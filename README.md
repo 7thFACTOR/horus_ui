@@ -1,2 +1,2 @@
-# horus
-HorusUI Immediate Mode Graphical User Interface
+# HorusUI
+Immediate Mode Graphical User Interface
