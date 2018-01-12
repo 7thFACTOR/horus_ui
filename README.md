@@ -26,4 +26,4 @@ Features:
 - Single header API
 - Simple functions API
 
-[[https://github.com/7thFACTOR/horus_ui/blob/master/hui.png|alt=HUI]]
+![HUI](hui.png)
