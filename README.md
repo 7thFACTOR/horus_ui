@@ -3,6 +3,7 @@
 # Advanced Immediate Mode Graphical User Interface
 
 ## Features
+- Immediate mode GUI, imgui (no state kept per widget, user provides the state)
 - Docking OS native windows and tab panes system
 - UTF8 text support 
 - DPI aware, scaling of the whole UI elements, useful for high DPI screens
