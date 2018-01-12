@@ -2,7 +2,7 @@
 
 # Advanced Immediate Mode Graphical User Interface
 
-## Features:
+## Features
 - Docking OS native windows and tab panes system
 - UTF8 text support 
 - DPI aware, scaling of the whole UI elements, useful for high DPI screens
@@ -30,7 +30,7 @@
 - Single header API
 - C-like API
 
-## Roadmap:
+## Roadmap
 - Linux and OSX proper support
 - Vulkan rendering backend
 - Better unicode input (suggestion box for Chinese etc.)
