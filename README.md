@@ -1,6 +1,6 @@
 ![HUI Logo](hui_logo.png)
 
-Advanced Immediate Mode Graphical User Interface
+# Advanced Immediate Mode Graphical User Interface
 
 Features:
 - Docking OS native windows and tab panes system
@@ -30,7 +30,7 @@ Features:
 - Single header API
 - C-like API
 
-Roadmap:
+# Roadmap:
 - Linux and OSX proper support
 - Vulkan rendering backend
 - Better unicode input (suggestion box for Chinese etc.)
