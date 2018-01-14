@@ -1,6 +1,6 @@
 ![HUI Logo](hui_logo.png)
 
-# Advanced Immediate Mode Graphical User Interface
+# Immediate Mode Graphical User Interface
 
 ## Features
 - Immediate mode GUI, imgui (no state kept per widget, user provides the state)
