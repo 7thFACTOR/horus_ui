@@ -1,6 +1,37 @@
 ![HUI Logo](hui_logo.png)
-
 # Immediate Mode Graphical User Interface
+
+# OVERVIEW
+---
+The HorusUI library allows you to quickly develop GUIs for your applications by leveraging the ease of use provided by immediate mode GUI concepts. No need to design your GUI layout and writing many lines of boilerplate GUI preparation, imgui takes care of layouting and making sure every widget you add to the system has an unique ID, gets drawn and responds to events.
+
+# PREREQUISITES
+---
+Windows:
+Microsoft Visual Studio 2017
+
+Linux:
+g++
+
+GTK3 dev, needed for the nativefiledialog lib, use:
+	```sudo apt-get install libgtk-3-dev```
+
+GLU/GLUT dev, needed by GLEW, use:
+	```sudo apt-get install libglu1-mesa-dev freeglut3-dev mesa-common-dev```
+
+# BUILDING
+---
+
+Windows:
+- Execute: generate.bat
+- Open and compile: build_vs2017/horus.sln
+- Run generated files from bin folder
+
+Linux:
+- Execute: sh ./generate.sh
+- Execute: sh ./build.sh
+- Run generated files from the ./bin folder
+
 
 ## Features
 - Immediate mode GUI, imgui (no state kept per widget, user provides the state)
@@ -32,9 +63,9 @@
 - C-like API
 
 ## Roadmap
-- Linux and OSX proper support
+- OSX proper support
 - Vulkan rendering backend
-- Better unicode input (suggestion box for Chinese etc.)
+- Better unicode input (show IME suggestion box for Chinese etc.)
 - DPI theme elements based on current UI scale, choose the proper element bitmap size
 - Multiline text input editor with highlighting, advanced text operations
 - Hyperlink widget

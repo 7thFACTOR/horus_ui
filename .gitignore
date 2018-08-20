@@ -1,0 +1,12 @@
+3rdparty/freetype/builds/*
+3rdparty/SDL2/VisualC/.vs/*
+3rdparty/SDL2/VisualC/SDL/Win32/*
+3rdparty/SDL2/VisualC/SDL/x64/*
+3rdparty/SDL2/VisualC/*
+bin64/*
+3rdparty/jsoncpp/build/*
+3rdparty/jsoncpp/makefiles/*
+3rdparty/jsoncpp/test/data*
+build/3rdparty/jsoncpp/
+build_*/**
+bin/*
