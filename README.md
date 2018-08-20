@@ -1,12 +1,10 @@
 ![HUI Logo](hui_logo.png)
 # Immediate Mode Graphical User Interface
 
-# OVERVIEW
----
+## OVERVIEW
 The HorusUI library allows you to quickly develop GUIs for your applications by leveraging the ease of use provided by immediate mode GUI concepts. No need to design your GUI layout and writing many lines of boilerplate GUI preparation, imgui takes care of layouting and making sure every widget you add to the system has an unique ID, gets drawn and responds to events.
 
-# PREREQUISITES
----
+## PREREQUISITES
 Windows:
 Microsoft Visual Studio 2017
 
@@ -19,9 +17,7 @@ GTK3 dev, needed for the nativefiledialog lib, use:
 GLU/GLUT dev, needed by GLEW, use:
 	```sudo apt-get install libglu1-mesa-dev freeglut3-dev mesa-common-dev```
 
-# BUILDING
----
-
+## BUILDING
 Windows:
 - Execute: generate.bat
 - Open and compile: build_vs2017/horus.sln
