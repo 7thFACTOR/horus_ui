@@ -1,5 +1,7 @@
 ![HUI Logo](hui_logo.png)
-# Immediate Mode Graphical User Interface
+# Immediate Mode Graphical User Interface for Tools
+
+![HUI](hui.png)
 
 ## OVERVIEW
 The HorusUI library allows you to quickly develop GUIs for your applications by leveraging the ease of use provided by immediate mode GUI concepts. No need to design your GUI layout and writing many lines of boilerplate GUI preparation, imgui takes care of layouting and making sure every widget you add to the system has an unique ID, gets drawn and responds to events.
@@ -68,5 +70,3 @@ Linux:
 - Rich text widget (multi-font family, style and size, multi-color, insert images and hyperlinks)
 - Customizable Object Inspector
 - Customizable Node Editor
-
-![HUI](hui.png)
