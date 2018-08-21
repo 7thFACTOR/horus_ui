@@ -135,7 +135,7 @@ libudev-dev, needed by SFML
 - Single header API
 - C-like API
 
-## Roadmap
+## ROADMAP
 - OSX proper support
 - Vulkan rendering backend
 - Better unicode input (show IME suggestion box for Chinese etc.)
