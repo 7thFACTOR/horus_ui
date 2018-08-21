@@ -6,6 +6,78 @@
 ## OVERVIEW
 The HorusUI library allows you to quickly develop GUIs for your applications by leveraging the ease of use provided by immediate mode GUI concepts. No need to design your GUI layout and writing many lines of boilerplate GUI preparation, imgui takes care of layouting and making sure every widget you add to the system has an unique ID, gets drawn and responds to events.
 
+## QUICK SAMPLE (C++)
+![HUI](docs/images/hui_sample_code.png)
+```
+    auto huiCtx = hui::createContext(hui::GraphicsApi::OpenGL);
+    auto wnd = hui::createWindow("Sample", 1000, 800);
+    hui::setWindow(wnd);
+    auto theme = hui::loadTheme("../themes/default.theme");
+    hui::setTheme(theme);
+
+    auto largeFnt = hui::getFont(theme, "title");
+
+    while (true)
+    {
+        hui::processEvents();
+        hui::setWindow(hui::getMainWindow());
+        hui::beginWindow(hui::getMainWindow());
+
+        // user drawing code
+        glClearColor(0, .3, .2, 1);
+        glClear(GL_COLOR_BUFFER_BIT);
+
+	// horus ui
+        hui::beginFrame();
+        hui::Rect panelRect = { 50, 50, 350, 500 };
+        hui::beginContainer(panelRect);
+        hui::WidgetElementInfo elemInfo;
+        hui::getThemeWidgetElementInfo(hui::WidgetElementId::PopupBody, hui::WidgetStateType::Normal, elemInfo);
+        hui::setBackColor(hui::Color::white);
+        hui::drawBorderedImage(elemInfo.image, elemInfo.border, panelRect);
+        hui::pushPadding(15);
+        hui::gap(15);
+        hui::labelCustomFont("Information", largeFnt);
+        hui::button("Activate shields");
+        static bool chk1, chk2, chk3;
+        hui::beginTwoColumns();
+        chk1 = hui::check("Option 1", chk1);
+        chk2 = hui::check("Option 2", chk2);
+        hui::nextColumn();
+        chk3 = hui::check("Option 3", chk3);
+        hui::pushTint(hui::Color::cyan);
+        hui::button("Browse...");
+        hui::popTint();
+        hui::endColumns();
+        static float val;
+        hui::sliderFloat(0, 100, val);
+        static char txt[2000];
+        hui::textInput(txt, 2000, hui::TextInputValueMode::Any, "Write something here");
+        hui::space();
+
+        static f32 scrollPos = 0;
+        hui::beginScrollView(200, scrollPos);
+        hui::multilineLabel("Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur?", hui::HAlignType::Left);
+        hui::line();
+        hui::button("I AGREE");
+        scrollPos = hui::endScrollView();
+
+        if (hui::button("Exit"))
+            hui::quitApplication();
+
+        hui::popPadding();
+        hui::endContainer();
+        hui::endFrame();
+        hui::endWindow();
+        hui::presentWindow(hui::getMainWindow());
+
+        if (hui::wantsToQuit() || hui::mustQuit())
+            break;
+    }
+
+    hui::shutdown();
+```
+
 ## PREREQUISITES
 **Windows:**
 	Microsoft Visual Studio 2017
