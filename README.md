@@ -6,9 +6,11 @@
 ## OVERVIEW
 The HorusUI library allows you to quickly develop GUIs for your applications by leveraging the ease of use provided by immediate mode GUI concepts. No need to design your GUI layout and writing many lines of boilerplate GUI preparation, imgui takes care of layouting and making sure every widget you add to the system has an unique ID, gets drawn and responds to events.
 
+```NOTE: The library is still work in progress, drastic changes will occur until stabilization```
+
 ## QUICK SAMPLE (C++)
 ![HUI](docs/images/hui_sample_code.png)
-```
+```C++
     auto huiCtx = hui::createContext(hui::GraphicsApi::OpenGL);
     auto wnd = hui::createWindow("Sample", 1000, 800);
     hui::setWindow(wnd);
