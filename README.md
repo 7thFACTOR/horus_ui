@@ -9,7 +9,7 @@ The HorusUI library allows you to quickly develop GUIs for your applications by 
 ```NOTE: The library is still work in progress, drastic changes will occur until stabilization```
 
 ## QUICK SAMPLE (C++)
-![HUI](docs/images/hui_sample_code.png){:height="384px" width="517px"}
+![HUI](docs/images/hui_sample_code.png)
 ```C++
     auto huiCtx = hui::createContext(hui::GraphicsApi::OpenGL);
     auto wnd = hui::createWindow("Sample", 1000, 800);
