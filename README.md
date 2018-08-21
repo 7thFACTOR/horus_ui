@@ -18,19 +18,21 @@ GTK3 dev, needed for the nativefiledialog lib, use:
 
 GLU/GLUT dev, needed by GLEW, use:
 	```sudo apt-get install libglu1-mesa-dev freeglut3-dev mesa-common-dev```
+	
+libudev-dev, needed by SFML
 
 ## BUILDING
-Windows:
-- Execute: generate.bat
-- Open and compile: build_vs2017/horus.sln
-- Run generated files from bin folder
+**Windows:**
+- Execute: ```generate.bat```
+- Open and compile: ```build_vs2017/horus.sln```
+- Run generated files from ```./bin``` folder
 
-Linux:
+**Linux:**
 - Execute: ```sh ./generate.sh``` to generate makefiles
 - Execute: ```sh ./build.sh``` to compile and generate the lib and executables for the examples
-- Run generated files from the ./bin folder
+- Run generated files from the ```./bin``` folder
 
-## Features
+## FEATURES
 - Immediate mode GUI, imgui (no state kept per widget, user provides the state)
 - Docking OS native windows and tab panes system
 - UTF8 text support 
