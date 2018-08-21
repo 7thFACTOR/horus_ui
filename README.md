@@ -1,7 +1,7 @@
-![HUI Logo](hui_logo.png)
+![HUI Logo](docs/images/hui_logo.png)
 # Immediate Mode Graphical User Interface for Tools
 
-![HUI](hui.png)
+![HUI](docs/images/hui.png)
 
 ## OVERVIEW
 The HorusUI library allows you to quickly develop GUIs for your applications by leveraging the ease of use provided by immediate mode GUI concepts. No need to design your GUI layout and writing many lines of boilerplate GUI preparation, imgui takes care of layouting and making sure every widget you add to the system has an unique ID, gets drawn and responds to events.
@@ -26,10 +26,9 @@ Windows:
 - Run generated files from bin folder
 
 Linux:
-- Execute: sh ./generate.sh
-- Execute: sh ./build.sh
+- Execute: ```sh ./generate.sh``` to generate makefiles
+- Execute: ```sh ./build.sh``` to compile and generate the lib and executables for the examples
 - Run generated files from the ./bin folder
-
 
 ## Features
 - Immediate mode GUI, imgui (no state kept per widget, user provides the state)
