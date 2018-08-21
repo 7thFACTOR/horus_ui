@@ -1,46 +1,9 @@
-project "custom_widgets_s"
-	kind "ConsoleApp"
-	defines {"_CONSOLE", "HORUS_STATIC"}
-	includedirs {scriptRoot, scriptRoot.."/include"}
-	add_sources_from("./")
-	link_horus_static()    
-	link_sdl2()
-	link_binpack()
-	link_win32()
-	link_opengl()
-	link_glew()
-	link_freetype()
-	link_jsoncpp()
-	link_stb_image()
-	link_nfd()
-	filter {"system:windows"}
-		links { "user32", "gdi32", "winmm", "imm32", "ole32", "oleaut32", "version", "uuid"}
-	filter {"system:linux"}
-	linkgroups 'On'
-		buildoptions {"`pkg-config --cflags gtk+-3.0` -fPIC"}
-		links {"X11 `pkg-config --libs gtk+-3.0`"}
-		links {"Xi", "dl", "pthread", "Xext"}
-	filter {}
-		filter {"system:macosx"}
-		links {"OpenGL.framework", "ForceFeedback.framework", "CoreVideo.framework", "Cocoa.framework", "IOKit.framework", "Carbon.framework", "CoreAudio.framework", "AudioToolbox.framework", "dl"}
-	filter {}
-	configuration "Debug"
-		defines {}
-		symbols "On"
-		targetname "custom_widgets_sd"
-	configuration "Release"
-		defines
-		{
-			"NDEBUG"
-		}
-		optimize "On"
-		targetname "custom_widgets_s"
-
 project "custom_widgets"
 	kind "ConsoleApp"
 	defines {"_CONSOLE", "HORUS_IMPORTS"}
 	includedirs {scriptRoot, scriptRoot.."/include"}
 	add_sources_from("./")
+
 	link_horus()
 	link_binpack()
 	link_win32()
@@ -51,21 +14,27 @@ project "custom_widgets"
 	link_stb_image()
 	link_nfd()
 	link_sdl2()
+	
 	filter {"system:windows"}
 		links { "user32", "gdi32", "winmm", "imm32", "ole32", "oleaut32", "version", "uuid"}
+	filter {}
+
 	filter {"system:linux"}
-	linkgroups 'On'
+		linkgroups 'On'
 		buildoptions {"`pkg-config --cflags gtk+-3.0` -fPIC"}
 		links {"X11 `pkg-config --libs gtk+-3.0`"}
 		links {"Xi", "dl", "pthread", "Xext"}
 	filter {}
-		filter {"system:macosx"}
+	
+	filter {"system:macosx"}
 		links {"OpenGL.framework", "ForceFeedback.framework", "CoreVideo.framework", "Cocoa.framework", "IOKit.framework", "Carbon.framework", "CoreAudio.framework", "AudioToolbox.framework", "dl"}
 	filter {}
+	
 	configuration "Debug"
 		defines {}
 		symbols "On"
 		targetname "custom_widgets_d"
+		
 	configuration "Release"
 		defines
 		{

@@ -7,19 +7,19 @@
 The HorusUI library allows you to quickly develop GUIs for your applications by leveraging the ease of use provided by immediate mode GUI concepts. No need to design your GUI layout and writing many lines of boilerplate GUI preparation, imgui takes care of layouting and making sure every widget you add to the system has an unique ID, gets drawn and responds to events.
 
 ## PREREQUISITES
-Windows:
-Microsoft Visual Studio 2017
+**Windows:**
+	Microsoft Visual Studio 2017
 
-Linux:
-g++
+**Linux:**
+	g++
 
-GTK3 dev, needed for the nativefiledialog lib, use:
-	```sudo apt-get install libgtk-3-dev```
+	GTK3 dev, needed for the nativefiledialog lib, use:
+		```sudo apt-get install libgtk-3-dev```
 
-GLU/GLUT dev, needed by GLEW, use:
-	```sudo apt-get install libglu1-mesa-dev freeglut3-dev mesa-common-dev```
+	GLU/GLUT dev, needed by GLEW, use:
+		```sudo apt-get install libglu1-mesa-dev freeglut3-dev mesa-common-dev```
 	
-libudev-dev, needed by SFML
+	libudev-dev, needed by SFML
 
 ## BUILDING
 **Windows:**
