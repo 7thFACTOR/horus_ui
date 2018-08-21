@@ -11,15 +11,15 @@ The HorusUI library allows you to quickly develop GUIs for your applications by 
 	Microsoft Visual Studio 2017
 
 **Linux:**
-	g++
+g++
 
-	GTK3 dev, needed for the nativefiledialog lib, use:
+GTK3 dev, needed for the nativefiledialog lib, use:
 		```sudo apt-get install libgtk-3-dev```
 
-	GLU/GLUT dev, needed by GLEW, use:
+GLU/GLUT dev, needed by GLEW, use:
 		```sudo apt-get install libglu1-mesa-dev freeglut3-dev mesa-common-dev```
 	
-	libudev-dev, needed by SFML
+libudev-dev, needed by SFML
 
 ## BUILDING
 **Windows:**
