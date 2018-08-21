@@ -776,7 +776,7 @@ WindowState SDLInputProvider::getWindowState(Window window)
 
 void SDLInputProvider::setCapture(Window window)
 {
-	//SDL_CaptureMouse(SDL_TRUE);
+	SDL_CaptureMouse(SDL_TRUE);
 }
 
 void SDLInputProvider::releaseCapture()
@@ -801,7 +801,7 @@ void initializeUserSDL(void* sdlContext, void* sdlMainWindow)
 	provider->sdlOpenGLCtx = sdlContext;
 	provider->mainWindow = wnd;
 	provider->focusedWindow = wnd;
-	provider->context = createContext(GraphicsApi::OpenGL, 0);
+	provider->context = createContext(GraphicsApi::OpenGL, nullptr, nullptr);
 	setInputProvider(provider);
 	SDL_RaiseWindow(wnd);
 }

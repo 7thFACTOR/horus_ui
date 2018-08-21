@@ -183,30 +183,25 @@ bool textInput(
 		ctx->renderer->cmdDrawSolidColor(cursorRect);
 	}
 
-	UnicodeString* textToDraw = nullptr;
-	UnicodeString utf32text;
-	bool isEmptyText = false;
+    if (isEditingThis)
+    {
+        memset((char*)text, 0, maxLength);
+        utf32ToUtf8NoAlloc(ctx->textInput.text, text, maxLength);
+    }
 
-	if (isEditingThis)
-	{
-		textToDraw = &ctx->textInput.text;
-	}
-	else
-	{
-		utf8ToUtf32(text, utf32text);
-		textToDraw = &utf32text;
-	}
+    bool isEmptyText = false;
+    Utf8StringBuffer textToDraw = (Utf8StringBuffer)text;
 
-	isEmptyText = textToDraw->empty();
+    isEmptyText = !strcmp(textToDraw, "");
 
 	if (isEmptyText && defaultText)
 	{
-		textToDraw = ctx->textCache->getText(defaultText);
+        textToDraw = (Utf8StringBuffer)defaultText;
 		ctx->renderer->cmdSetColor(bodyTextDefaultElemState.color);
 	}
 	else
 	{
-		ctx->renderer->cmdSetColor(bodyElemState->color);
+        ctx->renderer->cmdSetColor(bodyElemState->color);
 	}
 
 	auto textRect = Rect(
@@ -215,22 +210,14 @@ bool textInput(
 		clipRect.width,
 		clipRect.height);
 
-	utf32ToUtf8NoAlloc(*textToDraw, text, maxLength);
-
 	// draw the actual text
 	ctx->renderer->cmdDrawTextInBox(
-		text,
+		textToDraw,
 		textRect,
 		HAlignType::Left,
 		VAlignType::Bottom);
 
 	ctx->renderer->popClipRect();
-
-	if (isEditingThis)
-	{
-		memset((char*)text, 0, maxLength);
-		utf32ToUtf8NoAlloc(ctx->textInput.text, text, maxLength);
-	}
 
 	setAsFocusable();
 	ctx->currentWidgetId++;
