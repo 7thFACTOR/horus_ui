@@ -172,14 +172,6 @@ void Renderer::endFrame()
 	vertexBuffer->updateData(vertexBufferData.vertices.data(), 0, vertexBufferData.drawVertexCount);
 	// render the batches
 	ctx->gfx->draw(batches.data(), batches.size());
-
-	static u32 tim = ~0;
-
-	//if (GetTickCount() - tim > 1000)
-	{
-		//tim = GetTickCount();
-		//printf("Drawcalls: %d\n", batches.size());
-	}
 }
 
 void Renderer::cmdSetColor(const Color& newColor)
