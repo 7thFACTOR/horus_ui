@@ -121,23 +121,23 @@ libudev-dev, needed by SFML
 - Virtual list view support (huge number of items)
 - Automatic vertical layouting of widgets (no need to position them by hand)
 - Multi-column layout with custom sizes (preferred, fill, max size, percentage based or pixel based)
-- Padding (left-right) and spacing for widgets
+- Padding (left-right) and vertical spacing for widgets
 - Native Open/Save/Pick folder dialogs API
 - Inter-widget drag and drop
 - OS file/text drag and drop
 - Currently using OpenGL and SDL as backends for rendering and window/input
-- Customizable render/input/file i/o backends
+- Customizable render/input backends
 - Custom user widgets API
 - 2D primitive drawing, lines, polylines, hermite splines, elipses, rectangles, with thickness
 - User viewport widget (rendering your scene/document view with the current rendering API)
 - Custom mouse cursor API
 - Clipboard API
-- Undo/Redo system
-- Keyboard shortcuts system
 - Single header API
 - C-like API
 
 ## ROADMAP
+- Undo/Redo system
+- Keyboard shortcuts system
 - OSX proper support
 - Vulkan rendering backend
 - Better unicode input (show IME suggestion box for Chinese etc.)
