@@ -9,11 +9,6 @@ int isMouseEvent(void* userdata, SDL_Event* event)
 {
 	SDLInputProvider* provider = (SDLInputProvider*)userdata;
 	
-	if (event->type == SDL_MOUSEMOTION)
-	{
-		printf("Mouse motion ");
-	}
-
 	if (event->type == SDL_MOUSEMOTION && provider->disableMouseMove)
 		return 0;
 
