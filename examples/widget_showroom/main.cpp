@@ -1480,39 +1480,38 @@ int main(int argc, char** args)
 
 	printf("Loading theme...\n");
 	//TODO: load themes and images and anything from memory also
-	auto theme = hui::loadTheme("../data/default.theme");
-	fntBig = hui::createFont(theme, "../data/fonts/arial.ttf", 20);
-	fntBold = hui::createFont(theme, "../data/fonts/arial.ttf", 15);
-	fntItalic = hui::createFont(theme, "../data/fonts/arial.ttf", 15);
-	fntNodeTitle = hui::createFont(theme, "../data/fonts/Roboto-Bold.ttf", 12);
+	auto theme = hui::loadTheme("../themes/default.theme");
+	fntBig = hui::createFont(theme, "../themes/fonts/arial.ttf", 20);
+	fntBold = hui::createFont(theme, "../themes/fonts/arial.ttf", 15);
+	fntItalic = hui::createFont(theme, "../themes/fonts/arial.ttf", 15);
+	fntNodeTitle = hui::createFont(theme, "../themes/fonts/Roboto-Bold.ttf", 12);
     printf("Loading images...\n");
 
 	hui::setTheme(theme);
-	drawLineImg = hui::loadImage("../data/drawline.png");
-	lenaImg= hui::loadImage("../data/lena.png");
-	nodeBodyImg = hui::loadImage("../data/node-body.png");
-	tabIcon1 = hui::loadImage("../data/tabicon.png");
-	tabIcon2 = hui::loadImage("../data/tabicon2.png");
-	deleteIcon = hui::loadImage("../data/delete_icon.png");
-	sadIcon = hui::loadImage("../data/delete_icon.png");
-	xaxisIcon = hui::loadImage("../data/xaxis.png");
-	yaxisIcon = hui::loadImage("../data/yaxis.png");
-	zaxisIcon = hui::loadImage("../data/zaxis.png");
-	targetIcon = hui::loadImage("../data/target_icon.png");
-	clearIcon = hui::loadImage("../data/clear_icon.png");
-	myViewHandler.moveIcon = hui::loadImage("../data/move_icon.png");
-	myViewHandler.playIcon = hui::loadImage("../data/play-icon.png");
-	myViewHandler.stopIcon = hui::loadImage("../data/stop-icon.png");
-	myViewHandler.pauseIcon = hui::loadImage("../data/pause-icon.png");
-	myViewHandler.horusLogo = hui::loadImage("../data/horus.png");
-	lenaImg = hui::loadImage("../data/lena.png");
-	dragDropCur = hui::createMouseCursor("../data/dragdrop_cursor.png");
+	drawLineImg = hui::loadImage("../themes/drawline.png");
+	lenaImg= hui::loadImage("../themes/lena.png");
+	nodeBodyImg = hui::loadImage("../themes/node-body.png");
+	tabIcon1 = hui::loadImage("../themes/tabicon.png");
+	tabIcon2 = hui::loadImage("../themes/tabicon2.png");
+	deleteIcon = hui::loadImage("../themes/delete_icon.png");
+	sadIcon = hui::loadImage("../themes/delete_icon.png");
+	xaxisIcon = hui::loadImage("../themes/xaxis.png");
+	yaxisIcon = hui::loadImage("../themes/yaxis.png");
+	zaxisIcon = hui::loadImage("../themes/zaxis.png");
+	targetIcon = hui::loadImage("../themes/target_icon.png");
+	clearIcon = hui::loadImage("../themes/clear_icon.png");
+	myViewHandler.moveIcon = hui::loadImage("../themes/move_icon.png");
+	myViewHandler.playIcon = hui::loadImage("../themes/play-icon.png");
+	myViewHandler.stopIcon = hui::loadImage("../themes/stop-icon.png");
+	myViewHandler.pauseIcon = hui::loadImage("../themes/pause-icon.png");
+	myViewHandler.horusLogo = hui::loadImage("../themes/horus.png");
+	dragDropCur = hui::createMouseCursor("../themes/dragdrop_cursor.png");
 
 	hui::setDragDropMouseCursor(dragDropCur);
     printf("Loading views...\n");
 
 	// if there is no state, then create the default panes and tabs
-	//if (!hui::loadViewContainersState("layout.hui"))
+	if (!hui::loadViewContainersState("layout.hui"))
 	{
 		createMyDefaultViewPanes();
 	}

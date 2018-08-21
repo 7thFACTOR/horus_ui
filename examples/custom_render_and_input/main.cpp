@@ -395,10 +395,10 @@ struct SfmlInputProvider : hui::InputProvider
 
     bool pasteFromClipboard(hui::Utf8String *outText) override
     {
-		//auto str = sf::Clipboard::getString().toUtf8();
+		auto str = sf::Clipboard::getString().toUtf8();
 		
-		//*outText = new char[str.size()];
-		//memcpy((char*)(*outText), str.data(), str.size());
+		*outText = new char[str.size()];
+		memcpy((char*)(*outText), str.data(), str.size());
 		return true;
 	}
 
@@ -651,7 +651,7 @@ int main(int argc, char** args)
     auto huiCtx = hui::createContext(hui::GraphicsApi::OpenGL, new SfmlInputProvider);
     auto wnd = hui::createWindow("Sfml", 1000, 800);
     hui::setWindow(wnd);
-	auto theme = hui::loadTheme("../data/default.theme");
+	auto theme = hui::loadTheme("../themes/default.theme");
 	hui::setTheme(theme);
 
     auto largeFnt = hui::getFont(theme, "title");

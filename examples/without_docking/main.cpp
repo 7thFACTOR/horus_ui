@@ -12,7 +12,7 @@
 int main(int argc, char** args)
 {
 	hui::initializeSDL("Without Docking", { 0, 0, 1024, 768 });
-	auto theme = hui::loadTheme("../data/default.theme");
+	auto theme = hui::loadTheme("../themes/default.theme");
     auto largeFnt = hui::getFont(theme, "title");
 	hui::setTheme(theme);
 

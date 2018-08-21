@@ -41,7 +41,7 @@ void curveEditor(f32 height, u32 maxPoints, Point* points, u32& pointCount, cons
 int main(int argc, char** args)
 {
 	hui::initializeSDL("Custom Widgets", { 0, 0, 1200, 600 });
-	auto theme = hui::loadTheme("../data/default.theme");
+	auto theme = hui::loadTheme("../themes/default.theme");
 
 	hui::setTheme(theme);
     auto largeFnt = hui::getFont(theme, "title");
