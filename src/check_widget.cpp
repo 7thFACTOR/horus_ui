@@ -57,7 +57,7 @@ bool check(Utf8String labelText, bool checked)
 			}, ctx->globalScale);
 	}
 
-	const f32 bulletTextSpacing = 5.0f * ctx->globalScale;
+	const f32 bulletTextSpacing = ctx->settings.checkBulletTextSpacing * ctx->globalScale;
 
 	ctx->renderer->cmdSetColor(checkBodyElemState->textColor);
 	ctx->renderer->cmdSetFont(checkBodyElemState->font);

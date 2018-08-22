@@ -182,13 +182,13 @@ void drawRectangle(const Rect& rc)
 	ctx->renderer->cmdDrawPolyLine(pts, 4, true);
 }
 
-#define B_HERMITE_TANGENT(a, b, c, tt, cc, bb, adj)\
+#define HORUS_HERMITE_TANGENT(a, b, c, tt, cc, bb, adj)\
 			(((b - a) * (1.0f + bb) * (1.0f - cc) + (c - b)\
 			* (1.0f - bb) * (1.0f + cc)) * (1.0f - tt) * adj)
 
-#define B_HERMITE_ONE_TANGENT(a, b, tt) ((a - b) * (1.0f - tt))
+#define HORUS_HERMITE_ONE_TANGENT(a, b, tt) ((a - b) * (1.0f - tt))
 
-#define B_HERMITE_FIRST_TANGENT(a, b, c, tt) (((a - b) * 1.5f - c * 0.5f) * (1.0f - tt))
+#define HORUS_HERMITE_FIRST_TANGENT(a, b, c, tt) (((a - b) * 1.5f - c * 0.5f) * (1.0f - tt))
 
 Point hermitePoint(
 	const Point& controlPtA,

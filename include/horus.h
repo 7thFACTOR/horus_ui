@@ -1344,6 +1344,12 @@ struct WidgetElementInfo
 	f32 height;
 };
 
+struct ContextSettings
+{
+	f32 radioBulletTextSpacing = 5;
+	f32 checkBulletTextSpacing = 5;
+};
+
 //////////////////////////////////////////////////////////////////////////
 // Core
 //////////////////////////////////////////////////////////////////////////
@@ -1351,6 +1357,7 @@ HORUS_API Context createContext(GraphicsApi gfxApi, struct InputProvider* custom
 HORUS_API void setContext(Context ctx);
 HORUS_API Context getContext();
 HORUS_API void deleteContext(Context ctx);
+HORUS_API ContextSettings& getContextSettings();
 // using SDL for input and windowing
 HORUS_API void initializeSDL(Utf8String mainWindowTitle, const Rect& mainWindowRect = Rect(), WindowPositionType positionType = WindowPositionType::Undefined, bool vsync = true);
 HORUS_API void initializeUserSDL(void* sdlContext, void* sdlMainWindow);

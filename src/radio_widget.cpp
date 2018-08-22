@@ -57,8 +57,7 @@ bool radio(Utf8String labelText, bool checked)
 			}, ctx->globalScale);
 	}
 
-	//TODO: 5 is hardcoded
-	const f32 bulletTextSpacing = 5 * ctx->globalScale;
+	const f32 bulletTextSpacing = ctx->settings.radioBulletTextSpacing * ctx->globalScale;
 
 	ctx->renderer->cmdSetColor(radioBodyElemState->textColor);
 	ctx->renderer->cmdSetFont(radioBodyElemState->font);

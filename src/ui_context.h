@@ -24,6 +24,7 @@ struct UiContext
 	GraphicsProvider* gfx = nullptr;
 	Renderer* renderer = nullptr;
 	TextCache* textCache = nullptr;
+    ContextSettings settings;
 
 	u32 currentWindowIndex = 0;
 	GraphicsApiContext gfxApiContext = 0;

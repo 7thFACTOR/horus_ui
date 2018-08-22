@@ -114,6 +114,11 @@ void deleteContext(Context context)
 	delete (Context*)context;
 }
 
+ContextSettings& getContextSettings()
+{
+	return ctx->settings;
+}
+
 void clearBackground()
 {
 	auto windowElemState = ctx->theme->getElement(WidgetElementId::WindowBody).normalState();
