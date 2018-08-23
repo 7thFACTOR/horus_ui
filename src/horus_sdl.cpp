@@ -23,7 +23,7 @@ SDLInputProvider::SDLInputProvider()
 	}
 
 	SDL_SetHint(SDL_HINT_MOUSE_FOCUS_CLICKTHROUGH, "1");
-	SDL_SetEventFilter(isMouseEvent, this);
+	//SDL_SetEventFilter(isMouseEvent, this);
 }
 
 SDLInputProvider::~SDLInputProvider()
@@ -475,8 +475,8 @@ bool SDLInputProvider::pasteFromClipboard(Utf8String *outText)
 
 void SDLInputProvider::addSdlEvent(SDL_Event& ev)
 {
-	if (ev.type == SDL_MOUSEMOTION && disableMouseMove)
-		return;
+	//if (ev.type == SDL_MOUSEMOTION && disableMouseMove)
+	//	return;
 
 	if (ev.type == SDL_KEYDOWN
 		|| ev.type == SDL_KEYUP
