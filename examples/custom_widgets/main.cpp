@@ -50,37 +50,61 @@ int main(int argc, char** args)
 
     WidgetElementInfo el;
     getThemeWidgetElementInfo(WidgetElementId::ButtonBody, WidgetStateType::Normal, inf);
+    bool exitNow = false;
 
-    while (true)
+    while (!exitNow)
     {
-        hui::processEvents();
-        hui::setWindow(hui::getMainWindow());
-        hui::beginWindow(hui::getMainWindow());
-        hui::clearBackground();
+        // get the events from SDL or whatever input provider is set, it will fill a queue of events
+        hui::processInputEvents();
+        // lets check the count of events
+        int eventCount = hui::getInputEventCount();
 
-        hui::beginFrame();
-        hui::Rect panelRect = { 50, 50, 350, 500 };
-        hui::beginContainer(panelRect);
-        hui::WidgetElementInfo elemInfo;
-        hui::getThemeWidgetElementInfo(hui::WidgetElementId::PopupBody, hui::WidgetStateType::Normal, elemInfo);
+        // the main frame rendering and input handling
+        auto doFrame = [&](bool lastFrame)
+        {
+            hui::setWindow(hui::getMainWindow());
+            hui::beginWindow(hui::getMainWindow());
+            hui::clearBackground();
 
-        const int maxPts = 32;
-        Point pts[maxPts] = { 0 };
-        u32 ptCount = 0;
+            hui::beginFrame();
+            hui::Rect panelRect = { 50, 50, 350, 500 };
+            hui::beginContainer(panelRect);
+            hui::WidgetElementInfo elemInfo;
+            hui::getThemeWidgetElementInfo(hui::WidgetElementId::PopupBody, hui::WidgetStateType::Normal, elemInfo);
 
-        curveEditor(55, maxPts, pts, ptCount, Color::red);
+            const int maxPts = 32;
+            Point pts[maxPts] = { 0 };
+            u32 ptCount = 0;
 
-        if (hui::button("Exit"))
-            hui::quitApplication();
+            curveEditor(55, maxPts, pts, ptCount, Color::red);
 
-        hui::popPadding();
-        hui::endContainer();
-        hui::endFrame();
-        hui::endWindow();
-        hui::presentWindow(hui::getMainWindow());
+            if (hui::button("Exit"))
+                hui::quitApplication();
 
-        if (hui::wantsToQuit() || hui::mustQuit())
-            break;
+            hui::popPadding();
+            hui::endContainer();
+            hui::endFrame();
+            hui::endWindow();
+            hui::presentWindow(hui::getMainWindow());
+
+            if (hui::wantsToQuit() || hui::mustQuit())
+                exitNow = true;
+        };
+
+        // if we have events, then go through all of them and call the frame render and input
+        if (eventCount)
+        {
+            for (int i = 0; i < eventCount; i++)
+            {
+                hui::setInputEvent(hui::getInputEventAt(i));
+                doFrame(i == eventCount - 1);
+            }
+        }
+        else
+        {
+            // if no events, just do the frame
+            doFrame(true);
+        }
     }
 
 	hui::shutdown();

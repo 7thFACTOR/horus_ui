@@ -1114,7 +1114,6 @@ struct InputEvent
 		MouseWheel,
 		Key,
 		Text,
-		TextEditing,
 		WindowResize,
 		WindowGotFocus,
 		WindowLostFocus,
@@ -1135,21 +1134,13 @@ struct InputEvent
 	{
 		bool down = false;
 		KeyCode code = KeyCode::None;
-		KeyModifiers modifiers;
+		KeyModifiers modifiers = KeyModifiers::None;
 	};
 
 	struct TextData
 	{
 		static const int maxTextBufferSize = 64;
 		char text[maxTextBufferSize] = { 0 };
-	};
-
-	struct TextEditingData
-	{
-		static const int maxTextBufferSize = 64;
-		char text[maxTextBufferSize] = {0};
-		int start;
-		int length;
 	};
 
 	struct OsDragDropData
@@ -1174,7 +1165,6 @@ struct InputEvent
 		MouseData mouse;
 		KeyData key;
 		TextData text;
-		TextEditingData textEditing;
 		OsDragDropData drop;
 	};
 
@@ -1193,7 +1183,6 @@ struct InputEvent
 		mouse = other.mouse;
 		key = other.key;
 		text = other.text;
-		textEditing = other.textEditing;
 		drop = other.drop;
 
 		return *this;
@@ -1354,7 +1343,7 @@ HORUS_API void deleteContext(Context ctx);
 HORUS_API ContextSettings& getContextSettings();
 HORUS_API void setInputProvider(struct InputProvider* provider);
 HORUS_API void setGraphicsProvider(struct GraphicsProvider* provider);
-HORUS_API void processEvents();
+HORUS_API void processInputEvents();
 // must be called continuously in the main loop, used for tooltips and other timed things
 HORUS_API void setFrameDeltaTime(f32 dt);
 HORUS_API f32 getFrameDeltaTime();
@@ -1363,6 +1352,7 @@ HORUS_API void beginFrame();
 HORUS_API void endFrame();
 HORUS_API void clearBackground();
 HORUS_API bool hasNothingToDo();
+HORUS_API void setDisableRendering(bool disable);
 HORUS_API void forceRepaint();
 HORUS_API void skipThisFrame();
 HORUS_API bool copyToClipboard(Utf8String text);
@@ -1372,6 +1362,9 @@ HORUS_API const InputEvent& getInputEvent();
 HORUS_API void cancelEvent();
 HORUS_API void addInputEvent(const InputEvent& event);
 HORUS_API void setMouseMoved(bool moved);
+HORUS_API u32 getInputEventCount();
+HORUS_API InputEvent getInputEventAt(u32 index);
+HORUS_API void setInputEvent(const InputEvent& event);
 HORUS_API void clearInputEventQueue();
 HORUS_API void setMouseCursor(MouseCursorType type);
 HORUS_API MouseCursor createMouseCursor(Rgba32* pixels, u32 width, u32 height, u32 hotSpotX = 0, u32 hotSpotY = 0);

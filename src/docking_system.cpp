@@ -104,7 +104,7 @@ void updateDockingSystemInternal(bool isLastEvent, ViewHandler* handler)
 
 void updateDockingSystem(ViewHandler* handler)
 {
-	hui::processEvents();
+	hui::processInputEvents();
 
 	if (hui::hasNothingToDo())
 	{

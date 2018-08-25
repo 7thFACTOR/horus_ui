@@ -366,13 +366,6 @@ void Sdl2InputProvider::addSdlEvent(SDL_Event& ev)
         strcpy(outEvent.text.text, ev.text.text);
         outEvent.window = SDL_GetWindowFromID(ev.text.windowID);
         break;
-    case SDL_TEXTEDITING:
-        outEvent.type = InputEvent::Type::TextEditing;
-        strcpy(outEvent.textEditing.text, ev.edit.text);
-        outEvent.textEditing.start = ev.edit.start;
-        outEvent.textEditing.length = ev.edit.length;
-        outEvent.window = SDL_GetWindowFromID(ev.text.windowID);
-        break;
     case SDL_DROPFILE:
         outEvent.type = InputEvent::Type::OsDragDrop;
         outEvent.drop.type = InputEvent::OsDragDropData::Type::DropFile;
@@ -444,7 +437,7 @@ void Sdl2InputProvider::addSdlEvent(SDL_Event& ev)
     outEvent.key.modifiers |= (ev.key.keysym.mod & KMOD_ALT) ? KeyModifiers::Alt : KeyModifiers::None;
     outEvent.key.modifiers |= (ev.key.keysym.mod & KMOD_SHIFT) ? KeyModifiers::Shift : KeyModifiers::None;
     outEvent.key.modifiers |= (ev.key.keysym.mod & KMOD_CTRL) ? KeyModifiers::Control : KeyModifiers::None;
-    
+
     if (ev.type == SDL_KEYDOWN
 		|| ev.type == SDL_KEYUP
 		|| ev.type == SDL_MOUSEBUTTONDOWN

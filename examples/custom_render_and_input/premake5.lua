@@ -4,8 +4,8 @@ project "custom_render_and_input"
 	includedirs {scriptRoot, scriptRoot.."/include"}
 	includedirs {scriptRoot.."/examples/common"}
 	add_sources_from("./")
-  files { "../common/sdl2*.h" }
-  files { "../common/sdl2*.cpp" }
+  files { "../common/sfml*.h" }
+  files { "../common/sfml*.cpp" }
   files { "../common/opengl*.h" }
   files { "../common/opengl*.cpp" }
 

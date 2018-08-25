@@ -334,6 +334,11 @@ bool hasNothingToDo()
 		&& !ctx->dockingTabPane;
 }
 
+void setDisableRendering(bool disable)
+{
+    ctx->renderer->disableRendering = disable;
+}
+
 void forceRepaint()
 {
 	ctx->mustRedraw = true;
@@ -536,6 +541,21 @@ void setMouseMoved(bool moved)
     ctx->mouseMoved = moved;
 }
 
+u32 getInputEventCount()
+{
+    return ctx->events.size();
+}
+
+InputEvent getInputEventAt(u32 index)
+{
+    return ctx->events[index];
+}
+
+void setInputEvent(const InputEvent& event)
+{
+    ctx->event = event;
+}
+
 bool mustQuit()
 {
 	return ctx->inputProvider->mustQuit();
@@ -675,7 +695,7 @@ void setGraphicsProvider(GraphicsProvider* provider)
 	ctx->gfx = provider;
 }
 
-void processEvents()
+void processInputEvents()
 {
     ctx->event.type = InputEvent::Type::None;
     clearInputEventQueue();

@@ -1,4 +1,8 @@
-void SfmlInputProvider::processSfmlEvent(sf::Window* window, sf::Event& ev)
+#include "sfml_input_provider.h"
+
+namespace hui
+{
+void SfmlInputProvider::processSfmlEvent(hui::Window window, sf::Event& ev)
 {
 	hui::InputEvent event;
 
@@ -259,13 +263,14 @@ void SfmlInputProvider::processSfmlEvent(sf::Window* window, sf::Event& ev)
 	{
 		if (ev.text.unicode < 32)
 			break;
+
 		event.type = hui::InputEvent::Type::Text;
-		char text[hui::InputEvent::TextData::maxTextBufferSize] = { 0 };
+		char text[5] = { 0 };
 		size_t textLen = 0;
 		u32 uni[2] = {0};
 		uni[0] = ev.text.unicode;
-		hui::unicodeToUtf8(uni, 1, text, hui::InputEvent::TextData::maxTextBufferSize);
-		memcpy(event.text.text, text, strlen(text));
+		hui::unicodeToUtf8(uni, 1, text, 4);
+		memcpy(event.text.text, text, strlen(text) + 1);
 		break;
 	}
 	case sf::Event::KeyPressed:             ///< A key was pressed (data in event.key)
@@ -311,8 +316,12 @@ void SfmlInputProvider::processSfmlEvent(sf::Window* window, sf::Event& ev)
 		break;
 	case sf::Event::MouseMoved:             ///< The mouse cursor moved (data in event.mouseMove)
         hui::setMouseMoved(true);
-		break;
+        event.type = hui::InputEvent::Type::MouseMove;
+        event.mouse.point.x = ev.mouseMove.x;
+        event.mouse.point.y = ev.mouseMove.y;
+        break;
 	case sf::Event::MouseEntered:           ///< The mouse cursor entered the area of the window (no data)
+        hoveredWindow = focusedWindow;
 		break;
 	case sf::Event::MouseLeft:              ///< The mouse cursor left the area of the window (no data)
 		break;
@@ -324,39 +333,26 @@ void SfmlInputProvider::processSfmlEvent(sf::Window* window, sf::Event& ev)
 		wantsToQuitApp = true;
 	}
 
-	events.push_back(event);
+    addInputEvent(event);
 }
 
-bool SfmlInputProvider::popEvent(hui::InputEvent* outEvent) override
-{
-	bool hasEvents = events.size() != 0;
-
-	if (!hasEvents)
-		return false;
-
-	*outEvent = events.front();
-	events.erase(events.begin());
-
-	return hasEvents;
-}
-
-void startTextInput(hui::Window window, const hui::Rect& imeRect) override
+void SfmlInputProvider::startTextInput(hui::Window window, const hui::Rect& imeRect)
 {
 	
 }
 
-void stopTextInput() override
+void SfmlInputProvider::stopTextInput()
 {
 
 }
 
-bool copyToClipboard(hui::Utf8String text) override
+bool SfmlInputProvider::copyToClipboard(hui::Utf8String text)
 {
 	sf::Clipboard::setString(text);
 	return true;
 }
 
-bool pasteFromClipboard(hui::Utf8String *outText) override
+bool SfmlInputProvider::pasteFromClipboard(hui::Utf8String *outText)
 {
 	auto str = sf::Clipboard::getString().toUtf8();
 	
@@ -365,14 +361,9 @@ bool pasteFromClipboard(hui::Utf8String *outText) override
 	return true;
 }
 
-u32 getEventCount() const override
+void SfmlInputProvider::processEvents()
 {
-	return events.size();
-}
-
-void processEvents() override
-{
-	for (int i = 0; i < maxWindowCount; i++)
+	for (int i = 1; i < maxWindowCount; i++)
 	{
 		if (freeWindowSlot[i])
 			continue;
@@ -381,51 +372,47 @@ void processEvents() override
 
 		while (windows[i].pollEvent(ev))
 		{
-			processSfmlEvent(&windows[i], ev);
+			processSfmlEvent((hui::Window)i, ev);
 		}
 	}
 }
 
-void flushEvents() override
+void SfmlInputProvider::setCurrentWindow(hui::Window window)
 {
-	events.clear();
+	currentWindow = window;
 }
 
-void setCurrentWindow(hui::Window window) override
-{
-	currentWindow = (sf::Window*)window;
-}
-
-hui::Window getCurrentWindow() override
+hui::Window SfmlInputProvider::getCurrentWindow()
 {
 	return currentWindow;
 }
 
-hui::Window getFocusedWindow() override
+hui::Window SfmlInputProvider::getFocusedWindow()
 {
 	return focusedWindow;
 }
 
-hui::Window getHoveredWindow() override
+hui::Window SfmlInputProvider::getHoveredWindow()
 {
 	return hoveredWindow;
 }
 
-hui::Window getMainWindow() override
+hui::Window SfmlInputProvider::getMainWindow()
 {
 	return mainWindow;
 }
 
-hui::Window createWindow(
-	hui::Utf8String title, i32 width, i32 height,
-	hui::WindowBorder border = hui::WindowBorder::Resizable,
-	hui::WindowPositionType positionType = hui::WindowPositionType::Undefined,
-	hui::Point customPosition = { 0, 0 },
-	bool showInTaskBar = true) override
+hui::Window SfmlInputProvider::createWindow(
+	hui::Utf8String title,
+    i32 width, i32 height,
+	hui::WindowBorder border,
+	hui::WindowPositionType positionType,
+	hui::Point customPosition,
+	bool showInTaskBar)
 {
 	int freeIndex = -1;
 
-	for (int i = 0; i < maxWindowCount; i++)
+	for (int i = 1; i < maxWindowCount; i++)
 	{
 		if (freeWindowSlot[i])
 		{
@@ -439,14 +426,14 @@ hui::Window createWindow(
 	return 0;
 }
 
-void setWindowTitle(hui::Window window, hui::Utf8String title) override
+void SfmlInputProvider::setWindowTitle(hui::Window window, hui::Utf8String title)
 {
 	int index = (int)window;
 
 	windows[index].setTitle(title);
 }
 
-void setWindowRect(hui::Window window, const hui::Rect& rect) override
+void SfmlInputProvider::setWindowRect(hui::Window window, const hui::Rect& rect)
 {
 	int index = (int)window;
 
@@ -454,7 +441,7 @@ void setWindowRect(hui::Window window, const hui::Rect& rect) override
 	windows[index].setSize({ (u32)rect.width, (u32)rect.height });
 }
 
-hui::Rect getWindowRect(hui::Window window) override
+hui::Rect SfmlInputProvider::getWindowRect(hui::Window window)
 {
 	int index = (int)window;
 
@@ -464,77 +451,77 @@ hui::Rect getWindowRect(hui::Window window) override
 	return { (f32)pos.x, (f32)pos.y, (f32)size.x, (f32)size.y };
 }
 
-void presentWindow(hui::Window window) override
+void SfmlInputProvider::presentWindow(hui::Window window)
 {
 	int index = (int)window;
 
 	windows[index].display();
 }
 
-void destroyWindow(hui::Window window) override
+void SfmlInputProvider::destroyWindow(hui::Window window)
 {
 	int index = (int)window;
 	windows[index].close();
 	freeWindowSlot[index] = true;
 }
 
-void showWindow(hui::Window window) override
+void SfmlInputProvider::showWindow(hui::Window window)
 {
 	int index = (int)window;
 	windows[index].setVisible(true);
 }
 
-void hideWindow(hui::Window window) override
+void SfmlInputProvider::hideWindow(hui::Window window)
 {
 	int index = (int)window;
 	windows[index].setVisible(false);
 }
 
-void raiseWindow(hui::Window window) override
+void SfmlInputProvider::raiseWindow(hui::Window window)
 {
 	int index = (int)window;
 	windows[index].requestFocus();
 }
 
-void maximizeWindow(hui::Window window) override
+void SfmlInputProvider::maximizeWindow(hui::Window window)
 {
 	int index = (int)window;
 	//TODO
 }
 
-void minimizeWindow(hui::Window window) override
+void SfmlInputProvider::minimizeWindow(hui::Window window)
 {
 	int index = (int)window;
 	//TODO
 }
 
-hui::WindowState getWindowState(hui::Window window) override
+hui::WindowState SfmlInputProvider::getWindowState(hui::Window window)
 {
 	return hui::WindowState::Normal;
 }
 
-void setCapture(hui::Window window) override
+void SfmlInputProvider::setCapture(hui::Window window)
 {
 	int index = (int)window;
 	windows[index].requestFocus();
 }
 
-void releaseCapture() override
+void SfmlInputProvider::releaseCapture()
 {
 }
 
-hui::Point getMousePosition() override
+hui::Point SfmlInputProvider::getMousePosition()
 {
 	auto pos = sf::Mouse::getPosition();
 	return { (f32)pos.x, (f32)pos.y };
 }
 
-void setCursor(hui::MouseCursorType type) override
+void SfmlInputProvider::setCursor(hui::MouseCursorType type)
 {
 	//TODO
 }
 
-hui::MouseCursor createCustomCursor(hui::Rgba32* pixels, u32 width, u32 height, u32 hotX, u32 hotY) override
+hui::MouseCursor SfmlInputProvider::createCustomCursor(hui::Rgba32* pixels, u32 width, u32 height, u32 hotX, u32 hotY)
 {
 	for (int i = 0; i < maxCursorCount; i++)
 	{
@@ -549,48 +536,61 @@ hui::MouseCursor createCustomCursor(hui::Rgba32* pixels, u32 width, u32 height, 
 	return 0;
 }
 
-void destroyCustomCursor(hui::MouseCursor cursor) override
+void SfmlInputProvider::destroyCustomCursor(hui::MouseCursor cursor)
 {
 	int index = (int)cursor;
 	freeCursorSlot[index] = true;
 }
 
-void setCustomCursor(hui::MouseCursor cursor) override
+void SfmlInputProvider::setCustomCursor(hui::MouseCursor cursor)
 {
 	int index = (int)cursor;
 
 	if (currentWindow)
 	{
-		currentWindow->setMouseCursor(cursors[(int)cursor]);
+		windows[(int)currentWindow].setMouseCursor(cursors[(int)cursor]);
 	}
 }
 
-bool mustQuit() override
+bool SfmlInputProvider::mustQuit()
 {
 	return mustQuitApp;
 }
 
-bool wantsToQuit() override
+bool SfmlInputProvider::wantsToQuit()
 {
 	return wantsToQuitApp;
 }
 
-void cancelQuitApplication() override
+void SfmlInputProvider::cancelQuitApplication()
 {
 	mustQuitApp = false;
 }
 
-void quitApplication() override
+void SfmlInputProvider::quitApplication()
 {
 	mustQuitApp = true;
 }
 
-void shutdown() override
+void SfmlInputProvider::initialize()
+{
+    for (int i = 0; i < maxWindowCount; i++)
+    {
+        freeWindowSlot[i] = true;
+    }
+
+    for (int i = 0; i < maxCursorCount; i++)
+    {
+        freeCursorSlot[i] = true;
+    }
+}
+
+void SfmlInputProvider::shutdown()
 {
 	//TODO
 }
 
-void updateDeltaTime() override
+void SfmlInputProvider::updateDeltaTime()
 {
 	auto time = clock.getElapsedTime();
 	u32 ticks = time.asMilliseconds();
@@ -598,7 +598,67 @@ void updateDeltaTime() override
 	lastTime = ticks;
 }
 
-f32 getDeltaTime() const override
+void initializeWithSfml(const SfmlSettings& settings)
 {
-	return deltaTime;
+    Rect wndRect = settings.mainWindowRect;
+
+    if (!settings.gfxProvider)
+    {
+        printf("SFML needs a graphics provider\n");
+        return;
+    }
+
+    printf("Initializing SFML...\n");
+
+    SfmlInputProvider* inputProvider = new SfmlInputProvider();
+
+    inputProvider->initialize();
+
+    if (!settings.sfmlContext)
+    {
+        //inputProvider->sfmlContext = new sf::Context();
+    }
+
+    //inputProvider->sfmlContext->setActive(true);
+    inputProvider->gfxProvider = settings.gfxProvider;
+
+    bool maximize = false;
+    hui::Window wnd = nullptr;
+
+    inputProvider->context = createContext(inputProvider, settings.gfxProvider);
+
+    if (!settings.sfmlMainWindow)
+    {
+        if (settings.mainWindowRect.isZero())
+        {
+            wndRect.set(0, 0, 1024, 768);
+            maximize = true;
+        }
+        else
+        {
+            wndRect = settings.mainWindowRect;
+        }
+
+        wnd = inputProvider->createWindow(
+            settings.mainWindowTitle,
+            (int)wndRect.width,
+            (int)wndRect.height,
+            WindowBorder::Resizable,
+            settings.positionType,
+            { wndRect.x, wndRect.y },
+            true);
+
+        if (!wnd)
+        {
+            printf("Cannot create SFML window: %s\n", settings.mainWindowTitle);
+            return;
+        }
+    }
+
+    settings.gfxProvider->initialize();
+    initializeContext(inputProvider->context);
+    inputProvider->mainWindow = wnd;
+    inputProvider->focusedWindow = wnd;
+}
+
 }
