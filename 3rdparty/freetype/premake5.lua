@@ -49,15 +49,16 @@ project "freetype"
 	}
 
 	filter {"system:windows"}
-	defines
-    {
-        "WIN32"}
-	filter {}
+    defines {"WIN32"}
+  filter {}
 	defines 
 	{
-        "FT2_BUILD_LIBRARY",
-    }
-buildoptions {"-fPIC"}
+    "FT2_BUILD_LIBRARY",
+  }
+
+  filter {"system:linux"}
+    buildoptions {"-fPIC"}
+  filter {}
 	
 	configuration "Debug"
         defines 

@@ -1,6 +1,5 @@
 #include "opengl_graphics_provider.h"
 #include "horus.h"
-#include "util.h"
 #include "opengl_texture_array.h"
 #include "opengl_vertex_buffer.h"
 #include <string.h>
@@ -127,117 +126,127 @@ void main()\
 	
 OpenGLGraphicsProvider::OpenGLGraphicsProvider()
 {
-	GLenum errGlew = 0;
-	glewExperimental=GL_TRUE;	
-	errGlew = glewInit();
-	
-	if (errGlew != GLEW_OK)
-	{
-		printf("FATAL ERROR: Cannot initialize GLEW. Error: %s\n", glewGetErrorString(errGlew));
-		return;
-	}
-
-	program = glCreateProgram();
-
-	pixelShader = glCreateShader(GL_FRAGMENT_SHADER);
-	glShaderSource(pixelShader, 1, &uiPixelShaderSource, nullptr);
-	OGL_CHECK_ERROR;
-	glCompileShader(pixelShader);
-	OGL_CHECK_ERROR;
-	glAttachShader((GLuint)program, pixelShader);
-	OGL_CHECK_ERROR;
-
-	vertexShader = glCreateShader(GL_VERTEX_SHADER);
-	glShaderSource(vertexShader, 1, &uiVertexShaderSource, nullptr);
-	OGL_CHECK_ERROR;
-	glCompileShader(vertexShader);
-	OGL_CHECK_ERROR;
-	glAttachShader((GLuint)program, vertexShader);
-	OGL_CHECK_ERROR;
-
-	glLinkProgram((GLuint)program);
-	OGL_CHECK_ERROR;
-
-	{
-		GLchar errorLog[1024] = { 0 };
-		glGetProgramInfoLog((GLuint)program, 1024, NULL, errorLog);
-		OGL_CHECK_ERROR;
-
-		if (strcmp(errorLog, ""))
-		{
-			printf("Linking program: %s\n", errorLog);
-		}
-	}
-
-	if (!glIsProgram((GLuint)program))
-	{
-		printf("Program ID:%d is not a valid OpenGL program\n", program);
-	}
-	OGL_CHECK_ERROR;
-
-	GLint err;
-	glGetShaderiv(pixelShader, GL_COMPILE_STATUS, &err);
-	OGL_CHECK_ERROR;
-
-	if (!err)
-	{
-		GLchar errorLog[1024] = { 0 };
-		glGetShaderInfoLog((GLuint)pixelShader, 1024, NULL, errorLog);
-		OGL_CHECK_ERROR;
-		printf("Error validating ps: '%s'\n", errorLog);
-		return;
-	}
-
-	glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &err);
-	OGL_CHECK_ERROR;
-
-	if (!err)
-	{
-		GLchar errorLog[1024] = { 0 };
-		glGetShaderInfoLog((GLuint)vertexShader, 1024, NULL, errorLog);
-		OGL_CHECK_ERROR;
-		printf("Error validating vs: '%s'\n", errorLog);
-		return;
-	}
-
-	printf("Validate program id:%d\n", program);
-	glValidateProgram((GLuint)program);
-	OGL_CHECK_ERROR;
-
-	GLint success = GL_FALSE;
-	glGetProgramiv((GLuint)program, GL_VALIDATE_STATUS, &success);
-	OGL_CHECK_ERROR;
-
-	if (success == GL_FALSE)
-	{
-		GLchar errorLog[1024] = { 0 };
-		glGetProgramInfoLog((GLuint)program, 1024, NULL, errorLog);
-		OGL_CHECK_ERROR;
-		printf("Error validating program: '%s'\n", errorLog);
-		return;
-	}
-
-	GLint numAttrs;
-	glGetProgramiv(program, GL_ACTIVE_ATTRIBUTES, &numAttrs);
-	OGL_CHECK_ERROR;
-
-	for (int n = 0; n < numAttrs; n++)
-	{
-		GLsizei len;
-		GLint size;
-		GLenum type;
-		GLchar name[100];
-		glGetActiveAttrib(program, n, 100, &len, &size, &type, name);
-		OGL_CHECK_ERROR;
-		printf("%s\n", name);
-	}
 }
 
 OpenGLGraphicsProvider::~OpenGLGraphicsProvider()
 {
-	glDeleteShader(vertexShader);
-	glDeleteShader(pixelShader);
-	glDeleteProgram(program);
+}
+
+bool OpenGLGraphicsProvider::initialize()
+{
+    GLenum errGlew = 0;
+    glewExperimental = GL_TRUE;
+    errGlew = glewInit();
+
+    if (errGlew != GLEW_OK)
+    {
+        printf("FATAL ERROR: Cannot initialize GLEW. Error: %s\n", glewGetErrorString(errGlew));
+        return false;
+    }
+
+    program = glCreateProgram();
+
+    pixelShader = glCreateShader(GL_FRAGMENT_SHADER);
+    glShaderSource(pixelShader, 1, &uiPixelShaderSource, nullptr);
+    OGL_CHECK_ERROR;
+    glCompileShader(pixelShader);
+    OGL_CHECK_ERROR;
+    glAttachShader((GLuint)program, pixelShader);
+    OGL_CHECK_ERROR;
+
+    vertexShader = glCreateShader(GL_VERTEX_SHADER);
+    glShaderSource(vertexShader, 1, &uiVertexShaderSource, nullptr);
+    OGL_CHECK_ERROR;
+    glCompileShader(vertexShader);
+    OGL_CHECK_ERROR;
+    glAttachShader((GLuint)program, vertexShader);
+    OGL_CHECK_ERROR;
+
+    glLinkProgram((GLuint)program);
+    OGL_CHECK_ERROR;
+
+    {
+        GLchar errorLog[1024] = { 0 };
+        glGetProgramInfoLog((GLuint)program, 1024, NULL, errorLog);
+        OGL_CHECK_ERROR;
+
+        if (strcmp(errorLog, ""))
+        {
+            printf("Linking program: %s\n", errorLog);
+        }
+    }
+
+    if (!glIsProgram((GLuint)program))
+    {
+        printf("Program ID:%d is not a valid OpenGL program\n", program);
+    }
+    OGL_CHECK_ERROR;
+
+    GLint err;
+    glGetShaderiv(pixelShader, GL_COMPILE_STATUS, &err);
+    OGL_CHECK_ERROR;
+
+    if (!err)
+    {
+        GLchar errorLog[1024] = { 0 };
+        glGetShaderInfoLog((GLuint)pixelShader, 1024, NULL, errorLog);
+        OGL_CHECK_ERROR;
+        printf("Error validating ps: '%s'\n", errorLog);
+        return false;
+    }
+
+    glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &err);
+    OGL_CHECK_ERROR;
+
+    if (!err)
+    {
+        GLchar errorLog[1024] = { 0 };
+        glGetShaderInfoLog((GLuint)vertexShader, 1024, NULL, errorLog);
+        OGL_CHECK_ERROR;
+        printf("Error validating vs: '%s'\n", errorLog);
+        return false;
+    }
+
+    printf("Validate program id:%d\n", program);
+    glValidateProgram((GLuint)program);
+    OGL_CHECK_ERROR;
+
+    GLint success = GL_FALSE;
+    glGetProgramiv((GLuint)program, GL_VALIDATE_STATUS, &success);
+    OGL_CHECK_ERROR;
+
+    if (success == GL_FALSE)
+    {
+        GLchar errorLog[1024] = { 0 };
+        glGetProgramInfoLog((GLuint)program, 1024, NULL, errorLog);
+        OGL_CHECK_ERROR;
+        printf("Error validating program: '%s'\n", errorLog);
+        return false;
+    }
+
+    GLint numAttrs;
+    glGetProgramiv(program, GL_ACTIVE_ATTRIBUTES, &numAttrs);
+    OGL_CHECK_ERROR;
+
+    for (int n = 0; n < numAttrs; n++)
+    {
+        GLsizei len;
+        GLint size;
+        GLenum type;
+        GLchar name[100];
+        glGetActiveAttrib(program, n, 100, &len, &size, &type, name);
+        OGL_CHECK_ERROR;
+        printf("%s\n", name);
+    }
+
+    return true;
+}
+
+void OpenGLGraphicsProvider::shutdown()
+{
+    glDeleteShader(vertexShader);
+    glDeleteShader(pixelShader);
+    glDeleteProgram(program);
 }
 
 TextureArray* OpenGLGraphicsProvider::createTextureArray()

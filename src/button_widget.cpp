@@ -64,11 +64,11 @@ void buttonBehavior(bool menuItem)
 
 		if (!alreadyCapturedSomeWidget)
 		{
-			ctx->widget.hovered = true;
-			ctx->widget.hoveredWidgetRect = ctx->widget.rect;
-			ctx->widget.hoveredWidgetId = ctx->currentWidgetId;
-
-			if (ctx->inputEnabled
+            ctx->widget.hoveredWidgetId = ctx->currentWidgetId;
+            ctx->widget.hovered = true;
+            ctx->widget.hoveredWidgetRect = ctx->widget.rect;
+            
+            if (ctx->inputEnabled
 				&& ctx->event.type == InputEvent::Type::MouseDown
 				&& ctx->event.mouse.button == MouseButton::Left)
 			{
@@ -217,8 +217,10 @@ bool button(Utf8String labelText)
 		btnBodyElemState = &btnBodyElem.getState(WidgetStateType::Pressed);
 	else if (ctx->widget.focused)
 		btnBodyElemState = &btnBodyElem.getState(WidgetStateType::Focused);
-	else if (ctx->widget.hovered)
-		btnBodyElemState = &btnBodyElem.getState(WidgetStateType::Hovered);
+    else if (ctx->widget.hovered)
+    {
+        btnBodyElemState = &btnBodyElem.getState(WidgetStateType::Hovered);
+    }
 
 	if (ctx->widget.visible)
 	{

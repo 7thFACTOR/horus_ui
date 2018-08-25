@@ -83,8 +83,7 @@ bool sliderInternal(f32 minVal, f32 maxVal, f32& value, bool useStep, f32 step, 
 		}
 	}
 
-	if (ctx->event.type == InputEvent::Type::MouseMove
-		&& draggingKnob
+	if (draggingKnob
 		&& ctx->currentWidgetId == ctx->widget.focusedWidgetId
 		&& ctx->isActiveLayer())
 	{

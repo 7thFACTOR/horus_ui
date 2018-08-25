@@ -73,7 +73,7 @@ f32 endScrollView()
 		{
 			scrollAmount = ctx->event.mouse.wheel.y * (clipRect.height * ctx->scrollViewSpeed) * ctx->globalScale;
 			scrollPos -= scrollAmount;
-			ctx->mustRedraw = true;
+			forceRepaint();
 		}
 	}
 
@@ -89,13 +89,13 @@ f32 endScrollView()
 	if (scrollPos < 0)
 	{
 		scrollPos = 0;
-		ctx->mustRedraw = true;
+        forceRepaint();
 	}
 
 	if (scrollContentSize < clipRect.height && fabs(scrollPos) > 0)
 	{
 		scrollPos = 0;
-		ctx->mustRedraw = true;
+		forceRepaint();
 	}
 
 	if (ctx->penPosition.y + scrollAmount < clipRect.bottom())
@@ -160,8 +160,7 @@ f32 endScrollView()
 				}
 			}
 		}
-		else if (ctx->event.type == InputEvent::Type::MouseMove
-			&& ctx->scrollViewStack[ctx->scrollViewDepth].draggingThumb
+		else if (ctx->scrollViewStack[ctx->scrollViewDepth].draggingThumb
 			&& ctx->dragScrollViewHandleWidgetId == ctx->scrollViewStack[ctx->scrollViewDepth].widgetId)
 		{
 			f32 crtLocalY = ctx->event.mouse.point.y - ctx->scrollViewStack[ctx->scrollViewDepth].dragDelta.y - clipRect.y;
@@ -178,13 +177,13 @@ f32 endScrollView()
 			if (scrollPos < 0)
 			{
 				scrollPos = 0;
-				ctx->mustRedraw = true;
+                forceRepaint();
 			}
 
 			if (scrollContentSize < clipRect.height && fabs(scrollPos) > 0)
 			{
 				scrollPos = 0;
-				ctx->mustRedraw = true;
+				forceRepaint();
 			}
 
 			if (ctx->penPosition.y + scrollAmount < clipRect.bottom())

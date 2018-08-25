@@ -2,7 +2,12 @@ project "custom_render_and_input"
 	kind "ConsoleApp"
 	defines {"_CONSOLE", "HORUS_IMPORTS"}
 	includedirs {scriptRoot, scriptRoot.."/include"}
+	includedirs {scriptRoot.."/examples/common"}
 	add_sources_from("./")
+  files { "../common/sdl2*.h" }
+  files { "../common/sdl2*.cpp" }
+  files { "../common/opengl*.h" }
+  files { "../common/opengl*.cpp" }
 
 	link_binpack()
 	link_win32()

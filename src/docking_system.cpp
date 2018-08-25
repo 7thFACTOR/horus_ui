@@ -111,24 +111,24 @@ void updateDockingSystem(ViewHandler* handler)
 		return;
 	}
 
-	auto doLogicAndRender = [handler](bool isLastEvent)
+    ctx->mustRedraw = false;
+	
+    auto doLogicAndRender = [handler](bool isLastEvent)
 	{
-		ctx->renderer->disableRendering = !isLastEvent;
+		ctx->renderer->disableRendering = !isLastEvent && !ctx->skipRenderAndInput;
 		hui::updateDockingSystemInternal(isLastEvent, handler);
 	};
 
-	if (ctx->inputProvider->getEventCount())
-	{
-		while (ctx->inputProvider->getEventCount())
-		{
-			bool isLastEvent = ctx->inputProvider->getEventCount() == 1;
-			doLogicAndRender(isLastEvent);
-		}
-	}
-	else
-	{
-		doLogicAndRender(true);
-	}
+    if (ctx->events.size() == 0)
+    {
+        doLogicAndRender(true);
+    }
+
+    for (int i = 0; i < ctx->events.size(); i++)
+    {
+        ctx->event = ctx->events[i];
+        doLogicAndRender(i == ctx->events.size() - 1);
+    }
 }
 
 void dockingSystemLoop(ViewHandler* handler)
@@ -221,7 +221,6 @@ void handleViewContainerResize(UiViewContainer* viewContainer)
 			{
 				dragTab = tab;
 				draggingViewPaneTab = true;
-				ctx->inputProvider->disableMouseMoveEvents(true);
 				break;
 			}
 		}
@@ -229,7 +228,6 @@ void handleViewContainerResize(UiViewContainer* viewContainer)
 		if (resizingCell)
 		{
 			draggingViewPaneBorder = true;
-			ctx->inputProvider->disableMouseMoveEvents(true);
 		}
 	}
 
@@ -237,8 +235,6 @@ void handleViewContainerResize(UiViewContainer* viewContainer)
 	{
 		const f32 moveTriggerDelta = 3;
 		bool moved = fabs(lastMousePos.x - crtEvent.mouse.point.x) > moveTriggerDelta || fabs(lastMousePos.y - crtEvent.mouse.point.y) > moveTriggerDelta;
-
-		ctx->inputProvider->disableMouseMoveEvents(false);
 
 		if (dockToCell)
 		{
@@ -397,8 +393,7 @@ void handleViewContainerResize(UiViewContainer* viewContainer)
 			auto tabGroupElem = ctx->theme->getElement(WidgetElementId::TabGroupBody);
 			auto zorder = ctx->renderer->getZOrder();
 
-			if (crtEvent.type == InputEvent::Type::MouseMove
-				|| crtEvent.type == InputEvent::Type::MouseDown
+			if (crtEvent.type == InputEvent::Type::MouseDown
 				|| moved)
 			{
 				std::vector<UiViewTab*> tabs;

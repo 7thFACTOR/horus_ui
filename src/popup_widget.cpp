@@ -44,8 +44,7 @@ void beginPopup(
 	}
 
 	ctx->popupIndex++;
-
-	popup.previousSkipRenderAndInput = prevSkip;
+    popup.previousSkipRenderAndInput = prevSkip;
 
 	// not active, first show, do not render anything, next frame
 	if (!popup.active)
@@ -174,7 +173,6 @@ void endPopup()
 			popup.startedToDrag = true;
 			popup.lastMouseDownPoint = ctx->event.mouse.point;
 			popup.lastMousePoint = ctx->event.mouse.point;
-			ctx->inputProvider->disableMouseMoveEvents(true);
 		}
 
 		// popup drag by mouse
@@ -214,7 +212,6 @@ void endPopup()
 
 		popup.startedToDrag = false;
 		popup.draggingPopup = false;
-		ctx->inputProvider->disableMouseMoveEvents(false);
 		forceRepaint();
 	}
 
@@ -277,9 +274,6 @@ bool clickedOutsidePopup()
 
 bool mouseOutsidePopup()
 {
-	if (ctx->event.type != InputEvent::Type::MouseMove)
-		return false;
-
 	if (ctx->layoutStack.back().type == LayoutType::Container
 		&& ctx->isActiveLayer())
 	{

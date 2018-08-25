@@ -2,6 +2,7 @@
 #include "horus.h"
 #include "horus_interfaces.h"
 #include "types.h"
+#include "text_input_state.h"
 #include <string>
 
 namespace hui
@@ -20,12 +21,12 @@ struct UiContext
 	static const int maxMenuDepth = 256;
 	static const int maxBoxDepth = 256;
 
-	GraphicsApi gfxApi = GraphicsApi::OpenGL;
 	GraphicsProvider* gfx = nullptr;
 	Renderer* renderer = nullptr;
 	TextCache* textCache = nullptr;
     ContextSettings settings;
 
+    f32 deltaTime = 0;
 	u32 currentWindowIndex = 0;
 	GraphicsApiContext gfxApiContext = 0;
 	u32 currentWidgetId = 1;
@@ -105,6 +106,7 @@ struct UiContext
 
 	InputProvider* inputProvider = nullptr;
 	InputEvent event;
+    std::vector<InputEvent> events;
 	InputEvent::Type savedEventType = InputEvent::Type::None;
 
 	std::map<TintColorType, std::vector<Color>> tintStack;
@@ -116,6 +118,8 @@ struct UiContext
 	
 	MouseCursorType mouseCursor = MouseCursorType::Arrow;
 	MouseCursor customMouseCursor = 0;
+	bool mouseMoved = false;
+	Point oldMousePos = { 0, 0 };
 
 	DragDropState dragDropState;
 

@@ -4,6 +4,7 @@ project "horus"
 	includedirs {scriptRoot, scriptRoot.."/include"}
 	add_sources_from("./")
 	vpaths { ["*"] = scriptRoot.."/src/**.*" }
+
 	link_binpack()
 	link_win32()
 	link_opengl()
@@ -13,10 +14,6 @@ project "horus"
 	link_stb_image()
 	link_nfd()
 	link_sdl2()
-
-	filter {"system:windows"}
-	   	links { "user32", "gdi32", "winmm", "imm32", "ole32", "oleaut32", "version", "uuid"}
-	filter {}
 
 	filter {"system:macosx"}
 		links {"OpenGL.framework", "ForceFeedback.framework", "CoreVideo.framework", "Cocoa.framework", "IOKit.framework", "Carbon.framework", "CoreAudio.framework", "AudioToolbox.framework", "dl"}
@@ -41,6 +38,7 @@ project "horus_s"
 	includedirs {scriptRoot, scriptRoot.."/include"}
 	add_sources_from("./")
 	vpaths { ["*"] = scriptRoot.."/src/**.*" }
+
 	link_binpack()
 	link_win32()
 	link_opengl()
@@ -50,10 +48,6 @@ project "horus_s"
 	link_stb_image()
 	link_nfd()
 	link_sdl2()
-
-	filter {"system:windows"}
-		links { "user32", "gdi32", "winmm", "imm32", "ole32", "oleaut32", "version", "uuid"}
-	filter {}
 
 	filter {"system:macosx"}
 		links {"OpenGL.framework", "ForceFeedback.framework", "CoreVideo.framework", "Cocoa.framework", "IOKit.framework", "Carbon.framework", "CoreAudio.framework", "AudioToolbox.framework", "dl"}

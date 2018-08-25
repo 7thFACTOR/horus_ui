@@ -15,10 +15,9 @@
 #include "3rdparty/jsoncpp/include/json/reader.h"
 #include <algorithm>
 
-// graphics API providers
-#include "opengl_graphics_provider.h"
-//#include "vulkan_graphics_provider.h"
-//#include "direct3d_graphics_provider.h"
+#ifdef _WIN32
+	#include <windows.h>
+#endif
 
 namespace hui
 {
@@ -79,12 +78,11 @@ const Color Color::gray(0.5f, 0.5f, 0.5f, 1);
 const Color Color::lightGray(0.7f, 0.7f, 0.7f, 1);
 const Color Color::sky(0.f, 0.682f, 0.937f, 1);
 
-Context createContext(GraphicsApi gfxApi, InputProvider* customInputProvider, GraphicsProvider* customGfxProvider)
+Context createContext(InputProvider* customInputProvider, GraphicsProvider* customGfxProvider)
 {
 	UiContext* context = new UiContext();
 
 	setContext((Context)context);
-	ctx->gfxApi = gfxApi;
 
 	if (customInputProvider)
 		setInputProvider(customInputProvider);
@@ -97,6 +95,12 @@ Context createContext(GraphicsApi gfxApi, InputProvider* customInputProvider, Gr
 #endif
 
 	return context;
+}
+
+void initializeContext(Context context)
+{
+    UiContext* ctxPtr = (UiContext*)context;
+    ctxPtr->initializeGraphics();
 }
 
 void setContext(Context context)
@@ -126,23 +130,93 @@ void clearBackground()
 	ctx->renderer->clear(windowElemState.color);
 }
 
+void setEnabled(bool enabled)
+{
+	ctx->widget.enabled = enabled;
+}
+
+void setFocused()
+{
+	ctx->widget.focusedWidgetPressed = true;
+	ctx->widget.hoveredWidgetId = ctx->currentWidgetId;
+	ctx->widget.focusedWidgetId = ctx->currentWidgetId;
+	ctx->widget.hovered = true;
+	ctx->widget.pressed = true;
+	ctx->widget.focused = true;
+	ctx->focusChanged = true;
+}
+
+void addWidgetItem(f32 height)
+{
+	height = round(height);
+	ctx->widget.rect.set(
+		round(ctx->penPosition.x + ctx->padding * ctx->globalScale),
+		round(ctx->penPosition.y),
+		ctx->layoutStack.back().width - ctx->padding * 2.0f * ctx->globalScale,
+		height);
+	ctx->penPosition.y += ctx->spacing * ctx->globalScale + height;
+	ctx->penPosition.y = round(ctx->penPosition.y);
+}
+
+void setAsFocusable()
+{
+	if (ctx->widget.focusedWidgetId == ctx->currentWidgetId)
+	{
+		ctx->widget.focusedWidgetRect = ctx->widget.rect;
+	}
+
+	if (!ctx->widget.nextFocusableWidgetId
+		&& ctx->currentWidgetId > ctx->widget.focusedWidgetId)
+	{
+		ctx->widget.nextFocusableWidgetId = ctx->currentWidgetId;
+	}
+}
+
+bool viewportImageFitSize(
+	f32 imageWidth, f32 imageHeight,
+	f32 viewWidth, f32 viewHeight,
+	f32& newWidth, f32& newHeight,
+	bool ignoreHeight, bool ignoreWidth)
+{
+	f32 aspectRatio = 1.0f;
+
+	newWidth = imageWidth;
+	newHeight = imageHeight;
+
+	if (imageWidth <= viewWidth
+		&& imageHeight <= viewHeight)
+	{
+		return false;
+	}
+
+	if (newWidth >= viewWidth && !ignoreWidth)
+	{
+		if (newWidth < 0.0001f)
+			newWidth = 0.0001f;
+
+		aspectRatio = (f32)viewWidth / newWidth;
+		newWidth = viewWidth;
+		newHeight *= aspectRatio;
+	}
+
+	if (newHeight >= viewHeight && !ignoreHeight)
+	{
+		if (newHeight < 0.0001f)
+			newHeight = 0.0001f;
+
+		aspectRatio = (f32)viewHeight / newHeight;
+		newHeight = viewHeight;
+		newWidth *= aspectRatio;
+	}
+
+	return true;
+}
+
 void beginFrame()
 {
-	ctx->event.type = InputEvent::Type::None;
-
 	if (ctx->textInput.widgetId)
 	{
-		while (ctx->inputProvider->popEvent(&ctx->event))
-		{
-			if (!ctx->textInput.processEvent(ctx->event))
-			{
-				break;
-			}
-		}
-	}
-	else
-	{
-		ctx->inputProvider->popEvent(&ctx->event);
+        ctx->textInput.processEvent(ctx->event);
 	}
 
 	if (ctx->event.type == InputEvent::Type::Key
@@ -192,6 +266,7 @@ void endFrame()
 {
 	ctx->maxWidgetId = ctx->currentWidgetId;
 	ctx->focusChanged = false;
+    ctx->mouseMoved = false;
 
 	if (ctx->dragDropState.begunDragging
 		&& ctx->event.type == InputEvent::Type::MouseUp)
@@ -253,9 +328,9 @@ void update(f32 deltaTime)
 
 bool hasNothingToDo()
 {
-	return !(ctx->skipRenderAndInput || ctx->renderer->skipRender)
-		&& !ctx->mustRedraw
-		&& !ctx->inputProvider->getEventCount()
+	return !ctx->mustRedraw
+        && !ctx->mouseMoved
+        && !ctx->events.size()
 		&& !ctx->dockingTabPane;
 }
 
@@ -358,8 +433,10 @@ Window createWindow(
 {
 	auto wnd = ctx->inputProvider->createWindow(title, width, height, border, positionType, customPosition, showInTaskBar);
 
-	if (!ctx->gfx)
+	if (!ctx->renderer)
+	{
 		ctx->initializeGraphics();
+	}
 
 	return wnd;
 }
@@ -442,6 +519,21 @@ void releaseCapture()
 void cancelEvent()
 {
 	ctx->event.type = InputEvent::Type::None;
+}
+
+void addInputEvent(const InputEvent& event)
+{
+    ctx->events.push_back(event);
+}
+
+void clearInputEventQueue()
+{
+    ctx->events.clear();
+}
+
+void setMouseMoved(bool moved)
+{
+    ctx->mouseMoved = moved;
 }
 
 bool mustQuit()
@@ -585,9 +677,20 @@ void setGraphicsProvider(GraphicsProvider* provider)
 
 void processEvents()
 {
-	ctx->inputProvider->updateDeltaTime();
+    ctx->event.type = InputEvent::Type::None;
+    clearInputEventQueue();
 	ctx->inputProvider->processEvents();
-	hui::update(ctx->inputProvider->getDeltaTime());
+	hui::update(getFrameDeltaTime());
+}
+
+void setFrameDeltaTime(f32 dt)
+{
+    ctx->deltaTime = dt;
+}
+
+f32 getFrameDeltaTime()
+{
+    return ctx->deltaTime;
 }
 
 Theme createTheme(u32 atlasTextureSize)
@@ -1670,7 +1773,6 @@ bool wantsToDragDrop()
 	if (ctx->dragDropState.draggingIntent
 		&& !ctx->dragDropState.dragging
 		&& ctx->currentWidgetId == ctx->dragDropState.widgetId
-		&& ctx->event.type == InputEvent::Type::MouseMove
 		&& ctx->dragDropState.lastMousePos.getDistance(ctx->event.mouse.point) >= dragStartPixelDistance)
 	{
 		ctx->dragDropState.dragging = true;

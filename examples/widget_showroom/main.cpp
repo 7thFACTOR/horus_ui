@@ -1,17 +1,7 @@
-﻿#include "horus.h"
-
-#ifdef _WIN32
-#include <Windows.h>
-#endif
-#ifdef _APPLE
-#include <OpenGL/gl.h>
-#else
-#include <GL/gl.h>
-#endif
-#pragma execution_character_set("utf-8")
-#include <vector>
-#include <string>
-#include <string.h>
+﻿#pragma execution_character_set("utf-8")
+#include "horus.h"
+#include "sdl2_input_provider.h"
+#include "opengl_graphics_provider.h"
 
 using namespace hui;
 char str[1500] = { 0 };
@@ -39,7 +29,6 @@ Image zaxisIcon;
 Image targetIcon;
 Image clearIcon;
 MouseCursor dragDropCur;
-
 
 char* stristr(const char* haystack, const char* needle)
 {
@@ -1117,6 +1106,11 @@ struct MyViewHandler : hui::ViewHandler
 				static bool ap = false;
 				ap = hui::check("Approve her", ap);
 
+                if (hui::isClicked())
+                {
+                    printf("Changed approved\n");
+                }
+
 				static int selTab = 0;
 
 				hui::beginTabGroup(selTab);
@@ -1476,7 +1470,12 @@ void createMyDefaultViewPanes()
 
 int main(int argc, char** args)
 {
-	hui::initializeSDL("HorusUI Example", { 0, 0, 800, 600 });
+    hui::SdlSettings settings;
+
+    settings.mainWindowTitle = "HorusUI Example - Widget Showroom";
+    settings.mainWindowRect = { 0, 0, 800, 600 };
+    settings.gfxProvider = new OpenGLGraphicsProvider();
+	hui::initializeWithSDL(settings);
 
 	printf("Loading theme...\n");
 	//TODO: load themes and images and anything from memory also

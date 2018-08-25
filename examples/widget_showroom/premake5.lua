@@ -2,12 +2,13 @@ project "widget_showroom"
 	kind "ConsoleApp"
 	defines {"_CONSOLE", "HORUS_IMPORTS"}
 	includedirs {scriptRoot, scriptRoot.."/include"}
+  includedirs {scriptRoot.."/examples/common"}
 	add_sources_from("./")
-	
-	if _ACTION == "gmake" then
-		linkgroups 'On'
-	end
-	
+	files { "../common/sdl2*.h" }
+	files { "../common/sdl2*.cpp" }
+	files { "../common/opengl*.h" }
+	files { "../common/opengl*.cpp" }
+
 	link_horus()
 	link_binpack()
 	link_win32()
@@ -19,11 +20,8 @@ project "widget_showroom"
 	link_nfd()
 	link_sdl2()
 	
-	filter {"system:windows"}
-		links { "user32", "gdi32", "winmm", "imm32", "ole32", "oleaut32", "version", "uuid"}
-	filter {}
-	
 	filter {"system:linux"}
+    linkgroups "On"
 		buildoptions {"`pkg-config --cflags gtk+-3.0` -fPIC"}
 		links {"X11 `pkg-config --libs gtk+-3.0`"}
 		links {"Xi", "dl"}

@@ -2,11 +2,12 @@
 #include "ui_font.h"
 #include "renderer.h"
 #include "util.h"
-#include "opengl_graphics_provider.h"
 #include "text_cache.h"
 
 namespace hui
 {
+UiContext* ctx = nullptr;
+
 Rect UiContext::drawMultilineText(
 	Utf8String text,
 	const Rect& rect,
@@ -186,24 +187,8 @@ void UiContext::setSkipRenderAndInput(bool skip)
 
 void UiContext::initializeGraphics()
 {
-	// init the graphics on first window created (SFML needs this specifically)
-	if (!renderer && !gfx)
+	if (!renderer)
 	{
-		switch (ctx->gfxApi)
-		{
-		case hui::GraphicsApi::OpenGL:
-			ctx->gfx = new OpenGLGraphicsProvider;
-			break;
-		case hui::GraphicsApi::Vulkan:
-			//ctx->gfx = new VulkanGraphicsProvider;
-			break;
-		case hui::GraphicsApi::Direct3D:
-			//ctx->gfx = new Direct3DGraphicsProvider;
-			break;
-		default:
-			break;
-		}
-
 		renderer = new Renderer();
 		textCache = new TextCache();
 	}

@@ -14,14 +14,11 @@ struct Vertex
 
 struct InputProvider
 {
-	virtual bool popEvent(InputEvent* outEvent) = 0;
 	virtual void startTextInput(Window window, const Rect& imeRect) = 0;
 	virtual void stopTextInput() = 0;
 	virtual bool copyToClipboard(Utf8String text) = 0;
 	virtual bool pasteFromClipboard(Utf8String *outText) = 0;
-	virtual u32 getEventCount() const = 0;
 	virtual void processEvents() = 0;
-	virtual void flushEvents() = 0;
 	virtual void setCurrentWindow(Window window) = 0;
 	virtual Window getCurrentWindow() = 0;
 	virtual Window getFocusedWindow() = 0;
@@ -56,9 +53,6 @@ struct InputProvider
 	virtual void cancelQuitApplication() = 0;
 	virtual void quitApplication() = 0;
 	virtual void shutdown() = 0;
-	virtual void updateDeltaTime() = 0;
-	virtual f32 getDeltaTime() const = 0;
-	virtual void disableMouseMoveEvents(bool disable) = 0;
 };
 
 struct TextureArray
@@ -110,7 +104,20 @@ struct RenderBatch
 
 struct GraphicsProvider
 {
+    enum class ApiType
+    {
+        OpenGL,
+        Vulkan,
+        Direct3D,
+        Custom,
+
+        Count
+    };
+
 	virtual ~GraphicsProvider() {}
+    virtual bool initialize() = 0;
+    virtual void shutdown() = 0;
+    virtual ApiType getApiType() const = 0;
 	virtual TextureArray* createTextureArray() = 0;
 	virtual void deleteTextureArray(TextureArray* texture) = 0;
 	virtual VertexBuffer* createVertexBuffer() = 0;

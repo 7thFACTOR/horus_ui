@@ -68,8 +68,7 @@ bool vecEditorInternal(f64& x, f64& y, f64& z, f64 scrollStep, bool useZ)
 		}
 
 		if (draggingValue 
-			&& draggedWidgetId == ctx->currentWidgetId
-			&& hui::getInputEvent().type == hui::InputEvent::Type::MouseMove)
+			&& draggedWidgetId == ctx->currentWidgetId)
 		{
 			value = atof(strAxis);
 			f32 dx = hui::getInputEvent().mouse.point.x - lastMousePos.x;

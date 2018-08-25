@@ -136,13 +136,6 @@ typedef u32 ViewId;
 
 const f32 ColumnFill = -1;
 
-enum class GraphicsApi
-{
-	OpenGL,
-	Vulkan,
-	Direct3D
-};
-
 enum class HAlignType
 {
 	Left,
@@ -1115,9 +1108,9 @@ struct InputEvent
 	enum class Type
 	{
 		None,
-		MouseDown,
+        MouseMove,
+        MouseDown,
 		MouseUp,
-		MouseMove,
 		MouseWheel,
 		Key,
 		Text,
@@ -1353,19 +1346,19 @@ struct ContextSettings
 //////////////////////////////////////////////////////////////////////////
 // Core
 //////////////////////////////////////////////////////////////////////////
-HORUS_API Context createContext(GraphicsApi gfxApi, struct InputProvider* customInputProvider = nullptr, struct GraphicsProvider* customGfxProvider = nullptr);
+HORUS_API Context createContext(struct InputProvider* customInputProvider = nullptr, struct GraphicsProvider* customGfxProvider = nullptr);
+HORUS_API void initializeContext(Context ctx);
 HORUS_API void setContext(Context ctx);
 HORUS_API Context getContext();
 HORUS_API void deleteContext(Context ctx);
 HORUS_API ContextSettings& getContextSettings();
-// using SDL for input and windowing
-HORUS_API void initializeSDL(Utf8String mainWindowTitle, const Rect& mainWindowRect = Rect(), WindowPositionType positionType = WindowPositionType::Undefined, bool vsync = true);
-HORUS_API void initializeUserSDL(void* sdlContext, void* sdlMainWindow);
 HORUS_API void setInputProvider(struct InputProvider* provider);
 HORUS_API void setGraphicsProvider(struct GraphicsProvider* provider);
 HORUS_API void processEvents();
 // must be called continuously in the main loop, used for tooltips and other timed things
-HORUS_API void update(f32 deltaTime);
+HORUS_API void setFrameDeltaTime(f32 dt);
+HORUS_API f32 getFrameDeltaTime();
+HORUS_API void update();
 HORUS_API void beginFrame();
 HORUS_API void endFrame();
 HORUS_API void clearBackground();
@@ -1377,6 +1370,9 @@ HORUS_API bool pasteFromClipboard(Utf8String *outText);
 HORUS_API void enableInput(bool enabled);
 HORUS_API const InputEvent& getInputEvent();
 HORUS_API void cancelEvent();
+HORUS_API void addInputEvent(const InputEvent& event);
+HORUS_API void setMouseMoved(bool moved);
+HORUS_API void clearInputEventQueue();
 HORUS_API void setMouseCursor(MouseCursorType type);
 HORUS_API MouseCursor createMouseCursor(Rgba32* pixels, u32 width, u32 height, u32 hotSpotX = 0, u32 hotSpotY = 0);
 HORUS_API MouseCursor createMouseCursor(const char* imageFilename, u32 hotSpotX = 0, u32 hotSpotY = 0);

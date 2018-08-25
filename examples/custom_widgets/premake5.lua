@@ -2,7 +2,12 @@ project "custom_widgets"
 	kind "ConsoleApp"
 	defines {"_CONSOLE", "HORUS_IMPORTS"}
 	includedirs {scriptRoot, scriptRoot.."/include"}
+  includedirs {scriptRoot.."/examples/common"}
 	add_sources_from("./")
+	files { "../common/sdl2*.h" }
+	files { "../common/sdl2*.cpp" }
+	files { "../common/opengl*.h" }
+	files { "../common/opengl*.cpp" }
 
 	link_horus()
 	link_binpack()
@@ -14,10 +19,6 @@ project "custom_widgets"
 	link_stb_image()
 	link_nfd()
 	link_sdl2()
-	
-	filter {"system:windows"}
-		links { "user32", "gdi32", "winmm", "imm32", "ole32", "oleaut32", "version", "uuid"}
-	filter {}
 
 	filter {"system:linux"}
 		linkgroups 'On'

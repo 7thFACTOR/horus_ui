@@ -1,15 +1,14 @@
 workspace "horus"
 
 if _ACTION ~= "gmake" and _ACTION ~= "xcode" then
-function os.winSdkVersion()
-	local reg_arch = iif( os.is64bit(), "\\Wow6432Node\\", "\\" )
-	local sdk_version = os.getWindowsRegistry( "HKLM:SOFTWARE" .. reg_arch .."Microsoft\\Microsoft SDKs\\Windows\\v10.0\\ProductVersion" )
-	if sdk_version ~= nil then return sdk_version end
-end
+  function os.winSdkVersion()
+    local reg_arch = iif( os.is64bit(), "\\Wow6432Node\\", "\\" )
+    local sdk_version = os.getWindowsRegistry( "HKLM:SOFTWARE" .. reg_arch .."Microsoft\\Microsoft SDKs\\Windows\\v10.0\\ProductVersion" )
+    if sdk_version ~= nil then return sdk_version end
+  end
 
-filter {"system:windows", "action:vs*"}
-	systemversion(os.winSdkVersion() .. ".0")
-
+  filter {"system:windows", "action:vs*"}
+    systemversion(os.winSdkVersion() .. ".0")
 end
 
 filter {}
@@ -19,18 +18,14 @@ if _ACTION == "vs2015" then
 	-- We're on Windows, this will be used in code for ifdef
 	defines {"_WINDOWS"}
 	system ("windows")
-	-- Setup post build to copy the binaries to /bin
-	--postbuildcommands { "xcopy /y \"$(TargetPath)\" $(SolutionDir)\\..\\bin\\" }
 end
 
 -- Location of the solutions
 if _ACTION == "vs2017" then
 	location "./build_vs2017"
 	-- We're on Windows, this will be used in code for ifdef
-	defines {"_WINDOWS"}
+	defines {"_WINDOWS", "_WIN32"}
 	system ("windows")
-	-- Setup post build to copy the binaries to /bin
-	--postbuildcommands { "xcopy /y \"$(TargetPath)\" $(SolutionDir)\\..\\bin\\" }
 end
 
 if _ACTION == "gmake" and _ARGS[1] == "macos" then
@@ -147,6 +142,7 @@ end
 function link_win32()
 	filter { "system:windows" }
 		links { "shlwapi", "winmm",  "Ws2_32", "Wininet", "dbghelp" }
+    links { "user32", "gdi32", "winmm", "imm32", "ole32", "oleaut32", "version", "uuid"}
 	filter {}
 end
 

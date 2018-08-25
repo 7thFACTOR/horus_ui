@@ -1,13 +1,12 @@
 #pragma once
 #include "horus.h"
-#include "types.h"
 #include "horus_interfaces.h"
 #include <string>
 
 #define GLEW_STATIC
 #include <GL/glew.h>
 
-#ifdef _WINDOWS
+#ifdef _WIN32
 #include <windows.h>
 #endif
 
@@ -35,7 +34,9 @@ struct OpenGLGraphicsProvider : GraphicsProvider
 {
 	OpenGLGraphicsProvider();
 	~OpenGLGraphicsProvider();
-
+    bool initialize() override;
+    void shutdown() override;
+    ApiType getApiType() const { return GraphicsProvider::ApiType::OpenGL; }
 	TextureArray* createTextureArray() override;
 	void deleteTextureArray(TextureArray* texture) override;
 	VertexBuffer* createVertexBuffer() override;

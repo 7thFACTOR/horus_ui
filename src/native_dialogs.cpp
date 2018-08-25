@@ -10,7 +10,7 @@ bool openFileDialog(const char* filterList, const char* defaultPath, char* outPa
 {
 	auto res = NFD_OpenDialog(filterList, defaultPath, &outPath);
 
-	ctx->inputProvider->flushEvents();
+	clearInputEventQueue();
 
 	if (res == NFD_ERROR || res == NFD_CANCEL)
 		return false;
@@ -23,7 +23,7 @@ bool openMultipleFileDialog(const char* filterList, const char* defaultPath, Ope
 	nfdpathset_t outPaths;
 	auto res = NFD_OpenDialogMultiple(filterList, defaultPath, &outPaths);
 
-	ctx->inputProvider->flushEvents();
+	clearInputEventQueue();
 
 	if (res == NFD_ERROR || res == NFD_CANCEL)
 		return false;
@@ -48,7 +48,7 @@ bool saveFileDialog(const char* filterList, const char* defaultPath, char* outPa
 {
 	auto res = NFD_SaveDialog(filterList, defaultPath, &outPath);
 
-	ctx->inputProvider->flushEvents();
+	clearInputEventQueue();
 
 	if (res == NFD_ERROR || res == NFD_CANCEL)
 		return false;
@@ -60,7 +60,7 @@ bool pickFolderDialog(const char* defaultPath, char* outPath, u32 outPathMaxSize
 {
 	auto res = NFD_PickFolder(defaultPath, &outPath);
 	
-	ctx->inputProvider->flushEvents();
+	clearInputEventQueue();
 
 	if (res == NFD_ERROR || res == NFD_CANCEL)
 		return false;

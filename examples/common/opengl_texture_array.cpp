@@ -1,7 +1,5 @@
 #include "opengl_texture_array.h"
 #include "opengl_graphics_provider.h"
-#include "renderer.h"
-#include "util.h"
 
 namespace hui
 {

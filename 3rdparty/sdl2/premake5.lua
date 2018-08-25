@@ -27,9 +27,9 @@ project "sdl2"
 			"WIN32",
 			"__WIN32__",
 			"SDL_SHARED",
-			--"WIN32_LEAN_AND_MEAN",
-			--"VC_EXTRALEAN",
-			--"_CRT_SECURE_NO_WARNINGS",
+			"WIN32_LEAN_AND_MEAN",
+			"VC_EXTRALEAN",
+			"_CRT_SECURE_NO_WARNINGS",
 		}
 
 		links { "user32", "gdi32", "winmm", "imm32", "ole32", "oleaut32", "version", "uuid" }
@@ -53,9 +53,9 @@ project "sdl2"
 			"SDL_VIDEO_OPENGL_GLX",
 			"SDL_LOADSO_DLOPEN",
 			"SDL_TIMER_UNIX",
-			--"WIN32_LEAN_AND_MEAN",
-			--"VC_EXTRALEAN",
-			--"_CRT_SECURE_NO_WARNINGS",
+			"WIN32_LEAN_AND_MEAN",
+			"VC_EXTRALEAN",
+			"_CRT_SECURE_NO_WARNINGS",
 		}
 
 		buildoptions {"-fPIC"}

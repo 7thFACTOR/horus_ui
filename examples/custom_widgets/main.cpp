@@ -1,12 +1,7 @@
-﻿#include "horus.h"
-
-#ifdef _WIN32
-#include <Windows.h>
-#endif
-#include <GL/gl.h>
-#pragma execution_character_set("utf-8")
-#include <vector>
-#include <string>
+﻿#pragma execution_character_set("utf-8")
+#include <horus.h>
+#include "sdl2_input_provider.h"
+#include "opengl_graphics_provider.h"
 
 using namespace hui;
 WidgetElementInfo inf;
@@ -40,7 +35,14 @@ void curveEditor(f32 height, u32 maxPoints, Point* points, u32& pointCount, cons
 
 int main(int argc, char** args)
 {
-	hui::initializeSDL("Custom Widgets", { 0, 0, 1200, 600 });
+    hui::SdlSettings settings;
+
+    settings.mainWindowTitle = "HorusUI Example - Custom Widgets";
+    settings.mainWindowRect = { 0, 0, 1024, 768 };
+    settings.gfxProvider = new hui::OpenGLGraphicsProvider();
+
+    hui::initializeWithSDL(settings);
+    
 	auto theme = hui::loadTheme("../themes/default.theme");
 
 	hui::setTheme(theme);

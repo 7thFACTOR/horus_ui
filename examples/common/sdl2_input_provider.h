@@ -1,33 +1,33 @@
 #pragma once
 #include "horus.h"
 #include "horus_interfaces.h"
-#include "types.h"
-#ifdef _WIN32
-#include <SDL_syswm.h>
-#endif
+#define SDL_MAIN_HANDLED
 #include <SDL.h>
 #include <SDL_version.h>
 #include <vector>
-#include <unordered_map>
-
-#ifdef _WIN32
-#include <windows.h>
-#endif
 
 namespace hui
 {
-struct SDLInputProvider : InputProvider
+struct SdlSettings
 {
-	SDLInputProvider();
-	~SDLInputProvider();
-	bool popEvent(InputEvent* outEvent) override;
+    Utf8StringBuffer mainWindowTitle;
+    Rect mainWindowRect;
+    WindowPositionType positionType = WindowPositionType::Undefined;
+    bool vSync = true;
+    void* sdlContext = nullptr;
+    SDL_Window* sdlMainWindow = nullptr;
+    GraphicsProvider* gfxProvider = nullptr;
+};
+
+struct Sdl2InputProvider : InputProvider
+{
+	Sdl2InputProvider();
+	~Sdl2InputProvider();
 	void startTextInput(Window window, const Rect& imeRect) override;
 	void stopTextInput() override;
 	bool copyToClipboard(Utf8String text) override;
 	bool pasteFromClipboard(Utf8String *outText) override;
-	u32 getEventCount() const override;
 	void processEvents() override;
-	void flushEvents() override;
 	void setCurrentWindow(Window window) override;
 	Window getCurrentWindow() override;
 	Window getFocusedWindow() override;
@@ -62,18 +62,15 @@ struct SDLInputProvider : InputProvider
 	MouseCursor createCustomCursor(Rgba32* pixels, u32 width, u32 height, u32 hotX, u32 hotY) override;
 	void destroyCustomCursor(MouseCursor cursor) override;
 	void setCustomCursor(MouseCursor cursor) override;
-	void updateDeltaTime() override;
-	f32 getDeltaTime() const override;
-	void disableMouseMoveEvents(bool disable) override;
+	void updateDeltaTime();
+	f32 getDeltaTime() const;
 
 	KeyCode fromSdlKey(int code);
 	void addSdlEvent(SDL_Event& ev);
 	void processSdlEvents();
 
-	std::vector<SDL_Event> events;
 	bool quitApp = false;
 	bool wantsToQuitApp = false;
-	bool disableMouseMove = false;
 	SDL_GLContext sdlOpenGLCtx;
 	SDL_Window* mainWindow = nullptr;
 	SDL_Window* focusedWindow = nullptr;
@@ -86,6 +83,9 @@ struct SDLInputProvider : InputProvider
 	SDL_Cursor *cursors[SDL_NUM_SYSTEM_CURSORS] = {nullptr};
 	std::vector<SDL_Cursor*> customCursors;
 	std::vector<SDL_Surface*> customCursorSurfaces;
+    GraphicsProvider* gfxProvider = nullptr;
 };
+
+void initializeWithSDL(const SdlSettings& settings);
 
 }

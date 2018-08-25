@@ -8,11 +8,15 @@ project "jsoncpp"
 	defines
 	{
 		"WIN32",
-		--"WIN32_LEAN_AND_MEAN",
-		--"VC_EXTRALEAN",
-		--"_CRT_SECURE_NO_WARNINGS",
+		"WIN32_LEAN_AND_MEAN",
+		"VC_EXTRALEAN",
+		"_CRT_SECURE_NO_WARNINGS",
 	}
-buildoptions {"-fPIC"}	
+
+  filter {"system:linux"}
+    buildoptions {"-fPIC"}
+  filter {}
+
 	configuration "Debug"
 		defines 
 		{
