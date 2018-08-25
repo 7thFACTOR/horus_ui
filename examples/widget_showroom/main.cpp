@@ -2,6 +2,7 @@
 #include "horus.h"
 #include "sdl2_input_provider.h"
 #include "opengl_graphics_provider.h"
+#include <string.h>
 
 using namespace hui;
 char str[1500] = { 0 };

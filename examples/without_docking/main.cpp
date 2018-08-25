@@ -93,7 +93,9 @@ int main(int argc, char** args)
             hui::endContainer();
             hui::endFrame();
             hui::endWindow();
-            hui::presentWindow(hui::getMainWindow());
+
+		if (lastFrame)
+	            hui::presentWindow(hui::getMainWindow());
 
             if (hui::wantsToQuit() || hui::mustQuit())
             {

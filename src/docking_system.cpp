@@ -83,11 +83,7 @@ void updateDockingSystemInternal(bool isLastEvent, ViewHandler* handler)
 		dockingData.currentViewContainer = nullptr;
 		handleViewContainerResize(viewContainer);
 
-		if ((isLastEvent 
-			&& !ctx->skipRenderAndInput
-			&& !ctx->renderer->disableRendering
-			&& !ctx->renderer->skipRender)
-			|| ctx->dockingTabPane)
+		if (isLastEvent)
 		{
 			hui::presentWindow(wnd);
 		}

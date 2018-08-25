@@ -64,6 +64,7 @@ int main(int argc, char** args)
         {
             hui::setWindow(hui::getMainWindow());
             hui::beginWindow(hui::getMainWindow());
+		hui::setDisableRendering(!lastFrame);
             hui::clearBackground();
 
             hui::beginFrame();
@@ -80,12 +81,13 @@ int main(int argc, char** args)
 
             if (hui::button("Exit"))
                 hui::quitApplication();
-
             hui::popPadding();
+
             hui::endContainer();
             hui::endFrame();
             hui::endWindow();
-            hui::presentWindow(hui::getMainWindow());
+	if (lastFrame)
+		hui::presentWindow(hui::getMainWindow());
 
             if (hui::wantsToQuit() || hui::mustQuit())
                 exitNow = true;

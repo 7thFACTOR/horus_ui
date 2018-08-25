@@ -70,6 +70,7 @@ struct Sdl2InputProvider : InputProvider
 	void processSdlEvents();
 
 	bool quitApp = false;
+	bool addedMouseMove = false;
 	bool wantsToQuitApp = false;
 	SDL_GLContext sdlOpenGLCtx;
 	SDL_Window* mainWindow = nullptr;

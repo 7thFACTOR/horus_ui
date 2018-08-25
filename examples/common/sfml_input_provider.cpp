@@ -1,4 +1,5 @@
 #include "sfml_input_provider.h"
+#include <string.h>
 
 namespace hui
 {
