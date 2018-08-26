@@ -432,10 +432,10 @@ struct MyViewHandler : hui::ViewHandler
 			}
 			
 			hui::gap(10);
-			/*
+			
 			static f32 toolbarCols[] = {30, 30, 30, 100, 100, 0.5f, 1};
 			hui::pushPadding(1);
-			hui::beginColumns(7, toolbarCols, toolbarCols, toolbarCols);
+			hui::beginColumns(6, toolbarCols, toolbarCols, toolbarCols);
 			hui::iconButton(moveIcon, 20);
 			hui::nextColumn();
 			hui::iconButton(moveIcon, 20);
@@ -452,7 +452,7 @@ struct MyViewHandler : hui::ViewHandler
 			hui::textInput(tx, 100, TextInputValueMode::Any, "Search");
 			hui::endColumns();
 			hui::popPadding();
-			*/
+			
 			WidgetElementInfo wel;
 			
 			hui::getThemeWidgetElementInfo(hui::WidgetElementId::ButtonBody, hui::WidgetStateType::Normal, wel);
