@@ -1720,7 +1720,7 @@ HORUS_API bool openFileDialog(const char* filterList, const char* defaultPath, c
 HORUS_API bool openMultipleFileDialog(const char* filterList, const char* defaultPath, OpenMultipleFileSet& outPathSet);
 HORUS_API void destroyMultipleFileSet(OpenMultipleFileSet& fileSet);
 HORUS_API bool saveFileDialog(const char* filterList, const char* defaultPath, char* outPath, u32 outPathMaxSize);
-HORUS_API bool pickFolderDialog(const char* defaultPath, char* outPath, u32 outPathMaxSize);
+HORUS_API bool pickFolderDialog(const char* defaultPath, char** outPath);
 
 //////////////////////////////////////////////////////////////////////////
 // Utility functions

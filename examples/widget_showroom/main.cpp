@@ -114,9 +114,9 @@ struct MyViewHandler : hui::ViewHandler
 			if (hui::menuItem("Pick folder...", "Ctrl+F"))
 			{
 				printf("pick folder\n");
-				char file[1000] = { 0 };
+				char* file = nullptr;
 
-				if (hui::pickFolderDialog("C:\\", file, 1000))
+				if (hui::pickFolderDialog("C:\\", &file))
 				{
 					printf("Picked folder: '%s'\n", file);
 				}
@@ -314,9 +314,9 @@ struct MyViewHandler : hui::ViewHandler
 				if (hui::menuItem("Pick folder...", "Ctrl+F"))
 				{
 					printf("pick folder\n");
-					char file[1000] = {0};
+					char* file = nullptr;
 
-					if (hui::pickFolderDialog("C:\\", file, 1000))
+					if (hui::pickFolderDialog("C:\\", &file))
 					{
 						printf("Picked folder: '%s'\n", file);
 					}
@@ -1124,7 +1124,7 @@ struct MyViewHandler : hui::ViewHandler
 				
 				static int projType = 0;
 				static Utf8String projTypes[] = { "Perspective", "Free Ortho", "Left", "Top", "Front" };
-				static char someText[200] = { 0 };
+				static char someText[200] = "Please select projection type";
 				static char colorR[10] = { 0 };
 				static char colorG[10] = { 0 };
 				static char colorB[10] = { 0 };
@@ -1141,7 +1141,6 @@ struct MyViewHandler : hui::ViewHandler
 					{
 						strcpy((char*)someText, projTypes[projType]);
 					}
-
 
 					hui::endColumns();
 				}
@@ -1189,11 +1188,6 @@ struct MyViewHandler : hui::ViewHandler
 				}
 
 				hui::gap(20);
-
-				//c.r = (f32)atof((char*)colorR);
-				//c.g = (f32)atof((char*)colorG);
-				//c.b = (f32)atof((char*)colorB);
-
 				hui::pushTint(c);
 				hui::multilineLabelCustomFont((Utf8String)someText, fntBig, HAlignType::Center);
 				hui::popTint();
@@ -1221,7 +1215,8 @@ struct MyViewHandler : hui::ViewHandler
 					}
 				}
 				
-				hui::endPopup();
+                hui::gap(20);
+                hui::endPopup();
 			}
 
 			if (hui::button("Move"))
@@ -1231,7 +1226,10 @@ struct MyViewHandler : hui::ViewHandler
 			hui::button("Rotate");
 			hui::button("Scale");
 			hui::nextColumn();
-			hui::button("Subtract");
+            if (hui::button("Subtract"))
+            {
+                printf("SUB\n");
+            }
 			Utf8String s2[] = { "White", "Red", "Green", "Blue", "Yellow", "Pink" };
 			static int sel = 0;
 			static hui::Color currentTint = Color::white;

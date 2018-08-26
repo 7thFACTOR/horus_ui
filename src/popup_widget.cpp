@@ -21,12 +21,7 @@ void beginPopup(
 {
 	auto& popup = ctx->popupStack[ctx->popupIndex];
 
-	if (ctx->popupIndex == 0)
-		popup.previousSkipRenderAndInput = ctx->skipRenderAndInput;
-
-	auto prevSkip = popup.previousSkipRenderAndInput;
-
-	popup.incrementLayer = incrementLayer;
+    popup.incrementLayer = incrementLayer;
 
 	if (ctx->popupUseGlobalScale)
 		width *= ctx->globalScale;
@@ -44,12 +39,11 @@ void beginPopup(
 	}
 
 	ctx->popupIndex++;
-    popup.previousSkipRenderAndInput = prevSkip;
 
 	// not active, first show, do not render anything, next frame
 	if (!popup.active)
 	{
-		ctx->setSkipRenderAndInput(true);
+		skipThisFrame();
 		popup.active = true;
 		popup.height = 0;
 		popup.widgetElementId = widgetElementIdTheme;
@@ -215,7 +209,6 @@ void endPopup()
 		forceRepaint();
 	}
 
-	ctx->setSkipRenderAndInput(popup.previousSkipRenderAndInput);
 	auto bodyElemState = ctx->theme->getElement(popup.widgetElementId).normalState();
 	popup.height = (ctx->penPosition.y - ctx->layoutStack.back().position.y) + bodyElemState.border * 2.0f * ctx->globalScale - ctx->spacing * ctx->globalScale;
 	ctx->penPosition = ctx->layoutStack.back().savedPenPosition;
@@ -243,7 +236,7 @@ void closePopup()
 	
 	ctx->event.type = InputEvent::Type::None;
 	ctx->widget.focusedWidgetId = 0;
-	ctx->setSkipRenderAndInput(true);
+	skipThisFrame();
 	forceRepaint();
 }
 

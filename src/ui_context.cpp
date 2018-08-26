@@ -20,6 +20,10 @@ Rect UiContext::drawMultilineText(
 	u32 lastWordIndex = 0;
 	GlyphCode lastGlyphCode = 0;
 	Rect newRect = rect;
+
+    if (!strcmp(text, ""))
+        return newRect;
+
 	TextLine line;
 	auto crtFont = renderer->getFont();
 

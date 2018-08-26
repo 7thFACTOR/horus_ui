@@ -16,8 +16,11 @@ bool radio(Utf8String labelText, bool checked)
 	addWidgetItem(radioBodyElem.normalState().height * ctx->globalScale);
 	buttonBehavior();
 
-	if (ctx->widget.clicked)
-		checked = !checked;
+    if (ctx->widget.clicked)
+    {
+        checked = !checked;
+        forceRepaint();
+    }
 
 	auto radioBodyElemState = &radioBodyElem.normalState();
 	auto radioMarkElemState = &radioMarkElem.normalState();

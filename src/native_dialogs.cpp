@@ -56,11 +56,13 @@ bool saveFileDialog(const char* filterList, const char* defaultPath, char* outPa
 	return true;
 }
 
-bool pickFolderDialog(const char* defaultPath, char* outPath, u32 outPathMaxSize)
+bool pickFolderDialog(const char* defaultPath, char** outPath)
 {
-	auto res = NFD_PickFolder(defaultPath, &outPath);
+    enableInput(false);
+	auto res = NFD_PickFolder(defaultPath, outPath);
 	
 	clearInputEventQueue();
+    enableInput(true);
 
 	if (res == NFD_ERROR || res == NFD_CANCEL)
 		return false;

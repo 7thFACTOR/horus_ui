@@ -124,7 +124,6 @@ struct PopupState
 	i32 oldZOrder = 0;
 	bool startedToDrag = false;
 	bool draggingPopup = false;
-	bool previousSkipRenderAndInput = false;
 	bool opened = false;
 	Window ownerWindow = 0;
 	Point dragDelta, lastMouseDownPoint;

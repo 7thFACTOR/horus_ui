@@ -214,6 +214,9 @@ bool viewportImageFitSize(
 
 void beginFrame()
 {
+    if (!ctx->inputEnabled)
+        ctx->event.type = InputEvent::Type::None;
+
 	if (ctx->textInput.widgetId)
 	{
         ctx->textInput.processEvent(ctx->event);
@@ -251,7 +254,6 @@ void beginFrame()
 	ctx->widget.enabled = true;
 	ctx->currentWindowIndex = 0;
 	ctx->layerIndex = 0;
-	ctx->inputEnabled = true;
 	ctx->widget.nextFocusableWidgetId = 0;
 	ctx->mouseCursor = MouseCursorType::Arrow;
 	ctx->menuDepth = 0;
@@ -533,6 +535,7 @@ void addInputEvent(const InputEvent& event)
 
 void clearInputEventQueue()
 {
+    ctx->event.type = InputEvent::Type::None;
     ctx->events.clear();
 }
 
