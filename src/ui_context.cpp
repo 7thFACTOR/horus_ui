@@ -3,6 +3,7 @@
 #include "renderer.h"
 #include "util.h"
 #include "text_cache.h"
+#include <string.h>
 
 namespace hui
 {

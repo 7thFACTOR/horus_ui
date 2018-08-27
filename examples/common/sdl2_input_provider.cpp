@@ -360,17 +360,26 @@ void Sdl2InputProvider::addSdlEvent(SDL_Event& ev)
         outEvent.key.down = true;
         outEvent.key.code = fromSdlKey(ev.key.keysym.sym);
         outEvent.window = SDL_GetWindowFromID(ev.key.windowID);
+	outEvent.key.modifiers = KeyModifiers::None;
+	outEvent.key.modifiers |= (ev.key.keysym.mod & KMOD_ALT) ? KeyModifiers::Alt : KeyModifiers::None;
+    	outEvent.key.modifiers |= (ev.key.keysym.mod & KMOD_SHIFT) ? KeyModifiers::Shift : KeyModifiers::None;
+    	outEvent.key.modifiers |= (ev.key.keysym.mod & KMOD_CTRL) ? KeyModifiers::Control : KeyModifiers::None;
         break;
     case SDL_KEYUP:
         outEvent.type = InputEvent::Type::Key;
         outEvent.key.down = false;
         outEvent.key.code = fromSdlKey(ev.key.keysym.sym);
         outEvent.window = SDL_GetWindowFromID(ev.key.windowID);
+	outEvent.key.modifiers = KeyModifiers::None;
+	outEvent.key.modifiers |= (ev.key.keysym.mod & KMOD_ALT) ? KeyModifiers::Alt : KeyModifiers::None;
+    	outEvent.key.modifiers |= (ev.key.keysym.mod & KMOD_SHIFT) ? KeyModifiers::Shift : KeyModifiers::None;
+    	outEvent.key.modifiers |= (ev.key.keysym.mod & KMOD_CTRL) ? KeyModifiers::Control : KeyModifiers::None;
         break;
     case SDL_TEXTINPUT:
         outEvent.type = InputEvent::Type::Text;
         strcpy(outEvent.text.text, ev.text.text);
         outEvent.window = SDL_GetWindowFromID(ev.text.windowID);
+	outEvent.key.modifiers = KeyModifiers::None;
         break;
     case SDL_DROPFILE:
         outEvent.type = InputEvent::Type::OsDragDrop;
@@ -439,10 +448,6 @@ void Sdl2InputProvider::addSdlEvent(SDL_Event& ev)
     default:
         break;
     }
-
-    outEvent.key.modifiers |= (ev.key.keysym.mod & KMOD_ALT) ? KeyModifiers::Alt : KeyModifiers::None;
-    outEvent.key.modifiers |= (ev.key.keysym.mod & KMOD_SHIFT) ? KeyModifiers::Shift : KeyModifiers::None;
-    outEvent.key.modifiers |= (ev.key.keysym.mod & KMOD_CTRL) ? KeyModifiers::Control : KeyModifiers::None;
 
     if (ev.type == SDL_KEYDOWN
 		|| ev.type == SDL_KEYUP

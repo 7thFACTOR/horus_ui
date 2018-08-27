@@ -209,6 +209,9 @@ void TextInputState::clearText()
 
 void TextInputState::processKeyEvent(const InputEvent& ev)
 {
+	if (ev.type != InputEvent::Type::Key)
+		return;
+
 	if (ev.key.code == KeyCode::None)
 		return;
 

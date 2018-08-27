@@ -3,14 +3,18 @@
 #include "ui_context.h"
 #include "util.h"
 #include "3rdparty/nativefiledialog/src/include/nfd.h"
+#include <string.h>
 
 namespace hui
 {
-bool openFileDialog(const char* filterList, const char* defaultPath, char* outPath, u32 outPathMaxSize)
+bool openFileDialog(const char* filterList, const char* defaultPath, char* outPath, u32 maxOutPathSize)
 {
-	auto res = NFD_OpenDialog(filterList, defaultPath, &outPath);
+	char* path = 0;
+	auto res = NFD_OpenDialog(filterList, defaultPath, &path);
 
 	clearInputEventQueue();
+	memcpy(outPath, path, std::min((int)maxOutPathSize, (int)strlen(path) + 1));
+	delete [] path;
 
 	if (res == NFD_ERROR || res == NFD_CANCEL)
 		return false;
@@ -44,11 +48,14 @@ void destroyMultipleFileSet(OpenMultipleFileSet& fileSet)
 	fileSet.bufferIndices = nullptr;
 }
 
-bool saveFileDialog(const char* filterList, const char* defaultPath, char* outPath, u32 outPathMaxSize)
+bool saveFileDialog(const char* filterList, const char* defaultPath, char* outPath, u32 maxOutPathSize)
 {
-	auto res = NFD_SaveDialog(filterList, defaultPath, &outPath);
+	char* path = 0;
+	auto res = NFD_SaveDialog(filterList, defaultPath, &path);
 
 	clearInputEventQueue();
+	memcpy(outPath, path, std::min((int)maxOutPathSize, (int)strlen(path) + 1));
+	delete [] path;
 
 	if (res == NFD_ERROR || res == NFD_CANCEL)
 		return false;
@@ -56,13 +63,16 @@ bool saveFileDialog(const char* filterList, const char* defaultPath, char* outPa
 	return true;
 }
 
-bool pickFolderDialog(const char* defaultPath, char** outPath)
+bool pickFolderDialog(const char* defaultPath, char* outPath, u32 maxOutPathSize)
 {
     enableInput(false);
-	auto res = NFD_PickFolder(defaultPath, outPath);
+	char* path = 0;	
+	auto res = NFD_PickFolder(defaultPath, &path);
 	
 	clearInputEventQueue();
     enableInput(true);
+	memcpy(outPath, path, std::min((int)maxOutPathSize, (int)strlen(path) + 1));
+	delete [] path;
 
 	if (res == NFD_ERROR || res == NFD_CANCEL)
 		return false;

@@ -99,6 +99,20 @@ struct MyViewHandler : hui::ViewHandler
 					printf("File open: '%s'\n", file);
 				}
 			}
+			
+			if (hui::menuItem("Open many files...", "Ctrl+Alt+O", tabIcon1))
+			{
+				printf("open many\n");
+				OpenMultipleFileSet fs;
+
+				if (hui::openMultipleFileDialog("png;zip;exe;jpg", "file.png", fs))
+				{
+
+					for(int i = 0; i < fs.count; i++)	
+						printf("File open#%d: '%s'\n", i, fs.filenameBuffer + fs.bufferIndices[i]);
+					destroyMultipleFileSet(fs);
+				}
+			}
 
 			if (hui::menuItem("Save", "Ctrl+S"))
 			{
@@ -114,9 +128,9 @@ struct MyViewHandler : hui::ViewHandler
 			if (hui::menuItem("Pick folder...", "Ctrl+F"))
 			{
 				printf("pick folder\n");
-				char* file = nullptr;
+				char file[1000] = {0};
 
-				if (hui::pickFolderDialog("C:\\", &file))
+				if (hui::pickFolderDialog("C:\\", file, 1000))
 				{
 					printf("Picked folder: '%s'\n", file);
 				}
@@ -314,9 +328,9 @@ struct MyViewHandler : hui::ViewHandler
 				if (hui::menuItem("Pick folder...", "Ctrl+F"))
 				{
 					printf("pick folder\n");
-					char* file = nullptr;
+					char file[1000] = {0};
 
-					if (hui::pickFolderDialog("C:\\", &file))
+					if (hui::pickFolderDialog("C:\\", file, 1000))
 					{
 						printf("Picked folder: '%s'\n", file);
 					}
