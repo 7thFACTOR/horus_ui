@@ -248,35 +248,6 @@ function link_sdl2()
 	filter {}
 end
 
-function link_sfml()
-	filter {"system:windows"}
-		includedirs {scriptRoot.."/3rdparty/sfml/win64/include"}
-		libdirs {scriptRoot.."/3rdparty/sfml/win64/lib"}
-		filter { "system:windows", "configurations:Debug" }
-			links { "freetype", "sfml-window-d", "sfml-system-d", "sfml-graphics-d", "sfml-audio-d" }
-		filter { "system:windows", "configurations:Release" }
-			links { "freetype", "sfml-window", "sfml-system", "sfml-graphics", "sfml-audio" }
-	filter {}
-
-	filter {"system:linux"}
-		includedirs {scriptRoot.."/3rdparty/sfml/linux/include"}
-		libdirs {scriptRoot.."/3rdparty/sfml/linux/lib"}
-		filter { "system:linux", "configurations:Debug" }
-			links { "freetype", "sfml-window-d", "sfml-system-d", "sfml-graphics-d", "sfml-audio-d" }
-		filter { "system:linux", "configurations:Release" }
-			links { "freetype", "sfml-window", "sfml-system", "sfml-graphics", "sfml-audio" }
-	filter {}
-
-	filter {"system:macosx"}
-		includedirs {scriptRoot.."/3rdparty/sfml/macos/include"}
-		libdirs {scriptRoot.."/3rdparty/sfml/macos/lib"}
-		filter { "system:macosx", "configurations:Debug" }
-			links { "sfml-window", "sfml-system", "sfml-graphics", "sfml-audio" }
-		filter { "system:macosx", "configurations:Release" }
-			links { "sfml-window", "sfml-system", "sfml-graphics", "sfml-audio" }
-	filter {}
-end
-
 ---
 --- Own libs
 ---
