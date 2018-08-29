@@ -4,6 +4,7 @@
 #include "util.h"
 #include "3rdparty/nativefiledialog/src/include/nfd.h"
 #include <string.h>
+#include <algorithm>
 
 namespace hui
 {

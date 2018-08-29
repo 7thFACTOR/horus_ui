@@ -1,6 +1,5 @@
 #include "horus.h"
 #include <horus_interfaces.h>
-#define SFML_STATIC
 #include <SFML/System.hpp>
 #include <SFML/Window.hpp>
 #include <SFML/OpenGL.hpp>

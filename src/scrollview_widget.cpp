@@ -160,7 +160,8 @@ f32 endScrollView()
 				}
 			}
 		}
-		else if (ctx->scrollViewStack[ctx->scrollViewDepth].draggingThumb
+		else if (ctx->mouseMoved
+            && ctx->scrollViewStack[ctx->scrollViewDepth].draggingThumb
 			&& ctx->dragScrollViewHandleWidgetId == ctx->scrollViewStack[ctx->scrollViewDepth].widgetId)
 		{
 			f32 crtLocalY = ctx->event.mouse.point.y - ctx->scrollViewStack[ctx->scrollViewDepth].dragDelta.y - clipRect.y;
