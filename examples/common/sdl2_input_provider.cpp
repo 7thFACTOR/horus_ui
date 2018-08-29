@@ -314,7 +314,7 @@ void Sdl2InputProvider::addSdlEvent(SDL_Event& ev)
     {
     case SDL_MOUSEMOTION:
 	if (!addedMouseMove)
-        {
+    {
 		addedMouseMove = true;
 		hui::setMouseMoved(true);
 		outEvent.type = InputEvent::Type::MouseMove;
@@ -323,8 +323,10 @@ void Sdl2InputProvider::addSdlEvent(SDL_Event& ev)
 		outEvent.window = SDL_GetWindowFromID(ev.motion.windowID);
 		focusedWindow = (SDL_Window*)outEvent.window;
 	}
-	else
-		return;
+    else
+    {
+        return;
+    }
         break;
     case SDL_MOUSEBUTTONDOWN:
         outEvent.type = InputEvent::Type::MouseDown;
@@ -590,12 +592,6 @@ void Sdl2InputProvider::setCurrentWindow(Window window)
     }
 
 	currentWindow = (SDL_Window*)window;
-	enableInput(currentWindow == focusedWindow);
-
-	if (getInputEvent().window != focusedWindow)
-	{
-		enableInput(false);
-	}
 }
 
 Window Sdl2InputProvider::getCurrentWindow()

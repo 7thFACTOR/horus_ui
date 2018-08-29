@@ -1357,7 +1357,6 @@ HORUS_API void forceRepaint();
 HORUS_API void skipThisFrame();
 HORUS_API bool copyToClipboard(Utf8String text);
 HORUS_API bool pasteFromClipboard(Utf8String *outText);
-HORUS_API void enableInput(bool enabled);
 HORUS_API const InputEvent& getInputEvent();
 HORUS_API void cancelEvent();
 HORUS_API void addInputEvent(const InputEvent& event);

@@ -32,7 +32,6 @@ struct UiContext
 	u32 currentWidgetId = 1;
 	std::vector<u32> widgetIdStack;
 	u32 maxWidgetId = 0;
-	bool inputEnabled = true;
 	bool mustRedraw = false;
 	bool focusChanged = false;
 	bool skipRenderAndInput = false;

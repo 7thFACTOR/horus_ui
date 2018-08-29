@@ -199,6 +199,8 @@ bool objectRefEditor(Image targetIcon, Image clearIcon, Utf8String objectTypeNam
 
 		if (objectValueWasModified)
 			*objectValueWasModified = true;
+        
+        forceRepaint();
 	}
 
 	nextColumn();

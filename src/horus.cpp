@@ -214,9 +214,6 @@ bool viewportImageFitSize(
 
 void beginFrame()
 {
-    if (!ctx->inputEnabled)
-        ctx->event.type = InputEvent::Type::None;
-
 	if (ctx->textInput.widgetId)
 	{
         ctx->textInput.processEvent(ctx->event);
@@ -359,11 +356,6 @@ bool copyToClipboard(Utf8String text)
 bool pasteFromClipboard(Utf8String *outText)
 {
 	return ctx->inputProvider->pasteFromClipboard(outText);
-}
-
-void enableInput(bool state)
-{
-	ctx->inputEnabled = state;
 }
 
 const InputEvent& getInputEvent()
@@ -1234,12 +1226,6 @@ Theme loadTheme(Utf8String filename)
 void beginWindow(Window window)
 {
 	ctx->savedEventType = ctx->event.type;
-
-	if (!ctx->inputEnabled)
-	{
-		ctx->event.type = InputEvent::Type::None;
-	}
-
 	ctx->renderer->setZOrder(0);
 	
 	for (auto& popup : ctx->popupStack)
@@ -1844,8 +1830,6 @@ void allowDragDrop()
 
 	if (ctx->dragDropState.begunDragging)
 	{
-		enableInput(true);
-
 		if (ctx->widget.hovered)
 		{
 			ctx->dragDropState.foundDropTarget = true;
@@ -1860,11 +1844,6 @@ void disallowDragDrop()
 
 bool droppedOnWidget()
 {
-	if (ctx->dragDropState.foundDropTarget)
-	{
-		enableInput(true);
-	}
-
 	if (ctx->dragDropState.begunDragging
 		&& ctx->hoveringThisWindow
 		&& getFocusedWindow() != getWindow())
