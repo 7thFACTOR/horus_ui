@@ -259,17 +259,17 @@ function link_sfml()
 	filter {}
 
 	filter {"system:linux"}
-		includedirs {scriptRoot.."/3rdparty/sfml/linux/include"}
-		libdirs {scriptRoot.."/3rdparty/sfml/linux/lib"}
+		--includedirs {scriptRoot.."/3rdparty/sfml/linux/include"}
+		--libdirs {scriptRoot.."/3rdparty/sfml/linux/lib"}
 		filter { "system:linux", "configurations:Debug" }
 			links { "freetype", "sfml-window-d", "sfml-system-d", "sfml-graphics-d", "sfml-audio-d" }
 		filter { "system:linux", "configurations:Release" }
-			links { "freetype", "sfml-window", "sfml-system", "sfml-graphics", "sfml-audio" }
+			links { "freetype", "sfml-system", "sfml-window", "sfml-graphics", "sfml-audio" }
 	filter {}
 
 	filter {"system:macosx"}
-		includedirs {scriptRoot.."/3rdparty/sfml/macos/include"}
-		libdirs {scriptRoot.."/3rdparty/sfml/macos/lib"}
+		--includedirs {scriptRoot.."/3rdparty/sfml/macos/include"}
+		--libdirs {scriptRoot.."/3rdparty/sfml/macos/lib"}
 		filter { "system:macosx", "configurations:Debug" }
 			links { "sfml-window", "sfml-system", "sfml-graphics", "sfml-audio" }
 		filter { "system:macosx", "configurations:Release" }

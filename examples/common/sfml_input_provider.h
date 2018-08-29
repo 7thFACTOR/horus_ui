@@ -1,8 +1,9 @@
 #include "horus.h"
 #include <horus_interfaces.h>
 #include <SFML/System.hpp>
-#include <SFML/Window.hpp>
+#include <SFML/Graphics.hpp>
 #include <SFML/OpenGL.hpp>
+#include <SFML/Window.hpp>
 
 namespace hui
 {
