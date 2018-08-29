@@ -243,7 +243,7 @@ void handleViewContainerResize(UiViewContainer* viewContainer)
 			bool executeDocking = true;
 
 			// we don't have to create a new view pane if it holds just one view tab
-			if (dragTab->parentViewPane->viewTabs.size() == 1)
+			if (dragTab && dragTab->parentViewPane->viewTabs.size() == 1)
 			{
 				newPane = dragTab->parentViewPane;
 
@@ -262,7 +262,7 @@ void handleViewContainerResize(UiViewContainer* viewContainer)
 				}
 			}
 
-			if (executeDocking)
+			if (dragTab && executeDocking)
 			{
 				if (dockType == DockType::TopAsViewTab)
 				{
@@ -393,7 +393,8 @@ void handleViewContainerResize(UiViewContainer* viewContainer)
 			auto tabGroupElem = ctx->theme->getElement(WidgetElementId::TabGroupBody);
 			auto zorder = ctx->renderer->getZOrder();
 
-			if (crtEvent.type == InputEvent::Type::MouseDown
+			if (ctx->mouseMoved
+                || crtEvent.type == InputEvent::Type::MouseDown
 				|| moved)
 			{
 				std::vector<UiViewTab*> tabs;

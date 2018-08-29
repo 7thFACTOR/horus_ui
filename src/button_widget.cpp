@@ -26,8 +26,7 @@ void buttonBehavior(bool menuItem)
 	if (!ctx->widget.enabled)
 		return;
 
-	if (ctx->inputEnabled
-		&& ctx->currentWidgetId == ctx->widget.focusedWidgetId
+	if (ctx->currentWidgetId == ctx->widget.focusedWidgetId
 		&& ctx->event.type == InputEvent::Type::Key
 		&& (ctx->event.key.code == KeyCode::Enter
 			|| ctx->event.key.code == KeyCode::Space))
@@ -68,8 +67,7 @@ void buttonBehavior(bool menuItem)
             ctx->widget.hovered = true;
             ctx->widget.hoveredWidgetRect = ctx->widget.rect;
             
-            if (ctx->inputEnabled
-				&& ctx->event.type == InputEvent::Type::MouseDown
+            if (ctx->event.type == InputEvent::Type::MouseDown
 				&& ctx->event.mouse.button == MouseButton::Left)
 			{
 				ctx->widget.focusedWidgetId = ctx->currentWidgetId;
@@ -83,8 +81,7 @@ void buttonBehavior(bool menuItem)
 					popup.alreadyClickedOnSomething = true;
 				}
 			}
-			else if (ctx->inputEnabled
-					&& ctx->event.type == InputEvent::Type::MouseUp
+			else if (ctx->event.type == InputEvent::Type::MouseUp
 					&& ctx->event.mouse.button == MouseButton::Left)
 				{
 					if (ctx->currentWidgetId == ctx->widget.focusedWidgetId)
@@ -100,8 +97,7 @@ void buttonBehavior(bool menuItem)
 	}
 	else
 	{
-		if (ctx->inputEnabled
-			&& ctx->event.type == InputEvent::Type::MouseDown)
+		if (ctx->event.type == InputEvent::Type::MouseDown)
 		{
 			if (ctx->currentWidgetId == ctx->widget.focusedWidgetId)
 			{
@@ -111,8 +107,7 @@ void buttonBehavior(bool menuItem)
 			}
 		}
 
-		if (ctx->inputEnabled
-			&& ctx->event.type == InputEvent::Type::MouseUp)
+		if (ctx->event.type == InputEvent::Type::MouseUp)
 		{
 			if (ctx->currentWidgetId == ctx->widget.focusedWidgetId)
 			{
@@ -162,8 +157,7 @@ void mouseDownOnlyButtonBehavior()
 
 		ctx->widget.hoveredWidgetId = ctx->currentWidgetId;
 
-		if (ctx->inputEnabled
-			&& ctx->event.type == InputEvent::Type::MouseDown
+		if (ctx->event.type == InputEvent::Type::MouseDown
 			&& ctx->event.mouse.button == MouseButton::Left)
 		{
 			ctx->widget.focusedWidgetId = ctx->currentWidgetId;
@@ -186,8 +180,7 @@ void mouseDownOnlyButtonBehavior()
 	}
 	else
 	{
-		if (ctx->inputEnabled
-			&& ctx->event.type == InputEvent::Type::MouseDown
+		if (ctx->event.type == InputEvent::Type::MouseDown
 			&& ctx->currentWidgetId == ctx->widget.focusedWidgetId)
 		{
 			ctx->widget.focusedWidgetId = 0;

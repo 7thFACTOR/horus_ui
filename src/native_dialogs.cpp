@@ -14,8 +14,13 @@ bool openFileDialog(const char* filterList, const char* defaultPath, char* outPa
 	auto res = NFD_OpenDialog(filterList, defaultPath, &path);
 
 	clearInputEventQueue();
-	memcpy(outPath, path, std::min((int)maxOutPathSize, (int)strlen(path) + 1));
-	delete [] path;
+    
+    if (res == NFD_OKAY)
+    {
+        memcpy(outPath, path, std::min((int)maxOutPathSize, (int)strlen(path) + 1));
+    }
+	
+    delete [] path;
 
 	if (res == NFD_ERROR || res == NFD_CANCEL)
 		return false;
@@ -30,7 +35,7 @@ bool openMultipleFileDialog(const char* filterList, const char* defaultPath, Ope
 
 	clearInputEventQueue();
 
-	if (res == NFD_ERROR || res == NFD_CANCEL)
+	if (res != NFD_OKAY)
 		return false;
 
 	outPathSet.filenameBuffer = outPaths.buf;
@@ -42,8 +47,8 @@ bool openMultipleFileDialog(const char* filterList, const char* defaultPath, Ope
 
 void destroyMultipleFileSet(OpenMultipleFileSet& fileSet)
 {
-	delete[]fileSet.filenameBuffer;
-	delete[]fileSet.bufferIndices;
+	delete [] fileSet.filenameBuffer;
+	delete [] fileSet.bufferIndices;
 	fileSet.count = 0;
 	fileSet.filenameBuffer = nullptr;
 	fileSet.bufferIndices = nullptr;
@@ -55,28 +60,28 @@ bool saveFileDialog(const char* filterList, const char* defaultPath, char* outPa
 	auto res = NFD_SaveDialog(filterList, defaultPath, &path);
 
 	clearInputEventQueue();
-	memcpy(outPath, path, std::min((int)maxOutPathSize, (int)strlen(path) + 1));
-	delete [] path;
 
-	if (res == NFD_ERROR || res == NFD_CANCEL)
+	if (res != NFD_OKAY)
 		return false;
+
+    memcpy(outPath, path, std::min((int)maxOutPathSize, (int)strlen(path) + 1));
+    delete[] path;
 
 	return true;
 }
 
 bool pickFolderDialog(const char* defaultPath, char* outPath, u32 maxOutPathSize)
 {
-    enableInput(false);
 	char* path = 0;	
 	auto res = NFD_PickFolder(defaultPath, &path);
 	
 	clearInputEventQueue();
-    enableInput(true);
-	memcpy(outPath, path, std::min((int)maxOutPathSize, (int)strlen(path) + 1));
-	delete [] path;
 
-	if (res == NFD_ERROR || res == NFD_CANCEL)
+	if (res != NFD_OKAY)
 		return false;
+
+    memcpy(outPath, path, std::min((int)maxOutPathSize, (int)strlen(path) + 1));
+    delete[] path;
 
 	return true;
 }
