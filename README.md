@@ -111,7 +111,8 @@ libudev-dev, needed by SFML
 ## FEATURES
 - Immediate mode GUI, imgui (no state kept per widget, user provides the state)
 - Docking OS native windows and tab panes system
-- UTF8 text support 
+- UTF8 text support
+- It can redraw the UI only when needed, useful for non-gaming applications where continuous rendering not needed
 - DPI aware, scaling of the whole UI elements, useful for high DPI screens
 - Fully customizable through themes specified in a JSON file with 9-cell resizable elements and PNG images
 - Dynamic font atlas for unlimited unicode glyphs and font sizes
