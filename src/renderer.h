@@ -11,20 +11,23 @@ struct UiImage;
 class UiAtlas;
 struct FontTextSize;
 
+/// How an image is drawn, repeated or stretched across the rectangle
 enum class ImageSizingPolicy
 {
 	Stretch,
 	Repeat
 };
 
+/// Text styling info
 struct TextStyle
 {
-	FontStyle style = FontStyle::Normal;
-	Color backFillColor;
-	bool underline = false;
-	bool backFill = false;
+	FontStyle style = FontStyle::Normal; /// the font face style
+	Color backFillColor; /// the text color
+	bool underline = false; /// true if underline
+	bool backFill = false; /// true if back is filled color
 };
 
+/// Vertex buffer data used in rendering the UI
 struct VertexBufferData
 {
 	std::vector<Vertex> vertices;

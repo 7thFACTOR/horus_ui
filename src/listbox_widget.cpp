@@ -9,26 +9,26 @@
 
 namespace hui
 {
-i32 list(i32 selectedIndex, ListSelectionType selectionType, Utf8String** items, u32 itemCount)
+i32 list(i32 selectedIndex, ListSelectionMode selectionType, Utf8String** items, u32 itemCount)
 {
 	return 0;
 }
 
-i32 list(i32 selectedIndex, ListSelectionType selectionType, Utf8String* items)
+i32 list(i32 selectedIndex, ListSelectionMode selectionType, Utf8String* items)
 {
 
 	return 0;
 }
 
 i32 list(
-	i32 selectedIndex, ListSelectionType selectionType, void* userdata,
+	i32 selectedIndex, ListSelectionMode selectionType, void* userdata,
 	bool(*itemSource)(void* userdata, i32 index, Utf8String** outItem))
 {
 
 	return 0;
 }
 
-i32 beginList(ListSelectionType selectionType)
+i32 beginList(ListSelectionMode selectionType)
 {
 
 	return 0;

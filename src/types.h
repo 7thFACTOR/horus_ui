@@ -44,6 +44,15 @@ struct UiThemeElement
 	inline State& normalState() { return states[(u32)WidgetStateType::Normal]; }
 };
 
+enum class LayoutType
+{
+    Container,
+    Vertical,
+    Columns,
+    Column,
+    ScrollView
+};
+
 struct LayoutState
 {
 	LayoutState() {}

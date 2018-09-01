@@ -41,7 +41,7 @@ void updateDockingSystemInternal(bool isLastEvent, ViewHandler* handler)
 
 		hui::setWindow(wnd);
 		hui::beginWindow(wnd);
-		handler->onBeforeFrameRender();
+		handler->onBeforeFrameRender(wnd);
 		hui::clearBackground();
 
 		if ((hui::getInputEvent().type == InputEvent::Type::WindowResize
@@ -70,7 +70,7 @@ void updateDockingSystemInternal(bool isLastEvent, ViewHandler* handler)
 			if (tab)
 			{
 				hui::ViewId crtViewId = beginViewPane(panes[j]);
-				handler->onViewPaneRender(
+				handler->onViewRender(
 					wnd, panes[j], crtViewId,
 					tab->userDataId);
 				endViewPane();
@@ -79,7 +79,7 @@ void updateDockingSystemInternal(bool isLastEvent, ViewHandler* handler)
 
 		endContainer();
 		endWindow();
-		handler->onAfterFrameRender();
+		handler->onAfterFrameRender(wnd);
 		dockingData.currentViewContainer = nullptr;
 		handleViewContainerResize(viewContainer);
 

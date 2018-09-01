@@ -13,6 +13,8 @@
 ------------------------------------------------------------------------------
 */
 
+/// \file horus.h
+
 #ifndef HORUS_NO_BASIC_TYPES
 #ifndef HORUS_NO_U8
 	typedef uint8_t u8;
@@ -136,6 +138,7 @@ typedef u32 ViewId;
 
 const f32 ColumnFill = -1;
 
+/// Horizontal align type, for text and images
 enum class HAlignType
 {
 	Left,
@@ -143,6 +146,7 @@ enum class HAlignType
 	Center
 };
 
+/// Vertical align type, for text and images
 enum class VAlignType
 {
 	Top,
@@ -150,6 +154,7 @@ enum class VAlignType
 	Center
 };
 
+/// Font style type
 enum class FontStyle
 {
 	Normal,
@@ -160,6 +165,7 @@ enum class FontStyle
 	Count
 };
 
+/// Current supported widget types, used form themes
 enum class WidgetType
 {
 	None,
@@ -203,6 +209,7 @@ enum class WidgetType
 	Count
 };
 
+/// Current supported widget element types, used form themes
 enum class WidgetElementId
 {
 	None = 0,
@@ -288,6 +295,7 @@ enum class MouseButton
 	Count
 };
 
+/// Image fit mode, used in the image widget
 enum class ImageFitType
 {
 	None,
@@ -295,6 +303,7 @@ enum class ImageFitType
 	Stretch
 };
 
+/// Text input modes for the textInput widget
 enum class TextInputValueMode
 {
 	Any,
@@ -303,12 +312,14 @@ enum class TextInputValueMode
 	Custom
 };
 
-enum class ListSelectionType
+/// List selection mode
+enum class ListSelectionMode
 {
 	Single,
 	Multiple
 };
 
+/// Various flags for the selectable widget
 enum class SelectableFlags : u32
 {
 	Normal = (1 << 0),
@@ -331,6 +342,7 @@ enum class TabState
 	Disabled
 };
 
+/// The popup location when shown
 enum class PopupPositionMode
 {
 	WindowCenter,
@@ -338,15 +350,7 @@ enum class PopupPositionMode
 	Custom
 };
 
-enum class LayoutType
-{
-	Container,
-	Vertical,
-	Columns,
-	Column,
-	ScrollView
-};
-
+/// When pushTint is called, specifies what element is color tinted
 enum class TintColorType
 {
 	Body,
@@ -356,6 +360,7 @@ enum class TintColorType
 	Count
 };
 
+/// Native window position type
 enum class WindowPositionType
 {
 	Undefined,
@@ -363,6 +368,7 @@ enum class WindowPositionType
 	Custom
 };
 
+/// Native window border type
 enum class WindowBorder
 {
 	Resizable,
@@ -371,6 +377,7 @@ enum class WindowBorder
 	FixedNoTitle
 };
 
+/// Native window state
 enum class WindowState
 {
 	Normal,
@@ -379,6 +386,7 @@ enum class WindowState
 	Hidden
 };
 
+/// Key press codes
 enum class KeyCode
 {
 	None,
@@ -528,23 +536,29 @@ enum class MouseCursorType
 	Count
 };
 
+/// Docking modes for the view panes
 enum class DockType
 {
-	Left,
-	Right,
-	TopAsViewTab,
-	Top,
-	Bottom
+	Left, /// will dock pane to left
+	Right, /// will dock pane to right
+	TopAsViewTab, /// will dock pane as full pane in the pane tabs bar
+	Top, /// will dock pane to top
+	Bottom /// will dock pane to bottom
 };
 
+/// Common message box icons
 enum class MessageBoxIcon
 {
 	Error,
 	Info,
 	Question,
-	Warning
+	Warning,
+    Custom,
+
+    Count
 };
 
+/// Message box flags, used for configure the messagebox and to get results
 enum class MessageBoxButtons : u32
 {
 	None = 0,
@@ -554,13 +568,14 @@ enum class MessageBoxButtons : u32
 	No = (1 << 3),
 	Retry = (1 << 4),
 	Abort = (1 << 5),
-	ClosedByEscape = (1 << 6),
+	ClosedByEscape = (1 << 6), /// escape key closed the message box
 	OkCancel = (u32)Ok | (u32)Cancel,
 	YesNo = (u32)Yes | (u32)No,
 	YesNoCancel = (u32)YesNo | (u32)Cancel
 };
 HORUS_ENUM_AS_FLAGS(MessageBoxButtons);
 
+/// A 2D point
 class Point
 {
 public:
@@ -986,6 +1001,7 @@ public:
 	f32 x, y;
 };
 
+/// A 2D spline control point
 struct SplineControlPoint
 {
 	enum class NodeType
@@ -1002,6 +1018,7 @@ struct SplineControlPoint
 	NodeType type = NodeType::Symmetrical;
 };
 
+/// A 2D rectangle
 struct Rect
 {
 	f32 x = 0, y = 0, width = 0, height = 0;
@@ -1267,13 +1284,31 @@ struct HORUS_CLASS_API Color
 	f32 r = 0.0f, g = 0.0f, b = 0.0f, a = 1.0f;
 };
 
+/// A view handler is used by the docking system to delegate UI rendering to the user
+/// It calls various functions at specific times so the user will just show the UI
 struct ViewHandler
 {
-	virtual void onMainMenuRender(Window window) {}
-	virtual void onViewPaneRender(Window window, Window viewPane, ViewId activeViewId, u64 userDataId) {}
-	virtual void onViewPaneClosed(Window window, Window viewPane, ViewId activeViewId, u64 userDataId) {}
-	virtual void onBeforeFrameRender() {}
-	virtual void onAfterFrameRender() {}
+    /// Called when the user must render the main menu of the application on the specified window
+	/// \param window the window for which the main menu to be rendered
+    virtual void onMainMenuRender(Window window) {}
+	/// Called when the user must render the widgets for a specific view
+    /// \param window the window where the drawing of UI will occur
+    /// \param viewPane the view pane where the drawing of UI will occur
+    /// \param activeViewId the view ID for which to draw the UI (there can be multiple views with the same ID), data driven UI
+    /// \param userDataId the user data ID, which was set by the user for this particular view instance
+    virtual void onViewRender(Window window, Window viewPane, ViewId activeViewId, u64 userDataId) {}
+    /// Called when a view was closed
+    /// \param window the window where the view pane was closed
+    /// \param viewPane the view pane
+    /// \param activeViewId the view ID for which to draw the UI (there can be multiple views with the same ID), data driven UI
+    /// \param userDataId the user data ID, which was set by the user for this particular view instance
+    virtual void onViewClosed(Window window, Window viewPane, ViewId activeViewId, u64 userDataId) {}
+    /// Called just before the frame starts to render
+    /// \param window the window where rendering will happen
+    virtual void onBeforeFrameRender(Window wnd) {}
+    /// Called after the frame starts to render
+    /// \param window the window where rendering did happen
+    virtual void onAfterFrameRender(Window wnd) {}
 };
 
 struct LineStyle
@@ -1310,31 +1345,37 @@ struct RawImage
 
 struct WidgetElementInfo
 {
-	//! the image from the theme, used to draw the element
-	Image image;
-	//! the border size used to draw 9-cell resizable element
-	u32 border;
-	//! the color of the element
+	/// the image from the theme, used to draw the element
+	Image image = 0;
+	/// the border size used to draw 9-cell resizable element
+	u32 border = 0;
+	/// the color of the element
 	Color color;
-	//! the text color of the element
+	/// the text color of the element
 	Color textColor;
-	//! the font used for this element
-	Font font;
-	//! the pixel width of the element (not its image)
-	f32 width;
-	//! the pixel height of the element (not its image)
-	f32 height;
+	/// the font used for this element
+	Font font = 0;
+	/// the pixel width of the element (not its image)
+	f32 width = 0;
+	/// the pixel height of the element (not its image)
+	f32 height = 0;
 };
 
+/// Various HorusUI per-context global settings
 struct ContextSettings
 {
-	f32 radioBulletTextSpacing = 5;
-	f32 checkBulletTextSpacing = 5;
+	f32 radioBulletTextSpacing = 5; /// distance in pixels between radio bullet and its label text
+	f32 checkBulletTextSpacing = 5; /// distance in pixels between check bullet and its label text
 };
 
 //////////////////////////////////////////////////////////////////////////
 // Core
 //////////////////////////////////////////////////////////////////////////
+
+/// Create a new HorusUI context
+/// \param customInputProvider a custom input provider which will handle input and windowing
+/// \param customGfxProvider a custom graphics provider which will handle rendering of the UI
+/// \return the created context handle
 HORUS_API Context createContext(struct InputProvider* customInputProvider = nullptr, struct GraphicsProvider* customGfxProvider = nullptr);
 HORUS_API void initializeContext(Context ctx);
 HORUS_API void setContext(Context ctx);
@@ -1545,10 +1586,10 @@ HORUS_API bool panel(Utf8String labelText, bool expanded);
 HORUS_API bool dropdown(i32& selectedIndex, Utf8String* items, u32 itemCount, u32 maxVisibleDropDownItems = ~0);
 HORUS_API bool dropdown(i32& selectedIndex, void* userdata, bool (*itemSource)(void* userdata, i32 index, Utf8String* outItem), u32 maxVisibleDropDownItems = ~0);
 //TODO:
-HORUS_API i32 list(i32 selectedIndex, ListSelectionType selectionType, Utf8String** items, u32 itemCount);
-HORUS_API i32 list(i32 selectedIndex, ListSelectionType selectionType, Utf8String* items);
-HORUS_API i32 list(i32 selectedIndex, ListSelectionType selectionType, void* userdata, bool(*itemSource)(void* userdata, i32 index, Utf8String** outItem));
-HORUS_API i32 beginList(ListSelectionType selectionType);
+HORUS_API i32 list(i32 selectedIndex, ListSelectionMode selectionType, Utf8String** items, u32 itemCount);
+HORUS_API i32 list(i32 selectedIndex, ListSelectionMode selectionType, Utf8String* items);
+HORUS_API i32 list(i32 selectedIndex, ListSelectionMode selectionType, void* userdata, bool(*itemSource)(void* userdata, i32 index, Utf8String** outItem));
+HORUS_API i32 beginList(ListSelectionMode selectionType);
 HORUS_API void endList();
 HORUS_API void listItem(Utf8String labelText, SelectableFlags stateFlags, Image icon);
 HORUS_API bool selectable(Utf8String labelText, SelectableFlags stateFlags = SelectableFlags::Normal);
@@ -1691,8 +1732,12 @@ HORUS_API void restoreViewPane(ViewPane viewPane);
 //////////////////////////////////////////////////////////////////////////
 // Docking system functions
 //////////////////////////////////////////////////////////////////////////
+
+/// update the docking system internal, usually called by the dockingSystemLoop function, if you make your own loop, then you need to call it
 HORUS_API void updateDockingSystem(ViewHandler* handler);
+/// If this function will be called it will block until all or the main window is closed, or a quitApplication is issued
 HORUS_API void dockingSystemLoop(ViewHandler* handler);
+/// When the allow is true, the docking system will deny undocking to new native windows, it will only allow docking in the main application window
 HORUS_API void setAllowUndockingToNewWindow(bool allow);
 
 //////////////////////////////////////////////////////////////////////////
@@ -1708,16 +1753,23 @@ HORUS_API bool objectRefEditor(Image targetIcon, Image clearIcon, Utf8String obj
 //////////////////////////////////////////////////////////////////////////
 // System native file dialogs
 //////////////////////////////////////////////////////////////////////////
-typedef struct
+
+/// Used by the openMultipleFileDialog function, you will need to call destroyMultipleFileSet after using it
+struct OpenMultipleFileSet
 {
 	char* filenameBuffer = nullptr;
 	size_t* bufferIndices = nullptr;
 	size_t count = 0;
-} OpenMultipleFileSet;
+
+    ~OpenMultipleFileSet()
+    {
+        delete[] filenameBuffer;
+        delete[] bufferIndices;
+    }
+};
 
 HORUS_API bool openFileDialog(const char* filterList, const char* defaultPath, char* outPath, u32 maxOutPathSize);
 HORUS_API bool openMultipleFileDialog(const char* filterList, const char* defaultPath, OpenMultipleFileSet& outPathSet);
-HORUS_API void destroyMultipleFileSet(OpenMultipleFileSet& fileSet);
 HORUS_API bool saveFileDialog(const char* filterList, const char* defaultPath, char* outPath, u32 maxOutPathSize);
 HORUS_API bool pickFolderDialog(const char* defaultPath, char* outPath, u32 maxOutPathSize);
 
@@ -1729,3 +1781,4 @@ HORUS_API void toString(f32 value, char* outString, u32 outStringMaxSize, u32 de
 HORUS_API bool unicodeToUtf8(const u32* text, size_t textLength, Utf8StringBuffer outString, size_t maxOutStringLength);
 
 }
+/** @}*/
