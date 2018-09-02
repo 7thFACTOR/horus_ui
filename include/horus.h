@@ -1528,7 +1528,6 @@ HORUS_API void setMouseCursor(MouseCursor cursor);
 /// \param window the window to be set as current
 HORUS_API void setWindow(Window window);
 
-
 /// \return the window set as current
 HORUS_API Window getWindow();
 
@@ -1712,10 +1711,8 @@ HORUS_API void deleteTheme(Theme theme);
 
 /// Create a new theme
 /// \param atlasTextureSize the width and height of the atlas texture, where theme images are kept
-/// \param defaultFontSize the default font size
-/// \param defaultFontFilename the default font filename, relative to executable
 /// \return the newly created theme
-HORUS_API Theme createTheme(u32 atlasTextureSize, u32 defaultFontSize, const char* defaultFontFilename);
+HORUS_API Theme createTheme(u32 atlasTextureSize);
 
 /// Add a image to a theme's atlas (it will not pack it yet to the atlas, call buildTheme for that)
 /// \param theme the theme
@@ -2111,13 +2108,13 @@ HORUS_API bool dropdown(i32& selectedIndex, const char** items, u32 itemCount, u
 /// \param itemSource a callback to use when rendering an item, returns false when item list ended
 /// \param maxVisibleDropDownItems the maximum number of visible items in the drop down list, if ~0 then its automatic
 /// \return true if it the selection changed
-HORUS_API bool dropdown(i32& selectedIndex, void* userdata, bool (*itemSource)(void* userdata, i32 index, const char* outItemText), u32 maxVisibleDropDownItems = ~0);
+HORUS_API bool dropdown(i32& selectedIndex, void* userdata, bool (*itemSource)(void* userdata, i32 index, char** outItemText), u32 maxVisibleDropDownItems = ~0);
 
 /// TODO:
 HORUS_API bool list(i32* selectedIndices, u32 maxSelectedIndices, ListSelectionMode selectionType, const char** items, u32 itemCount);
 
 /// TODO: 
-HORUS_API bool list(i32* selectedIndices, u32 maxSelectedIndices, ListSelectionMode selectionType, void* userdata, bool (*itemSource)(void* userdata, i32 index, char* outItem));
+HORUS_API bool list(i32* selectedIndices, u32 maxSelectedIndices, ListSelectionMode selectionType, void* userdata, bool (*itemSource)(void* userdata, i32 index, char** outItemText));
 
 /// TODO: 
 HORUS_API bool beginList(ListSelectionMode selectionType);
@@ -2591,7 +2588,7 @@ HORUS_API void toString(i32 value, char* outString, u32 outStringMaxSize, u32 fi
 HORUS_API void toString(f32 value, char* outString, u32 outStringMaxSize, u32 decimalPlaces = 4);
 
 /// Convert a unicode (utf32) value to utf8 string
-HORUS_API bool unicodeToUtf8(const u32* text, u32 textLength, char* outString, u32 maxOutStringLength);
+HORUS_API bool unicodeToUtf8(const u32* text, u32 maxTextSize, char* outString, u32 maxOutStringSize);
 
 }
 /** @}*/

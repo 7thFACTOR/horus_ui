@@ -267,7 +267,7 @@ void SfmlInputProvider::processSfmlEvent(hui::Window window, sf::Event& ev)
 
 		event.type = hui::InputEvent::Type::Text;
 		char text[5] = { 0 };
-		size_t textLen = 0;
+		u32 textLen = 0;
 		u32 uni[2] = {0};
 		uni[0] = ev.text.unicode;
 		hui::unicodeToUtf8(uni, 1, text, 4);
@@ -347,18 +347,16 @@ void SfmlInputProvider::stopTextInput()
 
 }
 
-bool SfmlInputProvider::copyToClipboard(hui::Utf8String text)
+bool SfmlInputProvider::copyToClipboard(const char* text)
 {
 	sf::Clipboard::setString(text);
 	return true;
 }
 
-bool SfmlInputProvider::pasteFromClipboard(hui::Utf8String *outText)
+bool SfmlInputProvider::pasteFromClipboard(char* outText, u32 maxTextSize)
 {
 	auto str = sf::Clipboard::getString().toUtf8();
-	
-	*outText = new char[str.size()];
-	memcpy((char*)(*outText), str.data(), str.size());
+	memcpy(outText, str.data(), std::min((u32)str.size(), maxTextSize));
 	return true;
 }
 
@@ -404,7 +402,7 @@ hui::Window SfmlInputProvider::getMainWindow()
 }
 
 hui::Window SfmlInputProvider::createWindow(
-	hui::Utf8String title,
+	const char* title,
     i32 width, i32 height,
 	hui::WindowBorder border,
 	hui::WindowPositionType positionType,
@@ -427,7 +425,7 @@ hui::Window SfmlInputProvider::createWindow(
 	return 0;
 }
 
-void SfmlInputProvider::setWindowTitle(hui::Window window, hui::Utf8String title)
+void SfmlInputProvider::setWindowTitle(hui::Window window, const char* title)
 {
 	int index = (int)window;
 
@@ -537,7 +535,7 @@ hui::MouseCursor SfmlInputProvider::createCustomCursor(hui::Rgba32* pixels, u32 
 	return 0;
 }
 
-void SfmlInputProvider::destroyCustomCursor(hui::MouseCursor cursor)
+void SfmlInputProvider::deleteCustomCursor(hui::MouseCursor cursor)
 {
 	int index = (int)cursor;
 	freeCursorSlot[index] = true;

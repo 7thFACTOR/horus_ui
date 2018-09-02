@@ -46,7 +46,7 @@ struct InputProvider
 	virtual Point getMousePosition() = 0;
 	virtual void setCursor(MouseCursorType type) = 0;
 	virtual MouseCursor createCustomCursor(Rgba32* pixels, u32 width, u32 height, u32 hotX, u32 hotY) = 0;
-	virtual void destroyCustomCursor(MouseCursor cursor) = 0;
+	virtual void deleteCustomCursor(MouseCursor cursor) = 0;
 	virtual void setCustomCursor(MouseCursor cursor) = 0;
 	virtual bool mustQuit() = 0;
 	virtual bool wantsToQuit() = 0;

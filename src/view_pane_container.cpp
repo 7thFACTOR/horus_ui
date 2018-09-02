@@ -38,10 +38,10 @@ void deleteViewContainer(ViewContainer viewContainer)
 	delete viewContainerObj;
 }
 
-size_t getViewContainers(ViewContainer* outViewContainers, size_t maxCount)
+u32 getViewContainers(ViewContainer* outViewContainers, u32 maxCount)
 {
 	std::vector<UiViewPane*> viewPanes;
-	auto count = fminl(maxCount, dockingData.viewContainers.size());
+	auto count = (u32)fminl(maxCount, dockingData.viewContainers.size());
 
 	for (size_t i = 0; i < count; i++)
 	{
@@ -93,13 +93,13 @@ void deleteViewContainerFromWindow(Window window)
 	}
 }
 
-size_t getViewContainerViewPanes(ViewContainer viewContainer, ViewPane* outViewPanes, size_t maxCount)
+u32 getViewContainerViewPanes(ViewContainer viewContainer, ViewPane* outViewPanes, u32 maxCount)
 {
 	std::vector<UiViewPane*> viewPanes;
 	auto viewContainerObj = (UiViewContainer*)viewContainer;
 
 	viewContainerObj->rootCell->fillViewPanes(viewPanes);
-	auto count = std::fminl(maxCount, viewPanes.size());
+	auto count = (u32)std::min(maxCount, (u32)viewPanes.size());
 
 	for (size_t i = 0; i < count; i++)
 	{

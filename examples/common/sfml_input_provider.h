@@ -9,7 +9,7 @@ namespace hui
 {
 struct SfmlSettings
 {
-    Utf8StringBuffer mainWindowTitle;
+    char* mainWindowTitle;
     Rect mainWindowRect;
     WindowPositionType positionType = WindowPositionType::Undefined;
     bool vSync = true;
@@ -43,8 +43,8 @@ struct SfmlInputProvider : hui::InputProvider
     void processSfmlEvent(hui::Window window, sf::Event& ev);
     void startTextInput(hui::Window window, const hui::Rect& imeRect) override;
     void stopTextInput() override;
-    bool copyToClipboard(hui::Utf8String text) override;
-    bool pasteFromClipboard(hui::Utf8String *outText) override;
+    bool copyToClipboard(const char* text) override;
+    bool pasteFromClipboard(char* outText, u32 maxTextSize) override;
     void processEvents() override;
     void setCurrentWindow(hui::Window window) override;
     hui::Window getCurrentWindow() override;
@@ -52,12 +52,12 @@ struct SfmlInputProvider : hui::InputProvider
     hui::Window getHoveredWindow() override;
     hui::Window getMainWindow() override;
     hui::Window createWindow(
-        hui::Utf8String title, i32 width, i32 height,
+        const char* title, i32 width, i32 height,
         hui::WindowBorder border = hui::WindowBorder::Resizable,
         hui::WindowPositionType positionType = hui::WindowPositionType::Undefined,
         hui::Point customPosition = { 0, 0 },
         bool showInTaskBar = true) override;
-    void setWindowTitle(hui::Window window, hui::Utf8String title) override;
+    void setWindowTitle(hui::Window window, const char* title) override;
     void setWindowRect(hui::Window window, const hui::Rect& rect) override;
     hui::Rect getWindowRect(hui::Window window) override;
     void presentWindow(hui::Window window) override;
@@ -73,7 +73,7 @@ struct SfmlInputProvider : hui::InputProvider
     hui::Point getMousePosition() override;
     void setCursor(hui::MouseCursorType type) override;
     hui::MouseCursor createCustomCursor(hui::Rgba32* pixels, u32 width, u32 height, u32 hotX, u32 hotY) override;
-    void destroyCustomCursor(hui::MouseCursor cursor) override;
+    void deleteCustomCursor(hui::MouseCursor cursor) override;
     void setCustomCursor(hui::MouseCursor cursor) override;
     bool mustQuit() override;
     bool wantsToQuit() override;

@@ -110,7 +110,6 @@ struct MyViewHandler : hui::ViewHandler
 
 					for(int i = 0; i < fs.count; i++)	
 						printf("File open#%d: '%s'\n", i, fs.filenameBuffer + fs.bufferIndices[i]);
-					destroyMultipleFileSet(fs);
 				}
 			}
 
@@ -155,7 +154,7 @@ struct MyViewHandler : hui::ViewHandler
 		hui::endMenuBar();
 	}
 
-	void onAfterFrameRender() override
+	void onAfterFrameRender(Window wnd) override
 	{
 		if (changeScale)
 			hui::setGlobalScale(scale);
@@ -179,7 +178,7 @@ struct MyViewHandler : hui::ViewHandler
 		hui::drawTextInBox(name, box, hui::HAlignType::Center, hui::VAlignType::Top);
 	}
 
-	void onViewPaneRender(Window wnd, ViewPane viewPane, ViewId viewId, u64 userDataId) override
+	void onViewRender(Window wnd, ViewPane viewPane, ViewId viewId, u64 userDataId) override
 	{
 		Rect viewRect = hui::getViewPaneRect(viewPane);
 
@@ -1160,14 +1159,14 @@ struct MyViewHandler : hui::ViewHandler
 				}
 				else
 				{
-					hui::toString(c.r, (char*)colorR, 10);
-					hui::toString(c.g, (char*)colorG, 10);
-					hui::toString(c.b, (char*)colorB, 10);
+					hui::toString(c.r, colorR, 10);
+					hui::toString(c.g, colorG, 10);
+					hui::toString(c.b, colorB, 10);
 
 					hui::beginTwoColumns();
 					hui::label("Text.Red", HAlignType::Right);
 					hui::nextColumn();
-					hui::textInput((const char*)colorR, 10);
+					hui::textInput(colorR, 10);
 					hui::endColumns();
 
 					hui::label("Red", HAlignType::Right);
@@ -1177,7 +1176,7 @@ struct MyViewHandler : hui::ViewHandler
 					hui::beginTwoColumns();
 					hui::label("Text.Green", HAlignType::Right);
 					hui::nextColumn();
-					hui::textInput((const char*)colorG, 10);
+					hui::textInput(colorG, 10);
 					hui::endColumns();
 
 					hui::label("Green", HAlignType::Right);
@@ -1186,26 +1185,26 @@ struct MyViewHandler : hui::ViewHandler
 					hui::beginTwoColumns();
 					hui::label("Text.Blue", HAlignType::Right);
 					hui::nextColumn();
-					hui::textInput((const char*)colorB, 10);
+					hui::textInput(colorB, 10);
 					hui::endColumns();
 
 					hui::label("Blue", HAlignType::Right);
 					hui::sliderFloat(0, 1, c.b);
 
 					hui::beginThreeColumns();
-					hui::labelCustomFont((const char*)colorR, fntBold, HAlignType::Center);
+					hui::labelCustomFont(colorR, fntBold, HAlignType::Center);
 					hui::nextColumn();
-					hui::labelCustomFont((const char*)colorG, fntBold, HAlignType::Center);
+					hui::labelCustomFont(colorG, fntBold, HAlignType::Center);
 					hui::nextColumn();
-					hui::labelCustomFont((const char*)colorB, fntBold, HAlignType::Center);
+					hui::labelCustomFont(colorB, fntBold, HAlignType::Center);
 					hui::endColumns();
 				}
 
 				hui::gap(20);
 				hui::pushTint(c);
-				hui::multilineLabelCustomFont((const char*)someText, fntBig, HAlignType::Center);
+				hui::multilineLabelCustomFont(someText, fntBig, HAlignType::Center);
 				hui::popTint();
-				hui::textInput((const char*)someText, 200, TextInputValueMode::Any, "Input projection");
+				hui::textInput(someText, 200, TextInputValueMode::Any, "Input projection");
 				hui::gap(20);
 				if (hui::button("More Info..."))
 				{
@@ -1371,7 +1370,7 @@ struct MyViewHandler : hui::ViewHandler
 			if (pnl1)
 			{
 				hui::textInput(str, 100, TextInputValueMode::Any);
-				if (hui::beginRichTooltip(200))
+				if (hui::beginCustomTooltip(200))
 				{
 					hui::pushTint(Color::darkGray, TintColorType::Text);
 					hui::labelCustomFont("How to edit", fntBig);
@@ -1380,7 +1379,7 @@ struct MyViewHandler : hui::ViewHandler
 					hui::multilineLabel("The tooltip or infotip or a hint is a common graphical user interface element. It is used in conjunction with a cursor, usually a pointer. The user hovers the pointer over an item, without clicking it, and a tooltip may appear—a small \"hover box\" with information about the item being hovered over.[1][2] Tooltips do not usually appear on mobile operating systems, because there is no cursor (though tooltips may be displayed when using a mouse).", HAlignType::Left);
 					hui::popTint();
 					hui::line();
-					hui::endRichTooltip();
+					hui::endCustomTooltip();
 				}
 
 				if (hui::getInputEvent().type == hui::InputEvent::Type::OsDragDrop)
@@ -1493,10 +1492,10 @@ int main(int argc, char** args)
 	printf("Loading theme...\n");
 	//TODO: load themes and images and anything from memory also
 	auto theme = hui::loadTheme("../themes/default.theme");
-	fntBig = hui::createFont(theme, "../themes/fonts/arial.ttf", 20);
-	fntBold = hui::createFont(theme, "../themes/fonts/arial.ttf", 15);
-	fntItalic = hui::createFont(theme, "../themes/fonts/arial.ttf", 15);
-	fntNodeTitle = hui::createFont(theme, "../themes/fonts/Roboto-Bold.ttf", 12);
+	fntBig = hui::createFont(theme, "customBig", "../themes/fonts/arial.ttf", 20);
+	fntBold = hui::createFont(theme, "customBold", "../themes/fonts/arial.ttf", 15);
+	fntItalic = hui::createFont(theme, "customItalic", "../themes/fonts/arial.ttf", 15);
+	fntNodeTitle = hui::createFont(theme, "customNodeTitle", "../themes/fonts/Roboto-Bold.ttf", 12);
     printf("Loading images...\n");
 
 	hui::setTheme(theme);

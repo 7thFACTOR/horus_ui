@@ -382,9 +382,9 @@ MouseCursor createMouseCursor(const char* imageFilename, u32 hotSpotX, u32 hotSp
 	return cur;
 }
 
-void destroyMouseCursor(MouseCursor cursor)
+void deleteMouseCursor(MouseCursor cursor)
 {
-	ctx->inputProvider->destroyCustomCursor(cursor);
+	ctx->inputProvider->deleteCustomCursor(cursor);
 }
 
 void setMouseCursor(MouseCursor cursor)
@@ -427,8 +427,10 @@ Window getMainWindow()
 
 Window createWindow(
 	const char* title, u32 width, u32 height,
-	WindowBorder border, WindowPositionType positionType,
-	Point customPosition, bool showInTaskBar)
+	WindowBorder border,
+    WindowPositionType positionType,
+	Point customPosition,
+    bool showInTaskBar)
 {
 	auto wnd = ctx->inputProvider->createWindow(title, width, height, border, positionType, customPosition, showInTaskBar);
 
@@ -1580,7 +1582,7 @@ void endColumns()
 	nextColumn();
 }
 
-void columnHeader(const char* label, f32& width, f32 preferredWidth, f32 minWidth, f32 maxWidth)
+void columnHeader(const char* label, f32 width, f32 preferredWidth, f32 minWidth, f32 maxWidth)
 {
 	auto headerElemState = ctx->theme->getElement(WidgetElementId::ColumnsHeaderBody).normalState();
 

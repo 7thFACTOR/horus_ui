@@ -9,20 +9,13 @@
 
 namespace hui
 {
-i32 list(i32 selectedIndex, ListSelectionMode selectionType, const char*** items, u32 itemCount)
+bool list(i32* selectedIndices, u32 maxSelectedIndices, ListSelectionMode selectionType, const char** items, u32 itemCount)
 {
 	return 0;
 }
 
-i32 list(i32 selectedIndex, ListSelectionMode selectionType, const char** items)
-{
-
-	return 0;
-}
-
-i32 list(
-	i32 selectedIndex, ListSelectionMode selectionType, void* userdata,
-	bool(*itemSource)(void* userdata, i32 index, const char*** outItem))
+bool list(i32* selectedIndices, u32 maxSelectedIndices, ListSelectionMode selectionType, void* userdata,
+	bool(*itemSource)(void* userdata, i32 index, char** outItemText))
 {
 
 	return 0;

@@ -152,8 +152,9 @@ bool dropdown(i32& selectedIndex, const char** items, u32 itemCount, u32 maxVisi
 	return selectedNewItem;
 }
 
-bool dropdown(i32& selectedIndex, void* userdata,
-	bool(*itemSource)(void* userdata, i32 index, const char** outItem),
+bool dropdown(i32& selectedIndex,
+    void* userdata,
+	bool (*itemSource)(void* userdata, i32 index, char** outItemText),
 	u32 maxVisibleDropDownItems)
 {
 	return false;

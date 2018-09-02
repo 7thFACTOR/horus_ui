@@ -300,7 +300,7 @@ bool Sdl2InputProvider::pasteFromClipboard(char* outText, u32 maxTextSize)
 
 	char* txt = SDL_GetClipboardText();
 
-	memcpy(outText, txt, std::min(strlen(txt) + 1, maxTextSize));
+	memcpy(outText, txt, std::min((u32)strlen(txt) + 1, maxTextSize));
 	SDL_free(txt);
 
 	return true;
@@ -559,7 +559,7 @@ MouseCursor Sdl2InputProvider::createCustomCursor(Rgba32* pixels, u32 width, u32
 	return cur;
 }
 
-void Sdl2InputProvider::destroyCustomCursor(MouseCursor cursor)
+void Sdl2InputProvider::deleteCustomCursor(MouseCursor cursor)
 {
 	for (size_t i = 0; i < customCursors.size(); i++)
 	{

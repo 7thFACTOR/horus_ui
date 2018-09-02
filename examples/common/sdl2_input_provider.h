@@ -26,7 +26,7 @@ struct Sdl2InputProvider : InputProvider
 	void startTextInput(Window window, const Rect& imeRect) override;
 	void stopTextInput() override;
 	bool copyToClipboard(const char* text) override;
-	bool pasteFromClipboard(char* *outText, u32 maxTextSize) override;
+	bool pasteFromClipboard(char* outText, u32 maxTextSize) override;
 	void processEvents() override;
 	void setCurrentWindow(Window window) override;
 	Window getCurrentWindow() override;
@@ -60,10 +60,9 @@ struct Sdl2InputProvider : InputProvider
 	void shutdown() override;
 	void setCursor(MouseCursorType type) override;
 	MouseCursor createCustomCursor(Rgba32* pixels, u32 width, u32 height, u32 hotX, u32 hotY) override;
-	void destroyCustomCursor(MouseCursor cursor) override;
+	void deleteCustomCursor(MouseCursor cursor) override;
 	void setCustomCursor(MouseCursor cursor) override;
 	void updateDeltaTime();
-	f32 getDeltaTime() const;
 
 	KeyCode fromSdlKey(int code);
 	void addSdlEvent(SDL_Event& ev);

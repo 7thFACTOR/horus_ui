@@ -176,7 +176,7 @@ void toHexString(int n, char* outString, u32 outStringMaxSize, bool lowercase = 
 		snprintf(outString, outStringMaxSize, "%02X", n);
 }
 
-bool unicodeToUtf8(const u32* text, size_t textSize, char* outString, size_t maxOutStringSize)
+bool unicodeToUtf8(const u32* text, u32 maxTextSize, char* outString, u32 maxOutStringSize)
 {
 	std::vector<char> chars;
 
@@ -184,7 +184,7 @@ bool unicodeToUtf8(const u32* text, size_t textSize, char* outString, size_t max
 	{
 		utf8::utf32to8(
 			text,
-			text + textSize,
+			text + maxTextSize,
 			std::back_inserter(chars));
 	}
 
@@ -200,7 +200,7 @@ bool unicodeToUtf8(const u32* text, size_t textSize, char* outString, size_t max
 
 	int i = 0;
 
-	for (i = 0; i < std::min(maxOutStringSize, chars.size()); i++)
+	for (i = 0; i < std::min(maxOutStringSize, (u32)chars.size()); i++)
 	{
 		((char*)outString)[i] = chars[i];
 	}
