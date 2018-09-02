@@ -16,8 +16,8 @@ struct InputProvider
 {
 	virtual void startTextInput(Window window, const Rect& imeRect) = 0;
 	virtual void stopTextInput() = 0;
-	virtual bool copyToClipboard(Utf8String text) = 0;
-	virtual bool pasteFromClipboard(Utf8String *outText) = 0;
+	virtual bool copyToClipboard(const char* text) = 0;
+	virtual bool pasteFromClipboard(char* outText, u32 maxTextSize) = 0;
 	virtual void processEvents() = 0;
 	virtual void setCurrentWindow(Window window) = 0;
 	virtual Window getCurrentWindow() = 0;
@@ -25,12 +25,12 @@ struct InputProvider
 	virtual Window getHoveredWindow() = 0;
 	virtual Window getMainWindow() = 0;
 	virtual Window createWindow(
-		Utf8String title, i32 width, i32 height,
+		const char* title, i32 width, i32 height,
 		WindowBorder border = WindowBorder::Resizable,
 		WindowPositionType positionType = WindowPositionType::Undefined,
 		Point customPosition = { 0, 0 },
 		bool showInTaskBar = true) = 0;
-	virtual void setWindowTitle(Window window, Utf8String title) = 0;
+	virtual void setWindowTitle(Window window, const char* title) = 0;
 	virtual void setWindowRect(Window window, const Rect& rect) = 0;
 	virtual Rect getWindowRect(Window window) = 0;
 	virtual void presentWindow(Window window) = 0;

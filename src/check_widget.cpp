@@ -8,7 +8,7 @@
 
 namespace hui
 {
-bool check(Utf8String labelText, bool checked)
+bool check(const char* labelText, bool checked)
 {
 	auto checkBodyElem = ctx->theme->getElement(WidgetElementId::CheckBody);
 	auto checkMarkElem = ctx->theme->getElement(WidgetElementId::CheckMark);

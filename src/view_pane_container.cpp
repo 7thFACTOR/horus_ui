@@ -124,7 +124,7 @@ ViewPane getViewContainerFirstViewPane(ViewContainer viewContainer)
 	return nullptr;
 }
 
-bool saveViewContainersState(Utf8String filename)
+bool saveViewContainersState(const char* filename)
 {
 	FILE* file = fopen(filename, "wb");
 
@@ -143,7 +143,7 @@ bool saveViewContainersState(Utf8String filename)
 	return true;
 }
 
-bool loadViewContainersState(Utf8String filename)
+bool loadViewContainersState(const char* filename)
 {
 	FILE* file = fopen(filename, "rb");
 

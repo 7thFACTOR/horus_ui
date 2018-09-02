@@ -361,7 +361,7 @@ void Renderer::cmdDrawPolyLine(const Point* points, u32 pointCount, bool closed)
 }
 
 FontTextSize Renderer::cmdDrawTextAt(
-	Utf8String text,
+	const char* text,
 	const Point& position)
 {
 	FontTextSize fsize = currentFont->computeTextSize(text);
@@ -374,7 +374,7 @@ FontTextSize Renderer::cmdDrawTextAt(
 }
 
 FontTextSize Renderer::cmdDrawTextInBox(
-	Utf8String text,
+	const char* text,
 	const Rect& rect,
 	HAlignType horizontal,
 	VAlignType vertical)
@@ -1142,7 +1142,7 @@ void Renderer::drawPolyLine(const Point* points, u32 pointCount, bool closed)
 }
 
 void Renderer::drawTextInternal(
-	Utf8String text,
+	const char* text,
 	const Point& position)
 {
 	if (!strcmp(text, ""))

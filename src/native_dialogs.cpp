@@ -45,10 +45,6 @@ bool openMultipleFileDialog(const char* filterList, const char* defaultPath, Ope
 	return true;
 }
 
-void destroyMultipleFileSet(OpenMultipleFileSet& fileSet)
-{
-}
-
 bool saveFileDialog(const char* filterList, const char* defaultPath, char* outPath, u32 maxOutPathSize)
 {
 	char* path = 0;

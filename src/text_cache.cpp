@@ -18,7 +18,7 @@ TextCache::~TextCache()
 	}
 }
 
-UnicodeString* TextCache::getText(Utf8String text)
+UnicodeString* TextCache::getText(const char* text)
 {
 	auto iter = texts.find((const char*)text);
 

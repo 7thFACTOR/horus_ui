@@ -379,7 +379,7 @@ void TextInputState::processKeyEvent(const InputEvent& ev)
 
 		if (!str.empty())
 		{
-			Utf8String tmpStr;
+			char* tmpStr = 0;
 
 			utf32ToUtf8(str, &tmpStr);
 			copyToClipboard(tmpStr);
@@ -393,10 +393,11 @@ void TextInputState::processKeyEvent(const InputEvent& ev)
 			deleteSelection();
 		}
 
-		Utf8String tmpStr;
+        static const u32 maxTextSize = 2048;
+		char tmpStr[maxTextSize];
 		UnicodeString utf32Str;
 
-		pasteFromClipboard(&tmpStr);
+		pasteFromClipboard(tmpStr, maxTextSize);
 
 		if (utf8ToUtf32(tmpStr, utf32Str))
 		{
@@ -426,7 +427,7 @@ void TextInputState::processKeyEvent(const InputEvent& ev)
 		{
 			deleteSelection();
 
-			Utf8String str8;
+			char* str8 = 0;
 
 			if (utf32ToUtf8(str, &str8))
 			{

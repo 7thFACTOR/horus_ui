@@ -13,11 +13,12 @@ FontCache::~FontCache()
 	deleteFonts();
 }
 
-UiFont* FontCache::createFont(const std::string& filename, u32 size, bool packAtlasNow)
+UiFont* FontCache::createFont(const std::string& name, const std::string& filename, u32 size, bool packAtlasNow)
 {
 	for (auto fnt : cachedFonts)
 	{
-		if (fnt.second->filename == filename
+        if (fnt.second->name == name
+            && fnt.second->filename == filename
 			&& fnt.second->size == size)
 		{
 			fnt.second->usageCount++;
@@ -32,6 +33,8 @@ UiFont* FontCache::createFont(const std::string& filename, u32 size, bool packAt
 	newFont->font.precacheLatinAlphabetGlyphs();
 	newFont->size = size;
 	newFont->usageCount = 1;
+    newFont->filename = filename;
+    newFont->name = name;
 	cachedFonts.insert(std::make_pair(&newFont->font, newFont));
 	
 	if (packAtlasNow)

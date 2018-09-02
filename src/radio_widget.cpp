@@ -8,7 +8,7 @@
 
 namespace hui
 {
-bool radio(Utf8String labelText, bool checked)
+bool radio(const char* labelText, bool checked)
 {
 	auto radioBodyElem = ctx->theme->getElement(WidgetElementId::RadioBody);
 	auto radioMarkElem = ctx->theme->getElement(WidgetElementId::RadioMark);

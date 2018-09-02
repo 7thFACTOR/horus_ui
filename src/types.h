@@ -97,13 +97,6 @@ struct WidgetState
 
 struct MenuWidgetState
 {
-	struct MenuItemData
-	{
-		Utf8String text;
-		Utf8String shortcut;
-		SelectableFlags state;
-	};
-
 	bool isSubMenu = false;
 	Point startPosition;
 	Rect lastItemRect;

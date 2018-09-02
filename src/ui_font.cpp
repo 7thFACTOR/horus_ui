@@ -309,7 +309,7 @@ FontTextSize UiFont::computeTextSize(const UnicodeString& text)
 	return computeTextSize(text.data(), text.size());
 }
 
-FontTextSize UiFont::computeTextSize(Utf8String text)
+FontTextSize UiFont::computeTextSize(const char* text)
 {
 	static UnicodeString str;
 

@@ -177,7 +177,7 @@ void setViewIcon(ViewId id, Image icon)
 	}
 }
 
-ViewPaneTab addViewPaneTab(ViewPane viewPane, Utf8String title, ViewId id, u64 userDataId)
+ViewPaneTab addViewPaneTab(ViewPane viewPane, const char* title, ViewId id, u64 userDataId)
 {
 	auto viewPaneObj = (UiViewPane*)viewPane;
 	auto view = new UiViewTab();

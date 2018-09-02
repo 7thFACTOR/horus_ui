@@ -131,8 +131,6 @@ typedef void* GraphicsApiRenderTarget;
 typedef void* GraphicsApiVertexBuffer;
 typedef void* Context;
 typedef u32 Rgba32;
-typedef const char* Utf8String;
-typedef char* Utf8StringBuffer;
 typedef u32 TabIndex;
 typedef u32 ViewId;
 
@@ -269,6 +267,7 @@ enum class WidgetElementId
 	Count
 };
 
+/// The state of a widget
 enum class WidgetStateType
 {
 	Normal,
@@ -280,6 +279,7 @@ enum class WidgetStateType
 	Count
 };
 
+/// Mouse button type
 enum class MouseButton
 {
 	Left = 0,
@@ -1284,6 +1284,20 @@ struct HORUS_CLASS_API Color
 	f32 r = 0.0f, g = 0.0f, b = 0.0f, a = 1.0f;
 };
 
+/// Used by the openMultipleFileDialog function. Warning! the pointers will be deleted on struct's instance out of scope
+struct OpenMultipleFileSet
+{
+    char* filenameBuffer = nullptr; /// buffer used to store the filenames, created by the library
+    size_t* bufferIndices = nullptr; /// array containing indices into filenameBuffer, where each filename starts
+    u32 count = 0; /// the number of filenames
+
+    ~OpenMultipleFileSet()
+    {
+        delete[] filenameBuffer;
+        delete[] bufferIndices;
+    }
+};
+
 /// A view handler is used by the docking system to delegate UI rendering to the user
 /// It calls various functions at specific times so the user will just show the UI
 struct ViewHandler
@@ -1311,6 +1325,7 @@ struct ViewHandler
     virtual void onAfterFrameRender(Window wnd) {}
 };
 
+/// Line drawing style
 struct LineStyle
 {
 	LineStyle() {}
@@ -1323,6 +1338,7 @@ struct LineStyle
 	f32 width = 1.0f;
 };
 
+/// Filled primitives style
 struct FillStyle
 {
 	FillStyle() {}
@@ -1335,6 +1351,7 @@ struct FillStyle
 	Point scale;
 };
 
+/// Raw image data info
 struct RawImage
 {
 	u8* pixels = nullptr;
@@ -1343,6 +1360,7 @@ struct RawImage
 	u32 bpp = 0;
 };
 
+/// Info about a widget element
 struct WidgetElementInfo
 {
 	/// the image from the theme, used to draw the element
@@ -1377,175 +1395,562 @@ struct ContextSettings
 /// \param customGfxProvider a custom graphics provider which will handle rendering of the UI
 /// \return the created context handle
 HORUS_API Context createContext(struct InputProvider* customInputProvider = nullptr, struct GraphicsProvider* customGfxProvider = nullptr);
+
+/// Initialize a created context, that is create renderer and various systems, called after createContext
+/// It is used for initializing the renderer, after the graphics API is initialized by SDL or other lib
+/// \param ctx the context to be initialized
 HORUS_API void initializeContext(Context ctx);
+
+/// Set the current context
+/// \param ctx the context
 HORUS_API void setContext(Context ctx);
+
+/// \return the current context
 HORUS_API Context getContext();
+
+/// Delete a context
+/// \param ctx the context to be deleted
 HORUS_API void deleteContext(Context ctx);
+
+/// \return the context settings
 HORUS_API ContextSettings& getContextSettings();
+
+/// Set the input provider for the current context
+/// \param provider the input provider (user owns the pointer and must delete it at the end of the program)
 HORUS_API void setInputProvider(struct InputProvider* provider);
+
+/// Set the graphics provider for the current context
+/// \param provider the graphics provider (user owns the pointer and must delete it at the end of the program)
 HORUS_API void setGraphicsProvider(struct GraphicsProvider* provider);
+
+/// Gather and process the input events, including window events, called in a main loop
 HORUS_API void processInputEvents();
-// must be called continuously in the main loop, used for tooltips and other timed things
+
+/// Set the current frame time delta. Used for tooltips and other timed things.
+/// Must be called continuously in the main loop. If initializeWithSDL is used, no need to call it, the SDL input provider will update it.
+/// \param dt delta time value, in seconds
 HORUS_API void setFrameDeltaTime(f32 dt);
+
+/// \return delta time in seconds
 HORUS_API f32 getFrameDeltaTime();
-HORUS_API void update();
+
+/// Begin a frame which means the rendering of UI across one or many windows. This must be called first when rendering UI
 HORUS_API void beginFrame();
+
+/// Ends an UI frame
 HORUS_API void endFrame();
+
+/// Clear the current window background with the color found in the current theme
 HORUS_API void clearBackground();
+
+/// \return true if there is nothing to do in the UI (like redrawing or layout computations), used to not render continuously when its not needed, for applications that do not need realtime continuous rendering
 HORUS_API bool hasNothingToDo();
+
+/// This will disable rendering functions, used when only widget logic needs to be run, but no drawing, used mostly internally for layout computations
+/// \param disable if true, disable the rendering functions
 HORUS_API void setDisableRendering(bool disable);
+
+/// Call this when you need to repaint the UI, due to data/layout changes
 HORUS_API void forceRepaint();
+
+/// If called, rendering and input will be ignored until the endFrame and the loop will redraw again, used mostly internally when layout is computed
 HORUS_API void skipThisFrame();
-HORUS_API bool copyToClipboard(Utf8String text);
-HORUS_API bool pasteFromClipboard(Utf8String *outText);
+
+/// Copy UTF8 text to the clipboard
+/// \param text the null ended UTF8 text
+/// \return true if text was copied to clipboard
+HORUS_API bool copyToClipboard(const char* text);
+
+/// Paste UTF8 from clipboard
+/// \param outText a pointer to a buffer where to store the text, provided by user
+/// \param maxTextSize the available text buffer size
+/// \return true if text was pasted
+HORUS_API bool pasteFromClipboard(char* outText, u32 maxTextSize);
+
+/// \return the current input event which was popped from the event queue
 HORUS_API const InputEvent& getInputEvent();
+
+/// Cancel the current event, after this function call the event will be null, so no widget/window will react
 HORUS_API void cancelEvent();
+
+/// Add an input event to the queue, usually used by input providers to push events to event queue
 HORUS_API void addInputEvent(const InputEvent& event);
+
+/// Signal that the mouse was moved, used by input providers
 HORUS_API void setMouseMoved(bool moved);
+
+/// \return the input event count in the event queue
 HORUS_API u32 getInputEventCount();
+
+/// \return the input event at the index
+/// \param index the event index (maximum is getInputEventCount())
 HORUS_API InputEvent getInputEventAt(u32 index);
+
+/// Set the current input event, usually called by input providers
+/// \param event the event to be set
 HORUS_API void setInputEvent(const InputEvent& event);
+
+/// Clear the input event queue, usually called by input providers
 HORUS_API void clearInputEventQueue();
+
+/// Set the current mouse cursor type
+/// \param type the cursor type
 HORUS_API void setMouseCursor(MouseCursorType type);
+
+/// Create a mouse cursor from a bitmap
+/// \param pixels the 32bit color bitmap, RGBA
+/// \param width width of the cursor bitmap
+/// \param height height of the cursor bitmap
+/// \param hotSpotX the cursor pointer hot spot X coordinate, relative to the bitmap size
+/// \param hotSpotY the cursor pointer hot spot Y coordinate, relative to the bitmap size
+/// \return the created mouse cursor
 HORUS_API MouseCursor createMouseCursor(Rgba32* pixels, u32 width, u32 height, u32 hotSpotX = 0, u32 hotSpotY = 0);
+
+/// Create a mouse cursor from a bitmap loaded from a PNG image file
+/// \param hotSpotX the cursor pointer hot spot X coordinate, relative to the bitmap size
+/// \param hotSpotY the cursor pointer hot spot Y coordinate, relative to the bitmap size
+/// \return the created mouse cursor
 HORUS_API MouseCursor createMouseCursor(const char* imageFilename, u32 hotSpotX = 0, u32 hotSpotY = 0);
-HORUS_API void destroyMouseCursor(MouseCursor cursor);
+
+/// Delete a custom mouse cursor
+/// \param cursor the cursor to be deleted
+HORUS_API void deleteMouseCursor(MouseCursor cursor);
+
+/// Set the current custom mouse cursor
+/// \param cursor the custom mouse cursor to be set
 HORUS_API void setMouseCursor(MouseCursor cursor);
 
 //////////////////////////////////////////////////////////////////////////
 // Windowing
 //////////////////////////////////////////////////////////////////////////
+
+/// Set the current window
+/// \param window the window to be set as current
 HORUS_API void setWindow(Window window);
+
+
+/// \return the window set as current
 HORUS_API Window getWindow();
+
+/// \return the focused window
 HORUS_API Window getFocusedWindow();
+
+/// \return the mouse hovered window
 HORUS_API Window getHoveredWindow();
+
+/// \return the application's main window
 HORUS_API Window getMainWindow();
+
+/// Create a new OS native window
+/// \param title the title of the window
+/// \param width the width of the window or -1 to use default
+/// \param height the height of the window or -1 to use default
+/// \param border the border type of the window
+/// \param positionType the position of the window
+/// \param customPosition if the position is custom, then this is the location on screen
+/// \param showInTaskBar if true then show a button in the taskbar for this window
+/// \return the created window handle
 HORUS_API Window createWindow(
-	Utf8String title, u32 width, u32 height,
+	const char* title, u32 width, u32 height,
 	WindowBorder border = WindowBorder::Resizable,
 	WindowPositionType positionType = WindowPositionType::Undefined,
 	Point customPosition = { 0, 0 },
 	bool showInTaskBar = true);
-HORUS_API void setWindowTitle(Window window, Utf8String title);
+
+/// Set window title
+/// \param title the window title
+HORUS_API void setWindowTitle(Window window, const char* title);
+
+/// Set window rectangle on screen
+/// \param window the window handle
+/// \param rect the screen rectangle
 HORUS_API void setWindowRect(Window window, const Rect& rect);
+
+/// \return the window rectangle on screen
+/// \param window the window handle
 HORUS_API Rect getWindowRect(Window window);
+
+/// \return the window client rectangle area, relative to window screen rectangle
+/// \param window the window handle
 HORUS_API Rect getWindowClientRect(Window window);
+
+/// Present the contents of the backbuffer, called after all rendering is done
+/// \param window the backbuffer's window to show
 HORUS_API void presentWindow(Window window);
+
+/// Destroy an OS native window
+/// \param window the window to destroy
 HORUS_API void destroyWindow(Window window);
+
+/// Show a window
+/// \param window the window to be shown
 HORUS_API void showWindow(Window window);
+
+/// Hide a window
+/// \param window window to be hidden
 HORUS_API void hideWindow(Window window);
+
+/// Bring a window to front
+/// \param window to be brought to front
 HORUS_API void riseWindow(Window window);
+
+/// Maximize a window
+/// \param window the window to be maximized
 HORUS_API void maximizeWindow(Window window);
+
+/// Minimize a window
+/// \param window the window to be minimized
 HORUS_API void minimizeWindow(Window window);
+
+/// \return the window's state
+/// \param window the window
 HORUS_API WindowState getWindowState(Window window);
+
+/// Capture input to a specific window
+/// \param window the window to capture input events
 HORUS_API void setCapture(Window window);
+
+/// Release the capture for the input events
 HORUS_API void releaseCapture();
+
+/// \return true if the application must quit, due to quitApplication() call.
 HORUS_API bool mustQuit();
+
+/// \return true if the application must quit, due to user closing main window. You can close the application by exiting the main loop or ignore it, as you wish. If you show a message box and it is cancelled you must call cancelQuitApplication() to set this returned value to false.
 HORUS_API bool wantsToQuit();
+
+/// Cancel quitting the application if it was due to exit
 HORUS_API void cancelQuitApplication();
+
+/// Set the quit application to true, so the main loop will end
 HORUS_API void quitApplication();
+
+/// Shut down the library
 HORUS_API void shutdown();
 
 //////////////////////////////////////////////////////////////////////////
 // Images
 //////////////////////////////////////////////////////////////////////////
+
+/// Load a PNG image from file (it doesn't need to be powr of two in dimension) and add it to the theme's image atlas.
+/// \param filename the PNG filename, relative to the executable
+/// \return the created image or nullptr if it cannot be loaded
 HORUS_API Image loadImage(const char* filename);
+
+/// Create an image from memory
+/// \param pixels the RGBA 32bit color pixels buffer
+/// \param width the width in pixels
+/// \param height the height in pixels
+/// \return the created image or nullptr if error
 HORUS_API Image createImage(Rgba32* pixels, u32 width, u32 height);
+
+/// \return an image size as a point (x = width, y = height)
+/// \param image the image
 HORUS_API Point getImageSize(Image image);
+
+/// Update an image's pixel data
+/// \param image the image to be updated
+/// \param pixels the new pixels of the image
 HORUS_API void updateImagePixels(Image image, Rgba32* pixels);
+
+/// Delete an image
+/// \param image the image to be deleted
 HORUS_API void deleteImage(Image image);
+
+/// Load a raw image from a PNG file, it will not add it to the theme's image atlas. Used when you need an image data for something else.
+/// \param filename the PNG filename
+/// \return the raw image info and data
 HORUS_API RawImage loadRawImage(const char* filename);
+
+/// Delete a raw image object after your used/copied its contents
+/// \param image the raw image
 HORUS_API void deleteRawImage(RawImage& image);
 
 //////////////////////////////////////////////////////////////////////////
 // Image atlas
 //////////////////////////////////////////////////////////////////////////
+
+/// Create a new image atlas. Usually used for collections of images (for making thumbnail browsers for example)
+/// \param width the width of the atlas image
+/// \param height the height of the atlas image
+/// \return the new atlas handle
 HORUS_API Atlas createAtlas(u32 width, u32 height);
+
+/// Delete an image atlas
+/// \param atlas the atlas to be deleted
 HORUS_API void deleteAtlas(Atlas atlas);
+
+/// Add an image to an image atlas (it will just queue it, to pack the images into the atlas, call packAtlas)
+/// \param atlas the image atlas
+/// \param image the raw image to be queued for add
+/// \return the new image handle created in the image atlas
 HORUS_API Image addAtlasImage(Atlas atlas, const RawImage& image);
+
+/// Pack image atlas. This will optimally fit all the queued images into the image atlas. This operation might add new textures to the atlas' texture array if some of the images do not fit inside the current atlas texture(s)
+/// \param atlas the atlas to be packed
+/// \return true if all queued images were packed ok
 HORUS_API bool packAtlas(Atlas atlas);
 
 //////////////////////////////////////////////////////////////////////////
 // Themes
 //////////////////////////////////////////////////////////////////////////
-HORUS_API Theme loadTheme(Utf8String filename);
+
+/// Load a theme from a JSON file
+/// \param filename the JSON filename (*.theme), relative to executable
+HORUS_API Theme loadTheme(const char* filename);
+
+/// Set the current theme
+/// \param theme the theme to be set as current
 HORUS_API void setTheme(Theme theme);
+
+/// \return the current theme
 HORUS_API Theme getTheme();
+
+/// Delete a theme
+/// \param theme the theme to be deleted, if this is the current theme it will be set to null
 HORUS_API void deleteTheme(Theme theme);
-HORUS_API Theme createTheme(u32 atlasTextureSize, u32 defaultFontSize, Utf8String defaultFontFilename);
+
+/// Create a new theme
+/// \param atlasTextureSize the width and height of the atlas texture, where theme images are kept
+/// \param defaultFontSize the default font size
+/// \param defaultFontFilename the default font filename, relative to executable
+/// \return the newly created theme
+HORUS_API Theme createTheme(u32 atlasTextureSize, u32 defaultFontSize, const char* defaultFontFilename);
+
+/// Add a image to a theme's atlas (it will not pack it yet to the atlas, call buildTheme for that)
+/// \param theme the theme
+/// \param img the image to be added
+/// \return the newly created image handle
 HORUS_API Image addThemeImage(Theme theme, const RawImage& img);
+
+/// Set a theme's widget element info
+/// \param theme the theme of the widget element
+/// \param elementId the element to be set
+/// \param widgetStateType which state to be set
+/// \param elementInfo the element info to be set
 HORUS_API void setThemeWidgetElement(
 	Theme theme,
 	WidgetElementId elementId,
 	WidgetStateType widgetStateType,
 	const WidgetElementInfo& elementInfo);
+
+/// Build a theme after images were added to its atlas, respectively packing the theme's image atlas
+/// \param theme the theme to be built
 void buildTheme(Theme theme);
+
+/// Set a theme's user widget element info
+/// \param theme the theme of the widget element
+/// \param userElementName the element name
+/// \param widgetStateType which state to be set
+/// \param elementInfo the element info to be set
 HORUS_API void setThemeUserWidgetElement(
 	Theme theme,
 	const char* userElementName,
 	WidgetStateType widgetStateType,
 	const WidgetElementInfo& elementInfo);
+
+/// Return a theme widget element's info
+/// \param elementId the widget element id
+/// \param state the element state
+/// \param outInfo returned element info
 HORUS_API void getThemeWidgetElementInfo(WidgetElementId elementId, WidgetStateType state, WidgetElementInfo& outInfo);
+
+/// Return a theme user widget element's info
+/// \param userElementName the user widget element name
+/// \param state the element state
+/// \param outInfo returned element info
 HORUS_API void getThemeUserWidgetElementInfo(const char* userElementName, WidgetStateType state, WidgetElementInfo& outInfo);
-HORUS_API Font createFont(Theme theme, const char* fontFilename, u32 faceSize);
-//! release font reference, if font usage is zero, the font is deleted
+
+/// Create a new font object
+/// \param theme the theme where to place the font
+/// \param name the name of the font (a given name like for example: 'smallItalic')
+/// \param fontFilename the TTF/OTF font filename, relative to executable
+/// \param faceSize the font face size in font units
+/// \return the newly created font handle
+HORUS_API Font createFont(Theme theme, const char* name, const char* fontFilename, u32 faceSize);
+
+/// Release font reference, if font usage is zero, the font is deleted
+/// \param font the font to be reference released
 HORUS_API void releaseFont(Font font);
-//! \return the font by name, from the current theme
-HORUS_API Font getFont(Utf8String themeFontName);
-//! \return the font by name, from the specified theme
-HORUS_API Font getFont(Theme theme, Utf8String themeFontName);
+
+/// \return the font by name, from the current theme
+/// \param themeFontName the name of the font as it is in the theme
+HORUS_API Font getFont(const char* themeFontName);
+
+/// \return the font by name, from the specified theme
+HORUS_API Font getFont(Theme theme, const char* themeFontName);
 
 //////////////////////////////////////////////////////////////////////////
 // Layout and containers
 //////////////////////////////////////////////////////////////////////////
+
+/// Start to create UI inside a specific native window, set it as current window
+/// \param window the window
 HORUS_API void beginWindow(Window window);
+
+/// Stop creating UI in the current window
 HORUS_API void endWindow();
+
+/// Begin a widget container, and invisible rectangle on the current window area where widgets will be laid out
 HORUS_API void beginContainer(const Rect& rect);
+
+/// End the current widget container
 HORUS_API void endContainer();
+
+/// Push a specific widget id to the ID stack, used when you create widgets inside a loop
 HORUS_API void pushWidgetId(u32 id);
+
+/// Pop a widget id from ID stack, used with pushWidgetId
 HORUS_API void popWidgetId();
-//! if width <= 1 its considered percentage of the parent, if > 1 its considered fixed pixel size
+
+/// Begin a layout made up as columns which can have percentage based widths or fixed
+/// \param columnCount the number of columns to be created
+/// \param preferredWidths a float array of the preferred width for each columns, if width is smaller of equal to 1.0f it is considered a percentage of the parent layout, if it is greater than 1.0f it is considered a fixed pixel size
+/// \param minWidths a float array of the minimal width for each columns, if width is smaller of equal to 1.0f it is considered a percentage of the parent layout, if it is greater than 1.0f it is considered a fixed pixel size
+/// \param maxWidths a float array of the maximum width for each columns, if width is smaller of equal to 1.0f it is considered a percentage of the parent layout, if it is greater than 1.0f it is considered a fixed pixel size
 HORUS_API void beginColumns(u32 columnCount, const f32 preferredWidths[] = nullptr, const f32 minWidths[] = nullptr, const f32 maxWidths[] = nullptr);
+
+/// Begin an equal widths array of columns
+/// \param columnCount the column count
+/// \param minWidths a float array of the minimal width for each columns, if width is smaller of equal to 1.0f it is considered a percentage of the parent layout, if it is greater than 1.0f it is considered a fixed pixel size
+/// \param addPadding true if you want padding to be added to left and right sides of the columns group
 HORUS_API void beginEqualColumns(u32 columnCount, const f32 minWidths[] = nullptr, bool addPadding = false);
+
+/// Start a single padded column layout, which has padding added to left and right sides
 HORUS_API void beginPaddedColumn();
+
+/// End a single padded column layout
 HORUS_API void endPaddedColumn();
+
+/// Begin a two columns layout
 HORUS_API void beginTwoColumns();
+
+/// Begin a three columns layout
 HORUS_API void beginThreeColumns();
+
+/// Begin a four columns layout
 HORUS_API void beginFourColumns();
+
+/// Begin a five column layout
 HORUS_API void beginFiveColumns();
+
+/// Begin a six column layout
 HORUS_API void beginSixColumns();
+
+/// Advance to next column in the current column layout
 HORUS_API void nextColumn();
+
+/// \return the current column's rectangle in coordinates relative to current window
 HORUS_API Rect getColumnRect();
+
+/// End the columns layout (does the same thing as nextColumn, for the last column)
 HORUS_API void endColumns();
-HORUS_API void columnHeader(Utf8String label, f32& width, f32 preferredWidth, f32 minWidth, f32 maxWidth);
+
+/// Draw a column header widget, usually called inside a column layout. This widget might get resized with mouse, so its parent column could get resized
+/// \param label the label of the header
+/// \param preferredWidth the normal width of the column header
+/// \param minWidth the minimal width of the column header
+/// \param maxWidth the maximal width of the column header
+HORUS_API void columnHeader(const char* label, f32 width, f32 preferredWidth, f32 minWidth, f32 maxWidth);
+
+/// Begin a scroll view area widget
+/// \param height the height of the scroll area
+/// \param scrollPosition the current scroll position (given by endScrollView)
+/// \param virtualHeight the virtual inside scroll height, if its zero then its automatically calculated from the child widgets inside this area
 HORUS_API void beginScrollView(f32 height, f32 scrollPosition, f32 virtualHeight = 0.0f);
+
+/// Ends a scroll view area widget
+/// \return the current scroll position (offset)
 HORUS_API f32 endScrollView();
+
+/// Begin a virtual list content area, used for many items, inside the beginScrollView/endScrollView
+/// \param totalRowCount the number of rows
+/// \param itemHeight the height of one item
+/// \param scrollPosition the current scroll offset of the scroll view widget
 HORUS_API void beginVirtualListContent(u32 totalRowCount, u32 itemHeight, f32 scrollPosition);
+
+/// End a virtual list content area
 HORUS_API void endVirtualListContent();
+
+/// Push the old padding and set a new one, padding is the left and right side horizontal spacing for widgets
+/// \param newPadding the new horizontal padding value
 HORUS_API void pushPadding(f32 newPadding);
+
+/// Pop the previous padding value from stack and set it as current
 HORUS_API void popPadding();
+
+/// Push the old spacing value to stack and set a new spacing value, spacing is the vertical space between widgets
+/// \param newSpacing the new vertical spacing value
 HORUS_API void pushSpacing(f32 newSpacing);
+
+/// Pop old spacing value from stack and set it as current
 HORUS_API void popSpacing();
+
+/// \return the current vertical spacing value
 HORUS_API f32 getSpacing();
+
+/// \return the current horizontal left and right side padding value
 HORUS_API f32 getPadding();
+
+/// Set the global UI scale, this will scale all the elements from widgets to text, but not the docking panes
+/// \param scale a value between 0 and N, no higher limit, but use with consideration
 HORUS_API void setGlobalScale(f32 scale);
+
+/// \return the current global UI scale
 HORUS_API f32 getGlobalScale();
+
+/// Push and set a new tinting color on stack, to colorize the next widget on specific parts
+/// \param color the tint color
+/// \param type what elements of the widget to tint
 HORUS_API void pushTint(const Color& color, TintColorType type = TintColorType::All);
+
+/// Pop the old tint color from stack
 HORUS_API void popTint(TintColorType type = TintColorType::All);
-HORUS_API bool tooltip(Utf8String text);
-HORUS_API bool beginRichTooltip(f32 width);
-HORUS_API void endRichTooltip();
+
+/// Draw a delayed tooltip widget near the previous widget
+/// \param text the label of the tooltip
+/// \return true if the tooltip is visible now
+HORUS_API bool tooltip(const char* text);
+
+/// Begin drawing a custom tooltip (delayed), which contains other widgets like image and labels etc.
+/// \param width the tooltip width
+/// \return true if the tooltip is visible now
+HORUS_API bool beginCustomTooltip(f32 width);
+
+/// End drawing a custom tooltip
+HORUS_API void endCustomTooltip();
+
+/// Begin draw a box, which may contain other widgets
+/// \param color the box tint color
+/// \param widgetElementId the widget element id image to use when drawing the box
+/// \param state the widget element state to draw with
+/// \param customHeight a forced custom height, otherwise auto calculated from the total height the child widgets have
 HORUS_API void beginBox(
 	const Color& color,
 	WidgetElementId widgetElementId = WidgetElementId::BoxBody,
 	WidgetStateType state = WidgetStateType::Normal,
 	f32 customHeight = 0.0f);
+
+/// Begin draw a box, which may contain other widgets
+/// \param color the box tint color
+/// \param userElementName the user widget element name whose image to use when drawing the box
+/// \param state the widget element state to draw with
+/// \param customHeight a forced custom height, otherwise auto calculated from the total height the child widgets have
 HORUS_API void beginBox(
 	const Color& color,
 	const char* userElementName,
 	WidgetStateType state = WidgetStateType::Normal,
 	f32 customHeight = 0.0f);
+
+/// End the box widget
 HORUS_API bool endBox();
+
+/// Begin drawing a popup widget on top of all other popups or widgets
+/// \param width the width of the popup
+/// \param positionMode the popup position on the window
+/// \param position when custom position, this is the window coordinates of the popup
+/// \param incrementLayer if true, it will increment the current layer index, if false the popup will be in same plane with the last layer, receiving events as that layer's widget
+/// \param isMenu true if this is a menu popup, used usually by beginMenu
 HORUS_API void beginPopup(
 	f32 width,
 	PopupPositionMode positionMode = PopupPositionMode::BelowLastWidget,
@@ -1554,231 +1959,639 @@ HORUS_API void beginPopup(
 	bool incrementLayer = true,
 	bool topMost = false,
 	bool isMenu = false);
+
+/// End a popup widget
 HORUS_API void endPopup();
+
+/// Close the current popup, used inside begin/endPopup
 HORUS_API void closePopup();
+
+/// \return true if the popup must be closed, due to user input, used inside begin/endPopup
 HORUS_API bool mustClosePopup();
+
+/// \return true if the user clicked outside popup's rect, used inside begin/endPopup
 HORUS_API bool clickedOutsidePopup();
+
+/// \return true if mouse is inside popup's rect, used inside begin/endPopup
 HORUS_API bool mouseOutsidePopup();
+
+/// \return true if the user pressed escape while current popup is active, used inside begin/endPopup
 HORUS_API bool pressedEscapeOnPopup();
+
+/// Draw a message box popup
+/// \param title the message box title
+/// \param message the message
+/// \param buttons the visible buttons flags in the message box
+/// \param icon the icon of the message box
+/// \param width the width of the message box
+/// \param customIcon the custom icon, if set in the icon param
+/// \return the pushed button in the message box
 HORUS_API MessageBoxButtons messageBox(
-	Utf8String title,
-	Utf8String message,
+	const char* title,
+	const char* message,
 	MessageBoxButtons buttons = MessageBoxButtons::Ok,
 	MessageBoxIcon icon = MessageBoxIcon::Info,
 	u32 width = 400,
 	Image customIcon = 0);
+
+/// Set the current widget as enabled or not
+/// \param enabled if true, the widget is enabled for input
 HORUS_API void setEnabled(bool enabled);
+
+/// Set current widget as focused
 HORUS_API void setFocused();
-HORUS_API bool button(Utf8String labelText);
+
+/// Draw a button widget
+/// \param labelText the button text
+/// \return true if button was pressed
+HORUS_API bool button(const char* labelText);
+
+/// Draw a button with an icon on it
+/// \param icon the icon image
+/// \param height the button height, if zero then it takes the icon's height
+/// \param down if true the button is in the pressed state
+/// \return true if the button was pressed
 HORUS_API bool iconButton(Image icon, f32 height = 0.0f, bool down = false);
-HORUS_API bool textInput(Utf8String text, size_t maxLength, TextInputValueMode valueType = TextInputValueMode::Any, Utf8String defaultText = nullptr, Image icon = 0);
+
+/// Draw a text input widget
+/// \param text the text to be edited, provided by user
+/// \param maxTextSize the max size of the text buffer
+/// \param valueType the value type filter, what value is allowed in the text
+/// \param defaultText the grayed default text when there is no text value
+/// \param icon the icon drawn in the widget
+/// \return true if the text was modified
+HORUS_API bool textInput(char* text, u32 maxTextSize, TextInputValueMode valueType = TextInputValueMode::Any, const char* defaultText = nullptr, Image icon = 0);
+
+/// Draw an integer number slider widget
+/// \param minVal the minimum value
+/// \param maxVal the maximum value
+/// \param value the value ref
+/// \param useStep use stepping when moving slider
+/// \param step if useStep is true, then this is the step size
+/// \return true if value was modified
 HORUS_API bool sliderInteger(i32 minVal, i32 maxVal, i32& value, bool useStep = false, i32 step = 0);
+
+/// Draw a float number slider widget
+/// \param minVal the minimum value
+/// \param maxVal the maximum value
+/// \param value the value ref
+/// \param useStep use stepping when moving slider
+/// \param step if useStep is true, then this is the step size
+/// \return true if value was modified
 HORUS_API bool sliderFloat(f32 minVal, f32 maxVal, f32& value, bool useStep = false, f32 step = 0);
+
+/// Draw a image widget
+/// \param image the image to draw
+/// \param height the height of the image, if zero then the actual image height will be used
+/// \param horizontalAlign the horizontal image align mode
+/// \param verticalAlign the vertical image align mode
+/// \param fit how the image is fitted in the rectangle, resize mode
+/// \return true if it was clicked on
 HORUS_API bool image(Image image, f32 height = 0, HAlignType horizontalAlign = HAlignType::Center, VAlignType verticalAlign = VAlignType::Center, ImageFitType fit = ImageFitType::KeepAspect);
+
+/// Draw a progress bar widget
+/// \param value the progress as a percentage from 0.0f to 1.0f (meaning 100%)
 HORUS_API void progress(f32 value);
-HORUS_API bool check(Utf8String labelText, bool checked);
-HORUS_API bool radio(Utf8String labelText, bool checked);
-HORUS_API bool label(Utf8String labelText, HAlignType horizontalAlign = HAlignType::Left);
-HORUS_API bool labelCustomFont(Utf8String labelText, Font font, HAlignType horizontalAlign = HAlignType::Left);
-HORUS_API bool multilineLabel(Utf8String labelText, HAlignType horizontalAlign);
-HORUS_API bool multilineLabelCustomFont(Utf8String labelText, Font font, HAlignType horizontalAlign = HAlignType::Left);
-HORUS_API bool panel(Utf8String labelText, bool expanded);
-HORUS_API bool dropdown(i32& selectedIndex, Utf8String* items, u32 itemCount, u32 maxVisibleDropDownItems = ~0);
-HORUS_API bool dropdown(i32& selectedIndex, void* userdata, bool (*itemSource)(void* userdata, i32 index, Utf8String* outItem), u32 maxVisibleDropDownItems = ~0);
-//TODO:
-HORUS_API i32 list(i32 selectedIndex, ListSelectionMode selectionType, Utf8String** items, u32 itemCount);
-HORUS_API i32 list(i32 selectedIndex, ListSelectionMode selectionType, Utf8String* items);
-HORUS_API i32 list(i32 selectedIndex, ListSelectionMode selectionType, void* userdata, bool(*itemSource)(void* userdata, i32 index, Utf8String** outItem));
-HORUS_API i32 beginList(ListSelectionMode selectionType);
+
+/// Draw a check box widget
+/// \param labelText the label text
+/// \param checked true if it has check mark on
+/// \return true if it is checked
+HORUS_API bool check(const char* labelText, bool checked);
+
+/// Draw a radio box widget
+/// \param labelText the label text
+/// \param checked true if it has check mark on
+/// \return true if it is checked
+HORUS_API bool radio(const char* labelText, bool checked);
+
+/// Draw a label text widget
+/// \param labelText the label's text
+/// \param horizontalAlign the text align mode horizontally in the current layout rectangle
+/// \return true if it was clicked on
+HORUS_API bool label(const char* labelText, HAlignType horizontalAlign = HAlignType::Left);
+
+/// Draw a label text widget with a custom font
+/// \param labelText the label's text
+/// \param font the label's font
+/// \param horizontalAlign the text align mode horizontally in the current layout rectangle
+/// \return true if it was clicked on
+HORUS_API bool labelCustomFont(const char* labelText, Font font, HAlignType horizontalAlign = HAlignType::Left);
+
+/// Draw a multiline label text widget (involves more logic than a single lined label)
+/// \param labelText the label's text
+/// \param horizontalAlign the text align mode horizontally in the current layout rectangle
+/// \return true if it was clicked on
+HORUS_API bool multilineLabel(const char* labelText, HAlignType horizontalAlign);
+
+/// Draw a multiline label text widget with a custom font (involves more logic than a single lined label)
+/// \param labelText the label's text
+/// \param font the label's font
+/// \param horizontalAlign the text align mode horizontally in the current layout rectangle
+/// \return true if it was clicked on
+HORUS_API bool multilineLabelCustomFont(const char* labelText, Font font, HAlignType horizontalAlign = HAlignType::Left);
+
+/// Draw a expandable panel widget
+/// \param labelText the text of the panel
+/// \param expanded true if the panel is expanded
+/// \return true if the panel is expanded, use this in a if() statement to draw child widgets if expanded
+HORUS_API bool panel(const char* labelText, bool expanded);
+
+/// Draw a dropdown widget
+/// \param selectedIndex the current selected item index
+/// \param items an array of strings for the items
+/// \param itemCount the number of items in the list
+/// \param maxVisibleDropDownItems the maximum number of visible items in the drop down list, if ~0 then its automatic
+/// \return true if it the selection changed
+HORUS_API bool dropdown(i32& selectedIndex, const char** items, u32 itemCount, u32 maxVisibleDropDownItems = ~0);
+
+/// Draw a custom data dropdown widget, good for many items in the list
+/// \param selectedIndex the current selected item index
+/// \param userdata the items user custom data
+/// \param itemSource a callback to use when rendering an item, returns false when item list ended
+/// \param maxVisibleDropDownItems the maximum number of visible items in the drop down list, if ~0 then its automatic
+/// \return true if it the selection changed
+HORUS_API bool dropdown(i32& selectedIndex, void* userdata, bool (*itemSource)(void* userdata, i32 index, const char* outItemText), u32 maxVisibleDropDownItems = ~0);
+
+/// TODO:
+HORUS_API bool list(i32* selectedIndices, u32 maxSelectedIndices, ListSelectionMode selectionType, const char** items, u32 itemCount);
+
+/// TODO: 
+HORUS_API bool list(i32* selectedIndices, u32 maxSelectedIndices, ListSelectionMode selectionType, void* userdata, bool (*itemSource)(void* userdata, i32 index, char* outItem));
+
+/// TODO: 
+HORUS_API bool beginList(ListSelectionMode selectionType);
+
+/// TODO: 
 HORUS_API void endList();
-HORUS_API void listItem(Utf8String labelText, SelectableFlags stateFlags, Image icon);
-HORUS_API bool selectable(Utf8String labelText, SelectableFlags stateFlags = SelectableFlags::Normal);
-HORUS_API bool selectableCustomFont(Utf8String labelText, Font font, SelectableFlags stateFlags = SelectableFlags::Normal);
+
+/// TODO: 
+HORUS_API void listItem(const char* labelText, SelectableFlags stateFlags, Image icon);
+
+/// Draw a selectable label
+/// \param labelText the label's text
+/// \param stateFlags the state of the selectable widget
+/// \return true if it is selected
+HORUS_API bool selectable(const char* labelText, SelectableFlags stateFlags = SelectableFlags::Normal);
+
+/// Draw a selectable label with custom font
+/// \param labelText the label's text
+/// \param font the label's text font
+/// \param stateFlags the state of the selectable widget
+/// \return true if it is selected
+HORUS_API bool selectableCustomFont(const char* labelText, Font font, SelectableFlags stateFlags = SelectableFlags::Normal);
 
 //////////////////////////////////////////////////////////////////////////
 // Separators
 //////////////////////////////////////////////////////////////////////////
+
+/// Draw a horizontal line widget
 HORUS_API void line();
+
+/// Leave a space between previous widget and next one
+/// \param size the size of the gap
 HORUS_API void gap(f32 size);
+
+/// Leave a normal space between previous widget and next one
 HORUS_API void space();
+
+/// Begin a custom user viewport area
+/// \param height the height of the viewport, if zero, it will take the entire remaining container height
+/// \return the rectangle in window coordinates of the actual viewport area, use this to draw your custom things in
 HORUS_API Rect beginViewport(f32 height = 0);
+
+/// End the current user viewport
 HORUS_API void endViewport();
 
 //////////////////////////////////////////////////////////////////////////
 // Menus
 //////////////////////////////////////////////////////////////////////////
+
+/// Begin a menu bar widget
 HORUS_API void beginMenuBar();
+
+/// End the current menu bar widget
 HORUS_API void endMenuBar();
-HORUS_API bool beginMenu(Utf8String labelText, SelectableFlags flags = SelectableFlags::Normal);
+
+/// Begin a menu panel widget (it will show up only when clicked)
+/// \param labelText the menu item text
+/// \param flags the menu item flags
+/// \return true if the menu is visible, use it in a if() statement to show menu items
+HORUS_API bool beginMenu(const char* labelText, SelectableFlags flags = SelectableFlags::Normal);
+
+/// End the current menu
 HORUS_API void endMenu();
+
+/// Begin drawing a context menu which will open on right click on the previous widget
+/// \return true if the menu is opened/visible
 HORUS_API bool beginContextMenu();
+
+/// End the current context menu
 HORUS_API void endContextMenu();
-HORUS_API bool menuItem(Utf8String labelText, Utf8String shortcut, Image icon = 0, SelectableFlags flags = SelectableFlags::Normal);
+
+/// Draw a menu item widget, use inside begin/end menu (or context menu)
+/// \param labelText the menu item text
+/// \param shortcut the key shortcut text
+/// \param icon the menu item left side icon
+/// \param flags the menu item flags
+/// \return true if the menu item was clicked on
+HORUS_API bool menuItem(const char* labelText, const char* shortcut, Image icon = 0, SelectableFlags flags = SelectableFlags::Normal);
+
+/// Draw a menu item separator
 HORUS_API void menuSeparator();
 
 //////////////////////////////////////////////////////////////////////////
 // Toolbar
 //////////////////////////////////////////////////////////////////////////
+
+/// Begin drawing a toolbar widget
+/// \param itemCount the number of toolbar items
+/// \param preferredWidths a float array of the preferred width for each item, if width is smaller of equal to 1.0f it is considered a percentage of the parent layout, if it is greater than 1.0f it is considered a fixed pixel size
+/// \param minWidths a float array of the minimal width for each item, if width is smaller of equal to 1.0f it is considered a percentage of the parent layout, if it is greater than 1.0f it is considered a fixed pixel size
+/// \param maxWidths a float array of the maximum width for each item, if width is smaller of equal to 1.0f it is considered a percentage of the parent layout, if it is greater than 1.0f it is considered a fixed pixel size
 HORUS_API void beginToolbar(u32 itemCount, const f32 preferredWidths[] = nullptr, const f32 minWidths[] = nullptr, const f32 maxWidths[] = nullptr);
+
+/// End the current toolbar
 HORUS_API void endToolbar();
+
+/// Draw a toolbar button widget
+/// \param normalIcon the normal state icon
+/// \param disabledIcon the disabled state icon
+/// \param down true if the button state is down
+/// \return true if the button was pressed
 HORUS_API bool toolbarButton(Image normalIcon, Image disabledIcon = 0, bool down = false);
-HORUS_API bool toolbarDropdown(Utf8String label, Image normalIcon = 0, Image disabledIcon = 0);
+
+/// Draw a toolbar dropdown button widget
+/// \param label the label text
+/// \param normalIcon the normal state icon
+/// \param disabledIcon the disabled state icon
+/// \param down true if the button state is down
+/// \return true if the dropdown button was pressed
+HORUS_API bool toolbarDropdown(const char* label, Image normalIcon = 0, Image disabledIcon = 0);
+
+/// Draw a toolbar item separator
 HORUS_API void toolbarSeparator();
+
+/// Leave a gap horizontally in the toolbar
 HORUS_API void toolbarGap();
-HORUS_API bool toolbarTextInputFilter(char* outText, u32 maxOutTextSize, u32& filterIndex, Utf8String* filterNames = 0, u32 filterNameCount = 0);
-HORUS_API bool toolbarTextInput(char* outText, u32 maxOutTextSize, Utf8String hint = 0, Image icon = 0);
+
+/// Draw a text input filter editor in the toolbar
+/// \param outText the text buffer to edit
+/// \param maxOutTextSize the maximum size of the buffer
+/// \param filterIndex the current filter index
+/// \param filterNames the filter names
+/// \param filterNameCount the filter name count
+/// \return true if the text or filter changed
+HORUS_API bool toolbarTextInputFilter(char* outText, u32 maxOutTextSize, u32& filterIndex, const char** filterNames = 0, u32 filterNameCount = 0);
+
+/// Draw a text input widget in the toolbar
+/// \param outText the text buffer to edit
+/// \param maxOutTextSize the maximum size of the buffer
+/// \param hint the text hint
+/// \param icon the text edit icon
+/// \return true if the text was changed
+HORUS_API bool toolbarTextInput(char* outText, u32 maxOutTextSize, const char* hint = 0, Image icon = 0);
 
 //////////////////////////////////////////////////////////////////////////
 // Dockable Tabs
 //////////////////////////////////////////////////////////////////////////
+
+/// Start a tab group
+/// \param selectedIndex the selected tab index
 HORUS_API void beginTabGroup(TabIndex selectedIndex);
-HORUS_API void tab(Utf8String labelText, Image icon);
+
+/// Draw a tab widget
+/// \param labelText the text of the tab
+/// \param icon the icon of the tab
+HORUS_API void tab(const char* labelText, Image icon);
+
+/// End the tab group
 HORUS_API TabIndex endTabGroup();
 
 //////////////////////////////////////////////////////////////////////////
 // Immediate state query for the last widget
 //////////////////////////////////////////////////////////////////////////
+
+/// \return true if the previous widget is hovered
 HORUS_API bool isHovered();
+
+/// \return true if the previous widget is focused
 HORUS_API bool isFocused();
+
+/// \return true if the previous widget is pressed down
 HORUS_API bool isPressed();
+
+/// \return true if the previous widget is clicked
 HORUS_API bool isClicked();
+
+/// \return true if the previous widget is visible
 HORUS_API bool isVisible();
+
+/// \return the current widget id (the next widget's id)
 HORUS_API u32 getWidgetId();
+
+/// \return the current mouse position inside current window
 HORUS_API Point getMousePosition();
 
 //////////////////////////////////////////////////////////////////////////
 // Drag and drop logic support
 //////////////////////////////////////////////////////////////////////////
+
+/// \return true if there is a drag intent
 HORUS_API bool wantsToDragDrop();
+
+/// set the mouse cursor to be used when dropping allowed
+/// \param dropAllowedCursor the mouse cursor
 HORUS_API void setDragDropMouseCursor(MouseCursor dropAllowedCursor);
+
+/// Begin dragging an object
+/// \param dragObjectUserType the user type for the object
+/// \param dragObject the user object to drag as payload
 HORUS_API void beginDragDrop(u32 dragObjectUserType, void* dragObject);
+
+/// End drag and drop operation
 HORUS_API void endDragDrop();
+
+/// Allow drag drop for the next widgets
 HORUS_API void allowDragDrop();
+
+/// Disallow drop for the next widgets
 HORUS_API void disallowDragDrop();
+
+/// \return true if the user dropped payload on previous widget
 HORUS_API bool droppedOnWidget();
+
+/// \return the drag drop payload user object pointer
 HORUS_API void* getDragDropObject();
+
+/// \return the drag drop payload user object type
 HORUS_API u32 getDragDropObjectType();
 
 //////////////////////////////////////////////////////////////////////////
 // Custom widgets
 //////////////////////////////////////////////////////////////////////////
+
+/// Begin drawing a custom widget
+/// \param height the widget height
+/// \return the widget rectangle in window coordinates
 HORUS_API Rect beginCustomWidget(f32 height = 0.0f);
+
+/// End custom widget drawing
 HORUS_API void endCustomWidget();
+
+/// \return the current widget drawing pen position in the parent layout/container
 HORUS_API Point getPenPosition();
+
+/// Set the widget pen position
 HORUS_API void setPenPosition(const Point& penPosition);
-// the highest layer will be the active one
+
+/// Increment the widget layer index, the highest layer index will be the active one
 HORUS_API void incrementLayerIndex();
+
+/// \return the layer index, after decrementing it
 HORUS_API u32 decrementLayerIndex();
+
+/// 
 HORUS_API void decrementWindowMaxLayerIndex();
+
+/// 
 HORUS_API Point getParentSize();
+
+/// 
 HORUS_API Rect getWidgetRect();
+
+/// 
 HORUS_API void pushDrawCommandIndex();
+
+/// 
 HORUS_API u32 popDrawCommandIndex();
+
+/// 
 HORUS_API void beginInsertDrawCommands(u32 atIndex);
+
+/// 
 HORUS_API void endInsertDrawCommands();
+
+/// 
 HORUS_API void setFont(Font font);
+
+/// 
 HORUS_API void setBackColor(const Color& color);
-HORUS_API void drawTextAt(Utf8String text, const Point& position);
-HORUS_API void drawTextInBox(Utf8String text, const Rect& rect, HAlignType horizontalAlign, VAlignType verticalAlign);
-HORUS_API Point getTextSize(Utf8String text);
+
+/// 
+HORUS_API void drawTextAt(const char* text, const Point& position);
+
+/// 
+HORUS_API void drawTextInBox(const char* text, const Rect& rect, HAlignType horizontalAlign, VAlignType verticalAlign);
+
+/// 
+HORUS_API Point getTextSize(const char* text);
+
+/// 
 HORUS_API void drawImage(Image image, const Point& position);
+
+/// 
 HORUS_API void drawStretchedImage(Image image, const Rect& rect);
+
+/// 
 HORUS_API void drawBorderedImage(Image image, u32 border, const Rect& rect);
+
+/// 
 HORUS_API void setLineStyle(const LineStyle& style);
+
+/// 
 HORUS_API void setFillStyle(const FillStyle& style);
+
+/// 
 HORUS_API void drawLine(const Point& a, const Point& b);
+
+/// 
 HORUS_API void drawPolyLine(const Point* points, u32 pointCount, bool closed = false);
+
+/// 
 HORUS_API void drawCircle(const Point& center, f32 radius, u32 segments = 32);
+
+/// 
 HORUS_API void drawEllipse(const Point& center, f32 radiusX, f32 radiusY, u32 segments = 32);
+
+/// 
 HORUS_API void drawRectangle(const Rect& rc);
+
+/// 
 HORUS_API void drawSpline(SplineControlPoint* points, u32 count);
+
+/// 
 HORUS_API void drawArrow(const Point& startPoint, const Point& endPoint, f32 tipLength, f32 tipWidth, bool drawBodyLine = true);
 
 //////////////////////////////////////////////////////////////////////////
 // Pane container functions
 //////////////////////////////////////////////////////////////////////////
+
+/// Create a view container for a specific window, where views can be docked, used by the docking system
 HORUS_API ViewContainer createViewContainer(Window window);
+
+/// Delete a view container, used by the docking system
 HORUS_API void deleteViewContainer(ViewContainer viewContainer);
-HORUS_API size_t getViewContainers(ViewContainer* outViewContainers, size_t maxCount);
+
+/// Get the view containers from all windows, used by the docking system
+HORUS_API u32 getViewContainers(ViewContainer* outViewContainers, u32 maxCount);
+
+/// \return the view container's window, used by the docking system
 HORUS_API Window getViewContainerWindow(ViewContainer viewContainer);
+
+/// \return a view container for a specific window, used by the docking system
 HORUS_API ViewContainer getWindowViewContainer(Window window);
+
+/// Delete window's view container, used by the docking system
 HORUS_API void deleteViewContainerFromWindow(Window window);
-// \return -1 if maxCount was too small
-HORUS_API size_t getViewContainerViewPanes(ViewContainer viewContainer, ViewPane* outViewPanes, size_t maxCount);
+
+/// Get view container's view panes, used by the docking system
+/// \return -1 if maxCount was too small
+HORUS_API u32 getViewContainerViewPanes(ViewContainer viewContainer, ViewPane* outViewPanes, u32 maxCount);
+
+/// Get view container's first view pane, used by the docking system
 HORUS_API ViewPane getViewContainerFirstViewPane(ViewContainer viewContainer);
-HORUS_API bool saveViewContainersState(Utf8String filename);
-HORUS_API bool loadViewContainersState(Utf8String filename);
+
+/// Save the view container state, with all view panes docked info
+/// \param filename the *.hui filename relative to executable where to save the state
+/// \return true if save was ok
+HORUS_API bool saveViewContainersState(const char* filename);
+
+/// Load the view container state, with all view panes docked info, it will create view panes
+/// \param filename the *.hui filename relative to executable from where to load the state
+/// \return true if the load was ok
+HORUS_API bool loadViewContainersState(const char* filename);
 
 //////////////////////////////////////////////////////////////////////////
 // Pane and tab functions
 //////////////////////////////////////////////////////////////////////////
+
+/// \return the view pane rect
+/// \param viewPane the view pane
 HORUS_API Rect getViewPaneRect(ViewPane viewPane);
+
+/// \return the remaining view pane height
+/// \param viewPane the view pane
 HORUS_API f32 getRemainingViewPaneHeight(ViewPane viewPane);
+
+/// Create a new view pane
+/// \param viewContainer the parent view container
+/// \param dockType how the view pane will dock
+/// \param paneSize width or height, depending on dock type
+/// \return the view pane handle
 HORUS_API ViewPane createViewPane(ViewContainer viewContainer, DockType dockType, f32 paneSize = 0.0f);
+
+/// Create a new view pane as a child of another view pane
+/// \param parentViewPane the parent view pane
+/// \param dockType how the view pane will dock
+/// \param paneSize width or height, depending on dock type
+/// \return the view pane handle
 HORUS_API ViewPane createChildViewPane(ViewPane parentViewPane, DockType dockType, f32 paneSize = 0.0f);
-HORUS_API ViewPaneTab addViewPaneTab(ViewPane viewPane, Utf8String title, ViewId id, u64 userDataId);
+
+/// Add a tab (view instance) to a view pane tab group
+/// \param viewPane the view pane where to add a tab
+/// \param title the tab text
+/// \param id the view id to be shown in this tab
+/// \param userDataId the data id associated with this tab's view
+/// \return a view pane tab handle
+HORUS_API ViewPaneTab addViewPaneTab(ViewPane viewPane, const char* title, ViewId id, u64 userDataId);
+
+/// Remove a view pane tab
 HORUS_API void removeViewPaneTab(ViewPaneTab viewPaneTab);
+
+/// Set a view pane tab data id
 HORUS_API void setTabUserDataId(ViewPaneTab viewPaneTab, u64 userDataId);
+
+/// \return a tab view's data id
 HORUS_API u64 getTabUserDataId(ViewPaneTab viewPaneTab);
+
+/// Set a view icon
 HORUS_API void setViewIcon(ViewId id, Image image);
+
+/// Dock a view pane inside a view container
 HORUS_API void dockViewPane(ViewPane viewPane, ViewContainer viewContainer, DockType dockType);
+
+/// Begin draw of a view pane
 HORUS_API ViewId beginViewPane(ViewPane viewPane);
+
+/// End draw of a view pane
 HORUS_API void endViewPane();
+
+/// Activate a view pane
 HORUS_API void activateViewPane(ViewPane viewPane);
+
+/// Close a view pane
 HORUS_API void closeViewPane(ViewPane viewPane);
+
+/// Maximize a view pane
 HORUS_API void maximizeViewPane(ViewPane viewPane);
+
+/// Restore a view pane
 HORUS_API void restoreViewPane(ViewPane viewPane);
 
 //////////////////////////////////////////////////////////////////////////
 // Docking system functions
 //////////////////////////////////////////////////////////////////////////
 
-/// update the docking system internal, usually called by the dockingSystemLoop function, if you make your own loop, then you need to call it
+/// Update the docking system internal, usually called by the dockingSystemLoop function, if you make your own loop, then you need to call it
 HORUS_API void updateDockingSystem(ViewHandler* handler);
+
 /// If this function will be called it will block until all or the main window is closed, or a quitApplication is issued
 HORUS_API void dockingSystemLoop(ViewHandler* handler);
+
 /// When the allow is true, the docking system will deny undocking to new native windows, it will only allow docking in the main application window
 HORUS_API void setAllowUndockingToNewWindow(bool allow);
 
 //////////////////////////////////////////////////////////////////////////
 // Utility panels and complex/combined mega-widgets
 //////////////////////////////////////////////////////////////////////////
+
+/// Draw a color picker popup widget
 HORUS_API bool colorPickerPopup(const Color& currentColor, Color& outNewColor);
+
+/// Draw a 3D double vector editor widget
 HORUS_API bool vec3Editor(f64& x, f64& y, f64& z, f64 scrollStep = 0.03f);
+
+/// Draw a 3D float vector editor widget
 HORUS_API bool vec3Editor(f32& x, f32& y, f32& z, f32 scrollStep = 0.03f);
+
+/// Draw a 2D double vector editor widget
 HORUS_API bool vec2Editor(f64& x, f64& y, f64 scrollStep = 0.03f);
+
+/// Draw a 2D float vector editor widget
 HORUS_API bool vec2Editor(f32& x, f32& y, f32 scrollStep = 0.03f);
-HORUS_API bool objectRefEditor(Image targetIcon, Image clearIcon, Utf8String objectTypeName, Utf8String valueAsString, u32 objectType, void** outObject, bool* objectValueWasModified);
+
+/// Draw an object reference editor
+HORUS_API bool objectRefEditor(Image targetIcon, Image clearIcon, const char* objectTypeName, const char* valueAsString, u32 objectType, void** outObject, bool* objectValueWasModified);
 
 //////////////////////////////////////////////////////////////////////////
 // System native file dialogs
 //////////////////////////////////////////////////////////////////////////
 
-/// Used by the openMultipleFileDialog function, you will need to call destroyMultipleFileSet after using it
-struct OpenMultipleFileSet
-{
-	char* filenameBuffer = nullptr;
-	size_t* bufferIndices = nullptr;
-	size_t count = 0;
-
-    ~OpenMultipleFileSet()
-    {
-        delete[] filenameBuffer;
-        delete[] bufferIndices;
-    }
-};
-
+/// Show a native open file dialog
 HORUS_API bool openFileDialog(const char* filterList, const char* defaultPath, char* outPath, u32 maxOutPathSize);
+
+/// Show a native open multiple file dialog
 HORUS_API bool openMultipleFileDialog(const char* filterList, const char* defaultPath, OpenMultipleFileSet& outPathSet);
+
+/// Show a native save file dialog
 HORUS_API bool saveFileDialog(const char* filterList, const char* defaultPath, char* outPath, u32 maxOutPathSize);
+
+/// Show a native pick folder dialog
 HORUS_API bool pickFolderDialog(const char* defaultPath, char* outPath, u32 maxOutPathSize);
 
 //////////////////////////////////////////////////////////////////////////
 // Utility functions
 //////////////////////////////////////////////////////////////////////////
+
+/// Convert an int value to string
 HORUS_API void toString(i32 value, char* outString, u32 outStringMaxSize, u32 fillerZeroesCount = 0);
+
+/// Convert a float value to string
 HORUS_API void toString(f32 value, char* outString, u32 outStringMaxSize, u32 decimalPlaces = 4);
-HORUS_API bool unicodeToUtf8(const u32* text, size_t textLength, Utf8StringBuffer outString, size_t maxOutStringLength);
+
+/// Convert a unicode (utf32) value to utf8 string
+HORUS_API bool unicodeToUtf8(const u32* text, u32 textLength, char* outString, u32 maxOutStringLength);
 
 }
 /** @}*/

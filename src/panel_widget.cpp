@@ -9,7 +9,7 @@
 
 namespace hui
 {
-bool panel(Utf8String labelText, bool expanded)
+bool panel(const char* labelText, bool expanded)
 {
 	auto bodyElem = ctx->theme->getElement(WidgetElementId::PanelBody);
 	auto panelCollapsedArrow = ctx->theme->getElement(WidgetElementId::PanelCollapsedArrow);

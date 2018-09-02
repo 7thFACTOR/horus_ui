@@ -348,14 +348,14 @@ void skipThisFrame()
 	ctx->setSkipRenderAndInput(true);
 }
 
-bool copyToClipboard(Utf8String text)
+bool copyToClipboard(const char* text)
 {
 	return ctx->inputProvider->copyToClipboard(text);
 }
 
-bool pasteFromClipboard(Utf8String *outText)
+bool pasteFromClipboard(char* outText, u32 maxTextSize)
 {
-	return ctx->inputProvider->pasteFromClipboard(outText);
+	return ctx->inputProvider->pasteFromClipboard(outText, maxTextSize);
 }
 
 const InputEvent& getInputEvent()
@@ -426,7 +426,7 @@ Window getMainWindow()
 }
 
 Window createWindow(
-	Utf8String title, u32 width, u32 height,
+	const char* title, u32 width, u32 height,
 	WindowBorder border, WindowPositionType positionType,
 	Point customPosition, bool showInTaskBar)
 {
@@ -440,7 +440,7 @@ Window createWindow(
 	return wnd;
 }
 
-void setWindowTitle(Window window, Utf8String title)
+void setWindowTitle(Window window, const char* title)
 {
 	ctx->inputProvider->setWindowTitle(window, title);
 }
@@ -830,9 +830,9 @@ void getThemeUserWidgetElementInfo(const char* userElementName, WidgetStateType 
 	outInfo.height = elemState.height;
 }
 
-Font createFont(Theme theme, const char* fontFilename, u32 faceSize)
+Font createFont(Theme theme, const char* name, const char* fontFilename, u32 faceSize)
 {
-	return (Font)((UiTheme*)theme)->fontCache->createFont(fontFilename, faceSize * ctx->globalScale, false);
+	return (Font)((UiTheme*)theme)->fontCache->createFont(name, fontFilename, faceSize * ctx->globalScale, false);
 }
 
 void releaseFont(Font font)
@@ -840,14 +840,14 @@ void releaseFont(Font font)
 	ctx->theme->fontCache->releaseFont((UiFont*)font);
 }
 
-Font getFont(Theme theme, Utf8String themeFontName)
+Font getFont(Theme theme, const char* themeFontName)
 {
 	UiTheme* themeObj = (UiTheme*)theme;
 
 	return themeObj->fonts[themeFontName];
 }
 
-Font getFont(Utf8String themeFontName)
+Font getFont(const char* themeFontName)
 {
 	return getFont(getTheme(), themeFontName);
 }
@@ -1140,7 +1140,7 @@ void setUserElement(
 		});
 }
 
-Theme loadTheme(Utf8String filename)
+Theme loadTheme(const char* filename)
 {
 	const u32 defaultAtlasSize = 4096;
 	
@@ -1177,7 +1177,7 @@ Theme loadTheme(Utf8String filename)
 			fontFilename = themePath + fontFilename;
 		}
 
-		auto newFont = createFont(theme, fontFilename.c_str(), fnt.get("size", 0).asInt());
+		auto newFont = createFont(theme, name.c_str(), fontFilename.c_str(), fnt.get("size", 0).asInt());
 		theme->fonts[name] = (UiFont*)newFont;
 	}
 
@@ -1580,7 +1580,7 @@ void endColumns()
 	nextColumn();
 }
 
-void columnHeader(Utf8String label, f32& width, f32 preferredWidth, f32 minWidth, f32 maxWidth)
+void columnHeader(const char* label, f32& width, f32 preferredWidth, f32 minWidth, f32 maxWidth)
 {
 	auto headerElemState = ctx->theme->getElement(WidgetElementId::ColumnsHeaderBody).normalState();
 

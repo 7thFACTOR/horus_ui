@@ -83,7 +83,7 @@ void setBackColor(const Color& color)
 	ctx->renderer->cmdSetColor(color);
 }
 
-Point getTextSize(Utf8String text)
+Point getTextSize(const char* text)
 {
 	if (!ctx->renderer->getFont())
 		return Point();
@@ -93,12 +93,12 @@ Point getTextSize(Utf8String text)
 	return { fntInfo.width, fntInfo.height };
 }
 
-void drawTextAt(Utf8String text, const Point& position)
+void drawTextAt(const char* text, const Point& position)
 {
 	ctx->renderer->cmdDrawTextAt(text, Point(position.x, position.y));
 }
 
-void drawTextInBox(Utf8String text, const Rect& rect, HAlignType horizontalAlign, VAlignType verticalAlign)
+void drawTextInBox(const char* text, const Rect& rect, HAlignType horizontalAlign, VAlignType verticalAlign)
 {
 	ctx->renderer->cmdDrawTextInBox(
 		text,

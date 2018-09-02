@@ -187,10 +187,10 @@ public:
 	void cmdDrawLine(const Point& a, const Point& b);
 	void cmdDrawPolyLine(const Point* points, u32 pointCount, bool closed);
 	FontTextSize cmdDrawTextAt(
-		Utf8String text,
+		const char* text,
 		const Point& position);
 	FontTextSize cmdDrawTextInBox(
-		Utf8String text,
+		const char* text,
 		const Rect& rect,
 		HAlignType horizontal = HAlignType::Left,
 		VAlignType vertical = VAlignType::Top);
@@ -205,7 +205,7 @@ protected:
 	void drawQuad(const Rect& rect, const Rect& uvRect);
 	void drawQuadRot90(const Rect& rect, const Rect& uvRect);
 	void drawTextInternal(
-		Utf8String text,
+		const char* text,
 		const Point& rect);
 	void drawInterpolatedColors(
 		const Rect& rect,

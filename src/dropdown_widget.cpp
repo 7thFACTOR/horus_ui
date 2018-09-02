@@ -9,7 +9,7 @@
 
 namespace hui
 {
-bool dropdown(i32& selectedIndex, Utf8String* items, u32 itemCount, u32 maxVisibleDropDownItems)
+bool dropdown(i32& selectedIndex, const char** items, u32 itemCount, u32 maxVisibleDropDownItems)
 {
 	auto bodyElem = ctx->theme->getElement(WidgetElementId::DropdownBody);
 	auto arrowElem = ctx->theme->getElement(WidgetElementId::DropdownArrow);
@@ -51,7 +51,7 @@ bool dropdown(i32& selectedIndex, Utf8String* items, u32 itemCount, u32 maxVisib
 		arrowElemState->image->rect.height * ctx->globalScale
 	});
 
-	Utf8String selectedItemText = nullptr;
+	const char* selectedItemText = nullptr;
 	
 	if (selectedIndex >= 0 && selectedIndex < itemCount)
 	{
@@ -153,7 +153,7 @@ bool dropdown(i32& selectedIndex, Utf8String* items, u32 itemCount, u32 maxVisib
 }
 
 bool dropdown(i32& selectedIndex, void* userdata,
-	bool(*itemSource)(void* userdata, i32 index, Utf8String* outItem),
+	bool(*itemSource)(void* userdata, i32 index, const char** outItem),
 	u32 maxVisibleDropDownItems)
 {
 	return false;

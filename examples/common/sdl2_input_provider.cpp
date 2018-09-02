@@ -1,5 +1,6 @@
 #include "sdl2_input_provider.h"
 #include <string.h>
+#include <algorithm>
 
 namespace hui
 {
@@ -287,20 +288,19 @@ void Sdl2InputProvider::stopTextInput()
 	SDL_StopTextInput();
 }
 
-bool Sdl2InputProvider::copyToClipboard(Utf8String text)
+bool Sdl2InputProvider::copyToClipboard(const char* text)
 {
 	return 0 == SDL_SetClipboardText(text);
 }
 
-bool Sdl2InputProvider::pasteFromClipboard(Utf8String *outText)
+bool Sdl2InputProvider::pasteFromClipboard(char* outText, u32 maxTextSize)
 {
 	if (!SDL_HasClipboardText())
 		return false;
 
 	char* txt = SDL_GetClipboardText();
 
-	*outText = new char[strlen(txt) + 1];
-	memcpy((char*)(*outText), txt, strlen(txt) + 1);
+	memcpy(outText, txt, std::min(strlen(txt) + 1, maxTextSize));
 	SDL_free(txt);
 
 	return true;
@@ -610,7 +610,7 @@ Window Sdl2InputProvider::getHoveredWindow()
 }
 
 Window Sdl2InputProvider::createWindow(
-	Utf8String title, i32 width, i32 height,
+	const char* title, i32 width, i32 height,
 	WindowBorder border, WindowPositionType windowPos,
 	Point customPosition, bool showInTaskBar)
 {
@@ -652,7 +652,7 @@ Window Sdl2InputProvider::createWindow(
 	return wnd;
 }
 
-void Sdl2InputProvider::setWindowTitle(Window window, Utf8String title)
+void Sdl2InputProvider::setWindowTitle(Window window, const char* title)
 {
 	SDL_SetWindowTitle((SDL_Window*)window, title);
 }

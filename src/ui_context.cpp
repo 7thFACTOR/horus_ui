@@ -10,7 +10,7 @@ namespace hui
 UiContext* ctx = nullptr;
 
 Rect UiContext::drawMultilineText(
-	Utf8String text,
+	const char* text,
 	const Rect& rect,
 	HAlignType horizontal,
 	VAlignType vertical)

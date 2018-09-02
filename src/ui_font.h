@@ -69,7 +69,7 @@ public:
 	void precacheLatinAlphabetGlyphs();
 	FontTextSize computeTextSize(const GlyphCode* const text, u32 size);
 	FontTextSize computeTextSize(const UnicodeString& text);
-	FontTextSize computeTextSize(Utf8String text);
+	FontTextSize computeTextSize(const char* text);
 	void deleteGlyphs();
 
 	UiAtlas* atlas = nullptr;

@@ -8,7 +8,7 @@
 
 namespace hui
 {
-bool labelInternal(Utf8String labelText, HAlignType horizontalAlign, UiFont* font)
+bool labelInternal(const char* labelText, HAlignType horizontalAlign, UiFont* font)
 {
 	auto bodyElem = ctx->theme->getElement(WidgetElementId::LabelBody);
 	f32 width = ctx->layoutStack.back().width - ctx->padding * 2.0f;
@@ -46,24 +46,24 @@ bool labelInternal(Utf8String labelText, HAlignType horizontalAlign, UiFont* fon
 	return ctx->widget.clicked;
 }
 
-bool label(Utf8String labelText, HAlignType horizontalAlign)
+bool label(const char* labelText, HAlignType horizontalAlign)
 {
 	return labelInternal(labelText, horizontalAlign, nullptr);
 }
 
-bool labelCustomFont(Utf8String labelText, Font font, HAlignType horizontalAlign)
+bool labelCustomFont(const char* labelText, Font font, HAlignType horizontalAlign)
 {
 	return labelInternal(labelText, horizontalAlign, (UiFont*)font);
 }
 
-bool multilineLabel(Utf8String labelText, HAlignType horizontalAlign)
+bool multilineLabel(const char* labelText, HAlignType horizontalAlign)
 {
 	auto bodyElemState = ctx->theme->getElement(WidgetElementId::LabelBody).normalState();
 
 	return multilineLabelCustomFont(labelText, bodyElemState.font, horizontalAlign);
 }
 
-bool multilineLabelCustomFont(Utf8String labelText, Font font, HAlignType horizontalAlign)
+bool multilineLabelCustomFont(const char* labelText, Font font, HAlignType horizontalAlign)
 {
 	auto bodyElemState = ctx->theme->getElement(WidgetElementId::LabelBody).normalState();
 

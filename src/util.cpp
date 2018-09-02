@@ -7,7 +7,7 @@
 
 namespace hui
 {
-bool utf8ToUtf32(Utf8String text, UnicodeString& outText)
+bool utf8ToUtf32(const char* text, UnicodeString& outText)
 {
 	if (!text)
 		return false;
@@ -44,7 +44,7 @@ bool utf32ToUtf16(const UnicodeString& text, wchar_t** outString, size_t& length
 	return true;
 }
 
-bool utf32ToUtf8(const UnicodeString& text, Utf8String* outString)
+bool utf32ToUtf8(const UnicodeString& text, char** outString)
 {
 	std::vector<char> chars;
 
@@ -74,7 +74,7 @@ bool utf32ToUtf8(const UnicodeString& text, Utf8String* outString)
 	return true;
 }
 
-bool utf16ToUtf8(wchar_t* text, Utf8String* outString)
+bool utf16ToUtf8(wchar_t* text, const char** outString)
 {
 	std::vector<char> chars;
 
@@ -104,7 +104,7 @@ bool utf16ToUtf8(wchar_t* text, Utf8String* outString)
 	return true;
 }
 
-bool utf32ToUtf8NoAlloc(const UnicodeString& text, Utf8String outString, size_t maxLength)
+bool utf32ToUtf8NoAlloc(const UnicodeString& text, const char* outString, size_t maxLength)
 {
 	std::vector<char> chars;
 
@@ -176,7 +176,7 @@ void toHexString(int n, char* outString, u32 outStringMaxSize, bool lowercase = 
 		snprintf(outString, outStringMaxSize, "%02X", n);
 }
 
-bool unicodeToUtf8(const u32* text, size_t textLength, Utf8StringBuffer outString, size_t maxOutStringLength)
+bool unicodeToUtf8(const u32* text, size_t textSize, char* outString, size_t maxOutStringSize)
 {
 	std::vector<char> chars;
 
@@ -184,7 +184,7 @@ bool unicodeToUtf8(const u32* text, size_t textLength, Utf8StringBuffer outStrin
 	{
 		utf8::utf32to8(
 			text,
-			text + textLength,
+			text + textSize,
 			std::back_inserter(chars));
 	}
 
@@ -200,7 +200,7 @@ bool unicodeToUtf8(const u32* text, size_t textLength, Utf8StringBuffer outStrin
 
 	int i = 0;
 
-	for (i = 0; i < std::min(maxOutStringLength, chars.size()); i++)
+	for (i = 0; i < std::min(maxOutStringSize, chars.size()); i++)
 	{
 		((char*)outString)[i] = chars[i];
 	}

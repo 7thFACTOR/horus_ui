@@ -9,12 +9,12 @@
 
 namespace hui
 {
-i32 list(i32 selectedIndex, ListSelectionMode selectionType, Utf8String** items, u32 itemCount)
+i32 list(i32 selectedIndex, ListSelectionMode selectionType, const char*** items, u32 itemCount)
 {
 	return 0;
 }
 
-i32 list(i32 selectedIndex, ListSelectionMode selectionType, Utf8String* items)
+i32 list(i32 selectedIndex, ListSelectionMode selectionType, const char** items)
 {
 
 	return 0;
@@ -22,13 +22,13 @@ i32 list(i32 selectedIndex, ListSelectionMode selectionType, Utf8String* items)
 
 i32 list(
 	i32 selectedIndex, ListSelectionMode selectionType, void* userdata,
-	bool(*itemSource)(void* userdata, i32 index, Utf8String** outItem))
+	bool(*itemSource)(void* userdata, i32 index, const char*** outItem))
 {
 
 	return 0;
 }
 
-i32 beginList(ListSelectionMode selectionType)
+bool beginList(ListSelectionMode selectionType)
 {
 
 	return 0;
@@ -38,12 +38,12 @@ void endList()
 {
 }
 
-void listItem(Utf8String labelText, SelectableFlags stateFlags, Image icon)
+void listItem(const char* labelText, SelectableFlags stateFlags, Image icon)
 {
 
 }
 
-bool selectableInternal(Utf8String labelText, Font font, SelectableFlags stateFlags)
+bool selectableInternal(const char* labelText, Font font, SelectableFlags stateFlags)
 {
 	auto bodyElem = ctx->theme->getElement(WidgetElementId::SelectableBody);
 	UiFont* fnt = font ? (UiFont*)font : bodyElem.normalState().font;
@@ -89,12 +89,12 @@ bool selectableInternal(Utf8String labelText, Font font, SelectableFlags stateFl
 	return ctx->widget.clicked;
 }
 
-bool selectable(Utf8String labelText, SelectableFlags stateFlags)
+bool selectable(const char* labelText, SelectableFlags stateFlags)
 {
 	return selectableInternal(labelText, nullptr, stateFlags);
 }
 
-bool selectableCustomFont(Utf8String labelText, Font font, SelectableFlags stateFlags)
+bool selectableCustomFont(const char* labelText, Font font, SelectableFlags stateFlags)
 {
 	return selectableInternal(labelText, font, stateFlags);
 }

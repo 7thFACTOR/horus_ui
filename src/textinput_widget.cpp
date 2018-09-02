@@ -12,10 +12,10 @@
 namespace hui
 {
 bool textInput(
-	Utf8String text,
-	size_t maxLength,
+	char* text,
+	u32 maxLength,
 	TextInputValueMode valueMode,
-	Utf8String defaultText,
+	const char* defaultText,
 	Image icon)
 {
 	auto bodyElem = &ctx->theme->getElement(WidgetElementId::TextInputBody);
@@ -190,13 +190,13 @@ bool textInput(
     }
 
     bool isEmptyText = false;
-    Utf8StringBuffer textToDraw = (Utf8StringBuffer)text;
+    char* textToDraw = (char*)text;
 
     isEmptyText = !strcmp(textToDraw, "");
 
 	if (isEmptyText && defaultText)
 	{
-        textToDraw = (Utf8StringBuffer)defaultText;
+        textToDraw = (char*)defaultText;
 		ctx->renderer->cmdSetColor(bodyTextDefaultElemState.color);
 	}
 	else

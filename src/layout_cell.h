@@ -11,7 +11,7 @@ static constexpr f32 percentOfNewPaneSplit = 0.2f;
 	
 struct UiViewTab
 {
-	Utf8StringBuffer title = nullptr;
+	char* title = nullptr;
 	struct UiViewPane* parentViewPane = nullptr;
 	ViewId id = 0;
 	Rect rect;

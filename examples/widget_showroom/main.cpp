@@ -168,7 +168,7 @@ struct MyViewHandler : hui::ViewHandler
 		}
 	}
 
-	void drawFlowNode(Utf8String name, const Rect& rc)
+	void drawFlowNode(const char* name, const Rect& rc)
 	{
 		hui::Rect box = rc;
 
@@ -459,7 +459,7 @@ struct MyViewHandler : hui::ViewHandler
 			hui::check("Autofill", true);
 			hui::nextColumn();
 			static i32 sel = -1;
-			static Utf8String strs[] = { "Perspective", "Top", "Front", "Left" };
+			static const char* strs[] = { "Perspective", "Top", "Front", "Left" };
 			hui::dropdown(sel, strs, 4);
 			hui::nextColumn();
 			static char tx[100] = { 0 };
@@ -1019,7 +1019,7 @@ struct MyViewHandler : hui::ViewHandler
 			hui::labelCustomFont("General Settings", hui::getFont("title"));
 			static f32 scr[100] = {0};
 			hui::image(horusLogo);
-			Utf8String s[] = { "Red", "Green", "Blue", "Yellow", "Pink" };
+			const char* s[] = { "Red", "Green", "Blue", "Yellow", "Pink" };
 			static i32 crtSel = 0;
 			hui::dropdown(crtSel, s, 5, 3);
 			hui::beginScrollView(hui::getRemainingViewPaneHeight(viewPane), scr[viewId]);
@@ -1137,7 +1137,7 @@ struct MyViewHandler : hui::ViewHandler
 				hui::gap(10);
 				
 				static int projType = 0;
-				static Utf8String projTypes[] = { "Perspective", "Free Ortho", "Left", "Top", "Front" };
+				static const char* projTypes[] = { "Perspective", "Free Ortho", "Left", "Top", "Front" };
 				static char someText[200] = "Please select projection type";
 				static char colorR[10] = { 0 };
 				static char colorG[10] = { 0 };
@@ -1167,7 +1167,7 @@ struct MyViewHandler : hui::ViewHandler
 					hui::beginTwoColumns();
 					hui::label("Text.Red", HAlignType::Right);
 					hui::nextColumn();
-					hui::textInput((Utf8String)colorR, 10);
+					hui::textInput((const char*)colorR, 10);
 					hui::endColumns();
 
 					hui::label("Red", HAlignType::Right);
@@ -1177,7 +1177,7 @@ struct MyViewHandler : hui::ViewHandler
 					hui::beginTwoColumns();
 					hui::label("Text.Green", HAlignType::Right);
 					hui::nextColumn();
-					hui::textInput((Utf8String)colorG, 10);
+					hui::textInput((const char*)colorG, 10);
 					hui::endColumns();
 
 					hui::label("Green", HAlignType::Right);
@@ -1186,26 +1186,26 @@ struct MyViewHandler : hui::ViewHandler
 					hui::beginTwoColumns();
 					hui::label("Text.Blue", HAlignType::Right);
 					hui::nextColumn();
-					hui::textInput((Utf8String)colorB, 10);
+					hui::textInput((const char*)colorB, 10);
 					hui::endColumns();
 
 					hui::label("Blue", HAlignType::Right);
 					hui::sliderFloat(0, 1, c.b);
 
 					hui::beginThreeColumns();
-					hui::labelCustomFont((Utf8String)colorR, fntBold, HAlignType::Center);
+					hui::labelCustomFont((const char*)colorR, fntBold, HAlignType::Center);
 					hui::nextColumn();
-					hui::labelCustomFont((Utf8String)colorG, fntBold, HAlignType::Center);
+					hui::labelCustomFont((const char*)colorG, fntBold, HAlignType::Center);
 					hui::nextColumn();
-					hui::labelCustomFont((Utf8String)colorB, fntBold, HAlignType::Center);
+					hui::labelCustomFont((const char*)colorB, fntBold, HAlignType::Center);
 					hui::endColumns();
 				}
 
 				hui::gap(20);
 				hui::pushTint(c);
-				hui::multilineLabelCustomFont((Utf8String)someText, fntBig, HAlignType::Center);
+				hui::multilineLabelCustomFont((const char*)someText, fntBig, HAlignType::Center);
 				hui::popTint();
-				hui::textInput((Utf8String)someText, 200, TextInputValueMode::Any, "Input projection");
+				hui::textInput((const char*)someText, 200, TextInputValueMode::Any, "Input projection");
 				hui::gap(20);
 				if (hui::button("More Info..."))
 				{
@@ -1244,7 +1244,7 @@ struct MyViewHandler : hui::ViewHandler
             {
                 printf("SUB\n");
             }
-			Utf8String s2[] = { "White", "Red", "Green", "Blue", "Yellow", "Pink" };
+			const char* s2[] = { "White", "Red", "Green", "Blue", "Yellow", "Pink" };
 			static int sel = 0;
 			static hui::Color currentTint = Color::white;
 

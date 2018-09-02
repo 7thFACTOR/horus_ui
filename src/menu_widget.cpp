@@ -36,7 +36,7 @@ void endMenuBar()
 	ctx->currentMenuBarId = 0;
 }
 
-bool beginMenuInternal(Utf8String labelText, SelectableFlags stateFlags, bool contextMenu)
+bool beginMenuInternal(const char* labelText, SelectableFlags stateFlags, bool contextMenu)
 {
 	auto menuBarItemElem = ctx->theme->getElement(WidgetElementId::MenuBarItem);
 	auto menuBarItemElemState = menuBarItemElem.normalState();
@@ -269,7 +269,7 @@ void endMenuInternal(bool contextMenu)
 	}
 }
 
-bool beginMenu(Utf8String labelText, SelectableFlags stateFlags)
+bool beginMenu(const char* labelText, SelectableFlags stateFlags)
 {
 	return beginMenuInternal(labelText, stateFlags, false);
 }
@@ -311,7 +311,7 @@ void endContextMenu()
 	endMenuInternal(true);
 }
 
-bool menuItem(Utf8String labelText, Utf8String shortcut, Image icon, SelectableFlags stateFlags)
+bool menuItem(const char* labelText, const char* shortcut, Image icon, SelectableFlags stateFlags)
 {
 	auto menuItemShortcutElem = ctx->theme->getElement(WidgetElementId::MenuItemShortcut);
 	auto bodyElem = ctx->theme->getElement(WidgetElementId::MenuItemBody);

@@ -10,7 +10,7 @@ namespace hui
 {
 struct SdlSettings
 {
-    Utf8StringBuffer mainWindowTitle;
+    char* mainWindowTitle;
     Rect mainWindowRect;
     WindowPositionType positionType = WindowPositionType::Undefined;
     bool vSync = true;
@@ -25,8 +25,8 @@ struct Sdl2InputProvider : InputProvider
 	~Sdl2InputProvider();
 	void startTextInput(Window window, const Rect& imeRect) override;
 	void stopTextInput() override;
-	bool copyToClipboard(Utf8String text) override;
-	bool pasteFromClipboard(Utf8String *outText) override;
+	bool copyToClipboard(const char* text) override;
+	bool pasteFromClipboard(char* *outText, u32 maxTextSize) override;
 	void processEvents() override;
 	void setCurrentWindow(Window window) override;
 	Window getCurrentWindow() override;
@@ -34,12 +34,12 @@ struct Sdl2InputProvider : InputProvider
 	Window getHoveredWindow() override;
 	Window getMainWindow() override;
 	Window createWindow(
-		Utf8String title, i32 width, i32 height,
+		const char* title, i32 width, i32 height,
 		WindowBorder border = WindowBorder::Resizable,
 		WindowPositionType windowPos = WindowPositionType::Undefined,
 		Point customPosition = { 0, 0 },
 		bool showInTaskBar = true) override;
-	void setWindowTitle(Window window, Utf8String title) override;
+	void setWindowTitle(Window window, const char* title) override;
 	void setWindowRect(Window window, const Rect& rect) override;
 	Rect getWindowRect(Window window) override;
 	void presentWindow(Window window) override;

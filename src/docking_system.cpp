@@ -480,7 +480,7 @@ void handleViewContainerResize(UiViewContainer* viewContainer)
 				ctx->renderer->cmdSetFont(dockingRectElem.normalState().font);
 				ctx->renderer->cmdSetColor(dockingRectElem.normalState().textColor);
 
-				Utf8String str = nullptr;
+				const char* str = nullptr;
 				std::string title = "";
 
 				if (dragTab)

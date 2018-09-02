@@ -11,7 +11,7 @@
 
 namespace hui
 {
-bool tooltip(Utf8String text)
+bool tooltip(const char* text)
 {
 	if ((ctx->currentWidgetId - 1) == ctx->widget.hoveredWidgetId
 		&& ctx->tooltip.show)
@@ -69,7 +69,7 @@ bool tooltip(Utf8String text)
 	return false;
 }
 
-bool beginRichTooltip(f32 width)
+bool beginCustomTooltip(f32 width)
 {
 	if ((ctx->currentWidgetId - 1) == ctx->widget.hoveredWidgetId
 		&& ctx->tooltip.show)
@@ -88,7 +88,7 @@ bool beginRichTooltip(f32 width)
 	return false;
 }
 
-void endRichTooltip()
+void endCustomTooltip()
 {
 	if (ctx->tooltip.show)
 	{

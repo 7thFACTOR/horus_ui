@@ -9,7 +9,7 @@ class FontCache
 public:
 	FontCache(UiAtlas* newAtlas);
 	~FontCache();
-	UiFont* createFont(const std::string& filename, u32 size, bool packAtlasNow);
+	UiFont* createFont(const std::string& name, const std::string& filename, u32 size, bool packAtlasNow);
 	void releaseFont(UiFont* font);
 	void deleteFonts();
 	void rescaleFonts(f32 scale);
@@ -18,7 +18,8 @@ protected:
 	struct CachedFontInfo
 	{
 		UiFont font;
-		std::string filename;
+        std::string name;
+        std::string filename;
 		u32 size;
 		u32 usageCount = 0;
 	};

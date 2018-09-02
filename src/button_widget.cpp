@@ -197,7 +197,7 @@ void mouseDownOnlyButtonBehavior()
 	}
 }
 
-bool button(Utf8String labelText)
+bool button(const char* labelText)
 {
 	auto btnBodyElem = ctx->theme->getElement(WidgetElementId::ButtonBody);
 

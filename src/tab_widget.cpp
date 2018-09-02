@@ -64,7 +64,7 @@ TabIndex endTabGroup()
 	return ctx->selectedTabIndex;
 }
 
-void tab(Utf8String labelText, Image icon)
+void tab(const char* labelText, Image icon)
 {
 	auto tabGroupElemState = ctx->theme->getElement(WidgetElementId::TabGroupBody).normalState();
 	auto tabActiveElem = ctx->theme->getElement(WidgetElementId::TabBodyActive);

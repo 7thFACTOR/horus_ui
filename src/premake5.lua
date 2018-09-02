@@ -3,7 +3,8 @@ project "horus"
 	defines {"HORUS_EXPORTS"}
 	includedirs {scriptRoot, scriptRoot.."/include"}
 	add_sources_from("./")
-	vpaths { ["*"] = scriptRoot.."/src/**.*" }
+	add_sources_from("../include/")
+	vpaths { ["*"] = { scriptRoot.."/src/**.*", scriptRoot.."/include/**.*" } }
 
 	link_binpack()
 	link_win32()

@@ -140,7 +140,7 @@ struct UiContext
 	void setSkipRenderAndInput(bool skip);
 
 	Rect drawMultilineText(
-		Utf8String text,
+		const char* text,
 		const Rect& rect,
 		HAlignType horizontal = HAlignType::Left,
 		VAlignType vertical = VAlignType::Top);

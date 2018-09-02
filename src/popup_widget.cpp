@@ -313,8 +313,8 @@ bool mustClosePopup()
 }
 
 MessageBoxButtons messageBox(
-	Utf8String title,
-	Utf8String message,
+	const char* title,
+	const char* message,
 	MessageBoxButtons buttons,
 	MessageBoxIcon icon,
 	u32 width,

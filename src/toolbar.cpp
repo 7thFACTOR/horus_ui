@@ -23,7 +23,7 @@ bool toolbarButton(Image normalIcon, Image disabledIcon, bool down)
 	return ret;
 }
 
-bool toolbarDropdown(Utf8String label, Image normalIcon, Image disabledIcon)
+bool toolbarDropdown(const char* label, Image normalIcon, Image disabledIcon)
 {
 	return false;
 }
@@ -38,12 +38,12 @@ void toolbarGap()
 
 }
 
-bool toolbarTextInputFilter(char* outText, u32 maxOutTextSize, u32& filterIndex, Utf8String* filterNames, u32 filterNameCount)
+bool toolbarTextInputFilter(char* outText, u32 maxOutTextSize, u32& filterIndex, const char** filterNames, u32 filterNameCount)
 {
 	return false;
 }
 
-bool toolbarTextInput(char* outText, u32 maxOutTextSize, Utf8String hint, Image icon)
+bool toolbarTextInput(char* outText, u32 maxOutTextSize, const char* hint, Image icon)
 {
 	return textInput(outText, maxOutTextSize, TextInputValueMode::Any, hint, icon);
 }

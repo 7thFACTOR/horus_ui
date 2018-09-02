@@ -140,7 +140,7 @@ bool vec2Editor(f32& x, f32& y, f32 scrollStep)
 	return ret;
 }
 
-bool objectRefEditor(Image targetIcon, Image clearIcon, Utf8String objectTypeName, Utf8String valueAsString, u32 objectType, void** outObject, bool* objectValueWasModified)
+bool objectRefEditor(Image targetIcon, Image clearIcon, const char* objectTypeName, const char* valueAsString, u32 objectType, void** outObject, bool* objectValueWasModified)
 {
 	bool returnValue = false;
 	pushPadding(0);
