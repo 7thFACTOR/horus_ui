@@ -11,7 +11,6 @@ HorusUI was specifically designed to create game editor tools or similar types o
 ```NOTE: The library is still work in progress, drastic changes will occur until stabilization```
 
 ## QUICK SAMPLE (C++)
-![HUI](docs/images/hui_sample_code.png)
 ![HUI](docs/images/hui_sample_code.gif)
 ```C++
     auto huiCtx = hui::createContext(hui::GraphicsApi::OpenGL);
