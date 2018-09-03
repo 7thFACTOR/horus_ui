@@ -10,8 +10,13 @@ HorusUI was specifically designed to create game editor tools or similar types o
 
 ```NOTE: The library is still work in progress, drastic changes will occur until stabilization```
 
+If you want to help with the development, donations are welcomed:
+Donations on Patreon:
+<br>[![Patreon](docs/images/patreon.png)](http://www.patreon.com/7thfactor)
+Donations on PayPal:
+<br>[![PayPal](https://www.paypalobjects.com/en_US/i/btn/btn_donate_LG.gif)](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=D2J3J2A766KXY)
+
 ## QUICK SAMPLE (C++)
-![HUI](docs/images/hui_sample_code.png)
 ![HUI](docs/images/hui_sample_code.gif)
 ```C++
     auto huiCtx = hui::createContext(hui::GraphicsApi::OpenGL);
