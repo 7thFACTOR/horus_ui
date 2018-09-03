@@ -10,6 +10,8 @@ HorusUI was specifically designed to create game editor tools or similar types o
 
 ```NOTE: The library is still work in progress, drastic changes will occur until stabilization```
 
+For direct support: support@7thfactor.com
+
 If you want to help with the development, donations are welcomed:
 
 Donations on Patreon:
