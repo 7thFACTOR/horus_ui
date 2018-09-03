@@ -103,8 +103,6 @@ GTK3 dev, needed for the nativefiledialog lib, use:
 GLU/GLUT dev, needed by GLEW, use:
 		```sudo apt-get install libglu1-mesa-dev freeglut3-dev mesa-common-dev```
 	
-libudev-dev, needed by SFML
-
 ## BUILDING
 **Windows:**
 - Execute: ```generate.bat```
