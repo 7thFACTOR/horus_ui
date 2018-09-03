@@ -8,7 +8,7 @@ The HorusUI library allows you to quickly develop GUIs for your applications by 
 Ideally you should be familiar with https://en.wikipedia.org/wiki/Immediate_Mode_GUI. There are other imgui libs out there, dear-imgui which is more like a debug GUI and Nuklear which resembles HorusUI.
 HorusUI was specifically designed to create game editor tools or similar types of applications.
 
-```NOTE: The library is still work in progress, drastic changes will occur until stabilization```
+```NOTE: The library is still work in progress, changes will occur until stabilization```
 
 For direct support: support@tachyonengine.com
 
