@@ -14,11 +14,11 @@ void line()
 	addWidgetItem(bodyElemState.image->rect.height * ctx->globalScale);
 	ctx->renderer->cmdSetColor(bodyElemState.color);
 	ctx->renderer->cmdDrawImageBordered(bodyElemState.image, bodyElemState.border,
-	{
-		ctx->widget.rect.x,
-		ctx->widget.rect.y,
-		ctx->widget.rect.width,
-		ctx->widget.rect.height }, ctx->globalScale);
+		{
+			ctx->widget.rect.x,
+			ctx->widget.rect.y,
+			ctx->widget.rect.width,
+			ctx->widget.rect.height }, ctx->globalScale);
 	ctx->currentWidgetId++;
 }
 

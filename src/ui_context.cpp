@@ -22,8 +22,8 @@ Rect UiContext::drawMultilineText(
 	GlyphCode lastGlyphCode = 0;
 	Rect newRect = rect;
 
-    if (!strcmp(text, ""))
-        return newRect;
+	if (!strcmp(text, ""))
+		return newRect;
 
 	TextLine line;
 	auto crtFont = renderer->getFont();

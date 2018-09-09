@@ -8,6 +8,7 @@
 
 namespace hui
 {
+//TODO: place into public settings
 static f32 movePopupMaxDistanceTrigger = 5;
 
 void beginPopup(
@@ -21,7 +22,7 @@ void beginPopup(
 {
 	auto& popup = ctx->popupStack[ctx->popupIndex];
 
-    popup.incrementLayer = incrementLayer;
+	popup.incrementLayer = incrementLayer;
 
 	if (ctx->popupUseGlobalScale)
 		width *= ctx->globalScale;
@@ -153,7 +154,7 @@ void endPopup()
 
 	//TODO: make a better popup move
 	if (ctx->isActiveLayer()
-		&& 
+		&&
 		(ctx->widget.hoveredWidgetId == popup.widgetId
 			|| popup.startedToDrag
 			|| ctx->widget.hoveredWidgetType == WidgetType::Label))
@@ -215,7 +216,7 @@ void endPopup()
 	ctx->containerRect = popup.prevContainerRect;
 	ctx->renderer->popClipRect();
 	ctx->layoutStack.pop_back();
-	
+
 	if (popup.incrementLayer)
 		decrementLayerIndex();
 
@@ -230,10 +231,10 @@ void closePopup()
 	auto& popup = ctx->popupStack[ctx->popupIndex - 1];
 
 	popup.active = false;
-	
+
 	if (popup.incrementLayer)
 		decrementWindowMaxLayerIndex();
-	
+
 	ctx->event.type = InputEvent::Type::None;
 	ctx->widget.focusedWidgetId = 0;
 	skipThisFrame();

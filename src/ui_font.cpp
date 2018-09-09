@@ -71,13 +71,13 @@ void UiFont::load(const std::string& fontFilename, u32 facePointSize, UiAtlas* t
 
 	/* Select charmap */
 	int error = FT_Select_Charmap((FT_Face)face, FT_ENCODING_UNICODE);
-	
+
 	if (error)
 	{
 		FT_Done_Face((FT_Face)face);
 		return;
 	}
-	
+
 	// freetype measures fonts in 64ths of pixels
 	//FT_Set_Char_Size((FT_Face)face, faceSize << 6, faceSize << 6, 96, 96);
 	FT_Set_Pixel_Sizes((FT_Face)face, 0, faceSize);
@@ -105,7 +105,7 @@ void UiFont::resetFaceSize(u32 fontFaceSize)
 	{
 		cacheGlyph(glyph.first);
 	}
-	
+
 	resizeFaceMode = false;
 }
 
@@ -249,7 +249,7 @@ FontGlyph* UiFont::cacheGlyph(GlyphCode glyphCode, bool packAtlasNow)
 
 	fontGlyph->pixelWidth = width;
 	fontGlyph->pixelHeight = height;
-	
+
 	if (resizeFaceMode)
 		delete[] fontGlyph->rgbaBuffer;
 
@@ -283,7 +283,7 @@ FontGlyph* UiFont::cacheGlyph(GlyphCode glyphCode, bool packAtlasNow)
 	else
 	{
 		// if we are in resize mode, then just update the image buffer for the glyph and its size
-		delete [] fontGlyph->image->imageData;
+		delete[] fontGlyph->image->imageData;
 		auto imgSize = fontGlyph->pixelWidth * fontGlyph->pixelHeight * sizeof(Rgba32);
 		fontGlyph->image->imageData = new Rgba32[imgSize];
 		fontGlyph->image->width = width;
@@ -379,7 +379,7 @@ void UiFont::deleteGlyphs()
 	for (auto glyph : glyphs)
 	{
 		atlas->deleteImage(glyph.second->image);
-		delete [] glyph.second->rgbaBuffer;
+		delete[] glyph.second->rgbaBuffer;
 		delete glyph.second;
 	}
 

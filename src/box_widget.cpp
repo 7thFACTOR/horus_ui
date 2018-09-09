@@ -89,7 +89,7 @@ bool endBox()
 	endInsertDrawCommands();
 
 	ctx->penPosition.x = ctx->penStack.back().x;
-	
+
 	if (ctx->layoutStack.back().height <= 0.0f)
 	{
 		ctx->penPosition.y += boxElemState->border * ctx->globalScale;

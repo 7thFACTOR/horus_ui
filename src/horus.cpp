@@ -16,7 +16,7 @@
 #include <algorithm>
 
 #ifdef _WIN32
-	#include <windows.h>
+#include <windows.h>
 #endif
 
 namespace hui
@@ -86,7 +86,7 @@ Context createContext(InputProvider* customInputProvider, GraphicsProvider* cust
 
 	if (customInputProvider)
 		setInputProvider(customInputProvider);
-	
+
 	if (customGfxProvider)
 		setGraphicsProvider(customGfxProvider);
 
@@ -99,8 +99,8 @@ Context createContext(InputProvider* customInputProvider, GraphicsProvider* cust
 
 void initializeContext(Context context)
 {
-    UiContext* ctxPtr = (UiContext*)context;
-    ctxPtr->initializeGraphics();
+	UiContext* ctxPtr = (UiContext*)context;
+	ctxPtr->initializeGraphics();
 }
 
 void setContext(Context context)
@@ -126,7 +126,7 @@ ContextSettings& getContextSettings()
 void clearBackground()
 {
 	auto windowElemState = ctx->theme->getElement(WidgetElementId::WindowBody).normalState();
-	
+
 	ctx->renderer->clear(windowElemState.color);
 }
 
@@ -216,7 +216,7 @@ void beginFrame()
 {
 	if (ctx->textInput.widgetId)
 	{
-        ctx->textInput.processEvent(ctx->event);
+		ctx->textInput.processEvent(ctx->event);
 	}
 
 	if (ctx->event.type == InputEvent::Type::Key
@@ -224,7 +224,7 @@ void beginFrame()
 		&& !!(ctx->event.key.modifiers, KeyModifiers::Shift)
 		&& ctx->event.key.down)
 	{
-		ctx->widget.focusedWidgetId --;
+		ctx->widget.focusedWidgetId--;
 		ctx->focusChanged = true;
 
 		if (ctx->widget.focusedWidgetId < 0)
@@ -265,7 +265,7 @@ void endFrame()
 {
 	ctx->maxWidgetId = ctx->currentWidgetId;
 	ctx->focusChanged = false;
-    ctx->mouseMoved = false;
+	ctx->mouseMoved = false;
 
 	if (ctx->dragDropState.begunDragging
 		&& ctx->event.type == InputEvent::Type::MouseUp)
@@ -328,14 +328,14 @@ void update(f32 deltaTime)
 bool hasNothingToDo()
 {
 	return !ctx->mustRedraw
-        && !ctx->mouseMoved
-        && !ctx->events.size()
+		&& !ctx->mouseMoved
+		&& !ctx->events.size()
 		&& !ctx->dockingTabPane;
 }
 
 void setDisableRendering(bool disable)
 {
-    ctx->renderer->disableRendering = disable;
+	ctx->renderer->disableRendering = disable;
 }
 
 void forceRepaint()
@@ -401,7 +401,7 @@ void setWindow(Window window)
 
 	ctx->renderer->setWindowSize({ rect.width, rect.height });
 	ctx->gfx->setViewport(
-		{rect.width, rect.height},
+		{ rect.width, rect.height },
 		{ 0, 0, rect.width, rect.height });
 }
 
@@ -428,9 +428,9 @@ Window getMainWindow()
 Window createWindow(
 	const char* title, u32 width, u32 height,
 	WindowBorder border,
-    WindowPositionType positionType,
+	WindowPositionType positionType,
 	Point customPosition,
-    bool showInTaskBar)
+	bool showInTaskBar)
 {
 	auto wnd = ctx->inputProvider->createWindow(title, width, height, border, positionType, customPosition, showInTaskBar);
 
@@ -524,33 +524,33 @@ void cancelEvent()
 
 void addInputEvent(const InputEvent& event)
 {
-    ctx->events.push_back(event);
+	ctx->events.push_back(event);
 }
 
 void clearInputEventQueue()
 {
-    ctx->event.type = InputEvent::Type::None;
-    ctx->events.clear();
+	ctx->event.type = InputEvent::Type::None;
+	ctx->events.clear();
 }
 
 void setMouseMoved(bool moved)
 {
-    ctx->mouseMoved = moved;
+	ctx->mouseMoved = moved;
 }
 
 u32 getInputEventCount()
 {
-    return ctx->events.size();
+	return ctx->events.size();
 }
 
 InputEvent getInputEventAt(u32 index)
 {
-    return ctx->events[index];
+	return ctx->events[index];
 }
 
 void setInputEvent(const InputEvent& event)
 {
-    ctx->event = event;
+	ctx->event = event;
 }
 
 bool mustQuit()
@@ -576,7 +576,7 @@ void quitApplication()
 void shutdown()
 {
 	assert(ctx);
-	
+
 	if (ctx->inputProvider)
 		ctx->inputProvider->shutdown();
 }
@@ -593,7 +593,7 @@ Image loadImage(const char* filename)
 
 	Image img = createImage((Rgba32*)data, width, height);
 
-	delete [] data;
+	delete[] data;
 
 	return img;
 }
@@ -615,7 +615,7 @@ Point getImageSize(Image image)
 void updateImagePixels(Image image, Rgba32* pixels)
 {
 	UiImage* img = (UiImage*)image;
-	
+
 	//TODO: check if image is rotated
 	img->atlasTexture->textureArray->updateRectData(img->atlasTexture->textureIndex, img->rect, pixels);
 }
@@ -694,20 +694,20 @@ void setGraphicsProvider(GraphicsProvider* provider)
 
 void processInputEvents()
 {
-    ctx->event.type = InputEvent::Type::None;
-    clearInputEventQueue();
+	ctx->event.type = InputEvent::Type::None;
+	clearInputEventQueue();
 	ctx->inputProvider->processEvents();
 	hui::update(getFrameDeltaTime());
 }
 
 void setFrameDeltaTime(f32 dt)
 {
-    ctx->deltaTime = dt;
+	ctx->deltaTime = dt;
 }
 
 f32 getFrameDeltaTime()
 {
-    return ctx->deltaTime;
+	return ctx->deltaTime;
 }
 
 Theme createTheme(u32 atlasTextureSize)
@@ -877,7 +877,7 @@ static std::string readTextFile(const char* path)
 
 		delete[] buffer;
 	}
-	
+
 	fclose(file);
 
 	return text;
@@ -1131,7 +1131,7 @@ void setUserElement(
 		theme,
 		elemName.c_str(),
 		widgetStateType,
-		{ 
+		{
 			image,
 			(u32)border,
 			bgColor,
@@ -1145,7 +1145,7 @@ void setUserElement(
 Theme loadTheme(const char* filename)
 {
 	const u32 defaultAtlasSize = 4096;
-	
+
 	assert(ctx);
 
 	UiTheme* theme = new UiTheme(defaultAtlasSize);
@@ -1229,7 +1229,7 @@ void beginWindow(Window window)
 {
 	ctx->savedEventType = ctx->event.type;
 	ctx->renderer->setZOrder(0);
-	
+
 	for (auto& popup : ctx->popupStack)
 	{
 		popup.alreadyClosedWithEscape = false;
@@ -1257,7 +1257,7 @@ void beginContainer(const Rect& rect)
 	ctx->layoutStack.back().height = rect.height;
 
 	ctx->renderer->pushClipRect(rect);
-	ctx->penPosition = {rect.x, rect.y};
+	ctx->penPosition = { rect.x, rect.y };
 	ctx->containerRect = rect;
 }
 
@@ -1274,7 +1274,7 @@ void endContainer()
 			ctx->layoutStack.back().position.x,
 			ctx->layoutStack.back().position.y,
 			ctx->layoutStack.back().width,
-			ctx->layoutStack.back().height};
+			ctx->layoutStack.back().height };
 		ctx->penPosition = { rect.x, rect.y };
 		ctx->containerRect = rect;
 	}
@@ -1319,7 +1319,7 @@ u32 decrementLayerIndex()
 void decrementWindowMaxLayerIndex()
 {
 	ctx->maxLayerIndex--;
-	
+
 	if (ctx->maxLayerIndex == ~0)
 	{
 		ctx->maxLayerIndex = 0;
@@ -1339,7 +1339,7 @@ static void computeColumnsPixelSize(LayoutState& parentLayout, LayoutState& layo
 		{
 			availableWidth -= layout.columnPixelSizes[i];
 		}
-		
+
 		// if its a column that wants to get equal part of remaining space
 		if (layout.columnSizes[i] <= 0.0f)
 		{
@@ -1522,14 +1522,14 @@ void nextColumn()
 		// take out the last column
 		ctx->layoutStack.pop_back();
 		auto& columnsLayout = ctx->layoutStack.back();
-		
+
 		// wrong placement, here must be a Columns
 		if (columnsLayout.type != LayoutType::Columns)
 			return;
 
 		// now we're in the Columns layout
 		columnsLayout.currentColumn++;
-		
+
 		// set max column Y in columns
 		if (columnsLayout.maxPenPositionY < ctx->penPosition.y)
 			columnsLayout.maxPenPositionY = ctx->penPosition.y;
@@ -1550,8 +1550,8 @@ void nextColumn()
 
 			ctx->penPosition = {
 				parentLayout.position.x,
-				maxY};
-			
+				maxY };
+
 			ctx->penPosition.x = ctx->penStack.back().x;
 			ctx->penStack.pop_back();
 			return;
@@ -1650,7 +1650,7 @@ f32 getPadding()
 void setGlobalScale(f32 scale)
 {
 	ctx->globalScale = scale;
-	
+
 	if (ctx->theme)
 	{
 		ctx->theme->fontCache->rescaleFonts(scale);

@@ -89,7 +89,7 @@ f32 endScrollView()
 	if (scrollPos < 0)
 	{
 		scrollPos = 0;
-        forceRepaint();
+		forceRepaint();
 	}
 
 	if (scrollContentSize < clipRect.height && fabs(scrollPos) > 0)
@@ -120,7 +120,7 @@ f32 endScrollView()
 		};
 
 		f32 handleSize = rectScrollBar.height * rectScrollBar.height / scrollContentSize;
-		
+
 		//TODO: make it global property
 		if (handleSize < 20.0f)
 			handleSize = 20.0f;
@@ -147,7 +147,7 @@ f32 endScrollView()
 			else if (rectScrollBar.contains(ctx->event.mouse.point))
 			{
 				f32 pageSize = (clipRect.height * ctx->scrollViewScrollPageSize);
-				
+
 				// page up
 				if (ctx->event.mouse.point.y < rectScrollBarHandle.y)
 				{
@@ -161,7 +161,7 @@ f32 endScrollView()
 			}
 		}
 		else if (ctx->mouseMoved
-            && ctx->scrollViewStack[ctx->scrollViewDepth].draggingThumb
+			&& ctx->scrollViewStack[ctx->scrollViewDepth].draggingThumb
 			&& ctx->dragScrollViewHandleWidgetId == ctx->scrollViewStack[ctx->scrollViewDepth].widgetId)
 		{
 			f32 crtLocalY = ctx->event.mouse.point.y - ctx->scrollViewStack[ctx->scrollViewDepth].dragDelta.y - clipRect.y;
@@ -178,7 +178,7 @@ f32 endScrollView()
 			if (scrollPos < 0)
 			{
 				scrollPos = 0;
-                forceRepaint();
+				forceRepaint();
 			}
 
 			if (scrollContentSize < clipRect.height && fabs(scrollPos) > 0)
@@ -245,10 +245,10 @@ void beginVirtualListContent(u32 totalRowCount, u32 itemHeight, f32 scrollPos)
 void endVirtualListContent()
 {
 	hui::setPenPosition(
-	{
-		ctx->virtualListStack.back().lastPenPosition.x,
-		ctx->virtualListStack.back().lastPenPosition.y + ctx->virtualListStack.back().totalRowCount * ctx->virtualListStack.back().itemHeight
-	});
+		{
+			ctx->virtualListStack.back().lastPenPosition.x,
+			ctx->virtualListStack.back().lastPenPosition.y + ctx->virtualListStack.back().totalRowCount * ctx->virtualListStack.back().itemHeight
+		});
 
 	ctx->virtualListStack.pop_back();
 }

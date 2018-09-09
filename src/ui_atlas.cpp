@@ -93,7 +93,7 @@ void UiAtlas::deleteImage(UiImage* image)
 	if (iter == images.end())
 		return;
 
-	delete [] image->imageData;
+	delete[] image->imageData;
 	delete image;
 
 	//TODO: we would need to recreate the atlas texture where this image was in
@@ -107,7 +107,7 @@ UiImage* UiAtlas::addWhiteImage(u32 width)
 
 	memset(whiteImageData, 0xff, whiteImageSize * 4);
 	whiteImage = addImage(whiteImageData, width, width, true);
-	delete []whiteImageData;
+	delete[]whiteImageData;
 
 	return whiteImage;
 }
@@ -153,7 +153,7 @@ bool UiAtlas::pack(
 						iter = pendingPackImages.erase(iter);
 						continue;
 					}
-					
+
 					packedRect = guillotineBinPack.Insert(
 						packImage.width + border2,
 						packImage.height + border2,
@@ -187,7 +187,7 @@ bool UiAtlas::pack(
 				while (iter != pendingPackImages.end())
 				{
 					auto& packImage = *iter;
-					
+
 					packedRect = maxRectsBinPack.Insert(
 						packImage.width + border2,
 						packImage.height + border2,
@@ -309,7 +309,7 @@ bool UiAtlas::pack(
 			}
 
 			atlasTextures.push_back(newTexture);
-		
+
 			// resize the texture array
 			textureArray->resize(atlasTextures.size(), width, height);
 			allTexturesDirty = true;
@@ -370,16 +370,16 @@ bool UiAtlas::pack(
 			}
 		}
 		else
-		for (u32 y = 0; y < packImage.height; y++)
-		{
-			for (u32 x = 0; x < packImage.width; x++)
+			for (u32 y = 0; y < packImage.height; y++)
 			{
-				u32 destIndex =
-					packImage.packedRect.x + x + (packImage.packedRect.y + y) * width;
-				u32 srcIndex = x + y * packImage.width;
-				image->atlasTexture->textureImage[destIndex] = ((Rgba32*)packImage.imageData)[srcIndex];
+				for (u32 x = 0; x < packImage.width; x++)
+				{
+					u32 destIndex =
+						packImage.packedRect.x + x + (packImage.packedRect.y + y) * width;
+					u32 srcIndex = x + y * packImage.width;
+					image->atlasTexture->textureImage[destIndex] = ((Rgba32*)packImage.imageData)[srcIndex];
+				}
 			}
-		}
 
 		image->atlasTexture->dirty = true;
 	}
@@ -411,7 +411,7 @@ void UiAtlas::repackImages()
 		// pass over the data ptr, it will be passed again to the image
 		if (img.second->imageData)
 			packImg.imageData = img.second->imageData;
-		
+
 		packImg.width = img.second->width;
 		packImg.height = img.second->height;
 		packImg.packedRect.set(0, 0, 0, 0);

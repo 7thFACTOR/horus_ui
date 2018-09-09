@@ -27,19 +27,19 @@ void progress(f32 value)
 
 	ctx->renderer->cmdSetColor(backElemState.color);
 	ctx->renderer->cmdDrawImageBordered(backElemState.image, backElemState.border,
-	{
-		ctx->widget.rect.x,
-		ctx->widget.rect.y + (backElemState.height - backElemState.image->rect.height) / 2.0f * ctx->globalScale,
-		ctx->widget.rect.width,
-		backElemState.image->rect.height * ctx->globalScale }, ctx->globalScale);
+		{
+			ctx->widget.rect.x,
+			ctx->widget.rect.y + (backElemState.height - backElemState.image->rect.height) / 2.0f * ctx->globalScale,
+			ctx->widget.rect.width,
+			backElemState.image->rect.height * ctx->globalScale }, ctx->globalScale);
 
 	ctx->renderer->cmdSetColor(fillElemState.color);
 	ctx->renderer->cmdDrawImageBordered(fillElemState.image, fillElemState.border,
-	{
-		ctx->widget.rect.x,
-		ctx->widget.rect.y + (backElemState.height - fillElemState.image->rect.height) / 2.0f * ctx->globalScale,
-		ctx->widget.rect.width * percentFilled,
-		fillElemState.image->rect.height * ctx->globalScale }, ctx->globalScale);
+		{
+			ctx->widget.rect.x,
+			ctx->widget.rect.y + (backElemState.height - fillElemState.image->rect.height) / 2.0f * ctx->globalScale,
+			ctx->widget.rect.width * percentFilled,
+			fillElemState.image->rect.height * ctx->globalScale }, ctx->globalScale);
 	ctx->currentWidgetId++;
 }
 

@@ -183,25 +183,25 @@ bool textInput(
 		ctx->renderer->cmdDrawSolidColor(cursorRect);
 	}
 
-    if (isEditingThis)
-    {
-        memset((char*)text, 0, maxLength);
-        utf32ToUtf8NoAlloc(ctx->textInput.text, text, maxLength);
-    }
+	if (isEditingThis)
+	{
+		memset((char*)text, 0, maxLength);
+		utf32ToUtf8NoAlloc(ctx->textInput.text, text, maxLength);
+	}
 
-    bool isEmptyText = false;
-    char* textToDraw = (char*)text;
+	bool isEmptyText = false;
+	char* textToDraw = (char*)text;
 
-    isEmptyText = !strcmp(textToDraw, "");
+	isEmptyText = !strcmp(textToDraw, "");
 
 	if (isEmptyText && defaultText)
 	{
-        textToDraw = (char*)defaultText;
+		textToDraw = (char*)defaultText;
 		ctx->renderer->cmdSetColor(bodyTextDefaultElemState.color);
 	}
 	else
 	{
-        ctx->renderer->cmdSetColor(bodyElemState->color);
+		ctx->renderer->cmdSetColor(bodyElemState->color);
 	}
 
 	auto textRect = Rect(

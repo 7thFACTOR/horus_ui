@@ -101,14 +101,8 @@ struct DrawCommand
 		Color bottomRight;
 	};
 
-	struct CmdCallback
-	{
-		DrawCommandCallback func;
-		void* userdata;
-	};
-
 	DrawCommand() {}
-	DrawCommand(Type newType) 
+	DrawCommand(Type newType)
 		: type(newType)
 	{}
 
@@ -129,7 +123,6 @@ struct DrawCommand
 	Color setTextColor;
 	TextStyle setTextStyle;
 	LineStyle setLineStyle;
-	CmdCallback callback;
 };
 
 class Renderer

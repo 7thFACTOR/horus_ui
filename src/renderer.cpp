@@ -26,7 +26,7 @@ Renderer::Renderer()
 
 Renderer::~Renderer()
 {
-	ctx->gfx->deleteVertexBuffer(vertexBuffer);
+	delete vertexBuffer;
 }
 
 void Renderer::clear(const Color& color)
@@ -160,12 +160,6 @@ void Renderer::endFrame()
 				addBatch();
 			}
 			break;
-		case DrawCommand::Type::Callback:
-			if (cmd.callback.func)
-			{
-				cmd.callback.func(cmd.callback.userdata);
-			}
-			break;
 		}
 	}
 
@@ -243,7 +237,7 @@ void Renderer::cmdDrawImage(UiImage* image, const Point& position)
 	cmd.drawRect.uvRect = image->uvRect;
 	cmd.drawRect.rotated = image->rotated;
 	cmd.drawRect.textureIndex = image->atlasTexture->textureIndex;
-	
+
 	addDrawCommand(cmd);
 }
 
@@ -425,7 +419,7 @@ FontTextSize Renderer::cmdDrawTextInBox(
 void Renderer::drawAtlasRegion(bool rotated, const Rect& rect, const Rect& uvRect)
 {
 	Rect newRect = rect, newUvRect = uvRect;
-	
+
 	if (!clipRect(rotated, newRect, newUvRect))
 	{
 		return;
@@ -712,7 +706,7 @@ void Renderer::drawInterpolatedColorsTopBottom(
 
 	if (uvRect.y > 0.0f)
 		clippedTopColor = top + (bottom - top) * uvRect.y;
-	
+
 	if (uvRect.height < 1.0f && uvRect.y == 0.0f)
 		clippedBottomColor = top + (bottom - top) * uvRect.height;
 
@@ -889,7 +883,7 @@ void Renderer::drawImageBordered(UiImage* image, u32 border, const Rect& rect, f
 		topMiddleUV = { texCoords.x, texCoords.y + borderV, borderU, texCoords.height - borderV2 };
 		topRightUV = { texCoords.x, texCoords.y, borderU, borderV };
 
-		middleLeftUV = { texCoords.x + borderU, texCoords.bottom() - borderV, texCoords.width - borderU2, borderV } ;
+		middleLeftUV = { texCoords.x + borderU, texCoords.bottom() - borderV, texCoords.width - borderU2, borderV };
 		middleCenterUV = { texCoords.x + borderU, texCoords.y + borderV, texCoords.width - borderU2, texCoords.height - borderV2 };
 		middleRightUV = { texCoords.x + borderU, texCoords.y, texCoords.width - borderU2, borderV };
 
@@ -901,17 +895,17 @@ void Renderer::drawImageBordered(UiImage* image, u32 border, const Rect& rect, f
 	f32 borderW2 = borderW * 2.0f;
 	f32 borderH2 = borderH * 2.0f;
 
-	Rect topLeft = {0, 0, borderW, borderH};
-	Rect topMiddle = {0, 0, screenRect.width - borderW2, borderH};
-	Rect topRight = {0, 0, borderW, borderH};
-	
-	Rect middleLeft = {0, 0, borderW, screenRect.height - borderW2};
-	Rect middleCenter = {0, 0, screenRect.width - borderW2, screenRect.height - borderH2};
-	Rect middleRight = {0, 0, borderW, screenRect.height - borderH2};
-	
-	Rect bottomLeft = {0, 0, borderW, borderH};
-	Rect bottomMiddle = {0, 0, screenRect.width - borderW2, borderH};
-	Rect bottomRight = {0, 0, borderW, borderH};
+	Rect topLeft = { 0, 0, borderW, borderH };
+	Rect topMiddle = { 0, 0, screenRect.width - borderW2, borderH };
+	Rect topRight = { 0, 0, borderW, borderH };
+
+	Rect middleLeft = { 0, 0, borderW, screenRect.height - borderW2 };
+	Rect middleCenter = { 0, 0, screenRect.width - borderW2, screenRect.height - borderH2 };
+	Rect middleRight = { 0, 0, borderW, screenRect.height - borderH2 };
+
+	Rect bottomLeft = { 0, 0, borderW, borderH };
+	Rect bottomMiddle = { 0, 0, screenRect.width - borderW2, borderH };
+	Rect bottomRight = { 0, 0, borderW, borderH };
 
 	// top row
 	drawAtlasRegion(
@@ -996,7 +990,7 @@ void Renderer::drawImageBordered(UiImage* image, u32 border, const Rect& rect, f
 
 void Renderer::drawLine(const Point& a, const Point& b)
 {
-	Point pts[] = {a, b};
+	Point pts[] = { a, b };
 	drawPolyLine(pts, 2, false);
 }
 
@@ -1104,7 +1098,7 @@ void Renderer::drawPolyLine(const Point* points, u32 pointCount, bool closed)
 		vertexBufferData.vertices[i].color = color;
 		vertexBufferData.vertices[i].textureIndex = atlasTextureIndex;
 		i++;
-		
+
 		// 2
 		vertexBufferData.vertices[i].position = p22;
 		vertexBufferData.vertices[i].uv = uv22;
@@ -1162,7 +1156,7 @@ void Renderer::drawTextInternal(
 	// DRAW CHARS
 	/////////////////////////////
 	static UnicodeString utext;
-	
+
 	utf8ToUtf32(text, utext);
 
 	for (int i = 0; i < utext.size(); i++)

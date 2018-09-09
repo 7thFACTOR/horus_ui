@@ -13,74 +13,74 @@ namespace hui
 {
 OpenGLVertexBuffer::OpenGLVertexBuffer()
 {
-	create(1);
+    create(1);
 }
 
 OpenGLVertexBuffer::OpenGLVertexBuffer(u32 count, Vertex* vertices)
 {
-	create(count);
-	updateData(vertices, 0, count);
+    create(count);
+    updateData(vertices, 0, count);
 }
 
 OpenGLVertexBuffer::~OpenGLVertexBuffer()
 {
-	destroy();
+    destroy();
 }
 
 void OpenGLVertexBuffer::create(u32 count)
 {
-	glGenBuffers(1, (GLuint*)&vbHandle);
-	OGL_CHECK_ERROR;
-	resize(count);
+    glGenBuffers(1, (GLuint*)&vbHandle);
+    OGL_CHECK_ERROR;
+    resize(count);
 }
 
 void OpenGLVertexBuffer::resize(u32 count)
 {
-	glBindBuffer(GL_ARRAY_BUFFER, (GLuint)vbHandle);
-	OGL_CHECK_ERROR;
-	glBufferData(
-		GL_ARRAY_BUFFER,
-		sizeof(Vertex) * count,
-		nullptr,
-		GL_DYNAMIC_DRAW);
-	OGL_CHECK_ERROR;
+    glBindBuffer(GL_ARRAY_BUFFER, (GLuint)vbHandle);
+    OGL_CHECK_ERROR;
+    glBufferData(
+        GL_ARRAY_BUFFER,
+        sizeof(Vertex) * count,
+        nullptr,
+        GL_DYNAMIC_DRAW);
+    OGL_CHECK_ERROR;
 }
 
 void OpenGLVertexBuffer::updateData(Vertex* vertices, u32 startVertexIndex, u32 count)
 {
-	glBindBuffer(GL_ARRAY_BUFFER, vbHandle);
-	OGL_CHECK_ERROR;
+    glBindBuffer(GL_ARRAY_BUFFER, vbHandle);
+    OGL_CHECK_ERROR;
 
-	u8* data = (u8*)glMapBufferRange(
-		GL_ARRAY_BUFFER,
-		sizeof(Vertex) * startVertexIndex,
-		sizeof(Vertex) * count,
-		GL_MAP_WRITE_BIT);
-	OGL_CHECK_ERROR;
+    u8* data = (u8*)glMapBufferRange(
+        GL_ARRAY_BUFFER,
+        sizeof(Vertex) * startVertexIndex,
+        sizeof(Vertex) * count,
+        GL_MAP_WRITE_BIT);
+    OGL_CHECK_ERROR;
 
-	if (!data)
-	{
-		return;
-	}
+    if (!data)
+    {
+        return;
+    }
 
-	memcpy(
-		data,
-		&vertices[startVertexIndex],
-		count * sizeof(Vertex));
+    memcpy(
+        data,
+        &vertices[startVertexIndex],
+        count * sizeof(Vertex));
 
-	glUnmapBuffer(GL_ARRAY_BUFFER);
-	OGL_CHECK_ERROR;
+    glUnmapBuffer(GL_ARRAY_BUFFER);
+    OGL_CHECK_ERROR;
 }
 
 void OpenGLVertexBuffer::destroy()
 {
-	glDeleteBuffers(1, &vbHandle);
-	vbHandle = 0;
+    glDeleteBuffers(1, &vbHandle);
+    vbHandle = 0;
 }
 
 GraphicsApiVertexBuffer OpenGLVertexBuffer::getHandle() const
 {
-	return (GraphicsApiVertexBuffer)vbHandle;
+    return (GraphicsApiVertexBuffer)vbHandle;
 }
 
 }

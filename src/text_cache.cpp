@@ -7,8 +7,7 @@
 namespace hui
 {
 TextCache::TextCache()
-{
-}
+{}
 
 TextCache::~TextCache()
 {
@@ -25,7 +24,7 @@ UnicodeString* TextCache::getText(const char* text)
 	if (iter == texts.end())
 	{
 		UnicodeString* txt = new UnicodeString();
-		
+
 		try
 		{
 			utf8::utf8to32((char*)text, (char*)(text + strlen((const char*)text)), std::back_inserter(*txt));

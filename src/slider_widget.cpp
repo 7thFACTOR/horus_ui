@@ -24,7 +24,7 @@ bool sliderInternal(f32 minVal, f32 maxVal, f32& value, bool useStep, f32 step, 
 
 	ctx->widget.rect.x += knobElem.normalState().image->rect.width / 2.f * ctx->globalScale;
 	ctx->widget.rect.width -= knobElem.normalState().image->rect.width * ctx->globalScale;
-	
+
 	if (isHovered())
 	{
 		setMouseCursor(MouseCursorType::Hand);

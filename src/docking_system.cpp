@@ -35,7 +35,7 @@ void updateDockingSystemInternal(bool isLastEvent, ViewHandler* handler)
 		}
 
 		auto wndRect = ctx->inputProvider->getWindowRect(wnd);
-		
+
 		wndRect.x = 0;
 		wndRect.y = 0;
 
@@ -84,10 +84,10 @@ void updateDockingSystemInternal(bool isLastEvent, ViewHandler* handler)
 		handleViewContainerResize(viewContainer);
 
 		if ((isLastEvent
-            && !ctx->skipRenderAndInput
-            && !ctx->renderer->disableRendering
-            && !ctx->renderer->skipRender)
-            || ctx->dockingTabPane)
+			&& !ctx->skipRenderAndInput
+			&& !ctx->renderer->disableRendering
+			&& !ctx->renderer->skipRender)
+			|| ctx->dockingTabPane)
 		{
 			hui::presentWindow(wnd);
 		}
@@ -111,24 +111,24 @@ void updateDockingSystem(ViewHandler* handler)
 		return;
 	}
 
-    ctx->mustRedraw = false;
-	
-    auto doLogicAndRender = [handler](bool isLastEvent)
+	ctx->mustRedraw = false;
+
+	auto doLogicAndRender = [handler](bool isLastEvent)
 	{
 		ctx->renderer->disableRendering = !isLastEvent && !ctx->skipRenderAndInput;
 		hui::updateDockingSystemInternal(isLastEvent, handler);
 	};
 
-    if (ctx->events.size() == 0)
-    {
-        doLogicAndRender(true);
-    }
+	if (ctx->events.size() == 0)
+	{
+		doLogicAndRender(true);
+	}
 
-    for (int i = 0; i < ctx->events.size(); i++)
-    {
-        ctx->event = ctx->events[i];
-        doLogicAndRender(i == ctx->events.size() - 1);
-    }
+	for (int i = 0; i < ctx->events.size(); i++)
+	{
+		ctx->event = ctx->events[i];
+		doLogicAndRender(i == ctx->events.size() - 1);
+	}
 }
 
 void dockingSystemLoop(ViewHandler* handler)
@@ -147,7 +147,7 @@ void setAllowUndockingToNewWindow(bool allow)
 void updateViewContainerLayout(UiViewContainer* viewContainer)
 {
 	auto rect = getWindowRect(viewContainer->window);
-	
+
 	viewContainer->rootCell->normalizedSize.x = 1;
 	viewContainer->rootCell->normalizedSize.y = 1;
 	viewContainer->rootCell->rect.x = 0;
@@ -317,7 +317,7 @@ void handleViewContainerResize(UiViewContainer* viewContainer)
 				hui::updateViewContainerLayout(viewContainer);
 				hui::forceRepaint();
 			}
-		}		
+		}
 		else if (dragTab && !dragOntoTab && moved)
 		{
 			// do not undock if the source window is the main window and there is just one tab left!
@@ -394,7 +394,7 @@ void handleViewContainerResize(UiViewContainer* viewContainer)
 			auto zorder = ctx->renderer->getZOrder();
 
 			if (ctx->mouseMoved
-                || crtEvent.type == InputEvent::Type::MouseDown
+				|| crtEvent.type == InputEvent::Type::MouseDown
 				|| moved)
 			{
 				std::vector<UiViewTab*> tabs;

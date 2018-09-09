@@ -8,7 +8,7 @@
 namespace hui
 {
 static constexpr f32 percentOfNewPaneSplit = 0.2f;
-	
+
 struct UiViewTab
 {
 	char* title = nullptr;
@@ -84,6 +84,5 @@ struct UiViewContainer
 	Window window = 0;
 	f32 mainMenuHeight = 0;
 };
-
 
 }

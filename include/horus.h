@@ -17,82 +17,82 @@
 
 #ifndef HORUS_NO_BASIC_TYPES
 #ifndef HORUS_NO_U8
-	typedef uint8_t u8;
+typedef uint8_t u8;
 #endif
 
 #ifndef HORUS_NO_U16
-	typedef uint16_t u16;
+typedef uint16_t u16;
 #endif
 
 #ifndef HORUS_NO_U32
-	typedef uint32_t u32;
+typedef uint32_t u32;
 #endif
 
 #ifndef HORUS_NO_U64
-	typedef uint64_t u64;
+typedef uint64_t u64;
 #endif
 
 #ifndef HORUS_NO_U128
-	typedef struct
-	{
-		u64 data[2];
-	} u128;
+typedef struct
+{
+	u64 data[2];
+} u128;
 #endif
 
 #ifndef HORUS_NO_I8
-	typedef int8_t i8;
+typedef int8_t i8;
 #endif
 
 #ifndef HORUS_NO_I16
-	typedef int16_t i16;
+typedef int16_t i16;
 #endif
 
 #ifndef HORUS_NO_I32
-	typedef int32_t i32;
+typedef int32_t i32;
 #endif
 
 #ifndef HORUS_NO_I64
-	typedef int64_t i64;
+typedef int64_t i64;
 #endif
 
 #ifndef HORUS_NO_I128
-	typedef struct
-	{
-		i64 data[2];
-	} i128;
+typedef struct
+{
+	i64 data[2];
+} i128;
 #endif
 
 #ifndef HORUS_NO_F32
-	typedef float f32;
+typedef float f32;
 #endif
 
 #ifndef HORUS_NO_F64
-	typedef double f64;
+typedef double f64;
 #endif
 
 #endif
 
 #ifdef HORUS_STATIC
-	#define HORUS_API
-	#define HORUS_CLASS_API
+#define HORUS_API
+#define HORUS_CLASS_API
 #else 
-	#ifdef _WINDOWS
-		#ifdef HORUS_EXPORTS
-			#define HORUS_API extern "C++" __declspec(dllexport)
-			#define HORUS_CLASS_API __declspec(dllexport)
-		#else
-			#define HORUS_API extern "C++" __declspec(dllimport)
-			#define HORUS_CLASS_API __declspec(dllimport)
-		#endif
-	#else
-		#ifdef HORUS_EXPORTS
-			#define HORUS_API __attribute__((dllexport))
-			#define HORUS_CLASS_API __attribute__((dllexport))
-		#else
-			#define HORUS_API __attribute__((dllimport))
-			#define HORUS_CLASS_API __attribute__((dllimport))
-		#endif
-	#endif
+#ifdef _WINDOWS
+#ifdef HORUS_EXPORTS
+#define HORUS_API extern "C++" __declspec(dllexport)
+#define HORUS_CLASS_API __declspec(dllexport)
+#else
+#define HORUS_API extern "C++" __declspec(dllimport)
+#define HORUS_CLASS_API __declspec(dllimport)
+#endif
+#else
+#ifdef HORUS_EXPORTS
+#define HORUS_API __attribute__((dllexport))
+#define HORUS_CLASS_API __attribute__((dllexport))
+#else
+#define HORUS_API __attribute__((dllimport))
+#define HORUS_CLASS_API __attribute__((dllimport))
+#endif
+#endif
 #endif
 
 namespace hui
@@ -159,7 +159,7 @@ enum class FontStyle
 	Bold,
 	Italic,
 	BoldItalic,
-	
+
 	Count
 };
 
@@ -553,9 +553,9 @@ enum class MessageBoxIcon
 	Info,
 	Question,
 	Warning,
-    Custom,
+	Custom,
 
-    Count
+	Count
 };
 
 /// Message box flags, used for configure the messagebox and to get results
@@ -1061,11 +1061,15 @@ struct Rect
 	inline Point bottomRight() const { return Point(x + width, y + height); }
 	inline Point center() const { return Point(x + width / 2, y + height / 2); }
 	inline bool contains(const Point& pt) const
-	{ return pt.x >= x && pt.x < (x + width) && pt.y >= y && (pt.y < y + height); }
-	
+	{
+		return pt.x >= x && pt.x < (x + width) && pt.y >= y && (pt.y < y + height);
+	}
+
 	inline bool contains(f32 X, f32 Y) const
-	{ return X >= x && X < (x + width) && Y >= y && Y < (y + height); }
-	
+	{
+		return X >= x && X < (x + width) && Y >= y && Y < (y + height);
+	}
+
 	inline bool contains(const Rect& other) const
 	{
 		return x <= other.x && (other.right()) < right()
@@ -1125,8 +1129,8 @@ struct InputEvent
 	enum class Type
 	{
 		None,
-        MouseMove,
-        MouseDown,
+		MouseMove,
+		MouseDown,
 		MouseUp,
 		MouseWheel,
 		Key,
@@ -1287,42 +1291,42 @@ struct HORUS_CLASS_API Color
 /// Used by the openMultipleFileDialog function. Warning! the pointers will be deleted on struct's instance out of scope
 struct OpenMultipleFileSet
 {
-    char* filenameBuffer = nullptr; /// buffer used to store the filenames, created by the library
-    size_t* bufferIndices = nullptr; /// array containing indices into filenameBuffer, where each filename starts
-    u32 count = 0; /// the number of filenames
+	char* filenameBuffer = nullptr; /// buffer used to store the filenames, created by the library
+	size_t* bufferIndices = nullptr; /// array containing indices into filenameBuffer, where each filename starts
+	u32 count = 0; /// the number of filenames
 
-    ~OpenMultipleFileSet()
-    {
-        delete[] filenameBuffer;
-        delete[] bufferIndices;
-    }
+	~OpenMultipleFileSet()
+	{
+		delete[] filenameBuffer;
+		delete[] bufferIndices;
+	}
 };
 
 /// A view handler is used by the docking system to delegate UI rendering to the user
 /// It calls various functions at specific times so the user will just show the UI
 struct ViewHandler
 {
-    /// Called when the user must render the main menu of the application on the specified window
+	/// Called when the user must render the main menu of the application on the specified window
 	/// \param window the window for which the main menu to be rendered
-    virtual void onMainMenuRender(Window window) {}
+	virtual void onMainMenuRender(Window window) {}
 	/// Called when the user must render the widgets for a specific view
-    /// \param window the window where the drawing of UI will occur
-    /// \param viewPane the view pane where the drawing of UI will occur
-    /// \param activeViewId the view ID for which to draw the UI (there can be multiple views with the same ID), data driven UI
-    /// \param userDataId the user data ID, which was set by the user for this particular view instance
-    virtual void onViewRender(Window window, Window viewPane, ViewId activeViewId, u64 userDataId) {}
-    /// Called when a view was closed
-    /// \param window the window where the view pane was closed
-    /// \param viewPane the view pane
-    /// \param activeViewId the view ID for which to draw the UI (there can be multiple views with the same ID), data driven UI
-    /// \param userDataId the user data ID, which was set by the user for this particular view instance
-    virtual void onViewClosed(Window window, Window viewPane, ViewId activeViewId, u64 userDataId) {}
-    /// Called just before the frame starts to render
-    /// \param window the window where rendering will happen
-    virtual void onBeforeFrameRender(Window wnd) {}
-    /// Called after the frame starts to render
-    /// \param window the window where rendering did happen
-    virtual void onAfterFrameRender(Window wnd) {}
+	/// \param window the window where the drawing of UI will occur
+	/// \param viewPane the view pane where the drawing of UI will occur
+	/// \param activeViewId the view ID for which to draw the UI (there can be multiple views with the same ID), data driven UI
+	/// \param userDataId the user data ID, which was set by the user for this particular view instance
+	virtual void onViewRender(Window window, Window viewPane, ViewId activeViewId, u64 userDataId) {}
+	/// Called when a view was closed
+	/// \param window the window where the view pane was closed
+	/// \param viewPane the view pane
+	/// \param activeViewId the view ID for which to draw the UI (there can be multiple views with the same ID), data driven UI
+	/// \param userDataId the user data ID, which was set by the user for this particular view instance
+	virtual void onViewClosed(Window window, Window viewPane, ViewId activeViewId, u64 userDataId) {}
+	/// Called just before the frame starts to render
+	/// \param window the window where rendering will happen
+	virtual void onBeforeFrameRender(Window wnd) {}
+	/// Called after the frame starts to render
+	/// \param window the window where rendering did happen
+	virtual void onAfterFrameRender(Window wnd) {}
 };
 
 /// Line drawing style
@@ -2108,13 +2112,13 @@ HORUS_API bool dropdown(i32& selectedIndex, const char** items, u32 itemCount, u
 /// \param itemSource a callback to use when rendering an item, returns false when item list ended
 /// \param maxVisibleDropDownItems the maximum number of visible items in the drop down list, if ~0 then its automatic
 /// \return true if it the selection changed
-HORUS_API bool dropdown(i32& selectedIndex, void* userdata, bool (*itemSource)(void* userdata, i32 index, char** outItemText), u32 maxVisibleDropDownItems = ~0);
+HORUS_API bool dropdown(i32& selectedIndex, void* userdata, bool(*itemSource)(void* userdata, i32 index, char** outItemText), u32 maxVisibleDropDownItems = ~0);
 
 /// TODO:
 HORUS_API bool list(i32* selectedIndices, u32 maxSelectedIndices, ListSelectionMode selectionType, const char** items, u32 itemCount);
 
 /// TODO: 
-HORUS_API bool list(i32* selectedIndices, u32 maxSelectedIndices, ListSelectionMode selectionType, void* userdata, bool (*itemSource)(void* userdata, i32 index, char** outItemText));
+HORUS_API bool list(i32* selectedIndices, u32 maxSelectedIndices, ListSelectionMode selectionType, void* userdata, bool(*itemSource)(void* userdata, i32 index, char** outItemText));
 
 /// TODO: 
 HORUS_API bool beginList(ListSelectionMode selectionType);

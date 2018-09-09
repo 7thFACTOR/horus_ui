@@ -6,5 +6,4 @@ namespace hui
 {
 void updateViewContainerLayout(UiViewContainer* viewContainer);
 void handleViewContainerResize(UiViewContainer* viewContainer);
-
 };

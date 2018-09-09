@@ -42,7 +42,7 @@ bool UiViewPane::deserialize(FILE* file)
 		size_t len = 0;
 		fread(&len, sizeof(len), 1, file);
 		fread(title, len + 1, 1, file);
-		tab->title = new char [len + 1];
+		tab->title = new char[len + 1];
 		memset(tab->title, 0, len + 1);
 		memcpy(tab->title, title, strlen(title));
 		fread(&tab->userDataId, sizeof(tab->userDataId), 1, file);
@@ -104,7 +104,7 @@ void UiViewPane::destroy()
 {
 	for (auto tab : viewTabs)
 	{
-		delete [] tab->title;
+		delete[] tab->title;
 		delete tab;
 	}
 
@@ -146,7 +146,7 @@ bool UiViewContainer::deserialize(FILE* file)
 	{
 		window = createWindow(
 			"",
-			rc.width, rc.height, WindowBorder::Resizable, WindowPositionType::Custom, 
+			rc.width, rc.height, WindowBorder::Resizable, WindowPositionType::Custom,
 			{ rc.x, rc.y }, false);
 	}
 	else
@@ -399,7 +399,7 @@ LayoutCell* LayoutCell::findDockToCell(const Point& pt, DockType& outDockType, R
 		Rect rcTop = rect;
 		Rect rcTopTabs = rect;
 		Rect rcBottom = rect;
-				
+
 		rcLeft.width = rect.width * dockBorderSize;
 
 		rcRight.width = rect.width * dockBorderSize;
@@ -744,7 +744,7 @@ LayoutCell* LayoutCell::dockViewPane(UiViewPane* viewPaneToDock, DockType dock)
 				auto iter = std::find(parent->children.begin(), parent->children.end(), this);
 				parent->children.insert(iter, newCell);
 				auto widestCell = parent->findWidestChild();
-				
+
 				if (widestCell)
 					widestCell->normalizedSize.y -= percentOfNewPaneSplit;
 			}

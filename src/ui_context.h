@@ -24,9 +24,9 @@ struct UiContext
 	GraphicsProvider* gfx = nullptr;
 	Renderer* renderer = nullptr;
 	TextCache* textCache = nullptr;
-    ContextSettings settings;
+	ContextSettings settings;
 
-    f32 deltaTime = 0;
+	f32 deltaTime = 0;
 	u32 currentWindowIndex = 0;
 	GraphicsApiContext gfxApiContext = 0;
 	u32 currentWidgetId = 1;
@@ -105,16 +105,16 @@ struct UiContext
 
 	InputProvider* inputProvider = nullptr;
 	InputEvent event;
-    std::vector<InputEvent> events;
+	std::vector<InputEvent> events;
 	InputEvent::Type savedEventType = InputEvent::Type::None;
 
 	std::map<TintColorType, std::vector<Color>> tintStack;
 	Color tint[(u32)TintColorType::Count] = { Color::white, Color::white };
 	LineStyle lineStyle;
 	FillStyle fillStyle;
-	
+
 	std::vector<u32> drawCmdIndexStack;
-	
+
 	MouseCursorType mouseCursor = MouseCursorType::Arrow;
 	MouseCursor customMouseCursor = 0;
 	bool mouseMoved = false;

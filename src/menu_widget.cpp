@@ -43,7 +43,7 @@ bool beginMenuInternal(const char* labelText, SelectableFlags stateFlags, bool c
 	UnicodeString* uniStr = ctx->textCache->getText(labelText);
 	FontTextSize fsize = menuBarItemElemState.font->computeTextSize(*uniStr);
 	auto isMenuBarItem = ctx->menuDepth == 0;
-	
+
 	if (isMenuBarItem || contextMenu)
 	{
 		ctx->rightSideMenu = true;
@@ -161,7 +161,7 @@ bool beginMenuInternal(const char* labelText, SelectableFlags stateFlags, bool c
 
 		if (ctx->widget.hovered)
 			ctx->hoveredSimpleMenuItemMenuDepth = ~0;
-		
+
 		if (!ctx->menuStack[ctx->menuDepth].active && (ctx->widget.hovered))
 		{
 			ctx->menuItemChosen = false;
@@ -204,7 +204,7 @@ void endMenuInternal(bool contextMenu)
 			|| pressedEscapeOnPopup()
 			|| ((clickedOutsidePopup()
 				&& !ctx->pressedOnMenuItem)
-			&& !ctx->clickedOnASubMenuItem))
+				&& !ctx->clickedOnASubMenuItem))
 		{
 			if (!ctx->switchedToAnotherMainMenu)
 			{
@@ -295,7 +295,7 @@ bool beginContextMenu()
 	}
 
 	bool opened = false;
-	
+
 	if ((ctx->contextMenuActive || ctx->contextMenuClicked)
 		&& ctx->contextMenuWidgetId == widgetId)
 	{
@@ -398,7 +398,7 @@ bool menuItem(const char* labelText, const char* shortcut, Image icon, Selectabl
 			rc.y + (rc.height - noCheckMarkElem.normalState().image->rect.height * ctx->globalScale) / 2.0f,
 			noCheckMarkElem.normalState().image->rect.width * ctx->globalScale,
 			noCheckMarkElem.normalState().image->rect.height * ctx->globalScale
-			);
+		);
 
 		ctx->renderer->cmdSetColor(noCheckMarkElem.normalState().color);
 		ctx->renderer->cmdDrawImage(noCheckMarkElem.normalState().image, rcIcon);
@@ -420,7 +420,7 @@ bool menuItem(const char* labelText, const char* shortcut, Image icon, Selectabl
 			rc.y + (rc.height - iconImg->rect.height * ctx->globalScale) / 2.0f,
 			iconImg->rect.width * ctx->globalScale,
 			iconImg->rect.height * ctx->globalScale
-			);
+		);
 
 		ctx->renderer->cmdSetColor(Color::white);
 		ctx->renderer->cmdDrawImage(iconImg, rcIcon);
@@ -434,7 +434,7 @@ bool menuItem(const char* labelText, const char* shortcut, Image icon, Selectabl
 	ctx->menuStack[ctx->menuDepth - 1].size.x = std::max(
 		menuItemTextWidth,
 		ctx->menuStack[ctx->menuDepth - 1].size.x);
-	
+
 	if (!ctx->isSubMenu)
 	{
 		if (ctx->widget.clicked)
@@ -473,12 +473,12 @@ bool menuItem(const char* labelText, const char* shortcut, Image icon, Selectabl
 			rc.y + (rc.height - submenuArrowState->image->rect.height * ctx->globalScale) / 2.0f,
 			submenuArrowState->image->rect.width * ctx->globalScale,
 			submenuArrowState->image->rect.height * ctx->globalScale
-			);
+		);
 
 		ctx->renderer->cmdSetColor(submenuArrowState->color);
 		ctx->renderer->cmdDrawImage(submenuArrowState->image, rcArrow);
 	}
-	
+
 	return ctx->widget.clicked;
 }
 

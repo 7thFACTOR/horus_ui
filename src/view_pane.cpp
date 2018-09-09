@@ -27,7 +27,7 @@ ViewPane createViewPane(ViewContainer viewContainer, DockType dock, f32 size)
 	UiViewPane* viewPane = new UiViewPane();
 
 	auto dockCell = viewContainerObj->rootCell->dockViewPane(viewPane, dock);
-	
+
 	if (size != 0.0f)
 	{
 		dockCell->setNewSize(size);

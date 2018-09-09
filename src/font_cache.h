@@ -18,8 +18,8 @@ protected:
 	struct CachedFontInfo
 	{
 		UiFont font;
-        std::string name;
-        std::string filename;
+		std::string name;
+		std::string filename;
 		u32 size;
 		u32 usageCount = 0;
 	};

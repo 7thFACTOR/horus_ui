@@ -44,15 +44,15 @@ bool dropdown(i32& selectedIndex, const char** items, u32 itemCount, u32 maxVisi
 	auto arrowY = ((ctx->widget.rect.height / ctx->globalScale - arrowElemState->image->rect.height) / 2.0f + (ctx->widget.pressed ? 1.0f : 0.0f)) * ctx->globalScale;
 
 	ctx->renderer->cmdDrawImage(arrowElemState->image,
-	{
-		ctx->widget.rect.right() - (arrowElemState->image->rect.width - (ctx->widget.pressed ? 1.0f : 0.0f)) * ctx->globalScale,
-		ctx->widget.rect.top() + arrowY,
-		arrowElemState->image->rect.width * ctx->globalScale,
-		arrowElemState->image->rect.height * ctx->globalScale
-	});
+		{
+			ctx->widget.rect.right() - (arrowElemState->image->rect.width - (ctx->widget.pressed ? 1.0f : 0.0f)) * ctx->globalScale,
+			ctx->widget.rect.top() + arrowY,
+			arrowElemState->image->rect.width * ctx->globalScale,
+			arrowElemState->image->rect.height * ctx->globalScale
+		});
 
 	const char* selectedItemText = nullptr;
-	
+
 	if (selectedIndex >= 0 && selectedIndex < itemCount)
 	{
 		selectedItemText = items[selectedIndex];
@@ -60,7 +60,7 @@ bool dropdown(i32& selectedIndex, const char** items, u32 itemCount, u32 maxVisi
 
 	// add the border of the body element
 	ctx->widget.rect.x += bodyElemState->border * ctx->globalScale;
-	
+
 	auto posForPopup = ctx->widget.rect.bottomLeft();
 
 	if (selectedItemText)
@@ -153,8 +153,8 @@ bool dropdown(i32& selectedIndex, const char** items, u32 itemCount, u32 maxVisi
 }
 
 bool dropdown(i32& selectedIndex,
-    void* userdata,
-	bool (*itemSource)(void* userdata, i32 index, char** outItemText),
+	void* userdata,
+	bool(*itemSource)(void* userdata, i32 index, char** outItemText),
 	u32 maxVisibleDropDownItems)
 {
 	return false;

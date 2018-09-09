@@ -23,12 +23,12 @@ void beginTabGroup(TabIndex selectedIndex)
 	// tab group background
 	ctx->renderer->cmdSetColor(tabGroupElemState.color);
 	ctx->renderer->pushClipRect(
-	{
-		round(ctx->penPosition.x),
-		round(ctx->penPosition.y),
-		ctx->layoutStack.back().width,
-		ctx->containerRect.height
-	});
+		{
+			round(ctx->penPosition.x),
+			round(ctx->penPosition.y),
+			ctx->layoutStack.back().width,
+			ctx->containerRect.height
+		});
 
 	ctx->renderer->cmdDrawImageBordered(tabGroupElemState.image, tabGroupElemState.border, ctx->widget.rect, ctx->globalScale);
 
@@ -76,7 +76,7 @@ void tab(const char* labelText, Image icon)
 
 	f32 width = 0;
 	f32 iconWidth = 0;
-	
+
 	if (icon)
 	{
 		iconWidth = ico->rect.width;
@@ -129,19 +129,19 @@ void tab(const char* labelText, Image icon)
 	if (ico)
 	{
 		ctx->renderer->cmdDrawImageScaledAligned(ico,
-		rcTextAndIcon, HAlignType::Left, VAlignType::Center, ctx->globalScale);
+			rcTextAndIcon, HAlignType::Left, VAlignType::Center, ctx->globalScale);
 	}
 
 	ctx->renderer->cmdSetFont(tabElemState->font);
 	ctx->renderer->cmdSetColor(tabElemState->textColor);
 	ctx->renderer->cmdDrawTextInBox(labelText,
-	{
-		ctx->widget.rect.x + (tabElemState->border + iconWidth) * ctx->globalScale,
-		ctx->widget.rect.y,
-		width, 
-		ctx->widget.rect.height,
-	},
-	HAlignType::Left, VAlignType::Bottom);
+		{
+			ctx->widget.rect.x + (tabElemState->border + iconWidth) * ctx->globalScale,
+			ctx->widget.rect.y,
+			width,
+			ctx->widget.rect.height,
+		},
+		HAlignType::Left, VAlignType::Bottom);
 
 	ctx->currentTabIndex++;
 	ctx->currentWidgetId++;

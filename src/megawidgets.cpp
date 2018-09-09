@@ -40,7 +40,7 @@ bool vecEditorInternal(f64& x, f64& y, f64& z, f64 scrollStep, bool useZ)
 		auto elem = ctx->theme->userElements[axisImageName];
 
 		// current widget + 2 since widget is computed in endBox and we have 1 image widget
-		hui::beginBox((draggingValue && (draggedWidgetId == (ctx->currentWidgetId + 2))) ? dragColor : normalColor , "axisBoxBody");
+		hui::beginBox((draggingValue && (draggedWidgetId == (ctx->currentWidgetId + 2))) ? dragColor : normalColor, "axisBoxBody");
 		u32 imageWidgetId = hui::getWidgetId();
 		hui::image(elem->normalState().image, 13);
 		bool imageHovered = hui::isHovered();
@@ -67,7 +67,7 @@ bool vecEditorInternal(f64& x, f64& y, f64& z, f64 scrollStep, bool useZ)
 			hui::releaseCapture();
 		}
 
-		if (draggingValue 
+		if (draggingValue
 			&& draggedWidgetId == ctx->currentWidgetId)
 		{
 			value = atof(strAxis);
@@ -200,7 +200,7 @@ bool objectRefEditor(Image targetIcon, Image clearIcon, const char* objectTypeNa
 		if (objectValueWasModified)
 			*objectValueWasModified = true;
 
-        forceRepaint();
+		forceRepaint();
 	}
 
 	nextColumn();

@@ -210,4 +210,9 @@ bool unicodeToUtf8(const u32* text, u32 maxTextSize, char* outString, u32 maxOut
 	return true;
 }
 
+void saveImage(const char* filename, Rgba32* pixels, u32 width, u32 height)
+{
+	stbi_write_png(filename, width, height, 4, pixels, 0);
+}
+
 }

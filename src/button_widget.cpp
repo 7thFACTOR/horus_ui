@@ -13,6 +13,7 @@ namespace hui
 {
 void buttonBehavior(bool menuItem)
 {
+
 	ctx->widget.hovered = (ctx->currentWidgetId == ctx->widget.hoveredWidgetId);
 	ctx->widget.focused = (ctx->currentWidgetId == ctx->widget.focusedWidgetId);
 	ctx->widget.clicked = false;
@@ -63,11 +64,11 @@ void buttonBehavior(bool menuItem)
 
 		if (!alreadyCapturedSomeWidget)
 		{
-            ctx->widget.hoveredWidgetId = ctx->currentWidgetId;
-            ctx->widget.hovered = true;
-            ctx->widget.hoveredWidgetRect = ctx->widget.rect;
-            
-            if (ctx->event.type == InputEvent::Type::MouseDown
+			ctx->widget.hoveredWidgetId = ctx->currentWidgetId;
+			ctx->widget.hovered = true;
+			ctx->widget.hoveredWidgetRect = ctx->widget.rect;
+
+			if (ctx->event.type == InputEvent::Type::MouseDown
 				&& ctx->event.mouse.button == MouseButton::Left)
 			{
 				ctx->widget.focusedWidgetId = ctx->currentWidgetId;
@@ -82,15 +83,15 @@ void buttonBehavior(bool menuItem)
 				}
 			}
 			else if (ctx->event.type == InputEvent::Type::MouseUp
-					&& ctx->event.mouse.button == MouseButton::Left)
+				&& ctx->event.mouse.button == MouseButton::Left)
+			{
+				if (ctx->currentWidgetId == ctx->widget.focusedWidgetId)
 				{
-					if (ctx->currentWidgetId == ctx->widget.focusedWidgetId)
-					{
-						ctx->widget.clicked = true;
-						ctx->widget.pressed = false;
-						ctx->widget.focusedWidgetPressed = false;
-					}
+					ctx->widget.clicked = true;
+					ctx->widget.pressed = false;
+					ctx->widget.focusedWidgetPressed = false;
 				}
+			}
 
 			ctx->widget.pressed = ctx->widget.focusedWidgetPressed;
 		}
@@ -162,7 +163,7 @@ void mouseDownOnlyButtonBehavior()
 		{
 			ctx->widget.focusedWidgetId = ctx->currentWidgetId;
 			ctx->widget.pressed = true;
-			
+
 			if (ctx->layerIndex)
 			{
 				auto& popup = ctx->popupStack[ctx->layerIndex - 1];
@@ -210,10 +211,10 @@ bool button(const char* labelText)
 		btnBodyElemState = &btnBodyElem.getState(WidgetStateType::Pressed);
 	else if (ctx->widget.focused)
 		btnBodyElemState = &btnBodyElem.getState(WidgetStateType::Focused);
-    else if (ctx->widget.hovered)
-    {
-        btnBodyElemState = &btnBodyElem.getState(WidgetStateType::Hovered);
-    }
+	else if (ctx->widget.hovered)
+	{
+		btnBodyElemState = &btnBodyElem.getState(WidgetStateType::Hovered);
+	}
 
 	if (ctx->widget.visible)
 	{
@@ -297,11 +298,6 @@ bool iconButton(Image icon, f32 customHeight, bool down)
 	auto btnBodyElem = ctx->theme->getElement(WidgetElementId::ButtonBody);
 
 	return iconButtonInternal(icon, icon, customHeight, down, &btnBodyElem);
-}
-
-void saveImage(const char* filename, Rgba32* pixels, u32 width, u32 height)
-{
-	stbi_write_png(filename, width, height, 4, pixels, 0);
 }
 
 }

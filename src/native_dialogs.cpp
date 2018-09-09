@@ -14,13 +14,13 @@ bool openFileDialog(const char* filterList, const char* defaultPath, char* outPa
 	auto res = NFD_OpenDialog(filterList, defaultPath, &path);
 
 	clearInputEventQueue();
-    
-    if (res == NFD_OKAY)
-    {
-        memcpy(outPath, path, std::min((int)maxOutPathSize, (int)strlen(path) + 1));
-    }
-	
-    delete [] path;
+
+	if (res == NFD_OKAY)
+	{
+		memcpy(outPath, path, std::min((int)maxOutPathSize, (int)strlen(path) + 1));
+	}
+
+	delete[] path;
 
 	if (res == NFD_ERROR || res == NFD_CANCEL)
 		return false;
@@ -55,24 +55,24 @@ bool saveFileDialog(const char* filterList, const char* defaultPath, char* outPa
 	if (res != NFD_OKAY)
 		return false;
 
-    memcpy(outPath, path, std::min((int)maxOutPathSize, (int)strlen(path) + 1));
-    delete[] path;
+	memcpy(outPath, path, std::min((int)maxOutPathSize, (int)strlen(path) + 1));
+	delete[] path;
 
 	return true;
 }
 
 bool pickFolderDialog(const char* defaultPath, char* outPath, u32 maxOutPathSize)
 {
-	char* path = 0;	
+	char* path = 0;
 	auto res = NFD_PickFolder(defaultPath, &path);
-	
+
 	clearInputEventQueue();
 
 	if (res != NFD_OKAY)
 		return false;
 
-    memcpy(outPath, path, std::min((int)maxOutPathSize, (int)strlen(path) + 1));
-    delete[] path;
+	memcpy(outPath, path, std::min((int)maxOutPathSize, (int)strlen(path) + 1));
+	delete[] path;
 
 	return true;
 }

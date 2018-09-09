@@ -16,7 +16,7 @@
 namespace hui
 {
 class Renderer;
-class TextureArray;
+struct TextureArray;
 class UiTheme;
 class TextCache;
 class FontCache;
@@ -46,11 +46,11 @@ struct UiThemeElement
 
 enum class LayoutType
 {
-    Container,
-    Vertical,
-    Columns,
-    Column,
-    ScrollView
+	Container,
+	Vertical,
+	Columns,
+	Column,
+	ScrollView
 };
 
 struct LayoutState
@@ -67,7 +67,7 @@ struct LayoutState
 	std::vector<f32> columnMinSizes;
 	std::vector<f32> columnMaxSizes;
 	std::vector<f32> columnPixelSizes;
-	Point position = {0, 0};
+	Point position = { 0, 0 };
 	Point savedPenPosition = { 0, 0 };
 	f32 width = 0;
 	f32 height = 0;

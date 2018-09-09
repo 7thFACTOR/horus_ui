@@ -87,7 +87,7 @@ Point getTextSize(const char* text)
 {
 	if (!ctx->renderer->getFont())
 		return Point();
-	
+
 	auto fntInfo = ctx->renderer->getFont()->computeTextSize(*ctx->textCache->getText(text));
 
 	return { fntInfo.width, fntInfo.height };
@@ -183,8 +183,8 @@ void drawRectangle(const Rect& rc)
 }
 
 #define HORUS_HERMITE_TANGENT(a, b, c, tt, cc, bb, adj)\
-			(((b - a) * (1.0f + bb) * (1.0f - cc) + (c - b)\
-			* (1.0f - bb) * (1.0f + cc)) * (1.0f - tt) * adj)
+		(((b - a) * (1.0f + bb) * (1.0f - cc) + (c - b)\
+		* (1.0f - bb) * (1.0f + cc)) * (1.0f - tt) * adj)
 
 #define HORUS_HERMITE_ONE_TANGENT(a, b, tt) ((a - b) * (1.0f - tt))
 
@@ -223,7 +223,7 @@ void drawSpline(SplineControlPoint* points, u32 count)
 	{
 		for (f32 s = 0; s < 1.0f; s += step)
 		{
-			pts.push_back(hermitePoint(points[i].center, points[i].rightTangent, points[i+1].leftTangent, points[i+1].center, s));
+			pts.push_back(hermitePoint(points[i].center, points[i].rightTangent, points[i + 1].leftTangent, points[i + 1].center, s));
 		}
 	}
 

@@ -57,7 +57,7 @@ bool TextInputState::processEvent(const InputEvent& ev)
 
 			if (abs(chrPos - caretPosition))
 				mouseMoved = true;
-			
+
 			selectingWithMouse = true;
 		}
 
@@ -383,7 +383,7 @@ void TextInputState::processKeyEvent(const InputEvent& ev)
 
 			utf32ToUtf8(str, &tmpStr);
 			copyToClipboard(tmpStr);
-			delete [] tmpStr;
+			delete[] tmpStr;
 		}
 	}
 	else if (ev.key.code == KeyCode::V && !!(ev.key.modifiers & KeyModifiers::Control))
@@ -393,7 +393,7 @@ void TextInputState::processKeyEvent(const InputEvent& ev)
 			deleteSelection();
 		}
 
-        static const u32 maxTextSize = 2048;
+		static const u32 maxTextSize = 2048;
 		char tmpStr[maxTextSize];
 		UnicodeString utf32Str;
 
@@ -476,7 +476,7 @@ i32 TextInputState::getCharIndexAtX(f32 xPos)
 	FontTextSize rcCurrentRange, rcLastChar;
 	UnicodeString subStr, lastChar;
 	i32 pos = 0;
-	
+
 	xPos += scrollOffset;
 
 	UiFont* font = (UiFont*)themeElement->normalState().font;
@@ -562,7 +562,7 @@ void TextInputState::formatValue(UnicodeString& value)
 	case TextInputValueMode::NumericOnly:
 	{
 		std::vector<u32>::iterator iter = value.begin();
-		
+
 		while (iter != value.end())
 		{
 			if (!isdigit(*iter) && *iter != '.' && *iter != ',')

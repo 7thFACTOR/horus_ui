@@ -5,7 +5,6 @@
 #include <algorithm>
 #include <math.h>
 
-
 namespace hui
 {
 ViewContainer createViewContainer(Window window)
@@ -113,7 +112,7 @@ ViewPane getViewContainerFirstViewPane(ViewContainer viewContainer)
 {
 	auto viewContainerObj = (UiViewContainer*)viewContainer;
 	std::vector<UiViewPane*> viewPanes;
-	
+
 	viewContainerObj->rootCell->fillViewPanes(viewPanes);
 
 	if (viewPanes.size())
