@@ -99,7 +99,7 @@ struct MyViewHandler : hui::ViewHandler
 					printf("File open: '%s'\n", file);
 				}
 			}
-			
+
 			if (hui::menuItem("Open many files...", "Ctrl+Alt+O", tabIcon1))
 			{
 				printf("open many\n");
@@ -108,7 +108,7 @@ struct MyViewHandler : hui::ViewHandler
 				if (hui::openMultipleFileDialog("png;zip;exe;jpg", "file.png", fs))
 				{
 
-					for(int i = 0; i < fs.count; i++)	
+					for (int i = 0; i < fs.count; i++)
 						printf("File open#%d: '%s'\n", i, fs.filenameBuffer + fs.bufferIndices[i]);
 				}
 			}
@@ -127,7 +127,7 @@ struct MyViewHandler : hui::ViewHandler
 			if (hui::menuItem("Pick folder...", "Ctrl+F"))
 			{
 				printf("pick folder\n");
-				char file[1000] = {0};
+				char file[1000] = { 0 };
 
 				if (hui::pickFolderDialog("C:\\", file, 1000))
 				{
@@ -145,7 +145,7 @@ struct MyViewHandler : hui::ViewHandler
 			if (hui::menuItem("Exit", "Ctrl+Alt+X"))
 			{
 				printf("exit\n");
-                hui::quitApplication();
+				hui::quitApplication();
 			}
 
 			hui::endMenu();
@@ -197,7 +197,7 @@ struct MyViewHandler : hui::ViewHandler
 			f32 baseItemSize = 128;
 			static f32 rowHeight = 128;
 			f32 itemWidth = baseItemSize + hui::getPadding() * 2.0f;
-			
+
 			auto viewWidth = hui::getParentSize().x;
 			int itemCountPerRow = viewWidth / itemWidth;
 			f32 availablePaneHeight = hui::getRemainingViewPaneHeight(viewPane);
@@ -220,11 +220,11 @@ struct MyViewHandler : hui::ViewHandler
 				for (int rowItemIndex = 0; rowItemIndex < itemCountPerRow; rowItemIndex++)
 				{
 					int index = row * itemCountPerRow + rowItemIndex;
-					
+
 					if (index < totalItemCount)
 					{
 						hui::beginBox(index == selection ? (isListFocused ? Color::cyan : Color::gray) : Color::transparent);
-						
+
 						hui::image(lenaImg, baseItemSize);
 
 						if (index == selection && hui::isFocused())
@@ -238,13 +238,13 @@ struct MyViewHandler : hui::ViewHandler
 						if (hui::wantsToDragDrop())
 						{
 							static char str[100];
-							sprintf(str, "File%d", index+1);
+							sprintf(str, "File%d", index + 1);
 							hui::beginDragDrop(0, str);
 						}
 
 						hui::endBox();
 
-						
+
 						char sss[111];
 
 						sprintf(sss, "%d", index + 1);
@@ -292,21 +292,21 @@ struct MyViewHandler : hui::ViewHandler
 			static bool showDxf = false;
 			// userDataId here is an index into customPaneData
 			MyCustomTabData& cdata = customPaneData[userDataId];
-			
+
 			hui::beginMenuBar();
-		
+
 			if (hui::beginMenu("File"))
 			{
 				if (hui::menuItem("New...", "Ctrl+N"))
 				{
 					printf("new\n");
 				}
-				
+
 				if (hui::menuItem("Open...", "Ctrl+O", tabIcon1))
 				{
 					printf("open\n");
 					char file[1000] = { 0 };
-					
+
 					if (hui::openFileDialog("png;zip;exe;jpg", "file.png", file, 1000))
 					{
 						printf("File open: '%s'\n", file);
@@ -327,7 +327,7 @@ struct MyViewHandler : hui::ViewHandler
 				if (hui::menuItem("Pick folder...", "Ctrl+F"))
 				{
 					printf("pick folder\n");
-					char file[1000] = {0};
+					char file[1000] = { 0 };
 
 					if (hui::pickFolderDialog("C:\\", file, 1000))
 					{
@@ -356,7 +356,7 @@ struct MyViewHandler : hui::ViewHandler
 				}
 
 				if (hui::beginMenu("Save As..."))
-				{ 
+				{
 					if (hui::menuItem("DXF", "Ctrl+Shift+X"))
 					{
 						showDxf = true;
@@ -366,7 +366,7 @@ struct MyViewHandler : hui::ViewHandler
 					{
 						printf("obj\n");
 					}
-					
+
 					if (hui::beginMenu("FBX"))
 					{
 						if (hui::menuItem("Other", ""))
@@ -443,10 +443,10 @@ struct MyViewHandler : hui::ViewHandler
 					showDxf = false;
 				}
 			}
-			
+
 			hui::gap(10);
-			
-			static f32 toolbarCols[] = {30, 30, 30, 100, 100, 0.5f, 1};
+
+			static f32 toolbarCols[] = { 30, 30, 30, 100, 100, 0.5f, 1 };
 			hui::pushPadding(1);
 			hui::beginColumns(6, toolbarCols, toolbarCols, toolbarCols);
 			hui::iconButton(moveIcon, 20);
@@ -465,9 +465,9 @@ struct MyViewHandler : hui::ViewHandler
 			hui::textInput(tx, 100, TextInputValueMode::Any, "Search");
 			hui::endColumns();
 			hui::popPadding();
-			
+
 			WidgetElementInfo wel;
-			
+
 			hui::getThemeWidgetElementInfo(hui::WidgetElementId::ButtonBody, hui::WidgetStateType::Normal, wel);
 
 			hui::image(wel.image);
@@ -514,7 +514,7 @@ struct MyViewHandler : hui::ViewHandler
 
 				hui::beginScrollView(200, cdata.scrollPosNewComponentList);
 
-                static int folderIndex = 0;
+				static int folderIndex = 0;
 
 				char* compNames1[] = {
 					"UiText",
@@ -534,45 +534,45 @@ struct MyViewHandler : hui::ViewHandler
 
 				};
 
-                char* compNames2[] = {
-                    "SoundSource",
-                    "SoundEffect",
-                    "SoundCue",
-                };
+				char* compNames2[] = {
+					"SoundSource",
+					"SoundEffect",
+					"SoundCue",
+				};
 
-                char** compNames = (folderIndex == 0) ? compNames1 : compNames2;
+				char** compNames = (folderIndex == 0) ? compNames1 : compNames2;
 
-                char* compFolders[] = {
-                    "Graphics",
-                    "Audio",
-                };
-                
+				char* compFolders[] = {
+					"Graphics",
+					"Audio",
+				};
+
 
 				int numComp = (folderIndex == 0) ? sizeof(compNames1) / sizeof(compNames1[0]) : sizeof(compNames2) / sizeof(compNames2[0]);
-                int numCompFolders = sizeof(compFolders) / sizeof(compFolders[0]);
+				int numCompFolders = sizeof(compFolders) / sizeof(compFolders[0]);
 				bool foundSome = false;
 
 				hui::pushPadding(0);
 				hui::pushSpacing(0);
-				
-                for (int i = 0; i < numCompFolders; i++)
-                {
-                    if (stristr(compFolders[i], cdata.strSearch))
-                    {
-                        foundSome = true;
-                        hui::pushTint(Color::orange, TintColorType::Text);
-                        if (hui::selectableCustomFont(compFolders[i], fntBold))
-                        {
-                            hui::popTint();
-                            //closePopup();
-                            folderIndex = i;
-                            break;
-                        }
-                        hui::popTint();
-                    }
-                }
-                
-                for (int i = 0; i < numComp; i++)
+
+				for (int i = 0; i < numCompFolders; i++)
+				{
+					if (stristr(compFolders[i], cdata.strSearch))
+					{
+						foundSome = true;
+						hui::pushTint(Color::orange, TintColorType::Text);
+						if (hui::selectableCustomFont(compFolders[i], fntBold))
+						{
+							hui::popTint();
+							//closePopup();
+							folderIndex = i;
+							break;
+						}
+						hui::popTint();
+					}
+				}
+
+				for (int i = 0; i < numComp; i++)
 				{
 					if (stristr(compNames[i], cdata.strSearch))
 					{
@@ -620,7 +620,7 @@ struct MyViewHandler : hui::ViewHandler
 						cdata.componentPanelEnabled.push_back(true);
 						strcpy(cdata.strNewCompScript, "");
 					}
-					
+
 					hui::closePopup();
 					cdata.showAddComponent = false;
 				}
@@ -647,7 +647,7 @@ struct MyViewHandler : hui::ViewHandler
 			hui::endColumns();
 			hui::popPadding();
 			hui::label("Drag this to the None target");
-			
+
 			if (hui::wantsToDragDrop())
 			{
 				hui::beginDragDrop(0, (void*)"Dragged man!");
@@ -675,12 +675,12 @@ struct MyViewHandler : hui::ViewHandler
 			hui::beginScrollView(hui::getRemainingViewPaneHeight(viewPane), cdata.scrollPosComponents);
 
 			srand(0);
-			
+
 			auto iter = cdata.components.begin();
 			auto iter2 = cdata.componentPanelExpanded.begin();
 			auto iter3 = cdata.componentPanelEnabled.begin();
 
-			while(iter != cdata.components.end())
+			while (iter != cdata.components.end())
 			{
 				f32 widths[] = { 1, 50 };
 				bool deleted = false;
@@ -689,7 +689,7 @@ struct MyViewHandler : hui::ViewHandler
 					hui::pushTint(Color::gray);
 
 				*iter2 = hui::panel(iter->c_str(), *iter2);
-				
+
 				if (*iter3 == false)
 					hui::popTint();
 
@@ -697,15 +697,15 @@ struct MyViewHandler : hui::ViewHandler
 				{
 					f32 colWidthsForProps[] = { 0.3, -1 };
 					hui::beginColumns(2, colWidthsForProps);
-					
+
 					hui::label("Name");
 					hui::label("Position");
 					hui::label("Rotation");
 					hui::label("Scale");
 					hui::label("Visibility");
-					
+
 					hui::nextColumn();
-					
+
 					hui::pushPadding(0);
 					hui::textInput(str, 100);
 
@@ -783,7 +783,7 @@ struct MyViewHandler : hui::ViewHandler
 		// custom viewport pane
 		case 2:
 		{
-			f32 cols[] = {50, 50, 50, -1, 80};
+			f32 cols[] = { 50, 50, 50, -1, 80 };
 			hui::gap(5);
 			hui::beginColumns(5, cols);
 			hui::iconButton(playIcon);
@@ -799,7 +799,7 @@ struct MyViewHandler : hui::ViewHandler
 
 			// no margins for our viewport
 			hui::pushPadding(0);
-		
+
 			auto viewRc = hui::beginViewport(200);
 			//printf("Custom viewport:%f %f %f %f\n", viewRc.x, viewRc.y, viewRc.width, viewRc.height);
 
@@ -909,8 +909,8 @@ struct MyViewHandler : hui::ViewHandler
 
 				//hui::drawSpline(pts.data(), pts.size());
 
-				hui::setLineStyle({Color::red, 2});
-				hui::drawLine({50,50}, {100, 100});
+				hui::setLineStyle({ Color::red, 2 });
+				hui::drawLine({ 50,50 }, { 100, 100 });
 			}
 
 			if (hui::isHovered())
@@ -919,7 +919,7 @@ struct MyViewHandler : hui::ViewHandler
 			}
 
 			hui::endViewport();
-			
+
 			hui::popPadding();
 			static f32 spos = 0;
 			hui::beginScrollView(hui::getRemainingViewPaneHeight(viewPane), spos);
@@ -1016,14 +1016,14 @@ struct MyViewHandler : hui::ViewHandler
 		{
 			hui::gap(5);
 			hui::labelCustomFont("General Settings", hui::getFont("title"));
-			static f32 scr[100] = {0};
+			static f32 scr[100] = { 0 };
 			hui::image(horusLogo);
 			const char* s[] = { "Red", "Green", "Blue", "Yellow", "Pink" };
 			static i32 crtSel = 0;
 			hui::dropdown(crtSel, s, 5, 3);
 			hui::beginScrollView(hui::getRemainingViewPaneHeight(viewPane), scr[viewId]);
 			hui::gap(5);
-			
+
 			// showing a message box
 			static bool exiting = false;
 			static u64 udid = 0;
@@ -1037,7 +1037,7 @@ struct MyViewHandler : hui::ViewHandler
 			if (exiting && udid == userDataId)
 			{
 				hui::MessageBoxButtons mb = hui::messageBox("Exit?", "Do you want to exit ?", hui::MessageBoxButtons::YesNo, hui::MessageBoxIcon::Question);
-				
+
 				if (!!(mb & MessageBoxButtons::Yes))
 				{
 					hui::quitApplication();
@@ -1052,19 +1052,19 @@ struct MyViewHandler : hui::ViewHandler
 
 			static f32 prog = 0;
 			hui::label("Processing the procedural Universe...");
-			hui::progress(prog+=0.0001f);
-		
+			hui::progress(prog += 0.0001f);
+
 			hui::beginEqualColumns(2);
 
 			hui::pushTint(color, hui::TintColorType::Body);
-			
+
 			static bool chooseColorPopup = false;
 			static u64 userDataIdForLena = 0;
 
 			if (hui::button("Choose color..."))
 			{
 				auto rect = hui::getWidgetRect();
-				chooseColorPopupPos = {rect.x, rect.bottom()};
+				chooseColorPopupPos = { rect.x, rect.bottom() };
 				chooseColorPopup = true;
 				userDataIdForLena = userDataId;
 			}
@@ -1114,16 +1114,16 @@ struct MyViewHandler : hui::ViewHandler
 				hui::endMenuBar();
 
 				hui::multilineLabel("Lenna or Lena is the name given to a standard test image widely used in the field of image processing since 1973.[1] It is a picture of Lena Söderberg, shot by photographer Dwight Hooker, cropped from the centerfold of the November 1972 issue of Playboy magazine.", HAlignType::Left);
-				
+
 				hui::gap(20);
-				
+
 				static bool ap = false;
 				ap = hui::check("Approve her", ap);
 
-                if (hui::isClicked())
-                {
-                    printf("Changed approved\n");
-                }
+				if (hui::isClicked())
+				{
+					printf("Changed approved\n");
+				}
 
 				static int selTab = 0;
 
@@ -1134,7 +1134,7 @@ struct MyViewHandler : hui::ViewHandler
 				selTab = hui::endTabGroup();
 
 				hui::gap(10);
-				
+
 				static int projType = 0;
 				static const char* projTypes[] = { "Perspective", "Free Ortho", "Left", "Top", "Front" };
 				static char someText[200] = "Please select projection type";
@@ -1227,9 +1227,9 @@ struct MyViewHandler : hui::ViewHandler
 						moreInfoMsgBox = false;
 					}
 				}
-				
-                hui::gap(20);
-                hui::endPopup();
+
+				hui::gap(20);
+				hui::endPopup();
 			}
 
 			if (hui::button("Move"))
@@ -1239,10 +1239,10 @@ struct MyViewHandler : hui::ViewHandler
 			hui::button("Rotate");
 			hui::button("Scale");
 			hui::nextColumn();
-            if (hui::button("Subtract"))
-            {
-                printf("SUB\n");
-            }
+			if (hui::button("Subtract"))
+			{
+				printf("SUB\n");
+			}
 			const char* s2[] = { "White", "Red", "Green", "Blue", "Yellow", "Pink" };
 			static int sel = 0;
 			static hui::Color currentTint = Color::white;
@@ -1399,7 +1399,7 @@ struct MyViewHandler : hui::ViewHandler
 					strcpy(str, (char*)hui::getDragDropObject());
 					hui::endDragDrop();
 				}
-				
+
 				hui::beginEqualColumns(2);
 				checks[0] = hui::check("Show markers", checks[0]);
 				hui::tooltip("And some amazing tooltip\nMultiline of course!");
@@ -1456,7 +1456,7 @@ struct MyViewHandler : hui::ViewHandler
 
 			scr[viewId] = hui::endScrollView();
 			break;
-			}
+		}
 		}
 	}
 
@@ -1482,11 +1482,11 @@ void createMyDefaultViewPanes()
 
 int main(int argc, char** args)
 {
-    hui::SdlSettings settings;
+	hui::SdlSettings settings;
 
-    settings.mainWindowTitle = "HorusUI Example - Widget Showroom";
-    settings.mainWindowRect = { 0, 0, 800, 600 };
-    settings.gfxProvider = new OpenGLGraphicsProvider();
+	settings.mainWindowTitle = "HorusUI Example - Widget Showroom";
+	settings.mainWindowRect = { 0, 0, 800, 600 };
+	settings.gfxProvider = new OpenGLGraphicsProvider();
 	hui::initializeWithSDL(settings);
 
 	printf("Loading theme...\n");
@@ -1496,11 +1496,11 @@ int main(int argc, char** args)
 	fntBold = hui::createFont(theme, "customBold", "../themes/fonts/arial.ttf", 15);
 	fntItalic = hui::createFont(theme, "customItalic", "../themes/fonts/arial.ttf", 15);
 	fntNodeTitle = hui::createFont(theme, "customNodeTitle", "../themes/fonts/Roboto-Bold.ttf", 12);
-    printf("Loading images...\n");
+	printf("Loading images...\n");
 
 	hui::setTheme(theme);
 	drawLineImg = hui::loadImage("../themes/drawline.png");
-	lenaImg= hui::loadImage("../themes/lena.png");
+	lenaImg = hui::loadImage("../themes/lena.png");
 	nodeBodyImg = hui::loadImage("../themes/node-body.png");
 	tabIcon1 = hui::loadImage("../themes/tabicon.png");
 	tabIcon2 = hui::loadImage("../themes/tabicon2.png");
@@ -1519,7 +1519,7 @@ int main(int argc, char** args)
 	dragDropCur = hui::createMouseCursor("../themes/dragdrop_cursor.png");
 
 	hui::setDragDropMouseCursor(dragDropCur);
-    printf("Loading views...\n");
+	printf("Loading views...\n");
 
 	// if there is no state, then create the default panes and tabs
 	if (!hui::loadViewContainersState("layout.hui"))

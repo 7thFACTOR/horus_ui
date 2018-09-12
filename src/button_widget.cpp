@@ -6,7 +6,6 @@
 #include "ui_font.h"
 #include "ui_context.h"
 #include "util.h"
-#include "3rdparty/stb_image/stb_image_write.c"
 #include <algorithm>
 
 namespace hui

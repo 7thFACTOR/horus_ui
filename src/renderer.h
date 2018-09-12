@@ -2,7 +2,7 @@
 #include "types.h"
 #include "horus.h"
 #include "horus_interfaces.h"
-#include <map>
+#include <unordered_map>
 
 namespace hui
 {

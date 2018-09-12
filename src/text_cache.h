@@ -1,7 +1,6 @@
 #pragma once
-#include <map>
+#include <unordered_map>
 #include <string>
-#include <vector>
 #include "types.h"
 
 namespace hui
@@ -16,7 +15,7 @@ public:
 	UnicodeString* getText(const char* text);
 
 protected:
-	std::map<std::string, UnicodeString*> texts;
+	std::unordered_map<std::string, UnicodeString*> texts;
 };
 
 }

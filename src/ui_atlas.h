@@ -3,7 +3,7 @@
 #include "types.h"
 #include "renderer.h"
 #include "horus_interfaces.h"
-#include <map>
+#include <unordered_map>
 #include <string>
 #include <vector>
 #include <3rdparty/binpack/Rect.h>
@@ -99,7 +99,7 @@ protected:
 	UiAtlasPackPolicy lastUsedPolicy = UiAtlasPackPolicy::Skyline;
 	bool useWasteMap = true;
 	std::vector<AtlasTexture*> atlasTextures;
-	std::map<UiImageId, UiImage*> images;
+	std::unordered_map<UiImageId, UiImage*> images;
 	std::vector<PackImageData> pendingPackImages;
 };
 

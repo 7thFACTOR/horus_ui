@@ -1,9 +1,10 @@
 #include "util.h"
-#include "3rdparty/utf8/source/utf8.h"
 #include <algorithm>
 #include <string.h>
 #include <string>
 #include <vector>
+#include "3rdparty/utf8/source/utf8.h"
+#include "3rdparty/stb_image/stb_image_write.c"
 
 namespace hui
 {

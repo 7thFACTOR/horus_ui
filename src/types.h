@@ -1,8 +1,6 @@
 #pragma once
 #include "horus.h"
 #include <vector>
-#include <map>
-#include <unordered_map>
 
 #ifdef _LINUX
 #include <sys/types.h>

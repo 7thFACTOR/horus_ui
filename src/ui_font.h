@@ -3,7 +3,6 @@
 #include "ui_atlas.h"
 #include <string>
 #include <vector>
-#include <map>
 #include <unordered_map>
 
 namespace hui
@@ -83,7 +82,7 @@ protected:
 	f32 ascender = 0;
 	FontMetrics metrics;
 	void* face = 0;
-	std::map<GlyphCode, FontGlyph*> glyphs;
+	std::unordered_map<GlyphCode, FontGlyph*> glyphs;
 	std::unordered_map<u64, f32> kerningPairs;
 };
 

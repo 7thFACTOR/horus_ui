@@ -1,5 +1,5 @@
 #pragma once
-#include <map>
+#include <unordered_map>
 #include "horus.h"
 #include "types.h"
 #include "ui_atlas.h"
@@ -16,10 +16,11 @@ public:
 	void packAtlas();
 	inline UiThemeElement& getElement(WidgetElementId id) { return elements[(u32)id]; }
 
-	std::map<std::string, UiFont*> fonts;
-	std::map<std::string, UiImage*> images;
+	std::unordered_map<std::string, UiFont*> fonts;
+	std::unordered_map<std::string, UiImage*> images;
 	UiThemeElement elements[(int)WidgetElementId::Count];
-	std::map<std::string, UiThemeElement*> userElements;
+	std::unordered_map<std::string, UiThemeElement*> userElements;
+	std::unordered_map<std::string, std::string> userSettings;
 	UiAtlas* atlas = nullptr;
 	FontCache* fontCache = nullptr;
 };

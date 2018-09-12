@@ -25,7 +25,7 @@ protected:
 	};
 
 	UiAtlas* atlas = nullptr;
-	std::map<UiFont*, CachedFontInfo*> cachedFonts;
+	std::unordered_map<UiFont*, CachedFontInfo*> cachedFonts;
 };
 
 }
