@@ -536,6 +536,15 @@ enum class MouseCursorType
 	Count
 };
 
+/// Text cache pruning mode. The text cache is keeping unicode text transformed from utf8 to be faster to render each frame
+/// When the UI is rendered continuously every frame the cache is pruned for non used text, based on last time access.
+/// When the UI is rendered only when needed, the cache is pruned for non used text, based on frame count, if that is greater than a specified max frames, then the unicode text is discarded from cache.
+enum class TextCachePruneMode
+{
+	Time,
+	Frames
+};
+
 /// Docking modes for the view panes
 enum class DockType
 {
@@ -1388,6 +1397,10 @@ struct ContextSettings
 {
 	f32 radioBulletTextSpacing = 5; /// distance in pixels between radio bullet and its label text
 	f32 checkBulletTextSpacing = 5; /// distance in pixels between check bullet and its label text
+	TextCachePruneMode textCachePruneMode = TextCachePruneMode::Time;
+	f32 textCachePruneMaxTimeSec = 5; /// after this time, if a unicode text is not accessed, it's discarded from cache, textCachePruneMode must be Time
+	f32 textCachePruneMaxFrames = 500; /// after this frame count, if a unicode text is not accessed, it's discarded from cache, textCachePruneMode must be Frames
+	f32 textCachePruneIntervalSec = 5; /// after each interval has passed, the pruning of unused texts is executed, will delete the texts that were not used for the last textCachePruneMaxTimeMs or textCachePruneMaxFrames, depending on the prune mode
 };
 
 //////////////////////////////////////////////////////////////////////////

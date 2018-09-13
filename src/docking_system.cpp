@@ -1,7 +1,7 @@
 #include "horus.h"
 #include "types.h"
 #include "renderer.h"
-#include "text_cache.h"
+#include "unicode_text_cache.h"
 #include "ui_font.h"
 #include "ui_theme.h"
 #include "ui_context.h"
@@ -10,6 +10,7 @@
 #include <vector>
 #include <unordered_map>
 #include <algorithm>
+#include <thread>
 
 namespace hui
 {
@@ -108,6 +109,7 @@ void updateDockingSystem(ViewHandler* handler)
 
 	if (hui::hasNothingToDo())
 	{
+		std::this_thread::yield();
 		return;
 	}
 

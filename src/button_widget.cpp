@@ -2,7 +2,7 @@
 #include "types.h"
 #include "renderer.h"
 #include "ui_theme.h"
-#include "text_cache.h"
+#include "unicode_text_cache.h"
 #include "ui_font.h"
 #include "ui_context.h"
 #include "util.h"
@@ -12,7 +12,6 @@ namespace hui
 {
 void buttonBehavior(bool menuItem)
 {
-
 	ctx->widget.hovered = (ctx->currentWidgetId == ctx->widget.hoveredWidgetId);
 	ctx->widget.focused = (ctx->currentWidgetId == ctx->widget.focusedWidgetId);
 	ctx->widget.clicked = false;

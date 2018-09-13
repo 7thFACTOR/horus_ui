@@ -2,7 +2,7 @@
 #include "types.h"
 #include "renderer.h"
 #include "ui_theme.h"
-#include "text_cache.h"
+#include "unicode_text_cache.h"
 #include "util.h"
 #include "ui_font.h"
 #include "ui_context.h"

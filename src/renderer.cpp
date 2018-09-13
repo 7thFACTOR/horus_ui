@@ -10,6 +10,7 @@
 #include "ui_theme.h"
 #include "ui_context.h"
 #include "util.h"
+#include "unicode_text_cache.h"
 
 namespace hui
 {
@@ -1155,9 +1156,7 @@ void Renderer::drawTextInternal(
 	/////////////////////////////
 	// DRAW CHARS
 	/////////////////////////////
-	static UnicodeString utext;
-
-	utf8ToUtf32(text, utext);
+	const UnicodeString& utext = *ctx->textCache->getText(text);
 
 	for (int i = 0; i < utext.size(); i++)
 	{

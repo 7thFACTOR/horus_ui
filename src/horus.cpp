@@ -9,7 +9,7 @@
 #include "ui_context.h"
 #include "util.h"
 #include "renderer.h"
-#include "text_cache.h"
+#include "unicode_text_cache.h"
 #include "font_cache.h"
 #include "3rdparty/jsoncpp/include/json/json.h"
 #include "3rdparty/jsoncpp/include/json/reader.h"
@@ -259,6 +259,15 @@ void beginFrame()
 	ctx->dragDropState.foundDropTarget = false;
 	ctx->widget.hoveredWidgetId = 0;
 	ctx->widget.hoveredWidgetType = WidgetType::None;
+	ctx->frameCount++;
+	ctx->totalTime += ctx->deltaTime;
+	ctx->pruneUnusedTextTime += ctx->deltaTime;
+
+	if (ctx->pruneUnusedTextTime >= ctx->settings.textCachePruneIntervalSec)
+	{
+		ctx->textCache->pruneUnusedTexts();
+		ctx->pruneUnusedTextTime = 0;
+	}
 }
 
 void endFrame()

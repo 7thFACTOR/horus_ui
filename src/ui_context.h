@@ -4,6 +4,7 @@
 #include "types.h"
 #include "text_input_state.h"
 #include <string>
+#include <unordered_map>
 
 namespace hui
 {
@@ -23,10 +24,13 @@ struct UiContext
 
 	GraphicsProvider* gfx = nullptr;
 	Renderer* renderer = nullptr;
-	TextCache* textCache = nullptr;
+	UnicodeTextCache* textCache = nullptr;
 	ContextSettings settings;
 
 	f32 deltaTime = 0;
+	f32 totalTime = 0;
+	u32 frameCount = 0;
+	f32 pruneUnusedTextTime = 0;
 	u32 currentWindowIndex = 0;
 	GraphicsApiContext gfxApiContext = 0;
 	u32 currentWidgetId = 1;

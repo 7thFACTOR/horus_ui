@@ -2,7 +2,7 @@
 #include "ui_font.h"
 #include "renderer.h"
 #include "util.h"
-#include "text_cache.h"
+#include "unicode_text_cache.h"
 #include <string.h>
 
 namespace hui
@@ -195,7 +195,7 @@ void UiContext::initializeGraphics()
 	if (!renderer)
 	{
 		renderer = new Renderer();
-		textCache = new TextCache();
+		textCache = new UnicodeTextCache();
 	}
 }
 

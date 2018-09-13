@@ -1,7 +1,7 @@
 #include "horus.h"
 #include "types.h"
 #include "ui_theme.h"
-#include "text_cache.h"
+#include "unicode_text_cache.h"
 #include "ui_font.h"
 #include "ui_context.h"
 #include "util.h"

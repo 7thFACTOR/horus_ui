@@ -16,7 +16,7 @@ namespace hui
 class Renderer;
 struct TextureArray;
 class UiTheme;
-class TextCache;
+class UnicodeTextCache;
 class FontCache;
 class UiFont;
 struct UiImage;
