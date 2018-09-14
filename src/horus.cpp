@@ -1136,15 +1136,15 @@ void setUserElement(
 		txtColor = Color((f32)r / 255.0f, (f32)g / 255.0f, (f32)b / 255.0f, (f32)a / 255.0f);
 	}
 
-	WidgetElementInfo inf = {
-		image,
-		border,
-		bgColor,
-		txtColor,
-		font,
-		width,
-		height
-	};
+	WidgetElementInfo inf;
+	
+	inf.image = image;
+	inf.border = border;
+	inf.color = bgColor;
+	inf.textColor = txtColor;
+	inf.font = font;
+	inf.width = width,
+	inf.height = height;
 
 	setThemeUserWidgetElement(
 		theme,
