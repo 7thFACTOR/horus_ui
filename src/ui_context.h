@@ -112,7 +112,7 @@ struct UiContext
 	std::vector<InputEvent> events;
 	InputEvent::Type savedEventType = InputEvent::Type::None;
 
-	std::unordered_map<TintColorType, std::vector<Color>> tintStack;
+	std::unordered_map<u32, std::vector<Color>> tintStack;
 	Color tint[(u32)TintColorType::Count] = { Color::white, Color::white };
 	LineStyle lineStyle;
 	FillStyle fillStyle;

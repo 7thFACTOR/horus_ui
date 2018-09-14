@@ -1678,13 +1678,13 @@ void pushTint(const Color& color, TintColorType type)
 	{
 	case hui::TintColorType::Body:
 	case hui::TintColorType::Text:
-		ctx->tintStack[type].push_back(color);
+		ctx->tintStack[(u32)type].push_back(color);
 		ctx->tint[(u32)type] = color;
 		break;
 	case hui::TintColorType::All:
 		for (int i = 0; i < (int)TintColorType::Count; i++)
 		{
-			ctx->tintStack[(TintColorType)i].push_back(color);
+			ctx->tintStack[i].push_back(color);
 			ctx->tint[i] = color;
 		}
 		break;
@@ -1699,29 +1699,29 @@ void popTint(TintColorType type)
 	{
 	case hui::TintColorType::Body:
 	case hui::TintColorType::Text:
-		if (ctx->tintStack[type].empty())
+		if (ctx->tintStack[(u32)type].empty())
 			return;
 
-		ctx->tintStack[type].pop_back();
+		ctx->tintStack[(u32)type].pop_back();
 
-		if (!ctx->tintStack[type].empty())
-			ctx->tint[(u32)type] = ctx->tintStack[type].back();
+		if (!ctx->tintStack[(u32)type].empty())
+			ctx->tint[(u32)type] = ctx->tintStack[(u32)type].back();
 		else
 			ctx->tint[(u32)type] = Color::white;
 		break;
 	case hui::TintColorType::All:
 		for (int i = 0; i < (int)TintColorType::Count; i++)
 		{
-			if (ctx->tintStack[(TintColorType)i].empty())
+			if (ctx->tintStack[i].empty())
 			{
 				ctx->tint[i] = Color::white;
 				continue;
 			}
 
-			ctx->tintStack[(TintColorType)i].pop_back();
+			ctx->tintStack[i].pop_back();
 
-			if (!ctx->tintStack[(TintColorType)i].empty())
-				ctx->tint[i] = ctx->tintStack[(TintColorType)i].back();
+			if (!ctx->tintStack[i].empty())
+				ctx->tint[i] = ctx->tintStack[i].back();
 			else
 				ctx->tint[i] = Color::white;
 		}
