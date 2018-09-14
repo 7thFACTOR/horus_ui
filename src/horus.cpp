@@ -824,7 +824,7 @@ void getThemeWidgetElementInfo(WidgetElementId elementId, WidgetStateType state,
 
 void getThemeUserWidgetElementInfo(const char* userElementName, WidgetStateType state, WidgetElementInfo& outInfo)
 {
-	outInfo = { 0 };
+	outInfo = {};
 	auto iter = ctx->theme->userElements.find(userElementName);
 
 	if (iter == ctx->theme->userElements.end())
