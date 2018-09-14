@@ -1136,19 +1136,21 @@ void setUserElement(
 		txtColor = Color((f32)r / 255.0f, (f32)g / 255.0f, (f32)b / 255.0f, (f32)a / 255.0f);
 	}
 
+	WidgetElementInfo inf = {
+		image,
+		border,
+		bgColor,
+		txtColor,
+		font,
+		width,
+		height
+	};
+
 	setThemeUserWidgetElement(
 		theme,
 		elemName.c_str(),
 		widgetStateType,
-		{
-			image,
-			(u32)border,
-			bgColor,
-			txtColor,
-			font,
-			(f32)width,
-			(f32)height
-		});
+		inf);
 }
 
 Theme loadTheme(const char* filename)
