@@ -72,7 +72,7 @@ bool rotarySliderFloat(const char* labelText, f32& value, f32 minVal, f32 maxVal
 			Point newp;
 			//qpos[i] -= center;
 			newp.x = cosf(value*M_PI) * qpos[i].x - sinf(value*M_PI) * qpos[i].y;
-			newp.y = sinf(value*M_PI) * qpos[i].x - cosf(value*M_PI) * qpos[i].y;
+			newp.y = sinf(value*M_PI) * qpos[i].x + cosf(value*M_PI) * qpos[i].y;
 			qpos[i] = newp + center;
 		}
 

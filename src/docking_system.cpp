@@ -10,7 +10,10 @@
 #include <vector>
 #include <unordered_map>
 #include <algorithm>
-#include <thread>
+
+#ifdef _WIN32
+#include <windows.h>
+#endif
 
 namespace hui
 {
@@ -109,7 +112,9 @@ void updateDockingSystem(ViewHandler* handler)
 
 	if (hui::hasNothingToDo())
 	{
-		std::this_thread::yield();
+#ifdef _WIN32
+		Sleep(1);
+#endif
 		return;
 	}
 
