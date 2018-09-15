@@ -13,6 +13,9 @@ f32 scale = 1.f;
 Font fntBig;
 Font fntBold;
 Font fntItalic;
+Font fntLed1;
+Font fntLed2;
+Font fntLed3;
 Image lenaImg;
 Image nodeBodyImg;
 Image drawLineImg;
@@ -1301,7 +1304,41 @@ struct MyViewHandler : hui::ViewHandler
 			hui::label("Far Plane:", HAlignType::Right);
 			hui::nextColumn();
 			hui::pushPadding(0);
-			hui::sliderFloat(0, 1, slideVal, true, 0.2f);
+			hui::getContextSettings().sliderAllowAnyDragDirection = true;
+			hui::getContextSettings().sliderInvertVerticalDragAmount = false;
+			hui::comboSliderFloat(slideVal, 1);
+			hui::comboSliderFloatRanged(slideVal, 0, 100, .1f);
+
+			static f32 sval[3] = {0.5f, 1, 0};
+			static char txtSlider[64] = "";
+			hui::beginThreeColumns();
+			hui::rotarySliderFloat("Volume",sval[0], 0, 1, .1);
+			toString(sval[0], txtSlider, 64);
+			hui::beginBox(Color::black);
+			hui::pushTint(Color::red);
+			hui::labelCustomFont(txtSlider, fntLed2, HAlignType::Center);
+			hui::popTint();
+			hui::endBox();
+			hui::nextColumn();
+
+			hui::rotarySliderFloat("Pitch", sval[1], 0, 1, .1);
+			toString(sval[1], txtSlider, 64);
+			hui::beginBox(Color(199/255.0f, 202 / 255.0f, 1 / 255.0f, 1));
+			hui::pushTint(Color::black);
+			hui::labelCustomFont(txtSlider, fntLed1, HAlignType::Center);
+			hui::popTint();
+			hui::endBox();
+			hui::nextColumn();
+
+			hui::rotarySliderFloat("Echo", sval[2], 0, 1, .1);
+			toString(sval[2], txtSlider, 64);
+			hui::beginBox(Color::veryDarkGreen);
+			hui::pushTint(Color::green);
+			hui::labelCustomFont(txtSlider, fntLed1, HAlignType::Center);
+			hui::popTint();
+			hui::endBox();
+			hui::endColumns();
+
 			hui::popPadding();
 			hui::nextColumn();
 			static char valStr[20];
@@ -1517,6 +1554,10 @@ int main(int argc, char** args)
 	myViewHandler.pauseIcon = hui::loadImage("../themes/pause-icon.png");
 	myViewHandler.horusLogo = hui::loadImage("../themes/horus.png");
 	dragDropCur = hui::createMouseCursor("../themes/dragdrop_cursor.png");
+
+	fntLed1 = hui::getFont("led1");
+	fntLed2 = hui::getFont("led2");
+	fntLed3 = hui::getFont("led3");
 
 	hui::setDragDropMouseCursor(dragDropCur);
 	printf("Loading views...\n");

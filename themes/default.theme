@@ -17,7 +17,17 @@
 		"title": { "file": "fonts/segoeui.ttf", "size": 20 },
 		"heading": { "file": "fonts/segoeui.ttf", "size": 14 },
 		"para": { "file": "fonts/segoeui.ttf", "size": 12 },
-		"menu": { "file": "fonts/segoeui.ttf", "size": 16 }
+		"menu": { "file": "fonts/segoeui.ttf", "size": 16 },
+		"led1": { "file": "fonts/digital dismay.otf", "size": 30 },
+		"led2": { "file": "fonts/MobileFont.ttf", "size": 20 }
+	},
+	
+	"settings":
+	{
+		"radioBulletTextSpacing": "5",
+		"checkBulletTextSpacing": "5",
+		"comboSliderArrowSideSpacing": "3",
+		"comboSliderArrowClickSize" : "25"
 	},
 
 	"widgets":
@@ -192,6 +202,57 @@
 				"hovered": { "image": "slider_knob", "border": 0, "color": "sky", "textColor": "white", "font": "normal" },
 				"pressed": { "image": "slider_knob", "border": 0, "color": "white", "textColor": "white", "font": "normal" },
 				"focused": { "image": "slider_knob", "border": 0, "color": "sky", "textColor": "white", "font": "normal" }
+			}
+		},
+		"comboSlider":
+		{
+			"comboSliderBody":
+			{
+				"height": 20,
+				"normal": { "image": "dropdown", "border": 2, "color": "lightGray", "textColor": "white", "font": "normal" },
+				"hovered": { "image": "dropdown", "border": 2, "color": "white", "textColor": "white", "font": "normal" },
+				"pressed": { "image": "dropdown", "border": 2, "color": "darkCyan", "textColor": "white", "font": "normal" },
+				"focused": { "image": "dropdown", "border": 2, "color": "white", "textColor": "white", "font": "normal" }
+			},
+			"comboSliderLeftArrow":
+			{
+				"normal": { "image": "left_arrow", "border": 0, "color": "white", "textColor": "white", "font": "normal" },
+				"hovered": { "image": "left_arrow", "border": 0, "color": "orange", "textColor": "white", "font": "normal" },
+				"pressed": { "image": "left_arrow", "border": 0, "color": "white", "textColor": "white", "font": "normal" },
+				"focused": { "image": "left_arrow", "border": 0, "color": "white", "textColor": "white", "font": "normal" }
+			},
+			"comboSliderRightArrow":
+			{
+				"normal": { "image": "right_arrow", "border": 0, "color": "white", "textColor": "white", "font": "normal" },
+				"hovered": { "image": "right_arrow", "border": 0, "color": "orange", "textColor": "white", "font": "normal" },
+				"pressed": { "image": "right_arrow", "border": 0, "color": "white", "textColor": "white", "font": "normal" },
+				"focused": { "image": "right_arrow", "border": 0, "color": "white", "textColor": "white", "font": "normal" }
+			},
+			"comboSliderRangeBar":
+			{
+				"height": 2,
+				"normal": { "image": "comboslider_range_bar", "border": 1, "color": "sky", "textColor": "white", "font": "normal" },
+				"hovered": { "image": "comboslider_range_bar", "border": 1, "color": "sky", "textColor": "white", "font": "normal" },
+				"pressed": { "image": "comboslider_range_bar", "border": 1, "color": "sky", "textColor": "white", "font": "normal" },
+				"focused": { "image": "comboslider_range_bar", "border": 1, "color": "sky", "textColor": "white", "font": "normal" }
+			}
+		},
+		"rotarySlider":
+		{
+			"rotarySliderBody":
+			{
+				"height": 90,
+				"normal": { "image": "rotaryslider_body", "border": 2, "color": "lightGray", "textColor": "white", "font": "normal" },
+				"hovered": { "image": "rotaryslider_body", "border": 2, "color": "white", "textColor": "white", "font": "normal" },
+				"pressed": { "image": "rotaryslider_body", "border": 2, "color": "darkCyan", "textColor": "white", "font": "normal" },
+				"focused": { "image": "rotaryslider_body", "border": 2, "color": "white", "textColor": "white", "font": "normal" }
+			},
+			"rotarySliderMark":
+			{
+				"normal": { "image": "rotaryslider_mark", "border": 0, "color": "white", "textColor": "white", "font": "normal" },
+				"hovered": { "image": "rotaryslider_mark", "border": 0, "color": "orange", "textColor": "white", "font": "normal" },
+				"pressed": { "image": "rotaryslider_mark", "border": 0, "color": "white", "textColor": "white", "font": "normal" },
+				"focused": { "image": "rotaryslider_mark", "border": 0, "color": "white", "textColor": "white", "font": "normal" }
 			}
 		},
 		"tooltip":

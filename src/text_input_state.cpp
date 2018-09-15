@@ -565,7 +565,10 @@ void TextInputState::formatValue(UnicodeString& value)
 
 		while (iter != value.end())
 		{
-			if (!isdigit(*iter) && *iter != '.' && *iter != ',')
+			if (!isdigit(*iter)
+				&& *iter != '.' && *iter != ',' 
+				&& *iter != '-' && *iter != 'e'
+				&& *iter != 'E' && *iter != '+')
 			{
 				iter = value.erase(iter);
 				continue;

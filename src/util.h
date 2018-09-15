@@ -22,4 +22,5 @@ bool viewportImageFitSize(
 	bool ignoreHeight, bool ignoreWidth);
 bool iconButtonInternal(Image icon, Image disabledIcon, f32 customHeight, bool down, UiThemeElement* btnBodyElem);
 void saveImage(const char* filename, Rgba32* pixels, u32 width, u32 height);
+bool clampValue(f32& value, f32 minVal, f32 maxVal);
 }

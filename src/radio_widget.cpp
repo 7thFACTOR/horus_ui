@@ -60,14 +60,14 @@ bool radio(const char* labelText, bool checked)
 			}, ctx->globalScale);
 	}
 
-	const f32 bulletTextSpacing = ctx->settings.radioBulletTextSpacing * ctx->globalScale;
+	const f32 bulletTextSpacing = ctx->theme->settings.radioBulletTextSpacing * ctx->globalScale;
 
 	ctx->renderer->cmdSetColor(radioBodyElemState->textColor);
 	ctx->renderer->cmdSetFont(radioBodyElemState->font);
 	ctx->renderer->cmdDrawTextInBox(
 		labelText,
 		Rect(
-			ctx->widget.rect.x + (radioBodyElemState->border * 2.0f + radioBodyElemState->image->rect.width) * ctx->globalScale + bulletTextSpacing,
+			ctx->widget.rect.x + ctx->widget.rect.height + bulletTextSpacing,
 			ctx->widget.rect.y,
 			ctx->widget.rect.width,
 			ctx->widget.rect.height),

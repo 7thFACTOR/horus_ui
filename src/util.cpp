@@ -216,4 +216,21 @@ void saveImage(const char* filename, Rgba32* pixels, u32 width, u32 height)
 	stbi_write_png(filename, width, height, 4, pixels, 0);
 }
 
+bool clampValue(f32& value, f32 minVal, f32 maxVal)
+{
+	if (value < minVal)
+	{
+		value = minVal;
+		return true;
+	}
+
+	if (value > maxVal)
+	{
+		value = maxVal;
+		return true;
+	}
+
+	return false;
+}
+
 }

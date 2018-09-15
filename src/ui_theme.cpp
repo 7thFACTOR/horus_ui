@@ -29,6 +29,22 @@ UiImage* UiTheme::addImage(const Rgba32* pixels, u32 width, u32 height)
 void UiTheme::packAtlas()
 {
 	atlas->pack();
+	cacheBuiltinSettings();
+}
+
+void UiTheme::cacheBuiltinSettings()
+{
+	if (userSettings.find("radioBulletTextSpacing") != userSettings.end())
+		settings.radioBulletTextSpacing = atoi(userSettings["radioBulletTextSpacing"].c_str());
+
+	if (userSettings.find("checkBulletTextSpacing") != userSettings.end())
+		settings.checkBulletTextSpacing = atoi(userSettings["checkBulletTextSpacing"].c_str());
+
+	if (userSettings.find("comboSliderArrowSideSpacing") != userSettings.end())
+		settings.comboSliderArrowSideSpacing = atoi(userSettings["comboSliderArrowSideSpacing"].c_str());
+
+	if (userSettings.find("comboSliderArrowClickSize") != userSettings.end())
+		settings.comboSliderArrowClickSize = atoi(userSettings["comboSliderArrowClickSize"].c_str());
 }
 
 }

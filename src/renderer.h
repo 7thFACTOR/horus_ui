@@ -41,6 +41,7 @@ struct DrawCommand
 	{
 		None,
 		DrawRect,
+		DrawQuad,
 		DrawImageBordered,
 		DrawLine,
 		DrawPolyLine,
@@ -63,6 +64,12 @@ struct DrawCommand
 		Rect uvRect;
 		bool rotated;
 		u32 textureIndex;
+	};
+
+	struct CmdDrawQuad
+	{
+		Point corners[4];
+		UiImage* image = nullptr;
 	};
 
 	struct CmdDrawLine
@@ -109,6 +116,7 @@ struct DrawCommand
 	Type type = Type::None;
 	i32 zOrder = 0;
 	CmdDrawRect drawRect;
+	CmdDrawQuad drawQuad;
 	CmdDrawLine drawLine;
 	CmdDrawPolyLine drawPolyLine;
 	CmdDrawText drawText;
@@ -168,6 +176,7 @@ public:
 	void cmdSetTextBackfill(bool backfill);
 	void cmdSetTextBackfillColor(const Color& color);
 	void cmdSetLineStyle(const LineStyle& style);
+	void cmdDrawQuad(UiImage* image, const Point& p1, const Point& p2, const Point& p3, const Point& p4);
 	void cmdDrawImage(UiImage* image, const Point& position);
 	void cmdDrawImage(UiImage* image, const Rect& rect);
 	void cmdDrawImageBordered(UiImage* image, u32 border, const Rect& rect, f32 scale);
@@ -195,6 +204,7 @@ public:
 protected:
 	void drawAtlasRegion(bool rotatedUv, const Rect& rect, const Rect& atlasUvRect);
 	void drawTextGlyph(UiImage* image, const Point& pos);
+	void drawQuad(UiImage* image, const Point& p1, const Point& p2, const Point& p3, const Point& p4);
 	void drawQuad(const Rect& rect, const Rect& uvRect);
 	void drawQuadRot90(const Rect& rect, const Rect& uvRect);
 	void drawTextInternal(

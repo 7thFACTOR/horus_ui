@@ -57,14 +57,14 @@ bool check(const char* labelText, bool checked)
 			}, ctx->globalScale);
 	}
 
-	const f32 bulletTextSpacing = ctx->settings.checkBulletTextSpacing * ctx->globalScale;
+	const f32 bulletTextSpacing = ctx->theme->settings.checkBulletTextSpacing * ctx->globalScale;
 
 	ctx->renderer->cmdSetColor(checkBodyElemState->textColor);
 	ctx->renderer->cmdSetFont(checkBodyElemState->font);
 	ctx->renderer->cmdDrawTextInBox(
 		labelText,
 		Rect(
-			ctx->widget.rect.x + (checkBodyElemState->border * 2.0f + checkBodyElemState->image->rect.width) * ctx->globalScale + bulletTextSpacing,
+			ctx->widget.rect.x + ctx->widget.rect.height + bulletTextSpacing,
 			ctx->widget.rect.y,
 			ctx->widget.rect.width,
 			ctx->widget.rect.height),

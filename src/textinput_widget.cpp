@@ -47,7 +47,7 @@ bool textInput(
 		ctx->widget.rect.width - bodyElemState->border * 2,
 		ctx->widget.rect.height - bodyElemState->border * 2);
 
-	bool editNow = false;
+	ctx->textInput.editNow = false;
 
 	if (ctx->event.type == InputEvent::Type::Key
 		&& ctx->event.key.code == KeyCode::Enter
@@ -58,20 +58,22 @@ bool textInput(
 		{
 			ctx->textInput.widgetId = ctx->currentWidgetId;
 			isEditingThis = true;
-			editNow = true;
+			ctx->textInput.editNow = true;
 			ctx->textInput.selectAllOnFocus = true;
 		}
 		else
 		{
 			ctx->textInput.widgetId = 0;
+			ctx->textInput.editNow = false;
 			isEditingThis = false;
+			ctx->widget.focusedWidgetId = 0;
 		}
 	}
 
 	if (ctx->focusChanged
 		&& ctx->currentWidgetId == ctx->widget.focusedWidgetId)
 	{
-		editNow = true;
+		ctx->textInput.editNow = true;
 		isEditingThis = 0 != ctx->textInput.widgetId;
 		ctx->textInput.selectAllOnFocus = true;
 
@@ -85,7 +87,7 @@ bool textInput(
 		&& ctx->currentWidgetId != ctx->textInput.widgetId)
 	{
 		ctx->textInput.widgetId = ctx->currentWidgetId;
-		editNow = true;
+		ctx->textInput.editNow = true;
 		isEditingThis = true;
 		ctx->textInput.selectAllOnFocus = true;
 		ctx->textInput.firstMouseDown = true;
@@ -93,7 +95,7 @@ bool textInput(
 		ctx->widget.focusedWidgetPressed = false;
 	}
 
-	if (editNow)
+	if (ctx->textInput.editNow)
 	{
 		ctx->textInput.rect = ctx->widget.rect;
 		ctx->textInput.clipRect = clipRect;

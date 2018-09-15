@@ -117,6 +117,9 @@ void Renderer::endFrame()
 		case DrawCommand::Type::DrawImageBordered:
 			drawImageBordered(cmd.drawImageBordered.image, cmd.drawImageBordered.border, cmd.drawImageBordered.rect, cmd.drawImageBordered.scale);
 			break;
+		case DrawCommand::Type::DrawQuad:
+			drawQuad(cmd.drawQuad.image, cmd.drawQuad.corners[0], cmd.drawQuad.corners[1], cmd.drawQuad.corners[2], cmd.drawQuad.corners[3]);
+			break;
 		case DrawCommand::Type::DrawRect:
 		{
 			atlasTextureIndex = cmd.drawRect.textureIndex;
@@ -250,6 +253,19 @@ void Renderer::cmdDrawImage(UiImage* image, const Rect& rect)
 	cmd.drawRect.uvRect = image->uvRect;
 	cmd.drawRect.rotated = image->rotated;
 	cmd.drawRect.textureIndex = image->atlasTexture->textureIndex;
+	addDrawCommand(cmd);
+}
+
+void Renderer::cmdDrawQuad(UiImage* image, const Point& p1, const Point& p2, const Point& p3, const Point& p4)
+{
+	DrawCommand cmd(DrawCommand::Type::DrawQuad);
+	cmd.zOrder = zOrder;
+	cmd.drawQuad.corners[0] = p1;
+	cmd.drawQuad.corners[1] = p2;
+	cmd.drawQuad.corners[2] = p3;
+	cmd.drawQuad.corners[3] = p4;
+	cmd.drawQuad.image = image;
+
 	addDrawCommand(cmd);
 }
 
@@ -449,6 +465,54 @@ void Renderer::drawTextGlyph(UiImage* image, const Point& position)
 		drawQuadRot90(rect, uvRect);
 	else
 		drawQuad(rect, uvRect);
+}
+
+void Renderer::drawQuad(UiImage* image, const Point& p1, const Point& p2, const Point& p3, const Point& p4)
+{
+	atlasTextureIndex = image->atlasTexture->textureIndex;
+	needToAddVertexCount(6);
+
+	u32 i = vertexBufferData.drawVertexCount;
+
+	vertexBufferData.vertices[i].position = p1;
+	vertexBufferData.vertices[i].uv = image->uvRect.topLeft();
+	vertexBufferData.vertices[i].color = currentColor;
+	vertexBufferData.vertices[i].textureIndex = atlasTextureIndex;
+	i++;
+
+	vertexBufferData.vertices[i].position = p2;
+	vertexBufferData.vertices[i].uv = image->uvRect.topRight();
+	vertexBufferData.vertices[i].color = currentColor;
+	vertexBufferData.vertices[i].textureIndex = atlasTextureIndex;
+	i++;
+
+	vertexBufferData.vertices[i].position = p3;
+	vertexBufferData.vertices[i].uv = image->uvRect.bottomRight();
+	vertexBufferData.vertices[i].color = currentColor;
+	vertexBufferData.vertices[i].textureIndex = atlasTextureIndex;
+	i++;
+
+	// 2nd triangle
+	vertexBufferData.vertices[i].position = p3;
+	vertexBufferData.vertices[i].uv = image->uvRect.bottomRight();
+	vertexBufferData.vertices[i].color = currentColor;
+	vertexBufferData.vertices[i].textureIndex = atlasTextureIndex;
+	i++;
+
+	vertexBufferData.vertices[i].position = p4;
+	vertexBufferData.vertices[i].uv = image->uvRect.bottomLeft();
+	vertexBufferData.vertices[i].color = currentColor;
+	vertexBufferData.vertices[i].textureIndex = atlasTextureIndex;
+	i++;
+
+	vertexBufferData.vertices[i].position = p1;
+	vertexBufferData.vertices[i].uv = image->uvRect.topLeft();
+	vertexBufferData.vertices[i].color = currentColor;
+	vertexBufferData.vertices[i].textureIndex = atlasTextureIndex;
+	i++;
+
+	vertexBufferData.drawVertexCount = i;
+	currentBatch->vertexCount += 6;
 }
 
 void Renderer::drawQuad(const Rect& rect, const Rect& uvRect)

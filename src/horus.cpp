@@ -925,6 +925,8 @@ WidgetType getWidgetTypeFromName(std::string name)
 	if (name == "toolbar") return WidgetType::Toolbar;
 	if (name == "toolbarButton") return WidgetType::ToolbarButton;
 	if (name == "columnsHeader") return WidgetType::ColumnsHeader;
+	if (name == "comboSlider") return WidgetType::ComboSlider;
+	if (name == "rotarySlider") return WidgetType::RotarySlider;
 
 	return WidgetType::None;
 }
@@ -980,6 +982,12 @@ WidgetElementId getWidgetElementFromName(std::string name)
 	if (name == "toolbarBody") return WidgetElementId::ToolbarBody;
 	if (name == "toolbarButtonBody") return WidgetElementId::ToolbarButtonBody;
 	if (name == "columnsHeaderBody") return WidgetElementId::ColumnsHeaderBody;
+	if (name == "comboSliderBody") return WidgetElementId::ComboSliderBody;
+	if (name == "comboSliderLeftArrow") return WidgetElementId::ComboSliderLeftArrow;
+	if (name == "comboSliderRightArrow") return WidgetElementId::ComboSliderRightArrow;
+	if (name == "comboSliderRangeBar") return WidgetElementId::ComboSliderRangeBar;
+	if (name == "rotarySliderBody") return WidgetElementId::RotarySliderBody;
+	if (name == "rotarySliderMark") return WidgetElementId::RotarySliderMark;
 
 	return WidgetElementId::Custom;
 }
@@ -1155,11 +1163,9 @@ void setUserElement(
 
 Theme loadTheme(const char* filename)
 {
-	const u32 defaultAtlasSize = 4096;
-
 	assert(ctx);
 
-	UiTheme* theme = new UiTheme(defaultAtlasSize);
+	UiTheme* theme = new UiTheme(ctx->settings.defaultAtlasSize);
 
 	ctx->themes.push_back(theme);
 
@@ -1192,6 +1198,15 @@ Theme loadTheme(const char* filename)
 
 		auto newFont = createFont(theme, name.c_str(), fontFilename.c_str(), fnt.get("size", 0).asInt());
 		theme->fonts[name] = (UiFont*)newFont;
+	}
+
+	Json::Value settings = root.get("settings", Json::Value());
+
+	for (size_t i = 0; i < settings.getMemberNames().size(); i++)
+	{
+		auto name = settings.getMemberNames()[i];
+		auto val = settings.get(name.c_str(), Json::Value());
+		theme->userSettings[name] = val.asString();
 	}
 
 	Json::Value widgets = root.get("widgets", Json::Value());
