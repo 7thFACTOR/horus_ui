@@ -988,6 +988,7 @@ WidgetElementId getWidgetElementFromName(std::string name)
 	if (name == "comboSliderRangeBar") return WidgetElementId::ComboSliderRangeBar;
 	if (name == "rotarySliderBody") return WidgetElementId::RotarySliderBody;
 	if (name == "rotarySliderMark") return WidgetElementId::RotarySliderMark;
+	if (name == "rotarySliderValueDot") return WidgetElementId::RotarySliderValueDot;
 
 	return WidgetElementId::Custom;
 }

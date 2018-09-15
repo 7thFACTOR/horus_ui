@@ -481,7 +481,7 @@ void Renderer::drawQuad(UiImage* image, const Point& p1, const Point& p2, const 
 	i++;
 
 	vertexBufferData.vertices[i].position = p2;
-	vertexBufferData.vertices[i].uv = image->uvRect.topRight();
+	vertexBufferData.vertices[i].uv = image->uvRect.bottomLeft();
 	vertexBufferData.vertices[i].color = currentColor;
 	vertexBufferData.vertices[i].textureIndex = atlasTextureIndex;
 	i++;
@@ -500,7 +500,7 @@ void Renderer::drawQuad(UiImage* image, const Point& p1, const Point& p2, const 
 	i++;
 
 	vertexBufferData.vertices[i].position = p4;
-	vertexBufferData.vertices[i].uv = image->uvRect.bottomLeft();
+	vertexBufferData.vertices[i].uv = image->uvRect.topRight();
 	vertexBufferData.vertices[i].color = currentColor;
 	vertexBufferData.vertices[i].textureIndex = atlasTextureIndex;
 	i++;

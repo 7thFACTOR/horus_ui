@@ -242,17 +242,22 @@
 			"rotarySliderBody":
 			{
 				"height": 90,
-				"normal": { "image": "rotaryslider_body", "border": 2, "color": "lightGray", "textColor": "white", "font": "normal" },
+				"normal": { "image": "rotaryslider_body", "border": 2, "color": "white", "textColor": "white", "font": "normal" },
 				"hovered": { "image": "rotaryslider_body", "border": 2, "color": "white", "textColor": "white", "font": "normal" },
-				"pressed": { "image": "rotaryslider_body", "border": 2, "color": "darkCyan", "textColor": "white", "font": "normal" },
+				"pressed": { "image": "rotaryslider_body", "border": 2, "color": "white", "textColor": "white", "font": "normal" },
 				"focused": { "image": "rotaryslider_body", "border": 2, "color": "white", "textColor": "white", "font": "normal" }
 			},
 			"rotarySliderMark":
 			{
+				"height": 10,
 				"normal": { "image": "rotaryslider_mark", "border": 0, "color": "white", "textColor": "white", "font": "normal" },
-				"hovered": { "image": "rotaryslider_mark", "border": 0, "color": "orange", "textColor": "white", "font": "normal" },
+				"hovered": { "image": "rotaryslider_mark", "border": 0, "color": "white", "textColor": "white", "font": "normal" },
 				"pressed": { "image": "rotaryslider_mark", "border": 0, "color": "white", "textColor": "white", "font": "normal" },
 				"focused": { "image": "rotaryslider_mark", "border": 0, "color": "white", "textColor": "white", "font": "normal" }
+			},
+			"rotarySliderValueDot":
+			{
+				"normal": { "image": "rotaryslider_value_dot", "border": 0, "color": "white", "textColor": "white", "font": "normal" }
 			}
 		},
 		"tooltip":

@@ -14,12 +14,42 @@ namespace hui
 {
 bool rotarySliderFloat(const char* labelText, f32& value, f32 minVal, f32 maxVal, f32 step)
 {
+	static Point lastMousePos;
+	static u32 rotarySliderWidgetId = 0;
 	auto bodyElem = ctx->theme->getElement(WidgetElementId::RotarySliderBody);
 	auto markElem = ctx->theme->getElement(WidgetElementId::RotarySliderMark);
+	auto valueDotElem = ctx->theme->getElement(WidgetElementId::RotarySliderValueDot);
+	bool wasModified = false;
 
 	addWidgetItem(bodyElem.normalState().height * ctx->globalScale);
 	buttonBehavior();
 
+	if (isHovered() && ctx->event.type == InputEvent::Type::MouseDown)
+	{
+		lastMousePos = ctx->event.mouse.point;
+		rotarySliderWidgetId = ctx->currentWidgetId;
+	}
+
+	if (ctx->event.type == InputEvent::Type::MouseUp && rotarySliderWidgetId == ctx->currentWidgetId)
+	{
+		rotarySliderWidgetId = 0;
+	}
+
+	if (ctx->event.type == InputEvent::Type::MouseMove && rotarySliderWidgetId == ctx->currentWidgetId)
+	{
+		f32 deltaValue = 0;
+		Point delta = ctx->event.mouse.point - lastMousePos;
+		lastMousePos = ctx->event.mouse.point;
+
+		if (fabsf(delta.x) > fabsf(delta.y))
+			deltaValue = delta.x;
+		else
+			deltaValue = ctx->settings.sliderInvertVerticalDragAmount ? delta.y : -delta.y;
+
+		value += deltaValue * step;
+		wasModified = clampValue(value, minVal, maxVal);
+	}
+	
 	auto bodyElemState = &bodyElem.normalState();
 	auto markElemState = &markElem.normalState();
 
@@ -50,33 +80,42 @@ bool rotarySliderFloat(const char* labelText, f32& value, f32 minVal, f32 maxVal
 		ctx->renderer->cmdDrawImage(bodyElemState->image, rc);
 
 		Point center = rc.center();
-
-		center.x -= markElemState->image->width / 2;
-		center.y -= markElemState->image->height / 2;
-
-		Point pos;
-		f32 radius = 21;
-
-		pos.x = center.x + sinf(value*M_PI) * radius;
-		pos.y = center.y + cosf(value*M_PI) * radius;
-
+		f32 percent = 1.0f - (maxVal - value) / (maxVal - minVal);
+		
 		Point qpos[4] = {
-			Point(-5, 0),
-			Point(5, 0),
-			Point(5, 35),
-			Point(-5, 35)
+			Point(0, 0),
+			Point(markElemState->image->width, 0),
+			Point(markElemState->image->width, markElemState->image->height),
+			Point(0, markElemState->image->height),
 		};
-		value += 0.01f;
+
+		f32 lowLimitRadians = M_PI / 2 + 0.3f;
+		f32 highLimitRadians = 2 * M_PI + M_PI / 2 - 0.3f;
+		f32 radians = lowLimitRadians + percent * (highLimitRadians - lowLimitRadians);
+		int numDots = 22;
+		f32 step = (highLimitRadians - lowLimitRadians) / (f32)numDots;
+		f32 angle = lowLimitRadians;
+
+		for (int i = 0; i <= numDots * percent; i++)
+		{
+			Point pos;
+			
+			pos.x = cosf(angle) * 34 + center.x - valueDotElem.normalState().image->width / 2;
+			pos.y = sinf(angle) * 34 + center.y - valueDotElem.normalState().image->height / 2;
+			ctx->renderer->cmdDrawImage(valueDotElem.normalState().image, pos);
+			angle += step;
+		}
+
 		for (int i = 0; i < 4; i++)
 		{
 			Point newp;
-			//qpos[i] -= center;
-			newp.x = cosf(value*M_PI) * qpos[i].x - sinf(value*M_PI) * qpos[i].y;
-			newp.y = sinf(value*M_PI) * qpos[i].x + cosf(value*M_PI) * qpos[i].y;
+			qpos[i].y -= markElemState->image->height / 2;
+			qpos[i].x += markElem.normalState().height;
+			newp.x = cosf(radians) * qpos[i].x - sinf(radians) * qpos[i].y;
+			newp.y = sinf(radians) * qpos[i].x + cosf(radians) * qpos[i].y;
 			qpos[i] = newp + center;
 		}
 
-		//ctx->renderer->cmdDrawImage(markElemState->image, pos);
 		ctx->renderer->cmdDrawQuad(markElemState->image, qpos[0], qpos[1], qpos[2], qpos[3]);
 		
 		ctx->renderer->cmdSetColor(bodyElemState->textColor * ctx->tint[(int)TintColorType::Text]);
@@ -97,7 +136,7 @@ bool rotarySliderFloat(const char* labelText, f32& value, f32 minVal, f32 maxVal
 	setAsFocusable();
 	ctx->currentWidgetId++;
 
-	return ctx->widget.clicked;
+	return wasModified;
 }
 
 }

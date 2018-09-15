@@ -271,6 +271,7 @@ enum class WidgetElementId
 	ComboSliderRangeBar,
 	RotarySliderBody,
 	RotarySliderMark,
+	RotarySliderValueDot,
 
 	Count
 };

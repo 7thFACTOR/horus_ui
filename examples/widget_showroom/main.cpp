@@ -1312,7 +1312,8 @@ struct MyViewHandler : hui::ViewHandler
 			static f32 sval[3] = {0.5f, 1, 0};
 			static char txtSlider[64] = "";
 			hui::beginThreeColumns();
-			hui::rotarySliderFloat("Volume",sval[0], 0, 1, .1);
+			hui::rotarySliderFloat("Volume",sval[0], -1, 1, .01);
+			hui::progress(sval[0]);
 			toString(sval[0], txtSlider, 64);
 			hui::beginBox(Color::black);
 			hui::pushTint(Color::red);
@@ -1321,7 +1322,8 @@ struct MyViewHandler : hui::ViewHandler
 			hui::endBox();
 			hui::nextColumn();
 
-			hui::rotarySliderFloat("Pitch", sval[1], 0, 1, .1);
+			hui::rotarySliderFloat("Pitch", sval[1], 0, 1, .01);
+			hui::progress(sval[1]);
 			toString(sval[1], txtSlider, 64);
 			hui::beginBox(Color(199/255.0f, 202 / 255.0f, 1 / 255.0f, 1));
 			hui::pushTint(Color::black);
@@ -1330,7 +1332,8 @@ struct MyViewHandler : hui::ViewHandler
 			hui::endBox();
 			hui::nextColumn();
 
-			hui::rotarySliderFloat("Echo", sval[2], 0, 1, .1);
+			hui::rotarySliderFloat("Echo", sval[2], 0, 1, .01);
+			hui::progress(sval[2]);
 			toString(sval[2], txtSlider, 64);
 			hui::beginBox(Color::veryDarkGreen);
 			hui::pushTint(Color::green);
