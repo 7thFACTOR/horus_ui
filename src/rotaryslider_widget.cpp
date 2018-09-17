@@ -95,14 +95,25 @@ bool rotarySliderFloat(const char* labelText, f32& value, f32 minVal, f32 maxVal
 		int numDots = 22;
 		f32 step = (highLimitRadians - lowLimitRadians) / (f32)numDots;
 		f32 angle = lowLimitRadians;
+		int activeDots = numDots * percent;
 
-		for (int i = 0; i <= numDots * percent; i++)
+		for (int i = 0; i <= numDots; i++)
 		{
 			Point pos;
 			
 			pos.x = cosf(angle) * 34 + center.x - valueDotElem.normalState().image->width / 2;
 			pos.y = sinf(angle) * 34 + center.y - valueDotElem.normalState().image->height / 2;
+			if (i <= activeDots)
+			{
+				ctx->renderer->cmdSetColor(valueDotElem.getState(WidgetStateType::Pressed).color);
+			}
+			else
+			{
+				ctx->renderer->cmdSetColor(valueDotElem.getState(WidgetStateType::Normal).color);
+			}
+
 			ctx->renderer->cmdDrawImage(valueDotElem.normalState().image, pos);
+
 			angle += step;
 		}
 
@@ -116,6 +127,7 @@ bool rotarySliderFloat(const char* labelText, f32& value, f32 minVal, f32 maxVal
 			qpos[i] = newp + center;
 		}
 
+		ctx->renderer->cmdSetColor(markElemState->color);
 		ctx->renderer->cmdDrawQuad(markElemState->image, qpos[0], qpos[1], qpos[2], qpos[3]);
 		
 		ctx->renderer->cmdSetColor(bodyElemState->textColor * ctx->tint[(int)TintColorType::Text]);

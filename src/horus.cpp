@@ -735,23 +735,176 @@ Image addThemeImage(Theme theme, const RawImage& img)
 	return themePtr->addImage((const Rgba32*)img.pixels, img.width, img.height);
 }
 
+void setWidgetStyle(WidgetType widgetType, const char* styleName)
+{
+	//TODO: more automatic correlation between widget type and its element types, to avoid manual switch
+	// To not force using map to search for the current style for all widgets, this might be the only way
+	switch (widgetType)
+	{
+	case WidgetType::Window:
+		ctx->theme->elements[(u32)WidgetElementId::WindowBody].setStyle(styleName);
+		break;
+	case WidgetType::Layout:
+		break;
+	case WidgetType::Compound:
+		break;
+	case WidgetType::Tooltip:
+		ctx->theme->elements[(u32)WidgetElementId::TooltipBody].setStyle(styleName);
+		break;
+	case WidgetType::Button:
+		ctx->theme->elements[(u32)WidgetElementId::ButtonBody].setStyle(styleName);
+		break;
+	case WidgetType::IconButton:
+		break;
+	case WidgetType::TextInput:
+		ctx->theme->elements[(u32)WidgetElementId::TextInputBody].setStyle(styleName);
+		ctx->theme->elements[(u32)WidgetElementId::TextInputCaret].setStyle(styleName);
+		ctx->theme->elements[(u32)WidgetElementId::TextInputSelection].setStyle(styleName);
+		ctx->theme->elements[(u32)WidgetElementId::TextInputDefaultText].setStyle(styleName);
+		break;
+	case WidgetType::Slider:
+		ctx->theme->elements[(u32)WidgetElementId::SliderBody].setStyle(styleName);
+		ctx->theme->elements[(u32)WidgetElementId::SliderBodyFilled].setStyle(styleName);
+		ctx->theme->elements[(u32)WidgetElementId::SliderKnob].setStyle(styleName);
+		break;
+	case WidgetType::Progress:
+		ctx->theme->elements[(u32)WidgetElementId::ProgressBack].setStyle(styleName);
+		ctx->theme->elements[(u32)WidgetElementId::ProgressFill].setStyle(styleName);
+		break;
+	case WidgetType::Image:
+		break;
+	case WidgetType::Check:
+		ctx->theme->elements[(u32)WidgetElementId::CheckBody].setStyle(styleName);
+		ctx->theme->elements[(u32)WidgetElementId::CheckMark].setStyle(styleName);
+		break;
+	case WidgetType::Radio:
+		ctx->theme->elements[(u32)WidgetElementId::RadioBody].setStyle(styleName);
+		ctx->theme->elements[(u32)WidgetElementId::RadioMark].setStyle(styleName);
+		break;
+	case WidgetType::Label:
+		ctx->theme->elements[(u32)WidgetElementId::LabelBody].setStyle(styleName);
+		break;
+	case WidgetType::Panel:
+		ctx->theme->elements[(u32)WidgetElementId::PanelBody].setStyle(styleName);
+		ctx->theme->elements[(u32)WidgetElementId::PanelCollapsedArrow].setStyle(styleName);
+		ctx->theme->elements[(u32)WidgetElementId::PanelExpandedArrow].setStyle(styleName);
+		break;
+	case WidgetType::Popup:
+		ctx->theme->elements[(u32)WidgetElementId::PopupBody].setStyle(styleName);
+		break;
+	case WidgetType::Dropdown:
+		ctx->theme->elements[(u32)WidgetElementId::DropdownBody].setStyle(styleName);
+		ctx->theme->elements[(u32)WidgetElementId::DropdownArrow].setStyle(styleName);
+		break;
+	case WidgetType::List:
+		break;
+	case WidgetType::Selectable:
+		ctx->theme->elements[(u32)WidgetElementId::SelectableBody].setStyle(styleName);
+		break;
+	case WidgetType::ResizeGrip:
+		break;
+	case WidgetType::Line:
+		ctx->theme->elements[(u32)WidgetElementId::LineBody].setStyle(styleName);
+		break;
+	case WidgetType::Space:
+		break;
+	case WidgetType::ScrollView:
+		ctx->theme->elements[(u32)WidgetElementId::ScrollViewBody].setStyle(styleName);
+		ctx->theme->elements[(u32)WidgetElementId::ScrollViewScrollBar].setStyle(styleName);
+		ctx->theme->elements[(u32)WidgetElementId::ScrollViewScrollThumb].setStyle(styleName);
+		break;
+	case WidgetType::MenuBar:
+		ctx->theme->elements[(u32)WidgetElementId::MenuBarBody].setStyle(styleName);
+		ctx->theme->elements[(u32)WidgetElementId::MenuBarItem].setStyle(styleName);
+		break;
+	case WidgetType::Menu:
+		ctx->theme->elements[(u32)WidgetElementId::MenuBody].setStyle(styleName);
+		ctx->theme->elements[(u32)WidgetElementId::MenuItemBody].setStyle(styleName);
+		ctx->theme->elements[(u32)WidgetElementId::MenuItemCheckMark].setStyle(styleName);
+		ctx->theme->elements[(u32)WidgetElementId::MenuItemNoCheckMark].setStyle(styleName);
+		ctx->theme->elements[(u32)WidgetElementId::MenuItemSeparator].setStyle(styleName);
+		ctx->theme->elements[(u32)WidgetElementId::MenuItemShortcut].setStyle(styleName);
+		ctx->theme->elements[(u32)WidgetElementId::SubMenuItemArrow].setStyle(styleName);
+		break;
+	case WidgetType::TabGroup:
+		ctx->theme->elements[(u32)WidgetElementId::TabGroupBody].setStyle(styleName);
+		break;
+	case WidgetType::Tab:
+		ctx->theme->elements[(u32)WidgetElementId::TabBodyActive].setStyle(styleName);
+		ctx->theme->elements[(u32)WidgetElementId::TabBodyInactive].setStyle(styleName);
+		break;
+	case WidgetType::Viewport:
+		break;
+	case WidgetType::ViewPane:
+		ctx->theme->elements[(u32)WidgetElementId::ViewPaneDockRect].setStyle(styleName);
+		break;
+	case WidgetType::MsgBox:
+		ctx->theme->elements[(u32)WidgetElementId::MessageBoxIconError].setStyle(styleName);
+		ctx->theme->elements[(u32)WidgetElementId::MessageBoxIconWarning].setStyle(styleName);
+		ctx->theme->elements[(u32)WidgetElementId::MessageBoxIconInfo].setStyle(styleName);
+		ctx->theme->elements[(u32)WidgetElementId::MessageBoxIconQuestion].setStyle(styleName);
+		break;
+	case WidgetType::Box:
+		ctx->theme->elements[(u32)WidgetElementId::BoxBody].setStyle(styleName);
+		break;
+	case WidgetType::Toolbar:
+		ctx->theme->elements[(u32)WidgetElementId::ToolbarBody].setStyle(styleName);
+		break;
+	case WidgetType::ToolbarButton:
+		ctx->theme->elements[(u32)WidgetElementId::ToolbarButtonBody].setStyle(styleName);
+		break;
+	case WidgetType::ToolbarDropdown:
+		ctx->theme->elements[(u32)WidgetElementId::ToolbarDropdownBody].setStyle(styleName);
+		break;
+	case WidgetType::ToolbarSeparator:
+		ctx->theme->elements[(u32)WidgetElementId::ToolbarSeparatorBody].setStyle(styleName);
+		break;
+	case WidgetType::ColumnsHeader:
+		ctx->theme->elements[(u32)WidgetElementId::ColumnsHeaderBody].setStyle(styleName);
+		break;
+	case WidgetType::ComboSlider:
+		ctx->theme->elements[(u32)WidgetElementId::ComboSliderBody].setStyle(styleName);
+		ctx->theme->elements[(u32)WidgetElementId::ComboSliderLeftArrow].setStyle(styleName);
+		ctx->theme->elements[(u32)WidgetElementId::ComboSliderRangeBar].setStyle(styleName);
+		ctx->theme->elements[(u32)WidgetElementId::ComboSliderRightArrow].setStyle(styleName);
+		break;
+	case WidgetType::RotarySlider:
+		ctx->theme->elements[(u32)WidgetElementId::RotarySliderBody].setStyle(styleName);
+		ctx->theme->elements[(u32)WidgetElementId::RotarySliderMark].setStyle(styleName);
+		ctx->theme->elements[(u32)WidgetElementId::RotarySliderValueDot].setStyle(styleName);
+		break;
+	}
+}
+
+void setWidgetDefaultStyle(WidgetType widgetType)
+{
+	setWidgetStyle(widgetType, "default");
+}
+
+void setUserWidgetElementStyle(const char* elementName, const char* styleName)
+{
+	ctx->theme->userElements[elementName]->setStyle(styleName);
+}
+
 void buildTheme(Theme theme)
 {
 	UiTheme* themePtr = (UiTheme*)theme;
 
 	themePtr->packAtlas();
+	themePtr->setDefaultWidgetStyle();
 }
 
 void setThemeWidgetElement(
 	Theme theme,
 	WidgetElementId elementId,
 	WidgetStateType widgetStateType,
-	const WidgetElementInfo& elementInfo)
+	const WidgetElementInfo& elementInfo,
+	const char* styleName)
 {
 	UiTheme* themePtr = (UiTheme*)theme;
 	u32 stateIndex = (u32)widgetStateType;
 
-	auto& state = themePtr->elements[(u32)elementId].states[stateIndex];
+	auto& state = themePtr->elements[(u32)elementId].styles[styleName].states[stateIndex];
 
 	state.border = elementInfo.border;
 	state.color = elementInfo.color;
@@ -766,7 +919,8 @@ void setThemeUserWidgetElement(
 	Theme theme,
 	const char* userElementName,
 	WidgetStateType widgetStateType,
-	const WidgetElementInfo& elementInfo)
+	const WidgetElementInfo& elementInfo,
+	const char* styleName)
 {
 	UiTheme* themePtr = (UiTheme*)theme;
 	u32 stateIndex = (u32)widgetStateType;
@@ -776,7 +930,7 @@ void setThemeUserWidgetElement(
 		themePtr->userElements.insert(std::make_pair(userElementName, new UiThemeElement()));
 	}
 
-	auto& state = themePtr->userElements[userElementName]->states[stateIndex];
+	auto& state = themePtr->userElements[userElementName]->styles[styleName].states[stateIndex];
 
 	state.border = elementInfo.border;
 	state.color = elementInfo.color;
@@ -809,9 +963,10 @@ void deleteTheme(Theme theme)
 	ctx->theme = nullptr;
 }
 
-void getThemeWidgetElementInfo(WidgetElementId elementId, WidgetStateType state, WidgetElementInfo& outInfo)
+void getThemeWidgetElementInfo(WidgetElementId elementId, WidgetStateType state, WidgetElementInfo& outInfo,
+	const char* styleName)
 {
-	auto& elemState = ctx->theme->elements[(u32)elementId].getState(state);
+	auto& elemState = ctx->theme->elements[(u32)elementId].getStyleState(styleName, state);
 
 	outInfo.border = elemState.border;
 	outInfo.color = elemState.color;
@@ -822,7 +977,7 @@ void getThemeWidgetElementInfo(WidgetElementId elementId, WidgetStateType state,
 	outInfo.height = elemState.height;
 }
 
-void getThemeUserWidgetElementInfo(const char* userElementName, WidgetStateType state, WidgetElementInfo& outInfo)
+void getThemeUserWidgetElementInfo(const char* userElementName, WidgetStateType state, WidgetElementInfo& outInfo, const char* styleName)
 {
 	outInfo = {};
 	auto iter = ctx->theme->userElements.find(userElementName);
@@ -830,7 +985,7 @@ void getThemeUserWidgetElementInfo(const char* userElementName, WidgetStateType 
 	if (iter == ctx->theme->userElements.end())
 		return;
 
-	auto elemState = iter->second->getState(state);
+	auto elemState = iter->second->getStyleState(styleName, state);
 
 	outInfo.border = elemState.border;
 	outInfo.color = elemState.color;
@@ -1028,6 +1183,7 @@ bool getColorFromText(std::string colorText, Color& color)
 void setThemeElement(
 	UiTheme* theme,
 	const std::string& themePath,
+	const char* styleName,
 	WidgetType widgetType,
 	WidgetElementId elemId,
 	WidgetStateType widgetStateType,
@@ -1081,7 +1237,7 @@ void setThemeElement(
 		txtColor = Color((f32)r / 255.0f, (f32)g / 255.0f, (f32)b / 255.0f, (f32)a / 255.0f);
 	}
 
-	auto& elemState = theme->elements[(u32)elemId].states[(u32)widgetStateType];
+	auto& elemState = theme->elements[(u32)elemId].styles[styleName].states[(u32)widgetStateType];
 	elemState.image = (UiImage*)image;
 	elemState.border = border;
 	elemState.color = bgColor;
@@ -1094,6 +1250,7 @@ void setThemeElement(
 void setUserElement(
 	UiTheme* theme,
 	const std::string& themePath,
+	const char* styleName,
 	const std::string& widgetName,
 	const std::string& elemName,
 	WidgetStateType widgetStateType,
@@ -1159,7 +1316,8 @@ void setUserElement(
 		theme,
 		elemName.c_str(),
 		widgetStateType,
-		inf);
+		inf,
+		styleName);
 }
 
 Theme loadTheme(const char* filename)
@@ -1184,10 +1342,11 @@ Theme loadTheme(const char* filename)
 	}
 
 	Json::Value fonts = root.get("fonts", Json::Value());
-
-	for (size_t i = 0; i < fonts.getMemberNames().size(); i++)
+	auto fontNames = fonts.getMemberNames();
+	
+	for (size_t i = 0; i < fontNames.size(); i++)
 	{
-		auto name = fonts.getMemberNames()[i];
+		auto name = fontNames[i];
 		auto fnt = fonts.get(name.c_str(), Json::Value());
 
 		std::string fontFilename = fnt.get("file", "").asString();
@@ -1202,47 +1361,109 @@ Theme loadTheme(const char* filename)
 	}
 
 	Json::Value settings = root.get("settings", Json::Value());
+	auto settingNames = settings.getMemberNames();
 
-	for (size_t i = 0; i < settings.getMemberNames().size(); i++)
+	for (size_t i = 0; i < settingNames.size(); i++)
 	{
-		auto name = settings.getMemberNames()[i];
+		auto name = settingNames[i];
 		auto val = settings.get(name.c_str(), Json::Value());
 		theme->userSettings[name] = val.asString();
 	}
 
 	Json::Value widgets = root.get("widgets", Json::Value());
+	auto widgetNames = widgets.getMemberNames();
 
-	for (size_t i = 0; i < widgets.getMemberNames().size(); i++)
+	for (size_t i = 0; i < widgetNames.size(); i++)
 	{
-		auto widgetName = widgets.getMemberNames()[i];
+		auto widgetName = widgetNames[i];
 		auto widget = widgets.get(widgetName.c_str(), Json::Value());
 
 		WidgetType wtype = getWidgetTypeFromName(widgetName);
+		auto widgetMemberNames = widget.getMemberNames();
 
-		for (size_t j = 0; j < widget.getMemberNames().size(); j++)
+		for (size_t j = 0; j < widgetMemberNames.size(); j++)
 		{
-			auto elemName = widget.getMemberNames()[j];
+			auto elemName = widgetMemberNames[j];
 			auto elem = widget.get(elemName.c_str(), Json::Value());
 			auto elemType = getWidgetElementFromName(elemName);
-
 			auto width = elem.get("width", 0).asInt();
 			auto height = elem.get("height", 0).asInt();
 
 			if (wtype != WidgetType::None)
 			{
-				setThemeElement(theme, themePath, wtype, elemType, WidgetStateType::Normal, (Json::Value)elem.get("normal", Json::Value()), width, height);
-				setThemeElement(theme, themePath, wtype, elemType, WidgetStateType::Hovered, elem.get("hovered", Json::Value()), width, height);
-				setThemeElement(theme, themePath, wtype, elemType, WidgetStateType::Pressed, elem.get("pressed", Json::Value()), width, height);
-				setThemeElement(theme, themePath, wtype, elemType, WidgetStateType::Focused, elem.get("focused", Json::Value()), width, height);
-				setThemeElement(theme, themePath, wtype, elemType, WidgetStateType::Disabled, elem.get("disabled", Json::Value()), width, height);
+				// if we have styles for this widget
+				if (elemName == "styles")
+				{
+					auto styles = widget.get("styles", Json::Value());
+					printf("Loading %d %s styles\n", styles.getMemberNames().size(), widgetName.c_str());
+					auto styleNames = styles.getMemberNames();
+					
+					for (size_t k = 0; k < styleNames.size(); k++)
+					{
+						auto styleName = styleNames[k];
+						auto styleElem = styles.get(styleName.c_str(), Json::Value());
+						printf("\tStyle '%s'\n", styleName.c_str());
+						auto elementNames = styleElem.getMemberNames();
+
+						for (size_t l = 0; l < elementNames.size(); l++)
+						{
+							auto elemType = getWidgetElementFromName(elementNames[l]);
+							auto elem = styleElem.get(elementNames[j], Json::Value());
+							width = elem.get("width", 0).asInt();
+							height = elem.get("height", 0).asInt();
+							setThemeElement(theme, themePath, styleName.c_str(), wtype, elemType, WidgetStateType::Normal, elem.get("normal", Json::Value()), width, height);
+							setThemeElement(theme, themePath, styleName.c_str(), wtype, elemType, WidgetStateType::Hovered, elem.get("hovered", Json::Value()), width, height);
+							setThemeElement(theme, themePath, styleName.c_str(), wtype, elemType, WidgetStateType::Pressed, elem.get("pressed", Json::Value()), width, height);
+							setThemeElement(theme, themePath, styleName.c_str(), wtype, elemType, WidgetStateType::Focused, elem.get("focused", Json::Value()), width, height);
+							setThemeElement(theme, themePath, styleName.c_str(), wtype, elemType, WidgetStateType::Disabled, elem.get("disabled", Json::Value()), width, height);
+						}
+					}
+				}
+				else
+				{
+					setThemeElement(theme, themePath, "default", wtype, elemType, WidgetStateType::Normal, elem.get("normal", Json::Value()), width, height);
+					setThemeElement(theme, themePath, "default", wtype, elemType, WidgetStateType::Hovered, elem.get("hovered", Json::Value()), width, height);
+					setThemeElement(theme, themePath, "default", wtype, elemType, WidgetStateType::Pressed, elem.get("pressed", Json::Value()), width, height);
+					setThemeElement(theme, themePath, "default", wtype, elemType, WidgetStateType::Focused, elem.get("focused", Json::Value()), width, height);
+					setThemeElement(theme, themePath, "default", wtype, elemType, WidgetStateType::Disabled, elem.get("disabled", Json::Value()), width, height);
+				}
 			}
 			else
 			{
-				setUserElement(theme, themePath, widgetName, elemName, WidgetStateType::Normal, elem.get("normal", Json::Value()), width, height);
-				setUserElement(theme, themePath, widgetName, elemName, WidgetStateType::Hovered, elem.get("hovered", Json::Value()), width, height);
-				setUserElement(theme, themePath, widgetName, elemName, WidgetStateType::Pressed, elem.get("pressed", Json::Value()), width, height);
-				setUserElement(theme, themePath, widgetName, elemName, WidgetStateType::Focused, elem.get("focused", Json::Value()), width, height);
-				setUserElement(theme, themePath, widgetName, elemName, WidgetStateType::Disabled, elem.get("disabled", Json::Value()), width, height);
+				// if we have styles for this widget
+				if (elemName == "styles")
+				{
+					auto styles = widget.get("styles", Json::Value());
+					auto styleNames = styles.getMemberNames();
+
+					for (size_t k = 0; k < styleNames.size(); k++)
+					{
+						auto& styleName = styleNames[k];
+						auto styleElem = styles.get(styleName.c_str(), Json::Value());
+						auto elementNames = styleElem.getMemberNames();
+						width = styleElem.get("width", 0).asInt();
+						height = styleElem.get("height", 0).asInt();
+
+						for (size_t l = 0; l < elementNames.size(); l++)
+						{
+							auto& elemName = elementNames[l];
+							auto elem = styleElem.get(elemName, Json::Value());
+							setUserElement(theme, themePath, styleName.c_str(), widgetName, elemName, WidgetStateType::Normal, elem.get("normal", Json::Value()), width, height);
+							setUserElement(theme, themePath, styleName.c_str(), widgetName, elemName, WidgetStateType::Hovered, elem.get("hovered", Json::Value()), width, height);
+							setUserElement(theme, themePath, styleName.c_str(), widgetName, elemName, WidgetStateType::Pressed, elem.get("pressed", Json::Value()), width, height);
+							setUserElement(theme, themePath, styleName.c_str(), widgetName, elemName, WidgetStateType::Focused, elem.get("focused", Json::Value()), width, height);
+							setUserElement(theme, themePath, styleName.c_str(), widgetName, elemName, WidgetStateType::Disabled, elem.get("disabled", Json::Value()), width, height);
+						}
+					}
+				}
+				else
+				{
+					setUserElement(theme, themePath, "default", widgetName, elemName, WidgetStateType::Normal, elem.get("normal", Json::Value()), width, height);
+					setUserElement(theme, themePath, "default", widgetName, elemName, WidgetStateType::Hovered, elem.get("hovered", Json::Value()), width, height);
+					setUserElement(theme, themePath, "default", widgetName, elemName, WidgetStateType::Pressed, elem.get("pressed", Json::Value()), width, height);
+					setUserElement(theme, themePath, "default", widgetName, elemName, WidgetStateType::Focused, elem.get("focused", Json::Value()), width, height);
+					setUserElement(theme, themePath, "default", widgetName, elemName, WidgetStateType::Disabled, elem.get("disabled", Json::Value()), width, height);
+				}
 			}
 		}
 	}

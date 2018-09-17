@@ -47,4 +47,17 @@ void UiTheme::cacheBuiltinSettings()
 		settings.comboSliderArrowClickSize = atoi(userSettings["comboSliderArrowClickSize"].c_str());
 }
 
+void UiTheme::setDefaultWidgetStyle()
+{
+	for (u32 i = 0; i < (u32)WidgetElementId::Count; i++)
+	{
+		elements[i].setDefaultStyle();
+	}
+
+	for (auto& elem : userElements)
+	{
+		elem.second->setDefaultStyle();
+	}
+}
+
 }

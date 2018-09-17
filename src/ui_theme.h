@@ -24,6 +24,7 @@ public:
 	void packAtlas();
 	inline UiThemeElement& getElement(WidgetElementId id) { return elements[(u32)id]; }
 	void cacheBuiltinSettings();
+	void setDefaultWidgetStyle();
 
 	std::unordered_map<std::string, UiFont*> fonts;
 	std::unordered_map<std::string, UiImage*> images;

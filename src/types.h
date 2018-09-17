@@ -1,6 +1,7 @@
 #pragma once
 #include "horus.h"
 #include <vector>
+#include <unordered_map>
 
 #ifdef _LINUX
 #include <sys/types.h>
@@ -36,10 +37,22 @@ struct UiThemeElement
 		UiImage* image = nullptr;
 		f32 width = 0;
 		f32 height = 0;
-	} states[(u32)WidgetStateType::Count];
+	};
 
-	inline State& getState(WidgetStateType stateType) { return states[(u32)stateType]; }
-	inline State& normalState() { return states[(u32)WidgetStateType::Normal]; }
+	struct StyleStates
+	{
+		State states[(u32)WidgetStateType::Count];
+	};
+
+	std::unordered_map<std::string, StyleStates> styles;
+	StyleStates* currentStyle = nullptr;
+
+	inline void setDefaultStyle() { currentStyle = &styles["default"]; }
+	inline void setStyle(const char* styleName) { currentStyle = &styles[styleName]; }
+	inline State& getState(WidgetStateType stateType) { return currentStyle->states[(u32)stateType]; }
+	inline State& normalState() { return currentStyle->states[(u32)WidgetStateType::Normal]; }
+	inline State& getStyleState(const char* styleName, WidgetStateType stateType) { return styles[styleName].states[(u32)stateType]; }
+	inline State& styleNormalState(const char* styleName) { return styles[styleName].states[(u32)WidgetStateType::Normal]; }
 };
 
 enum class LayoutType

@@ -15,7 +15,7 @@ bool comboSliderInternal(f32& value, f32 minVal, f32 maxVal, bool useRange, f32 
 	static bool dragging = false;
 	static bool editingText = false;
 	static Point dragLastMousePos;
-	static char text[64];
+	static char text[64] = "";
 	static u32 comboSliderWidgetId = 0;
 	auto bodyElem = ctx->theme->getElement(WidgetElementId::ComboSliderBody);
 	auto leftArrowElem = ctx->theme->getElement(WidgetElementId::ComboSliderLeftArrow);
@@ -70,15 +70,20 @@ bool comboSliderInternal(f32& value, f32 minVal, f32 maxVal, bool useRange, f32 
 		if (useRange) wasModified = clampValue(value, minVal, maxVal);
 	}
 	
-	if (isClicked() && !dragging && !arrowStepped)
+	if (isClicked() && !dragging && !arrowStepped && !editingText)
 	{
 		editingText = true;
 		comboSliderWidgetId = ctx->currentWidgetId;
 		ctx->widget.focusedWidgetId = ctx->currentWidgetId;
 		ctx->focusChanged = true;
 		ctx->textInput.widgetId = ctx->currentWidgetId;
+		memset(text, 64, 0);
 		toString(value, text, 64);
+		ctx->textInput.editNow = true;
+		ctx->textInput.selectAllOnFocus = true;
+		ctx->textInput.firstMouseDown = true;
 		forceRepaint();
+		textInput(text, 64, TextInputValueMode::NumericOnly);
 	}
 	else
 	if (editingText && comboSliderWidgetId == ctx->currentWidgetId)

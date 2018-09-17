@@ -1306,9 +1306,10 @@ struct MyViewHandler : hui::ViewHandler
 			hui::pushPadding(0);
 			hui::getContextSettings().sliderAllowAnyDragDirection = true;
 			hui::getContextSettings().sliderInvertVerticalDragAmount = false;
+
 			hui::comboSliderFloat(slideVal, 1);
 			hui::comboSliderFloatRanged(slideVal, 0, 100, .1f);
-
+			hui::line();
 			static f32 sval[3] = {0.5f, 1, 0};
 			static char txtSlider[64] = "";
 			hui::beginThreeColumns();
@@ -1321,7 +1322,6 @@ struct MyViewHandler : hui::ViewHandler
 			hui::popTint();
 			hui::endBox();
 			hui::nextColumn();
-
 			hui::rotarySliderFloat("Pitch", sval[1], 0, 1, .01);
 			hui::progress(sval[1]);
 			toString(sval[1], txtSlider, 64);
@@ -1341,7 +1341,6 @@ struct MyViewHandler : hui::ViewHandler
 			hui::popTint();
 			hui::endBox();
 			hui::endColumns();
-
 			hui::popPadding();
 			hui::nextColumn();
 			static char valStr[20];
@@ -1386,6 +1385,10 @@ struct MyViewHandler : hui::ViewHandler
 			hui::nextColumn();
 			hui::label(some);
 			hui::nextColumn();
+
+			hui::setWidgetStyle(WidgetType::Button, "important");
+			hui::button("Important button");
+			hui::setWidgetDefaultStyle(WidgetType::Button);
 
 			static bool pnl1 = false;
 			static bool pnl2 = false;

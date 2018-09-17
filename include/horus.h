@@ -1748,6 +1748,12 @@ HORUS_API Theme createTheme(u32 atlasTextureSize);
 /// \return the newly created image handle
 HORUS_API Image addThemeImage(Theme theme, const RawImage& img);
 
+HORUS_API void setWidgetStyle(WidgetType widgetType, const char* styleName);
+
+HORUS_API void setWidgetDefaultStyle(WidgetType widgetType);
+
+HORUS_API void setUserWidgetElementStyle(const char* elementName, const char* styleName);
+
 /// Set a theme's widget element info
 /// \param theme the theme of the widget element
 /// \param elementId the element to be set
@@ -1757,7 +1763,8 @@ HORUS_API void setThemeWidgetElement(
 	Theme theme,
 	WidgetElementId elementId,
 	WidgetStateType widgetStateType,
-	const WidgetElementInfo& elementInfo);
+	const WidgetElementInfo& elementInfo,
+	const char* styleName = "default");
 
 /// Build a theme after images were added to its atlas, respectively packing the theme's image atlas
 /// \param theme the theme to be built
@@ -1772,19 +1779,20 @@ HORUS_API void setThemeUserWidgetElement(
 	Theme theme,
 	const char* userElementName,
 	WidgetStateType widgetStateType,
-	const WidgetElementInfo& elementInfo);
+	const WidgetElementInfo& elementInfo,
+	const char* styleName = "default");
 
 /// Return a theme widget element's info
 /// \param elementId the widget element id
 /// \param state the element state
 /// \param outInfo returned element info
-HORUS_API void getThemeWidgetElementInfo(WidgetElementId elementId, WidgetStateType state, WidgetElementInfo& outInfo);
+HORUS_API void getThemeWidgetElementInfo(WidgetElementId elementId, WidgetStateType state, WidgetElementInfo& outInfo, const char* styleName = "default");
 
 /// Return a theme user widget element's info
 /// \param userElementName the user widget element name
 /// \param state the element state
 /// \param outInfo returned element info
-HORUS_API void getThemeUserWidgetElementInfo(const char* userElementName, WidgetStateType state, WidgetElementInfo& outInfo);
+HORUS_API void getThemeUserWidgetElementInfo(const char* userElementName, WidgetStateType state, WidgetElementInfo& outInfo, const char* styleName = "default");
 
 /// Create a new font object
 /// \param theme the theme where to place the font
