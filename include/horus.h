@@ -285,6 +285,7 @@ enum class WidgetStateType
 	Hovered,
 	Disabled,
 
+	None,
 	Count
 };
 

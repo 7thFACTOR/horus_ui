@@ -1192,14 +1192,14 @@ void setThemeElement(
 {
 	auto imageName = state.get("image", "").asString();
 	auto border = state.get("border", 0).asInt();
-	width = state.get("width", width).asInt();
-	height = state.get("height", height).asInt();
 	auto color = state.get("color", "white").asString();
 	auto textColor = state.get("textColor", "white").asString();
 	auto fontName = state.get("font", "").asString();
 	auto imageFilename = themePath + imageName + ".png";
 	auto iter = theme->images.find(imageFilename);
 	Image image = 0;
+	width = state.get("width", width).asInt();
+	height = state.get("height", height).asInt();
 
 	if (iter == theme->images.end())
 	{
@@ -1265,6 +1265,8 @@ void setUserElement(
 	auto imageFilename = themePath + imageName + ".png";
 	auto iter = theme->images.find(imageFilename);
 	Image image = 0;
+	width = state.get("width", width).asInt();
+	height = state.get("height", height).asInt();
 
 	if (iter == theme->images.end())
 	{
@@ -1381,6 +1383,7 @@ Theme loadTheme(const char* filename)
 		WidgetType wtype = getWidgetTypeFromName(widgetName);
 		auto widgetMemberNames = widget.getMemberNames();
 
+		// read all widgets
 		for (size_t j = 0; j < widgetMemberNames.size(); j++)
 		{
 			auto elemName = widgetMemberNames[j];
@@ -1389,6 +1392,7 @@ Theme loadTheme(const char* filename)
 			auto width = elem.get("width", 0).asInt();
 			auto height = elem.get("height", 0).asInt();
 
+			// if its a builtin widget
 			if (wtype != WidgetType::None)
 			{
 				// if we have styles for this widget
@@ -1398,6 +1402,7 @@ Theme loadTheme(const char* filename)
 					printf("Loading %d %s styles\n", styles.getMemberNames().size(), widgetName.c_str());
 					auto styleNames = styles.getMemberNames();
 					
+					// read all styles
 					for (size_t k = 0; k < styleNames.size(); k++)
 					{
 						auto styleName = styleNames[k];
@@ -1405,17 +1410,35 @@ Theme loadTheme(const char* filename)
 						printf("\tStyle '%s'\n", styleName.c_str());
 						auto elementNames = styleElem.getMemberNames();
 
+						// read all widget elements
 						for (size_t l = 0; l < elementNames.size(); l++)
 						{
 							auto elemType = getWidgetElementFromName(elementNames[l]);
 							auto elem = styleElem.get(elementNames[j], Json::Value());
-							width = elem.get("width", 0).asInt();
-							height = elem.get("height", 0).asInt();
-							setThemeElement(theme, themePath, styleName.c_str(), wtype, elemType, WidgetStateType::Normal, elem.get("normal", Json::Value()), width, height);
-							setThemeElement(theme, themePath, styleName.c_str(), wtype, elemType, WidgetStateType::Hovered, elem.get("hovered", Json::Value()), width, height);
-							setThemeElement(theme, themePath, styleName.c_str(), wtype, elemType, WidgetStateType::Pressed, elem.get("pressed", Json::Value()), width, height);
-							setThemeElement(theme, themePath, styleName.c_str(), wtype, elemType, WidgetStateType::Focused, elem.get("focused", Json::Value()), width, height);
-							setThemeElement(theme, themePath, styleName.c_str(), wtype, elemType, WidgetStateType::Disabled, elem.get("disabled", Json::Value()), width, height);
+							width = elem.get("width", width).asInt();
+							height = elem.get("height", height).asInt();
+							auto elemStates = elem.getMemberNames();
+
+							for (size_t m = 0; m < elemStates.size(); m++)
+							{
+								auto& stateName = elemStates[m];
+								auto elemState = elem.get(stateName, Json::Value());
+								auto widgetStateType = WidgetStateType::None;
+
+								if (stateName == "normal")
+									widgetStateType = WidgetStateType::Normal;
+								else if (stateName == "pressed")
+									widgetStateType = WidgetStateType::Pressed;
+								else if (stateName == "hovered")
+									widgetStateType = WidgetStateType::Hovered;
+								else if (stateName == "disabled")
+									widgetStateType = WidgetStateType::Disabled;
+
+								if (widgetStateType != WidgetStateType::None)
+									setThemeElement(theme, themePath, styleName.c_str(), wtype, elemType, widgetStateType, elemState, width, height);
+								else
+									theme->elements[(u32)elemType].styles[styleName].parameters[stateName] = elemState.asFloat();
+							}
 						}
 					}
 				}
@@ -1441,8 +1464,8 @@ Theme loadTheme(const char* filename)
 						auto& styleName = styleNames[k];
 						auto styleElem = styles.get(styleName.c_str(), Json::Value());
 						auto elementNames = styleElem.getMemberNames();
-						width = styleElem.get("width", 0).asInt();
-						height = styleElem.get("height", 0).asInt();
+						width = styleElem.get("width", width).asInt();
+						height = styleElem.get("height", height).asInt();
 
 						for (size_t l = 0; l < elementNames.size(); l++)
 						{

@@ -42,6 +42,7 @@ struct UiThemeElement
 	struct StyleStates
 	{
 		State states[(u32)WidgetStateType::Count];
+		std::unordered_map<std::string, f32> parameters;
 	};
 
 	std::unordered_map<std::string, StyleStates> styles;
