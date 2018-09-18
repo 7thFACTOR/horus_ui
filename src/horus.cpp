@@ -1403,6 +1403,8 @@ Theme loadTheme(const char* filename)
 
 					if (stateName == "normal")
 						widgetStateType = WidgetStateType::Normal;
+					else if (stateName == "focused")
+						widgetStateType = WidgetStateType::Focused;
 					else if (stateName == "pressed")
 						widgetStateType = WidgetStateType::Pressed;
 					else if (stateName == "hovered")
@@ -1441,6 +1443,8 @@ Theme loadTheme(const char* filename)
 
 					if (stateName == "normal")
 						widgetStateType = WidgetStateType::Normal;
+					else if (stateName == "focused")
+						widgetStateType = WidgetStateType::Focused;
 					else if (stateName == "pressed")
 						widgetStateType = WidgetStateType::Pressed;
 					else if (stateName == "hovered")
