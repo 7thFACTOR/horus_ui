@@ -60,7 +60,8 @@ bool radio(const char* labelText, bool checked)
 			}, ctx->globalScale);
 	}
 
-	const f32 bulletTextSpacing = ctx->theme->settings.radioBulletTextSpacing * ctx->globalScale;
+	const f32 bulletTextSpacingParam = radioBodyElem.currentStyle->getParameterValue("bulletTextSpacing", 5);
+	const f32 bulletTextSpacing = bulletTextSpacingParam * ctx->globalScale;
 
 	ctx->renderer->cmdSetColor(radioBodyElemState->textColor);
 	ctx->renderer->cmdSetFont(radioBodyElemState->font);

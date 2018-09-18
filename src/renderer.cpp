@@ -233,11 +233,11 @@ void Renderer::cmdSetLineStyle(const LineStyle& style)
 	addDrawCommand(cmd);
 }
 
-void Renderer::cmdDrawImage(UiImage* image, const Point& position)
+void Renderer::cmdDrawImage(UiImage* image, const Point& position, f32 scale)
 {
 	DrawCommand cmd(DrawCommand::Type::DrawRect);
 	cmd.zOrder = zOrder;
-	cmd.drawRect.rect = Rect(position.x, position.y, image->rect.width, image->rect.height);
+	cmd.drawRect.rect = Rect(position.x, position.y, image->rect.width * scale, image->rect.height * scale);
 	cmd.drawRect.uvRect = image->uvRect;
 	cmd.drawRect.rotated = image->rotated;
 	cmd.drawRect.textureIndex = image->atlasTexture->textureIndex;

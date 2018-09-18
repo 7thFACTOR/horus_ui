@@ -106,10 +106,10 @@ void drawTextInBox(const char* text, const Rect& rect, HAlignType horizontalAlig
 		horizontalAlign, verticalAlign);
 }
 
-void drawImage(Image image, const Point& position)
+void drawImage(Image image, const Point& position, f32 scale)
 {
 	UiImage* img = (UiImage*)image;
-	ctx->renderer->cmdDrawImage(img, Point(position.x, position.y));
+	ctx->renderer->cmdDrawImage(img, Point(position.x, position.y), scale);
 }
 
 void drawStretchedImage(Image image, const Rect& rect)

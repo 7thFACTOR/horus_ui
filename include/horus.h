@@ -555,6 +555,14 @@ enum class TextCachePruneMode
 	Frames
 };
 
+/// Slider drag direction modes
+enum class SliderDragDirection
+{
+	Any,
+	HorizontalOnly,
+	VerticalOnly
+};
+
 /// Docking modes for the view panes
 enum class DockType
 {
@@ -1410,8 +1418,8 @@ struct ContextSettings
 	f32 textCachePruneMaxFrames = 500; /// after this frame count, if a unicode text is not accessed, it's discarded from cache, textCachePruneMode must be Frames
 	f32 textCachePruneIntervalSec = 5; /// after each interval has passed, the pruning of unused texts is executed, will delete the texts that were not used for the last textCachePruneMaxTimeMs or textCachePruneMaxFrames, depending on the prune mode
 	u32 defaultAtlasSize = 4096; /// default atlas textures size in pixels
-	bool sliderAllowAnyDragDirection = false; /// allows to change slider value from any direction drag, vertical or horizontal
-	bool sliderInvertVerticalDragAmount = false;
+	SliderDragDirection sliderDragDirection = SliderDragDirection::Any; /// allows to change slider value from any direction drag, vertical or horizontal
+	bool sliderInvertVerticalDragAmount = false; /// if true and vertical sliding allowed, it will invert the drag amount
 	f32 dragStartDistance = 3; /// the max distance after which a dragging operation starts to occur when mouse down and moved, in pixels
 };
 
@@ -2076,7 +2084,7 @@ HORUS_API bool sliderFloat(f32 minVal, f32 maxVal, f32& value, bool useStep = fa
 
 HORUS_API bool comboSliderFloat(f32& value, f32 stepsPerPixel = 1.0f, f32 arrowStep = 1.0f);
 HORUS_API bool comboSliderFloatRanged(f32& value, f32 minVal, f32 maxVal, f32 stepsPerPixel = 1.0f, f32 arrowStep = 1.0f);
-HORUS_API bool rotarySliderFloat(const char* label, f32& value, f32 minVal, f32 maxVal, f32 step);
+HORUS_API bool rotarySliderFloat(const char* label, f32& value, f32 minVal, f32 maxVal, f32 step, bool twoSide = false);
 
 /// Draw a image widget
 /// \param image the image to draw
@@ -2426,7 +2434,7 @@ HORUS_API void drawTextInBox(const char* text, const Rect& rect, HAlignType hori
 HORUS_API Point getTextSize(const char* text);
 
 /// 
-HORUS_API void drawImage(Image image, const Point& position);
+HORUS_API void drawImage(Image image, const Point& position, f32 scale);
 
 /// 
 HORUS_API void drawStretchedImage(Image image, const Rect& rect);

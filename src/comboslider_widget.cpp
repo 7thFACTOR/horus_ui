@@ -48,22 +48,23 @@ bool comboSliderInternal(f32& value, f32 minVal, f32 maxVal, bool useRange, f32 
 	bool arrowHoveredLeft = false;
 	bool arrowHoveredRight = false;
 
-	if (isHovered() && ctx->event.mouse.point.x <= ctx->widget.rect.x + ctx->theme->settings.comboSliderArrowClickSize)
+	if (isHovered() && ctx->event.mouse.point.x <= ctx->widget.rect.x + leftArrowElem.normalState().image->width)
 	{
 		arrowHoveredLeft = true;
 	}
-	else if (isHovered() && ctx->event.mouse.point.x >= ctx->widget.rect.right() - ctx->theme->settings.comboSliderArrowClickSize)
+	else if (isHovered() && ctx->event.mouse.point.x >= ctx->widget.rect.right() - rightArrowElem.normalState().image->width)
 	{
 		arrowHoveredRight = true;
 	}
 
-	if (isClicked() && ctx->event.mouse.point.x <= ctx->widget.rect.x + ctx->theme->settings.comboSliderArrowClickSize)
+	if (isClicked()
+		&& ctx->event.mouse.point.x <= ctx->widget.rect.x + leftArrowElem.normalState().image->width)
 	{
 		value -= arrowStep;
 		arrowStepped = true;
 		if (useRange) wasModified = clampValue(value, minVal, maxVal);
 	}
-	else if (isClicked() && ctx->event.mouse.point.x >= ctx->widget.rect.right() - ctx->theme->settings.comboSliderArrowClickSize)
+	else if (isClicked() && ctx->event.mouse.point.x >= ctx->widget.rect.right() - rightArrowElem.normalState().image->width)
 	{
 		value += arrowStep;
 		arrowStepped = true;
@@ -134,16 +135,20 @@ bool comboSliderInternal(f32& value, f32 minVal, f32 maxVal, bool useRange, f32 
 			dragLastMousePos = ctx->event.mouse.point;
 			f32 deltaValue = 0;
 
-			if (ctx->settings.sliderAllowAnyDragDirection)
+			switch (ctx->settings.sliderDragDirection)
 			{
+			case SliderDragDirection::Any:
 				if (fabsf(delta.x) > fabsf(delta.y))
 					deltaValue = delta.x;
 				else
 					deltaValue = ctx->settings.sliderInvertVerticalDragAmount ? delta.y : -delta.y;
-			}
-			else
-			{
+				break;
+			case SliderDragDirection::VerticalOnly:
+				deltaValue = delta.y;
+				break;
+			case SliderDragDirection::HorizontalOnly:
 				deltaValue = delta.x;
+				break;
 			}
 
 			if (useRange)
@@ -161,7 +166,8 @@ bool comboSliderInternal(f32& value, f32 minVal, f32 maxVal, bool useRange, f32 
 
 		if (ctx->event.type == InputEvent::Type::MouseUp
 			&& (dragging || mouseWasDown)
-			&& ctx->isActiveLayer()&&comboSliderWidgetId == ctx->currentWidgetId)
+			&& ctx->isActiveLayer()
+			&& comboSliderWidgetId == ctx->currentWidgetId)
 		{
 			dragging = false;
 			mouseWasDown = false;
@@ -225,7 +231,7 @@ bool comboSliderInternal(f32& value, f32 minVal, f32 maxVal, bool useRange, f32 
 
 		ctx->renderer->cmdDrawImage(leftArrowElemState->image,
 			{
-				ctx->widget.rect.x + bodyElemState->border + (ctx->theme->settings.comboSliderArrowSideSpacing + (ctx->widget.pressed ? 1.0f : 0.0f)) * ctx->globalScale,
+				ctx->widget.rect.x + bodyElemState->border + (ctx->widget.pressed ? 1.0f : 0.0f) * ctx->globalScale,
 				ctx->widget.rect.top() + arrowY,
 				leftArrowElemState->image->rect.width * ctx->globalScale,
 				leftArrowElemState->image->rect.height * ctx->globalScale
@@ -238,7 +244,7 @@ bool comboSliderInternal(f32& value, f32 minVal, f32 maxVal, bool useRange, f32 
 
 		ctx->renderer->cmdDrawImage(rightArrowElemState->image,
 			{
-				ctx->widget.rect.right() - bodyElemState->border - (ctx->theme->settings.comboSliderArrowSideSpacing + rightArrowElemState->image->rect.width - (ctx->widget.pressed ? 1.0f : 0.0f)) * ctx->globalScale,
+				ctx->widget.rect.right() - bodyElemState->border - (rightArrowElemState->image->rect.width - (ctx->widget.pressed ? 1.0f : 0.0f)) * ctx->globalScale,
 				ctx->widget.rect.top() + arrowY,
 				rightArrowElemState->image->rect.width * ctx->globalScale,
 				rightArrowElemState->image->rect.height * ctx->globalScale

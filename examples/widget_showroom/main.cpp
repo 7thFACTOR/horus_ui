@@ -1304,7 +1304,7 @@ struct MyViewHandler : hui::ViewHandler
 			hui::label("Far Plane:", HAlignType::Right);
 			hui::nextColumn();
 			hui::pushPadding(0);
-			hui::getContextSettings().sliderAllowAnyDragDirection = true;
+			hui::getContextSettings().sliderDragDirection = hui::SliderDragDirection::Any;
 			hui::getContextSettings().sliderInvertVerticalDragAmount = false;
 
 			hui::comboSliderFloat(slideVal, 1);

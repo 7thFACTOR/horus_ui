@@ -268,6 +268,7 @@
 			"rotarySliderMark":
 			{
 				"height": 10,
+				"placementRadius": 20,
 				"normal": { "image": "rotaryslider_mark", "border": 0, "color": "white", "textColor": "white", "font": "normal" },
 				"hovered": { "image": "rotaryslider_mark", "border": 0, "color": "white", "textColor": "white", "font": "normal" },
 				"pressed": { "image": "rotaryslider_mark", "border": 0, "color": "white", "textColor": "white", "font": "normal" },
@@ -275,6 +276,8 @@
 			},
 			"rotarySliderValueDot":
 			{
+				"count":120,
+				"placementRadius":36,
 				"normal": { "image": "rotaryslider_value_dot", "border": 0, "color": "black", "textColor": "white", "font": "normal" },
 				"pressed": { "image": "rotaryslider_value_dot", "border": 0, "color": "orange", "textColor": "white", "font": "normal" }
 			}

@@ -39,14 +39,21 @@ struct UiThemeElement
 		f32 height = 0;
 	};
 
-	struct StyleStates
+	struct Style
 	{
 		State states[(u32)WidgetStateType::Count];
 		std::unordered_map<std::string, f32> parameters;
+
+		f32 getParameterValue(const std::string& name, f32 defaultValue)
+		{
+			auto iter = parameters.find(name);
+			if (iter == parameters.end()) return defaultValue;
+			return iter->second;
+		}
 	};
 
-	std::unordered_map<std::string, StyleStates> styles;
-	StyleStates* currentStyle = nullptr;
+	std::unordered_map<std::string, Style> styles;
+	Style* currentStyle = nullptr;
 
 	inline void setDefaultStyle() { currentStyle = &styles["default"]; }
 	inline void setStyle(const char* styleName) { currentStyle = &styles[styleName]; }
