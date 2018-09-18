@@ -6,6 +6,7 @@
 #include "ui_context.h"
 #include "util.h"
 #include <algorithm>
+#include <string.h> // memset
 
 namespace hui
 {
