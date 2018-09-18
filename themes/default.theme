@@ -18,7 +18,7 @@
 		"heading": { "file": "fonts/segoeui.ttf", "size": 14 },
 		"para": { "file": "fonts/segoeui.ttf", "size": 12 },
 		"menu": { "file": "fonts/segoeui.ttf", "size": 16 },
-		"led1": { "file": "fonts/digital dismay.otf", "size": 30 },
+		"led1": { "file": "fonts/digital_dismay.otf", "size": 30 },
 		"led2": { "file": "fonts/MobileFont.ttf", "size": 20 }
 	},
 	
