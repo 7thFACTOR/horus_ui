@@ -12,7 +12,7 @@
 
 namespace hui
 {
-bool rotarySliderFloat(const char* labelText, f32& value, f32 minVal, f32 maxVal, f32 step)
+bool rotarySliderFloat(const char* labelText, f32& value, f32 minVal, f32 maxVal, f32 step, bool twoSide)
 {
 	static Point lastMousePos;
 	static u32 rotarySliderWidgetId = 0;
@@ -73,10 +73,11 @@ bool rotarySliderFloat(const char* labelText, f32& value, f32 minVal, f32 maxVal
 	{
 		ctx->renderer->cmdSetColor(bodyElemState->color * ctx->tint[(int)TintColorType::Body]);
 		Rect rc = {
-			ctx->widget.rect.x + (ctx->widget.rect.width - bodyElemState->image->width) / 2.0f,
+			ctx->widget.rect.x + (ctx->widget.rect.width - bodyElemState->image->width * ctx->globalScale) / 2.0f,
 				ctx->widget.rect.y,
-				(f32)bodyElemState->image->width,
-				(f32)bodyElemState->image->height };
+				(f32)bodyElemState->image->width * ctx->globalScale,
+				(f32)bodyElemState->image->height * ctx->globalScale };
+		
 		ctx->renderer->cmdDrawImage(bodyElemState->image, rc);
 
 		Point center = rc.center();
@@ -84,52 +85,51 @@ bool rotarySliderFloat(const char* labelText, f32& value, f32 minVal, f32 maxVal
 		
 		Point qpos[4] = {
 			Point(0, 0),
-			Point(markElemState->image->width, 0),
-			Point(markElemState->image->width, markElemState->image->height),
-			Point(0, markElemState->image->height),
+			Point(markElemState->image->width * ctx->globalScale, 0),
+			Point(markElemState->image->width * ctx->globalScale, markElemState->image->height * ctx->globalScale),
+			Point(0, markElemState->image->height * ctx->globalScale),
 		};
 
-		f32 lowLimitRadians = M_PI / 2 + 0.3f;
-		f32 highLimitRadians = 2 * M_PI + M_PI / 2 - 0.3f;
+		f32 limitOffset = valueDotElem.currentStyle->getParameterValue("limitOffset", 0.3f);
+		f32 dotCount = valueDotElem.currentStyle->getParameterValue("count", 20);
+		f32 dotPlacementRadius = valueDotElem.currentStyle->getParameterValue("placementRadius", 35);
+		f32 markPlacementRadius = markElem.currentStyle->getParameterValue("placementRadius", 25);
+		f32 lowLimitRadians = M_PI / 2 + limitOffset;
+		f32 highLimitRadians = 2 * M_PI + M_PI / 2 - limitOffset;
 		f32 radians = lowLimitRadians + percent * (highLimitRadians - lowLimitRadians);
-		int numDots = 22;
-		f32 step = (highLimitRadians - lowLimitRadians) / (f32)numDots;
+		f32 step = (highLimitRadians - lowLimitRadians) / dotCount;
 		f32 angle = lowLimitRadians;
-		int activeDots = numDots * percent;
+		int activeDots = dotCount * percent;
+		Point pos;
 
-		for (int i = 0; i <= numDots; i++)
+		for (int i = 0; i <= activeDots; i++)
 		{
-			Point pos;
-			
-			pos.x = cosf(angle) * 34 + center.x - valueDotElem.normalState().image->width / 2;
-			pos.y = sinf(angle) * 34 + center.y - valueDotElem.normalState().image->height / 2;
-			if (i <= activeDots)
-			{
-				ctx->renderer->cmdSetColor(valueDotElem.getState(WidgetStateType::Pressed).color);
-			}
-			else
-			{
-				ctx->renderer->cmdSetColor(valueDotElem.getState(WidgetStateType::Normal).color);
-			}
-
-			ctx->renderer->cmdDrawImage(valueDotElem.normalState().image, pos);
-
+			pos.x = cosf(angle) * dotPlacementRadius * ctx->globalScale + center.x - valueDotElem.normalState().image->width * ctx->globalScale / 2;
+			pos.y = sinf(angle) * dotPlacementRadius * ctx->globalScale + center.y - valueDotElem.normalState().image->height * ctx->globalScale / 2;
+			ctx->renderer->cmdSetColor(valueDotElem.getState(WidgetStateType::Pressed).color);
+			ctx->renderer->cmdDrawImage(valueDotElem.normalState().image, pos, ctx->globalScale);
 			angle += step;
 		}
 
+		/*
 		for (int i = 0; i < 4; i++)
 		{
 			Point newp;
-			qpos[i].y -= markElemState->image->height / 2;
-			qpos[i].x += markElem.normalState().height;
+			qpos[i].y -= markElemState->image->height * ctx->globalScale / 2;
+			qpos[i].x += markElem.normalState().height * ctx->globalScale;
 			newp.x = cosf(radians) * qpos[i].x - sinf(radians) * qpos[i].y;
 			newp.y = sinf(radians) * qpos[i].x + cosf(radians) * qpos[i].y;
 			qpos[i] = newp + center;
-		}
+		}*/
 
 		ctx->renderer->cmdSetColor(markElemState->color);
-		ctx->renderer->cmdDrawQuad(markElemState->image, qpos[0], qpos[1], qpos[2], qpos[3]);
-		
+		//ctx->renderer->cmdDrawQuad(markElemState->image, qpos[0], qpos[1], qpos[2], qpos[3]);
+		pos.x = center.x + markPlacementRadius * cosf(radians) * ctx->globalScale - markElemState->image->width * ctx->globalScale / 2;
+		pos.y = center.y + markPlacementRadius * sinf(radians) * ctx->globalScale - markElemState->image->height * ctx->globalScale / 2;
+
+		ctx->renderer->cmdDrawImage(markElemState->image, pos, ctx->globalScale);
+
+		// draw the text under the knob
 		ctx->renderer->cmdSetColor(bodyElemState->textColor * ctx->tint[(int)TintColorType::Text]);
 		ctx->renderer->cmdSetFont(bodyElemState->font);
 		ctx->renderer->pushClipRect(ctx->widget.rect);

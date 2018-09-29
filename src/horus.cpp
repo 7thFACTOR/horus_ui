@@ -1379,115 +1379,114 @@ Theme loadTheme(const char* filename)
 	{
 		auto widgetName = widgetNames[i];
 		auto widget = widgets.get(widgetName.c_str(), Json::Value());
-
-		WidgetType wtype = getWidgetTypeFromName(widgetName);
+		WidgetType widgetType = getWidgetTypeFromName(widgetName);
 		auto widgetMemberNames = widget.getMemberNames();
+		auto styles = widget.get("styles", Json::Value());
 
-		// read all widgets
-		for (size_t j = 0; j < widgetMemberNames.size(); j++)
+		auto readElements = [theme, themePath, widgetType](const std::string& styleName, Json::Value& parentElem)
 		{
-			auto elemName = widgetMemberNames[j];
-			auto elem = widget.get(elemName.c_str(), Json::Value());
-			auto elemType = getWidgetElementFromName(elemName);
-			auto width = elem.get("width", 0).asInt();
-			auto height = elem.get("height", 0).asInt();
-
-			// if its a builtin widget
-			if (wtype != WidgetType::None)
+			auto elementNames = parentElem.getMemberNames();
+			// read all widget elements
+			for (size_t l = 0; l < elementNames.size(); l++)
 			{
-				// if we have styles for this widget
-				if (elemName == "styles")
+				auto elemType = getWidgetElementFromName(elementNames[l]);
+				auto elem = parentElem.get(elementNames[l], Json::Value());
+				auto width = elem.get("width", 0).asInt();
+				auto height = elem.get("height", 0).asInt();
+				auto elemStates = elem.getMemberNames();
+
+				for (size_t m = 0; m < elemStates.size(); m++)
 				{
-					auto styles = widget.get("styles", Json::Value());
-					printf("Loading %d %s styles\n", styles.getMemberNames().size(), widgetName.c_str());
-					auto styleNames = styles.getMemberNames();
-					
-					// read all styles
-					for (size_t k = 0; k < styleNames.size(); k++)
-					{
-						auto styleName = styleNames[k];
-						auto styleElem = styles.get(styleName.c_str(), Json::Value());
-						printf("\tStyle '%s'\n", styleName.c_str());
-						auto elementNames = styleElem.getMemberNames();
+					auto& stateName = elemStates[m];
+					auto elemState = elem.get(stateName, Json::Value());
+					auto widgetStateType = WidgetStateType::None;
 
-						// read all widget elements
-						for (size_t l = 0; l < elementNames.size(); l++)
-						{
-							auto elemType = getWidgetElementFromName(elementNames[l]);
-							auto elem = styleElem.get(elementNames[j], Json::Value());
-							width = elem.get("width", width).asInt();
-							height = elem.get("height", height).asInt();
-							auto elemStates = elem.getMemberNames();
+					if (stateName == "normal")
+						widgetStateType = WidgetStateType::Normal;
+					else if (stateName == "focused")
+						widgetStateType = WidgetStateType::Focused;
+					else if (stateName == "pressed")
+						widgetStateType = WidgetStateType::Pressed;
+					else if (stateName == "hovered")
+						widgetStateType = WidgetStateType::Hovered;
+					else if (stateName == "disabled")
+						widgetStateType = WidgetStateType::Disabled;
 
-							for (size_t m = 0; m < elemStates.size(); m++)
-							{
-								auto& stateName = elemStates[m];
-								auto elemState = elem.get(stateName, Json::Value());
-								auto widgetStateType = WidgetStateType::None;
-
-								if (stateName == "normal")
-									widgetStateType = WidgetStateType::Normal;
-								else if (stateName == "pressed")
-									widgetStateType = WidgetStateType::Pressed;
-								else if (stateName == "hovered")
-									widgetStateType = WidgetStateType::Hovered;
-								else if (stateName == "disabled")
-									widgetStateType = WidgetStateType::Disabled;
-
-								if (widgetStateType != WidgetStateType::None)
-									setThemeElement(theme, themePath, styleName.c_str(), wtype, elemType, widgetStateType, elemState, width, height);
-								else
-									theme->elements[(u32)elemType].styles[styleName].parameters[stateName] = elemState.asFloat();
-							}
-						}
-					}
-				}
-				else
-				{
-					setThemeElement(theme, themePath, "default", wtype, elemType, WidgetStateType::Normal, elem.get("normal", Json::Value()), width, height);
-					setThemeElement(theme, themePath, "default", wtype, elemType, WidgetStateType::Hovered, elem.get("hovered", Json::Value()), width, height);
-					setThemeElement(theme, themePath, "default", wtype, elemType, WidgetStateType::Pressed, elem.get("pressed", Json::Value()), width, height);
-					setThemeElement(theme, themePath, "default", wtype, elemType, WidgetStateType::Focused, elem.get("focused", Json::Value()), width, height);
-					setThemeElement(theme, themePath, "default", wtype, elemType, WidgetStateType::Disabled, elem.get("disabled", Json::Value()), width, height);
+					if (widgetStateType != WidgetStateType::None)
+						setThemeElement(theme, themePath, styleName.c_str(), widgetType, elemType, widgetStateType, elemState, width, height);
+					else if (elemState.isDouble())
+						theme->elements[(u32)elemType].styles[styleName].parameters[stateName] = elemState.asFloat();
+					else if (elemState.isInt())
+						theme->elements[(u32)elemType].styles[styleName].parameters[stateName] = elemState.asInt();
 				}
 			}
+		};
+
+		auto readUserElements = [theme, themePath, widgetName](const std::string& styleName, Json::Value& parentElem)
+		{
+			auto elementNames = parentElem.getMemberNames();
+
+			// read all widget elements
+			for (size_t l = 0; l < elementNames.size(); l++)
+			{
+				auto& elementName = elementNames[l];
+				auto elem = parentElem.get(elementName, Json::Value());
+				auto width = elem.get("width", 0).asInt();
+				auto height = elem.get("height", 0).asInt();
+				auto elemStates = elem.getMemberNames();
+
+				for (size_t m = 0; m < elemStates.size(); m++)
+				{
+					auto& stateName = elemStates[m];
+					auto elemState = elem.get(stateName, Json::Value());
+					auto widgetStateType = WidgetStateType::None;
+
+					if (stateName == "normal")
+						widgetStateType = WidgetStateType::Normal;
+					else if (stateName == "focused")
+						widgetStateType = WidgetStateType::Focused;
+					else if (stateName == "pressed")
+						widgetStateType = WidgetStateType::Pressed;
+					else if (stateName == "hovered")
+						widgetStateType = WidgetStateType::Hovered;
+					else if (stateName == "disabled")
+						widgetStateType = WidgetStateType::Disabled;
+
+					if (!theme->userElements[elementName])
+						theme->userElements[elementName] = new UiThemeElement();
+
+					if (widgetStateType != WidgetStateType::None)
+						setUserElement(theme, themePath, styleName.c_str(), widgetName, elementName, widgetStateType, elemState, width, height);
+					else if (elemState.isDouble())
+						theme->userElements[elementName]->styles[styleName].parameters[stateName] = elemState.asFloat();
+					else if (elemState.isInt())
+						theme->userElements[elementName]->styles[styleName].parameters[stateName] = elemState.asInt();
+				}
+			}
+		};
+
+		if (styles.isObject())
+		{
+			auto styleNames = styles.getMemberNames();
+
+			// read all styles
+			for (size_t k = 0; k < styleNames.size(); k++)
+			{
+				auto styleName = styleNames[k];
+				auto styleElem = styles.get(styleName, Json::Value());
+
+				if (widgetType != WidgetType::None)
+					readElements(styleName, styleElem);
+				else
+					readUserElements(styleName, styleElem);
+			}
+		}
+		else
+		{
+			if (widgetType != WidgetType::None)
+				readElements("default", widget);
 			else
-			{
-				// if we have styles for this widget
-				if (elemName == "styles")
-				{
-					auto styles = widget.get("styles", Json::Value());
-					auto styleNames = styles.getMemberNames();
-
-					for (size_t k = 0; k < styleNames.size(); k++)
-					{
-						auto& styleName = styleNames[k];
-						auto styleElem = styles.get(styleName.c_str(), Json::Value());
-						auto elementNames = styleElem.getMemberNames();
-						width = styleElem.get("width", width).asInt();
-						height = styleElem.get("height", height).asInt();
-
-						for (size_t l = 0; l < elementNames.size(); l++)
-						{
-							auto& elemName = elementNames[l];
-							auto elem = styleElem.get(elemName, Json::Value());
-							setUserElement(theme, themePath, styleName.c_str(), widgetName, elemName, WidgetStateType::Normal, elem.get("normal", Json::Value()), width, height);
-							setUserElement(theme, themePath, styleName.c_str(), widgetName, elemName, WidgetStateType::Hovered, elem.get("hovered", Json::Value()), width, height);
-							setUserElement(theme, themePath, styleName.c_str(), widgetName, elemName, WidgetStateType::Pressed, elem.get("pressed", Json::Value()), width, height);
-							setUserElement(theme, themePath, styleName.c_str(), widgetName, elemName, WidgetStateType::Focused, elem.get("focused", Json::Value()), width, height);
-							setUserElement(theme, themePath, styleName.c_str(), widgetName, elemName, WidgetStateType::Disabled, elem.get("disabled", Json::Value()), width, height);
-						}
-					}
-				}
-				else
-				{
-					setUserElement(theme, themePath, "default", widgetName, elemName, WidgetStateType::Normal, elem.get("normal", Json::Value()), width, height);
-					setUserElement(theme, themePath, "default", widgetName, elemName, WidgetStateType::Hovered, elem.get("hovered", Json::Value()), width, height);
-					setUserElement(theme, themePath, "default", widgetName, elemName, WidgetStateType::Pressed, elem.get("pressed", Json::Value()), width, height);
-					setUserElement(theme, themePath, "default", widgetName, elemName, WidgetStateType::Focused, elem.get("focused", Json::Value()), width, height);
-					setUserElement(theme, themePath, "default", widgetName, elemName, WidgetStateType::Disabled, elem.get("disabled", Json::Value()), width, height);
-				}
-			}
+				readUserElements("default", widget);
 		}
 	}
 

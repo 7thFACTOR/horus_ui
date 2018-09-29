@@ -177,7 +177,7 @@ public:
 	void cmdSetTextBackfillColor(const Color& color);
 	void cmdSetLineStyle(const LineStyle& style);
 	void cmdDrawQuad(UiImage* image, const Point& p1, const Point& p2, const Point& p3, const Point& p4);
-	void cmdDrawImage(UiImage* image, const Point& position);
+	void cmdDrawImage(UiImage* image, const Point& position, f32 scale);
 	void cmdDrawImage(UiImage* image, const Rect& rect);
 	void cmdDrawImageBordered(UiImage* image, u32 border, const Rect& rect, f32 scale);
 	void cmdDrawImageScaledAligned(UiImage* image, const Rect& rect, HAlignType halign, VAlignType valign, f32 scale);
