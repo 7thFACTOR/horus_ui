@@ -123,6 +123,7 @@ GLU/GLUT dev, needed by GLEW, use:
 - It can redraw the UI only when needed, useful for non-gaming applications where continuous rendering not needed
 - DPI aware, scaling of the whole UI elements, useful for high DPI screens
 - Fully customizable through themes specified in a JSON file with 9-cell resizable elements and PNG images
+- Widgets can have multiple full styles in the same theme (example: different button shapes/skins)
 - Dynamic font atlas for unlimited unicode glyphs and font sizes
 - Widgets: text input (with hint text), tooltip, box, popup, messagebox, progress, button, icon button, dropdown, menu, context menu, tab, panel, radio, check, slider, toolbar etc.
 - MegaWidgets: color picker, XYZ/XY editor, object reference editor (with dragdrop support)
