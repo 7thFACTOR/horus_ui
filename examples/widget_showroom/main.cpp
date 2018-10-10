@@ -1313,7 +1313,7 @@ struct MyViewHandler : hui::ViewHandler
 			static f32 sval[3] = {0.5f, 1, 0};
 			static char txtSlider[64] = "";
 			hui::beginThreeColumns();
-			hui::rotarySliderFloat("Volume",sval[0], -1, 1, .01);
+			hui::rotarySliderFloat("Volume",sval[0], -1, 1, .01, true);
 			hui::progress(sval[0]);
 			toString(sval[0], txtSlider, 64);
 			hui::beginBox(Color::black);

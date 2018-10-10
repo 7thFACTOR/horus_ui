@@ -107,9 +107,30 @@ bool rotarySliderFloat(const char* labelText, f32& value, f32 minVal, f32 maxVal
 		f32 dotCount = valueDotElem.currentStyle->getParameterValue("count", 20);
 		f32 dotPlacementRadius = valueDotElem.currentStyle->getParameterValue("placementRadius", 35);
 		f32 markPlacementRadius = markElem.currentStyle->getParameterValue("placementRadius", 25);
-		f32 lowLimitRadians = M_PI / 2 + limitOffset;
-		f32 highLimitRadians = 2 * M_PI + M_PI / 2 - limitOffset;
-		f32 radians = lowLimitRadians + percent * (highLimitRadians - lowLimitRadians);
+
+		f32 lowLimitRadians;
+		f32 highLimitRadians;
+
+		if (!twoSide)
+		{
+			lowLimitRadians = M_PI / 2 + limitOffset;
+			highLimitRadians = 2 * M_PI + M_PI / 2 - limitOffset;
+		}
+		else
+		{
+			if (value < 0)
+			{
+				lowLimitRadians = -M_PI / 2.0f;
+				highLimitRadians = -3.0f*M_PI;
+			}
+			else
+			{
+				lowLimitRadians = -M_PI / 2.0f;
+				highLimitRadians = M_PI / 2.0f;
+			}
+		}
+
+		f32 radians = lowLimitRadians + percent * (twoSide ? 0.5f : 1.0f) * (highLimitRadians - lowLimitRadians);
 		f32 step = (highLimitRadians - lowLimitRadians) / dotCount;
 		f32 angle = lowLimitRadians;
 		int activeDots = dotCount * percent;
@@ -118,6 +139,17 @@ bool rotarySliderFloat(const char* labelText, f32& value, f32 minVal, f32 maxVal
 		if (twoSide)
 		{
 			if (value < 0)
+			{
+				for (int i = 0; i <= activeDots; i++)
+				{
+					pos.x = cosf(angle) * dotPlacementRadius * ctx->globalScale + center.x - valueDotElem.normalState().image->width * ctx->globalScale / 2;
+					pos.y = sinf(angle) * dotPlacementRadius * ctx->globalScale + center.y - valueDotElem.normalState().image->height * ctx->globalScale / 2;
+					ctx->renderer->cmdSetColor(valueDotElem.getState(WidgetStateType::Pressed).color);
+					ctx->renderer->cmdDrawImage(valueDotElem.normalState().image, pos, ctx->globalScale);
+					angle += step;
+				}
+			}
+			else
 			{
 				for (int i = 0; i <= activeDots; i++)
 				{
