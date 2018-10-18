@@ -136,42 +136,42 @@ bool rotarySliderFloat(const char* labelText, f32& value, f32 minVal, f32 maxVal
 		int activeDots = dotCount * percent;
 		Point pos;
 
-		if (twoSide)
-		{
-			if (value < 0)
-			{
-				for (int i = 0; i <= activeDots; i++)
-				{
-					pos.x = cosf(angle) * dotPlacementRadius * ctx->globalScale + center.x - valueDotElem.normalState().image->width * ctx->globalScale / 2;
-					pos.y = sinf(angle) * dotPlacementRadius * ctx->globalScale + center.y - valueDotElem.normalState().image->height * ctx->globalScale / 2;
-					ctx->renderer->cmdSetColor(valueDotElem.getState(WidgetStateType::Pressed).color);
-					ctx->renderer->cmdDrawImage(valueDotElem.normalState().image, pos, ctx->globalScale);
-					angle += step;
-				}
-			}
-			else
-			{
-				for (int i = 0; i <= activeDots; i++)
-				{
-					pos.x = cosf(angle) * dotPlacementRadius * ctx->globalScale + center.x - valueDotElem.normalState().image->width * ctx->globalScale / 2;
-					pos.y = sinf(angle) * dotPlacementRadius * ctx->globalScale + center.y - valueDotElem.normalState().image->height * ctx->globalScale / 2;
-					ctx->renderer->cmdSetColor(valueDotElem.getState(WidgetStateType::Pressed).color);
-					ctx->renderer->cmdDrawImage(valueDotElem.normalState().image, pos, ctx->globalScale);
-					angle += step;
-				}
-			}
-		}
-		else
-		{
-			for (int i = 0; i <= activeDots; i++)
-			{
-				pos.x = cosf(angle) * dotPlacementRadius * ctx->globalScale + center.x - valueDotElem.normalState().image->width * ctx->globalScale / 2;
-				pos.y = sinf(angle) * dotPlacementRadius * ctx->globalScale + center.y - valueDotElem.normalState().image->height * ctx->globalScale / 2;
-				ctx->renderer->cmdSetColor(valueDotElem.getState(WidgetStateType::Pressed).color);
-				ctx->renderer->cmdDrawImage(valueDotElem.normalState().image, pos, ctx->globalScale);
-				angle += step;
-			}
-		}
+		//if (twoSide)
+		//{
+		//	if (value < 0)
+		//	{
+		//		for (int i = 0; i <= activeDots; i++)
+		//		{
+		//			pos.x = cosf(angle) * dotPlacementRadius * ctx->globalScale + center.x - valueDotElem.normalState().image->width * ctx->globalScale / 2;
+		//			pos.y = sinf(angle) * dotPlacementRadius * ctx->globalScale + center.y - valueDotElem.normalState().image->height * ctx->globalScale / 2;
+		//			ctx->renderer->cmdSetColor(valueDotElem.getState(WidgetStateType::Pressed).color);
+		//			ctx->renderer->cmdDrawImage(valueDotElem.normalState().image, pos, ctx->globalScale);
+		//			angle += step;
+		//		}
+		//	}
+		//	else
+		//	{
+		//		for (int i = 0; i <= activeDots; i++)
+		//		{
+		//			pos.x = cosf(angle) * dotPlacementRadius * ctx->globalScale + center.x - valueDotElem.normalState().image->width * ctx->globalScale / 2;
+		//			pos.y = sinf(angle) * dotPlacementRadius * ctx->globalScale + center.y - valueDotElem.normalState().image->height * ctx->globalScale / 2;
+		//			ctx->renderer->cmdSetColor(valueDotElem.getState(WidgetStateType::Pressed).color);
+		//			ctx->renderer->cmdDrawImage(valueDotElem.normalState().image, pos, ctx->globalScale);
+		//			angle += step;
+		//		}
+		//	}
+		//}
+		//else
+		//{
+		//	for (int i = 0; i <= activeDots; i++)
+		//	{
+		//		pos.x = cosf(angle) * dotPlacementRadius * ctx->globalScale + center.x - valueDotElem.normalState().image->width * ctx->globalScale / 2;
+		//		pos.y = sinf(angle) * dotPlacementRadius * ctx->globalScale + center.y - valueDotElem.normalState().image->height * ctx->globalScale / 2;
+		//		ctx->renderer->cmdSetColor(valueDotElem.getState(WidgetStateType::Pressed).color);
+		//		ctx->renderer->cmdDrawImage(valueDotElem.normalState().image, pos, ctx->globalScale);
+		//		angle += step;
+		//	}
+		//}
 
 		/*
 		for (int i = 0; i < 4; i++)
