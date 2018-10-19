@@ -18,7 +18,7 @@ void beginBoxInternal(const Color& color, UiThemeElement::State& state, f32 cust
 	ctx->layoutStack.back().position = ctx->penPosition;
 	// take some padding and border from width
 	ctx->layoutStack.back().width = width - (state.border * 2.0f + ctx->padding * 2.0f) * ctx->globalScale;
-	ctx->layoutStack.back().height = customHeight;
+	ctx->layoutStack.back().height = customHeight * ctx->globalScale;
 	ctx->layoutStack.back().themeWidgetElementState = &state;
 	ctx->layoutStack.back().themeElementColorTint = color;
 

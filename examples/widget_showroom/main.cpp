@@ -1318,7 +1318,8 @@ struct MyViewHandler : hui::ViewHandler
 			toString(sval[0], txtSlider, 64);
 			hui::beginBox(Color::black);
 			hui::pushTint(Color::red);
-			hui::labelCustomFont(txtSlider, fntLed2, HAlignType::Center);
+			//hui::button("test");
+			hui::multilineLabel(txtSlider, HAlignType::Center);
 			hui::popTint();
 			hui::endBox();
 			hui::nextColumn();
@@ -1327,6 +1328,7 @@ struct MyViewHandler : hui::ViewHandler
 			toString(sval[1], txtSlider, 64);
 			hui::beginBox(Color(199/255.0f, 202 / 255.0f, 1 / 255.0f, 1));
 			hui::pushTint(Color::black);
+			hui::button("test");
 			hui::labelCustomFont(txtSlider, fntLed1, HAlignType::Center);
 			hui::popTint();
 			hui::endBox();
@@ -1337,6 +1339,7 @@ struct MyViewHandler : hui::ViewHandler
 			toString(sval[2], txtSlider, 64);
 			hui::beginBox(Color::veryDarkGreen);
 			hui::pushTint(Color::green);
+			hui::button("test");
 			hui::labelCustomFont(txtSlider, fntLed1, HAlignType::Center);
 			hui::popTint();
 			hui::endBox();

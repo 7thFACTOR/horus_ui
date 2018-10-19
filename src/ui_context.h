@@ -141,6 +141,11 @@ struct UiContext
 		return maxLayerIndex == layerIndex;
 	}
 
+	inline const Color& getTint(TintColorType type) const
+	{
+		return tint[(int)type];
+	}
+
 	void setSkipRenderAndInput(bool skip);
 
 	Rect drawMultilineText(

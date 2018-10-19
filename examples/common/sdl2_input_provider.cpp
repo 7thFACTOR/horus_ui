@@ -321,6 +321,11 @@ void Sdl2InputProvider::addSdlEvent(SDL_Event& ev)
 			outEvent.mouse.point.x = ev.motion.x;
 			outEvent.mouse.point.y = ev.motion.y;
 			outEvent.window = SDL_GetWindowFromID(ev.motion.windowID);
+			auto mods = SDL_GetModState();
+			outEvent.mouse.modifiers = KeyModifiers::None;
+			outEvent.mouse.modifiers |= (mods & KMOD_ALT) ? KeyModifiers::Alt : KeyModifiers::None;
+			outEvent.mouse.modifiers |= (mods & KMOD_SHIFT) ? KeyModifiers::Shift : KeyModifiers::None;
+			outEvent.mouse.modifiers |= (mods & KMOD_CTRL) ? KeyModifiers::Control : KeyModifiers::None;
 			focusedWindow = (SDL_Window*)outEvent.window;
 		}
 		else
@@ -329,23 +334,38 @@ void Sdl2InputProvider::addSdlEvent(SDL_Event& ev)
 		}
 		break;
 	case SDL_MOUSEBUTTONDOWN:
+	{
 		outEvent.type = InputEvent::Type::MouseDown;
 		outEvent.mouse.point.x = ev.button.x;
 		outEvent.mouse.point.y = ev.button.y;
 		outEvent.mouse.button = (MouseButton)(ev.button.button - 1);
 		outEvent.mouse.clickCount = ev.button.clicks;
 		outEvent.window = SDL_GetWindowFromID(ev.button.windowID);
+		auto mods = SDL_GetModState();
+		outEvent.mouse.modifiers = KeyModifiers::None;
+		outEvent.mouse.modifiers |= (mods & KMOD_ALT) ? KeyModifiers::Alt : KeyModifiers::None;
+		outEvent.mouse.modifiers |= (mods & KMOD_SHIFT) ? KeyModifiers::Shift : KeyModifiers::None;
+		outEvent.mouse.modifiers |= (mods & KMOD_CTRL) ? KeyModifiers::Control : KeyModifiers::None;
 		focusedWindow = (SDL_Window*)outEvent.window;
 		break;
+	}
 	case SDL_MOUSEBUTTONUP:
+	{
 		outEvent.type = InputEvent::Type::MouseUp;
 		outEvent.mouse.point.x = ev.button.x;
 		outEvent.mouse.point.y = ev.button.y;
 		outEvent.mouse.button = (MouseButton)(ev.button.button - 1);
 		outEvent.mouse.clickCount = ev.button.clicks;
+		auto mods = SDL_GetModState();
+		outEvent.mouse.modifiers = KeyModifiers::None;
+		outEvent.mouse.modifiers |= (mods & KMOD_ALT) ? KeyModifiers::Alt : KeyModifiers::None;
+		outEvent.mouse.modifiers |= (mods & KMOD_SHIFT) ? KeyModifiers::Shift : KeyModifiers::None;
+		outEvent.mouse.modifiers |= (mods & KMOD_CTRL) ? KeyModifiers::Control : KeyModifiers::None;
 		outEvent.window = SDL_GetWindowFromID(ev.button.windowID);
 		break;
+	}
 	case SDL_MOUSEWHEEL:
+	{
 		outEvent.type = InputEvent::Type::MouseWheel;
 		int x, y;
 		SDL_GetMouseState(&x, &y);
@@ -355,8 +375,14 @@ void Sdl2InputProvider::addSdlEvent(SDL_Event& ev)
 		outEvent.mouse.clickCount = ev.button.clicks;
 		outEvent.mouse.wheel.x = ev.wheel.x;
 		outEvent.mouse.wheel.y = ev.wheel.y;
+		auto mods = SDL_GetModState();
+		outEvent.mouse.modifiers = KeyModifiers::None;
+		outEvent.mouse.modifiers |= (mods & KMOD_ALT) ? KeyModifiers::Alt : KeyModifiers::None;
+		outEvent.mouse.modifiers |= (mods & KMOD_SHIFT) ? KeyModifiers::Shift : KeyModifiers::None;
+		outEvent.mouse.modifiers |= (mods & KMOD_CTRL) ? KeyModifiers::Control : KeyModifiers::None;
 		outEvent.window = SDL_GetWindowFromID(ev.wheel.windowID);
 		break;
+	}
 	case SDL_KEYDOWN:
 		outEvent.type = InputEvent::Type::Key;
 		outEvent.key.down = true;

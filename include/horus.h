@@ -1176,6 +1176,7 @@ struct InputEvent
 		Point point;
 		Point wheel;
 		i32 wheelDelta = 0;
+		KeyModifiers modifiers = KeyModifiers::None;
 	};
 
 	struct KeyData
@@ -2084,7 +2085,7 @@ HORUS_API bool sliderFloat(f32 minVal, f32 maxVal, f32& value, bool useStep = fa
 
 HORUS_API bool comboSliderFloat(f32& value, f32 stepsPerPixel = 1.0f, f32 arrowStep = 1.0f);
 HORUS_API bool comboSliderFloatRanged(f32& value, f32 minVal, f32 maxVal, f32 stepsPerPixel = 1.0f, f32 arrowStep = 1.0f);
-HORUS_API bool rotarySliderFloat(const char* label, f32& value, f32 minVal, f32 maxVal, f32 step, bool twoSide = false);
+HORUS_API bool rotarySliderFloat(const char* label, f32& value, f32 minVal, f32 maxVal, f32 step, bool twoSide = false, f32 fineStepDivideFactor = 10.f);
 
 /// Draw a image widget
 /// \param image the image to draw
