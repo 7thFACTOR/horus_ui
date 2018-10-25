@@ -1422,6 +1422,7 @@ struct ContextSettings
 	SliderDragDirection sliderDragDirection = SliderDragDirection::Any; /// allows to change slider value from any direction drag, vertical or horizontal
 	bool sliderInvertVerticalDragAmount = false; /// if true and vertical sliding allowed, it will invert the drag amount
 	f32 dragStartDistance = 3; /// the max distance after which a dragging operation starts to occur when mouse down and moved, in pixels
+	f32 whiteImageUvBorder = 0.001f; /// this value is subtracted from the white image used to draw lines, to avoid black border artifacts
 };
 
 //////////////////////////////////////////////////////////////////////////

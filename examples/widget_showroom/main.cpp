@@ -808,73 +808,73 @@ struct MyViewHandler : hui::ViewHandler
 
 			auto ls = hui::LineStyle(hui::Color::yellow, 30);
 			hui::setLineStyle(ls);
-			//hui::drawCircle({ 200, 200 }, 50, 300);
+			hui::drawCircle({ 200, 200 }, 50, 300);
 
-			//Point pts[] = {{10, 240}, {100, 240}, {120, 240}, {330, 240}, {350, 240}, {380, 100}, {400, 120}};
+			Point pts[] = {{10, 240}, {100, 240}, {120, 240}, {330, 240}, {350, 240}, {380, 100}, {400, 120}};
 			//Point pts[] = { { 10, 240 },{ 100, 140 },{ 190, 240 }, {250, 240}};
-			//{
-			//	hui::LineStyle ls;
+			{
+				hui::LineStyle ls;
 
-			//	ls.width = 54;
-			//	ls.color = Color::yellow;
-			//	hui::setLineStyle(ls);
-			//	std::vector<Point> pts;
-			//	float x = 2;
-			//	for (float u = 0; u < 3.14*2; u += 0.1)
-			//	{
-			//		pts.push_back(Point(x+=15, 300 + sinf(u)*100));
+				ls.width = 54;
+				ls.color = Color::yellow;
+				hui::setLineStyle(ls);
+				std::vector<Point> pts;
+				float x = 2;
+				for (float u = 0; u < 3.14*2; u += 0.1)
+				{
+					pts.push_back(Point(x+=15, 300 + sinf(u)*100));
 
-			//	}
-			//	hui::drawPolyLine(pts.data(), pts.size());
-			//}
+				}
+				hui::drawPolyLine(pts.data(), pts.size());
+			}
 
-			//{
-			//	hui::LineStyle ls;
+			{
+				hui::LineStyle ls;
 
-			//	ls.width = 3;
-			//	ls.color = Color::white;
-			//	hui::setLineStyle(ls);
-			//	std::vector<Point> pts;
-			//	float x = 2;
-			//	for (float u = 0; u < 3.14 * 2; u += 0.1)
-			//	{
-			//		pts.push_back(Point(x += 15, 370 + sinf(u) * 100));
+				ls.width = 3;
+				ls.color = Color::white;
+				hui::setLineStyle(ls);
+				std::vector<Point> pts;
+				float x = 2;
+				for (float u = 0; u < 3.14 * 2; u += 0.1)
+				{
+					pts.push_back(Point(x += 15, 370 + sinf(u) * 100));
 
-			//	}
-			//	hui::drawPolyLine(pts.data(), pts.size());
-			//}
+				}
+				hui::drawPolyLine(pts.data(), pts.size());
+			}
 
-			//{
-			//	hui::LineStyle ls;
+			{
+				hui::LineStyle ls;
 
-			//	ls.width = 10;
-			//	ls.color = Color::green;
-			//	hui::setLineStyle(ls);
-			//	std::vector<Point> pts;
-			//	float x = 2;
-			//	for (float u = 0; u < 3.14 * 2; u += 0.1)
-			//	{
-			//		pts.push_back(Point(x += 15, 400 + sinf(u) * 100));
+				ls.width = 10;
+				ls.color = Color::green;
+				hui::setLineStyle(ls);
+				std::vector<Point> pts;
+				float x = 2;
+				for (float u = 0; u < 3.14 * 2; u += 0.1)
+				{
+					pts.push_back(Point(x += 15, 400 + sinf(u) * 100));
 
-			//	}
-			//	hui::drawPolyLine(pts.data(), pts.size());
-			//}
+				}
+				hui::drawPolyLine(pts.data(), pts.size());
+			}
 
-			//{
-			//	hui::LineStyle ls;
+			{
+				hui::LineStyle ls;
 
-			//	ls.width = 8;
-			//	ls.color = Color::orange;
-			//	hui::setLineStyle(ls);
-			//	std::vector<Point> pts;
-			//	float x = 2;
-			//	for (float u = 0; u < 3.14 * 2; u += 0.1)
-			//	{
-			//		pts.push_back(Point(x += 15, 440 + sinf(u) * 100));
+				ls.width = 8;
+				ls.color = Color::orange;
+				hui::setLineStyle(ls);
+				std::vector<Point> pts;
+				float x = 2;
+				for (float u = 0; u < 3.14 * 2; u += 0.1)
+				{
+					pts.push_back(Point(x += 15, 440 + sinf(u) * 100));
 
-			//	}
-			//	hui::drawPolyLine(pts.data(), pts.size());
-			//}
+				}
+				hui::drawPolyLine(pts.data(), pts.size());
+			}
 
 			{
 				hui::LineStyle ls;

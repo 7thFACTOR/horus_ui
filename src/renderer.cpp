@@ -1092,10 +1092,15 @@ void Renderer::drawPolyLine(const Point* points, u32 pointCount, bool closed)
 	atlasTextureIndex = lineImage ? lineImage->atlasTexture->textureIndex : 0;
 	needToAddVertexCount(6 * (pointCount - 1));
 	const auto color = currentLineStyle.color.getRgba();
-	const auto uv11 = lineImage->uvRect.topLeft();
-	const auto uv12 = lineImage->uvRect.topRight();
-	const auto uv22 = lineImage->uvRect.bottomRight();
-	const auto uv21 = lineImage->uvRect.bottomLeft();
+	auto rcUv = lineImage->uvRect;
+	rcUv.x += ctx->settings.whiteImageUvBorder;
+	rcUv.y += ctx->settings.whiteImageUvBorder;
+	rcUv.width -= ctx->settings.whiteImageUvBorder * 2.0f;
+	rcUv.height -= ctx->settings.whiteImageUvBorder * 2.0f;
+	const auto uv11 = rcUv.topLeft();
+	const auto uv12 = rcUv.topRight();
+	const auto uv22 = rcUv.bottomRight();
+	const auto uv21 = rcUv.bottomLeft();
 
 	Point lastP11, lastP12;
 
@@ -1138,6 +1143,8 @@ void Renderer::drawPolyLine(const Point* points, u32 pointCount, bool closed)
 		{
 			p11 = Point(pts[p].x + n11.x, pts[p].y + n11.y);
 			p12 = Point(pts[p].x + n12.x, pts[p].y + n12.y);
+			lastP11 = p11;
+			lastP12 = p12;
 		}
 
 		Point p21 = Point(pts[p + 1].x + n21.x, pts[p + 1].y + n21.y);
