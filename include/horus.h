@@ -2471,6 +2471,11 @@ HORUS_API void drawSpline(SplineControlPoint* points, u32 count);
 /// 
 HORUS_API void drawArrow(const Point& startPoint, const Point& endPoint, f32 tipLength, f32 tipWidth, bool drawBodyLine = true);
 
+HORUS_API bool clipLineToRect(
+	const Point& p1, const Point& p2,
+	const Rect& rect,
+	Point& newP1, Point& newP2);
+
 //////////////////////////////////////////////////////////////////////////
 // Pane container functions
 //////////////////////////////////////////////////////////////////////////

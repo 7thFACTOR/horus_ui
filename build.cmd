@@ -9,6 +9,6 @@ for /f "usebackq tokens=*" %%i in (`"%VSWHERE%" -latest -products * -requires Mi
 
 if exist "%InstallDir%\MSBuild\15.0\Bin\MSBuild.exe" (
 	set msbuild="%InstallDir%\MSBuild\15.0\Bin\MSBuild.exe"
-	%msbuild%  .\build_vs2017\horus.sln /property:Configuration=Release
+	%msbuild%  .\build_vs2017\horus.sln /m:4 /property:Configuration=Release
 )
 
