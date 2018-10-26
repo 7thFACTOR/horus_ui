@@ -141,9 +141,13 @@ bool clipTriangleToRect(
 	const Rect& rect,
 	Point* outTriangles, u32& outTriangleCount)
 {
-	if (computeLineClipCode(p1, rect) == LineClipBit::Inside
-		&& computeLineClipCode(p2, rect) == LineClipBit::Inside
-		&& computeLineClipCode(p3, rect) == LineClipBit::Inside)
+	auto clip1 = computeLineClipCode(p1, rect);
+	auto clip2 = computeLineClipCode(p2, rect);
+	auto clip3 = computeLineClipCode(p3, rect);
+
+	if (clip1 == LineClipBit::Inside
+		&& clip2 == LineClipBit::Inside
+		&& clip3 == LineClipBit::Inside)
 	{
 		outTriangles[0] = p1;
 		outTriangles[1] = p2;
@@ -151,6 +155,7 @@ bool clipTriangleToRect(
 		outTriangleCount = 1;
 		return true;
 	}
+
 
 
 
