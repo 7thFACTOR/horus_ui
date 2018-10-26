@@ -804,9 +804,37 @@ struct MyViewHandler : hui::ViewHandler
 			hui::pushPadding(0);
 
 			auto viewRc = hui::beginViewport(200);
-			//printf("Custom viewport:%f %f %f %f\n", viewRc.x, viewRc.y, viewRc.width, viewRc.height);
 
-			auto ls = hui::LineStyle(hui::Color::yellow, 30);
+			//auto viewRc = { 600, 600, 600, 600 };
+			viewRc.x += 20;
+			viewRc.y += 20;
+			viewRc.width -= 40;
+			viewRc.height -= 40;
+
+			auto ls = hui::LineStyle(hui::Color::blue, 1);
+			hui::setLineStyle(ls);
+			drawRectangle(viewRc);
+
+			ls = hui::LineStyle(hui::Color::yellow, 10);
+			hui::setLineStyle(ls);
+			for (int i = 0; i < 100; i++)
+			{
+				Point p1, p2;
+
+				p1.x = 2000.0f * (f32)rand() / RAND_MAX;
+				p1.y = 1000.0f * (f32)rand() / RAND_MAX;
+				p2.x = 2000.0f * (f32)rand() / RAND_MAX;
+				p2.y = 1000.0f * (f32)rand() / RAND_MAX;
+
+				if (clipLineToRect(p1, p2, viewRc, p1, p2))
+				{
+					drawLine(p1, p2);
+				}
+			}
+
+			printf("Custom viewport:%f %f %f %f\n", viewRc.x, viewRc.y, viewRc.width, viewRc.height);
+
+			ls = hui::LineStyle(hui::Color::yellow, 30);
 			hui::setLineStyle(ls);
 			hui::drawCircle({ 200, 200 }, 50, 300);
 

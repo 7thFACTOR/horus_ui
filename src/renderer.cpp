@@ -18,6 +18,145 @@ namespace hui
 const int textBufferMaxSize = 1024 * 1024 * 3;//!<< 3MB of text on screen at once its more than enough for now
 const int pointBufferMaxSize = 300000; //!<< more than enough for a full screen of lines, around 3.4 Mb
 
+enum LineClipBit
+{
+	Inside = 0,
+	Left = 1,
+	Right = 2,
+	Bottom = 4,
+	Top = 8
+};
+
+// Function to compute region code for a point(x, y) 
+int computeLineClipCode(const Point& p, const Rect& rect)
+{
+	// initialized as being inside  
+	int code = LineClipBit::Inside;
+
+	if (p.x < rect.left())       // to the left of rectangle 
+		code |= LineClipBit::Left;
+	else if (p.x > rect.right())  // to the right of rectangle 
+		code |= LineClipBit::Right;
+	if (p.y < rect.top())       // below the rectangle 
+		code |= LineClipBit::Bottom;
+	else if (p.y > rect.bottom())  // above the rectangle 
+		code |= LineClipBit::Top;
+
+	return code;
+}
+
+bool clipLineToRect(
+	const Point& p1, const Point& p2,
+	const Rect& rect,
+	Point& newP1, Point& newP2)
+{
+	// Compute region codes for P1, P2 
+	int code1 = computeLineClipCode(p1, rect);
+	int code2 = computeLineClipCode(p2, rect);
+
+	// Initialize line as outside the rectangular window 
+	bool accept = false;
+
+	while (true)
+	{
+		if ((code1 == 0) && (code2 == 0))
+		{
+			// If both endpoints lie within rectangle 
+			accept = true;
+			newP1 = p1;
+			newP2 = p2;
+			break;
+		}
+		else if (code1 & code2)
+		{
+			// If both endpoints are outside rectangle, 
+			// in same region 
+			break;
+		}
+		else
+		{
+			// Some segment of line lies within the 
+			// rectangle 
+			int code_out;
+			f32 x, y;
+
+			// At least one endpoint is outside the  
+			// rectangle, pick it. 
+			if (code1 != 0)
+				code_out = code1;
+			else
+				code_out = code2;
+
+			// Find intersection point; 
+			// using formulas y = y1 + slope * (x - x1), 
+			// x = x1 + (1 / slope) * (y - y1) 
+			if (code_out & LineClipBit::Top)
+			{
+				// point is above the clip rectangle 
+				x = p1.x + (p2.x - p1.x) * (rect.bottom() - p1.y) / (p2.y - p1.y);
+				y = rect.bottom();
+			}
+			else if (code_out & LineClipBit::Bottom)
+			{
+				// point is below the rectangle 
+				x = p1.x + (p2.x - p1.x) * (rect.top() - p1.y) / (p2.y - p1.y);
+				y = rect.top();
+			}
+			else if (code_out & LineClipBit::Right)
+			{
+				// point is to the right of rectangle 
+				y = p1.y + (p2.y - p1.y) * (rect.right() - p1.x) / (p2.x - p1.x);
+				x = rect.right();
+			}
+			else if (code_out & LineClipBit::Left)
+			{
+				// point is to the left of rectangle 
+				y = p1.y + (p2.y - p1.y) * (rect.left() - p1.x) / (p2.x - p1.x);
+				x = rect.left();
+			}
+
+			// Now intersection point x,y is found 
+			// We replace point outside rectangle 
+			// by intersection point 
+			if (code_out == code1)
+			{
+				newP1.x = x;
+				newP1.y = y;
+				code1 = computeLineClipCode(newP1, rect);
+			}
+			else
+			{
+				newP2.x = x;
+				newP2.y = y;
+				code2 = computeLineClipCode(newP2, rect);
+			}
+		}
+	}
+
+	return accept;
+}
+
+bool clipTriangleToRect(
+	const Point& p1, const Point& p2, const Point& p3,
+	const Rect& rect,
+	Point* outTriangles, u32& outTriangleCount)
+{
+	if (computeLineClipCode(p1, rect) == LineClipBit::Inside
+		&& computeLineClipCode(p2, rect) == LineClipBit::Inside
+		&& computeLineClipCode(p3, rect) == LineClipBit::Inside)
+	{
+		outTriangles[0] = p1;
+		outTriangles[1] = p2;
+		outTriangles[2] = p3;
+		outTriangleCount = 1;
+		return true;
+	}
+
+
+
+	return false;
+}
+
 Renderer::Renderer()
 {
 	textBuffer.resize(textBufferMaxSize);

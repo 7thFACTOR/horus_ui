@@ -106,6 +106,8 @@ Rect UiContext::drawMultilineText(
 				crtWordWidth = 0;
 				crtWidth = 0;
 
+				if (!line.start && !line.length)
+					break;
 				//TODO: make sure if there is one single char not fitting in the max width to just clip it
 				// otherwise we get into an infinite loop
 				i = k;
