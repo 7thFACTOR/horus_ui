@@ -47,6 +47,7 @@ struct DrawCommand
 		DrawPolyLine,
 		DrawText,
 		DrawInterpolatedColors,
+		DrawTriangle,
 		ClipRect,
 		SetAtlas,
 		SetColor,
@@ -69,6 +70,13 @@ struct DrawCommand
 	struct CmdDrawQuad
 	{
 		Point corners[4];
+		UiImage* image = nullptr;
+	};
+
+	struct CmdDrawTriangle
+	{
+		Point p1, p2, p3;
+		Point uv1, uv2, uv3;
 		UiImage* image = nullptr;
 	};
 
@@ -122,6 +130,7 @@ struct DrawCommand
 	CmdDrawText drawText;
 	CmdDrawImageBordered drawImageBordered;
 	CmdDrawInterpolatedColors drawInterpolatedColors;
+	CmdDrawTriangle drawTriangle;
 	Rect clipRect;
 	bool clipToParent;
 	bool popClipRect = false;
@@ -188,6 +197,7 @@ public:
 	void cmdDrawInterpolatedColorsLeftRight(const Rect& rect, const Color& left, const Color& right);
 	void cmdDrawLine(const Point& a, const Point& b);
 	void cmdDrawPolyLine(const Point* points, u32 pointCount, bool closed);
+	void cmdDrawTriangle(const Point& p1, const Point& p2, const Point& p3, const Point& uv1, const Point& uv2, const Point& uv3);
 	FontTextSize cmdDrawTextAt(
 		const char* text,
 		const Point& position);
@@ -223,6 +233,7 @@ protected:
 	void drawImageBordered(UiImage* image, u32 border, const Rect& rect, f32 scale);
 	void drawLine(const Point& a, const Point& b);
 	void drawPolyLine(const Point* points, u32 pointCount, bool closed);
+	void drawTriangle(const Point& p1, const Point& p2, const Point& p3, const Point& uv1, const Point& uv2, const Point& uv3, UiImage* image);
 
 	bool clipRectNoRot(Rect& rect, Rect& uvRect);
 	bool clipRectRot(Rect& rect, Rect& uvRect);
