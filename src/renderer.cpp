@@ -136,30 +136,39 @@ bool clipLineToRect(
 	return accept;
 }
 
-void clipLeft(const Rect& rect, Point* inPoints, u32 inCount, Point* outPoints, u32& outCount)
+void clipLeft(const Rect& rect, Point* inPoints, Point* inUvPoints, u32 inCount, Point* outPoints, Point* outUvPoints, u32& outCount)
 {
 	for (u32 i = 0; i < inCount; i++)
 	{
 		Point* pp1;
 		Point* pp2;
+		Point* uvpp1;
+		Point* uvpp2;
 
 		if (i == inCount - 1)
 		{
 			pp1 = &inPoints[i];
 			pp2 = &inPoints[0];
+			uvpp1 = &inUvPoints[i];
+			uvpp2 = &inUvPoints[0];
 		}
 		else
 		{
 			pp1 = &inPoints[i];
 			pp2 = &inPoints[i + 1];
+			uvpp1 = &inUvPoints[i];
+			uvpp2 = &inUvPoints[i + 1];
 		}
 
 		Point& p1 = *pp1;
 		Point& p2 = *pp2;
+		Point& uvp1 = *uvpp1;
+		Point& uvp2 = *uvpp2;
 
 		// inside
 		if (p1.x >= rect.x && p2.x >= rect.x)
 		{
+			outUvPoints[outCount] = uvp2;
 			outPoints[outCount++] = p2;
 		}
 
@@ -167,8 +176,10 @@ void clipLeft(const Rect& rect, Point* inPoints, u32 inCount, Point* outPoints, 
 		if (p1.x >= rect.x && p2.x < rect.x)
 		{
 			// point is to the left of rectangle 
-			auto y = p1.y + (p2.y - p1.y) * (rect.x - p1.x) / (p2.x - p1.x);
+			auto t = (rect.x - p1.x) / (p2.x - p1.x);
+			auto y = p1.y + (p2.y - p1.y) * t;
 			auto x = rect.x;
+			outUvPoints[outCount] = uvp1 + (uvp2 - uvp1) * t;
 			outPoints[outCount++] = { x, y };
 		}
 
@@ -176,8 +187,10 @@ void clipLeft(const Rect& rect, Point* inPoints, u32 inCount, Point* outPoints, 
 		if (p1.x < rect.x && p2.x >= rect.x)
 		{
 			// point is to the left of rectangle 
-			auto y = p1.y + (p2.y - p1.y) * (rect.x - p1.x) / (p2.x - p1.x);
+			auto t = (rect.x - p1.x) / (p2.x - p1.x);
+			auto y = p1.y + (p2.y - p1.y) * t;
 			auto x = rect.x;
+			outUvPoints[outCount] = uvp1 + (uvp2 - uvp1) * t;
 			outPoints[outCount++] = { x, y };
 			outPoints[outCount++] = p2;
 		}
@@ -330,8 +343,9 @@ void clipBottom(const Rect& rect, Point* inPoints, u32 inCount, Point* outPoints
 
 bool clipTriangleToRect(
 	const Point& p1, const Point& p2, const Point& p3,
+	const Point& uv1, const Point& uv2, const Point& uv3,
 	const Rect& rect,
-	Point* outPoints, u32& outCount)
+	Point* outPoints, Point* outUvPoints, u32& outCount)
 {
 	outCount = 0;
 	auto clip1 = computeLineClipCode(p1, rect);
@@ -350,20 +364,22 @@ bool clipTriangleToRect(
 	}
 
 	Point inPoints[] = {p1, p2, p3, Point(), Point(), Point(), Point(), Point(), Point(), Point(), Point(), Point() };
+	Point inUvPoints[] = { uv1, uv2, uv3, Point(), Point(), Point(), Point(), Point(), Point(), Point(), Point(), Point() };
 	u32 inCount = 3;
 
 	outCount = 0;
-	clipLeft(rect, inPoints, inCount, outPoints, outCount);
+	clipLeft(rect, inPoints, inUvPoints, inCount, outPoints, outUvPoints, outCount);
 	inCount = 0;
-	clipTop(rect, outPoints, outCount, inPoints, inCount);
+	clipTop(rect, outPoints, outUvPoints, outCount, inPoints, inUvPoints, inCount);
 	outCount = 0;
-	clipRight(rect, inPoints, inCount, outPoints, outCount);
+	clipRight(rect, inPoints, inUvPoints, inCount, outPoints, outUvPoints, outCount);
 	inCount = 0;
-	clipBottom(rect, outPoints, outCount, inPoints, inCount);
+	clipBottom(rect, outPoints, outUvPoints, outCount, inPoints, inUvPoints, inCount);
 	
 	for (u32 i = 0; i < inCount; i++)
 	{
 		outPoints[i] = inPoints[i];
+		outUvPoints[i] = inUvPoints[i];
 	}
 
 	outCount = inCount;
@@ -721,6 +737,21 @@ void Renderer::cmdDrawPolyLine(const Point* points, u32 pointCount, bool closed)
 	cmd.drawPolyLine.points = &pointBuffer[pointBufferPosition];
 	memcpy(pointBuffer.data() + pointBufferPosition, points, pointCount * sizeof(Point));
 	pointBufferPosition += pointCount;
+	addDrawCommand(cmd);
+}
+
+void Renderer::cmdDrawTriangle(const Point& p1, const Point& p2, const Point& p3, const Point& uv1, const Point& uv2, const Point& uv3)
+{
+	DrawCommand cmd(DrawCommand::Type::DrawTriangle);
+	cmd.zOrder = zOrder;
+	cmd.drawTriangle.p1 = p1;
+	cmd.drawTriangle.p2 = p2;
+	cmd.drawTriangle.p3 = p3;
+	cmd.drawTriangle.uv1 = uv1;
+	cmd.drawTriangle.uv2 = uv2;
+	cmd.drawTriangle.uv3 = uv3;
+	auto image = currentAtlas->whiteImage;
+	cmd.drawTriangle.image = image;
 	addDrawCommand(cmd);
 }
 
@@ -1509,55 +1540,94 @@ void Renderer::drawPolyLine(const Point* points, u32 pointCount, bool closed)
 			lastP12 = p22;
 		}
 
-		//tri1
-		// 0
-		vertexBufferData.vertices[i].position = p11;
-		vertexBufferData.vertices[i].uv = uv11;
-		vertexBufferData.vertices[i].color = color;
-		vertexBufferData.vertices[i].textureIndex = atlasTextureIndex;
-		i++;
+		drawTriangle(p11, p12, p22, uv11, uv12, uv22, lineImage);
+		drawTriangle(p21, p22, p11, uv21, uv22, uv11, lineImage);
 
-		// 1
-		vertexBufferData.vertices[i].position = p12;
-		vertexBufferData.vertices[i].uv = uv12;
-		vertexBufferData.vertices[i].color = color;
-		vertexBufferData.vertices[i].textureIndex = atlasTextureIndex;
-		i++;
+		////tri1
+		//// 0
+		//vertexBufferData.vertices[i].position = p11;
+		//vertexBufferData.vertices[i].uv = uv11;
+		//vertexBufferData.vertices[i].color = color;
+		//vertexBufferData.vertices[i].textureIndex = atlasTextureIndex;
+		//i++;
 
-		// 2
-		vertexBufferData.vertices[i].position = p22;
-		vertexBufferData.vertices[i].uv = uv22;
-		vertexBufferData.vertices[i].color = color;
-		vertexBufferData.vertices[i].textureIndex = atlasTextureIndex;
-		i++;
+		//// 1
+		//vertexBufferData.vertices[i].position = p12;
+		//vertexBufferData.vertices[i].uv = uv12;
+		//vertexBufferData.vertices[i].color = color;
+		//vertexBufferData.vertices[i].textureIndex = atlasTextureIndex;
+		//i++;
 
-		//tri 2
-		// 3
-		vertexBufferData.vertices[i].position = p21;
-		vertexBufferData.vertices[i].uv = uv21;
-		vertexBufferData.vertices[i].color = color;
-		vertexBufferData.vertices[i].textureIndex = atlasTextureIndex;
-		i++;
+		//// 2
+		//vertexBufferData.vertices[i].position = p22;
+		//vertexBufferData.vertices[i].uv = uv22;
+		//vertexBufferData.vertices[i].color = color;
+		//vertexBufferData.vertices[i].textureIndex = atlasTextureIndex;
+		//i++;
 
-		// 4
-		vertexBufferData.vertices[i].position = p22;
-		vertexBufferData.vertices[i].uv = uv22;
-		vertexBufferData.vertices[i].color = color;
-		vertexBufferData.vertices[i].textureIndex = atlasTextureIndex;
-		i++;
+		////tri 2
+		//// 3
+		//vertexBufferData.vertices[i].position = p21;
+		//vertexBufferData.vertices[i].uv = uv21;
+		//vertexBufferData.vertices[i].color = color;
+		//vertexBufferData.vertices[i].textureIndex = atlasTextureIndex;
+		//i++;
 
-		// 5
-		vertexBufferData.vertices[i].position = p11;
-		vertexBufferData.vertices[i].uv = uv11;
-		vertexBufferData.vertices[i].color = color;
-		vertexBufferData.vertices[i].textureIndex = atlasTextureIndex;
-		i++;
+		//// 4
+		//vertexBufferData.vertices[i].position = p22;
+		//vertexBufferData.vertices[i].uv = uv22;
+		//vertexBufferData.vertices[i].color = color;
+		//vertexBufferData.vertices[i].textureIndex = atlasTextureIndex;
+		//i++;
 
-		currentBatch->vertexCount += 6;
+		//// 5
+		//vertexBufferData.vertices[i].position = p11;
+		//vertexBufferData.vertices[i].uv = uv11;
+		//vertexBufferData.vertices[i].color = color;
+		//vertexBufferData.vertices[i].textureIndex = atlasTextureIndex;
+		//i++;
+
+		//currentBatch->vertexCount += 6;
 		u += uStep;
 	}
 
-	vertexBufferData.drawVertexCount = i;
+	//vertexBufferData.drawVertexCount = i;
+}
+
+void Renderer::drawTriangle(
+	const Point& p1, const Point& p2, const Point& p3,
+	const Point& uv1, const Point& uv2, const Point& uv3,
+	UiImage* image)
+{
+	// not thread safe
+	static Point pts[10];
+	static u32 pointCount;
+
+	clipTriangleToRect(p1, p2, p3, uv1, uv2, uv3, currentClipRect, pts, pointCount);
+
+	if (!pointCount)
+		return;
+
+	Point& fp = pts[0];
+
+	atlasTextureIndex = image->atlasTexture->textureIndex;
+
+	needToAddVertexCount(pointCount);
+	u32 i = vertexBufferData.drawVertexCount;
+
+	for (int k = 1; k < pointCount - 1; k++)
+	{
+				//drawLine(fp, triPts[k]);
+				//drawLine(triPts[k], triPts[k + 1]);
+				//drawLine(triPts[k + 1], fp);
+
+		vertexBufferData.vertices[i].position = fp;
+		vertexBufferData.vertices[i].color = currentLineStyle.color.getRgba();
+		vertexBufferData.vertices[i].uv = uv1;
+		vertexBufferData.vertices[i].textureIndex = atlasTextureIndex;
+		i++;
+
+	}
 }
 
 void Renderer::drawTextInternal(
