@@ -136,11 +136,204 @@ bool clipLineToRect(
 	return accept;
 }
 
+void clipLeft(const Rect& rect, Point* inPoints, u32 inCount, Point* outPoints, u32& outCount)
+{
+	for (u32 i = 0; i < inCount; i++)
+	{
+		Point* pp1;
+		Point* pp2;
+
+		if (i == inCount - 1)
+		{
+			pp1 = &inPoints[i];
+			pp2 = &inPoints[0];
+		}
+		else
+		{
+			pp1 = &inPoints[i];
+			pp2 = &inPoints[i + 1];
+		}
+
+		Point& p1 = *pp1;
+		Point& p2 = *pp2;
+
+		// inside
+		if (p1.x >= rect.x && p2.x >= rect.x)
+		{
+			outPoints[outCount++] = p2;
+		}
+
+		// exit
+		if (p1.x >= rect.x && p2.x < rect.x)
+		{
+			// point is to the left of rectangle 
+			auto y = p1.y + (p2.y - p1.y) * (rect.x - p1.x) / (p2.x - p1.x);
+			auto x = rect.x;
+			outPoints[outCount++] = { x, y };
+		}
+
+		// enter
+		if (p1.x < rect.x && p2.x >= rect.x)
+		{
+			// point is to the left of rectangle 
+			auto y = p1.y + (p2.y - p1.y) * (rect.x - p1.x) / (p2.x - p1.x);
+			auto x = rect.x;
+			outPoints[outCount++] = { x, y };
+			outPoints[outCount++] = p2;
+		}
+	}
+}
+
+void clipRight(const Rect& rect, Point* inPoints, u32 inCount, Point* outPoints, u32& outCount)
+{
+	for (u32 i = 0; i < inCount; i++)
+	{
+		Point* pp1;
+		Point* pp2;
+
+		if (i == inCount - 1)
+		{
+			pp1 = &inPoints[i];
+			pp2 = &inPoints[0];
+		}
+		else
+		{
+			pp1 = &inPoints[i];
+			pp2 = &inPoints[i + 1];
+		}
+
+		Point& p1 = *pp1;
+		Point& p2 = *pp2;
+
+		// inside
+		if (p1.x <= rect.right() && p2.x <= rect.right())
+		{
+			outPoints[outCount++] = p2;
+		}
+
+		// exit
+		if (p1.x <= rect.right() && p2.x > rect.right())
+		{
+			// point is to the right of rectangle 
+			auto y = p1.y + (p2.y - p1.y) * (rect.right() - p1.x) / (p2.x - p1.x);
+			auto x = rect.right();
+			outPoints[outCount++] = { x, y };
+		}
+
+		// enter
+		if (p1.x > rect.right() && p2.x <= rect.right())
+		{
+			// point is to the right of rectangle 
+			auto y = p1.y + (p2.y - p1.y) * (rect.right() - p1.x) / (p2.x - p1.x);
+			auto x = rect.right();
+			outPoints[outCount++] = { x, y };
+			outPoints[outCount++] = p2;
+		}
+	}
+}
+
+void clipTop(const Rect& rect, Point* inPoints, u32 inCount, Point* outPoints, u32& outCount)
+{
+	for (u32 i = 0; i < inCount; i++)
+	{
+		Point* pp1;
+		Point* pp2;
+
+		if (i == inCount - 1)
+		{
+			pp1 = &inPoints[i];
+			pp2 = &inPoints[0];
+		}
+		else
+		{
+			pp1 = &inPoints[i];
+			pp2 = &inPoints[i + 1];
+		}
+
+		Point& p1 = *pp1;
+		Point& p2 = *pp2;
+
+		// inside
+		if (p1.y >= rect.top() && p2.y >= rect.top())
+		{
+			outPoints[outCount++] = p2;
+		}
+
+		// exit
+		if (p1.y >= rect.top() && p2.y < rect.top())
+		{
+			// point is above the clip rectangle 
+			auto x = p1.x + (p2.x - p1.x) * (rect.top() - p1.y) / (p2.y - p1.y);
+			auto y = rect.top();
+			outPoints[outCount++] = { x, y };
+		}
+
+		// enter
+		if (p1.y < rect.top() && p2.y >= rect.top())
+		{
+			// point is above the clip rectangle 
+			auto x = p1.x + (p2.x - p1.x) * (rect.top() - p1.y) / (p2.y - p1.y);
+			auto y = rect.top();
+			outPoints[outCount++] = { x, y };
+			outPoints[outCount++] = p2;
+		}
+	}
+}
+
+void clipBottom(const Rect& rect, Point* inPoints, u32 inCount, Point* outPoints, u32& outCount)
+{
+	for (u32 i = 0; i < inCount; i++)
+	{
+		Point* pp1;
+		Point* pp2;
+
+		if (i == inCount - 1)
+		{
+			pp1 = &inPoints[i];
+			pp2 = &inPoints[0];
+		}
+		else
+		{
+			pp1 = &inPoints[i];
+			pp2 = &inPoints[i + 1];
+		}
+
+		Point& p1 = *pp1;
+		Point& p2 = *pp2;
+
+		// inside
+		if (p1.y <= rect.bottom() && p2.y <= rect.bottom())
+		{
+			outPoints[outCount++] = p2;
+		}
+
+		// exit
+		if (p1.y <= rect.bottom() && p2.y > rect.bottom())
+		{
+			// point is below the rectangle 
+			auto x = p1.x + (p2.x - p1.x) * (rect.bottom() - p1.y) / (p2.y - p1.y);
+			auto y = rect.bottom();
+			outPoints[outCount++] = { x, y };
+		}
+
+		// enter
+		if (p1.y > rect.bottom() && p2.y <= rect.bottom())
+		{
+			// point is below the rectangle 
+			auto x = p1.x + (p2.x - p1.x) * (rect.bottom() - p1.y) / (p2.y - p1.y);
+			auto y = rect.bottom();
+			outPoints[outCount++] = { x, y };
+			outPoints[outCount++] = p2;
+		}
+	}
+}
+
 bool clipTriangleToRect(
 	const Point& p1, const Point& p2, const Point& p3,
 	const Rect& rect,
-	Point* outTriangles, u32& outTriangleCount)
+	Point* outPoints, u32& outCount)
 {
+	outCount = 0;
 	auto clip1 = computeLineClipCode(p1, rect);
 	auto clip2 = computeLineClipCode(p2, rect);
 	auto clip3 = computeLineClipCode(p3, rect);
@@ -149,17 +342,33 @@ bool clipTriangleToRect(
 		&& clip2 == LineClipBit::Inside
 		&& clip3 == LineClipBit::Inside)
 	{
-		outTriangles[0] = p1;
-		outTriangles[1] = p2;
-		outTriangles[2] = p3;
-		outTriangleCount = 1;
+		outPoints[0] = p1;
+		outPoints[1] = p2;
+		outPoints[2] = p3;
+		outCount = 3;
 		return true;
 	}
 
+	Point inPoints[] = {p1, p2, p3, Point(), Point(), Point(), Point(), Point(), Point(), Point(), Point(), Point() };
+	u32 inCount = 3;
 
+	outCount = 0;
+	clipLeft(rect, inPoints, inCount, outPoints, outCount);
+	inCount = 0;
+	clipTop(rect, outPoints, outCount, inPoints, inCount);
+	outCount = 0;
+	clipRight(rect, inPoints, inCount, outPoints, outCount);
+	inCount = 0;
+	clipBottom(rect, outPoints, outCount, inPoints, inCount);
+	
+	for (u32 i = 0; i < inCount; i++)
+	{
+		outPoints[i] = inPoints[i];
+	}
 
+	outCount = inCount;
 
-	return false;
+	return true;
 }
 
 Renderer::Renderer()

@@ -2476,6 +2476,10 @@ HORUS_API bool clipLineToRect(
 	const Rect& rect,
 	Point& newP1, Point& newP2);
 
+HORUS_API bool clipTriangleToRect(
+	const Point& p1, const Point& p2, const Point& p3,
+	const Rect& rect,
+	Point* outTriangles, u32& outTriangleVertexCount);
 //////////////////////////////////////////////////////////////////////////
 // Pane container functions
 //////////////////////////////////////////////////////////////////////////
