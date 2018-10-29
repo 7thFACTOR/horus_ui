@@ -235,4 +235,13 @@ void drawArrow(const Point& a, const Point& b, f32 tipLength, f32 tipWidth, bool
 	//TODO
 }
 
+void drawTriangle(
+	const Point& p1, const Point& p2, const Point& p3)
+{
+	Point uv1, uv2, uv3;
+
+	ctx->renderer->cmdDrawTriangle(p1, p2, p3, uv1, uv2, uv3, nullptr);
+}
+
+
 }

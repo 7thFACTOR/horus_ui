@@ -197,7 +197,7 @@ public:
 	void cmdDrawInterpolatedColorsLeftRight(const Rect& rect, const Color& left, const Color& right);
 	void cmdDrawLine(const Point& a, const Point& b);
 	void cmdDrawPolyLine(const Point* points, u32 pointCount, bool closed);
-	void cmdDrawTriangle(const Point& p1, const Point& p2, const Point& p3, const Point& uv1, const Point& uv2, const Point& uv3);
+	void cmdDrawTriangle(const Point& p1, const Point& p2, const Point& p3, const Point& uv1, const Point& uv2, const Point& uv3, UiImage* image);
 	FontTextSize cmdDrawTextAt(
 		const char* text,
 		const Point& position);
