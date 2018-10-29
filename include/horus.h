@@ -1141,6 +1141,45 @@ struct Rect
 		return newRect;
 	}
 
+	inline Rect expand(f32 amount)
+	{
+		return {
+			x - amount,
+			y - amount,
+			width + 2.0f * amount,
+			height + 2.0f * amount 
+		};
+	}
+
+	inline Rect contract(f32 amount)
+	{
+		return expand(-amount);
+	}
+
+	inline Rect operator + (const Point& pt) const
+	{
+		return { x + pt.x, y + pt.y, width, height };
+	}
+
+	inline Rect& operator += (const Point& pt)
+	{
+		x += pt.x;
+		y += pt.y;
+		return *this;
+	}
+
+	inline Rect operator - (const Point& pt) const
+	{
+		return { x - pt.x, y - pt.y, width, height };
+	}
+
+	inline Rect& operator -= (const Point& pt)
+	{
+		x -= pt.x;
+		y -= pt.y;
+		return *this;
+	}
+
 	inline bool operator != (const Rect& other) const
 	{
 		constexpr f32 epsilon = 0.00001f;
@@ -2471,8 +2510,7 @@ HORUS_API void drawSpline(SplineControlPoint* points, u32 count);
 /// 
 HORUS_API void drawArrow(const Point& startPoint, const Point& endPoint, f32 tipLength, f32 tipWidth, bool drawBodyLine = true);
 
-HORUS_API void drawTriangle(
-	const Point& p1, const Point& p2, const Point& p3);
+HORUS_API void drawTriangle(const Point& p1, const Point& p2, const Point& p3);
 
 //////////////////////////////////////////////////////////////////////////
 // Pane container functions

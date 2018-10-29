@@ -808,7 +808,7 @@ struct MyViewHandler : hui::ViewHandler
 			auto ls = hui::LineStyle(hui::Color::blue, 1);
 			hui::setLineStyle(ls);
 
-			for (int i = 0; i < 100; i++)
+			for (int i = 0; i < 500; i++)
 			{
 				Point p1, p2, p3;
 
@@ -819,16 +819,12 @@ struct MyViewHandler : hui::ViewHandler
 				p3.x = 2000.0f * (f32)rand() / RAND_MAX;
 				p3.y = 1000.0f * (f32)rand() / RAND_MAX;
 
-				//p1 = {500, 300};
-				//p2 = {700, 500};
-				//p3 = {500, 700};
-
 				ls = hui::LineStyle(hui::Color::random(), 4);
 				hui::setLineStyle(ls);
 
-				drawLine(p1, p2);
-				drawLine(p2, p3);
-				drawLine(p3, p1);
+				drawCircle(p1, 30, 20);
+				drawCircle(p2, 30, 20);
+				drawCircle(p3, 30, 20);
 
 				Point triPts[30];
 				u32 ptCount = 0;
@@ -836,7 +832,7 @@ struct MyViewHandler : hui::ViewHandler
 				ls = hui::LineStyle(hui::Color::random(), 1);
 				hui::setLineStyle(ls);
 
-				hui::drawTriangle(p1, p2, p3);
+				//hui::drawTriangle(p1, p2, p3);
 			}
 
 			printf("Custom viewport:%f %f %f %f\n", viewRc.x, viewRc.y, viewRc.width, viewRc.height);
@@ -846,7 +842,6 @@ struct MyViewHandler : hui::ViewHandler
 			hui::drawCircle({ 200, 200 }, 50, 300);
 
 			Point pts[] = {{10, 240}, {100, 240}, {120, 240}, {330, 240}, {350, 240}, {380, 100}, {400, 120}};
-			//Point pts[] = { { 10, 240 },{ 100, 140 },{ 190, 240 }, {250, 240}};
 			{
 				hui::LineStyle ls;
 

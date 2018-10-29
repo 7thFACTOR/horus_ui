@@ -49,6 +49,7 @@ struct DrawCommand
 		DrawInterpolatedColors,
 		DrawTriangle,
 		ClipRect,
+		SetViewportOffset,
 		SetAtlas,
 		SetColor,
 		SetFont,
@@ -116,6 +117,11 @@ struct DrawCommand
 		Color bottomRight;
 	};
 
+	struct CmdSetViewportOffset
+	{
+		Point offset;
+	};
+
 	DrawCommand() {}
 	DrawCommand(Type newType)
 		: type(newType)
@@ -131,6 +137,7 @@ struct DrawCommand
 	CmdDrawImageBordered drawImageBordered;
 	CmdDrawInterpolatedColors drawInterpolatedColors;
 	CmdDrawTriangle drawTriangle;
+	CmdSetViewportOffset setViewportOffset;
 	Rect clipRect;
 	bool clipToParent;
 	bool popClipRect = false;
@@ -210,6 +217,7 @@ public:
 public:
 	bool skipRender = false;
 	bool disableRendering = false;
+	Point viewportOffset;
 
 protected:
 	void drawAtlasRegion(bool rotatedUv, const Rect& rect, const Rect& atlasUvRect);
@@ -256,7 +264,6 @@ protected:
 	TextStyle currentTextStyle;
 	LineStyle currentLineStyle;
 	Rect currentClipRect;
-	Rect currentViewport;
 	UiFont* currentFont = nullptr;
 	UiAtlas* currentAtlas = nullptr;
 	Point windowSize;
