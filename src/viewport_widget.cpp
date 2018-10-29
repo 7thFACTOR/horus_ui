@@ -20,6 +20,7 @@ Rect beginViewport(f32 height)
 	auto scissor = ctx->renderer->pushClipRect(ctx->widget.rect);
 
 	ctx->currentWidgetId++;
+	ctx->renderer->viewportOffset = ctx->widget.rect.topLeft();
 
 	return scissor;
 }
@@ -27,6 +28,7 @@ Rect beginViewport(f32 height)
 void endViewport()
 {
 	ctx->renderer->popClipRect();
+	ctx->renderer->viewportOffset = Point();
 }
 
 }

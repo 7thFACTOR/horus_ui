@@ -95,34 +95,37 @@ Point getTextSize(const char* text)
 
 void drawTextAt(const char* text, const Point& position)
 {
-	ctx->renderer->cmdDrawTextAt(text, Point(position.x, position.y));
+	ctx->renderer->cmdDrawTextAt(text, position + ctx->renderer->viewportOffset);
 }
 
 void drawTextInBox(const char* text, const Rect& rect, HAlignType horizontalAlign, VAlignType verticalAlign)
 {
 	ctx->renderer->cmdDrawTextInBox(
 		text,
-		Rect(rect.x, rect.y, rect.width, rect.height),
+		Rect(
+			rect.x + ctx->renderer->viewportOffset.x,
+			rect.y + ctx->renderer->viewportOffset.y,
+			rect.width, rect.height),
 		horizontalAlign, verticalAlign);
 }
 
 void drawImage(Image image, const Point& position, f32 scale)
 {
 	UiImage* img = (UiImage*)image;
-	ctx->renderer->cmdDrawImage(img, Point(position.x, position.y), scale);
+	ctx->renderer->cmdDrawImage(img, position + ctx->renderer->viewportOffset, scale);
 }
 
 void drawStretchedImage(Image image, const Rect& rect)
 {
 	UiImage* img = (UiImage*)image;
-	ctx->renderer->cmdDrawImage(img, Rect(rect.x, rect.y, rect.width, rect.height));
+	ctx->renderer->cmdDrawImage(img, Rect(rect.x + ctx->renderer->viewportOffset.x, rect.y + ctx->renderer->viewportOffset.y, rect.width, rect.height));
 }
 
 void drawBorderedImage(Image image, u32 border, const Rect& rect)
 {
 	UiImage* img = (UiImage*)image;
 
-	ctx->renderer->cmdDrawImageBordered(img, border, Rect(rect.x, rect.y, rect.width, rect.height), ctx->globalScale);
+	ctx->renderer->cmdDrawImageBordered(img, border, Rect(rect.x + ctx->renderer->viewportOffset.x, rect.y + ctx->renderer->viewportOffset.y, rect.width, rect.height), ctx->globalScale);
 }
 
 void setLineStyle(const LineStyle& style)
@@ -137,17 +140,26 @@ void setFillStyle(const FillStyle& style)
 
 void drawLine(const Point& a, const Point& b)
 {
-	ctx->renderer->cmdDrawLine(a, b);
+	ctx->renderer->cmdDrawLine(a + ctx->renderer->viewportOffset, b + ctx->renderer->viewportOffset);
 }
 
 void drawPolyLine(const Point* points, u32 pointCount, bool closed)
 {
-	ctx->renderer->cmdDrawPolyLine(points, pointCount, closed);
+	std::vector<Point> pts;
+	
+	pts.resize(pointCount);
+
+	for (u32 i = 0; i < pointCount; i++)
+	{
+		pts[i] = points[i] + ctx->renderer->viewportOffset;
+	}
+
+	ctx->renderer->cmdDrawPolyLine(pts.data(), pointCount, closed);
 }
 
 void drawCircle(const Point& center, f32 radius, u32 segments)
 {
-	drawEllipse(center, radius, radius, segments);
+	drawEllipse(center + ctx->renderer->viewportOffset, radius, radius, segments);
 }
 
 void drawEllipse(const Point& center, f32 radiusX, f32 radiusY, u32 segments)
@@ -174,11 +186,12 @@ void drawEllipse(const Point& center, f32 radiusX, f32 radiusY, u32 segments)
 void drawRectangle(const Rect& rc)
 {
 	Point pts[4] = {
-		rc.topLeft(),
-		rc.topRight(),
-		rc.bottomRight(),
-		rc.bottomLeft()
+		rc.topLeft() + ctx->renderer->viewportOffset,
+		rc.topRight() + ctx->renderer->viewportOffset,
+		rc.bottomRight() + ctx->renderer->viewportOffset,
+		rc.bottomLeft() + ctx->renderer->viewportOffset
 	};
+
 	ctx->renderer->cmdDrawPolyLine(pts, 4, true);
 }
 
@@ -223,7 +236,8 @@ void drawSpline(SplineControlPoint* points, u32 count)
 	{
 		for (f32 s = 0; s < 1.0f; s += step)
 		{
-			pts.push_back(hermitePoint(points[i].center, points[i].rightTangent, points[i + 1].leftTangent, points[i + 1].center, s));
+			pts.push_back(
+				hermitePoint(points[i].center, points[i].rightTangent, points[i + 1].leftTangent, points[i + 1].center, s));
 		}
 	}
 
@@ -240,8 +254,11 @@ void drawTriangle(
 {
 	Point uv1, uv2, uv3;
 
-	ctx->renderer->cmdDrawTriangle(p1, p2, p3, uv1, uv2, uv3, nullptr);
+	ctx->renderer->cmdDrawTriangle(
+		p1 + ctx->renderer->viewportOffset,
+		p2 + ctx->renderer->viewportOffset,
+		p3 + ctx->renderer->viewportOffset,
+		uv1, uv2, uv3, nullptr);
 }
-
 
 }

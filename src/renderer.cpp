@@ -905,50 +905,53 @@ void Renderer::drawTextGlyph(UiImage* image, const Point& position)
 
 void Renderer::drawQuad(UiImage* image, const Point& p1, const Point& p2, const Point& p3, const Point& p4)
 {
-	atlasTextureIndex = image->atlasTexture->textureIndex;
-	needToAddVertexCount(6);
+	drawTriangle(p1, p2, p3, image->uvRect.topLeft(), image->uvRect.topRight(), image->uvRect.bottomRight(), image);
+	drawTriangle(p1, p3, p4, image->uvRect.topLeft(), image->uvRect.bottomRight(), image->uvRect.bottomLeft(), image);
 
-	u32 i = vertexBufferData.drawVertexCount;
+	//atlasTextureIndex = image->atlasTexture->textureIndex;
+	//needToAddVertexCount(6);
 
-	vertexBufferData.vertices[i].position = p1;
-	vertexBufferData.vertices[i].uv = image->uvRect.topLeft();
-	vertexBufferData.vertices[i].color = currentColor;
-	vertexBufferData.vertices[i].textureIndex = atlasTextureIndex;
-	i++;
+	//u32 i = vertexBufferData.drawVertexCount;
 
-	vertexBufferData.vertices[i].position = p2;
-	vertexBufferData.vertices[i].uv = image->uvRect.bottomLeft();
-	vertexBufferData.vertices[i].color = currentColor;
-	vertexBufferData.vertices[i].textureIndex = atlasTextureIndex;
-	i++;
+	//vertexBufferData.vertices[i].position = p1;
+	//vertexBufferData.vertices[i].uv = image->uvRect.topLeft();
+	//vertexBufferData.vertices[i].color = currentColor;
+	//vertexBufferData.vertices[i].textureIndex = atlasTextureIndex;
+	//i++;
 
-	vertexBufferData.vertices[i].position = p3;
-	vertexBufferData.vertices[i].uv = image->uvRect.bottomRight();
-	vertexBufferData.vertices[i].color = currentColor;
-	vertexBufferData.vertices[i].textureIndex = atlasTextureIndex;
-	i++;
+	//vertexBufferData.vertices[i].position = p2;
+	//vertexBufferData.vertices[i].uv = image->uvRect.bottomLeft();
+	//vertexBufferData.vertices[i].color = currentColor;
+	//vertexBufferData.vertices[i].textureIndex = atlasTextureIndex;
+	//i++;
 
-	// 2nd triangle
-	vertexBufferData.vertices[i].position = p3;
-	vertexBufferData.vertices[i].uv = image->uvRect.bottomRight();
-	vertexBufferData.vertices[i].color = currentColor;
-	vertexBufferData.vertices[i].textureIndex = atlasTextureIndex;
-	i++;
+	//vertexBufferData.vertices[i].position = p3;
+	//vertexBufferData.vertices[i].uv = image->uvRect.bottomRight();
+	//vertexBufferData.vertices[i].color = currentColor;
+	//vertexBufferData.vertices[i].textureIndex = atlasTextureIndex;
+	//i++;
 
-	vertexBufferData.vertices[i].position = p4;
-	vertexBufferData.vertices[i].uv = image->uvRect.topRight();
-	vertexBufferData.vertices[i].color = currentColor;
-	vertexBufferData.vertices[i].textureIndex = atlasTextureIndex;
-	i++;
+	//// 2nd triangle
+	//vertexBufferData.vertices[i].position = p3;
+	//vertexBufferData.vertices[i].uv = image->uvRect.bottomRight();
+	//vertexBufferData.vertices[i].color = currentColor;
+	//vertexBufferData.vertices[i].textureIndex = atlasTextureIndex;
+	//i++;
 
-	vertexBufferData.vertices[i].position = p1;
-	vertexBufferData.vertices[i].uv = image->uvRect.topLeft();
-	vertexBufferData.vertices[i].color = currentColor;
-	vertexBufferData.vertices[i].textureIndex = atlasTextureIndex;
-	i++;
+	//vertexBufferData.vertices[i].position = p4;
+	//vertexBufferData.vertices[i].uv = image->uvRect.topRight();
+	//vertexBufferData.vertices[i].color = currentColor;
+	//vertexBufferData.vertices[i].textureIndex = atlasTextureIndex;
+	//i++;
 
-	vertexBufferData.drawVertexCount = i;
-	currentBatch->vertexCount += 6;
+	//vertexBufferData.vertices[i].position = p1;
+	//vertexBufferData.vertices[i].uv = image->uvRect.topLeft();
+	//vertexBufferData.vertices[i].color = currentColor;
+	//vertexBufferData.vertices[i].textureIndex = atlasTextureIndex;
+	//i++;
+
+	//vertexBufferData.drawVertexCount = i;
+	//currentBatch->vertexCount += 6;
 }
 
 void Renderer::drawQuad(const Rect& rect, const Rect& uvRect)
@@ -1509,7 +1512,6 @@ void Renderer::drawPolyLine(const Point* points, u32 pointCount, bool closed)
 
 	pointCount = pts.size();
 
-	int i = currentBatch->vertexCount;
 	Point d1;
 	Point d2;
 	Point n11;
@@ -1525,8 +1527,8 @@ void Renderer::drawPolyLine(const Point* points, u32 pointCount, bool closed)
 	f32 uStep = lineImage->uvRect.width / (f32)pointCount;
 	f32 uSize = lineImage->uvRect.width;
 
-	atlasTextureIndex = lineImage ? lineImage->atlasTexture->textureIndex : 0;
-	needToAddVertexCount(6 * (pointCount - 1));
+	//atlasTextureIndex = lineImage ? lineImage->atlasTexture->textureIndex : 0;
+	//needToAddVertexCount(6 * (pointCount - 1));
 	const auto color = currentLineStyle.color.getRgba();
 	auto rcUv = lineImage->uvRect;
 	rcUv.x += ctx->settings.whiteImageUvBorder;
@@ -1594,56 +1596,8 @@ void Renderer::drawPolyLine(const Point* points, u32 pointCount, bool closed)
 
 		drawTriangle(p11, p12, p22, uv11, uv12, uv22, lineImage);
 		drawTriangle(p21, p22, p11, uv21, uv22, uv11, lineImage);
-
-		////tri1
-		//// 0
-		//vertexBufferData.vertices[i].position = p11;
-		//vertexBufferData.vertices[i].uv = uv11;
-		//vertexBufferData.vertices[i].color = color;
-		//vertexBufferData.vertices[i].textureIndex = atlasTextureIndex;
-		//i++;
-
-		//// 1
-		//vertexBufferData.vertices[i].position = p12;
-		//vertexBufferData.vertices[i].uv = uv12;
-		//vertexBufferData.vertices[i].color = color;
-		//vertexBufferData.vertices[i].textureIndex = atlasTextureIndex;
-		//i++;
-
-		//// 2
-		//vertexBufferData.vertices[i].position = p22;
-		//vertexBufferData.vertices[i].uv = uv22;
-		//vertexBufferData.vertices[i].color = color;
-		//vertexBufferData.vertices[i].textureIndex = atlasTextureIndex;
-		//i++;
-
-		////tri 2
-		//// 3
-		//vertexBufferData.vertices[i].position = p21;
-		//vertexBufferData.vertices[i].uv = uv21;
-		//vertexBufferData.vertices[i].color = color;
-		//vertexBufferData.vertices[i].textureIndex = atlasTextureIndex;
-		//i++;
-
-		//// 4
-		//vertexBufferData.vertices[i].position = p22;
-		//vertexBufferData.vertices[i].uv = uv22;
-		//vertexBufferData.vertices[i].color = color;
-		//vertexBufferData.vertices[i].textureIndex = atlasTextureIndex;
-		//i++;
-
-		//// 5
-		//vertexBufferData.vertices[i].position = p11;
-		//vertexBufferData.vertices[i].uv = uv11;
-		//vertexBufferData.vertices[i].color = color;
-		//vertexBufferData.vertices[i].textureIndex = atlasTextureIndex;
-		//i++;
-
-		//currentBatch->vertexCount += 6;
 		u += uStep;
 	}
-
-	//vertexBufferData.drawVertexCount = i;
 }
 
 void Renderer::drawTriangle(
@@ -1689,7 +1643,7 @@ void Renderer::drawTriangle(
 
 	atlasTextureIndex = img->atlasTexture->textureIndex;
 
-	needToAddVertexCount(pointCount - 2);wtf
+	needToAddVertexCount((pointCount - 2) * 3);
 	u32 i = vertexBufferData.drawVertexCount;
 
 	for (int k = 1; k < pointCount - 1; k++)
