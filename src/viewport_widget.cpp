@@ -19,7 +19,6 @@ Rect beginViewport(f32 height)
 
 	auto scissor = ctx->renderer->pushClipRect(ctx->widget.rect);
 
-	//ctx->gfx->setViewport(ctx->renderer->getWindowSize(), ctx->widget.rect);
 	ctx->currentWidgetId++;
 
 	return scissor;
@@ -28,11 +27,6 @@ Rect beginViewport(f32 height)
 void endViewport()
 {
 	ctx->renderer->popClipRect();
-	auto wnd = ctx->inputProvider->getCurrentWindow();
-	auto rc = ctx->inputProvider->getWindowRect(wnd);
-	rc.x = rc.y = 0;
-	//ctx->gfx->setViewport({ rc.width, rc.height }, rc);
-	//TODO: restore any render targets we use, the shader is set anyway when drawing the things
 }
 
 }
