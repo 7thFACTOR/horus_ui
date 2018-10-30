@@ -1500,75 +1500,116 @@ void Renderer::drawLine(const Point& a, const Point& b)
 
 void Renderer::drawPolyLine(const Point* points, u32 pointCount, bool closed)
 {
-	std::vector<Point> pts;
-	pts.resize(pointCount + (closed ? 1 : 0));
-	//TODO: maybe too slow?
-	memcpy(&pts[0], points, sizeof(Point) * pointCount);
-
-	if (closed)
-	{
-		pts.back() = pts.front();
-	}
-
-	pointCount = pts.size();
-
 	Point d1;
 	Point d2;
-	Point n11;
-	Point n12;
-	Point n21;
-	Point n22;
-
+	Point n1;
+	Point n2;
+	Point lastP11, lastP12;
+	Point lastN2;
+	Point p11;
+	Point p12;
+	Point p21;
+	Point p22;
 	auto atlas = (UiAtlas*)currentBatch->atlas;
 	auto lineImage = atlas->whiteImage;
-
 	f32 uStart = lineImage->uvRect.x;
 	f32 u = 0;
 	f32 uStep = lineImage->uvRect.width / (f32)pointCount;
 	f32 uSize = lineImage->uvRect.width;
-
 	const auto color = currentLineStyle.color.getRgba();
 	auto rcUv = lineImage->uvRect;
+
 	rcUv.x += ctx->settings.whiteImageUvBorder;
 	rcUv.y += ctx->settings.whiteImageUvBorder;
 	rcUv.width -= ctx->settings.whiteImageUvBorder * 2.0f;
 	rcUv.height -= ctx->settings.whiteImageUvBorder * 2.0f;
+
 	const auto uv11 = rcUv.topLeft();
 	const auto uv12 = rcUv.topRight();
 	const auto uv22 = rcUv.bottomRight();
 	const auto uv21 = rcUv.bottomLeft();
+	Point firstN;
+	const f32 half = currentLineStyle.width / 2.0f;
 
-	Point lastP11, lastP12;
+	// P11----------P21
+	//  |            |
+	// P12----------P22
 
-	for (int p = 0; p < pointCount - 1; p++)
+	for (int p = 0; p < pointCount; p++)
 	{
-		if (p < pointCount - 1)
+		if (p == pointCount - 1 && !closed) break;
+
+		if (p == 0)
 		{
 			// find normals at point A
-			d1 = Point(pts[p + 1].x - pts[p].x, pts[p + 1].y - pts[p].y);
+			d1 = Point(points[1].x - points[0].x, points[1].y - points[0].y);
 			// normal in both expanded directions
-			n11 = Point(-d1.y, d1.x);
-			n12 = n11.getNegated();
+			n1 = Point(-d1.y, d1.x);
+			n1.normalize();
+			auto origN11 = n1;
+
+			if (closed)
+			{
+				d1 = Point(points[0].x - points[pointCount - 1].x, points[0].y - points[pointCount - 1].y);
+				// normal in both expanded directions
+				n1 += Point(-d1.y, d1.x).getNormalized();
+				n1.normalize();
+				firstN = n1;
+			}
 
 			// find normals at point B
-			d1 = Point(pts[p + 1].x - pts[p].x, pts[p + 1].y - pts[p].y);
+			d2 = Point(points[2].x - points[1].x, points[2].y - points[1].y);
 			// normal in both expanded directions
-			n21 = Point(-d1.y, d1.x);
-			n22 = n11.getNegated();
+			n2 = Point(-d2.y, d2.x);
+			n2.normalize();
+			lastN2 = n2;
+			n2 += origN11;
+		}
+		// if last point and its closed
+		else if (p == pointCount - 1 && closed)
+		{
+			n1 = lastN2;
+			// find normals at point B
+			n2 = firstN;
+		}
+		// if almost last one
+		else if (p == pointCount - 2)
+		{
+			n1 = lastN2;
+			// find normals at point B
+			d1 = Point(points[p + 1].x - points[p].x, points[p + 1].y - points[p].y);
+			
+			if (closed)
+			{
+				// find normals at point B
+				d2 = Point(points[0].x - points[p + 1].x, points[0].y - points[p + 1].y);
+			}
+			else
+			{
+				d2.clear();
+			}
+			
+			// normal in both expanded directions
+			n2 = Point(-d1.y, d1.x).getNormalized() + Point(-d2.y, d2.x).getNormalized();
+			n2.normalize();
+			lastN2 = n2;
+		}
+		else if (p < pointCount - 2)
+		{
+			n1 = lastN2;
+			// find normals at point B
+			d1 = Point(points[p + 2].x - points[p + 1].x, points[p + 2].y - points[p + 1].y);
+			// normal in both expanded directions
+			n2 = Point(-d1.y, d1.x);
+			n2.normalize();
+			lastN2 = n2;
+			n2 += n1;
 		}
 
-		n11.normalize();
-		n12.normalize();
-		n21.normalize();
-		n22.normalize();
-
-		n11 *= currentLineStyle.width / 2.0f;
-		n12 *= currentLineStyle.width / 2.0f;
-		n21 *= currentLineStyle.width / 2.0f;
-		n22 *= currentLineStyle.width / 2.0f;
-
-		Point p11;
-		Point p12;
+		n1.normalize();
+		n2.normalize();
+		n1 *= half;
+		n2 *= half;
 
 		if (p > 0)
 		{
@@ -1577,24 +1618,25 @@ void Renderer::drawPolyLine(const Point* points, u32 pointCount, bool closed)
 		}
 		else
 		{
-			p11 = Point(pts[p].x + n11.x, pts[p].y + n11.y);
-			p12 = Point(pts[p].x + n12.x, pts[p].y + n12.y);
-			lastP11 = p11;
-			lastP12 = p12;
+			p11 = Point(points[p].x + n1.x, points[p].y + n1.y);
+			p12 = Point(points[p].x - n1.x, points[p].y - n1.y);
 		}
 
-		Point p21 = Point(pts[p + 1].x + n21.x, pts[p + 1].y + n21.y);
-		Point p22 = Point(pts[p + 1].x + n22.x, pts[p + 1].y + n22.y);
-
-		if (p > 0)
+		if (p == pointCount - 1 && closed)
 		{
-			lastP11 = p21;
-			lastP12 = p22;
+			p21 = Point(points[0].x + n2.x, points[0].y + n2.y);
+			p22 = Point(points[0].x - n2.x, points[0].y - n2.y);
+		}
+		else
+		{
+			p21 = Point(points[p + 1].x + n2.x, points[p + 1].y + n2.y);
+			p22 = Point(points[p + 1].x - n2.x, points[p + 1].y - n2.y);
 		}
 
+		lastP11 = p21;
+		lastP12 = p22;
 		drawTriangle(p11, p12, p22, uv11, uv12, uv22, lineImage);
 		drawTriangle(p21, p22, p11, uv21, uv22, uv11, lineImage);
-		u += uStep;
 	}
 }
 
