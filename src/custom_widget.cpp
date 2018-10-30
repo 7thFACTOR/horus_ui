@@ -159,7 +159,7 @@ void drawPolyLine(const Point* points, u32 pointCount, bool closed)
 
 void drawCircle(const Point& center, f32 radius, u32 segments)
 {
-	drawEllipse(center + ctx->renderer->viewportOffset, radius, radius, segments);
+	drawEllipse(center, radius, radius, segments);
 }
 
 void drawEllipse(const Point& center, f32 radiusX, f32 radiusY, u32 segments)
@@ -168,7 +168,7 @@ void drawEllipse(const Point& center, f32 radiusX, f32 radiusY, u32 segments)
 	Point pt;
 	f32 crtAngle = 0, step;
 
-	pts.reserve(segments);
+	pts.reserve(segments + 1);
 	step = 2 * M_PI / (f32)segments;
 	segments++;
 
@@ -177,10 +177,15 @@ void drawEllipse(const Point& center, f32 radiusX, f32 radiusY, u32 segments)
 		pt.x = center.x + radiusX * sinf(crtAngle);
 		pt.y = center.y + radiusY * cosf(crtAngle);
 		crtAngle += step;
-		pts.push_back(pt);
+		pts.push_back(pt + ctx->renderer->viewportOffset);
 	}
 
-	ctx->renderer->cmdDrawPolyLine(pts.data(), pts.size(), true);
+	crtAngle = 2 * M_PI;
+	pt.x = center.x + radiusX * sinf(crtAngle);
+	pt.y = center.y + radiusY * cosf(crtAngle);
+	//pts.push_back(pt + ctx->renderer->viewportOffset);
+
+	ctx->renderer->cmdDrawPolyLine(pts.data(), pts.size(), false);
 }
 
 void drawRectangle(const Rect& rc)
