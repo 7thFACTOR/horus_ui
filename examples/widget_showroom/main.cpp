@@ -808,7 +808,7 @@ struct MyViewHandler : hui::ViewHandler
 			auto ls = hui::LineStyle(hui::Color::blue, 1);
 			hui::setLineStyle(ls);
 
-			for (int i = 0; i < 500; i++)
+			for (int i = 0; i < 100; i++)
 			{
 				Point p1, p2, p3;
 
@@ -822,9 +822,14 @@ struct MyViewHandler : hui::ViewHandler
 				ls = hui::LineStyle(hui::Color::random(), 4);
 				hui::setLineStyle(ls);
 
-				drawCircle(p1, 30, 20);
-				drawCircle(p2, 30, 20);
-				drawCircle(p3, 30, 20);
+				drawEllipse(p1, 30, 50, 6);
+				drawCircle(p2, 30, 10);
+				drawCircle(p3, 30, 10);
+
+				WidgetElementInfo btnInf;
+
+				getThemeWidgetElementInfo(WidgetElementId::ButtonBody, WidgetStateType::Normal, btnInf);
+				drawBorderedImage(btnInf.image, btnInf.border, { -10, -10, 200, 200 });
 
 				Point triPts[30];
 				u32 ptCount = 0;
@@ -835,7 +840,7 @@ struct MyViewHandler : hui::ViewHandler
 				//hui::drawTriangle(p1, p2, p3);
 			}
 
-			printf("Custom viewport:%f %f %f %f\n", viewRc.x, viewRc.y, viewRc.width, viewRc.height);
+			//printf("Custom viewport:%f %f %f %f\n", viewRc.x, viewRc.y, viewRc.width, viewRc.height);
 
 			ls = hui::LineStyle(hui::Color::yellow, 30);
 			hui::setLineStyle(ls);

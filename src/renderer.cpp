@@ -1527,8 +1527,6 @@ void Renderer::drawPolyLine(const Point* points, u32 pointCount, bool closed)
 	f32 uStep = lineImage->uvRect.width / (f32)pointCount;
 	f32 uSize = lineImage->uvRect.width;
 
-	//atlasTextureIndex = lineImage ? lineImage->atlasTexture->textureIndex : 0;
-	//needToAddVertexCount(6 * (pointCount - 1));
 	const auto color = currentLineStyle.color.getRgba();
 	auto rcUv = lineImage->uvRect;
 	rcUv.x += ctx->settings.whiteImageUvBorder;
