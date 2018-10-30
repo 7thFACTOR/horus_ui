@@ -676,7 +676,7 @@ public:
 			return;
 		}
 
-		m = sqrt(m);
+		m = sqrtf(m);
 		x /= m;
 		y /= m;
 	}
@@ -691,7 +691,7 @@ public:
 			return Point();
 		}
 
-		m = sqrt((f32)m);
+		m = sqrtf((f32)m);
 		value.x /= m;
 		value.y /= m;
 
@@ -707,7 +707,7 @@ public:
 			return *this;
 		}
 
-		m = sqrt(m);
+		m = sqrtf(m);
 		to.x = x / m;
 		to.y = y / m;
 

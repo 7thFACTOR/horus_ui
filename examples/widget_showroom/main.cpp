@@ -808,148 +808,160 @@ struct MyViewHandler : hui::ViewHandler
 			auto ls = hui::LineStyle(hui::Color::blue, 1);
 			hui::setLineStyle(ls);
 
-			for (int i = 0; i < 100; i++)
-			{
-				Point p1, p2, p3;
+			static Point o;
 
-				p1.x = 2000.0f * (f32)rand() / RAND_MAX;
-				p1.y = 1000.0f * (f32)rand() / RAND_MAX;
-				p2.x = 2000.0f * (f32)rand() / RAND_MAX;
-				p2.y = 1000.0f * (f32)rand() / RAND_MAX;
-				p3.x = 2000.0f * (f32)rand() / RAND_MAX;
-				p3.y = 1000.0f * (f32)rand() / RAND_MAX;
+			o.x += 1;
+			o.y += sinf(o.x*0.2f) * 20;
 
-				ls = hui::LineStyle(hui::Color::random(), 4);
-				hui::setLineStyle(ls);
+			//for (int i = 0; i < 100; i++)
+			//{
+			//	Point p1, p2, p3;
 
-				drawEllipse(p1, 30, 50, 6);
-				drawCircle(p2, 30, 10);
-				drawCircle(p3, 30, 10);
+			//	p1.x = 2000.0f * (f32)rand() / RAND_MAX;
+			//	p1.y = 1000.0f * (f32)rand() / RAND_MAX;
+			//	p2.x = 2000.0f * (f32)rand() / RAND_MAX;
+			//	p2.y = 1000.0f * (f32)rand() / RAND_MAX;
+			//	p3.x = 2000.0f * (f32)rand() / RAND_MAX;
+			//	p3.y = 1000.0f * (f32)rand() / RAND_MAX;
 
-				WidgetElementInfo btnInf;
+			//	ls = hui::LineStyle(hui::Color::random(), 10);
+			//	hui::setLineStyle(ls);
 
-				getThemeWidgetElementInfo(WidgetElementId::ButtonBody, WidgetStateType::Normal, btnInf);
-				drawBorderedImage(btnInf.image, btnInf.border, { -10, -10, 200, 200 });
+			//	p1 += o;
 
-				Point triPts[30];
-				u32 ptCount = 0;
+			//	drawEllipse(p1, 20, 20, 4);
+			//	drawCircle(p2, fabs(sinf(GetTickCount()/1000) * 10), 30);
+			//	drawCircle(p3, 30, 10);
 
-				ls = hui::LineStyle(hui::Color::random(), 1);
-				hui::setLineStyle(ls);
+			//	WidgetElementInfo btnInf;
 
-				//hui::drawTriangle(p1, p2, p3);
-			}
+			//	getThemeWidgetElementInfo(WidgetElementId::ButtonBody, WidgetStateType::Normal, btnInf);
+			//	drawBorderedImage(btnInf.image, btnInf.border, { -10, -10, 200, 200 });
+
+			//	Point triPts[30];
+			//	u32 ptCount = 0;
+
+			//	ls = hui::LineStyle(hui::Color::random(), 1);
+			//	hui::setLineStyle(ls);
+
+			//	//hui::drawTriangle(p1, p2, p3);
+			//}
 
 			//printf("Custom viewport:%f %f %f %f\n", viewRc.x, viewRc.y, viewRc.width, viewRc.height);
 
-			ls = hui::LineStyle(hui::Color::yellow, 30);
-			hui::setLineStyle(ls);
-			hui::drawCircle({ 200, 200 }, 50, 300);
+			//ls = hui::LineStyle(hui::Color::yellow, 30);
+			//hui::setLineStyle(ls);
+			//hui::drawCircle({ 200, 200 }, 50, 300);
+			//static f32 ampl = 0;
 
-			Point pts[] = {{10, 240}, {100, 240}, {120, 240}, {330, 240}, {350, 240}, {380, 100}, {400, 120}};
-			{
-				hui::LineStyle ls;
+			//Point pts[] = {{10, 240}, {100, 240}, {120, 240}, {330, 240}, {350, 240}, {380, 100}, {400, 120}};
+			//{
+			//	hui::LineStyle ls;
 
-				ls.width = 54;
-				ls.color = Color::yellow;
-				hui::setLineStyle(ls);
-				std::vector<Point> pts;
-				float x = 2;
-				for (float u = 0; u < 3.14*2; u += 0.1)
-				{
-					pts.push_back(Point(x+=15, 300 + sinf(u)*100));
+			//	ls.width = 54;
+			//	ls.color = Color::yellow;
+			//	hui::setLineStyle(ls);
+			//	std::vector<Point> pts;
+			//	float x = 2;
+			//	for (float u = 0; u < 3.14*2; u += 0.1)
+			//	{
+			//		pts.push_back(Point(x+=5, 300 + sinf(u)*ampl));
 
-				}
-				hui::drawPolyLine(pts.data(), pts.size());
-			}
+			//	}
+			//	hui::drawPolyLine(pts.data(), pts.size());
+			//}
 
-			{
-				hui::LineStyle ls;
+			//{
+			//	hui::LineStyle ls;
 
-				ls.width = 3;
-				ls.color = Color::white;
-				hui::setLineStyle(ls);
-				std::vector<Point> pts;
-				float x = 2;
-				for (float u = 0; u < 3.14 * 2; u += 0.1)
-				{
-					pts.push_back(Point(x += 15, 370 + sinf(u) * 100));
+			//	ls.width = 3;
+			//	ls.color = Color::white;
+			//	hui::setLineStyle(ls);
+			//	std::vector<Point> pts;
+			//	float x = 2;
+			//	for (float u = 0; u < 3.14 * 2; u += 0.1)
+			//	{
+			//		pts.push_back(Point(x += 15, 370 + sinf(u) * 100));
 
-				}
-				hui::drawPolyLine(pts.data(), pts.size());
-			}
+			//	}
+			//	hui::drawPolyLine(pts.data(), pts.size());
+			//}
 
-			{
-				hui::LineStyle ls;
+			//{
+			//	hui::LineStyle ls;
 
-				ls.width = 10;
-				ls.color = Color::green;
-				hui::setLineStyle(ls);
-				std::vector<Point> pts;
-				float x = 2;
-				for (float u = 0; u < 3.14 * 2; u += 0.1)
-				{
-					pts.push_back(Point(x += 15, 400 + sinf(u) * 100));
+			//	ls.width = 10;
+			//	ls.color = Color::green;
+			//	hui::setLineStyle(ls);
+			//	std::vector<Point> pts;
+			//	float x = 2;
+			//	for (float u = 0; u < 3.14 * 2; u += 0.1)
+			//	{
+			//		pts.push_back(Point(x += 15, 400 + sinf(u) * 100));
 
-				}
-				hui::drawPolyLine(pts.data(), pts.size());
-			}
+			//	}
+			//	hui::drawPolyLine(pts.data(), pts.size());
+			//}
+			hui::setLineStyle({ Color::white, 16 });
+			drawRectangle({ 50, 50, viewRc.width - 100, viewRc.height - 100 });
 
-			{
-				hui::LineStyle ls;
 
-				ls.width = 8;
-				ls.color = Color::orange;
-				hui::setLineStyle(ls);
-				std::vector<Point> pts;
-				float x = 2;
-				for (float u = 0; u < 3.14 * 2; u += 0.1)
-				{
-					pts.push_back(Point(x += 15, 440 + sinf(u) * 100));
+			//{
+			//	hui::LineStyle ls;
 
-				}
-				hui::drawPolyLine(pts.data(), pts.size());
-			}
+			//	ls.width = 8;
+			//	ls.color = Color::orange;
+			//	hui::setLineStyle(ls);
+			//	std::vector<Point> pts;
+			//	float x = 2;
+			//	for (float u = 0; u < 3.14 * 2; u += 0.1)
+			//	{
+			//		pts.push_back(Point(x += 15, 440 + sinf(u) * 100));
 
-			{
-				hui::LineStyle ls;
+			//	}
+			//	hui::drawPolyLine(pts.data(), pts.size());
+			//}
 
-				ls.width = 6;
-				ls.color = Color::cyan;
-				hui::setLineStyle(ls);
-				std::vector<SplineControlPoint> pts;
+			//{
+			//	hui::LineStyle ls;
 
-				pts.resize(4);
+			//	ls.width = 6;
+			//	ls.color = Color::cyan;
+			//	hui::setLineStyle(ls);
+			//	std::vector<SplineControlPoint> pts;
 
-				pts[0].center.x = 100;
-				pts[0].center.y = 100;
-				pts[0].rightTangent.x = 120;
-				pts[0].rightTangent.y = 20;
+			//	pts.resize(4);
 
-				pts[1].center.x = 200;
-				pts[1].center.y = 100;
-				pts[1].leftTangent.x = 0;
-				pts[1].leftTangent.y = 140;
-				pts[1].rightTangent.x = 0;
-				pts[1].rightTangent.y = 90;
+			//	pts[0].center.x = 100;
+			//	pts[0].center.y = 100;
+			//	pts[0].rightTangent.x = 120;
+			//	pts[0].rightTangent.y = 20;
 
-				pts[2].center.x = 400;
-				pts[2].center.y = 100;
-				pts[2].leftTangent.x = 320;
-				pts[2].leftTangent.y = 1420;
-				pts[1].rightTangent.x = 20;
-				pts[1].rightTangent.y = 190;
+			//	pts[1].center.x = 200;
+			//	pts[1].center.y = 100;
+			//	pts[1].leftTangent.x = 0;
+			//	pts[1].leftTangent.y = 140;
+			//	pts[1].rightTangent.x = 0;
+			//	pts[1].rightTangent.y = 90;
 
-				pts[3].center.x = 700;
-				pts[3].center.y = 150;
-				pts[3].leftTangent.x = 320;
-				pts[3].leftTangent.y = 520;
+			//	pts[2].center.x = 400;
+			//	pts[2].center.y = 100;
+			//	pts[2].leftTangent.x = 320;
+			//	pts[2].leftTangent.y = 1420;
+			//	pts[1].rightTangent.x = 20;
+			//	pts[1].rightTangent.y = 190;
 
-				//hui::drawSpline(pts.data(), pts.size());
+			//	pts[3].center.x = 700;
+			//	pts[3].center.y = 150;
+			//	pts[3].leftTangent.x = 320;
+			//	pts[3].leftTangent.y = 520;
 
-				hui::setLineStyle({ Color::red, 2 });
-				hui::drawLine({ 50,50 }, { 100, 100 });
-			}
+			//	hui::drawSpline(pts.data(), pts.size());
+
+			//	hui::setLineStyle({ Color::red, 2 });
+			//	hui::drawLine({ 50,50 }, { 100, 100 });
+			//}
+			//ampl += sinf(GetTickCount()) * 12;
 
 			if (hui::isHovered())
 			{
@@ -957,8 +969,10 @@ struct MyViewHandler : hui::ViewHandler
 			}
 
 			hui::endViewport();
-
 			hui::popPadding();
+
+
+
 			static f32 spos = 0;
 			hui::beginScrollView(hui::getRemainingViewPaneHeight(viewPane), spos);
 
