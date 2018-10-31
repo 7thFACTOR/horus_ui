@@ -1576,13 +1576,6 @@ void Renderer::drawPolyLine1Pixel(const Point* points, u32 pointCount, bool clos
 
 void Renderer::drawPolyLine(const Point* points, u32 pointCount, bool closed)
 {
-	// special case, faster to draw single degenerated triangles as lines of 1 pixel
-	if (currentLineStyle.width <= 1.0f)
-	{
-		drawPolyLine1Pixel(points, pointCount, closed);
-		return;
-	}
-
 	Point d1;
 	Point d2;
 	Point n1;
@@ -1608,14 +1601,21 @@ void Renderer::drawPolyLine(const Point* points, u32 pointCount, bool closed)
 	const auto uv22 = rcUv.bottomRight();
 	const auto uv21 = rcUv.bottomLeft();
 	Point firstN;
-	const f32 half = currentLineStyle.width / 2.0f;
+	// we cannot draw 1 pixel wide lines, because we draw triangles, and degenerate ones are not rasterized
+	// so we force here 2 as the line width if less than that
+	const f32 half = (currentLineStyle.width < 2.0f ? 2.0f : currentLineStyle.width) / 2.0f;
 
 	// P11----------P21
 	//  |            |
 	// P12----------P22
+	f32 mitterScale1 = 1;
+	f32 mitterScale2 = 1;
 
 	for (int p = 0; p < pointCount; p++)
 	{
+		mitterScale1 = 1;
+		mitterScale2 = 1;
+
 		if (p == pointCount - 1 && !closed) break;
 
 		if (p == 0)
@@ -1636,13 +1636,17 @@ void Renderer::drawPolyLine(const Point* points, u32 pointCount, bool closed)
 				firstN = n1;
 			}
 
-			// find normals at point B
 			d2 = Point(points[2].x - points[1].x, points[2].y - points[1].y);
-			// normal in both expanded directions
-			n2 = Point(-d2.y, d2.x);
+			n2 = n1.getNegated() + Point(-d2.y, d2.x);
 			n2.normalize();
 			lastN2 = n2;
 			n2 += origN11;
+
+			d2 = Point(points[0].x - points[1].x, points[0].y - points[1].y);
+			d2.normalize();
+			n2.normalize();
+			float sinAngle = fabs(n2.x * d2.y - n2.y * d2.x);
+			n2h = 1 / sinAngle;
 		}
 		// if last point and its closed
 		else if (p == pointCount - 1 && closed)
@@ -1687,8 +1691,8 @@ void Renderer::drawPolyLine(const Point* points, u32 pointCount, bool closed)
 
 		n1.normalize();
 		n2.normalize();
-		n1 *= half;
-		n2 *= half;
+		n1 *= half * mitterScale1;
+		n2 *= half * mitterScale2;
 
 		if (p > 0)
 		{
