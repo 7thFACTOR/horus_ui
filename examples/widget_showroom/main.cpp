@@ -903,9 +903,10 @@ struct MyViewHandler : hui::ViewHandler
 				hui::drawPolyLine(pts.data(), pts.size(), false);
 			}
 			drawCircle({ 100, 100 }, 10, 50);
-			hui::setLineStyle({ Color::white, 1 });
-			drawRectangle({ 50, 50, viewRc.width - 100, viewRc.height - 100 });
-			//drawLine({ 100, 100 } , {200, 150 });
+			hui::setLineStyle({ Color::white, 10 });
+			//drawRectangle({ 50, 50, viewRc.width - 100, viewRc.height - 100 });
+			Point ps[] = { { 100, 150 },{ 150, 50 }, {170, 250} };
+			drawPolyLine(ps, 3);
 			//{
 			//	hui::LineStyle ls;
 
