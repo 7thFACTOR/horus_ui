@@ -240,6 +240,7 @@ protected:
 	void drawInterpolatedColorsLeftRight(const Rect& rect, const Rect& uvRect, const Color& left, const Color& right);
 	void drawImageBordered(UiImage* image, u32 border, const Rect& rect, f32 scale);
 	void drawLine(const Point& a, const Point& b);
+	void drawPolyLine1Pixel(const Point* points, u32 pointCount, bool closed);
 	void drawPolyLine(const Point* points, u32 pointCount, bool closed);
 	void drawTriangle(const Point& p1, const Point& p2, const Point& p3, const Point& uv1, const Point& uv2, const Point& uv3, UiImage* image);
 
