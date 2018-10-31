@@ -15,8 +15,8 @@
 namespace hui
 {
 //TODO: make them grow dynamically like the vertex buffer
-const int textBufferMaxSize = 1024 * 1024 * 3;//!<< 3MB of text on screen at once its more than enough for now
-const int pointBufferMaxSize = 300000; //!<< more than enough for a full screen of lines, around 3.4 Mb
+const u32 textBufferMaxSize = 1024 * 1024 * 5;//!<< 5MB of text on screen at once its more than enough for now
+const u32 pointBufferMaxSize = 500000; //!<< more than enough for a full screen of lines, around 5MB
 
 enum LineClipBit
 {
@@ -47,8 +47,10 @@ int computeLineClipCode(const Point& p, const Rect& rect)
 
 bool clipLineToRect(
 	const Point& p1, const Point& p2,
+	const Point& uv1, const Point& uv2,
 	const Rect& rect,
-	Point& newP1, Point& newP2)
+	Point& newP1, Point& newP2,
+	Point& newUv1, Point& newUv2)
 {
 	// Compute region codes for P1, P2 
 	int code1 = computeLineClipCode(p1, rect);
@@ -56,6 +58,9 @@ bool clipLineToRect(
 
 	// Initialize line as outside the rectangular window 
 	bool accept = false;
+
+	newUv1 = uv1;
+	newUv2 = uv2;
 
 	while (true)
 	{
@@ -65,6 +70,8 @@ bool clipLineToRect(
 			accept = true;
 			newP1 = p1;
 			newP2 = p2;
+			newUv1 = uv1;
+			newUv2 = uv2;
 			break;
 		}
 		else if (code1 & code2)
@@ -79,6 +86,7 @@ bool clipLineToRect(
 			// rectangle 
 			int code_out;
 			f32 x, y;
+			Point uv = uv1;
 
 			// At least one endpoint is outside the  
 			// rectangle, pick it. 
@@ -92,27 +100,35 @@ bool clipLineToRect(
 			// x = x1 + (1 / slope) * (y - y1) 
 			if (code_out & LineClipBit::Top)
 			{
-				// point is above the clip rectangle 
-				x = p1.x + (p2.x - p1.x) * (rect.bottom() - p1.y) / (p2.y - p1.y);
+				// point is above the clip rectangle
+				auto t = (rect.bottom() - p1.y) / (p2.y - p1.y);
+				x = p1.x + (p2.x - p1.x) * t;
 				y = rect.bottom();
+				uv = uv1 + (uv2 - uv1) * t;
 			}
 			else if (code_out & LineClipBit::Bottom)
 			{
-				// point is below the rectangle 
-				x = p1.x + (p2.x - p1.x) * (rect.top() - p1.y) / (p2.y - p1.y);
+				// point is below the rectangle
+				auto t = (rect.top() - p1.y) / (p2.y - p1.y);
+				x = p1.x + (p2.x - p1.x) * t;
 				y = rect.top();
+				uv = uv1 + (uv2 - uv1) * t;
 			}
 			else if (code_out & LineClipBit::Right)
 			{
-				// point is to the right of rectangle 
-				y = p1.y + (p2.y - p1.y) * (rect.right() - p1.x) / (p2.x - p1.x);
+				// point is to the right of rectangle
+				auto t = (rect.right() - p1.x) / (p2.x - p1.x);
+				y = p1.y + (p2.y - p1.y) * t;
 				x = rect.right();
+				uv = uv1 + (uv2 - uv1) * t;
 			}
 			else if (code_out & LineClipBit::Left)
 			{
-				// point is to the left of rectangle 
-				y = p1.y + (p2.y - p1.y) * (rect.left() - p1.x) / (p2.x - p1.x);
+				// point is to the left of rectangle
+				auto t = (rect.left() - p1.x) / (p2.x - p1.x);
+				y = p1.y + (p2.y - p1.y) * t;
 				x = rect.left();
+				uv = uv1 + (uv2 - uv1) * t;
 			}
 
 			// Now intersection point x,y is found 
@@ -122,12 +138,14 @@ bool clipLineToRect(
 			{
 				newP1.x = x;
 				newP1.y = y;
+				newUv1 = uv;
 				code1 = computeLineClipCode(newP1, rect);
 			}
 			else
 			{
 				newP2.x = x;
 				newP2.y = y;
+				newUv2 = uv;
 				code2 = computeLineClipCode(newP2, rect);
 			}
 		}
@@ -138,13 +156,13 @@ bool clipLineToRect(
 
 void clipLeft(const Rect& rect, Point* inPoints, Point* inUvPoints, u32 inCount, Point* outPoints, Point* outUvPoints, u32& outCount)
 {
+	Point* pp1;
+	Point* pp2;
+	Point* uvpp1;
+	Point* uvpp2;
+
 	for (u32 i = 0; i < inCount; i++)
 	{
-		Point* pp1;
-		Point* pp2;
-		Point* uvpp1;
-		Point* uvpp2;
-
 		if (i == inCount - 1)
 		{
 			pp1 = &inPoints[i];
@@ -160,10 +178,10 @@ void clipLeft(const Rect& rect, Point* inPoints, Point* inUvPoints, u32 inCount,
 			uvpp2 = &inUvPoints[i + 1];
 		}
 
-		Point& p1 = *pp1;
-		Point& p2 = *pp2;
-		Point& uvp1 = *uvpp1;
-		Point& uvp2 = *uvpp2;
+		const Point& p1 = *pp1;
+		const Point& p2 = *pp2;
+		const Point& uvp1 = *uvpp1;
+		const Point& uvp2 = *uvpp2;
 
 		// inside
 		if (p1.x >= rect.x && p2.x >= rect.x)
@@ -200,13 +218,13 @@ void clipLeft(const Rect& rect, Point* inPoints, Point* inUvPoints, u32 inCount,
 
 void clipRight(const Rect& rect, Point* inPoints, Point* inUvPoints, u32 inCount, Point* outPoints, Point* outUvPoints, u32& outCount)
 {
+	Point* pp1;
+	Point* pp2;
+	Point* uvpp1;
+	Point* uvpp2;
+
 	for (u32 i = 0; i < inCount; i++)
 	{
-		Point* pp1;
-		Point* pp2;
-		Point* uvpp1;
-		Point* uvpp2;
-
 		if (i == inCount - 1)
 		{
 			pp1 = &inPoints[i];
@@ -222,10 +240,10 @@ void clipRight(const Rect& rect, Point* inPoints, Point* inUvPoints, u32 inCount
 			uvpp2 = &inUvPoints[i + 1];
 		}
 
-		Point& p1 = *pp1;
-		Point& p2 = *pp2;
-		Point& uvp1 = *uvpp1;
-		Point& uvp2 = *uvpp2;
+		const Point& p1 = *pp1;
+		const Point& p2 = *pp2;
+		const Point& uvp1 = *uvpp1;
+		const Point& uvp2 = *uvpp2;
 
 		// inside
 		if (p1.x <= rect.right() && p2.x <= rect.right())
@@ -262,13 +280,13 @@ void clipRight(const Rect& rect, Point* inPoints, Point* inUvPoints, u32 inCount
 
 void clipTop(const Rect& rect, Point* inPoints, Point* inUvPoints, u32 inCount, Point* outPoints, Point* outUvPoints, u32& outCount)
 {
+	Point* pp1;
+	Point* pp2;
+	Point* uvpp1;
+	Point* uvpp2;
+
 	for (u32 i = 0; i < inCount; i++)
 	{
-		Point* pp1;
-		Point* pp2;
-		Point* uvpp1;
-		Point* uvpp2;
-
 		if (i == inCount - 1)
 		{
 			pp1 = &inPoints[i];
@@ -284,10 +302,10 @@ void clipTop(const Rect& rect, Point* inPoints, Point* inUvPoints, u32 inCount, 
 			uvpp2 = &inUvPoints[i + 1];
 		}
 
-		Point& p1 = *pp1;
-		Point& p2 = *pp2;
-		Point& uvp1 = *uvpp1;
-		Point& uvp2 = *uvpp2;
+		const Point& p1 = *pp1;
+		const Point& p2 = *pp2;
+		const Point& uvp1 = *uvpp1;
+		const Point& uvp2 = *uvpp2;
 
 		// inside
 		if (p1.y >= rect.top() && p2.y >= rect.top())
@@ -324,13 +342,13 @@ void clipTop(const Rect& rect, Point* inPoints, Point* inUvPoints, u32 inCount, 
 
 void clipBottom(const Rect& rect, Point* inPoints, Point* inUvPoints, u32 inCount, Point* outPoints, Point* outUvPoints, u32& outCount)
 {
+	Point* pp1;
+	Point* pp2;
+	Point* uvpp1;
+	Point* uvpp2;
+
 	for (u32 i = 0; i < inCount; i++)
 	{
-		Point* pp1;
-		Point* pp2;
-		Point* uvpp1;
-		Point* uvpp2;
-
 		if (i == inCount - 1)
 		{
 			pp1 = &inPoints[i];
@@ -346,10 +364,10 @@ void clipBottom(const Rect& rect, Point* inPoints, Point* inUvPoints, u32 inCoun
 			uvpp2 = &inUvPoints[i + 1];
 		}
 
-		Point& p1 = *pp1;
-		Point& p2 = *pp2;
-		Point& uvp1 = *uvpp1;
-		Point& uvp2 = *uvpp2;
+		const Point& p1 = *pp1;
+		const Point& p2 = *pp2;
+		const Point& uvp1 = *uvpp1;
+		const Point& uvp2 = *uvpp2;
 
 		// inside
 		if (p1.y <= rect.bottom() && p2.y <= rect.bottom())
@@ -402,6 +420,9 @@ bool clipTriangleToRect(
 		outPoints[0] = p1;
 		outPoints[1] = p2;
 		outPoints[2] = p3;
+		outUvPoints[0] = uv1;
+		outUvPoints[1] = uv2;
+		outUvPoints[2] = uv3;
 		outCount = 3;
 		return true;
 	}
@@ -1498,8 +1519,70 @@ void Renderer::drawLine(const Point& a, const Point& b)
 	drawPolyLine(pts, 2, false);
 }
 
+void Renderer::drawPolyLine1Pixel(const Point* points, u32 pointCount, bool closed)
+{
+	auto atlas = (UiAtlas*)currentBatch->atlas;
+	auto lineImage = atlas->whiteImage;
+	const auto color = currentLineStyle.color.getRgba();
+	auto rcUv = lineImage->uvRect;
+	auto atlasTextureIndex = lineImage->atlasTexture->textureIndex;
+
+	rcUv.x += ctx->settings.whiteImageUvBorder;
+	rcUv.y += ctx->settings.whiteImageUvBorder;
+	rcUv.width -= ctx->settings.whiteImageUvBorder * 2.0f;
+	rcUv.height -= ctx->settings.whiteImageUvBorder * 2.0f;
+
+	const auto uv11 = rcUv.topLeft();
+	const auto uv12 = rcUv.topRight();
+	const auto uv22 = rcUv.bottomRight();
+	const auto uv21 = rcUv.bottomLeft();
+	Point p1, p2, uv1, uv2;
+
+	for (int p = 0; p < pointCount; p++)
+	{
+		if (p == pointCount - 1)
+		{
+			if (!clipLineToRect(points[p], points[0], uv11, uv21, currentClipRect, p1, p2, uv1, uv2))
+				break;
+		}
+		else if (!clipLineToRect(points[p], points[p + 1], uv11, uv21, currentClipRect, p1, p2, uv1, uv2))
+			continue;
+
+		needToAddVertexCount(3);
+		u32 i = vertexBufferData.drawVertexCount;
+
+		vertexBufferData.vertices[i].position = p1;
+		vertexBufferData.vertices[i].color = currentLineStyle.color.getRgba();
+		vertexBufferData.vertices[i].uv = uv11;
+		vertexBufferData.vertices[i].textureIndex = atlasTextureIndex;
+		i++;
+
+		vertexBufferData.vertices[i].position = p2;
+		vertexBufferData.vertices[i].color = currentLineStyle.color.getRgba();
+		vertexBufferData.vertices[i].uv = uv12;
+		vertexBufferData.vertices[i].textureIndex = atlasTextureIndex;
+		i++;
+
+		vertexBufferData.vertices[i].position = p1;
+		vertexBufferData.vertices[i].color = currentLineStyle.color.getRgba();
+		vertexBufferData.vertices[i].uv = uv11;
+		vertexBufferData.vertices[i].textureIndex = atlasTextureIndex;
+		i++;
+
+		currentBatch->vertexCount += 3;
+		vertexBufferData.drawVertexCount = i;
+	}
+}
+
 void Renderer::drawPolyLine(const Point* points, u32 pointCount, bool closed)
 {
+	// special case, faster to draw single degenerated triangles as lines of 1 pixel
+	if (currentLineStyle.width <= 1.0f)
+	{
+		drawPolyLine1Pixel(points, pointCount, closed);
+		return;
+	}
+
 	Point d1;
 	Point d2;
 	Point n1;
@@ -1512,10 +1595,6 @@ void Renderer::drawPolyLine(const Point* points, u32 pointCount, bool closed)
 	Point p22;
 	auto atlas = (UiAtlas*)currentBatch->atlas;
 	auto lineImage = atlas->whiteImage;
-	f32 uStart = lineImage->uvRect.x;
-	f32 u = 0;
-	f32 uStep = lineImage->uvRect.width / (f32)pointCount;
-	f32 uSize = lineImage->uvRect.width;
 	const auto color = currentLineStyle.color.getRgba();
 	auto rcUv = lineImage->uvRect;
 
@@ -1705,10 +1784,9 @@ void Renderer::drawTriangle(
 		vertexBufferData.vertices[i].uv = uvPts[k+1];
 		vertexBufferData.vertices[i].textureIndex = atlasTextureIndex;
 		i++;
-
-		currentBatch->vertexCount += 3;
 	}
 
+	currentBatch->vertexCount += (pointCount - 2) * 3;
 	vertexBufferData.drawVertexCount = i;
 }
 

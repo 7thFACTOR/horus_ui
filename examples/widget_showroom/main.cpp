@@ -887,25 +887,25 @@ struct MyViewHandler : hui::ViewHandler
 			//	hui::drawPolyLine(pts.data(), pts.size());
 			//}
 
-			//{
-			//	hui::LineStyle ls;
+			{
+				hui::LineStyle ls;
 
-			//	ls.width = 10;
-			//	ls.color = Color::green;
-			//	hui::setLineStyle(ls);
-			//	std::vector<Point> pts;
-			//	float x = 2;
-			//	for (float u = 0; u < 3.14 * 2; u += 0.1)
-			//	{
-			//		pts.push_back(Point(x += 15, 400 + sinf(u) * 100));
+				ls.width = 10;
+				ls.color = Color::green;
+				hui::setLineStyle(ls);
+				std::vector<Point> pts;
+				float x = 2;
+				for (float u = 0; u < 3.14 * 2; u += 2)
+				{
+					pts.push_back(Point(x += 15, 400 + sinf(u) * 100));
 
-			//	}
-			//	hui::drawPolyLine(pts.data(), pts.size());
-			//}
-			hui::setLineStyle({ Color::white, 16 });
+				}
+				hui::drawPolyLine(pts.data(), pts.size(), false);
+			}
+			drawCircle({ 100, 100 }, 10, 50);
+			hui::setLineStyle({ Color::white, 1 });
 			drawRectangle({ 50, 50, viewRc.width - 100, viewRc.height - 100 });
-
-
+			//drawLine({ 100, 100 } , {200, 150 });
 			//{
 			//	hui::LineStyle ls;
 
