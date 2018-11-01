@@ -179,7 +179,7 @@ void drawEllipse(const Point& center, f32 radiusX, f32 radiusY, u32 segments)
 		crtAngle += step;
 	}
 
-	ctx->renderer->cmdDrawPolyLine(pts.data(), pts.size(), true);
+	ctx->renderer->cmdDrawPolyLine(pts.data(), pts.size(), false);
 }
 
 void drawRectangle(const Rect& rc)

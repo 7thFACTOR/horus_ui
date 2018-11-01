@@ -902,11 +902,17 @@ struct MyViewHandler : hui::ViewHandler
 				}
 				hui::drawPolyLine(pts.data(), pts.size(), false);
 			}
-			drawCircle({ 100, 100 }, 10, 50);
+			hui::setLineStyle({ Color::red, 20 });
+			drawCircle({ 140, 140 }, 110, 14);
 			hui::setLineStyle({ Color::white, 10 });
 			//drawRectangle({ 50, 50, viewRc.width - 100, viewRc.height - 100 });
-			Point ps[] = { { 100, 150 },{ 150, 50 }, {170, 250}, {200, 200}, {300, 100} };
-			drawPolyLine(ps, 5);
+			static float ff = 0;
+			Point ps[] = { { 100, 150+ff },{ 150, 50-ff }, {170, 150+ff}, {200, 200-ff}, {300, 100+ff}, {500, 300-ff}, {600, 40+ff} };
+			drawPolyLine(ps, 7);
+			ff = sinf(GetTickCount()*0.0007f) * 100.0f;
+
+			Point ps2[] = { { 103, 100 },{ 152, 101 },{ 155, 154 },{ 113, 150 }, {111, 160} };
+			drawPolyLine(ps2, 5);
 			//{
 			//	hui::LineStyle ls;
 
