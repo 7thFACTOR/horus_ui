@@ -1610,6 +1610,7 @@ void Renderer::drawPolyLine(const Point* points, u32 pointCount, bool closed)
 	// P12----------P22
 	f32 mitterScale1 = 1;
 	f32 mitterScale2 = 1;
+	f32 sinAngle = 0;
 
 	for (int p = 0; p < pointCount; p++)
 	{
@@ -1634,10 +1635,12 @@ void Renderer::drawPolyLine(const Point* points, u32 pointCount, bool closed)
 				n1 += Point(-d1.y, d1.x).getNormalized();
 				n1.normalize();
 				firstN = n1;
+				sinAngle = fabs(n2.x * d2.y - n2.y * d2.x);
+				mitterScale1 = 1 / sinAngle;
 			}
 
 			d2 = Point(points[2].x - points[1].x, points[2].y - points[1].y);
-			n2 = n1.getNegated() + Point(-d2.y, d2.x);
+			n2 = n1 + Point(-d2.y, d2.x);
 			n2.normalize();
 			lastN2 = n2;
 			n2 += origN11;
@@ -1645,8 +1648,8 @@ void Renderer::drawPolyLine(const Point* points, u32 pointCount, bool closed)
 			d2 = Point(points[0].x - points[1].x, points[0].y - points[1].y);
 			d2.normalize();
 			n2.normalize();
-			float sinAngle = fabs(n2.x * d2.y - n2.y * d2.x);
-			n2h = 1 / sinAngle;
+			sinAngle = fabs(n2.x * d2.y - n2.y * d2.x);
+			mitterScale2 = 1 / sinAngle;
 		}
 		// if last point and its closed
 		else if (p == pointCount - 1 && closed)
@@ -1682,9 +1685,11 @@ void Renderer::drawPolyLine(const Point* points, u32 pointCount, bool closed)
 			n1 = lastN2;
 			// find normals at point B
 			d1 = Point(points[p + 2].x - points[p + 1].x, points[p + 2].y - points[p + 1].y);
+			
 			// normal in both expanded directions
 			n2 = Point(-d1.y, d1.x);
 			n2.normalize();
+			
 			lastN2 = n2;
 			n2 += n1;
 		}
