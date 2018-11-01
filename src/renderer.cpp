@@ -1610,6 +1610,9 @@ void Renderer::drawPolyLine(const Point* points, u32 pointCount, bool closed)
 	// P12----------P22
 	f32 mitterScale1 = 1;
 	f32 mitterScale2 = 1;
+	f32 lastMitterScale1 = 1;
+	f32 lastMitterScale2 = 1;
+	f32 firstMitterScale = 1;
 	f32 sinAngle = 0;
 
 	for (int p = 0; p < pointCount; p++)
@@ -1626,78 +1629,89 @@ void Renderer::drawPolyLine(const Point* points, u32 pointCount, bool closed)
 			// normal in both expanded directions
 			n1 = Point(-d1.y, d1.x);
 			n1.normalize();
-			auto origN11 = n1;
+
+			auto seg1 = Point(points[p].x - points[p + 1].x, points[p].y - points[p + 1].y);;
+			auto seg2 = Point(points[p + 2].x - points[p + 1].x, points[p + 2].y - points[p + 1].y);
+			d1 = seg1.getNormalized() + seg2.getNormalized();
+			d1.normalize();
+			seg2.normalize();
+			sinAngle = fabs(d1.x * seg2.y - d1.y * seg2.x);
+			mitterScale2 = 1.0f / sinAngle * sgn(d1.y);
+			n2 = d1;
+			lastN2 = n2;
 
 			if (closed)
 			{
-				d1 = Point(points[0].x - points[pointCount - 1].x, points[0].y - points[pointCount - 1].y);
-				// normal in both expanded directions
-				n1 += Point(-d1.y, d1.x).getNormalized();
-				n1.normalize();
+				auto seg1 = Point(points[pointCount - 1].x - points[p].x, points[pointCount - 1].y - points[p].y);;
+				auto seg2 = Point(points[p + 1].x - points[p].x, points[p + 1].y - points[p].y);
+				seg1.normalize();
+				seg2.normalize();
+				d1 = seg1 + seg2;
+				d1.normalize();
+				sinAngle = fabs(d1.x * seg2.y - d1.y * seg2.x);
+				mitterScale1 = 1.0f / sinAngle * sgn(d1.y);
+				n1 = d1;
 				firstN = n1;
-				sinAngle = fabs(n2.x * d2.y - n2.y * d2.x);
-				mitterScale1 = 1 / sinAngle;
+				firstMitterScale = mitterScale1;
 			}
-
-			d2 = Point(points[2].x - points[1].x, points[2].y - points[1].y);
-			n2 = n1 + Point(-d2.y, d2.x);
-			n2.normalize();
-			lastN2 = n2;
-			n2 += origN11;
-
-			d2 = Point(points[0].x - points[1].x, points[0].y - points[1].y);
-			d2.normalize();
-			n2.normalize();
-			sinAngle = fabs(n2.x * d2.y - n2.y * d2.x);
-			mitterScale2 = 1 / sinAngle;
 		}
 		// if last point and its closed
 		else if (p == pointCount - 1 && closed)
 		{
 			n1 = lastN2;
+			mitterScale1 = lastMitterScale2;
 			// find normals at point B
 			n2 = firstN;
+			mitterScale2 = firstMitterScale;
 		}
 		// if almost last one
 		else if (p == pointCount - 2)
 		{
 			n1 = lastN2;
-			// find normals at point B
-			d1 = Point(points[p + 1].x - points[p].x, points[p + 1].y - points[p].y);
-			
+			mitterScale1 = lastMitterScale2;
+		
 			if (closed)
 			{
-				// find normals at point B
-				d2 = Point(points[0].x - points[p + 1].x, points[0].y - points[p + 1].y);
+				auto seg1 = Point(points[p].x - points[p + 1].x, points[p].y - points[p + 1].y);
+				auto seg2 = Point(points[0].x - points[p + 1].x, points[0].y - points[p + 1].y);
+				d1 = seg1.getNormalized() + seg2.getNormalized();
+				d1.normalize();
+				seg2.normalize();
+				sinAngle = fabs(d1.x * seg2.y - d1.y * seg2.x);
+				mitterScale2 = 1.0f / sinAngle * sgn(d1.y);
+				n2 = d1;
+				lastN2 = n2;
 			}
 			else
 			{
-				d2.clear();
+				// find normals at point B
+				d1 = Point(points[p + 1].x - points[p].x, points[p + 1].y - points[p].y);
+				// normal in both expanded directions
+				n2 = Point(-d1.y, d1.x).getNormalized();
+				lastN2 = n2;
+				mitterScale2 = 1;
 			}
-			
-			// normal in both expanded directions
-			n2 = Point(-d1.y, d1.x).getNormalized() + Point(-d2.y, d2.x).getNormalized();
-			n2.normalize();
-			lastN2 = n2;
 		}
 		else if (p < pointCount - 2)
 		{
 			n1 = lastN2;
-			// find normals at point B
-			d1 = Point(points[p + 2].x - points[p + 1].x, points[p + 2].y - points[p + 1].y);
-			
-			// normal in both expanded directions
-			n2 = Point(-d1.y, d1.x);
-			n2.normalize();
-			
-			lastN2 = n2;
-			n2 += n1;
-		}
+			mitterScale1 = lastMitterScale2;
 
-		n1.normalize();
-		n2.normalize();
+			auto seg1 = Point(points[p].x - points[p + 1].x, points[p].y - points[p + 1].y);;
+			auto seg2 = Point(points[p+2].x - points[p+1].x, points[p+2].y - points[p+1].y);
+			d1 = seg1.getNormalized() + seg2.getNormalized();
+			d1.normalize();
+			seg2.normalize();
+			sinAngle = fabs(d1.x * seg2.y - d1.y * seg2.x);
+			mitterScale2 = 1.0f / sinAngle *sgn(d1.y);
+			n2 = d1;
+			lastN2 = n2;
+		}
+		
 		n1 *= half * mitterScale1;
 		n2 *= half * mitterScale2;
+		lastMitterScale1 = mitterScale1;
+		lastMitterScale2 = mitterScale2;
 
 		if (p > 0)
 		{
