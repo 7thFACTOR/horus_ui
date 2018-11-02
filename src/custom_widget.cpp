@@ -226,13 +226,56 @@ Point hermitePoint(
 	return v;
 }
 
-void drawSpline(SplineControlPoint* points, u32 count, f32 segmentsPerSpline)
+// Compute a length of a spline segment by using 5-point Legendre-Gauss quadrature
+// https://en.wikipedia.org/wiki/Gaussian_quadrature
+f32 computeSplineLength(const Point& start, const Point& start_tangent,
+	const Point& end, Point const& end_tangent)
+{
+	// Cubic Hermite spline derivative coefficients
+	Point const c0 = start_tangent;
+	Point const c1 = (end - start) * 6.0f - start_tangent * 4.0f - end_tangent * 2.0f;
+	Point const c2 = (start - end) * 6.0f + (start_tangent + end_tangent) * 3.0f;
+	
+	auto const evaluate_derivative = [c0, c1, c2](float t) -> Point
+	{
+		return c0 + (c1 + c2 * t) * t;
+	};
+
+	struct GaussLengendreCoefficient
+	{
+		float abscissa;
+		float weight;
+	};
+
+	static constexpr GaussLengendreCoefficient gauss_lengendre_coefficients[] =
+	{
+		{ 0.0f, 0.5688889f },
+		{ -0.5384693f, 0.47862867f },
+		{ 0.5384693f, 0.47862867f },
+		{ -0.90617985f, 0.23692688f },
+		{ 0.90617985f, 0.23692688f }
+	};
+	
+	float length = 0.f;
+	
+	for (auto coefficient : gauss_lengendre_coefficients)
+	{
+		float const t = 0.5f * (1.f + coefficient.abscissa);
+		length += evaluate_derivative(t).getLength() * coefficient.weight;
+	}
+
+	return 0.5f * length;
+}
+
+void drawSpline(SplineControlPoint* points, u32 count, f32 segmentSize)
 {
 	std::vector<Point> pts;
-	f32 step = 1.0f / segmentsPerSpline;
 
 	for (int i = 0; i < count - 1; i++)
 	{
+		f32 len = computeSplineLength(points[i].center, points[i].rightTangent, points[i + 1].center, points[i + 1].leftTangent);
+		f32 step = 1.0f / (len / segmentSize);
+
 		for (f32 s = 0; s < 1.0f; s += step)
 		{
 			pts.push_back(

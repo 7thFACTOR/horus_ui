@@ -1600,9 +1600,7 @@ void Renderer::drawPolyLine(const Point* points, u32 pointCount, bool closed)
 	const auto uv12 = rcUv.topRight();
 	const auto uv22 = rcUv.bottomRight();
 	const auto uv21 = rcUv.bottomLeft();
-	// we cannot draw 1 pixel wide lines, because we draw triangles, and degenerate ones are not rasterized
-	// so we force here 2 as the line width if less than that
-	const f32 half = (currentLineStyle.width < 2.0f ? 1.0f : currentLineStyle.width) / 2.0f;
+	const f32 half = currentLineStyle.width  / 2.0f;
 
 	// P11----------P21
 	//  |            |

@@ -852,7 +852,7 @@ struct MyViewHandler : hui::ViewHandler
 			//ls = hui::LineStyle(hui::Color::yellow, 30);
 			//hui::setLineStyle(ls);
 			//hui::drawCircle({ 200, 200 }, 50, 300);
-			//static f32 ampl = 0;
+			static f32 ampl = 0;
 
 			//Point pts[] = {{10, 240}, {100, 240}, {120, 240}, {330, 240}, {350, 240}, {380, 100}, {400, 120}};
 			//{
@@ -955,7 +955,7 @@ struct MyViewHandler : hui::ViewHandler
 				pts[2].center.x = 400;
 				pts[2].center.y = 100;
 				pts[2].leftTangent.x = 320;
-				pts[2].leftTangent.y = 1420;
+				pts[2].leftTangent.y = 1420+ampl;
 				pts[1].rightTangent.x = 20;
 				pts[1].rightTangent.y = 190;
 
@@ -969,7 +969,8 @@ struct MyViewHandler : hui::ViewHandler
 				hui::setLineStyle({ Color::red, 2 });
 				hui::drawLine({ 50,50 }, { 100, 100 });
 			}
-			//ampl += sinf(GetTickCount()) * 12;
+			
+			ampl += sinf(GetTickCount()) * 12;
 
 			if (hui::isHovered())
 			{
