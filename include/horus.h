@@ -2505,7 +2505,7 @@ HORUS_API void drawEllipse(const Point& center, f32 radiusX, f32 radiusY, u32 se
 HORUS_API void drawRectangle(const Rect& rc);
 
 /// 
-HORUS_API void drawSpline(SplineControlPoint* points, u32 count);
+HORUS_API void drawSpline(SplineControlPoint* points, u32 count, f32 segmentsPerSpline = 15);
 
 /// 
 HORUS_API void drawArrow(const Point& startPoint, const Point& endPoint, f32 tipLength, f32 tipWidth, bool drawBodyLine = true);

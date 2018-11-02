@@ -1600,118 +1600,127 @@ void Renderer::drawPolyLine(const Point* points, u32 pointCount, bool closed)
 	const auto uv12 = rcUv.topRight();
 	const auto uv22 = rcUv.bottomRight();
 	const auto uv21 = rcUv.bottomLeft();
-	Point firstN;
 	// we cannot draw 1 pixel wide lines, because we draw triangles, and degenerate ones are not rasterized
 	// so we force here 2 as the line width if less than that
-	const f32 half = (currentLineStyle.width < 2.0f ? 2.0f : currentLineStyle.width) / 2.0f;
+	const f32 half = (currentLineStyle.width < 2.0f ? 1.0f : currentLineStyle.width) / 2.0f;
 
 	// P11----------P21
 	//  |            |
 	// P12----------P22
-	f32 mitterScale1 = 1;
-	f32 mitterScale2 = 1;
-	f32 lastMitterScale1 = 1;
-	f32 lastMitterScale2 = 1;
-	f32 firstMitterScale = 1;
+	f32 extrudeScale1 = 1;
+	f32 extrudeScale2 = 1;
+	f32 lastExtrudeScale1 = 1;
+	f32 lastExtrudeScale2 = 1;
+	f32 firstExtrudeScale = 1;
 	f32 sinAngle = 0;
+	Point firstN;
+	Point seg1, seg2;
 
 	for (int p = 0; p < pointCount; p++)
 	{
-		mitterScale1 = 1;
-		mitterScale2 = 1;
+		extrudeScale1 = 1;
+		extrudeScale2 = 1;
 
 		if (p == pointCount - 1 && !closed) break;
 
 		if (p == 0)
 		{
-			// find normals at point A
-			d1 = Point(points[1].x - points[0].x, points[1].y - points[0].y);
-			// normal in both expanded directions
-			n1 = Point(-d1.y, d1.x);
-			n1.normalize();
-
-			auto seg1 = Point(points[p].x - points[p + 1].x, points[p].y - points[p + 1].y);;
-			auto seg2 = Point(points[p + 2].x - points[p + 1].x, points[p + 2].y - points[p + 1].y);
-			d1 = seg1.getNormalized() + seg2.getNormalized();
-			d1.normalize();
-			seg2.normalize();
-			sinAngle = fabs(d1.x * seg2.y - d1.y * seg2.x);
-			mitterScale2 = 1.0f / sinAngle * sgn(d1.y);
-			n2 = d1;
-			lastN2 = n2;
-
-			if (closed)
+			if (pointCount > 2)
 			{
-				auto seg1 = Point(points[pointCount - 1].x - points[p].x, points[pointCount - 1].y - points[p].y);;
-				auto seg2 = Point(points[p + 1].x - points[p].x, points[p + 1].y - points[p].y);
+				seg1 = Point(points[p].x - points[p + 1].x, points[p].y - points[p + 1].y);;
+				seg2 = Point(points[p + 2].x - points[p + 1].x, points[p + 2].y - points[p + 1].y);
 				seg1.normalize();
 				seg2.normalize();
 				d1 = seg1 + seg2;
 				d1.normalize();
-				sinAngle = fabs(d1.x * seg2.y - d1.y * seg2.x);
-				mitterScale1 = 1.0f / sinAngle * sgn(d1.y);
+				sinAngle = (d1.x * seg2.y - d1.y * seg2.x);
+				extrudeScale2 = 1.0f / sinAngle;
+				n2 = d1;
+				lastN2 = n2;
+			}
+
+			if (!closed)
+			{
+				d1 = Point(points[1].x - points[0].x, points[1].y - points[0].y);
+				n1 = Point(d1.y, -d1.x);
+				n1.normalize();
+
+				if (pointCount == 2)
+				{
+					n2 = n1;
+				}
+			}
+			else
+			{
+				seg1 = Point(points[pointCount - 1].x - points[p].x, points[pointCount - 1].y - points[p].y);;
+				seg2 = Point(points[p + 1].x - points[p].x, points[p + 1].y - points[p].y);
+				seg1.normalize();
+				seg2.normalize();
+				d1 = seg1 + seg2;
+				d1.normalize();
+				sinAngle = (d1.x * seg2.y - d1.y * seg2.x);
+				extrudeScale1 = 1.0f / sinAngle;
 				n1 = d1;
 				firstN = n1;
-				firstMitterScale = mitterScale1;
+				firstExtrudeScale = extrudeScale1;
 			}
 		}
 		// if last point and its closed
 		else if (p == pointCount - 1 && closed)
 		{
 			n1 = lastN2;
-			mitterScale1 = lastMitterScale2;
+			extrudeScale1 = lastExtrudeScale2;
 			// find normals at point B
 			n2 = firstN;
-			mitterScale2 = firstMitterScale;
+			extrudeScale2 = firstExtrudeScale;
 		}
 		// if almost last one
 		else if (p == pointCount - 2)
 		{
 			n1 = lastN2;
-			mitterScale1 = lastMitterScale2;
+			extrudeScale1 = lastExtrudeScale2;
 		
 			if (closed)
 			{
-				auto seg1 = Point(points[p].x - points[p + 1].x, points[p].y - points[p + 1].y);
-				auto seg2 = Point(points[0].x - points[p + 1].x, points[0].y - points[p + 1].y);
-				d1 = seg1.getNormalized() + seg2.getNormalized();
-				d1.normalize();
+				seg1 = Point(points[p].x - points[p + 1].x, points[p].y - points[p + 1].y);
+				seg2 = Point(points[0].x - points[p + 1].x, points[0].y - points[p + 1].y);
+				seg1.normalize();
 				seg2.normalize();
-				sinAngle = fabs(d1.x * seg2.y - d1.y * seg2.x);
-				mitterScale2 = 1.0f / sinAngle * sgn(d1.y);
+				d1 = seg1 + seg2;
+				d1.normalize();
+				sinAngle = (d1.x * seg2.y - d1.y * seg2.x);
+				extrudeScale2 = 1.0f / sinAngle;
 				n2 = d1;
 				lastN2 = n2;
 			}
 			else
 			{
-				// find normals at point B
 				d1 = Point(points[p + 1].x - points[p].x, points[p + 1].y - points[p].y);
-				// normal in both expanded directions
-				n2 = Point(-d1.y, d1.x).getNormalized();
+				n2 = Point(d1.y, -d1.x).getNormalized();
 				lastN2 = n2;
-				mitterScale2 = 1;
 			}
 		}
 		else if (p < pointCount - 2)
 		{
 			n1 = lastN2;
-			mitterScale1 = lastMitterScale2;
-
-			auto seg1 = Point(points[p].x - points[p + 1].x, points[p].y - points[p + 1].y);;
-			auto seg2 = Point(points[p+2].x - points[p+1].x, points[p+2].y - points[p+1].y);
-			d1 = seg1.getNormalized() + seg2.getNormalized();
-			d1.normalize();
+			extrudeScale1 = lastExtrudeScale2;
+			
+			seg1 = Point(points[p].x - points[p + 1].x, points[p].y - points[p + 1].y);;
+			seg2 = Point(points[p+2].x - points[p+1].x, points[p+2].y - points[p+1].y);
+			seg1.normalize();
 			seg2.normalize();
-			sinAngle = fabs(d1.x * seg2.y - d1.y * seg2.x);
-			mitterScale2 = 1.0f / sinAngle *sgn(d1.y);
+			d1 = seg1 + seg2;
+			d1.normalize();
+			sinAngle = (d1.x * seg2.y - d1.y * seg2.x);
+			extrudeScale2 = 1.0f / sinAngle;
 			n2 = d1;
 			lastN2 = n2;
 		}
 		
-		n1 *= half * mitterScale1;
-		n2 *= half * mitterScale2;
-		lastMitterScale1 = mitterScale1;
-		lastMitterScale2 = mitterScale2;
+		n1 *= half * extrudeScale1;
+		n2 *= half * extrudeScale2;
+		lastExtrudeScale1 = extrudeScale1;
+		lastExtrudeScale2 = extrudeScale2;
 
 		if (p > 0)
 		{
@@ -1737,8 +1746,8 @@ void Renderer::drawPolyLine(const Point* points, u32 pointCount, bool closed)
 
 		lastP11 = p21;
 		lastP12 = p22;
-		drawTriangle(p11, p12, p22, uv11, uv12, uv22, lineImage);
-		drawTriangle(p21, p22, p11, uv21, uv22, uv11, lineImage);
+		drawTriangle(p11, p21, p22, uv11, uv21, uv22, lineImage);
+		drawTriangle(p11, p22, p12, uv11, uv22, uv12, lineImage);
 	}
 }
 
