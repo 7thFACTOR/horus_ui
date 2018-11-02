@@ -903,16 +903,17 @@ struct MyViewHandler : hui::ViewHandler
 				hui::drawPolyLine(pts.data(), pts.size(), false);
 			}
 			hui::setLineStyle({ Color::red, 20 });
-			drawCircle({ 140, 140 }, 110, 14);
-			hui::setLineStyle({ Color::white, 10 });
+			drawCircle({ 140, 140 }, 110, 40);
+			hui::setLineStyle({ Color::white, 1 });
 			//drawRectangle({ 50, 50, viewRc.width - 100, viewRc.height - 100 });
 			static float ff = 0;
+			static f32 tim = 0;
 			Point ps[] = { { 100, 150+ff },{ 150, 50-ff }, {170, 150+ff}, {200, 200-ff}, {300, 100+ff}, {500, 300-ff}, {600, 40+ff} };
 			drawPolyLine(ps, 7);
-			ff = sinf(GetTickCount()*0.0007f) * 100.0f;
-
-			Point ps2[] = { { 103, 100 },{ 152, 101 },{ 155, 154 },{ 113, 150 }, {111, 160} };
-			drawPolyLine(ps2, 5);
+			ff = sinf(tim) * 100.0f;
+			tim+=0.01f;
+			Point ps2[] = { { 100, 100 },{ 150, 100 },{ 150, 150 },{ 100, 150 } };
+			drawPolyLine(ps2, 4, true);
 			//{
 			//	hui::LineStyle ls;
 
@@ -929,45 +930,45 @@ struct MyViewHandler : hui::ViewHandler
 			//	hui::drawPolyLine(pts.data(), pts.size());
 			//}
 
-			//{
-			//	hui::LineStyle ls;
+			{
+				hui::LineStyle ls;
 
-			//	ls.width = 6;
-			//	ls.color = Color::cyan;
-			//	hui::setLineStyle(ls);
-			//	std::vector<SplineControlPoint> pts;
+				ls.width = 6;
+				ls.color = Color::cyan;
+				hui::setLineStyle(ls);
+				std::vector<SplineControlPoint> pts;
 
-			//	pts.resize(4);
+				pts.resize(4);
 
-			//	pts[0].center.x = 100;
-			//	pts[0].center.y = 100;
-			//	pts[0].rightTangent.x = 120;
-			//	pts[0].rightTangent.y = 20;
+				pts[0].center.x = 100;
+				pts[0].center.y = 100;
+				pts[0].rightTangent.x = 30;
+				pts[0].rightTangent.y = 20;
 
-			//	pts[1].center.x = 200;
-			//	pts[1].center.y = 100;
-			//	pts[1].leftTangent.x = 0;
-			//	pts[1].leftTangent.y = 140;
-			//	pts[1].rightTangent.x = 0;
-			//	pts[1].rightTangent.y = 90;
+				pts[1].center.x = 200;
+				pts[1].center.y = 100;
+				pts[1].leftTangent.x = 0;
+				pts[1].leftTangent.y = 4;
+				pts[1].rightTangent.x = 0;
+				pts[1].rightTangent.y = 90;
 
-			//	pts[2].center.x = 400;
-			//	pts[2].center.y = 100;
-			//	pts[2].leftTangent.x = 320;
-			//	pts[2].leftTangent.y = 1420;
-			//	pts[1].rightTangent.x = 20;
-			//	pts[1].rightTangent.y = 190;
+				pts[2].center.x = 400;
+				pts[2].center.y = 100;
+				pts[2].leftTangent.x = 320;
+				pts[2].leftTangent.y = 1420;
+				pts[1].rightTangent.x = 20;
+				pts[1].rightTangent.y = 190;
 
-			//	pts[3].center.x = 700;
-			//	pts[3].center.y = 150;
-			//	pts[3].leftTangent.x = 320;
-			//	pts[3].leftTangent.y = 520;
+				pts[3].center.x = 700;
+				pts[3].center.y = 150;
+				pts[3].leftTangent.x = 320;
+				pts[3].leftTangent.y = 520;
 
-			//	hui::drawSpline(pts.data(), pts.size());
+				hui::drawSpline(pts.data(), pts.size());
 
-			//	hui::setLineStyle({ Color::red, 2 });
-			//	hui::drawLine({ 50,50 }, { 100, 100 });
-			//}
+				hui::setLineStyle({ Color::red, 2 });
+				hui::drawLine({ 50,50 }, { 100, 100 });
+			}
 			//ampl += sinf(GetTickCount()) * 12;
 
 			if (hui::isHovered())

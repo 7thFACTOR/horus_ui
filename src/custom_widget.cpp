@@ -179,7 +179,7 @@ void drawEllipse(const Point& center, f32 radiusX, f32 radiusY, u32 segments)
 		crtAngle += step;
 	}
 
-	ctx->renderer->cmdDrawPolyLine(pts.data(), pts.size(), false);
+	ctx->renderer->cmdDrawPolyLine(pts.data(), pts.size(), true);
 }
 
 void drawRectangle(const Rect& rc)
@@ -226,10 +226,10 @@ Point hermitePoint(
 	return v;
 }
 
-void drawSpline(SplineControlPoint* points, u32 count)
+void drawSpline(SplineControlPoint* points, u32 count, f32 segmentsPerSpline)
 {
 	std::vector<Point> pts;
-	f32 step = 0.02f;
+	f32 step = 1.0f / segmentsPerSpline;
 
 	for (int i = 0; i < count - 1; i++)
 	{
