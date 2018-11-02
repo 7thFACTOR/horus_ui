@@ -892,6 +892,7 @@ struct MyViewHandler : hui::ViewHandler
 
 				ls.width = 10;
 				ls.color = Color::green;
+				
 				hui::setLineStyle(ls);
 				std::vector<Point> pts;
 				float x = 2;
@@ -900,42 +901,80 @@ struct MyViewHandler : hui::ViewHandler
 					pts.push_back(Point(x += 15, 400 + sinf(u) * 100));
 
 				}
-				hui::drawPolyLine(pts.data(), pts.size(), false);
+				//hui::drawPolyLine(pts.data(), pts.size(), false);
 			}
 			hui::setLineStyle({ Color::red, 20 });
-			drawCircle({ 140, 140 }, 110, 40);
+			//drawCircle({ 140, 140 }, 110, 40);
 			hui::setLineStyle({ Color::white, 1 });
 			//drawRectangle({ 50, 50, viewRc.width - 100, viewRc.height - 100 });
 			static float ff = 0;
 			static f32 tim = 0;
-			Point ps[] = { { 100, 150+ff },{ 150, 50-ff }, {170, 150+ff}, {200, 200-ff}, {300, 100+ff}, {500, 300-ff}, {600, 40+ff} };
+
+			LineStyle ls1;
+			static f32 phs = 0;
+			ls1.stipplePattern[0] = 15;
+			ls1.stipplePattern[1] = 2;
+			ls1.stipplePattern[2] = 5;
+			ls1.stipplePattern[3] = 10;
+			ls1.stipplePatternCount = 2;
+			ls1.useStipple = true;
+			ls1.width = 5;
+			ls1.color = Color::yellow;
+			ls1.stipplePhase = phs;
+
+			//phs += 1;
+
+
+			LineStyle ls2;
+
+			ls2.stipplePattern[0] = 4;
+			ls2.stipplePattern[1] = 3;
+			ls2.stipplePatternCount = 2;
+			ls2.useStipple = true;
+			ls2.width = 1;
+			ls2.stipplePhase = phs;
+			hui::setLineStyle(ls1);
+
+			auto mpos = getMousePosition();
+			mpos.x -= viewRc.x + 20;
+			mpos.y -= viewRc.y + 20;
+
+			if (hui::getInputEvent().type != InputEvent::Type::MouseMove)
+				mpos.clear();
+
+			Point ps[] = { { 100, 150 },mpos, {170, 150}, {200, 350}, {300, 250}, {500, 230}, {600, 150} };
+			//hui::setLineStyle({ Color::red, 25.5f });
 			drawPolyLine(ps, 7);
+			//hui::setLineStyle({ Color::red, 1 });
+			//drawPolyLine(ps, 7);
+
+
 			ff = sinf(tim) * 100.0f;
 			tim+=0.01f;
-			Point ps2[] = { { 100, 100 },{ 150, 100 },{ 150, 150 },{ 100, 150 } };
-			drawPolyLine(ps2, 4, true);
-			//{
-			//	hui::LineStyle ls;
+			Point ps2[] = { { 100, 100 },{ 250, 100 },{ 250, 250 },{ 100, 250 } };
+			drawPolyLine(ps2, 4, false);
+			{
+				hui::LineStyle ls;
 
-			//	ls.width = 8;
-			//	ls.color = Color::orange;
-			//	hui::setLineStyle(ls);
-			//	std::vector<Point> pts;
-			//	float x = 2;
-			//	for (float u = 0; u < 3.14 * 2; u += 0.1)
-			//	{
-			//		pts.push_back(Point(x += 15, 440 + sinf(u) * 100));
+				ls.width = 8;
+				ls.color = Color::orange;
+				hui::setLineStyle(ls);
+				std::vector<Point> pts;
+				float x = 2;
+				for (float u = 0; u < 3.14 * 2; u += 0.1)
+				{
+					pts.push_back(Point(x += 15, 440 + sinf(u) * 100));
 
-			//	}
-			//	hui::drawPolyLine(pts.data(), pts.size());
-			//}
+				}
+				hui::drawPolyLine(pts.data(), pts.size());
+			}
 
 			{
 				hui::LineStyle ls;
 
 				ls.width = 6;
 				ls.color = Color::cyan;
-				hui::setLineStyle(ls);
+				//hui::setLineStyle(ls);
 				std::vector<SplineControlPoint> pts;
 
 				pts.resize(4);
@@ -964,10 +1003,11 @@ struct MyViewHandler : hui::ViewHandler
 				pts[3].leftTangent.x = 320;
 				pts[3].leftTangent.y = 520;
 
-				hui::drawSpline(pts.data(), pts.size());
+				hui::setLineStyle(ls2);
+				//hui::drawSpline(pts.data(), pts.size());
 
-				hui::setLineStyle({ Color::red, 2 });
-				hui::drawLine({ 50,50 }, { 100, 100 });
+				//hui::setLineStyle({ Color::red, 2 });
+				//hui::drawLine({ 50,50 }, { 100, 100 });
 			}
 			
 			ampl += sinf(GetTickCount()) * 12;
