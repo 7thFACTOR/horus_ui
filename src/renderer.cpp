@@ -1576,6 +1576,108 @@ void Renderer::drawPolyLine1Pixel(const Point* points, u32 pointCount, bool clos
 
 void Renderer::drawPolyLine(const Point* points, u32 pointCount, bool closed)
 {
+	std::vector<Point> stippleLines;
+	std::vector<bool> stippleLinesSkip;
+	Point* pts = (Point*)points;
+
+	if (currentLineStyle.useStipple)
+	{
+		stippleLines.clear();
+		stippleLinesSkip.clear();
+		f32 remainder = 0;
+		u32 oldJ = 0;
+		bool skip = false;
+		f32 totalsize = 0;
+
+		for (u32 j = 0; j < currentLineStyle.stipplePatternCount; j++)
+		{
+			totalsize += currentLineStyle.stipplePattern[j];
+		}
+
+		f32 offs = (int)currentLineStyle.stipplePhase % (int)totalsize;
+		f32 tot = 0;
+
+		if (offs > 0.0f)
+		{
+			for (u32 j = 0; j < currentLineStyle.stipplePatternCount; j++)
+			{
+				// if its in this stipple cell
+				if (offs >= tot && offs < (tot + currentLineStyle.stipplePattern[j]))
+				{
+					oldJ = j;
+					remainder = (tot + currentLineStyle.stipplePattern[j]) - offs;
+					break;
+				}
+
+				tot += currentLineStyle.stipplePattern[j];
+				skip = !skip;
+			}
+		}
+
+		for (u32 i = 0; i < pointCount; i++)
+		{
+			stippleLines.push_back(points[i]);
+			stippleLinesSkip.push_back(skip);
+
+			u32 idx = i + 1;
+
+			if (i == pointCount - 1)
+			{
+				if (!closed) break;
+				idx = 0;
+			}
+
+			Point line = points[idx] - points[i];
+			f32 totalLen = line.getLength();
+			f32 len = remainder;
+			bool bail = false;
+
+			while (!bail)
+			{
+				for (u32 j = oldJ; j < currentLineStyle.stipplePatternCount; j++)
+				{
+					f32 size = currentLineStyle.stipplePattern[j];
+
+					// if we're outside the line
+					if (len + size >= totalLen)
+					{
+						// remember the stipple index
+						oldJ = j;
+						remainder = len + size - totalLen;
+						bail = true;
+						break;
+					}
+
+					if (remainder > 0)
+					{
+						remainder = 0;
+					}
+					else
+					{
+						len += size;
+					}
+
+					f32 t = len / totalLen;
+
+					stippleLines.push_back(points[i] + line * t);
+					skip = !skip;
+					stippleLinesSkip.push_back(skip);
+				}
+
+				if (!bail)
+					oldJ = 0;
+			}
+
+			if (bail && ((i == pointCount - 2 && !closed) || (i == pointCount - 1 && closed)) )
+			{
+				stippleLines.push_back(points[idx]);
+			}
+		}
+
+		pts = stippleLines.data();
+		pointCount = stippleLines.size();
+	}
+
 	Point d1;
 	Point d2;
 	Point n1;
@@ -1613,20 +1715,50 @@ void Renderer::drawPolyLine(const Point* points, u32 pointCount, bool closed)
 	f32 sinAngle = 0;
 	Point firstN;
 	Point seg1, seg2;
+	bool stippleToggle = true;
 
 	for (int p = 0; p < pointCount; p++)
 	{
 		extrudeScale1 = 1;
 		extrudeScale2 = 1;
 
-		if (p == pointCount - 1 && !closed) break;
+		if (!closed && p == pointCount - 1)
+			break;
 
 		if (p == 0)
 		{
-			if (pointCount > 2)
+			if (closed)
 			{
-				seg1 = Point(points[p].x - points[p + 1].x, points[p].y - points[p + 1].y);;
-				seg2 = Point(points[p + 2].x - points[p + 1].x, points[p + 2].y - points[p + 1].y);
+				seg1 = Point(pts[pointCount - 1].x - pts[p].x, pts[pointCount - 1].y - pts[p].y);
+				seg2 = Point(pts[p + 1].x - pts[p].x, pts[p + 1].y - pts[p].y);
+				seg1.normalize();
+				seg2.normalize();
+				d1 = seg1 + seg2;
+				d1.normalize();
+				sinAngle = (d1.x * seg2.y - d1.y * seg2.x);
+				extrudeScale1 = 1.0f / sinAngle;
+				auto a = seg1.dot(seg2);
+
+				if (a < -0.9f)
+				{
+					d1 = Point(pts[p + 1].x - pts[p].x, pts[p + 1].y - pts[p].y);
+					n1 = Point(d1.y, -d1.x).getNormalized();
+					extrudeScale1 = 1;
+				}
+				else
+					n1 = d1;
+
+				firstN = n1;
+				firstExtrudeScale = extrudeScale1;
+			}
+			else
+			{
+				d1 = Point(pts[1].x - pts[0].x, pts[1].y - pts[0].y);
+				n1 = Point(d1.y, -d1.x);
+				n1.normalize();
+
+				seg1 = Point(pts[p].x - pts[p + 1].x, pts[p].y - pts[p + 1].y);
+				seg2 = Point(pts[p + 2].x - pts[p + 1].x, pts[p + 2].y - pts[p + 1].y);
 				seg1.normalize();
 				seg2.normalize();
 				d1 = seg1 + seg2;
@@ -1635,32 +1767,19 @@ void Renderer::drawPolyLine(const Point* points, u32 pointCount, bool closed)
 				extrudeScale2 = 1.0f / sinAngle;
 				n2 = d1;
 				lastN2 = n2;
-			}
+				auto a = seg1.dot(seg2);
 
-			if (!closed)
-			{
-				d1 = Point(points[1].x - points[0].x, points[1].y - points[0].y);
-				n1 = Point(d1.y, -d1.x);
-				n1.normalize();
-
-				if (pointCount == 2)
+				if (a < -0.9f)
 				{
 					n2 = n1;
+					extrudeScale2 = extrudeScale1;
 				}
 			}
-			else
+
+			if (pointCount == 2)
 			{
-				seg1 = Point(points[pointCount - 1].x - points[p].x, points[pointCount - 1].y - points[p].y);;
-				seg2 = Point(points[p + 1].x - points[p].x, points[p + 1].y - points[p].y);
-				seg1.normalize();
-				seg2.normalize();
-				d1 = seg1 + seg2;
-				d1.normalize();
-				sinAngle = (d1.x * seg2.y - d1.y * seg2.x);
-				extrudeScale1 = 1.0f / sinAngle;
-				n1 = d1;
-				firstN = n1;
-				firstExtrudeScale = extrudeScale1;
+				n2 = n1;
+				extrudeScale2 = extrudeScale1;
 			}
 		}
 		// if last point and its closed
@@ -1668,7 +1787,7 @@ void Renderer::drawPolyLine(const Point* points, u32 pointCount, bool closed)
 		{
 			n1 = lastN2;
 			extrudeScale1 = lastExtrudeScale2;
-			// find normals at point B
+
 			n2 = firstN;
 			extrudeScale2 = firstExtrudeScale;
 		}
@@ -1680,20 +1799,30 @@ void Renderer::drawPolyLine(const Point* points, u32 pointCount, bool closed)
 		
 			if (closed)
 			{
-				seg1 = Point(points[p].x - points[p + 1].x, points[p].y - points[p + 1].y);
-				seg2 = Point(points[0].x - points[p + 1].x, points[0].y - points[p + 1].y);
+				seg1 = Point(pts[p].x - pts[p + 1].x, pts[p].y - pts[p + 1].y);
+				seg2 = Point(pts[0].x - pts[p + 1].x, pts[0].y - pts[p + 1].y);
 				seg1.normalize();
 				seg2.normalize();
 				d1 = seg1 + seg2;
 				d1.normalize();
 				sinAngle = (d1.x * seg2.y - d1.y * seg2.x);
 				extrudeScale2 = 1.0f / sinAngle;
-				n2 = d1;
+				auto a = seg1.dot(seg2);
+
+				if (a < -0.9f)
+				{
+					d1 = Point(pts[p + 1].x - pts[p].x, pts[p + 1].y - pts[p].y);
+					n2 = Point(d1.y, -d1.x).getNormalized();
+					extrudeScale2 = 1;
+				}
+				else
+					n2 = d1;
+
 				lastN2 = n2;
 			}
 			else
 			{
-				d1 = Point(points[p + 1].x - points[p].x, points[p + 1].y - points[p].y);
+				d1 = Point(pts[p + 1].x - pts[p].x, pts[p + 1].y - pts[p].y);
 				n2 = Point(d1.y, -d1.x).getNormalized();
 				lastN2 = n2;
 			}
@@ -1703,15 +1832,27 @@ void Renderer::drawPolyLine(const Point* points, u32 pointCount, bool closed)
 			n1 = lastN2;
 			extrudeScale1 = lastExtrudeScale2;
 			
-			seg1 = Point(points[p].x - points[p + 1].x, points[p].y - points[p + 1].y);;
-			seg2 = Point(points[p+2].x - points[p+1].x, points[p+2].y - points[p+1].y);
+			seg1 = Point(pts[p].x - pts[p + 1].x, pts[p].y - pts[p + 1].y);
+			seg2 = Point(pts[p + 2].x - pts[p + 1].x, pts[p + 2].y - pts[p + 1].y);
 			seg1.normalize();
 			seg2.normalize();
 			d1 = seg1 + seg2;
 			d1.normalize();
 			sinAngle = (d1.x * seg2.y - d1.y * seg2.x);
 			extrudeScale2 = 1.0f / sinAngle;
-			n2 = d1;
+			auto a = seg1.dot(seg2);
+
+			if (a < -0.9f)
+			{
+				d1 = Point(pts[p + 1].x - pts[p].x, pts[p + 1].y - pts[p].y);
+				n2 = Point(d1.y, -d1.x).getNormalized();
+				extrudeScale2 = 1;
+			}
+			else
+			{
+				n2 = d1;
+			}
+
 			lastN2 = n2;
 		}
 		
@@ -1727,25 +1868,36 @@ void Renderer::drawPolyLine(const Point* points, u32 pointCount, bool closed)
 		}
 		else
 		{
-			p11 = Point(points[p].x + n1.x, points[p].y + n1.y);
-			p12 = Point(points[p].x - n1.x, points[p].y - n1.y);
+			p11 = Point(pts[p].x + n1.x, pts[p].y + n1.y);
+			p12 = Point(pts[p].x - n1.x, pts[p].y - n1.y);
 		}
 
 		if (p == pointCount - 1 && closed)
 		{
-			p21 = Point(points[0].x + n2.x, points[0].y + n2.y);
-			p22 = Point(points[0].x - n2.x, points[0].y - n2.y);
+			p21 = Point(pts[0].x + n2.x, pts[0].y + n2.y);
+			p22 = Point(pts[0].x - n2.x, pts[0].y - n2.y);
 		}
 		else
 		{
-			p21 = Point(points[p + 1].x + n2.x, points[p + 1].y + n2.y);
-			p22 = Point(points[p + 1].x - n2.x, points[p + 1].y - n2.y);
+			p21 = Point(pts[p + 1].x + n2.x, pts[p + 1].y + n2.y);
+			p22 = Point(pts[p + 1].x - n2.x, pts[p + 1].y - n2.y);
 		}
 
 		lastP11 = p21;
 		lastP12 = p22;
-		drawTriangle(p11, p21, p22, uv11, uv21, uv22, lineImage);
-		drawTriangle(p11, p22, p12, uv11, uv22, uv12, lineImage);
+
+		bool drawIt = true;
+
+		if (currentLineStyle.useStipple)
+		{
+			drawIt = !stippleLinesSkip[p];
+		}
+
+		if (drawIt)
+		{
+			drawTriangle(p11, p21, p22, uv11, uv21, uv22, lineImage);
+			drawTriangle(p11, p22, p12, uv11, uv22, uv12, lineImage);
+		}
 	}
 }
 

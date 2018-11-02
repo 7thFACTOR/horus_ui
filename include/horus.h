@@ -1400,13 +1400,19 @@ struct ViewHandler
 struct LineStyle
 {
 	LineStyle() {}
-	LineStyle(const Color& newColor, f32 newWidth)
+	LineStyle(const Color& newColor, f32 newWidth, bool newUseStipple = false)
 		: color(newColor)
 		, width(newWidth)
+		, useStipple(newUseStipple)
 	{}
+	static const u32 stipplePatternMaxCount = 8;
 
 	Color color = Color::white;
 	f32 width = 1.0f;
+	bool useStipple = false;
+	f32 stipplePattern[stipplePatternMaxCount] = {5, 5}; /// first value is the dash size, second is empty space size and so on, toggle
+	u32 stipplePatternCount = 2;
+	f32 stipplePhase = 0.0f;
 };
 
 /// Filled primitives style
