@@ -1614,12 +1614,17 @@ void Renderer::drawPolyLine(const Point* points, u32 pointCount, bool closed)
 			}
 		}
 
+		bool bail = false;
+		Point line;
+		f32 totalLen;
+		f32 len;
+		u32 idx;
+
 		for (u32 i = 0; i < pointCount; i++)
 		{
 			stippleLines.push_back(points[i]);
 			stippleLinesSkip.push_back(skip);
-
-			u32 idx = i + 1;
+			idx = i + 1;
 
 			if (i == pointCount - 1)
 			{
@@ -1627,10 +1632,10 @@ void Renderer::drawPolyLine(const Point* points, u32 pointCount, bool closed)
 				idx = 0;
 			}
 
-			Point line = points[idx] - points[i];
-			f32 totalLen = line.getLength();
-			f32 len = remainder;
-			bool bail = false;
+			line = points[idx] - points[i];
+			totalLen = line.getLength();
+			len = remainder;
+			bail = false;
 
 			while (!bail)
 			{
@@ -1671,6 +1676,7 @@ void Renderer::drawPolyLine(const Point* points, u32 pointCount, bool closed)
 			if (bail && ((i == pointCount - 2 && !closed) || (i == pointCount - 1 && closed)) )
 			{
 				stippleLines.push_back(points[idx]);
+				break;
 			}
 		}
 
@@ -1893,7 +1899,7 @@ void Renderer::drawPolyLine(const Point* points, u32 pointCount, bool closed)
 			drawIt = !stippleLinesSkip[p];
 		}
 
-		if (drawIt)
+		//if (drawIt)
 		{
 			drawTriangle(p11, p21, p22, uv11, uv21, uv22, lineImage);
 			drawTriangle(p11, p22, p12, uv11, uv22, uv12, lineImage);
