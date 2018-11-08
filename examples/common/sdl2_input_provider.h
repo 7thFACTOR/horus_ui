@@ -17,6 +17,7 @@ struct SdlSettings
 	void* sdlContext = nullptr;
 	SDL_Window* sdlMainWindow = nullptr;
 	GraphicsProvider* gfxProvider = nullptr;
+	AntiAliasing antiAliasing = AntiAliasing::None;
 };
 
 struct Sdl2InputProvider : InputProvider

@@ -563,6 +563,16 @@ enum class SliderDragDirection
 	VerticalOnly
 };
 
+enum class AntiAliasing
+{
+	None,
+	MSAA4X,
+	MSAA8X,
+	MSAA16X,
+
+	Count
+};
+
 /// Docking modes for the view panes
 enum class DockType
 {

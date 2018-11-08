@@ -930,9 +930,11 @@ struct MyViewHandler : hui::ViewHandler
 			ls2.stipplePattern[0] = 4;
 			ls2.stipplePattern[1] = 3;
 			ls2.stipplePatternCount = 2;
-			ls2.useStipple = true;
+			ls2.useStipple = false;
 			ls2.width = 1;
 			ls2.stipplePhase = phs;
+			ls2.color = Color::red;
+
 			hui::setLineStyle(ls1);
 
 			auto mpos = getMousePosition();
@@ -944,7 +946,7 @@ struct MyViewHandler : hui::ViewHandler
 
 			Point ps[] = { { 100, 150 },mpos, {170, 150}, {200, 350}, {300, 250}, {500, 230}, {600, 150} };
 			//hui::setLineStyle({ Color::red, 25.5f });
-			drawPolyLine(ps, 7);
+			//drawPolyLine(ps, 7);
 			//hui::setLineStyle({ Color::red, 1 });
 			//drawPolyLine(ps, 7);
 
@@ -952,7 +954,12 @@ struct MyViewHandler : hui::ViewHandler
 			ff = sinf(tim) * 100.0f;
 			tim+=0.01f;
 			Point ps2[] = { { 100, 100 },{ 250, 100 },{ 250, 250 },{ 100, 250 } };
-			drawPolyLine(ps2, 4, false);
+			drawPolyLine(ps2, 4, true);
+			setLineStyle(ls2);
+			//drawPolyLine(ps2, 4, false);
+
+
+
 			{
 				hui::LineStyle ls;
 
@@ -1631,6 +1638,7 @@ int main(int argc, char** args)
 	settings.mainWindowTitle = "HorusUI Example - Widget Showroom";
 	settings.mainWindowRect = { 0, 0, 800, 600 };
 	settings.gfxProvider = new OpenGLGraphicsProvider();
+	settings.antiAliasing = hui::AntiAliasing::None;
 	hui::initializeWithSDL(settings);
 
 	printf("Loading theme...\n");
