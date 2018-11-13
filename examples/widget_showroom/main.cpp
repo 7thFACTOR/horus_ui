@@ -912,13 +912,13 @@ struct MyViewHandler : hui::ViewHandler
 
 			LineStyle ls1;
 			static f32 phs = 0;
-			ls1.stipplePattern[0] = 15;
-			ls1.stipplePattern[1] = 2;
+			ls1.stipplePattern[0] = 14;
+			ls1.stipplePattern[1] = 11;
 			ls1.stipplePattern[2] = 5;
 			ls1.stipplePattern[3] = 10;
 			ls1.stipplePatternCount = 2;
 			ls1.useStipple = true;
-			ls1.width = 5;
+			ls1.width = 15;
 			ls1.color = Color::yellow;
 			ls1.stipplePhase = phs;
 
@@ -935,7 +935,7 @@ struct MyViewHandler : hui::ViewHandler
 			ls2.stipplePhase = phs;
 			ls2.color = Color::red;
 
-			hui::setLineStyle(ls1);
+			hui::setLineStyle(ls2);
 
 			auto mpos = getMousePosition();
 			mpos.x -= viewRc.x + 20;
@@ -954,9 +954,13 @@ struct MyViewHandler : hui::ViewHandler
 			ff = sinf(tim) * 100.0f;
 			tim+=0.01f;
 			Point ps2[] = { { 100, 100 },{ 250, 100 },{ 250, 250 },{ 100, 250 } };
+			//Point ps2[] = { { 100, 100 },{ 250, 100 },{ 350, 100 },{ 410, 100 } };
+			//Point ps2[] = { { 100, 100 },{ 150, 150 },{ 200, 200 },{ 310, 310 } };
+			
+			setLineStyle(ls1);
 			drawPolyLine(ps2, 4, true);
 			setLineStyle(ls2);
-			//drawPolyLine(ps2, 4, false);
+			drawPolyLine(ps2, 4, false);
 
 
 
