@@ -1676,6 +1676,7 @@ void Renderer::drawPolyLine(const Point* points, u32 pointCount, bool closed)
 			if (bail && ((i == pointCount - 2 && !closed) || (i == pointCount - 1 && closed)) )
 			{
 				stippleLines.push_back(points[idx]);
+				stippleLinesSkip.push_back(skip);
 				break;
 			}
 		}
@@ -1762,24 +1763,23 @@ void Renderer::drawPolyLine(const Point* points, u32 pointCount, bool closed)
 				d1 = Point(pts[1].x - pts[0].x, pts[1].y - pts[0].y);
 				n1 = Point(d1.y, -d1.x);
 				n1.normalize();
+			}
+			seg1 = Point(pts[p].x - pts[p + 1].x, pts[p].y - pts[p + 1].y);
+			seg2 = Point(pts[p + 2].x - pts[p + 1].x, pts[p + 2].y - pts[p + 1].y);
+			seg1.normalize();
+			seg2.normalize();
+			d1 = seg1 + seg2;
+			d1.normalize();
+			sinAngle = (d1.x * seg2.y - d1.y * seg2.x);
+			extrudeScale2 = 1.0f / sinAngle;
+			n2 = d1;
+			lastN2 = n2;
+			auto a = seg1.dot(seg2);
 
-				seg1 = Point(pts[p].x - pts[p + 1].x, pts[p].y - pts[p + 1].y);
-				seg2 = Point(pts[p + 2].x - pts[p + 1].x, pts[p + 2].y - pts[p + 1].y);
-				seg1.normalize();
-				seg2.normalize();
-				d1 = seg1 + seg2;
-				d1.normalize();
-				sinAngle = (d1.x * seg2.y - d1.y * seg2.x);
-				extrudeScale2 = 1.0f / sinAngle;
-				n2 = d1;
-				lastN2 = n2;
-				auto a = seg1.dot(seg2);
-
-				if (a < -0.9f)
-				{
-					n2 = n1;
-					extrudeScale2 = extrudeScale1;
-				}
+			if (a < -0.9f)
+			{
+				n2 = n1;
+				extrudeScale2 = extrudeScale1;
 			}
 
 			if (pointCount == 2)
