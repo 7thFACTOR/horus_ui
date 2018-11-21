@@ -78,9 +78,21 @@ void setFont(Font font)
 	ctx->renderer->cmdSetFont((UiFont*)font);
 }
 
-void setBackColor(const Color& color)
+void setColor(const Color& color)
 {
 	ctx->renderer->cmdSetColor(color);
+}
+
+void setLineColor(const Color& color)
+{
+	ctx->renderer->currentLineStyle.color = color;
+	ctx->renderer->cmdSetLineStyle(ctx->renderer->currentLineStyle);
+}
+
+void setFillColor(const Color& color)
+{
+	ctx->renderer->currentFillStyle.color = color;
+	ctx->renderer->cmdSetFillStyle(ctx->renderer->currentFillStyle);
 }
 
 Point getTextSize(const char* text)
@@ -136,6 +148,7 @@ void setLineStyle(const LineStyle& style)
 void setFillStyle(const FillStyle& style)
 {
 	ctx->fillStyle = style;
+	ctx->renderer->cmdSetColor(style.color);
 }
 
 void drawLine(const Point& a, const Point& b)
@@ -192,6 +205,17 @@ void drawRectangle(const Rect& rc)
 	};
 
 	ctx->renderer->cmdDrawPolyLine(pts, 4, true);
+}
+
+void drawSolidRectangle(const Rect& rc)
+{
+	ctx->renderer->cmdDrawSolidRectangle(
+		{
+			ctx->renderer->viewportOffset.x + rc.x,
+			ctx->renderer->viewportOffset.y + rc.y,
+			rc.width,
+			rc.height
+		});
 }
 
 #define HORUS_HERMITE_TANGENT(a, b, c, tt, cc, bb, adj)\
@@ -291,16 +315,13 @@ void drawArrow(const Point& a, const Point& b, f32 tipLength, f32 tipWidth, bool
 	//TODO
 }
 
-void drawTriangle(
+void drawSolidTriangle(
 	const Point& p1, const Point& p2, const Point& p3)
 {
-	Point uv1, uv2, uv3;
-
-	ctx->renderer->cmdDrawTriangle(
+	ctx->renderer->cmdDrawSolidTriangle(
 		p1 + ctx->renderer->viewportOffset,
 		p2 + ctx->renderer->viewportOffset,
-		p3 + ctx->renderer->viewportOffset,
-		uv1, uv2, uv3, nullptr);
+		p3 + ctx->renderer->viewportOffset);
 }
 
 }

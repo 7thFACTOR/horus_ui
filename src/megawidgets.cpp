@@ -26,6 +26,9 @@ bool vecEditorInternal(f64& x, f64& y, f64& z, f64 scrollStep, bool useZ)
 	hui::beginColumns(useZ ? 6 : 4, colWidthsPRS);
 
 	bool modified = false;
+	bool changedEndedX = false;
+	bool changedEndedY = false;
+	bool changedEndedZ = false;
 
 	auto editValue = [maxStrSize](
 		char* axisName,
@@ -35,7 +38,8 @@ bool vecEditorInternal(f64& x, f64& y, f64& z, f64 scrollStep, bool useZ)
 		const Color& normalColor,
 		const Color& dragColor,
 		f64 scrollStep,
-		bool& modified)
+		bool& modified,
+		bool& changeEnded)
 	{
 		auto elem = ctx->theme->userElements[axisImageName];
 
@@ -65,6 +69,7 @@ bool vecEditorInternal(f64& x, f64& y, f64& z, f64 scrollStep, bool useZ)
 			draggingValue = false;
 			draggedWidgetId = 0;
 			hui::releaseCapture();
+			changeEnded = true;
 		}
 
 		if (draggingValue
@@ -84,23 +89,27 @@ bool vecEditorInternal(f64& x, f64& y, f64& z, f64 scrollStep, bool useZ)
 		hui::nextColumn();
 		modified = hui::textInput(strAxis, maxStrSize) || modified;
 
+		if (isChangeEnded())
+			changeEnded = true;
+
 		if (modified)
 		{
 			value = atof(strAxis);
 		}
 	};
 
-	editValue("X", "axisBoxXImage", strX, x, Color::veryDarkRed, Color::red, scrollStep, modified);
+	editValue("X", "axisBoxXImage", strX, x, Color::veryDarkRed, Color::red, scrollStep, modified, changedEndedX);
 	hui::nextColumn();
-	editValue("Y", "axisBoxYImage", strY, y, Color::veryDarkGreen, Color::green, scrollStep, modified);
+	editValue("Y", "axisBoxYImage", strY, y, Color::veryDarkGreen, Color::green, scrollStep, modified, changedEndedY);
 
 	if (useZ)
 	{
 		hui::nextColumn();
-		editValue("Z", "axisBoxZImage", strZ, z, Color::veryDarkCyan, Color::cyan, scrollStep, modified);
+		editValue("Z", "axisBoxZImage", strZ, z, Color::veryDarkCyan, Color::cyan, scrollStep, modified, changedEndedZ);
 	}
 
 	endColumns();
+	ctx->widget.changeEnded = changedEndedX || changedEndedY || changedEndedZ;
 
 	return modified;
 }
@@ -143,6 +152,7 @@ bool vec2Editor(f32& x, f32& y, f32 scrollStep)
 bool objectRefEditor(Image targetIcon, Image clearIcon, const char* objectTypeName, const char* valueAsString, u32 objectType, void** outObject, bool* objectValueWasModified)
 {
 	bool returnValue = false;
+	bool changeEnded = false;
 	pushPadding(0);
 	f32 tgtRowIcons[] = { -1, 30, 20 };
 
@@ -200,6 +210,7 @@ bool objectRefEditor(Image targetIcon, Image clearIcon, const char* objectTypeNa
 		if (objectValueWasModified)
 			*objectValueWasModified = true;
 
+		changeEnded = true;
 		forceRepaint();
 	}
 
@@ -214,11 +225,15 @@ bool objectRefEditor(Image targetIcon, Image clearIcon, const char* objectTypeNa
 
 		if (objectValueWasModified)
 			*objectValueWasModified = true;
+
+		changeEnded = true;
 	}
 
 	popTint();
 	endColumns();
 	popPadding();
+
+	ctx->widget.changeEnded = changeEnded;
 
 	return returnValue;
 }

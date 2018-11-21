@@ -17,7 +17,10 @@ bool check(const char* labelText, bool checked)
 	buttonBehavior();
 
 	if (ctx->widget.clicked)
+	{
+		ctx->widget.changeEnded = true;
 		checked = !checked;
+	}
 
 	auto checkBodyElemState = &checkBodyElem.normalState();
 	auto checkMarkElemState = &checkMarkElem.normalState();

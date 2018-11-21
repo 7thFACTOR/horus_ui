@@ -560,9 +560,13 @@ void Renderer::endFrame()
 			if (clipRect(cmd.drawRect.rotated, cmd.drawRect.rect, cmd.drawRect.uvRect))
 			{
 				if (cmd.drawRect.rotated)
+				{
 					drawQuadRot90(cmd.drawRect.rect, cmd.drawRect.uvRect);
+				}
 				else
+				{
 					drawQuad(cmd.drawRect.rect, cmd.drawRect.uvRect);
+				}
 			}
 			break;
 		}
@@ -584,13 +588,19 @@ void Renderer::endFrame()
 		case DrawCommand::Type::SetLineStyle:
 			currentLineStyle = cmd.setLineStyle;
 			break;
+		case DrawCommand::Type::SetFillStyle:
+			currentFillStyle = cmd.setFillStyle;
+			break;
 		case DrawCommand::Type::DrawLine:
+			currentColor = currentLineStyle.color.getRgba();
 			drawLine(cmd.drawLine.a, cmd.drawLine.b);
 			break;
 		case DrawCommand::Type::DrawPolyLine:
+			currentColor = currentLineStyle.color.getRgba();
 			drawPolyLine(cmd.drawPolyLine.points, cmd.drawPolyLine.count, cmd.drawPolyLine.closed);
 			break;
-		case DrawCommand::Type::DrawTriangle:
+		case DrawCommand::Type::DrawSolidTriangle:
+			currentColor = currentFillStyle.color.getRgba();
 			drawTriangle(
 				cmd.drawTriangle.p1,
 				cmd.drawTriangle.p2,
@@ -672,7 +682,15 @@ void Renderer::cmdSetLineStyle(const LineStyle& style)
 {
 	DrawCommand cmd(DrawCommand::Type::SetLineStyle);
 	cmd.zOrder = zOrder;
-	cmd.setLineStyle = style;
+	currentLineStyle = cmd.setLineStyle = style;
+	addDrawCommand(cmd);
+}
+
+void Renderer::cmdSetFillStyle(const FillStyle& style)
+{
+	DrawCommand cmd(DrawCommand::Type::SetFillStyle);
+	cmd.zOrder = zOrder;
+	currentFillStyle = cmd.setFillStyle = style;
 	addDrawCommand(cmd);
 }
 
@@ -684,7 +702,6 @@ void Renderer::cmdDrawImage(UiImage* image, const Point& position, f32 scale)
 	cmd.drawRect.uvRect = image->uvRect;
 	cmd.drawRect.rotated = image->rotated;
 	cmd.drawRect.textureIndex = image->atlasTexture->textureIndex;
-
 	addDrawCommand(cmd);
 }
 
@@ -694,6 +711,17 @@ void Renderer::cmdDrawImage(UiImage* image, const Rect& rect)
 	cmd.zOrder = zOrder;
 	cmd.drawRect.rect = rect;
 	cmd.drawRect.uvRect = image->uvRect;
+	cmd.drawRect.rotated = image->rotated;
+	cmd.drawRect.textureIndex = image->atlasTexture->textureIndex;
+	addDrawCommand(cmd);
+}
+
+void Renderer::cmdDrawImage(UiImage* image, const Rect& rect, const Rect& uvRect)
+{
+	DrawCommand cmd(DrawCommand::Type::DrawRect);
+	cmd.zOrder = zOrder;
+	cmd.drawRect.rect = rect;
+	cmd.drawRect.uvRect = uvRect;
 	cmd.drawRect.rotated = image->rotated;
 	cmd.drawRect.textureIndex = image->atlasTexture->textureIndex;
 	addDrawCommand(cmd);
@@ -760,10 +788,12 @@ void Renderer::cmdDrawImageScaledAligned(UiImage* image, const Rect& rect, HAlig
 	cmdDrawImage(image, newRect);
 }
 
-void Renderer::cmdDrawSolidColor(const Rect& rect)
+void Renderer::cmdDrawSolidRectangle(const Rect& rect)
 {
 	auto image = currentAtlas->whiteImage;
-	cmdDrawImage(image, rect);
+	auto uvRect = image->uvRect;
+	uvRect = uvRect.contract(ctx->settings.whiteImageUvBorder);
+	cmdDrawImage(image, rect, uvRect);
 }
 
 void Renderer::cmdDrawInterpolatedColors(const Rect& rect, const Color& topLeft, const Color& bottomLeft, const Color& topRight, const Color& bottomRight)
@@ -814,17 +844,19 @@ void Renderer::cmdDrawPolyLine(const Point* points, u32 pointCount, bool closed)
 	addDrawCommand(cmd);
 }
 
-void Renderer::cmdDrawTriangle(const Point& p1, const Point& p2, const Point& p3, const Point& uv1, const Point& uv2, const Point& uv3, UiImage* image)
+void Renderer::cmdDrawSolidTriangle(const Point& p1, const Point& p2, const Point& p3)
 {
-	DrawCommand cmd(DrawCommand::Type::DrawTriangle);
+	DrawCommand cmd(DrawCommand::Type::DrawSolidTriangle);
 	cmd.zOrder = zOrder;
 	cmd.drawTriangle.p1 = p1;
 	cmd.drawTriangle.p2 = p2;
 	cmd.drawTriangle.p3 = p3;
-	cmd.drawTriangle.uv1 = uv1;
-	cmd.drawTriangle.uv2 = uv2;
-	cmd.drawTriangle.uv3 = uv3;
-	cmd.drawTriangle.image = image;
+	auto uvRc =  ctx->theme->atlas->whiteImage->uvRect;
+	uvRc = uvRc.contract(ctx->settings.whiteImageUvBorder);
+	cmd.drawTriangle.uv1 = uvRc.topLeft();
+	cmd.drawTriangle.uv2 = uvRc.topRight();
+	cmd.drawTriangle.uv3 = uvRc.bottomRight();
+	cmd.drawTriangle.image = ctx->theme->atlas->whiteImage;
 	addDrawCommand(cmd);
 }
 
@@ -928,51 +960,6 @@ void Renderer::drawQuad(UiImage* image, const Point& p1, const Point& p2, const 
 {
 	drawTriangle(p1, p2, p3, image->uvRect.topLeft(), image->uvRect.topRight(), image->uvRect.bottomRight(), image);
 	drawTriangle(p1, p3, p4, image->uvRect.topLeft(), image->uvRect.bottomRight(), image->uvRect.bottomLeft(), image);
-
-	//atlasTextureIndex = image->atlasTexture->textureIndex;
-	//needToAddVertexCount(6);
-
-	//u32 i = vertexBufferData.drawVertexCount;
-
-	//vertexBufferData.vertices[i].position = p1;
-	//vertexBufferData.vertices[i].uv = image->uvRect.topLeft();
-	//vertexBufferData.vertices[i].color = currentColor;
-	//vertexBufferData.vertices[i].textureIndex = atlasTextureIndex;
-	//i++;
-
-	//vertexBufferData.vertices[i].position = p2;
-	//vertexBufferData.vertices[i].uv = image->uvRect.bottomLeft();
-	//vertexBufferData.vertices[i].color = currentColor;
-	//vertexBufferData.vertices[i].textureIndex = atlasTextureIndex;
-	//i++;
-
-	//vertexBufferData.vertices[i].position = p3;
-	//vertexBufferData.vertices[i].uv = image->uvRect.bottomRight();
-	//vertexBufferData.vertices[i].color = currentColor;
-	//vertexBufferData.vertices[i].textureIndex = atlasTextureIndex;
-	//i++;
-
-	//// 2nd triangle
-	//vertexBufferData.vertices[i].position = p3;
-	//vertexBufferData.vertices[i].uv = image->uvRect.bottomRight();
-	//vertexBufferData.vertices[i].color = currentColor;
-	//vertexBufferData.vertices[i].textureIndex = atlasTextureIndex;
-	//i++;
-
-	//vertexBufferData.vertices[i].position = p4;
-	//vertexBufferData.vertices[i].uv = image->uvRect.topRight();
-	//vertexBufferData.vertices[i].color = currentColor;
-	//vertexBufferData.vertices[i].textureIndex = atlasTextureIndex;
-	//i++;
-
-	//vertexBufferData.vertices[i].position = p1;
-	//vertexBufferData.vertices[i].uv = image->uvRect.topLeft();
-	//vertexBufferData.vertices[i].color = currentColor;
-	//vertexBufferData.vertices[i].textureIndex = atlasTextureIndex;
-	//i++;
-
-	//vertexBufferData.drawVertexCount = i;
-	//currentBatch->vertexCount += 6;
 }
 
 void Renderer::drawQuad(const Rect& rect, const Rect& uvRect)
@@ -1519,61 +1506,6 @@ void Renderer::drawLine(const Point& a, const Point& b)
 	drawPolyLine(pts, 2, false);
 }
 
-void Renderer::drawPolyLine1Pixel(const Point* points, u32 pointCount, bool closed)
-{
-	auto atlas = (UiAtlas*)currentBatch->atlas;
-	auto lineImage = atlas->whiteImage;
-	const auto color = currentLineStyle.color.getRgba();
-	auto rcUv = lineImage->uvRect;
-	auto atlasTextureIndex = lineImage->atlasTexture->textureIndex;
-
-	rcUv.x += ctx->settings.whiteImageUvBorder;
-	rcUv.y += ctx->settings.whiteImageUvBorder;
-	rcUv.width -= ctx->settings.whiteImageUvBorder * 2.0f;
-	rcUv.height -= ctx->settings.whiteImageUvBorder * 2.0f;
-
-	const auto uv11 = rcUv.topLeft();
-	const auto uv12 = rcUv.topRight();
-	const auto uv22 = rcUv.bottomRight();
-	const auto uv21 = rcUv.bottomLeft();
-	Point p1, p2, uv1, uv2;
-
-	for (int p = 0; p < pointCount; p++)
-	{
-		if (p == pointCount - 1)
-		{
-			if (!clipLineToRect(points[p], points[0], uv11, uv21, currentClipRect, p1, p2, uv1, uv2))
-				break;
-		}
-		else if (!clipLineToRect(points[p], points[p + 1], uv11, uv21, currentClipRect, p1, p2, uv1, uv2))
-			continue;
-
-		needToAddVertexCount(3);
-		u32 i = vertexBufferData.drawVertexCount;
-
-		vertexBufferData.vertices[i].position = p1;
-		vertexBufferData.vertices[i].color = currentLineStyle.color.getRgba();
-		vertexBufferData.vertices[i].uv = uv11;
-		vertexBufferData.vertices[i].textureIndex = atlasTextureIndex;
-		i++;
-
-		vertexBufferData.vertices[i].position = p2;
-		vertexBufferData.vertices[i].color = currentLineStyle.color.getRgba();
-		vertexBufferData.vertices[i].uv = uv12;
-		vertexBufferData.vertices[i].textureIndex = atlasTextureIndex;
-		i++;
-
-		vertexBufferData.vertices[i].position = p1;
-		vertexBufferData.vertices[i].color = currentLineStyle.color.getRgba();
-		vertexBufferData.vertices[i].uv = uv11;
-		vertexBufferData.vertices[i].textureIndex = atlasTextureIndex;
-		i++;
-
-		currentBatch->vertexCount += 3;
-		vertexBufferData.drawVertexCount = i;
-	}
-}
-
 void Renderer::drawPolyLine(const Point* points, u32 pointCount, bool closed)
 {
 	std::vector<Point> stippleLines;
@@ -1616,14 +1548,19 @@ void Renderer::drawPolyLine(const Point* points, u32 pointCount, bool closed)
 
 		bool bail = false;
 		Point line;
-		f32 totalLen;
-		f32 len;
+		f32 totalLineLength;
+		f32 currentLength;
 		u32 idx;
 
 		for (u32 i = 0; i < pointCount; i++)
 		{
-			stippleLines.push_back(points[i]);
-			stippleLinesSkip.push_back(skip);
+			if (stippleLines.empty() ||
+				(stippleLines.size() && points[i] != stippleLines.back()))
+			{
+				stippleLines.push_back(points[i]);
+				stippleLinesSkip.push_back(skip);
+			}
+
 			idx = i + 1;
 
 			if (i == pointCount - 1)
@@ -1633,22 +1570,22 @@ void Renderer::drawPolyLine(const Point* points, u32 pointCount, bool closed)
 			}
 
 			line = points[idx] - points[i];
-			totalLen = line.getLength();
-			len = remainder;
+			totalLineLength = line.getLength();
+			currentLength = remainder;
 			bail = false;
 
 			while (!bail)
 			{
 				for (u32 j = oldJ; j < currentLineStyle.stipplePatternCount; j++)
 				{
-					f32 size = currentLineStyle.stipplePattern[j];
+					f32 sttipleSize = currentLineStyle.stipplePattern[j];
 
 					// if we're outside the line
-					if (len + size >= totalLen)
+					if (currentLength + sttipleSize > totalLineLength)
 					{
-						// remember the stipple index
+						// remember the stipple index, we'll use it on the next segment
 						oldJ = j;
-						remainder = len + size - totalLen;
+						remainder = (currentLength + sttipleSize) - totalLineLength;
 						bail = true;
 						break;
 					}
@@ -1659,14 +1596,20 @@ void Renderer::drawPolyLine(const Point* points, u32 pointCount, bool closed)
 					}
 					else
 					{
-						len += size;
+						currentLength += sttipleSize;
 					}
 
-					f32 t = len / totalLen;
+					f32 t = currentLength / totalLineLength;
+					Point pt = points[i] + line * t;
 
-					stippleLines.push_back(points[i] + line * t);
-					skip = !skip;
-					stippleLinesSkip.push_back(skip);
+					if (stippleLines.empty() 
+						|| (stippleLines.size() && pt != stippleLines.back()))
+					{
+						stippleLines.push_back(pt);
+						// toggle pattern skip
+						skip = !skip;
+						stippleLinesSkip.push_back(skip);
+					}
 				}
 
 				if (!bail)
@@ -1675,8 +1618,6 @@ void Renderer::drawPolyLine(const Point* points, u32 pointCount, bool closed)
 
 			if (bail && ((i == pointCount - 2 && !closed) || (i == pointCount - 1 && closed)) )
 			{
-				stippleLines.push_back(points[idx]);
-				stippleLinesSkip.push_back(skip);
 				break;
 			}
 		}
@@ -1753,7 +1694,9 @@ void Renderer::drawPolyLine(const Point* points, u32 pointCount, bool closed)
 					extrudeScale1 = 1;
 				}
 				else
+				{
 					n1 = d1;
+				}
 
 				firstN = n1;
 				firstExtrudeScale = extrudeScale1;
@@ -1764,6 +1707,7 @@ void Renderer::drawPolyLine(const Point* points, u32 pointCount, bool closed)
 				n1 = Point(d1.y, -d1.x);
 				n1.normalize();
 			}
+
 			seg1 = Point(pts[p].x - pts[p + 1].x, pts[p].y - pts[p + 1].y);
 			seg2 = Point(pts[p + 2].x - pts[p + 1].x, pts[p + 2].y - pts[p + 1].y);
 			seg1.normalize();
@@ -1771,15 +1715,18 @@ void Renderer::drawPolyLine(const Point* points, u32 pointCount, bool closed)
 			d1 = seg1 + seg2;
 			d1.normalize();
 			sinAngle = (d1.x * seg2.y - d1.y * seg2.x);
+			auto a = seg1.dot(seg2);
 			extrudeScale2 = 1.0f / sinAngle;
 			n2 = d1;
 			lastN2 = n2;
-			auto a = seg1.dot(seg2);
 
 			if (a < -0.9f)
 			{
-				n2 = n1;
-				extrudeScale2 = extrudeScale1;
+				d1 = Point(pts[1].x - pts[0].x, pts[1].y - pts[0].y);
+				n2 = Point(d1.y, -d1.x);
+				n2.normalize();
+				lastN2 = n2;
+				extrudeScale2 = 1;
 			}
 
 			if (pointCount == 2)
@@ -1899,7 +1846,7 @@ void Renderer::drawPolyLine(const Point* points, u32 pointCount, bool closed)
 			drawIt = !stippleLinesSkip[p];
 		}
 
-		//if (drawIt)
+		if (drawIt)
 		{
 			drawTriangle(p11, p21, p22, uv11, uv21, uv22, lineImage);
 			drawTriangle(p11, p22, p12, uv11, uv22, uv12, lineImage);
@@ -1956,19 +1903,19 @@ void Renderer::drawTriangle(
 	for (int k = 1; k < pointCount - 1; k++)
 	{
 		vertexBufferData.vertices[i].position = fp;
-		vertexBufferData.vertices[i].color = currentLineStyle.color.getRgba();
+		vertexBufferData.vertices[i].color = currentColor;
 		vertexBufferData.vertices[i].uv = uvFp;
 		vertexBufferData.vertices[i].textureIndex = atlasTextureIndex;
 		i++;
 
 		vertexBufferData.vertices[i].position = pts[k];
-		vertexBufferData.vertices[i].color = currentLineStyle.color.getRgba();
+		vertexBufferData.vertices[i].color = currentColor;
 		vertexBufferData.vertices[i].uv = uvPts[k];
 		vertexBufferData.vertices[i].textureIndex = atlasTextureIndex;
 		i++;
 
 		vertexBufferData.vertices[i].position = pts[k+1];
-		vertexBufferData.vertices[i].color = currentLineStyle.color.getRgba();
+		vertexBufferData.vertices[i].color = currentColor;
 		vertexBufferData.vertices[i].uv = uvPts[k+1];
 		vertexBufferData.vertices[i].textureIndex = atlasTextureIndex;
 		i++;
@@ -2097,6 +2044,7 @@ bool Renderer::clipRectRot(Rect& rect, Rect& uvRect)
 	// clip right and bottom UVs
 	tx = (rect.right() - newRect.right()) / rect.width;
 	ty = (rect.bottom() - newRect.bottom()) / rect.height;
+	uvRect.y += uvRect.height * tx;
 	uvRect.width -= uvRect.width * ty;
 	uvRect.height -= uvRect.height * tx;
 	rect = newRect;

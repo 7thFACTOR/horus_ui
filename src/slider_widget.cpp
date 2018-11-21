@@ -108,6 +108,7 @@ bool sliderInternal(f32 minVal, f32 maxVal, f32& value, bool useStep, f32 step, 
 	{
 		draggingKnob = false;
 		releaseCapture();
+		ctx->widget.changeEnded = true;
 	}
 
 	if (recomputeKnobRect)

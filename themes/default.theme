@@ -278,6 +278,8 @@
 			{
 				"count":30,
 				"placementRadius":36,
+				"negativeColor": "red",
+				"positiveColor": "sky",
 				"normal": { "image": "rotaryslider_value_dot", "border": 0, "color": "black", "textColor": "white", "font": "normal" },
 				"pressed": { "image": "rotaryslider_value_dot", "border": 0, "color": "orange", "textColor": "white", "font": "normal" }
 			}

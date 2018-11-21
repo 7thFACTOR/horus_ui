@@ -29,6 +29,7 @@ bool comboSliderInternal(f32& value, f32 minVal, f32 maxVal, bool useRange, f32 
 		wasModified = clampValue(value, minVal, maxVal);
 	}
 
+	// if we're not editing any text of this particular widget id
 	if (!editingText || comboSliderWidgetId != ctx->currentWidgetId)
 	{
 		addWidgetItem(bodyElem.normalState().height * ctx->globalScale);
@@ -64,19 +65,24 @@ bool comboSliderInternal(f32& value, f32 minVal, f32 maxVal, bool useRange, f32 
 		value -= arrowStep;
 		arrowStepped = true;
 		if (useRange) wasModified = clampValue(value, minVal, maxVal);
+		ctx->widget.changeEnded = true;
 	}
 	else if (isClicked() && ctx->event.mouse.point.x >= ctx->widget.rect.right() - rightArrowElem.normalState().image->width)
 	{
 		value += arrowStep;
 		arrowStepped = true;
 		if (useRange) wasModified = clampValue(value, minVal, maxVal);
+		ctx->widget.changeEnded = true;
 	}
 	
-	if (isClicked() && !dragging && !arrowStepped && !editingText)
+	if (isClicked() && !dragging && !arrowStepped)
 	{
 		editingText = true;
 		comboSliderWidgetId = ctx->currentWidgetId;
+		mouseWasDown = false;
+		dragging = false;
 		ctx->widget.focusedWidgetId = ctx->currentWidgetId;
+		ctx->widget.focused = true;
 		ctx->focusChanged = true;
 		ctx->textInput.widgetId = ctx->currentWidgetId;
 		memset(text, 64, 0);
@@ -85,19 +91,27 @@ bool comboSliderInternal(f32& value, f32 minVal, f32 maxVal, bool useRange, f32 
 		ctx->textInput.selectAllOnFocus = true;
 		ctx->textInput.firstMouseDown = true;
 		forceRepaint();
+		ctx->penPosition.y -= ctx->spacing * ctx->globalScale + bodyElem.normalState().height;
 		textInput(text, 64, TextInputValueMode::NumericOnly);
+		printf("Enabled id %d\n", ctx->currentWidgetId);
 	}
 	else
 	if (editingText && comboSliderWidgetId == ctx->currentWidgetId)
 	{
 		textInput(text, 64, TextInputValueMode::NumericOnly);
 
-		if (!ctx->widget.focused || !ctx->textInput.widgetId)
+		if (!ctx->widget.focused || !ctx->textInput.widgetId || 
+				(ctx->event.type == InputEvent::Type::Key
+				&& ctx->event.key.down
+				&& ctx->event.key.code == KeyCode::Esc
+				&& ctx->isActiveLayer()))
 		{
 			editingText = false;
 			comboSliderWidgetId = 0;
 			value = atof(text);
 			if (useRange) wasModified = clampValue(value, minVal, maxVal);
+			ctx->widget.changeEnded = true;
+			printf("Disabled id %d\n", ctx->currentWidgetId);
 		}
 	}
 	else
@@ -174,6 +188,7 @@ bool comboSliderInternal(f32& value, f32 minVal, f32 maxVal, bool useRange, f32 
 			mouseWasDown = false;
 			comboSliderWidgetId = 0;
 			releaseCapture();
+			ctx->widget.changeEnded = true;
 		}
 
 		auto bodyElemState = &bodyElem.normalState();

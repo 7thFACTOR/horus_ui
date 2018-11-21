@@ -28,6 +28,12 @@ bool textInput(
 	if (!ctx->focusChanged)
 		buttonBehavior();
 
+	if (ctx->focusChanged
+		&& ctx->currentWidgetId != ctx->widget.focusedWidgetId)
+	{
+		ctx->widget.changeEnded = true;
+	}
+
 	auto bodyElemState = &bodyElem->normalState();
 	bool isEditingThis =
 		ctx->currentWidgetId == ctx->textInput.widgetId
@@ -67,6 +73,7 @@ bool textInput(
 			ctx->textInput.editNow = false;
 			isEditingThis = false;
 			ctx->widget.focusedWidgetId = 0;
+			ctx->widget.changeEnded = true;
 		}
 	}
 
@@ -177,12 +184,12 @@ bool textInput(
 
 			// draw selection rect
 			ctx->renderer->cmdSetColor(bodyTextSelectionElemState.color);
-			ctx->renderer->cmdDrawSolidColor(selRect);
+			ctx->renderer->cmdDrawSolidRectangle(selRect);
 		}
 
 		// draw cursor
 		ctx->renderer->cmdSetColor(bodyTextCaretElemState.color);
-		ctx->renderer->cmdDrawSolidColor(cursorRect);
+		ctx->renderer->cmdDrawSolidRectangle(cursorRect);
 	}
 
 	if (isEditingThis)

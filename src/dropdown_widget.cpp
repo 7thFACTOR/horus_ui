@@ -126,6 +126,7 @@ bool dropdown(i32& selectedIndex, const char** items, u32 itemCount, u32 maxVisi
 			{
 				selectedIndex = i;
 				selectedNewItem = true;
+				ctx->widget.changeEnded = true;
 			}
 		}
 
