@@ -148,6 +148,7 @@ void setFocused()
 
 void addWidgetItem(f32 height)
 {
+	ctx->widget.changeEnded = false;
 	height = round(height);
 	ctx->widget.rect.set(
 		round(ctx->penPosition.x + ctx->padding * ctx->globalScale),
@@ -1180,6 +1181,11 @@ bool getColorFromText(std::string colorText, Color& color)
 	return false;
 }
 
+bool getColorFromText(const char* colorText, Color& color)
+{
+	return getColorFromText(std::string(colorText), color);
+}
+
 void setThemeElement(
 	UiTheme* theme,
 	const std::string& themePath,
@@ -1414,10 +1420,8 @@ Theme loadTheme(const char* filename)
 
 					if (widgetStateType != WidgetStateType::None)
 						setThemeElement(theme, themePath, styleName.c_str(), widgetType, elemType, widgetStateType, elemState, width, height);
-					else if (elemState.isDouble())
-						theme->elements[(u32)elemType].styles[styleName].parameters[stateName] = elemState.asFloat();
-					else if (elemState.isInt())
-						theme->elements[(u32)elemType].styles[styleName].parameters[stateName] = elemState.asInt();
+					else
+						theme->elements[(u32)elemType].styles[styleName].parameters[stateName] = elemState.asString();
 				}
 			}
 		};
@@ -2015,6 +2019,11 @@ bool isClicked()
 bool isVisible()
 {
 	return ctx->widget.visible;
+}
+
+bool isChangeEnded()
+{
+	return ctx->widget.changeEnded;
 }
 
 u32 getWidgetId()

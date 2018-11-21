@@ -11,6 +11,7 @@ bool checks[100] = { false };
 bool changeScale = false;
 f32 scale = 1.f;
 Font fntBig;
+Font fntVeryBig;
 Font fntBold;
 Font fntItalic;
 Font fntLed1;
@@ -904,25 +905,24 @@ struct MyViewHandler : hui::ViewHandler
 				//hui::drawPolyLine(pts.data(), pts.size(), false);
 			}
 			hui::setLineStyle({ Color::red, 20 });
-			//drawCircle({ 140, 140 }, 110, 40);
+			drawCircle({ 140, 140 }, 110, 40);
 			hui::setLineStyle({ Color::white, 1 });
-			//drawRectangle({ 50, 50, viewRc.width - 100, viewRc.height - 100 });
+			drawRectangle({ 50, 50, viewRc.width - 100, viewRc.height - 100 });
 			static float ff = 0;
 			static f32 tim = 0;
 
 			LineStyle ls1;
 			static f32 phs = 0;
-			ls1.stipplePattern[0] = 14;
+			ls1.stipplePattern[0] = 34;
 			ls1.stipplePattern[1] = 11;
 			ls1.stipplePattern[2] = 5;
 			ls1.stipplePattern[3] = 10;
 			ls1.stipplePatternCount = 2;
 			ls1.useStipple = true;
-			ls1.width = 15;
+			ls1.width = 5;
 			ls1.color = Color::yellow;
 			ls1.stipplePhase = phs;
 
-			//phs += 1;
 
 
 			LineStyle ls2;
@@ -935,6 +935,17 @@ struct MyViewHandler : hui::ViewHandler
 			ls2.stipplePhase = phs;
 			ls2.color = Color::red;
 
+			LineStyle ls3;
+
+			ls3.stipplePattern[0] = 2;
+			ls3.stipplePattern[1] = 2;
+			ls3.stipplePatternCount = 2;
+			ls3.useStipple = true;
+			ls3.width = 1;
+			ls3.stipplePhase = phs;
+			ls3.color = Color::lightGray;
+
+			//phs += 1;
 			hui::setLineStyle(ls2);
 
 			auto mpos = getMousePosition();
@@ -953,16 +964,31 @@ struct MyViewHandler : hui::ViewHandler
 
 			ff = sinf(tim) * 100.0f;
 			tim+=0.01f;
-			Point ps2[] = { { 100, 100 },{ 250, 100 },{ 250, 250 },{ 100, 250 } };
+			Point ps2[] = { { 100, 100 },{ 250, 100 },{250, 250},{ 100, 250 } };
 			//Point ps2[] = { { 100, 100 },{ 250, 100 },{ 350, 100 },{ 410, 100 } };
 			//Point ps2[] = { { 100, 100 },{ 150, 150 },{ 200, 200 },{ 310, 310 } };
 			
 			setLineStyle(ls1);
-			drawPolyLine(ps2, 4, true);
+			//drawPolyLine(ps2, 4, true);
+			setLineStyle(ls3);
 			setLineStyle(ls2);
 			drawPolyLine(ps2, 4, false);
+			setLineStyle(ls3);
 
+			for (f32 m = 0; m < 1500; m += 20)
+			{
+				drawLine({ 0.0f, m }, { 1000.0f, m });
+			}
 
+			for (f32 m = 0; m < 1500; m += 20)
+			{
+				drawLine({ m, 0.0f }, { m, 1000.0f });
+			}
+
+			FillStyle fs;
+			fs.color = Color::sky;
+			setFillStyle(fs);
+			drawSolidRectangle({ 100, 100, mpos.x - 100, mpos.y - 100 });
 
 			{
 				hui::LineStyle ls;
@@ -985,7 +1011,15 @@ struct MyViewHandler : hui::ViewHandler
 
 				ls.width = 6;
 				ls.color = Color::cyan;
-				//hui::setLineStyle(ls);
+				ls.stipplePattern[0] = 20;
+				ls.stipplePattern[1] = 10;
+				ls.stipplePattern[2] = 5;
+				ls.stipplePattern[3] = 5;
+				ls.stipplePattern[4] = 5;
+				ls.stipplePattern[5] = 5;
+				ls.stipplePatternCount = 2;
+				ls.useStipple = true;
+				hui::setLineStyle(ls);
 				std::vector<SplineControlPoint> pts;
 
 				pts.resize(4);
@@ -1014,13 +1048,35 @@ struct MyViewHandler : hui::ViewHandler
 				pts[3].leftTangent.x = 320;
 				pts[3].leftTangent.y = 520;
 
-				hui::setLineStyle(ls2);
-				//hui::drawSpline(pts.data(), pts.size());
+				//hui::setLineStyle(ls2);
+				hui::drawSpline(pts.data(), pts.size(), 40);
 
 				//hui::setLineStyle({ Color::red, 2 });
 				//hui::drawLine({ 50,50 }, { 100, 100 });
 			}
 			
+			setFont(fntVeryBig);
+			FillStyle fs2;
+			fs2.color = Color::white;
+			setFillStyle(fs2);
+			drawTextAt("Custom Graphics abcdefghijklmnoprstuvxyz", { 40, 140 });
+
+			fs2.color = Color::green;
+			setFillStyle(fs2);
+			setFont(fntBold);
+			drawTextAt("TEST HERE SOME SMALLER TEXT", { 40, 340 });
+
+			setFont(fntBold);
+			setFillColor(Color::magenta);
+			drawSolidTriangle({ 200, 200 }, { 300, 210 }, { 100, 400 });
+
+			WidgetElementInfo ei;
+			getThemeWidgetElementInfo(WidgetElementId::PopupBody, WidgetStateType::Normal, ei);
+			setColor(Color::white);
+			drawBorderedImage(ei.image, ei.border, { 310, 322, 300, 300 });
+
+			drawImage(horusLogo, { 500, 300 }, 1);
+
 			ampl += sinf(GetTickCount()) * 12;
 
 			if (hui::isHovered())
@@ -1133,6 +1189,7 @@ struct MyViewHandler : hui::ViewHandler
 			const char* s[] = { "Red", "Green", "Blue", "Yellow", "Pink" };
 			static i32 crtSel = 0;
 			hui::dropdown(crtSel, s, 5, 3);
+			if (isChangeEnded()) printf("Drop changed\n");
 			hui::beginScrollView(hui::getRemainingViewPaneHeight(viewPane), scr[viewId]);
 			hui::gap(5);
 
@@ -1417,12 +1474,14 @@ struct MyViewHandler : hui::ViewHandler
 			hui::getContextSettings().sliderInvertVerticalDragAmount = false;
 
 			hui::comboSliderFloat(slideVal, 1);
+			if (isChangeEnded()) printf("Combo slider changed\n");
 			hui::comboSliderFloatRanged(slideVal, 0, 100, .1f);
 			hui::line();
 			static f32 sval[3] = {0.5f, 1, 0};
 			static char txtSlider[64] = "";
 			hui::beginThreeColumns();
 			hui::rotarySliderFloat("Volume",sval[0], -1, 1, .01, true);
+			if (isChangeEnded()) printf("Rotary changed\n");
 			hui::progress(sval[0]);
 			toString(sval[0], txtSlider, 64);
 			hui::beginBox(Color::black);
@@ -1458,6 +1517,8 @@ struct MyViewHandler : hui::ViewHandler
 			static char valStr[20];
 			sprintf(valStr, "%.2f", slideVal);
 			hui::textInput(valStr, 10);
+			if (isChangeEnded()) printf("Text changed\n");
+
 			slideVal = atof(valStr);
 			hui::nextColumn();
 
@@ -1649,6 +1710,7 @@ int main(int argc, char** args)
 	//TODO: load themes and images and anything from memory also
 	auto theme = hui::loadTheme("../themes/default.theme");
 	fntBig = hui::createFont(theme, "customBig", "../themes/fonts/arial.ttf", 20);
+	fntVeryBig = hui::createFont(theme, "customVeryBig", "../themes/fonts/arial.ttf", 50);
 	fntBold = hui::createFont(theme, "customBold", "../themes/fonts/arial.ttf", 15);
 	fntItalic = hui::createFont(theme, "customItalic", "../themes/fonts/arial.ttf", 15);
 	fntNodeTitle = hui::createFont(theme, "customNodeTitle", "../themes/fonts/Roboto-Bold.ttf", 12);

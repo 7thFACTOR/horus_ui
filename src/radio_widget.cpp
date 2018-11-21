@@ -20,6 +20,7 @@ bool radio(const char* labelText, bool checked)
 	{
 		checked = !checked;
 		forceRepaint();
+		ctx->widget.changeEnded = true;
 	}
 
 	auto radioBodyElemState = &radioBodyElem.normalState();

@@ -47,7 +47,7 @@ struct DrawCommand
 		DrawPolyLine,
 		DrawText,
 		DrawInterpolatedColors,
-		DrawTriangle,
+		DrawSolidTriangle,
 		ClipRect,
 		SetViewportOffset,
 		SetAtlas,
@@ -55,6 +55,7 @@ struct DrawCommand
 		SetFont,
 		SetTextStyle,
 		SetLineStyle,
+		SetFillStyle,
 		Callback,
 
 		Count
@@ -147,6 +148,7 @@ struct DrawCommand
 	Color setTextColor;
 	TextStyle setTextStyle;
 	LineStyle setLineStyle;
+	FillStyle setFillStyle;
 };
 
 class Renderer
@@ -192,19 +194,21 @@ public:
 	void cmdSetTextBackfill(bool backfill);
 	void cmdSetTextBackfillColor(const Color& color);
 	void cmdSetLineStyle(const LineStyle& style);
+	void cmdSetFillStyle(const FillStyle& style);
 	void cmdDrawQuad(UiImage* image, const Point& p1, const Point& p2, const Point& p3, const Point& p4);
 	void cmdDrawImage(UiImage* image, const Point& position, f32 scale);
 	void cmdDrawImage(UiImage* image, const Rect& rect);
+	void cmdDrawImage(UiImage* image, const Rect& rect, const Rect& uvRect);
 	void cmdDrawImageBordered(UiImage* image, u32 border, const Rect& rect, f32 scale);
 	void cmdDrawImageScaledAligned(UiImage* image, const Rect& rect, HAlignType halign, VAlignType valign, f32 scale);
-	void cmdDrawSolidColor(const Rect& rect);
+	void cmdDrawSolidRectangle(const Rect& rect);
 	void cmdDrawInterpolatedColors(const Rect& rect, const Color& topLeft, const Color& bottomLeft, const Color& topRight, const Color& bottomRight);
 	void cmdDrawSpectrumColors(const Rect& rect, DrawSpectrumBrightness brightness, DrawSpectrumDirection dir);
 	void cmdDrawInterpolatedColorsTopBottom(const Rect& rect, const Color& top, const Color& bottom);
 	void cmdDrawInterpolatedColorsLeftRight(const Rect& rect, const Color& left, const Color& right);
 	void cmdDrawLine(const Point& a, const Point& b);
 	void cmdDrawPolyLine(const Point* points, u32 pointCount, bool closed);
-	void cmdDrawTriangle(const Point& p1, const Point& p2, const Point& p3, const Point& uv1, const Point& uv2, const Point& uv3, UiImage* image);
+	void cmdDrawSolidTriangle(const Point& p1, const Point& p2, const Point& p3);
 	FontTextSize cmdDrawTextAt(
 		const char* text,
 		const Point& position);
@@ -218,6 +222,9 @@ public:
 	bool skipRender = false;
 	bool disableRendering = false;
 	Point viewportOffset;
+	TextStyle currentTextStyle;
+	LineStyle currentLineStyle;
+	FillStyle currentFillStyle;
 
 protected:
 	void drawAtlasRegion(bool rotatedUv, const Rect& rect, const Rect& atlasUvRect);
@@ -240,7 +247,6 @@ protected:
 	void drawInterpolatedColorsLeftRight(const Rect& rect, const Rect& uvRect, const Color& left, const Color& right);
 	void drawImageBordered(UiImage* image, u32 border, const Rect& rect, f32 scale);
 	void drawLine(const Point& a, const Point& b);
-	void drawPolyLine1Pixel(const Point* points, u32 pointCount, bool closed);
 	void drawPolyLine(const Point* points, u32 pointCount, bool closed);
 	void drawTriangle(const Point& p1, const Point& p2, const Point& p3, const Point& uv1, const Point& uv2, const Point& uv3, UiImage* image);
 
@@ -262,8 +268,6 @@ protected:
 	VertexBufferData vertexBufferData;
 	VertexBuffer* vertexBuffer = nullptr;
 	RenderBatch* currentBatch = nullptr;
-	TextStyle currentTextStyle;
-	LineStyle currentLineStyle;
 	Rect currentClipRect;
 	UiFont* currentFont = nullptr;
 	UiAtlas* currentAtlas = nullptr;

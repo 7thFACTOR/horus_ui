@@ -42,12 +42,50 @@ struct UiThemeElement
 	struct Style
 	{
 		State states[(u32)WidgetStateType::Count];
-		std::unordered_map<std::string, f32> parameters;
+		std::unordered_map<std::string, std::string> parameters;
+		std::unordered_map<std::string, f32> floatParameters;
+		std::unordered_map<std::string, Color> colorParameters;
 
 		f32 getParameterValue(const std::string& name, f32 defaultValue)
 		{
-			auto iter = parameters.find(name);
-			if (iter == parameters.end()) return defaultValue;
+			auto iter = floatParameters.find(name);
+
+			if (iter == floatParameters.end())
+			{
+				auto iter2 = parameters.find(name);
+
+				if (iter2 != parameters.end())
+				{
+					f32 val = atof(iter2->second.c_str());
+					floatParameters[name] = val;
+					return val;
+				}
+
+				return defaultValue;
+			}
+			
+			return iter->second;
+		}
+
+		Color getParameterValue(const std::string& name, const Color& defaultValue = Color::white)
+		{
+			auto iter = colorParameters.find(name);
+
+			if (iter == colorParameters.end())
+			{
+				auto iter2 = parameters.find(name);
+
+				if (iter2 != parameters.end())
+				{
+					Color c;
+					getColorFromText(iter2->second.c_str(), c);
+					colorParameters[name] = c;
+					return c;
+				}
+
+				return defaultValue;
+			}
+
 			return iter->second;
 		}
 	};
@@ -108,6 +146,7 @@ struct WidgetState
 	bool clicked = false;
 	bool hovered = false;
 	bool focused = false;
+	bool changeEnded = false;
 	Rect rect;
 	Rect hoveredWidgetRect;
 	Rect focusedWidgetRect;

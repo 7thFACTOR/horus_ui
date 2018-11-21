@@ -34,6 +34,8 @@ bool rotarySliderFloat(const char* labelText, f32& value, f32 minVal, f32 maxVal
 	if (ctx->event.type == InputEvent::Type::MouseUp && rotarySliderWidgetId == ctx->currentWidgetId)
 	{
 		rotarySliderWidgetId = 0;
+		ctx->widget.changeEnded = true;
+		ctx->widget.changeEnded = true;
 	}
 
 	if (ctx->event.type == InputEvent::Type::MouseMove
@@ -97,13 +99,6 @@ bool rotarySliderFloat(const char* labelText, f32& value, f32 minVal, f32 maxVal
 		Point center = rc.center();
 		f32 percent = 1.0f - (maxVal - value) / (maxVal - minVal);
 		
-		//Point qpos[4] = {
-		//	Point(0, 0),
-		//	Point(markElemState->image->width * ctx->globalScale, 0),
-		//	Point(markElemState->image->width * ctx->globalScale, markElemState->image->height * ctx->globalScale),
-		//	Point(0, markElemState->image->height * ctx->globalScale),
-		//};
-
 		f32 limitOffset = valueDotElem.currentStyle->getParameterValue("limitOffset", 0.3f);
 		f32 dotCount = valueDotElem.currentStyle->getParameterValue("count", 20);
 		f32 dotPlacementRadius = valueDotElem.currentStyle->getParameterValue("placementRadius", 35);
@@ -119,7 +114,7 @@ bool rotarySliderFloat(const char* labelText, f32& value, f32 minVal, f32 maxVal
 		else
 		{
 			lowLimitRadians = M_PI * 0.5f;
-			highLimitRadians = 2.5f*M_PI;
+			highLimitRadians = 2.5f * M_PI;
 		}
 
 		f32 radians = lowLimitRadians + percent * (highLimitRadians - lowLimitRadians);
@@ -130,22 +125,24 @@ bool rotarySliderFloat(const char* labelText, f32& value, f32 minVal, f32 maxVal
 
 		if (twoSide)
 		{
+			Color negativeColor = valueDotElem.currentStyle->getParameterValue("negativeColor");
+			Color positiveColor = valueDotElem.currentStyle->getParameterValue("positiveColor");
+
 			angle = 1.5f * M_PI;
 			step = (highLimitRadians - lowLimitRadians) / dotCount;
 			activeDots = fabs(dotCount * (percent - 0.5f));
-			
+			ctx->renderer->cmdSetColor(value < 0 ? negativeColor : positiveColor);
+
 			for (int i = 0; i <= activeDots; i++)
 			{
 				pos.x = cosf(angle) * dotPlacementRadius * ctx->globalScale + center.x - valueDotElem.normalState().image->width * ctx->globalScale / 2;
 				pos.y = sinf(angle) * dotPlacementRadius * ctx->globalScale + center.y - valueDotElem.normalState().image->height * ctx->globalScale / 2;
-				ctx->renderer->cmdSetColor(valueDotElem.getState(WidgetStateType::Pressed).color);
 				ctx->renderer->cmdDrawImage(valueDotElem.normalState().image, pos, ctx->globalScale);
 				angle += step * sgn(value);
 			}
 
 			pos.x = cosf(radians) * dotPlacementRadius * ctx->globalScale + center.x - valueDotElem.normalState().image->width * ctx->globalScale / 2;
 			pos.y = sinf(radians) * dotPlacementRadius * ctx->globalScale + center.y - valueDotElem.normalState().image->height * ctx->globalScale / 2;
-			ctx->renderer->cmdSetColor(valueDotElem.getState(WidgetStateType::Pressed).color);
 			ctx->renderer->cmdDrawImage(valueDotElem.normalState().image, pos, ctx->globalScale);
 		}
 		else
@@ -165,24 +162,11 @@ bool rotarySliderFloat(const char* labelText, f32& value, f32 minVal, f32 maxVal
 			ctx->renderer->cmdDrawImage(valueDotElem.normalState().image, pos, ctx->globalScale);
 		}
 
-		/*
-		for (int i = 0; i < 4; i++)
-		{
-			Point newp;
-			qpos[i].y -= markElemState->image->height * ctx->globalScale / 2;
-			qpos[i].x += markElem.normalState().height * ctx->globalScale;
-			newp.x = cosf(radians) * qpos[i].x - sinf(radians) * qpos[i].y;
-			newp.y = sinf(radians) * qpos[i].x + cosf(radians) * qpos[i].y;
-			qpos[i] = newp + center;
-		}*/
-
-		ctx->renderer->cmdSetColor(markElemState->color);
-		//ctx->renderer->cmdDrawQuad(markElemState->image, qpos[0], qpos[1], qpos[2], qpos[3]);
-
 		// draw the knob cursor
 		pos.x = center.x + markPlacementRadius * cosf(radians) * ctx->globalScale - markElemState->image->width * ctx->globalScale / 2;
 		pos.y = center.y + markPlacementRadius * sinf(radians) * ctx->globalScale - markElemState->image->height * ctx->globalScale / 2;
 
+		ctx->renderer->cmdSetColor(markElemState->color);
 		ctx->renderer->cmdDrawImage(markElemState->image, pos, ctx->globalScale);
 
 		// draw the text under the knob

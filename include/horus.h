@@ -1024,7 +1024,7 @@ public:
 	inline bool operator != (const Point& other) const
 	{
 		return x != other.x
-			&& y != other.y;
+			|| y != other.y;
 	}
 
 	inline Point& operator = (const Point& other)
@@ -2390,6 +2390,9 @@ HORUS_API bool isClicked();
 /// \return true if the previous widget is visible
 HORUS_API bool isVisible();
 
+/// \return true if the change for the widget's value ended, used for undo systems to add the undo action only after the drag/edit ended
+HORUS_API bool isChangeEnded();
+
 /// \return the current widget id (the next widget's id)
 HORUS_API u32 getWidgetId();
 
@@ -2479,7 +2482,13 @@ HORUS_API void endInsertDrawCommands();
 HORUS_API void setFont(Font font);
 
 /// 
-HORUS_API void setBackColor(const Color& color);
+HORUS_API void setColor(const Color& color);
+
+/// 
+HORUS_API void setLineColor(const Color& color);
+
+/// 
+HORUS_API void setFillColor(const Color& color);
 
 /// 
 HORUS_API void drawTextAt(const char* text, const Point& position);
@@ -2521,12 +2530,15 @@ HORUS_API void drawEllipse(const Point& center, f32 radiusX, f32 radiusY, u32 se
 HORUS_API void drawRectangle(const Rect& rc);
 
 /// 
+HORUS_API void drawSolidRectangle(const Rect& rc);
+
+/// 
 HORUS_API void drawSpline(SplineControlPoint* points, u32 count, f32 segmentSize = 15);
 
 /// 
 HORUS_API void drawArrow(const Point& startPoint, const Point& endPoint, f32 tipLength, f32 tipWidth, bool drawBodyLine = true);
 
-HORUS_API void drawTriangle(const Point& p1, const Point& p2, const Point& p3);
+HORUS_API void drawSolidTriangle(const Point& p1, const Point& p2, const Point& p3);
 
 //////////////////////////////////////////////////////////////////////////
 // Pane container functions
@@ -2697,6 +2709,8 @@ HORUS_API void toString(f32 value, char* outString, u32 outStringMaxSize, u32 de
 
 /// Convert a unicode (utf32) value to utf8 string
 HORUS_API bool unicodeToUtf8(const u32* text, u32 maxTextSize, char* outString, u32 maxOutStringSize);
+
+HORUS_API bool getColorFromText(const char* colorText, Color& color);
 
 }
 /** @}*/
