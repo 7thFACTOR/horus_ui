@@ -77,6 +77,7 @@ bool comboSliderInternal(f32& value, f32 minVal, f32 maxVal, bool useRange, f32 
 	
 	if (isClicked() && !dragging && !arrowStepped)
 	{
+		printf("Start edit %d\n", ctx->currentWidgetId);
 		editingText = true;
 		comboSliderWidgetId = ctx->currentWidgetId;
 		mouseWasDown = false;
@@ -93,11 +94,12 @@ bool comboSliderInternal(f32& value, f32 minVal, f32 maxVal, bool useRange, f32 
 		forceRepaint();
 		ctx->penPosition.y -= ctx->spacing * ctx->globalScale + bodyElem.normalState().height;
 		textInput(text, 64, TextInputValueMode::NumericOnly);
-		printf("Enabled id %d\n", ctx->currentWidgetId);
 	}
 	else
 	if (editingText && comboSliderWidgetId == ctx->currentWidgetId)
 	{
+		// edit text sterge efectiv state-ul cand e down mouse la previous widget, de aia nu intra in clicked
+		printf("Now editing text %d\n", comboSliderWidgetId);
 		textInput(text, 64, TextInputValueMode::NumericOnly);
 
 		if (!ctx->widget.focused || !ctx->textInput.widgetId || 

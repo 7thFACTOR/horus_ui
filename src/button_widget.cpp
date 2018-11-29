@@ -72,6 +72,7 @@ void buttonBehavior(bool menuItem)
 				ctx->widget.focusedWidgetId = ctx->currentWidgetId;
 				ctx->widget.pressed = true;
 				ctx->widget.focusedWidgetPressed = true;
+				printf("DOWN\n");
 
 				if (ctx->popupIndex)
 				{
@@ -85,6 +86,8 @@ void buttonBehavior(bool menuItem)
 			{
 				if (ctx->currentWidgetId == ctx->widget.focusedWidgetId)
 				{
+					printf("UP\n");
+
 					ctx->widget.clicked = true;
 					ctx->widget.pressed = false;
 					ctx->widget.focusedWidgetPressed = false;
