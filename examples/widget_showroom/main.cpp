@@ -1441,6 +1441,7 @@ struct MyViewHandler : hui::ViewHandler
 			hui::button("Trim edges");
 			hui::button("Generate All edges");
 			static f32 slideVal = 0;
+			static f32 slideVal55= 0;
 			hui::endColumns();
 
 			f32 colWidths[] = { 0.2f, 15, -1, 15, -1, 15, -1 };
@@ -1475,7 +1476,7 @@ struct MyViewHandler : hui::ViewHandler
 
 			hui::comboSliderFloat(slideVal, 1);
 			if (isChangeEnded()) printf("Combo slider changed\n");
-			hui::comboSliderFloatRanged(slideVal, 0, 100, .1f);
+			hui::comboSliderFloatRanged(slideVal55, 0, 100, .1f);
 			hui::line();
 			static f32 sval[3] = {0.5f, 1, 0};
 			static char txtSlider[64] = "";
