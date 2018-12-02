@@ -74,6 +74,11 @@ bool comboSliderInternal(f32& value, f32 minVal, f32 maxVal, bool useRange, f32 
 		if (useRange) wasModified = clampValue(value, minVal, maxVal);
 		ctx->widget.changeEnded = true;
 	}
+
+	if (isClicked())
+	{
+		printf("CLICK\n");
+	}
 	
 	if (isClicked() && !dragging && !arrowStepped)
 	{
@@ -98,7 +103,6 @@ bool comboSliderInternal(f32& value, f32 minVal, f32 maxVal, bool useRange, f32 
 	else
 	if (editingText && comboSliderWidgetId == ctx->currentWidgetId)
 	{
-		// edit text sterge efectiv state-ul cand e down mouse la previous widget, de aia nu intra in clicked
 		printf("Now editing text %d\n", comboSliderWidgetId);
 		textInput(text, 64, TextInputValueMode::NumericOnly);
 
