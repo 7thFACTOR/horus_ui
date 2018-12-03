@@ -18,6 +18,8 @@ bool comboSliderInternal(f32& value, f32 minVal, f32 maxVal, bool useRange, f32 
 	static Point dragLastMousePos;
 	static char text[64] = "";
 	static u32 comboSliderWidgetId = 0;
+	static bool requestChangeToOtherComboSlider = false;
+	static u32 newComboSliderId = 0;
 	auto bodyElem = ctx->theme->getElement(WidgetElementId::ComboSliderBody);
 	auto leftArrowElem = ctx->theme->getElement(WidgetElementId::ComboSliderLeftArrow);
 	auto rightArrowElem = ctx->theme->getElement(WidgetElementId::ComboSliderRightArrow);
@@ -75,14 +77,8 @@ bool comboSliderInternal(f32& value, f32 minVal, f32 maxVal, bool useRange, f32 
 		ctx->widget.changeEnded = true;
 	}
 
-	if (isClicked())
-	{
-		printf("CLICK\n");
-	}
-	
 	if (isClicked() && !dragging && !arrowStepped)
 	{
-		printf("Start edit %d\n", ctx->currentWidgetId);
 		editingText = true;
 		comboSliderWidgetId = ctx->currentWidgetId;
 		mouseWasDown = false;
@@ -103,11 +99,12 @@ bool comboSliderInternal(f32& value, f32 minVal, f32 maxVal, bool useRange, f32 
 	else
 	if (editingText && comboSliderWidgetId == ctx->currentWidgetId)
 	{
-		printf("Now editing text %d\n", comboSliderWidgetId);
 		textInput(text, 64, TextInputValueMode::NumericOnly);
 
-		if (!ctx->widget.focused || !ctx->textInput.widgetId || 
-				(ctx->event.type == InputEvent::Type::Key
+		if (!ctx->widget.focused
+			|| !ctx->textInput.widgetId
+			|| requestChangeToOtherComboSlider
+			|| (ctx->event.type == InputEvent::Type::Key
 				&& ctx->event.key.down
 				&& ctx->event.key.code == KeyCode::Esc
 				&& ctx->isActiveLayer()))
@@ -117,7 +114,13 @@ bool comboSliderInternal(f32& value, f32 minVal, f32 maxVal, bool useRange, f32 
 			value = atof(text);
 			if (useRange) wasModified = clampValue(value, minVal, maxVal);
 			ctx->widget.changeEnded = true;
-			printf("Disabled id %d\n", ctx->currentWidgetId);
+
+			if (requestChangeToOtherComboSlider)
+			{
+				comboSliderWidgetId = newComboSliderId;
+				newComboSliderId = 0;
+				requestChangeToOtherComboSlider = false;
+			}
 		}
 	}
 	else
@@ -132,7 +135,18 @@ bool comboSliderInternal(f32& value, f32 minVal, f32 maxVal, bool useRange, f32 
 		{
 			setCapture(getWindow());
 			dragLastMousePos = ctx->event.mouse.point;
-			comboSliderWidgetId = ctx->currentWidgetId;
+
+			if (!editingText)
+			{
+				comboSliderWidgetId = ctx->currentWidgetId;
+			}
+			else
+			{
+				requestChangeToOtherComboSlider = true;
+				newComboSliderId = ctx->currentWidgetId;
+				forceRepaint();
+			}
+
 			mouseWasDown = true;
 		}
 
