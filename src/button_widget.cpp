@@ -241,7 +241,7 @@ bool button(const char* labelText)
 	return ctx->widget.clicked;
 }
 
-bool iconButtonInternal(Image icon, Image disabledIcon, f32 customHeight, bool down, UiThemeElement* btnBodyElem)
+bool iconButtonInternal(Image icon, Image disabledIcon, f32 customHeight, bool down, UiThemeElement* btnBodyElem, bool focusable)
 {
 	auto btnBodyElemState = &btnBodyElem->normalState();
 	UiImage* iconImg = (UiImage*)icon;
@@ -261,13 +261,14 @@ bool iconButtonInternal(Image icon, Image disabledIcon, f32 customHeight, bool d
 	if (!ctx->widget.enabled)
 	{
 		btnBodyElemState = &btnBodyElem->getState(WidgetStateType::Disabled);
+		iconImg = disabledIconImg;
 	}
 	else if (ctx->widget.pressed)
 	{
 		btnBodyElemState = &btnBodyElem->getState(WidgetStateType::Pressed);
 		pressedIncrement = 1;
 	}
-	else if (ctx->widget.focused)
+	else if (ctx->widget.focused && focusable)
 		btnBodyElemState = &btnBodyElem->getState(WidgetStateType::Focused);
 	else if (ctx->widget.hovered)
 		btnBodyElemState = &btnBodyElem->getState(WidgetStateType::Hovered);
@@ -285,7 +286,9 @@ bool iconButtonInternal(Image icon, Image disabledIcon, f32 customHeight, bool d
 			iconImg->rect.width * ctx->globalScale, iconImg->rect.height * ctx->globalScale });
 	}
 
-	setAsFocusable();
+	if (focusable)
+		setAsFocusable();
+	
 	ctx->currentWidgetId++;
 
 	return ctx->widget.clicked;

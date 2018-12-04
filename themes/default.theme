@@ -54,7 +54,7 @@
 						"normal": { "image": "button_normal", "border": 3, "color": "115,115,115,255", "textColor": "white", "font": "normal" },
 						"hovered": { "image": "button_normal", "border": 3, "color": "155,200,200,255", "textColor": "white", "font": "normal" },
 						"pressed": { "image": "button_pressed", "border": 3, "color": "white", "textColor": "white", "font": "normal" },
-						"focused": { "image": "button_focused", "border": 3, "color": "white", "textColor": "white", "font": "normal" }
+						"focused": { "image": "button_normal", "border": 3, "color": "115,115,115,255", "textColor": "white", "font": "normal" }
 					}
 				},
 				"important":
@@ -66,7 +66,7 @@
 						"normal": { "image": "button_normal", "border": 3, "color": "red", "textColor": "white", "font": "normal" },
 						"hovered": { "image": "button_normal", "border": 3, "color": "yellow", "textColor": "white", "font": "normal" },
 						"pressed": { "image": "button_pressed", "border": 3, "color": "white", "textColor": "white", "font": "normal" },
-						"focused": { "image": "button_focused", "border": 3, "color": "white", "textColor": "white", "font": "normal" }
+						"focused": { "image": "button_normal", "border": 3, "color": "white", "textColor": "white", "font": "normal" }
 					}
 				}
 			}
@@ -487,7 +487,11 @@
 			"toolbarButtonBody":
 			{
 				"height":20,
-				"normal": { "image": "empty", "border": 0, "color": "white", "textColor": "white", "font": "normal" }
+				"normal": { "image": "empty", "border": 3, "color": "white", "textColor": "white", "font": "normal" },
+				"hovered": { "image": "button_normal", "border": 3, "color": "white", "textColor": "white", "font": "normal" },
+				"disabled": { "image": "empty", "border": 3, "color": "white", "textColor": "white", "font": "normal" },
+				"focused": { "image": "empty", "border": 3, "color": "white", "textColor": "white", "font": "normal" },
+				"pressed": { "image": "button_pressed", "border": 3, "color": "white", "textColor": "white", "font": "normal" }
 			}
 		},
 		"columnsHeader":
