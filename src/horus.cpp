@@ -146,17 +146,19 @@ void setFocused()
 	ctx->focusChanged = true;
 }
 
-void addWidgetItem(f32 height)
+void addWidgetItem(f32 height, f32 sameLineWidth)
 {
 	ctx->widget.changeEnded = false;
 	height = round(height);
+	f32 width = ctx->sameLine ? sameLineWidth : ctx->layoutStack.back().width - ctx->padding * 2.0f * ctx->globalScale;
 	ctx->widget.rect.set(
 		round(ctx->penPosition.x + ctx->padding * ctx->globalScale),
 		round(ctx->penPosition.y),
-		ctx->layoutStack.back().width - ctx->padding * 2.0f * ctx->globalScale,
+		width,
 		height);
 	ctx->penPosition.y += ctx->spacing * ctx->globalScale + height;
 	ctx->penPosition.y = round(ctx->penPosition.y);
+	ctx->sameLine = false;
 }
 
 void setAsFocusable()

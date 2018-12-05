@@ -57,7 +57,7 @@ int main(int argc, char** args)
 			hui::beginContainer(panelRect);
 			hui::WidgetElementInfo elemInfo;
 			hui::getThemeWidgetElementInfo(hui::WidgetElementId::PopupBody, hui::WidgetStateType::Normal, elemInfo);
-			hui::setBackColor(hui::Color::white);
+			hui::setColor(hui::Color::white);
 			hui::drawBorderedImage(elemInfo.image, elemInfo.border, panelRect);
 			hui::pushPadding(15);
 			hui::gap(15);

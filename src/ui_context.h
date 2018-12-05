@@ -44,6 +44,7 @@ struct UiContext
 	f32 globalScale = 1.0f;
 	u32 atlasTextureSize = 4096;
 	bool drawingViewPaneTabs = false;
+	bool sameLine = false;
 
 	TextInputState textInput;
 	WidgetState widget;

@@ -11,7 +11,7 @@ bool utf32ToUtf8(const UnicodeString& text, char** outString);
 bool utf32ToUtf8NoAlloc(const UnicodeString& text, const char* outString, size_t maxLength);
 
 void setEnabled(bool enabled);
-void addWidgetItem(f32 height);
+void addWidgetItem(f32 height, f32 sameLineWidth);
 void setAsFocusable();
 void buttonBehavior(bool menuItem = false);
 void mouseDownOnlyButtonBehavior();

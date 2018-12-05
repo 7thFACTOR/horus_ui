@@ -2258,6 +2258,10 @@ HORUS_API void gap(f32 size);
 /// Leave a normal space between previous widget and next one
 HORUS_API void space();
 
+/// Make next widget show on the same row as the last widget. The widget width depends on the widget type, the content inside it, etc.
+/// Not all widgets support the same line modifier, since some need content
+HORUS_API void sameLine();
+
 /// Begin a custom user viewport area
 /// \param height the height of the viewport, if zero, it will take the entire remaining container height
 /// \return the rectangle in window coordinates of the actual viewport area, use this to draw your custom things in
