@@ -9,7 +9,7 @@ WidgetElementInfo inf;
 void curveEditor(f32 height, u32 maxPoints, Point* points, u32& pointCount, const Color& lineColor)
 {
 	beginCustomWidget(height);
-	setBackColor(isPressed() ? Color::red : Color::white);
+	setColor(isPressed() ? Color::red : Color::white);
 	drawBorderedImage(inf.image, inf.border, getWidgetRect());
 	setLineStyle({ Color::orange, 1.5f });
 	drawLine({ 10,10 }, { 10,110 });

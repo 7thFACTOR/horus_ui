@@ -32,4 +32,9 @@ void space()
 	ctx->penPosition.y += ctx->spacing * ctx->globalScale;
 }
 
+void sameLine()
+{
+	ctx->sameLine = true;
+}
+
 }
