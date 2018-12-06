@@ -10,7 +10,7 @@ bool colorPickerPopup(const Color& currentColor, Color& outNewColor)
 {
 	Color newColor = currentColor;
 	f32 height = 250;
-	addWidgetItem(height);
+	addWidgetItem(height, 0);
 
 	ctx->renderer->cmdDrawInterpolatedColors(
 		{

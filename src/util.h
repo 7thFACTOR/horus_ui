@@ -20,7 +20,7 @@ bool viewportImageFitSize(
 	f32 viewWidth, f32 viewHeight,
 	f32& newWidth, f32& newHeight,
 	bool ignoreHeight, bool ignoreWidth);
-bool iconButtonInternal(Image icon, Image disabledIcon, f32 customHeight, bool down, UiThemeElement* btnBodyElem, bool focusable = true);
+bool iconButtonInternal(Image icon, Image disabledIcon, f32 customWidth, f32 customHeight, bool down, UiThemeElement* btnBodyElem, bool focusable = true);
 void saveImage(const char* filename, Rgba32* pixels, u32 width, u32 height);
 bool clampValue(f32& value, f32 minVal, f32 maxVal);
 template <typename T> T sgn(T val) { return (T(0) < val) - (val < T(0)); }
