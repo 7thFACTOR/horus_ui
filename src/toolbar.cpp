@@ -17,7 +17,14 @@ void endToolbar()
 
 bool toolbarButton(Image normalIcon, Image disabledIcon, bool down)
 {
-	bool ret = iconButtonInternal(normalIcon, disabledIcon, 0, down, &ctx->theme->getElement(WidgetElementId::ToolbarButtonBody), false);
+	auto el = &ctx->theme->getElement(WidgetElementId::ToolbarButtonBody);
+
+	bool ret = iconButtonInternal(
+		normalIcon, disabledIcon,
+		el->normalState().width,
+		el->normalState().height,
+		down,
+		el, false);
 
 	nextColumn();
 	return ret;
