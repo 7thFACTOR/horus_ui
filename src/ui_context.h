@@ -48,6 +48,7 @@ struct UiContext
 
 	TextInputState textInput;
 	WidgetState widget;
+	std::vector<f32> widthStack;
 	TooltipState tooltip;
 
 	u32 layerIndex = 0;
@@ -93,6 +94,8 @@ struct UiContext
 	std::vector<UiTheme*> themes;
 
 	Rect containerRect;
+	f32 previousSameLinePenY = 0;
+	f32 highestSameLinePenY = 0;
 	Point penPosition;
 	std::vector<LayoutState> layoutStack;
 	Rect lastColumnRect;

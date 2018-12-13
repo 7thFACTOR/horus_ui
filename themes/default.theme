@@ -486,7 +486,8 @@
 		{
 			"toolbarButtonBody":
 			{
-				"height":20,
+				"width":24,
+				"height":24,
 				"normal": { "image": "empty", "border": 3, "color": "white", "textColor": "white", "font": "normal" },
 				"hovered": { "image": "button_normal", "border": 3, "color": "white", "textColor": "white", "font": "normal" },
 				"disabled": { "image": "empty", "border": 3, "color": "white", "textColor": "white", "font": "normal" },

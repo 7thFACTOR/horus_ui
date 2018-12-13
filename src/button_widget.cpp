@@ -241,7 +241,7 @@ bool button(const char* labelText)
 	return ctx->widget.clicked;
 }
 
-bool iconButtonInternal(Image icon, Image disabledIcon, f32 customWidth, f32 customHeight, bool down, UiThemeElement* btnBodyElem, bool focusable)
+bool iconButtonInternal(Image icon, Image disabledIcon, f32 customHeight, bool down, UiThemeElement* btnBodyElem, bool focusable)
 {
 	auto btnBodyElemState = &btnBodyElem->normalState();
 	UiImage* iconImg = (UiImage*)icon;
@@ -253,7 +253,7 @@ bool iconButtonInternal(Image icon, Image disabledIcon, f32 customWidth, f32 cus
 	else
 		height = std::max(btnBodyElemState->height, iconImg->rect.height);
 
-	addWidgetItem(height * ctx->globalScale, customWidth);
+	addWidgetItem(height * ctx->globalScale);
 	buttonBehavior();
 
 	f32 pressedIncrement = 0.0f;
