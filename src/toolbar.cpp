@@ -8,25 +8,30 @@ namespace hui
 {
 void beginToolbar(u32 itemCount, const f32 preferredWidths[], const f32 minWidths[], const f32 maxWidths[])
 {
-	beginColumns(itemCount, preferredWidths, minWidths, maxWidths);
+	//beginColumns(itemCount, preferredWidths, minWidths, maxWidths);
 }
 
 void endToolbar()
 {
+	ctx->sameLine = false;
+	ctx->penPosition.x = ctx->containerRect.x;
 }
 
 bool toolbarButton(Image normalIcon, Image disabledIcon, bool down)
 {
 	auto el = &ctx->theme->getElement(WidgetElementId::ToolbarButtonBody);
 
+	pushWidth(el->normalState().width);
+
 	bool ret = iconButtonInternal(
 		normalIcon, disabledIcon,
-		el->normalState().width,
 		el->normalState().height,
 		down,
 		el, false);
 
-	nextColumn();
+	popWidth(); sameLine();
+
+	//nextColumn();
 	return ret;
 }
 

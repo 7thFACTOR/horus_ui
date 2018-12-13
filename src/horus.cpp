@@ -146,19 +146,33 @@ void setFocused()
 	ctx->focusChanged = true;
 }
 
-void addWidgetItem(f32 height, f32 sameLineWidth)
+void addWidgetItem(f32 height)
 {
 	ctx->widget.changeEnded = false;
 	height = round(height);
-	f32 width = ctx->sameLine ? sameLineWidth : ctx->layoutStack.back().width - ctx->padding * 2.0f * ctx->globalScale;
+	f32 width = (ctx->sameLine ? ctx->widget.width : (ctx->widget.width != 0 ? ctx->widget.width : ctx->layoutStack.back().width)) - ctx->padding * 2.0f * ctx->globalScale;
 	ctx->widget.rect.set(
 		round(ctx->penPosition.x + ctx->padding * ctx->globalScale),
 		round(ctx->penPosition.y),
 		width,
 		height);
-	ctx->penPosition.y += ctx->spacing * ctx->globalScale + height;
-	ctx->penPosition.y = round(ctx->penPosition.y);
-	ctx->sameLine = false;
+
+	if (!ctx->sameLine)
+	{
+		ctx->previousSameLinePenY = ctx->penPosition.y;
+		ctx->penPosition.y += ctx->spacing * ctx->globalScale + height;
+		ctx->penPosition.y = round(ctx->penPosition.y);
+	}
+	else
+	{
+		ctx->penPosition.x += width;
+		ctx->penPosition.y = ctx->previousSameLinePenY;
+		ctx->penPosition.y += ctx->spacing * ctx->globalScale + height;
+		ctx->penPosition.y = round(ctx->penPosition.y);
+		ctx->sameLine = false;
+	}
+
+	ctx->highestSameLinePenY = fmax(ctx->penPosition.y, ctx->highestSameLinePenY);
 }
 
 void setAsFocusable()

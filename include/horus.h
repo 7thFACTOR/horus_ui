@@ -2262,6 +2262,10 @@ HORUS_API void space();
 /// Not all widgets support the same line modifier, since some need content
 HORUS_API void sameLine();
 
+HORUS_API void pushWidth(f32 width);
+
+HORUS_API f32 popWidth();
+
 /// Begin a custom user viewport area
 /// \param height the height of the viewport, if zero, it will take the entire remaining container height
 /// \return the rectangle in window coordinates of the actual viewport area, use this to draw your custom things in

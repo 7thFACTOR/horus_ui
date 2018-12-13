@@ -37,4 +37,22 @@ void sameLine()
 	ctx->sameLine = true;
 }
 
+void pushWidth(f32 width)
+{
+	ctx->widthStack.push_back(ctx->widget.width);
+	ctx->widget.width = width;
+}
+
+f32 popWidth()
+{
+	if (ctx->widthStack.size())
+	{
+		ctx->widget.width = ctx->widthStack.back();
+		ctx->widthStack.pop_back();
+		return ctx->widget.width;
+	}
+
+	return 0;
+}
+
 }
