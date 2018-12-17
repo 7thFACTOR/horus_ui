@@ -35,7 +35,29 @@ void space()
 void sameLine()
 {
 	ctx->sameLine = true;
+	ctx->penPosition.x += ctx->widget.rect.width + ctx->widget.sameLineSpacing;
+	ctx->penPosition.y = round(ctx->previousSameLinePenY);
+	ctx->penPosition.y = round(ctx->penPosition.y);
 }
+
+void pushSameLineSpacing(f32 horizontalSpace)
+{
+	ctx->sameLineSpacingStack.push_back(ctx->widget.sameLineSpacing);
+	ctx->widget.sameLineSpacing = horizontalSpace;
+}
+
+f32 popSameLineSpacing()
+{
+	if (ctx->sameLineSpacingStack.size())
+	{
+		ctx->widget.sameLineSpacing = ctx->sameLineSpacingStack.back();
+		ctx->sameLineSpacingStack.pop_back();
+		return ctx->widget.sameLineSpacing;
+	}
+
+	return 0;
+}
+
 
 void pushWidth(f32 width)
 {

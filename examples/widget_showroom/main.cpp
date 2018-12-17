@@ -453,13 +453,28 @@ struct MyViewHandler : hui::ViewHandler
 			static f32 toolbarCols[] = { 30, 30, 30, 100, 100, 0.5f, 1 };
 			hui::pushPadding(1);
 
-			hui::beginToolbar(5);
+			hui::pushSameLineSpacing(5);
+			hui::beginToolbar();
 			hui::toolbarButton(moveIcon);
 			hui::toolbarButton(moveIcon);
 			hui::toolbarButton(moveIcon);
 			hui::toolbarButton(moveIcon);
 			hui::toolbarButton(moveIcon);
 			hui::endToolbar();
+			//hui::sameLine();
+			//hui::pushWidth(70);
+			//hui::button("Add"); sameLine();
+			//hui::button("Duplicate"); sameLine();
+			//hui::button("Erase"); sameLine();
+			//hui:check("Koko", true); sameLine();
+			//
+			////pushWidth(0);
+			//hui::label("Whoot");
+			////popWidth();
+			//sameLine();
+			//hui::radio("Ckckckc", true);
+			//hui::popWidth();
+			hui::popSameLineSpacing();
 
 			//hui::beginColumns(6, toolbarCols, toolbarCols, toolbarCols);
 			//hui::iconButton(moveIcon, 20);
@@ -483,7 +498,7 @@ struct MyViewHandler : hui::ViewHandler
 
 			hui::getThemeWidgetElementInfo(hui::WidgetElementId::ButtonBody, hui::WidgetStateType::Normal, wel);
 
-			hui::image(wel.image);
+			//hui::image(wel.image);
 			//hui::beginViewport(100);
 			//static f32 w = 60;
 			//w += 0.1;

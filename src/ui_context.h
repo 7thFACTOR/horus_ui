@@ -49,6 +49,7 @@ struct UiContext
 	TextInputState textInput;
 	WidgetState widget;
 	std::vector<f32> widthStack;
+	std::vector<f32> sameLineSpacingStack;
 	TooltipState tooltip;
 
 	u32 layerIndex = 0;

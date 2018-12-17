@@ -6,15 +6,14 @@
 
 namespace hui
 {
-void beginToolbar(u32 itemCount, const f32 preferredWidths[], const f32 minWidths[], const f32 maxWidths[])
+void beginToolbar()
 {
-	//beginColumns(itemCount, preferredWidths, minWidths, maxWidths);
 }
 
 void endToolbar()
 {
 	ctx->sameLine = false;
-	ctx->penPosition.x = ctx->containerRect.x;
+	ctx->penPosition.x -= ctx->widget.rect.width + ctx->widget.sameLineSpacing;
 }
 
 bool toolbarButton(Image normalIcon, Image disabledIcon, bool down)
@@ -31,7 +30,6 @@ bool toolbarButton(Image normalIcon, Image disabledIcon, bool down)
 
 	popWidth(); sameLine();
 
-	//nextColumn();
 	return ret;
 }
 

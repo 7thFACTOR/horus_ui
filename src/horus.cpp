@@ -150,29 +150,33 @@ void addWidgetItem(f32 height)
 {
 	ctx->widget.changeEnded = false;
 	height = round(height);
+
 	f32 width = (ctx->sameLine ? ctx->widget.width : (ctx->widget.width != 0 ? ctx->widget.width : ctx->layoutStack.back().width)) - ctx->padding * 2.0f * ctx->globalScale;
+
+	if (!ctx->sameLine)
+		ctx->penPosition.x = ctx->layoutStack.back().position.x;
+
 	ctx->widget.rect.set(
 		round(ctx->penPosition.x + ctx->padding * ctx->globalScale),
 		round(ctx->penPosition.y),
 		width,
 		height);
 
+	const f32 totalHeight = ctx->spacing * ctx->globalScale + height;
+
 	if (!ctx->sameLine)
 	{
 		ctx->previousSameLinePenY = ctx->penPosition.y;
-		ctx->penPosition.y += ctx->spacing * ctx->globalScale + height;
+		ctx->penPosition.y += totalHeight;
 		ctx->penPosition.y = round(ctx->penPosition.y);
-	}
-	else
-	{
-		ctx->penPosition.x += width;
-		ctx->penPosition.y = ctx->previousSameLinePenY;
-		ctx->penPosition.y += ctx->spacing * ctx->globalScale + height;
-		ctx->penPosition.y = round(ctx->penPosition.y);
-		ctx->sameLine = false;
 	}
 
-	ctx->highestSameLinePenY = fmax(ctx->penPosition.y, ctx->highestSameLinePenY);
+	ctx->highestSameLinePenY = round(fmax(ctx->penPosition.y + totalHeight, ctx->highestSameLinePenY));
+
+	if (ctx->sameLine)
+		ctx->penPosition.y = ctx->highestSameLinePenY;
+
+	ctx->sameLine = false;
 }
 
 void setAsFocusable()
@@ -1549,6 +1553,8 @@ void beginContainer(const Rect& rect)
 	ctx->renderer->pushClipRect(rect);
 	ctx->penPosition = { rect.x, rect.y };
 	ctx->containerRect = rect;
+	ctx->highestSameLinePenY = 0;
+	ctx->sameLine = false;
 }
 
 void endContainer()
