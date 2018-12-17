@@ -281,8 +281,8 @@ bool iconButtonInternal(Image icon, Image disabledIcon, f32 customHeight, bool d
 		ctx->renderer->cmdSetFont(btnBodyElemState->font);
 		ctx->renderer->cmdDrawImage(
 			iconImg,
-			{ ctx->widget.rect.x + (ctx->widget.rect.width - iconImg->rect.width * ctx->globalScale) / 2 + pressedIncrement * ctx->globalScale,
-			ctx->widget.rect.y + (ctx->widget.rect.height - iconImg->rect.height * ctx->globalScale) / 2 + pressedIncrement * ctx->globalScale,
+			{ round(ctx->widget.rect.x + (ctx->widget.rect.width - iconImg->rect.width * ctx->globalScale) / 2 + pressedIncrement * ctx->globalScale),
+			round(ctx->widget.rect.y + (ctx->widget.rect.height - iconImg->rect.height * ctx->globalScale) / 2 + pressedIncrement * ctx->globalScale),
 			iconImg->rect.width * ctx->globalScale, iconImg->rect.height * ctx->globalScale });
 	}
 

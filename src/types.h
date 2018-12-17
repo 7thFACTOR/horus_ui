@@ -139,6 +139,7 @@ struct WidgetState
 	u32 prevFocusableWidgetId = 0;
 	u32 nextFocusableWidgetId = 0;
 	u32 hoveredWidgetId = 0;
+	f32 sameLineSpacing = 0;
 	f32 width = 0; // if 0 then it will be automatically computed, usually the parent container width
 	bool enabled = true;
 	bool pressed = false;

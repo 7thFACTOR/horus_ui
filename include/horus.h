@@ -2262,6 +2262,10 @@ HORUS_API void space();
 /// Not all widgets support the same line modifier, since some need content
 HORUS_API void sameLine();
 
+HORUS_API void pushSameLineSpacing(f32 horizontalSpace = 0.0f);
+
+HORUS_API f32 popSameLineSpacing();
+
 HORUS_API void pushWidth(f32 width);
 
 HORUS_API f32 popWidth();
@@ -2320,7 +2324,7 @@ HORUS_API void menuSeparator();
 /// \param preferredWidths a float array of the preferred width for each item, if width is smaller of equal to 1.0f it is considered a percentage of the parent layout, if it is greater than 1.0f it is considered a fixed pixel size
 /// \param minWidths a float array of the minimal width for each item, if width is smaller of equal to 1.0f it is considered a percentage of the parent layout, if it is greater than 1.0f it is considered a fixed pixel size
 /// \param maxWidths a float array of the maximum width for each item, if width is smaller of equal to 1.0f it is considered a percentage of the parent layout, if it is greater than 1.0f it is considered a fixed pixel size
-HORUS_API void beginToolbar(u32 itemCount, const f32 preferredWidths[] = nullptr, const f32 minWidths[] = nullptr, const f32 maxWidths[] = nullptr);
+HORUS_API void beginToolbar();
 
 /// End the current toolbar
 HORUS_API void endToolbar();
