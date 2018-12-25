@@ -210,9 +210,7 @@ bool button(const char* labelText)
 	else if (ctx->widget.focused)
 		btnBodyElemState = &btnBodyElem.getState(WidgetStateType::Focused);
 	else if (ctx->widget.hovered)
-	{
 		btnBodyElemState = &btnBodyElem.getState(WidgetStateType::Hovered);
-	}
 
 	if (ctx->widget.visible)
 	{
@@ -263,11 +261,8 @@ bool iconButtonInternal(Image icon, Image disabledIcon, f32 customHeight, bool d
 		btnBodyElemState = &btnBodyElem->getState(WidgetStateType::Disabled);
 		iconImg = disabledIconImg;
 	}
-	else if (ctx->widget.pressed)
-	{
+	else if (ctx->widget.pressed || down || isClicked())
 		btnBodyElemState = &btnBodyElem->getState(WidgetStateType::Pressed);
-		pressedIncrement = 1;
-	}
 	else if (ctx->widget.focused && focusable)
 		btnBodyElemState = &btnBodyElem->getState(WidgetStateType::Focused);
 	else if (ctx->widget.hovered)
@@ -290,6 +285,9 @@ bool iconButtonInternal(Image icon, Image disabledIcon, f32 customHeight, bool d
 		setAsFocusable();
 	
 	ctx->currentWidgetId++;
+
+	if (isClicked())
+		forceRepaint();
 
 	return ctx->widget.clicked;
 }

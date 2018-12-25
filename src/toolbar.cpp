@@ -6,14 +6,22 @@
 
 namespace hui
 {
-void beginToolbar()
+void beginToolbar(ToolbarDirection dir)
 {
+	auto el = &ctx->theme->getElement(WidgetElementId::ToolbarBody);
+	ctx->verticalToolbar = dir == ToolbarDirection::Vertical;
+	// we set the highest Y so we can center vertically the other widgets on the toolbar, the toolbar buttons are of this height
+
+	if (!ctx->verticalToolbar)
+		beginSameLine();
 }
 
 void endToolbar()
 {
-	ctx->sameLine = false;
-	ctx->penPosition.x -= ctx->widget.rect.width + ctx->widget.sameLineSpacing;
+	if (!ctx->verticalToolbar)
+		endSameLine();
+	
+	ctx->verticalToolbar = false;
 }
 
 bool toolbarButton(Image normalIcon, Image disabledIcon, bool down)
@@ -28,8 +36,8 @@ bool toolbarButton(Image normalIcon, Image disabledIcon, bool down)
 		down,
 		el, false);
 
-	popWidth(); sameLine();
-
+	popWidth();
+	
 	return ret;
 }
 
@@ -40,12 +48,28 @@ bool toolbarDropdown(const char* label, Image normalIcon, Image disabledIcon)
 
 void toolbarSeparator()
 {
+	auto elId = ctx->verticalToolbar ? WidgetElementId::ToolbarSeparatorHorizontalBody : WidgetElementId::ToolbarSeparatorVerticalBody;
+	auto bodyElemState = ctx->theme->getElement(elId).normalState();
 
+	addWidgetItem(bodyElemState.height * ctx->globalScale);
+	ctx->renderer->cmdSetColor(bodyElemState.color);
+	ctx->renderer->cmdDrawImageBordered(bodyElemState.image, bodyElemState.border,
+		{
+			ctx->widget.rect.x,
+			ctx->widget.rect.y,
+			(f32)bodyElemState.width,
+			ctx->widget.rect.height }, ctx->globalScale);
+	ctx->currentWidgetId++;
+
+	toolbarGap();
 }
 
-void toolbarGap()
+void toolbarGap(f32 gapSize)
 {
-
+	if (ctx->verticalToolbar)
+		gap(gapSize);
+	else
+		ctx->penPosition.x += gapSize;
 }
 
 bool toolbarTextInputFilter(char* outText, u32 maxOutTextSize, u32& filterIndex, const char** filterNames, u32 filterNameCount)

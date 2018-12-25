@@ -151,32 +151,40 @@ void addWidgetItem(f32 height)
 	ctx->widget.changeEnded = false;
 	height = round(height);
 
-	f32 width = (ctx->sameLine ? ctx->widget.width : (ctx->widget.width != 0 ? ctx->widget.width : ctx->layoutStack.back().width)) - ctx->padding * 2.0f * ctx->globalScale;
-
-	if (!ctx->sameLine)
-		ctx->penPosition.x = ctx->layoutStack.back().position.x;
-
-	ctx->widget.rect.set(
-		round(ctx->penPosition.x + ctx->padding * ctx->globalScale),
-		round(ctx->penPosition.y),
-		width,
-		height);
+	f32 width = (ctx->widget.sameLine ? ctx->widget.width : (ctx->widget.width != 0 ? ctx->widget.width : ctx->layoutStack.back().width)) - ctx->padding * 2.0f * ctx->globalScale;
+	f32 verticalOffset = 0;
 
 	const f32 totalHeight = ctx->spacing * ctx->globalScale + height;
 
-	if (!ctx->sameLine)
+	if (!ctx->widget.sameLine)
 	{
-		ctx->previousSameLinePenY = ctx->penPosition.y;
+		ctx->penPosition.x = ctx->layoutStack.back().position.x;
+	}
+	else
+	{
+		if (ctx->sameLineInfo[ctx->sameLineInfoIndex - 1].computeHeight)
+		{
+			ctx->sameLineInfo[ctx->sameLineInfoIndex - 1].lineHeight = round(fmax(totalHeight, ctx->sameLineInfo[ctx->sameLineInfoIndex - 1].lineHeight));
+		}
+
+		verticalOffset = (ctx->sameLineInfo[ctx->sameLineInfoIndex - 1].lineHeight - totalHeight) / 2.0f;
+	}
+
+	ctx->widget.rect.set(
+		round(ctx->penPosition.x + ctx->padding * ctx->globalScale),
+		round(ctx->penPosition.y + verticalOffset),
+		width,
+		height);
+
+	if (!ctx->widget.sameLine)
+	{
 		ctx->penPosition.y += totalHeight;
 		ctx->penPosition.y = round(ctx->penPosition.y);
 	}
-
-	ctx->highestSameLinePenY = round(fmax(ctx->penPosition.y + totalHeight, ctx->highestSameLinePenY));
-
-	if (ctx->sameLine)
-		ctx->penPosition.y = ctx->highestSameLinePenY;
-
-	ctx->sameLine = false;
+	else
+	{
+		ctx->penPosition.x += width + ctx->padding * ctx->globalScale;
+	}
 }
 
 void setAsFocusable()
@@ -283,6 +291,7 @@ void beginFrame()
 	ctx->frameCount++;
 	ctx->totalTime += ctx->deltaTime;
 	ctx->pruneUnusedTextTime += ctx->deltaTime;
+	ctx->sameLineInfoIndex = 0;
 
 	if (ctx->pruneUnusedTextTime >= ctx->settings.textCachePruneIntervalSec)
 	{
@@ -296,7 +305,7 @@ void endFrame()
 	ctx->maxWidgetId = ctx->currentWidgetId;
 	ctx->focusChanged = false;
 	ctx->mouseMoved = false;
-
+	
 	if (ctx->dragDropState.begunDragging
 		&& ctx->event.type == InputEvent::Type::MouseUp)
 	{
@@ -323,6 +332,13 @@ void endFrame()
 	{
 		ctx->inputProvider->setCustomCursor(ctx->customMouseCursor);
 	}
+
+	for (u32 i = 0; i < ctx->sameLineInfoIndex; i++)
+	{
+		ctx->sameLineInfo[i].computeHeight = false;
+	}
+
+	ctx->sameLineInfoIndex = 0;
 }
 
 void update(f32 deltaTime)
@@ -878,7 +894,8 @@ void setWidgetStyle(WidgetType widgetType, const char* styleName)
 		ctx->theme->elements[(u32)WidgetElementId::ToolbarDropdownBody].setStyle(styleName);
 		break;
 	case WidgetType::ToolbarSeparator:
-		ctx->theme->elements[(u32)WidgetElementId::ToolbarSeparatorBody].setStyle(styleName);
+		ctx->theme->elements[(u32)WidgetElementId::ToolbarSeparatorVerticalBody].setStyle(styleName);
+		ctx->theme->elements[(u32)WidgetElementId::ToolbarSeparatorHorizontalBody].setStyle(styleName);
 		break;
 	case WidgetType::ColumnsHeader:
 		ctx->theme->elements[(u32)WidgetElementId::ColumnsHeaderBody].setStyle(styleName);
@@ -1100,6 +1117,7 @@ WidgetType getWidgetTypeFromName(std::string name)
 	if (name == "box") return WidgetType::Box;
 	if (name == "toolbar") return WidgetType::Toolbar;
 	if (name == "toolbarButton") return WidgetType::ToolbarButton;
+	if (name == "toolbarSeparator") return WidgetType::ToolbarSeparator;
 	if (name == "columnsHeader") return WidgetType::ColumnsHeader;
 	if (name == "comboSlider") return WidgetType::ComboSlider;
 	if (name == "rotarySlider") return WidgetType::RotarySlider;
@@ -1157,6 +1175,8 @@ WidgetElementId getWidgetElementFromName(std::string name)
 	if (name == "boxBody") return WidgetElementId::BoxBody;
 	if (name == "toolbarBody") return WidgetElementId::ToolbarBody;
 	if (name == "toolbarButtonBody") return WidgetElementId::ToolbarButtonBody;
+	if (name == "toolbarSeparatorVerticalBody") return WidgetElementId::ToolbarSeparatorVerticalBody;
+	if (name == "toolbarSeparatorHorizontalBody") return WidgetElementId::ToolbarSeparatorHorizontalBody;
 	if (name == "columnsHeaderBody") return WidgetElementId::ColumnsHeaderBody;
 	if (name == "comboSliderBody") return WidgetElementId::ComboSliderBody;
 	if (name == "comboSliderLeftArrow") return WidgetElementId::ComboSliderLeftArrow;
@@ -1553,8 +1573,7 @@ void beginContainer(const Rect& rect)
 	ctx->renderer->pushClipRect(rect);
 	ctx->penPosition = { rect.x, rect.y };
 	ctx->containerRect = rect;
-	ctx->highestSameLinePenY = 0;
-	ctx->sameLine = false;
+	ctx->widget.sameLine = false;
 }
 
 void endContainer()

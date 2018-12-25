@@ -82,7 +82,16 @@ struct UiViewContainer
 
 	LayoutCell* rootCell = nullptr;
 	Window window = 0;
-	f32 mainMenuHeight = 0;
+
+	enum SideSpacing
+	{
+		SideSpacingTop = 0,
+		SideSpacingBottom,
+		SideSpacingLeft,
+		SideSpacingRight
+	};
+
+	f32 sideSpacing[4]; // spacing for all sides of the view container, usually used for toolbars and main menu
 };
 
 }

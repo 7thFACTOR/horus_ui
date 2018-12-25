@@ -279,12 +279,13 @@ void endMenu()
 	endMenuInternal(false);
 }
 
-bool beginContextMenu()
+bool beginContextMenu(bool allowLeftMouseButton)
 {
 	u32 widgetId = ctx->currentWidgetId;
+	bool leftButton = allowLeftMouseButton ? ctx->event.mouse.button == MouseButton::Left : false;
 
 	if (ctx->event.type == hui::InputEvent::Type::MouseDown
-		&& ctx->event.mouse.button == MouseButton::Right
+		&& (ctx->event.mouse.button == MouseButton::Right || leftButton) 
 		&& ctx->widget.rect.contains(ctx->event.mouse.point)
 		&& !ctx->activeMenuBarItemWidgetId
 		&& !ctx->contextMenuClicked
@@ -292,6 +293,7 @@ bool beginContextMenu()
 	{
 		ctx->contextMenuClicked = true;
 		ctx->contextMenuWidgetId = widgetId;
+		ctx->widget.focusedWidgetPressed = false;
 	}
 
 	bool opened = false;

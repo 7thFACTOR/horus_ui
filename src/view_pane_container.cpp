@@ -171,4 +171,13 @@ bool loadViewContainersState(const char* filename)
 	return true;
 }
 
+void setViewContainerSideSpacing(ViewContainer viewContainer, f32 left, f32 right, f32 bottom)
+{
+	UiViewContainer* vc = (UiViewContainer*)viewContainer;
+
+	vc->sideSpacing[UiViewContainer::SideSpacingLeft] = left;
+	vc->sideSpacing[UiViewContainer::SideSpacingRight] = right;
+	vc->sideSpacing[UiViewContainer::SideSpacingBottom] = bottom;
+}
+
 }

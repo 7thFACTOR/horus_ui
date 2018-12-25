@@ -126,6 +126,9 @@ struct LayoutState
 	std::vector<f32> columnPixelSizes;
 	Point position = { 0, 0 };
 	Point savedPenPosition = { 0, 0 };
+	bool savedSameLine = false;
+	f32 savedHighestSameLineY;
+	f32 savedPreviousSameLineY;
 	f32 width = 0;
 	f32 height = 0;
 	f32 maxPenPositionY = -10000000000;
@@ -140,6 +143,8 @@ struct WidgetState
 	u32 nextFocusableWidgetId = 0;
 	u32 hoveredWidgetId = 0;
 	f32 sameLineSpacing = 0;
+	f32 sameLineHeight = 0;
+	bool sameLine = false;
 	f32 width = 0; // if 0 then it will be automatically computed, usually the parent container width
 	bool enabled = true;
 	bool pressed = false;

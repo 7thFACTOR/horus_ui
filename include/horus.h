@@ -263,7 +263,8 @@ enum class WidgetElementId
 	ToolbarBody,
 	ToolbarButtonBody,
 	ToolbarDropdownBody,
-	ToolbarSeparatorBody,
+	ToolbarSeparatorVerticalBody,
+	ToolbarSeparatorHorizontalBody,
 	ColumnsHeaderBody,
 	ComboSliderBody,
 	ComboSliderLeftArrow,
@@ -611,6 +612,12 @@ enum class MessageBoxButtons : u32
 	YesNoCancel = (u32)YesNo | (u32)Cancel
 };
 HORUS_ENUM_AS_FLAGS(MessageBoxButtons);
+
+enum class ToolbarDirection
+{
+	Horizontal,
+	Vertical
+};
 
 /// A 2D point
 class Point
@@ -1385,7 +1392,10 @@ struct ViewHandler
 {
 	/// Called when the user must render the main menu of the application on the specified window
 	/// \param window the window for which the main menu to be rendered
-	virtual void onMainMenuRender(Window window) {}
+	virtual void onTopAreaRender(Window window) {}
+	virtual void onLeftAreaRender(Window window) {}
+	virtual void onRightAreaRender(Window window) {}
+	virtual void onBottomAreaRender(Window window) {}
 	/// Called when the user must render the widgets for a specific view
 	/// \param window the window where the drawing of UI will occur
 	/// \param viewPane the view pane where the drawing of UI will occur
@@ -1470,14 +1480,15 @@ struct WidgetElementInfo
 struct ContextSettings
 {
 	TextCachePruneMode textCachePruneMode = TextCachePruneMode::Time;
-	f32 textCachePruneMaxTimeSec = 5; /// after this time, if a unicode text is not accessed, it's discarded from cache, textCachePruneMode must be Time
-	f32 textCachePruneMaxFrames = 500; /// after this frame count, if a unicode text is not accessed, it's discarded from cache, textCachePruneMode must be Frames
+	f32 textCachePruneMaxTimeSec = 5; /// after this time, if an Unicode text is not accessed, it's discarded from cache, textCachePruneMode must be Time
+	f32 textCachePruneMaxFrames = 500; /// after this frame count, if an Unicode text is not accessed, it's discarded from cache, textCachePruneMode must be Frames
 	f32 textCachePruneIntervalSec = 5; /// after each interval has passed, the pruning of unused texts is executed, will delete the texts that were not used for the last textCachePruneMaxTimeMs or textCachePruneMaxFrames, depending on the prune mode
 	u32 defaultAtlasSize = 4096; /// default atlas textures size in pixels
 	SliderDragDirection sliderDragDirection = SliderDragDirection::Any; /// allows to change slider value from any direction drag, vertical or horizontal
 	bool sliderInvertVerticalDragAmount = false; /// if true and vertical sliding allowed, it will invert the drag amount
 	f32 dragStartDistance = 3; /// the max distance after which a dragging operation starts to occur when mouse down and moved, in pixels
 	f32 whiteImageUvBorder = 0.001f; /// this value is subtracted from the white image used to draw lines, to avoid black border artifacts
+	f32 sameLineHeight = 20.0f; /// the height of a line when sameLine() is used to position widgets on a single row/line. Used to center various widget heights vertically. This must be non-zero, otherwise the widgets will align wrongly.
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -2260,7 +2271,9 @@ HORUS_API void space();
 
 /// Make next widget show on the same row as the last widget. The widget width depends on the widget type, the content inside it, etc.
 /// Not all widgets support the same line modifier, since some need content
-HORUS_API void sameLine();
+HORUS_API void beginSameLine();
+
+HORUS_API void endSameLine();
 
 HORUS_API void pushSameLineSpacing(f32 horizontalSpace = 0.0f);
 
@@ -2299,7 +2312,7 @@ HORUS_API void endMenu();
 
 /// Begin drawing a context menu which will open on right click on the previous widget
 /// \return true if the menu is opened/visible
-HORUS_API bool beginContextMenu();
+HORUS_API bool beginContextMenu(bool allowLeftMouseButton = false);
 
 /// End the current context menu
 HORUS_API void endContextMenu();
@@ -2320,11 +2333,8 @@ HORUS_API void menuSeparator();
 //////////////////////////////////////////////////////////////////////////
 
 /// Begin drawing a toolbar widget
-/// \param itemCount the number of toolbar items
-/// \param preferredWidths a float array of the preferred width for each item, if width is smaller of equal to 1.0f it is considered a percentage of the parent layout, if it is greater than 1.0f it is considered a fixed pixel size
-/// \param minWidths a float array of the minimal width for each item, if width is smaller of equal to 1.0f it is considered a percentage of the parent layout, if it is greater than 1.0f it is considered a fixed pixel size
-/// \param maxWidths a float array of the maximum width for each item, if width is smaller of equal to 1.0f it is considered a percentage of the parent layout, if it is greater than 1.0f it is considered a fixed pixel size
-HORUS_API void beginToolbar();
+/// \param direction the toolbar direction
+HORUS_API void beginToolbar(ToolbarDirection dir = ToolbarDirection::Horizontal);
 
 /// End the current toolbar
 HORUS_API void endToolbar();
@@ -2348,7 +2358,7 @@ HORUS_API bool toolbarDropdown(const char* label, Image normalIcon = 0, Image di
 HORUS_API void toolbarSeparator();
 
 /// Leave a gap horizontally in the toolbar
-HORUS_API void toolbarGap();
+HORUS_API void toolbarGap(f32 gapSize = 5);
 
 /// Draw a text input filter editor in the toolbar
 /// \param outText the text buffer to edit
@@ -2590,6 +2600,10 @@ HORUS_API bool saveViewContainersState(const char* filename);
 /// \param filename the *.hui filename relative to executable from where to load the state
 /// \return true if the load was ok
 HORUS_API bool loadViewContainersState(const char* filename);
+
+/// Set the view container spacing for adding toolbars, status bar or panels
+/// Top spacing is not needed, it will be computed automatically from the rendered widgets heights
+HORUS_API void setViewContainerSideSpacing(ViewContainer viewContainer, f32 left, f32 right, f32 bottom);
 
 //////////////////////////////////////////////////////////////////////////
 // Pane and tab functions

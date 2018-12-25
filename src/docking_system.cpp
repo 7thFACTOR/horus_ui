@@ -63,9 +63,32 @@ void updateDockingSystemInternal(bool isLastEvent, ViewHandler* handler)
 		dockingData.closeWindow = false;
 
 		beginContainer(wndRect);
+		f32 oldY = 0;
 
-		handler->onMainMenuRender(wnd);
-		viewContainer->mainMenuHeight = ctx->penPosition.y;
+		// top area
+		handler->onTopAreaRender(wnd);
+		viewContainer->sideSpacing[UiViewContainer::SideSpacingTop] = ctx->penPosition.y;
+		oldY = ctx->penPosition.y;
+
+		// left area
+		ctx->penPosition.x = 0;
+		beginContainer({ ctx->penPosition.x, ctx->penPosition.y, viewContainer->sideSpacing[UiViewContainer::SideSpacingLeft], wndRect.height - oldY - viewContainer->sideSpacing[UiViewContainer::SideSpacingBottom] });
+		handler->onLeftAreaRender(wnd);
+		endContainer();
+
+		// right area
+		ctx->penPosition.x = wndRect.width - viewContainer->sideSpacing[UiViewContainer::SideSpacingRight];
+		ctx->penPosition.y = oldY;
+		beginContainer({ ctx->penPosition.x, ctx->penPosition.y, viewContainer->sideSpacing[UiViewContainer::SideSpacingRight], wndRect.height - oldY - viewContainer->sideSpacing[UiViewContainer::SideSpacingBottom] });
+		handler->onRightAreaRender(wnd);
+		endContainer();
+
+		// bottom area
+		ctx->penPosition.x = 0;
+		ctx->penPosition.y = wndRect.height - viewContainer->sideSpacing[UiViewContainer::SideSpacingBottom];
+		beginContainer({ ctx->penPosition.x, ctx->penPosition.y, wndRect.width, viewContainer->sideSpacing[UiViewContainer::SideSpacingBottom] });
+		handler->onBottomAreaRender(wnd);
+		endContainer();
 
 		for (size_t j = 0; j < panes.size(); j++)
 		{
@@ -157,10 +180,10 @@ void updateViewContainerLayout(UiViewContainer* viewContainer)
 
 	viewContainer->rootCell->normalizedSize.x = 1;
 	viewContainer->rootCell->normalizedSize.y = 1;
-	viewContainer->rootCell->rect.x = 0;
-	viewContainer->rootCell->rect.y = viewContainer->mainMenuHeight;
-	viewContainer->rootCell->rect.width = rect.width;
-	viewContainer->rootCell->rect.height = rect.height;
+	viewContainer->rootCell->rect.x = viewContainer->sideSpacing[UiViewContainer::SideSpacingLeft];
+	viewContainer->rootCell->rect.y = viewContainer->sideSpacing[UiViewContainer::SideSpacingTop];
+	viewContainer->rootCell->rect.width = rect.width - (viewContainer->sideSpacing[UiViewContainer::SideSpacingLeft] + viewContainer->sideSpacing[UiViewContainer::SideSpacingRight]);
+	viewContainer->rootCell->rect.height = rect.height - (viewContainer->sideSpacing[UiViewContainer::SideSpacingTop] + viewContainer->sideSpacing[UiViewContainer::SideSpacingBottom]);
 	viewContainer->rootCell->computeSize();
 	viewContainer->rootCell->fixNormalizedSizes();
 }

@@ -20,6 +20,7 @@ bool check(const char* labelText, bool checked)
 	{
 		ctx->widget.changeEnded = true;
 		checked = !checked;
+		forceRepaint();
 	}
 
 	auto checkBodyElemState = &checkBodyElem.normalState();
