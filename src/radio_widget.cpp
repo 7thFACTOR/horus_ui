@@ -19,8 +19,8 @@ bool radio(const char* labelText, bool checked)
 	if (ctx->widget.clicked)
 	{
 		checked = !checked;
-		forceRepaint();
 		ctx->widget.changeEnded = true;
+		forceRepaint();
 	}
 
 	auto radioBodyElemState = &radioBodyElem.normalState();

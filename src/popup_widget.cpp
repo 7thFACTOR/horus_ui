@@ -212,6 +212,7 @@ void endPopup()
 
 	auto bodyElemState = ctx->theme->getElement(popup.widgetElementId).normalState();
 	popup.height = (ctx->penPosition.y - ctx->layoutStack.back().position.y) + bodyElemState.border * 2.0f * ctx->globalScale - ctx->spacing * ctx->globalScale;
+	
 	ctx->penPosition = ctx->layoutStack.back().savedPenPosition;
 	ctx->containerRect = popup.prevContainerRect;
 	ctx->renderer->popClipRect();

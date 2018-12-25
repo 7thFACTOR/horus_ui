@@ -24,10 +24,7 @@
 	
 	"settings":
 	{
-		"radioBulletTextSpacing": "5",
-		"checkBulletTextSpacing": "5",
-		"comboSliderArrowSideSpacing": "3",
-		"comboSliderArrowClickSize" : "25"
+		"sameLineHeight": 20
 	},
 
 	"widgets":
@@ -478,7 +475,7 @@
 		{
 			"toolbarBody":
 			{
-				"height":20,
+				"height":32,
 				"normal": { "image": "toolbar_body", "border": 0, "color": "white", "textColor": "white", "font": "normal" }
 			}
 		},
@@ -486,13 +483,28 @@
 		{
 			"toolbarButtonBody":
 			{
-				"width":77,
-				"height":77,
+				"width":32,
+				"height":32,
 				"normal": { "image": "empty", "border": 3, "color": "white", "textColor": "white", "font": "normal" },
 				"hovered": { "image": "button_normal", "border": 3, "color": "white", "textColor": "white", "font": "normal" },
 				"disabled": { "image": "empty", "border": 3, "color": "white", "textColor": "white", "font": "normal" },
 				"focused": { "image": "empty", "border": 3, "color": "white", "textColor": "white", "font": "normal" },
 				"pressed": { "image": "button_pressed", "border": 3, "color": "white", "textColor": "white", "font": "normal" }
+			}
+		},
+		"toolbarSeparator":
+		{
+			"toolbarSeparatorVerticalBody":
+			{
+				"width":1,
+				"height":32,
+				"normal": { "image": "toolbar_separator", "border": 2, "color": "black", "textColor": "white", "font": "normal" }
+			},
+			"toolbarSeparatorHorizontalBody":
+			{
+				"width":32,
+				"height":3,
+				"normal": { "image": "toolbar_separator", "border": 2, "color": "white", "textColor": "white", "font": "normal" }
 			}
 		},
 		"columnsHeader":

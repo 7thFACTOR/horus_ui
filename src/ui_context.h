@@ -16,11 +16,24 @@ struct UiContext
 		u32 length = 0;
 	};
 
+	struct SameLineInfo
+	{
+		bool computeHeight = true;
+		f32 lineHeight = 0;
+		f32 lineY = 0;
+	};
+
+	struct ToolbarState
+	{
+		ToolbarDirection direction;
+	};
+
 	static const int maxLayerCount = 256;
 	static const int maxNestingIndex = 256;
 	static const int maxPopupIndex = 256;
 	static const int maxMenuDepth = 256;
 	static const int maxBoxDepth = 256;
+	static const int maxSameLineInfoIndex = 256;
 
 	GraphicsProvider* gfx = nullptr;
 	Renderer* renderer = nullptr;
@@ -44,12 +57,17 @@ struct UiContext
 	f32 globalScale = 1.0f;
 	u32 atlasTextureSize = 4096;
 	bool drawingViewPaneTabs = false;
-	bool sameLine = false;
+	
+	bool verticalToolbar = false;
 
 	TextInputState textInput;
 	WidgetState widget;
-	std::vector<f32> widthStack;
+	std::vector<f32> sameLineWidthStack;
 	std::vector<f32> sameLineSpacingStack;
+	std::vector<SameLineInfo> sameLineInfoStack;
+	SameLineInfo sameLineInfo[maxSameLineInfoIndex];
+	u32 sameLineInfoIndex = 0;
+	std::vector<ToolbarState> toolbarStack;
 	TooltipState tooltip;
 
 	u32 layerIndex = 0;
@@ -95,8 +113,6 @@ struct UiContext
 	std::vector<UiTheme*> themes;
 
 	Rect containerRect;
-	f32 previousSameLinePenY = 0;
-	f32 highestSameLinePenY = 0;
 	Point penPosition;
 	std::vector<LayoutState> layoutStack;
 	Rect lastColumnRect;

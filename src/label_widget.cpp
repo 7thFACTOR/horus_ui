@@ -36,7 +36,7 @@ bool labelInternal(const char* labelText, HAlignType horizontalAlign, UiFont* fo
 		ctx->renderer->cmdSetFont(font ? font : bodyElemState.font);
 		ctx->renderer->cmdDrawTextInBox(
 			labelText,
-			rect,
+			ctx->widget.rect,
 			horizontalAlign,
 			VAlignType::Center);
 	}

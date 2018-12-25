@@ -3,6 +3,8 @@
 #include "sdl2_input_provider.h"
 #include "opengl_graphics_provider.h"
 #include <string.h>
+#include <string>
+#include <unordered_map>
 
 using namespace hui;
 char str[1500] = { 0 };
@@ -34,6 +36,7 @@ Image zaxisIcon;
 Image targetIcon;
 Image clearIcon;
 MouseCursor dragDropCur;
+std::unordered_map<std::string, Image> icons;
 
 char* stristr(const char* haystack, const char* needle)
 {
@@ -82,7 +85,7 @@ struct MyViewHandler : hui::ViewHandler
 	MyCustomTabData customData[2];
 	Color color = Color::red;
 
-	void onMainMenuRender(Window wnd) override
+	void onTopAreaRender(Window wnd) override
 	{
 		hui::beginMenuBar();
 
@@ -156,6 +159,162 @@ struct MyViewHandler : hui::ViewHandler
 		}
 
 		hui::endMenuBar();
+
+		{
+			pushSpacing(5);
+			static bool tbDown[10] = { 0 };
+			hui::pushSameLineSpacing(5);
+			beginSameLine();
+			hui::beginToolbar();
+			pushPadding(0);
+			if (hui::toolbarButton(moveIcon, 0, tbDown[0]))
+			{
+				tbDown[0] = true;
+				tbDown[1] = false;
+			}
+
+			if (hui::toolbarButton(icons["attach_file"], 0, tbDown[1]))
+			{
+				tbDown[0] = false;
+				tbDown[1] = true;
+			}
+			hui::toolbarSeparator();
+
+			static bool showPopupToolbar = false;
+
+			if (hui::toolbarButton(icons["attach_money"]))
+				showPopupToolbar = true;
+
+			if (showPopupToolbar)
+			{
+				beginPopup(38, PopupPositionMode::BelowLastWidget, hui::Point(), WidgetElementId::ButtonBody);
+				beginToolbar();
+				toolbarButton(moveIcon);
+				toolbarButton(moveIcon);
+				toolbarButton(moveIcon);
+				endToolbar();
+
+				if (mustClosePopup())
+				{
+					showPopupToolbar = false;
+					closePopup();
+				}
+
+				endPopup();
+			}
+
+			hui::toolbarGap();
+
+			hui::toolbarButton(icons["border_all"]);
+			hui::tooltip("Full Border");
+			if (beginContextMenu(true))
+			{
+				menuItem("Cut", "Ctrl+X");
+				hui::tooltip("Cut the current selection");
+				menuItem("Copy", "Ctrl+C");
+				hui::tooltip("Copy the current selection");
+				menuItem("Paste", "Ctrl+V");
+				menuSeparator();
+				menuItem("Delete All", "Delete");
+				endContextMenu();
+			}
+
+			hui::toolbarButton(stopIcon);
+			hui::endToolbar();
+			popPadding();
+			//beginSameLine();
+			hui::pushWidth(70);
+			hui::button("Add");
+			hui::button("Duplicate");
+			hui::button("Erase");
+			hui:check("Activate", true);
+			hui::label("Simple label");
+			static float val = 0;
+			hui::comboSliderFloat(val);
+			hui::radio("Add", true);
+			hui::radio("Mul", false);
+			hui::radio("Xor", false);
+			hui::popWidth();
+			endSameLine();
+			hui::popSameLineSpacing();
+			popSpacing();
+		}
+	}
+
+	void onLeftAreaRender(Window window) override
+	{
+		static bool tbDown[10] = { 0 };
+
+		pushPadding(1);
+		hui::pushSameLineSpacing(5);
+		hui::beginToolbar(ToolbarDirection::Vertical);
+		if (hui::toolbarButton(moveIcon, 0, tbDown[0]))
+		{
+			tbDown[0] = true;
+			tbDown[1] = false;
+		}
+
+		if (hui::toolbarButton(icons["attach_file"], 0, tbDown[1]))
+		{
+			tbDown[0] = false;
+			tbDown[1] = true;
+		}
+		hui::toolbarSeparator();
+
+		static bool showPopupToolbar = false;
+
+		if (hui::toolbarButton(icons["attach_money"]))
+			showPopupToolbar = true;
+
+		if (showPopupToolbar)
+		{
+			beginPopup(38, PopupPositionMode::BelowLastWidget, hui::Point(), WidgetElementId::ButtonBody);
+			beginToolbar();
+			toolbarButton(moveIcon);
+			toolbarButton(moveIcon);
+			toolbarButton(moveIcon);
+			endToolbar();
+
+			if (mustClosePopup())
+			{
+				showPopupToolbar = false;
+				closePopup();
+			}
+
+			endPopup();
+		}
+
+		hui::toolbarGap();
+
+		hui::toolbarButton(icons["border_all"]);
+		hui::tooltip("Full Border");
+		if (beginContextMenu(true))
+		{
+			menuItem("Cut", "Ctrl+X");
+			hui::tooltip("Cut the current selection");
+			menuItem("Copy", "Ctrl+C");
+			hui::tooltip("Copy the current selection");
+			menuItem("Paste", "Ctrl+V");
+			menuSeparator();
+			menuItem("Delete All", "Delete");
+			endContextMenu();
+		}
+
+		hui::toolbarButton(stopIcon);
+		hui::endToolbar();
+		hui::popSameLineSpacing();
+		popPadding();
+	}
+
+	void onBottomAreaRender(Window window) override
+	{
+		space();
+		label("   HINT OF THE DAY: Roll over to get cookie.");
+	}
+
+	void onRightAreaRender(Window window) override
+	{
+		button("Left area");
 	}
 
 	void onAfterFrameRender(Window wnd) override
@@ -450,30 +609,82 @@ struct MyViewHandler : hui::ViewHandler
 
 			hui::gap(10);
 
-			static f32 toolbarCols[] = { 30, 30, 30, 100, 100, 0.5f, 1 };
 			hui::pushPadding(1);
 
+			static bool tbDown[10] = { 0 };
+
 			hui::pushSameLineSpacing(5);
+			beginSameLine();
 			hui::beginToolbar();
-			hui::toolbarButton(moveIcon);
-			hui::toolbarButton(moveIcon);
-			hui::toolbarButton(moveIcon);
-			hui::toolbarButton(moveIcon);
-			hui::toolbarButton(moveIcon);
+			if (hui::toolbarButton(moveIcon, 0, tbDown[0]))
+			{
+				tbDown[0] = true;
+				tbDown[1] = false;
+			}
+
+			if (hui::toolbarButton(icons["attach_file"], 0, tbDown[1]))
+			{
+				tbDown[0] = false;
+				tbDown[1] = true;
+			}
+			hui::toolbarSeparator();
+
+			static bool showPopupToolbar = false;
+
+			if (hui::toolbarButton(icons["attach_money"]))
+				showPopupToolbar = true;
+
+			if (showPopupToolbar)
+			{
+				beginPopup(38, PopupPositionMode::BelowLastWidget, hui::Point(), WidgetElementId::ButtonBody);
+				beginToolbar();
+				toolbarButton(moveIcon);
+				toolbarButton(moveIcon);
+				toolbarButton(moveIcon);
+				endToolbar();
+
+				if (mustClosePopup())
+				{
+					showPopupToolbar = false;
+					closePopup();
+				}
+
+				endPopup();
+			}
+
+			hui::toolbarGap();
+
+			hui::toolbarButton(icons["border_all"]);
+			hui::tooltip("Full Border");
+			if (beginContextMenu(true))
+			{
+				menuItem("Cut", "Ctrl+X");
+				hui::tooltip("Cut the current selection");
+				menuItem("Copy", "Ctrl+C");
+				hui::tooltip("Copy the current selection");
+				menuItem("Paste", "Ctrl+V");
+				menuSeparator();
+				menuItem("Delete All", "Delete");
+				endContextMenu();
+			}
+
+			hui::toolbarButton(stopIcon);
 			hui::endToolbar();
-			//hui::sameLine();
-			//hui::pushWidth(70);
-			//hui::button("Add"); sameLine();
-			//hui::button("Duplicate"); sameLine();
-			//hui::button("Erase"); sameLine();
-			//hui:check("Koko", true); sameLine();
-			//
-			////pushWidth(0);
-			//hui::label("Whoot");
-			////popWidth();
-			//sameLine();
-			//hui::radio("Ckckckc", true);
-			//hui::popWidth();
+
+			hui::pushWidth(70);
+			//hui::beginSameLine();
+			hui::button("Add");
+			hui::button("Duplicate");
+			hui::button("Erase");
+			hui:check("Activate", true);
+			hui::label("Simple label");
+			static float val = 0;
+			hui::comboSliderFloat(val);
+			hui::radio("Add", true);
+			hui::radio("Mul", false);
+			hui::radio("Xor", false);
+			hui::popWidth();
+			endSameLine();
 			hui::popSameLineSpacing();
 
 			//hui::beginColumns(6, toolbarCols, toolbarCols, toolbarCols);
@@ -1764,6 +1975,10 @@ int main(int argc, char** args)
 	myViewHandler.horusLogo = hui::loadImage("../themes/horus.png");
 	dragDropCur = hui::createMouseCursor("../themes/dragdrop_cursor.png");
 
+	icons["attach_file"] = hui::loadImage("../themes/icons/ic_attach_file_white_24dp.png");
+	icons["attach_money"] = hui::loadImage("../themes/icons/ic_attach_money_white_24dp.png");
+	icons["border_all"] = hui::loadImage("../themes/icons/ic_border_all_white_24dp.png");
+
 	fntLed1 = hui::getFont("led1");
 	fntLed2 = hui::getFont("led2");
 	fntLed3 = hui::getFont("led3");
@@ -1775,6 +1990,15 @@ int main(int argc, char** args)
 	if (!hui::loadViewContainersState("layout.hui"))
 	{
 		createMyDefaultViewPanes();
+	}
+
+	ViewContainer vcs[100];
+
+	auto count = getViewContainers(vcs, 100);
+
+	for (int i = 0; i < count; i++)
+	{
+		setViewContainerSideSpacing(vcs[i], 45, 150, 36);
 	}
 
 	hui::setViewIcon(1, tabIcon1);
