@@ -8,20 +8,28 @@ namespace hui
 {
 void beginToolbar(ToolbarDirection dir)
 {
-	auto el = &ctx->theme->getElement(WidgetElementId::ToolbarBody);
 	ctx->verticalToolbar = dir == ToolbarDirection::Vertical;
-	// we set the highest Y so we can center vertically the other widgets on the toolbar, the toolbar buttons are of this height
+	ctx->sameLineStack.push_back(ctx->widget.sameLine);
 
 	if (!ctx->verticalToolbar)
 		beginSameLine();
+	else
+		ctx->widget.sameLine = false;
+
+	ctx->verticalToolbarStack.push_back(ctx->verticalToolbar);
 }
 
 void endToolbar()
 {
+	ctx->verticalToolbar = ctx->verticalToolbarStack.back();
+	ctx->verticalToolbarStack.pop_back();
+	ctx->sameLineStack.pop_back();
+
 	if (!ctx->verticalToolbar)
 		endSameLine();
-	
+
 	ctx->verticalToolbar = false;
+	ctx->widget.sameLine = ctx->sameLineStack.back();
 }
 
 bool toolbarButton(Image normalIcon, Image disabledIcon, bool down)

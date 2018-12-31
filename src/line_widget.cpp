@@ -34,6 +34,8 @@ void space()
 
 void beginSameLine()
 {
+	ctx->sameLineInfoIndex = ctx->sameLineInfoCount;
+
 	if (ctx->sameLineInfo[ctx->sameLineInfoIndex].lineHeight == 0)
 	{
 		ctx->sameLineInfo[ctx->sameLineInfoIndex].computeHeight = true;
@@ -45,28 +47,26 @@ void beginSameLine()
 		ctx->sameLineInfo[ctx->sameLineInfoIndex].computeHeight = false;
 	}
 
-	// only a root sameline can start a new line, the others will just follow
-	if (ctx->sameLineInfoStack.size() <= 1)
+	// only a root same line can start a new line, the others will just follow
+	if (ctx->sameLineInfoIndexStack.size() <= 1)
 		ctx->penPosition.x = ctx->layoutStack.back().position.x;
 
-	// push current line to stack
-	ctx->sameLineInfoStack.push_back(ctx->sameLineInfo[ctx->sameLineInfoIndex]);
-
+	// push current line index to stack, so we recover it
+	ctx->sameLineInfoIndexStack.push_back(ctx->sameLineInfoIndex);
 	ctx->widget.sameLine = true;
-	ctx->sameLineInfoIndex++;
+	ctx->sameLineInfoCount++;
 }
 
 void endSameLine()
 {
-	auto sli = ctx->sameLineInfoStack.back();
-	
-	ctx->sameLineInfoStack.pop_back();
+	ctx->sameLineInfoIndex = ctx->sameLineInfoIndexStack.back();
+	ctx->sameLineInfoIndexStack.pop_back();
 
 	// we stop same line if this is a root same line
-	if (!ctx->sameLineInfoStack.size())
+	if (!ctx->sameLineInfoIndexStack.size())
 		ctx->widget.sameLine = false;
 
-	if (ctx->sameLineInfoStack.size() == 0)
+	if (!ctx->sameLineInfoIndexStack.size())
 		ctx->penPosition.y += ctx->sameLineInfo[ctx->sameLineInfoIndex].lineHeight;
 	else
 		ctx->sameLineInfo[ctx->sameLineInfoIndex - 1].lineHeight = fmaxf(

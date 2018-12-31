@@ -279,10 +279,10 @@ void endMenu()
 	endMenuInternal(false);
 }
 
-bool beginContextMenu(bool allowLeftMouseButton)
+bool beginContextMenu(ContextMenuFlags flags)
 {
 	u32 widgetId = ctx->currentWidgetId;
-	bool leftButton = allowLeftMouseButton ? ctx->event.mouse.button == MouseButton::Left : false;
+	bool leftButton = has(flags, ContextMenuFlags::AllowLeftClickOpen) ? ctx->event.mouse.button == MouseButton::Left : false;
 
 	if (ctx->event.type == hui::InputEvent::Type::MouseDown
 		&& (ctx->event.mouse.button == MouseButton::Right || leftButton) 
