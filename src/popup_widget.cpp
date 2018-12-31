@@ -134,6 +134,8 @@ void beginPopup(
 	ctx->layoutStack.back().width = width - bodyElemState.border * 2 * ctx->globalScale;
 	ctx->layoutStack.back().savedPenPosition = ctx->penPosition;
 	ctx->penPosition = ctx->layoutStack.back().position;
+	ctx->sameLineStack.push_back(ctx->widget.sameLine);
+	ctx->widget.sameLine = false; // reset the same line, we dont need that at the popup start
 	popup.prevContainerRect = ctx->containerRect;
 	ctx->containerRect = ctx->renderer->getWindowRect();
 
@@ -217,6 +219,8 @@ void endPopup()
 	ctx->containerRect = popup.prevContainerRect;
 	ctx->renderer->popClipRect();
 	ctx->layoutStack.pop_back();
+	ctx->widget.sameLine = ctx->sameLineStack.back();
+	ctx->sameLineStack.pop_back();
 
 	if (popup.incrementLayer)
 		decrementLayerIndex();

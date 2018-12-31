@@ -97,9 +97,9 @@ typedef double f64;
 
 namespace hui
 {
+#define HORUS_BIT(bit) (1<<bit)
 #define HORUS_ENUM_AS_FLAGS(T)\
 	HORUS_ENUM_AS_FLAGS_EX(T, u32)
-
 #define HORUS_ENUM_AS_FLAGS_EX(T, enumBasicType) \
 inline T operator & (T x, T y) { return static_cast<T> (static_cast<enumBasicType>(x) & static_cast<enumBasicType>(y)); }; \
 inline T operator | (T x, T y) { return static_cast<T> (static_cast<enumBasicType>(x) | static_cast<enumBasicType>(y)); }; \
@@ -618,6 +618,13 @@ enum class ToolbarDirection
 	Horizontal,
 	Vertical
 };
+
+enum class ContextMenuFlags
+{
+	None = 0,
+	AllowLeftClickOpen = HORUS_BIT(1)
+};
+HORUS_ENUM_AS_FLAGS(ContextMenuFlags);
 
 /// A 2D point
 class Point
@@ -2068,7 +2075,7 @@ HORUS_API void beginPopup(
 	WidgetElementId widgetElementId = WidgetElementId::PopupBody,
 	bool incrementLayer = true,
 	bool topMost = false,
-	bool isMenu = false);
+	bool isMenu = false); //TODO: use flags enum for position and these bools
 
 /// End a popup widget
 HORUS_API void endPopup();
@@ -2312,7 +2319,7 @@ HORUS_API void endMenu();
 
 /// Begin drawing a context menu which will open on right click on the previous widget
 /// \return true if the menu is opened/visible
-HORUS_API bool beginContextMenu(bool allowLeftMouseButton = false);
+HORUS_API bool beginContextMenu(ContextMenuFlags flags = ContextMenuFlags::None);
 
 /// End the current context menu
 HORUS_API void endContextMenu();

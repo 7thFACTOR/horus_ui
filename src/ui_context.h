@@ -59,14 +59,17 @@ struct UiContext
 	bool drawingViewPaneTabs = false;
 	
 	bool verticalToolbar = false;
+	std::vector<bool> verticalToolbarStack;
 
 	TextInputState textInput;
 	WidgetState widget;
 	std::vector<f32> sameLineWidthStack;
 	std::vector<f32> sameLineSpacingStack;
-	std::vector<SameLineInfo> sameLineInfoStack;
+	std::vector<u32> sameLineInfoIndexStack;
+	std::vector<bool> sameLineStack;
 	SameLineInfo sameLineInfo[maxSameLineInfoIndex];
 	u32 sameLineInfoIndex = 0;
+	u32 sameLineInfoCount = 0;
 	std::vector<ToolbarState> toolbarStack;
 	TooltipState tooltip;
 

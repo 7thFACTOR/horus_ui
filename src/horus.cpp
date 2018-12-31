@@ -162,12 +162,12 @@ void addWidgetItem(f32 height)
 	}
 	else
 	{
-		if (ctx->sameLineInfo[ctx->sameLineInfoIndex - 1].computeHeight)
+		if (ctx->sameLineInfo[ctx->sameLineInfoIndex].computeHeight)
 		{
-			ctx->sameLineInfo[ctx->sameLineInfoIndex - 1].lineHeight = round(fmax(totalHeight, ctx->sameLineInfo[ctx->sameLineInfoIndex - 1].lineHeight));
+			ctx->sameLineInfo[ctx->sameLineInfoIndex].lineHeight = round(fmax(totalHeight, ctx->sameLineInfo[ctx->sameLineInfoIndex].lineHeight));
 		}
 
-		verticalOffset = (ctx->sameLineInfo[ctx->sameLineInfoIndex - 1].lineHeight - totalHeight) / 2.0f;
+		verticalOffset = (ctx->sameLineInfo[ctx->sameLineInfoIndex].lineHeight - totalHeight) / 2.0f;
 	}
 
 	ctx->widget.rect.set(
@@ -292,6 +292,7 @@ void beginFrame()
 	ctx->totalTime += ctx->deltaTime;
 	ctx->pruneUnusedTextTime += ctx->deltaTime;
 	ctx->sameLineInfoIndex = 0;
+	ctx->sameLineInfoCount = 0;
 
 	if (ctx->pruneUnusedTextTime >= ctx->settings.textCachePruneIntervalSec)
 	{
@@ -333,12 +334,10 @@ void endFrame()
 		ctx->inputProvider->setCustomCursor(ctx->customMouseCursor);
 	}
 
-	for (u32 i = 0; i < ctx->sameLineInfoIndex; i++)
+	for (u32 i = 0; i < ctx->sameLineInfoCount; i++)
 	{
 		ctx->sameLineInfo[i].computeHeight = false;
 	}
-
-	ctx->sameLineInfoIndex = 0;
 }
 
 void update(f32 deltaTime)
