@@ -1,3 +1,4 @@
 build_*/**
-bin/*
-docs/doxygen/**
+bin/**
+3rdparty/**
+docs/html/**

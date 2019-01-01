@@ -1022,19 +1022,15 @@ struct MyViewHandler : hui::ViewHandler
 		// custom viewport pane
 		case 2:
 		{
-			f32 cols[] = { 50, 50, 50, -1, 80 };
-			hui::gap(5);
-			hui::beginColumns(5, cols);
+			hui::pushWidth(30);
+			hui::beginSameLine();
 			hui::iconButton(playIcon);
-			hui::nextColumn();
 			hui::iconButton(stopIcon);
-			hui::nextColumn();
 			hui::iconButton(pauseIcon);
-			hui::nextColumn();
 			hui::textInput(str, 100, TextInputValueMode::Any, "Type to filter scene");
-			hui::nextColumn();
 			hui::button("Search");
-			hui::endColumns();
+			hui::endSameLine();
+			hui::popWidth();
 
 			// no margins for our viewport
 			//hui::pushPadding(0);
