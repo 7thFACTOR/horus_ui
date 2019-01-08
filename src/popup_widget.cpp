@@ -54,6 +54,10 @@ void beginPopup(
 	{
 		popup.position = ctx->widget.rect.bottomLeft();
 	}
+	else if (positionMode == PopupPositionMode::RightSideLastWidget)
+	{
+		popup.position = ctx->widget.rect.topRight();
+	}
 	else
 	{
 		popup.position = customPosition;
@@ -76,6 +80,7 @@ void beginPopup(
 		break;
 	case hui::PopupPositionMode::Custom:
 	case hui::PopupPositionMode::BelowLastWidget:
+	case hui::PopupPositionMode::RightSideLastWidget:
 		pos = { popup.position.x, popup.position.y };
 		break;
 	default:

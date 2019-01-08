@@ -243,7 +243,6 @@ struct MyViewHandler : hui::ViewHandler
 	void onLeftAreaRender(Window window) override
 	{
 		static bool tbDown[10] = { 0 };
-		return;
 		pushPadding(1);
 		hui::pushSameLineSpacing(5);
 		hui::beginToolbar(ToolbarDirection::Vertical);
@@ -267,11 +266,11 @@ struct MyViewHandler : hui::ViewHandler
 
 		if (showPopupToolbar)
 		{
-			beginPopup(38, PopupPositionMode::BelowLastWidget, hui::Point(), WidgetElementId::ButtonBody);
+			beginPopup(200, PopupPositionMode::RightSideLastWidget, hui::Point(), WidgetElementId::ButtonBody);
 			beginToolbar();
-			toolbarButton(moveIcon);
-			toolbarButton(moveIcon);
-			toolbarButton(moveIcon);
+			//toolbarButton(moveIcon);
+			//toolbarButton(moveIcon);
+			//toolbarButton(moveIcon);
 			endToolbar();
 
 			if (mustClosePopup())
@@ -283,7 +282,7 @@ struct MyViewHandler : hui::ViewHandler
 			endPopup();
 		}
 
-		hui::toolbarGap();
+		//hui::toolbarGap();
 
 		hui::toolbarButton(moveIcon);
 		hui::tooltip("Full Border");
@@ -608,7 +607,7 @@ struct MyViewHandler : hui::ViewHandler
 
 			hui::gap(10);
 
-			if (0) {
+			if (1) {
 				hui::pushPadding(1);
 
 				static bool tbDown[10] = { 0 };
@@ -1023,13 +1022,15 @@ struct MyViewHandler : hui::ViewHandler
 		case 2:
 		{
 			hui::pushWidth(30);
+			hui::pushSpacing(0);
 			hui::beginSameLine();
 			hui::iconButton(playIcon);
-			hui::iconButton(stopIcon);
-			hui::iconButton(pauseIcon);
-			hui::textInput(str, 100, TextInputValueMode::Any, "Type to filter scene");
-			hui::button("Search");
+			//hui::iconButton(stopIcon);
+			//hui::iconButton(pauseIcon);
+			//hui::textInput(str, 100, TextInputValueMode::Any, "Type to filter scene");
+			//hui::button("Search");
 			hui::endSameLine();
+			hui::popSpacing();
 			hui::popWidth();
 
 			// no margins for our viewport

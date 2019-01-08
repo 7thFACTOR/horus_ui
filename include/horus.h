@@ -358,6 +358,7 @@ enum class PopupPositionMode
 {
 	WindowCenter,
 	BelowLastWidget,
+	RightSideLastWidget,
 	Custom
 };
 

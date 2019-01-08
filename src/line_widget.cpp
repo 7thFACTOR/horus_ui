@@ -69,10 +69,13 @@ void endSameLine()
 	if (!ctx->sameLineInfoIndexStack.size())
 		ctx->penPosition.y += ctx->sameLineInfo[ctx->sameLineInfoIndex].lineHeight;
 	else
-		ctx->sameLineInfo[ctx->sameLineInfoIndex - 1].lineHeight = fmaxf(
-			ctx->sameLineInfo[ctx->sameLineInfoIndex - 1].lineHeight,
-			ctx->sameLineInfo[ctx->sameLineInfoIndex].lineHeight
-		);
+	{
+		//TODO: not working here
+		//ctx->sameLineInfo[ctx->sameLineInfoIndex-1].lineHeight = fmaxf(
+		//	ctx->sameLineInfo[ctx->sameLineInfoIndex - 1].lineHeight,
+		//	ctx->sameLineInfo[ctx->sameLineInfoIndex].lineHeight
+		//);
+	}
 }
 
 void pushSameLineSpacing(f32 horizontalSpace)

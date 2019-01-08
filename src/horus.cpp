@@ -153,7 +153,6 @@ void addWidgetItem(f32 height)
 
 	f32 width = (ctx->widget.sameLine ? ctx->widget.width : (ctx->widget.width != 0 ? ctx->widget.width : ctx->layoutStack.back().width)) - ctx->padding * 2.0f * ctx->globalScale;
 	f32 verticalOffset = 0;
-
 	const f32 totalHeight = ctx->spacing * ctx->globalScale + height;
 
 	if (!ctx->widget.sameLine)
