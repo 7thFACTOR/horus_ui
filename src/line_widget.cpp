@@ -70,11 +70,11 @@ void endSameLine()
 		ctx->penPosition.y += ctx->sameLineInfo[ctx->sameLineInfoIndex].lineHeight;
 	else
 	{
-		//TODO: not working here
-		//ctx->sameLineInfo[ctx->sameLineInfoIndex-1].lineHeight = fmaxf(
-		//	ctx->sameLineInfo[ctx->sameLineInfoIndex - 1].lineHeight,
-		//	ctx->sameLineInfo[ctx->sameLineInfoIndex].lineHeight
-		//);
+		//TODO: not working here, needs a proper stack
+		ctx->sameLineInfo[ctx->sameLineInfoIndex-1].lineHeight = fmaxf(
+			ctx->sameLineInfo[ctx->sameLineInfoIndex - 1].lineHeight,
+			ctx->sameLineInfo[ctx->sameLineInfoIndex].lineHeight
+		);
 	}
 }
 
