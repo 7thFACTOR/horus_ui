@@ -129,7 +129,7 @@ ViewId viewPaneTabs(ViewPane viewPane)
 			hui::forceRepaint();
 		}
 
-		return viewPaneObj->viewTabs[viewPaneObj->selectedTabIndex]->id;
+		return viewPaneObj->viewTabs[viewPaneObj->selectedTabIndex]->viewId;
 	}
 
 	return ~0;
@@ -149,14 +149,38 @@ void endViewPane()
 	endContainer();
 }
 
-void setTabUserDataId(ViewPaneTab viewPaneTab, u64 userDataId)
+void setViewPaneTabUserDataId(ViewPaneTab viewPaneTab, u64 userDataId)
 {
 	((UiViewTab*)viewPaneTab)->userDataId = userDataId;
 }
 
-u64 getTabUserDataId(ViewPaneTab viewPaneTab)
+u64 getViewPaneTabUserDataId(ViewPaneTab viewPaneTab)
 {
 	return ((UiViewTab*)viewPaneTab)->userDataId;
+}
+
+void setViewPaneTabTitle(ViewPaneTab viewPaneTab, const char* title)
+{
+	auto viewPaneTabObj = (UiViewTab*)viewPaneTab;
+
+	delete[] viewPaneTabObj->title;
+	viewPaneTabObj->title = new char[strlen(title) + 1];
+	memset(viewPaneTabObj->title, 0, strlen(title) + 1);
+	memcpy(viewPaneTabObj->title, title, strlen(title));
+}
+
+const char* getViewPaneTabTitle(ViewPaneTab viewPaneTab)
+{
+	auto viewPaneTabObj = (UiViewTab*)viewPaneTab;
+
+	return viewPaneTabObj->title;
+}
+
+ViewId getViewPaneTabViewId(ViewPaneTab viewPaneTab)
+{
+	auto viewPaneTabObj = (UiViewTab*)viewPaneTab;
+
+	return viewPaneTabObj->viewId;
 }
 
 void setViewIcon(ViewId id, Image icon)
@@ -169,7 +193,7 @@ void setViewIcon(ViewId id, Image icon)
 
 		for (auto& tab : tabs)
 		{
-			if (tab->id == id)
+			if (tab->viewId == id)
 			{
 				tab->icon = icon;
 			}
@@ -182,7 +206,7 @@ ViewPaneTab addViewPaneTab(ViewPane viewPane, const char* title, ViewId id, u64 
 	auto viewPaneObj = (UiViewPane*)viewPane;
 	auto view = new UiViewTab();
 
-	view->id = id;
+	view->viewId = id;
 	view->parentViewPane = viewPaneObj;
 	view->title = new char[strlen(title) + 1];
 	view->userDataId = userDataId;
@@ -248,6 +272,25 @@ void restoreViewPane(ViewPane viewPane)
 void maximizeViewPane(ViewPane viewPane)
 {
 	//TODO
+}
+
+u32 getViewPaneTabs(ViewPane viewPane, ViewPaneTab* outViewPaneTabs, u32 maxCount)
+{
+	auto viewPaneObj = (UiViewPane*)viewPane;
+	auto count = (u32)std::min(maxCount, (u32)viewPaneObj->viewTabs.size());
+
+	for (size_t i = 0; i < count; i++)
+	{
+		outViewPaneTabs[i] = viewPaneObj->viewTabs[i];
+	}
+
+	return count;
+}
+
+u32 getViewPaneTabCount(ViewPane viewPane)
+{
+	auto viewPaneObj = (UiViewPane*)viewPane;
+	return (u32)viewPaneObj->viewTabs.size();
 }
 
 }

@@ -108,6 +108,16 @@ u32 getViewContainerViewPanes(ViewContainer viewContainer, ViewPane* outViewPane
 	return count;
 }
 
+u32 getViewContainerViewPaneCount(ViewContainer viewContainer)
+{
+	std::vector<UiViewPane*> viewPanes;
+	auto viewContainerObj = (UiViewContainer*)viewContainer;
+
+	viewContainerObj->rootCell->fillViewPanes(viewPanes);
+
+	return (u32)viewPanes.size();
+}
+
 ViewPane getViewContainerFirstViewPane(ViewContainer viewContainer)
 {
 	auto viewContainerObj = (UiViewContainer*)viewContainer;
@@ -123,7 +133,7 @@ ViewPane getViewContainerFirstViewPane(ViewContainer viewContainer)
 	return nullptr;
 }
 
-bool saveViewContainersState(const char* filename)
+bool saveViewContainersState(const char* filename, ViewHandler* viewHandler)
 {
 	FILE* file = fopen(filename, "wb");
 
@@ -136,13 +146,13 @@ bool saveViewContainersState(const char* filename)
 
 	for (auto container : dockingData.viewContainers)
 	{
-		container->serialize(file);
+		container->serialize(file, viewHandler);
 	}
 
 	return true;
 }
 
-bool loadViewContainersState(const char* filename)
+bool loadViewContainersState(const char* filename, struct ViewHandler* viewHandler)
 {
 	FILE* file = fopen(filename, "rb");
 
@@ -161,7 +171,7 @@ bool loadViewContainersState(const char* filename)
 	{
 		auto container = new UiViewContainer();
 
-		container->deserialize(file);
+		container->deserialize(file, viewHandler);
 		dockingData.viewContainers.push_back(container);
 		updateViewContainerLayout(container);
 	}

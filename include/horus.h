@@ -380,14 +380,17 @@ enum class WindowPositionType
 	Custom
 };
 
-/// Native window border type
-enum class WindowBorder
+/// Window flags
+enum class WindowFlags
 {
-	Resizable,
-	Fixed,
-	ResizableNoTitle,
-	FixedNoTitle
+	Resizable = HORUS_BIT(0),
+	Fixed = HORUS_BIT(1),
+	ResizableNoTitle = HORUS_BIT(2),
+	FixedNoTitle = HORUS_BIT(3),
+	NoTaskbarButton = HORUS_BIT(4),
 };
+
+HORUS_ENUM_AS_FLAGS(WindowFlags);
 
 /// Native window state
 enum class WindowState
@@ -1422,6 +1425,8 @@ struct ViewHandler
 	/// Called after the frame starts to render
 	/// \param window the window where rendering did happen
 	virtual void onAfterFrameRender(Window wnd) {}
+	virtual void onViewPaneTabSave(ViewPaneTab tab, u64 dataId, FILE* file) {}
+	virtual void onViewPaneTabLoad(ViewPaneTab tab, u64 dataId, FILE* file) {}
 };
 
 /// Line drawing style
@@ -1664,7 +1669,7 @@ HORUS_API Window getMainWindow();
 /// \return the created window handle
 HORUS_API Window createWindow(
 	const char* title, u32 width, u32 height,
-	WindowBorder border = WindowBorder::Resizable,
+	WindowFlags border = WindowFlags::Resizable,
 	WindowPositionType positionType = WindowPositionType::Undefined,
 	Point customPosition = { 0, 0 },
 	bool showInTaskBar = true);
@@ -2596,18 +2601,20 @@ HORUS_API void deleteViewContainerFromWindow(Window window);
 /// \return -1 if maxCount was too small
 HORUS_API u32 getViewContainerViewPanes(ViewContainer viewContainer, ViewPane* outViewPanes, u32 maxCount);
 
+HORUS_API u32 getViewContainerViewPaneCount(ViewContainer viewContainer);
+
 /// Get view container's first view pane, used by the docking system
 HORUS_API ViewPane getViewContainerFirstViewPane(ViewContainer viewContainer);
 
 /// Save the view container state, with all view panes docked info
 /// \param filename the *.hui filename relative to executable where to save the state
 /// \return true if save was ok
-HORUS_API bool saveViewContainersState(const char* filename);
+HORUS_API bool saveViewContainersState(const char* filename, ViewHandler* viewHandler);
 
 /// Load the view container state, with all view panes docked info, it will create view panes
 /// \param filename the *.hui filename relative to executable from where to load the state
 /// \return true if the load was ok
-HORUS_API bool loadViewContainersState(const char* filename);
+HORUS_API bool loadViewContainersState(const char* filename, ViewHandler* viewHandler);
 
 /// Set the view container spacing for adding toolbars, status bar or panels
 /// Top spacing is not needed, it will be computed automatically from the rendered widgets heights
@@ -2651,10 +2658,16 @@ HORUS_API ViewPaneTab addViewPaneTab(ViewPane viewPane, const char* title, ViewI
 HORUS_API void removeViewPaneTab(ViewPaneTab viewPaneTab);
 
 /// Set a view pane tab data id
-HORUS_API void setTabUserDataId(ViewPaneTab viewPaneTab, u64 userDataId);
+HORUS_API void setViewPaneTabUserDataId(ViewPaneTab viewPaneTab, u64 userDataId);
 
 /// \return a tab view's data id
-HORUS_API u64 getTabUserDataId(ViewPaneTab viewPaneTab);
+HORUS_API u64 getViewPaneTabUserDataId(ViewPaneTab viewPaneTab);
+
+HORUS_API void setViewPaneTabTitle(ViewPaneTab viewPaneTab, const char* title);
+
+HORUS_API const char* getViewPaneTabTitle(ViewPaneTab viewPaneTab);
+
+HORUS_API ViewId getViewPaneTabViewId(ViewPaneTab viewPaneTab);
 
 /// Set a view icon
 HORUS_API void setViewIcon(ViewId id, Image image);
@@ -2679,6 +2692,12 @@ HORUS_API void maximizeViewPane(ViewPane viewPane);
 
 /// Restore a view pane
 HORUS_API void restoreViewPane(ViewPane viewPane);
+
+/// Get view pane's view pane tabs
+/// \return -1 if maxCount was too small
+HORUS_API u32 getViewPaneTabs(ViewPane viewPane, ViewPaneTab* outViewPaneTabs, u32 maxCount);
+
+HORUS_API u32 getViewPaneTabCount(ViewPane viewPane);
 
 //////////////////////////////////////////////////////////////////////////
 // Docking system functions

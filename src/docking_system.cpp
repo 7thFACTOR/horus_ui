@@ -361,7 +361,7 @@ void handleViewContainerResize(UiViewContainer* viewContainer)
 					"",
 					dragTab->parentViewPane->rect.width,
 					dragTab->parentViewPane->rect.height,
-					WindowBorder::Resizable,
+					WindowFlags::Resizable | WindowFlags::NoTaskbarButton,
 					WindowPositionType::Custom,
 					{
 						crtEvent.mouse.point.x + rc.x - dragTab->parentViewPane->rect.width / 2,

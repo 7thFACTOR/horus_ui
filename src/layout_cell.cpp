@@ -4,7 +4,7 @@
 
 namespace hui
 {
-bool UiViewPane::serialize(FILE* file)
+bool UiViewPane::serialize(FILE* file, struct ViewHandler* viewHandler)
 {
 	size_t tabCount = viewTabs.size();
 
@@ -13,17 +13,18 @@ bool UiViewPane::serialize(FILE* file)
 
 	for (auto tab : viewTabs)
 	{
-		fwrite(&tab->id, sizeof(tab->id), 1, file);
+		fwrite(&tab->viewId, sizeof(tab->viewId), 1, file);
 		size_t len = strlen(tab->title);
 		fwrite(&len, sizeof(len), 1, file);
 		fwrite(tab->title, len + 1, 1, file);
 		fwrite(&tab->userDataId, sizeof(tab->userDataId), 1, file);
+		if (viewHandler) viewHandler->onViewPaneTabSave(tab, tab->userDataId, file);
 	}
 
 	return true;
 }
 
-bool UiViewPane::deserialize(FILE* file)
+bool UiViewPane::deserialize(FILE* file, struct ViewHandler* viewHandler)
 {
 	size_t tabCount = 0;
 
@@ -38,7 +39,7 @@ bool UiViewPane::deserialize(FILE* file)
 		UiViewTab* tab = new UiViewTab();
 
 		tab->parentViewPane = this;
-		fread(&tab->id, sizeof(tab->id), 1, file);
+		fread(&tab->viewId, sizeof(tab->viewId), 1, file);
 		size_t len = 0;
 		fread(&len, sizeof(len), 1, file);
 		fread(title, len + 1, 1, file);
@@ -47,6 +48,8 @@ bool UiViewPane::deserialize(FILE* file)
 		memcpy(tab->title, title, strlen(title));
 		fread(&tab->userDataId, sizeof(tab->userDataId), 1, file);
 		viewTabs.push_back(tab);
+
+		if (viewHandler) viewHandler->onViewPaneTabLoad(tab, tab->userDataId, file);
 	}
 
 	return true;
@@ -111,7 +114,7 @@ void UiViewPane::destroy()
 	viewTabs.clear();
 }
 
-bool UiViewContainer::serialize(FILE* file)
+bool UiViewContainer::serialize(FILE* file, struct ViewHandler* viewHandler)
 {
 	Rect rc = getWindowRect(window);
 	i32 isMainWindow = window == getMainWindow();
@@ -124,12 +127,12 @@ bool UiViewContainer::serialize(FILE* file)
 	fwrite(&rc.width, sizeof(rc.width), 1, file);
 	fwrite(&rc.height, sizeof(rc.height), 1, file);
 
-	rootCell->serialize(file);
+	rootCell->serialize(file, viewHandler);
 
 	return true;
 }
 
-bool UiViewContainer::deserialize(FILE* file)
+bool UiViewContainer::deserialize(FILE* file, struct ViewHandler* viewHandler)
 {
 	Rect rc;
 	i32 isMainWindow = 0;
@@ -146,7 +149,7 @@ bool UiViewContainer::deserialize(FILE* file)
 	{
 		window = createWindow(
 			"",
-			rc.width, rc.height, WindowBorder::Resizable, WindowPositionType::Custom,
+			rc.width, rc.height, WindowFlags::Resizable, WindowPositionType::Custom,
 			{ rc.x, rc.y }, false);
 	}
 	else
@@ -170,12 +173,12 @@ bool UiViewContainer::deserialize(FILE* file)
 	}
 
 	rootCell = new LayoutCell();
-	rootCell->deserialize(file);
+	rootCell->deserialize(file, viewHandler);
 
 	return true;
 }
 
-bool LayoutCell::serialize(FILE* file)
+bool LayoutCell::serialize(FILE* file, struct ViewHandler* viewHandler)
 {
 	size_t childCount = children.size();
 	i32 hasViewPane = viewPane != nullptr;
@@ -188,18 +191,18 @@ bool LayoutCell::serialize(FILE* file)
 
 	if (viewPane)
 	{
-		viewPane->serialize(file);
+		viewPane->serialize(file, viewHandler);
 	}
 
 	for (auto child : children)
 	{
-		child->serialize(file);
+		child->serialize(file, viewHandler);
 	}
 
 	return true;
 }
 
-bool LayoutCell::deserialize(FILE* file)
+bool LayoutCell::deserialize(FILE* file, struct ViewHandler* viewHandler)
 {
 	size_t childCount = 0;
 	i32 hasViewPane = 0;
@@ -213,7 +216,7 @@ bool LayoutCell::deserialize(FILE* file)
 	if (hasViewPane)
 	{
 		viewPane = new UiViewPane();
-		viewPane->deserialize(file);
+		viewPane->deserialize(file, viewHandler);
 	}
 
 	for (size_t i = 0; i < childCount; i++)
@@ -222,7 +225,7 @@ bool LayoutCell::deserialize(FILE* file)
 
 		children.push_back(child);
 		child->parent = this;
-		child->deserialize(file);
+		child->deserialize(file, viewHandler);
 	}
 
 	return true;
