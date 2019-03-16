@@ -13,7 +13,7 @@ struct UiViewTab
 {
 	char* title = nullptr;
 	struct UiViewPane* parentViewPane = nullptr;
-	ViewId id = 0;
+	ViewId viewId = 0;
 	Rect rect;
 	Image icon = nullptr;
 	Window nativeWindow = 0;
@@ -22,8 +22,8 @@ struct UiViewTab
 
 struct UiViewPane
 {
-	bool serialize(FILE* file);
-	bool deserialize(FILE* file);
+	bool serialize(FILE* file, struct ViewHandler* viewHandler);
+	bool deserialize(FILE* file, struct ViewHandler* viewHandler);
 	size_t getViewTabIndex(UiViewTab* viewTab);
 	void removeViewTab(UiViewTab* viewTab);
 	UiViewTab* getSelectedViewTab();
@@ -43,8 +43,8 @@ struct LayoutCell
 		Horizontal
 	};
 
-	bool serialize(FILE* file);
-	bool deserialize(FILE* file);
+	bool serialize(FILE* file, struct ViewHandler* viewHandler);
+	bool deserialize(FILE* file, struct ViewHandler* viewHandler);
 	void setNewSize(f32 size);
 	void computeRect(const Point& startPos);
 	void computeSize();
@@ -77,8 +77,8 @@ struct UiViewContainer
 		rootCell = nullptr;
 	}
 
-	bool serialize(FILE* file);
-	bool deserialize(FILE* file);
+	bool serialize(FILE* file, struct ViewHandler* viewHandler);
+	bool deserialize(FILE* file, struct ViewHandler* viewHandler);
 
 	LayoutCell* rootCell = nullptr;
 	Window window = 0;

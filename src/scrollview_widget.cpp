@@ -77,7 +77,7 @@ f32 endScrollView()
 		}
 	}
 
-	if (ctx->focusChanged)
+	if (ctx->focusChanged && ctx->widget.focusedWidgetId == ctx->currentWidgetId)
 	{
 		if (ctx->widget.focusedWidgetRect.y > clipRect.bottom())
 		{

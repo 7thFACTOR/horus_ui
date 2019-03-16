@@ -2008,20 +2008,27 @@ bool Renderer::clipRectNoRot(Rect& rect, Rect& uvRect)
 		return false;
 
 	auto newRect = rect.clipInside(currentClipRect);
+	auto oldUvRect = uvRect;
 
 	// clip left and top UVs
 	auto tx = (newRect.x - rect.x) / rect.width;
 	auto ty = (newRect.y - rect.y) / rect.height;
+	
+	// left clip
 	uvRect.x += uvRect.width * tx;
-	uvRect.y += uvRect.height * ty;
 	uvRect.width -= uvRect.width * tx;
+
+	// top clip
+	uvRect.y += uvRect.height * ty;
 	uvRect.height -= uvRect.height * ty;
 
 	// clip right and bottom UVs
 	tx = (rect.right() - newRect.right()) / rect.width;
 	ty = (rect.bottom() - newRect.bottom()) / rect.height;
-	uvRect.width -= uvRect.width * tx;
-	uvRect.height -= uvRect.height * ty;
+	
+	uvRect.width -= oldUvRect.width * tx;
+	uvRect.height -= oldUvRect.height * ty;
+	
 	rect = newRect;
 
 	return true;

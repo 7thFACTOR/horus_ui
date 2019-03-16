@@ -471,7 +471,7 @@ Window getMainWindow()
 
 Window createWindow(
 	const char* title, u32 width, u32 height,
-	WindowBorder border,
+	WindowFlags border,
 	WindowPositionType positionType,
 	Point customPosition,
 	bool showInTaskBar)

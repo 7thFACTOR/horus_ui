@@ -37,6 +37,11 @@ Image targetIcon;
 Image clearIcon;
 MouseCursor dragDropCur;
 
+struct View1Data
+{
+	bool menuOpened = false;
+};
+
 char* stristr(const char* haystack, const char* needle)
 {
 	do
@@ -628,7 +633,7 @@ struct MyViewHandler : hui::ViewHandler
 				}
 				hui::toolbarSeparator();
 
-				static bool showPopupToolbar = false;
+				static bool showPopupToolbar = { false };
 
 				if (hui::toolbarButton(moveIcon))
 					showPopupToolbar = true;
@@ -1912,6 +1917,16 @@ struct MyViewHandler : hui::ViewHandler
 		}
 	}
 
+	void onViewPaneTabSave(ViewPaneTab tab, u64 dataId, FILE* file) override
+	{
+		printf("Saving view pane tab: %s dataId: %llu\n", getViewPaneTabTitle(tab), dataId);
+	}
+
+	void onViewPaneTabLoad(ViewPaneTab tab, u64 dataId, FILE* file) override
+	{
+		printf("Loading view pane tab: %s dataId: %llu\n", getViewPaneTabTitle(tab), dataId);
+	}
+
 } myViewHandler;
 
 void createMyDefaultViewPanes()
@@ -1980,7 +1995,7 @@ int main(int argc, char** args)
 	printf("Loading views...\n");
 
 	// if there is no state, then create the default panes and tabs
-	if (!hui::loadViewContainersState("layout.hui"))
+	if (!hui::loadViewContainersState("layout.hui", &myViewHandler))
 	{
 		createMyDefaultViewPanes();
 	}
@@ -1997,9 +2012,10 @@ int main(int argc, char** args)
 	hui::setViewIcon(1, tabIcon1);
 	hui::setViewIcon(2, tabIcon2);
 	hui::setViewIcon(3, tabIcon1);
+
 	printf("Starting loop...\n");
 	hui::dockingSystemLoop(&myViewHandler);
-	hui::saveViewContainersState("layout.hui");
+	hui::saveViewContainersState("layout.hui", &myViewHandler);
 	hui::shutdown();
 
 	return 0;

@@ -47,9 +47,9 @@ void beginSameLine()
 		ctx->sameLineInfo[ctx->sameLineInfoIndex].computeHeight = false;
 	}
 
-	// only a root same line can start a new line, the others will just follow
-	if (ctx->sameLineInfoIndexStack.size() <= 1)
-		ctx->penPosition.x = ctx->layoutStack.back().position.x;
+	//// only a root same line can start a new line, the others will just follow
+	//if (ctx->sameLineInfoIndexStack.size() <= 1)
+	//	ctx->penPosition.x = ctx->layoutStack.back().position.x;
 
 	// push current line index to stack, so we recover it
 	ctx->sameLineInfoIndexStack.push_back(ctx->sameLineInfoIndex);

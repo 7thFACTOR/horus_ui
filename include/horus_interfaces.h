@@ -55,17 +55,15 @@ struct InputProvider
 	/// \param title the window title, UTF8 text
 	/// \param width the window width
 	/// \param height the window height
-	/// \param border the window border type
+	/// \param flags the window flags
 	/// \param positionType the window position type
 	/// \param customPosition if the positionType is custom, then this is the window's initial position
-	/// \param showInTaskBar if true then show a button in the taskbar, for supported OS-es
 	/// \return the new window handle
 	virtual Window createWindow(
 		const char* title, i32 width, i32 height,
-		WindowBorder border = WindowBorder::Resizable,
+		WindowFlags flags = WindowFlags::Resizable,
 		WindowPositionType positionType = WindowPositionType::Undefined,
-		Point customPosition = { 0, 0 },
-		bool showInTaskBar = true) = 0;
+		Point customPosition = { 0, 0 }) = 0;
 
 	/// Set window title
 	/// \param window the window
