@@ -366,7 +366,7 @@ void handleViewContainerResize(UiViewContainer* viewContainer)
 					{
 						crtEvent.mouse.point.x + rc.x - dragTab->parentViewPane->rect.width / 2,
 						crtEvent.mouse.point.y + rc.y
-					}, false);
+					});
 
 				auto newViewContainer = createViewContainer(paneWnd);
 

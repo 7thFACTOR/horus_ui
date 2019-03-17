@@ -1502,6 +1502,7 @@ struct ContextSettings
 	f32 dragStartDistance = 3; /// the max distance after which a dragging operation starts to occur when mouse down and moved, in pixels
 	f32 whiteImageUvBorder = 0.001f; /// this value is subtracted from the white image used to draw lines, to avoid black border artifacts
 	f32 sameLineHeight = 20.0f; /// the height of a line when sameLine() is used to position widgets on a single row/line. Used to center various widget heights vertically. This must be non-zero, otherwise the widgets will align wrongly.
+	f32 minScrollViewHandleSize = 20.0f; /// the minimum allowed scroll handle size (height)
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -1662,17 +1663,15 @@ HORUS_API Window getMainWindow();
 /// \param title the title of the window
 /// \param width the width of the window or -1 to use default
 /// \param height the height of the window or -1 to use default
-/// \param border the border type of the window
+/// \param flags the flags of the window
 /// \param positionType the position of the window
 /// \param customPosition if the position is custom, then this is the location on screen
-/// \param showInTaskBar if true then show a button in the taskbar for this window
 /// \return the created window handle
 HORUS_API Window createWindow(
 	const char* title, u32 width, u32 height,
-	WindowFlags border = WindowFlags::Resizable,
+	WindowFlags flags = WindowFlags::Resizable,
 	WindowPositionType positionType = WindowPositionType::Undefined,
-	Point customPosition = { 0, 0 },
-	bool showInTaskBar = true);
+	Point customPosition = { 0, 0 });
 
 /// Set window title
 /// \param title the window title
