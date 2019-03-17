@@ -346,7 +346,7 @@
 			{
 				"width": 10,
 				"normal": { "image": "scrollview_scrollthumb", "border": 1, "color": "160,160,160,255", "textColor": "white", "font": "normal" },
-				"hovered": { "image": "scrollview_scrollthumb", "border": 1, "color": "200,200,160,255", "textColor": "white", "font": "normal" }
+				"hovered": { "image": "scrollview_scrollthumb", "border": 1, "color": "200,200,200,255", "textColor": "white", "font": "normal" }
 			}
 		},
 		"menuBar":
