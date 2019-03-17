@@ -58,10 +58,11 @@ f32 endScrollView()
 
 	auto clipRect = ctx->renderer->getClipRect();
 	ctx->renderer->popClipRect();
+	auto& scrollViewInfo = ctx->scrollViewStack[ctx->scrollViewDepth];
 
 	auto scrollViewElemState = ctx->theme->getElement(WidgetElementId::ScrollViewBody).normalState();
-	f32 scrollPos = ctx->scrollViewStack[ctx->scrollViewDepth].scrollPosition;
-	f32 size = ctx->scrollViewStack[ctx->scrollViewDepth].size;
+	f32 scrollPos = scrollViewInfo.scrollPosition;
+	f32 size = scrollViewInfo.size;
 	f32 contentY = ctx->penStack.back().y - scrollPos;
 	f32 scrollContentSize = ctx->penPosition.y - contentY;
 	f32 scrollAmount = 0;
@@ -133,9 +134,8 @@ f32 endScrollView()
 			scrollViewScrollThumbElemState.width * ctx->globalScale,
 			handleSize
 		};
-		printf("%d %d \n", ctx->currentWidgetId, ctx->dragScrollViewHandleWidgetId);
-		if (ctx->currentWidgetId == ctx->dragScrollViewHandleWidgetId &&
-			(rectScrollBarHandle.contains(ctx->event.mouse.point) || ctx->scrollViewStack[ctx->scrollViewDepth].draggingThumb))
+
+		if (rectScrollBarHandle.contains(ctx->event.mouse.point) || (scrollViewInfo.draggingThumb && ctx->dragScrollViewHandleWidgetId == scrollViewInfo.widgetId))
 		{
 			scrollViewScrollThumbElemState = ctx->theme->getElement(WidgetElementId::ScrollViewScrollThumb).getState(WidgetStateType::Hovered);
 		}
@@ -144,9 +144,9 @@ f32 endScrollView()
 		{
 			if (rectScrollBarHandle.contains(ctx->event.mouse.point))
 			{
-				ctx->scrollViewStack[ctx->scrollViewDepth].draggingThumb = true;
-				ctx->scrollViewStack[ctx->scrollViewDepth].dragDelta = ctx->event.mouse.point - rectScrollBarHandle.topLeft();
-				ctx->dragScrollViewHandleWidgetId = ctx->scrollViewStack[ctx->scrollViewDepth].widgetId;
+				scrollViewInfo.draggingThumb = true;
+				scrollViewInfo.dragDelta = ctx->event.mouse.point - rectScrollBarHandle.topLeft();
+				ctx->dragScrollViewHandleWidgetId = scrollViewInfo.widgetId;
 				ctx->widget.focusedWidgetId = ctx->currentWidgetId;
 			}
 			else if (rectScrollBar.contains(ctx->event.mouse.point))
@@ -166,10 +166,10 @@ f32 endScrollView()
 			}
 		}
 		else if (ctx->mouseMoved
-			&& ctx->scrollViewStack[ctx->scrollViewDepth].draggingThumb
-			&& ctx->dragScrollViewHandleWidgetId == ctx->scrollViewStack[ctx->scrollViewDepth].widgetId)
+			&& scrollViewInfo.draggingThumb
+			&& ctx->dragScrollViewHandleWidgetId == scrollViewInfo.widgetId)
 		{
-			f32 crtLocalY = ctx->event.mouse.point.y - ctx->scrollViewStack[ctx->scrollViewDepth].dragDelta.y - clipRect.y;
+			f32 crtLocalY = ctx->event.mouse.point.y - scrollViewInfo.dragDelta.y - clipRect.y;
 			f32 trackSize = clipRect.height - handleSize;
 			f32 percent = crtLocalY / trackSize;
 			f32 oldScrollPos = scrollPos;
@@ -214,10 +214,10 @@ f32 endScrollView()
 
 		if (ctx->event.type == InputEvent::Type::MouseUp
 			&& ctx->isActiveLayer()
-			&& ctx->scrollViewStack[ctx->scrollViewDepth].draggingThumb
-			&& ctx->dragScrollViewHandleWidgetId == ctx->scrollViewStack[ctx->scrollViewDepth].widgetId)
+			&& scrollViewInfo.draggingThumb
+			&& ctx->dragScrollViewHandleWidgetId == scrollViewInfo.widgetId)
 		{
-			ctx->scrollViewStack[ctx->scrollViewDepth].draggingThumb = false;
+			scrollViewInfo.draggingThumb = false;
 			ctx->dragScrollViewHandleWidgetId = 0;
 		}
 
