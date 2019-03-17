@@ -471,12 +471,11 @@ Window getMainWindow()
 
 Window createWindow(
 	const char* title, u32 width, u32 height,
-	WindowFlags border,
+	WindowFlags flags,
 	WindowPositionType positionType,
-	Point customPosition,
-	bool showInTaskBar)
+	Point customPosition)
 {
-	auto wnd = ctx->inputProvider->createWindow(title, width, height, border, positionType, customPosition, showInTaskBar);
+	auto wnd = ctx->inputProvider->createWindow(title, width, height, flags, positionType, customPosition);
 
 	if (!ctx->renderer)
 	{

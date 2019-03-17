@@ -121,9 +121,8 @@ f32 endScrollView()
 
 		f32 handleSize = rectScrollBar.height * rectScrollBar.height / scrollContentSize;
 
-		//TODO: make it global property
-		if (handleSize < 20.0f)
-			handleSize = 20.0f;
+		if (handleSize < ctx->settings.minScrollViewHandleSize)
+			handleSize = ctx->settings.minScrollViewHandleSize;
 
 		f32 handleOffset = (rectScrollBar.height - handleSize) * scrollPos / (scrollContentSize - clipRect.height);
 
@@ -134,6 +133,12 @@ f32 endScrollView()
 			scrollViewScrollThumbElemState.width * ctx->globalScale,
 			handleSize
 		};
+		printf("%d %d \n", ctx->currentWidgetId, ctx->dragScrollViewHandleWidgetId);
+		if (ctx->currentWidgetId == ctx->dragScrollViewHandleWidgetId &&
+			(rectScrollBarHandle.contains(ctx->event.mouse.point) || ctx->scrollViewStack[ctx->scrollViewDepth].draggingThumb))
+		{
+			scrollViewScrollThumbElemState = ctx->theme->getElement(WidgetElementId::ScrollViewScrollThumb).getState(WidgetStateType::Hovered);
+		}
 
 		if (ctx->event.type == InputEvent::Type::MouseDown && ctx->isActiveLayer())
 		{
@@ -216,8 +221,11 @@ f32 endScrollView()
 			ctx->dragScrollViewHandleWidgetId = 0;
 		}
 
+		// draw scroll bar line
 		ctx->renderer->cmdSetColor(scrollViewElemState.color);
 		ctx->renderer->cmdDrawImageBordered(scrollViewScrollBarElemState.image, scrollViewScrollBarElemState.border, rectScrollBar, ctx->globalScale);
+
+		// draw scroll bar thumb
 		ctx->renderer->cmdSetColor(scrollViewScrollThumbElemState.color);
 		ctx->renderer->cmdDrawImageBordered(scrollViewScrollThumbElemState.image, scrollViewScrollThumbElemState.border, rectScrollBarHandle, ctx->globalScale);
 	}

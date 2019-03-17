@@ -637,8 +637,8 @@ Window Sdl2InputProvider::getHoveredWindow()
 
 Window Sdl2InputProvider::createWindow(
 	const char* title, i32 width, i32 height,
-	WindowBorder border, WindowPositionType windowPos,
-	Point customPosition, bool showInTaskBar)
+	WindowFlags flags, WindowPositionType windowPos,
+	Point customPosition)
 {
 	int posx = SDL_WINDOWPOS_UNDEFINED, posy = SDL_WINDOWPOS_UNDEFINED;
 
@@ -652,28 +652,18 @@ Window Sdl2InputProvider::createWindow(
 		posy = customPosition.y;
 	}
 
-	int flags = SDL_WINDOW_SHOWN;
+	int sdlflags = SDL_WINDOW_SHOWN;
 
-	switch (border)
-	{
-	case WindowBorder::Resizable:
-		flags |= SDL_WINDOW_RESIZABLE;
-		break;
-	case WindowBorder::Fixed:
-		break;
-	case WindowBorder::ResizableNoTitle:
-		flags |= SDL_WINDOW_RESIZABLE | SDL_WINDOW_BORDERLESS;
-		break;
-	case WindowBorder::FixedNoTitle:
-		flags |= SDL_WINDOW_BORDERLESS;
-		break;
-	default:
-		break;
-	}
+	if (has(flags, WindowFlags::Resizable))
+		sdlflags |= SDL_WINDOW_RESIZABLE;
+	if (has(flags, WindowFlags::ResizableNoTitle))
+		sdlflags |= SDL_WINDOW_RESIZABLE | SDL_WINDOW_BORDERLESS;
+	if (has(flags, WindowFlags::FixedNoTitle))
+		sdlflags |= SDL_WINDOW_BORDERLESS;
 
 	auto wnd = SDL_CreateWindow(
 		title, posx, posy, width, height,
-		SDL_WINDOW_OPENGL | flags);
+		SDL_WINDOW_OPENGL | sdlflags);
 
 	return wnd;
 }
@@ -848,10 +838,9 @@ void initializeWithSDL(const SdlSettings& settings)
 			settings.mainWindowTitle,
 			(int)wndRect.width,
 			(int)wndRect.height,
-			WindowBorder::Resizable,
+			WindowFlags::Resizable,
 			settings.positionType,
-			{ wndRect.x, wndRect.y },
-			true);
+			{ wndRect.x, wndRect.y });
 
 		if (!wnd)
 		{

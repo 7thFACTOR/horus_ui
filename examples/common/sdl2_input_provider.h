@@ -36,10 +36,9 @@ struct Sdl2InputProvider : InputProvider
 	Window getMainWindow() override;
 	Window createWindow(
 		const char* title, i32 width, i32 height,
-		WindowBorder border = WindowBorder::Resizable,
+		WindowFlags flags = WindowFlags::Resizable,
 		WindowPositionType windowPos = WindowPositionType::Undefined,
-		Point customPosition = { 0, 0 },
-		bool showInTaskBar = true) override;
+		Point customPosition = { 0, 0 }) override;
 	void setWindowTitle(Window window, const char* title) override;
 	void setWindowRect(Window window, const Rect& rect) override;
 	Rect getWindowRect(Window window) override;
