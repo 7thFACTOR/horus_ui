@@ -78,6 +78,7 @@ bool beginCustomTooltip(f32 width)
 
 		beginPopup(
 			width,
+			false,
 			PopupPositionMode::Custom,
 			{ ctx->tooltip.position.x + ctx->tooltip.offsetFromCursor, ctx->tooltip.position.y + ctx->tooltip.offsetFromCursor },
 			WidgetElementId::TooltipBody,

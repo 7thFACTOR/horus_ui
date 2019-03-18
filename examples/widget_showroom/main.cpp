@@ -191,7 +191,7 @@ struct MyViewHandler : hui::ViewHandler
 
 			if (showPopupToolbar)
 			{
-				beginPopup(38, PopupPositionMode::BelowLastWidget, hui::Point(), WidgetElementId::ButtonBody);
+				beginPopup(38, false, PopupPositionMode::BelowLastWidget, hui::Point(), WidgetElementId::ButtonBody);
 				beginToolbar(ToolbarDirection::Vertical);
 				toolbarButton(moveIcon);
 				toolbarButton(moveIcon);
@@ -271,7 +271,7 @@ struct MyViewHandler : hui::ViewHandler
 
 		if (showPopupToolbar)
 		{
-			beginPopup(200, PopupPositionMode::RightSideLastWidget, hui::Point(), WidgetElementId::ButtonBody);
+			beginPopup(200, false, PopupPositionMode::RightSideLastWidget, hui::Point(), WidgetElementId::ButtonBody);
 			beginToolbar();
 			//toolbarButton(moveIcon);
 			//toolbarButton(moveIcon);
@@ -640,7 +640,7 @@ struct MyViewHandler : hui::ViewHandler
 
 				if (showPopupToolbar)
 				{
-					beginPopup(38, PopupPositionMode::BelowLastWidget, hui::Point(), WidgetElementId::ButtonBody);
+					beginPopup(38, false, PopupPositionMode::BelowLastWidget, hui::Point(), WidgetElementId::ButtonBody);
 					beginToolbar();
 					toolbarButton(moveIcon);
 					toolbarButton(moveIcon);
@@ -728,7 +728,7 @@ struct MyViewHandler : hui::ViewHandler
 			if (cdata.showAddComponent)
 			{
 				auto rc = hui::getWidgetRect();
-				hui::beginPopup(rc.width, hui::PopupPositionMode::BelowLastWidget);
+				hui::beginPopup(rc.width, false, hui::PopupPositionMode::BelowLastWidget);
 
 				if (cdata.focusEditBox)
 				{

@@ -293,6 +293,10 @@
 			"popupBody":
 			{
 				"normal": { "image": "popup", "border": 10, "color": "white", "textColor": "white", "font": "normal" }
+			},
+			"popupBehind":
+			{
+				"normal": { "image": "popup_behind", "border": 10, "color": "255,255,255,180", "textColor": "white", "font": "normal" }
 			}
 		},
 		"tabGroup":

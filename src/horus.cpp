@@ -825,6 +825,7 @@ void setWidgetStyle(WidgetType widgetType, const char* styleName)
 		break;
 	case WidgetType::Popup:
 		ctx->theme->elements[(u32)WidgetElementId::PopupBody].setStyle(styleName);
+		ctx->theme->elements[(u32)WidgetElementId::PopupBehind].setStyle(styleName);
 		break;
 	case WidgetType::Dropdown:
 		ctx->theme->elements[(u32)WidgetElementId::DropdownBody].setStyle(styleName);
@@ -1146,6 +1147,7 @@ WidgetElementId getWidgetElementFromName(std::string name)
 	if (name == "progressFill") return WidgetElementId::ProgressFill;
 	if (name == "tooltipBody") return WidgetElementId::TooltipBody;
 	if (name == "popupBody") return WidgetElementId::PopupBody;
+	if (name == "popupBehind") return WidgetElementId::PopupBehind;
 	if (name == "dropdownBody") return WidgetElementId::DropdownBody;
 	if (name == "dropdownArrow") return WidgetElementId::DropdownArrow;
 	if (name == "scrollViewBody") return WidgetElementId::ScrollViewBody;

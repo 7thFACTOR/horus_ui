@@ -13,6 +13,7 @@ static f32 movePopupMaxDistanceTrigger = 5;
 
 void beginPopup(
 	f32 width,
+	bool fadeBehind,
 	PopupPositionMode positionMode,
 	const Point& customPosition,
 	WidgetElementId widgetElementIdTheme,
@@ -143,6 +144,17 @@ void beginPopup(
 	ctx->widget.sameLine = false; // reset the same line, we dont need that at the popup start
 	popup.prevContainerRect = ctx->containerRect;
 	ctx->containerRect = ctx->renderer->getWindowRect();
+
+	if (fadeBehind)
+	{
+		auto& behindElemState = ctx->theme->getElement(WidgetElementId::PopupBehind).normalState();
+
+		ctx->renderer->cmdSetColor(behindElemState.color);
+		ctx->renderer->cmdDrawImageBordered(
+			behindElemState.image,
+			behindElemState.border,
+			ctx->containerRect, ctx->globalScale);
+	}
 
 	ctx->renderer->pushClipRect(ctx->renderer->getWindowRect(), false);
 	ctx->renderer->cmdSetColor(bodyElemState.color);
@@ -351,7 +363,7 @@ MessageBoxButtons messageBox(
 		break;
 	}
 
-	hui::beginPopup(500, PopupPositionMode::WindowCenter);
+	hui::beginPopup(500, true, PopupPositionMode::WindowCenter);
 	auto iterFnt = ctx->theme->fonts.find("title");
 	hui::pushTint(Color::cyan);
 

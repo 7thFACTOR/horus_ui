@@ -140,6 +140,7 @@ bool beginMenuInternal(const char* labelText, SelectableFlags stateFlags, bool c
 			pushSpacing(0);
 			beginPopup(
 				ctx->menuStack[ctx->menuDepth].size.x + menuBodyElem.normalState().border * 2.0f + ctx->menuFillerWidth + ctx->menuIconSpace,
+				false,
 				contextMenu ? PopupPositionMode::Custom : PopupPositionMode::BelowLastWidget,
 				ctx->activeMenuBarItemWidgetPos, WidgetElementId::MenuBody, true, false, true);
 
@@ -182,6 +183,7 @@ bool beginMenuInternal(const char* labelText, SelectableFlags stateFlags, bool c
 			pushSpacing(0);
 			beginPopup(
 				ctx->menuStack[ctx->menuDepth].size.x + menuBodyElem.normalState().border * 2.0f + ctx->menuFillerWidth + ctx->menuIconSpace,
+				false,
 				PopupPositionMode::Custom,
 				Point(rc.right(), rc.top()),
 				WidgetElementId::MenuBody,
