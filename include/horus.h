@@ -236,6 +236,7 @@ enum class WidgetElementId
 	ProgressFill,
 	TooltipBody,
 	PopupBody,
+	PopupBehind,
 	DropdownBody,
 	DropdownArrow,
 	ScrollViewBody,
@@ -2075,6 +2076,7 @@ HORUS_API bool endBox();
 /// \param isMenu true if this is a menu popup, used usually by beginMenu
 HORUS_API void beginPopup(
 	f32 width,
+	bool fadeBehind = true,
 	PopupPositionMode positionMode = PopupPositionMode::BelowLastWidget,
 	const Point& position = Point(),
 	WidgetElementId widgetElementId = WidgetElementId::PopupBody,

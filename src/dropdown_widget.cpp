@@ -104,6 +104,7 @@ bool dropdown(i32& selectedIndex, const char** items, u32 itemCount, u32 maxVisi
 		ctx->popupUseGlobalScale = false;
 
 		beginPopup(ctx->widget.rect.width - bodyElem.normalState().border * 2,
+			false,
 			PopupPositionMode::Custom,
 			posForPopup, WidgetElementId::ButtonBody);
 
