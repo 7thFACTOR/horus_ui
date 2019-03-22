@@ -135,6 +135,7 @@ f32 endScrollView()
 			handleSize
 		};
 
+		if (ctx->isActiveLayer())
 		if (rectScrollBarHandle.contains(ctx->event.mouse.point) || (scrollViewInfo.draggingThumb && ctx->dragScrollViewHandleWidgetId == scrollViewInfo.widgetId))
 		{
 			scrollViewScrollThumbElemState = ctx->theme->getElement(WidgetElementId::ScrollViewScrollThumb).getState(WidgetStateType::Hovered);

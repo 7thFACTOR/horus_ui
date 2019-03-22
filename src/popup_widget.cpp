@@ -145,6 +145,8 @@ void beginPopup(
 	popup.prevContainerRect = ctx->containerRect;
 	ctx->containerRect = ctx->renderer->getWindowRect();
 
+	ctx->renderer->pushClipRect(ctx->renderer->getWindowRect(), false);
+
 	if (fadeBehind)
 	{
 		auto& behindElemState = ctx->theme->getElement(WidgetElementId::PopupBehind).normalState();
@@ -156,7 +158,6 @@ void beginPopup(
 			ctx->containerRect, ctx->globalScale);
 	}
 
-	ctx->renderer->pushClipRect(ctx->renderer->getWindowRect(), false);
 	ctx->renderer->cmdSetColor(bodyElemState.color);
 	ctx->renderer->cmdDrawImageBordered(
 		bodyElemState.image,
