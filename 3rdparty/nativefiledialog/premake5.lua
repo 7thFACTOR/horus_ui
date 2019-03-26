@@ -1,7 +1,26 @@
 project "nativefiledialog"
 	kind "StaticLib"
 	language "C++"
-	includedirs { 'src/include' }
+
+	shared.includedirs "src/include"
+
+	if os.target() == "windows" then
+		files {
+			"src/nfd_common.c",
+			"src/nfd_win.cpp"
+		}
+	elseif os.target() == "linux" then
+		files {
+			"src/nfd_common.c",
+			"src/nfd_gtk.c"
+		}
+	elseif os.target() == "macosx" then
+		files {
+			"src/nfd_common.c",
+			"src/nfd_cocoa.m"
+		}
+	end
+--[[
 
 	filter {"system:windows"}
 		files {
@@ -42,19 +61,28 @@ project "nativefiledialog"
 		}
 		buildoptions {"-fPIC -fno-exceptions"}
 	filter {}
-
-	configuration "Debug"
-		defines 
-		{
+]]--
+	filter "system:windows"
+		disablewarnings { 4996 }
+		defines {
+			"WIN32",
+			--"WIN32_LEAN_AND_MEAN",
+			--"VC_EXTRALEAN",
+			--"_CRT_SECURE_NO_WARNINGS",
 		}
+
+	filter "configurations:Debug"
 		symbols "On"
-		targetname "nativefiledialog_d"
 
-	configuration "Release"
-		defines
-		{
-			"NDEBUG"
-		}
-
+	filter "configurations:Release"
 		optimize "On"
-		targetname "nativefiledialog"
+		defines "NDEBUG"
+
+	filter "system:linux"
+		buildoptions { "-fPIC", "`pkg-config --cflags gtk+-3.0`" }
+		linkoptions "`pkg-config --libs gtk+-3.0`"
+
+	filter "system:macosx"
+		buildoptions "-fPIC -fno-exceptions"
+
+	filter{}

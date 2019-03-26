@@ -1,68 +1,42 @@
+function horus_base()
+	language "C++"
+	cppdialect "C++11"
+
+	files {
+		"**.h",
+		"**.hpp",
+		"**.cpp",
+		"**.cxx",
+		"**.c",
+		"**.inl",
+		"../include/**.h",
+		"../include/**.hpp",
+		"../include/**.cpp",
+		"../include/**.cxx",
+		"../include/**.c",
+		"../include/**.inl",
+	}
+	vpaths { ["*"] = { "src/**.*", "include/**.*" } }
+
+	shared.includedirs {
+		".",
+		"..",
+		"../include"
+	}
+
+	public.defines "HORUS_IMPORTS"
+	defines { "HORUS_EXPORTS", "HORUS_TIMING_DEBUG" }
+
+	warnings "off"
+	using {	"os", "binpack", "stb_image", "jsoncpp", "nativefiledialog", "freetype", "glew" } 
+end
+
 project "horus"
 	kind "SharedLib"
-	defines {"HORUS_EXPORTS"}
-	includedirs {scriptRoot, scriptRoot.."/include"}
-	add_sources_from("./")
-	add_sources_from("../include/")
-	vpaths { ["*"] = { scriptRoot.."/src/**.*", scriptRoot.."/include/**.*" } }
+	horus_base()
+	distcopy(mytarget())
 
-	link_binpack()
-	link_win32()
-	link_opengl()
-	link_glew()
-	link_freetype()
-	link_jsoncpp()
-	link_stb_image()
-	link_nfd()
-	link_sdl2()
-
-	filter {"system:macosx"}
-		links {"OpenGL.framework", "ForceFeedback.framework", "CoreVideo.framework", "Cocoa.framework", "IOKit.framework", "Carbon.framework", "CoreAudio.framework", "AudioToolbox.framework", "dl"}
-	filter {}
-
-	configuration "Debug"
-        	defines {}
-	        symbols "On"
-	        targetname "horus_d"
-
-	configuration "Release"
-	        defines
-	        {
-	            "NDEBUG"
-	        }
-	        optimize "On"
-	        targetname "horus"
-
-project "horus_s"
+project "horus_static"
 	kind "StaticLib"
-	defines {"HORUS_STATIC"}
-	includedirs {scriptRoot, scriptRoot.."/include"}
-	add_sources_from("./")
-	vpaths { ["*"] = scriptRoot.."/src/**.*" }
-
-	link_binpack()
-	link_win32()
-	link_opengl()
-	link_glew()
-	link_freetype()
-	link_jsoncpp()
-	link_stb_image()
-	link_nfd()
-	link_sdl2()
-
-	filter {"system:macosx"}
-		links {"OpenGL.framework", "ForceFeedback.framework", "CoreVideo.framework", "Cocoa.framework", "IOKit.framework", "Carbon.framework", "CoreAudio.framework", "AudioToolbox.framework", "dl"}
-	filter {}
-
-	configuration "Debug"
-        	defines {}
-	        symbols "On"
-	        targetname "horus_sd"
-
-	configuration "Release"
-	        defines
-	        {
-	            "NDEBUG"
-	        }
-	        optimize "On"
-	        targetname "horus_s"
+	horus_base()
+	shared.defines "HORUS_STATIC"
