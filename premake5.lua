@@ -1,288 +1,115 @@
+require('remake')
 workspace "horus"
+	configurations { "Debug", "Development", "Release" }
+	
+	-- global options
+	architecture "x64" -- We only support 64bit architectures
+	characterset "Unicode" -- We support Unicode
+	flags { "NoMinimalRebuild", "MultiProcessorCompile", "NoPCH" }
 
-if _ACTION ~= "gmake" and _ACTION ~= "xcode" then
-  function os.winSdkVersion()
-    local reg_arch = iif( os.is64bit(), "\\Wow6432Node\\", "\\" )
-    local sdk_version = os.getWindowsRegistry( "HKLM:SOFTWARE" .. reg_arch .."Microsoft\\Microsoft SDKs\\Windows\\v10.0\\ProductVersion" )
-    if sdk_version ~= nil then return sdk_version end
-  end
-
-  filter {"system:windows", "action:vs*"}
-    systemversion(os.winSdkVersion() .. ".0")
-end
-
-filter {}
--- Location of the solutions
-if _ACTION == "vs2015" then
-	location "./build_vs2015"
-	-- We're on Windows, this will be used in code for ifdef
-	defines {"_WINDOWS"}
-	system ("windows")
-end
-
--- Location of the solutions
-if _ACTION == "vs2017" then
-	location "./build_vs2017"
-	-- We're on Windows, this will be used in code for ifdef
-	defines {"_WINDOWS", "_WIN32"}
-	system ("windows")
-end
-
-if _ACTION == "gmake" and _ARGS[1] == "macos" then
-	location "./build_gmake"
-	-- We're on Linux, this will be used in code for ifdef
-	defines {"_APPLE"}
-	system ("macosx")
-else
-	if _ACTION == "gmake" then
-	location "./build_gmake"
-	-- We're on Linux, this will be used in code for ifdef
-	defines {"_LINUX"}
-	system ("linux")
+	-- Build config
+	if _ACTION == "vs2015" or _ACTION == "vs2017" then
+		system "windows"
+	elseif _ACTION == "gmake" then
+		if _ARGS[1] == "macos" then
+			system "macosx"
+		else
+			system "linux"
+		end
+	elseif _ACTION == "xcode" then
+		system "macosx"
+	else
+		premake.error("Unknown/Unsupported build action specifie: " .. _ACTION)
 	end
-end
 
-if _ACTION == "xcode" then
-	location "./build_xcode"
-	-- We're on OSX, this will be used in code for ifdef
-	defines {"_APPLE"}
-	system ("macosx")
-end
+	paths = Config('src', '3rdparty', ('build_' .. _ACTION), 'bin')
 
-postbuildcommands { "{MKDIR} bin" }
-postbuildcommands { "{COPY} \"%{cfg.linktarget.abspath}\" bin" }
+	--- Prepare naming convention of libs
+	filter "kind:SharedLib or StaticLib"
+		pic "on"
 
-language "C++"
+	filter { "kind:SharedLib or *App", "configurations:Debug or Development" }
+		targetsuffix '_d'
 
--- We only support 64bit architectures
-architecture "x64"
-
-configurations { "Debug", "Release" }
-
--- Keep the script root to be used in paths
-scriptRoot = _WORKING_DIR
-
--- With no filter, we set some global settings
-filter {}
-debugdir "bin"
-targetdir "bin"
-libdirs { "%{prj.location}\\bin" }
-
--- We support Unicode
-characterset ("Unicode")
-
-flags { "NoMinimalRebuild", "MultiProcessorCompile", "NoPCH" }
-cppdialect "C++11"
-filter { "system:windows" }
-	-- Disable some warnings
-	disablewarnings { 4251, 4006, 4221, 4204 }
-filter {}
-
-filter { "system:linux or macosx or ios" }
-	buildoptions {"-pthread"}
-	buildoptions {"-fpermissive"}
-filter {}
-
----
---- Prepare the configurations
----
-
-filter { "configurations:Debug" }
-	symbols "On"
-	optimize "Debug"
-	defines {"_DEBUG"}
-	warnings "Off"
-	
-filter { "configurations:Development" }
-	symbols "On"
-	optimize "Speed"
-	defines {"_DEVELOPMENT"}
-	defines {"NDEBUG"}
-	warnings "Off"
-
-filter { "configurations:Release" }
-	optimize "Full"
-	defines {"_SHIPPING"}
-	defines {"_RELEASE"}
-	defines {"NDEBUG"}
-	warnings "Off"
-
----
---- Global defines
----
-filter {}
-
--- used for new/delete override, with logging of new/delete operations
-filter { "configurations:Debug or Development" }
-filter {}
-
----
---- Utility functions
----
-	
-function add_sources_from(path)
-	files { path.."**.h" }
-	files { path.."**.hpp" }
-	files { path.."**.cpp" }
-	files { path.."**.cxx" }
-	files { path.."**.c" }
-	files { path.."**.inl" }
-end
-
-function add_res_from(path)
-	files { path.."**/resource.h" }
-	files { path.."**.res" }
-	files { path.."**.rc" }
-end
-
----
---- Linking with our libraries and 3rdparty
----
-
-function link_win32()
-	filter { "system:windows" }
-		links { "shlwapi", "winmm",  "Ws2_32", "Wininet", "dbghelp" }
-    links { "user32", "gdi32", "winmm", "imm32", "ole32", "oleaut32", "version", "uuid"}
-	filter {}
-end
-
-function link_opengl()
-	filter {}
-	defines {"USE_OPENGL"}
-
-	filter { "system:windows" }
-		links { "opengl32" }
-
-	filter { "system:linux" }
-		links { "GL", "GLU", "X11" }
-	filter {}
-end
-
-function link_freetype()
-	filter {}
-	includedirs {scriptRoot.."/3rdparty/freetype/include"}
-
-	filter { "configurations:Debug"}
-		links { "freetype_d" }
+	filter { "kind:StaticLib", "configurations:Debug or Development" }
+		targetsuffix '_sd'
 		
-	filter { "configurations:Release"}
-		links { "freetype" }
-end
+	--- Prepare the configurations
+	filter "configurations:Debug"
+		symbols "On"
+		optimize "Debug"
+		defines "_DEBUG"
+		warnings "Off"
 
-function link_glew()
-	filter {}
-	defines {"GLEW_STATIC"}
-	includedirs {scriptRoot.."/3rdparty/glew/include"}
+	filter "configurations:Development"
+		symbols "On"
+		optimize "Speed"
+		defines { "_DEVELOPMENT", "NDEBUG" }
+		warnings "Off"
 
-	filter { "configurations:Debug" }
-		links { "glew_d" }
-	filter {}
+	filter "configurations:Release"
+		symbols "Off"
+		optimize "Full"
+		flags "LinkTimeOptimization"
+		defines { "_SHIPPING", "_RELEASE", "NDEBUG" }
+		warnings "Off"
 
-	filter { "configurations:Release" }
-		links { "glew" }
-	filter {}
-end
+	filter { "system:windows", "action:vs*" }
+		systemversion(os.winSdkVersion() .. ".0")
+		
+	filter { "system:linux or macosx or ios" }
+		buildoptions { "-pthread", "-fpermissive" }
 
-function link_binpack()
-	filter {}
-	includedirs {scriptRoot.."/3rdparty/binpack"}
+	filter "system:windows"
+		-- Disable some warnings		
+		disablewarnings { 4251, 4006, 4221, 4204 }
+		defines "_WINDOWS"
 
-	filter { "configurations:Debug" }
-		links { "binpack_d" }
-	filter {}
+	filter "system:macosx or ios"
+		defines "_APPLE"
 
-	filter { "configurations:Release" }
-		links { "binpack" }
-	filter {}
-end
+	filter "system:linux"
+		defines "_LINUX"
 
-function link_stb_image()
-	filter {}
-	includedirs {scriptRoot.."/3rdparty/stb_image"}
+	filter{}
 
-	filter { "configurations:Debug" }
-		links { "stb_image_d" }
-	filter {}
 
-	filter { "configurations:Release" }
-		links { "stb_image" }
-	filter {}
-end
+	library("os", function()
+		if os.target() == "windows" then
+			public.links {
+				"shlwapi",  "Ws2_32", "Wininet", "dbghelp",
+				"user32", "gdi32", "ole32", "oleaut32",  "uuid"
+			}
+		elseif os.target() == "linux" then
+			public.links {
+				"X11 `pkg-config --libs gtk+-3.0`",
+				"Xi", "dl", "pthread", "Xext"
+			}
+		elseif os.target() == "macosx" then
+			public.links { 
+				"dl", "ForceFeedback.framework", "CoreVideo.framework", "Cocoa.framework",
+				"IOKit.framework", "Carbon.framework", "CoreAudio.framework", "AudioToolbox.framework",
+			}			
+		end
+	end)
 
-function link_jsoncpp()
-	filter {}
-	includedirs {scriptRoot.."/3rdparty/jsoncpp/include"}
+	library("opengl", function()
+		public.defines "USE_OPENGL"
 
-	filter { "configurations:Debug" }
-		links { "jsoncpp_d" }
-	filter {}
+		if os.target() == "windows" then
+			public.links "opengl32"
+		elseif os.target() == "linux" then
+			public.links { "GL", "GLU", "X11" }
+		elseif os.target() == "macosx" then
+			public.links "OpenGL.framework"
+		end
+	end)
+	
+	group "3rdparty"
+		include "3rdparty"
 
-	filter { "configurations:Release" }
-		links { "jsoncpp" }
-	filter {}
-end
+	group "horus-ui"
+		include "src"
 
-function link_nfd()
-	filter {}
-	includedirs {scriptRoot.."/3rdparty/nativefiledialog/src/include"}
-
-	filter { "configurations:Debug" }
-		links { "nativefiledialog_d" }
-	filter {}
-
-	filter { "configurations:Release" }
-		links { "nativefiledialog" }
-	filter {}
-end
-
-function link_sdl2()
-	filter {}
-	includedirs {scriptRoot.."/3rdparty/sdl2/include"}
-
-	filter { "configurations:Debug" }
-		links { "sdl2" }
-	filter {}
-
-	filter { "configurations:Release" }
-		links { "sdl2" }
-	filter {}
-end
-
----
---- Own libs
----
-
-function link_horus_static()
-	filter {}
-	includedirs {scriptRoot.."/include"}
-
-	filter { "configurations:Debug" }
-		links { "horus_sd" }
-	filter {}
-
-	filter { "configurations:Release" }
-		links { "horus_s" }
-	filter {}
-end
-
-function link_horus()
-	filter {}
-	includedirs {scriptRoot.."/include"}
-
-	filter { "configurations:Debug" }
-		links { "horus_d" }
-	filter {}
-
-	filter { "configurations:Release" }
-		links { "horus" }
-	filter {}
-end
-
----
---- Include the subprojects
----
-
--- TODO: we need to generate solutions for CMake for 3rdparty that uses it
-include "3rdparty"
-include "src"
-include "examples"
+	group "examples"
+		includeall "examples"

@@ -11,6 +11,12 @@
 #include <unordered_map>
 #include <algorithm>
 
+#ifdef HORUS_TIMING_DEBUG
+#include <ctime>
+#include <chrono>
+#include <ratio>
+#endif
+
 #ifdef _WIN32
 #include <windows.h>
 #endif
@@ -163,9 +169,27 @@ void updateDockingSystem(ViewHandler* handler)
 
 void dockingSystemLoop(ViewHandler* handler)
 {
+#ifdef HORUS_TIMING_DEBUG
+	using namespace std;
+	using namespace std::chrono;
+
+	high_resolution_clock::time_point t1, t2;
+	duration<double, std::milli> total;
+#endif
 	while (!hui::mustQuit())
 	{
+#ifdef HORUS_TIMING_DEBUG
+		t1 = high_resolution_clock::now();
+#endif
+
 		updateDockingSystem(handler);
+
+#ifdef HORUS_TIMING_DEBUG
+		t2 = high_resolution_clock::now();
+		total = t2 - t1;
+
+		printf("%fms\n", total.count());
+#endif
 	}
 }
 
