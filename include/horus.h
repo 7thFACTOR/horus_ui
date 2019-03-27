@@ -542,8 +542,8 @@ enum class MouseCursorType
 /// When the UI is rendered only when needed, the cache is pruned for non used text, based on frame count, if that is greater than a specified max frames, then the unicode text is discarded from cache.
 enum class TextCachePruneMode
 {
-	Time,
-	Frames
+	Time, /// delete unused text after some time
+	Frames /// delete unused text after N frames
 };
 
 /// Slider drag direction modes
@@ -1492,7 +1492,7 @@ struct WidgetElementInfo
 /// Various HorusUI per-context global settings
 struct ContextSettings
 {
-	TextCachePruneMode textCachePruneMode = TextCachePruneMode::Time;
+	TextCachePruneMode textCachePruneMode = TextCachePruneMode::Time; /// how to prune the unicode text cache which is not used for a while
 	f32 textCachePruneMaxTimeSec = 5; /// after this time, if an Unicode text is not accessed, it's discarded from cache, textCachePruneMode must be Time
 	f32 textCachePruneMaxFrames = 500; /// after this frame count, if an Unicode text is not accessed, it's discarded from cache, textCachePruneMode must be Frames
 	f32 textCachePruneIntervalSec = 5; /// after each interval has passed, the pruning of unused texts is executed, will delete the texts that were not used for the last textCachePruneMaxTimeMs or textCachePruneMaxFrames, depending on the prune mode
@@ -1503,7 +1503,7 @@ struct ContextSettings
 	f32 whiteImageUvBorder = 0.001f; /// this value is subtracted from the white image used to draw lines, to avoid black border artifacts
 	f32 sameLineHeight = 20.0f; /// the height of a line when sameLine() is used to position widgets on a single row/line. Used to center various widget heights vertically. This must be non-zero, otherwise the widgets will align wrongly.
 	f32 minScrollViewHandleSize = 20.0f; /// the minimum allowed scroll handle size (height)
-	bool allowUndockingToNewWindow = true;
+	bool allowUndockingToNewWindow = true; /// allow pane tabs to be undocked as native windows, outside of main window
 };
 
 //////////////////////////////////////////////////////////////////////////
