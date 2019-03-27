@@ -179,15 +179,13 @@ struct PopupState
 	f32 width = 0;
 	f32 height = 0;
 	u32 widgetId = 0;
-	PopupPositionMode positionMode = PopupPositionMode::WindowCenter;
+	PopupFlags flags = PopupFlags::None;
 	Point position;
 	Point moveOffset;
 	WidgetElementId widgetElementId = WidgetElementId::PopupBody;
 	bool alreadyClickedOnSomething = false;
 	bool alreadyClosedWithEscape = false;
 	bool active = false;
-	bool incrementLayer = true;
-	bool topMost = false;
 	i32 oldZOrder = 0;
 	bool startedToDrag = false;
 	bool draggingPopup = false;

@@ -354,15 +354,6 @@ enum class TabState
 	Disabled
 };
 
-/// The popup location when shown
-enum class PopupPositionMode
-{
-	WindowCenter,
-	BelowLastWidget,
-	RightSideLastWidget,
-	Custom
-};
-
 /// When pushTint is called, specifies what element is color tinted
 enum class TintColorType
 {
@@ -630,6 +621,20 @@ enum class ContextMenuFlags
 	AllowLeftClickOpen = HORUS_BIT(1)
 };
 HORUS_ENUM_AS_FLAGS(ContextMenuFlags);
+
+enum class PopupFlags : u32
+{
+	None = 0,
+	FadeWindowContents = HORUS_BIT(1), //! fade the contents behind the popup when shown
+	Centered = HORUS_BIT(2), //! center the popup to window
+	BelowLastWidget = HORUS_BIT(3), //! position the popup below last widget
+	RightSideLastWidget = HORUS_BIT(4), //! position the popup on right side of the last widget
+	CustomPosition = HORUS_BIT(5), //! custom popup position
+	SameLayer = HORUS_BIT(6), //! internal: don't increment layer index
+	TopMost = HORUS_BIT(7), //! set to have this popup top most
+	IsMenu = HORUS_BIT(8) //! internal, when this popup is a menu
+};
+HORUS_ENUM_AS_FLAGS(PopupFlags);
 
 /// A 2D point
 class Point
@@ -2076,13 +2081,9 @@ HORUS_API bool endBox();
 /// \param isMenu true if this is a menu popup, used usually by beginMenu
 HORUS_API void beginPopup(
 	f32 width,
-	bool fadeBehind = true,
-	PopupPositionMode positionMode = PopupPositionMode::BelowLastWidget,
+	PopupFlags flags = PopupFlags::BelowLastWidget,
 	const Point& position = Point(),
-	WidgetElementId widgetElementId = WidgetElementId::PopupBody,
-	bool incrementLayer = true,
-	bool topMost = false,
-	bool isMenu = false); //TODO: use flags enum for position and these bools
+	WidgetElementId widgetElementId = WidgetElementId::PopupBody);
 
 /// End a popup widget
 HORUS_API void endPopup();

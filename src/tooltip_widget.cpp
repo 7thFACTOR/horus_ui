@@ -78,11 +78,9 @@ bool beginCustomTooltip(f32 width)
 
 		beginPopup(
 			width,
-			false,
-			PopupPositionMode::Custom,
+			PopupFlags::CustomPosition | PopupFlags::TopMost,
 			{ ctx->tooltip.position.x + ctx->tooltip.offsetFromCursor, ctx->tooltip.position.y + ctx->tooltip.offsetFromCursor },
-			WidgetElementId::TooltipBody,
-			false, true);
+			WidgetElementId::TooltipBody);
 		return true;
 	}
 
