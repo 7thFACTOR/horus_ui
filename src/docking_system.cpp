@@ -193,11 +193,6 @@ void dockingSystemLoop(ViewHandler* handler)
 	}
 }
 
-void setAllowUndockingToNewWindow(bool allow)
-{
-	dockingData.allowUndocking = allow;
-}
-
 void updateViewContainerLayout(UiViewContainer* viewContainer)
 {
 	auto rect = getWindowRect(viewContainer->window);
@@ -377,7 +372,7 @@ void handleViewContainerResize(UiViewContainer* viewContainer)
 			// do not undock if the source window is the main window and there is just one tab left!
 			if (!(dragTab->parentViewPane->viewTabs.size() == 1
 				&& draggingContainerSource->rootCell->viewPane == dragTab->parentViewPane)
-				&& dockingData.allowUndocking)
+				&& ctx->settings.allowUndockingToNewWindow)
 			{
 				Rect rc = hui::getWindowRect(draggingContainerSource->window);
 
@@ -540,12 +535,12 @@ void handleViewContainerResize(UiViewContainer* viewContainer)
 				if (dragTab)
 					str = dragTab->title;
 
-				if (!dragOntoTab && !dockToCell && dockingData.allowUndocking)
+				if (!dragOntoTab && !dockToCell && ctx->settings.allowUndockingToNewWindow)
 				{
 					title = std::string("Undock\n" + std::string(dragTab->title));
 					str = title.c_str();
 				}
-				else if (!dockingData.allowUndocking)
+				else if (!ctx->settings.allowUndockingToNewWindow)
 				{
 					str = dragTab->title;
 				}

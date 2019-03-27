@@ -321,13 +321,13 @@ void Sdl2InputProvider::addSdlEvent(SDL_Event& ev)
 			outEvent.type = InputEvent::Type::MouseMove;
 			outEvent.mouse.point.x = ev.motion.x;
 			outEvent.mouse.point.y = ev.motion.y;
-			outEvent.window = SDL_GetWindowFromID(ev.motion.windowID);
+			outEvent.window = findSdlWindow(SDL_GetWindowFromID(ev.motion.windowID));
 			auto mods = SDL_GetModState();
 			outEvent.mouse.modifiers = KeyModifiers::None;
 			outEvent.mouse.modifiers |= (mods & KMOD_ALT) ? KeyModifiers::Alt : KeyModifiers::None;
 			outEvent.mouse.modifiers |= (mods & KMOD_SHIFT) ? KeyModifiers::Shift : KeyModifiers::None;
 			outEvent.mouse.modifiers |= (mods & KMOD_CTRL) ? KeyModifiers::Control : KeyModifiers::None;
-			focusedWindow = (SdlWindow*)outEvent.window;
+			focusedWindow = (SdlWindowProxy*)outEvent.window;
 		}
 		else
 		{
@@ -341,13 +341,13 @@ void Sdl2InputProvider::addSdlEvent(SDL_Event& ev)
 		outEvent.mouse.point.y = ev.button.y;
 		outEvent.mouse.button = (MouseButton)(ev.button.button - 1);
 		outEvent.mouse.clickCount = ev.button.clicks;
-		outEvent.window = SDL_GetWindowFromID(ev.button.windowID);
+		outEvent.window = findSdlWindow(SDL_GetWindowFromID(ev.button.windowID));
 		auto mods = SDL_GetModState();
 		outEvent.mouse.modifiers = KeyModifiers::None;
 		outEvent.mouse.modifiers |= (mods & KMOD_ALT) ? KeyModifiers::Alt : KeyModifiers::None;
 		outEvent.mouse.modifiers |= (mods & KMOD_SHIFT) ? KeyModifiers::Shift : KeyModifiers::None;
 		outEvent.mouse.modifiers |= (mods & KMOD_CTRL) ? KeyModifiers::Control : KeyModifiers::None;
-		focusedWindow = (SdlWindow*)outEvent.window;
+		focusedWindow = (SdlWindowProxy*)outEvent.window;
 		break;
 	}
 	case SDL_MOUSEBUTTONUP:
@@ -528,7 +528,7 @@ void Sdl2InputProvider::processSdlEvents()
 	}
 }
 
-SdlWindow* Sdl2InputProvider::findSdlWindow(SDL_Window* wnd)
+SdlWindowProxy* Sdl2InputProvider::findSdlWindow(SDL_Window* wnd)
 {
 	for (auto& w : windows)
 	{
@@ -628,10 +628,10 @@ void Sdl2InputProvider::setCurrentWindow(Window window)
 {
 	if (gfxProvider->getApiType() == GraphicsProvider::ApiType::OpenGL)
 	{
-		SDL_GL_MakeCurrent(((SdlWindow*)window)->sdlWindow, sdlOpenGLCtx);
+		SDL_GL_MakeCurrent(((SdlWindowProxy*)window)->sdlWindow, sdlOpenGLCtx);
 	}
 
-	currentWindow = ((SdlWindow*)window);
+	currentWindow = ((SdlWindowProxy*)window);
 }
 
 Window Sdl2InputProvider::getCurrentWindow()
@@ -687,7 +687,7 @@ Window Sdl2InputProvider::createWindow(
 		title, posx, posy, width, height,
 		sdlflags);
 
-	auto newWnd = new SdlWindow();
+	auto newWnd = new SdlWindowProxy();
 	
 	newWnd->sdlWindow = wnd;
 	// initialize here DX11 swapchains or other API objects for this specific window, if that API is selected
@@ -699,21 +699,21 @@ Window Sdl2InputProvider::createWindow(
 
 void Sdl2InputProvider::setWindowTitle(Window window, const char* title)
 {
-	SDL_SetWindowTitle(((SdlWindow*)window)->sdlWindow, title);
+	SDL_SetWindowTitle(((SdlWindowProxy*)window)->sdlWindow, title);
 }
 
 void Sdl2InputProvider::setWindowRect(Window window, const Rect& rect)
 {
-	SDL_SetWindowPosition(((SdlWindow*)window)->sdlWindow, rect.x, rect.y);
-	SDL_SetWindowSize(((SdlWindow*)window)->sdlWindow, rect.width, rect.height);
+	SDL_SetWindowPosition(((SdlWindowProxy*)window)->sdlWindow, rect.x, rect.y);
+	SDL_SetWindowSize(((SdlWindowProxy*)window)->sdlWindow, rect.width, rect.height);
 }
 
 Rect Sdl2InputProvider::getWindowRect(Window window)
 {
 	SDL_Rect rc;
 
-	SDL_GetWindowPosition(((SdlWindow*)window)->sdlWindow, &rc.x, &rc.y);
-	SDL_GetWindowSize(((SdlWindow*)window)->sdlWindow, &rc.w, &rc.h);
+	SDL_GetWindowPosition(((SdlWindowProxy*)window)->sdlWindow, &rc.x, &rc.y);
+	SDL_GetWindowSize(((SdlWindowProxy*)window)->sdlWindow, &rc.w, &rc.h);
 
 	return{ (f32)rc.x, (f32)rc.y, (f32)rc.w, (f32)rc.h };
 }
@@ -722,50 +722,50 @@ void Sdl2InputProvider::presentWindow(Window window)
 {
 	if (gfxProvider->getApiType() == GraphicsProvider::ApiType::OpenGL)
 	{
-		SDL_GL_SwapWindow(((SdlWindow*)window)->sdlWindow);
+		SDL_GL_SwapWindow(((SdlWindowProxy*)window)->sdlWindow);
 	}
 }
 
 void Sdl2InputProvider::destroyWindow(Window window)
 {
-	SDL_DestroyWindow(((SdlWindow*)window)->sdlWindow);
+	SDL_DestroyWindow(((SdlWindowProxy*)window)->sdlWindow);
 	auto iter = std::find(windows.begin(), windows.end(), window);
 
 	if (iter != windows.end())
 	{
-		delete ((SdlWindow*)window);
+		delete ((SdlWindowProxy*)window);
 		windows.erase(iter);
 	}
 }
 
 void Sdl2InputProvider::showWindow(Window window)
 {
-	SDL_ShowWindow(((SdlWindow*)window)->sdlWindow);
+	SDL_ShowWindow(((SdlWindowProxy*)window)->sdlWindow);
 }
 
 void Sdl2InputProvider::hideWindow(Window window)
 {
-	SDL_HideWindow(((SdlWindow*)window)->sdlWindow);
+	SDL_HideWindow(((SdlWindowProxy*)window)->sdlWindow);
 }
 
 void Sdl2InputProvider::raiseWindow(Window window)
 {
-	SDL_RaiseWindow(((SdlWindow*)window)->sdlWindow);
+	SDL_RaiseWindow(((SdlWindowProxy*)window)->sdlWindow);
 }
 
 void Sdl2InputProvider::maximizeWindow(Window window)
 {
-	SDL_MaximizeWindow(((SdlWindow*)window)->sdlWindow);
+	SDL_MaximizeWindow(((SdlWindowProxy*)window)->sdlWindow);
 }
 
 void Sdl2InputProvider::minimizeWindow(Window window)
 {
-	SDL_MinimizeWindow(((SdlWindow*)window)->sdlWindow);
+	SDL_MinimizeWindow(((SdlWindowProxy*)window)->sdlWindow);
 }
 
 WindowState Sdl2InputProvider::getWindowState(Window window)
 {
-	auto flags = SDL_GetWindowFlags(((SdlWindow*)window)->sdlWindow);
+	auto flags = SDL_GetWindowFlags(((SdlWindowProxy*)window)->sdlWindow);
 
 	if (flags & SDL_WINDOW_HIDDEN)
 	{
@@ -857,7 +857,7 @@ void initializeWithSDL(const SdlSettings& settings)
 	inputProvider->gfxProvider = settings.gfxProvider;
 
 	bool maximize = false;
-	SdlWindow* wnd = nullptr;
+	SdlWindowProxy* wnd = nullptr;
 
 	inputProvider->context = createContext(inputProvider, settings.gfxProvider);
 
@@ -873,7 +873,7 @@ void initializeWithSDL(const SdlSettings& settings)
 			wndRect = settings.mainWindowRect;
 		}
 
-		wnd = (SdlWindow*)inputProvider->createWindow(
+		wnd = (SdlWindowProxy*)inputProvider->createWindow(
 			settings.mainWindowTitle,
 			(int)wndRect.width,
 			(int)wndRect.height,
@@ -889,7 +889,7 @@ void initializeWithSDL(const SdlSettings& settings)
 
 		if (inputProvider->gfxProvider->getApiType() == GraphicsProvider::ApiType::OpenGL)
 		{
-			inputProvider->sdlOpenGLCtx = SDL_GL_CreateContext(((SdlWindow*)wnd)->sdlWindow);
+			inputProvider->sdlOpenGLCtx = SDL_GL_CreateContext(((SdlWindowProxy*)wnd)->sdlWindow);
 
 			if (!inputProvider->sdlOpenGLCtx)
 			{
@@ -899,7 +899,7 @@ void initializeWithSDL(const SdlSettings& settings)
 	}
 	else
 	{
-		wnd = new SdlWindow();
+		wnd = new SdlWindowProxy();
 		wnd->sdlWindow = settings.sdlMainWindow;
 		// initialize here DX11 stuff also, if api is DX11, from the sdlWindow info
 
