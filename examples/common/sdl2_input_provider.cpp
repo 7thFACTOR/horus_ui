@@ -279,6 +279,7 @@ void Sdl2InputProvider::startTextInput(Window window, const Rect& imeRect)
 	rc.w = imeRect.width;
 	rc.h = imeRect.height;
 
+	//TODO: test this, show the IME hints window
 	SDL_SetTextInputRect(&rc);
 	SDL_StartTextInput();
 }
@@ -326,7 +327,7 @@ void Sdl2InputProvider::addSdlEvent(SDL_Event& ev)
 			outEvent.mouse.modifiers |= (mods & KMOD_ALT) ? KeyModifiers::Alt : KeyModifiers::None;
 			outEvent.mouse.modifiers |= (mods & KMOD_SHIFT) ? KeyModifiers::Shift : KeyModifiers::None;
 			outEvent.mouse.modifiers |= (mods & KMOD_CTRL) ? KeyModifiers::Control : KeyModifiers::None;
-			focusedWindow = (SDL_Window*)outEvent.window;
+			focusedWindow = (SdlWindow*)outEvent.window;
 		}
 		else
 		{
@@ -346,7 +347,7 @@ void Sdl2InputProvider::addSdlEvent(SDL_Event& ev)
 		outEvent.mouse.modifiers |= (mods & KMOD_ALT) ? KeyModifiers::Alt : KeyModifiers::None;
 		outEvent.mouse.modifiers |= (mods & KMOD_SHIFT) ? KeyModifiers::Shift : KeyModifiers::None;
 		outEvent.mouse.modifiers |= (mods & KMOD_CTRL) ? KeyModifiers::Control : KeyModifiers::None;
-		focusedWindow = (SDL_Window*)outEvent.window;
+		focusedWindow = (SdlWindow*)outEvent.window;
 		break;
 	}
 	case SDL_MOUSEBUTTONUP:
@@ -361,7 +362,7 @@ void Sdl2InputProvider::addSdlEvent(SDL_Event& ev)
 		outEvent.mouse.modifiers |= (mods & KMOD_ALT) ? KeyModifiers::Alt : KeyModifiers::None;
 		outEvent.mouse.modifiers |= (mods & KMOD_SHIFT) ? KeyModifiers::Shift : KeyModifiers::None;
 		outEvent.mouse.modifiers |= (mods & KMOD_CTRL) ? KeyModifiers::Control : KeyModifiers::None;
-		outEvent.window = SDL_GetWindowFromID(ev.button.windowID);
+		outEvent.window = findSdlWindow(SDL_GetWindowFromID(ev.button.windowID));
 		break;
 	}
 	case SDL_MOUSEWHEEL:
@@ -380,14 +381,14 @@ void Sdl2InputProvider::addSdlEvent(SDL_Event& ev)
 		outEvent.mouse.modifiers |= (mods & KMOD_ALT) ? KeyModifiers::Alt : KeyModifiers::None;
 		outEvent.mouse.modifiers |= (mods & KMOD_SHIFT) ? KeyModifiers::Shift : KeyModifiers::None;
 		outEvent.mouse.modifiers |= (mods & KMOD_CTRL) ? KeyModifiers::Control : KeyModifiers::None;
-		outEvent.window = SDL_GetWindowFromID(ev.wheel.windowID);
+		outEvent.window = findSdlWindow(SDL_GetWindowFromID(ev.wheel.windowID));
 		break;
 	}
 	case SDL_KEYDOWN:
 		outEvent.type = InputEvent::Type::Key;
 		outEvent.key.down = true;
 		outEvent.key.code = fromSdlKey(ev.key.keysym.sym);
-		outEvent.window = SDL_GetWindowFromID(ev.key.windowID);
+		outEvent.window = findSdlWindow(SDL_GetWindowFromID(ev.key.windowID));
 		outEvent.key.modifiers = KeyModifiers::None;
 		outEvent.key.modifiers |= (ev.key.keysym.mod & KMOD_ALT) ? KeyModifiers::Alt : KeyModifiers::None;
 		outEvent.key.modifiers |= (ev.key.keysym.mod & KMOD_SHIFT) ? KeyModifiers::Shift : KeyModifiers::None;
@@ -397,7 +398,7 @@ void Sdl2InputProvider::addSdlEvent(SDL_Event& ev)
 		outEvent.type = InputEvent::Type::Key;
 		outEvent.key.down = false;
 		outEvent.key.code = fromSdlKey(ev.key.keysym.sym);
-		outEvent.window = SDL_GetWindowFromID(ev.key.windowID);
+		outEvent.window = findSdlWindow(SDL_GetWindowFromID(ev.key.windowID));
 		outEvent.key.modifiers = KeyModifiers::None;
 		outEvent.key.modifiers |= (ev.key.keysym.mod & KMOD_ALT) ? KeyModifiers::Alt : KeyModifiers::None;
 		outEvent.key.modifiers |= (ev.key.keysym.mod & KMOD_SHIFT) ? KeyModifiers::Shift : KeyModifiers::None;
@@ -406,7 +407,7 @@ void Sdl2InputProvider::addSdlEvent(SDL_Event& ev)
 	case SDL_TEXTINPUT:
 		outEvent.type = InputEvent::Type::Text;
 		strcpy(outEvent.text.text, ev.text.text);
-		outEvent.window = SDL_GetWindowFromID(ev.text.windowID);
+		outEvent.window = findSdlWindow(SDL_GetWindowFromID(ev.text.windowID));
 		outEvent.key.modifiers = KeyModifiers::None;
 		break;
 	case SDL_DROPFILE:
@@ -415,7 +416,7 @@ void Sdl2InputProvider::addSdlEvent(SDL_Event& ev)
 		outEvent.drop.filename = new char[strlen(ev.drop.file) + 1];
 		strcpy(outEvent.drop.filename, ev.drop.file);
 		SDL_free(ev.drop.file);
-		outEvent.window = SDL_GetWindowFromID(ev.drop.windowID);
+		outEvent.window = findSdlWindow(SDL_GetWindowFromID(ev.drop.windowID));
 		break;
 	case SDL_DROPTEXT:
 		outEvent.type = InputEvent::Type::OsDragDrop;
@@ -423,17 +424,17 @@ void Sdl2InputProvider::addSdlEvent(SDL_Event& ev)
 		outEvent.drop.filename = new char[strlen(ev.drop.file) + 1];
 		strcpy(outEvent.drop.filename, ev.drop.file);
 		SDL_free(ev.drop.file);
-		outEvent.window = SDL_GetWindowFromID(ev.drop.windowID);
+		outEvent.window = findSdlWindow(SDL_GetWindowFromID(ev.drop.windowID));
 		break;
 	case SDL_DROPBEGIN:
 		outEvent.type = InputEvent::Type::OsDragDrop;
 		outEvent.drop.type = InputEvent::OsDragDropData::Type::DropBegin;
-		outEvent.window = SDL_GetWindowFromID(ev.drop.windowID);
+		outEvent.window = findSdlWindow(SDL_GetWindowFromID(ev.drop.windowID));
 		break;
 	case SDL_DROPCOMPLETE:
 		outEvent.type = InputEvent::Type::OsDragDrop;
 		outEvent.drop.type = InputEvent::OsDragDropData::Type::DropComplete;
-		outEvent.window = SDL_GetWindowFromID(ev.drop.windowID);
+		outEvent.window = findSdlWindow(SDL_GetWindowFromID(ev.drop.windowID));
 		break;
 	case SDL_WINDOWEVENT:
 	{
@@ -448,13 +449,13 @@ void Sdl2InputProvider::addSdlEvent(SDL_Event& ev)
 		case SDL_WINDOWEVENT_FOCUS_GAINED:
 		{
 			outEvent.type = InputEvent::Type::WindowGotFocus;
-			focusedWindow = SDL_GetWindowFromID(ev.window.windowID);
+			focusedWindow = findSdlWindow(SDL_GetWindowFromID(ev.window.windowID));
 			break;
 		}
 		case SDL_WINDOWEVENT_ENTER:
 		{
 			outEvent.type = InputEvent::Type::WindowGotFocus;
-			hoveredWindow = SDL_GetWindowFromID(ev.window.windowID);
+			hoveredWindow = findSdlWindow(SDL_GetWindowFromID(ev.window.windowID));
 			break;
 		}
 		case SDL_WINDOWEVENT_FOCUS_LOST:
@@ -469,7 +470,7 @@ void Sdl2InputProvider::addSdlEvent(SDL_Event& ev)
 			break;
 		}
 
-		outEvent.window = SDL_GetWindowFromID(ev.window.windowID);
+		outEvent.window = findSdlWindow(SDL_GetWindowFromID(ev.window.windowID));
 
 		break;
 	}
@@ -517,12 +518,25 @@ void Sdl2InputProvider::addSdlEvent(SDL_Event& ev)
 void Sdl2InputProvider::processSdlEvents()
 {
 	SDL_Event ev;
+	
 	sizeChanged = false;
 	addedMouseMove = false;
+
 	while (SDL_PollEvent(&ev))
 	{
 		addSdlEvent(ev);
 	}
+}
+
+SdlWindow* Sdl2InputProvider::findSdlWindow(SDL_Window* wnd)
+{
+	for (auto& w : windows)
+	{
+		if (w->sdlWindow == wnd)
+			return w;
+	}
+
+	return nullptr;
 }
 
 void Sdl2InputProvider::updateDeltaTime()
@@ -614,10 +628,10 @@ void Sdl2InputProvider::setCurrentWindow(Window window)
 {
 	if (gfxProvider->getApiType() == GraphicsProvider::ApiType::OpenGL)
 	{
-		SDL_GL_MakeCurrent((SDL_Window*)window, sdlOpenGLCtx);
+		SDL_GL_MakeCurrent(((SdlWindow*)window)->sdlWindow, sdlOpenGLCtx);
 	}
 
-	currentWindow = (SDL_Window*)window;
+	currentWindow = ((SdlWindow*)window);
 }
 
 Window Sdl2InputProvider::getCurrentWindow()
@@ -656,77 +670,102 @@ Window Sdl2InputProvider::createWindow(
 
 	if (has(flags, WindowFlags::Resizable))
 		sdlflags |= SDL_WINDOW_RESIZABLE;
+	
 	if (has(flags, WindowFlags::ResizableNoTitle))
 		sdlflags |= SDL_WINDOW_RESIZABLE | SDL_WINDOW_BORDERLESS;
+	
 	if (has(flags, WindowFlags::FixedNoTitle))
 		sdlflags |= SDL_WINDOW_BORDERLESS;
 
+	if (gfxProvider->getApiType() == GraphicsProvider::ApiType::OpenGL)
+		sdlflags |= SDL_WINDOW_OPENGL;
+
+	if (gfxProvider->getApiType() == GraphicsProvider::ApiType::Vulkan)
+		sdlflags |= SDL_WINDOW_VULKAN;
+
 	auto wnd = SDL_CreateWindow(
 		title, posx, posy, width, height,
-		SDL_WINDOW_OPENGL | sdlflags);
+		sdlflags);
 
-	return wnd;
+	auto newWnd = new SdlWindow();
+	
+	newWnd->sdlWindow = wnd;
+	// initialize here DX11 swapchains or other API objects for this specific window, if that API is selected
+
+	windows.push_back(newWnd);
+
+	return newWnd;
 }
 
 void Sdl2InputProvider::setWindowTitle(Window window, const char* title)
 {
-	SDL_SetWindowTitle((SDL_Window*)window, title);
+	SDL_SetWindowTitle(((SdlWindow*)window)->sdlWindow, title);
 }
 
 void Sdl2InputProvider::setWindowRect(Window window, const Rect& rect)
 {
-	SDL_SetWindowPosition((SDL_Window*)window, rect.x, rect.y);
-	SDL_SetWindowSize((SDL_Window*)window, rect.width, rect.height);
+	SDL_SetWindowPosition(((SdlWindow*)window)->sdlWindow, rect.x, rect.y);
+	SDL_SetWindowSize(((SdlWindow*)window)->sdlWindow, rect.width, rect.height);
 }
 
 Rect Sdl2InputProvider::getWindowRect(Window window)
 {
 	SDL_Rect rc;
 
-	SDL_GetWindowPosition((SDL_Window*)window, &rc.x, &rc.y);
-	SDL_GetWindowSize((SDL_Window*)window, &rc.w, &rc.h);
+	SDL_GetWindowPosition(((SdlWindow*)window)->sdlWindow, &rc.x, &rc.y);
+	SDL_GetWindowSize(((SdlWindow*)window)->sdlWindow, &rc.w, &rc.h);
 
 	return{ (f32)rc.x, (f32)rc.y, (f32)rc.w, (f32)rc.h };
 }
 
 void Sdl2InputProvider::presentWindow(Window window)
 {
-	SDL_GL_SwapWindow((SDL_Window*)window);
+	if (gfxProvider->getApiType() == GraphicsProvider::ApiType::OpenGL)
+	{
+		SDL_GL_SwapWindow(((SdlWindow*)window)->sdlWindow);
+	}
 }
 
 void Sdl2InputProvider::destroyWindow(Window window)
 {
-	SDL_DestroyWindow((SDL_Window*)window);
+	SDL_DestroyWindow(((SdlWindow*)window)->sdlWindow);
+	auto iter = std::find(windows.begin(), windows.end(), window);
+
+	if (iter != windows.end())
+	{
+		delete ((SdlWindow*)window);
+		windows.erase(iter);
+	}
 }
 
 void Sdl2InputProvider::showWindow(Window window)
 {
-	SDL_ShowWindow((SDL_Window*)window);
+	SDL_ShowWindow(((SdlWindow*)window)->sdlWindow);
 }
 
 void Sdl2InputProvider::hideWindow(Window window)
 {
-	SDL_HideWindow((SDL_Window*)window);
+	SDL_HideWindow(((SdlWindow*)window)->sdlWindow);
 }
 
 void Sdl2InputProvider::raiseWindow(Window window)
 {
-	SDL_RaiseWindow((SDL_Window*)window);
+	SDL_RaiseWindow(((SdlWindow*)window)->sdlWindow);
 }
 
 void Sdl2InputProvider::maximizeWindow(Window window)
 {
-	SDL_MaximizeWindow((SDL_Window*)window);
+	SDL_MaximizeWindow(((SdlWindow*)window)->sdlWindow);
 }
 
 void Sdl2InputProvider::minimizeWindow(Window window)
 {
-	SDL_MinimizeWindow((SDL_Window*)window);
+	SDL_MinimizeWindow(((SdlWindow*)window)->sdlWindow);
 }
 
 WindowState Sdl2InputProvider::getWindowState(Window window)
 {
-	auto flags = SDL_GetWindowFlags((SDL_Window*)window);
+	auto flags = SDL_GetWindowFlags(((SdlWindow*)window)->sdlWindow);
 
 	if (flags & SDL_WINDOW_HIDDEN)
 	{
@@ -818,7 +857,7 @@ void initializeWithSDL(const SdlSettings& settings)
 	inputProvider->gfxProvider = settings.gfxProvider;
 
 	bool maximize = false;
-	SDL_Window* wnd = nullptr;
+	SdlWindow* wnd = nullptr;
 
 	inputProvider->context = createContext(inputProvider, settings.gfxProvider);
 
@@ -834,7 +873,7 @@ void initializeWithSDL(const SdlSettings& settings)
 			wndRect = settings.mainWindowRect;
 		}
 
-		wnd = (SDL_Window*)inputProvider->createWindow(
+		wnd = (SdlWindow*)inputProvider->createWindow(
 			settings.mainWindowTitle,
 			(int)wndRect.width,
 			(int)wndRect.height,
@@ -850,7 +889,7 @@ void initializeWithSDL(const SdlSettings& settings)
 
 		if (inputProvider->gfxProvider->getApiType() == GraphicsProvider::ApiType::OpenGL)
 		{
-			inputProvider->sdlOpenGLCtx = SDL_GL_CreateContext(wnd);
+			inputProvider->sdlOpenGLCtx = SDL_GL_CreateContext(((SdlWindow*)wnd)->sdlWindow);
 
 			if (!inputProvider->sdlOpenGLCtx)
 			{
@@ -860,26 +899,30 @@ void initializeWithSDL(const SdlSettings& settings)
 	}
 	else
 	{
-		wnd = settings.sdlMainWindow;
+		wnd = new SdlWindow();
+		wnd->sdlWindow = settings.sdlMainWindow;
+		// initialize here DX11 stuff also, if api is DX11, from the sdlWindow info
+
+		inputProvider->windows.push_back(wnd);
 	}
 
 	if (settings.gfxProvider->getApiType() == GraphicsProvider::ApiType::OpenGL)
 	{
-		SDL_GL_MakeCurrent(wnd, inputProvider->sdlOpenGLCtx);
+		SDL_GL_MakeCurrent(wnd->sdlWindow, inputProvider->sdlOpenGLCtx);
 		SDL_GL_SetSwapInterval(settings.vSync ? 1 : 0);
 	}
-
+	
 	settings.gfxProvider->initialize();
 	initializeContext(inputProvider->context);
 	inputProvider->mainWindow = wnd;
 	inputProvider->focusedWindow = wnd;
 
-	SDL_ShowWindow(wnd);
-	SDL_RaiseWindow(wnd);
+	SDL_ShowWindow(wnd->sdlWindow);
+	SDL_RaiseWindow(wnd->sdlWindow);
 
 	if (maximize)
 	{
-		SDL_MaximizeWindow(wnd);
+		SDL_MaximizeWindow(wnd->sdlWindow);
 	}
 }
 

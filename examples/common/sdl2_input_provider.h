@@ -20,6 +20,17 @@ struct SdlSettings
 	AntiAliasing antiAliasing = AntiAliasing::None;
 };
 
+struct SdlWindow
+{
+	SDL_Window* sdlWindow = nullptr;
+	// add here any graphics API aux data (DX11 swapchain etc.)
+
+	~SdlWindow()
+	{
+		// delete any graphics API objects, when window is destroyed
+	}
+};
+
 struct Sdl2InputProvider : InputProvider
 {
 	Sdl2InputProvider();
@@ -67,22 +78,24 @@ struct Sdl2InputProvider : InputProvider
 	KeyCode fromSdlKey(int code);
 	void addSdlEvent(SDL_Event& ev);
 	void processSdlEvents();
+	SdlWindow* findSdlWindow(SDL_Window* wnd);
 
 	bool quitApp = false;
 	bool addedMouseMove = false;
 	bool wantsToQuitApp = false;
 	SDL_GLContext sdlOpenGLCtx = nullptr;
-	SDL_Window* mainWindow = nullptr;
-	SDL_Window* focusedWindow = nullptr;
-	SDL_Window* hoveredWindow = nullptr;
-	SDL_Window* currentWindow = nullptr;
-	Context context = nullptr;
+	SDL_Cursor *cursors[SDL_NUM_SYSTEM_CURSORS] = { nullptr };
+	std::vector<SdlWindow*> windows;
+	std::vector<SDL_Cursor*> customCursors;
+	std::vector<SDL_Surface*> customCursorSurfaces;
+	SdlWindow* mainWindow = nullptr;
+	SdlWindow* focusedWindow = nullptr;
+	SdlWindow* hoveredWindow = nullptr;
+	SdlWindow* currentWindow = nullptr;
+	hui::Context context = nullptr;
 	u32 lastTime = SDL_GetTicks();
 	f32 deltaTime = 0;
 	bool sizeChanged = false;
-	SDL_Cursor *cursors[SDL_NUM_SYSTEM_CURSORS] = { nullptr };
-	std::vector<SDL_Cursor*> customCursors;
-	std::vector<SDL_Surface*> customCursorSurfaces;
 	GraphicsProvider* gfxProvider = nullptr;
 };
 
