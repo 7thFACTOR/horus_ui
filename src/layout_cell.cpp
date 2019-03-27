@@ -150,8 +150,7 @@ bool UiViewContainer::deserialize(FILE* file, struct ViewHandler* viewHandler)
 		window = createWindow(
 			"",
 			rc.width, rc.height,
-			WindowFlags::Resizable | WindowFlags::NoTaskbarButton,
-			WindowPositionType::Custom,
+			WindowFlags::Resizable | WindowFlags::NoTaskbarButton | WindowFlags::CustomPosition,
 			{ rc.x, rc.y });
 	}
 	else

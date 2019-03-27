@@ -364,14 +364,6 @@ enum class TintColorType
 	Count
 };
 
-/// Native window position type
-enum class WindowPositionType
-{
-	Undefined,
-	Centered,
-	Custom
-};
-
 /// Window flags
 enum class WindowFlags
 {
@@ -380,6 +372,8 @@ enum class WindowFlags
 	ResizableNoTitle = HORUS_BIT(2),
 	FixedNoTitle = HORUS_BIT(3),
 	NoTaskbarButton = HORUS_BIT(4),
+	Centered = HORUS_BIT(5),
+	CustomPosition = HORUS_BIT(6)
 };
 
 HORUS_ENUM_AS_FLAGS(WindowFlags);
@@ -1676,8 +1670,7 @@ HORUS_API Window getMainWindow();
 /// \return the created window handle
 HORUS_API Window createWindow(
 	const char* title, u32 width, u32 height,
-	WindowFlags flags = WindowFlags::Resizable,
-	WindowPositionType positionType = WindowPositionType::Undefined,
+	WindowFlags flags = WindowFlags::Resizable | WindowFlags::Centered,
 	Point customPosition = { 0, 0 });
 
 /// Set window title

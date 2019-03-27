@@ -61,8 +61,7 @@ struct InputProvider
 	/// \return the new window handle
 	virtual Window createWindow(
 		const char* title, i32 width, i32 height,
-		WindowFlags flags = WindowFlags::Resizable,
-		WindowPositionType positionType = WindowPositionType::Undefined,
+		WindowFlags flags = WindowFlags::Resizable | WindowFlags::Centered,
 		Point customPosition = { 0, 0 }) = 0;
 
 	/// Set window title

@@ -12,7 +12,7 @@ struct SdlSettings
 {
 	char* mainWindowTitle = nullptr;
 	Rect mainWindowRect;
-	WindowPositionType positionType = WindowPositionType::Undefined;
+	WindowFlags windowFlags = WindowFlags::Resizable;
 	bool vSync = true;
 	void* sdlContext = nullptr;
 	SDL_Window* sdlMainWindow = nullptr;
@@ -47,8 +47,7 @@ struct Sdl2InputProvider : InputProvider
 	Window getMainWindow() override;
 	Window createWindow(
 		const char* title, i32 width, i32 height,
-		WindowFlags flags = WindowFlags::Resizable,
-		WindowPositionType windowPos = WindowPositionType::Undefined,
+		WindowFlags flags = WindowFlags::Resizable | WindowFlags::Centered,
 		Point customPosition = { 0, 0 }) override;
 	void setWindowTitle(Window window, const char* title) override;
 	void setWindowRect(Window window, const Rect& rect) override;
