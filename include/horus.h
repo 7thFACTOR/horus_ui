@@ -2075,10 +2075,9 @@ HORUS_API bool endBox();
 
 /// Begin drawing a popup widget on top of all other popups or widgets
 /// \param width the width of the popup
-/// \param positionMode the popup position on the window
+/// \param flags the popup flags
 /// \param position when custom position, this is the window coordinates of the popup
-/// \param incrementLayer if true, it will increment the current layer index, if false the popup will be in same plane with the last layer, receiving events as that layer's widget
-/// \param isMenu true if this is a menu popup, used usually by beginMenu
+/// \param widgetElementId will use this element's theme to draw the popup body
 HORUS_API void beginPopup(
 	f32 width,
 	PopupFlags flags = PopupFlags::BelowLastWidget,
