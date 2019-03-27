@@ -1509,6 +1509,7 @@ struct ContextSettings
 	f32 whiteImageUvBorder = 0.001f; /// this value is subtracted from the white image used to draw lines, to avoid black border artifacts
 	f32 sameLineHeight = 20.0f; /// the height of a line when sameLine() is used to position widgets on a single row/line. Used to center various widget heights vertically. This must be non-zero, otherwise the widgets will align wrongly.
 	f32 minScrollViewHandleSize = 20.0f; /// the minimum allowed scroll handle size (height)
+	bool allowUndockingToNewWindow = true;
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -1754,7 +1755,7 @@ HORUS_API void shutdown();
 // Images
 //////////////////////////////////////////////////////////////////////////
 
-/// Load a PNG image from file (it doesn't need to be powr of two in dimension) and add it to the theme's image atlas.
+/// Load a PNG image from file (it doesn't need to be power of two in dimension) and add it to the theme's image atlas.
 /// \param filename the PNG filename, relative to the executable
 /// \return the created image or nullptr if it cannot be loaded
 HORUS_API Image loadImage(const char* filename);
@@ -2709,9 +2710,6 @@ HORUS_API void updateDockingSystem(ViewHandler* handler);
 
 /// If this function will be called it will block until all or the main window is closed, or a quitApplication is issued
 HORUS_API void dockingSystemLoop(ViewHandler* handler);
-
-/// When the allow is true, the docking system will deny undocking to new native windows, it will only allow docking in the main application window
-HORUS_API void setAllowUndockingToNewWindow(bool allow);
 
 //////////////////////////////////////////////////////////////////////////
 // Utility panels and complex/combined mega-widgets

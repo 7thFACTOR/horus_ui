@@ -108,7 +108,7 @@ workspace "horus"
 	group "3rdparty"
 		include "3rdparty"
 
-	group "horus-ui"
+	group "horus_ui"
 		include "src"
 
 	group "examples"

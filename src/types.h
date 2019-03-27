@@ -258,7 +258,6 @@ struct DockingSystemData
 	std::vector<struct UiViewContainer*> viewContainers;
 	struct UiViewContainer* currentViewContainer = nullptr;
 	bool closeWindow = false;
-	bool allowUndocking = true;
 };
 
 struct DragDropState
