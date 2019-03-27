@@ -13,29 +13,24 @@ static f32 movePopupMaxDistanceTrigger = 5;
 
 void beginPopup(
 	f32 width,
-	bool fadeBehind,
-	PopupPositionMode positionMode,
-	const Point& customPosition,
-	WidgetElementId widgetElementIdTheme,
-	bool incrementLayer,
-	bool topMost,
-	bool isMenu)
+	PopupFlags flags,
+	const Point& position,
+	WidgetElementId widgetElementId)
 {
 	auto& popup = ctx->popupStack[ctx->popupIndex];
 
-	popup.incrementLayer = incrementLayer;
+	popup.flags = flags;
 
 	if (ctx->popupUseGlobalScale)
 		width *= ctx->globalScale;
 
 	ctx->popupUseGlobalScale = true;
 
-	if (incrementLayer)
+	if (!has(flags, PopupFlags::SameLayer))
 		incrementLayerIndex();
 
-	if (topMost)
+	if (has(flags, PopupFlags::TopMost))
 	{
-		popup.topMost = topMost;
 		popup.oldZOrder = ctx->renderer->getZOrder();
 		ctx->renderer->setZOrder(INT_MAX - 1);
 	}
@@ -48,47 +43,44 @@ void beginPopup(
 		skipThisFrame();
 		popup.active = true;
 		popup.height = 0;
-		popup.widgetElementId = widgetElementIdTheme;
+		popup.widgetElementId = widgetElementId;
 	}
 
-	if (positionMode == PopupPositionMode::BelowLastWidget)
+	if (has(flags, PopupFlags::BelowLastWidget))
 	{
 		popup.position = ctx->widget.rect.bottomLeft();
 	}
-	else if (positionMode == PopupPositionMode::RightSideLastWidget)
+	else if (has(flags, PopupFlags::RightSideLastWidget))
 	{
 		popup.position = ctx->widget.rect.topRight();
 	}
 	else
 	{
-		popup.position = customPosition;
+		popup.position = position;
 	}
 
 	popup.width = width;
-	popup.positionMode = positionMode;
 
 	f32 height = popup.height;
-	auto bodyElemState = ctx->theme->getElement(widgetElementIdTheme).normalState();
+	auto bodyElemState = ctx->theme->getElement(widgetElementId).normalState();
 	Point pos = { ctx->containerRect.x, ctx->containerRect.y };
 
-	switch (positionMode)
+	if (has(flags, PopupFlags::Centered))
 	{
-	case hui::PopupPositionMode::WindowCenter:
 		pos = {
 			(ctx->renderer->getWindowSize().x - width) / 2.0f,
-			(ctx->renderer->getWindowSize().y - height) / 2.0f };
+			(ctx->renderer->getWindowSize().y - height) / 2.0f 
+		};
 		pos += popup.moveOffset;
-		break;
-	case hui::PopupPositionMode::Custom:
-	case hui::PopupPositionMode::BelowLastWidget:
-	case hui::PopupPositionMode::RightSideLastWidget:
+	}
+	else if (has(flags, PopupFlags::CustomPosition)
+		|| has(flags, PopupFlags::BelowLastWidget)
+		|| has(flags, PopupFlags::RightSideLastWidget))
+	{
 		pos = { popup.position.x, popup.position.y };
-		break;
-	default:
-		break;
 	}
 
-	if (isMenu && !ctx->rightSideMenu)
+	if (has(flags, PopupFlags::IsMenu) && !ctx->rightSideMenu)
 	{
 		pos.x -= ctx->activeMenuBarItemWidgetWidth + width;
 	}
@@ -96,7 +88,7 @@ void beginPopup(
 	// limit to right side
 	if (pos.x + width > ctx->renderer->getWindowSize().x)
 	{
-		if (isMenu)
+		if (has(flags, PopupFlags::IsMenu))
 		{
 			ctx->rightSideMenu = false;
 			pos.x -= ctx->activeMenuBarItemWidgetWidth + width;
@@ -141,13 +133,13 @@ void beginPopup(
 	ctx->layoutStack.back().savedPenPosition = ctx->penPosition;
 	ctx->penPosition = ctx->layoutStack.back().position;
 	ctx->sameLineStack.push_back(ctx->widget.sameLine);
-	ctx->widget.sameLine = false; // reset the same line, we dont need that at the popup start
+	ctx->widget.sameLine = false; // reset the same line, we don't need that at the popup start
 	popup.prevContainerRect = ctx->containerRect;
 	ctx->containerRect = ctx->renderer->getWindowRect();
 
 	ctx->renderer->pushClipRect(ctx->renderer->getWindowRect(), false);
 
-	if (fadeBehind)
+	if (has(flags, PopupFlags::FadeWindowContents))
 	{
 		auto& behindElemState = ctx->theme->getElement(WidgetElementId::PopupBehind).normalState();
 
@@ -240,10 +232,10 @@ void endPopup()
 	ctx->widget.sameLine = ctx->sameLineStack.back();
 	ctx->sameLineStack.pop_back();
 
-	if (popup.incrementLayer)
+	if (!has(popup.flags, PopupFlags::SameLayer))
 		decrementLayerIndex();
 
-	if (popup.topMost)
+	if (has(popup.flags, PopupFlags::TopMost))
 		ctx->renderer->setZOrder(popup.oldZOrder);
 
 	ctx->popupIndex--;
@@ -255,7 +247,7 @@ void closePopup()
 
 	popup.active = false;
 
-	if (popup.incrementLayer)
+	if (!has(popup.flags, PopupFlags::SameLayer))
 		decrementWindowMaxLayerIndex();
 
 	ctx->event.type = InputEvent::Type::None;
@@ -364,7 +356,7 @@ MessageBoxButtons messageBox(
 		break;
 	}
 
-	hui::beginPopup(500, true, PopupPositionMode::WindowCenter);
+	hui::beginPopup(500, PopupFlags::FadeWindowContents | PopupFlags::Centered);
 	auto iterFnt = ctx->theme->fonts.find("title");
 	hui::pushTint(Color::cyan);
 
