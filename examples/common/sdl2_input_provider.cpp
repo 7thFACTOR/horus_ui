@@ -651,16 +651,16 @@ Window Sdl2InputProvider::getHoveredWindow()
 
 Window Sdl2InputProvider::createWindow(
 	const char* title, i32 width, i32 height,
-	WindowFlags flags, WindowPositionType windowPos,
+	WindowFlags flags,
 	Point customPosition)
 {
 	int posx = SDL_WINDOWPOS_UNDEFINED, posy = SDL_WINDOWPOS_UNDEFINED;
 
-	if (windowPos == WindowPositionType::Centered)
+	if (has(flags, WindowFlags::Centered))
 	{
 		posx = posy = SDL_WINDOWPOS_CENTERED;
 	}
-	else if (windowPos == WindowPositionType::Custom)
+	else if (has(flags, WindowFlags::CustomPosition))
 	{
 		posx = customPosition.x;
 		posy = customPosition.y;
@@ -877,8 +877,7 @@ void initializeWithSDL(const SdlSettings& settings)
 			settings.mainWindowTitle,
 			(int)wndRect.width,
 			(int)wndRect.height,
-			WindowFlags::Resizable,
-			settings.positionType,
+			settings.windowFlags,
 			{ wndRect.x, wndRect.y });
 
 		if (!wnd)
@@ -901,7 +900,7 @@ void initializeWithSDL(const SdlSettings& settings)
 	{
 		wnd = new SdlWindowProxy();
 		wnd->sdlWindow = settings.sdlMainWindow;
-		// initialize here DX11 stuff also, if api is DX11, from the sdlWindow info
+		// initialize here DX11 stuff also, if API is DX11, from the sdlWindow info
 
 		inputProvider->windows.push_back(wnd);
 	}

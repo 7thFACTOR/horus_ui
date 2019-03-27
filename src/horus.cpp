@@ -472,10 +472,9 @@ Window getMainWindow()
 Window createWindow(
 	const char* title, u32 width, u32 height,
 	WindowFlags flags,
-	WindowPositionType positionType,
 	Point customPosition)
 {
-	auto wnd = ctx->inputProvider->createWindow(title, width, height, flags, positionType, customPosition);
+	auto wnd = ctx->inputProvider->createWindow(title, width, height, flags, customPosition);
 
 	if (!ctx->renderer)
 	{
