@@ -79,9 +79,9 @@ struct Sdl2InputProvider : InputProvider
 	void processSdlEvents();
 	SdlWindowProxy* findSdlWindow(SDL_Window* wnd);
 
-	bool quitApp = false;
-	bool addedMouseMove = false;
-	bool wantsToQuitApp = false;
+	bool quitApp = false; //! if true, it will end the main app loop
+	bool addedMouseMove = false; //! we only want the first mouse move because otherwise we'll get way too many mouse move events in the queue
+	bool wantsToQuitApp = false; //! true when the user wants to quit the app
 	SDL_GLContext sdlOpenGLCtx = nullptr;
 	SDL_Cursor *cursors[SDL_NUM_SYSTEM_CURSORS] = { nullptr };
 	std::vector<SdlWindowProxy*> windows;
