@@ -8,7 +8,7 @@ struct Vertex
 	Point position;
 	Point uv;
 	u32 color;
-	u32 textureIndex = 0; /// what atlas texture index this vertex is using
+	u32 textureIndex = 0; /// what atlas texture array index this vertex is using
 };
 
 /// The input provider class is used for input and windowing services
@@ -56,7 +56,6 @@ struct InputProvider
 	/// \param width the window width
 	/// \param height the window height
 	/// \param flags the window flags
-	/// \param positionType the window position type
 	/// \param customPosition if the positionType is custom, then this is the window's initial position
 	/// \return the new window handle
 	virtual Window createWindow(
@@ -230,7 +229,7 @@ struct RenderBatch
 	};
 
 	PrimitiveType primitiveType = PrimitiveType::TriangleList;
-	VertexBuffer* vertexBuffer; /// which vertex buffer to use for rendering
+	VertexBuffer* vertexBuffer = nullptr; /// which vertex buffer to use for rendering
 	TextureArray* textureArray = nullptr; /// which texture array to use for rendering
 	Atlas atlas = nullptr; /// handle to the corresponding image atlas
 	u32 startVertexIndex = 0; /// where to start rendering
@@ -249,7 +248,9 @@ struct GraphicsProvider
 	{
 		OpenGL,
 		Vulkan,
-		Direct3D,
+		Metal,
+		Direct3D11,
+		Direct3D12,
 		Custom,
 
 		Count

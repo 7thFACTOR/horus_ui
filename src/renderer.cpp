@@ -15,8 +15,8 @@
 namespace hui
 {
 //TODO: make them grow dynamically like the vertex buffer
-const u32 textBufferMaxSize = 1024 * 1024 * 5;//!<< 5MB of text on screen at once its more than enough for now
-const u32 pointBufferMaxSize = 500000; //!<< more than enough for a full screen of lines, around 5MB
+const u32 textBufferMaxSize = 1024 * 1024 * 5;/// 5MB of text on screen at once its more than enough for now
+const u32 pointBufferMaxSize = 500000; /// more than enough for a full screen of lines, around 5MB
 
 enum LineClipBit
 {

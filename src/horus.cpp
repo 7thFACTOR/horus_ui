@@ -1595,18 +1595,23 @@ void endContainer()
 	ctx->scrollViewDepth = 0;
 }
 
-void pushWidgetId(u32 id)
+void pushWidgetLoop(u32 loopMaxCount)
 {
-	ctx->widgetIdStack.push_back(ctx->currentWidgetId);
-	ctx->currentWidgetId = id;
+	UiContext::WidgetLoopInfo li;
+
+	li.previousId = ctx->currentWidgetId;
+	li.startId = ctx->widgetLoopStack.size() ? ctx->widgetLoopStack.back().startId + ctx->widgetLoopStack.back().maxCount : ctx->settings.widgetLoopStartId;
+	li.maxCount = loopMaxCount == ~0 ? ctx->settings.widgetLoopMaxCount : loopMaxCount;
+	ctx->currentWidgetId = li.startId;
+	ctx->widgetLoopStack.push_back(li);
 }
 
-void popWidgetId()
+void popWidgetLoop()
 {
-	if (ctx->widgetIdStack.size())
+	if (ctx->widgetLoopStack.size())
 	{
-		ctx->currentWidgetId = ctx->widgetIdStack.back();
-		ctx->widgetIdStack.pop_back();
+		ctx->currentWidgetId = ctx->widgetLoopStack.back().previousId;
+		ctx->widgetLoopStack.pop_back();
 	}
 }
 
