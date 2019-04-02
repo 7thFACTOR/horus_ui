@@ -28,6 +28,13 @@ struct UiContext
 		ToolbarDirection direction;
 	};
 
+	struct WidgetLoopInfo
+	{
+		u32 previousId;
+		u32 startId;
+		u32 maxCount;
+	};
+
 	static const int maxLayerCount = 256;
 	static const int maxNestingIndex = 256;
 	static const int maxPopupIndex = 256;
@@ -47,7 +54,7 @@ struct UiContext
 	u32 currentWindowIndex = 0;
 	GraphicsApiContext gfxApiContext = 0;
 	u32 currentWidgetId = 1;
-	std::vector<u32> widgetIdStack;
+	std::vector<WidgetLoopInfo> widgetLoopStack;
 	u32 maxWidgetId = 0;
 	bool mustRedraw = false;
 	bool focusChanged = false;
@@ -179,7 +186,7 @@ struct UiContext
 		VAlignType vertical = VAlignType::Top);
 };
 
-//! the current context, used internally
+/// the current context, used internally
 extern UiContext* ctx;
 
 }
