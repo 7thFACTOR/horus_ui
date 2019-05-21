@@ -19,7 +19,7 @@ workspace "horus"
 	elseif _ACTION == "xcode" then
 		system "macosx"
 	else
-		premake.error("Unknown/Unsupported build action specifie: " .. _ACTION)
+		premake.error("Unknown/Unsupported build action specific: " .. _ACTION)
 	end
 
 	paths = Config('src', '3rdparty', ('build_' .. _ACTION), 'bin')
