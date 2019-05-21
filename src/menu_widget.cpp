@@ -183,7 +183,7 @@ bool beginMenuInternal(const char* labelText, SelectableFlags stateFlags, bool c
 			pushSpacing(0);
 			beginPopup(
 				ctx->menuStack[ctx->menuDepth].size.x + menuBodyElem.normalState().border * 2.0f + ctx->menuFillerWidth + ctx->menuIconSpace,
-				PopupFlags::CustomPosition | PopupFlags::IsMenu,
+				PopupFlags::CustomPosition | PopupFlags::IsMenu | PopupFlags::SameLayer,
 				Point(rc.right(), rc.top()),
 				WidgetElementId::MenuBody);
 			ctx->menuDepth++;

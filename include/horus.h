@@ -619,14 +619,14 @@ HORUS_ENUM_AS_FLAGS(ContextMenuFlags);
 enum class PopupFlags : u32
 {
 	None = 0,
-	FadeWindowContents = HORUS_BIT(1), //! fade the contents behind the popup when shown
-	Centered = HORUS_BIT(2), //! center the popup to window
-	BelowLastWidget = HORUS_BIT(3), //! position the popup below last widget
-	RightSideLastWidget = HORUS_BIT(4), //! position the popup on right side of the last widget
-	CustomPosition = HORUS_BIT(5), //! custom popup position
-	SameLayer = HORUS_BIT(6), //! internal: don't increment layer index
-	TopMost = HORUS_BIT(7), //! set to have this popup top most
-	IsMenu = HORUS_BIT(8) //! internal, when this popup is a menu
+	FadeWindowContents = HORUS_BIT(1), /// fade the contents behind the popup when shown
+	WindowCenter = HORUS_BIT(2), /// center the popup to window
+	BelowLastWidget = HORUS_BIT(3), /// position the popup below last widget
+	RightSideLastWidget = HORUS_BIT(4), /// position the popup on right side of the last widget
+	CustomPosition = HORUS_BIT(5), /// use custom popup position
+	SameLayer = HORUS_BIT(6), /// internal: don't increment layer index
+	TopMost = HORUS_BIT(7), /// set to have this popup top most
+	IsMenu = HORUS_BIT(8) /// internal, when this popup is a menu
 };
 HORUS_ENUM_AS_FLAGS(PopupFlags);
 
@@ -1504,6 +1504,8 @@ struct ContextSettings
 	f32 sameLineHeight = 20.0f; /// the height of a line when sameLine() is used to position widgets on a single row/line. Used to center various widget heights vertically. This must be non-zero, otherwise the widgets will align wrongly.
 	f32 minScrollViewHandleSize = 20.0f; /// the minimum allowed scroll handle size (height)
 	bool allowUndockingToNewWindow = true; /// allow pane tabs to be undocked as native windows, outside of main window
+	u32 widgetLoopStartId = 1000000000; /// when pushing loops into loop stack, the widget ids will start from here. Basically this avoids the user to specify IDs when creating widgets in a loop, taking into account the fact there will not be so many widgets created anyway.
+	u32 widgetLoopMaxCount = 500000; /// current increment after each loop push to stack
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -1919,11 +1921,13 @@ HORUS_API void beginContainer(const Rect& rect);
 /// End the current widget container
 HORUS_API void endContainer();
 
-/// Push a specific widget id to the ID stack, used when you create widgets inside a loop
-HORUS_API void pushWidgetId(u32 id);
+/// Push a widget loop, used when you create widgets inside a loop.
+/// For each pushed loop, the widget IDs will be created incrementally in the upper range of uint32
+/// \param loopMaxCount optional, this should be a constant for this specific loop, the max number of widgets that might be in this loop. If -1, use the current loop size set with getSettings().widgetLoopMaxCount
+HORUS_API void pushWidgetLoop(u32 loopMaxCount = ~0);
 
 /// Pop a widget id from ID stack, used with pushWidgetId
-HORUS_API void popWidgetId();
+HORUS_API void popWidgetLoop();
 
 /// Begin a layout made up as columns which can have percentage based widths or fixed
 /// \param columnCount the number of columns to be created
