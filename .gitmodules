@@ -1,3 +1,24 @@
 [submodule "libs/sdl"]
 	path = libs/sdl
 	url = https://github.com/spurious/SDL-mirror.git
+[submodule "libs/binpack"]
+	path = libs/binpack
+	url = https://github.com/nekitu/binpack.git
+[submodule "libs/freetype"]
+	path = libs/freetype
+	url = git://git.sv.nongnu.org/freetype/freetype2.git
+[submodule "libs/glew"]
+	path = libs/glew
+	url = https://github.com/nigels-com/glew
+[submodule "libs/jsoncpp"]
+	path = libs/jsoncpp
+	url = https://github.com/open-source-parsers/jsoncpp
+[submodule "libs/nativefiledialog"]
+	path = libs/nativefiledialog
+	url = https://github.com/mlabbe/nativefiledialog
+[submodule "libs/stb"]
+	path = libs/stb
+	url = https://github.com/nothings/stb
+[submodule "libs/utfcpp"]
+	path = libs/utfcpp
+	url = https://github.com/nemtrif/utfcpp
