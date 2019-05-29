@@ -4,9 +4,6 @@
 [submodule "libs/binpack"]
 	path = libs/binpack
 	url = https://github.com/nekitu/binpack.git
-[submodule "libs/glew"]
-	path = libs/glew
-	url = https://github.com/nigels-com/glew
 [submodule "libs/jsoncpp"]
 	path = libs/jsoncpp
 	url = https://github.com/open-source-parsers/jsoncpp
@@ -19,3 +16,6 @@
 [submodule "libs/utfcpp"]
 	path = libs/utfcpp
 	url = https://github.com/nemtrif/utfcpp
+[submodule "libs/freetype"]
+	path = libs/freetype
+	url = https://git.sv.nongnu.org/r/freetype/freetype2.git

@@ -3,6 +3,8 @@ project "stb"
 	language "C++"
 
 	files "stb/stb_image.h"
+	files "stb/*.c"
+  files "stb/*.cpp"
 	shared.includedirs "stb/."
 
 	filter "system:windows"
