@@ -1,7 +1,0 @@
-include "freetype"
-include "glew"
-include "binpack"
-include "jsoncpp"
-include "nativefiledialog"
-include "stb"
-include "sdl"
