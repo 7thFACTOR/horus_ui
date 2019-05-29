@@ -3,8 +3,8 @@
 #include <string.h>
 #include <string>
 #include <vector>
-#include "3rdparty/utf8/source/utf8.h"
-#include "3rdparty/stb_image/stb_image_write.c"
+#include "libs/utfcpp/source/utf8.h"
+#include "libs/stb/stb_image_write.h"
 
 namespace hui
 {

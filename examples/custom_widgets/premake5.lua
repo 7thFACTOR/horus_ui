@@ -24,5 +24,5 @@ project "custom_widgets"
 
 	filter{}
 
-	using { "horus", "sdl2" }	
+	using { "horus", "sdl" }	
 	distcopy(mytarget())

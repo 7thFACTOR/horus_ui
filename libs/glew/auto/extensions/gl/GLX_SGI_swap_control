@@ -1,0 +1,5 @@
+GLX_SGI_swap_control
+https://www.khronos.org/registry/OpenGL/extensions/SGI/GLX_SGI_swap_control.txt
+GLX_SGI_swap_control
+
+	int glXSwapIntervalSGI (int interval)

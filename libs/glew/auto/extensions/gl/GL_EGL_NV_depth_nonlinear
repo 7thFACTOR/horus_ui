@@ -1,0 +1,8 @@
+GL_EGL_NV_depth_nonlinear
+https://www.khronos.org/registry/OpenGL/extensions/NV/EGL_NV_depth_nonlinear.txt
+GL_EGL_NV_depth_nonlinear
+
+	GL_EGL_DEPTH_ENCODING_NONE_NV 0
+	GL_EGL_DEPTH_ENCODING_NV 0x30E2
+	GL_EGL_DEPTH_ENCODING_NONLINEAR_NV 0x30E3
+	GL_DEPTH_COMPONENT16_NONLINEAR_NV 0x8E2C

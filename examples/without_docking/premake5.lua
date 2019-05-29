@@ -18,5 +18,5 @@ project "without_docking"
 	
 	defines "_CONSOLE"
 
-	using { "horus", "sdl2" }
+	using { "horus", "sdl" }
 	distcopy(mytarget())

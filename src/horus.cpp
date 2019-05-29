@@ -2,8 +2,9 @@
 #include <stdlib.h>
 #include <assert.h>
 #include "types.h"
-#include "3rdparty/utf8/source/utf8.h"
-#include "3rdparty/stb_image/stb_image.h"
+#include "libs/utfcpp/source/utf8.h"
+#define STB_IMAGE_IMPLEMENTATION
+#include "libs/stb/stb_image.h"
 #include "ui_theme.h"
 #include "ui_atlas.h"
 #include "ui_context.h"
@@ -11,8 +12,8 @@
 #include "renderer.h"
 #include "unicode_text_cache.h"
 #include "font_cache.h"
-#include "3rdparty/jsoncpp/include/json/json.h"
-#include "3rdparty/jsoncpp/include/json/reader.h"
+#include "libs/jsoncpp/include/json/json.h"
+#include "libs/jsoncpp/include/json/reader.h"
 #include <algorithm>
 
 #ifdef _WIN32
