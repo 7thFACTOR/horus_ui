@@ -1,4 +1,4 @@
-project "sdl2"
+project "sdl"
 	kind "SharedLib"
 	language "C"
 
@@ -9,20 +9,20 @@ project "sdl2"
 	excludes {
 		"sdl/src/main/**",
 		"sdl/src/test/**",
-		"sdl/**/qnx/**",
-		"sdl/**/pandora/**",
-		"sdl/**/raspberry/**",
-		"sdl/**/vivante/**",
-		"sdl/**/haiku/**",
-		"sdl/**/psp/**",
-		"sdl/**/android/**",
-		"sdl/**/iphoneos/**",
-		"sdl/**/emscripten/**",
-		"sdl/**/nacl/**",
+		"**/qnx/**",
+		"**/pandora/**",
+		"**/raspberry/**",
+		"**/vivante/**",
+		"**/haiku/**",
+		"**/psp/**",
+		"**/android/**",
+		"**/iphoneos/**",
+		"**/emscripten/**",
+		"**/nacl/**",
 	}
 
 	defines "SDL_SHARED"
-	shared.includedirs "sdl/include"
+	shared.includedirs "sdl/include/"
 
 	-- can't use filters to exclude files
 	if os.target() == "windows" then
@@ -31,26 +31,28 @@ project "sdl2"
 			"sdl/src/thread/generic/SDL_syssem.c",
 			"sdl/src/thread/generic/SDL_systhread.c",
 			"sdl/src/thread/generic/SDL_systls.c",
-			"sdl/**/pthread/**",
-			"sdl/**/unix/**",
-			"sdl/**/*bsd/**",
-			"sdl/**/linux/**",
-			"sdl/**/macosx/**",
-			"sdl/**/darwin/**",
-			"sdl/**/cocoa/**",
-			"sdl/**/x11/**",
-			"sdl/**/directfb/**",
-			"sdl/**/kmsdrm/**",
-			"sdl/**/mir/**",
-			"sdl/**/wayland/**",
-			"sdl/**/alsa/**",
-			"sdl/**/jack/**",
-			"sdl/**/pulseaudio/**",
+			"**/pthread/**",
+			"**/unix/**",
+			"**/*bsd/**",
+			"**/linux/**",
+			"**/macosx/**",
+			"**/darwin/**",
+			"**/cocoa/**",
+			"**/x11/**",
+			"**/directfb/**",
+			"**/kmsdrm/**",
+			"**/mir/**",
+			"**/wayland/**",
+			"**/alsa/**",
+			"**/jack/**",
+			"**/pulseaudio/**",
+			"**/libusb/**",
+			"**/mac/**",
 		}
-		links { "winmm", "imm32", "version", "kernel32", "vcruntime", "ucrtd" }
+		links { "Setupapi", "winmm", "imm32", "version", "kernel32", "vcruntime", "ucrtd" }
 	elseif os.target() == "linux" or os.target() == "macosx" then
 		excludes {
-			"sdl/**/windows/**",
+			"**/windows/**",
 			"sdl/src/thread/generic/**",
 			"sdl/src/loadso/dummy/**",
 			"sdl/src/timer/dummy/**",

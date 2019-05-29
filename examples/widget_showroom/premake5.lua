@@ -18,7 +18,7 @@ project "widget_showroom"
 
 	defines "_CONSOLE"
 
-	using { "horus", "sdl2" }
+	using { "horus", "sdl" }
 	distcopy(mytarget())
 
 project "widget_showroom_static"
@@ -43,5 +43,5 @@ project "widget_showroom_static"
 
 	defines "_CONSOLE"
 
-	using { "horus_static", "sdl2" }
+	using { "horus_static", "sdl" }
 	distcopy(mytarget())

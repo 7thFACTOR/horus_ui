@@ -221,7 +221,7 @@ function Module:process()
         shared.links(m.name)
       end
     else
-      print("Cannot get module from exports: " .. mod)
+      premake.error("Cannot get module from exports (non-existent/misspelled lib name?): " .. mod)
     end
 		debuglog("...")
 	end)

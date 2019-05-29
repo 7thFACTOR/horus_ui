@@ -1,0 +1,5 @@
+GLX_ARB_robustness_application_isolation
+https://www.khronos.org/registry/OpenGL/extensions/ARB/GLX_ARB_robustness_application_isolation.txt
+GLX_ARB_robustness_application_isolation
+
+	GLX_CONTEXT_RESET_ISOLATION_BIT_ARB 0x00000008

@@ -1,0 +1,5 @@
+GLX_NV_robustness_video_memory_purge
+https://www.khronos.org/registry/OpenGL/extensions/NV/NV_robustness_video_memory_purge.txt
+GLX_NV_robustness_video_memory_purge
+
+	GLX_GENERATE_RESET_ON_VIDEO_MEMORY_PURGE_NV 0x20F7
