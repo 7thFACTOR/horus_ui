@@ -16,6 +16,7 @@ function horus_base()
 		"../include/**.c",
 		"../include/**.inl",
 	}
+
 	vpaths { ["*"] = { "src/**.*", "include/**.*" } }
 
 	shared.includedirs {
@@ -28,7 +29,7 @@ function horus_base()
 	defines { "HORUS_EXPORTS", "HORUS_TIMING_DEBUG" }
 
 	warnings "off"
-	using {	"os", "binpack", "stb_image", "jsoncpp", "nativefiledialog", "freetype", "glew" } 
+	using {	"os", "binpack", "stb", "jsoncpp", "nativefiledialog", "freetype", "glew" } 
 end
 
 project "horus"

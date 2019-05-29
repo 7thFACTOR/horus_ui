@@ -6,11 +6,11 @@
 #include <unordered_map>
 #include <string>
 #include <vector>
-#include <3rdparty/binpack/Rect.h>
-#include <3rdparty/binpack/GuillotineBinPack.h>
-#include <3rdparty/binpack/ShelfBinPack.h>
-#include <3rdparty/binpack/SkylineBinPack.h>
-#include <3rdparty/binpack/MaxRectsBinPack.h>
+#include <libs/binpack/Rect.h>
+#include <libs/binpack/GuillotineBinPack.h>
+#include <libs/binpack/ShelfBinPack.h>
+#include <libs/binpack/SkylineBinPack.h>
+#include <libs/binpack/MaxRectsBinPack.h>
 
 namespace hui
 {

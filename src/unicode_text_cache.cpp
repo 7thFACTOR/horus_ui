@@ -1,5 +1,5 @@
 #include "unicode_text_cache.h"
-#include "3rdparty/utf8/source/utf8.h"
+#include "libs/utfcpp/source/utf8.h"
 #include "types.h"
 #include <algorithm>
 #include <string.h>

@@ -106,7 +106,7 @@ library("opengl", function()
 end)
 
 group "libs"
-  include "libs/all.lua"
+  include "libs"
 
 group "horus_ui"
   include "src"
