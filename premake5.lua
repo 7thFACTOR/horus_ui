@@ -1,6 +1,12 @@
 require("vstudio")
 require('remake')
-workspace "horus"
+
+if HORUS_NO_WORKSPACE then
+  project "horus"
+else
+  workspace "horus"
+end
+
 configurations { "Debug", "Development", "Release" }
 
 -- global options
@@ -108,7 +114,7 @@ end)
 group "libs"
   include "libs"
 
-group "horus_ui"
+group "horus"
   include "src"
 
 group "examples"
