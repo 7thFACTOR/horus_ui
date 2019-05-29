@@ -7,7 +7,7 @@ workspace "horus"
 	characterset "Unicode" -- We support Unicode
 	flags { "NoMinimalRebuild", "MultiProcessorCompile", "NoPCH" }
 
-	-- Build config
+	-- build config
 	if _ACTION == "vs2015" or _ACTION == "vs2017" then
 		system "windows"
 	elseif _ACTION == "gmake" then
@@ -19,12 +19,12 @@ workspace "horus"
 	elseif _ACTION == "xcode" then
 		system "macosx"
 	else
-		premake.error("Unknown/Unsupported build action specific: " .. _ACTION)
+		premake.error("Unknown/Unsupported build action: " .. _ACTION)
 	end
 
-	paths = Config('src', '3rdparty', ('build_' .. _ACTION), 'bin')
+	paths = Config('src', 'libs', ('build_' .. _ACTION), 'bin')
 
-	--- Prepare naming convention of libs
+	--- prepare naming convention for library files
 	filter "kind:SharedLib or StaticLib"
 		pic "on"
 
@@ -34,7 +34,7 @@ workspace "horus"
 	filter { "kind:StaticLib", "configurations:Debug or Development" }
 		targetsuffix '_sd'
 		
-	--- Prepare the configurations
+	--- prepare the configurations
 	filter "configurations:Debug"
 		symbols "On"
 		optimize "Debug"
@@ -61,7 +61,7 @@ workspace "horus"
 		buildoptions { "-pthread", "-fpermissive" }
 
 	filter "system:windows"
-		-- Disable some warnings		
+		-- disable some warnings
 		disablewarnings { 4251, 4006, 4221, 4204 }
 		defines "_WINDOWS"
 
@@ -72,7 +72,6 @@ workspace "horus"
 		defines "_LINUX"
 
 	filter{}
-
 
 	library("os", function()
 		if os.target() == "windows" then
@@ -105,11 +104,11 @@ workspace "horus"
 		end
 	end)
 	
-	group "3rdparty"
-		include "3rdparty"
+	--group "libs"
+	--	include "libs/all.lua"
 
-	group "horus_ui"
-		include "src"
+	--group "horus_ui"
+		--include "src"
 
-	group "examples"
-		includeall "examples"
+	--group "examples"
+		--includeall "examples"

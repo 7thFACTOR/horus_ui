@@ -5,7 +5,8 @@
 #include "ui_context.h"
 #include "util.h"
 #define STB_IMAGE_WRITE_IMPLEMENTATION
-#include "3rdparty/stb_image/stb_image_write.c"
+#define STB_IMAGE_IMPLEMENTATION
+#include "libs/stb/stb_image_write.h"
 
 namespace hui
 {
