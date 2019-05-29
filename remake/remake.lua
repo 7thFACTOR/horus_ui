@@ -209,16 +209,20 @@ function Module:process()
 	list:each(function(mod,k)
 		local m = exports:getModule(mod)
 		debuglog("\t" .. mod)
-		validk:each(function(v,_)
-			if m.public[v] == nil then return end
-			debuglog("\t\t" .. v)
-			if v ~= 'using' then
-				shared[v](m.public[v])
-			end
-		end)
-		if not m.ismodule then
-			shared.links(m.name)
-		end
+    if m then
+      validk:each(function(v,_)
+        if m.public[v] == nil then return end
+        debuglog("\t\t" .. v)
+        if v ~= 'using' then
+          shared[v](m.public[v])
+        end
+      end)
+      if not m.ismodule then
+        shared.links(m.name)
+      end
+    else
+      print("Cannot get module from exports: " .. mod)
+    end
 		debuglog("...")
 	end)
 	print("Module(" .. self.name .. ") processed")
