@@ -26,7 +26,7 @@ function horus_base()
 	}
 
 	public.defines "HORUS_IMPORTS"
-	defines { "HORUS_EXPORTS", "HORUS_TIMING_DEBUG" }
+	defines { "HORUS_EXPORTS" }
 
 	warnings "off"
 	using {	"os", "binpack", "stb", "jsoncpp", "nativefiledialog", "freetype", "glew" } 
