@@ -1,0 +1,7 @@
+bin/*.dll
+bin/*.exe
+build_vs2017/Release/x86_64/*.lib
+build_vs2017/Debug/x86_64/*.lib
+include/*
+docs/doxygen/*
+themes/*
