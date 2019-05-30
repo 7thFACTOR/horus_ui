@@ -207,7 +207,6 @@ bool OpenGLGraphicsProvider::initialize()
 		return false;
 	}
 
-	printf("Validating program id:%d\n", program);
 	glValidateProgram((GLuint)program);
 	OGL_CHECK_ERROR;
 
@@ -236,7 +235,6 @@ bool OpenGLGraphicsProvider::initialize()
 		GLchar name[100];
 		glGetActiveAttrib(program, n, 100, &len, &size, &type, name);
 		OGL_CHECK_ERROR;
-		printf("%s\n", name);
 	}
 
 	return true;
