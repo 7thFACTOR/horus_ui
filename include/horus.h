@@ -209,7 +209,7 @@ enum class WidgetType
 	Count
 };
 
-/// Current supported widget element types, used form themes
+/// Current supported widget element types, used for themes
 enum class WidgetElementId
 {
 	None = 0,
@@ -334,11 +334,11 @@ enum class ListSelectionMode
 /// Various flags for the selectable widget
 enum class SelectableFlags : u32
 {
-	Normal = (1 << 0),
-	Checkable = (1 << 1),
-	Checked = (1 << 2),
-	Disabled = (1 << 3),
-	Selected = (1 << 4)
+	Normal = HORUS_BIT(0),
+	Checkable = HORUS_BIT(1),
+	Checked = HORUS_BIT(2),
+	Disabled = HORUS_BIT(3),
+	Selected = HORUS_BIT(4)
 };
 HORUS_ENUM_AS_FLAGS(SelectableFlags);
 
@@ -510,10 +510,10 @@ enum class KeyCode
 enum class KeyModifiers : u32
 {
 	None = 0,
-	Shift = (1 << 0),
-	Control = (1 << 1),
-	Alt = (1 << 2),
-	CapsLock = (1 << 3)
+	Shift = HORUS_BIT(0),
+	Control = HORUS_BIT(1),
+	Alt = HORUS_BIT(2),
+	CapsLock = HORUS_BIT(3)
 };
 HORUS_ENUM_AS_FLAGS(KeyModifiers);
 
@@ -590,13 +590,13 @@ enum class MessageBoxIcon
 enum class MessageBoxButtons : u32
 {
 	None = 0,
-	Ok = (1 << 0),
-	Cancel = (1 << 1),
-	Yes = (1 << 2),
-	No = (1 << 3),
-	Retry = (1 << 4),
-	Abort = (1 << 5),
-	ClosedByEscape = (1 << 6), /// escape key closed the message box
+	Ok = HORUS_BIT(0),
+	Cancel = HORUS_BIT(1),
+	Yes = HORUS_BIT(2),
+	No = HORUS_BIT(3),
+	Retry = HORUS_BIT(4),
+	Abort = HORUS_BIT(5),
+	ClosedByEscape = HORUS_BIT(6), /// escape key closed the message box
 	OkCancel = (u32)Ok | (u32)Cancel,
 	YesNo = (u32)Yes | (u32)No,
 	YesNoCancel = (u32)YesNo | (u32)Cancel
