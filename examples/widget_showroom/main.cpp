@@ -1841,13 +1841,13 @@ struct MyViewHandler : hui::ViewHandler
 				hui::textInput(str, 100, TextInputValueMode::Any);
 				if (hui::beginCustomTooltip(200))
 				{
-					hui::pushTint(Color::darkGray, TintColorType::Text);
+					/*hui::pushTint(Color::darkGray, TintColorType::Text);
 					hui::labelCustomFont("How to edit", fntBig);
 					hui::image(lenaImg);
 					hui::gap(10);
 					hui::multilineLabel("The tooltip or infotip or a hint is a common graphical user interface element. It is used in conjunction with a cursor, usually a pointer. The user hovers the pointer over an item, without clicking it, and a tooltip may appear—a small \"hover box\" with information about the item being hovered over.[1][2] Tooltips do not usually appear on mobile operating systems, because there is no cursor (though tooltips may be displayed when using a mouse).", HAlignType::Left);
 					hui::popTint();
-					hui::line();
+					hui::line();*/
 					hui::endCustomTooltip();
 				}
 

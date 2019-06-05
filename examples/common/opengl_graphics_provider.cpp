@@ -136,7 +136,7 @@ bool OpenGLGraphicsProvider::initialize()
 	glewExperimental = GL_TRUE;
 	errGlew = glewInit();
 
-	printf("Initializing HorusUI OpenGL provider...");
+	printf("Initializing HorusUI OpenGL provider...\n");
 
 	if (errGlew != GLEW_OK)
 	{

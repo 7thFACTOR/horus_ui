@@ -29,7 +29,11 @@ void endToolbar()
 		endSameLine();
 
 	ctx->verticalToolbar = false;
-	ctx->widget.sameLine = ctx->sameLineStack.back();
+
+	if (ctx->sameLineStack.size())
+		ctx->widget.sameLine = ctx->sameLineStack.back();
+	else
+		ctx->widget.sameLine = false;
 }
 
 bool toolbarButton(Image normalIcon, Image disabledIcon, bool down)
