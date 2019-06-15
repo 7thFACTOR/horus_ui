@@ -1,1 +1,1 @@
-git submodule update --force
+git submodule update --init --force

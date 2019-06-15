@@ -1325,9 +1325,9 @@ struct MyViewHandler : hui::ViewHandler
 			drawBorderedImage(ei.image, ei.border, { 310, 322, 300, 300 });
 
 			drawImage(horusLogo, { 500, 300 }, 1);
-
+#ifdef _WINDOWS
 			ampl += sinf(GetTickCount()) * 12;
-
+#endif
 			if (hui::isHovered())
 			{
 				hui::setMouseCursor(hui::MouseCursorType::CrossHair);
