@@ -44,5 +44,5 @@ project "widget_showroom_static"
 	defines "_CONSOLE"
 
 	using { "horus_static", "sdl" }
-	dumpModules()
+
   distcopy(mytarget())
