@@ -17,14 +17,17 @@ flags { "NoMinimalRebuild", "MultiProcessorCompile", "NoPCH" }
 -- build config
 if _ACTION == "vs2015" or _ACTION == "vs2017" then
   system "windows"
+  isWindows = true
 elseif _ACTION == "gmake" then
   if _ARGS[1] == "macos" then
     system "macosx"
   else
     system "linux"
   end
+  isLinux = true
 elseif _ACTION == "xcode" then
   system "macosx"
+  isLinux = true
 else
   premake.error("Unknown/Unsupported build action: " .. _ACTION)
 end
@@ -62,7 +65,7 @@ filter "configurations:Release"
   warnings "Off"
 
 filter { "system:windows", "action:vs*" }
-  systemversion(os.winSdkVersion() .. ".0")
+  if isWindows then systemversion(os.winSdkVersion() .. ".0") end
   
 filter { "system:linux or macosx or ios" }
   buildoptions { "-pthread", "-fpermissive" }

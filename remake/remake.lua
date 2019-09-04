@@ -206,9 +206,10 @@ function Module:process()
 	end
 	local list = self.public['using'] or Table{}
 	local validk = Table { 'includedirs', 'libdirs', 'links', 'defines', 'using' }
-	list:each(function(mod,k)
+  list:each(function(mod,k)
 		local m = exports:getModule(mod)
 		debuglog("\t" .. mod)
+    print(mod)
     if m then
       validk:each(function(v,_)
         if m.public[v] == nil then return end
@@ -292,6 +293,13 @@ shared = Table {
 	end,
 	['links'] = function(list)
 		public.links(list)
+	if isLinux then
+		local reversedList = {}
+		for i = #list, 1, -1 do
+			table.insert(reversedList, list[i])
+		end
+		list = reversedList
+	end
 		links(list)
 	end,
 }
