@@ -23,7 +23,17 @@
 
 namespace hui
 {
-void updateDockingSystemInternal(bool isLastEvent, ViewHandler* handler)
+void setCurrentViewHandler(ViewHandler* handler)
+{
+	ctx->currentViewHandler = handler;
+}
+
+ViewHandler* getCurrentViewHandler()
+{
+	return ctx->currentViewHandler;
+}
+
+void updateDockingSystemInternal(bool isLastEvent)
 {
 	hui::beginFrame();
 
@@ -51,7 +61,7 @@ void updateDockingSystemInternal(bool isLastEvent, ViewHandler* handler)
 
 		hui::setWindow(wnd);
 		hui::beginWindow(wnd);
-		handler->onBeforeFrameRender(wnd);
+		ctx->currentViewHandler->onBeforeFrameRender(wnd);
 		hui::clearBackground();
 
 		if ((hui::getInputEvent().type == InputEvent::Type::WindowResize
@@ -135,7 +145,7 @@ void updateDockingSystemInternal(bool isLastEvent, ViewHandler* handler)
 	hui::endFrame();
 }
 
-void updateDockingSystem(ViewHandler* handler)
+void updateDockingSystem()
 {
 	hui::processInputEvents();
 
@@ -149,10 +159,10 @@ void updateDockingSystem(ViewHandler* handler)
 
 	ctx->mustRedraw = false;
 
-	auto doLogicAndRender = [handler](bool isLastEvent)
+	auto doLogicAndRender = [ctx->currentViewHandler](bool isLastEvent)
 	{
 		ctx->renderer->disableRendering = !isLastEvent && !ctx->skipRenderAndInput;
-		hui::updateDockingSystemInternal(isLastEvent, handler);
+		hui::updateDockingSystemInternal(isLastEvent, ctx->currentViewHandler);
 	};
 
 	if (ctx->events.size() == 0)
@@ -167,7 +177,7 @@ void updateDockingSystem(ViewHandler* handler)
 	}
 }
 
-void dockingSystemLoop(ViewHandler* handler)
+void dockingSystemLoop()
 {
 #ifdef HORUS_TIMING_DEBUG
 	using namespace std;
@@ -182,7 +192,7 @@ void dockingSystemLoop(ViewHandler* handler)
 		t1 = high_resolution_clock::now();
 #endif
 
-		updateDockingSystem(handler);
+		updateDockingSystem(ctx->currentViewHandler);
 
 #ifdef HORUS_TIMING_DEBUG
 		t2 = high_resolution_clock::now();

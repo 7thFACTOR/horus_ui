@@ -2003,11 +2003,14 @@ int main(int argc, char** args)
 	fntLed2 = hui::getFont("led2");
 	fntLed3 = hui::getFont("led3");
 
+	// first we need to set the current view handler before loading view windows state
+	hui::setCurrentViewHandler(&myViewHandler);
+
 	hui::setDragDropMouseCursor(dragDropCur);
 	printf("Loading views...\n");
 
 	// if there is no state, then create the default panes and tabs
-	if (!hui::loadViewContainersState("layout.hui", &myViewHandler))
+	if (!hui::loadViewContainersState("layout.hui"))
 	{
 		createMyDefaultViewPanes();
 	}
@@ -2026,8 +2029,8 @@ int main(int argc, char** args)
 	hui::setViewIcon(3, tabIcon1);
 
 	printf("Starting loop...\n");
-	hui::dockingSystemLoop(&myViewHandler);
-	hui::saveViewContainersState("layout.hui", &myViewHandler);
+	hui::dockingSystemLoop();
+	hui::saveViewContainersState("layout.hui");
 	hui::shutdown();
 
 	return 0;
