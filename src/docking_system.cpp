@@ -82,28 +82,28 @@ void updateDockingSystemInternal(bool isLastEvent)
 		f32 oldY = 0;
 
 		// top area
-		handler->onTopAreaRender(wnd);
+		ctx->currentViewHandler->onTopAreaRender(wnd);
 		viewContainer->sideSpacing[UiViewContainer::SideSpacingTop] = ctx->penPosition.y;
 		oldY = ctx->penPosition.y;
 
 		// left area
 		ctx->penPosition.x = 0;
 		beginContainer({ ctx->penPosition.x, ctx->penPosition.y, viewContainer->sideSpacing[UiViewContainer::SideSpacingLeft], wndRect.height - oldY - viewContainer->sideSpacing[UiViewContainer::SideSpacingBottom] });
-		handler->onLeftAreaRender(wnd);
+		ctx->currentViewHandler->onLeftAreaRender(wnd);
 		endContainer();
 
 		// right area
 		ctx->penPosition.x = wndRect.width - viewContainer->sideSpacing[UiViewContainer::SideSpacingRight];
 		ctx->penPosition.y = oldY;
 		beginContainer({ ctx->penPosition.x, ctx->penPosition.y, viewContainer->sideSpacing[UiViewContainer::SideSpacingRight], wndRect.height - oldY - viewContainer->sideSpacing[UiViewContainer::SideSpacingBottom] });
-		handler->onRightAreaRender(wnd);
+		ctx->currentViewHandler->onRightAreaRender(wnd);
 		endContainer();
 
 		// bottom area
 		ctx->penPosition.x = 0;
 		ctx->penPosition.y = wndRect.height - viewContainer->sideSpacing[UiViewContainer::SideSpacingBottom];
 		beginContainer({ ctx->penPosition.x, ctx->penPosition.y, wndRect.width, viewContainer->sideSpacing[UiViewContainer::SideSpacingBottom] });
-		handler->onBottomAreaRender(wnd);
+		ctx->currentViewHandler->onBottomAreaRender(wnd);
 		endContainer();
 
 		for (size_t j = 0; j < panes.size(); j++)
@@ -113,7 +113,7 @@ void updateDockingSystemInternal(bool isLastEvent)
 			if (tab)
 			{
 				hui::ViewId crtViewId = beginViewPane(panes[j]);
-				handler->onViewRender(
+				ctx->currentViewHandler->onViewRender(
 					wnd, panes[j], crtViewId,
 					tab->userDataId);
 				endViewPane();
@@ -122,7 +122,7 @@ void updateDockingSystemInternal(bool isLastEvent)
 
 		endContainer();
 		endWindow();
-		handler->onAfterFrameRender(wnd);
+		ctx->currentViewHandler->onAfterFrameRender(wnd);
 		dockingData.currentViewContainer = nullptr;
 		handleViewContainerResize(viewContainer);
 
@@ -159,10 +159,10 @@ void updateDockingSystem()
 
 	ctx->mustRedraw = false;
 
-	auto doLogicAndRender = [ctx->currentViewHandler](bool isLastEvent)
+	auto doLogicAndRender = [](bool isLastEvent)
 	{
 		ctx->renderer->disableRendering = !isLastEvent && !ctx->skipRenderAndInput;
-		hui::updateDockingSystemInternal(isLastEvent, ctx->currentViewHandler);
+		hui::updateDockingSystemInternal(isLastEvent);
 	};
 
 	if (ctx->events.size() == 0)
@@ -170,6 +170,7 @@ void updateDockingSystem()
 		doLogicAndRender(true);
 	}
 
+	// execute logic and render for all events that might be in the queue
 	for (int i = 0; i < ctx->events.size(); i++)
 	{
 		ctx->event = ctx->events[i];
@@ -192,7 +193,7 @@ void dockingSystemLoop()
 		t1 = high_resolution_clock::now();
 #endif
 
-		updateDockingSystem(ctx->currentViewHandler);
+		updateDockingSystem();
 
 #ifdef HORUS_TIMING_DEBUG
 		t2 = high_resolution_clock::now();
