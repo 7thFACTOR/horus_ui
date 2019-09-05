@@ -164,7 +164,7 @@ struct MyViewHandler : hui::ViewHandler
 
 		hui::endMenuBar();
 
-		if (1){
+		if (0){
 			pushSpacing(5);
 			static bool tbDown[10] = { 0 };
 			hui::pushSameLineSpacing(5);
@@ -620,7 +620,7 @@ struct MyViewHandler : hui::ViewHandler
 
 			hui::gap(10);
 
-			if (1) {
+			if (0) {
 				hui::pushPadding(1);
 
 				static bool tbDown[10] = { 0 };
@@ -1839,7 +1839,7 @@ struct MyViewHandler : hui::ViewHandler
 			if (pnl1)
 			{
 				hui::textInput(str, 100, TextInputValueMode::Any);
-				if (hui::beginCustomTooltip(200))
+				if (0&&hui::beginCustomTooltip(200))
 				{
 					/*hui::pushTint(Color::darkGray, TintColorType::Text);
 					hui::labelCustomFont("How to edit", fntBig);
