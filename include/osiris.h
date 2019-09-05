@@ -117,7 +117,6 @@ struct Transform
 		pivot.reset();
 		scale.reset();
 		rotation.reset();
-
 	}
 };
 

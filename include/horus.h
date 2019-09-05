@@ -9,7 +9,7 @@
 ------------------------------------------------------------------------------
 	Immediate Mode Graphical User Interface Library
 
-	(C) All rights reserved 2016-2017 7thFACTOR Software - Nicusor Nedelcu
+	(C) All rights reserved 2016-2017 7thFACTOR Software - Nicusor Nedelcu (nekitu)
 ------------------------------------------------------------------------------
 */
 
@@ -2702,8 +2702,10 @@ HORUS_API u32 getViewPaneTabCount(ViewPane viewPane);
 // Docking system functions
 //////////////////////////////////////////////////////////////////////////
 
+/// Set the current view handler, used throughout the docking system (also for save/load view window state)
 HORUS_API void setCurrentViewHandler(ViewHandler* handler);
 
+/// \return the current view handler, used throughout the docking system (also for save/load view window state)
 HORUS_API ViewHandler* getCurrentViewHandler();
 
 /// Update the docking system internal, usually called by the dockingSystemLoop function, if you make your own loop, then you need to call it
