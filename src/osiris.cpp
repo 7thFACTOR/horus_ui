@@ -87,8 +87,7 @@ void ButtonElement::update()
 
 void ButtonElement::draw()
 {
-
-	ctx->renderer->cmdDrawImageBordered(uiBodyImage,uiBodyImage-> )
+	//TODO: ctx->renderer->cmdDrawImageBordered(uiBodyImage,uiBodyImage-> )
 }
 
 bool ButtonElement::onMouseDown(const InputEvent3D& ev)

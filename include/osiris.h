@@ -95,6 +95,13 @@ enum class EaseType
 struct Vec3
 {
 	float x, y, z;
+
+	inline void reset() { x = y = z = 0; }
+};
+
+struct Matrix44
+{
+	f32 m[16];
 };
 
 struct InputEvent3D
@@ -109,7 +116,7 @@ struct Transform
 	Point size;
 	Rect padding;
 	Rect anchors;
-	Matrix matrix;
+	Matrix44 matrix;
 
 	void reset()
 	{
