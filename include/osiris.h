@@ -236,7 +236,6 @@ struct Transition
 	Transform transform[(int)StateType::Count];
 	EaseType colorEase[(int)StateType::Count];
 	EaseType transformEase[(int)StateType::Count];
-
 	f32 colorMultiplier = 1.0f;
 	f32 duration = 0.1f;
 	Animation animations[(int)StateType::Count];
@@ -275,6 +274,133 @@ struct ButtonElement : Element
 	ResizableImage bodyImage;
 
 	ButtonElement();
+	void update() override;
+	void draw() override;
+	bool onMouseDown(const InputEvent3D& ev) override;
+	bool onMouseUp(const InputEvent3D& ev) override;
+	bool onMouseMove(const InputEvent3D& ev) override;
+	bool onKeyDown(const InputEvent3D& ev)  override;
+	bool onKeyUp(const InputEvent3D& ev)  override;
+};
+
+struct ToggleElement : Element
+{
+	ResizableImage bodyImage, checkMarkImage;
+
+	ToggleElement();
+	void update() override;
+	void draw() override;
+	bool onMouseDown(const InputEvent3D& ev) override;
+	bool onMouseUp(const InputEvent3D& ev) override;
+	bool onMouseMove(const InputEvent3D& ev) override;
+	bool onKeyDown(const InputEvent3D& ev)  override;
+	bool onKeyUp(const InputEvent3D& ev)  override;
+};
+
+struct TextElement : Element
+{
+	std::string text;
+
+	TextElement();
+	void update() override;
+	void draw() override;
+	bool onMouseDown(const InputEvent3D& ev) override;
+	bool onMouseUp(const InputEvent3D& ev) override;
+	bool onMouseMove(const InputEvent3D& ev) override;
+	bool onKeyDown(const InputEvent3D& ev)  override;
+	bool onKeyUp(const InputEvent3D& ev)  override;
+};
+
+struct ImageElement : Element
+{
+	ResizableImage image;
+
+	ImageElement();
+	void update() override;
+	void draw() override;
+	bool onMouseDown(const InputEvent3D& ev) override;
+	bool onMouseUp(const InputEvent3D& ev) override;
+	bool onMouseMove(const InputEvent3D& ev) override;
+	bool onKeyDown(const InputEvent3D& ev)  override;
+	bool onKeyUp(const InputEvent3D& ev)  override;
+};
+
+struct SliderElement : Element
+{
+	// ----[]---------
+	ResizableImage bodyImage, knobImage;
+
+	SliderElement();
+	void update() override;
+	void draw() override;
+	bool onMouseDown(const InputEvent3D& ev) override;
+	bool onMouseUp(const InputEvent3D& ev) override;
+	bool onMouseMove(const InputEvent3D& ev) override;
+	bool onKeyDown(const InputEvent3D& ev)  override;
+	bool onKeyUp(const InputEvent3D& ev)  override;
+};
+
+struct ScrollBarElement : Element
+{
+	// <---[]-------->
+	ResizableImage bodyImage, handleImage, leftArrowImage, rightArrowImage;
+
+	ScrollBarElement();
+	void update() override;
+	void draw() override;
+	bool onMouseDown(const InputEvent3D& ev) override;
+	bool onMouseUp(const InputEvent3D& ev) override;
+	bool onMouseMove(const InputEvent3D& ev) override;
+	bool onKeyDown(const InputEvent3D& ev)  override;
+	bool onKeyUp(const InputEvent3D& ev)  override;
+};
+
+struct DropDownElement : Element
+{
+	// [        ][ V ]
+	ResizableImage bodyImage, arrowImage, leftArrowImage, rightArrowImage;
+
+	DropDownElement();
+	void update() override;
+	void draw() override;
+	bool onMouseDown(const InputEvent3D& ev) override;
+	bool onMouseUp(const InputEvent3D& ev) override;
+	bool onMouseMove(const InputEvent3D& ev) override;
+	bool onKeyDown(const InputEvent3D& ev)  override;
+	bool onKeyUp(const InputEvent3D& ev)  override;
+};
+
+struct TextInputElement : Element
+{
+	// [        ]
+	ResizableImage bodyImage;
+
+	TextInputElement();
+	void update() override;
+	void draw() override;
+	bool onMouseDown(const InputEvent3D& ev) override;
+	bool onMouseUp(const InputEvent3D& ev) override;
+	bool onMouseMove(const InputEvent3D& ev) override;
+	bool onKeyDown(const InputEvent3D& ev)  override;
+	bool onKeyUp(const InputEvent3D& ev)  override;
+};
+
+struct ScrolRectElement : Element
+{
+	// [          ^]
+	// [          #]
+	// [          .]
+	// [          v]
+	// [<...#...>]
+	ResizableImage bodyImage, leftArrowImage, rightArrowImage, upArrowImage, downArrowImage, horizontalBarBody, verticalBarBody, horizontalThumbBody, verticalThumbBody;
+	bool showHorizontalScrollBar = true;
+	bool showVerticalScrollBar = true;
+	bool showHorizontalScrollBarAlways = false;
+	bool showVerticalScrollBarAlways = false;
+	bool showHorizontalArrows = true;
+	bool showVerticalArrows = true;
+
+	ScrolRectElement();
 	void update() override;
 	void draw() override;
 	bool onMouseDown(const InputEvent3D& ev) override;
