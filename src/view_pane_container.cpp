@@ -133,7 +133,7 @@ ViewPane getViewContainerFirstViewPane(ViewContainer viewContainer)
 	return nullptr;
 }
 
-bool saveViewContainersState(const char* filename, ViewHandler* viewHandler)
+bool saveViewContainersState(const char* filename)
 {
 	FILE* file = fopen(filename, "wb");
 
@@ -146,13 +146,13 @@ bool saveViewContainersState(const char* filename, ViewHandler* viewHandler)
 
 	for (auto container : dockingData.viewContainers)
 	{
-		container->serialize(file, viewHandler);
+		container->serialize(file, ctx->currentViewHandler);
 	}
 
 	return true;
 }
 
-bool loadViewContainersState(const char* filename, struct ViewHandler* viewHandler)
+bool loadViewContainersState(const char* filename)
 {
 	FILE* file = fopen(filename, "rb");
 
@@ -171,7 +171,7 @@ bool loadViewContainersState(const char* filename, struct ViewHandler* viewHandl
 	{
 		auto container = new UiViewContainer();
 
-		container->deserialize(file, viewHandler);
+		container->deserialize(file, ctx->currentViewHandler);
 		dockingData.viewContainers.push_back(container);
 		updateViewContainerLayout(container);
 	}

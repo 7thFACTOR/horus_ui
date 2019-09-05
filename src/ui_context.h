@@ -46,6 +46,7 @@ struct UiContext
 	Renderer* renderer = nullptr;
 	UnicodeTextCache* textCache = nullptr;
 	ContextSettings settings;
+	ViewHandler* currentViewHandler = nullptr;
 
 	f32 deltaTime = 0;
 	f32 totalTime = 0;

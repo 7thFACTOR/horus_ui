@@ -2608,12 +2608,12 @@ HORUS_API ViewPane getViewContainerFirstViewPane(ViewContainer viewContainer);
 /// Save the view container state, with all view panes docked info
 /// \param filename the *.hui filename relative to executable where to save the state
 /// \return true if save was ok
-HORUS_API bool saveViewContainersState(const char* filename, ViewHandler* viewHandler);
+HORUS_API bool saveViewContainersState(const char* filename);
 
 /// Load the view container state, with all view panes docked info, it will create view panes
 /// \param filename the *.hui filename relative to executable from where to load the state
 /// \return true if the load was ok
-HORUS_API bool loadViewContainersState(const char* filename, ViewHandler* viewHandler);
+HORUS_API bool loadViewContainersState(const char* filename);
 
 /// Set the view container spacing for adding toolbars, status bar or panels
 /// Top spacing is not needed, it will be computed automatically from the rendered widgets heights
@@ -2702,11 +2702,15 @@ HORUS_API u32 getViewPaneTabCount(ViewPane viewPane);
 // Docking system functions
 //////////////////////////////////////////////////////////////////////////
 
+HORUS_API void setCurrentViewHandler(ViewHandler* handler);
+
+HORUS_API ViewHandler* getCurrentViewHandler();
+
 /// Update the docking system internal, usually called by the dockingSystemLoop function, if you make your own loop, then you need to call it
-HORUS_API void updateDockingSystem(ViewHandler* handler);
+HORUS_API void updateDockingSystem();
 
 /// If this function will be called it will block until all or the main window is closed, or a quitApplication is issued
-HORUS_API void dockingSystemLoop(ViewHandler* handler);
+HORUS_API void dockingSystemLoop();
 
 //////////////////////////////////////////////////////////////////////////
 // Utility panels and complex/combined mega-widgets
