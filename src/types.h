@@ -203,6 +203,7 @@ struct TooltipState
 	f32 delayToShow = 1.0f;
 	u32 widgetId = 0;
 	bool show = false;
+	bool closeTooltipPopup = false;
 	f32 offsetFromCursor = 18.0f;
 };
 

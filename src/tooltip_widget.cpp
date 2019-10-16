@@ -81,6 +81,14 @@ bool beginCustomTooltip(f32 width)
 			PopupFlags::CustomPosition | PopupFlags::TopMost,
 			{ ctx->tooltip.position.x + ctx->tooltip.offsetFromCursor, ctx->tooltip.position.y + ctx->tooltip.offsetFromCursor },
 			WidgetElementId::TooltipBody);
+
+		return true;
+	}
+
+	if (ctx->tooltip.closeTooltipPopup)
+	{
+		printf("Closed");
+		closePopup();
 		return true;
 	}
 
@@ -89,9 +97,10 @@ bool beginCustomTooltip(f32 width)
 
 void endCustomTooltip()
 {
-	if (ctx->tooltip.show)
+	if (ctx->tooltip.show || ctx->tooltip.closeTooltipPopup)
 	{
 		endPopup();
+		ctx->tooltip.closeTooltipPopup = false;
 	}
 }
 

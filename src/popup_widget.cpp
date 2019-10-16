@@ -24,7 +24,7 @@ void beginPopup(
 	if (ctx->popupUseGlobalScale)
 		width *= ctx->globalScale;
 
-	ctx->popupUseGlobalScale = true;
+	//ctx->popupUseGlobalScale = true;
 
 	if (!has(flags, PopupFlags::SameLayer))
 		incrementLayerIndex();
