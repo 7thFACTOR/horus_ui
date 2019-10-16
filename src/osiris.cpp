@@ -91,18 +91,28 @@ void ButtonElement::draw()
 }
 
 bool ButtonElement::onMouseDown(const InputEvent3D& ev)
-{}
+{
+	return true;
+}
 
 bool ButtonElement::onMouseUp(const InputEvent3D& ev)
-{}
+{
+	return true;
+}
 
 bool ButtonElement::onMouseMove(const InputEvent3D& ev)
-{}
+{
+	return true;
+}
 
 bool ButtonElement::onKeyDown(const InputEvent3D& ev)
-{}
+{
+	return true;
+}
 
 bool ButtonElement::onKeyUp(const InputEvent3D& ev)
-{}
+{
+	return true;
+}
 
 }

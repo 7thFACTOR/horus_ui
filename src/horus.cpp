@@ -356,11 +356,14 @@ void update(f32 deltaTime)
 		ctx->tooltip.show = true;
 		ctx->mustRedraw = true;
 		ctx->tooltip.timer = 0;
+		ctx->tooltip.closeTooltipPopup = false;
 	}
-	else if (!ctx->widget.hoveredWidgetId)
+	else if (!ctx->widget.hoveredWidgetId && ctx->tooltip.show && ctx->tooltip.widgetId)
 	{
+		printf("SOME %d %d %d\n", ctx->widget.hoveredWidgetId, ctx->tooltip.show, ctx->tooltip.widgetId);
 		ctx->tooltip.show = false;
 		ctx->tooltip.widgetId = 0;
+		ctx->tooltip.closeTooltipPopup = true;
 	}
 
 	if (ctx->tooltip.show)

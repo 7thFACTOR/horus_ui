@@ -1839,7 +1839,9 @@ struct MyViewHandler : hui::ViewHandler
 			if (pnl1)
 			{
 				hui::textInput(str, 100, TextInputValueMode::Any);
-				if (0&&hui::beginCustomTooltip(200))
+				//TODO: this will freeze the gui because closePopup doesnt have a chance to be called when tooltip.show becomes false
+				// work to be done in the beginCustomTooltip func
+				if (hui::beginCustomTooltip(200))
 				{
 					/*hui::pushTint(Color::darkGray, TintColorType::Text);
 					hui::labelCustomFont("How to edit", fntBig);
