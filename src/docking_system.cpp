@@ -74,7 +74,7 @@ void updateDockingSystemInternal(bool isLastEvent)
 
 		std::vector<UiViewPane*> panes;
 
-		viewContainer->rootCell->fillViewPanes(panes);
+		viewContainer->rootCell->gatherViewPanes(panes);
 		dockingData.currentViewContainer = viewContainer;
 		dockingData.closeWindow = false;
 
@@ -261,7 +261,7 @@ void handleViewContainerResize(UiViewContainer* viewContainer)
 		resizingCell = viewContainer->rootCell->findResizeCell(mousePos, gripSize);
 		std::vector<UiViewTab*> tabs;
 
-		viewContainer->rootCell->fillViewTabs(tabs);
+		viewContainer->rootCell->gatherViewTabs(tabs);
 		dragTab = nullptr;
 		draggingContainerSource = viewContainer;
 
@@ -360,7 +360,7 @@ void handleViewContainerResize(UiViewContainer* viewContainer)
 						auto iter = std::find(dockingData.viewContainers.begin(), dockingData.viewContainers.end(), draggingContainerSource);
 
 						dockingData.viewContainers.erase(iter);
-						//crashes LLVM on MacOS	
+						//TODO: crashes LLVM on MacOS, check for dangling ptrs
 						draggingContainerSource->destroy();
 						delete draggingContainerSource;
 						draggingContainerSource = nullptr;
@@ -436,14 +436,15 @@ void handleViewContainerResize(UiViewContainer* viewContainer)
 	const auto mousePos = ctx->inputProvider->getMousePosition();
 	auto overCellToResize = viewContainer->rootCell->findResizeCell(mousePos, gripSize);
 
-	// if we draw a tab or a pane splitter
+	// if we drag a tab or a pane splitter
 	if (crtEvent.type == InputEvent::Type::MouseDown
 		|| dragTab
 		|| overCellToResize
 		|| resizingCell)
 	{
 		auto cellToResize = overCellToResize;
-		bool moved = fabs(lastMousePos.x - mousePos.x) > 3 || abs(lastMousePos.y - mousePos.y) > 3;
+		const int moveOffsetTriggerSize = 3;
+		bool moved = fabs(lastMousePos.x - mousePos.x) > moveOffsetTriggerSize || abs(lastMousePos.y - mousePos.y) > moveOffsetTriggerSize;
 
 		if (dragTab)
 		{
@@ -458,7 +459,7 @@ void handleViewContainerResize(UiViewContainer* viewContainer)
 			{
 				std::vector<UiViewTab*> tabs;
 
-				viewContainer->rootCell->fillViewTabs(tabs);
+				viewContainer->rootCell->gatherViewTabs(tabs);
 				dragOntoTab = nullptr;
 
 				for (auto tab : tabs)
@@ -535,7 +536,7 @@ void handleViewContainerResize(UiViewContainer* viewContainer)
 				ctx->renderer->setWindowSize({ rect.width, rect.height });
 				ctx->renderer->beginFrame();
 				ctx->renderer->cmdSetColor(dockingRectElem.normalState().color);
-				ctx->renderer->cmdDrawImageBordered(dockingRectElem.normalState().image, dockingRectElem.normalState().border, rectDragged, ctx->globalScale);
+				//ctx->renderer->cmdDrawImageBordered(dockingRectElem.normalState().image, dockingRectElem.normalState().border, rectDragged, ctx->globalScale);
 				ctx->renderer->cmdSetFont(dockingRectElem.normalState().font);
 				ctx->renderer->cmdSetColor(dockingRectElem.normalState().textColor);
 
@@ -633,10 +634,12 @@ void handleViewContainerResize(UiViewContainer* viewContainer)
 			iterNextCell++;
 			resizingCell->normalizedSize.x = normalizedSize1;
 
-			if (resizingCell->normalizedSize.x < 0.1f)
+			//TODO: externalize to user
+			const f32 minPaneNormalizedSize = 0.1f;
+
+			if (resizingCell->normalizedSize.x < minPaneNormalizedSize)
 			{
-				//TODO: externalize to user
-				resizingCell->normalizedSize.x = 0.1f;
+				resizingCell->normalizedSize.x = minPaneNormalizedSize;
 			}
 
 			if (iterNextCell != resizingCell->parent->children.end())
@@ -648,9 +651,9 @@ void handleViewContainerResize(UiViewContainer* viewContainer)
 
 				(*iterNextCell)->normalizedSize.x = normalizedSize2;
 
-				if ((*iterNextCell)->normalizedSize.x < 0.1f)
+				if ((*iterNextCell)->normalizedSize.x < minPaneNormalizedSize)
 				{
-					(*iterNextCell)->normalizedSize.x = 0.1f;
+					(*iterNextCell)->normalizedSize.x = minPaneNormalizedSize;
 					resizingCell->normalizedSize.x = normalizedSizeBothSiblings - (*iterNextCell)->normalizedSize.x;
 				}
 			}
@@ -668,9 +671,12 @@ void handleViewContainerResize(UiViewContainer* viewContainer)
 			iterNextCell++;
 			resizingCell->normalizedSize.y = normalizedSize1;
 
-			if (resizingCell->normalizedSize.y < 0.1f)
+			//TODO: externalize to user
+			const f32 minPaneNormalizedSize = 0.1f;
+
+			if (resizingCell->normalizedSize.y < minPaneNormalizedSize)
 			{
-				resizingCell->normalizedSize.y = 0.1f;
+				resizingCell->normalizedSize.y = minPaneNormalizedSize;
 			}
 
 			if (iterNextCell != resizingCell->parent->children.end())
@@ -682,9 +688,9 @@ void handleViewContainerResize(UiViewContainer* viewContainer)
 
 				(*iterNextCell)->normalizedSize.y = normalizedSize2;
 
-				if ((*iterNextCell)->normalizedSize.y < 0.1f)
+				if ((*iterNextCell)->normalizedSize.y < minPaneNormalizedSize)
 				{
-					(*iterNextCell)->normalizedSize.y = 0.1f;
+					(*iterNextCell)->normalizedSize.y = minPaneNormalizedSize;
 					resizingCell->normalizedSize.y = normalizedSizeBothSiblings - (*iterNextCell)->normalizedSize.y;
 				}
 			}

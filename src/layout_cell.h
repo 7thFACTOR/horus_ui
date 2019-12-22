@@ -50,8 +50,8 @@ struct LayoutCell
 	void computeSize();
 	LayoutCell* findResizeCell(const Point& pt, i32 gripSize);
 	LayoutCell* findDockToCell(const Point& pt, DockType& outDockType, Rect& outDockRect, f32 dockBorderSize, f32 tabGroupHeight);
-	void fillViewTabs(std::vector<UiViewTab*>& tabs);
-	void fillViewPanes(std::vector<UiViewPane*>& viewPanes);
+	void gatherViewTabs(std::vector<UiViewTab*>& tabs);
+	void gatherViewPanes(std::vector<UiViewPane*>& viewPanes);
 	LayoutCell* findWidestChild(LayoutCell* skipCell = nullptr);
 	LayoutCell* dockViewPane(UiViewPane* viewPaneToDock, DockType dock);
 	void fixNormalizedSizes();

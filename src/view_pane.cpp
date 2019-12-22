@@ -189,7 +189,7 @@ void setViewIcon(ViewId id, Image icon)
 	{
 		std::vector<UiViewTab*> tabs;
 
-		dc->rootCell->fillViewTabs(tabs);
+		dc->rootCell->gatherViewTabs(tabs);
 
 		for (auto& tab : tabs)
 		{

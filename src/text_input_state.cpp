@@ -373,7 +373,7 @@ void TextInputState::processKeyEvent(const InputEvent& ev)
 		selectionBegin = 0;
 		selectionEnd = text.size();
 	}
-	else if (ev.key.code == KeyCode::C && !!(ev.key.modifiers & KeyModifiers::Control))
+	else if (!password && ev.key.code == KeyCode::C && !!(ev.key.modifiers & KeyModifiers::Control))
 	{
 		UnicodeString str = getSelection();
 
@@ -401,8 +401,6 @@ void TextInputState::processKeyEvent(const InputEvent& ev)
 
 		if (utf8ToUtf32(tmpStr, utf32Str))
 		{
-			delete[] tmpStr;
-
 			if (utf32Str.size() + text.size() < maxTextLength)
 			{
 				int offs = caretPosition;
@@ -450,7 +448,7 @@ void TextInputState::insertTextAtCaret(const UnicodeString& newText)
 {
 	if (selectionActive)
 		deleteSelection();
-
+	printf("insert %d chars\n", newText.size());
 	if (newText.empty())
 	{
 		return;
@@ -460,14 +458,15 @@ void TextInputState::insertTextAtCaret(const UnicodeString& newText)
 
 	if (caretPosition > text.size() && !text.empty())
 		offs = text.size() - 1;
+	printf("maxTextLen %d\n", maxTextLength);
 
 	if (text.size() + newText.size() < maxTextLength)
 	{
 		text.insert(text.begin() + offs, newText.begin(), newText.end());
 		caretPosition += newText.size();
 		textChanged = true;
+		printf("inserted...\n");
 	}
-
 	selectionActive = false;
 }
 
@@ -495,14 +494,30 @@ i32 TextInputState::getCharIndexAtX(f32 xPos)
 		{
 			lastChar = UnicodeString(subStr.begin() + (subStr.size() - 1), subStr.end());
 
-			rcLastChar = font->computeTextSize(lastChar.data(), 1);
+			if (!password)
+			{
+				rcLastChar = font->computeTextSize(lastChar.data(), 1);
+			}
+			else
+			{
+				rcLastChar = font->computeTextSize(passwordCharUnicode);
+			}
 		}
 		else
 		{
 			rcLastChar.width = 0;
 		}
 
-		rcCurrentRange = font->computeTextSize(subStr.data(), subStr.size());
+		if (!password)
+		{
+			rcCurrentRange = font->computeTextSize(subStr.data(), subStr.size());
+		}
+		else
+		{
+			rcCurrentRange = font->computeTextSize(passwordCharUnicode);
+			rcCurrentRange.width *= subStr.size();
+		}
+
 		bool passed = false;
 
 		// if X is to the left of the middle of last char
@@ -536,9 +551,20 @@ i32 TextInputState::getCharIndexAtX(f32 xPos)
 void TextInputState::computeScrollAmount()
 {
 	UnicodeString tmpStr = UnicodeString(text.begin(), text.begin() + caretPosition);
-	FontTextSize textSizeToCaret = themeElement->normalState().font->computeTextSize(tmpStr.data(), tmpStr.size());
+	FontTextSize textSizeToCaret;
+	
+	if (!password)
+	{
+		textSizeToCaret = themeElement->normalState().font->computeTextSize(tmpStr.data(), tmpStr.size());
+	}
+	else
+	{
+		textSizeToCaret = themeElement->normalState().font->computeTextSize(passwordCharUnicode);
+		textSizeToCaret.width *= tmpStr.size();
+	}
+
 	f32 absCursorPosX = clipRect.x + textSizeToCaret.width - scrollOffset;
-	f32 stepAmount = 30;
+	const f32 stepAmount = 30; //TODO: make public
 
 	if (absCursorPosX < clipRect.x)
 	{

@@ -53,6 +53,8 @@ struct TextInputState
 	bool selectAllOnFocus = true;
 	bool textChanged = false;
 	u32 maxTextLength = 0;
+	bool password = false;
+	UnicodeString passwordCharUnicode;
 };
 
 }
