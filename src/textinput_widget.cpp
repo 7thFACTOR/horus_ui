@@ -8,6 +8,7 @@
 #include "util.h"
 #include <math.h>
 #include <string.h>
+#include <algorithm>
 
 namespace hui
 {
@@ -16,7 +17,9 @@ bool textInput(
 	u32 maxLength,
 	TextInputValueMode valueMode,
 	const char* defaultText,
-	Image icon)
+	Image icon,
+	bool password,
+	const char* passwordChar)
 {
 	auto bodyElem = &ctx->theme->getElement(WidgetElementId::TextInputBody);
 	auto bodyTextCaretElemState = ctx->theme->getElement(WidgetElementId::TextInputCaret).normalState();
@@ -53,7 +56,17 @@ bool textInput(
 		ctx->widget.rect.width - bodyElemState->border * 2,
 		ctx->widget.rect.height - bodyElemState->border * 2);
 
+	const u32 maxHiddenCharLen = 1024;
+	static char hiddenPwdText[maxHiddenCharLen] = "";
+	bool isEmptyText = false;
+	char* textToDraw = (char*)text;
+	UnicodeString pwdStr;
+
+	utf8ToUtf32(passwordChar, pwdStr);
+
 	ctx->textInput.editNow = false;
+	ctx->textInput.password = password;
+	ctx->textInput.passwordCharUnicode = pwdStr;
 
 	if (ctx->event.type == InputEvent::Type::Key
 		&& ctx->event.key.code == KeyCode::Enter
@@ -146,10 +159,21 @@ bool textInput(
 		if (ctx->textInput.caretPosition > ctx->textInput.text.size())
 			offs = ctx->textInput.text.size() - 1;
 
-		UnicodeString textToCursor = UnicodeString(
+		FontTextSize textToCursorSize;
+		UnicodeString textToCursor;
+
+		textToCursor = UnicodeString(
 			ctx->textInput.text.begin(), ctx->textInput.text.begin() + offs);
 
-		FontTextSize textToCursorSize = bodyElemState->font->computeTextSize(textToCursor);
+		if (!password)
+		{
+			textToCursorSize = bodyElemState->font->computeTextSize(textToCursor);
+		}
+		else
+		{
+			textToCursorSize = bodyElemState->font->computeTextSize(pwdStr);
+			textToCursorSize.width *= textToCursor.size();
+		}
 
 		const f32 cursorWidth = bodyTextCaretElemState.width;
 		const f32 cursorBorder = bodyTextCaretElemState.border;
@@ -171,10 +195,24 @@ bool textInput(
 				endSel = tmpSel;
 			}
 
+			FontTextSize selectedTextSize;
+			FontTextSize textToSelectionStartSize;
+
 			UnicodeString selectedText = UnicodeString(ctx->textInput.text.begin() + startSel, ctx->textInput.text.begin() + endSel);
 			UnicodeString textToSelectionStart = UnicodeString(ctx->textInput.text.begin(), ctx->textInput.text.begin() + startSel);
-			FontTextSize selectedTextSize = bodyElemState->font->computeTextSize(selectedText);
-			FontTextSize textToSelectionStartSize = bodyElemState->font->computeTextSize(textToSelectionStart);
+
+			if (!password)
+			{
+				selectedTextSize = bodyElemState->font->computeTextSize(selectedText);
+				textToSelectionStartSize = bodyElemState->font->computeTextSize(textToSelectionStart);
+			}
+			else
+			{
+				selectedTextSize = bodyElemState->font->computeTextSize(pwdStr);
+				textToSelectionStartSize = selectedTextSize;
+				selectedTextSize.width *= selectedText.size();
+				textToSelectionStartSize.width *= textToSelectionStart.size();
+			}
 
 			Rect selRect(
 				clipRect.x + textToSelectionStartSize.width - ctx->textInput.scrollOffset,
@@ -198,8 +236,18 @@ bool textInput(
 		utf32ToUtf8NoAlloc(ctx->textInput.text, text, maxLength);
 	}
 
-	bool isEmptyText = false;
-	char* textToDraw = (char*)text;
+	if (password && defaultText != textToDraw)
+	{
+		u32 len = std::min(utf8Len(textToDraw), maxHiddenCharLen);
+		hiddenPwdText[0] = 0;
+
+		for (int i = 0; i < len; i++)
+		{
+			strcat(hiddenPwdText, passwordChar);
+		}
+
+		textToDraw = hiddenPwdText;
+	}
 
 	isEmptyText = !strcmp(textToDraw, "");
 

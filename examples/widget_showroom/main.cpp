@@ -751,8 +751,8 @@ struct MyViewHandler : hui::ViewHandler
 				f32 widths[] = { 1.f, 20.f };
 				hui::pushPadding(0);
 				hui::beginColumns(2, widths);
-
-				if (hui::textInput(cdata.strSearch, cdata.strSearchMaxSize, TextInputValueMode::Any, "Type component name"))
+				printf(" max %d\n", cdata.strSearchMaxSize);
+				if (hui::textInput(cdata.strSearch, cdata.strSearchMaxSize, TextInputValueMode::Any, "Type component name", 0, true))
 				{
 					printf("Text changed: %s\n", cdata.strSearch);
 				}

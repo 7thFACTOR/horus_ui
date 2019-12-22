@@ -139,7 +139,10 @@ bool utf32ToUtf8NoAlloc(const UnicodeString& text, const char* outString, size_t
 	return true;
 }
 
-
+u32 utf8Len(const char* text)
+{
+	return utf8::distance(text, text + strlen(text));
+}
 
 void toString(i32 value, char* outString, u32 outStringMaxSize, u32 fillerZeroesCount)
 {

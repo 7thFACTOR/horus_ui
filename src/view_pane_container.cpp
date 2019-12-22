@@ -98,7 +98,7 @@ u32 getViewContainerViewPanes(ViewContainer viewContainer, ViewPane* outViewPane
 	std::vector<UiViewPane*> viewPanes;
 	auto viewContainerObj = (UiViewContainer*)viewContainer;
 
-	viewContainerObj->rootCell->fillViewPanes(viewPanes);
+	viewContainerObj->rootCell->gatherViewPanes(viewPanes);
 	auto count = (u32)std::min(maxCount, (u32)viewPanes.size());
 
 	for (size_t i = 0; i < count; i++)
@@ -114,7 +114,7 @@ u32 getViewContainerViewPaneCount(ViewContainer viewContainer)
 	std::vector<UiViewPane*> viewPanes;
 	auto viewContainerObj = (UiViewContainer*)viewContainer;
 
-	viewContainerObj->rootCell->fillViewPanes(viewPanes);
+	viewContainerObj->rootCell->gatherViewPanes(viewPanes);
 
 	return (u32)viewPanes.size();
 }
@@ -124,7 +124,7 @@ ViewPane getViewContainerFirstViewPane(ViewContainer viewContainer)
 	auto viewContainerObj = (UiViewContainer*)viewContainer;
 	std::vector<UiViewPane*> viewPanes;
 
-	viewContainerObj->rootCell->fillViewPanes(viewPanes);
+	viewContainerObj->rootCell->gatherViewPanes(viewPanes);
 
 	if (viewPanes.size())
 	{

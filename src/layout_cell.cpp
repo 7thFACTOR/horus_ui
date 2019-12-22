@@ -468,7 +468,7 @@ LayoutCell* LayoutCell::findDockToCell(const Point& pt, DockType& outDockType, R
 	return nullptr;
 }
 
-void LayoutCell::fillViewTabs(std::vector<UiViewTab*>& tabs)
+void LayoutCell::gatherViewTabs(std::vector<UiViewTab*>& tabs)
 {
 	if (viewPane)
 	{
@@ -479,12 +479,12 @@ void LayoutCell::fillViewTabs(std::vector<UiViewTab*>& tabs)
 	{
 		for (auto cell : children)
 		{
-			cell->fillViewTabs(tabs);
+			cell->gatherViewTabs(tabs);
 		}
 	}
 }
 
-void LayoutCell::fillViewPanes(std::vector<UiViewPane*>& viewPanes)
+void LayoutCell::gatherViewPanes(std::vector<UiViewPane*>& viewPanes)
 {
 	if (viewPane)
 	{
@@ -496,7 +496,7 @@ void LayoutCell::fillViewPanes(std::vector<UiViewPane*>& viewPanes)
 	{
 		for (auto cell : children)
 		{
-			cell->fillViewPanes(viewPanes);
+			cell->gatherViewPanes(viewPanes);
 		}
 	}
 }

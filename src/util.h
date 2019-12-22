@@ -9,6 +9,7 @@ bool utf16ToUtf8(wchar_t* text, char** outString);
 bool utf32ToUtf16(const UnicodeString& text, wchar_t** outString, size_t& length);
 bool utf32ToUtf8(const UnicodeString& text, char** outString);
 bool utf32ToUtf8NoAlloc(const UnicodeString& text, const char* outString, size_t maxLength);
+u32 utf8Len(const char* text);
 
 void setEnabled(bool enabled);
 void addWidgetItem(f32 height);
