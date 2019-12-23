@@ -570,9 +570,13 @@ enum class DockType
 {
 	Left, /// will dock pane to left
 	Right, /// will dock pane to right
-	TopAsViewTab, /// will dock pane as full pane in the pane tabs bar
 	Top, /// will dock pane to top
-	Bottom /// will dock pane to bottom
+	Bottom, /// will dock pane to bottom
+	RootLeft, /// will dock pane to left of root dock space
+	RootRight, /// will dock pane to right of root dock space
+	RootTop, /// will dock pane to top of root dock space
+	RootBottom, /// will dock pane to bottom of root dock space
+	TopAsViewTab, /// will dock pane as full pane in the pane tabs bar
 };
 
 /// Common message box icons

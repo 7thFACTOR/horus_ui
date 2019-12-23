@@ -515,10 +515,14 @@ LayoutCell* LayoutCell::dockViewPane(UiViewPane* viewPaneToDock, DockType dock)
 		{
 		case hui::DockType::Left:
 		case hui::DockType::Right:
+		case hui::DockType::RootLeft:
+		case hui::DockType::RootRight:
 			tileType = CellTileType::Horizontal;
 			break;
 		case hui::DockType::Top:
 		case hui::DockType::Bottom:
+		case hui::DockType::RootTop:
+		case hui::DockType::RootBottom:
 			tileType = CellTileType::Vertical;
 			break;
 		}

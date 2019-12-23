@@ -583,6 +583,22 @@ void handleViewContainerResize(UiViewContainer* viewContainer)
 					if (isSmallRectTopHovered) dockType = DockType::Top;
 					if (isSmallRectBottomHovered) dockType = DockType::Bottom;
 					if (isSmallRectMiddleHovered) dockType = DockType::TopAsViewTab;
+					if (isSmallRectRootLeftHovered)
+					{
+						dockToCell = viewContainer->rootCell; dockType = DockType::RootLeft;
+					}
+					if (isSmallRectRootRightHovered)
+					{
+						dockToCell = viewContainer->rootCell; dockType = DockType::RootRight;
+					}
+					if (isSmallRectRootTopHovered)
+					{
+						dockToCell = viewContainer->rootCell; dockType = DockType::RootTop;
+					}
+					if (isSmallRectRootBottomHovered)
+					{
+						dockToCell = viewContainer->rootCell; dockType = DockType::RootBottom;
+					}
 
 					ctx->renderer->cmdSetColor(isSmallRectLeftHovered ? dockingDialRectElem.hoveredState().color : dockingDialRectElem.normalState().color);
 					ctx->renderer->cmdDrawImageBordered(
