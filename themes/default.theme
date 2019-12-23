@@ -332,7 +332,12 @@
 		{
 			"viewPaneDockRect":
 			{
-				"normal": { "image": "viewpane_dock_rect", "border": 2, "color": "white", "textColor": "yellow", "font": "normal" }
+				"normal": { "image": "viewpane_dock_rect", "border": 2, "color": "gray", "textColor": "yellow", "font": "normal" }
+			},
+			"viewPaneDockDialRect":
+			{
+				"normal": { "image": "viewpane_dock_dial_rect", "border": 15, "color": "gray", "textColor": "yellow", "font": "normal" },
+				"hovered": { "image": "viewpane_dock_dial_rect", "border": 15, "color": "white", "textColor": "yellow", "font": "normal" }
 			}
 		},
 		"scrollView":

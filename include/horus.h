@@ -246,6 +246,7 @@ enum class WidgetElementId
 	TabBodyActive,
 	TabBodyInactive,
 	ViewPaneDockRect,
+	ViewPaneDockDialRect,
 	MenuBarBody,
 	MenuBarItem,
 	MenuBody,

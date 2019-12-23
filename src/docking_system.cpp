@@ -238,7 +238,7 @@ void handleViewContainerResize(UiViewContainer* viewContainer)
 	}
 
 	const i32 gripSize = 8;
-	const f32 dockBorderSizePercent = 0.2f;
+	const f32 dockBorderSizePercent = 0.5f;
 
 	static bool draggingViewPaneBorder = false;
 	static bool draggingViewPaneTab = false;
@@ -450,12 +450,11 @@ void handleViewContainerResize(UiViewContainer* viewContainer)
 		{
 			// draw tab rect
 			auto dockingRectElem = ctx->theme->getElement(WidgetElementId::ViewPaneDockRect);
+			auto dockingDialRectElem = ctx->theme->getElement(WidgetElementId::ViewPaneDockDialRect);
 			auto tabGroupElem = ctx->theme->getElement(WidgetElementId::TabGroupBody);
 			auto zorder = ctx->renderer->getZOrder();
 
-			if (ctx->mouseMoved
-				|| crtEvent.type == InputEvent::Type::MouseDown
-				|| moved)
+			if (crtEvent.type == InputEvent::Type::MouseDown || ctx->mouseMoved || moved)
 			{
 				std::vector<UiViewTab*> tabs;
 
@@ -486,81 +485,155 @@ void handleViewContainerResize(UiViewContainer* viewContainer)
 						dragTab->parentViewPane->viewTabs[index2] = dragTab;
 						dragTab->parentViewPane->selectedTabIndex = index2;
 					}
-					else
-					{
-					}
-				}
-
-				rectDragged = dragTab->rect;
-
-				// probably user wants to undock it
-				if (!dragOntoTab)
-				{
-					rectDragged.x = mousePos.x - rectDragged.width / 2;
-					rectDragged.y = mousePos.y - rectDragged.height / 2;
-					rectDragged.height = dragTab->rect.height * 2; // we have two lines of text when undocking "Undock\nTabname"
 				}
 
 				// check for docking on pane views
-				dockToCell = viewContainer->rootCell->findDockToCell(
-					mousePos,
-					dockType,
-					dockRect,
-					dockBorderSizePercent,
-					tabGroupElem.normalState().height * ctx->globalScale);
-				bool isSamePane = dockToCell == viewContainer->rootCell->findCellOfViewPane(dragTab->parentViewPane);
-				bool isPaneSingleTab = dragTab->parentViewPane->viewTabs.size() == 1;
+				dockToCell = viewContainer->rootCell->findDockCell(mousePos);
+			}
 
-				// drag onto other view panes, aside itself
-				if (!dragOntoTab && dockToCell)
+			bool isSamePane = dockToCell == viewContainer->rootCell->findCellOfViewPane(dragTab->parentViewPane);
+			bool isPaneSingleTab = dragTab->parentViewPane->viewTabs.size() == 1;
+
+			if (!dockToCell)
+			{
+				if (dragOntoTab && !isSamePane)
 				{
-					rectDragged = { (f32)dockRect.x, (f32)dockRect.y, (f32)dockRect.width, (f32)dockRect.height };
+					rectDragged = dockRect;
+					dockToCell = viewContainer->rootCell->findCellOfViewPane(dragOntoTab->parentViewPane);
 				}
 				else
 				{
-					if (dragOntoTab && !isSamePane)
-					{
-						rectDragged = dockRect;
-						dockToCell = viewContainer->rootCell->findCellOfViewPane(dragOntoTab->parentViewPane);
-					}
-					else
-					{
-						// docking not allowed
-						dockToCell = nullptr;
-					}
+					// docking not allowed
+					dockToCell = nullptr;
 				}
 			}
 
+			rectDragged = dragTab->rect;
+			rectDragged.x = mousePos.x - rectDragged.width / 2;
+			rectDragged.y = mousePos.y - rectDragged.height / 2;
+			rectDragged.height = dragTab->rect.height * 2; // we have two lines of text when undocking "Undock\nTabname"
+			
 			if (dragTab != dragOntoTab)
 			{
 				ctx->renderer->setWindowSize({ rect.width, rect.height });
 				ctx->renderer->beginFrame();
 				ctx->renderer->cmdSetColor(dockingRectElem.normalState().color);
-				//ctx->renderer->cmdDrawImageBordered(dockingRectElem.normalState().image, dockingRectElem.normalState().border, rectDragged, ctx->globalScale);
+
+				if (dockToCell)
+				{
+					// draw the 5 locations where we can dock the pane
+					const f32 smallRectSize = 64 * ctx->globalScale;
+					const f32 smallRectGap = 1 * ctx->globalScale;
+					auto parentRect = dockToCell->rect;
+					auto smallRectLeft = Rect(
+						parentRect.x + parentRect.width / 2.0f - smallRectSize / 2.0f - smallRectGap - smallRectSize,
+						parentRect.y + parentRect.height / 2.0f - smallRectSize / 2.0f,
+						smallRectSize, smallRectSize);
+					auto smallRectRight = Rect(
+						parentRect.x + parentRect.width / 2.0f + smallRectSize / 2.0f + smallRectGap,
+						parentRect.y + parentRect.height / 2.0f - smallRectSize / 2.0f,
+						smallRectSize, smallRectSize);
+					auto smallRectTop = Rect(
+						parentRect.x + parentRect.width / 2.0f - smallRectSize / 2.0f,
+						parentRect.y + parentRect.height / 2.0f - smallRectSize / 2.0f - smallRectSize - smallRectGap,
+						smallRectSize, smallRectSize);
+					auto smallRectBottom = Rect(
+						parentRect.x + parentRect.width / 2.0f - smallRectSize / 2.0f,
+						parentRect.y + parentRect.height / 2 + smallRectSize / 2 + smallRectGap,
+						smallRectSize, smallRectSize);
+					auto smallRectMiddle = Rect(
+						parentRect.x + parentRect.width / 2.0f - smallRectSize / 2.0f,
+						parentRect.y + parentRect.height / 2.0f - smallRectSize / 2.0f,
+						smallRectSize, smallRectSize);
+
+					auto rootRect = viewContainer->rootCell->rect;
+
+					auto smallRectRootLeft = Rect(
+						smallRectGap,
+						rootRect.y + rootRect.height / 2.0f - smallRectSize / 2.0f,
+						smallRectSize, smallRectSize);
+
+					auto smallRectRootRight = Rect(
+						rootRect.right() - smallRectGap - smallRectSize,
+						rootRect.y + rootRect.height / 2.0f - smallRectSize / 2.0f,
+						smallRectSize, smallRectSize);
+
+					auto smallRectRootTop = Rect(
+						rootRect.x + rootRect.width / 2.0f - smallRectSize / 2.0f,
+						rootRect.y + smallRectGap,
+						smallRectSize, smallRectSize);
+
+					auto smallRectRootBottom = Rect(
+						rootRect.x + rootRect.width / 2.0f - smallRectSize / 2.0f,
+						rootRect.bottom() - smallRectSize / 2.0f - smallRectGap,
+						smallRectSize, smallRectSize);
+
+					auto isSmallRectLeftHovered = smallRectLeft.contains(mousePos);
+					auto isSmallRectRightHovered = smallRectRight.contains(mousePos);
+					auto isSmallRectTopHovered = smallRectTop.contains(mousePos);
+					auto isSmallRectBottomHovered = smallRectBottom.contains(mousePos);
+					auto isSmallRectMiddleHovered = smallRectMiddle.contains(mousePos);
+					auto isSmallRectRootLeftHovered = smallRectRootLeft.contains(mousePos);
+					auto isSmallRectRootRightHovered = smallRectRootRight.contains(mousePos);
+					auto isSmallRectRootTopHovered = smallRectRootTop.contains(mousePos);
+					auto isSmallRectRootBottomHovered = smallRectRootBottom.contains(mousePos);
+
+					if (isSmallRectLeftHovered) dockType = DockType::Left;
+					if (isSmallRectRightHovered) dockType = DockType::Right;
+					if (isSmallRectTopHovered) dockType = DockType::Top;
+					if (isSmallRectBottomHovered) dockType = DockType::Bottom;
+					if (isSmallRectMiddleHovered) dockType = DockType::TopAsViewTab;
+
+					ctx->renderer->cmdSetColor(isSmallRectLeftHovered ? dockingDialRectElem.hoveredState().color : dockingDialRectElem.normalState().color);
+					ctx->renderer->cmdDrawImageBordered(
+						dockingDialRectElem.normalState().image,
+						dockingDialRectElem.normalState().border, smallRectLeft, ctx->globalScale);
+
+					ctx->renderer->cmdSetColor(isSmallRectRightHovered ? dockingDialRectElem.hoveredState().color : dockingDialRectElem.normalState().color);
+					ctx->renderer->cmdDrawImageBordered(
+						dockingDialRectElem.normalState().image,
+						dockingDialRectElem.normalState().border, smallRectRight, ctx->globalScale);
+
+					ctx->renderer->cmdSetColor(isSmallRectTopHovered ? dockingDialRectElem.hoveredState().color : dockingDialRectElem.normalState().color);
+					ctx->renderer->cmdDrawImageBordered(
+						dockingDialRectElem.normalState().image,
+						dockingDialRectElem.normalState().border, smallRectTop, ctx->globalScale);
+
+					ctx->renderer->cmdSetColor(isSmallRectBottomHovered ? dockingDialRectElem.hoveredState().color : dockingDialRectElem.normalState().color);
+					ctx->renderer->cmdDrawImageBordered(
+						dockingDialRectElem.normalState().image,
+						dockingDialRectElem.normalState().border, smallRectBottom, ctx->globalScale);
+
+					ctx->renderer->cmdSetColor(isSmallRectMiddleHovered ? dockingDialRectElem.hoveredState().color : dockingDialRectElem.normalState().color);
+					ctx->renderer->cmdDrawImageBordered(
+						dockingDialRectElem.normalState().image,
+						dockingDialRectElem.normalState().border, smallRectMiddle, ctx->globalScale);
+
+					ctx->renderer->cmdSetColor(isSmallRectRootLeftHovered ? dockingDialRectElem.hoveredState().color : dockingDialRectElem.normalState().color);
+					ctx->renderer->cmdDrawImageBordered(
+						dockingDialRectElem.normalState().image,
+						dockingDialRectElem.normalState().border, smallRectRootLeft, ctx->globalScale);
+
+					ctx->renderer->cmdSetColor(isSmallRectRootRightHovered ? dockingDialRectElem.hoveredState().color : dockingDialRectElem.normalState().color);
+					ctx->renderer->cmdDrawImageBordered(
+						dockingDialRectElem.normalState().image,
+						dockingDialRectElem.normalState().border, smallRectRootRight, ctx->globalScale);
+
+					ctx->renderer->cmdSetColor(isSmallRectRootTopHovered ? dockingDialRectElem.hoveredState().color : dockingDialRectElem.normalState().color);
+					ctx->renderer->cmdDrawImageBordered(
+						dockingDialRectElem.normalState().image,
+						dockingDialRectElem.normalState().border, smallRectRootTop, ctx->globalScale);
+
+					ctx->renderer->cmdSetColor(isSmallRectRootBottomHovered ? dockingDialRectElem.hoveredState().color : dockingDialRectElem.normalState().color);
+					ctx->renderer->cmdDrawImageBordered(
+						dockingDialRectElem.normalState().image,
+						dockingDialRectElem.normalState().border, smallRectRootBottom, ctx->globalScale);
+				}
+
+				ctx->renderer->cmdDrawImageBordered(dockingRectElem.normalState().image, dockingRectElem.normalState().border, rectDragged, ctx->globalScale);
 				ctx->renderer->cmdSetFont(dockingRectElem.normalState().font);
 				ctx->renderer->cmdSetColor(dockingRectElem.normalState().textColor);
-
-				const char* str = nullptr;
-				std::string title = "";
-
-				if (dragTab)
-					str = dragTab->title;
-
-				if (!dragOntoTab && !dockToCell && ctx->settings.allowUndockingToNewWindow)
-				{
-					title = std::string("Undock\n" + std::string(dragTab->title));
-					str = title.c_str();
-				}
-				else if (!ctx->settings.allowUndockingToNewWindow)
-				{
-					str = dragTab->title;
-				}
-
-				if (str)
-				{
-					ctx->drawMultilineText(str, rectDragged, HAlignType::Center, VAlignType::Center);
-				}
-
+				ctx->drawMultilineText(dragTab->title, rectDragged, HAlignType::Center, VAlignType::Center);
 				ctx->renderer->endFrame();
 			}
 		}
