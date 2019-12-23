@@ -875,6 +875,7 @@ void setWidgetStyle(WidgetType widgetType, const char* styleName)
 		break;
 	case WidgetType::ViewPane:
 		ctx->theme->elements[(u32)WidgetElementId::ViewPaneDockRect].setStyle(styleName);
+		ctx->theme->elements[(u32)WidgetElementId::ViewPaneDockDialRect].setStyle(styleName);
 		break;
 	case WidgetType::MsgBox:
 		ctx->theme->elements[(u32)WidgetElementId::MessageBoxIconError].setStyle(styleName);
@@ -1160,6 +1161,7 @@ WidgetElementId getWidgetElementFromName(std::string name)
 	if (name == "tabBodyActive") return WidgetElementId::TabBodyActive;
 	if (name == "tabBodyInactive") return WidgetElementId::TabBodyInactive;
 	if (name == "viewPaneDockRect") return WidgetElementId::ViewPaneDockRect;
+	if (name == "viewPaneDockDialRect") return WidgetElementId::ViewPaneDockDialRect;
 	if (name == "menuBarBody") return WidgetElementId::MenuBarBody;
 	if (name == "menuBarItem") return WidgetElementId::MenuBarItem;
 	if (name == "menuBody") return WidgetElementId::MenuBody;

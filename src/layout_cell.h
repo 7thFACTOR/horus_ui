@@ -7,7 +7,7 @@
 
 namespace hui
 {
-static constexpr f32 percentOfNewPaneSplit = 0.2f;
+static constexpr f32 percentOfNewPaneSplit = 0.5f;
 
 struct UiViewTab
 {
@@ -49,7 +49,7 @@ struct LayoutCell
 	void computeRect(const Point& startPos);
 	void computeSize();
 	LayoutCell* findResizeCell(const Point& pt, i32 gripSize);
-	LayoutCell* findDockToCell(const Point& pt, DockType& outDockType, Rect& outDockRect, f32 dockBorderSize, f32 tabGroupHeight);
+	LayoutCell* findDockCell(const Point& pt);
 	void gatherViewTabs(std::vector<UiViewTab*>& tabs);
 	void gatherViewPanes(std::vector<UiViewPane*>& viewPanes);
 	LayoutCell* findWidestChild(LayoutCell* skipCell = nullptr);

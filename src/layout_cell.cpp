@@ -393,70 +393,19 @@ LayoutCell* LayoutCell::findResizeCell(const Point& pt, i32 gripSize)
 	return nullptr;
 }
 
-LayoutCell* LayoutCell::findDockToCell(const Point& pt, DockType& outDockType, Rect& outDockRect, f32 dockBorderSize, f32 tabGroupHeight)
+LayoutCell* LayoutCell::findDockCell(const Point& pt)
 {
 	if (tileType == CellTileType::None
 		|| (!parent && children.empty()))
 	{
-		Rect rcLeft = rect;
-		Rect rcRight = rect;
-		Rect rcTop = rect;
-		Rect rcTopTabs = rect;
-		Rect rcBottom = rect;
-
-		rcLeft.width = rect.width * dockBorderSize;
-
-		rcRight.width = rect.width * dockBorderSize;
-		rcRight.x = rect.x + rect.width - rcRight.width;
-
-		rcTopTabs.height = tabGroupHeight;
-
-		rcTop.y += tabGroupHeight;
-		rcTop.height = rect.height * dockBorderSize;
-
-		rcBottom.height = rect.height * dockBorderSize;
-		rcBottom.y = rect.y + rect.height - rcBottom.height;
-
-		if (rcLeft.contains(pt))
-		{
-			outDockType = DockType::Left;
-			outDockRect = rcLeft;
+		if (rect.contains(pt))
 			return this;
-		}
-
-		if (rcRight.contains(pt))
-		{
-			outDockType = DockType::Right;
-			outDockRect = rcRight;
-			return this;
-		}
-
-		if (rcTop.contains(pt))
-		{
-			outDockType = DockType::Top;
-			outDockRect = rcTop;
-			return this;
-		}
-
-		if (rcTopTabs.contains(pt))
-		{
-			outDockType = DockType::TopAsViewTab;
-			outDockRect = rcTopTabs;
-			return this;
-		}
-
-		if (rcBottom.contains(pt))
-		{
-			outDockType = DockType::Bottom;
-			outDockRect = rcBottom;
-			return this;
-		}
 	}
 	else
 	{
 		for (auto cell : children)
 		{
-			auto foundCell = cell->findDockToCell(pt, outDockType, outDockRect, dockBorderSize, tabGroupHeight);
+			auto foundCell = cell->findDockCell(pt);
 
 			if (foundCell)
 			{
