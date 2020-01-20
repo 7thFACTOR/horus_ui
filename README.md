@@ -10,7 +10,7 @@ HorusUI was specifically designed to create game editor tools or similar types o
 
 ```NOTE: The library is still work in progress, changes will occur until stabilization```
 
-For direct support: support@tachyonengine.com
+For direct support: nekitu@gmail.com
 
 If you want to help with the development, donations are welcomed:
 
