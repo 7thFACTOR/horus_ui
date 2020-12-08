@@ -185,7 +185,7 @@ bool LayoutCell::serialize(FILE* file, struct ViewHandler* viewHandler)
 	i32 hasViewPane = viewPane != nullptr;
 
 	fwrite(&childCount, sizeof(childCount), 1, file);
-	fwrite(&tileType, sizeof(tileType), 1, file);
+	fwrite(&splitMode, sizeof(splitMode), 1, file);
 	fwrite(&normalizedSize.x, sizeof(normalizedSize.x), 1, file);
 	fwrite(&normalizedSize.y, sizeof(normalizedSize.y), 1, file);
 	fwrite(&hasViewPane, sizeof(hasViewPane), 1, file);
@@ -209,7 +209,7 @@ bool LayoutCell::deserialize(FILE* file, struct ViewHandler* viewHandler)
 	i32 hasViewPane = 0;
 
 	fread(&childCount, sizeof(childCount), 1, file);
-	fread(&tileType, sizeof(tileType), 1, file);
+	fread(&splitMode, sizeof(splitMode), 1, file);
 	fread(&normalizedSize.x, sizeof(normalizedSize.x), 1, file);
 	fread(&normalizedSize.y, sizeof(normalizedSize.y), 1, file);
 	fread(&hasViewPane, sizeof(hasViewPane), 1, file);
@@ -249,10 +249,10 @@ void LayoutCell::setNewSize(f32 size)
 			continue;
 		}
 
-		if (parent->tileType == CellTileType::Horizontal)
+		if (parent->splitMode == CellSplitMode::Horizontal)
 			sibling->normalizedSize.x += amountToAdd.x;
 
-		if (parent->tileType == CellTileType::Vertical)
+		if (parent->splitMode == CellSplitMode::Vertical)
 			sibling->normalizedSize.y += amountToAdd.y;
 	}
 
@@ -272,15 +272,15 @@ void LayoutCell::computeRect(const Point& startPos)
 
 void LayoutCell::computeSize()
 {
-	switch (tileType)
+	switch (splitMode)
 	{
-	case CellTileType::None:
+	case CellSplitMode::None:
 		if (viewPane)
 		{
 			viewPane->rect = rect;
 		}
 		break;
-	case CellTileType::Horizontal:
+	case CellSplitMode::Horizontal:
 		if (!children.empty())
 			for (size_t i = 0; i < children.size() - 1; i++)
 			{
@@ -308,7 +308,7 @@ void LayoutCell::computeSize()
 			}
 
 		break;
-	case CellTileType::Vertical:
+	case CellSplitMode::Vertical:
 		if (!children.empty())
 			for (size_t i = 0; i < children.size() - 1; i++)
 			{
@@ -340,16 +340,16 @@ void LayoutCell::computeSize()
 
 LayoutCell* LayoutCell::findResizeCell(const Point& pt, i32 gripSize)
 {
-	if (tileType != CellTileType::None)
+	if (splitMode != CellSplitMode::None)
 	{
 		if (!rect.contains(pt))
 		{
 			return nullptr;
 		}
 
-		switch (tileType)
+		switch (splitMode)
 		{
-		case LayoutCell::CellTileType::Horizontal:
+		case LayoutCell::CellSplitMode::Horizontal:
 			for (auto cell : children)
 			{
 				if (cell != children.back())
@@ -362,7 +362,7 @@ LayoutCell* LayoutCell::findResizeCell(const Point& pt, i32 gripSize)
 				}
 			}
 			break;
-		case LayoutCell::CellTileType::Vertical:
+		case LayoutCell::CellSplitMode::Vertical:
 			for (auto cell : children)
 			{
 				if (cell != children.back())
@@ -395,7 +395,7 @@ LayoutCell* LayoutCell::findResizeCell(const Point& pt, i32 gripSize)
 
 LayoutCell* LayoutCell::findDockCell(const Point& pt)
 {
-	if (tileType == CellTileType::None
+	if (splitMode == CellSplitMode::None
 		|| (!parent && children.empty()))
 	{
 		if (rect.contains(pt))
@@ -424,7 +424,7 @@ void LayoutCell::gatherViewTabs(std::vector<UiViewTab*>& tabs)
 		tabs.insert(tabs.end(), viewPane->viewTabs.begin(), viewPane->viewTabs.end());
 	}
 
-	if (tileType != CellTileType::None)
+	if (splitMode != CellSplitMode::None)
 	{
 		for (auto cell : children)
 		{
@@ -441,7 +441,7 @@ void LayoutCell::gatherViewPanes(std::vector<UiViewPane*>& viewPanes)
 		return;
 	}
 
-	if (tileType != CellTileType::None)
+	if (splitMode != CellSplitMode::None)
 	{
 		for (auto cell : children)
 		{
@@ -462,16 +462,16 @@ LayoutCell* LayoutCell::findWidestChild(LayoutCell* skipCell)
 			continue;
 		}
 
-		switch (tileType)
+		switch (splitMode)
 		{
-		case CellTileType::Vertical:
+		case CellSplitMode::Vertical:
 			if (child->normalizedSize.y > maxWidth)
 			{
 				maxWidth = child->normalizedSize.y;
 				cell = child;
 			}
 			break;
-		case CellTileType::Horizontal:
+		case CellSplitMode::Horizontal:
 			if (child->normalizedSize.x > maxWidth)
 			{
 				maxWidth = child->normalizedSize.x;
@@ -517,13 +517,13 @@ LayoutCell* LayoutCell::dockViewPane(UiViewPane* viewPaneToDock, DockType dock)
 		case hui::DockType::Right:
 		case hui::DockType::RootLeft:
 		case hui::DockType::RootRight:
-			tileType = CellTileType::Horizontal;
+			splitMode = CellSplitMode::Horizontal;
 			break;
 		case hui::DockType::Top:
 		case hui::DockType::Bottom:
 		case hui::DockType::RootTop:
 		case hui::DockType::RootBottom:
-			tileType = CellTileType::Vertical;
+			splitMode = CellSplitMode::Vertical;
 			break;
 		}
 
@@ -533,13 +533,13 @@ LayoutCell* LayoutCell::dockViewPane(UiViewPane* viewPaneToDock, DockType dock)
 		newCellChild->parent = this;
 		newCellChild->viewPane = viewPane;
 
-		switch (tileType)
+		switch (splitMode)
 		{
-		case CellTileType::Vertical:
+		case CellSplitMode::Vertical:
 			newCellChild->normalizedSize.x = 1.0f;
 			newCellChild->normalizedSize.y = 1.0f - percentOfNewPaneSplit;
 			break;
-		case CellTileType::Horizontal:
+		case CellSplitMode::Horizontal:
 			newCellChild->normalizedSize.x = 1.0f - percentOfNewPaneSplit;
 			newCellChild->normalizedSize.y = 1.0f;
 			break;
@@ -553,16 +553,17 @@ LayoutCell* LayoutCell::dockViewPane(UiViewPane* viewPaneToDock, DockType dock)
 	switch (dock)
 	{
 	case DockType::Left:
+	case DockType::RootLeft:
 	{
 		auto newCell = new LayoutCell();
-		CellTileType tile = tileType;
+		CellSplitMode split = splitMode;
 
 		if (parent)
 		{
-			tile = parent->tileType;
+			split = parent->splitMode;
 		}
 
-		if (tile == CellTileType::Horizontal)
+		if (split == CellSplitMode::Horizontal)
 		{
 			newCell->normalizedSize.x = percentOfNewPaneSplit;
 			newCell->normalizedSize.y = 1.0f;
@@ -585,7 +586,7 @@ LayoutCell* LayoutCell::dockViewPane(UiViewPane* viewPaneToDock, DockType dock)
 				children.insert(children.begin(), newCell);
 			}
 		}
-		else if (tile == CellTileType::Vertical)
+		else if (split == CellSplitMode::Vertical)
 		{
 			LayoutCell* newCellChild = new LayoutCell();
 
@@ -594,7 +595,7 @@ LayoutCell* LayoutCell::dockViewPane(UiViewPane* viewPaneToDock, DockType dock)
 			newCellChild->normalizedSize.x = 1.0f - percentOfNewPaneSplit;
 			newCellChild->viewPane = viewPane;
 			newCellChild->children = children;
-			newCellChild->tileType = tileType;
+			newCellChild->splitMode = splitMode;
 
 			for (auto child : newCellChild->children)
 				child->parent = newCellChild;
@@ -610,22 +611,23 @@ LayoutCell* LayoutCell::dockViewPane(UiViewPane* viewPaneToDock, DockType dock)
 			children.insert(children.begin(), newCell);
 
 			viewPane = nullptr;
-			tileType = CellTileType::Horizontal;
+			splitMode = CellSplitMode::Horizontal;
 		}
 
 		break;
 	}
 	case DockType::Right:
+	case DockType::RootRight:
 	{
 		auto newCell = new LayoutCell();
-		CellTileType tile = tileType;
+		CellSplitMode split = splitMode;
 
 		if (parent)
 		{
-			tile = parent->tileType;
+			split = parent->splitMode;
 		}
 
-		if (tile == CellTileType::Horizontal)
+		if (split == CellSplitMode::Horizontal)
 		{
 			newCell->normalizedSize.x = percentOfNewPaneSplit;
 			newCell->normalizedSize.y = 1.0f;
@@ -648,7 +650,7 @@ LayoutCell* LayoutCell::dockViewPane(UiViewPane* viewPaneToDock, DockType dock)
 				children.push_back(newCell);
 			}
 		}
-		else if (tile == CellTileType::Vertical)
+		else if (split == CellSplitMode::Vertical)
 		{
 			LayoutCell* newCellChild = new LayoutCell();
 
@@ -657,7 +659,7 @@ LayoutCell* LayoutCell::dockViewPane(UiViewPane* viewPaneToDock, DockType dock)
 			newCellChild->normalizedSize.x = 1.0f - percentOfNewPaneSplit;
 			newCellChild->viewPane = viewPane;
 			newCellChild->children = children;
-			newCellChild->tileType = tileType;
+			newCellChild->splitMode = splitMode;
 
 			for (auto child : newCellChild->children)
 				child->parent = newCellChild;
@@ -672,23 +674,24 @@ LayoutCell* LayoutCell::dockViewPane(UiViewPane* viewPaneToDock, DockType dock)
 			children.push_back(newCell);
 
 			viewPane = nullptr;
-			tileType = CellTileType::Horizontal;
+			splitMode = CellSplitMode::Horizontal;
 		}
 
 		break;
 	}
 
 	case DockType::Top:
+	case DockType::RootTop:
 	{
 		auto newCell = new LayoutCell();
-		CellTileType tile = tileType;
+		CellSplitMode split = splitMode;
 
 		if (parent)
 		{
-			tile = parent->tileType;
+			split = parent->splitMode;
 		}
 
-		if (tile == CellTileType::Vertical)
+		if (split == CellSplitMode::Vertical)
 		{
 			newCell->normalizedSize.x = 1.0f;
 			newCell->normalizedSize.y = percentOfNewPaneSplit;
@@ -716,7 +719,7 @@ LayoutCell* LayoutCell::dockViewPane(UiViewPane* viewPaneToDock, DockType dock)
 				children.push_back(newCell);
 			}
 		}
-		else if (tile == CellTileType::Horizontal)
+		else if (split == CellSplitMode::Horizontal)
 		{
 			LayoutCell* newCellChild = new LayoutCell();
 
@@ -725,7 +728,7 @@ LayoutCell* LayoutCell::dockViewPane(UiViewPane* viewPaneToDock, DockType dock)
 			newCellChild->normalizedSize.y = 1.0f - percentOfNewPaneSplit;
 			newCellChild->viewPane = viewPane;
 			newCellChild->children = children;
-			newCellChild->tileType = tileType;
+			newCellChild->splitMode = splitMode;
 
 			for (auto child : newCellChild->children)
 				child->parent = newCellChild;
@@ -740,23 +743,24 @@ LayoutCell* LayoutCell::dockViewPane(UiViewPane* viewPaneToDock, DockType dock)
 			children.insert(children.begin(), newCell);
 
 			viewPane = nullptr;
-			tileType = CellTileType::Vertical;
+			splitMode = CellSplitMode::Vertical;
 		}
 
 		break;
 	}
 
 	case DockType::Bottom:
+	case DockType::RootBottom:
 	{
 		auto newCell = new LayoutCell();
-		CellTileType tile = tileType;
+		CellSplitMode split = splitMode;
 
 		if (parent)
 		{
-			tile = parent->tileType;
+			split = parent->splitMode;
 		}
 
-		if (tile == CellTileType::Vertical)
+		if (split == CellSplitMode::Vertical)
 		{
 			newCell->normalizedSize.x = 1.0f;
 			newCell->normalizedSize.y = percentOfNewPaneSplit;
@@ -783,7 +787,7 @@ LayoutCell* LayoutCell::dockViewPane(UiViewPane* viewPaneToDock, DockType dock)
 				children.push_back(newCell);
 			}
 		}
-		else if (tile == CellTileType::Horizontal)
+		else if (split == CellSplitMode::Horizontal)
 		{
 			LayoutCell* newCellChild = new LayoutCell();
 
@@ -792,7 +796,7 @@ LayoutCell* LayoutCell::dockViewPane(UiViewPane* viewPaneToDock, DockType dock)
 			newCellChild->normalizedSize.y = 1.0f - percentOfNewPaneSplit;
 			newCellChild->viewPane = viewPane;
 			newCellChild->children = children;
-			newCellChild->tileType = tileType;
+			newCellChild->splitMode = splitMode;
 
 			for (auto child : newCellChild->children)
 				child->parent = newCellChild;
@@ -807,7 +811,7 @@ LayoutCell* LayoutCell::dockViewPane(UiViewPane* viewPaneToDock, DockType dock)
 			children.push_back(newCell);
 
 			viewPane = nullptr;
-			tileType = CellTileType::Vertical;
+			splitMode = CellSplitMode::Vertical;
 		}
 
 		break;
@@ -827,12 +831,12 @@ void LayoutCell::fixNormalizedSizes()
 
 	for (auto child : children)
 	{
-		switch (tileType)
+		switch (splitMode)
 		{
-		case CellTileType::Horizontal:
+		case CellSplitMode::Horizontal:
 			amount += child->normalizedSize.x;
 			break;
-		case CellTileType::Vertical:
+		case CellSplitMode::Vertical:
 			amount += child->normalizedSize.y;
 			break;
 		}
@@ -842,12 +846,12 @@ void LayoutCell::fixNormalizedSizes()
 	{
 		auto last = children.back();
 
-		switch (tileType)
+		switch (splitMode)
 		{
-		case CellTileType::Horizontal:
+		case CellSplitMode::Horizontal:
 			last->normalizedSize.x += 1.0f - amount;
 			break;
-		case CellTileType::Vertical:
+		case CellSplitMode::Vertical:
 			last->normalizedSize.y += 1.0f - amount;
 			break;
 		}
@@ -875,12 +879,12 @@ bool LayoutCell::removeViewPaneCell(UiViewPane* viewPaneToRemove)
 
 			if (widestCell)
 			{
-				switch (tileType)
+				switch (splitMode)
 				{
-				case CellTileType::Vertical:
+				case CellSplitMode::Vertical:
 					widestCell->normalizedSize.y += child->normalizedSize.y;
 					break;
-				case CellTileType::Horizontal:
+				case CellSplitMode::Horizontal:
 					widestCell->normalizedSize.x += child->normalizedSize.x;
 					break;
 				default:
@@ -901,7 +905,7 @@ bool LayoutCell::removeViewPaneCell(UiViewPane* viewPaneToRemove)
 				auto singleChild = children[0];
 
 				viewPane = singleChild->viewPane;
-				tileType = singleChild->tileType;
+				splitMode = singleChild->splitMode;
 				children = singleChild->children;
 
 				// re-parent

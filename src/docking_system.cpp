@@ -296,6 +296,7 @@ void handleViewContainerResize(UiViewContainer* viewContainer)
 		const f32 moveTriggerDelta = 3;
 		bool moved = fabs(lastMousePos.x - crtEvent.mouse.point.x) > moveTriggerDelta || fabs(lastMousePos.y - crtEvent.mouse.point.y) > moveTriggerDelta;
 
+		// we have a cell to dock to
 		if (dockToCell)
 		{
 			UiViewPane* newPane = nullptr;
@@ -322,6 +323,12 @@ void handleViewContainerResize(UiViewContainer* viewContainer)
 				}
 			}
 
+			if (!moved)
+			{
+				executeDocking = false;
+			}
+
+			// dock now
 			if (dragTab && executeDocking)
 			{
 				if (dockType == DockType::TopAsViewTab)
@@ -340,7 +347,10 @@ void handleViewContainerResize(UiViewContainer* viewContainer)
 				newPane->selectedTabIndex = 0;
 				newPane->rect = dockRect;
 				// remove from old pane
-				dragTab->parentViewPane->removeViewTab(dragTab);
+				if (dragTab->parentViewPane)
+				{
+					dragTab->parentViewPane->removeViewTab(dragTab);
+				}
 				// re-parent to new pane
 				dragTab->parentViewPane = newPane;
 
@@ -351,7 +361,7 @@ void handleViewContainerResize(UiViewContainer* viewContainer)
 				}
 
 				if (draggingContainerSource->rootCell->children.empty()
-					&& draggingContainerSource->rootCell->tileType == LayoutCell::CellTileType::None
+					&& draggingContainerSource->rootCell->splitMode == LayoutCell::CellSplitMode::None
 					&& !draggingContainerSource->rootCell->viewPane)
 				{
 					if (hui::getMainWindow() != draggingContainerSource->window)
@@ -525,22 +535,27 @@ void handleViewContainerResize(UiViewContainer* viewContainer)
 					const f32 smallRectSize = 64 * ctx->globalScale;
 					const f32 smallRectGap = 1 * ctx->globalScale;
 					auto parentRect = dockToCell->rect;
+		
 					auto smallRectLeft = Rect(
 						parentRect.x + parentRect.width / 2.0f - smallRectSize / 2.0f - smallRectGap - smallRectSize,
 						parentRect.y + parentRect.height / 2.0f - smallRectSize / 2.0f,
 						smallRectSize, smallRectSize);
+					
 					auto smallRectRight = Rect(
 						parentRect.x + parentRect.width / 2.0f + smallRectSize / 2.0f + smallRectGap,
 						parentRect.y + parentRect.height / 2.0f - smallRectSize / 2.0f,
 						smallRectSize, smallRectSize);
+					
 					auto smallRectTop = Rect(
 						parentRect.x + parentRect.width / 2.0f - smallRectSize / 2.0f,
 						parentRect.y + parentRect.height / 2.0f - smallRectSize / 2.0f - smallRectSize - smallRectGap,
 						smallRectSize, smallRectSize);
+					
 					auto smallRectBottom = Rect(
 						parentRect.x + parentRect.width / 2.0f - smallRectSize / 2.0f,
 						parentRect.y + parentRect.height / 2 + smallRectSize / 2 + smallRectGap,
 						smallRectSize, smallRectSize);
+					
 					auto smallRectMiddle = Rect(
 						parentRect.x + parentRect.width / 2.0f - smallRectSize / 2.0f,
 						parentRect.y + parentRect.height / 2.0f - smallRectSize / 2.0f,
@@ -583,18 +598,22 @@ void handleViewContainerResize(UiViewContainer* viewContainer)
 					if (isSmallRectTopHovered) dockType = DockType::Top;
 					if (isSmallRectBottomHovered) dockType = DockType::Bottom;
 					if (isSmallRectMiddleHovered) dockType = DockType::TopAsViewTab;
+					
 					if (isSmallRectRootLeftHovered)
 					{
 						dockToCell = viewContainer->rootCell; dockType = DockType::RootLeft;
 					}
+					
 					if (isSmallRectRootRightHovered)
 					{
 						dockToCell = viewContainer->rootCell; dockType = DockType::RootRight;
 					}
+					
 					if (isSmallRectRootTopHovered)
 					{
 						dockToCell = viewContainer->rootCell; dockType = DockType::RootTop;
 					}
+					
 					if (isSmallRectRootBottomHovered)
 					{
 						dockToCell = viewContainer->rootCell; dockType = DockType::RootBottom;
@@ -657,13 +676,13 @@ void handleViewContainerResize(UiViewContainer* viewContainer)
 		// do we resize a cell ?
 		if ((cellToResize || resizingCell) && !dragTab)
 		{
-			LayoutCell::CellTileType splitType = LayoutCell::CellTileType::None;
+			LayoutCell::CellSplitMode splitType = LayoutCell::CellSplitMode::None;
 
 			if (cellToResize)
 			{
 				if (cellToResize->parent)
 				{
-					splitType = cellToResize->parent->tileType;
+					splitType = cellToResize->parent->splitMode;
 				}
 			}
 
@@ -671,7 +690,7 @@ void handleViewContainerResize(UiViewContainer* viewContainer)
 			{
 				if (resizingCell->parent)
 				{
-					splitType = resizingCell->parent->tileType;
+					splitType = resizingCell->parent->splitMode;
 				}
 
 				if (crtEvent.type == InputEvent::Type::MouseDown)
@@ -690,12 +709,12 @@ void handleViewContainerResize(UiViewContainer* viewContainer)
 
 			switch (splitType)
 			{
-			case LayoutCell::CellTileType::Horizontal:
+			case LayoutCell::CellSplitMode::Horizontal:
 			{
 				ctx->mouseCursor = MouseCursorType::SizeWE;
 				break;
 			}
-			case LayoutCell::CellTileType::Vertical:
+			case LayoutCell::CellSplitMode::Vertical:
 			{
 				ctx->mouseCursor = MouseCursorType::SizeNS;
 				break;
@@ -711,9 +730,9 @@ void handleViewContainerResize(UiViewContainer* viewContainer)
 		&& resizingCell
 		&& resizingCell->parent)
 	{
-		switch (resizingCell->parent->tileType)
+		switch (resizingCell->parent->splitMode)
 		{
-		case LayoutCell::CellTileType::Horizontal:
+		case LayoutCell::CellSplitMode::Horizontal:
 		{
 			f32 normalizedSizeBothSiblings = (resizeCellRect.width + resizeCellSiblingRect.width) / resizingCell->parent->rect.width;
 			f32 normalizedSize1 = (mousePos.x - resizeCellRect.x) / resizingCell->parent->rect.width;
@@ -750,7 +769,7 @@ void handleViewContainerResize(UiViewContainer* viewContainer)
 			break;
 		}
 
-		case LayoutCell::CellTileType::Vertical:
+		case LayoutCell::CellSplitMode::Vertical:
 		{
 			f32 normalizedSizeBothSiblings = (resizeCellRect.height + resizeCellSiblingRect.height) / resizingCell->parent->rect.height;
 			f32 normalizedSize1 = (mousePos.y - resizeCellRect.y) / resizingCell->parent->rect.height;

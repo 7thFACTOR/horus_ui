@@ -36,7 +36,7 @@ struct UiViewPane
 
 struct LayoutCell
 {
-	enum class CellTileType
+	enum class CellSplitMode
 	{
 		None,
 		Vertical,
@@ -64,7 +64,7 @@ struct LayoutCell
 	LayoutCell* parent = nullptr;
 	UiViewPane* viewPane = nullptr;
 	std::vector<LayoutCell*> children;
-	CellTileType tileType = CellTileType::None;
+	CellSplitMode splitMode = CellSplitMode::None;
 	Point normalizedSize = { 1, 1 };
 	Rect rect;
 };
