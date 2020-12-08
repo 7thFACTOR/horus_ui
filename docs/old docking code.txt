@@ -1,0 +1,77 @@
+,
+					dockType,
+					dockRect,
+					dockBorderSizePercent,
+					tabGroupElem.normalState().height * ctx->globalScale
+
+
+
+				rectDragged = dragTab->rect;
+
+				// probably user wants to undock it
+				if (!dragOntoTab)
+				{
+					rectDragged.x = mousePos.x - rectDragged.width / 2;
+					rectDragged.y = mousePos.y - rectDragged.height / 2;
+					rectDragged.height = dragTab->rect.height * 2; // we have two lines of text when undocking "Undock\nTabname"
+				}
+
+
+
+
+
+
+
+
+		Rect rcLeft = rect;
+		Rect rcRight = rect;
+		Rect rcTop = rect;
+		Rect rcTopTabs = rect;
+		Rect rcBottom = rect;
+
+		rcLeft.width = rect.width * dockBorderSize;
+
+		rcRight.width = rect.width * dockBorderSize;
+		rcRight.x = rect.x + rect.width - rcRight.width;
+
+		rcTopTabs.height = tabGroupHeight;
+
+		rcTop.y += tabGroupHeight;
+		rcTop.height = rect.height * dockBorderSize;
+
+		rcBottom.height = rect.height * dockBorderSize;
+		rcBottom.y = rect.y + rect.height - rcBottom.height;
+
+		if (rcLeft.contains(pt))
+		{
+			outDockType = DockType::Left;
+			outDockRect = rcLeft;
+			return this;
+		}
+
+		if (rcRight.contains(pt))
+		{
+			outDockType = DockType::Right;
+			outDockRect = rcRight;
+			return this;
+		}
+
+		if (rcTop.contains(pt))
+		{
+			outDockType = DockType::Top;
+			outDockRect = rcTop;
+			return this;
+		}
+
+		if (rcTopTabs.contains(pt))
+		{
+			outDockType = DockType::TopAsViewTab;
+			outDockRect = rcTopTabs;
+			return this;
+		}
+
+		if (rcBottom.contains(pt))
+		{
+			outDockType = DockType::Bottom;
+			outDockRect = rcBottom;
+daca 
