@@ -15,7 +15,7 @@ characterset "Unicode" -- We support Unicode
 flags { "NoMinimalRebuild", "MultiProcessorCompile", "NoPCH" }
 
 -- build config
-if _ACTION == "vs2015" or _ACTION == "vs2017" then
+if _ACTION == "vs2019" then
   system "windows"
   isWindows = true
 elseif _ACTION == "gmake" then
