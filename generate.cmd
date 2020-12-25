@@ -1,2 +1,2 @@
-set VSVER=vs2017
+set VSVER=vs2019
 premake5 %VSVER%
