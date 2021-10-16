@@ -276,7 +276,7 @@ struct MyViewHandler : hui::ViewHandler
 		if (showPopupToolbar)
 		{
 			beginPopup(
-				200, 
+				200,
 				PopupFlags::RightSideLastWidget,
 				hui::Point(),
 				WidgetElementId::ButtonBody);
@@ -1142,7 +1142,7 @@ struct MyViewHandler : hui::ViewHandler
 
 				ls.width = 10;
 				ls.color = Color::green;
-				
+
 				hui::setLineStyle(ls);
 				std::vector<Point> pts;
 				float x = 2;
@@ -1216,7 +1216,7 @@ struct MyViewHandler : hui::ViewHandler
 			Point ps2[] = { { 100, 100 },{ 250, 100 },{250, 250},{ 100, 250 } };
 			//Point ps2[] = { { 100, 100 },{ 250, 100 },{ 350, 100 },{ 410, 100 } };
 			//Point ps2[] = { { 100, 100 },{ 150, 150 },{ 200, 200 },{ 310, 310 } };
-			
+
 			setLineStyle(ls1);
 			//drawPolyLine(ps2, 4, true);
 			setLineStyle(ls3);
@@ -1303,7 +1303,7 @@ struct MyViewHandler : hui::ViewHandler
 				//hui::setLineStyle({ Color::red, 2 });
 				//hui::drawLine({ 50,50 }, { 100, 100 });
 			}
-			
+
 			setFont(fntVeryBig);
 			FillStyle fs2;
 			fs2.color = Color::white;

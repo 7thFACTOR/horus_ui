@@ -2,3 +2,5 @@ build_*/**
 bin/**
 3rdparty/**
 docs/html/**
+releases
+docs/doxygen
