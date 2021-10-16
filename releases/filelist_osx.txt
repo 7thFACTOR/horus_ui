@@ -1,3 +1,0 @@
-bin/horus.dll
-bin/widget_showroom.exe
-bin/sdl.dll
