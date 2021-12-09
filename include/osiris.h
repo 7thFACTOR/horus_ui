@@ -392,7 +392,7 @@ struct TextInputElement : Element
 	bool onKeyUp(const InputEvent3D& ev)  override;
 };
 
-struct ScrolRectElement : Element
+struct ScrollRectElement : Element
 {
 	// [          ^]
 	// [          #]
@@ -407,7 +407,7 @@ struct ScrolRectElement : Element
 	bool showHorizontalArrows = true;
 	bool showVerticalArrows = true;
 
-	ScrolRectElement();
+	ScrollRectElement();
 	void update() override;
 	void draw() override;
 	bool onMouseDown(const InputEvent3D& ev) override;
