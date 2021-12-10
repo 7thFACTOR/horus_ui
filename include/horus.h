@@ -115,21 +115,21 @@ inline bool has(T x, T y) { return ((enumBasicType)x & (enumBasicType)y) != 0; }
 inline enumBasicType fromFlags(T x) { return (enumBasicType)x; };
 template <typename T> inline T toFlags(int x) { return (T)x; };
 
-typedef void* Image;
-typedef void* Theme;
-typedef void* Atlas;
-typedef void* Font;
-typedef void* ThemeWidgetElement;
-typedef void* Window;
-typedef void* ViewPane;
-typedef void* ViewPaneTab;
-typedef void* ViewContainer;
-typedef void* MouseCursor;
-typedef void* GraphicsApiContext;
-typedef void* GraphicsApiTexture;
-typedef void* GraphicsApiRenderTarget;
-typedef void* GraphicsApiVertexBuffer;
-typedef void* Context;
+typedef void* HImage;
+typedef void* HTheme;
+typedef void* HAtlas;
+typedef void* HFont;
+typedef void* HThemeWidgetElement;
+typedef void* HWindow;
+typedef void* HViewPane;
+typedef void* HViewPaneTab;
+typedef void* HViewContainer;
+typedef void* HMouseCursor;
+typedef void* HGraphicsApiContext;
+typedef void* HGraphicsApiTexture;
+typedef void* HGraphicsApiRenderTarget;
+typedef void* HGraphicsApiVertexBuffer;
+typedef void* HContext;
 typedef u32 Rgba32;
 typedef u32 TabIndex;
 typedef u32 ViewId;
@@ -287,8 +287,8 @@ enum class WidgetStateType
 	Pressed,
 	Hovered,
 	Disabled,
+	Unknown,
 
-	None,
 	Count
 };
 

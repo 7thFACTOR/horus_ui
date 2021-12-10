@@ -14,6 +14,7 @@ struct Vertex
 /// The input provider class is used for input and windowing services
 struct InputProvider
 {
+	virtual ~InputProvider(){}
 	/// Start text input, usually called by the library to show IME suggestions boxes
 	/// \param window the window where the text started to be input
 	/// \param imeRect the rectangle where to show the suggestion box
@@ -158,9 +159,6 @@ struct InputProvider
 /// A graphics texture array
 struct TextureArray
 {
-	TextureArray() {}
-	TextureArray(u32 count, u32 newWidth, u32 newHeight, Rgba32* pixels) {}
-	TextureArray(u32 count, u32 newWidth, u32 newHeight) {}
 	virtual ~TextureArray() {}
 
 	/// Resize the texture array, this will not preserve the current texture data
@@ -199,8 +197,6 @@ struct TextureArray
 /// A vertex buffer used to hold UI vertices
 struct VertexBuffer
 {
-	VertexBuffer() {}
-	VertexBuffer(u32 count, Vertex* vertices) {}
 	virtual ~VertexBuffer() {}
 
 	/// Resize the vertex buffer, it will not keep the old contents
@@ -296,6 +292,66 @@ struct GraphicsProvider
 
 	/// Draw the given render batch array
 	virtual void draw(struct RenderBatch* batches, u32 count) = 0;
+};
+
+struct RectPackProvider
+{
+	virtual void reset(u32 atlasWidth, u32 atlasHeight) = 0;
+	virtual bool packRect(u32 width, u32 height, Rect& outPackedRect) = 0;
+};
+
+struct FontGlyph
+{
+	UiImage* image = nullptr;
+	GlyphCode code = 0;
+	f32 bearingX = 0.0f;
+	f32 bearingY = 0.0f;
+	f32 advanceX = 0.0f;
+	f32 advanceY = 0.0f;
+	i32 bitmapLeft = 0;
+	i32 bitmapTop = 0;
+	u32 pixelWidth = 0;
+	u32 pixelHeight = 0;
+	i32 pixelX = 0;
+	i32 pixelY = 0;
+	Rgba32* rgbaBuffer = nullptr;
+};
+
+struct FontKerningPair
+{
+	GlyphCode glyphLeft = 0;
+	GlyphCode glyphRight = 0;
+	f32 kerning = 0.0f;
+};
+
+struct FontMetrics
+{
+	f32 height;
+	f32 ascender;
+	f32 descender;
+	f32 underlinePosition;
+	f32 underlineThickness;
+};
+
+struct FontTextSize
+{
+	f32 width = 0;
+	f32 height = 0;
+	f32 maxBearingY = 0;
+	f32 maxGlyphHeight = 0;
+	u32 lastFontIndex = 0;
+	std::vector<f32> lineHeights;
+};
+
+struct FontLoader
+{
+	virtual ~FontLoader(){}
+	virtual bool loadFont(const char* path, u32 faceSize) = 0;
+	virtual bool resetFaceSize(u32 faceSize) = 0;
+	virtual FontGlyph* getGlyph(GlyphCode glyphCode) = 0;
+	virtual f32 getKerning(GlyphCode glyphCodeLeft, GlyphCode glyphCodeRight) = 0;
+	virtual const FontMetrics& getMetrics() const = 0;
+	virtual void precacheGlyphs(GlyphCode* glyphs, u32 glyphCount) = 0;
 };
 
 };
