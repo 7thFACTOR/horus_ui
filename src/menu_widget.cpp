@@ -1,10 +1,10 @@
 #include "horus.h"
 #include "types.h"
-#include "ui_theme.h"
+#include "theme.h"
 #include "renderer.h"
 #include "unicode_text_cache.h"
-#include "ui_font.h"
-#include "ui_context.h"
+#include "font.h"
+#include "context.h"
 #include "util.h"
 #include <algorithm>
 
@@ -312,7 +312,7 @@ void endContextMenu()
 	endMenuInternal(true);
 }
 
-bool menuItem(const char* labelText, const char* shortcut, Image icon, SelectableFlags stateFlags)
+bool menuItem(const char* labelText, const char* shortcut, HImage icon, SelectableFlags stateFlags)
 {
 	auto menuItemShortcutElem = ctx->theme->getElement(WidgetElementId::MenuItemShortcut);
 	auto bodyElem = ctx->theme->getElement(WidgetElementId::MenuItemBody);

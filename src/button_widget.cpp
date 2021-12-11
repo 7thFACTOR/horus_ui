@@ -1,10 +1,10 @@
 #include "horus.h"
 #include "types.h"
 #include "renderer.h"
-#include "ui_theme.h"
+#include "theme.h"
 #include "unicode_text_cache.h"
-#include "ui_font.h"
-#include "ui_context.h"
+#include "font.h"
+#include "context.h"
 #include "util.h"
 #include <algorithm>
 
@@ -239,7 +239,7 @@ bool button(const char* labelText)
 	return ctx->widget.clicked;
 }
 
-bool iconButtonInternal(Image icon, Image disabledIcon, f32 customHeight, bool down, UiThemeElement* btnBodyElem, bool focusable)
+bool iconButtonInternal(HImage icon, HImage disabledIcon, f32 customHeight, bool down, UiThemeElement* btnBodyElem, bool focusable)
 {
 	auto btnBodyElemState = &btnBodyElem->normalState();
 	UiImage* iconImg = (UiImage*)icon;
@@ -292,7 +292,7 @@ bool iconButtonInternal(Image icon, Image disabledIcon, f32 customHeight, bool d
 	return ctx->widget.clicked;
 }
 
-bool iconButton(Image icon, f32 customHeight, bool down)
+bool iconButton(HImage icon, f32 customHeight, bool down)
 {
 	auto btnBodyElem = ctx->theme->getElement(WidgetElementId::ButtonBody);
 

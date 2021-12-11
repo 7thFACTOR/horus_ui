@@ -1,12 +1,12 @@
 #include "horus.h"
 #include "types.h"
-#include "ui_theme.h"
-#include "ui_context.h"
+#include "theme.h"
+#include "context.h"
 #include "util.h"
 
 namespace hui
 {
-bool image(Image img, f32 height, HAlignType horizontalAlign, VAlignType verticalAlign, ImageFitType fit)
+bool image(HImage img, f32 height, HAlignType horizontalAlign, VAlignType verticalAlign, ImageFitType fit)
 {
 	UiImage* imgPtr = (UiImage*)img;
 	bool autoHeight = false;

@@ -5,10 +5,10 @@
 #include <string.h>
 #include <algorithm>
 #include "renderer.h"
-#include "ui_atlas.h"
-#include "ui_font.h"
-#include "ui_theme.h"
-#include "ui_context.h"
+#include "atlas.h"
+#include "font.h"
+#include "theme.h"
+#include "context.h"
 #include "util.h"
 #include "unicode_text_cache.h"
 

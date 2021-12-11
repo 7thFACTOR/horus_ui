@@ -2,9 +2,9 @@
 #include "types.h"
 #include "renderer.h"
 #include "unicode_text_cache.h"
-#include "ui_font.h"
-#include "ui_theme.h"
-#include "ui_context.h"
+#include "font.h"
+#include "theme.h"
+#include "context.h"
 #include "docking_system.h"
 #include "layout_cell.h"
 #include <vector>

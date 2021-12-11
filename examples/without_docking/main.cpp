@@ -1,7 +1,7 @@
 ﻿#pragma execution_character_set("utf-8")
 #include "horus.h"
-#include "sdl2_input_provider.h"
-#include "opengl_graphics_provider.h"
+#include "sdl2_input.h"
+#include "opengl_graphics.h"
 
 int main(int argc, char** args)
 {

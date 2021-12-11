@@ -3,46 +3,27 @@ project "widget_showroom"
 	language "C++"
 	cppdialect "C++11"
 
+  vpaths { ["backends"] = "../../backends/" }
+  vpaths { ["horus"] = "../../src/" }
+  vpaths { ["horus"] = "../../include/" }
+
 	warnings "off"
 	files {
-		"../common/sdl2*.*",
-		"../common/opengl*.*",
+		"../../backends/sdl2*.*",
+		"../../backends/opengl*.*",
+		"../../src/*.*",
+		"../../include/*.*",
 		"*.cpp"
 	}
 
 	includedirs {
 		".",
 		"../../include",
-		"../common"
+		"../../backends",
+    "../../include"
 	}
 
 	defines "_CONSOLE"
 
-	using { "horus", "sdl" }
+	using { "sdl", "glew" }
 	distcopy(mytarget())
-
-project "widget_showroom_static"
-	kind "ConsoleApp"
-	language "C++"
-	cppdialect "C++11"
-
-	warnings "off"
-	files {
-		"../common/sdl2*.h",
-		"../common/sdl2*.cpp",
-		"../common/opengl*.h",
-		"../common/opengl*.cpp",
-		"*.cpp"
-	}
-
-	includedirs {
-		".",
-		"../../include",
-		"../common"
-	}
-
-	defines "_CONSOLE"
-
-	using { "horus_static", "sdl" }
-
-  distcopy(mytarget())

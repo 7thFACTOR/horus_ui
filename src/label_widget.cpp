@@ -1,8 +1,8 @@
 #include "horus.h"
 #include "types.h"
-#include "ui_theme.h"
-#include "ui_font.h"
-#include "ui_context.h"
+#include "theme.h"
+#include "font.h"
+#include "context.h"
 #include "unicode_text_cache.h"
 #include "util.h"
 
@@ -51,7 +51,7 @@ bool label(const char* labelText, HAlignType horizontalAlign)
 	return labelInternal(labelText, horizontalAlign, nullptr);
 }
 
-bool labelCustomFont(const char* labelText, Font font, HAlignType horizontalAlign)
+bool labelCustomFont(const char* labelText, HFont font, HAlignType horizontalAlign)
 {
 	return labelInternal(labelText, horizontalAlign, (UiFont*)font);
 }
@@ -63,7 +63,7 @@ bool multilineLabel(const char* labelText, HAlignType horizontalAlign)
 	return multilineLabelCustomFont(labelText, bodyElemState.font, horizontalAlign);
 }
 
-bool multilineLabelCustomFont(const char* labelText, Font font, HAlignType horizontalAlign)
+bool multilineLabelCustomFont(const char* labelText, HFont font, HAlignType horizontalAlign)
 {
 	auto bodyElemState = ctx->theme->getElement(WidgetElementId::LabelBody).normalState();
 

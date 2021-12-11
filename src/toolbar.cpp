@@ -1,7 +1,7 @@
 #include "horus.h"
 #include "types.h"
-#include "ui_theme.h"
-#include "ui_context.h"
+#include "theme.h"
+#include "context.h"
 #include "util.h"
 
 namespace hui
@@ -36,7 +36,7 @@ void endToolbar()
 		ctx->widget.sameLine = false;
 }
 
-bool toolbarButton(Image normalIcon, Image disabledIcon, bool down)
+bool toolbarButton(HImage normalIcon, HImage disabledIcon, bool down)
 {
 	auto el = &ctx->theme->getElement(WidgetElementId::ToolbarButtonBody);
 
@@ -53,7 +53,7 @@ bool toolbarButton(Image normalIcon, Image disabledIcon, bool down)
 	return ret;
 }
 
-bool toolbarDropdown(const char* label, Image normalIcon, Image disabledIcon)
+bool toolbarDropdown(const char* label, HImage normalIcon, HImage disabledIcon)
 {
 	return false;
 }
@@ -89,7 +89,7 @@ bool toolbarTextInputFilter(char* outText, u32 maxOutTextSize, u32& filterIndex,
 	return false;
 }
 
-bool toolbarTextInput(char* outText, u32 maxOutTextSize, const char* hint, Image icon)
+bool toolbarTextInput(char* outText, u32 maxOutTextSize, const char* hint, HImage icon)
 {
 	return textInput(outText, maxOutTextSize, TextInputValueMode::Any, hint, icon);
 }

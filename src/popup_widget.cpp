@@ -1,9 +1,9 @@
 #include "horus.h"
 #include "types.h"
-#include "ui_theme.h"
-#include "ui_font.h"
+#include "theme.h"
+#include "font.h"
 #include "util.h"
-#include "ui_context.h"
+#include "context.h"
 #include <limits.h>
 
 namespace hui
@@ -334,7 +334,7 @@ MessageBoxButtons messageBox(
 	MessageBoxButtons buttons,
 	MessageBoxIcon icon,
 	u32 width,
-	Image customIcon)
+	HImage customIcon)
 {
 	UiThemeElement* iconElem = nullptr;
 
@@ -362,7 +362,7 @@ MessageBoxButtons messageBox(
 
 	if (iterFnt != ctx->theme->fonts.end())
 	{
-		hui::labelCustomFont(title, (Image)iterFnt->second);
+		hui::labelCustomFont(title, (HImage)iterFnt->second);
 	}
 	else
 	{
@@ -377,7 +377,7 @@ MessageBoxButtons messageBox(
 	beginColumns(2, titleColWidths);
 	hui::multilineLabel(message, HAlignType::Left);
 	nextColumn();
-	hui::image((Image)iconElem->normalState().image, 0, hui::HAlignType::Right);
+	hui::image((HImage)iconElem->normalState().image, 0, hui::HAlignType::Right);
 	endColumns();
 
 	hui::gap(10);

@@ -1,11 +1,11 @@
 #include "horus.h"
 #include "types.h"
 #include "renderer.h"
-#include "ui_theme.h"
+#include "theme.h"
 #include "unicode_text_cache.h"
 #include "util.h"
-#include "ui_font.h"
-#include "ui_context.h"
+#include "font.h"
+#include "context.h"
 #define _USE_MATH_DEFINES
 #include <math.h>
 
@@ -73,7 +73,7 @@ void endInsertDrawCommands()
 	ctx->renderer->endDrawCmdInsertion();
 }
 
-void setFont(Font font)
+void setFont(HFont font)
 {
 	ctx->renderer->cmdSetFont((UiFont*)font);
 }
@@ -121,19 +121,19 @@ void drawTextInBox(const char* text, const Rect& rect, HAlignType horizontalAlig
 		horizontalAlign, verticalAlign);
 }
 
-void drawImage(Image image, const Point& position, f32 scale)
+void drawImage(HImage image, const Point& position, f32 scale)
 {
 	UiImage* img = (UiImage*)image;
 	ctx->renderer->cmdDrawImage(img, position + ctx->renderer->viewportOffset, scale);
 }
 
-void drawStretchedImage(Image image, const Rect& rect)
+void drawStretchedImage(HImage image, const Rect& rect)
 {
 	UiImage* img = (UiImage*)image;
 	ctx->renderer->cmdDrawImage(img, Rect(rect.x + ctx->renderer->viewportOffset.x, rect.y + ctx->renderer->viewportOffset.y, rect.width, rect.height));
 }
 
-void drawBorderedImage(Image image, u32 border, const Rect& rect)
+void drawBorderedImage(HImage image, u32 border, const Rect& rect)
 {
 	UiImage* img = (UiImage*)image;
 

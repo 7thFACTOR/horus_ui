@@ -2,7 +2,7 @@
 #include "horus.h"
 #include "types.h"
 #include "renderer.h"
-#include "ui_theme.h"
+#include "theme.h"
 #include <vector>
 
 namespace hui
@@ -15,8 +15,8 @@ struct UiViewTab
 	struct UiViewPane* parentViewPane = nullptr;
 	ViewId viewId = 0;
 	Rect rect;
-	Image icon = nullptr;
-	Window nativeWindow = 0;
+	HImage icon = nullptr;
+	HWindow nativeWindow = 0;
 	u64 userDataId = 0;
 };
 
@@ -81,7 +81,7 @@ struct UiViewContainer
 	bool deserialize(FILE* file, struct ViewHandler* viewHandler);
 
 	LayoutCell* rootCell = nullptr;
-	Window window = 0;
+	HWindow window = 0;
 
 	enum SideSpacing
 	{

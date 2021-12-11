@@ -1,5 +1,5 @@
 #include "font_cache.h"
-#include "ui_atlas.h"
+#include "atlas.h"
 
 namespace hui
 {

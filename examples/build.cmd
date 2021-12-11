@@ -11,6 +11,6 @@ echo %InstallDir%
 
 if exist "%InstallDir%\MSBuild\Current\Bin\MSBuild.exe" (
 	set msbuild="%InstallDir%\MSBuild\Current\Bin\MSBuild.exe"
-	%msbuild%  .\build_vs2019\horus.sln /m:4 /property:Configuration=Release
+	%msbuild%  .\build_msvc\horus.sln /m:4 /property:Configuration=Release
 )
 

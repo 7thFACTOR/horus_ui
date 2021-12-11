@@ -3,18 +3,24 @@ project "custom_widgets"
 	language "C++"
 	cppdialect "C++11"
 
+  vpaths { ["backends"] = "../../backends/" }
+  vpaths { ["horus"] = "../../src/" }
+  vpaths { ["horus"] = "../../include/" }
+
 	warnings "off"
 	files {
-		"../common/sdl2*.h",
-		"../common/sdl2*.cpp",
-		"../common/opengl*.*",
+		"../../backends/sdl2*.h",
+		"../../backends/sdl2*.cpp",
+		"../../backends/opengl*.*",
+    "../../src/*.*",
+    "../../include/*.*",
 		"*.cpp"
 	}
 
 	includedirs {
 		".",
 		"../../include",
-		"../common"
+		"../../backends"
 	}
 	
 	defines "_CONSOLE"
@@ -24,5 +30,5 @@ project "custom_widgets"
 
 	filter{}
 
-	using { "horus", "sdl" }	
+	using { "sdl", "glew" }
 	distcopy(mytarget())

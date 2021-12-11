@@ -6,23 +6,10 @@
 #include <unordered_map>
 #include <string>
 #include <vector>
-#include <libs/binpack/Rect.h>
-#include <libs/binpack/GuillotineBinPack.h>
-#include <libs/binpack/ShelfBinPack.h>
-#include <libs/binpack/SkylineBinPack.h>
-#include <libs/binpack/MaxRectsBinPack.h>
 
 namespace hui
 {
 class UiAtlas;
-
-enum class UiAtlasPackPolicy
-{
-	Guillotine,
-	MaxRects,
-	ShelfBin,
-	Skyline
-};
 
 struct AtlasTexture
 {
@@ -30,11 +17,6 @@ struct AtlasTexture
 	u32 textureIndex = 0;
 	Rgba32* textureImage = nullptr;
 	bool dirty = false;
-	UiAtlasPackPolicy packPolicy = UiAtlasPackPolicy::Skyline;
-	GuillotineBinPack guillotineBinPack;
-	MaxRectsBinPack maxRectsBinPack;
-	ShelfBinPack shelfBinPack;
-	SkylineBinPack skylineBinPack;
 };
 
 struct UiImage

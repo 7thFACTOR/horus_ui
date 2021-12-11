@@ -1,9 +1,9 @@
 #include "horus.h"
 #include "types.h"
-#include "ui_theme.h"
+#include "theme.h"
 #include "unicode_text_cache.h"
-#include "ui_font.h"
-#include "ui_context.h"
+#include "font.h"
+#include "context.h"
 #include "util.h"
 #include <math.h>
 
@@ -64,7 +64,7 @@ TabIndex endTabGroup()
 	return ctx->selectedTabIndex;
 }
 
-void tab(const char* labelText, Image icon)
+void tab(const char* labelText, HImage icon)
 {
 	auto tabGroupElemState = ctx->theme->getElement(WidgetElementId::TabGroupBody).normalState();
 	auto tabActiveElem = ctx->theme->getElement(WidgetElementId::TabBodyActive);

@@ -1,4 +1,4 @@
-#include "opengl_graphics_provider.h"
+#include "opengl_graphics.h"
 #include "horus.h"
 #include "opengl_texture_array.h"
 #include "opengl_vertex_buffer.h"

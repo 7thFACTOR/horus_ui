@@ -1,8 +1,8 @@
 #include "types.h"
 #include "horus.h"
-#include "ui_context.h"
+#ifdef HORUS_USE_NATIVEFILEDIALOGS
+#include "context.h"
 #include "util.h"
-#include "libs/nativefiledialog/src/include/nfd.h"
 #include <string.h>
 #include <algorithm>
 
@@ -78,3 +78,5 @@ bool pickFolderDialog(const char* defaultPath, char* outPath, u32 maxOutPathSize
 }
 
 }
+
+#endif

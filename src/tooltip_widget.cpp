@@ -1,11 +1,11 @@
 #include "horus.h"
 #include "types.h"
-#include "ui_atlas.h"
-#include "ui_theme.h"
+#include "atlas.h"
+#include "theme.h"
 #include "renderer.h"
 #include "unicode_text_cache.h"
-#include "ui_font.h"
-#include "ui_context.h"
+#include "font.h"
+#include "context.h"
 #include "util.h"
 #include <limits.h>
 
@@ -87,7 +87,6 @@ bool beginCustomTooltip(f32 width)
 
 	if (ctx->tooltip.closeTooltipPopup)
 	{
-		printf("Closed");
 		closePopup();
 		return true;
 	}

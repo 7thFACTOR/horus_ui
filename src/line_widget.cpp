@@ -1,8 +1,8 @@
 #include "horus.h"
 #include "types.h"
 #include "renderer.h"
-#include "ui_theme.h"
-#include "ui_context.h"
+#include "theme.h"
+#include "context.h"
 #include "util.h"
 
 namespace hui
@@ -95,7 +95,6 @@ f32 popSameLineSpacing()
 
 	return 0;
 }
-
 
 void pushWidth(f32 width)
 {

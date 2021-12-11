@@ -1,13 +1,14 @@
 #include "horus.h"
 #include "types.h"
-#include "ui_context.h"
-#include "ui_theme.h"
+#include "context.h"
+#include "theme.h"
 #include "util.h"
 
 namespace hui
 {
 bool vecEditorInternal(f64& x, f64& y, f64& z, f64 scrollStep, bool useZ)
 {
+	//TODO: place statics into context struct
 	static bool draggingValue;
 	static Point lastMousePos;
 	static u32 draggedWidgetId = 0;
@@ -149,7 +150,7 @@ bool vec2Editor(f32& x, f32& y, f32 scrollStep)
 	return ret;
 }
 
-bool objectRefEditor(Image targetIcon, Image clearIcon, const char* objectTypeName, const char* valueAsString, u32 objectType, void** outObject, bool* objectValueWasModified)
+bool objectRefEditor(HImage targetIcon, HImage clearIcon, const char* objectTypeName, const char* valueAsString, u32 objectType, void** outObject, bool* objectValueWasModified)
 {
 	bool returnValue = false;
 	bool changeEnded = false;

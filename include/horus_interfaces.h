@@ -18,7 +18,7 @@ struct InputProvider
 	/// Start text input, usually called by the library to show IME suggestions boxes
 	/// \param window the window where the text started to be input
 	/// \param imeRect the rectangle where to show the suggestion box
-	virtual void startTextInput(Window window, const Rect& imeRect) = 0;
+	virtual void startTextInput(HWindow window, const Rect& imeRect) = 0;
 
 	/// Called when the text input ends
 	virtual void stopTextInput() = 0;
@@ -38,19 +38,19 @@ struct InputProvider
 	virtual void processEvents() = 0;
 
 	/// Set the current native window, where drawing and input testing is occurring
-	virtual void setCurrentWindow(Window window) = 0;
+	virtual void setCurrentWindow(HWindow window) = 0;
 
 	/// \return the current native window
-	virtual Window getCurrentWindow() = 0;
+	virtual HWindow getCurrentWindow() = 0;
 
 	/// \return the focused native window
-	virtual Window getFocusedWindow() = 0;
+	virtual HWindow getFocusedWindow() = 0;
 
 	/// \return the hovered native window
-	virtual Window getHoveredWindow() = 0;
+	virtual HWindow getHoveredWindow() = 0;
 
 	/// \return the main native window, this window is the one that upon closing, will end the application
-	virtual Window getMainWindow() = 0;
+	virtual HWindow getMainWindow() = 0;
 
 	/// Create a new native window, the first window created will be the main window
 	/// \param title the window title, UTF8 text
@@ -59,7 +59,7 @@ struct InputProvider
 	/// \param flags the window flags
 	/// \param customPosition if the positionType is custom, then this is the window's initial position
 	/// \return the new window handle
-	virtual Window createWindow(
+	virtual HWindow createWindow(
 		const char* title, i32 width, i32 height,
 		WindowFlags flags = WindowFlags::Resizable | WindowFlags::Centered,
 		Point customPosition = { 0, 0 }) = 0;
@@ -67,51 +67,51 @@ struct InputProvider
 	/// Set window title
 	/// \param window the window
 	/// \param title UTF8 text for the title
-	virtual void setWindowTitle(Window window, const char* title) = 0;
+	virtual void setWindowTitle(HWindow window, const char* title) = 0;
 
 	/// Set the window rectangle
 	/// \param window the window
 	/// \param rect the rectangle
-	virtual void setWindowRect(Window window, const Rect& rect) = 0;
+	virtual void setWindowRect(HWindow window, const Rect& rect) = 0;
 
 	/// \param window the window
 	/// \return the rectangle of the window
-	virtual Rect getWindowRect(Window window) = 0;
+	virtual Rect getWindowRect(HWindow window) = 0;
 
 	/// Present the backbuffer of the specified window
 	/// \param window the window to present
-	virtual void presentWindow(Window window) = 0;
+	virtual void presentWindow(HWindow window) = 0;
 
 	/// Destroy a native window
 	/// \param window the window
-	virtual void destroyWindow(Window window) = 0;
+	virtual void destroyWindow(HWindow window) = 0;
 
 	/// Show a native window
 	/// \param window the window to show
-	virtual void showWindow(Window window) = 0;
+	virtual void showWindow(HWindow window) = 0;
 
 	/// Hide a native window
 	/// \param window the window to hide
-	virtual void hideWindow(Window window) = 0;
+	virtual void hideWindow(HWindow window) = 0;
 
 	/// Bring a native window to front of all windows, on supported OS-es
 	/// \param window the window
-	virtual void raiseWindow(Window window) = 0;
+	virtual void raiseWindow(HWindow window) = 0;
 
 	/// Maximize a native window
 	/// \param window the window
-	virtual void maximizeWindow(Window window) = 0;
+	virtual void maximizeWindow(HWindow window) = 0;
 
 	/// Minimize a native window
 	/// \param window the window
-	virtual void minimizeWindow(Window window) = 0;
+	virtual void minimizeWindow(HWindow window) = 0;
 
 	/// \return the window state
-	virtual WindowState getWindowState(Window window) = 0;
+	virtual WindowState getWindowState(HWindow window) = 0;
 
 	/// Set the input capture to a specified window
 	/// \param window the window
-	virtual void setCapture(Window window) = 0;
+	virtual void setCapture(HWindow window) = 0;
 
 	/// Release capture from the captured window (if any)
 	virtual void releaseCapture() = 0;
@@ -130,15 +130,15 @@ struct InputProvider
 	/// \param x mouse cursor x hot spot in the image
 	/// \param y mouse cursor y hot spot in the image
 	/// \return the new mouse cursor handle
-	virtual MouseCursor createCustomCursor(Rgba32* pixels, u32 width, u32 height, u32 hotX, u32 hotY) = 0;
+	virtual HMouseCursor createCustomCursor(Rgba32* pixels, u32 width, u32 height, u32 hotX, u32 hotY) = 0;
 
 	/// Delete a custom mouse cursor
 	/// \param cursor the cursor handle
-	virtual void deleteCustomCursor(MouseCursor cursor) = 0;
+	virtual void deleteCustomCursor(HMouseCursor cursor) = 0;
 
 	/// Set the current mouse cursor to a custom cursor
 	/// \param cursor the custom cursor handle
-	virtual void setCustomCursor(MouseCursor cursor) = 0;
+	virtual void setCustomCursor(HMouseCursor cursor) = 0;
 
 	/// \return true if the user called quitApplication()
 	virtual bool mustQuit() = 0;
@@ -182,7 +182,7 @@ struct TextureArray
 	virtual void updateRectData(u32 textureIndex, const Rect& rect, Rgba32* pixels) = 0;
 
 	/// \return the graphics API handle of the texture, you may cast it to the proper handle for your graphics API
-	virtual GraphicsApiTexture getHandle() const = 0;
+	virtual HGraphicsApiTexture getHandle() const = 0;
 
 	/// \return the textures width
 	virtual u32 getWidth() const = 0;
@@ -209,7 +209,7 @@ struct VertexBuffer
 	virtual void updateData(Vertex* vertices, u32 startVertexIndex, u32 count) = 0;
 
 	/// \return the graphics API handle for this vertex buffer, you may cast it to the proper handle your graphics API uses
-	virtual GraphicsApiVertexBuffer getHandle() const = 0;
+	virtual HGraphicsApiVertexBuffer getHandle() const = 0;
 };
 
 /// A render batch is a single drawcall, which renders the whole UI or part of it.
@@ -227,7 +227,7 @@ struct RenderBatch
 	PrimitiveType primitiveType = PrimitiveType::TriangleList;
 	VertexBuffer* vertexBuffer = nullptr; /// which vertex buffer to use for rendering
 	TextureArray* textureArray = nullptr; /// which texture array to use for rendering
-	Atlas atlas = nullptr; /// handle to the corresponding image atlas
+	HAtlas atlas = nullptr; /// handle to the corresponding image atlas
 	u32 startVertexIndex = 0; /// where to start rendering
 	u32 vertexCount = 0; /// how many vertices to use for rendering the primitives
 	/// The draw command callback is used when the user wants to render this batch
@@ -274,13 +274,13 @@ struct GraphicsProvider
 	/// Create a new render target texture
 	/// \param width the texture width
 	/// \param height the texture height
-	virtual GraphicsApiRenderTarget createRenderTarget(u32 width, u32 height) = 0;
+	virtual HGraphicsApiRenderTarget createRenderTarget(u32 width, u32 height) = 0;
 
 	/// Delete a render target
-	virtual void destroyRenderTarget(GraphicsApiRenderTarget rt) = 0;
+	virtual void destroyRenderTarget(HGraphicsApiRenderTarget rt) = 0;
 
 	/// Set the current render target
-	virtual void setRenderTarget(GraphicsApiRenderTarget rt) = 0;
+	virtual void setRenderTarget(HGraphicsApiRenderTarget rt) = 0;
 
 	/// Set the current viewport and scissor box
 	/// \param windowSize the native window's current size
@@ -302,7 +302,7 @@ struct RectPackProvider
 
 struct FontGlyph
 {
-	UiImage* image = nullptr;
+	HImage image = nullptr;
 	GlyphCode code = 0;
 	f32 bearingX = 0.0f;
 	f32 bearingY = 0.0f;
@@ -352,6 +352,13 @@ struct FontLoader
 	virtual f32 getKerning(GlyphCode glyphCodeLeft, GlyphCode glyphCodeRight) = 0;
 	virtual const FontMetrics& getMetrics() const = 0;
 	virtual void precacheGlyphs(GlyphCode* glyphs, u32 glyphCount) = 0;
+};
+
+struct ImageProvider
+{
+	virtual ~ImageProvider() {}
+	virtual bool loadImage(const char* path, Rgba32** outBuffer, u32& width, u32& height) = 0;
+
 };
 
 };

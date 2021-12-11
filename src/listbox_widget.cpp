@@ -1,8 +1,8 @@
 #include "horus.h"
 #include "types.h"
-#include "ui_theme.h"
-#include "ui_font.h"
-#include "ui_context.h"
+#include "theme.h"
+#include "font.h"
+#include "context.h"
 #include "unicode_text_cache.h"
 #include "util.h"
 #include <math.h>
@@ -31,12 +31,12 @@ void endList()
 {
 }
 
-void listItem(const char* labelText, SelectableFlags stateFlags, Image icon)
+void listItem(const char* labelText, SelectableFlags stateFlags, HImage icon)
 {
 
 }
 
-bool selectableInternal(const char* labelText, Font font, SelectableFlags stateFlags)
+bool selectableInternal(const char* labelText, HFont font, SelectableFlags stateFlags)
 {
 	auto bodyElem = ctx->theme->getElement(WidgetElementId::SelectableBody);
 	UiFont* fnt = font ? (UiFont*)font : bodyElem.normalState().font;
@@ -87,7 +87,7 @@ bool selectable(const char* labelText, SelectableFlags stateFlags)
 	return selectableInternal(labelText, nullptr, stateFlags);
 }
 
-bool selectableCustomFont(const char* labelText, Font font, SelectableFlags stateFlags)
+bool selectableCustomFont(const char* labelText, HFont font, SelectableFlags stateFlags)
 {
 	return selectableInternal(labelText, font, stateFlags);
 }

@@ -130,6 +130,7 @@ struct DrawCommand
 
 	Type type = Type::None;
 	i32 zOrder = 0;
+	//TODO: make union of all cmds
 	CmdDrawRect drawRect;
 	CmdDrawQuad drawQuad;
 	CmdDrawLine drawLine;

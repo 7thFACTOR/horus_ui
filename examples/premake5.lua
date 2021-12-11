@@ -2,9 +2,9 @@ require("vstudio")
 require('remake')
 
 if HORUS_NO_WORKSPACE then
-  project "horus"
+  project "horus_examples"
 else
-  workspace "horus"
+  workspace "horus_examples"
 end
 
 configurations { "Debug", "Development", "Release" }
@@ -32,7 +32,7 @@ else
   premake.error("Unknown/Unsupported build action: " .. _ACTION)
 end
 
-paths = Config('src', 'libs', ('build_' .. _ACTION), 'bin')
+paths = Config('../src', 'libs', ('build_' .. _ACTION), 'bin')
 
 --- prepare naming convention for library files
 filter "kind:SharedLib or StaticLib"
@@ -103,7 +103,7 @@ library("os", function()
 end)
 
 library("opengl", function()
-  public.defines "USE_OPENGL"
+  public.defines "HORUS_USE_GL"
 
   if os.target() == "windows" then
     public.links "opengl32"

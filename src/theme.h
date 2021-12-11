@@ -2,7 +2,7 @@
 #include <unordered_map>
 #include "horus.h"
 #include "types.h"
-#include "ui_atlas.h"
+#include "atlas.h"
 
 namespace hui
 {

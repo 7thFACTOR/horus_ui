@@ -1,12 +1,9 @@
 #include <string.h>
-#include "ui_atlas.h"
+#include "atlas.h"
 #include "horus_interfaces.h"
 #include "renderer.h"
-#include "ui_context.h"
+#include "context.h"
 #include "util.h"
-#define STB_IMAGE_WRITE_IMPLEMENTATION
-#define STB_IMAGE_IMPLEMENTATION
-#include "libs/stb/stb_image_write.h"
 
 namespace hui
 {

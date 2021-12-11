@@ -23,7 +23,6 @@ class UiFont;
 struct UiImage;
 
 typedef u32 UiImageId;
-typedef u32 GlyphCode;
 typedef std::vector<GlyphCode> UnicodeString;
 
 struct UiThemeElement
@@ -194,7 +193,7 @@ struct PopupState
 	bool startedToDrag = false;
 	bool draggingPopup = false;
 	bool opened = false;
-	Window ownerWindow = 0;
+	HWindow ownerWindow = 0;
 	Point dragDelta, lastMouseDownPoint;
 	Point lastMousePoint;
 	Rect prevContainerRect;
@@ -275,7 +274,7 @@ struct DragDropState
 	bool foundDropTarget = false;
 	u32 widgetId = 0;
 	Point lastMousePos;
-	MouseCursor dropAllowedCursor = 0;
+	HMouseCursor dropAllowedCursor = 0;
 	void* dragObject = nullptr;
 	u32 dragObjectType = 0;
 };

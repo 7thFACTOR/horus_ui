@@ -5,9 +5,9 @@
 #include "libs/utfcpp/source/utf8.h"
 #define STB_IMAGE_IMPLEMENTATION
 #include "libs/stb/stb_image.h"
-#include "ui_theme.h"
-#include "ui_atlas.h"
-#include "ui_context.h"
+#include "theme.h"
+#include "atlas.h"
+#include "context.h"
 #include "util.h"
 #include "renderer.h"
 #include "unicode_text_cache.h"
