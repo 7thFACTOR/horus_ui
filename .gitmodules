@@ -1,21 +1,21 @@
-[submodule "libs/sdl"]
-	path = libs/sdl
+[submodule "examples/libs/sdl"]
+	path = examples/libs/sdl
 	url = https://github.com/spurious/SDL-mirror.git
-[submodule "libs/binpack"]
-	path = libs/binpack
+[submodule "examples/libs/binpack"]
+	path = examples/libs/binpack
 	url = https://github.com/nekitu/binpack.git
-[submodule "libs/jsoncpp"]
-	path = libs/jsoncpp
+[submodule "examples/libs/jsoncpp"]
+	path = examples/libs/jsoncpp
 	url = https://github.com/open-source-parsers/jsoncpp
-[submodule "libs/nativefiledialog"]
-	path = libs/nativefiledialog
+[submodule "examples/libs/nativefiledialog"]
+	path = examples/libs/nativefiledialog
 	url = https://github.com/mlabbe/nativefiledialog
-[submodule "libs/stb"]
-	path = libs/stb
+[submodule "examples/libs/stb"]
+	path = examples/libs/stb
 	url = https://github.com/nothings/stb
-[submodule "libs/utfcpp"]
-	path = libs/utfcpp
+[submodule "examples/libs/utfcpp"]
+	path = examples/libs/utfcpp
 	url = https://github.com/nemtrif/utfcpp
-[submodule "libs/freetype"]
-	path = libs/freetype
+[submodule "examples/libs/freetype"]
+	path = examples/libs/freetype
 	url = https://git.sv.nongnu.org/r/freetype/freetype2.git
