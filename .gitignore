@@ -4,3 +4,5 @@ bin/**
 docs/html/**
 releases
 docs/doxygen
+bin
+build_vs2019

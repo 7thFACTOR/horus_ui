@@ -1,0 +1,7 @@
+include "binpack"
+include "freetype.lua"
+include "glew.lua"
+include "jsoncpp.lua"
+include "nativefiledialog.lua"
+include "stb.lua"
+include "sdl.lua"
