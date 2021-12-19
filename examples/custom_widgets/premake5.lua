@@ -8,14 +8,20 @@ project "custom_widgets"
   vpaths { ["horus"] = "../../include/" }
 
 	warnings "off"
-	files {
-		"../../backends/sdl2*.h",
-		"../../backends/sdl2*.cpp",
-		"../../backends/opengl*.*",
+  files {
     "../../src/*.*",
     "../../include/*.*",
-		"*.cpp"
-	}
+    "../../backends/sdl2*.*",
+    "../../backends/opengl*.*",
+    "../../backends/binpack*.*",
+    "../../backends/freetype*.*",
+    "../../backends/stb_image*.*",
+    "../../backends/stdio*.*",
+    "../../backends/json*.*",
+    "../../backends/utfcpp*.*",
+    "../../backends/nativefiledialogs*.*",
+    "*.cpp"
+  }
 
 	includedirs {
 		".",

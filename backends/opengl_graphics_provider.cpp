@@ -257,7 +257,7 @@ VertexBuffer* OpenGLGraphicsProvider::createVertexBuffer()
 	return (VertexBuffer*)new OpenGLVertexBuffer();
 }
 
-GraphicsApiRenderTarget OpenGLGraphicsProvider::createRenderTarget(u32 width, u32 height)
+HGraphicsApiRenderTarget OpenGLGraphicsProvider::createRenderTarget(u32 width, u32 height)
 {
 	OpenGLRenderTarget* rt = new OpenGLRenderTarget();
 	GLuint fb;
@@ -281,7 +281,7 @@ GraphicsApiRenderTarget OpenGLGraphicsProvider::createRenderTarget(u32 width, u3
 	return rt;
 }
 
-void OpenGLGraphicsProvider::destroyRenderTarget(GraphicsApiRenderTarget rt)
+void OpenGLGraphicsProvider::destroyRenderTarget(HGraphicsApiRenderTarget rt)
 {
 	if (!rt)
 	{
@@ -301,7 +301,7 @@ void OpenGLGraphicsProvider::destroyRenderTarget(GraphicsApiRenderTarget rt)
 	delete rt;
 }
 
-void OpenGLGraphicsProvider::setRenderTarget(GraphicsApiRenderTarget rt)
+void OpenGLGraphicsProvider::setRenderTarget(HGraphicsApiRenderTarget rt)
 {
 	OpenGLRenderTarget* oglRt = (OpenGLRenderTarget*)rt;
 	glBindFramebuffer(GL_FRAMEBUFFER, (GLuint)oglRt->frameBuffer);

@@ -18,7 +18,7 @@ struct OpenGLTextureArray : TextureArray
 	void updateData(Rgba32* pixels) override;
 	void updateLayerData(u32 textureIndex, Rgba32* pixels) override;
 	void updateRectData(u32 textureIndex, const Rect& rect, Rgba32* pixels) override;
-	GraphicsApiTexture getHandle() const override { return (GraphicsApiTexture)handle; }
+	HGraphicsApiTexture getHandle() const override { return (HGraphicsApiTexture)handle; }
 	virtual u32 getWidth() const override { return width; }
 	virtual u32 getHeight() const override { return height; }
 	virtual u32 getCount() const override { return textureCount; }

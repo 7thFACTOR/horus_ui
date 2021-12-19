@@ -27,8 +27,8 @@ Rect beginCustomWidget(f32 height)
 
 void endCustomWidget()
 {
-	auto wnd = ctx->inputProvider->getCurrentWindow();
-	auto rc = ctx->inputProvider->getWindowRect(wnd);
+	auto wnd = ctx->providers->input->getCurrentWindow();
+	auto rc = ctx->providers->input->getWindowRect(wnd);
 }
 
 Point getParentSize()

@@ -455,7 +455,7 @@ Renderer::Renderer()
 {
 	textBuffer.resize(textBufferMaxSize);
 	pointBuffer.resize(pointBufferMaxSize);
-	vertexBuffer = ctx->gfx->createVertexBuffer();
+	vertexBuffer = ctx->providers->gfx->createVertexBuffer();
 }
 
 Renderer::~Renderer()
@@ -465,7 +465,7 @@ Renderer::~Renderer()
 
 void Renderer::clear(const Color& color)
 {
-	ctx->gfx->clear(color);
+	ctx->providers->gfx->clear(color);
 }
 
 Rect Renderer::pushClipRect(const Rect& rect, bool clipToParent)
@@ -507,7 +507,7 @@ void Renderer::setWindowSize(const Point& size)
 {
 	windowSize = size;
 	currentClipRect = { 0, 0, windowSize.x, windowSize.y };
-	ctx->gfx->setViewport(windowSize, currentClipRect);
+	ctx->providers->gfx->setViewport(windowSize, currentClipRect);
 }
 
 void Renderer::beginFrame()
@@ -622,7 +622,7 @@ void Renderer::endFrame()
 
 	vertexBuffer->updateData(vertexBufferData.vertices.data(), 0, vertexBufferData.drawVertexCount);
 	// render the batches
-	ctx->gfx->draw(batches.data(), batches.size());
+	ctx->providers->gfx->draw(batches.data(), batches.size());
 }
 
 void Renderer::cmdSetColor(const Color& newColor)

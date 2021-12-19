@@ -54,7 +54,7 @@ void updateDockingSystemInternal(bool isLastEvent)
 			continue;
 		}
 
-		auto wndRect = ctx->inputProvider->getWindowRect(wnd);
+		auto wndRect = ctx->providers->input->getWindowRect(wnd);
 
 		wndRect.x = 0;
 		wndRect.y = 0;
@@ -443,7 +443,7 @@ void handleViewContainerResize(UiViewContainer* viewContainer)
 		resizingCell = nullptr;
 	}
 
-	const auto mousePos = ctx->inputProvider->getMousePosition();
+	const auto mousePos = ctx->providers->input->getMousePosition();
 	auto overCellToResize = viewContainer->rootCell->findResizeCell(mousePos, gripSize);
 
 	// if we drag a tab or a pane splitter

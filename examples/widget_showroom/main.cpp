@@ -1,10 +1,21 @@
 ﻿#pragma execution_character_set("utf-8")
 #include "horus.h"
-#include "sdl2_input.h"
-#include "opengl_graphics.h"
 #include <string.h>
 #include <string>
 #include <unordered_map>
+
+// backends
+#include "sdl2_input_provider.h"
+#include "opengl_graphics_provider.h"
+#include "opengl_vertex_buffer.h"
+#include "opengl_texture_array.h"
+#include "stb_image_provider.h"
+#include "json_theme_provider.h"
+#include "binpack_rectpack_provider.h"
+#include "freetype_font_provider.h"
+#include "nativefiledialogs_provider.h"
+#include "stdio_file_provider.h"
+#include "utfcpp_provider.h"
 
 using namespace hui;
 char str[1500] = { 0 };
@@ -12,30 +23,30 @@ char str2[1500] = { 0 };
 bool checks[100] = { false };
 bool changeScale = false;
 f32 scale = 1.f;
-Font fntBig;
-Font fntVeryBig;
-Font fntBold;
-Font fntItalic;
-Font fntLed1;
-Font fntLed2;
-Font fntLed3;
-Image lenaImg;
-Image nodeBodyImg;
-Image drawLineImg;
-Font fntNodeTitle = 0;
-ViewPaneTab console1Tab;
-ViewPaneTab console2Tab;
-Image tabIcon1;
-Image tabIcon2;
-Image tabIcon3;
-Image deleteIcon;
-Image sadIcon;
-Image xaxisIcon;
-Image yaxisIcon;
-Image zaxisIcon;
-Image targetIcon;
-Image clearIcon;
-MouseCursor dragDropCur;
+HFont fntBig;
+HFont fntVeryBig;
+HFont fntBold;
+HFont fntItalic;
+HFont fntLed1;
+HFont fntLed2;
+HFont fntLed3;
+HImage lenaImg;
+HImage nodeBodyImg;
+HImage drawLineImg;
+HFont fntNodeTitle = 0;
+HViewPaneTab console1Tab;
+HViewPaneTab console2Tab;
+HImage tabIcon1;
+HImage tabIcon2;
+HImage tabIcon3;
+HImage deleteIcon;
+HImage sadIcon;
+HImage xaxisIcon;
+HImage yaxisIcon;
+HImage zaxisIcon;
+HImage targetIcon;
+HImage clearIcon;
+HMouseCursor dragDropCur;
 
 struct View1Data
 {
@@ -76,11 +87,11 @@ struct MyCustomTabData
 
 struct MyViewHandler : hui::ViewHandler
 {
-	Image moveIcon = 0;
-	Image playIcon = 0;
-	Image stopIcon = 0;
-	Image pauseIcon = 0;
-	Image horusLogo = 0;
+	HImage moveIcon = 0;
+	HImage playIcon = 0;
+	HImage stopIcon = 0;
+	HImage pauseIcon = 0;
+	HImage horusLogo = 0;
 	bool chooseColorPopup = false;
 	bool exitAppMsgBox = false;
 	bool moreInfoMsgBox = false;
@@ -89,7 +100,7 @@ struct MyViewHandler : hui::ViewHandler
 	MyCustomTabData customData[2];
 	Color color = Color::red;
 
-	void onTopAreaRender(Window wnd) override
+	void onTopAreaRender(HWindow wnd) override
 	{
 		hui::beginMenuBar();
 
@@ -249,7 +260,7 @@ struct MyViewHandler : hui::ViewHandler
 		}
 	}
 
-	void onLeftAreaRender(Window window) override
+	void onLeftAreaRender(HWindow window) override
 	{
 		static bool tbDown[10] = { 0 };
 		pushPadding(1);
@@ -317,18 +328,18 @@ struct MyViewHandler : hui::ViewHandler
 		popPadding();
 	}
 
-	void onBottomAreaRender(Window window) override
+	void onBottomAreaRender(HWindow window) override
 	{
 		space();
 		label("   HINT OF THE DAY: Roll over to get cookie.");
 	}
 
-	void onRightAreaRender(Window window) override
+	void onRightAreaRender(HWindow window) override
 	{
 		button("Left area");
 	}
 
-	void onAfterFrameRender(Window wnd) override
+	void onAfterFrameRender(HWindow wnd) override
 	{
 		if (changeScale)
 			hui::setGlobalScale(scale);
@@ -352,7 +363,7 @@ struct MyViewHandler : hui::ViewHandler
 		hui::drawTextInBox(name, box, hui::HAlignType::Center, hui::VAlignType::Top);
 	}
 
-	void onViewRender(Window wnd, ViewPane viewPane, ViewId viewId, u64 userDataId) override
+	void onViewRender(HWindow wnd, HViewPane viewPane, ViewId viewId, u64 userDataId) override
 	{
 		Rect viewRect = hui::getViewPaneRect(viewPane);
 
@@ -1814,7 +1825,7 @@ struct MyViewHandler : hui::ViewHandler
 
 			hui::setWidgetStyle(WidgetType::Button, "important");
 			hui::button("Important button");
-			hui::setWidgetDefaultStyle(WidgetType::Button);
+			hui::setDefaultWidgetStyle(WidgetType::Button);
 
 			static bool pnl1 = false;
 			static bool pnl2 = false;
@@ -1931,12 +1942,12 @@ struct MyViewHandler : hui::ViewHandler
 		}
 	}
 
-	void onViewPaneTabSave(ViewPaneTab tab, u64 dataId, FILE* file) override
+	void onViewPaneTabSave(HViewPaneTab tab, u64 dataId, FILE* file) override
 	{
 		printf("Saving view pane tab: %s dataId: %llu\n", getViewPaneTabTitle(tab), dataId);
 	}
 
-	void onViewPaneTabLoad(ViewPaneTab tab, u64 dataId, FILE* file) override
+	void onViewPaneTabLoad(HViewPaneTab tab, u64 dataId, FILE* file) override
 	{
 		printf("Loading view pane tab: %s dataId: %llu\n", getViewPaneTabTitle(tab), dataId);
 	}
@@ -1973,7 +1984,9 @@ int main(int argc, char** args)
 
 	printf("Loading theme...\n");
 	//TODO: load themes and images and anything from memory also
-	auto theme = hui::loadTheme("../themes/default.theme");
+	auto theme = hui::loadThemeFromJson("../themes/default.theme.json");
+	
+	// create additional fonts
 	fntBig = hui::createFont(theme, "customBig", "../themes/fonts/arial.ttf", 20);
 	fntVeryBig = hui::createFont(theme, "customVeryBig", "../themes/fonts/arial.ttf", 50);
 	fntBold = hui::createFont(theme, "customBold", "../themes/fonts/arial.ttf", 15);
@@ -1999,13 +2012,13 @@ int main(int argc, char** args)
 	myViewHandler.stopIcon = hui::loadImage("../themes/stop-icon.png");
 	myViewHandler.pauseIcon = hui::loadImage("../themes/pause-icon.png");
 	myViewHandler.horusLogo = hui::loadImage("../themes/horus.png");
-	dragDropCur = hui::createMouseCursor("../themes/dragdrop_cursor.png");
+	dragDropCur = hui::loadMouseCursor("../themes/dragdrop_cursor.png");
 
 	fntLed1 = hui::getFont("led1");
 	fntLed2 = hui::getFont("led2");
 	fntLed3 = hui::getFont("led3");
 
-	// first we need to set the current view handler before loading view windows state
+	// first we need to set the current view handler before loading view windows state, so the handler does handling of loading state if it wants to
 	hui::setCurrentViewHandler(&myViewHandler);
 
 	hui::setDragDropMouseCursor(dragDropCur);
@@ -2017,7 +2030,7 @@ int main(int argc, char** args)
 		createMyDefaultViewPanes();
 	}
 
-	ViewContainer vcs[100];
+	HViewContainer vcs[100] = { 0 };
 
 	auto count = getViewContainers(vcs, 100);
 

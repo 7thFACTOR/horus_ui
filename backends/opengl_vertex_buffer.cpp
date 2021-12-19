@@ -78,9 +78,9 @@ void OpenGLVertexBuffer::destroy()
 	vbHandle = 0;
 }
 
-GraphicsApiVertexBuffer OpenGLVertexBuffer::getHandle() const
+HGraphicsApiVertexBuffer OpenGLVertexBuffer::getHandle() const
 {
-	return (GraphicsApiVertexBuffer)vbHandle;
+	return (HGraphicsApiVertexBuffer)vbHandle;
 }
 
 }

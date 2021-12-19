@@ -1,55 +1,12 @@
 #pragma once
 #include "types.h"
-#include "ui_atlas.h"
+#include "atlas.h"
 #include <string>
 #include <vector>
 #include <unordered_map>
 
 namespace hui
 {
-struct FontGlyph
-{
-	UiImage* image = nullptr;
-	GlyphCode code = 0;
-	f32 bearingX = 0.0f;
-	f32 bearingY = 0.0f;
-	f32 advanceX = 0.0f;
-	f32 advanceY = 0.0f;
-	i32 bitmapLeft = 0;
-	i32 bitmapTop = 0;
-	u32 pixelWidth = 0;
-	u32 pixelHeight = 0;
-	i32 pixelX = 0;
-	i32 pixelY = 0;
-	Rgba32* rgbaBuffer = nullptr;
-};
-
-struct FontKerningPair
-{
-	GlyphCode glyphLeft = 0;
-	GlyphCode glyphRight = 0;
-	f32 kerning = 0.0f;
-};
-
-struct FontMetrics
-{
-	f32 height;
-	f32 ascender;
-	f32 descender;
-	f32 underlinePosition;
-	f32 underlineThickness;
-};
-
-struct FontTextSize
-{
-	f32 width = 0;
-	f32 height = 0;
-	f32 maxBearingY = 0;
-	f32 maxGlyphHeight = 0;
-	u32 lastFontIndex = 0;
-	std::vector<f32> lineHeights;
-};
-
 class UiFont
 {
 public:

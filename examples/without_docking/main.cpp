@@ -1,7 +1,18 @@
 ﻿#pragma execution_character_set("utf-8")
 #include "horus.h"
-#include "sdl2_input.h"
-#include "opengl_graphics.h"
+
+// backends
+#include "sdl2_input_provider.h"
+#include "opengl_graphics_provider.h"
+#include "opengl_vertex_buffer.h"
+#include "opengl_texture_array.h"
+#include "stb_image_provider.h"
+#include "json_theme_provider.h"
+#include "binpack_rectpack_provider.h"
+#include "freetype_font_provider.h"
+#include "nativefiledialogs_provider.h"
+#include "stdio_file_provider.h"
+#include "utfcpp_provider.h"
 
 int main(int argc, char** args)
 {

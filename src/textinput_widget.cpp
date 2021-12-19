@@ -141,7 +141,7 @@ bool textInput(
 		rc.y = ctx->widget.rect.y;
 		rc.width = ctx->widget.rect.width;
 		rc.height = ctx->widget.rect.height;
-		ctx->inputProvider->startTextInput(0, rc);
+		ctx->providers->input->startTextInput(0, rc);
 		bodyElemState = &bodyElem->getState(WidgetStateType::Focused);
 		forceRepaint();
 	}

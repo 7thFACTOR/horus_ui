@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <math.h>
+#include <vector>
 
 /*
 ------------------------------------------------------------------------------
@@ -79,25 +80,35 @@ typedef double f64;
 #endif
 
 #ifdef HORUS_STATIC
-#define HORUS_API
-#define HORUS_CLASS_API
+	#define HORUS_API
+	#define HORUS_CLASS_API
 #else 
 #ifdef _WINDOWS
-#ifdef HORUS_EXPORTS
-#define HORUS_API extern "C++" __declspec(dllexport)
-#define HORUS_CLASS_API __declspec(dllexport)
+	#ifdef HORUS_EXPORT
+		#define HORUS_API extern "C++" __declspec(dllexport)
+		#define HORUS_CLASS_API __declspec(dllexport)
+	#else
+		#ifdef HORUS_IMPORT
+			#define HORUS_API extern "C++" __declspec(dllimport)
+			#define HORUS_CLASS_API __declspec(dllimport)
+		#else
+			#define HORUS_API
+			#define HORUS_CLASS_API
+		#endif
+	#endif
 #else
-#define HORUS_API extern "C++" __declspec(dllimport)
-#define HORUS_CLASS_API __declspec(dllimport)
-#endif
-#else
-#ifdef HORUS_EXPORTS
-#define HORUS_API __attribute__((dllexport))
-#define HORUS_CLASS_API __attribute__((dllexport))
-#else
-#define HORUS_API __attribute__((dllimport))
-#define HORUS_CLASS_API __attribute__((dllimport))
-#endif
+	#ifdef HORUS_EXPORT
+		#define HORUS_API __attribute__((dllexport))
+		#define HORUS_CLASS_API __attribute__((dllexport))
+	#else
+		#ifdef HORUS_IMPORT
+			#define HORUS_API __attribute__((dllimport))
+			#define HORUS_CLASS_API __attribute__((dllimport))
+		#else
+			#define HORUS_API
+			#define HORUS_CLASS_API
+		#endif
+	#endif
 #endif
 #endif
 
@@ -121,6 +132,15 @@ inline bool has(T x, T y) { return ((enumBasicType)x & (enumBasicType)y) != 0; }
 inline enumBasicType fromFlags(T x) { return (enumBasicType)x; };
 template <typename T> inline T toFlags(int x) { return (T)x; };
 
+// Some shortcuts for the service providers
+#define HORUS_FILE hui::getContextSettings().providers.file
+#define HORUS_GFX hui::getContextSettings().providers.gfx
+#define HORUS_INPUT hui::getContextSettings().providers.input
+#define HORUS_UTF hui::getContextSettings().providers.utf
+#define HORUS_IMAGE hui::getContextSettings().providers.image
+#define HORUS_FONT hui::getContextSettings().providers.font
+#define HORUS_RECTPACK hui::getContextSettings().providers.rectPack
+
 typedef void* HImage;
 typedef void* HTheme;
 typedef void* HAtlas;
@@ -140,6 +160,7 @@ typedef u32 Rgba32;
 typedef u32 TabIndex;
 typedef u32 ViewId;
 typedef u32 GlyphCode;
+typedef std::vector<GlyphCode> UnicodeString;
 
 const f32 ColumnFill = -1;
 
@@ -1474,8 +1495,8 @@ struct FillStyle
 	Point scale;
 };
 
-/// Raw image data info
-struct RawImage
+/// Image data info
+struct ImageData
 {
 	u8* pixels = nullptr;
 	u32 width = 0;
@@ -1502,9 +1523,21 @@ struct WidgetElementInfo
 	f32 height = 0;
 };
 
+struct ServiceProviders
+{
+	struct InputProvider* input = 0;
+	struct GraphicsProvider* gfx = 0;
+	struct ImageProvider* image = 0;
+	struct FileProvider* file = 0;
+	struct UtfProvider* utf = 0;
+	struct FontProvider* font = 0;
+	struct RectPackProvider* rectPack = 0;
+};
+
 /// Various HorusUI per-context global settings
 struct ContextSettings
 {
+	ServiceProviders providers;
 	TextCachePruneMode textCachePruneMode = TextCachePruneMode::Time; /// how to prune the unicode text cache which is not used for a while
 	f32 textCachePruneMaxTimeSec = 5; /// after this time, if an Unicode text is not accessed, it's discarded from cache, textCachePruneMode must be Time
 	f32 textCachePruneMaxFrames = 500; /// after this frame count, if an Unicode text is not accessed, it's discarded from cache, textCachePruneMode must be Frames
@@ -1529,12 +1562,7 @@ struct ContextSettings
 /// \param customInputProvider a custom input provider which will handle input and windowing
 /// \param customGfxProvider a custom graphics provider which will handle rendering of the UI
 /// \return the created context handle
-HORUS_API HContext createContext(struct InputProvider* customInputProvider = nullptr, struct GraphicsProvider* customGfxProvider = nullptr);
-
-/// Initialize a created context, that is create renderer and various systems, called after createContext
-/// It is used for initializing the renderer, after the graphics API is initialized by SDL or other lib
-/// \param ctx the context to be initialized
-HORUS_API void initializeContext(HContext ctx);
+HORUS_API HContext createContext(struct ContextSettings& settings);
 
 /// Set the current context
 /// \param ctx the context
@@ -1549,14 +1577,6 @@ HORUS_API void deleteContext(HContext ctx);
 
 /// \return the context settings
 HORUS_API ContextSettings& getContextSettings();
-
-/// Set the input provider for the current context
-/// \param provider the input provider (user owns the pointer and must delete it at the end of the program)
-HORUS_API void setInputProvider(struct InputProvider* provider);
-
-/// Set the graphics provider for the current context
-/// \param provider the graphics provider (user owns the pointer and must delete it at the end of the program)
-HORUS_API void setGraphicsProvider(struct GraphicsProvider* provider);
 
 /// Gather and process the input events, including window events, called in a main loop
 HORUS_API void processInputEvents();
@@ -1645,7 +1665,7 @@ HORUS_API HMouseCursor createMouseCursor(Rgba32* pixels, u32 width, u32 height, 
 /// \param hotSpotX the cursor pointer hot spot X coordinate, relative to the bitmap size
 /// \param hotSpotY the cursor pointer hot spot Y coordinate, relative to the bitmap size
 /// \return the created mouse cursor
-HORUS_API HMouseCursor createMouseCursor(const char* imageFilename, u32 hotSpotX = 0, u32 hotSpotY = 0);
+HORUS_API HMouseCursor loadMouseCursor(const char* imageFilename, u32 hotSpotX = 0, u32 hotSpotY = 0);
 
 /// Delete a custom mouse cursor
 /// \param cursor the cursor to be deleted
@@ -1788,14 +1808,14 @@ HORUS_API void updateImagePixels(HImage image, Rgba32* pixels);
 /// \param image the image to be deleted
 HORUS_API void deleteImage(HImage image);
 
-/// Load a raw image from a PNG file, it will not add it to the theme's image atlas. Used when you need an image data for something else.
+/// Load an image from a PNG file, it will not add it to the theme's image atlas. Used when you need an image data for something else.
 /// \param filename the PNG filename
 /// \return the raw image info and data
-HORUS_API RawImage loadRawImage(const char* filename);
+HORUS_API ImageData loadImageData(const char* filename);
 
-/// Delete a raw image object after your used/copied its contents
+/// Delete a image object after your used/copied its contents
 /// \param image the raw image
-HORUS_API void deleteRawImage(RawImage& image);
+HORUS_API void deleteImageData(ImageData& image);
 
 //////////////////////////////////////////////////////////////////////////
 // Image atlas
@@ -1815,20 +1835,16 @@ HORUS_API void deleteAtlas(HAtlas atlas);
 /// \param atlas the image atlas
 /// \param image the raw image to be queued for add
 /// \return the new image handle created in the image atlas
-HORUS_API HImage addAtlasImage(HAtlas atlas, const RawImage& image);
+HORUS_API HImage addAtlasImage(HAtlas atlas, const ImageData& image);
 
 /// Pack image atlas. This will optimally fit all the queued images into the image atlas. This operation might add new textures to the atlas' texture array if some of the images do not fit inside the current atlas texture(s)
 /// \param atlas the atlas to be packed
 /// \return true if all queued images were packed ok
-HORUS_API bool packAtlas(HAtlas atlas);
+HORUS_API bool packAtlas(HAtlas atlas, u32 border = 2);
 
 //////////////////////////////////////////////////////////////////////////
 // Themes
 //////////////////////////////////////////////////////////////////////////
-
-/// Load a theme from a JSON file
-/// \param filename the JSON filename (*.theme), relative to executable
-HORUS_API HTheme loadTheme(const char* filename);
 
 /// Set the current theme
 /// \param theme the theme to be set as current
@@ -1846,15 +1862,23 @@ HORUS_API void deleteTheme(HTheme theme);
 /// \return the newly created theme
 HORUS_API HTheme createTheme(u32 atlasTextureSize);
 
+HORUS_API void setThemeUserSetting(HTheme theme, const char* name, const char* value);
+
+HORUS_API const char* getThemeUserSetting(HTheme theme, const char* name);
+
 /// Add a image to a theme's atlas (it will not pack it yet to the atlas, call buildTheme for that)
 /// \param theme the theme
 /// \param img the image to be added
 /// \return the newly created image handle
-HORUS_API HImage addThemeImage(HTheme theme, const RawImage& img);
+HORUS_API HImage addThemeImage(HTheme theme, const ImageData& img);
+
+HORUS_API HImage getThemeImage(HTheme theme, const char* imageName);
+
+HORUS_API void setThemeImage(HTheme theme, const char* imageName, HImage image);
 
 HORUS_API void setWidgetStyle(WidgetType widgetType, const char* styleName);
 
-HORUS_API void setWidgetDefaultStyle(WidgetType widgetType);
+HORUS_API void setDefaultWidgetStyle(WidgetType widgetType);
 
 HORUS_API void setUserWidgetElementStyle(const char* elementName, const char* styleName);
 
@@ -1898,24 +1922,40 @@ HORUS_API void getThemeWidgetElementInfo(WidgetElementId elementId, WidgetStateT
 /// \param outInfo returned element info
 HORUS_API void getThemeUserWidgetElementInfo(const char* userElementName, WidgetStateType state, WidgetElementInfo& outInfo, const char* styleName = "default");
 
+HORUS_API void setThemeWidgetElementParameter(HTheme theme, WidgetElementId elementId, const char* styleName, const char* paramName, const char* paramValue);
+
+HORUS_API const char* getThemeWidgetElementStringParameter(HTheme theme, WidgetElementId elementId, const char* styleName, const char* paramName, const char* defaultValue = "");
+
+HORUS_API f32 getThemeWidgetElementFloatParameter(HTheme theme, WidgetElementId elementId, const char* styleName, const char* paramName, f32 defaultValue = 0.0f);
+
+HORUS_API const Color& getThemeWidgetElementColorParameter(HTheme theme, WidgetElementId elementId, const char* styleName, const char* paramName, const Color& defaultValue = Color());
+
+HORUS_API void setThemeUserWidgetElementParameter(HTheme theme, const char* userElementName, const char* styleName, const char* paramName, const char* paramValue);
+
+HORUS_API const char* getThemeUserWidgetElementStringParameter(HTheme theme, const char* userElementName, const char* styleName, const char* paramName, const char* defaultValue = "");
+
+HORUS_API f32 getThemeUserWidgetElementFloatParameter(HTheme theme, const char* userElementName, const char* styleName, const char* paramName, f32 defaultValue = 0.0f);
+
+HORUS_API const Color& getThemeUserWidgetElementColorParameter(HTheme theme, const char* userElementName, const char* styleName, const char* paramName, const Color& defaultValue = Color());
+
 /// Create a new font object
 /// \param theme the theme where to place the font
 /// \param name the name of the font (a given name like for example: 'smallItalic')
 /// \param fontFilename the TTF/OTF font filename, relative to executable
 /// \param faceSize the font face size in font units
 /// \return the newly created font handle
-HORUS_API HFont createFont(HTheme theme, const char* name, const char* fontFilename, u32 faceSize);
+HORUS_API HFont createThemeFont(HTheme theme, const char* name, const char* fontFilename, u32 faceSize);
 
 /// Release font reference, if font usage is zero, the font is deleted
 /// \param font the font to be reference released
-HORUS_API void releaseFont(HFont font);
+HORUS_API void releaseThemeFont(HTheme theme, HFont font);
 
 /// \return the font by name, from the current theme
 /// \param themeFontName the name of the font as it is in the theme
 HORUS_API HFont getFont(const char* themeFontName);
 
 /// \return the font by name, from the specified theme
-HORUS_API HFont getFont(HTheme theme, const char* themeFontName);
+HORUS_API HFont getThemeFont(HTheme theme, const char* themeFontName);
 
 //////////////////////////////////////////////////////////////////////////
 // Layout and containers
@@ -2755,8 +2795,6 @@ HORUS_API bool objectRefEditor(HImage targetIcon, HImage clearIcon, const char* 
 // System native file dialogs
 //////////////////////////////////////////////////////////////////////////
 
-#ifdef HORUS_USE_NATIVEFILEDIALOGS
-
 /// Show a native open file dialog
 HORUS_API bool openFileDialog(const char* filterList, const char* defaultPath, char* outPath, u32 maxOutPathSize);
 
@@ -2768,8 +2806,6 @@ HORUS_API bool saveFileDialog(const char* filterList, const char* defaultPath, c
 
 /// Show a native pick folder dialog
 HORUS_API bool pickFolderDialog(const char* defaultPath, char* outPath, u32 maxOutPathSize);
-
-#endif
 
 //////////////////////////////////////////////////////////////////////////
 // Utility functions

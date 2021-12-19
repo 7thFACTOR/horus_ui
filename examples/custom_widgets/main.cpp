@@ -1,7 +1,18 @@
 ﻿#pragma execution_character_set("utf-8")
 #include <horus.h>
-#include "sdl2_input.h"
-#include "opengl_graphics.h"
+
+// backends
+#include "sdl2_input_provider.h"
+#include "opengl_graphics_provider.h"
+#include "opengl_vertex_buffer.h"
+#include "opengl_texture_array.h"
+#include "stb_image_provider.h"
+#include "json_theme_provider.h"
+#include "binpack_rectpack_provider.h"
+#include "freetype_font_provider.h"
+#include "nativefiledialogs_provider.h"
+#include "stdio_file_provider.h"
+#include "utfcpp_provider.h"
 
 using namespace hui;
 WidgetElementInfo inf;
@@ -43,7 +54,7 @@ int main(int argc, char** args)
 
 	hui::initializeWithSDL(settings);
 
-	auto theme = hui::loadTheme("../themes/default.theme");
+	auto theme = hui::loadThemeFromJson("../themes/default.theme");
 
 	hui::setTheme(theme);
 	auto largeFnt = hui::getFont(theme, "title");
@@ -51,17 +62,18 @@ int main(int argc, char** args)
 	getThemeWidgetElementInfo(WidgetElementId::ButtonBody, WidgetStateType::Normal, inf);
 	bool exitNow = false;
 
+	hui::setWindow(hui::getMainWindow());
+
 	while (!exitNow)
 	{
 		// get the events from SDL or whatever input provider is set, it will fill a queue of events
 		hui::processInputEvents();
-		// lets check the count of events
 		int eventCount = hui::getInputEventCount();
 
 		// the main frame rendering and input handling
+
 		auto doFrame = [&](bool lastFrame)
 		{
-			hui::setWindow(hui::getMainWindow());
 			hui::beginWindow(hui::getMainWindow());
 			hui::setDisableRendering(!lastFrame);
 			hui::clearBackground();

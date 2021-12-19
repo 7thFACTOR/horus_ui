@@ -47,10 +47,9 @@ public:
 	UiImage* addWhiteImage(u32 width = 8);
 	bool pack(
 		u32 spacing = 5,
-		const Color& bgColor = Color::black,
-		UiAtlasPackPolicy packing = UiAtlasPackPolicy::Skyline);
+		const Color& bgColor = Color::black);
 	void repackImages();
-	void packWithLastUsedParams() { pack(lastUsedSpacing, lastUsedBgColor, lastUsedPolicy); }
+	void packWithLastUsedParams() { pack(lastUsedSpacing, lastUsedBgColor); }
 	void clearImages();
 
 	UiImage* whiteImage = nullptr;
@@ -78,7 +77,6 @@ protected:
 	u32 height;
 	u32 lastUsedSpacing = 0;
 	Color lastUsedBgColor = Color::black;
-	UiAtlasPackPolicy lastUsedPolicy = UiAtlasPackPolicy::Skyline;
 	bool useWasteMap = true;
 	std::vector<AtlasTexture*> atlasTextures;
 	std::unordered_map<UiImageId, UiImage*> images;

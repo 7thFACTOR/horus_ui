@@ -1,47 +1,9 @@
 ﻿#include "ui_font.h"
 #include "util.h"
-#include <ft2build.h>
-#include <freetype/freetype.h>
-#include <freetype/ftglyph.h>
-#include <freetype/ftoutln.h>
-#include <freetype/fttrigon.h>
 #include <assert.h>
-
-#include FT_FREETYPE_H
-#include FT_STROKER_H
-#include FT_LCD_FILTER_H
 
 namespace hui
 {
-static FT_Library freetypeLibHandle;
-static u32 freetypeUsageCount = 0;
-
-#define PIXEL(x) ((((x)+63) & -64)>>6)
-#define PIXEL2(x) ((x) >> 6)
-
-static bool startFreeType()
-{
-	if (!freetypeUsageCount)
-	{
-		freetypeUsageCount++;
-		return !(FT_Init_FreeType(&freetypeLibHandle));
-	}
-
-	freetypeUsageCount++;
-
-	return true;
-}
-
-static void stopFreeType()
-{
-	freetypeUsageCount--;
-
-	if (freetypeUsageCount <= 0)
-	{
-		FT_Done_FreeType(freetypeLibHandle);
-	}
-}
-
 UiFont::UiFont(const std::string& fontFilename, u32 faceSize, UiAtlas* themeAtlas)
 {
 	load(fontFilename, faceSize, themeAtlas);
@@ -53,46 +15,6 @@ void UiFont::load(const std::string& fontFilename, u32 facePointSize, UiAtlas* t
 	faceSize = facePointSize;
 	atlas = themeAtlas;
 
-	startFreeType();
-
-	if (face)
-	{
-		FT_Done_Face((FT_Face)face);
-	}
-
-	face = new FT_Face();
-
-	// load the font from the file
-	if (FT_New_Face(freetypeLibHandle, fontFilename.c_str(), 0, (FT_Face*)&face))
-	{
-		FT_Done_Face((FT_Face)face);
-		return;
-	}
-
-	/* Select charmap */
-	int error = FT_Select_Charmap((FT_Face)face, FT_ENCODING_UNICODE);
-
-	if (error)
-	{
-		FT_Done_Face((FT_Face)face);
-		return;
-	}
-
-	// freetype measures fonts in 64ths of pixels
-	//FT_Set_Char_Size((FT_Face)face, faceSize << 6, faceSize << 6, 96, 96);
-	FT_Set_Pixel_Sizes((FT_Face)face, 0, faceSize);
-
-	metrics.ascender = PIXEL2(((FT_Face)face)->size->metrics.ascender);
-	metrics.descender = PIXEL2(((FT_Face)face)->size->metrics.descender);
-	metrics.height = PIXEL2(((FT_Face)face)->size->metrics.height);
-	metrics.underlinePosition = PIXEL2(((FT_Face)face)->underline_position);
-	metrics.underlineThickness = PIXEL2(((FT_Face)face)->underline_thickness);
-
-	// if its too big, clamp it
-	if (metrics.underlinePosition < -2)
-		metrics.underlinePosition = -2;
-
-	metrics.underlinePosition = round(metrics.underlinePosition);
 }
 
 void UiFont::resetFaceSize(u32 fontFaceSize)

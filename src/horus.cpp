@@ -1,10 +1,8 @@
-#include "horus.h"
 #include <stdlib.h>
 #include <assert.h>
+#include <algorithm>
+#include "horus.h"
 #include "types.h"
-#include "libs/utfcpp/source/utf8.h"
-#define STB_IMAGE_IMPLEMENTATION
-#include "libs/stb/stb_image.h"
 #include "theme.h"
 #include "atlas.h"
 #include "context.h"
@@ -12,11 +10,8 @@
 #include "renderer.h"
 #include "unicode_text_cache.h"
 #include "font_cache.h"
-#include "libs/jsoncpp/include/json/json.h"
-#include "libs/jsoncpp/include/json/reader.h"
-#include <algorithm>
 
-#ifdef _WIN32
+#ifdef _WINDOWS
 #include <windows.h>
 #endif
 
@@ -24,7 +19,7 @@ namespace hui
 {
 u32 Color::getRgba() const
 {
-	u32 col;
+	u32 col = 0;
 	u8 *color = (u8*)&col;
 
 	color[0] = (r > 1.0f ? 1.0f : r) * 255;
@@ -37,7 +32,7 @@ u32 Color::getRgba() const
 
 u32 Color::getArgb() const
 {
-	u32 col;
+	u32 col = 0;
 	u8 *color = (u8*)&col;
 
 	color[1] = (r > 1.0f ? 1.0f : r) * 255;
@@ -79,17 +74,13 @@ const Color Color::gray(0.5f, 0.5f, 0.5f, 1);
 const Color Color::lightGray(0.7f, 0.7f, 0.7f, 1);
 const Color Color::sky(0.f, 0.682f, 0.937f, 1);
 
-Context createContext(InputProvider* customInputProvider, GraphicsProvider* customGfxProvider)
+HContext createContext(struct ContextSettings& settings)
 {
 	UiContext* context = new UiContext();
 
-	setContext((Context)context);
-
-	if (customInputProvider)
-		setInputProvider(customInputProvider);
-
-	if (customGfxProvider)
-		setGraphicsProvider(customGfxProvider);
+	context->settings = settings;
+	context->providers = &settings.providers;
+	setContext((HContext)context);
 
 #ifdef _WIN32
 	SetProcessDPIAware();
@@ -98,25 +89,19 @@ Context createContext(InputProvider* customInputProvider, GraphicsProvider* cust
 	return context;
 }
 
-void initializeContext(Context context)
-{
-	UiContext* ctxPtr = (UiContext*)context;
-	ctxPtr->initializeGraphics();
-}
-
-void setContext(Context context)
+void setContext(HContext context)
 {
 	ctx = (UiContext*)context;
 }
 
-Context getContext()
+HContext getContext()
 {
 	return ctx;
 }
 
-void deleteContext(Context context)
+void deleteContext(HContext context)
 {
-	delete (Context*)context;
+	delete (HContext*)context;
 }
 
 ContextSettings& getContextSettings()
@@ -187,7 +172,7 @@ void addWidgetItem(f32 height)
 	}
 }
 
-void setAsFocusable()
+void setFocusable()
 {
 	if (ctx->widget.focusedWidgetId == ctx->currentWidgetId)
 	{
@@ -327,11 +312,11 @@ void endFrame()
 
 	if (ctx->mouseCursor != MouseCursorType::Custom)
 	{
-		ctx->inputProvider->setCursor(ctx->mouseCursor);
+		ctx->providers->input->setCursor(ctx->mouseCursor);
 	}
 	else if (ctx->customMouseCursor)
 	{
-		ctx->inputProvider->setCustomCursor(ctx->customMouseCursor);
+		ctx->providers->input->setCustomCursor(ctx->customMouseCursor);
 	}
 
 	for (u32 i = 0; i < ctx->sameLineInfoCount; i++)
@@ -360,7 +345,6 @@ void update(f32 deltaTime)
 	}
 	else if (!ctx->widget.hoveredWidgetId && ctx->tooltip.show && ctx->tooltip.widgetId)
 	{
-		printf("SOME %d %d %d\n", ctx->widget.hoveredWidgetId, ctx->tooltip.show, ctx->tooltip.widgetId);
 		ctx->tooltip.show = false;
 		ctx->tooltip.widgetId = 0;
 		ctx->tooltip.closeTooltipPopup = true;
@@ -369,7 +353,7 @@ void update(f32 deltaTime)
 	if (ctx->tooltip.show)
 	{
 		// track mouse pos
-		ctx->tooltip.position = ctx->inputProvider->getMousePosition();
+		ctx->tooltip.position = ctx->providers->input->getMousePosition();
 	}
 }
 
@@ -398,12 +382,12 @@ void skipThisFrame()
 
 bool copyToClipboard(const char* text)
 {
-	return ctx->inputProvider->copyToClipboard(text);
+	return ctx->providers->input->copyToClipboard(text);
 }
 
 bool pasteFromClipboard(char* outText, u32 maxTextSize)
 {
-	return ctx->inputProvider->pasteFromClipboard(outText, maxTextSize);
+	return ctx->providers->input->pasteFromClipboard(outText, maxTextSize);
 }
 
 const InputEvent& getInputEvent()
@@ -416,69 +400,69 @@ void setMouseCursor(MouseCursorType type)
 	ctx->mouseCursor = type;
 }
 
-MouseCursor createMouseCursor(Rgba32* pixels, u32 width, u32 height, u32 hotSpotX, u32 hotSpotY)
+HMouseCursor createMouseCursor(Rgba32* pixels, u32 width, u32 height, u32 hotSpotX, u32 hotSpotY)
 {
-	return ctx->inputProvider->createCustomCursor(pixels, width, height, hotSpotX, hotSpotY);
+	return ctx->providers->input->createCustomCursor(pixels, width, height, hotSpotX, hotSpotY);
 }
 
-MouseCursor createMouseCursor(const char* imageFilename, u32 hotSpotX, u32 hotSpotY)
+HMouseCursor loadMouseCursor(const char* imageFilename, u32 hotSpotX, u32 hotSpotY)
 {
-	auto img = hui::loadRawImage(imageFilename);
+	auto img = hui::loadImageData(imageFilename);
 	auto cur = hui::createMouseCursor((Rgba32*)img.pixels, img.width, img.height, hotSpotX, hotSpotY);
-	deleteRawImage(img);
+	deleteImageData(img);
 
 	return cur;
 }
 
-void deleteMouseCursor(MouseCursor cursor)
+void deleteMouseCursor(HMouseCursor cursor)
 {
-	ctx->inputProvider->deleteCustomCursor(cursor);
+	ctx->providers->input->deleteCustomCursor(cursor);
 }
 
-void setMouseCursor(MouseCursor cursor)
+void setMouseCursor(HMouseCursor cursor)
 {
 	ctx->mouseCursor = MouseCursorType::Custom;
 	ctx->customMouseCursor = cursor;
 }
 
-void setWindow(Window window)
+void setWindow(HWindow window)
 {
-	ctx->inputProvider->setCurrentWindow(window);
+	ctx->providers->input->setCurrentWindow(window);
 
 	auto rect = getWindowRect(window);
 
 	ctx->renderer->setWindowSize({ rect.width, rect.height });
-	ctx->gfx->setViewport(
+	ctx->providers->gfx->setViewport(
 		{ rect.width, rect.height },
 		{ 0, 0, rect.width, rect.height });
 }
 
-Window getWindow()
+HWindow getWindow()
 {
-	return ctx->inputProvider->getCurrentWindow();
+	return ctx->providers->input->getCurrentWindow();
 }
 
-Window getFocusedWindow()
+HWindow getFocusedWindow()
 {
-	return ctx->inputProvider->getFocusedWindow();
+	return ctx->providers->input->getFocusedWindow();
 }
 
-Window getHoveredWindow()
+HWindow getHoveredWindow()
 {
-	return ctx->inputProvider->getHoveredWindow();
+	return ctx->providers->input->getHoveredWindow();
 }
 
-Window getMainWindow()
+HWindow getMainWindow()
 {
-	return ctx->inputProvider->getMainWindow();
+	return ctx->providers->input->getMainWindow();
 }
 
-Window createWindow(
+HWindow createWindow(
 	const char* title, u32 width, u32 height,
 	WindowFlags flags,
 	Point customPosition)
 {
-	auto wnd = ctx->inputProvider->createWindow(title, width, height, flags, customPosition);
+	auto wnd = ctx->providers->input->createWindow(title, width, height, flags, customPosition);
 
 	if (!ctx->renderer)
 	{
@@ -488,24 +472,24 @@ Window createWindow(
 	return wnd;
 }
 
-void setWindowTitle(Window window, const char* title)
+void setWindowTitle(HWindow window, const char* title)
 {
-	ctx->inputProvider->setWindowTitle(window, title);
+	ctx->providers->input->setWindowTitle(window, title);
 }
 
-void setWindowRect(Window window, const Rect& rect)
+void setWindowRect(HWindow window, const Rect& rect)
 {
-	ctx->inputProvider->setWindowRect(window, rect);
+	ctx->providers->input->setWindowRect(window, rect);
 }
 
-Rect getWindowRect(Window window)
+Rect getWindowRect(HWindow window)
 {
-	return ctx->inputProvider->getWindowRect(window);
+	return ctx->providers->input->getWindowRect(window);
 }
 
-Rect getWindowClientRect(Window window)
+Rect getWindowClientRect(HWindow window)
 {
-	auto rect = ctx->inputProvider->getWindowRect(window);
+	auto rect = ctx->providers->input->getWindowRect(window);
 
 	rect.x = 0;
 	rect.y = 0;
@@ -513,54 +497,54 @@ Rect getWindowClientRect(Window window)
 	return rect;
 }
 
-void presentWindow(Window window)
+void presentWindow(HWindow window)
 {
-	ctx->inputProvider->presentWindow(window);
+	ctx->providers->input->presentWindow(window);
 }
 
-void destroyWindow(Window window)
+void destroyWindow(HWindow window)
 {
-	ctx->inputProvider->destroyWindow(window);
+	ctx->providers->input->destroyWindow(window);
 }
 
-void showWindow(Window window)
+void showWindow(HWindow window)
 {
-	ctx->inputProvider->showWindow(window);
+	ctx->providers->input->showWindow(window);
 }
 
-void hideWindow(Window window)
+void hideWindow(HWindow window)
 {
-	ctx->inputProvider->hideWindow(window);
+	ctx->providers->input->hideWindow(window);
 }
 
-void riseWindow(Window window)
+void riseWindow(HWindow window)
 {
-	ctx->inputProvider->raiseWindow(window);
+	ctx->providers->input->raiseWindow(window);
 }
 
-void maximizeWindow(Window window)
+void maximizeWindow(HWindow window)
 {
-	ctx->inputProvider->maximizeWindow(window);
+	ctx->providers->input->maximizeWindow(window);
 }
 
-void minimizeWindow(Window window)
+void minimizeWindow(HWindow window)
 {
-	ctx->inputProvider->minimizeWindow(window);
+	ctx->providers->input->minimizeWindow(window);
 }
 
-WindowState getWindowState(Window window)
+WindowState getWindowState(HWindow window)
 {
-	return ctx->inputProvider->getWindowState(window);
+	return ctx->providers->input->getWindowState(window);
 }
 
-void setCapture(Window window)
+void setCapture(HWindow window)
 {
-	ctx->inputProvider->setCapture(window);
+	ctx->providers->input->setCapture(window);
 }
 
 void releaseCapture()
 {
-	ctx->inputProvider->releaseCapture();
+	ctx->providers->input->releaseCapture();
 }
 
 void cancelEvent()
@@ -601,64 +585,67 @@ void setInputEvent(const InputEvent& event)
 
 bool mustQuit()
 {
-	return ctx->inputProvider->mustQuit();
+	return ctx->providers->input->mustQuit();
 }
 
 bool wantsToQuit()
 {
-	return ctx->inputProvider->wantsToQuit();
+	return ctx->providers->input->wantsToQuit();
 }
 
 void cancelQuitApplication()
 {
-	ctx->inputProvider->cancelQuitApplication();
+	ctx->providers->input->cancelQuitApplication();
 }
 
 void quitApplication()
 {
-	ctx->inputProvider->quitApplication();
+	ctx->providers->input->quitApplication();
 }
 
 void shutdown()
 {
 	assert(ctx);
 
-	if (ctx->inputProvider)
-		ctx->inputProvider->shutdown();
+	if (ctx->providers->input)
+		ctx->providers->input->shutdown();
 }
 
-Image loadImage(const char* filename)
+HImage loadImage(const char* filename)
 {
-	int width = 0;
-	int height = 0;
-	int comp;
-	stbi_uc* data = stbi_load(filename, &width, &height, &comp, 4);
+	ImageData imgData = loadImageData(filename);
 
-	if (!data)
+	if (!imgData.pixels)
 		return nullptr;
 
-	Image img = createImage((Rgba32*)data, width, height);
+	if (imgData.bpp != 32)
+	{
+		printf("ERROR: Only 32bpp images allowed (%s)\n", filename);
+		return nullptr;
+	}
 
-	delete[] data;
+	HImage img = createImage((Rgba32*)imgData.pixels, imgData.width, imgData.height);
+
+	deleteImageData(imgData);
 
 	return img;
 }
 
-Image createImage(Rgba32* pixels, u32 width, u32 height)
+HImage createImage(Rgba32* pixels, u32 width, u32 height)
 {
 	auto img = ctx->theme->addImage(pixels, width, height);
 	ctx->theme->packAtlas();
 	return img;
 }
 
-Point getImageSize(Image image)
+Point getImageSize(HImage image)
 {
 	UiImage* img = (UiImage*)image;
 
 	return { img->rect.width, img->rect.height };
 }
 
-void updateImagePixels(Image image, Rgba32* pixels)
+void updateImagePixels(HImage image, Rgba32* pixels)
 {
 	UiImage* img = (UiImage*)image;
 
@@ -666,34 +653,25 @@ void updateImagePixels(Image image, Rgba32* pixels)
 	img->atlasTexture->textureArray->updateRectData(img->atlasTexture->textureIndex, img->rect, pixels);
 }
 
-RawImage loadRawImage(const char* filename)
+ImageData loadImageData(const char* filename)
 {
-	int width = 0;
-	int height = 0;
-	int comp;
-	stbi_uc* data = stbi_load(filename, &width, &height, &comp, 4);
+	ImageData imgData;
 
-	if (!data)
-		return RawImage();
+	if (!ctx->providers->image->loadImage(filename, imgData))
+	{
+		return ImageData();
+	}
 
-	RawImage imgdata;
-
-	imgdata.width = width;
-	imgdata.height = height;
-	imgdata.pixels = data;
-	imgdata.bpp = 32;
-	//TODO: load 8bbp or other formats?
-
-	return imgdata;
+	return imgData;
 }
 
-void deleteImage(Image image)
+void deleteImage(HImage image)
 {
 	UiImage* img = (UiImage*)image;
 	img->atlas->deleteImage(img);
 }
 
-void deleteRawImage(RawImage& image)
+void deleteImageData(ImageData& image)
 {
 	delete[] image.pixels;
 	image.pixels = nullptr;
@@ -702,47 +680,35 @@ void deleteRawImage(RawImage& image)
 	image.bpp = 0;
 }
 
-Atlas createAtlas(u32 width, u32 height)
+HAtlas createAtlas(u32 width, u32 height)
 {
 	return new UiAtlas(width, height);
 }
 
-void deleteAtlas(Atlas atlas)
+void deleteAtlas(HAtlas atlas)
 {
 	delete (UiAtlas*)atlas;
 }
 
-Image addAtlasImage(Atlas atlas, const RawImage& img)
+HImage addAtlasImage(HAtlas atlas, const ImageData& img)
 {
 	UiAtlas* atlasPtr = (UiAtlas*)atlas;
 
 	return atlasPtr->addImage((const Rgba32*)img.pixels, img.width, img.height);
 }
 
-bool packAtlas(Atlas atlas)
+bool packAtlas(HAtlas atlas, u32 border)
 {
 	UiAtlas* atlasPtr = (UiAtlas*)atlas;
 
-	constexpr u32 border = 2;
-
 	return atlasPtr->pack(border);
-}
-
-void setInputProvider(InputProvider* provider)
-{
-	ctx->inputProvider = provider;
-}
-
-void setGraphicsProvider(GraphicsProvider* provider)
-{
-	ctx->gfx = provider;
 }
 
 void processInputEvents()
 {
 	ctx->event.type = InputEvent::Type::None;
 	clearInputEventQueue();
-	ctx->inputProvider->processEvents();
+	ctx->providers->input->processEvents();
 	hui::update(getFrameDeltaTime());
 }
 
@@ -756,7 +722,7 @@ f32 getFrameDeltaTime()
 	return ctx->deltaTime;
 }
 
-Theme createTheme(u32 atlasTextureSize)
+HTheme createTheme(u32 atlasTextureSize)
 {
 	UiTheme* theme = new UiTheme(atlasTextureSize);
 
@@ -765,11 +731,53 @@ Theme createTheme(u32 atlasTextureSize)
 	return theme;
 }
 
-Image addThemeImage(Theme theme, const RawImage& img)
+void setThemeUserSetting(HTheme theme, const char* name, const char* value)
+{
+	((UiTheme*)theme)->userSettings[name] = value;
+}
+
+const char* getThemeUserSetting(HTheme theme, const char* name)
+{
+	auto iter = ((UiTheme*)theme)->userSettings.find(name);
+
+	if (iter == ((UiTheme*)theme)->userSettings.end())
+		return "";
+
+	return iter->second.c_str();
+}
+
+HImage addThemeImage(HTheme theme, const ImageData& img)
 {
 	UiTheme* themePtr = (UiTheme*)theme;
 
 	return themePtr->addImage((const Rgba32*)img.pixels, img.width, img.height);
+}
+
+HImage getThemeImage(HTheme theme, const char* imageName)
+{
+	UiTheme* themePtr = (UiTheme*)theme;
+
+	auto iter = themePtr->images.find(imageName);
+
+	if (iter != themePtr->images.end())
+		return iter->second;
+
+	return nullptr;
+}
+
+void setThemeImage(HTheme theme, const char* imageName, HImage image)
+{
+	UiTheme* themePtr = (UiTheme*)theme;
+
+	auto iter = themePtr->images.find(imageName);
+
+	if (iter != themePtr->images.end())
+	{
+		iter->second = (UiImage*)image;
+		return;
+	}
+
+	themePtr->images[imageName] = (UiImage*)image;
 }
 
 void setWidgetStyle(WidgetType widgetType, const char* styleName)
@@ -916,7 +924,7 @@ void setWidgetStyle(WidgetType widgetType, const char* styleName)
 	}
 }
 
-void setWidgetDefaultStyle(WidgetType widgetType)
+void setDefaultWidgetStyle(WidgetType widgetType)
 {
 	setWidgetStyle(widgetType, "default");
 }
@@ -926,7 +934,7 @@ void setUserWidgetElementStyle(const char* elementName, const char* styleName)
 	ctx->theme->userElements[elementName]->setStyle(styleName);
 }
 
-void buildTheme(Theme theme)
+void buildTheme(HTheme theme)
 {
 	UiTheme* themePtr = (UiTheme*)theme;
 
@@ -935,7 +943,7 @@ void buildTheme(Theme theme)
 }
 
 void setThemeWidgetElement(
-	Theme theme,
+	HTheme theme,
 	WidgetElementId elementId,
 	WidgetStateType widgetStateType,
 	const WidgetElementInfo& elementInfo,
@@ -956,7 +964,7 @@ void setThemeWidgetElement(
 }
 
 void setThemeUserWidgetElement(
-	Theme theme,
+	HTheme theme,
 	const char* userElementName,
 	WidgetStateType widgetStateType,
 	const WidgetElementInfo& elementInfo,
@@ -981,17 +989,17 @@ void setThemeUserWidgetElement(
 	state.image = (UiImage*)elementInfo.image;
 }
 
-void setTheme(Theme theme)
+void setTheme(HTheme theme)
 {
 	ctx->theme = (UiTheme*)theme;
 }
 
-Theme getTheme()
+HTheme getTheme()
 {
 	return ctx->theme;
 }
 
-void deleteTheme(Theme theme)
+void deleteTheme(HTheme theme)
 {
 	auto iter = std::find(ctx->themes.begin(), ctx->themes.end(), (UiTheme*)theme);
 
@@ -1036,514 +1044,92 @@ void getThemeUserWidgetElementInfo(const char* userElementName, WidgetStateType 
 	outInfo.height = elemState.height;
 }
 
-Font createFont(Theme theme, const char* name, const char* fontFilename, u32 faceSize)
+void setThemeWidgetElementParameter(HTheme theme, WidgetElementId elementId, const char* styleName, const char* paramName, const char* paramValue)
 {
-	return (Font)((UiTheme*)theme)->fontCache->createFont(name, fontFilename, faceSize * ctx->globalScale, false);
+	((UiTheme*)theme)->elements[(int)elementId].styles[styleName].parameters[paramName] = paramValue;
 }
 
-void releaseFont(Font font)
+const char* getThemeWidgetElementStringParameter(HTheme theme, WidgetElementId elementId, const char* styleName, const char* paramName, const char* defaultValue)
 {
-	ctx->theme->fontCache->releaseFont((UiFont*)font);
+	auto& style = ((UiTheme*)theme)->elements[(int)elementId].styles[styleName];
+
+	auto iter = style.parameters.find(paramName);
+
+	if (iter == style.parameters.end())
+		return defaultValue;
+
+	return iter->second.c_str();
 }
 
-Font getFont(Theme theme, const char* themeFontName)
+f32 getThemeWidgetElementFloatParameter(HTheme theme, WidgetElementId elementId, const char* styleName, const char* paramName, f32 defaultValue)
+{
+	auto& style = ((UiTheme*)theme)->elements[(int)elementId].styles[styleName];
+
+	return style.getParameterValue(paramName, defaultValue);
+}
+
+const Color& getThemeWidgetElementColorParameter(HTheme theme, WidgetElementId elementId, const char* styleName, const char* paramName, const Color& defaultValue)
+{
+	auto& style = ((UiTheme*)theme)->elements[(int)elementId].styles[styleName];
+
+	return style.getParameterValue(paramName, defaultValue);
+}
+
+void setThemeUserWidgetElementParameter(HTheme theme, const char* userElementName, const char* styleName, const char* paramName, const char* paramValue)
+{
+	((UiTheme*)theme)->userElements[userElementName]->styles[styleName].parameters[paramName] = paramValue;
+}
+
+const char* getThemeUserWidgetElementStringParameter(HTheme theme, const char* userElementName, const char* styleName, const char* paramName, const char* defaultValue)
+{
+	auto& style = ((UiTheme*)theme)->userElements[userElementName]->styles[styleName];
+
+	auto iter = style.parameters.find(paramName);
+
+	if (iter == style.parameters.end())
+		return defaultValue;
+
+	return iter->second.c_str();
+}
+
+f32 getThemeUserWidgetElementFloatParameter(HTheme theme, const char* userElementName, const char* styleName, const char* paramName, f32 defaultValue)
+{
+	auto& style = ((UiTheme*)theme)->userElements[userElementName]->styles[styleName];
+
+	return style.getParameterValue(paramName, defaultValue);
+}
+
+const Color& getThemeUserWidgetElementColorParameter(HTheme theme, const char* userElementName, const char* styleName, const char* paramName, const Color& defaultValue)
+{
+	auto& style = ((UiTheme*)theme)->userElements[userElementName]->styles[styleName];
+
+	return style.getParameterValue(paramName, defaultValue);
+}
+
+
+HFont createThemeFont(HTheme theme, const char* name, const char* fontFilename, u32 faceSize)
+{
+	return (HFont)((UiTheme*)theme)->fontCache->createFont(name, fontFilename, faceSize * ctx->globalScale, false);
+}
+
+void releaseThemeFont(HTheme theme, HFont font)
+{
+	((UiTheme*)theme)->fontCache->releaseFont((UiFont*)font);
+}
+
+HFont getThemeFont(HTheme theme, const char* themeFontName)
 {
 	UiTheme* themeObj = (UiTheme*)theme;
 
 	return themeObj->fonts[themeFontName];
 }
 
-Font getFont(const char* themeFontName)
+HFont getFont(const char* themeFontName)
 {
-	return getFont(getTheme(), themeFontName);
+	return getThemeFont(getTheme(), themeFontName);
 }
 
-static std::string readTextFile(const char* path)
-{
-	FILE* file = fopen(path, "rb");
-
-	if (!file)
-		return std::string("");
-
-	fseek(file, 0, SEEK_END);
-	long size = ftell(file);
-	std::string text;
-
-	if (size != -1)
-	{
-		fseek(file, 0, SEEK_SET);
-
-		char* buffer = new char[size + 1];
-		buffer[size] = 0;
-
-		if (fread(buffer, 1, size, file) == (unsigned long)size)
-			text = buffer;
-
-		delete[] buffer;
-	}
-
-	fclose(file);
-
-	return text;
-}
-
-WidgetType getWidgetTypeFromName(std::string name)
-{
-	if (name == "window") return WidgetType::Window;
-	if (name == "tooltip") return WidgetType::Tooltip;
-	if (name == "button") return WidgetType::Button;
-	if (name == "iconButton") return WidgetType::IconButton;
-	if (name == "textInput") return WidgetType::TextInput;
-	if (name == "slider") return WidgetType::Slider;
-	if (name == "progress") return WidgetType::Progress;
-	if (name == "image") return WidgetType::Image;
-	if (name == "check") return WidgetType::Check;
-	if (name == "radio") return WidgetType::Radio;
-	if (name == "label") return WidgetType::Label;
-	if (name == "panel") return WidgetType::Panel;
-	if (name == "popup") return WidgetType::Popup;
-	if (name == "dropdown") return WidgetType::Dropdown;
-	if (name == "list") return WidgetType::List;
-	if (name == "resizeGrip") return WidgetType::ResizeGrip;
-	if (name == "line") return WidgetType::Line;
-	if (name == "space") return WidgetType::Space;
-	if (name == "scrollView") return WidgetType::ScrollView;
-	if (name == "menuBar") return WidgetType::MenuBar;
-	if (name == "menu") return WidgetType::Menu;
-	if (name == "tabGroup") return WidgetType::TabGroup;
-	if (name == "tab") return WidgetType::Tab;
-	if (name == "viewport") return WidgetType::Viewport;
-	if (name == "viewPane") return WidgetType::ViewPane;
-	if (name == "messageBox") return WidgetType::MsgBox;
-	if (name == "selectable") return WidgetType::Selectable;
-	if (name == "box") return WidgetType::Box;
-	if (name == "toolbar") return WidgetType::Toolbar;
-	if (name == "toolbarButton") return WidgetType::ToolbarButton;
-	if (name == "toolbarSeparator") return WidgetType::ToolbarSeparator;
-	if (name == "columnsHeader") return WidgetType::ColumnsHeader;
-	if (name == "comboSlider") return WidgetType::ComboSlider;
-	if (name == "rotarySlider") return WidgetType::RotarySlider;
-
-	return WidgetType::None;
-}
-
-WidgetElementId getWidgetElementFromName(std::string name)
-{
-	if (name == "windowBody") return WidgetElementId::WindowBody;
-	if (name == "buttonBody") return WidgetElementId::ButtonBody;
-	if (name == "checkBody") return WidgetElementId::CheckBody;
-	if (name == "checkMark") return WidgetElementId::CheckMark;
-	if (name == "radioBody") return WidgetElementId::RadioBody;
-	if (name == "radioMark") return WidgetElementId::RadioMark;
-	if (name == "lineBody") return WidgetElementId::LineBody;
-	if (name == "labelBody") return WidgetElementId::LabelBody;
-	if (name == "panelBody") return WidgetElementId::PanelBody;
-	if (name == "panelCollapsedArrow") return WidgetElementId::PanelCollapsedArrow;
-	if (name == "panelExpandedArrow") return WidgetElementId::PanelExpandedArrow;
-	if (name == "textInputBody") return WidgetElementId::TextInputBody;
-	if (name == "textInputCaret") return WidgetElementId::TextInputCaret;
-	if (name == "textInputSelection") return WidgetElementId::TextInputSelection;
-	if (name == "textInputDefaultText") return WidgetElementId::TextInputDefaultText;
-	if (name == "sliderBody") return WidgetElementId::SliderBody;
-	if (name == "sliderBodyFilled") return WidgetElementId::SliderBodyFilled;
-	if (name == "sliderKnob") return WidgetElementId::SliderKnob;
-	if (name == "progressBack") return WidgetElementId::ProgressBack;
-	if (name == "progressFill") return WidgetElementId::ProgressFill;
-	if (name == "tooltipBody") return WidgetElementId::TooltipBody;
-	if (name == "popupBody") return WidgetElementId::PopupBody;
-	if (name == "popupBehind") return WidgetElementId::PopupBehind;
-	if (name == "dropdownBody") return WidgetElementId::DropdownBody;
-	if (name == "dropdownArrow") return WidgetElementId::DropdownArrow;
-	if (name == "scrollViewBody") return WidgetElementId::ScrollViewBody;
-	if (name == "scrollViewScrollBar") return WidgetElementId::ScrollViewScrollBar;
-	if (name == "scrollViewScrollThumb") return WidgetElementId::ScrollViewScrollThumb;
-	if (name == "tabGroupBody") return WidgetElementId::TabGroupBody;
-	if (name == "tabBodyActive") return WidgetElementId::TabBodyActive;
-	if (name == "tabBodyInactive") return WidgetElementId::TabBodyInactive;
-	if (name == "viewPaneDockRect") return WidgetElementId::ViewPaneDockRect;
-	if (name == "viewPaneDockDialRect") return WidgetElementId::ViewPaneDockDialRect;
-	if (name == "menuBarBody") return WidgetElementId::MenuBarBody;
-	if (name == "menuBarItem") return WidgetElementId::MenuBarItem;
-	if (name == "menuBody") return WidgetElementId::MenuBody;
-	if (name == "menuItemSeparator") return WidgetElementId::MenuItemSeparator;
-	if (name == "menuItemBody") return WidgetElementId::MenuItemBody;
-	if (name == "menuItemShortcut") return WidgetElementId::MenuItemShortcut;
-	if (name == "menuItemCheckMark") return WidgetElementId::MenuItemCheckMark;
-	if (name == "menuItemNoCheckMark") return WidgetElementId::MenuItemNoCheckMark;
-	if (name == "subMenuItemArrow") return WidgetElementId::SubMenuItemArrow;
-	if (name == "errorIcon") return WidgetElementId::MessageBoxIconError;
-	if (name == "infoIcon") return WidgetElementId::MessageBoxIconInfo;
-	if (name == "questionIcon") return WidgetElementId::MessageBoxIconQuestion;
-	if (name == "warningIcon") return WidgetElementId::MessageBoxIconWarning;
-	if (name == "selectableBody") return WidgetElementId::SelectableBody;
-	if (name == "boxBody") return WidgetElementId::BoxBody;
-	if (name == "toolbarBody") return WidgetElementId::ToolbarBody;
-	if (name == "toolbarButtonBody") return WidgetElementId::ToolbarButtonBody;
-	if (name == "toolbarSeparatorVerticalBody") return WidgetElementId::ToolbarSeparatorVerticalBody;
-	if (name == "toolbarSeparatorHorizontalBody") return WidgetElementId::ToolbarSeparatorHorizontalBody;
-	if (name == "columnsHeaderBody") return WidgetElementId::ColumnsHeaderBody;
-	if (name == "comboSliderBody") return WidgetElementId::ComboSliderBody;
-	if (name == "comboSliderLeftArrow") return WidgetElementId::ComboSliderLeftArrow;
-	if (name == "comboSliderRightArrow") return WidgetElementId::ComboSliderRightArrow;
-	if (name == "comboSliderRangeBar") return WidgetElementId::ComboSliderRangeBar;
-	if (name == "rotarySliderBody") return WidgetElementId::RotarySliderBody;
-	if (name == "rotarySliderMark") return WidgetElementId::RotarySliderMark;
-	if (name == "rotarySliderValueDot") return WidgetElementId::RotarySliderValueDot;
-
-	return WidgetElementId::Custom;
-}
-
-std::string getPath(const std::string& fname)
-{
-	size_t pos = fname.find_last_of("\\/");
-	return (std::string::npos == pos) ? "" : fname.substr(0, pos);
-}
-
-bool getColorFromText(std::string colorText, Color& color)
-{
-	if (colorText == "white") { color = Color::white; return true; }
-	if (colorText == "black") { color = Color::black; return true; }
-	if (colorText == "red") { color = Color::red; return true; }
-	if (colorText == "darkRed") { color = Color::darkRed; return true; }
-	if (colorText == "veryDarkRed") { color = Color::veryDarkRed; return true; }
-	if (colorText == "green") { color = Color::green; return true; }
-	if (colorText == "darkGreen") { color = Color::darkGreen; return true; }
-	if (colorText == "veryDarkGreen") { color = Color::veryDarkGreen; return true; }
-	if (colorText == "blue") { color = Color::blue; return true; }
-	if (colorText == "yellow") { color = Color::yellow; return true; }
-	if (colorText == "magenta") { color = Color::magenta; return true; }
-	if (colorText == "cyan") { color = Color::cyan; return true; }
-	if (colorText == "darkCyan") { color = Color::darkCyan; return true; }
-	if (colorText == "veryDarkCyan") { color = Color::veryDarkCyan; return true; }
-	if (colorText == "orange") { color = Color::orange; return true; }
-	if (colorText == "darkOrange") { color = Color::darkOrange; return true; }
-	if (colorText == "lightGray") { color = Color::lightGray; return true; }
-	if (colorText == "gray") { color = Color::gray; return true; }
-	if (colorText == "darkGray") { color = Color::darkGray; return true; }
-	if (colorText == "sky") { color = Color::sky; return true; }
-
-	return false;
-}
-
-bool getColorFromText(const char* colorText, Color& color)
-{
-	return getColorFromText(std::string(colorText), color);
-}
-
-void setThemeElement(
-	UiTheme* theme,
-	const std::string& themePath,
-	const char* styleName,
-	WidgetType widgetType,
-	WidgetElementId elemId,
-	WidgetStateType widgetStateType,
-	Json::Value state,
-	i32 width, i32 height)
-{
-	auto imageName = state.get("image", "").asString();
-	auto border = state.get("border", 0).asInt();
-	auto color = state.get("color", "white").asString();
-	auto textColor = state.get("textColor", "white").asString();
-	auto fontName = state.get("font", "").asString();
-	auto imageFilename = themePath + imageName + ".png";
-	auto iter = theme->images.find(imageFilename);
-	Image image = 0;
-	width = state.get("width", width).asInt();
-	height = state.get("height", height).asInt();
-
-	if (iter == theme->images.end())
-	{
-		auto rawImage = loadRawImage(imageFilename.c_str());
-		image = addThemeImage(theme, rawImage);
-		deleteRawImage(rawImage);
-		theme->images[imageFilename] = (UiImage*)image;
-	}
-	else
-	{
-		image = (Image)iter->second;
-	}
-
-	auto iterFnt = theme->fonts.find(fontName);
-	Font font = 0;
-
-	if (iterFnt != theme->fonts.end())
-	{
-		font = iterFnt->second;
-	}
-
-	u32 r = 0, g = 0, b = 0, a = 255;
-	Color bgColor;
-	Color txtColor;
-
-	if (!getColorFromText(color, bgColor))
-	{
-		sscanf(color.c_str(), "%d,%d,%d,%d", &r, &g, &b, &a);
-		bgColor = Color((f32)r / 255.0f, (f32)g / 255.0f, (f32)b / 255.0f, (f32)a / 255.0f);
-	}
-
-	if (!getColorFromText(textColor, txtColor))
-	{
-		sscanf(textColor.c_str(), "%d,%d,%d,%d", &r, &g, &b, &a);
-		txtColor = Color((f32)r / 255.0f, (f32)g / 255.0f, (f32)b / 255.0f, (f32)a / 255.0f);
-	}
-
-	auto& elemState = theme->elements[(u32)elemId].styles[styleName].states[(u32)widgetStateType];
-	elemState.image = (UiImage*)image;
-	elemState.border = border;
-	elemState.color = bgColor;
-	elemState.textColor = txtColor;
-	elemState.font = (UiFont*)font;
-	elemState.width = width;
-	elemState.height = height;
-}
-
-void setUserElement(
-	UiTheme* theme,
-	const std::string& themePath,
-	const char* styleName,
-	const std::string& widgetName,
-	const std::string& elemName,
-	WidgetStateType widgetStateType,
-	Json::Value state,
-	i32 width, i32 height)
-{
-	auto imageName = state.get("image", "").asString();
-	auto border = state.get("border", 0).asInt();
-	auto color = state.get("color", "white").asString();
-	auto textColor = state.get("textColor", "white").asString();
-	auto fontName = state.get("font", "").asString();
-	auto imageFilename = themePath + imageName + ".png";
-	auto iter = theme->images.find(imageFilename);
-	Image image = 0;
-	width = state.get("width", width).asInt();
-	height = state.get("height", height).asInt();
-
-	if (iter == theme->images.end())
-	{
-		auto rawImage = loadRawImage(imageFilename.c_str());
-		image = addThemeImage(theme, rawImage);
-		deleteRawImage(rawImage);
-		theme->images[imageFilename] = (UiImage*)image;
-	}
-	else
-	{
-		image = (Image)iter->second;
-	}
-
-	auto iterFnt = theme->fonts.find(fontName);
-	Font font = 0;
-
-	if (iterFnt != theme->fonts.end())
-	{
-		font = iterFnt->second;
-	}
-
-	u32 r = 0, g = 0, b = 0, a = 255;
-	Color bgColor;
-	Color txtColor;
-
-	if (!getColorFromText(color, bgColor))
-	{
-		sscanf(color.c_str(), "%d,%d,%d,%d", &r, &g, &b, &a);
-		bgColor = Color((f32)r / 255.0f, (f32)g / 255.0f, (f32)b / 255.0f, (f32)a / 255.0f);
-	}
-
-	if (!getColorFromText(textColor, txtColor))
-	{
-		sscanf(textColor.c_str(), "%d,%d,%d,%d", &r, &g, &b, &a);
-		txtColor = Color((f32)r / 255.0f, (f32)g / 255.0f, (f32)b / 255.0f, (f32)a / 255.0f);
-	}
-
-	WidgetElementInfo inf;
-	
-	inf.image = image;
-	inf.border = border;
-	inf.color = bgColor;
-	inf.textColor = txtColor;
-	inf.font = font;
-	inf.width = width,
-	inf.height = height;
-
-	setThemeUserWidgetElement(
-		theme,
-		elemName.c_str(),
-		widgetStateType,
-		inf,
-		styleName);
-}
-
-Theme loadTheme(const char* filename)
-{
-	assert(ctx);
-
-	UiTheme* theme = new UiTheme(ctx->settings.defaultAtlasSize);
-
-	ctx->themes.push_back(theme);
-
-	Json::Reader reader;
-	Json::Value root;
-	auto json = readTextFile(filename);
-	bool ok = reader.parse(json, root);
-	std::string themePath = getPath(filename) + "/";
-
-	if (!ok)
-	{
-		printf(reader.getFormatedErrorMessages().c_str());
-		deleteTheme(theme);
-		return 0;
-	}
-
-	Json::Value fonts = root.get("fonts", Json::Value());
-	auto fontNames = fonts.getMemberNames();
-	
-	for (size_t i = 0; i < fontNames.size(); i++)
-	{
-		auto name = fontNames[i];
-		auto fnt = fonts.get(name.c_str(), Json::Value());
-
-		std::string fontFilename = fnt.get("file", "").asString();
-
-		if (fontFilename.find_first_of(':') == std::string::npos)
-		{
-			fontFilename = themePath + fontFilename;
-		}
-
-		auto newFont = createFont(theme, name.c_str(), fontFilename.c_str(), fnt.get("size", 0).asInt());
-		theme->fonts[name] = (UiFont*)newFont;
-	}
-
-	Json::Value settings = root.get("settings", Json::Value());
-	auto settingNames = settings.getMemberNames();
-
-	for (size_t i = 0; i < settingNames.size(); i++)
-	{
-		auto name = settingNames[i];
-		auto val = settings.get(name.c_str(), Json::Value());
-		theme->userSettings[name] = val.asString();
-	}
-
-	Json::Value widgets = root.get("widgets", Json::Value());
-	auto widgetNames = widgets.getMemberNames();
-
-	for (size_t i = 0; i < widgetNames.size(); i++)
-	{
-		auto widgetName = widgetNames[i];
-		auto widget = widgets.get(widgetName.c_str(), Json::Value());
-		WidgetType widgetType = getWidgetTypeFromName(widgetName);
-		auto widgetMemberNames = widget.getMemberNames();
-		auto styles = widget.get("styles", Json::Value());
-
-		auto readElements = [theme, themePath, widgetType](const std::string& styleName, Json::Value& parentElem)
-		{
-			auto elementNames = parentElem.getMemberNames();
-			// read all widget elements
-			for (size_t l = 0; l < elementNames.size(); l++)
-			{
-				auto elemType = getWidgetElementFromName(elementNames[l]);
-				auto elem = parentElem.get(elementNames[l], Json::Value());
-				auto width = elem.get("width", 0).asInt();
-				auto height = elem.get("height", 0).asInt();
-				auto elemStates = elem.getMemberNames();
-
-				for (size_t m = 0; m < elemStates.size(); m++)
-				{
-					auto& stateName = elemStates[m];
-					auto elemState = elem.get(stateName, Json::Value());
-					auto widgetStateType = WidgetStateType::None;
-
-					if (stateName == "normal")
-						widgetStateType = WidgetStateType::Normal;
-					else if (stateName == "focused")
-						widgetStateType = WidgetStateType::Focused;
-					else if (stateName == "pressed")
-						widgetStateType = WidgetStateType::Pressed;
-					else if (stateName == "hovered")
-						widgetStateType = WidgetStateType::Hovered;
-					else if (stateName == "disabled")
-						widgetStateType = WidgetStateType::Disabled;
-
-					if (widgetStateType != WidgetStateType::None)
-						setThemeElement(theme, themePath, styleName.c_str(), widgetType, elemType, widgetStateType, elemState, width, height);
-					else
-						theme->elements[(u32)elemType].styles[styleName].parameters[stateName] = elemState.asString();
-				}
-			}
-		};
-
-		auto readUserElements = [theme, themePath, widgetName](const std::string& styleName, Json::Value& parentElem)
-		{
-			auto elementNames = parentElem.getMemberNames();
-
-			// read all widget elements
-			for (size_t l = 0; l < elementNames.size(); l++)
-			{
-				auto& elementName = elementNames[l];
-				auto elem = parentElem.get(elementName, Json::Value());
-				auto width = elem.get("width", 0).asInt();
-				auto height = elem.get("height", 0).asInt();
-				auto elemStates = elem.getMemberNames();
-
-				for (size_t m = 0; m < elemStates.size(); m++)
-				{
-					auto& stateName = elemStates[m];
-					auto elemState = elem.get(stateName, Json::Value());
-					auto widgetStateType = WidgetStateType::None;
-
-					if (stateName == "normal")
-						widgetStateType = WidgetStateType::Normal;
-					else if (stateName == "focused")
-						widgetStateType = WidgetStateType::Focused;
-					else if (stateName == "pressed")
-						widgetStateType = WidgetStateType::Pressed;
-					else if (stateName == "hovered")
-						widgetStateType = WidgetStateType::Hovered;
-					else if (stateName == "disabled")
-						widgetStateType = WidgetStateType::Disabled;
-
-					if (!theme->userElements[elementName])
-						theme->userElements[elementName] = new UiThemeElement();
-
-					if (widgetStateType != WidgetStateType::None)
-						setUserElement(theme, themePath, styleName.c_str(), widgetName, elementName, widgetStateType, elemState, width, height);
-					else if (elemState.isDouble())
-						theme->userElements[elementName]->styles[styleName].parameters[stateName] = elemState.asFloat();
-					else if (elemState.isInt())
-						theme->userElements[elementName]->styles[styleName].parameters[stateName] = elemState.asInt();
-				}
-			}
-		};
-
-		if (styles.isObject())
-		{
-			auto styleNames = styles.getMemberNames();
-
-			// read all styles
-			for (size_t k = 0; k < styleNames.size(); k++)
-			{
-				auto styleName = styleNames[k];
-				auto styleElem = styles.get(styleName, Json::Value());
-
-				if (widgetType != WidgetType::None)
-					readElements(styleName, styleElem);
-				else
-					readUserElements(styleName, styleElem);
-			}
-		}
-		else
-		{
-			if (widgetType != WidgetType::None)
-				readElements("default", widget);
-			else
-				readUserElements("default", widget);
-		}
-	}
-
-	buildTheme(theme);
-
-	return theme;
-}
-
-void beginWindow(Window window)
+void beginWindow(HWindow window)
 {
 	ctx->savedEventType = ctx->event.type;
 	ctx->renderer->setZOrder(0);
@@ -2131,7 +1717,7 @@ bool wantsToDragDrop()
 	return false;
 }
 
-void setDragDropMouseCursor(MouseCursor dropAllowedCursor)
+void setDragDropMouseCursor(HMouseCursor dropAllowedCursor)
 {
 	ctx->dragDropState.dropAllowedCursor = dropAllowedCursor;
 }
@@ -2179,7 +1765,7 @@ bool droppedOnWidget()
 		&& ctx->hoveringThisWindow
 		&& getFocusedWindow() != getWindow())
 	{
-		ctx->inputProvider->raiseWindow(getWindow());
+		ctx->providers->input->raiseWindow(getWindow());
 	}
 
 	if (ctx->dragDropState.begunDragging

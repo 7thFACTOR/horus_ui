@@ -1,4 +1,8 @@
 #pragma once
+#include <horus.h>
+#include <vector>
+#include <string>
+#include <unordered_map>
 
 namespace hui
 {
@@ -9,6 +13,26 @@ struct Vertex
 	Point uv;
 	u32 color;
 	u32 textureIndex = 0; /// what atlas texture array index this vertex is using
+};
+
+typedef void* FileHandle;
+
+enum class FileSeekMode
+{
+	Begin,
+	End,
+	Set
+};
+
+struct FileProvider
+{
+	virtual ~FileProvider(){};
+	virtual FileHandle open(const char* path, const char* mode) = 0;
+	virtual size_t read(FileHandle file, void* outData, size_t bytes) = 0;
+	virtual size_t write(FileHandle file, void* data, size_t bytes) = 0;
+	virtual void close(FileHandle file) = 0;
+	virtual void seek(FileHandle file, FileSeekMode mode, size_t pos = 0) = 0;
+	virtual size_t tell(FileHandle file) = 0;
 };
 
 /// The input provider class is used for input and windowing services
@@ -300,9 +324,11 @@ struct RectPackProvider
 	virtual bool packRect(u32 width, u32 height, Rect& outPackedRect) = 0;
 };
 
+typedef void* FontHandle;
+
 struct FontGlyph
 {
-	HImage image = nullptr;
+	HImage image = nullptr; // will be created by horus atlas
 	GlyphCode code = 0;
 	f32 bearingX = 0.0f;
 	f32 bearingY = 0.0f;
@@ -343,22 +369,32 @@ struct FontTextSize
 	std::vector<f32> lineHeights;
 };
 
-struct FontLoader
+struct FontInfo
 {
-	virtual ~FontLoader(){}
-	virtual bool loadFont(const char* path, u32 faceSize) = 0;
-	virtual bool resetFaceSize(u32 faceSize) = 0;
-	virtual FontGlyph* getGlyph(GlyphCode glyphCode) = 0;
-	virtual f32 getKerning(GlyphCode glyphCodeLeft, GlyphCode glyphCodeRight) = 0;
-	virtual const FontMetrics& getMetrics() const = 0;
-	virtual void precacheGlyphs(GlyphCode* glyphs, u32 glyphCount) = 0;
+	FontHandle handle;
+	FontMetrics metrics;
+	std::unordered_map<u64, f32> kerningPairs; // the u64 is a hash of left and right glyph codes: u64 hash = ((u64)glyphCodeLeft) << 32 + glyphCodeRight;
+};
+
+struct FontProvider
+{
+	virtual ~FontProvider(){}
+	virtual bool loadFont(const char* path, u32 faceSize, FontInfo& fontInfo) = 0;
+	virtual bool rasterizeGlyph(FontHandle fontHandle, GlyphCode glyphCode, FontGlyph& outGlyph) = 0;
 };
 
 struct ImageProvider
 {
 	virtual ~ImageProvider() {}
-	virtual bool loadImage(const char* path, Rgba32** outBuffer, u32& width, u32& height) = 0;
+	virtual bool loadImage(const char* path, ImageData& outImage) = 0;
+};
 
+struct UtfProvider
+{
+	virtual ~UtfProvider() {}
+	virtual bool utf8To32(const char* utf8Str, UnicodeString& outUtf32Str) = 0;
+	virtual bool utf32To8(UnicodeString& outUtf32Str, char* outUtf8Str, size_t maxUtf8StrSize) = 0;
+	virtual size_t utf8Length(const char* utf8Str) = 0;
 };
 
 };

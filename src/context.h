@@ -42,7 +42,7 @@ struct UiContext
 	static const int maxBoxDepth = 256;
 	static const int maxSameLineInfoIndex = 256;
 
-	GraphicsProvider* gfx = nullptr;
+	ServiceProviders* providers = nullptr;
 	Renderer* renderer = nullptr;
 	UnicodeTextCache* textCache = nullptr;
 	ContextSettings settings;
@@ -53,7 +53,7 @@ struct UiContext
 	u32 frameCount = 0;
 	f32 pruneUnusedTextTime = 0;
 	u32 currentWindowIndex = 0;
-	GraphicsApiContext gfxApiContext = 0;
+	HGraphicsApiContext gfxApiContext = 0;
 	u32 currentWidgetId = 1;
 	std::vector<WidgetLoopInfo> widgetLoopStack;
 	u32 maxWidgetId = 0;
@@ -139,7 +139,6 @@ struct UiContext
 
 	DropdownState dropdownState;
 
-	InputProvider* inputProvider = nullptr;
 	InputEvent event;
 	std::vector<InputEvent> events;
 	InputEvent::Type savedEventType = InputEvent::Type::None;
@@ -152,7 +151,7 @@ struct UiContext
 	std::vector<u32> drawCmdIndexStack;
 
 	MouseCursorType mouseCursor = MouseCursorType::Arrow;
-	MouseCursor customMouseCursor = 0;
+	HMouseCursor customMouseCursor = 0;
 	bool mouseMoved = false;
 	Point oldMousePos = { 0, 0 };
 

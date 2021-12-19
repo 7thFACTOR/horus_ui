@@ -8,13 +8,20 @@ project "without_docking"
   vpaths { ["horus"] = "../../include/" }
 
 	warnings "off"
-	files {
-		"../../backends/sdl2*.*",
-		"../../backends/opengl*.*",
+  files {
     "../../src/*.*",
     "../../include/*.*",
-		"*.cpp"
-	}
+    "../../backends/sdl2*.*",
+    "../../backends/opengl*.*",
+    "../../backends/binpack*.*",
+    "../../backends/freetype*.*",
+    "../../backends/stb_image*.*",
+    "../../backends/stdio*.*",
+    "../../backends/json*.*",
+    "../../backends/utfcpp*.*",
+    "../../backends/nativefiledialogs*.*",
+    "*.cpp"
+  }
 
 	includedirs {
 		".",

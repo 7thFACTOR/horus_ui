@@ -23,7 +23,6 @@ class UiFont;
 struct UiImage;
 
 typedef u32 UiImageId;
-typedef std::vector<GlyphCode> UnicodeString;
 
 struct UiThemeElement
 {
@@ -42,21 +41,22 @@ struct UiThemeElement
 	{
 		State states[(u32)WidgetStateType::Count];
 		std::unordered_map<std::string, std::string> parameters;
-		std::unordered_map<std::string, f32> floatParameters;
-		std::unordered_map<std::string, Color> colorParameters;
+		std::unordered_map<std::string, f32> cachedFloatParameters;
+		std::unordered_map<std::string, Color> cachedColorParameters;
 
 		f32 getParameterValue(const std::string& name, f32 defaultValue)
 		{
-			auto iter = floatParameters.find(name);
+			auto iter = cachedFloatParameters.find(name);
 
-			if (iter == floatParameters.end())
+			// if not found, search it in the parameters and cache the value
+			if (iter == cachedFloatParameters.end())
 			{
 				auto iter2 = parameters.find(name);
 
 				if (iter2 != parameters.end())
 				{
 					f32 val = atof(iter2->second.c_str());
-					floatParameters[name] = val;
+					cachedFloatParameters[name] = val;
 					return val;
 				}
 
@@ -68,9 +68,10 @@ struct UiThemeElement
 
 		Color getParameterValue(const std::string& name, const Color& defaultValue = Color::white)
 		{
-			auto iter = colorParameters.find(name);
+			auto iter = cachedColorParameters.find(name);
 
-			if (iter == colorParameters.end())
+			// if not found, search it in the parameters and cache the value
+			if (iter == cachedColorParameters.end())
 			{
 				auto iter2 = parameters.find(name);
 
@@ -78,7 +79,7 @@ struct UiThemeElement
 				{
 					Color c;
 					getColorFromText(iter2->second.c_str(), c);
-					colorParameters[name] = c;
+					cachedColorParameters[name] = c;
 					return c;
 				}
 

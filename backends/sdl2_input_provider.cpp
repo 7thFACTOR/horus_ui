@@ -26,7 +26,7 @@ Sdl2InputProvider::~Sdl2InputProvider()
 KeyCode Sdl2InputProvider::fromSdlKey(int code)
 {
 	KeyCode key = KeyCode::None;
-
+	//TODO: make it unordered_map
 	switch (code)
 	{
 	case SDLK_UNKNOWN: key = KeyCode::None; break;
@@ -270,7 +270,7 @@ KeyCode Sdl2InputProvider::fromSdlKey(int code)
 	return key;
 }
 
-void Sdl2InputProvider::startTextInput(Window window, const Rect& imeRect)
+void Sdl2InputProvider::startTextInput(HWindow window, const Rect& imeRect)
 {
 	SDL_Rect rc;
 
@@ -301,10 +301,14 @@ bool Sdl2InputProvider::pasteFromClipboard(char* outText, u32 maxTextSize)
 
 	char* txt = SDL_GetClipboardText();
 
-	memcpy(outText, txt, std::min((u32)strlen(txt) + 1, maxTextSize));
-	SDL_free(txt);
+	if (txt)
+	{
+		memcpy(outText, txt, std::min((u32)strlen(txt) + 1, maxTextSize));
+		SDL_free(txt);
+		return true;
+	}
 
-	return true;
+	return false;
 }
 
 void Sdl2InputProvider::addSdlEvent(SDL_Event& ev)
@@ -491,7 +495,7 @@ void Sdl2InputProvider::addSdlEvent(SDL_Event& ev)
 		|| ev.type == SDL_DROPBEGIN
 		|| ev.type == SDL_DROPCOMPLETE)
 	{
-		// do not add all the resize event, we just need one
+		// do not add all the resize events, we just need one
 		if (ev.type == SDL_WINDOWEVENT
 			&& (ev.window.event == SDL_WINDOWEVENT_RESIZED
 				|| ev.window.event == SDL_WINDOWEVENT_SIZE_CHANGED
@@ -586,7 +590,7 @@ void Sdl2InputProvider::setCursor(MouseCursorType type)
 	SDL_SetCursor(cursors[(int)type]);
 }
 
-MouseCursor Sdl2InputProvider::createCustomCursor(Rgba32* pixels, u32 width, u32 height, u32 hotX, u32 hotY)
+HMouseCursor Sdl2InputProvider::createCustomCursor(Rgba32* pixels, u32 width, u32 height, u32 hotX, u32 hotY)
 {
 	SDL_Surface* surf = SDL_CreateRGBSurfaceWithFormatFrom(
 		pixels, width, height, 1, width * 4, SDL_PIXELFORMAT_RGBA32);
@@ -599,7 +603,7 @@ MouseCursor Sdl2InputProvider::createCustomCursor(Rgba32* pixels, u32 width, u32
 	return cur;
 }
 
-void Sdl2InputProvider::deleteCustomCursor(MouseCursor cursor)
+void Sdl2InputProvider::deleteCustomCursor(HMouseCursor cursor)
 {
 	for (size_t i = 0; i < customCursors.size(); i++)
 	{
@@ -614,17 +618,17 @@ void Sdl2InputProvider::deleteCustomCursor(MouseCursor cursor)
 	}
 }
 
-void Sdl2InputProvider::setCustomCursor(MouseCursor cursor)
+void Sdl2InputProvider::setCustomCursor(HMouseCursor cursor)
 {
 	SDL_SetCursor((SDL_Cursor*)cursor);
 }
 
-Window Sdl2InputProvider::getMainWindow()
+HWindow Sdl2InputProvider::getMainWindow()
 {
-	return (Window)mainWindow;
+	return (HWindow)mainWindow;
 }
 
-void Sdl2InputProvider::setCurrentWindow(Window window)
+void Sdl2InputProvider::setCurrentWindow(HWindow window)
 {
 	if (gfxProvider->getApiType() == GraphicsProvider::ApiType::OpenGL)
 	{
@@ -634,22 +638,22 @@ void Sdl2InputProvider::setCurrentWindow(Window window)
 	currentWindow = ((SdlWindowProxy*)window);
 }
 
-Window Sdl2InputProvider::getCurrentWindow()
+HWindow Sdl2InputProvider::getCurrentWindow()
 {
 	return currentWindow;
 }
 
-Window Sdl2InputProvider::getFocusedWindow()
+HWindow Sdl2InputProvider::getFocusedWindow()
 {
 	return focusedWindow;
 }
 
-Window Sdl2InputProvider::getHoveredWindow()
+HWindow Sdl2InputProvider::getHoveredWindow()
 {
 	return hoveredWindow;
 }
 
-Window Sdl2InputProvider::createWindow(
+HWindow Sdl2InputProvider::createWindow(
 	const char* title, i32 width, i32 height,
 	WindowFlags flags,
 	Point customPosition)
@@ -697,18 +701,18 @@ Window Sdl2InputProvider::createWindow(
 	return newWnd;
 }
 
-void Sdl2InputProvider::setWindowTitle(Window window, const char* title)
+void Sdl2InputProvider::setWindowTitle(HWindow window, const char* title)
 {
 	SDL_SetWindowTitle(((SdlWindowProxy*)window)->sdlWindow, title);
 }
 
-void Sdl2InputProvider::setWindowRect(Window window, const Rect& rect)
+void Sdl2InputProvider::setWindowRect(HWindow window, const Rect& rect)
 {
 	SDL_SetWindowPosition(((SdlWindowProxy*)window)->sdlWindow, rect.x, rect.y);
 	SDL_SetWindowSize(((SdlWindowProxy*)window)->sdlWindow, rect.width, rect.height);
 }
 
-Rect Sdl2InputProvider::getWindowRect(Window window)
+Rect Sdl2InputProvider::getWindowRect(HWindow window)
 {
 	SDL_Rect rc;
 
@@ -718,7 +722,7 @@ Rect Sdl2InputProvider::getWindowRect(Window window)
 	return{ (f32)rc.x, (f32)rc.y, (f32)rc.w, (f32)rc.h };
 }
 
-void Sdl2InputProvider::presentWindow(Window window)
+void Sdl2InputProvider::presentWindow(HWindow window)
 {
 	if (gfxProvider->getApiType() == GraphicsProvider::ApiType::OpenGL)
 	{
@@ -726,7 +730,7 @@ void Sdl2InputProvider::presentWindow(Window window)
 	}
 }
 
-void Sdl2InputProvider::destroyWindow(Window window)
+void Sdl2InputProvider::destroyWindow(HWindow window)
 {
 	SDL_DestroyWindow(((SdlWindowProxy*)window)->sdlWindow);
 	auto iter = std::find(windows.begin(), windows.end(), window);
@@ -738,32 +742,32 @@ void Sdl2InputProvider::destroyWindow(Window window)
 	}
 }
 
-void Sdl2InputProvider::showWindow(Window window)
+void Sdl2InputProvider::showWindow(HWindow window)
 {
 	SDL_ShowWindow(((SdlWindowProxy*)window)->sdlWindow);
 }
 
-void Sdl2InputProvider::hideWindow(Window window)
+void Sdl2InputProvider::hideWindow(HWindow window)
 {
 	SDL_HideWindow(((SdlWindowProxy*)window)->sdlWindow);
 }
 
-void Sdl2InputProvider::raiseWindow(Window window)
+void Sdl2InputProvider::raiseWindow(HWindow window)
 {
 	SDL_RaiseWindow(((SdlWindowProxy*)window)->sdlWindow);
 }
 
-void Sdl2InputProvider::maximizeWindow(Window window)
+void Sdl2InputProvider::maximizeWindow(HWindow window)
 {
 	SDL_MaximizeWindow(((SdlWindowProxy*)window)->sdlWindow);
 }
 
-void Sdl2InputProvider::minimizeWindow(Window window)
+void Sdl2InputProvider::minimizeWindow(HWindow window)
 {
 	SDL_MinimizeWindow(((SdlWindowProxy*)window)->sdlWindow);
 }
 
-WindowState Sdl2InputProvider::getWindowState(Window window)
+WindowState Sdl2InputProvider::getWindowState(HWindow window)
 {
 	auto flags = SDL_GetWindowFlags(((SdlWindowProxy*)window)->sdlWindow);
 
@@ -785,7 +789,7 @@ WindowState Sdl2InputProvider::getWindowState(Window window)
 	return WindowState::Normal;
 }
 
-void Sdl2InputProvider::setCapture(Window window)
+void Sdl2InputProvider::setCapture(HWindow window)
 {
 	SDL_CaptureMouse(SDL_TRUE);
 }
@@ -900,8 +904,7 @@ void initializeWithSDL(const SdlSettings& settings)
 	{
 		wnd = new SdlWindowProxy();
 		wnd->sdlWindow = settings.sdlMainWindow;
-		// initialize here DX11 stuff also, if API is DX11, from the sdlWindow info
-
+		// initialize here DX11/Vk/Metal stuff also, from the sdlWindow info
 		inputProvider->windows.push_back(wnd);
 	}
 

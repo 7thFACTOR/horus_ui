@@ -233,7 +233,7 @@ bool button(const char* labelText)
 		ctx->renderer->popClipRect();
 	}
 
-	setAsFocusable();
+	setFocusable();
 	ctx->currentWidgetId++;
 
 	return ctx->widget.clicked;
@@ -282,7 +282,7 @@ bool iconButtonInternal(HImage icon, HImage disabledIcon, f32 customHeight, bool
 	}
 
 	if (focusable)
-		setAsFocusable();
+		setFocusable();
 	
 	ctx->currentWidgetId++;
 

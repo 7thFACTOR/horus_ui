@@ -22,9 +22,9 @@ UiAtlas::~UiAtlas()
 		delete[] at->textureImage;
 	}
 
-	for (auto& pps : pendingPackImages)
+	for (auto& ppi : pendingPackImages)
 	{
-		delete[] pps.imageData;
+		delete[] ppi.imageData;
 	}
 
 	delete textureArray;
@@ -34,7 +34,7 @@ void UiAtlas::create(u32 textureWidth, u32 textureHeight)
 {
 	width = textureWidth;
 	height = textureHeight;
-	textureArray = ctx->gfx->createTextureArray();
+	textureArray = ctx->providers->gfx->createTextureArray();
 	textureArray->resize(1, textureWidth, textureHeight);
 }
 
@@ -112,18 +112,16 @@ UiImage* UiAtlas::addWhiteImage(u32 width)
 
 bool UiAtlas::pack(
 	u32 spacing,
-	const Color& bgColor,
-	UiAtlasPackPolicy packPolicy)
+	const Color& bgColor)
 {
 	if (pendingPackImages.empty())
 		return true;
 
 	lastUsedBgColor = bgColor;
-	lastUsedPolicy = packPolicy;
 	lastUsedSpacing = spacing;
 
 	u32 border2 = spacing * 2;
-	::Rect packedRect;
+	Rect packedRect;
 	bool rotated = false;
 	bool allTexturesDirty = false;
 	std::vector<PackImageData> acceptedImages;

@@ -37,9 +37,9 @@ struct OpenGLGraphicsProvider : GraphicsProvider
 	ApiType getApiType() const { return GraphicsProvider::ApiType::OpenGL; }
 	TextureArray* createTextureArray() override;
 	VertexBuffer* createVertexBuffer() override;
-	GraphicsApiRenderTarget createRenderTarget(u32 width, u32 height) override;
-	void destroyRenderTarget(GraphicsApiRenderTarget rt) override;
-	void setRenderTarget(GraphicsApiRenderTarget rt) override;
+	HGraphicsApiRenderTarget createRenderTarget(u32 width, u32 height) override;
+	void destroyRenderTarget(HGraphicsApiRenderTarget rt) override;
+	void setRenderTarget(HGraphicsApiRenderTarget rt) override;
 	void commitRenderState();
 	void setViewport(const Point& windowSize, const Rect& viewport) override;
 	void clear(const Color& color) override;
