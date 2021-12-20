@@ -19,6 +19,13 @@ project "sdl"
 		"**/iphoneos/**",
 		"**/emscripten/**",
 		"**/nacl/**",
+    "**/riscos/**",
+		"**/os2/**",
+    "**/ios/**",
+    "**/windows/hid**",
+    "**/winrt/**",
+    "**/locale/dummy**",
+    "**/misc/dummy**",
 	}
 
 	defines "SDL_SHARED"
@@ -26,6 +33,7 @@ project "sdl"
 
 	-- can't use filters to exclude files
 	if os.target() == "windows" then
+    defines "HAVE_LIBC"
 		excludes {
 			"sdl/src/thread/generic/SDL_sysmutex.c",
 			"sdl/src/thread/generic/SDL_syssem.c",
@@ -48,8 +56,9 @@ project "sdl"
 			"**/pulseaudio/**",
 			"**/libusb/**",
 			"**/mac/**",
+      "**/os2/**",
 		}
-		links { "Setupapi", "winmm", "imm32", "version", "kernel32", "vcruntime", "ucrtd" }
+		links { "Setupapi", "winmm", "imm32", "version", "kernel32", "vcruntime" }
 	elseif os.target() == "linux" or os.target() == "macosx" then
 		excludes {
 			"**/windows/**",

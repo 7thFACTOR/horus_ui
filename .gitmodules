@@ -19,3 +19,6 @@
 [submodule "examples/libs/freetype"]
 	path = examples/libs/freetype
 	url = https://git.sv.nongnu.org/r/freetype/freetype2.git
+[submodule "examples/libs/glew"]
+	path = examples/libs/glew
+	url = https://github.com/edoren/glew

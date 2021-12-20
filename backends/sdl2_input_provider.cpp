@@ -1,4 +1,5 @@
-#include "sdl2_input.h"
+#include "sdl2_input_provider.h"
+#include <assert.h>
 #include <string.h>
 #include <algorithm>
 
@@ -522,7 +523,7 @@ void Sdl2InputProvider::addSdlEvent(SDL_Event& ev)
 void Sdl2InputProvider::processSdlEvents()
 {
 	SDL_Event ev;
-	
+
 	sizeChanged = false;
 	addedMouseMove = false;
 
@@ -674,10 +675,10 @@ HWindow Sdl2InputProvider::createWindow(
 
 	if (has(flags, WindowFlags::Resizable))
 		sdlflags |= SDL_WINDOW_RESIZABLE;
-	
+
 	if (has(flags, WindowFlags::ResizableNoTitle))
 		sdlflags |= SDL_WINDOW_RESIZABLE | SDL_WINDOW_BORDERLESS;
-	
+
 	if (has(flags, WindowFlags::FixedNoTitle))
 		sdlflags |= SDL_WINDOW_BORDERLESS;
 
@@ -692,7 +693,7 @@ HWindow Sdl2InputProvider::createWindow(
 		sdlflags);
 
 	auto newWnd = new SdlWindowProxy();
-	
+
 	newWnd->sdlWindow = wnd;
 	// initialize here DX11 swapchains or other API objects for this specific window, if that API is selected
 
@@ -812,11 +813,7 @@ void initializeWithSDL(const SdlSettings& settings)
 {
 	Rect wndRect = settings.mainWindowRect;
 
-	if (!settings.gfxProvider)
-	{
-		printf("SDL needs a graphics provider\n");
-		return;
-	}
+	assert(getContextSettings().providers.gfx);
 
 	printf("Initializing SDL...\n");
 
@@ -833,7 +830,7 @@ void initializeWithSDL(const SdlSettings& settings)
 		}
 	}
 
-	if (settings.gfxProvider->getApiType() == GraphicsProvider::ApiType::OpenGL)
+	if (HORUS_GFX->getApiType() == GraphicsProvider::ApiType::OpenGL)
 	{
 		if (settings.antiAliasing != AntiAliasing::None)
 			SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
@@ -856,14 +853,8 @@ void initializeWithSDL(const SdlSettings& settings)
 		SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
 	}
 
-	Sdl2InputProvider* inputProvider = new Sdl2InputProvider();
-
-	inputProvider->gfxProvider = settings.gfxProvider;
-
 	bool maximize = false;
 	SdlWindowProxy* wnd = nullptr;
-
-	inputProvider->context = createContext(inputProvider, settings.gfxProvider);
 
 	if (!settings.sdlMainWindow)
 	{
@@ -877,7 +868,7 @@ void initializeWithSDL(const SdlSettings& settings)
 			wndRect = settings.mainWindowRect;
 		}
 
-		wnd = (SdlWindowProxy*)inputProvider->createWindow(
+		wnd = (SdlWindowProxy*)HORUS_INPUT->createWindow(
 			settings.mainWindowTitle,
 			(int)wndRect.width,
 			(int)wndRect.height,
@@ -890,11 +881,11 @@ void initializeWithSDL(const SdlSettings& settings)
 			return;
 		}
 
-		if (inputProvider->gfxProvider->getApiType() == GraphicsProvider::ApiType::OpenGL)
+		if (HORUS_GFX->getApiType() == GraphicsProvider::ApiType::OpenGL)
 		{
-			inputProvider->sdlOpenGLCtx = SDL_GL_CreateContext(((SdlWindowProxy*)wnd)->sdlWindow);
+			((Sdl2InputProvider*)HORUS_INPUT)->sdlOpenGLCtx = SDL_GL_CreateContext(((SdlWindowProxy*)wnd)->sdlWindow);
 
-			if (!inputProvider->sdlOpenGLCtx)
+			if (!((Sdl2InputProvider*)HORUS_INPUT)->sdlOpenGLCtx)
 			{
 				printf("Cannot create GL context for SDL: %s\n", SDL_GetError());
 			}
@@ -905,19 +896,19 @@ void initializeWithSDL(const SdlSettings& settings)
 		wnd = new SdlWindowProxy();
 		wnd->sdlWindow = settings.sdlMainWindow;
 		// initialize here DX11/Vk/Metal stuff also, from the sdlWindow info
-		inputProvider->windows.push_back(wnd);
+		((Sdl2InputProvider*)HORUS_INPUT)->windows.push_back(wnd);
 	}
 
-	if (settings.gfxProvider->getApiType() == GraphicsProvider::ApiType::OpenGL)
+	if (HORUS_GFX->getApiType() == GraphicsProvider::ApiType::OpenGL)
 	{
-		SDL_GL_MakeCurrent(wnd->sdlWindow, inputProvider->sdlOpenGLCtx);
+		SDL_GL_MakeCurrent(wnd->sdlWindow, ((Sdl2InputProvider*)HORUS_INPUT)->sdlOpenGLCtx);
 		SDL_GL_SetSwapInterval(settings.vSync ? 1 : 0);
 	}
-	
-	settings.gfxProvider->initialize();
-	initializeContext(inputProvider->context);
-	inputProvider->mainWindow = wnd;
-	inputProvider->focusedWindow = wnd;
+
+	HORUS_GFX->initialize();
+	//initializeContext(inputProvider->context);
+	((Sdl2InputProvider*)HORUS_INPUT)->mainWindow = wnd;
+	((Sdl2InputProvider*)HORUS_INPUT)->focusedWindow = wnd;
 
 	SDL_ShowWindow(wnd->sdlWindow);
 	SDL_RaiseWindow(wnd->sdlWindow);

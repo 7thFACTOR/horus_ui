@@ -1,6 +1,7 @@
-﻿#include "ui_font.h"
+﻿#include "font.h"
 #include "util.h"
 #include <assert.h>
+#include "horus_interfaces.h"
 
 namespace hui
 {
@@ -33,12 +34,7 @@ void UiFont::resetFaceSize(u32 fontFaceSize)
 
 UiFont::~UiFont()
 {
-	if (face)
-	{
-		FT_Done_Face((FT_Face)face);
-	}
-
-	stopFreeType();
+	HORUS_FONT->freeFont(fontInfo.handle);
 	deleteGlyphs();
 }
 
@@ -55,9 +51,9 @@ FontGlyph* UiFont::getGlyph(GlyphCode glyphCode)
 	return iter->second;
 }
 
-f32 UiFont::getKerning(GlyphCode glyphCodeLeft, GlyphCode glyphCodeRight)
+f32 UiFont::getKerning(GlyphCode leftGlyphCode, GlyphCode rightGlyphCode)
 {
-	u64 hash = ((u64)glyphCodeLeft) << 32 + glyphCodeRight;
+	u64 hash = ((u64)leftGlyphCode) << 32 + rightGlyphCode;
 	auto iter = kerningPairs.find(hash);
 
 	if (iter != kerningPairs.end())
@@ -66,16 +62,7 @@ f32 UiFont::getKerning(GlyphCode glyphCodeLeft, GlyphCode glyphCodeRight)
 	}
 	else
 	{
-		FT_Vector kerning;
-
-		FT_Get_Kerning(
-			(FT_Face)face,
-			FT_Get_Char_Index((FT_Face)face, glyphCodeLeft),
-			FT_Get_Char_Index((FT_Face)face, glyphCodeRight),
-			FT_KERNING_DEFAULT,
-			&kerning);
-
-		f32 kern = kerning.x >> 6;
+		auto kern = HORUS_FONT->getKerning(fontInfo.handle, leftGlyphCode, rightGlyphCode);
 		kerningPairs[hash] = kern;
 
 		return kern;
@@ -112,7 +99,7 @@ void UiFont::precacheLatinAlphabetGlyphs()
 
 FontGlyph* UiFont::cacheGlyph(GlyphCode glyphCode, bool packAtlasNow)
 {
-	if (!face)
+	if (!fontInfo.handle)
 	{
 		return nullptr;
 	}
@@ -123,66 +110,11 @@ FontGlyph* UiFont::cacheGlyph(GlyphCode glyphCode, bool packAtlasNow)
 		return iter->second;
 
 	FontGlyph* fontGlyph = resizeFaceMode ? iter->second : new FontGlyph();
-	FT_GlyphSlot slot = ((FT_Face)face)->glyph;
-
-	// FT_LCD_FILTER_LIGHT   is (0x00, 0x55, 0x56, 0x55, 0x00)
-	// FT_LCD_FILTER_DEFAULT is (0x10, 0x40, 0x70, 0x40, 0x10)
-	u8 lcd_weights[10];
-
-	lcd_weights[0] = 0x10;
-	lcd_weights[1] = 0x40;
-	lcd_weights[2] = 0x70;
-	lcd_weights[3] = 0x40;
-	lcd_weights[4] = 0x10;
-
-	int flags = FT_LOAD_FORCE_AUTOHINT;
-	FT_Library_SetLcdFilter(freetypeLibHandle, FT_LCD_FILTER_LIGHT);
-	flags |= FT_LOAD_TARGET_LCD;
-	FT_Library_SetLcdFilterWeights(freetypeLibHandle, lcd_weights);
-
-	if (FT_Load_Glyph(
-		(FT_Face)face,
-		FT_Get_Char_Index((FT_Face)face, glyphCode),
-		flags))
-	{
-		return nullptr;
-	}
-
-	if (FT_Render_Glyph(slot, FT_RENDER_MODE_NORMAL))
-	{
-		return nullptr;
-	}
-
-	FT_Bitmap bitmap = slot->bitmap;
-	u32 width = bitmap.width;
-	u32 height = bitmap.rows;
-	Rgba32* rgbaBuffer = new Rgba32[width * height];
-
-	for (int j = 0; j < height; ++j)
-	{
-		for (int i = 0; i < width; ++i)
-		{
-			u8 lum = bitmap.buffer[i + width * j];
-			u32 index = (i + j * width);
-			rgbaBuffer[index] = ~0;
-			*((u8*)&(rgbaBuffer[index]) + 3) = lum;
-		}
-	}
-
-	fontGlyph->pixelWidth = width;
-	fontGlyph->pixelHeight = height;
 
 	if (resizeFaceMode)
 		delete[] fontGlyph->rgbaBuffer;
 
-	fontGlyph->rgbaBuffer = rgbaBuffer;
-	fontGlyph->code = glyphCode;
-	fontGlyph->advanceX = ((FT_Face)face)->glyph->advance.x >> 6;
-	fontGlyph->advanceY = ((FT_Face)face)->glyph->advance.y >> 6;
-	fontGlyph->bearingX = ((FT_Face)face)->glyph->metrics.horiBearingX >> 6;
-	fontGlyph->bearingY = ((FT_Face)face)->glyph->metrics.horiBearingY >> 6;
-	fontGlyph->bitmapLeft = ((FT_Face)face)->glyph->bitmap_left;
-	fontGlyph->bitmapTop = ((FT_Face)face)->glyph->bitmap_top;
+	HORUS_FONT->rasterizeGlyph(fontInfo.handle, glyphCode, *fontGlyph);
 
 	// if we do not currently resizing the font glyphs, then create and insert the image into the atlas
 	if (!resizeFaceMode)
@@ -191,7 +123,7 @@ FontGlyph* UiFont::cacheGlyph(GlyphCode glyphCode, bool packAtlasNow)
 		assert(rgbaBuffer);
 
 		auto image = atlas->addImage(
-			(Rgba32*)rgbaBuffer,
+			fontGlyph->rgbaBuffer,
 			fontGlyph->pixelWidth,
 			fontGlyph->pixelHeight);
 
@@ -205,12 +137,12 @@ FontGlyph* UiFont::cacheGlyph(GlyphCode glyphCode, bool packAtlasNow)
 	else
 	{
 		// if we are in resize mode, then just update the image buffer for the glyph and its size
-		delete[] fontGlyph->image->imageData;
+		delete[] ((UiImage*)fontGlyph->image)->imageData;
 		auto imgSize = fontGlyph->pixelWidth * fontGlyph->pixelHeight * sizeof(Rgba32);
-		fontGlyph->image->imageData = new Rgba32[imgSize];
-		fontGlyph->image->width = width;
-		fontGlyph->image->height = height;
-		memcpy(fontGlyph->image->imageData, rgbaBuffer, imgSize);
+		((UiImage*)fontGlyph->image)->imageData = new Rgba32[imgSize];
+		((UiImage*)fontGlyph->image)->width = fontGlyph->pixelWidth;
+		((UiImage*)fontGlyph->image)->height = fontGlyph->pixelHeight;
+		memcpy(((UiImage*)fontGlyph->image)->imageData, fontGlyph->rgbaBuffer, imgSize);
 	}
 
 	return fontGlyph;
@@ -223,7 +155,7 @@ UiImage* UiFont::getGlyphImage(GlyphCode glyphCode)
 	if (iter == glyphs.end())
 		return nullptr;
 
-	return iter->second->image;
+	return (UiImage*)iter->second->image;
 }
 
 FontTextSize UiFont::computeTextSize(const UnicodeString& text)
@@ -291,7 +223,7 @@ FontTextSize UiFont::computeTextSize(const GlyphCode* const text, u32 size)
 	}
 
 	lineCount++;
-	fsize.height = lineCount * metrics.height;
+	fsize.height = lineCount * fontInfo.metrics.height;
 
 	return fsize;
 }
@@ -300,7 +232,7 @@ void UiFont::deleteGlyphs()
 {
 	for (auto glyph : glyphs)
 	{
-		atlas->deleteImage(glyph.second->image);
+		atlas->deleteImage((UiImage*)glyph.second->image);
 		delete[] glyph.second->rgbaBuffer;
 		delete glyph.second;
 	}

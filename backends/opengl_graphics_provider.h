@@ -1,5 +1,4 @@
 #pragma once
-#include "horus.h"
 #include "horus_interfaces.h"
 #include <string>
 

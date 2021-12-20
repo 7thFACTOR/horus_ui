@@ -18,8 +18,8 @@ public:
 	void resetFaceSize(u32 fontFaceSize);
 	FontGlyph* getGlyph(GlyphCode glyphCode);
 	UiImage* getGlyphImage(GlyphCode glyphCode);
-	f32 getKerning(GlyphCode glyphCodeLeft, GlyphCode glyphCodeRight);
-	const FontMetrics& getMetrics() const { return metrics; }
+	f32 getKerning(GlyphCode leftGlyphCode, GlyphCode rightGlyphCode);
+	const FontMetrics& getMetrics() const { return fontInfo.metrics; }
 	void precacheGlyphs(const UnicodeString& glyphCodes);
 	void precacheGlyphs(u32* glyphs, u32 glyphCount);
 	void precacheLatinAlphabetGlyphs();
@@ -33,12 +33,11 @@ public:
 protected:
 	FontGlyph* cacheGlyph(GlyphCode glyphCode, bool packAtlasNow = false);
 
+	FontInfo fontInfo;
 	bool resizeFaceMode = false;
 	std::string filename;
 	u32 faceSize = 12;
 	f32 ascender = 0;
-	FontMetrics metrics;
-	void* face = 0;
 	std::unordered_map<GlyphCode, FontGlyph*> glyphs;
 	std::unordered_map<u64, f32> kerningPairs;
 };

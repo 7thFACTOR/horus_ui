@@ -82,7 +82,7 @@ typedef double f64;
 #ifdef HORUS_STATIC
 	#define HORUS_API
 	#define HORUS_CLASS_API
-#else 
+#else
 #ifdef _WINDOWS
 	#ifdef HORUS_EXPORT
 		#define HORUS_API extern "C++" __declspec(dllexport)
@@ -134,6 +134,7 @@ template <typename T> inline T toFlags(int x) { return (T)x; };
 
 // Some shortcuts for the service providers
 #define HORUS_FILE hui::getContextSettings().providers.file
+#define HORUS_FILEDIALOGS hui::getContextSettings().providers.fileDialogs
 #define HORUS_GFX hui::getContextSettings().providers.gfx
 #define HORUS_INPUT hui::getContextSettings().providers.input
 #define HORUS_UTF hui::getContextSettings().providers.utf
@@ -1208,7 +1209,7 @@ struct Rect
 			x - amount,
 			y - amount,
 			width + 2.0f * amount,
-			height + 2.0f * amount 
+			height + 2.0f * amount
 		};
 	}
 
@@ -1529,6 +1530,7 @@ struct ServiceProviders
 	struct GraphicsProvider* gfx = 0;
 	struct ImageProvider* image = 0;
 	struct FileProvider* file = 0;
+	struct FileDialogsProvider* fileDialogs = 0;
 	struct UtfProvider* utf = 0;
 	struct FontProvider* font = 0;
 	struct RectPackProvider* rectPack = 0;
@@ -2295,16 +2297,16 @@ HORUS_API bool dropdown(i32& selectedIndex, void* userdata, bool(*itemSource)(vo
 /// TODO:
 HORUS_API bool list(i32* selectedIndices, u32 maxSelectedIndices, ListSelectionMode selectionType, const char** items, u32 itemCount);
 
-/// TODO: 
+/// TODO:
 HORUS_API bool list(i32* selectedIndices, u32 maxSelectedIndices, ListSelectionMode selectionType, void* userdata, bool(*itemSource)(void* userdata, i32 index, char** outItemText));
 
-/// TODO: 
+/// TODO:
 HORUS_API bool beginList(ListSelectionMode selectionType);
 
-/// TODO: 
+/// TODO:
 HORUS_API void endList();
 
-/// TODO: 
+/// TODO:
 HORUS_API void listItem(const char* labelText, SelectableFlags stateFlags, HImage icon);
 
 /// Draw a selectable label
@@ -2544,87 +2546,87 @@ HORUS_API void incrementLayerIndex();
 /// \return the layer index, after decrementing it
 HORUS_API u32 decrementLayerIndex();
 
-/// 
+///
 HORUS_API void decrementWindowMaxLayerIndex();
 
-/// 
+///
 HORUS_API Point getParentSize();
 
-/// 
+///
 HORUS_API Rect getWidgetRect();
 
-/// 
+///
 HORUS_API void pushDrawCommandIndex();
 
-/// 
+///
 HORUS_API u32 popDrawCommandIndex();
 
-/// 
+///
 HORUS_API void beginInsertDrawCommands(u32 atIndex);
 
-/// 
+///
 HORUS_API void endInsertDrawCommands();
 
-/// 
+///
 HORUS_API void setFont(HFont font);
 HORUS_API void pushFont(HFont font);
 HORUS_API void popFont();
 
-/// 
+///
 HORUS_API void setColor(const Color& color);
 
-/// 
+///
 HORUS_API void setLineColor(const Color& color);
 
-/// 
+///
 HORUS_API void setFillColor(const Color& color);
 
-/// 
+///
 HORUS_API void drawTextAt(const char* text, const Point& position);
 
-/// 
+///
 HORUS_API void drawTextInBox(const char* text, const Rect& rect, HAlignType horizontalAlign, VAlignType verticalAlign);
 
-/// 
+///
 HORUS_API Point getTextSize(const char* text);
 
-/// 
+///
 HORUS_API void drawImage(HImage image, const Point& position, f32 scale);
 
-/// 
+///
 HORUS_API void drawStretchedImage(HImage image, const Rect& rect);
 
-/// 
+///
 HORUS_API void drawBorderedImage(HImage image, u32 border, const Rect& rect);
 
-/// 
+///
 HORUS_API void setLineStyle(const LineStyle& style);
 
-/// 
+///
 HORUS_API void setFillStyle(const FillStyle& style);
 
-/// 
+///
 HORUS_API void drawLine(const Point& a, const Point& b);
 
-/// 
+///
 HORUS_API void drawPolyLine(const Point* points, u32 pointCount, bool closed = false);
 
-/// 
+///
 HORUS_API void drawCircle(const Point& center, f32 radius, u32 segments = 32);
 
-/// 
+///
 HORUS_API void drawEllipse(const Point& center, f32 radiusX, f32 radiusY, u32 segments = 32);
 
-/// 
+///
 HORUS_API void drawRectangle(const Rect& rc);
 
-/// 
+///
 HORUS_API void drawSolidRectangle(const Rect& rc);
 
-/// 
+///
 HORUS_API void drawSpline(SplineControlPoint* points, u32 count, f32 segmentSize = 15);
 
-/// 
+///
 HORUS_API void drawArrow(const Point& startPoint, const Point& endPoint, f32 tipLength, f32 tipWidth, bool drawBodyLine = true);
 
 HORUS_API void drawSolidTriangle(const Point& p1, const Point& p2, const Point& p3);

@@ -6,33 +6,37 @@
 
 namespace hui
 {
-/// A vertex struct for rendering UI
-struct Vertex
-{
-	Point position;
-	Point uv;
-	u32 color;
-	u32 textureIndex = 0; /// what atlas texture array index this vertex is using
-};
-
 typedef void* FileHandle;
 
 enum class FileSeekMode
 {
-	Begin,
-	End,
-	Set
+	Current = 1,
+	End = 2,
+	Set = 0,
 };
 
 struct FileProvider
 {
 	virtual ~FileProvider(){};
 	virtual FileHandle open(const char* path, const char* mode) = 0;
-	virtual size_t read(FileHandle file, void* outData, size_t bytes) = 0;
-	virtual size_t write(FileHandle file, void* data, size_t bytes) = 0;
+	virtual size_t read(FileHandle file, void* outData, size_t maxDataSize, size_t bytesToRead) = 0;
+	virtual size_t write(FileHandle file, void* data, size_t bytesToWrite) = 0;
 	virtual void close(FileHandle file) = 0;
-	virtual void seek(FileHandle file, FileSeekMode mode, size_t pos = 0) = 0;
+	virtual bool seek(FileHandle file, FileSeekMode mode, size_t pos = 0) = 0;
 	virtual size_t tell(FileHandle file) = 0;
+};
+
+struct FileDialogsProvider
+{
+	virtual ~FileDialogsProvider() {}
+	/// Show an open file dialog
+	virtual bool openFileDialog(const char* filterList, const char* defaultPath, char* outPath, u32 maxOutPathSize) = 0;
+	/// Show an open multiple file dialog
+	virtual bool openMultipleFileDialog(const char* filterList, const char* defaultPath, OpenMultipleFileSet& outPathSet) = 0;
+	/// Show an save file dialog
+	virtual bool saveFileDialog(const char* filterList, const char* defaultPath, char* outPath, u32 maxOutPathSize) = 0;
+	/// Show a pick folder dialog
+	virtual bool pickFolderDialog(const char* defaultPath, char* outPath, u32 maxOutPathSize) = 0;
 };
 
 /// The input provider class is used for input and windowing services
@@ -178,6 +182,15 @@ struct InputProvider
 
 	/// Shutdown the input provider
 	virtual void shutdown() = 0;
+};
+
+/// A vertex struct for rendering UI
+struct Vertex
+{
+	Point position;
+	Point uv;
+	u32 color;
+	u32 textureIndex = 0; /// what atlas texture array index this vertex is using
 };
 
 /// A graphics texture array
@@ -373,20 +386,22 @@ struct FontInfo
 {
 	FontHandle handle;
 	FontMetrics metrics;
-	std::unordered_map<u64, f32> kerningPairs; // the u64 is a hash of left and right glyph codes: u64 hash = ((u64)glyphCodeLeft) << 32 + glyphCodeRight;
 };
 
 struct FontProvider
 {
 	virtual ~FontProvider(){}
 	virtual bool loadFont(const char* path, u32 faceSize, FontInfo& fontInfo) = 0;
-	virtual bool rasterizeGlyph(FontHandle fontHandle, GlyphCode glyphCode, FontGlyph& outGlyph) = 0;
+	virtual void freeFont(FontHandle font) = 0;
+	virtual f32 getKerning(FontHandle font, GlyphCode leftGlyphCode, GlyphCode rightGlyphCode) = 0;
+	virtual bool rasterizeGlyph(FontHandle font, GlyphCode glyphCode, FontGlyph& outGlyph) = 0;
 };
 
 struct ImageProvider
 {
 	virtual ~ImageProvider() {}
 	virtual bool loadImage(const char* path, ImageData& outImage) = 0;
+	virtual bool saveImage(const char* path, const ImageData& image) = 0;
 };
 
 struct UtfProvider

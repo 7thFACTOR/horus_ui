@@ -1,5 +1,5 @@
 #include "opengl_vertex_buffer.h"
-#include "opengl_graphics.h"
+#include "opengl_graphics_provider.h"
 
 #define GLEW_STATIC
 #include <GL/glew.h>

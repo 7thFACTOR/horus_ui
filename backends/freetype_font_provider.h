@@ -6,16 +6,14 @@
 
 namespace hui
 {
-struct FreetypeFontProvider
+struct FreetypeFontProvider : FontProvider
 {
 	void initializeFreetype(FT_Library context = 0);
 	void shutdownFreetype();
-	~FreetypeFontProvider();
-	bool loadFont(const char* path, u32 faceSize, FontInfo& outFontInfo);
-	bool rasterizeGlyph(GlyphCode glyphCode, FontGlyph* outGlyph);
-
-private:
-
+	bool loadFont(const char* path, u32 faceSize, FontInfo& outFontInfo) override;
+	void freeFont(FontHandle font) override;
+	f32 getKerning(FontHandle font, GlyphCode leftGlyphCode, GlyphCode rightGlyphCode) override;
+	bool rasterizeGlyph(FontHandle font, GlyphCode glyphCode, FontGlyph& outGlyph) override;
 };
 
 }
