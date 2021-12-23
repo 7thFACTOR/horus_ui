@@ -607,6 +607,9 @@ void shutdown()
 {
 	assert(ctx);
 
+	if (ctx->providers->gfx)
+		ctx->providers->gfx->shutdown();
+
 	if (ctx->providers->input)
 		ctx->providers->input->shutdown();
 }

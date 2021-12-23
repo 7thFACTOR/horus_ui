@@ -155,6 +155,7 @@ bool saveViewContainersState(const char* filename)
 
 bool loadViewContainersState(const char* filename)
 {
+	//TODO: use HORUS_FILE provider
 	FILE* file = fopen(filename, "rb");
 
 	if (!file)

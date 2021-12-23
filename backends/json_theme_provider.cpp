@@ -22,8 +22,9 @@ static std::string readTextFile(const char* path)
 
 		char* buffer = new char[size + 1];
 		buffer[size] = 0;
-
-		if (HORUS_FILE->read(file, buffer, size, size) == (unsigned long)size)
+		auto readBytes = HORUS_FILE->read(file, buffer, size, size);
+		
+		if (readBytes == size)
 			text = buffer;
 
 		delete[] buffer;

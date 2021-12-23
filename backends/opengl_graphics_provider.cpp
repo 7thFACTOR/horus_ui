@@ -124,10 +124,12 @@ void main()\
 ";
 
 OpenGLGraphicsProvider::OpenGLGraphicsProvider()
-{}
+{
+}
 
 OpenGLGraphicsProvider::~OpenGLGraphicsProvider()
-{}
+{
+}
 
 bool OpenGLGraphicsProvider::initialize()
 {

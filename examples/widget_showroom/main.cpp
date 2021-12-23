@@ -1974,13 +1974,27 @@ void createMyDefaultViewPanes()
 
 int main(int argc, char** args)
 {
-	hui::SdlSettings settings;
+	hui::ContextSettings settings;
 
-	settings.mainWindowTitle = "HorusUI Example - Widget Showroom";
-	settings.mainWindowRect = { 0, 0, 800, 600 };
-	//settings.gfxProvider = new OpenGLGraphicsProvider();
-	settings.antiAliasing = hui::AntiAliasing::None;
-	hui::initializeWithSDL(settings);
+	settings.providers.file = new StdioFileProvider();
+	settings.providers.fileDialogs = new NativeFileDialogsProvider();
+	settings.providers.font = new FreetypeFontProvider();
+	settings.providers.gfx = new OpenGLGraphicsProvider();
+	settings.providers.image = new StbImageProvider();
+	settings.providers.input = new Sdl2InputProvider();
+	settings.providers.rectPack = new BinPackRectPackProvider();
+	settings.providers.utf = new UtfCppProvider();
+
+	auto ctx = hui::createContext(settings);
+
+	hui::SdlSettings sdlSettings;
+
+	sdlSettings.mainWindowTitle = "HorusUI Example - Widget Showroom";
+	sdlSettings.mainWindowRect = { 0, 0, 800, 600 };
+	sdlSettings.antiAliasing = hui::AntiAliasing::None;
+	hui::setupSDL(sdlSettings);
+
+	HORUS_GFX->initialize(); // init the gfx objects, since we have now a graphics context set
 
 	printf("Loading theme...\n");
 	//TODO: load themes and images and anything from memory also
@@ -2046,6 +2060,7 @@ int main(int argc, char** args)
 	printf("Starting loop...\n");
 	hui::dockingSystemLoop();
 	hui::saveViewContainersState("layout.hui");
+	
 	hui::shutdown();
 
 	return 0;

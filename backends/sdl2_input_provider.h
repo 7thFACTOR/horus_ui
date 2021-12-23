@@ -13,7 +13,8 @@ struct SdlSettings
 	Rect mainWindowRect;
 	WindowFlags windowFlags = WindowFlags::Resizable;
 	bool vSync = true;
-	void* sdlContext = nullptr;
+	void* sdlGLContext = nullptr; // set to a valid SDL
+	bool initializeSDL = true; // set to false if you already initialized SDL 
 	SDL_Window* sdlMainWindow = nullptr;
 	AntiAliasing antiAliasing = AntiAliasing::None;
 };
@@ -80,7 +81,9 @@ struct Sdl2InputProvider : InputProvider
 	bool quitApp = false; /// if true, it will end the main app loop
 	bool addedMouseMove = false; /// we only want the first mouse move because otherwise we'll get way too many mouse move events in the queue
 	bool wantsToQuitApp = false; /// true when the user wants to quit the app
-	SDL_GLContext sdlOpenGLCtx = nullptr;
+	bool ownsGLContext = false; // true if it created the OpenGL context
+	bool ownsSDLInit = false; // true if the SDL init happened here
+	SDL_GLContext sdlGLContext = nullptr;
 	SDL_Cursor* cursors[SDL_NUM_SYSTEM_CURSORS] = { nullptr };
 	std::vector<SdlWindowProxy*> windows;
 	std::vector<SDL_Cursor*> customCursors;
@@ -89,13 +92,11 @@ struct Sdl2InputProvider : InputProvider
 	SdlWindowProxy* focusedWindow = nullptr;
 	SdlWindowProxy* hoveredWindow = nullptr;
 	SdlWindowProxy* currentWindow = nullptr;
-	HContext context = nullptr;
 	u32 lastTime = SDL_GetTicks();
 	f32 deltaTime = 0;
 	bool sizeChanged = false;
-	GraphicsProvider* gfxProvider = nullptr;
 };
 
-void initializeWithSDL(const SdlSettings& settings);
+void setupSDL(const SdlSettings& settings);
 
 }

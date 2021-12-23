@@ -10,15 +10,15 @@ FileHandle StdioFileProvider::open(const char* path, const char* mode)
 size_t StdioFileProvider::read(FileHandle file, void* outData, size_t maxDataSize, size_t bytesToRead)
 {
 #ifdef _WINDOWS
-	return fread_s(outData, maxDataSize, bytesToRead, 1, (FILE*)file);
+	return fread_s(outData, maxDataSize, bytesToRead, 1, (FILE*)file) * bytesToRead;
 #else
-	return fread(outData, bytesToRead, 1, (FILE*)file);
+	return fread(outData, bytesToRead, 1, (FILE*)file) * bytesToRead;
 #endif
 }
 
 size_t StdioFileProvider::write(FileHandle file, void* data, size_t bytesToWrite)
 {
-	return fwrite(data, bytesToWrite, 1, (FILE*)file);
+	return fwrite(data, bytesToWrite, 1, (FILE*)file) * bytesToWrite;
 }
 
 void StdioFileProvider::close(FileHandle file)

@@ -583,7 +583,11 @@ void Sdl2InputProvider::processEvents()
 
 void Sdl2InputProvider::shutdown()
 {
-	SDL_Quit();
+	if (ownsGLContext)
+		SDL_GL_DeleteContext(sdlGLContext);
+	
+	if (ownsSDLInit)
+		SDL_Quit();
 }
 
 void Sdl2InputProvider::setCursor(MouseCursorType type)
@@ -631,9 +635,9 @@ HWindow Sdl2InputProvider::getMainWindow()
 
 void Sdl2InputProvider::setCurrentWindow(HWindow window)
 {
-	if (gfxProvider->getApiType() == GraphicsProvider::ApiType::OpenGL)
+	if (HORUS_GFX->getApiType() == GraphicsProvider::ApiType::OpenGL)
 	{
-		SDL_GL_MakeCurrent(((SdlWindowProxy*)window)->sdlWindow, sdlOpenGLCtx);
+		SDL_GL_MakeCurrent(((SdlWindowProxy*)window)->sdlWindow, sdlGLContext);
 	}
 
 	currentWindow = ((SdlWindowProxy*)window);
@@ -682,10 +686,10 @@ HWindow Sdl2InputProvider::createWindow(
 	if (has(flags, WindowFlags::FixedNoTitle))
 		sdlflags |= SDL_WINDOW_BORDERLESS;
 
-	if (gfxProvider->getApiType() == GraphicsProvider::ApiType::OpenGL)
+	if (HORUS_GFX->getApiType() == GraphicsProvider::ApiType::OpenGL)
 		sdlflags |= SDL_WINDOW_OPENGL;
 
-	if (gfxProvider->getApiType() == GraphicsProvider::ApiType::Vulkan)
+	if (HORUS_GFX->getApiType() == GraphicsProvider::ApiType::Vulkan)
 		sdlflags |= SDL_WINDOW_VULKAN;
 
 	auto wnd = SDL_CreateWindow(
@@ -725,7 +729,7 @@ Rect Sdl2InputProvider::getWindowRect(HWindow window)
 
 void Sdl2InputProvider::presentWindow(HWindow window)
 {
-	if (gfxProvider->getApiType() == GraphicsProvider::ApiType::OpenGL)
+	if (HORUS_GFX->getApiType() == GraphicsProvider::ApiType::OpenGL)
 	{
 		SDL_GL_SwapWindow(((SdlWindowProxy*)window)->sdlWindow);
 	}
@@ -809,25 +813,28 @@ Point Sdl2InputProvider::getMousePosition()
 	return { (f32)x , (f32)y };
 }
 
-void initializeWithSDL(const SdlSettings& settings)
+void setupSDL(const SdlSettings& settings)
 {
 	Rect wndRect = settings.mainWindowRect;
 
 	assert(getContextSettings().providers.gfx);
-
+	auto sdlProvider = ((Sdl2InputProvider*)HORUS_INPUT);
+	assert(sdlProvider);
 	printf("Initializing SDL...\n");
 
-	if (!settings.sdlContext)
+	if (settings.initializeSDL)
 	{
 		SDL_SetMainReady();
 
-		int err = SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS);
+		int err = SDL_Init(SDL_INIT_EVERYTHING);
 
 		if (err != 0)
 		{
 			printf("SDL initialize error: %s\n", SDL_GetError());
 			return;
 		}
+
+		sdlProvider->ownsSDLInit = true;
 	}
 
 	if (HORUS_GFX->getApiType() == GraphicsProvider::ApiType::OpenGL)
@@ -868,7 +875,7 @@ void initializeWithSDL(const SdlSettings& settings)
 			wndRect = settings.mainWindowRect;
 		}
 
-		wnd = (SdlWindowProxy*)HORUS_INPUT->createWindow(
+		wnd = (SdlWindowProxy*)sdlProvider->createWindow(
 			settings.mainWindowTitle,
 			(int)wndRect.width,
 			(int)wndRect.height,
@@ -880,12 +887,23 @@ void initializeWithSDL(const SdlSettings& settings)
 			printf("Cannot create SDL window: %s: %s\n", settings.mainWindowTitle, SDL_GetError());
 			return;
 		}
+	}
+	else
+	{
+		wnd = new SdlWindowProxy();
+		wnd->sdlWindow = settings.sdlMainWindow;
+		// initialize here DX11/Vk/Metal stuff also, from the sdlWindow info
+		sdlProvider->windows.push_back(wnd);
+	}
 
+	if (!settings.sdlGLContext)
+	{
 		if (HORUS_GFX->getApiType() == GraphicsProvider::ApiType::OpenGL)
 		{
-			((Sdl2InputProvider*)HORUS_INPUT)->sdlOpenGLCtx = SDL_GL_CreateContext(((SdlWindowProxy*)wnd)->sdlWindow);
+			sdlProvider->sdlGLContext = SDL_GL_CreateContext(((SdlWindowProxy*)wnd)->sdlWindow);
+			sdlProvider->ownsGLContext = true;
 
-			if (!((Sdl2InputProvider*)HORUS_INPUT)->sdlOpenGLCtx)
+			if (!sdlProvider->sdlGLContext)
 			{
 				printf("Cannot create GL context for SDL: %s\n", SDL_GetError());
 			}
@@ -893,22 +911,17 @@ void initializeWithSDL(const SdlSettings& settings)
 	}
 	else
 	{
-		wnd = new SdlWindowProxy();
-		wnd->sdlWindow = settings.sdlMainWindow;
-		// initialize here DX11/Vk/Metal stuff also, from the sdlWindow info
-		((Sdl2InputProvider*)HORUS_INPUT)->windows.push_back(wnd);
+		sdlProvider->sdlGLContext = settings.sdlGLContext;
 	}
 
 	if (HORUS_GFX->getApiType() == GraphicsProvider::ApiType::OpenGL)
 	{
-		SDL_GL_MakeCurrent(wnd->sdlWindow, ((Sdl2InputProvider*)HORUS_INPUT)->sdlOpenGLCtx);
+		SDL_GL_MakeCurrent(wnd->sdlWindow, sdlProvider->sdlGLContext);
 		SDL_GL_SetSwapInterval(settings.vSync ? 1 : 0);
 	}
 
-	HORUS_GFX->initialize();
-	//initializeContext(inputProvider->context);
-	((Sdl2InputProvider*)HORUS_INPUT)->mainWindow = wnd;
-	((Sdl2InputProvider*)HORUS_INPUT)->focusedWindow = wnd;
+	sdlProvider->mainWindow = wnd;
+	sdlProvider->focusedWindow = wnd;
 
 	SDL_ShowWindow(wnd->sdlWindow);
 	SDL_RaiseWindow(wnd->sdlWindow);
