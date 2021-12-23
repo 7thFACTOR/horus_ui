@@ -290,7 +290,7 @@ bool comboSliderInternal(f32& value, f32 minVal, f32 maxVal, bool useRange, f32 
 		toString(value, outStr, 64);
 		ctx->renderer->cmdSetColor(bodyElemState->textColor * ctx->tint[(int)TintColorType::Body]);
 		ctx->renderer->cmdDrawTextInBox(outStr, ctx->widget.rect, HAlignType::Center, VAlignType::Center);
-		setAsFocusable();
+		setFocusable();
 		ctx->currentWidgetId++;
 	}
 

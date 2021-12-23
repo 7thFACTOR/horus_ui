@@ -70,7 +70,7 @@ void tab(const char* labelText, HImage icon)
 	auto tabActiveElem = ctx->theme->getElement(WidgetElementId::TabBodyActive);
 	auto tabInactiveElem = ctx->theme->getElement(WidgetElementId::TabBodyInactive);
 	auto tabElemState = &tabActiveElem.normalState();
-	UnicodeString* uniStr = ctx->textCache->getText(labelText);
+	Utf32String* uniStr = ctx->textCache->getText(labelText);
 	FontTextSize fsize = tabElemState->font->computeTextSize(*uniStr);
 	UiImage* ico = (UiImage*)icon;
 

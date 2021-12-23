@@ -50,14 +50,14 @@ int main(int argc, char** args)
 
 	settings.mainWindowTitle = "HorusUI Example - Custom Widgets";
 	settings.mainWindowRect = { 0, 0, 1024, 768 };
-	settings.gfxProvider = new hui::OpenGLGraphicsProvider();
+	//settings.gfxProvider = new hui::OpenGLGraphicsProvider();
 
 	hui::initializeWithSDL(settings);
 
 	auto theme = hui::loadThemeFromJson("../themes/default.theme");
 
 	hui::setTheme(theme);
-	auto largeFnt = hui::getFont(theme, "title");
+	auto largeFnt = hui::getThemeFont(theme, "title");
 
 	getThemeWidgetElementInfo(WidgetElementId::ButtonBody, WidgetStateType::Normal, inf);
 	bool exitNow = false;

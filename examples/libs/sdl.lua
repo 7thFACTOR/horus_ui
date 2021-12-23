@@ -28,7 +28,7 @@ project "sdl"
     "**/misc/dummy**",
 	}
 
-	defines "SDL_SHARED"
+	defines { "SDL_SHARED", "DLL_EXPORT" }
 	shared.includedirs "sdl/include/"
 
 	-- can't use filters to exclude files

@@ -1945,7 +1945,7 @@ void Renderer::drawTextInternal(
 	/////////////////////////////
 	// DRAW CHARS
 	/////////////////////////////
-	const UnicodeString& utext = *ctx->textCache->getText(text);
+	const Utf32String& utext = *ctx->textCache->getText(text);
 
 	for (int i = 0; i < utext.size(); i++)
 	{

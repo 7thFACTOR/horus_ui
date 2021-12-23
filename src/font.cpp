@@ -71,7 +71,7 @@ f32 UiFont::getKerning(GlyphCode leftGlyphCode, GlyphCode rightGlyphCode)
 	return 0;
 }
 
-void UiFont::precacheGlyphs(const UnicodeString& glyphCodes)
+void UiFont::precacheGlyphs(const Utf32String& glyphCodes)
 {
 	for (auto glyphCode : glyphCodes)
 	{
@@ -120,7 +120,7 @@ FontGlyph* UiFont::cacheGlyph(GlyphCode glyphCode, bool packAtlasNow)
 	if (!resizeFaceMode)
 	{
 		glyphs.insert(std::make_pair(glyphCode, fontGlyph));
-		assert(rgbaBuffer);
+		//assert(rgbaBuffer);
 
 		auto image = atlas->addImage(
 			fontGlyph->rgbaBuffer,
@@ -158,16 +158,16 @@ UiImage* UiFont::getGlyphImage(GlyphCode glyphCode)
 	return (UiImage*)iter->second->image;
 }
 
-FontTextSize UiFont::computeTextSize(const UnicodeString& text)
+FontTextSize UiFont::computeTextSize(const Utf32String& text)
 {
 	return computeTextSize(text.data(), text.size());
 }
 
 FontTextSize UiFont::computeTextSize(const char* text)
 {
-	static UnicodeString str;
+	static Utf32String str;
 
-	utf8ToUtf32(text, str);
+	HORUS_UTF->utf8To32(text, str);
 
 	return computeTextSize(str.data(), str.size());
 }

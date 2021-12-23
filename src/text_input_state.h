@@ -24,20 +24,20 @@ struct TextInputState
 	void selectAll() { selectionBegin = 0; selectionEnd = text.size(); selectionActive = true; caretPosition = text.size(); }
 	void deselect() { selectionBegin = 0; selectionEnd = 0; selectionActive = false; }
 	void deleteSelection();
-	UnicodeString getSelection();
+	Utf32String getSelection();
 	void clearText();
-	void insertTextAtCaret(const UnicodeString& newText);
+	void insertTextAtCaret(const Utf32String& newText);
 	bool processEvent(const InputEvent& ev);
 	void processKeyEvent(const InputEvent& ev);
 	i32 getCharIndexAtX(f32 aX);
 	void computeScrollAmount();
-	void formatValue(UnicodeString& value);
+	void formatValue(Utf32String& value);
 
 	struct UiThemeElement* themeElement;
 	Rect rect;
 	Rect clipRect;
-	UnicodeString text;
-	UnicodeString defaultText;
+	Utf32String text;
+	Utf32String defaultText;
 	TextInputValueMode valueType = TextInputValueMode::Any;
 	u32 decimalPlaces = 2;
 	i32 selectionBegin = 0;
@@ -54,7 +54,7 @@ struct TextInputState
 	bool textChanged = false;
 	u32 maxTextLength = 0;
 	bool password = false;
-	UnicodeString passwordCharUnicode;
+	Utf32String passwordCharUnicode;
 };
 
 }

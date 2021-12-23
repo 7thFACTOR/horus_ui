@@ -12,13 +12,13 @@ public:
 	~UnicodeTextCache();
 	//TODO: warning for dynamic text that can change per frame, maybe that should not be cached
 	// or just convert from utf8 to utf32 directly every frame, check speed
-	UnicodeString* getText(const char* text);
-	void pruneUnusedTexts();
+	Utf32String* getText(const char* text);
+	void pruneUnusedText();
 
 protected:
 	struct CachedText
 	{
-		UnicodeString* text = nullptr;
+		Utf32String* text = nullptr;
 		f32 lastUsedTimeOrFrame = 0;
 	};
 	std::unordered_map<std::string, CachedText> texts;

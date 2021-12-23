@@ -185,7 +185,7 @@ bool rotarySliderFloat(const char* labelText, f32& value, f32 minVal, f32 maxVal
 		ctx->renderer->popClipRect();
 	}
 
-	setAsFocusable();
+	setFocusable();
 	ctx->currentWidgetId++;
 
 	return wasModified;

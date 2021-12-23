@@ -401,14 +401,18 @@ struct ImageProvider
 {
 	virtual ~ImageProvider() {}
 	virtual bool loadImage(const char* path, ImageData& outImage) = 0;
-	virtual bool saveImage(const char* path, const ImageData& image) = 0;
+	virtual bool savePngImage(const char* path, const ImageData& image) = 0;
 };
 
 struct UtfProvider
 {
 	virtual ~UtfProvider() {}
-	virtual bool utf8To32(const char* utf8Str, UnicodeString& outUtf32Str) = 0;
-	virtual bool utf32To8(UnicodeString& outUtf32Str, char* outUtf8Str, size_t maxUtf8StrSize) = 0;
+	virtual bool utf8To32(const char* utf8Str, Utf32String& outUtf32Str) = 0;
+	virtual bool utf32To16(const Utf32String& utf32Str, wchar_t** outUtf16Str, size_t& outUtf16StrLen) = 0;
+	virtual bool utf32To8(const Utf32String& utf32Str, char** outUtf8Str) = 0;
+	virtual bool utf16To8(wchar_t* utf16Str, const char** outUtf8Str) = 0;
+	virtual bool utf32To8NoAlloc(const Utf32String& utf32Str, const char* outUtf8Str, size_t maxUtf8StrLen) = 0;
+	virtual bool utf32To8NoAlloc(const u32* utf32Str, size_t utf32StrSize, char* outUtf8Str, size_t maxOutUtf8StrSize) = 0;
 	virtual size_t utf8Length(const char* utf8Str) = 0;
 };
 

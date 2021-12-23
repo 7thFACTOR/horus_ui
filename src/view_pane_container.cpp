@@ -4,11 +4,11 @@
 #include <string.h>
 #include <algorithm>
 #include <math.h>
-#include "ui_context.h"
+#include "context.h"
 
 namespace hui
 {
-ViewContainer createViewContainer(Window window)
+HViewContainer createViewContainer(HWindow window)
 {
 	auto rect = getWindowRect(window);
 	auto viewContainer = new UiViewContainer();
@@ -23,7 +23,7 @@ ViewContainer createViewContainer(Window window)
 	return viewContainer;
 }
 
-void deleteViewContainer(ViewContainer viewContainer)
+void deleteViewContainer(HViewContainer viewContainer)
 {
 	auto viewContainerObj = (UiViewContainer*)viewContainer;
 	auto iter = std::find(dockingData.viewContainers.begin(), dockingData.viewContainers.begin(), viewContainerObj);
@@ -38,7 +38,7 @@ void deleteViewContainer(ViewContainer viewContainer)
 	delete viewContainerObj;
 }
 
-u32 getViewContainers(ViewContainer* outViewContainers, u32 maxCount)
+u32 getViewContainers(HViewContainer* outViewContainers, u32 maxCount)
 {
 	std::vector<UiViewPane*> viewPanes;
 	auto count = (u32)fminl(maxCount, dockingData.viewContainers.size());
@@ -51,7 +51,7 @@ u32 getViewContainers(ViewContainer* outViewContainers, u32 maxCount)
 	return count;
 }
 
-Window getViewContainerWindow(ViewContainer viewContainer)
+HWindow getViewContainerWindow(HViewContainer viewContainer)
 {
 	auto iter = std::find(dockingData.viewContainers.begin(), dockingData.viewContainers.end(), (UiViewContainer*)viewContainer);
 
@@ -61,7 +61,7 @@ Window getViewContainerWindow(ViewContainer viewContainer)
 	return ((UiViewContainer*)viewContainer)->window;
 }
 
-ViewContainer getWindowViewContainer(Window window)
+HViewContainer getWindowViewContainer(HWindow window)
 {
 	for (auto& iter : dockingData.viewContainers)
 	{
@@ -74,7 +74,7 @@ ViewContainer getWindowViewContainer(Window window)
 	return nullptr;
 }
 
-void deleteViewContainerFromWindow(Window window)
+void deleteViewContainerFromWindow(HWindow window)
 {
 	for (auto container : dockingData.viewContainers)
 	{
@@ -93,7 +93,7 @@ void deleteViewContainerFromWindow(Window window)
 	}
 }
 
-u32 getViewContainerViewPanes(ViewContainer viewContainer, ViewPane* outViewPanes, u32 maxCount)
+u32 getViewContainerViewPanes(HViewContainer viewContainer, HViewPane* outViewPanes, u32 maxCount)
 {
 	std::vector<UiViewPane*> viewPanes;
 	auto viewContainerObj = (UiViewContainer*)viewContainer;
@@ -109,7 +109,7 @@ u32 getViewContainerViewPanes(ViewContainer viewContainer, ViewPane* outViewPane
 	return count;
 }
 
-u32 getViewContainerViewPaneCount(ViewContainer viewContainer)
+u32 getViewContainerViewPaneCount(HViewContainer viewContainer)
 {
 	std::vector<UiViewPane*> viewPanes;
 	auto viewContainerObj = (UiViewContainer*)viewContainer;
@@ -119,7 +119,7 @@ u32 getViewContainerViewPaneCount(ViewContainer viewContainer)
 	return (u32)viewPanes.size();
 }
 
-ViewPane getViewContainerFirstViewPane(ViewContainer viewContainer)
+HViewPane getViewContainerFirstViewPane(HViewContainer viewContainer)
 {
 	auto viewContainerObj = (UiViewContainer*)viewContainer;
 	std::vector<UiViewPane*> viewPanes;
@@ -182,7 +182,7 @@ bool loadViewContainersState(const char* filename)
 	return true;
 }
 
-void setViewContainerSideSpacing(ViewContainer viewContainer, f32 left, f32 right, f32 bottom)
+void setViewContainerSideSpacing(HViewContainer viewContainer, f32 left, f32 right, f32 bottom)
 {
 	UiViewContainer* vc = (UiViewContainer*)viewContainer;
 

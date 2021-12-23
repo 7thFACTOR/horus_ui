@@ -151,7 +151,7 @@ bool sliderInternal(f32 minVal, f32 maxVal, f32& value, bool useStep, f32 step, 
 		knobElemState->border,
 		knobRect,
 		ctx->globalScale);
-	setAsFocusable();
+	setFocusable();
 	ctx->currentWidgetId++;
 
 	return wasModified;

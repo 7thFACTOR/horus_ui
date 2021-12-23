@@ -75,7 +75,7 @@ bool selectableInternal(const char* labelText, HFont font, SelectableFlags state
 		ctx->renderer->popClipRect();
 	}
 
-	setAsFocusable();
+	setFocusable();
 	ctx->currentWidgetId++;
 	ctx->menuItemTextWidth = fnt->computeTextSize(labelText).width + bodyElemState->border * 2.0f;
 

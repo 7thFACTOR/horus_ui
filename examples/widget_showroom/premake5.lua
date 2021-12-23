@@ -27,7 +27,8 @@ project "widget_showroom"
 		".",
 		"../../include",
 		"../../backends",
-    "../libs"
+    "../libs",
+    "../libs/utfcpp/source"
 	}
 
 	defines "_CONSOLE"

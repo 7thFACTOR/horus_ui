@@ -1,9 +1,9 @@
 #include "unicode_text_cache.h"
-#include "libs/utfcpp/source/utf8.h"
 #include "types.h"
 #include <algorithm>
 #include <string.h>
-#include "ui_context.h"
+#include "context.h"
+#include "horus_interfaces.h"
 
 namespace hui
 {
@@ -18,40 +18,37 @@ UnicodeTextCache::~UnicodeTextCache()
 	}
 }
 
-UnicodeString* UnicodeTextCache::getText(const char* text)
+Utf32String* UnicodeTextCache::getText(const char* text)
 {
 	auto iter = texts.find((const char*)text);
 
 	if (iter == texts.end())
 	{
-		UnicodeString* txt = new UnicodeString();
+		Utf32String* txt = new Utf32String();
 
-		try
+		if (HORUS_UTF->utf8To32((char*)text, *txt))
 		{
-			utf8::utf8to32((char*)text, (char*)(text + strlen((const char*)text)), std::back_inserter(*txt));
-		}
+			CachedText ct;
 
-		catch (utf8::invalid_utf8 ex)
-		{
-			delete txt;
-			return nullptr;
-		}
+			ct.text = txt;
 
-		CachedText ct;
+			if (ctx->settings.textCachePruneMode == TextCachePruneMode::Time)
+			{
+				ct.lastUsedTimeOrFrame = ctx->totalTime;
+			}
+			else
+			{
+				ct.lastUsedTimeOrFrame = ctx->frameCount;
+			}
 
-		ct.text = txt;
-
-		if (ctx->settings.textCachePruneMode == TextCachePruneMode::Time)
-		{
-			ct.lastUsedTimeOrFrame = ctx->totalTime;
+			texts.insert(std::make_pair((const char*)text, ct));
+			return txt;
 		}
 		else
 		{
-			ct.lastUsedTimeOrFrame = ctx->frameCount;
+			delete txt;
+			return false;
 		}
-
-		texts.insert(std::make_pair((const char*)text, ct));
-		return txt;
 	}
 
 	if (ctx->settings.textCachePruneMode == TextCachePruneMode::Time)
@@ -66,7 +63,7 @@ UnicodeString* UnicodeTextCache::getText(const char* text)
 	return iter->second.text;
 }
 
-void UnicodeTextCache::pruneUnusedTexts()
+void UnicodeTextCache::pruneUnusedText()
 {
 	auto iter = texts.begin();
 

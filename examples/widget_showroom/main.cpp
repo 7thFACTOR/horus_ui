@@ -352,7 +352,7 @@ struct MyViewHandler : hui::ViewHandler
 		}
 	}
 
-	void drawFlowNode(const char* name, const Rect& rc)
+	void drawFlowNode(const char* name, const hui::Rect& rc)
 	{
 		hui::Rect box = rc;
 
@@ -365,7 +365,7 @@ struct MyViewHandler : hui::ViewHandler
 
 	void onViewRender(HWindow wnd, HViewPane viewPane, ViewId viewId, u64 userDataId) override
 	{
-		Rect viewRect = hui::getViewPaneRect(viewPane);
+		hui::Rect viewRect = hui::getViewPaneRect(viewPane);
 
 		switch (viewId)
 		{
@@ -988,7 +988,7 @@ struct MyViewHandler : hui::ViewHandler
 					checker = hui::check("", checker);
 
 					static char objName[1000] = { 0 };
-					static char* str;
+					static char* str = 0;
 					bool wasModified;
 
 					if (hui::objectRefEditor(targetIcon, clearIcon, "Mesh", objName, 0, (void**)&str, &wasModified))
@@ -1382,7 +1382,7 @@ struct MyViewHandler : hui::ViewHandler
 		}
 		case 3:
 		{
-			Rect wrect = hui::beginCustomWidget(hui::getRemainingViewPaneHeight(viewPane));
+			hui::Rect wrect = hui::beginCustomWidget(hui::getRemainingViewPaneHeight(viewPane));
 
 			{
 				//hui::LineStyle ls;
@@ -1978,7 +1978,7 @@ int main(int argc, char** args)
 
 	settings.mainWindowTitle = "HorusUI Example - Widget Showroom";
 	settings.mainWindowRect = { 0, 0, 800, 600 };
-	settings.gfxProvider = new OpenGLGraphicsProvider();
+	//settings.gfxProvider = new OpenGLGraphicsProvider();
 	settings.antiAliasing = hui::AntiAliasing::None;
 	hui::initializeWithSDL(settings);
 
@@ -1987,11 +1987,11 @@ int main(int argc, char** args)
 	auto theme = hui::loadThemeFromJson("../themes/default.theme.json");
 	
 	// create additional fonts
-	fntBig = hui::createFont(theme, "customBig", "../themes/fonts/arial.ttf", 20);
-	fntVeryBig = hui::createFont(theme, "customVeryBig", "../themes/fonts/arial.ttf", 50);
-	fntBold = hui::createFont(theme, "customBold", "../themes/fonts/arial.ttf", 15);
-	fntItalic = hui::createFont(theme, "customItalic", "../themes/fonts/arial.ttf", 15);
-	fntNodeTitle = hui::createFont(theme, "customNodeTitle", "../themes/fonts/Roboto-Bold.ttf", 12);
+	fntBig = hui::createThemeFont(theme, "customBig", "../themes/fonts/arial.ttf", 20);
+	fntVeryBig = hui::createThemeFont(theme, "customVeryBig", "../themes/fonts/arial.ttf", 50);
+	fntBold = hui::createThemeFont(theme, "customBold", "../themes/fonts/arial.ttf", 15);
+	fntItalic = hui::createThemeFont(theme, "customItalic", "../themes/fonts/arial.ttf", 15);
+	fntNodeTitle = hui::createThemeFont(theme, "customNodeTitle", "../themes/fonts/Roboto-Bold.ttf", 12);
 	printf("Loading images...\n");
 
 	hui::setTheme(theme);

@@ -281,7 +281,7 @@ void beginFrame()
 
 	if (ctx->pruneUnusedTextTime >= ctx->settings.textCachePruneIntervalSec)
 	{
-		ctx->textCache->pruneUnusedTexts();
+		ctx->textCache->pruneUnusedText();
 		ctx->pruneUnusedTextTime = 0;
 	}
 }

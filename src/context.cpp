@@ -1,5 +1,5 @@
-#include "ui_context.h"
-#include "ui_font.h"
+#include "context.h"
+#include "font.h"
 #include "renderer.h"
 #include "util.h"
 #include "unicode_text_cache.h"
@@ -9,6 +9,7 @@ namespace hui
 {
 UiContext* ctx = nullptr;
 
+//TODO: move to graphics or some gfx util
 Rect UiContext::drawMultilineText(
 	const char* text,
 	const Rect& rect,
@@ -31,9 +32,10 @@ Rect UiContext::drawMultilineText(
 	newRect.height = 0;
 	textLines.resize(0);
 
-	UnicodeString utext;
+	//TODO: this could be kept in a cache in context or use the text cache
+	Utf32String utext;
 
-	utf8ToUtf32(text, utext);
+	HORUS_UTF->utf8To32(text, utext);
 
 	for (int i = 0, iCount = utext.size(); i < iCount; i++)
 	{
@@ -169,13 +171,13 @@ Rect UiContext::drawMultilineText(
 			break;
 		}
 
-		UnicodeString lineText;
+		Utf32String lineText;
 
-		lineText = UnicodeString(utext.begin() + line.start, utext.begin() + line.start + line.length);
+		lineText = Utf32String(utext.begin() + line.start, utext.begin() + line.start + line.length);
 
 		static char strUtf8[1024] = { 0 };
 
-		utf32ToUtf8NoAlloc(lineText, strUtf8, 1024);
+		HORUS_UTF->utf32To8NoAlloc(lineText, strUtf8, 1024);
 		renderer->cmdDrawTextAt(strUtf8, pos);
 
 		pos.y += crtFont->getMetrics().height;

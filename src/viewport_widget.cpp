@@ -1,7 +1,7 @@
 #include "horus.h"
 #include "types.h"
-#include "ui_theme.h"
-#include "ui_context.h"
+#include "theme.h"
+#include "context.h"
 #include "util.h"
 #include "renderer.h"
 

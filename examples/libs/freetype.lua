@@ -46,6 +46,7 @@ project "freetype"
 		"freetype/src/type1/type1.c",
 		"freetype/src/type42/type42.c",
 		"freetype/src/winfonts/winfnt.c",
+    "freetype/src/sdf/sdf.c"
 	}
 
 	defines "FT2_BUILD_LIBRARY"

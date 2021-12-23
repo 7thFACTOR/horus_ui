@@ -56,13 +56,13 @@ bool textInput(
 		ctx->widget.rect.width - bodyElemState->border * 2,
 		ctx->widget.rect.height - bodyElemState->border * 2);
 
-	const u32 maxHiddenCharLen = 1024;
+	const size_t maxHiddenCharLen = 1024;
 	static char hiddenPwdText[maxHiddenCharLen] = "";
 	bool isEmptyText = false;
 	char* textToDraw = (char*)text;
-	UnicodeString pwdStr;
+	Utf32String pwdStr;
 
-	utf8ToUtf32(passwordChar, pwdStr);
+	HORUS_UTF->utf8To32(passwordChar, pwdStr);
 
 	ctx->textInput.editNow = false;
 	ctx->textInput.password = password;
@@ -123,8 +123,8 @@ bool textInput(
 		ctx->textInput.selectionActive = false;
 		ctx->textInput.valueType = valueMode;
 		ctx->textInput.scrollOffset = 0;
-		utf8ToUtf32(text, ctx->textInput.text);
-		utf8ToUtf32(defaultText, ctx->textInput.defaultText);
+		HORUS_UTF->utf8To32(text, ctx->textInput.text);
+		HORUS_UTF->utf8To32(defaultText, ctx->textInput.defaultText);
 
 		if (ctx->textInput.selectAllOnFocus)
 		{
@@ -160,9 +160,9 @@ bool textInput(
 			offs = ctx->textInput.text.size() - 1;
 
 		FontTextSize textToCursorSize;
-		UnicodeString textToCursor;
+		Utf32String textToCursor;
 
-		textToCursor = UnicodeString(
+		textToCursor = Utf32String(
 			ctx->textInput.text.begin(), ctx->textInput.text.begin() + offs);
 
 		if (!password)
@@ -198,8 +198,8 @@ bool textInput(
 			FontTextSize selectedTextSize;
 			FontTextSize textToSelectionStartSize;
 
-			UnicodeString selectedText = UnicodeString(ctx->textInput.text.begin() + startSel, ctx->textInput.text.begin() + endSel);
-			UnicodeString textToSelectionStart = UnicodeString(ctx->textInput.text.begin(), ctx->textInput.text.begin() + startSel);
+			Utf32String selectedText = Utf32String(ctx->textInput.text.begin() + startSel, ctx->textInput.text.begin() + endSel);
+			Utf32String textToSelectionStart = Utf32String(ctx->textInput.text.begin(), ctx->textInput.text.begin() + startSel);
 
 			if (!password)
 			{
@@ -233,12 +233,12 @@ bool textInput(
 	if (isEditingThis)
 	{
 		memset((char*)text, 0, maxLength);
-		utf32ToUtf8NoAlloc(ctx->textInput.text, text, maxLength);
+		HORUS_UTF->utf32To8NoAlloc(ctx->textInput.text, text, maxLength);
 	}
 
 	if (password && defaultText != textToDraw)
 	{
-		u32 len = std::min(utf8Len(textToDraw), maxHiddenCharLen);
+		u32 len = std::min(HORUS_UTF->utf8Length(textToDraw), maxHiddenCharLen);
 		hiddenPwdText[0] = 0;
 
 		for (int i = 0; i < len; i++)
@@ -276,7 +276,7 @@ bool textInput(
 
 	ctx->renderer->popClipRect();
 
-	setAsFocusable();
+	setFocusable();
 	ctx->currentWidgetId++;
 
 	return ctx->textInput.textChanged;

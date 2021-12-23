@@ -73,8 +73,8 @@ protected:
 
 	u32 id = 0;
 	u32 lastImageId = 1;
-	u32 width;
-	u32 height;
+	u32 width = 0;
+	u32 height = 0;
 	u32 lastUsedSpacing = 0;
 	Color lastUsedBgColor = Color::black;
 	bool useWasteMap = true;

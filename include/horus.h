@@ -161,7 +161,7 @@ typedef u32 Rgba32;
 typedef u32 TabIndex;
 typedef u32 ViewId;
 typedef u32 GlyphCode;
-typedef std::vector<GlyphCode> UnicodeString;
+typedef std::vector<GlyphCode> Utf32String;
 
 const f32 ColumnFill = -1;
 

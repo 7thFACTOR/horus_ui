@@ -26,7 +26,6 @@ UiFont* FontCache::createFont(const std::string& name, const std::string& filena
 		}
 	}
 
-
 	CachedFontInfo* newFont = new CachedFontInfo();
 
 	newFont->font.load(filename, size, atlas);

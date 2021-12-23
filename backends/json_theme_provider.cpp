@@ -23,7 +23,7 @@ static std::string readTextFile(const char* path)
 		char* buffer = new char[size + 1];
 		buffer[size] = 0;
 
-		if (HORUS_FILE->read(file, buffer, size) == (unsigned long)size)
+		if (HORUS_FILE->read(file, buffer, size, size) == (unsigned long)size)
 			text = buffer;
 
 		delete[] buffer;

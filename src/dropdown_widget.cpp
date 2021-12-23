@@ -76,7 +76,7 @@ bool dropdown(i32& selectedIndex, const char** items, u32 itemCount, u32 maxVisi
 		ctx->renderer->popClipRect();
 	}
 
-	setAsFocusable();
+	setFocusable();
 	ctx->currentWidgetId++;
 
 	if (ctx->widget.clicked)

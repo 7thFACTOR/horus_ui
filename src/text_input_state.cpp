@@ -127,9 +127,9 @@ bool TextInputState::processEvent(const InputEvent& ev)
 
 	if (ev.type == InputEvent::Type::Text)
 	{
-		UnicodeString txt;
+		Utf32String txt;
 
-		utf8ToUtf32(ev.text.text, txt);
+		HORUS_UTF->utf8To32(ev.text.text, txt);
 		formatValue(txt);
 		insertTextAtCaret(txt);
 		textChanged = true;
@@ -153,7 +153,7 @@ bool TextInputState::processEvent(const InputEvent& ev)
 
 void TextInputState::deleteSelection()
 {
-	UnicodeString str1, str2;
+	Utf32String str1, str2;
 	int startSel = selectionBegin, endSel = selectionEnd, tmpSel;
 
 	if (startSel > endSel)
@@ -175,7 +175,7 @@ void TextInputState::deleteSelection()
 	textChanged = true;
 }
 
-UnicodeString TextInputState::getSelection()
+Utf32String TextInputState::getSelection()
 {
 	if (selectionActive)
 	{
@@ -190,12 +190,12 @@ UnicodeString TextInputState::getSelection()
 
 		if (!text.empty() && abs(endSel - startSel))
 		{
-			UnicodeString str(text.begin() + startSel, text.begin() + endSel);
+			Utf32String str(text.begin() + startSel, text.begin() + endSel);
 			return str;
 		}
 	}
 
-	return UnicodeString();
+	return Utf32String();
 }
 
 void TextInputState::clearText()
@@ -375,13 +375,13 @@ void TextInputState::processKeyEvent(const InputEvent& ev)
 	}
 	else if (!password && ev.key.code == KeyCode::C && !!(ev.key.modifiers & KeyModifiers::Control))
 	{
-		UnicodeString str = getSelection();
+		Utf32String str = getSelection();
 
 		if (!str.empty())
 		{
 			char* tmpStr = 0;
 
-			utf32ToUtf8(str, &tmpStr);
+			HORUS_UTF->utf32To8(str, &tmpStr);
 			copyToClipboard(tmpStr);
 			delete[] tmpStr;
 		}
@@ -395,11 +395,11 @@ void TextInputState::processKeyEvent(const InputEvent& ev)
 
 		static const u32 maxTextSize = 2048;
 		char tmpStr[maxTextSize];
-		UnicodeString utf32Str;
+		Utf32String utf32Str;
 
 		pasteFromClipboard(tmpStr, maxTextSize);
 
-		if (utf8ToUtf32(tmpStr, utf32Str))
+		if (HORUS_UTF->utf8To32(tmpStr, utf32Str))
 		{
 			if (utf32Str.size() + text.size() < maxTextLength)
 			{
@@ -419,7 +419,7 @@ void TextInputState::processKeyEvent(const InputEvent& ev)
 	}
 	else if (ev.key.code == KeyCode::X && !!(ev.key.modifiers & KeyModifiers::Control))
 	{
-		UnicodeString str = getSelection();
+		Utf32String str = getSelection();
 
 		if (selectionActive && !str.empty())
 		{
@@ -427,7 +427,7 @@ void TextInputState::processKeyEvent(const InputEvent& ev)
 
 			char* str8 = 0;
 
-			if (utf32ToUtf8(str, &str8))
+			if (HORUS_UTF->utf32To8(str, &str8))
 			{
 				copyToClipboard(str8);
 				delete[] str8;
@@ -444,7 +444,7 @@ void TextInputState::processKeyEvent(const InputEvent& ev)
 	computeScrollAmount();
 }
 
-void TextInputState::insertTextAtCaret(const UnicodeString& newText)
+void TextInputState::insertTextAtCaret(const Utf32String& newText)
 {
 	if (selectionActive)
 		deleteSelection();
@@ -473,7 +473,7 @@ void TextInputState::insertTextAtCaret(const UnicodeString& newText)
 i32 TextInputState::getCharIndexAtX(f32 xPos)
 {
 	FontTextSize rcCurrentRange, rcLastChar;
-	UnicodeString subStr, lastChar;
+	Utf32String subStr, lastChar;
 	i32 pos = 0;
 
 	xPos += scrollOffset;
@@ -488,11 +488,11 @@ i32 TextInputState::getCharIndexAtX(f32 xPos)
 	//TODO: optimize, slow on long text
 	for (size_t i = 0; i < text.size(); ++i)
 	{
-		subStr = UnicodeString(text.begin(), text.begin() + i);
+		subStr = Utf32String(text.begin(), text.begin() + i);
 
 		if (subStr.size() >= 1)
 		{
-			lastChar = UnicodeString(subStr.begin() + (subStr.size() - 1), subStr.end());
+			lastChar = Utf32String(subStr.begin() + (subStr.size() - 1), subStr.end());
 
 			if (!password)
 			{
@@ -550,7 +550,7 @@ i32 TextInputState::getCharIndexAtX(f32 xPos)
 
 void TextInputState::computeScrollAmount()
 {
-	UnicodeString tmpStr = UnicodeString(text.begin(), text.begin() + caretPosition);
+	Utf32String tmpStr = Utf32String(text.begin(), text.begin() + caretPosition);
 	FontTextSize textSizeToCaret;
 	
 	if (!password)
@@ -581,7 +581,7 @@ void TextInputState::computeScrollAmount()
 	}
 }
 
-void TextInputState::formatValue(UnicodeString& value)
+void TextInputState::formatValue(Utf32String& value)
 {
 	switch (valueType)
 	{

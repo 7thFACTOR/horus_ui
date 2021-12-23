@@ -20,12 +20,12 @@ int main(int argc, char** args)
 
 	settings.mainWindowTitle = "HorusUI Example - Without docking";
 	settings.mainWindowRect = { 0, 0, 1024, 768 };
-	settings.gfxProvider = new hui::OpenGLGraphicsProvider();
+	//settings.gfxProvider = new hui::OpenGLGraphicsProvider();
 
 	hui::initializeWithSDL(settings);
 
-	auto theme = hui::loadTheme("../themes/default.theme");
-	auto largeFnt = hui::getFont(theme, "title");
+	auto theme = hui::loadThemeFromJson("../themes/default.theme");
+	auto largeFnt = hui::getThemeFont(theme, "title");
 	hui::setTheme(theme);
 	bool exitNow = false;
 

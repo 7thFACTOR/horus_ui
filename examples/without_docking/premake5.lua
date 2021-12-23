@@ -26,10 +26,12 @@ project "without_docking"
 	includedirs {
 		".",
 		"../../include",
-		"../../backends"
+		"../../backends",
+    "../libs",
+    "../libs/utfcpp/source"
 	}
 	
 	defines "_CONSOLE"
 
-	using { "sdl", "glew" }
+	using { "sdl", "glew", "binpack", "freetype", "jsoncpp", "nativefiledialog" }
 	distcopy(mytarget())

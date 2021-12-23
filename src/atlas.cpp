@@ -4,6 +4,7 @@
 #include "renderer.h"
 #include "context.h"
 #include "util.h"
+#include <assert.h>
 
 namespace hui
 {
@@ -126,153 +127,43 @@ bool UiAtlas::pack(
 	bool allTexturesDirty = false;
 	std::vector<PackImageData> acceptedImages;
 
+	HORUS_RECTPACK->reset(width, height);
+
 	while (!pendingPackImages.empty())
 	{
 		// search some place to put the image
 		for (auto& atlasTex : atlasTextures)
 		{
-			switch (atlasTex->packPolicy)
-			{
-			case UiAtlasPackPolicy::Guillotine:
-			{
-				auto& guillotineBinPack = atlasTex->guillotineBinPack;
-				auto iter = pendingPackImages.begin();
+			auto iter = pendingPackImages.begin();
 
-				while (iter != pendingPackImages.end())
+			while (iter != pendingPackImages.end())
+			{
+				auto& packImage = *iter;
+
+				//TODO: if image is bigger than the atlas size, then resize or just skip
+				if (packImage.width >= width || packImage.height >= height)
 				{
-					auto& packImage = *iter;
-
-					//TODO: if image is bigger than the atlas size, then resize or just skip
-					if (packImage.width >= width || packImage.height >= height)
-					{
-						delete[] packImage.imageData;
-						iter = pendingPackImages.erase(iter);
-						continue;
-					}
-
-					packedRect = guillotineBinPack.Insert(
-						packImage.width + border2,
-						packImage.height + border2,
-						true,
-						GuillotineBinPack::FreeRectChoiceHeuristic::RectBestShortSideFit,
-						GuillotineBinPack::GuillotineSplitHeuristic::SplitLongerAxis);
-
-					if (packedRect.height <= 0)
-					{
-						++iter;
-						continue;
-					}
-
-					packImage.packedRect.x = packedRect.x;
-					packImage.packedRect.y = packedRect.y;
-					packImage.packedRect.width = packedRect.width;
-					packImage.packedRect.height = packedRect.height;
-					packImage.atlas = this;
-					packImage.atlasTexture = atlasTex;
-					acceptedImages.push_back(packImage);
+					delete[] packImage.imageData;
 					iter = pendingPackImages.erase(iter);
+					continue;
 				}
 
-				break;
-			}
-			case UiAtlasPackPolicy::MaxRects:
-			{
-				MaxRectsBinPack& maxRectsBinPack = atlasTex->maxRectsBinPack;
-				auto iter = pendingPackImages.begin();
+				HORUS_RECTPACK->packRect(packImage.width + border2, packImage.height + border2, packedRect);
 
-				while (iter != pendingPackImages.end())
+				if (packedRect.height <= 0)
 				{
-					auto& packImage = *iter;
-
-					packedRect = maxRectsBinPack.Insert(
-						packImage.width + border2,
-						packImage.height + border2,
-						MaxRectsBinPack::FreeRectChoiceHeuristic::RectBestAreaFit);
-
-					if (packedRect.height <= 0)
-					{
-						++iter;
-						continue;
-					}
-
-					packImage.packedRect.x = packedRect.x;
-					packImage.packedRect.y = packedRect.y;
-					packImage.packedRect.width = packedRect.width;
-					packImage.packedRect.height = packedRect.height;
-					packImage.atlas = this;
-					packImage.atlasTexture = atlasTex;
-					acceptedImages.push_back(packImage);
-					iter = pendingPackImages.erase(iter);
+					++iter;
+					continue;
 				}
 
-				break;
-			}
-			case UiAtlasPackPolicy::ShelfBin:
-			{
-				ShelfBinPack& shelfBinPack = atlasTex->shelfBinPack;
-				auto iter = pendingPackImages.begin();
-
-				while (iter != pendingPackImages.end())
-				{
-					auto& packImage = *iter;
-
-					packedRect = shelfBinPack.Insert(
-						packImage.width + border2,
-						packImage.height + border2,
-						ShelfBinPack::ShelfChoiceHeuristic::ShelfBestAreaFit);
-
-					if (packedRect.height <= 0)
-					{
-						++iter;
-						continue;
-					}
-
-					packImage.packedRect.x = packedRect.x;
-					packImage.packedRect.y = packedRect.y;
-					packImage.packedRect.width = packedRect.width;
-					packImage.packedRect.height = packedRect.height;
-					packImage.atlas = this;
-					packImage.atlasTexture = atlasTex;
-					acceptedImages.push_back(packImage);
-					iter = pendingPackImages.erase(iter);
-				}
-
-				break;
-			}
-			case UiAtlasPackPolicy::Skyline:
-			{
-				SkylineBinPack& skylineBinPack = atlasTex->skylineBinPack;
-				auto iter = pendingPackImages.begin();
-
-				while (iter != pendingPackImages.end())
-				{
-					auto& packImage = *iter;
-
-					packedRect = skylineBinPack.Insert(
-						packImage.width + border2,
-						packImage.height + border2,
-						SkylineBinPack::LevelChoiceHeuristic::LevelMinWasteFit);
-
-					if (packedRect.height <= 0)
-					{
-						++iter;
-						continue;
-					}
-
-					packImage.packedRect.x = packedRect.x;
-					packImage.packedRect.y = packedRect.y;
-					packImage.packedRect.width = packedRect.width;
-					packImage.packedRect.height = packedRect.height;
-					packImage.atlas = this;
-					packImage.atlasTexture = atlasTex;
-					acceptedImages.push_back(packImage);
-					iter = pendingPackImages.erase(iter);
-				}
-
-				break;
-			}
-			default:
-				break;
+				packImage.packedRect.x = packedRect.x;
+				packImage.packedRect.y = packedRect.y;
+				packImage.packedRect.width = packedRect.width;
+				packImage.packedRect.height = packedRect.height;
+				packImage.atlas = this;
+				packImage.atlasTexture = atlasTex;
+				acceptedImages.push_back(packImage);
+				iter = pendingPackImages.erase(iter);
 			}
 		}
 
@@ -280,30 +171,10 @@ bool UiAtlas::pack(
 		{
 			AtlasTexture* newTexture = new AtlasTexture();
 
-			newTexture->packPolicy = packPolicy;
 			newTexture->textureImage = new Rgba32[width * height];
 			memset(newTexture->textureImage, 0, width * height * sizeof(Rgba32));
 			newTexture->textureIndex = atlasTextures.size();
 			newTexture->textureArray = textureArray;
-
-			switch (packPolicy)
-			{
-			case hui::UiAtlasPackPolicy::Guillotine:
-				newTexture->guillotineBinPack.Init(width, height);
-				break;
-			case hui::UiAtlasPackPolicy::MaxRects:
-				newTexture->maxRectsBinPack.Init(width, height);
-				break;
-			case hui::UiAtlasPackPolicy::ShelfBin:
-				newTexture->shelfBinPack.Init(width, height, useWasteMap);
-				break;
-			case hui::UiAtlasPackPolicy::Skyline:
-				newTexture->skylineBinPack.Init(width, height, useWasteMap);
-				break;
-			default:
-				break;
-			}
-
 			atlasTextures.push_back(newTexture);
 
 			// resize the texture array
@@ -424,24 +295,6 @@ void UiAtlas::deletePackerImages()
 	// initialize the atlas textures
 	for (auto& atlasTex : atlasTextures)
 	{
-		switch (atlasTex->packPolicy)
-		{
-		case hui::UiAtlasPackPolicy::Guillotine:
-			atlasTex->guillotineBinPack = GuillotineBinPack(width, height);
-			break;
-		case hui::UiAtlasPackPolicy::MaxRects:
-			atlasTex->maxRectsBinPack = MaxRectsBinPack(width, height);
-			break;
-		case hui::UiAtlasPackPolicy::ShelfBin:
-			atlasTex->shelfBinPack = ShelfBinPack(width, height, useWasteMap);
-			break;
-		case hui::UiAtlasPackPolicy::Skyline:
-			atlasTex->skylineBinPack = SkylineBinPack(width, height, useWasteMap);
-			break;
-		default:
-			break;
-		}
-
 		// clear texture
 		memset(atlasTex->textureImage, lastUsedBgColor.getRgba(), width * height * sizeof(Rgba32));
 	}

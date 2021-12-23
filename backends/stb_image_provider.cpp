@@ -25,7 +25,7 @@ bool StbImageProvider::loadImage(const char* path, ImageData& outImage)
 	return true;
 }
 
-bool StbImageProvider::saveImage(const char* path, const ImageData& image)
+bool StbImageProvider::savePngImage(const char* path, const ImageData& image)
 {
 	auto res = stbi_write_png(path, image.width, image.height, image.bpp / 8, image.pixels, 0);
 

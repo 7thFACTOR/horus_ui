@@ -1,4 +1,4 @@
-#include "ui_theme.h"
+#include "theme.h"
 #include "font_cache.h"
 
 namespace hui

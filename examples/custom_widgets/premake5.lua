@@ -26,7 +26,9 @@ project "custom_widgets"
 	includedirs {
 		".",
 		"../../include",
-		"../../backends"
+		"../../backends",
+    "../libs",
+    "../libs/utfcpp/source"
 	}
 	
 	defines "_CONSOLE"
@@ -36,5 +38,5 @@ project "custom_widgets"
 
 	filter{}
 
-	using { "sdl", "glew" }
+	using { "sdl", "glew", "binpack", "freetype", "jsoncpp", "nativefiledialog" }
 	distcopy(mytarget())

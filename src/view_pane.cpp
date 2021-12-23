@@ -1,27 +1,27 @@
 #include "horus.h"
 #include "layout_cell.h"
-#include "ui_context.h"
+#include "context.h"
 #include "docking_system.h"
 #include <string.h>
 #include <algorithm>
 
 namespace hui
 {
-Rect getViewPaneRect(ViewPane viewPane)
+Rect getViewPaneRect(HViewPane viewPane)
 {
 	UiViewPane* viewPaneObj = (UiViewPane*)viewPane;
 
 	return viewPaneObj->rect;
 }
 
-f32 getRemainingViewPaneHeight(ViewPane viewPane)
+f32 getRemainingViewPaneHeight(HViewPane viewPane)
 {
 	UiViewPane* viewPaneObj = (UiViewPane*)viewPane;
 
 	return round((f32)viewPaneObj->rect.height - (ctx->penPosition.y - viewPaneObj->rect.y));
 }
 
-ViewPane createViewPane(ViewContainer viewContainer, DockType dock, f32 size)
+HViewPane createViewPane(HViewContainer viewContainer, DockType dock, f32 size)
 {
 	UiViewContainer* viewContainerObj = (UiViewContainer*)viewContainer;
 	UiViewPane* viewPane = new UiViewPane();
@@ -38,7 +38,7 @@ ViewPane createViewPane(ViewContainer viewContainer, DockType dock, f32 size)
 	return viewPane;
 }
 
-ViewPane createChildViewPane(ViewPane viewPane, DockType dock, f32 size)
+HViewPane createChildViewPane(HViewPane viewPane, DockType dock, f32 size)
 {
 	UiViewPane* newViewPane = new UiViewPane();
 
@@ -63,7 +63,7 @@ ViewPane createChildViewPane(ViewPane viewPane, DockType dock, f32 size)
 	return newViewPane;
 }
 
-ViewId viewPaneTabs(ViewPane viewPane)
+ViewId viewPaneTabs(HViewPane viewPane)
 {
 	auto viewPaneObj = (UiViewPane*)viewPane;
 
@@ -135,7 +135,7 @@ ViewId viewPaneTabs(ViewPane viewPane)
 	return ~0;
 }
 
-ViewId beginViewPane(ViewPane viewPane)
+ViewId beginViewPane(HViewPane viewPane)
 {
 	UiViewPane* viewPaneObj = (UiViewPane*)viewPane;
 
@@ -149,17 +149,17 @@ void endViewPane()
 	endContainer();
 }
 
-void setViewPaneTabUserDataId(ViewPaneTab viewPaneTab, u64 userDataId)
+void setViewPaneTabUserDataId(HViewPaneTab viewPaneTab, u64 userDataId)
 {
 	((UiViewTab*)viewPaneTab)->userDataId = userDataId;
 }
 
-u64 getViewPaneTabUserDataId(ViewPaneTab viewPaneTab)
+u64 getViewPaneTabUserDataId(HViewPaneTab viewPaneTab)
 {
 	return ((UiViewTab*)viewPaneTab)->userDataId;
 }
 
-void setViewPaneTabTitle(ViewPaneTab viewPaneTab, const char* title)
+void setViewPaneTabTitle(HViewPaneTab viewPaneTab, const char* title)
 {
 	auto viewPaneTabObj = (UiViewTab*)viewPaneTab;
 
@@ -169,21 +169,21 @@ void setViewPaneTabTitle(ViewPaneTab viewPaneTab, const char* title)
 	memcpy(viewPaneTabObj->title, title, strlen(title));
 }
 
-const char* getViewPaneTabTitle(ViewPaneTab viewPaneTab)
+const char* getViewPaneTabTitle(HViewPaneTab viewPaneTab)
 {
 	auto viewPaneTabObj = (UiViewTab*)viewPaneTab;
 
 	return viewPaneTabObj->title;
 }
 
-ViewId getViewPaneTabViewId(ViewPaneTab viewPaneTab)
+ViewId getViewPaneTabViewId(HViewPaneTab viewPaneTab)
 {
 	auto viewPaneTabObj = (UiViewTab*)viewPaneTab;
 
 	return viewPaneTabObj->viewId;
 }
 
-void setViewIcon(ViewId id, Image icon)
+void setViewIcon(ViewId id, HImage icon)
 {
 	for (auto& dc : dockingData.viewContainers)
 	{
@@ -201,7 +201,7 @@ void setViewIcon(ViewId id, Image icon)
 	}
 }
 
-ViewPaneTab addViewPaneTab(ViewPane viewPane, const char* title, ViewId id, u64 userDataId)
+HViewPaneTab addViewPaneTab(HViewPane viewPane, const char* title, ViewId id, u64 userDataId)
 {
 	auto viewPaneObj = (UiViewPane*)viewPane;
 	auto view = new UiViewTab();
@@ -218,7 +218,7 @@ ViewPaneTab addViewPaneTab(ViewPane viewPane, const char* title, ViewId id, u64 
 	return view;
 }
 
-void removeViewPaneTab(ViewPaneTab viewPaneTab)
+void removeViewPaneTab(HViewPaneTab viewPaneTab)
 {
 	auto viewTabObj = (UiViewTab*)viewPaneTab;
 	auto viewPaneObj = viewTabObj->parentViewPane;
@@ -246,7 +246,7 @@ void removeViewPaneTab(ViewPaneTab viewPaneTab)
 	}
 }
 
-void dockViewPane(ViewPane viewPane, ViewContainer viewContainer, DockType dock)
+void dockViewPane(HViewPane viewPane, HViewContainer viewContainer, DockType dock)
 {
 	auto viewPaneObj = (UiViewPane*)viewPane;
 	auto viewContainerObj = (UiViewContainer*)viewContainer;
@@ -254,27 +254,27 @@ void dockViewPane(ViewPane viewPane, ViewContainer viewContainer, DockType dock)
 	viewContainerObj->rootCell->dockViewPane(viewPaneObj, dock);
 }
 
-void activateViewPane(ViewPane viewPane)
+void activateViewPane(HViewPane viewPane)
 {
 	//TODO
 }
 
-void closeViewPane(ViewPane viewPane)
+void closeViewPane(HViewPane viewPane)
 {
 	//TODO
 }
 
-void restoreViewPane(ViewPane viewPane)
+void restoreViewPane(HViewPane viewPane)
 {
 	//TODO
 }
 
-void maximizeViewPane(ViewPane viewPane)
+void maximizeViewPane(HViewPane viewPane)
 {
 	//TODO
 }
 
-u32 getViewPaneTabs(ViewPane viewPane, ViewPaneTab* outViewPaneTabs, u32 maxCount)
+u32 getViewPaneTabs(HViewPane viewPane, HViewPaneTab* outViewPaneTabs, u32 maxCount)
 {
 	auto viewPaneObj = (UiViewPane*)viewPane;
 	auto count = (u32)std::min(maxCount, (u32)viewPaneObj->viewTabs.size());
@@ -287,7 +287,7 @@ u32 getViewPaneTabs(ViewPane viewPane, ViewPaneTab* outViewPaneTabs, u32 maxCoun
 	return count;
 }
 
-u32 getViewPaneTabCount(ViewPane viewPane)
+u32 getViewPaneTabCount(HViewPane viewPane)
 {
 	auto viewPaneObj = (UiViewPane*)viewPane;
 	return (u32)viewPaneObj->viewTabs.size();

@@ -40,7 +40,7 @@ bool beginMenuInternal(const char* labelText, SelectableFlags stateFlags, bool c
 {
 	auto menuBarItemElem = ctx->theme->getElement(WidgetElementId::MenuBarItem);
 	auto menuBarItemElemState = menuBarItemElem.normalState();
-	UnicodeString* uniStr = ctx->textCache->getText(labelText);
+	Utf32String* uniStr = ctx->textCache->getText(labelText);
 	FontTextSize fsize = menuBarItemElemState.font->computeTextSize(*uniStr);
 	auto isMenuBarItem = ctx->menuDepth == 0;
 
@@ -427,7 +427,7 @@ bool menuItem(const char* labelText, const char* shortcut, HImage icon, Selectab
 		ctx->renderer->cmdDrawImage(iconImg, rcIcon);
 	}
 
-	setAsFocusable();
+	setFocusable();
 	ctx->currentWidgetId++;
 	auto menuItemTextWidth = bodyElemState->font->computeTextSize(
 		*ctx->textCache->getText(labelText)).width + menuItemShortcutElem.normalState().font->computeTextSize(*ctx->textCache->getText(shortcut)).width;
