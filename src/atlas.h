@@ -16,6 +16,7 @@ struct AtlasTexture
 	TextureArray* textureArray = nullptr;
 	u32 textureIndex = 0;
 	Rgba32* textureImage = nullptr;
+	HRectPacker packer = 0;
 	bool dirty = false;
 };
 

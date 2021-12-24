@@ -36,10 +36,10 @@ UiFont* FontCache::createFont(const std::string& name, const std::string& filena
 	newFont->name = name;
 	cachedFonts.insert(std::make_pair(&newFont->font, newFont));
 
-	if (packAtlasNow)
-	{
-		newFont->font.atlas->pack();
-	}
+	//if (packAtlasNow)
+	//{
+	//	newFont->font.atlas->pack();
+	//}
 
 	return &newFont->font;
 }

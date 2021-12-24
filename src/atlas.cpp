@@ -62,7 +62,7 @@ UiImage* UiAtlas::addImageInternal(UiImageId imgId, const Rgba32* imageData, u32
 
 	u32 imageSize = imageWidth * imageHeight;
 	psd.imageData = new Rgba32[imageSize];
-	memcpy(psd.imageData, imageData, imageSize * 4);
+	memcpy(psd.imageData, imageData, (size_t)imageSize * 4);
 	psd.id = imgId;
 	psd.width = imageWidth;
 	psd.height = imageHeight;
@@ -104,7 +104,7 @@ UiImage* UiAtlas::addWhiteImage(u32 width)
 	u32 whiteImageSize = width * width;
 	Rgba32* whiteImageData = new Rgba32[whiteImageSize];
 
-	memset(whiteImageData, 0xff, whiteImageSize * 4);
+	memset(whiteImageData, 0xff, (size_t)whiteImageSize * 4);
 	whiteImage = addImage(whiteImageData, width, width, true);
 	delete[]whiteImageData;
 
@@ -127,13 +127,12 @@ bool UiAtlas::pack(
 	bool allTexturesDirty = false;
 	std::vector<PackImageData> acceptedImages;
 
-	HORUS_RECTPACK->reset(width, height);
-
 	while (!pendingPackImages.empty())
 	{
-		// search some place to put the image
+		// search some place to put the images
 		for (auto& atlasTex : atlasTextures)
 		{
+			//HORUS_RECTPACK->reset(width, height);
 			auto iter = pendingPackImages.begin();
 
 			while (iter != pendingPackImages.end())
@@ -148,7 +147,7 @@ bool UiAtlas::pack(
 					continue;
 				}
 
-				HORUS_RECTPACK->packRect(packImage.width + border2, packImage.height + border2, packedRect);
+				HORUS_RECTPACK->packRect(atlasTex->packer, packImage.width + border2, packImage.height + border2, packedRect);
 
 				if (packedRect.height <= 0)
 				{
@@ -171,19 +170,20 @@ bool UiAtlas::pack(
 		{
 			AtlasTexture* newTexture = new AtlasTexture();
 
-			newTexture->textureImage = new Rgba32[width * height];
-			memset(newTexture->textureImage, 0, width * height * sizeof(Rgba32));
+			newTexture->textureImage = new Rgba32[(size_t)width * height];
+			memset(newTexture->textureImage, 0, (size_t)width * height * sizeof(Rgba32));
 			newTexture->textureIndex = atlasTextures.size();
 			newTexture->textureArray = textureArray;
+			newTexture->packer = HORUS_RECTPACK->createRectPacker();
+			HORUS_RECTPACK->reset(newTexture->packer, width, height);
 			atlasTextures.push_back(newTexture);
-
 			// resize the texture array
 			textureArray->resize(atlasTextures.size(), width, height);
 			allTexturesDirty = true;
 		}
 	}
 
-	// we have now the rects inside the atlas
+	// we have now the rects inside the atlas, copy to atlas textures
 	for (auto& packImage : acceptedImages)
 	{
 		auto image = images[packImage.id];
@@ -237,6 +237,7 @@ bool UiAtlas::pack(
 			}
 		}
 		else
+		{
 			for (u32 y = 0; y < packImage.height; y++)
 			{
 				for (u32 x = 0; x < packImage.width; x++)
@@ -247,10 +248,12 @@ bool UiAtlas::pack(
 					image->atlasTexture->textureImage[destIndex] = ((Rgba32*)packImage.imageData)[srcIndex];
 				}
 			}
+		}
 
 		image->atlasTexture->dirty = true;
 	}
 
+	// upload atlas textures to gfx card
 	for (auto& atlasTex : atlasTextures)
 	{
 		if (atlasTex->dirty || allTexturesDirty)
@@ -269,7 +272,7 @@ void UiAtlas::repackImages()
 {
 	deletePackerImages();
 
-	for (auto img : images)
+	for (auto& img : images)
 	{
 		PackImageData packImg;
 
@@ -296,7 +299,8 @@ void UiAtlas::deletePackerImages()
 	for (auto& atlasTex : atlasTextures)
 	{
 		// clear texture
-		memset(atlasTex->textureImage, lastUsedBgColor.getRgba(), width * height * sizeof(Rgba32));
+		memset(atlasTex->textureImage, lastUsedBgColor.getRgba(), (size_t)width * height * sizeof(Rgba32));
+		HORUS_RECTPACK->reset(atlasTex->packer, width, height);
 	}
 }
 

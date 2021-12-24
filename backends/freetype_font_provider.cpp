@@ -18,6 +18,16 @@ struct FTContextInfo
 
 FTContextInfo ftContext;
 
+FreetypeFontProvider::FreetypeFontProvider(FT_Library context)
+{
+	initializeFreetype(context);
+}
+
+FreetypeFontProvider::~FreetypeFontProvider()
+{
+	shutdownFreetype();
+}
+
 void FreetypeFontProvider::initializeFreetype(FT_Library context)
 {
 	ftContext.libHandle = context;
@@ -71,12 +81,12 @@ bool FreetypeFontProvider::loadFont(const char* path, u32 faceSize, FontInfo& ou
 		outFontInfo.metrics.underlinePosition = -2;
 
 	outFontInfo.metrics.underlinePosition = round(outFontInfo.metrics.underlinePosition);
-	outFontInfo.handle = face;
+	outFontInfo.fontFace = face;
 
 	return true;
 }
 
-void FreetypeFontProvider::freeFont(FontHandle font)
+void FreetypeFontProvider::freeFont(HFontFace font)
 {
 	if (font)
 	{
@@ -84,7 +94,7 @@ void FreetypeFontProvider::freeFont(FontHandle font)
 	}
 }
 
-f32 FreetypeFontProvider::getKerning(FontHandle font, GlyphCode leftGlyphCode, GlyphCode rightGlyphCode)
+f32 FreetypeFontProvider::getKerning(HFontFace font, GlyphCode leftGlyphCode, GlyphCode rightGlyphCode)
 {
 	FT_Vector kerning;
 
@@ -98,7 +108,7 @@ f32 FreetypeFontProvider::getKerning(FontHandle font, GlyphCode leftGlyphCode, G
 	return kerning.x >> 6;
 }
 
-bool FreetypeFontProvider::rasterizeGlyph(FontHandle font, GlyphCode glyphCode, FontGlyph& outGlyph)
+bool FreetypeFontProvider::rasterizeGlyph(HFontFace font, GlyphCode glyphCode, FontGlyph& outGlyph)
 {
 	FT_GlyphSlot slot = ((FT_Face)font)->glyph;
 
@@ -133,7 +143,7 @@ bool FreetypeFontProvider::rasterizeGlyph(FontHandle font, GlyphCode glyphCode, 
 	FT_Bitmap bitmap = slot->bitmap;
 	u32 width = bitmap.width;
 	u32 height = bitmap.rows;
-	Rgba32* rgbaBuffer = new Rgba32[width * height];
+	Rgba32* rgbaBuffer = new Rgba32[(size_t)width * height];
 
 	for (int j = 0; j < height; ++j)
 	{

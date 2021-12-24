@@ -7,14 +7,10 @@ namespace hui
 {
 struct BinPackRectPackProvider : RectPackProvider
 {
-	void reset(u32 atlasWidth, u32 atlasHeight) override;
-	bool packRect(u32 width, u32 height, hui::Rect& outPackedRect) override;
-
-private:
-	//GuillotineBinPack guillotineBinPack;
-	//MaxRectsBinPack maxRectsBinPack;
-	//ShelfBinPack shelfBinPack;
-	SkylineBinPack skylineBinPack;
+	HRectPacker createRectPacker() override;
+	void deleteRectPacker(HRectPacker packer) override;
+	void reset(HRectPacker packer, u32 atlasWidth, u32 atlasHeight) override;
+	bool packRect(HRectPacker packer, u32 width, u32 height, hui::Rect& outPackedRect) override;
 };
 
 }

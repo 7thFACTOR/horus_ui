@@ -6,7 +6,8 @@
 
 namespace hui
 {
-typedef void* FileHandle;
+typedef void* HFile;
+typedef void* HRectPacker;
 
 enum class FileSeekMode
 {
@@ -18,12 +19,12 @@ enum class FileSeekMode
 struct FileProvider
 {
 	virtual ~FileProvider(){};
-	virtual FileHandle open(const char* path, const char* mode) = 0;
-	virtual size_t read(FileHandle file, void* outData, size_t maxDataSize, size_t bytesToRead) = 0;
-	virtual size_t write(FileHandle file, void* data, size_t bytesToWrite) = 0;
-	virtual void close(FileHandle file) = 0;
-	virtual bool seek(FileHandle file, FileSeekMode mode, size_t pos = 0) = 0;
-	virtual size_t tell(FileHandle file) = 0;
+	virtual HFile open(const char* path, const char* mode) = 0;
+	virtual size_t read(HFile file, void* outData, size_t maxDataSize, size_t bytesToRead) = 0;
+	virtual size_t write(HFile file, void* data, size_t bytesToWrite) = 0;
+	virtual void close(HFile file) = 0;
+	virtual bool seek(HFile file, FileSeekMode mode, size_t pos = 0) = 0;
+	virtual size_t tell(HFile file) = 0;
 };
 
 struct FileDialogsProvider
@@ -333,15 +334,17 @@ struct GraphicsProvider
 
 struct RectPackProvider
 {
-	virtual void reset(u32 atlasWidth, u32 atlasHeight) = 0;
-	virtual bool packRect(u32 width, u32 height, Rect& outPackedRect) = 0;
+	virtual HRectPacker createRectPacker() = 0;
+	virtual void deleteRectPacker(HRectPacker packer) = 0;
+	virtual void reset(HRectPacker packer, u32 atlasWidth, u32 atlasHeight) = 0;
+	virtual bool packRect(HRectPacker packer, u32 width, u32 height, Rect& outPackedRect) = 0;
 };
 
-typedef void* FontHandle;
+typedef void* HFontFace;
 
 struct FontGlyph
 {
-	HImage image = nullptr; // will be created by horus atlas
+	HImage image = nullptr; // will be created by atlas
 	GlyphCode code = 0;
 	f32 bearingX = 0.0f;
 	f32 bearingY = 0.0f;
@@ -379,12 +382,12 @@ struct FontTextSize
 	f32 maxBearingY = 0;
 	f32 maxGlyphHeight = 0;
 	u32 lastFontIndex = 0;
-	std::vector<f32> lineHeights;
+	std::vector<f32> lineHeights; // valid when text size is computed from multiple lines of text
 };
 
 struct FontInfo
 {
-	FontHandle handle;
+	HFontFace fontFace = 0;
 	FontMetrics metrics;
 };
 
@@ -392,9 +395,9 @@ struct FontProvider
 {
 	virtual ~FontProvider(){}
 	virtual bool loadFont(const char* path, u32 faceSize, FontInfo& fontInfo) = 0;
-	virtual void freeFont(FontHandle font) = 0;
-	virtual f32 getKerning(FontHandle font, GlyphCode leftGlyphCode, GlyphCode rightGlyphCode) = 0;
-	virtual bool rasterizeGlyph(FontHandle font, GlyphCode glyphCode, FontGlyph& outGlyph) = 0;
+	virtual void freeFont(HFontFace fontFace) = 0;
+	virtual f32 getKerning(HFontFace fontFace, GlyphCode leftGlyphCode, GlyphCode rightGlyphCode) = 0;
+	virtual bool rasterizeGlyph(HFontFace fontFace, GlyphCode glyphCode, FontGlyph& outGlyph) = 0;
 };
 
 struct ImageProvider
@@ -410,9 +413,9 @@ struct UtfProvider
 	virtual bool utf8To32(const char* utf8Str, Utf32String& outUtf32Str) = 0;
 	virtual bool utf32To16(const Utf32String& utf32Str, wchar_t** outUtf16Str, size_t& outUtf16StrLen) = 0;
 	virtual bool utf32To8(const Utf32String& utf32Str, char** outUtf8Str) = 0;
-	virtual bool utf16To8(wchar_t* utf16Str, const char** outUtf8Str) = 0;
+	virtual bool utf16To8(const wchar_t* utf16Str, char** outUtf8Str) = 0;
 	virtual bool utf32To8NoAlloc(const Utf32String& utf32Str, const char* outUtf8Str, size_t maxUtf8StrLen) = 0;
-	virtual bool utf32To8NoAlloc(const u32* utf32Str, size_t utf32StrSize, char* outUtf8Str, size_t maxOutUtf8StrSize) = 0;
+	virtual bool utf32To8NoAlloc(const u32* utf32Str, size_t utf32StrSize, const char* outUtf8Str, size_t maxOutUtf8StrSize) = 0;
 	virtual size_t utf8Length(const char* utf8Str) = 0;
 };
 

@@ -2,12 +2,12 @@
 
 namespace hui
 {
-FileHandle StdioFileProvider::open(const char* path, const char* mode)
+HFile StdioFileProvider::open(const char* path, const char* mode)
 {
 	return fopen(path, mode);
 }
 
-size_t StdioFileProvider::read(FileHandle file, void* outData, size_t maxDataSize, size_t bytesToRead)
+size_t StdioFileProvider::read(HFile file, void* outData, size_t maxDataSize, size_t bytesToRead)
 {
 #ifdef _WINDOWS
 	return fread_s(outData, maxDataSize, bytesToRead, 1, (FILE*)file) * bytesToRead;
@@ -16,17 +16,17 @@ size_t StdioFileProvider::read(FileHandle file, void* outData, size_t maxDataSiz
 #endif
 }
 
-size_t StdioFileProvider::write(FileHandle file, void* data, size_t bytesToWrite)
+size_t StdioFileProvider::write(HFile file, void* data, size_t bytesToWrite)
 {
 	return fwrite(data, bytesToWrite, 1, (FILE*)file) * bytesToWrite;
 }
 
-void StdioFileProvider::close(FileHandle file)
+void StdioFileProvider::close(HFile file)
 {
 	fclose((FILE*)file);
 }
 
-bool StdioFileProvider::seek(FileHandle file, FileSeekMode mode, size_t pos)
+bool StdioFileProvider::seek(HFile file, FileSeekMode mode, size_t pos)
 {
 #ifdef _WIN64
 	return 0 == _fseeki64((FILE*)file, pos, (int)mode);
@@ -35,7 +35,7 @@ bool StdioFileProvider::seek(FileHandle file, FileSeekMode mode, size_t pos)
 #endif
 }
 
-size_t StdioFileProvider::tell(FileHandle file)
+size_t StdioFileProvider::tell(HFile file)
 {
 #ifdef _WIN64
 	return _ftelli64((FILE*)file);

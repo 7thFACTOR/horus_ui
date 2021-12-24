@@ -80,7 +80,6 @@ HContext createContext(struct ContextSettings& settings)
 
 	context->settings = settings;
 	context->providers = &settings.providers;
-	setContext((HContext)context);
 
 #ifdef _WIN32
 	SetProcessDPIAware();
@@ -107,6 +106,11 @@ void deleteContext(HContext context)
 ContextSettings& getContextSettings()
 {
 	return ctx->settings;
+}
+
+void initializeRenderer()
+{
+	ctx->initializeGraphics();
 }
 
 void clearBackground()
@@ -291,7 +295,7 @@ void endFrame()
 	ctx->maxWidgetId = ctx->currentWidgetId;
 	ctx->focusChanged = false;
 	ctx->mouseMoved = false;
-	
+
 	if (ctx->dragDropState.begunDragging
 		&& ctx->event.type == InputEvent::Type::MouseUp)
 	{
@@ -637,7 +641,7 @@ HImage loadImage(const char* filename)
 HImage createImage(Rgba32* pixels, u32 width, u32 height)
 {
 	auto img = ctx->theme->addImage(pixels, width, height);
-	ctx->theme->packAtlas();
+
 	return img;
 }
 
@@ -1014,8 +1018,7 @@ void deleteTheme(HTheme theme)
 	ctx->theme = nullptr;
 }
 
-void getThemeWidgetElementInfo(WidgetElementId elementId, WidgetStateType state, WidgetElementInfo& outInfo,
-	const char* styleName)
+void getThemeWidgetElementInfo(WidgetElementId elementId, WidgetStateType state, WidgetElementInfo& outInfo, const char* styleName)
 {
 	auto& elemState = ctx->theme->elements[(u32)elementId].getStyleState(styleName, state);
 
@@ -1080,7 +1083,14 @@ const Color& getThemeWidgetElementColorParameter(HTheme theme, WidgetElementId e
 
 void setThemeUserWidgetElementParameter(HTheme theme, const char* userElementName, const char* styleName, const char* paramName, const char* paramValue)
 {
-	((UiTheme*)theme)->userElements[userElementName]->styles[styleName].parameters[paramName] = paramValue;
+	auto themePtr = ((UiTheme*)theme);
+
+	if (themePtr->userElements.find(userElementName) == themePtr->userElements.end())
+	{
+		themePtr->userElements.insert(std::make_pair(userElementName, new UiThemeElement()));
+	}
+
+	themePtr->userElements[userElementName]->styles[styleName].parameters[paramName] = paramValue;
 }
 
 const char* getThemeUserWidgetElementStringParameter(HTheme theme, const char* userElementName, const char* styleName, const char* paramName, const char* defaultValue)
@@ -1112,11 +1122,24 @@ const Color& getThemeUserWidgetElementColorParameter(HTheme theme, const char* u
 
 HFont createThemeFont(HTheme theme, const char* name, const char* fontFilename, u32 faceSize)
 {
-	return (HFont)((UiTheme*)theme)->fontCache->createFont(name, fontFilename, faceSize * ctx->globalScale, false);
+	auto fnt = (HFont)((UiTheme*)theme)->fontCache->createFont(name, fontFilename, faceSize * ctx->globalScale, false);
+	//TODO: check first if there is already set
+	((UiTheme*)theme)->fonts[name] = (UiFont*)fnt;
+
+	return fnt;
 }
 
 void releaseThemeFont(HTheme theme, HFont font)
 {
+	for (auto fntPair : ((UiTheme*)theme)->fonts)
+	{
+		if (fntPair.second == (UiFont*)font)
+		{
+			((UiTheme*)theme)->fonts.erase(fntPair.first);
+			break;
+		}
+	}
+
 	((UiTheme*)theme)->fontCache->releaseFont((UiFont*)font);
 }
 

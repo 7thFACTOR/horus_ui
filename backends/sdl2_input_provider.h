@@ -14,7 +14,7 @@ struct SdlSettings
 	WindowFlags windowFlags = WindowFlags::Resizable;
 	bool vSync = true;
 	void* sdlGLContext = nullptr; // set to a valid SDL
-	bool initializeSDL = true; // set to false if you already initialized SDL 
+	bool initializeSDL = true; // set to false if you already initialized SDL
 	SDL_Window* sdlMainWindow = nullptr;
 	AntiAliasing antiAliasing = AntiAliasing::None;
 };
@@ -77,6 +77,7 @@ struct Sdl2InputProvider : InputProvider
 	void addSdlEvent(SDL_Event& ev);
 	void processSdlEvents();
 	SdlWindowProxy* findSdlWindow(SDL_Window* wnd);
+	void createSystemCursors();
 
 	bool quitApp = false; /// if true, it will end the main app loop
 	bool addedMouseMove = false; /// we only want the first mouse move because otherwise we'll get way too many mouse move events in the queue

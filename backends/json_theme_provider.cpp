@@ -2,6 +2,7 @@
 #include "json/json.h"
 #include "json/reader.h"
 #include "horus_interfaces.h"
+#include <assert.h>
 
 namespace hui
 {
@@ -23,7 +24,7 @@ static std::string readTextFile(const char* path)
 		char* buffer = new char[size + 1];
 		buffer[size] = 0;
 		auto readBytes = HORUS_FILE->read(file, buffer, size, size);
-		
+
 		if (readBytes == size)
 			text = buffer;
 
@@ -208,6 +209,7 @@ void setThemeElement(
 	}
 
 	auto font = hui::getThemeFont(theme, fontName.c_str());
+	assert(font);
 
 	u32 r = 0, g = 0, b = 0, a = 255;
 	Color bgColor;
@@ -225,19 +227,19 @@ void setThemeElement(
 		txtColor = Color((f32)r / 255.0f, (f32)g / 255.0f, (f32)b / 255.0f, (f32)a / 255.0f);
 	}
 
-	WidgetElementInfo elemState;
+	WidgetElementInfo elemInfo;
 
-	hui::getThemeWidgetElementInfo(elemId, widgetStateType, elemState, styleName);
+	elemInfo.image = image;
+	elemInfo.border = border;
+	elemInfo.color = bgColor;
+	elemInfo.textColor = txtColor;
+	elemInfo.font = font;
+	elemInfo.width = width;
+	elemInfo.height = height;
 
-	elemState.image = image;
-	elemState.border = border;
-	elemState.color = bgColor;
-	elemState.textColor = txtColor;
-	elemState.font = font;
-	elemState.width = width;
-	elemState.height = height;
+	hui::setThemeWidgetElement(theme, elemId, widgetStateType, elemInfo, styleName);
 }
-	
+
 void setUserElement(
 	HTheme theme,
 	const std::string& themePath,
@@ -266,7 +268,7 @@ void setUserElement(
 		hui::setThemeImage(theme, imageFilename.c_str(), image);
 	}
 
-	auto font = hui::getFont(fontName.c_str());
+	auto font = hui::getThemeFont(theme, fontName.c_str());
 
 	u32 r = 0, g = 0, b = 0, a = 255;
 	Color bgColor;
@@ -284,22 +286,17 @@ void setUserElement(
 		txtColor = Color((f32)r / 255.0f, (f32)g / 255.0f, (f32)b / 255.0f, (f32)a / 255.0f);
 	}
 
-	WidgetElementInfo inf;
+	WidgetElementInfo elemInfo;
 
-	inf.image = image;
-	inf.border = border;
-	inf.color = bgColor;
-	inf.textColor = txtColor;
-	inf.font = font;
-	inf.width = width,
-		inf.height = height;
+	elemInfo.image = image;
+	elemInfo.border = border;
+	elemInfo.color = bgColor;
+	elemInfo.textColor = txtColor;
+	elemInfo.font = font;
+	elemInfo.width = width,
+	elemInfo.height = height;
 
-	setThemeUserWidgetElement(
-		theme,
-		elemName.c_str(),
-		widgetStateType,
-		inf,
-		styleName);
+	setThemeUserWidgetElement(theme, elemName.c_str(), widgetStateType, elemInfo, styleName);
 }
 
 WidgetStateType widgetStateFromText(const std::string& stateName)
@@ -337,7 +334,7 @@ HTheme loadThemeFromJson(const char* filename)
 
 	Json::Value fonts = root.get("fonts", Json::Value());
 	auto fontNames = fonts.getMemberNames();
-	
+
 	for (size_t i = 0; i < fontNames.size(); i++)
 	{
 		auto name = fontNames[i];
@@ -350,7 +347,7 @@ HTheme loadThemeFromJson(const char* filename)
 			fontFilename = themePath + fontFilename;
 		}
 
-		auto newFont = createThemeFont(theme, name.c_str(), fontFilename.c_str(), fnt.get("size", 0).asInt());
+		createThemeFont(theme, name.c_str(), fontFilename.c_str(), fnt.get("size", 0).asInt());
 	}
 
 	Json::Value settings = root.get("settings", Json::Value());
@@ -396,7 +393,7 @@ HTheme loadThemeFromJson(const char* filename)
 						setThemeElement(theme, themePath, styleName.c_str(), widgetType, elemType, widgetStateType, elemState, width, height);
 					else
 					{
-						hui::setThemeWidgetElementParameter(theme, elemType, styleName.c_str(), stateName.c_str(), elemState.asCString());
+						hui::setThemeWidgetElementParameter(theme, elemType, styleName.c_str(), stateName.c_str(), elemState.asString().c_str());
 					}
 				}
 			}
@@ -427,7 +424,7 @@ HTheme loadThemeFromJson(const char* filename)
 					}
 					else
 					{
-						hui::setThemeUserWidgetElementParameter(theme, elementName.c_str(), styleName.c_str(), stateName.c_str(), elemState.asCString());
+						hui::setThemeUserWidgetElementParameter(theme, elementName.c_str(), styleName.c_str(), stateName.c_str(), elemState.asString().c_str());
 					}
 				}
 			}

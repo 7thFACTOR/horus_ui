@@ -1580,6 +1580,8 @@ HORUS_API void deleteContext(HContext ctx);
 /// \return the context settings
 HORUS_API ContextSettings& getContextSettings();
 
+HORUS_API void initializeRenderer();
+
 /// Gather and process the input events, including window events, called in a main loop
 HORUS_API void processInputEvents();
 

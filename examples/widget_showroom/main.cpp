@@ -1974,6 +1974,9 @@ void createMyDefaultViewPanes()
 
 int main(int argc, char** args)
 {
+	///
+	/// Setup a Horus UI context, with given service providers
+	///
 	hui::ContextSettings settings;
 
 	settings.providers.file = new StdioFileProvider();
@@ -1986,29 +1989,37 @@ int main(int argc, char** args)
 	settings.providers.utf = new UtfCppProvider();
 
 	auto ctx = hui::createContext(settings);
+	hui::setContext(ctx); // set as current context
 
+	///
+	/// Setup SDL2
+	///
 	hui::SdlSettings sdlSettings;
 
 	sdlSettings.mainWindowTitle = "HorusUI Example - Widget Showroom";
 	sdlSettings.mainWindowRect = { 0, 0, 800, 600 };
 	sdlSettings.antiAliasing = hui::AntiAliasing::None;
-	hui::setupSDL(sdlSettings);
-
+	hui::setupSDL(sdlSettings); // setup SDL (will create an SDL context if none set in the sdlSettings
 	HORUS_GFX->initialize(); // init the gfx objects, since we have now a graphics context set
+	hui::initializeRenderer(); // init UI renderer for the current context
+
+	//////////////////////////////////////////////////////////////////////////
+	/// Now setup our UI, load theme, etc.
 
 	printf("Loading theme...\n");
 	//TODO: load themes and images and anything from memory also
 	auto theme = hui::loadThemeFromJson("../themes/default.theme.json");
-	
+	hui::setTheme(theme); // set as the current theme
+
 	// create additional fonts
 	fntBig = hui::createThemeFont(theme, "customBig", "../themes/fonts/arial.ttf", 20);
 	fntVeryBig = hui::createThemeFont(theme, "customVeryBig", "../themes/fonts/arial.ttf", 50);
 	fntBold = hui::createThemeFont(theme, "customBold", "../themes/fonts/arial.ttf", 15);
 	fntItalic = hui::createThemeFont(theme, "customItalic", "../themes/fonts/arial.ttf", 15);
 	fntNodeTitle = hui::createThemeFont(theme, "customNodeTitle", "../themes/fonts/Roboto-Bold.ttf", 12);
+
 	printf("Loading images...\n");
 
-	hui::setTheme(theme);
 	drawLineImg = hui::loadImage("../themes/drawline.png");
 	lenaImg = hui::loadImage("../themes/lena.png");
 	nodeBodyImg = hui::loadImage("../themes/node-body.png");
@@ -2027,6 +2038,9 @@ int main(int argc, char** args)
 	myViewHandler.pauseIcon = hui::loadImage("../themes/pause-icon.png");
 	myViewHandler.horusLogo = hui::loadImage("../themes/horus.png");
 	dragDropCur = hui::loadMouseCursor("../themes/dragdrop_cursor.png");
+
+	// after we load and create images and fonts, rebuild the theme atlas
+	hui::buildTheme(theme);
 
 	fntLed1 = hui::getFont("led1");
 	fntLed2 = hui::getFont("led2");
@@ -2060,7 +2074,7 @@ int main(int argc, char** args)
 	printf("Starting loop...\n");
 	hui::dockingSystemLoop();
 	hui::saveViewContainersState("layout.hui");
-	
+
 	hui::shutdown();
 
 	return 0;

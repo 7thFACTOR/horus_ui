@@ -3,14 +3,32 @@
 
 namespace hui
 {
-void BinPackRectPackProvider::reset(u32 atlasWidth, u32 atlasHeight)
+struct BinPackProxy
 {
-	skylineBinPack.Init(atlasWidth, atlasHeight, true);
+	//GuillotineBinPack guillotineBinPack;
+	//MaxRectsBinPack maxRectsBinPack;
+	//ShelfBinPack shelfBinPack;
+	SkylineBinPack skylineBinPack;
+};
+
+HRectPacker BinPackRectPackProvider::createRectPacker()
+{
+	return new BinPackProxy();
 }
 
-bool BinPackRectPackProvider::packRect(u32 width, u32 height, hui::Rect& outPackedRect)
+void BinPackRectPackProvider::deleteRectPacker(HRectPacker packer)
 {
-	auto rc = skylineBinPack.Insert(
+	delete (BinPackProxy*)packer;
+}
+
+void BinPackRectPackProvider::reset(HRectPacker packer, u32 atlasWidth, u32 atlasHeight)
+{
+	((BinPackProxy*)packer)->skylineBinPack.Init(atlasWidth, atlasHeight, true);
+}
+
+bool BinPackRectPackProvider::packRect(HRectPacker packer, u32 width, u32 height, hui::Rect& outPackedRect)
+{
+	auto rc = ((BinPackProxy*)packer)->skylineBinPack.Insert(
 		width,
 		height,
 		SkylineBinPack::LevelChoiceHeuristic::LevelMinWasteFit);

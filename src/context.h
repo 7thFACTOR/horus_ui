@@ -53,7 +53,6 @@ struct UiContext
 	u32 frameCount = 0;
 	f32 pruneUnusedTextTime = 0;
 	u32 currentWindowIndex = 0;
-	HGraphicsApiContext gfxApiContext = 0;
 	u32 currentWidgetId = 1;
 	std::vector<WidgetLoopInfo> widgetLoopStack;
 	u32 maxWidgetId = 0;
@@ -65,7 +64,7 @@ struct UiContext
 	f32 globalScale = 1.0f;
 	u32 atlasTextureSize = 4096;
 	bool drawingViewPaneTabs = false;
-	
+
 	bool verticalToolbar = false;
 	std::vector<bool> verticalToolbarStack;
 

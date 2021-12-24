@@ -16,6 +16,14 @@ void UiFont::load(const std::string& fontFilename, u32 facePointSize, UiAtlas* t
 	faceSize = facePointSize;
 	atlas = themeAtlas;
 
+	if (fontInfo.fontFace)
+	{
+		HORUS_FONT->freeFont(fontInfo.fontFace);
+		fontInfo.fontFace = 0;
+	}
+
+	if (!HORUS_FONT->loadFont(fontFilename.c_str(), facePointSize, fontInfo))
+		return;
 }
 
 void UiFont::resetFaceSize(u32 fontFaceSize)
@@ -34,7 +42,11 @@ void UiFont::resetFaceSize(u32 fontFaceSize)
 
 UiFont::~UiFont()
 {
-	HORUS_FONT->freeFont(fontInfo.handle);
+	if (fontInfo.fontFace)
+	{
+		HORUS_FONT->freeFont(fontInfo.fontFace);
+	}
+
 	deleteGlyphs();
 }
 
@@ -62,7 +74,7 @@ f32 UiFont::getKerning(GlyphCode leftGlyphCode, GlyphCode rightGlyphCode)
 	}
 	else
 	{
-		auto kern = HORUS_FONT->getKerning(fontInfo.handle, leftGlyphCode, rightGlyphCode);
+		auto kern = HORUS_FONT->getKerning(fontInfo.fontFace, leftGlyphCode, rightGlyphCode);
 		kerningPairs[hash] = kern;
 
 		return kern;
@@ -99,7 +111,7 @@ void UiFont::precacheLatinAlphabetGlyphs()
 
 FontGlyph* UiFont::cacheGlyph(GlyphCode glyphCode, bool packAtlasNow)
 {
-	if (!fontInfo.handle)
+	if (!fontInfo.fontFace)
 	{
 		return nullptr;
 	}
@@ -114,13 +126,12 @@ FontGlyph* UiFont::cacheGlyph(GlyphCode glyphCode, bool packAtlasNow)
 	if (resizeFaceMode)
 		delete[] fontGlyph->rgbaBuffer;
 
-	HORUS_FONT->rasterizeGlyph(fontInfo.handle, glyphCode, *fontGlyph);
+	HORUS_FONT->rasterizeGlyph(fontInfo.fontFace, glyphCode, *fontGlyph);
 
 	// if we do not currently resizing the font glyphs, then create and insert the image into the atlas
 	if (!resizeFaceMode)
 	{
 		glyphs.insert(std::make_pair(glyphCode, fontGlyph));
-		//assert(rgbaBuffer);
 
 		auto image = atlas->addImage(
 			fontGlyph->rgbaBuffer,
@@ -137,12 +148,13 @@ FontGlyph* UiFont::cacheGlyph(GlyphCode glyphCode, bool packAtlasNow)
 	else
 	{
 		// if we are in resize mode, then just update the image buffer for the glyph and its size
-		delete[] ((UiImage*)fontGlyph->image)->imageData;
-		auto imgSize = fontGlyph->pixelWidth * fontGlyph->pixelHeight * sizeof(Rgba32);
-		((UiImage*)fontGlyph->image)->imageData = new Rgba32[imgSize];
-		((UiImage*)fontGlyph->image)->width = fontGlyph->pixelWidth;
-		((UiImage*)fontGlyph->image)->height = fontGlyph->pixelHeight;
-		memcpy(((UiImage*)fontGlyph->image)->imageData, fontGlyph->rgbaBuffer, imgSize);
+		auto img = ((UiImage*)fontGlyph->image);
+		delete[] img->imageData;
+		auto imgSize = (size_t)fontGlyph->pixelWidth * fontGlyph->pixelHeight * sizeof(Rgba32);
+		img->imageData = new Rgba32[imgSize];
+		img->width = fontGlyph->pixelWidth;
+		img->height = fontGlyph->pixelHeight;
+		memcpy(img->imageData, fontGlyph->rgbaBuffer, imgSize);
 	}
 
 	return fontGlyph;

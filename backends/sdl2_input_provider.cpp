@@ -7,12 +7,6 @@ namespace hui
 {
 Sdl2InputProvider::Sdl2InputProvider()
 {
-	for (int i = 0; i < SDL_NUM_SYSTEM_CURSORS; i++)
-	{
-		cursors[i] = SDL_CreateSystemCursor((SDL_SystemCursor)i);
-	}
-
-	SDL_SetHint(SDL_HINT_MOUSE_FOCUS_CLICKTHROUGH, "1");
 }
 
 Sdl2InputProvider::~Sdl2InputProvider()
@@ -585,7 +579,7 @@ void Sdl2InputProvider::shutdown()
 {
 	if (ownsGLContext)
 		SDL_GL_DeleteContext(sdlGLContext);
-	
+
 	if (ownsSDLInit)
 		SDL_Quit();
 }
@@ -813,6 +807,16 @@ Point Sdl2InputProvider::getMousePosition()
 	return { (f32)x , (f32)y };
 }
 
+void Sdl2InputProvider::createSystemCursors()
+{
+	for (int i = 0; i < SDL_NUM_SYSTEM_CURSORS; i++)
+	{
+		cursors[i] = SDL_CreateSystemCursor((SDL_SystemCursor)i);
+	}
+
+	SDL_SetHint(SDL_HINT_MOUSE_FOCUS_CLICKTHROUGH, "1");
+}
+
 void setupSDL(const SdlSettings& settings)
 {
 	Rect wndRect = settings.mainWindowRect;
@@ -930,6 +934,8 @@ void setupSDL(const SdlSettings& settings)
 	{
 		SDL_MaximizeWindow(wnd->sdlWindow);
 	}
+
+	sdlProvider->createSystemCursors();
 }
 
 }

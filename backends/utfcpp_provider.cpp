@@ -31,9 +31,9 @@ bool UtfCppProvider::utf32To16(const Utf32String& utf32Str, wchar_t** outUtf16St
 {
 	*outUtf16Str = new wchar_t[utf32Str.size()];
 
-	for (int i = 0; i < utf32Str.size(); i++)
+	for (size_t i = 0; i < utf32Str.size(); i++)
 	{
-		(*outUtf16Str)[i] = utf32Str[i];
+		(*outUtf16Str)[i] = (wchar_t)utf32Str[i];
 	}
 
 	outUtf16StrLen = utf32Str.size();
@@ -71,7 +71,7 @@ bool UtfCppProvider::utf32To8(const Utf32String& utf32Str, char** outUtf8Str)
 	return true;
 }
 
-bool UtfCppProvider::utf16To8(wchar_t* utf16Str, const char** outUtf8Str)
+bool UtfCppProvider::utf16To8(const wchar_t* utf16Str, char** outUtf8Str)
 {
 	std::vector<char> chars;
 
@@ -140,7 +140,7 @@ size_t UtfCppProvider::utf8Length(const char* utf8Str)
 	return utf8::distance(utf8Str, utf8Str + strlen(utf8Str));
 }
 
-bool UtfCppProvider::utf32To8NoAlloc(const u32* utf32Str, size_t utf32StrSize, char* outUtf8Str, size_t maxOutUtf8StrSize)
+bool UtfCppProvider::utf32To8NoAlloc(const u32* utf32Str, size_t utf32StrSize, const char* outUtf8Str, size_t maxOutUtf8StrSize)
 {
 	std::vector<char> chars;
 
