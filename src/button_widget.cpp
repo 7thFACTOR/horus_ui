@@ -242,8 +242,8 @@ bool button(const char* labelText)
 bool iconButtonInternal(HImage icon, HImage disabledIcon, f32 customHeight, bool down, UiThemeElement* btnBodyElem, bool focusable)
 {
 	auto btnBodyElemState = &btnBodyElem->normalState();
-	UiImage* iconImg = (UiImage*)icon;
-	UiImage* disabledIconImg = (UiImage*)disabledIcon;
+	Image* iconImg = (Image*)icon;
+	Image* disabledIconImg = (Image*)disabledIcon;
 	f32 height = 0.0f;
 
 	if (customHeight > 0.0f)
@@ -283,7 +283,7 @@ bool iconButtonInternal(HImage icon, HImage disabledIcon, f32 customHeight, bool
 
 	if (focusable)
 		setFocusable();
-	
+
 	ctx->currentWidgetId++;
 
 	if (isClicked())

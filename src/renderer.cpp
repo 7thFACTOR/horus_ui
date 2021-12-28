@@ -27,19 +27,19 @@ enum LineClipBit
 	Top = 8
 };
 
-// Function to compute region code for a point(x, y) 
+// Function to compute region code for a point(x, y)
 int computeLineClipCode(const Point& p, const Rect& rect)
 {
-	// initialized as being inside  
+	// initialized as being inside
 	int code = LineClipBit::Inside;
 
-	if (p.x < rect.left())       // to the left of rectangle 
+	if (p.x < rect.left())       // to the left of rectangle
 		code |= LineClipBit::Left;
-	else if (p.x > rect.right())  // to the right of rectangle 
+	else if (p.x > rect.right())  // to the right of rectangle
 		code |= LineClipBit::Right;
-	if (p.y < rect.top())       // below the rectangle 
+	if (p.y < rect.top())       // below the rectangle
 		code |= LineClipBit::Bottom;
-	else if (p.y > rect.bottom())  // above the rectangle 
+	else if (p.y > rect.bottom())  // above the rectangle
 		code |= LineClipBit::Top;
 
 	return code;
@@ -52,11 +52,11 @@ bool clipLineToRect(
 	Point& newP1, Point& newP2,
 	Point& newUv1, Point& newUv2)
 {
-	// Compute region codes for P1, P2 
+	// Compute region codes for P1, P2
 	int code1 = computeLineClipCode(p1, rect);
 	int code2 = computeLineClipCode(p2, rect);
 
-	// Initialize line as outside the rectangular window 
+	// Initialize line as outside the rectangular window
 	bool accept = false;
 
 	newUv1 = uv1;
@@ -66,7 +66,7 @@ bool clipLineToRect(
 	{
 		if ((code1 == 0) && (code2 == 0))
 		{
-			// If both endpoints lie within rectangle 
+			// If both endpoints lie within rectangle
 			accept = true;
 			newP1 = p1;
 			newP2 = p2;
@@ -76,28 +76,28 @@ bool clipLineToRect(
 		}
 		else if (code1 & code2)
 		{
-			// If both endpoints are outside rectangle, 
-			// in same region 
+			// If both endpoints are outside rectangle,
+			// in same region
 			break;
 		}
 		else
 		{
-			// Some segment of line lies within the 
-			// rectangle 
+			// Some segment of line lies within the
+			// rectangle
 			int code_out;
 			f32 x, y;
 			Point uv = uv1;
 
-			// At least one endpoint is outside the  
-			// rectangle, pick it. 
+			// At least one endpoint is outside the
+			// rectangle, pick it.
 			if (code1 != 0)
 				code_out = code1;
 			else
 				code_out = code2;
 
-			// Find intersection point; 
-			// using formulas y = y1 + slope * (x - x1), 
-			// x = x1 + (1 / slope) * (y - y1) 
+			// Find intersection point;
+			// using formulas y = y1 + slope * (x - x1),
+			// x = x1 + (1 / slope) * (y - y1)
 			if (code_out & LineClipBit::Top)
 			{
 				// point is above the clip rectangle
@@ -131,9 +131,9 @@ bool clipLineToRect(
 				uv = uv1 + (uv2 - uv1) * t;
 			}
 
-			// Now intersection point x,y is found 
-			// We replace point outside rectangle 
-			// by intersection point 
+			// Now intersection point x,y is found
+			// We replace point outside rectangle
+			// by intersection point
 			if (code_out == code1)
 			{
 				newP1.x = x;
@@ -193,7 +193,7 @@ void clipLeft(const Rect& rect, Point* inPoints, Point* inUvPoints, u32 inCount,
 		// exit
 		if (p1.x >= rect.x && p2.x < rect.x)
 		{
-			// point is to the left of rectangle 
+			// point is to the left of rectangle
 			auto t = (rect.x - p1.x) / (p2.x - p1.x);
 			auto y = p1.y + (p2.y - p1.y) * t;
 			auto x = rect.x;
@@ -204,7 +204,7 @@ void clipLeft(const Rect& rect, Point* inPoints, Point* inUvPoints, u32 inCount,
 		// enter
 		if (p1.x < rect.x && p2.x >= rect.x)
 		{
-			// point is to the left of rectangle 
+			// point is to the left of rectangle
 			auto t = (rect.x - p1.x) / (p2.x - p1.x);
 			auto y = p1.y + (p2.y - p1.y) * t;
 			auto x = rect.x;
@@ -255,7 +255,7 @@ void clipRight(const Rect& rect, Point* inPoints, Point* inUvPoints, u32 inCount
 		// exit
 		if (p1.x <= rect.right() && p2.x > rect.right())
 		{
-			// point is to the right of rectangle 
+			// point is to the right of rectangle
 			auto t = (rect.right() - p1.x) / (p2.x - p1.x);
 			auto y = p1.y + (p2.y - p1.y) * t;
 			auto x = rect.right();
@@ -390,7 +390,7 @@ void clipBottom(const Rect& rect, Point* inPoints, Point* inUvPoints, u32 inCoun
 		// enter
 		if (p1.y > rect.bottom() && p2.y <= rect.bottom())
 		{
-			// point is below the rectangle 
+			// point is below the rectangle
 			auto t = (rect.bottom() - p1.y) / (p2.y - p1.y);
 			auto x = p1.x + (p2.x - p1.x) * t;
 			auto y = rect.bottom();
@@ -439,7 +439,7 @@ bool clipTriangleToRect(
 	clipRight(rect, inPoints, inUvPoints, inCount, outPoints, outUvPoints, outCount);
 	inCount = 0;
 	clipBottom(rect, outPoints, outUvPoints, outCount, inPoints, inUvPoints, inCount);
-	
+
 	for (u32 i = 0; i < inCount; i++)
 	{
 		outPoints[i] = inPoints[i];
@@ -633,7 +633,7 @@ void Renderer::cmdSetColor(const Color& newColor)
 	addDrawCommand(cmd);
 }
 
-void Renderer::cmdSetAtlas(UiAtlas* newAtlas)
+void Renderer::cmdSetAtlas(Atlas* newAtlas)
 {
 	DrawCommand cmd(DrawCommand::Type::SetAtlas);
 	cmd.zOrder = zOrder;
@@ -642,7 +642,7 @@ void Renderer::cmdSetAtlas(UiAtlas* newAtlas)
 	addDrawCommand(cmd);
 }
 
-void Renderer::cmdSetFont(UiFont* font)
+void Renderer::cmdSetFont(Font* font)
 {
 	DrawCommand cmd(DrawCommand::Type::SetFont);
 	cmd.zOrder = zOrder;
@@ -694,7 +694,7 @@ void Renderer::cmdSetFillStyle(const FillStyle& style)
 	addDrawCommand(cmd);
 }
 
-void Renderer::cmdDrawImage(UiImage* image, const Point& position, f32 scale)
+void Renderer::cmdDrawImage(Image* image, const Point& position, f32 scale)
 {
 	DrawCommand cmd(DrawCommand::Type::DrawRect);
 	cmd.zOrder = zOrder;
@@ -705,7 +705,7 @@ void Renderer::cmdDrawImage(UiImage* image, const Point& position, f32 scale)
 	addDrawCommand(cmd);
 }
 
-void Renderer::cmdDrawImage(UiImage* image, const Rect& rect)
+void Renderer::cmdDrawImage(Image* image, const Rect& rect)
 {
 	DrawCommand cmd(DrawCommand::Type::DrawRect);
 	cmd.zOrder = zOrder;
@@ -716,7 +716,7 @@ void Renderer::cmdDrawImage(UiImage* image, const Rect& rect)
 	addDrawCommand(cmd);
 }
 
-void Renderer::cmdDrawImage(UiImage* image, const Rect& rect, const Rect& uvRect)
+void Renderer::cmdDrawImage(Image* image, const Rect& rect, const Rect& uvRect)
 {
 	DrawCommand cmd(DrawCommand::Type::DrawRect);
 	cmd.zOrder = zOrder;
@@ -727,7 +727,7 @@ void Renderer::cmdDrawImage(UiImage* image, const Rect& rect, const Rect& uvRect
 	addDrawCommand(cmd);
 }
 
-void Renderer::cmdDrawQuad(UiImage* image, const Point& p1, const Point& p2, const Point& p3, const Point& p4)
+void Renderer::cmdDrawQuad(Image* image, const Point& p1, const Point& p2, const Point& p3, const Point& p4)
 {
 	DrawCommand cmd(DrawCommand::Type::DrawQuad);
 	cmd.zOrder = zOrder;
@@ -740,7 +740,7 @@ void Renderer::cmdDrawQuad(UiImage* image, const Point& p1, const Point& p2, con
 	addDrawCommand(cmd);
 }
 
-void Renderer::cmdDrawImageBordered(UiImage* image, u32 border, const Rect& rect, f32 scale)
+void Renderer::cmdDrawImageBordered(Image* image, u32 border, const Rect& rect, f32 scale)
 {
 	DrawCommand cmd(DrawCommand::Type::DrawImageBordered);
 	cmd.zOrder = zOrder;
@@ -751,7 +751,7 @@ void Renderer::cmdDrawImageBordered(UiImage* image, u32 border, const Rect& rect
 	addDrawCommand(cmd);
 }
 
-void Renderer::cmdDrawImageScaledAligned(UiImage* image, const Rect& rect, HAlignType halign, VAlignType valign, f32 scale)
+void Renderer::cmdDrawImageScaledAligned(Image* image, const Rect& rect, HAlignType halign, VAlignType valign, f32 scale)
 {
 	f32 newWidth = image->rect.width * scale;
 	f32 newHeight = image->rect.height * scale;
@@ -937,8 +937,10 @@ void Renderer::drawAtlasRegion(bool rotated, const Rect& rect, const Rect& uvRec
 		drawQuad(newRect, newUvRect);
 }
 
-void Renderer::drawTextGlyph(UiImage* image, const Point& position)
+void Renderer::drawTextGlyph(Image* image, const Point& position)
 {
+	if (!image->atlasTexture) return;
+
 	atlasTextureIndex = image->atlasTexture->textureIndex;
 	Rect rect = Rect(
 		position.x,
@@ -956,7 +958,7 @@ void Renderer::drawTextGlyph(UiImage* image, const Point& position)
 		drawQuad(rect, uvRect);
 }
 
-void Renderer::drawQuad(UiImage* image, const Point& p1, const Point& p2, const Point& p3, const Point& p4)
+void Renderer::drawQuad(Image* image, const Point& p1, const Point& p2, const Point& p3, const Point& p4)
 {
 	drawTriangle(p1, p2, p3, image->uvRect.topLeft(), image->uvRect.topRight(), image->uvRect.bottomRight(), image);
 	drawTriangle(p1, p3, p4, image->uvRect.topLeft(), image->uvRect.bottomRight(), image->uvRect.bottomLeft(), image);
@@ -1322,7 +1324,7 @@ void Renderer::drawInterpolatedColorsLeftRight(
 	currentBatch->vertexCount += 6;
 }
 
-void Renderer::drawImageBordered(UiImage* image, u32 border, const Rect& rect, f32 scale)
+void Renderer::drawImageBordered(Image* image, u32 border, const Rect& rect, f32 scale)
 {
 	Rect screenRect = rect;
 
@@ -1602,7 +1604,7 @@ void Renderer::drawPolyLine(const Point* points, u32 pointCount, bool closed)
 					f32 t = currentLength / totalLineLength;
 					Point pt = points[i] + line * t;
 
-					if (stippleLines.empty() 
+					if (stippleLines.empty()
 						|| (stippleLines.size() && pt != stippleLines.back()))
 					{
 						stippleLines.push_back(pt);
@@ -1636,7 +1638,7 @@ void Renderer::drawPolyLine(const Point* points, u32 pointCount, bool closed)
 	Point p12;
 	Point p21;
 	Point p22;
-	auto atlas = (UiAtlas*)currentBatch->atlas;
+	auto atlas = (Atlas*)currentBatch->atlas;
 	auto lineImage = atlas->whiteImage;
 	const auto color = currentLineStyle.color.getRgba();
 	auto rcUv = lineImage->uvRect;
@@ -1749,7 +1751,7 @@ void Renderer::drawPolyLine(const Point* points, u32 pointCount, bool closed)
 		{
 			n1 = lastN2;
 			extrudeScale1 = lastExtrudeScale2;
-		
+
 			if (closed)
 			{
 				seg1 = Point(pts[p].x - pts[p + 1].x, pts[p].y - pts[p + 1].y);
@@ -1784,7 +1786,7 @@ void Renderer::drawPolyLine(const Point* points, u32 pointCount, bool closed)
 		{
 			n1 = lastN2;
 			extrudeScale1 = lastExtrudeScale2;
-			
+
 			seg1 = Point(pts[p].x - pts[p + 1].x, pts[p].y - pts[p + 1].y);
 			seg2 = Point(pts[p + 2].x - pts[p + 1].x, pts[p + 2].y - pts[p + 1].y);
 			seg1.normalize();
@@ -1808,7 +1810,7 @@ void Renderer::drawPolyLine(const Point* points, u32 pointCount, bool closed)
 
 			lastN2 = n2;
 		}
-		
+
 		n1 *= half * extrudeScale1;
 		n2 *= half * extrudeScale2;
 		lastExtrudeScale1 = extrudeScale1;
@@ -1857,7 +1859,7 @@ void Renderer::drawPolyLine(const Point* points, u32 pointCount, bool closed)
 void Renderer::drawTriangle(
 	const Point& p1, const Point& p2, const Point& p3,
 	const Point& uv1, const Point& uv2, const Point& uv3,
-	UiImage* image)
+	Image* image)
 {
 	// not thread safe
 	static Point pts[12];
@@ -1959,14 +1961,14 @@ void Renderer::drawTextInternal(
 		auto glyph = currentFont->getGlyph(chr);
 		auto img = currentFont->getGlyphImage(chr);
 
-		if (!glyph || !img)
+		if (!glyph)
 		{
 			continue;
 		}
 
 		auto kern = currentFont->getKerning(lastChr, chr);
 		pos.x += kern;
-		drawTextGlyph(img, { pos.x + glyph->bitmapLeft, pos.y - glyph->bitmapTop });
+		if (img) drawTextGlyph(img, { pos.x + glyph->bitmapLeft, pos.y - glyph->bitmapTop });
 		pos.x += glyph->advanceX;
 		lastChr = chr;
 	}
@@ -2013,7 +2015,7 @@ bool Renderer::clipRectNoRot(Rect& rect, Rect& uvRect)
 	// clip left and top UVs
 	auto tx = (newRect.x - rect.x) / rect.width;
 	auto ty = (newRect.y - rect.y) / rect.height;
-	
+
 	// left clip
 	uvRect.x += uvRect.width * tx;
 	uvRect.width -= uvRect.width * tx;
@@ -2025,10 +2027,10 @@ bool Renderer::clipRectNoRot(Rect& rect, Rect& uvRect)
 	// clip right and bottom UVs
 	tx = (rect.right() - newRect.right()) / rect.width;
 	ty = (rect.bottom() - newRect.bottom()) / rect.height;
-	
+
 	uvRect.width -= oldUvRect.width * tx;
 	uvRect.height -= oldUvRect.height * ty;
-	
+
 	rect = newRect;
 
 	return true;

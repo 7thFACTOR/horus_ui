@@ -7,10 +7,10 @@
 
 namespace hui
 {
-UiContext* ctx = nullptr;
+Context* ctx = nullptr;
 
 //TODO: move to graphics or some gfx util
-Rect UiContext::drawMultilineText(
+Rect Context::drawMultilineText(
 	const char* text,
 	const Rect& rect,
 	HAlignType horizontal,
@@ -188,13 +188,13 @@ Rect UiContext::drawMultilineText(
 	return newRect;
 }
 
-void UiContext::setSkipRenderAndInput(bool skip)
+void Context::setSkipRenderAndInput(bool skip)
 {
 	skipRenderAndInput = skip;
 	renderer->skipRender = skip;
 }
 
-void UiContext::initializeGraphics()
+void Context::initializeGraphics()
 {
 	if (!renderer)
 	{

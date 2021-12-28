@@ -5,12 +5,12 @@
 
 namespace hui
 {
-UiFont::UiFont(const std::string& fontFilename, u32 faceSize, UiAtlas* themeAtlas)
+Font::Font(const std::string& fontFilename, u32 faceSize, Atlas* themeAtlas)
 {
 	load(fontFilename, faceSize, themeAtlas);
 }
 
-void UiFont::load(const std::string& fontFilename, u32 facePointSize, UiAtlas* themeAtlas)
+void Font::load(const std::string& fontFilename, u32 facePointSize, Atlas* themeAtlas)
 {
 	filename = fontFilename;
 	faceSize = facePointSize;
@@ -26,7 +26,7 @@ void UiFont::load(const std::string& fontFilename, u32 facePointSize, UiAtlas* t
 		return;
 }
 
-void UiFont::resetFaceSize(u32 fontFaceSize)
+void Font::resetFaceSize(u32 fontFaceSize)
 {
 	faceSize = fontFaceSize;
 	load(filename, faceSize, atlas);
@@ -40,7 +40,7 @@ void UiFont::resetFaceSize(u32 fontFaceSize)
 	resizeFaceMode = false;
 }
 
-UiFont::~UiFont()
+Font::~Font()
 {
 	if (fontInfo.fontFace)
 	{
@@ -50,20 +50,20 @@ UiFont::~UiFont()
 	deleteGlyphs();
 }
 
-FontGlyph* UiFont::getGlyph(GlyphCode glyphCode)
+FontGlyph* Font::getGlyph(GlyphCode glyphCode)
 {
 	auto iter = glyphs.find(glyphCode);
 
 	// glyph not cached, do it
 	if (iter == glyphs.end())
 	{
-		return cacheGlyph(glyphCode, true);
+		return cacheGlyph(glyphCode);
 	}
 
 	return iter->second;
 }
 
-f32 UiFont::getKerning(GlyphCode leftGlyphCode, GlyphCode rightGlyphCode)
+f32 Font::getKerning(GlyphCode leftGlyphCode, GlyphCode rightGlyphCode)
 {
 	u64 hash = ((u64)leftGlyphCode) << 32 + rightGlyphCode;
 	auto iter = kerningPairs.find(hash);
@@ -83,7 +83,7 @@ f32 UiFont::getKerning(GlyphCode leftGlyphCode, GlyphCode rightGlyphCode)
 	return 0;
 }
 
-void UiFont::precacheGlyphs(const Utf32String& glyphCodes)
+void Font::precacheGlyphs(const Utf32String& glyphCodes)
 {
 	for (auto glyphCode : glyphCodes)
 	{
@@ -91,7 +91,7 @@ void UiFont::precacheGlyphs(const Utf32String& glyphCodes)
 	}
 }
 
-void UiFont::precacheGlyphs(u32* glyphs, u32 glyphCount)
+void Font::precacheGlyphs(u32* glyphs, u32 glyphCount)
 {
 	for (size_t i = 0; i < glyphCount; i++)
 	{
@@ -99,7 +99,7 @@ void UiFont::precacheGlyphs(u32* glyphs, u32 glyphCount)
 	}
 }
 
-void UiFont::precacheLatinAlphabetGlyphs()
+void Font::precacheLatinAlphabetGlyphs()
 {
 	std::string alphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890!@#$%^&*()_+-=~`[]{};':\",./<>?®© ";
 
@@ -109,7 +109,7 @@ void UiFont::precacheLatinAlphabetGlyphs()
 	}
 }
 
-FontGlyph* UiFont::cacheGlyph(GlyphCode glyphCode, bool packAtlasNow)
+FontGlyph* Font::cacheGlyph(GlyphCode glyphCode)
 {
 	if (!fontInfo.fontFace)
 	{
@@ -126,7 +126,7 @@ FontGlyph* UiFont::cacheGlyph(GlyphCode glyphCode, bool packAtlasNow)
 	if (resizeFaceMode)
 		delete[] fontGlyph->rgbaBuffer;
 
-	HORUS_FONT->rasterizeGlyph(fontInfo.fontFace, glyphCode, *fontGlyph);
+	auto ret = HORUS_FONT->rasterizeGlyph(fontInfo.fontFace, glyphCode, *fontGlyph);
 
 	// if we do not currently resizing the font glyphs, then create and insert the image into the atlas
 	if (!resizeFaceMode)
@@ -139,43 +139,41 @@ FontGlyph* UiFont::cacheGlyph(GlyphCode glyphCode, bool packAtlasNow)
 			fontGlyph->pixelHeight);
 
 		fontGlyph->image = image;
-
-		if (packAtlasNow)
-		{
-			atlas->packWithLastUsedParams();
-		}
 	}
 	else
 	{
 		// if we are in resize mode, then just update the image buffer for the glyph and its size
-		auto img = ((UiImage*)fontGlyph->image);
-		delete[] img->imageData;
-		auto imgSize = (size_t)fontGlyph->pixelWidth * fontGlyph->pixelHeight * sizeof(Rgba32);
-		img->imageData = new Rgba32[imgSize];
-		img->width = fontGlyph->pixelWidth;
-		img->height = fontGlyph->pixelHeight;
-		memcpy(img->imageData, fontGlyph->rgbaBuffer, imgSize);
+		auto img = ((Image*)fontGlyph->image);
+		if (img)
+		{
+			delete[] img->imageData;
+			auto imgSize = (size_t)fontGlyph->pixelWidth * fontGlyph->pixelHeight * sizeof(Rgba32);
+			img->imageData = new Rgba32[imgSize];
+			img->width = fontGlyph->pixelWidth;
+			img->height = fontGlyph->pixelHeight;
+			memcpy(img->imageData, fontGlyph->rgbaBuffer, imgSize);
+		}
 	}
 
 	return fontGlyph;
 }
 
-UiImage* UiFont::getGlyphImage(GlyphCode glyphCode)
+Image* Font::getGlyphImage(GlyphCode glyphCode)
 {
 	auto iter = glyphs.find(glyphCode);
 
 	if (iter == glyphs.end())
 		return nullptr;
 
-	return (UiImage*)iter->second->image;
+	return (Image*)iter->second->image;
 }
 
-FontTextSize UiFont::computeTextSize(const Utf32String& text)
+FontTextSize Font::computeTextSize(const Utf32String& text)
 {
 	return computeTextSize(text.data(), text.size());
 }
 
-FontTextSize UiFont::computeTextSize(const char* text)
+FontTextSize Font::computeTextSize(const char* text)
 {
 	static Utf32String str;
 
@@ -184,7 +182,7 @@ FontTextSize UiFont::computeTextSize(const char* text)
 	return computeTextSize(str.data(), str.size());
 }
 
-FontTextSize UiFont::computeTextSize(const GlyphCode* const text, u32 size)
+FontTextSize Font::computeTextSize(const GlyphCode* const text, u32 size)
 {
 	FontTextSize fsize;
 	u32 lastChr = 0;
@@ -209,7 +207,7 @@ FontTextSize UiFont::computeTextSize(const GlyphCode* const text, u32 size)
 			continue;
 		}
 
-		if (glyphImage && glyph)
+		if (glyph)
 		{
 			f32 top = glyph->bearingY;
 			f32 bottom = -(glyph->pixelHeight - glyph->bearingY);
@@ -240,11 +238,11 @@ FontTextSize UiFont::computeTextSize(const GlyphCode* const text, u32 size)
 	return fsize;
 }
 
-void UiFont::deleteGlyphs()
+void Font::deleteGlyphs()
 {
 	for (auto glyph : glyphs)
 	{
-		atlas->deleteImage((UiImage*)glyph.second->image);
+		atlas->deleteImage((Image*)glyph.second->image);
 		delete[] glyph.second->rgbaBuffer;
 		delete glyph.second;
 	}

@@ -26,23 +26,30 @@ void BinPackRectPackProvider::reset(HRectPacker packer, u32 atlasWidth, u32 atla
 	((BinPackProxy*)packer)->skylineBinPack.Init(atlasWidth, atlasHeight, true);
 }
 
-bool BinPackRectPackProvider::packRect(HRectPacker packer, u32 width, u32 height, hui::Rect& outPackedRect)
+bool BinPackRectPackProvider::packRects(HRectPacker packer, PackRect* rects, size_t rectCount)
 {
-	auto rc = ((BinPackProxy*)packer)->skylineBinPack.Insert(
-		width,
-		height,
-		SkylineBinPack::LevelChoiceHeuristic::LevelMinWasteFit);
+	auto binPacker = (BinPackProxy*)packer;
+	bool allPackedOk = true;
 
-	if (rc.width && rc.height)
+	for (size_t i = 0; i < rectCount; ++i)
 	{
-		outPackedRect.x = rc.x;
-		outPackedRect.y = rc.y;
-		outPackedRect.width = rc.width;
-		outPackedRect.height = rc.height;
-		return true;
+		auto rc = binPacker->skylineBinPack.Insert(
+			rects[i].rect.width,
+			rects[i].rect.height,
+			SkylineBinPack::LevelChoiceHeuristic::LevelMinWasteFit);
+		rects[i].rect.x = rc.x;
+		rects[i].rect.y = rc.y;
+		rects[i].rect.width = rc.width;
+		rects[i].rect.height = rc.height;
+		rects[i].packedOk = (rc.width && rc.height);
+
+		if (!rects[i].packedOk)
+		{
+			allPackedOk = false;
+		}
 	}
 
-	return false;
+	return allPackedOk;
 }
 
 }

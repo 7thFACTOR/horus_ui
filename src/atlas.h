@@ -9,7 +9,7 @@
 
 namespace hui
 {
-class UiAtlas;
+class Atlas;
 
 struct AtlasTexture
 {
@@ -18,12 +18,13 @@ struct AtlasTexture
 	Rgba32* textureImage = nullptr;
 	HRectPacker packer = 0;
 	bool dirty = false;
+	std::vector<PackRect> rects;
 };
 
-struct UiImage
+struct Image
 {
 	UiImageId id = 0;
-	UiAtlas* atlas = nullptr;
+	Atlas* atlas = nullptr;
 	AtlasTexture* atlasTexture = nullptr;
 	bool rotated = false;
 	Rect uvRect;
@@ -33,19 +34,19 @@ struct UiImage
 	bool bleedOut = false;
 };
 
-class UiAtlas
+class Atlas
 {
 public:
-	UiAtlas() {}
-	UiAtlas(u32 width, u32 height);
-	~UiAtlas();
+	Atlas() {}
+	Atlas(u32 width, u32 height);
+	~Atlas();
 
 	void create(u32 width, u32 height);
-	UiImage* getImageById(UiImageId id) const;
-	UiImage* addImage(const Rgba32* imageData, u32 width, u32 height, bool addBleedOut = false);
+	Image* getImageById(UiImageId id) const;
+	Image* addImage(const Rgba32* imageData, u32 width, u32 height, bool addBleedOut = false);
 	void updateImageData(UiImageId imgId, const Rgba32* imageData, u32 width, u32 height);
-	void deleteImage(UiImage* image);
-	UiImage* addWhiteImage(u32 width = 8);
+	void deleteImage(Image* image);
+	Image* addWhiteImage(u32 width = 8);
 	bool pack(
 		u32 spacing = 5,
 		const Color& bgColor = Color::black);
@@ -53,24 +54,11 @@ public:
 	void packWithLastUsedParams() { pack(lastUsedSpacing, lastUsedBgColor); }
 	void clearImages();
 
-	UiImage* whiteImage = nullptr;
+	Image* whiteImage = nullptr;
 	TextureArray* textureArray = nullptr;
 
 protected:
-	struct PackImageData
-	{
-		UiImageId id = 0;
-		UiAtlas* atlas = nullptr;
-		AtlasTexture* atlasTexture = nullptr;
-		Rgba32* imageData = nullptr;
-		u32 width = 0;
-		u32 height = 0;
-		Rect packedRect;
-		bool bleedOut = false;
-	};
-
-	void deletePackerImages();
-	UiImage* addImageInternal(UiImageId imgId, const Rgba32* imageData, u32 imageWidth, u32 imageHeight, bool addBleedOut);
+	Image* addImageInternal(UiImageId imgId, const Rgba32* imageData, u32 imageWidth, u32 imageHeight, bool addBleedOut);
 
 	u32 id = 0;
 	u32 lastImageId = 1;
@@ -78,10 +66,8 @@ protected:
 	u32 height = 0;
 	u32 lastUsedSpacing = 0;
 	Color lastUsedBgColor = Color::black;
-	bool useWasteMap = true;
 	std::vector<AtlasTexture*> atlasTextures;
-	std::unordered_map<UiImageId, UiImage*> images;
-	std::vector<PackImageData> pendingPackImages;
+	std::unordered_map<UiImageId, Image*> images;
 };
 
 }

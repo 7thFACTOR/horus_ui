@@ -40,20 +40,38 @@ void curveEditor(f32 height, u32 maxPoints, Point* points, u32& pointCount, cons
 	p[3].isLine = false;
 	p[3].leftTangent = { -10,20 };
 	p[3].rightTangent = { 10,20 };
-	drawSpline(p, 4);
+	drawSpline(p, 4, 100);
 	endCustomWidget();
 }
 
 int main(int argc, char** args)
 {
-	hui::SdlSettings settings;
+	///
+	/// Setup a Horus UI context, with given service providers
+	///
+	hui::ContextSettings settings;
 
-	settings.mainWindowTitle = "HorusUI Example - Custom Widgets";
-	settings.mainWindowRect = { 0, 0, 1024, 768 };
+	settings.providers.file = new hui::StdioFileProvider();
+	settings.providers.fileDialogs = new hui::NativeFileDialogsProvider();
+	settings.providers.font = new hui::FreetypeFontProvider();
+	settings.providers.gfx = new hui::OpenGLGraphicsProvider();
+	settings.providers.image = new hui::StbImageProvider();
+	settings.providers.input = new hui::Sdl2InputProvider();
+	settings.providers.rectPack = new hui::BinPackRectPackProvider();
+	settings.providers.utf = new hui::UtfCppProvider();
 
-	hui::setupSDL(settings);
+	auto ctx = hui::createContext(settings);
+	hui::setContext(ctx); // set as current context
 
-	auto theme = hui::loadThemeFromJson("../themes/default.theme");
+	hui::SdlSettings sdlSettings;
+
+	sdlSettings.mainWindowTitle = "HorusUI Example - Custom Widgets";
+	sdlSettings.mainWindowRect = { 0, 0, 1200, 1000 };
+	hui::setupSDL(sdlSettings);
+	HORUS_GFX->initialize(); // init the gfx objects, since we have now a graphics context set
+	hui::initializeRenderer(); // init UI renderer for the current context
+
+	auto theme = hui::loadThemeFromJson("../themes/default.theme.json");
 
 	hui::setTheme(theme);
 	auto largeFnt = hui::getThemeFont(theme, "title");

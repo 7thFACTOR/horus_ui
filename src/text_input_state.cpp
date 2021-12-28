@@ -478,7 +478,7 @@ i32 TextInputState::getCharIndexAtX(f32 xPos)
 
 	xPos += scrollOffset;
 
-	UiFont* font = (UiFont*)themeElement->normalState().font;
+	Font* font = (Font*)themeElement->normalState().font;
 
 	if (!font)
 	{
@@ -552,7 +552,7 @@ void TextInputState::computeScrollAmount()
 {
 	Utf32String tmpStr = Utf32String(text.begin(), text.begin() + caretPosition);
 	FontTextSize textSizeToCaret;
-	
+
 	if (!password)
 	{
 		textSizeToCaret = themeElement->normalState().font->computeTextSize(tmpStr.data(), tmpStr.size());
@@ -592,7 +592,7 @@ void TextInputState::formatValue(Utf32String& value)
 		while (iter != value.end())
 		{
 			if (!isdigit(*iter)
-				&& *iter != '.' && *iter != ',' 
+				&& *iter != '.' && *iter != ','
 				&& *iter != '-' && *iter != 'e'
 				&& *iter != 'E' && *iter != '+')
 			{

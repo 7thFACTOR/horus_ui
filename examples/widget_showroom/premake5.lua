@@ -20,6 +20,7 @@ project "widget_showroom"
     "../../backends/json*.*",
     "../../backends/utfcpp*.*",
     "../../backends/nativefiledialogs*.*",
+    "../../backends/stb_rectpack*.*",
     "*.cpp"
   }
 

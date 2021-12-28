@@ -40,6 +40,20 @@ struct FileDialogsProvider
 	virtual bool pickFolderDialog(const char* defaultPath, char* outPath, u32 maxOutPathSize) = 0;
 };
 
+struct LogProvider
+{
+	enum class LogType
+	{
+		Info,
+		Warn,
+		Error,
+		Debug
+	};
+
+	virtual ~LogProvider() {}
+	virtual void log(const char* msg, LogType logType) = 0;
+};
+
 /// The input provider class is used for input and windowing services
 struct InputProvider
 {
@@ -332,12 +346,19 @@ struct GraphicsProvider
 	virtual void draw(struct RenderBatch* batches, u32 count) = 0;
 };
 
+struct PackRect
+{
+	u32 id = 0; // used to identify the rect, because the rect pack might reorder them in the rect array
+	Rect rect;
+	bool packedOk = false;
+};
+
 struct RectPackProvider
 {
 	virtual HRectPacker createRectPacker() = 0;
 	virtual void deleteRectPacker(HRectPacker packer) = 0;
 	virtual void reset(HRectPacker packer, u32 atlasWidth, u32 atlasHeight) = 0;
-	virtual bool packRect(HRectPacker packer, u32 width, u32 height, Rect& outPackedRect) = 0;
+	virtual bool packRects(HRectPacker packer, PackRect* rects, size_t rectCount) = 0;
 };
 
 typedef void* HFontFace;

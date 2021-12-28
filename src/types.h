@@ -19,8 +19,8 @@ struct TextureArray;
 class UiTheme;
 class UnicodeTextCache;
 class FontCache;
-class UiFont;
-struct UiImage;
+class Font;
+struct Image;
 
 typedef u32 UiImageId;
 
@@ -28,11 +28,11 @@ struct UiThemeElement
 {
 	struct State
 	{
-		UiFont* font = nullptr;
+		Font* font = nullptr;
 		Color color = Color::white;
 		Color textColor = Color::white;
 		u32 border = 0;
-		UiImage* image = nullptr;
+		Image* image = nullptr;
 		f32 width = 0;
 		f32 height = 0;
 	};
@@ -62,7 +62,7 @@ struct UiThemeElement
 
 				return defaultValue;
 			}
-			
+
 			return iter->second;
 		}
 

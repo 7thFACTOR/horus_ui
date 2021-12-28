@@ -5,7 +5,7 @@ namespace hui
 {
 UiTheme::UiTheme(u32 atlasTextureSize)
 {
-	atlas = new UiAtlas(atlasTextureSize, atlasTextureSize);
+	atlas = new Atlas(atlasTextureSize, atlasTextureSize);
 	fontCache = new FontCache(atlas);
 	auto whiteImage = atlas->addWhiteImage(32);
 }
@@ -16,7 +16,7 @@ UiTheme::~UiTheme()
 	delete atlas;
 }
 
-UiImage* UiTheme::addImage(const Rgba32* pixels, u32 width, u32 height)
+Image* UiTheme::addImage(const Rgba32* pixels, u32 width, u32 height)
 {
 	if (!pixels || !width || !height)
 	{

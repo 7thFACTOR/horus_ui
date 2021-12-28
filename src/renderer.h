@@ -6,9 +6,9 @@
 
 namespace hui
 {
-class UiFont;
-struct UiImage;
-class UiAtlas;
+class Font;
+struct Image;
+class Atlas;
 struct FontTextSize;
 
 /// How an image is drawn, repeated or stretched across the rectangle
@@ -72,14 +72,14 @@ struct DrawCommand
 	struct CmdDrawQuad
 	{
 		Point corners[4];
-		UiImage* image = nullptr;
+		Image* image = nullptr;
 	};
 
 	struct CmdDrawTriangle
 	{
 		Point p1, p2, p3;
 		Point uv1, uv2, uv3;
-		UiImage* image = nullptr;
+		Image* image = nullptr;
 	};
 
 	struct CmdDrawLine
@@ -103,7 +103,7 @@ struct DrawCommand
 	struct CmdDrawImageBordered
 	{
 		Rect rect;
-		UiImage* image;
+		Image* image;
 		f32 border;
 		f32 scale;
 	};
@@ -143,9 +143,9 @@ struct DrawCommand
 	Rect clipRect;
 	bool clipToParent;
 	bool popClipRect = false;
-	UiAtlas* setAtlas;
+	Atlas* setAtlas;
 	Color setColor;
-	UiFont* setFont;
+	Font* setFont;
 	Color setTextColor;
 	TextStyle setTextStyle;
 	LineStyle setLineStyle;
@@ -182,26 +182,26 @@ public:
 	u32 getZOrder() const { return zOrder; }
 	void beginFrame();
 	void endFrame();
-	UiFont* getFont() const { return currentFont; }
+	Font* getFont() const { return currentFont; }
 	u32 getDrawCommandCount() const { return drawCommands.size(); }
 	void beginDrawCmdInsertion(u32 index) { drawCmdNextInsertIndex = index; }
 	void endDrawCmdInsertion() { drawCmdNextInsertIndex = ~0; }
 
 	// Commands
 	void cmdSetColor(const Color& color);
-	void cmdSetAtlas(UiAtlas* atlas);
-	void cmdSetFont(UiFont* font);
+	void cmdSetAtlas(Atlas* atlas);
+	void cmdSetFont(Font* font);
 	void cmdSetTextUnderline(bool underline);
 	void cmdSetTextBackfill(bool backfill);
 	void cmdSetTextBackfillColor(const Color& color);
 	void cmdSetLineStyle(const LineStyle& style);
 	void cmdSetFillStyle(const FillStyle& style);
-	void cmdDrawQuad(UiImage* image, const Point& p1, const Point& p2, const Point& p3, const Point& p4);
-	void cmdDrawImage(UiImage* image, const Point& position, f32 scale);
-	void cmdDrawImage(UiImage* image, const Rect& rect);
-	void cmdDrawImage(UiImage* image, const Rect& rect, const Rect& uvRect);
-	void cmdDrawImageBordered(UiImage* image, u32 border, const Rect& rect, f32 scale);
-	void cmdDrawImageScaledAligned(UiImage* image, const Rect& rect, HAlignType halign, VAlignType valign, f32 scale);
+	void cmdDrawQuad(Image* image, const Point& p1, const Point& p2, const Point& p3, const Point& p4);
+	void cmdDrawImage(Image* image, const Point& position, f32 scale);
+	void cmdDrawImage(Image* image, const Rect& rect);
+	void cmdDrawImage(Image* image, const Rect& rect, const Rect& uvRect);
+	void cmdDrawImageBordered(Image* image, u32 border, const Rect& rect, f32 scale);
+	void cmdDrawImageScaledAligned(Image* image, const Rect& rect, HAlignType halign, VAlignType valign, f32 scale);
 	void cmdDrawSolidRectangle(const Rect& rect);
 	void cmdDrawInterpolatedColors(const Rect& rect, const Color& topLeft, const Color& bottomLeft, const Color& topRight, const Color& bottomRight);
 	void cmdDrawSpectrumColors(const Rect& rect, DrawSpectrumBrightness brightness, DrawSpectrumDirection dir);
@@ -229,8 +229,8 @@ public:
 
 protected:
 	void drawAtlasRegion(bool rotatedUv, const Rect& rect, const Rect& atlasUvRect);
-	void drawTextGlyph(UiImage* image, const Point& pos);
-	void drawQuad(UiImage* image, const Point& p1, const Point& p2, const Point& p3, const Point& p4);
+	void drawTextGlyph(Image* image, const Point& pos);
+	void drawQuad(Image* image, const Point& p1, const Point& p2, const Point& p3, const Point& p4);
 	void drawQuad(const Rect& rect, const Rect& uvRect);
 	void drawQuadRot90(const Rect& rect, const Rect& uvRect);
 	void drawTextInternal(
@@ -246,10 +246,10 @@ protected:
 	void drawSpectrumColors(const Rect& rect, DrawSpectrumBrightness brightness, DrawSpectrumDirection dir);
 	void drawInterpolatedColorsTopBottom(const Rect& rect, const Rect& uvRect, const Color& top, const Color& bottom);
 	void drawInterpolatedColorsLeftRight(const Rect& rect, const Rect& uvRect, const Color& left, const Color& right);
-	void drawImageBordered(UiImage* image, u32 border, const Rect& rect, f32 scale);
+	void drawImageBordered(Image* image, u32 border, const Rect& rect, f32 scale);
 	void drawLine(const Point& a, const Point& b);
 	void drawPolyLine(const Point* points, u32 pointCount, bool closed);
-	void drawTriangle(const Point& p1, const Point& p2, const Point& p3, const Point& uv1, const Point& uv2, const Point& uv3, UiImage* image);
+	void drawTriangle(const Point& p1, const Point& p2, const Point& p3, const Point& uv1, const Point& uv2, const Point& uv3, Image* image);
 
 	bool clipRectNoRot(Rect& rect, Rect& uvRect);
 	bool clipRectRot(Rect& rect, Rect& uvRect);
@@ -270,8 +270,8 @@ protected:
 	VertexBuffer* vertexBuffer = nullptr;
 	RenderBatch* currentBatch = nullptr;
 	Rect currentClipRect;
-	UiFont* currentFont = nullptr;
-	UiAtlas* currentAtlas = nullptr;
+	Font* currentFont = nullptr;
+	Atlas* currentAtlas = nullptr;
 	Point windowSize;
 	u32 currentColor;
 	i32 zOrder = 0;

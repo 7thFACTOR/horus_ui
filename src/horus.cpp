@@ -76,7 +76,7 @@ const Color Color::sky(0.f, 0.682f, 0.937f, 1);
 
 HContext createContext(struct ContextSettings& settings)
 {
-	UiContext* context = new UiContext();
+	Context* context = new Context();
 
 	context->settings = settings;
 	context->providers = &settings.providers;
@@ -90,7 +90,7 @@ HContext createContext(struct ContextSettings& settings)
 
 void setContext(HContext context)
 {
-	ctx = (UiContext*)context;
+	ctx = (Context*)context;
 }
 
 HContext getContext()
@@ -115,7 +115,7 @@ void initializeRenderer()
 
 void clearBackground()
 {
-	auto windowElemState = ctx->theme->getElement(WidgetElementId::WindowBody).normalState();
+	const auto& windowElemState = ctx->theme->getElement(WidgetElementId::WindowBody).normalState();
 
 	ctx->renderer->clear(windowElemState.color);
 }
@@ -627,7 +627,6 @@ HImage loadImage(const char* filename)
 
 	if (imgData.bpp != 32)
 	{
-		printf("ERROR: Only 32bpp images allowed (%s)\n", filename);
 		return nullptr;
 	}
 
@@ -647,14 +646,14 @@ HImage createImage(Rgba32* pixels, u32 width, u32 height)
 
 Point getImageSize(HImage image)
 {
-	UiImage* img = (UiImage*)image;
+	Image* img = (Image*)image;
 
 	return { img->rect.width, img->rect.height };
 }
 
 void updateImagePixels(HImage image, Rgba32* pixels)
 {
-	UiImage* img = (UiImage*)image;
+	Image* img = (Image*)image;
 
 	//TODO: check if image is rotated
 	img->atlasTexture->textureArray->updateRectData(img->atlasTexture->textureIndex, img->rect, pixels);
@@ -674,7 +673,7 @@ ImageData loadImageData(const char* filename)
 
 void deleteImage(HImage image)
 {
-	UiImage* img = (UiImage*)image;
+	Image* img = (Image*)image;
 	img->atlas->deleteImage(img);
 }
 
@@ -689,24 +688,24 @@ void deleteImageData(ImageData& image)
 
 HAtlas createAtlas(u32 width, u32 height)
 {
-	return new UiAtlas(width, height);
+	return new Atlas(width, height);
 }
 
 void deleteAtlas(HAtlas atlas)
 {
-	delete (UiAtlas*)atlas;
+	delete (Atlas*)atlas;
 }
 
 HImage addAtlasImage(HAtlas atlas, const ImageData& img)
 {
-	UiAtlas* atlasPtr = (UiAtlas*)atlas;
+	Atlas* atlasPtr = (Atlas*)atlas;
 
 	return atlasPtr->addImage((const Rgba32*)img.pixels, img.width, img.height);
 }
 
 bool packAtlas(HAtlas atlas, u32 border)
 {
-	UiAtlas* atlasPtr = (UiAtlas*)atlas;
+	Atlas* atlasPtr = (Atlas*)atlas;
 
 	return atlasPtr->pack(border);
 }
@@ -780,11 +779,11 @@ void setThemeImage(HTheme theme, const char* imageName, HImage image)
 
 	if (iter != themePtr->images.end())
 	{
-		iter->second = (UiImage*)image;
+		iter->second = (Image*)image;
 		return;
 	}
 
-	themePtr->images[imageName] = (UiImage*)image;
+	themePtr->images[imageName] = (Image*)image;
 }
 
 void setWidgetStyle(WidgetType widgetType, const char* styleName)
@@ -964,10 +963,10 @@ void setThemeWidgetElement(
 	state.border = elementInfo.border;
 	state.color = elementInfo.color;
 	state.textColor = elementInfo.textColor;
-	state.font = (UiFont*)elementInfo.font;
+	state.font = (Font*)elementInfo.font;
 	state.width = elementInfo.width;
 	state.height = elementInfo.height;
-	state.image = (UiImage*)elementInfo.image;
+	state.image = (Image*)elementInfo.image;
 }
 
 void setThemeUserWidgetElement(
@@ -990,10 +989,10 @@ void setThemeUserWidgetElement(
 	state.border = elementInfo.border;
 	state.color = elementInfo.color;
 	state.textColor = elementInfo.textColor;
-	state.font = (UiFont*)elementInfo.font;
+	state.font = (Font*)elementInfo.font;
 	state.width = elementInfo.width;
 	state.height = elementInfo.height;
-	state.image = (UiImage*)elementInfo.image;
+	state.image = (Image*)elementInfo.image;
 }
 
 void setTheme(HTheme theme)
@@ -1124,7 +1123,7 @@ HFont createThemeFont(HTheme theme, const char* name, const char* fontFilename, 
 {
 	auto fnt = (HFont)((UiTheme*)theme)->fontCache->createFont(name, fontFilename, faceSize * ctx->globalScale, false);
 	//TODO: check first if there is already set
-	((UiTheme*)theme)->fonts[name] = (UiFont*)fnt;
+	((UiTheme*)theme)->fonts[name] = (Font*)fnt;
 
 	return fnt;
 }
@@ -1133,14 +1132,14 @@ void releaseThemeFont(HTheme theme, HFont font)
 {
 	for (auto fntPair : ((UiTheme*)theme)->fonts)
 	{
-		if (fntPair.second == (UiFont*)font)
+		if (fntPair.second == (Font*)font)
 		{
 			((UiTheme*)theme)->fonts.erase(fntPair.first);
 			break;
 		}
 	}
 
-	((UiTheme*)theme)->fontCache->releaseFont((UiFont*)font);
+	((UiTheme*)theme)->fontCache->releaseFont((Font*)font);
 }
 
 HFont getThemeFont(HTheme theme, const char* themeFontName)
@@ -1215,7 +1214,7 @@ void endContainer()
 
 void pushWidgetLoop(u32 loopMaxCount)
 {
-	UiContext::WidgetLoopInfo li;
+	Context::WidgetLoopInfo li;
 
 	li.previousId = ctx->currentWidgetId;
 	li.startId = ctx->widgetLoopStack.size() ? ctx->widgetLoopStack.back().startId + ctx->widgetLoopStack.back().maxCount : ctx->settings.widgetLoopStartId;

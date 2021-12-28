@@ -140,7 +140,7 @@ bool beginMenuInternal(const char* labelText, SelectableFlags stateFlags, bool c
 			pushSpacing(0);
 			beginPopup(
 				ctx->menuStack[ctx->menuDepth].size.x + menuBodyElem.normalState().border * 2.0f + ctx->menuFillerWidth + ctx->menuIconSpace,
-				(contextMenu ? PopupFlags::CustomPosition : PopupFlags::BelowLastWidget) 
+				(contextMenu ? PopupFlags::CustomPosition : PopupFlags::BelowLastWidget)
 				 | PopupFlags::IsMenu,
 				ctx->activeMenuBarItemWidgetPos, WidgetElementId::MenuBody);
 
@@ -284,7 +284,7 @@ bool beginContextMenu(ContextMenuFlags flags)
 	bool leftButton = has(flags, ContextMenuFlags::AllowLeftClickOpen) ? ctx->event.mouse.button == MouseButton::Left : false;
 
 	if (ctx->event.type == hui::InputEvent::Type::MouseDown
-		&& (ctx->event.mouse.button == MouseButton::Right || leftButton) 
+		&& (ctx->event.mouse.button == MouseButton::Right || leftButton)
 		&& ctx->widget.rect.contains(ctx->event.mouse.point)
 		&& !ctx->activeMenuBarItemWidgetId
 		&& !ctx->contextMenuClicked
@@ -414,7 +414,7 @@ bool menuItem(const char* labelText, const char* shortcut, HImage icon, Selectab
 	{
 		// draw icon
 		auto& rc = ctx->widget.rect;
-		UiImage* iconImg = (UiImage*)icon;
+		Image* iconImg = (Image*)icon;
 
 		auto rcIcon = Rect(
 			rc.x + (ctx->menuIconSpace - iconImg->rect.width) / 2.0f * ctx->globalScale,

@@ -143,16 +143,22 @@ bool FreetypeFontProvider::rasterizeGlyph(HFontFace font, GlyphCode glyphCode, F
 	FT_Bitmap bitmap = slot->bitmap;
 	u32 width = bitmap.width;
 	u32 height = bitmap.rows;
-	Rgba32* rgbaBuffer = new Rgba32[(size_t)width * height];
 
-	for (int j = 0; j < height; ++j)
+	Rgba32* rgbaBuffer = nullptr;
+
+	if (width && height)
 	{
-		for (int i = 0; i < width; ++i)
+		rgbaBuffer = new Rgba32[(size_t)width * height];
+
+		for (int j = 0; j < height; ++j)
 		{
-			u8 lum = bitmap.buffer[i + width * j];
-			u32 index = (i + j * width);
-			rgbaBuffer[index] = ~0;
-			*((u8*)&(rgbaBuffer[index]) + 3) = lum;
+			for (int i = 0; i < width; ++i)
+			{
+				u8 lum = bitmap.buffer[i + width * j];
+				u32 index = (i + j * width);
+				rgbaBuffer[index] = ~0;
+				*((u8*)&(rgbaBuffer[index]) + 3) = lum;
+			}
 		}
 	}
 
@@ -160,12 +166,12 @@ bool FreetypeFontProvider::rasterizeGlyph(HFontFace font, GlyphCode glyphCode, F
 	outGlyph.pixelHeight = height;
 	outGlyph.rgbaBuffer = rgbaBuffer;
 	outGlyph.code = glyphCode;
-	outGlyph.advanceX = ((FT_Face)font)->glyph->advance.x >> 6;
-	outGlyph.advanceY = ((FT_Face)font)->glyph->advance.y >> 6;
-	outGlyph.bearingX = ((FT_Face)font)->glyph->metrics.horiBearingX >> 6;
-	outGlyph.bearingY = ((FT_Face)font)->glyph->metrics.horiBearingY >> 6;
-	outGlyph.bitmapLeft = ((FT_Face)font)->glyph->bitmap_left;
-	outGlyph.bitmapTop = ((FT_Face)font)->glyph->bitmap_top;
+	outGlyph.advanceX = slot->advance.x >> 6;
+	outGlyph.advanceY = slot->advance.y >> 6;
+	outGlyph.bearingX = slot->metrics.horiBearingX >> 6;
+	outGlyph.bearingY = slot->metrics.horiBearingY >> 6;
+	outGlyph.bitmapLeft = slot->bitmap_left;
+	outGlyph.bitmapTop = slot->bitmap_top;
 
 	return true;
 }

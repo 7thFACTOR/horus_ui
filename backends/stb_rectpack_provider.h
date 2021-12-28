@@ -1,11 +1,9 @@
 #pragma once
-#include <horus.h>
 #include <horus_interfaces.h>
-#include "SkylineBinPack.h"
 
 namespace hui
 {
-struct BinPackRectPackProvider : RectPackProvider
+struct StbRectPackProvider : RectPackProvider
 {
 	HRectPacker createRectPacker() override;
 	void deleteRectPacker(HRectPacker packer) override;

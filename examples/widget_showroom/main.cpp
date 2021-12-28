@@ -12,6 +12,7 @@
 #include "stb_image_provider.h"
 #include "json_theme_provider.h"
 #include "binpack_rectpack_provider.h"
+#include "stb_rectpack_provider.h"
 #include "freetype_font_provider.h"
 #include "nativefiledialogs_provider.h"
 #include "stdio_file_provider.h"
@@ -1979,14 +1980,15 @@ int main(int argc, char** args)
 	///
 	hui::ContextSettings settings;
 
-	settings.providers.file = new StdioFileProvider();
-	settings.providers.fileDialogs = new NativeFileDialogsProvider();
-	settings.providers.font = new FreetypeFontProvider();
-	settings.providers.gfx = new OpenGLGraphicsProvider();
-	settings.providers.image = new StbImageProvider();
-	settings.providers.input = new Sdl2InputProvider();
-	settings.providers.rectPack = new BinPackRectPackProvider();
-	settings.providers.utf = new UtfCppProvider();
+	settings.providers.file = new hui::StdioFileProvider();
+	settings.providers.fileDialogs = new hui::NativeFileDialogsProvider();
+	settings.providers.font = new hui::FreetypeFontProvider();
+	settings.providers.gfx = new hui::OpenGLGraphicsProvider();
+	settings.providers.image = new hui::StbImageProvider();
+	settings.providers.input = new hui::Sdl2InputProvider();
+	settings.providers.rectPack = new hui::StbRectPackProvider();
+	//settings.providers.rectPack = new hui::BinPackRectPackProvider();
+	settings.providers.utf = new hui::UtfCppProvider();
 
 	auto ctx = hui::createContext(settings);
 	hui::setContext(ctx); // set as current context
@@ -1997,8 +1999,7 @@ int main(int argc, char** args)
 	hui::SdlSettings sdlSettings;
 
 	sdlSettings.mainWindowTitle = "HorusUI Example - Widget Showroom";
-	sdlSettings.mainWindowRect = { 0, 0, 800, 600 };
-	sdlSettings.antiAliasing = hui::AntiAliasing::None;
+	sdlSettings.mainWindowRect = { 0, 0, 1200, 1000 };
 	hui::setupSDL(sdlSettings); // setup SDL (will create an SDL context if none set in the sdlSettings
 	HORUS_GFX->initialize(); // init the gfx objects, since we have now a graphics context set
 	hui::initializeRenderer(); // init UI renderer for the current context

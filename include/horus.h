@@ -1534,6 +1534,7 @@ struct ServiceProviders
 	struct UtfProvider* utf = 0;
 	struct FontProvider* font = 0;
 	struct RectPackProvider* rectPack = 0;
+	struct LogProvider* log = 0;
 };
 
 /// Various HorusUI per-context global settings

@@ -315,7 +315,7 @@ WidgetStateType widgetStateFromText(const std::string& stateName)
 	return WidgetStateType::Unknown;
 }
 
-HTheme loadThemeFromJson(const char* filename)
+HTheme loadThemeFromJson(const char* filename, char* errorTextBuffer, size_t errorTextBufferSize)
 {
 	HTheme theme = hui::createTheme(hui::getContextSettings().defaultAtlasSize);
 
@@ -327,7 +327,11 @@ HTheme loadThemeFromJson(const char* filename)
 
 	if (!ok)
 	{
-		printf(reader.getFormatedErrorMessages().c_str());
+		if (errorTextBuffer)
+		{
+			strncpy(errorTextBuffer, reader.getFormatedErrorMessages().c_str(), )
+		}
+
 		deleteTheme(theme);
 		return 0;
 	}

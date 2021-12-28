@@ -75,7 +75,7 @@ void endInsertDrawCommands()
 
 void setFont(HFont font)
 {
-	ctx->renderer->cmdSetFont((UiFont*)font);
+	ctx->renderer->cmdSetFont((Font*)font);
 }
 
 void setColor(const Color& color)
@@ -123,19 +123,19 @@ void drawTextInBox(const char* text, const Rect& rect, HAlignType horizontalAlig
 
 void drawImage(HImage image, const Point& position, f32 scale)
 {
-	UiImage* img = (UiImage*)image;
+	Image* img = (Image*)image;
 	ctx->renderer->cmdDrawImage(img, position + ctx->renderer->viewportOffset, scale);
 }
 
 void drawStretchedImage(HImage image, const Rect& rect)
 {
-	UiImage* img = (UiImage*)image;
+	Image* img = (Image*)image;
 	ctx->renderer->cmdDrawImage(img, Rect(rect.x + ctx->renderer->viewportOffset.x, rect.y + ctx->renderer->viewportOffset.y, rect.width, rect.height));
 }
 
 void drawBorderedImage(HImage image, u32 border, const Rect& rect)
 {
-	UiImage* img = (UiImage*)image;
+	Image* img = (Image*)image;
 
 	ctx->renderer->cmdDrawImageBordered(img, border, Rect(rect.x + ctx->renderer->viewportOffset.x, rect.y + ctx->renderer->viewportOffset.y, rect.width, rect.height), ctx->globalScale);
 }
@@ -159,7 +159,7 @@ void drawLine(const Point& a, const Point& b)
 void drawPolyLine(const Point* points, u32 pointCount, bool closed)
 {
 	std::vector<Point> pts;
-	
+
 	pts.resize(pointCount);
 
 	for (u32 i = 0; i < pointCount; i++)
@@ -259,7 +259,7 @@ f32 computeSplineLength(const Point& start, const Point& start_tangent,
 	Point const c0 = start_tangent;
 	Point const c1 = (end - start) * 6.0f - start_tangent * 4.0f - end_tangent * 2.0f;
 	Point const c2 = (start - end) * 6.0f + (start_tangent + end_tangent) * 3.0f;
-	
+
 	auto const evaluate_derivative = [c0, c1, c2](float t) -> Point
 	{
 		return c0 + (c1 + c2 * t) * t;
@@ -279,9 +279,9 @@ f32 computeSplineLength(const Point& start, const Point& start_tangent,
 		{ -0.90617985f, 0.23692688f },
 		{ 0.90617985f, 0.23692688f }
 	};
-	
+
 	float length = 0.f;
-	
+
 	for (auto coefficient : gauss_lengendre_coefficients)
 	{
 		float const t = 0.5f * (1.f + coefficient.abscissa);
@@ -299,7 +299,7 @@ void drawSpline(SplineControlPoint* points, u32 count, f32 segmentSize)
 	{
 		f32 len = computeSplineLength(points[i].center, points[i].rightTangent, points[i + 1].center, points[i + 1].leftTangent);
 		f32 step = 1.0f / (len / segmentSize);
-
+		step = fmaxf(0.001f, step);
 		for (f32 s = 0; s < 1.0f; s += step)
 		{
 			pts.push_back(

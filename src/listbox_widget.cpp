@@ -39,7 +39,7 @@ void listItem(const char* labelText, SelectableFlags stateFlags, HImage icon)
 bool selectableInternal(const char* labelText, HFont font, SelectableFlags stateFlags)
 {
 	auto bodyElem = ctx->theme->getElement(WidgetElementId::SelectableBody);
-	UiFont* fnt = font ? (UiFont*)font : bodyElem.normalState().font;
+	Font* fnt = font ? (Font*)font : bodyElem.normalState().font;
 
 	addWidgetItem(fmaxf(
 		bodyElem.normalState().height,

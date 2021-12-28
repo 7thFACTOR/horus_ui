@@ -3,7 +3,7 @@
 
 namespace hui
 {
-FontCache::FontCache(UiAtlas* newAtlas)
+FontCache::FontCache(Atlas* newAtlas)
 {
 	atlas = newAtlas;
 }
@@ -13,7 +13,7 @@ FontCache::~FontCache()
 	deleteFonts();
 }
 
-UiFont* FontCache::createFont(const std::string& name, const std::string& filename, u32 size, bool packAtlasNow)
+Font* FontCache::createFont(const std::string& name, const std::string& filename, u32 size, bool packAtlasNow)
 {
 	for (auto fnt : cachedFonts)
 	{
@@ -44,7 +44,7 @@ UiFont* FontCache::createFont(const std::string& name, const std::string& filena
 	return &newFont->font;
 }
 
-void FontCache::releaseFont(UiFont* font)
+void FontCache::releaseFont(Font* font)
 {
 	auto iter = cachedFonts.find(font);
 

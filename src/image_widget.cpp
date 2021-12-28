@@ -8,7 +8,7 @@ namespace hui
 {
 bool image(HImage img, f32 height, HAlignType horizontalAlign, VAlignType verticalAlign, ImageFitType fit)
 {
-	UiImage* imgPtr = (UiImage*)img;
+	Image* imgPtr = (Image*)img;
 	bool autoHeight = false;
 
 	if (height <= 0)

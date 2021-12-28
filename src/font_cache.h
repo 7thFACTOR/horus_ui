@@ -7,25 +7,25 @@ namespace hui
 class FontCache
 {
 public:
-	FontCache(UiAtlas* newAtlas);
+	FontCache(Atlas* newAtlas);
 	~FontCache();
-	UiFont* createFont(const std::string& name, const std::string& filename, u32 size, bool packAtlasNow);
-	void releaseFont(UiFont* font);
+	Font* createFont(const std::string& name, const std::string& filename, u32 size, bool packAtlasNow);
+	void releaseFont(Font* font);
 	void deleteFonts();
 	void rescaleFonts(f32 scale);
 
 protected:
 	struct CachedFontInfo
 	{
-		UiFont font;
+		Font font;
 		std::string name;
 		std::string filename;
 		u32 size;
 		u32 usageCount = 0;
 	};
 
-	UiAtlas* atlas = nullptr;
-	std::unordered_map<UiFont*, CachedFontInfo*> cachedFonts;
+	Atlas* atlas = nullptr;
+	std::unordered_map<Font*, CachedFontInfo*> cachedFonts;
 };
 
 }

@@ -7,17 +7,17 @@
 
 namespace hui
 {
-class UiFont
+class Font
 {
 public:
-	UiFont() {}
-	UiFont(const std::string& fontFilename, u32 fontFaceSize, UiAtlas* themeAtlas);
-	~UiFont();
+	Font() {}
+	Font(const std::string& fontFilename, u32 fontFaceSize, Atlas* themeAtlas);
+	~Font();
 
-	void load(const std::string& fontFilename, u32 fontFaceSize, UiAtlas* themeAtlas);
+	void load(const std::string& fontFilename, u32 fontFaceSize, Atlas* themeAtlas);
 	void resetFaceSize(u32 fontFaceSize);
 	FontGlyph* getGlyph(GlyphCode glyphCode);
-	UiImage* getGlyphImage(GlyphCode glyphCode);
+	Image* getGlyphImage(GlyphCode glyphCode);
 	f32 getKerning(GlyphCode leftGlyphCode, GlyphCode rightGlyphCode);
 	const FontMetrics& getMetrics() const { return fontInfo.metrics; }
 	void precacheGlyphs(const Utf32String& glyphCodes);
@@ -28,10 +28,10 @@ public:
 	FontTextSize computeTextSize(const char* text);
 	void deleteGlyphs();
 
-	UiAtlas* atlas = nullptr;
+	Atlas* atlas = nullptr;
 
 protected:
-	FontGlyph* cacheGlyph(GlyphCode glyphCode, bool packAtlasNow = false);
+	FontGlyph* cacheGlyph(GlyphCode glyphCode);
 
 	FontInfo fontInfo;
 	bool resizeFaceMode = false;

@@ -8,7 +8,7 @@
 
 namespace hui
 {
-struct UiContext
+struct Context
 {
 	struct TextLine
 	{
@@ -158,7 +158,7 @@ struct UiContext
 
 	std::vector<TextLine> textLines;
 
-	UiContext()
+	Context()
 	{
 		popupStack.resize(maxPopupIndex);
 		menuStack.resize(maxMenuDepth);
@@ -186,6 +186,6 @@ struct UiContext
 };
 
 /// the current context, used internally
-extern UiContext* ctx;
+extern Context* ctx;
 
 }

@@ -72,7 +72,7 @@ void tab(const char* labelText, HImage icon)
 	auto tabElemState = &tabActiveElem.normalState();
 	Utf32String* uniStr = ctx->textCache->getText(labelText);
 	FontTextSize fsize = tabElemState->font->computeTextSize(*uniStr);
-	UiImage* ico = (UiImage*)icon;
+	Image* ico = (Image*)icon;
 
 	f32 width = 0;
 	f32 iconWidth = 0;

@@ -10,28 +10,25 @@ namespace hui
 {
 static u32 atlasId = 0;
 
-UiAtlas::UiAtlas(u32 textureWidth, u32 textureHeight)
+Atlas::Atlas(u32 textureWidth, u32 textureHeight)
 {
 	id = atlasId++;
 	create(textureWidth, textureHeight);
 }
 
-UiAtlas::~UiAtlas()
+Atlas::~Atlas()
 {
 	for (auto& at : atlasTextures)
 	{
 		delete[] at->textureImage;
 	}
 
-	for (auto& ppi : pendingPackImages)
-	{
-		delete[] ppi.imageData;
-	}
-
 	delete textureArray;
+
+	clearImages();
 }
 
-void UiAtlas::create(u32 textureWidth, u32 textureHeight)
+void Atlas::create(u32 textureWidth, u32 textureHeight)
 {
 	width = textureWidth;
 	height = textureHeight;
@@ -39,7 +36,7 @@ void UiAtlas::create(u32 textureWidth, u32 textureHeight)
 	textureArray->resize(1, textureWidth, textureHeight);
 }
 
-UiImage* UiAtlas::getImageById(UiImageId id) const
+Image* Atlas::getImageById(UiImageId id) const
 {
 	auto iter = images.find(id);
 
@@ -51,41 +48,39 @@ UiImage* UiAtlas::getImageById(UiImageId id) const
 	return iter->second;
 }
 
-UiImage* UiAtlas::addImage(const Rgba32* imageData, u32 width, u32 height, bool addBleedOut)
+Image* Atlas::addImage(const Rgba32* imageData, u32 width, u32 height, bool addBleedOut)
 {
 	return addImageInternal(lastImageId++, imageData, width, height, addBleedOut);
 }
 
-UiImage* UiAtlas::addImageInternal(UiImageId imgId, const Rgba32* imageData, u32 imageWidth, u32 imageHeight, bool addBleedOut)
+Image* Atlas::addImageInternal(UiImageId imgId, const Rgba32* imageData, u32 imageWidth, u32 imageHeight, bool addBleedOut)
 {
-	PackImageData psd;
+	//assert(imageWidth && imageHeight);
+
+	if (!imageWidth || !imageHeight) return nullptr;
+
+	Image* image = new Image();
 
 	u32 imageSize = imageWidth * imageHeight;
-	psd.imageData = new Rgba32[imageSize];
-	memcpy(psd.imageData, imageData, (size_t)imageSize * 4);
-	psd.id = imgId;
-	psd.width = imageWidth;
-	psd.height = imageHeight;
-	psd.packedRect.set(0, 0, 0, 0);
-	psd.atlas = this;
-	psd.bleedOut = addBleedOut;
-	pendingPackImages.push_back(psd);
-
-	UiImage* image = new UiImage();
-
-	image->id = psd.id;
+	image->id = imgId;
 	image->atlas = this;
-	images.insert(std::make_pair(psd.id, image));
+	image->imageData = new Rgba32[imageSize];
+	memcpy(image->imageData, imageData, (size_t)imageSize * 4);
+	image->width = imageWidth;
+	image->height = imageHeight;
+	image->rect.set(0, 0, 0, 0);
+	image->bleedOut = addBleedOut;
+	images.insert(std::make_pair(imgId, image));
 
 	return image;
 }
 
-void UiAtlas::updateImageData(UiImageId imgId, const Rgba32* imageData, u32 width, u32 height)
+void Atlas::updateImageData(UiImageId imgId, const Rgba32* imageData, u32 width, u32 height)
 {
 	//TODO
 }
 
-void UiAtlas::deleteImage(UiImage* image)
+void Atlas::deleteImage(Image* image)
 {
 	auto iter = images.find(image->id);
 
@@ -99,7 +94,7 @@ void UiAtlas::deleteImage(UiImage* image)
 	images.erase(iter);
 }
 
-UiImage* UiAtlas::addWhiteImage(u32 width)
+Image* Atlas::addWhiteImage(u32 width)
 {
 	u32 whiteImageSize = width * width;
 	Rgba32* whiteImageData = new Rgba32[whiteImageSize];
@@ -111,11 +106,11 @@ UiImage* UiAtlas::addWhiteImage(u32 width)
 	return whiteImage;
 }
 
-bool UiAtlas::pack(
+bool Atlas::pack(
 	u32 spacing,
 	const Color& bgColor)
 {
-	if (pendingPackImages.empty())
+	if (images.empty())
 		return true;
 
 	lastUsedBgColor = bgColor;
@@ -125,127 +120,138 @@ bool UiAtlas::pack(
 	Rect packedRect;
 	bool rotated = false;
 	bool allTexturesDirty = false;
-	std::vector<PackImageData> acceptedImages;
+	std::vector<PackRect> packRects;
+	const u32 maxAtlasPageCount = 64;
+	u32 atlasPageCount = 0;
 
-	while (!pendingPackImages.empty())
+	for (auto& imgPair : images)
 	{
-		// search some place to put the images
-		for (auto& atlasTex : atlasTextures)
-		{
-			//HORUS_RECTPACK->reset(width, height);
-			auto iter = pendingPackImages.begin();
+		imgPair.second->rect.set(0, 0, 0, 0);
+		imgPair.second->atlasTexture = nullptr;
 
-			while (iter != pendingPackImages.end())
-			{
-				auto& packImage = *iter;
+		if (imgPair.second->width == 0 || imgPair.second->height == 0)
+			continue;
 
-				//TODO: if image is bigger than the atlas size, then resize or just skip
-				if (packImage.width >= width || packImage.height >= height)
-				{
-					delete[] packImage.imageData;
-					iter = pendingPackImages.erase(iter);
-					continue;
-				}
-
-				HORUS_RECTPACK->packRect(atlasTex->packer, packImage.width + border2, packImage.height + border2, packedRect);
-
-				if (packedRect.height <= 0)
-				{
-					++iter;
-					continue;
-				}
-
-				packImage.packedRect.x = packedRect.x;
-				packImage.packedRect.y = packedRect.y;
-				packImage.packedRect.width = packedRect.width;
-				packImage.packedRect.height = packedRect.height;
-				packImage.atlas = this;
-				packImage.atlasTexture = atlasTex;
-				acceptedImages.push_back(packImage);
-				iter = pendingPackImages.erase(iter);
-			}
-		}
-
-		if (!pendingPackImages.empty())
-		{
-			AtlasTexture* newTexture = new AtlasTexture();
-
-			newTexture->textureImage = new Rgba32[(size_t)width * height];
-			memset(newTexture->textureImage, 0, (size_t)width * height * sizeof(Rgba32));
-			newTexture->textureIndex = atlasTextures.size();
-			newTexture->textureArray = textureArray;
-			newTexture->packer = HORUS_RECTPACK->createRectPacker();
-			HORUS_RECTPACK->reset(newTexture->packer, width, height);
-			atlasTextures.push_back(newTexture);
-			// resize the texture array
-			textureArray->resize(atlasTextures.size(), width, height);
-			allTexturesDirty = true;
-		}
+		PackRect prc;
+		prc.id = imgPair.second->id;
+		prc.rect.width = imgPair.second->width + border2;
+		prc.rect.height = imgPair.second->height + border2;
+		packRects.push_back(prc);
 	}
 
-	// we have now the rects inside the atlas, copy to atlas textures
-	for (auto& packImage : acceptedImages)
+	auto packIntoAtlasTex = [&packRects, this](AtlasTexture* atlasTex)
 	{
-		auto image = images[packImage.id];
+		atlasTex->rects.clear();
+		atlasTex->dirty = true;
+		memset(atlasTex->textureImage, 0, (size_t)width * height * sizeof(Rgba32));
+		HORUS_RECTPACK->reset(atlasTex->packer, width, height);
+		auto ret = HORUS_RECTPACK->packRects(atlasTex->packer, packRects.data(), packRects.size());
+		auto iter = packRects.begin();
 
-		assert(image);
-		// take out the border from final image rect
-		packImage.packedRect.x += spacing;
-		packImage.packedRect.y += spacing;
-		packImage.packedRect.width -= border2;
-		packImage.packedRect.height -= border2;
-
-		// if bleedOut, then limit/shrink the rect so we sample from within the image
-		if (packImage.bleedOut)
+		while (iter != packRects.end())
 		{
-			const int bleedOutSize = 3;
-			packImage.packedRect.x += bleedOutSize;
-			packImage.packedRect.y += bleedOutSize;
-			packImage.packedRect.width -= bleedOutSize * 2;
-			packImage.packedRect.height -= bleedOutSize * 2;
+			if (iter->packedOk)
+			{
+				atlasTex->rects.push_back(*iter);
+				images[iter->id]->atlasTexture = atlasTex;
+				images[iter->id]->rect = iter->rect;
+				iter = packRects.erase(iter);
+				continue;
+			}
+
+			++iter;
 		}
 
-		// init image
-		// pass the ownership of the data ptr
-		image->bleedOut = packImage.bleedOut;
-		image->imageData = packImage.imageData;
-		image->width = packImage.width;
-		image->height = packImage.height;
-		image->atlasTexture = packImage.atlasTexture;
-		assert(image->atlasTexture);
-		image->rect = { (f32)packImage.packedRect.x, (f32)packImage.packedRect.y, (f32)packImage.width, (f32)packImage.height };
-		image->rotated = packImage.width != packImage.packedRect.width;
+		return ret;
+	};
+
+	for (auto& atlasTex : atlasTextures)
+	{
+		if (packIntoAtlasTex(atlasTex))
+			break;
+	}
+
+	bool packedAllRects = false;
+
+	while (!packedAllRects && !packRects.empty() && atlasTextures.size() <= maxAtlasPageCount)
+	{
+		AtlasTexture* newTexture = new AtlasTexture();
+
+		newTexture->textureImage = new Rgba32[(size_t)width * height];
+		memset(newTexture->textureImage, 0, (size_t)width * height * sizeof(Rgba32));
+		newTexture->textureIndex = atlasTextures.size();
+		newTexture->textureArray = textureArray;
+		newTexture->dirty = true;
+		newTexture->packer = HORUS_RECTPACK->createRectPacker();
+		atlasTextures.push_back(newTexture);
+		// resize the texture array
+		textureArray->resize(atlasTextures.size(), width, height);
+		packedAllRects = packIntoAtlasTex(newTexture);
+	}
+
+	assert(packRects.empty());
+
+	// we have now the rects inside the atlas, copy to atlas textures
+	for (auto& imgPair : images)
+	{
+		auto image = imgPair.second;
+		// bring back the original rect
+		image->rect.x += spacing;
+		image->rect.y += spacing;
+		image->rect.width -= border2;
+		image->rect.height -= border2;
+
+		// if bleedOut, then limit/shrink the rect so we sample from within the image
+		if (image->bleedOut)
+		{
+			const int bleedOutSize = 3;
+			image->rect.x += bleedOutSize;
+			image->rect.y += bleedOutSize;
+			image->rect.width -= bleedOutSize * 2;
+			image->rect.height -= bleedOutSize * 2;
+		}
+
+		// if packed width != from image width, it was rotated CW
+		image->rotated = image->rect.width != image->width;
+
 		image->uvRect.set(
-			(f32)packImage.packedRect.x / (f32)width,
-			(f32)packImage.packedRect.y / (f32)height,
-			(f32)packImage.packedRect.width / (f32)width,
-			(f32)packImage.packedRect.height / (f32)height);
+			(f32)image->rect.x / (f32)width,
+			(f32)image->rect.y / (f32)height,
+			(f32)image->rect.width / (f32)width,
+			(f32)image->rect.height / (f32)height);
+
+		if (image->rotated)
+		{
+			// we prepare the final rect of the image, swap the dimensions
+			image->rect.width = image->width;
+			image->rect.height = image->height;
+		}
 
 		// copy image to the atlas image buffer
 		if (image->rotated)
 		{
 			// rotation is clockwise
-			for (u32 y = 0; y < packImage.height; y++)
+			for (u32 y = 0; y < image->height; y++)
 			{
-				for (u32 x = 0; x < packImage.width; x++)
+				for (u32 x = 0; x < image->width; x++)
 				{
 					u32 destIndex =
-						packImage.packedRect.x + y + (packImage.packedRect.y + x) * width;
-					u32 srcIndex = y * packImage.width + (packImage.width - 1) - x;
-					image->atlasTexture->textureImage[destIndex] = ((Rgba32*)packImage.imageData)[srcIndex];
+						image->rect.x + y + (image->rect.y + x) * width;
+					u32 srcIndex = y * image->width + (image->width - 1) - x;
+					image->atlasTexture->textureImage[destIndex] = ((Rgba32*)image->imageData)[srcIndex];
 				}
 			}
 		}
 		else
 		{
-			for (u32 y = 0; y < packImage.height; y++)
+			for (u32 y = 0; y < image->height; y++)
 			{
-				for (u32 x = 0; x < packImage.width; x++)
+				for (u32 x = 0; x < image->width; x++)
 				{
 					u32 destIndex =
-						packImage.packedRect.x + x + (packImage.packedRect.y + y) * width;
-					u32 srcIndex = x + y * packImage.width;
-					image->atlasTexture->textureImage[destIndex] = ((Rgba32*)packImage.imageData)[srcIndex];
+						image->rect.x + x + (image->rect.y + y) * width;
+					u32 srcIndex = x + y * image->width;
+					image->atlasTexture->textureImage[destIndex] = ((Rgba32*)image->imageData)[srcIndex];
 				}
 			}
 		}
@@ -263,63 +269,23 @@ bool UiAtlas::pack(
 		}
 	}
 
-	assert(pendingPackImages.empty());
-
-	return pendingPackImages.empty();
+	return true;
 }
 
-void UiAtlas::repackImages()
+void Atlas::repackImages()
 {
-	deletePackerImages();
-
-	for (auto& img : images)
-	{
-		PackImageData packImg;
-
-		packImg.id = img.first;
-
-		// pass over the data ptr, it will be passed again to the image
-		if (img.second->imageData)
-			packImg.imageData = img.second->imageData;
-
-		packImg.width = img.second->width;
-		packImg.height = img.second->height;
-		packImg.packedRect.set(0, 0, 0, 0);
-		packImg.atlas = this;
-		packImg.bleedOut = img.second->bleedOut;
-		pendingPackImages.push_back(packImg);
-	}
-
 	packWithLastUsedParams();
 }
 
-void UiAtlas::deletePackerImages()
+void Atlas::clearImages()
 {
-	// initialize the atlas textures
-	for (auto& atlasTex : atlasTextures)
-	{
-		// clear texture
-		memset(atlasTex->textureImage, lastUsedBgColor.getRgba(), (size_t)width * height * sizeof(Rgba32));
-		HORUS_RECTPACK->reset(atlasTex->packer, width, height);
-	}
-}
-
-void UiAtlas::clearImages()
-{
-	deletePackerImages();
-
 	for (auto image : images)
 	{
+		delete[] image.second->imageData;
 		delete image.second;
 	}
 
-	for (auto& image : pendingPackImages)
-	{
-		delete[] image.imageData;
-	}
-
 	images.clear();
-	pendingPackImages.clear();
 }
 
 }
