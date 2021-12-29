@@ -157,6 +157,10 @@ typedef void* HGraphicsApiTexture;
 typedef void* HGraphicsApiRenderTarget;
 typedef void* HGraphicsApiVertexBuffer;
 typedef void* HContext;
+typedef void* HFile;
+typedef void* HRectPacker;
+typedef void* HFontFace;
+
 typedef u32 Rgba32;
 typedef u32 TabIndex;
 typedef u32 ViewId;
@@ -1460,8 +1464,8 @@ struct ViewHandler
 	/// \param window the window where rendering did happen
 	virtual void onAfterFrameRender(HWindow wnd) {}
 	//TODO: abstract file save interface
-	virtual void onViewPaneTabSave(HViewPaneTab tab, u64 dataId, FILE* file) {}
-	virtual void onViewPaneTabLoad(HViewPaneTab tab, u64 dataId, FILE* file) {}
+	virtual void onViewPaneTabSave(HViewPaneTab tab, u64 dataId, HFile file) {}
+	virtual void onViewPaneTabLoad(HViewPaneTab tab, u64 dataId, HFile file) {}
 };
 
 /// Line drawing style

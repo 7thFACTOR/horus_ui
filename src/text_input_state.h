@@ -33,7 +33,7 @@ struct TextInputState
 	void computeScrollAmount();
 	void formatValue(Utf32String& value);
 
-	struct UiThemeElement* themeElement;
+	struct ThemeElement* themeElement;
 	Rect rect;
 	Rect clipRect;
 	Utf32String text;

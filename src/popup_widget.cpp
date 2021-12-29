@@ -336,7 +336,7 @@ MessageBoxButtons messageBox(
 	u32 width,
 	HImage customIcon)
 {
-	UiThemeElement* iconElem = nullptr;
+	ThemeElement* iconElem = nullptr;
 
 	switch (icon)
 	{

@@ -239,7 +239,7 @@ bool button(const char* labelText)
 	return ctx->widget.clicked;
 }
 
-bool iconButtonInternal(HImage icon, HImage disabledIcon, f32 customHeight, bool down, UiThemeElement* btnBodyElem, bool focusable)
+bool iconButtonInternal(HImage icon, HImage disabledIcon, f32 customHeight, bool down, ThemeElement* btnBodyElem, bool focusable)
 {
 	auto btnBodyElemState = &btnBodyElem->normalState();
 	Image* iconImg = (Image*)icon;

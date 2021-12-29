@@ -18,12 +18,13 @@ struct AtlasTexture
 	Rgba32* textureImage = nullptr;
 	HRectPacker packer = 0;
 	bool dirty = false;
+	bool filledUp = false;
 	std::vector<PackRect> rects;
 };
 
 struct Image
 {
-	UiImageId id = 0;
+	ImageId id = 0;
 	Atlas* atlas = nullptr;
 	AtlasTexture* atlasTexture = nullptr;
 	bool rotated = false;
@@ -42,13 +43,13 @@ public:
 	~Atlas();
 
 	void create(u32 width, u32 height);
-	Image* getImageById(UiImageId id) const;
+	Image* getImageById(ImageId id) const;
 	Image* addImage(const Rgba32* imageData, u32 width, u32 height, bool addBleedOut = false);
-	void updateImageData(UiImageId imgId, const Rgba32* imageData, u32 width, u32 height);
+	void updateImageData(ImageId imgId, const Rgba32* imageData, u32 width, u32 height);
 	void deleteImage(Image* image);
 	Image* addWhiteImage(u32 width = 8);
 	bool pack(
-		u32 spacing = 5,
+		u32 spacing = 2,
 		const Color& bgColor = Color::black);
 	void repackImages();
 	void packWithLastUsedParams() { pack(lastUsedSpacing, lastUsedBgColor); }
@@ -58,7 +59,7 @@ public:
 	TextureArray* textureArray = nullptr;
 
 protected:
-	Image* addImageInternal(UiImageId imgId, const Rgba32* imageData, u32 imageWidth, u32 imageHeight, bool addBleedOut);
+	Image* addImageInternal(ImageId imgId, const Rgba32* imageData, u32 imageWidth, u32 imageHeight, bool addBleedOut);
 
 	u32 id = 0;
 	u32 lastImageId = 1;
@@ -67,7 +68,8 @@ protected:
 	u32 lastUsedSpacing = 0;
 	Color lastUsedBgColor = Color::black;
 	std::vector<AtlasTexture*> atlasTextures;
-	std::unordered_map<UiImageId, Image*> images;
+	std::unordered_map<ImageId, Image*> images;
+	std::vector<Image*> nonPackedImages;
 };
 
 }

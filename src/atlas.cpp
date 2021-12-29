@@ -36,7 +36,7 @@ void Atlas::create(u32 textureWidth, u32 textureHeight)
 	textureArray->resize(1, textureWidth, textureHeight);
 }
 
-Image* Atlas::getImageById(UiImageId id) const
+Image* Atlas::getImageById(ImageId id) const
 {
 	auto iter = images.find(id);
 
@@ -53,10 +53,8 @@ Image* Atlas::addImage(const Rgba32* imageData, u32 width, u32 height, bool addB
 	return addImageInternal(lastImageId++, imageData, width, height, addBleedOut);
 }
 
-Image* Atlas::addImageInternal(UiImageId imgId, const Rgba32* imageData, u32 imageWidth, u32 imageHeight, bool addBleedOut)
+Image* Atlas::addImageInternal(ImageId imgId, const Rgba32* imageData, u32 imageWidth, u32 imageHeight, bool addBleedOut)
 {
-	//assert(imageWidth && imageHeight);
-
 	if (!imageWidth || !imageHeight) return nullptr;
 
 	Image* image = new Image();
@@ -71,11 +69,12 @@ Image* Atlas::addImageInternal(UiImageId imgId, const Rgba32* imageData, u32 ima
 	image->rect.set(0, 0, 0, 0);
 	image->bleedOut = addBleedOut;
 	images.insert(std::make_pair(imgId, image));
+	nonPackedImages.push_back(image);
 
 	return image;
 }
 
-void Atlas::updateImageData(UiImageId imgId, const Rgba32* imageData, u32 width, u32 height)
+void Atlas::updateImageData(ImageId imgId, const Rgba32* imageData, u32 width, u32 height)
 {
 	//TODO
 }
@@ -123,28 +122,34 @@ bool Atlas::pack(
 	std::vector<PackRect> packRects;
 	const u32 maxAtlasPageCount = 64;
 	u32 atlasPageCount = 0;
+	std::vector<Image*> packedImages;
 
-	for (auto& imgPair : images)
+	for (auto img : nonPackedImages)
 	{
-		imgPair.second->rect.set(0, 0, 0, 0);
-		imgPair.second->atlasTexture = nullptr;
+		img->rect.set(0, 0, 0, 0);
+		img->atlasTexture = nullptr;
 
-		if (imgPair.second->width == 0 || imgPair.second->height == 0)
+		if (img->width == 0 || img->height == 0)
 			continue;
 
 		PackRect prc;
-		prc.id = imgPair.second->id;
-		prc.rect.width = imgPair.second->width + border2;
-		prc.rect.height = imgPair.second->height + border2;
+		prc.id = img->id;
+		prc.rect.width = img->width + border2;
+		prc.rect.height = img->height + border2;
 		packRects.push_back(prc);
 	}
 
-	auto packIntoAtlasTex = [&packRects, this](AtlasTexture* atlasTex)
+	auto packIntoAtlasTex = [&packRects, &packedImages, border2, this](AtlasTexture* atlasTex)
 	{
-		atlasTex->rects.clear();
-		atlasTex->dirty = true;
-		memset(atlasTex->textureImage, 0, (size_t)width * height * sizeof(Rgba32));
-		HORUS_RECTPACK->reset(atlasTex->packer, width, height);
+		packRects.clear();
+		for (auto img : nonPackedImages)
+		{
+			PackRect rc;
+			rc.id = img->id;
+			rc.rect = { 0.f, 0.f, (f32)img->width + border2, (f32)img->height + border2 };
+			packRects.push_back(rc);
+		}
+
 		auto ret = HORUS_RECTPACK->packRects(atlasTex->packer, packRects.data(), packRects.size());
 		auto iter = packRects.begin();
 
@@ -155,6 +160,10 @@ bool Atlas::pack(
 				atlasTex->rects.push_back(*iter);
 				images[iter->id]->atlasTexture = atlasTex;
 				images[iter->id]->rect = iter->rect;
+				packedImages.push_back(images[iter->id]);
+				auto iterImg = std::find(nonPackedImages.begin(), nonPackedImages.begin(), images[iter->id]);
+				if (iterImg != nonPackedImages.end())
+					nonPackedImages.erase(iterImg);
 				iter = packRects.erase(iter);
 				continue;
 			}
@@ -162,18 +171,24 @@ bool Atlas::pack(
 			++iter;
 		}
 
+		if (!packRects.empty())
+		{
+			atlasTex->filledUp = true;
+		}
+
 		return ret;
 	};
 
 	for (auto& atlasTex : atlasTextures)
 	{
+		if (atlasTex->filledUp)
+			continue;
+
 		if (packIntoAtlasTex(atlasTex))
 			break;
 	}
 
-	bool packedAllRects = false;
-
-	while (!packedAllRects && !packRects.empty() && atlasTextures.size() <= maxAtlasPageCount)
+	while (!nonPackedImages.empty() && atlasTextures.size() <= maxAtlasPageCount)
 	{
 		AtlasTexture* newTexture = new AtlasTexture();
 
@@ -183,18 +198,18 @@ bool Atlas::pack(
 		newTexture->textureArray = textureArray;
 		newTexture->dirty = true;
 		newTexture->packer = HORUS_RECTPACK->createRectPacker();
+		HORUS_RECTPACK->reset(newTexture->packer, width, height);
 		atlasTextures.push_back(newTexture);
 		// resize the texture array
 		textureArray->resize(atlasTextures.size(), width, height);
-		packedAllRects = packIntoAtlasTex(newTexture);
+		packIntoAtlasTex(newTexture);
 	}
 
-	assert(packRects.empty());
+	assert(nonPackedImages.empty());
 
 	// we have now the rects inside the atlas, copy to atlas textures
-	for (auto& imgPair : images)
+	for (auto image : packedImages)
 	{
-		auto image = imgPair.second;
 		// bring back the original rect
 		image->rect.x += spacing;
 		image->rect.y += spacing;

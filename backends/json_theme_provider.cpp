@@ -23,7 +23,7 @@ static std::string readTextFile(const char* path)
 
 		char* buffer = new char[size + 1];
 		buffer[size] = 0;
-		auto readBytes = HORUS_FILE->read(file, buffer, size, size);
+		auto readBytes = HORUS_FILE->read(file, buffer, size);
 
 		if (readBytes == size)
 			text = buffer;
@@ -329,7 +329,7 @@ HTheme loadThemeFromJson(const char* filename, char* errorTextBuffer, size_t err
 	{
 		if (errorTextBuffer)
 		{
-			strncpy(errorTextBuffer, reader.getFormatedErrorMessages().c_str(), )
+			strncpy(errorTextBuffer, reader.getFormatedErrorMessages().c_str(), std::min(errorTextBufferSize, reader.getFormatedErrorMessages().size()));
 		}
 
 		deleteTheme(theme);

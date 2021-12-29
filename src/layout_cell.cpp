@@ -4,49 +4,50 @@
 
 namespace hui
 {
-bool UiViewPane::serialize(FILE* file, struct ViewHandler* viewHandler)
+bool ViewPane::serialize(HFile file, struct ViewHandler* viewHandler)
 {
 	size_t tabCount = viewTabs.size();
 
-	fwrite(&tabCount, sizeof(tabCount), 1, file);
-	fwrite(&selectedTabIndex, sizeof(selectedTabIndex), 1, file);
+	HORUS_FILE->write(file, &tabCount, sizeof(tabCount));
+	HORUS_FILE->write(file, &selectedTabIndex, sizeof(selectedTabIndex));
 
 	for (auto tab : viewTabs)
 	{
-		fwrite(&tab->viewId, sizeof(tab->viewId), 1, file);
+		HORUS_FILE->write(file, &tab->viewId, sizeof(tab->viewId));
 		size_t len = strlen(tab->title);
-		fwrite(&len, sizeof(len), 1, file);
-		fwrite(tab->title, len + 1, 1, file);
-		fwrite(&tab->userDataId, sizeof(tab->userDataId), 1, file);
+		HORUS_FILE->write(file, &len, sizeof(len));
+		HORUS_FILE->write(file, tab->title, len + 1);
+		HORUS_FILE->write(file, &tab->userDataId, sizeof(tab->userDataId));
+		
 		if (viewHandler) viewHandler->onViewPaneTabSave(tab, tab->userDataId, file);
 	}
 
 	return true;
 }
 
-bool UiViewPane::deserialize(FILE* file, struct ViewHandler* viewHandler)
+bool ViewPane::deserialize(HFile file, struct ViewHandler* viewHandler)
 {
 	size_t tabCount = 0;
 
-	fread(&tabCount, sizeof(tabCount), 1, file);
-	fread(&selectedTabIndex, sizeof(selectedTabIndex), 1, file);
+	HORUS_FILE->read(file, &tabCount, sizeof(tabCount));
+	HORUS_FILE->read(file, &selectedTabIndex, sizeof(selectedTabIndex));
 
 	const size_t maxTitleSize = 512;
 	char title[maxTitleSize] = { 0 };
 
 	for (size_t i = 0; i < tabCount; i++)
 	{
-		UiViewTab* tab = new UiViewTab();
+		ViewTab* tab = new ViewTab();
 
 		tab->parentViewPane = this;
-		fread(&tab->viewId, sizeof(tab->viewId), 1, file);
+		HORUS_FILE->read(file, &tab->viewId, sizeof(tab->viewId));
 		size_t len = 0;
-		fread(&len, sizeof(len), 1, file);
-		fread(title, len + 1, 1, file);
+		HORUS_FILE->read(file, &len, sizeof(len));
+		HORUS_FILE->read(file, title, len + 1);
 		tab->title = new char[len + 1];
 		memset(tab->title, 0, len + 1);
 		memcpy(tab->title, title, strlen(title));
-		fread(&tab->userDataId, sizeof(tab->userDataId), 1, file);
+		HORUS_FILE->read(file, &tab->userDataId, sizeof(tab->userDataId));
 		viewTabs.push_back(tab);
 
 		if (viewHandler) viewHandler->onViewPaneTabLoad(tab, tab->userDataId, file);
@@ -55,7 +56,7 @@ bool UiViewPane::deserialize(FILE* file, struct ViewHandler* viewHandler)
 	return true;
 }
 
-size_t UiViewPane::getViewTabIndex(UiViewTab* viewTab)
+size_t ViewPane::getViewTabIndex(ViewTab* viewTab)
 {
 	for (size_t i = 0; i < viewTabs.size(); i++)
 	{
@@ -68,7 +69,7 @@ size_t UiViewPane::getViewTabIndex(UiViewTab* viewTab)
 	return ~0;
 }
 
-void UiViewPane::removeViewTab(UiViewTab* viewTab)
+void ViewPane::removeViewTab(ViewTab* viewTab)
 {
 	auto iter = std::find(viewTabs.begin(), viewTabs.end(), viewTab);
 
@@ -88,7 +89,7 @@ void UiViewPane::removeViewTab(UiViewTab* viewTab)
 	}
 }
 
-UiViewTab* UiViewPane::getSelectedViewTab()
+ViewTab* ViewPane::getSelectedViewTab()
 {
 	if (selectedTabIndex == ~0)
 	{
@@ -103,7 +104,7 @@ UiViewTab* UiViewPane::getSelectedViewTab()
 	return viewTabs[selectedTabIndex];
 }
 
-void UiViewPane::destroy()
+void ViewPane::destroy()
 {
 	for (auto tab : viewTabs)
 	{
@@ -114,36 +115,36 @@ void UiViewPane::destroy()
 	viewTabs.clear();
 }
 
-bool UiViewContainer::serialize(FILE* file, struct ViewHandler* viewHandler)
+bool ViewContainer::serialize(HFile file, struct ViewHandler* viewHandler)
 {
 	Rect rc = getWindowRect(window);
 	i32 isMainWindow = window == getMainWindow();
 	WindowState wstate = getWindowState(window);
 
-	fwrite(&isMainWindow, sizeof(isMainWindow), 1, file);
-	fwrite(&wstate, sizeof(wstate), 1, file);
-	fwrite(&rc.x, sizeof(rc.x), 1, file);
-	fwrite(&rc.y, sizeof(rc.y), 1, file);
-	fwrite(&rc.width, sizeof(rc.width), 1, file);
-	fwrite(&rc.height, sizeof(rc.height), 1, file);
+	HORUS_FILE->write(file, &isMainWindow, sizeof(isMainWindow));
+	HORUS_FILE->write(file, &wstate, sizeof(wstate));
+	HORUS_FILE->write(file, &rc.x, sizeof(rc.x));
+	HORUS_FILE->write(file, &rc.y, sizeof(rc.y));
+	HORUS_FILE->write(file, &rc.width, sizeof(rc.width));
+	HORUS_FILE->write(file, &rc.height, sizeof(rc.height));
 
 	rootCell->serialize(file, viewHandler);
 
 	return true;
 }
 
-bool UiViewContainer::deserialize(FILE* file, struct ViewHandler* viewHandler)
+bool ViewContainer::deserialize(HFile file, struct ViewHandler* viewHandler)
 {
 	Rect rc;
 	i32 isMainWindow = 0;
 	WindowState wstate = WindowState::Normal;
 
-	fread(&isMainWindow, sizeof(isMainWindow), 1, file);
-	fread(&wstate, sizeof(wstate), 1, file);
-	fread(&rc.x, sizeof(rc.x), 1, file);
-	fread(&rc.y, sizeof(rc.y), 1, file);
-	fread(&rc.width, sizeof(rc.width), 1, file);
-	fread(&rc.height, sizeof(rc.height), 1, file);
+	HORUS_FILE->read(file, &isMainWindow, sizeof(isMainWindow));
+	HORUS_FILE->read(file, &wstate, sizeof(wstate));
+	HORUS_FILE->read(file, &rc.x, sizeof(rc.x));
+	HORUS_FILE->read(file, &rc.y, sizeof(rc.y));
+	HORUS_FILE->read(file, &rc.width, sizeof(rc.width));
+	HORUS_FILE->read(file, &rc.height, sizeof(rc.height));
 
 	if (!isMainWindow)
 	{
@@ -179,16 +180,16 @@ bool UiViewContainer::deserialize(FILE* file, struct ViewHandler* viewHandler)
 	return true;
 }
 
-bool LayoutCell::serialize(FILE* file, struct ViewHandler* viewHandler)
+bool LayoutCell::serialize(HFile file, struct ViewHandler* viewHandler)
 {
 	size_t childCount = children.size();
 	i32 hasViewPane = viewPane != nullptr;
 
-	fwrite(&childCount, sizeof(childCount), 1, file);
-	fwrite(&splitMode, sizeof(splitMode), 1, file);
-	fwrite(&normalizedSize.x, sizeof(normalizedSize.x), 1, file);
-	fwrite(&normalizedSize.y, sizeof(normalizedSize.y), 1, file);
-	fwrite(&hasViewPane, sizeof(hasViewPane), 1, file);
+	HORUS_FILE->write(file, &childCount, sizeof(childCount));
+	HORUS_FILE->write(file, &splitMode, sizeof(splitMode));
+	HORUS_FILE->write(file, &normalizedSize.x, sizeof(normalizedSize.x));
+	HORUS_FILE->write(file, &normalizedSize.y, sizeof(normalizedSize.y));
+	HORUS_FILE->write(file, &hasViewPane, sizeof(hasViewPane));
 
 	if (viewPane)
 	{
@@ -203,20 +204,20 @@ bool LayoutCell::serialize(FILE* file, struct ViewHandler* viewHandler)
 	return true;
 }
 
-bool LayoutCell::deserialize(FILE* file, struct ViewHandler* viewHandler)
+bool LayoutCell::deserialize(HFile file, struct ViewHandler* viewHandler)
 {
 	size_t childCount = 0;
 	i32 hasViewPane = 0;
 
-	fread(&childCount, sizeof(childCount), 1, file);
-	fread(&splitMode, sizeof(splitMode), 1, file);
-	fread(&normalizedSize.x, sizeof(normalizedSize.x), 1, file);
-	fread(&normalizedSize.y, sizeof(normalizedSize.y), 1, file);
-	fread(&hasViewPane, sizeof(hasViewPane), 1, file);
+	HORUS_FILE->read(file, &childCount, sizeof(childCount));
+	HORUS_FILE->read(file, &splitMode, sizeof(splitMode));
+	HORUS_FILE->read(file, &normalizedSize.x, sizeof(normalizedSize.x));
+	HORUS_FILE->read(file, &normalizedSize.y, sizeof(normalizedSize.y));
+	HORUS_FILE->read(file, &hasViewPane, sizeof(hasViewPane));
 
 	if (hasViewPane)
 	{
-		viewPane = new UiViewPane();
+		viewPane = new ViewPane();
 		viewPane->deserialize(file, viewHandler);
 	}
 
@@ -417,7 +418,7 @@ LayoutCell* LayoutCell::findDockCell(const Point& pt)
 	return nullptr;
 }
 
-void LayoutCell::gatherViewTabs(std::vector<UiViewTab*>& tabs)
+void LayoutCell::gatherViewTabs(std::vector<ViewTab*>& tabs)
 {
 	if (viewPane)
 	{
@@ -433,7 +434,7 @@ void LayoutCell::gatherViewTabs(std::vector<UiViewTab*>& tabs)
 	}
 }
 
-void LayoutCell::gatherViewPanes(std::vector<UiViewPane*>& viewPanes)
+void LayoutCell::gatherViewPanes(std::vector<ViewPane*>& viewPanes)
 {
 	if (viewPane)
 	{
@@ -486,7 +487,7 @@ LayoutCell* LayoutCell::findWidestChild(LayoutCell* skipCell)
 	return cell;
 }
 
-LayoutCell* LayoutCell::dockViewPane(UiViewPane* viewPaneToDock, DockType dock)
+LayoutCell* LayoutCell::dockViewPane(ViewPane* viewPaneToDock, DockType dock)
 {
 	LayoutCell* dockedToCell = nullptr;
 
@@ -858,7 +859,7 @@ void LayoutCell::fixNormalizedSizes()
 	}
 }
 
-bool LayoutCell::removeViewPaneCell(UiViewPane* viewPaneToRemove)
+bool LayoutCell::removeViewPaneCell(ViewPane* viewPaneToRemove)
 {
 	if (viewPane == viewPaneToRemove && children.empty())
 	{
@@ -949,7 +950,7 @@ LayoutCell* LayoutCell::deleteChildCell(LayoutCell* cell)
 	return nullptr;
 }
 
-LayoutCell* LayoutCell::findCellOfViewPane(UiViewPane* viewPaneToFind)
+LayoutCell* LayoutCell::findCellOfViewPane(ViewPane* viewPaneToFind)
 {
 	if (viewPane == viewPaneToFind)
 	{

@@ -119,8 +119,8 @@ struct Context
 	u32 dragScrollViewHandleWidgetId = 0;
 	f32 dropDownScrollViewPos = 0;
 
-	UiTheme* theme = nullptr;
-	std::vector<UiTheme*> themes;
+	Theme* theme = nullptr;
+	std::vector<Theme*> themes;
 
 	Rect containerRect;
 	Point penPosition;
@@ -157,6 +157,8 @@ struct Context
 	DragDropState dragDropState;
 
 	std::vector<TextLine> textLines;
+
+	DockingSystemData dockingData;
 
 	Context()
 	{

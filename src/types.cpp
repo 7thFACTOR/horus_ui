@@ -2,5 +2,5 @@
 
 namespace hui
 {
-DockingSystemData dockingData;
+
 }

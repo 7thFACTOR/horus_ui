@@ -3,20 +3,20 @@
 
 namespace hui
 {
-UiTheme::UiTheme(u32 atlasTextureSize)
+Theme::Theme(u32 atlasTextureSize)
 {
 	atlas = new Atlas(atlasTextureSize, atlasTextureSize);
 	fontCache = new FontCache(atlas);
 	auto whiteImage = atlas->addWhiteImage(32);
 }
 
-UiTheme::~UiTheme()
+Theme::~Theme()
 {
 	delete fontCache;
 	delete atlas;
 }
 
-Image* UiTheme::addImage(const Rgba32* pixels, u32 width, u32 height)
+Image* Theme::addImage(const Rgba32* pixels, u32 width, u32 height)
 {
 	if (!pixels || !width || !height)
 	{
@@ -26,12 +26,12 @@ Image* UiTheme::addImage(const Rgba32* pixels, u32 width, u32 height)
 	return atlas->addImage(pixels, width, height);
 }
 
-void UiTheme::packAtlas()
+void Theme::packAtlas()
 {
 	atlas->pack();
 }
 
-void UiTheme::setDefaultWidgetStyle()
+void Theme::setDefaultWidgetStyle()
 {
 	for (u32 i = 0; i < (u32)WidgetElementId::Count; i++)
 	{

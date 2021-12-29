@@ -6,9 +6,6 @@
 
 namespace hui
 {
-typedef void* HFile;
-typedef void* HRectPacker;
-
 enum class FileSeekMode
 {
 	Current = 1,
@@ -20,7 +17,7 @@ struct FileProvider
 {
 	virtual ~FileProvider(){};
 	virtual HFile open(const char* path, const char* mode) = 0;
-	virtual size_t read(HFile file, void* outData, size_t maxDataSize, size_t bytesToRead) = 0;
+	virtual size_t read(HFile file, void* outData, size_t bytesToRead) = 0;
 	virtual size_t write(HFile file, void* data, size_t bytesToWrite) = 0;
 	virtual void close(HFile file) = 0;
 	virtual bool seek(HFile file, FileSeekMode mode, size_t pos = 0) = 0;
@@ -38,20 +35,6 @@ struct FileDialogsProvider
 	virtual bool saveFileDialog(const char* filterList, const char* defaultPath, char* outPath, u32 maxOutPathSize) = 0;
 	/// Show a pick folder dialog
 	virtual bool pickFolderDialog(const char* defaultPath, char* outPath, u32 maxOutPathSize) = 0;
-};
-
-struct LogProvider
-{
-	enum class LogType
-	{
-		Info,
-		Warn,
-		Error,
-		Debug
-	};
-
-	virtual ~LogProvider() {}
-	virtual void log(const char* msg, LogType logType) = 0;
 };
 
 /// The input provider class is used for input and windowing services
@@ -360,8 +343,6 @@ struct RectPackProvider
 	virtual void reset(HRectPacker packer, u32 atlasWidth, u32 atlasHeight) = 0;
 	virtual bool packRects(HRectPacker packer, PackRect* rects, size_t rectCount) = 0;
 };
-
-typedef void* HFontFace;
 
 struct FontGlyph
 {

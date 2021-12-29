@@ -9,10 +9,10 @@ namespace hui
 {
 static constexpr f32 percentOfNewPaneSplit = 0.5f;
 
-struct UiViewTab
+struct ViewTab
 {
 	char* title = nullptr;
-	struct UiViewPane* parentViewPane = nullptr;
+	struct ViewPane* parentViewPane = nullptr;
 	ViewId viewId = 0;
 	Rect rect;
 	HImage icon = nullptr;
@@ -20,17 +20,17 @@ struct UiViewTab
 	u64 userDataId = 0;
 };
 
-struct UiViewPane
+struct ViewPane
 {
-	bool serialize(FILE* file, struct ViewHandler* viewHandler);
-	bool deserialize(FILE* file, struct ViewHandler* viewHandler);
-	size_t getViewTabIndex(UiViewTab* viewTab);
-	void removeViewTab(UiViewTab* viewTab);
-	UiViewTab* getSelectedViewTab();
+	bool serialize(HFile file, struct ViewHandler* viewHandler);
+	bool deserialize(HFile file, struct ViewHandler* viewHandler);
+	size_t getViewTabIndex(ViewTab* viewTab);
+	void removeViewTab(ViewTab* viewTab);
+	ViewTab* getSelectedViewTab();
 	void destroy();
 
 	Rect rect;
-	std::vector<UiViewTab*> viewTabs;
+	std::vector<ViewTab*> viewTabs;
 	size_t selectedTabIndex = 0;
 };
 
@@ -43,33 +43,33 @@ struct LayoutCell
 		Horizontal
 	};
 
-	bool serialize(FILE* file, struct ViewHandler* viewHandler);
-	bool deserialize(FILE* file, struct ViewHandler* viewHandler);
+	bool serialize(HFile file, struct ViewHandler* viewHandler);
+	bool deserialize(HFile, struct ViewHandler* viewHandler);
 	void setNewSize(f32 size);
 	void computeRect(const Point& startPos);
 	void computeSize();
 	LayoutCell* findResizeCell(const Point& pt, i32 gripSize);
 	LayoutCell* findDockCell(const Point& pt);
-	void gatherViewTabs(std::vector<UiViewTab*>& tabs);
-	void gatherViewPanes(std::vector<UiViewPane*>& viewPanes);
+	void gatherViewTabs(std::vector<ViewTab*>& tabs);
+	void gatherViewPanes(std::vector<ViewPane*>& viewPanes);
 	LayoutCell* findWidestChild(LayoutCell* skipCell = nullptr);
-	LayoutCell* dockViewPane(UiViewPane* viewPaneToDock, DockType dock);
+	LayoutCell* dockViewPane(ViewPane* viewPaneToDock, DockType dock);
 	void fixNormalizedSizes();
-	bool removeViewPaneCell(UiViewPane* viewPaneToRemove);
+	bool removeViewPaneCell(ViewPane* viewPaneToRemove);
 	LayoutCell* deleteChildCell(LayoutCell* cell);
-	LayoutCell* findCellOfViewPane(UiViewPane* viewPaneToFind);
+	LayoutCell* findCellOfViewPane(ViewPane* viewPaneToFind);
 	void debug(i32 level);
 	void destroy();
 
 	LayoutCell* parent = nullptr;
-	UiViewPane* viewPane = nullptr;
+	ViewPane* viewPane = nullptr;
 	std::vector<LayoutCell*> children;
 	CellSplitMode splitMode = CellSplitMode::None;
 	Point normalizedSize = { 1, 1 };
 	Rect rect;
 };
 
-struct UiViewContainer
+struct ViewContainer
 {
 	void destroy()
 	{
@@ -77,8 +77,8 @@ struct UiViewContainer
 		rootCell = nullptr;
 	}
 
-	bool serialize(FILE* file, struct ViewHandler* viewHandler);
-	bool deserialize(FILE* file, struct ViewHandler* viewHandler);
+	bool serialize(HFile file, struct ViewHandler* viewHandler);
+	bool deserialize(HFile file, struct ViewHandler* viewHandler);
 
 	LayoutCell* rootCell = nullptr;
 	HWindow window = 0;

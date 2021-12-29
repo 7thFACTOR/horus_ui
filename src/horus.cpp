@@ -292,6 +292,7 @@ void beginFrame()
 
 void endFrame()
 {
+	ctx->theme->atlas->packWithLastUsedParams();
 	ctx->maxWidgetId = ctx->currentWidgetId;
 	ctx->focusChanged = false;
 	ctx->mouseMoved = false;
@@ -730,7 +731,7 @@ f32 getFrameDeltaTime()
 
 HTheme createTheme(u32 atlasTextureSize)
 {
-	UiTheme* theme = new UiTheme(atlasTextureSize);
+	Theme* theme = new Theme(atlasTextureSize);
 
 	ctx->themes.push_back(theme);
 
@@ -739,14 +740,14 @@ HTheme createTheme(u32 atlasTextureSize)
 
 void setThemeUserSetting(HTheme theme, const char* name, const char* value)
 {
-	((UiTheme*)theme)->userSettings[name] = value;
+	((Theme*)theme)->userSettings[name] = value;
 }
 
 const char* getThemeUserSetting(HTheme theme, const char* name)
 {
-	auto iter = ((UiTheme*)theme)->userSettings.find(name);
+	auto iter = ((Theme*)theme)->userSettings.find(name);
 
-	if (iter == ((UiTheme*)theme)->userSettings.end())
+	if (iter == ((Theme*)theme)->userSettings.end())
 		return "";
 
 	return iter->second.c_str();
@@ -754,14 +755,14 @@ const char* getThemeUserSetting(HTheme theme, const char* name)
 
 HImage addThemeImage(HTheme theme, const ImageData& img)
 {
-	UiTheme* themePtr = (UiTheme*)theme;
+	Theme* themePtr = (Theme*)theme;
 
 	return themePtr->addImage((const Rgba32*)img.pixels, img.width, img.height);
 }
 
 HImage getThemeImage(HTheme theme, const char* imageName)
 {
-	UiTheme* themePtr = (UiTheme*)theme;
+	Theme* themePtr = (Theme*)theme;
 
 	auto iter = themePtr->images.find(imageName);
 
@@ -773,7 +774,7 @@ HImage getThemeImage(HTheme theme, const char* imageName)
 
 void setThemeImage(HTheme theme, const char* imageName, HImage image)
 {
-	UiTheme* themePtr = (UiTheme*)theme;
+	Theme* themePtr = (Theme*)theme;
 
 	auto iter = themePtr->images.find(imageName);
 
@@ -942,7 +943,7 @@ void setUserWidgetElementStyle(const char* elementName, const char* styleName)
 
 void buildTheme(HTheme theme)
 {
-	UiTheme* themePtr = (UiTheme*)theme;
+	Theme* themePtr = (Theme*)theme;
 
 	themePtr->packAtlas();
 	themePtr->setDefaultWidgetStyle();
@@ -955,7 +956,7 @@ void setThemeWidgetElement(
 	const WidgetElementInfo& elementInfo,
 	const char* styleName)
 {
-	UiTheme* themePtr = (UiTheme*)theme;
+	Theme* themePtr = (Theme*)theme;
 	u32 stateIndex = (u32)widgetStateType;
 
 	auto& state = themePtr->elements[(u32)elementId].styles[styleName].states[stateIndex];
@@ -976,12 +977,12 @@ void setThemeUserWidgetElement(
 	const WidgetElementInfo& elementInfo,
 	const char* styleName)
 {
-	UiTheme* themePtr = (UiTheme*)theme;
+	Theme* themePtr = (Theme*)theme;
 	u32 stateIndex = (u32)widgetStateType;
 
 	if (themePtr->userElements.find(userElementName) == themePtr->userElements.end())
 	{
-		themePtr->userElements.insert(std::make_pair(userElementName, new UiThemeElement()));
+		themePtr->userElements.insert(std::make_pair(userElementName, new ThemeElement()));
 	}
 
 	auto& state = themePtr->userElements[userElementName]->styles[styleName].states[stateIndex];
@@ -997,7 +998,7 @@ void setThemeUserWidgetElement(
 
 void setTheme(HTheme theme)
 {
-	ctx->theme = (UiTheme*)theme;
+	ctx->theme = (Theme*)theme;
 }
 
 HTheme getTheme()
@@ -1007,7 +1008,7 @@ HTheme getTheme()
 
 void deleteTheme(HTheme theme)
 {
-	auto iter = std::find(ctx->themes.begin(), ctx->themes.end(), (UiTheme*)theme);
+	auto iter = std::find(ctx->themes.begin(), ctx->themes.end(), (Theme*)theme);
 
 	if (iter == ctx->themes.end())
 		return;
@@ -1051,12 +1052,12 @@ void getThemeUserWidgetElementInfo(const char* userElementName, WidgetStateType 
 
 void setThemeWidgetElementParameter(HTheme theme, WidgetElementId elementId, const char* styleName, const char* paramName, const char* paramValue)
 {
-	((UiTheme*)theme)->elements[(int)elementId].styles[styleName].parameters[paramName] = paramValue;
+	((Theme*)theme)->elements[(int)elementId].styles[styleName].parameters[paramName] = paramValue;
 }
 
 const char* getThemeWidgetElementStringParameter(HTheme theme, WidgetElementId elementId, const char* styleName, const char* paramName, const char* defaultValue)
 {
-	auto& style = ((UiTheme*)theme)->elements[(int)elementId].styles[styleName];
+	auto& style = ((Theme*)theme)->elements[(int)elementId].styles[styleName];
 
 	auto iter = style.parameters.find(paramName);
 
@@ -1068,25 +1069,25 @@ const char* getThemeWidgetElementStringParameter(HTheme theme, WidgetElementId e
 
 f32 getThemeWidgetElementFloatParameter(HTheme theme, WidgetElementId elementId, const char* styleName, const char* paramName, f32 defaultValue)
 {
-	auto& style = ((UiTheme*)theme)->elements[(int)elementId].styles[styleName];
+	auto& style = ((Theme*)theme)->elements[(int)elementId].styles[styleName];
 
 	return style.getParameterValue(paramName, defaultValue);
 }
 
 const Color& getThemeWidgetElementColorParameter(HTheme theme, WidgetElementId elementId, const char* styleName, const char* paramName, const Color& defaultValue)
 {
-	auto& style = ((UiTheme*)theme)->elements[(int)elementId].styles[styleName];
+	auto& style = ((Theme*)theme)->elements[(int)elementId].styles[styleName];
 
 	return style.getParameterValue(paramName, defaultValue);
 }
 
 void setThemeUserWidgetElementParameter(HTheme theme, const char* userElementName, const char* styleName, const char* paramName, const char* paramValue)
 {
-	auto themePtr = ((UiTheme*)theme);
+	auto themePtr = ((Theme*)theme);
 
 	if (themePtr->userElements.find(userElementName) == themePtr->userElements.end())
 	{
-		themePtr->userElements.insert(std::make_pair(userElementName, new UiThemeElement()));
+		themePtr->userElements.insert(std::make_pair(userElementName, new ThemeElement()));
 	}
 
 	themePtr->userElements[userElementName]->styles[styleName].parameters[paramName] = paramValue;
@@ -1094,7 +1095,7 @@ void setThemeUserWidgetElementParameter(HTheme theme, const char* userElementNam
 
 const char* getThemeUserWidgetElementStringParameter(HTheme theme, const char* userElementName, const char* styleName, const char* paramName, const char* defaultValue)
 {
-	auto& style = ((UiTheme*)theme)->userElements[userElementName]->styles[styleName];
+	auto& style = ((Theme*)theme)->userElements[userElementName]->styles[styleName];
 
 	auto iter = style.parameters.find(paramName);
 
@@ -1106,14 +1107,14 @@ const char* getThemeUserWidgetElementStringParameter(HTheme theme, const char* u
 
 f32 getThemeUserWidgetElementFloatParameter(HTheme theme, const char* userElementName, const char* styleName, const char* paramName, f32 defaultValue)
 {
-	auto& style = ((UiTheme*)theme)->userElements[userElementName]->styles[styleName];
+	auto& style = ((Theme*)theme)->userElements[userElementName]->styles[styleName];
 
 	return style.getParameterValue(paramName, defaultValue);
 }
 
 const Color& getThemeUserWidgetElementColorParameter(HTheme theme, const char* userElementName, const char* styleName, const char* paramName, const Color& defaultValue)
 {
-	auto& style = ((UiTheme*)theme)->userElements[userElementName]->styles[styleName];
+	auto& style = ((Theme*)theme)->userElements[userElementName]->styles[styleName];
 
 	return style.getParameterValue(paramName, defaultValue);
 }
@@ -1121,30 +1122,30 @@ const Color& getThemeUserWidgetElementColorParameter(HTheme theme, const char* u
 
 HFont createThemeFont(HTheme theme, const char* name, const char* fontFilename, u32 faceSize)
 {
-	auto fnt = (HFont)((UiTheme*)theme)->fontCache->createFont(name, fontFilename, faceSize * ctx->globalScale, false);
+	auto fnt = (HFont)((Theme*)theme)->fontCache->createFont(name, fontFilename, faceSize * ctx->globalScale, false);
 	//TODO: check first if there is already set
-	((UiTheme*)theme)->fonts[name] = (Font*)fnt;
+	((Theme*)theme)->fonts[name] = (Font*)fnt;
 
 	return fnt;
 }
 
 void releaseThemeFont(HTheme theme, HFont font)
 {
-	for (auto fntPair : ((UiTheme*)theme)->fonts)
+	for (auto fntPair : ((Theme*)theme)->fonts)
 	{
 		if (fntPair.second == (Font*)font)
 		{
-			((UiTheme*)theme)->fonts.erase(fntPair.first);
+			((Theme*)theme)->fonts.erase(fntPair.first);
 			break;
 		}
 	}
 
-	((UiTheme*)theme)->fontCache->releaseFont((Font*)font);
+	((Theme*)theme)->fontCache->releaseFont((Font*)font);
 }
 
 HFont getThemeFont(HTheme theme, const char* themeFontName)
 {
-	UiTheme* themeObj = (UiTheme*)theme;
+	Theme* themeObj = (Theme*)theme;
 
 	return themeObj->fonts[themeFontName];
 }

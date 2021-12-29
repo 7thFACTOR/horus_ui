@@ -6,7 +6,7 @@
 
 namespace hui
 {
-void beginBoxInternal(const Color& color, UiThemeElement::State& state, f32 customHeight)
+void beginBoxInternal(const Color& color, ThemeElement::State& state, f32 customHeight)
 {
 	auto width = ctx->layoutStack.back().width;
 

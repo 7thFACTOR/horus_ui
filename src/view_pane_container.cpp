@@ -11,26 +11,26 @@ namespace hui
 HViewContainer createViewContainer(HWindow window)
 {
 	auto rect = getWindowRect(window);
-	auto viewContainer = new UiViewContainer();
+	auto viewContainer = new ViewContainer();
 
 	viewContainer->rootCell = new LayoutCell();
 	viewContainer->rootCell->normalizedSize.x = 1.0f;
 	viewContainer->rootCell->normalizedSize.y = 1.0f;
 	viewContainer->window = window;
 
-	dockingData.viewContainers.push_back(viewContainer);
+	ctx->dockingData.viewContainers.push_back(viewContainer);
 
 	return viewContainer;
 }
 
 void deleteViewContainer(HViewContainer viewContainer)
 {
-	auto viewContainerObj = (UiViewContainer*)viewContainer;
-	auto iter = std::find(dockingData.viewContainers.begin(), dockingData.viewContainers.begin(), viewContainerObj);
+	auto viewContainerObj = (ViewContainer*)viewContainer;
+	auto iter = std::find(ctx->dockingData.viewContainers.begin(), ctx->dockingData.viewContainers.begin(), viewContainerObj);
 
-	if (iter != dockingData.viewContainers.end())
+	if (iter != ctx->dockingData.viewContainers.end())
 	{
-		dockingData.viewContainers.erase(iter);
+		ctx->dockingData.viewContainers.erase(iter);
 	}
 
 	hui::destroyWindow(viewContainerObj->window);
@@ -40,12 +40,12 @@ void deleteViewContainer(HViewContainer viewContainer)
 
 u32 getViewContainers(HViewContainer* outViewContainers, u32 maxCount)
 {
-	std::vector<UiViewPane*> viewPanes;
-	auto count = (u32)fminl(maxCount, dockingData.viewContainers.size());
+	std::vector<ViewPane*> viewPanes;
+	auto count = (u32)fminl(maxCount, ctx->dockingData.viewContainers.size());
 
 	for (size_t i = 0; i < count; i++)
 	{
-		outViewContainers[i] = dockingData.viewContainers[i];
+		outViewContainers[i] = ctx->dockingData.viewContainers[i];
 	}
 
 	return count;
@@ -53,17 +53,17 @@ u32 getViewContainers(HViewContainer* outViewContainers, u32 maxCount)
 
 HWindow getViewContainerWindow(HViewContainer viewContainer)
 {
-	auto iter = std::find(dockingData.viewContainers.begin(), dockingData.viewContainers.end(), (UiViewContainer*)viewContainer);
+	auto iter = std::find(ctx->dockingData.viewContainers.begin(), ctx->dockingData.viewContainers.end(), (ViewContainer*)viewContainer);
 
-	if (iter == dockingData.viewContainers.end())
+	if (iter == ctx->dockingData.viewContainers.end())
 		return 0;
 
-	return ((UiViewContainer*)viewContainer)->window;
+	return ((ViewContainer*)viewContainer)->window;
 }
 
 HViewContainer getWindowViewContainer(HWindow window)
 {
-	for (auto& iter : dockingData.viewContainers)
+	for (auto& iter : ctx->dockingData.viewContainers)
 	{
 		if (iter->window == window)
 		{
@@ -76,17 +76,17 @@ HViewContainer getWindowViewContainer(HWindow window)
 
 void deleteViewContainerFromWindow(HWindow window)
 {
-	for (auto container : dockingData.viewContainers)
+	for (auto container : ctx->dockingData.viewContainers)
 	{
 		if (container->window == window)
 		{
-			auto iter = std::find(dockingData.viewContainers.begin(), dockingData.viewContainers.end(), container);
+			auto iter = std::find(ctx->dockingData.viewContainers.begin(), ctx->dockingData.viewContainers.end(), container);
 
-			if (iter != dockingData.viewContainers.end())
+			if (iter != ctx->dockingData.viewContainers.end())
 			{
 				container->destroy();
 				delete container;
-				dockingData.viewContainers.erase(iter);
+				ctx->dockingData.viewContainers.erase(iter);
 				return;
 			}
 		}
@@ -95,8 +95,8 @@ void deleteViewContainerFromWindow(HWindow window)
 
 u32 getViewContainerViewPanes(HViewContainer viewContainer, HViewPane* outViewPanes, u32 maxCount)
 {
-	std::vector<UiViewPane*> viewPanes;
-	auto viewContainerObj = (UiViewContainer*)viewContainer;
+	std::vector<ViewPane*> viewPanes;
+	auto viewContainerObj = (ViewContainer*)viewContainer;
 
 	viewContainerObj->rootCell->gatherViewPanes(viewPanes);
 	auto count = (u32)std::min(maxCount, (u32)viewPanes.size());
@@ -111,8 +111,8 @@ u32 getViewContainerViewPanes(HViewContainer viewContainer, HViewPane* outViewPa
 
 u32 getViewContainerViewPaneCount(HViewContainer viewContainer)
 {
-	std::vector<UiViewPane*> viewPanes;
-	auto viewContainerObj = (UiViewContainer*)viewContainer;
+	std::vector<ViewPane*> viewPanes;
+	auto viewContainerObj = (ViewContainer*)viewContainer;
 
 	viewContainerObj->rootCell->gatherViewPanes(viewPanes);
 
@@ -121,8 +121,8 @@ u32 getViewContainerViewPaneCount(HViewContainer viewContainer)
 
 HViewPane getViewContainerFirstViewPane(HViewContainer viewContainer)
 {
-	auto viewContainerObj = (UiViewContainer*)viewContainer;
-	std::vector<UiViewPane*> viewPanes;
+	auto viewContainerObj = (ViewContainer*)viewContainer;
+	std::vector<ViewPane*> viewPanes;
 
 	viewContainerObj->rootCell->gatherViewPanes(viewPanes);
 
@@ -136,16 +136,16 @@ HViewPane getViewContainerFirstViewPane(HViewContainer viewContainer)
 
 bool saveViewContainersState(const char* filename)
 {
-	FILE* file = fopen(filename, "wb");
+	HFile file = HORUS_FILE->open(filename, "wb");
 
 	if (!file)
 		return false;
 
-	i32 containerCount = dockingData.viewContainers.size();
+	i32 containerCount = ctx->dockingData.viewContainers.size();
 
-	fwrite(&containerCount, sizeof(containerCount), 1, file);
+	HORUS_FILE->write(file, &containerCount, sizeof(containerCount));
 
-	for (auto container : dockingData.viewContainers)
+	for (auto container : ctx->dockingData.viewContainers)
 	{
 		container->serialize(file, ctx->currentViewHandler);
 	}
@@ -155,41 +155,40 @@ bool saveViewContainersState(const char* filename)
 
 bool loadViewContainersState(const char* filename)
 {
-	//TODO: use HORUS_FILE provider
-	FILE* file = fopen(filename, "rb");
+	HFile file = HORUS_FILE->open(filename, "rb");
 
 	if (!file)
 		return false;
 
 	i32 containerCount = 0;
 
-	if (!fread(&containerCount, sizeof(containerCount), 1, file))
+	if (!HORUS_FILE->read(file, &containerCount, sizeof(containerCount)))
 	{
-		fclose(file);
+		HORUS_FILE->close(file);
 		return false;
 	}
 
 	for (i32 i = 0; i < containerCount; i++)
 	{
-		auto container = new UiViewContainer();
+		auto container = new ViewContainer();
 
 		container->deserialize(file, ctx->currentViewHandler);
-		dockingData.viewContainers.push_back(container);
+		ctx->dockingData.viewContainers.push_back(container);
 		updateViewContainerLayout(container);
 	}
 
-	fclose(file);
+	HORUS_FILE->close(file);
 
 	return true;
 }
 
 void setViewContainerSideSpacing(HViewContainer viewContainer, f32 left, f32 right, f32 bottom)
 {
-	UiViewContainer* vc = (UiViewContainer*)viewContainer;
+	ViewContainer* vc = (ViewContainer*)viewContainer;
 
-	vc->sideSpacing[UiViewContainer::SideSpacingLeft] = left;
-	vc->sideSpacing[UiViewContainer::SideSpacingRight] = right;
-	vc->sideSpacing[UiViewContainer::SideSpacingBottom] = bottom;
+	vc->sideSpacing[ViewContainer::SideSpacingLeft] = left;
+	vc->sideSpacing[ViewContainer::SideSpacingRight] = right;
+	vc->sideSpacing[ViewContainer::SideSpacingBottom] = bottom;
 }
 
 }

@@ -44,9 +44,9 @@ void updateDockingSystemInternal(bool isLastEvent)
 		hui::destroyWindow(hui::getInputEvent().window);
 	}
 
-	for (size_t i = 0; i < dockingData.viewContainers.size(); i++)
+	for (size_t i = 0; i < ctx->dockingData.viewContainers.size(); i++)
 	{
-		auto viewContainer = dockingData.viewContainers[i];
+		auto viewContainer = ctx->dockingData.viewContainers[i];
 		auto wnd = viewContainer->window;
 
 		if (!wnd)
@@ -72,37 +72,37 @@ void updateDockingSystemInternal(bool isLastEvent)
 			hui::forceRepaint();
 		}
 
-		std::vector<UiViewPane*> panes;
+		std::vector<ViewPane*> panes;
 
 		viewContainer->rootCell->gatherViewPanes(panes);
-		dockingData.currentViewContainer = viewContainer;
-		dockingData.closeWindow = false;
+		ctx->dockingData.currentViewContainer = viewContainer;
+		ctx->dockingData.closeWindow = false;
 
 		beginContainer(wndRect);
 		f32 oldY = 0;
 
 		// top area
 		ctx->currentViewHandler->onTopAreaRender(wnd);
-		viewContainer->sideSpacing[UiViewContainer::SideSpacingTop] = ctx->penPosition.y;
+		viewContainer->sideSpacing[ViewContainer::SideSpacingTop] = ctx->penPosition.y;
 		oldY = ctx->penPosition.y;
 
 		// left area
 		ctx->penPosition.x = 0;
-		beginContainer({ ctx->penPosition.x, ctx->penPosition.y, viewContainer->sideSpacing[UiViewContainer::SideSpacingLeft], wndRect.height - oldY - viewContainer->sideSpacing[UiViewContainer::SideSpacingBottom] });
+		beginContainer({ ctx->penPosition.x, ctx->penPosition.y, viewContainer->sideSpacing[ViewContainer::SideSpacingLeft], wndRect.height - oldY - viewContainer->sideSpacing[ViewContainer::SideSpacingBottom] });
 		ctx->currentViewHandler->onLeftAreaRender(wnd);
 		endContainer();
 
 		// right area
-		ctx->penPosition.x = wndRect.width - viewContainer->sideSpacing[UiViewContainer::SideSpacingRight];
+		ctx->penPosition.x = wndRect.width - viewContainer->sideSpacing[ViewContainer::SideSpacingRight];
 		ctx->penPosition.y = oldY;
-		beginContainer({ ctx->penPosition.x, ctx->penPosition.y, viewContainer->sideSpacing[UiViewContainer::SideSpacingRight], wndRect.height - oldY - viewContainer->sideSpacing[UiViewContainer::SideSpacingBottom] });
+		beginContainer({ ctx->penPosition.x, ctx->penPosition.y, viewContainer->sideSpacing[ViewContainer::SideSpacingRight], wndRect.height - oldY - viewContainer->sideSpacing[ViewContainer::SideSpacingBottom] });
 		ctx->currentViewHandler->onRightAreaRender(wnd);
 		endContainer();
 
 		// bottom area
 		ctx->penPosition.x = 0;
-		ctx->penPosition.y = wndRect.height - viewContainer->sideSpacing[UiViewContainer::SideSpacingBottom];
-		beginContainer({ ctx->penPosition.x, ctx->penPosition.y, wndRect.width, viewContainer->sideSpacing[UiViewContainer::SideSpacingBottom] });
+		ctx->penPosition.y = wndRect.height - viewContainer->sideSpacing[ViewContainer::SideSpacingBottom];
+		beginContainer({ ctx->penPosition.x, ctx->penPosition.y, wndRect.width, viewContainer->sideSpacing[ViewContainer::SideSpacingBottom] });
 		ctx->currentViewHandler->onBottomAreaRender(wnd);
 		endContainer();
 
@@ -123,7 +123,7 @@ void updateDockingSystemInternal(bool isLastEvent)
 		endContainer();
 		endWindow();
 		ctx->currentViewHandler->onAfterFrameRender(wnd);
-		dockingData.currentViewContainer = nullptr;
+		ctx->dockingData.currentViewContainer = nullptr;
 		handleViewContainerResize(viewContainer);
 
 		if ((isLastEvent
@@ -135,7 +135,7 @@ void updateDockingSystemInternal(bool isLastEvent)
 			hui::presentWindow(wnd);
 		}
 
-		if (dockingData.closeWindow)
+		if (ctx->dockingData.closeWindow)
 		{
 			hui::deleteViewContainerFromWindow(wnd);
 			hui::destroyWindow(wnd);
@@ -204,21 +204,21 @@ void dockingSystemLoop()
 	}
 }
 
-void updateViewContainerLayout(UiViewContainer* viewContainer)
+void updateViewContainerLayout(ViewContainer* viewContainer)
 {
 	auto rect = getWindowRect(viewContainer->window);
 
 	viewContainer->rootCell->normalizedSize.x = 1;
 	viewContainer->rootCell->normalizedSize.y = 1;
-	viewContainer->rootCell->rect.x = viewContainer->sideSpacing[UiViewContainer::SideSpacingLeft];
-	viewContainer->rootCell->rect.y = viewContainer->sideSpacing[UiViewContainer::SideSpacingTop];
-	viewContainer->rootCell->rect.width = rect.width - (viewContainer->sideSpacing[UiViewContainer::SideSpacingLeft] + viewContainer->sideSpacing[UiViewContainer::SideSpacingRight]);
-	viewContainer->rootCell->rect.height = rect.height - (viewContainer->sideSpacing[UiViewContainer::SideSpacingTop] + viewContainer->sideSpacing[UiViewContainer::SideSpacingBottom]);
+	viewContainer->rootCell->rect.x = viewContainer->sideSpacing[ViewContainer::SideSpacingLeft];
+	viewContainer->rootCell->rect.y = viewContainer->sideSpacing[ViewContainer::SideSpacingTop];
+	viewContainer->rootCell->rect.width = rect.width - (viewContainer->sideSpacing[ViewContainer::SideSpacingLeft] + viewContainer->sideSpacing[ViewContainer::SideSpacingRight]);
+	viewContainer->rootCell->rect.height = rect.height - (viewContainer->sideSpacing[ViewContainer::SideSpacingTop] + viewContainer->sideSpacing[ViewContainer::SideSpacingBottom]);
 	viewContainer->rootCell->computeSize();
 	viewContainer->rootCell->fixNormalizedSizes();
 }
 
-void handleViewContainerResize(UiViewContainer* viewContainer)
+void handleViewContainerResize(ViewContainer* viewContainer)
 {
 	auto rect = getWindowRect(viewContainer->window);
 	auto& crtEvent = hui::getInputEvent();
@@ -242,10 +242,10 @@ void handleViewContainerResize(UiViewContainer* viewContainer)
 
 	static bool draggingViewPaneBorder = false;
 	static bool draggingViewPaneTab = false;
-	static UiViewContainer* draggingContainerSource = nullptr;
+	static ViewContainer* draggingContainerSource = nullptr;
 	static LayoutCell* resizingCell = nullptr;
-	static UiViewTab* dragTab = nullptr;
-	static UiViewTab* dragOntoTab = nullptr;
+	static ViewTab* dragTab = nullptr;
+	static ViewTab* dragOntoTab = nullptr;
 	static Rect dockRect;
 	static DockType dockType;
 	static LayoutCell* dockToCell = nullptr;
@@ -259,7 +259,7 @@ void handleViewContainerResize(UiViewContainer* viewContainer)
 		const Point& mousePos = crtEvent.mouse.point;
 		lastMousePos = mousePos;
 		resizingCell = viewContainer->rootCell->findResizeCell(mousePos, gripSize);
-		std::vector<UiViewTab*> tabs;
+		std::vector<ViewTab*> tabs;
 
 		viewContainer->rootCell->gatherViewTabs(tabs);
 		dragTab = nullptr;
@@ -299,7 +299,7 @@ void handleViewContainerResize(UiViewContainer* viewContainer)
 		// we have a cell to dock to
 		if (dockToCell)
 		{
-			UiViewPane* newPane = nullptr;
+			ViewPane* newPane = nullptr;
 			auto dockToViewPane = dockToCell->viewPane;
 			bool executeDocking = true;
 
@@ -339,7 +339,7 @@ void handleViewContainerResize(UiViewContainer* viewContainer)
 				{
 					if (!newPane)
 					{
-						newPane = new UiViewPane();
+						newPane = new ViewPane();
 					}
 				}
 
@@ -367,9 +367,9 @@ void handleViewContainerResize(UiViewContainer* viewContainer)
 					if (hui::getMainWindow() != draggingContainerSource->window)
 					{
 						destroyWindow(draggingContainerSource->window);
-						auto iter = std::find(dockingData.viewContainers.begin(), dockingData.viewContainers.end(), draggingContainerSource);
+						auto iter = std::find(ctx->dockingData.viewContainers.begin(), ctx->dockingData.viewContainers.end(), draggingContainerSource);
 
-						dockingData.viewContainers.erase(iter);
+						ctx->dockingData.viewContainers.erase(iter);
 						//TODO: crashes LLVM on MacOS, check for dangling ptrs
 						draggingContainerSource->destroy();
 						delete draggingContainerSource;
@@ -419,12 +419,12 @@ void handleViewContainerResize(UiViewContainer* viewContainer)
 				{
 					// remove from old pane
 					dragTab->parentViewPane->removeViewTab(dragTab);
-					auto newPane = (UiViewPane*)hui::createViewPane(newViewContainer, DockType::TopAsViewTab);
+					auto newPane = (ViewPane*)hui::createViewPane(newViewContainer, DockType::TopAsViewTab);
 					newPane->viewTabs.push_back(dragTab);
 					dragTab->parentViewPane = newPane;
 				}
 
-				updateViewContainerLayout((UiViewContainer*)newViewContainer);
+				updateViewContainerLayout((ViewContainer*)newViewContainer);
 			}
 
 			updateViewContainerLayout(viewContainer);
@@ -466,7 +466,7 @@ void handleViewContainerResize(UiViewContainer* viewContainer)
 
 			if (crtEvent.type == InputEvent::Type::MouseDown || ctx->mouseMoved || moved)
 			{
-				std::vector<UiViewTab*> tabs;
+				std::vector<ViewTab*> tabs;
 
 				viewContainer->rootCell->gatherViewTabs(tabs);
 				dragOntoTab = nullptr;

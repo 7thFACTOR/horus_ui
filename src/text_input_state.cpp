@@ -448,7 +448,7 @@ void TextInputState::insertTextAtCaret(const Utf32String& newText)
 {
 	if (selectionActive)
 		deleteSelection();
-	printf("insert %d chars\n", newText.size());
+
 	if (newText.empty())
 	{
 		return;
@@ -458,15 +458,14 @@ void TextInputState::insertTextAtCaret(const Utf32String& newText)
 
 	if (caretPosition > text.size() && !text.empty())
 		offs = text.size() - 1;
-	printf("maxTextLen %d\n", maxTextLength);
 
 	if (text.size() + newText.size() < maxTextLength)
 	{
 		text.insert(text.begin() + offs, newText.begin(), newText.end());
 		caretPosition += newText.size();
 		textChanged = true;
-		printf("inserted...\n");
 	}
+
 	selectionActive = false;
 }
 

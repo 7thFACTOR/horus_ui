@@ -784,14 +784,14 @@ struct MyViewHandler : hui::ViewHandler
 				static int folderIndex = 0;
 
 				char* compNames1[] = {
-					"UiText",
+					"Text",
 					"Light",
 					"Camera",
 					"Mesh",
 					"Material",
-					"UiCanvas",
-					"UiButton",
-					"UiPanel",
+					"Canvas",
+					"Button",
+					"Panel",
 					"SoundSource",
 					"SoundEffect",
 					"SoundCue",
@@ -1943,12 +1943,12 @@ struct MyViewHandler : hui::ViewHandler
 		}
 	}
 
-	void onViewPaneTabSave(HViewPaneTab tab, u64 dataId, FILE* file) override
+	void onViewPaneTabSave(HViewPaneTab tab, u64 dataId, HFile file) override
 	{
 		printf("Saving view pane tab: %s dataId: %llu\n", getViewPaneTabTitle(tab), dataId);
 	}
 
-	void onViewPaneTabLoad(HViewPaneTab tab, u64 dataId, FILE* file) override
+	void onViewPaneTabLoad(HViewPaneTab tab, u64 dataId, HFile file) override
 	{
 		printf("Loading view pane tab: %s dataId: %llu\n", getViewPaneTabTitle(tab), dataId);
 	}

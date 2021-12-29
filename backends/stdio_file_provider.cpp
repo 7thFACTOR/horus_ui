@@ -7,10 +7,10 @@ HFile StdioFileProvider::open(const char* path, const char* mode)
 	return fopen(path, mode);
 }
 
-size_t StdioFileProvider::read(HFile file, void* outData, size_t maxDataSize, size_t bytesToRead)
+size_t StdioFileProvider::read(HFile file, void* outData, size_t bytesToRead)
 {
 #ifdef _WINDOWS
-	return fread_s(outData, maxDataSize, bytesToRead, 1, (FILE*)file) * bytesToRead;
+	return fread_s(outData, bytesToRead, bytesToRead, 1, (FILE*)file) * bytesToRead;
 #else
 	return fread(outData, bytesToRead, 1, (FILE*)file) * bytesToRead;
 #endif

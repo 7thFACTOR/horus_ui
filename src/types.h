@@ -16,15 +16,15 @@ namespace hui
 {
 class Renderer;
 struct TextureArray;
-class UiTheme;
+class Theme;
 class UnicodeTextCache;
 class FontCache;
 class Font;
 struct Image;
 
-typedef u32 UiImageId;
+typedef u32 ImageId;
 
-struct UiThemeElement
+struct ThemeElement
 {
 	struct State
 	{
@@ -136,7 +136,7 @@ struct LayoutState
 	f32 width = 0;
 	f32 height = 0;
 	f32 maxPenPositionY = -10000000000;
-	UiThemeElement::State* themeWidgetElementState = nullptr;
+	ThemeElement::State* themeWidgetElementState = nullptr;
 	Color themeElementColorTint;
 };
 
@@ -260,8 +260,8 @@ struct DropdownState
 
 struct DockingSystemData
 {
-	std::vector<struct UiViewContainer*> viewContainers;
-	struct UiViewContainer* currentViewContainer = nullptr;
+	std::vector<struct ViewContainer*> viewContainers;
+	struct ViewContainer* currentViewContainer = nullptr;
 	bool closeWindow = false;
 };
 
@@ -286,7 +286,5 @@ struct VirtualListContentState
 	u32 totalRowCount;
 	f32 itemHeight;
 };
-
-extern DockingSystemData dockingData;
 
 }
