@@ -1,9 +1,9 @@
 #pragma once
 #include "types.h"
-#include "layout_cell.h"
+#include "view_pane.h"
 
 namespace hui
 {
-void updateViewContainerLayout(ViewContainer* viewContainer);
-void handleViewContainerResize(ViewContainer* viewContainer);
+void updateViewPaneLayout(ViewPane* viewPane);
+void handleViewPaneResize(ViewPane* viewPane);
 };

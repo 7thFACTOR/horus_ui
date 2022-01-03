@@ -364,9 +364,9 @@ struct MyViewHandler : hui::ViewHandler
 		hui::drawTextInBox(name, box, hui::HAlignType::Center, hui::VAlignType::Top);
 	}
 
-	void onViewRender(HWindow wnd, HViewPane viewPane, ViewId viewId, u64 userDataId) override
+	void onViewRender(HWindow wnd, HViewPane viewPane, ViewId viewId, u64 userData) override
 	{
-		hui::Rect viewRect = hui::getViewPaneRect(viewPane);
+		hui::Rect viewRect = hui::getViewPaneClientRect(viewPane);
 
 		switch (viewId)
 		{
@@ -386,7 +386,7 @@ struct MyViewHandler : hui::ViewHandler
 
 			auto viewWidth = hui::getParentSize().x;
 			int itemCountPerRow = viewWidth / itemWidth;
-			f32 availablePaneHeight = hui::getRemainingViewPaneHeight(viewPane);
+			f32 availablePaneHeight = hui::getRemainingViewPaneClientHeight(viewPane);
 			f32 skipRowCount = scrollPos / rowHeight;
 			f32 totalRowCount = ceilf((f32)totalItemCount / itemCountPerRow);
 			f32 visibleRowCount = availablePaneHeight / rowHeight;
@@ -476,8 +476,8 @@ struct MyViewHandler : hui::ViewHandler
 		case 1:
 		{
 			static bool showDxf = false;
-			// userDataId here is an index into customPaneData
-			MyCustomTabData& cdata = customPaneData[userDataId];
+			// userData here is an index into customPaneData
+			MyCustomTabData& cdata = customPaneData[userData];
 
 			hui::beginMenuBar();
 
@@ -939,7 +939,7 @@ struct MyViewHandler : hui::ViewHandler
 			hui::endColumns();
 			hui::popPadding();
 
-			hui::beginScrollView(hui::getRemainingViewPaneHeight(viewPane), cdata.scrollPosComponents);
+			hui::beginScrollView(hui::getRemainingViewPaneClientHeight(viewPane), cdata.scrollPosComponents);
 
 			srand(0);
 
@@ -1351,7 +1351,7 @@ struct MyViewHandler : hui::ViewHandler
 
 
 			static f32 spos = 0;
-			hui::beginScrollView(hui::getRemainingViewPaneHeight(viewPane), spos);
+			hui::beginScrollView(hui::getRemainingViewPaneClientHeight(viewPane), spos);
 
 			hui::beginBox(Color::darkCyan);
 
@@ -1383,7 +1383,7 @@ struct MyViewHandler : hui::ViewHandler
 		}
 		case 3:
 		{
-			hui::Rect wrect = hui::beginCustomWidget(hui::getRemainingViewPaneHeight(viewPane));
+			hui::Rect wrect = hui::beginCustomWidget(hui::getRemainingViewPaneClientHeight(viewPane));
 
 			{
 				//hui::LineStyle ls;
@@ -1451,7 +1451,7 @@ struct MyViewHandler : hui::ViewHandler
 			static i32 crtSel = 0;
 			hui::dropdown(crtSel, s, 5, 3);
 			if (isChangeEnded()) printf("Drop changed\n");
-			hui::beginScrollView(hui::getRemainingViewPaneHeight(viewPane), scr[viewId]);
+			hui::beginScrollView(hui::getRemainingViewPaneClientHeight(viewPane), scr[viewId]);
 			hui::gap(5);
 
 			// showing a message box
@@ -1461,10 +1461,10 @@ struct MyViewHandler : hui::ViewHandler
 			if (hui::button("Exit"))
 			{
 				exiting = true;
-				udid = userDataId;
+				udid = userData;
 			}
 
-			if (exiting && udid == userDataId)
+			if (exiting && udid == userData)
 			{
 				hui::MessageBoxButtons mb = hui::messageBox("Exit?", "Do you want to exit ?", hui::MessageBoxButtons::YesNo, hui::MessageBoxIcon::Question);
 
@@ -1496,12 +1496,12 @@ struct MyViewHandler : hui::ViewHandler
 				auto rect = hui::getWidgetRect();
 				chooseColorPopupPos = { rect.x, rect.bottom() };
 				chooseColorPopup = true;
-				userDataIdForLena = userDataId;
+				userDataIdForLena = userData;
 			}
 
 			hui::popTint(hui::TintColorType::Body);
 
-			if (chooseColorPopup && userDataId == userDataIdForLena)
+			if (chooseColorPopup && userData == userDataIdForLena)
 			{
 				hui::beginPopup(400);
 				hui::pushTint(Color::yellow);
@@ -1943,12 +1943,12 @@ struct MyViewHandler : hui::ViewHandler
 		}
 	}
 
-	void onViewPaneTabSave(HViewPaneTab tab, u64 dataId, HFile file) override
+	void onViewPaneTabSave(HViewPaneTab tab, u64 dataId) override
 	{
 		printf("Saving view pane tab: %s dataId: %llu\n", getViewPaneTabTitle(tab), dataId);
 	}
 
-	void onViewPaneTabLoad(HViewPaneTab tab, u64 dataId, HFile file) override
+	void onViewPaneTabLoad(HViewPaneTab tab, u64 dataId) override
 	{
 		printf("Loading view pane tab: %s dataId: %llu\n", getViewPaneTabTitle(tab), dataId);
 	}
@@ -1957,19 +1957,19 @@ struct MyViewHandler : hui::ViewHandler
 
 void createMyDefaultViewPanes()
 {
-	auto myViewContainer = hui::createViewContainer(hui::getMainWindow());
-	auto viewPane1 = hui::createViewPane(myViewContainer, hui::DockType::Left);
+	auto myRootViewPane = hui::createRootViewPane(hui::getMainWindow());
+	auto viewPane1 = hui::createViewPane(myRootViewPane, hui::DockType::Left);
 	hui::addViewPaneTab(viewPane1, "Assets", 0, 0);
 	console1Tab = hui::addViewPaneTab(viewPane1, "Console1", 1, 0);
 	console2Tab = hui::addViewPaneTab(viewPane1, "Console2", 1, 1);
 	hui::addViewPaneTab(viewPane1, "Scene", 2, 0);
-	auto viewPane2 = hui::createViewPane(myViewContainer, hui::DockType::Left);
+	auto viewPane2 = hui::createViewPane(myRootViewPane, hui::DockType::Left);
 	hui::addViewPaneTab(viewPane2, "Game", 3, 0);
-	auto viewPane3 = hui::createViewPane(myViewContainer, hui::DockType::Left);
+	auto viewPane3 = hui::createViewPane(myRootViewPane, hui::DockType::Left);
 	hui::addViewPaneTab(viewPane3, "Particles", 4, 1);
-	auto viewPane4 = hui::createViewPane(myViewContainer, hui::DockType::Bottom);
+	auto viewPane4 = hui::createViewPane(myRootViewPane, hui::DockType::Bottom);
 	hui::addViewPaneTab(viewPane4, "Properties", 5, 2);
-	auto viewPane5 = hui::createViewPane(myViewContainer, hui::DockType::Right);
+	auto viewPane5 = hui::createViewPane(myRootViewPane, hui::DockType::Right);
 	hui::addViewPaneTab(viewPane5, "Object Inspector", 6, 3);
 }
 
@@ -2054,18 +2054,18 @@ int main(int argc, char** args)
 	printf("Loading views...\n");
 
 	// if there is no state, then create the default panes and tabs
-	if (!hui::loadViewContainersState("layout.hui"))
+	if (!hui::loadViewPaneState("layout.hui"))
 	{
 		createMyDefaultViewPanes();
 	}
 
-	HViewContainer vcs[100] = { 0 };
+	HViewPane vcs[100] = { 0 };
 
-	auto count = getViewContainers(vcs, 100);
+	auto count = getRootViewPanes(vcs, 100);
 
 	for (int i = 0; i < count; i++)
 	{
-		setViewContainerSideSpacing(vcs[i], 45, 150, 36);
+		setViewPaneSideSpacing(vcs[i], 45, 150, 36);
 	}
 
 	hui::setViewIcon(1, tabIcon1);
@@ -2074,7 +2074,7 @@ int main(int argc, char** args)
 
 	printf("Starting loop...\n");
 	hui::dockingSystemLoop();
-	hui::saveViewContainersState("layout.hui");
+	hui::saveViewPaneState("layout.hui");
 
 	hui::shutdown();
 

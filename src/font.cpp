@@ -32,7 +32,7 @@ void Font::resetFaceSize(u32 fontFaceSize)
 	load(filename, faceSize, atlas);
 	resizeFaceMode = true;
 
-	for (auto glyph : glyphs)
+	for (auto& glyph : glyphs)
 	{
 		cacheGlyph(glyph.first);
 	}

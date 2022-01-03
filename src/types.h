@@ -77,8 +77,7 @@ struct ThemeElement
 
 				if (iter2 != parameters.end())
 				{
-					Color c;
-					getColorFromText(iter2->second.c_str(), c);
+					Color c = getColorFromText(iter2->second.c_str());
 					cachedColorParameters[name] = c;
 					return c;
 				}
@@ -131,8 +130,8 @@ struct LayoutState
 	Point position = { 0, 0 };
 	Point savedPenPosition = { 0, 0 };
 	bool savedSameLine = false;
-	f32 savedHighestSameLineY;
-	f32 savedPreviousSameLineY;
+	f32 savedHighestSameLineY = 0;
+	f32 savedPreviousSameLineY = 0;
 	f32 width = 0;
 	f32 height = 0;
 	f32 maxPenPositionY = -10000000000;
@@ -260,8 +259,8 @@ struct DropdownState
 
 struct DockingSystemData
 {
-	std::vector<struct ViewContainer*> viewContainers;
-	struct ViewContainer* currentViewContainer = nullptr;
+	std::vector<struct ViewPane*> rootViewPanes;
+	struct ViewPane* currentViewPane = nullptr;
 	bool closeWindow = false;
 };
 
@@ -285,6 +284,29 @@ struct VirtualListContentState
 	Point lastPenPosition;
 	u32 totalRowCount;
 	f32 itemHeight;
+};
+
+struct MemoryStream
+{
+	enum class Mode
+	{
+		None,
+		Read,
+		Write
+	};
+
+	Mode currentMode = Mode::None;
+	std::vector<u8> data;
+	size_t currentOffset = 0;
+
+	bool beginWrite();
+	bool beginRead(const u8* data, size_t dataSize);
+	void writeData(const u8* data, size_t dataSize);
+	bool readData(u8* outData, size_t dataSize);
+	template <typename Type> void write(const Type* data, size_t dataSize)
+	{ writeData((u8*)data, dataSize); }
+	template <typename Type> bool read(Type* data, size_t dataSize)
+	{ return readData((u8*)data, dataSize); }
 };
 
 }

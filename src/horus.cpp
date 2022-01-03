@@ -292,7 +292,9 @@ void beginFrame()
 
 void endFrame()
 {
-	ctx->theme->atlas->packWithLastUsedParams();
+	if (ctx->theme->atlas->packWithLastUsedParams())
+		skipThisFrame();
+
 	ctx->maxWidgetId = ctx->currentWidgetId;
 	ctx->focusChanged = false;
 	ctx->mouseMoved = false;

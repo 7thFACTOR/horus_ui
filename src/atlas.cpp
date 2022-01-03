@@ -109,8 +109,8 @@ bool Atlas::pack(
 	u32 spacing,
 	const Color& bgColor)
 {
-	if (images.empty())
-		return true;
+	if (nonPackedImages.empty())
+		return false;
 
 	lastUsedBgColor = bgColor;
 	lastUsedSpacing = spacing;
@@ -160,11 +160,16 @@ bool Atlas::pack(
 				atlasTex->rects.push_back(*iter);
 				images[iter->id]->atlasTexture = atlasTex;
 				images[iter->id]->rect = iter->rect;
+
 				packedImages.push_back(images[iter->id]);
+
 				auto iterImg = std::find(nonPackedImages.begin(), nonPackedImages.begin(), images[iter->id]);
+
 				if (iterImg != nonPackedImages.end())
 					nonPackedImages.erase(iterImg);
+
 				iter = packRects.erase(iter);
+				atlasTex->dirty = true;
 				continue;
 			}
 
@@ -176,6 +181,7 @@ bool Atlas::pack(
 			atlasTex->filledUp = true;
 		}
 
+		// return true if all images packed up properly
 		return ret;
 	};
 
@@ -289,6 +295,19 @@ bool Atlas::pack(
 
 void Atlas::repackImages()
 {
+	// re-add to non packed images
+	for (auto& img : images)
+	{
+		nonPackedImages.push_back(img.second);
+	}
+
+	// clear atlas
+	for (auto atlasTex : atlasTextures)
+	{
+		atlasTex->filledUp = false;
+		HORUS_RECTPACK->reset(atlasTex->packer, width, height);
+	}
+
 	packWithLastUsedParams();
 }
 

@@ -6,7 +6,7 @@
 #include "theme.h"
 #include "context.h"
 #include "docking_system.h"
-#include "layout_cell.h"
+#include "view_pane.h"
 #include <vector>
 #include <unordered_map>
 #include <algorithm>
@@ -40,14 +40,16 @@ void updateDockingSystemInternal(bool isLastEvent)
 	if (hui::getInputEvent().type == InputEvent::Type::WindowClose
 		&& hui::getInputEvent().window != hui::getMainWindow())
 	{
-		hui::deleteViewContainerFromWindow(hui::getInputEvent().window);
+		auto pane = (ViewPane*)getWindowRootViewPane(hui::getInputEvent().window);
 		hui::destroyWindow(hui::getInputEvent().window);
 	}
 
-	for (size_t i = 0; i < ctx->dockingData.viewContainers.size(); i++)
+	std::vector<ViewPane*> panes;
+
+	for (size_t i = 0; i < ctx->dockingData.rootViewPanes.size(); i++)
 	{
-		auto viewContainer = ctx->dockingData.viewContainers[i];
-		auto wnd = viewContainer->window;
+		auto viewPane = ctx->dockingData.rootViewPanes[i];
+		auto wnd = viewPane->window;
 
 		if (!wnd)
 		{
@@ -68,14 +70,13 @@ void updateDockingSystemInternal(bool isLastEvent)
 			|| hui::getInputEvent().type == InputEvent::Type::WindowGotFocus)
 			&& hui::getInputEvent().window == wnd)
 		{
-			updateViewContainerLayout(viewContainer);
+			updateViewPaneLayout(viewPane);
 			hui::forceRepaint();
 		}
 
-		std::vector<ViewPane*> panes;
-
-		viewContainer->rootCell->gatherViewPanes(panes);
-		ctx->dockingData.currentViewContainer = viewContainer;
+		panes.clear();
+		viewPane->gatherViewPanes(panes);
+		ctx->dockingData.currentViewPane = viewPane;
 		ctx->dockingData.closeWindow = false;
 
 		beginContainer(wndRect);
@@ -83,39 +84,39 @@ void updateDockingSystemInternal(bool isLastEvent)
 
 		// top area
 		ctx->currentViewHandler->onTopAreaRender(wnd);
-		viewContainer->sideSpacing[ViewContainer::SideSpacingTop] = ctx->penPosition.y;
+		viewPane->sideSpacing[(int)ViewPane::SideSpacing::SideSpacingTop] = ctx->penPosition.y;
 		oldY = ctx->penPosition.y;
 
 		// left area
 		ctx->penPosition.x = 0;
-		beginContainer({ ctx->penPosition.x, ctx->penPosition.y, viewContainer->sideSpacing[ViewContainer::SideSpacingLeft], wndRect.height - oldY - viewContainer->sideSpacing[ViewContainer::SideSpacingBottom] });
+		beginContainer({ ctx->penPosition.x, ctx->penPosition.y, viewPane->sideSpacing[(int)ViewPane::SideSpacing::SideSpacingLeft], wndRect.height - oldY - viewPane->sideSpacing[(int)ViewPane::SideSpacing::SideSpacingBottom] });
 		ctx->currentViewHandler->onLeftAreaRender(wnd);
 		endContainer();
 
 		// right area
-		ctx->penPosition.x = wndRect.width - viewContainer->sideSpacing[ViewContainer::SideSpacingRight];
+		ctx->penPosition.x = wndRect.width - viewPane->sideSpacing[(int)ViewPane::SideSpacing::SideSpacingRight];
 		ctx->penPosition.y = oldY;
-		beginContainer({ ctx->penPosition.x, ctx->penPosition.y, viewContainer->sideSpacing[ViewContainer::SideSpacingRight], wndRect.height - oldY - viewContainer->sideSpacing[ViewContainer::SideSpacingBottom] });
+		beginContainer({ ctx->penPosition.x, ctx->penPosition.y, viewPane->sideSpacing[(int)ViewPane::SideSpacing::SideSpacingRight], wndRect.height - oldY - viewPane->sideSpacing[(int)ViewPane::SideSpacing::SideSpacingBottom] });
 		ctx->currentViewHandler->onRightAreaRender(wnd);
 		endContainer();
 
 		// bottom area
 		ctx->penPosition.x = 0;
-		ctx->penPosition.y = wndRect.height - viewContainer->sideSpacing[ViewContainer::SideSpacingBottom];
-		beginContainer({ ctx->penPosition.x, ctx->penPosition.y, wndRect.width, viewContainer->sideSpacing[ViewContainer::SideSpacingBottom] });
+		ctx->penPosition.y = wndRect.height - viewPane->sideSpacing[(int)ViewPane::SideSpacing::SideSpacingBottom];
+		beginContainer({ ctx->penPosition.x, ctx->penPosition.y, wndRect.width, viewPane->sideSpacing[(int)ViewPane::SideSpacing::SideSpacingBottom] });
 		ctx->currentViewHandler->onBottomAreaRender(wnd);
 		endContainer();
 
-		for (size_t j = 0; j < panes.size(); j++)
+		for (auto pane : panes)
 		{
-			auto tab = panes[j]->getSelectedViewTab();
+			auto tab = pane->getSelectedViewTab();
 
 			if (tab)
 			{
-				hui::ViewId crtViewId = beginViewPane(panes[j]);
+				hui::ViewId crtViewId = beginViewPane(pane);
 				ctx->currentViewHandler->onViewRender(
-					wnd, panes[j], crtViewId,
-					tab->userDataId);
+					wnd, pane, crtViewId,
+					tab->userData);
 				endViewPane();
 			}
 		}
@@ -123,8 +124,8 @@ void updateDockingSystemInternal(bool isLastEvent)
 		endContainer();
 		endWindow();
 		ctx->currentViewHandler->onAfterFrameRender(wnd);
-		ctx->dockingData.currentViewContainer = nullptr;
-		handleViewContainerResize(viewContainer);
+		ctx->dockingData.currentViewPane = nullptr;
+		handleViewPaneResize(viewPane);
 
 		if ((isLastEvent
 			&& !ctx->skipRenderAndInput
@@ -137,7 +138,7 @@ void updateDockingSystemInternal(bool isLastEvent)
 
 		if (ctx->dockingData.closeWindow)
 		{
-			hui::deleteViewContainerFromWindow(wnd);
+			hui::deleteWindowRootViewPane(wnd);
 			hui::destroyWindow(wnd);
 		}
 	}
@@ -204,27 +205,27 @@ void dockingSystemLoop()
 	}
 }
 
-void updateViewContainerLayout(ViewContainer* viewContainer)
+void updateViewPaneLayout(ViewPane* viewPane)
 {
-	auto rect = getWindowRect(viewContainer->window);
+	auto rect = getWindowRect(viewPane->window);
 
-	viewContainer->rootCell->normalizedSize.x = 1;
-	viewContainer->rootCell->normalizedSize.y = 1;
-	viewContainer->rootCell->rect.x = viewContainer->sideSpacing[ViewContainer::SideSpacingLeft];
-	viewContainer->rootCell->rect.y = viewContainer->sideSpacing[ViewContainer::SideSpacingTop];
-	viewContainer->rootCell->rect.width = rect.width - (viewContainer->sideSpacing[ViewContainer::SideSpacingLeft] + viewContainer->sideSpacing[ViewContainer::SideSpacingRight]);
-	viewContainer->rootCell->rect.height = rect.height - (viewContainer->sideSpacing[ViewContainer::SideSpacingTop] + viewContainer->sideSpacing[ViewContainer::SideSpacingBottom]);
-	viewContainer->rootCell->computeSize();
-	viewContainer->rootCell->fixNormalizedSizes();
+	viewPane->normalizedSize.x = 1;
+	viewPane->normalizedSize.y = 1;
+	viewPane->rect.x = viewPane->sideSpacing[(int)ViewPane::SideSpacing::SideSpacingLeft];
+	viewPane->rect.y = viewPane->sideSpacing[(int)ViewPane::SideSpacing::SideSpacingTop];
+	viewPane->rect.width = rect.width - (viewPane->sideSpacing[(int)ViewPane::SideSpacing::SideSpacingLeft] + viewPane->sideSpacing[(int)ViewPane::SideSpacing::SideSpacingRight]);
+	viewPane->rect.height = rect.height - (viewPane->sideSpacing[(int)ViewPane::SideSpacing::SideSpacingTop] + viewPane->sideSpacing[(int)ViewPane::SideSpacing::SideSpacingBottom]);
+	viewPane->computeSize();
+	viewPane->fixNormalizedSizes();
 }
 
-void handleViewContainerResize(ViewContainer* viewContainer)
+void handleViewPaneResize(ViewPane* viewPane)
 {
-	auto rect = getWindowRect(viewContainer->window);
+	auto rect = getWindowRect(viewPane->window);
 	auto& crtEvent = hui::getInputEvent();
 
 	//TODO: find current window index better
-	// find if the current window of the view container had a layer index > 0
+	// find if the current window of the view pane had a layer index > 0
 	// if so, then we must be having popups or menus
 	if (ctx->maxLayerIndex)
 	{
@@ -232,7 +233,7 @@ void handleViewContainerResize(ViewContainer* viewContainer)
 	}
 
 	// is the event for this window ?
-	if (crtEvent.window != viewContainer->window)
+	if (crtEvent.window != viewPane->window)
 	{
 		return;
 	}
@@ -240,17 +241,18 @@ void handleViewContainerResize(ViewContainer* viewContainer)
 	const i32 gripSize = 8;
 	const f32 dockBorderSizePercent = 0.5f;
 
+	//TODO: maybe put all these in the current context
 	static bool draggingViewPaneBorder = false;
 	static bool draggingViewPaneTab = false;
-	static ViewContainer* draggingContainerSource = nullptr;
-	static LayoutCell* resizingCell = nullptr;
+	static ViewPane* draggingPaneSource = nullptr;
+	static ViewPane* resizingPane = nullptr;
 	static ViewTab* dragTab = nullptr;
 	static ViewTab* dragOntoTab = nullptr;
 	static Rect dockRect;
-	static DockType dockType;
-	static LayoutCell* dockToCell = nullptr;
-	static Rect resizeCellRect;
-	static Rect resizeCellSiblingRect;
+	static DockType dockType = DockType::Left;
+	static ViewPane* dockToPane = nullptr;
+	static Rect resizePaneRect;
+	static Rect resizePaneSiblingRect;
 	static Point lastMousePos;
 	static Rect rectDragged;
 
@@ -258,16 +260,16 @@ void handleViewContainerResize(ViewContainer* viewContainer)
 	{
 		const Point& mousePos = crtEvent.mouse.point;
 		lastMousePos = mousePos;
-		resizingCell = viewContainer->rootCell->findResizeCell(mousePos, gripSize);
+		resizingPane = viewPane->findResizeViewPane(mousePos, gripSize);
 		std::vector<ViewTab*> tabs;
 
-		viewContainer->rootCell->gatherViewTabs(tabs);
+		viewPane->gatherViewTabs(tabs);
 		dragTab = nullptr;
-		draggingContainerSource = viewContainer;
+		draggingPaneSource = viewPane;
 
 		for (auto tab : tabs)
 		{
-			Rect paneRect = tab->parentViewPane->rect;
+			Rect paneRect = tab->viewPane->rect;
 
 			// return if the widget is not visible, that is outside current clip rect
 			if (tab->rect.outside(paneRect))
@@ -285,36 +287,37 @@ void handleViewContainerResize(ViewContainer* viewContainer)
 			}
 		}
 
-		if (resizingCell)
+		if (resizingPane)
 		{
 			draggingViewPaneBorder = true;
 		}
 	}
 
+	// execute docking or undocking
 	if (crtEvent.type == InputEvent::Type::MouseUp)
 	{
 		const f32 moveTriggerDelta = 3;
 		bool moved = fabs(lastMousePos.x - crtEvent.mouse.point.x) > moveTriggerDelta || fabs(lastMousePos.y - crtEvent.mouse.point.y) > moveTriggerDelta;
 
-		// we have a cell to dock to
-		if (dockToCell)
+		// we have a pane to dock to
+		if (dockToPane)
 		{
 			ViewPane* newPane = nullptr;
-			auto dockToViewPane = dockToCell->viewPane;
+			auto dockToViewPane = dockToPane;
 			bool executeDocking = true;
 
 			// we don't have to create a new view pane if it holds just one view tab
-			if (dragTab && dragTab->parentViewPane->viewTabs.size() == 1)
+			if (dragTab && dragTab->viewPane->viewTabs.size() == 1)
 			{
-				newPane = dragTab->parentViewPane;
+				newPane = dragTab->viewPane;
 
 				if (newPane != dockToViewPane)
 				{
-					draggingContainerSource->rootCell->removeViewPaneCell(newPane);
+					draggingPaneSource->removeChild(newPane);
 
-					if (draggingContainerSource == viewContainer)
+					if (draggingPaneSource == viewPane)
 					{
-						dockToCell = draggingContainerSource->rootCell->findCellOfViewPane(dockToViewPane);
+						dockToPane = dockToViewPane;
 					}
 				}
 				else
@@ -346,129 +349,132 @@ void handleViewContainerResize(ViewContainer* viewContainer)
 				newPane->viewTabs.push_back(dragTab);
 				newPane->selectedTabIndex = 0;
 				newPane->rect = dockRect;
+
 				// remove from old pane
-				if (dragTab->parentViewPane)
+				if (dragTab->viewPane)
 				{
-					dragTab->parentViewPane->removeViewTab(dragTab);
+					dragTab->viewPane->removeViewTab(dragTab);
 				}
 				// re-parent to new pane
-				dragTab->parentViewPane = newPane;
+				dragTab->viewPane = newPane;
 
-				if (dockToCell && dockType != DockType::TopAsViewTab)
+				if (dockToPane && dockType != DockType::TopAsViewTab)
 				{
 					// dock the new pane
-					dockToCell->dockViewPane(newPane, dockType);
+					//dockToPane->dockViewTab(newPane, dockType);
 				}
 
-				if (draggingContainerSource->rootCell->children.empty()
-					&& draggingContainerSource->rootCell->splitMode == LayoutCell::CellSplitMode::None
-					&& !draggingContainerSource->rootCell->viewPane)
+				if (draggingPaneSource->children.empty()
+					&& draggingPaneSource->splitMode == ViewPane::SplitMode::None
+					&& !draggingPaneSource)
 				{
-					if (hui::getMainWindow() != draggingContainerSource->window)
+					if (hui::getMainWindow() != draggingPaneSource->window)
 					{
-						destroyWindow(draggingContainerSource->window);
-						auto iter = std::find(ctx->dockingData.viewContainers.begin(), ctx->dockingData.viewContainers.end(), draggingContainerSource);
+						destroyWindow(draggingPaneSource->window);
+						auto iter = std::find(ctx->dockingData.rootViewPanes.begin(), ctx->dockingData.rootViewPanes.end(), draggingPaneSource);
 
-						ctx->dockingData.viewContainers.erase(iter);
+						ctx->dockingData.rootViewPanes.erase(iter);
 						//TODO: crashes LLVM on MacOS, check for dangling ptrs
-						draggingContainerSource->destroy();
-						delete draggingContainerSource;
-						draggingContainerSource = nullptr;
+						draggingPaneSource->destroy();
+						delete draggingPaneSource;
+						draggingPaneSource = nullptr;
 					}
 				}
 
-				dockToCell = nullptr;
+				dockToPane = nullptr;
 
-				if (draggingContainerSource)
+				if (draggingPaneSource)
 				{
-					hui::updateViewContainerLayout(draggingContainerSource);
+					hui::updateViewPaneLayout(draggingPaneSource);
 				}
 
-				hui::updateViewContainerLayout(viewContainer);
+				hui::updateViewPaneLayout(viewPane);
 				hui::forceRepaint();
 			}
 		}
 		else if (dragTab && !dragOntoTab && moved)
 		{
 			// do not undock if the source window is the main window and there is just one tab left!
-			if (!(dragTab->parentViewPane->viewTabs.size() == 1
-				&& draggingContainerSource->rootCell->viewPane == dragTab->parentViewPane)
+			if (!(dragTab->viewPane->viewTabs.size() == 1
+				&& draggingPaneSource == dragTab->viewPane)
 				&& ctx->settings.allowUndockingToNewWindow)
 			{
-				Rect rc = hui::getWindowRect(draggingContainerSource->window);
+				Rect rc = hui::getWindowRect(draggingPaneSource->window);
 
 				auto paneWnd = hui::createWindow(
 					"",
-					dragTab->parentViewPane->rect.width,
-					dragTab->parentViewPane->rect.height,
+					dragTab->viewPane->rect.width,
+					dragTab->viewPane->rect.height,
 					WindowFlags::Resizable | WindowFlags::NoTaskbarButton | WindowFlags::CustomPosition,
 					{
-						crtEvent.mouse.point.x + rc.x - dragTab->parentViewPane->rect.width / 2,
+						crtEvent.mouse.point.x + rc.x - dragTab->viewPane->rect.width / 2,
 						crtEvent.mouse.point.y + rc.y
 					});
 
-				auto newViewContainer = createViewContainer(paneWnd);
+				auto newViewPane = createRootViewPane(paneWnd);
 
 				// we don't have to create a new view pane if it holds just one view tab
-				if (dragTab->parentViewPane->viewTabs.size() == 1)
+				if (dragTab->viewPane->viewTabs.size() == 1)
 				{
-					viewContainer->rootCell->removeViewPaneCell(dragTab->parentViewPane);
-					hui::dockViewPane(dragTab->parentViewPane, newViewContainer, DockType::TopAsViewTab);
+					viewPane->removeChild(dragTab->viewPane);
+					//hui::dockViewPane(dragTab->viewPane, newViewPane, DockType::TopAsViewTab);
 				}
 				else
 				{
 					// remove from old pane
-					dragTab->parentViewPane->removeViewTab(dragTab);
-					auto newPane = (ViewPane*)hui::createViewPane(newViewContainer, DockType::TopAsViewTab);
+					dragTab->viewPane->removeViewTab(dragTab);
+					auto newPane = (ViewPane*)hui::createViewPane(newViewPane, DockType::TopAsViewTab);
 					newPane->viewTabs.push_back(dragTab);
-					dragTab->parentViewPane = newPane;
+					dragTab->viewPane = newPane;
 				}
 
-				updateViewContainerLayout((ViewContainer*)newViewContainer);
+				updateViewPaneLayout((ViewPane*)newViewPane);
 			}
 
-			updateViewContainerLayout(viewContainer);
+			updateViewPaneLayout(viewPane);
 			hui::forceRepaint();
 		}
 
-		if (resizingCell)
+		if (resizingPane)
 		{
-			resizingCell->parent->fixNormalizedSizes();
+			resizingPane->parent->fixNormalizedSizes();
 		}
 
-		draggingContainerSource = nullptr;
+		draggingPaneSource = nullptr;
 		draggingViewPaneBorder = false;
 		draggingViewPaneTab = false;
 		dragTab = nullptr;
-		resizingCell = nullptr;
+		resizingPane = nullptr;
 	}
 
 	const auto mousePos = ctx->providers->input->getMousePosition();
-	auto overCellToResize = viewContainer->rootCell->findResizeCell(mousePos, gripSize);
+	auto overPaneToResize = viewPane->findResizeViewPane(mousePos, gripSize);
 
 	// if we drag a tab or a pane splitter
 	if (crtEvent.type == InputEvent::Type::MouseDown
 		|| dragTab
-		|| overCellToResize
-		|| resizingCell)
+		|| overPaneToResize
+		|| resizingPane)
 	{
-		auto cellToResize = overCellToResize;
+		auto paneToResize = overPaneToResize;
 		const int moveOffsetTriggerSize = 3;
 		bool moved = fabs(lastMousePos.x - mousePos.x) > moveOffsetTriggerSize || abs(lastMousePos.y - mousePos.y) > moveOffsetTriggerSize;
 
 		if (dragTab)
 		{
 			// draw tab rect
-			auto dockingRectElem = ctx->theme->getElement(WidgetElementId::ViewPaneDockRect);
-			auto dockingDialRectElem = ctx->theme->getElement(WidgetElementId::ViewPaneDockDialRect);
-			auto tabGroupElem = ctx->theme->getElement(WidgetElementId::TabGroupBody);
+			auto& dockingRectElem = ctx->theme->getElement(WidgetElementId::ViewPaneDockRect);
+			auto& dockingDialRectElem = ctx->theme->getElement(WidgetElementId::ViewPaneDockDialRect);
+			auto& dockingDialRectVSplitElem = ctx->theme->getElement(WidgetElementId::ViewPaneDockDialVSplitRect);
+			auto& dockingDialRectHSplitElem = ctx->theme->getElement(WidgetElementId::ViewPaneDockDialHSplitRect);
+			auto& tabGroupElem = ctx->theme->getElement(WidgetElementId::TabGroupBody);
 			auto zorder = ctx->renderer->getZOrder();
 
 			if (crtEvent.type == InputEvent::Type::MouseDown || ctx->mouseMoved || moved)
 			{
 				std::vector<ViewTab*> tabs;
 
-				viewContainer->rootCell->gatherViewTabs(tabs);
+				viewPane->gatherViewTabs(tabs);
 				dragOntoTab = nullptr;
 
 				for (auto tab : tabs)
@@ -485,43 +491,41 @@ void handleViewContainerResize(ViewContainer* viewContainer)
 					&& dragTab
 					&& dragOntoTab)
 				{
-					if (dragTab->parentViewPane == dragOntoTab->parentViewPane)
+					if (dragTab->viewPane == dragOntoTab->viewPane)
 					{
 						// same pane
-						size_t index1 = dragTab->parentViewPane->getViewTabIndex(dragTab);
-						size_t index2 = dragTab->parentViewPane->getViewTabIndex(dragOntoTab);
+						size_t index1 = dragTab->viewPane->getViewTabIndex(dragTab);
+						size_t index2 = dragTab->viewPane->getViewTabIndex(dragOntoTab);
 
-						dragTab->parentViewPane->viewTabs[index1] = dragOntoTab;
-						dragTab->parentViewPane->viewTabs[index2] = dragTab;
-						dragTab->parentViewPane->selectedTabIndex = index2;
+						dragTab->viewPane->viewTabs[index1] = dragOntoTab;
+						dragTab->viewPane->viewTabs[index2] = dragTab;
+						dragTab->viewPane->selectedTabIndex = index2;
 					}
 				}
 
 				// check for docking on pane views
-				dockToCell = viewContainer->rootCell->findDockCell(mousePos);
+				dockToPane = viewPane->findDockViewPane(mousePos);
 			}
 
-			bool isSamePane = dockToCell == viewContainer->rootCell->findCellOfViewPane(dragTab->parentViewPane);
-			bool isPaneSingleTab = dragTab->parentViewPane->viewTabs.size() == 1;
+			bool isSamePane = dockToPane == dragTab->viewPane;
+			bool isPaneSingleTab = dragTab->viewPane->viewTabs.size() == 1;
 
-			if (!dockToCell)
+			if (!dockToPane)
 			{
 				if (dragOntoTab && !isSamePane)
 				{
-					rectDragged = dockRect;
-					dockToCell = viewContainer->rootCell->findCellOfViewPane(dragOntoTab->parentViewPane);
+					rectDragged = dragTab->rect;
+					rectDragged.x = mousePos.x - rectDragged.width / 2;
+					rectDragged.y = mousePos.y - rectDragged.height / 2;
+					rectDragged.height = dragTab->rect.height * 2; // we have two lines of text when undocking "Undock\nTabname"
+					dockToPane = dragOntoTab->viewPane;
 				}
 				else
 				{
 					// docking not allowed
-					dockToCell = nullptr;
+					dockToPane = nullptr;
 				}
 			}
-
-			rectDragged = dragTab->rect;
-			rectDragged.x = mousePos.x - rectDragged.width / 2;
-			rectDragged.y = mousePos.y - rectDragged.height / 2;
-			rectDragged.height = dragTab->rect.height * 2; // we have two lines of text when undocking "Undock\nTabname"
 			
 			if (dragTab != dragOntoTab)
 			{
@@ -529,12 +533,12 @@ void handleViewContainerResize(ViewContainer* viewContainer)
 				ctx->renderer->beginFrame();
 				ctx->renderer->cmdSetColor(dockingRectElem.normalState().color);
 
-				if (dockToCell)
+				if (dockToPane)
 				{
 					// draw the 5 locations where we can dock the pane
 					const f32 smallRectSize = 64 * ctx->globalScale;
 					const f32 smallRectGap = 1 * ctx->globalScale;
-					auto parentRect = dockToCell->rect;
+					auto parentRect = dockToPane->rect;
 		
 					auto smallRectLeft = Rect(
 						parentRect.x + parentRect.width / 2.0f - smallRectSize / 2.0f - smallRectGap - smallRectSize,
@@ -561,10 +565,10 @@ void handleViewContainerResize(ViewContainer* viewContainer)
 						parentRect.y + parentRect.height / 2.0f - smallRectSize / 2.0f,
 						smallRectSize, smallRectSize);
 
-					auto rootRect = viewContainer->rootCell->rect;
+					auto rootRect = viewPane->rect;
 
 					auto smallRectRootLeft = Rect(
-						smallRectGap,
+						rootRect.x + smallRectGap,
 						rootRect.y + rootRect.height / 2.0f - smallRectSize / 2.0f,
 						smallRectSize, smallRectSize);
 
@@ -593,128 +597,173 @@ void handleViewContainerResize(ViewContainer* viewContainer)
 					auto isSmallRectRootTopHovered = smallRectRootTop.contains(mousePos);
 					auto isSmallRectRootBottomHovered = smallRectRootBottom.contains(mousePos);
 
-					if (isSmallRectLeftHovered) dockType = DockType::Left;
-					if (isSmallRectRightHovered) dockType = DockType::Right;
-					if (isSmallRectTopHovered) dockType = DockType::Top;
-					if (isSmallRectBottomHovered) dockType = DockType::Bottom;
-					if (isSmallRectMiddleHovered) dockType = DockType::TopAsViewTab;
-					
+					if (isSmallRectLeftHovered)
+					{
+						dockType = DockType::Left;
+						rectDragged = parentRect;
+						rectDragged.width /= 2;
+					}
+
+					if (isSmallRectRightHovered)
+					{
+						dockType = DockType::Right;
+						rectDragged = parentRect;
+						rectDragged.x += rectDragged.width / 2;
+						rectDragged.width /= 2;
+					}
+
+					if (isSmallRectTopHovered)
+					{
+						dockType = DockType::Top;
+						rectDragged = parentRect;
+						rectDragged.height /= 2;
+					}
+
+					if (isSmallRectBottomHovered)
+					{
+						dockType = DockType::Bottom;
+						rectDragged = parentRect;
+						rectDragged.y += rectDragged.height / 2;
+						rectDragged.height /= 2;
+					}
+
+					if (isSmallRectMiddleHovered)
+					{
+						dockType = DockType::TopAsViewTab;
+						rectDragged = parentRect;
+						rectDragged.height = tabGroupElem.normalState().height;
+					}
+
 					if (isSmallRectRootLeftHovered)
 					{
-						dockToCell = viewContainer->rootCell; dockType = DockType::RootLeft;
+						dockToPane = viewPane;
+						dockType = DockType::RootLeft;
+						rectDragged = dockToPane->rect;
+						rectDragged.width /= 2.0f;
 					}
 					
 					if (isSmallRectRootRightHovered)
 					{
-						dockToCell = viewContainer->rootCell; dockType = DockType::RootRight;
+						dockToPane = viewPane;
+						dockType = DockType::RootRight;
+						rectDragged = dockToPane->rect;
+						rectDragged.x += rectDragged.width / 2.0f;
+						rectDragged.width /= 2.0f;
 					}
 					
 					if (isSmallRectRootTopHovered)
 					{
-						dockToCell = viewContainer->rootCell; dockType = DockType::RootTop;
+						dockToPane = viewPane;
+						dockType = DockType::RootTop;
+						rectDragged = dockToPane->rect;
+						rectDragged.height /= 2.0f;
 					}
 					
 					if (isSmallRectRootBottomHovered)
 					{
-						dockToCell = viewContainer->rootCell; dockType = DockType::RootBottom;
+						dockToPane = viewPane;
+						dockType = DockType::RootBottom;
+						rectDragged = dockToPane->rect;
+						rectDragged.y += rectDragged.height / 2.0f;
+						rectDragged.height /= 2.0f;
 					}
 
-					ctx->renderer->cmdSetColor(isSmallRectLeftHovered ? dockingDialRectElem.hoveredState().color : dockingDialRectElem.normalState().color);
+					ctx->renderer->cmdSetColor(isSmallRectLeftHovered ? dockingDialRectVSplitElem.hoveredState().color : dockingDialRectVSplitElem.normalState().color);
 					ctx->renderer->cmdDrawImageBordered(
-						dockingDialRectElem.normalState().image,
-						dockingDialRectElem.normalState().border, smallRectLeft, ctx->globalScale);
+						dockingDialRectVSplitElem.normalState().image,
+						dockingDialRectVSplitElem.normalState().border, smallRectLeft, ctx->globalScale);
 
-					ctx->renderer->cmdSetColor(isSmallRectRightHovered ? dockingDialRectElem.hoveredState().color : dockingDialRectElem.normalState().color);
+					ctx->renderer->cmdSetColor(isSmallRectRightHovered ? dockingDialRectVSplitElem.hoveredState().color : dockingDialRectVSplitElem.normalState().color);
 					ctx->renderer->cmdDrawImageBordered(
-						dockingDialRectElem.normalState().image,
-						dockingDialRectElem.normalState().border, smallRectRight, ctx->globalScale);
+						dockingDialRectVSplitElem.normalState().image,
+						dockingDialRectVSplitElem.normalState().border, smallRectRight, ctx->globalScale);
 
-					ctx->renderer->cmdSetColor(isSmallRectTopHovered ? dockingDialRectElem.hoveredState().color : dockingDialRectElem.normalState().color);
+					ctx->renderer->cmdSetColor(isSmallRectTopHovered ? dockingDialRectHSplitElem.hoveredState().color : dockingDialRectHSplitElem.normalState().color);
 					ctx->renderer->cmdDrawImageBordered(
-						dockingDialRectElem.normalState().image,
-						dockingDialRectElem.normalState().border, smallRectTop, ctx->globalScale);
+						dockingDialRectHSplitElem.normalState().image,
+						dockingDialRectHSplitElem.normalState().border, smallRectTop, ctx->globalScale);
 
-					ctx->renderer->cmdSetColor(isSmallRectBottomHovered ? dockingDialRectElem.hoveredState().color : dockingDialRectElem.normalState().color);
+					ctx->renderer->cmdSetColor(isSmallRectBottomHovered ? dockingDialRectHSplitElem.hoveredState().color : dockingDialRectHSplitElem.normalState().color);
 					ctx->renderer->cmdDrawImageBordered(
-						dockingDialRectElem.normalState().image,
-						dockingDialRectElem.normalState().border, smallRectBottom, ctx->globalScale);
+						dockingDialRectHSplitElem.normalState().image,
+						dockingDialRectHSplitElem.normalState().border, smallRectBottom, ctx->globalScale);
 
 					ctx->renderer->cmdSetColor(isSmallRectMiddleHovered ? dockingDialRectElem.hoveredState().color : dockingDialRectElem.normalState().color);
 					ctx->renderer->cmdDrawImageBordered(
 						dockingDialRectElem.normalState().image,
 						dockingDialRectElem.normalState().border, smallRectMiddle, ctx->globalScale);
 
-					ctx->renderer->cmdSetColor(isSmallRectRootLeftHovered ? dockingDialRectElem.hoveredState().color : dockingDialRectElem.normalState().color);
+					ctx->renderer->cmdSetColor(isSmallRectRootLeftHovered ? dockingDialRectVSplitElem.hoveredState().color : dockingDialRectVSplitElem.normalState().color);
 					ctx->renderer->cmdDrawImageBordered(
-						dockingDialRectElem.normalState().image,
-						dockingDialRectElem.normalState().border, smallRectRootLeft, ctx->globalScale);
+						dockingDialRectVSplitElem.normalState().image,
+						dockingDialRectVSplitElem.normalState().border, smallRectRootLeft, ctx->globalScale);
 
-					ctx->renderer->cmdSetColor(isSmallRectRootRightHovered ? dockingDialRectElem.hoveredState().color : dockingDialRectElem.normalState().color);
+					ctx->renderer->cmdSetColor(isSmallRectRootRightHovered ? dockingDialRectVSplitElem.hoveredState().color : dockingDialRectVSplitElem.normalState().color);
 					ctx->renderer->cmdDrawImageBordered(
-						dockingDialRectElem.normalState().image,
-						dockingDialRectElem.normalState().border, smallRectRootRight, ctx->globalScale);
+						dockingDialRectVSplitElem.normalState().image,
+						dockingDialRectVSplitElem.normalState().border, smallRectRootRight, ctx->globalScale);
 
-					ctx->renderer->cmdSetColor(isSmallRectRootTopHovered ? dockingDialRectElem.hoveredState().color : dockingDialRectElem.normalState().color);
+					ctx->renderer->cmdSetColor(isSmallRectRootTopHovered ? dockingDialRectHSplitElem.hoveredState().color : dockingDialRectHSplitElem.normalState().color);
 					ctx->renderer->cmdDrawImageBordered(
-						dockingDialRectElem.normalState().image,
-						dockingDialRectElem.normalState().border, smallRectRootTop, ctx->globalScale);
+						dockingDialRectHSplitElem.normalState().image,
+						dockingDialRectHSplitElem.normalState().border, smallRectRootTop, ctx->globalScale);
 
-					ctx->renderer->cmdSetColor(isSmallRectRootBottomHovered ? dockingDialRectElem.hoveredState().color : dockingDialRectElem.normalState().color);
+					ctx->renderer->cmdSetColor(isSmallRectRootBottomHovered ? dockingDialRectHSplitElem.hoveredState().color : dockingDialRectHSplitElem.normalState().color);
 					ctx->renderer->cmdDrawImageBordered(
-						dockingDialRectElem.normalState().image,
-						dockingDialRectElem.normalState().border, smallRectRootBottom, ctx->globalScale);
+						dockingDialRectHSplitElem.normalState().image,
+						dockingDialRectHSplitElem.normalState().border, smallRectRootBottom, ctx->globalScale);
 				}
 
 				ctx->renderer->cmdDrawImageBordered(dockingRectElem.normalState().image, dockingRectElem.normalState().border, rectDragged, ctx->globalScale);
 				ctx->renderer->cmdSetFont(dockingRectElem.normalState().font);
 				ctx->renderer->cmdSetColor(dockingRectElem.normalState().textColor);
-				ctx->drawMultilineText(dragTab->title, rectDragged, HAlignType::Center, VAlignType::Center);
+				ctx->drawMultilineText(dragTab->title.c_str(), rectDragged, HAlignType::Center, VAlignType::Center);
 				ctx->renderer->endFrame();
 			}
 		}
 
-		// do we resize a cell ?
-		if ((cellToResize || resizingCell) && !dragTab)
+		// are we resizing a pane ?
+		if ((paneToResize || resizingPane) && !dragTab)
 		{
-			LayoutCell::CellSplitMode splitType = LayoutCell::CellSplitMode::None;
+			ViewPane::SplitMode splitType = ViewPane::SplitMode::None;
 
-			if (cellToResize)
+			if (paneToResize)
 			{
-				if (cellToResize->parent)
+				if (paneToResize->parent)
 				{
-					splitType = cellToResize->parent->splitMode;
+					splitType = paneToResize->parent->splitMode;
 				}
 			}
 
-			if (resizingCell)
+			if (resizingPane)
 			{
-				if (resizingCell->parent)
+				if (resizingPane->parent)
 				{
-					splitType = resizingCell->parent->splitMode;
+					splitType = resizingPane->parent->splitMode;
 				}
 
 				if (crtEvent.type == InputEvent::Type::MouseDown)
 				{
-					resizeCellRect = resizingCell->rect;
-					auto iterNextCell = std::find(resizingCell->parent->children.begin(), resizingCell->parent->children.end(), resizingCell);
+					resizePaneRect = resizingPane->rect;
+					auto iterNextPane = std::find(resizingPane->parent->children.begin(), resizingPane->parent->children.end(), resizingPane);
 
-					iterNextCell++;
+					iterNextPane++;
 
-					if (iterNextCell != resizingCell->parent->children.end())
+					if (iterNextPane != resizingPane->parent->children.end())
 					{
-						resizeCellSiblingRect = (*iterNextCell)->rect;
+						resizePaneSiblingRect = (*iterNextPane)->rect;
 					}
 				}
 			}
 
 			switch (splitType)
 			{
-			case LayoutCell::CellSplitMode::Horizontal:
+			case ViewPane::SplitMode::Horizontal:
 			{
 				ctx->mouseCursor = MouseCursorType::SizeWE;
 				break;
 			}
-			case LayoutCell::CellSplitMode::Vertical:
+			case ViewPane::SplitMode::Vertical:
 			{
 				ctx->mouseCursor = MouseCursorType::SizeNS;
 				break;
@@ -727,90 +776,82 @@ void handleViewContainerResize(ViewContainer* viewContainer)
 	}
 
 	if (draggingViewPaneBorder
-		&& resizingCell
-		&& resizingCell->parent)
+		&& resizingPane
+		&& resizingPane->parent)
 	{
-		switch (resizingCell->parent->splitMode)
+		switch (resizingPane->parent->splitMode)
 		{
-		case LayoutCell::CellSplitMode::Horizontal:
+		case ViewPane::SplitMode::Horizontal:
 		{
-			f32 normalizedSizeBothSiblings = (resizeCellRect.width + resizeCellSiblingRect.width) / resizingCell->parent->rect.width;
-			f32 normalizedSize1 = (mousePos.x - resizeCellRect.x) / resizingCell->parent->rect.width;
-			f32 normalizedSize2 = (resizeCellSiblingRect.right() - mousePos.x) / resizingCell->parent->rect.width;
-			auto iterNextCell = std::find(resizingCell->parent->children.begin(), resizingCell->parent->children.end(), resizingCell);
+			f32 normalizedSizeBothSiblings = (resizePaneRect.width + resizePaneSiblingRect.width) / resizingPane->parent->rect.width;
+			f32 normalizedSize1 = (mousePos.x - resizePaneRect.x) / resizingPane->parent->rect.width;
+			f32 normalizedSize2 = (resizePaneSiblingRect.right() - mousePos.x) / resizingPane->parent->rect.width;
+			auto iterNextPane = std::find(resizingPane->parent->children.begin(), resizingPane->parent->children.end(), resizingPane);
 
-			iterNextCell++;
-			resizingCell->normalizedSize.x = normalizedSize1;
+			iterNextPane++;
+			resizingPane->normalizedSize.x = normalizedSize1;
 
-			//TODO: externalize to user
-			const f32 minPaneNormalizedSize = 0.1f;
-
-			if (resizingCell->normalizedSize.x < minPaneNormalizedSize)
+			if (resizingPane->normalizedSize.x < resizingPane->minNormalizedSize.x)
 			{
-				resizingCell->normalizedSize.x = minPaneNormalizedSize;
+				resizingPane->normalizedSize.x = resizingPane->minNormalizedSize.y;
 			}
 
-			if (iterNextCell != resizingCell->parent->children.end())
+			if (iterNextPane != resizingPane->parent->children.end())
 			{
-				if (resizingCell->normalizedSize.x + normalizedSize2 > normalizedSizeBothSiblings)
+				if (resizingPane->normalizedSize.x + normalizedSize2 > normalizedSizeBothSiblings)
 				{
-					normalizedSize2 = normalizedSizeBothSiblings - resizingCell->normalizedSize.x;
+					normalizedSize2 = normalizedSizeBothSiblings - resizingPane->normalizedSize.x;
 				}
 
-				(*iterNextCell)->normalizedSize.x = normalizedSize2;
+				(*iterNextPane)->normalizedSize.x = normalizedSize2;
 
-				if ((*iterNextCell)->normalizedSize.x < minPaneNormalizedSize)
+				if ((*iterNextPane)->normalizedSize.x < resizingPane->minNormalizedSize.x)
 				{
-					(*iterNextCell)->normalizedSize.x = minPaneNormalizedSize;
-					resizingCell->normalizedSize.x = normalizedSizeBothSiblings - (*iterNextCell)->normalizedSize.x;
+					(*iterNextPane)->normalizedSize.x = resizingPane->minNormalizedSize.x;
+					resizingPane->normalizedSize.x = normalizedSizeBothSiblings - (*iterNextPane)->normalizedSize.x;
 				}
 			}
 
 			break;
 		}
 
-		case LayoutCell::CellSplitMode::Vertical:
+		case ViewPane::SplitMode::Vertical:
 		{
-			f32 normalizedSizeBothSiblings = (resizeCellRect.height + resizeCellSiblingRect.height) / resizingCell->parent->rect.height;
-			f32 normalizedSize1 = (mousePos.y - resizeCellRect.y) / resizingCell->parent->rect.height;
-			f32 normalizedSize2 = (resizeCellSiblingRect.bottom() - mousePos.y) / resizingCell->parent->rect.height;
-			auto iterNextCell = std::find(resizingCell->parent->children.begin(), resizingCell->parent->children.end(), resizingCell);
+			f32 normalizedSizeBothSiblings = (resizePaneRect.height + resizePaneSiblingRect.height) / resizingPane->parent->rect.height;
+			f32 normalizedSize1 = (mousePos.y - resizePaneRect.y) / resizingPane->parent->rect.height;
+			f32 normalizedSize2 = (resizePaneSiblingRect.bottom() - mousePos.y) / resizingPane->parent->rect.height;
+			auto iterNextPane = std::find(resizingPane->parent->children.begin(), resizingPane->parent->children.end(), resizingPane);
 
-			iterNextCell++;
-			resizingCell->normalizedSize.y = normalizedSize1;
+			iterNextPane++;
+			resizingPane->normalizedSize.y = normalizedSize1;
 
-			//TODO: externalize to user
-			const f32 minPaneNormalizedSize = 0.1f;
-
-			if (resizingCell->normalizedSize.y < minPaneNormalizedSize)
+			if (resizingPane->normalizedSize.y < resizingPane->minNormalizedSize.x)
 			{
-				resizingCell->normalizedSize.y = minPaneNormalizedSize;
+				resizingPane->normalizedSize.y = resizingPane->minNormalizedSize.y;
 			}
 
-			if (iterNextCell != resizingCell->parent->children.end())
+			if (iterNextPane != resizingPane->parent->children.end())
 			{
-				if (resizingCell->normalizedSize.y + normalizedSize2 > normalizedSizeBothSiblings)
+				if (resizingPane->normalizedSize.y + normalizedSize2 > normalizedSizeBothSiblings)
 				{
-					normalizedSize2 = normalizedSizeBothSiblings - resizingCell->normalizedSize.y;
+					normalizedSize2 = normalizedSizeBothSiblings - resizingPane->normalizedSize.y;
 				}
 
-				(*iterNextCell)->normalizedSize.y = normalizedSize2;
+				(*iterNextPane)->normalizedSize.y = normalizedSize2;
 
-				if ((*iterNextCell)->normalizedSize.y < minPaneNormalizedSize)
+				if ((*iterNextPane)->normalizedSize.y < resizingPane->minNormalizedSize.y)
 				{
-					(*iterNextCell)->normalizedSize.y = minPaneNormalizedSize;
-					resizingCell->normalizedSize.y = normalizedSizeBothSiblings - (*iterNextCell)->normalizedSize.y;
+					(*iterNextPane)->normalizedSize.y = resizingPane->minNormalizedSize.y;
+					resizingPane->normalizedSize.y = normalizedSizeBothSiblings - (*iterNextPane)->normalizedSize.y;
 				}
 			}
 
 			break;
 		}
-		default:
-			break;
 		}
 
-		resizingCell->parent->fixNormalizedSizes();
-		updateViewContainerLayout(viewContainer);
+		resizingPane->parent->fixNormalizedSizes();
+		updateViewPaneLayout(viewPane);
 		hui::forceRepaint();
 	}
 

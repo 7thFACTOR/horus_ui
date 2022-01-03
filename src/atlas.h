@@ -52,7 +52,7 @@ public:
 		u32 spacing = 2,
 		const Color& bgColor = Color::black);
 	void repackImages();
-	void packWithLastUsedParams() { pack(lastUsedSpacing, lastUsedBgColor); }
+	bool packWithLastUsedParams() { return pack(lastUsedSpacing, lastUsedBgColor); }
 	void clearImages();
 
 	Image* whiteImage = nullptr;

@@ -111,6 +111,8 @@ WidgetElementId getWidgetElementFromName(std::string name)
 	if (name == "tabBodyInactive") return WidgetElementId::TabBodyInactive;
 	if (name == "viewPaneDockRect") return WidgetElementId::ViewPaneDockRect;
 	if (name == "viewPaneDockDialRect") return WidgetElementId::ViewPaneDockDialRect;
+	if (name == "viewPaneDockDialVSplitRect") return WidgetElementId::ViewPaneDockDialVSplitRect;
+	if (name == "viewPaneDockDialHSplitRect") return WidgetElementId::ViewPaneDockDialHSplitRect;
 	if (name == "menuBarBody") return WidgetElementId::MenuBarBody;
 	if (name == "menuBarItem") return WidgetElementId::MenuBarItem;
 	if (name == "menuBody") return WidgetElementId::MenuBody;
@@ -148,35 +150,38 @@ std::string getPath(const std::string& fname)
 	return (std::string::npos == pos) ? "" : fname.substr(0, pos);
 }
 
-bool getColorFromText(std::string colorText, Color& color)
+Color getColorFromText(std::string colorText)
 {
-	if (colorText == "white") { color = Color::white; return true; }
-	if (colorText == "black") { color = Color::black; return true; }
-	if (colorText == "red") { color = Color::red; return true; }
-	if (colorText == "darkRed") { color = Color::darkRed; return true; }
-	if (colorText == "veryDarkRed") { color = Color::veryDarkRed; return true; }
-	if (colorText == "green") { color = Color::green; return true; }
-	if (colorText == "darkGreen") { color = Color::darkGreen; return true; }
-	if (colorText == "veryDarkGreen") { color = Color::veryDarkGreen; return true; }
-	if (colorText == "blue") { color = Color::blue; return true; }
-	if (colorText == "yellow") { color = Color::yellow; return true; }
-	if (colorText == "magenta") { color = Color::magenta; return true; }
-	if (colorText == "cyan") { color = Color::cyan; return true; }
-	if (colorText == "darkCyan") { color = Color::darkCyan; return true; }
-	if (colorText == "veryDarkCyan") { color = Color::veryDarkCyan; return true; }
-	if (colorText == "orange") { color = Color::orange; return true; }
-	if (colorText == "darkOrange") { color = Color::darkOrange; return true; }
-	if (colorText == "lightGray") { color = Color::lightGray; return true; }
-	if (colorText == "gray") { color = Color::gray; return true; }
-	if (colorText == "darkGray") { color = Color::darkGray; return true; }
-	if (colorText == "sky") { color = Color::sky; return true; }
+	if (colorText == "white") { return Color::white; }
+	if (colorText == "black") { return Color::black; }
+	if (colorText == "red") { return Color::red; }
+	if (colorText == "darkRed") { return Color::darkRed; }
+	if (colorText == "veryDarkRed") { return Color::veryDarkRed; }
+	if (colorText == "green") { return Color::green; }
+	if (colorText == "darkGreen") { return Color::darkGreen; }
+	if (colorText == "veryDarkGreen") { return Color::veryDarkGreen; }
+	if (colorText == "blue") { return Color::blue; }
+	if (colorText == "yellow") { return Color::yellow; }
+	if (colorText == "magenta") { return Color::magenta; }
+	if (colorText == "cyan") { return Color::cyan; }
+	if (colorText == "darkCyan") { return Color::darkCyan; }
+	if (colorText == "veryDarkCyan") { return Color::veryDarkCyan; }
+	if (colorText == "orange") { return Color::orange; }
+	if (colorText == "darkOrange") { return Color::darkOrange; }
+	if (colorText == "lightGray") { return Color::lightGray; }
+	if (colorText == "gray") { return Color::gray; }
+	if (colorText == "darkGray") { return Color::darkGray; }
+	if (colorText == "sky") { return Color::sky; }
 
-	return false;
+	u32 r, g, b, a;
+	sscanf(colorText.c_str(), "%d %d %d %d", &r, &g, &b, &a);
+
+	return Color((f32)r / 255.0f, (f32)g / 255.0f, (f32)b / 255.0f, (f32)a / 255.0f);
 }
 
-bool getColorFromText(const char* colorText, Color& color)
+Color getColorFromText(const char* colorText)
 {
-	return getColorFromText(std::string(colorText), color);
+	return getColorFromText(std::string(colorText));
 }
 
 void setThemeElement(
@@ -215,17 +220,8 @@ void setThemeElement(
 	Color bgColor;
 	Color txtColor;
 
-	if (!getColorFromText(color, bgColor))
-	{
-		sscanf(color.c_str(), "%d %d %d %d", &r, &g, &b, &a);
-		bgColor = Color((f32)r / 255.0f, (f32)g / 255.0f, (f32)b / 255.0f, (f32)a / 255.0f);
-	}
-
-	if (!getColorFromText(textColor, txtColor))
-	{
-		sscanf(textColor.c_str(), "%d %d %d %d", &r, &g, &b, &a);
-		txtColor = Color((f32)r / 255.0f, (f32)g / 255.0f, (f32)b / 255.0f, (f32)a / 255.0f);
-	}
+	bgColor = getColorFromText(color);
+	txtColor = getColorFromText(textColor);
 
 	WidgetElementInfo elemInfo;
 
@@ -274,17 +270,8 @@ void setUserElement(
 	Color bgColor;
 	Color txtColor;
 
-	if (!getColorFromText(color, bgColor))
-	{
-		sscanf(color.c_str(), "%d %d %d %d", &r, &g, &b, &a);
-		bgColor = Color((f32)r / 255.0f, (f32)g / 255.0f, (f32)b / 255.0f, (f32)a / 255.0f);
-	}
-
-	if (!getColorFromText(textColor, txtColor))
-	{
-		sscanf(textColor.c_str(), "%d %d %d %d", &r, &g, &b, &a);
-		txtColor = Color((f32)r / 255.0f, (f32)g / 255.0f, (f32)b / 255.0f, (f32)a / 255.0f);
-	}
+	bgColor = getColorFromText(color);
+	txtColor = getColorFromText(textColor);
 
 	WidgetElementInfo elemInfo;
 
