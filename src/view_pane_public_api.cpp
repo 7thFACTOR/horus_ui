@@ -13,8 +13,7 @@ HViewPane createRootViewPane(HWindow window)
 	auto rect = getWindowRect(window);
 	auto viewPane = new ViewPane();
 
-	viewPane->normalizedSize.x = 1.0f;
-	viewPane->normalizedSize.y = 1.0f;
+	viewPane->rect.set(0, 0, rect.width, rect.height);
 	viewPane->window = window;
 	ctx->dockingData.rootViewPanes.push_back(viewPane);
 
@@ -44,103 +43,118 @@ bool dockViewTab(HViewPane viewPane, HViewPaneTab viewTab, DockType dockType)
 	auto viewPanePtr = (ViewPane*)viewPane;
 	auto viewTabPtr = (ViewTab*)viewTab;
 	auto parent = viewPanePtr->parent;
-	auto dockTo = parent ? parent : viewPanePtr;
-	ViewPane* newViewPane = nullptr;
+	auto dockInside = parent ? parent : viewPanePtr;
+	ViewPane* viewPaneToDock = nullptr;
 
-	if (dockTo->children.empty())
+	if (!dockInside)
+		return false;
+
+	// if this is the first view pane to be docked, set the split mode
+	if (dockInside->children.empty())
 	{
 		switch (dockType)
 		{
 		case hui::DockType::Left:
 		case hui::DockType::Right:
-			dockTo->splitMode = ViewPane::SplitMode::Horizontal;
+		case hui::DockType::RootLeft:
+		case hui::DockType::RootRight:
+			dockInside->splitMode = ViewPane::SplitMode::Horizontal;
 			break;
 		case hui::DockType::Top:
 		case hui::DockType::Bottom:
-			dockTo->splitMode = ViewPane::SplitMode::Vertical;
+		case hui::DockType::RootTop:
+		case hui::DockType::RootBottom:
+			dockInside->splitMode = ViewPane::SplitMode::Vertical;
 			break;
 		case hui::DockType::TopAsViewTab:
-			dockTo->splitMode = ViewPane::SplitMode::None;
+			dockInside->splitMode = ViewPane::SplitMode::None;
 			break;
+		}
+
+		viewPaneToDock = dockInside->acquireViewTab(viewTabPtr, dockType);
+		dockInside->children.push_back(viewPaneToDock);
+
+		if (!parent)
+		{
+			// this is a root view pane, set size to window size
+
 		}
 	}
 
-	// if we have a parent, dock inside it, next to our view pane
-	if (parent)
+	// dock inside the parent view pane, next to the sibling view pane
+	auto iter = std::find(dockInside->children.begin(), dockInside->children.end(), viewPanePtr);
+
+	const f32 splitFactor = 0.333333f;
+
+	if (iter != dockInside->children.end())
 	{
-		auto iter = parent->children.begin();
-		while (iter != parent->children.end())
+		auto siblingPane = *iter;
+
+		switch (dockType)
 		{
-			if (*iter == viewPanePtr)
+		case hui::DockType::Left:
+		case hui::DockType::Top:
+		{
+			viewPaneToDock = dockInside->acquireViewTab(viewTabPtr, dockType);
+			dockInside->children.insert(iter, viewPaneToDock);
+
+			if (dockType == hui::DockType::Left)
 			{
-				switch (dockType)
-				{
-				case hui::DockType::Left:
-				case hui::DockType::Top:
-				{
-					newViewPane = parent->acquireViewTab(viewTabPtr, dockType);
-					parent->children.insert(iter, newViewPane);
-					newViewPane->setNewSize();
-					break;
-				}
-				case hui::DockType::Right:
-				case hui::DockType::Bottom:
-				{
-					newViewPane = parent->acquireViewTab(viewTabPtr, dockType);
-					parent->children.insert(++iter, newViewPane);
-					break;
-				}
-				case hui::DockType::TopAsViewTab:
-				{
-					newViewPane = parent->acquireViewTab(viewTabPtr, dockType);
-					break;
-				}
-				}
-				break;
+				viewPaneToDock->rect.x = siblingPane->rect.x;
+				viewPaneToDock->rect.y = siblingPane->rect.y;
+				viewPaneToDock->rect.width = siblingPane->rect.width * splitFactor;
+				viewPaneToDock->rect.height = siblingPane->rect.height;
+
+				siblingPane->rect.width -= viewPaneToDock->rect.width;
+				siblingPane->rect.x = viewPaneToDock->rect.right();
 			}
-		}
-	}
-	else
-	{
-		// no parent, that means this is the root view pane
-		switch (dockType)
-		{
-		case hui::DockType::Left:
-		case hui::DockType::Top:
-		{
-			newViewPane = viewPanePtr->acquireViewTab(viewTabPtr, dockType);
-			viewPanePtr->children.insert(viewPanePtr->children.begin(), newViewPane);
+			else if (dockType == hui::DockType::Top)
+			{
+				viewPaneToDock->rect.x = siblingPane->rect.x;
+				viewPaneToDock->rect.y = siblingPane->rect.y;
+				viewPaneToDock->rect.height = siblingPane->rect.height * splitFactor;
+				viewPaneToDock->rect.width = siblingPane->rect.width;
+
+				siblingPane->rect.height -= viewPaneToDock->rect.height;
+				siblingPane->rect.y = viewPaneToDock->rect.bottom();
+			}
+
 			break;
 		}
 		case hui::DockType::Right:
 		case hui::DockType::Bottom:
 		{
-			newViewPane = viewPanePtr->acquireViewTab(viewTabPtr, dockType);
-			viewPanePtr->children.insert(viewPanePtr->children.end(), newViewPane);
+			viewPaneToDock = dockInside->acquireViewTab(viewTabPtr, dockType);
+			dockInside->children.insert(++iter, viewPaneToDock);
+
+			if (dockType == hui::DockType::Right)
+			{
+				viewPaneToDock->rect.y = siblingPane->rect.y;
+				viewPaneToDock->rect.width = siblingPane->rect.width * splitFactor;
+				viewPaneToDock->rect.height = siblingPane->rect.height;
+
+				siblingPane->rect.width -= viewPaneToDock->rect.width;
+				viewPaneToDock->rect.x = siblingPane->rect.right();
+			}
+			else if (dockType == hui::DockType::Bottom)
+			{
+				viewPaneToDock->rect.x = siblingPane->rect.x;
+				viewPaneToDock->rect.height = siblingPane->rect.height * splitFactor;
+				viewPaneToDock->rect.width = siblingPane->rect.width;
+
+				siblingPane->rect.height -= viewPaneToDock->rect.height;
+				viewPaneToDock->rect.y = siblingPane->rect.y;
+			}
+
 			break;
 		}
 		case hui::DockType::TopAsViewTab:
 		{
-			newViewPane = viewPanePtr->acquireViewTab(viewTabPtr, dockType);
+			viewPaneToDock = parent->acquireViewTab(viewTabPtr, dockType);
 			break;
 		}
 		}
 	}
-
-
-	switch (dockTo->splitMode)
-	{
-	case ViewPane::SplitMode::Vertical:
-		dockTo->normalizedSize.x = 1.0f;
-		newViewPane->normalizedSize.y = 1.0f - percentOfNewPaneSplit;
-		break;
-	case ViewPane::SplitMode::Horizontal:
-		newViewPane->normalizedSize.x = 1.0f - percentOfNewPaneSplit;
-		newViewPane->normalizedSize.y = 1.0f;
-		break;
-	}
-
-
 }
 
 void deleteViewPane(HViewPane viewPane)

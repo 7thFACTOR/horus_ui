@@ -41,7 +41,7 @@ struct ViewPane
 	bool deserialize(MemoryStream& stream, struct ViewHandler* viewHandler);
 	void setNewSize(f32 size);
 	void computeRect(const Point& startPos);
-	void computeSize();
+	//void computeSize();
 	ViewPane* findResizeViewPane(const Point& pt, i32 gripSize);
 	ViewPane* findDockViewPane(const Point& pt);
 	void dockViewTab(ViewTab* dockViewTab, DockType dock);
