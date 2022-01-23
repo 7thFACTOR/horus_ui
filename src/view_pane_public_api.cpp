@@ -19,24 +19,17 @@ HViewPane createRootViewPane(HWindow window)
 
 	return viewPane;
 }
-//
-//HViewPane createViewPane(HViewPane parentViewPane, DockType dock, f32 size)
-//{
-//	ViewPane* viewPaneObj = (ViewPane*)parentViewPane;
-//	auto newViewPane = new ViewPane();
-//
-//	dockViewTab
-//
-//	viewPaneObj->doc
-//
-//	newViewPane->normalizedSize.x = 1.0f;
-//	newViewPane->normalizedSize.y = 1.0f;
-//	newViewPane->window = viewPaneObj->window;
-//	newViewPane->parent = viewPaneObj;
-//	viewPaneObj->children.push_back(newViewPane);
-//
-//	return viewPane;
-//}
+
+HViewPane createViewPane(HViewPane parentViewPane, DockType dock, f32 size)
+{
+	ViewPane* viewPaneObj = (ViewPane*)parentViewPane;
+	auto newViewPane = new ViewPane();
+
+	newViewPane->window = viewPaneObj->window;
+	newViewPane->parent = viewPaneObj;
+
+	return newViewPane;
+}
 
 bool dockViewTab(HViewPane viewPane, HViewPaneTab viewTab, DockType dockType)
 {
@@ -166,8 +159,22 @@ bool dockViewTab(HViewPane viewPane, HViewPaneTab viewTab, DockType dockType)
 		case hui::DockType::Left:
 		case hui::DockType::Top:
 		{
+			dockInside = new ViewPane();
+			*dockInside = *viewPanePtr;
+			dockInside->children.clear();
+			dockInside->viewTabs.clear();
+			viewPanePtr->parent = dockInside;
+
+			if (dockType == DockType::Left)
+				dockInside->splitMode = ViewPane::SplitMode::Vertical;
+			else
+				dockInside->splitMode = ViewPane::SplitMode::Horizontal;
+
+			// add the view panes to new parent
 			viewPaneToDock = dockInside->acquireViewTab(viewTabPtr, dockType);
-			dockInside->children.insert(iter, viewPaneToDock);
+			dockInside->children.push_back(viewPaneToDock);
+
+			auto siblingPane = viewPanePtr;
 
 			if (dockType == hui::DockType::Left)
 			{
@@ -195,8 +202,23 @@ bool dockViewTab(HViewPane viewPane, HViewPaneTab viewTab, DockType dockType)
 		case hui::DockType::Right:
 		case hui::DockType::Bottom:
 		{
+			dockInside = new ViewPane();
+			*dockInside = *viewPanePtr;
+			dockInside->children.clear();
+			dockInside->viewTabs.clear();
+			viewPanePtr->parent = dockInside;
+
+			if (dockType == DockType::Right)
+				dockInside->splitMode = ViewPane::SplitMode::Vertical;
+			else
+				dockInside->splitMode = ViewPane::SplitMode::Horizontal;
+
+			// add the view panes to new parent
 			viewPaneToDock = dockInside->acquireViewTab(viewTabPtr, dockType);
-			dockInside->children.insert(++iter, viewPaneToDock);
+			dockInside->children.push_back(viewPanePtr);
+			dockInside->children.push_back(viewPaneToDock);
+
+			auto siblingPane = viewPanePtr;
 
 			if (dockType == hui::DockType::Right)
 			{
@@ -226,7 +248,6 @@ bool dockViewTab(HViewPane viewPane, HViewPaneTab viewTab, DockType dockType)
 		}
 		}
 	}
-
 }
 
 void deleteViewPane(HViewPane viewPane)
@@ -298,7 +319,7 @@ bool saveViewPaneState(const char* filename)
 		return false;
 
 	size_t dataSize = 0;
-	u8* data = 	saveViewPaneStateToMemory(dataSize);
+	u8* data = saveViewPaneStateToMemory(dataSize);
 
 	if (data && dataSize)
 	{
@@ -544,7 +565,7 @@ void setViewIcon(ViewId id, HImage icon)
 	}
 }
 
-HViewPaneTab addViewPaneTab(HViewPane viewPane, const char* title, ViewId id, u64 userData)
+HViewPaneTab createViewPaneTab(HViewPane viewPane, const char* title, ViewId id, u64 userData)
 {
 	auto viewPaneObj = (ViewPane*)viewPane;
 	auto view = new ViewTab();

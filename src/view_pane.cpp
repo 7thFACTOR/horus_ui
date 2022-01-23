@@ -375,13 +375,24 @@ ViewPane* ViewPane::acquireViewTab(ViewTab* viewTab, DockType dock)
 		return viewTab->viewPane;
 	}
 
-	// create a new view pane and add the tab to it
-	auto viewPane = (ViewPane*)createRootViewPane(this->window);
-	viewPane->viewTabs.push_back(viewTab);
-	viewTab->viewPane = parent;
-	viewPane->parent = this;
+	// remove tab from the old view pane
+	viewTab->viewPane->removeViewTab(viewTab);
 
-	return viewPane;
+	if (dock == DockType::TopAsViewTab)
+	{
+		viewTabs.push_back(viewTab); // TODO tab ordering
+		return this;
+	}
+	else
+	{
+		// create a new view pane and add the tab to it
+		auto viewPane = new ViewPane();
+		viewPane->window = this->window;
+		viewPane->viewTabs.push_back(viewTab);
+		viewPane->parent = this;
+
+		return viewPane;
+	}
 }
 
 void ViewPane::gatherViewPanes(std::vector<ViewPane*>& panes)

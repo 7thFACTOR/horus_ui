@@ -25,8 +25,8 @@ struct ViewPane
 	enum class SplitMode
 	{
 		None,
-		Vertical,
-		Horizontal
+		Vertical, // =
+		Horizontal // ||
 	};
 
 	enum class SideSpacing
@@ -44,7 +44,6 @@ struct ViewPane
 	//void computeSize();
 	ViewPane* findResizeViewPane(const Point& pt, i32 gripSize);
 	ViewPane* findDockViewPane(const Point& pt);
-	void dockViewTab(ViewTab* dockViewTab, DockType dock);
 	void gatherViewPanes(std::vector<ViewPane*>& tabs);
 	void gatherViewTabs(std::vector<ViewTab*>& tabs);
 	ViewPane* findWidestChild(ViewPane* skipPane = nullptr);

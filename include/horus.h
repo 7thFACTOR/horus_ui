@@ -2694,7 +2694,7 @@ HORUS_API f32 getRemainingViewPaneClientHeight(HViewPane viewPane);
 /// \param id the view id to be shown in this tab
 /// \param userData the data id associated with this tab's view
 /// \return a view pane tab handle
-HORUS_API HViewPaneTab addViewPaneTab(HViewPane viewPane, const char* title, ViewId id, u64 userData);
+HORUS_API HViewPaneTab createViewPaneTab(HViewPane viewPane, const char* title, ViewId id, u64 userData);
 
 /// Remove a view pane tab
 HORUS_API void removeViewPaneTab(HViewPaneTab viewPaneTab);
