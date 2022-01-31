@@ -70,7 +70,6 @@ void updateDockingSystemInternal(bool isLastEvent)
 			|| hui::getInputEvent().type == InputEvent::Type::WindowGotFocus)
 			&& hui::getInputEvent().window == wnd)
 		{
-			updateViewPaneLayout(viewPane);
 			hui::forceRepaint();
 		}
 
@@ -205,18 +204,14 @@ void dockingSystemLoop()
 	}
 }
 
-void updateViewPaneLayout(ViewPane* viewPane)
+void resizeRootViewPaneToSides(ViewPane* viewPane)
 {
 	auto rect = getWindowRect(viewPane->window);
 
-	viewPane->normalizedSize.x = 1;
-	viewPane->normalizedSize.y = 1;
 	viewPane->rect.x = viewPane->sideSpacing[(int)ViewPane::SideSpacing::SideSpacingLeft];
 	viewPane->rect.y = viewPane->sideSpacing[(int)ViewPane::SideSpacing::SideSpacingTop];
 	viewPane->rect.width = rect.width - (viewPane->sideSpacing[(int)ViewPane::SideSpacing::SideSpacingLeft] + viewPane->sideSpacing[(int)ViewPane::SideSpacing::SideSpacingRight]);
 	viewPane->rect.height = rect.height - (viewPane->sideSpacing[(int)ViewPane::SideSpacing::SideSpacingTop] + viewPane->sideSpacing[(int)ViewPane::SideSpacing::SideSpacingBottom]);
-	viewPane->computeSize();
-	viewPane->fixNormalizedSizes();
 }
 
 void handleViewPaneResize(ViewPane* viewPane)
@@ -238,10 +233,9 @@ void handleViewPaneResize(ViewPane* viewPane)
 		return;
 	}
 
+	//TODO: maybe put all these in the current context
 	const i32 gripSize = 8;
 	const f32 dockBorderSizePercent = 0.5f;
-
-	//TODO: maybe put all these in the current context
 	static bool draggingViewPaneBorder = false;
 	static bool draggingViewPaneTab = false;
 	static ViewPane* draggingPaneSource = nullptr;
@@ -300,69 +294,9 @@ void handleViewPaneResize(ViewPane* viewPane)
 		bool moved = fabs(lastMousePos.x - crtEvent.mouse.point.x) > moveTriggerDelta || fabs(lastMousePos.y - crtEvent.mouse.point.y) > moveTriggerDelta;
 
 		// we have a pane to dock to
-		if (dockToPane)
+		if (dockToPane && moved)
 		{
-			ViewPane* newPane = nullptr;
-			auto dockToViewPane = dockToPane;
-			bool executeDocking = true;
-
-			// we don't have to create a new view pane if it holds just one view tab
-			if (dragTab && dragTab->viewPane->viewTabs.size() == 1)
-			{
-				newPane = dragTab->viewPane;
-
-				if (newPane != dockToViewPane)
-				{
-					draggingPaneSource->removeChild(newPane);
-
-					if (draggingPaneSource == viewPane)
-					{
-						dockToPane = dockToViewPane;
-					}
-				}
-				else
-				{
-					executeDocking = false;
-				}
-			}
-
-			if (!moved)
-			{
-				executeDocking = false;
-			}
-
-			// dock now
-			if (dragTab && executeDocking)
-			{
-				if (dockType == DockType::TopAsViewTab)
-				{
-					newPane = dockToViewPane;
-				}
-				else
-				{
-					if (!newPane)
-					{
-						newPane = new ViewPane();
-					}
-				}
-
-				newPane->viewTabs.push_back(dragTab);
-				newPane->selectedTabIndex = 0;
-				newPane->rect = dockRect;
-
-				// remove from old pane
-				if (dragTab->viewPane)
-				{
-					dragTab->viewPane->removeViewTab(dragTab);
-				}
-				// re-parent to new pane
-				dragTab->viewPane = newPane;
-
-				if (dockToPane && dockType != DockType::TopAsViewTab)
-				{
-					// dock the new pane
-					//dockToPane->dockViewTab(newPane, dockType);
-				}
+			dockViewTab(dockToPane, dragTab, dockType);
 
 				if (draggingPaneSource->children.empty()
 					&& draggingPaneSource->splitMode == ViewPane::SplitMode::None
@@ -383,12 +317,6 @@ void handleViewPaneResize(ViewPane* viewPane)
 
 				dockToPane = nullptr;
 
-				if (draggingPaneSource)
-				{
-					hui::updateViewPaneLayout(draggingPaneSource);
-				}
-
-				hui::updateViewPaneLayout(viewPane);
 				hui::forceRepaint();
 			}
 		}
@@ -402,7 +330,7 @@ void handleViewPaneResize(ViewPane* viewPane)
 				Rect rc = hui::getWindowRect(draggingPaneSource->window);
 
 				auto paneWnd = hui::createWindow(
-					"",
+					"", //TODO: title 
 					dragTab->viewPane->rect.width,
 					dragTab->viewPane->rect.height,
 					WindowFlags::Resizable | WindowFlags::NoTaskbarButton | WindowFlags::CustomPosition,
@@ -423,21 +351,14 @@ void handleViewPaneResize(ViewPane* viewPane)
 				{
 					// remove from old pane
 					dragTab->viewPane->removeViewTab(dragTab);
-					auto newPane = (ViewPane*)hui::createViewPane(newViewPane, DockType::TopAsViewTab);
+					auto newPane = (ViewPane*)hui::createEmptyViewPane(newViewPane, DockType::TopAsViewTab);
 					newPane->viewTabs.push_back(dragTab);
+					dockViewTab(newPane, );
 					dragTab->viewPane = newPane;
 				}
-
-				updateViewPaneLayout((ViewPane*)newViewPane);
 			}
 
-			updateViewPaneLayout(viewPane);
 			hui::forceRepaint();
-		}
-
-		if (resizingPane)
-		{
-			resizingPane->parent->fixNormalizedSizes();
 		}
 
 		draggingPaneSource = nullptr;
@@ -789,27 +710,27 @@ void handleViewPaneResize(ViewPane* viewPane)
 			auto iterNextPane = std::find(resizingPane->parent->children.begin(), resizingPane->parent->children.end(), resizingPane);
 
 			iterNextPane++;
-			resizingPane->normalizedSize.x = normalizedSize1;
+			//resizingPane->normalizedSize.x = normalizedSize1;
 
-			if (resizingPane->normalizedSize.x < resizingPane->minNormalizedSize.x)
-			{
-				resizingPane->normalizedSize.x = resizingPane->minNormalizedSize.y;
-			}
+			//if (resizingPane->normalizedSize.x < resizingPane->minNormalizedSize.x)
+			//{
+			//	resizingPane->normalizedSize.x = resizingPane->minNormalizedSize.y;
+			//}
 
 			if (iterNextPane != resizingPane->parent->children.end())
 			{
-				if (resizingPane->normalizedSize.x + normalizedSize2 > normalizedSizeBothSiblings)
-				{
-					normalizedSize2 = normalizedSizeBothSiblings - resizingPane->normalizedSize.x;
-				}
+				//if (resizingPane->normalizedSize.x + normalizedSize2 > normalizedSizeBothSiblings)
+				//{
+				//	normalizedSize2 = normalizedSizeBothSiblings - resizingPane->normalizedSize.x;
+				//}
 
-				(*iterNextPane)->normalizedSize.x = normalizedSize2;
+				//(*iterNextPane)->normalizedSize.x = normalizedSize2;
 
-				if ((*iterNextPane)->normalizedSize.x < resizingPane->minNormalizedSize.x)
-				{
-					(*iterNextPane)->normalizedSize.x = resizingPane->minNormalizedSize.x;
-					resizingPane->normalizedSize.x = normalizedSizeBothSiblings - (*iterNextPane)->normalizedSize.x;
-				}
+				//if ((*iterNextPane)->normalizedSize.x < resizingPane->minNormalizedSize.x)
+				//{
+				//	(*iterNextPane)->normalizedSize.x = resizingPane->minNormalizedSize.x;
+				//	resizingPane->normalizedSize.x = normalizedSizeBothSiblings - (*iterNextPane)->normalizedSize.x;
+				//}
 			}
 
 			break;
@@ -823,35 +744,33 @@ void handleViewPaneResize(ViewPane* viewPane)
 			auto iterNextPane = std::find(resizingPane->parent->children.begin(), resizingPane->parent->children.end(), resizingPane);
 
 			iterNextPane++;
-			resizingPane->normalizedSize.y = normalizedSize1;
+			//resizingPane->normalizedSize.y = normalizedSize1;
 
-			if (resizingPane->normalizedSize.y < resizingPane->minNormalizedSize.x)
-			{
-				resizingPane->normalizedSize.y = resizingPane->minNormalizedSize.y;
-			}
+			//if (resizingPane->normalizedSize.y < resizingPane->minNormalizedSize.x)
+			//{
+			//	resizingPane->normalizedSize.y = resizingPane->minNormalizedSize.y;
+			//}
 
-			if (iterNextPane != resizingPane->parent->children.end())
-			{
-				if (resizingPane->normalizedSize.y + normalizedSize2 > normalizedSizeBothSiblings)
-				{
-					normalizedSize2 = normalizedSizeBothSiblings - resizingPane->normalizedSize.y;
-				}
+			//if (iterNextPane != resizingPane->parent->children.end())
+			//{
+			//	if (resizingPane->normalizedSize.y + normalizedSize2 > normalizedSizeBothSiblings)
+			//	{
+			//		normalizedSize2 = normalizedSizeBothSiblings - resizingPane->normalizedSize.y;
+			//	}
 
-				(*iterNextPane)->normalizedSize.y = normalizedSize2;
+			//	(*iterNextPane)->normalizedSize.y = normalizedSize2;
 
-				if ((*iterNextPane)->normalizedSize.y < resizingPane->minNormalizedSize.y)
-				{
-					(*iterNextPane)->normalizedSize.y = resizingPane->minNormalizedSize.y;
-					resizingPane->normalizedSize.y = normalizedSizeBothSiblings - (*iterNextPane)->normalizedSize.y;
-				}
-			}
+			//	if ((*iterNextPane)->normalizedSize.y < resizingPane->minNormalizedSize.y)
+			//	{
+			//		(*iterNextPane)->normalizedSize.y = resizingPane->minNormalizedSize.y;
+			//		resizingPane->normalizedSize.y = normalizedSizeBothSiblings - (*iterNextPane)->normalizedSize.y;
+			//	}
+			//}
 
 			break;
 		}
 		}
 
-		resizingPane->parent->fixNormalizedSizes();
-		updateViewPaneLayout(viewPane);
 		hui::forceRepaint();
 	}
 

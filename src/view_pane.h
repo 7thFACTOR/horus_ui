@@ -39,15 +39,11 @@ struct ViewPane
 
 	bool serialize(MemoryStream& stream, struct ViewHandler* viewHandler);
 	bool deserialize(MemoryStream& stream, struct ViewHandler* viewHandler);
-	void setNewSize(f32 size);
-	void computeRect(const Point& startPos);
-	//void computeSize();
 	ViewPane* findResizeViewPane(const Point& pt, i32 gripSize);
 	ViewPane* findDockViewPane(const Point& pt);
 	void gatherViewPanes(std::vector<ViewPane*>& tabs);
 	void gatherViewTabs(std::vector<ViewTab*>& tabs);
 	ViewPane* findWidestChild(ViewPane* skipPane = nullptr);
-	void fixNormalizedSizes();
 	ViewPane* deleteChild(ViewPane* child);
 	bool removeChild(ViewPane* child);
 	void debug(i32 level);
@@ -61,8 +57,7 @@ struct ViewPane
 	HWindow window = 0;
 	std::vector<ViewPane*> children;
 	SplitMode splitMode = SplitMode::None;
-	Point normalizedSize = { 1, 1 };
-	Point minNormalizedSize = { 0.1f, 0.1f };
+	Point minSize = { 32, 32 };
 	Rect rect;
 	std::vector<ViewTab*> viewTabs;
 	size_t selectedTabIndex = 0;

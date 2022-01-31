@@ -2648,7 +2648,7 @@ HORUS_API void drawSolidTriangle(const Point& p1, const Point& p2, const Point& 
 /// Create a root view pane for a specific window, where views can be docked, used by the docking system
 HORUS_API HViewPane createRootViewPane(HWindow window);
 
-HORUS_API HViewPane createViewPane(HViewPane viewPane, DockType dock, f32 size);
+HORUS_API HViewPane createEmptyViewPane(HViewPane viewPane, DockType dock);
 
 /// Delete a view pane, used by the docking system
 HORUS_API void deleteViewPane(HViewPane viewPane);
@@ -2731,6 +2731,8 @@ HORUS_API void closeViewPane(HViewPane viewPane);
 HORUS_API u32 getViewPaneTabs(HViewPane viewPane, HViewPaneTab* outViewPaneTabs, u32 maxCount);
 
 HORUS_API u32 getViewPaneTabCount(HViewPane viewPane);
+
+HORUS_API bool dockViewTab(HViewPane viewPane, HViewPaneTab viewTab, DockType dockType);
 
 /// Set the current view handler, used throughout the docking system (also for save/load view window state)
 HORUS_API void setCurrentViewHandler(ViewHandler* handler);

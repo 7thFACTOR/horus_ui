@@ -55,8 +55,6 @@ ViewTab* ViewPane::getSelectedViewTab()
 bool ViewPane::serialize(MemoryStream& stream, struct ViewHandler* viewHandler)
 {
 	stream.write(&splitMode, sizeof(splitMode));
-	stream.write(&normalizedSize.x, sizeof(normalizedSize.x));
-	stream.write(&normalizedSize.y, sizeof(normalizedSize.y));
 
 	Rect rc = getWindowRect(window);
 	i32 isMainWindow = window == getMainWindow();
@@ -163,8 +161,6 @@ bool ViewPane::deserialize(MemoryStream& stream, struct ViewHandler* viewHandler
 
 	stream.read(&childCount, sizeof(childCount));
 	stream.read(&splitMode, sizeof(splitMode));
-	stream.read(&normalizedSize.x, sizeof(normalizedSize.x));
-	stream.read(&normalizedSize.y, sizeof(normalizedSize.y));
 
 	for (size_t i = 0; i < childCount; i++)
 	{
@@ -176,107 +172,6 @@ bool ViewPane::deserialize(MemoryStream& stream, struct ViewHandler* viewHandler
 	}
 
 	return true;
-}
-
-void ViewPane::setNewSize(f32 size)
-{
-	if (!parent)
-		return;
-
-	auto deltaSize = normalizedSize - size;
-	auto& siblings = parent->children;
-	auto amountToAdd = deltaSize / (f32)(siblings.size() - 1);
-
-	for (auto& sibling : siblings)
-	{
-		if (sibling == this)
-		{
-			continue;
-		}
-
-		if (parent->splitMode == SplitMode::Horizontal)
-			sibling->normalizedSize.x += amountToAdd.x;
-
-		if (parent->splitMode == SplitMode::Vertical)
-			sibling->normalizedSize.y += amountToAdd.y;
-	}
-
-	parent->computeSize();
-}
-
-void ViewPane::computeRect(const Point& startPos)
-{
-	if (parent)
-	{
-		rect.x = startPos.x;
-		rect.y = startPos.y;
-		rect.width = round(normalizedSize.x * parent->rect.width);
-		rect.height = round(normalizedSize.y * parent->rect.height);
-	}
-}
-
-void ViewPane::computeSize()
-{
-	switch (splitMode)
-	{
-	case SplitMode::None:
-		break;
-	case SplitMode::Horizontal:
-		if (!children.empty())
-			for (size_t i = 0; i < children.size() - 1; i++)
-			{
-				if (i == 0)
-				{
-					children[i]->computeRect({ rect.x, rect.y });
-				}
-
-				children[i]->computeSize();
-
-				auto iNext = i + 1;
-
-				if (iNext < children.size())
-				{
-					children[iNext]->rect.x = children[i]->rect.x + children[i]->rect.width;
-					children[iNext]->rect.y = rect.y;
-					children[iNext]->rect.width = round(rect.width * children[iNext]->normalizedSize.x);
-					children[iNext]->rect.height = rect.height;
-
-					if (iNext == children.size() - 1)
-					{
-						children[iNext]->computeSize();
-					}
-				}
-			}
-
-		break;
-	case SplitMode::Vertical:
-		if (!children.empty())
-			for (size_t i = 0; i < children.size() - 1; i++)
-			{
-				if (i == 0)
-				{
-					children[i]->computeRect({ rect.x, rect.y });
-				}
-
-				children[i]->computeSize();
-
-				auto iNext = i + 1;
-
-				if (iNext < children.size())
-				{
-					children[iNext]->rect.x = rect.x;
-					children[iNext]->rect.y = children[i]->rect.y + children[i]->rect.height;
-					children[iNext]->rect.width = rect.width;
-					children[iNext]->rect.height = rect.height * children[iNext]->normalizedSize.y;
-
-					if (iNext == children.size() - 1)
-					{
-						children[iNext]->computeSize();
-					}
-				}
-			}
-		break;
-	}
 }
 
 ViewPane* ViewPane::findResizeViewPane(const Point& pt, i32 gripSize)
@@ -436,16 +331,16 @@ ViewPane* ViewPane::findWidestChild(ViewPane* skipChild)
 		switch (splitMode)
 		{
 		case SplitMode::Vertical:
-			if (child->normalizedSize.y > maxWidth)
+			if (child->rect.height > maxWidth)
 			{
-				maxWidth = child->normalizedSize.y;
+				maxWidth = child->rect.height;
 				widestChild = child;
 			}
 			break;
 		case SplitMode::Horizontal:
-			if (child->normalizedSize.x > maxWidth)
+			if (child->rect.width > maxWidth)
 			{
-				maxWidth = child->normalizedSize.x;
+				maxWidth = child->rect.width;
 				widestChild = child;
 			}
 			break;
@@ -1133,100 +1028,78 @@ ViewPane* ViewPane::findWidestChild(ViewPane* skipChild)
 //	return dockedToCell;
 //}
 
-void ViewPane::fixNormalizedSizes()
-{
-	f64 amount = 0.0f;
-
-	for (auto child : children)
-	{
-		switch (splitMode)
-		{
-		case SplitMode::Horizontal:
-			amount += child->normalizedSize.x;
-			break;
-		case SplitMode::Vertical:
-			amount += child->normalizedSize.y;
-			break;
-		}
-	}
-
-	if (!children.empty())
-	{
-		auto last = children.back();
-
-		switch (splitMode)
-		{
-		case SplitMode::Horizontal:
-			last->normalizedSize.x += 1.0f - amount;
-			break;
-		case SplitMode::Vertical:
-			last->normalizedSize.y += 1.0f - amount;
-			break;
-		}
-	}
-}
-
 bool ViewPane::removeChild(ViewPane* viewPaneToRemove)
 {
-	for (auto child : children)
+	auto iter = children.begin();
+	std::vector<ViewPane*>::iterator iterPrev = children.end();
+	std::vector<ViewPane*>::iterator iterNext = children.end();
+
+	while (iter != children.end())
 	{
-		if (child == viewPaneToRemove)
+		if (*iter == viewPaneToRemove)
 		{
-			auto iter = std::find(children.begin(), children.end(), child);
+			iterPrev = iter;
+			iterPrev--;
+			iterNext = iter;
+			iterNext++;
+		}
+	}
 
-			// get the widest, beside this
-			auto widestChild = findWidestChild(child);
-
-			if (widestChild)
+	//TODO: make this shorter, use a scale factor to scale the sizes for next and prev
+	// if the next pane is the one to be removed, do it here
+	if (iter != children.end())
+	{
+		// check to see if we are first pane in the list
+		if (iter == children.begin())
+		{
+			// transfer size (width or height) to next view pane
+			if (iterNext != children.end())
 			{
-				switch (splitMode)
-				{
-				case SplitMode::Vertical:
-					widestChild->normalizedSize.y += child->normalizedSize.y;
-					break;
-				case SplitMode::Horizontal:
-					widestChild->normalizedSize.x += child->normalizedSize.x;
-					break;
-				default:
-					break;
-				}
+				if (splitMode == SplitMode::Vertical)
+					(*iterNext)->rect.width += viewPaneToRemove->rect.width;
+
+				if (splitMode == SplitMode::Horizontal)
+					(*iterNext)->rect.height += viewPaneToRemove->rect.height;
 			}
-
-			delete child;
-
-			if (iter != children.end())
+		}
+		else if (iter == --children.end())
+		{
+			// transfer size (width or height) to prev view pane
+			if (iterPrev != children.end())
 			{
-				children.erase(iter);
+				if (splitMode == SplitMode::Vertical)
+					(*iterPrev)->rect.width += viewPaneToRemove->rect.width;
+
+				if (splitMode == SplitMode::Horizontal)
+					(*iterPrev)->rect.height += viewPaneToRemove->rect.height;
 			}
-
-			// if one single cell remains, collapse it to parent
-			if (children.size() == 1)
-			{
-				auto singleChild = children[0];
-
-				splitMode = singleChild->splitMode;
-				children = singleChild->children;
-
-				// re-parent
-				for (auto child2 : children)
-				{
-					child2->parent = this;
-				}
-
-				delete singleChild;
-			}
-
-			return true;
 		}
 		else
 		{
-			auto deleted = child->removeChild(viewPaneToRemove);
-
-			if (deleted)
+			// transfer half size (width or height) to prev view pane
+			if (iterPrev != children.end())
 			{
-				return true;
+				if (splitMode == SplitMode::Vertical)
+					(*iterPrev)->rect.width += viewPaneToRemove->rect.width / 2.0f;
+
+				if (splitMode == SplitMode::Horizontal)
+					(*iterPrev)->rect.height += viewPaneToRemove->rect.height / 2.0f;
+			}
+
+			// transfer half size (width or height) to next view pane
+			if (iterNext != children.end())
+			{
+				if (splitMode == SplitMode::Vertical)
+					(*iterNext)->rect.width += viewPaneToRemove->rect.width / 2.0f;
+
+				if (splitMode == SplitMode::Horizontal)
+					(*iterNext)->rect.height += viewPaneToRemove->rect.height / 2.0f;
 			}
 		}
+	
+		children.erase(iter);
+
+		return true;
 	}
 
 	return false;

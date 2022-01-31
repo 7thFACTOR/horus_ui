@@ -20,7 +20,7 @@ HViewPane createRootViewPane(HWindow window)
 	return viewPane;
 }
 
-HViewPane createViewPane(HViewPane parentViewPane, DockType dock, f32 size)
+HViewPane createEmptyViewPane(HViewPane parentViewPane, DockType dock)
 {
 	ViewPane* viewPaneObj = (ViewPane*)parentViewPane;
 	auto newViewPane = new ViewPane();
@@ -400,7 +400,6 @@ bool loadViewPaneStateFromMemory(const u8* stateInfo, size_t stateInfoSize)
 
 		pane->deserialize(stream, ctx->currentViewHandler);
 		ctx->dockingData.rootViewPanes.push_back(pane);
-		updateViewPaneLayout(pane);
 	}
 
 	return true;
@@ -474,7 +473,6 @@ ViewId viewPaneTabs(HViewPane viewPane)
 		if (viewPaneObj->viewTabs.empty())
 		{
 			ctx->dockingData.currentViewPane->removeChild(viewPaneObj);
-			hui::updateViewPaneLayout(ctx->dockingData.currentViewPane);
 
 			// close window if no tabs
 			if (ctx->dockingData.currentViewPane->children.empty())

@@ -4,6 +4,5 @@
 
 namespace hui
 {
-void updateViewPaneLayout(ViewPane* viewPane);
 void handleViewPaneResize(ViewPane* viewPane);
 };
