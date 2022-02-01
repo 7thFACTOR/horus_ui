@@ -316,39 +316,6 @@ void ViewPane::gatherViewTabs(std::vector<ViewTab*>& tabs)
 	}
 }
 
-ViewPane* ViewPane::findWidestChild(ViewPane* skipChild)
-{
-	f32 maxWidth = 0;
-	ViewPane* widestChild = nullptr;
-
-	for (auto child : children)
-	{
-		if (skipChild == child)
-		{
-			continue;
-		}
-
-		switch (splitMode)
-		{
-		case SplitMode::Vertical:
-			if (child->rect.height > maxWidth)
-			{
-				maxWidth = child->rect.height;
-				widestChild = child;
-			}
-			break;
-		case SplitMode::Horizontal:
-			if (child->rect.width > maxWidth)
-			{
-				maxWidth = child->rect.width;
-				widestChild = child;
-			}
-			break;
-		}
-	}
-
-	return widestChild;
-}
 
 //ViewPane* ViewPane::dockViewPane1(ViewPane* viewPaneToDock, DockType dock)
 //{

@@ -43,7 +43,6 @@ struct ViewPane
 	ViewPane* findDockViewPane(const Point& pt);
 	void gatherViewPanes(std::vector<ViewPane*>& tabs);
 	void gatherViewTabs(std::vector<ViewTab*>& tabs);
-	ViewPane* findWidestChild(ViewPane* skipPane = nullptr);
 	ViewPane* deleteChild(ViewPane* child);
 	bool removeChild(ViewPane* child);
 	void debug(i32 level);

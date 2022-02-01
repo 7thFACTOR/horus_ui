@@ -1958,18 +1958,18 @@ struct MyViewHandler : hui::ViewHandler
 void createMyDefaultViewPanes()
 {
 	auto myRootViewPane = hui::createRootViewPane(hui::getMainWindow());
-	auto viewPane1 = hui::createViewPane(myRootViewPane, hui::DockType::Left);
+	auto viewPane1 = hui::createEmptyViewPane(myRootViewPane, hui::DockType::Left);
 	hui::createViewPaneTab(viewPane1, "Assets", 0, 0);
 	console1Tab = hui::createViewPaneTab(viewPane1, "Console1", 1, 0);
 	console2Tab = hui::createViewPaneTab(viewPane1, "Console2", 1, 1);
 	hui::createViewPaneTab(viewPane1, "Scene", 2, 0);
-	auto viewPane2 = hui::createViewPane(myRootViewPane, hui::DockType::Left);
+	auto viewPane2 = hui::createEmptyViewPane(myRootViewPane, hui::DockType::Left);
 	hui::createViewPaneTab(viewPane2, "Game", 3, 0);
-	auto viewPane3 = hui::createViewPane(myRootViewPane, hui::DockType::Left);
+	auto viewPane3 = hui::createEmptyViewPane(myRootViewPane, hui::DockType::Left);
 	hui::createViewPaneTab(viewPane3, "Particles", 4, 1);
-	auto viewPane4 = hui::createViewPane(myRootViewPane, hui::DockType::Bottom);
+	auto viewPane4 = hui::createEmptyViewPane(myRootViewPane, hui::DockType::Bottom);
 	hui::createViewPaneTab(viewPane4, "Properties", 5, 2);
-	auto viewPane5 = hui::createViewPane(myRootViewPane, hui::DockType::Right);
+	auto viewPane5 = hui::createEmptyViewPane(myRootViewPane, hui::DockType::Right);
 	hui::createViewPaneTab(viewPane5, "Object Inspector", 6, 3);
 }
 

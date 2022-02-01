@@ -298,68 +298,68 @@ void handleViewPaneResize(ViewPane* viewPane)
 		{
 			dockViewTab(dockToPane, dragTab, dockType);
 
-				if (draggingPaneSource->children.empty()
-					&& draggingPaneSource->splitMode == ViewPane::SplitMode::None
-					&& !draggingPaneSource)
-				{
-					if (hui::getMainWindow() != draggingPaneSource->window)
-					{
-						destroyWindow(draggingPaneSource->window);
-						auto iter = std::find(ctx->dockingData.rootViewPanes.begin(), ctx->dockingData.rootViewPanes.end(), draggingPaneSource);
+				//if (draggingPaneSource->children.empty()
+				//	&& draggingPaneSource->splitMode == ViewPane::SplitMode::None
+				//	&& !draggingPaneSource)
+				//{
+				//	if (hui::getMainWindow() != draggingPaneSource->window)
+				//	{
+				//		destroyWindow(draggingPaneSource->window);
+				//		auto iter = std::find(ctx->dockingData.rootViewPanes.begin(), ctx->dockingData.rootViewPanes.end(), draggingPaneSource);
 
-						ctx->dockingData.rootViewPanes.erase(iter);
-						//TODO: crashes LLVM on MacOS, check for dangling ptrs
-						draggingPaneSource->destroy();
-						delete draggingPaneSource;
-						draggingPaneSource = nullptr;
-					}
-				}
+				//		ctx->dockingData.rootViewPanes.erase(iter);
+				//		//TODO: crashes LLVM on MacOS, check for dangling ptrs
+				//		draggingPaneSource->destroy();
+				//		delete draggingPaneSource;
+				//		draggingPaneSource = nullptr;
+				//	}
+				//}
 
 				dockToPane = nullptr;
 
 				hui::forceRepaint();
-			}
+			//}
 		}
-		else if (dragTab && !dragOntoTab && moved)
-		{
-			// do not undock if the source window is the main window and there is just one tab left!
-			if (!(dragTab->viewPane->viewTabs.size() == 1
-				&& draggingPaneSource == dragTab->viewPane)
-				&& ctx->settings.allowUndockingToNewWindow)
-			{
-				Rect rc = hui::getWindowRect(draggingPaneSource->window);
+		//else if (dragTab && !dragOntoTab && moved)
+		//{
+		//	// do not undock if the source window is the main window and there is just one tab left!
+		//	if (!(dragTab->viewPane->viewTabs.size() == 1
+		//		&& draggingPaneSource == dragTab->viewPane)
+		//		&& ctx->settings.allowUndockingToNewWindow)
+		//	{
+		//		Rect rc = hui::getWindowRect(draggingPaneSource->window);
 
-				auto paneWnd = hui::createWindow(
-					"", //TODO: title 
-					dragTab->viewPane->rect.width,
-					dragTab->viewPane->rect.height,
-					WindowFlags::Resizable | WindowFlags::NoTaskbarButton | WindowFlags::CustomPosition,
-					{
-						crtEvent.mouse.point.x + rc.x - dragTab->viewPane->rect.width / 2,
-						crtEvent.mouse.point.y + rc.y
-					});
+		//		auto paneWnd = hui::createWindow(
+		//			"", //TODO: title 
+		//			dragTab->viewPane->rect.width,
+		//			dragTab->viewPane->rect.height,
+		//			WindowFlags::Resizable | WindowFlags::NoTaskbarButton | WindowFlags::CustomPosition,
+		//			{
+		//				crtEvent.mouse.point.x + rc.x - dragTab->viewPane->rect.width / 2,
+		//				crtEvent.mouse.point.y + rc.y
+		//			});
 
-				auto newViewPane = createRootViewPane(paneWnd);
+		//		auto newViewPane = createRootViewPane(paneWnd);
 
-				// we don't have to create a new view pane if it holds just one view tab
-				if (dragTab->viewPane->viewTabs.size() == 1)
-				{
-					viewPane->removeChild(dragTab->viewPane);
-					//hui::dockViewPane(dragTab->viewPane, newViewPane, DockType::TopAsViewTab);
-				}
-				else
-				{
-					// remove from old pane
-					dragTab->viewPane->removeViewTab(dragTab);
-					auto newPane = (ViewPane*)hui::createEmptyViewPane(newViewPane, DockType::TopAsViewTab);
-					newPane->viewTabs.push_back(dragTab);
-					dockViewTab(newPane, );
-					dragTab->viewPane = newPane;
-				}
-			}
+		//		// we don't have to create a new view pane if it holds just one view tab
+		//		if (dragTab->viewPane->viewTabs.size() == 1)
+		//		{
+		//			viewPane->removeChild(dragTab->viewPane);
+		//			//hui::dockViewPane(dragTab->viewPane, newViewPane, DockType::TopAsViewTab);
+		//		}
+		//		else
+		//		{
+		//			// remove from old pane
+		//			dragTab->viewPane->removeViewTab(dragTab);
+		//			auto newPane = (ViewPane*)hui::createEmptyViewPane(newViewPane, DockType::TopAsViewTab);
+		//			newPane->viewTabs.push_back(dragTab);
+		//			dockViewTab(newPane, );
+		//			dragTab->viewPane = newPane;
+		//		}
+		//	}
 
-			hui::forceRepaint();
-		}
+		//	hui::forceRepaint();
+		//}
 
 		draggingPaneSource = nullptr;
 		draggingViewPaneBorder = false;
@@ -407,6 +407,7 @@ void handleViewPaneResize(ViewPane* viewPane)
 					}
 				}
 
+				//TODO: visualize better the tab insertion
 				// if we dragged on some other tab
 				if (dragOntoTab != dragTab
 					&& dragTab
@@ -456,7 +457,7 @@ void handleViewPaneResize(ViewPane* viewPane)
 
 				if (dockToPane)
 				{
-					// draw the 5 locations where we can dock the pane
+					// draw the locations where we can dock the pane
 					const f32 smallRectSize = 64 * ctx->globalScale;
 					const f32 smallRectGap = 1 * ctx->globalScale;
 					auto parentRect = dockToPane->rect;

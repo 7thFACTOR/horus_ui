@@ -28,6 +28,8 @@ HViewPane createEmptyViewPane(HViewPane parentViewPane, DockType dock)
 	newViewPane->window = viewPaneObj->window;
 	newViewPane->parent = viewPaneObj;
 
+
+
 	return newViewPane;
 }
 
@@ -66,12 +68,6 @@ bool dockViewTab(HViewPane viewPane, HViewPaneTab viewTab, DockType dockType)
 
 		viewPaneToDock = dockInside->acquireViewTab(viewTabPtr, dockType);
 		dockInside->children.push_back(viewPaneToDock);
-
-		if (!parent)
-		{
-			// this is a root view pane, set size to window size
-
-		}
 	}
 
 	// dock inside the parent view pane, next to the sibling view pane
