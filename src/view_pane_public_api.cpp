@@ -28,8 +28,6 @@ HViewPane createEmptyViewPane(HViewPane parentViewPane, DockType dock)
 	newViewPane->window = viewPaneObj->window;
 	newViewPane->parent = viewPaneObj;
 
-
-
 	return newViewPane;
 }
 
@@ -51,14 +49,10 @@ bool dockViewTab(HViewPane viewPane, HViewPaneTab viewTab, DockType dockType)
 		{
 		case hui::DockType::Left:
 		case hui::DockType::Right:
-		case hui::DockType::RootLeft:
-		case hui::DockType::RootRight:
 			dockInside->splitMode = ViewPane::SplitMode::Horizontal;
 			break;
 		case hui::DockType::Top:
 		case hui::DockType::Bottom:
-		case hui::DockType::RootTop:
-		case hui::DockType::RootBottom:
 			dockInside->splitMode = ViewPane::SplitMode::Vertical;
 			break;
 		case hui::DockType::TopAsViewTab:
