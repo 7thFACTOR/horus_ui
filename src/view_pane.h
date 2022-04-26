@@ -51,6 +51,7 @@ struct ViewPane
 	void removeViewTab(ViewTab* viewTab);
 	ViewTab* getSelectedViewTab();
 	ViewPane* acquireViewTab(ViewTab* viewTab, DockType dock);
+	void reparent(ViewPane* newParent);
 
 	ViewPane* parent = nullptr;
 	HWindow window = 0;
@@ -60,7 +61,7 @@ struct ViewPane
 	Rect rect;
 	std::vector<ViewTab*> viewTabs;
 	size_t selectedTabIndex = 0;
-	f32 sideSpacing[4]; // spacing for all sides of the view pane, usually used for toolbars and main menu
+	f32 sideSpacing[4] = { 0 }; // spacing for all sides of the view pane, usually used for toolbars and main menu
 };
 
 }

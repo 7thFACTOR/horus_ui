@@ -296,7 +296,7 @@ void handleViewPaneResize(ViewPane* viewPane)
 		// we have a pane to dock to
 		if (dockToPane && moved)
 		{
-			dockViewTab(dockToPane, dragTab, dockType);
+			dockViewTab(dragTab, dockToPane, dockType);
 
 				//if (draggingPaneSource->children.empty()
 				//	&& draggingPaneSource->splitMode == ViewPane::SplitMode::None

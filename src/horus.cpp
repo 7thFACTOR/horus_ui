@@ -141,7 +141,11 @@ void addWidgetItem(f32 height)
 	ctx->widget.changeEnded = false;
 	height = round(height);
 
-	f32 width = (ctx->widget.sameLine ? ctx->widget.width : (ctx->widget.width != 0 ? ctx->widget.width : ctx->layoutStack.back().width)) - ctx->padding * 2.0f * ctx->globalScale;
+	auto pixelWidth = ctx->widget.width >= 1 ? ctx->widget.width : ctx->widget.width * ctx->layoutStack.back().width;
+
+	if (ctx->widget.width == 0) pixelWidth = 0;
+
+	f32 width = (ctx->widget.sameLine ? pixelWidth : (pixelWidth != 0 ? pixelWidth : ctx->layoutStack.back().width)) - ctx->padding * 2.0f * ctx->globalScale;
 	f32 verticalOffset = 0;
 	const f32 totalHeight = ctx->spacing * ctx->globalScale + height;
 

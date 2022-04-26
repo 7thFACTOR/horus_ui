@@ -255,6 +255,8 @@ ViewPane* ViewPane::findDockViewPane(const Point& pt)
 
 ViewPane* ViewPane::acquireViewTab(ViewTab* viewTab, DockType dock)
 {
+	if (!viewTab) return this;
+
 	auto tabCount = viewTab->viewPane->viewTabs.size();
 
 	// if there is just one tab in the pane, reparent the view pane to this
@@ -288,6 +290,17 @@ ViewPane* ViewPane::acquireViewTab(ViewTab* viewTab, DockType dock)
 
 		return viewPane;
 	}
+}
+
+void ViewPane::reparent(ViewPane* newParent)
+{
+	if (parent)
+	{
+		parent->removeChild(this);
+	}
+
+	parent = newParent;
+	parent->children.push_back(this);
 }
 
 void ViewPane::gatherViewPanes(std::vector<ViewPane*>& panes)
@@ -1093,9 +1106,9 @@ void ViewPane::debug(i32 level)
 	spaces.resize(level, ' ');
 	printf("%sCell: %p\n", spaces.c_str(), this);
 
-	printf("%s  holds pane: %s (%f %f %f %f)\n", spaces.c_str(), viewTabs[0]->title, rect.x,  rect.y,  rect.width,  rect.height);
+	printf("%s  holds pane: %s (%f %f %f %f)\n", spaces.c_str(), viewTabs[0]->title.c_str(), rect.x,  rect.y,  rect.width,  rect.height);
 
-	printf("%s  has %d children\n", spaces.c_str(), children.size());
+	printf("%s  has %ud children\n", spaces.c_str(), children.size());
 
 	for (auto child : children)
 	{
