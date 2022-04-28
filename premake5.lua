@@ -10,6 +10,7 @@ end
 configurations { "Debug", "Development", "Release" }
 
 -- global options
+cppdialect "gnu++17"
 architecture "x64" -- We only support 64bit architectures
 characterset "Unicode" -- We support Unicode
 flags { "NoMinimalRebuild", "MultiProcessorCompile", "NoPCH" }

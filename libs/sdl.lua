@@ -4,7 +4,8 @@ project "sdl"
 
 	files {
 		"sdl/src/**.c",
-		"sdl/src/**.cc"
+		"sdl/src/**.cc",
+		"sdl/gen/**.c"
 	}
 	excludes {
 		"sdl/src/main/**",
@@ -23,6 +24,7 @@ project "sdl"
 
 	defines "SDL_SHARED"
 	shared.includedirs "sdl/include/"
+	shared.includedirs "sdl/gen/"
 
 	-- can't use filters to exclude files
 	if os.target() == "windows" then
