@@ -1,6 +1,3 @@
-[submodule "libs/sdl"]
-	path = libs/sdl
-	url = https://github.com/spurious/SDL-mirror.git
 [submodule "libs/binpack"]
 	path = libs/binpack
 	url = https://github.com/nekitu/binpack.git
@@ -19,3 +16,6 @@
 [submodule "libs/freetype"]
 	path = libs/freetype
 	url = https://git.sv.nongnu.org/r/freetype/freetype2.git
+[submodule "libs/sdl"]
+	path = libs/sdl
+	url = https://github.com/libsdl-org/SDL.git
