@@ -17,8 +17,8 @@
 	path = examples/libs/stb
 	url = https://github.com/nothings/stb
 [submodule "examples/libs/utfcpp"]
-	path = libs/utfcpp
+	path = examples/libs/utfcpp
 	url = https://github.com/nemtrif/utfcpp
 [submodule "examples/libs/freetype"]
-	path = libs/freetype
+	path = examples/libs/freetype
 	url = https://git.sv.nongnu.org/r/freetype/freetype2.git
