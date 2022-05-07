@@ -1,6 +1,9 @@
 [submodule "examples/libs/sdl"]
 	path = examples/libs/sdl
 	url = https://github.com/spurious/SDL-mirror.git
+[submodule "examples/libs/glew"]
+	path = examples/libs/glew
+	url = https://github.com/edoren/glew
 [submodule "examples/libs/binpack"]
 	path = examples/libs/binpack
 	url = https://github.com/nekitu/binpack.git
@@ -14,11 +17,8 @@
 	path = examples/libs/stb
 	url = https://github.com/nothings/stb
 [submodule "examples/libs/utfcpp"]
-	path = examples/libs/utfcpp
+	path = libs/utfcpp
 	url = https://github.com/nemtrif/utfcpp
 [submodule "examples/libs/freetype"]
-	path = examples/libs/freetype
+	path = libs/freetype
 	url = https://git.sv.nongnu.org/r/freetype/freetype2.git
-[submodule "examples/libs/glew"]
-	path = examples/libs/glew
-	url = https://github.com/edoren/glew

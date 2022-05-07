@@ -1,7 +1,7 @@
 #include "json_theme_provider.h"
-#include "json/json.h"
-#include "json/reader.h"
 #include "horus_interfaces.h"
+#include <json/json.h>
+#include <json/reader.h>
 #include <assert.h>
 
 namespace hui

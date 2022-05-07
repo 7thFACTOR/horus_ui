@@ -1,7 +1,11 @@
 #pragma once
 #include <horus.h>
 #include <horus_interfaces.h>
+#ifndef HORUS_SKYLINEBINPACK_H
 #include "SkylineBinPack.h"
+#else
+#include HORUS_SKYLINEBINPACK_H
+#endif
 
 namespace hui
 {

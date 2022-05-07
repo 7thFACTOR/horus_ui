@@ -1,0 +1,25 @@
+# to the root binary directory of the project as ${HELLO_BINARY_DIR}.
+cmake_minimum_required(VERSION 2.8.11)
+project(horus_examples)
+
+set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS}")
+
+if(WINDOWS)
+	link_libraries("shlwapi"  "Ws2_32" "Wininet" "dbghelp"
+      "user32" "gdi32" "ole32" "oleaut32"  "uuid" "opengl32")
+endif(WINDOWS)
+
+if(LINUX)
+	link_libraries("X11 `pkg-config --libs gtk+-3.0`"
+      "Xi" "dl" "pthread" "Xext" "GL" "GLU")
+endif(LINUX)
+
+if(APPLE)
+	link_libraries("dl" "ForceFeedback.framework" "CoreVideo.framework" "Cocoa.framework"
+      "IOKit.framework" "Carbon.framework" "CoreAudio.framework" "AudioToolbox.framework" "OpenGL.framework")
+endif(APPLE)
+
+add_subdirectory(libs)
+#add_subdirectory(custom_widgets)
+add_subdirectory(widget_showroom)
+#add_subdirectory(without_docking)

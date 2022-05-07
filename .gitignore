@@ -1,8 +1,5 @@
 build_*/**
 bin/**
-3rdparty/**
 docs/html/**
-releases
 docs/doxygen
 bin
-build_vs2019
