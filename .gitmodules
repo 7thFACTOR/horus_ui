@@ -1,6 +1,6 @@
 [submodule "examples/libs/sdl"]
 	path = examples/libs/sdl
-	url = https://github.com/spurious/SDL-mirror.git
+	url = https://github.com/libsdl-org/SDL.git
 [submodule "examples/libs/glew"]
 	path = examples/libs/glew
 	url = https://github.com/edoren/glew
