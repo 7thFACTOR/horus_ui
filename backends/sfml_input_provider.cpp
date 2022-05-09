@@ -1,6 +1,8 @@
 #include "sfml_input_provider.h"
 #include <string.h>
 
+#ifdef HORUS_USE_SFML
+
 namespace hui
 {
 void SfmlInputProvider::processSfmlEvent(hui::Window window, sf::Event& ev)
@@ -661,3 +663,5 @@ void initializeWithSfml(const SfmlSettings& settings)
 }
 
 }
+
+#endif

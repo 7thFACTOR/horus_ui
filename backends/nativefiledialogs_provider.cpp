@@ -1,5 +1,6 @@
 #include "nativefiledialogs_provider.h"
 #include <nfd.h>
+#include <string.h>
 
 namespace hui
 {

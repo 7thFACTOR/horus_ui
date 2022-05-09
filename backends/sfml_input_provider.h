@@ -1,4 +1,5 @@
 #include "horus.h"
+#ifdef HORUS_USE_SFML
 #include <horus_interfaces.h>
 #include <SFML/System.hpp>
 #include <SFML/Graphics.hpp>
@@ -87,3 +88,5 @@ struct SfmlInputProvider : hui::InputProvider
 void initializeWithSfml(const SfmlSettings& settings);
 
 }
+
+#endif

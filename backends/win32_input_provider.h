@@ -1,10 +1,9 @@
 #pragma once
 #include "horus.h"
 #include "horus_interfaces.h"
-#define SDL_MAIN_HANDLED
-#include <SDL.h>
-#include <SDL_version.h>
 #include <vector>
+
+#if 0
 
 namespace hui
 {
@@ -101,3 +100,5 @@ struct Sdl2InputProvider : InputProvider
 void initializeWithSDL(const SdlSettings& settings);
 
 }
+
+#endif

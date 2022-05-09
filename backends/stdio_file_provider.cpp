@@ -40,7 +40,7 @@ size_t StdioFileProvider::tell(HFile file)
 #ifdef _WIN64
 	return _ftelli64((FILE*)file);
 #else
-	return ftell((FILE*)file, pos, (int)mode);
+	return ftell((FILE*)file);
 #endif
 }
 

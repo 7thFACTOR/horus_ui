@@ -1,7 +1,8 @@
-#include "sdl2_input_provider.h"
+#include "win32_input_provider.h"
 #include <string.h>
 #include <algorithm>
 
+#if 0
 namespace hui
 {
 Sdl2InputProvider::Sdl2InputProvider()
@@ -926,3 +927,5 @@ void initializeWithSDL(const SdlSettings& settings)
 }
 
 }
+
+#endif
