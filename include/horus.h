@@ -2206,7 +2206,7 @@ HORUS_API bool iconButton(HImage icon, f32 height = 0.0f, bool down = false);
 /// \param defaultText the grayed default text when there is no text value
 /// \param icon the icon drawn in the widget
 /// \return true if the text was modified
-HORUS_API bool textInput(char* text, u32 maxTextSize, TextInputValueMode valueType = TextInputValueMode::Any, const char* defaultText = nullptr, HImage icon = 0, bool password = false, const char* passwordChar = "•");
+HORUS_API bool textInput(char* text, u32 maxTextSize, TextInputValueMode valueType = TextInputValueMode::Any, const char* defaultText = nullptr, HImage icon = 0, bool password = false, const char* passwordChar = "\95");
 
 /// Draw an integer number slider widget
 /// \param minVal the minimum value

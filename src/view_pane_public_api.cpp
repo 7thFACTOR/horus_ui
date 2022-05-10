@@ -1,7 +1,7 @@
 #include "horus.h"
 #include "view_pane.h"
 #include "docking_system.h"
-#include <string.h>
+#include <cstring>
 #include <algorithm>
 #include <math.h>
 #include "context.h"

@@ -5,6 +5,7 @@
 #include "context.h"
 #include "util.h"
 #include <assert.h>
+#include <algorithm>
 
 namespace hui
 {

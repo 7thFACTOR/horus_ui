@@ -42,7 +42,15 @@ int main(int argc, char** args)
 	HORUS_GFX->initialize(); // init the gfx objects, since we have now a graphics context set
 	hui::initializeRenderer(); // init UI renderer for the current context
 
-	auto theme = hui::loadThemeFromJson("../themes/default.theme.json");
+	char err[2048];
+	auto theme = hui::loadThemeFromJson("../themes/default.theme.json", err, 2048);
+
+	if (!theme)
+	{
+		printf(err);
+		exit(1);
+	}
+
 	auto largeFnt = hui::getThemeFont(theme, "title");
 	hui::setTheme(theme);
 	bool exitNow = false;

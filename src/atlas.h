@@ -1,5 +1,4 @@
 #pragma once
-#include "horus.h"
 #include "types.h"
 #include "renderer.h"
 #include "horus_interfaces.h"

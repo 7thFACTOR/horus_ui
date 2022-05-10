@@ -23,9 +23,9 @@ endif(WINDOWS)
 
 
 add_definitions(-DHORUS_STATIC)
-add_executable(widget_showroom ${SRCS} ${HORUS_SRCS} ${BACKENDS} ${BINPACK} ${NFD_SRCS})
+add_executable(without_docking ${SRCS} ${HORUS_SRCS} ${BACKENDS} ${BINPACK} ${NFD_SRCS})
 
-target_include_directories(widget_showroom PUBLIC
+target_include_directories(without_docking PUBLIC
 	../../include
 	../../src
 	../../backends
@@ -39,16 +39,15 @@ target_include_directories(widget_showroom PUBLIC
 	../libs/binpack
 	../libs/freetype/include)
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -std=c++0x -O3 -fPIC" )
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -std=c++11 -O3 -fPIC" )
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -O3 -fPIC" )
 
 find_package(GTK REQUIRED)
 find_package(PkgConfig)
 pkg_check_modules(GTK "gtk+-3.0")
-target_link_libraries(widget_showroom ${GTK_LIBRARIES})
+target_link_libraries(without_docking ${GTK_LIBRARIES})
 add_definitions(${GTK_CFLAGS} ${GTK_CFLAGS_OTHER})
 
-target_link_directories(widget_showroom PUBLIC ${CMAKE_BINARY_DIR}/bin)
-target_link_libraries(widget_showroom libSDL2-2.0.so libfreetype.so libGLEW.so libjsoncpp.so libGL.so) 
-
+target_link_directories(without_docking PUBLIC ${CMAKE_BINARY_DIR}/bin)
+target_link_libraries(without_docking libSDL2-2.0.so libfreetype.so libGLEW.so libjsoncpp.so libGL.so) 
 

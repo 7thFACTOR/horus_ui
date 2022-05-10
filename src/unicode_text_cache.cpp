@@ -47,7 +47,7 @@ Utf32String* UnicodeTextCache::getText(const char* text)
 		else
 		{
 			delete txt;
-			return false;
+			return nullptr;
 		}
 	}
 

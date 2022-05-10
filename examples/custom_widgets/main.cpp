@@ -14,17 +14,16 @@
 #include "stdio_file_provider.h"
 #include "utfcpp_provider.h"
 
-using namespace hui;
-WidgetElementInfo inf;
+hui::WidgetElementInfo inf;
 
-void curveEditor(f32 height, u32 maxPoints, Point* points, u32& pointCount, const Color& lineColor)
+void curveEditor(f32 height, u32 maxPoints, hui::Point* points, u32& pointCount, const hui::Color& lineColor)
 {
-	beginCustomWidget(height);
-	setColor(isPressed() ? Color::red : Color::white);
-	drawBorderedImage(inf.image, inf.border, getWidgetRect());
-	setLineStyle({ Color::orange, 1.5f });
-	drawLine({ 10,10 }, { 10,110 });
-	SplineControlPoint p[4];
+	hui::beginCustomWidget(height);
+	hui::setColor(hui::isPressed() ? hui::Color::red : hui::Color::white);
+	hui::drawBorderedImage(inf.image, inf.border, hui::getWidgetRect());
+	hui::setLineStyle({ hui::Color::orange, 1.5f });
+	hui::drawLine({ 10,10 }, { 10,110 });
+	hui::SplineControlPoint p[4];
 	p[0].center = { 10, 20 };
 	p[0].rightTangent = { 10,20 };
 	p[1].center = { 210, 120 };
@@ -36,12 +35,12 @@ void curveEditor(f32 height, u32 maxPoints, Point* points, u32& pointCount, cons
 	p[2].leftTangent = { -10,20 };
 	p[2].rightTangent = { 10,20 };
 
-	p[3].center = getMousePosition();
+	p[3].center = hui::getMousePosition();
 	p[3].isLine = false;
 	p[3].leftTangent = { -10,20 };
 	p[3].rightTangent = { 10,20 };
-	drawSpline(p, 4, 100);
-	endCustomWidget();
+	hui::drawSpline(p, 4, 100);
+	hui::endCustomWidget();
 }
 
 int main(int argc, char** args)
@@ -76,7 +75,7 @@ int main(int argc, char** args)
 	hui::setTheme(theme);
 	auto largeFnt = hui::getThemeFont(theme, "title");
 
-	getThemeWidgetElementInfo(WidgetElementId::ButtonBody, WidgetStateType::Normal, inf);
+	hui::getThemeWidgetElementInfo(hui::WidgetElementId::ButtonBody, hui::WidgetStateType::Normal, inf);
 	bool exitNow = false;
 
 	hui::setWindow(hui::getMainWindow());
@@ -102,10 +101,10 @@ int main(int argc, char** args)
 			hui::getThemeWidgetElementInfo(hui::WidgetElementId::PopupBody, hui::WidgetStateType::Normal, elemInfo);
 
 			const int maxPts = 32;
-			Point pts[maxPts] = { 0 };
+			hui::Point pts[maxPts] = { 0 };
 			u32 ptCount = 0;
 
-			curveEditor(55, maxPts, pts, ptCount, Color::red);
+			curveEditor(55, maxPts, pts, ptCount, hui::Color::red);
 
 			if (hui::button("Exit"))
 				hui::quitApplication();

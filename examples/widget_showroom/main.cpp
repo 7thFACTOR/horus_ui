@@ -28,9 +28,6 @@ HFont fntBig;
 HFont fntVeryBig;
 HFont fntBold;
 HFont fntItalic;
-HFont fntLed1;
-HFont fntLed2;
-HFont fntLed3;
 HImage lenaImg;
 HImage nodeBodyImg;
 HImage drawLineImg;
@@ -1762,7 +1759,6 @@ struct MyViewHandler : hui::ViewHandler
 			hui::beginBox(Color(199/255.0f, 202 / 255.0f, 1 / 255.0f, 1));
 			hui::pushTint(Color::black);
 			hui::button("test");
-			hui::labelCustomFont(txtSlider, fntLed1, HAlignType::Center);
 			hui::popTint();
 			hui::endBox();
 			hui::nextColumn();
@@ -1773,7 +1769,6 @@ struct MyViewHandler : hui::ViewHandler
 			hui::beginBox(Color::veryDarkGreen);
 			hui::pushTint(Color::green);
 			hui::button("test");
-			hui::labelCustomFont(txtSlider, fntLed1, HAlignType::Center);
 			hui::popTint();
 			hui::endBox();
 			hui::endColumns();
@@ -2042,10 +2037,6 @@ int main(int argc, char** args)
 
 	// after we load and create images and fonts, rebuild the theme atlas
 	hui::buildTheme(theme);
-
-	fntLed1 = hui::getFont("led1");
-	fntLed2 = hui::getFont("led2");
-	fntLed3 = hui::getFont("led3");
 
 	// first we need to set the current view handler before loading view windows state, so the handler does handling of loading state if it wants to
 	hui::setCurrentViewHandler(&myViewHandler);

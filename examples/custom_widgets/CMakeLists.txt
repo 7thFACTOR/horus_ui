@@ -23,9 +23,9 @@ endif(WINDOWS)
 
 
 add_definitions(-DHORUS_STATIC)
-add_executable(widget_showroom ${SRCS} ${HORUS_SRCS} ${BACKENDS} ${BINPACK} ${NFD_SRCS})
+add_executable(custom_widgets ${SRCS} ${HORUS_SRCS} ${BACKENDS} ${BINPACK} ${NFD_SRCS})
 
-target_include_directories(widget_showroom PUBLIC
+target_include_directories(custom_widgets PUBLIC
 	../../include
 	../../src
 	../../backends
@@ -45,10 +45,9 @@ set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -O3 -fPIC" )
 find_package(GTK REQUIRED)
 find_package(PkgConfig)
 pkg_check_modules(GTK "gtk+-3.0")
-target_link_libraries(widget_showroom ${GTK_LIBRARIES})
+target_link_libraries(custom_widgets ${GTK_LIBRARIES})
 add_definitions(${GTK_CFLAGS} ${GTK_CFLAGS_OTHER})
 
-target_link_directories(widget_showroom PUBLIC ${CMAKE_BINARY_DIR}/bin)
-target_link_libraries(widget_showroom libSDL2-2.0.so libfreetype.so libGLEW.so libjsoncpp.so libGL.so) 
-
+target_link_directories(custom_widgets PUBLIC ${CMAKE_BINARY_DIR}/bin)
+target_link_libraries(custom_widgets libSDL2-2.0.so libfreetype.so libGLEW.so libjsoncpp.so libGL.so) 
 
