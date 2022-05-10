@@ -1,9 +1,6 @@
 [submodule "examples/libs/glew"]
 	path = examples/libs/glew
 	url = https://github.com/edoren/glew
-[submodule "examples/libs/binpack"]
-	path = examples/libs/binpack
-	url = https://github.com/nekitu/binpack.git
 [submodule "examples/libs/jsoncpp"]
 	path = examples/libs/jsoncpp
 	url = https://github.com/open-source-parsers/jsoncpp
