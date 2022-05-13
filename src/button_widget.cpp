@@ -79,6 +79,8 @@ void buttonBehavior(bool menuItem)
 
 					popup.alreadyClickedOnSomething = true;
 				}
+
+				ctx->alreadyClickedOnSomething = true;
 			}
 			else if (ctx->event.type == InputEvent::Type::MouseUp
 				&& ctx->event.mouse.button == MouseButton::Left)
@@ -246,6 +248,11 @@ bool iconButtonInternal(HImage icon, HImage disabledIcon, f32 customHeight, bool
 	Image* disabledIconImg = (Image*)disabledIcon;
 	f32 height = 0.0f;
 
+	if (!iconImg)
+	{
+		return false;
+	}
+
 	if (customHeight > 0.0f)
 		height = customHeight;
 	else
@@ -256,7 +263,7 @@ bool iconButtonInternal(HImage icon, HImage disabledIcon, f32 customHeight, bool
 
 	f32 pressedIncrement = 0.0f;
 
-	if (!ctx->widget.enabled)
+	if (!ctx->widget.enabled && disabledIconImg)
 	{
 		btnBodyElemState = &btnBodyElem->getState(WidgetStateType::Disabled);
 		iconImg = disabledIconImg;

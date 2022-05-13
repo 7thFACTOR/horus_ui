@@ -67,6 +67,7 @@ struct DrawCommand
 		Rect uvRect;
 		bool rotated;
 		u32 textureIndex;
+		bool wire = false;
 	};
 
 	struct CmdDrawQuad
@@ -202,6 +203,7 @@ public:
 	void cmdDrawImage(Image* image, const Rect& rect, const Rect& uvRect);
 	void cmdDrawImageBordered(Image* image, u32 border, const Rect& rect, f32 scale);
 	void cmdDrawImageScaledAligned(Image* image, const Rect& rect, HAlignType halign, VAlignType valign, f32 scale);
+	void cmdDrawRectangle(const Rect& rect);
 	void cmdDrawSolidRectangle(const Rect& rect);
 	void cmdDrawInterpolatedColors(const Rect& rect, const Color& topLeft, const Color& bottomLeft, const Color& topRight, const Color& bottomRight);
 	void cmdDrawSpectrumColors(const Rect& rect, DrawSpectrumBrightness brightness, DrawSpectrumDirection dir);

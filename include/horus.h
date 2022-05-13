@@ -1979,7 +1979,7 @@ HORUS_API void beginWindow(HWindow window);
 /// Stop creating UI in the current window
 HORUS_API void endWindow();
 
-/// Begin a widget container, and invisible rectangle on the current window area where widgets will be laid out
+/// Begin a widget container, an invisible rectangle on the current window area where widgets will be laid out
 HORUS_API void beginContainer(const Rect& rect);
 
 /// End the current widget container
@@ -2004,13 +2004,7 @@ HORUS_API void beginColumns(u32 columnCount, const f32 preferredWidths[] = nullp
 /// \param columnCount the column count
 /// \param minWidths a float array of the minimal width for each columns, if width is smaller of equal to 1.0f it is considered a percentage of the parent layout, if it is greater than 1.0f it is considered a fixed pixel size
 /// \param addPadding true if you want padding to be added to left and right sides of the columns group
-HORUS_API void beginEqualColumns(u32 columnCount, const f32 minWidths[] = nullptr, bool addPadding = false);
-
-/// Start a single padded column layout, which has padding added to left and right sides
-HORUS_API void beginPaddedColumn();
-
-/// End a single padded column layout
-HORUS_API void endPaddedColumn();
+HORUS_API void beginEqualColumns(u32 columnCount, const f32 minWidths[] = nullptr, const f32 maxWidths[] = nullptr);
 
 /// Begin a two columns layout
 HORUS_API void beginTwoColumns();
@@ -2135,7 +2129,7 @@ HORUS_API void beginBox(
 /// End the box widget
 HORUS_API bool endBox();
 
-/// Begin drawing a popup widget on top of all other popups or widgets
+/// Begin drawing a modal popup widget on top of all other popups or widgets
 /// \param width the width of the popup
 /// \param flags the popup flags
 /// \param position when custom position, this is the window coordinates of the popup

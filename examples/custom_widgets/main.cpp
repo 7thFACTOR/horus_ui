@@ -8,7 +8,7 @@
 #include "opengl_texture_array.h"
 #include "stb_image_provider.h"
 #include "json_theme_provider.h"
-#include "binpack_rectpack_provider.h"
+#include "stb_rectpack_provider.h"
 #include "freetype_font_provider.h"
 #include "nativefiledialogs_provider.h"
 #include "stdio_file_provider.h"
@@ -56,7 +56,7 @@ int main(int argc, char** args)
 	settings.providers.gfx = new hui::OpenGLGraphicsProvider();
 	settings.providers.image = new hui::StbImageProvider();
 	settings.providers.input = new hui::Sdl2InputProvider();
-	settings.providers.rectPack = new hui::BinPackRectPackProvider();
+	settings.providers.rectPack = new hui::StbRectPackProvider();
 	settings.providers.utf = new hui::UtfCppProvider();
 
 	auto ctx = hui::createContext(settings);

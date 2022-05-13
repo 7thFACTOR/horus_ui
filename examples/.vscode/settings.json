@@ -2,6 +2,7 @@
     "files.associations": {
         "unordered_map": "cpp"
     },
-    "cmake.buildDirectory": "${workspaceFolder}/../build_make/${buildType}",
-    "cmake.generator": "Ninja Multi-Config"
+    "cmake.buildDirectory": "${workspaceFolder}/../build",
+    "cmake.generator": "Unix Makefiles",
+    "cmake.configureArgs": ["-DOpenGL_GL_PREFERENCE=GLVND"]
 }

@@ -128,7 +128,7 @@ struct Context
 	Rect lastColumnRect;
 	std::vector<f32> paddingStack;
 	std::vector<f32> spacingStack;
-	f32 padding = 4;
+	f32 padding = 10;
 	f32 spacing = 4;
 	std::vector<Point> penStack;
 
@@ -152,6 +152,7 @@ struct Context
 	MouseCursorType mouseCursor = MouseCursorType::Arrow;
 	HMouseCursor customMouseCursor = 0;
 	bool mouseMoved = false;
+	bool alreadyClickedOnSomething = false;
 	Point oldMousePos = { 0, 0 };
 
 	DragDropState dragDropState;

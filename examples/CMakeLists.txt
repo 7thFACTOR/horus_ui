@@ -1,8 +1,9 @@
 # to the root binary directory of the project as ${HELLO_BINARY_DIR}.
-cmake_minimum_required(VERSION 2.8.11)
+cmake_minimum_required(VERSION 3.0.0)
 project(horus_examples)
 
 set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS}")
+add_definitions(-DSDL_MAIN_HANDLED)
 
 if(WINDOWS)
 	link_libraries("shlwapi"  "Ws2_32" "Wininet" "dbghelp"
@@ -18,8 +19,6 @@ if(APPLE)
 	link_libraries("dl" "ForceFeedback.framework" "CoreVideo.framework" "Cocoa.framework"
       "IOKit.framework" "Carbon.framework" "CoreAudio.framework" "AudioToolbox.framework" "OpenGL.framework")
 endif(APPLE)
-
-add_definitions(-DSDL_MAIN_HANDLED)
 
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/../bin)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/../bin)

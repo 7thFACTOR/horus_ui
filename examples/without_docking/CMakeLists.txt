@@ -1,5 +1,5 @@
 # to the root binary directory of the project as ${HELLO_BINARY_DIR}.
-cmake_minimum_required(VERSION 2.8.11)
+cmake_minimum_required(VERSION 3.0.0)
 include(../CMakeUtils.cmake)
 
 add_source_group(src ./ SRCS)
@@ -39,8 +39,8 @@ target_include_directories(without_docking PUBLIC
 	../libs/binpack
 	../libs/freetype/include)
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -std=c++11 -O3 -fPIC" )
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -O3 -fPIC" )
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -O0 -fPIC" )
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -O0 -fPIC" )
 
 find_package(GTK REQUIRED)
 find_package(PkgConfig)

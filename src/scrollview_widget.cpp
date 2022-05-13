@@ -11,28 +11,28 @@ void beginScrollView(f32 size, f32 scrollPos, f32 virtualHeight)
 	auto scrollViewElemState = ctx->theme->getElement(WidgetElementId::ScrollViewBody).normalState();
 	auto scrollViewScrollThumbElemState = ctx->theme->getElement(WidgetElementId::ScrollViewScrollThumb).normalState();
 
-	ctx->scrollViewStack[ctx->scrollViewDepth].size = size * ctx->globalScale;
+	ctx->scrollViewStack[ctx->scrollViewDepth].size = size /* * ctx->globalScale*/; //TODO: scale height with UI scale ?
 	ctx->scrollViewStack[ctx->scrollViewDepth].virtualHeight = virtualHeight;
 	ctx->scrollViewStack[ctx->scrollViewDepth].widgetId = ctx->currentWidgetId;
 	ctx->penStack.push_back(ctx->penPosition);
-	size *= ctx->globalScale;
-	size -= ctx->padding * ctx->globalScale;
+	//TODO: scale height with UI scale ?
+	//size *= ctx->globalScale;
+	const f32 scrollViewPadding = 10;
+	auto internalPadding = scrollViewPadding * ctx->globalScale + (f32)scrollViewElemState.border * ctx->globalScale;
 
 	Rect rect =
 	{
-		round(ctx->penPosition.x + ctx->padding * ctx->globalScale),
+		round(ctx->penPosition.x),
 		round(ctx->penPosition.y),
-		ctx->layoutStack.back().width - ctx->padding * 2,
+		ctx->layoutStack.back().width,
 		size
 	};
 
-	Rect clipRect =
-	{
-		round(ctx->penPosition.x + ctx->padding * ctx->globalScale),
-		round(ctx->penPosition.y + (f32)scrollViewElemState.border * ctx->globalScale),
-		ctx->layoutStack.back().width - ctx->padding * 2.0f * ctx->globalScale,
-		size - (f32)scrollViewElemState.border * 2.0f * ctx->globalScale
-	};
+	ctx->scrollViewStack[ctx->scrollViewDepth].rect = rect;
+
+	Rect clipRect = rect.contract(internalPadding);
+
+	clipRect.width -= scrollViewScrollThumbElemState.width;
 
 	ctx->renderer->cmdSetColor(scrollViewElemState.color);
 	ctx->renderer->cmdDrawImageBordered(scrollViewElemState.image, scrollViewElemState.border, rect, ctx->globalScale);
@@ -43,11 +43,11 @@ void beginScrollView(f32 size, f32 scrollPos, f32 virtualHeight)
 	ctx->penPosition.y += scrollViewElemState.border * ctx->globalScale;
 
 	ctx->layoutStack.push_back(LayoutState(LayoutType::ScrollView));
-	ctx->layoutStack.back().position = { clipRect.x + (f32)scrollViewElemState.border * ctx->globalScale, clipRect.y };
-	ctx->layoutStack.back().width = clipRect.width - (f32)scrollViewElemState.border * 2.0f * ctx->globalScale - scrollViewScrollThumbElemState.width * ctx->globalScale;
+	ctx->layoutStack.back().position = { clipRect.x, clipRect.y };
+	ctx->layoutStack.back().width = clipRect.width;
+	ctx->layoutStack.back().height = clipRect.height;
 	ctx->layoutStack.back().savedPenPosition = ctx->penPosition;
 	ctx->penPosition.x = ctx->layoutStack.back().position.x;
-
 	ctx->scrollViewDepth++;
 }
 
@@ -55,11 +55,10 @@ f32 endScrollView()
 {
 	ctx->scrollViewDepth--;
 	ctx->layoutStack.pop_back();
-
 	auto clipRect = ctx->renderer->getClipRect();
 	ctx->renderer->popClipRect();
 	auto& scrollViewInfo = ctx->scrollViewStack[ctx->scrollViewDepth];
-
+	auto fullRect = scrollViewInfo.rect;
 	auto scrollViewElemState = ctx->theme->getElement(WidgetElementId::ScrollViewBody).normalState();
 	f32 scrollPos = scrollViewInfo.scrollPosition;
 	f32 size = scrollViewInfo.size;
@@ -67,10 +66,14 @@ f32 endScrollView()
 	f32 scrollContentSize = ctx->penPosition.y - contentY;
 	f32 scrollAmount = 0;
 
+
+	// make the rect for the scrollbars, without the UI element border
+	auto rect = fullRect.contract(scrollViewElemState.border);
+
 	if (ctx->event.type == InputEvent::Type::MouseWheel
 		&& ctx->isActiveLayer())
 	{
-		if (clipRect.contains(ctx->event.mouse.point))
+		if (fullRect.contains(ctx->event.mouse.point))
 		{
 			scrollAmount = ctx->event.mouse.wheel.y * (clipRect.height * ctx->scrollViewSpeed) * ctx->globalScale;
 			scrollPos -= scrollAmount;
@@ -82,8 +85,7 @@ f32 endScrollView()
 	{
 		if (ctx->widget.focusedWidgetRect.y > clipRect.bottom())
 		{
-			scrollPos =
-				(ctx->widget.focusedWidgetRect.top() + scrollPos) - clipRect.y;
+			scrollPos = (ctx->widget.focusedWidgetRect.y + scrollPos) - clipRect.y;
 		}
 	}
 
@@ -114,10 +116,10 @@ f32 endScrollView()
 
 		Rect rectScrollBar =
 		{
-			clipRect.right() - scrollViewScrollBarElemState.width * ctx->globalScale,
-			clipRect.y,
+			rect.right() - scrollViewScrollBarElemState.width * ctx->globalScale,
+			rect.y,
 			scrollViewScrollBarElemState.width * ctx->globalScale,
-			clipRect.height
+			rect.height
 		};
 
 		f32 handleSize = rectScrollBar.height * rectScrollBar.height / scrollContentSize;
@@ -125,12 +127,12 @@ f32 endScrollView()
 		if (handleSize < ctx->settings.minScrollViewHandleSize)
 			handleSize = ctx->settings.minScrollViewHandleSize;
 
-		f32 handleOffset = (rectScrollBar.height - handleSize) * scrollPos / (scrollContentSize - clipRect.height);
+		f32 handleOffset = (rectScrollBar.height - handleSize) * scrollPos / (scrollContentSize - rect.height);
 
 		Rect rectScrollBarHandle =
 		{
-			clipRect.right() - scrollViewScrollThumbElemState.width * ctx->globalScale,
-			clipRect.y + handleOffset,
+			rect.right() - scrollViewScrollThumbElemState.width * ctx->globalScale,
+			rect.y + handleOffset,
 			scrollViewScrollThumbElemState.width * ctx->globalScale,
 			handleSize
 		};
@@ -152,7 +154,7 @@ f32 endScrollView()
 			}
 			else if (rectScrollBar.contains(ctx->event.mouse.point))
 			{
-				f32 pageSize = (clipRect.height * ctx->scrollViewScrollPageSize);
+				f32 pageSize = (rect.height * ctx->scrollViewScrollPageSize);
 
 				// page up
 				if (ctx->event.mouse.point.y < rectScrollBarHandle.y)
@@ -170,8 +172,8 @@ f32 endScrollView()
 			&& scrollViewInfo.draggingThumb
 			&& ctx->dragScrollViewHandleWidgetId == scrollViewInfo.widgetId)
 		{
-			f32 crtLocalY = ctx->event.mouse.point.y - scrollViewInfo.dragDelta.y - clipRect.y;
-			f32 trackSize = clipRect.height - handleSize;
+			f32 crtLocalY = ctx->event.mouse.point.y - scrollViewInfo.dragDelta.y - rect.y;
+			f32 trackSize = rect.height - handleSize;
 			f32 percent = crtLocalY / trackSize;
 			f32 oldScrollPos = scrollPos;
 
@@ -180,7 +182,7 @@ f32 endScrollView()
 			scrollPos = percent * (scrollContentSize - clipRect.height);
 			scrollAmount = oldScrollPos - scrollPos;
 
-			//TODO: duplicated code see above scrollPos corRecton
+			//TODO: duplicated code see above scrollPos correction
 			if (scrollPos < 0)
 			{
 				scrollPos = 0;
@@ -206,8 +208,8 @@ f32 endScrollView()
 
 			rectScrollBarHandle =
 			{
-				clipRect.right() - scrollViewScrollThumbElemState.width * ctx->globalScale,
-				clipRect.y + handleOffset,
+				rect.right() - scrollViewScrollThumbElemState.width * ctx->globalScale,
+				rect.y + handleOffset,
 				scrollViewScrollThumbElemState.width * ctx->globalScale,
 				handleSize
 			};

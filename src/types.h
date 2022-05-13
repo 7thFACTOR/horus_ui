@@ -219,6 +219,7 @@ struct ScrollViewState
 	f32 size = 0.0f;
 	f32 virtualHeight = 0.0f;
 	f32 scrollPosition = 0.0f;
+	Rect rect;
 };
 
 struct TextMarker

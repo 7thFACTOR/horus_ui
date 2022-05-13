@@ -1,5 +1,5 @@
 #!/bin/bash
 
-cd build_make
+cd ./build
 make config=release
 cd ..

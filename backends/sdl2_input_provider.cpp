@@ -504,8 +504,8 @@ void Sdl2InputProvider::addSdlEvent(SDL_Event& ev)
 		sizeChanged = true;
 	}
 
-	if ((ev.type == SDL_QUIT || ev.window.event == SDL_WINDOWEVENT_CLOSE)
-		&& focusedWindow == mainWindow)
+	if (ev.type == SDL_QUIT || (ev.window.event == SDL_WINDOWEVENT_CLOSE
+		&& outEvent.window == mainWindow))
 	{
 		// give a chance the user to cancel quit, can be cancelled with cancelQuit()
 		wantsToQuitApp = true;

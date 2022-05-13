@@ -8,7 +8,7 @@
 #include "opengl_texture_array.h"
 #include "stb_image_provider.h"
 #include "json_theme_provider.h"
-#include "binpack_rectpack_provider.h"
+#include "stb_rectpack_provider.h"
 #include "freetype_font_provider.h"
 #include "nativefiledialogs_provider.h"
 #include "stdio_file_provider.h"
@@ -27,7 +27,7 @@ int main(int argc, char** args)
 	settings.providers.gfx = new hui::OpenGLGraphicsProvider();
 	settings.providers.image = new hui::StbImageProvider();
 	settings.providers.input = new hui::Sdl2InputProvider();
-	settings.providers.rectPack = new hui::BinPackRectPackProvider();
+	settings.providers.rectPack = new hui::StbRectPackProvider();
 	settings.providers.utf = new hui::UtfCppProvider();
 
 	auto ctx = hui::createContext(settings);
@@ -54,6 +54,16 @@ int main(int argc, char** args)
 	auto largeFnt = hui::getThemeFont(theme, "title");
 	hui::setTheme(theme);
 	bool exitNow = false;
+
+	auto ico1 = hui::loadImage("../themes/icons/ic_attach_file_white_24dp.png");
+	auto ico2 = hui::loadImage("../themes/icons/ic_attach_money_white_24dp.png");
+	auto ico3 = hui::loadImage("../themes/icons/ic_border_all_white_24dp.png");
+	auto ico4 = hui::loadImage("../themes/icons/ic_border_inner_white_24dp.png");
+	auto ico5 = hui::loadImage("../themes/icons/ic_border_outer_white_24dp.png");
+
+	hui::buildTheme(theme);
+
+	//auto w = hui::createWindow("TEST", 600, 500, hui::WindowFlags::Resizable);
 
 	while (!exitNow)
 	{
@@ -90,14 +100,15 @@ int main(int argc, char** args)
 
 			// horus ui
 			hui::beginFrame();
-			hui::Rect panelRect = { 50, 50, 350, 500 };
-			hui::beginContainer(panelRect);
+			hui::Rect panelRect = { 5, 5, 300, 500 };
 			hui::WidgetElementInfo elemInfo;
 			hui::getThemeWidgetElementInfo(hui::WidgetElementId::PopupBody, hui::WidgetStateType::Normal, elemInfo);
 			hui::setColor(hui::Color::white);
+			// draw before container, because it will clip our panel image (using padding)
 			hui::drawBorderedImage(elemInfo.image, elemInfo.border, panelRect);
-			hui::pushPadding(15);
-			hui::gap(15);
+
+			//hui::pushPadding(10);
+			hui::beginContainer(panelRect);
 			hui::labelCustomFont("Information", largeFnt);
 			hui::button("Activate shields");
 			static bool chk1, chk2, chk3;
@@ -107,7 +118,16 @@ int main(int argc, char** args)
 			hui::nextColumn();
 			chk3 = hui::check("Option 3", chk3);
 			hui::pushTint(hui::Color::cyan);
-			hui::button("Browse...");
+			
+			if (hui::button("Browse..."))
+			{
+				char path[256] = {0};
+				if (hui::openFileDialog("*.*", "", path, 256))
+				{
+					printf("Browsed for `%s`\n", path);
+				}
+			}
+
 			hui::popTint();
 			hui::endColumns();
 			static float val;
@@ -126,13 +146,35 @@ int main(int argc, char** args)
 			if (hui::button("Exit"))
 				hui::quitApplication();
 
-			hui::popPadding();
+			hui::beginColumns(5);
+			hui::pushWidth(0.5);
+			hui::iconButton(ico1, 32);
+			hui::popWidth();
+			hui::nextColumn();
+			hui::pushWidth(1);
+			hui::iconButton(ico2, 32);
+			hui::popWidth();
+			hui::nextColumn();
+			hui::iconButton(ico3, 32);
+			hui::nextColumn();
+			hui::iconButton(ico4, 32);
+			hui::nextColumn();
+			hui::iconButton(ico5, 32);
+			hui::endColumns();
+			
 			hui::endContainer();
+			//hui::popPadding();
 			hui::endFrame();
 			hui::endWindow();
 
 			if (lastFrame)
 				hui::presentWindow(hui::getMainWindow());
+
+			// if (hui::getInputEvent().type == hui::InputEvent::Type::WindowClose
+			// && hui::getInputEvent().window == w)
+			// {
+			// 	hui::destroyWindow(w);
+			// }
 
 			if (hui::wantsToQuit() || hui::mustQuit())
 			{

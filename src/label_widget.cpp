@@ -11,14 +11,14 @@ namespace hui
 bool labelInternal(const char* labelText, HAlignType horizontalAlign, Font* font)
 {
 	auto bodyElem = ctx->theme->getElement(WidgetElementId::LabelBody);
-	f32 width = ctx->layoutStack.back().width - ctx->padding * 2.0f;
+	f32 width = ctx->layoutStack.back().width;
 	f32 height = 0;
 	auto bodyElemState = bodyElem.normalState();
 
 	height = bodyElemState.height;
 
 	Rect rect = {
-		ctx->penPosition.x + ctx->padding,
+		ctx->penPosition.x,
 		ctx->penPosition.y,
 		width, height };
 
@@ -70,12 +70,12 @@ bool multilineLabelCustomFont(const char* labelText, HFont font, HAlignType hori
 	ctx->renderer->cmdSetColor(bodyElemState.textColor * ctx->tint[(int)TintColorType::Text]);
 	ctx->renderer->cmdSetFont((Font*)font);
 
-	f32 width = ctx->layoutStack.back().width - ctx->padding * 2.0f * ctx->globalScale;
+	f32 width = ctx->layoutStack.back().width;
 
 	auto rect = ctx->drawMultilineText(
 		labelText,
 		{
-			ctx->penPosition.x + ctx->padding * ctx->globalScale,
+			ctx->penPosition.x,
 			ctx->penPosition.y,
 			width,
 			0 },

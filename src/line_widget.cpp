@@ -104,7 +104,7 @@ void pushWidth(f32 width)
 
 f32 popWidth()
 {
-	if (ctx->sameLineWidthStack.size())
+	if (!ctx->sameLineWidthStack.empty())
 	{
 		ctx->widget.width = ctx->sameLineWidthStack.back();
 		ctx->sameLineWidthStack.pop_back();

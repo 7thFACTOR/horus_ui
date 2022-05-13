@@ -1,6 +1,6 @@
 #!/bin/bash
 
-mkdir build_make
+mkdir build
 
-cd ./build_make
-cmake ../examples
+cd ./build
+cmake -G "Unix Makefiles" -DOpenGL_GL_PREFERENCE=GLVND ../examples

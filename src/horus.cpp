@@ -141,11 +141,11 @@ void addWidgetItem(f32 height)
 	ctx->widget.changeEnded = false;
 	height = round(height);
 
-	auto pixelWidth = ctx->widget.width >= 1 ? ctx->widget.width : ctx->widget.width * ctx->layoutStack.back().width;
+	auto pixelWidth = ctx->widget.width > 1 ? ctx->widget.width : ctx->widget.width * ctx->layoutStack.back().width;
 
 	if (ctx->widget.width == 0) pixelWidth = 0;
 
-	f32 width = (ctx->widget.sameLine ? pixelWidth : (pixelWidth != 0 ? pixelWidth : ctx->layoutStack.back().width)) - ctx->padding * 2.0f * ctx->globalScale;
+	f32 width = ctx->widget.sameLine ? pixelWidth : (pixelWidth != 0 ? pixelWidth : ctx->layoutStack.back().width);
 	f32 verticalOffset = 0;
 	const f32 totalHeight = ctx->spacing * ctx->globalScale + height;
 
@@ -164,7 +164,7 @@ void addWidgetItem(f32 height)
 	}
 
 	ctx->widget.rect.set(
-		round(ctx->penPosition.x + ctx->padding * ctx->globalScale),
+		round(ctx->penPosition.x),
 		round(ctx->penPosition.y + verticalOffset),
 		width,
 		height);
@@ -176,7 +176,7 @@ void addWidgetItem(f32 height)
 	}
 	else
 	{
-		ctx->penPosition.x += width + ctx->padding * ctx->globalScale;
+		ctx->penPosition.x += width * ctx->globalScale;
 	}
 }
 
@@ -1171,7 +1171,8 @@ void beginWindow(HWindow window)
 		popup.alreadyClosedWithEscape = false;
 		popup.alreadyClickedOnSomething = false;
 	}
-
+	
+	ctx->alreadyClickedOnSomething = false;
 	ctx->hoveringThisWindow = getHoveredWindow() == getWindow();
 	ctx->renderer->beginFrame();
 }
@@ -1187,14 +1188,16 @@ void endWindow()
 
 void beginContainer(const Rect& rect)
 {
+	auto paddedRect = rect;
+	paddedRect = paddedRect.contract(ctx->padding);
 	ctx->layoutStack.push_back(LayoutState(LayoutType::Container));
-	ctx->layoutStack.back().position = rect.topLeft();
-	ctx->layoutStack.back().width = rect.width;
-	ctx->layoutStack.back().height = rect.height;
+	ctx->layoutStack.back().position = paddedRect.topLeft();
+	ctx->layoutStack.back().width = paddedRect.width;
+	ctx->layoutStack.back().height = paddedRect.height;
 
-	ctx->renderer->pushClipRect(rect);
-	ctx->penPosition = { rect.x, rect.y };
-	ctx->containerRect = rect;
+	ctx->renderer->pushClipRect(paddedRect);
+	ctx->penPosition = { paddedRect.x, paddedRect.y };
+	ctx->containerRect = paddedRect;
 	ctx->widget.sameLine = false;
 }
 
@@ -1270,7 +1273,7 @@ void decrementWindowMaxLayerIndex()
 
 static void computeColumnsPixelSize(LayoutState& parentLayout, LayoutState& layout)
 {
-	f32 availableWidth = parentLayout.width;
+	f32 availableWidth = parentLayout.width - ctx->padding * 2.0f * ctx->globalScale;
 	u32 fullFillerCount = 0;
 
 	// alloc fixed pixel size columns
@@ -1363,60 +1366,25 @@ void beginColumns(u32 columnCount, const f32 widths[], const f32 minWidths[], co
 
 	ctx->penStack.push_back(ctx->penPosition);
 	columns.position = ctx->penPosition;
+	columns.position.x += ctx->padding * ctx->globalScale;
 	computeColumnsPixelSize(ctx->layoutStack.back(), columns);
 	ctx->layoutStack.push_back(columns);
 	nextColumn();
 }
 
-void beginEqualColumns(u32 columnCount, const f32 minWidths[], bool addPadding)
+void beginEqualColumns(u32 columnCount, const f32 minWidths[], const f32 maxWidths[])
 {
-	if (columnCount == 0)
-	{
-		return;
-	}
+	std::vector<f32> colWidths(columnCount);
 
-	ctx->penStack.push_back(ctx->penPosition);
+	f32 columnPercentSize = 1.0f / (f32)columnCount;
 
-	if (addPadding)
-		ctx->penPosition.x += ctx->padding * ctx->globalScale;
-
-	LayoutState columns;
-
-	columns.currentColumn = 0;
-	columns.type = LayoutType::Columns;
-	columns.position = ctx->penPosition;
-	columns.width = ctx->layoutStack.back().width;
-
-	if (addPadding)
-		columns.width -= ctx->padding * 2.0f * ctx->globalScale;
-
-	f32 columnPercentSize = round(columns.width / (f32)columnCount);
 
 	for (u32 i = 0; i < columnCount; i++)
 	{
-		columns.columnSizes.push_back(columnPercentSize);
-		columns.columnPixelSizes.push_back(columnPercentSize);
-
-		if (minWidths)
-		{
-			columns.columnMinSizes.push_back(minWidths[i]);
-			columns.columnMaxSizes.push_back(columnPercentSize);
-		}
+		colWidths[i] = columnPercentSize;
 	}
 
-	computeColumnsPixelSize(ctx->layoutStack.back(), columns);
-	ctx->layoutStack.push_back(columns);
-	nextColumn();
-}
-
-void beginPaddedColumn()
-{
-	beginEqualColumns(1, nullptr, true);
-}
-
-void endPaddedColumn()
-{
-	endColumns();
+	beginColumns(columnCount, colWidths.data(), minWidths, nullptr);
 }
 
 void beginTwoColumns()
@@ -1455,8 +1423,10 @@ void nextColumn()
 		// lets just add the first column
 		newColumn.type = LayoutType::Column;
 		newColumn.position = ctx->penPosition;
+		newColumn.position.x += ctx->padding * ctx->globalScale;
 		newColumn.width = layout.columnPixelSizes[layout.currentColumn];
 		ctx->layoutStack.push_back(newColumn);
+		ctx->renderer->cmdDrawRectangle(Rect(newColumn.position.x, newColumn.position.y, newColumn.width, newColumn.height));
 		return;
 	}
 	else if (layout.type == LayoutType::Column)
@@ -1510,6 +1480,7 @@ void nextColumn()
 			newColumn.position = ctx->penPosition;
 			newColumn.width = columnsLayout.columnPixelSizes[columnsLayout.currentColumn];
 			ctx->layoutStack.push_back(newColumn);
+			ctx->renderer->cmdDrawRectangle(Rect(newColumn.position.x, newColumn.position.y, newColumn.width, newColumn.height));
 		}
 	}
 }

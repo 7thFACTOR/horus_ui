@@ -788,6 +788,18 @@ void Renderer::cmdDrawImageScaledAligned(Image* image, const Rect& rect, HAlignT
 	cmdDrawImage(image, newRect);
 }
 
+void Renderer::cmdDrawRectangle(const Rect& rect)
+{
+	Point pts[4] = {
+		rect.topLeft(),
+		rect.topRight(),
+		rect.bottomRight(),
+		rect.bottomLeft()
+	};
+
+	cmdDrawPolyLine(pts, 4, true);
+}
+
 void Renderer::cmdDrawSolidRectangle(const Rect& rect)
 {
 	auto image = currentAtlas->whiteImage;
