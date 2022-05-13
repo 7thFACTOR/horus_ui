@@ -1,4 +1,4 @@
-build_*/**
+build*/**
 bin/**
 docs/html/**
 docs/doxygen
