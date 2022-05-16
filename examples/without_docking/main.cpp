@@ -61,6 +61,7 @@ int main(int argc, char** args)
 	auto ico4 = hui::loadImage("../themes/icons/ic_border_inner_white_24dp.png");
 	auto ico5 = hui::loadImage("../themes/icons/ic_border_outer_white_24dp.png");
 
+	// after we load the theme and more images and fonts, we need to rebuild the theme (image atlas)
 	hui::buildTheme(theme);
 
 	//auto w = hui::createWindow("TEST", 600, 500, hui::WindowFlags::Resizable);
@@ -69,7 +70,7 @@ int main(int argc, char** args)
 	{
 		// get the events from SDL or whatever input provider is set, it will fill a queue of events
 		hui::processInputEvents();
-		// lets check the count of events
+		// lets check the event count
 		int eventCount = hui::getInputEventCount();
 
 		// the main frame rendering and input handling
@@ -107,7 +108,6 @@ int main(int argc, char** args)
 			// draw before container, because it will clip our panel image (using padding)
 			hui::drawBorderedImage(elemInfo.image, elemInfo.border, panelRect);
 
-			//hui::pushPadding(10);
 			hui::beginContainer(panelRect);
 			hui::labelCustomFont("Information", largeFnt);
 			hui::button("Activate shields");
@@ -163,18 +163,11 @@ int main(int argc, char** args)
 			hui::endColumns();
 			
 			hui::endContainer();
-			//hui::popPadding();
 			hui::endFrame();
 			hui::endWindow();
 
 			if (lastFrame)
 				hui::presentWindow(hui::getMainWindow());
-
-			// if (hui::getInputEvent().type == hui::InputEvent::Type::WindowClose
-			// && hui::getInputEvent().window == w)
-			// {
-			// 	hui::destroyWindow(w);
-			// }
 
 			if (hui::wantsToQuit() || hui::mustQuit())
 			{

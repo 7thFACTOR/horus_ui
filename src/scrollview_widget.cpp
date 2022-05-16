@@ -40,7 +40,7 @@ void beginScrollView(f32 size, f32 scrollPos, f32 virtualHeight)
 	ctx->scrollViewStack[ctx->scrollViewDepth].scrollPosition = scrollPos;
 	ctx->renderer->pushClipRect(clipRect);
 	ctx->penPosition.y -= scrollPos;
-	ctx->penPosition.y += scrollViewElemState.border * ctx->globalScale;
+	ctx->penPosition.y += internalPadding;
 
 	ctx->layoutStack.push_back(LayoutState(LayoutType::ScrollView));
 	ctx->layoutStack.back().position = { clipRect.x, clipRect.y };
@@ -70,6 +70,7 @@ f32 endScrollView()
 	// make the rect for the scrollbars, without the UI element border
 	auto rect = fullRect.contract(scrollViewElemState.border);
 
+	// scroll view with mouse wheel
 	if (ctx->event.type == InputEvent::Type::MouseWheel
 		&& ctx->isActiveLayer())
 	{
@@ -81,6 +82,7 @@ f32 endScrollView()
 		}
 	}
 
+	// auto scroll to the focused widget if curent widget changed
 	if (ctx->focusChanged && ctx->widget.focusedWidgetId == ctx->currentWidgetId)
 	{
 		if (ctx->widget.focusedWidgetRect.y > clipRect.bottom())
@@ -89,18 +91,21 @@ f32 endScrollView()
 		}
 	}
 
+	// if we reached the top and trying to scroll more, just set to 0
 	if (scrollPos < 0)
 	{
 		scrollPos = 0;
 		forceRepaint();
 	}
 
+	// if content is smaller than scroll view, just set pos to 0
 	if (scrollContentSize < clipRect.height && fabs(scrollPos) > 0)
 	{
 		scrollPos = 0;
 		forceRepaint();
 	}
 
+	// if we reached bottom of the content, stop
 	if (ctx->penPosition.y + scrollAmount < clipRect.bottom())
 	{
 		if (scrollContentSize > clipRect.height)
@@ -109,6 +114,7 @@ f32 endScrollView()
 		}
 	}
 
+	// draw scrollbar if content is bigger than scroll view
 	if (scrollContentSize > clipRect.height)
 	{
 		auto scrollViewScrollBarElemState = ctx->theme->getElement(WidgetElementId::ScrollViewScrollBar).normalState();
