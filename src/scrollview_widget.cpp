@@ -3,6 +3,7 @@
 #include "theme.h"
 #include "context.h"
 #include "util.h"
+#include <iostream>
 
 namespace hui
 {
@@ -54,6 +55,7 @@ void beginScrollView(f32 size, f32 scrollPos, f32 virtualHeight)
 f32 endScrollView()
 {
 	ctx->scrollViewDepth--;
+	auto prevPenPos = ctx->layoutStack.back().savedPenPosition;
 	ctx->layoutStack.pop_back();
 	auto clipRect = ctx->renderer->getClipRect();
 	ctx->renderer->popClipRect();
@@ -62,10 +64,8 @@ f32 endScrollView()
 	auto scrollViewElemState = ctx->theme->getElement(WidgetElementId::ScrollViewBody).normalState();
 	f32 scrollPos = scrollViewInfo.scrollPosition;
 	f32 size = scrollViewInfo.size;
-	f32 contentY = ctx->penStack.back().y - scrollPos;
-	f32 scrollContentSize = ctx->penPosition.y - contentY;
+	f32 scrollContentSize = ctx->penPosition.y - prevPenPos.y;
 	f32 scrollAmount = 0;
-
 
 	// make the rect for the scrollbars, without the UI element border
 	auto rect = fullRect.contract(scrollViewElemState.border);
@@ -128,12 +128,12 @@ f32 endScrollView()
 			rect.height
 		};
 
-		f32 handleSize = rectScrollBar.height * rectScrollBar.height / scrollContentSize;
+		f32 handleSize = rectScrollBar.height * rectScrollBar.height / (scrollContentSize + 20);
 
 		if (handleSize < ctx->settings.minScrollViewHandleSize)
 			handleSize = ctx->settings.minScrollViewHandleSize;
 
-		f32 handleOffset = (rectScrollBar.height - handleSize) * scrollPos / (scrollContentSize - rect.height);
+		f32 handleOffset = (rectScrollBar.height - handleSize) * scrollPos / ((scrollContentSize + 20) - rect.height);
 
 		Rect rectScrollBarHandle =
 		{
@@ -175,6 +175,7 @@ f32 endScrollView()
 			}
 		}
 		else if (ctx->mouseMoved
+			&& ctx->event.type != InputEvent::Type::MouseUp
 			&& scrollViewInfo.draggingThumb
 			&& ctx->dragScrollViewHandleWidgetId == scrollViewInfo.widgetId)
 		{
@@ -184,8 +185,8 @@ f32 endScrollView()
 			f32 oldScrollPos = scrollPos;
 
 			// kill event, only we're dragging now
-			ctx->event.type = InputEvent::Type::None;
-			scrollPos = percent * (scrollContentSize - clipRect.height);
+			hui::cancelEvent();
+			scrollPos = percent * ((scrollContentSize + 20) - rect.height);
 			scrollAmount = oldScrollPos - scrollPos;
 
 			//TODO: duplicated code see above scrollPos correction
@@ -210,7 +211,7 @@ f32 endScrollView()
 			}
 			// end duplicated code
 
-			handleOffset = (rectScrollBar.height - handleSize) * scrollPos / (scrollContentSize - clipRect.height);
+			handleOffset = (rectScrollBar.height - handleSize) * scrollPos / ((scrollContentSize + 20) - rect.height);
 
 			rectScrollBarHandle =
 			{

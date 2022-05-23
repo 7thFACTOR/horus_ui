@@ -126,9 +126,13 @@ struct Context
 	Point penPosition;
 	std::vector<LayoutState> layoutStack;
 	Rect lastColumnRect;
-	std::vector<f32> paddingStack;
+	std::vector<f32> layoutPaddingStack;
+	std::vector<f32> columnPaddingStack;
 	std::vector<f32> spacingStack;
-	f32 padding = 10;
+	std::vector<f32> columnSpacingStack;
+	f32 layoutPadding = 10;
+	f32 columnPadding = 0;
+	f32 columnSpacing = 4;
 	f32 spacing = 4;
 	std::vector<Point> penStack;
 

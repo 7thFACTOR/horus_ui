@@ -178,7 +178,7 @@ struct MyViewHandler : hui::ViewHandler
 			hui::pushSameLineSpacing(5);
 			beginSameLine();
 			hui::beginToolbar();
-			pushPadding(0);
+			
 			if (hui::toolbarButton(moveIcon, 0, tbDown[0]))
 			{
 				tbDown[0] = true;
@@ -238,7 +238,7 @@ struct MyViewHandler : hui::ViewHandler
 
 			hui::toolbarButton(stopIcon);
 			hui::endToolbar();
-			popPadding();
+			
 			hui::pushWidth(70);
 			hui::button("Add");
 			hui::button("Duplicate");
@@ -260,7 +260,7 @@ struct MyViewHandler : hui::ViewHandler
 	void onLeftAreaRender(HWindow window) override
 	{
 		static bool tbDown[10] = { 0 };
-		pushPadding(1);
+		
 		hui::pushSameLineSpacing(5);
 		hui::beginToolbar(ToolbarDirection::Vertical);
 		if (hui::toolbarButton(moveIcon, 0, tbDown[0]))
@@ -322,7 +322,7 @@ struct MyViewHandler : hui::ViewHandler
 		hui::toolbarButton(stopIcon);
 		hui::endToolbar();
 		hui::popSameLineSpacing();
-		popPadding();
+		
 	}
 
 	void onBottomAreaRender(HWindow window) override
@@ -378,7 +378,7 @@ struct MyViewHandler : hui::ViewHandler
 			u32 totalItemCount = 50000;
 			f32 baseItemSize = 128;
 			static f32 rowHeight = 128;
-			f32 itemWidth = baseItemSize + hui::getPadding() * 2.0f;
+			f32 itemWidth = baseItemSize + hui::getColumnPadding() * 2.0f;
 
 			auto viewWidth = hui::getParentSize().x;
 			int itemCountPerRow = viewWidth / itemWidth;
@@ -629,7 +629,7 @@ struct MyViewHandler : hui::ViewHandler
 			hui::gap(10);
 
 			if (0) {
-				hui::pushPadding(1);
+				
 
 				static bool tbDown[10] = { 0 };
 
@@ -727,7 +727,7 @@ struct MyViewHandler : hui::ViewHandler
 				//static char tx[100] = { 0 };
 				//hui::textInput(tx, 100, TextInputValueMode::Any, "Search");
 				//hui::endColumns();
-				hui::popPadding();
+				
 			}
 			WidgetElementInfo wel;
 
@@ -757,7 +757,7 @@ struct MyViewHandler : hui::ViewHandler
 				}
 
 				f32 widths[] = { 1.f, 20.f };
-				hui::pushPadding(0);
+				
 				hui::beginColumns(2, widths);
 				printf(" max %d\n", cdata.strSearchMaxSize);
 				if (hui::textInput(cdata.strSearch, cdata.strSearchMaxSize, TextInputValueMode::Any, "Type component name", 0, true))
@@ -773,7 +773,7 @@ struct MyViewHandler : hui::ViewHandler
 				}
 
 				hui::endColumns();
-				hui::popPadding();
+				
 
 				hui::beginScrollView(200, cdata.scrollPosNewComponentList);
 
@@ -815,7 +815,7 @@ struct MyViewHandler : hui::ViewHandler
 				int numCompFolders = sizeof(compFolders) / sizeof(compFolders[0]);
 				bool foundSome = false;
 
-				hui::pushPadding(0);
+				
 				hui::pushSpacing(0);
 
 				for (int i = 0; i < numCompFolders; i++)
@@ -852,18 +852,18 @@ struct MyViewHandler : hui::ViewHandler
 						}
 					}
 				}
-				hui::popPadding();
+				
 				hui::popSpacing();
 
 				if (!foundSome)
 				{
-					hui::pushPadding(15);
+					
 					hui::pushSpacing(5);
 					hui::beginBox(hui::Color::darkRed);
 					hui::image(sadIcon);
 					hui::multilineLabelCustomFont((std::string("No component names found to contain '") + std::string(cdata.strSearch) + std::string("' text\nTry other names")).c_str(), fntItalic, HAlignType::Center);
 					hui::endBox();
-					hui::popPadding();
+					
 					hui::popSpacing();
 				}
 
@@ -898,7 +898,7 @@ struct MyViewHandler : hui::ViewHandler
 				hui::endPopup();
 			}
 
-			hui::pushPadding(2);
+			
 			hui::beginFourColumns();
 			hui::button("Select");
 			hui::nextColumn();
@@ -908,7 +908,7 @@ struct MyViewHandler : hui::ViewHandler
 			hui::nextColumn();
 			hui::button("Update");
 			hui::endColumns();
-			hui::popPadding();
+			
 			hui::label("Drag this to the None target");
 
 			if (hui::wantsToDragDrop())
@@ -923,7 +923,7 @@ struct MyViewHandler : hui::ViewHandler
 				hui::beginDragDrop(0, (void*)"AHA!");
 			}
 
-			hui::pushPadding(2);
+			
 			hui::beginFourColumns();
 			hui::button("Expand All");
 			hui::nextColumn();
@@ -933,7 +933,7 @@ struct MyViewHandler : hui::ViewHandler
 			hui::nextColumn();
 			hui::button("Disable All");
 			hui::endColumns();
-			hui::popPadding();
+			
 
 			hui::beginScrollView(hui::getRemainingViewPaneClientHeight(viewPane), cdata.scrollPosComponents);
 
@@ -969,7 +969,7 @@ struct MyViewHandler : hui::ViewHandler
 
 					hui::nextColumn();
 
-					hui::pushPadding(0);
+					
 					hui::textInput(str, 100);
 
 					static f32 x1 = 0, y1 = 0, z1 = 0;
@@ -998,7 +998,7 @@ struct MyViewHandler : hui::ViewHandler
 						strcpy(objName, str);
 					}
 
-					hui::popPadding();
+					
 					hui::endColumns();
 
 					hui::beginColumns(2, widths);
@@ -1058,10 +1058,9 @@ struct MyViewHandler : hui::ViewHandler
 			hui::popSpacing();
 			hui::popWidth();
 
-			// no margins for our viewport
-			//hui::pushPadding(0);
+		
 
-			hui::pushPadding(10);
+			
 			auto viewRc = hui::beginViewport(500);
 			auto ls = hui::LineStyle(hui::Color::blue, 1);
 			hui::setLineStyle(ls);
@@ -1342,10 +1341,7 @@ struct MyViewHandler : hui::ViewHandler
 			}
 
 			hui::endViewport();
-			hui::popPadding();
-
-
-
+			
 			static f32 spos = 0;
 			hui::beginScrollView(hui::getRemainingViewPaneClientHeight(viewPane), spos);
 
@@ -1727,7 +1723,7 @@ struct MyViewHandler : hui::ViewHandler
 			hui::beginEqualColumns(3);
 			hui::label("Far Plane:", HAlignType::Right);
 			hui::nextColumn();
-			hui::pushPadding(0);
+			
 			hui::getContextSettings().sliderDragDirection = hui::SliderDragDirection::Any;
 			hui::getContextSettings().sliderInvertVerticalDragAmount = false;
 
@@ -1771,7 +1767,7 @@ struct MyViewHandler : hui::ViewHandler
 			hui::popTint();
 			hui::endBox();
 			hui::endColumns();
-			hui::popPadding();
+			
 			hui::nextColumn();
 			static char valStr[20];
 			sprintf(valStr, "%.2f", slideVal);
@@ -1785,9 +1781,9 @@ struct MyViewHandler : hui::ViewHandler
 			hui::beginEqualColumns(3);
 			hui::label("X Scale:");
 			hui::nextColumn();
-			hui::pushPadding(0);
+			
 			hui::sliderFloat(0, 100, slideVal2);
-			hui::popPadding();
+			
 			hui::nextColumn();
 			static char valStr2[10];
 			sprintf(valStr2, "%.2f", slideVal2);
@@ -1799,9 +1795,9 @@ struct MyViewHandler : hui::ViewHandler
 			hui::beginEqualColumns(3);
 			hui::label("Y Scale:");
 			hui::nextColumn();
-			hui::pushPadding(0);
+			
 			hui::sliderFloat(0, 100, slideVal3);
-			hui::popPadding();
+			
 			hui::nextColumn();
 			static char valStr3[20];
 			sprintf(valStr3, "%.2f", slideVal3);
@@ -1954,17 +1950,17 @@ void createMyDefaultViewPanes()
 	auto myRootViewPane = hui::createRootViewPane(hui::getMainWindow());
 	auto viewPane1 = hui::createViewPane(myRootViewPane, 1, hui::DockType::Left);
 	hui::createViewPaneTab(viewPane1, "Assets", 0, 0);
-	console1Tab = hui::createViewPaneTab(viewPane1, "Console1", 1, 0);
-	console2Tab = hui::createViewPaneTab(viewPane1, "Console2", 1, 1);
-	hui::createViewPaneTab(viewPane1, "Scene", 2, 0);
+	//console1Tab = hui::createViewPaneTab(viewPane1, "Console1", 1, 0);
+	//console2Tab = hui::createViewPaneTab(viewPane1, "Console2", 1, 1);
+	//hui::createViewPaneTab(viewPane1, "Scene", 2, 0);
 	auto viewPane2 = hui::createViewPane(myRootViewPane, 1, hui::DockType::Left);
-	hui::createViewPaneTab(viewPane2, "Game", 3, 0);
-	auto viewPane3 = hui::createViewPane(myRootViewPane, 1, hui::DockType::Left);
+    hui::createViewPaneTab(viewPane2, "Game", 3, 0);
+	auto viewPane3 = hui::createViewPane(myRootViewPane, 1, hui::DockType::Bottom);
 	hui::createViewPaneTab(viewPane3, "Particles", 4, 1);
-	auto viewPane4 = hui::createViewPane(myRootViewPane, 1, hui::DockType::Bottom);
-	hui::createViewPaneTab(viewPane4, "Properties", 5, 2);
-	auto viewPane5 = hui::createViewPane(myRootViewPane, 1, hui::DockType::Right);
-	hui::createViewPaneTab(viewPane5, "Object Inspector", 6, 3);
+	// auto viewPane4 = hui::createViewPane(myRootViewPane, 1, hui::DockType::Bottom);
+	// hui::createViewPaneTab(viewPane4, "Properties", 5, 2);
+	// auto viewPane5 = hui::createViewPane(myRootViewPane, 1, hui::DockType::Right);
+	// hui::createViewPaneTab(viewPane5, "Object Inspector", 6, 3);
 }
 
 int main(int argc, char** args)
@@ -2006,32 +2002,32 @@ int main(int argc, char** args)
 	hui::setTheme(theme); // set as the current theme
 
 	// create additional fonts
-	fntBig = hui::createThemeFont(theme, "customBig", "../themes/fonts/arial.ttf", 20);
-	fntVeryBig = hui::createThemeFont(theme, "customVeryBig", "../themes/fonts/arial.ttf", 50);
-	fntBold = hui::createThemeFont(theme, "customBold", "../themes/fonts/arial.ttf", 15);
-	fntItalic = hui::createThemeFont(theme, "customItalic", "../themes/fonts/arial.ttf", 15);
+	fntBig = hui::createThemeFont(theme, "customBig", "../themes/fonts/Roboto-Regular.ttf", 20);
+	fntVeryBig = hui::createThemeFont(theme, "customVeryBig", "../themes/fonts/Roboto-Regular.ttf", 50);
+	fntBold = hui::createThemeFont(theme, "customBold", "../themes/fonts/Roboto-Regular.ttf", 15);
+	fntItalic = hui::createThemeFont(theme, "customItalic", "../themes/fonts/Roboto-Regular.ttf", 15);
 	fntNodeTitle = hui::createThemeFont(theme, "customNodeTitle", "../themes/fonts/Roboto-Bold.ttf", 12);
 
 	printf("Loading images...\n");
 
-	drawLineImg = hui::loadImage("../themes/drawline.png");
-	lenaImg = hui::loadImage("../themes/lena.png");
-	nodeBodyImg = hui::loadImage("../themes/node-body.png");
-	tabIcon1 = hui::loadImage("../themes/tabicon.png");
-	tabIcon2 = hui::loadImage("../themes/tabicon2.png");
-	deleteIcon = hui::loadImage("../themes/delete_icon.png");
-	sadIcon = hui::loadImage("../themes/delete_icon.png");
-	xaxisIcon = hui::loadImage("../themes/xaxis.png");
-	yaxisIcon = hui::loadImage("../themes/yaxis.png");
-	zaxisIcon = hui::loadImage("../themes/zaxis.png");
-	targetIcon = hui::loadImage("../themes/target_icon.png");
-	clearIcon = hui::loadImage("../themes/clear_icon.png");
-	myViewHandler.moveIcon = hui::loadImage("../themes/move_icon.png");
-	myViewHandler.playIcon = hui::loadImage("../themes/play-icon.png");
-	myViewHandler.stopIcon = hui::loadImage("../themes/stop-icon.png");
-	myViewHandler.pauseIcon = hui::loadImage("../themes/pause-icon.png");
-	myViewHandler.horusLogo = hui::loadImage("../themes/horus.png");
-	dragDropCur = hui::loadMouseCursor("../themes/dragdrop_cursor.png");
+	drawLineImg = hui::loadImage("../themes/default/drawline.png");
+	lenaImg = hui::loadImage("../themes/default/lena.png");
+	nodeBodyImg = hui::loadImage("../themes/default/node-body.png");
+	tabIcon1 = hui::loadImage("../themes/default/tabicon.png");
+	tabIcon2 = hui::loadImage("../themes/default/tabicon2.png");
+	deleteIcon = hui::loadImage("../themes/default/delete_icon.png");
+	sadIcon = hui::loadImage("../themes/default/delete_icon.png");
+	xaxisIcon = hui::loadImage("../themes/default/xaxis.png");
+	yaxisIcon = hui::loadImage("../themes/default/yaxis.png");
+	zaxisIcon = hui::loadImage("../themes/default/zaxis.png");
+	targetIcon = hui::loadImage("../themes/default/target_icon.png");
+	clearIcon = hui::loadImage("../themes/default/clear_icon.png");
+	myViewHandler.moveIcon = hui::loadImage("../themes/default/move_icon.png");
+	myViewHandler.playIcon = hui::loadImage("../themes/default/play-icon.png");
+	myViewHandler.stopIcon = hui::loadImage("../themes/default/stop-icon.png");
+	myViewHandler.pauseIcon = hui::loadImage("../themes/default/pause-icon.png");
+	myViewHandler.horusLogo = hui::loadImage("../themes/default/horus.png");
+	dragDropCur = hui::loadMouseCursor("../themes/default/dragdrop_cursor.png");
 
 	// after we load and create images and fonts, rebuild the theme atlas
 	hui::buildTheme(theme);

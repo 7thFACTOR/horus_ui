@@ -154,7 +154,7 @@ bool objectRefEditor(HImage targetIcon, HImage clearIcon, const char* objectType
 {
 	bool returnValue = false;
 	bool changeEnded = false;
-	pushPadding(0);
+
 	f32 tgtRowIcons[] = { -1, 30, 20 };
 
 	if (objectValueWasModified)
@@ -232,7 +232,6 @@ bool objectRefEditor(HImage targetIcon, HImage clearIcon, const char* objectType
 
 	popTint();
 	endColumns();
-	popPadding();
 
 	ctx->widget.changeEnded = changeEnded;
 

@@ -29,12 +29,12 @@ bool image(HImage img, f32 height, HAlignType horizontalAlign, VAlignType vertic
 		viewportImageFitSize(
 			imgPtr->rect.width * ctx->globalScale,
 			imgPtr->rect.height * ctx->globalScale,
-			ctx->layoutStack.back().width - ctx->padding * 2 * ctx->globalScale,
+			ctx->layoutStack.back().width,
 			height, newWidth, newHeight, false, false);
 	}
 	else if (fit == ImageFitType::Stretch)
 	{
-		newWidth = ctx->layoutStack.back().width - ctx->padding * 2 * ctx->globalScale;
+		newWidth = ctx->layoutStack.back().width;
 	}
 
 	if (autoHeight)

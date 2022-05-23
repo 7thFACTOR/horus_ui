@@ -136,7 +136,6 @@ bool beginMenuInternal(const char* labelText, SelectableFlags stateFlags, bool c
 			auto menuBodyElem = ctx->theme->getElement(WidgetElementId::MenuBody);
 
 			ctx->renderer->pushClipRect(ctx->renderer->getWindowRect(), false);
-			pushPadding(0);
 			pushSpacing(0);
 			beginPopup(
 				ctx->menuStack[ctx->menuDepth].size.x + menuBodyElem.normalState().border * 2.0f + ctx->menuFillerWidth + ctx->menuIconSpace,
@@ -179,7 +178,6 @@ bool beginMenuInternal(const char* labelText, SelectableFlags stateFlags, bool c
 			auto menuBodyElem = ctx->theme->getElement(WidgetElementId::MenuBody);
 			ctx->activeMenuBarItemWidgetWidth = rc.width;
 			ctx->renderer->pushClipRect(ctx->renderer->getWindowRect(), false);
-			pushPadding(0);
 			pushSpacing(0);
 			beginPopup(
 				ctx->menuStack[ctx->menuDepth].size.x + menuBodyElem.normalState().border * 2.0f + ctx->menuFillerWidth + ctx->menuIconSpace,
@@ -228,7 +226,6 @@ void endMenuInternal(bool contextMenu)
 		}
 
 		endPopup();
-		popPadding();
 		popSpacing();
 		ctx->renderer->popClipRect();
 		ctx->menuDepth = 0;
@@ -259,7 +256,6 @@ void endMenuInternal(bool contextMenu)
 			}
 
 			endPopup();
-			popPadding();
 			popSpacing();
 			ctx->renderer->popClipRect();
 		}

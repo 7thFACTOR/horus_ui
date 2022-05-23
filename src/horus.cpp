@@ -1189,7 +1189,7 @@ void endWindow()
 void beginContainer(const Rect& rect)
 {
 	auto paddedRect = rect;
-	paddedRect = paddedRect.contract(ctx->padding);
+	paddedRect = paddedRect.contract(ctx->layoutPadding);
 	ctx->layoutStack.push_back(LayoutState(LayoutType::Container));
 	ctx->layoutStack.back().position = paddedRect.topLeft();
 	ctx->layoutStack.back().width = paddedRect.width;
@@ -1273,7 +1273,7 @@ void decrementWindowMaxLayerIndex()
 
 static void computeColumnsPixelSize(LayoutState& parentLayout, LayoutState& layout)
 {
-	f32 availableWidth = parentLayout.width - ctx->padding * 2.0f * ctx->globalScale;
+	f32 availableWidth = parentLayout.width - ctx->columnSpacing * (layout.columnSizes.size() - 1);
 	u32 fullFillerCount = 0;
 
 	// alloc fixed pixel size columns
@@ -1366,7 +1366,6 @@ void beginColumns(u32 columnCount, const f32 widths[], const f32 minWidths[], co
 
 	ctx->penStack.push_back(ctx->penPosition);
 	columns.position = ctx->penPosition;
-	columns.position.x += ctx->padding * ctx->globalScale;
 	computeColumnsPixelSize(ctx->layoutStack.back(), columns);
 	ctx->layoutStack.push_back(columns);
 	nextColumn();
@@ -1423,10 +1422,8 @@ void nextColumn()
 		// lets just add the first column
 		newColumn.type = LayoutType::Column;
 		newColumn.position = ctx->penPosition;
-		newColumn.position.x += ctx->padding * ctx->globalScale;
 		newColumn.width = layout.columnPixelSizes[layout.currentColumn];
 		ctx->layoutStack.push_back(newColumn);
-		ctx->renderer->cmdDrawRectangle(Rect(newColumn.position.x, newColumn.position.y, newColumn.width, newColumn.height));
 		return;
 	}
 	else if (layout.type == LayoutType::Column)
@@ -1472,7 +1469,7 @@ void nextColumn()
 		{
 			// increment the columns' current column X
 			ctx->penPosition = {
-				columnsLayout.position.x += columnsLayout.columnPixelSizes[columnsLayout.currentColumn - 1],
+				columnsLayout.position.x += columnsLayout.columnPixelSizes[columnsLayout.currentColumn - 1] + ctx->columnSpacing,
 				columnsLayout.position.y };
 
 			// lets add a new column
@@ -1480,7 +1477,6 @@ void nextColumn()
 			newColumn.position = ctx->penPosition;
 			newColumn.width = columnsLayout.columnPixelSizes[columnsLayout.currentColumn];
 			ctx->layoutStack.push_back(newColumn);
-			ctx->renderer->cmdDrawRectangle(Rect(newColumn.position.x, newColumn.position.y, newColumn.width, newColumn.height));
 		}
 	}
 }
@@ -1500,9 +1496,9 @@ void columnHeader(const char* label, f32 width, f32 preferredWidth, f32 minWidth
 	auto headerElemState = ctx->theme->getElement(WidgetElementId::ColumnsHeaderBody).normalState();
 
 	ctx->widget.rect = {
-		ctx->layoutStack.back().position.x + ctx->padding,
+		ctx->layoutStack.back().position.x + ctx->columnPadding,
 		ctx->layoutStack.back().position.y,
-		ctx->layoutStack.back().width - ctx->padding * 2.0f * ctx->globalScale,
+		ctx->layoutStack.back().width - ctx->columnPadding * 2.0f * ctx->globalScale,
 		headerElemState.height
 	};
 
@@ -1520,18 +1516,33 @@ void columnHeader(const char* label, f32 width, f32 preferredWidth, f32 minWidth
 	ctx->currentWidgetId++;
 }
 
-void pushPadding(f32 newPadding)
+void pushLayoutPadding(f32 newPadding)
 {
-	ctx->paddingStack.push_back(ctx->padding);
-	ctx->padding = newPadding;
+	ctx->layoutPaddingStack.push_back(ctx->layoutPadding);
+	ctx->layoutPadding = newPadding;
 }
 
-void popPadding()
+void popLayoutPadding()
 {
-	if (!ctx->paddingStack.empty())
+	if (!ctx->layoutPaddingStack.empty())
 	{
-		ctx->padding = ctx->paddingStack.back();
-		ctx->paddingStack.pop_back();
+		ctx->layoutPadding = ctx->layoutPaddingStack.back();
+		ctx->layoutPaddingStack.pop_back();
+	}
+}
+
+void pushColumnPadding(f32 newPadding)
+{
+	ctx->columnPaddingStack.push_back(ctx->columnPadding);
+	ctx->columnPadding = newPadding;
+}
+
+void popColumnPadding()
+{
+	if (!ctx->columnPaddingStack.empty())
+	{
+		ctx->columnPadding = ctx->columnPaddingStack.back();
+		ctx->columnPaddingStack.pop_back();
 	}
 }
 
@@ -1550,14 +1561,39 @@ void popSpacing()
 	}
 }
 
+void pushColumnSpacing(f32 newSpacing)
+{
+	ctx->columnSpacingStack.push_back(ctx->spacing);
+	ctx->columnSpacing = newSpacing;
+}
+
+void popColumnSpacing()
+{
+	if (!ctx->columnSpacingStack.empty())
+	{
+		ctx->columnSpacing = ctx->columnSpacingStack.back();
+		ctx->columnSpacingStack.pop_back();
+	}
+}
+
 f32 getSpacing()
 {
 	return ctx->spacing;
 }
 
-f32 getPadding()
+f32 getColumnSpacing()
 {
-	return ctx->padding;
+	return ctx->columnSpacing;
+}
+
+f32 getLayoutPadding()
+{
+	return ctx->layoutPadding;
+}
+
+f32 getColumnPadding()
+{
+	return ctx->columnPadding;
 }
 
 void setGlobalScale(f32 scale)

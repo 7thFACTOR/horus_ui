@@ -108,11 +108,11 @@ int main(int argc, char** args)
 
 			if (hui::button("Exit"))
 				hui::quitApplication();
-			hui::popPadding();
 
 			hui::endContainer();
 			hui::endFrame();
 			hui::endWindow();
+			
 			if (lastFrame)
 				hui::presentWindow(hui::getMainWindow());
 

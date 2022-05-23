@@ -2058,10 +2058,15 @@ HORUS_API void endVirtualListContent();
 
 /// Push the old padding and set a new one, padding is the left and right side horizontal spacing for widgets
 /// \param newPadding the new horizontal padding value
-HORUS_API void pushPadding(f32 newPadding);
+HORUS_API void pushLayoutPadding(f32 newPadding);
 
 /// Pop the previous padding value from stack and set it as current
-HORUS_API void popPadding();
+HORUS_API void popLayoutPadding();
+
+/// Push a new padding for column content
+HORUS_API void pushColumnPadding(f32 newPadding);
+
+HORUS_API void popColumnPadding();
 
 /// Push the old spacing value to stack and set a new spacing value, spacing is the vertical space between widgets
 /// \param newSpacing the new vertical spacing value
@@ -2070,11 +2075,22 @@ HORUS_API void pushSpacing(f32 newSpacing);
 /// Pop old spacing value from stack and set it as current
 HORUS_API void popSpacing();
 
+/// Push the old spacing value to stack and set a new spacing value, spacing is the vertical space between widgets
+/// \param newSpacing the new vertical spacing value
+HORUS_API void pushColumnSpacing(f32 newSpacing);
+
+/// Pop old spacing value from stack and set it as current
+HORUS_API void popColumnSpacing();
+
 /// \return the current vertical spacing value
 HORUS_API f32 getSpacing();
 
+HORUS_API f32 getColumnSpacing();
+
 /// \return the current horizontal left and right side padding value
-HORUS_API f32 getPadding();
+HORUS_API f32 getLayoutPadding();
+
+HORUS_API f32 getColumnPadding();
 
 /// Set the global UI scale, this will scale all the elements from widgets to text, but not the docking panes
 /// \param scale a value between 0 and N, no higher limit, but use with consideration

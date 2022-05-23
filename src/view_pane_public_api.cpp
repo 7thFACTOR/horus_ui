@@ -38,29 +38,32 @@ bool dockViewPane(HViewPane viewPane, HViewPane toViewPane, DockType dockType)
 	auto viewPanePtr = (ViewPane*)viewPane;
 	auto toViewPanePtr = (ViewPane*)toViewPane;
 	auto isRootPane = !toViewPanePtr->parent;
-	auto dockInside = isRootPane ? toViewPanePtr->parent : toViewPanePtr;
+	auto dockInside = isRootPane ? toViewPanePtr : toViewPanePtr->parent;
 
 	if (!dockInside)
 		return false;
 
+	ViewPane::SplitMode splitMode = ViewPane::SplitMode::None;
+
+	switch (dockType)
+	{
+	case hui::DockType::Left:
+	case hui::DockType::Right:
+		splitMode = ViewPane::SplitMode::Horizontal;
+		break;
+	case hui::DockType::Top:
+	case hui::DockType::Bottom:
+		splitMode = ViewPane::SplitMode::Vertical;
+		break;
+	case hui::DockType::TopAsViewTab:
+		splitMode = ViewPane::SplitMode::None;
+		break;
+	}
+
 	// if this is the first view pane to be created and docked, set the split mode
 	if (dockInside->children.empty())
 	{
-		switch (dockType)
-		{
-		case hui::DockType::Left:
-		case hui::DockType::Right:
-			dockInside->splitMode = ViewPane::SplitMode::Horizontal;
-			break;
-		case hui::DockType::Top:
-		case hui::DockType::Bottom:
-			dockInside->splitMode = ViewPane::SplitMode::Vertical;
-			break;
-		case hui::DockType::TopAsViewTab:
-			dockInside->splitMode = ViewPane::SplitMode::None;
-			break;
-		}
-
+		dockInside->splitMode = splitMode;
 		dockInside->children.push_back(viewPanePtr);
 		viewPanePtr->parent = dockInside;
 		viewPanePtr->rect = dockInside->rect;
@@ -71,7 +74,7 @@ bool dockViewPane(HViewPane viewPane, HViewPane toViewPane, DockType dockType)
 	auto iter = std::find(dockInside->children.begin(), dockInside->children.end(), toViewPanePtr);
 
 	const f32 splitFactor = 0.333333f;
-	bool isSameSplit = dockInside->splitMode == toViewPanePtr->splitMode;
+	bool isSameSplit = dockInside->splitMode == splitMode;
 	bool foundSibling = iter != dockInside->children.end();
 
 	if (isSameSplit && (isRootPane || foundSibling))
@@ -251,7 +254,11 @@ bool dockViewPane(HViewPane viewPane, HViewPane toViewPane, DockType dockType)
 				viewPanePtr->rect.height = siblingPane->rect.height * splitFactor;
 				viewPanePtr->rect.width = siblingPane->rect.width;
 				siblingPane->rect.height -= viewPanePtr->rect.height;
-				viewPanePtr->rect.y = siblingPane->rect.y;
+				for (auto& child : siblingPane->children)
+				{
+					child->rect.height = siblingPane->rect.height;
+				}
+				viewPanePtr->rect.y = siblingPane->rect.bottom();
 			}
 
 			break;

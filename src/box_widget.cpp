@@ -14,10 +14,10 @@ void beginBoxInternal(const Color& color, ThemeElement::State& state, f32 custom
 	ctx->layoutStack.back().savedPenPosition = ctx->penPosition;
 	ctx->penStack.push_back(ctx->penPosition);
 	// move with padding
-	ctx->penPosition.x += ctx->padding * ctx->globalScale;
+	ctx->penPosition.x += ctx->layoutPadding * ctx->globalScale;
 	ctx->layoutStack.back().position = ctx->penPosition;
 	// take some padding and border from width
-	ctx->layoutStack.back().width = width - (state.border * 2.0f + ctx->padding * 2.0f) * ctx->globalScale;
+	ctx->layoutStack.back().width = width - (state.border * 2.0f + ctx->layoutPadding * 2.0f) * ctx->globalScale;
 	ctx->layoutStack.back().height = customHeight * ctx->globalScale;
 	ctx->layoutStack.back().themeWidgetElementState = &state;
 	ctx->layoutStack.back().themeElementColorTint = color;
