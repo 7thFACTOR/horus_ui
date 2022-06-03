@@ -22,48 +22,139 @@ HViewPane createRootViewPane(HWindow window)
 
 HViewPane createViewPane(HViewPane parentViewPane, f32 size, DockType dock)
 {
-	ViewPane* viewPaneObj = (ViewPane*)parentViewPane;
+	ViewPane* parentViewPanePtr = (ViewPane*)parentViewPane;
 	auto newViewPane = new ViewPane();
 
-	newViewPane->window = viewPaneObj->window;
-	newViewPane->parent = viewPaneObj;
+	newViewPane->window = parentViewPanePtr->window;
+	newViewPane->parent = parentViewPanePtr;
 	newViewPane->rect.width = newViewPane->rect.height = size;
 	dockViewPane(newViewPane, parentViewPane, dock);
 
 	return newViewPane;
 }
 
+void resizePanesAfterDocking(DockType dockType, ViewPane* viewPaneToDock, ViewPane* siblingPane, f32 splitFactor)
+{
+	switch (dockType)
+	{
+		case hui::DockType::Left:
+		{
+			viewPaneToDock->rect.x = siblingPane->rect.x;
+			viewPaneToDock->rect.y = siblingPane->rect.y;
+			viewPaneToDock->rect.width = siblingPane->rect.width * splitFactor;
+			viewPaneToDock->rect.height = siblingPane->rect.height;
+			siblingPane->rect.width -= viewPaneToDock->rect.width;
+			siblingPane->rect.x = viewPaneToDock->rect.right();
+			break;
+		}
+		case hui::DockType::Top:
+		{
+			viewPaneToDock->rect.x = siblingPane->rect.x;
+			viewPaneToDock->rect.y = siblingPane->rect.y;
+			viewPaneToDock->rect.height = siblingPane->rect.height * splitFactor;
+			viewPaneToDock->rect.width = siblingPane->rect.width;
+			siblingPane->rect.height -= viewPaneToDock->rect.height;
+			siblingPane->rect.y = viewPaneToDock->rect.bottom();
+			break;
+		}
+		case hui::DockType::Right:
+		{
+			viewPaneToDock->rect.y = siblingPane->rect.y;
+			viewPaneToDock->rect.width = siblingPane->rect.width * splitFactor;
+			viewPaneToDock->rect.height = siblingPane->rect.height;
+			siblingPane->rect.width -= viewPaneToDock->rect.width;
+			viewPaneToDock->rect.x = siblingPane->rect.right();
+			break;
+		}
+		case hui::DockType::Bottom:
+		{
+			viewPaneToDock->rect.x = siblingPane->rect.x;
+			viewPaneToDock->rect.height = siblingPane->rect.height * splitFactor;
+			viewPaneToDock->rect.width = siblingPane->rect.width;
+			siblingPane->rect.height -= viewPaneToDock->rect.height;
+			viewPaneToDock->rect.y = siblingPane->rect.y;
+			break;
+		}
+		default:
+		break;
+	}
+}
+
+void insertViewPaneOnDocking(ViewPane* pane, ViewPane* sibling, ViewPane* parent, DockType dockType)
+{
+	switch (dockType)
+	{
+	case hui::DockType::Left:
+	case hui::DockType::Top:
+	{
+		if (sibling)
+		{
+			auto iter = std::find(parent->children.begin(), parent->children.end(), sibling);
+			
+			if (iter != parent->children.end())
+			{
+				parent->children.insert(iter, pane);
+			}
+		}
+		else
+		{
+			parent->children.insert(parent->children.begin(), pane);
+		}
+		break;
+	}
+	case hui::DockType::Right:
+	case hui::DockType::Bottom:
+	{
+		if (sibling)
+		{
+			auto iter = std::find(parent->children.begin(), parent->children.end(), sibling);
+
+			if (iter != parent->children.end())
+			{
+				parent->children.insert(++iter, pane);
+			}
+		}
+		else
+		{
+			parent->children.push_back(pane);
+		}
+		break;
+	}
+	}
+}
+
 bool dockViewPane(HViewPane viewPane, HViewPane toViewPane, DockType dockType)
 {
 	auto viewPanePtr = (ViewPane*)viewPane;
 	auto toViewPanePtr = (ViewPane*)toViewPane;
-	auto isRootPane = !toViewPanePtr->parent;
-	auto dockInside = isRootPane ? toViewPanePtr : toViewPanePtr->parent;
+	auto toParentPane = toViewPanePtr->parent;
+	auto isRootPane = !toParentPane;
+	auto dockInside = isRootPane ? toViewPanePtr : toParentPane;
 
 	if (!dockInside)
 		return false;
 
-	ViewPane::SplitMode splitMode = ViewPane::SplitMode::None;
+	ViewPane::SplitMode neededSplitMode = ViewPane::SplitMode::None;
 
 	switch (dockType)
 	{
 	case hui::DockType::Left:
 	case hui::DockType::Right:
-		splitMode = ViewPane::SplitMode::Horizontal;
+		neededSplitMode = ViewPane::SplitMode::Horizontal;
 		break;
 	case hui::DockType::Top:
 	case hui::DockType::Bottom:
-		splitMode = ViewPane::SplitMode::Vertical;
+		neededSplitMode = ViewPane::SplitMode::Vertical;
 		break;
 	case hui::DockType::TopAsViewTab:
-		splitMode = ViewPane::SplitMode::None;
+		neededSplitMode = ViewPane::SplitMode::None;
 		break;
 	}
 
 	// if this is the first view pane to be created and docked, set the split mode
 	if (dockInside->children.empty())
 	{
-		dockInside->splitMode = splitMode;
+		dockInside->splitMode = neededSplitMode;
 		dockInside->children.push_back(viewPanePtr);
 		viewPanePtr->parent = dockInside;
 		viewPanePtr->rect = dockInside->rect;
@@ -71,13 +162,51 @@ bool dockViewPane(HViewPane viewPane, HViewPane toViewPane, DockType dockType)
 	}
 
 	// dock inside the parent view pane, next to a sibling view pane
-	auto iter = std::find(dockInside->children.begin(), dockInside->children.end(), toViewPanePtr);
+	// search the sibling where we want to dock next to
+	std::vector<ViewPane*>::iterator iter = dockInside->children.end();
+
+	if (!isRootPane)
+	{
+		iter = std::find(dockInside->children.begin(), dockInside->children.end(), toViewPanePtr);
+	}
 
 	const f32 splitFactor = 0.333333f;
-	bool isSameSplit = dockInside->splitMode == splitMode;
+	// is same split mode if its the same with requested split mode of the docking type, or if the host has only 1 child, in which case split mode doesnt matter what it is, it will be set
+	bool isSameSplit = dockInside->splitMode == neededSplitMode || (dockInside->children.size() == 1);
 	bool foundSibling = iter != dockInside->children.end();
 
-	if (isSameSplit && (isRootPane || foundSibling))
+	// if we dock to root pane
+	if (isRootPane)
+	{
+		// if same split then just insert before or after sibling (if any)
+		if (isSameSplit)
+		{
+			insertViewPaneOnDocking(viewPanePtr, foundSibling ? *iter : nullptr, dockInside, dockType);
+			resizePanesAfterDocking(dockType, viewPanePtr, foundSibling ? *iter : nullptr, splitFactor);
+		}
+		else // create a new pane to contain the current panes
+		{
+			// new container pane
+			auto newPane = new ViewPane();
+			newPane->parent = dockInside;
+			newPane->rect = dockInside->rect;
+			newPane->sideSpacing = dockInside->sideSpacing;
+			newPane->splitMode = dockInside->splitMode;
+			newPane->window = dockInside->window;
+			
+			for (auto& child : dockInside->children)
+			{
+				child->reparent(newPane);
+			}
+
+			insertViewPaneOnDocking(viewPanePtr, newPane, dockInside, dockType);
+			resizePanesAfterDocking(dockType, viewPanePtr, newPane, splitFactor);
+		}
+
+		dockInside->splitMode = neededSplitMode;
+	}
+/*
+	if (isSameSplit && !isRootPane && foundSibling)
 	{
 		ViewPane* siblingPane = nullptr;
 		
