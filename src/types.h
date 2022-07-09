@@ -22,6 +22,7 @@ class UnicodeTextCache;
 class FontCache;
 class Font;
 struct Image;
+struct ViewPane;
 
 typedef u32 ImageId;
 
@@ -262,21 +263,10 @@ struct DropdownState
 struct DockingSystemData
 {
 	std::vector<struct ViewPane*> rootViewPanes; //TODO: maybe keep an unordered map of HWindow, ViewPane*
-	struct ViewPane* currentViewPane = nullptr;
+	ViewPane* currentViewPane = nullptr;
 	bool closeWindow = false;
 
-	ViewPane* getRootViewPaneOfWindow(HWindow window)
-	{
-		for (auto& pane : rootViewPanes)
-		{
-			if (pane->window == window)
-			{
-				return pane;
-			}
-		}
-
-		return nullptr;
-	}
+	ViewPane* getRootViewPaneOfWindow(HWindow window);
 };
 
 struct DragDropState
