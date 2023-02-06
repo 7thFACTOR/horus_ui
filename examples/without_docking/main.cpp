@@ -55,11 +55,11 @@ int main(int argc, char** args)
 	hui::setTheme(theme);
 	bool exitNow = false;
 
-	auto ico1 = hui::loadImage("../themes/icons/ic_attach_file_white_24dp.png");
-	auto ico2 = hui::loadImage("../themes/icons/ic_attach_money_white_24dp.png");
-	auto ico3 = hui::loadImage("../themes/icons/ic_border_all_white_24dp.png");
-	auto ico4 = hui::loadImage("../themes/icons/ic_border_inner_white_24dp.png");
-	auto ico5 = hui::loadImage("../themes/icons/ic_border_outer_white_24dp.png");
+	auto icon1 = hui::loadImage("../themes/icons/ic_attach_file_white_24dp.png");
+	auto icon2 = hui::loadImage("../themes/icons/ic_attach_money_white_24dp.png");
+	auto icon3 = hui::loadImage("../themes/icons/ic_border_all_white_24dp.png");
+	auto icon4 = hui::loadImage("../themes/icons/ic_border_inner_white_24dp.png");
+	auto icon5 = hui::loadImage("../themes/icons/ic_border_outer_white_24dp.png");
 
 	// after we load the theme and more images and fonts, we need to rebuild the theme (image atlas)
 	hui::buildTheme(theme);
@@ -157,18 +157,18 @@ int main(int argc, char** args)
 
 			hui::beginColumns(5);
 			hui::pushWidth(0.5);
-			hui::iconButton(ico1, 32);
+			hui::iconButton(icon1, 32);
 			hui::popWidth();
 			hui::nextColumn();
 			hui::pushWidth(1);
-			hui::iconButton(ico2, 32);
+			hui::iconButton(icon2, 32);
 			hui::popWidth();
 			hui::nextColumn();
-			hui::iconButton(ico3, 32);
+			hui::iconButton(icon3, 32);
 			hui::nextColumn();
-			hui::iconButton(ico4, 32);
+			hui::iconButton(icon4, 32);
 			hui::nextColumn();
-			hui::iconButton(ico5, 32);
+			hui::iconButton(icon5, 32);
 			hui::endColumns();
 			
 			hui::endContainer();
