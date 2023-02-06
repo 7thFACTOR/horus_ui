@@ -148,8 +148,8 @@ typedef void* HAtlas;
 typedef void* HFont;
 typedef void* HThemeWidgetElement;
 typedef void* HWindow;
-typedef void* HViewPane;
-typedef void* HViewPaneTab;
+typedef void* HView;
+typedef void* HViewContainer;
 typedef void* HMouseCursor;
 typedef void* HGraphicsApiContext;
 typedef void* HGraphicsApiTexture;
@@ -162,7 +162,7 @@ typedef void* HFontFace;
 
 typedef u32 Rgba32;
 typedef u32 TabIndex;
-typedef u32 ViewId;
+typedef u32 ViewType;
 typedef u32 GlyphCode;
 typedef std::vector<GlyphCode> Utf32String;
 
@@ -227,7 +227,7 @@ enum class WidgetType
 	TabGroup,
 	Tab,
 	Viewport,
-	ViewPane,
+	View,
 	MsgBox,
 	Box,
 	Toolbar,
@@ -277,10 +277,10 @@ enum class WidgetElementId
 	TabGroupBody,
 	TabBodyActive,
 	TabBodyInactive,
-	ViewPaneDockRect,
-	ViewPaneDockDialRect,
-	ViewPaneDockDialHSplitRect,
-	ViewPaneDockDialVSplitRect,
+	ViewDockRect,
+	ViewDockDialRect,
+	ViewDockDialHSplitRect,
+	ViewDockDialVSplitRect,
 	MenuBarBody,
 	MenuBarItem,
 	MenuBody,
@@ -599,18 +599,18 @@ enum class AntiAliasing
 	Count
 };
 
-/// Docking modes for the view panes
+/// Docking modes for the views
 enum class DockType
 {
-	Left, /// will dock pane to left
-	Right, /// will dock pane to right
-	Top, /// will dock pane to top
-	Bottom, /// will dock pane to bottom
-	RootLeft, /// will dock pane to left of root dock space
-	RootRight, /// will dock pane to right of root dock space
-	RootTop, /// will dock pane to top of root dock space
-	RootBottom, /// will dock pane to bottom of root dock space
-	TopAsViewTab, /// will dock pane as full pane in the pane tabs bar
+	Left, /// will dock view to left
+	Right, /// will dock view to right
+	Top, /// will dock view to top
+	Bottom, /// will dock view to bottom
+	RootLeft, /// will dock view to left of root dock space
+	RootRight, /// will dock view to right of root dock space
+	RootTop, /// will dock view to top of root dock space
+	RootBottom, /// will dock view to bottom of root dock space
+	TopAsTab, /// will dock view as full view in the view tabs bar
 };
 
 /// Common message box icons
@@ -1448,26 +1448,26 @@ struct ViewHandler
 	virtual void onBottomAreaRender(HWindow window) {}
 	/// Called when the user must render the widgets for a specific view
 	/// \param window the window where the drawing of UI will occur
-	/// \param viewPane the view pane where the drawing of UI will occur
-	/// \param activeViewId the view ID for which to draw the UI (there can be multiple views with the same ID), data driven UI
-	/// \param userData the user data ID, which was set by the user for this particular view instance
-	virtual void onViewRender(HWindow window, HWindow viewPane, ViewId activeViewId, u64 userData) {}
+	/// \param view the view where the drawing of UI will occur
+	/// \param activeViewType the view type for which to draw the UI (there can be multiple views with the same type), data driven UI
+	/// \param userData the user data, which was set by the user for this particular view instance
+	virtual void onViewRender(HWindow window, HView view, ViewType activeViewType, u64 userData) {}
 	/// Called when a view was closed
-	/// \param window the window where the view pane was closed
-	/// \param viewPane the view pane
-	/// \param activeViewId the view ID for which to draw the UI (there can be multiple views with the same ID), data driven UI
-	/// \param userData the user data ID, which was set by the user for this particular view instance
-	virtual void onViewClosed(HWindow window, HWindow viewPane, ViewId activeViewId, u64 userData) {}
+	/// \param window the window where the view was closed
+	/// \param view the view
+	/// \param activeViewType the view type for which to draw the UI (there can be multiple views with the same type), data driven UI
+	/// \param userData the user data, which was set by the user for this particular view instance
+	virtual void onViewClosed(HWindow window, HView view, ViewType activeViewType, u64 userData) {}
 	/// Called just before the frame starts to render
 	/// \param window the window where rendering will happen
 	virtual void onBeforeFrameRender(HWindow wnd) {}
 	/// Called after the frame starts to render
 	/// \param window the window where rendering did happen
 	virtual void onAfterFrameRender(HWindow wnd) {}
-	/// Called when the view pane state is saved, so you can also save your custom data
-	virtual void onViewPaneTabSave(HViewPaneTab tab, u64 dataId) {}
-	/// Called when the view pane state is loaded, so you can also load your custom data
-	virtual void onViewPaneTabLoad(HViewPaneTab tab, u64 dataId) {}
+	/// Called when the view state is saved, so you can also save your custom data
+	virtual void onViewSave(HView view, u64 userData) {}
+	/// Called when the view state is loaded, so you can also load your custom data
+	virtual void onViewLoad(HView view, u64 userData) {}
 };
 
 /// Line drawing style
@@ -1558,7 +1558,7 @@ struct ContextSettings
 	f32 whiteImageUvBorder = 0.001f; /// this value is subtracted from the white image used to draw lines, to avoid black border artifacts
 	f32 sameLineHeight = 20.0f; /// the height of a line when sameLine() is used to position widgets on a single row/line. Used to center various widget heights vertically. This must be non-zero, otherwise the widgets will align wrongly.
 	f32 minScrollViewHandleSize = 20.0f; /// the minimum allowed scroll handle size (height)
-	bool allowUndockingToNewWindow = true; /// allow pane tabs to be undocked as native windows, outside of main window
+	bool allowUndockingToNewWindow = true; /// allow view tabs to be undocked as native windows, outside of main window
 	u32 widgetLoopStartId = 1000000000; /// when pushing loops into loop stack, the widget ids will start from here. Basically this avoids the user to specify IDs when creating widgets in a loop, taking into account the fact there will not be so many widgets created anyway.
 	u32 widgetLoopMaxCount = 500000; /// current increment after each loop push to stack
 };
@@ -2092,7 +2092,7 @@ HORUS_API f32 getLayoutPadding();
 
 HORUS_API f32 getColumnPadding();
 
-/// Set the global UI scale, this will scale all the elements from widgets to text, but not the docking panes
+/// Set the global UI scale, this will scale all the elements from widgets to text, but not the docking views rectangles
 /// \param scale a value between 0 and N, no higher limit, but use with consideration
 HORUS_API void setGlobalScale(f32 scale);
 
@@ -2651,100 +2651,76 @@ HORUS_API void drawArrow(const Point& startPoint, const Point& endPoint, f32 tip
 HORUS_API void drawSolidTriangle(const Point& p1, const Point& p2, const Point& p3);
 
 //////////////////////////////////////////////////////////////////////////
-// View pane functions
-// A view pane is an area inside a native window and hosts a single view and a view tabs bar at the top. It can also only contain children view panes arranged vertically or horizontally, acting as a container.
+// View functions
+// A view is an area inside a native window and hosts a single view.
 //////////////////////////////////////////////////////////////////////////
 
-/// Create a root view pane for a specific window, where views can be docked, used by the docking system
-HORUS_API HViewPane createRootViewPane(HWindow window);
+/// Create a root view container for a specific window, where views can be docked, used by the docking system
+HORUS_API HViewContainer createRootViewContainer(HWindow window);
 
-HORUS_API HViewPane createViewPane(HViewPane parentViewPane, f32 size, DockType dock);
+HORUS_API HView createView(HViewContainer viewContainer, f32 size, DockType dock, const char* title, ViewType viewType, u64 userData);
 
-/// Delete a view pane, used by the docking system
-HORUS_API void deleteViewPane(HViewPane viewPane);
+/// Delete a view, used by the docking system
+HORUS_API void deleteView(HView view);
 
-HORUS_API void deleteWindowRootViewPane(HWindow window);
+HORUS_API void deleteWindowRootViewContainer(HWindow window);
 
-/// Get the root view panes from all windows, used by the docking system
-HORUS_API u32 getRootViewPanes(HViewPane* outViewPanes, u32 maxCount);
+/// \return the view's native window, used by the docking system
+HORUS_API HWindow getViewWindow(HView view);
 
-/// \return the view pane's window, used by the docking system
-HORUS_API HWindow getViewPaneWindow(HViewPane viewPane);
+HORUS_API HViewContainer getWindowRootViewContainer(HWindow window);
 
-HORUS_API HViewPane getWindowRootViewPane(HWindow window);
-
-/// Save the view panes state, with all view panes docked info
+/// Save the views state, with all views docked info
 /// \param filename the *.hui filename relative to executable where to save the state
 /// \return true if save was ok
-HORUS_API bool saveViewPaneState(const char* filename);
+HORUS_API bool saveViewState(const char* filename);
 /// Save the view state to memory, the returned data ptr contains the state info and it is now owned by you
-HORUS_API u8* saveViewPaneStateToMemory(size_t& outStateInfoSize);
+HORUS_API u8* saveViewStateToMemory(size_t& outStateInfoSize);
+//TODO: save view state to structures too
 
-/// Load the view container state, with all view panes docked info, it will create view panes
+/// Load the view state, with all views docked info, it will create views
 /// \param filename the *.hui filename relative to executable from where to load the state
 /// \return true if the load was ok
-HORUS_API bool loadViewPaneState(const char* filename);
-HORUS_API bool loadViewPaneStateFromMemory(const u8* stateInfo, size_t stateInfoSize);
+HORUS_API bool loadViewState(const char* filename);
+HORUS_API bool loadViewStateFromMemory(const u8* stateInfo, size_t stateInfoSize);
 
-/// Set the view pane spacing for adding toolbars, status bar or panels
+/// Set the view spacing for adding toolbars, status bar or panels
 /// Top spacing is not needed, it will be computed automatically from the rendered widgets heights
-HORUS_API void setViewPaneSideSpacing(HViewPane viewPane, f32 left, f32 right, f32 bottom);
+HORUS_API void setViewSideSpacing(HView view, f32 left, f32 right, f32 bottom);
 
-/// \return the view pane rect, relative to its window, used usually to render client scenes or other custom rendering
-/// \param viewPane the view pane
-HORUS_API Rect getViewPaneClientRect(HViewPane viewPane);
+/// \return the view rect, relative to its window, used usually to render client scenes or other custom rendering
+/// \param view the view
+HORUS_API Rect getViewClientRect(HView view);
 
-/// \return the remaining view pane height
-/// \param viewPane the view pane
-HORUS_API f32 getRemainingViewPaneClientHeight(HViewPane viewPane);
+/// \return the remaining view height
+/// \param view the view
+HORUS_API f32 getRemainingViewClientHeight(HView view);
 
-/// Add a tab (view instance) to a view pane tab group
-/// \param viewPane the view pane where to add a tab
-/// \param title the tab text
-/// \param id the view id to be shown in this tab
-/// \param userData the data id associated with this tab's view
-/// \return a view pane tab handle
-HORUS_API HViewPaneTab createViewPaneTab(HViewPane viewPane, const char* title, ViewId id, u64 userData);
+/// Set a view user data
+HORUS_API void setViewUserData(HView view, u64 userData);
 
-/// Remove a view pane tab
-HORUS_API void removeViewPaneTab(HViewPaneTab viewPaneTab);
+/// \return a view's data
+HORUS_API u64 getViewUserData(HView view);
 
-/// Set a view pane tab data
-HORUS_API void setViewPaneTabUserData(HViewPaneTab viewPaneTab, u64 userData);
+HORUS_API void setViewTitle(HView view, const char* title);
 
-/// \return a tab view's data
-HORUS_API u64 getViewPaneTabUserData(HViewPaneTab viewPaneTab);
+HORUS_API const char* getViewTitle(HView view);
 
-HORUS_API void setViewPaneTabTitle(HViewPaneTab viewPaneTab, const char* title);
-
-HORUS_API const char* getViewPaneTabTitle(HViewPaneTab viewPaneTab);
-
-HORUS_API ViewId getViewPaneTabViewId(HViewPaneTab viewPaneTab);
+HORUS_API ViewType getViewType(HView view);
 
 /// Set a view icon
-HORUS_API void setViewIcon(ViewId id, HImage image);
+HORUS_API void setViewIcon(ViewType viewType, HImage image);
 
-/// Begin draw of a view pane
-HORUS_API ViewId beginViewPane(HViewPane viewPane);
+/// Begin draw of a view
+HORUS_API ViewType beginView(HView view);
 
-/// End draw of a view pane
-HORUS_API void endViewPane();
+/// End draw of a view
+HORUS_API void endView();
 
-/// Activate a view pane
-HORUS_API void activateViewPane(HViewPane viewPane);
+/// Activate a view
+HORUS_API void activateView(HView view);
 
-/// Close a view pane
-HORUS_API void closeViewPane(HViewPane viewPane);
-
-/// Get view pane's view pane tabs
-/// \return -1 if maxCount was too small
-HORUS_API u32 getViewPaneTabs(HViewPane viewPane, HViewPaneTab* outViewPaneTabs, u32 maxCount);
-
-HORUS_API u32 getViewPaneTabCount(HViewPane viewPane);
-
-HORUS_API bool dockViewPane(HViewPane viewPane, HViewPane toViewPane, DockType dockType);
-
-HORUS_API bool dockViewTab(HViewPaneTab viewTab, HViewPane viewPane, DockType dockType);
+HORUS_API bool dockView(HView view, HView toView, DockType dockType);
 
 /// Set the current view handler, used throughout the docking system (also for save/load view window state)
 HORUS_API void setCurrentViewHandler(ViewHandler* handler);

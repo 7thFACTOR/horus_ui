@@ -262,11 +262,11 @@ struct DropdownState
 
 struct DockingSystemData
 {
-	std::vector<struct ViewPane*> rootViewPanes; //TODO: maybe keep an unordered map of HWindow, ViewPane*
-	ViewPane* currentViewPane = nullptr;
+	std::vector<struct ViewContainer*> rootViewContainers; //TODO: maybe keep an unordered map of HWindow, ViewContainer*
+	View* currentView = nullptr;
 	bool closeWindow = false;
 
-	ViewPane* getRootViewPaneOfWindow(HWindow window);
+	ViewContainer* getRootViewContainerOfWindow(HWindow window);
 };
 
 struct DragDropState

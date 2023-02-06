@@ -38,17 +38,19 @@ target_include_directories(widget_showroom PUBLIC
 	../libs
 	../libs/binpack
 	../libs/freetype/include)
-
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -fPIC" )
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -fPIC" )
-
-find_package(GTK REQUIRED)
-find_package(PkgConfig)
-pkg_check_modules(GTK "gtk+-3.0")
-target_link_libraries(widget_showroom ${GTK_LIBRARIES})
-add_definitions(${GTK_CFLAGS} ${GTK_CFLAGS_OTHER})
+	
+if(LINUX)
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -fPIC" )
+	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -fPIC" )
+	find_package(GTK REQUIRED)
+	find_package(PkgConfig)
+	pkg_check_modules(GTK "gtk+-3.0")
+	target_link_libraries(widget_showroom ${GTK_LIBRARIES})
+	add_definitions(${GTK_CFLAGS} ${GTK_CFLAGS_OTHER})
+	target_link_libraries(widget_showroom libSDL2-2.0.so libfreetype.so libGLEW.so libjsoncpp.so libGL.so) 
+endif(LINUX)
 
 target_link_directories(widget_showroom PUBLIC ${CMAKE_BINARY_DIR}/bin)
-target_link_libraries(widget_showroom libSDL2-2.0.so libfreetype.so libGLEW.so libjsoncpp.so libGL.so) 
+
 
 

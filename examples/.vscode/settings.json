@@ -3,6 +3,6 @@
         "unordered_map": "cpp"
     },
     "cmake.buildDirectory": "${workspaceFolder}/../build",
-    "cmake.generator": "Unix Makefiles",
+    "cmake.generator": "Visual Studio 16",
     "cmake.configureArgs": ["-DOpenGL_GL_PREFERENCE=GLVND"]
 }
