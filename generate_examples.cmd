@@ -1,2 +1,3 @@
-set VSVER=vs2019
-premake5 %VSVER%
+mkdir build
+cd ./build
+cmake -G "Visual Studio 16" ../examples
