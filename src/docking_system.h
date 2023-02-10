@@ -1,8 +1,8 @@
 #pragma once
 #include "types.h"
-#include "view_pane.h"
+#include "view.h"
 
 namespace hui
 {
-void handleViewPaneResize(ViewPane* viewPane);
+void handleViewResize(View* view);
 };

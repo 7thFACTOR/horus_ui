@@ -149,7 +149,7 @@ typedef void* HFont;
 typedef void* HThemeWidgetElement;
 typedef void* HWindow;
 typedef void* HView;
-typedef void* HViewContainer;
+typedef void* HDockNode;
 typedef void* HMouseCursor;
 typedef void* HGraphicsApiContext;
 typedef void* HGraphicsApiTexture;
@@ -610,7 +610,7 @@ enum class DockType
 	RootRight, /// will dock view to right of root dock space
 	RootTop, /// will dock view to top of root dock space
 	RootBottom, /// will dock view to bottom of root dock space
-	TopAsTab, /// will dock view as full view in the view tabs bar
+	AsTab, /// will dock view as full view in the view tabs bar
 };
 
 /// Common message box icons
@@ -1558,6 +1558,7 @@ struct ContextSettings
 	f32 whiteImageUvBorder = 0.001f; /// this value is subtracted from the white image used to draw lines, to avoid black border artifacts
 	f32 sameLineHeight = 20.0f; /// the height of a line when sameLine() is used to position widgets on a single row/line. Used to center various widget heights vertically. This must be non-zero, otherwise the widgets will align wrongly.
 	f32 minScrollViewHandleSize = 20.0f; /// the minimum allowed scroll handle size (height)
+	//TODO: make this per dock node
 	bool allowUndockingToNewWindow = true; /// allow view tabs to be undocked as native windows, outside of main window
 	u32 widgetLoopStartId = 1000000000; /// when pushing loops into loop stack, the widget ids will start from here. Basically this avoids the user to specify IDs when creating widgets in a loop, taking into account the fact there will not be so many widgets created anyway.
 	u32 widgetLoopMaxCount = 500000; /// current increment after each loop push to stack
@@ -2651,42 +2652,38 @@ HORUS_API void drawArrow(const Point& startPoint, const Point& endPoint, f32 tip
 HORUS_API void drawSolidTriangle(const Point& p1, const Point& p2, const Point& p3);
 
 //////////////////////////////////////////////////////////////////////////
-// View functions
+// Docking views functions
 // A view is an area inside a native window and hosts a single view.
 //////////////////////////////////////////////////////////////////////////
 
-/// Create a root view container for a specific window, where views can be docked, used by the docking system
-HORUS_API HViewContainer createRootViewContainer(HWindow window);
+/// Create a root dock node for a specific window, where views can be docked
+HORUS_API HDockNode createRootDockNode(HWindow window);
 
-HORUS_API HView createView(HViewContainer viewContainer, f32 size, DockType dock, const char* title, ViewType viewType, u64 userData);
+HORUS_API HView createView(HDockNode dockTarget, f32 size, DockType dock, const char* title, ViewType viewType, u64 userData);
 
 /// Delete a view, used by the docking system
 HORUS_API void deleteView(HView view);
 
-HORUS_API void deleteWindowRootViewContainer(HWindow window);
+HORUS_API void deleteRootDockNode(HWindow window);
 
 /// \return the view's native window, used by the docking system
 HORUS_API HWindow getViewWindow(HView view);
 
-HORUS_API HViewContainer getWindowRootViewContainer(HWindow window);
+HORUS_API HDockNode getRootDockNode(HWindow window);
 
 /// Save the views state, with all views docked info
 /// \param filename the *.hui filename relative to executable where to save the state
 /// \return true if save was ok
-HORUS_API bool saveViewState(const char* filename);
+HORUS_API bool saveDockingState(const char* filename);
 /// Save the view state to memory, the returned data ptr contains the state info and it is now owned by you
-HORUS_API u8* saveViewStateToMemory(size_t& outStateInfoSize);
+HORUS_API u8* saveDockingStateToMemory(size_t& outStateInfoSize);
 //TODO: save view state to structures too
 
 /// Load the view state, with all views docked info, it will create views
 /// \param filename the *.hui filename relative to executable from where to load the state
 /// \return true if the load was ok
-HORUS_API bool loadViewState(const char* filename);
-HORUS_API bool loadViewStateFromMemory(const u8* stateInfo, size_t stateInfoSize);
-
-/// Set the view spacing for adding toolbars, status bar or panels
-/// Top spacing is not needed, it will be computed automatically from the rendered widgets heights
-HORUS_API void setViewSideSpacing(HView view, f32 left, f32 right, f32 bottom);
+HORUS_API bool loadDockingState(const char* filename);
+HORUS_API bool loadDockingStateFromMemory(const u8* stateInfo, size_t stateInfoSize);
 
 /// \return the view rect, relative to its window, used usually to render client scenes or other custom rendering
 /// \param view the view
@@ -2720,7 +2717,7 @@ HORUS_API void endView();
 /// Activate a view
 HORUS_API void activateView(HView view);
 
-HORUS_API bool dockView(HView view, HView toView, DockType dockType);
+HORUS_API bool dockNode(HDockNode source, HDockNode target, DockType dockType);
 
 /// Set the current view handler, used throughout the docking system (also for save/load view window state)
 HORUS_API void setCurrentViewHandler(ViewHandler* handler);

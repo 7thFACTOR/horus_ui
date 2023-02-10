@@ -6,7 +6,7 @@
 #include "theme.h"
 #include "context.h"
 #include "docking_system.h"
-#include "view_pane.h"
+#include "view.h"
 #include <vector>
 #include <unordered_map>
 #include <algorithm>
@@ -15,10 +15,6 @@
 #include <ctime>
 #include <chrono>
 #include <ratio>
-#endif
-
-#ifdef _WIN32
-#include <windows.h>
 #endif
 
 namespace hui
@@ -40,16 +36,16 @@ void updateDockingSystemInternal(bool isLastEvent)
 	if (hui::getInputEvent().type == InputEvent::Type::WindowClose
 		&& hui::getInputEvent().window != hui::getMainWindow())
 	{
-		auto pane = (ViewPane*)getWindowRootViewPane(hui::getInputEvent().window);
+		auto ctr = (ViewContainer*)getWindowRootViewContainer(hui::getInputEvent().window);
 		hui::destroyWindow(hui::getInputEvent().window);
 	}
 
-	std::vector<ViewPane*> panes;
+	std::vector<View*> views;
 
-	for (size_t i = 0; i < ctx->dockingData.rootViewPanes.size(); i++)
+	for (size_t i = 0; i < ctx->dockingData.rootViewContainers.size(); i++)
 	{
-		auto viewPane = ctx->dockingData.rootViewPanes[i];
-		auto wnd = viewPane->window;
+		auto viewCtr = ctx->dockingData.rootViewContainers[i];
+		auto wnd = viewCtr->window;
 
 		if (!wnd)
 		{
@@ -73,9 +69,9 @@ void updateDockingSystemInternal(bool isLastEvent)
 			hui::forceRepaint();
 		}
 
-		panes.clear();
-		viewPane->gatherViewPanes(panes);
-		ctx->dockingData.currentViewPane = viewPane;
+		views.clear();
+		viewCtr->gatherViews(views);
+		ctx->dockingData.currentViewContainer = viewCtr;
 		ctx->dockingData.closeWindow = false;
 
 		beginContainer(wndRect);
@@ -83,26 +79,26 @@ void updateDockingSystemInternal(bool isLastEvent)
 
 		// top area
 		ctx->currentViewHandler->onTopAreaRender(wnd);
-		viewPane->sideSpacing[(int)ViewPane::SideSpacing::SideSpacingTop] = ctx->penPosition.y;
+		viewCtr->sideSpacing[(int)ViewContainer::SideSpacing::SideSpacingTop] = ctx->penPosition.y;
 		oldY = ctx->penPosition.y;
 
 		// left area
 		ctx->penPosition.x = 0;
-		beginContainer({ ctx->penPosition.x, ctx->penPosition.y, viewPane->sideSpacing[(int)ViewPane::SideSpacing::SideSpacingLeft], wndRect.height - oldY - viewPane->sideSpacing[(int)ViewPane::SideSpacing::SideSpacingBottom] });
+		beginContainer({ ctx->penPosition.x, ctx->penPosition.y, viewCtr->sideSpacing[(int)ViewContainer::SideSpacing::SideSpacingLeft], wndRect.height - oldY - viewCtr->sideSpacing[(int)ViewContainer::SideSpacing::SideSpacingBottom] });
 		ctx->currentViewHandler->onLeftAreaRender(wnd);
 		endContainer();
 
 		// right area
-		ctx->penPosition.x = wndRect.width - viewPane->sideSpacing[(int)ViewPane::SideSpacing::SideSpacingRight];
+		ctx->penPosition.x = wndRect.width - viewCtr->sideSpacing[(int)ViewContainer::SideSpacing::SideSpacingRight];
 		ctx->penPosition.y = oldY;
-		beginContainer({ ctx->penPosition.x, ctx->penPosition.y, viewPane->sideSpacing[(int)ViewPane::SideSpacing::SideSpacingRight], wndRect.height - oldY - viewPane->sideSpacing[(int)ViewPane::SideSpacing::SideSpacingBottom] });
+		beginContainer({ ctx->penPosition.x, ctx->penPosition.y, viewCtr->sideSpacing[(int)ViewContainer::SideSpacing::SideSpacingRight], wndRect.height - oldY - viewCtr->sideSpacing[(int)ViewContainer::SideSpacing::SideSpacingBottom] });
 		ctx->currentViewHandler->onRightAreaRender(wnd);
 		endContainer();
 
 		// bottom area
 		ctx->penPosition.x = 0;
-		ctx->penPosition.y = wndRect.height - viewPane->sideSpacing[(int)ViewPane::SideSpacing::SideSpacingBottom];
-		beginContainer({ ctx->penPosition.x, ctx->penPosition.y, wndRect.width, viewPane->sideSpacing[(int)ViewPane::SideSpacing::SideSpacingBottom] });
+		ctx->penPosition.y = wndRect.height - viewCtr->sideSpacing[(int)ViewContainer::SideSpacing::SideSpacingBottom];
+		beginContainer({ ctx->penPosition.x, ctx->penPosition.y, wndRect.width, viewCtr->sideSpacing[(int)ViewContainer::SideSpacing::SideSpacingBottom] });
 		ctx->currentViewHandler->onBottomAreaRender(wnd);
 		endContainer();
 

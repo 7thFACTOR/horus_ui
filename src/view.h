@@ -13,55 +13,33 @@ static constexpr f32 percentOfNewViewSplit = 0.5f;
 struct View
 {
 	std::string title;
-	struct ViewContainer* viewContainer = nullptr;
+	struct DockNode* dockNode = nullptr;
 	ViewType viewType = 0;
-	Rect rect;
-	f32 size = 0;
 	HImage icon = nullptr;
 	u64 userData = 0;
+	f32 size = 0;
 };
 
-struct ViewContainer
+struct DockNode
 {
-	enum class SplitMode
+	enum class Type
 	{
 		None,
-		Vertical, // =
-		Horizontal, // ||
+		View,
+		Vertical, // -
+		Horizontal, // |
 		Tabs
 	};
 
-	enum class SideSpacing
-	{
-		SideSpacingTop = 0,
-		SideSpacingBottom,
-		SideSpacingLeft,
-		SideSpacingRight
-	};
 
-	bool serialize(MemoryStream& stream, struct ViewHandler* viewHandler);
-	bool deserialize(MemoryStream& stream, struct ViewHandler* viewHandler);
-	View* findViewToResize(const Point& pt, i32 gripSize);
-	View* findDockView(const Point& pt);
-	void gatherViews(std::vector<View*>& views);
-	View* deleteView(View* view);
-	bool removeView(View* view);
-	void debug(i32 level);
-	void destroy();
-	size_t getViewTabIndex(ViewTab* viewTab);
-	void removeViewTab(ViewTab* viewTab);
-	ViewTab* getSelectedViewTab();
-	ViewPane* acquireViewTab(ViewTab* viewTab, DockType dock);
-	void reparent(ViewPane* newParent);
-
-	ViewContainer* parent = nullptr;
+	DockNode* parent = nullptr;
+	std::vector<DockNode*> children;
 	HWindow window = 0;
-	std::vector<View*> views;
-	SplitMode splitMode = SplitMode::None;
+	Type type = Type::None;
+	View* view = nullptr;
 	Point minSize = { 32, 32 };
 	Rect rect;
 	size_t selectedTabIndex = 0;
-	f32 sideSpacing[4] = { 0 }; // spacing for all sides of the view pane, usually used for toolbars and main menu
-}
+};
 
 }
