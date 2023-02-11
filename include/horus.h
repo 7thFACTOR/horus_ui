@@ -2717,7 +2717,7 @@ HORUS_API void endView();
 /// Activate a view
 HORUS_API void activateView(HView view);
 
-HORUS_API bool dockNode(HDockNode source, HDockNode target, DockType dockType);
+HORUS_API bool dockView(HView view, HDockNode target, DockType dockType);
 
 /// Set the current view handler, used throughout the docking system (also for save/load view window state)
 HORUS_API void setCurrentViewHandler(ViewHandler* handler);

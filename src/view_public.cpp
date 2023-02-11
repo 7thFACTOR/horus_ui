@@ -21,7 +21,7 @@ HDockNode createRootDockNode(HWindow window)
 	return dockNode;
 }
 
-HView createView(HDockNode targetNode, DockType dock, const char* title, f32 size, ViewType viewType, u64 userData)
+HDockNode createView(HDockNode targetNode, DockType dock, const char* title, f32 size, ViewType viewType, u64 userData)
 {
 	auto targetNodePtr = (DockNode*)targetNode;
 	auto newView = new View();
@@ -29,30 +29,32 @@ HView createView(HDockNode targetNode, DockType dock, const char* title, f32 siz
 	newView->title = title;
 	newView->viewType = viewType;
 	newView->userData = userData;
-	newView->size = size;
 
 	dockView(newView, targetNode, dock);
 
 	return newView;
 }
 
-bool dockNode(HDockNode sourceNode, HDockNode targetNode, DockType dockType)
+bool dockView(HView view, HDockNode targetNode, DockType dockType)
 {
-	DockNode* source = (DockNode*)sourceNode;
+	auto viewObj = (View*)view;
+	auto source = viewObj->parent;
 	DockNode* target = (DockNode*)targetNode;
 
-	if (target->children.empty())
+	if (source == target)
+		return false;
+
+
+	if (target->children.empty() && target->views.empty())
 	{
-		target->children = source->children;
-		target->rect = source->rect;
-		target->selectedTabIndex = source->selectedTabIndex;
-		target->type = source->type;
-		target->view = source->view;
-		target->window = source->window;
-		delete source; //TODO: destroy source's window also
+		target->views.push_back(viewObj);
+		target->type = DockNode::Type::ViewTabs;
+		target->selectedTabIndex = 0;
 		//TODO: recalc layout
 		return true;
 	}
+
+	DockNode* sourceNode = nullptr;
 
 	switch (dockType)
 	{
@@ -72,10 +74,51 @@ bool dockNode(HDockNode sourceNode, HDockNode targetNode, DockType dockType)
 		target->type = DockNode::Type::Vertical;
 		target->children.push_back(source);
 		break;
-	case hui::DockType::RootLeft:
+	case hui::DockType::RootLeft:		
+		
+		if (source->views.size() == 1)
+		{
+			sourceNode = source;
+		}
+		else
+		{
+			source->removeView(viewObj);
+			sourceNode = new DockNode();
+			sourceNode->type = DockNode::Type::ViewTabs;
+			sourceNode->views.push_back(viewObj);
+		}
+
+		sourceNode->parent = target;
+
+		// if same layout
 		if (target->type == DockNode::Type::Horizontal)
 		{
-			
+			target->children.insert(target->children.begin(), sourceNode);
+		}
+		// if layout is different
+		else if (target->type == DockNode::Type::Vertical)
+		{
+			newNode->parent = target;
+			newNode->children = target->children;
+			for (auto& c : newNode->children) c->parent = newNode;
+			newNode->type = target->type = DockNode::Type::Vertical;
+			newNode->window = target->window;
+			target->children.clear();
+			target->children.push_back(source);
+			target->children.push_back(newNode);
+		}
+		// if target is a view or tabs, create a horizontal container node
+		else
+		{
+			DockNode* newNode = new DockNode();
+			newNode->parent = target;
+			newNode->view = target->view;
+			newNode->type = target->type;
+			newNode->window = target->window;
+			newNode->views = target->views;
+			target->type = DockNode::Type::Horizontal;
+			target->children.push_back(source);
+			target->children.push_back(newNode);
 		}
 
 		break;

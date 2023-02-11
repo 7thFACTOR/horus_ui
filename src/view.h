@@ -12,12 +12,11 @@ static constexpr f32 percentOfNewViewSplit = 0.5f;
 
 struct View
 {
+	struct DockNode* parent = nullptr;
 	std::string title;
-	struct DockNode* dockNode = nullptr;
 	ViewType viewType = 0;
 	HImage icon = nullptr;
 	u64 userData = 0;
-	f32 size = 0;
 };
 
 struct DockNode
@@ -25,21 +24,22 @@ struct DockNode
 	enum class Type
 	{
 		None,
-		View,
+		ViewTabs,
 		Vertical, // -
 		Horizontal, // |
-		Tabs
 	};
-
 
 	DockNode* parent = nullptr;
 	std::vector<DockNode*> children;
+	std::vector<View*> views;
 	HWindow window = 0;
 	Type type = Type::None;
-	View* view = nullptr;
 	Point minSize = { 32, 32 };
 	Rect rect;
 	size_t selectedTabIndex = 0;
+
+	void removeFromParent();
+	void removeView(View* view);
 };
 
 }
