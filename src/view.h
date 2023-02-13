@@ -12,7 +12,7 @@ static constexpr f32 percentOfNewViewSplit = 0.5f;
 
 struct View
 {
-	struct DockNode* parent = nullptr;
+	struct DockNode* dockNode = nullptr;
 	std::string title;
 	ViewType viewType = 0;
 	HImage icon = nullptr;
@@ -36,10 +36,12 @@ struct DockNode
 	Type type = Type::None;
 	Point minSize = { 32, 32 };
 	Rect rect;
+	Rect unitRect;
 	size_t selectedTabIndex = 0;
 
 	void removeFromParent();
 	void removeView(View* view);
+	void computeRect();
 };
 
 }

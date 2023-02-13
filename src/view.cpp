@@ -23,4 +23,20 @@ void DockNode::removeView(View* view)
 		views.erase(iter);
 }
 
+void DockNode::computeRect()
+{
+	if (parent)
+	{
+
+	}
+	else
+	{
+		auto rc = getWindowClientRect(window);
+		rect.x = unitRect.x * rc.width;
+		rect.y = unitRect.y * rc.height;
+		rect.width = unitRect.width * rc.width;
+		rect.height = unitRect.height * rc.height;
+	}
+}
+
 }
