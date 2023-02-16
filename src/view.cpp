@@ -40,8 +40,8 @@ void DockNode::computeRect()
 	switch (type)
 	{
 	case hui::DockNode::Type::None:
-		break;
 	case hui::DockNode::Type::ViewTabs:
+		rect = parentRect;
 		break;
 	case hui::DockNode::Type::Vertical:
 	{
