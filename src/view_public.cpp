@@ -71,7 +71,7 @@ bool dockView(HView view, HDockNode targetNode, DockType dockType)
 				source->parent->removeFromParent();
 				source->parent = target->parent;
 				source->window = target->window;
-				--iter; // insert before
+				// insert it before target
 				target->parent->children.insert(iter, source);
 			}
 			else

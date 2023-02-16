@@ -36,7 +36,6 @@ struct DockNode
 	Type type = Type::None;
 	Point minSize = { 32, 32 };
 	Rect rect;
-	Rect unitRect;
 	size_t selectedTabIndex = 0;
 
 	void removeFromParent();
