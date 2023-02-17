@@ -1560,6 +1560,9 @@ struct ContextSettings
 	f32 minScrollViewHandleSize = 20.0f; /// the minimum allowed scroll handle size (height)
 	//TODO: make this per dock node
 	bool allowUndockingToNewWindow = true; /// allow view tabs to be undocked as native windows, outside of main window
+	f32 dockNodeSpacing = 4;
+	bool dockNodeProportionalResize = true; /// if false, it will dock nodes keeping the other nodes sizes unchanged, else will resize the others so the new one can fit
+	f32 dockNodeDockingSizeRatio = 0.3f; /// ratio of the new size of a docked node in regard to the node we're docking in (if dockNodeProportionalResize is true)
 	u32 widgetLoopStartId = 1000000000; /// when pushing loops into loop stack, the widget ids will start from here. Basically this avoids the user to specify IDs when creating widgets in a loop, taking into account the fact there will not be so many widgets created anyway.
 	u32 widgetLoopMaxCount = 500000; /// current increment after each loop push to stack
 };
@@ -2717,7 +2720,7 @@ HORUS_API void endView();
 /// Activate a view
 HORUS_API void activateView(HView view);
 
-HORUS_API bool dockView(HView view, HDockNode target, DockType dockType);
+HORUS_API bool dockView(HView view, HDockNode target, DockType dockType, u32 tabIndex = 0);
 
 /// Set the current view handler, used throughout the docking system (also for save/load view window state)
 HORUS_API void setCurrentViewHandler(ViewHandler* handler);

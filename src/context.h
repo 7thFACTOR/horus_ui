@@ -163,8 +163,7 @@ struct Context
 
 	std::vector<TextLine> textLines;
 
-	DockingSystemData dockingData;
-	f32 dockNodeSpacing = 4;
+	DockingState dockingState;
 
 	Context()
 	{

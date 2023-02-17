@@ -47,7 +47,7 @@ bool MemoryStream::readData(u8* outData, size_t dataSize)
 	return true;
 }
 
-ViewPane* DockingSystemData::getRootViewPaneOfWindow(HWindow window)
+ViewPane* DockingState::getRootViewPaneOfWindow(HWindow window)
 {
 	for (auto& pane : rootViewPanes)
 	{

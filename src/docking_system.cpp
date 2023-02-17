@@ -42,9 +42,9 @@ void updateDockingSystemInternal(bool isLastEvent)
 
 	std::vector<View*> views;
 
-	for (size_t i = 0; i < ctx->dockingData.rootViewContainers.size(); i++)
+	for (size_t i = 0; i < ctx->dockingState.rootViewContainers.size(); i++)
 	{
-		auto viewCtr = ctx->dockingData.rootViewContainers[i];
+		auto viewCtr = ctx->dockingState.rootViewContainers[i];
 		auto wnd = viewCtr->window;
 
 		if (!wnd)
@@ -71,8 +71,8 @@ void updateDockingSystemInternal(bool isLastEvent)
 
 		views.clear();
 		viewCtr->gatherViews(views);
-		ctx->dockingData.currentViewContainer = viewCtr;
-		ctx->dockingData.closeWindow = false;
+		ctx->dockingState.currentViewContainer = viewCtr;
+		ctx->dockingState.closeWindow = false;
 
 		beginContainer(wndRect);
 		f32 oldY = 0;
@@ -119,7 +119,7 @@ void updateDockingSystemInternal(bool isLastEvent)
 		endContainer();
 		endWindow();
 		ctx->currentViewHandler->onAfterFrameRender(wnd);
-		ctx->dockingData.currentViewPane = nullptr;
+		ctx->dockingState.currentViewPane = nullptr;
 		handleViewPaneResize(viewPane);
 
 		if ((isLastEvent
@@ -131,7 +131,7 @@ void updateDockingSystemInternal(bool isLastEvent)
 			hui::presentWindow(wnd);
 		}
 
-		if (ctx->dockingData.closeWindow)
+		if (ctx->dockingState.closeWindow)
 		{
 			hui::deleteWindowRootViewPane(wnd);
 			hui::destroyWindow(wnd);
@@ -301,9 +301,9 @@ void handleViewPaneResize(ViewPane* viewPane)
 				//	if (hui::getMainWindow() != draggingPaneSource->window)
 				//	{
 				//		destroyWindow(draggingPaneSource->window);
-				//		auto iter = std::find(ctx->dockingData.rootViewPanes.begin(), ctx->dockingData.rootViewPanes.end(), draggingPaneSource);
+				//		auto iter = std::find(ctx->dockingState.rootViewPanes.begin(), ctx->dockingState.rootViewPanes.end(), draggingPaneSource);
 
-				//		ctx->dockingData.rootViewPanes.erase(iter);
+				//		ctx->dockingState.rootViewPanes.erase(iter);
 				//		//TODO: crashes LLVM on MacOS, check for dangling ptrs
 				//		draggingPaneSource->destroy();
 				//		delete draggingPaneSource;

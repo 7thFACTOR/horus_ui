@@ -45,7 +45,7 @@ void DockNode::computeRect()
 		break;
 	case hui::DockNode::Type::Vertical:
 	{
-		f32 availableSpace = parentRect.height + ctx->dockNodeSpacing * (f32)(children.size() - 1);
+		f32 availableSpace = parentRect.height + ctx->settings.dockNodeSpacing * (f32)(children.size() - 1);
 		f32 averageSpace = availableSpace / (f32)children.size();
 		f32 totalSpace = 0;
 
@@ -73,13 +73,13 @@ void DockNode::computeRect()
 			child->computeRect();
 
 			currentY += height;
-			currentY += ctx->dockNodeSpacing;
+			currentY += ctx->settings.dockNodeSpacing;
 		}
 	}
 		break;
 	case hui::DockNode::Type::Horizontal:
 	{
-		f32 availableSpace = parentRect.width + ctx->dockNodeSpacing * (f32)(children.size() - 1); 
+		f32 availableSpace = parentRect.width + ctx->settings.dockNodeSpacing * (f32)(children.size() - 1);
 		f32 averageSpace = availableSpace / (f32)children.size();
 		f32 totalSpace = 0;
 
@@ -107,7 +107,7 @@ void DockNode::computeRect()
 			child->computeRect();
 
 			currentX += width;
-			currentX += ctx->dockNodeSpacing;
+			currentX += ctx->settings.dockNodeSpacing;
 		}
 	}
 		break;

@@ -260,7 +260,7 @@ struct DropdownState
 	u32 widgetId = 0;
 };
 
-struct DockingSystemData
+struct DockingState
 {
 	std::unordered_map<HWindow, struct DockNode*> rootWindowDockNodes;
 	DockNode* currentDockNode = nullptr;

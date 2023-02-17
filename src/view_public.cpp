@@ -16,7 +16,7 @@ HDockNode createRootDockNode(HWindow window)
 	dockNode->type = DockNode::Type::None;
 	dockNode->rect.set(0, 0, rect.width, rect.height);
 	dockNode->window = window;
-	ctx->dockingData.rootWindowDockNodes.insert(std::make_pair(window, dockNode));
+	ctx->dockingState.rootWindowDockNodes.insert(std::make_pair(window, dockNode));
 
 	return dockNode;
 }
@@ -35,7 +35,7 @@ HDockNode createView(HDockNode targetNode, DockType dock, const char* title, f32
 	return newView;
 }
 
-bool dockView(HView view, HDockNode targetNode, DockType dockType)
+bool dockView(HView view, HDockNode targetNode, DockType dockType, u32 tabIndex)
 {
 	auto viewObj = (View*)view;
 	auto source = viewObj->dockNode;
@@ -50,8 +50,6 @@ bool dockView(HView view, HDockNode targetNode, DockType dockType)
 		target->views.push_back(viewObj);
 		target->type = DockNode::Type::ViewTabs;
 		target->selectedTabIndex = 0;
-
-		//TODO: recalc layout
 		return true;
 	}
 
@@ -68,11 +66,12 @@ bool dockView(HView view, HDockNode targetNode, DockType dockType)
 			// if there is just one view in the source node, move the node also and remove from current parent
 			if (source->views.size() == 1)
 			{
-				source->parent->removeFromParent();
+				source->removeFromParent();
 				source->parent = target->parent;
 				source->window = target->window;
 				// insert it before target
 				target->parent->children.insert(iter, source);
+				sourceNode = source;
 			}
 			else
 			// we create a new node to hold the view
@@ -85,9 +84,158 @@ bool dockView(HView view, HDockNode targetNode, DockType dockType)
 				newNode->type = DockNode::Type::ViewTabs;
 				newNode->window = target->window;
 				target->parent->children.insert(iter, newNode);
+				sourceNode = newNode;
 			}
 		}
 		else if (target->parent->type == DockNode::Type::Vertical)
+		{
+			if (source->views.size() == 1)
+			{
+				source->removeFromParent();
+				source->parent = target;
+				sourceNode = source;
+			}
+			else
+			{
+				source->removeView(viewObj);
+				sourceNode = new DockNode();
+				sourceNode->views.push_back(viewObj);
+				viewObj->dockNode = sourceNode;
+				sourceNode->parent = target;
+				sourceNode->type = DockNode::Type::ViewTabs;
+			}
+
+			// move target content into new node
+			DockNode* newNode = new DockNode();
+			*newNode = *target;
+			newNode->parent = target;
+			for (auto& c : newNode->children) c->parent = newNode;
+			target->children.clear();
+			target->children.push_back(sourceNode);
+			target->children.push_back(newNode);
+		}
+
+		// if not proportional docking resize, then resize the target and compute size from it for source
+		if (!ctx->settings.dockNodeProportionalResize
+			&& sourceNode
+			&& (target->parent->type == DockNode::Type::Vertical
+			|| target->parent->type == DockNode::Type::Horizontal))
+		{
+			f32 size = target->rect.width * ctx->settings.dockNodeDockingSizeRatio;
+			sourceNode->rect.x = target->rect.x;
+			sourceNode->rect.y = target->rect.y;
+			sourceNode->rect.width = size;
+			sourceNode->rect.height = target->rect.height;
+			target->rect.width -= size;
+			target->rect.x -= size;
+		}
+
+		break;
+	case hui::DockType::Right:
+		// just insert at the target site
+		if (target->parent->type == DockNode::Type::Horizontal)
+		{
+			auto iter = std::find(target->parent->children.begin(), target->parent->children.end(), target);
+
+			// we will insert after it
+			++iter;
+
+			// if there is just one view in the source node, move the node also and remove from current parent
+			if (source->views.size() == 1)
+			{
+				source->removeFromParent();
+				source->parent = target->parent;
+				source->window = target->window;
+				target->parent->children.insert(iter, source);
+				sourceNode = source;
+			}
+			else
+			// we create a new node to hold the view
+			{
+				source->removeView(viewObj);
+				DockNode* newNode = new DockNode();
+				newNode->views.push_back(viewObj);
+				viewObj->dockNode = newNode;
+				newNode->parent = target->parent;
+				newNode->type = DockNode::Type::ViewTabs;
+				newNode->window = target->window;
+				target->parent->children.insert(iter, newNode);
+				sourceNode = newNode;
+			}
+		}
+		else if (target->parent->type == DockNode::Type::Vertical)
+		{
+			if (source->views.size() == 1)
+			{
+				source->removeFromParent();
+				source->parent = target;
+				sourceNode = source;
+			}
+			else
+			{
+				source->removeView(viewObj);
+				sourceNode = new DockNode();
+				sourceNode->views.push_back(viewObj);
+				viewObj->dockNode = sourceNode;
+				sourceNode->parent = target;
+				sourceNode->type = DockNode::Type::ViewTabs;
+			}
+
+			// move target content into new node
+			DockNode* newNode = new DockNode();
+			*newNode = *target;
+			newNode->parent = target;
+			for (auto& c : newNode->children) c->parent = newNode;
+			target->children.clear();
+			target->children.push_back(newNode);
+			target->children.push_back(sourceNode); // insert last
+		}
+
+		// if not proportional docking resize, then resize the target and compute size from it for source
+		if (!ctx->settings.dockNodeProportionalResize
+			&& sourceNode
+			&& (target->parent->type == DockNode::Type::Vertical
+				|| target->parent->type == DockNode::Type::Horizontal))
+		{
+			f32 size = target->rect.width * ctx->settings.dockNodeDockingSizeRatio;
+			sourceNode->rect.x = target->rect.right() - size;
+			sourceNode->rect.y = target->rect.y;
+			sourceNode->rect.width = size;
+			sourceNode->rect.height = target->rect.height;
+			target->rect.width -= size;
+		}
+		break;
+	case hui::DockType::Top:
+		// just insert at the target site
+		if (target->parent->type == DockNode::Type::Vertical)
+		{
+			auto iter = std::find(target->parent->children.begin(), target->parent->children.end(), target);
+
+			// if there is just one view in the source node, move the node also and remove from current parent
+			if (source->views.size() == 1)
+			{
+				source->removeFromParent();
+				source->parent = target->parent;
+				source->window = target->window;
+				// insert it before target
+				target->parent->children.insert(iter, source);
+				sourceNode = source;
+			}
+			else
+				// we create a new node to hold the view
+			{
+				source->removeView(viewObj);
+				DockNode* newNode = new DockNode();
+				newNode->views.push_back(viewObj);
+				viewObj->dockNode = newNode;
+				newNode->parent = target->parent;
+				newNode->type = DockNode::Type::ViewTabs;
+				newNode->window = target->window;
+				target->parent->children.insert(iter, newNode);
+				sourceNode = newNode;
+			}
+		}
+		else if (target->parent->type == DockNode::Type::Horizontal)
 		{
 			if (source->views.size() == 1)
 			{
@@ -114,17 +262,101 @@ bool dockView(HView view, HDockNode targetNode, DockType dockType)
 			target->children.push_back(sourceNode);
 			target->children.push_back(newNode);
 		}
-		break;
-	case hui::DockType::Right:
-		break;
-	case hui::DockType::Top:
+
+		// if not proportional docking resize, then resize the target and compute size from it for source
+		if (!ctx->settings.dockNodeProportionalResize
+			&& sourceNode
+			&& (target->parent->type == DockNode::Type::Vertical
+				|| target->parent->type == DockNode::Type::Horizontal))
+		{
+			f32 size = target->rect.height * ctx->settings.dockNodeDockingSizeRatio;
+			sourceNode->rect.x = target->rect.x;
+			sourceNode->rect.y = target->rect.y;
+			sourceNode->rect.width = target->rect.width;
+			sourceNode->rect.height = size;
+			target->rect.height -= size;
+			target->rect.y -= size;
+		}
 		break;
 	case hui::DockType::Bottom:
+		// just insert at the target site
+		if (target->parent->type == DockNode::Type::Vertical)
+		{
+			auto iter = std::find(target->parent->children.begin(), target->parent->children.end(), target);
+
+			// we will insert after it
+			++iter;
+
+			// if there is just one view in the source node, move the node also and remove from current parent
+			if (source->views.size() == 1)
+			{
+				source->removeFromParent();
+				source->parent = target->parent;
+				source->window = target->window;
+				target->parent->children.insert(iter, source);
+				sourceNode = source;
+			}
+			else
+				// we create a new node to hold the view
+			{
+				source->removeView(viewObj);
+				DockNode* newNode = new DockNode();
+				newNode->views.push_back(viewObj);
+				viewObj->dockNode = newNode;
+				newNode->parent = target->parent;
+				newNode->type = DockNode::Type::ViewTabs;
+				newNode->window = target->window;
+				target->parent->children.insert(iter, newNode);
+				sourceNode = newNode;
+			}
+		}
+		else if (target->parent->type == DockNode::Type::Horizontal)
+		{
+			if (source->views.size() == 1)
+			{
+				source->parent->removeFromParent();
+				source->parent = target;
+				sourceNode = source;
+			}
+			else
+			{
+				source->removeView(viewObj);
+				sourceNode = new DockNode();
+				sourceNode->views.push_back(viewObj);
+				viewObj->dockNode = sourceNode;
+				sourceNode->parent = target;
+				sourceNode->type = DockNode::Type::ViewTabs;
+			}
+
+			// move target content into new node
+			DockNode* newNode = new DockNode();
+			*newNode = *target;
+			newNode->parent = target;
+			for (auto& c : newNode->children) c->parent = newNode;
+			target->children.clear();
+			target->children.push_back(newNode);
+			target->children.push_back(sourceNode); // insert last
+		}
+
+		// if not proportional docking resize, then resize the target and compute size from it for source
+		if (!ctx->settings.dockNodeProportionalResize
+			&& sourceNode
+			&& (target->parent->type == DockNode::Type::Vertical
+				|| target->parent->type == DockNode::Type::Horizontal))
+		{
+			f32 size = target->rect.height * ctx->settings.dockNodeDockingSizeRatio;
+			sourceNode->rect.x = target->rect.x;
+			sourceNode->rect.y = target->rect.bottom() - size;
+			sourceNode->rect.width = target->rect.width;
+			sourceNode->rect.height = size;
+			target->rect.height -= size;
+		}
 		break;
 	case hui::DockType::RootLeft:
 		// if we only have a view in the source node, grab the node itself
 		if (source->views.size() == 1)
 		{
+			source->removeFromParent();
 			sourceNode = source;
 		}
 		else
@@ -141,6 +373,7 @@ bool dockView(HView view, HDockNode targetNode, DockType dockType)
 		// reparent the source node
 		sourceNode->parent = target;
 		sourceNode->window = target->window;
+		DockNode* newNode = nullptr;
 
 		// if same layout, add the new node to the left
 		if (target->type == DockNode::Type::Horizontal)
@@ -151,7 +384,7 @@ bool dockView(HView view, HDockNode targetNode, DockType dockType)
 		else if (target->type == DockNode::Type::Vertical)
 		{
 			// reparent all the children to a new node
-			DockNode* newNode = new DockNode();
+			newNode = new DockNode();
 			newNode->parent = target;
 			newNode->children = target->children;
 			newNode->type = target->type;
@@ -163,10 +396,10 @@ bool dockView(HView view, HDockNode targetNode, DockType dockType)
 			target->children.push_back(sourceNode);
 			target->children.push_back(newNode);
 		}
-		// if target is a view or tabs, create a horizontal container node
+		// if target is tabs, create a container node
 		else
 		{
-			DockNode* newNode = new DockNode();
+			newNode = new DockNode();
 			newNode->parent = target;
 			newNode->views = target->views;
 			newNode->type = target->type;
@@ -180,14 +413,293 @@ bool dockView(HView view, HDockNode targetNode, DockType dockType)
 			target->children.push_back(newNode);
 		}
 
+		// if not proportional docking resize, then resize the target and compute size from it for source
+		if (!ctx->settings.dockNodeProportionalResize
+			&& sourceNode
+			&& target->type != DockNode::Type::None)
+		{
+			f32 size = target->rect.width * ctx->settings.dockNodeDockingSizeRatio;
+			
+			sourceNode->rect.x = target->rect.x;
+			sourceNode->rect.y = target->rect.y;
+			sourceNode->rect.width = size;
+			sourceNode->rect.height = target->rect.height;
+
+			if (newNode)
+			{
+				newNode->rect.x = target->rect.x + size;
+				newNode->rect.y = target->rect.y;
+				newNode->rect.width = target->rect.width - size;
+				newNode->rect.height = target->rect.height;
+			}
+		}
+
 		break;
 	case hui::DockType::RootRight:
+		// if we only have a view in the source node, grab the node itself
+		if (source->views.size() == 1)
+		{
+			source->removeFromParent();
+			sourceNode = source;
+		}
+		else
+		{
+			// remove from the source node
+			source->removeView(viewObj);
+
+			// create new node
+			sourceNode = new DockNode();
+			sourceNode->type = DockNode::Type::ViewTabs;
+			sourceNode->views.push_back(viewObj);
+		}
+
+		// reparent the source node
+		sourceNode->parent = target;
+		sourceNode->window = target->window;
+		DockNode* newNode = nullptr;
+
+		// if same layout, add the new node to the left
+		if (target->type == DockNode::Type::Horizontal)
+		{
+			target->children.push_back(sourceNode);
+		}
+		// if layout is different
+		else if (target->type == DockNode::Type::Vertical)
+		{
+			// reparent all the children to a new node
+			newNode = new DockNode();
+			newNode->parent = target;
+			newNode->children = target->children;
+			newNode->type = target->type;
+			newNode->window = target->window;
+
+			for (auto& c : newNode->children) c->parent = newNode;
+
+			target->children.clear();
+			target->children.push_back(newNode);
+			target->children.push_back(sourceNode);
+		}
+		// if target is tabs, create a container node
+		else
+		{
+			newNode = new DockNode();
+			newNode->parent = target;
+			newNode->views = target->views;
+			newNode->type = target->type;
+			newNode->window = target->window;
+			newNode->selectedTabIndex = target->selectedTabIndex;
+
+			for (auto& c : newNode->children) c->parent = newNode;
+
+			target->type = DockNode::Type::Horizontal;
+			target->children.push_back(newNode);
+			target->children.push_back(sourceNode);
+		}
+
+		// if not proportional docking resize, then resize the target and compute size from it for source
+		if (!ctx->settings.dockNodeProportionalResize
+			&& sourceNode
+			&& target->type != DockNode::Type::None)
+		{
+			f32 size = target->rect.width * ctx->settings.dockNodeDockingSizeRatio;
+
+			sourceNode->rect.x = target->rect.right() - size;
+			sourceNode->rect.y = target->rect.y;
+			sourceNode->rect.width = size;
+			sourceNode->rect.height = target->rect.height;
+
+			if (newNode)
+			{
+				newNode->rect.x = target->rect.x;
+				newNode->rect.y = target->rect.y;
+				newNode->rect.width = target->rect.width - size;
+				newNode->rect.height = target->rect.height;
+			}
+		}
 		break;
 	case hui::DockType::RootTop:
+		// if we only have a view in the source node, grab the node itself
+		if (source->views.size() == 1)
+		{
+			source->removeFromParent();
+			sourceNode = source;
+		}
+		else
+		{
+			// remove from the source node
+			source->removeView(viewObj);
+
+			// create new node
+			sourceNode = new DockNode();
+			sourceNode->type = DockNode::Type::ViewTabs;
+			sourceNode->views.push_back(viewObj);
+		}
+
+		// reparent the source node
+		sourceNode->parent = target;
+		sourceNode->window = target->window;
+		DockNode* newNode = nullptr;
+
+		// if same layout, add the new node to the left
+		if (target->type == DockNode::Type::Vertical)
+		{
+			target->children.insert(target->children.begin(), sourceNode);
+		}
+		// if layout is different
+		else if (target->type == DockNode::Type::Horizontal)
+		{
+			// reparent all the children to a new node
+			newNode = new DockNode();
+			newNode->parent = target;
+			newNode->children = target->children;
+			newNode->type = target->type;
+			newNode->window = target->window;
+
+			for (auto& c : newNode->children) c->parent = newNode;
+
+			target->children.clear();
+			target->children.push_back(sourceNode);
+			target->children.push_back(newNode);
+		}
+		// if target is tabs, create a container node
+		else
+		{
+			newNode = new DockNode();
+			newNode->parent = target;
+			newNode->views = target->views;
+			newNode->type = target->type;
+			newNode->window = target->window;
+			newNode->selectedTabIndex = target->selectedTabIndex;
+
+			for (auto& c : newNode->children) c->parent = newNode;
+
+			target->type = DockNode::Type::Vertical;
+			target->children.push_back(sourceNode);
+			target->children.push_back(newNode);
+		}
+
+		// if not proportional docking resize, then resize the target and compute size from it for source
+		if (!ctx->settings.dockNodeProportionalResize
+			&& sourceNode
+			&& target->type != DockNode::Type::None)
+		{
+			f32 size = target->rect.height * ctx->settings.dockNodeDockingSizeRatio;
+			
+			sourceNode->rect.x = target->rect.x;
+			sourceNode->rect.y = target->rect.y;
+			sourceNode->rect.width = target->rect.width;
+			sourceNode->rect.height = size;
+			
+			if (newNode)
+			{
+				newNode->rect.x = target->rect.x;
+				newNode->rect.y = target->rect.y + size;
+				newNode->rect.width = target->rect.width;
+				newNode->rect.height = target->rect.height - size;
+			}
+		}
 		break;
 	case hui::DockType::RootBottom:
+		// if we only have a view in the source node, grab the node itself
+		if (source->views.size() == 1)
+		{
+			source->removeFromParent();
+			sourceNode = source;
+		}
+		else
+		{
+			// remove from the source node
+			source->removeView(viewObj);
+
+			// create new node
+			sourceNode = new DockNode();
+			sourceNode->type = DockNode::Type::ViewTabs;
+			sourceNode->views.push_back(viewObj);
+		}
+
+		// reparent the source node
+		sourceNode->parent = target;
+		sourceNode->window = target->window;
+		DockNode* newNode = nullptr;
+
+		// if same layout, add the new node to the bottom
+		if (target->type == DockNode::Type::Vertical)
+		{
+			target->children.insert(target->children.begin(), sourceNode);
+		}
+		// if layout is different
+		else if (target->type == DockNode::Type::Horizontal)
+		{
+			// reparent all the children to a new node
+			newNode = new DockNode();
+			newNode->parent = target;
+			newNode->children = target->children;
+			newNode->type = target->type;
+			newNode->window = target->window;
+
+			for (auto& c : newNode->children) c->parent = newNode;
+
+			target->children.clear();
+			target->children.push_back(newNode);
+			target->children.push_back(sourceNode);
+		}
+		// if target is tabs, create a container node
+		else
+		{
+			newNode = new DockNode();
+			newNode->parent = target;
+			newNode->views = target->views;
+			newNode->type = target->type;
+			newNode->window = target->window;
+			newNode->selectedTabIndex = target->selectedTabIndex;
+
+			for (auto& c : newNode->children) c->parent = newNode;
+
+			target->type = DockNode::Type::Vertical;
+			target->children.push_back(newNode);
+			target->children.push_back(sourceNode);
+		}
+
+		// if not proportional docking resize, then resize the target and compute size from it for source
+		if (!ctx->settings.dockNodeProportionalResize
+			&& sourceNode
+			&& target->type != DockNode::Type::None)
+		{
+			f32 size = target->rect.height * ctx->settings.dockNodeDockingSizeRatio;
+
+			sourceNode->rect.x = target->rect.x;
+			sourceNode->rect.y = target->rect.bottom() - size;
+			sourceNode->rect.width = target->rect.width;
+			sourceNode->rect.height = size;
+
+			if (newNode)
+			{
+				newNode->rect.x = target->rect.x;
+				newNode->rect.y = target->rect.y;
+				newNode->rect.width = target->rect.width;
+				newNode->rect.height = target->rect.height - size;
+			}
+		}
 		break;
 	case hui::DockType::AsTab:
+		{
+			auto iter = std::next(target->views.begin(), tabIndex);
+			target->views.insert(iter, viewObj);
+			target->type = DockNode::Type::ViewTabs;
+			target->selectedTabIndex = 0;
+
+			// if we only have a view in the source node, grab the node itself
+			if (source->views.size() == 1)
+			{
+				source->removeFromParent();
+				delete source;
+			}
+			else
+			{
+				// remove from the source node
+				source->removeView(viewObj);
+			}
+	}
 		break;
 	default:
 		break;
