@@ -16,6 +16,7 @@ struct View
 	ViewType viewType = 0;
 	HImage icon = nullptr;
 	u64 userData = 0;
+	Rect tabRect;
 };
 
 struct DockNode
@@ -24,8 +25,8 @@ struct DockNode
 	{
 		None,
 		ViewTabs,
-		Vertical, // -
-		Horizontal, // |
+		Vertical, // =
+		Horizontal, // ||
 	};
 
 	DockNode* parent = nullptr;
@@ -42,8 +43,9 @@ struct DockNode
 	void computeRect();
 	bool checkRedundancy();
 	void gatherViewTabsNodes(std::vector<DockNode*>& outNodes);
-	DockNode*
-	void debug(int level = 0);
+	DockNode* findResizeNode(const Point& pt);
+	DockNode* findTargetDockNode(const Point& pt);
+	void debug(i32 level = 0);
 };
 
 }

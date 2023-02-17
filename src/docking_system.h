@@ -4,5 +4,5 @@
 
 namespace hui
 {
-void handleViewResize(View* view);
+void handleDockNodeResize(DockNode* node);
 };

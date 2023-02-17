@@ -184,7 +184,7 @@ bool DockNode::checkRedundancy()
 	return false;
 }
 
-void DockNode::debug(int level)
+void DockNode::debug(i32 level)
 {
 	std::string tabs(level, '\t');
 	std::string name = "";
@@ -208,6 +208,84 @@ void DockNode::debug(int level)
 	}
 
 	for (auto& c : children) c->debug(level + 1);
+}
+
+DockNode* DockNode::findResizeNode(const Point& pt)
+{
+	if (type != Type::None)
+	{
+		if (!rect.contains(pt))
+		{
+			return nullptr;
+		}
+
+		switch (type)
+		{
+		case Type::Horizontal:
+			for (auto& child : children)
+			{
+				if (child != children.back())
+				{
+					if (pt.x >= child->rect.right() - ctx->settings.dockNodeSpacing / 2
+						&& pt.x <= child->rect.right() + ctx->settings.dockNodeSpacing / 2)
+					{
+						return child;
+					}
+				}
+			}
+			break;
+		case Type::Vertical:
+			for (auto& child : children)
+			{
+				if (child != children.back())
+				{
+					if (pt.y >= child->rect.bottom() - ctx->settings.dockNodeSpacing / 2
+						&& pt.y <= child->rect.bottom() + ctx->settings.dockNodeSpacing / 2)
+					{
+						return child;
+					}
+				}
+			}
+			break;
+		default:
+			break;
+		}
+
+		for (auto cell : children)
+		{
+			auto foundCell = cell->findResizeNode(pt);
+
+			if (foundCell)
+			{
+				return foundCell;
+			}
+		}
+	}
+
+	return nullptr;
+}
+
+DockNode* DockNode::findTargetDockNode(const Point& pt)
+{
+	if (type == Type::None || type == Type::ViewTabs)
+	{
+		if (rect.contains(pt))
+			return this;
+	}
+	else
+	{
+		for (auto child : children)
+		{
+			auto foundCell = child->findTargetDockNode(pt);
+
+			if (foundCell)
+			{
+				return foundCell;
+			}
+		}
+	}
+
+	return nullptr;
 }
 
 }
