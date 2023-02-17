@@ -2662,7 +2662,7 @@ HORUS_API void drawSolidTriangle(const Point& p1, const Point& p2, const Point& 
 /// Create a root dock node for a specific window, where views can be docked
 HORUS_API HDockNode createRootDockNode(HWindow window);
 
-HORUS_API HView createView(HDockNode dockTarget, f32 size, DockType dock, const char* title, ViewType viewType, u64 userData);
+HORUS_API HView createView(HDockNode dockTarget, f32 size, DockType dock, const char* title, ViewType viewType, u64 userData, HImage icon);
 
 /// Delete a view, used by the docking system
 HORUS_API void deleteView(HView view);

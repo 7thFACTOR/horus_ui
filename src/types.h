@@ -22,7 +22,8 @@ class UnicodeTextCache;
 class FontCache;
 class Font;
 struct Image;
-struct ViewPane;
+struct DockNode;
+struct View;
 
 typedef u32 ImageId;
 

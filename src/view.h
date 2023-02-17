@@ -8,7 +8,6 @@
 namespace hui
 {
 struct MemoryStream;
-static constexpr f32 percentOfNewViewSplit = 0.5f;
 
 struct View
 {
@@ -41,6 +40,10 @@ struct DockNode
 	void removeFromParent();
 	void removeView(View* view);
 	void computeRect();
+	bool checkRedundancy();
+	void gatherViewTabsNodes(std::vector<DockNode*>& outNodes);
+	DockNode*
+	void debug(int level = 0);
 };
 
 }

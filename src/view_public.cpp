@@ -21,7 +21,23 @@ HDockNode createRootDockNode(HWindow window)
 	return dockNode;
 }
 
-HDockNode createView(HDockNode targetNode, DockType dock, const char* title, f32 size, ViewType viewType, u64 userData)
+HDockNode getRootDockNode(HWindow window)
+{
+	return ctx->dockingState.rootWindowDockNodes[window];
+}
+
+void deleteRootDockNode(HWindow window)
+{
+	auto node = ctx->dockingState.rootWindowDockNodes[window];
+
+	if (node)
+	{
+		ctx->dockingState.rootWindowDockNodes.erase(window);
+		delete node;
+	}
+}
+
+HDockNode createView(HDockNode targetNode, DockType dock, const char* title, f32 size, ViewType viewType, u64 userData, HImage icon)
 {
 	auto targetNodePtr = (DockNode*)targetNode;
 	auto newView = new View();
@@ -29,10 +45,33 @@ HDockNode createView(HDockNode targetNode, DockType dock, const char* title, f32
 	newView->title = title;
 	newView->viewType = viewType;
 	newView->userData = userData;
+	newView->icon = icon;
 
 	dockView(newView, targetNode, dock);
 
 	return newView;
+}
+
+void deleteView(HView view)
+{
+	View* viewObj = (View*)view;
+	DockNode* node = viewObj->dockNode;
+
+	node->removeView(viewObj);
+
+	if (!node->parent)
+	{
+		destroyWindow(node->window);
+		ctx->dockingState.rootWindowDockNodes.erase(node->window);
+		delete node;
+	}
+}
+
+HWindow getViewWindow(HView view)
+{
+	View* viewObj = (View*)view;
+
+	return viewObj->dockNode->window;
 }
 
 bool dockView(HView view, HDockNode targetNode, DockType dockType, u32 tabIndex)
@@ -45,7 +84,7 @@ bool dockView(HView view, HDockNode targetNode, DockType dockType, u32 tabIndex)
 		return false;
 
 	// if this is the root and its empty
-	if (target->children.empty() && target->views.empty())
+	if (!target->parent && target->children.empty() && target->views.empty() && target->type == DockNode::Type::None)
 	{
 		target->views.push_back(viewObj);
 		target->type = DockNode::Type::ViewTabs;
@@ -384,6 +423,7 @@ bool dockView(HView view, HDockNode targetNode, DockType dockType, u32 tabIndex)
 			sourceNode = new DockNode();
 			sourceNode->type = DockNode::Type::ViewTabs;
 			sourceNode->views.push_back(viewObj);
+			viewObj->dockNode = sourceNode;
 		}
 
 		// reparent the source node
@@ -469,6 +509,7 @@ bool dockView(HView view, HDockNode targetNode, DockType dockType, u32 tabIndex)
 			sourceNode = new DockNode();
 			sourceNode->type = DockNode::Type::ViewTabs;
 			sourceNode->views.push_back(viewObj);
+			viewObj->dockNode = sourceNode;
 		}
 
 		// reparent the source node
@@ -553,6 +594,7 @@ bool dockView(HView view, HDockNode targetNode, DockType dockType, u32 tabIndex)
 			sourceNode = new DockNode();
 			sourceNode->type = DockNode::Type::ViewTabs;
 			sourceNode->views.push_back(viewObj);
+			viewObj->dockNode = sourceNode;
 		}
 
 		// reparent the source node
@@ -637,6 +679,7 @@ bool dockView(HView view, HDockNode targetNode, DockType dockType, u32 tabIndex)
 			sourceNode = new DockNode();
 			sourceNode->type = DockNode::Type::ViewTabs;
 			sourceNode->views.push_back(viewObj);
+			viewObj->dockNode = sourceNode;
 		}
 
 		// reparent the source node
@@ -712,7 +755,7 @@ bool dockView(HView view, HDockNode targetNode, DockType dockType, u32 tabIndex)
 			target->type = DockNode::Type::ViewTabs;
 			target->selectedTabIndex = 0;
 
-			// if we only have a view in the source node, grab the node itself
+			// if we only have a view in the source node, delete the node
 			if (source->views.size() == 1)
 			{
 				source->removeFromParent();
