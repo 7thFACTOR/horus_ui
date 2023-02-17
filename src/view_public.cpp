@@ -86,6 +86,8 @@ bool dockView(HView view, HDockNode targetNode, DockType dockType, u32 tabIndex)
 				target->parent->children.insert(iter, newNode);
 				sourceNode = newNode;
 			}
+
+			if (ctx->settings.dockNodeProportionalResize && target->parent) target->parent->computeRect();
 		}
 		else if (target->parent->type == DockNode::Type::Vertical)
 		{
@@ -113,6 +115,8 @@ bool dockView(HView view, HDockNode targetNode, DockType dockType, u32 tabIndex)
 			target->children.clear();
 			target->children.push_back(sourceNode);
 			target->children.push_back(newNode);
+
+			if (ctx->settings.dockNodeProportionalResize) target->computeRect();
 		}
 
 		// if not proportional docking resize, then resize the target and compute size from it for source
@@ -162,6 +166,8 @@ bool dockView(HView view, HDockNode targetNode, DockType dockType, u32 tabIndex)
 				target->parent->children.insert(iter, newNode);
 				sourceNode = newNode;
 			}
+
+			if (ctx->settings.dockNodeProportionalResize && target->parent) target->parent->computeRect();
 		}
 		else if (target->parent->type == DockNode::Type::Vertical)
 		{
@@ -189,6 +195,8 @@ bool dockView(HView view, HDockNode targetNode, DockType dockType, u32 tabIndex)
 			target->children.clear();
 			target->children.push_back(newNode);
 			target->children.push_back(sourceNode); // insert last
+
+			if (ctx->settings.dockNodeProportionalResize) target->computeRect();
 		}
 
 		// if not proportional docking resize, then resize the target and compute size from it for source
@@ -234,6 +242,8 @@ bool dockView(HView view, HDockNode targetNode, DockType dockType, u32 tabIndex)
 				target->parent->children.insert(iter, newNode);
 				sourceNode = newNode;
 			}
+
+			if (ctx->settings.dockNodeProportionalResize && target->parent) target->parent->computeRect();
 		}
 		else if (target->parent->type == DockNode::Type::Horizontal)
 		{
@@ -261,6 +271,8 @@ bool dockView(HView view, HDockNode targetNode, DockType dockType, u32 tabIndex)
 			target->children.clear();
 			target->children.push_back(sourceNode);
 			target->children.push_back(newNode);
+	
+			if (ctx->settings.dockNodeProportionalResize) target->computeRect();
 		}
 
 		// if not proportional docking resize, then resize the target and compute size from it for source
@@ -309,6 +321,8 @@ bool dockView(HView view, HDockNode targetNode, DockType dockType, u32 tabIndex)
 				target->parent->children.insert(iter, newNode);
 				sourceNode = newNode;
 			}
+
+			if (ctx->settings.dockNodeProportionalResize && target->parent) target->parent->computeRect();
 		}
 		else if (target->parent->type == DockNode::Type::Horizontal)
 		{
@@ -336,6 +350,8 @@ bool dockView(HView view, HDockNode targetNode, DockType dockType, u32 tabIndex)
 			target->children.clear();
 			target->children.push_back(newNode);
 			target->children.push_back(sourceNode); // insert last
+
+			if (ctx->settings.dockNodeProportionalResize) target->computeRect();
 		}
 
 		// if not proportional docking resize, then resize the target and compute size from it for source
@@ -412,6 +428,8 @@ bool dockView(HView view, HDockNode targetNode, DockType dockType, u32 tabIndex)
 			target->children.push_back(sourceNode);
 			target->children.push_back(newNode);
 		}
+
+		if (ctx->settings.dockNodeProportionalResize) target->computeRect();
 
 		// if not proportional docking resize, then resize the target and compute size from it for source
 		if (!ctx->settings.dockNodeProportionalResize
@@ -496,6 +514,8 @@ bool dockView(HView view, HDockNode targetNode, DockType dockType, u32 tabIndex)
 			target->children.push_back(sourceNode);
 		}
 
+		if (ctx->settings.dockNodeProportionalResize) target->computeRect();
+
 		// if not proportional docking resize, then resize the target and compute size from it for source
 		if (!ctx->settings.dockNodeProportionalResize
 			&& sourceNode
@@ -578,6 +598,8 @@ bool dockView(HView view, HDockNode targetNode, DockType dockType, u32 tabIndex)
 			target->children.push_back(newNode);
 		}
 
+		if (ctx->settings.dockNodeProportionalResize) target->computeRect();
+
 		// if not proportional docking resize, then resize the target and compute size from it for source
 		if (!ctx->settings.dockNodeProportionalResize
 			&& sourceNode
@@ -659,6 +681,8 @@ bool dockView(HView view, HDockNode targetNode, DockType dockType, u32 tabIndex)
 			target->children.push_back(newNode);
 			target->children.push_back(sourceNode);
 		}
+
+		if (ctx->settings.dockNodeProportionalResize) target->computeRect();
 
 		// if not proportional docking resize, then resize the target and compute size from it for source
 		if (!ctx->settings.dockNodeProportionalResize
