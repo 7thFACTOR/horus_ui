@@ -270,7 +270,6 @@ void handleDockNodeResize(DockNode* node)
 				if (clippedRect.contains(mousePos.x, mousePos.y))
 				{
 					dragView = view;
-					draggingView = true;
 					break;
 				}
 			}
