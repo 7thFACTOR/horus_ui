@@ -208,7 +208,107 @@ void dockingSystemLoop()
 //	viewPane->rect.height = rect.height - (viewPane->sideSpacing[(int)ViewPane::SideSpacing::SideSpacingTop] + viewPane->sideSpacing[(int)ViewPane::SideSpacing::SideSpacingBottom]);
 //}
 
-void handleDockNodeResize(DockNode* node)
+void handleDockingMouseDown(const InputEvent& event, DockNode* node)
+{
+	auto& ds = ctx->dockingState;
+	const Point& mousePos = event.mouse.point;
+	std::vector<DockNode*> viewTabsNodes;
+
+	ds.lastMousePos = mousePos;
+	ds.resizingNode = node->findResizeNode(mousePos);
+
+	if (ds.resizingNode)
+	{
+		return;
+	}
+
+	node->gatherViewTabsNodes(viewTabsNodes);
+	ds.dragView = nullptr;
+
+	for (auto& viewTabsNode : viewTabsNodes)
+	{
+		for (auto& view : viewTabsNode->views)
+		{
+			// return if the widget is not visible, that is outside current clip rect
+			if (view->tabRect.outside(viewTabsNode->rect))
+			{
+				continue;
+			}
+
+			Rect clippedRect = view->tabRect.clipInside(viewTabsNode->rect);
+
+			if (clippedRect.contains(mousePos.x, mousePos.y))
+			{
+				ds.dragView = view;
+				break;
+			}
+		}
+	}
+}
+
+void handleDockingMouseUp(const InputEvent& event, DockNode* node)
+{
+	auto& ds = ctx->dockingState;
+	const f32 moveTriggerDelta = 3;
+	bool moved = fabs(ds.lastMousePos.x - event.mouse.point.x) > moveTriggerDelta || fabs(ds.lastMousePos.y - event.mouse.point.y) > moveTriggerDelta;
+
+	// we have a pane to dock to
+	if (ds.dockToNode && moved)
+	{
+		if (dockView(ds.dragView, ds.dockToNode, ds.dockType))
+		{
+			ds.dragView = nullptr;
+			ds.dockToNode = nullptr;
+		}
+
+		hui::forceRepaint();
+	}
+	else if (ds.dragView && moved)
+	{
+		// do not undock if there is just one tab left!
+		if (ds.dragView->dockNode->views.size() > 1 && ctx->settings.allowUndockingToNewWindow)
+		{
+			Rect rc = hui::getWindowRect(ds.dragView->dockNode->rect);
+			auto wnd = hui::createWindow(
+				ds.dragView->title.c_str(),
+				rc.width,
+				rc.height,
+				WindowFlags::Resizable | WindowFlags::NoTaskbarButton | WindowFlags::CustomPosition,
+				{
+					event.mouse.point.x + rc.x - rc.width / 2,
+					event.mouse.point.y + rc.y
+				});
+
+			auto newDockNode = createRootDockNode(wnd);
+
+			// we don't have to create a new view pane if it holds just one view tab
+			if (ds.dragView->dockNode->views.size() == 1)
+			{
+				ds.dragView->dockNode->removeView(ds.dragView);
+				//hui::dockViewPane(dragTab->viewPane, newViewPane, DockType::TopAsViewTab);
+			}
+			else
+			{
+				// remove from old dock node
+				ds.dragView->viewPane->removeViewTab(dragTab);
+				auto newPane = (ViewPane*)hui::createEmptyViewPane(newViewPane, DockType::TopAsViewTab);
+				newPane->viewTabs.push_back(dragTab);
+				dockViewTab(newPane, );
+				dragTab->viewPane = newPane;
+			}
+		}
+
+		hui::forceRepaint();
+	}
+
+	//draggingNodeSource = nullptr;
+	//draggingDockNodeBorder = false;
+	//draggingView = false;
+	//dragView = nullptr;
+	//resizingNode = nullptr;
+}
+
+void handleDockNodeEvents(DockNode* node)
 {
 	auto& rect = node->rect;
 	auto& event = hui::getInputEvent();
@@ -228,123 +328,13 @@ void handleDockNodeResize(DockNode* node)
 		return;
 	}
 
-	if (event.type == InputEvent::Type::MouseDown)
+	switch (event.type)
 	{
-		const Point& mousePos = event.mouse.point;
-		ctx->dockingState.lastMousePos = mousePos;
-		resizingNode = node->findResizeNode(mousePos);
-		std::vector<DockNode*> viewTabsNodes;
-
-		node->gatherViewTabsNodes(viewTabsNodes);
-		dragView = nullptr;
-		draggingNodeSource = node;
-
-		for (auto& viewTabsNode : viewTabsNodes)
-		{
-			for (auto& view : viewTabsNode->views)
-			{
-				// return if the widget is not visible, that is outside current clip rect
-				if (view->tabRect.outside(viewTabsNode->rect))
-				{
-					continue;
-				}
-
-				Rect clippedRect = view->tabRect.clipInside(viewTabsNode->rect);
-
-				if (clippedRect.contains(mousePos.x, mousePos.y))
-				{
-					dragView = view;
-					break;
-				}
-			}
-		}
-
-		if (resizingNode)
-		{
-			draggingDockNodeBorder = true;
-		}
-	}
-
-	if (event.type == InputEvent::Type::MouseUp)
-	{
-		const f32 moveTriggerDelta = 3;
-		bool moved = fabs(lastMousePos.x - event.mouse.point.x) > moveTriggerDelta || fabs(lastMousePos.y - event.mouse.point.y) > moveTriggerDelta;
-
-		// we have a pane to dock to
-		if (dockToNode && moved)
-		{
-			dockView(dragView, dockToNode, dockType);
-
-			//if (draggingNodeSource->children.empty()
-			//	&& draggingNodeSource->splitMode == ViewPane::SplitMode::None
-			//	&& !draggingNodeSource)
-			//{
-			//	if (hui::getMainWindow() != draggingNodeSource->window)
-			//	{
-			//		destroyWindow(draggingNodeSource->window);
-			//		auto iter = std::find(ctx->dockingState.rootViewPanes.begin(), ctx->dockingState.rootViewPanes.end(), draggingNodeSource);
-
-			//		ctx->dockingState.rootViewPanes.erase(iter);
-			//		//TODO: crashes LLVM on MacOS, check for dangling ptrs
-			//		draggingNodeSource->destroy();
-			//		delete draggingNodeSource;
-			//		draggingNodeSource = nullptr;
-			//	}
-			//}
-
-			dockToNode = nullptr;
-
-			hui::forceRepaint();
-			//}
-		}
-		//else if (dragTab && !dragOntoTab && moved)
-		//{
-		//	// do not undock if the source window is the main window and there is just one tab left!
-		//	if (!(dragTab->viewPane->viewTabs.size() == 1
-		//		&& draggingNodeSource == dragTab->viewPane)
-		//		&& ctx->settings.allowUndockingToNewWindow)
-		//	{
-		//		Rect rc = hui::getWindowRect(draggingNodeSource->window);
-
-		//		auto paneWnd = hui::createWindow(
-		//			"", //TODO: title 
-		//			dragTab->viewPane->rect.width,
-		//			dragTab->viewPane->rect.height,
-		//			WindowFlags::Resizable | WindowFlags::NoTaskbarButton | WindowFlags::CustomPosition,
-		//			{
-		//				crtEvent.mouse.point.x + rc.x - dragTab->viewPane->rect.width / 2,
-		//				crtEvent.mouse.point.y + rc.y
-		//			});
-
-		//		auto newViewPane = createRootViewPane(paneWnd);
-
-		//		// we don't have to create a new view pane if it holds just one view tab
-		//		if (dragTab->viewPane->viewTabs.size() == 1)
-		//		{
-		//			viewPane->removeChild(dragTab->viewPane);
-		//			//hui::dockViewPane(dragTab->viewPane, newViewPane, DockType::TopAsViewTab);
-		//		}
-		//		else
-		//		{
-		//			// remove from old pane
-		//			dragTab->viewPane->removeViewTab(dragTab);
-		//			auto newPane = (ViewPane*)hui::createEmptyViewPane(newViewPane, DockType::TopAsViewTab);
-		//			newPane->viewTabs.push_back(dragTab);
-		//			dockViewTab(newPane, );
-		//			dragTab->viewPane = newPane;
-		//		}
-		//	}
-
-		//	hui::forceRepaint();
-		//}
-
-		draggingNodeSource = nullptr;
-		draggingDockNodeBorder = false;
-		draggingView = false;
-		dragView = nullptr;
-		resizingNode = nullptr;
-	}
-
+	case InputEvent::Type::MouseDown: handleDockingMouseDown(event, node);
+	case InputEvent::Type::MouseUp: handleDockingMouseUp(event, node);
+	default:
+		break;
+	};
 }
 
 void handleDockNodeResize2(DockNode* node)
