@@ -266,6 +266,20 @@ struct DockingState
 	std::unordered_map<HWindow, struct DockNode*> rootWindowDockNodes;
 	DockNode* currentDockNode = nullptr;
 	bool closeWindow = false;
+
+	// variables for dragging views around
+	const f32 dockBorderSizePercent = 0.5f;
+	bool draggingDockNodeBorder = false;
+	DockNode* resizingNode = nullptr;
+	View* dragView = nullptr;
+	View* dragOntoTab = nullptr;
+	Rect dockRect;
+	DockType dockType = DockType::None;
+	DockNode* dockToNode = nullptr;
+	Rect resizeNodeRect;
+	Rect resizeNodeSiblingRect;
+	Point lastMousePos;
+	Rect draggedRect;
 };
 
 struct DragDropState

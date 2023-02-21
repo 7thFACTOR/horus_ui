@@ -602,6 +602,7 @@ enum class AntiAliasing
 /// Docking modes for the views
 enum class DockType
 {
+	None,
 	Left, /// will dock view to left
 	Right, /// will dock view to right
 	Top, /// will dock view to top

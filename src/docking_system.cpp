@@ -210,23 +210,6 @@ void dockingSystemLoop()
 
 void handleDockNodeResize(DockNode* node)
 {
-	//TODO: maybe put all these in the current context
-	const i32 gripSize = 8;
-	const f32 dockBorderSizePercent = 0.5f;
-	static bool draggingDockNodeBorder = false;
-	static bool draggingView = false;
-	static DockNode* draggingNodeSource = nullptr;
-	static DockNode* resizingNode = nullptr;
-	static View* dragView = nullptr;
-	static View* dragOntoTab = nullptr;
-	static Rect dockRect;
-	static DockType dockType = DockType::Left;
-	static DockNode* dockToNode = nullptr;
-	static Rect resizePaneRect;
-	static Rect resizePaneSiblingRect;
-	static Point lastMousePos;
-	static Rect rectDragged;
-
 	auto& rect = node->rect;
 	auto& event = hui::getInputEvent();
 
@@ -235,6 +218,7 @@ void handleDockNodeResize(DockNode* node)
 	// if so, then we must be having popups or menus
 	if (ctx->maxLayerIndex)
 	{
+		// node is disabled for input
 		return;
 	}
 
@@ -247,7 +231,7 @@ void handleDockNodeResize(DockNode* node)
 	if (event.type == InputEvent::Type::MouseDown)
 	{
 		const Point& mousePos = event.mouse.point;
-		lastMousePos = mousePos;
+		ctx->dockingState.lastMousePos = mousePos;
 		resizingNode = node->findResizeNode(mousePos);
 		std::vector<DockNode*> viewTabsNodes;
 
