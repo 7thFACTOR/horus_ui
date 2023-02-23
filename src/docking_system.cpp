@@ -268,7 +268,7 @@ void handleDockingMouseUp(const InputEvent& event, DockNode* node)
 		// do not undock if there is just one tab left!
 		if (ds.dragView->dockNode->views.size() > 1 && ctx->settings.allowUndockingToNewWindow)
 		{
-			Rect rc = hui::getWindowRect(ds.dragView->dockNode->rect);
+			auto& rc = ds.dragView->dockNode->rect;
 			auto wnd = hui::createWindow(
 				ds.dragView->title.c_str(),
 				rc.width,
@@ -308,6 +308,11 @@ void handleDockingMouseUp(const InputEvent& event, DockNode* node)
 	//resizingNode = nullptr;
 }
 
+void handleDockingMouseMove(const InputEvent& event, DockNode* node)
+{
+
+}
+
 void handleDockNodeEvents(DockNode* node)
 {
 	auto& rect = node->rect;
@@ -335,6 +340,8 @@ void handleDockNodeEvents(DockNode* node)
 	default:
 		break;
 	};
+
+	handleDockingMouseMove(event, node);
 }
 
 void handleDockNodeResize2(DockNode* node)
