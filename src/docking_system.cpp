@@ -34,10 +34,17 @@ void updateDockingSystemInternal(bool isLastEvent)
 {
 	hui::beginFrame();
 
+	// if we close a dockable native window
 	if (hui::getInputEvent().type == InputEvent::Type::WindowClose
 		&& hui::getInputEvent().window != hui::getMainWindow())
 	{
-		//auto node = (DockNode*)getRootDockNode(hui::getInputEvent().window);
+		auto node = (DockNode*)getRootDockNode(hui::getInputEvent().window);
+		auto iter = ctx->dockingState.rootWindowDockNodes.find(hui::getInputEvent().window);
+		
+		if (iter != ctx->dockingState.rootWindowDockNodes.end())
+			ctx->dockingState.rootWindowDockNodes.erase(iter);
+
+		delete node;
 		hui::destroyWindow(hui::getInputEvent().window);
 	}
 
@@ -249,8 +256,7 @@ void handleDockingMouseDown(const InputEvent& event, DockNode* node)
 void handleDockingMouseUp(const InputEvent& event, DockNode* node)
 {
 	auto& ds = ctx->dockingState;
-	const f32 moveTriggerDelta = 3;
-	bool moved = fabs(ds.lastMousePos.x - event.mouse.point.x) > moveTriggerDelta || fabs(ds.lastMousePos.y - event.mouse.point.y) > moveTriggerDelta;
+	bool moved = fabs(ds.lastMousePos.x - event.mouse.point.x) > ctx->settings.dragStartDistance || fabs(ds.lastMousePos.y - event.mouse.point.y) > ctx->settings.dragStartDistance;
 
 	// we have a pane to dock to
 	if (ds.dockToNode && moved)
@@ -263,10 +269,14 @@ void handleDockingMouseUp(const InputEvent& event, DockNode* node)
 
 		hui::forceRepaint();
 	}
+	// we undock to a new native window
 	else if (ds.dragView && moved)
 	{
-		// do not undock if there is just one tab left!
-		if (ds.dragView->dockNode->views.size() > 1 && ctx->settings.allowUndockingToNewWindow)
+		// undock the view if there is more than one in the dock node
+		// and if the dock node is not a root node of the window
+		if (ds.dragView->dockNode->views.size() > 1
+			&& ds.dragView->dockNode->parent
+			&& ctx->settings.allowUndockingToNewWindow)
 		{
 			auto& rc = ds.dragView->dockNode->rect;
 			auto wnd = hui::createWindow(
@@ -280,37 +290,300 @@ void handleDockingMouseUp(const InputEvent& event, DockNode* node)
 				});
 
 			auto newDockNode = createRootDockNode(wnd);
-
-			// we don't have to create a new view pane if it holds just one view tab
-			if (ds.dragView->dockNode->views.size() == 1)
-			{
-				ds.dragView->dockNode->removeView(ds.dragView);
-				//hui::dockViewPane(dragTab->viewPane, newViewPane, DockType::TopAsViewTab);
-			}
-			else
-			{
-				// remove from old dock node
-				ds.dragView->viewPane->removeViewTab(dragTab);
-				auto newPane = (ViewPane*)hui::createEmptyViewPane(newViewPane, DockType::TopAsViewTab);
-				newPane->viewTabs.push_back(dragTab);
-				dockViewTab(newPane, );
-				dragTab->viewPane = newPane;
-			}
+			dockView(ds.dragView, newDockNode, DockType::AsTab);
 		}
 
 		hui::forceRepaint();
 	}
 
-	//draggingNodeSource = nullptr;
-	//draggingDockNodeBorder = false;
-	//draggingView = false;
-	//dragView = nullptr;
-	//resizingNode = nullptr;
+	ds.dockToNode = nullptr;
+	ds.dragView = nullptr;
+	ds.resizingNode = nullptr;
 }
 
 void handleDockingMouseMove(const InputEvent& event, DockNode* node)
 {
 
+}
+
+void handleDockingResizeMouseDown(const InputEvent& event, DockNode* node)
+{
+	auto& ds = ctx->dockingState;
+
+	// if we drag a tab or a pane splitter
+	if (ds.dragView
+		|| ds.hoveredNode
+		|| ds.resizingNode)
+	{
+		auto& mousePos = event.mouse.point;
+		bool moved = fabs(ds.lastMousePos.x - mousePos.x) > ctx->settings.dragStartDistance || abs(ds.lastMousePos.y - mousePos.y) > ctx->settings.dragStartDistance;
+
+		if (ds.dragView)
+		{
+			// draw tab rect
+			auto& dockingRectElem = ctx->theme->getElement(WidgetElementId::ViewDockRect);
+			auto& dockingDialRectElem = ctx->theme->getElement(WidgetElementId::ViewDockDialRect);
+			auto& dockingDialRectVSplitElem = ctx->theme->getElement(WidgetElementId::ViewDockDialVSplitRect);
+			auto& dockingDialRectHSplitElem = ctx->theme->getElement(WidgetElementId::ViewDockDialHSplitRect);
+			auto& tabGroupElem = ctx->theme->getElement(WidgetElementId::TabGroupBody);
+			auto zorder = ctx->renderer->getZOrder();
+
+			if (ctx->mouseMoved || moved)
+			{
+				std::vector<DockNode*> viewTabsNodes;
+
+				node->gatherViewTabsNodes(viewTabsNodes);
+				ds.dragOntoTab = nullptr;
+
+				for (auto& viewTabsNode : viewTabsNodes)
+				{
+					for (auto& view : viewTabsNode->views)
+					{
+						if (view->tabRect.contains(mousePos.x, mousePos.y))
+						{
+							ds.dragOntoTab = view;
+							break;
+						}
+					}
+				}
+
+				//TODO: visualize better the tab insertion
+				// if we dragged on some other tab
+				if (ds.dragOntoTab != ds.dragView
+					&& ds.dragView
+					&& ds.dragOntoTab)
+				{
+					// same node drag
+					if (ds.dragView->dockNode == ds.dragOntoTab->dockNode)
+					{
+						size_t index1 = ds.dragView->dockNode->getViewIndex(ds.dragView);
+						size_t index2 = ds.dragView->dockNode->getViewIndex(ds.dragOntoTab);
+
+						ds.dragView->dockNode->views[index1] = ds.dragOntoTab;
+						ds.dragView->dockNode->views[index2] = ds.dragView;
+						ds.dragView->dockNode->selectedTabIndex = index2;
+					}
+				}
+
+				// check for docking on pane views
+				ds.dockToNode = node->findDockNode(mousePos);
+			}
+
+			bool isSameNode = ds.dockToNode == ds.dragView->dockNode;
+			bool isSingleView = ds.dragView->dockNode->views.size() == 1;
+
+			if (!ds.dockToNode)
+			{
+				if (ds.dragOntoTab && !isSameNode)
+				{
+					ds.rectDragged = ds.dragView->tabRect;
+					ds.rectDragged.x = mousePos.x - ds.rectDragged.width / 2;
+					ds.rectDragged.y = mousePos.y - ds.rectDragged.height / 2;
+					ds.rectDragged.height = ds.dragView->tabRect.height * 2; // we have two lines of text when undocking "Undock\nTabname"
+					ds.dockToNode = ds.dragOntoTab->dockNode;
+				}
+				else
+				{
+					// docking not allowed
+					ds.dockToNode = nullptr;
+				}
+			}
+
+			if (ds.dragView != ds.dragOntoTab)
+			{
+				ctx->renderer->setWindowSize({ node->rect.width, node->rect.height });
+				ctx->renderer->beginFrame();
+				ctx->renderer->cmdSetColor(dockingRectElem.normalState().color);
+
+				if (ds.dockToNode)
+				{
+					// draw the locations where we can dock the pane
+					const f32 smallRectSize = 64 * ctx->globalScale;
+					const f32 smallRectGap = 1 * ctx->globalScale;
+					auto parentRect = ds.dockToNode->rect;
+
+					auto smallRectLeft = Rect(
+						parentRect.x + parentRect.width / 2.0f - smallRectSize / 2.0f - smallRectGap - smallRectSize,
+						parentRect.y + parentRect.height / 2.0f - smallRectSize / 2.0f,
+						smallRectSize, smallRectSize);
+
+					auto smallRectRight = Rect(
+						parentRect.x + parentRect.width / 2.0f + smallRectSize / 2.0f + smallRectGap,
+						parentRect.y + parentRect.height / 2.0f - smallRectSize / 2.0f,
+						smallRectSize, smallRectSize);
+
+					auto smallRectTop = Rect(
+						parentRect.x + parentRect.width / 2.0f - smallRectSize / 2.0f,
+						parentRect.y + parentRect.height / 2.0f - smallRectSize / 2.0f - smallRectSize - smallRectGap,
+						smallRectSize, smallRectSize);
+
+					auto smallRectBottom = Rect(
+						parentRect.x + parentRect.width / 2.0f - smallRectSize / 2.0f,
+						parentRect.y + parentRect.height / 2 + smallRectSize / 2 + smallRectGap,
+						smallRectSize, smallRectSize);
+
+					auto smallRectMiddle = Rect(
+						parentRect.x + parentRect.width / 2.0f - smallRectSize / 2.0f,
+						parentRect.y + parentRect.height / 2.0f - smallRectSize / 2.0f,
+						smallRectSize, smallRectSize);
+
+					auto rootRect = viewPane->rect;
+
+					auto smallRectRootLeft = Rect(
+						rootRect.x + smallRectGap,
+						rootRect.y + rootRect.height / 2.0f - smallRectSize / 2.0f,
+						smallRectSize, smallRectSize);
+
+					auto smallRectRootRight = Rect(
+						rootRect.right() - smallRectGap - smallRectSize,
+						rootRect.y + rootRect.height / 2.0f - smallRectSize / 2.0f,
+						smallRectSize, smallRectSize);
+
+					auto smallRectRootTop = Rect(
+						rootRect.x + rootRect.width / 2.0f - smallRectSize / 2.0f,
+						rootRect.y + smallRectGap,
+						smallRectSize, smallRectSize);
+
+					auto smallRectRootBottom = Rect(
+						rootRect.x + rootRect.width / 2.0f - smallRectSize / 2.0f,
+						rootRect.bottom() - smallRectSize / 2.0f - smallRectGap,
+						smallRectSize, smallRectSize);
+
+					auto isSmallRectLeftHovered = smallRectLeft.contains(mousePos);
+					auto isSmallRectRightHovered = smallRectRight.contains(mousePos);
+					auto isSmallRectTopHovered = smallRectTop.contains(mousePos);
+					auto isSmallRectBottomHovered = smallRectBottom.contains(mousePos);
+					auto isSmallRectMiddleHovered = smallRectMiddle.contains(mousePos);
+					auto isSmallRectRootLeftHovered = smallRectRootLeft.contains(mousePos);
+					auto isSmallRectRootRightHovered = smallRectRootRight.contains(mousePos);
+					auto isSmallRectRootTopHovered = smallRectRootTop.contains(mousePos);
+					auto isSmallRectRootBottomHovered = smallRectRootBottom.contains(mousePos);
+
+					if (isSmallRectLeftHovered)
+					{
+						dockType = DockType::Left;
+						rectDragged = parentRect;
+						rectDragged.width /= 2;
+					}
+
+					if (isSmallRectRightHovered)
+					{
+						dockType = DockType::Right;
+						rectDragged = parentRect;
+						rectDragged.x += rectDragged.width / 2;
+						rectDragged.width /= 2;
+					}
+
+					if (isSmallRectTopHovered)
+					{
+						dockType = DockType::Top;
+						rectDragged = parentRect;
+						rectDragged.height /= 2;
+					}
+
+					if (isSmallRectBottomHovered)
+					{
+						dockType = DockType::Bottom;
+						rectDragged = parentRect;
+						rectDragged.y += rectDragged.height / 2;
+						rectDragged.height /= 2;
+					}
+
+					if (isSmallRectMiddleHovered)
+					{
+						dockType = DockType::AsTab;
+						rectDragged = parentRect;
+						rectDragged.height = tabGroupElem.normalState().height;
+					}
+
+					if (isSmallRectRootLeftHovered)
+					{
+						dockToNode = viewPane;
+						dockType = DockType::RootLeft;
+						rectDragged = dockToNode->rect;
+						rectDragged.width /= 2.0f;
+					}
+
+					if (isSmallRectRootRightHovered)
+					{
+						dockToNode = viewPane;
+						dockType = DockType::RootRight;
+						rectDragged = dockToNode->rect;
+						rectDragged.x += rectDragged.width / 2.0f;
+						rectDragged.width /= 2.0f;
+					}
+
+					if (isSmallRectRootTopHovered)
+					{
+						dockToNode = viewPane;
+						dockType = DockType::RootTop;
+						rectDragged = dockToNode->rect;
+						rectDragged.height /= 2.0f;
+					}
+
+					if (isSmallRectRootBottomHovered)
+					{
+						dockToNode = viewPane;
+						dockType = DockType::RootBottom;
+						rectDragged = dockToNode->rect;
+						rectDragged.y += rectDragged.height / 2.0f;
+						rectDragged.height /= 2.0f;
+					}
+
+					ctx->renderer->cmdSetColor(isSmallRectLeftHovered ? dockingDialRectVSplitElem.hoveredState().color : dockingDialRectVSplitElem.normalState().color);
+					ctx->renderer->cmdDrawImageBordered(
+						dockingDialRectVSplitElem.normalState().image,
+						dockingDialRectVSplitElem.normalState().border, smallRectLeft, ctx->globalScale);
+
+					ctx->renderer->cmdSetColor(isSmallRectRightHovered ? dockingDialRectVSplitElem.hoveredState().color : dockingDialRectVSplitElem.normalState().color);
+					ctx->renderer->cmdDrawImageBordered(
+						dockingDialRectVSplitElem.normalState().image,
+						dockingDialRectVSplitElem.normalState().border, smallRectRight, ctx->globalScale);
+
+					ctx->renderer->cmdSetColor(isSmallRectTopHovered ? dockingDialRectHSplitElem.hoveredState().color : dockingDialRectHSplitElem.normalState().color);
+					ctx->renderer->cmdDrawImageBordered(
+						dockingDialRectHSplitElem.normalState().image,
+						dockingDialRectHSplitElem.normalState().border, smallRectTop, ctx->globalScale);
+
+					ctx->renderer->cmdSetColor(isSmallRectBottomHovered ? dockingDialRectHSplitElem.hoveredState().color : dockingDialRectHSplitElem.normalState().color);
+					ctx->renderer->cmdDrawImageBordered(
+						dockingDialRectHSplitElem.normalState().image,
+						dockingDialRectHSplitElem.normalState().border, smallRectBottom, ctx->globalScale);
+
+					ctx->renderer->cmdSetColor(isSmallRectMiddleHovered ? dockingDialRectElem.hoveredState().color : dockingDialRectElem.normalState().color);
+					ctx->renderer->cmdDrawImageBordered(
+						dockingDialRectElem.normalState().image,
+						dockingDialRectElem.normalState().border, smallRectMiddle, ctx->globalScale);
+
+					ctx->renderer->cmdSetColor(isSmallRectRootLeftHovered ? dockingDialRectVSplitElem.hoveredState().color : dockingDialRectVSplitElem.normalState().color);
+					ctx->renderer->cmdDrawImageBordered(
+						dockingDialRectVSplitElem.normalState().image,
+						dockingDialRectVSplitElem.normalState().border, smallRectRootLeft, ctx->globalScale);
+
+					ctx->renderer->cmdSetColor(isSmallRectRootRightHovered ? dockingDialRectVSplitElem.hoveredState().color : dockingDialRectVSplitElem.normalState().color);
+					ctx->renderer->cmdDrawImageBordered(
+						dockingDialRectVSplitElem.normalState().image,
+						dockingDialRectVSplitElem.normalState().border, smallRectRootRight, ctx->globalScale);
+
+					ctx->renderer->cmdSetColor(isSmallRectRootTopHovered ? dockingDialRectHSplitElem.hoveredState().color : dockingDialRectHSplitElem.normalState().color);
+					ctx->renderer->cmdDrawImageBordered(
+						dockingDialRectHSplitElem.normalState().image,
+						dockingDialRectHSplitElem.normalState().border, smallRectRootTop, ctx->globalScale);
+
+					ctx->renderer->cmdSetColor(isSmallRectRootBottomHovered ? dockingDialRectHSplitElem.hoveredState().color : dockingDialRectHSplitElem.normalState().color);
+					ctx->renderer->cmdDrawImageBordered(
+						dockingDialRectHSplitElem.normalState().image,
+						dockingDialRectHSplitElem.normalState().border, smallRectRootBottom, ctx->globalScale);
+				}
+
+				ctx->renderer->cmdDrawImageBordered(dockingRectElem.normalState().image, dockingRectElem.normalState().border, rectDragged, ctx->globalScale);
+				ctx->renderer->cmdSetFont(dockingRectElem.normalState().font);
+				ctx->renderer->cmdSetColor(dockingRectElem.normalState().textColor);
+				ctx->drawMultilineText(dragView->title.c_str(), rectDragged, HAlignType::Center, VAlignType::Center);
+				ctx->renderer->endFrame();
+			}
+		}
+	}
 }
 
 void handleDockNodeEvents(DockNode* node)

@@ -271,6 +271,7 @@ struct DockingState
 	const f32 dockBorderSizePercent = 0.5f;
 	bool draggingDockNodeBorder = false;
 	DockNode* resizingNode = nullptr;
+	DockNode* hoveredNode = nullptr;
 	View* dragView = nullptr;
 	View* dragOntoTab = nullptr;
 	Rect dockRect;

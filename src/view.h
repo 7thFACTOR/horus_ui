@@ -45,6 +45,8 @@ struct DockNode
 	void gatherViewTabsNodes(std::vector<DockNode*>& outNodes);
 	DockNode* findResizeNode(const Point& pt);
 	DockNode* findTargetDockNode(const Point& pt);
+	DockNode* findDockNode(const Point& pt);
+	size_t getViewIndex(View* view);
 	void debug(i32 level = 0);
 };
 

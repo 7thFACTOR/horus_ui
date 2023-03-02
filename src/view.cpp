@@ -288,4 +288,26 @@ DockNode* DockNode::findTargetDockNode(const Point& pt)
 	return nullptr;
 }
 
+size_t DockNode::getViewIndex(View* view)
+{
+	auto iter = std::find(views.begin(), views.end(), view);
+	
+	if (iter == views.end()) return -1;
+
+	return std::distance(views.begin(), iter);
+}
+
+DockNode* DockNode::findDockNode(const Point& pt)
+{
+	if (rect.contains(pt)) return this;
+
+	for (auto& c : children)
+	{
+		auto node = c->findDockNode(pt);
+		if (node) return node;
+	}
+
+	return nullptr;
+}
+
 }
