@@ -303,11 +303,6 @@ void handleDockingMouseUp(const InputEvent& event, DockNode* node)
 
 void handleDockingMouseMove(const InputEvent& event, DockNode* node)
 {
-
-}
-
-void handleDockingResizeMouseDown(const InputEvent& event, DockNode* node)
-{
 	auto& ds = ctx->dockingState;
 
 	// if we drag a tab or a pane splitter
@@ -333,7 +328,7 @@ void handleDockingResizeMouseDown(const InputEvent& event, DockNode* node)
 				std::vector<DockNode*> viewTabsNodes;
 
 				node->gatherViewTabsNodes(viewTabsNodes);
-				ds.dragOntoTab = nullptr;
+				ds.dragOntoView = nullptr;
 
 				for (auto& viewTabsNode : viewTabsNodes)
 				{
@@ -341,7 +336,7 @@ void handleDockingResizeMouseDown(const InputEvent& event, DockNode* node)
 					{
 						if (view->tabRect.contains(mousePos.x, mousePos.y))
 						{
-							ds.dragOntoTab = view;
+							ds.dragOntoView = view;
 							break;
 						}
 					}
@@ -349,23 +344,23 @@ void handleDockingResizeMouseDown(const InputEvent& event, DockNode* node)
 
 				//TODO: visualize better the tab insertion
 				// if we dragged on some other tab
-				if (ds.dragOntoTab != ds.dragView
+				if (ds.dragOntoView != ds.dragView
 					&& ds.dragView
-					&& ds.dragOntoTab)
+					&& ds.dragOntoView)
 				{
-					// same node drag
-					if (ds.dragView->dockNode == ds.dragOntoTab->dockNode)
+					// same node drag, switch tab places
+					if (ds.dragView->dockNode == ds.dragOntoView->dockNode)
 					{
 						size_t index1 = ds.dragView->dockNode->getViewIndex(ds.dragView);
-						size_t index2 = ds.dragView->dockNode->getViewIndex(ds.dragOntoTab);
+						size_t index2 = ds.dragView->dockNode->getViewIndex(ds.dragOntoView);
 
-						ds.dragView->dockNode->views[index1] = ds.dragOntoTab;
+						ds.dragView->dockNode->views[index1] = ds.dragOntoView;
 						ds.dragView->dockNode->views[index2] = ds.dragView;
 						ds.dragView->dockNode->selectedTabIndex = index2;
 					}
 				}
 
-				// check for docking on pane views
+				// also find the node we're hovering
 				ds.dockToNode = node->findDockNode(mousePos);
 			}
 
@@ -374,13 +369,14 @@ void handleDockingResizeMouseDown(const InputEvent& event, DockNode* node)
 
 			if (!ds.dockToNode)
 			{
-				if (ds.dragOntoTab && !isSameNode)
+				// we want to undock to new window
+				if (ds.dragOntoView && !isSameNode)
 				{
-					ds.rectDragged = ds.dragView->tabRect;
-					ds.rectDragged.x = mousePos.x - ds.rectDragged.width / 2;
-					ds.rectDragged.y = mousePos.y - ds.rectDragged.height / 2;
-					ds.rectDragged.height = ds.dragView->tabRect.height * 2; // we have two lines of text when undocking "Undock\nTabname"
-					ds.dockToNode = ds.dragOntoTab->dockNode;
+					ds.draggedRect = ds.dragView->tabRect;
+					ds.draggedRect.x = mousePos.x - ds.draggedRect.width / 2;
+					ds.draggedRect.y = mousePos.y - ds.draggedRect.height / 2;
+					ds.draggedRect.height = ds.dragView->tabRect.height * 2; // we have two lines of text when undocking "Undock\nTabname"
+					ds.dockToNode = ds.dragOntoView->dockNode;
 				}
 				else
 				{
@@ -389,7 +385,8 @@ void handleDockingResizeMouseDown(const InputEvent& event, DockNode* node)
 				}
 			}
 
-			if (ds.dragView != ds.dragOntoTab)
+			// draw docking rects
+			if (ds.dragView != ds.dragOntoView)
 			{
 				ctx->renderer->setWindowSize({ node->rect.width, node->rect.height });
 				ctx->renderer->beginFrame();
@@ -427,7 +424,7 @@ void handleDockingResizeMouseDown(const InputEvent& event, DockNode* node)
 						parentRect.y + parentRect.height / 2.0f - smallRectSize / 2.0f,
 						smallRectSize, smallRectSize);
 
-					auto rootRect = viewPane->rect;
+					auto& rootRect = node->rect;
 
 					auto smallRectRootLeft = Rect(
 						rootRect.x + smallRectGap,
@@ -461,73 +458,73 @@ void handleDockingResizeMouseDown(const InputEvent& event, DockNode* node)
 
 					if (isSmallRectLeftHovered)
 					{
-						dockType = DockType::Left;
-						rectDragged = parentRect;
-						rectDragged.width /= 2;
+						ds.dockType = DockType::Left;
+						ds.draggedRect = parentRect;
+						ds.draggedRect.width /= 2;
 					}
 
 					if (isSmallRectRightHovered)
 					{
-						dockType = DockType::Right;
-						rectDragged = parentRect;
-						rectDragged.x += rectDragged.width / 2;
-						rectDragged.width /= 2;
+						ds.dockType = DockType::Right;
+						ds.draggedRect = parentRect;
+						ds.draggedRect.x += ds.draggedRect.width / 2;
+						ds.draggedRect.width /= 2;
 					}
 
 					if (isSmallRectTopHovered)
 					{
-						dockType = DockType::Top;
-						rectDragged = parentRect;
-						rectDragged.height /= 2;
+						ds.dockType = DockType::Top;
+						ds.draggedRect = parentRect;
+						ds.draggedRect.height /= 2;
 					}
 
 					if (isSmallRectBottomHovered)
 					{
-						dockType = DockType::Bottom;
-						rectDragged = parentRect;
-						rectDragged.y += rectDragged.height / 2;
-						rectDragged.height /= 2;
+						ds.dockType = DockType::Bottom;
+						ds.draggedRect = parentRect;
+						ds.draggedRect.y += ds.draggedRect.height / 2;
+						ds.draggedRect.height /= 2;
 					}
 
 					if (isSmallRectMiddleHovered)
 					{
-						dockType = DockType::AsTab;
-						rectDragged = parentRect;
-						rectDragged.height = tabGroupElem.normalState().height;
+						ds.dockType = DockType::AsTab;
+						ds.draggedRect = parentRect;
+						ds.draggedRect.height = tabGroupElem.normalState().height;
 					}
 
 					if (isSmallRectRootLeftHovered)
 					{
-						dockToNode = viewPane;
-						dockType = DockType::RootLeft;
-						rectDragged = dockToNode->rect;
-						rectDragged.width /= 2.0f;
+						ds.dockToNode = node;
+						ds.dockType = DockType::RootLeft;
+						ds.draggedRect = ds.dockToNode->rect;
+						ds.draggedRect.width /= 2.0f;
 					}
 
 					if (isSmallRectRootRightHovered)
 					{
-						dockToNode = viewPane;
-						dockType = DockType::RootRight;
-						rectDragged = dockToNode->rect;
-						rectDragged.x += rectDragged.width / 2.0f;
-						rectDragged.width /= 2.0f;
+						ds.dockToNode = node;
+						ds.dockType = DockType::RootRight;
+						ds.draggedRect = ds.dockToNode->rect;
+						ds.draggedRect.x += ds.draggedRect.width / 2.0f;
+						ds.draggedRect.width /= 2.0f;
 					}
 
 					if (isSmallRectRootTopHovered)
 					{
-						dockToNode = viewPane;
-						dockType = DockType::RootTop;
-						rectDragged = dockToNode->rect;
-						rectDragged.height /= 2.0f;
+						ds.dockToNode = node;
+						ds.dockType = DockType::RootTop;
+						ds.draggedRect = ds.dockToNode->rect;
+						ds.draggedRect.height /= 2.0f;
 					}
 
 					if (isSmallRectRootBottomHovered)
 					{
-						dockToNode = viewPane;
-						dockType = DockType::RootBottom;
-						rectDragged = dockToNode->rect;
-						rectDragged.y += rectDragged.height / 2.0f;
-						rectDragged.height /= 2.0f;
+						ds.dockToNode = node;
+						ds.dockType = DockType::RootBottom;
+						ds.draggedRect = ds.dockToNode->rect;
+						ds.draggedRect.y += ds.draggedRect.height / 2.0f;
+						ds.draggedRect.height /= 2.0f;
 					}
 
 					ctx->renderer->cmdSetColor(isSmallRectLeftHovered ? dockingDialRectVSplitElem.hoveredState().color : dockingDialRectVSplitElem.normalState().color);
@@ -576,10 +573,10 @@ void handleDockingResizeMouseDown(const InputEvent& event, DockNode* node)
 						dockingDialRectHSplitElem.normalState().border, smallRectRootBottom, ctx->globalScale);
 				}
 
-				ctx->renderer->cmdDrawImageBordered(dockingRectElem.normalState().image, dockingRectElem.normalState().border, rectDragged, ctx->globalScale);
+				ctx->renderer->cmdDrawImageBordered(dockingRectElem.normalState().image, dockingRectElem.normalState().border, ds.draggedRect, ctx->globalScale);
 				ctx->renderer->cmdSetFont(dockingRectElem.normalState().font);
 				ctx->renderer->cmdSetColor(dockingRectElem.normalState().textColor);
-				ctx->drawMultilineText(dragView->title.c_str(), rectDragged, HAlignType::Center, VAlignType::Center);
+				ctx->drawMultilineText(ds.dragView->title.c_str(), ds.draggedRect, HAlignType::Center, VAlignType::Center);
 				ctx->renderer->endFrame();
 			}
 		}
@@ -616,7 +613,7 @@ void handleDockNodeEvents(DockNode* node)
 
 	handleDockingMouseMove(event, node);
 }
-
+/*
 void handleDockNodeResize2(DockNode* node)
 {
 	auto& rect = node->rect;
@@ -644,7 +641,7 @@ void handleDockNodeResize2(DockNode* node)
 	static DockNode* draggingNodeSource = nullptr;
 	static DockNode* resizingNode = nullptr;
 	static View* dragView = nullptr;
-	static View* dragOntoTab = nullptr;
+	static View* dragOntoView = nullptr;
 	static Rect dockRect;
 	static DockType dockType = DockType::Left;
 	static DockNode* dockToNode = nullptr;
@@ -724,7 +721,7 @@ void handleDockNodeResize2(DockNode* node)
 				hui::forceRepaint();
 			//}
 		}
-		//else if (dragTab && !dragOntoTab && moved)
+		//else if (dragTab && !dragOntoView && moved)
 		//{
 		//	// do not undock if the source window is the main window and there is just one tab left!
 		//	if (!(dragTab->viewPane->viewTabs.size() == 1
@@ -800,30 +797,30 @@ void handleDockNodeResize2(DockNode* node)
 				std::vector<ViewTab*> tabs;
 
 				viewPane->gatherViewTabs(tabs);
-				dragOntoTab = nullptr;
+				dragOntoView = nullptr;
 
 				for (auto tab : tabs)
 				{
 					if (tab->rect.contains(mousePos.x, mousePos.y))
 					{
-						dragOntoTab = tab;
+						dragOntoView = tab;
 						break;
 					}
 				}
 
 				//TODO: visualize better the tab insertion
 				// if we dragged on some other tab
-				if (dragOntoTab != dragView
+				if (dragOntoView != dragView
 					&& dragView
-					&& dragOntoTab)
+					&& dragOntoView)
 				{
-					if (dragView->viewPane == dragOntoTab->viewPane)
+					if (dragView->viewPane == dragOntoView->viewPane)
 					{
 						// same pane
 						size_t index1 = dragView->viewPane->getViewTabIndex(dragView);
-						size_t index2 = dragView->viewPane->getViewTabIndex(dragOntoTab);
+						size_t index2 = dragView->viewPane->getViewTabIndex(dragOntoView);
 
-						dragView->viewPane->viewTabs[index1] = dragOntoTab;
+						dragView->viewPane->viewTabs[index1] = dragOntoView;
 						dragView->viewPane->viewTabs[index2] = dragView;
 						dragView->viewPane->selectedTabIndex = index2;
 					}
@@ -838,13 +835,13 @@ void handleDockNodeResize2(DockNode* node)
 
 			if (!dockToNode)
 			{
-				if (dragOntoTab && !isSamePane)
+				if (dragOntoView && !isSamePane)
 				{
 					rectDragged = dragView->rect;
 					rectDragged.x = mousePos.x - rectDragged.width / 2;
 					rectDragged.y = mousePos.y - rectDragged.height / 2;
 					rectDragged.height = dragView->rect.height * 2; // we have two lines of text when undocking "Undock\nTabname"
-					dockToNode = dragOntoTab->viewPane;
+					dockToNode = dragOntoView->viewPane;
 				}
 				else
 				{
@@ -853,7 +850,7 @@ void handleDockNodeResize2(DockNode* node)
 				}
 			}
 			
-			if (dragView != dragOntoTab)
+			if (dragView != dragOntoView)
 			{
 				ctx->renderer->setWindowSize({ rect.width, rect.height });
 				ctx->renderer->beginFrame();
@@ -1181,5 +1178,5 @@ void handleDockNodeResize2(DockNode* node)
 
 	ctx->dockingTabPane = draggingView;
 }
-
+*/
 }

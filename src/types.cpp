@@ -1,6 +1,6 @@
 #include "types.h"
 #include <cstring>
-#include "view_pane.h"
+#include "view.h"
 
 namespace hui
 {
@@ -46,19 +46,5 @@ bool MemoryStream::readData(u8* outData, size_t dataSize)
 
 	return true;
 }
-
-ViewPane* DockingState::getRootViewPaneOfWindow(HWindow window)
-{
-	for (auto& pane : rootViewPanes)
-	{
-		if (pane->window == window)
-		{
-			return pane;
-		}
-	}
-
-	return nullptr;
-}
-
 
 }

@@ -31,8 +31,8 @@ HImage lenaImg;
 HImage nodeBodyImg;
 HImage drawLineImg;
 HFont fntNodeTitle = 0;
-HViewPaneTab console1Tab;
-HViewPaneTab console2Tab;
+HView console1View;
+HView console2View;
 HImage tabIcon1;
 HImage tabIcon2;
 HImage tabIcon3;
@@ -360,11 +360,11 @@ struct MyViewHandler : hui::ViewHandler
 		hui::drawTextInBox(name, box, hui::HAlignType::Center, hui::VAlignType::Top);
 	}
 
-	void onViewRender(HWindow wnd, HViewPane viewPane, ViewId viewId, u64 userData) override
+	void onViewRender(HWindow wnd, HView view, ViewType viewType, u64 userData) override
 	{
-		hui::Rect viewRect = hui::getViewPaneClientRect(viewPane);
+		hui::Rect viewRect = hui::getViewClientRect(view);
 
-		switch (viewId)
+		switch (viewType)
 		{
 		case 0:
 		{
@@ -382,7 +382,7 @@ struct MyViewHandler : hui::ViewHandler
 
 			auto viewWidth = hui::getParentSize().x;
 			int itemCountPerRow = viewWidth / itemWidth;
-			f32 availablePaneHeight = hui::getRemainingViewPaneClientHeight(viewPane);
+			f32 availablePaneHeight = hui::getRemainingViewClientHeight(view);
 			f32 skipRowCount = scrollPos / rowHeight;
 			f32 totalRowCount = ceilf((f32)totalItemCount / itemCountPerRow);
 			f32 visibleRowCount = availablePaneHeight / rowHeight;
@@ -935,7 +935,7 @@ struct MyViewHandler : hui::ViewHandler
 			hui::endColumns();
 			
 
-			hui::beginScrollView(hui::getRemainingViewPaneClientHeight(viewPane), cdata.scrollPosComponents);
+			hui::beginScrollView(hui::getRemainingViewClientHeight(view), cdata.scrollPosComponents);
 
 			srand(0);
 
@@ -1343,7 +1343,7 @@ struct MyViewHandler : hui::ViewHandler
 			hui::endViewport();
 			
 			static f32 spos = 0;
-			hui::beginScrollView(hui::getRemainingViewPaneClientHeight(viewPane), spos);
+			hui::beginScrollView(hui::getRemainingViewClientHeight(view), spos);
 
 			hui::beginBox(Color::darkCyan);
 
@@ -1375,7 +1375,7 @@ struct MyViewHandler : hui::ViewHandler
 		}
 		case 3:
 		{
-			hui::Rect wrect = hui::beginCustomWidget(hui::getRemainingViewPaneClientHeight(viewPane));
+			hui::Rect wrect = hui::beginCustomWidget(hui::getRemainingViewClientHeight(view));
 
 			{
 				//hui::LineStyle ls;
@@ -1443,7 +1443,7 @@ struct MyViewHandler : hui::ViewHandler
 			static i32 crtSel = 0;
 			hui::dropdown(crtSel, s, 5, 3);
 			if (isChangeEnded()) printf("Drop changed\n");
-			hui::beginScrollView(hui::getRemainingViewPaneClientHeight(viewPane), scr[viewId]);
+			hui::beginScrollView(hui::getRemainingViewClientHeight(view), scr[viewType]);
 			hui::gap(5);
 
 			// showing a message box
@@ -1927,36 +1927,33 @@ struct MyViewHandler : hui::ViewHandler
 				hui::line();
 			}
 
-			scr[viewId] = hui::endScrollView();
+			scr[viewType] = hui::endScrollView();
 			break;
 		}
 		}
 	}
 
-	void onViewPaneTabSave(HViewPaneTab tab, u64 dataId) override
+	void onViewSave(HView view, u64 dataId) override
 	{
-		printf("Saving view pane tab: %s dataId: %llu\n", getViewPaneTabTitle(tab), dataId);
+		printf("Saving view pane tab: %s dataId: %llu\n", getViewTitle(view), dataId);
 	}
 
-	void onViewPaneTabLoad(HViewPaneTab tab, u64 dataId) override
+	void onViewLoad(HView view, u64 dataId) override
 	{
-		printf("Loading view pane tab: %s dataId: %llu\n", getViewPaneTabTitle(tab), dataId);
+		printf("Loading view pane tab: %s dataId: %llu\n", getViewTitle(view), dataId);
 	}
 
 } myViewHandler;
 
 void createMyDefaultViewPanes()
 {
-	auto myRootViewPane = hui::createRootViewPane(hui::getMainWindow());
-	auto viewPane1 = hui::createViewPane(myRootViewPane, 1, hui::DockType::Left);
-	hui::createViewPaneTab(viewPane1, "Assets", 0, 0);
+	auto myRoot = hui::createRootDockNode(hui::getMainWindow());
+	auto view1 = hui::createView(myRoot, 1, hui::DockType::Left, "Assets", 0, 0, 0);
 	//console1Tab = hui::createViewPaneTab(viewPane1, "Console1", 1, 0);
 	//console2Tab = hui::createViewPaneTab(viewPane1, "Console2", 1, 1);
 	//hui::createViewPaneTab(viewPane1, "Scene", 2, 0);
-	auto viewPane2 = hui::createViewPane(myRootViewPane, 1, hui::DockType::Left);
-    hui::createViewPaneTab(viewPane2, "Game", 3, 0);
-	auto viewPane3 = hui::createViewPane(myRootViewPane, 1, hui::DockType::Bottom);
-	hui::createViewPaneTab(viewPane3, "Particles", 4, 1);
+	auto view2 = hui::createView(myRoot, 1, hui::DockType::Left, "Game", 1, 0, 0);
+	auto view3 = hui::createView(myRoot, 1, hui::DockType::Bottom, "Particles", 2, 0 ,0);
 	// auto viewPane4 = hui::createViewPane(myRootViewPane, 1, hui::DockType::Bottom);
 	// hui::createViewPaneTab(viewPane4, "Properties", 5, 2);
 	// auto viewPane5 = hui::createViewPane(myRootViewPane, 1, hui::DockType::Right);
@@ -2039,19 +2036,19 @@ int main(int argc, char** args)
 	printf("Loading views...\n");
 
 	// if there is no state, then create the default panes and tabs
-	if (!hui::loadViewPaneState("layout.hui"))
+	if (!hui::loadViewState("layout.hui"))
 	{
 		createMyDefaultViewPanes();
 	}
 
-	HViewPane vcs[100] = { 0 };
+	//HDockNode dn[100] = { 0 };
 
-	auto count = getRootViewPanes(vcs, 100);
+	//auto count = getRootDockNodes(dn, 100);
 
-	for (int i = 0; i < count; i++)
-	{
-		setViewPaneSideSpacing(vcs[i], 45, 150, 36);
-	}
+	//for (int i = 0; i < count; i++)
+	//{
+	//	setViewPaneSideSpacing(vcs[i], 45, 150, 36);
+	//}
 
 	hui::setViewIcon(1, tabIcon1);
 	hui::setViewIcon(2, tabIcon2);
@@ -2059,7 +2056,7 @@ int main(int argc, char** args)
 
 	printf("Starting loop...\n");
 	hui::dockingSystemLoop();
-	hui::saveViewPaneState("layout.hui");
+	hui::saveViewState("layout.hui");
 
 	hui::shutdown();
 

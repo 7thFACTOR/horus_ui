@@ -273,7 +273,7 @@ struct DockingState
 	DockNode* resizingNode = nullptr;
 	DockNode* hoveredNode = nullptr;
 	View* dragView = nullptr;
-	View* dragOntoTab = nullptr;
+	View* dragOntoView = nullptr;
 	Rect dockRect;
 	DockType dockType = DockType::None;
 	DockNode* dockToNode = nullptr;
