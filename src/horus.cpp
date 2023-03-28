@@ -894,9 +894,9 @@ void setWidgetStyle(WidgetType widgetType, const char* styleName)
 		break;
 	case WidgetType::Viewport:
 		break;
-	case WidgetType::ViewPane:
-		ctx->theme->elements[(u32)WidgetElementId::ViewPaneDockRect].setStyle(styleName);
-		ctx->theme->elements[(u32)WidgetElementId::ViewPaneDockDialRect].setStyle(styleName);
+	case WidgetType::View:
+		ctx->theme->elements[(u32)WidgetElementId::ViewDockRect].setStyle(styleName);
+		ctx->theme->elements[(u32)WidgetElementId::ViewDockDialRect].setStyle(styleName);
 		break;
 	case WidgetType::MsgBox:
 		ctx->theme->elements[(u32)WidgetElementId::MessageBoxIconError].setStyle(styleName);

@@ -2036,7 +2036,7 @@ int main(int argc, char** args)
 	printf("Loading views...\n");
 
 	// if there is no state, then create the default panes and tabs
-	if (!hui::loadViewState("layout.hui"))
+	if (!hui::loadDockingState("layout.hui"))
 	{
 		createMyDefaultViewPanes();
 	}
@@ -2056,7 +2056,7 @@ int main(int argc, char** args)
 
 	printf("Starting loop...\n");
 	hui::dockingSystemLoop();
-	hui::saveViewState("layout.hui");
+	hui::saveDockingState("layout.hui");
 
 	hui::shutdown();
 

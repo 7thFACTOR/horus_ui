@@ -97,11 +97,11 @@ bool dockView(HView view, HDockNode targetNode, DockType dockType, u32 tabIndex)
 	switch (dockType)
 	{
 	case hui::DockType::Left:
-		// just insert at the target site
+	{	// just insert at the target site
 		if (target->parent->type == DockNode::Type::Horizontal)
 		{
 			auto iter = std::find(target->parent->children.begin(), target->parent->children.end(), target);
-			
+
 			// if there is just one view in the source node, move the node also and remove from current parent
 			if (source->views.size() == 1)
 			{
@@ -113,7 +113,7 @@ bool dockView(HView view, HDockNode targetNode, DockType dockType, u32 tabIndex)
 				sourceNode = source;
 			}
 			else
-			// we create a new node to hold the view
+				// we create a new node to hold the view
 			{
 				source->removeView(viewObj);
 				DockNode* newNode = new DockNode();
@@ -162,7 +162,7 @@ bool dockView(HView view, HDockNode targetNode, DockType dockType, u32 tabIndex)
 		if (!ctx->settings.dockNodeProportionalResize
 			&& sourceNode
 			&& (target->parent->type == DockNode::Type::Vertical
-			|| target->parent->type == DockNode::Type::Horizontal))
+				|| target->parent->type == DockNode::Type::Horizontal))
 		{
 			f32 size = target->rect.width * ctx->settings.dockNodeDockingSizeRatio;
 			sourceNode->rect.x = target->rect.x;
@@ -174,8 +174,9 @@ bool dockView(HView view, HDockNode targetNode, DockType dockType, u32 tabIndex)
 		}
 
 		break;
+	}
 	case hui::DockType::Right:
-		// just insert at the target site
+	{	// just insert at the target site
 		if (target->parent->type == DockNode::Type::Horizontal)
 		{
 			auto iter = std::find(target->parent->children.begin(), target->parent->children.end(), target);
@@ -193,7 +194,7 @@ bool dockView(HView view, HDockNode targetNode, DockType dockType, u32 tabIndex)
 				sourceNode = source;
 			}
 			else
-			// we create a new node to hold the view
+				// we create a new node to hold the view
 			{
 				source->removeView(viewObj);
 				DockNode* newNode = new DockNode();
@@ -252,8 +253,9 @@ bool dockView(HView view, HDockNode targetNode, DockType dockType, u32 tabIndex)
 			target->rect.width -= size;
 		}
 		break;
+	}
 	case hui::DockType::Top:
-		// just insert at the target site
+	{	// just insert at the target site
 		if (target->parent->type == DockNode::Type::Vertical)
 		{
 			auto iter = std::find(target->parent->children.begin(), target->parent->children.end(), target);
@@ -310,7 +312,7 @@ bool dockView(HView view, HDockNode targetNode, DockType dockType, u32 tabIndex)
 			target->children.clear();
 			target->children.push_back(sourceNode);
 			target->children.push_back(newNode);
-	
+
 			if (ctx->settings.dockNodeProportionalResize) target->computeRect();
 		}
 
@@ -329,8 +331,9 @@ bool dockView(HView view, HDockNode targetNode, DockType dockType, u32 tabIndex)
 			target->rect.y -= size;
 		}
 		break;
+	}
 	case hui::DockType::Bottom:
-		// just insert at the target site
+	{	// just insert at the target site
 		if (target->parent->type == DockNode::Type::Vertical)
 		{
 			auto iter = std::find(target->parent->children.begin(), target->parent->children.end(), target);
@@ -407,8 +410,9 @@ bool dockView(HView view, HDockNode targetNode, DockType dockType, u32 tabIndex)
 			target->rect.height -= size;
 		}
 		break;
+	}
 	case hui::DockType::RootLeft:
-		// if we only have a view in the source node, grab the node itself
+	{	// if we only have a view in the source node, grab the node itself
 		if (source->views.size() == 1)
 		{
 			source->removeFromParent();
@@ -447,7 +451,7 @@ bool dockView(HView view, HDockNode targetNode, DockType dockType, u32 tabIndex)
 			newNode->window = target->window;
 
 			for (auto& c : newNode->children) c->parent = newNode;
-			
+
 			target->children.clear();
 			target->children.push_back(sourceNode);
 			target->children.push_back(newNode);
@@ -477,7 +481,7 @@ bool dockView(HView view, HDockNode targetNode, DockType dockType, u32 tabIndex)
 			&& target->type != DockNode::Type::None)
 		{
 			f32 size = target->rect.width * ctx->settings.dockNodeDockingSizeRatio;
-			
+
 			sourceNode->rect.x = target->rect.x;
 			sourceNode->rect.y = target->rect.y;
 			sourceNode->rect.width = size;
@@ -493,8 +497,9 @@ bool dockView(HView view, HDockNode targetNode, DockType dockType, u32 tabIndex)
 		}
 
 		break;
+	}
 	case hui::DockType::RootRight:
-		// if we only have a view in the source node, grab the node itself
+	{	// if we only have a view in the source node, grab the node itself
 		if (source->views.size() == 1)
 		{
 			source->removeFromParent();
@@ -578,8 +583,9 @@ bool dockView(HView view, HDockNode targetNode, DockType dockType, u32 tabIndex)
 			}
 		}
 		break;
+	}
 	case hui::DockType::RootTop:
-		// if we only have a view in the source node, grab the node itself
+	{	// if we only have a view in the source node, grab the node itself
 		if (source->views.size() == 1)
 		{
 			source->removeFromParent();
@@ -648,12 +654,12 @@ bool dockView(HView view, HDockNode targetNode, DockType dockType, u32 tabIndex)
 			&& target->type != DockNode::Type::None)
 		{
 			f32 size = target->rect.height * ctx->settings.dockNodeDockingSizeRatio;
-			
+
 			sourceNode->rect.x = target->rect.x;
 			sourceNode->rect.y = target->rect.y;
 			sourceNode->rect.width = target->rect.width;
 			sourceNode->rect.height = size;
-			
+
 			if (newNode)
 			{
 				newNode->rect.x = target->rect.x;
@@ -663,8 +669,9 @@ bool dockView(HView view, HDockNode targetNode, DockType dockType, u32 tabIndex)
 			}
 		}
 		break;
+	}
 	case hui::DockType::RootBottom:
-		// if we only have a view in the source node, grab the node itself
+	{	// if we only have a view in the source node, grab the node itself
 		if (source->views.size() == 1)
 		{
 			source->removeFromParent();
@@ -748,26 +755,27 @@ bool dockView(HView view, HDockNode targetNode, DockType dockType, u32 tabIndex)
 			}
 		}
 		break;
-	case hui::DockType::AsTab:
-		{
-			auto iter = std::next(target->views.begin(), tabIndex);
-			target->views.insert(iter, viewObj);
-			target->type = DockNode::Type::ViewTabs;
-			target->selectedTabIndex = 0;
-
-			// if we only have a view in the source node, delete the node
-			if (source->views.size() == 1)
-			{
-				source->removeFromParent();
-				delete source;
-			}
-			else
-			{
-				// remove from the source node
-				source->removeView(viewObj);
-			}
 	}
+	case hui::DockType::AsTab:
+	{
+		auto iter = std::next(target->views.begin(), tabIndex);
+		target->views.insert(iter, viewObj);
+		target->type = DockNode::Type::ViewTabs;
+		target->selectedTabIndex = 0;
+
+		// if we only have a view in the source node, delete the node
+		if (source->views.size() == 1)
+		{
+			source->removeFromParent();
+			delete source;
+		}
+		else
+		{
+			// remove from the source node
+			source->removeView(viewObj);
+		}
 		break;
+	}
 	default:
 		break;
 	}
