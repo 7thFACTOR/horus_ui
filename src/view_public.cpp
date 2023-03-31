@@ -783,4 +783,126 @@ bool dockView(HView view, HDockNode targetNode, DockType dockType, u32 tabIndex)
 	return true;
 }
 
+ViewType dockNodeTabs(DockNode* node)
+{
+	if (ctx->layoutStack.back().width <= (node->views.size() * (ctx->paneGroupState.tabWidth + ctx->paneGroupState.sideSpacing)) * ctx->globalScale)
+	{
+		ctx->paneGroupState.forceTabWidth = ctx->layoutStack.back().width / (f32)node->views.size();
+		ctx->paneGroupState.forceSqueezeTabs = true;
+	}
+	else
+	{
+		ctx->paneGroupState.forceSqueezeTabs = false;
+	}
+
+	u32 closeTabIndex = ~0;
+
+	ctx->drawingViewPaneTabs = true;
+	beginTabGroup(node->selectedTabIndex);
+
+	for (size_t i = 0; i < node->views.size(); i++)
+	{
+		hui::tab(node->views[i]->title.c_str(), node->views[i]->icon);
+		node->views[i]->tabRect = ctx->widget.rect;
+
+		if (ctx->widget.hovered
+			&& ctx->event.type == InputEvent::Type::MouseDown
+			&& ctx->event.mouse.button == MouseButton::Middle)
+		{
+			// close tab
+			closeTabIndex = i;
+			ctx->event.type = InputEvent::Type::None;
+			//TODO: issue some event on tab close ?
+		}
+	}
+
+	u32 selectedIndex = hui::endTabGroup();
+
+	ctx->drawingViewPaneTabs = false;
+
+	if (closeTabIndex != ~0)
+	{
+		node->removeView(node->views[closeTabIndex]);
+
+		if (node->views.empty())
+		{
+			ctx->dockingState.currentView->removeChild(node);
+
+			// close window if no tabs
+			if (ctx->dockingState.currentView->children.empty())
+			{
+				//dockingData.closeWindow = true;
+			}
+		}
+
+		if (selectedIndex >= node->views.size())
+			selectedIndex = node->views.size() - 1;
+	}
+
+	if (!node->views.empty())
+	{
+		if (node->selectedTabIndex != selectedIndex)
+		{
+			node->selectedTabIndex = selectedIndex;
+			hui::forceRepaint();
+		}
+
+		return node->views[node->selectedTabIndex]->viewType;
+	}
+
+	return ~0;
+}
+
+void beginDockNode(HDockNode node)
+{
+	DockNode* nodeObj = (DockNode*)node;
+
+	beginContainer(nodeObj->rect);
+
+	return dockNodeTabs(nodeObj);
+}
+
+void endDockNode()
+{
+	endContainer();
+}
+
+void setViewUserData(HView view, u64 userData)
+{
+	((View*)view)->userData = userData;
+}
+
+u64 getViewUserData(HView view)
+{
+	return ((View*)view)->userData;
+}
+
+void setViewTitle(HView view, const char* title)
+{
+	auto viewObj = (View*)view;
+
+	viewObj->title = title;
+}
+
+const char* getViewTitle(HView view)
+{
+	auto viewObj = (View*)view;
+
+	return viewObj->title.c_str();
+}
+
+ViewType getViewType(HView view)
+{
+	auto viewObj = (View*)view;
+
+	return viewObj->viewType;
+}
+
+void setViewIcon(HView view, HImage icon)
+{
+	View* viewObj = (View*)view;
+
+	viewObj->icon = icon;
+}
+
 }

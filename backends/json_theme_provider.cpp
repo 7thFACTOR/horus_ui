@@ -62,7 +62,7 @@ WidgetType getWidgetTypeFromName(std::string name)
 	if (name == "tabGroup") return WidgetType::TabGroup;
 	if (name == "tab") return WidgetType::Tab;
 	if (name == "viewport") return WidgetType::Viewport;
-	if (name == "viewPane") return WidgetType::ViewPane;
+	if (name == "view") return WidgetType::View;
 	if (name == "messageBox") return WidgetType::MsgBox;
 	if (name == "selectable") return WidgetType::Selectable;
 	if (name == "box") return WidgetType::Box;
@@ -109,10 +109,10 @@ WidgetElementId getWidgetElementFromName(std::string name)
 	if (name == "tabGroupBody") return WidgetElementId::TabGroupBody;
 	if (name == "tabBodyActive") return WidgetElementId::TabBodyActive;
 	if (name == "tabBodyInactive") return WidgetElementId::TabBodyInactive;
-	if (name == "viewPaneDockRect") return WidgetElementId::ViewPaneDockRect;
-	if (name == "viewPaneDockDialRect") return WidgetElementId::ViewPaneDockDialRect;
-	if (name == "viewPaneDockDialVSplitRect") return WidgetElementId::ViewPaneDockDialVSplitRect;
-	if (name == "viewPaneDockDialHSplitRect") return WidgetElementId::ViewPaneDockDialHSplitRect;
+	if (name == "viewDockRect") return WidgetElementId::ViewDockRect;
+	if (name == "viewDockDialRect") return WidgetElementId::ViewDockDialRect;
+	if (name == "viewDockDialVSplitRect") return WidgetElementId::ViewDockDialVSplitRect;
+	if (name == "viewDockDialHSplitRect") return WidgetElementId::ViewDockDialHSplitRect;
 	if (name == "menuBarBody") return WidgetElementId::MenuBarBody;
 	if (name == "menuBarItem") return WidgetElementId::MenuBarItem;
 	if (name == "menuBody") return WidgetElementId::MenuBody;
