@@ -1449,10 +1449,11 @@ struct ViewHandler
 	virtual void onBottomAreaRender(HWindow window) {}
 	/// Called when the user must render the widgets for a specific view
 	/// \param window the window where the drawing of UI will occur
+	/// \param node the parent dock node of the view
 	/// \param view the view where the drawing of UI will occur
 	/// \param activeViewType the view type for which to draw the UI (there can be multiple views with the same type), data driven UI
 	/// \param userData the user data, which was set by the user for this particular view instance
-	virtual void onViewRender(HWindow window, HView view, ViewType activeViewType, u64 userData) {}
+	virtual void onViewRender(HWindow window, HDockNode node, HView view, ViewType activeViewType, u64 userData) {}
 	/// Called when a view was closed
 	/// \param window the window where the view was closed
 	/// \param view the view
@@ -2663,7 +2664,7 @@ HORUS_API void drawSolidTriangle(const Point& p1, const Point& p2, const Point& 
 /// Create a root dock node for a specific window, where views can be docked
 HORUS_API HDockNode createRootDockNode(HWindow window);
 
-HORUS_API HView createView(HDockNode dockTarget, f32 size, DockType dock, const char* title, ViewType viewType, u64 userData, HImage icon);
+HORUS_API HView createView(HDockNode targetNode, DockType dock, const char* title, f32 size, ViewType viewType, u64 userData, HImage icon);
 
 /// Delete a view, used by the docking system
 HORUS_API void deleteView(HView view);
@@ -2693,9 +2694,9 @@ HORUS_API bool loadDockingStateFromMemory(const u8* stateInfo, size_t stateInfoS
 /// \param view the view
 HORUS_API Rect getViewClientRect(HView view);
 
-/// \return the remaining view height
-/// \param view the view
-HORUS_API f32 getRemainingViewClientHeight(HView view);
+/// \return the remaining dock node view height
+/// \param node the dock node
+HORUS_API f32 getRemainingDockNodeClientHeight(HDockNode node);
 
 /// Set a view user data
 HORUS_API void setViewUserData(HView view, u64 userData);
@@ -2710,13 +2711,13 @@ HORUS_API const char* getViewTitle(HView view);
 HORUS_API ViewType getViewType(HView view);
 
 /// Set a view icon
-HORUS_API void setViewIcon(ViewType viewType, HImage image);
+HORUS_API void setViewIcon(HView view, HImage image);
 
-/// Begin draw of a view
-HORUS_API ViewType beginView(HView view);
+/// Begin draw of a dock node views
+HORUS_API ViewType beginDockNode(HDockNode node);
 
-/// End draw of a view
-HORUS_API void endView();
+/// End draw of a dock node views
+HORUS_API void endDockNode();
 
 /// Activate a view
 HORUS_API void activateView(HView view);

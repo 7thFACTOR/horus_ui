@@ -113,15 +113,15 @@ void updateDockingSystemInternal(bool isLastEvent)
 		endContainer();
 		*/
 
-		for (auto& viewTabsNode : viewTabsNodes)
-		{
-			for (auto& v : viewTabsNode->views)
-			{
-				beginView(v);
-				ctx->currentViewHandler->onViewRender(wnd, v, v->viewType, v->userData);
-				endView();
-			}
-		}
+		//for (auto& viewTabsNode : viewTabsNodes)
+		//{
+		//	for (auto& v : viewTabsNode->views)
+		//	{
+		//		beginContainer(;
+		//		ctx->currentViewHandler->onViewRender(wnd, v, v->viewType, v->userData);
+		//		endView();
+		//	}
+		//}
 
 		endContainer();
 		endWindow();

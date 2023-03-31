@@ -360,7 +360,7 @@ struct MyViewHandler : hui::ViewHandler
 		hui::drawTextInBox(name, box, hui::HAlignType::Center, hui::VAlignType::Top);
 	}
 
-	void onViewRender(HWindow wnd, HView view, ViewType viewType, u64 userData) override
+	void onViewRender(HWindow wnd, HDockNode node, HView view, ViewType viewType, u64 userData) override
 	{
 		hui::Rect viewRect = hui::getViewClientRect(view);
 
@@ -382,7 +382,7 @@ struct MyViewHandler : hui::ViewHandler
 
 			auto viewWidth = hui::getParentSize().x;
 			int itemCountPerRow = viewWidth / itemWidth;
-			f32 availablePaneHeight = hui::getRemainingViewClientHeight(view);
+			f32 availablePaneHeight = hui::getRemainingDockNodeClientHeight(node);
 			f32 skipRowCount = scrollPos / rowHeight;
 			f32 totalRowCount = ceilf((f32)totalItemCount / itemCountPerRow);
 			f32 visibleRowCount = availablePaneHeight / rowHeight;
@@ -935,7 +935,7 @@ struct MyViewHandler : hui::ViewHandler
 			hui::endColumns();
 			
 
-			hui::beginScrollView(hui::getRemainingViewClientHeight(view), cdata.scrollPosComponents);
+			hui::beginScrollView(hui::getRemainingDockNodeClientHeight(node), cdata.scrollPosComponents);
 
 			srand(0);
 
@@ -1343,7 +1343,7 @@ struct MyViewHandler : hui::ViewHandler
 			hui::endViewport();
 			
 			static f32 spos = 0;
-			hui::beginScrollView(hui::getRemainingViewClientHeight(view), spos);
+			hui::beginScrollView(hui::getRemainingDockNodeClientHeight(node), spos);
 
 			hui::beginBox(Color::darkCyan);
 
@@ -1375,7 +1375,7 @@ struct MyViewHandler : hui::ViewHandler
 		}
 		case 3:
 		{
-			hui::Rect wrect = hui::beginCustomWidget(hui::getRemainingViewClientHeight(view));
+			hui::Rect wrect = hui::beginCustomWidget(hui::getRemainingDockNodeClientHeight(node));
 
 			{
 				//hui::LineStyle ls;
@@ -1443,7 +1443,7 @@ struct MyViewHandler : hui::ViewHandler
 			static i32 crtSel = 0;
 			hui::dropdown(crtSel, s, 5, 3);
 			if (isChangeEnded()) printf("Drop changed\n");
-			hui::beginScrollView(hui::getRemainingViewClientHeight(view), scr[viewType]);
+			hui::beginScrollView(hui::getRemainingDockNodeClientHeight(node), scr[viewType]);
 			hui::gap(5);
 
 			// showing a message box
@@ -1948,16 +1948,16 @@ struct MyViewHandler : hui::ViewHandler
 void createMyDefaultViewPanes()
 {
 	auto myRoot = hui::createRootDockNode(hui::getMainWindow());
-	auto view1 = hui::createView(myRoot, 1, hui::DockType::Left, "Assets", 0, 0, 0);
-	//console1Tab = hui::createViewPaneTab(viewPane1, "Console1", 1, 0);
-	//console2Tab = hui::createViewPaneTab(viewPane1, "Console2", 1, 1);
-	//hui::createViewPaneTab(viewPane1, "Scene", 2, 0);
-	auto view2 = hui::createView(myRoot, 1, hui::DockType::Left, "Game", 1, 0, 0);
-	auto view3 = hui::createView(myRoot, 1, hui::DockType::Bottom, "Particles", 2, 0 ,0);
-	// auto viewPane4 = hui::createViewPane(myRootViewPane, 1, hui::DockType::Bottom);
-	// hui::createViewPaneTab(viewPane4, "Properties", 5, 2);
-	// auto viewPane5 = hui::createViewPane(myRootViewPane, 1, hui::DockType::Right);
-	// hui::createViewPaneTab(viewPane5, "Object Inspector", 6, 3);
+	auto view1 = hui::createView(myRoot, hui::DockType::Left, "Assets", 0, 1, 0, 0);
+	//console1Tab = hui::createView(view1, hui::DockType::AsTab, "Console1", 0, 1, 0, 0);
+	//console2Tab = hui::createView(view1, hui::DockType::AsTab, "Console2", 0, 1, 1, 0);
+	//hui::createView(view1, hui::DockType::AsTab, "Scene", 0, 2, 0, 0);
+	auto view2 = hui::createView(myRoot, hui::DockType::Left, "Game", 0, 1, 0, 0);
+	auto view3 = hui::createView(myRoot, hui::DockType::Bottom, "Particles", 0, 2, 0 ,0);
+	// auto view4 = hui::createView(myRoot, hui::DockType::Bottom, "View4");
+	// hui::createView(view4, "Properties", 5, 2);
+	// auto view5 = hui::createView(myRoot, 1, hui::DockType::Right);
+	// hui::createView(view5, "Object Inspector", 6, 3);
 }
 
 int main(int argc, char** args)
@@ -2050,9 +2050,9 @@ int main(int argc, char** args)
 	//	setViewPaneSideSpacing(vcs[i], 45, 150, 36);
 	//}
 
-	hui::setViewIcon(1, tabIcon1);
-	hui::setViewIcon(2, tabIcon2);
-	hui::setViewIcon(3, tabIcon1);
+	//hui::setViewIcon(1, tabIcon1);
+	//hui::setViewIcon(2, tabIcon2);
+	//hui::setViewIcon(3, tabIcon1);
 
 	printf("Starting loop...\n");
 	hui::dockingSystemLoop();

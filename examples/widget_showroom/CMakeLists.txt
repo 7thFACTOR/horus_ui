@@ -51,6 +51,3 @@ if(LINUX)
 endif(LINUX)
 
 target_link_directories(widget_showroom PUBLIC ${CMAKE_BINARY_DIR}/bin)
-
-
-

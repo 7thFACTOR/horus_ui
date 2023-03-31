@@ -310,4 +310,24 @@ DockNode* DockNode::findDockNode(const Point& pt)
 	return nullptr;
 }
 
+bool saveDockingState(const char* filename)
+{
+	return true;
+}
+
+u8* saveDockingStateToMemory(size_t& outStateInfoSize)
+{
+	return 0;
+}
+
+bool loadDockingState(const char* filename)
+{
+	return true;
+}
+
+bool loadDockingStateFromMemory(const u8* stateInfo, size_t stateInfoSize)
+{
+	return true;
+}
+
 }

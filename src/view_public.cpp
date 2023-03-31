@@ -824,17 +824,6 @@ ViewType dockNodeTabs(DockNode* node)
 	{
 		node->removeView(node->views[closeTabIndex]);
 
-		if (node->views.empty())
-		{
-			ctx->dockingState.currentView->removeChild(node);
-
-			// close window if no tabs
-			if (ctx->dockingState.currentView->children.empty())
-			{
-				//dockingData.closeWindow = true;
-			}
-		}
-
 		if (selectedIndex >= node->views.size())
 			selectedIndex = node->views.size() - 1;
 	}
@@ -853,7 +842,7 @@ ViewType dockNodeTabs(DockNode* node)
 	return ~0;
 }
 
-void beginDockNode(HDockNode node)
+ViewType beginDockNode(HDockNode node)
 {
 	DockNode* nodeObj = (DockNode*)node;
 
@@ -904,5 +893,23 @@ void setViewIcon(HView view, HImage icon)
 
 	viewObj->icon = icon;
 }
+
+f32 getRemainingDockNodeClientHeight(HDockNode node)
+{
+	DockNode* nodeObj = (DockNode*)node;
+
+	return round((f32)nodeObj->rect.height - (ctx->penPosition.y - nodeObj->rect.y));
+}
+
+Rect getViewClientRect(HView view)
+{
+	auto rc = ((View*)view)->dockNode->rect;
+	auto tabHeight = ctx->theme->getElement(WidgetElementId::TabBodyActive).normalState().height;
+	rc.y += tabHeight;
+	rc.height -= tabHeight;
+
+	return rc;
+}
+
 
 }
