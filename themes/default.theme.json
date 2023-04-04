@@ -326,23 +326,23 @@
 				"focused": { "image": "default/tab_inactive", "border": 5, "color": "white", "textColor": "white", "font": "normal" }
 			}
 		},
-		"viewPane":
+		"view":
 		{
-			"viewPaneDockRect":
+			"viewDockRect":
 			{
-				"normal": { "image": "default/viewpane_dock_rect", "border": 2, "color": "white", "textColor": "yellow", "font": "normal" }
+				"normal": { "image": "default/view_dock_rect", "border": 2, "color": "white", "textColor": "yellow", "font": "normal" }
 			},
-			"viewPaneDockDialRect":
+			"viewDockDialRect":
 			{
-				"normal": { "image": "default/viewpane_dock_dial_rect", "border": 15, "color": "gray", "textColor": "yellow", "font": "normal" },
-				"hovered": { "image": "default/viewpane_dock_dial_rect", "border": 15, "color": "white", "textColor": "yellow", "font": "normal" }
+				"normal": { "image": "default/view_dock_dial_rect", "border": 15, "color": "gray", "textColor": "yellow", "font": "normal" },
+				"hovered": { "image": "default/view_dock_dial_rect", "border": 15, "color": "white", "textColor": "yellow", "font": "normal" }
 			},
-			"viewPaneDockDialVSplitRect":
+			"viewDockDialVSplitRect":
 			{
 				"normal": { "image": "default/docking_rect_dial_vertical_split", "border": 15, "color": "gray", "textColor": "yellow", "font": "normal" },
 				"hovered": { "image": "default/docking_rect_dial_vertical_split", "border": 15, "color": "white", "textColor": "yellow", "font": "normal" }
 			},
-			"viewPaneDockDialHSplitRect":
+			"viewDockDialHSplitRect":
 			{
 				"normal": { "image": "default/docking_rect_dial_horizontal_split", "border": 15, "color": "gray", "textColor": "yellow", "font": "normal" },
 				"hovered": { "image": "default/docking_rect_dial_horizontal_split", "border": 15, "color": "white", "textColor": "yellow", "font": "normal" }

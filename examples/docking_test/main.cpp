@@ -18,85 +18,34 @@
 #include "utfcpp_provider.h"
 
 using namespace hui;
-char str[1500] = { 0 };
-char str2[1500] = { 0 };
-bool checks[100] = { false };
-bool changeScale = false;
-f32 scale = 1.f;
 HFont fntBig;
 HFont fntVeryBig;
 HFont fntBold;
 HFont fntItalic;
-HImage lenaImg;
-HImage nodeBodyImg;
-HImage drawLineImg;
-HFont fntNodeTitle = 0;
-HView console1View;
-HView console2View;
+HView view1;
+HView view2;
+HView view3;
 HImage tabIcon1;
 HImage tabIcon2;
 HImage tabIcon3;
-HImage deleteIcon;
-HImage sadIcon;
-HImage xaxisIcon;
-HImage yaxisIcon;
-HImage zaxisIcon;
-HImage targetIcon;
-HImage clearIcon;
-HMouseCursor dragDropCur;
 
 struct View1Data
 {
-	bool menuOpened = false;
+	int data = 1;
 };
 
-char* stristr(const char* haystack, const char* needle)
+struct View2Data
 {
-	do
-	{
-		const char* h = haystack;
-		const char* n = needle;
-		while (tolower((unsigned char)*h) == tolower((unsigned char)*n) && *n)
-		{
-			h++;
-			n++;
-		}
-		if (*n == 0) {
-			return (char *)haystack;
-		}
-	} while (*haystack++);
-	return 0;
-}
+	int data = 2;
+};
 
-struct MyCustomTabData
+struct View3Data
 {
-	bool showAddComponent = false;
-	bool focusEditBox = false;
-	static const int strSearchMaxSize = 256;
-	char strSearch[strSearchMaxSize] = { 0 };
-	f32 scrollPosNewComponentList = 0;
-	char strNewCompScript[1000] = { "" };
-	f32 scrollPosComponents = 0;
-	std::vector<std::string> components;
-	std::vector<bool> componentPanelExpanded;
-	std::vector<bool> componentPanelEnabled;
-} customPaneData[2];
+	int data = 3;
+};
 
 struct MyViewHandler : hui::ViewHandler
 {
-	HImage moveIcon = 0;
-	HImage playIcon = 0;
-	HImage stopIcon = 0;
-	HImage pauseIcon = 0;
-	HImage horusLogo = 0;
-	bool chooseColorPopup = false;
-	bool exitAppMsgBox = false;
-	bool moreInfoMsgBox = false;
-	Point chooseColorPopupPos;
-	Point moreInfoBoxPos;
-	MyCustomTabData customData[2];
-	Color color = Color::red;
-
 	void onTopAreaRender(HWindow wnd) override
 	{
 		hui::beginMenuBar();
@@ -2003,36 +1952,16 @@ int main(int argc, char** args)
 	fntVeryBig = hui::createThemeFont(theme, "customVeryBig", "../themes/fonts/Roboto-Regular.ttf", 50);
 	fntBold = hui::createThemeFont(theme, "customBold", "../themes/fonts/Roboto-Regular.ttf", 15);
 	fntItalic = hui::createThemeFont(theme, "customItalic", "../themes/fonts/Roboto-Regular.ttf", 15);
-	fntNodeTitle = hui::createThemeFont(theme, "customNodeTitle", "../themes/fonts/Roboto-Bold.ttf", 12);
 
 	printf("Loading images...\n");
 
-	drawLineImg = hui::loadImage("../themes/default/drawline.png");
-	lenaImg = hui::loadImage("../themes/default/lena.png");
-	nodeBodyImg = hui::loadImage("../themes/default/node-body.png");
-	tabIcon1 = hui::loadImage("../themes/default/tabicon.png");
+	tabIcon1 = hui::loadImage("../themes/default/tabicon1.png");
 	tabIcon2 = hui::loadImage("../themes/default/tabicon2.png");
-	deleteIcon = hui::loadImage("../themes/default/delete_icon.png");
-	sadIcon = hui::loadImage("../themes/default/delete_icon.png");
-	xaxisIcon = hui::loadImage("../themes/default/xaxis.png");
-	yaxisIcon = hui::loadImage("../themes/default/yaxis.png");
-	zaxisIcon = hui::loadImage("../themes/default/zaxis.png");
-	targetIcon = hui::loadImage("../themes/default/target_icon.png");
-	clearIcon = hui::loadImage("../themes/default/clear_icon.png");
-	myViewHandler.moveIcon = hui::loadImage("../themes/default/move_icon.png");
-	myViewHandler.playIcon = hui::loadImage("../themes/default/play-icon.png");
-	myViewHandler.stopIcon = hui::loadImage("../themes/default/stop-icon.png");
-	myViewHandler.pauseIcon = hui::loadImage("../themes/default/pause-icon.png");
-	myViewHandler.horusLogo = hui::loadImage("../themes/default/horus.png");
-	dragDropCur = hui::loadMouseCursor("../themes/default/dragdrop_cursor.png");
+	tabIcon2 = hui::loadImage("../themes/default/tabicon3.png");
 
 	// after we load and create images and fonts, rebuild the theme atlas
 	hui::buildTheme(theme);
 
-	// first we need to set the current view handler before loading view windows state, so the handler does handling of loading state if it wants to
-	hui::setCurrentViewHandler(&myViewHandler);
-
-	hui::setDragDropMouseCursor(dragDropCur);
 	printf("Loading views...\n");
 
 	// if there is no state, then create the default panes and tabs
@@ -2041,23 +1970,61 @@ int main(int argc, char** args)
 		createMyDefaultViewPanes();
 	}
 
-	//HDockNode dn[100] = { 0 };
-
-	//auto count = getRootDockNodes(dn, 100);
-
-	//for (int i = 0; i < count; i++)
-	//{
-	//	setViewPaneSideSpacing(vcs[i], 45, 150, 36);
-	//}
-
-	//hui::setViewIcon(1, tabIcon1);
-	//hui::setViewIcon(2, tabIcon2);
-	//hui::setViewIcon(3, tabIcon1);
-
 	printf("Starting loop...\n");
-	hui::dockingSystemLoop();
-	hui::saveDockingState("layout.hui");
 
+	bool exitNow = false;
+
+	do
+	{
+		// get the events from SDL or whatever input provider is set, it will fill a queue of events
+		hui::processInputEvents();
+		// lets check the event count
+		int eventCount = hui::getInputEventCount();
+
+		// the main frame rendering and input handling
+		auto doFrame = [&](bool lastEventInQueue)
+		{
+			hui::beginView(view1);
+			// set the current window we're handling
+			hui::setWindow(hui::getMainWindow());
+			// start to add widgets in the window
+			hui::beginWindow(hui::getMainWindow());
+			// disable rendering if its not the last event in the queue
+			// no need to render while handling all the input events
+			// we only render on the last event in the queue
+			hui::setDisableRendering(!lastEventInQueue);
+
+			// begin an actual frame of the gui
+			hui::beginFrame();
+			hui::endFrame();
+			hui::endWindow();
+
+			if (lastEventInQueue)
+				hui::presentWindow(hui::getMainWindow());
+
+			if (hui::wantsToQuit() || hui::mustQuit())
+			{
+				exitNow = true;
+			}
+		};
+
+		// if we have events, then go through all of them and call the frame render and input
+		if (eventCount)
+		{
+			for (int i = 0; i < eventCount; i++)
+			{
+				hui::setInputEvent(hui::getInputEventAt(i));
+				doFrame(i == eventCount - 1);
+			}
+		}
+		else
+		{
+			// if no events, just do the frame
+			doFrame(true);
+		}
+	} while (!exitNow);
+
+	hui::saveDockingState("layout.hui");
 	hui::shutdown();
 
 	return 0;
