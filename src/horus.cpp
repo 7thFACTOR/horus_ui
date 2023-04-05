@@ -441,7 +441,7 @@ void setWindow(HWindow window)
 	ctx->providers->input->setCurrentWindow(window);
 
 	auto rect = getWindowRect(window);
-
+	ctx->renderer->setWindow(window);
 	ctx->renderer->setWindowSize({ rect.width, rect.height });
 	ctx->providers->gfx->setViewport(
 		{ rect.width, rect.height },
@@ -1173,6 +1173,7 @@ void beginWindow(HWindow window)
 	}
 	
 	ctx->alreadyClickedOnSomething = false;
+	setWindow(window);
 	ctx->hoveringThisWindow = getHoveredWindow() == getWindow();
 	ctx->renderer->beginFrame();
 }

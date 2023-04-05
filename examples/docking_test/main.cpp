@@ -18,10 +18,6 @@
 #include "utfcpp_provider.h"
 
 using namespace hui;
-HFont fntBig;
-HFont fntVeryBig;
-HFont fntBold;
-HFont fntItalic;
 HView view1;
 HView view2;
 HView view3;
@@ -1947,12 +1943,6 @@ int main(int argc, char** args)
 	auto theme = hui::loadThemeFromJson("../themes/default.theme.json");
 	hui::setTheme(theme); // set as the current theme
 
-	// create additional fonts
-	fntBig = hui::createThemeFont(theme, "customBig", "../themes/fonts/Roboto-Regular.ttf", 20);
-	fntVeryBig = hui::createThemeFont(theme, "customVeryBig", "../themes/fonts/Roboto-Regular.ttf", 50);
-	fntBold = hui::createThemeFont(theme, "customBold", "../themes/fonts/Roboto-Regular.ttf", 15);
-	fntItalic = hui::createThemeFont(theme, "customItalic", "../themes/fonts/Roboto-Regular.ttf", 15);
-
 	printf("Loading images...\n");
 
 	tabIcon1 = hui::loadImage("../themes/default/tabicon1.png");
@@ -1984,23 +1974,22 @@ int main(int argc, char** args)
 		// the main frame rendering and input handling
 		auto doFrame = [&](bool lastEventInQueue)
 		{
-			hui::beginView(view1);
-			// set the current window we're handling
-			hui::setWindow(hui::getMainWindow());
-			// start to add widgets in the window
-			hui::beginWindow(hui::getMainWindow());
 			// disable rendering if its not the last event in the queue
 			// no need to render while handling all the input events
 			// we only render on the last event in the queue
 			hui::setDisableRendering(!lastEventInQueue);
-
 			// begin an actual frame of the gui
 			hui::beginFrame();
+
+			hui::beginView(view1);
+			hui::endView();
+
 			hui::endFrame();
-			hui::endWindow();
 
 			if (lastEventInQueue)
-				hui::presentWindow(hui::getMainWindow());
+			{
+				hui::presentWindows();
+			}
 
 			if (hui::wantsToQuit() || hui::mustQuit())
 			{
