@@ -145,6 +145,7 @@ struct Context
 	InputEvent event;
 	std::vector<InputEvent> events;
 	InputEvent::Type savedEventType = InputEvent::Type::None;
+	std::vector<HWindow> windows;
 
 	std::unordered_map<u32, std::vector<Color>> tintStack;
 	Color tint[(u32)TintColorType::Count] = { Color::white, Color::white };

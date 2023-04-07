@@ -480,6 +480,8 @@ HWindow createWindow(
 		ctx->initializeGraphics();
 	}
 
+	ctx->windows.push_back(wnd);
+
 	return wnd;
 }
 
@@ -508,9 +510,14 @@ Rect getWindowClientRect(HWindow window)
 	return rect;
 }
 
-void presentWindow(HWindow window)
+void presentWindows()
 {
-	ctx->providers->input->presentWindow(window);
+	for (auto& wnd : ctx->windows)
+	{
+		ctx->renderer->setWindow(wnd);
+		ctx->renderer->processCommands(wnd);
+		ctx->providers->input->presentWindow(wnd);
+	}
 }
 
 void destroyWindow(HWindow window)

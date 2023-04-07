@@ -1981,7 +1981,22 @@ int main(int argc, char** args)
 			// begin an actual frame of the gui
 			hui::beginFrame();
 
-			hui::beginView(view1);
+			if (hui::beginView(view1))
+			{
+
+			}
+			hui::endView();
+
+			if (hui::beginView(view2))
+			{
+
+			}
+			hui::endView();
+
+			if (hui::beginView(view3))
+			{
+
+			}
 			hui::endView();
 
 			hui::endFrame();
