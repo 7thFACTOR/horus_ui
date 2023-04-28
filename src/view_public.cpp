@@ -911,5 +911,24 @@ Rect getViewClientRect(HView view)
 	return rc;
 }
 
+bool beginView(HView view)
+{
+	View* viewObj = (View*)view;
+
+	if (viewObj->dockNode->getViewIndex(viewObj) != viewObj->dockNode->selectedTabIndex)
+	{
+		return false;
+	}
+
+	auto rc = getViewClientRect(view);
+	beginContainer(rc);
+
+	return true;
+}
+
+void endView()
+{
+	endContainer();
+}
 
 }
