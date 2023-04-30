@@ -532,6 +532,7 @@ void Renderer::beginFrame()
 
 void Renderer::endFrame()
 {
+	//TODO: should these be per window ?
 	if (disableRendering || skipRender)
 		return;
 
@@ -1606,14 +1607,14 @@ void Renderer::drawPolyLine(const Point* points, u32 pointCount, bool closed)
 			{
 				for (u32 j = oldJ; j < currentLineStyle.stipplePatternCount; j++)
 				{
-					f32 sttipleSize = currentLineStyle.stipplePattern[j];
+					f32 stippleSize = currentLineStyle.stipplePattern[j];
 
 					// if we're outside the line
-					if (currentLength + sttipleSize > totalLineLength)
+					if (currentLength + stippleSize > totalLineLength)
 					{
 						// remember the stipple index, we'll use it on the next segment
 						oldJ = j;
-						remainder = (currentLength + sttipleSize) - totalLineLength;
+						remainder = (currentLength + stippleSize) - totalLineLength;
 						bail = true;
 						break;
 					}
@@ -1624,7 +1625,7 @@ void Renderer::drawPolyLine(const Point* points, u32 pointCount, bool closed)
 					}
 					else
 					{
-						currentLength += sttipleSize;
+						currentLength += stippleSize;
 					}
 
 					f32 t = currentLength / totalLineLength;
@@ -2099,7 +2100,7 @@ bool Renderer::clipRect(bool rotated, Rect& rect, Rect& uvRect)
 
 void Renderer::needToAddVertexCount(u32 count)
 {
-	if (vertexBufferData.drawVertexCount + count < vertexBufferData.vertices.size())
+	if (vertexBufferData.drawVertexCount + count < (u32)vertexBufferData.vertices.size())
 	{
 		// already have space available
 		return;
@@ -2114,6 +2115,7 @@ void Renderer::needToAddVertexCount(u32 count)
 
 char* Renderer::addUtf8TextToBuffer(const char* text, u32 sizeBytes)
 {
+	if (textBufferPosition + sizeBytes + 1 >= (u32)textBuffer.size()) return nullptr;
 	auto pos = textBuffer.data() + textBufferPosition;
 	memcpy(pos, text, sizeBytes + 1); // and zero
 	textBufferPosition += sizeBytes + 1;
