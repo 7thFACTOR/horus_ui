@@ -514,10 +514,15 @@ void presentWindows()
 {
 	for (auto& wnd : ctx->windows)
 	{
-		ctx->renderer->setWindow(wnd);
-		ctx->renderer->processCommands(wnd);
-		ctx->providers->input->presentWindow(wnd);
+		presentWindow(wnd);
 	}
+}
+
+void presentWindow(HWindow wnd)
+{
+	ctx->renderer->setWindow(wnd);
+	//TODO ctx->renderer->processCommands(wnd);
+	ctx->providers->input->presentWindow(wnd);
 }
 
 void destroyWindow(HWindow window)

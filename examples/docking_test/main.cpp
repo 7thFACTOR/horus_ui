@@ -43,16 +43,9 @@ struct View3Data
 void createMyDefaultViewPanes()
 {
 	auto myRoot = hui::createRootDockNode(hui::getMainWindow());
-	auto view1 = hui::createView(myRoot, hui::DockType::Left, "Assets", 0, 1, 0, 0);
-	//console1Tab = hui::createView(view1, hui::DockType::AsTab, "Console1", 0, 1, 0, 0);
-	//console2Tab = hui::createView(view1, hui::DockType::AsTab, "Console2", 0, 1, 1, 0);
-	//hui::createView(view1, hui::DockType::AsTab, "Scene", 0, 2, 0, 0);
-	auto view2 = hui::createView(myRoot, hui::DockType::Left, "Game", 0, 1, 0, 0);
-	auto view3 = hui::createView(myRoot, hui::DockType::Bottom, "Particles", 0, 2, 0 ,0);
-	// auto view4 = hui::createView(myRoot, hui::DockType::Bottom, "View4");
-	// hui::createView(view4, "Properties", 5, 2);
-	// auto view5 = hui::createView(myRoot, 1, hui::DockType::Right);
-	// hui::createView(view5, "Object Inspector", 6, 3);
+	auto view1 = hui::createView(myRoot, hui::DockType::Left, "Assets", 0, 1, 0, nullptr);
+	auto view2 = hui::createView(myRoot, hui::DockType::Left, "Game", 0, 2, 0, nullptr);
+	auto view3 = hui::createView(myRoot, hui::DockType::Bottom, "Particles", 0, 3, 0, nullptr);
 }
 
 int main(int argc, char** args)
@@ -110,6 +103,8 @@ int main(int argc, char** args)
 		createMyDefaultViewPanes();
 	}
 
+	hui::debugViews();
+
 	printf("Starting loop...\n");
 
 	bool exitNow = false;
@@ -131,29 +126,29 @@ int main(int argc, char** args)
 			// begin an actual frame of the gui
 			hui::beginFrame();
 
-			if (hui::beginView(view1))
-			{
+			//if (hui::beginView(view1))
+			//{
 
-			}
-			hui::endView();
+			//}
+			//hui::endView();
 
-			if (hui::beginView(view2))
-			{
+			//if (hui::beginView(view2))
+			//{
 
-			}
-			hui::endView();
+			//}
+			//hui::endView();
 
-			if (hui::beginView(view3))
-			{
+			//if (hui::beginView(view3))
+			//{
 
-			}
-			hui::endView();
+			//}
+			//hui::endView();
 
 			hui::endFrame();
 
 			if (lastEventInQueue)
 			{
-				hui::presentWindows();
+				//hui::presentWindows();
 			}
 
 			if (hui::wantsToQuit() || hui::mustQuit())

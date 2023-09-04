@@ -1742,8 +1742,10 @@ HORUS_API Rect getWindowRect(HWindow window);
 /// \param window the window handle
 HORUS_API Rect getWindowClientRect(HWindow window);
 
-/// Present the contents of the backbuffer, called after all rendering is done
-/// \param window the backbuffer's window to show
+/// Present the contents of the backbuffer for each OS native window, called after all rendering is done
+HORUS_API void presentWindows();
+
+/// Present the contents of the backbuffer of an OS native window, called after all rendering is done
 HORUS_API void presentWindow(HWindow window);
 
 /// Destroy an OS native window
@@ -2675,6 +2677,8 @@ HORUS_API void deleteRootDockNode(HWindow window);
 HORUS_API HWindow getViewWindow(HView view);
 
 HORUS_API HDockNode getRootDockNode(HWindow window);
+
+HORUS_API void debugViews();
 
 /// Save the views state, with all views docked info
 /// \param filename the *.hui filename relative to executable where to save the state

@@ -322,7 +322,7 @@ u8* saveDockingStateToMemory(size_t& outStateInfoSize)
 
 bool loadDockingState(const char* filename)
 {
-	return true;
+	return false;
 }
 
 bool loadDockingStateFromMemory(const u8* stateInfo, size_t stateInfoSize)
