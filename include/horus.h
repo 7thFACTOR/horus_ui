@@ -2676,6 +2676,8 @@ HORUS_API void deleteRootDockNode(HWindow window);
 /// \return the view's native window, used by the docking system
 HORUS_API HWindow getViewWindow(HView view);
 
+HORUS_API HDockNode getViewDockNode(HView view);
+
 HORUS_API HDockNode getRootDockNode(HWindow window);
 
 HORUS_API void debugViews();

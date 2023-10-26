@@ -151,7 +151,7 @@ bool DockNode::checkRedundancy()
 	// if we have just 1 child, delete it, move its contents to us
 	if (children.size() == 1)
 	{
-		auto& child = children[0];
+		auto child = children[0];
 		children = child->children;
 		for (auto& c : children) c->parent = this;
 		views = child->views;

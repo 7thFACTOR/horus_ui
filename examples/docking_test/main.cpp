@@ -44,8 +44,13 @@ void createMyDefaultViewPanes()
 {
 	auto myRoot = hui::createRootDockNode(hui::getMainWindow());
 	auto view1 = hui::createView(myRoot, hui::DockType::Left, "Assets", 0, 1, 0, nullptr);
+	hui::debugViews();
 	auto view2 = hui::createView(myRoot, hui::DockType::Left, "Game", 0, 2, 0, nullptr);
-	auto view3 = hui::createView(myRoot, hui::DockType::Bottom, "Particles", 0, 3, 0, nullptr);
+	hui::debugViews();
+	auto view3 = hui::createView(myRoot, hui::DockType::Top, "Particles", 0, 3, 0, nullptr);
+	hui::debugViews();
+	hui::dockView(view1, hui::getViewDockNode(view3), hui::DockType::Top);
+	hui::debugViews();
 }
 
 int main(int argc, char** args)
@@ -102,8 +107,6 @@ int main(int argc, char** args)
 	{
 		createMyDefaultViewPanes();
 	}
-
-	hui::debugViews();
 
 	printf("Starting loop...\n");
 
