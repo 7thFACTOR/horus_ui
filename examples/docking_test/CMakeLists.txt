@@ -24,6 +24,7 @@ endif(WINDOWS)
 
 add_definitions(-DHORUS_STATIC)
 add_executable(docking_test ${SRCS} ${HORUS_SRCS} ${BACKENDS} ${BINPACK} ${NFD_SRCS})
+set_property(TARGET docking_test PROPERTY VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/../bin")
 
 target_include_directories(docking_test PUBLIC
 	../../include

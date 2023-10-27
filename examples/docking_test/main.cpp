@@ -51,6 +51,14 @@ void createMyDefaultViewPanes()
 	hui::debugViews();
 	hui::dockView(view1, hui::getViewDockNode(view3), hui::DockType::Top);
 	hui::debugViews();
+	hui::dockView(view2, hui::getViewDockNode(view3), hui::DockType::Right);
+	hui::debugViews();
+	//hui::dockView(view1, hui::getViewDockNode(view2), hui::DockType::Right);
+	hui::debugViews();
+	auto view4 = hui::createView(myRoot, hui::DockType::Bottom, "Inspector", 0, 4, 0, nullptr);
+	hui::debugViews();
+	hui::dockView(view1, hui::getViewDockNode(view4), hui::DockType::Bottom);
+	hui::debugViews();
 }
 
 int main(int argc, char** args)

@@ -96,24 +96,25 @@ bool dockView(HView view, HDockNode targetNode, DockType dockType, u32 tabIndex)
 	{
 		target->views.push_back(viewObj);
 		viewObj->dockNode = target;
+		target->type = DockNode::Type::ViewTabs;
 		
-		switch (dockType)
-		{
-		case DockType::Left:
-		case DockType::Right:
-		case DockType::RootLeft:
-		case DockType::RootRight:
-			target->type = DockNode::Type::Horizontal;
-			break;
-		case DockType::Top:
-		case DockType::Bottom:
-		case DockType::RootTop:
-		case DockType::RootBottom:
-			target->type = DockNode::Type::Vertical;
-			break;
-		default:
-			break;
-		}
+		//switch (dockType)
+		//{
+		//case DockType::Left:
+		//case DockType::Right:
+		//case DockType::RootLeft:
+		//case DockType::RootRight:
+		//	target->type = DockNode::Type::Horizontal;
+		//	break;
+		//case DockType::Top:
+		//case DockType::Bottom:
+		//case DockType::RootTop:
+		//case DockType::RootBottom:
+		//	target->type = DockNode::Type::Vertical;
+		//	break;
+		//default:
+		//	break;
+		//}
 		target->selectedTabIndex = 0;
 		return true;
 	}
@@ -159,7 +160,7 @@ bool dockView(HView view, HDockNode targetNode, DockType dockType, u32 tabIndex)
 	{
 	case hui::DockType::Left:
 	{	// just insert at the target site
-		if (targetParent->type == DockNode::Type::Horizontal)
+		if (targetParent->type == DockNode::Type::Horizontal || targetParent->type == DockNode::Type::ViewTabs)
 		{
 			// if there is no children nodes but has views, relocate to new node
 			auto newTarget = checkRelocateViewsOfNode(targetParent);
@@ -196,6 +197,8 @@ bool dockView(HView view, HDockNode targetNode, DockType dockType, u32 tabIndex)
 				targetParent->children.insert(iter, newNode);
 				sourceNode = newNode;
 			}
+			
+			targetParent->type = DockNode::Type::Horizontal;
 
 			if (ctx->settings.dockNodeProportionalResize && targetParent) targetParent->computeRect();
 		}
@@ -226,11 +229,13 @@ bool dockView(HView view, HDockNode targetNode, DockType dockType, u32 tabIndex)
 			*newTargetNode = *target;
 			newTargetNode->parent = target;
 			for (auto& c : newTargetNode->children) c->parent = newTargetNode;
+			target->views.clear();
 			target->children.clear();
 			target->children.push_back(sourceNode);
 			target->children.push_back(newTargetNode);
+			target->type = DockNode::Type::Horizontal;
 
-			if (ctx->settings.dockNodeProportionalResize) target->computeRect();
+			if (ctx->settings.dockNodeProportionalResize) targetParent->computeRect();
 		}
 
 		// if not proportional docking resize, then resize the target and compute size from it for source
@@ -252,7 +257,7 @@ bool dockView(HView view, HDockNode targetNode, DockType dockType, u32 tabIndex)
 	}
 	case hui::DockType::Right:
 	{	// just insert at the target site
-		if (targetParent->type == DockNode::Type::Horizontal)
+		if (targetParent->type == DockNode::Type::Horizontal || targetParent->type == DockNode::Type::ViewTabs)
 		{
 			// if there is no children nodes but has views, relocate to new node
 			auto newTarget = checkRelocateViewsOfNode(targetParent);
@@ -291,6 +296,8 @@ bool dockView(HView view, HDockNode targetNode, DockType dockType, u32 tabIndex)
 				sourceNode = newNode;
 			}
 
+			targetParent->type = DockNode::Type::Horizontal;
+
 			if (ctx->settings.dockNodeProportionalResize && targetParent) targetParent->computeRect();
 		}
 		else if (targetParent->type == DockNode::Type::Vertical)
@@ -315,14 +322,29 @@ bool dockView(HView view, HDockNode targetNode, DockType dockType, u32 tabIndex)
 				sourceNode->type = DockNode::Type::ViewTabs;
 			}
 
-			// relocate target's content into new node
-			DockNode* newNode = new DockNode();
-			*newNode = *target;
-			newNode->parent = targetParent;
-			for (auto& c : newNode->children) c->parent = newNode;
-			target->children.clear();
-			target->children.push_back(newNode);
-			target->children.push_back(sourceNode); // insert last
+			if (targetParent->type == DockNode::Type::Horizontal)
+			{
+				auto iter = std::find(targetParent->children.begin(), targetParent->children.end(), target);
+				// we will insert after it
+				++iter;
+				//if (iter != targetParent->children.end())
+				{
+					targetParent->children.insert(iter, source);
+				}
+			}
+			else
+			{
+				// relocate target's content into new node
+				DockNode* newNode = new DockNode();
+				*newNode = *target;
+				newNode->parent = targetParent;
+				for (auto& c : newNode->children) c->parent = newNode;
+				target->views.clear();
+				target->children.clear();
+				target->children.push_back(newNode);
+				target->children.push_back(sourceNode); // insert last
+				target->type = DockNode::Type::Horizontal;
+			}
 
 			if (ctx->settings.dockNodeProportionalResize) target->computeRect();
 		}
@@ -344,7 +366,7 @@ bool dockView(HView view, HDockNode targetNode, DockType dockType, u32 tabIndex)
 	}
 	case hui::DockType::Top:
 	{	// just insert at the target site
-		if (targetParent->type == DockNode::Type::Vertical)
+		if (targetParent->type == DockNode::Type::Vertical || targetParent->type == DockNode::Type::ViewTabs)
 		{
 			// if there is no children nodes but has views, relocate to new node
 			auto newTarget = checkRelocateViewsOfNode(targetParent);
@@ -378,6 +400,8 @@ bool dockView(HView view, HDockNode targetNode, DockType dockType, u32 tabIndex)
 				sourceNode = newNode;
 			}
 
+			targetParent->type = DockNode::Type::Vertical;
+
 			if (ctx->settings.dockNodeProportionalResize && targetParent) targetParent->computeRect();
 		}
 		else if (targetParent->type == DockNode::Type::Horizontal)
@@ -407,9 +431,11 @@ bool dockView(HView view, HDockNode targetNode, DockType dockType, u32 tabIndex)
 			*newNode = *target;
 			newNode->parent = target;
 			for (auto& c : newNode->children) c->parent = newNode;
+			target->views.clear();
 			target->children.clear();
 			target->children.push_back(sourceNode);
 			target->children.push_back(newNode);
+			target->type = DockNode::Type::Vertical;
 
 			if (ctx->settings.dockNodeProportionalResize) target->computeRect();
 		}
@@ -432,17 +458,12 @@ bool dockView(HView view, HDockNode targetNode, DockType dockType, u32 tabIndex)
 	}
 	case hui::DockType::Bottom:
 	{	// just insert at the target site
-		if (targetParent->type == DockNode::Type::Vertical)
+		if (targetParent->type == DockNode::Type::Vertical || targetParent->type == DockNode::Type::ViewTabs)
 		{
 			// if there is no children nodes but has views, relocate to new node
 			auto newTarget = checkRelocateViewsOfNode(targetParent);
 
 			if (newTarget) target = newTarget;
-
-			auto iter = std::find(targetParent->children.begin(), targetParent->children.end(), target);
-
-			// we will insert after it
-			++iter;
 
 			// if there is just one view in the source node, move the node also and remove from current parent
 			if (source && source->views.size() == 1)
@@ -451,10 +472,14 @@ bool dockView(HView view, HDockNode targetNode, DockType dockType, u32 tabIndex)
 				source->parent = targetParent;
 				source->window = target->window;
 
+				auto iter = std::find(targetParent->children.begin(), targetParent->children.end(), target);
+
+				// we will insert after it
 				if (iter != targetParent->children.end())
-				{
-					targetParent->children.insert(iter, source);
-				}
+					++iter;
+
+				targetParent->children.insert(iter, source);
+
 				sourceNode = source;
 			}
 			else
@@ -467,9 +492,18 @@ bool dockView(HView view, HDockNode targetNode, DockType dockType, u32 tabIndex)
 				newNode->parent = targetParent;
 				newNode->type = DockNode::Type::ViewTabs;
 				newNode->window = target->window;
+
+				auto iter = std::find(targetParent->children.begin(), targetParent->children.end(), target);
+
+				// we will insert after it
+				if (iter != targetParent->children.end())
+					++iter;
+
 				targetParent->children.insert(iter, newNode);
 				sourceNode = newNode;
 			}
+
+			targetParent->type = DockNode::Type::Vertical;
 
 			if (ctx->settings.dockNodeProportionalResize && targetParent) targetParent->computeRect();
 		}
@@ -500,9 +534,11 @@ bool dockView(HView view, HDockNode targetNode, DockType dockType, u32 tabIndex)
 			*newNode = *target;
 			newNode->parent = target;
 			for (auto& c : newNode->children) c->parent = newNode;
+			target->views.clear();
 			target->children.clear();
 			target->children.push_back(newNode);
 			target->children.push_back(sourceNode); // insert last
+			target->type = DockNode::Type::Vertical;
 
 			if (ctx->settings.dockNodeProportionalResize) target->computeRect();
 		}
@@ -1042,14 +1078,36 @@ void endView()
 	endContainer();
 }
 
+std::string enumTypeToStr(DockNode::Type type)
+{
+	switch (type)
+	{
+	case hui::DockNode::Type::None:
+		return "None";
+		break;
+	case hui::DockNode::Type::ViewTabs:
+		return "ViewTabs";
+		break;
+	case hui::DockNode::Type::Vertical:
+		return "Vertical";
+		break;
+	case hui::DockNode::Type::Horizontal:
+		return "Horizontal";
+		break;
+	default:
+		return "";
+		break;
+	}
+}
+
 void printInfo(int level, HWindow wnd, DockNode* node)
 {
 	std::string spaces(level, '\t');
-	printf("%snode: %p nativeWnd: %p parentNode: %p type: %u rc: %0.0f %0.0f %0.0f %0.0f\n", spaces.c_str(), node, wnd, node->parent, node->type, node->rect.x, node->rect.y, node->rect.width, node->rect.height);
-	printf("%sviews:\n", spaces.c_str());
+	printf("%snode: %p nativeWnd: %p parentNode: %p type: %s rc: %0.0f %0.0f %0.0f %0.0f\n", spaces.c_str(), node, wnd, node->parent, enumTypeToStr(node->type).c_str(), node->rect.x, node->rect.y, node->rect.width, node->rect.height);
+
 	for (auto& v : node->views)
 	{
-		printf("%s  `%s` %p dockNode: %p icon: %u viewType: %d userData: %p tabRect: %f %f %f %f\n", spaces.c_str(), v->title.c_str(), v, v->dockNode, v->icon, v->viewType, v->userData, v->tabRect.x, v->tabRect.y, v->tabRect.width, v->tabRect.height);
+		printf("%s `%s` %p dockNode: %p icon: %u viewType: %d userData: %p tabRect: %f %f %f %f\n", spaces.c_str(), v->title.c_str(), v, v->dockNode, v->icon, v->viewType, v->userData, v->tabRect.x, v->tabRect.y, v->tabRect.width, v->tabRect.height);
 	}
 
 	for (auto& child : node->children)
@@ -1060,7 +1118,8 @@ void printInfo(int level, HWindow wnd, DockNode* node)
 
 void debugViews()
 {
-	printf("Debug Views:\n");
+	printf("------------------------------------------------------------------------------------------------------------\n");
+	printf("Debug Views:\n\n");
 	printf("%d windows\n", ctx->dockingState.rootWindowDockNodes.size());
 
 	for (auto& pair : ctx->dockingState.rootWindowDockNodes)
