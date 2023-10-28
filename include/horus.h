@@ -607,10 +607,6 @@ enum class DockType
 	Right, /// will dock view to right
 	Top, /// will dock view to top
 	Bottom, /// will dock view to bottom
-	RootLeft, /// will dock view to left of root dock space
-	RootRight, /// will dock view to right of root dock space
-	RootTop, /// will dock view to top of root dock space
-	RootBottom, /// will dock view to bottom of root dock space
 	AsTab, /// will dock view as full view in the view tabs bar
 };
 
@@ -2680,6 +2676,8 @@ HORUS_API HDockNode getViewDockNode(HView view);
 
 HORUS_API HDockNode getRootDockNode(HWindow window);
 
+HORUS_API void setDockNodeRect(HDockNode node, const Rect& rect);
+
 HORUS_API void debugViews();
 
 /// Save the views state, with all views docked info
@@ -2738,6 +2736,21 @@ HORUS_API ViewHandler* getCurrentViewHandler();
 
 /// Update the docking system internal, usually called by the dockingSystemLoop function, if you make your own loop, then you need to call it
 HORUS_API void updateDockingSystem();
+
+struct DragDockNodeInfo
+{
+	enum class DragSide
+	{
+		None,
+		Right,
+		Bottom
+	};
+
+	HDockNode node = nullptr;
+	DragSide dragSide = DragSide::None;
+};
+
+HORUS_API DragDockNodeInfo findDockNodeDragInfoAtMousePos(HWindow window, const Point& mousePos);
 
 /// If this function will be called it will block until all or the main window is closed, or a quitApplication is issued
 HORUS_API void dockingSystemLoop();

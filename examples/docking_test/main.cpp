@@ -40,25 +40,38 @@ struct View3Data
 	int data = 3;
 };
 
+HDockNode myRoot;
+
 void createMyDefaultViewPanes()
 {
-	auto myRoot = hui::createRootDockNode(hui::getMainWindow());
-	auto view1 = hui::createView(myRoot, hui::DockType::Left, "Assets", 0, 1, 0, nullptr);
+	myRoot = hui::createRootDockNode(hui::getMainWindow());
+	auto assets = hui::createView(myRoot, hui::DockType::Left, "Assets", 0, 1, 0, nullptr);
 	hui::debugViews();
-	auto view2 = hui::createView(myRoot, hui::DockType::Left, "Game", 0, 2, 0, nullptr);
+	auto game = hui::createView(myRoot, hui::DockType::Left, "Game", 0, 2, 0, nullptr);
 	hui::debugViews();
-	auto view3 = hui::createView(myRoot, hui::DockType::Top, "Particles", 0, 3, 0, nullptr);
+	auto particles = hui::createView(myRoot, hui::DockType::Top, "Particles", 0, 3, 0, nullptr);
 	hui::debugViews();
-	hui::dockView(view1, hui::getViewDockNode(view3), hui::DockType::Top);
+	hui::dockView(assets, hui::getViewDockNode(particles), hui::DockType::Top);
 	hui::debugViews();
-	hui::dockView(view2, hui::getViewDockNode(view3), hui::DockType::Right);
-	hui::debugViews();
-	//hui::dockView(view1, hui::getViewDockNode(view2), hui::DockType::Right);
-	hui::debugViews();
-	auto view4 = hui::createView(myRoot, hui::DockType::Bottom, "Inspector", 0, 4, 0, nullptr);
-	hui::debugViews();
-	hui::dockView(view1, hui::getViewDockNode(view4), hui::DockType::Bottom);
-	hui::debugViews();
+	hui::dockView(game, hui::getViewDockNode(particles), hui::DockType::Right);
+	//hui::debugViews();
+	hui::dockView(assets, hui::getViewDockNode(game), hui::DockType::Right);
+	//hui::debugViews();
+	auto inspector = hui::createView(myRoot, hui::DockType::Bottom, "Inspector", 0, 4, 0, nullptr);
+	//hui::debugViews();
+	//hui::dockView(assets, hui::getViewDockNode(inspector), hui::DockType::Bottom);
+	//hui::debugViews();
+	auto scene = hui::createView(myRoot, hui::DockType::Top, "Scene", 0, 5, 0, nullptr);
+	auto prefs = hui::createView(assets, hui::DockType::Top, "Preferences", 0, 6, 0, nullptr);
+	hui::dockView(assets, hui::getViewDockNode(particles), hui::DockType::Bottom);
+	hui::dockView(scene, hui::getViewDockNode(assets), hui::DockType::AsTab);
+	hui::dockView(prefs, hui::getViewDockNode(game), hui::DockType::AsTab);
+	hui::dockView(prefs, hui::getViewDockNode(particles), hui::DockType::Left);
+	hui::dockView(prefs, hui::getViewDockNode(game), hui::DockType::AsTab);
+	hui::dockView(assets, hui::getViewDockNode(game), hui::DockType::AsTab);
+	//hui::debugViews();
+	//hui::dockView(particles, hui::getViewDockNode(assets), hui::DockType::Right);
+	//hui::debugViews();
 }
 
 int main(int argc, char** args)
@@ -85,7 +98,7 @@ int main(int argc, char** args)
 	///
 	hui::SdlSettings sdlSettings;
 
-	sdlSettings.mainWindowTitle = "HorusUI Example - Widget Showroom";
+	sdlSettings.mainWindowTitle = "HorusUI Example - Docking Test";
 	sdlSettings.mainWindowRect = { 0, 0, 1200, 1000 };
 	hui::setupSDL(sdlSettings); // setup SDL (will create an SDL context if none set in the sdlSettings
 	HORUS_GFX->initialize(); // init the gfx objects, since we have now a graphics context set
@@ -111,7 +124,7 @@ int main(int argc, char** args)
 	printf("Loading views...\n");
 
 	// if there is no state, then create the default panes and tabs
-	if (!hui::loadDockingState("layout.hui"))
+	//if (!hui::loadDockingState("layout.hui"))
 	{
 		createMyDefaultViewPanes();
 	}
@@ -130,36 +143,38 @@ int main(int argc, char** args)
 		// the main frame rendering and input handling
 		auto doFrame = [&](bool lastEventInQueue)
 		{
+			// set the current window we're handling
+			hui::setWindow(hui::getMainWindow());
+			// start to add widgets in the window
+			hui::beginWindow(hui::getMainWindow());
+
 			// disable rendering if its not the last event in the queue
 			// no need to render while handling all the input events
 			// we only render on the last event in the queue
 			hui::setDisableRendering(!lastEventInQueue);
 			// begin an actual frame of the gui
 			hui::beginFrame();
+			hui::clearBackground();
 
-			//if (hui::beginView(view1))
-			//{
+			hui::beginDockNode(myRoot);
+			//hui::beginContainer(Rect(0, 0, 100, 100));
+			//hui::button("Some button");
+			//hui::endContainer();
+			hui::endDockNode();
 
-			//}
-			//hui::endView();
-
-			//if (hui::beginView(view2))
-			//{
-
-			//}
-			//hui::endView();
-
-			//if (hui::beginView(view3))
-			//{
-
-			//}
-			//hui::endView();
 
 			hui::endFrame();
+			hui::endWindow();
+
+			if (hui::getInputEvent().type == hui::InputEvent::Type::WindowResize)
+			{
+				hui::setDockNodeRect(myRoot, hui::getWindowClientRect(hui::getWindow()));
+			}
 
 			if (lastEventInQueue)
 			{
 				//hui::presentWindows();
+				hui::presentWindow(hui::getMainWindow());
 			}
 
 			if (hui::wantsToQuit() || hui::mustQuit())
@@ -184,7 +199,7 @@ int main(int argc, char** args)
 		}
 	} while (!exitNow);
 
-	hui::saveDockingState("layout.hui");
+	//hui::saveDockingState("layout.hui");
 	hui::shutdown();
 
 	return 0;

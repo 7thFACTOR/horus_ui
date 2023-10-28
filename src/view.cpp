@@ -14,7 +14,8 @@ void DockNode::removeFromParent()
 		if (iter != parent->children.end())
 		{
 			parent->children.erase(iter);
-			parent->checkRedundancy();
+			//parent->checkRedundancy();
+			parent->computeRect();
 			parent = nullptr;
 		}
 	}
@@ -33,11 +34,9 @@ void DockNode::removeView(View* view)
 
 	if (iter != views.end())
 	{
-		views.erase(iter);
 		(*iter)->dockNode = nullptr;
+		views.erase(iter);
 	}
-
-	checkRedundancy();
 }
 
 void DockNode::gatherViewTabsNodes(std::vector<DockNode*>& outNodes)
@@ -75,7 +74,7 @@ void DockNode::computeRect()
 		break;
 	case hui::DockNode::Type::Vertical:
 	{
-		f32 availableSpace = rect.height + ctx->settings.dockNodeSpacing * (f32)(children.size() - 1);
+		f32 availableSpace = rect.height - ctx->settings.dockNodeSpacing * (f32)(children.size() - 1);
 		f32 averageSpace = availableSpace / (f32)children.size();
 		f32 totalSpace = 0;
 
@@ -98,6 +97,7 @@ void DockNode::computeRect()
 			child->rect.y = currentY;
 			child->rect.x = rect.x;
 			child->rect.width = rect.width;
+			child->rect.height = height;
 
 			// recursive, could be done with a vector and a while loop though
 			child->computeRect();
@@ -109,7 +109,7 @@ void DockNode::computeRect()
 		break;
 	case hui::DockNode::Type::Horizontal:
 	{
-		f32 availableSpace = rect.width + ctx->settings.dockNodeSpacing * (f32)(children.size() - 1);
+		f32 availableSpace = rect.width - ctx->settings.dockNodeSpacing * (f32)(children.size() - 1);
 		f32 averageSpace = availableSpace / (f32)children.size();
 		f32 totalSpace = 0;
 
@@ -132,6 +132,7 @@ void DockNode::computeRect()
 			child->rect.x = currentX;
 			child->rect.y = rect.y;
 			child->rect.height = rect.height;
+			child->rect.width = width;
 
 			// recursive, could be done with a vector and a while loop though
 			child->computeRect();
@@ -148,6 +149,13 @@ void DockNode::computeRect()
 
 bool DockNode::checkRedundancy()
 {
+	// first do leaves for redundant nesting of dock nodes
+	// collapse starting at the leaf nodes
+	for (auto& c : children)
+	{
+		c->checkRedundancy();
+	}
+
 	// if we have just 1 child, delete it, move its contents to us
 	if (children.size() == 1)
 	{
@@ -173,10 +181,11 @@ bool DockNode::checkRedundancy()
 			// find it again, remove it
 			iterPosThis = std::find(parent->children.begin(), parent->children.end(), this);
 			parent->children.erase(iterPosThis);
+			for (auto& c : children) c->parent = parent;
+			for (auto& v : views) v->dockNode = parent;
 			deleteThis = true;
 		}
 
-		parent->checkRedundancy();
 		if (deleteThis) delete this;
 		return true;
 	}

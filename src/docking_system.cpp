@@ -496,7 +496,7 @@ void handleDockingMouseMove(const InputEvent& event, DockNode* node)
 					if (isSmallRectRootLeftHovered)
 					{
 						ds.dockToNode = node;
-						ds.dockType = DockType::RootLeft;
+						ds.dockType = DockType::Left;
 						ds.draggedRect = ds.dockToNode->rect;
 						ds.draggedRect.width /= 2.0f;
 					}
@@ -504,7 +504,7 @@ void handleDockingMouseMove(const InputEvent& event, DockNode* node)
 					if (isSmallRectRootRightHovered)
 					{
 						ds.dockToNode = node;
-						ds.dockType = DockType::RootRight;
+						ds.dockType = DockType::Right;
 						ds.draggedRect = ds.dockToNode->rect;
 						ds.draggedRect.x += ds.draggedRect.width / 2.0f;
 						ds.draggedRect.width /= 2.0f;
@@ -513,7 +513,7 @@ void handleDockingMouseMove(const InputEvent& event, DockNode* node)
 					if (isSmallRectRootTopHovered)
 					{
 						ds.dockToNode = node;
-						ds.dockType = DockType::RootTop;
+						ds.dockType = DockType::Top;
 						ds.draggedRect = ds.dockToNode->rect;
 						ds.draggedRect.height /= 2.0f;
 					}
@@ -521,7 +521,7 @@ void handleDockingMouseMove(const InputEvent& event, DockNode* node)
 					if (isSmallRectRootBottomHovered)
 					{
 						ds.dockToNode = node;
-						ds.dockType = DockType::RootBottom;
+						ds.dockType = DockType::Bottom;
 						ds.draggedRect = ds.dockToNode->rect;
 						ds.draggedRect.y += ds.draggedRect.height / 2.0f;
 						ds.draggedRect.height /= 2.0f;
