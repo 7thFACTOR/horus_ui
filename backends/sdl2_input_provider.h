@@ -9,9 +9,6 @@ namespace hui
 {
 struct SdlSettings
 {
-	char* mainWindowTitle = nullptr;
-	Rect mainWindowRect;
-	WindowFlags windowFlags = WindowFlags::Resizable;
 	bool vSync = true;
 	void* sdlGLContext = nullptr; // set to a valid SDL
 	bool initializeSDL = true; // set to false if you already initialized SDL
@@ -34,32 +31,31 @@ struct Sdl2InputProvider : InputProvider
 {
 	Sdl2InputProvider();
 	~Sdl2InputProvider();
-	void startTextInput(HWindow window, const Rect& imeRect) override;
+	void startTextInput(HOsWindow window, const Rect& imeRect) override;
 	void stopTextInput() override;
 	bool copyToClipboard(const char* text) override;
 	bool pasteFromClipboard(char* outText, u32 maxTextSize) override;
 	void processEvents() override;
-	void setCurrentWindow(HWindow window) override;
-	HWindow getCurrentWindow() override;
-	HWindow getFocusedWindow() override;
-	HWindow getHoveredWindow() override;
-	HWindow getMainWindow() override;
-	HWindow createWindow(
-		const char* title, i32 width, i32 height,
-		WindowFlags flags = WindowFlags::Resizable | WindowFlags::Centered,
-		Point customPosition = { 0, 0 }) override;
-	void setWindowTitle(HWindow window, const char* title) override;
-	void setWindowRect(HWindow window, const Rect& rect) override;
-	Rect getWindowRect(HWindow window) override;
-	void presentWindow(HWindow window) override;
-	void destroyWindow(HWindow window) override;
-	void showWindow(HWindow window) override;
-	void hideWindow(HWindow window) override;
-	void raiseWindow(HWindow window) override;
-	void maximizeWindow(HWindow window) override;
-	void minimizeWindow(HWindow window) override;
-	WindowState getWindowState(HWindow window) override;
-	void setCapture(HWindow window) override;
+	void setCurrentWindow(HOsWindow window) override;
+	HOsWindow getCurrentWindow() override;
+	HOsWindow getFocusedWindow() override;
+	HOsWindow getHoveredWindow() override;
+	HOsWindow getMainWindow() override;
+	HOsWindow createWindow(const char* title, OsWindowFlags flags, const Rect& rect) override;
+	void setWindowTitle(HOsWindow window, const char* title) override;
+	void setWindowClientSize(HOsWindow window, const Point& size) override;
+	Point getWindowClientSize(HOsWindow window) override;
+	void setWindowPosition(HOsWindow window, const Point& pos) override;
+	Point getWindowPosition(HOsWindow window) override;
+	OsWindowState getWindowState(HOsWindow window);
+	void presentWindow(HOsWindow window) override;
+	void destroyWindow(HOsWindow window) override;
+	void showWindow(HOsWindow window) override;
+	void hideWindow(HOsWindow window) override;
+	void raiseWindow(HOsWindow window) override;
+	void maximizeWindow(HOsWindow window) override;
+	void minimizeWindow(HOsWindow window) override;
+	void setCapture(HOsWindow window) override;
 	void releaseCapture() override;
 	Point getMousePosition() override;
 	bool mustQuit() override;
@@ -96,6 +92,7 @@ struct Sdl2InputProvider : InputProvider
 	u32 lastTime = SDL_GetTicks();
 	f32 deltaTime = 0;
 	bool sizeChanged = false;
+	SdlSettings settings;
 };
 
 void setupSDL(const SdlSettings& settings);

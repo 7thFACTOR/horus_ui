@@ -10,6 +10,9 @@
 #include "renderer.h"
 #include "unicode_text_cache.h"
 #include "font_cache.h"
+#include "docking.h"
+#include "docking_system.h"
+#include "dock_node.h"
 
 #ifdef _WINDOWS
 #include <windows.h>
@@ -436,133 +439,31 @@ void setMouseCursor(HMouseCursor cursor)
 	ctx->customMouseCursor = cursor;
 }
 
-void setWindow(HWindow window)
+void setOsWindow(HOsWindow window)
 {
 	ctx->providers->input->setCurrentWindow(window);
 
-	auto rect = getWindowRect(window);
+	auto size = HORUS_INPUT->getWindowClientSize(window);
 	ctx->renderer->setWindow(window);
-	ctx->renderer->setWindowSize({ rect.width, rect.height });
+	ctx->renderer->setWindowSize(size);
 	ctx->providers->gfx->setViewport(
-		{ rect.width, rect.height },
-		{ 0, 0, rect.width, rect.height });
+		size,
+		{ 0, 0, size.x, size.y });
 }
 
-HWindow getWindow()
+void present()
 {
-	return ctx->providers->input->getCurrentWindow();
-}
-
-HWindow getFocusedWindow()
-{
-	return ctx->providers->input->getFocusedWindow();
-}
-
-HWindow getHoveredWindow()
-{
-	return ctx->providers->input->getHoveredWindow();
-}
-
-HWindow getMainWindow()
-{
-	return ctx->providers->input->getMainWindow();
-}
-
-HWindow createWindow(
-	const char* title, u32 width, u32 height,
-	WindowFlags flags,
-	Point customPosition)
-{
-	auto wnd = ctx->providers->input->createWindow(title, width, height, flags, customPosition);
-
-	if (!ctx->renderer)
-	{
-		ctx->initializeGraphics();
-	}
-
-	ctx->windows.push_back(wnd);
-
-	return wnd;
-}
-
-void setWindowTitle(HWindow window, const char* title)
-{
-	ctx->providers->input->setWindowTitle(window, title);
-}
-
-void setWindowRect(HWindow window, const Rect& rect)
-{
-	ctx->providers->input->setWindowRect(window, rect);
-}
-
-Rect getWindowRect(HWindow window)
-{
-	return ctx->providers->input->getWindowRect(window);
-}
-
-Rect getWindowClientRect(HWindow window)
-{
-	auto rect = ctx->providers->input->getWindowRect(window);
-
-	rect.x = 0;
-	rect.y = 0;
-
-	return rect;
-}
-
-void presentWindows()
-{
-	for (auto& wnd : ctx->windows)
+	for (auto& wnd : ctx->osWindows)
 	{
 		presentWindow(wnd);
 	}
 }
 
-void presentWindow(HWindow wnd)
+void presentWindow(HOsWindow wnd)
 {
 	ctx->renderer->setWindow(wnd);
 	//TODO ctx->renderer->processCommands(wnd);
 	ctx->providers->input->presentWindow(wnd);
-}
-
-void destroyWindow(HWindow window)
-{
-	ctx->providers->input->destroyWindow(window);
-}
-
-void showWindow(HWindow window)
-{
-	ctx->providers->input->showWindow(window);
-}
-
-void hideWindow(HWindow window)
-{
-	ctx->providers->input->hideWindow(window);
-}
-
-void riseWindow(HWindow window)
-{
-	ctx->providers->input->raiseWindow(window);
-}
-
-void maximizeWindow(HWindow window)
-{
-	ctx->providers->input->maximizeWindow(window);
-}
-
-void minimizeWindow(HWindow window)
-{
-	ctx->providers->input->minimizeWindow(window);
-}
-
-WindowState getWindowState(HWindow window)
-{
-	return ctx->providers->input->getWindowState(window);
-}
-
-void setCapture(HWindow window)
-{
-	ctx->providers->input->setCapture(window);
 }
 
 void releaseCapture()
@@ -1149,7 +1050,7 @@ HFont createThemeFont(HTheme theme, const char* name, const char* fontFilename, 
 
 void releaseThemeFont(HTheme theme, HFont font)
 {
-	for (auto fntPair : ((Theme*)theme)->fonts)
+	for (auto& fntPair : ((Theme*)theme)->fonts)
 	{
 		if (fntPair.second == (Font*)font)
 		{
@@ -1173,8 +1074,28 @@ HFont getFont(const char* themeFontName)
 	return getThemeFont(getTheme(), themeFontName);
 }
 
-void beginWindow(HWindow window)
+bool beginWindow(const char* id, const char* title, const char* dockTo, DockType dockType, Rect* initialRect)
 {
+	Window* wnd = nullptr;
+
+	if (ctx->dockingState.windows.find(id) == ctx->dockingState.windows.end())
+	{
+		auto iter = ctx->dockingState.windows.find(dockTo);
+		DockNode* dockToNode = nullptr;
+
+		if (dockTo && iter != ctx->dockingState.windows.end())
+		{
+			dockToNode = ctx->dockingState.windows[dockTo]->dockNode;
+		}
+
+		wnd = createWindow(dockToNode, dockType, title, initialRect);
+		wnd->id = id;
+	}
+	else
+	{
+		wnd = ctx->dockingState.windows[id];
+	}
+
 	ctx->savedEventType = ctx->event.type;
 	ctx->renderer->setZOrder(0);
 
@@ -1185,8 +1106,7 @@ void beginWindow(HWindow window)
 	}
 	
 	ctx->alreadyClickedOnSomething = false;
-	setWindow(window);
-	ctx->hoveringThisWindow = getHoveredWindow() == getWindow();
+	ctx->hoveringThisWindow = isMouseOverWindow();
 	ctx->renderer->beginFrame();
 }
 
@@ -1197,6 +1117,24 @@ void endWindow()
 	ctx->event.type = ctx->savedEventType;
 	ctx->penStack.clear();
 	//TODO: make scroll struct stack
+}
+
+bool isMouseOverWindow()
+{
+	if (ctx->currentWindow)
+	{
+		auto mousePos = HORUS_INPUT->getMousePosition();
+		auto osWndPos = HORUS_INPUT->getWindowPosition(ctx->currentWindow->dockNode->osWindow);
+
+		mousePos -= osWndPos;
+
+		if (ctx->currentWindow->dockNode->rect.contains(mousePos))
+		{
+			return true;
+		}
+	}
+
+	return false;
 }
 
 void beginContainer(const Rect& rect)

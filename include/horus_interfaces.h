@@ -44,7 +44,7 @@ struct InputProvider
 	/// Start text input, usually called by the library to show IME suggestions boxes
 	/// \param window the window where the text started to be input
 	/// \param imeRect the rectangle where to show the suggestion box
-	virtual void startTextInput(HWindow window, const Rect& imeRect) = 0;
+	virtual void startTextInput(HOsWindow window, const Rect& imeRect) = 0;
 
 	/// Called when the text input ends
 	virtual void stopTextInput() = 0;
@@ -64,19 +64,19 @@ struct InputProvider
 	virtual void processEvents() = 0;
 
 	/// Set the current native window, where drawing and input testing is occurring
-	virtual void setCurrentWindow(HWindow window) = 0;
+	virtual void setCurrentWindow(HOsWindow window) = 0;
 
 	/// \return the current native window
-	virtual HWindow getCurrentWindow() = 0;
+	virtual HOsWindow getCurrentWindow() = 0;
 
 	/// \return the focused native window
-	virtual HWindow getFocusedWindow() = 0;
+	virtual HOsWindow getFocusedWindow() = 0;
 
 	/// \return the hovered native window
-	virtual HWindow getHoveredWindow() = 0;
+	virtual HOsWindow getHoveredWindow() = 0;
 
 	/// \return the main native window, this window is the one that upon closing, will end the application
-	virtual HWindow getMainWindow() = 0;
+	virtual HOsWindow getMainWindow() = 0;
 
 	/// Create a new native window, the first window created will be the main window
 	/// \param title the window title, UTF8 text
@@ -85,59 +85,68 @@ struct InputProvider
 	/// \param flags the window flags
 	/// \param customPosition if the positionType is custom, then this is the window's initial position
 	/// \return the new window handle
-	virtual HWindow createWindow(
-		const char* title, i32 width, i32 height,
-		WindowFlags flags = WindowFlags::Resizable | WindowFlags::Centered,
-		Point customPosition = { 0, 0 }) = 0;
+	virtual HOsWindow createWindow(const char* title, OsWindowFlags flags, const Rect& rect) = 0;
 
 	/// Set window title
 	/// \param window the window
 	/// \param title UTF8 text for the title
-	virtual void setWindowTitle(HWindow window, const char* title) = 0;
+	virtual void setWindowTitle(HOsWindow window, const char* title) = 0;
 
-	/// Set the window rectangle
+	/// Set the window client area size
 	/// \param window the window
-	/// \param rect the rectangle
-	virtual void setWindowRect(HWindow window, const Rect& rect) = 0;
+	/// \param size the width and height
+	virtual void setWindowClientSize(HOsWindow window, const Point& size) = 0;
 
+	/// Get the window client area size
 	/// \param window the window
-	/// \return the rectangle of the window
-	virtual Rect getWindowRect(HWindow window) = 0;
+	virtual Point getWindowClientSize(HOsWindow window) = 0;
 
+	/// Set the window absolute screen position
+	/// \param window the window
+	/// \param pos the position
+	virtual void setWindowPosition(HOsWindow window, const Point& pos) = 0;
+
+	/// Get the window absolute screen position
+	/// \param window the window
+	virtual Point getWindowPosition(HOsWindow window) = 0;
+
+	/// Return the window current state  
+	virtual OsWindowState getWindowState(HOsWindow window) = 0;
+	
 	/// Present the backbuffer of the specified window
 	/// \param window the window to present
-	virtual void presentWindow(HWindow window) = 0;
+	virtual void presentWindow(HOsWindow window) = 0;
 
 	/// Destroy a native window
 	/// \param window the window
-	virtual void destroyWindow(HWindow window) = 0;
+	virtual void destroyWindow(HOsWindow window) = 0;
 
 	/// Show a native window
 	/// \param window the window to show
-	virtual void showWindow(HWindow window) = 0;
+	virtual void showWindow(HOsWindow window) = 0;
 
 	/// Hide a native window
 	/// \param window the window to hide
-	virtual void hideWindow(HWindow window) = 0;
+	virtual void hideWindow(HOsWindow window) = 0;
 
 	/// Bring a native window to front of all windows, on supported OS-es
 	/// \param window the window
-	virtual void raiseWindow(HWindow window) = 0;
+	virtual void raiseWindow(HOsWindow window) = 0;
 
 	/// Maximize a native window
 	/// \param window the window
-	virtual void maximizeWindow(HWindow window) = 0;
+	virtual void maximizeWindow(HOsWindow window) = 0;
 
 	/// Minimize a native window
 	/// \param window the window
-	virtual void minimizeWindow(HWindow window) = 0;
+	virtual void minimizeWindow(HOsWindow window) = 0;
 
 	/// \return the window state
-	virtual WindowState getWindowState(HWindow window) = 0;
+	virtual OsWindowState getWindowState(HOsWindow window) = 0;
 
 	/// Set the input capture to a specified window
 	/// \param window the window
-	virtual void setCapture(HWindow window) = 0;
+	virtual void setCapture(HOsWindow window) = 0;
 
 	/// Release capture from the captured window (if any)
 	virtual void releaseCapture() = 0;
@@ -370,11 +379,11 @@ struct FontKerningPair
 
 struct FontMetrics
 {
-	f32 height;
-	f32 ascender;
-	f32 descender;
-	f32 underlinePosition;
-	f32 underlineThickness;
+	f32 height = 0;
+	f32 ascender = 0;
+	f32 descender = 0;
+	f32 underlinePosition = 0;
+	f32 underlineThickness = 0;
 };
 
 struct FontTextSize

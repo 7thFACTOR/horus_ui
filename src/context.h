@@ -42,12 +42,13 @@ struct Context
 	static const int maxBoxDepth = 256;
 	static const int maxSameLineInfoIndex = 256;
 
+	// Various providers and singletons
 	ServiceProviders* providers = nullptr;
 	Renderer* renderer = nullptr;
 	UnicodeTextCache* textCache = nullptr;
 	ContextSettings settings;
-	ViewHandler* currentViewHandler = nullptr;
 
+	// Global general state
 	f32 deltaTime = 0;
 	f32 totalTime = 0;
 	u32 frameCount = 0;
@@ -59,16 +60,19 @@ struct Context
 	bool mustRedraw = false;
 	bool focusChanged = false;
 	bool skipRenderAndInput = false;
+	Window* currentWindow = nullptr;
 	bool hoveringThisWindow = false;
 	bool dockingTabPane = false;
 	f32 globalScale = 1.0f;
 	u32 atlasTextureSize = 4096;
-	bool drawingViewPaneTabs = false;
 
+	// Vertical toolbars
 	bool verticalToolbar = false;
 	std::vector<bool> verticalToolbarStack;
 
+	// Widgets
 	TextInputState textInput;
+	std::vector<TextLine> textLines;
 	WidgetState widget;
 	std::vector<f32> sameLineWidthStack;
 	std::vector<f32> sameLineSpacingStack;
@@ -83,12 +87,15 @@ struct Context
 	u32 layerIndex = 0;
 	u32 maxLayerIndex = 0;
 
+	// Popups
 	std::vector<PopupState> popupStack;
 	bool popupUseGlobalScale = true;
 	u32 popupIndex = 0;
 
+	// Virtual list
 	std::vector<VirtualListContentState> virtualListStack;
 
+	// Menus
 	std::vector<MenuWidgetState> menuStack;
 	u32 menuDepth = 0;
 	u32 activeMenuBarItemWidgetId = 0;
@@ -112,6 +119,7 @@ struct Context
 	f32 menuIconSpace = 18;
 	f32 menuFillerWidth = 30;
 
+	// Scrolling
 	ScrollViewState scrollViewStack[maxNestingIndex];
 	f32 scrollViewSpeed = 0.2f;
 	f32 scrollViewScrollPageSize = 0.4f;
@@ -119,9 +127,11 @@ struct Context
 	u32 dragScrollViewHandleWidgetId = 0;
 	f32 dropDownScrollViewPos = 0;
 
+	// Themes
 	Theme* theme = nullptr;
 	std::vector<Theme*> themes;
 
+	// Containers
 	Rect containerRect;
 	Point penPosition;
 	std::vector<LayoutState> layoutStack;
@@ -136,17 +146,20 @@ struct Context
 	f32 spacing = 4;
 	std::vector<Point> penStack;
 
+	// Tabbing/focusing
 	TabIndex currentTabIndex = 0;
 	TabIndex selectedTabIndex = 0;
 	DockPaneTabGroupState paneGroupState;
 
 	DropdownState dropdownState;
 
+	// Input
 	InputEvent event;
 	std::vector<InputEvent> events;
 	InputEvent::Type savedEventType = InputEvent::Type::None;
-	std::vector<HWindow> windows;
+	std::vector<HOsWindow> osWindows;
 
+	// Colors and styles
 	std::unordered_map<u32, std::vector<Color>> tintStack;
 	Color tint[(u32)TintColorType::Count] = { Color::white, Color::white };
 	LineStyle lineStyle;
@@ -154,6 +167,7 @@ struct Context
 
 	std::vector<u32> drawCmdIndexStack;
 
+	// Mouse
 	MouseCursorType mouseCursor = MouseCursorType::Arrow;
 	HMouseCursor customMouseCursor = 0;
 	bool mouseMoved = false;
@@ -161,9 +175,6 @@ struct Context
 	Point oldMousePos = { 0, 0 };
 
 	DragDropState dragDropState;
-
-	std::vector<TextLine> textLines;
-
 	DockingState dockingState;
 
 	Context()

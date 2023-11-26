@@ -6,8 +6,7 @@
 namespace hui
 {
 Sdl2InputProvider::Sdl2InputProvider()
-{
-}
+{}
 
 Sdl2InputProvider::~Sdl2InputProvider()
 {
@@ -265,7 +264,7 @@ KeyCode Sdl2InputProvider::fromSdlKey(int code)
 	return key;
 }
 
-void Sdl2InputProvider::startTextInput(HWindow window, const Rect& imeRect)
+void Sdl2InputProvider::startTextInput(HOsWindow window, const Rect& imeRect)
 {
 	SDL_Rect rc;
 
@@ -622,12 +621,12 @@ void Sdl2InputProvider::setCustomCursor(HMouseCursor cursor)
 	SDL_SetCursor((SDL_Cursor*)cursor);
 }
 
-HWindow Sdl2InputProvider::getMainWindow()
+HOsWindow Sdl2InputProvider::getMainWindow()
 {
-	return (HWindow)mainWindow;
+	return (HOsWindow)mainWindow;
 }
 
-void Sdl2InputProvider::setCurrentWindow(HWindow window)
+void Sdl2InputProvider::setCurrentWindow(HOsWindow window)
 {
 	if (HORUS_GFX->getApiType() == GraphicsProvider::ApiType::OpenGL)
 	{
@@ -637,47 +636,30 @@ void Sdl2InputProvider::setCurrentWindow(HWindow window)
 	currentWindow = ((SdlWindowProxy*)window);
 }
 
-HWindow Sdl2InputProvider::getCurrentWindow()
+HOsWindow Sdl2InputProvider::getCurrentWindow()
 {
 	return currentWindow;
 }
 
-HWindow Sdl2InputProvider::getFocusedWindow()
+HOsWindow Sdl2InputProvider::getFocusedWindow()
 {
 	return focusedWindow;
 }
 
-HWindow Sdl2InputProvider::getHoveredWindow()
+HOsWindow Sdl2InputProvider::getHoveredWindow()
 {
 	return hoveredWindow;
 }
 
-HWindow Sdl2InputProvider::createWindow(
-	const char* title, i32 width, i32 height,
-	WindowFlags flags,
-	Point customPosition)
+HOsWindow Sdl2InputProvider::createWindow(
+	const char* title, OsWindowFlags flags, const Rect& rect)
 {
-	int posx = SDL_WINDOWPOS_UNDEFINED, posy = SDL_WINDOWPOS_UNDEFINED;
-
-	if (has(flags, WindowFlags::Centered))
-	{
-		posx = posy = SDL_WINDOWPOS_CENTERED;
-	}
-	else if (has(flags, WindowFlags::CustomPosition))
-	{
-		posx = customPosition.x;
-		posy = customPosition.y;
-	}
-
 	int sdlflags = SDL_WINDOW_SHOWN;
 
-	if (has(flags, WindowFlags::Resizable))
+	if (has(flags, OsWindowFlags::Resizable))
 		sdlflags |= SDL_WINDOW_RESIZABLE;
 
-	if (has(flags, WindowFlags::ResizableNoTitle))
-		sdlflags |= SDL_WINDOW_RESIZABLE | SDL_WINDOW_BORDERLESS;
-
-	if (has(flags, WindowFlags::FixedNoTitle))
+	if (has(flags, OsWindowFlags::NoDecoration))
 		sdlflags |= SDL_WINDOW_BORDERLESS;
 
 	if (HORUS_GFX->getApiType() == GraphicsProvider::ApiType::OpenGL)
@@ -687,7 +669,7 @@ HWindow Sdl2InputProvider::createWindow(
 		sdlflags |= SDL_WINDOW_VULKAN;
 
 	auto wnd = SDL_CreateWindow(
-		title, posx, posy, width, height,
+		title, rect.x, rect.y, rect.width, rect.height,
 		sdlflags);
 
 	auto newWnd = new SdlWindowProxy();
@@ -697,31 +679,78 @@ HWindow Sdl2InputProvider::createWindow(
 
 	windows.push_back(newWnd);
 
+	// on first window created, set it as main and create contexts
+	if (!settings.sdlMainWindow)
+	{
+		if (!settings.sdlGLContext)
+		{
+			if (HORUS_GFX->getApiType() == GraphicsProvider::ApiType::OpenGL)
+			{
+				sdlGLContext = SDL_GL_CreateContext(((SdlWindowProxy*)wnd)->sdlWindow);
+				ownsGLContext = true;
+
+				if (!sdlGLContext)
+				{
+					printf("Cannot create GL context for SDL: %s\n", SDL_GetError());
+				}
+			}
+		}
+		else
+		{
+			sdlGLContext = settings.sdlGLContext;
+		}
+
+		if (HORUS_GFX->getApiType() == GraphicsProvider::ApiType::OpenGL)
+		{
+			SDL_GL_MakeCurrent(newWnd->sdlWindow, sdlGLContext);
+			SDL_GL_SetSwapInterval(settings.vSync ? 1 : 0);
+		}
+
+		mainWindow = newWnd;
+		focusedWindow = newWnd;
+		SDL_ShowWindow(newWnd->sdlWindow);
+		SDL_RaiseWindow(newWnd->sdlWindow);
+		createSystemCursors();
+	}
+
 	return newWnd;
 }
 
-void Sdl2InputProvider::setWindowTitle(HWindow window, const char* title)
+void Sdl2InputProvider::setWindowTitle(HOsWindow window, const char* title)
 {
 	SDL_SetWindowTitle(((SdlWindowProxy*)window)->sdlWindow, title);
 }
 
-void Sdl2InputProvider::setWindowRect(HWindow window, const Rect& rect)
+
+void Sdl2InputProvider::setWindowClientSize(HOsWindow window, const Point& size)
 {
-	SDL_SetWindowPosition(((SdlWindowProxy*)window)->sdlWindow, rect.x, rect.y);
-	SDL_SetWindowSize(((SdlWindowProxy*)window)->sdlWindow, rect.width, rect.height);
+	SDL_SetWindowSize(((SdlWindowProxy*)window)->sdlWindow, size.x, size.y);
 }
 
-Rect Sdl2InputProvider::getWindowRect(HWindow window)
+Point Sdl2InputProvider::getWindowClientSize(HOsWindow window)
 {
-	SDL_Rect rc;
+	int w = 0, h = 0;
 
-	SDL_GetWindowPosition(((SdlWindowProxy*)window)->sdlWindow, &rc.x, &rc.y);
-	SDL_GetWindowSize(((SdlWindowProxy*)window)->sdlWindow, &rc.w, &rc.h);
+	SDL_GetWindowSize(((SdlWindowProxy*)window)->sdlWindow, &w, &h);
 
-	return{ (f32)rc.x, (f32)rc.y, (f32)rc.w, (f32)rc.h };
+	return { w, h };
 }
 
-void Sdl2InputProvider::presentWindow(HWindow window)
+void Sdl2InputProvider::setWindowPosition(HOsWindow window, const Point& pos)
+{
+	SDL_SetWindowPosition(((SdlWindowProxy*)window)->sdlWindow, pos.x, pos.y);
+}
+
+Point Sdl2InputProvider::getWindowPosition(HOsWindow window)
+{
+	int x = 0, y = 0;
+
+	SDL_GetWindowPosition(((SdlWindowProxy*)window)->sdlWindow, &x, &y);
+
+	return { x, y };
+}
+
+void Sdl2InputProvider::presentWindow(HOsWindow window)
 {
 	if (HORUS_GFX->getApiType() == GraphicsProvider::ApiType::OpenGL)
 	{
@@ -729,7 +758,7 @@ void Sdl2InputProvider::presentWindow(HWindow window)
 	}
 }
 
-void Sdl2InputProvider::destroyWindow(HWindow window)
+void Sdl2InputProvider::destroyWindow(HOsWindow window)
 {
 	SDL_DestroyWindow(((SdlWindowProxy*)window)->sdlWindow);
 	auto iter = std::find(windows.begin(), windows.end(), window);
@@ -741,54 +770,54 @@ void Sdl2InputProvider::destroyWindow(HWindow window)
 	}
 }
 
-void Sdl2InputProvider::showWindow(HWindow window)
+void Sdl2InputProvider::showWindow(HOsWindow window)
 {
 	SDL_ShowWindow(((SdlWindowProxy*)window)->sdlWindow);
 }
 
-void Sdl2InputProvider::hideWindow(HWindow window)
+void Sdl2InputProvider::hideWindow(HOsWindow window)
 {
 	SDL_HideWindow(((SdlWindowProxy*)window)->sdlWindow);
 }
 
-void Sdl2InputProvider::raiseWindow(HWindow window)
+void Sdl2InputProvider::raiseWindow(HOsWindow window)
 {
 	SDL_RaiseWindow(((SdlWindowProxy*)window)->sdlWindow);
 }
 
-void Sdl2InputProvider::maximizeWindow(HWindow window)
+void Sdl2InputProvider::maximizeWindow(HOsWindow window)
 {
 	SDL_MaximizeWindow(((SdlWindowProxy*)window)->sdlWindow);
 }
 
-void Sdl2InputProvider::minimizeWindow(HWindow window)
+void Sdl2InputProvider::minimizeWindow(HOsWindow window)
 {
 	SDL_MinimizeWindow(((SdlWindowProxy*)window)->sdlWindow);
 }
 
-WindowState Sdl2InputProvider::getWindowState(HWindow window)
+OsWindowState Sdl2InputProvider::getWindowState(HOsWindow window)
 {
 	auto flags = SDL_GetWindowFlags(((SdlWindowProxy*)window)->sdlWindow);
 
 	if (flags & SDL_WINDOW_HIDDEN)
 	{
-		return WindowState::Hidden;
+		return OsWindowState::Hidden;
 	}
 
 	if (flags & SDL_WINDOW_MINIMIZED)
 	{
-		return WindowState::Minimized;
+		return OsWindowState::Minimized;
 	}
 
 	if (flags & SDL_WINDOW_MAXIMIZED)
 	{
-		return WindowState::Maximized;
+		return OsWindowState::Maximized;
 	}
 
-	return WindowState::Normal;
+	return OsWindowState::Normal;
 }
 
-void Sdl2InputProvider::setCapture(HWindow window)
+void Sdl2InputProvider::setCapture(HOsWindow window)
 {
 	SDL_CaptureMouse(SDL_TRUE);
 }
@@ -819,8 +848,6 @@ void Sdl2InputProvider::createSystemCursors()
 
 void setupSDL(const SdlSettings& settings)
 {
-	Rect wndRect = settings.mainWindowRect;
-
 	assert(getContextSettings().providers.gfx);
 	auto sdlProvider = ((Sdl2InputProvider*)HORUS_INPUT);
 	assert(sdlProvider);
@@ -865,78 +892,7 @@ void setupSDL(const SdlSettings& settings)
 		SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
 	}
 
-	bool maximize = false;
-	SdlWindowProxy* wnd = nullptr;
-
-	if (!settings.sdlMainWindow)
-	{
-		if (settings.mainWindowRect.isZero())
-		{
-			wndRect.set(0, 0, 1024, 768);
-			maximize = true;
-		}
-		else
-		{
-			wndRect = settings.mainWindowRect;
-		}
-
-		wnd = (SdlWindowProxy*)sdlProvider->createWindow(
-			settings.mainWindowTitle,
-			(int)wndRect.width,
-			(int)wndRect.height,
-			settings.windowFlags,
-			{ wndRect.x, wndRect.y });
-
-		if (!wnd)
-		{
-			printf("Cannot create SDL window: %s: %s\n", settings.mainWindowTitle, SDL_GetError());
-			return;
-		}
-	}
-	else
-	{
-		wnd = new SdlWindowProxy();
-		wnd->sdlWindow = settings.sdlMainWindow;
-		// initialize here DX11/Vk/Metal stuff also, from the sdlWindow info
-		sdlProvider->windows.push_back(wnd);
-	}
-
-	if (!settings.sdlGLContext)
-	{
-		if (HORUS_GFX->getApiType() == GraphicsProvider::ApiType::OpenGL)
-		{
-			sdlProvider->sdlGLContext = SDL_GL_CreateContext(((SdlWindowProxy*)wnd)->sdlWindow);
-			sdlProvider->ownsGLContext = true;
-
-			if (!sdlProvider->sdlGLContext)
-			{
-				printf("Cannot create GL context for SDL: %s\n", SDL_GetError());
-			}
-		}
-	}
-	else
-	{
-		sdlProvider->sdlGLContext = settings.sdlGLContext;
-	}
-
-	if (HORUS_GFX->getApiType() == GraphicsProvider::ApiType::OpenGL)
-	{
-		SDL_GL_MakeCurrent(wnd->sdlWindow, sdlProvider->sdlGLContext);
-		SDL_GL_SetSwapInterval(settings.vSync ? 1 : 0);
-	}
-
-	sdlProvider->mainWindow = wnd;
-	sdlProvider->focusedWindow = wnd;
-
-	SDL_ShowWindow(wnd->sdlWindow);
-	SDL_RaiseWindow(wnd->sdlWindow);
-
-	if (maximize)
-	{
-		SDL_MaximizeWindow(wnd->sdlWindow);
-	}
-
-	sdlProvider->createSystemCursors();
+	sdlProvider->settings = settings;
 }
 
 }

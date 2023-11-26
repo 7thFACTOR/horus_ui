@@ -1,4 +1,4 @@
-#include "view.h"
+#include "dock_node.h"
 #include <string.h>
 #include <algorithm>
 #include "context.h"
@@ -14,7 +14,6 @@ void DockNode::removeFromParent()
 		if (iter != parent->children.end())
 		{
 			parent->children.erase(iter);
-			//parent->checkRedundancy();
 			parent->computeRect();
 			parent = nullptr;
 		}
@@ -22,26 +21,26 @@ void DockNode::removeFromParent()
 	else
 	{
 		// this is a root node and removing it we must destroy the window too
-		ctx->dockingState.rootWindowDockNodes.erase(window);
-		destroyWindow(window);
-		window = 0;
+		ctx->dockingState.rootOsWindowDockNodes.erase(osWindow);
+		HORUS_INPUT->destroyWindow(osWindow);
+		osWindow = 0;
 	}
 }
 
-void DockNode::removeView(View* view)
+void DockNode::removeWindow(Window* window)
 {
-	auto iter = std::find(views.begin(), views.end(), view);
+	auto iter = std::find(windows.begin(), windows.end(), windows);
 
-	if (iter != views.end())
+	if (iter != windows.end())
 	{
 		(*iter)->dockNode = nullptr;
-		views.erase(iter);
+		windows.erase(iter);
 	}
 }
 
-void DockNode::gatherViewTabsNodes(std::vector<DockNode*>& outNodes)
+void DockNode::gatherWindowTabsNodes(std::vector<DockNode*>& outNodes)
 {
-	if (type == Type::ViewTabs)
+	if (type == Type::Tabs)
 	{
 		outNodes.push_back(this);
 		return;
@@ -49,13 +48,13 @@ void DockNode::gatherViewTabsNodes(std::vector<DockNode*>& outNodes)
 
 	for (auto& c : children)
 	{
-		if (c->type == DockNode::Type::ViewTabs)
+		if (c->type == DockNode::Type::Tabs)
 		{
 			outNodes.push_back(c);
 		}
 		else
 		{
-			c->gatherViewTabsNodes(outNodes);
+			c->gatherWindowTabsNodes(outNodes);
 		}
 	}
 }
@@ -64,13 +63,14 @@ void DockNode::computeRect()
 {
 	if (!parent)
 	{
-		rect = getWindowClientRect(window);
+		auto size = HORUS_INPUT->getWindowClientSize(osWindow);
+		rect = { 0, 0, size.x, size.y };
 	}
 
 	switch (type)
 	{
 	case hui::DockNode::Type::None:
-	case hui::DockNode::Type::ViewTabs:
+	case hui::DockNode::Type::Tabs:
 		break;
 	case hui::DockNode::Type::Vertical:
 	{
@@ -162,8 +162,8 @@ bool DockNode::checkRedundancy()
 		auto child = children[0];
 		children = child->children;
 		for (auto& c : children) c->parent = this;
-		views = child->views;
-		for (auto& v : views) v->dockNode = this;
+		windows = child->windows;
+		for (auto& w : windows) w->dockNode = this;
 		selectedTabIndex = child->selectedTabIndex;
 		type = child->type;
 		delete child;
@@ -182,7 +182,7 @@ bool DockNode::checkRedundancy()
 			iterPosThis = std::find(parent->children.begin(), parent->children.end(), this);
 			parent->children.erase(iterPosThis);
 			for (auto& c : children) c->parent = parent;
-			for (auto& v : views) v->dockNode = parent;
+			for (auto& w : windows) w->dockNode = parent;
 			deleteThis = true;
 		}
 
@@ -203,23 +203,23 @@ void DockNode::debug(i32 level)
 	case Type::None: name = "None"; break;
 	case Type::Vertical: name = "Vertical"; break;
 	case Type::Horizontal: name = "Horizontal"; break;
-	case Type::ViewTabs: name = "ViewTabs"; break;
+	case Type::Tabs: name = "Tabs"; break;
 	default: break;
 	}
 
-	printf("%s%s rect(%d,%d,%d,%d) tabIdx:%d wnd:%p\n", tabs.c_str(), name.c_str(), (i32)rect.x, (i32)rect.y, (i32)rect.width, (i32)rect.height, selectedTabIndex, window);
+	printf("%s%s rect(%d,%d,%d,%d) tabIdx:%d osWnd:%p\n", tabs.c_str(), name.c_str(), (i32)rect.x, (i32)rect.y, (i32)rect.width, (i32)rect.height, selectedTabIndex, osWindow);
 
-	if (!views.empty())
+	if (!windows.empty())
 	{
 		printf("%s\tViews:\n", tabs.c_str());
-		for (auto& v : views)
-			printf("%s\t\t%s userdata:%p type:%d icon:%p\n", tabs.c_str(), v->title.c_str(), (void*)v->userData, v->viewType, (void*)v->icon);
+		for (auto& w : windows)
+			printf("%s\t\t%s icon:%p\n", tabs.c_str(), w->title.c_str(), (void*)w->icon);
 	}
 
 	for (auto& c : children) c->debug(level + 1);
 }
 
-DockNode* DockNode::findResizeNode(const Point& pt)
+DockNode* DockNode::findResizeDockNode(const Point& pt)
 {
 	if (type != Type::None)
 	{
@@ -262,7 +262,7 @@ DockNode* DockNode::findResizeNode(const Point& pt)
 
 		for (auto cell : children)
 		{
-			auto foundCell = cell->findResizeNode(pt);
+			auto foundCell = cell->findResizeDockNode(pt);
 
 			if (foundCell)
 			{
@@ -276,7 +276,7 @@ DockNode* DockNode::findResizeNode(const Point& pt)
 
 DockNode* DockNode::findTargetDockNode(const Point& pt)
 {
-	if (type == Type::None || type == Type::ViewTabs)
+	if (type == Type::None || type == Type::Tabs)
 	{
 		if (rect.contains(pt))
 			return this;
@@ -297,13 +297,13 @@ DockNode* DockNode::findTargetDockNode(const Point& pt)
 	return nullptr;
 }
 
-size_t DockNode::getViewIndex(View* view)
+size_t DockNode::getWindowIndex(Window* window)
 {
-	auto iter = std::find(views.begin(), views.end(), view);
+	auto iter = std::find(windows.begin(), windows.end(), window);
 	
-	if (iter == views.end()) return -1;
+	if (iter == windows.end()) return -1;
 
-	return std::distance(views.begin(), iter);
+	return std::distance(windows.begin(), iter);
 }
 
 DockNode* DockNode::findDockNode(const Point& pt)
@@ -321,21 +321,25 @@ DockNode* DockNode::findDockNode(const Point& pt)
 
 bool saveDockingState(const char* filename)
 {
+	//TODO
 	return true;
 }
 
 u8* saveDockingStateToMemory(size_t& outStateInfoSize)
 {
+	//TODO
 	return 0;
 }
 
 bool loadDockingState(const char* filename)
 {
+	//TODO
 	return false;
 }
 
 bool loadDockingStateFromMemory(const u8* stateInfo, size_t stateInfoSize)
 {
+	//TODO
 	return true;
 }
 

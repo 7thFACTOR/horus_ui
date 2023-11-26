@@ -18,61 +18,44 @@
 #include "utfcpp_provider.h"
 
 using namespace hui;
-HView view1;
-HView view2;
-HView view3;
+
 HImage tabIcon1;
 HImage tabIcon2;
 HImage tabIcon3;
 
-struct View1Data
-{
-	int data = 1;
-};
-
-struct View2Data
-{
-	int data = 2;
-};
-
-struct View3Data
-{
-	int data = 3;
-};
-
-HDockNode myRoot;
-
-void createMyDefaultViewPanes()
-{
-	myRoot = hui::createRootDockNode(hui::getMainWindow());
-	auto assets = hui::createView(myRoot, hui::DockType::Left, "Assets", 0, 1, 0, nullptr);
-	hui::debugViews();
-	auto game = hui::createView(myRoot, hui::DockType::Left, "Game", 0, 2, 0, nullptr);
-	hui::debugViews();
-	auto particles = hui::createView(myRoot, hui::DockType::Top, "Particles", 0, 3, 0, nullptr);
-	hui::debugViews();
-	hui::dockView(assets, hui::getViewDockNode(particles), hui::DockType::Top);
-	hui::debugViews();
-	hui::dockView(game, hui::getViewDockNode(particles), hui::DockType::Right);
-	//hui::debugViews();
-	hui::dockView(assets, hui::getViewDockNode(game), hui::DockType::Right);
-	//hui::debugViews();
-	auto inspector = hui::createView(myRoot, hui::DockType::Bottom, "Inspector", 0, 4, 0, nullptr);
-	//hui::debugViews();
-	//hui::dockView(assets, hui::getViewDockNode(inspector), hui::DockType::Bottom);
-	//hui::debugViews();
-	auto scene = hui::createView(myRoot, hui::DockType::Top, "Scene", 0, 5, 0, nullptr);
-	auto prefs = hui::createView(assets, hui::DockType::Top, "Preferences", 0, 6, 0, nullptr);
-	hui::dockView(assets, hui::getViewDockNode(particles), hui::DockType::Bottom);
-	hui::dockView(scene, hui::getViewDockNode(assets), hui::DockType::AsTab);
-	hui::dockView(prefs, hui::getViewDockNode(game), hui::DockType::AsTab);
-	hui::dockView(prefs, hui::getViewDockNode(particles), hui::DockType::Left);
-	hui::dockView(prefs, hui::getViewDockNode(game), hui::DockType::AsTab);
-	hui::dockView(assets, hui::getViewDockNode(game), hui::DockType::AsTab);
-	//hui::debugViews();
-	//hui::dockView(particles, hui::getViewDockNode(assets), hui::DockType::Right);
-	//hui::debugViews();
-}
+//HDockNode myRoot;
+//
+//void createMyDefaultViewPanes()
+//{
+//	myRoot = hui::createRootDockNode(hui::getMainWindow());
+//	auto assets = hui::createView(myRoot, hui::DockType::Left, "Assets", 0, 1, 0, nullptr);
+//	hui::debugViews();
+//	auto game = hui::createView(myRoot, hui::DockType::Left, "Game", 0, 2, 0, nullptr);
+//	hui::debugViews();
+//	auto particles = hui::createView(myRoot, hui::DockType::Top, "Particles", 0, 3, 0, nullptr);
+//	hui::debugViews();
+//	hui::dockView(assets, hui::getViewDockNode(particles), hui::DockType::Top);
+//	hui::debugViews();
+//	hui::dockView(game, hui::getViewDockNode(particles), hui::DockType::Right);
+//	//hui::debugViews();
+//	hui::dockView(assets, hui::getViewDockNode(game), hui::DockType::Right);
+//	//hui::debugViews();
+//	auto inspector = hui::createView(myRoot, hui::DockType::Bottom, "Inspector", 0, 4, 0, nullptr);
+//	//hui::debugViews();
+//	//hui::dockView(assets, hui::getViewDockNode(inspector), hui::DockType::Bottom);
+//	//hui::debugViews();
+//	auto scene = hui::createView(myRoot, hui::DockType::Top, "Scene", 0, 5, 0, nullptr);
+//	auto prefs = hui::createView(assets, hui::DockType::Top, "Preferences", 0, 6, 0, nullptr);
+//	hui::dockView(assets, hui::getViewDockNode(particles), hui::DockType::Bottom);
+//	hui::dockView(scene, hui::getViewDockNode(assets), hui::DockType::AsTab);
+//	hui::dockView(prefs, hui::getViewDockNode(game), hui::DockType::AsTab);
+//	hui::dockView(prefs, hui::getViewDockNode(particles), hui::DockType::Left);
+//	hui::dockView(prefs, hui::getViewDockNode(game), hui::DockType::AsTab);
+//	hui::dockView(assets, hui::getViewDockNode(game), hui::DockType::AsTab);
+//	//hui::debugViews();
+//	//hui::dockView(particles, hui::getViewDockNode(assets), hui::DockType::Right);
+//	//hui::debugViews();
+//}
 
 int main(int argc, char** args)
 {
@@ -126,7 +109,7 @@ int main(int argc, char** args)
 	// if there is no state, then create the default panes and tabs
 	//if (!hui::loadDockingState("layout.hui"))
 	{
-		createMyDefaultViewPanes();
+		//createMyDefaultViewPanes();
 	}
 
 	printf("Starting loop...\n");
@@ -143,38 +126,23 @@ int main(int argc, char** args)
 		// the main frame rendering and input handling
 		auto doFrame = [&](bool lastEventInQueue)
 		{
-			// set the current window we're handling
-			hui::setWindow(hui::getMainWindow());
-			// start to add widgets in the window
-			hui::beginWindow(hui::getMainWindow());
-
 			// disable rendering if its not the last event in the queue
 			// no need to render while handling all the input events
 			// we only render on the last event in the queue
 			hui::setDisableRendering(!lastEventInQueue);
+
 			// begin an actual frame of the gui
 			hui::beginFrame();
+			Rect r = { 100, 100, 1000, 1200 };
+			hui::beginWindow("wnd1", "Window1", &r);
 			hui::clearBackground();
-
-			hui::beginDockNode(myRoot);
-			//hui::beginContainer(Rect(0, 0, 100, 100));
-			//hui::button("Some button");
-			//hui::endContainer();
-			hui::endDockNode();
-
-
-			hui::endFrame();
 			hui::endWindow();
 
-			if (hui::getInputEvent().type == hui::InputEvent::Type::WindowResize)
-			{
-				hui::setDockNodeRect(myRoot, hui::getWindowClientRect(hui::getWindow()));
-			}
+			hui::endFrame();
 
 			if (lastEventInQueue)
 			{
-				//hui::presentWindows();
-				hui::presentWindow(hui::getMainWindow());
+				hui::present();
 			}
 
 			if (hui::wantsToQuit() || hui::mustQuit())

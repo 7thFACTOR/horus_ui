@@ -65,7 +65,7 @@ void beginPopup(
 	auto bodyElemState = ctx->theme->getElement(widgetElementId).normalState();
 	Point pos = { ctx->containerRect.x, ctx->containerRect.y };
 
-	if (has(flags, PopupFlags::WindowCenter))
+	if (has(flags, PopupFlags::Centered))
 	{
 		pos = {
 			(ctx->renderer->getWindowSize().x - width) / 2.0f,
@@ -139,7 +139,7 @@ void beginPopup(
 
 	ctx->renderer->pushClipRect(ctx->renderer->getWindowRect(), false);
 
-	if (has(flags, PopupFlags::FadeWindowContents))
+	if (has(flags, PopupFlags::FadeBackground))
 	{
 		auto& behindElemState = ctx->theme->getElement(WidgetElementId::PopupBehind).normalState();
 
@@ -356,7 +356,7 @@ MessageBoxButtons messageBox(
 		break;
 	}
 
-	hui::beginPopup(500, PopupFlags::FadeWindowContents | PopupFlags::WindowCenter);
+	hui::beginPopup(500, PopupFlags::FadeBackground | PopupFlags::Centered);
 	auto iterFnt = ctx->theme->fonts.find("title");
 	hui::pushTint(Color::cyan);
 

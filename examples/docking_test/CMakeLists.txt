@@ -4,6 +4,7 @@ include(../CMakeUtils.cmake)
 
 add_source_group(src ./ SRCS)
 add_source_group(horus ../../src HORUS_SRCS)
+add_source_group(horus ../../include HORUS_SRCS)
 add_source_group(backends ../../backends BACKENDS)
 add_source_group(binpack ../libs/binpack BINPACK)
 

@@ -147,8 +147,7 @@ typedef void* HTheme;
 typedef void* HAtlas;
 typedef void* HFont;
 typedef void* HThemeWidgetElement;
-typedef void* HWindow;
-typedef void* HView;
+typedef void* HOsWindow;
 typedef void* HDockNode;
 typedef void* HMouseCursor;
 typedef void* HGraphicsApiContext;
@@ -162,7 +161,6 @@ typedef void* HFontFace;
 
 typedef u32 Rgba32;
 typedef u32 TabIndex;
-typedef u32 ViewType;
 typedef u32 GlyphCode;
 typedef std::vector<GlyphCode> Utf32String;
 
@@ -342,6 +340,22 @@ enum class MouseButton
 	Count
 };
 
+/// OS window flags
+enum class OsWindowFlags : u32
+{
+	NoDecoration = HORUS_BIT(0),
+	Resizable = HORUS_BIT(1)
+};
+HORUS_ENUM_AS_FLAGS(OsWindowFlags);
+
+enum class OsWindowState
+{
+	Normal,
+	Minimized,
+	Maximized,
+	Hidden
+};
+
 /// Image fit mode, used in the image widget
 enum class ImageFitType
 {
@@ -397,29 +411,6 @@ enum class TintColorType
 	All,
 
 	Count
-};
-
-/// Window flags
-enum class WindowFlags
-{
-	Resizable = HORUS_BIT(0),
-	Fixed = HORUS_BIT(1),
-	ResizableNoTitle = HORUS_BIT(2),
-	FixedNoTitle = HORUS_BIT(3),
-	NoTaskbarButton = HORUS_BIT(4),
-	Centered = HORUS_BIT(5),
-	CustomPosition = HORUS_BIT(6)
-};
-
-HORUS_ENUM_AS_FLAGS(WindowFlags);
-
-/// Native window state
-enum class WindowState
-{
-	Normal,
-	Maximized,
-	Minimized,
-	Hidden
 };
 
 /// Key press codes
@@ -655,8 +646,8 @@ HORUS_ENUM_AS_FLAGS(ContextMenuFlags);
 enum class PopupFlags : u32
 {
 	None = 0,
-	FadeWindowContents = HORUS_BIT(1), /// fade the contents behind the popup when shown
-	WindowCenter = HORUS_BIT(2), /// center the popup to window
+	FadeBackground = HORUS_BIT(1), /// fade the contents behind the popup when shown
+	Centered = HORUS_BIT(2), /// center the popup to the native window
 	BelowLastWidget = HORUS_BIT(3), /// position the popup below last widget
 	RightSideLastWidget = HORUS_BIT(4), /// position the popup on right side of the last widget
 	CustomPosition = HORUS_BIT(5), /// use custom popup position
@@ -1309,7 +1300,7 @@ struct InputEvent
 		Type type = Type::None;
 		u32 timestamp = 0;
 		char* filename = nullptr;
-		HWindow window = 0;
+		HOsWindow window = 0;
 	};
 
 	union
@@ -1341,7 +1332,7 @@ struct InputEvent
 	}
 
 	Type type = Type::None;
-	HWindow window = 0;
+	HOsWindow window = 0;
 };
 
 struct HORUS_CLASS_API Color
@@ -1433,41 +1424,6 @@ struct OpenMultipleFileSet
 	}
 };
 
-/// A view handler is used by the docking system to delegate UI rendering to the user
-/// It calls various functions at specific times so the user will just show the UI
-struct ViewHandler
-{
-	/// Called when the user must render the main menu of the application on the specified window
-	/// \param window the window for which the main menu to be rendered
-	virtual void onTopAreaRender(HWindow window) {}
-	virtual void onLeftAreaRender(HWindow window) {}
-	virtual void onRightAreaRender(HWindow window) {}
-	virtual void onBottomAreaRender(HWindow window) {}
-	/// Called when the user must render the widgets for a specific view
-	/// \param window the window where the drawing of UI will occur
-	/// \param node the parent dock node of the view
-	/// \param view the view where the drawing of UI will occur
-	/// \param activeViewType the view type for which to draw the UI (there can be multiple views with the same type), data driven UI
-	/// \param userData the user data, which was set by the user for this particular view instance
-	virtual void onViewRender(HWindow window, HDockNode node, HView view, ViewType activeViewType, u64 userData) {}
-	/// Called when a view was closed
-	/// \param window the window where the view was closed
-	/// \param view the view
-	/// \param activeViewType the view type for which to draw the UI (there can be multiple views with the same type), data driven UI
-	/// \param userData the user data, which was set by the user for this particular view instance
-	virtual void onViewClosed(HWindow window, HView view, ViewType activeViewType, u64 userData) {}
-	/// Called just before the frame starts to render
-	/// \param window the window where rendering will happen
-	virtual void onBeforeFrameRender(HWindow wnd) {}
-	/// Called after the frame starts to render
-	/// \param window the window where rendering did happen
-	virtual void onAfterFrameRender(HWindow wnd) {}
-	/// Called when the view state is saved, so you can also save your custom data
-	virtual void onViewSave(HView view, u64 userData) {}
-	/// Called when the view state is loaded, so you can also load your custom data
-	virtual void onViewLoad(HView view, u64 userData) {}
-};
-
 /// Line drawing style
 struct LineStyle
 {
@@ -1557,7 +1513,7 @@ struct ContextSettings
 	f32 sameLineHeight = 20.0f; /// the height of a line when sameLine() is used to position widgets on a single row/line. Used to center various widget heights vertically. This must be non-zero, otherwise the widgets will align wrongly.
 	f32 minScrollViewHandleSize = 20.0f; /// the minimum allowed scroll handle size (height)
 	//TODO: make this per dock node
-	bool allowUndockingToNewWindow = true; /// allow view tabs to be undocked as native windows, outside of main window
+	bool allowUndockingToNewOsWindow = true; /// allow view tabs to be undocked as native OS windows, outside of the main window
 	f32 dockNodeSpacing = 4;
 	bool dockNodeProportionalResize = true; /// if false, it will dock nodes keeping the other nodes sizes unchanged, else will resize the others so the new one can fit
 	f32 dockNodeDockingSizeRatio = 0.3f; /// ratio of the new size of a docked node in regard to the node we're docking in (if dockNodeProportionalResize is true)
@@ -1608,7 +1564,7 @@ HORUS_API void beginFrame();
 /// Ends an UI frame
 HORUS_API void endFrame();
 
-/// Clear the current window background with the color found in the current theme
+/// Clear the current OS window background with the color found in the current theme
 HORUS_API void clearBackground();
 
 /// \return true if there is nothing to do in the UI (like redrawing or layout computations), used to not render continuously when its not needed, for applications that do not need realtime continuous rendering
@@ -1689,95 +1645,44 @@ HORUS_API void deleteMouseCursor(HMouseCursor cursor);
 HORUS_API void setMouseCursor(HMouseCursor cursor);
 
 //////////////////////////////////////////////////////////////////////////
-// Windowing
+// Windowing & docking functions
 //////////////////////////////////////////////////////////////////////////
 
-/// Set the current window
-/// \param window the window to be set as current
-HORUS_API void setWindow(HWindow window);
+HORUS_API bool beginWindow(const char* id, const char* title, const char* dockTo, DockType dockType, Rect* initialRect);
 
-/// \return the window set as current
-HORUS_API HWindow getWindow();
+HORUS_API void endWindow();
 
-/// \return the focused window
-HORUS_API HWindow getFocusedWindow();
+HORUS_API bool isMouseOverWindow();
 
-/// \return the mouse hovered window
-HORUS_API HWindow getHoveredWindow();
+/// \return the window client rect, used usually to render custom scenes
+HORUS_API Rect getWindowClientRect();
 
-/// \return the application's main window
-HORUS_API HWindow getMainWindow();
+/// Save the windows docking state
+/// \param filename the *.hui filename relative to executable where to save the state
+/// \return true if save was ok
+HORUS_API bool saveDockingState(const char* filename);
+/// Save the docking state to memory, the returned data ptr contains the state info and it is now owned by you
+HORUS_API u8* saveDockingStateToMemory(size_t& outStateInfoSize);
+//TODO: save docking state to structures too
 
-/// Create a new OS native window
-/// \param title the title of the window
-/// \param width the width of the window or -1 to use default
-/// \param height the height of the window or -1 to use default
-/// \param flags the flags of the window
-/// \param positionType the position of the window
-/// \param customPosition if the position is custom, then this is the location on screen
-/// \return the created window handle
-HORUS_API HWindow createWindow(
-	const char* title, u32 width, u32 height,
-	WindowFlags flags = WindowFlags::Resizable | WindowFlags::Centered,
-	Point customPosition = { 0, 0 });
+/// Load the docking state
+/// \param filename the *.hui filename relative to executable from where to load the state
+/// \return true if the load was ok
+HORUS_API bool loadDockingState(const char* filename);
+HORUS_API bool loadDockingStateFromMemory(const u8* stateInfo, size_t stateInfoSize);
 
-/// Set window title
-/// \param title the window title
-HORUS_API void setWindowTitle(HWindow window, const char* title);
+/// Update the docking system internal, usually called by the dockingSystemLoop function, if you make your own loop, then you need to call it
+HORUS_API void updateDockingSystem();
 
-/// Set window rectangle on screen
-/// \param window the window handle
-/// \param rect the screen rectangle
-HORUS_API void setWindowRect(HWindow window, const Rect& rect);
+/// If this function will be called it will block until all or the main window is closed, or a quitApplication is issued
+HORUS_API void dockingSystemLoop();
 
-/// \return the window rectangle on screen
-/// \param window the window handle
-HORUS_API Rect getWindowRect(HWindow window);
-
-/// \return the window client rectangle area, relative to window screen rectangle
-/// \param window the window handle
-HORUS_API Rect getWindowClientRect(HWindow window);
+///////////////////////////////////////////////////////////////////////////////
+// Application functions
+///////////////////////////////////////////////////////////////////////////////
 
 /// Present the contents of the backbuffer for each OS native window, called after all rendering is done
-HORUS_API void presentWindows();
-
-/// Present the contents of the backbuffer of an OS native window, called after all rendering is done
-HORUS_API void presentWindow(HWindow window);
-
-/// Destroy an OS native window
-/// \param window the window to destroy
-HORUS_API void destroyWindow(HWindow window);
-
-/// Show a window
-/// \param window the window to be shown
-HORUS_API void showWindow(HWindow window);
-
-/// Hide a window
-/// \param window window to be hidden
-HORUS_API void hideWindow(HWindow window);
-
-/// Bring a window to front
-/// \param window to be brought to front
-HORUS_API void riseWindow(HWindow window);
-
-/// Maximize a window
-/// \param window the window to be maximized
-HORUS_API void maximizeWindow(HWindow window);
-
-/// Minimize a window
-/// \param window the window to be minimized
-HORUS_API void minimizeWindow(HWindow window);
-
-/// \return the window's state
-/// \param window the window
-HORUS_API WindowState getWindowState(HWindow window);
-
-/// Capture input to a specific window
-/// \param window the window to capture input events
-HORUS_API void setCapture(HWindow window);
-
-/// Release the capture for the input events
-HORUS_API void releaseCapture();
+HORUS_API void present();
 
 /// \return true if the application must quit, due to quitApplication() call.
 HORUS_API bool mustQuit();
@@ -1975,13 +1880,6 @@ HORUS_API HFont getThemeFont(HTheme theme, const char* themeFontName);
 //////////////////////////////////////////////////////////////////////////
 // Layout and containers
 //////////////////////////////////////////////////////////////////////////
-
-/// Start to create UI inside a specific native window, set it as current window
-/// \param window the window
-HORUS_API void beginWindow(HWindow window);
-
-/// Stop creating UI in the current window
-HORUS_API void endWindow();
 
 /// Begin a widget container, an invisible rectangle on the current window area where widgets will be laid out
 HORUS_API void beginContainer(const Rect& rect);
@@ -2653,107 +2551,6 @@ HORUS_API void drawSpline(SplineControlPoint* points, u32 count, f32 segmentSize
 HORUS_API void drawArrow(const Point& startPoint, const Point& endPoint, f32 tipLength, f32 tipWidth, bool drawBodyLine = true);
 
 HORUS_API void drawSolidTriangle(const Point& p1, const Point& p2, const Point& p3);
-
-//////////////////////////////////////////////////////////////////////////
-// Docking views functions
-// A view is an area inside a native window and hosts a single view.
-//////////////////////////////////////////////////////////////////////////
-
-/// Create a root dock node for a specific window, where views can be docked
-HORUS_API HDockNode createRootDockNode(HWindow window);
-
-HORUS_API HView createView(HDockNode targetNode, DockType dock, const char* title, f32 size, ViewType viewType, u64 userData, HImage icon);
-
-/// Delete a view, used by the docking system
-HORUS_API void deleteView(HView view);
-
-HORUS_API void deleteRootDockNode(HWindow window);
-
-/// \return the view's native window, used by the docking system
-HORUS_API HWindow getViewWindow(HView view);
-
-HORUS_API HDockNode getViewDockNode(HView view);
-
-HORUS_API HDockNode getRootDockNode(HWindow window);
-
-HORUS_API void setDockNodeRect(HDockNode node, const Rect& rect);
-
-HORUS_API void debugViews();
-
-/// Save the views state, with all views docked info
-/// \param filename the *.hui filename relative to executable where to save the state
-/// \return true if save was ok
-HORUS_API bool saveDockingState(const char* filename);
-/// Save the view state to memory, the returned data ptr contains the state info and it is now owned by you
-HORUS_API u8* saveDockingStateToMemory(size_t& outStateInfoSize);
-//TODO: save view state to structures too
-
-/// Load the view state, with all views docked info, it will create views
-/// \param filename the *.hui filename relative to executable from where to load the state
-/// \return true if the load was ok
-HORUS_API bool loadDockingState(const char* filename);
-HORUS_API bool loadDockingStateFromMemory(const u8* stateInfo, size_t stateInfoSize);
-
-/// \return the view rect, relative to its window, used usually to render client scenes or other custom rendering
-/// \param view the view
-HORUS_API Rect getViewClientRect(HView view);
-
-/// \return the remaining dock node view height
-/// \param node the dock node
-HORUS_API f32 getRemainingDockNodeClientHeight(HDockNode node);
-
-/// Set a view user data
-HORUS_API void setViewUserData(HView view, u64 userData);
-
-/// \return a view's data
-HORUS_API u64 getViewUserData(HView view);
-
-HORUS_API void setViewTitle(HView view, const char* title);
-
-HORUS_API const char* getViewTitle(HView view);
-
-HORUS_API ViewType getViewType(HView view);
-
-/// Set a view icon
-HORUS_API void setViewIcon(HView view, HImage image);
-
-/// Begin draw of a dock node views
-HORUS_API ViewType beginDockNode(HDockNode node);
-
-/// End draw of a dock node views
-HORUS_API void endDockNode();
-
-/// Activate a view
-HORUS_API void activateView(HView view);
-
-HORUS_API bool dockView(HView view, HDockNode target, DockType dockType, u32 tabIndex = 0);
-
-/// Set the current view handler, used throughout the docking system (also for save/load view window state)
-HORUS_API void setCurrentViewHandler(ViewHandler* handler);
-
-/// \return the current view handler, used throughout the docking system (also for save/load view window state)
-HORUS_API ViewHandler* getCurrentViewHandler();
-
-/// Update the docking system internal, usually called by the dockingSystemLoop function, if you make your own loop, then you need to call it
-HORUS_API void updateDockingSystem();
-
-struct DragDockNodeInfo
-{
-	enum class DragSide
-	{
-		None,
-		Right,
-		Bottom
-	};
-
-	HDockNode node = nullptr;
-	DragSide dragSide = DragSide::None;
-};
-
-HORUS_API DragDockNodeInfo findDockNodeDragInfoAtMousePos(HWindow window, const Point& mousePos);
-
-/// If this function will be called it will block until all or the main window is closed, or a quitApplication is issued
-HORUS_API void dockingSystemLoop();
 
 //////////////////////////////////////////////////////////////////////////
 // Utility panels and complex/combined mega-widgets

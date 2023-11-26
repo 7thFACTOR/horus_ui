@@ -32,7 +32,7 @@ void beginTabGroup(TabIndex selectedIndex)
 
 	ctx->renderer->cmdDrawImageBordered(tabGroupElemState.image, tabGroupElemState.border, ctx->widget.rect, ctx->globalScale);
 
-	if (ctx->drawingViewPaneTabs)
+	if (ctx->dockingState.drawingWindowTabs)
 	{
 		// vertical splitter
 		//NOTE: horizontal splitter is not needed because there is tab group background

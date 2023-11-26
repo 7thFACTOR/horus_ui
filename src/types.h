@@ -196,7 +196,7 @@ struct PopupState
 	bool startedToDrag = false;
 	bool draggingPopup = false;
 	bool opened = false;
-	HWindow ownerWindow = 0;
+	HOsWindow ownerWindow = 0;
 	Point dragDelta, lastMouseDownPoint;
 	Point lastMousePoint;
 	Rect prevContainerRect;
@@ -261,19 +261,24 @@ struct DropdownState
 	u32 widgetId = 0;
 };
 
+struct Window
+{
+	struct DockNode* dockNode = nullptr;
+	std::string id, title;
+	Rect cachedTabRect;
+};
+
 struct DockingState
 {
-	std::unordered_map<HWindow, struct DockNode*> rootWindowDockNodes;
+	std::unordered_map<HOsWindow, struct DockNode*> rootOsWindowDockNodes;
+	std::unordered_map<std::string, Window*> windows;
 	DockNode* currentDockNode = nullptr;
 	bool closeWindow = false;
-
 	// variables for dragging views around
 	const f32 dockBorderSizePercent = 0.5f;
 	bool draggingDockNodeBorder = false;
 	DockNode* resizingNode = nullptr;
 	DockNode* hoveredNode = nullptr;
-	View* dragView = nullptr;
-	View* dragOntoView = nullptr;
 	Rect dockRect;
 	DockType dockType = DockType::None;
 	DockNode* dockToNode = nullptr;
@@ -281,6 +286,7 @@ struct DockingState
 	Rect resizeNodeSiblingRect;
 	Point lastMousePos;
 	Rect draggedRect;
+	bool drawingWindowTabs = false;
 };
 
 struct DragDropState
