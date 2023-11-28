@@ -295,6 +295,18 @@ void beginFrame()
 		ctx->textCache->pruneUnusedText();
 		ctx->pruneUnusedTextTime = 0;
 	}
+
+	ctx->savedEventType = ctx->event.type;
+	ctx->renderer->setZOrder(0);
+
+	for (auto& popup : ctx->popupStack)
+	{
+		popup.alreadyClosedWithEscape = false;
+		popup.alreadyClickedOnSomething = false;
+	}
+
+	ctx->alreadyClickedOnSomething = false;
+	ctx->renderer->beginFrame();
 }
 
 void endFrame()
@@ -337,6 +349,10 @@ void endFrame()
 	{
 		ctx->sameLineInfo[i].computeHeight = false;
 	}
+
+	ctx->renderer->endFrame();
+	ctx->event.type = ctx->savedEventType;
+	ctx->penStack.clear();
 }
 
 void update(f32 deltaTime)
@@ -1096,26 +1112,12 @@ bool beginWindow(const char* id, const char* title, const char* dockTo, DockType
 		wnd = ctx->dockingState.windows[id];
 	}
 
-	ctx->savedEventType = ctx->event.type;
-	ctx->renderer->setZOrder(0);
-
-	for (auto& popup : ctx->popupStack)
-	{
-		popup.alreadyClosedWithEscape = false;
-		popup.alreadyClickedOnSomething = false;
-	}
-	
-	ctx->alreadyClickedOnSomething = false;
 	ctx->hoveringThisWindow = isMouseOverWindow();
-	ctx->renderer->beginFrame();
 }
 
 void endWindow()
 {
-	ctx->renderer->endFrame();
 	ctx->currentWindowIndex++;
-	ctx->event.type = ctx->savedEventType;
-	ctx->penStack.clear();
 	//TODO: make scroll struct stack
 }
 

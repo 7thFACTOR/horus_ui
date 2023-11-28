@@ -25,14 +25,14 @@ struct Context
 
 	struct ToolbarState
 	{
-		ToolbarDirection direction;
+		ToolbarDirection direction = ToolbarDirection::Horizontal;
 	};
 
 	struct WidgetLoopInfo
 	{
-		u32 previousId;
-		u32 startId;
-		u32 maxCount;
+		u32 previousId = 0;
+		u32 startId = 0;
+		u32 maxCount = 0;
 	};
 
 	static const int maxLayerCount = 256;
