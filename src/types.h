@@ -265,7 +265,7 @@ struct Window
 {
 	struct DockNode* dockNode = nullptr;
 	std::string id, title;
-	Rect cachedTabRect;
+	Rect tabRect, clientRect;
 };
 
 struct DockingState

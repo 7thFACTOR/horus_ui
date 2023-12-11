@@ -1139,6 +1139,11 @@ bool isMouseOverWindow()
 	return false;
 }
 
+Rect getWindowClientRect()
+{
+	return ctx->currentWindow->clientRect;
+}
+
 void beginContainer(const Rect& rect)
 {
 	auto paddedRect = rect;
