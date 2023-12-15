@@ -158,6 +158,7 @@ struct Context
 	std::vector<InputEvent> events;
 	InputEvent::Type savedEventType = InputEvent::Type::None;
 	std::vector<HOsWindow> osWindows;
+	HOsWindow mainOsWindow = 0;
 
 	// Colors and styles
 	std::unordered_map<u32, std::vector<Color>> tintStack;

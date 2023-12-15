@@ -463,7 +463,7 @@ Renderer::~Renderer()
 	delete vertexBuffer;
 }
 
-void Renderer::setWindow(HWindow wnd)
+void Renderer::setWindow(HOsWindow wnd)
 {
 	currentWindow = wnd;
 }
@@ -520,7 +520,7 @@ void Renderer::beginFrame()
 	zOrder = 0;
 	skipRender = false;
 	disableRendering = false;
-	drawCommands[currentWindow].clear();
+	drawCommands.clear();
 	batches.clear();
 	vertexBufferData.drawVertexCount = 0;
 	textBufferPosition = 0;
@@ -544,94 +544,88 @@ void Renderer::endFrame()
 		return false;
 	};
 
-	for (auto& wndCmds : drawCommands)
-	{
-		std::stable_sort(wndCmds.second.begin(), wndCmds.second.end(), sortDrawCommands);
-	}
+	std::stable_sort(drawCommands.begin(), drawCommands.end(), sortDrawCommands);
 
 	currentAtlas = nullptr;
 	currentBatch = nullptr;
 
 	// generate the batches
-	for (auto& wndCmds : drawCommands)
+	for (auto& cmd : drawCommands)
 	{
-		for (auto& cmd : wndCmds.second)
+		switch (cmd.type)
 		{
-			switch (cmd.type)
-			{
-			case DrawCommand::Type::DrawImageBordered:
-				drawImageBordered(cmd.drawImageBordered.image, cmd.drawImageBordered.border, cmd.drawImageBordered.rect, cmd.drawImageBordered.scale);
-				break;
-			case DrawCommand::Type::DrawQuad:
-				drawQuad(cmd.drawQuad.image, cmd.drawQuad.corners[0], cmd.drawQuad.corners[1], cmd.drawQuad.corners[2], cmd.drawQuad.corners[3]);
-				break;
-			case DrawCommand::Type::DrawRect:
-			{
-				atlasTextureIndex = cmd.drawRect.textureIndex;
+		case DrawCommand::Type::DrawImageBordered:
+			drawImageBordered(cmd.drawImageBordered.image, cmd.drawImageBordered.border, cmd.drawImageBordered.rect, cmd.drawImageBordered.scale);
+			break;
+		case DrawCommand::Type::DrawQuad:
+			drawQuad(cmd.drawQuad.image, cmd.drawQuad.corners[0], cmd.drawQuad.corners[1], cmd.drawQuad.corners[2], cmd.drawQuad.corners[3]);
+			break;
+		case DrawCommand::Type::DrawRect:
+		{
+			atlasTextureIndex = cmd.drawRect.textureIndex;
 
-				if (clipRect(cmd.drawRect.rotated, cmd.drawRect.rect, cmd.drawRect.uvRect))
+			if (clipRect(cmd.drawRect.rotated, cmd.drawRect.rect, cmd.drawRect.uvRect))
+			{
+				if (cmd.drawRect.rotated)
 				{
-					if (cmd.drawRect.rotated)
-					{
-						drawQuadRot90(cmd.drawRect.rect, cmd.drawRect.uvRect);
-					}
-					else
-					{
-						drawQuad(cmd.drawRect.rect, cmd.drawRect.uvRect);
-					}
+					drawQuadRot90(cmd.drawRect.rect, cmd.drawRect.uvRect);
 				}
-				break;
-			}
-			case DrawCommand::Type::DrawText:
-				drawTextInternal(cmd.drawText.text, cmd.drawText.position);
-				break;
-			case DrawCommand::Type::SetColor:
-				currentColor = cmd.setColor.getRgba();
-				break;
-			case DrawCommand::Type::SetFont:
-				currentFont = cmd.setFont;
-				break;
-			case DrawCommand::Type::ClipRect:
-				currentClipRect = cmd.clipRect;
-				break;
-			case DrawCommand::Type::SetTextStyle:
-				currentTextStyle = cmd.setTextStyle;
-				break;
-			case DrawCommand::Type::SetLineStyle:
-				currentLineStyle = cmd.setLineStyle;
-				break;
-			case DrawCommand::Type::SetFillStyle:
-				currentFillStyle = cmd.setFillStyle;
-				break;
-			case DrawCommand::Type::DrawLine:
-				currentColor = currentLineStyle.color.getRgba();
-				drawLine(cmd.drawLine.a, cmd.drawLine.b);
-				break;
-			case DrawCommand::Type::DrawPolyLine:
-				currentColor = currentLineStyle.color.getRgba();
-				drawPolyLine(cmd.drawPolyLine.points, cmd.drawPolyLine.count, cmd.drawPolyLine.closed);
-				break;
-			case DrawCommand::Type::DrawSolidTriangle:
-				currentColor = currentFillStyle.color.getRgba();
-				drawTriangle(
-					cmd.drawTriangle.p1,
-					cmd.drawTriangle.p2,
-					cmd.drawTriangle.p3,
-					cmd.drawTriangle.uv1,
-					cmd.drawTriangle.uv2,
-					cmd.drawTriangle.uv3,
-					cmd.drawTriangle.image);
-				break;
-			case DrawCommand::Type::SetAtlas:
-				if (currentAtlas != cmd.setAtlas)
+				else
 				{
-					currentAtlas = cmd.setAtlas;
-					addBatch();
+					drawQuad(cmd.drawRect.rect, cmd.drawRect.uvRect);
 				}
-				break;
-			default:
-				break;
 			}
+			break;
+		}
+		case DrawCommand::Type::DrawText:
+			drawTextInternal(cmd.drawText.text, cmd.drawText.position);
+			break;
+		case DrawCommand::Type::SetColor:
+			currentColor = cmd.setColor.getRgba();
+			break;
+		case DrawCommand::Type::SetFont:
+			currentFont = cmd.setFont;
+			break;
+		case DrawCommand::Type::ClipRect:
+			currentClipRect = cmd.clipRect;
+			break;
+		case DrawCommand::Type::SetTextStyle:
+			currentTextStyle = cmd.setTextStyle;
+			break;
+		case DrawCommand::Type::SetLineStyle:
+			currentLineStyle = cmd.setLineStyle;
+			break;
+		case DrawCommand::Type::SetFillStyle:
+			currentFillStyle = cmd.setFillStyle;
+			break;
+		case DrawCommand::Type::DrawLine:
+			currentColor = currentLineStyle.color.getRgba();
+			drawLine(cmd.drawLine.a, cmd.drawLine.b);
+			break;
+		case DrawCommand::Type::DrawPolyLine:
+			currentColor = currentLineStyle.color.getRgba();
+			drawPolyLine(cmd.drawPolyLine.points, cmd.drawPolyLine.count, cmd.drawPolyLine.closed);
+			break;
+		case DrawCommand::Type::DrawSolidTriangle:
+			currentColor = currentFillStyle.color.getRgba();
+			drawTriangle(
+				cmd.drawTriangle.p1,
+				cmd.drawTriangle.p2,
+				cmd.drawTriangle.p3,
+				cmd.drawTriangle.uv1,
+				cmd.drawTriangle.uv2,
+				cmd.drawTriangle.uv3,
+				cmd.drawTriangle.image);
+			break;
+		case DrawCommand::Type::SetAtlas:
+			if (currentAtlas != cmd.setAtlas)
+			{
+				currentAtlas = cmd.setAtlas;
+				addBatch();
+			}
+			break;
+		default:
+			break;
 		}
 	}
 
@@ -2137,11 +2131,11 @@ void Renderer::addDrawCommand(const DrawCommand& cmd)
 {
 	if (drawCmdNextInsertIndex == ~0)
 	{
-		drawCommands[currentWindow].push_back(cmd);
+		drawCommands.push_back(cmd);
 	}
 	else
 	{
-		drawCommands[currentWindow].insert(drawCommands[currentWindow].begin() + drawCmdNextInsertIndex, cmd);
+		drawCommands.insert(drawCommands.begin() + drawCmdNextInsertIndex, cmd);
 		drawCmdNextInsertIndex++;
 	}
 }

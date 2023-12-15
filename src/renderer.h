@@ -170,7 +170,7 @@ public:
 
 	Renderer();
 	virtual ~Renderer();
-	void setWindow(HWindow wnd);
+	void setWindow(HOsWindow wnd);
 	void clear(const Color& color);
 	Rect pushClipRect(const Rect& rect, bool clipToParent = true);
 	void popClipRect();
@@ -262,12 +262,12 @@ protected:
 	void addBatch();
 	void addDrawCommand(const DrawCommand& cmd);
 
-	HWindow currentWindow = 0;
+	HOsWindow currentWindow = 0;
 	u32 textBufferPosition = 0;
 	std::vector<char> textBuffer;
 	u32 pointBufferPosition = 0;
 	std::vector<Point> pointBuffer;
-	std::unordered_map<HWindow, std::vector<DrawCommand>> drawCommands;
+	std::vector<DrawCommand> drawCommands;
 	std::vector<RenderBatch> batches;
 	std::vector<Rect> clipRectStack;
 	VertexBufferData vertexBufferData;

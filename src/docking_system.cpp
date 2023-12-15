@@ -6,7 +6,7 @@
 #include "theme.h"
 #include "context.h"
 #include "docking_system.h"
-#include "view.h"
+#include "docking.h"
 #include <vector>
 #include <unordered_map>
 #include <algorithm>
@@ -20,32 +20,21 @@
 
 namespace hui
 {
-void setCurrentViewHandler(ViewHandler* handler)
-{
-	ctx->currentViewHandler = handler;
-}
-
-ViewHandler* getCurrentViewHandler()
-{
-	return ctx->currentViewHandler;
-}
-
+#ifdef false
 void updateDockingSystemInternal(bool isLastEvent)
 {
+	/*
 	hui::beginFrame();
 
 	// if we close a dockable native window
 	if (hui::getInputEvent().type == InputEvent::Type::WindowClose
-		&& hui::getInputEvent().window != hui::getMainWindow())
+		&& hui::getInputEvent().window != ctx->mainOsWindow)
 	{
-		auto node = (DockNode*)getRootDockNode(hui::getInputEvent().window);
-		auto iter = ctx->dockingState.rootWindowDockNodes.find(hui::getInputEvent().window);
+		auto node = getRootDockNode(hui::getInputEvent().window);
 		
-		if (iter != ctx->dockingState.rootWindowDockNodes.end())
-			ctx->dockingState.rootWindowDockNodes.erase(iter);
-
-		delete node;
-		hui::destroyWindow(hui::getInputEvent().window);
+		deleteRootDockNode(hui::getInputEvent().window);
+		destroyOsWindow(hui::getInputEvent().window);
+		
 	}
 
 	std::vector<DockNode*> viewTabsNodes;
@@ -86,7 +75,7 @@ void updateDockingSystemInternal(bool isLastEvent)
 		beginContainer(wndRect);
 		f32 oldY = 0;
 
-		/*
+		
 		// top area
 		ctx->currentViewHandler->onTopAreaRender(wnd);
 		//node->sideSpacing[(int)ViewContainer::SideSpacing::SideSpacingTop] = ctx->penPosition.y;
@@ -111,7 +100,7 @@ void updateDockingSystemInternal(bool isLastEvent)
 		beginContainer({ ctx->penPosition.x, ctx->penPosition.y, wndRect.width, viewCtr->sideSpacing[(int)ViewContainer::SideSpacing::SideSpacingBottom] });
 		ctx->currentViewHandler->onBottomAreaRender(wnd);
 		endContainer();
-		*/
+		
 
 		//for (auto& viewTabsNode : viewTabsNodes)
 		//{
@@ -146,10 +135,12 @@ void updateDockingSystemInternal(bool isLastEvent)
 	}
 
 	hui::endFrame();
+	*/
 }
 
 void updateDockingSystem()
 {
+	/*
 	hui::processInputEvents();
 
 	if (hui::hasNothingToDo())
@@ -177,10 +168,12 @@ void updateDockingSystem()
 		ctx->event = ctx->events[i];
 		doLogicAndRender(i == ctx->events.size() - 1);
 	}
+	*/
 }
 
 void dockingSystemLoop()
 {
+	/*
 #ifdef HORUS_TIMING_DEBUG
 	using namespace std;
 	using namespace std::chrono;
@@ -203,6 +196,7 @@ void dockingSystemLoop()
 		printf("%fms\n", total.count());
 #endif
 	}
+	*/
 }
 
 //void resizeRootViewPaneToSides(ViewPane* viewPane)
@@ -217,6 +211,7 @@ void dockingSystemLoop()
 
 void handleDockingMouseDown(const InputEvent& event, DockNode* node)
 {
+	/*
 	auto& ds = ctx->dockingState;
 	const Point& mousePos = event.mouse.point;
 	std::vector<DockNode*> viewTabsNodes;
@@ -251,10 +246,12 @@ void handleDockingMouseDown(const InputEvent& event, DockNode* node)
 			}
 		}
 	}
+	*/
 }
 
 void handleDockingMouseUp(const InputEvent& event, DockNode* node)
 {
+	/*
 	auto& ds = ctx->dockingState;
 	bool moved = fabs(ds.lastMousePos.x - event.mouse.point.x) > ctx->settings.dragStartDistance || fabs(ds.lastMousePos.y - event.mouse.point.y) > ctx->settings.dragStartDistance;
 
@@ -299,10 +296,12 @@ void handleDockingMouseUp(const InputEvent& event, DockNode* node)
 	ds.dockToNode = nullptr;
 	ds.dragView = nullptr;
 	ds.resizingNode = nullptr;
+	*/
 }
 
 void handleDockingMouseMove(const InputEvent& event, DockNode* node)
 {
+	/*
 	auto& ds = ctx->dockingState;
 
 	// if we drag a tab or a pane splitter
@@ -1179,4 +1178,5 @@ void handleDockNodeResize2(DockNode* node)
 	ctx->dockingTabPane = draggingView;
 }
 */
+#endif
 }

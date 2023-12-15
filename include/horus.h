@@ -1648,11 +1648,18 @@ HORUS_API void setMouseCursor(HMouseCursor cursor);
 // Windowing & docking functions
 //////////////////////////////////////////////////////////////////////////
 
+// Create the main window from an OS window handle, used by backends
+HORUS_API void createMainWindow(HOsWindow osWnd);
+
 HORUS_API bool beginWindow(const char* id, const char* title, const char* dockTo, DockType dockType, Rect* initialRect);
 
 HORUS_API void endWindow();
 
 HORUS_API bool isMouseOverWindow();
+
+HORUS_API void setCapture();
+
+HORUS_API void releaseCapture();
 
 /// \return the window client rect, used usually to render custom scenes
 HORUS_API Rect getWindowClientRect();

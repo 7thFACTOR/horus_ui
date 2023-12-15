@@ -133,7 +133,7 @@ bool comboSliderInternal(f32& value, f32 minVal, f32 maxVal, bool useRange, f32 
 			&& !dragging
 			&& ctx->isActiveLayer())
 		{
-			setCapture(getWindow());
+			hui::setCapture();
 			dragLastMousePos = ctx->event.mouse.point;
 
 			if (!editingText)
@@ -207,7 +207,7 @@ bool comboSliderInternal(f32& value, f32 minVal, f32 maxVal, bool useRange, f32 
 			dragging = false;
 			mouseWasDown = false;
 			comboSliderWidgetId = 0;
-			releaseCapture();
+			//TODO: releaseCapture();
 			ctx->widget.changeEnded = true;
 		}
 

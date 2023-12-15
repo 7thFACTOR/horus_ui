@@ -32,7 +32,7 @@ bool TextInputState::processEvent(const InputEvent& ev)
 		selectionBegin = selectionEnd = caretPosition;
 		selectingWithMouse = false;
 		computeScrollAmount();
-		setCapture(0);
+		setCapture();
 	}
 	else if (ev.type == InputEvent::Type::MouseUp)
 	{
@@ -47,7 +47,7 @@ bool TextInputState::processEvent(const InputEvent& ev)
 			firstMouseDown = false;
 		}
 	}
-	else if (ev.window == getFocusedWindow())
+	else if (ev.window == HORUS_INPUT->getFocusedWindow())
 	{
 		auto chrPos = getCharIndexAtX(ev.mouse.point.x);
 

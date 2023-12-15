@@ -61,7 +61,7 @@ bool vecEditorInternal(f64& x, f64& y, f64& z, f64 scrollStep, bool useZ)
 				draggingValue = true;
 				draggedWidgetId = ctx->currentWidgetId;
 				lastMousePos = hui::getInputEvent().mouse.point;
-				hui::setCapture(hui::getWindow());
+				hui::setCapture();
 			}
 		}
 

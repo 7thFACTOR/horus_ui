@@ -90,7 +90,7 @@ void deleteRootDockNode(HOsWindow window)
 	}
 }
 
-Window* createWindow(DockNode* targetNode, DockType dockType, const std::string& title, Rect* initialRect)
+Window* createWindow(const std::string& id, DockNode* targetNode, DockType dockType, const std::string& title, Rect* initialRect)
 {
 	auto targetNodePtr = (DockNode*)targetNode;
 	auto newWnd = new Window();
@@ -103,6 +103,8 @@ Window* createWindow(DockNode* targetNode, DockType dockType, const std::string&
 		auto osWnd = createOsWindow(title, OsWindowFlags::Resizable, initialRect ? *initialRect : defaultRect);
 		newWnd->dockNode = createRootDockNode(osWnd);
 	}
+
+	ctx->dockingState.windows[id] = newWnd;
 
 	if (targetNode)
 		dockWindow(newWnd, targetNode, dockType, 0);
@@ -795,8 +797,8 @@ void dockNodeTabs(DockNode* node)
 
 	for (size_t i = 0; i < node->windows.size(); i++)
 	{
-		hui::tab(node->windows[i]->title.c_str(), node->windows[i]->icon);
-		node->windows[i]->cachedTabRect = ctx->widget.rect;
+		hui::tab(node->windows[i]->title.c_str(), 0/*node->windows[i]->icon*/);
+		node->windows[i]->tabRect = ctx->widget.rect;
 
 		if (ctx->widget.hovered
 			&& ctx->event.type == InputEvent::Type::MouseDown
@@ -836,7 +838,7 @@ void beginDockNode(DockNode* node)
 	//beginContainer(node->rect);
 
 	//auto ret = dockNodeTabs(node);
-	auto info = hui::findDockNodeDragInfoAtMousePos(hui::getOsWindow(), hui::getMousePosition());
+	auto info = hui::findDockNodeDragInfoAtMousePos(node->osWindow, hui::getMousePosition());
 	
 	if (info.node == node)
 		hui::setLineColor(hui::Color::red);
@@ -858,7 +860,7 @@ void beginDockNode(DockNode* node)
 	for (auto& c : node->children)
 	{
 		beginDockNode(c);
-		endDockNode();
+		//endDockNode();
 	}
 }
 
@@ -906,19 +908,19 @@ std::string enumTypeToStr(DockNode::Type type)
 	}
 }
 
-void printInfo(int level, Window* wnd, DockNode* node)
+void printInfo(int level, DockNode* node)
 {
 	std::string spaces(level, '\t');
-	printf("%snode: %p wnd: %p parent: %p type: %s rc: %0.0f %0.0f %0.0f %0.0f\n", spaces.c_str(), node, wnd, node->parent, enumTypeToStr(node->type).c_str(), node->rect.x, node->rect.y, node->rect.width, node->rect.height);
+	printf("%snode: %p osWnd: %p parent: %p type: %s rc: %0.0f %0.0f %0.0f %0.0f\n", spaces.c_str(), node, node->osWindow, node->parent, enumTypeToStr(node->type).c_str(), node->rect.x, node->rect.y, node->rect.width, node->rect.height);
 
 	for (auto& w : node->windows)
 	{
-		printf("%s `%s` %p node: %p icon: %u windowType: %d usrData: %p tabRect: %f %f %f %f\n", spaces.c_str(), w->title.c_str(), w, w->dockNode, w->cachedTabRect.x, w->cachedTabRect.y, w->cachedTabRect.width, w->cachedTabRect.height);
+		printf("%s `%s` %p node: %p windowType: %d usrData: %p tabRect: %f %f %f %f\n", spaces.c_str(), w->title.c_str(), w, w->dockNode, w->tabRect.x, w->tabRect.y, w->tabRect.width, w->tabRect.height);
 	}
 
 	for (auto& child : node->children)
 	{
-		printInfo(level + 1, wnd, child);
+		printInfo(level + 1, child);
 	}
 }
 
@@ -926,11 +928,11 @@ void debugwindows()
 {
 	printf("------------------------------------------------------------------------------------------------------------\n");
 	printf("Debug windows:\n\n");
-	printf("%d windows\n", ctx->dockingState.rootWindowDockNodes.size());
+	printf("%d windows\n", ctx->dockingState.rootOsWindowDockNodes.size());
 
-	for (auto& pair : ctx->dockingState.rootWindowDockNodes)
+	for (auto& pair : ctx->dockingState.rootOsWindowDockNodes)
 	{
-		printInfo(0, pair.first, pair.second);
+		printInfo(0, pair.second);
 	}
 }
 

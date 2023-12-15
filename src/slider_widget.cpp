@@ -67,7 +67,7 @@ bool sliderInternal(f32 minVal, f32 maxVal, f32& value, bool useStep, f32 step, 
 	{
 		if (knobRect.contains(ctx->event.mouse.point))
 		{
-			setCapture(getWindow());
+			setCapture();
 			draggingKnob = true;
 			dragDelta.x = ctx->event.mouse.point.x - (knobRect.x + knobRect.width / 2.0f);
 		}

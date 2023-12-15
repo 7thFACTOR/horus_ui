@@ -1,6 +1,6 @@
 #pragma once
 #include "types.h"
-#include "view.h"
+#include "dock_node.h"
 
 namespace hui
 {

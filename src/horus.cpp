@@ -467,14 +467,6 @@ void setOsWindow(HOsWindow window)
 		{ 0, 0, size.x, size.y });
 }
 
-void present()
-{
-	for (auto& wnd : ctx->osWindows)
-	{
-		presentWindow(wnd);
-	}
-}
-
 void presentWindow(HOsWindow wnd)
 {
 	ctx->renderer->setWindow(wnd);
@@ -482,9 +474,16 @@ void presentWindow(HOsWindow wnd)
 	ctx->providers->input->presentWindow(wnd);
 }
 
-void releaseCapture()
+void present()
 {
-	ctx->providers->input->releaseCapture();
+	for (auto& wnd : ctx->osWindows)
+	{
+		presentWindow(wnd);
+	}
+
+	ctx->renderer->setWindow(ctx->providers->input->getMainWindow());
+	//TODO ctx->renderer->processCommands(wnd);
+	ctx->providers->input->presentWindow(ctx->providers->input->getMainWindow());
 }
 
 void cancelEvent()
@@ -1090,6 +1089,14 @@ HFont getFont(const char* themeFontName)
 	return getThemeFont(getTheme(), themeFontName);
 }
 
+void createMainWindow(HOsWindow osWnd)
+{
+	auto title = HORUS_INPUT->getWindowTitle(osWnd);
+	auto rc = HORUS_INPUT->getWindowRect(osWnd);
+	auto wnd = createWindow(HORUS_MAIN_WINDOW_ID, nullptr, DockType::None, title, rc);
+	ctx->mainOsWindow = wnd;
+}
+
 bool beginWindow(const char* id, const char* title, const char* dockTo, DockType dockType, Rect* initialRect)
 {
 	Window* wnd = nullptr;
@@ -1113,6 +1120,8 @@ bool beginWindow(const char* id, const char* title, const char* dockTo, DockType
 	}
 
 	ctx->hoveringThisWindow = isMouseOverWindow();
+
+	return true;
 }
 
 void endWindow()
@@ -1137,6 +1146,16 @@ bool isMouseOverWindow()
 	}
 
 	return false;
+}
+
+void setCapture()
+{
+	HORUS_INPUT->setCapture(ctx->currentWindow);
+}
+
+void releaseCapture()
+{
+	HORUS_INPUT->releaseCapture();
 }
 
 Rect getWindowClientRect()
@@ -1760,9 +1779,9 @@ bool droppedOnWidget()
 {
 	if (ctx->dragDropState.begunDragging
 		&& ctx->hoveringThisWindow
-		&& getFocusedWindow() != getWindow())
+		&& HORUS_INPUT->getFocusedWindow() != ctx->currentWindow->dockNode->osWindow)
 	{
-		ctx->providers->input->raiseWindow(getWindow());
+		ctx->providers->input->raiseWindow(ctx->currentWindow->dockNode->osWindow);
 	}
 
 	if (ctx->dragDropState.begunDragging

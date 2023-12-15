@@ -805,7 +805,7 @@ Point Sdl2InputProvider::getMousePosition()
 	return { (f32)x , (f32)y };
 }
 
-void initializeWithSDL(const SdlSettings& settings)
+void initializeWithSDL(const SdlInitParams& settings)
 {
 	Rect wndRect = settings.mainWindowRect;
 

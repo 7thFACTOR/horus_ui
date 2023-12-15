@@ -29,7 +29,7 @@ void DockNode::removeFromParent()
 
 void DockNode::removeWindow(Window* window)
 {
-	auto iter = std::find(windows.begin(), windows.end(), windows);
+	auto iter = std::find(windows.begin(), windows.end(), window);
 
 	if (iter != windows.end())
 	{
@@ -213,7 +213,7 @@ void DockNode::debug(i32 level)
 	{
 		printf("%s\tViews:\n", tabs.c_str());
 		for (auto& w : windows)
-			printf("%s\t\t%s icon:%p\n", tabs.c_str(), w->title.c_str(), (void*)w->icon);
+			printf("%s\t\t%s\n", tabs.c_str(), w->title.c_str());
 	}
 
 	for (auto& c : children) c->debug(level + 1);

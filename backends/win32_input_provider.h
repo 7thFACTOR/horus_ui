@@ -7,7 +7,7 @@
 
 namespace hui
 {
-struct SdlSettings
+struct SdlInitParams
 {
 	char* mainWindowTitle = nullptr;
 	Rect mainWindowRect;
@@ -97,7 +97,7 @@ struct Sdl2InputProvider : InputProvider
 	GraphicsProvider* gfxProvider = nullptr;
 };
 
-void initializeWithSDL(const SdlSettings& settings);
+void initializeWithSDL(const SdlInitParams& settings);
 
 }
 

@@ -92,6 +92,9 @@ struct InputProvider
 	/// \param title UTF8 text for the title
 	virtual void setWindowTitle(HOsWindow window, const char* title) = 0;
 
+	/// Get window title
+	virtual std::string getWindowTitle(HOsWindow window) = 0;
+
 	/// Set the window client area size
 	/// \param window the window
 	/// \param size the width and height
@@ -100,6 +103,14 @@ struct InputProvider
 	/// Get the window client area size
 	/// \param window the window
 	virtual Point getWindowClientSize(HOsWindow window) = 0;
+
+	/// Get the window screen rectangle, including the decorations
+	/// \param window the window
+	virtual Rect getWindowRect(HOsWindow window) = 0;
+
+	/// Set the window screen rectangle, including the decorations
+	/// \param window the window
+	virtual void setWindowRect(HOsWindow window, const Rect& rect) = 0;
 
 	/// Set the window absolute screen position
 	/// \param window the window
@@ -140,9 +151,6 @@ struct InputProvider
 	/// Minimize a native window
 	/// \param window the window
 	virtual void minimizeWindow(HOsWindow window) = 0;
-
-	/// \return the window state
-	virtual OsWindowState getWindowState(HOsWindow window) = 0;
 
 	/// Set the input capture to a specified window
 	/// \param window the window

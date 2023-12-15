@@ -4,14 +4,17 @@
 #include <SDL.h>
 #include <SDL_version.h>
 #include <vector>
+#include <string>
 
 namespace hui
 {
-struct SdlSettings
+struct SdlInitParams
 {
 	bool vSync = true;
-	void* sdlGLContext = nullptr; // set to a valid SDL
-	bool initializeSDL = true; // set to false if you already initialized SDL
+	SDL_GLContext sdlGlContext = nullptr; // set to a valid SDL GL context
+	bool initializeSdl = true; // set to false if you already initialized SDL
+	std::string mainWindowTitle;
+	Rect mainWindowRect = {0, 0, 800, 600};
 	SDL_Window* sdlMainWindow = nullptr;
 	AntiAliasing antiAliasing = AntiAliasing::None;
 };
@@ -43,8 +46,11 @@ struct Sdl2InputProvider : InputProvider
 	HOsWindow getMainWindow() override;
 	HOsWindow createWindow(const char* title, OsWindowFlags flags, const Rect& rect) override;
 	void setWindowTitle(HOsWindow window, const char* title) override;
+	std::string getWindowTitle(HOsWindow window) override;
 	void setWindowClientSize(HOsWindow window, const Point& size) override;
 	Point getWindowClientSize(HOsWindow window) override;
+	Rect getWindowRect(HOsWindow window) override;
+	void setWindowRect(HOsWindow window, const Rect& rect) override;
 	void setWindowPosition(HOsWindow window, const Point& pos) override;
 	Point getWindowPosition(HOsWindow window) override;
 	OsWindowState getWindowState(HOsWindow window);
@@ -78,9 +84,8 @@ struct Sdl2InputProvider : InputProvider
 	bool quitApp = false; /// if true, it will end the main app loop
 	bool addedMouseMove = false; /// we only want the first mouse move because otherwise we'll get way too many mouse move events in the queue
 	bool wantsToQuitApp = false; /// true when the user wants to quit the app
-	bool ownsGLContext = false; // true if it created the OpenGL context
-	bool ownsSDLInit = false; // true if the SDL init happened here
-	SDL_GLContext sdlGLContext = nullptr;
+	bool ownsGlContext = false; // true if it created the OpenGL context
+	bool ownsSdlInit = false; // true if the SDL init happened here
 	SDL_Cursor* cursors[SDL_NUM_SYSTEM_CURSORS] = { nullptr };
 	std::vector<SdlWindowProxy*> windows;
 	std::vector<SDL_Cursor*> customCursors;
@@ -92,9 +97,9 @@ struct Sdl2InputProvider : InputProvider
 	u32 lastTime = SDL_GetTicks();
 	f32 deltaTime = 0;
 	bool sizeChanged = false;
-	SdlSettings settings;
+	SdlInitParams initParams;
 };
 
-void setupSDL(const SdlSettings& settings);
+void initializeSdl(const SdlInitParams& params);
 
 }
