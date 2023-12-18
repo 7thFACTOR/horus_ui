@@ -90,7 +90,7 @@ void deleteRootDockNode(HOsWindow window)
 	}
 }
 
-Window* createWindow(const std::string& id, DockNode* targetNode, DockType dockType, const std::string& title, Rect* initialRect)
+Window* createWindow(const std::string& id, DockNode* targetNode, DockType dockType, const std::string& title, Rect* initialRect, HOsWindow osWnd)
 {
 	auto targetNodePtr = (DockNode*)targetNode;
 	auto newWnd = new Window();
@@ -100,11 +100,16 @@ Window* createWindow(const std::string& id, DockNode* targetNode, DockType dockT
 
 	if (!targetNode)
 	{
-		auto osWnd = createOsWindow(title, OsWindowFlags::Resizable, initialRect ? *initialRect : defaultRect);
+		if (!osWnd)
+		{
+			osWnd = createOsWindow(title, OsWindowFlags::Resizable, initialRect ? *initialRect : defaultRect);
+		}
+		
 		newWnd->dockNode = createRootDockNode(osWnd);
 	}
 
 	ctx->dockingState.windows[id] = newWnd;
+	ctx->osWindows.push_back(osWnd);
 
 	if (targetNode)
 		dockWindow(newWnd, targetNode, dockType, 0);

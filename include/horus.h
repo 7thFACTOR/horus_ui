@@ -1211,6 +1211,11 @@ struct Rect
 		return expand(-amount);
 	}
 
+	inline Point getSize() const
+	{
+		return { width, height };
+	}
+
 	inline Rect operator + (const Point& pt) const
 	{
 		return { x + pt.x, y + pt.y, width, height };

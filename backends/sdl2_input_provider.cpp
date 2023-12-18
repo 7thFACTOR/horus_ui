@@ -676,7 +676,7 @@ HOsWindow Sdl2InputProvider::createWindow(
 
 	//if (HORUS_GFX->getApiType() == GraphicsProvider::ApiType::Direct3D12)
 	//	sdlflags |= SDL_WINDOW_DX12;
-
+	
 	auto wnd = SDL_CreateWindow(
 		title, rect.x, rect.y, rect.width, rect.height,
 		sdlflags);
@@ -721,20 +721,15 @@ Rect Sdl2InputProvider::getWindowRect(HOsWindow window)
 
 	SDL_GetWindowPosition(((SdlWindowProxy*)window)->sdlWindow, &x, &y);
 	SDL_GetWindowSize(((SdlWindowProxy*)window)->sdlWindow, &w, &h);
-	SDL_GetWindowBordersSize(((SdlWindowProxy*)window)->sdlWindow, &top, &left, &right, &bottom);
 
-	return { (f32)x, (f32)y, (f32)(w + left + right), (f32)(h + top + bottom) };
+	return { (f32)x, (f32)y, (f32)(w), (f32)(h) };
 }
 
 void Sdl2InputProvider::setWindowRect(HOsWindow window, const Rect& rect)
 {
-	int top = 0, left = 0, right = 0, bottom = 0;
-	SDL_GetWindowBordersSize(((SdlWindowProxy*)window)->sdlWindow, &top, &left, &right, &bottom);
-
 	SDL_SetWindowPosition(((SdlWindowProxy*)window)->sdlWindow, rect.x, rect.y);
-	SDL_SetWindowSize(((SdlWindowProxy*)window)->sdlWindow, rect.width - left - right, rect.height - top - bottom);
+	SDL_SetWindowSize(((SdlWindowProxy*)window)->sdlWindow, rect.width, rect.height);
 }
-
 
 void Sdl2InputProvider::setWindowPosition(HOsWindow window, const Point& pos)
 {
@@ -933,8 +928,7 @@ void initializeSdl(const SdlInitParams& params)
 	SDL_RaiseWindow(mainWnd->sdlWindow);
 	SDL_SetWindowInputFocus(mainWnd->sdlWindow);
 	sdlProvider->createSystemCursors();
-	hui::createMainWindow(mainWnd);
-
+	createMainWindow(mainWnd);
 	HORUS_GFX->initialize();
 }
 

@@ -470,7 +470,6 @@ void setOsWindow(HOsWindow window)
 void presentWindow(HOsWindow wnd)
 {
 	ctx->renderer->setWindow(wnd);
-	//TODO ctx->renderer->processCommands(wnd);
 	ctx->providers->input->presentWindow(wnd);
 }
 
@@ -480,10 +479,6 @@ void present()
 	{
 		presentWindow(wnd);
 	}
-
-	ctx->renderer->setWindow(ctx->providers->input->getMainWindow());
-	//TODO ctx->renderer->processCommands(wnd);
-	ctx->providers->input->presentWindow(ctx->providers->input->getMainWindow());
 }
 
 void cancelEvent()
@@ -1093,8 +1088,16 @@ void createMainWindow(HOsWindow osWnd)
 {
 	auto title = HORUS_INPUT->getWindowTitle(osWnd);
 	auto rc = HORUS_INPUT->getWindowRect(osWnd);
-	auto wnd = createWindow(HORUS_MAIN_WINDOW_ID, nullptr, DockType::None, title, rc);
-	ctx->mainOsWindow = wnd;
+	auto wnd = createWindow(HORUS_MAIN_WINDOW_ID, nullptr, DockType::None, title, &rc, osWnd);
+	ctx->dockingState.mainWindow = wnd;
+	ctx->currentWindow = wnd;
+	ctx->hoveringThisWindow = true;
+}
+
+void closeMainWindow()
+{
+	deleteWindow(ctx->dockingState.mainWindow);
+	ctx->dockingState.mainWindow = 0;
 }
 
 bool beginWindow(const char* id, const char* title, const char* dockTo, DockType dockType, Rect* initialRect)
@@ -1111,7 +1114,7 @@ bool beginWindow(const char* id, const char* title, const char* dockTo, DockType
 			dockToNode = ctx->dockingState.windows[dockTo]->dockNode;
 		}
 
-		wnd = createWindow(dockToNode, dockType, title, initialRect);
+		wnd = createWindow(id, dockToNode, dockType, title, initialRect, 0);
 		wnd->id = id;
 	}
 	else

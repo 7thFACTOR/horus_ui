@@ -289,6 +289,7 @@ struct DockingState
 	Point lastMousePos;
 	Rect draggedRect;
 	bool drawingWindowTabs = false;
+	Window* mainWindow = nullptr;
 };
 
 struct DragDropState
