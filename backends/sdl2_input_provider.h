@@ -15,6 +15,8 @@ struct SdlInitParams
 	bool initializeSdl = true; // set to false if you already initialized SDL
 	std::string mainWindowTitle;
 	Rect mainWindowRect = {0, 0, 800, 600};
+	OsWindowFlags mainWindowFlags = OsWindowFlags::Resizable;
+	OsWindowState mainWindowState = OsWindowState::Normal;
 	SDL_Window* sdlMainWindow = nullptr;
 	AntiAliasing antiAliasing = AntiAliasing::None;
 };
@@ -44,7 +46,7 @@ struct Sdl2InputProvider : InputProvider
 	HOsWindow getFocusedWindow() override;
 	HOsWindow getHoveredWindow() override;
 	HOsWindow getMainWindow() override;
-	HOsWindow createWindow(const char* title, OsWindowFlags flags, const Rect& rect) override;
+	HOsWindow createWindow(const char* title, OsWindowFlags flags, OsWindowState state, const Rect& rect) override;
 	void setWindowTitle(HOsWindow window, const char* title) override;
 	std::string getWindowTitle(HOsWindow window) override;
 	void setWindowClientSize(HOsWindow window, const Point& size) override;

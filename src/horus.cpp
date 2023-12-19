@@ -1106,7 +1106,7 @@ bool beginWindow(const char* id, const char* title, const char* dockTo, DockType
 
 	if (ctx->dockingState.windows.find(id) == ctx->dockingState.windows.end())
 	{
-		auto iter = ctx->dockingState.windows.find(dockTo);
+		auto iter = ctx->dockingState.windows.find(dockTo ? dockTo : "");
 		DockNode* dockToNode = nullptr;
 
 		if (dockTo && iter != ctx->dockingState.windows.end())

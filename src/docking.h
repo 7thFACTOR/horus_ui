@@ -17,7 +17,7 @@ struct DragDockNodeInfo
 	DragSide dragSide = DragSide::None;
 };
 
-HOsWindow createOsWindow(const std::string& title, OsWindowFlags flags, const Rect& rect);
+HOsWindow createOsWindow(const std::string& title, OsWindowFlags flags, OsWindowState state, const Rect& rect);
 void destroyOsWindow(HOsWindow wnd);
 DockNode* createRootDockNode(HOsWindow osWindow);
 void deleteRootDockNode(HOsWindow window);

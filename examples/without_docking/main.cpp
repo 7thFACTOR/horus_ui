@@ -36,7 +36,9 @@ int main(int argc, char** args)
 	hui::SdlInitParams sdlParams;
 
 	sdlParams.mainWindowTitle = "HorusUI Example - Without docking";
-	sdlParams.mainWindowRect = { 0, 0, 1200, 1000 };
+	sdlParams.mainWindowRect = { 20, 20, 1200, 1000 };
+	//sdlParams.mainWindowFlags = hui::OsWindowFlags::NoDecoration;
+	sdlParams.mainWindowState = hui::OsWindowState::Maximized;
 
 	hui::initializeSdl(sdlParams);
 	hui::initializeRenderer(); // init UI renderer for the current context
@@ -75,9 +77,6 @@ int main(int argc, char** args)
 		// the main frame rendering and input handling
 		auto doFrame = [&](bool lastEventInQueue)
 		{
-			//// start to add widgets in the window
-			//if (hui::beginWindow("wnd1", "Horus Demo - No Docking", nullptr, hui::DockType::None, nullptr))
-			//{
 				// disable rendering if its not the last event in the queue
 				// no need to render while handling all the input events
 				// we only render on the last event in the queue
@@ -149,9 +148,10 @@ int main(int argc, char** args)
 				hui::button("I AGREE");
 				hui::line();
 				scrollPos = hui::endScrollView();
-
+				hui::pushTint(hui::Color::orange);
 				if (hui::button("Exit"))
 					hui::quitApplication();
+				hui::popTint();
 
 				hui::beginColumns(5);
 				hui::pushWidth(0.5);
@@ -170,8 +170,16 @@ int main(int argc, char** args)
 				hui::endColumns();
 
 				hui::endContainer();
+
+				// start to add widgets in the window
+				if (hui::beginWindow("wnd1", "Horus Demo - No Docking", nullptr, hui::DockType::None, nullptr))
+				{
+					hui::button("COCO");
+				}
+				hui::endWindow();
+
+
 				hui::endFrame();
-				//hui::endWindow();
 
 				if (lastEventInQueue)
 					hui::present();

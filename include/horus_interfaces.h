@@ -85,7 +85,7 @@ struct InputProvider
 	/// \param flags the window flags
 	/// \param customPosition if the positionType is custom, then this is the window's initial position
 	/// \return the new window handle
-	virtual HOsWindow createWindow(const char* title, OsWindowFlags flags, const Rect& rect) = 0;
+	virtual HOsWindow createWindow(const char* title, OsWindowFlags flags, OsWindowState state, const Rect& rect) = 0;
 
 	/// Set window title
 	/// \param window the window

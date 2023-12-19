@@ -652,9 +652,20 @@ HOsWindow Sdl2InputProvider::getHoveredWindow()
 }
 
 HOsWindow Sdl2InputProvider::createWindow(
-	const char* title, OsWindowFlags flags, const Rect& rect)
+	const char* title, OsWindowFlags flags, OsWindowState state, const Rect& rect)
 {
-	int sdlflags = SDL_WINDOW_SHOWN;
+	int sdlflags = 0;
+
+	if (state == OsWindowState::Maximized)
+		sdlflags |= SDL_WINDOW_MAXIMIZED;
+
+	if (state == OsWindowState::Minimized)
+		sdlflags |= SDL_WINDOW_MINIMIZED;
+
+	if (state == OsWindowState::Hidden)
+		sdlflags |= SDL_WINDOW_HIDDEN;
+	else
+		sdlflags |= SDL_WINDOW_SHOWN;
 
 	if (has(flags, OsWindowFlags::Resizable))
 		sdlflags |= SDL_WINDOW_RESIZABLE;
@@ -893,7 +904,7 @@ void initializeSdl(const SdlInitParams& params)
 
 	if (!params.sdlMainWindow)
 	{
-		mainWnd = (SdlWindowProxy*)sdlProvider->createWindow(params.mainWindowTitle.c_str(), hui::OsWindowFlags::Resizable, params.mainWindowRect);
+		mainWnd = (SdlWindowProxy*)sdlProvider->createWindow(params.mainWindowTitle.c_str(), params.mainWindowFlags, params.mainWindowState, params.mainWindowRect);
 	}
 	else
 	{

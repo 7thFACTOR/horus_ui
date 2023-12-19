@@ -9,9 +9,9 @@
 
 namespace hui
 {
-HOsWindow createOsWindow(const std::string& title, OsWindowFlags flags, const Rect& rect)
+HOsWindow createOsWindow(const std::string& title, OsWindowFlags flags, OsWindowState state, const Rect& rect)
 {
-	auto wnd = ctx->providers->input->createWindow(title.c_str(), flags, rect);
+	auto wnd = ctx->providers->input->createWindow(title.c_str(), flags, state, rect);
 
 	if (!ctx->renderer)
 	{
@@ -102,7 +102,7 @@ Window* createWindow(const std::string& id, DockNode* targetNode, DockType dockT
 	{
 		if (!osWnd)
 		{
-			osWnd = createOsWindow(title, OsWindowFlags::Resizable, initialRect ? *initialRect : defaultRect);
+			osWnd = createOsWindow(title, OsWindowFlags::Resizable, OsWindowState::Normal, initialRect ? *initialRect : defaultRect);
 		}
 		
 		newWnd->dockNode = createRootDockNode(osWnd);
