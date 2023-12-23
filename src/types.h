@@ -27,8 +27,6 @@ struct View;
 
 typedef u32 ImageId;
 
-#define HORUS_MAIN_WINDOW_ID "__mainWnd"
-
 struct ThemeElement
 {
 	struct State

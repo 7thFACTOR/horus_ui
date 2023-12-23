@@ -159,7 +159,7 @@ struct InputProvider
 	/// Release capture from the captured window (if any)
 	virtual void releaseCapture() = 0;
 
-	/// \return the current mouse position
+	/// \return the current screen mouse position
 	virtual Point getMousePosition() = 0;
 
 	/// Set the current mouse cursor type

@@ -453,8 +453,6 @@ bool clipTriangleToRect(
 
 Renderer::Renderer()
 {
-	textBuffer.resize(textBufferMaxSize);
-	pointBuffer.resize(pointBufferMaxSize);
 	vertexBuffer = ctx->providers->gfx->createVertexBuffer();
 }
 
@@ -463,14 +461,137 @@ Renderer::~Renderer()
 	delete vertexBuffer;
 }
 
-void Renderer::setWindow(HOsWindow wnd)
+void Renderer::setOsWindow(HOsWindow wnd)
 {
 	currentWindow = wnd;
+	auto size = HORUS_INPUT->getWindowClientSize(wnd);
+	setWindowSize(size);
+
+	if (textBuffer[wnd].empty())
+	{
+		textBuffer[wnd].resize(textBufferMaxSize);
+		pointBuffer[wnd].resize(pointBufferMaxSize);
+	}
 }
 
-void Renderer::clear(const Color& color)
+void Renderer::executeDrawCommands(HOsWindow wnd)
 {
-	ctx->providers->gfx->clear(color);
+	//TODO: should these be per window ?
+	if (disableRendering || skipRender)
+		return;
+
+	auto sortDrawCommands = [](const DrawCommand& a, const DrawCommand& b) -> bool
+		{
+			if (a.zOrder < b.zOrder)
+				return true;
+
+			return false;
+		};
+
+	auto& wndCmds = drawCommands[wnd];
+
+	std::stable_sort(wndCmds.begin(), wndCmds.end(), sortDrawCommands);
+
+	currentAtlas = nullptr;
+	currentBatch = nullptr;
+	batches.clear();
+	vertexBufferData.drawVertexCount = 0;
+
+	// generate the batches
+	for (auto& cmd : wndCmds)
+	{
+		switch (cmd.type)
+		{
+		case DrawCommand::Type::DrawImageBordered:
+			drawImageBordered(cmd.data.drawImageBordered.image, cmd.data.drawImageBordered.border, cmd.data.drawImageBordered.rect, cmd.data.drawImageBordered.scale);
+			break;
+		case DrawCommand::Type::DrawQuad:
+			drawQuad(cmd.data.drawQuad.image, cmd.data.drawQuad.corners[0], cmd.data.drawQuad.corners[1], cmd.data.drawQuad.corners[2], cmd.data.drawQuad.corners[3]);
+			break;
+		case DrawCommand::Type::DrawRect:
+		{
+			atlasTextureIndex = cmd.data.drawRect.textureIndex;
+
+			if (clipRect(cmd.data.drawRect.rotated, cmd.data.drawRect.rect, cmd.data.drawRect.uvRect))
+			{
+				if (cmd.data.drawRect.rotated)
+				{
+					drawQuadRot90(cmd.data.drawRect.rect, cmd.data.drawRect.uvRect);
+				}
+				else
+				{
+					drawQuad(cmd.data.drawRect.rect, cmd.data.drawRect.uvRect);
+				}
+			}
+			break;
+		}
+		case DrawCommand::Type::DrawText:
+			drawTextInternal(cmd.data.drawText.text, cmd.data.drawText.position);
+			break;
+		case DrawCommand::Type::SetColor:
+			currentColor = cmd.data.setColor.getRgba();
+			break;
+		case DrawCommand::Type::SetFont:
+			currentFont = cmd.data.setFont;
+			break;
+		case DrawCommand::Type::ClipRect:
+			currentClipRect = cmd.data.clipRect;
+			break;
+		case DrawCommand::Type::SetTextStyle:
+			currentTextStyle = cmd.data.setTextStyle;
+			break;
+		case DrawCommand::Type::SetLineStyle:
+			currentLineStyle = cmd.data.setLineStyle;
+			break;
+		case DrawCommand::Type::SetFillStyle:
+			currentFillStyle = cmd.data.setFillStyle;
+			break;
+		case DrawCommand::Type::DrawLine:
+			currentColor = currentLineStyle.color.getRgba();
+			drawLine(cmd.data.drawLine.a, cmd.data.drawLine.b);
+			break;
+		case DrawCommand::Type::DrawPolyLine:
+			currentColor = currentLineStyle.color.getRgba();
+			drawPolyLine(cmd.data.drawPolyLine.points, cmd.data.drawPolyLine.count, cmd.data.drawPolyLine.closed);
+			break;
+		case DrawCommand::Type::DrawSolidTriangle:
+			currentColor = currentFillStyle.color.getRgba();
+			drawTriangle(
+				cmd.data.drawTriangle.p1,
+				cmd.data.drawTriangle.p2,
+				cmd.data.drawTriangle.p3,
+				cmd.data.drawTriangle.uv1,
+				cmd.data.drawTriangle.uv2,
+				cmd.data.drawTriangle.uv3,
+				cmd.data.drawTriangle.image);
+			break;
+		case DrawCommand::Type::SetAtlas:
+			if (currentAtlas != cmd.data.setAtlas)
+			{
+				currentAtlas = cmd.data.setAtlas;
+				addBatch();
+			}
+			break;
+		case DrawCommand::Type::ClearBackground:
+			ctx->providers->gfx->clear(cmd.data.setColor);
+			break;
+		default:
+			break;
+		}
+	}
+
+	vertexBuffer->updateData(vertexBufferData.vertices.data(), 0, vertexBufferData.drawVertexCount);
+	// render the batches
+	ctx->providers->gfx->draw(batches.data(), batches.size());
+}
+
+void Renderer::cmdClearBackground(const Color& color)
+{
+	DrawCommand cmd(DrawCommand::Type::ClearBackground);
+
+	cmd.zOrder = zOrder;
+	cmd.data.setColor = color;
+	addDrawCommand(cmd);
 }
 
 Rect Renderer::pushClipRect(const Rect& rect, bool clipToParent)
@@ -483,8 +604,8 @@ Rect Renderer::pushClipRect(const Rect& rect, bool clipToParent)
 	DrawCommand cmd(DrawCommand::Type::ClipRect);
 
 	cmd.zOrder = zOrder;
-	cmd.clipRect = currentClipRect;
-	cmd.clipToParent = clipToParent;
+	cmd.data.clipRect = currentClipRect;
+	cmd.data.clipToParent = clipToParent;
 	addDrawCommand(cmd);
 
 	return newRect;
@@ -502,9 +623,9 @@ void Renderer::popClipRect()
 
 	DrawCommand cmd(DrawCommand::Type::ClipRect);
 
-	cmd.clipRect = currentClipRect;
 	cmd.zOrder = zOrder;
-	cmd.popClipRect = true;
+	cmd.data.clipRect = currentClipRect;
+	cmd.data.popClipRect = true;
 	addDrawCommand(cmd);
 }
 
@@ -520,11 +641,9 @@ void Renderer::beginFrame()
 	zOrder = 0;
 	skipRender = false;
 	disableRendering = false;
-	drawCommands.clear();
-	batches.clear();
-	vertexBufferData.drawVertexCount = 0;
-	textBufferPosition = 0;
-	pointBufferPosition = 0;
+	drawCommands[currentWindow].clear();
+	textBufferPosition[currentWindow] = 0;
+	pointBufferPosition[currentWindow] = 0;
 	currentAtlas = nullptr;
 	currentBatch = nullptr;
 	cmdSetAtlas(ctx->theme->atlas);
@@ -532,113 +651,13 @@ void Renderer::beginFrame()
 
 void Renderer::endFrame()
 {
-	//TODO: should these be per window ?
-	if (disableRendering || skipRender)
-		return;
-
-	auto sortDrawCommands = [](const DrawCommand& a, const DrawCommand& b) -> bool
-	{
-		if (a.zOrder < b.zOrder)
-			return true;
-
-		return false;
-	};
-
-	std::stable_sort(drawCommands.begin(), drawCommands.end(), sortDrawCommands);
-
-	currentAtlas = nullptr;
-	currentBatch = nullptr;
-
-	// generate the batches
-	for (auto& cmd : drawCommands)
-	{
-		switch (cmd.type)
-		{
-		case DrawCommand::Type::DrawImageBordered:
-			drawImageBordered(cmd.drawImageBordered.image, cmd.drawImageBordered.border, cmd.drawImageBordered.rect, cmd.drawImageBordered.scale);
-			break;
-		case DrawCommand::Type::DrawQuad:
-			drawQuad(cmd.drawQuad.image, cmd.drawQuad.corners[0], cmd.drawQuad.corners[1], cmd.drawQuad.corners[2], cmd.drawQuad.corners[3]);
-			break;
-		case DrawCommand::Type::DrawRect:
-		{
-			atlasTextureIndex = cmd.drawRect.textureIndex;
-
-			if (clipRect(cmd.drawRect.rotated, cmd.drawRect.rect, cmd.drawRect.uvRect))
-			{
-				if (cmd.drawRect.rotated)
-				{
-					drawQuadRot90(cmd.drawRect.rect, cmd.drawRect.uvRect);
-				}
-				else
-				{
-					drawQuad(cmd.drawRect.rect, cmd.drawRect.uvRect);
-				}
-			}
-			break;
-		}
-		case DrawCommand::Type::DrawText:
-			drawTextInternal(cmd.drawText.text, cmd.drawText.position);
-			break;
-		case DrawCommand::Type::SetColor:
-			currentColor = cmd.setColor.getRgba();
-			break;
-		case DrawCommand::Type::SetFont:
-			currentFont = cmd.setFont;
-			break;
-		case DrawCommand::Type::ClipRect:
-			currentClipRect = cmd.clipRect;
-			break;
-		case DrawCommand::Type::SetTextStyle:
-			currentTextStyle = cmd.setTextStyle;
-			break;
-		case DrawCommand::Type::SetLineStyle:
-			currentLineStyle = cmd.setLineStyle;
-			break;
-		case DrawCommand::Type::SetFillStyle:
-			currentFillStyle = cmd.setFillStyle;
-			break;
-		case DrawCommand::Type::DrawLine:
-			currentColor = currentLineStyle.color.getRgba();
-			drawLine(cmd.drawLine.a, cmd.drawLine.b);
-			break;
-		case DrawCommand::Type::DrawPolyLine:
-			currentColor = currentLineStyle.color.getRgba();
-			drawPolyLine(cmd.drawPolyLine.points, cmd.drawPolyLine.count, cmd.drawPolyLine.closed);
-			break;
-		case DrawCommand::Type::DrawSolidTriangle:
-			currentColor = currentFillStyle.color.getRgba();
-			drawTriangle(
-				cmd.drawTriangle.p1,
-				cmd.drawTriangle.p2,
-				cmd.drawTriangle.p3,
-				cmd.drawTriangle.uv1,
-				cmd.drawTriangle.uv2,
-				cmd.drawTriangle.uv3,
-				cmd.drawTriangle.image);
-			break;
-		case DrawCommand::Type::SetAtlas:
-			if (currentAtlas != cmd.setAtlas)
-			{
-				currentAtlas = cmd.setAtlas;
-				addBatch();
-			}
-			break;
-		default:
-			break;
-		}
-	}
-
-	vertexBuffer->updateData(vertexBufferData.vertices.data(), 0, vertexBufferData.drawVertexCount);
-	// render the batches
-	ctx->providers->gfx->draw(batches.data(), batches.size());
 }
 
 void Renderer::cmdSetColor(const Color& newColor)
 {
 	DrawCommand cmd(DrawCommand::Type::SetColor);
 	cmd.zOrder = zOrder;
-	cmd.setColor = newColor;
+	cmd.data.setColor = newColor;
 	addDrawCommand(cmd);
 }
 
@@ -646,7 +665,7 @@ void Renderer::cmdSetAtlas(Atlas* newAtlas)
 {
 	DrawCommand cmd(DrawCommand::Type::SetAtlas);
 	cmd.zOrder = zOrder;
-	cmd.setAtlas = newAtlas;
+	cmd.data.setAtlas = newAtlas;
 	currentAtlas = newAtlas;
 	addDrawCommand(cmd);
 }
@@ -655,7 +674,7 @@ void Renderer::cmdSetFont(Font* font)
 {
 	DrawCommand cmd(DrawCommand::Type::SetFont);
 	cmd.zOrder = zOrder;
-	cmd.setFont = font;
+	cmd.data.setFont = font;
 	currentFont = font;
 	addDrawCommand(cmd);
 }
@@ -665,7 +684,7 @@ void Renderer::cmdSetTextUnderline(bool underline)
 	DrawCommand cmd(DrawCommand::Type::SetTextStyle);
 	currentTextStyle.underline = underline;
 	cmd.zOrder = zOrder;
-	cmd.setTextStyle = currentTextStyle;
+	cmd.data.setTextStyle = currentTextStyle;
 	addDrawCommand(cmd);
 }
 
@@ -674,7 +693,7 @@ void Renderer::cmdSetTextBackfill(bool backfill)
 	DrawCommand cmd(DrawCommand::Type::SetTextStyle);
 	currentTextStyle.backFill = backfill;
 	cmd.zOrder = zOrder;
-	cmd.setTextStyle = currentTextStyle;
+	cmd.data.setTextStyle = currentTextStyle;
 	addDrawCommand(cmd);
 }
 
@@ -683,7 +702,7 @@ void Renderer::cmdSetTextBackfillColor(const Color& color)
 	DrawCommand cmd(DrawCommand::Type::SetTextStyle);
 	currentTextStyle.backFillColor = color;
 	cmd.zOrder = zOrder;
-	cmd.setTextStyle = currentTextStyle;
+	cmd.data.setTextStyle = currentTextStyle;
 	addDrawCommand(cmd);
 }
 
@@ -691,7 +710,7 @@ void Renderer::cmdSetLineStyle(const LineStyle& style)
 {
 	DrawCommand cmd(DrawCommand::Type::SetLineStyle);
 	cmd.zOrder = zOrder;
-	currentLineStyle = cmd.setLineStyle = style;
+	currentLineStyle = cmd.data.setLineStyle = style;
 	addDrawCommand(cmd);
 }
 
@@ -699,7 +718,7 @@ void Renderer::cmdSetFillStyle(const FillStyle& style)
 {
 	DrawCommand cmd(DrawCommand::Type::SetFillStyle);
 	cmd.zOrder = zOrder;
-	currentFillStyle = cmd.setFillStyle = style;
+	currentFillStyle = cmd.data.setFillStyle = style;
 	addDrawCommand(cmd);
 }
 
@@ -707,10 +726,10 @@ void Renderer::cmdDrawImage(Image* image, const Point& position, f32 scale)
 {
 	DrawCommand cmd(DrawCommand::Type::DrawRect);
 	cmd.zOrder = zOrder;
-	cmd.drawRect.rect = Rect(position.x, position.y, image->rect.width * scale, image->rect.height * scale);
-	cmd.drawRect.uvRect = image->uvRect;
-	cmd.drawRect.rotated = image->rotated;
-	cmd.drawRect.textureIndex = image->atlasTexture->textureIndex;
+	cmd.data.drawRect.rect = Rect(position.x, position.y, image->rect.width * scale, image->rect.height * scale);
+	cmd.data.drawRect.uvRect = image->uvRect;
+	cmd.data.drawRect.rotated = image->rotated;
+	cmd.data.drawRect.textureIndex = image->atlasTexture->textureIndex;
 	addDrawCommand(cmd);
 }
 
@@ -718,10 +737,10 @@ void Renderer::cmdDrawImage(Image* image, const Rect& rect)
 {
 	DrawCommand cmd(DrawCommand::Type::DrawRect);
 	cmd.zOrder = zOrder;
-	cmd.drawRect.rect = rect;
-	cmd.drawRect.uvRect = image->uvRect;
-	cmd.drawRect.rotated = image->rotated;
-	cmd.drawRect.textureIndex = image->atlasTexture->textureIndex;
+	cmd.data.drawRect.rect = rect;
+	cmd.data.drawRect.uvRect = image->uvRect;
+	cmd.data.drawRect.rotated = image->rotated;
+	cmd.data.drawRect.textureIndex = image->atlasTexture->textureIndex;
 	addDrawCommand(cmd);
 }
 
@@ -729,10 +748,10 @@ void Renderer::cmdDrawImage(Image* image, const Rect& rect, const Rect& uvRect)
 {
 	DrawCommand cmd(DrawCommand::Type::DrawRect);
 	cmd.zOrder = zOrder;
-	cmd.drawRect.rect = rect;
-	cmd.drawRect.uvRect = uvRect;
-	cmd.drawRect.rotated = image->rotated;
-	cmd.drawRect.textureIndex = image->atlasTexture->textureIndex;
+	cmd.data.drawRect.rect = rect;
+	cmd.data.drawRect.uvRect = uvRect;
+	cmd.data.drawRect.rotated = image->rotated;
+	cmd.data.drawRect.textureIndex = image->atlasTexture->textureIndex;
 	addDrawCommand(cmd);
 }
 
@@ -740,11 +759,11 @@ void Renderer::cmdDrawQuad(Image* image, const Point& p1, const Point& p2, const
 {
 	DrawCommand cmd(DrawCommand::Type::DrawQuad);
 	cmd.zOrder = zOrder;
-	cmd.drawQuad.corners[0] = p1;
-	cmd.drawQuad.corners[1] = p2;
-	cmd.drawQuad.corners[2] = p3;
-	cmd.drawQuad.corners[3] = p4;
-	cmd.drawQuad.image = image;
+	cmd.data.drawQuad.corners[0] = p1;
+	cmd.data.drawQuad.corners[1] = p2;
+	cmd.data.drawQuad.corners[2] = p3;
+	cmd.data.drawQuad.corners[3] = p4;
+	cmd.data.drawQuad.image = image;
 
 	addDrawCommand(cmd);
 }
@@ -753,10 +772,10 @@ void Renderer::cmdDrawImageBordered(Image* image, u32 border, const Rect& rect, 
 {
 	DrawCommand cmd(DrawCommand::Type::DrawImageBordered);
 	cmd.zOrder = zOrder;
-	cmd.drawImageBordered.rect = rect;
-	cmd.drawImageBordered.image = image;
-	cmd.drawImageBordered.border = border;
-	cmd.drawImageBordered.scale = scale;
+	cmd.data.drawImageBordered.rect = rect;
+	cmd.data.drawImageBordered.image = image;
+	cmd.data.drawImageBordered.border = border;
+	cmd.data.drawImageBordered.scale = scale;
 	addDrawCommand(cmd);
 }
 
@@ -821,11 +840,11 @@ void Renderer::cmdDrawInterpolatedColors(const Rect& rect, const Color& topLeft,
 {
 	DrawCommand cmd(DrawCommand::Type::DrawInterpolatedColors);
 	cmd.zOrder = zOrder;
-	cmd.drawInterpolatedColors.rect = rect;
-	cmd.drawInterpolatedColors.bottomLeft = bottomLeft;
-	cmd.drawInterpolatedColors.bottomRight = bottomRight;
-	cmd.drawInterpolatedColors.topLeft = topLeft;
-	cmd.drawInterpolatedColors.topRight = topRight;
+	cmd.data.drawInterpolatedColors.rect = rect;
+	cmd.data.drawInterpolatedColors.bottomLeft = bottomLeft;
+	cmd.data.drawInterpolatedColors.bottomRight = bottomRight;
+	cmd.data.drawInterpolatedColors.topLeft = topLeft;
+	cmd.data.drawInterpolatedColors.topRight = topRight;
 	addDrawCommand(cmd);
 }
 
@@ -848,8 +867,8 @@ void Renderer::cmdDrawLine(const Point& a, const Point& b)
 {
 	DrawCommand cmd(DrawCommand::Type::DrawLine);
 	cmd.zOrder = zOrder;
-	cmd.drawLine.a = a;
-	cmd.drawLine.b = b;
+	cmd.data.drawLine.a = a;
+	cmd.data.drawLine.b = b;
 	addDrawCommand(cmd);
 }
 
@@ -857,11 +876,11 @@ void Renderer::cmdDrawPolyLine(const Point* points, u32 pointCount, bool closed)
 {
 	DrawCommand cmd(DrawCommand::Type::DrawPolyLine);
 	cmd.zOrder = zOrder;
-	cmd.drawPolyLine.count = pointCount;
-	cmd.drawPolyLine.closed = closed;
-	cmd.drawPolyLine.points = &pointBuffer[pointBufferPosition];
-	memcpy(pointBuffer.data() + pointBufferPosition, points, pointCount * sizeof(Point));
-	pointBufferPosition += pointCount;
+	cmd.data.drawPolyLine.count = pointCount;
+	cmd.data.drawPolyLine.closed = closed;
+	cmd.data.drawPolyLine.points = &pointBuffer[currentWindow][pointBufferPosition[currentWindow]];
+	memcpy(pointBuffer[currentWindow].data() + pointBufferPosition[currentWindow], points, pointCount * sizeof(Point));
+	pointBufferPosition[currentWindow] += pointCount;
 	addDrawCommand(cmd);
 }
 
@@ -869,15 +888,15 @@ void Renderer::cmdDrawSolidTriangle(const Point& p1, const Point& p2, const Poin
 {
 	DrawCommand cmd(DrawCommand::Type::DrawSolidTriangle);
 	cmd.zOrder = zOrder;
-	cmd.drawTriangle.p1 = p1;
-	cmd.drawTriangle.p2 = p2;
-	cmd.drawTriangle.p3 = p3;
+	cmd.data.drawTriangle.p1 = p1;
+	cmd.data.drawTriangle.p2 = p2;
+	cmd.data.drawTriangle.p3 = p3;
 	auto uvRc =  ctx->theme->atlas->whiteImage->uvRect;
 	uvRc = uvRc.contract(ctx->settings.whiteImageUvBorder);
-	cmd.drawTriangle.uv1 = uvRc.topLeft();
-	cmd.drawTriangle.uv2 = uvRc.topRight();
-	cmd.drawTriangle.uv3 = uvRc.bottomRight();
-	cmd.drawTriangle.image = ctx->theme->atlas->whiteImage;
+	cmd.data.drawTriangle.uv1 = uvRc.topLeft();
+	cmd.data.drawTriangle.uv2 = uvRc.topRight();
+	cmd.data.drawTriangle.uv3 = uvRc.bottomRight();
+	cmd.data.drawTriangle.image = ctx->theme->atlas->whiteImage;
 	addDrawCommand(cmd);
 }
 
@@ -888,8 +907,8 @@ FontTextSize Renderer::cmdDrawTextAt(
 	FontTextSize fsize = currentFont->computeTextSize(text);
 	DrawCommand cmd(DrawCommand::Type::DrawText);
 	cmd.zOrder = zOrder;
-	cmd.drawText.position = position;
-	cmd.drawText.text = addUtf8TextToBuffer(text, strlen(text));
+	cmd.data.drawText.position = position;
+	cmd.data.drawText.text = addUtf8TextToBuffer(text, strlen(text));
 	addDrawCommand(cmd);
 	return fsize;
 }
@@ -937,8 +956,8 @@ FontTextSize Renderer::cmdDrawTextInBox(
 	}
 
 	cmd.zOrder = zOrder;
-	cmd.drawText.position = pos;
-	cmd.drawText.text = addUtf8TextToBuffer(text, strlen(text));
+	cmd.data.drawText.position = pos;
+	cmd.data.drawText.text = addUtf8TextToBuffer(text, strlen(text));
 	addDrawCommand(cmd);
 	return fsize;
 }
@@ -2109,11 +2128,11 @@ void Renderer::needToAddVertexCount(u32 count)
 
 char* Renderer::addUtf8TextToBuffer(const char* text, u32 sizeBytes)
 {
-	if (textBufferPosition + sizeBytes + 1 >= (u32)textBuffer.size()) return nullptr;
-	auto pos = textBuffer.data() + textBufferPosition;
-	memcpy(pos, text, sizeBytes + 1); // and zero
-	textBufferPosition += sizeBytes + 1;
-	return pos;
+	if (textBufferPosition[currentWindow] + sizeBytes + 1 >= (u32)textBuffer[currentWindow].size()) return nullptr;
+	auto textAddr = textBuffer[currentWindow].data() + textBufferPosition[currentWindow];
+	memcpy(textAddr, text, sizeBytes + 1); // and zero
+	textBufferPosition[currentWindow] += sizeBytes + 1;
+	return textAddr;
 }
 
 void Renderer::addBatch()
@@ -2131,11 +2150,11 @@ void Renderer::addDrawCommand(const DrawCommand& cmd)
 {
 	if (drawCmdNextInsertIndex == ~0)
 	{
-		drawCommands.push_back(cmd);
+		drawCommands[currentWindow].push_back(cmd);
 	}
 	else
 	{
-		drawCommands.insert(drawCommands.begin() + drawCmdNextInsertIndex, cmd);
+		drawCommands[currentWindow].insert(drawCommands[currentWindow].begin() + drawCmdNextInsertIndex, cmd);
 		drawCmdNextInsertIndex++;
 	}
 }

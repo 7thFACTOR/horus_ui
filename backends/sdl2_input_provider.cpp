@@ -442,6 +442,9 @@ void Sdl2InputProvider::addSdlEvent(SDL_Event& ev)
 		case SDL_WINDOWEVENT_SIZE_CHANGED:
 		case SDL_WINDOWEVENT_MOVED:
 		case SDL_WINDOWEVENT_EXPOSED:
+		case SDL_WINDOWEVENT_MAXIMIZED:
+		case SDL_WINDOWEVENT_MINIMIZED:
+		case SDL_WINDOWEVENT_RESTORED:
 			outEvent.type = InputEvent::Type::WindowResize;
 			break;
 		case SDL_WINDOWEVENT_FOCUS_GAINED:
@@ -494,7 +497,10 @@ void Sdl2InputProvider::addSdlEvent(SDL_Event& ev)
 			&& (ev.window.event == SDL_WINDOWEVENT_RESIZED
 				|| ev.window.event == SDL_WINDOWEVENT_SIZE_CHANGED
 				|| ev.window.event == SDL_WINDOWEVENT_MOVED
-				|| ev.window.event == SDL_WINDOWEVENT_EXPOSED)
+				|| ev.window.event == SDL_WINDOWEVENT_EXPOSED
+				|| ev.window.event == SDL_WINDOWEVENT_MAXIMIZED
+				|| ev.window.event == SDL_WINDOWEVENT_MINIMIZED
+				|| ev.window.event == SDL_WINDOWEVENT_RESTORED)
 			&& sizeChanged)
 		{
 			return;
@@ -837,7 +843,7 @@ Point Sdl2InputProvider::getMousePosition()
 {
 	int x, y;
 
-	SDL_GetMouseState(&x, &y);
+	SDL_GetGlobalMouseState(&x, &y);
 
 	return { (f32)x , (f32)y };
 }

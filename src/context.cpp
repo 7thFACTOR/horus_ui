@@ -202,7 +202,7 @@ void Context::initializeGraphics()
 		textCache = new UnicodeTextCache();
 	}
 
-	renderer->setWindow(ctx->settings.providers.input->getMainWindow());
+	renderer->setOsWindow(ctx->settings.providers.input->getMainWindow());
 	auto size = ctx->settings.providers.input->getWindowClientSize(ctx->settings.providers.input->getMainWindow());
 	renderer->setWindowSize(size);
 }

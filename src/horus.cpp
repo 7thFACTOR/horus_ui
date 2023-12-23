@@ -116,11 +116,16 @@ void initializeRenderer()
 	ctx->initializeGraphics();
 }
 
-void clearBackground()
+void clearOsWindowBackground()
 {
 	const auto& windowElemState = ctx->theme->getElement(WidgetElementId::WindowBody).normalState();
 
-	ctx->renderer->clear(windowElemState.color);
+	clearBackground(windowElemState.color);
+}
+
+void clearBackground(const Color& color)
+{
+	ctx->renderer->cmdClearBackground(color);
 }
 
 void setEnabled(bool enabled)
@@ -297,7 +302,6 @@ void beginFrame()
 	}
 
 	ctx->savedEventType = ctx->event.type;
-	ctx->renderer->setZOrder(0);
 
 	for (auto& popup : ctx->popupStack)
 	{
@@ -306,7 +310,7 @@ void beginFrame()
 	}
 
 	ctx->alreadyClickedOnSomething = false;
-	ctx->renderer->beginFrame();
+	
 }
 
 void endFrame()
@@ -350,7 +354,6 @@ void endFrame()
 		ctx->sameLineInfo[i].computeHeight = false;
 	}
 
-	ctx->renderer->endFrame();
 	ctx->event.type = ctx->savedEventType;
 	ctx->penStack.clear();
 }
@@ -385,6 +388,8 @@ void update(f32 deltaTime)
 		// track mouse pos
 		ctx->tooltip.position = ctx->providers->input->getMousePosition();
 	}
+
+
 }
 
 bool hasNothingToDo()
@@ -455,12 +460,12 @@ void setMouseCursor(HMouseCursor cursor)
 	ctx->customMouseCursor = cursor;
 }
 
-void setOsWindow(HOsWindow window)
+void setOsWindow(HOsWindow wnd)
 {
-	ctx->providers->input->setCurrentWindow(window);
+	ctx->providers->input->setCurrentWindow(wnd);
 
-	auto size = HORUS_INPUT->getWindowClientSize(window);
-	ctx->renderer->setWindow(window);
+	auto size = HORUS_INPUT->getWindowClientSize(wnd);
+	ctx->renderer->setOsWindow(wnd);
 	ctx->renderer->setWindowSize(size);
 	ctx->providers->gfx->setViewport(
 		size,
@@ -469,7 +474,9 @@ void setOsWindow(HOsWindow window)
 
 void presentWindow(HOsWindow wnd)
 {
-	ctx->renderer->setWindow(wnd);
+	ctx->providers->input->setCurrentWindow(wnd);
+	ctx->renderer->setOsWindow(wnd);
+	ctx->renderer->executeDrawCommands(wnd);
 	ctx->providers->input->presentWindow(wnd);
 }
 
@@ -640,11 +647,28 @@ bool packAtlas(HAtlas atlas, u32 border)
 	return atlasPtr->pack(border);
 }
 
+void resizeRootDockNodesIfNeeded()
+{
+	if (ctx->event.type != InputEvent::Type::WindowResize)
+		return;
+
+	for (auto wnd : ctx->osWindows)
+	{
+		if (wnd == ctx->event.window)
+		{
+			auto size = HORUS_INPUT->getWindowClientSize(wnd);
+			ctx->dockingState.rootOsWindowDockNodes[wnd]->rect = {0, 0, size.x, size.y};
+			ctx->dockingState.rootOsWindowDockNodes[wnd]->computeRect();
+		}
+	}
+}
+
 void processInputEvents()
 {
 	ctx->event.type = InputEvent::Type::None;
 	clearInputEventQueue();
 	ctx->providers->input->processEvents();
+	resizeRootDockNodesIfNeeded();
 	hui::update(getFrameDeltaTime());
 }
 
@@ -1094,6 +1118,13 @@ void createMainWindow(HOsWindow osWnd)
 	ctx->hoveringThisWindow = true;
 }
 
+
+void setGraphicsContextForWindow(const char* windowId)
+{
+
+
+}
+
 void closeMainWindow()
 {
 	deleteWindow(ctx->dockingState.mainWindow);
@@ -1122,13 +1153,17 @@ bool beginWindow(const char* id, const char* title, const char* dockTo, DockType
 		wnd = ctx->dockingState.windows[id];
 	}
 
+	ctx->currentWindow = wnd;
 	ctx->hoveringThisWindow = isMouseOverWindow();
+	ctx->renderer->setOsWindow(wnd->dockNode->osWindow);
+	ctx->renderer->beginFrame();
 
 	return true;
 }
 
 void endWindow()
 {
+	ctx->renderer->endFrame();
 	ctx->currentWindowIndex++;
 	//TODO: make scroll struct stack
 }

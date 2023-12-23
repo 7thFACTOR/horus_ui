@@ -142,6 +142,8 @@ template <typename T> inline T toFlags(int x) { return (T)x; };
 #define HORUS_FONT hui::getContextSettings().providers.font
 #define HORUS_RECTPACK hui::getContextSettings().providers.rectPack
 
+#define HORUS_MAIN_WINDOW_ID "__mainWnd"
+
 typedef void* HImage;
 typedef void* HTheme;
 typedef void* HAtlas;
@@ -1570,7 +1572,8 @@ HORUS_API void beginFrame();
 HORUS_API void endFrame();
 
 /// Clear the current OS window background with the color found in the current theme
-HORUS_API void clearBackground();
+HORUS_API void clearOsWindowBackground();
+HORUS_API void clearBackground(const Color& color);
 
 /// \return true if there is nothing to do in the UI (like redrawing or layout computations), used to not render continuously when its not needed, for applications that do not need realtime continuous rendering
 HORUS_API bool hasNothingToDo();
@@ -1656,7 +1659,9 @@ HORUS_API void setMouseCursor(HMouseCursor cursor);
 // Create the main window from an OS window handle, used by backends
 HORUS_API void createMainWindow(HOsWindow osWnd);
 
-HORUS_API bool beginWindow(const char* id, const char* title, const char* dockTo, DockType dockType, Rect* initialRect);
+HORUS_API void setGraphicsContextForWindow(const char* windowId);
+
+HORUS_API bool beginWindow(const char* windowId, const char* title, const char* dockTo, DockType dockType, Rect* initialRect);
 
 HORUS_API void endWindow();
 

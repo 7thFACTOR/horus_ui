@@ -56,6 +56,7 @@ struct DrawCommand
 		SetTextStyle,
 		SetLineStyle,
 		SetFillStyle,
+		ClearBackground,
 		Callback,
 
 		Count
@@ -131,26 +132,60 @@ struct DrawCommand
 
 	Type type = Type::None;
 	i32 zOrder = 0;
-	//TODO: make union of all cmds
-	CmdDrawRect drawRect;
-	CmdDrawQuad drawQuad;
-	CmdDrawLine drawLine;
-	CmdDrawPolyLine drawPolyLine;
-	CmdDrawText drawText;
-	CmdDrawImageBordered drawImageBordered;
-	CmdDrawInterpolatedColors drawInterpolatedColors;
-	CmdDrawTriangle drawTriangle;
-	CmdSetViewportOffset setViewportOffset;
-	Rect clipRect;
-	bool clipToParent;
-	bool popClipRect = false;
-	Atlas* setAtlas;
-	Color setColor;
-	Font* setFont;
-	Color setTextColor;
-	TextStyle setTextStyle;
-	LineStyle setLineStyle;
-	FillStyle setFillStyle;
+	union CmdData
+	{
+		CmdDrawRect drawRect;
+		CmdDrawQuad drawQuad;
+		CmdDrawLine drawLine;
+		CmdDrawPolyLine drawPolyLine;
+		CmdDrawText drawText;
+		CmdDrawImageBordered drawImageBordered;
+		CmdDrawInterpolatedColors drawInterpolatedColors;
+		CmdDrawTriangle drawTriangle;
+		CmdSetViewportOffset setViewportOffset;
+		Rect clipRect;
+		bool clipToParent;
+		bool popClipRect = false;
+		Atlas* setAtlas;
+		Color setColor;
+		Font* setFont;
+		Color setTextColor;
+		TextStyle setTextStyle;
+		LineStyle setLineStyle;
+		FillStyle setFillStyle;
+	} data;
+
+	DrawCommand(const DrawCommand& other)
+	{
+		*this = other;
+	}
+
+	DrawCommand& operator = (const DrawCommand& other)
+	{
+		type = other.type;
+		zOrder = other.zOrder;
+		data.drawRect = other.data.drawRect;
+		data.drawQuad = other.data.drawQuad;
+		data.drawLine = other.data.drawLine;
+		data.drawPolyLine = other.data.drawPolyLine;
+		data.drawText = other.data.drawText;
+		data.drawImageBordered = other.data.drawImageBordered;
+		data.drawInterpolatedColors = other.data.drawInterpolatedColors;
+		data.drawTriangle = other.data.drawTriangle;
+		data.setViewportOffset = other.data.setViewportOffset;
+		data.clipRect = other.data.clipRect;
+		data.clipToParent = other.data.clipToParent;
+		data.popClipRect = other.data.popClipRect;
+		data.setAtlas = other.data.setAtlas;
+		data.setColor = other.data.setColor;
+		data.setFont = other.data.setFont;
+		data.setTextColor = other.data.setTextColor;
+		data.setTextStyle = other.data.setTextStyle;
+		data.setLineStyle = other.data.setLineStyle;
+		data.setFillStyle = other.data.setFillStyle;
+		
+		return *this;
+	}
 };
 
 class Renderer
@@ -170,8 +205,8 @@ public:
 
 	Renderer();
 	virtual ~Renderer();
-	void setWindow(HOsWindow wnd);
-	void clear(const Color& color);
+	void setOsWindow(HOsWindow wnd);
+	void executeDrawCommands(HOsWindow wnd);
 	Rect pushClipRect(const Rect& rect, bool clipToParent = true);
 	void popClipRect();
 	const Rect& getClipRect() const { return currentClipRect; }
@@ -190,6 +225,7 @@ public:
 	void endDrawCmdInsertion() { drawCmdNextInsertIndex = ~0; }
 
 	// Commands
+	void cmdClearBackground(const Color& color);
 	void cmdSetColor(const Color& color);
 	void cmdSetAtlas(Atlas* atlas);
 	void cmdSetFont(Font* font);
@@ -263,11 +299,11 @@ protected:
 	void addDrawCommand(const DrawCommand& cmd);
 
 	HOsWindow currentWindow = 0;
-	u32 textBufferPosition = 0;
-	std::vector<char> textBuffer;
-	u32 pointBufferPosition = 0;
-	std::vector<Point> pointBuffer;
-	std::vector<DrawCommand> drawCommands;
+	std::unordered_map<HOsWindow, u32> textBufferPosition;
+	std::unordered_map <HOsWindow, std::vector<char>> textBuffer;
+	std::unordered_map<HOsWindow, u32> pointBufferPosition;
+	std::unordered_map<HOsWindow, std::vector<Point>> pointBuffer;
+	std::unordered_map<HOsWindow, std::vector<DrawCommand>> drawCommands;
 	std::vector<RenderBatch> batches;
 	std::vector<Rect> clipRectStack;
 	VertexBufferData vertexBufferData;
