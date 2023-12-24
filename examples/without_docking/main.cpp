@@ -78,7 +78,8 @@ int main(int argc, char** args)
 		auto doFrame = [&](bool lastEventInQueue)
 		{
 			hui::setGraphicsContextForWindow(HORUS_MAIN_WINDOW_ID);
-			if (lastEventInQueue)
+
+			auto tritri = [](hui::HOsWindow wnd)
 			{
 				// some user drawing code, a triangle
 				glClearColor(0.0f, .3f, .2f, 1.0f);
@@ -95,12 +96,18 @@ int main(int argc, char** args)
 				glEnd();
 				x = sinf(t);
 				t += 0.01f;
-			}
+			};
 
 			// begin an actual frame of the gui
 			hui::beginFrame();
 
 			hui::beginWindow(HORUS_MAIN_WINDOW_ID, "HUI", 0, hui::DockType::None, 0);
+
+
+			if (lastEventInQueue)
+			{
+				hui::addRenderCallback(tritri);
+			}
 
 			// disable rendering if its not the last event in the queue
 			// no need to render while handling all the input events
@@ -175,7 +182,7 @@ int main(int argc, char** args)
 
 			hui::endContainer();
 			hui::endWindow();
-
+				
 			// start to add widgets in the window
 			if (hui::beginWindow("wnd1", "Horus Demo - No Docking", nullptr, hui::DockType::None, nullptr))
 			{

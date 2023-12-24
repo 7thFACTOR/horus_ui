@@ -143,6 +143,7 @@ struct DrawCommand
 		CmdDrawInterpolatedColors drawInterpolatedColors;
 		CmdDrawTriangle drawTriangle;
 		CmdSetViewportOffset setViewportOffset;
+		RenderCallback callback;
 		Rect clipRect;
 		bool clipToParent;
 		bool popClipRect = false;
@@ -183,7 +184,8 @@ struct DrawCommand
 		data.setTextStyle = other.data.setTextStyle;
 		data.setLineStyle = other.data.setLineStyle;
 		data.setFillStyle = other.data.setFillStyle;
-		
+		data.callback = other.data.callback;
+
 		return *this;
 	}
 };
@@ -225,6 +227,7 @@ public:
 	void endDrawCmdInsertion() { drawCmdNextInsertIndex = ~0; }
 
 	// Commands
+	void cmdCallback(RenderCallback callback);
 	void cmdClearBackground(const Color& color);
 	void cmdSetColor(const Color& color);
 	void cmdSetAtlas(Atlas* atlas);

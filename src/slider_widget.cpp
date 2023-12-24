@@ -63,7 +63,8 @@ bool sliderInternal(f32 minVal, f32 maxVal, f32& value, bool useStep, f32 step, 
 
 	if (ctx->event.type == InputEvent::Type::MouseDown
 		&& !draggingKnob
-		&& ctx->isActiveLayer())
+		&& ctx->isActiveLayer()
+		&& ctx->hoveringThisWindow)
 	{
 		if (knobRect.contains(ctx->event.mouse.point))
 		{

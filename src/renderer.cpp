@@ -575,6 +575,9 @@ void Renderer::executeDrawCommands(HOsWindow wnd)
 		case DrawCommand::Type::ClearBackground:
 			ctx->providers->gfx->clear(cmd.data.setColor);
 			break;
+		case DrawCommand::Type::Callback:
+			cmd.data.callback(currentWindow);
+			break;
 		default:
 			break;
 		}
@@ -583,6 +586,15 @@ void Renderer::executeDrawCommands(HOsWindow wnd)
 	vertexBuffer->updateData(vertexBufferData.vertices.data(), 0, vertexBufferData.drawVertexCount);
 	// render the batches
 	ctx->providers->gfx->draw(batches.data(), batches.size());
+}
+
+void Renderer::cmdCallback(RenderCallback callback)
+{
+	DrawCommand cmd(DrawCommand::Type::Callback);
+
+	cmd.zOrder = zOrder;
+	cmd.data.callback = callback;
+	addDrawCommand(cmd);
 }
 
 void Renderer::cmdClearBackground(const Color& color)

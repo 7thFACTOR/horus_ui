@@ -1571,6 +1571,10 @@ HORUS_API void beginFrame();
 /// Ends an UI frame
 HORUS_API void endFrame();
 
+typedef void (*RenderCallback)(HOsWindow wnd);
+
+HORUS_API void addRenderCallback(RenderCallback callback);
+
 /// Clear the current OS window background with the color found in the current theme
 HORUS_API void clearOsWindowBackground();
 HORUS_API void clearBackground(const Color& color);

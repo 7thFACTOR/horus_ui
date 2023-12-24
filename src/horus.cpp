@@ -123,6 +123,11 @@ void clearOsWindowBackground()
 	clearBackground(windowElemState.color);
 }
 
+void addRenderCallback(RenderCallback callback)
+{
+	ctx->renderer->cmdCallback(callback);
+}
+
 void clearBackground(const Color& color)
 {
 	ctx->renderer->cmdClearBackground(color);
@@ -1172,15 +1177,7 @@ bool isMouseOverWindow()
 {
 	if (ctx->currentWindow)
 	{
-		auto mousePos = HORUS_INPUT->getMousePosition();
-		auto osWndPos = HORUS_INPUT->getWindowPosition(ctx->currentWindow->dockNode->osWindow);
-
-		mousePos -= osWndPos;
-
-		if (ctx->currentWindow->dockNode->rect.contains(mousePos))
-		{
-			return true;
-		}
+		return ctx->currentWindow->dockNode->osWindow == HORUS_INPUT->getHoveredWindow();
 	}
 
 	return false;
