@@ -225,6 +225,7 @@ public:
 	u32 getDrawCommandCount() const { return drawCommands.size(); }
 	void beginDrawCmdInsertion(u32 index) { drawCmdNextInsertIndex = index; }
 	void endDrawCmdInsertion() { drawCmdNextInsertIndex = ~0; }
+	void clearDrawCommands();
 
 	// Commands
 	void cmdCallback(RenderCallback callback);

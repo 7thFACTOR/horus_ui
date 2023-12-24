@@ -23,7 +23,7 @@ public:
 	void precacheGlyphs(const Utf32String& glyphCodes);
 	void precacheGlyphs(u32* glyphs, u32 glyphCount);
 	void precacheLatinAlphabetGlyphs();
-	FontTextSize computeTextSize(const GlyphCode* const text, u32 size);
+	FontTextSize computeTextSize(const GlyphCode* const text, u32 size, u32 maxWidth = ~0);
 	FontTextSize computeTextSize(const Utf32String& text);
 	FontTextSize computeTextSize(const char* text);
 	void deleteGlyphs();

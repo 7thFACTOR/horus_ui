@@ -70,6 +70,7 @@ void tab(const char* labelText, HImage icon)
 	auto tabActiveElem = ctx->theme->getElement(WidgetElementId::TabBodyActive);
 	auto tabInactiveElem = ctx->theme->getElement(WidgetElementId::TabBodyInactive);
 	auto tabElemState = &tabActiveElem.normalState();
+	
 	Utf32String* uniStr = ctx->textCache->getText(labelText);
 	FontTextSize fsize = tabElemState->font->computeTextSize(*uniStr);
 	Image* ico = (Image*)icon;
@@ -82,16 +83,9 @@ void tab(const char* labelText, HImage icon)
 		iconWidth = ico->rect.width;
 	}
 
-	f32 textAndIconWidth = fmaxf(fsize.width + iconWidth, tabElemState->width) * ctx->globalScale;
-
-	if (ctx->paneGroupState.forceSqueezeTabs)
-	{
-		width = ctx->paneGroupState.forceTabWidth;
-	}
-	else
-	{
-		width = (ctx->paneGroupState.sideSpacing + ctx->paneGroupState.tabWidth) * ctx->globalScale;
-	}
+	f32 textAndIconWidth = (fsize.width + iconWidth) * ctx->globalScale;
+	
+	width = textAndIconWidth + tabElemState->border *2 * ctx->globalScale;
 
 	f32 height = tabElemState->height * ctx->globalScale;
 
@@ -134,15 +128,21 @@ void tab(const char* labelText, HImage icon)
 
 	ctx->renderer->cmdSetFont(tabElemState->font);
 	ctx->renderer->cmdSetColor(tabElemState->textColor);
-	ctx->renderer->cmdDrawTextInBox(labelText,
-		{
+
+	Rect textRc = {
 			ctx->widget.rect.x + (tabElemState->border + iconWidth) * ctx->globalScale,
 			ctx->widget.rect.y,
 			width,
 			ctx->widget.rect.height,
-		},
+	};
+
+	ctx->renderer->pushClipRect(textRc);
+
+	ctx->renderer->cmdDrawTextInBox(labelText,
+		textRc,
 		HAlignType::Left, VAlignType::Bottom);
 
+	ctx->renderer->popClipRect();
 	ctx->currentTabIndex++;
 	ctx->currentWidgetId++;
 }

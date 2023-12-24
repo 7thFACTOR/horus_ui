@@ -481,6 +481,15 @@ void presentWindow(HOsWindow wnd)
 {
 	ctx->providers->input->setCurrentWindow(wnd);
 	ctx->renderer->setOsWindow(wnd);
+	auto r = HORUS_INPUT->getWindowRect(wnd);
+	r.x = r.y = 0;
+	beginFrame();
+	pushLayoutPadding(0);
+	beginContainer(r);
+	dockNodeTabs(ctx->dockingState.rootOsWindowDockNodes[wnd]);
+	endContainer();
+	popLayoutPadding();
+	endFrame();
 	ctx->renderer->executeDrawCommands(wnd);
 	ctx->providers->input->presentWindow(wnd);
 }
@@ -491,6 +500,8 @@ void present()
 	{
 		presentWindow(wnd);
 	}
+
+	ctx->renderer->clearDrawCommands();
 }
 
 void cancelEvent()
@@ -652,7 +663,7 @@ bool packAtlas(HAtlas atlas, u32 border)
 	return atlasPtr->pack(border);
 }
 
-void resizeRootDockNodesIfNeeded()
+void updateDockingSystem()
 {
 	if (ctx->event.type != InputEvent::Type::WindowResize)
 		return;
@@ -661,8 +672,6 @@ void resizeRootDockNodesIfNeeded()
 	{
 		if (wnd == ctx->event.window)
 		{
-			auto size = HORUS_INPUT->getWindowClientSize(wnd);
-			ctx->dockingState.rootOsWindowDockNodes[wnd]->rect = {0, 0, size.x, size.y};
 			ctx->dockingState.rootOsWindowDockNodes[wnd]->computeRect();
 		}
 	}
@@ -673,7 +682,6 @@ void processInputEvents()
 	ctx->event.type = InputEvent::Type::None;
 	clearInputEventQueue();
 	ctx->providers->input->processEvents();
-	resizeRootDockNodesIfNeeded();
 	hui::update(getFrameDeltaTime());
 }
 
@@ -1076,7 +1084,6 @@ const Color& getThemeUserWidgetElementColorParameter(HTheme theme, const char* u
 
 	return style.getParameterValue(paramName, defaultValue);
 }
-
 
 HFont createThemeFont(HTheme theme, const char* name, const char* fontFilename, u32 faceSize)
 {

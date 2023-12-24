@@ -40,7 +40,7 @@ DockNode* createRootDockNode(HOsWindow osWindow)
 	Rect rect = { 0, 0, size.x, size.y };
 	auto dockNode = new DockNode();
 
-	dockNode->type = DockNode::Type::None;
+	dockNode->type = DockNode::Type::Tabs;
 	dockNode->rect.set(0, 0, rect.width, rect.height);
 	dockNode->osWindow = osWindow;
 	ctx->dockingState.rootOsWindowDockNodes.insert(std::make_pair(osWindow, dockNode));
@@ -94,8 +94,7 @@ Window* createWindow(const std::string& id, DockNode* targetNode, DockType dockT
 {
 	auto targetNodePtr = (DockNode*)targetNode;
 	auto newWnd = new Window();
-	Rect defaultRect = { 10, 10, 500, 300 };
-
+	Rect defaultRect = { 100, 100, 500, 300 };
 	newWnd->title = title;
 
 	if (!targetNode)
@@ -106,10 +105,11 @@ Window* createWindow(const std::string& id, DockNode* targetNode, DockType dockT
 		}
 		
 		newWnd->dockNode = createRootDockNode(osWnd);
+		newWnd->dockNode->windows.push_back(newWnd);
+		newWnd->clientRect = newWnd->dockNode->rect;
 	}
 
 	ctx->dockingState.windows[id] = newWnd;
-	ctx->osWindows.push_back(osWnd);
 
 	if (targetNode)
 		dockWindow(newWnd, targetNode, dockType, 0);

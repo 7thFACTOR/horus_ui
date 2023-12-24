@@ -1662,9 +1662,7 @@ HORUS_API void setMouseCursor(HMouseCursor cursor);
 
 // Create the main window from an OS window handle, used by backends
 HORUS_API void createMainWindow(HOsWindow osWnd);
-
-HORUS_API void setGraphicsContextForWindow(const char* windowId);
-
+HORUS_API void updateDockingSystem();
 HORUS_API bool beginWindow(const char* windowId, const char* title, const char* dockTo, DockType dockType, Rect* initialRect);
 
 HORUS_API void endWindow();

@@ -4,6 +4,7 @@
 #include "docking.h"
 #include "context.h"
 #include "renderer.h"
+#include "dock_node.h"
 
 namespace hui
 {
@@ -50,12 +51,21 @@ bool beginWindow(const char* id, const char* title, const char* dockTo, DockType
 	ctx->hoveringThisWindow = isMouseOverWindow();
 	ctx->renderer->setOsWindow(wnd->dockNode->osWindow);
 	ctx->renderer->beginFrame();
+	beginContainer(wnd->clientRect);
 
 	return true;
 }
 
 void endWindow()
 {
+	endContainer();
+	auto r = ctx->currentWindow->clientRect;
+	r = r.contract(1);
+	LineStyle ls;
+	ls.color = Color::red;
+	ctx->renderer->cmdSetLineStyle(ls);
+	ctx->renderer->cmdDrawRectangle(r);
+	ctx->renderer->cmdDrawRectangle(ctx->currentWindow->tabRect);
 	ctx->renderer->endFrame();
 	ctx->currentWindowIndex++;
 	//TODO: make scroll struct stack

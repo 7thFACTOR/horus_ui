@@ -71,6 +71,12 @@ void DockNode::computeRect()
 	{
 	case hui::DockNode::Type::None:
 	case hui::DockNode::Type::Tabs:
+		for (auto& wnd : windows)
+		{
+			wnd->clientRect = {
+				rect.x, rect.y + 25, rect.width, rect.height - 25
+			};
+		}
 		break;
 	case hui::DockNode::Type::Vertical:
 	{

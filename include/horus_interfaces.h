@@ -402,6 +402,7 @@ struct FontTextSize
 	f32 maxGlyphHeight = 0;
 	u32 lastFontIndex = 0;
 	std::vector<f32> lineHeights; // valid when text size is computed from multiple lines of text
+	u32 maxLength = 0; // valid with maxWidth argument of computeTextSize is valid (!= -1)
 };
 
 struct FontInfo

@@ -183,7 +183,7 @@ FontTextSize Font::computeTextSize(const char* text)
 	return computeTextSize(str.data(), str.size());
 }
 
-FontTextSize Font::computeTextSize(const GlyphCode* const text, u32 size)
+FontTextSize Font::computeTextSize(const GlyphCode* const text, u32 size, u32 maxWidth)
 {
 	FontTextSize fsize;
 	u32 lastChr = 0;
@@ -213,7 +213,20 @@ FontTextSize Font::computeTextSize(const GlyphCode* const text, u32 size)
 			f32 top = glyph->bearingY;
 			f32 bottom = -(glyph->pixelHeight - glyph->bearingY);
 			auto kern = getKerning(lastChr, chr);
-			crtLineWidth += glyph->advanceX + kern;
+
+			if (maxWidth != ~0)
+			{
+				if (maxWidth <= crtLineWidth + glyph->advanceX + kern)
+				{
+					fsize.maxLength = i - 1;
+					break;
+				}
+			}
+			else
+			{
+				crtLineWidth += glyph->advanceX + kern;
+			}
+			
 			lastChr = chr;
 
 			if (fsize.maxGlyphHeight < fabs(top - bottom))

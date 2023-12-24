@@ -648,14 +648,21 @@ void Renderer::setWindowSize(const Point& size)
 	ctx->providers->gfx->setViewport(windowSize, currentClipRect);
 }
 
+void Renderer::clearDrawCommands()
+{
+	drawCommands.clear();
+	textBufferPosition.clear();
+	pointBufferPosition.clear();
+}
+
 void Renderer::beginFrame()
 {
 	zOrder = 0;
 	skipRender = false;
 	disableRendering = false;
-	drawCommands[currentWindow].clear();
-	textBufferPosition[currentWindow] = 0;
-	pointBufferPosition[currentWindow] = 0;
+	//drawCommands[currentWindow].clear();
+	/*textBufferPosition[currentWindow] = 0;
+	pointBufferPosition[currentWindow] = 0;*/
 	currentAtlas = nullptr;
 	currentBatch = nullptr;
 	cmdSetAtlas(ctx->theme->atlas);

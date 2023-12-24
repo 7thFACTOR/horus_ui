@@ -77,8 +77,6 @@ int main(int argc, char** args)
 		// the main frame rendering and input handling
 		auto doFrame = [&](bool lastEventInQueue)
 		{
-			hui::setGraphicsContextForWindow(HORUS_MAIN_WINDOW_ID);
-
 			auto tritri = [](hui::HOsWindow wnd)
 			{
 				// some user drawing code, a triangle
@@ -97,6 +95,8 @@ int main(int argc, char** args)
 				x = sinf(t);
 				t += 0.01f;
 			};
+
+			hui::updateDockingSystem();
 
 			// begin an actual frame of the gui
 			hui::beginFrame();
@@ -194,6 +194,17 @@ int main(int argc, char** args)
 				hui::space();
 				hui::button("Open Editor...");
 				hui::endContainer();
+			}
+			hui::endWindow();
+
+			// start to add widgets in the window
+			if (hui::beginWindow("wnd2", "Assets", "wnd1", hui::DockType::Right, nullptr))
+			{
+				hui::labelCustomFont("ASSETS OF COURSE", hui::getFont("large"));
+				static char txt[2000];
+				hui::textInput(txt, 2000, hui::TextInputValueMode::Any, "Write something here");
+				hui::space();
+				hui::button("BROWSE...");
 			}
 			hui::endWindow();
 				
