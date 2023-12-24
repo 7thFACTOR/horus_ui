@@ -188,6 +188,10 @@ int main(int argc, char** args)
 			{
 				hui::clearOsWindowBackground();
 				hui::beginContainer({40, 40, 300, 300});
+				hui::labelCustomFont("SETTINGS AND STUFF", hui::getFont("large"));
+				static char txt[2000];
+				hui::textInput(txt, 2000, hui::TextInputValueMode::Any, "Write something here");
+				hui::space();
 				hui::button("Open Editor...");
 				hui::endContainer();
 			}
