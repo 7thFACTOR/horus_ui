@@ -466,12 +466,17 @@ void Renderer::setOsWindow(HOsWindow wnd)
 	currentWindow = wnd;
 	auto size = HORUS_INPUT->getWindowClientSize(wnd);
 	setWindowSize(size);
+	auto iter = windowContexts.find(wnd);
 
-	if (textBuffer[wnd].empty())
+	if (iter == windowContexts.end())
 	{
-		textBuffer[wnd].resize(textBufferMaxSize);
-		pointBuffer[wnd].resize(pointBufferMaxSize);
+		windowContexts.insert({ wnd, OsWindowRenderContext() });
+		auto& wndCtx = windowContexts[wnd];
+		wndCtx.textBuffer.resize(textBufferMaxSize);
+		wndCtx.pointBuffer.resize(pointBufferMaxSize);
 	}
+
+	currentWindowContext = &windowContexts[wnd];
 }
 
 void Renderer::executeDrawCommands(HOsWindow wnd)
@@ -479,6 +484,8 @@ void Renderer::executeDrawCommands(HOsWindow wnd)
 	//TODO: should these be per window ?
 	if (disableRendering || skipRender)
 		return;
+
+	currentWindowContext = &windowContexts[wnd];
 
 	auto sortDrawCommands = [](const DrawCommand& a, const DrawCommand& b) -> bool
 		{
@@ -488,13 +495,13 @@ void Renderer::executeDrawCommands(HOsWindow wnd)
 			return false;
 		};
 
-	auto& wndCmds = drawCommands[wnd];
+	auto& wndCmds = currentWindowContext->drawCommands;
 
 	std::stable_sort(wndCmds.begin(), wndCmds.end(), sortDrawCommands);
 
 	currentAtlas = nullptr;
 	currentBatch = nullptr;
-	batches.clear();
+	currentWindowContext->batches.clear();
 	vertexBufferData.drawVertexCount = 0;
 
 	// generate the batches
@@ -585,7 +592,7 @@ void Renderer::executeDrawCommands(HOsWindow wnd)
 
 	vertexBuffer->updateData(vertexBufferData.vertices.data(), 0, vertexBufferData.drawVertexCount);
 	// render the batches
-	ctx->providers->gfx->draw(batches.data(), batches.size());
+	ctx->providers->gfx->draw(currentWindowContext->batches.data(), currentWindowContext->batches.size());
 }
 
 void Renderer::cmdCallback(RenderCallback callback)
@@ -609,7 +616,7 @@ void Renderer::cmdClearBackground(const Color& color)
 Rect Renderer::pushClipRect(const Rect& rect, bool clipToParent)
 {
 	auto oldRect = currentClipRect;
-	clipRectStack.push_back(currentClipRect);
+	currentWindowContext->clipRectStack.push_back(currentClipRect);
 	auto newRect = clipToParent ? rect.clipInside(oldRect) : rect;
 	currentClipRect = newRect;
 
@@ -625,13 +632,13 @@ Rect Renderer::pushClipRect(const Rect& rect, bool clipToParent)
 
 void Renderer::popClipRect()
 {
-	if (clipRectStack.empty())
+	if (currentWindowContext->clipRectStack.empty())
 	{
 		return;
 	}
 
-	currentClipRect = clipRectStack.back();
-	clipRectStack.pop_back();
+	currentClipRect = currentWindowContext->clipRectStack.back();
+	currentWindowContext->clipRectStack.pop_back();
 
 	DrawCommand cmd(DrawCommand::Type::ClipRect);
 
@@ -648,27 +655,32 @@ void Renderer::setWindowSize(const Point& size)
 	ctx->providers->gfx->setViewport(windowSize, currentClipRect);
 }
 
-void Renderer::clearDrawCommands()
+void Renderer::resetWindowContexts()
 {
-	drawCommands.clear();
-	textBufferPosition.clear();
-	pointBufferPosition.clear();
+	for (auto& wc : windowContexts)
+	{
+		wc.second.batches.clear();
+		wc.second.clipRectStack.clear();
+		wc.second.drawCmdNextInsertIndex = ~0;
+		wc.second.drawCommands.clear();
+		wc.second.pointBufferPosition = 0;
+		wc.second.textBufferPosition = 0;
+		wc.second.textBuffer.resize(textBufferMaxSize);
+		wc.second.pointBuffer.resize(pointBufferMaxSize);
+	}
 }
 
-void Renderer::beginFrame()
+void Renderer::begin()
 {
 	zOrder = 0;
 	skipRender = false;
 	disableRendering = false;
-	//drawCommands[currentWindow].clear();
-	/*textBufferPosition[currentWindow] = 0;
-	pointBufferPosition[currentWindow] = 0;*/
 	currentAtlas = nullptr;
 	currentBatch = nullptr;
 	cmdSetAtlas(ctx->theme->atlas);
 }
 
-void Renderer::endFrame()
+void Renderer::end()
 {
 }
 
@@ -897,9 +909,9 @@ void Renderer::cmdDrawPolyLine(const Point* points, u32 pointCount, bool closed)
 	cmd.zOrder = zOrder;
 	cmd.data.drawPolyLine.count = pointCount;
 	cmd.data.drawPolyLine.closed = closed;
-	cmd.data.drawPolyLine.points = &pointBuffer[currentWindow][pointBufferPosition[currentWindow]];
-	memcpy(pointBuffer[currentWindow].data() + pointBufferPosition[currentWindow], points, pointCount * sizeof(Point));
-	pointBufferPosition[currentWindow] += pointCount;
+	cmd.data.drawPolyLine.points = &currentWindowContext->pointBuffer[currentWindowContext->pointBufferPosition];
+	memcpy(currentWindowContext->pointBuffer.data() + currentWindowContext->pointBufferPosition, points, pointCount * sizeof(Point));
+	currentWindowContext->pointBufferPosition += pointCount;
 	addDrawCommand(cmd);
 }
 
@@ -2147,17 +2159,17 @@ void Renderer::needToAddVertexCount(u32 count)
 
 char* Renderer::addUtf8TextToBuffer(const char* text, u32 sizeBytes)
 {
-	if (textBufferPosition[currentWindow] + sizeBytes + 1 >= (u32)textBuffer[currentWindow].size()) return nullptr;
-	auto textAddr = textBuffer[currentWindow].data() + textBufferPosition[currentWindow];
+	if (currentWindowContext->textBufferPosition + sizeBytes + 1 >= (u32)currentWindowContext->textBuffer.size()) return nullptr;
+	auto textAddr = currentWindowContext->textBuffer.data() + currentWindowContext->textBufferPosition;
 	memcpy(textAddr, text, sizeBytes + 1); // and zero
-	textBufferPosition[currentWindow] += sizeBytes + 1;
+	currentWindowContext->textBufferPosition += sizeBytes + 1;
 	return textAddr;
 }
 
 void Renderer::addBatch()
 {
-	batches.push_back(RenderBatch());
-	currentBatch = &batches.back();
+	currentWindowContext->batches.push_back(RenderBatch());
+	currentBatch = &currentWindowContext->batches.back();
 	currentBatch->atlas = currentAtlas;
 	currentBatch->primitiveType = RenderBatch::PrimitiveType::TriangleList;
 	currentBatch->startVertexIndex = vertexBufferData.drawVertexCount;
@@ -2167,14 +2179,14 @@ void Renderer::addBatch()
 
 void Renderer::addDrawCommand(const DrawCommand& cmd)
 {
-	if (drawCmdNextInsertIndex == ~0)
+	if (currentWindowContext->drawCmdNextInsertIndex == ~0)
 	{
-		drawCommands[currentWindow].push_back(cmd);
+		currentWindowContext->drawCommands.push_back(cmd);
 	}
 	else
 	{
-		drawCommands[currentWindow].insert(drawCommands[currentWindow].begin() + drawCmdNextInsertIndex, cmd);
-		drawCmdNextInsertIndex++;
+		currentWindowContext->drawCommands.insert(currentWindowContext->drawCommands.begin() + currentWindowContext->drawCmdNextInsertIndex, cmd);
+		currentWindowContext->drawCmdNextInsertIndex++;
 	}
 }
 

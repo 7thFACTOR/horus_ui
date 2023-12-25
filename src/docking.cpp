@@ -95,7 +95,9 @@ Window* createWindow(const std::string& id, DockNode* targetNode, DockType dockT
 	auto targetNodePtr = (DockNode*)targetNode;
 	auto newWnd = new Window();
 	Rect defaultRect = { 100, 100, 500, 300 };
+	
 	newWnd->title = title;
+	newWnd->id = id;
 
 	if (!targetNode)
 	{

@@ -219,13 +219,13 @@ public:
 	void incrementZOrder() { zOrder++; }
 	void decrementZOrder() { zOrder--; }
 	u32 getZOrder() const { return zOrder; }
-	void beginFrame();
-	void endFrame();
+	void begin();
+	void end();
 	Font* getFont() const { return currentFont; }
-	u32 getDrawCommandCount() const { return drawCommands.size(); }
-	void beginDrawCmdInsertion(u32 index) { drawCmdNextInsertIndex = index; }
-	void endDrawCmdInsertion() { drawCmdNextInsertIndex = ~0; }
-	void clearDrawCommands();
+	u32 getDrawCommandCount() { return currentWindowContext->drawCommands.size(); }
+	void beginDrawCmdInsertion(u32 index) { currentWindowContext->drawCmdNextInsertIndex = index; }
+	void endDrawCmdInsertion() { currentWindowContext->drawCmdNextInsertIndex = ~0; }
+	void resetWindowContexts();
 
 	// Commands
 	void cmdCallback(RenderCallback callback);
@@ -302,14 +302,21 @@ protected:
 	void addBatch();
 	void addDrawCommand(const DrawCommand& cmd);
 
+	struct OsWindowRenderContext
+	{
+		u32 textBufferPosition = 0;
+		std::vector<char> textBuffer;
+		u32 pointBufferPosition = 0;
+		std::vector<Point> pointBuffer;
+		std::vector<DrawCommand> drawCommands;
+		std::vector<RenderBatch> batches;
+		std::vector<Rect> clipRectStack;
+		u32 drawCmdNextInsertIndex = ~0;
+	};
+	
 	HOsWindow currentWindow = 0;
-	std::unordered_map<HOsWindow, u32> textBufferPosition;
-	std::unordered_map <HOsWindow, std::vector<char>> textBuffer;
-	std::unordered_map<HOsWindow, u32> pointBufferPosition;
-	std::unordered_map<HOsWindow, std::vector<Point>> pointBuffer;
-	std::unordered_map<HOsWindow, std::vector<DrawCommand>> drawCommands;
-	std::vector<RenderBatch> batches;
-	std::vector<Rect> clipRectStack;
+	OsWindowRenderContext* currentWindowContext = nullptr;
+	std::unordered_map<HOsWindow, OsWindowRenderContext> windowContexts;
 	VertexBufferData vertexBufferData;
 	VertexBuffer* vertexBuffer = nullptr;
 	RenderBatch* currentBatch = nullptr;
@@ -320,7 +327,6 @@ protected:
 	u32 currentColor;
 	i32 zOrder = 0;
 	u32 atlasTextureIndex = 0;
-	u32 drawCmdNextInsertIndex = ~0;
 };
 
 }

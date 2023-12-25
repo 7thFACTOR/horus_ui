@@ -501,7 +501,7 @@ void present()
 		presentWindow(wnd);
 	}
 
-	ctx->renderer->clearDrawCommands();
+	ctx->renderer->resetWindowContexts();
 }
 
 void cancelEvent()

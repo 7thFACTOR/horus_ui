@@ -50,7 +50,7 @@ bool beginWindow(const char* id, const char* title, const char* dockTo, DockType
 	ctx->currentWindow = wnd;
 	ctx->hoveringThisWindow = isMouseOverWindow();
 	ctx->renderer->setOsWindow(wnd->dockNode->osWindow);
-	ctx->renderer->beginFrame();
+	ctx->renderer->begin();
 	beginContainer(wnd->clientRect);
 
 	return true;
@@ -66,7 +66,7 @@ void endWindow()
 	ctx->renderer->cmdSetLineStyle(ls);
 	ctx->renderer->cmdDrawRectangle(r);
 	ctx->renderer->cmdDrawRectangle(ctx->currentWindow->tabRect);
-	ctx->renderer->endFrame();
+	ctx->renderer->end();
 	ctx->currentWindowIndex++;
 	//TODO: make scroll struct stack
 }
