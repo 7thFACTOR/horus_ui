@@ -80,8 +80,6 @@ int main(int argc, char** args)
 			auto tritri = [](hui::HOsWindow wnd)
 			{
 				// some user drawing code, a triangle
-				glClearColor(0.0f, .3f, .2f, 1.0f);
-				glClear(GL_COLOR_BUFFER_BIT);
 				static f32 x = 1;
 				static f32 t = 1;
 				glBegin(GL_TRIANGLES);
@@ -100,113 +98,120 @@ int main(int argc, char** args)
 
 			// begin an actual frame of the gui
 			hui::beginFrame();
-
-			hui::beginWindow(HORUS_MAIN_WINDOW_ID, "HUI", 0, hui::DockType::None, 0);
-
-
-			if (lastEventInQueue)
-			{
-				hui::addRenderCallback(tritri);
-			}
-
 			// disable rendering if its not the last event in the queue
 			// no need to render while handling all the input events
 			// we only render on the last event in the queue
 			hui::setDisableRendering(!lastEventInQueue);
 
-			// lets first draw a rect with a theme, for the panel
-			hui::Rect panelRect = { 5, 5, 300, 500 };
-			hui::WidgetElementInfo elemInfo;
-			hui::getThemeWidgetElementInfo(hui::WidgetElementId::PopupBody, hui::WidgetStateType::Normal, elemInfo);
-			hui::setColor(hui::Color::white);
-			// draw before the beginContainer, because it will clip our panel image (using padding)
-			hui::drawBorderedImage(elemInfo.image, elemInfo.border, panelRect);
-
-			// begin a widget container (it doesnt draw anything, a container is a layouting rectangle)
-			hui::beginContainer(panelRect);
-			hui::labelCustomFont("Information", largeFnt);
-			hui::button("Activate shields");
-			static bool chk1, chk2, chk3;
-			hui::beginTwoColumns();
-			chk1 = hui::check("Option 1", chk1);
-			chk2 = hui::check("Option 2", chk2);
-			hui::nextColumn();
-			chk3 = hui::check("Option 3", chk3);
-			hui::pushTint(hui::Color::cyan);
-
-			if (hui::button("Browse..."))
+			if (hui::beginWindow(HORUS_MAIN_WINDOW_ID, "HUI", 0, hui::DockType::None, 0))
 			{
-				char path[256] = { 0 };
-
-				if (hui::openFileDialog("*.*;*.png;*.jpg", "", path, 256))
+				if (lastEventInQueue)
 				{
-					printf("Browsed for `%s`\n", path);
+					hui::addRenderCallback(tritri);
 				}
+
+				// lets first draw a rect with a theme, for the panel
+				hui::Rect panelRect = { 5, 5, 300, 500 };
+				hui::WidgetElementInfo elemInfo;
+				hui::getThemeWidgetElementInfo(hui::WidgetElementId::PopupBody, hui::WidgetStateType::Normal, elemInfo);
+				hui::setColor(hui::Color::white);
+				// draw before the beginContainer, because it will clip our panel image (using padding)
+				//hui::drawBorderedImage(elemInfo.image, elemInfo.border, panelRect);
+
+				// begin a widget container (it doesnt draw anything, a container is a layouting rectangle)
+				//hui::beginContainer(panelRect);
+				hui::labelCustomFont("Information", largeFnt);
+				hui::button("Activate shields");
+				static bool chk1, chk2, chk3;
+				hui::beginTwoColumns();
+				chk1 = hui::check("Option 1", chk1);
+				chk2 = hui::check("Option 2", chk2);
+				hui::nextColumn();
+				chk3 = hui::check("Option 3", chk3);
+				hui::pushTint(hui::Color::cyan);
+
+				if (hui::button("Browse..."))
+				{
+					char path[256] = { 0 };
+
+					if (hui::openFileDialog("*.*;*.png;*.jpg", "", path, 256))
+					{
+						printf("Browsed for `%s`\n", path);
+					}
+				}
+
+				hui::popTint();
+				hui::endColumns();
+				static float val;
+				hui::sliderFloat(0, 100, val);
+				static char txt[2000];
+				hui::textInput(txt, 2000, hui::TextInputValueMode::Any, "Write something here");
+				hui::space();
+
+				static f32 scrollPos = 0;
+				hui::beginScrollView(200, scrollPos);
+				hui::multilineLabel("Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum. Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium, totam rem aperiam, eaque ipsa quae ab illo inventore veritatis et quasi architecto beatae vitae dicta sunt explicabo. Nemo enim ipsam voluptatem quia voluptas sit aspernatur aut odit aut fugit, sed quia consequuntur magni dolores eos qui ratione voluptatem sequi nesciunt. Neque porro quisquam est, qui dolorem ipsum quia dolor sit amet, consectetur, adipisci velit, sed quia non numquam eius modi tempora incidunt ut labore et dolore magnam aliquam quaerat voluptatem. Ut enim ad minima veniam, quis nostrum exercitationem ullam corporis suscipit laboriosam, nisi ut aliquid ex ea commodi consequatur? Quis autem vel eum iure reprehenderit qui in ea voluptate velit esse quam nihil molestiae consequatur, vel illum qui dolorem eum fugiat quo voluptas nulla pariatur?", hui::HAlignType::Left);
+				hui::line();
+				hui::button("I AGREE");
+				hui::line();
+				scrollPos = hui::endScrollView();
+				hui::pushTint(hui::Color::orange);
+				if (hui::button("Exit"))
+					hui::quitApplication();
+				hui::popTint();
+
+				hui::beginColumns(5);
+				hui::pushWidth(0.5);
+				hui::iconButton(icon1, 32);
+				hui::popWidth();
+				hui::nextColumn();
+				hui::pushWidth(1);
+				hui::iconButton(icon2, 32);
+				hui::popWidth();
+				hui::nextColumn();
+				hui::iconButton(icon3, 32);
+				hui::nextColumn();
+				hui::iconButton(icon4, 32);
+				hui::nextColumn();
+				hui::iconButton(icon5, 32);
+				hui::endColumns();
+
+				//hui::endContainer();
+				hui::endWindow();
 			}
-
-			hui::popTint();
-			hui::endColumns();
-			static float val;
-			hui::sliderFloat(0, 100, val);
-			static char txt[2000];
-			hui::textInput(txt, 2000, hui::TextInputValueMode::Any, "Write something here");
-			hui::space();
-
-			static f32 scrollPos = 0;
-			hui::beginScrollView(200, scrollPos);
-			hui::multilineLabel("Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum. Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium, totam rem aperiam, eaque ipsa quae ab illo inventore veritatis et quasi architecto beatae vitae dicta sunt explicabo. Nemo enim ipsam voluptatem quia voluptas sit aspernatur aut odit aut fugit, sed quia consequuntur magni dolores eos qui ratione voluptatem sequi nesciunt. Neque porro quisquam est, qui dolorem ipsum quia dolor sit amet, consectetur, adipisci velit, sed quia non numquam eius modi tempora incidunt ut labore et dolore magnam aliquam quaerat voluptatem. Ut enim ad minima veniam, quis nostrum exercitationem ullam corporis suscipit laboriosam, nisi ut aliquid ex ea commodi consequatur? Quis autem vel eum iure reprehenderit qui in ea voluptate velit esse quam nihil molestiae consequatur, vel illum qui dolorem eum fugiat quo voluptas nulla pariatur?", hui::HAlignType::Left);
-			hui::line();
-			hui::button("I AGREE");
-			hui::line();
-			scrollPos = hui::endScrollView();
-			hui::pushTint(hui::Color::orange);
-			if (hui::button("Exit"))
-				hui::quitApplication();
-			hui::popTint();
-
-			hui::beginColumns(5);
-			hui::pushWidth(0.5);
-			hui::iconButton(icon1, 32);
-			hui::popWidth();
-			hui::nextColumn();
-			hui::pushWidth(1);
-			hui::iconButton(icon2, 32);
-			hui::popWidth();
-			hui::nextColumn();
-			hui::iconButton(icon3, 32);
-			hui::nextColumn();
-			hui::iconButton(icon4, 32);
-			hui::nextColumn();
-			hui::iconButton(icon5, 32);
-			hui::endColumns();
-
-			hui::endContainer();
-			hui::endWindow();
-				
+			
 			// start to add widgets in the window
-			if (hui::beginWindow("wnd1", "Horus Demo - No Docking", nullptr, hui::DockType::None, nullptr))
+			if (hui::beginWindow("inspector", "Inspector", nullptr, hui::DockType::None, nullptr))
 			{
-				hui::clearOsWindowBackground();
 				hui::beginContainer({40, 40, 300, 300});
 				hui::labelCustomFont("SETTINGS AND STUFF", hui::getFont("large"));
 				static char txt[2000];
 				hui::textInput(txt, 2000, hui::TextInputValueMode::Any, "Write something here");
 				hui::space();
-				hui::button("Open Editor...");
+				if (hui::button("Dock Left"))
+				{
+					hui::dockWindow("inspector", HORUS_MAIN_WINDOW_ID, hui::DockType::Left);
+				}
+				if (hui::button("Dock As tab"))
+				{
+					hui::dockWindow("inspector", HORUS_MAIN_WINDOW_ID, hui::DockType::AsTab);
+				}
 				hui::endContainer();
+				hui::endWindow();
 			}
-			hui::endWindow();
+			
 
 			// start to add widgets in the window
-			if (hui::beginWindow("wnd2", "Assets", "wnd1", hui::DockType::Right, nullptr))
+			if (hui::beginWindow("assets", "Assets", "inspector", hui::DockType::Right, nullptr))
 			{
 				hui::labelCustomFont("ASSETS OF COURSE", hui::getFont("large"));
 				static char txt[2000];
 				hui::textInput(txt, 2000, hui::TextInputValueMode::Any, "Write something here");
 				hui::space();
 				hui::button("BROWSE...");
+				hui::endWindow();
 			}
-			hui::endWindow();
+			
 				
 			hui::endFrame();
 

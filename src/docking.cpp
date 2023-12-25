@@ -787,6 +787,9 @@ bool dockWindow(Window* wnd, DockNode* targetNode, DockType dockType, u32 tabInd
 
 void dockNodeTabs(DockNode* node)
 {
+	pushLayoutPadding(0);
+	beginContainer(node->rect);
+
 	if (ctx->layoutStack.back().width <= (node->windows.size() * (ctx->paneGroupState.tabWidth + ctx->paneGroupState.sideSpacing)) * ctx->globalScale)
 	{
 		ctx->paneGroupState.forceTabWidth = ctx->layoutStack.back().width / (f32)node->windows.size();
@@ -798,27 +801,32 @@ void dockNodeTabs(DockNode* node)
 	}
 
 	u32 closeTabIndex = ~0;
+	u32 selectedIndex = 0;
 
 	ctx->dockingState.drawingWindowTabs = true;
-	beginTabGroup(node->selectedTabIndex);
 
-	for (size_t i = 0; i < node->windows.size(); i++)
+	if (!node->windows.empty())
 	{
-		hui::tab(node->windows[i]->title.c_str(), 0/*node->windows[i]->icon*/);
-		node->windows[i]->tabRect = ctx->widget.rect;
+		beginTabGroup(node->selectedTabIndex);
 
-		if (ctx->widget.hovered
-			&& ctx->event.type == InputEvent::Type::MouseDown
-			&& ctx->event.mouse.button == MouseButton::Middle)
+		for (size_t i = 0; i < node->windows.size(); i++)
 		{
-			// close tab
-			closeTabIndex = i;
-			ctx->event.type = InputEvent::Type::None;
-			//TODO: issue some event on tab close ?
-		}
-	}
+			hui::tab(node->windows[i]->title.c_str(), 0/*node->windows[i]->icon*/);
+			node->windows[i]->tabRect = ctx->widget.rect;
 
-	u32 selectedIndex = hui::endTabGroup();
+			if (ctx->widget.hovered
+				&& ctx->event.type == InputEvent::Type::MouseDown
+				&& ctx->event.mouse.button == MouseButton::Middle)
+			{
+				// close tab
+				closeTabIndex = i;
+				ctx->event.type = InputEvent::Type::None;
+				//TODO: issue some event on tab close ?
+			}
+		}
+
+		selectedIndex = hui::endTabGroup();
+	}
 
 	ctx->dockingState.drawingWindowTabs = false;
 
@@ -837,6 +845,14 @@ void dockNodeTabs(DockNode* node)
 			node->selectedTabIndex = selectedIndex;
 			hui::forceRepaint();
 		}
+	}
+
+	endContainer();
+	popLayoutPadding();
+
+	for (auto& child : node->children)
+	{
+		dockNodeTabs(child);
 	}
 }
 

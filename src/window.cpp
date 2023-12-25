@@ -14,6 +14,7 @@ void createMainWindow(HOsWindow osWnd)
 	auto title = HORUS_INPUT->getWindowTitle(osWnd);
 	auto rc = HORUS_INPUT->getWindowRect(osWnd);
 	auto wnd = createWindow(HORUS_MAIN_WINDOW_ID, nullptr, DockType::None, title, &rc, osWnd);
+	ctx->osWindows.push_back(osWnd);
 	ctx->dockingState.mainWindow = wnd;
 	ctx->currentWindow = wnd;
 	ctx->hoveringThisWindow = true;
@@ -47,6 +48,11 @@ bool beginWindow(const char* id, const char* title, const char* dockTo, DockType
 		wnd = ctx->dockingState.windows[id];
 	}
 
+	if (wnd->dockNode->type == DockNode::Type::Tabs && wnd->dockNode->getWindowIndex(wnd) != wnd->dockNode->selectedTabIndex)
+	{
+		return false;
+	}
+
 	ctx->currentWindow = wnd;
 	ctx->hoveringThisWindow = isMouseOverWindow();
 	ctx->renderer->setOsWindow(wnd->dockNode->osWindow);
@@ -59,16 +65,24 @@ bool beginWindow(const char* id, const char* title, const char* dockTo, DockType
 void endWindow()
 {
 	endContainer();
-	auto r = ctx->currentWindow->clientRect;
-	r = r.contract(1);
-	LineStyle ls;
-	ls.color = Color::red;
-	ctx->renderer->cmdSetLineStyle(ls);
-	ctx->renderer->cmdDrawRectangle(r);
-	ctx->renderer->cmdDrawRectangle(ctx->currentWindow->tabRect);
+	//auto r = ctx->currentWindow->clientRect;
+	//r = r.contract(1);
+	//LineStyle ls;
+	//ls.color = Color::red;
+	//ctx->renderer->cmdSetLineStyle(ls);
+	//ctx->renderer->cmdDrawRectangle(r);
+	//ctx->renderer->cmdDrawRectangle(ctx->currentWindow->tabRect);
 	ctx->renderer->end();
 	ctx->currentWindowIndex++;
 	//TODO: make scroll struct stack
+}
+
+
+void dockWindow(const char* windowId, const char* targetWindowId, DockType dockType)
+{
+	Window* wnd1 = ctx->dockingState.windows[windowId];
+	Window* wnd2 = ctx->dockingState.windows[targetWindowId];
+	dockWindow(wnd1, wnd2->dockNode, dockType, 0);
 }
 
 bool isMouseOverWindow()

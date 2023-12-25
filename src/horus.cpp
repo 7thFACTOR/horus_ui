@@ -483,13 +483,11 @@ void presentWindow(HOsWindow wnd)
 	ctx->renderer->setOsWindow(wnd);
 	auto r = HORUS_INPUT->getWindowRect(wnd);
 	r.x = r.y = 0;
-	beginFrame();
-	pushLayoutPadding(0);
-	beginContainer(r);
+	ctx->renderer->begin();
+	auto& bgColor = ctx->theme->getElement(WidgetElementId::WindowBody).normalState().color;
+	HORUS_GFX->clear(bgColor);
 	dockNodeTabs(ctx->dockingState.rootOsWindowDockNodes[wnd]);
-	endContainer();
-	popLayoutPadding();
-	endFrame();
+	ctx->renderer->end();
 	ctx->renderer->executeDrawCommands(wnd);
 	ctx->providers->input->presentWindow(wnd);
 }

@@ -21,7 +21,8 @@
 		"title": { "file": "fonts/Roboto-Regular.ttf", "size": 20 },
 		"heading": { "file": "fonts/Roboto-Regular.ttf", "size": 14 },
 		"para": { "file": "fonts/Roboto-Regular.ttf", "size": 12 },
-		"menu": { "file": "fonts/Roboto-Regular.ttf", "size": 16 }
+		"menu": { "file": "fonts/Roboto-Regular.ttf", "size": 16 },
+		"window-tab": { "file": "fonts/Roboto-Regular.ttf", "size": 14 }
 	},
 	
 	"settings":
@@ -314,20 +315,20 @@
 			"tabBodyActive":
 			{
 				"width": 100,
-				"height": 20,
-				"normal": { "image": "default/tab_active", "border": 5, "color": "white", "textColor": "white", "font": "normal-bold" },
-				"hovered": { "image": "default/tab_active", "border": 5, "color": "white", "textColor": "white", "font": "normal-bold" },
-				"pressed": { "image": "default/tab_active", "border": 5, "color": "white", "textColor": "white", "font": "normal-bold" },
-				"focused": { "image": "default/tab_active", "border": 5, "color": "white", "textColor": "white", "font": "normal-bold" }
+				"height": 24,
+				"normal": { "image": "default/tab_active", "border": 5, "color": "white", "textColor": "white", "font": "window-tab" },
+				"hovered": { "image": "default/tab_active", "border": 5, "color": "white", "textColor": "white", "font": "window-tab" },
+				"pressed": { "image": "default/tab_active", "border": 5, "color": "white", "textColor": "white", "font": "window-tab" },
+				"focused": { "image": "default/tab_active", "border": 5, "color": "white", "textColor": "white", "font": "window-tab" }
 			},
 			"tabBodyInactive":
 			{
 				"width": 100,
-				"height": 20,
-				"normal": { "image": "default/tab_inactive", "border": 5, "color": "white", "textColor": "white", "font": "normal" },
-				"hovered": { "image": "default/tab_inactive", "border": 5, "color": "white", "textColor": "white", "font": "normal" },
-				"pressed": { "image": "default/tab_inactive", "border": 5, "color": "white", "textColor": "white", "font": "normal" },
-				"focused": { "image": "default/tab_inactive", "border": 5, "color": "white", "textColor": "white", "font": "normal" }
+				"height": 24,
+				"normal": { "image": "default/tab_inactive", "border": 5, "color": "white", "textColor": "white", "font": "window-tab" },
+				"hovered": { "image": "default/tab_inactive", "border": 5, "color": "white", "textColor": "white", "font": "window-tab" },
+				"pressed": { "image": "default/tab_inactive", "border": 5, "color": "white", "textColor": "white", "font": "window-tab" },
+				"focused": { "image": "default/tab_inactive", "border": 5, "color": "white", "textColor": "white", "font": "window-tab" }
 			}
 		},
 		"view":
