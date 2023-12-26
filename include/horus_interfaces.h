@@ -339,6 +339,8 @@ struct GraphicsProvider
 	/// \param viewport the viewport with top-left corner as (0,0)
 	virtual void setViewport(const Point& windowSize, const Rect& viewport) = 0;
 
+	virtual Rect getViewport() const = 0;
+
 	/// Clear the current backbuffer with a specified color
 	virtual void clear(const Color& color) = 0;
 

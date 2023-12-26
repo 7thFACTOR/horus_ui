@@ -91,7 +91,7 @@ void deleteRootDockNode(HOsWindow window)
 	}
 }
 
-Window* createWindow(const std::string& id, DockNode* targetNode, DockType dockType, const std::string& title, Rect* initialRect, HOsWindow osWnd)
+Window* createWindow(const std::string& id, DockNode* targetNode, DockType dockType, const std::string& title, Rect* initialRect, HOsWindow osWnd, HImage icon)
 {
 	auto targetNodePtr = (DockNode*)targetNode;
 	auto newWnd = new Window();
@@ -99,6 +99,7 @@ Window* createWindow(const std::string& id, DockNode* targetNode, DockType dockT
 	
 	newWnd->title = title;
 	newWnd->id = id;
+	newWnd->icon = icon;
 
 	if (!targetNode)
 	{
@@ -201,7 +202,20 @@ bool dockWindow(Window* wnd, DockNode* targetNode, DockType dockType, u32 tabInd
 			// if there is just one window in the source node, move the node and remove from current parent
 			if (source && source->windows.size() == 1)
 			{
+				bool isSameParent = source->parent == targetParent;
 				source->removeFromParent();
+
+				if (!isSameParent)
+				{
+					// optimize the source's dock node hierarcy
+					auto rnode = getRootDockNode(source->osWindow);
+					if (rnode)
+					{
+						rnode->checkRedundancy();
+						rnode->computeRect();
+					}
+				}
+
 				source->parent = targetParent;
 				source->osWindow = target->osWindow;
 
@@ -256,7 +270,20 @@ bool dockWindow(Window* wnd, DockNode* targetNode, DockType dockType, u32 tabInd
 			// and just relocate to target parent node
 			if (source && source->windows.size() == 1)
 			{
+				bool isSameParent = source->parent == targetParent;
 				source->removeFromParent();
+
+				if (!isSameParent)
+				{
+					// optimize the source's dock node hierarcy
+					auto rnode = getRootDockNode(source->osWindow);
+					if (rnode)
+					{
+						rnode->checkRedundancy();
+						rnode->computeRect();
+					}
+				}
+
 				source->parent = targetParent;
 				sourceNode = source;
 			}
@@ -343,8 +370,11 @@ bool dockWindow(Window* wnd, DockNode* targetNode, DockType dockType, u32 tabInd
 				{
 					// optimize the source's dock node hierarcy
 					auto rnode = getRootDockNode(source->osWindow);
-					rnode->checkRedundancy();
-					rnode->computeRect();
+					if (rnode)
+					{
+						rnode->checkRedundancy();
+						rnode->computeRect();
+					}
 				}
 
 				source->parent = targetParent;
@@ -491,7 +521,20 @@ bool dockWindow(Window* wnd, DockNode* targetNode, DockType dockType, u32 tabInd
 			// if there is just one window in the source node, move the node also and remove from current parent
 			if (source && source->windows.size() == 1)
 			{
+				bool isSameParent = source->parent == targetParent;
 				source->removeFromParent();
+
+				if (!isSameParent)
+				{
+					// optimize the source's dock node hierarcy
+					auto rnode = getRootDockNode(source->osWindow);
+					if (rnode)
+					{
+						rnode->checkRedundancy();
+						rnode->computeRect();
+					}
+				}
+
 				source->parent = targetParent;
 				source->osWindow = target->osWindow;
 
@@ -552,7 +595,20 @@ bool dockWindow(Window* wnd, DockNode* targetNode, DockType dockType, u32 tabInd
 			// and just relocate to target parent node
 			if (source && source->windows.size() == 1)
 			{
+				bool isSameParent = source->parent == targetParent;
 				source->removeFromParent();
+
+				if (!isSameParent)
+				{
+					// optimize the source's dock node hierarcy
+					auto rnode = getRootDockNode(source->osWindow);
+					if (rnode)
+					{
+						rnode->checkRedundancy();
+						rnode->computeRect();
+					}
+				}
+
 				source->parent = targetParent;
 				sourceNode = source;
 			}
@@ -630,7 +686,20 @@ bool dockWindow(Window* wnd, DockNode* targetNode, DockType dockType, u32 tabInd
 			// if there is just one window in the source node, move the node also and remove from current parent
 			if (source && source->windows.size() == 1)
 			{
+				bool isSameParent = source->parent == targetParent;
 				source->removeFromParent();
+
+				if (!isSameParent)
+				{
+					// optimize the source's dock node hierarcy
+					auto rnode = getRootDockNode(source->osWindow);
+					if (rnode)
+					{
+						rnode->checkRedundancy();
+						rnode->computeRect();
+					}
+				}
+
 				source->parent = targetParent;
 				source->osWindow = target->osWindow;
 
@@ -695,7 +764,20 @@ bool dockWindow(Window* wnd, DockNode* targetNode, DockType dockType, u32 tabInd
 			// and just relocate to target parent node
 			if (source && source->windows.size() == 1)
 			{
+				bool isSameParent = source->parent == targetParent;
 				source->removeFromParent();
+
+				if (!isSameParent)
+				{
+					// optimize the source's dock node hierarcy
+					auto rnode = getRootDockNode(source->osWindow);
+					if (rnode)
+					{
+						rnode->checkRedundancy();
+						rnode->computeRect();
+					}
+				}
+
 				source->parent = targetParent;
 				sourceNode = source;
 			}
@@ -775,7 +857,21 @@ bool dockWindow(Window* wnd, DockNode* targetNode, DockType dockType, u32 tabInd
 		// if we only have a window in the source node, delete the node
 		if (source && source->windows.size() == 1)
 		{
+			bool isSameParent = source->parent == targetParent;
 			source->removeFromParent();
+
+			if (!isSameParent)
+			{
+				// optimize the source's dock node hierarcy
+				auto rnode = getRootDockNode(source->osWindow);
+				if (rnode)
+				{
+					rnode->checkRedundancy();
+					rnode->computeRect();
+				}
+
+			}
+
 			delete source;
 		}
 		else
@@ -798,6 +894,8 @@ bool dockWindow(Window* wnd, DockNode* targetNode, DockType dockType, u32 tabInd
 		node->checkRedundancy();
 		node->computeRect();
 	}
+
+	debugWindows();
 
 	return true;
 }
@@ -828,7 +926,7 @@ void dockNodeTabs(DockNode* node)
 
 		for (size_t i = 0; i < node->windows.size(); i++)
 		{
-			hui::tab(node->windows[i]->title.c_str(), 0/*node->windows[i]->icon*/);
+			hui::tab(node->windows[i]->title.c_str(), node->windows[i]->icon);
 			node->windows[i]->tabRect = ctx->widget.rect;
 
 			if (ctx->widget.hovered
@@ -871,42 +969,6 @@ void dockNodeTabs(DockNode* node)
 	{
 		dockNodeTabs(child);
 	}
-}
-
-void beginDockNode(DockNode* node)
-{
-	//beginContainer(node->rect);
-
-	//auto ret = dockNodeTabs(node);
-	auto info = hui::findDockNodeDragInfoAtMousePos(node->osWindow, hui::getMousePosition());
-	
-	if (info.node == node)
-		hui::setLineColor(hui::Color::red);
-	else
-		hui::setLineColor(hui::Color::white);
-
-	hui::drawRectangle(node->rect);
-	hui::setFont(hui::getFont("normal-bold"));
-
-	if (node->windows.size())
-	{
-		std::string windowNames;
-
-		for (auto& w : node->windows) windowNames += w->title + ";";
-
-		hui::drawTextInBox(windowNames.c_str(), node->rect, hui::HAlignType::Center, hui::VAlignType::Center);
-	}
-
-	for (auto& c : node->children)
-	{
-		beginDockNode(c);
-		//endDockNode();
-	}
-}
-
-void endDockNode()
-{
-	//endContainer();
 }
 
 f32 getRemainingDockNodeClientHeight(HDockNode node)

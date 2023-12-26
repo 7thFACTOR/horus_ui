@@ -61,6 +61,10 @@ int main(int argc, char** args)
 	auto icon3 = hui::loadImage("../themes/icons/ic_border_all_white_24dp.png");
 	auto icon4 = hui::loadImage("../themes/icons/ic_border_inner_white_24dp.png");
 	auto icon5 = hui::loadImage("../themes/icons/ic_border_outer_white_24dp.png");
+	auto tabicon1 = hui::loadImage("../themes/icons/icons8-equivalent-20.png");
+	auto tabicon2 = hui::loadImage("../themes/icons/icons8-settings-20.png");
+	auto tabicon3 = hui::loadImage("../themes/icons/icons8-opened-folder-20.png");
+
 
 	// after we load the theme and more images and fonts, we need to rebuild the theme (image atlas)
 	hui::buildTheme(theme);
@@ -79,9 +83,15 @@ int main(int argc, char** args)
 		{
 			auto tritri = [](hui::HOsWindow wnd)
 			{
+				auto osWndSize = HORUS_INPUT->getWindowClientSize(wnd);
+				auto wrc = hui::getWindowClientRect();
+				auto rc = hui::beginViewport();
 				// some user drawing code, a triangle
 				static f32 x = 1;
 				static f32 t = 1;
+				i32 vp[4];
+				glGetIntegerv(GL_VIEWPORT, vp);
+				glViewport(wrc.x, osWndSize.y - wrc.y - wrc.height, wrc.width, wrc.height);
 				glBegin(GL_TRIANGLES);
 				glColor3f(1, 0, 0);
 				glVertex2f(0, 0);
@@ -92,6 +102,8 @@ int main(int argc, char** args)
 				glEnd();
 				x = sinf(t);
 				t += 0.01f;
+				hui::endViewport();
+				glViewport(vp[0], vp[1], vp[2], vp[3]);
 			};
 
 			hui::updateDockingSystem();
@@ -103,7 +115,7 @@ int main(int argc, char** args)
 			// we only render on the last event in the queue
 			hui::setDisableRendering(!lastEventInQueue);
 
-			if (hui::beginWindow(HORUS_MAIN_WINDOW_ID, "HUI", 0, hui::DockType::AsTab, 0))
+			if (hui::beginWindow(HORUS_MAIN_WINDOW_ID, "HUI", 0, hui::DockType::AsTab, 0, tabicon1))
 			{
 				if (lastEventInQueue)
 				{
@@ -181,68 +193,72 @@ int main(int argc, char** args)
 			}
 			
 			// start to add widgets in the window
-			if (hui::beginWindow("inspector", "Inspector", nullptr, hui::DockType::None, nullptr))
+			if (hui::beginWindow("inspector", "Inspector", nullptr, hui::DockType::None, nullptr, tabicon2))
 			{
 				hui::labelCustomFont("SETTINGS AND STUFF", hui::getFont("large"));
-				static char txt[2000];
+				static char txt[2000] = HORUS_MAIN_WINDOW_ID;
+				
+				hui::label("Dock Target");
 				hui::textInput(txt, 2000, hui::TextInputValueMode::Any, "Write something here");
+			
 				hui::space();
 				if (hui::button("Dock Left"))
 				{
-					hui::dockWindow("inspector", HORUS_MAIN_WINDOW_ID, hui::DockType::Left);
+					hui::dockWindow("inspector", txt, hui::DockType::Left);
 				}
 				if (hui::button("Dock Right"))
 				{
-					hui::dockWindow("inspector", HORUS_MAIN_WINDOW_ID, hui::DockType::Right);
-					hui::debugWindows();
+					hui::dockWindow("inspector", txt, hui::DockType::Right);
 				}
 				if (hui::button("Dock Top"))
 				{
-					hui::dockWindow("inspector", HORUS_MAIN_WINDOW_ID, hui::DockType::Top);
+					hui::dockWindow("inspector", txt, hui::DockType::Top);
 				}
 				if (hui::button("Dock Bottom"))
 				{
-					hui::dockWindow("inspector", HORUS_MAIN_WINDOW_ID, hui::DockType::Bottom);
+					hui::dockWindow("inspector", txt, hui::DockType::Bottom);
 				}
 				if (hui::button("Dock As tab"))
 				{
-					hui::dockWindow("inspector", HORUS_MAIN_WINDOW_ID, hui::DockType::AsTab);
-				}
-				if (hui::button("Dock As tab to Assets"))
-				{
-					hui::dockWindow("inspector", "assets", hui::DockType::AsTab);
-				}
-				if (hui::button("Dock Left to Assets"))
-				{
-					hui::dockWindow("inspector", "assets", hui::DockType::Left);
-				}
-				if (hui::button("Dock Right to Assets"))
-				{
-					hui::dockWindow("inspector", "assets", hui::DockType::Right);
-				}
-				if (hui::button("Dock Top to Assets"))
-				{
-					hui::dockWindow("inspector", "assets", hui::DockType::Top);
-				}
-				if (hui::button("Dock Bottom to Assets"))
-				{
-					hui::dockWindow("inspector", "assets", hui::DockType::Bottom);
+					hui::dockWindow("inspector", txt, hui::DockType::AsTab);
 				}
 				hui::endWindow();
 			}
 			
 
 			// start to add widgets in the window
-			if (hui::beginWindow("assets", "Assets", "inspector", hui::DockType::Right, nullptr))
+			if (hui::beginWindow("assets", "Assets", "inspector", hui::DockType::Right, nullptr, tabicon3))
 			{
 				hui::labelCustomFont("ASSETS OF COURSE", hui::getFont("large"));
-				static char txt[2000];
+				static char txt[2000] = HORUS_MAIN_WINDOW_ID;
+
+				hui::label("Dock Target");
 				hui::textInput(txt, 2000, hui::TextInputValueMode::Any, "Write something here");
+
 				hui::space();
-				hui::button("BROWSE...");
+				if (hui::button("Dock Left"))
+				{
+					hui::dockWindow("assets", txt, hui::DockType::Left);
+				}
+				if (hui::button("Dock Right"))
+				{
+					hui::dockWindow("assets", txt, hui::DockType::Right);
+				}
+				if (hui::button("Dock Top"))
+				{
+					hui::dockWindow("assets", txt, hui::DockType::Top);
+				}
+				if (hui::button("Dock Bottom"))
+				{
+					hui::dockWindow("assets", txt, hui::DockType::Bottom);
+				}
+				if (hui::button("Dock As tab"))
+				{
+					hui::dockWindow("assets", txt, hui::DockType::AsTab);
+				}
 				hui::endWindow();
 			}
-			
+
 				
 			hui::endFrame();
 

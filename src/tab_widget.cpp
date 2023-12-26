@@ -83,9 +83,10 @@ void tab(const char* labelText, HImage icon)
 		iconWidth = ico->rect.width;
 	}
 
-	f32 textAndIconWidth = (fsize.width + iconWidth) * ctx->globalScale;
+	const f32 iconTextSpacing = 4;
+	f32 textAndIconWidth = (fsize.width + iconWidth + iconTextSpacing) * ctx->globalScale;
 	
-	width = textAndIconWidth + tabElemState->border *2 * ctx->globalScale;
+	width = textAndIconWidth + tabElemState->border * 2.0f * ctx->globalScale;
 
 	f32 height = tabElemState->height * ctx->globalScale;
 
@@ -104,11 +105,21 @@ void tab(const char* labelText, HImage icon)
 		ctx->selectedTabIndex = ctx->currentTabIndex;
 	}
 
-	//TODO: deal with hover also
+	bool isActive = ctx->currentTabIndex == ctx->selectedTabIndex;
 
-	if (ctx->currentTabIndex != ctx->selectedTabIndex)
+	if (isActive)
 	{
-		tabElemState = &tabInactiveElem.normalState();
+		if (ctx->widget.hovered)
+			tabElemState = &tabActiveElem.hoveredState();
+		else
+			tabElemState = &tabActiveElem.normalState();
+	}
+	else
+	{
+		if (ctx->widget.hovered)
+			tabElemState = &tabInactiveElem.hoveredState();
+		else
+			tabElemState = &tabInactiveElem.normalState();
 	}
 
 	ctx->renderer->cmdSetColor(tabElemState->color);
@@ -122,6 +133,7 @@ void tab(const char* labelText, HImage icon)
 
 	if (ico)
 	{
+		ctx->renderer->cmdSetColor(Color::white);
 		ctx->renderer->cmdDrawImageScaledAligned(ico,
 			rcTextAndIcon, HAlignType::Left, VAlignType::Center, ctx->globalScale);
 	}
@@ -130,7 +142,7 @@ void tab(const char* labelText, HImage icon)
 	ctx->renderer->cmdSetColor(tabElemState->textColor);
 
 	Rect textRc = {
-			ctx->widget.rect.x + (tabElemState->border + iconWidth) * ctx->globalScale,
+			ctx->widget.rect.x + (tabElemState->border + iconWidth + iconTextSpacing) * ctx->globalScale,
 			ctx->widget.rect.y,
 			width,
 			ctx->widget.rect.height,

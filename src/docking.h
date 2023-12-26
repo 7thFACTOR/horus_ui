@@ -23,7 +23,7 @@ DockNode* createRootDockNode(HOsWindow osWindow);
 void deleteRootDockNode(HOsWindow window);
 DockNode* getRootDockNode(HOsWindow window);
 DragDockNodeInfo findDockNodeDragInfoAtMousePos(HOsWindow window, const Point& mousePos);
-Window* createWindow(const std::string& id, DockNode* targetNode, DockType dockType, const std::string& title, Rect* initialRect, HOsWindow osWnd);
+Window* createWindow(const std::string& id, DockNode* targetNode, DockType dockType, const std::string& title, Rect* initialRect, HOsWindow osWnd, HImage icon);
 void deleteWindow(Window* wnd);
 bool dockWindow(Window* wnd, DockNode* targetNode, DockType dockType, u32 tabIndex);
 void dockNodeTabs(DockNode* node);

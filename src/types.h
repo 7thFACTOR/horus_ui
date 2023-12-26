@@ -265,6 +265,7 @@ struct Window
 {
 	struct DockNode* dockNode = nullptr;
 	std::string id, title;
+	HImage icon = 0;
 	Rect tabRect, clientRect;
 };
 

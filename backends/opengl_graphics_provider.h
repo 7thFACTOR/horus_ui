@@ -41,6 +41,7 @@ struct OpenGLGraphicsProvider : GraphicsProvider
 	void setRenderTarget(HGraphicsApiRenderTarget rt) override;
 	void commitRenderState();
 	void setViewport(const Point& windowSize, const Rect& viewport) override;
+	Rect getViewport() const override;
 	void clear(const Color& color) override;
 	void draw(struct RenderBatch* batches, u32 count) override;
 

@@ -483,6 +483,7 @@ void presentWindow(HOsWindow wnd)
 	ctx->renderer->setOsWindow(wnd);
 	auto r = HORUS_INPUT->getWindowRect(wnd);
 	r.x = r.y = 0;
+	ctx->hoveringThisWindow = HORUS_INPUT->getHoveredWindow() == wnd;
 	ctx->renderer->begin();
 	auto& bgColor = ctx->theme->getElement(WidgetElementId::WindowBody).normalState().color;
 	HORUS_GFX->clear(bgColor);

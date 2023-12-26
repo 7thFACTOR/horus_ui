@@ -327,6 +327,11 @@ void OpenGLGraphicsProvider::setViewport(const Point& windowSize, const Rect& vi
 	OGL_CHECK_ERROR;
 }
 
+Rect OpenGLGraphicsProvider::getViewport() const
+{
+	return currentViewport;
+}
+
 void OpenGLGraphicsProvider::clear(const Color& color)
 {
 	glClearColor(color.r, color.g, color.b, color.a);

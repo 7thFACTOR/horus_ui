@@ -1,28 +1,28 @@
 {
 	"fonts":
 	{
-		"normal": { "file": "fonts/Roboto-Regular.ttf", "size": 12 },
-		"normal-unicode": { "file": "fonts/Roboto-Regular.ttf", "size": 12 },
-		"normal-bold": { "file": "fonts/Roboto-Regular.ttf", "size": 12 },
+		"normal": { "file": "fonts/Inter-Regular.ttf", "size": 12 },
+		"normal-unicode": { "file": "fonts/Inter-Regular.ttf", "size": 12 },
+		"normal-bold": { "file": "fonts/Inter-Regular.ttf", "size": 12 },
 		"normal-italic": { "file": "fonts/Roboto-Italic.ttf", "size": 12 },
-		"medium": { "file": "fonts/Roboto-Regular.ttf", "size": 13 },
-		"medium-bold": { "file": "fonts/Roboto-Bold.ttf", "size": 13 },
+		"medium": { "file": "fonts/Inter-Regular.ttf", "size": 13 },
+		"medium-bold": { "file": "fonts/Inter-Bold.ttf", "size": 13 },
 		"medium-italic": { "file": "fonts/Roboto-Italic.ttf", "size": 13 },
-		"small": { "file": "fonts/Roboto-Regular.ttf", "size": 8 },
-		"small-bold": { "file": "fonts/Roboto-Bold.ttf", "size": 8 },
+		"small": { "file": "fonts/Inter-Regular.ttf", "size": 8 },
+		"small-bold": { "file": "fonts/Inter-Bold.ttf", "size": 8 },
 		"small-italic": { "file": "fonts/Roboto-Italic.ttf", "size": 8 },
-		"xsmall": { "file": "fonts/Roboto-Regular.ttf", "size": 6 },
-		"xsmall-bold": { "file": "fonts/Roboto-Bold.ttf", "size": 6 },
+		"xsmall": { "file": "fonts/Inter-Regular.ttf", "size": 6 },
+		"xsmall-bold": { "file": "fonts/Inter-Bold.ttf", "size": 6 },
 		"xsmall-italic": { "file": "fonts/Roboto-Italic.ttf", "size": 6 },
-		"large": { "file": "fonts/Roboto-Regular.ttf", "size": 25 },
-		"large-unicode": { "file": "fonts/Roboto-Regular.ttf", "size": 25 },
-		"large-bold": { "file": "fonts/Roboto-Regular.ttf", "size": 25 },
+		"large": { "file": "fonts/Inter-Regular.ttf", "size": 25 },
+		"large-unicode": { "file": "fonts/Inter-Regular.ttf", "size": 25 },
+		"large-bold": { "file": "fonts/Inter-Regular.ttf", "size": 25 },
 		"large-italic": { "file": "fonts/Roboto-Italic.ttf", "size": 25 },
-		"title": { "file": "fonts/Roboto-Regular.ttf", "size": 20 },
-		"heading": { "file": "fonts/Roboto-Regular.ttf", "size": 14 },
-		"para": { "file": "fonts/Roboto-Regular.ttf", "size": 12 },
-		"menu": { "file": "fonts/Roboto-Regular.ttf", "size": 16 },
-		"window-tab": { "file": "fonts/Roboto-Regular.ttf", "size": 14 }
+		"title": { "file": "fonts/Inter-Regular.ttf", "size": 20 },
+		"heading": { "file": "fonts/Inter-Regular.ttf", "size": 14 },
+		"para": { "file": "fonts/Inter-Regular.ttf", "size": 12 },
+		"menu": { "file": "fonts/Inter-Regular.ttf", "size": 15 },
+		"window-tab": { "file": "fonts/Inter-Regular.ttf", "size": 15 }
 	},
 	
 	"settings":
@@ -306,7 +306,7 @@
 		{
 			"tabGroupBody":
 			{
-				"height": 25,
+				"height": 24,
 				"normal": { "image": "default/tabgroup", "border": 4, "color": "white", "textColor": "white", "font": "normal" }
 			}
 		},
@@ -325,8 +325,8 @@
 			{
 				"width": 100,
 				"height": 24,
-				"normal": { "image": "default/tab_inactive", "border": 5, "color": "white", "textColor": "white", "font": "window-tab" },
-				"hovered": { "image": "default/tab_inactive", "border": 5, "color": "white", "textColor": "white", "font": "window-tab" },
+				"normal": { "image": "default/tab_inactive", "border": 5, "color": "0 0 0 0", "textColor": "white", "font": "window-tab" },
+				"hovered": { "image": "default/tab_inactive", "border": 5, "color": "lightGray", "textColor": "white", "font": "window-tab" },
 				"pressed": { "image": "default/tab_inactive", "border": 5, "color": "white", "textColor": "white", "font": "window-tab" },
 				"focused": { "image": "default/tab_inactive", "border": 5, "color": "white", "textColor": "white", "font": "window-tab" }
 			}

@@ -22,6 +22,9 @@ void DockNode::removeFromParent()
 	{
 		// this is a root node and removing it we must destroy the window too
 		ctx->dockingState.rootOsWindowDockNodes.erase(osWindow);
+		auto iter = std::find(ctx->osWindows.begin(), ctx->osWindows.end(), osWindow);
+		if (iter != ctx->osWindows.end())
+			ctx->osWindows.erase(iter);
 		HORUS_INPUT->destroyWindow(osWindow);
 		osWindow = 0;
 	}

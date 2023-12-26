@@ -13,7 +13,7 @@ void createMainWindow(HOsWindow osWnd)
 {
 	auto title = HORUS_INPUT->getWindowTitle(osWnd);
 	auto rc = HORUS_INPUT->getWindowRect(osWnd);
-	auto wnd = createWindow(HORUS_MAIN_WINDOW_ID, nullptr, DockType::None, title, &rc, osWnd);
+	auto wnd = createWindow(HORUS_MAIN_WINDOW_ID, nullptr, DockType::None, title, &rc, osWnd, 0);
 	ctx->osWindows.push_back(osWnd);
 	ctx->dockingState.mainWindow = wnd;
 	ctx->currentWindow = wnd;
@@ -26,7 +26,7 @@ void closeMainWindow()
 	ctx->dockingState.mainWindow = 0;
 }
 
-bool beginWindow(const char* id, const char* title, const char* dockTo, DockType dockType, Rect* initialRect)
+bool beginWindow(const char* id, const char* title, const char* dockTo, DockType dockType, Rect* initialRect, HImage icon)
 {
 	Window* wnd = nullptr;
 
@@ -40,19 +40,20 @@ bool beginWindow(const char* id, const char* title, const char* dockTo, DockType
 			dockToNode = ctx->dockingState.windows[dockTo]->dockNode;
 		}
 
-		wnd = createWindow(id, dockToNode, dockType, title, initialRect, 0);
+		wnd = createWindow(id, dockToNode, dockType, title, initialRect, 0, icon);
 		wnd->id = id;
 	}
 	else
 	{
 		wnd = ctx->dockingState.windows[id];
+		wnd->icon = icon;
 	}
 
 	if (wnd->dockNode->type == DockNode::Type::Tabs && wnd->dockNode->getWindowIndex(wnd) != wnd->dockNode->selectedTabIndex)
 	{
 		return false;
 	}
-
+	
 	ctx->currentWindow = wnd;
 	ctx->hoveringThisWindow = isMouseOverWindow();
 	ctx->renderer->setOsWindow(wnd->dockNode->osWindow);
