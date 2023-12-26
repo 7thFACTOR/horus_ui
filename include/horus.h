@@ -1666,7 +1666,7 @@ HORUS_API void updateDockingSystem();
 HORUS_API bool beginWindow(const char* windowId, const char* title, const char* dockTo, DockType dockType, Rect* initialRect);
 
 HORUS_API void endWindow();
-
+HORUS_API void debugWindows();
 HORUS_API void dockWindow(const char* windowId, const char* targetWindowId, DockType dockType);
 
 HORUS_API bool isMouseOverWindow();

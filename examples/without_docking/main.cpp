@@ -103,7 +103,7 @@ int main(int argc, char** args)
 			// we only render on the last event in the queue
 			hui::setDisableRendering(!lastEventInQueue);
 
-			if (hui::beginWindow(HORUS_MAIN_WINDOW_ID, "HUI", 0, hui::DockType::None, 0))
+			if (hui::beginWindow(HORUS_MAIN_WINDOW_ID, "HUI", 0, hui::DockType::AsTab, 0))
 			{
 				if (lastEventInQueue)
 				{
@@ -183,7 +183,6 @@ int main(int argc, char** args)
 			// start to add widgets in the window
 			if (hui::beginWindow("inspector", "Inspector", nullptr, hui::DockType::None, nullptr))
 			{
-				hui::beginContainer({40, 40, 300, 300});
 				hui::labelCustomFont("SETTINGS AND STUFF", hui::getFont("large"));
 				static char txt[2000];
 				hui::textInput(txt, 2000, hui::TextInputValueMode::Any, "Write something here");
@@ -192,11 +191,43 @@ int main(int argc, char** args)
 				{
 					hui::dockWindow("inspector", HORUS_MAIN_WINDOW_ID, hui::DockType::Left);
 				}
+				if (hui::button("Dock Right"))
+				{
+					hui::dockWindow("inspector", HORUS_MAIN_WINDOW_ID, hui::DockType::Right);
+					hui::debugWindows();
+				}
+				if (hui::button("Dock Top"))
+				{
+					hui::dockWindow("inspector", HORUS_MAIN_WINDOW_ID, hui::DockType::Top);
+				}
+				if (hui::button("Dock Bottom"))
+				{
+					hui::dockWindow("inspector", HORUS_MAIN_WINDOW_ID, hui::DockType::Bottom);
+				}
 				if (hui::button("Dock As tab"))
 				{
 					hui::dockWindow("inspector", HORUS_MAIN_WINDOW_ID, hui::DockType::AsTab);
 				}
-				hui::endContainer();
+				if (hui::button("Dock As tab to Assets"))
+				{
+					hui::dockWindow("inspector", "assets", hui::DockType::AsTab);
+				}
+				if (hui::button("Dock Left to Assets"))
+				{
+					hui::dockWindow("inspector", "assets", hui::DockType::Left);
+				}
+				if (hui::button("Dock Right to Assets"))
+				{
+					hui::dockWindow("inspector", "assets", hui::DockType::Right);
+				}
+				if (hui::button("Dock Top to Assets"))
+				{
+					hui::dockWindow("inspector", "assets", hui::DockType::Top);
+				}
+				if (hui::button("Dock Bottom to Assets"))
+				{
+					hui::dockWindow("inspector", "assets", hui::DockType::Bottom);
+				}
 				hui::endWindow();
 			}
 			

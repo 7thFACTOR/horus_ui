@@ -50,6 +50,7 @@ DockNode* createRootDockNode(HOsWindow osWindow)
 
 DockNode* getRootDockNode(HOsWindow window)
 {
+	if (!window) return nullptr;
 	return ctx->dockingState.rootOsWindowDockNodes[window];
 }
 
@@ -136,11 +137,9 @@ void deleteWindow(Window* wnd)
 bool dockWindow(Window* wnd, DockNode* targetNode, DockType dockType, u32 tabIndex)
 {
 	auto source = wnd->dockNode;
-	DockNode* target = (DockNode*)targetNode;
+	DockNode* target = targetNode;
 	auto targetIsRoot = !target->parent;
-
-	if (source == target)
-		return false;
+	auto sourceIsTarget = source == target;
 
 	// if this is the root and its empty of any children and windows
 	if (targetIsRoot && target->children.empty() && target->windows.empty() && target->type == DockNode::Type::None)
@@ -224,6 +223,7 @@ bool dockWindow(Window* wnd, DockNode* targetNode, DockType dockType, u32 tabInd
 			// we create a new node to hold the window
 			{
 				auto wndRect = wnd->dockNode ? wnd->dockNode->rect : Rect();
+				if (sourceIsTarget) target->removeWindow(wnd);
 				if (source)	source->removeWindow(wnd);
 				DockNode* newNode = new DockNode();
 				newNode->windows.push_back(wnd);
@@ -263,6 +263,7 @@ bool dockWindow(Window* wnd, DockNode* targetNode, DockType dockType, u32 tabInd
 			else
 			{
 				auto wndRect = wnd->dockNode ? wnd->dockNode->rect : Rect();
+				if (sourceIsTarget) target->removeWindow(wnd);
 				// remove the window from parent node
 				if (source) source->removeWindow(wnd);
 				// create new node for the window
@@ -335,7 +336,17 @@ bool dockWindow(Window* wnd, DockNode* targetNode, DockType dockType, u32 tabInd
 			// if there is just one window in the source node, move the node and remove from current parent
 			if (source && source->windows.size() == 1)
 			{
+				bool isSameParent = source->parent == targetParent;
 				source->removeFromParent();
+				
+				if (!isSameParent)
+				{
+					// optimize the source's dock node hierarcy
+					auto rnode = getRootDockNode(source->osWindow);
+					rnode->checkRedundancy();
+					rnode->computeRect();
+				}
+
 				source->parent = targetParent;
 				source->osWindow = target->osWindow;
 
@@ -361,6 +372,7 @@ bool dockWindow(Window* wnd, DockNode* targetNode, DockType dockType, u32 tabInd
 			// we create a new node to hold the window
 			{
 				auto wndRect = wnd->dockNode ? wnd->dockNode->rect : Rect();
+				if (sourceIsTarget) target->removeWindow(wnd);
 				if (source) source->removeWindow(wnd);
 				DockNode* newNode = new DockNode();
 				newNode->windows.push_back(wnd);
@@ -404,6 +416,7 @@ bool dockWindow(Window* wnd, DockNode* targetNode, DockType dockType, u32 tabInd
 			else
 			{
 				auto wndRect = wnd->dockNode ? wnd->dockNode->rect : Rect();
+				if (sourceIsTarget) target->removeWindow(wnd);
 				// remove the window from parent node
 				if (source) source->removeWindow(wnd);
 				// create new node for the window
@@ -500,6 +513,7 @@ bool dockWindow(Window* wnd, DockNode* targetNode, DockType dockType, u32 tabInd
 			// we create a new node to hold the window
 			{
 				auto wndRect = wnd->dockNode ? wnd->dockNode->rect : Rect();
+				if (sourceIsTarget) target->removeWindow(wnd);
 				if (source) source->removeWindow(wnd);
 				DockNode* newNode = new DockNode();
 				newNode->windows.push_back(wnd);
@@ -545,6 +559,7 @@ bool dockWindow(Window* wnd, DockNode* targetNode, DockType dockType, u32 tabInd
 			else
 			{
 				auto wndRect = wnd->dockNode ? wnd->dockNode->rect : Rect();
+				if (sourceIsTarget) target->removeWindow(wnd);
 				// remove the window from parent node
 				if (source) source->removeWindow(wnd);
 				// create new node for the window
@@ -641,6 +656,7 @@ bool dockWindow(Window* wnd, DockNode* targetNode, DockType dockType, u32 tabInd
 			// we create a new node to hold the window
 			{
 				auto wndRect = wnd->dockNode ? wnd->dockNode->rect : Rect();
+				if (sourceIsTarget) target->removeWindow(wnd);
 				if (source) source->removeWindow(wnd);
 				DockNode* newNode = new DockNode();
 				newNode->windows.push_back(wnd);
@@ -686,6 +702,7 @@ bool dockWindow(Window* wnd, DockNode* targetNode, DockType dockType, u32 tabInd
 			else
 			{
 				auto wndRect = wnd->dockNode ? wnd->dockNode->rect : Rect();
+				if (sourceIsTarget) target->removeWindow(wnd);
 				// remove the window from parent node
 				if (source) source->removeWindow(wnd);
 				// create new node for the window
@@ -777,7 +794,7 @@ bool dockWindow(Window* wnd, DockNode* targetNode, DockType dockType, u32 tabInd
 
 	if (ctx->settings.dockNodeProportionalResize)
 	{
-		auto node = (DockNode*)getRootDockNode(target->osWindow);
+		auto node = getRootDockNode(target->osWindow);
 		node->checkRedundancy();
 		node->computeRect();
 	}
@@ -938,7 +955,7 @@ void printInfo(int level, DockNode* node)
 
 	for (auto& w : node->windows)
 	{
-		printf("%s `%s` %p node: %p windowType: %d usrData: %p tabRect: %f %f %f %f\n", spaces.c_str(), w->title.c_str(), w, w->dockNode, w->tabRect.x, w->tabRect.y, w->tabRect.width, w->tabRect.height);
+		printf("%s `%s` %p node: %p tabRect: %f %f %f %f rc %f %f %f %f\n", spaces.c_str(), w->title.c_str(), w, w->dockNode, w->tabRect.x, w->tabRect.y, w->tabRect.width, w->tabRect.height, w->clientRect.x, w->clientRect.y, w->clientRect.width, w->clientRect.height);
 	}
 
 	for (auto& child : node->children)
@@ -947,7 +964,7 @@ void printInfo(int level, DockNode* node)
 	}
 }
 
-void debugwindows()
+void debugWindows()
 {
 	printf("------------------------------------------------------------------------------------------------------------\n");
 	printf("Debug windows:\n\n");
