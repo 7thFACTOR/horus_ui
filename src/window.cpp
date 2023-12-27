@@ -58,7 +58,11 @@ bool beginWindow(const char* id, const char* title, const char* dockTo, DockType
 	ctx->hoveringThisWindow = isMouseOverWindow();
 	ctx->renderer->setOsWindow(wnd->dockNode->osWindow);
 	ctx->renderer->begin();
-	beginContainer(wnd->clientRect);
+	auto rc = wnd->clientRect;
+
+	rc.y += ctx->theme->getElement(WidgetElementId::TabGroupBody).normalState().height;
+
+	beginContainer(rc);
 
 	return true;
 }
@@ -81,9 +85,23 @@ void endWindow()
 
 void dockWindow(const char* windowId, const char* targetWindowId, DockType dockType)
 {
-	Window* wnd1 = ctx->dockingState.windows[windowId];
-	Window* wnd2 = ctx->dockingState.windows[targetWindowId];
-	dockWindow(wnd1, wnd2->dockNode, dockType, 0);
+	Window *wnd1 = nullptr, *wnd2 = nullptr;
+	
+	wnd1 = ctx->dockingState.windows[windowId];
+	
+	if (targetWindowId)
+	{
+		wnd2 = ctx->dockingState.windows[targetWindowId];
+	}
+
+	dockWindow(wnd1, wnd2 ? wnd2->dockNode : nullptr, dockType, 0);
+}
+
+void undockWindow(const char* windowId, const Point& windowPos)
+{
+	dockWindow(windowId, 0, DockType::Floating);
+	Window* wnd = ctx->dockingState.windows[windowId];
+	HORUS_INPUT->setWindowPosition(wnd->dockNode->osWindow, windowPos);
 }
 
 bool isMouseOverWindow()

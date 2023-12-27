@@ -77,7 +77,7 @@ void DockNode::computeRect()
 		for (auto& wnd : windows)
 		{
 			wnd->clientRect = {
-				rect.x, rect.y + 25, rect.width, rect.height - 25
+				rect.x, rect.y, rect.width, rect.height
 			};
 		}
 		break;

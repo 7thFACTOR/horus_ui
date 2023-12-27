@@ -592,15 +592,16 @@ enum class AntiAliasing
 	Count
 };
 
-/// Docking modes for the views
+/// Docking modes for the windows
 enum class DockType
 {
 	None,
-	Left, /// will dock view to left
-	Right, /// will dock view to right
-	Top, /// will dock view to top
-	Bottom, /// will dock view to bottom
-	AsTab, /// will dock view as full view in the view tabs bar
+	Left, /// will dock window to left
+	Right, /// will dock window to right
+	Top, /// will dock window to top
+	Bottom, /// will dock window to bottom
+	AsTab, /// will dock window as full window in the window tabs bar
+	Floating /// will undock window to a floating native window
 };
 
 /// Common message box icons
@@ -1668,6 +1669,7 @@ HORUS_API bool beginWindow(const char* windowId, const char* title, const char* 
 HORUS_API void endWindow();
 HORUS_API void debugWindows();
 HORUS_API void dockWindow(const char* windowId, const char* targetWindowId, DockType dockType);
+HORUS_API void undockWindow(const char* windowId, const Point& windowPos = Point());
 
 HORUS_API bool isMouseOverWindow();
 

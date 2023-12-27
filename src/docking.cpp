@@ -139,11 +139,11 @@ bool dockWindow(Window* wnd, DockNode* targetNode, DockType dockType, u32 tabInd
 {
 	auto source = wnd->dockNode;
 	DockNode* target = targetNode;
-	auto targetIsRoot = !target->parent;
+	auto targetIsRoot = target ? !target->parent : true;
 	auto sourceIsTarget = source == target;
 
 	// if this is the root and its empty of any children and windows
-	if (targetIsRoot && target->children.empty() && target->windows.empty() && target->type == DockNode::Type::None)
+	if (targetIsRoot && target && target->children.empty() && target->windows.empty() && target->type == DockNode::Type::None)
 	{
 		target->windows.push_back(wnd);
 		wnd->dockNode = target;
@@ -155,13 +155,16 @@ bool dockWindow(Window* wnd, DockNode* targetNode, DockType dockType, u32 tabInd
 	DockNode* sourceNode = nullptr;
 	DockNode* targetParent = nullptr;
 
-	if (!target->parent)
+	if (target)
 	{
-		targetParent = target;
-	}
-	else
-	{
-		targetParent = target->parent;
+		if (!target->parent)
+		{
+			targetParent = target;
+		}
+		else
+		{
+			targetParent = target->parent;
+		}
 	}
 
 	auto checkRelocateWindowsOfNode = [](DockNode* targetParent)
@@ -202,22 +205,9 @@ bool dockWindow(Window* wnd, DockNode* targetNode, DockType dockType, u32 tabInd
 			// if there is just one window in the source node, move the node and remove from current parent
 			if (source && source->windows.size() == 1)
 			{
-				bool isSameParent = source->parent == targetParent;
 				source->removeFromParent();
-
-				if (!isSameParent)
-				{
-					// optimize the source's dock node hierarcy
-					auto rnode = getRootDockNode(source->osWindow);
-					if (rnode)
-					{
-						rnode->checkRedundancy();
-						rnode->computeRect();
-					}
-				}
-
 				source->parent = targetParent;
-				source->osWindow = target->osWindow;
+				source->osWindow = targetParent->osWindow;
 
 				// treat docking to root node
 				if (targetParent != target)
@@ -270,21 +260,9 @@ bool dockWindow(Window* wnd, DockNode* targetNode, DockType dockType, u32 tabInd
 			// and just relocate to target parent node
 			if (source && source->windows.size() == 1)
 			{
-				bool isSameParent = source->parent == targetParent;
 				source->removeFromParent();
-
-				if (!isSameParent)
-				{
-					// optimize the source's dock node hierarcy
-					auto rnode = getRootDockNode(source->osWindow);
-					if (rnode)
-					{
-						rnode->checkRedundancy();
-						rnode->computeRect();
-					}
-				}
-
 				source->parent = targetParent;
+				source->osWindow = targetParent->osWindow;
 				sourceNode = source;
 			}
 			else
@@ -362,23 +340,10 @@ bool dockWindow(Window* wnd, DockNode* targetNode, DockType dockType, u32 tabInd
 
 			// if there is just one window in the source node, move the node and remove from current parent
 			if (source && source->windows.size() == 1)
-			{
-				bool isSameParent = source->parent == targetParent;
+			{				
 				source->removeFromParent();
-				
-				if (!isSameParent)
-				{
-					// optimize the source's dock node hierarcy
-					auto rnode = getRootDockNode(source->osWindow);
-					if (rnode)
-					{
-						rnode->checkRedundancy();
-						rnode->computeRect();
-					}
-				}
-
 				source->parent = targetParent;
-				source->osWindow = target->osWindow;
+				source->osWindow = targetParent->osWindow;
 
 				// treat docking to root node
 				if (targetParent != target)
@@ -441,6 +406,7 @@ bool dockWindow(Window* wnd, DockNode* targetNode, DockType dockType, u32 tabInd
 			{
 				source->removeFromParent();
 				source->parent = targetParent;
+				source->osWindow = targetParent->osWindow;
 				sourceNode = source;
 			}
 			else
@@ -521,22 +487,9 @@ bool dockWindow(Window* wnd, DockNode* targetNode, DockType dockType, u32 tabInd
 			// if there is just one window in the source node, move the node also and remove from current parent
 			if (source && source->windows.size() == 1)
 			{
-				bool isSameParent = source->parent == targetParent;
 				source->removeFromParent();
-
-				if (!isSameParent)
-				{
-					// optimize the source's dock node hierarcy
-					auto rnode = getRootDockNode(source->osWindow);
-					if (rnode)
-					{
-						rnode->checkRedundancy();
-						rnode->computeRect();
-					}
-				}
-
 				source->parent = targetParent;
-				source->osWindow = target->osWindow;
+				source->osWindow = targetParent->osWindow;
 
 				// treat docking to root node
 				if (targetParent != target)
@@ -595,21 +548,9 @@ bool dockWindow(Window* wnd, DockNode* targetNode, DockType dockType, u32 tabInd
 			// and just relocate to target parent node
 			if (source && source->windows.size() == 1)
 			{
-				bool isSameParent = source->parent == targetParent;
 				source->removeFromParent();
-
-				if (!isSameParent)
-				{
-					// optimize the source's dock node hierarcy
-					auto rnode = getRootDockNode(source->osWindow);
-					if (rnode)
-					{
-						rnode->checkRedundancy();
-						rnode->computeRect();
-					}
-				}
-
 				source->parent = targetParent;
+				source->osWindow = targetParent->osWindow;
 				sourceNode = source;
 			}
 			else
@@ -686,22 +627,9 @@ bool dockWindow(Window* wnd, DockNode* targetNode, DockType dockType, u32 tabInd
 			// if there is just one window in the source node, move the node also and remove from current parent
 			if (source && source->windows.size() == 1)
 			{
-				bool isSameParent = source->parent == targetParent;
 				source->removeFromParent();
-
-				if (!isSameParent)
-				{
-					// optimize the source's dock node hierarcy
-					auto rnode = getRootDockNode(source->osWindow);
-					if (rnode)
-					{
-						rnode->checkRedundancy();
-						rnode->computeRect();
-					}
-				}
-
 				source->parent = targetParent;
-				source->osWindow = target->osWindow;
+				source->osWindow = targetParent->osWindow;
 
 				// treat docking to root node
 				if (targetParent != target)
@@ -764,21 +692,9 @@ bool dockWindow(Window* wnd, DockNode* targetNode, DockType dockType, u32 tabInd
 			// and just relocate to target parent node
 			if (source && source->windows.size() == 1)
 			{
-				bool isSameParent = source->parent == targetParent;
 				source->removeFromParent();
-
-				if (!isSameParent)
-				{
-					// optimize the source's dock node hierarcy
-					auto rnode = getRootDockNode(source->osWindow);
-					if (rnode)
-					{
-						rnode->checkRedundancy();
-						rnode->computeRect();
-					}
-				}
-
 				source->parent = targetParent;
+				source->osWindow = targetParent->osWindow;
 				sourceNode = source;
 			}
 			else
@@ -857,21 +773,7 @@ bool dockWindow(Window* wnd, DockNode* targetNode, DockType dockType, u32 tabInd
 		// if we only have a window in the source node, delete the node
 		if (source && source->windows.size() == 1)
 		{
-			bool isSameParent = source->parent == targetParent;
 			source->removeFromParent();
-
-			if (!isSameParent)
-			{
-				// optimize the source's dock node hierarcy
-				auto rnode = getRootDockNode(source->osWindow);
-				if (rnode)
-				{
-					rnode->checkRedundancy();
-					rnode->computeRect();
-				}
-
-			}
-
 			delete source;
 		}
 		else
@@ -884,15 +786,48 @@ bool dockWindow(Window* wnd, DockNode* targetNode, DockType dockType, u32 tabInd
 
 		break;
 	}
+	case DockType::Floating:
+	{
+		if (source)
+		{
+			if (source->windows.size() == 1 && source->osWindow && !source->parent)
+			{
+				// already floating single window
+				return true;
+			}
+
+			if (source->windows.size() == 1)
+			{
+				source->removeFromParent();
+				delete source;
+				source = nullptr;
+			}
+			else
+			{
+				source->removeWindow(wnd);
+			}
+		}
+
+		auto osWnd = createOsWindow(wnd->title, OsWindowFlags::Resizable, OsWindowState::Normal, wnd->clientRect);
+		
+		wnd->dockNode = createRootDockNode(osWnd);
+		wnd->dockNode->windows.push_back(wnd);
+		wnd->clientRect = wnd->dockNode->rect;
+
+		break;
+	}
 	default:
 		break;
 	}
 
 	if (ctx->settings.dockNodeProportionalResize)
 	{
-		auto node = getRootDockNode(target->osWindow);
-		node->checkRedundancy();
-		node->computeRect();
+		for (auto& osWnd : ctx->osWindows)
+		{
+			auto node = getRootDockNode(osWnd);
+			node->checkRedundancy();
+			node->computeRect();
+		}
 	}
 
 	debugWindows();

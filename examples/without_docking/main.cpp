@@ -222,6 +222,10 @@ int main(int argc, char** args)
 				{
 					hui::dockWindow("inspector", txt, hui::DockType::AsTab);
 				}
+				if (hui::button("UnDock"))
+				{
+					hui::undockWindow("inspector", HORUS_INPUT->getMousePosition());
+				}
 				hui::endWindow();
 			}
 			
@@ -255,6 +259,10 @@ int main(int argc, char** args)
 				if (hui::button("Dock As tab"))
 				{
 					hui::dockWindow("assets", txt, hui::DockType::AsTab);
+				}
+				if (hui::button("UnDock"))
+				{
+					hui::dockWindow("assets", 0, hui::DockType::Floating);
 				}
 				hui::endWindow();
 			}
