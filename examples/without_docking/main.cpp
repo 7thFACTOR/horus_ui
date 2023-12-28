@@ -90,6 +90,7 @@ int main(int argc, char** args)
 				static f32 x = 1;
 				static f32 t = 1;
 				i32 vp[4];
+				
 				glGetIntegerv(GL_VIEWPORT, vp);
 				glViewport(wrc.x, osWndSize.y - wrc.y - wrc.height, wrc.width, wrc.height);
 				glBegin(GL_TRIANGLES);
@@ -193,7 +194,7 @@ int main(int argc, char** args)
 			}
 			
 			// start to add widgets in the window
-			if (hui::beginWindow("inspector", "Inspector", nullptr, hui::DockType::None, nullptr, tabicon2))
+			if (0&&hui::beginWindow("inspector", "Inspector", nullptr, hui::DockType::None, nullptr, tabicon2))
 			{
 				hui::labelCustomFont("SETTINGS AND STUFF", hui::getFont("large"));
 				static char txt[2000] = HORUS_MAIN_WINDOW_ID;
@@ -231,12 +232,14 @@ int main(int argc, char** args)
 			
 
 			// start to add widgets in the window
-			if (hui::beginWindow("assets", "Assets", "inspector", hui::DockType::Right, nullptr, tabicon3))
+			if (0&&hui::beginWindow("assets", "Assets", "inspector", hui::DockType::Right, nullptr, tabicon3))
 			{
-				hui::labelCustomFont("ASSETS OF COURSE", hui::getFont("large"));
+				
+				hui::labelCustomFont("ASSETS OF COURSE", hui::getFont("heading"));
 				static char txt[2000] = HORUS_MAIN_WINDOW_ID;
 
 				hui::label("Dock Target");
+				
 				hui::textInput(txt, 2000, hui::TextInputValueMode::Any, "Write something here");
 
 				hui::space();
@@ -270,8 +273,8 @@ int main(int argc, char** args)
 				
 			hui::endFrame();
 
-			if (lastEventInQueue)
-				hui::present();
+			//if (lastEventInQueue)
+			hui::present();
 
 			if (hui::wantsToQuit() || hui::mustQuit())
 			{

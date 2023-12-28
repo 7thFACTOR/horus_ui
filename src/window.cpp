@@ -70,18 +70,10 @@ bool beginWindow(const char* id, const char* title, const char* dockTo, DockType
 void endWindow()
 {
 	endContainer();
-	//auto r = ctx->currentWindow->clientRect;
-	//r = r.contract(1);
-	//LineStyle ls;
-	//ls.color = Color::red;
-	//ctx->renderer->cmdSetLineStyle(ls);
-	//ctx->renderer->cmdDrawRectangle(r);
-	//ctx->renderer->cmdDrawRectangle(ctx->currentWindow->tabRect);
 	ctx->renderer->end();
 	ctx->currentWindowIndex++;
 	//TODO: make scroll struct stack
 }
-
 
 void dockWindow(const char* windowId, const char* targetWindowId, DockType dockType)
 {
