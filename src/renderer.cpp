@@ -673,8 +673,6 @@ void Renderer::resetWindowContexts()
 void Renderer::begin()
 {
 	zOrder = 0;
-	skipRender = false;
-	disableRendering = false;
 	currentAtlas = nullptr;
 	currentBatch = nullptr;
 	cmdSetAtlas(ctx->theme->atlas);
@@ -2179,6 +2177,9 @@ void Renderer::addBatch()
 
 void Renderer::addDrawCommand(const DrawCommand& cmd)
 {
+	if (disableRendering || skipRender)
+		return;
+
 	if (currentWindowContext->drawCmdNextInsertIndex == ~0)
 	{
 		currentWindowContext->drawCommands.push_back(cmd);

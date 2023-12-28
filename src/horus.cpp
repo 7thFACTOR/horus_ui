@@ -504,6 +504,8 @@ void present()
 	}
 
 	ctx->renderer->resetWindowContexts();
+	ctx->renderer->skipRender = false;
+	ctx->renderer->disableRendering = false;
 }
 
 void cancelEvent()
@@ -763,6 +765,8 @@ void setWidgetStyle(WidgetType widgetType, const char* styleName)
 	{
 	case WidgetType::Window:
 		ctx->theme->elements[(u32)WidgetElementId::WindowBody].setStyle(styleName);
+		ctx->theme->elements[(u32)WidgetElementId::WindowDockRect].setStyle(styleName);
+		ctx->theme->elements[(u32)WidgetElementId::WindowDockDialRect].setStyle(styleName);
 		break;
 	case WidgetType::Layout:
 		break;
@@ -855,10 +859,6 @@ void setWidgetStyle(WidgetType widgetType, const char* styleName)
 		ctx->theme->elements[(u32)WidgetElementId::TabBodyInactive].setStyle(styleName);
 		break;
 	case WidgetType::Viewport:
-		break;
-	case WidgetType::View:
-		ctx->theme->elements[(u32)WidgetElementId::ViewDockRect].setStyle(styleName);
-		ctx->theme->elements[(u32)WidgetElementId::ViewDockDialRect].setStyle(styleName);
 		break;
 	case WidgetType::MsgBox:
 		ctx->theme->elements[(u32)WidgetElementId::MessageBoxIconError].setStyle(styleName);

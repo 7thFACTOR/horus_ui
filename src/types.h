@@ -278,8 +278,10 @@ struct DockingState
 	// variables for dragging views around
 	const f32 dockBorderSizePercent = 0.5f;
 	bool draggingDockNodeBorder = false;
+	bool draggingWindow = false;
 	DockNode* resizingNode = nullptr;
 	DockNode* hoveredNode = nullptr;
+	DockNode* draggingNodeSource = nullptr;
 	Rect dockRect;
 	DockType dockType = DockType::None;
 	DockNode* dockToNode = nullptr;
@@ -289,6 +291,8 @@ struct DockingState
 	Rect draggedRect;
 	bool drawingWindowTabs = false;
 	Window* mainWindow = nullptr;
+	Window* dragWindow = nullptr;
+	Window* dragOntoWindow = nullptr;
 };
 
 struct DragDropState

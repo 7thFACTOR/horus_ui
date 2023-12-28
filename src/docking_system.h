@@ -5,4 +5,5 @@
 namespace hui
 {
 void handleDockNodeEvents(DockNode* node);
+void handleDockNodeResize(DockNode* node);
 };

@@ -228,7 +228,7 @@ void DockNode::debug(i32 level)
 	for (auto& c : children) c->debug(level + 1);
 }
 
-DockNode* DockNode::findResizeDockNode(const Point& pt)
+DockNode* DockNode::findResizeDockNode(const Point& pt, f32 gripSize)
 {
 	if (type != Type::None)
 	{

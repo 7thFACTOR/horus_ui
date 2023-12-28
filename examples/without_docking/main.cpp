@@ -194,7 +194,7 @@ int main(int argc, char** args)
 			}
 			
 			// start to add widgets in the window
-			if (0&&hui::beginWindow("inspector", "Inspector", nullptr, hui::DockType::None, nullptr, tabicon2))
+			if (hui::beginWindow("inspector", "Inspector", nullptr, hui::DockType::None, nullptr, tabicon2))
 			{
 				hui::labelCustomFont("SETTINGS AND STUFF", hui::getFont("large"));
 				static char txt[2000] = HORUS_MAIN_WINDOW_ID;
@@ -232,7 +232,7 @@ int main(int argc, char** args)
 			
 
 			// start to add widgets in the window
-			if (0&&hui::beginWindow("assets", "Assets", "inspector", hui::DockType::Right, nullptr, tabicon3))
+			if (hui::beginWindow("assets", "Assets", "inspector", hui::DockType::Right, nullptr, tabicon3))
 			{
 				
 				hui::labelCustomFont("ASSETS OF COURSE", hui::getFont("heading"));
@@ -273,8 +273,8 @@ int main(int argc, char** args)
 				
 			hui::endFrame();
 
-			//if (lastEventInQueue)
-			hui::present();
+			if (lastEventInQueue)
+				hui::present();
 
 			if (hui::wantsToQuit() || hui::mustQuit())
 			{
