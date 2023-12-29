@@ -281,6 +281,7 @@ struct DockingState
 	bool draggingWindow = false;
 	DockNode* resizingNode = nullptr;
 	DockNode* hoveredNode = nullptr;
+	DockNode* nodeToResize = nullptr;
 	DockNode* draggingNodeSource = nullptr;
 	Rect dockRect;
 	DockType dockType = DockType::None;

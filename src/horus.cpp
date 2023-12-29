@@ -287,7 +287,7 @@ void beginFrame()
 	ctx->currentWindowIndex = 0;
 	ctx->layerIndex = 0;
 	ctx->widget.nextFocusableWidgetId = 0;
-	ctx->mouseCursor = MouseCursorType::Arrow;
+	//ctx->mouseCursor = MouseCursorType::Arrow;
 	ctx->menuDepth = 0;
 	ctx->popupIndex = 0;
 	ctx->menuItemChosen = false;
@@ -393,8 +393,6 @@ void update(f32 deltaTime)
 		// track mouse pos
 		ctx->tooltip.position = ctx->providers->input->getMousePosition();
 	}
-
-
 }
 
 bool hasNothingToDo()
@@ -669,14 +667,19 @@ bool packAtlas(HAtlas atlas, u32 border)
 
 void updateDockingSystem()
 {
-	if (ctx->event.type != InputEvent::Type::WindowResize)
-		return;
-
-	for (auto wnd : ctx->osWindows)
+	for (auto& wnd : ctx->dockingState.rootOsWindowDockNodes)
 	{
-		if (wnd == ctx->event.window)
+		handleDockNodeEvents(wnd.second);
+	}
+
+	if (ctx->event.type == InputEvent::Type::WindowResize)
+	{
+		for (auto wnd : ctx->osWindows)
 		{
-			ctx->dockingState.rootOsWindowDockNodes[wnd]->computeRect();
+			if (wnd == ctx->event.window)
+			{
+				ctx->dockingState.rootOsWindowDockNodes[wnd]->computeRect();
+			}
 		}
 	}
 }

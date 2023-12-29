@@ -20,7 +20,7 @@
 
 namespace hui
 {
-
+/*
 void updateDockingSystemInternal(bool isLastEvent)
 {
 	// if we close a dockable native window
@@ -104,8 +104,8 @@ void updateDockingSystem(bool isLastEvent)
 	//	ctx->event = ctx->events[i];
 	//	doLogicAndRender(i == ctx->events.size() - 1);
 	//}
-	//*/
-}
+	//
+}*/
 
 void dockingSystemLoop()
 {
@@ -223,8 +223,29 @@ void handleDockingMouseUp(const InputEvent& event, DockNode* node)
 void handleDockingMouseMove(const InputEvent& event, DockNode* node)
 {
 	auto& ds = ctx->dockingState;
+	auto  = node->findResizeDockNode(event.mouse.point);
 
-	// if we drag a tab or a pane splitter
+	if (ds.nodeToResize)
+	{
+		switch (ds.nodeToResize->parent->type)
+		{
+		case DockNode::Type::Horizontal:
+		{
+			ctx->mouseCursor = MouseCursorType::SizeWE;
+			break;
+		}
+		case DockNode::Type::Vertical:
+		{
+			ctx->mouseCursor = MouseCursorType::SizeNS;
+			break;
+		}
+		default:
+			//ctx->mouseCursor = MouseCursorType::Arrow;
+			break;
+		}
+	}
+
+	// if we drag a tab or a node splitter
 	if (ds.dragWindow
 		|| ds.hoveredNode
 		|| ds.resizingNode)
@@ -528,6 +549,7 @@ void handleDockNodeEvents(DockNode* node)
 	handleDockingMouseMove(event, node);
 }
 
+/*
 void handleDockNodeResize(DockNode* node)
 {
 	auto& rect = node->rect;
@@ -939,13 +961,13 @@ void handleDockNodeResize(DockNode* node)
 		// are we resizing a node ?
 		if ((ds.nodeToResize || ds.resizingNode) && !ds.dragWindow)
 		{
-			DockNode::Type splitType = DockNode::Type::None;
+			DockNode::Type dockType = DockNode::Type::None;
 
 			if (ds.nodeToResize)
 			{
 				if (ds.nodeToResize->parent)
 				{
-					splitType = ds.nodeToResize->parent->type;
+					dockType = ds.nodeToResize->parent->type;
 				}
 			}
 
@@ -953,7 +975,7 @@ void handleDockNodeResize(DockNode* node)
 			{
 				if (ds.resizingNode->parent)
 				{
-					splitType = ds.resizingNode->parent->type;
+					dockType = ds.resizingNode->parent->type;
 				}
 
 				if (crtEvent.type == InputEvent::Type::MouseDown)
@@ -970,7 +992,7 @@ void handleDockNodeResize(DockNode* node)
 				}
 			}
 
-			switch (splitType)
+			switch (dockType)
 			{
 			case DockNode::Type::Horizontal:
 			{
@@ -1069,5 +1091,5 @@ void handleDockNodeResize(DockNode* node)
 
 	//ds.dockingNode = ds.draggingWindow;
 }
-
+*/
 }

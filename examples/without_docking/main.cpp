@@ -107,7 +107,7 @@ int main(int argc, char** args)
 				glViewport(vp[0], vp[1], vp[2], vp[3]);
 			};
 
-			hui::updateDockingSystem();
+			
 
 			// begin an actual frame of the gui
 			hui::beginFrame();
@@ -270,9 +270,9 @@ int main(int argc, char** args)
 				hui::endWindow();
 			}
 
-				
+			hui::updateDockingSystem();
 			hui::endFrame();
-
+			
 			if (lastEventInQueue)
 				hui::present();
 
@@ -281,7 +281,7 @@ int main(int argc, char** args)
 				exitNow = true;
 			}
 		};
-
+		hui::setMouseCursor(hui::MouseCursorType::Arrow);
 		// if we have events, then go through all of them and call the frame render and input
 		if (eventCount)
 		{
