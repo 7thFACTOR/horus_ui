@@ -526,6 +526,7 @@ void handleDockingMouseMove(const InputEvent& event, DockNode* node)
 				if (ds.resizingNode->rect.height < 100) ds.resizingNode->rect.height = 100;
 				auto nextSibling = ds.resizingNode->parent->findNextSiblingOf(ds.resizingNode);
 				resize o sa forteze maximum de la sibling minim
+					muta astea in docking.cpp, delete acest file
 				if (nextSibling)
 				{
 					auto prevBottom = nextSibling->rect.bottom();
