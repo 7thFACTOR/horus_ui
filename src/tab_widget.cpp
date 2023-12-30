@@ -17,7 +17,7 @@ void beginTabGroup(TabIndex selectedIndex)
 	ctx->widget.rect.set(
 		round(ctx->penPosition.x),
 		round(ctx->penPosition.y),
-		ctx->layoutStack.back().width,
+		ctx->layoutStack.back().width + ctx->settings.dockNodeSpacing,
 		height);
 
 	// tab group background
@@ -25,10 +25,20 @@ void beginTabGroup(TabIndex selectedIndex)
 	ctx->renderer->pushClipRect(
 		{
 			round(ctx->penPosition.x),
-			round(ctx->penPosition.y),
-			ctx->layoutStack.back().width,
-			ctx->containerRect.height
+			round(ctx->penPosition.y - ctx->settings.dockNodeSpacing),
+			ctx->layoutStack.back().width + ctx->settings.dockNodeSpacing,
+			ctx->containerRect.height + ctx->settings.dockNodeSpacing
 		});
+
+	Rect rcTop = {
+		round(ctx->penPosition.x),
+		round(ctx->penPosition.y - ctx->settings.dockNodeSpacing),
+		ctx->layoutStack.back().width + ctx->settings.dockNodeSpacing,
+		ctx->settings.dockNodeSpacing };
+
+	ctx->renderer->cmdSetColor(Color::black);
+	ctx->renderer->cmdDrawImageBordered(tabGroupElemState.image, tabGroupElemState.border, rcTop, ctx->globalScale);
+	ctx->renderer->cmdSetColor(tabGroupElemState.color);
 
 	ctx->renderer->cmdDrawImageBordered(tabGroupElemState.image, tabGroupElemState.border, ctx->widget.rect, ctx->globalScale);
 
@@ -36,13 +46,14 @@ void beginTabGroup(TabIndex selectedIndex)
 	{
 		// vertical splitter
 		//NOTE: horizontal splitter is not needed because there is tab group background
+		ctx->renderer->cmdSetColor(Color::black);
 		ctx->renderer->cmdDrawImage(
 			tabGroupElemState.image,
 			{
-				ctx->widget.rect.right() - 1,
+				ctx->widget.rect.right() - ctx->settings.dockNodeSpacing,
 				ctx->widget.rect.y + height,
-				1,
-				ctx->containerRect.height
+				ctx->settings.dockNodeSpacing,
+				ctx->containerRect.height + ctx->settings.dockNodeSpacing
 			});
 	}
 

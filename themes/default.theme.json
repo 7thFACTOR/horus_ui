@@ -22,7 +22,7 @@
 		"heading": { "file": "fonts/Inter-Regular.ttf", "size": 14 },
 		"para": { "file": "fonts/Inter-Regular.ttf", "size": 12 },
 		"menu": { "file": "fonts/Inter-Regular.ttf", "size": 15 },
-		"window-tab": { "file": "fonts/Inter-Regular.ttf", "size": 15 }
+		"window-tab": { "file": "fonts/Inter-Regular.ttf", "size": 17 }
 	},
 	
 	"settings":
@@ -306,7 +306,7 @@
 		{
 			"tabGroupBody":
 			{
-				"height": 24,
+				"height": 26,
 				"normal": { "image": "default/tabgroup", "border": 4, "color": "white", "textColor": "white", "font": "normal" }
 			}
 		},

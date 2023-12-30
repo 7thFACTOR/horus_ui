@@ -36,6 +36,7 @@ struct DockNode
 	DockNode* findResizeDockNode(const Point& pt);
 	DockNode* findTargetDockNode(const Point& pt);
 	DockNode* findDockNode(const Point& pt);
+	DockNode* findNextSiblingOf(DockNode* node);
 	size_t getWindowIndex(Window* window);
 	void debug(i32 level = 0);
 };

@@ -244,8 +244,8 @@ DockNode* DockNode::findResizeDockNode(const Point& pt)
 			{
 				if (child != children.back())
 				{
-					if (pt.x >= child->rect.right() - ctx->settings.dockNodeSpacing / 2
-						&& pt.x <= child->rect.right() + ctx->settings.dockNodeSpacing / 2)
+					if (pt.x >= child->rect.right() + ctx->settings.dockNodeSpacing/2 - ctx->settings.dockNodeResizeSplitterHitSize/2
+						&& pt.x <= child->rect.right() + ctx->settings.dockNodeSpacing / 2 + ctx->settings.dockNodeResizeSplitterHitSize/2)
 					{
 						return child;
 					}
@@ -257,8 +257,8 @@ DockNode* DockNode::findResizeDockNode(const Point& pt)
 			{
 				if (child != children.back())
 				{
-					if (pt.y >= child->rect.bottom() - ctx->settings.dockNodeSpacing / 2
-						&& pt.y <= child->rect.bottom() + ctx->settings.dockNodeSpacing / 2)
+					if (pt.y >= child->rect.bottom() + ctx->settings.dockNodeSpacing / 2 - ctx->settings.dockNodeResizeSplitterHitSize / 2
+						&& pt.y <= child->rect.bottom() + ctx->settings.dockNodeSpacing / 2 + ctx->settings.dockNodeResizeSplitterHitSize / 2)
 					{
 						return child;
 					}
@@ -324,6 +324,18 @@ DockNode* DockNode::findDockNode(const Point& pt)
 		auto node = c->findDockNode(pt);
 		if (node) return node;
 	}
+
+	return nullptr;
+}
+
+DockNode* DockNode::findNextSiblingOf(DockNode* node)
+{
+	auto iter = std::find(children.begin(), children.end(), node);
+
+	++iter;
+
+	if (iter != children.end())
+		return *iter;
 
 	return nullptr;
 }

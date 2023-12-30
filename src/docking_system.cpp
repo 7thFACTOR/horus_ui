@@ -151,8 +151,7 @@ void handleDockingMouseDown(const InputEvent& event, DockNode* node)
 	const Point& mousePos = event.mouse.point;
 
 	ds.lastMousePos = mousePos;
-	auto info = findDockNodeDragInfoAtMousePos(event.window, mousePos);
-	ds.resizingNode = info.node;
+	ds.resizingNode = ds.hoveredNode;
 
 	if (ds.resizingNode)
 	{
@@ -223,11 +222,11 @@ void handleDockingMouseUp(const InputEvent& event, DockNode* node)
 void handleDockingMouseMove(const InputEvent& event, DockNode* node)
 {
 	auto& ds = ctx->dockingState;
-	auto  = node->findResizeDockNode(event.mouse.point);
+	ds.hoveredNode = node->findResizeDockNode(event.mouse.point);
 
-	if (ds.nodeToResize)
+	if (ds.hoveredNode)
 	{
-		switch (ds.nodeToResize->parent->type)
+		switch (ds.hoveredNode->parent->type)
 		{
 		case DockNode::Type::Horizontal:
 		{
@@ -240,7 +239,6 @@ void handleDockingMouseMove(const InputEvent& event, DockNode* node)
 			break;
 		}
 		default:
-			//ctx->mouseCursor = MouseCursorType::Arrow;
 			break;
 		}
 	}
@@ -252,7 +250,8 @@ void handleDockingMouseMove(const InputEvent& event, DockNode* node)
 	{
 		auto& mousePos = event.mouse.point;
 		bool moved = fabs(ds.lastMousePos.x - mousePos.x) > ctx->settings.dragStartDistance || abs(ds.lastMousePos.y - mousePos.y) > ctx->settings.dragStartDistance;
-
+		auto mouseDelta = mousePos - ds.lastMousePos;
+#ifdef false
 		if (ds.dragWindow)
 		{
 			// draw tab rect
@@ -515,6 +514,46 @@ void handleDockingMouseMove(const InputEvent& event, DockNode* node)
 				ctx->renderer->end();
 			}
 		}
+#endif
+		if (ds.resizingNode)
+		{
+			ds.lastMousePos = mousePos;
+			switch (ds.resizingNode->parent->type)
+			{
+			case DockNode::Type::Vertical:
+			{
+				ds.resizingNode->rect.height += mouseDelta.y;
+				if (ds.resizingNode->rect.height < 100) ds.resizingNode->rect.height = 100;
+				auto nextSibling = ds.resizingNode->parent->findNextSiblingOf(ds.resizingNode);
+				resize o sa forteze maximum de la sibling minim
+				if (nextSibling)
+				{
+					auto prevBottom = nextSibling->rect.bottom();
+					nextSibling->rect.y = ds.resizingNode->rect.bottom() + ctx->settings.dockNodeSpacing;
+					nextSibling->rect.height = prevBottom - (ds.resizingNode->rect.bottom() + ctx->settings.dockNodeSpacing);
+					nextSibling->computeRect();
+				}
+				break;
+			}
+			case DockNode::Type::Horizontal:
+			{
+				ds.resizingNode->rect.width += mouseDelta.x;
+				if (ds.resizingNode->rect.width < 100) ds.resizingNode->rect.width = 100;
+				auto nextSibling = ds.resizingNode->parent->findNextSiblingOf(ds.resizingNode);
+
+				if (nextSibling)
+				{
+					auto prevRight = nextSibling->rect.right();
+					nextSibling->rect.x = ds.resizingNode->rect.right() + ctx->settings.dockNodeSpacing;
+					nextSibling->rect.width = prevRight - (ds.resizingNode->rect.right() + ctx->settings.dockNodeSpacing);
+					nextSibling->computeRect();
+				}
+				break;
+			}
+			}
+
+			ds.resizingNode->computeRect();
+		}
 	}
 }
 
@@ -540,8 +579,8 @@ void handleDockNodeEvents(DockNode* node)
 
 	switch (event.type)
 	{
-	case InputEvent::Type::MouseDown: handleDockingMouseDown(event, node);
-	case InputEvent::Type::MouseUp: handleDockingMouseUp(event, node);
+	case InputEvent::Type::MouseDown: handleDockingMouseDown(event, node); break;
+	case InputEvent::Type::MouseUp: handleDockingMouseUp(event, node); break;
 	default:
 		break;
 	};

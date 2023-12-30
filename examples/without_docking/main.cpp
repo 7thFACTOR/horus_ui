@@ -29,6 +29,8 @@ int main(int argc, char** args)
 	settings.providers.input = new hui::Sdl2InputProvider();
 	settings.providers.rectPack = new hui::StbRectPackProvider();
 	settings.providers.utf = new hui::UtfCppProvider();
+	settings.dockNodeSpacing = 2;
+	settings.dockNodeResizeSplitterHitSize = 6;
 
 	auto ctx = hui::createContext(settings);
 	hui::setContext(ctx); // set as current context
@@ -108,7 +110,7 @@ int main(int argc, char** args)
 			};
 
 			
-
+			hui::updateDockingSystem();
 			// begin an actual frame of the gui
 			hui::beginFrame();
 			// disable rendering if its not the last event in the queue
@@ -270,7 +272,44 @@ int main(int argc, char** args)
 				hui::endWindow();
 			}
 
-			hui::updateDockingSystem();
+			if (hui::beginWindow("scene", "Scene", "inspector", hui::DockType::Right, nullptr, tabicon3))
+			{
+
+				hui::labelCustomFont("SCENE", hui::getFont("heading"));
+				static char txt[2000] = HORUS_MAIN_WINDOW_ID;
+
+				hui::label("Dock Target");
+
+				hui::textInput(txt, 2000, hui::TextInputValueMode::Any, "Write something here");
+
+				hui::space();
+				if (hui::button("Dock Left"))
+				{
+					hui::dockWindow("scene", txt, hui::DockType::Left);
+				}
+				if (hui::button("Dock Right"))
+				{
+					hui::dockWindow("scene", txt, hui::DockType::Right);
+				}
+				if (hui::button("Dock Top"))
+				{
+					hui::dockWindow("scene", txt, hui::DockType::Top);
+				}
+				if (hui::button("Dock Bottom"))
+				{
+					hui::dockWindow("scene", txt, hui::DockType::Bottom);
+				}
+				if (hui::button("Dock As tab"))
+				{
+					hui::dockWindow("scene", txt, hui::DockType::AsTab);
+				}
+				if (hui::button("UnDock"))
+				{
+					hui::dockWindow("scene", 0, hui::DockType::Floating);
+				}
+				hui::endWindow();
+			}
+
 			hui::endFrame();
 			
 			if (lastEventInQueue)

@@ -839,6 +839,8 @@ void dockNodeTabs(DockNode* node)
 {
 	pushLayoutPadding(0);
 	beginContainer(node->rect);
+	// pop the clip rect, we dont want clipping since draw tabs bar beyond the node rect width
+	ctx->renderer->popClipRect();
 
 	if (ctx->layoutStack.back().width <= (node->windows.size() * (ctx->paneGroupState.tabWidth + ctx->paneGroupState.sideSpacing)) * ctx->globalScale)
 	{
@@ -857,6 +859,8 @@ void dockNodeTabs(DockNode* node)
 
 	if (!node->windows.empty())
 	{
+		auto& rc = ctx->dockingState.rootOsWindowDockNodes[node->osWindow]->rect;
+		ctx->renderer->pushClipRect(rc, false);
 		beginTabGroup(node->selectedTabIndex);
 
 		for (size_t i = 0; i < node->windows.size(); i++)
@@ -876,6 +880,7 @@ void dockNodeTabs(DockNode* node)
 		}
 
 		selectedIndex = hui::endTabGroup();
+		ctx->renderer->popClipRect();
 	}
 
 	ctx->dockingState.drawingWindowTabs = false;
@@ -897,6 +902,8 @@ void dockNodeTabs(DockNode* node)
 		}
 	}
 
+	// just push a clip rect so endContainer can pop it
+	ctx->renderer->pushClipRect(Rect(0, 0, node->rect.width, node->rect.height), false);
 	endContainer();
 	popLayoutPadding();
 
