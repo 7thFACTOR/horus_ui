@@ -328,16 +328,24 @@ DockNode* DockNode::findDockNode(const Point& pt)
 	return nullptr;
 }
 
-DockNode* DockNode::findNextSiblingOf(DockNode* node)
+std::vector<DockNode*>::iterator DockNode::findNextSiblingOf(DockNode* node)
 {
 	auto iter = std::find(children.begin(), children.end(), node);
 
-	++iter;
-
 	if (iter != children.end())
-		return *iter;
+		++iter;
 
-	return nullptr;
+	return iter;
+}
+
+std::vector<DockNode*>::reverse_iterator DockNode::findPrevSiblingOf(DockNode* node)
+{
+	auto iter = std::find(children.rbegin(), children.rend(), node);
+
+	if (iter != children.rend())
+		++iter;
+
+	return iter;
 }
 
 bool saveDockingState(const char* filename)

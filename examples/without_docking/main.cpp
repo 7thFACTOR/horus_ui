@@ -108,7 +108,6 @@ int main(int argc, char** args)
 				hui::endViewport();
 				glViewport(vp[0], vp[1], vp[2], vp[3]);
 			};
-
 			
 			hui::updateDockingSystem();
 			// begin an actual frame of the gui

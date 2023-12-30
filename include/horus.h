@@ -1523,6 +1523,7 @@ struct ContextSettings
 	bool allowUndockingToNewOsWindow = true; /// allow view tabs to be undocked as native OS windows, outside of the main window
 	f32 dockNodeSpacing = 1;
 	f32 dockNodeResizeSplitterHitSize = 4;
+	f32 dockNodeMinSize = 100;
 	bool dockNodeProportionalResize = true; /// if false, it will dock nodes keeping the other nodes sizes unchanged, else will resize the others so the new one can fit
 	f32 dockNodeDockingSizeRatio = 0.3f; /// ratio of the new size of a docked node in regard to the node we're docking in (if dockNodeProportionalResize is true)
 	u32 widgetLoopStartId = 1000000000; /// when pushing loops into loop stack, the widget ids will start from here. Basically this avoids the user to specify IDs when creating widgets in a loop, taking into account the fact there will not be so many widgets created anyway.

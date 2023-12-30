@@ -32,15 +32,6 @@
 
 	"widgets":
 	{
-		"window":
-		{
-			"windowBody":
-			{
-				"width": 0,
-				"height": 0,
-				"normal": { "image": "", "border": 0, "color": "darkGray", "textColor": "white", "font": "normal" }
-			}
-		},
 		"button":
 		{
 			"styles":
@@ -331,23 +322,29 @@
 				"focused": { "image": "default/tab_inactive", "border": 5, "color": "white", "textColor": "white", "font": "window-tab" }
 			}
 		},
-		"view":
+		"window":
 		{
-			"viewDockRect":
+			"windowBody":
+			{
+				"width": 0,
+				"height": 0,
+				"normal": { "image": "", "border": 0, "color": "darkGray", "textColor": "white", "font": "normal" }
+			},
+			"windowDockRect":
 			{
 				"normal": { "image": "default/view_dock_rect", "border": 2, "color": "white", "textColor": "yellow", "font": "normal" }
 			},
-			"viewDockDialRect":
+			"windowDockDialRect":
 			{
 				"normal": { "image": "default/view_dock_dial_rect", "border": 15, "color": "gray", "textColor": "yellow", "font": "normal" },
 				"hovered": { "image": "default/view_dock_dial_rect", "border": 15, "color": "white", "textColor": "yellow", "font": "normal" }
 			},
-			"viewDockDialVSplitRect":
+			"windowDockDialVSplitRect":
 			{
 				"normal": { "image": "default/docking_rect_dial_vertical_split", "border": 15, "color": "gray", "textColor": "yellow", "font": "normal" },
 				"hovered": { "image": "default/docking_rect_dial_vertical_split", "border": 15, "color": "white", "textColor": "yellow", "font": "normal" }
 			},
-			"viewDockDialHSplitRect":
+			"windowDockDialHSplitRect":
 			{
 				"normal": { "image": "default/docking_rect_dial_horizontal_split", "border": 15, "color": "gray", "textColor": "yellow", "font": "normal" },
 				"hovered": { "image": "default/docking_rect_dial_horizontal_split", "border": 15, "color": "white", "textColor": "yellow", "font": "normal" }

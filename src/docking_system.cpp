@@ -517,42 +517,74 @@ void handleDockingMouseMove(const InputEvent& event, DockNode* node)
 #endif
 		if (ds.resizingNode)
 		{
-			ds.lastMousePos = mousePos;
+			
 			switch (ds.resizingNode->parent->type)
 			{
 			case DockNode::Type::Vertical:
 			{
 				ds.resizingNode->rect.height += mouseDelta.y;
 				if (ds.resizingNode->rect.height < 100) ds.resizingNode->rect.height = 100;
-				auto nextSibling = ds.resizingNode->parent->findNextSiblingOf(ds.resizingNode);
-				resize o sa forteze maximum de la sibling minim
-					muta astea in docking.cpp, delete acest file
-				if (nextSibling)
-				{
-					auto prevBottom = nextSibling->rect.bottom();
-					nextSibling->rect.y = ds.resizingNode->rect.bottom() + ctx->settings.dockNodeSpacing;
-					nextSibling->rect.height = prevBottom - (ds.resizingNode->rect.bottom() + ctx->settings.dockNodeSpacing);
-					nextSibling->computeRect();
-				}
+				//auto nextSibling = ds.resizingNode->parent->findNextSiblingOf(ds.resizingNode);
+				////resize o sa forteze maximum de la sibling minim
+				////	muta astea in docking.cpp, delete acest file
+				//if (nextSibling)
+				//{
+				//	auto prevBottom = nextSibling->rect.bottom();
+				//	nextSibling->rect.y = ds.resizingNode->rect.bottom() + ctx->settings.dockNodeSpacing;
+				//	nextSibling->rect.height = prevBottom - (ds.resizingNode->rect.bottom() + ctx->settings.dockNodeSpacing);
+				//	nextSibling->computeRect();
+				//}
 				break;
 			}
 			case DockNode::Type::Horizontal:
 			{
-				ds.resizingNode->rect.width += mouseDelta.x;
-				if (ds.resizingNode->rect.width < 100) ds.resizingNode->rect.width = 100;
-				auto nextSibling = ds.resizingNode->parent->findNextSiblingOf(ds.resizingNode);
+				ds.resizingNode->rect.width = mousePos.x - ds.resizingNode->rect.x;
+				f32 pushAmount = 0;
 
-				if (nextSibling)
+				if (ds.resizingNode->rect.width < ctx->settings.dockNodeMinSize)
 				{
-					auto prevRight = nextSibling->rect.right();
-					nextSibling->rect.x = ds.resizingNode->rect.right() + ctx->settings.dockNodeSpacing;
-					nextSibling->rect.width = prevRight - (ds.resizingNode->rect.right() + ctx->settings.dockNodeSpacing);
-					nextSibling->computeRect();
+					pushAmount = ds.lastMousePos.x - mousePos.x;
+					ds.resizingNode->rect.width = ctx->settings.dockNodeMinSize;
+					ds.resizingNode->rect.x -= pushAmount;
 				}
+
+				auto iterPrev = ds.resizingNode->parent->findPrevSiblingOf(ds.resizingNode);
+
+				while (iterPrev != ds.resizingNode->parent->children.rend())
+				{
+					if (*iterPrev != ds.resizingNode->parent->children[0]
+						&& (*iterPrev)->rect.width - pushAmount < ctx->settings.dockNodeMinSize)
+					{
+						(*iterPrev)->rect.x -= pushAmount;
+						(*iterPrev)->rect.width = ctx->settings.dockNodeMinSize;
+					}
+					else /*if (*iterPrev != ds.resizingNode->parent->children[0])*/
+					{
+						(*iterPrev)->rect.width -= pushAmount;
+						if ((*iterPrev)->rect.width < ctx->settings.dockNodeMinSize)
+							(*iterPrev)->rect.width = ctx->settings.dockNodeMinSize;
+						(*iterPrev)->computeRect();
+						break;						
+					}
+
+					(*iterPrev)->computeRect();
+
+					++iterPrev;
+				}
+
+				//auto nextSibling = ds.resizingNode->parent->findNextSiblingOf(ds.resizingNode);
+
+				//if (nextSibling)
+				//{
+				//	auto prevRight = nextSibling->rect.right();
+				//	nextSibling->rect.x = ds.resizingNode->rect.right() + ctx->settings.dockNodeSpacing;
+				//	nextSibling->rect.width = prevRight - (ds.resizingNode->rect.right() + ctx->settings.dockNodeSpacing);
+				//	nextSibling->computeRect();
+				//}
 				break;
 			}
 			}
-
+			ds.lastMousePos = mousePos;
 			ds.resizingNode->computeRect();
 		}
 	}
