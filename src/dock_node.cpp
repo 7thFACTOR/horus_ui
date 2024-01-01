@@ -156,6 +156,51 @@ void DockNode::computeRect()
 	}
 }
 
+void DockNode::computeMinSize()
+{
+	minSize.set(ctx->settings.dockNodeMinSize, ctx->settings.dockNodeMinSize);
+
+	for (auto child : children)
+	{
+		child->computeMinSize();
+	};
+
+	switch (type)
+	{
+	case hui::DockNode::Type::None:
+		break;
+	case hui::DockNode::Type::Tabs:
+		break;
+	case hui::DockNode::Type::Vertical:
+	{
+		f32 total = 0;
+		for (auto child : children)
+		{
+			total += child->minSize.y;
+		};
+
+		if (total > minSize.y) minSize.y = total;
+
+		break;
+	}
+	case hui::DockNode::Type::Horizontal:
+	{
+		f32 total = 0;
+		for (auto child : children)
+		{
+			total += child->minSize.x;
+		};
+
+		if (total > minSize.x) minSize.x = total;
+
+		break;
+	}
+	break;
+	default:
+		break;
+	}
+}
+
 bool DockNode::checkRedundancy()
 {
 	// first do leaves for redundant nesting of dock nodes

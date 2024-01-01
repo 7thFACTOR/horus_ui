@@ -527,99 +527,61 @@ void handleDockingMouseMove(const InputEvent& event, DockNode* node)
 			}
 			case DockNode::Type::Horizontal:
 			{
-				ds.resizingNode->rect.width = mousePos.x - ds.resizingNode->rect.x;
 				f32 pushAmount = 0;
+				f32 moveDelta = mousePos.x - ds.lastMousePos.x;
 
-				if (ds.resizingNode->rect.width < ctx->settings.dockNodeMinSize)
+				ds.resizingNode->computeMinSize();
+
+				if (moveDelta != 0.0f)
+					ds.resizingNode->rect.width = mousePos.x - ds.resizingNode->rect.x;
+
+				if (ds.resizingNode->rect.width < ds.resizingNode->minSize.x)
 				{
-					ds.resizingNode->rect.width = ctx->settings.dockNodeMinSize;
-					pushAmount = ds.lastMousePos.x - mousePos.x;
-					if (pushAmount > 0)
-						ds.resizingNode->rect.x -= pushAmount;
+					ds.resizingNode->rect.width = ds.resizingNode->minSize.x;
+					pushAmount = moveDelta;
+					
+					if (ds.resizingNode != ds.resizingNode->parent->children[0] && pushAmount < 0)
+						ds.resizingNode->rect.x += pushAmount;
+
+					ds.resizingNode->computeRect();
+				}
+				else
+				{
+					if (moveDelta > 0)
+						pushAmount = moveDelta;
 				}
 
-				auto iterNext = ds.resizingNode->parent->findNextSiblingOf(ds.resizingNode);
-				auto rr = (*iterNext)->rect.right();
-				(*iterNext)->rect.x = ds.resizingNode->rect.right() + ctx->settings.dockNodeSpacing;
-				(*iterNext)->rect.width = rr - (*iterNext)->rect.x;
+				auto iterNxt = ds.resizingNode->parent->findNextSiblingOf(ds.resizingNode);
+
+				if (ds.resizingNode->rect.right() >= (*iterNxt)->rect.x)
+				{
+					ds.resizingNode->rect.width = (*iterNxt)->rect.x - ctx->settings.dockNodeSpacing - ds.resizingNode->rect.x;
+				}
 				
-				if ((*iterNext)->rect.width < ctx->settings.dockNodeMinSize)
-				{
-					(*iterNext)->rect.width = ctx->settings.dockNodeMinSize;
-					pushAmount = ds.lastMousePos.x - mousePos.x;
-					/*if (pushAmount < 0)
-						(*iterNext)->rect.x -= pushAmount;*/
-				}
-
-				(*iterNext)->computeRect();
-
-				printf("pa %f\n", pushAmount);
-
-				if (pushAmount > 0)
+				if (pushAmount < 0)
 				{
 					auto iterPrev = ds.resizingNode->parent->findPrevSiblingOf(ds.resizingNode);
 					while (iterPrev != ds.resizingNode->parent->children.rend())
 					{
 						if (*iterPrev != ds.resizingNode->parent->children[0]
-							&& (*iterPrev)->rect.width - pushAmount < ctx->settings.dockNodeMinSize)
+							&& (*iterPrev)->rect.width + pushAmount <= ctx->settings.dockNodeMinSize)
 						{
-							(*iterPrev)->rect.x -= pushAmount;
-							(*iterPrev)->rect.width = ctx->settings.dockNodeMinSize;
-						}
-						else
-						{
-							(*iterPrev)->rect.width -= pushAmount;
-
-							// if first one, stop all from moving
-							if (*iterPrev == ds.resizingNode->parent->children[0]
-								&& (*iterPrev)->rect.width <= ctx->settings.dockNodeMinSize)
-							{
-								auto iter = ds.resizingNode->parent->children.begin();
-								auto crtX = (*iterPrev)->rect.x;
-								auto iterLast = ds.resizingNode->parent->findNextSiblingOf(ds.resizingNode);
-
-								do {
-
-									(*iter)->rect.x = crtX;
-									(*iter)->rect.width = ctx->settings.dockNodeMinSize;
-									(*iter)->computeRect();
-									++iter;
-									crtX += ctx->settings.dockNodeMinSize + ctx->settings.dockNodeSpacing;
-									if (iter == iterLast) break;
-								} while (true);
-							}
-							(*iterPrev)->computeRect();
-							break;
-						}
-
-						(*iterPrev)->computeRect();
-
-						++iterPrev;
-					}
-				}
-
-				if (pushAmount < 0)
-				{
-					auto iterPrev = ds.resizingNode->parent->findNextSiblingOf(ds.resizingNode);
-					while (iterPrev != ds.resizingNode->parent->children.end())
-					{
-						if (*iterPrev != ds.resizingNode->parent->children.back()
-							&& (*iterPrev)->rect.width + pushAmount < ctx->settings.dockNodeMinSize)
-						{
-							(*iterPrev)->rect.x -= pushAmount;
+							(*iterPrev)->rect.x += pushAmount;
 							(*iterPrev)->rect.width = ctx->settings.dockNodeMinSize;
 						}
 						else
 						{
 							(*iterPrev)->rect.width += pushAmount;
 
-							// if first one, stop all from moving
-							if (*iterPrev == ds.resizingNode->parent->children.back()
+							// if first one, stop all from moving if its min size
+							if (*iterPrev == ds.resizingNode->parent->children[0]
 								&& (*iterPrev)->rect.width <= ctx->settings.dockNodeMinSize)
 							{
-								auto iter = ds.resizingNode->parent->children.rbegin();
-								auto crtX = (*iterPrev)->rect.x;
-								auto iterLast = ds.resizingNode->parent->findPrevSiblingOf(ds.resizingNode);
+								auto iter = ds.resizingNode->parent->children.begin();
+								auto crtX = (*iter)->rect.x;
+								auto iterLast = std::find(ds.resizingNode->parent->children.begin(),
+									ds.resizingNode->parent->children.end(), ds.resizingNode);
+								++iterLast; // need to advance to next
 
 								do {
 
@@ -640,16 +602,72 @@ void handleDockingMouseMove(const InputEvent& event, DockNode* node)
 						++iterPrev;
 					}
 				}
+				
+				//if (pushAmount < 0)
+				{
+					auto iterNext = ds.resizingNode->parent->findNextSiblingOf(ds.resizingNode);
+					auto oldRight = (*iterNext)->rect.right();
 
-				//auto nextSibling = ds.resizingNode->parent->findNextSiblingOf(ds.resizingNode);
+					(*iterNext)->rect.x = ds.resizingNode->rect.right() + ctx->settings.dockNodeSpacing;
+					(*iterNext)->rect.width = oldRight - (*iterNext)->rect.x;
+					(*iterNext)->computeRect();
+				}
 
-				//if (nextSibling)
-				//{
-				//	auto prevRight = nextSibling->rect.right();
-				//	nextSibling->rect.x = ds.resizingNode->rect.right() + ctx->settings.dockNodeSpacing;
-				//	nextSibling->rect.width = prevRight - (ds.resizingNode->rect.right() + ctx->settings.dockNodeSpacing);
-				//	nextSibling->computeRect();
-				//}
+				if (pushAmount > 0)
+				{
+					auto iterPrev = ds.resizingNode->parent->findNextSiblingOf(ds.resizingNode);
+					
+					while (iterPrev != ds.resizingNode->parent->children.end())
+					{
+						if (*iterPrev != ds.resizingNode->parent->children.back()
+							&& (*iterPrev)->rect.width - pushAmount < ctx->settings.dockNodeMinSize)
+						{
+							(*iterPrev)->rect.x += pushAmount;
+							(*iterPrev)->rect.width = ctx->settings.dockNodeMinSize;
+						}
+						else
+						{
+							(*iterPrev)->rect.x += pushAmount;
+							(*iterPrev)->rect.width -= pushAmount;
+
+							// if last one, stop all from moving if min size
+							if (*iterPrev == ds.resizingNode->parent->children.back()
+								&& (*iterPrev)->rect.width < ctx->settings.dockNodeMinSize)
+							{
+								(*iterPrev)->rect.width = ctx->settings.dockNodeMinSize;
+								(*iterPrev)->rect.x = (*iterPrev)->parent->rect.right() - ctx->settings.dockNodeMinSize;
+								
+								auto iter = ds.resizingNode->parent->children.rbegin();
+								auto crtX = (*iter)->rect.x;
+								auto iterLast = std::find(ds.resizingNode->parent->children.rbegin(),
+									ds.resizingNode->parent->children.rend(), ds.resizingNode);
+
+								do {
+
+									(*iter)->rect.x = crtX;
+									(*iter)->rect.width = ctx->settings.dockNodeMinSize;
+									(*iter)->computeRect();
+									++iter;
+									crtX -= ctx->settings.dockNodeMinSize + ctx->settings.dockNodeSpacing;
+									if (iter == iterLast) break;
+								} while (true);
+
+								auto iterNext = ds.resizingNode->parent->findNextSiblingOf(ds.resizingNode);
+								
+								ds.resizingNode->rect.width = (*iterNext)->rect.x - ds.resizingNode->rect.x - ctx->settings.dockNodeSpacing;
+						
+							}
+							(*iterPrev)->computeRect();
+							break;
+						}
+
+						(*iterPrev)->computeRect();
+						++iterPrev;
+					}
+				}
+
+
+
 				break;
 			}
 			}

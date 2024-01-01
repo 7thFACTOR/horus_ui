@@ -31,6 +31,7 @@ struct DockNode
 	void removeFromParent();
 	void removeWindow(Window* window);
 	void computeRect();
+	void computeMinSize();
 	bool checkRedundancy();
 	void gatherWindowTabsNodes(std::vector<DockNode*>& outNodes);
 	DockNode* findResizeDockNode(const Point& pt);

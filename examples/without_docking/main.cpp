@@ -309,6 +309,82 @@ int main(int argc, char** args)
 				hui::endWindow();
 			}
 
+			if (hui::beginWindow("ui", "UI", "inspector", hui::DockType::Right, nullptr, tabicon3))
+			{
+
+				hui::labelCustomFont("UI", hui::getFont("heading"));
+				static char txt[2000] = HORUS_MAIN_WINDOW_ID;
+
+				hui::label("Dock Target");
+
+				hui::textInput(txt, 2000, hui::TextInputValueMode::Any, "Write something here");
+
+				hui::space();
+				if (hui::button("Dock Left"))
+				{
+					hui::dockWindow("ui", txt, hui::DockType::Left);
+				}
+				if (hui::button("Dock Right"))
+				{
+					hui::dockWindow("ui", txt, hui::DockType::Right);
+				}
+				if (hui::button("Dock Top"))
+				{
+					hui::dockWindow("ui", txt, hui::DockType::Top);
+				}
+				if (hui::button("Dock Bottom"))
+				{
+					hui::dockWindow("ui", txt, hui::DockType::Bottom);
+				}
+				if (hui::button("Dock As tab"))
+				{
+					hui::dockWindow("ui", txt, hui::DockType::AsTab);
+				}
+				if (hui::button("UnDock"))
+				{
+					hui::dockWindow("ui", 0, hui::DockType::Floating);
+				}
+				hui::endWindow();
+			}
+
+			if (hui::beginWindow("log", "Log", "inspector", hui::DockType::Right, nullptr, tabicon3))
+			{
+
+				hui::labelCustomFont("LOG", hui::getFont("heading"));
+				static char txt[2000] = HORUS_MAIN_WINDOW_ID;
+
+				hui::label("Dock Target");
+
+				hui::textInput(txt, 2000, hui::TextInputValueMode::Any, "Write something here");
+
+				hui::space();
+				if (hui::button("Dock Left"))
+				{
+					hui::dockWindow("log", txt, hui::DockType::Left);
+				}
+				if (hui::button("Dock Right"))
+				{
+					hui::dockWindow("log", txt, hui::DockType::Right);
+				}
+				if (hui::button("Dock Top"))
+				{
+					hui::dockWindow("log", txt, hui::DockType::Top);
+				}
+				if (hui::button("Dock Bottom"))
+				{
+					hui::dockWindow("log", txt, hui::DockType::Bottom);
+				}
+				if (hui::button("Dock As tab"))
+				{
+					hui::dockWindow("log", txt, hui::DockType::AsTab);
+				}
+				if (hui::button("UnDock"))
+				{
+					hui::dockWindow("log", 0, hui::DockType::Floating);
+				}
+				hui::endWindow();
+			}
+
 			hui::endFrame();
 			
 			if (lastEventInQueue)
