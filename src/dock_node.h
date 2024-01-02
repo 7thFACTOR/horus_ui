@@ -39,6 +39,8 @@ struct DockNode
 	DockNode* findDockNode(const Point& pt);
 	std::vector<DockNode*>::iterator findNextSiblingOf(DockNode* node);
 	std::vector<DockNode*>::reverse_iterator findPrevSiblingOf(DockNode* node);
+	std::vector<DockNode*>::iterator getIteratorOf(DockNode* node);
+	std::vector<DockNode*>::reverse_iterator getReverseIteratorOf(DockNode* node);
 	size_t getWindowIndex(Window* window);
 	void debug(i32 level = 0);
 };

@@ -393,6 +393,20 @@ std::vector<DockNode*>::reverse_iterator DockNode::findPrevSiblingOf(DockNode* n
 	return iter;
 }
 
+std::vector<DockNode*>::iterator DockNode::getIteratorOf(DockNode* node)
+{
+	auto iter = std::find(children.begin(), children.end(), node);
+
+	return iter;
+}
+
+std::vector<DockNode*>::reverse_iterator DockNode::getReverseIteratorOf(DockNode* node)
+{
+	auto iter = std::find(children.rbegin(), children.rend(), node);
+
+	return iter;
+}
+
 bool saveDockingState(const char* filename)
 {
 	//TODO
