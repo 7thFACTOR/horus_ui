@@ -3,6 +3,7 @@
 #include <stdint.h>
 #include <math.h>
 #include <vector>
+#include <string>
 
 /*
 ------------------------------------------------------------------------------
@@ -1502,6 +1503,15 @@ struct ServiceProviders
 	struct FontProvider* font = 0;
 	struct RectPackProvider* rectPack = 0;
 	struct LogProvider* log = 0;
+};
+
+struct DisplayInfo
+{
+	std::string name;
+	u32 index = 0;
+	Rect bounds;
+	Rect usableBounds;
+	f32 diagonalDpi = 0, horizontalDpi = 0, verticalDpi = 0;
 };
 
 /// Various HorusUI per-context global settings

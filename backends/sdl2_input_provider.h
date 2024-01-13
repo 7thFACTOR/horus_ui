@@ -49,6 +49,9 @@ struct Sdl2InputProvider : InputProvider
 	HOsWindow createWindow(const char* title, OsWindowFlags flags, OsWindowState state, const Rect& rect) override;
 	void setWindowTitle(HOsWindow window, const char* title) override;
 	std::string getWindowTitle(HOsWindow window) override;
+	u32 getWindowDisplayIndex(HOsWindow window) override;
+	u32 getDisplayCount() const override;
+	DisplayInfo getDisplayInfo(u32 displayIndex) override;
 	void setWindowClientSize(HOsWindow window, const Point& size) override;
 	Point getWindowClientSize(HOsWindow window) override;
 	Rect getWindowRect(HOsWindow window) override;

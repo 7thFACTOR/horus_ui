@@ -716,6 +716,32 @@ std::string Sdl2InputProvider::getWindowTitle(HOsWindow window)
 	return SDL_GetWindowTitle(((SdlWindowProxy*)window)->sdlWindow);
 }
 
+u32 Sdl2InputProvider::getWindowDisplayIndex(HOsWindow window)
+{
+	return SDL_GetWindowDisplayIndex(((SdlWindowProxy*)window)->sdlWindow);
+}
+
+u32 Sdl2InputProvider::getDisplayCount() const
+{
+	return SDL_GetNumVideoDisplays();
+}
+
+DisplayInfo Sdl2InputProvider::getDisplayInfo(u32 displayIndex)
+{
+	DisplayInfo info;
+
+	info.name = SDL_GetDisplayName(displayIndex);
+	info.index = displayIndex;
+	SDL_Rect rc;
+	SDL_GetDisplayBounds(displayIndex, &rc);
+	info.bounds = { (f32)rc.x, (f32)rc.y, (f32)rc.w, (f32)rc.h };
+	SDL_GetDisplayUsableBounds(displayIndex, &rc);
+	info.usableBounds = { (f32)rc.x, (f32)rc.y, (f32)rc.w, (f32)rc.h };
+	SDL_GetDisplayDPI(displayIndex, &info.diagonalDpi, &info.horizontalDpi, &info.verticalDpi);
+	
+	return info;
+}
+
 void Sdl2InputProvider::setWindowClientSize(HOsWindow window, const Point& size)
 {
 	SDL_SetWindowSize(((SdlWindowProxy*)window)->sdlWindow, size.x, size.y);

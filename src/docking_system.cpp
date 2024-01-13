@@ -528,8 +528,6 @@ void handleDockingMouseMove(const InputEvent& event, DockNode* node)
 			case DockNode::Type::Horizontal:
 			{
 				f32 pushAmount = 0;
-				f32 moveDelta = mousePos.x - ds.lastMousePos.x;
-				pushAmount = moveDelta;
 
 				//ds.resizingNode->computeMinSize();
 
@@ -559,13 +557,19 @@ void handleDockingMouseMove(const InputEvent& event, DockNode* node)
 				//	ds.resizingNode->rect.width = (*iterNxt)->rect.x - ctx->settings.dockNodeSpacing - ds.resizingNode->rect.x;
 				//}
 				
-				if (pushAmount < 0)
+				if (mouseDelta.x < 0)
 				{
 					auto iterPrev = ds.resizingNode->parent->getReverseIteratorOf(ds.resizingNode);
 
 					ds.resizingNode->computeMinSize();
 					ds.resizingNode->rect.width = mousePos.x - ds.resizingNode->rect.x;
 
+					if (ds.resizingNode->rect.width < ds.resizingNode->minSize.x)
+					{
+						ds.resizingNode->rect.width = ds.resizingNode->minSize.x;
+					}
+
+					
 					while (iterPrev != ds.resizingNode->parent->children.rend())
 					{
 						(*iterPrev)->computeMinSize();

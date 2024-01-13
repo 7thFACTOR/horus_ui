@@ -97,6 +97,10 @@ struct InputProvider
 
 	virtual u32 getWindowDisplayIndex(HOsWindow window) = 0;
 
+	virtual u32 getDisplayCount() const = 0;
+
+	virtual DisplayInfo getDisplayInfo(u32 displayIndex) = 0;
+
 	/// Set the window client area size
 	/// \param window the window
 	/// \param size the width and height
