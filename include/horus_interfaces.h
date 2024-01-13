@@ -95,6 +95,8 @@ struct InputProvider
 	/// Get window title
 	virtual std::string getWindowTitle(HOsWindow window) = 0;
 
+	virtual u32 getWindowDisplayIndex(HOsWindow window) = 0;
+
 	/// Set the window client area size
 	/// \param window the window
 	/// \param size the width and height
