@@ -64,6 +64,19 @@ bool beginWindow(const char* id, const char* title, const char* dockTo, DockType
 
 	beginContainer(rc);
 
+	if (ctx->event.type == InputEvent::Type::WindowClose)
+	{
+		if (ctx->event.window == wnd->dockNode->osWindow)
+		{
+		 	auto rootNode = ctx->dockingState.rootOsWindowDockNodes[ctx->event.window];
+		
+			rootNode->deleteWindowsAndChildrenRecursive();
+			deleteRootDockNode(ctx->event.window);
+			destroyOsWindow(ctx->event.window);
+			return false;
+		}
+	}
+
 	return true;
 }
 

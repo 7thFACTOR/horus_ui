@@ -191,6 +191,9 @@ bool dockWindow(Window* wnd, DockNode* targetNode, DockType dockType, u32 tabInd
 		return newNode;
 	};
 
+	if (!targetParent)
+		return false;
+
 	switch (dockType)
 	{
 	case hui::DockType::Left:
@@ -972,7 +975,7 @@ void debugWindows()
 {
 	printf("------------------------------------------------------------------------------------------------------------\n");
 	printf("Debug windows:\n\n");
-	printf("%d windows\n", ctx->dockingState.rootOsWindowDockNodes.size());
+	printf("%d windows\n", (u32)ctx->dockingState.rootOsWindowDockNodes.size());
 
 	for (auto& pair : ctx->dockingState.rootOsWindowDockNodes)
 	{

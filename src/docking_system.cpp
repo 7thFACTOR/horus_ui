@@ -603,7 +603,7 @@ void handleDockingMouseMove(const InputEvent& event, DockNode* node)
 					auto iterNext = ds.resizingNode->parent->findNextSiblingOf(ds.resizingNode);
 					ds.resizingNode->computeMinSize();
 
-					//if (mousePos.x >= ds.resizingNode->rect.right())
+					if (mousePos.x >= ds.resizingNode->rect.right())
 					{
 						ds.resizingNode->rect.width += mouseDelta.x;
 						pushAmount = mouseDelta.x;
@@ -617,17 +617,16 @@ void handleDockingMouseMove(const InputEvent& event, DockNode* node)
 							&& (*iterNext)->rect.width - pushAmount < (*iterNext)->minSize.x)
 						{							
 							(*iterNext)->rect.x += pushAmount;
-							(*iterNext)->rect.width = ctx->settings.dockNodeMinSize;
+							(*iterNext)->rect.width = (*iterNext)->minSize.x;
 						}
 						else
 						{
 							(*iterNext)->rect.x += pushAmount;
 							(*iterNext)->rect.width -= pushAmount;
-							(*iterNext)->computeRect();
 							
 							// if last one, stop all from moving if min size
 							if (*iterNext == ds.resizingNode->parent->children.back()
-								&& (*iterNext)->rect.width < ctx->settings.dockNodeMinSize)
+								&& (*iterNext)->rect.width < (*iterNext)->minSize.x)
 							{
 								auto iter = ds.resizingNode->parent->children.rbegin();
 								auto crtX = (*iterNext)->parent->rect.right() - (*iterNext)->minSize.x;

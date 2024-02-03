@@ -1128,7 +1128,7 @@ HFont getFont(const char* themeFontName)
 void beginContainer(const Rect& rect)
 {
 	auto paddedRect = rect;
-	paddedRect = paddedRect.contract(ctx->layoutPadding);
+	//paddedRect = paddedRect.contract(ctx->layoutPadding);
 	ctx->layoutStack.push_back(LayoutState(LayoutType::Container));
 	ctx->layoutStack.back().position = paddedRect.topLeft();
 	ctx->layoutStack.back().width = paddedRect.width;

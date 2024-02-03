@@ -28,6 +28,7 @@ struct DockNode
 	Rect rect;
 	size_t selectedTabIndex = 0;
 
+	void deleteWindowsAndChildrenRecursive();
 	void removeFromParent();
 	void removeWindow(Window* window);
 	void computeRect();
