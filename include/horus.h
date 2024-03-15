@@ -1531,7 +1531,7 @@ struct ContextSettings
 	f32 minScrollViewHandleSize = 20.0f; /// the minimum allowed scroll handle size (height)
 	//TODO: make this per dock node
 	bool allowUndockingToNewOsWindow = true; /// allow view tabs to be undocked as native OS windows, outside of the main window
-	f32 dockNodeSpacing = 1;
+	f32 dockNodeSpacing = 3;
 	f32 dockNodeResizeSplitterHitSize = 4;
 	f32 dockNodeMinSize = 100;
 	bool dockNodeProportionalResize = true; /// if false, it will dock nodes keeping the other nodes sizes unchanged, else will resize the others so the new one can fit
