@@ -29,7 +29,7 @@ int main(int argc, char** args)
 	settings.providers.input = new hui::Sdl2InputProvider();
 	settings.providers.rectPack = new hui::StbRectPackProvider();
 	settings.providers.utf = new hui::UtfCppProvider();
-	settings.dockNodeSpacing = 2;
+	settings.dockNodeSpacing = 5;
 	settings.dockNodeResizeSplitterHitSize = 6;
 
 	auto ctx = hui::createContext(settings);
