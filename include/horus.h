@@ -1532,7 +1532,7 @@ struct ContextSettings
 	//TODO: make this per dock node
 	bool allowUndockingToNewOsWindow = true; /// allow view tabs to be undocked as native OS windows, outside of the main window
 	f32 dockNodeSpacing = 3;
-	f32 dockNodeResizeSplitterHitSize = 4;
+	f32 dockNodeResizeSplitterHitSize = 6;
 	f32 dockNodeMinSize = 100;
 	bool dockNodeProportionalResize = true; /// if false, it will dock nodes keeping the other nodes sizes unchanged, else will resize the others so the new one can fit
 	f32 dockNodeDockingSizeRatio = 0.3f; /// ratio of the new size of a docked node in regard to the node we're docking in (if dockNodeProportionalResize is true)

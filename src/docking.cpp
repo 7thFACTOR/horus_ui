@@ -194,6 +194,10 @@ bool dockWindow(Window* wnd, DockNode* targetNode, DockType dockType, u32 tabInd
 	if (!targetParent)
 		return false;
 
+	// check to see if we dock inside the same docknode which contains only one window which is the same window itself
+	if (wnd->dockNode == target && target->children.empty() && target->windows.size() == 1 && target->windows[0] == wnd)
+		return false;
+
 	switch (dockType)
 	{
 	case hui::DockType::Left:

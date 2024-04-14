@@ -151,7 +151,7 @@ void handleDockingMouseDown(const InputEvent& event, DockNode* node)
 	const Point& mousePos = event.mouse.point;
 
 	ds.lastMousePos = mousePos;
-	ds.resizingNode = ds.hoveredNode;
+	ds.resizingNode = node->findResizeDockNode(event.mouse.point);
 
 	if (ds.resizingNode)
 	{
@@ -222,11 +222,22 @@ void handleDockingMouseUp(const InputEvent& event, DockNode* node)
 void handleDockingMouseMove(const InputEvent& event, DockNode* node)
 {
 	auto& ds = ctx->dockingState;
-	ds.hoveredNode = node->findResizeDockNode(event.mouse.point);
+	ds.hoveredNode = node->findTargetDockNode(event.mouse.point);
+	DockNode* hoveredResizingNode = nullptr;
 
-	if (ds.hoveredNode)
+	if (!ds.dragWindow)
+		hoveredResizingNode = node->findResizeDockNode(event.mouse.point);
+
+	if (ds.resizingNode || (hoveredResizingNode && hoveredResizingNode->parent))
 	{
-		switch (ds.hoveredNode->parent->type)
+		DockNode::Type nodeType = DockNode::Type::None;
+
+		if (ds.resizingNode)
+			nodeType = ds.resizingNode->parent->type;
+		else
+			if (hoveredResizingNode) nodeType = hoveredResizingNode->parent->type;
+
+		switch (nodeType)
 		{
 		case DockNode::Type::Horizontal:
 		{
@@ -243,15 +254,13 @@ void handleDockingMouseMove(const InputEvent& event, DockNode* node)
 		}
 	}
 
-	// if we drag a tab or a node splitter
-	if (ds.dragWindow
-		|| ds.hoveredNode
-		|| ds.resizingNode)
+	// if we drag a tab
+	if (ds.dragWindow || ds.resizingNode)
 	{
 		auto& mousePos = event.mouse.point;
 		bool moved = fabs(ds.lastMousePos.x - mousePos.x) > ctx->settings.dragStartDistance || abs(ds.lastMousePos.y - mousePos.y) > ctx->settings.dragStartDistance;
 		auto mouseDelta = mousePos - ds.lastMousePos;
-#ifdef false
+
 		if (ds.dragWindow)
 		{
 			// draw tab rect
@@ -294,7 +303,7 @@ void handleDockingMouseMove(const InputEvent& event, DockNode* node)
 				}
 
 				// also find the node we're hovering
-				ds.dockToNode = node->findDockNode(mousePos);
+				ds.dockToNode = node->findTargetDockNode(mousePos);
 			}
 
 			bool isSameNode = ds.dockToNode == ds.dragWindow->dockNode;
@@ -324,6 +333,8 @@ void handleDockingMouseMove(const InputEvent& event, DockNode* node)
 				ctx->renderer->setOsWindow(node->osWindow);
 				ctx->renderer->setWindowSize({ node->rect.width, node->rect.height });
 				ctx->renderer->begin();
+				auto oldZOrder = ctx->renderer->getZOrder();
+				ctx->renderer->setZOrder(10000000); //TODO: figure out why ~0 doesnt work
 				ctx->renderer->cmdSetColor(dockingRectElem.normalState().color);
 
 				if (ds.dockToNode)
@@ -511,11 +522,12 @@ void handleDockingMouseMove(const InputEvent& event, DockNode* node)
 				ctx->renderer->cmdSetFont(dockingRectElem.normalState().font);
 				ctx->renderer->cmdSetColor(dockingRectElem.normalState().textColor);
 				ctx->drawMultilineText(ds.dragWindow->title.c_str(), ds.draggedRect, HAlignType::Center, VAlignType::Center);
+				ctx->renderer->setZOrder(oldZOrder);
 				ctx->renderer->end();
 			}
 		}
-#endif
-		if (ds.resizingNode)
+
+		if (ds.resizingNode && ds.resizingNode->parent)
 		{	
 			switch (ds.resizingNode->parent->type)
 			{

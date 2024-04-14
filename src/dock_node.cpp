@@ -351,7 +351,7 @@ DockNode* DockNode::findResizeDockNode(const Point& pt)
 
 DockNode* DockNode::findTargetDockNode(const Point& pt)
 {
-	if (type == Type::None || type == Type::Tabs)
+	if (parent && (type == Type::None || type == Type::Tabs))
 	{
 		if (rect.contains(pt))
 			return this;

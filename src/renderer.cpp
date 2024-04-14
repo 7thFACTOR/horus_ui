@@ -496,7 +496,7 @@ void Renderer::executeDrawCommands(HOsWindow wnd)
 		};
 
 	auto& wndCmds = currentWindowContext->drawCommands;
-
+	//TODO: maybe just sort some indices/ptrs and not the whole command structs, too much data to move
 	std::stable_sort(wndCmds.begin(), wndCmds.end(), sortDrawCommands);
 
 	currentAtlas = nullptr;
