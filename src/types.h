@@ -267,6 +267,7 @@ struct Window
 	std::string id, title;
 	HImage icon = 0;
 	Rect tabRect, clientRect;
+	bool visible = true;
 };
 
 struct DockingState
@@ -288,6 +289,7 @@ struct DockingState
 	DockNode* dockToNode = nullptr;
 	Rect resizeNodeRect;
 	Rect resizeNodeSiblingRect;
+	Point lastMousePosSinceMouseDown;
 	Point lastMousePos;
 	Rect draggedRect;
 	bool drawingWindowTabs = false;

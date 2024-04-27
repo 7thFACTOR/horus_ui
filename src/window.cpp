@@ -29,12 +29,12 @@ void closeMainWindow()
 bool beginWindow(const char* id, const char* title, const char* dockTo, DockType dockType, Rect* initialRect, HImage icon)
 {
 	Window* wnd = nullptr;
+	auto iterWnd = ctx->dockingState.windows.find(id);
+	auto iter = ctx->dockingState.windows.find(dockTo ? dockTo : "");
+	DockNode* dockToNode = nullptr;
 
-	if (ctx->dockingState.windows.find(id) == ctx->dockingState.windows.end())
+	if (iterWnd == ctx->dockingState.windows.end())
 	{
-		auto iter = ctx->dockingState.windows.find(dockTo ? dockTo : "");
-		DockNode* dockToNode = nullptr;
-
 		if (dockTo && iter != ctx->dockingState.windows.end())
 		{
 			dockToNode = ctx->dockingState.windows[dockTo]->dockNode;
@@ -46,6 +46,21 @@ bool beginWindow(const char* id, const char* title, const char* dockTo, DockType
 	else
 	{
 		wnd = ctx->dockingState.windows[id];
+		
+		//if (!wnd->visible)
+			//return false;
+
+		if (!wnd->dockNode->osWindow)
+		{
+			Rect defaultRect = { 100, 100, 1500, 1300 };
+
+			wnd->dockNode->osWindow = createOsWindow(title, OsWindowFlags::Resizable, OsWindowState::Normal, initialRect ? *initialRect : defaultRect);
+			ctx->dockingState.rootOsWindowDockNodes.insert(std::make_pair(wnd->dockNode->osWindow, wnd->dockNode));
+
+			if (dockToNode)
+				dockWindow(wnd, dockToNode, dockType);
+		}
+
 		wnd->icon = icon;
 	}
 
@@ -88,25 +103,39 @@ void endWindow()
 	//TODO: make scroll struct stack
 }
 
-void dockWindow(const char* windowId, const char* targetWindowId, DockType dockType)
+void setWindowVisibility(const char* windowId, bool visible)
 {
-	Window *wnd1 = nullptr, *wnd2 = nullptr;
-	
+	auto iter = ctx->dockingState.windows.find(windowId);
+
+	if (iter == ctx->dockingState.windows.end())
+		return;
+
+	//iter->second->visible = true;
+}
+
+void dockWindow(const char* windowId, const char* targetWindowId, DockType dockType, const Point* undockedWindowPos)
+{
+	Window* wnd1 = nullptr, * wnd2 = nullptr;
+
 	wnd1 = ctx->dockingState.windows[windowId];
-	
+
 	if (targetWindowId)
 	{
 		wnd2 = ctx->dockingState.windows[targetWindowId];
 	}
 
-	dockWindow(wnd1, wnd2 ? wnd2->dockNode : nullptr, dockType, 0);
+	dockWindow(wnd1, wnd2 ? wnd2->dockNode : nullptr, dockType, 0, undockedWindowPos);
+}
+
+void dockWindow(const char* windowId, const char* targetWindowId, DockType dockType)
+{
+	dockWindow(windowId, targetWindowId, dockType, nullptr);
 }
 
 void undockWindow(const char* windowId, const Point& windowPos)
 {
-	dockWindow(windowId, 0, DockType::Floating);
+	dockWindow(windowId, nullptr, DockType::Floating, &windowPos);
 	Window* wnd = ctx->dockingState.windows[windowId];
-	HORUS_INPUT->setWindowPosition(wnd->dockNode->osWindow, windowPos);
 }
 
 bool isMouseOverWindow()

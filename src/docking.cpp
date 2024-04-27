@@ -23,10 +23,18 @@ HOsWindow createOsWindow(const std::string& title, OsWindowFlags flags, OsWindow
 	return wnd;
 }
 
-void destroyOsWindow(HOsWindow wnd)
+void destroyOsWindow(HOsWindow osWnd)
 {
-	HORUS_INPUT->destroyWindow(wnd);
-	auto iter = std::find(ctx->osWindows.begin(), ctx->osWindows.end(), wnd);
+	auto dockNode =	ctx->dockingState.rootOsWindowDockNodes[osWnd];
+
+	if (dockNode)
+	{
+		dockNode->closedOsWindowRect = HORUS_INPUT->getWindowRect(osWnd);	
+	}
+
+	HORUS_INPUT->destroyWindow(osWnd);
+
+	auto iter = std::find(ctx->osWindows.begin(), ctx->osWindows.end(), osWnd);
 
 	if (iter != ctx->osWindows.end())
 	{
@@ -116,7 +124,7 @@ Window* createWindow(const std::string& id, DockNode* targetNode, DockType dockT
 	ctx->dockingState.windows[id] = newWnd;
 
 	if (targetNode)
-		dockWindow(newWnd, targetNode, dockType, 0);
+		dockWindow(newWnd, targetNode, dockType);
 
 	return newWnd;
 }
@@ -135,7 +143,24 @@ void deleteWindow(Window* wnd)
 	}
 }
 
-bool dockWindow(Window* wnd, DockNode* targetNode, DockType dockType, u32 tabIndex)
+void closeWindow(Window* wnd)
+{
+	DockNode* node = wnd->dockNode;
+
+	wnd->visible = false;
+
+	// if the window is in a root dock node
+	if (!node->parent && node->children.empty() && node->windows.size() == 1)
+	{
+		destroyOsWindow(node->osWindow);
+		node->osWindow = nullptr;
+		ctx->dockingState.rootOsWindowDockNodes.erase(node->osWindow);
+	}
+
+
+}
+
+bool dockWindow(Window* wnd, DockNode* targetNode, DockType dockType, u32 tabIndex, const Point* undockedWindowPos)
 {
 	auto source = wnd->dockNode;
 	DockNode* target = targetNode;
@@ -191,11 +216,11 @@ bool dockWindow(Window* wnd, DockNode* targetNode, DockType dockType, u32 tabInd
 		return newNode;
 	};
 
-	if (!targetParent)
+	if (target && !targetParent)
 		return false;
 
 	// check to see if we dock inside the same docknode which contains only one window which is the same window itself
-	if (wnd->dockNode == target && target->children.empty() && target->windows.size() == 1 && target->windows[0] == wnd)
+	if (target && wnd->dockNode == target && target->children.empty() && target->windows.size() == 1 && target->windows[0] == wnd)
 		return false;
 
 	switch (dockType)
@@ -306,7 +331,10 @@ bool dockWindow(Window* wnd, DockNode* targetNode, DockType dockType, u32 tabInd
 			{
 				// relocate target's content into new node
 				DockNode* newTargetNode = new DockNode();
-				*newTargetNode = *target;
+				
+				if (target)
+					*newTargetNode = *target;
+				
 				newTargetNode->parent = target;
 				sourceNode->parent = target;
 				for (auto& c : newTargetNode->children) c->parent = newTargetNode;
@@ -815,7 +843,14 @@ bool dockWindow(Window* wnd, DockNode* targetNode, DockType dockType, u32 tabInd
 			}
 		}
 
-		auto osWnd = createOsWindow(wnd->title, OsWindowFlags::Resizable, OsWindowState::Normal, wnd->clientRect);
+		Rect rcWnd = wnd->clientRect;
+		
+		if (undockedWindowPos) {
+			rcWnd.x = undockedWindowPos->x;
+			rcWnd.y = undockedWindowPos->y;
+		}
+
+		auto osWnd = createOsWindow(wnd->title, OsWindowFlags::Resizable, OsWindowState::Normal, rcWnd);
 		
 		wnd->dockNode = createRootDockNode(osWnd);
 		wnd->dockNode->windows.push_back(wnd);

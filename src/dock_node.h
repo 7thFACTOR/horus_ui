@@ -26,6 +26,7 @@ struct DockNode
 	Type type = Type::None;
 	Point minSize = { 32, 32 };
 	Rect rect;
+	Rect closedOsWindowRect; // rect for the closed OS window, used when showing the window again, to be in the same position
 	size_t selectedTabIndex = 0;
 
 	void deleteWindowsAndChildrenRecursive();

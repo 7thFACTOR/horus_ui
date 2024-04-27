@@ -131,7 +131,7 @@ struct DrawCommand
 	{}
 
 	Type type = Type::None;
-	i32 zOrder = 0;
+	u32 zOrder = 0;
 	union CmdData
 	{
 		CmdDrawRect drawRect;

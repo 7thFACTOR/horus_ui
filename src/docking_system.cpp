@@ -150,6 +150,7 @@ void handleDockingMouseDown(const InputEvent& event, DockNode* node)
 	auto& ds = ctx->dockingState;
 	const Point& mousePos = event.mouse.point;
 
+	ds.lastMousePosSinceMouseDown = mousePos;
 	ds.lastMousePos = mousePos;
 	ds.resizingNode = node->findResizeDockNode(event.mouse.point);
 
@@ -162,6 +163,9 @@ void handleDockingMouseDown(const InputEvent& event, DockNode* node)
 
 	for (auto& wnd : ds.windows)
 	{
+		if (wnd.second->dockNode->osWindow != event.window)
+			continue;
+
 		// return if the widget is not visible, that is outside current clip rect
 		if (wnd.second->tabRect.outside(wnd.second->dockNode->rect))
 		{
@@ -181,7 +185,7 @@ void handleDockingMouseDown(const InputEvent& event, DockNode* node)
 void handleDockingMouseUp(const InputEvent& event, DockNode* node)
 {
 	auto& ds = ctx->dockingState;
-	bool moved = fabs(ds.lastMousePos.x - event.mouse.point.x) > ctx->settings.dragStartDistance || fabs(ds.lastMousePos.y - event.mouse.point.y) > ctx->settings.dragStartDistance;
+	bool moved = fabs(ds.lastMousePosSinceMouseDown.x - event.mouse.point.x) > ctx->settings.dragStartDistance || fabs(ds.lastMousePosSinceMouseDown.y - event.mouse.point.y) > ctx->settings.dragStartDistance;
 
 	if (ds.dockToNode && moved)
 	{
@@ -198,14 +202,13 @@ void handleDockingMouseUp(const InputEvent& event, DockNode* node)
 	{
 		// undock the window if there is more than one in the dock node
 		// and if the dock node is not a root node of the window
-		if (ds.dragWindow->dockNode->windows.size() > 1
-			&& ds.dragWindow->dockNode->parent
-			&& ctx->settings.allowUndockingToNewOsWindow)
+		if (ctx->settings.allowUndockingToNewOsWindow)
 		{
 			auto& rc = ds.dragWindow->dockNode->rect;
+			auto ptWnd = HORUS_INPUT->getWindowPosition(ds.dragWindow->dockNode->osWindow);
 			Point pt = {
-				event.mouse.point.x + rc.x - rc.width / 2.0f,
-				event.mouse.point.y + rc.y
+				event.mouse.point.x + ptWnd.x - rc.width / 2.0f,
+				event.mouse.point.y + ptWnd.y
 			};
 
 			undockWindow(ds.dragWindow->id.c_str(), pt);
@@ -254,14 +257,15 @@ void handleDockingMouseMove(const InputEvent& event, DockNode* node)
 		}
 	}
 
-	// if we drag a tab
+	auto& mousePos = event.mouse.point;
+
 	if (ds.dragWindow || ds.resizingNode)
 	{
-		auto& mousePos = event.mouse.point;
-		bool moved = fabs(ds.lastMousePos.x - mousePos.x) > ctx->settings.dragStartDistance || abs(ds.lastMousePos.y - mousePos.y) > ctx->settings.dragStartDistance;
-		auto mouseDelta = mousePos - ds.lastMousePos;
+		bool moved = fabs(ds.lastMousePosSinceMouseDown.x - mousePos.x) > ctx->settings.dragStartDistance || abs(ds.lastMousePosSinceMouseDown.y - mousePos.y) > ctx->settings.dragStartDistance;
+		Point mouseDelta = mousePos - ds.lastMousePos;
+		ds.dockToNode = nullptr;
 
-		if (ds.dragWindow)
+		if (ds.dragWindow && moved)
 		{
 			// draw tab rect
 			auto& dockingRectElem = ctx->theme->getElement(WidgetElementId::WindowDockRect);
@@ -269,12 +273,14 @@ void handleDockingMouseMove(const InputEvent& event, DockNode* node)
 			auto& dockingDialRectVSplitElem = ctx->theme->getElement(WidgetElementId::WindowDockDialVSplitRect);
 			auto& dockingDialRectHSplitElem = ctx->theme->getElement(WidgetElementId::WindowDockDialHSplitRect);
 			auto& tabGroupElem = ctx->theme->getElement(WidgetElementId::TabGroupBody);
-			auto zorder = ctx->renderer->getZOrder();
 
 			if (ctx->mouseMoved || moved)
 			{
+				ds.dockToNode = nullptr;
 				ds.dragOntoWindow = nullptr;
+				printf("moved mouse \n");
 
+				// check drag onto the tabs of a window
 				for (auto& wnd : ds.windows)
 				{
 					if (wnd.second->tabRect.contains(mousePos.x, mousePos.y))
@@ -303,28 +309,24 @@ void handleDockingMouseMove(const InputEvent& event, DockNode* node)
 				}
 
 				// also find the node we're hovering
-				ds.dockToNode = node->findTargetDockNode(mousePos);
+				ds.hoveredNode = node->findTargetDockNode(mousePos);
 			}
 
-			bool isSameNode = ds.dockToNode == ds.dragWindow->dockNode;
+			bool isSameNode = ds.hoveredNode == ds.dragWindow->dockNode;
 			bool isSingleWindow = ds.dragWindow->dockNode->windows.size() == 1;
 
-			if (!ds.dockToNode)
+			if (ds.dragWindow)
 			{
-				// we want to undock to new window
-				if (ds.dragOntoWindow && !isSameNode)
-				{
-					ds.draggedRect = ds.dragWindow->tabRect;
-					ds.draggedRect.x = mousePos.x - ds.draggedRect.width / 2;
-					ds.draggedRect.y = mousePos.y - ds.draggedRect.height / 2;
-					ds.draggedRect.height = ds.dragWindow->tabRect.height * 2; // we have two lines of text when undocking "Undock\nTabname"
-					ds.dockToNode = ds.dragOntoWindow->dockNode;
-				}
-				else
-				{
-					// docking not allowed
-					ds.dockToNode = nullptr;
-				}
+				ds.draggedRect = ds.dragWindow->tabRect;
+				ds.draggedRect.x = mousePos.x - ds.draggedRect.width / 2;
+				ds.draggedRect.y = mousePos.y - ds.draggedRect.height / 2;
+				ds.draggedRect.height = ds.dragWindow->tabRect.height * 2; // we have two lines of text when undocking "Undock\nTabname"
+				ds.dockToNode =nullptr;
+			}
+			else
+			{
+				// docking not allowed
+				ds.dockToNode = nullptr;
 			}
 
 			// draw docking rects
@@ -334,15 +336,15 @@ void handleDockingMouseMove(const InputEvent& event, DockNode* node)
 				ctx->renderer->setWindowSize({ node->rect.width, node->rect.height });
 				ctx->renderer->begin();
 				auto oldZOrder = ctx->renderer->getZOrder();
-				ctx->renderer->setZOrder(10000000); //TODO: figure out why ~0 doesnt work
+				ctx->renderer->setZOrder(~0);// top most rendering
 				ctx->renderer->cmdSetColor(dockingRectElem.normalState().color);
 
-				if (ds.dockToNode)
+				if (ds.hoveredNode)
 				{
 					// draw the locations where we can dock the pane
 					const f32 smallRectSize = 64 * ctx->globalScale; //TODO: make it settings
 					const f32 smallRectGap = 1 * ctx->globalScale; //TODO: make it settings
-					auto parentRect = ds.dockToNode->rect;
+					auto parentRect = ds.hoveredNode->rect;
 
 					auto smallRectLeft = Rect(
 						parentRect.x + parentRect.width / 2.0f - smallRectSize / 2.0f - smallRectGap - smallRectSize,
@@ -403,6 +405,7 @@ void handleDockingMouseMove(const InputEvent& event, DockNode* node)
 
 					if (isSmallRectLeftHovered)
 					{
+						ds.dockToNode = ds.hoveredNode;
 						ds.dockType = DockType::Left;
 						ds.draggedRect = parentRect;
 						ds.draggedRect.width /= 2.0f;
@@ -410,6 +413,7 @@ void handleDockingMouseMove(const InputEvent& event, DockNode* node)
 
 					if (isSmallRectRightHovered)
 					{
+						ds.dockToNode = ds.hoveredNode;
 						ds.dockType = DockType::Right;
 						ds.draggedRect = parentRect;
 						ds.draggedRect.x += ds.draggedRect.width / 2.0f;
@@ -418,6 +422,7 @@ void handleDockingMouseMove(const InputEvent& event, DockNode* node)
 
 					if (isSmallRectTopHovered)
 					{
+						ds.dockToNode = ds.hoveredNode;
 						ds.dockType = DockType::Top;
 						ds.draggedRect = parentRect;
 						ds.draggedRect.height /= 2.0f;
@@ -425,6 +430,7 @@ void handleDockingMouseMove(const InputEvent& event, DockNode* node)
 
 					if (isSmallRectBottomHovered)
 					{
+						ds.dockToNode = ds.hoveredNode;
 						ds.dockType = DockType::Bottom;
 						ds.draggedRect = parentRect;
 						ds.draggedRect.y += ds.draggedRect.height / 2.0f;
@@ -433,6 +439,7 @@ void handleDockingMouseMove(const InputEvent& event, DockNode* node)
 
 					if (isSmallRectMiddleHovered)
 					{
+						ds.dockToNode = ds.hoveredNode;
 						ds.dockType = DockType::AsTab;
 						ds.draggedRect = parentRect;
 						ds.draggedRect.height = tabGroupElem.normalState().height;
@@ -820,8 +827,9 @@ void handleDockingMouseMove(const InputEvent& event, DockNode* node)
 				break;
 			}
 			}
-			ds.lastMousePos = mousePos;
+			
 			ds.resizingNode->computeRect();
+			ds.lastMousePos = mousePos;
 		}
 	}
 }
@@ -850,6 +858,11 @@ void handleDockNodeEvents(DockNode* node)
 	{
 	case InputEvent::Type::MouseDown: handleDockingMouseDown(event, node); break;
 	case InputEvent::Type::MouseUp: handleDockingMouseUp(event, node); break;
+	case InputEvent::Type::WindowClose:
+	{
+		destroyOsWindow(event.window);
+		break;
+	}
 	default:
 		break;
 	};

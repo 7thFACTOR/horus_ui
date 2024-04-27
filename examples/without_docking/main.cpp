@@ -136,6 +136,8 @@ int main(int argc, char** args)
 				//hui::beginContainer(panelRect);
 				hui::labelCustomFont("Information", largeFnt);
 				hui::button("Activate shields");
+				if (hui::button("Show UI window"))
+					hui::setWindowVisibility("ui", true);
 				static bool chk1, chk2, chk3;
 				hui::beginTwoColumns();
 				chk1 = hui::check("Option 1", chk1);

@@ -486,7 +486,7 @@ void presentWindow(HOsWindow wnd)
 	ctx->hoveringThisWindow = HORUS_INPUT->getHoveredWindow() == wnd;
 	ctx->renderer->begin();
 	dockNodeTabs(ctx->dockingState.rootOsWindowDockNodes[wnd]);
-	ctx->renderer->end();	
+	ctx->renderer->end();
 	ctx->renderer->executeDrawCommands(wnd);
 	ctx->providers->input->presentWindow(wnd);
 }

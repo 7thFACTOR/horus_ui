@@ -1678,6 +1678,7 @@ HORUS_API void updateDockingSystem();
 HORUS_API bool beginWindow(const char* windowId, const char* title, const char* dockTo, DockType dockType, Rect* initialRect, HImage icon);
 
 HORUS_API void endWindow();
+HORUS_API void setWindowVisibility(const char* windowId, bool visible);
 HORUS_API void debugWindows();
 HORUS_API void dockWindow(const char* windowId, const char* targetWindowId, DockType dockType);
 HORUS_API void undockWindow(const char* windowId, const Point& windowPos = Point());
