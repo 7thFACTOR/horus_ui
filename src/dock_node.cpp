@@ -5,13 +5,15 @@
 
 namespace hui
 {
-void DockNode::deleteWindowsAndChildrenRecursive()
+void DockNode::removeWindowsAndDeleteChildrenRecursive()
 {
 	for (auto& wnd : windows)
 	{
 		auto iter = ctx->dockingState.windows.find(wnd->id);
+		
 		if (iter != ctx->dockingState.windows.end())
 			ctx->dockingState.windows.erase(iter);
+		
 		delete wnd;
 	}
 
@@ -19,7 +21,7 @@ void DockNode::deleteWindowsAndChildrenRecursive()
 
 	for (auto& child : children)
 	{
-		child->deleteWindowsAndChildrenRecursive();
+		child->removeWindowsAndDeleteChildrenRecursive();
 		delete child;
 	}
 

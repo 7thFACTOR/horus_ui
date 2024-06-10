@@ -156,8 +156,6 @@ void closeWindow(Window* wnd)
 		node->osWindow = nullptr;
 		ctx->dockingState.rootOsWindowDockNodes.erase(node->osWindow);
 	}
-
-
 }
 
 bool dockWindow(Window* wnd, DockNode* targetNode, DockType dockType, u32 tabIndex, const Point* undockedWindowPos)

@@ -64,6 +64,15 @@ bool beginWindow(const char* id, const char* title, const char* dockTo, DockType
 		wnd->icon = icon;
 	}
 
+	if (ctx->event.type == InputEvent::Type::WindowClose)
+	{
+		if (ctx->event.window == wnd->dockNode->osWindow && !wnd->dockNode->parent)
+		{
+			ctx->dockingState.windowsToDestroy.insert(wnd->dockNode->osWindow);
+			return false;
+		}
+	}
+
 	if (wnd->dockNode->type == DockNode::Type::Tabs && wnd->dockNode->getWindowIndex(wnd) != wnd->dockNode->selectedTabIndex)
 	{
 		return false;
@@ -78,19 +87,6 @@ bool beginWindow(const char* id, const char* title, const char* dockTo, DockType
 	rc.y += ctx->theme->getElement(WidgetElementId::TabGroupBody).normalState().height;
 
 	beginContainer(rc);
-
-	if (ctx->event.type == InputEvent::Type::WindowClose)
-	{
-		if (ctx->event.window == wnd->dockNode->osWindow)
-		{
-		 	auto rootNode = ctx->dockingState.rootOsWindowDockNodes[ctx->event.window];
-		
-			rootNode->deleteWindowsAndChildrenRecursive();
-			deleteRootDockNode(ctx->event.window);
-			destroyOsWindow(ctx->event.window);
-			return false;
-		}
-	}
 
 	return true;
 }
