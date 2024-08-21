@@ -892,7 +892,7 @@ void dockNodeTabs(DockNode* node)
 		ctx->paneGroupState.forceSqueezeTabs = false;
 	}
 
-	u32 closeTabIndex = ~0;
+	u32 hideTabIndex = ~0;
 	u32 selectedIndex = 0;
 
 	ctx->dockingState.drawingWindowTabs = true;
@@ -912,8 +912,7 @@ void dockNodeTabs(DockNode* node)
 				&& ctx->event.type == InputEvent::Type::MouseDown
 				&& ctx->event.mouse.button == MouseButton::Middle)
 			{
-				// close tab
-				closeTabIndex = i;
+				hideTabIndex = i;
 				ctx->event.type = InputEvent::Type::None;
 				//TODO: issue some event on tab close ?
 			}
@@ -925,12 +924,15 @@ void dockNodeTabs(DockNode* node)
 
 	ctx->dockingState.drawingWindowTabs = false;
 
-	if (closeTabIndex != ~0)
+	if (hideTabIndex != ~0)
 	{
-		node->removeWindow(node->windows[closeTabIndex]);
+		node->windows[hideTabIndex]->visible = false;
+		node->computeRect();
 
-		if (selectedIndex >= node->windows.size())
-			selectedIndex = node->windows.size() - 1;
+		auto visCount = node->getVisibleWindowCount();
+		
+		if (selectedIndex >= visCount)
+			selectedIndex = visCount - 1;
 	}
 
 	if (!node->windows.empty())

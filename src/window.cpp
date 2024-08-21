@@ -47,8 +47,8 @@ bool beginWindow(const char* id, const char* title, const char* dockTo, DockType
 	{
 		wnd = ctx->dockingState.windows[id];
 		
-		//if (!wnd->visible)
-			//return false;
+		if (!wnd->visible)
+			return false;
 
 		if (!wnd->dockNode->osWindow)
 		{
@@ -66,9 +66,12 @@ bool beginWindow(const char* id, const char* title, const char* dockTo, DockType
 
 	if (ctx->event.type == InputEvent::Type::WindowClose)
 	{
-		if (ctx->event.window == wnd->dockNode->osWindow && !wnd->dockNode->parent)
+		if (ctx->event.window == wnd->dockNode->osWindow
+			&& !wnd->dockNode->parent
+			&& wnd->dockNode->children.empty())
 		{
-			ctx->dockingState.windowsToDestroy.insert(wnd->dockNode->osWindow);
+			wnd->visible = false;
+
 			return false;
 		}
 	}

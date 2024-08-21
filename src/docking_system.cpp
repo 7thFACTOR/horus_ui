@@ -860,7 +860,7 @@ void handleDockNodeEvents(DockNode* node)
 	case InputEvent::Type::MouseUp: handleDockingMouseUp(event, node); break;
 	case InputEvent::Type::WindowClose:
 	{
-		destroyOsWindow(event.window);
+		HORUS_INPUT->hideWindow(event.window);
 		break;
 	}
 	default:

@@ -5,6 +5,69 @@
 
 namespace hui
 {
+bool DockNode::hasSingleWindowVisible() const
+{
+	return windows.size() == 1 && windows[0]->visible;
+}
+
+void DockNode::setChildVisible(DockNode* child, bool visible)
+{
+	if (!visible)
+	{
+		auto iterChild = std::find(children.begin(), children.end(), child);
+
+		if (iterChild == children.end())
+		{
+			return;
+		}
+
+		children.erase(iterChild);
+		hiddenChildren.push_back(child);
+
+
+	}
+	else
+	{
+		auto iterChild = std::find(hiddenChildren.begin(), hiddenChildren.end(), child);
+
+		if (iterChild == hiddenChildren.end())
+		{
+			return;
+		}
+
+		hiddenChildren.erase(iterChild);
+		children.push_back(child);
+	}
+}
+
+void DockNode::setWindowVisible(Window* wnd, bool visible)
+{
+	if (!visible)
+	{
+		auto iterWnd = std::find(windows.begin(), windows.end(), wnd);
+
+		if (iterWnd == windows.end())
+		{
+			return;
+		}
+
+		windows.erase(iterWnd);
+		hiddenWindows.push_back(wnd);
+	}
+	else
+	{
+		auto iterWnd = std::find(hiddenWindows.begin(), hiddenWindows.end(), wnd);
+
+		if (iterWnd == hiddenWindows.end())
+		{
+			return;
+		}
+
+		hiddenWindows.erase(iterWnd);
+		windows.push_back(wnd);
+	}
+}
+
 void DockNode::removeWindowsAndDeleteChildrenRecursive()
 {
 	for (auto& wnd : windows)
@@ -46,8 +109,10 @@ void DockNode::removeFromParent()
 		// this is a root node and removing it we must destroy the window too
 		ctx->dockingState.rootOsWindowDockNodes.erase(osWindow);
 		auto iter = std::find(ctx->osWindows.begin(), ctx->osWindows.end(), osWindow);
+	
 		if (iter != ctx->osWindows.end())
 			ctx->osWindows.erase(iter);
+		
 		HORUS_INPUT->destroyWindow(osWindow);
 		osWindow = 0;
 	}
@@ -74,6 +139,9 @@ void DockNode::gatherWindowTabsNodes(std::vector<DockNode*>& outNodes)
 
 	for (auto& c : children)
 	{
+		if (!c->hasSingleWindowVisible())
+			continue;
+
 		if (c->type == DockNode::Type::Tabs)
 		{
 			outNodes.push_back(c);
@@ -99,6 +167,9 @@ void DockNode::computeRect()
 	case hui::DockNode::Type::Tabs:
 		for (auto& wnd : windows)
 		{
+			if (!wnd->visible)
+				continue;
+
 			wnd->clientRect = {
 				rect.x, rect.y, rect.width, rect.height
 			};
@@ -106,12 +177,16 @@ void DockNode::computeRect()
 		break;
 	case hui::DockNode::Type::Vertical:
 	{
-		f32 availableSpace = rect.height - ctx->settings.dockNodeSpacing * (f32)(children.size() - 1);
-		f32 averageSpace = availableSpace / (f32)children.size();
+		auto visChildCount = getVisibleChildCount();
+		f32 availableSpace = rect.height - ctx->settings.dockNodeSpacing * (f32)(visChildCount - 1);
+		f32 averageSpace = availableSpace / (f32)visChildCount;
 		f32 totalSpace = 0;
 
 		for (auto& child : children)
 		{
+			if (!child->hasSingleWindowVisible())
+				continue;
+
 			if (child->rect.height <= 0.0f)
 			{
 				child->rect.height = averageSpace;
@@ -124,6 +199,9 @@ void DockNode::computeRect()
 
 		for (auto& child : children)
 		{
+			if (!child->hasSingleWindowVisible())
+				continue;
+
 			f32 height = child->rect.height / totalSpace * availableSpace;
 
 			child->rect.y = currentY;
@@ -141,12 +219,16 @@ void DockNode::computeRect()
 		break;
 	case hui::DockNode::Type::Horizontal:
 	{
-		f32 availableSpace = rect.width - ctx->settings.dockNodeSpacing * (f32)(children.size() - 1);
-		f32 averageSpace = availableSpace / (f32)children.size();
+		auto visChildCount = getVisibleChildCount();
+		f32 availableSpace = rect.width - ctx->settings.dockNodeSpacing * (f32)(visChildCount - 1);
+		f32 averageSpace = availableSpace / (f32)visChildCount;
 		f32 totalSpace = 0;
 
 		for (auto& child : children)
 		{
+			if (!child->hasSingleWindowVisible())
+				continue;
+
 			if (child->rect.width <= 0.0f)
 			{
 				child->rect.width = averageSpace;
@@ -159,6 +241,9 @@ void DockNode::computeRect()
 
 		for (auto& child : children)
 		{
+			if (!child->hasSingleWindowVisible())
+				continue;
+
 			f32 width = child->rect.width / totalSpace * availableSpace;
 
 			child->rect.x = currentX;
@@ -183,8 +268,11 @@ void DockNode::computeMinSize()
 {
 	minSize.set(ctx->settings.dockNodeMinSize, ctx->settings.dockNodeMinSize);
 
-	for (auto child : children)
+	for (auto& child : children)
 	{
+		if (!child->hasSingleWindowVisible())
+			continue;
+
 		child->computeMinSize();
 	};
 
@@ -197,8 +285,12 @@ void DockNode::computeMinSize()
 	case hui::DockNode::Type::Vertical:
 	{
 		f32 total = 0;
-		for (auto child : children)
+
+		for (auto& child : children)
 		{
+			if (!child->hasSingleWindowVisible())
+				continue;
+
 			total += child->minSize.y;
 		};
 
@@ -209,8 +301,12 @@ void DockNode::computeMinSize()
 	case hui::DockNode::Type::Horizontal:
 	{
 		f32 total = 0;
-		for (auto child : children)
+
+		for (auto& child : children)
 		{
+			if (!child->hasSingleWindowVisible())
+				continue;
+
 			total += child->minSize.x;
 		};
 
@@ -264,6 +360,7 @@ bool DockNode::checkRedundancy()
 		}
 
 		if (deleteThis) delete this;
+		
 		return true;
 	}
 
@@ -310,6 +407,9 @@ DockNode* DockNode::findResizeDockNode(const Point& pt)
 		case Type::Horizontal:
 			for (auto& child : children)
 			{
+				if (!child->hasSingleWindowVisible())
+					continue;
+
 				if (child != children.back())
 				{
 					if (pt.x >= child->rect.right() + ctx->settings.dockNodeSpacing/2 - ctx->settings.dockNodeResizeSplitterHitSize/2
@@ -323,6 +423,9 @@ DockNode* DockNode::findResizeDockNode(const Point& pt)
 		case Type::Vertical:
 			for (auto& child : children)
 			{
+				if (!child->hasSingleWindowVisible())
+					continue;
+
 				if (child != children.back())
 				{
 					if (pt.y >= child->rect.bottom() + ctx->settings.dockNodeSpacing / 2 - ctx->settings.dockNodeResizeSplitterHitSize / 2
@@ -337,13 +440,16 @@ DockNode* DockNode::findResizeDockNode(const Point& pt)
 			break;
 		}
 
-		for (auto cell : children)
+		for (auto& child : children)
 		{
-			auto foundCell = cell->findResizeDockNode(pt);
+			if (!child->hasSingleWindowVisible())
+				continue;
 
-			if (foundCell)
+			auto foundChild = child->findResizeDockNode(pt);
+
+			if (foundChild)
 			{
-				return foundCell;
+				return foundChild;
 			}
 		}
 	}
@@ -360,13 +466,16 @@ DockNode* DockNode::findTargetDockNode(const Point& pt)
 	}
 	else
 	{
-		for (auto child : children)
+		for (auto& child : children)
 		{
-			auto foundCell = child->findTargetDockNode(pt);
+			if (!child->hasSingleWindowVisible())
+				continue;
 
-			if (foundCell)
+			auto foundChild = child->findTargetDockNode(pt);
+
+			if (foundChild)
 			{
-				return foundCell;
+				return foundChild;
 			}
 		}
 	}
@@ -387,10 +496,15 @@ DockNode* DockNode::findDockNode(const Point& pt)
 {
 	if (rect.contains(pt)) return this;
 
-	for (auto& c : children)
+	for (auto& child : children)
 	{
-		auto node = c->findDockNode(pt);
-		if (node) return node;
+		if (!child->hasSingleWindowVisible())
+			continue;
+
+		auto node = child->findDockNode(pt);
+		
+		if (node)
+			return node;
 	}
 
 	return nullptr;
