@@ -224,7 +224,11 @@ bool dockWindow(Window* wnd, DockNode* targetNode, DockType dockType, u32 tabInd
 	switch (dockType)
 	{
 	case hui::DockType::Left:
-	{	// just insert at the target site
+	{	
+		if (!targetParent)
+			break;
+
+		// just insert at the target site
 		if (targetParent->type == DockNode::Type::Horizontal || targetParent->type == DockNode::Type::Tabs)
 		{
 			// if there is no children nodes but has windows, relocate to new node
@@ -335,13 +339,18 @@ bool dockWindow(Window* wnd, DockNode* targetNode, DockType dockType, u32 tabInd
 				
 				newTargetNode->parent = target;
 				sourceNode->parent = target;
+				
 				for (auto& c : newTargetNode->children) c->parent = newTargetNode;
 				for (auto& w : newTargetNode->windows) w->dockNode = newTargetNode;
-				target->windows.clear();
-				target->children.clear();
-				target->children.push_back(sourceNode);
-				target->children.push_back(newTargetNode);
-				target->type = DockNode::Type::Horizontal;
+				
+				if (target)
+				{
+					target->windows.clear();
+					target->children.clear();
+					target->children.push_back(sourceNode);
+					target->children.push_back(newTargetNode);
+					target->type = DockNode::Type::Horizontal;
+				}
 			}
 		}
 
@@ -363,7 +372,11 @@ bool dockWindow(Window* wnd, DockNode* targetNode, DockType dockType, u32 tabInd
 		break;
 	}
 	case hui::DockType::Right:
-	{	// just insert at the target site
+	{
+		if (!targetParent)
+			break;
+
+		// just insert at the target site
 		if (targetParent->type == DockNode::Type::Horizontal || targetParent->type == DockNode::Type::Tabs)
 		{
 			// if there is no children nodes but has windows, relocate to new node
@@ -483,13 +496,18 @@ bool dockWindow(Window* wnd, DockNode* targetNode, DockType dockType, u32 tabInd
 				*newNode = *target;
 				newNode->parent = target;
 				sourceNode->parent = target;
+				
 				for (auto& c : newNode->children) c->parent = newNode;
 				for (auto& w : newNode->windows) w->dockNode = newNode;
-				target->windows.clear();
-				target->children.clear();
-				target->children.push_back(newNode);
-				target->children.push_back(sourceNode); // insert last
-				target->type = DockNode::Type::Horizontal;
+				
+				if (target)
+				{
+					target->windows.clear();
+					target->children.clear();
+					target->children.push_back(newNode);
+					target->children.push_back(sourceNode); // insert last
+					target->type = DockNode::Type::Horizontal;
+				}
 			}
 		}
 
@@ -509,7 +527,11 @@ bool dockWindow(Window* wnd, DockNode* targetNode, DockType dockType, u32 tabInd
 		break;
 	}
 	case hui::DockType::Top:
-	{	// just insert at the target site
+	{
+		if (!targetParent)
+			break;
+
+		// just insert at the target site
 		if (targetParent->type == DockNode::Type::Vertical || targetParent->type == DockNode::Type::Tabs)
 		{
 			// if there is no children nodes but has windows, relocate to new node
@@ -622,13 +644,18 @@ bool dockWindow(Window* wnd, DockNode* targetNode, DockType dockType, u32 tabInd
 				*newNode = *target;
 				newNode->parent = target;
 				sourceNode->parent = target;
+				
 				for (auto& c : newNode->children) c->parent = newNode;
 				for (auto& w : newNode->windows) w->dockNode = newNode;
-				target->windows.clear();
-				target->children.clear();
-				target->children.push_back(sourceNode);
-				target->children.push_back(newNode);
-				target->type = DockNode::Type::Vertical;
+				
+				if (target)
+				{
+					target->windows.clear();
+					target->children.clear();
+					target->children.push_back(sourceNode);
+					target->children.push_back(newNode);
+					target->type = DockNode::Type::Vertical;
+				}
 			}
 		}
 
@@ -649,7 +676,11 @@ bool dockWindow(Window* wnd, DockNode* targetNode, DockType dockType, u32 tabInd
 		break;
 	}
 	case hui::DockType::Bottom:
-	{	// just insert at the target site
+	{
+		if (!targetParent)
+			break;
+
+		// just insert at the target site
 		if (targetParent->type == DockNode::Type::Vertical || targetParent->type == DockNode::Type::Tabs)
 		{
 			// if there is no children nodes but has windows, relocate to new node
@@ -771,13 +802,18 @@ bool dockWindow(Window* wnd, DockNode* targetNode, DockType dockType, u32 tabInd
 				*newNode = *target;
 				newNode->parent = target;
 				sourceNode->parent = target;
+				
 				for (auto& c : newNode->children) c->parent = newNode;
 				for (auto& w : newNode->windows) w->dockNode = newNode;
-				target->windows.clear();
-				target->children.clear();
-				target->children.push_back(newNode);
-				target->children.push_back(sourceNode); // insert last
-				target->type = DockNode::Type::Vertical;
+				
+				if (target)
+				{
+					target->windows.clear();
+					target->children.clear();
+					target->children.push_back(newNode);
+					target->children.push_back(sourceNode); // insert last
+					target->type = DockNode::Type::Vertical;
+				}
 			}
 		}
 
@@ -798,6 +834,9 @@ bool dockWindow(Window* wnd, DockNode* targetNode, DockType dockType, u32 tabInd
 	}
 	case hui::DockType::AsTab:
 	{
+		if (!target)
+			break;
+
 		auto iter = std::next(target->windows.begin(), tabIndex);
 		target->windows.insert(iter, wnd);
 		target->type = DockNode::Type::Tabs;
@@ -929,7 +968,7 @@ void dockNodeTabs(DockNode* node)
 		node->windows[hideTabIndex]->visible = false;
 		node->computeRect();
 
-		auto visCount = node->getVisibleWindowCount();
+		auto visCount = node->children.size();
 		
 		if (selectedIndex >= visCount)
 			selectedIndex = visCount - 1;

@@ -23,8 +23,6 @@ void DockNode::setChildVisible(DockNode* child, bool visible)
 
 		children.erase(iterChild);
 		hiddenChildren.push_back(child);
-
-
 	}
 	else
 	{
@@ -177,7 +175,7 @@ void DockNode::computeRect()
 		break;
 	case hui::DockNode::Type::Vertical:
 	{
-		auto visChildCount = getVisibleChildCount();
+		auto visChildCount = children.size();
 		f32 availableSpace = rect.height - ctx->settings.dockNodeSpacing * (f32)(visChildCount - 1);
 		f32 averageSpace = availableSpace / (f32)visChildCount;
 		f32 totalSpace = 0;
@@ -219,7 +217,7 @@ void DockNode::computeRect()
 		break;
 	case hui::DockNode::Type::Horizontal:
 	{
-		auto visChildCount = getVisibleChildCount();
+		auto visChildCount = children.size();
 		f32 availableSpace = rect.width - ctx->settings.dockNodeSpacing * (f32)(visChildCount - 1);
 		f32 averageSpace = availableSpace / (f32)visChildCount;
 		f32 totalSpace = 0;
