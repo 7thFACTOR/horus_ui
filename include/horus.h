@@ -1522,6 +1522,8 @@ struct ContextSettings
 	f32 textCachePruneMaxTimeSec = 5; /// after this time, if an Unicode text is not accessed, it's discarded from cache, textCachePruneMode must be Time
 	f32 textCachePruneMaxFrames = 500; /// after this frame count, if an Unicode text is not accessed, it's discarded from cache, textCachePruneMode must be Frames
 	f32 textCachePruneIntervalSec = 5; /// after each interval has passed, the pruning of unused texts is executed, will delete the texts that were not used for the last textCachePruneMaxTimeMs or textCachePruneMaxFrames, depending on the prune mode
+	f32 textCaretBlinkDelay = 0.4f;
+	bool textCaretBlinkEnable = true;
 	u32 defaultAtlasSize = 4096; /// default atlas textures size in pixels
 	SliderDragDirection sliderDragDirection = SliderDragDirection::Any; /// allows to change slider value from any direction drag, vertical or horizontal
 	bool sliderInvertVerticalDragAmount = false; /// if true and vertical sliding allowed, it will invert the drag amount

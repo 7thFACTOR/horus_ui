@@ -23,6 +23,8 @@ void DockNode::setChildVisible(DockNode* child, bool visible)
 
 		children.erase(iterChild);
 		hiddenChildren.push_back(child);
+
+
 	}
 	else
 	{
@@ -175,16 +177,13 @@ void DockNode::computeRect()
 		break;
 	case hui::DockNode::Type::Vertical:
 	{
-		auto visChildCount = children.size();
-		f32 availableSpace = rect.height - ctx->settings.dockNodeSpacing * (f32)(visChildCount - 1);
-		f32 averageSpace = availableSpace / (f32)visChildCount;
+		auto childCount = children.size();
+		f32 availableSpace = rect.height - ctx->settings.dockNodeSpacing * (f32)(childCount - 1);
+		f32 averageSpace = availableSpace / (f32)childCount;
 		f32 totalSpace = 0;
 
 		for (auto& child : children)
 		{
-			if (!child->hasSingleWindowVisible())
-				continue;
-
 			if (child->rect.height <= 0.0f)
 			{
 				child->rect.height = averageSpace;
@@ -197,9 +196,6 @@ void DockNode::computeRect()
 
 		for (auto& child : children)
 		{
-			if (!child->hasSingleWindowVisible())
-				continue;
-
 			f32 height = child->rect.height / totalSpace * availableSpace;
 
 			child->rect.y = currentY;
@@ -217,16 +213,13 @@ void DockNode::computeRect()
 		break;
 	case hui::DockNode::Type::Horizontal:
 	{
-		auto visChildCount = children.size();
-		f32 availableSpace = rect.width - ctx->settings.dockNodeSpacing * (f32)(visChildCount - 1);
-		f32 averageSpace = availableSpace / (f32)visChildCount;
+		auto childCount = children.size();
+		f32 availableSpace = rect.width - ctx->settings.dockNodeSpacing * (f32)(childCount - 1);
+		f32 averageSpace = availableSpace / (f32)childCount;
 		f32 totalSpace = 0;
 
 		for (auto& child : children)
 		{
-			if (!child->hasSingleWindowVisible())
-				continue;
-
 			if (child->rect.width <= 0.0f)
 			{
 				child->rect.width = averageSpace;
@@ -239,9 +232,6 @@ void DockNode::computeRect()
 
 		for (auto& child : children)
 		{
-			if (!child->hasSingleWindowVisible())
-				continue;
-
 			f32 width = child->rect.width / totalSpace * availableSpace;
 
 			child->rect.x = currentX;
@@ -268,9 +258,6 @@ void DockNode::computeMinSize()
 
 	for (auto& child : children)
 	{
-		if (!child->hasSingleWindowVisible())
-			continue;
-
 		child->computeMinSize();
 	};
 
@@ -286,9 +273,6 @@ void DockNode::computeMinSize()
 
 		for (auto& child : children)
 		{
-			if (!child->hasSingleWindowVisible())
-				continue;
-
 			total += child->minSize.y;
 		};
 
@@ -302,9 +286,6 @@ void DockNode::computeMinSize()
 
 		for (auto& child : children)
 		{
-			if (!child->hasSingleWindowVisible())
-				continue;
-
 			total += child->minSize.x;
 		};
 
@@ -331,10 +312,15 @@ bool DockNode::checkRedundancy()
 	if (children.size() == 1)
 	{
 		auto child = children[0];
+		
 		children = child->children;
+		
 		for (auto& c : children) c->parent = this;
+		
 		windows = child->windows;
+		
 		for (auto& w : windows) w->dockNode = this;
+		
 		selectedTabIndex = child->selectedTabIndex;
 		type = child->type;
 		delete child;
@@ -348,12 +334,16 @@ bool DockNode::checkRedundancy()
 		if (parent->type == type)
 		{
 			auto iterPosThis = std::find(parent->children.begin(), parent->children.end(), this);
+			
 			parent->children.insert(iterPosThis, children.begin(), children.end());
 			// find it again, remove it
 			iterPosThis = std::find(parent->children.begin(), parent->children.end(), this);
 			parent->children.erase(iterPosThis);
+			
 			for (auto& c : children) c->parent = parent;
+			
 			for (auto& w : windows) w->dockNode = parent;
+			
 			deleteThis = true;
 		}
 
@@ -405,9 +395,6 @@ DockNode* DockNode::findResizeDockNode(const Point& pt)
 		case Type::Horizontal:
 			for (auto& child : children)
 			{
-				if (!child->hasSingleWindowVisible())
-					continue;
-
 				if (child != children.back())
 				{
 					if (pt.x >= child->rect.right() + ctx->settings.dockNodeSpacing/2 - ctx->settings.dockNodeResizeSplitterHitSize/2
@@ -421,9 +408,6 @@ DockNode* DockNode::findResizeDockNode(const Point& pt)
 		case Type::Vertical:
 			for (auto& child : children)
 			{
-				if (!child->hasSingleWindowVisible())
-					continue;
-
 				if (child != children.back())
 				{
 					if (pt.y >= child->rect.bottom() + ctx->settings.dockNodeSpacing / 2 - ctx->settings.dockNodeResizeSplitterHitSize / 2
@@ -440,9 +424,6 @@ DockNode* DockNode::findResizeDockNode(const Point& pt)
 
 		for (auto& child : children)
 		{
-			if (!child->hasSingleWindowVisible())
-				continue;
-
 			auto foundChild = child->findResizeDockNode(pt);
 
 			if (foundChild)
@@ -466,9 +447,6 @@ DockNode* DockNode::findTargetDockNode(const Point& pt)
 	{
 		for (auto& child : children)
 		{
-			if (!child->hasSingleWindowVisible())
-				continue;
-
 			auto foundChild = child->findTargetDockNode(pt);
 
 			if (foundChild)
@@ -496,9 +474,6 @@ DockNode* DockNode::findDockNode(const Point& pt)
 
 	for (auto& child : children)
 	{
-		if (!child->hasSingleWindowVisible())
-			continue;
-
 		auto node = child->findDockNode(pt);
 		
 		if (node)

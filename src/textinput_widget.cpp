@@ -146,6 +146,11 @@ bool textInput(
 		forceRepaint();
 	}
 
+	if (ctx->widget.hovered)
+	{
+		setMouseCursor(MouseCursorType::IBeam);
+	}
+
 	ctx->renderer->cmdSetColor(bodyElemState->color);
 	ctx->renderer->cmdDrawImageBordered(bodyElemState->image, bodyElemState->border, ctx->widget.rect, ctx->globalScale);
 	ctx->renderer->cmdSetColor(bodyElemState->textColor);
@@ -225,9 +230,12 @@ bool textInput(
 			ctx->renderer->cmdDrawSolidRectangle(selRect);
 		}
 
-		// draw cursor
-		ctx->renderer->cmdSetColor(bodyTextCaretElemState.color);
-		ctx->renderer->cmdDrawSolidRectangle(cursorRect);
+		// draw cursor/caret	
+		if (!ctx->settings.textCaretBlinkEnable || (ctx->textInput.caretBlinkTimer >= 0 && ctx->textInput.caretBlinkTimer <= 1))
+		{
+			ctx->renderer->cmdSetColor(bodyTextCaretElemState.color);
+			ctx->renderer->cmdDrawSolidRectangle(cursorRect);
+		}
 	}
 
 	if (isEditingThis)
@@ -278,6 +286,18 @@ bool textInput(
 
 	setFocusable();
 	ctx->currentWidgetId++;
+
+	if (ctx->settings.textCaretBlinkDelay > 0)
+	{
+		// this will work even if deltaTime is always zero, caret wont blink ever
+		// dt zero happens when UI is not drawn continuously
+		ctx->textInput.caretBlinkTimer += ctx->deltaTime * ctx->settings.textCaretBlinkDelay;
+
+		if (ctx->textInput.caretBlinkTimer > 2.0f)
+		{
+			ctx->textInput.caretBlinkTimer = 0;
+		}
+	}
 
 	return ctx->textInput.textChanged;
 }

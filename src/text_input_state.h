@@ -55,6 +55,7 @@ struct TextInputState
 	u32 maxTextLength = 0;
 	bool password = false;
 	Utf32String passwordCharUnicode;
+	f32 caretBlinkTimer = 0;
 };
 
 }
