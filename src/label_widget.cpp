@@ -65,7 +65,7 @@ bool multilineLabel(const char* labelText, HAlignType horizontalAlign)
 
 bool multilineLabelCustomFont(const char* labelText, HFont font, HAlignType horizontalAlign)
 {
-	auto bodyElemState = ctx->theme->getElement(WidgetElementId::LabelBody).normalState();
+	auto& bodyElemState = ctx->theme->getElement(WidgetElementId::LabelBody).normalState();
 
 	ctx->renderer->cmdSetColor(bodyElemState.textColor * ctx->tint[(int)TintColorType::Text]);
 	ctx->renderer->cmdSetFont((Font*)font);

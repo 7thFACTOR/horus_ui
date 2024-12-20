@@ -316,8 +316,8 @@ struct DragDropState
 struct VirtualListContentState
 {
 	Point lastPenPosition;
-	u32 totalRowCount;
-	f32 itemHeight;
+	u32 totalRowCount = 0;
+	f32 itemHeight = 0;
 };
 
 struct MemoryStream

@@ -134,6 +134,8 @@ OpenGLGraphicsProvider::~OpenGLGraphicsProvider()
 bool OpenGLGraphicsProvider::initialize()
 {
 	GLenum errGlew = 0;
+	GLchar errorLog[1024] = { 0 };
+
 	glewExperimental = GL_TRUE;
 	errGlew = glewInit();
 
@@ -167,7 +169,6 @@ bool OpenGLGraphicsProvider::initialize()
 	OGL_CHECK_ERROR;
 
 	{
-		GLchar errorLog[1024] = { 0 };
 		glGetProgramInfoLog((GLuint)program, 1024, NULL, errorLog);
 		OGL_CHECK_ERROR;
 
@@ -189,7 +190,6 @@ bool OpenGLGraphicsProvider::initialize()
 
 	if (!err)
 	{
-		GLchar errorLog[1024] = { 0 };
 		glGetShaderInfoLog((GLuint)pixelShader, 1024, NULL, errorLog);
 		OGL_CHECK_ERROR;
 		printf("Error validating pixel shader: '%s'\n", errorLog);
@@ -201,7 +201,6 @@ bool OpenGLGraphicsProvider::initialize()
 
 	if (!err)
 	{
-		GLchar errorLog[1024] = { 0 };
 		glGetShaderInfoLog((GLuint)vertexShader, 1024, NULL, errorLog);
 		OGL_CHECK_ERROR;
 		printf("Error validating vertex shader: '%s'\n", errorLog);
@@ -217,7 +216,6 @@ bool OpenGLGraphicsProvider::initialize()
 
 	if (success == GL_FALSE)
 	{
-		GLchar errorLog[1024] = { 0 };
 		glGetProgramInfoLog((GLuint)program, 1024, NULL, errorLog);
 		OGL_CHECK_ERROR;
 		printf("Error validating program: '%s'\n", errorLog);

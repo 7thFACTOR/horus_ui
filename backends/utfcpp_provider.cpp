@@ -32,14 +32,21 @@ bool UtfCppProvider::utf32To16(const Utf32String& utf32Str, wchar_t** outUtf16St
 {
 	*outUtf16Str = new wchar_t[utf32Str.size()];
 
-	for (size_t i = 0; i < utf32Str.size(); i++)
+	if (*outUtf16Str)
 	{
-		(*outUtf16Str)[i] = (wchar_t)utf32Str[i];
+		for (size_t i = 0; i < utf32Str.size(); i++)
+		{
+			(*outUtf16Str)[i] = (wchar_t)utf32Str[i];
+		}
+
+		outUtf16StrLen = utf32Str.size();
+
+		return true;
 	}
 
-	outUtf16StrLen = utf32Str.size();
+	outUtf16StrLen = 0;
 
-	return true;
+	return false;
 }
 
 bool UtfCppProvider::utf32To8(const Utf32String& utf32Str, char** outUtf8Str)

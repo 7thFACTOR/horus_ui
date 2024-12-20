@@ -210,7 +210,7 @@ struct Vertex
 {
 	Point position;
 	Point uv;
-	u32 color;
+	u32 color = 0xffffffff;
 	u32 textureIndex = 0; /// what atlas texture array index this vertex is using
 };
 
@@ -291,7 +291,7 @@ struct RenderBatch
 	/// The draw command callback is used when the user wants to render this batch
 	typedef void(*DrawCommandCallback)(void* userdata, RenderBatch& batch);
 	/// User defined command callback
-	DrawCommandCallback commandCallback;
+	DrawCommandCallback commandCallback = nullptr;
 };
 
 /// The graphics provider, used to render UI

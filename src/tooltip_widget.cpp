@@ -74,7 +74,7 @@ bool beginCustomTooltip(f32 width)
 	if ((ctx->currentWidgetId - 1) == ctx->widget.hoveredWidgetId
 		&& ctx->tooltip.show)
 	{
-		auto bodyElemState = ctx->theme->getElement(WidgetElementId::TooltipBody).normalState();
+		auto& bodyElemState = ctx->theme->getElement(WidgetElementId::TooltipBody).normalState();
 
 		beginPopup(
 			width,

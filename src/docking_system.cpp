@@ -229,7 +229,9 @@ void handleDockingMouseMove(const InputEvent& event, DockNode* node)
 	DockNode* hoveredResizingNode = nullptr;
 
 	if (!ds.dragWindow)
+	{
 		hoveredResizingNode = node->findResizeDockNode(event.mouse.point);
+	}
 
 	if (ds.resizingNode || (hoveredResizingNode && hoveredResizingNode->parent))
 	{
@@ -257,7 +259,7 @@ void handleDockingMouseMove(const InputEvent& event, DockNode* node)
 		}
 	}
 
-	auto& mousePos = event.mouse.point;
+	auto mousePos = event.mouse.point;
 
 	if (ds.dragWindow || ds.resizingNode)
 	{
@@ -278,7 +280,6 @@ void handleDockingMouseMove(const InputEvent& event, DockNode* node)
 			{
 				ds.dockToNode = nullptr;
 				ds.dragOntoWindow = nullptr;
-				printf("moved mouse \n");
 
 				// check drag onto the tabs of a window
 				for (auto& wnd : ds.windows)
@@ -310,6 +311,30 @@ void handleDockingMouseMove(const InputEvent& event, DockNode* node)
 
 				// also find the node we're hovering
 				ds.hoveredNode = node->findTargetDockNode(mousePos);
+
+				printf("Mouse pos: %f %f\n", mousePos.x, mousePos.y);
+
+				if (!ds.hoveredNode)
+				{
+					// search all the native windows
+					// we need the screen mouse position
+					auto absMousePos = HORUS_INPUT->getMousePosition();
+					
+					for (auto& pair : ds.rootOsWindowDockNodes)
+					{
+						auto relMousePos = absMousePos - HORUS_INPUT->getWindowPosition(pair.first);
+						printf("Testing mouse pos: %f %f\n", relMousePos.x, relMousePos.y);
+						ds.hoveredNode = pair.second->findTargetDockNode(relMousePos);
+
+						if (ds.hoveredNode)
+						{
+							mousePos = relMousePos;
+							break;
+						}
+					}
+				}
+
+				printf("hovered node: %p wnd: %p\n", ds.hoveredNode, ds.hoveredNode ? ds.hoveredNode->osWindow : 0);
 			}
 
 			bool isSameNode = ds.hoveredNode == ds.dragWindow->dockNode;
@@ -321,7 +346,7 @@ void handleDockingMouseMove(const InputEvent& event, DockNode* node)
 				ds.draggedRect.x = mousePos.x - ds.draggedRect.width / 2;
 				ds.draggedRect.y = mousePos.y - ds.draggedRect.height / 2;
 				ds.draggedRect.height = ds.dragWindow->tabRect.height * 2; // we have two lines of text when undocking "Undock\nTabname"
-				ds.dockToNode =nullptr;
+				ds.dockToNode = nullptr;
 			}
 			else
 			{
@@ -330,14 +355,15 @@ void handleDockingMouseMove(const InputEvent& event, DockNode* node)
 			}
 
 			// draw docking rects
-			if (ds.dragWindow != ds.dragOntoWindow)
+			if (ds.dragWindow != ds.dragOntoWindow && ds.hoveredNode)
 			{
-				ctx->renderer->setOsWindow(node->osWindow);
-				ctx->renderer->setWindowSize({ node->rect.width, node->rect.height });
+				auto rootNode = ds.rootOsWindowDockNodes[ds.hoveredNode->osWindow];
+
+				ctx->renderer->setOsWindow(rootNode->osWindow);
+				ctx->renderer->setWindowSize({ rootNode->rect.width, rootNode->rect.height });
 				ctx->renderer->begin();
 				auto oldZOrder = ctx->renderer->getZOrder();
 				ctx->renderer->setZOrder(~0);// top most rendering
-				ctx->renderer->cmdSetColor(dockingRectElem.normalState().color);
 
 				if (ds.hoveredNode)
 				{
@@ -371,7 +397,7 @@ void handleDockingMouseMove(const InputEvent& event, DockNode* node)
 						parentRect.y + parentRect.height / 2.0f - smallRectSize / 2.0f,
 						smallRectSize, smallRectSize);
 
-					auto& rootRect = node->rect;
+					auto& rootRect = rootNode->rect;
 
 					auto smallRectRootLeft = Rect(
 						rootRect.x + smallRectGap,
@@ -390,7 +416,7 @@ void handleDockingMouseMove(const InputEvent& event, DockNode* node)
 
 					auto smallRectRootBottom = Rect(
 						rootRect.x + rootRect.width / 2.0f - smallRectSize / 2.0f,
-						rootRect.bottom() - smallRectSize / 2.0f - smallRectGap,
+						rootRect.bottom() - smallRectSize - smallRectGap,
 						smallRectSize, smallRectSize);
 
 					auto isSmallRectLeftHovered = smallRectLeft.contains(mousePos);
@@ -447,7 +473,7 @@ void handleDockingMouseMove(const InputEvent& event, DockNode* node)
 
 					if (isSmallRectRootLeftHovered)
 					{
-						ds.dockToNode = node;
+						ds.dockToNode = rootNode;
 						ds.dockType = DockType::Left;
 						ds.draggedRect = ds.dockToNode->rect;
 						ds.draggedRect.width /= 2.0f;
@@ -455,7 +481,7 @@ void handleDockingMouseMove(const InputEvent& event, DockNode* node)
 
 					if (isSmallRectRootRightHovered)
 					{
-						ds.dockToNode = node;
+						ds.dockToNode = rootNode;
 						ds.dockType = DockType::Right;
 						ds.draggedRect = ds.dockToNode->rect;
 						ds.draggedRect.x += ds.draggedRect.width / 2.0f;
@@ -464,7 +490,7 @@ void handleDockingMouseMove(const InputEvent& event, DockNode* node)
 
 					if (isSmallRectRootTopHovered)
 					{
-						ds.dockToNode = node;
+						ds.dockToNode = rootNode;
 						ds.dockType = DockType::Top;
 						ds.draggedRect = ds.dockToNode->rect;
 						ds.draggedRect.height /= 2.0f;
@@ -472,11 +498,12 @@ void handleDockingMouseMove(const InputEvent& event, DockNode* node)
 
 					if (isSmallRectRootBottomHovered)
 					{
-						ds.dockToNode = node;
+						ds.dockToNode = rootNode;
 						ds.dockType = DockType::Bottom;
 						ds.draggedRect = ds.dockToNode->rect;
 						ds.draggedRect.y += ds.draggedRect.height / 2.0f;
 						ds.draggedRect.height /= 2.0f;
+						ds.draggedRect.height -= 2;
 					}
 
 					ctx->renderer->cmdSetColor(isSmallRectLeftHovered ? dockingDialRectVSplitElem.hoveredState().color : dockingDialRectVSplitElem.normalState().color);
@@ -525,6 +552,7 @@ void handleDockingMouseMove(const InputEvent& event, DockNode* node)
 						dockingDialRectHSplitElem.normalState().border, smallRectRootBottom, ctx->globalScale);
 				}
 
+				ctx->renderer->cmdSetColor(dockingRectElem.normalState().color);
 				ctx->renderer->cmdDrawImageBordered(dockingRectElem.normalState().image, dockingRectElem.normalState().border, ds.draggedRect, ctx->globalScale);
 				ctx->renderer->cmdSetFont(dockingRectElem.normalState().font);
 				ctx->renderer->cmdSetColor(dockingRectElem.normalState().textColor);

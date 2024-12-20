@@ -20,7 +20,7 @@ protected:
 		Font font;
 		std::string name;
 		std::string filename;
-		u32 size;
+		u32 size = 0;
 		u32 usageCount = 0;
 	};
 

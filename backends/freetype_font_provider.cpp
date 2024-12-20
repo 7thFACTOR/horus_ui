@@ -12,7 +12,7 @@ namespace hui
 {
 struct FTContextInfo
 {
-	FT_Library libHandle;
+	FT_Library libHandle = nullptr;
 	bool hasUserLibHandle = false;
 };
 

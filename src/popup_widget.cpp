@@ -222,7 +222,7 @@ void endPopup()
 		forceRepaint();
 	}
 
-	auto bodyElemState = ctx->theme->getElement(popup.widgetElementId).normalState();
+	auto& bodyElemState = ctx->theme->getElement(popup.widgetElementId).normalState();
 	popup.height = (ctx->penPosition.y - ctx->layoutStack.back().position.y) + bodyElemState.border * 2.0f * ctx->globalScale - ctx->spacing * ctx->globalScale;
 	
 	ctx->penPosition = ctx->layoutStack.back().savedPenPosition;
@@ -243,7 +243,7 @@ void endPopup()
 
 void closePopup()
 {
-	auto& popup = ctx->popupStack[ctx->popupIndex - 1];
+	auto& popup = ctx->popupStack[(size_t)ctx->popupIndex - 1];
 
 	popup.active = false;
 

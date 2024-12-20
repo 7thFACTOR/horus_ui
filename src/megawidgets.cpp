@@ -78,10 +78,9 @@ bool vecEditorInternal(f64& x, f64& y, f64& z, f64 scrollStep, bool useZ)
 		{
 			value = atof(strAxis);
 			f32 dx = hui::getInputEvent().mouse.point.x - lastMousePos.x;
-
 			f32 unitPerPixel = scrollStep;
 
-			value += dx * unitPerPixel;
+			value += (f64)dx * unitPerPixel;
 			lastMousePos = hui::getInputEvent().mouse.point;
 			hui::toString((f32)value, strAxis, maxStrSize);
 			modified = true;

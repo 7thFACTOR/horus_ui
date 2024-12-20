@@ -124,9 +124,19 @@ void DockNode::removeWindow(Window* window)
 
 	if (iter != windows.end())
 	{
+		auto idx = std::distance(windows.begin(), iter);
+
 		(*iter)->dockNode = nullptr;
 		windows.erase(iter);
-	}
+
+		if (selectedTabIndex == idx)
+		{
+			if (selectedTabIndex > 0)
+			{
+				selectedTabIndex--;
+			}
+		}
+ 	}
 }
 
 void DockNode::gatherWindowTabsNodes(std::vector<DockNode*>& outNodes)
@@ -369,7 +379,7 @@ void DockNode::debug(i32 level)
 	default: break;
 	}
 
-	printf("%s%s rect(%d,%d,%d,%d) tabIdx:%d osWnd:%p\n", tabs.c_str(), name.c_str(), (i32)rect.x, (i32)rect.y, (i32)rect.width, (i32)rect.height, selectedTabIndex, osWindow);
+	printf("%s%s rect(%d,%d,%d,%d) tabIdx:%d osWnd:%p\n", tabs.c_str(), name.c_str(), (i32)rect.x, (i32)rect.y, (i32)rect.width, (i32)rect.height, (u32)selectedTabIndex, osWindow);
 
 	if (!windows.empty())
 	{
@@ -438,10 +448,12 @@ DockNode* DockNode::findResizeDockNode(const Point& pt)
 
 DockNode* DockNode::findTargetDockNode(const Point& pt)
 {
-	if (parent && (type == Type::None || type == Type::Tabs))
+	if ((type == Type::None || type == Type::Tabs))
 	{
 		if (rect.contains(pt))
+		{
 			return this;
+		}
 	}
 	else
 	{

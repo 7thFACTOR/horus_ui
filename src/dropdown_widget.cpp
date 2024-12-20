@@ -11,8 +11,8 @@ namespace hui
 {
 bool dropdown(i32& selectedIndex, const char** items, u32 itemCount, u32 maxVisibleDropDownItems)
 {
-	auto bodyElem = ctx->theme->getElement(WidgetElementId::DropdownBody);
-	auto arrowElem = ctx->theme->getElement(WidgetElementId::DropdownArrow);
+	auto& bodyElem = ctx->theme->getElement(WidgetElementId::DropdownBody);
+	auto& arrowElem = ctx->theme->getElement(WidgetElementId::DropdownArrow);
 
 	addWidgetItem(bodyElem.normalState().height * ctx->globalScale);
 	buttonBehavior();
@@ -61,7 +61,7 @@ bool dropdown(i32& selectedIndex, const char** items, u32 itemCount, u32 maxVisi
 	// add the border of the body element
 	ctx->widget.rect.x += bodyElemState->border * ctx->globalScale;
 
-	auto posForPopup = ctx->widget.rect.bottomLeft();
+	const auto& posForPopup = ctx->widget.rect.bottomLeft();
 
 	if (selectedItemText)
 	{
@@ -98,7 +98,7 @@ bool dropdown(i32& selectedIndex, const char** items, u32 itemCount, u32 maxVisi
 
 	if (ctx->dropdownState.active && ctx->currentWidgetId == ctx->dropdownState.widgetId)
 	{
-		auto bodyElem = ctx->theme->getElement(WidgetElementId::DropdownBody);
+		auto& bodyElem = ctx->theme->getElement(WidgetElementId::DropdownBody);
 
 		// we need exact width, so don't scale the popup's width
 		ctx->popupUseGlobalScale = false;
@@ -108,7 +108,7 @@ bool dropdown(i32& selectedIndex, const char** items, u32 itemCount, u32 maxVisi
 			posForPopup,
 			WidgetElementId::ButtonBody);
 
-		auto selectableBodyElem = ctx->theme->getElement(WidgetElementId::SelectableBody).normalState();
+		auto& selectableBodyElem = ctx->theme->getElement(WidgetElementId::SelectableBody).normalState();
 
 		pushSpacing(0);
 		pushLayoutPadding(0);

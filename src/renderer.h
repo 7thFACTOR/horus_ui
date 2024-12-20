@@ -324,7 +324,7 @@ protected:
 	Font* currentFont = nullptr;
 	Atlas* currentAtlas = nullptr;
 	Point windowSize;
-	u32 currentColor;
+	u32 currentColor = 0xffffffff;
 	i32 zOrder = 0;
 	u32 atlasTextureIndex = 0;
 };

@@ -190,7 +190,7 @@ bool dockWindow(Window* wnd, DockNode* targetNode, DockType dockType, u32 tabInd
 		}
 	}
 
-	auto checkRelocateWindowsOfNode = [](DockNode* targetParent)
+	auto checkAndRelocateWindowsOfNode = [](DockNode* targetParent)
 	{
 		DockNode* newNode = nullptr;
 
@@ -232,7 +232,7 @@ bool dockWindow(Window* wnd, DockNode* targetNode, DockType dockType, u32 tabInd
 		if (targetParent->type == DockNode::Type::Horizontal || targetParent->type == DockNode::Type::Tabs)
 		{
 			// if there is no children nodes but has windows, relocate to new node
-			auto newTarget = checkRelocateWindowsOfNode(targetParent);
+			auto newTarget = checkAndRelocateWindowsOfNode(targetParent);
 			
 			if (newTarget) target = newTarget;
 
@@ -380,7 +380,7 @@ bool dockWindow(Window* wnd, DockNode* targetNode, DockType dockType, u32 tabInd
 		if (targetParent->type == DockNode::Type::Horizontal || targetParent->type == DockNode::Type::Tabs)
 		{
 			// if there is no children nodes but has windows, relocate to new node
-			auto newTarget = checkRelocateWindowsOfNode(targetParent);
+			auto newTarget = checkAndRelocateWindowsOfNode(targetParent);
 
 			if (newTarget) target = newTarget;
 
@@ -535,7 +535,7 @@ bool dockWindow(Window* wnd, DockNode* targetNode, DockType dockType, u32 tabInd
 		if (targetParent->type == DockNode::Type::Vertical || targetParent->type == DockNode::Type::Tabs)
 		{
 			// if there is no children nodes but has windows, relocate to new node
-			auto newTarget = checkRelocateWindowsOfNode(targetParent);
+			auto newTarget = checkAndRelocateWindowsOfNode(targetParent);
 
 			if (newTarget) target = newTarget;
 
@@ -684,7 +684,7 @@ bool dockWindow(Window* wnd, DockNode* targetNode, DockType dockType, u32 tabInd
 		if (targetParent->type == DockNode::Type::Vertical || targetParent->type == DockNode::Type::Tabs)
 		{
 			// if there is no children nodes but has windows, relocate to new node
-			auto newTarget = checkRelocateWindowsOfNode(targetParent);
+			auto newTarget = checkAndRelocateWindowsOfNode(targetParent);
 
 			if (newTarget) target = newTarget;
 

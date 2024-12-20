@@ -28,7 +28,7 @@ void beginMenuBar()
 
 void endMenuBar()
 {
-	auto menuBarElemState = ctx->theme->getElement(WidgetElementId::MenuBarBody).normalState();
+	auto& menuBarElemState = ctx->theme->getElement(WidgetElementId::MenuBarBody).normalState();
 	f32 height = menuBarElemState.height * ctx->globalScale;
 
 	ctx->penPosition.x = ctx->layoutStack.back().position.x;
@@ -38,8 +38,8 @@ void endMenuBar()
 
 bool beginMenuInternal(const char* labelText, SelectableFlags stateFlags, bool contextMenu)
 {
-	auto menuBarItemElem = ctx->theme->getElement(WidgetElementId::MenuBarItem);
-	auto menuBarItemElemState = menuBarItemElem.normalState();
+	auto& menuBarItemElem = ctx->theme->getElement(WidgetElementId::MenuBarItem);
+	auto& menuBarItemElemState = menuBarItemElem.normalState();
 	Utf32String* uniStr = ctx->textCache->getText(labelText);
 	FontTextSize fsize = menuBarItemElemState.font->computeTextSize(*uniStr);
 	auto isMenuBarItem = ctx->menuDepth == 0;

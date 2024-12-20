@@ -9,8 +9,8 @@ namespace hui
 {
 void beginScrollView(f32 size, f32 scrollPos, f32 virtualHeight)
 {
-	auto scrollViewElemState = ctx->theme->getElement(WidgetElementId::ScrollViewBody).normalState();
-	auto scrollViewScrollThumbElemState = ctx->theme->getElement(WidgetElementId::ScrollViewScrollThumb).normalState();
+	auto& scrollViewElemState = ctx->theme->getElement(WidgetElementId::ScrollViewBody).normalState();
+	auto& scrollViewScrollThumbElemState = ctx->theme->getElement(WidgetElementId::ScrollViewScrollThumb).normalState();
 
 	ctx->scrollViewStack[ctx->scrollViewDepth].size = size /* * ctx->globalScale*/; //TODO: scale height with UI scale ?
 	ctx->scrollViewStack[ctx->scrollViewDepth].virtualHeight = virtualHeight;
@@ -55,13 +55,13 @@ void beginScrollView(f32 size, f32 scrollPos, f32 virtualHeight)
 f32 endScrollView()
 {
 	ctx->scrollViewDepth--;
-	auto prevPenPos = ctx->layoutStack.back().savedPenPosition;
+	auto& prevPenPos = ctx->layoutStack.back().savedPenPosition;
 	ctx->layoutStack.pop_back();
-	auto clipRect = ctx->renderer->getClipRect();
+	auto& clipRect = ctx->renderer->getClipRect();
 	ctx->renderer->popClipRect();
 	auto& scrollViewInfo = ctx->scrollViewStack[ctx->scrollViewDepth];
-	auto fullRect = scrollViewInfo.rect;
-	auto scrollViewElemState = ctx->theme->getElement(WidgetElementId::ScrollViewBody).normalState();
+	const auto& fullRect = scrollViewInfo.rect;
+	auto& scrollViewElemState = ctx->theme->getElement(WidgetElementId::ScrollViewBody).normalState();
 	f32 scrollPos = scrollViewInfo.scrollPosition;
 	f32 size = scrollViewInfo.size;
 	f32 scrollContentSize = ctx->penPosition.y - prevPenPos.y;

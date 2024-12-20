@@ -7,7 +7,7 @@ namespace hui
 {
 struct StbRectPackProxy
 {
-	stbrp_context ctx;
+	stbrp_context ctx = {};
 	std::vector<stbrp_rect> rects;
 	std::vector<stbrp_node> nodes;
 };

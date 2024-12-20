@@ -87,26 +87,26 @@ int main(int argc, char** args)
 			{
 				auto osWndSize = HORUS_INPUT->getWindowClientSize(wnd);
 				auto wrc = hui::getWindowClientRect();
-				auto rc = hui::beginViewport();
-				// some user drawing code, a triangle
-				static f32 x = 1;
-				static f32 t = 1;
-				i32 vp[4];
-				
-				glGetIntegerv(GL_VIEWPORT, vp);
-				glViewport(wrc.x, osWndSize.y - wrc.y - wrc.height, wrc.width, wrc.height);
-				glBegin(GL_TRIANGLES);
-				glColor3f(1, 0, 0);
-				glVertex2f(0, 0);
-				glColor3f(1, 1, 0);
-				glVertex2f(x, 0);
-				glColor3f(1, 0, 1);
-				glVertex2f(x, 1);
-				glEnd();
-				x = sinf(t);
-				t += 0.01f;
-				hui::endViewport();
-				glViewport(vp[0], vp[1], vp[2], vp[3]);
+				//auto rc = hui::beginViewport();
+				//// some user drawing code, a triangle
+				//static f32 x = 1;
+				//static f32 t = 1;
+				//i32 vp[4];
+				//
+				//glGetIntegerv(GL_VIEWPORT, vp);
+				//glViewport(wrc.x, osWndSize.y - wrc.y - wrc.height, wrc.width, wrc.height);
+				//glBegin(GL_TRIANGLES);
+				//glColor3f(1, 0, 0);
+				//glVertex2f(0, 0);
+				//glColor3f(1, 1, 0);
+				//glVertex2f(x, 0);
+				//glColor3f(1, 0, 1);
+				//glVertex2f(x, 1);
+				//glEnd();
+				//x = sinf(t);
+				//t += 0.01f;
+				//hui::endViewport();
+//				glViewport(vp[0], vp[1], vp[2], vp[3]);
 			};
 			
 			hui::updateDockingSystem();

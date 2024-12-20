@@ -63,7 +63,7 @@ void beginTabGroup(TabIndex selectedIndex)
 
 TabIndex endTabGroup()
 {
-	auto tabGroupElemState = ctx->theme->getElement(WidgetElementId::TabGroupBody).normalState();
+	auto& tabGroupElemState = ctx->theme->getElement(WidgetElementId::TabGroupBody).normalState();
 	f32 height = tabGroupElemState.height * ctx->globalScale;
 
 	ctx->penPosition.x = ctx->layoutStack.back().position.x;
@@ -77,9 +77,9 @@ TabIndex endTabGroup()
 
 void tab(const char* labelText, HImage icon)
 {
-	auto tabGroupElemState = ctx->theme->getElement(WidgetElementId::TabGroupBody).normalState();
-	auto tabActiveElem = ctx->theme->getElement(WidgetElementId::TabBodyActive);
-	auto tabInactiveElem = ctx->theme->getElement(WidgetElementId::TabBodyInactive);
+	auto& tabGroupElemState = ctx->theme->getElement(WidgetElementId::TabGroupBody).normalState();
+	auto& tabActiveElem = ctx->theme->getElement(WidgetElementId::TabBodyActive);
+	auto& tabInactiveElem = ctx->theme->getElement(WidgetElementId::TabBodyInactive);
 	auto tabElemState = &tabActiveElem.normalState();
 	
 	Utf32String* uniStr = ctx->textCache->getText(labelText);

@@ -22,9 +22,9 @@ bool textInput(
 	const char* passwordChar)
 {
 	auto bodyElem = &ctx->theme->getElement(WidgetElementId::TextInputBody);
-	auto bodyTextCaretElemState = ctx->theme->getElement(WidgetElementId::TextInputCaret).normalState();
-	auto bodyTextSelectionElemState = ctx->theme->getElement(WidgetElementId::TextInputSelection).normalState();
-	auto bodyTextDefaultElemState = ctx->theme->getElement(WidgetElementId::TextInputDefaultText).normalState();
+	auto& bodyTextCaretElemState = ctx->theme->getElement(WidgetElementId::TextInputCaret).normalState();
+	auto& bodyTextSelectionElemState = ctx->theme->getElement(WidgetElementId::TextInputSelection).normalState();
+	auto& bodyTextDefaultElemState = ctx->theme->getElement(WidgetElementId::TextInputDefaultText).normalState();
 
 	addWidgetItem(fmaxf(bodyElem->normalState().height * ctx->globalScale, bodyElem->normalState().font->getMetrics().height));
 

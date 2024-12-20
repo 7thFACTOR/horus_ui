@@ -721,7 +721,7 @@ public:
 			return 0.0f;
 		}
 
-		return (f32)(x * other.x + y * other.y) / sqrt(m);
+		return (f32)(x * other.x + y * other.y) / sqrtf(m);
 	}
 
 	void normalize()
@@ -812,18 +812,18 @@ public:
 		u1 = (x - lineA.x) / u1;
 		u2 = (y - lineA.y) / u2;
 
-		return (fabs(u1 - u2) <= tolerance);
+		return (fabsf(u1 - u2) <= tolerance);
 	}
 
 	inline bool isAlmosEqual(const Point& other, f32 tolerance = 0.001f) const
 	{
-		return fabs(x - other.x) <= tolerance
-			&& fabs(y - other.y) <= tolerance;
+		return fabsf(x - other.x) <= tolerance
+			&& fabsf(y - other.y) <= tolerance;
 	}
 
 	inline f32 getLength() const
 	{
-		return sqrt(x * x + y * y);
+		return sqrtf(x * x + y * y);
 	}
 
 	inline f32 getSquaredLength() const
@@ -1199,7 +1199,7 @@ struct Rect
 		return newRect;
 	}
 
-	inline Rect expand(f32 amount)
+	inline Rect expand(f32 amount) const
 	{
 		return {
 			x - amount,
@@ -1209,7 +1209,7 @@ struct Rect
 		};
 	}
 
-	inline Rect contract(f32 amount)
+	inline Rect contract(f32 amount) const
 	{
 		return expand(-amount);
 	}
@@ -1246,10 +1246,10 @@ struct Rect
 	inline bool operator != (const Rect& other) const
 	{
 		constexpr f32 epsilon = 0.00001f;
-		return fabs(x - other.x) > epsilon
-			|| fabs(y - other.y) > epsilon
-			|| fabs(width - other.width) > epsilon
-			|| fabs(height - other.height) > epsilon;
+		return fabsf(x - other.x) > epsilon
+			|| fabsf(y - other.y) > epsilon
+			|| fabsf(width - other.width) > epsilon
+			|| fabsf(height - other.height) > epsilon;
 	}
 };
 
@@ -1313,7 +1313,7 @@ struct InputEvent
 
 	union
 	{
-		MouseData mouse;
+		MouseData mouse = {};
 		KeyData key;
 		TextData text;
 		OsDragDropData drop;

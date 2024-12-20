@@ -53,8 +53,8 @@ bool clipLineToRect(
 	Point& newUv1, Point& newUv2)
 {
 	// Compute region codes for P1, P2
-	int code1 = computeLineClipCode(p1, rect);
-	int code2 = computeLineClipCode(p2, rect);
+	i32 code1 = computeLineClipCode(p1, rect);
+	i32 code2 = computeLineClipCode(p2, rect);
 
 	// Initialize line as outside the rectangular window
 	bool accept = false;
@@ -84,8 +84,8 @@ bool clipLineToRect(
 		{
 			// Some segment of line lies within the
 			// rectangle
-			int code_out;
-			f32 x, y;
+			i32 code_out = 0;
+			f32 x = 0, y = 0;
 			Point uv = uv1;
 
 			// At least one endpoint is outside the

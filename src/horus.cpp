@@ -667,7 +667,9 @@ bool packAtlas(HAtlas atlas, u32 border)
 
 void updateDockingSystem()
 {
-	for (auto& wnd : ctx->dockingState.rootOsWindowDockNodes)
+	auto windows = ctx->dockingState.rootOsWindowDockNodes;
+
+	for (auto& wnd : windows)
 	{
 		handleDockNodeEvents(wnd.second);
 	}
@@ -1408,7 +1410,7 @@ void nextColumn()
 		{
 			// increment the columns' current column X
 			ctx->penPosition = {
-				columnsLayout.position.x += columnsLayout.columnPixelSizes[columnsLayout.currentColumn - 1] + ctx->columnSpacing,
+				columnsLayout.position.x += columnsLayout.columnPixelSizes[(size_t)columnsLayout.currentColumn - 1] + ctx->columnSpacing,
 				columnsLayout.position.y };
 
 			// lets add a new column
