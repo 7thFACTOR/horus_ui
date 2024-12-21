@@ -32,7 +32,7 @@ void destroyOsWindow(HOsWindow osWnd)
 		dockNode->closedOsWindowRect = HORUS_INPUT->getWindowRect(osWnd);	
 	}
 
-	HORUS_INPUT->destroyWindow(osWnd);
+	ctx->dockingState.osWindowsToDelete.push_back(osWnd);
 
 	auto iter = std::find(ctx->osWindows.begin(), ctx->osWindows.end(), osWnd);
 
@@ -95,7 +95,7 @@ void deleteRootDockNode(HOsWindow window)
 	if (node)
 	{
 		ctx->dockingState.rootOsWindowDockNodes.erase(window);
-		delete node;
+		ctx->dockingState.dockNodesToDelete.push_back(node);
 	}
 }
 
@@ -124,7 +124,9 @@ Window* createWindow(const std::string& id, DockNode* targetNode, DockType dockT
 	ctx->dockingState.windows[id] = newWnd;
 
 	if (targetNode)
+	{
 		dockWindow(newWnd, targetNode, dockType);
+	}
 
 	return newWnd;
 }
@@ -139,7 +141,7 @@ void deleteWindow(Window* wnd)
 	{
 		destroyOsWindow(node->osWindow);
 		ctx->dockingState.rootOsWindowDockNodes.erase(node->osWindow);
-		delete node;
+		ctx->dockingState.dockNodesToDelete.push_back(node);
 	}
 }
 
@@ -846,7 +848,7 @@ bool dockWindow(Window* wnd, DockNode* targetNode, DockType dockType, u32 tabInd
 		if (source && source->windows.size() == 1)
 		{
 			source->removeFromParent();
-			delete source;
+			ctx->dockingState.dockNodesToDelete.push_back(source);
 		}
 		else
 		{
@@ -871,7 +873,7 @@ bool dockWindow(Window* wnd, DockNode* targetNode, DockType dockType, u32 tabInd
 			if (source->windows.size() == 1)
 			{
 				source->removeFromParent();
-				delete source;
+				ctx->dockingState.dockNodesToDelete.push_back(source);
 				source = nullptr;
 			}
 			else
@@ -942,7 +944,7 @@ void dockNodeTabs(DockNode* node)
 		ctx->renderer->pushClipRect(rc, false);
 		beginTabGroup(node->selectedTabIndex);
 
-		for (size_t i = 0; i < node->windows.size(); i++)
+		for (auto i = 0; i < node->windows.size(); i++)
 		{
 			hui::tab(node->windows[i]->title.c_str(), node->windows[i]->icon);
 			node->windows[i]->tabRect = ctx->widget.rect;

@@ -23,8 +23,6 @@ void DockNode::setChildVisible(DockNode* child, bool visible)
 
 		children.erase(iterChild);
 		hiddenChildren.push_back(child);
-
-
 	}
 	else
 	{
@@ -76,8 +74,8 @@ void DockNode::removeWindowsAndDeleteChildrenRecursive()
 		
 		if (iter != ctx->dockingState.windows.end())
 			ctx->dockingState.windows.erase(iter);
-		
-		delete wnd;
+
+		ctx->dockingState.windowsToDelete.push_back(wnd);
 	}
 
 	windows.clear();
@@ -85,7 +83,7 @@ void DockNode::removeWindowsAndDeleteChildrenRecursive()
 	for (auto& child : children)
 	{
 		child->removeWindowsAndDeleteChildrenRecursive();
-		delete child;
+		ctx->dockingState.dockNodesToDelete.push_back(child);
 	}
 
 	children.clear();
@@ -112,8 +110,8 @@ void DockNode::removeFromParent()
 	
 		if (iter != ctx->osWindows.end())
 			ctx->osWindows.erase(iter);
-		
-		HORUS_INPUT->destroyWindow(osWindow);
+
+		ctx->dockingState.osWindowsToDelete.push_back(osWindow);
 		osWindow = 0;
 	}
 }
@@ -333,7 +331,7 @@ bool DockNode::checkRedundancy()
 		
 		selectedTabIndex = child->selectedTabIndex;
 		type = child->type;
-		delete child;
+		ctx->dockingState.dockNodesToDelete.push_back(child);
 		computeRect();
 	}
 
@@ -357,8 +355,11 @@ bool DockNode::checkRedundancy()
 			deleteThis = true;
 		}
 
-		if (deleteThis) delete this;
-		
+		if (deleteThis)
+		{
+			ctx->dockingState.dockNodesToDelete.push_back(this);
+		}
+
 		return true;
 	}
 

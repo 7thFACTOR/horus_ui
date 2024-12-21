@@ -318,6 +318,30 @@ void beginFrame()
 	
 }
 
+void deferredDeleteObjects()
+{
+	for (auto& wnd : ctx->dockingState.windowsToDelete)
+	{
+		delete wnd;
+	}
+
+	ctx->dockingState.windowsToDelete.clear();
+
+	for (auto& dn : ctx->dockingState.dockNodesToDelete)
+	{
+		delete dn;
+	}
+
+	ctx->dockingState.dockNodesToDelete.clear();
+
+	for (auto& wnd : ctx->dockingState.osWindowsToDelete)
+	{
+		HORUS_INPUT->destroyWindow(wnd);
+	}
+
+	ctx->dockingState.osWindowsToDelete.clear();
+}
+
 void endFrame()
 {
 	if (ctx->theme->atlas->packWithLastUsedParams())
@@ -393,6 +417,8 @@ void update(f32 deltaTime)
 		// track mouse pos
 		ctx->tooltip.position = ctx->providers->input->getMousePosition();
 	}
+
+	deferredDeleteObjects();
 }
 
 bool hasNothingToDo()
@@ -667,7 +693,7 @@ bool packAtlas(HAtlas atlas, u32 border)
 
 void updateDockingSystem()
 {
-	auto windows = ctx->dockingState.rootOsWindowDockNodes;
+	auto& windows = ctx->dockingState.rootOsWindowDockNodes;
 
 	for (auto& wnd : windows)
 	{

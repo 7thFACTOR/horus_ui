@@ -274,6 +274,9 @@ struct DockingState
 {
 	std::unordered_map<HOsWindow, struct DockNode*> rootOsWindowDockNodes;
 	std::unordered_map<std::string, Window*> windows;
+	std::vector<Window*> windowsToDelete;
+	std::vector<DockNode*> dockNodesToDelete;
+	std::vector<HOsWindow> osWindowsToDelete;
 	DockNode* currentDockNode = nullptr;
 	bool closeWindow = false;
 	// variables for dragging views around

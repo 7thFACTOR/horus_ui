@@ -20,130 +20,6 @@
 
 namespace hui
 {
-/*
-void updateDockingSystemInternal(bool isLastEvent)
-{
-	// if we close a dockable native window
-	if (hui::getInputEvent().type == InputEvent::Type::WindowClose
-		&& hui::getInputEvent().window != HORUS_INPUT->getMainWindow())
-	{
-		auto node = getRootDockNode(hui::getInputEvent().window);		
-		deleteRootDockNode(hui::getInputEvent().window);
-		destroyOsWindow(hui::getInputEvent().window);
-	}
-
-	std::vector<DockNode*> nodes;
-
-	for (auto& nodeIter : ctx->dockingState.rootOsWindowDockNodes)
-	{
-		auto rootNode = nodeIter.second;
-		auto osWnd = rootNode->osWindow;
-
-		if (!osWnd)
-		{
-			continue;
-		}
-
-		auto osWndRect = ctx->providers->input->getWindowRect(osWnd);
-
-		osWndRect.x = 0;
-		osWndRect.y = 0;
-
-		if ((hui::getInputEvent().type == InputEvent::Type::WindowResize
-			|| hui::getInputEvent().type == InputEvent::Type::WindowGotFocus)
-			&& hui::getInputEvent().window == osWnd)
-		{
-			hui::forceRepaint();
-		}
-
-		ctx->dockingState.currentDockNode = rootNode;
-		ctx->dockingState.closeWindow = false;
-		handleDockNodeResize(rootNode);
-
-		if ((isLastEvent
-			&& !ctx->skipRenderAndInput
-			&& !ctx->renderer->disableRendering
-			&& !ctx->renderer->skipRender)
-			|| ctx->dockingTabPane)
-		{
-			hui::presentWindow(wnd);
-		}
-
-		if (ctx->dockingState.closeWindow)
-		{
-			hui::deleteRootDockNode(wnd);
-			hui::destroyWindow(wnd);
-		}
-	}
-}
-
-void updateDockingSystem(bool isLastEvent)
-{
-	if (hui::hasNothingToDo())
-	{
-		std::this_thread::yield();
-		return;
-	}
-
-	ctx->mustRedraw = false;
-	hui::updateDockingSystemInternal(isLastEvent);
-
-	//auto doLogicAndRender = [](bool isLastEvent)
-	//{
-	//	ctx->renderer->disableRendering = !isLastEvent && !ctx->skipRenderAndInput;
-	//};
-
-	//if (ctx->events.size() == 0)
-	//{
-	//	doLogicAndRender(true);
-	//}
-
-	//// execute logic and render for all events that might be in the queue
-	//for (int i = 0; i < ctx->events.size(); i++)
-	//{
-	//	ctx->event = ctx->events[i];
-	//	doLogicAndRender(i == ctx->events.size() - 1);
-	//}
-	//
-}*/
-
-void dockingSystemLoop()
-{
-	/*
-#ifdef HORUS_TIMING_DEBUG
-	using namespace std;
-	using namespace std::chrono;
-
-	high_resolution_clock::time_point t1, t2;
-	duration<double, std::milli> total;
-#endif
-	while (!hui::mustQuit())
-	{
-#ifdef HORUS_TIMING_DEBUG
-		t1 = high_resolution_clock::now();
-#endif
-
-		updateDockingSystem();
-
-#ifdef HORUS_TIMING_DEBUG
-		t2 = high_resolution_clock::now();
-		total = t2 - t1;
-
-		printf("%fms\n", total.count());
-#endif
-	}
-	*/
-}
-
-//void resizeRootViewPaneToSides(ViewPane* viewPane)
-//{
-//	auto rect = getWindowRect(viewPane->window);
-//
-//	viewPane->rect.x = viewPane->sideSpacing[(int)ViewPane::SideSpacing::SideSpacingLeft];
-//	viewPane->rect.y = viewPane->sideSpacing[(int)ViewPane::SideSpacing::SideSpacingTop];
-//	viewPane->rect.width = rect.width - (viewPane->sideSpacing[(int)ViewPane::SideSpacing::SideSpacingLeft] + viewPane->sideSpacing[(int)ViewPane::SideSpacing::SideSpacingRight]);
-//	viewPane->rect.height = rect.height - (viewPane->sideSpacing[(int)ViewPane::SideSpacing::SideSpacingTop] + viewPane->sideSpacing[(int)ViewPane::SideSpacing::SideSpacingBottom]);
-//}
 
 void handleDockingMouseDown(const InputEvent& event, DockNode* node)
 {
@@ -225,7 +101,6 @@ void handleDockingMouseUp(const InputEvent& event, DockNode* node)
 void handleDockingMouseMove(const InputEvent& event, DockNode* node)
 {
 	auto& ds = ctx->dockingState;
-	ds.hoveredNode = node->findTargetDockNode(event.mouse.point);
 	DockNode* hoveredResizingNode = nullptr;
 
 	if (!ds.dragWindow)
@@ -259,7 +134,7 @@ void handleDockingMouseMove(const InputEvent& event, DockNode* node)
 		}
 	}
 
-	auto mousePos = event.mouse.point;
+	Point mousePos = event.mouse.point;
 
 	if (ds.dragWindow || ds.resizingNode)
 	{
@@ -311,30 +186,6 @@ void handleDockingMouseMove(const InputEvent& event, DockNode* node)
 
 				// also find the node we're hovering
 				ds.hoveredNode = node->findTargetDockNode(mousePos);
-
-				printf("Mouse pos: %f %f\n", mousePos.x, mousePos.y);
-
-				if (!ds.hoveredNode)
-				{
-					// search all the native windows
-					// we need the screen mouse position
-					auto absMousePos = HORUS_INPUT->getMousePosition();
-					
-					for (auto& pair : ds.rootOsWindowDockNodes)
-					{
-						auto relMousePos = absMousePos - HORUS_INPUT->getWindowPosition(pair.first);
-						printf("Testing mouse pos: %f %f\n", relMousePos.x, relMousePos.y);
-						ds.hoveredNode = pair.second->findTargetDockNode(relMousePos);
-
-						if (ds.hoveredNode)
-						{
-							mousePos = relMousePos;
-							break;
-						}
-					}
-				}
-
-				printf("hovered node: %p wnd: %p\n", ds.hoveredNode, ds.hoveredNode ? ds.hoveredNode->osWindow : 0);
 			}
 
 			bool isSameNode = ds.hoveredNode == ds.dragWindow->dockNode;
@@ -344,8 +195,8 @@ void handleDockingMouseMove(const InputEvent& event, DockNode* node)
 			{
 				ds.draggedRect = ds.dragWindow->tabRect;
 				ds.draggedRect.x = mousePos.x - ds.draggedRect.width / 2;
-				ds.draggedRect.y = mousePos.y - ds.draggedRect.height / 2;
-				ds.draggedRect.height = ds.dragWindow->tabRect.height * 2; // we have two lines of text when undocking "Undock\nTabname"
+				ds.draggedRect.y = mousePos.y - ds.draggedRect.height;
+				ds.draggedRect.height = ds.dragWindow->tabRect.height; // we have two lines of text when undocking "Undock\nTabname"
 				ds.dockToNode = nullptr;
 			}
 			else
@@ -355,9 +206,9 @@ void handleDockingMouseMove(const InputEvent& event, DockNode* node)
 			}
 
 			// draw docking rects
-			if (ds.dragWindow != ds.dragOntoWindow && ds.hoveredNode)
+			if (ds.dragWindow != ds.dragOntoWindow)
 			{
-				auto rootNode = ds.rootOsWindowDockNodes[ds.hoveredNode->osWindow];
+				auto rootNode = node;
 
 				ctx->renderer->setOsWindow(rootNode->osWindow);
 				ctx->renderer->setWindowSize({ rootNode->rect.width, rootNode->rect.height });
@@ -365,147 +216,155 @@ void handleDockingMouseMove(const InputEvent& event, DockNode* node)
 				auto oldZOrder = ctx->renderer->getZOrder();
 				ctx->renderer->setZOrder(~0);// top most rendering
 
+				// draw the locations where we can dock the pane
+				const f32 smallRectSize = 64 * ctx->globalScale; //TODO: make it settings
+				const f32 smallRectGap = 1 * ctx->globalScale; //TODO: make it settings
+				auto& rootRect = rootNode->rect;
+				auto parentRect = ds.hoveredNode ? ds.hoveredNode->rect : rootRect;
+
+				Rect smallRectLeft;
+				Rect smallRectRight;
+				Rect smallRectTop;
+				Rect smallRectBottom;
+				Rect smallRectMiddle;
+
 				if (ds.hoveredNode)
 				{
-					// draw the locations where we can dock the pane
-					const f32 smallRectSize = 64 * ctx->globalScale; //TODO: make it settings
-					const f32 smallRectGap = 1 * ctx->globalScale; //TODO: make it settings
-					auto parentRect = ds.hoveredNode->rect;
-
-					auto smallRectLeft = Rect(
+					smallRectLeft = Rect(
 						parentRect.x + parentRect.width / 2.0f - smallRectSize / 2.0f - smallRectGap - smallRectSize,
 						parentRect.y + parentRect.height / 2.0f - smallRectSize / 2.0f,
 						smallRectSize, smallRectSize);
 
-					auto smallRectRight = Rect(
+					smallRectRight = Rect(
 						parentRect.x + parentRect.width / 2.0f + smallRectSize / 2.0f + smallRectGap,
 						parentRect.y + parentRect.height / 2.0f - smallRectSize / 2.0f,
 						smallRectSize, smallRectSize);
 
-					auto smallRectTop = Rect(
+					smallRectTop = Rect(
 						parentRect.x + parentRect.width / 2.0f - smallRectSize / 2.0f,
 						parentRect.y + parentRect.height / 2.0f - smallRectSize / 2.0f - smallRectSize - smallRectGap,
 						smallRectSize, smallRectSize);
 
-					auto smallRectBottom = Rect(
+					smallRectBottom = Rect(
 						parentRect.x + parentRect.width / 2.0f - smallRectSize / 2.0f,
 						parentRect.y + parentRect.height / 2 + smallRectSize / 2 + smallRectGap,
 						smallRectSize, smallRectSize);
 
-					auto smallRectMiddle = Rect(
+					smallRectMiddle = Rect(
 						parentRect.x + parentRect.width / 2.0f - smallRectSize / 2.0f,
 						parentRect.y + parentRect.height / 2.0f - smallRectSize / 2.0f,
 						smallRectSize, smallRectSize);
+				}
 
-					auto& rootRect = rootNode->rect;
+				auto smallRectRootLeft = Rect(
+					rootRect.x + smallRectGap,
+					rootRect.y + rootRect.height / 2.0f - smallRectSize / 2.0f,
+					smallRectSize, smallRectSize);
 
-					auto smallRectRootLeft = Rect(
-						rootRect.x + smallRectGap,
-						rootRect.y + rootRect.height / 2.0f - smallRectSize / 2.0f,
-						smallRectSize, smallRectSize);
+				auto smallRectRootRight = Rect(
+					rootRect.right() - smallRectGap - smallRectSize,
+					rootRect.y + rootRect.height / 2.0f - smallRectSize / 2.0f,
+					smallRectSize, smallRectSize);
 
-					auto smallRectRootRight = Rect(
-						rootRect.right() - smallRectGap - smallRectSize,
-						rootRect.y + rootRect.height / 2.0f - smallRectSize / 2.0f,
-						smallRectSize, smallRectSize);
+				auto smallRectRootTop = Rect(
+					rootRect.x + rootRect.width / 2.0f - smallRectSize / 2.0f,
+					rootRect.y + smallRectGap,
+					smallRectSize, smallRectSize);
 
-					auto smallRectRootTop = Rect(
-						rootRect.x + rootRect.width / 2.0f - smallRectSize / 2.0f,
-						rootRect.y + smallRectGap,
-						smallRectSize, smallRectSize);
+				auto smallRectRootBottom = Rect(
+					rootRect.x + rootRect.width / 2.0f - smallRectSize / 2.0f,
+					rootRect.bottom() - smallRectSize - smallRectGap,
+					smallRectSize, smallRectSize);
 
-					auto smallRectRootBottom = Rect(
-						rootRect.x + rootRect.width / 2.0f - smallRectSize / 2.0f,
-						rootRect.bottom() - smallRectSize - smallRectGap,
-						smallRectSize, smallRectSize);
+				auto isSmallRectLeftHovered = smallRectLeft.contains(mousePos);
+				auto isSmallRectRightHovered = smallRectRight.contains(mousePos);
+				auto isSmallRectTopHovered = smallRectTop.contains(mousePos);
+				auto isSmallRectBottomHovered = smallRectBottom.contains(mousePos);
+				auto isSmallRectMiddleHovered = smallRectMiddle.contains(mousePos);
 
-					auto isSmallRectLeftHovered = smallRectLeft.contains(mousePos);
-					auto isSmallRectRightHovered = smallRectRight.contains(mousePos);
-					auto isSmallRectTopHovered = smallRectTop.contains(mousePos);
-					auto isSmallRectBottomHovered = smallRectBottom.contains(mousePos);
-					auto isSmallRectMiddleHovered = smallRectMiddle.contains(mousePos);
-					auto isSmallRectRootLeftHovered = smallRectRootLeft.contains(mousePos);
-					auto isSmallRectRootRightHovered = smallRectRootRight.contains(mousePos);
-					auto isSmallRectRootTopHovered = smallRectRootTop.contains(mousePos);
-					auto isSmallRectRootBottomHovered = smallRectRootBottom.contains(mousePos);
+				auto isSmallRectRootLeftHovered = smallRectRootLeft.contains(mousePos);
+				auto isSmallRectRootRightHovered = smallRectRootRight.contains(mousePos);
+				auto isSmallRectRootTopHovered = smallRectRootTop.contains(mousePos);
+				auto isSmallRectRootBottomHovered = smallRectRootBottom.contains(mousePos);
 
-					if (isSmallRectLeftHovered)
-					{
-						ds.dockToNode = ds.hoveredNode;
-						ds.dockType = DockType::Left;
-						ds.draggedRect = parentRect;
-						ds.draggedRect.width /= 2.0f;
-					}
+				if (isSmallRectLeftHovered)
+				{
+					ds.dockToNode = ds.hoveredNode;
+					ds.dockType = DockType::Left;
+					ds.draggedRect = parentRect;
+					ds.draggedRect.width /= 2.0f;
+				}
 
-					if (isSmallRectRightHovered)
-					{
-						ds.dockToNode = ds.hoveredNode;
-						ds.dockType = DockType::Right;
-						ds.draggedRect = parentRect;
-						ds.draggedRect.x += ds.draggedRect.width / 2.0f;
-						ds.draggedRect.width /= 2.0f;
-					}
+				if (isSmallRectRightHovered)
+				{
+					ds.dockToNode = ds.hoveredNode;
+					ds.dockType = DockType::Right;
+					ds.draggedRect = parentRect;
+					ds.draggedRect.x += ds.draggedRect.width / 2.0f;
+					ds.draggedRect.width /= 2.0f;
+				}
 
-					if (isSmallRectTopHovered)
-					{
-						ds.dockToNode = ds.hoveredNode;
-						ds.dockType = DockType::Top;
-						ds.draggedRect = parentRect;
-						ds.draggedRect.height /= 2.0f;
-					}
+				if (isSmallRectTopHovered)
+				{
+					ds.dockToNode = ds.hoveredNode;
+					ds.dockType = DockType::Top;
+					ds.draggedRect = parentRect;
+					ds.draggedRect.height /= 2.0f;
+				}
 
-					if (isSmallRectBottomHovered)
-					{
-						ds.dockToNode = ds.hoveredNode;
-						ds.dockType = DockType::Bottom;
-						ds.draggedRect = parentRect;
-						ds.draggedRect.y += ds.draggedRect.height / 2.0f;
-						ds.draggedRect.height /= 2.0f;
-					}
+				if (isSmallRectBottomHovered)
+				{
+					ds.dockToNode = ds.hoveredNode;
+					ds.dockType = DockType::Bottom;
+					ds.draggedRect = parentRect;
+					ds.draggedRect.y += floorf(ds.draggedRect.height / 2.0f);
+					ds.draggedRect.height /= 2.0f;
+				}
 
-					if (isSmallRectMiddleHovered)
-					{
-						ds.dockToNode = ds.hoveredNode;
-						ds.dockType = DockType::AsTab;
-						ds.draggedRect = parentRect;
-						ds.draggedRect.height = tabGroupElem.normalState().height;
-					}
+				if (isSmallRectMiddleHovered)
+				{
+					ds.dockToNode = ds.hoveredNode;
+					ds.dockType = DockType::AsTab;
+					ds.draggedRect = parentRect;
+					ds.draggedRect.height = tabGroupElem.normalState().height;
+				}
 
-					if (isSmallRectRootLeftHovered)
-					{
-						ds.dockToNode = rootNode;
-						ds.dockType = DockType::Left;
-						ds.draggedRect = ds.dockToNode->rect;
-						ds.draggedRect.width /= 2.0f;
-					}
+				if (isSmallRectRootLeftHovered)
+				{
+					ds.dockToNode = rootNode;
+					ds.dockType = DockType::Left;
+					ds.draggedRect = ds.dockToNode->rect;
+					ds.draggedRect.width /= 2.0f;
+				}
 
-					if (isSmallRectRootRightHovered)
-					{
-						ds.dockToNode = rootNode;
-						ds.dockType = DockType::Right;
-						ds.draggedRect = ds.dockToNode->rect;
-						ds.draggedRect.x += ds.draggedRect.width / 2.0f;
-						ds.draggedRect.width /= 2.0f;
-					}
+				if (isSmallRectRootRightHovered)
+				{
+					ds.dockToNode = rootNode;
+					ds.dockType = DockType::Right;
+					ds.draggedRect = ds.dockToNode->rect;
+					ds.draggedRect.x += ds.draggedRect.width / 2.0f;
+					ds.draggedRect.width /= 2.0f;
+				}
 
-					if (isSmallRectRootTopHovered)
-					{
-						ds.dockToNode = rootNode;
-						ds.dockType = DockType::Top;
-						ds.draggedRect = ds.dockToNode->rect;
-						ds.draggedRect.height /= 2.0f;
-					}
+				if (isSmallRectRootTopHovered)
+				{
+					ds.dockToNode = rootNode;
+					ds.dockType = DockType::Top;
+					ds.draggedRect = ds.dockToNode->rect;
+					ds.draggedRect.height /= 2.0f;
+				}
 
-					if (isSmallRectRootBottomHovered)
-					{
-						ds.dockToNode = rootNode;
-						ds.dockType = DockType::Bottom;
-						ds.draggedRect = ds.dockToNode->rect;
-						ds.draggedRect.y += ds.draggedRect.height / 2.0f;
-						ds.draggedRect.height /= 2.0f;
-						ds.draggedRect.height -= 2;
-					}
+				if (isSmallRectRootBottomHovered)
+				{
+					ds.dockToNode = rootNode;
+					ds.dockType = DockType::Bottom;
+					ds.draggedRect = ds.dockToNode->rect;
+					ds.draggedRect.y += floorf(ds.draggedRect.height / 2.0f);
+					ds.draggedRect.height /= 2.0f;
+				}
 
+				if (ds.hoveredNode)
+				{
 					ctx->renderer->cmdSetColor(isSmallRectLeftHovered ? dockingDialRectVSplitElem.hoveredState().color : dockingDialRectVSplitElem.normalState().color);
 					ctx->renderer->cmdDrawImageBordered(
 						dockingDialRectVSplitElem.normalState().image,
@@ -530,28 +389,28 @@ void handleDockingMouseMove(const InputEvent& event, DockNode* node)
 					ctx->renderer->cmdDrawImageBordered(
 						dockingDialRectElem.normalState().image,
 						dockingDialRectElem.normalState().border, smallRectMiddle, ctx->globalScale);
-
-					ctx->renderer->cmdSetColor(isSmallRectRootLeftHovered ? dockingDialRectVSplitElem.hoveredState().color : dockingDialRectVSplitElem.normalState().color);
-					ctx->renderer->cmdDrawImageBordered(
-						dockingDialRectVSplitElem.normalState().image,
-						dockingDialRectVSplitElem.normalState().border, smallRectRootLeft, ctx->globalScale);
-
-					ctx->renderer->cmdSetColor(isSmallRectRootRightHovered ? dockingDialRectVSplitElem.hoveredState().color : dockingDialRectVSplitElem.normalState().color);
-					ctx->renderer->cmdDrawImageBordered(
-						dockingDialRectVSplitElem.normalState().image,
-						dockingDialRectVSplitElem.normalState().border, smallRectRootRight, ctx->globalScale);
-
-					ctx->renderer->cmdSetColor(isSmallRectRootTopHovered ? dockingDialRectHSplitElem.hoveredState().color : dockingDialRectHSplitElem.normalState().color);
-					ctx->renderer->cmdDrawImageBordered(
-						dockingDialRectHSplitElem.normalState().image,
-						dockingDialRectHSplitElem.normalState().border, smallRectRootTop, ctx->globalScale);
-
-					ctx->renderer->cmdSetColor(isSmallRectRootBottomHovered ? dockingDialRectHSplitElem.hoveredState().color : dockingDialRectHSplitElem.normalState().color);
-					ctx->renderer->cmdDrawImageBordered(
-						dockingDialRectHSplitElem.normalState().image,
-						dockingDialRectHSplitElem.normalState().border, smallRectRootBottom, ctx->globalScale);
 				}
 
+				ctx->renderer->cmdSetColor(isSmallRectRootLeftHovered ? dockingDialRectVSplitElem.hoveredState().color : dockingDialRectVSplitElem.normalState().color);
+				ctx->renderer->cmdDrawImageBordered(
+					dockingDialRectVSplitElem.normalState().image,
+					dockingDialRectVSplitElem.normalState().border, smallRectRootLeft, ctx->globalScale);
+
+				ctx->renderer->cmdSetColor(isSmallRectRootRightHovered ? dockingDialRectVSplitElem.hoveredState().color : dockingDialRectVSplitElem.normalState().color);
+				ctx->renderer->cmdDrawImageBordered(
+					dockingDialRectVSplitElem.normalState().image,
+					dockingDialRectVSplitElem.normalState().border, smallRectRootRight, ctx->globalScale);
+
+				ctx->renderer->cmdSetColor(isSmallRectRootTopHovered ? dockingDialRectHSplitElem.hoveredState().color : dockingDialRectHSplitElem.normalState().color);
+				ctx->renderer->cmdDrawImageBordered(
+					dockingDialRectHSplitElem.normalState().image,
+					dockingDialRectHSplitElem.normalState().border, smallRectRootTop, ctx->globalScale);
+
+				ctx->renderer->cmdSetColor(isSmallRectRootBottomHovered ? dockingDialRectHSplitElem.hoveredState().color : dockingDialRectHSplitElem.normalState().color);
+				ctx->renderer->cmdDrawImageBordered(
+					dockingDialRectHSplitElem.normalState().image,
+					dockingDialRectHSplitElem.normalState().border, smallRectRootBottom, ctx->globalScale);
+				
 				ctx->renderer->cmdSetColor(dockingRectElem.normalState().color);
 				ctx->renderer->cmdDrawImageBordered(dockingRectElem.normalState().image, dockingRectElem.normalState().border, ds.draggedRect, ctx->globalScale);
 				ctx->renderer->cmdSetFont(dockingRectElem.normalState().font);
@@ -898,547 +757,4 @@ void handleDockNodeEvents(DockNode* node)
 	handleDockingMouseMove(event, node);
 }
 
-/*
-void handleDockNodeResize(DockNode* node)
-{
-	auto& rect = node->rect;
-	auto& crtEvent = hui::getInputEvent();
-
-	//TODO: find current window index better
-	// find if the current window of the view pane had a layer index > 0
-	// if so, then we must be having popups or menus
-	if (ctx->maxLayerIndex)
-	{
-		return;
-	}
-
-	// is the event for this window ?
-	if (crtEvent.window != node->osWindow)
-	{
-		return;
-	}
-
-	auto& ds = ctx->dockingState;
-
-	if (crtEvent.type == InputEvent::Type::MouseDown)
-	{
-		const Point& mousePos = crtEvent.mouse.point;
-		ds.lastMousePos = mousePos;
-		ds.resizingNode = node->findResizeDockNode(mousePos);
-		ds.dragWindow = nullptr;
-		ds.draggingNodeSource = node;
-
-		for (auto& wnd : ds.windows)
-		{
-			// return if the widget is not visible, that is outside current clip rect
-			if (wnd.second->tabRect.outside(node->rect))
-			{
-				continue;
-			}
-
-			Rect clippedRect = wnd.second->tabRect.clipInside(node->rect);
-
-			if (clippedRect.contains(mousePos.x, mousePos.y))
-			{
-				ds.dragWindow = wnd.second;
-				ds.draggingWindow = true;
-				break;
-			}
-		}
-
-		if (ds.resizingNode)
-		{
-			ds.draggingDockNodeBorder = true;
-		}
-	}
-
-	// execute docking or undocking
-	if (crtEvent.type == InputEvent::Type::MouseUp)
-	{
-		const f32 moveTriggerDelta = 3;
-		bool moved = fabs(ds.lastMousePos.x - crtEvent.mouse.point.x) > moveTriggerDelta || fabs(ds.lastMousePos.y - crtEvent.mouse.point.y) > moveTriggerDelta;
-
-		// we have a node to dock to
-		if (ds.dockToNode && moved)
-		{
-			dockWindow(ds.dragWindow, ds.dockToNode, ds.dockType, 0);
-
-				//if (draggingNodeSource->children.empty()
-				//	&& draggingNodeSource->splitMode == ViewPane::SplitMode::None
-				//	&& !draggingNodeSource)
-				//{
-				//	if (hui::getMainWindow() != draggingNodeSource->window)
-				//	{
-				//		destroyWindow(draggingNodeSource->window);
-				//		auto iter = std::find(ctx->dockingState.rootViewPanes.begin(), ctx->dockingState.rootViewPanes.end(), draggingNodeSource);
-
-				//		ctx->dockingState.rootViewPanes.erase(iter);
-				//		//TODO: crashes LLVM on MacOS, check for dangling ptrs
-				//		draggingNodeSource->destroy();
-				//		delete draggingNodeSource;
-				//		draggingNodeSource = nullptr;
-				//	}
-				//}
-
-				ds.dockToNode = nullptr;
-
-				hui::forceRepaint();
-			//}
-		}
-		//else if (dragTab && !dragOntoView && moved)
-		//{
-		//	// do not undock if the source window is the main window and there is just one tab left!
-		//	if (!(dragTab->viewPane->viewTabs.size() == 1
-		//		&& draggingNodeSource == dragTab->viewPane)
-		//		&& ctx->settings.allowUndockingToNewWindow)
-		//	{
-		//		Rect rc = hui::getWindowRect(draggingNodeSource->window);
-
-		//		auto paneWnd = hui::createWindow(
-		//			"", //TODO: title 
-		//			dragTab->viewPane->rect.width,
-		//			dragTab->viewPane->rect.height,
-		//			WindowFlags::Resizable | WindowFlags::NoTaskbarButton | WindowFlags::CustomPosition,
-		//			{
-		//				crtEvent.mouse.point.x + rc.x - dragTab->viewPane->rect.width / 2,
-		//				crtEvent.mouse.point.y + rc.y
-		//			});
-
-		//		auto newViewPane = createRootViewPane(paneWnd);
-
-		//		// we don't have to create a new view pane if it holds just one view tab
-		//		if (dragTab->viewPane->viewTabs.size() == 1)
-		//		{
-		//			viewPane->removeChild(dragTab->viewPane);
-		//			//hui::dockViewPane(dragTab->viewPane, newViewPane, DockType::TopAsViewTab);
-		//		}
-		//		else
-		//		{
-		//			// remove from old pane
-		//			dragTab->viewPane->removeViewTab(dragTab);
-		//			auto newPane = (ViewPane*)hui::createEmptyViewPane(newViewPane, DockType::TopAsViewTab);
-		//			newPane->viewTabs.push_back(dragTab);
-		//			dockViewTab(newPane, );
-		//			dragTab->viewPane = newPane;
-		//		}
-		//	}
-
-		//	hui::forceRepaint();
-		//}
-
-		ds.draggingNodeSource = nullptr;
-		ds.draggingDockNodeBorder = false;
-		ds.draggingWindow = false;
-		ds.dragWindow = nullptr;
-		ds.resizingNode = nullptr;
-	}
-
-	const auto mousePos = ctx->providers->input->getMousePosition();
-	auto overNodeToResize = node->findResizeDockNode(mousePos);
-
-	// if we drag a tab or a node splitter
-	if (crtEvent.type == InputEvent::Type::MouseDown
-		|| ds.dragWindow
-		|| overNodeToResize
-		|| ds.resizingNode)
-	{
-		auto nodeToResize = overNodeToResize;
-		const int moveOffsetTriggerSize = 3;
-		bool moved = fabs(ds.lastMousePos.x - mousePos.x) > moveOffsetTriggerSize || abs(ds.lastMousePos.y - mousePos.y) > moveOffsetTriggerSize;
-
-		if (ds.dragWindow)
-		{
-			// draw tab rect
-			auto& dockingRectElem = ctx->theme->getElement(WidgetElementId::WindowDockRect);
-			auto& dockingDialRectElem = ctx->theme->getElement(WidgetElementId::WindowDockDialRect);
-			auto& dockingDialRectVSplitElem = ctx->theme->getElement(WidgetElementId::WindowDockDialVSplitRect);
-			auto& dockingDialRectHSplitElem = ctx->theme->getElement(WidgetElementId::WindowDockDialHSplitRect);
-			auto& tabGroupElem = ctx->theme->getElement(WidgetElementId::TabGroupBody);
-			auto zorder = ctx->renderer->getZOrder();
-
-			if (crtEvent.type == InputEvent::Type::MouseDown || ctx->mouseMoved || moved)
-			{
-				ds.dragOntoWindow = nullptr;
-
-				for (auto& wnd : ds.windows)
-				{
-					if (wnd.second->tabRect.contains(mousePos.x, mousePos.y))
-					{
-						ds.dragOntoWindow = wnd.second;
-						break;
-					}
-				}
-
-				//TODO: visualize better the tab insertion
-				// if we dragged on some other tab
-				if (ds.dragOntoWindow != ds.dragWindow
-					&& ds.dragWindow
-					&& ds.dragOntoWindow)
-				{
-					if (ds.dragWindow->dockNode == ds.dragOntoWindow->dockNode)
-					{
-						// same node
-						size_t index1 = ds.dragWindow->dockNode->getWindowIndex(ds.dragWindow);
-						size_t index2 = ds.dragWindow->dockNode->getWindowIndex(ds.dragOntoWindow);
-
-						ds.dragWindow->dockNode->windows[index1] = ds.dragOntoWindow;
-						ds.dragWindow->dockNode->windows[index2] = ds.dragWindow;
-						ds.dragWindow->dockNode->selectedTabIndex = index2;
-					}
-				}
-
-				// check for docking on windows
-				ds.dockToNode = node->findTargetDockNode(mousePos);
-			}
-
-			bool isSameNode = ds.dockToNode == ds.dragWindow->dockNode;
-			bool isNodeSingleTab = ds.dragWindow->dockNode->windows.size() == 1;
-
-			if (!ds.dockToNode)
-			{
-				if (ds.dragOntoWindow && !isSameNode)
-				{
-					ds.draggedRect = ds.dragWindow->clientRect;
-					ds.draggedRect.x = mousePos.x - ds.draggedRect.width / 2;
-					ds.draggedRect.y = mousePos.y - ds.draggedRect.height / 2;
-					ds.draggedRect.height = ds.dragWindow->clientRect.height * 2; // we have two lines of text when undocking "Undock\nTabname"
-					ds.dockToNode = ds.dragOntoWindow->dockNode;
-				}
-				else
-				{
-					// docking not allowed
-					ds.dockToNode = nullptr;
-				}
-			}
-			
-			if (ds.dragWindow != ds.dragOntoWindow)
-			{
-				ctx->renderer->setOsWindow(node->osWindow);
-				ctx->renderer->setWindowSize({ rect.width, rect.height });
-				ctx->renderer->begin();
-				ctx->renderer->cmdSetColor(dockingRectElem.normalState().color);
-
-				if (ds.dockToNode)
-				{
-					// draw the locations where we can dock the pane
-					const f32 smallRectSize = 64 * ctx->globalScale; //TODO: make settings
-					const f32 smallRectGap = 1 * ctx->globalScale; //TODO: make settings
-					auto parentRect = ds.dockToNode->rect;
-		
-					auto smallRectLeft = Rect(
-						parentRect.x + parentRect.width / 2.0f - smallRectSize / 2.0f - smallRectGap - smallRectSize,
-						parentRect.y + parentRect.height / 2.0f - smallRectSize / 2.0f,
-						smallRectSize, smallRectSize);
-					
-					auto smallRectRight = Rect(
-						parentRect.x + parentRect.width / 2.0f + smallRectSize / 2.0f + smallRectGap,
-						parentRect.y + parentRect.height / 2.0f - smallRectSize / 2.0f,
-						smallRectSize, smallRectSize);
-					
-					auto smallRectTop = Rect(
-						parentRect.x + parentRect.width / 2.0f - smallRectSize / 2.0f,
-						parentRect.y + parentRect.height / 2.0f - smallRectSize / 2.0f - smallRectSize - smallRectGap,
-						smallRectSize, smallRectSize);
-					
-					auto smallRectBottom = Rect(
-						parentRect.x + parentRect.width / 2.0f - smallRectSize / 2.0f,
-						parentRect.y + parentRect.height / 2 + smallRectSize / 2 + smallRectGap,
-						smallRectSize, smallRectSize);
-					
-					auto smallRectMiddle = Rect(
-						parentRect.x + parentRect.width / 2.0f - smallRectSize / 2.0f,
-						parentRect.y + parentRect.height / 2.0f - smallRectSize / 2.0f,
-						smallRectSize, smallRectSize);
-
-					auto rootRect = node->rect;
-
-					auto smallRectRootLeft = Rect(
-						rootRect.x + smallRectGap,
-						rootRect.y + rootRect.height / 2.0f - smallRectSize / 2.0f,
-						smallRectSize, smallRectSize);
-
-					auto smallRectRootRight = Rect(
-						rootRect.right() - smallRectGap - smallRectSize,
-						rootRect.y + rootRect.height / 2.0f - smallRectSize / 2.0f,
-						smallRectSize, smallRectSize);
-
-					auto smallRectRootTop = Rect(
-						rootRect.x + rootRect.width / 2.0f - smallRectSize / 2.0f,
-						rootRect.y + smallRectGap,
-						smallRectSize, smallRectSize);
-
-					auto smallRectRootBottom = Rect(
-						rootRect.x + rootRect.width / 2.0f - smallRectSize / 2.0f,
-						rootRect.bottom() - smallRectSize / 2.0f - smallRectGap,
-						smallRectSize, smallRectSize);
-
-					auto isSmallRectLeftHovered = smallRectLeft.contains(mousePos);
-					auto isSmallRectRightHovered = smallRectRight.contains(mousePos);
-					auto isSmallRectTopHovered = smallRectTop.contains(mousePos);
-					auto isSmallRectBottomHovered = smallRectBottom.contains(mousePos);
-					auto isSmallRectMiddleHovered = smallRectMiddle.contains(mousePos);
-					auto isSmallRectRootLeftHovered = smallRectRootLeft.contains(mousePos);
-					auto isSmallRectRootRightHovered = smallRectRootRight.contains(mousePos);
-					auto isSmallRectRootTopHovered = smallRectRootTop.contains(mousePos);
-					auto isSmallRectRootBottomHovered = smallRectRootBottom.contains(mousePos);
-
-					if (isSmallRectLeftHovered)
-					{
-						ds.dockType = DockType::Left;
-						ds.draggedRect = parentRect;
-						ds.draggedRect.width /= 2;
-					}
-
-					if (isSmallRectRightHovered)
-					{
-						ds.dockType = DockType::Right;
-						ds.draggedRect = parentRect;
-						ds.draggedRect.x += ds.draggedRect.width / 2;
-						ds.draggedRect.width /= 2;
-					}
-
-					if (isSmallRectTopHovered)
-					{
-						ds.dockType = DockType::Top;
-						ds.draggedRect = parentRect;
-						ds.draggedRect.height /= 2;
-					}
-
-					if (isSmallRectBottomHovered)
-					{
-						ds.dockType = DockType::Bottom;
-						ds.draggedRect = parentRect;
-						ds.draggedRect.y += ds.draggedRect.height / 2;
-						ds.draggedRect.height /= 2;
-					}
-
-					if (isSmallRectMiddleHovered)
-					{
-						ds.dockType = DockType::AsTab;
-						ds.draggedRect = parentRect;
-						ds.draggedRect.height = tabGroupElem.normalState().height;
-					}
-
-					if (isSmallRectRootLeftHovered)
-					{
-						ds.dockToNode = node;
-						ds.dockType = DockType::Left;
-						ds.draggedRect = ds.dockToNode->rect;
-						ds.draggedRect.width /= 2.0f;
-					}
-					
-					if (isSmallRectRootRightHovered)
-					{
-						ds.dockToNode = node;
-						ds.dockType = DockType::Right;
-						ds.draggedRect = ds.dockToNode->rect;
-						ds.draggedRect.x += ds.draggedRect.width / 2.0f;
-						ds.draggedRect.width /= 2.0f;
-					}
-					
-					if (isSmallRectRootTopHovered)
-					{
-						ds.dockToNode = node;
-						ds.dockType = DockType::Top;
-						ds.draggedRect = ds.dockToNode->rect;
-						ds.draggedRect.height /= 2.0f;
-					}
-					
-					if (isSmallRectRootBottomHovered)
-					{
-						ds.dockToNode = node;
-						ds.dockType = DockType::Bottom;
-						ds.draggedRect = ds.dockToNode->rect;
-						ds.draggedRect.y += ds.draggedRect.height / 2.0f;
-						ds.draggedRect.height /= 2.0f;
-					}
-
-					ctx->renderer->cmdSetColor(isSmallRectLeftHovered ? dockingDialRectVSplitElem.hoveredState().color : dockingDialRectVSplitElem.normalState().color);
-					ctx->renderer->cmdDrawImageBordered(
-						dockingDialRectVSplitElem.normalState().image,
-						dockingDialRectVSplitElem.normalState().border, smallRectLeft, ctx->globalScale);
-
-					ctx->renderer->cmdSetColor(isSmallRectRightHovered ? dockingDialRectVSplitElem.hoveredState().color : dockingDialRectVSplitElem.normalState().color);
-					ctx->renderer->cmdDrawImageBordered(
-						dockingDialRectVSplitElem.normalState().image,
-						dockingDialRectVSplitElem.normalState().border, smallRectRight, ctx->globalScale);
-
-					ctx->renderer->cmdSetColor(isSmallRectTopHovered ? dockingDialRectHSplitElem.hoveredState().color : dockingDialRectHSplitElem.normalState().color);
-					ctx->renderer->cmdDrawImageBordered(
-						dockingDialRectHSplitElem.normalState().image,
-						dockingDialRectHSplitElem.normalState().border, smallRectTop, ctx->globalScale);
-
-					ctx->renderer->cmdSetColor(isSmallRectBottomHovered ? dockingDialRectHSplitElem.hoveredState().color : dockingDialRectHSplitElem.normalState().color);
-					ctx->renderer->cmdDrawImageBordered(
-						dockingDialRectHSplitElem.normalState().image,
-						dockingDialRectHSplitElem.normalState().border, smallRectBottom, ctx->globalScale);
-
-					ctx->renderer->cmdSetColor(isSmallRectMiddleHovered ? dockingDialRectElem.hoveredState().color : dockingDialRectElem.normalState().color);
-					ctx->renderer->cmdDrawImageBordered(
-						dockingDialRectElem.normalState().image,
-						dockingDialRectElem.normalState().border, smallRectMiddle, ctx->globalScale);
-
-					ctx->renderer->cmdSetColor(isSmallRectRootLeftHovered ? dockingDialRectVSplitElem.hoveredState().color : dockingDialRectVSplitElem.normalState().color);
-					ctx->renderer->cmdDrawImageBordered(
-						dockingDialRectVSplitElem.normalState().image,
-						dockingDialRectVSplitElem.normalState().border, smallRectRootLeft, ctx->globalScale);
-
-					ctx->renderer->cmdSetColor(isSmallRectRootRightHovered ? dockingDialRectVSplitElem.hoveredState().color : dockingDialRectVSplitElem.normalState().color);
-					ctx->renderer->cmdDrawImageBordered(
-						dockingDialRectVSplitElem.normalState().image,
-						dockingDialRectVSplitElem.normalState().border, smallRectRootRight, ctx->globalScale);
-
-					ctx->renderer->cmdSetColor(isSmallRectRootTopHovered ? dockingDialRectHSplitElem.hoveredState().color : dockingDialRectHSplitElem.normalState().color);
-					ctx->renderer->cmdDrawImageBordered(
-						dockingDialRectHSplitElem.normalState().image,
-						dockingDialRectHSplitElem.normalState().border, smallRectRootTop, ctx->globalScale);
-
-					ctx->renderer->cmdSetColor(isSmallRectRootBottomHovered ? dockingDialRectHSplitElem.hoveredState().color : dockingDialRectHSplitElem.normalState().color);
-					ctx->renderer->cmdDrawImageBordered(
-						dockingDialRectHSplitElem.normalState().image,
-						dockingDialRectHSplitElem.normalState().border, smallRectRootBottom, ctx->globalScale);
-				}
-
-				ctx->renderer->cmdDrawImageBordered(dockingRectElem.normalState().image, dockingRectElem.normalState().border, rectDragged, ctx->globalScale);
-				ctx->renderer->cmdSetFont(dockingRectElem.normalState().font);
-				ctx->renderer->cmdSetColor(dockingRectElem.normalState().textColor);
-				ctx->drawMultilineText(ds.dragWindow->title.c_str(), rectDragged, HAlignType::Center, VAlignType::Center);
-				ctx->renderer->end();
-			}
-		}
-
-		// are we resizing a node ?
-		if ((ds.nodeToResize || ds.resizingNode) && !ds.dragWindow)
-		{
-			DockNode::Type dockType = DockNode::Type::None;
-
-			if (ds.nodeToResize)
-			{
-				if (ds.nodeToResize->parent)
-				{
-					dockType = ds.nodeToResize->parent->type;
-				}
-			}
-
-			if (ds.resizingNode)
-			{
-				if (ds.resizingNode->parent)
-				{
-					dockType = ds.resizingNode->parent->type;
-				}
-
-				if (crtEvent.type == InputEvent::Type::MouseDown)
-				{
-					ds.resizeNodeRect = ds.resizingNode->rect;
-					auto iterNextPane = std::find(ds.resizingNode->parent->children.begin(), ds.resizingNode->parent->children.end(), ds.resizingNode);
-
-					iterNextPane++;
-
-					if (iterNextPane != ds.resizingNode->parent->children.end())
-					{
-						ds.resizeNodeSiblingRect = (*iterNextPane)->rect;
-					}
-				}
-			}
-
-			switch (dockType)
-			{
-			case DockNode::Type::Horizontal:
-			{
-				ctx->mouseCursor = MouseCursorType::SizeWE;
-				break;
-			}
-			case DockNode::Type::Vertical:
-			{
-				ctx->mouseCursor = MouseCursorType::SizeNS;
-				break;
-			}
-			default:
-				ctx->mouseCursor = MouseCursorType::Arrow;
-				break;
-			}
-		}
-	}
-
-	if (ds.draggingDockNodeBorder
-		&& ds.resizingNode
-		&& ds.resizingNode->parent)
-	{
-		switch (ds.resizingNode->parent->type)
-		{
-		case DockNode::Type::Horizontal:
-		{
-			f32 normalizedSizeBothSiblings = (ds.resizeNodeRect.width + ds.resizeNodeSiblingRect.width) / ds.resizingNode->parent->rect.width;
-			f32 normalizedSize1 = (mousePos.x - ds.resizeNodeRect.x) / ds.resizingNode->parent->rect.width;
-			f32 normalizedSize2 = (ds.resizeNodeSiblingRect.right() - mousePos.x) / ds.resizingNode->parent->rect.width;
-			auto iterNextPane = std::find(ds.resizingNode->parent->children.begin(), ds.resizingNode->parent->children.end(), ds.resizingNode);
-
-			iterNextPane++;
-			//resizingNode->normalizedSize.x = normalizedSize1;
-
-			//if (resizingNode->normalizedSize.x < resizingNode->minNormalizedSize.x)
-			//{
-			//	resizingNode->normalizedSize.x = resizingNode->minNormalizedSize.y;
-			//}
-
-			if (iterNextPane != ds.resizingNode->parent->children.end())
-			{
-				//if (resizingNode->normalizedSize.x + normalizedSize2 > normalizedSizeBothSiblings)
-				//{
-				//	normalizedSize2 = normalizedSizeBothSiblings - resizingNode->normalizedSize.x;
-				//}
-
-				//(*iterNextPane)->normalizedSize.x = normalizedSize2;
-
-				//if ((*iterNextPane)->normalizedSize.x < resizingNode->minNormalizedSize.x)
-				//{
-				//	(*iterNextPane)->normalizedSize.x = resizingNode->minNormalizedSize.x;
-				//	resizingNode->normalizedSize.x = normalizedSizeBothSiblings - (*iterNextPane)->normalizedSize.x;
-				//}
-			}
-
-			break;
-		}
-
-		case DockNode::Type::Vertical:
-		{
-			f32 normalizedSizeBothSiblings = (ds.resizeNodeRect.height + ds.resizeNodeSiblingRect.height) / ds.resizingNode->parent->rect.height;
-			f32 normalizedSize1 = (mousePos.y - ds.resizeNodeRect.y) / ds.resizingNode->parent->rect.height;
-			f32 normalizedSize2 = (ds.resizeNodeSiblingRect.bottom() - mousePos.y) / ds.resizingNode->parent->rect.height;
-			auto iterNextPane = std::find(ds.resizingNode->parent->children.begin(), ds.resizingNode->parent->children.end(), ds.resizingNode);
-
-			iterNextPane++;
-			//resizingNode->normalizedSize.y = normalizedSize1;
-
-			//if (resizingNode->normalizedSize.y < resizingNode->minNormalizedSize.x)
-			//{
-			//	resizingNode->normalizedSize.y = resizingNode->minNormalizedSize.y;
-			//}
-
-			//if (iterNextPane != resizingNode->parent->children.end())
-			//{
-			//	if (resizingNode->normalizedSize.y + normalizedSize2 > normalizedSizeBothSiblings)
-			//	{
-			//		normalizedSize2 = normalizedSizeBothSiblings - resizingNode->normalizedSize.y;
-			//	}
-
-			//	(*iterNextPane)->normalizedSize.y = normalizedSize2;
-
-			//	if ((*iterNextPane)->normalizedSize.y < resizingNode->minNormalizedSize.y)
-			//	{
-			//		(*iterNextPane)->normalizedSize.y = resizingNode->minNormalizedSize.y;
-			//		resizingNode->normalizedSize.y = normalizedSizeBothSiblings - (*iterNextPane)->normalizedSize.y;
-			//	}
-			//}
-
-			break;
-		}
-		}
-
-		hui::forceRepaint();
-	}
-
-	//ds.dockingNode = ds.draggingWindow;
-}
-*/
 }

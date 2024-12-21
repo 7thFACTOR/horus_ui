@@ -266,7 +266,7 @@ KeyCode Sdl2InputProvider::fromSdlKey(int code)
 
 void Sdl2InputProvider::startTextInput(HOsWindow window, const Rect& imeRect)
 {
-	SDL_Rect rc;
+	SDL_Rect rc = {0};
 
 	rc.x = imeRect.x;
 	rc.y = imeRect.y;
@@ -339,6 +339,9 @@ void Sdl2InputProvider::addSdlEvent(SDL_Event& ev)
 		outEvent.mouse.point.y = ev.button.y;
 		outEvent.mouse.button = (MouseButton)(ev.button.button - 1);
 		outEvent.mouse.clickCount = ev.button.clicks;
+		draggingButton = ev.button.button;
+		draggingMouse = true;
+		draggingFromWindowId = ev.button.windowID;
 		outEvent.window = findSdlWindow(SDL_GetWindowFromID(ev.button.windowID));
 		auto mods = SDL_GetModState();
 		outEvent.mouse.modifiers = KeyModifiers::None;
@@ -350,6 +353,7 @@ void Sdl2InputProvider::addSdlEvent(SDL_Event& ev)
 	}
 	case SDL_MOUSEBUTTONUP:
 	{
+		draggingMouse = false; // invalidate dragging outside window, we've handled it
 		outEvent.type = InputEvent::Type::MouseUp;
 		outEvent.mouse.point.x = ev.button.x;
 		outEvent.mouse.point.y = ev.button.y;
@@ -525,10 +529,42 @@ void Sdl2InputProvider::processSdlEvents()
 
 	sizeChanged = false;
 	addedMouseMove = false;
+	bool addedEvents = false;
 
 	while (SDL_PollEvent(&ev))
 	{
 		addSdlEvent(ev);
+		addedEvents = true;
+	}
+
+	if (draggingMouse)
+	{
+		i32 mx = 0, my = 0;
+		auto buttons = SDL_GetGlobalMouseState(&mx, &my);
+
+		if (!(buttons & SDL_BUTTON(draggingButton)))
+		{
+			InputEvent outEvent;
+
+			i32 wx = 0, wy = 0;
+			SDL_GetWindowPosition(SDL_GetWindowFromID(draggingFromWindowId), &wx, &wy);
+
+			outEvent.type = InputEvent::Type::MouseUp;
+			outEvent.mouse.point.x = mx - wx;
+			outEvent.mouse.point.y = my - wy;
+			outEvent.mouse.button = (MouseButton)(draggingButton - 1);
+			outEvent.mouse.clickCount = 1;
+			auto mods = SDL_GetModState();
+			outEvent.mouse.modifiers = KeyModifiers::None;
+			outEvent.mouse.modifiers |= (mods & KMOD_ALT) ? KeyModifiers::Alt : KeyModifiers::None;
+			outEvent.mouse.modifiers |= (mods & KMOD_SHIFT) ? KeyModifiers::Shift : KeyModifiers::None;
+			outEvent.mouse.modifiers |= (mods & KMOD_CTRL) ? KeyModifiers::Control : KeyModifiers::None;
+			outEvent.window = findSdlWindow(SDL_GetWindowFromID(draggingFromWindowId));
+			addInputEvent(outEvent);
+			draggingMouse = false;
+			draggingButton = 0;
+			draggingFromWindowId = 0;
+		}
 	}
 }
 
@@ -973,6 +1009,7 @@ void initializeSdl(const SdlInitParams& params)
 	sdlProvider->createSystemCursors();
 	createMainWindow(mainWnd);
 	HORUS_GFX->initialize();
+	SDL_SetHint(SDL_HINT_MOUSE_AUTO_CAPTURE, "0");
 }
 
 }

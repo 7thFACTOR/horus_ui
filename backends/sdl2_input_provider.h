@@ -103,6 +103,9 @@ struct Sdl2InputProvider : InputProvider
 	f32 deltaTime = 0;
 	bool sizeChanged = false;
 	SdlInitParams initParams;
+	bool draggingMouse = false;
+	u32 draggingButton = 0;
+	u32 draggingFromWindowId = 0;
 };
 
 void initializeSdl(const SdlInitParams& params);
