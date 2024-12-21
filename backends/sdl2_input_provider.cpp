@@ -529,12 +529,10 @@ void Sdl2InputProvider::processSdlEvents()
 
 	sizeChanged = false;
 	addedMouseMove = false;
-	bool addedEvents = false;
 
 	while (SDL_PollEvent(&ev))
 	{
 		addSdlEvent(ev);
-		addedEvents = true;
 	}
 
 	if (draggingMouse)

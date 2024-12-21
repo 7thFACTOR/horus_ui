@@ -81,12 +81,11 @@ void handleDockingMouseUp(const InputEvent& event, DockNode* node)
 		if (ctx->settings.allowUndockingToNewOsWindow)
 		{
 			auto& rc = ds.dragWindow->dockNode->rect;
-			auto ptWnd = HORUS_INPUT->getWindowPosition(ds.dragWindow->dockNode->osWindow);
-			Point pt = {
-				event.mouse.point.x + ptWnd.x - rc.width / 2.0f,
-				event.mouse.point.y + ptWnd.y
-			};
 
+			// we use the current screen mouse pos to undock the window to
+			Point pt = HORUS_INPUT->getMousePosition();
+			// put the window in the middle of the mouse X coordinate
+			pt.x -= rc.width / 2.0f;
 			undockWindow(ds.dragWindow->id.c_str(), pt);
 		}
 
