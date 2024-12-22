@@ -5,77 +5,16 @@
 
 namespace hui
 {
-bool DockNode::hasSingleWindowVisible() const
+bool DockNode::hasSingleWindow() const
 {
-	return windows.size() == 1 && windows[0]->visible;
-}
-
-void DockNode::setChildVisible(DockNode* child, bool visible)
-{
-	if (!visible)
-	{
-		auto iterChild = std::find(children.begin(), children.end(), child);
-
-		if (iterChild == children.end())
-		{
-			return;
-		}
-
-		children.erase(iterChild);
-		hiddenChildren.push_back(child);
-	}
-	else
-	{
-		auto iterChild = std::find(hiddenChildren.begin(), hiddenChildren.end(), child);
-
-		if (iterChild == hiddenChildren.end())
-		{
-			return;
-		}
-
-		hiddenChildren.erase(iterChild);
-		children.push_back(child);
-	}
-}
-
-void DockNode::setWindowVisible(Window* wnd, bool visible)
-{
-	if (!visible)
-	{
-		auto iterWnd = std::find(windows.begin(), windows.end(), wnd);
-
-		if (iterWnd == windows.end())
-		{
-			return;
-		}
-
-		windows.erase(iterWnd);
-		hiddenWindows.push_back(wnd);
-	}
-	else
-	{
-		auto iterWnd = std::find(hiddenWindows.begin(), hiddenWindows.end(), wnd);
-
-		if (iterWnd == hiddenWindows.end())
-		{
-			return;
-		}
-
-		hiddenWindows.erase(iterWnd);
-		windows.push_back(wnd);
-	}
+	return windows.size() == 1;
 }
 
 void DockNode::removeWindowsAndDeleteChildrenRecursive()
 {
 	for (auto& wnd : windows)
 	{
-		auto iter = ctx->dockingState.windows.find(wnd->id);
-		
-		if (iter != ctx->dockingState.windows.end())
-			ctx->dockingState.windows.erase(iter);
-
-		ctx->dockingState.windowsToDelete.push_back(wnd);
+		ctx->dockingState.windowsToDelete.insert(wnd);
 	}
 
 	windows.clear();
@@ -83,7 +22,7 @@ void DockNode::removeWindowsAndDeleteChildrenRecursive()
 	for (auto& child : children)
 	{
 		child->removeWindowsAndDeleteChildrenRecursive();
-		ctx->dockingState.dockNodesToDelete.push_back(child);
+		ctx->dockingState.dockNodesToDelete.insert(child);
 	}
 
 	children.clear();
@@ -105,14 +44,9 @@ void DockNode::removeFromParent()
 	else
 	{
 		// this is a root node and removing it we must destroy the window too
-		ctx->dockingState.rootOsWindowDockNodes.erase(osWindow);
-		auto iter = std::find(ctx->osWindows.begin(), ctx->osWindows.end(), osWindow);
-	
-		if (iter != ctx->osWindows.end())
-			ctx->osWindows.erase(iter);
-
-		ctx->dockingState.osWindowsToDelete.push_back(osWindow);
-		osWindow = 0;
+		ctx->dockingState.osWindowsToDelete.insert(osWindow);
+		osWindow = nullptr;
+		parent = nullptr;
 	}
 }
 
@@ -147,7 +81,7 @@ void DockNode::gatherWindowTabsNodes(std::vector<DockNode*>& outNodes)
 
 	for (auto& c : children)
 	{
-		if (!c->hasSingleWindowVisible())
+		if (!c->hasSingleWindow())
 			continue;
 
 		if (c->type == DockNode::Type::Tabs)
@@ -175,9 +109,6 @@ void DockNode::computeRect()
 	case hui::DockNode::Type::Tabs:
 		for (auto& wnd : windows)
 		{
-			if (!wnd->visible)
-				continue;
-
 			wnd->clientRect = {
 				rect.x, rect.y, rect.width, rect.height
 			};
@@ -331,7 +262,7 @@ bool DockNode::checkRedundancy()
 		
 		selectedTabIndex = child->selectedTabIndex;
 		type = child->type;
-		ctx->dockingState.dockNodesToDelete.push_back(child);
+		ctx->dockingState.dockNodesToDelete.insert(child);
 		computeRect();
 	}
 
@@ -357,7 +288,7 @@ bool DockNode::checkRedundancy()
 
 		if (deleteThis)
 		{
-			ctx->dockingState.dockNodesToDelete.push_back(this);
+			ctx->dockingState.dockNodesToDelete.insert(this);
 		}
 
 		return true;

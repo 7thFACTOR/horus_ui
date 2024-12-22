@@ -29,11 +29,13 @@ void closeMainWindow()
 bool beginWindow(const char* id, const char* title, const char* dockTo, DockType dockType, Rect* initialRect, HImage icon)
 {
 	Window* wnd = nullptr;
+	DockNode* dockToNode = nullptr;
 	auto iterWnd = ctx->dockingState.windows.find(id);
 	auto iter = ctx->dockingState.windows.find(dockTo ? dockTo : "");
-	DockNode* dockToNode = nullptr;
+	auto iterClosed = ctx->dockingState.closedWindowsRects.find(id);
+	bool wasClosed = iterClosed != ctx->dockingState.closedWindowsRects.end();
 
-	if (iterWnd == ctx->dockingState.windows.end())
+	if (iterWnd == ctx->dockingState.windows.end() && !wasClosed)
 	{
 		if (dockTo && iter != ctx->dockingState.windows.end())
 		{
@@ -45,11 +47,13 @@ bool beginWindow(const char* id, const char* title, const char* dockTo, DockType
 	}
 	else
 	{
+		if (wasClosed)
+		{
+			return false;
+		}
+
 		wnd = ctx->dockingState.windows[id];
 		
-		if (!wnd->visible)
-			return false;
-
 		if (!wnd->dockNode->osWindow)
 		{
 			Rect defaultRect = { 100, 100, 1500, 1300 };
@@ -70,13 +74,17 @@ bool beginWindow(const char* id, const char* title, const char* dockTo, DockType
 			&& !wnd->dockNode->parent
 			&& wnd->dockNode->children.empty())
 		{
-			wnd->visible = false;
+			ctx->dockingState.osWindowsToDelete.insert(wnd->dockNode->osWindow);
+			ctx->dockingState.windowsToDelete.insert(wnd);
+			ctx->dockingState.dockNodesToDelete.insert(wnd->dockNode);
+			ctx->dockingState.closedWindowsRects[id] = wnd->dockNode->rect;
 
 			return false;
 		}
 	}
 
-	if (wnd->dockNode->type == DockNode::Type::Tabs && wnd->dockNode->getWindowIndex(wnd) != wnd->dockNode->selectedTabIndex)
+	if (wnd->dockNode->type == DockNode::Type::Tabs 
+		&& wnd->dockNode->getWindowIndex(wnd) != wnd->dockNode->selectedTabIndex)
 	{
 		return false;
 	}
@@ -104,12 +112,25 @@ void endWindow()
 
 void setWindowVisibility(const char* windowId, bool visible)
 {
-	auto iter = ctx->dockingState.windows.find(windowId);
+	if (!visible)
+	{
+		auto iter = ctx->dockingState.windows.find(windowId);
 
-	if (iter == ctx->dockingState.windows.end())
-		return;
+		if (iter == ctx->dockingState.windows.end())
+			return;
 
-	//iter->second->visible = true;
+		ctx->dockingState.windowsToDelete.insert(iter->second);
+		ctx->dockingState.closedWindowsRects[windowId] = iter->second->dockNode->rect;
+	}
+	else
+	{
+		auto iter = ctx->dockingState.closedWindowsRects.find(windowId);
+
+		if (iter != ctx->dockingState.closedWindowsRects.end())
+		{
+			ctx->dockingState.closedWindowsRects.erase(iter);
+		}
+	}
 }
 
 void dockWindow(const char* windowId, const char* targetWindowId, DockType dockType, const Point* undockedWindowPos)
@@ -134,7 +155,6 @@ void dockWindow(const char* windowId, const char* targetWindowId, DockType dockT
 void undockWindow(const char* windowId, const Point& windowPos)
 {
 	dockWindow(windowId, nullptr, DockType::Floating, &windowPos);
-	Window* wnd = ctx->dockingState.windows[windowId];
 }
 
 bool isMouseOverWindow()

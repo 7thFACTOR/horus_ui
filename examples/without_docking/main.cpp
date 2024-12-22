@@ -156,6 +156,11 @@ int main(int argc, char** args)
 					}
 				}
 
+				if (hui::button("Show UI"))
+				{
+					hui::setWindowVisibility("ui", true);
+				}
+
 				hui::popTint();
 				hui::endColumns();
 				static float val;

@@ -3,6 +3,7 @@
 #include <vector>
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
 
 #ifdef _LINUX
 #include <sys/types.h>
@@ -267,16 +268,16 @@ struct Window
 	std::string id, title;
 	HImage icon = 0;
 	Rect tabRect, clientRect;
-	bool visible = true;
 };
 
 struct DockingState
 {
 	std::unordered_map<HOsWindow, struct DockNode*> rootOsWindowDockNodes;
 	std::unordered_map<std::string, Window*> windows;
-	std::vector<Window*> windowsToDelete;
-	std::vector<DockNode*> dockNodesToDelete;
-	std::vector<HOsWindow> osWindowsToDelete;
+	std::unordered_set<Window*> windowsToDelete;
+	std::unordered_set<DockNode*> dockNodesToDelete;
+	std::unordered_set<HOsWindow> osWindowsToDelete;
+	std::unordered_map<std::string /*window name*/, Rect> closedWindowsRects;
 	DockNode* currentDockNode = nullptr;
 	bool closeWindow = false;
 	// variables for dragging views around

@@ -23,6 +23,9 @@ namespace hui
 
 void handleDockingMouseDown(const InputEvent& event, DockNode* node)
 {
+	if (event.mouse.button != MouseButton::Left)
+		return;
+
 	auto& ds = ctx->dockingState;
 	const Point& mousePos = event.mouse.point;
 
@@ -746,7 +749,8 @@ void handleDockNodeEvents(DockNode* node)
 	case InputEvent::Type::MouseUp: handleDockingMouseUp(event, node); break;
 	case InputEvent::Type::WindowClose:
 	{
-		HORUS_INPUT->hideWindow(event.window);
+		//destroy all nodes and root nodes and windows of the os window
+		
 		break;
 	}
 	default:

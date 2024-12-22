@@ -27,19 +27,8 @@ void destroyOsWindow(HOsWindow osWnd)
 {
 	auto dockNode =	ctx->dockingState.rootOsWindowDockNodes[osWnd];
 
-	if (dockNode)
-	{
-		dockNode->closedOsWindowRect = HORUS_INPUT->getWindowRect(osWnd);	
-	}
-
-	ctx->dockingState.osWindowsToDelete.push_back(osWnd);
-
-	auto iter = std::find(ctx->osWindows.begin(), ctx->osWindows.end(), osWnd);
-
-	if (iter != ctx->osWindows.end())
-	{
-		ctx->osWindows.erase(iter);
-	}
+	ctx->dockingState.dockNodesToDelete.insert(dockNode);
+	ctx->dockingState.osWindowsToDelete.insert(osWnd);
 }
 
 DockNode* createRootDockNode(HOsWindow osWindow)
@@ -59,6 +48,7 @@ DockNode* createRootDockNode(HOsWindow osWindow)
 DockNode* getRootDockNode(HOsWindow window)
 {
 	if (!window) return nullptr;
+
 	return ctx->dockingState.rootOsWindowDockNodes[window];
 }
 
@@ -94,8 +84,8 @@ void deleteRootDockNode(HOsWindow window)
 
 	if (node)
 	{
-		ctx->dockingState.rootOsWindowDockNodes.erase(window);
-		ctx->dockingState.dockNodesToDelete.push_back(node);
+		ctx->dockingState.osWindowsToDelete.insert(window);
+		ctx->dockingState.dockNodesToDelete.insert(node);
 	}
 }
 
@@ -140,8 +130,6 @@ void deleteWindow(Window* wnd)
 	if (!node->parent)
 	{
 		destroyOsWindow(node->osWindow);
-		ctx->dockingState.rootOsWindowDockNodes.erase(node->osWindow);
-		ctx->dockingState.dockNodesToDelete.push_back(node);
 	}
 }
 
@@ -149,14 +137,13 @@ void closeWindow(Window* wnd)
 {
 	DockNode* node = wnd->dockNode;
 
-	wnd->visible = false;
-
 	// if the window is in a root dock node
-	if (!node->parent && node->children.empty() && node->windows.size() == 1)
+	if (!node->parent
+		&& node->children.empty()
+		&& node->windows.size() == 1)
 	{
 		destroyOsWindow(node->osWindow);
 		node->osWindow = nullptr;
-		ctx->dockingState.rootOsWindowDockNodes.erase(node->osWindow);
 	}
 }
 
@@ -848,7 +835,7 @@ bool dockWindow(Window* wnd, DockNode* targetNode, DockType dockType, u32 tabInd
 		if (source && source->windows.size() == 1)
 		{
 			source->removeFromParent();
-			ctx->dockingState.dockNodesToDelete.push_back(source);
+			ctx->dockingState.dockNodesToDelete.insert(source);
 		}
 		else
 		{
@@ -873,7 +860,7 @@ bool dockWindow(Window* wnd, DockNode* targetNode, DockType dockType, u32 tabInd
 			if (source->windows.size() == 1)
 			{
 				source->removeFromParent();
-				ctx->dockingState.dockNodesToDelete.push_back(source);
+				ctx->dockingState.dockNodesToDelete.insert(source);
 				source = nullptr;
 			}
 			else
@@ -906,8 +893,12 @@ bool dockWindow(Window* wnd, DockNode* targetNode, DockType dockType, u32 tabInd
 		for (auto& osWnd : ctx->osWindows)
 		{
 			auto node = getRootDockNode(osWnd);
-			node->checkRedundancy();
-			node->computeRect();
+			
+			if (node->osWindow)
+			{
+				node->checkRedundancy();
+				node->computeRect();
+			}
 		}
 	}
 
@@ -933,7 +924,7 @@ void dockNodeTabs(DockNode* node)
 		ctx->paneGroupState.forceSqueezeTabs = false;
 	}
 
-	u32 hideTabIndex = ~0;
+	u32 closeTabIndex = ~0;
 	u32 selectedIndex = 0;
 
 	ctx->dockingState.drawingWindowTabs = true;
@@ -953,7 +944,7 @@ void dockNodeTabs(DockNode* node)
 				&& ctx->event.type == InputEvent::Type::MouseDown
 				&& ctx->event.mouse.button == MouseButton::Middle)
 			{
-				hideTabIndex = i;
+				closeTabIndex = i;
 				ctx->event.type = InputEvent::Type::None;
 				//TODO: issue some event on tab close ?
 			}
@@ -965,15 +956,30 @@ void dockNodeTabs(DockNode* node)
 
 	ctx->dockingState.drawingWindowTabs = false;
 
-	if (hideTabIndex != ~0)
+	if (closeTabIndex != ~0)
 	{
-		node->windows[hideTabIndex]->visible = false;
-		node->computeRect();
+		ctx->dockingState.windowsToDelete.insert(node->windows[closeTabIndex]);
+		node->windows.erase(node->windows.begin() + closeTabIndex);
 
-		auto visCount = node->children.size();
+		if (node->windows.empty())
+		{
+			// this is an empty root dock node, destroy and close OS window too
+			if (!node->parent)
+			{
+				ctx->dockingState.dockNodesToDelete.insert(node);
+				ctx->dockingState.osWindowsToDelete.insert(node->osWindow);
+			}
+			else
+			{
+				node->removeFromParent();
+				ctx->dockingState.dockNodesToDelete.insert(node);
+			}
+		}
+
+		auto wndCount = node->windows.size();
 		
-		if (selectedIndex >= visCount)
-			selectedIndex = visCount - 1;
+		if (selectedIndex >= wndCount && wndCount)
+			selectedIndex = wndCount - 1;
 	}
 
 	if (!node->windows.empty())

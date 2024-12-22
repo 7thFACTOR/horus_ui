@@ -22,18 +22,13 @@ struct DockNode
 	DockNode* parent = nullptr;
 	std::vector<DockNode*> children;
 	std::vector<Window*> windows;
-	std::vector<DockNode*> hiddenChildren;
-	std::vector<Window*> hiddenWindows;
 	HOsWindow osWindow = 0;
 	Type type = Type::None;
 	Point minSize = { 32, 32 };
 	Rect rect;
-	Rect closedOsWindowRect; // rect for the closed OS window, used when showing the window again, to be in the same position
 	size_t selectedTabIndex = 0;
 
-	bool hasSingleWindowVisible() const;
-	void setChildVisible(DockNode* child, bool visible);
-	void setWindowVisible(Window* wnd, bool visible);
+	bool hasSingleWindow() const;
 	void removeWindowsAndDeleteChildrenRecursive();
 	void removeFromParent();
 	void removeWindow(Window* window);

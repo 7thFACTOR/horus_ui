@@ -322,23 +322,49 @@ void deferredDeleteObjects()
 {
 	for (auto& wnd : ctx->dockingState.windowsToDelete)
 	{
+		auto iter = ctx->dockingState.windows.find(wnd->id);
+
+		if (iter != ctx->dockingState.windows.end())
+		{
+			ctx->dockingState.windows.erase(iter);
+		}
+
+		ctx->dockingState.closedWindowsRects[wnd->id] = wnd->dockNode->rect;
 		delete wnd;
 	}
-
-	ctx->dockingState.windowsToDelete.clear();
 
 	for (auto& dn : ctx->dockingState.dockNodesToDelete)
 	{
 		delete dn;
 	}
 
-	ctx->dockingState.dockNodesToDelete.clear();
-
 	for (auto& wnd : ctx->dockingState.osWindowsToDelete)
 	{
+		auto iter = ctx->dockingState.rootOsWindowDockNodes.find(wnd);
+
+		if (iter != ctx->dockingState.rootOsWindowDockNodes.end())
+		{
+			ctx->dockingState.rootOsWindowDockNodes.erase(iter);
+		}
+
+		auto iter2 = std::find(ctx->osWindows.begin(), ctx->osWindows.end(), wnd);
+
+		if (iter2 != ctx->osWindows.end())
+		{
+			ctx->osWindows.erase(iter2);
+		}
+
 		HORUS_INPUT->destroyWindow(wnd);
 	}
 
+	// just make sure we dont have redundant dock nodes
+	for (auto& pair : ctx->dockingState.rootOsWindowDockNodes)
+	{
+		pair.second->checkRedundancy();
+	}
+
+	ctx->dockingState.dockNodesToDelete.clear();
+	ctx->dockingState.windowsToDelete.clear();
 	ctx->dockingState.osWindowsToDelete.clear();
 }
 
@@ -417,8 +443,6 @@ void update(f32 deltaTime)
 		// track mouse pos
 		ctx->tooltip.position = ctx->providers->input->getMousePosition();
 	}
-
-	deferredDeleteObjects();
 }
 
 bool hasNothingToDo()
@@ -519,6 +543,9 @@ void presentWindow(HOsWindow wnd)
 
 void present()
 {
+	// first, delete pending objects so we dont access them
+	deferredDeleteObjects();
+
 	if (!ctx->renderer->disableRendering && !ctx->renderer->skipRender)
 	{
 		for (auto& wnd : ctx->osWindows)
@@ -693,9 +720,10 @@ bool packAtlas(HAtlas atlas, u32 border)
 
 void updateDockingSystem()
 {
-	auto& windows = ctx->dockingState.rootOsWindowDockNodes;
-
-	for (auto& wnd : windows)
+	// make a copy because the map might be modified by code
+	auto rootOsWindowDockNodes = ctx->dockingState.rootOsWindowDockNodes;
+	
+	for (auto& wnd : rootOsWindowDockNodes)
 	{
 		handleDockNodeEvents(wnd.second);
 	}
