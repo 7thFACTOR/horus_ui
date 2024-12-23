@@ -513,13 +513,6 @@ void Sdl2InputProvider::addSdlEvent(SDL_Event& ev)
 		sizeChanged = true;
 	}
 
-	if (ev.type == SDL_QUIT || (ev.window.event == SDL_WINDOWEVENT_CLOSE
-		&& outEvent.window == mainWindow))
-	{
-		// give a chance the user to cancel quit, can be cancelled with cancelQuit()
-		wantsToQuitApp = true;
-	}
-
 	addInputEvent(outEvent);
 }
 
@@ -584,29 +577,6 @@ void Sdl2InputProvider::updateDeltaTime()
 	lastTime = ticks;
 }
 
-bool Sdl2InputProvider::mustQuit()
-{
-	return quitApp;
-}
-
-bool Sdl2InputProvider::wantsToQuit()
-{
-	return wantsToQuitApp;
-}
-
-void Sdl2InputProvider::cancelQuitApplication()
-{
-	wantsToQuitApp = false;
-	quitApp = false;
-	forceRepaint();
-}
-
-void Sdl2InputProvider::quitApplication()
-{
-	wantsToQuitApp = true;
-	quitApp = true;
-}
-
 void Sdl2InputProvider::processEvents()
 {
 	updateDeltaTime();
@@ -659,11 +629,6 @@ void Sdl2InputProvider::deleteCustomCursor(HMouseCursor cursor)
 void Sdl2InputProvider::setCustomCursor(HMouseCursor cursor)
 {
 	SDL_SetCursor((SDL_Cursor*)cursor);
-}
-
-HOsWindow Sdl2InputProvider::getMainWindow()
-{
-	return (HOsWindow)mainWindow;
 }
 
 void Sdl2InputProvider::setCurrentWindow(HOsWindow window)
@@ -736,6 +701,27 @@ HOsWindow Sdl2InputProvider::createWindow(
 
 	newWnd->sdlWindow = wnd;
 	windows.push_back(newWnd);
+
+	focusedWindow = newWnd;
+	currentWindow = newWnd;
+	SDL_ShowWindow(wnd);
+	SDL_RaiseWindow(wnd);
+	SDL_SetWindowInputFocus(wnd);
+
+	// if no GL context provided, create one for this first window
+	if (HORUS_GFX->getApiType() == GraphicsProvider::ApiType::OpenGL && !initParams.sdlGlContext)
+	{
+		initParams.sdlGlContext = SDL_GL_CreateContext(wnd);
+		ownsGlContext = true;
+
+		if (!initParams.sdlGlContext)
+		{
+			printf("Cannot create GL context for SDL: %s\n", SDL_GetError());
+		}
+
+		SDL_GL_MakeCurrent(wnd, initParams.sdlGlContext);
+		SDL_GL_SetSwapInterval(initParams.vSync ? 1 : 0);
+	}
 
 	return newWnd;
 }
@@ -965,48 +951,7 @@ void initializeSdl(const SdlInitParams& params)
 	}
 
 	sdlProvider->initParams = params;
-
-	SdlWindowProxy* mainWnd = 0;
-
-	if (!params.sdlMainWindow)
-	{
-		mainWnd = (SdlWindowProxy*)sdlProvider->createWindow(params.mainWindowTitle.c_str(), params.mainWindowFlags, params.mainWindowState, params.mainWindowRect);
-	}
-	else
-	{
-		mainWnd = new SdlWindowProxy();
-		mainWnd->sdlWindow = params.sdlMainWindow;
-	}
-
-	// if no GL context provided, create one for the window
-	if (!sdlProvider->initParams.sdlGlContext)
-	{
-		if (HORUS_GFX->getApiType() == GraphicsProvider::ApiType::OpenGL)
-		{
-			sdlProvider->initParams.sdlGlContext = SDL_GL_CreateContext(((SdlWindowProxy*)mainWnd)->sdlWindow);
-			sdlProvider->ownsGlContext = true;
-
-			if (!sdlProvider->initParams.sdlGlContext)
-			{
-				printf("Cannot create GL context for SDL: %s\n", SDL_GetError());
-			}
-		}
-	}
-
-	if (HORUS_GFX->getApiType() == GraphicsProvider::ApiType::OpenGL)
-	{
-		SDL_GL_MakeCurrent(mainWnd->sdlWindow, sdlProvider->initParams.sdlGlContext);
-		SDL_GL_SetSwapInterval(params.vSync ? 1 : 0);
-	}
-
-	sdlProvider->mainWindow = mainWnd;
-	sdlProvider->focusedWindow = mainWnd;
-	SDL_ShowWindow(mainWnd->sdlWindow);
-	SDL_RaiseWindow(mainWnd->sdlWindow);
-	SDL_SetWindowInputFocus(mainWnd->sdlWindow);
-	sdlProvider->createSystemCursors();
-	createMainWindow(mainWnd);
-	HORUS_GFX->initialize();
+	sdlProvider->createSystemCursors();	
 	SDL_SetHint(SDL_HINT_MOUSE_AUTO_CAPTURE, "0");
 }
 

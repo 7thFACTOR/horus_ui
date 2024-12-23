@@ -32,18 +32,41 @@ int main(int argc, char** args)
 	//settings.dockNodeSpacing = 3;
 	//settings.dockNodeResizeSplitterHitSize = 6;
 
+	//1. Create the context
 	auto ctx = hui::createContext(settings);
 	hui::setContext(ctx); // set as current context
 
 	hui::SdlInitParams sdlParams;
 
-	sdlParams.mainWindowTitle = "HorusUI Example - Without docking";
-	sdlParams.mainWindowRect = { 20, 20, 1200, 1000 };
-	//sdlParams.mainWindowFlags = hui::OsWindowFlags::NoDecoration;
-	sdlParams.mainWindowState = hui::OsWindowState::Maximized;
-
+	//2. Initialize SDL input provider
 	hui::initializeSdl(sdlParams);
-	hui::initializeRenderer(); // init UI renderer for the current context
+
+	//3. Create the main window (this will also create a graphics (GL/VK/D3D/etc.) context)
+	auto mainWnd = HORUS_INPUT->createWindow("Horus Examples", hui::OsWindowFlags::Resizable, hui::OsWindowState::Maximized, hui::Rect(0, 0, 100, 100));
+
+	hui::DockNodeId mainDockNode = hui::createRootDockNode(mainWnd);
+
+	hui::DockNodeId n1, n2;
+	hui::dockLayoutSplit(mainDockNode, hui::DockNodeSplitType::Left, 0.5f, &n1, &n2 );
+	hui::dockLayoutSetNodeWindow(n1, "ui");
+	hui::dockLayoutSetNodeWindow(n2, "inspector");
+	auto inspectorNodeId = n2;
+	
+	hui::dockLayoutSplit(mainDockNode, hui::DockNodeSplitType::Top, 0.25f, &n1, &n2);
+	hui::dockLayoutSetNodeWindow(n2, "hui");
+
+	hui::dockLayoutSplit(inspectorNodeId, hui::DockNodeSplitType::Right, 0.25f, &n1, &n2);
+
+	hui::dockLayoutSetNodeWindow(n1, "scene");
+
+	hui::dockLayoutRecalculate();
+
+	//4. Initialize the graphics API, since now we have a first window created
+	// (we cant initialize the graphics api without a window)
+	HORUS_GFX->initialize();
+
+	//5. Initialize the UI renderer for the current context
+	hui::initializeRenderer();
 
 	char err[2048];
 	auto theme = hui::loadThemeFromJson("../themes/default.theme.json", err, 2048);
@@ -67,11 +90,8 @@ int main(int argc, char** args)
 	auto tabicon2 = hui::loadImage("../themes/icons/icons8-settings-20.png");
 	auto tabicon3 = hui::loadImage("../themes/icons/icons8-opened-folder-20.png");
 
-
 	// after we load the theme and more images and fonts, we need to rebuild the theme (image atlas)
 	hui::buildTheme(theme);
-
-	//auto w = hui::createWindow("TEST", 600, 500, hui::WindowFlags::Resizable);
 
 	while (!exitNow)
 	{
@@ -117,7 +137,10 @@ int main(int argc, char** args)
 			// we only render on the last event in the queue
 			hui::setDisableRendering(!lastEventInQueue);
 
-			if (hui::beginWindow(HORUS_MAIN_WINDOW_ID, "HUI", 0, hui::DockType::AsTab, 0, tabicon1))
+			HORUS_INPUT->setCurrentWindow(mainWnd);
+			HORUS_GFX->clear(hui::Color::red);
+
+			if (hui::beginWindow("hui", "HUI", nullptr, tabicon1))
 			{
 				if (lastEventInQueue)
 				{
@@ -178,7 +201,7 @@ int main(int argc, char** args)
 				scrollPos = hui::endScrollView();
 				hui::pushTint(hui::Color::orange);
 				if (hui::button("Exit"))
-					hui::quitApplication();
+					exitNow = true;
 				hui::popTint();
 
 				hui::beginColumns(5);
@@ -202,7 +225,7 @@ int main(int argc, char** args)
 			}
 			
 			// start to add widgets in the window
-			if (hui::beginWindow("inspector", "Inspector", nullptr, hui::DockType::None, nullptr, tabicon2))
+			if (hui::beginWindow("inspector", "Inspector", nullptr, tabicon2))
 			{
 				hui::labelCustomFont("SETTINGS AND STUFF", hui::getFont("large"));
 				static char txt[2000] = HORUS_MAIN_WINDOW_ID;
@@ -240,7 +263,7 @@ int main(int argc, char** args)
 			
 
 			// start to add widgets in the window
-			if (hui::beginWindow("assets", "Assets", "inspector", hui::DockType::Right, nullptr, tabicon3))
+			if (hui::beginWindow("assets", "Assets", nullptr, tabicon3))
 			{
 				
 				hui::labelCustomFont("ASSETS OF COURSE", hui::getFont("heading"));
@@ -278,7 +301,7 @@ int main(int argc, char** args)
 				hui::endWindow();
 			}
 
-			if (hui::beginWindow("scene", "Scene", "inspector", hui::DockType::Right, nullptr, tabicon3))
+			if (hui::beginWindow("scene", "Scene", nullptr, tabicon3))
 			{
 
 				hui::labelCustomFont("SCENE", hui::getFont("heading"));
@@ -316,7 +339,7 @@ int main(int argc, char** args)
 				hui::endWindow();
 			}
 
-			if (hui::beginWindow("ui", "UI", "inspector", hui::DockType::Right, nullptr, tabicon3))
+			if (hui::beginWindow("ui", "UI", nullptr, tabicon3))
 			{
 
 				hui::labelCustomFont("UI", hui::getFont("heading"));
@@ -354,7 +377,7 @@ int main(int argc, char** args)
 				hui::endWindow();
 			}
 
-			if (hui::beginWindow("log", "Log", "inspector", hui::DockType::Right, nullptr, tabicon3))
+			if (hui::beginWindow("log", "Log", nullptr, tabicon3))
 			{
 
 				hui::labelCustomFont("LOG", hui::getFont("heading"));
@@ -396,12 +419,8 @@ int main(int argc, char** args)
 			
 			if (lastEventInQueue)
 				hui::present();
-
-			if (hui::wantsToQuit() || hui::mustQuit())
-			{
-				exitNow = true;
-			}
 		};
+
 		hui::setMouseCursor(hui::MouseCursorType::Arrow);
 		// if we have events, then go through all of them and call the frame render and input
 		if (eventCount)
@@ -409,12 +428,21 @@ int main(int argc, char** args)
 			for (int i = 0; i < eventCount; i++)
 			{
 				hui::setInputEvent(hui::getInputEventAt(i));
+				
+				if (hui::getInputEvent().type == hui::InputEvent::Type::WindowClose)
+				{
+					if (hui::getInputEvent().window == mainWnd)
+					{
+						exitNow = true;
+					}
+				}
+
 				doFrame(i == eventCount - 1);
 			}
 		}
 		else
 		{
-			// if no events, just do the frame
+			// if no events, just draw the frame
 			doFrame(true);
 		}
 	}

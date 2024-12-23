@@ -17,4 +17,6 @@ bool viewportImageFitSize(
 bool iconButtonInternal(HImage icon, HImage disabledIcon, f32 customHeight, bool down, ThemeElement* btnBodyElem, bool focusable = true);
 bool clampValue(f32& value, f32 minVal, f32 maxVal);
 template <typename T> T sgn(T val) { return (T(0) < val) - (val < T(0)); }
+u64 hashString(const char* str);
+
 }

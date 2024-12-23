@@ -330,6 +330,14 @@ void deferredDeleteObjects()
 		}
 
 		ctx->dockingState.closedWindowsRects[wnd->id] = wnd->dockNode->rect;
+
+		auto iterWnd = ctx->dockingState.windowsDockNodeAssignments.find(wnd->id);
+
+		if (iterWnd != ctx->dockingState.windowsDockNodeAssignments.end())
+		{
+			ctx->dockingState.windowsDockNodeAssignments.erase(iterWnd);
+		}
+
 		delete wnd;
 	}
 
@@ -595,26 +603,6 @@ void setInputEvent(const InputEvent& event)
 	ctx->event = event;
 }
 
-bool mustQuit()
-{
-	return ctx->providers->input->mustQuit();
-}
-
-bool wantsToQuit()
-{
-	return ctx->providers->input->wantsToQuit();
-}
-
-void cancelQuitApplication()
-{
-	ctx->providers->input->cancelQuitApplication();
-}
-
-void quitApplication()
-{
-	ctx->providers->input->quitApplication();
-}
-
 void shutdown()
 {
 	assert(ctx);
@@ -718,6 +706,17 @@ bool packAtlas(HAtlas atlas, u32 border)
 	return atlasPtr->pack(border);
 }
 
+DockNodeId createRootDockNode(HOsWindow osWnd)
+{
+	auto node = createOsWindowRootDockNode(osWnd);
+	assert(node);
+
+	ctx->osWindows.push_back(osWnd);
+	ctx->dockingState.dockNodeIdsMap[node->id] = node;
+
+	return node->id;
+}
+
 void updateDockingSystem()
 {
 	// make a copy because the map might be modified by code
@@ -730,13 +729,133 @@ void updateDockingSystem()
 
 	if (ctx->event.type == InputEvent::Type::WindowResize)
 	{
-		for (auto wnd : ctx->osWindows)
+		for (auto& pair : ctx->dockingState.rootOsWindowDockNodes)
 		{
-			if (wnd == ctx->event.window)
-			{
-				ctx->dockingState.rootOsWindowDockNodes[wnd]->computeRect();
-			}
+			pair.second->computeRect();
 		}
+	}
+
+	if (ctx->event.type == InputEvent::Type::WindowClose)
+	{
+		auto node = ctx->dockingState.rootOsWindowDockNodes[ctx->event.window];
+
+		if (node)
+		{
+			node->removeWindowsAndDeleteChildrenRecursive();
+		}
+		
+		ctx->dockingState.osWindowsToDelete.insert(ctx->event.window);
+	}
+}
+
+void dockLayoutDeleteChildren(DockNodeId rootNodeId)
+{
+	DockNode* node = (DockNode*)ctx->dockingState.dockNodeIdsMap[rootNodeId];
+
+	if (node)
+		node->removeWindowsAndDeleteChildrenRecursive();
+}
+
+void dockLayoutSplit(DockNodeId nodeId, DockNodeSplitType splitType, f32 firstNodeSizeUnitPercent, DockNodeId* outNodeId1, DockNodeId* outNodeId2)
+{
+	DockNode* nodeToSplit = ctx->dockingState.dockNodeIdsMap[nodeId];
+	DockNode* newNode1 = new DockNode();
+	DockNode* newNode2 = new DockNode();
+
+	ctx->dockingState.dockNodeIdsMap[newNode1->id] = newNode1;
+	ctx->dockingState.dockNodeIdsMap[newNode2->id] = newNode2;
+
+	// find if there is a window assigned to the node to be split, if so, reassign to the new node that has the parent's content
+	auto iterWindow = ctx->dockingState.windowsDockNodeAssignments.begin();
+
+	while (iterWindow != ctx->dockingState.windowsDockNodeAssignments.end())
+	{
+		if (iterWindow->second == nodeToSplit->id)
+		{
+			iterWindow->second = newNode1->id;
+			break;
+		}
+
+		++iterWindow;
+	}
+
+	auto node1Id = newNode1->id;
+	*newNode1 = *nodeToSplit;
+	newNode1->id = node1Id;
+	newNode1->parent = nodeToSplit;
+
+	newNode2->osWindow = nodeToSplit->osWindow;
+	newNode2->parent = nodeToSplit;
+
+	for (auto& child : newNode1->children) child->parent = newNode1;
+
+	nodeToSplit->children.clear();
+
+	switch (splitType)
+	{
+	case DockNodeSplitType::Top:
+	case DockNodeSplitType::Left:
+		if (splitType == DockNodeSplitType::Top)
+		{
+			newNode1->rect.height = firstNodeSizeUnitPercent;
+			newNode2->rect.height = 1.0f - firstNodeSizeUnitPercent;
+		}
+		else
+		{
+			newNode1->rect.width = firstNodeSizeUnitPercent;
+			newNode2->rect.width = 1.0f - firstNodeSizeUnitPercent;
+		}
+		nodeToSplit->children.push_back(newNode1);
+		nodeToSplit->children.push_back(newNode2);
+		if (outNodeId1) *outNodeId1 = newNode1->id;
+		if (outNodeId2) *outNodeId2 = newNode2->id;
+		break;
+	case DockNodeSplitType::Bottom:
+	case DockNodeSplitType::Right:
+		if (splitType == DockNodeSplitType::Bottom)
+		{
+			newNode2->rect.height = firstNodeSizeUnitPercent;
+			newNode1->rect.height = 1.0f - firstNodeSizeUnitPercent;
+		}
+		else
+		{
+			newNode2->rect.width = firstNodeSizeUnitPercent;
+			newNode1->rect.width = 1.0f - firstNodeSizeUnitPercent;
+		}
+
+		nodeToSplit->children.push_back(newNode2);
+		nodeToSplit->children.push_back(newNode1);
+		if (outNodeId1) *outNodeId1 = newNode2->id;
+		if (outNodeId2) *outNodeId2 = newNode1->id;
+		break;
+	}
+
+	switch (splitType)
+	{
+	case DockNodeSplitType::Top:
+	case DockNodeSplitType::Bottom:
+		nodeToSplit->type = DockNode::Type::Vertical;
+		break;
+	case DockNodeSplitType::Left:
+	case DockNodeSplitType::Right:
+		nodeToSplit->type = DockNode::Type::Horizontal;
+		break;
+	}
+}
+
+void dockLayoutSetNodeWindow(DockNodeId parentNodeId, const char* windowId)
+{
+	DockNode* node = ctx->dockingState.dockNodeIdsMap[parentNodeId];
+
+	ctx->dockingState.windowsDockNodeAssignments[windowId] = node->id;
+}
+
+void dockLayoutRecalculate()
+{
+	for (auto& pair : ctx->dockingState.rootOsWindowDockNodes)
+	{
+		pair.second->checkRedundancy();
+		pair.second->computeRect();
 	}
 }
 

@@ -9,40 +9,40 @@
 namespace hui
 {
 
-void createMainWindow(HOsWindow osWnd)
+void dockWindow_DEPRECATED(const char* id, const char* dockTo, DockType dockType)
 {
-	auto title = HORUS_INPUT->getWindowTitle(osWnd);
-	auto rc = HORUS_INPUT->getWindowRect(osWnd);
-	auto wnd = createWindow(HORUS_MAIN_WINDOW_ID, nullptr, DockType::None, title, &rc, osWnd, 0);
-	ctx->osWindows.push_back(osWnd);
-	ctx->dockingState.mainWindow = wnd;
-	ctx->currentWindow = wnd;
-	ctx->hoveringThisWindow = true;
+	DockNode* dockToNode = nullptr;
+	auto iter = ctx->dockingState.windows.find(dockTo ? dockTo : "");
+	
+	if (dockTo && iter != ctx->dockingState.windows.end())
+	{
+		dockToNode = ctx->dockingState.windows[dockTo]->dockNode;
+	}
+
+	auto wnd = createWindow(id, dockToNode, dockType, false, "", nullptr, 0, 0);
+	wnd->id = id;
 }
 
-void closeMainWindow()
-{
-	deleteWindow(ctx->dockingState.mainWindow);
-	ctx->dockingState.mainWindow = 0;
-}
-
-bool beginWindow(const char* id, const char* title, const char* dockTo, DockType dockType, Rect* initialRect, HImage icon)
+bool beginWindow(const char* id, const char* title, Rect* initialRect, HImage icon)
 {
 	Window* wnd = nullptr;
-	DockNode* dockToNode = nullptr;
 	auto iterWnd = ctx->dockingState.windows.find(id);
-	auto iter = ctx->dockingState.windows.find(dockTo ? dockTo : "");
 	auto iterClosed = ctx->dockingState.closedWindowsRects.find(id);
 	bool wasClosed = iterClosed != ctx->dockingState.closedWindowsRects.end();
 
+	// if there is no window created, create one
 	if (iterWnd == ctx->dockingState.windows.end() && !wasClosed)
 	{
-		if (dockTo && iter != ctx->dockingState.windows.end())
+		// find docking info if there is anything there yet
+		auto iter = ctx->dockingState.windowsDockNodeAssignments.find(id);
+		DockNode* parentNode = nullptr;
+
+		if (iter != ctx->dockingState.windowsDockNodeAssignments.end())
 		{
-			dockToNode = ctx->dockingState.windows[dockTo]->dockNode;
+			parentNode = ctx->dockingState.dockNodeIdsMap[iter->second];
 		}
 
-		wnd = createWindow(id, dockToNode, dockType, title, initialRect, 0, icon);
+		wnd = createWindow(id, parentNode, parentNode ? DockType::AsTab : DockType::None, parentNode != nullptr, title, initialRect, 0, icon);
 		wnd->id = id;
 	}
 	else
@@ -53,23 +53,12 @@ bool beginWindow(const char* id, const char* title, const char* dockTo, DockType
 		}
 
 		wnd = ctx->dockingState.windows[id];
-		
-		if (!wnd->dockNode->osWindow)
-		{
-			Rect defaultRect = { 100, 100, 1500, 1300 };
-
-			wnd->dockNode->osWindow = createOsWindow(title, OsWindowFlags::Resizable, OsWindowState::Normal, initialRect ? *initialRect : defaultRect);
-			ctx->dockingState.rootOsWindowDockNodes.insert(std::make_pair(wnd->dockNode->osWindow, wnd->dockNode));
-
-			if (dockToNode)
-				dockWindow(wnd, dockToNode, dockType);
-		}
-
 		wnd->icon = icon;
 	}
 
 	if (ctx->event.type == InputEvent::Type::WindowClose)
 	{
+		// close the OS window if there is just one window inside
 		if (ctx->event.window == wnd->dockNode->osWindow
 			&& !wnd->dockNode->parent
 			&& wnd->dockNode->children.empty())

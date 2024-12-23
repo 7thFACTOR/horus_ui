@@ -278,6 +278,8 @@ struct DockingState
 	std::unordered_set<DockNode*> dockNodesToDelete;
 	std::unordered_set<HOsWindow> osWindowsToDelete;
 	std::unordered_map<std::string /*window name*/, Rect> closedWindowsRects;
+	std::unordered_map<std::string /*window name*/, DockNodeId> windowsDockNodeAssignments;
+	std::unordered_map<DockNodeId, DockNode*> dockNodeIdsMap;
 	DockNode* currentDockNode = nullptr;
 	bool closeWindow = false;
 	// variables for dragging views around
@@ -297,9 +299,9 @@ struct DockingState
 	Point lastMousePos;
 	Rect draggedRect;
 	bool drawingWindowTabs = false;
-	Window* mainWindow = nullptr;
 	Window* dragWindow = nullptr;
 	Window* dragOntoWindow = nullptr;
+	u64 nextDockNodeId = 1;
 };
 
 struct DragDropState

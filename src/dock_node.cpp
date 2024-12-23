@@ -5,6 +5,14 @@
 
 namespace hui
 {
+DockNode::DockNode()
+{
+	if (ctx)
+	{
+		id = ctx->dockingState.nextDockNodeId++;
+	}
+}
+
 bool DockNode::hasSingleWindow() const
 {
 	return windows.size() == 1;
@@ -45,6 +53,12 @@ void DockNode::removeFromParent()
 	{
 		// this is a root node and removing it we must destroy the window too
 		ctx->dockingState.osWindowsToDelete.insert(osWindow);
+
+		// we need to remove this now, it will interfere with redudancy checks
+		auto iter = std::find(ctx->osWindows.begin(), ctx->osWindows.end(), osWindow);
+
+		if (iter != ctx->osWindows.end()) ctx->osWindows.erase(iter);
+		
 		osWindow = nullptr;
 		parent = nullptr;
 	}

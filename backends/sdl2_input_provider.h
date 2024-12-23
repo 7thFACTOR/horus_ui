@@ -13,11 +13,6 @@ struct SdlInitParams
 	bool vSync = true;
 	SDL_GLContext sdlGlContext = nullptr; // set to a valid SDL GL context
 	bool initializeSdl = true; // set to false if you already initialized SDL
-	std::string mainWindowTitle;
-	Rect mainWindowRect = {0, 0, 800, 600};
-	OsWindowFlags mainWindowFlags = OsWindowFlags::Resizable;
-	OsWindowState mainWindowState = OsWindowState::Normal;
-	SDL_Window* sdlMainWindow = nullptr;
 	AntiAliasing antiAliasing = AntiAliasing::None;
 };
 
@@ -45,7 +40,6 @@ struct Sdl2InputProvider : InputProvider
 	HOsWindow getCurrentWindow() override;
 	HOsWindow getFocusedWindow() override;
 	HOsWindow getHoveredWindow() override;
-	HOsWindow getMainWindow() override;
 	HOsWindow createWindow(const char* title, OsWindowFlags flags, OsWindowState state, const Rect& rect) override;
 	void setWindowTitle(HOsWindow window, const char* title) override;
 	std::string getWindowTitle(HOsWindow window) override;
@@ -69,10 +63,6 @@ struct Sdl2InputProvider : InputProvider
 	void setCapture(HOsWindow window) override;
 	void releaseCapture() override;
 	Point getMousePosition() override;
-	bool mustQuit() override;
-	bool wantsToQuit() override;
-	void cancelQuitApplication() override;
-	void quitApplication() override;
 	void shutdown() override;
 	void setCursor(MouseCursorType type) override;
 	HMouseCursor createCustomCursor(Rgba32* pixels, u32 width, u32 height, u32 hotX, u32 hotY) override;
@@ -86,16 +76,13 @@ struct Sdl2InputProvider : InputProvider
 	SdlWindowProxy* findSdlWindow(SDL_Window* wnd);
 	void createSystemCursors();
 
-	bool quitApp = false; /// if true, it will end the main app loop
 	bool addedMouseMove = false; /// we only want the first mouse move because otherwise we'll get way too many mouse move events in the queue
-	bool wantsToQuitApp = false; /// true when the user wants to quit the app
 	bool ownsGlContext = false; // true if it created the OpenGL context
 	bool ownsSdlInit = false; // true if the SDL init happened here
 	SDL_Cursor* cursors[SDL_NUM_SYSTEM_CURSORS] = { nullptr };
 	std::vector<SdlWindowProxy*> windows;
 	std::vector<SDL_Cursor*> customCursors;
 	std::vector<SDL_Surface*> customCursorSurfaces;
-	SdlWindowProxy* mainWindow = nullptr;
 	SdlWindowProxy* focusedWindow = nullptr;
 	SdlWindowProxy* hoveredWindow = nullptr;
 	SdlWindowProxy* currentWindow = nullptr;

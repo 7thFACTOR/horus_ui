@@ -19,6 +19,7 @@ struct DockNode
 		Horizontal, // ||
 	};
 
+	u64 id = 0;
 	DockNode* parent = nullptr;
 	std::vector<DockNode*> children;
 	std::vector<Window*> windows;
@@ -28,6 +29,7 @@ struct DockNode
 	Rect rect;
 	size_t selectedTabIndex = 0;
 
+	DockNode();
 	bool hasSingleWindow() const;
 	void removeWindowsAndDeleteChildrenRecursive();
 	void removeFromParent();

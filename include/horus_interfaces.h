@@ -75,10 +75,7 @@ struct InputProvider
 	/// \return the hovered native window
 	virtual HOsWindow getHoveredWindow() = 0;
 
-	/// \return the main native window, this window is the one that upon closing, will end the application
-	virtual HOsWindow getMainWindow() = 0;
-
-	/// Create a new native window, the first window created will be the main window
+	/// Create a new native window
 	/// \param title the window title, UTF8 text
 	/// \param width the window width
 	/// \param height the window height
@@ -188,18 +185,6 @@ struct InputProvider
 	/// Set the current mouse cursor to a custom cursor
 	/// \param cursor the custom cursor handle
 	virtual void setCustomCursor(HMouseCursor cursor) = 0;
-
-	/// \return true if the user called quitApplication()
-	virtual bool mustQuit() = 0;
-
-	/// \return true if the main application window was closed by pressing the close button
-	virtual bool wantsToQuit() = 0;
-
-	/// Cancel the quit application, so mustQuit will return false from this point
-	virtual void cancelQuitApplication() = 0;
-
-	/// Quit the application, mustQuit will return true from now on
-	virtual void quitApplication() = 0;
 
 	/// Shutdown the input provider
 	virtual void shutdown() = 0;

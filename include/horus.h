@@ -166,6 +166,7 @@ typedef u32 Rgba32;
 typedef u32 TabIndex;
 typedef u32 GlyphCode;
 typedef std::vector<GlyphCode> Utf32String;
+typedef u64 DockNodeId;
 
 const f32 ColumnFill = -1;
 
@@ -602,6 +603,14 @@ enum class DockType
 	Bottom, /// will dock window to bottom
 	AsTab, /// will dock window as full window in the window tabs bar
 	Floating /// will undock window to a floating native window
+};
+
+enum class DockNodeSplitType
+{
+	Top,
+	Bottom,
+	Left,
+	Right
 };
 
 /// Common message box icons
@@ -1674,11 +1683,15 @@ HORUS_API void setMouseCursor(HMouseCursor cursor);
 // Windowing & docking functions
 //////////////////////////////////////////////////////////////////////////
 
-// Create the main window from an OS window handle, used by backends
-HORUS_API void createMainWindow(HOsWindow osWnd);
+HORUS_API DockNodeId createRootDockNode(HOsWindow osWnd);
 HORUS_API void updateDockingSystem();
-HORUS_API bool beginWindow(const char* windowId, const char* title, const char* dockTo, DockType dockType, Rect* initialRect, HImage icon);
 
+HORUS_API void dockLayoutDeleteChildren(DockNodeId rootNodeId);
+HORUS_API void dockLayoutSplit(DockNodeId nodeId, DockNodeSplitType splitType, f32 firstNodeSizeUnitPercent, DockNodeId* outNodeId1, DockNodeId* outNodeId2);
+HORUS_API void dockLayoutSetNodeWindow(DockNodeId parentNode, const char* windowId);
+HORUS_API void dockLayoutRecalculate();
+
+HORUS_API bool beginWindow(const char* windowId, const char* title, Rect* initialRect, HImage icon);
 HORUS_API void endWindow();
 HORUS_API void setWindowVisibility(const char* windowId, bool visible);
 HORUS_API void debugWindows();
@@ -1711,27 +1724,12 @@ HORUS_API bool loadDockingStateFromMemory(const u8* stateInfo, size_t stateInfoS
 /// Update the docking system internal, usually called by the dockingSystemLoop function, if you make your own loop, then you need to call it
 HORUS_API void updateDockingSystem();
 
-/// If this function will be called it will block until all or the main window is closed, or a quitApplication is issued
-HORUS_API void dockingSystemLoop();
-
 ///////////////////////////////////////////////////////////////////////////////
 // Application functions
 ///////////////////////////////////////////////////////////////////////////////
 
 /// Present the contents of the backbuffer for each OS native window, called after all rendering is done
 HORUS_API void present();
-
-/// \return true if the application must quit, due to quitApplication() call.
-HORUS_API bool mustQuit();
-
-/// \return true if the application must quit, due to user closing main window. You can close the application by exiting the main loop or ignore it, as you wish. If you show a message box and it is cancelled you must call cancelQuitApplication() to set this returned value to false.
-HORUS_API bool wantsToQuit();
-
-/// Cancel quitting the application if it was due to exit
-HORUS_API void cancelQuitApplication();
-
-/// Set the quit application to true, so the main loop will end
-HORUS_API void quitApplication();
 
 /// Shut down the library
 HORUS_API void shutdown();

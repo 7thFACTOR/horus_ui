@@ -3,6 +3,7 @@
 #include <string.h>
 #include <string>
 #include <vector>
+#include "rapidhash.h"
 
 namespace hui
 {
@@ -57,6 +58,11 @@ bool clampValue(f32& value, f32 minVal, f32 maxVal)
 	}
 
 	return false;
+}
+
+u64 hashString(const char* str)
+{
+	return rapidhash(str, strlen(str));
 }
 
 }

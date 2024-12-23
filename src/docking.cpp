@@ -31,7 +31,7 @@ void destroyOsWindow(HOsWindow osWnd)
 	ctx->dockingState.osWindowsToDelete.insert(osWnd);
 }
 
-DockNode* createRootDockNode(HOsWindow osWindow)
+DockNode* createOsWindowRootDockNode(HOsWindow osWindow)
 {
 	auto size = HORUS_INPUT->getWindowClientSize(osWindow);
 	Rect rect = { 0, 0, size.x, size.y };
@@ -89,7 +89,7 @@ void deleteRootDockNode(HOsWindow window)
 	}
 }
 
-Window* createWindow(const std::string& id, DockNode* targetNode, DockType dockType, const std::string& title, Rect* initialRect, HOsWindow osWnd, HImage icon)
+Window* createWindow(const std::string& id, DockNode* targetNode, DockType dockType, bool justPlaceIntoNode, const std::string& title, Rect* initialRect, HOsWindow osWnd, HImage icon)
 {
 	auto targetNodePtr = (DockNode*)targetNode;
 	auto newWnd = new Window();
@@ -106,7 +106,7 @@ Window* createWindow(const std::string& id, DockNode* targetNode, DockType dockT
 			osWnd = createOsWindow(title, OsWindowFlags::Resizable, OsWindowState::Normal, initialRect ? *initialRect : defaultRect);
 		}
 		
-		newWnd->dockNode = createRootDockNode(osWnd);
+		newWnd->dockNode = createOsWindowRootDockNode(osWnd);
 		newWnd->dockNode->windows.push_back(newWnd);
 		newWnd->clientRect = newWnd->dockNode->rect;
 	}
@@ -878,7 +878,7 @@ bool dockWindow(Window* wnd, DockNode* targetNode, DockType dockType, u32 tabInd
 
 		auto osWnd = createOsWindow(wnd->title, OsWindowFlags::Resizable, OsWindowState::Normal, rcWnd);
 		
-		wnd->dockNode = createRootDockNode(osWnd);
+		wnd->dockNode = createOsWindowRootDockNode(osWnd);
 		wnd->dockNode->windows.push_back(wnd);
 		wnd->clientRect = wnd->dockNode->rect;
 
