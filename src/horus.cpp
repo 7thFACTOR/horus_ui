@@ -574,12 +574,13 @@ void cancelEvent()
 
 void addInputEvent(const InputEvent& event)
 {
+	printf("adding event %d ", event.type);
 	ctx->events.push_back(event);
 }
 
 void clearInputEventQueue()
 {
-	ctx->event.type = InputEvent::Type::None;
+	ctx->event = InputEvent();
 	ctx->events.clear();
 }
 
@@ -727,7 +728,7 @@ void updateDockingSystem()
 		handleDockNodeEvents(wnd.second);
 	}
 
-	if (ctx->event.type == InputEvent::Type::WindowResize)
+	if (ctx->event.type == InputEvent::Type::WindowResized)
 	{
 		for (auto& pair : ctx->dockingState.rootOsWindowDockNodes)
 		{

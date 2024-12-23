@@ -347,7 +347,9 @@ enum class MouseButton
 enum class OsWindowFlags : u32
 {
 	NoDecoration = HORUS_BIT(0),
-	Resizable = HORUS_BIT(1)
+	NoInput = HORUS_BIT(1),
+	NoTaskBar = HORUS_BIT(2),
+	Resizable = HORUS_BIT(3)
 };
 HORUS_ENUM_AS_FLAGS(OsWindowFlags);
 
@@ -1273,7 +1275,8 @@ struct InputEvent
 		MouseWheel,
 		Key,
 		Text,
-		WindowResize,
+		WindowMoved,
+		WindowResized,
 		WindowGotFocus,
 		WindowLostFocus,
 		WindowClose,

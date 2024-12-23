@@ -442,14 +442,16 @@ void Sdl2InputProvider::addSdlEvent(SDL_Event& ev)
 	{
 		switch (ev.window.event)
 		{
+		case SDL_WINDOWEVENT_MOVED:
+			outEvent.type = InputEvent::Type::WindowMoved;
+			break;
 		case SDL_WINDOWEVENT_RESIZED:
 		case SDL_WINDOWEVENT_SIZE_CHANGED:
-		case SDL_WINDOWEVENT_MOVED:
 		case SDL_WINDOWEVENT_EXPOSED:
 		case SDL_WINDOWEVENT_MAXIMIZED:
 		case SDL_WINDOWEVENT_MINIMIZED:
 		case SDL_WINDOWEVENT_RESTORED:
-			outEvent.type = InputEvent::Type::WindowResize;
+			outEvent.type = InputEvent::Type::WindowResized;
 			break;
 		case SDL_WINDOWEVENT_FOCUS_GAINED:
 		{
@@ -480,6 +482,7 @@ void Sdl2InputProvider::addSdlEvent(SDL_Event& ev)
 		break;
 	}
 	default:
+		printf("unhandled SDL event: %d\n", ev.type);
 		break;
 	}
 
@@ -500,7 +503,6 @@ void Sdl2InputProvider::addSdlEvent(SDL_Event& ev)
 		if (ev.type == SDL_WINDOWEVENT
 			&& (ev.window.event == SDL_WINDOWEVENT_RESIZED
 				|| ev.window.event == SDL_WINDOWEVENT_SIZE_CHANGED
-				|| ev.window.event == SDL_WINDOWEVENT_MOVED
 				|| ev.window.event == SDL_WINDOWEVENT_EXPOSED
 				|| ev.window.event == SDL_WINDOWEVENT_MAXIMIZED
 				|| ev.window.event == SDL_WINDOWEVENT_MINIMIZED
@@ -528,6 +530,8 @@ void Sdl2InputProvider::processSdlEvents()
 		addSdlEvent(ev);
 	}
 
+	// we need to simulate focus dragging inter-windows for docking
+	// default dragging would only send events to one window so we wouldnt know where do we drag the mouse
 	if (draggingMouse)
 	{
 		i32 mx = 0, my = 0;
@@ -656,6 +660,18 @@ HOsWindow Sdl2InputProvider::getHoveredWindow()
 	return hoveredWindow;
 }
 
+#ifdef _WINDOWS
+void makeWindowPassthrough(SDL_Window* window) {
+	SDL_SysWMinfo wmInfo;
+	SDL_VERSION(&wmInfo.version);
+	if (SDL_GetWindowWMInfo(window, &wmInfo)) {
+		HWND hwnd = wmInfo.info.win.window;
+		LONG exStyle = GetWindowLong(hwnd, GWL_EXSTYLE);
+		SetWindowLong(hwnd, GWL_EXSTYLE, exStyle | WS_EX_LAYERED | WS_EX_TRANSPARENT);
+	}
+}
+#endif
+
 HOsWindow Sdl2InputProvider::createWindow(
 	const char* title, OsWindowFlags flags, OsWindowState state, const Rect& rect)
 {
@@ -678,6 +694,9 @@ HOsWindow Sdl2InputProvider::createWindow(
 	if (has(flags, OsWindowFlags::NoDecoration))
 		sdlflags |= SDL_WINDOW_BORDERLESS;
 
+	if (has(flags, OsWindowFlags::NoTaskBar))
+		sdlflags |= SDL_WINDOW_SKIP_TASKBAR;
+
 	if (HORUS_GFX->getApiType() == GraphicsProvider::ApiType::OpenGL)
 		sdlflags |= SDL_WINDOW_OPENGL;
 
@@ -696,6 +715,13 @@ HOsWindow Sdl2InputProvider::createWindow(
 	auto wnd = SDL_CreateWindow(
 		title, rect.x, rect.y, rect.width, rect.height,
 		sdlflags);
+
+	if (has(flags, OsWindowFlags::NoInput))
+	{
+#ifdef _WINDOWS
+		makeWindowPassthrough(wnd);
+#endif
+	}
 
 	auto newWnd = new SdlWindowProxy();
 

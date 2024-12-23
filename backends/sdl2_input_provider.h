@@ -3,6 +3,7 @@
 #define SDL_MAIN_HANDLED
 #include <SDL.h>
 #include <SDL_version.h>
+#include <SDL_syswm.h>
 #include <vector>
 #include <string>
 

@@ -286,6 +286,8 @@ struct DockingState
 	const f32 dockBorderSizePercent = 0.5f;
 	bool draggingDockNodeBorder = false;
 	bool draggingWindow = false;
+	std::string draggedText;
+	HOsWindow dragIndicatorOsWindow = nullptr;
 	DockNode* resizingNode = nullptr;
 	DockNode* hoveredNode = nullptr;
 	DockNode* nodeToResize = nullptr;

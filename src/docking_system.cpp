@@ -17,6 +17,8 @@
 #include <chrono>
 #include <ratio>
 #endif
+#define GLEW_STATIC
+#include <GL/glew.h>
 
 namespace hui
 {
@@ -95,6 +97,12 @@ void handleDockingMouseUp(const InputEvent& event, DockNode* node)
 		hui::forceRepaint();
 	}
 
+	if (ds.dragIndicatorOsWindow)
+	{
+		HORUS_INPUT->destroyWindow(ds.dragIndicatorOsWindow);
+		ds.dragIndicatorOsWindow = nullptr;
+	}
+
 	ds.dockToNode = nullptr;
 	ds.dragWindow = nullptr;
 	ds.resizingNode = nullptr;
@@ -146,6 +154,12 @@ void handleDockingMouseMove(const InputEvent& event, DockNode* node)
 
 		if (ds.dragWindow && moved)
 		{
+			if (!ds.dragIndicatorOsWindow)
+			{
+				ds.dragIndicatorOsWindow = HORUS_INPUT->createWindow(ds.dragWindow->title.c_str(),  OsWindowFlags::NoInput | OsWindowFlags::NoTaskBar|OsWindowFlags::NoDecoration, OsWindowState::Normal, Rect(0, 0, 200, 150));
+				HORUS_INPUT->showWindow(ds.dragIndicatorOsWindow);
+			}
+
 			// draw tab rect
 			auto& dockingRectElem = ctx->theme->getElement(WidgetElementId::WindowDockRect);
 			auto& dockingDialRectElem = ctx->theme->getElement(WidgetElementId::WindowDockDialRect);
@@ -198,13 +212,26 @@ void handleDockingMouseMove(const InputEvent& event, DockNode* node)
 				ds.draggedRect = ds.dragWindow->tabRect;
 				ds.draggedRect.x = mousePos.x - ds.draggedRect.width / 2;
 				ds.draggedRect.y = mousePos.y - ds.draggedRect.height;
-				ds.draggedRect.height = ds.dragWindow->tabRect.height; // we have two lines of text when undocking "Undock\nTabname"
+				ds.draggedRect.height = ds.dragWindow->tabRect.height * 2; // we have two lines of text when undocking "Undock\nTabname"
 				ds.dockToNode = nullptr;
 			}
 			else
 			{
 				// docking not allowed
 				ds.dockToNode = nullptr;
+			}
+
+			if (ds.dragIndicatorOsWindow)
+			{
+				auto mpos = HORUS_INPUT->getMousePosition();
+				mpos.x -= 50;
+				mpos.y -= 50;
+				HORUS_INPUT->setWindowPosition(ds.dragIndicatorOsWindow, mpos);
+				HORUS_INPUT->setCurrentWindow(ds.dragIndicatorOsWindow);
+				glClearColor(1, 1, 0, 1);
+				glClear(GL_COLOR_BUFFER_BIT);
+				HORUS_INPUT->presentWindow(ds.dragIndicatorOsWindow);
+
 			}
 
 			// draw docking rects
@@ -365,6 +392,15 @@ void handleDockingMouseMove(const InputEvent& event, DockNode* node)
 					ds.draggedRect.height /= 2.0f;
 				}
 
+				if (!ds.dockToNode)
+				{
+					ds.draggedText = "Undock\n" + ds.dragWindow->title;
+				}
+				else
+				{
+					ds.draggedText = ds.dragWindow->title;
+				}
+
 				if (ds.hoveredNode)
 				{
 					ctx->renderer->cmdSetColor(isSmallRectLeftHovered ? dockingDialRectVSplitElem.hoveredState().color : dockingDialRectVSplitElem.normalState().color);
@@ -417,7 +453,7 @@ void handleDockingMouseMove(const InputEvent& event, DockNode* node)
 				ctx->renderer->cmdDrawImageBordered(dockingRectElem.normalState().image, dockingRectElem.normalState().border, ds.draggedRect, ctx->globalScale);
 				ctx->renderer->cmdSetFont(dockingRectElem.normalState().font);
 				ctx->renderer->cmdSetColor(dockingRectElem.normalState().textColor);
-				ctx->drawMultilineText(ds.dragWindow->title.c_str(), ds.draggedRect, HAlignType::Center, VAlignType::Center);
+				ctx->drawMultilineText(ds.draggedText.c_str(), ds.draggedRect, HAlignType::Center, VAlignType::Center);
 				ctx->renderer->setZOrder(oldZOrder);
 				ctx->renderer->end();
 			}
@@ -736,6 +772,8 @@ void handleDockNodeEvents(DockNode* node)
 		// node is disabled for input
 		return;
 	}
+	
+	printf("wnd %d ev %d\n", event.window, event.type);
 
 	// is the event for this window ?
 	if (event.window != node->osWindow)
@@ -750,7 +788,7 @@ void handleDockNodeEvents(DockNode* node)
 	case InputEvent::Type::WindowClose:
 	{
 		//destroy all nodes and root nodes and windows of the os window
-		
+
 		break;
 	}
 	default:
