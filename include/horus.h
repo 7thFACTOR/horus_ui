@@ -1254,6 +1254,13 @@ struct Rect
 		return *this;
 	}
 
+	inline Rect& operator *= (f32 amount)
+	{
+		width *= amount;
+		height *= amount;
+		return *this;
+	}
+
 	inline bool operator != (const Rect& other) const
 	{
 		constexpr f32 epsilon = 0.00001f;
@@ -1548,8 +1555,7 @@ struct ContextSettings
 	f32 dockNodeSpacing = 3;
 	f32 dockNodeResizeSplitterHitSize = 6;
 	f32 dockNodeMinSize = 100;
-	bool dockNodeProportionalResize = true; /// if false, it will dock nodes keeping the other nodes sizes unchanged, else will resize the others so the new one can fit
-	f32 dockNodeDockingSizeRatio = 0.3f; /// ratio of the new size of a docked node in regard to the node we're docking in (if dockNodeProportionalResize is true)
+	f32 dockNodeDockingSizeRatio = 0.33f; /// ratio of the new size of a docked node in regard to the node we're docking in (if dockNodeProportionalResize is true)
 	u32 widgetLoopStartId = 1000000000; /// when pushing loops into loop stack, the widget ids will start from here. Basically this avoids the user to specify IDs when creating widgets in a loop, taking into account the fact there will not be so many widgets created anyway.
 	u32 widgetLoopMaxCount = 500000; /// current increment after each loop push to stack
 };

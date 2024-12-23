@@ -79,7 +79,8 @@ bool beginWindow(const char* id, const char* title, Rect* initialRect, HImage ic
 	}
 	
 	ctx->currentWindow = wnd;
-	ctx->hoveringThisWindow = isMouseOverWindow();
+	ctx->hoveringThisWindow = wnd->dockNode->osWindow == ctx->lastHoveredOsWindow;
+	printf("last %d\n", ctx->lastHoveredOsWindow);
 	ctx->renderer->setOsWindow(wnd->dockNode->osWindow);
 	ctx->renderer->begin();
 	auto rc = wnd->clientRect;
@@ -150,7 +151,7 @@ bool isMouseOverWindow()
 {
 	if (ctx->currentWindow)
 	{
-		return ctx->currentWindow->dockNode->osWindow == HORUS_INPUT->getHoveredWindow();
+		return ctx->currentWindow->dockNode->osWindow == ctx->lastHoveredOsWindow;
 	}
 
 	return false;

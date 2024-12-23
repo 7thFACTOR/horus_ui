@@ -52,24 +52,24 @@ bool comboSliderInternal(f32& value, f32 minVal, f32 maxVal, bool useRange, f32 
 	bool arrowHoveredLeft = false;
 	bool arrowHoveredRight = false;
 
-	if (isHovered() && ctx->event.mouse.point.x <= ctx->widget.rect.x + leftArrowElem.normalState().image->width)
+	if (isHovered() && ctx->mousePosition.x <= ctx->widget.rect.x + leftArrowElem.normalState().image->width)
 	{
 		arrowHoveredLeft = true;
 	}
-	else if (isHovered() && ctx->event.mouse.point.x >= ctx->widget.rect.right() - rightArrowElem.normalState().image->width)
+	else if (isHovered() && ctx->mousePosition.x >= ctx->widget.rect.right() - rightArrowElem.normalState().image->width)
 	{
 		arrowHoveredRight = true;
 	}
 
 	if (isClicked()
-		&& ctx->event.mouse.point.x <= ctx->widget.rect.x + leftArrowElem.normalState().image->width)
+		&& ctx->mousePosition.x <= ctx->widget.rect.x + leftArrowElem.normalState().image->width)
 	{
 		value -= arrowStep;
 		arrowStepped = true;
 		if (useRange) wasModified = clampValue(value, minVal, maxVal);
 		ctx->widget.changeEnded = true;
 	}
-	else if (isClicked() && ctx->event.mouse.point.x >= ctx->widget.rect.right() - rightArrowElem.normalState().image->width)
+	else if (isClicked() && ctx->mousePosition.x >= ctx->widget.rect.right() - rightArrowElem.normalState().image->width)
 	{
 		value += arrowStep;
 		arrowStepped = true;
@@ -134,7 +134,7 @@ bool comboSliderInternal(f32& value, f32 minVal, f32 maxVal, bool useRange, f32 
 			&& ctx->isActiveLayer())
 		{
 			hui::setCapture();
-			dragLastMousePos = ctx->event.mouse.point;
+			dragLastMousePos = ctx->mousePosition;
 
 			if (!editingText)
 			{
@@ -154,10 +154,10 @@ bool comboSliderInternal(f32& value, f32 minVal, f32 maxVal, bool useRange, f32 
 			&& ctx->event.type == InputEvent::Type::MouseMove
 			&& comboSliderWidgetId == ctx->currentWidgetId)
 		{
-			if (dragLastMousePos.getDistance(ctx->event.mouse.point) > ctx->settings.dragStartDistance)
+			if (dragLastMousePos.getDistance(ctx->mousePosition) > ctx->settings.dragStartDistance)
 			{
 				dragging = true;
-				dragLastMousePos = ctx->event.mouse.point;
+				dragLastMousePos = ctx->mousePosition;
 				mouseWasDown = false;
 			}
 		}
@@ -166,8 +166,8 @@ bool comboSliderInternal(f32& value, f32 minVal, f32 maxVal, bool useRange, f32 
 			&& ctx->currentWidgetId == comboSliderWidgetId
 			&& ctx->isActiveLayer())
 		{
-			Point delta = ctx->event.mouse.point - dragLastMousePos;
-			dragLastMousePos = ctx->event.mouse.point;
+			Point delta = ctx->mousePosition - dragLastMousePos;
+			dragLastMousePos = ctx->mousePosition;
 			f32 deltaValue = 0;
 
 			switch (ctx->settings.sliderDragDirection)

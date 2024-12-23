@@ -61,10 +61,12 @@ struct Context
 	bool focusChanged = false;
 	bool skipRenderAndInput = false;
 	Window* currentWindow = nullptr;
+	HOsWindow lastHoveredOsWindow = nullptr;
 	bool hoveringThisWindow = false;
 	bool dockingTabPane = false;
 	f32 globalScale = 1.0f;
 	u32 atlasTextureSize = 4096;
+	Point mousePosition;
 
 	// Vertical toolbars
 	bool verticalToolbar = false;

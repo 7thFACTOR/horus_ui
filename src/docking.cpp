@@ -193,6 +193,7 @@ bool dockWindow(Window* wnd, DockNode* targetNode, DockType dockType, u32 tabInd
 			newNode->type = targetParent->type;
 			newNode->windows = targetParent->windows;
 			newNode->osWindow = targetParent->osWindow;
+			newNode->rect = targetParent->rect;
 			for (auto& w : newNode->windows) { w->dockNode = newNode; }
 			targetParent->windows.clear();
 			targetParent->children.push_back(newNode);
@@ -210,6 +211,8 @@ bool dockWindow(Window* wnd, DockNode* targetNode, DockType dockType, u32 tabInd
 	if (target && wnd->dockNode == target && target->children.empty() && target->windows.size() == 1 && target->windows[0] == wnd)
 		return false;
 
+	auto sizeToShare = 0;
+
 	switch (dockType)
 	{
 	case hui::DockType::Left:
@@ -217,13 +220,19 @@ bool dockWindow(Window* wnd, DockNode* targetNode, DockType dockType, u32 tabInd
 		if (!targetParent)
 			break;
 
+		sizeToShare = target->rect.width;
+		target->rect.width *= 1.0f - ctx->settings.dockNodeDockingSizeRatio;
+
 		// just insert at the target site
 		if (targetParent->type == DockNode::Type::Horizontal || targetParent->type == DockNode::Type::Tabs)
 		{
 			// if there is no children nodes but has windows, relocate to new node
 			auto newTarget = checkAndRelocateWindowsOfNode(targetParent);
 			
-			if (newTarget) target = newTarget;
+			if (newTarget)
+			{
+				target = newTarget;
+			}
 
 			// if there is just one window in the source node, move the node and remove from current parent
 			if (source && source->windows.size() == 1)
@@ -344,18 +353,15 @@ bool dockWindow(Window* wnd, DockNode* targetNode, DockType dockType, u32 tabInd
 		}
 
 		// if not proportional docking resize, then resize the target and compute size from it for source
-		if (!ctx->settings.dockNodeProportionalResize
-			&& sourceNode
+		if (sourceNode
 			&& (targetParent->type == DockNode::Type::Vertical
 				|| targetParent->type == DockNode::Type::Horizontal))
 		{
-			f32 size = target->rect.width * ctx->settings.dockNodeDockingSizeRatio;
+			f32 size = sizeToShare * ctx->settings.dockNodeDockingSizeRatio;
 			sourceNode->rect.x = target->rect.x;
 			sourceNode->rect.y = target->rect.y;
 			sourceNode->rect.width = size;
 			sourceNode->rect.height = target->rect.height;
-			target->rect.width -= size;
-			target->rect.x -= size;
 		}
 
 		break;
@@ -365,13 +371,19 @@ bool dockWindow(Window* wnd, DockNode* targetNode, DockType dockType, u32 tabInd
 		if (!targetParent)
 			break;
 
+		sizeToShare = target->rect.width;
+		target->rect.width *= 1.0f - ctx->settings.dockNodeDockingSizeRatio;
+
 		// just insert at the target site
 		if (targetParent->type == DockNode::Type::Horizontal || targetParent->type == DockNode::Type::Tabs)
 		{
 			// if there is no children nodes but has windows, relocate to new node
 			auto newTarget = checkAndRelocateWindowsOfNode(targetParent);
 
-			if (newTarget) target = newTarget;
+			if (newTarget)
+			{
+				target = newTarget;
+			}
 
 			// if there is just one window in the source node, move the node and remove from current parent
 			if (source && source->windows.size() == 1)
@@ -482,10 +494,11 @@ bool dockWindow(Window* wnd, DockNode* targetNode, DockType dockType, u32 tabInd
 			{
 				// relocate target's content into new node
 				DockNode* newNode = new DockNode();
+				//TODO: id should not be copied
 				*newNode = *target;
 				newNode->parent = target;
 				sourceNode->parent = target;
-				
+
 				for (auto& c : newNode->children) c->parent = newNode;
 				for (auto& w : newNode->windows) w->dockNode = newNode;
 				
@@ -501,17 +514,15 @@ bool dockWindow(Window* wnd, DockNode* targetNode, DockType dockType, u32 tabInd
 		}
 
 		// if not proportional docking resize, then resize the target and compute size from it for source
-		if (!ctx->settings.dockNodeProportionalResize
-			&& sourceNode
+		if (sourceNode
 			&& (targetParent->type == DockNode::Type::Vertical
 				|| targetParent->type == DockNode::Type::Horizontal))
 		{
-			f32 size = target->rect.width * ctx->settings.dockNodeDockingSizeRatio;
+			f32 size = sizeToShare * ctx->settings.dockNodeDockingSizeRatio;
 			sourceNode->rect.x = target->rect.right() - size;
 			sourceNode->rect.y = target->rect.y;
 			sourceNode->rect.width = size;
 			sourceNode->rect.height = target->rect.height;
-			target->rect.width -= size;
 		}
 		break;
 	}
@@ -520,13 +531,19 @@ bool dockWindow(Window* wnd, DockNode* targetNode, DockType dockType, u32 tabInd
 		if (!targetParent)
 			break;
 
+		sizeToShare = target->rect.height;
+		target->rect.height *= 1.0f - ctx->settings.dockNodeDockingSizeRatio;
+
 		// just insert at the target site
 		if (targetParent->type == DockNode::Type::Vertical || targetParent->type == DockNode::Type::Tabs)
 		{
 			// if there is no children nodes but has windows, relocate to new node
 			auto newTarget = checkAndRelocateWindowsOfNode(targetParent);
 
-			if (newTarget) target = newTarget;
+			if (newTarget)
+			{
+				target = newTarget;
+			}
 
 			// if there is just one window in the source node, move the node also and remove from current parent
 			if (source && source->windows.size() == 1)
@@ -630,6 +647,7 @@ bool dockWindow(Window* wnd, DockNode* targetNode, DockType dockType, u32 tabInd
 			{
 				// relocate target's content into new node
 				DockNode* newNode = new DockNode();
+			
 				*newNode = *target;
 				newNode->parent = target;
 				sourceNode->parent = target;
@@ -649,18 +667,15 @@ bool dockWindow(Window* wnd, DockNode* targetNode, DockType dockType, u32 tabInd
 		}
 
 		// if not proportional docking resize, then resize the target and compute size from it for source
-		if (!ctx->settings.dockNodeProportionalResize
-			&& sourceNode
+		if (sourceNode
 			&& (targetParent->type == DockNode::Type::Vertical
 				|| targetParent->type == DockNode::Type::Horizontal))
 		{
-			f32 size = target->rect.height * ctx->settings.dockNodeDockingSizeRatio;
+			f32 size = sizeToShare * ctx->settings.dockNodeDockingSizeRatio;
 			sourceNode->rect.x = target->rect.x;
 			sourceNode->rect.y = target->rect.y;
 			sourceNode->rect.width = target->rect.width;
 			sourceNode->rect.height = size;
-			target->rect.height -= size;
-			target->rect.y -= size;
 		}
 		break;
 	}
@@ -669,13 +684,19 @@ bool dockWindow(Window* wnd, DockNode* targetNode, DockType dockType, u32 tabInd
 		if (!targetParent)
 			break;
 
+		sizeToShare = target->rect.height;
+		target->rect.height *= 1.0f - ctx->settings.dockNodeDockingSizeRatio;
+
 		// just insert at the target site
 		if (targetParent->type == DockNode::Type::Vertical || targetParent->type == DockNode::Type::Tabs)
 		{
 			// if there is no children nodes but has windows, relocate to new node
 			auto newTarget = checkAndRelocateWindowsOfNode(targetParent);
 
-			if (newTarget) target = newTarget;
+			if (newTarget)
+			{
+				target = newTarget;
+			}
 
 			// if there is just one window in the source node, move the node also and remove from current parent
 			if (source && source->windows.size() == 1)
@@ -788,6 +809,7 @@ bool dockWindow(Window* wnd, DockNode* targetNode, DockType dockType, u32 tabInd
 			{
 				// relocate target's content into new node
 				DockNode* newNode = new DockNode();
+			
 				*newNode = *target;
 				newNode->parent = target;
 				sourceNode->parent = target;
@@ -807,17 +829,15 @@ bool dockWindow(Window* wnd, DockNode* targetNode, DockType dockType, u32 tabInd
 		}
 
 		// if not proportional docking resize, then resize the target and compute size from it for source
-		if (!ctx->settings.dockNodeProportionalResize
-			&& sourceNode
+		if (sourceNode
 			&& (targetParent->type == DockNode::Type::Vertical
 				|| targetParent->type == DockNode::Type::Horizontal))
 		{
-			f32 size = target->rect.height * ctx->settings.dockNodeDockingSizeRatio;
+			f32 size = sizeToShare * ctx->settings.dockNodeDockingSizeRatio;
 			sourceNode->rect.x = target->rect.x;
 			sourceNode->rect.y = target->rect.bottom() - size;
 			sourceNode->rect.width = target->rect.width;
 			sourceNode->rect.height = size;
-			target->rect.height -= size;
 		}
 		break;
 	}
@@ -888,17 +908,14 @@ bool dockWindow(Window* wnd, DockNode* targetNode, DockType dockType, u32 tabInd
 		break;
 	}
 
-	if (ctx->settings.dockNodeProportionalResize)
+	for (auto& pair : ctx->dockingState.rootOsWindowDockNodes)
 	{
-		for (auto& osWnd : ctx->osWindows)
-		{
-			auto node = getRootDockNode(osWnd);
+		auto node = pair.second;
 			
-			if (node->osWindow)
-			{
-				node->checkRedundancy();
-				node->computeRect();
-			}
+		if (node->osWindow)
+		{
+			node->checkRedundancy();
+			node->computeRect();
 		}
 	}
 

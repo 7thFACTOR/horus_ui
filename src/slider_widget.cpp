@@ -66,17 +66,17 @@ bool sliderInternal(f32 minVal, f32 maxVal, f32& value, bool useStep, f32 step, 
 		&& ctx->isActiveLayer()
 		&& ctx->hoveringThisWindow)
 	{
-		if (knobRect.contains(ctx->event.mouse.point))
+		if (knobRect.contains(ctx->mousePosition))
 		{
 			setCapture();
 			draggingKnob = true;
-			dragDelta.x = ctx->event.mouse.point.x - (knobRect.x + knobRect.width / 2.0f);
+			dragDelta.x = ctx->mousePosition.x - (knobRect.x + knobRect.width / 2.0f);
 		}
-		else if (ctx->widget.rect.contains(ctx->event.mouse.point))
+		else if (ctx->widget.rect.contains(ctx->mousePosition))
 		{
 			draggingKnob = true;
 			dragDelta.x = 0;
-			f32 t = (ctx->event.mouse.point.x - ctx->widget.rect.x) / valueWidth;
+			f32 t = (ctx->mousePosition.x - ctx->widget.rect.x) / valueWidth;
 			value = minVal + (maxVal - minVal) * t;
 			percentFilled = 1.0f - (maxVal - value) / (maxVal - minVal);
 			recomputeKnobRect = true;
@@ -88,7 +88,7 @@ bool sliderInternal(f32 minVal, f32 maxVal, f32& value, bool useStep, f32 step, 
 		&& ctx->currentWidgetId == ctx->widget.focusedWidgetId
 		&& ctx->isActiveLayer())
 	{
-		f32 x = ctx->event.mouse.point.x - dragDelta.x;
+		f32 x = ctx->mousePosition.x - dragDelta.x;
 
 		if (x < ctx->widget.rect.x)
 			x = ctx->widget.rect.x;

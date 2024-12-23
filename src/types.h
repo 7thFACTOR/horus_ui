@@ -99,11 +99,11 @@ struct ThemeElement
 	inline void setDefaultStyle() { currentStyle = &styles["default"]; }
 	inline void setStyle(const char* styleName) { currentStyle = &styles[styleName]; }
 	inline State& getState(WidgetStateType stateType) { return currentStyle->states[(u32)stateType]; }
-	inline State& normalState() { return currentStyle->states[(u32)WidgetStateType::Normal]; }
-	inline State& focusedState() { return currentStyle->states[(u32)WidgetStateType::Focused]; }
-	inline State& pressedState() { return currentStyle->states[(u32)WidgetStateType::Pressed]; }
-	inline State& hoveredState() { return currentStyle->states[(u32)WidgetStateType::Hovered]; }
-	inline State& disabledState() { return currentStyle->states[(u32)WidgetStateType::Disabled]; }
+	inline State& normalState() const { return currentStyle->states[(u32)WidgetStateType::Normal]; }
+	inline State& focusedState() const { return currentStyle->states[(u32)WidgetStateType::Focused]; }
+	inline State& pressedState() const { return currentStyle->states[(u32)WidgetStateType::Pressed]; }
+	inline State& hoveredState() const { return currentStyle->states[(u32)WidgetStateType::Hovered]; }
+	inline State& disabledState() const { return currentStyle->states[(u32)WidgetStateType::Disabled]; }
 	inline State& getStyleState(const char* styleName, WidgetStateType stateType) { return styles[styleName].states[(u32)stateType]; }
 	inline State& styleNormalState(const char* styleName) { return styles[styleName].states[(u32)WidgetStateType::Normal]; }
 };

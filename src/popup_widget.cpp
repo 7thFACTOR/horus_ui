@@ -174,12 +174,12 @@ void endPopup()
 		auto rect = Rect(popup.position.x, popup.position.y, popup.width, popup.height);
 
 		if (ctx->event.type == InputEvent::Type::MouseDown
-			&& rect.contains(ctx->event.mouse.point)
+			&& rect.contains(ctx->mousePosition)
 			&& !popup.startedToDrag)
 		{
 			popup.startedToDrag = true;
-			popup.lastMouseDownPoint = ctx->event.mouse.point;
-			popup.lastMousePoint = ctx->event.mouse.point;
+			popup.lastMouseDownPoint = ctx->mousePosition;
+			popup.lastMousePoint = ctx->mousePosition;
 		}
 
 		// popup drag by mouse
@@ -211,8 +211,8 @@ void endPopup()
 	{
 		if (popup.draggingPopup)
 		{
-			popup.moveOffset += ctx->event.mouse.point - popup.lastMousePoint;
-			popup.lastMousePoint = ctx->event.mouse.point;
+			popup.moveOffset += ctx->mousePosition - popup.lastMousePoint;
+			popup.lastMousePoint = ctx->mousePosition;
 			// clear the event so other widgets will not use it
 			ctx->event = InputEvent();
 		}
@@ -272,7 +272,7 @@ bool clickedOutsidePopup()
 			popup.width,
 			popup.height };
 
-		if (!rc.contains(ctx->event.mouse.point))
+		if (!rc.contains(ctx->mousePosition))
 		{
 			return true;
 		}
@@ -294,7 +294,7 @@ bool mouseOutsidePopup()
 			popup.width,
 			popup.height };
 
-		if (!rc.contains(ctx->event.mouse.point))
+		if (!rc.contains(ctx->mousePosition))
 		{
 			return true;
 		}

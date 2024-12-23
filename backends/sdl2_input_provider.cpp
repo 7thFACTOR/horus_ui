@@ -447,7 +447,6 @@ void Sdl2InputProvider::addSdlEvent(SDL_Event& ev)
 			break;
 		case SDL_WINDOWEVENT_RESIZED:
 		case SDL_WINDOWEVENT_SIZE_CHANGED:
-		case SDL_WINDOWEVENT_EXPOSED:
 		case SDL_WINDOWEVENT_MAXIMIZED:
 		case SDL_WINDOWEVENT_MINIMIZED:
 		case SDL_WINDOWEVENT_RESTORED:
@@ -482,7 +481,6 @@ void Sdl2InputProvider::addSdlEvent(SDL_Event& ev)
 		break;
 	}
 	default:
-		printf("unhandled SDL event: %d\n", ev.type);
 		break;
 	}
 
@@ -515,7 +513,8 @@ void Sdl2InputProvider::addSdlEvent(SDL_Event& ev)
 		sizeChanged = true;
 	}
 
-	addInputEvent(outEvent);
+	if (outEvent.type != InputEvent::Type::None)
+		addInputEvent(outEvent);
 }
 
 void Sdl2InputProvider::processSdlEvents()

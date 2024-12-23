@@ -70,7 +70,7 @@ bool beginMenuInternal(const char* labelText, SelectableFlags stateFlags, bool c
 		{
 			Rect clippedRect = ctx->widget.rect.clipInside(ctx->renderer->getClipRect());
 
-			if (clippedRect.contains(ctx->event.mouse.point))
+			if (clippedRect.contains(ctx->mousePosition))
 			{
 				ctx->widget.pressed = true;
 				ctx->menuItemChosen = true;
@@ -95,8 +95,8 @@ bool beginMenuInternal(const char* labelText, SelectableFlags stateFlags, bool c
 			{
 				ctx->contextMenuActive = true;
 				ctx->activeMenuBarItemWidgetPos = {
-					ctx->event.mouse.point.x,
-					ctx->event.mouse.point.y };
+					ctx->mousePosition.x,
+					ctx->mousePosition.y };
 			}
 
 			ctx->event.type = InputEvent::Type::None;
@@ -281,7 +281,7 @@ bool beginContextMenu(ContextMenuFlags flags)
 
 	if (ctx->event.type == hui::InputEvent::Type::MouseDown
 		&& (ctx->event.mouse.button == MouseButton::Right || leftButton)
-		&& ctx->widget.rect.contains(ctx->event.mouse.point)
+		&& ctx->widget.rect.contains(ctx->mousePosition)
 		&& !ctx->activeMenuBarItemWidgetId
 		&& !ctx->contextMenuClicked
 		&& !ctx->contextMenuWidgetId)

@@ -27,7 +27,7 @@ bool rotarySliderFloat(const char* labelText, f32& value, f32 minVal, f32 maxVal
 
 	if (isHovered() && ctx->event.type == InputEvent::Type::MouseDown)
 	{
-		lastMousePos = ctx->event.mouse.point;
+		lastMousePos = ctx->mousePosition;
 		rotarySliderWidgetId = ctx->currentWidgetId;
 	}
 
@@ -42,9 +42,9 @@ bool rotarySliderFloat(const char* labelText, f32& value, f32 minVal, f32 maxVal
 		&& rotarySliderWidgetId == ctx->currentWidgetId)
 	{
 		f32 deltaValue = 0;
-		Point delta = ctx->event.mouse.point - lastMousePos;
+		Point delta = ctx->mousePosition - lastMousePos;
 		
-		lastMousePos = ctx->event.mouse.point;
+		lastMousePos = ctx->mousePosition;
 
 		switch (ctx->settings.sliderDragDirection)
 		{

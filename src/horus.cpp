@@ -254,6 +254,12 @@ void beginFrame()
 		ctx->textInput.processEvent(ctx->event);
 	}
 
+	if (ctx->event.window)
+	{
+		ctx->lastHoveredOsWindow = ctx->event.window;
+		ctx->mousePosition = ctx->event.mouse.point;
+	}
+
 	if (ctx->event.type == InputEvent::Type::Key
 		&& ctx->event.key.code == KeyCode::Tab
 		&& !!(ctx->event.key.modifiers, KeyModifiers::Shift)
@@ -287,7 +293,6 @@ void beginFrame()
 	ctx->currentWindowIndex = 0;
 	ctx->layerIndex = 0;
 	ctx->widget.nextFocusableWidgetId = 0;
-	//ctx->mouseCursor = MouseCursorType::Arrow;
 	ctx->menuDepth = 0;
 	ctx->popupIndex = 0;
 	ctx->menuItemChosen = false;
@@ -315,7 +320,6 @@ void beginFrame()
 	}
 
 	ctx->alreadyClickedOnSomething = false;
-	
 }
 
 void deferredDeleteObjects()
@@ -528,6 +532,7 @@ void setOsWindow(HOsWindow wnd)
 	auto size = HORUS_INPUT->getWindowClientSize(wnd);
 	ctx->renderer->setOsWindow(wnd);
 	ctx->renderer->setWindowSize(size);
+	ctx->hoveringThisWindow = ctx->lastHoveredOsWindow == wnd;
 	ctx->providers->gfx->setViewport(
 		size,
 		{ 0, 0, size.x, size.y });
@@ -541,7 +546,7 @@ void presentWindow(HOsWindow wnd)
 	HORUS_GFX->clear(bgColor);
 	auto r = HORUS_INPUT->getWindowRect(wnd);
 	r.x = r.y = 0;
-	ctx->hoveringThisWindow = HORUS_INPUT->getHoveredWindow() == wnd;
+	ctx->hoveringThisWindow = ctx->lastHoveredOsWindow == wnd;
 	ctx->renderer->begin();
 	dockNodeTabs(ctx->dockingState.rootOsWindowDockNodes[wnd]);
 	ctx->renderer->end();
@@ -574,7 +579,6 @@ void cancelEvent()
 
 void addInputEvent(const InputEvent& event)
 {
-	printf("adding event %d ", event.type);
 	ctx->events.push_back(event);
 }
 
@@ -728,7 +732,7 @@ void updateDockingSystem()
 		handleDockNodeEvents(wnd.second);
 	}
 
-	if (ctx->event.type == InputEvent::Type::WindowResized)
+	if (ctx->event.type == InputEvent::Type::WindowResized || ctx->event.type == InputEvent::Type::WindowMoved)
 	{
 		for (auto& pair : ctx->dockingState.rootOsWindowDockNodes)
 		{
@@ -1823,7 +1827,7 @@ u32 getWidgetId()
 
 Point getMousePosition()
 {
-	return ctx->event.mouse.point;
+	return ctx->mousePosition;
 }
 
 Point getPenPosition()
@@ -1844,7 +1848,7 @@ bool wantsToDragDrop()
 		&& ctx->widget.hovered)
 	{
 		ctx->dragDropState.draggingIntent = true;
-		ctx->dragDropState.lastMousePos = ctx->event.mouse.point;
+		ctx->dragDropState.lastMousePos = ctx->mousePosition;
 		ctx->dragDropState.widgetId = ctx->currentWidgetId;
 	}
 
@@ -1853,7 +1857,7 @@ bool wantsToDragDrop()
 	if (ctx->dragDropState.draggingIntent
 		&& !ctx->dragDropState.dragging
 		&& ctx->currentWidgetId == ctx->dragDropState.widgetId
-		&& ctx->dragDropState.lastMousePos.getDistance(ctx->event.mouse.point) >= dragStartPixelDistance)
+		&& ctx->dragDropState.lastMousePos.getDistance(ctx->mousePosition) >= dragStartPixelDistance)
 	{
 		ctx->dragDropState.dragging = true;
 		return true;

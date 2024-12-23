@@ -56,7 +56,7 @@ void buttonBehavior(bool menuItem)
 	Rect clippedRect = ctx->widget.rect.clipInside(ctx->renderer->getClipRect());
 
 	// if we're inside the button
-	if (clippedRect.contains(ctx->event.mouse.point) && ctx->hoveringThisWindow)
+	if (clippedRect.contains(ctx->mousePosition) && ctx->hoveringThisWindow)
 	{
 		bool alreadyCapturedSomeWidget = ctx->widget.focusedWidgetPressed && (ctx->currentWidgetId != ctx->widget.focusedWidgetId);
 
@@ -145,8 +145,7 @@ void mouseDownOnlyButtonBehavior()
 
 	Rect clippedRect = ctx->widget.rect.clipInside(ctx->renderer->getClipRect());
 
-	if (clippedRect.contains(ctx->event.mouse.point) && ctx->hoveringThisWindow
-		&& ctx->event.mouse.point.getLength())
+	if (clippedRect.contains(ctx->mousePosition) && ctx->hoveringThisWindow)
 	{
 		ctx->widget.hovered = true;
 		ctx->widget.hoveredWidgetRect = ctx->widget.rect;
@@ -200,7 +199,7 @@ void mouseDownOnlyButtonBehavior()
 
 bool button(const char* labelText)
 {
-	auto btnBodyElem = ctx->theme->getElement(WidgetElementId::ButtonBody);
+	auto& btnBodyElem = ctx->theme->getElement(WidgetElementId::ButtonBody);
 
 	addWidgetItem(btnBodyElem.normalState().height * ctx->globalScale);
 	buttonBehavior();

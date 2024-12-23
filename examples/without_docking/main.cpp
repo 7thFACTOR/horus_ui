@@ -31,6 +31,7 @@ int main(int argc, char** args)
 	settings.providers.utf = new hui::UtfCppProvider();
 	//settings.dockNodeSpacing = 3;
 	//settings.dockNodeResizeSplitterHitSize = 6;
+	//settings.dockNodeDockingSizeRatio = 0.33f;
 
 	//1. Create the context
 	auto ctx = hui::createContext(settings);

@@ -74,7 +74,7 @@ f32 endScrollView()
 	if (ctx->event.type == InputEvent::Type::MouseWheel
 		&& ctx->isActiveLayer())
 	{
-		if (fullRect.contains(ctx->event.mouse.point))
+		if (fullRect.contains(ctx->mousePosition))
 		{
 			scrollAmount = ctx->event.mouse.wheel.y * (clipRect.height * ctx->scrollViewSpeed) * ctx->globalScale;
 			scrollPos -= scrollAmount;
@@ -144,31 +144,31 @@ f32 endScrollView()
 		};
 
 		if (ctx->isActiveLayer())
-		if (rectScrollBarHandle.contains(ctx->event.mouse.point) || (scrollViewInfo.draggingThumb && ctx->dragScrollViewHandleWidgetId == scrollViewInfo.widgetId))
+		if (rectScrollBarHandle.contains(ctx->mousePosition) || (scrollViewInfo.draggingThumb && ctx->dragScrollViewHandleWidgetId == scrollViewInfo.widgetId))
 		{
 			scrollViewScrollThumbElemState = ctx->theme->getElement(WidgetElementId::ScrollViewScrollThumb).getState(WidgetStateType::Hovered);
 		}
 
 		if (ctx->event.type == InputEvent::Type::MouseDown && ctx->isActiveLayer())
 		{
-			if (rectScrollBarHandle.contains(ctx->event.mouse.point))
+			if (rectScrollBarHandle.contains(ctx->mousePosition))
 			{
 				scrollViewInfo.draggingThumb = true;
-				scrollViewInfo.dragDelta = ctx->event.mouse.point - rectScrollBarHandle.topLeft();
+				scrollViewInfo.dragDelta = ctx->mousePosition - rectScrollBarHandle.topLeft();
 				ctx->dragScrollViewHandleWidgetId = scrollViewInfo.widgetId;
 				ctx->widget.focusedWidgetId = ctx->currentWidgetId;
 			}
-			else if (rectScrollBar.contains(ctx->event.mouse.point))
+			else if (rectScrollBar.contains(ctx->mousePosition))
 			{
 				f32 pageSize = (rect.height * ctx->scrollViewScrollPageSize);
 
 				// page up
-				if (ctx->event.mouse.point.y < rectScrollBarHandle.y)
+				if (ctx->mousePosition.y < rectScrollBarHandle.y)
 				{
 					scrollPos -= pageSize;
 				}
 				// page down
-				else if (ctx->event.mouse.point.y > rectScrollBarHandle.bottom())
+				else if (ctx->mousePosition.y > rectScrollBarHandle.bottom())
 				{
 					scrollPos += pageSize;
 				}
@@ -179,7 +179,7 @@ f32 endScrollView()
 			&& scrollViewInfo.draggingThumb
 			&& ctx->dragScrollViewHandleWidgetId == scrollViewInfo.widgetId)
 		{
-			f32 crtLocalY = ctx->event.mouse.point.y - scrollViewInfo.dragDelta.y - rect.y;
+			f32 crtLocalY = ctx->mousePosition.y - scrollViewInfo.dragDelta.y - rect.y;
 			f32 trackSize = rect.height - handleSize;
 			f32 percent = crtLocalY / trackSize;
 			f32 oldScrollPos = scrollPos;
