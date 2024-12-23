@@ -29,7 +29,7 @@ int main(int argc, char** args)
 	settings.providers.input = new hui::Sdl2InputProvider();
 	settings.providers.rectPack = new hui::StbRectPackProvider();
 	settings.providers.utf = new hui::UtfCppProvider();
-	//settings.dockNodeSpacing = 3;
+	settings.dockNodeSpacing = 3;
 	//settings.dockNodeResizeSplitterHitSize = 6;
 	//settings.dockNodeDockingSizeRatio = 0.33f;
 
@@ -137,9 +137,6 @@ int main(int argc, char** args)
 			// no need to render while handling all the input events
 			// we only render on the last event in the queue
 			hui::setDisableRendering(!lastEventInQueue);
-
-			HORUS_INPUT->setCurrentWindow(mainWnd);
-			HORUS_GFX->clear(hui::Color::red);
 
 			if (hui::beginWindow("hui", "HUI", nullptr, tabicon1))
 			{

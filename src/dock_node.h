@@ -30,6 +30,9 @@ struct DockNode
 	size_t selectedTabIndex = 0;
 
 	DockNode();
+	void copyFrom(DockNode* other);
+	void adoptChildren();
+	void adoptWindows();
 	bool hasSingleWindow() const;
 	void removeWindowsAndDeleteChildrenRecursive();
 	void removeFromParent();

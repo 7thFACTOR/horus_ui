@@ -268,6 +268,7 @@ struct Window
 	std::string id, title;
 	HImage icon = 0;
 	Rect tabRect, clientRect;
+	bool dockingNow = false;
 };
 
 struct DockingState

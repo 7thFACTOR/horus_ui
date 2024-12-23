@@ -161,6 +161,7 @@ bool dockWindow(Window* wnd, DockNode* targetNode, DockType dockType, u32 tabInd
 		wnd->dockNode = target;
 		target->type = DockNode::Type::Tabs;
 		target->selectedTabIndex = 0;
+		
 		return true;
 	}
 
@@ -188,13 +189,8 @@ bool dockWindow(Window* wnd, DockNode* targetNode, DockType dockType, u32 tabInd
 		{
 			newNode = new DockNode();
 
-			newNode->parent = targetParent;
-			newNode->selectedTabIndex = targetParent->selectedTabIndex;
-			newNode->type = targetParent->type;
-			newNode->windows = targetParent->windows;
-			newNode->osWindow = targetParent->osWindow;
-			newNode->rect = targetParent->rect;
-			for (auto& w : newNode->windows) { w->dockNode = newNode; }
+			newNode->copyFrom(targetParent);
+			newNode->adoptWindows();
 			targetParent->windows.clear();
 			targetParent->children.push_back(newNode);
 
@@ -213,15 +209,15 @@ bool dockWindow(Window* wnd, DockNode* targetNode, DockType dockType, u32 tabInd
 
 	auto sizeToShare = 0;
 
+
+	Rect origTargetRc = target ? target->rect : Rect();
+
 	switch (dockType)
 	{
 	case hui::DockType::Left:
 	{	
 		if (!targetParent)
 			break;
-
-		sizeToShare = target->rect.width;
-		target->rect.width *= 1.0f - ctx->settings.dockNodeDockingSizeRatio;
 
 		// just insert at the target site
 		if (targetParent->type == DockNode::Type::Horizontal || targetParent->type == DockNode::Type::Tabs)
@@ -266,11 +262,11 @@ bool dockWindow(Window* wnd, DockNode* targetNode, DockType dockType, u32 tabInd
 				wnd->dockNode = newNode;
 				newNode->parent = targetParent;
 				newNode->type = DockNode::Type::Tabs;
-				newNode->osWindow = target->osWindow;
+				newNode->osWindow = target ? target->osWindow : nullptr;
 				newNode->rect = wndRect;
 
 				// treat docking to root node
-				if (targetParent != target)
+				if (targetParent != target && target)
 				{
 					auto iter = std::find(targetParent->children.begin(), targetParent->children.end(), target);
 
@@ -316,7 +312,7 @@ bool dockWindow(Window* wnd, DockNode* targetNode, DockType dockType, u32 tabInd
 			if (targetParent->type == DockNode::Type::Horizontal)
 			{
 				// treat docking to root node
-				if (targetParent != target)
+				if (targetParent != target && target)
 				{
 					auto iter = std::find(targetParent->children.begin(), targetParent->children.end(), target);
 
@@ -332,14 +328,12 @@ bool dockWindow(Window* wnd, DockNode* targetNode, DockType dockType, u32 tabInd
 				// relocate target's content into new node
 				DockNode* newTargetNode = new DockNode();
 				
-				if (target)
-					*newTargetNode = *target;
-				
+				if (target) newTargetNode->copyFrom(target);
 				newTargetNode->parent = target;
 				sourceNode->parent = target;
 				
-				for (auto& c : newTargetNode->children) c->parent = newTargetNode;
-				for (auto& w : newTargetNode->windows) w->dockNode = newTargetNode;
+				newTargetNode->adoptChildren();
+				newTargetNode->adoptWindows();
 				
 				if (target)
 				{
@@ -349,6 +343,8 @@ bool dockWindow(Window* wnd, DockNode* targetNode, DockType dockType, u32 tabInd
 					target->children.push_back(newTargetNode);
 					target->type = DockNode::Type::Horizontal;
 				}
+
+				target = newTargetNode;
 			}
 		}
 
@@ -357,11 +353,9 @@ bool dockWindow(Window* wnd, DockNode* targetNode, DockType dockType, u32 tabInd
 			&& (targetParent->type == DockNode::Type::Vertical
 				|| targetParent->type == DockNode::Type::Horizontal))
 		{
-			f32 size = sizeToShare * ctx->settings.dockNodeDockingSizeRatio;
-			sourceNode->rect.x = target->rect.x;
-			sourceNode->rect.y = target->rect.y;
+			f32 size = origTargetRc.width * ctx->settings.dockNodeDockingSizeRatio;
 			sourceNode->rect.width = size;
-			sourceNode->rect.height = target->rect.height;
+			if (target) target->rect.width -= size;
 		}
 
 		break;
@@ -370,9 +364,6 @@ bool dockWindow(Window* wnd, DockNode* targetNode, DockType dockType, u32 tabInd
 	{
 		if (!targetParent)
 			break;
-
-		sizeToShare = target->rect.width;
-		target->rect.width *= 1.0f - ctx->settings.dockNodeDockingSizeRatio;
 
 		// just insert at the target site
 		if (targetParent->type == DockNode::Type::Horizontal || targetParent->type == DockNode::Type::Tabs)
@@ -393,7 +384,7 @@ bool dockWindow(Window* wnd, DockNode* targetNode, DockType dockType, u32 tabInd
 				source->osWindow = targetParent->osWindow;
 
 				// treat docking to root node
-				if (targetParent != target)
+				if (targetParent != target && target)
 				{
 					auto iter = std::find(targetParent->children.begin(), targetParent->children.end(), target);
 
@@ -421,11 +412,11 @@ bool dockWindow(Window* wnd, DockNode* targetNode, DockType dockType, u32 tabInd
 				wnd->dockNode = newNode;
 				newNode->parent = targetParent;
 				newNode->type = DockNode::Type::Tabs;
-				newNode->osWindow = target->osWindow;
+				newNode->osWindow = target ? target->osWindow : nullptr;
 				newNode->rect = wndRect;
 
 				// treat docking to root node
-				if (targetParent != target)
+				if (targetParent != target && target)
 				{
 					auto iter = std::find(targetParent->children.begin(), targetParent->children.end(), target);
 
@@ -475,7 +466,7 @@ bool dockWindow(Window* wnd, DockNode* targetNode, DockType dockType, u32 tabInd
 			if (targetParent->type == DockNode::Type::Horizontal)
 			{
 				// treat docking to root node
-				if (targetParent != target)
+				if (targetParent != target && target)
 				{
 					auto iter = std::find(targetParent->children.begin(), targetParent->children.end(), target);
 
@@ -493,23 +484,24 @@ bool dockWindow(Window* wnd, DockNode* targetNode, DockType dockType, u32 tabInd
 			else
 			{
 				// relocate target's content into new node
-				DockNode* newNode = new DockNode();
-				//TODO: id should not be copied
-				*newNode = *target;
-				newNode->parent = target;
-				sourceNode->parent = target;
+				DockNode* newTargetNode = new DockNode();
 
-				for (auto& c : newNode->children) c->parent = newNode;
-				for (auto& w : newNode->windows) w->dockNode = newNode;
+				if (target) newTargetNode->copyFrom(target);
+				newTargetNode->parent = target;
+				sourceNode->parent = target;
+				newTargetNode->adoptChildren();
+				newTargetNode->adoptWindows();
 				
 				if (target)
 				{
 					target->windows.clear();
 					target->children.clear();
-					target->children.push_back(newNode);
+					target->children.push_back(newTargetNode);
 					target->children.push_back(sourceNode); // insert last
 					target->type = DockNode::Type::Horizontal;
 				}
+
+				target = newTargetNode;
 			}
 		}
 
@@ -518,11 +510,9 @@ bool dockWindow(Window* wnd, DockNode* targetNode, DockType dockType, u32 tabInd
 			&& (targetParent->type == DockNode::Type::Vertical
 				|| targetParent->type == DockNode::Type::Horizontal))
 		{
-			f32 size = sizeToShare * ctx->settings.dockNodeDockingSizeRatio;
-			sourceNode->rect.x = target->rect.right() - size;
-			sourceNode->rect.y = target->rect.y;
+			f32 size = origTargetRc.width * ctx->settings.dockNodeDockingSizeRatio;
 			sourceNode->rect.width = size;
-			sourceNode->rect.height = target->rect.height;
+			if (target) target->rect.width -= size;
 		}
 		break;
 	}
@@ -530,9 +520,6 @@ bool dockWindow(Window* wnd, DockNode* targetNode, DockType dockType, u32 tabInd
 	{
 		if (!targetParent)
 			break;
-
-		sizeToShare = target->rect.height;
-		target->rect.height *= 1.0f - ctx->settings.dockNodeDockingSizeRatio;
 
 		// just insert at the target site
 		if (targetParent->type == DockNode::Type::Vertical || targetParent->type == DockNode::Type::Tabs)
@@ -553,7 +540,7 @@ bool dockWindow(Window* wnd, DockNode* targetNode, DockType dockType, u32 tabInd
 				source->osWindow = targetParent->osWindow;
 
 				// treat docking to root node
-				if (targetParent != target)
+				if (targetParent != target && target)
 				{
 					auto iter = std::find(targetParent->children.begin(), targetParent->children.end(), target);
 
@@ -577,10 +564,10 @@ bool dockWindow(Window* wnd, DockNode* targetNode, DockType dockType, u32 tabInd
 				wnd->dockNode = newNode;
 				newNode->parent = targetParent;
 				newNode->type = DockNode::Type::Tabs;
-				newNode->osWindow = target->osWindow;
+				newNode->osWindow = target ? target->osWindow : target;
 				newNode->rect = wndRect;
 
-				if (targetParent != target)
+				if (targetParent != target && target)
 				{
 					// treat docking to root node
 					if (targetParent != target)
@@ -633,7 +620,7 @@ bool dockWindow(Window* wnd, DockNode* targetNode, DockType dockType, u32 tabInd
 			if (targetParent->type == DockNode::Type::Vertical)
 			{
 				// treat docking to root node
-				if (targetParent != target)
+				if (targetParent != target && target)
 				{
 					auto iter = std::find(targetParent->children.begin(), targetParent->children.end(), target);
 					targetParent->children.insert(iter, source);
@@ -646,23 +633,26 @@ bool dockWindow(Window* wnd, DockNode* targetNode, DockType dockType, u32 tabInd
 			else
 			{
 				// relocate target's content into new node
-				DockNode* newNode = new DockNode();
+				DockNode* newTargetNode = new DockNode();
 			
-				*newNode = *target;
-				newNode->parent = target;
+				if (target)	newTargetNode->copyFrom(target);
+				
+				newTargetNode->parent = target;
 				sourceNode->parent = target;
 				
-				for (auto& c : newNode->children) c->parent = newNode;
-				for (auto& w : newNode->windows) w->dockNode = newNode;
+				newTargetNode->adoptChildren();
+				newTargetNode->adoptWindows();
 				
 				if (target)
 				{
 					target->windows.clear();
 					target->children.clear();
 					target->children.push_back(sourceNode);
-					target->children.push_back(newNode);
+					target->children.push_back(newTargetNode);
 					target->type = DockNode::Type::Vertical;
 				}
+
+				target = newTargetNode;
 			}
 		}
 
@@ -671,11 +661,9 @@ bool dockWindow(Window* wnd, DockNode* targetNode, DockType dockType, u32 tabInd
 			&& (targetParent->type == DockNode::Type::Vertical
 				|| targetParent->type == DockNode::Type::Horizontal))
 		{
-			f32 size = sizeToShare * ctx->settings.dockNodeDockingSizeRatio;
-			sourceNode->rect.x = target->rect.x;
-			sourceNode->rect.y = target->rect.y;
-			sourceNode->rect.width = target->rect.width;
+			f32 size = origTargetRc.height * ctx->settings.dockNodeDockingSizeRatio;
 			sourceNode->rect.height = size;
+			if (target) target->rect.height -= size;
 		}
 		break;
 	}
@@ -683,9 +671,6 @@ bool dockWindow(Window* wnd, DockNode* targetNode, DockType dockType, u32 tabInd
 	{
 		if (!targetParent)
 			break;
-
-		sizeToShare = target->rect.height;
-		target->rect.height *= 1.0f - ctx->settings.dockNodeDockingSizeRatio;
 
 		// just insert at the target site
 		if (targetParent->type == DockNode::Type::Vertical || targetParent->type == DockNode::Type::Tabs)
@@ -706,7 +691,7 @@ bool dockWindow(Window* wnd, DockNode* targetNode, DockType dockType, u32 tabInd
 				source->osWindow = targetParent->osWindow;
 
 				// treat docking to root node
-				if (targetParent != target)
+				if (targetParent != target && target)
 				{
 					auto iter = std::find(targetParent->children.begin(), targetParent->children.end(), target);
 
@@ -734,13 +719,13 @@ bool dockWindow(Window* wnd, DockNode* targetNode, DockType dockType, u32 tabInd
 				wnd->dockNode = newNode;
 				newNode->parent = targetParent;
 				newNode->type = DockNode::Type::Tabs;
-				newNode->osWindow = target->osWindow;
+				newNode->osWindow = target ? target->osWindow : nullptr;
 				newNode->rect = wndRect;
 
 				auto iter = std::find(targetParent->children.begin(), targetParent->children.end(), target);
 
 				// treat docking to root node
-				if (targetParent != target)
+				if (targetParent != target && target)
 				{
 					auto iter = std::find(targetParent->children.begin(), targetParent->children.end(), target);
 
@@ -790,7 +775,7 @@ bool dockWindow(Window* wnd, DockNode* targetNode, DockType dockType, u32 tabInd
 			if (targetParent->type == DockNode::Type::Vertical)
 			{
 				// treat docking to root node
-				if (targetParent != target)
+				if (targetParent != target && target)
 				{
 					auto iter = std::find(targetParent->children.begin(), targetParent->children.end(), target);
 
@@ -808,23 +793,26 @@ bool dockWindow(Window* wnd, DockNode* targetNode, DockType dockType, u32 tabInd
 			else
 			{
 				// relocate target's content into new node
-				DockNode* newNode = new DockNode();
+				DockNode* newTargetNode = new DockNode();
 			
-				*newNode = *target;
-				newNode->parent = target;
+				if (target) newTargetNode->copyFrom(target);
+				
+				newTargetNode->parent = target;
 				sourceNode->parent = target;
 				
-				for (auto& c : newNode->children) c->parent = newNode;
-				for (auto& w : newNode->windows) w->dockNode = newNode;
+				newTargetNode->adoptChildren();
+				newTargetNode->adoptWindows();
 				
 				if (target)
 				{
 					target->windows.clear();
 					target->children.clear();
-					target->children.push_back(newNode);
+					target->children.push_back(newTargetNode);
 					target->children.push_back(sourceNode); // insert last
 					target->type = DockNode::Type::Vertical;
 				}
+
+				target = newTargetNode;
 			}
 		}
 
@@ -833,11 +821,9 @@ bool dockWindow(Window* wnd, DockNode* targetNode, DockType dockType, u32 tabInd
 			&& (targetParent->type == DockNode::Type::Vertical
 				|| targetParent->type == DockNode::Type::Horizontal))
 		{
-			f32 size = sizeToShare * ctx->settings.dockNodeDockingSizeRatio;
-			sourceNode->rect.x = target->rect.x;
-			sourceNode->rect.y = target->rect.bottom() - size;
-			sourceNode->rect.width = target->rect.width;
+			f32 size = origTargetRc.height * ctx->settings.dockNodeDockingSizeRatio;
 			sourceNode->rect.height = size;
+			if (target) target->rect.height -= size;
 		}
 		break;
 	}
@@ -954,7 +940,9 @@ void dockNodeTabs(DockNode* node)
 
 		for (auto i = 0; i < node->windows.size(); i++)
 		{
-			hui::tab(node->windows[i]->title.c_str(), node->windows[i]->icon);
+			if (!node->windows[i]->dockingNow)
+				hui::tab(node->windows[i]->title.c_str(), node->windows[i]->icon);
+
 			node->windows[i]->tabRect = ctx->widget.rect;
 
 			if (ctx->widget.hovered

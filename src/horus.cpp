@@ -542,10 +542,6 @@ void presentWindow(HOsWindow wnd)
 {
 	ctx->providers->input->setCurrentWindow(wnd);
 	ctx->renderer->setOsWindow(wnd);
-	auto& bgColor = ctx->theme->getElement(WidgetElementId::WindowBody).normalState().color;
-	HORUS_GFX->clear(bgColor);
-	auto r = HORUS_INPUT->getWindowRect(wnd);
-	r.x = r.y = 0;
 	ctx->hoveringThisWindow = ctx->lastHoveredOsWindow == wnd;
 	ctx->renderer->begin();
 	dockNodeTabs(ctx->dockingState.rootOsWindowDockNodes[wnd]);

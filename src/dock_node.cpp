@@ -13,6 +13,34 @@ DockNode::DockNode()
 	}
 }
 
+void DockNode::copyFrom(DockNode* other)
+{
+	parent = other->parent;
+	children = other->children;
+	windows = other->windows;
+	osWindow = other->osWindow;
+	type = other->type;
+	minSize = other->minSize;
+	rect = other->rect;
+	selectedTabIndex = other->selectedTabIndex;
+}
+
+void DockNode::adoptChildren()
+{
+	for (auto& c : children)
+	{
+		c->parent = this;
+	}
+}
+
+void DockNode::adoptWindows()
+{
+	for (auto& w : windows)
+	{
+		w->dockNode = this;
+	}
+}
+
 bool DockNode::hasSingleWindow() const
 {
 	return windows.size() == 1;
@@ -44,6 +72,31 @@ void DockNode::removeFromParent()
 		
 		if (iter != parent->children.end())
 		{
+			auto prev = parent->findPrevSiblingOf(this);
+			DockNode* sibling = nullptr;
+
+			if (prev == parent->children.rend())
+			{
+				auto next = parent->findNextSiblingOf(this);
+
+				if (next != parent->children.end())
+					sibling = *next;
+			}
+			else
+			{
+				sibling = *prev;
+			}
+
+			if (sibling)
+			{
+				// donate size to sibling
+				if (parent->type == DockNode::Type::Vertical)
+					sibling->rect.height += rect.height + ctx->settings.dockNodeSpacing;
+
+				if (parent->type == DockNode::Type::Horizontal)
+					sibling->rect.width += rect.width + ctx->settings.dockNodeSpacing;
+			}
+
 			parent->children.erase(iter);
 			parent->computeRect();
 			parent = nullptr;
@@ -168,8 +221,11 @@ void DockNode::computeRect()
 	{
 		auto childCount = children.size();
 		f32 availableSpace = rect.width - ctx->settings.dockNodeSpacing * (f32)(childCount - 1);
+		availableSpace = (i32)availableSpace;
 		f32 averageSpace = availableSpace / (f32)childCount;
 		f32 totalSpace = 0;
+
+		averageSpace = (i32)averageSpace;
 
 		for (auto& child : children)
 		{
@@ -183,10 +239,14 @@ void DockNode::computeRect()
 
 		f32 currentX = rect.x;
 
+		totalSpace = totalSpace;
+
 		for (auto& child : children)
 		{
 			f32 width = child->rect.width / totalSpace * availableSpace;
 
+			currentX = (i32)currentX;
+			width = (i32)width;
 			child->rect.x = currentX;
 			child->rect.y = rect.y;
 			child->rect.height = rect.height;

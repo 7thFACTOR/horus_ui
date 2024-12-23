@@ -328,7 +328,7 @@
 			{
 				"width": 0,
 				"height": 0,
-				"normal": { "image": "", "border": 0, "color": "darkGray", "textColor": "white", "font": "normal" }
+				"normal": { "image": "default/popup", "border": 10, "color": "darkGray", "textColor": "white", "font": "normal" }
 			},
 			"windowDockRect":
 			{

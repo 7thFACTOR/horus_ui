@@ -80,10 +80,12 @@ bool beginWindow(const char* id, const char* title, Rect* initialRect, HImage ic
 	
 	ctx->currentWindow = wnd;
 	ctx->hoveringThisWindow = wnd->dockNode->osWindow == ctx->lastHoveredOsWindow;
-	printf("last %d\n", ctx->lastHoveredOsWindow);
 	ctx->renderer->setOsWindow(wnd->dockNode->osWindow);
 	ctx->renderer->begin();
 	auto rc = wnd->clientRect;
+
+	ctx->renderer->cmdSetColor(ctx->theme->getElement(WidgetElementId::WindowBody).normalState().color);
+	ctx->renderer->cmdDrawSolidRectangle(rc);
 
 	rc.y += ctx->theme->getElement(WidgetElementId::TabGroupBody).normalState().height;
 

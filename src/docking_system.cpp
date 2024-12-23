@@ -70,6 +70,8 @@ void handleDockingMouseUp(const InputEvent& event, DockNode* node)
 
 	if (ds.dockToNode && moved)
 	{
+		ds.dragWindow->dockingNow = false;
+
 		if (dockWindow(ds.dragWindow, ds.dockToNode, ds.dockType, 0))
 		{
 			ds.dragWindow = nullptr;
@@ -81,6 +83,8 @@ void handleDockingMouseUp(const InputEvent& event, DockNode* node)
 	// we undock to a new native window
 	else if (ds.dragWindow && moved)
 	{
+		ds.dragWindow->dockingNow = false;
+
 		// undock the window if there is more than one in the dock node
 		// and if the dock node is not a root node of the window
 		if (ctx->settings.allowUndockingToNewOsWindow)
@@ -158,6 +162,7 @@ void handleDockingMouseMove(const InputEvent& event, DockNode* node)
 			{
 				ds.dragIndicatorOsWindow = HORUS_INPUT->createWindow(ds.dragWindow->title.c_str(),  OsWindowFlags::NoInput | OsWindowFlags::NoTaskBar|OsWindowFlags::NoDecoration, OsWindowState::Normal, Rect(0, 0, 200, 150));
 				HORUS_INPUT->showWindow(ds.dragIndicatorOsWindow);
+				ds.dragWindow->dockingNow = true;
 			}
 
 			// draw tab rect
@@ -226,11 +231,13 @@ void handleDockingMouseMove(const InputEvent& event, DockNode* node)
 			{
 				auto rootNode = node;
 
-				ctx->renderer->setOsWindow(rootNode->osWindow);
-				ctx->renderer->setWindowSize({ rootNode->rect.width, rootNode->rect.height });
-				ctx->renderer->begin();
-				auto oldZOrder = ctx->renderer->getZOrder();
-				ctx->renderer->setZOrder(~0);// top most rendering
+				bool renderDockHandles = false;
+
+				//ctx->renderer->setOsWindow(rootNode->osWindow);
+				//ctx->renderer->setWindowSize({ rootNode->rect.width, rootNode->rect.height });
+				//ctx->renderer->begin();
+				//auto oldZOrder = ctx->renderer->getZOrder();
+				//ctx->renderer->setZOrder(~0);// top most rendering
 
 				// draw the locations where we can dock the pane
 				const f32 smallRectSize = 64 * ctx->globalScale; //TODO: make it settings
@@ -243,6 +250,52 @@ void handleDockingMouseMove(const InputEvent& event, DockNode* node)
 				Rect smallRectTop;
 				Rect smallRectBottom;
 				Rect smallRectMiddle;
+
+				Rect hitBoxLeft;
+				Rect hitBoxRight;
+				Rect hitBoxTop;
+				Rect hitBoxBottom;
+				Rect hitBoxTabs;
+				Rect hitBoxRootLeft;
+				Rect hitBoxRootRight;
+				Rect hitBoxRootTop;
+				Rect hitBoxRootBottom;
+
+				if (ds.hoveredNode)
+				{
+					hitBoxLeft = parentRect;
+					hitBoxRight = parentRect;
+					hitBoxTop = parentRect;
+					hitBoxBottom = parentRect;
+					hitBoxTabs = parentRect;
+
+					hitBoxLeft.width *= ctx->settings.dockNodeDockingSizeRatio * ctx->settings.dockNodeDockingHitSizeRatio;
+
+					hitBoxRight.x += parentRect.width * (1.0f - ctx->settings.dockNodeDockingSizeRatio * ctx->settings.dockNodeDockingHitSizeRatio);
+					hitBoxRight.width *= ctx->settings.dockNodeDockingSizeRatio * ctx->settings.dockNodeDockingHitSizeRatio;
+
+					hitBoxTop.height *= ctx->settings.dockNodeDockingSizeRatio * ctx->settings.dockNodeDockingHitSizeRatio;
+					
+					hitBoxBottom.y += parentRect.height * (1.0f - ctx->settings.dockNodeDockingSizeRatio * ctx->settings.dockNodeDockingHitSizeRatio);
+					hitBoxBottom.height *= ctx->settings.dockNodeDockingSizeRatio * ctx->settings.dockNodeDockingHitSizeRatio;
+
+					hitBoxTabs.height = tabGroupElem.normalState().height;
+				}
+
+				hitBoxRootLeft = rootNode->rect;
+				hitBoxRootRight = rootNode->rect;
+				hitBoxRootTop = rootNode->rect;
+				hitBoxRootBottom = rootNode->rect;
+
+				hitBoxRootLeft.width = ctx->settings.dockNodeRootDockingHitSize;
+
+				hitBoxRootRight.x = rootNode->rect.right() - ctx->settings.dockNodeRootDockingHitSize;
+				hitBoxRootRight.width = ctx->settings.dockNodeRootDockingHitSize;
+
+				hitBoxRootTop.height = ctx->settings.dockNodeRootDockingHitSize;
+
+				hitBoxRootBottom.y = rootNode->rect.bottom() - ctx->settings.dockNodeRootDockingHitSize;
+				hitBoxRootBottom.height = ctx->settings.dockNodeRootDockingHitSize;
 
 				if (ds.hoveredNode)
 				{
@@ -303,7 +356,18 @@ void handleDockingMouseMove(const InputEvent& event, DockNode* node)
 				auto isSmallRectRootTopHovered = smallRectRootTop.contains(mousePos);
 				auto isSmallRectRootBottomHovered = smallRectRootBottom.contains(mousePos);
 
-				if (isSmallRectLeftHovered)
+				auto isHitBoxLeftHovered = hitBoxLeft.contains(mousePos);
+				auto isHitBoxRightHovered = hitBoxRight.contains(mousePos);
+				auto isHitBoxTopHovered = hitBoxTop.contains(mousePos);
+				auto isHitBoxBottomHovered = hitBoxBottom.contains(mousePos);
+				auto isHitBoxTabsHovered = hitBoxTabs.contains(mousePos);
+
+				auto isHitBoxRootLeftHovered = hitBoxRootLeft.contains(mousePos);
+				auto isHitBoxRootRightHovered = hitBoxRootRight.contains(mousePos);
+				auto isHitBoxRootTopHovered = hitBoxRootTop.contains(mousePos);
+				auto isHitBoxRootBottomHovered = hitBoxRootBottom.contains(mousePos);
+
+				if (isHitBoxLeftHovered)
 				{
 					ds.dockToNode = ds.hoveredNode;
 					ds.dockType = DockType::Left;
@@ -311,7 +375,7 @@ void handleDockingMouseMove(const InputEvent& event, DockNode* node)
 					ds.draggedRect.width *= ctx->settings.dockNodeDockingSizeRatio;
 				}
 
-				if (isSmallRectRightHovered)
+				if (isHitBoxRightHovered)
 				{
 					ds.dockToNode = ds.hoveredNode;
 					ds.dockType = DockType::Right;
@@ -320,7 +384,7 @@ void handleDockingMouseMove(const InputEvent& event, DockNode* node)
 					ds.draggedRect.width *= ctx->settings.dockNodeDockingSizeRatio;
 				}
 
-				if (isSmallRectTopHovered)
+				if (isHitBoxTopHovered)
 				{
 					ds.dockToNode = ds.hoveredNode;
 					ds.dockType = DockType::Top;
@@ -328,7 +392,7 @@ void handleDockingMouseMove(const InputEvent& event, DockNode* node)
 					ds.draggedRect.height *= ctx->settings.dockNodeDockingSizeRatio;
 				}
 
-				if (isSmallRectBottomHovered)
+				if (isHitBoxBottomHovered)
 				{
 					ds.dockToNode = ds.hoveredNode;
 					ds.dockType = DockType::Bottom;
@@ -337,7 +401,41 @@ void handleDockingMouseMove(const InputEvent& event, DockNode* node)
 					ds.draggedRect.height *= ctx->settings.dockNodeDockingSizeRatio;
 				}
 
-				if (isSmallRectMiddleHovered)
+				if (isHitBoxRootLeftHovered)
+				{
+					ds.dockToNode = rootNode;
+					ds.dockType = DockType::Left;
+					ds.draggedRect = ds.dockToNode->rect;
+					ds.draggedRect.width *= ctx->settings.dockNodeDockingSizeRatio;
+				}
+
+				if (isHitBoxRootRightHovered)
+				{
+					ds.dockToNode = rootNode;
+					ds.dockType = DockType::Right;
+					ds.draggedRect = ds.dockToNode->rect;
+					ds.draggedRect.x += ds.draggedRect.width * (1.0f - ctx->settings.dockNodeDockingSizeRatio);
+					ds.draggedRect.width *= ctx->settings.dockNodeDockingSizeRatio;
+				}
+
+				if (isHitBoxRootTopHovered)
+				{
+					ds.dockToNode = rootNode;
+					ds.dockType = DockType::Top;
+					ds.draggedRect = ds.dockToNode->rect;
+					ds.draggedRect.height *= ctx->settings.dockNodeDockingSizeRatio;
+				}
+
+				if (isHitBoxRootBottomHovered)
+				{
+					ds.dockToNode = rootNode;
+					ds.dockType = DockType::Bottom;
+					ds.draggedRect = ds.dockToNode->rect;
+					ds.draggedRect.y += floorf(ds.draggedRect.height * (1.0f - ctx->settings.dockNodeDockingSizeRatio));
+					ds.draggedRect.height *= ctx->settings.dockNodeDockingSizeRatio;
+				}
+
+				if (isHitBoxTabsHovered)
 				{
 					ds.dockToNode = ds.hoveredNode;
 					ds.dockType = DockType::AsTab;
@@ -346,50 +444,7 @@ void handleDockingMouseMove(const InputEvent& event, DockNode* node)
 					//TODO: make the tab show on the tab bar of the node
 				}
 
-				if (isSmallRectRootLeftHovered)
-				{
-					ds.dockToNode = rootNode;
-					ds.dockType = DockType::Left;
-					ds.draggedRect = ds.dockToNode->rect;
-					ds.draggedRect.width *= ctx->settings.dockNodeDockingSizeRatio;
-				}
-
-				if (isSmallRectRootRightHovered)
-				{
-					ds.dockToNode = rootNode;
-					ds.dockType = DockType::Right;
-					ds.draggedRect = ds.dockToNode->rect;
-					ds.draggedRect.x += ds.draggedRect.width * (1.0f - ctx->settings.dockNodeDockingSizeRatio);
-					ds.draggedRect.width *= ctx->settings.dockNodeDockingSizeRatio;
-				}
-
-				if (isSmallRectRootTopHovered)
-				{
-					ds.dockToNode = rootNode;
-					ds.dockType = DockType::Top;
-					ds.draggedRect = ds.dockToNode->rect;
-					ds.draggedRect.height *= ctx->settings.dockNodeDockingSizeRatio;
-				}
-
-				if (isSmallRectRootBottomHovered)
-				{
-					ds.dockToNode = rootNode;
-					ds.dockType = DockType::Bottom;
-					ds.draggedRect = ds.dockToNode->rect;
-					ds.draggedRect.y += floorf(ds.draggedRect.height * (1.0f - ctx->settings.dockNodeDockingSizeRatio));
-					ds.draggedRect.height *= ctx->settings.dockNodeDockingSizeRatio;
-				}
-
-				if (!ds.dockToNode)
-				{
-					ds.draggedText = "Undock\n" + ds.dragWindow->title;
-				}
-				else
-				{
-					ds.draggedText = ds.dragWindow->title;
-				}
-
-				if (ds.hoveredNode)
+				if (ds.hoveredNode && renderDockHandles)
 				{
 					ctx->renderer->cmdSetColor(isSmallRectLeftHovered ? dockingDialRectVSplitElem.hoveredState().color : dockingDialRectVSplitElem.normalState().color);
 					ctx->renderer->cmdDrawImageBordered(
@@ -417,31 +472,34 @@ void handleDockingMouseMove(const InputEvent& event, DockNode* node)
 						dockingDialRectElem.normalState().border, smallRectMiddle, ctx->globalScale);
 				}
 
-				ctx->renderer->cmdSetColor(isSmallRectRootLeftHovered ? dockingDialRectVSplitElem.hoveredState().color : dockingDialRectVSplitElem.normalState().color);
-				ctx->renderer->cmdDrawImageBordered(
-					dockingDialRectVSplitElem.normalState().image,
-					dockingDialRectVSplitElem.normalState().border, smallRectRootLeft, ctx->globalScale);
+				if (renderDockHandles)
+				{
+					ctx->renderer->cmdSetColor(isSmallRectRootLeftHovered ? dockingDialRectVSplitElem.hoveredState().color : dockingDialRectVSplitElem.normalState().color);
+					ctx->renderer->cmdDrawImageBordered(
+						dockingDialRectVSplitElem.normalState().image,
+						dockingDialRectVSplitElem.normalState().border, smallRectRootLeft, ctx->globalScale);
 
-				ctx->renderer->cmdSetColor(isSmallRectRootRightHovered ? dockingDialRectVSplitElem.hoveredState().color : dockingDialRectVSplitElem.normalState().color);
-				ctx->renderer->cmdDrawImageBordered(
-					dockingDialRectVSplitElem.normalState().image,
-					dockingDialRectVSplitElem.normalState().border, smallRectRootRight, ctx->globalScale);
+					ctx->renderer->cmdSetColor(isSmallRectRootRightHovered ? dockingDialRectVSplitElem.hoveredState().color : dockingDialRectVSplitElem.normalState().color);
+					ctx->renderer->cmdDrawImageBordered(
+						dockingDialRectVSplitElem.normalState().image,
+						dockingDialRectVSplitElem.normalState().border, smallRectRootRight, ctx->globalScale);
 
-				ctx->renderer->cmdSetColor(isSmallRectRootTopHovered ? dockingDialRectHSplitElem.hoveredState().color : dockingDialRectHSplitElem.normalState().color);
-				ctx->renderer->cmdDrawImageBordered(
-					dockingDialRectHSplitElem.normalState().image,
-					dockingDialRectHSplitElem.normalState().border, smallRectRootTop, ctx->globalScale);
+					ctx->renderer->cmdSetColor(isSmallRectRootTopHovered ? dockingDialRectHSplitElem.hoveredState().color : dockingDialRectHSplitElem.normalState().color);
+					ctx->renderer->cmdDrawImageBordered(
+						dockingDialRectHSplitElem.normalState().image,
+						dockingDialRectHSplitElem.normalState().border, smallRectRootTop, ctx->globalScale);
 
-				ctx->renderer->cmdSetColor(isSmallRectRootBottomHovered ? dockingDialRectHSplitElem.hoveredState().color : dockingDialRectHSplitElem.normalState().color);
-				ctx->renderer->cmdDrawImageBordered(
-					dockingDialRectHSplitElem.normalState().image,
-					dockingDialRectHSplitElem.normalState().border, smallRectRootBottom, ctx->globalScale);
+					ctx->renderer->cmdSetColor(isSmallRectRootBottomHovered ? dockingDialRectHSplitElem.hoveredState().color : dockingDialRectHSplitElem.normalState().color);
+					ctx->renderer->cmdDrawImageBordered(
+						dockingDialRectHSplitElem.normalState().image,
+						dockingDialRectHSplitElem.normalState().border, smallRectRootBottom, ctx->globalScale);
+				}
 
 				if (ctx->dockingState.dragIndicatorOsWindow)
 				{
 					auto pos = HORUS_INPUT->getWindowPosition(ctx->lastHoveredOsWindow);
 
-					if (ds.dockToNode)
+					if (ds.dockToNode && !isSameNode)
 					{
 						Rect screenRect = ds.draggedRect + pos;
 						HORUS_INPUT->setWindowRect(ctx->dockingState.dragIndicatorOsWindow, screenRect);
@@ -450,24 +508,36 @@ void handleDockingMouseMove(const InputEvent& event, DockNode* node)
 					{
 						auto mousePosAbs = HORUS_INPUT->getMousePosition();
 						Rect screenRect = ds.dragWindow->dockNode->rect;
+
 						screenRect *= 0.6f;
-						HORUS_INPUT->setWindowRect(ctx->dockingState.dragIndicatorOsWindow, screenRect);
-						HORUS_INPUT->setWindowPosition(ds.dragIndicatorOsWindow, { mousePosAbs.x - screenRect.width / 2, mousePosAbs.y - screenRect.height / 2});
+						screenRect.x = mousePosAbs.x - screenRect.width / 2;
+						screenRect.y = mousePosAbs.y - screenRect.height / 2;
+						HORUS_INPUT->setWindowRect(ds.dragIndicatorOsWindow, screenRect);
 					}
 
 					HORUS_INPUT->setCurrentWindow(ds.dragIndicatorOsWindow);
-					glClearColor(1, 1, 0, 1);
+					glClearColor(0.2f, 0.2f, 0.2f, 1);
 					glClear(GL_COLOR_BUFFER_BIT);
+					ctx->renderer->setOsWindow(ds.dragIndicatorOsWindow);
+					ctx->renderer->begin();
+					ctx->penPosition.clear();
+					hui::tab(ds.dragWindow->title.c_str(), ds.dragWindow->icon);
+					ctx->renderer->end();
+					ctx->renderer->executeDrawCommands(ds.dragIndicatorOsWindow);
 					HORUS_INPUT->presentWindow(ds.dragIndicatorOsWindow);
 				}
 				
-				ctx->renderer->cmdSetColor(dockingRectElem.normalState().color);
-				ctx->renderer->cmdDrawImageBordered(dockingRectElem.normalState().image, dockingRectElem.normalState().border, ds.draggedRect, ctx->globalScale);
-				ctx->renderer->cmdSetFont(dockingRectElem.normalState().font);
-				ctx->renderer->cmdSetColor(dockingRectElem.normalState().textColor);
-				ctx->drawMultilineText(ds.draggedText.c_str(), ds.draggedRect, HAlignType::Center, VAlignType::Center);
-				ctx->renderer->setZOrder(oldZOrder);
-				ctx->renderer->end();
+				if (renderDockHandles)
+				{
+					ctx->renderer->cmdSetColor(dockingRectElem.normalState().color);
+					ctx->renderer->cmdDrawImageBordered(dockingRectElem.normalState().image, dockingRectElem.normalState().border, ds.draggedRect, ctx->globalScale);
+					ctx->renderer->cmdSetFont(dockingRectElem.normalState().font);
+					ctx->renderer->cmdSetColor(dockingRectElem.normalState().textColor);
+					ctx->drawMultilineText(ds.draggedText.c_str(), ds.draggedRect, HAlignType::Center, VAlignType::Center);
+				}
+
+				//ctx->renderer->setZOrder(oldZOrder);
+				//ctx->renderer->end();
 			}
 		}
 
