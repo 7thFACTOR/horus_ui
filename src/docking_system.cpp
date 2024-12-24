@@ -514,17 +514,6 @@ void handleDockingMouseMove(const InputEvent& event, DockNode* node)
 						ds.draggedRect.x = 0;
 						ds.draggedRect.y = 0;
 					}
-
-					HORUS_INPUT->setCurrentWindow(ds.dragIndicatorOsWindow);
-					ctx->renderer->setOsWindow(ds.dragIndicatorOsWindow);
-					ctx->renderer->begin();
-					ctx->penPosition.clear();					
-					ctx->renderer->cmdSetColor(ctx->theme->getElement(WidgetElementId::WindowBody).normalState().color);
-					ctx->renderer->cmdDrawSolidRectangle(ds.draggedRect);
-					hui::tab(ds.dragWindow->title.c_str(), ds.dragWindow->icon);
-					ctx->renderer->end();
-					ctx->renderer->executeDrawCommands(ds.dragIndicatorOsWindow);
-					HORUS_INPUT->presentWindow(ds.dragIndicatorOsWindow);
 				}
 				
 				if (renderDockHandles)
@@ -854,7 +843,7 @@ void handleDockNodeEvents(DockNode* node)
 		// node is disabled for input
 		return;
 	}
-	
+
 	// is the event for this window ?
 	if (ctx->lastHoveredOsWindow != node->osWindow)
 	{

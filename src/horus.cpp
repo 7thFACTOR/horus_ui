@@ -725,6 +725,22 @@ void updateDockingSystem()
 		handleDockNodeEvents(wnd.second);
 	}
 
+	auto& ds = ctx->dockingState;
+
+	if (ctx->dockingState.dragIndicatorOsWindow && ds.dragWindow)
+	{
+		HORUS_INPUT->setCurrentWindow(ds.dragIndicatorOsWindow);
+		ctx->renderer->setOsWindow(ds.dragIndicatorOsWindow);
+		ctx->renderer->begin();
+		ctx->penPosition.clear();
+		ctx->renderer->cmdSetColor(ctx->theme->getElement(WidgetElementId::WindowBody).normalState().color);
+		ctx->renderer->cmdDrawSolidRectangle(ds.draggedRect);
+		hui::tab(ds.dragWindow->title.c_str(), ds.dragWindow->icon);
+		ctx->renderer->end();
+		ctx->renderer->executeDrawCommands(ds.dragIndicatorOsWindow);
+		HORUS_INPUT->presentWindow(ds.dragIndicatorOsWindow);
+	}
+
 	if (ctx->event.type == InputEvent::Type::WindowResized || ctx->event.type == InputEvent::Type::WindowMoved)
 	{
 		for (auto& pair : ctx->dockingState.rootOsWindowDockNodes)
