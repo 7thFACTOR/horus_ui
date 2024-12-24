@@ -64,9 +64,25 @@ void handleDockingMouseUp(const InputEvent& event, DockNode* node)
 
 	if (ds.dockToNode && moved)
 	{
-		ds.dragWindow->dockingNow = false;
+		u32 tabIndex = 0;
 
-		if (dockWindow(ds.dragWindow, ds.dockToNode, ds.dockType, 0))
+		if (ds.dockType == DockType::AsTab)
+		{
+			tabIndex = ds.dockToNode->dockingTabSpaceIndex;
+
+			if (tabIndex == ~0)
+				tabIndex = ds.dockToNode->windows.size();
+		}
+
+		if (ds.dragWindow->dockNode == ds.dockToNode)
+		{
+			//tabIndex--;
+		}
+
+		ds.dragWindow->dockingNow = false;
+		ds.dockToNode->removeTabSpace();
+
+		if (dockWindow(ds.dragWindow, ds.dockToNode, ds.dockType, tabIndex))
 		{
 			ds.dragWindow = nullptr;
 			ds.dockToNode = nullptr;
@@ -78,7 +94,7 @@ void handleDockingMouseUp(const InputEvent& event, DockNode* node)
 	else if (ds.dragWindow && moved)
 	{
 		ds.dragWindow->dockingNow = false;
-
+		ds.dragWindow->dockNode->removeTabSpace();
 		// undock the window if there is more than one in the dock node
 		// and if the dock node is not a root node of the window
 		if (ctx->settings.allowUndockingToNewOsWindow)
@@ -169,35 +185,35 @@ void handleDockingMouseMove(const InputEvent& event, DockNode* node)
 			if (ctx->mouseMoved || moved)
 			{
 				ds.dockToNode = nullptr;
-				ds.dragOntoWindow = nullptr;
+				//ds.dragOntoWindow = nullptr;
 
-				// check drag onto the tabs of a window
-				for (auto& wnd : ds.windows)
-				{
-					if (wnd.second->tabRect.contains(mousePos.x, mousePos.y))
-					{
-						ds.dragOntoWindow = wnd.second;
-						break;
-					}
-				}
+				//// check drag onto the tabs of a window
+				//for (auto& wnd : ds.windows)
+				//{
+				//	if (wnd.second->tabRect.contains(mousePos.x, mousePos.y))
+				//	{
+				//		ds.dragOntoWindow = wnd.second;
+				//		break;
+				//	}
+				//}
 
-				//TODO: visualize better the tab insertion
-				// if we dragged on some other tab
-				if (ds.dragOntoWindow != ds.dragWindow
-					&& ds.dragWindow
-					&& ds.dragOntoWindow)
-				{
-					// same node drag, switch tab places
-					if (ds.dragWindow->dockNode == ds.dragOntoWindow->dockNode)
-					{
-						size_t index1 = ds.dragWindow->dockNode->getWindowIndex(ds.dragWindow);
-						size_t index2 = ds.dragWindow->dockNode->getWindowIndex(ds.dragOntoWindow);
+				////TODO: visualize better the tab insertion
+				//// if we dragged on some other tab
+				//if (ds.dragOntoWindow != ds.dragWindow
+				//	&& ds.dragWindow
+				//	&& ds.dragOntoWindow)
+				//{
+				//	// same node drag, switch tab places
+				//	if (ds.dragWindow->dockNode == ds.dragOntoWindow->dockNode)
+				//	{
+				//		size_t index1 = ds.dragWindow->dockNode->getWindowIndex(ds.dragWindow);
+				//		size_t index2 = ds.dragWindow->dockNode->getWindowIndex(ds.dragOntoWindow);
 
-						ds.dragWindow->dockNode->windows[index1] = ds.dragOntoWindow;
-						ds.dragWindow->dockNode->windows[index2] = ds.dragWindow;
-						ds.dragWindow->dockNode->selectedTabIndex = index2;
-					}
-				}
+				//		ds.dragWindow->dockNode->windows[index1] = ds.dragOntoWindow;
+				//		ds.dragWindow->dockNode->windows[index2] = ds.dragWindow;
+				//		ds.dragWindow->dockNode->selectedTabIndex = index2;
+				//	}
+				//}
 
 				// also find the node we're hovering
 				ds.hoveredNode = node->findTargetDockNode(mousePos);
@@ -221,7 +237,7 @@ void handleDockingMouseMove(const InputEvent& event, DockNode* node)
 			}
 
 			// draw docking rects
-			if (ds.dragWindow != ds.dragOntoWindow)
+			if (ds.dragWindow)
 			{
 				auto rootNode = node;
 
@@ -434,8 +450,26 @@ void handleDockingMouseMove(const InputEvent& event, DockNode* node)
 					ds.dockToNode = ds.hoveredNode;
 					ds.dockType = DockType::AsTab;
 					ds.draggedRect = parentRect;
+					ds.draggedRect.x = mousePos.x;
+					ds.draggedRect.width = ds.dragWindow->tabRect.width;
 					ds.draggedRect.height = tabGroupElem.normalState().height;
 					//TODO: make the tab show on the tab bar of the node
+
+					ds.hoveredNode->insertTabSpaceAt(mousePos, ds.dragWindow->tabRect.width);
+
+					if (ds.dragIndicatorOsWindow)
+					{
+						//HORUS_INPUT->hideWindow(ds.dragIndicatorOsWindow);
+						Rect screenRect;
+						auto pos = HORUS_INPUT->getWindowPosition(ctx->lastHoveredOsWindow);
+						screenRect = ds.draggedRect + pos;
+						HORUS_INPUT->setWindowRect(ctx->dockingState.dragIndicatorOsWindow, screenRect);
+					}
+				}
+
+				if(ds.dockType != DockType::AsTab)
+				{
+					if(ds.hoveredNode) ds.hoveredNode->removeTabSpace();
 				}
 
 				if (ds.hoveredNode && renderDockHandles)
@@ -489,7 +523,7 @@ void handleDockingMouseMove(const InputEvent& event, DockNode* node)
 						dockingDialRectHSplitElem.normalState().border, smallRectRootBottom, ctx->globalScale);
 				}
 
-				if (ctx->dockingState.dragIndicatorOsWindow)
+				if (ctx->dockingState.dragIndicatorOsWindow && ds.dockType != DockType::AsTab)
 				{
 					auto pos = HORUS_INPUT->getWindowPosition(ctx->lastHoveredOsWindow);
 

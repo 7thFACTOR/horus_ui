@@ -28,6 +28,8 @@ struct DockNode
 	Point minSize = { 32, 32 };
 	Rect rect;
 	size_t selectedTabIndex = 0;
+	size_t dockingTabSpaceIndex = 0;
+	f32 dockingTabSpaceWidth = 0;
 
 	DockNode();
 	void copyFrom(DockNode* other);
@@ -49,6 +51,8 @@ struct DockNode
 	std::vector<DockNode*>::iterator getIteratorOf(DockNode* node);
 	std::vector<DockNode*>::reverse_iterator getReverseIteratorOf(DockNode* node);
 	size_t getWindowIndex(Window* window);
+	void insertTabSpaceAt(const Point& mousePos, f32 spaceWidth);
+	void removeTabSpace();
 	void debug(i32 level = 0);
 };
 

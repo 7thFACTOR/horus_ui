@@ -482,8 +482,8 @@ void Renderer::setOsWindow(HOsWindow wnd)
 void Renderer::executeDrawCommands(HOsWindow wnd)
 {
 	//TODO: should these be per window ?
-	//if (disableRendering || skipRender)
-		//return;
+	if (disableRendering || skipRender)
+		return;
 
 	currentWindowContext = &windowContexts[wnd];
 
@@ -2177,8 +2177,8 @@ void Renderer::addBatch()
 
 void Renderer::addDrawCommand(const DrawCommand& cmd)
 {
-	/*if (disableRendering || skipRender)
-		return;*/
+	if (disableRendering || skipRender)
+		return;
 
 	if (currentWindowContext->drawCmdNextInsertIndex == ~0)
 	{

@@ -303,7 +303,6 @@ struct DockingState
 	Rect draggedRect;
 	bool drawingWindowTabs = false;
 	Window* dragWindow = nullptr;
-	Window* dragOntoWindow = nullptr;
 	u64 nextDockNodeId = 1;
 };
 

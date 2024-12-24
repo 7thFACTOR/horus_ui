@@ -1374,6 +1374,11 @@ struct HORUS_CLASS_API Color
 		: r(R), g(G), b(B), a(A)
 	{}
 
+	static Color fromU8(u8 R, u8 G, u8 B, u8 A)
+	{
+		return Color(R / 255, G / 255, B / 255, A / 255);
+	}
+
 	u32 getRgba() const;
 	u32 getArgb() const;
 

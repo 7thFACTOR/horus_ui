@@ -535,6 +535,34 @@ std::vector<DockNode*>::reverse_iterator DockNode::getReverseIteratorOf(DockNode
 	return iter;
 }
 
+void DockNode::insertTabSpaceAt(const Point& mousePos, f32 spaceWidth)
+{
+	for (auto i = 0; i < windows.size(); i++)
+	{
+		if (windows[i]->dockingNow)
+			continue;
+
+		if (windows[i]->tabRect.contains(mousePos))
+		{
+			dockingTabSpaceIndex = i;
+
+			if (windows[i]->tabRect.x + windows[i]->tabRect.width / 2 < mousePos.x)
+			{
+				dockingTabSpaceIndex = i + 1;
+			}
+
+			dockingTabSpaceWidth = spaceWidth;
+			return;
+		}
+	}
+}
+
+void DockNode::removeTabSpace()
+{
+	dockingTabSpaceWidth = 0;
+	dockingTabSpaceIndex = ~0;
+}
+
 bool saveDockingState(const char* filename)
 {
 	//TODO

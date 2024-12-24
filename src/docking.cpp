@@ -856,6 +856,7 @@ bool dockWindow(Window* wnd, DockNode* targetNode, DockType dockType, u32 tabInd
 			break;
 
 		auto iter = std::next(target->windows.begin(), tabIndex);
+		
 		target->windows.insert(iter, wnd);
 		target->type = DockNode::Type::Tabs;
 		target->selectedTabIndex = tabIndex;
@@ -961,9 +962,17 @@ void dockNodeTabs(DockNode* node)
 
 		for (auto i = 0; i < node->windows.size(); i++)
 		{
-			if (!node->windows[i]->dockingNow)
-				hui::tab(node->windows[i]->title.c_str(), node->windows[i]->icon);
+			if (node->windows[i]->dockingNow)
+			{
+				continue;
+			}
 
+			if (i == node->dockingTabSpaceIndex)
+			{
+				ctx->penPosition.x += node->dockingTabSpaceWidth;
+			}
+
+			hui::tab(node->windows[i]->title.c_str(), node->windows[i]->icon);
 			node->windows[i]->tabRect = ctx->widget.rect;
 
 			if (ctx->widget.hovered
