@@ -34,12 +34,6 @@ void handleDockingMouseDown(const InputEvent& event, DockNode* node)
 	ds.lastMousePosSinceMouseDown = mousePos;
 	ds.lastMousePos = mousePos;
 	ds.resizingNode = node->findResizeDockNode(mousePos);
-
-	if (ds.resizingNode)
-	{
-		return;
-	}
-
 	ds.dragWindow = nullptr;
 
 	for (auto& wnd : ds.windows)
@@ -503,7 +497,10 @@ void handleDockingMouseMove(const InputEvent& event, DockNode* node)
 					{
 						Rect screenRect = ds.draggedRect + pos;
 						HORUS_INPUT->setWindowRect(ctx->dockingState.dragIndicatorOsWindow, screenRect);
-					}	
+						ds.draggedRect = screenRect;
+						ds.draggedRect.x = 0;
+						ds.draggedRect.y = 0;
+					}
 					else
 					{
 						auto mousePosAbs = HORUS_INPUT->getMousePosition();
@@ -513,14 +510,17 @@ void handleDockingMouseMove(const InputEvent& event, DockNode* node)
 						screenRect.x = mousePosAbs.x - screenRect.width / 2;
 						screenRect.y = mousePosAbs.y - screenRect.height / 2;
 						HORUS_INPUT->setWindowRect(ds.dragIndicatorOsWindow, screenRect);
+						ds.draggedRect = screenRect;
+						ds.draggedRect.x = 0;
+						ds.draggedRect.y = 0;
 					}
 
 					HORUS_INPUT->setCurrentWindow(ds.dragIndicatorOsWindow);
-					glClearColor(0.2f, 0.2f, 0.2f, 1);
-					glClear(GL_COLOR_BUFFER_BIT);
 					ctx->renderer->setOsWindow(ds.dragIndicatorOsWindow);
 					ctx->renderer->begin();
-					ctx->penPosition.clear();
+					ctx->penPosition.clear();					
+					ctx->renderer->cmdSetColor(ctx->theme->getElement(WidgetElementId::WindowBody).normalState().color);
+					ctx->renderer->cmdDrawSolidRectangle(ds.draggedRect);
 					hui::tab(ds.dragWindow->title.c_str(), ds.dragWindow->icon);
 					ctx->renderer->end();
 					ctx->renderer->executeDrawCommands(ds.dragIndicatorOsWindow);
@@ -865,12 +865,6 @@ void handleDockNodeEvents(DockNode* node)
 	{
 	case InputEvent::Type::MouseDown: handleDockingMouseDown(event, node); break;
 	case InputEvent::Type::MouseUp: handleDockingMouseUp(event, node); break;
-	case InputEvent::Type::WindowClose:
-	{
-		//destroy all nodes and root nodes and windows of the os window
-
-		break;
-	}
 	default:
 		break;
 	};

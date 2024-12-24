@@ -320,6 +320,8 @@ void beginFrame()
 	}
 
 	ctx->alreadyClickedOnSomething = false;
+
+	updateDockingSystem();
 }
 
 void deferredDeleteObjects()
@@ -369,15 +371,11 @@ void deferredDeleteObjects()
 		HORUS_INPUT->destroyWindow(wnd);
 	}
 
-	// just make sure we dont have redundant dock nodes
-	for (auto& pair : ctx->dockingState.rootOsWindowDockNodes)
-	{
-		pair.second->checkRedundancy();
-	}
-
 	ctx->dockingState.dockNodesToDelete.clear();
 	ctx->dockingState.windowsToDelete.clear();
 	ctx->dockingState.osWindowsToDelete.clear();
+
+	//debugWindows();
 }
 
 void endFrame()
@@ -720,10 +718,9 @@ DockNodeId createRootDockNode(HOsWindow osWnd)
 
 void updateDockingSystem()
 {
-	// make a copy because the map might be modified by code
-	auto rootOsWindowDockNodes = ctx->dockingState.rootOsWindowDockNodes;
-	
-	for (auto& wnd : rootOsWindowDockNodes)
+	auto copyOfRootOsWindowDockNodes = ctx->dockingState.rootOsWindowDockNodes;
+
+	for (auto& wnd : copyOfRootOsWindowDockNodes)
 	{
 		handleDockNodeEvents(wnd.second);
 	}

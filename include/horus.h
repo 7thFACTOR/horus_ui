@@ -1695,7 +1695,6 @@ HORUS_API void setMouseCursor(HMouseCursor cursor);
 //////////////////////////////////////////////////////////////////////////
 
 HORUS_API DockNodeId createRootDockNode(HOsWindow osWnd);
-HORUS_API void updateDockingSystem();
 
 HORUS_API void dockLayoutDeleteChildren(DockNodeId rootNodeId);
 HORUS_API void dockLayoutSplit(DockNodeId nodeId, DockNodeSplitType splitType, f32 firstNodeSizeUnitPercent, DockNodeId* outNodeId1, DockNodeId* outNodeId2);

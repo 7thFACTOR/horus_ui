@@ -27,8 +27,11 @@ void destroyOsWindow(HOsWindow osWnd)
 {
 	auto dockNode =	ctx->dockingState.rootOsWindowDockNodes[osWnd];
 
-	ctx->dockingState.dockNodesToDelete.insert(dockNode);
-	ctx->dockingState.osWindowsToDelete.insert(osWnd);
+	if (dockNode)
+		ctx->dockingState.dockNodesToDelete.insert(dockNode);
+	
+	if (osWnd)
+		ctx->dockingState.osWindowsToDelete.insert(osWnd);
 }
 
 DockNode* createOsWindowRootDockNode(HOsWindow osWindow)
@@ -191,6 +194,7 @@ bool dockWindow(Window* wnd, DockNode* targetNode, DockType dockType, u32 tabInd
 
 			newNode->copyFrom(targetParent);
 			newNode->adoptWindows();
+			newNode->parent = targetParent;
 			targetParent->windows.clear();
 			targetParent->children.push_back(newNode);
 
@@ -208,8 +212,6 @@ bool dockWindow(Window* wnd, DockNode* targetNode, DockType dockType, u32 tabInd
 		return false;
 
 	auto sizeToShare = 0;
-
-
 	Rect origTargetRc = target ? target->rect : Rect();
 
 	switch (dockType)
@@ -238,7 +240,7 @@ bool dockWindow(Window* wnd, DockNode* targetNode, DockType dockType, u32 tabInd
 				source->osWindow = targetParent->osWindow;
 
 				// treat docking to root node
-				if (targetParent != target)
+				if (targetParent != target && target)
 				{
 					auto iter = std::find(targetParent->children.begin(), targetParent->children.end(), target);
 
@@ -348,14 +350,19 @@ bool dockWindow(Window* wnd, DockNode* targetNode, DockType dockType, u32 tabInd
 			}
 		}
 
-		// if not proportional docking resize, then resize the target and compute size from it for source
 		if (sourceNode
 			&& (targetParent->type == DockNode::Type::Vertical
 				|| targetParent->type == DockNode::Type::Horizontal))
 		{
 			f32 size = origTargetRc.width * ctx->settings.dockNodeDockingSizeRatio;
+			
 			sourceNode->rect.width = size;
-			if (target) target->rect.width -= size;
+			sourceNode->rect.x = target->rect.x;
+			sourceNode->rect.y = target->rect.y;
+			sourceNode->rect.height = target->rect.height;
+			
+			target->rect.x += size;
+			target->rect.width -= size;
 		}
 
 		break;
@@ -511,8 +518,13 @@ bool dockWindow(Window* wnd, DockNode* targetNode, DockType dockType, u32 tabInd
 				|| targetParent->type == DockNode::Type::Horizontal))
 		{
 			f32 size = origTargetRc.width * ctx->settings.dockNodeDockingSizeRatio;
+
+			sourceNode->rect.x = target->rect.right() - size;
+			sourceNode->rect.y = target->rect.y;
 			sourceNode->rect.width = size;
-			if (target) target->rect.width -= size;
+			sourceNode->rect.height = target->rect.height;
+
+			target->rect.width -= size;
 		}
 		break;
 	}
@@ -662,8 +674,14 @@ bool dockWindow(Window* wnd, DockNode* targetNode, DockType dockType, u32 tabInd
 				|| targetParent->type == DockNode::Type::Horizontal))
 		{
 			f32 size = origTargetRc.height * ctx->settings.dockNodeDockingSizeRatio;
+
+			sourceNode->rect.x = target->rect.x;
+			sourceNode->rect.y = target->rect.y;
+			sourceNode->rect.width = target->rect.width;
 			sourceNode->rect.height = size;
-			if (target) target->rect.height -= size;
+
+			target->rect.height -= size;
+			target->rect.y += size;
 		}
 		break;
 	}
@@ -822,8 +840,13 @@ bool dockWindow(Window* wnd, DockNode* targetNode, DockType dockType, u32 tabInd
 				|| targetParent->type == DockNode::Type::Horizontal))
 		{
 			f32 size = origTargetRc.height * ctx->settings.dockNodeDockingSizeRatio;
+
+			sourceNode->rect.x = target->rect.x;
+			sourceNode->rect.y = target->rect.bottom() - size;
+			sourceNode->rect.width = target->rect.width;
 			sourceNode->rect.height = size;
-			if (target) target->rect.height -= size;
+
+			target->rect.height -= size;
 		}
 		break;
 	}
@@ -897,15 +920,13 @@ bool dockWindow(Window* wnd, DockNode* targetNode, DockType dockType, u32 tabInd
 	for (auto& pair : ctx->dockingState.rootOsWindowDockNodes)
 	{
 		auto node = pair.second;
-			
+
 		if (node->osWindow)
 		{
 			node->checkRedundancy();
 			node->computeRect();
 		}
 	}
-
-	debugWindows();
 
 	return true;
 }
