@@ -729,7 +729,6 @@ HOsWindow Sdl2InputProvider::createWindow(
 
 	focusedWindow = newWnd;
 	currentWindow = newWnd;
-	SDL_ShowWindow(wnd);
 	SDL_RaiseWindow(wnd);
 	SDL_SetWindowInputFocus(wnd);
 

@@ -43,7 +43,7 @@ void DockNode::adoptWindows()
 
 bool DockNode::hasSingleWindow() const
 {
-	return windows.size() == 1;
+	return windows.size() <= 1;
 }
 
 void DockNode::removeWindowsAndDeleteChildrenRecursive()

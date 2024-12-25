@@ -157,6 +157,8 @@ bool dockWindow(Window* wnd, DockNode* targetNode, DockType dockType, u32 tabInd
 	auto targetIsRoot = target ? !target->parent : true;
 	auto sourceIsTarget = source == target;
 
+	wnd->dockingNow = false;
+
 	// if this is the root and its empty of any children and windows
 	if (targetIsRoot && target && target->children.empty() && target->windows.empty() && target->type == DockNode::Type::None)
 	{
@@ -938,6 +940,7 @@ void dockNodeTabs(DockNode* node)
 	pushLayoutPadding(0);
 	beginContainer(node->rect);
 	// pop the clip rect, we dont want clipping since draw tabs bar beyond the node rect width
+	auto oldClipRect = ctx->renderer->getClipRect();
 	ctx->renderer->popClipRect();
 
 	if (ctx->layoutStack.back().width <= (node->windows.size() * (ctx->paneGroupState.tabWidth + ctx->paneGroupState.sideSpacing)) * ctx->globalScale)
@@ -955,40 +958,37 @@ void dockNodeTabs(DockNode* node)
 
 	ctx->dockingState.drawingWindowTabs = true;
 
-	if (!node->windows.empty())
+	auto& rc = ctx->dockingState.rootOsWindowDockNodes[node->osWindow]->rect;
+	ctx->renderer->pushClipRect(rc, false);
+	beginTabGroup(node->selectedTabIndex);
+
+	for (auto i = 0; i < node->windows.size(); i++)
 	{
-		auto& rc = ctx->dockingState.rootOsWindowDockNodes[node->osWindow]->rect;
-		ctx->renderer->pushClipRect(rc, false);
-		beginTabGroup(node->selectedTabIndex);
-
-		for (auto i = 0; i < node->windows.size(); i++)
+		if (node->windows[i]->dockingNow)
 		{
-			if (node->windows[i]->dockingNow)
-			{
-				continue;
-			}
-
-			if (i == node->dockingTabSpaceIndex)
-			{
-				ctx->penPosition.x += node->dockingTabSpaceWidth;
-			}
-
-			hui::tab(node->windows[i]->title.c_str(), node->windows[i]->icon);
-			node->windows[i]->tabRect = ctx->widget.rect;
-
-			if (ctx->widget.hovered
-				&& ctx->event.type == InputEvent::Type::MouseDown
-				&& ctx->event.mouse.button == MouseButton::Middle)
-			{
-				closeTabIndex = i;
-				ctx->event.type = InputEvent::Type::None;
-				//TODO: issue some event on tab close ?
-			}
+			continue;
 		}
 
-		selectedIndex = hui::endTabGroup();
-		ctx->renderer->popClipRect();
+		if (i == node->dockingTabSpaceIndex)
+		{
+			ctx->penPosition.x += node->dockingTabSpaceWidth;
+		}
+
+		hui::tab(node->windows[i]->title.c_str(), node->windows[i]->icon);
+		node->windows[i]->tabRect = ctx->widget.rect;
+
+		if (ctx->widget.hovered
+			&& ctx->event.type == InputEvent::Type::MouseDown
+			&& ctx->event.mouse.button == MouseButton::Middle)
+		{
+			closeTabIndex = i;
+			ctx->event.type = InputEvent::Type::None;
+			//TODO: issue some event on tab close ?
+		}
 	}
+
+	selectedIndex = hui::endTabGroup();
+	ctx->renderer->popClipRect();
 
 	ctx->dockingState.drawingWindowTabs = false;
 
@@ -1027,8 +1027,8 @@ void dockNodeTabs(DockNode* node)
 		}
 	}
 
-	// just push a clip rect so endContainer can pop it
-	ctx->renderer->pushClipRect(Rect(0, 0, node->rect.width, node->rect.height), false);
+	// just push the old clip rect so endContainer can pop it
+	ctx->renderer->pushClipRect(oldClipRect, false);
 	endContainer();
 	popLayoutPadding();
 

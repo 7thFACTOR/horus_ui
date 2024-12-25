@@ -727,6 +727,51 @@ void updateDockingSystem()
 
 	auto& ds = ctx->dockingState;
 
+
+
+	if (ds.dockType != DockType::AsTab)
+	{
+		if (ds.hoveredNode) ds.hoveredNode->removeTabSpace();
+	}
+
+	if (ds.dockType == DockType::AsTab)
+	{
+		if (ds.dragIndicatorOsWindow)
+		{
+			Rect screenRect;
+			auto pos = HORUS_INPUT->getWindowPosition(ctx->lastHoveredOsWindow);
+			screenRect = ds.draggedRect + pos;
+			HORUS_INPUT->setWindowRect(ctx->dockingState.dragIndicatorOsWindow, screenRect);
+		}
+	}
+
+	if (ctx->dockingState.dragIndicatorOsWindow && ds.dockType != DockType::AsTab)
+	{
+		auto pos = HORUS_INPUT->getWindowPosition(ctx->lastHoveredOsWindow);
+
+		if (ds.dockToNode)
+		{
+			Rect screenRect = ds.draggedRect + pos;
+			HORUS_INPUT->setWindowRect(ctx->dockingState.dragIndicatorOsWindow, screenRect);
+			ds.draggedRect = screenRect;
+			ds.draggedRect.x = 0;
+			ds.draggedRect.y = 0;
+		}
+		else
+		{
+			auto mousePosAbs = HORUS_INPUT->getMousePosition();
+			Rect screenRect = ds.dragWindow->dockNode->rect;
+
+			screenRect *= 0.6f;
+			screenRect.x = mousePosAbs.x - screenRect.width / 2;
+			screenRect.y = mousePosAbs.y - screenRect.height / 2;
+			HORUS_INPUT->setWindowRect(ds.dragIndicatorOsWindow, screenRect);
+			ds.draggedRect = screenRect;
+			ds.draggedRect.x = 0;
+			ds.draggedRect.y = 0;
+		}
+	}
+
 	if (ctx->dockingState.dragIndicatorOsWindow && ds.dragWindow)
 	{
 		HORUS_INPUT->setCurrentWindow(ds.dragIndicatorOsWindow);
@@ -750,6 +795,7 @@ void updateDockingSystem()
 		ctx->renderer->end();
 		ctx->renderer->executeDrawCommands(ds.dragIndicatorOsWindow);
 		HORUS_INPUT->presentWindow(ds.dragIndicatorOsWindow);
+		
 	}
 
 	if (ctx->event.type == InputEvent::Type::WindowResized || ctx->event.type == InputEvent::Type::WindowMoved)
