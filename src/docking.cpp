@@ -869,8 +869,9 @@ bool dockWindow(Window* wnd, DockNode* targetNode, DockType dockType, u32 tabInd
 		}
 		else
 		{
-			// remove from the source node
-			if (source) source->removeWindow(wnd);
+			// remove from the source node if its from another dock node
+			if (source && !sourceIsTarget)
+				source->removeWindow(wnd);
 		}
 
 		wnd->dockNode = target;

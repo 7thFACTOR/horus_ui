@@ -52,6 +52,7 @@ void handleDockingMouseDown(const InputEvent& event, DockNode* node)
 		if (clippedRect.contains(mousePos.x, mousePos.y))
 		{
 			ds.dragWindow = wnd.second;
+			ds.dragWindow->dockNode->removeWindow(ds.dragWindow);
 			break;
 		}
 	}
@@ -74,10 +75,7 @@ void handleDockingMouseUp(const InputEvent& event, DockNode* node)
 				tabIndex = ds.dockToNode->windows.size();
 		}
 
-		if (ds.dragWindow->dockNode == ds.dockToNode)
-		{
-			//tabIndex--;
-		}
+		printf("index %d\n", tabIndex);
 
 		ds.dragWindow->dockingNow = false;
 		ds.dockToNode->removeTabSpace();
