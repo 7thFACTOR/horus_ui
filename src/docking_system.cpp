@@ -65,8 +65,9 @@ void handleDockingMouseUp(const InputEvent& event, DockNode* node)
 	if (ds.dockToNode && moved)
 	{
 		u32 tabIndex = 0;
+		bool dontDock = (ds.dockType == DockType::AsTab && ds.dockToNode == ds.dragWindow->dockNode);
 
-		if (ds.dockType == DockType::AsTab)
+		if (ds.dockType == DockType::AsTab && ds.dockToNode != ds.dragWindow->dockNode)
 		{
 			tabIndex = ds.dockToNode->dockingTabSpaceIndex;
 
@@ -77,6 +78,7 @@ void handleDockingMouseUp(const InputEvent& event, DockNode* node)
 		ds.dragWindow->dockingNow = false;
 		ds.dockToNode->removeTabSpace();
 
+		if (!dontDock)
 		if (dockWindow(ds.dragWindow, ds.dockToNode, ds.dockType, tabIndex))
 		{
 			ds.dragWindow = nullptr;
@@ -161,28 +163,28 @@ void handleDockingMouseMove(const InputEvent& event, DockNode* node)
 		bool moved = fabs(ds.lastMousePosSinceMouseDown.x - mousePos.x) > ctx->settings.dragStartDistance || abs(ds.lastMousePosSinceMouseDown.y - mousePos.y) > ctx->settings.dragStartDistance;
 		Point mouseDelta = mousePos - ds.lastMousePos;
 		
-		ds.dockToNode = nullptr;
+		auto& tabGroupElem = ctx->theme->getElement(WidgetElementId::TabGroupBody);
+
+		if (ctx->mouseMoved || moved)
+		{
+			ds.hoveredNode = node->findTargetDockNode(mousePos);
+		}
 
 		if (ds.dragWindow && moved)
 		{
+			ds.dockToNode = nullptr;
+			ds.dockType = DockType::Floating;
+
+			bool isSameNode = ds.hoveredNode == ds.dragWindow->dockNode;
+			bool isSingleWindow = ds.dragWindow->dockNode->windows.size() == 1;
+
+			// we've started to drag the window, so prepare objects and state
 			if (!ds.dragIndicatorOsWindow)
 			{
 				ds.dragIndicatorOsWindow = HORUS_INPUT->createWindow(ds.dragWindow->title.c_str(),  OsWindowFlags::NoInput | OsWindowFlags::NoTaskBar|OsWindowFlags::NoDecoration, OsWindowState::Normal, Rect(0, 0, 200, 150));
 
 				ds.dragWindow->dockingNow = true;
 			}
-
-			auto& tabGroupElem = ctx->theme->getElement(WidgetElementId::TabGroupBody);
-
-			if (ctx->mouseMoved || moved)
-			{
-				ds.hoveredNode = node->findTargetDockNode(mousePos);
-			}
-
-			bool isSameNode = ds.hoveredNode == ds.dragWindow->dockNode;
-			bool isSingleWindow = ds.dragWindow->dockNode->windows.size() == 1;
-
-			ds.dockToNode = nullptr;
 
 			if (ds.dragWindow)
 			{
@@ -217,7 +219,7 @@ void handleDockingMouseMove(const InputEvent& event, DockNode* node)
 					hitBoxBottom.y += parentRect.height * (1.0f - ctx->settings.dockNodeDockingSizeRatio * ctx->settings.dockNodeDockingHitSizeRatio);
 					hitBoxBottom.height *= ctx->settings.dockNodeDockingSizeRatio * ctx->settings.dockNodeDockingHitSizeRatio;
 
-					hitBoxTabs.height = tabGroupElem.normalState().height;
+					hitBoxTabs.height = tabGroupElem.normalState().height * 2.0f;
 				}
 
 				hitBoxRootLeft = rootNode->rect;
@@ -231,9 +233,10 @@ void handleDockingMouseMove(const InputEvent& event, DockNode* node)
 				hitBoxRootRight.width = ctx->settings.dockNodeRootDockingHitSize;
 
 				hitBoxRootTop.height = ctx->settings.dockNodeRootDockingHitSize;
+				hitBoxRootTop.y -= 40;
 
 				hitBoxRootBottom.y = rootNode->rect.bottom() - ctx->settings.dockNodeRootDockingHitSize;
-				hitBoxRootBottom.height = ctx->settings.dockNodeRootDockingHitSize;
+				hitBoxRootBottom.height = ctx->settings.dockNodeRootDockingHitSize + 40;
 
 				auto isHitBoxLeftHovered = hitBoxLeft.contains(mousePos);
 				auto isHitBoxRightHovered = hitBoxRight.contains(mousePos);
@@ -323,7 +326,14 @@ void handleDockingMouseMove(const InputEvent& event, DockNode* node)
 					ds.draggedRect.width = ds.dragWindow->tabRect.width;
 					ds.draggedRect.height = tabGroupElem.normalState().height;
 
-					ds.hoveredNode->insertTabSpaceAt(mousePos, ds.dragWindow->tabRect.width);
+					if (isSameNode)
+					{
+						ds.hoveredNode->moveWindowTabAt(mousePos, ds.dragWindow);
+					}
+					else
+					{
+						ds.hoveredNode->insertTabSpaceAt(mousePos, ds.dragWindow->tabRect.width);
+					}
 				}
 			}
 		}

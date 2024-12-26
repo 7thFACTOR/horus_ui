@@ -557,6 +557,31 @@ void DockNode::insertTabSpaceAt(const Point& mousePos, f32 spaceWidth)
 	}
 }
 
+void DockNode::moveWindowTabAt(const Point& mousePos, Window* window)
+{
+	auto wndIndex = getWindowIndex(window);
+
+	for (auto i = 0; i < windows.size(); i++)
+	{
+		if (windows[i]->dockingNow)
+			continue;
+
+		if (windows[i]->tabRect.x + windows[i]->tabRect.width / 2.0f < mousePos.x
+			&& windows[i]->tabRect.right() > mousePos.x)
+		{
+			dockingTabSpaceIndex = i;
+
+			auto tmp = windows[wndIndex];
+
+			windows[wndIndex] = windows[dockingTabSpaceIndex];
+			windows[dockingTabSpaceIndex] = tmp;
+
+			return;
+		}
+	}
+}
+
+
 void DockNode::removeTabSpace()
 {
 	dockingTabSpaceWidth = 0;

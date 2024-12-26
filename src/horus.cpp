@@ -727,22 +727,19 @@ void updateDockingSystem()
 
 	auto& ds = ctx->dockingState;
 
-
-
 	if (ds.dockType != DockType::AsTab)
 	{
 		if (ds.hoveredNode) ds.hoveredNode->removeTabSpace();
 	}
 
-	if (ds.dockType == DockType::AsTab)
+	if (ds.dragIndicatorOsWindow && ds.dockType == DockType::AsTab)
 	{
-		if (ds.dragIndicatorOsWindow)
-		{
-			Rect screenRect;
-			auto pos = HORUS_INPUT->getWindowPosition(ctx->lastHoveredOsWindow);
-			screenRect = ds.draggedRect + pos;
-			HORUS_INPUT->setWindowRect(ctx->dockingState.dragIndicatorOsWindow, screenRect);
-		}
+		Rect screenRect;
+		auto pos = HORUS_INPUT->getWindowPosition(ctx->lastHoveredOsWindow);
+		
+		screenRect = ds.draggedRect + pos;
+		screenRect.x -= 20;
+		HORUS_INPUT->setWindowRect(ctx->dockingState.dragIndicatorOsWindow, screenRect);
 	}
 
 	if (ctx->dockingState.dragIndicatorOsWindow && ds.dockType != DockType::AsTab)

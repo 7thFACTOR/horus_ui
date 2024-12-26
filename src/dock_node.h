@@ -53,6 +53,7 @@ struct DockNode
 	size_t getWindowIndex(Window* window);
 	void insertTabSpaceAt(const Point& mousePos, f32 spaceWidth);
 	void removeTabSpace();
+	void moveWindowTabAt(const Point& mousePos, Window* window);
 	void debug(i32 level = 0);
 };
 
