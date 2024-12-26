@@ -719,34 +719,37 @@ DockNodeId createRootDockNode(HOsWindow osWnd)
 void updateDockingSystem()
 {
 	auto copyOfRootOsWindowDockNodes = ctx->dockingState.rootOsWindowDockNodes;
+	auto& ds = ctx->dockingState;
+	auto& mousePos = ctx->mousePosition;
+
+	ds.draggingStarted = fabs(ds.lastMousePosSinceMouseDown.x - mousePos.x) > ctx->settings.dragStartDistance || abs(ds.lastMousePosSinceMouseDown.y - mousePos.y) > ctx->settings.dragStartDistance;
+	ds.mouseDragDelta = mousePos - ds.lastMousePos;
 
 	for (auto& wnd : copyOfRootOsWindowDockNodes)
 	{
 		handleDockNodeEvents(wnd.second);
 	}
 
-	auto& ds = ctx->dockingState;
-
 	if (ds.dockType != DockType::AsTab)
 	{
 		if (ds.hoveredNode) ds.hoveredNode->removeTabSpace();
 	}
 
-	if (ds.dragIndicatorOsWindow && ds.dockType == DockType::AsTab)
+	if (ds.dragIndicatorOsWindow && ds.hoveredNode && ds.dockType == DockType::AsTab)
 	{
 		Rect screenRect;
 		auto pos = HORUS_INPUT->getWindowPosition(ctx->lastHoveredOsWindow);
 		
 		screenRect = ds.draggedRect + pos;
-		screenRect.x -= 20;
+		screenRect.x -= 32;
 		HORUS_INPUT->setWindowRect(ctx->dockingState.dragIndicatorOsWindow, screenRect);
 	}
 
-	if (ctx->dockingState.dragIndicatorOsWindow && ds.dockType != DockType::AsTab)
+	if (ds.dragIndicatorOsWindow)
 	{
 		auto pos = HORUS_INPUT->getWindowPosition(ctx->lastHoveredOsWindow);
 
-		if (ds.dockToNode)
+		if (ctx->event.window && ds.hoveredNode && (ds.dockType != DockType::None && ds.dockType != DockType::Floating))
 		{
 			Rect screenRect = ds.draggedRect + pos;
 			HORUS_INPUT->setWindowRect(ctx->dockingState.dragIndicatorOsWindow, screenRect);
@@ -756,10 +759,11 @@ void updateDockingSystem()
 		}
 		else
 		{
+			// resize window as floating window
 			auto mousePosAbs = HORUS_INPUT->getMousePosition();
 			Rect screenRect = ds.dragWindow->dockNode->rect;
 
-			screenRect *= 0.6f;
+			screenRect *= 0.6f; // scale back a bit from original size
 			screenRect.x = mousePosAbs.x - screenRect.width / 2;
 			screenRect.y = mousePosAbs.y - screenRect.height / 2;
 			HORUS_INPUT->setWindowRect(ds.dragIndicatorOsWindow, screenRect);
@@ -814,6 +818,8 @@ void updateDockingSystem()
 		
 		ctx->dockingState.osWindowsToDelete.insert(ctx->event.window);
 	}
+
+	ds.lastMousePos = mousePos;
 }
 
 void dockLayoutDeleteChildren(DockNodeId rootNodeId)
