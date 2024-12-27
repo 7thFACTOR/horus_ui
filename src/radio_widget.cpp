@@ -8,19 +8,21 @@
 
 namespace hui
 {
-bool radio(const char* labelText, bool checked)
+bool radio(const char* labelText, bool& checked)
 {
 	auto radioBodyElem = ctx->theme->getElement(WidgetElementId::RadioBody);
 	auto radioMarkElem = ctx->theme->getElement(WidgetElementId::RadioMark);
 
 	addWidgetItem(radioBodyElem.normalState().height * ctx->globalScale);
 	buttonBehavior();
+	bool changed = false;
 
 	if (ctx->widget.clicked)
 	{
 		checked = !checked;
 		ctx->widget.changeEnded = true;
 		forceRepaint();
+		changed = true;
 	}
 
 	auto radioBodyElemState = &radioBodyElem.normalState();
@@ -78,7 +80,7 @@ bool radio(const char* labelText, bool checked)
 
 	ctx->currentWidgetId++;
 
-	return checked;
+	return changed;
 }
 
 }

@@ -43,24 +43,27 @@ int main(int argc, char** args)
 	hui::initializeSdl(sdlParams);
 
 	//3. Create the main window (this will also create a graphics (GL/VK/D3D/etc.) context)
-	auto mainWnd = HORUS_INPUT->createWindow("Horus Examples", hui::OsWindowFlags::Resizable, hui::OsWindowState::Maximized, hui::Rect(0, 0, 100, 100));
+	auto mainWnd = HORUS_INPUT->createWindow("Horus Examples", hui::OsWindowFlags::Resizable, hui::OsWindowState::Maximized, hui::Rect(0, 0, 1500, 800));
 
 	hui::DockNodeId mainDockNode = hui::createRootDockNode(mainWnd);
 
-	hui::DockNodeId n1, n2;
-	hui::dockLayoutSplit(mainDockNode, hui::DockNodeSplitType::Left, 0.5f, &n1, &n2 );
-	hui::dockLayoutSetNodeWindow(n1, "ui");
-	hui::dockLayoutSetNodeWindow(n2, "inspector");
-	auto inspectorNodeId = n2;
+	if(1)
+	{
+		hui::DockNodeId n1, n2;
+		hui::dockLayoutSplit(mainDockNode, hui::DockNodeSplitType::Left, 0.5f, &n1, &n2 );
+		hui::dockLayoutSetNodeWindow(n1, "ui");
+		hui::dockLayoutSetNodeWindow(n2, "inspector");
+		auto inspectorNodeId = n2;
 	
-	hui::dockLayoutSplit(mainDockNode, hui::DockNodeSplitType::Top, 0.25f, &n1, &n2);
-	hui::dockLayoutSetNodeWindow(n2, "hui");
+		hui::dockLayoutSplit(mainDockNode, hui::DockNodeSplitType::Top, 0.25f, &n1, &n2);
+		hui::dockLayoutSetNodeWindow(n2, "hui");
 
-	hui::dockLayoutSplit(inspectorNodeId, hui::DockNodeSplitType::Right, 0.25f, &n1, &n2);
+		hui::dockLayoutSplit(inspectorNodeId, hui::DockNodeSplitType::Right, 0.25f, &n1, &n2);
 
-	hui::dockLayoutSetNodeWindow(n1, "scene");
+		hui::dockLayoutSetNodeWindow(n1, "scene");
 
-	hui::dockLayoutRecalculate();
+		hui::dockLayoutRecalculate();
+	}
 
 	//4. Initialize the graphics API, since now we have a first window created
 	// (we cant initialize the graphics api without a window)
@@ -104,33 +107,72 @@ int main(int argc, char** args)
 		// the main frame rendering and input handling
 		auto doFrame = [&](bool lastEventInQueue)
 		{
+			static bool confineSceneToWindow = false;
+
 			auto tritri = [](hui::HOsWindow wnd)
 			{
 				auto osWndSize = HORUS_INPUT->getWindowClientSize(wnd);
-				auto wrc = hui::getWindowClientRect();
+				hui::Rect rc;
+
+				if (confineSceneToWindow)
+				{
+					rc = hui::getWindowClientRect("scene");
+				}
+				else
+				{
+					rc = {0, 0, osWndSize.x, osWndSize.y};
+				}
+
+				//hui::beginContainer(hui::Rect(0, 0, osWndSize.x, osWndSize.y));
 				//auto rc = hui::beginViewport();
-				//// some user drawing code, a triangle
-				//static f32 x = 1;
-				//static f32 t = 1;
-				//i32 vp[4];
-				//
-				//glGetIntegerv(GL_VIEWPORT, vp);
-				//glViewport(wrc.x, osWndSize.y - wrc.y - wrc.height, wrc.width, wrc.height);
-				//glBegin(GL_TRIANGLES);
-				//glColor3f(1, 0, 0);
-				//glVertex2f(0, 0);
-				//glColor3f(1, 1, 0);
-				//glVertex2f(x, 0);
-				//glColor3f(1, 0, 1);
-				//glVertex2f(x, 1);
-				//glEnd();
-				//x = sinf(t);
-				//t += 0.01f;
+				// some user drawing code, a triangle
+				static f32 x = 1;
+				static f32 t = 1;
+				i32 vp[4];
+				glClearColor(0,.4,0,1);
+				glClear(GL_COLOR_BUFFER_BIT);
+				glGetIntegerv(GL_VIEWPORT, vp);
+				glViewport(rc.x, osWndSize.y - rc.bottom(), rc.width, rc.height);
+				// Setup projection using glOrtho
+				glMatrixMode(GL_PROJECTION);
+				glLoadIdentity();
+				//glOrtho(0, rectWidth, 0, rectHeight, -1, 1);
+				glOrtho(0, 1, 0, 1, -1, 1);
+
+				// Setup modelview
+				glMatrixMode(GL_MODELVIEW);
+				glLoadIdentity();
+
+				glBegin(GL_TRIANGLES);
+
+				f32 radius1 = 0;
+				f32 radius2 = 0.5;
+				f32 step = 2 * M_PI / 10.0f;
+
+				for (f32 u = 0; u < 2 * M_PI; u += step)
+				{
+					glColor3f(.1, 0.1, 0.1);
+					glVertex2f(0.5f + radius1 * sinf(u + t), 0.5f + radius1 * cosf(u + t));
+					glColor3f(.8, .8, 0);
+					glVertex2f(0.5f + radius2 * sinf(u + t), 0.5f + radius2 * cosf(u + t));
+					glColor3f(.1, 0.1, .1);
+					glVertex2f(0.5f + radius2 * sinf(u + step + t), 0.5f + radius2 * cosf(u + step + t));
+				}
+
+				glEnd();
+
+				x = sinf(t);
+				t += 0.01f;
+
 				//hui::endViewport();
-//				glViewport(vp[0], vp[1], vp[2], vp[3]);
+				//hui::endContainer();
+				glViewport(vp[0], vp[1], vp[2], vp[3]);
 			};
 
 			// begin an actual frame of the gui
+
+			
+
 			hui::beginFrame();
 			// disable rendering if its not the last event in the queue
 			// no need to render while handling all the input events
@@ -139,11 +181,6 @@ int main(int argc, char** args)
 
 			if (hui::beginWindow("hui", "HUI", nullptr, tabicon1))
 			{
-				if (lastEventInQueue)
-				{
-					hui::addRenderCallback(tritri);
-				}
-
 				// lets first draw a rect with a theme, for the panel
 				hui::Rect panelRect = { 5, 5, 300, 500 };
 				hui::WidgetElementInfo elemInfo;
@@ -155,7 +192,12 @@ int main(int argc, char** args)
 				// begin a widget container (it doesnt draw anything, a container is a layouting rectangle)
 				//hui::beginContainer(panelRect);
 				hui::labelCustomFont("Information", largeFnt);
-				hui::button("Activate shields");
+				
+				if (hui::button("DEBUG TREE"))
+				{
+					hui::debugWindows();
+				}
+
 				if (hui::button("Show UI window"))
 					hui::setWindowVisibility("ui", true);
 				static bool chk1, chk2, chk3;
@@ -225,7 +267,7 @@ int main(int argc, char** args)
 			if (hui::beginWindow("inspector", "Inspector", nullptr, tabicon2))
 			{
 				hui::labelCustomFont("SETTINGS AND STUFF", hui::getFont("large"));
-				static char txt[2000] = HORUS_MAIN_WINDOW_ID;
+				static char txt[2000] = "hui";
 				
 				hui::label("Dock Target");
 				hui::textInput(txt, 2000, hui::TextInputValueMode::Any, "Write something here");
@@ -264,7 +306,7 @@ int main(int argc, char** args)
 			{
 				
 				hui::labelCustomFont("ASSETS OF COURSE", hui::getFont("heading"));
-				static char txt[2000] = HORUS_MAIN_WINDOW_ID;
+				static char txt[2000] = "hui";
 
 				hui::label("Dock Target");
 				
@@ -298,41 +340,22 @@ int main(int argc, char** args)
 				hui::endWindow();
 			}
 
+			hui::setNextWindowFlags(hui::WindowFlags::Transparent);
+
 			if (hui::beginWindow("scene", "Scene", nullptr, tabicon3))
 			{
+				if (lastEventInQueue)
+				{
+					hui::addRenderCallback(tritri);
+				}
 
-				hui::labelCustomFont("SCENE", hui::getFont("heading"));
-				static char txt[2000] = HORUS_MAIN_WINDOW_ID;
+				static bool confine = false;
+				
+				if (hui::check("Confine scene to this window rectangle", confine))
+				{
+					confineSceneToWindow = confine;
+				}
 
-				hui::label("Dock Target");
-
-				hui::textInput(txt, 2000, hui::TextInputValueMode::Any, "Write something here");
-
-				hui::space();
-				if (hui::button("Dock Left"))
-				{
-					hui::dockWindow("scene", txt, hui::DockType::Left);
-				}
-				if (hui::button("Dock Right"))
-				{
-					hui::dockWindow("scene", txt, hui::DockType::Right);
-				}
-				if (hui::button("Dock Top"))
-				{
-					hui::dockWindow("scene", txt, hui::DockType::Top);
-				}
-				if (hui::button("Dock Bottom"))
-				{
-					hui::dockWindow("scene", txt, hui::DockType::Bottom);
-				}
-				if (hui::button("Dock As tab"))
-				{
-					hui::dockWindow("scene", txt, hui::DockType::AsTab);
-				}
-				if (hui::button("UnDock"))
-				{
-					hui::dockWindow("scene", 0, hui::DockType::Floating);
-				}
 				hui::endWindow();
 			}
 
@@ -340,7 +363,7 @@ int main(int argc, char** args)
 			{
 
 				hui::labelCustomFont("UI", hui::getFont("heading"));
-				static char txt[2000] = HORUS_MAIN_WINDOW_ID;
+				static char txt[2000] = "hui";
 
 				hui::label("Dock Target");
 
@@ -376,9 +399,8 @@ int main(int argc, char** args)
 
 			if (hui::beginWindow("log", "Log", nullptr, tabicon3))
 			{
-
 				hui::labelCustomFont("LOG", hui::getFont("heading"));
-				static char txt[2000] = HORUS_MAIN_WINDOW_ID;
+				static char txt[2000] = "hui";
 
 				hui::label("Dock Target");
 

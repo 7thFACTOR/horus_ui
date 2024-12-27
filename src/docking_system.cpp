@@ -42,6 +42,11 @@ void handleDockingMouseDown(const InputEvent& event, DockNode* node)
 		if (wnd.second->dockNode->osWindow != event.window)
 			continue;
 
+		if (wnd.second->clientRect.contains(mousePos) && wnd.second->dockNode->selectedTabIndex == wnd.second->dockNode->getWindowIndex(wnd.second))
+		{
+			ds.focusedWindow = wnd.second;
+		}
+
 		// return if the widget is not visible, that is outside current clip rect
 		if (wnd.second->tabRect.outside(wnd.second->dockNode->rect))
 		{
@@ -53,6 +58,7 @@ void handleDockingMouseDown(const InputEvent& event, DockNode* node)
 		if (clippedRect.contains(mousePos.x, mousePos.y))
 		{
 			ds.dragWindow = wnd.second;
+			ds.focusedWindow = wnd.second;
 			break;
 		}
 	}
@@ -67,10 +73,11 @@ void handleDockingMouseUp(const InputEvent& event, DockNode* node)
 		ds.dragWindow->dockingNow = false;
 	}
 
-	if (ds.dockToNode && ds.draggingStarted)
+	if (ds.dragWindow && ds.dockToNode && ds.draggingStarted)
 	{
 		u32 tabIndex = 0;
-		bool dontDock = (ds.dockType == DockType::AsTab && ds.dockToNode == ds.dragWindow->dockNode);
+
+		bool allowDock = !(ds.dockType == DockType::AsTab && ds.dockToNode == ds.dragWindow->dockNode);
 
 		if (ds.dockType == DockType::AsTab && ds.dockToNode != ds.dragWindow->dockNode)
 		{
@@ -80,11 +87,24 @@ void handleDockingMouseUp(const InputEvent& event, DockNode* node)
 				tabIndex = ds.dockToNode->windows.size();
 		}
 
+		if (ds.dockType == DockType::AsTab && ds.dockToNode == ds.dragWindow->dockNode)
+		{
+			ds.dragWindow->dockNode->selectedTabIndex = ds.dockToNode->dockingTabSpaceIndex;
+		}
+
+		if (ds.dockToNode->windows.size() == 1)
+		{
+			ds.dockToNode->selectedTabIndex = 0;
+		}
+
 		ds.dockToNode->removeTabSpace();
 
-		if (!dontDock)
-		if (dockWindow(ds.dragWindow, ds.dockToNode, ds.dockType, tabIndex))
+		if (allowDock)
 		{
+			ds.dragWindow->dockNode->selectedTabIndex = 0;
+
+			dockWindow(ds.dragWindow, ds.dockToNode, ds.dockType, tabIndex);
+
 			ds.dragWindow = nullptr;
 			ds.dockToNode = nullptr;
 		}
@@ -471,7 +491,7 @@ void handleDockingMouseMove(const InputEvent& event, DockNode* node)
 		{
 			ds.dockToNode = nullptr;
 			ds.hoveredNode = nullptr;
-			ds.dockType = DockType::None;
+			ds.dockType = DockType::Floating;
 
 			const Point mousePos = ctx->mousePosition;
 
@@ -479,7 +499,7 @@ void handleDockingMouseMove(const InputEvent& event, DockNode* node)
 				ds.hoveredNode = node->findTargetDockNode(mousePos);
 
 			bool isSameNode = ds.hoveredNode == ds.dragWindow->dockNode;
-			bool isSingleWindow = ds.dragWindow->dockNode->windows.size() == 1;
+			bool isSingleWindow = ds.dragWindow->dockNode && ds.dragWindow->dockNode->windows.size() == 1;
 
 			auto rootNode = node;
 			auto& rootRect = rootNode->rect;

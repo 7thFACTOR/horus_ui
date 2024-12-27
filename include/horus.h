@@ -143,8 +143,6 @@ template <typename T> inline T toFlags(int x) { return (T)x; };
 #define HORUS_FONT hui::getContextSettings().providers.font
 #define HORUS_RECTPACK hui::getContextSettings().providers.rectPack
 
-#define HORUS_MAIN_WINDOW_ID "__mainWnd"
-
 typedef void* HImage;
 typedef void* HTheme;
 typedef void* HAtlas;
@@ -346,10 +344,11 @@ enum class MouseButton
 /// OS window flags
 enum class OsWindowFlags : u32
 {
-	NoDecoration = HORUS_BIT(0),
-	NoInput = HORUS_BIT(1),
-	NoTaskBar = HORUS_BIT(2),
-	Resizable = HORUS_BIT(3)
+	NoInput = HORUS_BIT(0),
+	NoTitleBar = HORUS_BIT(1),
+	NoDecoration = HORUS_BIT(2),
+	NoTaskBar = HORUS_BIT(3),
+	Resizable = HORUS_BIT(4)
 };
 HORUS_ENUM_AS_FLAGS(OsWindowFlags);
 
@@ -360,6 +359,15 @@ enum class OsWindowState
 	Maximized,
 	Hidden
 };
+
+/// Window flags
+enum class WindowFlags : u32
+{
+	None = HORUS_BIT(0),
+	Transparent = HORUS_BIT(1),
+	Disabled = HORUS_BIT(2)
+};
+HORUS_ENUM_AS_FLAGS(WindowFlags);
 
 /// Image fit mode, used in the image widget
 enum class ImageFitType
@@ -1709,6 +1717,7 @@ HORUS_API void dockLayoutRecalculate();
 HORUS_API bool beginWindow(const char* windowId, const char* title, Rect* initialRect, HImage icon);
 HORUS_API void endWindow();
 HORUS_API void setWindowVisibility(const char* windowId, bool visible);
+HORUS_API void setNextWindowFlags(WindowFlags flags);
 HORUS_API void debugWindows();
 HORUS_API void dockWindow(const char* windowId, const char* targetWindowId, DockType dockType);
 HORUS_API void undockWindow(const char* windowId, const Point& windowPos = Point());
@@ -1719,8 +1728,10 @@ HORUS_API void setCapture();
 
 HORUS_API void releaseCapture();
 
+/// \return the window client rect
+HORUS_API Rect getCurrentWindowClientRect();
 /// \return the window client rect, used usually to render custom scenes
-HORUS_API Rect getWindowClientRect();
+HORUS_API Rect getWindowClientRect(const char* windowId);
 
 /// Save the windows docking state
 /// \param filename the *.hui filename relative to executable where to save the state
@@ -2208,14 +2219,14 @@ HORUS_API void progress(f32 value);
 /// Draw a check box widget
 /// \param labelText the label text
 /// \param checked true if it has check mark on
-/// \return true if it is checked
-HORUS_API bool check(const char* labelText, bool checked);
+/// \return true if it was changed, result put in checked
+HORUS_API bool check(const char* labelText, bool& checked);
 
 /// Draw a radio box widget
 /// \param labelText the label text
 /// \param checked true if it has check mark on
-/// \return true if it is checked
-HORUS_API bool radio(const char* labelText, bool checked);
+/// \return true if it was changed, result put in checked
+HORUS_API bool radio(const char* labelText, bool& checked);
 
 /// Draw a label text widget
 /// \param labelText the label's text

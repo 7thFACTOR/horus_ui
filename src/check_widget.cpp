@@ -8,19 +8,21 @@
 
 namespace hui
 {
-bool check(const char* labelText, bool checked)
+bool check(const char* labelText, bool& checked)
 {
 	auto checkBodyElem = ctx->theme->getElement(WidgetElementId::CheckBody);
 	auto checkMarkElem = ctx->theme->getElement(WidgetElementId::CheckMark);
 
 	addWidgetItem(checkBodyElem.normalState().height * ctx->globalScale);
 	buttonBehavior();
+	bool changed = false;
 
 	if (ctx->widget.clicked)
 	{
 		ctx->widget.changeEnded = true;
 		checked = !checked;
 		forceRepaint();
+		changed = true;
 	}
 
 	auto checkBodyElemState = &checkBodyElem.normalState();
@@ -78,7 +80,7 @@ bool check(const char* labelText, bool checked)
 
 	ctx->currentWidgetId++;
 
-	return checked;
+	return changed;
 }
 
 }

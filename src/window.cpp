@@ -5,6 +5,7 @@
 #include "context.h"
 #include "renderer.h"
 #include "dock_node.h"
+#include <assert.h>
 
 namespace hui
 {
@@ -19,7 +20,7 @@ void dockWindow_DEPRECATED(const char* id, const char* dockTo, DockType dockType
 		dockToNode = ctx->dockingState.windows[dockTo]->dockNode;
 	}
 
-	auto wnd = createWindow(id, dockToNode, dockType, false, "", nullptr, 0, 0);
+	auto wnd = createWindow(id, dockToNode, dockType, "", nullptr, 0, 0);
 	wnd->id = id;
 }
 
@@ -29,6 +30,9 @@ bool beginWindow(const char* id, const char* title, Rect* initialRect, HImage ic
 	auto iterWnd = ctx->dockingState.windows.find(id);
 	auto iterClosed = ctx->dockingState.closedWindowsRects.find(id);
 	bool wasClosed = iterClosed != ctx->dockingState.closedWindowsRects.end();
+	auto flags = ctx->nextWindowFlags;
+
+	ctx->nextWindowFlags = WindowFlags::None;
 
 	// if there is no window created, create one
 	if (iterWnd == ctx->dockingState.windows.end() && !wasClosed)
@@ -42,7 +46,7 @@ bool beginWindow(const char* id, const char* title, Rect* initialRect, HImage ic
 			parentNode = ctx->dockingState.dockNodeIdsMap[iter->second];
 		}
 
-		wnd = createWindow(id, parentNode, parentNode ? DockType::AsTab : DockType::None, parentNode != nullptr, title, initialRect, 0, icon);
+		wnd = createWindow(id, parentNode, parentNode ? DockType::AsTab : DockType::None, title, initialRect, 0, icon);
 		wnd->id = id;
 	}
 	else
@@ -73,7 +77,8 @@ bool beginWindow(const char* id, const char* title, Rect* initialRect, HImage ic
 	}
 
 	if (wnd->dockNode->type == DockNode::Type::Tabs 
-		&& wnd->dockNode->getWindowIndex(wnd) != wnd->dockNode->selectedTabIndex)
+		&& wnd->dockNode->selectedTabIndex != wnd->dockNode->getWindowIndex(wnd)
+		&& !wnd->dockingNow)
 	{
 		return false;
 	}
@@ -84,10 +89,11 @@ bool beginWindow(const char* id, const char* title, Rect* initialRect, HImage ic
 	ctx->renderer->begin();
 	auto rc = wnd->clientRect;
 
-	ctx->renderer->cmdSetColor(ctx->theme->getElement(WidgetElementId::WindowBody).normalState().color);
-	ctx->renderer->cmdDrawSolidRectangle(rc);
-
-	rc.y += ctx->theme->getElement(WidgetElementId::TabGroupBody).normalState().height;
+	if (!(flags & WindowFlags::Transparent))
+	{
+		ctx->renderer->cmdSetColor(ctx->theme->getElement(WidgetElementId::WindowBody).normalState().color);
+		ctx->renderer->cmdDrawSolidRectangle(rc);
+	}
 
 	beginContainer(rc);
 
@@ -125,18 +131,38 @@ void setWindowVisibility(const char* windowId, bool visible)
 	}
 }
 
+void setNextWindowFlags(WindowFlags flags)
+{
+	ctx->nextWindowFlags = flags;
+}
+
 void dockWindow(const char* windowId, const char* targetWindowId, DockType dockType, const Point* undockedWindowPos)
 {
 	Window* wnd1 = nullptr, * wnd2 = nullptr;
 
-	wnd1 = ctx->dockingState.windows[windowId];
+	auto iterWnd = ctx->dockingState.windows.find(windowId);
+
+	if (iterWnd != ctx->dockingState.windows.end())
+	{
+		wnd1 = iterWnd->second;
+	}
 
 	if (targetWindowId)
 	{
-		wnd2 = ctx->dockingState.windows[targetWindowId];
+		iterWnd = ctx->dockingState.windows.find(targetWindowId);
+		
+		if (iterWnd != ctx->dockingState.windows.end())
+		{
+			wnd2 = iterWnd->second;
+		}
 	}
 
-	dockWindow(wnd1, wnd2 ? wnd2->dockNode : nullptr, dockType, 0, undockedWindowPos);
+	assert(wnd1);
+
+	if (wnd1)
+	{
+		dockWindow(wnd1, wnd2 ? wnd2->dockNode : nullptr, dockType, 0, undockedWindowPos);
+	}
 }
 
 void dockWindow(const char* windowId, const char* targetWindowId, DockType dockType)
@@ -169,9 +195,18 @@ void releaseCapture()
 	HORUS_INPUT->releaseCapture();
 }
 
-Rect getWindowClientRect()
+Rect getCurrentWindowClientRect()
 {
 	return ctx->currentWindow->clientRect;
 }	
-	
+
+Rect getWindowClientRect(const char* windowId)
+{
+	auto iter = ctx->dockingState.windows.find(windowId);
+
+	if (iter == ctx->dockingState.windows.end()) return {};
+
+	return (*iter).second->clientRect;
+}
+
 }

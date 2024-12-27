@@ -2,6 +2,7 @@
 #include <string.h>
 #include <algorithm>
 #include "context.h"
+#include <assert.h>
 
 namespace hui
 {
@@ -110,6 +111,8 @@ void DockNode::removeFromParent()
 		// we need to remove this now, it will interfere with redudancy checks
 		auto iter = std::find(ctx->osWindows.begin(), ctx->osWindows.end(), osWindow);
 
+		assert(iter != ctx->osWindows.end());
+
 		if (iter != ctx->osWindows.end()) ctx->osWindows.erase(iter);
 		
 		osWindow = nullptr;
@@ -128,12 +131,10 @@ void DockNode::removeWindow(Window* window)
 		(*iter)->dockNode = nullptr;
 		windows.erase(iter);
 
-		if (selectedTabIndex == idx)
+		// make sure we leave a proper selected index for tabs
+		if (selectedTabIndex >= windows.size() && !windows.empty())
 		{
-			if (selectedTabIndex > 0)
-			{
-				selectedTabIndex--;
-			}
+			selectedTabIndex = windows.size() - 1;
 		}
  	}
 }
@@ -174,13 +175,17 @@ void DockNode::computeRect()
 	{
 	case hui::DockNode::Type::None:
 	case hui::DockNode::Type::Tabs:
+	{
+		auto tabGroupHeight = ctx->theme ? ctx->theme->getElement(WidgetElementId::TabGroupBody).normalState().height : 0;
+
 		for (auto& wnd : windows)
 		{
 			wnd->clientRect = {
-				rect.x, rect.y, rect.width, rect.height
+				rect.x, rect.y + tabGroupHeight, rect.width, rect.height - tabGroupHeight
 			};
 		}
 		break;
+	}
 	case hui::DockNode::Type::Vertical:
 	{
 		auto childCount = children.size();
@@ -314,9 +319,12 @@ void DockNode::computeMinSize()
 
 bool DockNode::checkRedundancy()
 {
-	// first do leaves for redundant nesting of dock nodes
+	// first do leafs for redundant nesting of dock nodes
 	// collapse starting at the leaf nodes
-	for (auto& c : children)
+	// use a copy of the children vector since it might get modified
+	auto copyOfChildren = children;
+
+	for (auto& c : copyOfChildren)
 	{
 		c->checkRedundancy();
 	}
@@ -327,35 +335,36 @@ bool DockNode::checkRedundancy()
 		auto child = children[0];
 		
 		children = child->children;
-		
-		for (auto& c : children) c->parent = this;
-		
 		windows = child->windows;
-		
-		for (auto& w : windows) w->dockNode = this;
-		
+
+		adoptChildren();
+		adoptWindows();
 		selectedTabIndex = child->selectedTabIndex;
 		type = child->type;
+
 		ctx->dockingState.dockNodesToDelete.insert(child);
-		computeRect();
 	}
 
 	if (parent)
 	{
 		bool deleteThis = false;
 
+		// if same type as parent, merge its nodes and windows into parent
 		if (parent->type == type)
 		{
 			auto iterPosThis = std::find(parent->children.begin(), parent->children.end(), this);
-			
+
+			assert(iterPosThis != parent->children.end());
+
 			parent->children.insert(iterPosThis, children.begin(), children.end());
-			// find it again, remove it
+			
+			// find it again, remove it, leaving children in the parent node
 			iterPosThis = std::find(parent->children.begin(), parent->children.end(), this);
+
+			assert(iterPosThis != parent->children.end());
+
 			parent->children.erase(iterPosThis);
-			
-			for (auto& c : children) c->parent = parent;
-			
-			for (auto& w : windows) w->dockNode = parent;
+			parent->adoptChildren();
 			
 			deleteThis = true;
 		}
@@ -575,6 +584,7 @@ void DockNode::moveWindowTabAt(const Point& mousePos, Window* window)
 
 			windows[wndIndex] = windows[dockingTabSpaceIndex];
 			windows[dockingTabSpaceIndex] = tmp;
+			selectedTabIndex = ~0;
 
 			return;
 		}

@@ -135,7 +135,7 @@ int main(int argc, char** args)
 			hui::beginFrame();
 			Rect r = { 100, 100, 1000, 1200 };
 			hui::beginWindow("wnd1", "Window1", &r);
-			hui::clearBackground();
+			//hui::clearBackground();
 			hui::endWindow();
 
 			hui::endFrame();

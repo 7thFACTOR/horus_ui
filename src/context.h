@@ -61,6 +61,7 @@ struct Context
 	bool focusChanged = false;
 	bool skipRenderAndInput = false;
 	Window* currentWindow = nullptr;
+	WindowFlags nextWindowFlags = WindowFlags::None;
 	HOsWindow lastHoveredOsWindow = nullptr;
 	bool hoveringThisWindow = false;
 	bool dockingTabPane = false;

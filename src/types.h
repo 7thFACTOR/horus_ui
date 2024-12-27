@@ -282,6 +282,7 @@ struct DockingState
 	std::unordered_map<std::string /*window name*/, DockNodeId> windowsDockNodeAssignments;
 	std::unordered_map<DockNodeId, DockNode*> dockNodeIdsMap;
 	DockNode* currentDockNode = nullptr;
+	Window* focusedWindow = nullptr;
 	bool closeWindow = false;
 	// variables for dragging views around
 	const f32 dockBorderSizePercent = 0.5f;

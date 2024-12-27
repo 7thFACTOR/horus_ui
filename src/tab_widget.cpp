@@ -108,11 +108,14 @@ void tab(const char* labelText, HImage icon)
 		ctx->selectedTabIndex = ctx->currentTabIndex;
 	}
 
-	bool isActive = ctx->currentTabIndex == ctx->selectedTabIndex;
+	bool isActive = ctx->selectedTabIndex == ctx->currentTabIndex;
+	bool isFocused = ctx->currentWindow == ctx->dockingState.focusedWindow;
 
 	if (isActive)
 	{
-		if (ctx->widget.hovered)
+		if (isFocused)
+			tabElemState = &tabActiveElem.focusedState();
+		else if (ctx->widget.hovered)
 			tabElemState = &tabActiveElem.hoveredState();
 		else
 			tabElemState = &tabActiveElem.normalState();

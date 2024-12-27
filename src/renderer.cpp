@@ -503,6 +503,7 @@ void Renderer::executeDrawCommands(HOsWindow wnd)
 	currentBatch = nullptr;
 	currentWindowContext->batches.clear();
 	vertexBufferData.drawVertexCount = 0;
+	currentWindow = wnd;
 
 	// generate the batches
 	for (auto& cmd : wndCmds)

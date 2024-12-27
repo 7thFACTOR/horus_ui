@@ -5,6 +5,58 @@
 
 namespace hui
 {
+SDL_HitTestResult HitTestCallback(SDL_Window *Window, const SDL_Point *Area, void *Data)
+{
+    int Width, Height;
+    SDL_GetWindowSize(Window, &Width, &Height);
+	const int MOUSE_GRAB_PADDING = 3;
+
+    if(Area->y < MOUSE_GRAB_PADDING)
+    {
+        if(Area->x < MOUSE_GRAB_PADDING)
+        {
+            return SDL_HITTEST_RESIZE_TOPLEFT;
+        }
+        else if(Area->x > Width - MOUSE_GRAB_PADDING)
+        {
+            return SDL_HITTEST_RESIZE_TOPRIGHT;
+        }
+        else
+        {
+            return SDL_HITTEST_RESIZE_TOP;
+        }
+    }
+    else if(Area->y > Height - MOUSE_GRAB_PADDING)
+    {
+        if(Area->x < MOUSE_GRAB_PADDING)
+        {
+            return SDL_HITTEST_RESIZE_BOTTOMLEFT;
+        }
+        else if(Area->x > Width - MOUSE_GRAB_PADDING)
+        {
+            return SDL_HITTEST_RESIZE_BOTTOMRIGHT;
+        }
+        else
+        {
+            return SDL_HITTEST_RESIZE_BOTTOM;
+        }
+    }
+    else if(Area->x < MOUSE_GRAB_PADDING)
+    {
+        return SDL_HITTEST_RESIZE_LEFT;
+    }
+    else if(Area->x > Width - MOUSE_GRAB_PADDING)
+    {
+        return SDL_HITTEST_RESIZE_RIGHT;
+    }
+    //else if(Area->y < 70)
+    //{
+    //    return SDL_HITTEST_DRAGGABLE;
+    //}
+
+    return SDL_HITTEST_NORMAL; //SDL_HITTEST_DRAGGABLE; // SDL_HITTEST_NORMAL <- Windows behaviour
+}
+
 Sdl2InputProvider::Sdl2InputProvider()
 {}
 
@@ -20,7 +72,7 @@ Sdl2InputProvider::~Sdl2InputProvider()
 KeyCode Sdl2InputProvider::fromSdlKey(int code)
 {
 	KeyCode key = KeyCode::None;
-	//TODO: make it unordered_map
+
 	switch (code)
 	{
 	case SDLK_UNKNOWN: key = KeyCode::None; break;
@@ -694,7 +746,7 @@ HOsWindow Sdl2InputProvider::createWindow(
 		sdlflags |= SDL_WINDOW_BORDERLESS;
 
 	if (has(flags, OsWindowFlags::NoTaskBar))
-		sdlflags |= SDL_WINDOW_SKIP_TASKBAR;
+		sdlflags |= SDL_WINDOW_SKIP_TASKBAR | SDL_WINDOW_UTILITY;
 
 	if (HORUS_GFX->getApiType() == GraphicsProvider::ApiType::OpenGL)
 		sdlflags |= SDL_WINDOW_OPENGL;

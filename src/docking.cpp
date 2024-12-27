@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <math.h>
 #include "context.h"
+#include <assert.h>
 
 namespace hui
 {
@@ -50,39 +51,17 @@ DockNode* createOsWindowRootDockNode(HOsWindow osWindow)
 
 DockNode* getRootDockNode(HOsWindow window)
 {
+	assert(window);
+
 	if (!window) return nullptr;
 
 	return ctx->dockingState.rootOsWindowDockNodes[window];
 }
 
-DragDockNodeInfo findDockNodeDragInfoAtMousePos(HOsWindow window, const Point& mousePos)
-{
-	auto node = ctx->dockingState.rootOsWindowDockNodes[window];
-	DragDockNodeInfo info;
-	
-	if (!node) return info;
-
-	info.node = node->findDockNode(mousePos);
-
-	if (info.node)
-	{
-		DockNode* nodeObj = (DockNode*)info.node;
-		
-		if (nodeObj->parent)
-		{
-			switch (nodeObj->parent->type)
-			{
-			case DockNode::Type::Horizontal: info.dragSide = DragDockNodeInfo::DragSide::Right; break;
-			case DockNode::Type::Vertical: info.dragSide = DragDockNodeInfo::DragSide::Bottom; break;
-			}
-		}
-	}
-
-	return info;
-}
-
 void deleteRootDockNode(HOsWindow window)
 {
+	assert(window);
+
 	auto node = ctx->dockingState.rootOsWindowDockNodes[window];
 
 	if (node)
@@ -92,7 +71,7 @@ void deleteRootDockNode(HOsWindow window)
 	}
 }
 
-Window* createWindow(const std::string& id, DockNode* targetNode, DockType dockType, bool justPlaceIntoNode, const std::string& title, Rect* initialRect, HOsWindow osWnd, HImage icon)
+Window* createWindow(const std::string& id, DockNode* targetNode, DockType dockType, const std::string& title, Rect* initialRect, HOsWindow osWnd, HImage icon)
 {
 	auto targetNodePtr = (DockNode*)targetNode;
 	auto newWnd = new Window();
@@ -112,6 +91,7 @@ Window* createWindow(const std::string& id, DockNode* targetNode, DockType dockT
 		newWnd->dockNode = createOsWindowRootDockNode(osWnd);
 		newWnd->dockNode->windows.push_back(newWnd);
 		newWnd->clientRect = newWnd->dockNode->rect;
+		ctx->dockingState.focusedWindow = newWnd;
 	}
 
 	ctx->dockingState.windows[id] = newWnd;
@@ -333,9 +313,9 @@ bool dockWindow(Window* wnd, DockNode* targetNode, DockType dockType, u32 tabInd
 				DockNode* newTargetNode = new DockNode();
 				
 				if (target) newTargetNode->copyFrom(target);
+				
 				newTargetNode->parent = target;
 				sourceNode->parent = target;
-				
 				newTargetNode->adoptChildren();
 				newTargetNode->adoptWindows();
 				
@@ -358,11 +338,10 @@ bool dockWindow(Window* wnd, DockNode* targetNode, DockType dockType, u32 tabInd
 		{
 			f32 size = origTargetRc.width * ctx->settings.dockNodeDockingSizeRatio;
 			
-			sourceNode->rect.width = size;
 			sourceNode->rect.x = target->rect.x;
 			sourceNode->rect.y = target->rect.y;
+			sourceNode->rect.width = size;
 			sourceNode->rect.height = target->rect.height;
-			
 			target->rect.x += size;
 			target->rect.width -= size;
 		}
@@ -467,8 +446,8 @@ bool dockWindow(Window* wnd, DockNode* targetNode, DockType dockType, u32 tabInd
 				sourceNode->windows.push_back(wnd);
 				wnd->dockNode = sourceNode;
 				sourceNode->parent = targetParent;
-				sourceNode->osWindow = targetParent->osWindow;
 				sourceNode->type = DockNode::Type::Tabs;
+				sourceNode->osWindow = targetParent->osWindow;
 				sourceNode->rect = wndRect;
 			}
 
@@ -496,6 +475,7 @@ bool dockWindow(Window* wnd, DockNode* targetNode, DockType dockType, u32 tabInd
 				DockNode* newTargetNode = new DockNode();
 
 				if (target) newTargetNode->copyFrom(target);
+
 				newTargetNode->parent = target;
 				sourceNode->parent = target;
 				newTargetNode->adoptChildren();
@@ -525,9 +505,9 @@ bool dockWindow(Window* wnd, DockNode* targetNode, DockType dockType, u32 tabInd
 			sourceNode->rect.y = target->rect.y;
 			sourceNode->rect.width = size;
 			sourceNode->rect.height = target->rect.height;
-
 			target->rect.width -= size;
 		}
+
 		break;
 	}
 	case hui::DockType::Top:
@@ -886,7 +866,7 @@ bool dockWindow(Window* wnd, DockNode* targetNode, DockType dockType, u32 tabInd
 		{
 			if (source->windows.size() == 1 && source->osWindow && !source->parent)
 			{
-				// already floating single window
+				// already a floating single window, skip
 				return true;
 			}
 
@@ -909,8 +889,8 @@ bool dockWindow(Window* wnd, DockNode* targetNode, DockType dockType, u32 tabInd
 			rcWnd.y = undockedWindowPos->y;
 		}
 
-		auto osWnd = createOsWindow(wnd->title, OsWindowFlags::Resizable, OsWindowState::Normal, rcWnd);
-		
+		auto osWnd = createOsWindow(wnd->title, OsWindowFlags::NoTaskBar | OsWindowFlags::Resizable, OsWindowState::Normal, rcWnd);
+				
 		wnd->dockNode = createOsWindowRootDockNode(osWnd);
 		wnd->dockNode->windows.push_back(wnd);
 		wnd->clientRect = wnd->dockNode->rect;
@@ -920,6 +900,8 @@ bool dockWindow(Window* wnd, DockNode* targetNode, DockType dockType, u32 tabInd
 	default:
 		break;
 	}
+
+	ctx->dockingState.focusedWindow = wnd;
 
 	for (auto& pair : ctx->dockingState.rootOsWindowDockNodes)
 	{
@@ -976,6 +958,7 @@ void dockNodeTabs(DockNode* node)
 			ctx->penPosition.x += node->dockingTabSpaceWidth;
 		}
 
+		ctx->currentWindow = node->windows[i];
 		hui::tab(node->windows[i]->title.c_str(), node->windows[i]->icon);
 		node->windows[i]->tabRect = ctx->widget.rect;
 
@@ -991,7 +974,6 @@ void dockNodeTabs(DockNode* node)
 
 	selectedIndex = hui::endTabGroup();
 	ctx->renderer->popClipRect();
-
 	ctx->dockingState.drawingWindowTabs = false;
 
 	if (closeTabIndex != ~0)
