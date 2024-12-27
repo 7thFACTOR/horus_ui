@@ -35,6 +35,7 @@ void handleDockingMouseDown(const InputEvent& event, DockNode* node)
 	ds.lastMousePos = mousePos;
 	ds.resizingNode = node->findResizeDockNode(mousePos);
 	ds.dragWindow = nullptr;
+	ds.draggingStarted = false;
 
 	for (auto& wnd : ds.windows)
 	{
@@ -59,10 +60,14 @@ void handleDockingMouseDown(const InputEvent& event, DockNode* node)
 
 void handleDockingMouseUp(const InputEvent& event, DockNode* node)
 {
-	auto& ds = ctx->dockingState;
-	bool moved = fabs(ds.lastMousePosSinceMouseDown.x - ctx->mousePosition.x) > ctx->settings.dragStartDistance || fabs(ds.lastMousePosSinceMouseDown.y - ctx->mousePosition.y) > ctx->settings.dragStartDistance;
+	auto& ds = ctx->dockingState;	
 
-	if (ds.dockToNode && moved)
+	if (ds.dragWindow)
+	{
+		ds.dragWindow->dockingNow = false;
+	}
+
+	if (ds.dockToNode && ds.draggingStarted)
 	{
 		u32 tabIndex = 0;
 		bool dontDock = (ds.dockType == DockType::AsTab && ds.dockToNode == ds.dragWindow->dockNode);
@@ -75,7 +80,6 @@ void handleDockingMouseUp(const InputEvent& event, DockNode* node)
 				tabIndex = ds.dockToNode->windows.size();
 		}
 
-		ds.dragWindow->dockingNow = false;
 		ds.dockToNode->removeTabSpace();
 
 		if (!dontDock)
@@ -88,7 +92,7 @@ void handleDockingMouseUp(const InputEvent& event, DockNode* node)
 		hui::forceRepaint();
 	}
 	// we undock to a new native window
-	else if (ds.dragWindow && moved)
+	else if (ds.dragWindow && ds.draggingStarted)
 	{
 		ds.dragWindow->dockingNow = false;
 		ds.dragWindow->dockNode->removeTabSpace();
@@ -459,8 +463,6 @@ void handleDockingMouseMove(const InputEvent& event, DockNode* node)
 		}
 	}
 
-	Point mousePos = ctx->mousePosition;
-
 	if (ds.dragWindow)
 	{
 		auto& tabGroupElem = ctx->theme->getElement(WidgetElementId::TabGroupBody);
@@ -471,19 +473,13 @@ void handleDockingMouseMove(const InputEvent& event, DockNode* node)
 			ds.hoveredNode = nullptr;
 			ds.dockType = DockType::None;
 
+			const Point mousePos = ctx->mousePosition;
+
 			if (ctx->lastHoveredOsWindow == node->osWindow)
 				ds.hoveredNode = node->findTargetDockNode(mousePos);
 
 			bool isSameNode = ds.hoveredNode == ds.dragWindow->dockNode;
 			bool isSingleWindow = ds.dragWindow->dockNode->windows.size() == 1;
-
-			// we've started to drag the window, so prepare objects and state
-			if (!ds.dragIndicatorOsWindow)
-			{
-				ds.dragIndicatorOsWindow = HORUS_INPUT->createWindow(ds.dragWindow->title.c_str(),  OsWindowFlags::NoInput | OsWindowFlags::NoTaskBar|OsWindowFlags::NoDecoration, OsWindowState::Normal, Rect(0, 0, 200, 150));
-
-				ds.dragWindow->dockingNow = true;
-			}
 
 			auto rootNode = node;
 			auto& rootRect = rootNode->rect;
@@ -625,12 +621,27 @@ void handleDockingMouseMove(const InputEvent& event, DockNode* node)
 
 					if (isSameNode)
 					{
-						ds.hoveredNode->moveWindowTabAt(mousePos, ds.dragWindow);
+						if (ds.hoveredNode->windows.size() > 1)
+							ds.hoveredNode->moveWindowTabAt(mousePos, ds.dragWindow);
 					}
 					else
 					{
 						ds.hoveredNode->insertTabSpaceAt(mousePos, ds.dragWindow->tabRect.width);
 					}
+				}
+
+				// we've started to drag the window, so prepare objects and state
+				if (!ds.dragIndicatorOsWindow)
+				{
+					Rect screenRect;
+
+					Point wndPos = HORUS_INPUT->getWindowPosition(ctx->lastHoveredOsWindow);
+
+					screenRect = ds.draggedRect + wndPos;
+
+					ds.dragIndicatorOsWindow = HORUS_INPUT->createWindow(ds.dragWindow->title.c_str(), OsWindowFlags::NoInput | OsWindowFlags::NoTaskBar | OsWindowFlags::NoDecoration, OsWindowState::Normal, screenRect);
+
+					ds.dragWindow->dockingNow = true;
 				}
 			}
 		}
@@ -655,8 +666,6 @@ void handleDockNodeEvents(DockNode* node)
 		// node is disabled for input
 		return;
 	}
-
-	printf("hwnd %p\n", ctx->lastHoveredOsWindow);
 
 	// is the event for this window ?
 	if (ctx->lastHoveredOsWindow != node->osWindow)

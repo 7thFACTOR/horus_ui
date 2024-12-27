@@ -16,9 +16,9 @@ void beginTabGroup(TabIndex selectedIndex)
 
 	ctx->widget.rect.set(
 		round(ctx->penPosition.x),
-		round(ctx->penPosition.y),
+		round(ctx->penPosition.y) - ctx->settings.dockNodeSpacing,
 		ctx->layoutStack.back().width + ctx->settings.dockNodeSpacing,
-		height);
+		height + ctx->settings.dockNodeSpacing);
 
 	// tab group background
 	ctx->renderer->cmdSetColor(tabGroupElemState.color);
@@ -27,17 +27,9 @@ void beginTabGroup(TabIndex selectedIndex)
 			round(ctx->penPosition.x),
 			round(ctx->penPosition.y - ctx->settings.dockNodeSpacing),
 			ctx->layoutStack.back().width + ctx->settings.dockNodeSpacing,
-			ctx->containerRect.height + ctx->settings.dockNodeSpacing
+			ctx->containerRect.height
 		});
 
-	Rect rcTop = {
-		round(ctx->penPosition.x),
-		round(ctx->penPosition.y - ctx->settings.dockNodeSpacing),
-		ctx->layoutStack.back().width + ctx->settings.dockNodeSpacing,
-		ctx->settings.dockNodeSpacing };
-
-	ctx->renderer->cmdSetColor(Color::black);
-	ctx->renderer->cmdDrawImageBordered(tabGroupElemState.image, tabGroupElemState.border, rcTop, ctx->globalScale);
 	ctx->renderer->cmdSetColor(tabGroupElemState.color);
 
 	ctx->renderer->cmdDrawImageBordered(tabGroupElemState.image, tabGroupElemState.border, ctx->widget.rect, ctx->globalScale);
@@ -46,7 +38,7 @@ void beginTabGroup(TabIndex selectedIndex)
 	{
 		// vertical splitter
 		//NOTE: horizontal splitter is not needed because there is tab group background
-		ctx->renderer->cmdSetColor(Color::black);
+		ctx->renderer->cmdSetColor(tabGroupElemState.color);
 		ctx->renderer->cmdDrawImage(
 			tabGroupElemState.image,
 			{
@@ -95,7 +87,7 @@ void tab(const char* labelText, HImage icon)
 	}
 
 	const f32 iconTextSpacing = 4;
-	f32 textAndIconWidth = (fsize.width + iconWidth + iconTextSpacing) * ctx->globalScale;
+	f32 textAndIconWidth = (fsize.width + iconWidth * 2.0f /* some space after text as icon width */ + iconTextSpacing) * ctx->globalScale;
 	
 	width = textAndIconWidth + tabElemState->border * 2.0f * ctx->globalScale;
 
@@ -144,7 +136,7 @@ void tab(const char* labelText, HImage icon)
 
 	if (ico)
 	{
-		ctx->renderer->cmdSetColor(Color::white);
+		ctx->renderer->cmdSetColor(tabElemState->textColor);
 		ctx->renderer->cmdDrawImageScaledAligned(ico,
 			rcTextAndIcon, HAlignType::Left, VAlignType::Center, ctx->globalScale);
 	}
@@ -163,7 +155,7 @@ void tab(const char* labelText, HImage icon)
 
 	ctx->renderer->cmdDrawTextInBox(labelText,
 		textRc,
-		HAlignType::Left, VAlignType::Bottom);
+		HAlignType::Left, VAlignType::Center);
 
 	ctx->renderer->popClipRect();
 	ctx->currentTabIndex++;

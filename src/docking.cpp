@@ -971,6 +971,11 @@ void dockNodeTabs(DockNode* node)
 			continue;
 		}
 
+		if (node->dockingTabSpaceIndex == i)
+		{
+			ctx->penPosition.x += node->dockingTabSpaceWidth;
+		}
+
 		hui::tab(node->windows[i]->title.c_str(), node->windows[i]->icon);
 		node->windows[i]->tabRect = ctx->widget.rect;
 

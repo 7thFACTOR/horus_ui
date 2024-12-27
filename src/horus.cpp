@@ -257,7 +257,17 @@ void beginFrame()
 	if (ctx->event.window)
 	{
 		ctx->lastHoveredOsWindow = ctx->event.window;
-		ctx->mousePosition = ctx->event.mouse.point;
+		
+		if (ctx->event.type == InputEvent::Type::MouseDown
+			|| ctx->event.type == InputEvent::Type::MouseUp
+			|| ctx->event.type == InputEvent::Type::MouseMove
+			|| ctx->event.type == InputEvent::Type::MouseWheel)
+		{
+			if (ctx->event.window && ctx->event.window != ctx->dockingState.dragIndicatorOsWindow)
+			{
+				ctx->mousePosition = ctx->event.mouse.point;
+			}
+		}
 	}
 
 	if (ctx->event.type == InputEvent::Type::Key
@@ -720,56 +730,65 @@ void updateDockingSystem()
 {
 	auto copyOfRootOsWindowDockNodes = ctx->dockingState.rootOsWindowDockNodes;
 	auto& ds = ctx->dockingState;
-	auto& mousePos = ctx->mousePosition;
+	const auto& mousePos = ctx->mousePosition;
 
 	ds.draggingStarted = fabs(ds.lastMousePosSinceMouseDown.x - mousePos.x) > ctx->settings.dragStartDistance || abs(ds.lastMousePosSinceMouseDown.y - mousePos.y) > ctx->settings.dragStartDistance;
 	ds.mouseDragDelta = mousePos - ds.lastMousePos;
 
+	bool mouseOutsideOfAllDockWindows = true;
+	auto screenMousePos = HORUS_INPUT->getMousePosition();
+
 	for (auto& wnd : copyOfRootOsWindowDockNodes)
 	{
 		handleDockNodeEvents(wnd.second);
+
+		// check if contains at least one window
+		// once checked, it wont enter this for the other root OS windows
+		if (mouseOutsideOfAllDockWindows)
+		{
+			auto wndRc = HORUS_INPUT->getWindowRect(wnd.first);
+
+			if (wndRc.contains(screenMousePos))
+			{
+				mouseOutsideOfAllDockWindows = false;
+			}
+		}
 	}
+
+	Rect screenRect;
 
 	if (ds.dockType != DockType::AsTab)
 	{
 		if (ds.hoveredNode) ds.hoveredNode->removeTabSpace();
 	}
 
-	if (ds.dragIndicatorOsWindow && ds.hoveredNode && ds.dockType == DockType::AsTab)
-	{
-		Rect screenRect;
-		auto pos = HORUS_INPUT->getWindowPosition(ctx->lastHoveredOsWindow);
-		
-		screenRect = ds.draggedRect + pos;
-		screenRect.x -= 32;
-		HORUS_INPUT->setWindowRect(ctx->dockingState.dragIndicatorOsWindow, screenRect);
-	}
-
 	if (ds.dragIndicatorOsWindow)
 	{
-		auto pos = HORUS_INPUT->getWindowPosition(ctx->lastHoveredOsWindow);
-
-		if (ctx->event.window && ds.hoveredNode && (ds.dockType != DockType::None && ds.dockType != DockType::Floating))
+		// if we try to dock on dock nodes sides
+		if (!mouseOutsideOfAllDockWindows && ds.dockType != DockType::None && ds.dockType != DockType::Floating && ds.hoveredNode)
 		{
-			Rect screenRect = ds.draggedRect + pos;
+			auto pos = HORUS_INPUT->getWindowPosition(ds.hoveredNode->osWindow);
+
+			screenRect = ds.draggedRect;
+			screenRect += pos;
+
+			if (ds.dockType == DockType::AsTab)
+			{
+				screenRect.x -= 32;
+			}
+
 			HORUS_INPUT->setWindowRect(ctx->dockingState.dragIndicatorOsWindow, screenRect);
-			ds.draggedRect = screenRect;
-			ds.draggedRect.x = 0;
-			ds.draggedRect.y = 0;
 		}
 		else
 		{
 			// resize window as floating window
 			auto mousePosAbs = HORUS_INPUT->getMousePosition();
-			Rect screenRect = ds.dragWindow->dockNode->rect;
 
+			screenRect = ds.dragWindow->dockNode->rect;
 			screenRect *= 0.6f; // scale back a bit from original size
 			screenRect.x = mousePosAbs.x - screenRect.width / 2;
 			screenRect.y = mousePosAbs.y - screenRect.height / 2;
 			HORUS_INPUT->setWindowRect(ds.dragIndicatorOsWindow, screenRect);
-			ds.draggedRect = screenRect;
-			ds.draggedRect.x = 0;
-			ds.draggedRect.y = 0;
 		}
 	}
 
@@ -779,12 +798,12 @@ void updateDockingSystem()
 		ctx->renderer->setOsWindow(ds.dragIndicatorOsWindow);
 		ctx->renderer->begin();
 		ctx->penPosition.set(3,3);
-		ds.draggedRect.x = 0;
-		ds.draggedRect.y = 0;
+		screenRect.x = 0;
+		screenRect.y = 0;
 		ctx->renderer->cmdSetColor(ctx->theme->getElement(WidgetElementId::WindowBody).normalState().color);
-		ctx->renderer->cmdDrawSolidRectangle(ds.draggedRect);
+		ctx->renderer->cmdDrawSolidRectangle(screenRect);
 		ctx->renderer->cmdSetLineStyle(LineStyle(Color::fromU8(35, 35, 35, 255), 1));
-		auto rc2 = ds.draggedRect.contract(1);
+		auto rc2 = screenRect.contract(1);
 		ctx->renderer->cmdDrawRectangle(rc2);
 		pushLayoutPadding(0);
 		beginContainer(rc2);
@@ -795,8 +814,7 @@ void updateDockingSystem()
 		popLayoutPadding();
 		ctx->renderer->end();
 		ctx->renderer->executeDrawCommands(ds.dragIndicatorOsWindow);
-		HORUS_INPUT->presentWindow(ds.dragIndicatorOsWindow);
-		
+		HORUS_INPUT->presentWindow(ds.dragIndicatorOsWindow);		
 	}
 
 	if (ctx->event.type == InputEvent::Type::WindowResized || ctx->event.type == InputEvent::Type::WindowMoved)
