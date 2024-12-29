@@ -1,8 +1,11 @@
 ﻿#pragma execution_character_set("utf-8")
 #include "horus.h"
 
+#define _USE_MATH_DEFINES
+#include <cmath>
+
 // backends
-#include "sdl2_input_provider.h"
+#include "sdl_input_provider.h"
 #include "opengl_graphics_provider.h"
 #include "opengl_vertex_buffer.h"
 #include "opengl_texture_array.h"

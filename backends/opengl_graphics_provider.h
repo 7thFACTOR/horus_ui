@@ -1,9 +1,7 @@
 #pragma once
 #include "horus_interfaces.h"
 #include <string>
-
-#define GLEW_STATIC
-#include <GL/glew.h>
+#include <glad/gl.h>
 
 #ifdef _WIN32
 #include <windows.h>

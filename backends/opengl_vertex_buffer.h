@@ -1,7 +1,6 @@
 #pragma once
 #include "horus_interfaces.h"
-#define GLEW_STATIC
-#include <GL/glew.h>
+#include <glad/gl.h>
 
 namespace hui
 {

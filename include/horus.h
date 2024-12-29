@@ -1543,7 +1543,9 @@ struct DisplayInfo
 	u32 index = 0;
 	Rect bounds;
 	Rect usableBounds;
-	f32 diagonalDpi = 0, horizontalDpi = 0, verticalDpi = 0;
+	f32 scale = 1.0f;
+	//TODO: these worked in SDL2, SDL3 not, use scale
+	//f32 diagonalDpi = 0, horizontalDpi = 0, verticalDpi = 0;
 };
 
 /// Various HorusUI per-context global settings

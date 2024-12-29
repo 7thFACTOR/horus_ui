@@ -17,8 +17,6 @@
 #include <chrono>
 #include <ratio>
 #endif
-#define GLEW_STATIC
-#include <GL/glew.h>
 
 namespace hui
 {

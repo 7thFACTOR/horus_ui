@@ -60,3 +60,47 @@ macro(add_source_group FILTER_NAME SOURCE_PATH TARGET_LIST)
    source_group("${NEW_FILTER_NAME}" FILES ${TEMP_SRC})
    list(APPEND ${TARGET_LIST} "${TEMP_SRC}")
 endmacro(add_source_group)
+
+macro(link_libs TARGET_LIST)
+	if(WINDOWS)
+		target_link_libraries(${TARGET_LIST} PUBLIC "shlwapi"  "Ws2_32" "Wininet" "dbghelp"
+		  "user32" "gdi32" "ole32" "oleaut32"  "uuid" "opengl32" "winmm" "setupapi" "version" "imm32")
+	endif(WINDOWS)
+
+	if(LINUX)
+		target_link_libraries(${TARGET_LIST} PUBLIC "X11 `pkg-config --libs gtk+-3.0`"
+		  "Xi" "dl" "pthread" "Xext" "GL" "GLU")
+	endif(LINUX)
+
+	if(APPLE)
+		target_link_libraries(${TARGET_LIST} PUBLIC "dl" "ForceFeedback.framework" "CoreVideo.framework" "Cocoa.framework"
+		  "IOKit.framework" "Carbon.framework" "CoreAudio.framework" "AudioToolbox.framework" "OpenGL.framework")
+	endif(APPLE)
+	
+	if(LINUX)
+		find_package(GTK REQUIRED)
+		find_package(PkgConfig)
+		pkg_check_modules(GTK "gtk+-3.0")
+		target_link_libraries(${TARGET_LIST} PUBLIC ${GTK_LIBRARIES})
+		add_definitions(${GTK_CFLAGS} ${GTK_CFLAGS_OTHER} -DMAKE_LIB)
+
+		#target_compile_options(${TARGET_LIST} PRIVATE -Werror=return-type -std=c++17 -lstdc++fs)
+
+		if(CMAKE_BUILD_TYPE MATCHES Debug)
+			target_link_libraries(${TARGET_LIST} PUBLIC libSDL2-2.0d.so libSDL2_mixer-2.0d.so libGLEWd.a libjsoncpp.a libGL.so libspdlogd.so)
+		else(CMAKE_BUILD_TYPE MATCHES Debug)
+			target_link_libraries(${TARGET_LIST} PUBLIC libSDL2-2.0.so libSDL2_mixer-2.0.so libGLEW.so libjsoncpp.so libGL.so libspdlog.so)
+		endif(CMAKE_BUILD_TYPE MATCHES Debug)
+	endif(LINUX)
+
+	if (WIN32)
+		target_link_libraries(${TARGET_LIST} PUBLIC debug freetyped optimized freetype)
+		target_link_libraries(${TARGET_LIST} PUBLIC debug SDL3 optimized SDL3)
+		#target_link_libraries(${TARGET_LIST} PUBLIC debug SDL3_mixerd optimized SDL3_mixer)
+		#target_link_libraries(${TARGET_LIST} PUBLIC debug libGLEW32d optimized libGLEW32)
+		#target_link_libraries(${TARGET_LIST} PUBLIC debug glfw3 optimized glfw3)
+		target_link_libraries(${TARGET_LIST} PUBLIC debug jsoncpp_static optimized jsoncpp_static)
+		#target_link_libraries(${TARGET_LIST} PUBLIC debug spdlogd optimized spdlog)
+	endif(WIN32)
+	
+endmacro(link_libs)

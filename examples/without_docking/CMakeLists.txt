@@ -45,9 +45,14 @@ if(LINUX)
 	find_package(GTK REQUIRED)
 	find_package(PkgConfig)
 	pkg_check_modules(GTK "gtk+-3.0")
-	target_link_libraries(without_docking ${GTK_LIBRARIES})
+	target_link_libraries(without_docking PUBLIC ${GTK_LIBRARIES})
 	add_definitions(${GTK_CFLAGS} ${GTK_CFLAGS_OTHER})
-	target_link_libraries(without_docking libSDL2-2.0.so libfreetype.so libGLEW.so libjsoncpp.so libGL.so) 
+	target_link_libraries(without_docking PUBLIC libSDL2-2.0.so libfreetype.so libGLEW.so libjsoncpp.so libGL.so) 
 endif(LINUX)
 
+link_libs(without_docking)
+
 target_link_directories(without_docking PUBLIC ${CMAKE_BINARY_DIR}/bin)
+set_target_properties(without_docking PROPERTIES
+    VS_DEBUGGER_WORKING_DIRECTORY "../../bin"
+)

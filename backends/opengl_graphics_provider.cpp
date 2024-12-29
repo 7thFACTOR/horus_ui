@@ -133,19 +133,9 @@ OpenGLGraphicsProvider::~OpenGLGraphicsProvider()
 
 bool OpenGLGraphicsProvider::initialize()
 {
-	GLenum errGlew = 0;
 	GLchar errorLog[1024] = { 0 };
 
-	glewExperimental = GL_TRUE;
-	errGlew = glewInit();
-
 	printf("Initializing HorusUI OpenGL provider...\n");
-
-	if (errGlew != GLEW_OK)
-	{
-		printf("FATAL ERROR: Cannot initialize GLEW. Error: %s\n", glewGetErrorString(errGlew));
-		return false;
-	}
 
 	program = glCreateProgram();
 
