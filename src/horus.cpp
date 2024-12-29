@@ -461,7 +461,7 @@ void update(f32 deltaTime)
 	if (ctx->tooltip.show)
 	{
 		// track mouse pos
-		ctx->tooltip.position = ctx->providers->input->getMousePosition();
+		ctx->tooltip.position = ctx->providers->input->getAbsoluteMousePosition();
 	}
 }
 
@@ -736,7 +736,7 @@ void updateDockingSystem()
 	ds.mouseDragDelta = mousePos - ds.lastMousePos;
 
 	bool mouseOutsideOfAllDockWindows = true;
-	auto screenMousePos = HORUS_INPUT->getMousePosition();
+	auto screenMousePos = HORUS_INPUT->getAbsoluteMousePosition();
 
 	for (auto& wnd : copyOfRootOsWindowDockNodes)
 	{
@@ -762,10 +762,15 @@ void updateDockingSystem()
 		if (ds.hoveredNode) ds.hoveredNode->removeTabSpace();
 	}
 
-	if (ds.dragIndicatorOsWindow)
+	screenRect = ds.draggedRect;
+
+	if (ds.dragIndicatorOsWindow && ds.dragWindow)
 	{
 		// if we try to dock on dock nodes sides
-		if (!mouseOutsideOfAllDockWindows && ds.dockType != DockType::None && ds.dockType != DockType::Floating && ds.hoveredNode)
+		if (!mouseOutsideOfAllDockWindows
+			&& ds.dockType != DockType::None
+			&& ds.dockType != DockType::Floating
+			&& ds.hoveredNode)
 		{
 			auto pos = HORUS_INPUT->getWindowPosition(ds.hoveredNode->osWindow);
 
@@ -776,45 +781,51 @@ void updateDockingSystem()
 			{
 				screenRect.x -= 32;
 			}
-
-			HORUS_INPUT->setWindowRect(ctx->dockingState.dragIndicatorOsWindow, screenRect);
 		}
 		else
 		{
 			// resize window as floating window
-			auto mousePosAbs = HORUS_INPUT->getMousePosition();
-
+			auto mousePosAbs = HORUS_INPUT->getAbsoluteMousePosition();
 			screenRect = ds.dragWindow->dockNode->rect;
 			screenRect *= 0.6f; // scale back a bit from original size
 			screenRect.x = mousePosAbs.x - screenRect.width / 2;
 			screenRect.y = mousePosAbs.y - screenRect.height / 2;
-			HORUS_INPUT->setWindowRect(ds.dragIndicatorOsWindow, screenRect);
 		}
+
+		HORUS_INPUT->setWindowRect(ds.dragIndicatorOsWindow, screenRect);
 	}
 
 	if (ctx->dockingState.dragIndicatorOsWindow && ds.dragWindow)
 	{
+		auto rc = screenRect;
 		HORUS_INPUT->setCurrentWindow(ds.dragIndicatorOsWindow);
 		ctx->renderer->setOsWindow(ds.dragIndicatorOsWindow);
+		ctx->renderer->setWindowSize(rc.getSize());
 		ctx->renderer->begin();
-		ctx->penPosition.set(3,3);
-		screenRect.x = 0;
-		screenRect.y = 0;
+		rc.x = 0;
+		rc.y = 0;
+		ctx->renderer->pushClipRect(rc, false);
+		ctx->renderer->cmdClearBackground(Color::red);
 		ctx->renderer->cmdSetColor(ctx->theme->getElement(WidgetElementId::WindowBody).normalState().color);
-		ctx->renderer->cmdDrawSolidRectangle(screenRect);
+
+		ctx->renderer->cmdDrawSolidRectangle(rc);
 		ctx->renderer->cmdSetLineStyle(LineStyle(Color::fromU8(35, 35, 35, 255), 1));
-		auto rc2 = screenRect.contract(1);
-		ctx->renderer->cmdDrawRectangle(rc2);
+		ctx->renderer->cmdDrawRectangle(rc);
+		ctx->penPosition.set(3,3);
+		rc = rc.contract(1);
+		
 		pushLayoutPadding(0);
-		beginContainer(rc2);
+		beginContainer(rc);
 		beginTabGroup(0);
 		hui::tab(ds.dragWindow->title.c_str(), ds.dragWindow->icon);
 		endTabGroup();
 		endContainer();
 		popLayoutPadding();
+		
+		ctx->renderer->popClipRect();
 		ctx->renderer->end();
 		ctx->renderer->executeDrawCommands(ds.dragIndicatorOsWindow);
-		HORUS_INPUT->presentWindow(ds.dragIndicatorOsWindow);		
+		HORUS_INPUT->presentWindow(ds.dragIndicatorOsWindow);
 	}
 
 	if (ctx->event.type == InputEvent::Type::WindowResized || ctx->event.type == InputEvent::Type::WindowMoved)

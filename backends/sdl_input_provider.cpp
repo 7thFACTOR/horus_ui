@@ -1,13 +1,17 @@
-#include <glad/gl.h>
+#define NOMINMAX
 #include "sdl_input_provider.h"
 #include <assert.h>
 #include <string.h>
-#include <algorithm>
 #include <SDL3/SDL_main.h>
+#include <glad/gl.h>
+#ifdef _WINDOWS
+#include <windows.h>
+#endif
+#include <algorithm>
 
 namespace hui
 {
-SDL_HitTestResult HitTestCallback(SDL_Window *Window, const SDL_Point *Area, void *Data)
+SDL_HitTestResult HitTestCallbackForResize(SDL_Window *Window, const SDL_Point *Area, void *Data)
 {
     int Width, Height;
     SDL_GetWindowSize(Window, &Width, &Height);
@@ -58,6 +62,31 @@ SDL_HitTestResult HitTestCallback(SDL_Window *Window, const SDL_Point *Area, voi
 
     return SDL_HITTEST_NORMAL; //SDL_HITTEST_DRAGGABLE; // SDL_HITTEST_NORMAL <- Windows behaviour
 }
+
+#ifdef _WINDOWS
+// Make the window click-through on Windows
+static void makeWindowClickThrough(SDL_Window* window) {
+	HWND hwnd = (HWND)SDL_GetPointerProperty(SDL_GetWindowProperties(window), SDL_PROP_WINDOW_WIN32_HWND_POINTER, NULL);
+	if (!hwnd) {
+		printf("Failed to get native window handle: %s\n", SDL_GetError());
+		return;
+	}
+
+	LONG style = GetWindowLong(hwnd, GWL_EXSTYLE);
+	SetWindowLong(hwnd, GWL_EXSTYLE, style | WS_EX_LAYERED | WS_EX_TRANSPARENT);
+}
+
+static void removeWindowShadow(SDL_Window* window) {
+	HWND hwnd = (HWND)SDL_GetPointerProperty(SDL_GetWindowProperties(window), SDL_PROP_WINDOW_WIN32_HWND_POINTER, NULL);
+	if (hwnd) {
+		LONG_PTR style = GetWindowLongPtr(hwnd, GWL_EXSTYLE);
+		style &= ~WS_EX_COMPOSITED; // Remove composition (shadow)
+
+		SetWindowLongPtr(hwnd, GWL_EXSTYLE, style);
+		SetWindowPos(hwnd, HWND_TOP, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
+	}
+}
+#endif
 
 Sdl2InputProvider::Sdl2InputProvider()
 {}
@@ -674,6 +703,11 @@ HOsWindow Sdl2InputProvider::getHoveredWindow()
 	return hoveredWindow;
 }
 
+// Hit-test callback that makes the window transparent to mouse events
+SDL_HitTestResult HitTestCallback(SDL_Window* win, const SDL_Point* area, void* data) {
+	return SDL_HITTEST_NORMAL; // Ignore input, pass through to windows underneath
+}
+
 HOsWindow Sdl2InputProvider::createWindow(
 	const char* title, OsWindowFlags flags, OsWindowState state, const Rect& rect)
 {
@@ -723,7 +757,14 @@ HOsWindow Sdl2InputProvider::createWindow(
 
 	focusedWindow = newWnd;
 	currentWindow = newWnd;
-	SDL_RaiseWindow(wnd);
+
+	if (has(flags, OsWindowFlags::NoInput))
+	{
+#ifdef _WINDOWS
+		makeWindowClickThrough(wnd);
+		removeWindowShadow(wnd);
+#endif
+	}
 
 	// if no GL context provided, create one for this first window
 	if (HORUS_GFX->getApiType() == GraphicsProvider::ApiType::OpenGL && !initParams.sdlGlContext)
@@ -738,7 +779,16 @@ HOsWindow Sdl2InputProvider::createWindow(
 
 		SDL_GL_MakeCurrent(wnd, initParams.sdlGlContext);
 		SDL_GL_SetSwapInterval(initParams.vSync ? 1 : 0);
+
+		if (!gladLoadGL((GLADloadfunc)SDL_GL_GetProcAddress))
+		{
+			printf("GLAD cannot init GL func ptrs\n");
+		}
 	}
+
+	SDL_SetWindowPosition(wnd, rect.x, rect.y);
+	SDL_SyncWindow(wnd);
+	SDL_RaiseWindow(wnd);
 
 	return newWnd;
 }
@@ -794,6 +844,7 @@ Point Sdl2InputProvider::getWindowClientSize(HOsWindow window)
 {
 	int w = 0, h = 0;
 
+	SDL_SyncWindow(((SdlWindowProxy*)window)->sdlWindow);
 	SDL_GetWindowSize(((SdlWindowProxy*)window)->sdlWindow, &w, &h);
 
 	return { (f32)w, (f32)h };
@@ -815,17 +866,20 @@ void Sdl2InputProvider::setWindowRect(HOsWindow window, const Rect& rect)
 {
 	SDL_SetWindowPosition(((SdlWindowProxy*)window)->sdlWindow, rect.x, rect.y);
 	SDL_SetWindowSize(((SdlWindowProxy*)window)->sdlWindow, rect.width, rect.height);
+	SDL_SyncWindow(((SdlWindowProxy*)window)->sdlWindow);
 }
 
 void Sdl2InputProvider::setWindowPosition(HOsWindow window, const Point& pos)
 {
 	SDL_SetWindowPosition(((SdlWindowProxy*)window)->sdlWindow, pos.x, pos.y);
+	SDL_SyncWindow(((SdlWindowProxy*)window)->sdlWindow);
 }
 
 Point Sdl2InputProvider::getWindowPosition(HOsWindow window)
 {
 	int x = 0, y = 0;
 
+	SDL_SyncWindow(((SdlWindowProxy*)window)->sdlWindow);
 	SDL_GetWindowPosition(((SdlWindowProxy*)window)->sdlWindow, &x, &y);
 
 	return { (f32)x, (f32)y };
@@ -835,6 +889,8 @@ void Sdl2InputProvider::presentWindow(HOsWindow window)
 {
 	if (HORUS_GFX->getApiType() == GraphicsProvider::ApiType::OpenGL)
 	{
+		glFinish();
+		glFlush();
 		SDL_GL_SwapWindow(((SdlWindowProxy*)window)->sdlWindow);
 	}
 }
@@ -908,7 +964,7 @@ void Sdl2InputProvider::releaseCapture()
 	SDL_CaptureMouse(false);
 }
 
-Point Sdl2InputProvider::getMousePosition()
+Point Sdl2InputProvider::getAbsoluteMousePosition()
 {
 	f32 x, y;
 
@@ -938,10 +994,10 @@ void initializeSdl(const SdlInitParams& params)
 	{
 		SDL_SetMainReady();
 		
-		int err = SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS |
+		auto ok = SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS |
                 SDL_INIT_JOYSTICK | SDL_INIT_HAPTIC | SDL_INIT_GAMEPAD | SDL_INIT_SENSOR);
 
-		if (err != 0)
+		if (!ok)
 		{
 			printf("SDL initialize error: %s\n", SDL_GetError());
 			return;
@@ -952,11 +1008,6 @@ void initializeSdl(const SdlInitParams& params)
 
 	if (HORUS_GFX->getApiType() == GraphicsProvider::ApiType::OpenGL)
 	{
-		if (!gladLoadGL((GLADloadfunc)SDL_GL_GetProcAddress))
-		{
-			printf("GLAD cannot init GL func ptrs\n");
-		}
-
 		if (params.antiAliasing != AntiAliasing::None)
 			SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
 

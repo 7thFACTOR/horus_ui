@@ -63,7 +63,7 @@ struct Sdl2InputProvider : InputProvider
 	void minimizeWindow(HOsWindow window) override;
 	void setCapture(HOsWindow window) override;
 	void releaseCapture() override;
-	Point getMousePosition() override;
+	Point getAbsoluteMousePosition() override;
 	void shutdown() override;
 	void setCursor(MouseCursorType type) override;
 	HMouseCursor createCustomCursor(Rgba32* pixels, u32 width, u32 height, u32 hotX, u32 hotY) override;

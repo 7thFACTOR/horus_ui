@@ -345,7 +345,6 @@ enum class MouseButton
 enum class OsWindowFlags : u32
 {
 	NoInput = HORUS_BIT(0),
-	NoTitleBar = HORUS_BIT(1),
 	NoDecoration = HORUS_BIT(2),
 	NoTaskBar = HORUS_BIT(3),
 	Resizable = HORUS_BIT(4)

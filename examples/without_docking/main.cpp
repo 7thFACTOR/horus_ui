@@ -298,7 +298,7 @@ int main(int argc, char** args)
 				}
 				if (hui::button("UnDock"))
 				{
-					hui::undockWindow("inspector", HORUS_INPUT->getMousePosition());
+					hui::undockWindow("inspector", HORUS_INPUT->getAbsoluteMousePosition());
 				}
 				hui::endWindow();
 			}

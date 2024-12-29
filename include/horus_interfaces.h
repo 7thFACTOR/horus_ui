@@ -163,7 +163,7 @@ struct InputProvider
 	virtual void releaseCapture() = 0;
 
 	/// \return the current screen mouse position
-	virtual Point getMousePosition() = 0;
+	virtual Point getAbsoluteMousePosition() = 0;
 
 	/// Set the current mouse cursor type
 	/// \param type the mouse cursor type

@@ -3,6 +3,9 @@
 #include "opengl_vertex_buffer.h"
 #include <string.h>
 
+#define GLAD_GL_IMPLEMENTATION
+#include <glad/gl.h>
+
 namespace hui
 {
 void checkErrorGL(const char* where)

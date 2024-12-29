@@ -122,7 +122,7 @@ void handleDockingMouseUp(const InputEvent& event, DockNode* node)
 			auto& rc = ds.dragWindow->dockNode->rect;
 
 			// we use the current screen mouse pos to undock the window to
-			Point pt = HORUS_INPUT->getMousePosition();
+			Point pt = HORUS_INPUT->getAbsoluteMousePosition();
 			// put the window in the middle of the mouse X coordinate
 			pt.x -= rc.width / 2.0f;
 			undockWindow(ds.dragWindow->id.c_str(), pt);
@@ -657,7 +657,7 @@ void handleDockingMouseMove(const InputEvent& event, DockNode* node)
 
 					screenRect = ds.draggedRect + wndPos;
 
-					ds.dragIndicatorOsWindow = HORUS_INPUT->createWindow(ds.dragWindow->title.c_str(), OsWindowFlags::NoInput | OsWindowFlags::NoTaskBar | OsWindowFlags::NoDecoration, OsWindowState::Normal, screenRect);
+					ds.dragIndicatorOsWindow = HORUS_INPUT->createWindow(ds.dragWindow->title.c_str(), OsWindowFlags::NoInput | OsWindowFlags::NoTaskBar | OsWindowFlags::NoDecoration | OsWindowFlags::Resizable, OsWindowState::Normal, screenRect);
 
 					ds.dragWindow->dockingNow = true;
 				}
