@@ -464,8 +464,6 @@ Renderer::~Renderer()
 void Renderer::setOsWindow(HOsWindow wnd)
 {
 	currentWindow = wnd;
-	auto size = HORUS_INPUT->getWindowClientSize(wnd);
-	setWindowSize(size);
 	auto iter = windowContexts.find(wnd);
 
 	if (iter == windowContexts.end())

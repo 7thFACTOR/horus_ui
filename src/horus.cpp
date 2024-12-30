@@ -256,8 +256,12 @@ void beginFrame()
 
 	if (ctx->event.window)
 	{
-		ctx->lastHoveredOsWindow = ctx->event.window;
+		if (ctx->event.type == InputEvent::Type::WindowMouseEnter)
+			ctx->lastHoveredOsWindow = ctx->event.window;
 		
+		if (ctx->event.type == InputEvent::Type::WindowMouseLeave)
+			ctx->lastHoveredOsWindow = 0;
+
 		if (ctx->event.type == InputEvent::Type::MouseDown
 			|| ctx->event.type == InputEvent::Type::MouseUp
 			|| ctx->event.type == InputEvent::Type::MouseMove
@@ -265,6 +269,7 @@ void beginFrame()
 		{
 			if (ctx->event.window && ctx->event.window != ctx->dockingState.dragIndicatorOsWindow)
 			{
+				ctx->lastHoveredOsWindow = ctx->event.window;
 				ctx->mousePosition = ctx->event.mouse.point;
 			}
 		}
@@ -536,26 +541,23 @@ void setMouseCursor(HMouseCursor cursor)
 void setOsWindow(HOsWindow wnd)
 {
 	ctx->providers->input->setCurrentWindow(wnd);
-
 	auto size = HORUS_INPUT->getWindowClientSize(wnd);
 	ctx->renderer->setOsWindow(wnd);
 	ctx->renderer->setWindowSize(size);
 	ctx->hoveringThisWindow = ctx->lastHoveredOsWindow == wnd;
-	ctx->providers->gfx->setViewport(
-		size,
-		{ 0, 0, size.x, size.y });
 }
 
-void presentWindow(HOsWindow wnd)
+static void presentWindow(HOsWindow wnd)
 {
-	ctx->providers->input->setCurrentWindow(wnd);
+	HORUS_INPUT->setCurrentWindow(wnd);
 	ctx->renderer->setOsWindow(wnd);
+	ctx->renderer->setWindowSize(HORUS_INPUT->getWindowClientSize(wnd));
 	ctx->hoveringThisWindow = ctx->lastHoveredOsWindow == wnd;
 	ctx->renderer->begin();
 	dockNodeTabs(ctx->dockingState.rootOsWindowDockNodes[wnd]);
 	ctx->renderer->end();
 	ctx->renderer->executeDrawCommands(wnd);
-	ctx->providers->input->presentWindow(wnd);
+	HORUS_INPUT->presentWindow(wnd);
 }
 
 void present()
@@ -563,7 +565,9 @@ void present()
 	// first, delete pending objects so we dont access them
 	deferredDeleteObjects();
 
-	if (!ctx->renderer->disableRendering && !ctx->renderer->skipRender)
+	bool allowRendering = !ctx->renderer->disableRendering && !ctx->renderer->skipRender;
+
+	if (allowRendering)
 	{
 		for (auto& wnd : ctx->osWindows)
 		{
@@ -735,24 +739,20 @@ void updateDockingSystem()
 	ds.draggingStarted = fabs(ds.lastMousePosSinceMouseDown.x - mousePos.x) > ctx->settings.dragStartDistance || abs(ds.lastMousePosSinceMouseDown.y - mousePos.y) > ctx->settings.dragStartDistance;
 	ds.mouseDragDelta = mousePos - ds.lastMousePos;
 
-	bool mouseOutsideOfAllDockWindows = true;
 	auto screenMousePos = HORUS_INPUT->getAbsoluteMousePosition();
+
+	ds.dockToNode = nullptr;
+	ds.hoveredNode = nullptr;
+	ds.dockType = DockType::Floating;
+
+	if (!ctx->lastHoveredOsWindow && !HORUS_INPUT->isMouseButtonDownNow(MouseButton::Left) && ds.dragWindow)
+	{
+		ctx->event.type = InputEvent::Type::MouseUp;
+	}
 
 	for (auto& wnd : copyOfRootOsWindowDockNodes)
 	{
 		handleDockNodeEvents(wnd.second);
-
-		// check if contains at least one window
-		// once checked, it wont enter this for the other root OS windows
-		if (mouseOutsideOfAllDockWindows)
-		{
-			auto wndRc = HORUS_INPUT->getWindowRect(wnd.first);
-
-			if (wndRc.contains(screenMousePos))
-			{
-				mouseOutsideOfAllDockWindows = false;
-			}
-		}
 	}
 
 	Rect screenRect;
@@ -767,7 +767,7 @@ void updateDockingSystem()
 	if (ds.dragIndicatorOsWindow && ds.dragWindow)
 	{
 		// if we try to dock on dock nodes sides
-		if (!mouseOutsideOfAllDockWindows
+		if (ctx->lastHoveredOsWindow
 			&& ds.dockType != DockType::None
 			&& ds.dockType != DockType::Floating
 			&& ds.hoveredNode)
@@ -791,25 +791,27 @@ void updateDockingSystem()
 			screenRect.x = mousePosAbs.x - screenRect.width / 2;
 			screenRect.y = mousePosAbs.y - screenRect.height / 2;
 		}
-
+		ds.dockType = DockType::Floating;
 		HORUS_INPUT->setWindowRect(ds.dragIndicatorOsWindow, screenRect);
 	}
+
+	printf("docking ev %d %d hwnd %d\n", ctx->event.type, ds.dockType, ctx->lastHoveredOsWindow);
 
 	if (ctx->dockingState.dragIndicatorOsWindow && ds.dragWindow)
 	{
 		auto rc = screenRect;
 		HORUS_INPUT->setCurrentWindow(ds.dragIndicatorOsWindow);
+		ctx->renderer->disableRendering = false;
 		ctx->renderer->setOsWindow(ds.dragIndicatorOsWindow);
 		ctx->renderer->setWindowSize(rc.getSize());
 		ctx->renderer->begin();
-		ctx->renderer->cmdClearBackground(Color::red);
 		rc.x = 0;
 		rc.y = 0;
 		ctx->renderer->pushClipRect(rc, false);
 		ctx->renderer->cmdSetColor(ctx->theme->getElement(WidgetElementId::WindowBody).normalState().color);
-		ctx->renderer->cmdDrawSolidRectangle(rc);
+		ctx->renderer->cmdDrawSolidRectangle({ rc.x + 1, rc.y + 1, rc.width-1, rc.height-1 });
 		ctx->renderer->cmdSetLineStyle(LineStyle(Color::fromU8(35, 35, 35, 255), 1));
-		ctx->renderer->cmdDrawRectangle(rc);
+		ctx->renderer->cmdDrawRectangle({ rc.x + 1, rc.y + 1, rc.width-1, rc.height-1 });
 		ctx->penPosition.set(3,3);
 		rc = rc.contract(1);
 		

@@ -1293,6 +1293,8 @@ struct InputEvent
 		WindowResized,
 		WindowGotFocus,
 		WindowLostFocus,
+		WindowMouseEnter,
+		WindowMouseLeave,
 		WindowClose,
 		OsDragDrop
 	};

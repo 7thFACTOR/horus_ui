@@ -86,6 +86,7 @@ bool beginWindow(const char* id, const char* title, Rect* initialRect, HImage ic
 	ctx->currentWindow = wnd;
 	ctx->hoveringThisWindow = wnd->dockNode->osWindow == ctx->lastHoveredOsWindow;
 	ctx->renderer->setOsWindow(wnd->dockNode->osWindow);
+	ctx->renderer->setWindowSize(HORUS_INPUT->getWindowClientSize(wnd->dockNode->osWindow));
 	ctx->renderer->begin();
 	auto rc = wnd->clientRect;
 

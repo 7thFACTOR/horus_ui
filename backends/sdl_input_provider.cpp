@@ -73,7 +73,8 @@ static void makeWindowClickThrough(SDL_Window* window) {
 	}
 	
 	LONG style = GetWindowLong(hwnd, GWL_EXSTYLE);
-	SetWindowLong(hwnd, GWL_EXSTYLE, style | WS_EX_LAYERED | WS_EX_TRANSPARENT|WS_EX_WINDOWEDGE);
+	SetWindowLong(hwnd, GWL_EXSTYLE, style | WS_EX_LAYERED | WS_EX_TRANSPARENT);
+	SetWindowPos(hwnd, HWND_TOP, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
 }
 
 static void removeWindowShadow(SDL_Window* window) {
@@ -414,9 +415,6 @@ void Sdl2InputProvider::addSdlEvent(SDL_Event& ev)
 		outEvent.mouse.point.y = ev.button.y;
 		outEvent.mouse.button = (MouseButton)(ev.button.button - 1);
 		outEvent.mouse.clickCount = ev.button.clicks;
-		draggingButton = ev.button.button;
-		draggingMouse = true;
-		draggingFromWindowId = ev.button.windowID;
 		outEvent.window = findSdlWindow(SDL_GetWindowFromID(ev.button.windowID));
 		auto mods = SDL_GetModState();
 		outEvent.mouse.modifiers = KeyModifiers::None;
@@ -428,7 +426,6 @@ void Sdl2InputProvider::addSdlEvent(SDL_Event& ev)
 	}
 	case SDL_EVENT_MOUSE_BUTTON_UP:
 	{
-		draggingMouse = false; // invalidate dragging outside window, we've handled it
 		outEvent.type = InputEvent::Type::MouseUp;
 		outEvent.mouse.point.x = ev.button.x;
 		outEvent.mouse.point.y = ev.button.y;
@@ -528,12 +525,19 @@ void Sdl2InputProvider::addSdlEvent(SDL_Event& ev)
 	}
 	case SDL_EVENT_WINDOW_MOUSE_ENTER:
 	{
-		outEvent.type = InputEvent::Type::WindowGotFocus;
+		outEvent.type = InputEvent::Type::WindowMouseEnter;
 		hoveredWindow = findSdlWindow(SDL_GetWindowFromID(ev.window.windowID));
+		break;
+	}
+	case SDL_EVENT_WINDOW_MOUSE_LEAVE:
+	{
+		outEvent.type = InputEvent::Type::WindowMouseLeave;
+		hoveredWindow = nullptr;
 		break;
 	}
 	case SDL_EVENT_WINDOW_FOCUS_LOST:
 		outEvent.type = InputEvent::Type::WindowLostFocus;
+		focusedWindow = nullptr;
 		break;
 	case SDL_EVENT_WINDOW_CLOSE_REQUESTED:
 	{
@@ -573,38 +577,6 @@ void Sdl2InputProvider::processSdlEvents()
 	while (SDL_PollEvent(&ev))
 	{
 		addSdlEvent(ev);
-	}
-
-	// we need to simulate focus dragging inter-windows for docking
-	// default dragging would only send events to one window so we wouldnt know where do we drag the mouse
-	if (draggingMouse)
-	{
-		f32 mx = 0, my = 0;
-		auto buttons = SDL_GetGlobalMouseState(&mx, &my);
-
-		if (!(buttons & SDL_BUTTON_MASK(draggingButton)))
-		{
-			InputEvent outEvent;
-
-			i32 wx = 0, wy = 0;
-			SDL_GetWindowPosition(SDL_GetWindowFromID(draggingFromWindowId), &wx, &wy);
-
-			outEvent.type = InputEvent::Type::MouseUp;
-			outEvent.mouse.point.x = mx - wx;
-			outEvent.mouse.point.y = my - wy;
-			outEvent.mouse.button = (MouseButton)(draggingButton - 1);
-			outEvent.mouse.clickCount = 1;
-			auto mods = SDL_GetModState();
-			outEvent.mouse.modifiers = KeyModifiers::None;
-			outEvent.mouse.modifiers |= (mods & SDL_KMOD_ALT) ? KeyModifiers::Alt : KeyModifiers::None;
-			outEvent.mouse.modifiers |= (mods & SDL_KMOD_SHIFT) ? KeyModifiers::Shift : KeyModifiers::None;
-			outEvent.mouse.modifiers |= (mods & SDL_KMOD_CTRL) ? KeyModifiers::Control : KeyModifiers::None;
-			outEvent.window = findSdlWindow(SDL_GetWindowFromID(draggingFromWindowId));
-			addInputEvent(outEvent);
-			draggingMouse = false;
-			draggingButton = 0;
-			draggingFromWindowId = 0;
-		}
 	}
 }
 
@@ -972,6 +944,18 @@ Point Sdl2InputProvider::getAbsoluteMousePosition()
 	SDL_GetGlobalMouseState(&x, &y);
 
 	return { (f32)x , (f32)y };
+}
+
+bool Sdl2InputProvider::isMouseButtonDownNow(MouseButton button)
+{
+	f32 x = 0, y = 0;
+	auto buttons = SDL_GetGlobalMouseState(&x, &y);
+
+	if (button == MouseButton::Left) return buttons & SDL_BUTTON_MASK(SDL_BUTTON_LEFT);
+	if (button == MouseButton::Middle) return buttons & SDL_BUTTON_MASK(SDL_BUTTON_MIDDLE);
+	if (button == MouseButton::Right) return buttons & SDL_BUTTON_MASK(SDL_BUTTON_RIGHT);
+
+	return false;
 }
 
 void Sdl2InputProvider::createSystemCursors()

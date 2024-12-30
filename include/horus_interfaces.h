@@ -165,6 +165,9 @@ struct InputProvider
 	/// \return the current screen mouse position
 	virtual Point getAbsoluteMousePosition() = 0;
 
+	/// \return true if the mouse button is down right now, no matter the events
+	virtual bool isMouseButtonDownNow(MouseButton button) = 0;
+
 	/// Set the current mouse cursor type
 	/// \param type the mouse cursor type
 	virtual void setCursor(MouseCursorType type) = 0;

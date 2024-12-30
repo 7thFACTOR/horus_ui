@@ -64,6 +64,7 @@ struct Sdl2InputProvider : InputProvider
 	void setCapture(HOsWindow window) override;
 	void releaseCapture() override;
 	Point getAbsoluteMousePosition() override;
+	bool isMouseButtonDownNow(MouseButton button) override;
 	void shutdown() override;
 	void setCursor(MouseCursorType type) override;
 	HMouseCursor createCustomCursor(Rgba32* pixels, u32 width, u32 height, u32 hotX, u32 hotY) override;
@@ -92,9 +93,6 @@ struct Sdl2InputProvider : InputProvider
 	f32 deltaTime = 0;
 	bool sizeChanged = false;
 	SdlInitParams initParams;
-	bool draggingMouse = false;
-	u32 draggingButton = 0;
-	u32 draggingFromWindowId = 0;
 };
 
 void initializeSdl(const SdlInitParams& params);
