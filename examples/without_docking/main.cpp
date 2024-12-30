@@ -35,12 +35,16 @@ int main(int argc, char** args)
 	settings.dockNodeSpacing = 3;
 	//settings.dockNodeResizeSplitterHitSize = 6;
 	//settings.dockNodeDockingSizeRatio = 0.33f;
-
+	
 	//1. Create the context
 	auto ctx = hui::createContext(settings);
 	hui::setContext(ctx); // set as current context
 
+	
 	hui::SdlInitParams sdlParams;
+
+
+	sdlParams.vSync = false;
 
 	//2. Initialize SDL input provider
 	hui::initializeSdl(sdlParams);

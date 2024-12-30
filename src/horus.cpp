@@ -802,12 +802,11 @@ void updateDockingSystem()
 		ctx->renderer->setOsWindow(ds.dragIndicatorOsWindow);
 		ctx->renderer->setWindowSize(rc.getSize());
 		ctx->renderer->begin();
+		ctx->renderer->cmdClearBackground(Color::red);
 		rc.x = 0;
 		rc.y = 0;
 		ctx->renderer->pushClipRect(rc, false);
-		ctx->renderer->cmdClearBackground(Color::red);
 		ctx->renderer->cmdSetColor(ctx->theme->getElement(WidgetElementId::WindowBody).normalState().color);
-
 		ctx->renderer->cmdDrawSolidRectangle(rc);
 		ctx->renderer->cmdSetLineStyle(LineStyle(Color::fromU8(35, 35, 35, 255), 1));
 		ctx->renderer->cmdDrawRectangle(rc);

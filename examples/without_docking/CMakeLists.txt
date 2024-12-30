@@ -1,5 +1,4 @@
-# to the root binary directory of the project as ${HELLO_BINARY_DIR}.
-cmake_minimum_required(VERSION 3.0.0)
+cmake_minimum_required(VERSION 3.3.0)
 include(../CMakeUtils.cmake)
 
 add_source_group(src ./ SRCS)
@@ -53,6 +52,4 @@ endif(LINUX)
 link_libs(without_docking)
 
 target_link_directories(without_docking PUBLIC ${CMAKE_BINARY_DIR}/bin)
-set_target_properties(without_docking PROPERTIES
-    VS_DEBUGGER_WORKING_DIRECTORY "../../bin"
-)
+set_target_properties(without_docking PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY "../../bin")

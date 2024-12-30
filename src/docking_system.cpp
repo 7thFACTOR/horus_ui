@@ -657,7 +657,7 @@ void handleDockingMouseMove(const InputEvent& event, DockNode* node)
 
 					screenRect = ds.draggedRect + wndPos;
 
-					ds.dragIndicatorOsWindow = HORUS_INPUT->createWindow(ds.dragWindow->title.c_str(), OsWindowFlags::NoInput | OsWindowFlags::NoTaskBar | OsWindowFlags::NoDecoration | OsWindowFlags::Resizable, OsWindowState::Normal, screenRect);
+					ds.dragIndicatorOsWindow = HORUS_INPUT->createWindow(ds.dragWindow->title.c_str(), OsWindowFlags::NoInput | OsWindowFlags::NoDecoration, OsWindowState::Normal, screenRect);
 
 					ds.dragWindow->dockingNow = true;
 				}

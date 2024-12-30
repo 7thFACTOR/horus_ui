@@ -71,9 +71,9 @@ static void makeWindowClickThrough(SDL_Window* window) {
 		printf("Failed to get native window handle: %s\n", SDL_GetError());
 		return;
 	}
-
+	
 	LONG style = GetWindowLong(hwnd, GWL_EXSTYLE);
-	SetWindowLong(hwnd, GWL_EXSTYLE, style | WS_EX_LAYERED | WS_EX_TRANSPARENT);
+	SetWindowLong(hwnd, GWL_EXSTYLE, style | WS_EX_LAYERED | WS_EX_TRANSPARENT|WS_EX_WINDOWEDGE);
 }
 
 static void removeWindowShadow(SDL_Window* window) {
@@ -81,7 +81,8 @@ static void removeWindowShadow(SDL_Window* window) {
 	if (hwnd) {
 		LONG_PTR style = GetWindowLongPtr(hwnd, GWL_EXSTYLE);
 		style &= ~WS_EX_COMPOSITED; // Remove composition (shadow)
-
+		style &= ~WS_EX_APPWINDOW;
+		style |= WS_EX_TOOLWINDOW;
 		SetWindowLongPtr(hwnd, GWL_EXSTYLE, style);
 		SetWindowPos(hwnd, HWND_TOP, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
 	}
@@ -683,6 +684,7 @@ void Sdl2InputProvider::setCurrentWindow(HOsWindow window)
 	if (HORUS_GFX->getApiType() == GraphicsProvider::ApiType::OpenGL)
 	{
 		SDL_GL_MakeCurrent(((SdlWindowProxy*)window)->sdlWindow, initParams.sdlGlContext);
+		SDL_GL_SetSwapInterval(initParams.vSync ? 1 : 0);
 	}
 
 	currentWindow = ((SdlWindowProxy*)window);
@@ -741,11 +743,11 @@ HOsWindow Sdl2InputProvider::createWindow(
 		sdlflags |= SDL_WINDOW_METAL;
 
 	//if (HORUS_GFX->getApiType() == GraphicsProvider::ApiType::Direct3D11)
-	//	sdlflags |= SDL_WINDOW_DX11;
+	//	sdlflags |= SDL_WINDOW_DIRECTX;
 
 	//if (HORUS_GFX->getApiType() == GraphicsProvider::ApiType::Direct3D12)
 	//	sdlflags |= SDL_WINDOW_DX12;
-	
+
 	auto wnd = SDL_CreateWindow(
 		title, rect.width, rect.height,
 		sdlflags);
@@ -784,6 +786,11 @@ HOsWindow Sdl2InputProvider::createWindow(
 		{
 			printf("GLAD cannot init GL func ptrs\n");
 		}
+
+		const GLubyte* renderer = glGetString(GL_RENDERER);  // Get renderer string
+		const GLubyte* version = glGetString(GL_VERSION);    // Get version string
+		printf("GL Renderer: %s\n", renderer);
+		printf("GL Version: %s\n", version);
 	}
 
 	SDL_SetWindowPosition(wnd, rect.x, rect.y);
@@ -844,7 +851,6 @@ Point Sdl2InputProvider::getWindowClientSize(HOsWindow window)
 {
 	int w = 0, h = 0;
 
-	SDL_SyncWindow(((SdlWindowProxy*)window)->sdlWindow);
 	SDL_GetWindowSize(((SdlWindowProxy*)window)->sdlWindow, &w, &h);
 
 	return { (f32)w, (f32)h };
@@ -866,20 +872,17 @@ void Sdl2InputProvider::setWindowRect(HOsWindow window, const Rect& rect)
 {
 	SDL_SetWindowPosition(((SdlWindowProxy*)window)->sdlWindow, rect.x, rect.y);
 	SDL_SetWindowSize(((SdlWindowProxy*)window)->sdlWindow, rect.width, rect.height);
-	SDL_SyncWindow(((SdlWindowProxy*)window)->sdlWindow);
 }
 
 void Sdl2InputProvider::setWindowPosition(HOsWindow window, const Point& pos)
 {
 	SDL_SetWindowPosition(((SdlWindowProxy*)window)->sdlWindow, pos.x, pos.y);
-	SDL_SyncWindow(((SdlWindowProxy*)window)->sdlWindow);
 }
 
 Point Sdl2InputProvider::getWindowPosition(HOsWindow window)
 {
 	int x = 0, y = 0;
 
-	SDL_SyncWindow(((SdlWindowProxy*)window)->sdlWindow);
 	SDL_GetWindowPosition(((SdlWindowProxy*)window)->sdlWindow, &x, &y);
 
 	return { (f32)x, (f32)y };
@@ -889,8 +892,6 @@ void Sdl2InputProvider::presentWindow(HOsWindow window)
 {
 	if (HORUS_GFX->getApiType() == GraphicsProvider::ApiType::OpenGL)
 	{
-		glFinish();
-		glFlush();
 		SDL_GL_SwapWindow(((SdlWindowProxy*)window)->sdlWindow);
 	}
 }

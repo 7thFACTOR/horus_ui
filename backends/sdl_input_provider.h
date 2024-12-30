@@ -11,7 +11,7 @@ namespace hui
 {
 struct SdlInitParams
 {
-	bool vSync = true;
+	bool vSync = false;
 	SDL_GLContext sdlGlContext = nullptr; // set to a valid SDL GL context
 	bool initializeSdl = true; // set to false if you already initialized SDL
 	AntiAliasing antiAliasing = AntiAliasing::None;
