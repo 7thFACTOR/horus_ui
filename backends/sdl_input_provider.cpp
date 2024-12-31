@@ -77,7 +77,7 @@ static void makeWindowClickThrough(SDL_Window* window) {
 	SetWindowPos(hwnd, HWND_TOP, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
 }
 
-static void removeWindowShadow(SDL_Window* window) {
+static void removeWindowShadow_Windows(SDL_Window* window) {
 	HWND hwnd = (HWND)SDL_GetPointerProperty(SDL_GetWindowProperties(window), SDL_PROP_WINDOW_WIN32_HWND_POINTER, NULL);
 	if (hwnd) {
 		LONG_PTR style = GetWindowLongPtr(hwnd, GWL_EXSTYLE);
@@ -87,6 +87,20 @@ static void removeWindowShadow(SDL_Window* window) {
 		SetWindowLongPtr(hwnd, GWL_EXSTYLE, style);
 		SetWindowPos(hwnd, HWND_TOP, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
 	}
+}
+#endif
+
+#ifdef _LINUX
+// Make the window click-through on Windows
+static void makeWindowClickThrough_Linux(SDL_Window* window) {
+	auto hwnd = SDL_GetPointerProperty(SDL_GetWindowProperties(window), SDL_PROP_WINDOW_X11_WINDOW_NUMBER, NULL);
+	auto hdisplay = SDL_GetPointerProperty(SDL_GetWindowProperties(window), SDL_PROP_WINDOW_X11_DISPLAY_POINTER, NULL);
+	if (!hwnd) {
+		printf("Failed to get native X11 window handle: %s\n", SDL_GetError());
+		return;
+	}
+
+	XSelectInput(hdisplay, hwnd, NoEventMask);
 }
 #endif
 
@@ -735,8 +749,12 @@ HOsWindow Sdl2InputProvider::createWindow(
 	if (has(flags, OsWindowFlags::NoInput))
 	{
 #ifdef _WINDOWS
-		makeWindowClickThrough(wnd);
+		makeWindowClickThrough_Windows(wnd);
 		removeWindowShadow(wnd);
+#endif
+		
+#ifdef _LINUX
+		makeWindowClickThrough_Linux(wnd);
 #endif
 	}
 
