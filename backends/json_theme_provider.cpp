@@ -108,10 +108,8 @@ WidgetElementId getWidgetElementFromName(std::string name)
 	if (name == "tabGroupBody") return WidgetElementId::TabGroupBody;
 	if (name == "tabBodyActive") return WidgetElementId::TabBodyActive;
 	if (name == "tabBodyInactive") return WidgetElementId::TabBodyInactive;
-	if (name == "windowDockRect") return WidgetElementId::WindowDockRect;
-	if (name == "windowDockDialRect") return WidgetElementId::WindowDockDialRect;
-	if (name == "windowDockDialVSplitRect") return WidgetElementId::WindowDockDialVSplitRect;
-	if (name == "windowDockDialHSplitRect") return WidgetElementId::WindowDockDialHSplitRect;
+	if (name == "windowHorizontalSplitter") return WidgetElementId::WindowHorizontalSplitter;
+	if (name == "windowVerticalSplitter") return WidgetElementId::WindowVerticalSplitter;
 	if (name == "menuBarBody") return WidgetElementId::MenuBarBody;
 	if (name == "menuBarItem") return WidgetElementId::MenuBarItem;
 	if (name == "menuBody") return WidgetElementId::MenuBody;

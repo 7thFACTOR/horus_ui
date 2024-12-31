@@ -114,7 +114,6 @@ static const char* uiPixelShaderSource =
 #version 130\r\n\
 #extension GL_EXT_texture_array : enable\r\n\
 uniform sampler2DArray diffuseSampler;\
-\
 in vec2 outTEXCOORD;\
 in vec4 outCOLOR;\
 flat in uint outTEXINDEX;\

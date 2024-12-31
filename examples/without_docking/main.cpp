@@ -33,7 +33,7 @@ int main(int argc, char** args)
 	settings.providers.rectPack = new hui::StbRectPackProvider();
 	settings.providers.utf = new hui::UtfCppProvider();
 	settings.dockNodeSpacing = 3;
-	//settings.dockNodeResizeSplitterHitSize = 6;
+	settings.dockNodeResizeSplitterHitSize = 8;
 	//settings.dockNodeDockingSizeRatio = 0.33f;
 	
 	//1. Create the context

@@ -6,4 +6,5 @@ namespace hui
 {
 void updateDockingSystem();
 void handleDockNodeEvents(DockNode* node);
+void handleDockingMouseUp();
 };

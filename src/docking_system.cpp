@@ -63,7 +63,7 @@ void handleDockingMouseDown(const InputEvent& event, DockNode* node)
 	}
 }
 
-void handleDockingMouseUp(const InputEvent& event, DockNode* node)
+void handleDockingMouseUp()
 {
 	auto& ds = ctx->dockingState;
 
@@ -98,9 +98,7 @@ void handleDockingMouseUp(const InputEvent& event, DockNode* node)
 			ds.dockToNode->removeTabSpace();
 
 		ds.dragWindow->dockNode->selectedTabIndex = 0;
-
 		dockWindow(ds.dragWindow, ds.dockToNode, ds.dockType, tabIndex);
-
 		ds.dragWindow = nullptr;
 		ds.dockToNode = nullptr;
 
@@ -672,17 +670,10 @@ void handleDockNodeEvents(DockNode* node)
 	}
 
 	// is the event for this window ?
-	if (ctx->lastHoveredOsWindow != node->osWindow)
+	if (ctx->lastHoveredOsWindow == node->osWindow)
 	{
-		return;
-	}
-
-	switch (event.type)
-	{
-	case InputEvent::Type::MouseDown: handleDockingMouseDown(event, node); break;
-	case InputEvent::Type::MouseUp: handleDockingMouseUp(event, node); break;
-	default:
-		break;
+		if(event.type == InputEvent::Type::MouseDown)
+			handleDockingMouseDown(event, node);
 	};
 
 	handleDockingMouseMove(event, node);

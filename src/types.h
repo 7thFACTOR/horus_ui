@@ -97,7 +97,19 @@ struct ThemeElement
 	Style* currentStyle = nullptr;
 
 	inline void setDefaultStyle() { currentStyle = &styles["default"]; }
-	inline void setStyle(const char* styleName) { currentStyle = &styles[styleName]; }
+	inline void setStyle(const char* styleName) 
+	{
+		auto iter = styles.find(styleName);
+
+		if (iter != styles.end())
+			currentStyle = &iter->second;
+		else
+		{
+			// just set the first one if there is a style in the list
+			if (!currentStyle)
+				if (!styles.empty()) currentStyle = &styles.begin()->second;
+		}
+	}
 	inline State& getState(WidgetStateType stateType) { return currentStyle->states[(u32)stateType]; }
 	inline State& normalState() const { return currentStyle->states[(u32)WidgetStateType::Normal]; }
 	inline State& focusedState() const { return currentStyle->states[(u32)WidgetStateType::Focused]; }

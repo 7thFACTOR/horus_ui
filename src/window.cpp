@@ -92,8 +92,10 @@ bool beginWindow(const char* id, const char* title, Rect* initialRect, HImage ic
 
 	if (!(flags & WindowFlags::Transparent))
 	{
-		ctx->renderer->cmdSetColor(ctx->theme->getElement(WidgetElementId::WindowBody).normalState().color);
-		ctx->renderer->cmdDrawSolidRectangle(rc);
+		auto& windowElem = ctx->theme->getElement(WidgetElementId::WindowBody).normalState();
+
+		ctx->renderer->cmdSetColor(windowElem.color);
+		ctx->renderer->cmdDrawImageBordered(windowElem.image, windowElem.border, rc, ctx->globalScale);
 	}
 
 	beginContainer(rc);

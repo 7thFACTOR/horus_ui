@@ -11,23 +11,23 @@ namespace hui
 {
 void beginTabGroup(TabIndex selectedIndex)
 {
-	auto tabGroupElemState = ctx->theme->getElement(WidgetElementId::TabGroupBody).normalState();
+	auto& tabGroupElemState = ctx->theme->getElement(WidgetElementId::TabGroupBody).normalState();
 	f32 height = tabGroupElemState.height * ctx->globalScale;
 
 	ctx->widget.rect.set(
 		round(ctx->penPosition.x),
-		round(ctx->penPosition.y) - ctx->settings.dockNodeSpacing,
-		ctx->layoutStack.back().width + ctx->settings.dockNodeSpacing,
-		height + ctx->settings.dockNodeSpacing);
+		round(ctx->penPosition.y),
+		ctx->layoutStack.back().width,
+		height);
 
 	// tab group background
 	ctx->renderer->cmdSetColor(tabGroupElemState.color);
 	ctx->renderer->pushClipRect(
 		{
 			round(ctx->penPosition.x),
-			round(ctx->penPosition.y - ctx->settings.dockNodeSpacing),
+			round(ctx->penPosition.y),
 			ctx->layoutStack.back().width + ctx->settings.dockNodeSpacing,
-			ctx->containerRect.height
+			ctx->containerRect.height + ctx->settings.dockNodeSpacing + 1
 		});
 
 	ctx->renderer->cmdSetColor(tabGroupElemState.color);
@@ -36,17 +36,29 @@ void beginTabGroup(TabIndex selectedIndex)
 
 	if (ctx->dockingState.drawingWindowTabs)
 	{
-		// vertical splitter
-		//NOTE: horizontal splitter is not needed because there is tab group background
-		ctx->renderer->cmdSetColor(tabGroupElemState.color);
-		ctx->renderer->cmdDrawImage(
-			tabGroupElemState.image,
+		auto& windowHorizontalSplitterElemState = ctx->theme->getElement(WidgetElementId::WindowHorizontalSplitter).normalState();
+		ctx->renderer->cmdSetColor(windowHorizontalSplitterElemState.color);
+		ctx->renderer->cmdDrawImageBordered(
+			windowHorizontalSplitterElemState.image,
+			windowHorizontalSplitterElemState.border,
 			{
-				ctx->widget.rect.right() - ctx->settings.dockNodeSpacing,
+				ctx->widget.rect.x,
+				ctx->widget.rect.y + ctx->containerRect.height,
+				ctx->containerRect.width,
+				ctx->settings.dockNodeSpacing,
+			}, ctx->globalScale);
+
+		auto& windowVerticalSplitterElemState = ctx->theme->getElement(WidgetElementId::WindowVerticalSplitter).normalState();
+		ctx->renderer->cmdSetColor(windowVerticalSplitterElemState.color);
+		ctx->renderer->cmdDrawImageBordered(
+			windowVerticalSplitterElemState.image,
+			windowVerticalSplitterElemState.border,
+			{
+				ctx->widget.rect.right(),
 				ctx->widget.rect.y + height,
 				ctx->settings.dockNodeSpacing,
-				ctx->containerRect.height + ctx->settings.dockNodeSpacing
-			});
+				ctx->containerRect.height - height
+			}, ctx->globalScale);
 	}
 
 	ctx->selectedTabIndex = selectedIndex;

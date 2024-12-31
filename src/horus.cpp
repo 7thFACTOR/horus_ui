@@ -745,14 +745,19 @@ void updateDockingSystem()
 	ds.hoveredNode = nullptr;
 	ds.dockType = DockType::Floating;
 
+	for (auto& wnd : copyOfRootOsWindowDockNodes)
+	{
+		handleDockNodeEvents(wnd.second);
+	}
+
 	if (!ctx->lastHoveredOsWindow && !HORUS_INPUT->isMouseButtonDownNow(MouseButton::Left) && ds.dragWindow)
 	{
 		ctx->event.type = InputEvent::Type::MouseUp;
 	}
 
-	for (auto& wnd : copyOfRootOsWindowDockNodes)
+	if (ctx->event.type == InputEvent::Type::MouseUp)
 	{
-		handleDockNodeEvents(wnd.second);
+		handleDockingMouseUp();
 	}
 
 	Rect screenRect;
@@ -795,8 +800,6 @@ void updateDockingSystem()
 		HORUS_INPUT->setWindowRect(ds.dragIndicatorOsWindow, screenRect);
 	}
 
-	printf("docking ev %d %d hwnd %d\n", ctx->event.type, ds.dockType, ctx->lastHoveredOsWindow);
-
 	if (ctx->dockingState.dragIndicatorOsWindow && ds.dragWindow)
 	{
 		auto rc = screenRect;
@@ -808,21 +811,21 @@ void updateDockingSystem()
 		rc.x = 0;
 		rc.y = 0;
 		ctx->renderer->pushClipRect(rc, false);
-		ctx->renderer->cmdSetColor(ctx->theme->getElement(WidgetElementId::WindowBody).normalState().color);
-		ctx->renderer->cmdDrawSolidRectangle({ rc.x + 1, rc.y + 1, rc.width-1, rc.height-1 });
-		ctx->renderer->cmdSetLineStyle(LineStyle(Color::fromU8(35, 35, 35, 255), 1));
-		ctx->renderer->cmdDrawRectangle({ rc.x + 1, rc.y + 1, rc.width-1, rc.height-1 });
-		ctx->penPosition.set(3,3);
+
+		auto& windowElem = ctx->theme->getElement(WidgetElementId::WindowBody).normalState();
+
+		ctx->renderer->cmdSetColor(windowElem.color);
+		auto wndRect = Rect { rc.x + 1, rc.y + 1, rc.width - 1, rc.height - 1 };
+		ctx->renderer->cmdDrawImageBordered(windowElem.image, windowElem.border, wndRect, ctx->globalScale);
+		ctx->penPosition.set(3, 3);
 		rc = rc.contract(1);
-		
 		pushLayoutPadding(0);
 		beginContainer(rc);
 		beginTabGroup(0);
 		hui::tab(ds.dragWindow->title.c_str(), ds.dragWindow->icon);
 		endTabGroup();
 		endContainer();
-		popLayoutPadding();
-		
+		popLayoutPadding();	
 		ctx->renderer->popClipRect();
 		ctx->renderer->end();
 		ctx->renderer->executeDrawCommands(ds.dragIndicatorOsWindow);
@@ -1047,8 +1050,8 @@ void setWidgetStyle(WidgetType widgetType, const char* styleName)
 	{
 	case WidgetType::Window:
 		ctx->theme->elements[(u32)WidgetElementId::WindowBody].setStyle(styleName);
-		ctx->theme->elements[(u32)WidgetElementId::WindowDockRect].setStyle(styleName);
-		ctx->theme->elements[(u32)WidgetElementId::WindowDockDialRect].setStyle(styleName);
+		ctx->theme->elements[(u32)WidgetElementId::WindowHorizontalSplitter].setStyle(styleName);
+		ctx->theme->elements[(u32)WidgetElementId::WindowVerticalSplitter].setStyle(styleName);
 		break;
 	case WidgetType::Layout:
 		break;
