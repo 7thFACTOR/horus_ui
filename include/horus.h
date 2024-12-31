@@ -1565,7 +1565,7 @@ struct ContextSettings
 	f32 sameLineHeight = 20.0f; /// the height of a line when sameLine() is used to position widgets on a single row/line. Used to center various widget heights vertically. This must be non-zero, otherwise the widgets will align wrongly.
 	f32 minScrollViewHandleSize = 20.0f; /// the minimum allowed scroll handle size (height)
 	//TODO: make this per dock node
-	bool allowUndockingToNewOsWindow = true; /// allow view tabs to be undocked as native OS windows, outside of the main window
+	bool allowUndockingToNewOsWindow = true; /// allow view tabs to be undocked as native OS windows, outside of the main window, else windows will only be allowed to dock in their owner OS windows
 	f32 dockNodeSpacing = 3;
 	f32 dockNodeResizeSplitterHitSize = 6;
 	f32 dockNodeMinSize = 100;

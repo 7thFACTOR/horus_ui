@@ -794,7 +794,7 @@ void updateDockingSystem()
 			screenRect = ds.dragWindow->dockNode->rect;
 			screenRect *= 0.6f; // scale back a bit from original size
 			screenRect.x = mousePosAbs.x - screenRect.width / 2;
-			screenRect.y = mousePosAbs.y + 10;// - screenRect.height / 2;
+			screenRect.y = mousePosAbs.y - screenRect.height / 2;
 		}
 		ds.dockType = DockType::Floating;
 		HORUS_INPUT->setWindowRect(ds.dragIndicatorOsWindow, screenRect);

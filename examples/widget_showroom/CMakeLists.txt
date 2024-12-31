@@ -4,6 +4,7 @@ include(../CMakeUtils.cmake)
 
 add_source_group(src ./ SRCS)
 add_source_group(horus ../../src HORUS_SRCS)
+add_source_group(horus_include ../../include HORUS_INCS)
 add_source_group(backends ../../backends BACKENDS)
 add_source_group(binpack ../libs/binpack BINPACK)
 
@@ -23,7 +24,7 @@ endif(WINDOWS)
 
 
 add_definitions(-DHORUS_STATIC)
-add_executable(widget_showroom ${SRCS} ${HORUS_SRCS} ${BACKENDS} ${BINPACK} ${NFD_SRCS})
+add_executable(widget_showroom ${SRCS} ${HORUS_SRCS} ${HORUS_INCS} ${BACKENDS} ${BINPACK} ${NFD_SRCS})
 
 target_include_directories(widget_showroom PUBLIC
 	../../include

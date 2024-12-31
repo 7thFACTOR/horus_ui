@@ -65,7 +65,7 @@ SDL_HitTestResult HitTestCallbackForResize(SDL_Window *Window, const SDL_Point *
 
 #ifdef _WINDOWS
 // Make the window click-through on Windows
-static void makeWindowClickThrough(SDL_Window* window) {
+static void makeWindowClickThrough_Windows(SDL_Window* window) {
 	HWND hwnd = (HWND)SDL_GetPointerProperty(SDL_GetWindowProperties(window), SDL_PROP_WINDOW_WIN32_HWND_POINTER, NULL);
 	if (!hwnd) {
 		printf("Failed to get native window handle: %s\n", SDL_GetError());
@@ -724,7 +724,7 @@ HOsWindow Sdl2InputProvider::createWindow(
 	{
 #ifdef _WINDOWS
 		makeWindowClickThrough_Windows(wnd);
-		removeWindowShadow(wnd);
+		//removeWindowShadow_Windows(wnd);
 #endif
 		
 #ifdef _LINUX
