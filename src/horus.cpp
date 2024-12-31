@@ -813,12 +813,11 @@ void updateDockingSystem()
 		ctx->renderer->pushClipRect(rc, false);
 
 		auto& windowElem = ctx->theme->getElement(WidgetElementId::WindowBody).normalState();
+		auto wndRect = Rect{ rc.x, rc.y, rc.width, rc.height };
 
 		ctx->renderer->cmdSetColor(windowElem.color);
-		auto wndRect = Rect { rc.x + 1, rc.y + 1, rc.width - 1, rc.height - 1 };
 		ctx->renderer->cmdDrawImageBordered(windowElem.image, windowElem.border, wndRect, ctx->globalScale);
-		ctx->penPosition.set(3, 3);
-		rc = rc.contract(1);
+		ctx->penPosition.set(0, 0);
 		pushLayoutPadding(0);
 		beginContainer(rc);
 		beginTabGroup(0);
