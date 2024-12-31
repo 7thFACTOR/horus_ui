@@ -97,4 +97,8 @@ struct Sdl2InputProvider : InputProvider
 
 void initializeSdl(const SdlInitParams& params);
 
+#ifdef _LINUX
+extern void makeWindowClickThrough_Linux(SDL_Window* window);
+#endif
+
 }

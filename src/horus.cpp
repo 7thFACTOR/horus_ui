@@ -256,10 +256,10 @@ void beginFrame()
 
 	if (ctx->event.window)
 	{
-		if (ctx->event.type == InputEvent::Type::WindowMouseEnter)
+		if (ctx->event.type == InputEvent::Type::WindowMouseEnter && ctx->event.window != ctx->dockingState.dragIndicatorOsWindow)
 			ctx->lastHoveredOsWindow = ctx->event.window;
 		
-		if (ctx->event.type == InputEvent::Type::WindowMouseLeave)
+		if (ctx->event.type == InputEvent::Type::WindowMouseLeave && ctx->event.window != ctx->dockingState.dragIndicatorOsWindow)
 			ctx->lastHoveredOsWindow = 0;
 
 		if (ctx->event.type == InputEvent::Type::MouseDown
@@ -794,7 +794,7 @@ void updateDockingSystem()
 			screenRect = ds.dragWindow->dockNode->rect;
 			screenRect *= 0.6f; // scale back a bit from original size
 			screenRect.x = mousePosAbs.x - screenRect.width / 2;
-			screenRect.y = mousePosAbs.y - screenRect.height / 2;
+			screenRect.y = mousePosAbs.y + 10;// - screenRect.height / 2;
 		}
 		ds.dockType = DockType::Floating;
 		HORUS_INPUT->setWindowRect(ds.dragIndicatorOsWindow, screenRect);
@@ -803,6 +803,7 @@ void updateDockingSystem()
 	if (ctx->dockingState.dragIndicatorOsWindow && ds.dragWindow)
 	{
 		auto rc = screenRect;
+
 		HORUS_INPUT->setCurrentWindow(ds.dragIndicatorOsWindow);
 		ctx->renderer->disableRendering = false;
 		ctx->renderer->setOsWindow(ds.dragIndicatorOsWindow);

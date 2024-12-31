@@ -9,6 +9,7 @@
 #include <math.h>
 #include <string.h>
 #include <algorithm>
+#include "dock_node.h"
 
 namespace hui
 {
@@ -141,7 +142,7 @@ bool textInput(
 		rc.y = ctx->widget.rect.y;
 		rc.width = ctx->widget.rect.width;
 		rc.height = ctx->widget.rect.height;
-		ctx->providers->input->startTextInput(0, rc);
+		HORUS_INPUT->startTextInput(ctx->lastHoveredOsWindow, rc);
 		bodyElemState = &bodyElem->getState(WidgetStateType::Focused);
 		forceRepaint();
 	}

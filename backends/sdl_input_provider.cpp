@@ -90,20 +90,6 @@ static void removeWindowShadow_Windows(SDL_Window* window) {
 }
 #endif
 
-#ifdef _LINUX
-// Make the window click-through on Windows
-static void makeWindowClickThrough_Linux(SDL_Window* window) {
-	auto hwnd = SDL_GetPointerProperty(SDL_GetWindowProperties(window), SDL_PROP_WINDOW_X11_WINDOW_NUMBER, NULL);
-	auto hdisplay = SDL_GetPointerProperty(SDL_GetWindowProperties(window), SDL_PROP_WINDOW_X11_DISPLAY_POINTER, NULL);
-	if (!hwnd) {
-		printf("Failed to get native X11 window handle: %s\n", SDL_GetError());
-		return;
-	}
-
-	XSelectInput(hdisplay, hwnd, NoEventMask);
-}
-#endif
-
 Sdl2InputProvider::Sdl2InputProvider()
 {}
 
@@ -360,12 +346,14 @@ void Sdl2InputProvider::startTextInput(HOsWindow window, const Rect& imeRect)
 	rc.x = imeRect.x;
 	rc.y = imeRect.y;
 	rc.w = imeRect.width;
-	rc.h = imeRect.height;
-
-	//TODO: test this, show the IME hints window
-	//SDL_SetTextInputRect(&rc);
-	textInputWindow = ((SdlWindowProxy*)window)->sdlWindow;
-	SDL_StartTextInput(textInputWindow);
+	rc.h = imeRect.height;	
+	
+	if (window)
+	{
+		textInputWindow = ((SdlWindowProxy*)window)->sdlWindow;
+		SDL_SetTextInputArea(textInputWindow, &rc, 0);
+		SDL_StartTextInput(textInputWindow);
+	}
 }
 
 void Sdl2InputProvider::stopTextInput()
@@ -564,19 +552,6 @@ void Sdl2InputProvider::addSdlEvent(SDL_Event& ev)
 
 	outEvent.window = findSdlWindow(SDL_GetWindowFromID(ev.window.windowID));
 
-	// do not add all the resize events, we just need one
-	if ((ev.type == SDL_EVENT_WINDOW_RESIZED
-		|| ev.type == SDL_EVENT_WINDOW_EXPOSED
-		|| ev.type == SDL_EVENT_WINDOW_MAXIMIZED
-		|| ev.type == SDL_EVENT_WINDOW_MINIMIZED
-		|| ev.type == SDL_EVENT_WINDOW_RESTORED)
-		&& sizeChanged)
-	{
-		return;
-	}
-
-	sizeChanged = true;
-
 	if (outEvent.type != InputEvent::Type::None)
 		addInputEvent(outEvent);
 }
@@ -585,7 +560,6 @@ void Sdl2InputProvider::processSdlEvents()
 {
 	SDL_Event ev;
 
-	sizeChanged = false;
 	addedMouseMove = false;
 
 	while (SDL_PollEvent(&ev))
