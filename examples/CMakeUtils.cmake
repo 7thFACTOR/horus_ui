@@ -68,8 +68,7 @@ macro(link_libs TARGET_LIST)
 	endif(WINDOWS)
 
 	if(LINUX)
-		target_link_libraries(${TARGET_LIST} PUBLIC "X11 `pkg-config --libs gtk+-3.0`"
-		  "Xi" "dl" "pthread" "Xext" "GL" "GLU")
+		target_link_libraries(${TARGET_LIST} PUBLIC "X11" "Xi" "dl" "pthread" "Xext" "GL")
 	endif(LINUX)
 
 	if(APPLE)
@@ -78,18 +77,18 @@ macro(link_libs TARGET_LIST)
 	endif(APPLE)
 	
 	if(LINUX)
-		find_package(GTK REQUIRED)
-		find_package(PkgConfig)
-		pkg_check_modules(GTK "gtk+-3.0")
-		target_link_libraries(${TARGET_LIST} PUBLIC ${GTK_LIBRARIES})
-		add_definitions(${GTK_CFLAGS} ${GTK_CFLAGS_OTHER} -DMAKE_LIB)
+		find_package(PkgConfig REQUIRED)
+		pkg_check_modules(GTK REQUIRED gtk+-3.0)
+
+		target_include_directories(${TARGET_LIST} PRIVATE ${GTK_INCLUDE_DIRS})
+		target_link_libraries(${TARGET_LIST} PRIVATE ${GTK_LIBRARIES})
 
 		#target_compile_options(${TARGET_LIST} PRIVATE -Werror=return-type -std=c++17 -lstdc++fs)
 
 		if(CMAKE_BUILD_TYPE MATCHES Debug)
-			target_link_libraries(${TARGET_LIST} PUBLIC libSDL2-2.0d.so libSDL2_mixer-2.0d.so libGLEWd.a libjsoncpp.a libGL.so libspdlogd.so)
+			target_link_libraries(${TARGET_LIST} PUBLIC libSDL3.so libjsoncpp.a libGL.so libfreetype.so)
 		else(CMAKE_BUILD_TYPE MATCHES Debug)
-			target_link_libraries(${TARGET_LIST} PUBLIC libSDL2-2.0.so libSDL2_mixer-2.0.so libGLEW.so libjsoncpp.so libGL.so libspdlog.so)
+			target_link_libraries(${TARGET_LIST} PUBLIC libSDL3.so libjsoncpp.so libGL.so libfreetype.so)
 		endif(CMAKE_BUILD_TYPE MATCHES Debug)
 	endif(LINUX)
 
