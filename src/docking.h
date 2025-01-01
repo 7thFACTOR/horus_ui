@@ -4,16 +4,70 @@
 
 namespace hui
 {
-HOsWindow createOsWindow(const std::string& title, OsWindowFlags flags, OsWindowState state, const Rect& rect);
-void destroyOsWindow(HOsWindow wnd);
-DockNode* createOsWindowRootDockNode(HOsWindow osWindow);
-void deleteRootDockNode(HOsWindow window);
-DockNode* getRootDockNode(HOsWindow window);
-Window* createWindow(const std::string& id, DockNode* targetNode, DockType dockType, const std::string& title, Rect* initialRect, HOsWindow osWnd, HImage icon);
+struct MemoryStream;
+
+struct DockNode
+{
+	enum class Type
+	{
+		None,
+		Tabs, //[A][B]
+		Vertical, // =
+		Horizontal, // ||
+	};
+
+	u64 id = 0;
+	DockNode* parent = nullptr;
+	std::vector<DockNode*> children;
+	std::vector<Window*> windows;
+	HNativeWindow nativeWindow = 0;
+	Type type = Type::None;
+	Point minSize = { 32, 32 };
+	Rect rect;
+	size_t selectedTabIndex = 0;
+	size_t dockingTabSpaceIndex = 0;
+	f32 dockingTabSpaceWidth = 0;
+
+	DockNode();
+	void copyFrom(DockNode* other);
+	void adoptChildren();
+	void adoptWindows();
+	bool hasSingleWindow() const;
+	void removeWindowsAndDeleteChildrenRecursive();
+	void removeFromParent();
+	void removeWindow(Window* window);
+	void computeRect();
+	void computeMinSize();
+	bool checkRedundancy();
+	void gatherWindowTabsNodes(std::vector<DockNode*>& outNodes);
+	DockNode* findResizeDockNode(const Point& pt);
+	DockNode* findTargetDockNode(const Point& pt);
+	DockNode* findDockNode(const Point& pt);
+	std::vector<DockNode*>::iterator findNextSiblingOf(DockNode* node);
+	std::vector<DockNode*>::reverse_iterator findPrevSiblingOf(DockNode* node);
+	std::vector<DockNode*>::iterator getIteratorOf(DockNode* node);
+	std::vector<DockNode*>::reverse_iterator getReverseIteratorOf(DockNode* node);
+	size_t getWindowIndex(Window* window);
+	void insertTabSpaceAt(const Point& mousePos, f32 spaceWidth);
+	void removeTabSpace();
+	void moveWindowTabAt(const Point& mousePos, Window* window);
+	void debug(i32 level = 0);
+};
+
+
+HNativeWindow createNativeWindow(const std::string& title, NativeWindowFlags flags, NativeWindowState state, const Rect& rect);
+void destroyNativeWindow(HNativeWindow wnd);
+DockNode* createNativeWindowRootDockNode(HNativeWindow nativeWindow);
+void deleteRootDockNode(HNativeWindow window);
+DockNode* getRootDockNode(HNativeWindow window);
+Window* createWindow(const std::string& id, DockNode* targetNode, DockType dockType, const std::string& title, Rect* initialRect, HNativeWindow nativeWnd, HImage icon);
 void deleteWindow(Window* wnd);
 void closeWindow(Window* wnd);
 bool dockWindow(Window* wnd, DockNode* targetNode, DockType dockType, u32 tabIndex = 0, const Point* undockedWindowPos = nullptr);
 void dockNodeTabs(DockNode* node);
+void updateDockingSystem();
+void handleDockNodeEvents(DockNode* node);
+void handleDockingMouseUp();
 
 
 }

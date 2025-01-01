@@ -1,3 +1,6 @@
+#include <math.h>
+#include <string.h>
+#include <algorithm>
 #include "horus.h"
 #include "types.h"
 #include "theme.h"
@@ -6,10 +9,6 @@
 #include "font.h"
 #include "context.h"
 #include "util.h"
-#include <math.h>
-#include <string.h>
-#include <algorithm>
-#include "dock_node.h"
 
 namespace hui
 {
@@ -142,7 +141,7 @@ bool textInput(
 		rc.y = ctx->widget.rect.y;
 		rc.width = ctx->widget.rect.width;
 		rc.height = ctx->widget.rect.height;
-		HORUS_INPUT->startTextInput(ctx->lastHoveredOsWindow, rc);
+		HORUS_INPUT->startTextInput(ctx->lastHoveredNativeWindow, rc);
 		bodyElemState = &bodyElem->getState(WidgetStateType::Focused);
 		forceRepaint();
 	}

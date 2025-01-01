@@ -1,16 +1,630 @@
-#include "horus.h"
-#include "docking.h"
-#include "dock_node.h"
-#include "docking_system.h"
 #include <cstring>
+#include <assert.h>
 #include <algorithm>
 #include <math.h>
+#include "horus.h"
+#include "docking.h"
 #include "context.h"
-#include <assert.h>
+#include "theme.h"
 
 namespace hui
 {
-HOsWindow createOsWindow(const std::string& title, OsWindowFlags flags, OsWindowState state, const Rect& rect)
+DockNode::DockNode()
+{
+	if (ctx)
+	{
+		id = ctx->dockingState.nextDockNodeId++;
+	}
+}
+
+void DockNode::copyFrom(DockNode* other)
+{
+	parent = other->parent;
+	children = other->children;
+	windows = other->windows;
+	nativeWindow = other->nativeWindow;
+	type = other->type;
+	minSize = other->minSize;
+	rect = other->rect;
+	selectedTabIndex = other->selectedTabIndex;
+}
+
+void DockNode::adoptChildren()
+{
+	for (auto& c : children)
+	{
+		c->parent = this;
+	}
+}
+
+void DockNode::adoptWindows()
+{
+	for (auto& w : windows)
+	{
+		w->dockNode = this;
+	}
+}
+
+bool DockNode::hasSingleWindow() const
+{
+	return windows.size() <= 1;
+}
+
+void DockNode::removeWindowsAndDeleteChildrenRecursive()
+{
+	for (auto& wnd : windows)
+	{
+		ctx->dockingState.windowsToDelete.insert(wnd);
+	}
+
+	windows.clear();
+
+	for (auto& child : children)
+	{
+		child->removeWindowsAndDeleteChildrenRecursive();
+		ctx->dockingState.dockNodesToDelete.insert(child);
+	}
+
+	children.clear();
+}
+
+void DockNode::removeFromParent()
+{
+	if (parent)
+	{
+		auto iter = std::find(parent->children.begin(), parent->children.end(), this);
+		
+		if (iter != parent->children.end())
+		{
+			auto prev = parent->findPrevSiblingOf(this);
+			DockNode* sibling = nullptr;
+
+			if (prev == parent->children.rend())
+			{
+				auto next = parent->findNextSiblingOf(this);
+
+				if (next != parent->children.end())
+					sibling = *next;
+			}
+			else
+			{
+				sibling = *prev;
+			}
+
+			if (sibling)
+			{
+				// donate size to sibling
+				if (parent->type == DockNode::Type::Vertical)
+					sibling->rect.height += rect.height + ctx->settings.dockNodeSpacing;
+
+				if (parent->type == DockNode::Type::Horizontal)
+					sibling->rect.width += rect.width + ctx->settings.dockNodeSpacing;
+			}
+
+			parent->children.erase(iter);
+			parent->computeRect();
+			parent = nullptr;
+		}
+	}
+	else
+	{
+		// this is a root node and removing it we must destroy the window too
+		ctx->dockingState.nativeWindowsToDelete.insert(nativeWindow);
+
+		// we need to remove this now, it will interfere with redudancy checks
+		auto iter = std::find(ctx->nativeWindows.begin(), ctx->nativeWindows.end(), nativeWindow);
+
+		assert(iter != ctx->nativeWindows.end());
+
+		if (iter != ctx->nativeWindows.end()) ctx->nativeWindows.erase(iter);
+		
+		nativeWindow = nullptr;
+		parent = nullptr;
+	}
+}
+
+void DockNode::removeWindow(Window* window)
+{
+	auto iter = std::find(windows.begin(), windows.end(), window);
+
+	if (iter != windows.end())
+	{
+		auto idx = std::distance(windows.begin(), iter);
+
+		(*iter)->dockNode = nullptr;
+		windows.erase(iter);
+
+		// make sure we leave a proper selected index for tabs
+		if (selectedTabIndex >= windows.size() && !windows.empty())
+		{
+			selectedTabIndex = windows.size() - 1;
+		}
+ 	}
+}
+
+void DockNode::gatherWindowTabsNodes(std::vector<DockNode*>& outNodes)
+{
+	if (type == Type::Tabs)
+	{
+		outNodes.push_back(this);
+		return;
+	}
+
+	for (auto& c : children)
+	{
+		if (!c->hasSingleWindow())
+			continue;
+
+		if (c->type == DockNode::Type::Tabs)
+		{
+			outNodes.push_back(c);
+		}
+		else
+		{
+			c->gatherWindowTabsNodes(outNodes);
+		}
+	}
+}
+
+void DockNode::computeRect()
+{
+	if (!parent)
+	{
+		auto size = HORUS_INPUT->getWindowClientSize(nativeWindow);
+		rect = { 0, 0, size.x, size.y };
+	}
+
+	switch (type)
+	{
+	case DockNode::Type::None:
+	case DockNode::Type::Tabs:
+	{
+		auto tabGroupHeight = ctx->theme ? ctx->theme->getElement(WidgetElementId::TabGroupBody).normalState().height : 0;
+
+		for (auto& wnd : windows)
+		{
+			wnd->clientRect = {
+				rect.x, rect.y + tabGroupHeight, rect.width, rect.height - tabGroupHeight
+			};
+		}
+		break;
+	}
+	case DockNode::Type::Vertical:
+	{
+		auto childCount = children.size();
+		f32 availableSpace = rect.height - ctx->settings.dockNodeSpacing * (f32)(childCount - 1);
+		f32 averageSpace = availableSpace / (f32)childCount;
+		f32 totalSpace = 0;
+
+		for (auto& child : children)
+		{
+			if (child->rect.height <= 0.0f)
+			{
+				child->rect.height = averageSpace;
+			}
+
+			totalSpace += child->rect.height;
+		}
+
+		f32 currentY = rect.y;
+
+		for (auto& child : children)
+		{
+			f32 height = child->rect.height / totalSpace * availableSpace;
+
+			child->rect.y = currentY;
+			child->rect.x = rect.x;
+			child->rect.width = rect.width;
+			child->rect.height = height;
+
+			// recursive, could be done with a vector and a while loop though
+			child->computeRect();
+
+			currentY += height;
+			currentY += ctx->settings.dockNodeSpacing;
+		}
+	}
+		break;
+	case DockNode::Type::Horizontal:
+	{
+		auto childCount = children.size();
+		f32 availableSpace = rect.width - ctx->settings.dockNodeSpacing * (f32)(childCount - 1);
+		availableSpace = (i32)availableSpace;
+		f32 averageSpace = availableSpace / (f32)childCount;
+		f32 totalSpace = 0;
+
+		averageSpace = (i32)averageSpace;
+
+		for (auto& child : children)
+		{
+			if (child->rect.width <= 0.0f)
+			{
+				child->rect.width = averageSpace;
+			}
+
+			totalSpace += child->rect.width;
+		}
+
+		f32 currentX = rect.x;
+
+		totalSpace = totalSpace;
+
+		for (auto& child : children)
+		{
+			f32 width = child->rect.width / totalSpace * availableSpace;
+
+			currentX = (i32)currentX;
+			width = (i32)width;
+			child->rect.x = currentX;
+			child->rect.y = rect.y;
+			child->rect.height = rect.height;
+			child->rect.width = width;
+
+			// recursive, could be done with a vector and a while loop though
+			child->computeRect();
+
+			currentX += width;
+			currentX += ctx->settings.dockNodeSpacing;
+		}
+	}
+		break;
+	default:
+		break;
+	}
+}
+
+void DockNode::computeMinSize()
+{
+	minSize.set(ctx->settings.dockNodeMinSize, ctx->settings.dockNodeMinSize);
+
+	for (auto& child : children)
+	{
+		child->computeMinSize();
+	};
+
+	switch (type)
+	{
+	case DockNode::Type::None:
+		break;
+	case DockNode::Type::Tabs:
+		break;
+	case DockNode::Type::Vertical:
+	{
+		f32 total = 0;
+
+		for (auto& child : children)
+		{
+			total += child->minSize.y;
+		};
+
+		if (total > minSize.y) minSize.y = total;
+
+		break;
+	}
+	case DockNode::Type::Horizontal:
+	{
+		f32 total = 0;
+
+		for (auto& child : children)
+		{
+			total += child->minSize.x;
+		};
+
+		if (total > minSize.x) minSize.x = total;
+
+		break;
+	}
+	break;
+	default:
+		break;
+	}
+}
+
+bool DockNode::checkRedundancy()
+{
+	// first do leafs for redundant nesting of dock nodes
+	// collapse starting at the leaf nodes
+	// use a copy of the children vector since it might get modified
+	auto copyOfChildren = children;
+
+	for (auto& c : copyOfChildren)
+	{
+		c->checkRedundancy();
+	}
+
+	// if we have just 1 child, delete it, move its contents to us
+	if (children.size() == 1)
+	{
+		auto child = children[0];
+		
+		children = child->children;
+		windows = child->windows;
+
+		adoptChildren();
+		adoptWindows();
+		selectedTabIndex = child->selectedTabIndex;
+		type = child->type;
+
+		ctx->dockingState.dockNodesToDelete.insert(child);
+	}
+
+	if (parent)
+	{
+		bool deleteThis = false;
+
+		// if same type as parent, merge its nodes and windows into parent
+		if (parent->type == type)
+		{
+			auto iterPosThis = std::find(parent->children.begin(), parent->children.end(), this);
+
+			assert(iterPosThis != parent->children.end());
+
+			parent->children.insert(iterPosThis, children.begin(), children.end());
+			
+			// find it again, remove it, leaving children in the parent node
+			iterPosThis = std::find(parent->children.begin(), parent->children.end(), this);
+
+			assert(iterPosThis != parent->children.end());
+
+			parent->children.erase(iterPosThis);
+			parent->adoptChildren();
+			
+			deleteThis = true;
+		}
+
+		if (deleteThis)
+		{
+			ctx->dockingState.dockNodesToDelete.insert(this);
+		}
+
+		return true;
+	}
+
+	return false;
+}
+
+void DockNode::debug(i32 level)
+{
+	std::string tabs(level, '\t');
+	std::string name = "";
+
+	switch (type)
+	{
+	case Type::None: name = "None"; break;
+	case Type::Vertical: name = "Vertical"; break;
+	case Type::Horizontal: name = "Horizontal"; break;
+	case Type::Tabs: name = "Tabs"; break;
+	default: break;
+	}
+
+	printf("%s%s rect(%d,%d,%d,%d) tabIdx:%d nativeWnd:%p\n", tabs.c_str(), name.c_str(), (i32)rect.x, (i32)rect.y, (i32)rect.width, (i32)rect.height, (u32)selectedTabIndex, nativeWindow);
+
+	if (!windows.empty())
+	{
+		printf("%s\tViews:\n", tabs.c_str());
+		for (auto& w : windows)
+			printf("%s\t\t%s\n", tabs.c_str(), w->title.c_str());
+	}
+
+	for (auto& c : children) c->debug(level + 1);
+}
+
+DockNode* DockNode::findResizeDockNode(const Point& pt)
+{
+	if (type != Type::None)
+	{
+		if (!rect.contains(pt))
+		{
+			return nullptr;
+		}
+
+		switch (type)
+		{
+		case Type::Horizontal:
+			for (auto& child : children)
+			{
+				if (child != children.back())
+				{
+					if (pt.x >= child->rect.right() + ctx->settings.dockNodeSpacing/2 - ctx->settings.dockNodeResizeSplitterHitSize/2
+						&& pt.x <= child->rect.right() + ctx->settings.dockNodeSpacing / 2 + ctx->settings.dockNodeResizeSplitterHitSize/2)
+					{
+						return child;
+					}
+				}
+			}
+			break;
+		case Type::Vertical:
+			for (auto& child : children)
+			{
+				if (child != children.back())
+				{
+					if (pt.y >= child->rect.bottom() + ctx->settings.dockNodeSpacing / 2 - ctx->settings.dockNodeResizeSplitterHitSize / 2
+						&& pt.y <= child->rect.bottom() + ctx->settings.dockNodeSpacing / 2 + ctx->settings.dockNodeResizeSplitterHitSize / 2)
+					{
+						return child;
+					}
+				}
+			}
+			break;
+		default:
+			break;
+		}
+
+		for (auto& child : children)
+		{
+			auto foundChild = child->findResizeDockNode(pt);
+
+			if (foundChild)
+			{
+				return foundChild;
+			}
+		}
+	}
+
+	return nullptr;
+}
+
+DockNode* DockNode::findTargetDockNode(const Point& pt)
+{
+	if ((type == Type::None || type == Type::Tabs))
+	{
+		if (rect.contains(pt))
+		{
+			return this;
+		}
+	}
+	else
+	{
+		for (auto& child : children)
+		{
+			auto foundChild = child->findTargetDockNode(pt);
+
+			if (foundChild)
+			{
+				return foundChild;
+			}
+		}
+	}
+
+	return nullptr;
+}
+
+size_t DockNode::getWindowIndex(Window* window)
+{
+	auto iter = std::find(windows.begin(), windows.end(), window);
+	
+	if (iter == windows.end()) return -1;
+
+	return std::distance(windows.begin(), iter);
+}
+
+DockNode* DockNode::findDockNode(const Point& pt)
+{
+	if (rect.contains(pt)) return this;
+
+	for (auto& child : children)
+	{
+		auto node = child->findDockNode(pt);
+		
+		if (node)
+			return node;
+	}
+
+	return nullptr;
+}
+
+std::vector<DockNode*>::iterator DockNode::findNextSiblingOf(DockNode* node)
+{
+	auto iter = std::find(children.begin(), children.end(), node);
+
+	if (iter != children.end())
+		++iter;
+
+	return iter;
+}
+
+std::vector<DockNode*>::reverse_iterator DockNode::findPrevSiblingOf(DockNode* node)
+{
+	auto iter = std::find(children.rbegin(), children.rend(), node);
+
+	if (iter != children.rend())
+		++iter;
+
+	return iter;
+}
+
+std::vector<DockNode*>::iterator DockNode::getIteratorOf(DockNode* node)
+{
+	auto iter = std::find(children.begin(), children.end(), node);
+
+	return iter;
+}
+
+std::vector<DockNode*>::reverse_iterator DockNode::getReverseIteratorOf(DockNode* node)
+{
+	auto iter = std::find(children.rbegin(), children.rend(), node);
+
+	return iter;
+}
+
+void DockNode::insertTabSpaceAt(const Point& mousePos, f32 spaceWidth)
+{
+	for (auto i = 0; i < windows.size(); i++)
+	{
+		if (windows[i]->dockingNow)
+			continue;
+
+		if (windows[i]->tabRect.contains(mousePos))
+		{
+			dockingTabSpaceIndex = i;
+
+			if (windows[i]->tabRect.x + windows[i]->tabRect.width / 2 < mousePos.x)
+			{
+				dockingTabSpaceIndex = i + 1;
+			}
+
+			dockingTabSpaceWidth = spaceWidth;
+			return;
+		}
+	}
+}
+
+void DockNode::moveWindowTabAt(const Point& mousePos, Window* window)
+{
+	auto wndIndex = getWindowIndex(window);
+
+	for (auto i = 0; i < windows.size(); i++)
+	{
+		if (windows[i]->dockingNow)
+			continue;
+
+		if (windows[i]->tabRect.x + windows[i]->tabRect.width / 2.0f < mousePos.x
+			&& windows[i]->tabRect.right() > mousePos.x)
+		{
+			dockingTabSpaceIndex = i;
+
+			auto tmp = windows[wndIndex];
+
+			windows[wndIndex] = windows[dockingTabSpaceIndex];
+			windows[dockingTabSpaceIndex] = tmp;
+			selectedTabIndex = ~0;
+
+			return;
+		}
+	}
+}
+
+void DockNode::removeTabSpace()
+{
+	dockingTabSpaceWidth = 0;
+	dockingTabSpaceIndex = ~0;
+}
+
+bool saveDockingState(const char* filename)
+{
+	//TODO
+	return true;
+}
+
+u8* saveDockingStateToMemory(size_t& outStateInfoSize)
+{
+	//TODO
+	return 0;
+}
+
+bool loadDockingState(const char* filename)
+{
+	//TODO
+	return false;
+}
+
+bool loadDockingStateFromMemory(const u8* stateInfo, size_t stateInfoSize)
+{
+	//TODO
+	return true;
+}
+
+HNativeWindow createNativeWindow(const std::string& title, NativeWindowFlags flags, NativeWindowState state, const Rect& rect)
 {
 	auto wnd = ctx->providers->input->createWindow(title.c_str(), flags, state, rect);
 
@@ -19,59 +633,59 @@ HOsWindow createOsWindow(const std::string& title, OsWindowFlags flags, OsWindow
 		ctx->initializeGraphics();
 	}
 
-	ctx->osWindows.push_back(wnd);
+	ctx->nativeWindows.push_back(wnd);
 
 	return wnd;
 }
 
-void destroyOsWindow(HOsWindow osWnd)
+void destroyNativeWindow(HNativeWindow nativeWnd)
 {
-	auto dockNode =	ctx->dockingState.rootOsWindowDockNodes[osWnd];
+	auto dockNode =	ctx->dockingState.rootNativeWindowDockNodes[nativeWnd];
 
 	if (dockNode)
 		ctx->dockingState.dockNodesToDelete.insert(dockNode);
 	
-	if (osWnd)
-		ctx->dockingState.osWindowsToDelete.insert(osWnd);
+	if (nativeWnd)
+		ctx->dockingState.nativeWindowsToDelete.insert(nativeWnd);
 }
 
-DockNode* createOsWindowRootDockNode(HOsWindow osWindow)
+DockNode* createNativeWindowRootDockNode(HNativeWindow nativeWindow)
 {
-	auto size = HORUS_INPUT->getWindowClientSize(osWindow);
+	auto size = HORUS_INPUT->getWindowClientSize(nativeWindow);
 	Rect rect = { 0, 0, size.x, size.y };
 	auto dockNode = new DockNode();
 
 	dockNode->type = DockNode::Type::Tabs;
 	dockNode->rect.set(0, 0, rect.width, rect.height);
-	dockNode->osWindow = osWindow;
-	ctx->dockingState.rootOsWindowDockNodes.insert(std::make_pair(osWindow, dockNode));
+	dockNode->nativeWindow = nativeWindow;
+	ctx->dockingState.rootNativeWindowDockNodes.insert(std::make_pair(nativeWindow, dockNode));
 
 	return dockNode;
 }
 
-DockNode* getRootDockNode(HOsWindow window)
+DockNode* getRootDockNode(HNativeWindow nativeWindow)
 {
-	assert(window);
+	assert(nativeWindow);
 
-	if (!window) return nullptr;
+	if (!nativeWindow) return nullptr;
 
-	return ctx->dockingState.rootOsWindowDockNodes[window];
+	return ctx->dockingState.rootNativeWindowDockNodes[nativeWindow];
 }
 
-void deleteRootDockNode(HOsWindow window)
+void deleteRootDockNode(HNativeWindow nativeWindow)
 {
-	assert(window);
+	assert(nativeWindow);
 
-	auto node = ctx->dockingState.rootOsWindowDockNodes[window];
+	auto node = ctx->dockingState.rootNativeWindowDockNodes[nativeWindow];
 
 	if (node)
 	{
-		ctx->dockingState.osWindowsToDelete.insert(window);
+		ctx->dockingState.nativeWindowsToDelete.insert(nativeWindow);
 		ctx->dockingState.dockNodesToDelete.insert(node);
 	}
 }
 
-Window* createWindow(const std::string& id, DockNode* targetNode, DockType dockType, const std::string& title, Rect* initialRect, HOsWindow osWnd, HImage icon)
+Window* createWindow(const std::string& id, DockNode* targetNode, DockType dockType, const std::string& title, Rect* initialRect, HNativeWindow nativeWindow, HImage icon)
 {
 	auto targetNodePtr = (DockNode*)targetNode;
 	auto newWnd = new Window();
@@ -83,12 +697,12 @@ Window* createWindow(const std::string& id, DockNode* targetNode, DockType dockT
 
 	if (!targetNode)
 	{
-		if (!osWnd)
+		if (!nativeWindow)
 		{
-			osWnd = createOsWindow(title, OsWindowFlags::Resizable, OsWindowState::Normal, initialRect ? *initialRect : defaultRect);
+			nativeWindow = createNativeWindow(title, NativeWindowFlags::Resizable, NativeWindowState::Normal, initialRect ? *initialRect : defaultRect);
 		}
 		
-		newWnd->dockNode = createOsWindowRootDockNode(osWnd);
+		newWnd->dockNode = createNativeWindowRootDockNode(nativeWindow);
 		newWnd->dockNode->windows.push_back(newWnd);
 		newWnd->clientRect = newWnd->dockNode->rect;
 		ctx->dockingState.focusedWindow = newWnd;
@@ -112,7 +726,7 @@ void deleteWindow(Window* wnd)
 
 	if (!node->parent)
 	{
-		destroyOsWindow(node->osWindow);
+		destroyNativeWindow(node->nativeWindow);
 	}
 }
 
@@ -120,13 +734,13 @@ void closeWindow(Window* wnd)
 {
 	DockNode* node = wnd->dockNode;
 
-	// if the window is in a root dock node
+	// if the nativeWindow is in a root dock node
 	if (!node->parent
 		&& node->children.empty()
 		&& node->windows.size() == 1)
 	{
-		destroyOsWindow(node->osWindow);
-		node->osWindow = nullptr;
+		destroyNativeWindow(node->nativeWindow);
+		node->nativeWindow = nullptr;
 	}
 }
 
@@ -189,7 +803,7 @@ bool dockWindow(Window* wnd, DockNode* targetNode, DockType dockType, u32 tabInd
 	if (target && !targetParent)
 		return false;
 
-	// check to see if we dock inside the same docknode which contains only one window which is the same window itself
+	// check to see if we dock inside the same docknode which contains only one nativeWindow which is the same nativeWindow itself
 	if (target && wnd->dockNode == target && target->children.empty() && target->windows.size() == 1 && target->windows[0] == wnd)
 		return false;
 
@@ -214,12 +828,12 @@ bool dockWindow(Window* wnd, DockNode* targetNode, DockType dockType, u32 tabInd
 				target = newTarget;
 			}
 
-			// if there is just one window in the source node, move the node and remove from current parent
+			// if there is just one nativeWindow in the source node, move the node and remove from current parent
 			if (source && source->windows.size() == 1)
 			{
 				source->removeFromParent();
 				source->parent = targetParent;
-				source->osWindow = targetParent->osWindow;
+				source->nativeWindow = targetParent->nativeWindow;
 
 				// treat docking to root node
 				if (targetParent != target && target)
@@ -236,7 +850,7 @@ bool dockWindow(Window* wnd, DockNode* targetNode, DockType dockType, u32 tabInd
 				sourceNode = source;
 			}
 			else
-			// we create a new node to hold the window
+			// we create a new node to hold the nativeWindow
 			{
 				auto wndRect = wnd->dockNode ? wnd->dockNode->rect : Rect();
 				if (sourceIsTarget) target->removeWindow(wnd);
@@ -246,7 +860,7 @@ bool dockWindow(Window* wnd, DockNode* targetNode, DockType dockType, u32 tabInd
 				wnd->dockNode = newNode;
 				newNode->parent = targetParent;
 				newNode->type = DockNode::Type::Tabs;
-				newNode->osWindow = target ? target->osWindow : nullptr;
+				newNode->nativeWindow = target ? target->nativeWindow : nullptr;
 				newNode->rect = wndRect;
 
 				// treat docking to root node
@@ -268,28 +882,28 @@ bool dockWindow(Window* wnd, DockNode* targetNode, DockType dockType, u32 tabInd
 		}
 		else if (targetParent->type == DockNode::Type::Vertical)
 		{
-			// if source has one window, remove source from its parent
+			// if source has one nativeWindow, remove source from its parent
 			// and just relocate to target parent node
 			if (source && source->windows.size() == 1)
 			{
 				source->removeFromParent();
 				source->parent = targetParent;
-				source->osWindow = targetParent->osWindow;
+				source->nativeWindow = targetParent->nativeWindow;
 				sourceNode = source;
 			}
 			else
 			{
 				auto wndRect = wnd->dockNode ? wnd->dockNode->rect : Rect();
 				if (sourceIsTarget) target->removeWindow(wnd);
-				// remove the window from parent node
+				// remove the nativeWindow from parent node
 				if (source) source->removeWindow(wnd);
-				// create new node for the window
+				// create new node for the nativeWindow
 				sourceNode = new DockNode();
 				sourceNode->windows.push_back(wnd);
 				wnd->dockNode = sourceNode;
 				sourceNode->parent = targetParent;
 				sourceNode->type = DockNode::Type::Tabs;
-				sourceNode->osWindow = targetParent->osWindow;
+				sourceNode->nativeWindow = targetParent->nativeWindow;
 				sourceNode->rect = wndRect;
 			}
 
@@ -364,12 +978,12 @@ bool dockWindow(Window* wnd, DockNode* targetNode, DockType dockType, u32 tabInd
 				target = newTarget;
 			}
 
-			// if there is just one window in the source node, move the node and remove from current parent
+			// if there is just one nativeWindow in the source node, move the node and remove from current parent
 			if (source && source->windows.size() == 1)
 			{				
 				source->removeFromParent();
 				source->parent = targetParent;
-				source->osWindow = targetParent->osWindow;
+				source->nativeWindow = targetParent->nativeWindow;
 
 				// treat docking to root node
 				if (targetParent != target && target)
@@ -390,7 +1004,7 @@ bool dockWindow(Window* wnd, DockNode* targetNode, DockType dockType, u32 tabInd
 				sourceNode = source;
 			}
 			else
-			// we create a new node to hold the window
+			// we create a new node to hold the nativeWindow
 			{
 				auto wndRect = wnd->dockNode ? wnd->dockNode->rect : Rect();
 				if (sourceIsTarget) target->removeWindow(wnd);
@@ -400,7 +1014,7 @@ bool dockWindow(Window* wnd, DockNode* targetNode, DockType dockType, u32 tabInd
 				wnd->dockNode = newNode;
 				newNode->parent = targetParent;
 				newNode->type = DockNode::Type::Tabs;
-				newNode->osWindow = target ? target->osWindow : nullptr;
+				newNode->nativeWindow = target ? target->nativeWindow : nullptr;
 				newNode->rect = wndRect;
 
 				// treat docking to root node
@@ -426,28 +1040,28 @@ bool dockWindow(Window* wnd, DockNode* targetNode, DockType dockType, u32 tabInd
 		}
 		else if (targetParent->type == DockNode::Type::Vertical)
 		{
-			// if source has one window, remove source from its parent
+			// if source has one nativeWindow, remove source from its parent
 			// and just relocate to target parent node
 			if (source && source->windows.size() == 1)
 			{
 				source->removeFromParent();
 				source->parent = targetParent;
-				source->osWindow = targetParent->osWindow;
+				source->nativeWindow = targetParent->nativeWindow;
 				sourceNode = source;
 			}
 			else
 			{
 				auto wndRect = wnd->dockNode ? wnd->dockNode->rect : Rect();
 				if (sourceIsTarget) target->removeWindow(wnd);
-				// remove the window from parent node
+				// remove the nativeWindow from parent node
 				if (source) source->removeWindow(wnd);
-				// create new node for the window
+				// create new node for the nativeWindow
 				sourceNode = new DockNode();
 				sourceNode->windows.push_back(wnd);
 				wnd->dockNode = sourceNode;
 				sourceNode->parent = targetParent;
 				sourceNode->type = DockNode::Type::Tabs;
-				sourceNode->osWindow = targetParent->osWindow;
+				sourceNode->nativeWindow = targetParent->nativeWindow;
 				sourceNode->rect = wndRect;
 			}
 
@@ -526,12 +1140,12 @@ bool dockWindow(Window* wnd, DockNode* targetNode, DockType dockType, u32 tabInd
 				target = newTarget;
 			}
 
-			// if there is just one window in the source node, move the node also and remove from current parent
+			// if there is just one nativeWindow in the source node, move the node also and remove from current parent
 			if (source && source->windows.size() == 1)
 			{
 				source->removeFromParent();
 				source->parent = targetParent;
-				source->osWindow = targetParent->osWindow;
+				source->nativeWindow = targetParent->nativeWindow;
 
 				// treat docking to root node
 				if (targetParent != target && target)
@@ -548,7 +1162,7 @@ bool dockWindow(Window* wnd, DockNode* targetNode, DockType dockType, u32 tabInd
 				sourceNode = source;
 			}
 			else
-			// we create a new node to hold the window
+			// we create a new node to hold the nativeWindow
 			{
 				auto wndRect = wnd->dockNode ? wnd->dockNode->rect : Rect();
 				if (sourceIsTarget) target->removeWindow(wnd);
@@ -558,7 +1172,7 @@ bool dockWindow(Window* wnd, DockNode* targetNode, DockType dockType, u32 tabInd
 				wnd->dockNode = newNode;
 				newNode->parent = targetParent;
 				newNode->type = DockNode::Type::Tabs;
-				newNode->osWindow = target ? target->osWindow : target;
+				newNode->nativeWindow = target ? target->nativeWindow : target;
 				newNode->rect = wndRect;
 
 				if (targetParent != target && target)
@@ -586,27 +1200,27 @@ bool dockWindow(Window* wnd, DockNode* targetNode, DockType dockType, u32 tabInd
 		}
 		else if (targetParent->type == DockNode::Type::Horizontal)
 		{
-			// if source has one window, remove source from its parent
+			// if source has one nativeWindow, remove source from its parent
 			// and just relocate to target parent node
 			if (source && source->windows.size() == 1)
 			{
 				source->removeFromParent();
 				source->parent = targetParent;
-				source->osWindow = targetParent->osWindow;
+				source->nativeWindow = targetParent->nativeWindow;
 				sourceNode = source;
 			}
 			else
 			{
 				auto wndRect = wnd->dockNode ? wnd->dockNode->rect : Rect();
 				if (sourceIsTarget) target->removeWindow(wnd);
-				// remove the window from parent node
+				// remove the nativeWindow from parent node
 				if (source) source->removeWindow(wnd);
-				// create new node for the window
+				// create new node for the nativeWindow
 				sourceNode = new DockNode();
 				sourceNode->windows.push_back(wnd);
 				wnd->dockNode = sourceNode;
 				sourceNode->parent = targetParent;
-				sourceNode->osWindow = targetParent->osWindow;
+				sourceNode->nativeWindow = targetParent->nativeWindow;
 				sourceNode->type = DockNode::Type::Tabs;
 				sourceNode->rect = wndRect;
 			}
@@ -683,12 +1297,12 @@ bool dockWindow(Window* wnd, DockNode* targetNode, DockType dockType, u32 tabInd
 				target = newTarget;
 			}
 
-			// if there is just one window in the source node, move the node also and remove from current parent
+			// if there is just one nativeWindow in the source node, move the node also and remove from current parent
 			if (source && source->windows.size() == 1)
 			{
 				source->removeFromParent();
 				source->parent = targetParent;
-				source->osWindow = targetParent->osWindow;
+				source->nativeWindow = targetParent->nativeWindow;
 
 				// treat docking to root node
 				if (targetParent != target && target)
@@ -709,7 +1323,7 @@ bool dockWindow(Window* wnd, DockNode* targetNode, DockType dockType, u32 tabInd
 				sourceNode = source;
 			}
 			else
-			// we create a new node to hold the window
+			// we create a new node to hold the nativeWindow
 			{
 				auto wndRect = wnd->dockNode ? wnd->dockNode->rect : Rect();
 				if (sourceIsTarget) target->removeWindow(wnd);
@@ -719,7 +1333,7 @@ bool dockWindow(Window* wnd, DockNode* targetNode, DockType dockType, u32 tabInd
 				wnd->dockNode = newNode;
 				newNode->parent = targetParent;
 				newNode->type = DockNode::Type::Tabs;
-				newNode->osWindow = target ? target->osWindow : nullptr;
+				newNode->nativeWindow = target ? target->nativeWindow : nullptr;
 				newNode->rect = wndRect;
 
 				auto iter = std::find(targetParent->children.begin(), targetParent->children.end(), target);
@@ -747,27 +1361,27 @@ bool dockWindow(Window* wnd, DockNode* targetNode, DockType dockType, u32 tabInd
 		}
 		else if (targetParent->type == DockNode::Type::Horizontal)
 		{
-			// if source has one window, remove source from its parent
+			// if source has one nativeWindow, remove source from its parent
 			// and just relocate to target parent node
 			if (source && source->windows.size() == 1)
 			{
 				source->removeFromParent();
 				source->parent = targetParent;
-				source->osWindow = targetParent->osWindow;
+				source->nativeWindow = targetParent->nativeWindow;
 				sourceNode = source;
 			}
 			else
 			{
 				auto wndRect = wnd->dockNode ? wnd->dockNode->rect : Rect();
 				if (sourceIsTarget) target->removeWindow(wnd);
-				// remove the window from parent node
+				// remove the nativeWindow from parent node
 				if (source) source->removeWindow(wnd);
-				// create new node for the window
+				// create new node for the nativeWindow
 				sourceNode = new DockNode();
 				sourceNode->windows.push_back(wnd);
 				wnd->dockNode = sourceNode;
 				sourceNode->parent = targetParent;
-				sourceNode->osWindow = targetParent->osWindow;
+				sourceNode->nativeWindow = targetParent->nativeWindow;
 				sourceNode->type = DockNode::Type::Tabs;
 				sourceNode->rect = wndRect;
 			}
@@ -843,7 +1457,7 @@ bool dockWindow(Window* wnd, DockNode* targetNode, DockType dockType, u32 tabInd
 		target->type = DockNode::Type::Tabs;
 		target->selectedTabIndex = tabIndex;
 
-		// if we only have a window in the source node, delete the node
+		// if we only have a nativeWindow in the source node, delete the node
 		if (source && source->windows.size() == 1)
 		{
 			source->removeFromParent();
@@ -864,9 +1478,9 @@ bool dockWindow(Window* wnd, DockNode* targetNode, DockType dockType, u32 tabInd
 	{
 		if (source)
 		{
-			if (source->windows.size() == 1 && source->osWindow && !source->parent)
+			if (source->windows.size() == 1 && source->nativeWindow && !source->parent)
 			{
-				// already a floating single window, skip
+				// already a floating single nativeWindow, skip
 				return true;
 			}
 
@@ -889,9 +1503,9 @@ bool dockWindow(Window* wnd, DockNode* targetNode, DockType dockType, u32 tabInd
 			rcWnd.y = undockedWindowPos->y;
 		}
 
-		auto osWnd = createOsWindow(wnd->title, OsWindowFlags::NoTaskBar | OsWindowFlags::Resizable, OsWindowState::Normal, rcWnd);
+		auto nativeWnd = createNativeWindow(wnd->title, NativeWindowFlags::NoTaskBar | NativeWindowFlags::Resizable, NativeWindowState::Normal, rcWnd);
 				
-		wnd->dockNode = createOsWindowRootDockNode(osWnd);
+		wnd->dockNode = createNativeWindowRootDockNode(nativeWnd);
 		wnd->dockNode->windows.push_back(wnd);
 		wnd->clientRect = wnd->dockNode->rect;
 
@@ -903,11 +1517,11 @@ bool dockWindow(Window* wnd, DockNode* targetNode, DockType dockType, u32 tabInd
 
 	ctx->dockingState.focusedWindow = wnd;
 
-	for (auto& pair : ctx->dockingState.rootOsWindowDockNodes)
+	for (auto& pair : ctx->dockingState.rootNativeWindowDockNodes)
 	{
 		auto node = pair.second;
 
-		if (node->osWindow)
+		if (node->nativeWindow)
 		{
 			node->checkRedundancy();
 			node->computeRect();
@@ -940,7 +1554,7 @@ void dockNodeTabs(DockNode* node)
 
 	ctx->dockingState.drawingWindowTabs = true;
 
-	auto& rc = ctx->dockingState.rootOsWindowDockNodes[node->osWindow]->rect;
+	auto& rc = ctx->dockingState.rootNativeWindowDockNodes[node->nativeWindow]->rect;
 	ctx->renderer->pushClipRect(rc, false);
 	beginTabGroup(node->selectedTabIndex);
 
@@ -983,11 +1597,11 @@ void dockNodeTabs(DockNode* node)
 
 		if (node->windows.empty())
 		{
-			// this is an empty root dock node, destroy and close OS window too
+			// this is an empty root dock node, destroy and close OS nativeWindow too
 			if (!node->parent)
 			{
 				ctx->dockingState.dockNodesToDelete.insert(node);
-				ctx->dockingState.osWindowsToDelete.insert(node->osWindow);
+				ctx->dockingState.nativeWindowsToDelete.insert(node->nativeWindow);
 			}
 			else
 			{
@@ -1064,7 +1678,7 @@ std::string enumTypeToStr(DockNode::Type type)
 void printInfo(int level, DockNode* node)
 {
 	std::string spaces(level, '\t');
-	printf("%snode: %p osWnd: %p parent: %p type: %s rc: %0.0f %0.0f %0.0f %0.0f\n", spaces.c_str(), node, node->osWindow, node->parent, enumTypeToStr(node->type).c_str(), node->rect.x, node->rect.y, node->rect.width, node->rect.height);
+	printf("%snode: %p nativeWindow: %p parent: %p type: %s rc: %0.0f %0.0f %0.0f %0.0f\n", spaces.c_str(), node, node->nativeWindow, node->parent, enumTypeToStr(node->type).c_str(), node->rect.x, node->rect.y, node->rect.width, node->rect.height);
 
 	for (auto& w : node->windows)
 	{
@@ -1081,12 +1695,795 @@ void debugWindows()
 {
 	printf("------------------------------------------------------------------------------------------------------------\n");
 	printf("Debug windows:\n\n");
-	printf("%d windows\n", (u32)ctx->dockingState.rootOsWindowDockNodes.size());
+	printf("%d windows\n", (u32)ctx->dockingState.rootNativeWindowDockNodes.size());
 
-	for (auto& pair : ctx->dockingState.rootOsWindowDockNodes)
+	for (auto& pair : ctx->dockingState.rootNativeWindowDockNodes)
 	{
 		printInfo(0, pair.second);
 	}
+}
+
+void handleDockingMouseDown(const InputEvent& event, DockNode* node)
+{
+	if (event.mouse.button != MouseButton::Left)
+		return;
+
+	auto& ds = ctx->dockingState;
+	const Point& mousePos = ctx->mousePosition;
+
+	ds.lastMousePosSinceMouseDown = mousePos;
+	ds.lastMousePos = mousePos;
+	ds.resizingNode = node->findResizeDockNode(mousePos);
+	ds.dragWindow = nullptr;
+	ds.draggingStarted = false;
+
+	//TODO: we could check just the tabs of the current os window clicked on
+	for (auto& wnd : ds.windows)
+	{
+		if (wnd.second->dockNode->nativeWindow != event.window)
+			continue;
+
+		if (wnd.second->clientRect.contains(mousePos) && wnd.second->dockNode->selectedTabIndex == wnd.second->dockNode->getWindowIndex(wnd.second))
+		{
+			ds.focusedWindow = wnd.second;
+		}
+
+		// return if the widget is not visible, that is outside current clip rect
+		if (wnd.second->tabRect.outside(wnd.second->dockNode->rect))
+		{
+			continue;
+		}
+
+		Rect clippedRect = wnd.second->tabRect.clipInside(wnd.second->dockNode->rect);
+
+		if (clippedRect.contains(mousePos.x, mousePos.y))
+		{
+			ds.dragWindow = wnd.second;
+			ds.focusedWindow = wnd.second;
+			break;
+		}
+	}
+}
+
+void handleDockingMouseUp()
+{
+	auto& ds = ctx->dockingState;
+
+	if (ds.dragWindow)
+	{
+		ds.dragWindow->dockingNow = false;
+	}
+
+	if (ds.dragWindow && ds.draggingStarted && ds.hoveredNode)
+	{
+		u32 tabIndex = 0;
+
+		if (ds.dockType == DockType::AsTab && ds.dockToNode != ds.dragWindow->dockNode)
+		{
+			tabIndex = ds.dockToNode->dockingTabSpaceIndex;
+
+			if (tabIndex == ~0)
+				tabIndex = ds.dockToNode->windows.size();
+		}
+
+		if (ds.dockType == DockType::AsTab && ds.dockToNode && ds.dockToNode == ds.dragWindow->dockNode)
+		{
+			ds.dragWindow->dockNode->selectedTabIndex = ds.dockToNode->dockingTabSpaceIndex;
+		}
+
+		if (ds.dockToNode && ds.dockToNode->windows.size() == 1)
+		{
+			ds.dockToNode->selectedTabIndex = 0;
+		}
+
+		if (ds.dockToNode)
+			ds.dockToNode->removeTabSpace();
+
+		ds.dragWindow->dockNode->selectedTabIndex = 0;
+		dockWindow(ds.dragWindow, ds.dockToNode, ds.dockType, tabIndex);
+		ds.dragWindow = nullptr;
+		ds.dockToNode = nullptr;
+
+		hui::forceRepaint();
+	}
+	// we undock to a new native window
+	else if (ds.dragWindow && ds.draggingStarted)
+	{
+		ds.dragWindow->dockingNow = false;
+		ds.dragWindow->dockNode->removeTabSpace();
+
+		// undock the window if there is more than one in the dock node
+		// and if the dock node is not a root node of the window
+		if (ctx->settings.dockAllowUndockingToNewNativeWindow)
+		{
+			auto& rc = ds.dragWindow->dockNode->rect;
+
+			// we use the current screen mouse pos to undock the window to
+			Point pt = HORUS_INPUT->getAbsoluteMousePosition();
+			// put the window in the middle of the mouse X coordinate
+			pt.x -= rc.width / 2.0f;
+			undockWindow(ds.dragWindow->id.c_str(), pt);
+		}
+
+		hui::forceRepaint();
+	}
+
+	if (ds.dragIndicatorNativeWindow)
+	{
+		HORUS_INPUT->destroyWindow(ds.dragIndicatorNativeWindow);
+		ds.dragIndicatorNativeWindow = nullptr;
+	}
+
+	ds.dockToNode = nullptr;
+	ds.dragWindow = nullptr;
+	ds.resizingNode = nullptr;
+}
+
+void handleDockNodeResize(DockNode* node)
+{
+	auto& ds = ctx->dockingState;
+	auto& mousePos = ctx->mousePosition;
+	DockNode* hoveredResizingNode = nullptr;
+
+	if (!ds.dragWindow)
+	{
+		hoveredResizingNode = node->findResizeDockNode(ctx->mousePosition);
+	}
+
+	if (ds.resizingNode || (hoveredResizingNode && hoveredResizingNode->parent))
+	{
+		DockNode::Type nodeType = DockNode::Type::None;
+
+		if (ds.resizingNode)
+			nodeType = ds.resizingNode->parent->type;
+		else
+			if (hoveredResizingNode) nodeType = hoveredResizingNode->parent->type;
+
+		switch (nodeType)
+		{
+		case DockNode::Type::Horizontal:
+		{
+			ctx->mouseCursor = MouseCursorType::SizeWE;
+			break;
+		}
+		case DockNode::Type::Vertical:
+		{
+			ctx->mouseCursor = MouseCursorType::SizeNS;
+			break;
+		}
+		default:
+			break;
+		}
+	}
+
+	if (ds.resizingNode && ds.resizingNode->parent)
+	{
+		switch (ds.resizingNode->parent->type)
+		{
+		case DockNode::Type::Vertical:
+		{
+			f32 pushAmount = 0;
+
+			// moving up
+			if (ds.mouseDragDelta.y < 0)
+			{
+				auto iterPrev = ds.resizingNode->parent->findPrevSiblingOf(ds.resizingNode);
+
+				ds.resizingNode->computeMinSize();
+
+				if (mousePos.y < ds.resizingNode->rect.bottom())
+					ds.resizingNode->rect.height += ds.mouseDragDelta.y;
+
+				if (ds.resizingNode->rect.height < ds.resizingNode->minSize.y)
+				{
+					pushAmount = ds.mouseDragDelta.y;
+
+					// dont push y if first node
+					if (ds.resizingNode->parent->children[0] != ds.resizingNode)
+						ds.resizingNode->rect.y += pushAmount;
+
+					ds.resizingNode->rect.height = ds.resizingNode->minSize.y;
+				}
+
+				while (iterPrev != ds.resizingNode->parent->children.rend())
+				{
+					(*iterPrev)->computeMinSize();
+					auto iterNext = ds.resizingNode->parent->findNextSiblingOf(*iterPrev);
+
+					(*iterPrev)->rect.height = (*iterNext)->rect.y - (*iterPrev)->rect.y - ctx->settings.dockNodeSpacing;
+
+					if (*iterPrev != ds.resizingNode->parent->children[0]
+						&& (*iterPrev)->rect.height <= (*iterPrev)->minSize.y)
+					{
+						(*iterPrev)->rect.y += pushAmount;
+						(*iterPrev)->rect.height = (*iterPrev)->minSize.y;
+					}
+					else
+					{
+						// if first one, stop all from moving if its min size
+						if (*iterPrev == ds.resizingNode->parent->children[0]
+							&& (*iterPrev)->rect.height < (*iterPrev)->minSize.y)
+						{
+							auto iter = ds.resizingNode->parent->children.begin();
+							auto crtY = (*iter)->rect.y;
+							auto iterLast = ds.resizingNode->parent->getIteratorOf(ds.resizingNode);
+							++iterLast; // need to advance to next
+
+							while (true)
+							{
+								(*iter)->rect.y = crtY;
+								(*iter)->rect.height = (*iter)->minSize.y;
+								(*iter)->computeRect();
+								++iter;
+								if (iter == iterLast) break;
+								crtY += (*iter)->minSize.y + ctx->settings.dockNodeSpacing;
+							};
+						}
+						(*iterPrev)->computeRect();
+						break;
+					}
+
+					(*iterPrev)->computeRect();
+					++iterPrev;
+				}
+
+				// resize node height after the resizing one
+				{
+					auto iterNext = ds.resizingNode->parent->findNextSiblingOf(ds.resizingNode);
+					auto oldBottom = (*iterNext)->rect.bottom();
+
+					(*iterNext)->rect.y = ds.resizingNode->rect.bottom() + ctx->settings.dockNodeSpacing;
+					(*iterNext)->rect.height = oldBottom - (*iterNext)->rect.y;
+					(*iterNext)->computeRect();
+				}
+			}
+
+			// moving down
+			if (ds.mouseDragDelta.y > 0)
+			{
+				auto iterNext = ds.resizingNode->parent->findNextSiblingOf(ds.resizingNode);
+
+				ds.resizingNode->computeMinSize();
+
+				if (mousePos.y > ds.resizingNode->rect.bottom())
+				{
+					ds.resizingNode->rect.height += ds.mouseDragDelta.y;
+					pushAmount = ds.mouseDragDelta.y;
+				}
+
+				auto prevNode = ds.resizingNode;
+
+				while (iterNext != ds.resizingNode->parent->children.end())
+				{
+					(*iterNext)->computeMinSize();
+					auto bottom = (*iterNext)->rect.bottom();
+					(*iterNext)->rect.y = prevNode->rect.bottom() + ctx->settings.dockNodeSpacing;
+					(*iterNext)->rect.height = bottom - (*iterNext)->rect.y;
+					prevNode = (*iterNext);
+
+					if (*iterNext != ds.resizingNode->parent->children.back()
+						&& (*iterNext)->rect.height < (*iterNext)->minSize.y)
+					{
+						(*iterNext)->rect.height = (*iterNext)->minSize.y;
+					}
+					else
+					{
+						// if last one, stop all from moving if min size
+						if (*iterNext == ds.resizingNode->parent->children.back()
+							&& (*iterNext)->rect.height < (*iterNext)->minSize.y)
+						{
+							auto iter = ds.resizingNode->parent->children.rbegin();
+							auto crtY = (*iterNext)->parent->rect.bottom() - (*iterNext)->minSize.y;
+							auto iterLast = ds.resizingNode->parent->getReverseIteratorOf(ds.resizingNode);
+
+							while (true)
+							{
+								(*iter)->computeMinSize();
+								(*iter)->rect.y = crtY;
+								(*iter)->rect.height = (*iter)->minSize.y;
+								(*iter)->computeRect();
+								++iter;
+								if (iter == iterLast) break;
+								crtY -= (*iter)->minSize.y + ctx->settings.dockNodeSpacing;
+							};
+
+							auto iterNext2 = ds.resizingNode->parent->findNextSiblingOf(ds.resizingNode);
+
+							ds.resizingNode->rect.height = (*iterNext2)->rect.y - ds.resizingNode->rect.y - ctx->settings.dockNodeSpacing;
+
+						}
+
+						(*iterNext)->computeRect();
+						break;
+					}
+
+					(*iterNext)->computeRect();
+					++iterNext;
+				}
+			}
+
+			break;
+		}
+		case DockNode::Type::Horizontal:
+		{
+			f32 pushAmount = 0;
+
+			// moving left
+			if (ds.mouseDragDelta.x < 0)
+			{
+				auto iterPrev = ds.resizingNode->parent->findPrevSiblingOf(ds.resizingNode);
+
+				ds.resizingNode->computeMinSize();
+
+				if (mousePos.x < ds.resizingNode->rect.right())
+					ds.resizingNode->rect.width += ds.mouseDragDelta.x;
+
+				if (ds.resizingNode->rect.width < ds.resizingNode->minSize.x)
+				{
+					pushAmount = ds.mouseDragDelta.x;
+
+					// dont push x if first node
+					if (ds.resizingNode->parent->children[0] != ds.resizingNode)
+						ds.resizingNode->rect.x += pushAmount;
+
+					ds.resizingNode->rect.width = ds.resizingNode->minSize.x;
+				}
+
+				while (iterPrev != ds.resizingNode->parent->children.rend())
+				{
+					(*iterPrev)->computeMinSize();
+					auto iterNext = ds.resizingNode->parent->findNextSiblingOf(*iterPrev);
+
+					(*iterPrev)->rect.width = (*iterNext)->rect.x - (*iterPrev)->rect.x - ctx->settings.dockNodeSpacing;
+
+					if (*iterPrev != ds.resizingNode->parent->children[0]
+						&& (*iterPrev)->rect.width <= (*iterPrev)->minSize.x)
+					{
+						(*iterPrev)->rect.x += pushAmount;
+						(*iterPrev)->rect.width = (*iterPrev)->minSize.x;
+					}
+					else
+					{
+						// if first one, stop all from moving if its min size
+						if (*iterPrev == ds.resizingNode->parent->children[0]
+							&& (*iterPrev)->rect.width < (*iterPrev)->minSize.x)
+						{
+							auto iter = ds.resizingNode->parent->children.begin();
+							auto crtX = (*iter)->rect.x;
+							auto iterLast = ds.resizingNode->parent->getIteratorOf(ds.resizingNode);
+							++iterLast; // need to advance to next
+
+							while (true)
+							{
+								(*iter)->rect.x = crtX;
+								(*iter)->rect.width = (*iter)->minSize.x;
+								(*iter)->computeRect();
+								++iter;
+								if (iter == iterLast) break;
+								crtX += (*iter)->minSize.x + ctx->settings.dockNodeSpacing;
+							};
+						}
+						(*iterPrev)->computeRect();
+						break;
+					}
+
+					(*iterPrev)->computeRect();
+					++iterPrev;
+				}
+
+				// resize node width after the resizing one
+				{
+					auto iterNext = ds.resizingNode->parent->findNextSiblingOf(ds.resizingNode);
+					auto oldRight = (*iterNext)->rect.right();
+
+					(*iterNext)->rect.x = ds.resizingNode->rect.right() + ctx->settings.dockNodeSpacing;
+					(*iterNext)->rect.width = oldRight - (*iterNext)->rect.x;
+					(*iterNext)->computeRect();
+				}
+			}
+
+			// moving right
+			if (ds.mouseDragDelta.x > 0)
+			{
+				auto iterNext = ds.resizingNode->parent->findNextSiblingOf(ds.resizingNode);
+
+				ds.resizingNode->computeMinSize();
+
+				if (mousePos.x > ds.resizingNode->rect.right())
+				{
+					ds.resizingNode->rect.width += ds.mouseDragDelta.x;
+					pushAmount = ds.mouseDragDelta.x;
+				}
+
+				auto prevNode = ds.resizingNode;
+
+				while (iterNext != ds.resizingNode->parent->children.end())
+				{
+					(*iterNext)->computeMinSize();
+					auto right = (*iterNext)->rect.right();
+					(*iterNext)->rect.x = prevNode->rect.right() + ctx->settings.dockNodeSpacing;
+					(*iterNext)->rect.width = right - (*iterNext)->rect.x;
+
+					prevNode = (*iterNext);
+
+					if (*iterNext != ds.resizingNode->parent->children.back()
+						&& (*iterNext)->rect.width < (*iterNext)->minSize.x)
+					{
+						(*iterNext)->rect.width = (*iterNext)->minSize.x;
+					}
+					else
+					{
+						// if last one, stop all from moving if min size
+						if (*iterNext == ds.resizingNode->parent->children.back()
+							&& (*iterNext)->rect.width < (*iterNext)->minSize.x)
+						{
+							auto iter = ds.resizingNode->parent->children.rbegin();
+							auto crtX = (*iterNext)->parent->rect.right() - (*iterNext)->minSize.x;
+							auto iterLast = ds.resizingNode->parent->getReverseIteratorOf(ds.resizingNode);
+
+							while (true)
+							{
+								(*iter)->computeMinSize();
+								(*iter)->rect.x = crtX;
+								(*iter)->rect.width = (*iter)->minSize.x;
+								(*iter)->computeRect();
+								++iter;
+								if (iter == iterLast) break;
+								crtX -= (*iter)->minSize.x + ctx->settings.dockNodeSpacing;
+							};
+
+							auto iterNext2 = ds.resizingNode->parent->findNextSiblingOf(ds.resizingNode);
+
+							ds.resizingNode->rect.width = (*iterNext2)->rect.x - ds.resizingNode->rect.x - ctx->settings.dockNodeSpacing;
+
+						}
+						(*iterNext)->computeRect();
+						break;
+					}
+
+					(*iterNext)->computeRect();
+					++iterNext;
+				}
+			}
+
+			break;
+		}
+		}
+
+		ds.resizingNode->computeRect();
+	}
+}
+
+void handleDockingMouseMove(const InputEvent& event, DockNode* node)
+{
+	auto& ds = ctx->dockingState;
+
+	if (ds.dragWindow && ds.draggingStarted)
+	{
+		auto& tabGroupElem = ctx->theme->getElement(WidgetElementId::TabGroupBody);
+		const Point mousePos = ctx->mousePosition;
+
+		if (ctx->lastHoveredNativeWindow == node->nativeWindow)
+			ds.hoveredNode = node->findTargetDockNode(mousePos);
+
+		bool isSameNode = ds.hoveredNode == ds.dragWindow->dockNode;
+		bool isSingleWindow = ds.dragWindow->dockNode && ds.dragWindow->dockNode->windows.size() == 1;
+
+		auto rootNode = node;
+		auto& rootRect = rootNode->rect;
+		auto parentRect = ds.hoveredNode ? ds.hoveredNode->rect : rootRect;
+		Rect hitBoxLeft;
+		Rect hitBoxRight;
+		Rect hitBoxTop;
+		Rect hitBoxBottom;
+		Rect hitBoxTabs;
+		Rect hitBoxRootLeft;
+		Rect hitBoxRootRight;
+		Rect hitBoxRootTop;
+		Rect hitBoxRootBottom;
+
+		// do check hit tests only if this is the hovered window
+		if (ds.hoveredNode && ctx->lastHoveredNativeWindow == node->nativeWindow)
+		{
+			hitBoxLeft = parentRect;
+			hitBoxRight = parentRect;
+			hitBoxTop = parentRect;
+			hitBoxBottom = parentRect;
+			hitBoxTabs = parentRect;
+
+			hitBoxLeft.width *= ctx->settings.dockNodeDockingSizeRatio * ctx->settings.dockNodeDockingHitSizeRatio;
+
+			hitBoxRight.x += parentRect.width * (1.0f - ctx->settings.dockNodeDockingSizeRatio * ctx->settings.dockNodeDockingHitSizeRatio);
+			hitBoxRight.width *= ctx->settings.dockNodeDockingSizeRatio * ctx->settings.dockNodeDockingHitSizeRatio;
+
+			hitBoxTop.height *= ctx->settings.dockNodeDockingSizeRatio * ctx->settings.dockNodeDockingHitSizeRatio;
+
+			hitBoxBottom.y += parentRect.height * (1.0f - ctx->settings.dockNodeDockingSizeRatio * ctx->settings.dockNodeDockingHitSizeRatio);
+			hitBoxBottom.height *= ctx->settings.dockNodeDockingSizeRatio * ctx->settings.dockNodeDockingHitSizeRatio;
+
+			hitBoxTabs.height = tabGroupElem.normalState().height * 2.0f;
+
+			hitBoxRootLeft = rootNode->rect;
+			hitBoxRootRight = rootNode->rect;
+			hitBoxRootTop = rootNode->rect;
+			hitBoxRootBottom = rootNode->rect;
+
+			hitBoxRootLeft.width = ctx->settings.dockNodeRootDockingHitSize;
+
+			hitBoxRootRight.x = rootNode->rect.right() - ctx->settings.dockNodeRootDockingHitSize;
+			hitBoxRootRight.width = ctx->settings.dockNodeRootDockingHitSize;
+
+			hitBoxRootTop.height = ctx->settings.dockNodeRootDockingHitSize;
+			hitBoxRootTop.y -= 40;
+
+			hitBoxRootBottom.y = rootNode->rect.bottom() - ctx->settings.dockNodeRootDockingHitSize;
+			hitBoxRootBottom.height = ctx->settings.dockNodeRootDockingHitSize + 40;
+
+			auto isHitBoxLeftHovered = hitBoxLeft.contains(mousePos);
+			auto isHitBoxRightHovered = hitBoxRight.contains(mousePos);
+			auto isHitBoxTopHovered = hitBoxTop.contains(mousePos);
+			auto isHitBoxBottomHovered = hitBoxBottom.contains(mousePos);
+			auto isHitBoxTabsHovered = hitBoxTabs.contains(mousePos);
+
+			auto isHitBoxRootLeftHovered = hitBoxRootLeft.contains(mousePos);
+			auto isHitBoxRootRightHovered = hitBoxRootRight.contains(mousePos);
+			auto isHitBoxRootTopHovered = hitBoxRootTop.contains(mousePos);
+			auto isHitBoxRootBottomHovered = hitBoxRootBottom.contains(mousePos);
+
+			if (isHitBoxLeftHovered)
+			{
+				ds.dockToNode = ds.hoveredNode;
+				ds.dockType = DockType::Left;
+				ds.draggedRect = parentRect;
+				ds.draggedRect.width *= ctx->settings.dockNodeDockingSizeRatio;
+			}
+
+			if (isHitBoxRightHovered)
+			{
+				ds.dockToNode = ds.hoveredNode;
+				ds.dockType = DockType::Right;
+				ds.draggedRect = parentRect;
+				ds.draggedRect.x += ds.draggedRect.width * (1.0f - ctx->settings.dockNodeDockingSizeRatio);
+				ds.draggedRect.width *= ctx->settings.dockNodeDockingSizeRatio;
+			}
+
+			if (isHitBoxTopHovered)
+			{
+				ds.dockToNode = ds.hoveredNode;
+				ds.dockType = DockType::Top;
+				ds.draggedRect = parentRect;
+				ds.draggedRect.height *= ctx->settings.dockNodeDockingSizeRatio;
+			}
+
+			if (isHitBoxBottomHovered)
+			{
+				ds.dockToNode = ds.hoveredNode;
+				ds.dockType = DockType::Bottom;
+				ds.draggedRect = parentRect;
+				ds.draggedRect.y += floorf(ds.draggedRect.height * (1.0f - ctx->settings.dockNodeDockingSizeRatio));
+				ds.draggedRect.height *= ctx->settings.dockNodeDockingSizeRatio;
+			}
+
+			if (isHitBoxRootLeftHovered)
+			{
+				ds.dockToNode = rootNode;
+				ds.dockType = DockType::Left;
+				ds.draggedRect = ds.dockToNode->rect;
+				ds.draggedRect.width *= ctx->settings.dockNodeDockingSizeRatio;
+			}
+
+			if (isHitBoxRootRightHovered)
+			{
+				ds.dockToNode = rootNode;
+				ds.dockType = DockType::Right;
+				ds.draggedRect = ds.dockToNode->rect;
+				ds.draggedRect.x += ds.draggedRect.width * (1.0f - ctx->settings.dockNodeDockingSizeRatio);
+				ds.draggedRect.width *= ctx->settings.dockNodeDockingSizeRatio;
+			}
+
+			if (isHitBoxRootTopHovered)
+			{
+				ds.dockToNode = rootNode;
+				ds.dockType = DockType::Top;
+				ds.draggedRect = ds.dockToNode->rect;
+				ds.draggedRect.height *= ctx->settings.dockNodeDockingSizeRatio;
+			}
+
+			if (isHitBoxRootBottomHovered)
+			{
+				ds.dockToNode = rootNode;
+				ds.dockType = DockType::Bottom;
+				ds.draggedRect = ds.dockToNode->rect;
+				ds.draggedRect.y += floorf(ds.draggedRect.height * (1.0f - ctx->settings.dockNodeDockingSizeRatio));
+				ds.draggedRect.height *= ctx->settings.dockNodeDockingSizeRatio;
+			}
+
+			if (isHitBoxTabsHovered)
+			{
+				ds.dockToNode = ds.hoveredNode;
+				ds.dockType = DockType::AsTab;
+				ds.draggedRect = parentRect;
+				ds.draggedRect.x = mousePos.x;
+				ds.draggedRect.width = ds.dragWindow->tabRect.width;
+				ds.draggedRect.height = tabGroupElem.normalState().height;
+
+				if (isSameNode)
+				{
+					if (ds.hoveredNode->windows.size() > 1)
+						ds.hoveredNode->moveWindowTabAt(mousePos, ds.dragWindow);
+				}
+				else
+				{
+					ds.hoveredNode->insertTabSpaceAt(mousePos, ds.dragWindow->tabRect.width);
+				}
+			}
+
+			// we've started to drag the window, so prepare objects and state
+			if (!ds.dragIndicatorNativeWindow)
+			{
+				Rect screenRect;
+
+				Point wndPos = HORUS_INPUT->getWindowPosition(ctx->lastHoveredNativeWindow);
+
+				screenRect = ds.draggedRect + wndPos;
+
+				ds.dragIndicatorNativeWindow = HORUS_INPUT->createWindow(ds.dragWindow->title.c_str(), NativeWindowFlags::NoInput | NativeWindowFlags::NoDecoration | NativeWindowFlags::Resizable, NativeWindowState::Normal, screenRect);
+
+				ds.dragWindow->dockingNow = true;
+			}
+		}
+	}
+
+	handleDockNodeResize(node);
+}
+
+void handleDockNodeEvents(DockNode* node)
+{
+	auto& rect = node->rect;
+	auto& event = hui::getInputEvent();
+
+	//TODO: find current window index better
+	// find if the current window of the view pane had a layer index > 0
+	// if so, then we must be having popups or menus
+	if (ctx->maxLayerIndex)
+	{
+		// node is disabled for input
+		return;
+	}
+
+	// is the event for this window ?
+	if (ctx->lastHoveredNativeWindow == node->nativeWindow)
+	{
+		if (event.type == InputEvent::Type::MouseDown)
+			handleDockingMouseDown(event, node);
+	};
+
+	handleDockingMouseMove(event, node);
+}
+
+void updateDockingSystem()
+{
+	auto copyOfRootNativeWindowDockNodes = ctx->dockingState.rootNativeWindowDockNodes;
+	auto& ds = ctx->dockingState;
+	const auto& mousePos = ctx->mousePosition;
+
+	ds.draggingStarted = fabs(ds.lastMousePosSinceMouseDown.x - mousePos.x) > ctx->settings.dragStartDistance || abs(ds.lastMousePosSinceMouseDown.y - mousePos.y) > ctx->settings.dragStartDistance;
+	ds.mouseDragDelta = mousePos - ds.lastMousePos;
+
+	auto screenMousePos = HORUS_INPUT->getAbsoluteMousePosition();
+
+	ds.dockToNode = nullptr;
+	ds.hoveredNode = nullptr;
+	ds.dockType = DockType::Floating;
+
+	for (auto& wnd : copyOfRootNativeWindowDockNodes)
+	{
+		handleDockNodeEvents(wnd.second);
+	}
+
+	if (!ctx->lastHoveredNativeWindow && !HORUS_INPUT->isMouseButtonDownNow(MouseButton::Left) && ds.dragWindow)
+	{
+		ctx->event.type = InputEvent::Type::MouseUp;
+	}
+
+	if (ctx->event.type == InputEvent::Type::MouseUp)
+	{
+		handleDockingMouseUp();
+	}
+
+	Rect screenRect;
+
+	if (ds.dockType != DockType::AsTab)
+	{
+		if (ds.hoveredNode) ds.hoveredNode->removeTabSpace();
+	}
+
+	screenRect = ds.draggedRect;
+
+	if (ds.dragIndicatorNativeWindow && ds.dragWindow)
+	{
+		// if we try to dock on dock nodes sides
+		if (ctx->lastHoveredNativeWindow
+			&& ds.dockType != DockType::None
+			&& ds.dockType != DockType::Floating
+			&& ds.hoveredNode)
+		{
+			auto pos = HORUS_INPUT->getWindowPosition(ds.hoveredNode->nativeWindow);
+
+			screenRect = ds.draggedRect;
+			screenRect += pos;
+
+			if (ds.dockType == DockType::AsTab)
+			{
+				screenRect.x -= 32;
+			}
+		}
+		else
+		{
+			// resize window as floating window
+			auto mousePosAbs = HORUS_INPUT->getAbsoluteMousePosition();
+			screenRect = ds.dragWindow->dockNode->rect;
+			screenRect *= 0.6f; // scale back a bit from original size
+			screenRect.x = mousePosAbs.x - screenRect.width / 2;
+			screenRect.y = mousePosAbs.y - screenRect.height / 2;
+		}
+		ds.dockType = DockType::Floating;
+		HORUS_INPUT->setWindowRect(ds.dragIndicatorNativeWindow, screenRect);
+	}
+
+	if (ctx->dockingState.dragIndicatorNativeWindow && ds.dragWindow)
+	{
+		auto rc = screenRect;
+
+		HORUS_INPUT->setCurrentWindow(ds.dragIndicatorNativeWindow);
+		ctx->renderer->disableRendering = false;
+		ctx->renderer->setCurrentNativeWindow(ds.dragIndicatorNativeWindow);
+		ctx->renderer->setWindowSize(rc.getSize());
+		ctx->renderer->begin();
+		rc.x = 0;
+		rc.y = 0;
+		ctx->renderer->pushClipRect(rc, false);
+
+		auto& windowElem = ctx->theme->getElement(WidgetElementId::WindowBody).normalState();
+		auto wndRect = Rect{ rc.x, rc.y, rc.width, rc.height };
+
+		ctx->renderer->cmdSetColor(windowElem.color);
+		ctx->renderer->cmdDrawImageBordered(windowElem.image, windowElem.border, wndRect, ctx->globalScale);
+		ctx->penPosition.set(0, 0);
+		pushLayoutPadding(0);
+		beginContainer(rc);
+		beginTabGroup(0);
+		hui::tab(ds.dragWindow->title.c_str(), ds.dragWindow->icon);
+		endTabGroup();
+		endContainer();
+		popLayoutPadding();
+		ctx->renderer->popClipRect();
+		ctx->renderer->end();
+		ctx->renderer->executeDrawCommands(ds.dragIndicatorNativeWindow);
+		HORUS_INPUT->presentWindow(ds.dragIndicatorNativeWindow);
+	}
+
+	if (ctx->event.type == InputEvent::Type::WindowResized || ctx->event.type == InputEvent::Type::WindowMoved)
+	{
+		for (auto& pair : ctx->dockingState.rootNativeWindowDockNodes)
+		{
+			pair.second->computeRect();
+		}
+	}
+
+	if (ctx->event.type == InputEvent::Type::WindowClose)
+	{
+		auto node = ctx->dockingState.rootNativeWindowDockNodes[ctx->event.window];
+
+		if (node)
+		{
+			node->removeWindowsAndDeleteChildrenRecursive();
+		}
+
+		ctx->dockingState.nativeWindowsToDelete.insert(ctx->event.window);
+	}
+
+	ds.lastMousePos = mousePos;
 }
 
 }

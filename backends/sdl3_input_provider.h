@@ -28,40 +28,40 @@ struct SdlWindowProxy
 	}
 };
 
-struct Sdl2InputProvider : InputProvider
+struct Sdl3InputProvider : InputProvider
 {
-	Sdl2InputProvider();
-	~Sdl2InputProvider();
-	void startTextInput(HOsWindow window, const Rect& imeRect) override;
+	Sdl3InputProvider();
+	~Sdl3InputProvider();
+	void startTextInput(HNativeWindow window, const Rect& imeRect) override;
 	void stopTextInput() override;
 	bool copyToClipboard(const char* text) override;
 	bool pasteFromClipboard(char* outText, u32 maxTextSize) override;
 	void processEvents() override;
-	void setCurrentWindow(HOsWindow window) override;
-	HOsWindow getCurrentWindow() override;
-	HOsWindow getFocusedWindow() override;
-	HOsWindow getHoveredWindow() override;
-	HOsWindow createWindow(const char* title, OsWindowFlags flags, OsWindowState state, const Rect& rect) override;
-	void setWindowTitle(HOsWindow window, const char* title) override;
-	std::string getWindowTitle(HOsWindow window) override;
-	u32 getWindowDisplayIndex(HOsWindow window) override;
+	void setCurrentWindow(HNativeWindow window) override;
+	HNativeWindow getCurrentWindow() override;
+	HNativeWindow getFocusedWindow() override;
+	HNativeWindow getHoveredWindow() override;
+	HNativeWindow createWindow(const char* title, NativeWindowFlags flags, NativeWindowState state, const Rect& rect) override;
+	void setWindowTitle(HNativeWindow window, const char* title) override;
+	std::string getWindowTitle(HNativeWindow window) override;
+	u32 getWindowDisplayIndex(HNativeWindow window) override;
 	u32 getDisplayCount() const override;
 	DisplayInfo getDisplayInfo(u32 displayIndex) override;
-	void setWindowClientSize(HOsWindow window, const Point& size) override;
-	Point getWindowClientSize(HOsWindow window) override;
-	Rect getWindowRect(HOsWindow window) override;
-	void setWindowRect(HOsWindow window, const Rect& rect) override;
-	void setWindowPosition(HOsWindow window, const Point& pos) override;
-	Point getWindowPosition(HOsWindow window) override;
-	OsWindowState getWindowState(HOsWindow window);
-	void presentWindow(HOsWindow window) override;
-	void destroyWindow(HOsWindow window) override;
-	void showWindow(HOsWindow window) override;
-	void hideWindow(HOsWindow window) override;
-	void raiseWindow(HOsWindow window) override;
-	void maximizeWindow(HOsWindow window) override;
-	void minimizeWindow(HOsWindow window) override;
-	void setCapture(HOsWindow window) override;
+	void setWindowClientSize(HNativeWindow window, const Point& size) override;
+	Point getWindowClientSize(HNativeWindow window) override;
+	Rect getWindowRect(HNativeWindow window) override;
+	void setWindowRect(HNativeWindow window, const Rect& rect) override;
+	void setWindowPosition(HNativeWindow window, const Point& pos) override;
+	Point getWindowPosition(HNativeWindow window) override;
+	NativeWindowState getWindowState(HNativeWindow window);
+	void presentWindow(HNativeWindow window) override;
+	void destroyWindow(HNativeWindow window) override;
+	void showWindow(HNativeWindow window) override;
+	void hideWindow(HNativeWindow window) override;
+	void raiseWindow(HNativeWindow window) override;
+	void maximizeWindow(HNativeWindow window) override;
+	void minimizeWindow(HNativeWindow window) override;
+	void setCapture(HNativeWindow window) override;
 	void releaseCapture() override;
 	Point getAbsoluteMousePosition() override;
 	bool isMouseButtonDownNow(MouseButton button) override;

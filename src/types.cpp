@@ -1,6 +1,5 @@
 #include "types.h"
 #include <cstring>
-#include "dock_node.h"
 
 namespace hui
 {

@@ -4,26 +4,11 @@
 #include "docking.h"
 #include "context.h"
 #include "renderer.h"
-#include "dock_node.h"
+#include "theme.h"
 #include <assert.h>
 
 namespace hui
 {
-
-void dockWindow_DEPRECATED(const char* id, const char* dockTo, DockType dockType)
-{
-	DockNode* dockToNode = nullptr;
-	auto iter = ctx->dockingState.windows.find(dockTo ? dockTo : "");
-	
-	if (dockTo && iter != ctx->dockingState.windows.end())
-	{
-		dockToNode = ctx->dockingState.windows[dockTo]->dockNode;
-	}
-
-	auto wnd = createWindow(id, dockToNode, dockType, "", nullptr, 0, 0);
-	wnd->id = id;
-}
-
 bool beginWindow(const char* id, const char* title, Rect* initialRect, HImage icon)
 {
 	Window* wnd = nullptr;
@@ -63,11 +48,11 @@ bool beginWindow(const char* id, const char* title, Rect* initialRect, HImage ic
 	if (ctx->event.type == InputEvent::Type::WindowClose)
 	{
 		// close the OS window if there is just one window inside
-		if (ctx->event.window == wnd->dockNode->osWindow
+		if (ctx->event.window == wnd->dockNode->nativeWindow
 			&& !wnd->dockNode->parent
 			&& wnd->dockNode->children.empty())
 		{
-			ctx->dockingState.osWindowsToDelete.insert(wnd->dockNode->osWindow);
+			ctx->dockingState.nativeWindowsToDelete.insert(wnd->dockNode->nativeWindow);
 			ctx->dockingState.windowsToDelete.insert(wnd);
 			ctx->dockingState.dockNodesToDelete.insert(wnd->dockNode);
 			ctx->dockingState.closedWindowsRects[id] = wnd->dockNode->rect;
@@ -84,9 +69,9 @@ bool beginWindow(const char* id, const char* title, Rect* initialRect, HImage ic
 	}
 	
 	ctx->currentWindow = wnd;
-	ctx->hoveringThisWindow = wnd->dockNode->osWindow == ctx->lastHoveredOsWindow;
-	ctx->renderer->setOsWindow(wnd->dockNode->osWindow);
-	ctx->renderer->setWindowSize(HORUS_INPUT->getWindowClientSize(wnd->dockNode->osWindow));
+	ctx->hoveringThisWindow = wnd->dockNode->nativeWindow == ctx->lastHoveredNativeWindow;
+	ctx->renderer->setCurrentNativeWindow(wnd->dockNode->nativeWindow);
+	ctx->renderer->setWindowSize(HORUS_INPUT->getWindowClientSize(wnd->dockNode->nativeWindow));
 	ctx->renderer->begin();
 	auto rc = wnd->clientRect;
 
@@ -111,7 +96,7 @@ void endWindow()
 	//TODO: make scroll struct stack
 }
 
-void setWindowVisibility(const char* windowId, bool visible)
+void setWindowVisible(const char* windowId, bool visible)
 {
 	if (!visible)
 	{
@@ -182,7 +167,7 @@ bool isMouseOverWindow()
 {
 	if (ctx->currentWindow)
 	{
-		return ctx->currentWindow->dockNode->osWindow == ctx->lastHoveredOsWindow;
+		return ctx->currentWindow->dockNode->nativeWindow == ctx->lastHoveredNativeWindow;
 	}
 
 	return false;
@@ -190,7 +175,7 @@ bool isMouseOverWindow()
 
 void setCapture()
 {
-	HORUS_INPUT->setCapture(ctx->currentWindow);
+	HORUS_INPUT->setCapture(ctx->currentWindow ? ctx->currentWindow->dockNode->nativeWindow : 0);
 }
 
 void releaseCapture()

@@ -461,14 +461,14 @@ Renderer::~Renderer()
 	delete vertexBuffer;
 }
 
-void Renderer::setOsWindow(HOsWindow wnd)
+void Renderer::setCurrentNativeWindow(HNativeWindow wnd)
 {
 	currentWindow = wnd;
 	auto iter = windowContexts.find(wnd);
 
 	if (iter == windowContexts.end())
 	{
-		windowContexts.insert({ wnd, OsWindowRenderContext() });
+		windowContexts.insert({ wnd, NativeWindowRenderContext() });
 		auto& wndCtx = windowContexts[wnd];
 		wndCtx.textBuffer.resize(textBufferMaxSize);
 		wndCtx.pointBuffer.resize(pointBufferMaxSize);
@@ -477,7 +477,7 @@ void Renderer::setOsWindow(HOsWindow wnd)
 	currentWindowContext = &windowContexts[wnd];
 }
 
-void Renderer::executeDrawCommands(HOsWindow wnd)
+void Renderer::executeDrawCommands(HNativeWindow wnd)
 {
 	//TODO: should these be per window ?
 	if (disableRendering || skipRender)

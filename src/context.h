@@ -62,7 +62,7 @@ struct Context
 	bool skipRenderAndInput = false;
 	Window* currentWindow = nullptr;
 	WindowFlags nextWindowFlags = WindowFlags::None;
-	HOsWindow lastHoveredOsWindow = nullptr;
+	HNativeWindow lastHoveredNativeWindow = nullptr;
 	bool hoveringThisWindow = false;
 	bool dockingTabPane = false;
 	f32 globalScale = 1.0f;
@@ -160,7 +160,7 @@ struct Context
 	InputEvent event;
 	std::vector<InputEvent> events;
 	InputEvent::Type savedEventType = InputEvent::Type::None;
-	std::vector<HOsWindow> osWindows;
+	std::vector<HNativeWindow> nativeWindows;
 
 	// Colors and styles
 	std::unordered_map<u32, std::vector<Color>> tintStack;

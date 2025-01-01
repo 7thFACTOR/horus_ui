@@ -11,12 +11,6 @@
 #include "unicode_text_cache.h"
 #include "font_cache.h"
 #include "docking.h"
-#include "docking_system.h"
-#include "dock_node.h"
-
-#ifdef _WINDOWS
-#include <windows.h>
-#endif
 
 namespace hui
 {
@@ -84,10 +78,6 @@ HContext createContext(struct ContextSettings& settings)
 	context->settings = settings;
 	context->providers = &settings.providers;
 
-#ifdef _WIN32
-	SetProcessDPIAware();
-#endif
-
 	return context;
 }
 
@@ -116,7 +106,7 @@ void initializeRenderer()
 	ctx->initializeGraphics();
 }
 
-void clearOsWindowBackground()
+void clearNativeWindowBackground()
 {
 	const auto& windowElemState = ctx->theme->getElement(WidgetElementId::WindowBody).normalState();
 
@@ -256,20 +246,20 @@ void beginFrame()
 
 	if (ctx->event.window)
 	{
-		if (ctx->event.type == InputEvent::Type::WindowMouseEnter && ctx->event.window != ctx->dockingState.dragIndicatorOsWindow)
-			ctx->lastHoveredOsWindow = ctx->event.window;
+		if (ctx->event.type == InputEvent::Type::WindowMouseEnter && ctx->event.window != ctx->dockingState.dragIndicatorNativeWindow)
+			ctx->lastHoveredNativeWindow = ctx->event.window;
 		
-		if (ctx->event.type == InputEvent::Type::WindowMouseLeave && ctx->event.window != ctx->dockingState.dragIndicatorOsWindow)
-			ctx->lastHoveredOsWindow = 0;
+		if (ctx->event.type == InputEvent::Type::WindowMouseLeave && ctx->event.window != ctx->dockingState.dragIndicatorNativeWindow)
+			ctx->lastHoveredNativeWindow = 0;
 
 		if (ctx->event.type == InputEvent::Type::MouseDown
 			|| ctx->event.type == InputEvent::Type::MouseUp
 			|| ctx->event.type == InputEvent::Type::MouseMove
 			|| ctx->event.type == InputEvent::Type::MouseWheel)
 		{
-			if (ctx->event.window && ctx->event.window != ctx->dockingState.dragIndicatorOsWindow)
+			if (ctx->event.window && ctx->event.window != ctx->dockingState.dragIndicatorNativeWindow)
 			{
-				ctx->lastHoveredOsWindow = ctx->event.window;
+				ctx->lastHoveredNativeWindow = ctx->event.window;
 				ctx->mousePosition = ctx->event.mouse.point;
 			}
 		}
@@ -367,20 +357,20 @@ void deferredDeleteObjects()
 		delete dn;
 	}
 
-	for (auto& wnd : ctx->dockingState.osWindowsToDelete)
+	for (auto& wnd : ctx->dockingState.nativeWindowsToDelete)
 	{
-		auto iter = ctx->dockingState.rootOsWindowDockNodes.find(wnd);
+		auto iter = ctx->dockingState.rootNativeWindowDockNodes.find(wnd);
 
-		if (iter != ctx->dockingState.rootOsWindowDockNodes.end())
+		if (iter != ctx->dockingState.rootNativeWindowDockNodes.end())
 		{
-			ctx->dockingState.rootOsWindowDockNodes.erase(iter);
+			ctx->dockingState.rootNativeWindowDockNodes.erase(iter);
 		}
 
-		auto iter2 = std::find(ctx->osWindows.begin(), ctx->osWindows.end(), wnd);
+		auto iter2 = std::find(ctx->nativeWindows.begin(), ctx->nativeWindows.end(), wnd);
 
-		if (iter2 != ctx->osWindows.end())
+		if (iter2 != ctx->nativeWindows.end())
 		{
-			ctx->osWindows.erase(iter2);
+			ctx->nativeWindows.erase(iter2);
 		}
 
 		HORUS_INPUT->destroyWindow(wnd);
@@ -388,7 +378,7 @@ void deferredDeleteObjects()
 
 	ctx->dockingState.dockNodesToDelete.clear();
 	ctx->dockingState.windowsToDelete.clear();
-	ctx->dockingState.osWindowsToDelete.clear();
+	ctx->dockingState.nativeWindowsToDelete.clear();
 
 	//debugWindows();
 }
@@ -538,23 +528,23 @@ void setMouseCursor(HMouseCursor cursor)
 	ctx->customMouseCursor = cursor;
 }
 
-void setOsWindow(HOsWindow wnd)
+void setCurrentNativeWindow(HNativeWindow wnd)
 {
 	ctx->providers->input->setCurrentWindow(wnd);
 	auto size = HORUS_INPUT->getWindowClientSize(wnd);
-	ctx->renderer->setOsWindow(wnd);
+	ctx->renderer->setCurrentNativeWindow(wnd);
 	ctx->renderer->setWindowSize(size);
-	ctx->hoveringThisWindow = ctx->lastHoveredOsWindow == wnd;
+	ctx->hoveringThisWindow = ctx->lastHoveredNativeWindow == wnd;
 }
 
-static void presentWindow(HOsWindow wnd)
+static void presentWindow(HNativeWindow wnd)
 {
 	HORUS_INPUT->setCurrentWindow(wnd);
-	ctx->renderer->setOsWindow(wnd);
+	ctx->renderer->setCurrentNativeWindow(wnd);
 	ctx->renderer->setWindowSize(HORUS_INPUT->getWindowClientSize(wnd));
-	ctx->hoveringThisWindow = ctx->lastHoveredOsWindow == wnd;
+	ctx->hoveringThisWindow = ctx->lastHoveredNativeWindow == wnd;
 	ctx->renderer->begin();
-	dockNodeTabs(ctx->dockingState.rootOsWindowDockNodes[wnd]);
+	dockNodeTabs(ctx->dockingState.rootNativeWindowDockNodes[wnd]);
 	ctx->renderer->end();
 	ctx->renderer->executeDrawCommands(wnd);
 	HORUS_INPUT->presentWindow(wnd);
@@ -569,7 +559,7 @@ void present()
 
 	if (allowRendering)
 	{
-		for (auto& wnd : ctx->osWindows)
+		for (auto& wnd : ctx->nativeWindows)
 		{
 			presentWindow(wnd);
 		}
@@ -719,140 +709,15 @@ bool packAtlas(HAtlas atlas, u32 border)
 	return atlasPtr->pack(border);
 }
 
-DockNodeId createRootDockNode(HOsWindow osWnd)
+DockNodeId createRootDockNode(HNativeWindow nativeWnd)
 {
-	auto node = createOsWindowRootDockNode(osWnd);
+	auto node = createNativeWindowRootDockNode(nativeWnd);
 	assert(node);
 
-	ctx->osWindows.push_back(osWnd);
+	ctx->nativeWindows.push_back(nativeWnd);
 	ctx->dockingState.dockNodeIdsMap[node->id] = node;
 
 	return node->id;
-}
-
-void updateDockingSystem()
-{
-	auto copyOfRootOsWindowDockNodes = ctx->dockingState.rootOsWindowDockNodes;
-	auto& ds = ctx->dockingState;
-	const auto& mousePos = ctx->mousePosition;
-
-	ds.draggingStarted = fabs(ds.lastMousePosSinceMouseDown.x - mousePos.x) > ctx->settings.dragStartDistance || abs(ds.lastMousePosSinceMouseDown.y - mousePos.y) > ctx->settings.dragStartDistance;
-	ds.mouseDragDelta = mousePos - ds.lastMousePos;
-
-	auto screenMousePos = HORUS_INPUT->getAbsoluteMousePosition();
-
-	ds.dockToNode = nullptr;
-	ds.hoveredNode = nullptr;
-	ds.dockType = DockType::Floating;
-
-	for (auto& wnd : copyOfRootOsWindowDockNodes)
-	{
-		handleDockNodeEvents(wnd.second);
-	}
-
-	if (!ctx->lastHoveredOsWindow && !HORUS_INPUT->isMouseButtonDownNow(MouseButton::Left) && ds.dragWindow)
-	{
-		ctx->event.type = InputEvent::Type::MouseUp;
-	}
-
-	if (ctx->event.type == InputEvent::Type::MouseUp)
-	{
-		handleDockingMouseUp();
-	}
-
-	Rect screenRect;
-
-	if (ds.dockType != DockType::AsTab)
-	{
-		if (ds.hoveredNode) ds.hoveredNode->removeTabSpace();
-	}
-
-	screenRect = ds.draggedRect;
-
-	if (ds.dragIndicatorOsWindow && ds.dragWindow)
-	{
-		// if we try to dock on dock nodes sides
-		if (ctx->lastHoveredOsWindow
-			&& ds.dockType != DockType::None
-			&& ds.dockType != DockType::Floating
-			&& ds.hoveredNode)
-		{
-			auto pos = HORUS_INPUT->getWindowPosition(ds.hoveredNode->osWindow);
-
-			screenRect = ds.draggedRect;
-			screenRect += pos;
-
-			if (ds.dockType == DockType::AsTab)
-			{
-				screenRect.x -= 32;
-			}
-		}
-		else
-		{
-			// resize window as floating window
-			auto mousePosAbs = HORUS_INPUT->getAbsoluteMousePosition();
-			screenRect = ds.dragWindow->dockNode->rect;
-			screenRect *= 0.6f; // scale back a bit from original size
-			screenRect.x = mousePosAbs.x - screenRect.width / 2;
-			screenRect.y = mousePosAbs.y - screenRect.height / 2;
-		}
-		ds.dockType = DockType::Floating;
-		HORUS_INPUT->setWindowRect(ds.dragIndicatorOsWindow, screenRect);
-	}
-
-	if (ctx->dockingState.dragIndicatorOsWindow && ds.dragWindow)
-	{
-		auto rc = screenRect;
-
-		HORUS_INPUT->setCurrentWindow(ds.dragIndicatorOsWindow);
-		ctx->renderer->disableRendering = false;
-		ctx->renderer->setOsWindow(ds.dragIndicatorOsWindow);
-		ctx->renderer->setWindowSize(rc.getSize());
-		ctx->renderer->begin();
-		rc.x = 0;
-		rc.y = 0;
-		ctx->renderer->pushClipRect(rc, false);
-
-		auto& windowElem = ctx->theme->getElement(WidgetElementId::WindowBody).normalState();
-		auto wndRect = Rect{ rc.x, rc.y, rc.width, rc.height };
-
-		ctx->renderer->cmdSetColor(windowElem.color);
-		ctx->renderer->cmdDrawImageBordered(windowElem.image, windowElem.border, wndRect, ctx->globalScale);
-		ctx->penPosition.set(0, 0);
-		pushLayoutPadding(0);
-		beginContainer(rc);
-		beginTabGroup(0);
-		hui::tab(ds.dragWindow->title.c_str(), ds.dragWindow->icon);
-		endTabGroup();
-		endContainer();
-		popLayoutPadding();	
-		ctx->renderer->popClipRect();
-		ctx->renderer->end();
-		ctx->renderer->executeDrawCommands(ds.dragIndicatorOsWindow);
-		HORUS_INPUT->presentWindow(ds.dragIndicatorOsWindow);
-	}
-
-	if (ctx->event.type == InputEvent::Type::WindowResized || ctx->event.type == InputEvent::Type::WindowMoved)
-	{
-		for (auto& pair : ctx->dockingState.rootOsWindowDockNodes)
-		{
-			pair.second->computeRect();
-		}
-	}
-
-	if (ctx->event.type == InputEvent::Type::WindowClose)
-	{
-		auto node = ctx->dockingState.rootOsWindowDockNodes[ctx->event.window];
-
-		if (node)
-		{
-			node->removeWindowsAndDeleteChildrenRecursive();
-		}
-		
-		ctx->dockingState.osWindowsToDelete.insert(ctx->event.window);
-	}
-
-	ds.lastMousePos = mousePos;
 }
 
 void dockLayoutDeleteChildren(DockNodeId rootNodeId)
@@ -891,7 +756,7 @@ void dockLayoutSplit(DockNodeId nodeId, DockNodeSplitType splitType, f32 firstNo
 	newNode1->id = node1Id;
 	newNode1->parent = nodeToSplit;
 
-	newNode2->osWindow = nodeToSplit->osWindow;
+	newNode2->nativeWindow = nodeToSplit->nativeWindow;
 	newNode2->parent = nodeToSplit;
 
 	for (auto& child : newNode1->children) child->parent = newNode1;
@@ -959,7 +824,7 @@ void dockLayoutSetNodeWindow(DockNodeId parentNodeId, const char* windowId)
 
 void dockLayoutRecalculate()
 {
-	for (auto& pair : ctx->dockingState.rootOsWindowDockNodes)
+	for (auto& pair : ctx->dockingState.rootNativeWindowDockNodes)
 	{
 		pair.second->checkRedundancy();
 		pair.second->computeRect();
@@ -968,7 +833,7 @@ void dockLayoutRecalculate()
 
 void processInputEvents()
 {
-	ctx->event.type = InputEvent::Type::None;
+	ctx->event = {};
 	clearInputEventQueue();
 	ctx->providers->input->processEvents();
 	hui::update(getFrameDeltaTime());
@@ -1046,6 +911,7 @@ void setWidgetStyle(WidgetType widgetType, const char* styleName)
 {
 	//TODO: more automatic correlation between widget type and its element types, to avoid manual switch
 	// To not force using map to search for the current style for all widgets, this might be the only way
+	// switch might be faster than map tho
 	switch (widgetType)
 	{
 	case WidgetType::Window:
@@ -1196,6 +1062,7 @@ void setUserWidgetElementStyle(const char* elementName, const char* styleName)
 
 void buildTheme(HTheme theme)
 {
+	assert(theme);
 	Theme* themePtr = (Theme*)theme;
 
 	themePtr->packAtlas();
@@ -1209,6 +1076,9 @@ void setThemeWidgetElement(
 	const WidgetElementInfo& elementInfo,
 	const char* styleName)
 {
+	assert(theme);
+	assert(styleName);
+
 	Theme* themePtr = (Theme*)theme;
 	u32 stateIndex = (u32)widgetStateType;
 
@@ -2023,9 +1893,9 @@ bool droppedOnWidget()
 {
 	if (ctx->dragDropState.begunDragging
 		&& ctx->hoveringThisWindow
-		&& HORUS_INPUT->getFocusedWindow() != ctx->currentWindow->dockNode->osWindow)
+		&& HORUS_INPUT->getFocusedWindow() != ctx->currentWindow->dockNode->nativeWindow)
 	{
-		ctx->providers->input->raiseWindow(ctx->currentWindow->dockNode->osWindow);
+		ctx->providers->input->raiseWindow(ctx->currentWindow->dockNode->nativeWindow);
 	}
 
 	if (ctx->dragDropState.begunDragging

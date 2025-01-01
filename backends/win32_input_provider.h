@@ -30,10 +30,10 @@ struct SdlWindowProxy
 	}
 };
 
-struct Sdl2InputProvider : InputProvider
+struct Sdl3InputProvider : InputProvider
 {
-	Sdl2InputProvider();
-	~Sdl2InputProvider();
+	Sdl3InputProvider();
+	~Sdl3InputProvider();
 	void startTextInput(Window window, const Rect& imeRect) override;
 	void stopTextInput() override;
 	bool copyToClipboard(const char* text) override;

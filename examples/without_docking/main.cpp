@@ -29,7 +29,7 @@ int main(int argc, char** args)
 	settings.providers.font = new hui::FreetypeFontProvider();
 	settings.providers.gfx = new hui::OpenGLGraphicsProvider();
 	settings.providers.image = new hui::StbImageProvider();
-	settings.providers.input = new hui::Sdl2InputProvider();
+	settings.providers.input = new hui::Sdl3InputProvider();
 	settings.providers.rectPack = new hui::StbRectPackProvider();
 	settings.providers.utf = new hui::UtfCppProvider();
 	settings.dockNodeSpacing = 3;
@@ -50,7 +50,7 @@ int main(int argc, char** args)
 	hui::initializeSdl(sdlParams);
 
 	//3. Create the main window (this will also create a graphics (GL/VK/D3D/etc.) context)
-	auto mainWnd = HORUS_INPUT->createWindow("Horus Examples", hui::OsWindowFlags::Resizable, hui::OsWindowState::Maximized, hui::Rect(0, 0, 1500, 800));
+	auto mainWnd = HORUS_INPUT->createWindow("Horus Examples", hui::NativeWindowFlags::Resizable, hui::NativeWindowState::Maximized, hui::Rect(0, 0, 1500, 800));
 
 	hui::DockNodeId mainDockNode = hui::createRootDockNode(mainWnd);
 
@@ -116,9 +116,9 @@ int main(int argc, char** args)
 		{
 			static bool confineSceneToWindow = false;
 
-			auto tritri = [](hui::HOsWindow wnd)
+			auto tritri = [](hui::HNativeWindow wnd)
 			{
-				auto osWndSize = HORUS_INPUT->getWindowClientSize(wnd);
+				auto nativeWndSize = HORUS_INPUT->getWindowClientSize(wnd);
 				hui::Rect rc;
 
 				if (confineSceneToWindow)
@@ -127,10 +127,10 @@ int main(int argc, char** args)
 				}
 				else
 				{
-					rc = {0, 0, osWndSize.x, osWndSize.y};
+					rc = {0, 0, nativeWndSize.x, nativeWndSize.y};
 				}
 
-				//hui::beginContainer(hui::Rect(0, 0, osWndSize.x, osWndSize.y));
+				//hui::beginContainer(hui::Rect(0, 0, nativeWndSize.x, nativeWndSize.y));
 				//auto rc = hui::beginViewport();
 				// some user drawing code, a triangle
 				static f32 x = 1;
@@ -139,7 +139,7 @@ int main(int argc, char** args)
 				glClearColor(0,.4,0,1);
 				glClear(GL_COLOR_BUFFER_BIT);
 				glGetIntegerv(GL_VIEWPORT, vp);
-				glViewport(rc.x, osWndSize.y - rc.bottom(), rc.width, rc.height);
+				glViewport(rc.x, nativeWndSize.y - rc.bottom(), rc.width, rc.height);
 				// Setup projection using glOrtho
 				glMatrixMode(GL_PROJECTION);
 				glLoadIdentity();
@@ -206,7 +206,7 @@ int main(int argc, char** args)
 				}
 
 				if (hui::button("Show UI window"))
-					hui::setWindowVisibility("ui", true);
+					hui::setWindowVisible("ui", true);
 				static bool chk1, chk2, chk3;
 				hui::beginTwoColumns();
 				chk1 = hui::check("Option 1", chk1);
@@ -227,7 +227,7 @@ int main(int argc, char** args)
 
 				if (hui::button("Show UI"))
 				{
-					hui::setWindowVisibility("ui", true);
+					hui::setWindowVisible("ui", true);
 				}
 
 				hui::popTint();

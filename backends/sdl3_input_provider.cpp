@@ -90,10 +90,10 @@ static void removeWindowShadow_Windows(SDL_Window* window) {
 }
 #endif
 
-Sdl2InputProvider::Sdl2InputProvider()
+Sdl3InputProvider::Sdl3InputProvider()
 {}
 
-Sdl2InputProvider::~Sdl2InputProvider()
+Sdl3InputProvider::~Sdl3InputProvider()
 {
 	for (size_t i = 0; i < customCursors.size(); i++)
 	{
@@ -102,7 +102,7 @@ Sdl2InputProvider::~Sdl2InputProvider()
 	}
 }
 
-KeyCode Sdl2InputProvider::fromSdlKey(int code)
+KeyCode Sdl3InputProvider::fromSdlKey(int code)
 {
 	KeyCode key = KeyCode::None;
 
@@ -339,7 +339,7 @@ KeyCode Sdl2InputProvider::fromSdlKey(int code)
 	return key;
 }
 
-void Sdl2InputProvider::startTextInput(HOsWindow window, const Rect& imeRect)
+void Sdl3InputProvider::startTextInput(HNativeWindow window, const Rect& imeRect)
 {
 	SDL_Rect rc = {0};
 
@@ -356,17 +356,17 @@ void Sdl2InputProvider::startTextInput(HOsWindow window, const Rect& imeRect)
 	}
 }
 
-void Sdl2InputProvider::stopTextInput()
+void Sdl3InputProvider::stopTextInput()
 {
 	SDL_StopTextInput(textInputWindow);
 }
 
-bool Sdl2InputProvider::copyToClipboard(const char* text)
+bool Sdl3InputProvider::copyToClipboard(const char* text)
 {
 	return 0 == SDL_SetClipboardText(text);
 }
 
-bool Sdl2InputProvider::pasteFromClipboard(char* outText, u32 maxTextSize)
+bool Sdl3InputProvider::pasteFromClipboard(char* outText, u32 maxTextSize)
 {
 	if (!SDL_HasClipboardText())
 		return false;
@@ -383,7 +383,7 @@ bool Sdl2InputProvider::pasteFromClipboard(char* outText, u32 maxTextSize)
 	return false;
 }
 
-void Sdl2InputProvider::addSdlEvent(SDL_Event& ev)
+void Sdl3InputProvider::addSdlEvent(SDL_Event& ev)
 {
 	InputEvent outEvent = InputEvent();
 
@@ -556,7 +556,7 @@ void Sdl2InputProvider::addSdlEvent(SDL_Event& ev)
 		addInputEvent(outEvent);
 }
 
-void Sdl2InputProvider::processSdlEvents()
+void Sdl3InputProvider::processSdlEvents()
 {
 	SDL_Event ev;
 
@@ -568,7 +568,7 @@ void Sdl2InputProvider::processSdlEvents()
 	}
 }
 
-SdlWindowProxy* Sdl2InputProvider::findSdlWindow(SDL_Window* wnd)
+SdlWindowProxy* Sdl3InputProvider::findSdlWindow(SDL_Window* wnd)
 {
 	for (auto& w : windows)
 	{
@@ -579,21 +579,21 @@ SdlWindowProxy* Sdl2InputProvider::findSdlWindow(SDL_Window* wnd)
 	return nullptr;
 }
 
-void Sdl2InputProvider::updateDeltaTime()
+void Sdl3InputProvider::updateDeltaTime()
 {
 	u32 ticks = SDL_GetTicks();
 	deltaTime = (f32)(ticks - lastTime) / 1000.0f;
 	lastTime = ticks;
 }
 
-void Sdl2InputProvider::processEvents()
+void Sdl3InputProvider::processEvents()
 {
 	updateDeltaTime();
 	setFrameDeltaTime(deltaTime);
 	processSdlEvents();
 }
 
-void Sdl2InputProvider::shutdown()
+void Sdl3InputProvider::shutdown()
 {
 	if (ownsGlContext)
 		SDL_GL_DestroyContext(initParams.sdlGlContext);
@@ -602,12 +602,12 @@ void Sdl2InputProvider::shutdown()
 		SDL_Quit();
 }
 
-void Sdl2InputProvider::setCursor(MouseCursorType type)
+void Sdl3InputProvider::setCursor(MouseCursorType type)
 {
 	SDL_SetCursor(cursors[(int)type]);
 }
 
-HMouseCursor Sdl2InputProvider::createCustomCursor(Rgba32* pixels, u32 width, u32 height, u32 hotX, u32 hotY)
+HMouseCursor Sdl3InputProvider::createCustomCursor(Rgba32* pixels, u32 width, u32 height, u32 hotX, u32 hotY)
 {
 	SDL_Surface* surf = SDL_CreateSurfaceFrom(width, height, SDL_PIXELFORMAT_RGBA32, pixels, width * 4);
 
@@ -619,7 +619,7 @@ HMouseCursor Sdl2InputProvider::createCustomCursor(Rgba32* pixels, u32 width, u3
 	return cur;
 }
 
-void Sdl2InputProvider::deleteCustomCursor(HMouseCursor cursor)
+void Sdl3InputProvider::deleteCustomCursor(HMouseCursor cursor)
 {
 	for (size_t i = 0; i < customCursors.size(); i++)
 	{
@@ -634,12 +634,12 @@ void Sdl2InputProvider::deleteCustomCursor(HMouseCursor cursor)
 	}
 }
 
-void Sdl2InputProvider::setCustomCursor(HMouseCursor cursor)
+void Sdl3InputProvider::setCustomCursor(HMouseCursor cursor)
 {
 	SDL_SetCursor((SDL_Cursor*)cursor);
 }
 
-void Sdl2InputProvider::setCurrentWindow(HOsWindow window)
+void Sdl3InputProvider::setCurrentWindow(HNativeWindow window)
 {
 	if (HORUS_GFX->getApiType() == GraphicsProvider::ApiType::OpenGL)
 	{
@@ -650,17 +650,17 @@ void Sdl2InputProvider::setCurrentWindow(HOsWindow window)
 	currentWindow = ((SdlWindowProxy*)window);
 }
 
-HOsWindow Sdl2InputProvider::getCurrentWindow()
+HNativeWindow Sdl3InputProvider::getCurrentWindow()
 {
 	return currentWindow;
 }
 
-HOsWindow Sdl2InputProvider::getFocusedWindow()
+HNativeWindow Sdl3InputProvider::getFocusedWindow()
 {
 	return focusedWindow;
 }
 
-HOsWindow Sdl2InputProvider::getHoveredWindow()
+HNativeWindow Sdl3InputProvider::getHoveredWindow()
 {
 	return hoveredWindow;
 }
@@ -670,27 +670,27 @@ SDL_HitTestResult HitTestCallback(SDL_Window* win, const SDL_Point* area, void* 
 	return SDL_HITTEST_NORMAL; // Ignore input, pass through to windows underneath
 }
 
-HOsWindow Sdl2InputProvider::createWindow(
-	const char* title, OsWindowFlags flags, OsWindowState state, const Rect& rect)
+HNativeWindow Sdl3InputProvider::createWindow(
+	const char* title, NativeWindowFlags flags, NativeWindowState state, const Rect& rect)
 {
 	int sdlflags = 0;
 
-	if (state == OsWindowState::Maximized)
+	if (state == NativeWindowState::Maximized)
 		sdlflags |= SDL_WINDOW_MAXIMIZED;
 
-	if (state == OsWindowState::Minimized)
+	if (state == NativeWindowState::Minimized)
 		sdlflags |= SDL_WINDOW_MINIMIZED;
 
-	if (state == OsWindowState::Hidden)
+	if (state == NativeWindowState::Hidden)
 		sdlflags |= SDL_WINDOW_HIDDEN;
 
-	if (has(flags, OsWindowFlags::Resizable))
+	if (has(flags, NativeWindowFlags::Resizable))
 		sdlflags |= SDL_WINDOW_RESIZABLE;
 
-	if (has(flags, OsWindowFlags::NoDecoration))
+	if (has(flags, NativeWindowFlags::NoDecoration))
 		sdlflags |= SDL_WINDOW_BORDERLESS;
 
-	if (has(flags, OsWindowFlags::NoTaskBar))
+	if (has(flags, NativeWindowFlags::NoTaskBar))
 		sdlflags |= SDL_WINDOW_UTILITY;
 
 	if (HORUS_GFX->getApiType() == GraphicsProvider::ApiType::OpenGL)
@@ -720,7 +720,7 @@ HOsWindow Sdl2InputProvider::createWindow(
 	focusedWindow = newWnd;
 	currentWindow = newWnd;
 
-	if (has(flags, OsWindowFlags::NoInput))
+	if (has(flags, NativeWindowFlags::NoInput))
 	{
 #ifdef _WINDOWS
 		makeWindowClickThrough_Windows(wnd);
@@ -764,22 +764,22 @@ HOsWindow Sdl2InputProvider::createWindow(
 	return newWnd;
 }
 
-void Sdl2InputProvider::setWindowTitle(HOsWindow window, const char* title)
+void Sdl3InputProvider::setWindowTitle(HNativeWindow window, const char* title)
 {
 	SDL_SetWindowTitle(((SdlWindowProxy*)window)->sdlWindow, title);
 }
 
-std::string Sdl2InputProvider::getWindowTitle(HOsWindow window)
+std::string Sdl3InputProvider::getWindowTitle(HNativeWindow window)
 {
 	return SDL_GetWindowTitle(((SdlWindowProxy*)window)->sdlWindow);
 }
 
-u32 Sdl2InputProvider::getWindowDisplayIndex(HOsWindow window)
+u32 Sdl3InputProvider::getWindowDisplayIndex(HNativeWindow window)
 {
 	return SDL_GetDisplayForWindow(((SdlWindowProxy*)window)->sdlWindow);
 }
 
-u32 Sdl2InputProvider::getDisplayCount() const
+u32 Sdl3InputProvider::getDisplayCount() const
 {
 	i32 count = 0;
 	SDL_DisplayID* displays = SDL_GetDisplays(&count);
@@ -789,7 +789,7 @@ u32 Sdl2InputProvider::getDisplayCount() const
 	return count;
 }
 
-DisplayInfo Sdl2InputProvider::getDisplayInfo(u32 displayIndex)
+DisplayInfo Sdl3InputProvider::getDisplayInfo(u32 displayIndex)
 {
 	DisplayInfo info;
 
@@ -806,12 +806,12 @@ DisplayInfo Sdl2InputProvider::getDisplayInfo(u32 displayIndex)
 	return info;
 }
 
-void Sdl2InputProvider::setWindowClientSize(HOsWindow window, const Point& size)
+void Sdl3InputProvider::setWindowClientSize(HNativeWindow window, const Point& size)
 {
 	SDL_SetWindowSize(((SdlWindowProxy*)window)->sdlWindow, size.x, size.y);
 }
 
-Point Sdl2InputProvider::getWindowClientSize(HOsWindow window)
+Point Sdl3InputProvider::getWindowClientSize(HNativeWindow window)
 {
 	int w = 0, h = 0;
 
@@ -820,7 +820,7 @@ Point Sdl2InputProvider::getWindowClientSize(HOsWindow window)
 	return { (f32)w, (f32)h };
 }
 
-Rect Sdl2InputProvider::getWindowRect(HOsWindow window)
+Rect Sdl3InputProvider::getWindowRect(HNativeWindow window)
 {
 	int top = 0, left = 0, right = 0, bottom = 0;
 	int x = 0, y = 0;
@@ -832,18 +832,18 @@ Rect Sdl2InputProvider::getWindowRect(HOsWindow window)
 	return { (f32)x, (f32)y, (f32)(w), (f32)(h) };
 }
 
-void Sdl2InputProvider::setWindowRect(HOsWindow window, const Rect& rect)
+void Sdl3InputProvider::setWindowRect(HNativeWindow window, const Rect& rect)
 {
 	SDL_SetWindowPosition(((SdlWindowProxy*)window)->sdlWindow, rect.x, rect.y);
 	SDL_SetWindowSize(((SdlWindowProxy*)window)->sdlWindow, rect.width, rect.height);
 }
 
-void Sdl2InputProvider::setWindowPosition(HOsWindow window, const Point& pos)
+void Sdl3InputProvider::setWindowPosition(HNativeWindow window, const Point& pos)
 {
 	SDL_SetWindowPosition(((SdlWindowProxy*)window)->sdlWindow, pos.x, pos.y);
 }
 
-Point Sdl2InputProvider::getWindowPosition(HOsWindow window)
+Point Sdl3InputProvider::getWindowPosition(HNativeWindow window)
 {
 	int x = 0, y = 0;
 
@@ -852,7 +852,7 @@ Point Sdl2InputProvider::getWindowPosition(HOsWindow window)
 	return { (f32)x, (f32)y };
 }
 
-void Sdl2InputProvider::presentWindow(HOsWindow window)
+void Sdl3InputProvider::presentWindow(HNativeWindow window)
 {
 	if (HORUS_GFX->getApiType() == GraphicsProvider::ApiType::OpenGL)
 	{
@@ -860,7 +860,7 @@ void Sdl2InputProvider::presentWindow(HOsWindow window)
 	}
 }
 
-void Sdl2InputProvider::destroyWindow(HOsWindow window)
+void Sdl3InputProvider::destroyWindow(HNativeWindow window)
 {
 	SDL_DestroyWindow(((SdlWindowProxy*)window)->sdlWindow);
 	auto iter = std::find(windows.begin(), windows.end(), window);
@@ -872,64 +872,64 @@ void Sdl2InputProvider::destroyWindow(HOsWindow window)
 	}
 }
 
-void Sdl2InputProvider::showWindow(HOsWindow window)
+void Sdl3InputProvider::showWindow(HNativeWindow window)
 {
 	SDL_ShowWindow(((SdlWindowProxy*)window)->sdlWindow);
 }
 
-void Sdl2InputProvider::hideWindow(HOsWindow window)
+void Sdl3InputProvider::hideWindow(HNativeWindow window)
 {
 	SDL_HideWindow(((SdlWindowProxy*)window)->sdlWindow);
 }
 
-void Sdl2InputProvider::raiseWindow(HOsWindow window)
+void Sdl3InputProvider::raiseWindow(HNativeWindow window)
 {
 	SDL_RaiseWindow(((SdlWindowProxy*)window)->sdlWindow);
 }
 
-void Sdl2InputProvider::maximizeWindow(HOsWindow window)
+void Sdl3InputProvider::maximizeWindow(HNativeWindow window)
 {
 	SDL_MaximizeWindow(((SdlWindowProxy*)window)->sdlWindow);
 }
 
-void Sdl2InputProvider::minimizeWindow(HOsWindow window)
+void Sdl3InputProvider::minimizeWindow(HNativeWindow window)
 {
 	SDL_MinimizeWindow(((SdlWindowProxy*)window)->sdlWindow);
 }
 
-OsWindowState Sdl2InputProvider::getWindowState(HOsWindow window)
+NativeWindowState Sdl3InputProvider::getWindowState(HNativeWindow window)
 {
 	auto flags = SDL_GetWindowFlags(((SdlWindowProxy*)window)->sdlWindow);
 
 	if (flags & SDL_WINDOW_HIDDEN)
 	{
-		return OsWindowState::Hidden;
+		return NativeWindowState::Hidden;
 	}
 
 	if (flags & SDL_WINDOW_MINIMIZED)
 	{
-		return OsWindowState::Minimized;
+		return NativeWindowState::Minimized;
 	}
 
 	if (flags & SDL_WINDOW_MAXIMIZED)
 	{
-		return OsWindowState::Maximized;
+		return NativeWindowState::Maximized;
 	}
 
-	return OsWindowState::Normal;
+	return NativeWindowState::Normal;
 }
 
-void Sdl2InputProvider::setCapture(HOsWindow window)
+void Sdl3InputProvider::setCapture(HNativeWindow window)
 {
 	SDL_CaptureMouse(true);
 }
 
-void Sdl2InputProvider::releaseCapture()
+void Sdl3InputProvider::releaseCapture()
 {
 	SDL_CaptureMouse(false);
 }
 
-Point Sdl2InputProvider::getAbsoluteMousePosition()
+Point Sdl3InputProvider::getAbsoluteMousePosition()
 {
 	f32 x, y;
 
@@ -938,7 +938,7 @@ Point Sdl2InputProvider::getAbsoluteMousePosition()
 	return { (f32)x , (f32)y };
 }
 
-bool Sdl2InputProvider::isMouseButtonDownNow(MouseButton button)
+bool Sdl3InputProvider::isMouseButtonDownNow(MouseButton button)
 {
 	f32 x = 0, y = 0;
 	auto buttons = SDL_GetGlobalMouseState(&x, &y);
@@ -950,7 +950,7 @@ bool Sdl2InputProvider::isMouseButtonDownNow(MouseButton button)
 	return false;
 }
 
-void Sdl2InputProvider::createSystemCursors()
+void Sdl3InputProvider::createSystemCursors()
 {
 	for (int i = 0; i < SDL_SYSTEM_CURSOR_COUNT; i++)
 	{
@@ -963,7 +963,7 @@ void Sdl2InputProvider::createSystemCursors()
 void initializeSdl(const SdlInitParams& params)
 {
 	assert(getContextSettings().providers.gfx);
-	auto sdlProvider = ((Sdl2InputProvider*)HORUS_INPUT);
+	auto sdlProvider = ((Sdl3InputProvider*)HORUS_INPUT);
 	assert(sdlProvider);
 	printf("Initializing SDL...\n");
 

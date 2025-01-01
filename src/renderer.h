@@ -207,8 +207,8 @@ public:
 
 	Renderer();
 	virtual ~Renderer();
-	void setOsWindow(HOsWindow wnd);
-	void executeDrawCommands(HOsWindow wnd);
+	void setCurrentNativeWindow(HNativeWindow wnd);
+	void executeDrawCommands(HNativeWindow wnd);
 	Rect pushClipRect(const Rect& rect, bool clipToParent = true);
 	void popClipRect();
 	const Rect& getClipRect() const { return currentClipRect; }
@@ -302,7 +302,7 @@ protected:
 	void addBatch();
 	void addDrawCommand(const DrawCommand& cmd);
 
-	struct OsWindowRenderContext
+	struct NativeWindowRenderContext
 	{
 		u32 textBufferPosition = 0;
 		std::vector<char> textBuffer;
@@ -314,9 +314,9 @@ protected:
 		u32 drawCmdNextInsertIndex = ~0;
 	};
 	
-	HOsWindow currentWindow = 0;
-	OsWindowRenderContext* currentWindowContext = nullptr;
-	std::unordered_map<HOsWindow, OsWindowRenderContext> windowContexts;
+	HNativeWindow currentWindow = 0;
+	NativeWindowRenderContext* currentWindowContext = nullptr;
+	std::unordered_map<HNativeWindow, NativeWindowRenderContext> windowContexts;
 	VertexBufferData vertexBufferData;
 	VertexBuffer* vertexBuffer = nullptr;
 	RenderBatch* currentBatch = nullptr;

@@ -148,7 +148,7 @@ typedef void* HTheme;
 typedef void* HAtlas;
 typedef void* HFont;
 typedef void* HThemeWidgetElement;
-typedef void* HOsWindow;
+typedef void* HNativeWindow;
 typedef void* HDockNode;
 typedef void* HMouseCursor;
 typedef void* HGraphicsApiContext;
@@ -340,16 +340,16 @@ enum class MouseButton
 };
 
 /// OS window flags
-enum class OsWindowFlags : u32
+enum class NativeWindowFlags : u32
 {
 	NoInput = HORUS_BIT(0),
 	NoDecoration = HORUS_BIT(2),
 	NoTaskBar = HORUS_BIT(3),
 	Resizable = HORUS_BIT(4)
 };
-HORUS_ENUM_AS_FLAGS(OsWindowFlags);
+HORUS_ENUM_AS_FLAGS(NativeWindowFlags);
 
-enum class OsWindowState
+enum class NativeWindowState
 {
 	Normal,
 	Minimized,
@@ -618,6 +618,17 @@ enum class DockNodeSplitType
 	Bottom,
 	Left,
 	Right
+};
+
+enum class DockingIndicatorsStyle
+{
+	/// Draw the indicators as actual native windows that shape to the sides of dock nodes, wont draw the small dock site rectangles
+	/// Works on Windows since we can make the dragged window pass-through events to windows below, doesnt work on Linux X11 or Wayland
+	/// This mode is smoother visually, but only works on Windows
+	NativeWindows,
+	/// Draw the indicators inside the native windows, consistent across platforms, might be a bit flickery due to the mechanism of window dragging
+	/// and updating the contents of the dragged window to match the dock indicators
+	InsideNativeWindows
 };
 
 /// Common message box icons
@@ -1334,7 +1345,7 @@ struct InputEvent
 		Type type = Type::None;
 		u32 timestamp = 0;
 		char* filename = nullptr;
-		HOsWindow window = 0;
+		HNativeWindow window = 0;
 	};
 
 	union
@@ -1366,7 +1377,7 @@ struct InputEvent
 	}
 
 	Type type = Type::None;
-	HOsWindow window = 0;
+	HNativeWindow window = 0;
 };
 
 struct HORUS_CLASS_API Color
@@ -1564,16 +1575,16 @@ struct ContextSettings
 	f32 whiteImageUvBorder = 0.001f; /// this value is subtracted from the white image used to draw lines, to avoid black border artifacts
 	f32 sameLineHeight = 20.0f; /// the height of a line when sameLine() is used to position widgets on a single row/line. Used to center various widget heights vertically. This must be non-zero, otherwise the widgets will align wrongly.
 	f32 minScrollViewHandleSize = 20.0f; /// the minimum allowed scroll handle size (height)
-	//TODO: make this per dock node
-	bool allowUndockingToNewOsWindow = true; /// allow view tabs to be undocked as native OS windows, outside of the main window, else windows will only be allowed to dock in their owner OS windows
+	u32 widgetLoopStartId = 1000000000; /// when pushing loops into loop stack, the widget ids will start from here. Basically this avoids the user to specify IDs when creating widgets in a loop, taking into account the fact there will not be so many widgets created anyway.
+	u32 widgetLoopMaxCount = 500000; /// current increment after each loop push to stack
+	DockingIndicatorsStyle dockingStyle = DockingIndicatorsStyle::NativeWindows; /// use DockingIndicatorsStyle::InsideNativeWindows for Linux
+	bool dockAllowUndockingToNewNativeWindow = true; /// allow view tabs to be undocked as native OS windows, outside of the main window, else windows will only be allowed to dock in their owner OS windows
 	f32 dockNodeSpacing = 3;
 	f32 dockNodeResizeSplitterHitSize = 6;
 	f32 dockNodeMinSize = 100;
 	f32 dockNodeDockingSizeRatio = 0.33f; /// ratio of the new size of a docked node in regard to the node we're docking in (if dockNodeProportionalResize is true)
 	f32 dockNodeRootDockingHitSize = 40;
 	f32 dockNodeDockingHitSizeRatio = 0.5f; /// unit percent from the size of a window used for the docking hit box
-	u32 widgetLoopStartId = 1000000000; /// when pushing loops into loop stack, the widget ids will start from here. Basically this avoids the user to specify IDs when creating widgets in a loop, taking into account the fact there will not be so many widgets created anyway.
-	u32 widgetLoopMaxCount = 500000; /// current increment after each loop push to stack
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -1619,12 +1630,12 @@ HORUS_API void beginFrame();
 /// Ends an UI frame
 HORUS_API void endFrame();
 
-typedef void (*RenderCallback)(HOsWindow wnd);
+typedef void (*RenderCallback)(HNativeWindow wnd);
 
 HORUS_API void addRenderCallback(RenderCallback callback);
 
 /// Clear the current OS window background with the color found in the current theme
-HORUS_API void clearOsWindowBackground();
+HORUS_API void clearNativeWindowBackground();
 HORUS_API void clearBackground(const Color& color);
 
 /// \return true if there is nothing to do in the UI (like redrawing or layout computations), used to not render continuously when its not needed, for applications that do not need realtime continuous rendering
@@ -1708,7 +1719,7 @@ HORUS_API void setMouseCursor(HMouseCursor cursor);
 // Windowing & docking functions
 //////////////////////////////////////////////////////////////////////////
 
-HORUS_API DockNodeId createRootDockNode(HOsWindow osWnd);
+HORUS_API DockNodeId createRootDockNode(HNativeWindow nativeWnd);
 
 HORUS_API void dockLayoutDeleteChildren(DockNodeId rootNodeId);
 HORUS_API void dockLayoutSplit(DockNodeId nodeId, DockNodeSplitType splitType, f32 firstNodeSizeUnitPercent, DockNodeId* outNodeId1, DockNodeId* outNodeId2);
@@ -1717,7 +1728,7 @@ HORUS_API void dockLayoutRecalculate();
 
 HORUS_API bool beginWindow(const char* windowId, const char* title, Rect* initialRect, HImage icon);
 HORUS_API void endWindow();
-HORUS_API void setWindowVisibility(const char* windowId, bool visible);
+HORUS_API void setWindowVisible(const char* windowId, bool visible);
 HORUS_API void setNextWindowFlags(WindowFlags flags);
 HORUS_API void debugWindows();
 HORUS_API void dockWindow(const char* windowId, const char* targetWindowId, DockType dockType);
@@ -1747,9 +1758,6 @@ HORUS_API u8* saveDockingStateToMemory(size_t& outStateInfoSize);
 /// \return true if the load was ok
 HORUS_API bool loadDockingState(const char* filename);
 HORUS_API bool loadDockingStateFromMemory(const u8* stateInfo, size_t stateInfoSize);
-
-/// Update the docking system internal, usually called by the dockingSystemLoop function, if you make your own loop, then you need to call it
-HORUS_API void updateDockingSystem();
 
 ///////////////////////////////////////////////////////////////////////////////
 // Application functions

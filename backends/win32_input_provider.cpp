@@ -5,7 +5,7 @@
 #if 0
 namespace hui
 {
-Sdl2InputProvider::Sdl2InputProvider()
+Sdl3InputProvider::Sdl3InputProvider()
 {
 	for (int i = 0; i < SDL_NUM_SYSTEM_CURSORS; i++)
 	{
@@ -15,7 +15,7 @@ Sdl2InputProvider::Sdl2InputProvider()
 	SDL_SetHint(SDL_HINT_MOUSE_FOCUS_CLICKTHROUGH, "1");
 }
 
-Sdl2InputProvider::~Sdl2InputProvider()
+Sdl3InputProvider::~Sdl3InputProvider()
 {
 	for (size_t i = 0; i < customCursors.size(); i++)
 	{
@@ -24,7 +24,7 @@ Sdl2InputProvider::~Sdl2InputProvider()
 	}
 }
 
-KeyCode Sdl2InputProvider::fromSdlKey(int code)
+KeyCode Sdl3InputProvider::fromSdlKey(int code)
 {
 	KeyCode key = KeyCode::None;
 
@@ -271,7 +271,7 @@ KeyCode Sdl2InputProvider::fromSdlKey(int code)
 	return key;
 }
 
-void Sdl2InputProvider::startTextInput(Window window, const Rect& imeRect)
+void Sdl3InputProvider::startTextInput(Window window, const Rect& imeRect)
 {
 	SDL_Rect rc;
 
@@ -285,17 +285,17 @@ void Sdl2InputProvider::startTextInput(Window window, const Rect& imeRect)
 	SDL_StartTextInput();
 }
 
-void Sdl2InputProvider::stopTextInput()
+void Sdl3InputProvider::stopTextInput()
 {
 	SDL_StopTextInput();
 }
 
-bool Sdl2InputProvider::copyToClipboard(const char* text)
+bool Sdl3InputProvider::copyToClipboard(const char* text)
 {
 	return 0 == SDL_SetClipboardText(text);
 }
 
-bool Sdl2InputProvider::pasteFromClipboard(char* outText, u32 maxTextSize)
+bool Sdl3InputProvider::pasteFromClipboard(char* outText, u32 maxTextSize)
 {
 	if (!SDL_HasClipboardText())
 		return false;
@@ -308,7 +308,7 @@ bool Sdl2InputProvider::pasteFromClipboard(char* outText, u32 maxTextSize)
 	return true;
 }
 
-void Sdl2InputProvider::addSdlEvent(SDL_Event& ev)
+void Sdl3InputProvider::addSdlEvent(SDL_Event& ev)
 {
 	InputEvent outEvent = InputEvent();
 
@@ -516,7 +516,7 @@ void Sdl2InputProvider::addSdlEvent(SDL_Event& ev)
 	addInputEvent(outEvent);
 }
 
-void Sdl2InputProvider::processSdlEvents()
+void Sdl3InputProvider::processSdlEvents()
 {
 	SDL_Event ev;
 	
@@ -529,7 +529,7 @@ void Sdl2InputProvider::processSdlEvents()
 	}
 }
 
-SdlWindowProxy* Sdl2InputProvider::findSdlWindow(SDL_Window* wnd)
+SdlWindowProxy* Sdl3InputProvider::findSdlWindow(SDL_Window* wnd)
 {
 	for (auto& w : windows)
 	{
@@ -540,54 +540,54 @@ SdlWindowProxy* Sdl2InputProvider::findSdlWindow(SDL_Window* wnd)
 	return nullptr;
 }
 
-void Sdl2InputProvider::updateDeltaTime()
+void Sdl3InputProvider::updateDeltaTime()
 {
 	u32 ticks = SDL_GetTicks();
 	deltaTime = (f32)(ticks - lastTime) / 1000.0f;
 	lastTime = ticks;
 }
 
-bool Sdl2InputProvider::mustQuit()
+bool Sdl3InputProvider::mustQuit()
 {
 	return quitApp;
 }
 
-bool Sdl2InputProvider::wantsToQuit()
+bool Sdl3InputProvider::wantsToQuit()
 {
 	return wantsToQuitApp;
 }
 
-void Sdl2InputProvider::cancelQuitApplication()
+void Sdl3InputProvider::cancelQuitApplication()
 {
 	wantsToQuitApp = false;
 	quitApp = false;
 	forceRepaint();
 }
 
-void Sdl2InputProvider::quitApplication()
+void Sdl3InputProvider::quitApplication()
 {
 	wantsToQuitApp = true;
 	quitApp = true;
 }
 
-void Sdl2InputProvider::processEvents()
+void Sdl3InputProvider::processEvents()
 {
 	updateDeltaTime();
 	setFrameDeltaTime(deltaTime);
 	processSdlEvents();
 }
 
-void Sdl2InputProvider::shutdown()
+void Sdl3InputProvider::shutdown()
 {
 	SDL_Quit();
 }
 
-void Sdl2InputProvider::setCursor(MouseCursorType type)
+void Sdl3InputProvider::setCursor(MouseCursorType type)
 {
 	SDL_SetCursor(cursors[(int)type]);
 }
 
-MouseCursor Sdl2InputProvider::createCustomCursor(Rgba32* pixels, u32 width, u32 height, u32 hotX, u32 hotY)
+MouseCursor Sdl3InputProvider::createCustomCursor(Rgba32* pixels, u32 width, u32 height, u32 hotX, u32 hotY)
 {
 	SDL_Surface* surf = SDL_CreateRGBSurfaceWithFormatFrom(
 		pixels, width, height, 1, width * 4, SDL_PIXELFORMAT_RGBA32);
@@ -600,7 +600,7 @@ MouseCursor Sdl2InputProvider::createCustomCursor(Rgba32* pixels, u32 width, u32
 	return cur;
 }
 
-void Sdl2InputProvider::deleteCustomCursor(MouseCursor cursor)
+void Sdl3InputProvider::deleteCustomCursor(MouseCursor cursor)
 {
 	for (size_t i = 0; i < customCursors.size(); i++)
 	{
@@ -615,17 +615,17 @@ void Sdl2InputProvider::deleteCustomCursor(MouseCursor cursor)
 	}
 }
 
-void Sdl2InputProvider::setCustomCursor(MouseCursor cursor)
+void Sdl3InputProvider::setCustomCursor(MouseCursor cursor)
 {
 	SDL_SetCursor((SDL_Cursor*)cursor);
 }
 
-Window Sdl2InputProvider::getMainWindow()
+Window Sdl3InputProvider::getMainWindow()
 {
 	return (Window)mainWindow;
 }
 
-void Sdl2InputProvider::setCurrentWindow(Window window)
+void Sdl3InputProvider::setCurrentWindow(Window window)
 {
 	if (gfxProvider->getApiType() == GraphicsProvider::ApiType::OpenGL)
 	{
@@ -635,22 +635,22 @@ void Sdl2InputProvider::setCurrentWindow(Window window)
 	currentWindow = ((SdlWindowProxy*)window);
 }
 
-Window Sdl2InputProvider::getCurrentWindow()
+Window Sdl3InputProvider::getCurrentWindow()
 {
 	return currentWindow;
 }
 
-Window Sdl2InputProvider::getFocusedWindow()
+Window Sdl3InputProvider::getFocusedWindow()
 {
 	return focusedWindow;
 }
 
-Window Sdl2InputProvider::getHoveredWindow()
+Window Sdl3InputProvider::getHoveredWindow()
 {
 	return hoveredWindow;
 }
 
-Window Sdl2InputProvider::createWindow(
+Window Sdl3InputProvider::createWindow(
 	const char* title, i32 width, i32 height,
 	WindowFlags flags,
 	Point customPosition)
@@ -698,18 +698,18 @@ Window Sdl2InputProvider::createWindow(
 	return newWnd;
 }
 
-void Sdl2InputProvider::setWindowTitle(Window window, const char* title)
+void Sdl3InputProvider::setWindowTitle(Window window, const char* title)
 {
 	SDL_SetWindowTitle(((SdlWindowProxy*)window)->sdlWindow, title);
 }
 
-void Sdl2InputProvider::setWindowRect(Window window, const Rect& rect)
+void Sdl3InputProvider::setWindowRect(Window window, const Rect& rect)
 {
 	SDL_SetWindowPosition(((SdlWindowProxy*)window)->sdlWindow, rect.x, rect.y);
 	SDL_SetWindowSize(((SdlWindowProxy*)window)->sdlWindow, rect.width, rect.height);
 }
 
-Rect Sdl2InputProvider::getWindowRect(Window window)
+Rect Sdl3InputProvider::getWindowRect(Window window)
 {
 	SDL_Rect rc;
 
@@ -719,7 +719,7 @@ Rect Sdl2InputProvider::getWindowRect(Window window)
 	return{ (f32)rc.x, (f32)rc.y, (f32)rc.w, (f32)rc.h };
 }
 
-void Sdl2InputProvider::presentWindow(Window window)
+void Sdl3InputProvider::presentWindow(Window window)
 {
 	if (gfxProvider->getApiType() == GraphicsProvider::ApiType::OpenGL)
 	{
@@ -727,7 +727,7 @@ void Sdl2InputProvider::presentWindow(Window window)
 	}
 }
 
-void Sdl2InputProvider::destroyWindow(Window window)
+void Sdl3InputProvider::destroyWindow(Window window)
 {
 	SDL_DestroyWindow(((SdlWindowProxy*)window)->sdlWindow);
 	auto iter = std::find(windows.begin(), windows.end(), window);
@@ -739,32 +739,32 @@ void Sdl2InputProvider::destroyWindow(Window window)
 	}
 }
 
-void Sdl2InputProvider::showWindow(Window window)
+void Sdl3InputProvider::showWindow(Window window)
 {
 	SDL_ShowWindow(((SdlWindowProxy*)window)->sdlWindow);
 }
 
-void Sdl2InputProvider::hideWindow(Window window)
+void Sdl3InputProvider::hideWindow(Window window)
 {
 	SDL_HideWindow(((SdlWindowProxy*)window)->sdlWindow);
 }
 
-void Sdl2InputProvider::raiseWindow(Window window)
+void Sdl3InputProvider::raiseWindow(Window window)
 {
 	SDL_RaiseWindow(((SdlWindowProxy*)window)->sdlWindow);
 }
 
-void Sdl2InputProvider::maximizeWindow(Window window)
+void Sdl3InputProvider::maximizeWindow(Window window)
 {
 	SDL_MaximizeWindow(((SdlWindowProxy*)window)->sdlWindow);
 }
 
-void Sdl2InputProvider::minimizeWindow(Window window)
+void Sdl3InputProvider::minimizeWindow(Window window)
 {
 	SDL_MinimizeWindow(((SdlWindowProxy*)window)->sdlWindow);
 }
 
-WindowState Sdl2InputProvider::getWindowState(Window window)
+WindowState Sdl3InputProvider::getWindowState(Window window)
 {
 	auto flags = SDL_GetWindowFlags(((SdlWindowProxy*)window)->sdlWindow);
 
@@ -786,17 +786,17 @@ WindowState Sdl2InputProvider::getWindowState(Window window)
 	return WindowState::Normal;
 }
 
-void Sdl2InputProvider::setCapture(Window window)
+void Sdl3InputProvider::setCapture(Window window)
 {
 	SDL_CaptureMouse(SDL_TRUE);
 }
 
-void Sdl2InputProvider::releaseCapture()
+void Sdl3InputProvider::releaseCapture()
 {
 	SDL_CaptureMouse(SDL_FALSE);
 }
 
-Point Sdl2InputProvider::getMousePosition()
+Point Sdl3InputProvider::getMousePosition()
 {
 	int x, y;
 
@@ -853,7 +853,7 @@ void initializeWithSDL(const SdlInitParams& settings)
 		SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
 	}
 
-	Sdl2InputProvider* inputProvider = new Sdl2InputProvider();
+	Sdl3InputProvider* inputProvider = new Sdl3InputProvider();
 
 	inputProvider->gfxProvider = settings.gfxProvider;
 

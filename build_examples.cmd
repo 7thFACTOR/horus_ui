@@ -1,5 +1,7 @@
 @echo off
 
+./generate_examples.cmd
+
 rem VS contains vswhere.exe
 if "%VSWHERE%"=="" set "VSWHERE=%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe"
 

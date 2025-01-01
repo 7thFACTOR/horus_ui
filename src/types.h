@@ -209,7 +209,7 @@ struct PopupState
 	bool startedToDrag = false;
 	bool draggingPopup = false;
 	bool opened = false;
-	HOsWindow ownerWindow = 0;
+	HNativeWindow ownerWindow = 0;
 	Point dragDelta, lastMouseDownPoint;
 	Point lastMousePoint;
 	Rect prevContainerRect;
@@ -285,11 +285,11 @@ struct Window
 
 struct DockingState
 {
-	std::unordered_map<HOsWindow, struct DockNode*> rootOsWindowDockNodes;
+	std::unordered_map<HNativeWindow, struct DockNode*> rootNativeWindowDockNodes;
 	std::unordered_map<std::string, Window*> windows;
 	std::unordered_set<Window*> windowsToDelete;
 	std::unordered_set<DockNode*> dockNodesToDelete;
-	std::unordered_set<HOsWindow> osWindowsToDelete;
+	std::unordered_set<HNativeWindow> nativeWindowsToDelete;
 	std::unordered_map<std::string /*window name*/, Rect> closedWindowsRects;
 	std::unordered_map<std::string /*window name*/, DockNodeId> windowsDockNodeAssignments;
 	std::unordered_map<DockNodeId, DockNode*> dockNodeIdsMap;
@@ -302,7 +302,7 @@ struct DockingState
 	bool draggingWindow = false;
 	bool draggingStarted = false;
 	std::string draggedText;
-	HOsWindow dragIndicatorOsWindow = nullptr;
+	HNativeWindow dragIndicatorNativeWindow = nullptr;
 	DockNode* resizingNode = nullptr;
 	DockNode* hoveredNode = nullptr;
 	DockNode* nodeToResize = nullptr;
