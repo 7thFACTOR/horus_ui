@@ -5,7 +5,7 @@
 #include <cmath>
 
 // backends
-#include "sdl_input_provider.h"
+#include "sdl3_input_provider.h"
 #include "opengl_graphics_provider.h"
 #include "opengl_vertex_buffer.h"
 #include "opengl_texture_array.h"
