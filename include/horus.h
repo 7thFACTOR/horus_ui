@@ -278,6 +278,9 @@ enum class WidgetElementId
 	TabBodyInactive,
 	WindowHorizontalSplitter,
 	WindowVerticalSplitter,
+	WindowDockGuideAsTab,
+	WindowDockGuideVerticalSplit,
+	WindowDockGuideHorizontalSplit,
 	MenuBarBody,
 	MenuBarItem,
 	MenuBody,
@@ -1876,7 +1879,11 @@ HORUS_API void setThemeImage(HTheme theme, const char* imageName, HImage image);
 
 HORUS_API void setWidgetStyle(WidgetType widgetType, const char* styleName);
 
+HORUS_API void setWidgetElementStyle(WidgetElementId widgetElementId, const char* styleName);
+
 HORUS_API void setDefaultWidgetStyle(WidgetType widgetType);
+
+HORUS_API void setDefaultWidgetElementStyle(WidgetElementId widgetElementId);
 
 HORUS_API void setUserWidgetElementStyle(const char* elementName, const char* styleName);
 

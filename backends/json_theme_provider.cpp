@@ -110,6 +110,9 @@ WidgetElementId getWidgetElementFromName(std::string name)
 	if (name == "tabBodyInactive") return WidgetElementId::TabBodyInactive;
 	if (name == "windowHorizontalSplitter") return WidgetElementId::WindowHorizontalSplitter;
 	if (name == "windowVerticalSplitter") return WidgetElementId::WindowVerticalSplitter;
+	if (name == "windowDockGuideAsTab") return WidgetElementId::WindowDockGuideAsTab;
+	if (name == "windowDockGuideVerticalSplit") return WidgetElementId::WindowDockGuideVerticalSplit;
+	if (name == "windowDockGuideHorizontalSplit") return WidgetElementId::WindowDockGuideHorizontalSplit;
 	if (name == "menuBarBody") return WidgetElementId::MenuBarBody;
 	if (name == "menuBarItem") return WidgetElementId::MenuBarItem;
 	if (name == "menuBody") return WidgetElementId::MenuBody;
@@ -141,13 +144,13 @@ WidgetElementId getWidgetElementFromName(std::string name)
 	return WidgetElementId::Custom;
 }
 
-std::string getPath(const std::string& fname)
+static std::string getPath(const std::string& fname)
 {
 	size_t pos = fname.find_last_of("\\/");
 	return (std::string::npos == pos) ? "" : fname.substr(0, pos);
 }
 
-Color getColorFromText(std::string colorText)
+static Color getColorFromText(std::string colorText)
 {
 	if (colorText == "white") { return Color::white; }
 	if (colorText == "black") { return Color::black; }

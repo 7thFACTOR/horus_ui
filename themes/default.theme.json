@@ -335,6 +335,21 @@
 			"windowVerticalSplitter":
 			{
 				"normal": { "image": "default/window_vertical_splitter", "border": 2, "color": "white", "textColor": "white", "font": "normal" }
+			},
+			"windowDockGuideVerticalSplit":
+			{
+				"normal": { "image": "default/window_dock_guide_vertical_split", "border": 20, "color": "255 255 255 128", "textColor": "white", "font": "normal" },
+				"hovered": { "image": "default/window_dock_guide_vertical_split", "border": 20, "color": "white", "textColor": "white", "font": "normal" }
+			},
+			"windowDockGuideHorizontalSplit":
+			{
+				"normal": { "image": "default/window_dock_guide_horizontal_split", "border": 20, "color": "255 255 255 128", "textColor": "white", "font": "normal" },
+				"hovered": { "image": "default/window_dock_guide_horizontal_split", "border": 20, "color": "white", "textColor": "white", "font": "normal" }
+			},
+			"windowDockGuideAsTab":
+			{
+				"normal": { "image": "default/window_dock_guide_as_tab", "border": 20, "color": "255 255 255 128", "textColor": "white", "font": "normal" },
+				"hovered": { "image": "default/window_dock_guide_as_tab", "border": 20, "color": "white", "textColor": "white", "font": "normal" }
 			}
 		},
 		"scrollView":

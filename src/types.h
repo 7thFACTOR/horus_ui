@@ -329,6 +329,15 @@ struct DockingState
 	Rect hitBoxRootRight;
 	Rect hitBoxRootTop;
 	Rect hitBoxRootBottom;
+	bool isHitBoxLeftHovered = false;
+	bool isHitBoxRightHovered = false;
+	bool isHitBoxTopHovered = false;
+	bool isHitBoxBottomHovered = false;
+	bool isHitBoxTabsHovered = false;
+	bool isHitBoxRootLeftHovered = false;
+	bool isHitBoxRootRightHovered = false;
+	bool isHitBoxRootTopHovered = false;
+	bool isHitBoxRootBottomHovered = false;
 };
 
 struct DragDropState

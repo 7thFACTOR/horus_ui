@@ -1060,9 +1060,22 @@ void setWidgetStyle(WidgetType widgetType, const char* styleName)
 	}
 }
 
+
+void setWidgetElementStyle(WidgetElementId widgetElementId, const char* styleName)
+{
+	assert(ctx);
+	assert(ctx->theme);
+	ctx->theme->elements[(u32)widgetElementId].setStyle(styleName);
+}
+
 void setDefaultWidgetStyle(WidgetType widgetType)
 {
 	setWidgetStyle(widgetType, "default");
+}
+
+void setDefaultWidgetElementStyle(WidgetElementId widgetElementId)
+{
+	setWidgetElementStyle(widgetElementId, "default");
 }
 
 void setUserWidgetElementStyle(const char* elementName, const char* styleName)
