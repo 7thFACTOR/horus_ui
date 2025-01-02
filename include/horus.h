@@ -620,15 +620,20 @@ enum class DockNodeSplitType
 	Right
 };
 
-enum class DockingIndicatorsStyle
+enum class DockingGuidesStyle
 {
-	/// Draw the indicators as actual native windows that shape to the sides of dock nodes, wont draw the small dock site rectangles
+	/// Draw the docking preview as actual native windows that shape to the sides of dock nodes, wont draw the docking guides
 	/// Works on Windows since we can make the dragged window pass-through events to windows below, doesnt work on Linux X11 or Wayland
 	/// This mode is smoother visually, but only works on Windows
 	NativeWindows,
-	/// Draw the indicators inside the native windows, consistent across platforms, might be a bit flickery due to the mechanism of window dragging
+	/// Draw the docking guides and preview inside the native windows, consistent across platforms, might be a bit flickery due to the mechanism of window dragging
 	/// and updating the contents of the dragged window to match the dock indicators
-	InsideNativeWindows
+	InsideNativeWindows,
+	/// Only change the cursor to a special drag window cursor
+	/// docking guides and preview are drawn inside the native window 
+	MouseCursorOnly,
+	/// Automatically will choose a style based on the platform OS' capabilities
+	Auto
 };
 
 /// Common message box icons
@@ -1577,11 +1582,14 @@ struct ContextSettings
 	f32 minScrollViewHandleSize = 20.0f; /// the minimum allowed scroll handle size (height)
 	u32 widgetLoopStartId = 1000000000; /// when pushing loops into loop stack, the widget ids will start from here. Basically this avoids the user to specify IDs when creating widgets in a loop, taking into account the fact there will not be so many widgets created anyway.
 	u32 widgetLoopMaxCount = 500000; /// current increment after each loop push to stack
-	DockingIndicatorsStyle dockingStyle = DockingIndicatorsStyle::NativeWindows; /// use DockingIndicatorsStyle::InsideNativeWindows for Linux
+	DockingGuidesStyle dockingStyle = DockingGuidesStyle::Auto; /// use DockingGuidesStyle::InsideNativeWindows for Linux
+	//TODO: this could be per native window
 	bool dockAllowUndockingToNewNativeWindow = true; /// allow view tabs to be undocked as native OS windows, outside of the main window, else windows will only be allowed to dock in their owner OS windows
 	f32 dockNodeSpacing = 3;
 	f32 dockNodeResizeSplitterHitSize = 6;
 	f32 dockNodeMinSize = 100;
+	f32 dockIndicatorBoxSize = 32;
+	f32 dockIndicatorBoxSpacing = 4;
 	f32 dockNodeDockingSizeRatio = 0.33f; /// ratio of the new size of a docked node in regard to the node we're docking in (if dockNodeProportionalResize is true)
 	f32 dockNodeRootDockingHitSize = 40;
 	f32 dockNodeDockingHitSizeRatio = 0.5f; /// unit percent from the size of a window used for the docking hit box

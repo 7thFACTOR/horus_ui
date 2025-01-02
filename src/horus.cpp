@@ -78,6 +78,15 @@ HContext createContext(struct ContextSettings& settings)
 	context->settings = settings;
 	context->providers = &settings.providers;
 
+	if (context->settings.dockingStyle == DockingGuidesStyle::Auto)
+	{
+#ifdef _WINDOWS
+		context->settings.dockingStyle = DockingGuidesStyle::NativeWindows;
+#elif _LINUX
+		context->settings.dockingStyle = DockingGuidesStyle::InsideNativeWindows;
+#endif
+	}
+
 	return context;
 }
 
@@ -711,6 +720,7 @@ bool packAtlas(HAtlas atlas, u32 border)
 
 DockNodeId createRootDockNode(HNativeWindow nativeWnd)
 {
+	assert(nativeWnd);
 	auto node = createNativeWindowRootDockNode(nativeWnd);
 	assert(node);
 

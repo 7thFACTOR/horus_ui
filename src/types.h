@@ -319,6 +319,16 @@ struct DockingState
 	bool drawingWindowTabs = false;
 	Window* dragWindow = nullptr;
 	u64 nextDockNodeId = 1;
+
+	Rect hitBoxLeft;
+	Rect hitBoxRight;
+	Rect hitBoxTop;
+	Rect hitBoxBottom;
+	Rect hitBoxTabs;
+	Rect hitBoxRootLeft;
+	Rect hitBoxRootRight;
+	Rect hitBoxRootTop;
+	Rect hitBoxRootBottom;
 };
 
 struct DragDropState

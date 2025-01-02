@@ -2172,63 +2172,107 @@ void handleDockingMouseMove(const InputEvent& event, DockNode* node)
 		auto rootNode = node;
 		auto& rootRect = rootNode->rect;
 		auto parentRect = ds.hoveredNode ? ds.hoveredNode->rect : rootRect;
-		Rect hitBoxLeft;
-		Rect hitBoxRight;
-		Rect hitBoxTop;
-		Rect hitBoxBottom;
-		Rect hitBoxTabs;
-		Rect hitBoxRootLeft;
-		Rect hitBoxRootRight;
-		Rect hitBoxRootTop;
-		Rect hitBoxRootBottom;
 
 		// do check hit tests only if this is the hovered window
 		if (ds.hoveredNode && ctx->lastHoveredNativeWindow == node->nativeWindow)
 		{
-			hitBoxLeft = parentRect;
-			hitBoxRight = parentRect;
-			hitBoxTop = parentRect;
-			hitBoxBottom = parentRect;
-			hitBoxTabs = parentRect;
+			ds.hitBoxLeft = parentRect;
+			ds.hitBoxRight = parentRect;
+			ds.hitBoxTop = parentRect;
+			ds.hitBoxBottom = parentRect;
+			ds.hitBoxTabs = parentRect;
 
-			hitBoxLeft.width *= ctx->settings.dockNodeDockingSizeRatio * ctx->settings.dockNodeDockingHitSizeRatio;
+			if (ctx->settings.dockingStyle != DockingGuidesStyle::InsideNativeWindows)
+			{
+				ds.hitBoxLeft.width *= ctx->settings.dockNodeDockingSizeRatio * ctx->settings.dockNodeDockingHitSizeRatio;
 
-			hitBoxRight.x += parentRect.width * (1.0f - ctx->settings.dockNodeDockingSizeRatio * ctx->settings.dockNodeDockingHitSizeRatio);
-			hitBoxRight.width *= ctx->settings.dockNodeDockingSizeRatio * ctx->settings.dockNodeDockingHitSizeRatio;
+				ds.hitBoxRight.x += parentRect.width * (1.0f - ctx->settings.dockNodeDockingSizeRatio * ctx->settings.dockNodeDockingHitSizeRatio);
+				ds.hitBoxRight.width *= ctx->settings.dockNodeDockingSizeRatio * ctx->settings.dockNodeDockingHitSizeRatio;
 
-			hitBoxTop.height *= ctx->settings.dockNodeDockingSizeRatio * ctx->settings.dockNodeDockingHitSizeRatio;
+				ds.hitBoxTop.height *= ctx->settings.dockNodeDockingSizeRatio * ctx->settings.dockNodeDockingHitSizeRatio;
 
-			hitBoxBottom.y += parentRect.height * (1.0f - ctx->settings.dockNodeDockingSizeRatio * ctx->settings.dockNodeDockingHitSizeRatio);
-			hitBoxBottom.height *= ctx->settings.dockNodeDockingSizeRatio * ctx->settings.dockNodeDockingHitSizeRatio;
+				ds.hitBoxBottom.y += parentRect.height * (1.0f - ctx->settings.dockNodeDockingSizeRatio * ctx->settings.dockNodeDockingHitSizeRatio);
+				ds.hitBoxBottom.height *= ctx->settings.dockNodeDockingSizeRatio * ctx->settings.dockNodeDockingHitSizeRatio;
 
-			hitBoxTabs.height = tabGroupElem.normalState().height * 2.0f;
+				ds.hitBoxTabs.height = tabGroupElem.normalState().height * 2.0f;
 
-			hitBoxRootLeft = rootNode->rect;
-			hitBoxRootRight = rootNode->rect;
-			hitBoxRootTop = rootNode->rect;
-			hitBoxRootBottom = rootNode->rect;
+				ds.hitBoxRootLeft = rootNode->rect;
+				ds.hitBoxRootRight = rootNode->rect;
+				ds.hitBoxRootTop = rootNode->rect;
+				ds.hitBoxRootBottom = rootNode->rect;
 
-			hitBoxRootLeft.width = ctx->settings.dockNodeRootDockingHitSize;
+				ds.hitBoxRootLeft.width = ctx->settings.dockNodeRootDockingHitSize;
 
-			hitBoxRootRight.x = rootNode->rect.right() - ctx->settings.dockNodeRootDockingHitSize;
-			hitBoxRootRight.width = ctx->settings.dockNodeRootDockingHitSize;
+				ds.hitBoxRootRight.x = rootNode->rect.right() - ctx->settings.dockNodeRootDockingHitSize;
+				ds.hitBoxRootRight.width = ctx->settings.dockNodeRootDockingHitSize;
 
-			hitBoxRootTop.height = ctx->settings.dockNodeRootDockingHitSize;
-			hitBoxRootTop.y -= 40;
+				ds.hitBoxRootTop.height = ctx->settings.dockNodeRootDockingHitSize;
+				ds.hitBoxRootTop.y -= 40;
 
-			hitBoxRootBottom.y = rootNode->rect.bottom() - ctx->settings.dockNodeRootDockingHitSize;
-			hitBoxRootBottom.height = ctx->settings.dockNodeRootDockingHitSize + 40;
+				ds.hitBoxRootBottom.y = rootNode->rect.bottom() - ctx->settings.dockNodeRootDockingHitSize;
+				ds.hitBoxRootBottom.height = ctx->settings.dockNodeRootDockingHitSize + 40;
+			}
+			else
+			{
+				auto boxSize = ctx->settings.dockIndicatorBoxSize;
+				auto boxGap = ctx->settings.dockIndicatorBoxSpacing;
 
-			auto isHitBoxLeftHovered = hitBoxLeft.contains(mousePos);
-			auto isHitBoxRightHovered = hitBoxRight.contains(mousePos);
-			auto isHitBoxTopHovered = hitBoxTop.contains(mousePos);
-			auto isHitBoxBottomHovered = hitBoxBottom.contains(mousePos);
-			auto isHitBoxTabsHovered = hitBoxTabs.contains(mousePos);
+				ds.hitBoxLeft = Rect(
+					parentRect.x + parentRect.width / 2.0f - boxSize / 2.0f - boxGap - boxSize,
+					parentRect.y + parentRect.height / 2.0f - boxSize / 2.0f,
+					boxSize, boxSize);
 
-			auto isHitBoxRootLeftHovered = hitBoxRootLeft.contains(mousePos);
-			auto isHitBoxRootRightHovered = hitBoxRootRight.contains(mousePos);
-			auto isHitBoxRootTopHovered = hitBoxRootTop.contains(mousePos);
-			auto isHitBoxRootBottomHovered = hitBoxRootBottom.contains(mousePos);
+				ds.hitBoxRight = Rect(
+					parentRect.x + parentRect.width / 2.0f + boxSize / 2.0f + boxGap,
+					parentRect.y + parentRect.height / 2.0f - boxSize / 2.0f,
+					boxSize, boxSize);
+
+				ds.hitBoxTop = Rect(
+					parentRect.x + parentRect.width / 2.0f - boxSize / 2.0f,
+					parentRect.y + parentRect.height / 2.0f - boxSize / 2.0f - boxSize - boxGap,
+					boxSize, boxSize);
+
+				ds.hitBoxBottom = Rect(
+					parentRect.x + parentRect.width / 2.0f - boxSize / 2.0f,
+					parentRect.y + parentRect.height / 2 + boxSize / 2 + boxGap,
+					boxSize, boxSize);
+
+				ds.hitBoxTabs = Rect(
+					parentRect.x + parentRect.width / 2.0f - boxSize / 2.0f,
+					parentRect.y + parentRect.height / 2.0f - boxSize / 2.0f,
+					boxSize, boxSize);
+
+				ds.hitBoxRootLeft = Rect(
+					boxGap,
+					rootRect.y + rootRect.height / 2.0f - boxSize / 2.0f,
+					boxSize, boxSize);
+
+				ds.hitBoxRootRight = Rect(
+					rootRect.right() - boxGap - boxSize,
+					rootRect.y + rootRect.height / 2.0f - boxSize / 2.0f,
+					boxSize, boxSize);
+
+				ds.hitBoxRootTop = Rect(
+					rootRect.x + rootRect.width / 2.0f - boxSize / 2.0f,
+					rootRect.y + boxGap,
+					boxSize, boxSize);
+
+				ds.hitBoxRootBottom = Rect(
+					rootRect.x + rootRect.width / 2.0f - boxSize / 2.0f,
+					rootRect.bottom() - boxSize / 2.0f - boxGap,
+					boxSize, boxSize);
+			}
+
+			auto isHitBoxLeftHovered = ds.hitBoxLeft.contains(mousePos);
+			auto isHitBoxRightHovered = ds.hitBoxRight.contains(mousePos);
+			auto isHitBoxTopHovered = ds.hitBoxTop.contains(mousePos);
+			auto isHitBoxBottomHovered = ds.hitBoxBottom.contains(mousePos);
+			auto isHitBoxTabsHovered = ds.hitBoxTabs.contains(mousePos);
+
+			auto isHitBoxRootLeftHovered = ds.hitBoxRootLeft.contains(mousePos);
+			auto isHitBoxRootRightHovered = ds.hitBoxRootRight.contains(mousePos);
+			auto isHitBoxRootTopHovered = ds.hitBoxRootTop.contains(mousePos);
+			auto isHitBoxRootBottomHovered = ds.hitBoxRootBottom.contains(mousePos);
 
 			if (isHitBoxLeftHovered)
 			{
@@ -2317,20 +2361,6 @@ void handleDockingMouseMove(const InputEvent& event, DockNode* node)
 					ds.hoveredNode->insertTabSpaceAt(mousePos, ds.dragWindow->tabRect.width);
 				}
 			}
-
-			// we've started to drag the window, so prepare objects and state
-			if (!ds.dragIndicatorNativeWindow)
-			{
-				Rect screenRect;
-
-				Point wndPos = HORUS_INPUT->getWindowPosition(ctx->lastHoveredNativeWindow);
-
-				screenRect = ds.draggedRect + wndPos;
-
-				ds.dragIndicatorNativeWindow = HORUS_INPUT->createWindow(ds.dragWindow->title.c_str(), NativeWindowFlags::NoInput | NativeWindowFlags::NoDecoration | NativeWindowFlags::Resizable, NativeWindowState::Normal, screenRect);
-
-				ds.dragWindow->dockingNow = true;
-			}
 		}
 	}
 
@@ -2379,6 +2409,20 @@ void updateDockingSystem()
 	for (auto& wnd : copyOfRootNativeWindowDockNodes)
 	{
 		handleDockNodeEvents(wnd.second);
+	}
+
+	// we've started to drag the window, so prepare objects and state
+	if (ds.dragWindow && ctx->settings.dockingStyle == DockingGuidesStyle::NativeWindows && !ds.dragIndicatorNativeWindow && ctx->lastHoveredNativeWindow)
+	{
+		Rect screenRect;
+
+		Point wndPos = HORUS_INPUT->getWindowPosition(ctx->lastHoveredNativeWindow);
+
+		screenRect = ds.draggedRect + wndPos;
+
+		ds.dragIndicatorNativeWindow = HORUS_INPUT->createWindow(ds.dragWindow->title.c_str(), NativeWindowFlags::NoInput | NativeWindowFlags::NoDecoration | NativeWindowFlags::Resizable, NativeWindowState::Normal, screenRect);
+
+		ds.dragWindow->dockingNow = true;
 	}
 
 	if (!ctx->lastHoveredNativeWindow && !HORUS_INPUT->isMouseButtonDownNow(MouseButton::Left) && ds.dragWindow)
