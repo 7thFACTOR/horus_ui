@@ -1715,7 +1715,7 @@ void handleDockingMouseDown(const InputEvent& event, DockNode* node)
 	ds.lastMousePos = mousePos;
 	ds.resizingNode = node->findResizeDockNode(mousePos);
 	ds.dragWindow = nullptr;
-	ds.draggingStarted = false;
+	ds.dragStarted = false;
 
 	//TODO: we could check just the tabs of the current os window clicked on
 	for (auto& wnd : ds.windows)
@@ -1754,7 +1754,7 @@ void handleDockingMouseUp()
 		ds.dragWindow->dockingNow = false;
 	}
 
-	if (ds.dragWindow && ds.draggingStarted && ds.hoveredNode)
+	if (ds.dragWindow && ds.dragStarted && ds.hoveredNode)
 	{
 		u32 tabIndex = 0;
 
@@ -1787,7 +1787,7 @@ void handleDockingMouseUp()
 		hui::forceRepaint();
 	}
 	// we undock to a new native window
-	else if (ds.dragWindow && ds.draggingStarted)
+	else if (ds.dragWindow && ds.dragStarted)
 	{
 		ds.dragWindow->dockingNow = false;
 		ds.dragWindow->dockNode->removeTabSpace();
@@ -2158,7 +2158,7 @@ void handleDockingMouseMove(const InputEvent& event, DockNode* node)
 {
 	auto& ds = ctx->dockingState;
 
-	if (ds.dragWindow && ds.draggingStarted)
+	if (ds.dragWindow && ds.dragStarted)
 	{
 		auto& tabGroupElem = ctx->theme->getElement(WidgetElementId::TabGroupBody);
 		const Point mousePos = ctx->mousePosition;
@@ -2214,53 +2214,58 @@ void handleDockingMouseMove(const InputEvent& event, DockNode* node)
 			}
 			else
 			{
-				auto boxSize = ctx->settings.dockIndicatorBoxSize;
+				// use width of the images to compute hit box
+				// the guide images are considered to be square
+				auto boxSizeV = ctx->theme->getElement(WidgetElementId::WindowDockGuideVerticalSplit).normalState().image->width * ctx->globalScale * ctx->settings.dockIndicatorBoxScale;
+				auto boxSizeH = ctx->theme->getElement(WidgetElementId::WindowDockGuideHorizontalSplit).normalState().image->width * ctx->globalScale * ctx->settings.dockIndicatorBoxScale;
+				auto boxSizeT = ctx->theme->getElement(WidgetElementId::WindowDockGuideAsTab).normalState().image->width * ctx->globalScale * ctx->settings.dockIndicatorBoxScale;
+
 				auto boxGap = ctx->settings.dockIndicatorBoxSpacing;
 
 				ds.hitBoxLeft = Rect(
-					parentRect.x + parentRect.width / 2.0f - boxSize / 2.0f - boxGap - boxSize,
-					parentRect.y + parentRect.height / 2.0f - boxSize / 2.0f,
-					boxSize, boxSize);
+					parentRect.x + parentRect.width / 2.0f - boxSizeV / 2.0f - boxGap - boxSizeV,
+					parentRect.y + parentRect.height / 2.0f - boxSizeV / 2.0f,
+					boxSizeV, boxSizeV);
 
 				ds.hitBoxRight = Rect(
-					parentRect.x + parentRect.width / 2.0f + boxSize / 2.0f + boxGap,
-					parentRect.y + parentRect.height / 2.0f - boxSize / 2.0f,
-					boxSize, boxSize);
+					parentRect.x + parentRect.width / 2.0f + boxSizeV / 2.0f + boxGap,
+					parentRect.y + parentRect.height / 2.0f - boxSizeV / 2.0f,
+					boxSizeV, boxSizeV);
 
 				ds.hitBoxTop = Rect(
-					parentRect.x + parentRect.width / 2.0f - boxSize / 2.0f,
-					parentRect.y + parentRect.height / 2.0f - boxSize / 2.0f - boxSize - boxGap,
-					boxSize, boxSize);
+					parentRect.x + parentRect.width / 2.0f - boxSizeH / 2.0f,
+					parentRect.y + parentRect.height / 2.0f - boxSizeH / 2.0f - boxSizeH - boxGap,
+					boxSizeH, boxSizeH);
 
 				ds.hitBoxBottom = Rect(
-					parentRect.x + parentRect.width / 2.0f - boxSize / 2.0f,
-					parentRect.y + parentRect.height / 2 + boxSize / 2 + boxGap,
-					boxSize, boxSize);
+					parentRect.x + parentRect.width / 2.0f - boxSizeH / 2.0f,
+					parentRect.y + parentRect.height / 2 + boxSizeH / 2 + boxGap,
+					boxSizeH, boxSizeH);
 
 				ds.hitBoxTabs = Rect(
-					parentRect.x + parentRect.width / 2.0f - boxSize / 2.0f,
-					parentRect.y + parentRect.height / 2.0f - boxSize / 2.0f,
-					boxSize, boxSize);
+					parentRect.x + parentRect.width / 2.0f - boxSizeT / 2.0f,
+					parentRect.y + parentRect.height / 2.0f - boxSizeT / 2.0f,
+					boxSizeT, boxSizeT);
 
 				ds.hitBoxRootLeft = Rect(
 					boxGap,
-					rootRect.y + rootRect.height / 2.0f - boxSize / 2.0f,
-					boxSize, boxSize);
+					rootRect.y + rootRect.height / 2.0f - boxSizeV / 2.0f,
+					boxSizeV, boxSizeV);
 
 				ds.hitBoxRootRight = Rect(
-					rootRect.right() - boxGap - boxSize,
-					rootRect.y + rootRect.height / 2.0f - boxSize / 2.0f,
-					boxSize, boxSize);
+					rootRect.right() - boxGap - boxSizeV,
+					rootRect.y + rootRect.height / 2.0f - boxSizeV / 2.0f,
+					boxSizeV, boxSizeV);
 
 				ds.hitBoxRootTop = Rect(
-					rootRect.x + rootRect.width / 2.0f - boxSize / 2.0f,
+					rootRect.x + rootRect.width / 2.0f - boxSizeH / 2.0f,
 					rootRect.y + boxGap,
-					boxSize, boxSize);
+					boxSizeH, boxSizeH);
 
 				ds.hitBoxRootBottom = Rect(
-					rootRect.x + rootRect.width / 2.0f - boxSize / 2.0f,
-					rootRect.bottom() - boxSize / 2.0f - boxGap,
-					boxSize, boxSize);
+					rootRect.x + rootRect.width / 2.0f - boxSizeH / 2.0f,
+					rootRect.bottom() - boxSizeH / 2.0f - boxGap,
+					boxSizeH, boxSizeH);
 			}
 
 			ds.isHitBoxLeftHovered = ds.hitBoxLeft.contains(mousePos);
@@ -2278,78 +2283,78 @@ void handleDockingMouseMove(const InputEvent& event, DockNode* node)
 			{
 				ds.dockToNode = ds.hoveredNode;
 				ds.dockType = DockType::Left;
-				ds.draggedRect = parentRect;
-				ds.draggedRect.width *= ctx->settings.dockNodeDockingSizeRatio;
+				ds.dragRect = parentRect;
+				ds.dragRect.width *= ctx->settings.dockNodeDockingSizeRatio;
 			}
 
 			if (ds.isHitBoxRightHovered)
 			{
 				ds.dockToNode = ds.hoveredNode;
 				ds.dockType = DockType::Right;
-				ds.draggedRect = parentRect;
-				ds.draggedRect.x += ds.draggedRect.width * (1.0f - ctx->settings.dockNodeDockingSizeRatio);
-				ds.draggedRect.width *= ctx->settings.dockNodeDockingSizeRatio;
+				ds.dragRect = parentRect;
+				ds.dragRect.x += ds.dragRect.width * (1.0f - ctx->settings.dockNodeDockingSizeRatio);
+				ds.dragRect.width *= ctx->settings.dockNodeDockingSizeRatio;
 			}
 
 			if (ds.isHitBoxTopHovered)
 			{
 				ds.dockToNode = ds.hoveredNode;
 				ds.dockType = DockType::Top;
-				ds.draggedRect = parentRect;
-				ds.draggedRect.height *= ctx->settings.dockNodeDockingSizeRatio;
+				ds.dragRect = parentRect;
+				ds.dragRect.height *= ctx->settings.dockNodeDockingSizeRatio;
 			}
 
 			if (ds.isHitBoxBottomHovered)
 			{
 				ds.dockToNode = ds.hoveredNode;
 				ds.dockType = DockType::Bottom;
-				ds.draggedRect = parentRect;
-				ds.draggedRect.y += floorf(ds.draggedRect.height * (1.0f - ctx->settings.dockNodeDockingSizeRatio));
-				ds.draggedRect.height *= ctx->settings.dockNodeDockingSizeRatio;
+				ds.dragRect = parentRect;
+				ds.dragRect.y += floorf(ds.dragRect.height * (1.0f - ctx->settings.dockNodeDockingSizeRatio));
+				ds.dragRect.height *= ctx->settings.dockNodeDockingSizeRatio;
 			}
 
 			if (ds.isHitBoxRootLeftHovered)
 			{
 				ds.dockToNode = rootNode;
 				ds.dockType = DockType::Left;
-				ds.draggedRect = ds.dockToNode->rect;
-				ds.draggedRect.width *= ctx->settings.dockNodeDockingSizeRatio;
+				ds.dragRect = ds.dockToNode->rect;
+				ds.dragRect.width *= ctx->settings.dockNodeDockingSizeRatio;
 			}
 
 			if (ds.isHitBoxRootRightHovered)
 			{
 				ds.dockToNode = rootNode;
 				ds.dockType = DockType::Right;
-				ds.draggedRect = ds.dockToNode->rect;
-				ds.draggedRect.x += ds.draggedRect.width * (1.0f - ctx->settings.dockNodeDockingSizeRatio);
-				ds.draggedRect.width *= ctx->settings.dockNodeDockingSizeRatio;
+				ds.dragRect = ds.dockToNode->rect;
+				ds.dragRect.x += ds.dragRect.width * (1.0f - ctx->settings.dockNodeDockingSizeRatio);
+				ds.dragRect.width *= ctx->settings.dockNodeDockingSizeRatio;
 			}
 
 			if (ds.isHitBoxRootTopHovered)
 			{
 				ds.dockToNode = rootNode;
 				ds.dockType = DockType::Top;
-				ds.draggedRect = ds.dockToNode->rect;
-				ds.draggedRect.height *= ctx->settings.dockNodeDockingSizeRatio;
+				ds.dragRect = ds.dockToNode->rect;
+				ds.dragRect.height *= ctx->settings.dockNodeDockingSizeRatio;
 			}
 
 			if (ds.isHitBoxRootBottomHovered)
 			{
 				ds.dockToNode = rootNode;
 				ds.dockType = DockType::Bottom;
-				ds.draggedRect = ds.dockToNode->rect;
-				ds.draggedRect.y += floorf(ds.draggedRect.height * (1.0f - ctx->settings.dockNodeDockingSizeRatio));
-				ds.draggedRect.height *= ctx->settings.dockNodeDockingSizeRatio;
+				ds.dragRect = ds.dockToNode->rect;
+				ds.dragRect.y += floorf(ds.dragRect.height * (1.0f - ctx->settings.dockNodeDockingSizeRatio));
+				ds.dragRect.height *= ctx->settings.dockNodeDockingSizeRatio;
 			}
 
 			if (ds.isHitBoxTabsHovered)
 			{
 				ds.dockToNode = ds.hoveredNode;
 				ds.dockType = DockType::AsTab;
-				ds.draggedRect = parentRect;
-				ds.draggedRect.x = mousePos.x;
-				ds.draggedRect.width = ds.dragWindow->tabRect.width;
-				ds.draggedRect.height = tabGroupElem.normalState().height;
+				ds.dragRect = parentRect;
+				ds.dragRect.x = mousePos.x;
+				ds.dragRect.width = ds.dragWindow->tabRect.width;
+				ds.dragRect.height = tabGroupElem.normalState().height;
 
 				if (isSameNode)
 				{
@@ -2391,7 +2396,7 @@ void handleDockNodeEvents(DockNode* node)
 	handleDockingMouseMove(event, node);
 }
 
-void drawDockingGuidesAndPreview()
+void drawDockGuides()
 {
 	auto& ds = ctx->dockingState;
 
@@ -2405,36 +2410,28 @@ void drawDockingGuidesAndPreview()
 
 	// draw the guides
 	ctx->renderer->cmdSetColor(ds.isHitBoxLeftHovered ? dockGuideVerticalSplitHoveredElem.color : dockGuideVerticalSplitNormalElem.color);
-	ctx->renderer->cmdDrawImageBordered(
+	ctx->renderer->cmdDrawImage(
 		ds.isHitBoxLeftHovered ?
 		dockGuideVerticalSplitHoveredElem.image : dockGuideVerticalSplitNormalElem.image,
-		ds.isHitBoxLeftHovered ?
-		dockGuideVerticalSplitHoveredElem.border : dockGuideVerticalSplitNormalElem.border,
-		ds.hitBoxLeft, ctx->globalScale);
+		ds.hitBoxLeft);
 
 	ctx->renderer->cmdSetColor(ds.isHitBoxRightHovered ? dockGuideVerticalSplitHoveredElem.color : dockGuideVerticalSplitNormalElem.color);
-	ctx->renderer->cmdDrawImageBordered(
+	ctx->renderer->cmdDrawImage(
 		ds.isHitBoxRightHovered ?
 		dockGuideVerticalSplitHoveredElem.image : dockGuideVerticalSplitNormalElem.image,
-		ds.isHitBoxRightHovered ?
-		dockGuideVerticalSplitHoveredElem.border : dockGuideVerticalSplitNormalElem.border,
-		ds.hitBoxRight, ctx->globalScale);
+		ds.hitBoxRight);
 
 	ctx->renderer->cmdSetColor(ds.isHitBoxTopHovered ? dockGuideHorizontalSplitHoveredElem.color : dockGuideHorizontalSplitNormalElem.color);
-	ctx->renderer->cmdDrawImageBordered(
+	ctx->renderer->cmdDrawImage(
 		ds.isHitBoxTopHovered ?
 		dockGuideHorizontalSplitHoveredElem.image : dockGuideHorizontalSplitNormalElem.image,
-		ds.isHitBoxTopHovered ?
-		dockGuideHorizontalSplitHoveredElem.border : dockGuideHorizontalSplitNormalElem.border,
-		ds.hitBoxTop, ctx->globalScale);
+		ds.hitBoxTop);
 
 	ctx->renderer->cmdSetColor(ds.isHitBoxBottomHovered ? dockGuideHorizontalSplitHoveredElem.color : dockGuideHorizontalSplitNormalElem.color);
-	ctx->renderer->cmdDrawImageBordered(
+	ctx->renderer->cmdDrawImage(
 		ds.isHitBoxBottomHovered ?
 		dockGuideHorizontalSplitHoveredElem.image : dockGuideHorizontalSplitNormalElem.image,
-		ds.isHitBoxBottomHovered ?
-		dockGuideHorizontalSplitHoveredElem.border : dockGuideHorizontalSplitNormalElem.border,
-		ds.hitBoxBottom, ctx->globalScale);
+		ds.hitBoxBottom);
 
 	// root node guides
 	ctx->renderer->cmdSetColor(ds.isHitBoxRootLeftHovered ? dockGuideVerticalSplitHoveredElem.color : dockGuideVerticalSplitNormalElem.color);
@@ -2446,50 +2443,48 @@ void drawDockingGuidesAndPreview()
 		ds.hitBoxRootLeft, ctx->globalScale);
 
 	ctx->renderer->cmdSetColor(ds.isHitBoxRootRightHovered ? dockGuideVerticalSplitHoveredElem.color : dockGuideVerticalSplitNormalElem.color);
-	ctx->renderer->cmdDrawImageBordered(
+	ctx->renderer->cmdDrawImage(
 		ds.isHitBoxRootRightHovered ?
 		dockGuideVerticalSplitHoveredElem.image : dockGuideVerticalSplitNormalElem.image,
-		ds.isHitBoxRootRightHovered ?
-		dockGuideVerticalSplitHoveredElem.border : dockGuideVerticalSplitNormalElem.border,
-		ds.hitBoxRootRight, ctx->globalScale);
+		ds.hitBoxRootRight);
 
 	ctx->renderer->cmdSetColor(ds.isHitBoxRootTopHovered ? dockGuideHorizontalSplitHoveredElem.color : dockGuideHorizontalSplitNormalElem.color);
-	ctx->renderer->cmdDrawImageBordered(
+	ctx->renderer->cmdDrawImage(
 		ds.isHitBoxRootTopHovered ?
 		dockGuideHorizontalSplitHoveredElem.image : dockGuideHorizontalSplitNormalElem.image,
-		ds.isHitBoxRootTopHovered ?
-		dockGuideHorizontalSplitHoveredElem.border : dockGuideHorizontalSplitNormalElem.border,
-		ds.hitBoxRootTop, ctx->globalScale);
+		ds.hitBoxRootTop);
 
 	ctx->renderer->cmdSetColor(ds.isHitBoxRootBottomHovered ? dockGuideHorizontalSplitHoveredElem.color : dockGuideHorizontalSplitNormalElem.color);
-	ctx->renderer->cmdDrawImageBordered(
+	ctx->renderer->cmdDrawImage(
 		ds.isHitBoxRootBottomHovered ?
 		dockGuideHorizontalSplitHoveredElem.image : dockGuideHorizontalSplitNormalElem.image,
-		ds.isHitBoxRootBottomHovered ?
-		dockGuideHorizontalSplitHoveredElem.border : dockGuideHorizontalSplitNormalElem.border,
-		ds.hitBoxRootBottom, ctx->globalScale);
+		ds.hitBoxRootBottom);
 
 	ctx->renderer->cmdSetColor(ds.isHitBoxTabsHovered ? dockGuideAsTabHoveredElem.color : dockGuideAsTabNormalElem.color);
-	ctx->renderer->cmdDrawImageBordered(
+	ctx->renderer->cmdDrawImage(
 		ds.isHitBoxTabsHovered ?
 		dockGuideAsTabHoveredElem.image : dockGuideAsTabNormalElem.image,
-		ds.isHitBoxTabsHovered ?
-		dockGuideAsTabHoveredElem.border : dockGuideAsTabNormalElem.border,
-		ds.hitBoxTabs, ctx->globalScale);
+		ds.hitBoxTabs);
 }
 
 void drawDockPreview(Window* window, const Rect& windowRect)
 {
 	auto& ds = ctx->dockingState;
 
-	ctx->renderer->begin();
 	ctx->renderer->pushClipRect(windowRect, false);
 
 	auto& windowElem = ctx->theme->getElement(WidgetElementId::WindowBody).normalState();
 
-	ctx->renderer->cmdSetColor(windowElem.color);
+	auto tintColorStr = hui::getThemeUserSetting(ctx->theme, "dockPreviewColorTint");
+	Color tintColor = Color::white;
+
+	if (tintColorStr && strcmp(tintColorStr, ""))
+	{
+		tintColor = getColorFromText(tintColorStr);
+	}
+
+	ctx->renderer->cmdSetColor(windowElem.color * tintColor);
 	ctx->renderer->cmdDrawImageBordered(windowElem.image, windowElem.border, windowRect, ctx->globalScale);
-	ctx->penPosition.set(0, 0);
 	pushLayoutPadding(0);
 	beginContainer(windowRect);
 	beginTabGroup(0);
@@ -2498,7 +2493,6 @@ void drawDockPreview(Window* window, const Rect& windowRect)
 	endContainer();
 	popLayoutPadding();
 	ctx->renderer->popClipRect();
-	ctx->renderer->end();
 }
 
 void updateDockingSystem()
@@ -2507,10 +2501,11 @@ void updateDockingSystem()
 	auto& ds = ctx->dockingState;
 	const auto& mousePos = ctx->mousePosition;
 
-	ds.draggingStarted = fabs(ds.lastMousePosSinceMouseDown.x - mousePos.x) > ctx->settings.dragStartDistance || abs(ds.lastMousePosSinceMouseDown.y - mousePos.y) > ctx->settings.dragStartDistance;
+	ds.dragStarted = (ds.lastMousePosSinceMouseDown - mousePos).getLength() > ctx->settings.dragStartDistance;
 	ds.mouseDragDelta = mousePos - ds.lastMousePos;
 
 	auto screenMousePos = HORUS_INPUT->getAbsoluteMousePosition();
+	Rect screenRect;
 
 	ds.dockToNode = nullptr;
 	ds.hoveredNode = nullptr;
@@ -2521,23 +2516,23 @@ void updateDockingSystem()
 		handleDockNodeEvents(wnd.second);
 	}
 
-	// we've started to drag the window, so prepare objects and state
 	if (ds.dragWindow 
 		&& ctx->settings.dockingStyle == DockingGuidesStyle::NativeWindows
 		&& !ds.dragIndicatorNativeWindow
 		&& ctx->lastHoveredNativeWindow)
 	{
-		Rect screenRect;
 		Point wndPos = HORUS_INPUT->getWindowPosition(ctx->lastHoveredNativeWindow);
 
-		screenRect = ds.draggedRect + wndPos;
+		screenRect = ds.dragRect + wndPos;
 
 		ds.dragIndicatorNativeWindow = HORUS_INPUT->createWindow(ds.dragWindow->title.c_str(), NativeWindowFlags::NoInput | NativeWindowFlags::NoDecoration | NativeWindowFlags::Resizable, NativeWindowState::Normal, screenRect);
 
 		ds.dragWindow->dockingNow = true;
 	}
 
-	if (!ctx->lastHoveredNativeWindow && !HORUS_INPUT->isMouseButtonDownNow(MouseButton::Left) && ds.dragWindow)
+	if (!ctx->lastHoveredNativeWindow
+		&& !HORUS_INPUT->isMouseButtonDownNow(MouseButton::Left)
+		&& ds.dragWindow)
 	{
 		ctx->event.type = InputEvent::Type::MouseUp;
 	}
@@ -2547,14 +2542,12 @@ void updateDockingSystem()
 		handleDockingMouseUp();
 	}
 
-	Rect screenRect;
-
 	if (ds.dockType != DockType::AsTab)
 	{
 		if (ds.hoveredNode) ds.hoveredNode->removeTabSpace();
 	}
 
-	screenRect = ds.draggedRect;
+	screenRect = ds.dragRect;
 
 	if (ds.dragIndicatorNativeWindow && ds.dragWindow)
 	{
@@ -2566,7 +2559,7 @@ void updateDockingSystem()
 		{
 			auto pos = HORUS_INPUT->getWindowPosition(ds.hoveredNode->nativeWindow);
 
-			screenRect = ds.draggedRect;
+			screenRect = ds.dragRect;
 			screenRect += pos;
 
 			if (ds.dockType == DockType::AsTab)
@@ -2599,7 +2592,9 @@ void updateDockingSystem()
 				ctx->renderer->disableRendering = false;
 				ctx->renderer->setCurrentNativeWindow(ds.dragIndicatorNativeWindow);
 				ctx->renderer->setWindowSize(rc.getSize());
+				ctx->renderer->begin();
 				drawDockPreview(ds.dragWindow, rc);
+				ctx->renderer->end();
 				ctx->renderer->executeDrawCommands(ds.dragIndicatorNativeWindow);
 				HORUS_INPUT->presentWindow(ds.dragIndicatorNativeWindow);
 			}
@@ -2608,15 +2603,23 @@ void updateDockingSystem()
 		{
 			if (ds.hoveredNode)
 			{
-				auto rc = screenRect;
+				auto rc = ds.rootNativeWindowDockNodes[ds.hoveredNode->nativeWindow]->rect;
 
 				HORUS_INPUT->setCurrentWindow(ds.hoveredNode->nativeWindow);
 				ctx->renderer->disableRendering = false;
 				ctx->renderer->setCurrentNativeWindow(ds.hoveredNode->nativeWindow);
 				ctx->renderer->setWindowSize(rc.getSize());
-				drawDockPreview(ds.dragWindow, rc);
+				ctx->renderer->begin();
+				// we need to render last, so choose the highest z order
+				auto oldZOrder = ctx->renderer->setZOrder(~0);
+				drawDockPreview(ds.dragWindow, ds.dragRect);
+				drawDockGuides();
+				ctx->renderer->end();
+				// restore z order
+				ctx->renderer->setZOrder(oldZOrder);
 				ctx->renderer->executeDrawCommands(ds.hoveredNode->nativeWindow);
-				HORUS_INPUT->presentWindow(ds.hoveredNode->nativeWindow);
+
+				hui::setMouseCursor(MouseCursorType::HandPointing);
 			}
 		}
 	}
@@ -2639,11 +2642,6 @@ void updateDockingSystem()
 		}
 
 		ctx->dockingState.nativeWindowsToDelete.insert(ctx->event.window);
-	}
-
-	if (ds.dragWindow && ctx->settings.dockingStyle != DockingGuidesStyle::NativeWindows)
-	{
-		drawDockingGuidesAndPreview();
 	}
 
 	ds.lastMousePos = mousePos;

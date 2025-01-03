@@ -215,7 +215,7 @@ public:
 	void setWindowSize(const Point& size);
 	const Point& getWindowSize() const { return windowSize; }
 	Rect getWindowRect() const { return { 0, 0, windowSize.x, windowSize.y }; }
-	void setZOrder(u32 zorder) { zOrder = zorder; }
+	u32 setZOrder(u32 zorder) { auto oldZOrder = zOrder; zOrder = zorder; return oldZOrder; }
 	void incrementZOrder() { zOrder++; }
 	void decrementZOrder() { zOrder--; }
 	u32 getZOrder() const { return zOrder; }

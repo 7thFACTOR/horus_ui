@@ -27,7 +27,7 @@ bool sliderInternal(f32 minVal, f32 maxVal, f32& value, bool useStep, f32 step, 
 
 	if (isHovered())
 	{
-		setMouseCursor(MouseCursorType::Hand);
+		setMouseCursor(MouseCursorType::HandPointing);
 	}
 
 	f32 percentFilled = 1.0f - (maxVal - value) / (maxVal - minVal);

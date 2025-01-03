@@ -296,30 +296,19 @@ struct DockingState
 	DockNode* currentDockNode = nullptr;
 	Window* focusedWindow = nullptr;
 	bool closeWindow = false;
-	// variables for dragging views around
-	const f32 dockBorderSizePercent = 0.5f;
-	bool draggingDockNodeBorder = false;
-	bool draggingWindow = false;
-	bool draggingStarted = false;
-	std::string draggedText;
+	bool dragStarted = false;
 	HNativeWindow dragIndicatorNativeWindow = nullptr;
 	DockNode* resizingNode = nullptr;
 	DockNode* hoveredNode = nullptr;
-	DockNode* nodeToResize = nullptr;
-	DockNode* draggingNodeSource = nullptr;
-	Rect dockRect;
 	DockType dockType = DockType::None;
 	DockNode* dockToNode = nullptr;
-	Rect resizeNodeRect;
-	Rect resizeNodeSiblingRect;
 	Point lastMousePosSinceMouseDown;
 	Point lastMousePos;
 	Point mouseDragDelta;
-	Rect draggedRect;
+	Rect dragRect;
 	bool drawingWindowTabs = false;
 	Window* dragWindow = nullptr;
 	u64 nextDockNodeId = 1;
-
 	Rect hitBoxLeft;
 	Rect hitBoxRight;
 	Rect hitBoxTop;

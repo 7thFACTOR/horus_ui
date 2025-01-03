@@ -45,7 +45,7 @@ bool comboSliderInternal(f32& value, f32 minVal, f32 maxVal, bool useRange, f32 
 
 	if (isHovered() || isPressed())
 	{
-		setMouseCursor(MouseCursorType::Hand);
+		setMouseCursor(MouseCursorType::HandPointing);
 	}
 
 	bool arrowStepped = false;

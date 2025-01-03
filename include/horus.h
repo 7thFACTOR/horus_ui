@@ -569,8 +569,7 @@ enum class MouseCursorType
 	SizeNS,
 	SizeAll,
 	No,
-	Hand,
-	FingerPoint,
+	HandPointing,
 	Custom,
 
 	Count
@@ -1293,6 +1292,11 @@ struct Rect
 			|| fabsf(width - other.width) > epsilon
 			|| fabsf(height - other.height) > epsilon;
 	}
+
+	inline Rect operator * (f32 amount)
+	{
+		return Rect(x, y, width * amount, height * amount);
+	}
 };
 
 struct InputEvent
@@ -1591,7 +1595,7 @@ struct ContextSettings
 	f32 dockNodeSpacing = 3;
 	f32 dockNodeResizeSplitterHitSize = 6;
 	f32 dockNodeMinSize = 100;
-	f32 dockIndicatorBoxSize = 32;
+	f32 dockIndicatorBoxScale = 1.0f;
 	f32 dockIndicatorBoxSpacing = 4;
 	f32 dockNodeDockingSizeRatio = 0.33f; /// ratio of the new size of a docked node in regard to the node we're docking in (if dockNodeProportionalResize is true)
 	f32 dockNodeRootDockingHitSize = 40;

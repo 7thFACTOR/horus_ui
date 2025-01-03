@@ -12,8 +12,8 @@ struct DockNode
 	{
 		None,
 		Tabs, //[A][B]
-		Vertical, // =
-		Horizontal, // ||
+		Vertical, // = vertical arrangement //TODO: maybe would be viceversa, vertical is actually |||||
+		Horizontal, // || horizontal arrangement
 	};
 
 	u64 id = 0;
