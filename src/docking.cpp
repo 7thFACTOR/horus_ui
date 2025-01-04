@@ -2559,7 +2559,7 @@ void updateDockingSystem()
 
 		ds.dragWindow->dockingNow = true;
 	}
-
+printf("hovwnd %d\n", ctx->lastHoveredNativeWindow);
 	// if we release the mouse button, wherever it is, over a window or not
 	// then force a mouse up button
 	if (!HORUS_INPUT->isMouseButtonDownNow(MouseButton::Left)
