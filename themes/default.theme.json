@@ -28,7 +28,7 @@
 	"settings":
 	{
 		"sameLineHeight": "20",
-		"dockPreviewColorTint": "sky"
+		"dockPreviewColorTint": "0 150 150 150"
 	},
 
 	"widgets":

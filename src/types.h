@@ -299,6 +299,7 @@ struct DockingState
 	bool dragStarted = false;
 	HNativeWindow dragIndicatorNativeWindow = nullptr;
 	DockNode* resizingNode = nullptr;
+	DockNode* lastHoveredNode = nullptr;
 	DockNode* hoveredNode = nullptr;
 	DockType dockType = DockType::None;
 	DockNode* dockToNode = nullptr;
@@ -308,12 +309,14 @@ struct DockingState
 	Rect dragRect;
 	bool drawingWindowTabs = false;
 	Window* dragWindow = nullptr;
+	Point dragWindowMouseDelta;
 	u64 nextDockNodeId = 1;
 	Rect hitBoxLeft;
 	Rect hitBoxRight;
 	Rect hitBoxTop;
 	Rect hitBoxBottom;
 	Rect hitBoxTabs;
+	Rect hitBoxTabsBar;
 	Rect hitBoxRootLeft;
 	Rect hitBoxRootRight;
 	Rect hitBoxRootTop;
@@ -323,6 +326,7 @@ struct DockingState
 	bool isHitBoxTopHovered = false;
 	bool isHitBoxBottomHovered = false;
 	bool isHitBoxTabsHovered = false;
+	bool isHitBoxTabsBarHovered = false;
 	bool isHitBoxRootLeftHovered = false;
 	bool isHitBoxRootRightHovered = false;
 	bool isHitBoxRootTopHovered = false;
