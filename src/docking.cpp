@@ -1766,7 +1766,9 @@ void handleDockingMouseUp()
 			if (tabIndex == ~0)
 				tabIndex = ds.dockToNode->windows.size();
 		}
+		
 		bool dock = true;
+
 		if (ds.dockType == DockType::AsTab && ds.dockToNode && ds.dockToNode == ds.dragWindow->dockNode)
 		{
 			ds.dragWindow->dockNode->selectedTabIndex = ds.dockToNode->dockingTabSpaceIndex;
@@ -2185,6 +2187,11 @@ void handleDockingMouseMove(const InputEvent& event, DockNode* node)
 		// do check hit tests only if this is the hovered window
 		if (ds.hoveredNode && ctx->lastHoveredNativeWindow == node->nativeWindow)
 		{
+			if (ds.lastHoveredNode && ds.lastHoveredNode != ds.hoveredNode)
+			{ incearca sa faci asta pt toate nodes ever de test macar
+				ds.lastHoveredNode->removeTabSpace();
+			}
+
 			ds.hitBoxLeft = parentRect;
 			ds.hitBoxRight = parentRect;
 			ds.hitBoxTop = parentRect;
@@ -2387,11 +2394,6 @@ void handleDockingMouseMove(const InputEvent& event, DockNode* node)
 				}
 				else
 				{
-					if (ds.lastHoveredNode && ds.lastHoveredNode != ds.hoveredNode)
-					{
-						ds.lastHoveredNode->removeTabSpace();
-					}
-
 					ds.hoveredNode->insertTabSpaceAt(mousePos, ds.dragWindow->tabRect.width);
 				}
 			}
@@ -2536,7 +2538,6 @@ void updateDockingSystem()
 	auto screenMousePos = HORUS_INPUT->getAbsoluteMousePosition();
 	Rect screenRect;
 
-	ds.lastHoveredNode = ds.hoveredNode;
 	ds.dockToNode = nullptr;
 	ds.hoveredNode = nullptr;
 	ds.dockType = DockType::Floating;
@@ -2687,6 +2688,7 @@ printf("hovwnd %d\n", ctx->lastHoveredNativeWindow);
 	}
 
 	ds.lastMousePos = mousePos;
+	ds.lastHoveredNode = ds.hoveredNode;
 }
 
 }
