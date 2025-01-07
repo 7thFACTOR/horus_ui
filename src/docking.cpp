@@ -578,6 +578,7 @@ void DockNode::moveWindowTabAt(const Point& mousePos, Window* window)
 		if (windows[i]->dockingNow)
 			continue;
 
+		// swap the tab with the overlapped one
 		if (windows[i]->tabRect.x + windows[i]->tabRect.width / 2.0f < mousePos.x
 			&& windows[i]->tabRect.right() > mousePos.x)
 		{
@@ -1757,22 +1758,25 @@ void handleDockingMouseUp()
 
 	if (ds.dragWindow && ds.dragStarted && ds.hoveredNode)
 	{
-		u32 tabIndex = 0;
+		size_t tabIndex = 0;
 
-		if (ds.dockType == DockType::AsTab && ds.dockToNode != ds.dragWindow->dockNode)
+		if (ds.dockType == DockType::AsTab)
 		{
 			tabIndex = ds.dockToNode->dockingTabSpaceIndex;
 
+			// dock after last tab
 			if (tabIndex == ~0)
 				tabIndex = ds.dockToNode->windows.size();
 		}
 		
-		bool dock = true;
+		bool allowDock = true;
 
-		if (ds.dockType == DockType::AsTab && ds.dockToNode && ds.dockToNode == ds.dragWindow->dockNode)
+		// if its trying to dock to the same dock node, just dont dock
+		if (ds.dockType == DockType::AsTab
+			&& ds.dockToNode
+			&& ds.dockToNode == ds.dragWindow->dockNode)
 		{
-			ds.dragWindow->dockNode->selectedTabIndex = ds.dockToNode->dockingTabSpaceIndex;
-			dock = false;
+			allowDock = false;
 		}
 
 		if (ds.dockToNode && ds.dockToNode->windows.size() == 1)
@@ -1784,10 +1788,14 @@ void handleDockingMouseUp()
 			ds.dockToNode->removeTabSpace();
 
 		// dock only if we dragged to a different dock node
-		if (dock)
+		if (allowDock)
 		{
-			ds.dragWindow->dockNode->selectedTabIndex = 0;
 			dockWindow(ds.dragWindow, ds.dockToNode, ds.dockType, tabIndex);
+		}
+		else
+		{
+			// just set the selected tab index to the new location
+			ds.dragWindow->dockNode->selectedTabIndex = tabIndex;
 		}
 
 		ds.dragWindow = nullptr;
@@ -2187,11 +2195,6 @@ void handleDockingMouseMove(const InputEvent& event, DockNode* node)
 		// do check hit tests only if this is the hovered window
 		if (ds.hoveredNode && ctx->lastHoveredNativeWindow == node->nativeWindow)
 		{
-			if (ds.lastHoveredNode && ds.lastHoveredNode != ds.hoveredNode)
-			{ incearca sa faci asta pt toate nodes ever de test macar
-				ds.lastHoveredNode->removeTabSpace();
-			}
-
 			ds.hitBoxLeft = parentRect;
 			ds.hitBoxRight = parentRect;
 			ds.hitBoxTop = parentRect;
@@ -2538,6 +2541,8 @@ void updateDockingSystem()
 	auto screenMousePos = HORUS_INPUT->getAbsoluteMousePosition();
 	Rect screenRect;
 
+	// remember last valid hovered node to remove insertion space when changed
+	ds.lastHoveredNode = ds.hoveredNode ? ds.hoveredNode : ds.lastHoveredNode;
 	ds.dockToNode = nullptr;
 	ds.hoveredNode = nullptr;
 	ds.dockType = DockType::Floating;
@@ -2560,7 +2565,7 @@ void updateDockingSystem()
 
 		ds.dragWindow->dockingNow = true;
 	}
-printf("hovwnd %d\n", ctx->lastHoveredNativeWindow);
+
 	// if we release the mouse button, wherever it is, over a window or not
 	// then force a mouse up button
 	if (!HORUS_INPUT->isMouseButtonDownNow(MouseButton::Left)
@@ -2574,9 +2579,9 @@ printf("hovwnd %d\n", ctx->lastHoveredNativeWindow);
 		handleDockingMouseUp();
 	}
 
-	if (ds.dockType != DockType::AsTab)
+	if (ds.lastHoveredNode && ds.lastHoveredNode != ds.hoveredNode)
 	{
-		if (ds.hoveredNode) ds.hoveredNode->removeTabSpace();
+		ds.lastHoveredNode->removeTabSpace();
 	}
 
 	screenRect = ds.dragRect;
@@ -2629,14 +2634,14 @@ printf("hovwnd %d\n", ctx->lastHoveredNativeWindow);
 		{
 			if (ctx->dockingState.dragIndicatorNativeWindow)
 			{
-				auto rc = screenRect;
-
 				HORUS_INPUT->setCurrentWindow(ds.dragIndicatorNativeWindow);
 				ctx->renderer->disableRendering = false;
 				ctx->renderer->setCurrentNativeWindow(ds.dragIndicatorNativeWindow);
-				ctx->renderer->setWindowSize(rc.getSize());
+				ctx->renderer->setWindowSize(screenRect.getSize());
 				ctx->renderer->begin();
-				drawDockPreview(ds.dragWindow, rc);
+				// the rect is in screen coords, just make it relative to our dragged indicator window
+				screenRect.x = screenRect.y = 0;
+				drawDockPreview(ds.dragWindow, screenRect);
 				ctx->renderer->end();
 				ctx->renderer->executeDrawCommands(ds.dragIndicatorNativeWindow);
 				HORUS_INPUT->presentWindow(ds.dragIndicatorNativeWindow);
