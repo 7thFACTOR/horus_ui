@@ -468,7 +468,12 @@ DockNode* DockNode::findTargetDockNode(const Point& pt)
 {
 	if ((type == Type::None || type == Type::Tabs))
 	{
-		if (rect.contains(pt))
+		Rect rectWithDockSpacing = rect;
+		
+		rectWithDockSpacing.width += ctx->settings.dockNodeSpacing;
+		rectWithDockSpacing.height += ctx->settings.dockNodeSpacing;
+
+		if (rectWithDockSpacing.contains(pt))
 		{
 			return this;
 		}
@@ -1741,7 +1746,7 @@ void handleDockingMouseDown(const InputEvent& event, DockNode* node)
 		{
 			ds.dragWindow = wnd.second;
 			ds.focusedWindow = wnd.second;
-			ds.dragWindowMouseDelta = ds.dragWindow->tabRect.topLeft() - mousePos;
+			ds.dragWindowMouseDelta = mousePos - ds.dragWindow->tabRect.topLeft();
 			break;
 		}
 	}
@@ -1784,43 +1789,40 @@ void handleDockingMouseUp()
 			ds.dockToNode->selectedTabIndex = 0;
 		}
 
-		if (ds.dockToNode)
-			ds.dockToNode->removeTabSpace();
-
 		// dock only if we dragged to a different dock node
 		if (allowDock)
 		{
-			dockWindow(ds.dragWindow, ds.dockToNode, ds.dockType, tabIndex);
+			Point* wndPos = nullptr;
+			Point pos;
+
+			// undock the window if there is more than one in the dock node
+			// and if the dock node is not a root node of the window
+			if (ds.dockType == DockType::Floating && ctx->settings.dockAllowUndockingToNewNativeWindow)
+			{
+				auto& rc = ds.dragWindow->dockNode->rect;
+
+				// we use the current screen mouse pos to undock the window to
+				pos = HORUS_INPUT->getAbsoluteMousePosition();
+				// put the window in the middle of the mouse coordinates
+				pos.x -= rc.width / 2.0f;
+				pos.y -= rc.height / 2.0f;
+				wndPos = &pos;
+			}
+
+			dockWindow(ds.dragWindow, ds.dockToNode, ds.dockType, tabIndex, wndPos);
 		}
 		else
 		{
-			// just set the selected tab index to the new location
-			ds.dragWindow->dockNode->selectedTabIndex = tabIndex;
+			ds.dockToNode->selectedTabIndex = ds.dockToNode->dockingTabSpaceIndex;
+
+			if (ds.dockToNode->selectedTabIndex == ~0 && ds.dockToNode->windows.size())
+			{
+				ds.dragWindow->dockNode->selectedTabIndex = ds.dockToNode->windows.size() - 1;
+			}
 		}
 
-		ds.dragWindow = nullptr;
-		ds.dockToNode = nullptr;
-
-		hui::forceRepaint();
-	}
-	// we undock to a new native window
-	else if (ds.dragWindow && ds.dragStarted)
-	{
-		ds.dragWindow->dockingNow = false;
-		ds.dragWindow->dockNode->removeTabSpace();
-
-		// undock the window if there is more than one in the dock node
-		// and if the dock node is not a root node of the window
-		if (ctx->settings.dockAllowUndockingToNewNativeWindow)
-		{
-			auto& rc = ds.dragWindow->dockNode->rect;
-
-			// we use the current screen mouse pos to undock the window to
-			Point pt = HORUS_INPUT->getAbsoluteMousePosition();
-			// put the window in the middle of the mouse X coordinate
-			pt.x -= rc.width / 2.0f;
-			undockWindow(ds.dragWindow->id.c_str(), pt);
-		}
+		if (ds.dockToNode)
+			ds.dockToNode->removeTabSpace();
 
 		hui::forceRepaint();
 	}
@@ -1834,6 +1836,7 @@ void handleDockingMouseUp()
 	ds.dockToNode = nullptr;
 	ds.dragWindow = nullptr;
 	ds.resizingNode = nullptr;
+	ds.dragStarted = false;
 }
 
 void handleDockNodeResize(DockNode* node)
@@ -1842,10 +1845,7 @@ void handleDockNodeResize(DockNode* node)
 	auto& mousePos = ctx->mousePosition;
 	DockNode* hoveredResizingNode = nullptr;
 
-	if (!ds.dragWindow)
-	{
-		hoveredResizingNode = node->findResizeDockNode(ctx->mousePosition);
-	}
+	hoveredResizingNode = node->findResizeDockNode(ctx->mousePosition);
 
 	if (ds.resizingNode || (hoveredResizingNode && hoveredResizingNode->parent))
 	{
@@ -2213,6 +2213,7 @@ void handleDockingMouseMove(const InputEvent& event, DockNode* node)
 				ds.hitBoxBottom.y += parentRect.height * (1.0f - ctx->settings.dockNodeDockingSizeRatio * ctx->settings.dockNodeDockingHitSizeRatio);
 				ds.hitBoxBottom.height *= ctx->settings.dockNodeDockingSizeRatio * ctx->settings.dockNodeDockingHitSizeRatio;
 
+				ds.hitBoxTabs.width += ctx->settings.dockNodeSpacing;
 				ds.hitBoxTabs.height = tabGroupElem.normalState().height * 2.0f;
 
 				ds.hitBoxRootLeft = rootNode->rect;
@@ -2381,7 +2382,7 @@ void handleDockingMouseMove(const InputEvent& event, DockNode* node)
 				if (ctx->settings.dockingStyle == DockingGuidesStyle::NativeWindows || ds.isHitBoxTabsBarHovered)
 				{
 					ds.dragRect = parentRect;
-					ds.dragRect.x = mousePos.x + ds.dragWindowMouseDelta.x;
+					ds.dragRect.x = mousePos.x - ds.dragWindowMouseDelta.x;
 					ds.dragRect.width = ds.dragWindow->tabRect.width;
 					ds.dragRect.height = tabGroupElem.normalState().height;
 				}
@@ -2509,12 +2510,21 @@ void drawDockPreview(Window* window, const Rect& windowRect)
 
 	auto& windowElem = ctx->theme->getElement(WidgetElementId::WindowBody).normalState();
 
-	auto tintColorStr = hui::getThemeUserSetting(ctx->theme, "dockPreviewColorTint");
-	Color tintColor = Color::white;
+	Color tintColor;
 
-	if (tintColorStr && strcmp(tintColorStr, ""))
+	if (ctx->settings.dockingStyle == DockingGuidesStyle::NativeWindows)
 	{
-		tintColor = getColorFromText(tintColorStr);
+		auto tintColorStr = hui::getThemeUserSetting(ctx->theme, "dockPreviewNativeWindowsColorTint");
+
+		if (tintColorStr && strcmp(tintColorStr, ""))
+			tintColor = getColorFromText(tintColorStr);
+	}
+	else
+	{
+		auto tintColorStr = hui::getThemeUserSetting(ctx->theme, "dockPreviewInsideWindowsColorTint");
+
+		if (tintColorStr && strcmp(tintColorStr, ""))
+			tintColor = getColorFromText(tintColorStr);
 	}
 
 	ctx->renderer->cmdSetColor(windowElem.color * tintColor);
@@ -2535,7 +2545,11 @@ void updateDockingSystem()
 	auto& ds = ctx->dockingState;
 	const auto& mousePos = ctx->mousePosition;
 
-	ds.dragStarted = (ds.lastMousePosSinceMouseDown - mousePos).getLength() > ctx->settings.dragStartDistance;
+	if (ds.dragWindow)
+	{
+		ds.dragStarted = (ds.lastMousePosSinceMouseDown - mousePos).getLength() > ctx->settings.dragStartDistance;
+	}
+
 	ds.mouseDragDelta = mousePos - ds.lastMousePos;
 
 	auto screenMousePos = HORUS_INPUT->getAbsoluteMousePosition();
@@ -2553,6 +2567,7 @@ void updateDockingSystem()
 	}
 
 	if (ds.dragWindow 
+		&& ds.dragStarted
 		&& ctx->settings.dockingStyle == DockingGuidesStyle::NativeWindows
 		&& !ds.dragIndicatorNativeWindow
 		&& ctx->lastHoveredNativeWindow)
@@ -2586,9 +2601,9 @@ void updateDockingSystem()
 
 	screenRect = ds.dragRect;
 
-	if (ds.dragIndicatorNativeWindow && ds.dragWindow)
+	if (ds.dragIndicatorNativeWindow && ds.dragWindow && ds.dragStarted)
 	{
-		// if we try to dock on dock nodes sides
+		// if we try to dock on dock nodes sides or tabs area
 		if (ctx->lastHoveredNativeWindow
 			&& ds.dockType != DockType::None
 			&& ds.dockType != DockType::Floating
@@ -2598,11 +2613,6 @@ void updateDockingSystem()
 
 			screenRect = ds.dragRect;
 			screenRect += pos;
-
-			if (ds.dockType == DockType::AsTab)
-			{
-				screenRect.x -= 32;
-			}
 		}
 		else
 		{
@@ -2624,8 +2634,8 @@ void updateDockingSystem()
 	{
 		ds.dragRect = ds.dragWindow->dockNode->rect;
 		ds.dragRect *= 0.6f; // scale back a bit from original size
-		ds.dragRect.x = mousePos.x + ds.dragWindowMouseDelta.x;
-		ds.dragRect.y = mousePos.y + ds.dragWindowMouseDelta.y;
+		ds.dragRect.x = mousePos.x - ds.dragWindowMouseDelta.x;
+		ds.dragRect.y = mousePos.y - ds.dragWindowMouseDelta.y;
 	}
 
 	if (ds.dragWindow)
