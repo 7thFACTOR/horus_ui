@@ -1569,6 +1569,7 @@ void dockNodeTabs(DockNode* node)
 		auto oldClipRect = ctx->renderer->getClipRect();
 		ctx->renderer->popClipRect();
 
+		//TODO: not use ? panes
 		if (ctx->layoutStack.back().width <= (node->windows.size() * (ctx->paneGroupState.tabWidth + ctx->paneGroupState.sideSpacing)) * ctx->globalScale)
 		{
 			ctx->paneGroupState.forceTabWidth = ctx->layoutStack.back().width / (f32)node->windows.size();
@@ -1584,6 +1585,7 @@ void dockNodeTabs(DockNode* node)
 
 		ctx->dockingState.drawingWindowTabs = true;
 
+		// set clip rect for whole native window
 		auto& rc = ctx->dockingState.rootNativeWindowDockNodes[node->nativeWindow]->rect;
 		ctx->renderer->pushClipRect(rc, false);
 		beginTabGroup(node->selectedTabIndex);
@@ -2701,8 +2703,6 @@ void updateDockingSystem()
 				// restore z order
 				ctx->renderer->setZOrder(oldZOrder);
 				ctx->renderer->executeDrawCommands(ds.hoveredNode->nativeWindow);
-
-				hui::setMouseCursor(MouseCursorType::HandPointing);
 			}
 		}
 	}

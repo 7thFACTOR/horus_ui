@@ -17,7 +17,7 @@ void beginTabGroup(TabIndex selectedIndex)
 	ctx->widget.rect.set(
 		round(ctx->penPosition.x),
 		round(ctx->penPosition.y),
-		ctx->layoutStack.back().width,
+		ctx->layoutStack.back().width + ctx->settings.dockNodeSpacing, // extend so we can draw the dock spacing on right
 		height);
 
 	// tab group background
@@ -26,16 +26,29 @@ void beginTabGroup(TabIndex selectedIndex)
 		{
 			round(ctx->penPosition.x),
 			round(ctx->penPosition.y),
-			ctx->layoutStack.back().width + ctx->settings.dockNodeSpacing,
-			ctx->containerRect.height + ctx->settings.dockNodeSpacing + 1
+			ctx->layoutStack.back().width + ctx->settings.dockNodeSpacing, // extend so we cover the dock spacing on right
+			ctx->layoutStack.back().height + ctx->settings.dockNodeSpacing + 1 // extend so we can draw the dock spacing on bottom
 		});
 
 	ctx->renderer->cmdSetColor(tabGroupElemState.color);
-
 	ctx->renderer->cmdDrawImageBordered(tabGroupElemState.image, tabGroupElemState.border, ctx->widget.rect, ctx->globalScale);
 
 	if (ctx->dockingState.drawingWindowTabs)
 	{
+		// draw the vertical splitter for dock node resize
+		auto& windowVerticalSplitterElemState = ctx->theme->getElement(WidgetElementId::WindowVerticalSplitter).normalState();
+		ctx->renderer->cmdSetColor(windowVerticalSplitterElemState.color);
+		ctx->renderer->cmdDrawImageBordered(
+			windowVerticalSplitterElemState.image,
+			windowVerticalSplitterElemState.border,
+			{
+				ctx->widget.rect.right() - ctx->settings.dockNodeSpacing,
+				ctx->widget.rect.y + height,
+				ctx->settings.dockNodeSpacing,
+				ctx->containerRect.height - height + ctx->settings.dockNodeSpacing // add dock node spacing to cover that too
+			}, ctx->globalScale);
+
+		// draw the horizontal splitter for dock node resize
 		auto& windowHorizontalSplitterElemState = ctx->theme->getElement(WidgetElementId::WindowHorizontalSplitter).normalState();
 		ctx->renderer->cmdSetColor(windowHorizontalSplitterElemState.color);
 		ctx->renderer->cmdDrawImageBordered(
@@ -46,18 +59,6 @@ void beginTabGroup(TabIndex selectedIndex)
 				ctx->widget.rect.y + ctx->containerRect.height,
 				ctx->containerRect.width,
 				ctx->settings.dockNodeSpacing,
-			}, ctx->globalScale);
-
-		auto& windowVerticalSplitterElemState = ctx->theme->getElement(WidgetElementId::WindowVerticalSplitter).normalState();
-		ctx->renderer->cmdSetColor(windowVerticalSplitterElemState.color);
-		ctx->renderer->cmdDrawImageBordered(
-			windowVerticalSplitterElemState.image,
-			windowVerticalSplitterElemState.border,
-			{
-				ctx->widget.rect.right(),
-				ctx->widget.rect.y + height,
-				ctx->settings.dockNodeSpacing,
-				ctx->containerRect.height - height
 			}, ctx->globalScale);
 	}
 
