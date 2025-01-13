@@ -17,6 +17,7 @@ struct DockNode
 	};
 
 	u64 id = 0;
+	bool createdByUndocking = false;
 	DockNode* parent = nullptr;
 	std::vector<DockNode*> children;
 	std::vector<Window*> windows;
@@ -34,7 +35,7 @@ struct DockNode
 	void adoptWindows();
 	bool hasSingleWindow() const;
 	void removeWindowsAndDeleteChildrenRecursive();
-	void removeFromParent();
+	DockNode* removeFromParent();
 	void removeWindow(Window* window);
 	void computeRect();
 	void computeMinSize();

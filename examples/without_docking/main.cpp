@@ -40,10 +40,8 @@ int main(int argc, char** args)
 	//1. Create the context
 	auto ctx = hui::createContext(settings);
 	hui::setContext(ctx); // set as current context
-
 	
 	hui::SdlInitParams sdlParams;
-
 
 	sdlParams.vSync = false;
 
@@ -107,6 +105,11 @@ int main(int argc, char** args)
 
 	while (!exitNow)
 	{
+		HORUS_INPUT->setCurrentWindow(mainWnd);
+		glClearColor(1, 1, 0, 1);
+		glClear(GL_COLOR_BUFFER_BIT);
+
+
 		// get the events from SDL or whatever input provider is set, it will fill a queue of events
 		hui::processInputEvents();
 		// lets check the event count
@@ -185,7 +188,7 @@ int main(int argc, char** args)
 			// disable rendering if its not the last event in the queue
 			// no need to render while handling all the input events
 			// we only render on the last event in the queue
-			hui::setDisableRendering(!lastEventInQueue);
+			//hui::setDisableRendering(!lastEventInQueue);
 
 			if (hui::beginWindow("hui", "HUI", nullptr, tabicon1))
 			{
