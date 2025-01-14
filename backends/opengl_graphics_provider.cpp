@@ -373,13 +373,13 @@ void OpenGLGraphicsProvider::draw(RenderBatch* batches, u32 count)
 
 			f32 m[4][4] = { 0 };
 
-			m[0][0] = 2.0f / currentViewport.width;
+			m[0][0] = 2.0f / vp[2];
 			m[0][1] = 0.0f;
 			m[0][2] = 0.0f;
 			m[0][3] = 0.0f;
 
 			m[1][0] = 0.0f;
-			m[1][1] = 2.0f / -currentViewport.height;
+			m[1][1] = 2.0f / -vp[3];
 			m[1][2] = 0.0f;
 			m[1][3] = 0.0f;
 

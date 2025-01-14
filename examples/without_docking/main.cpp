@@ -34,7 +34,7 @@ int main(int argc, char** args)
 	settings.providers.utf = new hui::UtfCppProvider();
 	settings.dockNodeSpacing = 3;
 	settings.dockNodeResizeSplitterHitSize = 8;
-	settings.dockingStyle = hui::DockingGuidesStyle::InsideNativeWindows;
+	//settings.dockingStyle = hui::DockingGuidesStyle::InsideNativeWindows;
 	//settings.dockNodeDockingSizeRatio = 0.33f;
 	
 	//1. Create the context
@@ -122,7 +122,7 @@ int main(int argc, char** args)
 
 			auto tritri = [](hui::HNativeWindow wnd)
 			{
-				auto nativeWndSize = HORUS_INPUT->getWindowClientSize(wnd);
+				auto nativeWndSize = HORUS_INPUT->getWindowSize(wnd);
 				hui::Rect rc;
 
 				if (confineSceneToWindow)
@@ -188,7 +188,7 @@ int main(int argc, char** args)
 			// disable rendering if its not the last event in the queue
 			// no need to render while handling all the input events
 			// we only render on the last event in the queue
-			//hui::setDisableRendering(!lastEventInQueue);
+			hui::setDisableRendering(!lastEventInQueue);
 
 			if (hui::beginWindow("hui", "HUI", nullptr, tabicon1))
 			{

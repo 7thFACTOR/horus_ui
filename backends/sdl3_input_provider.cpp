@@ -517,6 +517,8 @@ void Sdl3InputProvider::addSdlEvent(SDL_Event& ev)
 	case SDL_EVENT_WINDOW_MAXIMIZED:
 	case SDL_EVENT_WINDOW_MINIMIZED:
 	case SDL_EVENT_WINDOW_RESTORED:
+	case SDL_EVENT_WINDOW_EXPOSED:
+	case SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED:
 		outEvent.type = InputEvent::Type::WindowResized;
 		break;
 	case SDL_EVENT_WINDOW_FOCUS_GAINED:
@@ -806,36 +808,19 @@ DisplayInfo Sdl3InputProvider::getDisplayInfo(u32 displayIndex)
 	return info;
 }
 
-void Sdl3InputProvider::setWindowClientSize(HNativeWindow window, const Point& size)
+void Sdl3InputProvider::setWindowSize(HNativeWindow window, const Point& size)
 {
 	SDL_SetWindowSize(((SdlWindowProxy*)window)->sdlWindow, size.x, size.y);
 }
 
-Point Sdl3InputProvider::getWindowClientSize(HNativeWindow window)
+Point Sdl3InputProvider::getWindowSize(HNativeWindow window)
 {
 	int w = 0, h = 0;
 
+	SDL_SyncWindow(((SdlWindowProxy*)window)->sdlWindow);
 	SDL_GetWindowSize(((SdlWindowProxy*)window)->sdlWindow, &w, &h);
 
 	return { (f32)w, (f32)h };
-}
-
-Rect Sdl3InputProvider::getWindowRect(HNativeWindow window)
-{
-	int top = 0, left = 0, right = 0, bottom = 0;
-	int x = 0, y = 0;
-	int w = 0, h = 0;
-
-	SDL_GetWindowPosition(((SdlWindowProxy*)window)->sdlWindow, &x, &y);
-	SDL_GetWindowSize(((SdlWindowProxy*)window)->sdlWindow, &w, &h);
-
-	return { (f32)x, (f32)y, (f32)(w), (f32)(h) };
-}
-
-void Sdl3InputProvider::setWindowRect(HNativeWindow window, const Rect& rect)
-{
-	SDL_SetWindowPosition(((SdlWindowProxy*)window)->sdlWindow, rect.x, rect.y);
-	SDL_SetWindowSize(((SdlWindowProxy*)window)->sdlWindow, rect.width, rect.height);
 }
 
 void Sdl3InputProvider::setWindowPosition(HNativeWindow window, const Point& pos)
@@ -956,8 +941,6 @@ void Sdl3InputProvider::createSystemCursors()
 	{
 		cursors[i] = SDL_CreateSystemCursor((SDL_SystemCursor)i);
 	}
-
-	SDL_SetHint(SDL_HINT_MOUSE_FOCUS_CLICKTHROUGH, "1");
 }
 
 void initializeSdl(const SdlInitParams& params)
@@ -1009,6 +992,8 @@ void initializeSdl(const SdlInitParams& params)
 	sdlProvider->initParams = params;
 	sdlProvider->createSystemCursors();	
 	SDL_SetHint(SDL_HINT_MOUSE_AUTO_CAPTURE, "0");
+	SDL_SetHint(SDL_HINT_MOUSE_FOCUS_CLICKTHROUGH, "1");
+	SDL_SetHint("SDL_BORDERLESS_WINDOWED_STYLE", "0");
 }
 
 }

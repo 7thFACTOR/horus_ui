@@ -192,8 +192,9 @@ void DockNode::computeRect()
 {
 	if (!parent)
 	{
-		auto size = HORUS_INPUT->getWindowClientSize(nativeWindow);
+		auto size = HORUS_INPUT->getWindowSize(nativeWindow);
 		rect = { 0, 0, size.x, size.y };
+
 	}
 
 	switch (type)
@@ -677,7 +678,7 @@ void destroyNativeWindow(HNativeWindow nativeWnd)
 
 DockNode* createNativeWindowRootDockNode(HNativeWindow nativeWindow)
 {
-	auto size = HORUS_INPUT->getWindowClientSize(nativeWindow);
+	auto size = HORUS_INPUT->getWindowSize(nativeWindow);
 	Rect rect = { 0, 0, size.x, size.y };
 	auto dockNode = new DockNode();
 
@@ -1788,32 +1789,32 @@ void handleDockingMouseUp()
 		ds.dragWindow->dockingNow = false;
 	}
 
-	if (ds.dragWindow && ds.dragStarted && ds.hoveredNode)
+	if (ds.dragWindow && ds.dragStarted)
 	{
 		size_t tabIndex = 0;
-
-		if (ds.dockType == DockType::AsTab)
-		{
-			tabIndex = ds.dockToNode->dockingTabSpaceIndex;
-
-			// dock after last tab
-			if (tabIndex == ~0)
-				tabIndex = ds.dockToNode->windows.size();
-		}
-		
 		bool allowDock = true;
 
-		// if its trying to dock to the same dock node, just dont dock
-		if (ds.dockType == DockType::AsTab
-			&& ds.dockToNode
-			&& ds.dockToNode == ds.dragWindow->dockNode)
+		if (ds.dockToNode)
 		{
-			allowDock = false;
-		}
+			if (ds.dockType == DockType::AsTab)
+			{
+				tabIndex = ds.dockToNode->dockingTabSpaceIndex;
 
-		if (ds.dockToNode && ds.dockToNode->windows.size() == 1)
-		{
-			ds.dockToNode->selectedTabIndex = 0;
+				// dock after last tab
+				if (tabIndex == ~0)
+					tabIndex = ds.dockToNode->windows.size();
+
+				// if its trying to dock to the same dock node, just dont dock
+				if (ds.dockToNode == ds.dragWindow->dockNode)
+				{
+					allowDock = false;
+				}
+			}
+
+			if (ds.dockToNode->windows.size() == 1)
+			{
+				ds.dockToNode->selectedTabIndex = 0;
+			}
 		}
 
 		// dock only if we dragged to a different dock node
@@ -1840,11 +1841,14 @@ void handleDockingMouseUp()
 		}
 		else
 		{
-			ds.dockToNode->selectedTabIndex = ds.dockToNode->dockingTabSpaceIndex;
-
-			if (ds.dockToNode->selectedTabIndex == ~0 && ds.dockToNode->windows.size())
+			if (ds.dockToNode)
 			{
-				ds.dragWindow->dockNode->selectedTabIndex = ds.dockToNode->windows.size() - 1;
+				ds.dockToNode->selectedTabIndex = ds.dockToNode->dockingTabSpaceIndex;
+
+				if (ds.dockToNode->selectedTabIndex == ~0 && ds.dockToNode->windows.size())
+				{
+					ds.dragWindow->dockNode->selectedTabIndex = ds.dockToNode->windows.size() - 1;
+				}
 			}
 		}
 
@@ -2593,6 +2597,14 @@ void updateDockingSystem()
 		handleDockNodeEvents(wnd.second);
 	}
 
+	if (ctx->event.type == InputEvent::Type::WindowResized || ctx->event.type == InputEvent::Type::WindowMoved)
+	{
+		for (auto& pair : ctx->dockingState.rootNativeWindowDockNodes)
+		{
+			pair.second->computeRect();
+		}
+	}
+
 	if (ds.dragWindow 
 		&& ds.dragStarted
 		&& ctx->settings.dockingStyle == DockingGuidesStyle::NativeWindows
@@ -2652,7 +2664,8 @@ void updateDockingSystem()
 		}
 
 		ds.dockType = DockType::Floating;
-		HORUS_INPUT->setWindowRect(ds.dragIndicatorNativeWindow, screenRect);
+		HORUS_INPUT->setWindowPosition(ds.dragIndicatorNativeWindow, screenRect.topLeft());
+		HORUS_INPUT->setWindowSize(ds.dragIndicatorNativeWindow, screenRect.getSize());
 	}
 
 	if (ds.dragWindow
@@ -2704,14 +2717,6 @@ void updateDockingSystem()
 				ctx->renderer->setZOrder(oldZOrder);
 				ctx->renderer->executeDrawCommands(ds.hoveredNode->nativeWindow);
 			}
-		}
-	}
-
-	if (ctx->event.type == InputEvent::Type::WindowResized || ctx->event.type == InputEvent::Type::WindowMoved)
-	{
-		for (auto& pair : ctx->dockingState.rootNativeWindowDockNodes)
-		{
-			pair.second->computeRect();
 		}
 	}
 

@@ -273,6 +273,17 @@ void beginFrame()
 			}
 		}
 	}
+	else
+	{
+		// we need mouse position updated even if we're out of the window
+		// use last hovered window as reference for the global position to subtract from
+		if (ctx->lastHoveredNativeWindow)
+		{
+			auto wndPos = HORUS_INPUT->getWindowPosition(ctx->lastHoveredNativeWindow);
+			auto absMousePos = HORUS_INPUT->getAbsoluteMousePosition();
+			ctx->mousePosition = absMousePos - wndPos;
+		}
+	}
 
 	if (ctx->event.type == InputEvent::Type::Key
 		&& ctx->event.key.code == KeyCode::Tab
@@ -540,7 +551,7 @@ void setMouseCursor(HMouseCursor cursor)
 void setCurrentNativeWindow(HNativeWindow wnd)
 {
 	ctx->providers->input->setCurrentWindow(wnd);
-	auto size = HORUS_INPUT->getWindowClientSize(wnd);
+	auto size = HORUS_INPUT->getWindowSize(wnd);
 	ctx->renderer->setCurrentNativeWindow(wnd);
 	ctx->renderer->setWindowSize(size);
 	ctx->hoveringThisWindow = ctx->lastHoveredNativeWindow == wnd;
@@ -550,7 +561,7 @@ static void presentWindow(HNativeWindow wnd)
 {
 	HORUS_INPUT->setCurrentWindow(wnd);
 	ctx->renderer->setCurrentNativeWindow(wnd);
-	ctx->renderer->setWindowSize(HORUS_INPUT->getWindowClientSize(wnd));
+	ctx->renderer->setWindowSize(HORUS_INPUT->getWindowSize(wnd));
 	ctx->hoveringThisWindow = ctx->lastHoveredNativeWindow == wnd;
 	ctx->renderer->begin();
 	dockNodeTabs(ctx->dockingState.rootNativeWindowDockNodes[wnd]);

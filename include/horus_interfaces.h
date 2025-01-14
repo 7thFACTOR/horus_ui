@@ -101,19 +101,11 @@ struct InputProvider
 	/// Set the window client area size
 	/// \param window the window
 	/// \param size the width and height
-	virtual void setWindowClientSize(HNativeWindow window, const Point& size) = 0;
+	virtual void setWindowSize(HNativeWindow window, const Point& size) = 0;
 
 	/// Get the window client area size
 	/// \param window the window
-	virtual Point getWindowClientSize(HNativeWindow window) = 0;
-
-	/// Get the window screen rectangle, including the decorations
-	/// \param window the window
-	virtual Rect getWindowRect(HNativeWindow window) = 0;
-
-	/// Set the window screen rectangle, including the decorations
-	/// \param window the window
-	virtual void setWindowRect(HNativeWindow window, const Rect& rect) = 0;
+	virtual Point getWindowSize(HNativeWindow window) = 0;
 
 	/// Set the window absolute screen position
 	/// \param window the window

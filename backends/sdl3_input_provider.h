@@ -47,10 +47,8 @@ struct Sdl3InputProvider : InputProvider
 	u32 getWindowDisplayIndex(HNativeWindow window) override;
 	u32 getDisplayCount() const override;
 	DisplayInfo getDisplayInfo(u32 displayIndex) override;
-	void setWindowClientSize(HNativeWindow window, const Point& size) override;
-	Point getWindowClientSize(HNativeWindow window) override;
-	Rect getWindowRect(HNativeWindow window) override;
-	void setWindowRect(HNativeWindow window, const Rect& rect) override;
+	void setWindowSize(HNativeWindow window, const Point& size) override;
+	Point getWindowSize(HNativeWindow window) override;
 	void setWindowPosition(HNativeWindow window, const Point& pos) override;
 	Point getWindowPosition(HNativeWindow window) override;
 	NativeWindowState getWindowState(HNativeWindow window);
