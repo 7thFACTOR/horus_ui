@@ -124,6 +124,30 @@ void setNextWindowFlags(WindowFlags flags)
 	ctx->nextWindowFlags = flags;
 }
 
+void focusWindow(const char* windowId)
+{
+	auto wndIter = ctx->dockingState.windows.find(windowId);
+
+	if (wndIter == ctx->dockingState.windows.end())
+	{
+		return;
+	}
+
+	ctx->dockingState.focusedWindow = wndIter->second;
+
+	// change the title of the native window to the window tab title, but only if the native window was created automatically by the docking system, do not change title of a native window created by the user
+
+	auto iter = ctx->dockingState.rootNativeWindowDockNodes.find(ctx->dockingState.focusedWindow->dockNode->nativeWindow);
+
+	if (iter != ctx->dockingState.rootNativeWindowDockNodes.end())
+	{
+		if (iter->second->createdByDockingSystem)
+		{
+			HORUS_INPUT->setWindowTitle(ctx->dockingState.focusedWindow->dockNode->nativeWindow, ctx->dockingState.focusedWindow->title.c_str());
+		}
+	}
+}
+
 void dockWindow(const char* windowId, const char* targetWindowId, DockType dockType, const Point* undockedWindowPos)
 {
 	Window* wnd1 = nullptr, * wnd2 = nullptr;

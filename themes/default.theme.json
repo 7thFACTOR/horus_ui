@@ -28,7 +28,7 @@
 	"settings":
 	{
 		"sameLineHeight": "20",
-		"dockPreviewNativeWindowsColorTint": "255 255 255 255",
+		"dockPreviewNativeWindowsColorTint": "200 200 200 255",
 		"dockPreviewInsideWindowsColorTint": "0 150 150 150"
 	},
 

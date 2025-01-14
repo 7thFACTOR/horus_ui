@@ -5,10 +5,13 @@
 #include "font.h"
 #include "context.h"
 #include "util.h"
+#include "docking.h"
 #include <math.h>
 
 namespace hui
 {
+Rect tabGroupWidgetRect;
+
 void beginTabGroup(TabIndex selectedIndex)
 {
 	auto& tabGroupElemState = ctx->theme->getElement(WidgetElementId::TabGroupBody).normalState();
@@ -19,6 +22,8 @@ void beginTabGroup(TabIndex selectedIndex)
 		round(ctx->penPosition.y),
 		ctx->layoutStack.back().width + ctx->settings.dockNodeSpacing, // extend so we can draw the dock spacing on right
 		height);
+
+	tabGroupWidgetRect = ctx->widget.rect;
 
 	// tab group background
 	ctx->renderer->cmdSetColor(tabGroupElemState.color);
@@ -76,6 +81,14 @@ TabIndex endTabGroup()
 	ctx->penPosition.y = round(ctx->penPosition.y);
 	ctx->currentWidgetId++;
 	ctx->renderer->popClipRect();
+
+	if (ctx->event.type == InputEvent::Type::MouseDown)
+	{
+		if (tabGroupWidgetRect.contains(ctx->mousePosition) && ctx->dockingState.currentDockNode)
+		{
+			focusWindow(ctx->dockingState.currentDockNode->windows[ctx->selectedTabIndex]->id.c_str());
+		}
+	}
 
 	return ctx->selectedTabIndex;
 }

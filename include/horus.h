@@ -346,9 +346,8 @@ enum class MouseButton
 enum class NativeWindowFlags : u32
 {
 	NoInput = HORUS_BIT(0),
-	NoDecoration = HORUS_BIT(2),
-	NoTaskBar = HORUS_BIT(3),
-	Resizable = HORUS_BIT(4)
+	NoDecoration = HORUS_BIT(1),
+	Resizable = HORUS_BIT(2)
 };
 HORUS_ENUM_AS_FLAGS(NativeWindowFlags);
 
@@ -1745,6 +1744,7 @@ HORUS_API bool beginWindow(const char* windowId, const char* title, Rect* initia
 HORUS_API void endWindow();
 HORUS_API void setWindowVisible(const char* windowId, bool visible);
 HORUS_API void setNextWindowFlags(WindowFlags flags);
+HORUS_API void focusWindow(const char* windowId);
 HORUS_API void debugWindows();
 HORUS_API void dockWindow(const char* windowId, const char* targetWindowId, DockType dockType);
 HORUS_API void undockWindow(const char* windowId, const Point& windowPos = Point());

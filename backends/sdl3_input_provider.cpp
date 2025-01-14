@@ -11,58 +11,6 @@
 
 namespace hui
 {
-SDL_HitTestResult HitTestCallbackForResize(SDL_Window *Window, const SDL_Point *Area, void *Data)
-{
-    int Width, Height;
-    SDL_GetWindowSize(Window, &Width, &Height);
-	const int MOUSE_GRAB_PADDING = 3;
-
-    if(Area->y < MOUSE_GRAB_PADDING)
-    {
-        if(Area->x < MOUSE_GRAB_PADDING)
-        {
-            return SDL_HITTEST_RESIZE_TOPLEFT;
-        }
-        else if(Area->x > Width - MOUSE_GRAB_PADDING)
-        {
-            return SDL_HITTEST_RESIZE_TOPRIGHT;
-        }
-        else
-        {
-            return SDL_HITTEST_RESIZE_TOP;
-        }
-    }
-    else if(Area->y > Height - MOUSE_GRAB_PADDING)
-    {
-        if(Area->x < MOUSE_GRAB_PADDING)
-        {
-            return SDL_HITTEST_RESIZE_BOTTOMLEFT;
-        }
-        else if(Area->x > Width - MOUSE_GRAB_PADDING)
-        {
-            return SDL_HITTEST_RESIZE_BOTTOMRIGHT;
-        }
-        else
-        {
-            return SDL_HITTEST_RESIZE_BOTTOM;
-        }
-    }
-    else if(Area->x < MOUSE_GRAB_PADDING)
-    {
-        return SDL_HITTEST_RESIZE_LEFT;
-    }
-    else if(Area->x > Width - MOUSE_GRAB_PADDING)
-    {
-        return SDL_HITTEST_RESIZE_RIGHT;
-    }
-    //else if(Area->y < 70)
-    //{
-    //    return SDL_HITTEST_DRAGGABLE;
-    //}
-
-    return SDL_HITTEST_NORMAL; //SDL_HITTEST_DRAGGABLE; // SDL_HITTEST_NORMAL <- Windows behaviour
-}
-
 #ifdef _WINDOWS
 // Make the window click-through on Windows
 static void makeWindowClickThrough_Windows(SDL_Window* window) {
@@ -77,17 +25,6 @@ static void makeWindowClickThrough_Windows(SDL_Window* window) {
 	SetWindowPos(hwnd, HWND_TOP, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
 }
 
-static void removeWindowShadow_Windows(SDL_Window* window) {
-	HWND hwnd = (HWND)SDL_GetPointerProperty(SDL_GetWindowProperties(window), SDL_PROP_WINDOW_WIN32_HWND_POINTER, NULL);
-	if (hwnd) {
-		LONG_PTR style = GetWindowLongPtr(hwnd, GWL_EXSTYLE);
-		style &= ~WS_EX_COMPOSITED; // Remove composition (shadow)
-		style &= ~WS_EX_APPWINDOW;
-		style |= WS_EX_TOOLWINDOW;
-		SetWindowLongPtr(hwnd, GWL_EXSTYLE, style);
-		SetWindowPos(hwnd, HWND_TOP, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
-	}
-}
 #endif
 
 Sdl3InputProvider::Sdl3InputProvider()
@@ -692,9 +629,6 @@ HNativeWindow Sdl3InputProvider::createWindow(
 	if (has(flags, NativeWindowFlags::NoDecoration))
 		sdlflags |= SDL_WINDOW_BORDERLESS;
 
-	if (has(flags, NativeWindowFlags::NoTaskBar))
-		sdlflags |= SDL_WINDOW_UTILITY;
-
 	if (HORUS_GFX->getApiType() == GraphicsProvider::ApiType::OpenGL)
 		sdlflags |= SDL_WINDOW_OPENGL;
 
@@ -726,7 +660,6 @@ HNativeWindow Sdl3InputProvider::createWindow(
 	{
 #ifdef _WINDOWS
 		makeWindowClickThrough_Windows(wnd);
-		//removeWindowShadow_Windows(wnd);
 #endif
 		
 #ifdef _LINUX

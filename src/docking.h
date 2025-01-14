@@ -17,7 +17,7 @@ struct DockNode
 	};
 
 	u64 id = 0;
-	bool createdByUndocking = false;
+	bool createdByDockingSystem = false;
 	DockNode* parent = nullptr;
 	std::vector<DockNode*> children;
 	std::vector<Window*> windows;

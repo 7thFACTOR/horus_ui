@@ -110,7 +110,7 @@ DockNode* DockNode::removeFromParent()
 	}
 	else
 	{
-		if (createdByUndocking)
+		if (createdByDockingSystem)
 		{
 			// this is a root node and removing it we must destroy the window too
 			ctx->dockingState.nativeWindowsToDelete.insert(nativeWindow);
@@ -730,7 +730,7 @@ Window* createWindow(const std::string& id, DockNode* targetNode, DockType dockT
 		}
 		
 		newWnd->dockNode = createNativeWindowRootDockNode(nativeWindow);
-		newWnd->dockNode->createdByUndocking = true;
+		newWnd->dockNode->createdByDockingSystem = true;
 		newWnd->dockNode->windows.push_back(newWnd);
 		newWnd->clientRect = newWnd->dockNode->rect;
 		ctx->dockingState.focusedWindow = newWnd;
@@ -1534,7 +1534,7 @@ bool dockWindow(Window* wnd, DockNode* targetNode, DockType dockType, u32 tabInd
 		auto nativeWnd = createNativeWindow(wnd->title, NativeWindowFlags::Resizable, NativeWindowState::Normal, rcWnd);
 				
 		wnd->dockNode = createNativeWindowRootDockNode(nativeWnd);
-		wnd->dockNode->createdByUndocking = true;
+		wnd->dockNode->createdByDockingSystem = true;
 		wnd->dockNode->windows.push_back(wnd);
 		wnd->clientRect = wnd->dockNode->rect;
 
@@ -1544,7 +1544,7 @@ bool dockWindow(Window* wnd, DockNode* targetNode, DockType dockType, u32 tabInd
 		break;
 	}
 
-	ctx->dockingState.focusedWindow = wnd;
+	focusWindow(wnd->id.c_str());
 
 	for (auto& pair : ctx->dockingState.rootNativeWindowDockNodes)
 	{
@@ -1589,6 +1589,7 @@ void dockNodeTabs(DockNode* node)
 		// set clip rect for whole native window
 		auto& rc = ctx->dockingState.rootNativeWindowDockNodes[node->nativeWindow]->rect;
 		ctx->renderer->pushClipRect(rc, false);
+		ctx->dockingState.currentDockNode = node;
 		beginTabGroup(node->selectedTabIndex);
 
 		for (auto i = 0; i < node->windows.size(); i++)
@@ -1631,7 +1632,7 @@ void dockNodeTabs(DockNode* node)
 			if (node->windows.empty())
 			{
 				// this is an empty root dock node, destroy and close OS nativeWindow too
-				if (!node->parent && node->createdByUndocking)
+				if (!node->parent && node->createdByDockingSystem)
 				{
 					ctx->dockingState.dockNodesToDelete.insert(node);
 					ctx->dockingState.nativeWindowsToDelete.insert(node->nativeWindow);
@@ -1759,7 +1760,7 @@ void handleDockingMouseDown(const InputEvent& event, DockNode* node)
 
 		if (wnd.second->clientRect.contains(mousePos) && wnd.second->dockNode->selectedTabIndex == wnd.second->dockNode->getWindowIndex(wnd.second))
 		{
-			ds.focusedWindow = wnd.second;
+			focusWindow(wnd.second->id.c_str());
 		}
 
 		// return if the widget is not visible, that is outside current clip rect
@@ -1773,7 +1774,7 @@ void handleDockingMouseDown(const InputEvent& event, DockNode* node)
 		if (clippedRect.contains(mousePos.x, mousePos.y))
 		{
 			ds.dragWindow = wnd.second;
-			ds.focusedWindow = wnd.second;
+			focusWindow(wnd.second->id.c_str());
 			ds.dragWindowMouseDelta = mousePos - ds.dragWindow->tabRect.topLeft();
 			break;
 		}
