@@ -1,9 +1,21 @@
 #include "types.h"
+#include "horus_interfaces.h"
+#include "docking.h"
 #include <cstring>
 
 namespace hui
 {
 constexpr size_t writeGrowSize = 1024;
+
+DockingState::~DockingState()
+{
+	for (auto& pair : rootNativeWindowDockNodes)
+	{
+		pair.second->removeWindowsAndDeleteChildrenRecursive();
+		delete pair.second;
+		HORUS_INPUT->destroyWindow(pair.first);
+	}
+}
 
 bool MemoryStream::beginWrite()
 {

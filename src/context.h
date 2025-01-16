@@ -186,6 +186,8 @@ struct Context
 		menuStack.resize(maxMenuDepth);
 	}
 
+	~Context();
+
 	void initializeGraphics();
 
 	inline bool isActiveLayer() const

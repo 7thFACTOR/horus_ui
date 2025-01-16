@@ -201,6 +201,12 @@ bool button(const char* labelText)
 {
 	auto& btnBodyElem = ctx->theme->getElement(WidgetElementId::ButtonBody);
 
+	if (ctx->widget.sameLine)
+	{
+		auto textWidth = btnBodyElem.normalState().font->computeTextSize(labelText);
+		ctx->widget.width = (btnBodyElem.normalState().border * 2.0f + textWidth.width) * ctx->globalScale;
+	}
+
 	addWidgetItem(btnBodyElem.normalState().height * ctx->globalScale);
 	buttonBehavior();
 

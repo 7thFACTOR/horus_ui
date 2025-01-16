@@ -8,10 +8,10 @@
 
 namespace hui
 {
-bool radio(const char* labelText, bool& checked)
+bool radio(const char* labelText, i32* currentRadioValue, i32 thisValue)
 {
-	auto radioBodyElem = ctx->theme->getElement(WidgetElementId::RadioBody);
-	auto radioMarkElem = ctx->theme->getElement(WidgetElementId::RadioMark);
+	auto& radioBodyElem = ctx->theme->getElement(WidgetElementId::RadioBody);
+	auto& radioMarkElem = ctx->theme->getElement(WidgetElementId::RadioMark);
 
 	addWidgetItem(radioBodyElem.normalState().height * ctx->globalScale);
 	buttonBehavior();
@@ -19,7 +19,9 @@ bool radio(const char* labelText, bool& checked)
 
 	if (ctx->widget.clicked)
 	{
-		checked = !checked;
+		if (currentRadioValue)
+			*currentRadioValue = thisValue;
+		
 		ctx->widget.changeEnded = true;
 		forceRepaint();
 		changed = true;
@@ -28,7 +30,7 @@ bool radio(const char* labelText, bool& checked)
 	auto radioBodyElemState = &radioBodyElem.normalState();
 	auto radioMarkElemState = &radioMarkElem.normalState();
 
-	if (checked)
+	if (currentRadioValue && *currentRadioValue == thisValue)
 	{
 		radioBodyElemState = &radioBodyElem.getState(WidgetStateType::Pressed);
 		radioMarkElemState = &radioMarkElem.getState(WidgetStateType::Pressed);
@@ -50,7 +52,7 @@ bool radio(const char* labelText, bool& checked)
 			ctx->widget.rect.height
 		}, ctx->globalScale);
 
-	if (checked)
+	if (currentRadioValue && *currentRadioValue == thisValue)
 	{
 		ctx->renderer->cmdSetColor(radioMarkElemState->color);
 		ctx->renderer->cmdDrawImageBordered(

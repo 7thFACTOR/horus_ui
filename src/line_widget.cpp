@@ -9,8 +9,9 @@ namespace hui
 {
 void line()
 {
-	auto bodyElemState = ctx->theme->getElement(WidgetElementId::LineBody).normalState();
+	auto& bodyElemState = ctx->theme->getElement(WidgetElementId::LineBody).normalState();
 
+	ctx->widget.width = 0;
 	addWidgetItem(bodyElemState.image->rect.height * ctx->globalScale);
 	ctx->renderer->cmdSetColor(bodyElemState.color);
 	ctx->renderer->cmdDrawImageBordered(bodyElemState.image, bodyElemState.border,
@@ -32,7 +33,7 @@ void space()
 	ctx->penPosition.y += ctx->spacing * ctx->globalScale;
 }
 
-void beginSameLine()
+void beginSameLine(f32 spacing)
 {
 	ctx->sameLineInfoIndex = ctx->sameLineInfoCount;
 
@@ -55,6 +56,9 @@ void beginSameLine()
 	ctx->sameLineInfoIndexStack.push_back(ctx->sameLineInfoIndex);
 	ctx->widget.sameLine = true;
 	ctx->sameLineInfoCount++;
+
+	if (spacing > 0.0f)
+		ctx->widget.sameLineSpacing = spacing;
 }
 
 void endSameLine()
@@ -63,7 +67,7 @@ void endSameLine()
 	ctx->sameLineInfoIndexStack.pop_back();
 
 	// we stop same line if this is a root same line
-	if (!ctx->sameLineInfoIndexStack.size())
+	//if (!ctx->sameLineInfoIndexStack.size())
 		ctx->widget.sameLine = false;
 
 	if (!ctx->sameLineInfoIndexStack.size())

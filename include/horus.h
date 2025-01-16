@@ -1749,6 +1749,10 @@ HORUS_API void debugWindows();
 HORUS_API void dockWindow(const char* windowId, const char* targetWindowId, DockType dockType);
 HORUS_API void undockWindow(const char* windowId, const Point& windowPos = Point());
 
+HORUS_API void setCurrentNativeWindow(HNativeWindow nativeWnd);
+HORUS_API void beginRendering();
+HORUS_API void endRendering();
+
 HORUS_API bool isMouseOverWindow();
 
 HORUS_API void setCapture();
@@ -1780,6 +1784,9 @@ HORUS_API bool loadDockingStateFromMemory(const u8* stateInfo, size_t stateInfoS
 
 /// Present the contents of the backbuffer for each OS native window, called after all rendering is done
 HORUS_API void present();
+
+/// Present the contents of the backbuffer for a custom OS native window, called after all rendering is done
+HORUS_API void presentNativeWindow(HNativeWindow nativeWnd);
 
 /// Shut down the library
 HORUS_API void shutdown();
@@ -2248,13 +2255,14 @@ HORUS_API void progress(f32 value);
 /// \param labelText the label text
 /// \param checked true if it has check mark on
 /// \return true if it was changed, result put in checked
-HORUS_API bool check(const char* labelText, bool& checked);
+HORUS_API bool check(const char* labelText, bool* checkVar);
 
 /// Draw a radio box widget
 /// \param labelText the label text
-/// \param checked true if it has check mark on
+/// \param currentRadioValue location of the current value of the radio group
+/// \param thisValue the value of this radio button
 /// \return true if it was changed, result put in checked
-HORUS_API bool radio(const char* labelText, bool& checked);
+HORUS_API bool radio(const char* labelText, i32* currentRadioValue, i32 thisValue);
 
 /// Draw a label text widget
 /// \param labelText the label's text
@@ -2348,7 +2356,7 @@ HORUS_API void space();
 
 /// Make next widget show on the same row as the last widget. The widget width depends on the widget type, the content inside it, etc.
 /// Not all widgets support the same line modifier, since some need content
-HORUS_API void beginSameLine();
+HORUS_API void beginSameLine(f32 spacing = 0.0f);
 
 HORUS_API void endSameLine();
 

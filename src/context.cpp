@@ -9,6 +9,10 @@ namespace hui
 {
 Context* ctx = nullptr;
 
+Context::~Context()
+{
+}
+
 //TODO: move to graphics or some gfx util
 Rect Context::drawMultilineText(
 	const char* text,

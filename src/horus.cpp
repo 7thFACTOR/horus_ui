@@ -102,7 +102,7 @@ HContext getContext()
 
 void deleteContext(HContext context)
 {
-	delete (HContext*)context;
+	delete (Context*)context;
 }
 
 ContextSettings& getContextSettings()
@@ -188,7 +188,7 @@ void addWidgetItem(f32 height)
 	}
 	else
 	{
-		ctx->penPosition.x += width * ctx->globalScale;
+		ctx->penPosition.x += (width + ctx->widget.sameLineSpacing) * ctx->globalScale;
 	}
 }
 
@@ -345,7 +345,7 @@ void beginFrame()
 	}
 
 	ctx->alreadyClickedOnSomething = false;
-
+	setMouseCursor(MouseCursorType::Arrow);
 	updateDockingSystem();
 }
 
@@ -557,6 +557,16 @@ void setCurrentNativeWindow(HNativeWindow wnd)
 	ctx->hoveringThisWindow = ctx->lastHoveredNativeWindow == wnd;
 }
 
+void beginRendering()
+{
+	ctx->renderer->begin();
+}
+
+void endRendering()
+{
+	ctx->renderer->end();
+}
+
 static void presentWindow(HNativeWindow wnd)
 {
 	HORUS_INPUT->setCurrentWindow(wnd);
@@ -566,6 +576,16 @@ static void presentWindow(HNativeWindow wnd)
 	ctx->renderer->begin();
 	dockNodeTabs(ctx->dockingState.rootNativeWindowDockNodes[wnd]);
 	ctx->renderer->end();
+	ctx->renderer->executeDrawCommands(wnd);
+	HORUS_INPUT->presentWindow(wnd);
+}
+
+static void presentUserNativeWindow(HNativeWindow wnd)
+{
+	HORUS_INPUT->setCurrentWindow(wnd);
+	ctx->renderer->setCurrentNativeWindow(wnd);
+	ctx->renderer->setWindowSize(HORUS_INPUT->getWindowSize(wnd));
+	ctx->hoveringThisWindow = ctx->lastHoveredNativeWindow == wnd;
 	ctx->renderer->executeDrawCommands(wnd);
 	HORUS_INPUT->presentWindow(wnd);
 }
@@ -583,6 +603,23 @@ void present()
 		{
 			presentWindow(wnd);
 		}
+	}
+
+	ctx->renderer->resetWindowContexts();
+	ctx->renderer->skipRender = false;
+	ctx->renderer->disableRendering = false;
+}
+
+void presentNativeWindow(HNativeWindow nativeWnd)
+{
+	// first, delete pending objects so we dont access them
+	deferredDeleteObjects();
+
+	bool allowRendering = !ctx->renderer->disableRendering && !ctx->renderer->skipRender;
+
+	if (allowRendering)
+	{
+		presentUserNativeWindow(nativeWnd);
 	}
 
 	ctx->renderer->resetWindowContexts();

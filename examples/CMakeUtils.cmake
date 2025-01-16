@@ -35,6 +35,20 @@ endif(LINUX)
 
 link_directories(${FULL_PROJECTS_PATH}/lib)
 
+if(LINUX)
+list(APPEND NFD_SRCS
+	../libs/nativefiledialog/src/nfd_common.c
+	../libs/nativefiledialog/src/nfd_gtk.c
+	)
+endif(LINUX)
+
+if(WINDOWS)
+list(APPEND NFD_SRCS
+	../libs/nativefiledialog/src/nfd_common.c
+	../libs/nativefiledialog/src/nfd_win.cpp
+	)
+endif(WINDOWS)
+
 macro(add_source_group FILTER_NAME SOURCE_PATH TARGET_LIST)
    file(TO_NATIVE_PATH ${FILTER_NAME} NEW_FILTER_NAME)
    if (WIN32 OR LINUX)

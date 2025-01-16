@@ -8,10 +8,10 @@
 
 namespace hui
 {
-bool check(const char* labelText, bool& checked)
+bool check(const char* labelText, bool* checkVar)
 {
-	auto checkBodyElem = ctx->theme->getElement(WidgetElementId::CheckBody);
-	auto checkMarkElem = ctx->theme->getElement(WidgetElementId::CheckMark);
+	auto& checkBodyElem = ctx->theme->getElement(WidgetElementId::CheckBody);
+	auto& checkMarkElem = ctx->theme->getElement(WidgetElementId::CheckMark);
 
 	addWidgetItem(checkBodyElem.normalState().height * ctx->globalScale);
 	buttonBehavior();
@@ -20,7 +20,8 @@ bool check(const char* labelText, bool& checked)
 	if (ctx->widget.clicked)
 	{
 		ctx->widget.changeEnded = true;
-		checked = !checked;
+		if (checkVar)
+			*checkVar = !*checkVar;
 		forceRepaint();
 		changed = true;
 	}
@@ -28,7 +29,7 @@ bool check(const char* labelText, bool& checked)
 	auto checkBodyElemState = &checkBodyElem.normalState();
 	auto checkMarkElemState = &checkMarkElem.normalState();
 
-	if (checked)
+	if (checkVar && *checkVar)
 	{
 		checkBodyElemState = &checkBodyElem.getState(WidgetStateType::Pressed);
 		checkMarkElemState = &checkMarkElem.getState(WidgetStateType::Pressed);
@@ -49,7 +50,7 @@ bool check(const char* labelText, bool& checked)
 			ctx->widget.rect.height
 		}, ctx->globalScale);
 
-	if (checked)
+	if (checkVar && *checkVar)
 	{
 		ctx->renderer->cmdSetColor(checkMarkElemState->color);
 		ctx->renderer->cmdDrawImageBordered(

@@ -285,6 +285,7 @@ struct Window
 
 struct DockingState
 {
+	~DockingState();
 	std::unordered_map<HNativeWindow, struct DockNode*> rootNativeWindowDockNodes;
 	std::unordered_map<std::string, Window*> windows;
 	std::unordered_set<Window*> windowsToDelete;

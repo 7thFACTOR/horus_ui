@@ -8,21 +8,19 @@ namespace hui
 {
 void beginBoxInternal(const Color& color, ThemeElement::State& state, f32 customHeight)
 {
-	auto width = ctx->layoutStack.back().width;
+	const auto width = ctx->layoutStack.back().width;
 
 	ctx->layoutStack.push_back(LayoutState(LayoutType::Container));
 	ctx->layoutStack.back().savedPenPosition = ctx->penPosition;
 	ctx->penStack.push_back(ctx->penPosition);
 	// move with padding
-	ctx->penPosition.x += ctx->layoutPadding * ctx->globalScale;
+	ctx->penPosition.x += ctx->layoutPadding * ctx->globalScale + state.border * ctx->globalScale;
 	ctx->layoutStack.back().position = ctx->penPosition;
 	// take some padding and border from width
 	ctx->layoutStack.back().width = width - (state.border * 2.0f + ctx->layoutPadding * 2.0f) * ctx->globalScale;
 	ctx->layoutStack.back().height = customHeight * ctx->globalScale;
 	ctx->layoutStack.back().themeWidgetElementState = &state;
 	ctx->layoutStack.back().themeElementColorTint = color;
-
-	ctx->penPosition.x += state.border * ctx->globalScale;
 
 	if (customHeight <= 0.0f)
 		ctx->penPosition.y += state.border * ctx->globalScale;
@@ -70,10 +68,10 @@ bool endBox()
 	}
 
 	ctx->widget.rect = {
-		ctx->layoutStack.back().position.x,
-			ctx->layoutStack.back().position.y,
-			ctx->layoutStack.back().width + boxElemState->border * 2.0f * ctx->globalScale,
-			height
+		ctx->layoutStack.back().savedPenPosition.x,
+		ctx->layoutStack.back().savedPenPosition.y,
+		ctx->layoutStack.back().width + (boxElemState->border * 2.0f + ctx->layoutPadding * 2.0f) * ctx->globalScale,
+		height
 	};
 
 	buttonBehavior();
