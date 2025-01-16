@@ -375,7 +375,7 @@ MessageBoxButtons messageBox(
 	// body and icon
 	f32 titleColWidths[2] = { 0.8, 0.2 };
 	beginColumns(2, titleColWidths);
-	hui::multilineLabel(message, HAlignType::Left);
+	hui::labelMultiline(message, HAlignType::Left);
 	nextColumn();
 	hui::image((HImage)iconElem->normalState().image, 0, hui::HAlignType::Right);
 	endColumns();

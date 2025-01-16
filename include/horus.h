@@ -2273,14 +2273,14 @@ HORUS_API bool labelCustomFont(const char* labelText, HFont font, HAlignType hor
 /// \param labelText the label's text
 /// \param horizontalAlign the text align mode horizontally in the current layout rectangle
 /// \return true if it was clicked on
-HORUS_API bool multilineLabel(const char* labelText, HAlignType horizontalAlign);
+HORUS_API bool labelMultiline(const char* labelText, HAlignType horizontalAlign);
 
 /// Draw a multiline label text widget with a custom font (involves more logic than a single lined label)
 /// \param labelText the label's text
 /// \param font the label's font
 /// \param horizontalAlign the text align mode horizontally in the current layout rectangle
 /// \return true if it was clicked on
-HORUS_API bool multilineLabelCustomFont(const char* labelText, HFont font, HAlignType horizontalAlign = HAlignType::Left);
+HORUS_API bool labelCustomFontMultiline(const char* labelText, HFont font, HAlignType horizontalAlign = HAlignType::Left);
 
 /// Draw a expandable panel widget
 /// \param labelText the text of the panel

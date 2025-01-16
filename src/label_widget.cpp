@@ -56,14 +56,14 @@ bool labelCustomFont(const char* labelText, HFont font, HAlignType horizontalAli
 	return labelInternal(labelText, horizontalAlign, (Font*)font);
 }
 
-bool multilineLabel(const char* labelText, HAlignType horizontalAlign)
+bool labelMultiline(const char* labelText, HAlignType horizontalAlign)
 {
 	auto bodyElemState = ctx->theme->getElement(WidgetElementId::LabelBody).normalState();
 
-	return multilineLabelCustomFont(labelText, bodyElemState.font, horizontalAlign);
+	return labelCustomFontMultiline(labelText, bodyElemState.font, horizontalAlign);
 }
 
-bool multilineLabelCustomFont(const char* labelText, HFont font, HAlignType horizontalAlign)
+bool labelCustomFontMultiline(const char* labelText, HFont font, HAlignType horizontalAlign)
 {
 	auto& bodyElemState = ctx->theme->getElement(WidgetElementId::LabelBody).normalState();
 
