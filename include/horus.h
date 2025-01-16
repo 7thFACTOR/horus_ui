@@ -164,7 +164,8 @@ typedef u32 Rgba32;
 typedef u32 TabIndex;
 typedef u32 GlyphCode;
 typedef std::vector<GlyphCode> Utf32String;
-typedef u64 DockNodeId;
+typedef u32 DockNodeId;
+typedef u32 WidgetId;
 
 const f32 ColumnFill = -1;
 
@@ -2292,9 +2293,9 @@ HORUS_API bool labelCustomFontMultiline(const char* labelText, HFont font, HAlig
 
 /// Draw a expandable panel widget
 /// \param labelText the text of the panel
-/// \param expanded true if the panel is expanded
-/// \return true if the panel is expanded, use this in a if() statement to draw child widgets if expanded
-HORUS_API bool panel(const char* labelText, bool expanded);
+/// \param expandedVar keeps true if the panel is expanded
+/// \return true if the panel state changed
+HORUS_API bool panel(const char* labelText, bool* expandedVar = nullptr);
 
 /// Draw a dropdown widget
 /// \param selectedIndex the current selected item index

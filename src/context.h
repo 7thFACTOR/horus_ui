@@ -35,6 +35,12 @@ struct Context
 		u32 maxCount = 0;
 	};
 
+	struct WidgetValueState
+	{
+		u32 lastUsedFrame = 0;
+		f32 value;
+	};
+
 	static const int maxLayerCount = 256;
 	static const int maxNestingIndex = 256;
 	static const int maxPopupIndex = 256;
@@ -77,6 +83,7 @@ struct Context
 	TextInputState textInput;
 	std::vector<TextLine> textLines;
 	WidgetState widget;
+	std::unordered_map<WidgetId, WidgetValueState> widgetValueState;
 	std::vector<f32> sameLineWidthStack;
 	std::vector<f32> sameLineSpacingStack;
 	std::vector<u32> sameLineInfoIndexStack;

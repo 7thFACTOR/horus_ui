@@ -9,12 +9,14 @@
 
 namespace hui
 {
-bool panel(const char* labelText, bool expanded)
+bool panel(const char* labelText, bool* expandedVar)
 {
-	auto bodyElem = ctx->theme->getElement(WidgetElementId::PanelBody);
-	auto panelCollapsedArrow = ctx->theme->getElement(WidgetElementId::PanelCollapsedArrow);
-	auto panelExpandedArrow = ctx->theme->getElement(WidgetElementId::PanelExpandedArrow);
+	auto& bodyElem = ctx->theme->getElement(WidgetElementId::PanelBody);
+	auto& panelCollapsedArrow = ctx->theme->getElement(WidgetElementId::PanelCollapsedArrow);
+	auto& panelExpandedArrow = ctx->theme->getElement(WidgetElementId::PanelExpandedArrow);
 	auto bodyElemState = &bodyElem.normalState();
+	bool changed = false;
+	bool expanded = false;
 
 	addWidgetItem(bodyElemState->image->rect.height * ctx->globalScale);
 
@@ -26,7 +28,33 @@ bool panel(const char* labelText, bool expanded)
 
 	if (ctx->widget.clicked)
 	{
-		expanded = !expanded;
+		if (expandedVar)
+		{
+			*expandedVar = !*expandedVar;
+			changed = true;
+			expanded = *expandedVar;
+		}
+		else
+		{
+			auto& wvs = ctx->widgetValueState[ctx->currentWidgetId];
+			wvs.lastUsedFrame = ctx->frameCount;
+			wvs.value = (f32)!(bool)wvs.value;
+			expanded = (bool)wvs.value;
+			changed = true;
+		}
+	}
+	else
+	{
+		if (expandedVar)
+		{
+			expanded = *expandedVar;
+		}
+		else
+		{
+			auto& wvs = ctx->widgetValueState[ctx->currentWidgetId];
+			wvs.lastUsedFrame = ctx->frameCount;
+			expanded = (bool)wvs.value;
+		}
 	}
 
 	if (expanded)
@@ -75,6 +103,7 @@ bool panel(const char* labelText, bool expanded)
 		HAlignType::Left, VAlignType::Center);
 	ctx->renderer->popClipRect();
 	ctx->currentWidgetId++;
+	ctx->widget.changeEnded = changed;
 
 	return expanded;
 }

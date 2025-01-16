@@ -119,20 +119,28 @@ int main(int argc, char** args)
 				hui::check("A simple check box", &chk);
 				
 				static i32 option = 0;
-
-				hui::radio("Radio value 0", &option, 0);
-				hui::radio("Radio value 1", &option, 1);
-				hui::radio("Radio value 2", &option, 2);
+				static bool showRadios = true;
+				
+				if (hui::panel("Radios"))
+				{
+					hui::radio("Radio value 0", &option, 0);
+					hui::radio("Radio value 1", &option, 1);
+					hui::radio("Radio value 2", &option, 2);
+				}
 
 				hui::line();
 
-				hui::pushTint(hui::Color::red);
 				hui::beginSameLine(5);
-				hui::button("EXIT");
-				hui::button("ABORT");
-				hui::button("QUIT");
-				hui::endSameLine();
+				hui::pushTint(hui::Color::red);
+				hui::button("  EXIT  ");
 				hui::popTint();
+				hui::pushTint(hui::Color::yellow);
+				hui::button("  ABORT  ");
+				hui::popTint();
+				hui::pushTint(hui::Color::sky);
+				hui::button("  QUIT  ");
+				hui::popTint();
+				hui::endSameLine();
 
 				hui::gap(20);
 				hui::endBox();

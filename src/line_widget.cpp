@@ -11,7 +11,6 @@ void line()
 {
 	auto& bodyElemState = ctx->theme->getElement(WidgetElementId::LineBody).normalState();
 
-	ctx->widget.width = 0;
 	addWidgetItem(bodyElemState.image->rect.height * ctx->globalScale);
 	ctx->renderer->cmdSetColor(bodyElemState.color);
 	ctx->renderer->cmdDrawImageBordered(bodyElemState.image, bodyElemState.border,
@@ -80,6 +79,8 @@ void endSameLine()
 			ctx->sameLineInfo[ctx->sameLineInfoIndex].lineHeight
 		);
 	}
+
+	ctx->widget.width = 0;
 }
 
 void pushSameLineSpacing(f32 horizontalSpace)

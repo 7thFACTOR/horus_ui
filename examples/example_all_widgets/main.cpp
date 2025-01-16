@@ -207,10 +207,10 @@ int main(int argc, char** args)
 					hui::setWindowVisible("ui", true);
 				static bool chk1, chk2, chk3;
 				hui::beginTwoColumns();
-				chk1 = hui::check("Option 1", chk1);
-				chk2 = hui::check("Option 2", chk2);
+				hui::check("Option 1", &chk1);
+				hui::check("Option 2", &chk2);
 				hui::nextColumn();
-				chk3 = hui::check("Option 3", chk3);
+				hui::check("Option 3", &chk3);
 				hui::pushTint(hui::Color::cyan);
 
 				if (hui::button("Browse..."))
@@ -355,7 +355,7 @@ int main(int argc, char** args)
 
 				static bool confine = false;
 				
-				if (hui::check("Confine scene to this window rectangle", confine))
+				if (hui::check("Confine scene to this window rectangle", &confine))
 				{
 					confineSceneToWindow = confine;
 				}
