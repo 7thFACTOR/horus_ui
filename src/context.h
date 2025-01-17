@@ -10,37 +10,6 @@ namespace hui
 {
 struct Context
 {
-	struct TextLine
-	{
-		u32 start = 0;
-		u32 length = 0;
-	};
-
-	struct SameLineInfo
-	{
-		bool computeHeight = true;
-		f32 lineHeight = 0;
-		f32 lineY = 0;
-	};
-
-	struct ToolbarState
-	{
-		ToolbarDirection direction = ToolbarDirection::Horizontal;
-	};
-
-	struct WidgetLoopInfo
-	{
-		u32 previousId = 0;
-		u32 startId = 0;
-		u32 maxCount = 0;
-	};
-
-	struct WidgetValueState
-	{
-		u32 lastUsedFrame = 0;
-		f32 value;
-	};
-
 	static const int maxLayerCount = 256;
 	static const int maxNestingIndex = 256;
 	static const int maxPopupIndex = 256;
@@ -58,11 +27,11 @@ struct Context
 	f32 deltaTime = 0;
 	f32 totalTime = 0;
 	u32 frameCount = 0;
-	f32 pruneUnusedTextTime = 0;
+	f32 pruneUnusedTextTime = 0; //TODO: maybe make it frames
 	u32 currentWindowIndex = 0;
-	u32 currentWidgetId = 1;
+	WidgetId currentWidgetId = 1;
 	std::vector<WidgetLoopInfo> widgetLoopStack;
-	u32 maxWidgetId = 0;
+	WidgetId maxWidgetId = 0;
 	bool mustRedraw = false;
 	bool focusChanged = false;
 	bool skipRenderAndInput = false;
@@ -81,14 +50,15 @@ struct Context
 
 	// Widgets
 	TextInputState textInput;
-	std::vector<TextLine> textLines;
+	std::vector<TextLineState> textLines;
 	WidgetState widget;
-	std::unordered_map<WidgetId, WidgetValueState> widgetValueState;
+	std::vector<WidgetId> idStack;
+	std::unordered_map<WidgetId, WidgetBoolState> widgetBoolState;
 	std::vector<f32> sameLineWidthStack;
 	std::vector<f32> sameLineSpacingStack;
 	std::vector<u32> sameLineInfoIndexStack;
 	std::vector<bool> sameLineStack;
-	SameLineInfo sameLineInfo[maxSameLineInfoIndex];
+	SameLineState sameLineInfo[maxSameLineInfoIndex];
 	u32 sameLineInfoIndex = 0;
 	u32 sameLineInfoCount = 0;
 	std::vector<ToolbarState> toolbarStack;
@@ -108,10 +78,10 @@ struct Context
 	// Menus
 	std::vector<MenuWidgetState> menuStack;
 	u32 menuDepth = 0;
-	u32 activeMenuBarItemWidgetId = 0;
+	WidgetId activeMenuBarItemWidgetId = 0;
 	bool contextMenuActive = false;
 	bool contextMenuClicked = false;
-	u32 contextMenuWidgetId = 0;
+	WidgetId contextMenuWidgetId = 0;
 	std::string contextMenuNameId;
 	bool menuItemChosen = false;
 	bool pressedOnMenuItem = false;
@@ -134,7 +104,7 @@ struct Context
 	f32 scrollViewSpeed = 0.2f;
 	f32 scrollViewScrollPageSize = 0.4f;
 	size_t scrollViewDepth = 0;
-	u32 dragScrollViewHandleWidgetId = 0;
+	WidgetId dragScrollViewHandleWidgetId = 0;
 	f32 dropDownScrollViewPos = 0;
 
 	// Themes
@@ -182,7 +152,6 @@ struct Context
 	HMouseCursor customMouseCursor = 0;
 	bool mouseMoved = false;
 	bool alreadyClickedOnSomething = false;
-	Point oldMousePos = { 0, 0 };
 
 	DragDropState dragDropState;
 	DockingState dockingState;
@@ -191,6 +160,7 @@ struct Context
 	{
 		popupStack.resize(maxPopupIndex);
 		menuStack.resize(maxMenuDepth);
+		idStack.push_back(0);
 	}
 
 	~Context();
@@ -204,8 +174,10 @@ struct Context
 
 	inline const Color& getTint(TintColorType type) const
 	{
-		return tint[(int)type];
+		return tint[(i32)type];
 	}
+
+	void extractLabelAndId(const char* text, std::string& label, WidgetId& id);
 
 	void setSkipRenderAndInput(bool skip);
 

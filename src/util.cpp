@@ -60,9 +60,14 @@ bool clampValue(f32& value, f32 minVal, f32 maxVal)
 	return false;
 }
 
-u64 hashString(const char* str)
+u64 hashString(const char* str, u64 seed)
 {
-	return rapidhash(str, strlen(str));
+	return rapidhash_withSeed_unrolled(str, strlen(str), seed ? seed : RAPID_SEED);
+}
+
+u64 hashData(const void* ptr, size_t size, u64 seed)
+{
+	return rapidhash_withSeed_unrolled(ptr, size, seed ? seed : RAPID_SEED);
 }
 
 }

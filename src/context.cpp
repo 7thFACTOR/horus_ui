@@ -13,6 +13,30 @@ Context::~Context()
 {
 }
 
+void Context::extractLabelAndId(const char* text, std::string& label, WidgetId& id)
+{
+	char* textPtr = text ? text : "";
+	auto idStart = strstr(textPtr, "##");
+
+	// we have ###, forced id specified
+	if (idStart && *idStart == '#')
+	{
+		id = hashString(idStart, idStack.back());
+	}
+	else if (idStart) // we have ##, hash the whole text
+	{
+		id = hashString(textPtr, idStack.back());
+	}
+
+	label.assign(textPtr, idStart ? idStart : textPtr);
+
+	if (label == "" || id == 0)
+	{
+		auto posStr = std::to_string(ctx->penPosition.x) + std::to_string(ctx->penPosition.y);
+		id = hashString(posStr.c_str(), idStack.back());
+	}
+}
+
 //TODO: move to graphics or some gfx util
 Rect Context::drawMultilineText(
 	const char* text,
@@ -30,7 +54,7 @@ Rect Context::drawMultilineText(
 	if (!strcmp(text, ""))
 		return newRect;
 
-	TextLine line;
+	TextLineState line;
 	auto crtFont = renderer->getFont();
 
 	newRect.height = 0;

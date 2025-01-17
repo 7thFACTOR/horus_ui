@@ -667,11 +667,16 @@ HNativeWindow createNativeWindow(const std::string& title, NativeWindowFlags fla
 
 void destroyNativeWindow(HNativeWindow nativeWnd)
 {
-	auto dockNode =	ctx->dockingState.rootNativeWindowDockNodes[nativeWnd];
+	auto iterWnd = ctx->dockingState.rootNativeWindowDockNodes.find(nativeWnd);
 
-	if (dockNode)
-		ctx->dockingState.dockNodesToDelete.insert(dockNode);
-	
+	if (iterWnd != ctx->dockingState.rootNativeWindowDockNodes.end())
+	{
+		auto dockNode = iterWnd->second;
+
+		if (dockNode)
+			ctx->dockingState.dockNodesToDelete.insert(dockNode);
+	}
+
 	if (nativeWnd)
 		ctx->dockingState.nativeWindowsToDelete.insert(nativeWnd);
 }
@@ -696,14 +701,26 @@ DockNode* getRootDockNode(HNativeWindow nativeWindow)
 
 	if (!nativeWindow) return nullptr;
 
-	return ctx->dockingState.rootNativeWindowDockNodes[nativeWindow];
+	auto iterWnd = ctx->dockingState.rootNativeWindowDockNodes.find(nativeWindow);
+
+	if (iterWnd == ctx->dockingState.rootNativeWindowDockNodes.end())
+		return nullptr;
+
+	return iterWnd->second;
 }
 
 void deleteRootDockNode(HNativeWindow nativeWindow)
 {
 	assert(nativeWindow);
 
-	auto node = ctx->dockingState.rootNativeWindowDockNodes[nativeWindow];
+	auto iterWnd = ctx->dockingState.rootNativeWindowDockNodes.find(nativeWindow);
+
+	if (iterWnd == ctx->dockingState.rootNativeWindowDockNodes.end())
+	{
+		return;
+	}
+
+	auto node = iterWnd->second;
 
 	if (node)
 	{
@@ -2573,6 +2590,9 @@ void drawDockPreview(Window* window, const Rect& windowRect)
 
 void updateDockingSystem()
 {
+	if (ctx->dockingState.rootNativeWindowDockNodes.empty())
+		return;
+
 	auto copyOfRootNativeWindowDockNodes = ctx->dockingState.rootNativeWindowDockNodes;
 	auto& ds = ctx->dockingState;
 	const auto& mousePos = ctx->mousePosition;

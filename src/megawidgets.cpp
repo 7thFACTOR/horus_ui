@@ -46,7 +46,7 @@ bool vecEditorInternal(f64& x, f64& y, f64& z, f64 scrollStep, bool useZ)
 
 		// current widget + 2 since widget is computed in endBox and we have 1 image widget
 		hui::beginBox((draggingValue && (draggedWidgetId == (ctx->currentWidgetId + 2))) ? dragColor : normalColor, "axisBoxBody");
-		u32 imageWidgetId = hui::getWidgetId();
+		WidgetId imageWidgetId = hui::getWidgetId();
 		hui::image(elem->normalState().image, 13);
 		bool imageHovered = hui::isHovered();
 		bool imagePressed = hui::isPressed();

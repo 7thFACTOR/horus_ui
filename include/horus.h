@@ -164,8 +164,10 @@ typedef u32 Rgba32;
 typedef u32 TabIndex;
 typedef u32 GlyphCode;
 typedef std::vector<GlyphCode> Utf32String;
-typedef u32 DockNodeId;
-typedef u32 WidgetId;
+typedef u64 DockNodeId;
+typedef u64 WidgetId;
+
+typedef void (*RenderCallback)(HNativeWindow wnd);
 
 const f32 ColumnFill = -1;
 
@@ -1623,7 +1625,7 @@ HORUS_API HContext getContext();
 /// \param ctx the context to be deleted
 HORUS_API void deleteContext(HContext ctx);
 
-/// \return the context settings
+/// \return the context settings reference so you can modify them in realtime
 HORUS_API ContextSettings& getContextSettings();
 
 HORUS_API void initializeRenderer();
@@ -1644,8 +1646,6 @@ HORUS_API void beginFrame();
 
 /// Ends an UI frame
 HORUS_API void endFrame();
-
-typedef void (*RenderCallback)(HNativeWindow wnd);
 
 HORUS_API void addRenderCallback(RenderCallback callback);
 
@@ -1983,14 +1983,10 @@ HORUS_API void beginContainer(const Rect& rect);
 
 /// End the current widget container
 HORUS_API void endContainer();
-
-/// Push a widget loop, used when you create widgets inside a loop.
-/// For each pushed loop, the widget IDs will be created incrementally in the upper range of uint32
-/// \param loopMaxCount optional, this should be a constant for this specific loop, the max number of widgets that might be in this loop. If -1, use the current loop size set with getSettings().widgetLoopMaxCount
-HORUS_API void pushWidgetLoop(u32 loopMaxCount = ~0);
-
-/// Pop a widget id from ID stack, used with pushWidgetId
-HORUS_API void popWidgetLoop();
+HORUS_API void pushId(const char* id);
+HORUS_API void pushId(u32 id);
+HORUS_API void pushId(const void* id);
+HORUS_API void popId();
 
 /// Begin a layout made up as columns which can have percentage based widths or fixed
 /// \param columnCount the number of columns to be created
@@ -2502,7 +2498,7 @@ HORUS_API bool isVisible();
 HORUS_API bool isChangeEnded();
 
 /// \return the current widget id (the next widget's id)
-HORUS_API u32 getWidgetId();
+HORUS_API WidgetId getWidgetId();
 
 /// \return the current mouse position inside current window
 HORUS_API Point getMousePosition();

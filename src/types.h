@@ -24,9 +24,39 @@ class FontCache;
 class Font;
 struct Image;
 struct DockNode;
-struct View;
 
 typedef u32 ImageId;
+
+struct TextLineState
+{
+	u32 start = 0;
+	u32 length = 0;
+};
+
+struct SameLineState
+{
+	bool computeHeight = true;
+	f32 lineHeight = 0;
+	f32 lineY = 0;
+};
+
+struct ToolbarState
+{
+	ToolbarDirection direction = ToolbarDirection::Horizontal;
+};
+
+struct WidgetLoopInfo
+{
+	u32 previousId = 0;
+	u32 startId = 0;
+	u32 maxCount = 0;
+};
+
+struct WidgetBoolState
+{
+	u32 lastUsedFrame = 0;
+	bool value = false;
+};
 
 struct ThemeElement
 {
@@ -271,7 +301,7 @@ struct DockPaneTabGroupState
 struct DropdownState
 {
 	bool active = false;
-	u32 widgetId = 0;
+	WidgetId widgetId = 0;
 };
 
 struct Window

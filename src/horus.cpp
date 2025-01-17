@@ -1192,6 +1192,7 @@ void setThemeUserWidgetElement(
 
 void setTheme(HTheme theme)
 {
+	assert(theme);
 	ctx->theme = (Theme*)theme;
 }
 
@@ -1382,24 +1383,30 @@ void endContainer()
 	ctx->scrollViewDepth = 0;
 }
 
-void pushWidgetLoop(u32 loopMaxCount)
+void pushId(const char* id)
 {
-	Context::WidgetLoopInfo li;
-
-	li.previousId = ctx->currentWidgetId;
-	li.startId = ctx->widgetLoopStack.size() ? ctx->widgetLoopStack.back().startId + ctx->widgetLoopStack.back().maxCount : ctx->settings.widgetLoopStartId;
-	li.maxCount = loopMaxCount == ~0 ? ctx->settings.widgetLoopMaxCount : loopMaxCount;
-	ctx->currentWidgetId = li.startId;
-	ctx->widgetLoopStack.push_back(li);
+	ctx->idStack.push_back(hashString(id, ctx->idStack.back()));
 }
 
-void popWidgetLoop()
+void pushId(u32 id)
 {
-	if (ctx->widgetLoopStack.size())
+	ctx->idStack.push_back(hashData(&id, sizeof(id), ctx->idStack.back()));
+}
+
+void pushId(const void* id)
+{
+	ctx->idStack.push_back(hashData(&id, sizeof(id), ctx->idStack.back()));
+}
+
+void popId()
+{
+	if (ctx->idStack.size() <= 1) // 1 because we pushed the initial seed id in the Context constructor
 	{
-		ctx->currentWidgetId = ctx->widgetLoopStack.back().previousId;
-		ctx->widgetLoopStack.pop_back();
+		printf("popId used too many times\n");
+		return;
 	}
+
+	ctx->idStack.pop_back();
 }
 
 void incrementLayerIndex()
@@ -1861,7 +1868,7 @@ bool isChangeEnded()
 	return ctx->widget.changeEnded;
 }
 
-u32 getWidgetId()
+WidgetId getWidgetId()
 {
 	return ctx->currentWidgetId;
 }

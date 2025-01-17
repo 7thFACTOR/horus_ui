@@ -36,7 +36,7 @@ bool panel(const char* labelText, bool* expandedVar)
 		}
 		else
 		{
-			auto& wvs = ctx->widgetValueState[ctx->currentWidgetId];
+			auto& wvs = ctx->widgetBoolState[ctx->currentWidgetId];
 			wvs.lastUsedFrame = ctx->frameCount;
 			wvs.value = (f32)!(bool)wvs.value;
 			expanded = (bool)wvs.value;
@@ -51,7 +51,7 @@ bool panel(const char* labelText, bool* expandedVar)
 		}
 		else
 		{
-			auto& wvs = ctx->widgetValueState[ctx->currentWidgetId];
+			auto& wvs = ctx->widgetBoolState[ctx->currentWidgetId];
 			wvs.lastUsedFrame = ctx->frameCount;
 			expanded = (bool)wvs.value;
 		}
