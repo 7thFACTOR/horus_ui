@@ -12,7 +12,7 @@ namespace hui
 {
 void beginMenuBar()
 {
-	auto menuBarElem = ctx->theme->getElement(WidgetElementId::MenuBarBody);
+	auto& menuBarElem = ctx->theme->getElement(WidgetElementId::MenuBarBody);
 	f32 height = menuBarElem.normalState().height * ctx->globalScale;
 
 	ctx->widget.rect.set(
@@ -23,7 +23,6 @@ void beginMenuBar()
 	ctx->renderer->cmdSetColor(menuBarElem.normalState().color);
 	ctx->renderer->cmdDrawImageBordered(menuBarElem.normalState().image, menuBarElem.normalState().border, ctx->widget.rect, ctx->globalScale);
 	ctx->currentMenuBarId = ctx->currentWidgetId;
-	ctx->currentWidgetId++;
 }
 
 void endMenuBar()
@@ -128,12 +127,10 @@ bool beginMenuInternal(const char* labelText, SelectableFlags stateFlags, bool c
 			ctx->penPosition.x = round(ctx->penPosition.x);
 		}
 
-		ctx->currentWidgetId++;
-
 		if (ctx->activeMenuBarItemWidgetId == thisMenuItemId
 			|| (contextMenu && ctx->contextMenuActive))
 		{
-			auto menuBodyElem = ctx->theme->getElement(WidgetElementId::MenuBody);
+			auto& menuBodyElem = ctx->theme->getElement(WidgetElementId::MenuBody);
 
 			ctx->renderer->pushClipRect(ctx->renderer->getWindowRect(), false);
 			pushSpacing(0);
@@ -174,8 +171,7 @@ bool beginMenuInternal(const char* labelText, SelectableFlags stateFlags, bool c
 		if (ctx->menuStack[ctx->menuDepth].active)
 		{
 			auto rc = getWidgetRect();
-
-			auto menuBodyElem = ctx->theme->getElement(WidgetElementId::MenuBody);
+			auto& menuBodyElem = ctx->theme->getElement(WidgetElementId::MenuBody);
 			ctx->activeMenuBarItemWidgetWidth = rc.width;
 			ctx->renderer->pushClipRect(ctx->renderer->getWindowRect(), false);
 			pushSpacing(0);
@@ -208,7 +204,7 @@ void endMenuInternal(bool contextMenu)
 				ctx->activeMenuBarItemWidgetId = 0;
 				ctx->activeMenuBarId = 0;
 
-				for (int i = 0; i < ctx->maxMenuDepth; i++)
+				for (i32 i = 0; i < ctx->maxMenuDepth; i++)
 				{
 					ctx->menuStack[i].active = false;
 				}
@@ -276,7 +272,7 @@ void endMenu()
 
 bool beginContextMenu(ContextMenuFlags flags)
 {
-	u32 widgetId = ctx->currentWidgetId;
+	WidgetId widgetId = ctx->currentWidgetId;
 	bool leftButton = has(flags, ContextMenuFlags::AllowLeftClickOpen) ? ctx->event.mouse.button == MouseButton::Left : false;
 
 	if (ctx->event.type == hui::InputEvent::Type::MouseDown
@@ -310,13 +306,13 @@ void endContextMenu()
 
 bool menuItem(const char* labelText, const char* shortcut, HImage icon, SelectableFlags stateFlags)
 {
-	auto menuItemShortcutElem = ctx->theme->getElement(WidgetElementId::MenuItemShortcut);
-	auto bodyElem = ctx->theme->getElement(WidgetElementId::MenuItemBody);
+	auto& menuItemShortcutElem = ctx->theme->getElement(WidgetElementId::MenuItemShortcut);
+	auto& bodyElem = ctx->theme->getElement(WidgetElementId::MenuItemBody);
 	bool hasIcon = icon != nullptr;
 	bool hasCheck = !!(stateFlags & SelectableFlags::Checkable);
 	bool isChecked = !!(stateFlags & SelectableFlags::Checked);
 
-	addWidgetItem(bodyElem.normalState().height * ctx->globalScale);
+	addWidgetItem(labelText, &ctx->widgetLabel, bodyElem.normalState().height * ctx->globalScale);
 	buttonBehavior(true);
 
 	if (
@@ -355,7 +351,7 @@ bool menuItem(const char* labelText, const char* shortcut, HImage icon, Selectab
 	ctx->renderer->cmdSetFont(bodyElemState->font);
 	ctx->renderer->pushClipRect(ctx->widget.rect);
 	ctx->renderer->cmdDrawTextInBox(
-		labelText,
+		ctx->widgetLabel.c_str(),
 		Rect(
 			ctx->widget.rect.x + (ctx->menuItemTextSideSpacing + ctx->menuIconSpace) * ctx->globalScale,
 			ctx->widget.rect.y,
@@ -384,8 +380,8 @@ bool menuItem(const char* labelText, const char* shortcut, HImage icon, Selectab
 
 	if (hasCheck)
 	{
-		auto checkMarkElem = ctx->theme->getElement(WidgetElementId::MenuItemCheckMark);
-		auto noCheckMarkElem = ctx->theme->getElement(WidgetElementId::MenuItemNoCheckMark);
+		auto& checkMarkElem = ctx->theme->getElement(WidgetElementId::MenuItemCheckMark);
+		auto& noCheckMarkElem = ctx->theme->getElement(WidgetElementId::MenuItemNoCheckMark);
 
 		// draw icon or check mark
 		auto& rc = ctx->widget.rect;
@@ -424,9 +420,9 @@ bool menuItem(const char* labelText, const char* shortcut, HImage icon, Selectab
 	}
 
 	setFocusable();
-	ctx->currentWidgetId++;
+
 	auto menuItemTextWidth = bodyElemState->font->computeTextSize(
-		*ctx->textCache->getText(labelText)).width + menuItemShortcutElem.normalState().font->computeTextSize(*ctx->textCache->getText(shortcut)).width;
+		*ctx->textCache->getText(ctx->widgetLabel.c_str())).width + menuItemShortcutElem.normalState().font->computeTextSize(*ctx->textCache->getText(shortcut)).width;
 
 	ctx->menuStack[ctx->menuDepth - 1].size.x = std::max(
 		menuItemTextWidth,

@@ -8,12 +8,12 @@
 
 namespace hui
 {
-bool radio(const char* labelText, i32* currentRadioValue, i32 thisValue)
+bool radio(const char* label, i32* currentRadioValue, i32 thisValue)
 {
 	auto& radioBodyElem = ctx->theme->getElement(WidgetElementId::RadioBody);
 	auto& radioMarkElem = ctx->theme->getElement(WidgetElementId::RadioMark);
 
-	addWidgetItem(radioBodyElem.normalState().height * ctx->globalScale);
+	addWidgetItem(label, radioBodyElem.normalState().height * ctx->globalScale);
 	buttonBehavior();
 	bool changed = false;
 
@@ -71,7 +71,7 @@ bool radio(const char* labelText, i32* currentRadioValue, i32 thisValue)
 	ctx->renderer->cmdSetColor(radioBodyElemState->textColor);
 	ctx->renderer->cmdSetFont(radioBodyElemState->font);
 	ctx->renderer->cmdDrawTextInBox(
-		labelText,
+		ctx->widgetLabel.c_str(),
 		Rect(
 			ctx->widget.rect.x + ctx->widget.rect.height + bulletTextSpacing,
 			ctx->widget.rect.y,
@@ -79,8 +79,6 @@ bool radio(const char* labelText, i32* currentRadioValue, i32 thisValue)
 			ctx->widget.rect.height),
 		HAlignType::Left,
 		VAlignType::Center);
-
-	ctx->currentWidgetId++;
 
 	return changed;
 }

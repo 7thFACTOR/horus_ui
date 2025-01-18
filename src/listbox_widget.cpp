@@ -31,17 +31,17 @@ void endList()
 {
 }
 
-void listItem(const char* labelText, SelectableFlags stateFlags, HImage icon)
+void listItem(const char* label, SelectableFlags stateFlags, HImage icon)
 {
 
 }
 
-bool selectableInternal(const char* labelText, HFont font, SelectableFlags stateFlags)
+bool selectableInternal(const char* label, HFont font, SelectableFlags stateFlags)
 {
-	auto bodyElem = ctx->theme->getElement(WidgetElementId::SelectableBody);
+	auto& bodyElem = ctx->theme->getElement(WidgetElementId::SelectableBody);
 	Font* fnt = font ? (Font*)font : bodyElem.normalState().font;
 
-	addWidgetItem(fmaxf(
+	addWidgetItem(label, fmaxf(
 		bodyElem.normalState().height,
 		fnt->getMetrics().height) * ctx->globalScale);
 	buttonBehavior();
@@ -63,7 +63,7 @@ bool selectableInternal(const char* labelText, HFont font, SelectableFlags state
 		ctx->renderer->cmdSetColor(bodyElemState->textColor * ctx->tint[(int)TintColorType::Text]);
 		ctx->renderer->cmdSetFont(fnt);
 		ctx->renderer->cmdDrawTextInBox(
-			labelText,
+			ctx->widgetLabel.c_str(),
 			Rect(
 				ctx->widget.rect.x + bodyElemState->border,
 				ctx->widget.rect.y + bodyElemState->border,
@@ -76,20 +76,19 @@ bool selectableInternal(const char* labelText, HFont font, SelectableFlags state
 	}
 
 	setFocusable();
-	ctx->currentWidgetId++;
-	ctx->menuItemTextWidth = fnt->computeTextSize(labelText).width + bodyElemState->border * 2.0f;
+	ctx->menuItemTextWidth = fnt->computeTextSize(ctx->widgetLabel.c_str()).width + bodyElemState->border * 2.0f;
 
 	return ctx->widget.clicked;
 }
 
-bool selectable(const char* labelText, SelectableFlags stateFlags)
+bool selectable(const char* label, SelectableFlags stateFlags)
 {
-	return selectableInternal(labelText, nullptr, stateFlags);
+	return selectableInternal(label, nullptr, stateFlags);
 }
 
-bool selectableCustomFont(const char* labelText, HFont font, SelectableFlags stateFlags)
+bool selectableCustomFont(const char* label, HFont font, SelectableFlags stateFlags)
 {
-	return selectableInternal(labelText, font, stateFlags);
+	return selectableInternal(label, font, stateFlags);
 }
 
 }

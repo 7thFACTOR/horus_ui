@@ -117,8 +117,8 @@ f32 endScrollView()
 	// draw scrollbar if content is bigger than scroll view
 	if (scrollContentSize > clipRect.height)
 	{
-		auto scrollViewScrollBarElemState = ctx->theme->getElement(WidgetElementId::ScrollViewScrollBar).normalState();
-		auto scrollViewScrollThumbElemState = ctx->theme->getElement(WidgetElementId::ScrollViewScrollThumb).normalState();
+		auto& scrollViewScrollBarElemState = ctx->theme->getElement(WidgetElementId::ScrollViewScrollBar).normalState();
+		auto& scrollViewScrollThumbElemState = ctx->theme->getElement(WidgetElementId::ScrollViewScrollThumb).normalState();
 
 		Rect rectScrollBar =
 		{
@@ -243,8 +243,7 @@ f32 endScrollView()
 	scrollPos = (u32)scrollPos;
 	ctx->penPosition = ctx->penStack.back();
 	ctx->penStack.pop_back();
-	addWidgetItem(size);
-	ctx->currentWidgetId++;
+	addWidgetItem("", size);
 
 	return scrollPos;
 }

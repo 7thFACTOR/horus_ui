@@ -20,21 +20,21 @@ bool comboSliderInternal(f32& value, f32 minVal, f32 maxVal, bool useRange, f32 
 	static u32 comboSliderWidgetId = 0;
 	static bool requestChangeToOtherComboSlider = false;
 	static u32 newComboSliderId = 0;
-	auto bodyElem = ctx->theme->getElement(WidgetElementId::ComboSliderBody);
-	auto leftArrowElem = ctx->theme->getElement(WidgetElementId::ComboSliderLeftArrow);
-	auto rightArrowElem = ctx->theme->getElement(WidgetElementId::ComboSliderRightArrow);
-	auto rangeBarElem = ctx->theme->getElement(WidgetElementId::ComboSliderRangeBar);
-	bool wasModified = false;
+	auto& bodyElem = ctx->theme->getElement(WidgetElementId::ComboSliderBody);
+	auto& leftArrowElem = ctx->theme->getElement(WidgetElementId::ComboSliderLeftArrow);
+	auto& rightArrowElem = ctx->theme->getElement(WidgetElementId::ComboSliderRightArrow);
+	auto& rangeBarElem = ctx->theme->getElement(WidgetElementId::ComboSliderRangeBar);
+	bool changed = false;
 
 	if (useRange)
 	{
-		wasModified = clampValue(value, minVal, maxVal);
+		changed = clampValue(value, minVal, maxVal);
 	}
 
 	// if we're not editing any text of this particular widget id
 	if (!editingText || comboSliderWidgetId != ctx->currentWidgetId)
 	{
-		addWidgetItem(bodyElem.normalState().height * ctx->globalScale);
+		addWidgetItem("", bodyElem.normalState().height * ctx->globalScale);
 		buttonBehavior();
 	}
 
@@ -66,14 +66,14 @@ bool comboSliderInternal(f32& value, f32 minVal, f32 maxVal, bool useRange, f32 
 	{
 		value -= arrowStep;
 		arrowStepped = true;
-		if (useRange) wasModified = clampValue(value, minVal, maxVal);
+		if (useRange) changed = clampValue(value, minVal, maxVal);
 		ctx->widget.changeEnded = true;
 	}
 	else if (isClicked() && ctx->mousePosition.x >= ctx->widget.rect.right() - rightArrowElem.normalState().image->width)
 	{
 		value += arrowStep;
 		arrowStepped = true;
-		if (useRange) wasModified = clampValue(value, minVal, maxVal);
+		if (useRange) changed = clampValue(value, minVal, maxVal);
 		ctx->widget.changeEnded = true;
 	}
 
@@ -112,7 +112,7 @@ bool comboSliderInternal(f32& value, f32 minVal, f32 maxVal, bool useRange, f32 
 			editingText = false;
 			comboSliderWidgetId = 0;
 			value = atof(text);
-			if (useRange) wasModified = clampValue(value, minVal, maxVal);
+			if (useRange) changed = clampValue(value, minVal, maxVal);
 			ctx->widget.changeEnded = true;
 
 			if (requestChangeToOtherComboSlider)
@@ -189,13 +189,13 @@ bool comboSliderInternal(f32& value, f32 minVal, f32 maxVal, bool useRange, f32 
 			if (useRange)
 			{
 				value += deltaValue * stepsPerPixel;
-				wasModified = clampValue(value, minVal, maxVal);
+				changed = clampValue(value, minVal, maxVal);
 				percentFilled = 1.0f - (maxVal - value) / (maxVal - minVal);
 			}
 			else
 			{
 				value += deltaValue * stepsPerPixel;
-				wasModified = true;
+				changed = true;
 			}
 		}
 
@@ -291,10 +291,9 @@ bool comboSliderInternal(f32& value, f32 minVal, f32 maxVal, bool useRange, f32 
 		ctx->renderer->cmdSetColor(bodyElemState->textColor * ctx->tint[(int)TintColorType::Body]);
 		ctx->renderer->cmdDrawTextInBox(outStr, ctx->widget.rect, HAlignType::Center, VAlignType::Center);
 		setFocusable();
-		ctx->currentWidgetId++;
 	}
 
-	return wasModified;
+	return changed;
 }
 
 bool comboSliderFloat(f32& value, f32 stepsPerPixel, f32 arrowStep)

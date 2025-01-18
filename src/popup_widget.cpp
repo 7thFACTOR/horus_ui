@@ -12,11 +12,13 @@ namespace hui
 static f32 movePopupMaxDistanceTrigger = 5;
 
 void beginPopup(
+	const char* id,
 	f32 width,
 	PopupFlags flags,
 	const Point& position,
 	WidgetElementId widgetElementId)
 {
+	pushId(id);
 	auto& popup = ctx->popupStack[ctx->popupIndex];
 
 	popup.flags = flags;
@@ -62,7 +64,7 @@ void beginPopup(
 	popup.width = width;
 
 	f32 height = popup.height;
-	auto bodyElemState = ctx->theme->getElement(widgetElementId).normalState();
+	auto& bodyElemState = ctx->theme->getElement(widgetElementId).normalState();
 	Point pos = { ctx->containerRect.x, ctx->containerRect.y };
 
 	if (has(flags, PopupFlags::Centered))
@@ -157,7 +159,8 @@ void beginPopup(
 		popupRect, ctx->globalScale);
 
 	popup.widgetId = ctx->currentWidgetId;
-	ctx->currentWidgetId++;
+
+	popId();
 }
 
 void endPopup()
@@ -356,7 +359,7 @@ MessageBoxButtons messageBox(
 		break;
 	}
 
-	hui::beginPopup(500, PopupFlags::FadeBackground | PopupFlags::Centered);
+	hui::beginPopup(title, 500, PopupFlags::FadeBackground | PopupFlags::Centered);
 	auto iterFnt = ctx->theme->fonts.find("title");
 	hui::pushTint(Color::cyan);
 

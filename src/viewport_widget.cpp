@@ -14,12 +14,11 @@ Rect beginViewport(f32 height)
 		height = ctx->layoutStack.back().height - (ctx->penPosition.y - ctx->layoutStack.back().position.y);
 	}
 
-	addWidgetItem(height);
+	addWidgetItem("", height);
 	buttonBehavior();
 
 	auto scissor = ctx->renderer->pushClipRect(ctx->widget.rect);
 
-	ctx->currentWidgetId++;
 	ctx->renderer->viewportOffset = ctx->widget.rect.topLeft();
 
 	return scissor;

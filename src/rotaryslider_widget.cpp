@@ -12,17 +12,18 @@
 
 namespace hui
 {
-bool rotarySliderFloat(const char* labelText, f32& value, f32 minVal, f32 maxVal, f32 step, bool twoSide, f32 fineStepDivideFactor)
+bool rotarySliderFloat(const char* label, f32& value, f32 minVal, f32 maxVal, f32 step, bool twoSide, f32 fineStepDivideFactor)
 {
 	static Point lastMousePos;
 	static u32 rotarySliderWidgetId = 0;
 	static bool isFine = false;
-	auto bodyElem = ctx->theme->getElement(WidgetElementId::RotarySliderBody);
-	auto markElem = ctx->theme->getElement(WidgetElementId::RotarySliderMark);
-	auto valueDotElem = ctx->theme->getElement(WidgetElementId::RotarySliderValueDot);
+
+	auto& bodyElem = ctx->theme->getElement(WidgetElementId::RotarySliderBody);
+	auto& markElem = ctx->theme->getElement(WidgetElementId::RotarySliderMark);
+	auto& valueDotElem = ctx->theme->getElement(WidgetElementId::RotarySliderValueDot);
 	bool wasModified = false;
 
-	addWidgetItem(bodyElem.normalState().height * ctx->globalScale);
+	addWidgetItem(label, bodyElem.normalState().height * ctx->globalScale);
 	buttonBehavior();
 
 	if (isHovered() && ctx->event.type == InputEvent::Type::MouseDown)
@@ -120,7 +121,7 @@ bool rotarySliderFloat(const char* labelText, f32& value, f32 minVal, f32 maxVal
 		f32 radians = lowLimitRadians + percent * (highLimitRadians - lowLimitRadians);
 		f32 step = (highLimitRadians - lowLimitRadians) / dotCount;
 		f32 angle = lowLimitRadians;
-		int activeDots = dotCount * percent;
+		i32 activeDots = dotCount * percent;
 		Point pos;
 
 		if (twoSide)
@@ -133,7 +134,7 @@ bool rotarySliderFloat(const char* labelText, f32& value, f32 minVal, f32 maxVal
 			activeDots = fabs(dotCount * (percent - 0.5f));
 			ctx->renderer->cmdSetColor(value < 0 ? negativeColor : positiveColor);
 
-			for (int i = 0; i <= activeDots; i++)
+			for (i32 i = 0; i <= activeDots; i++)
 			{
 				pos.x = cosf(angle) * dotPlacementRadius * ctx->globalScale + center.x - valueDotElem.normalState().image->width * ctx->globalScale / 2;
 				pos.y = sinf(angle) * dotPlacementRadius * ctx->globalScale + center.y - valueDotElem.normalState().image->height * ctx->globalScale / 2;
@@ -147,7 +148,7 @@ bool rotarySliderFloat(const char* labelText, f32& value, f32 minVal, f32 maxVal
 		}
 		else
 		{
-			for (int i = 0; i <= activeDots; i++)
+			for (i32 i = 0; i <= activeDots; i++)
 			{
 				pos.x = cosf(angle) * dotPlacementRadius * ctx->globalScale + center.x - valueDotElem.normalState().image->width * ctx->globalScale / 2;
 				pos.y = sinf(angle) * dotPlacementRadius * ctx->globalScale + center.y - valueDotElem.normalState().image->height * ctx->globalScale / 2;
@@ -174,7 +175,7 @@ bool rotarySliderFloat(const char* labelText, f32& value, f32 minVal, f32 maxVal
 		ctx->renderer->cmdSetFont(bodyElemState->font);
 		ctx->renderer->pushClipRect(ctx->widget.rect);
 		ctx->renderer->cmdDrawTextInBox(
-			labelText,
+			ctx->widgetLabel.c_str(),
 			Rect(
 				ctx->widget.rect.x,
 				ctx->widget.rect.top(),
@@ -186,7 +187,6 @@ bool rotarySliderFloat(const char* labelText, f32& value, f32 minVal, f32 maxVal
 	}
 
 	setFocusable();
-	ctx->currentWidgetId++;
 
 	return wasModified;
 }

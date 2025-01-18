@@ -26,7 +26,9 @@ bool textInput(
 	auto& bodyTextSelectionElemState = ctx->theme->getElement(WidgetElementId::TextInputSelection).normalState();
 	auto& bodyTextDefaultElemState = ctx->theme->getElement(WidgetElementId::TextInputDefaultText).normalState();
 
-	addWidgetItem(fmaxf(bodyElem->normalState().height * ctx->globalScale, bodyElem->normalState().font->getMetrics().height));
+	// use ptr as id
+	pushId(text);
+	addWidgetItem("", fmaxf(bodyElem->normalState().height * ctx->globalScale, bodyElem->normalState().font->getMetrics().height));
 
 	if (!ctx->focusChanged)
 		buttonBehavior();
@@ -159,7 +161,7 @@ bool textInput(
 
 	if (isEditingThis)
 	{
-		int offs = ctx->textInput.caretPosition;
+		i32 offs = ctx->textInput.caretPosition;
 
 		if (ctx->textInput.caretPosition > ctx->textInput.text.size())
 			offs = ctx->textInput.text.size() - 1;
@@ -191,7 +193,7 @@ bool textInput(
 
 		if (ctx->textInput.selectionActive)
 		{
-			int startSel = ctx->textInput.selectionBegin, endSel = ctx->textInput.selectionEnd, tmpSel;
+			i32 startSel = ctx->textInput.selectionBegin, endSel = ctx->textInput.selectionEnd, tmpSel;
 
 			if (startSel > endSel)
 			{
@@ -249,7 +251,7 @@ bool textInput(
 		u32 len = std::min(HORUS_UTF->utf8Length(textToDraw), maxHiddenCharLen);
 		hiddenPwdText[0] = 0;
 
-		for (int i = 0; i < len; i++)
+		for (i32 i = 0; i < len; i++)
 		{
 			strcat(hiddenPwdText, passwordChar);
 		}
@@ -285,7 +287,6 @@ bool textInput(
 	ctx->renderer->popClipRect();
 
 	setFocusable();
-	ctx->currentWidgetId++;
 
 	if (ctx->settings.textCaretBlinkDelay > 0)
 	{
@@ -298,6 +299,8 @@ bool textInput(
 			ctx->textInput.caretBlinkTimer = 0;
 		}
 	}
+	
+	popId();
 
 	return ctx->textInput.textChanged;
 }

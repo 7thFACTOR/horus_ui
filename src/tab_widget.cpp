@@ -79,7 +79,6 @@ TabIndex endTabGroup()
 	ctx->penPosition.x = ctx->layoutStack.back().position.x;
 	ctx->penPosition.y += height;
 	ctx->penPosition.y = round(ctx->penPosition.y);
-	ctx->currentWidgetId++;
 	ctx->renderer->popClipRect();
 
 	if (ctx->event.type == InputEvent::Type::MouseDown)
@@ -93,14 +92,14 @@ TabIndex endTabGroup()
 	return ctx->selectedTabIndex;
 }
 
-void tab(const char* labelText, HImage icon)
+void tab(const char* label, HImage icon)
 {
 	auto& tabGroupElemState = ctx->theme->getElement(WidgetElementId::TabGroupBody).normalState();
 	auto& tabActiveElem = ctx->theme->getElement(WidgetElementId::TabBodyActive);
 	auto& tabInactiveElem = ctx->theme->getElement(WidgetElementId::TabBodyInactive);
 	auto tabElemState = &tabActiveElem.normalState();
 	
-	Utf32String* uniStr = ctx->textCache->getText(labelText);
+	Utf32String* uniStr = ctx->textCache->getText(label);
 	FontTextSize fsize = tabElemState->font->computeTextSize(*uniStr);
 	Image* ico = (Image*)icon;
 
@@ -182,13 +181,12 @@ void tab(const char* labelText, HImage icon)
 
 	ctx->renderer->pushClipRect(textRc);
 
-	ctx->renderer->cmdDrawTextInBox(labelText,
+	ctx->renderer->cmdDrawTextInBox(label,
 		textRc,
 		HAlignType::Left, VAlignType::Center);
 
 	ctx->renderer->popClipRect();
 	ctx->currentTabIndex++;
-	ctx->currentWidgetId++;
 }
 
 }

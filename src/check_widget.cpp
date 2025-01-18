@@ -8,20 +8,22 @@
 
 namespace hui
 {
-bool check(const char* labelText, bool* checkVar)
+bool check(const char* label, bool* checkVar)
 {
 	auto& checkBodyElem = ctx->theme->getElement(WidgetElementId::CheckBody);
 	auto& checkMarkElem = ctx->theme->getElement(WidgetElementId::CheckMark);
 
-	addWidgetItem(checkBodyElem.normalState().height * ctx->globalScale);
+	addWidgetItem(label, checkBodyElem.normalState().height * ctx->globalScale);
 	buttonBehavior();
 	bool changed = false;
 
 	if (ctx->widget.clicked)
 	{
 		ctx->widget.changeEnded = true;
+		
 		if (checkVar)
 			*checkVar = !*checkVar;
+		
 		forceRepaint();
 		changed = true;
 	}
@@ -70,7 +72,7 @@ bool check(const char* labelText, bool* checkVar)
 	ctx->renderer->cmdSetColor(checkBodyElemState->textColor);
 	ctx->renderer->cmdSetFont(checkBodyElemState->font);
 	ctx->renderer->cmdDrawTextInBox(
-		labelText,
+		ctx->widgetLabel.c_str(),
 		Rect(
 			ctx->widget.rect.x + ctx->widget.rect.height + bulletTextSpacing,
 			ctx->widget.rect.y,
@@ -78,8 +80,6 @@ bool check(const char* labelText, bool* checkVar)
 			ctx->widget.rect.height),
 		HAlignType::Left,
 		VAlignType::Center);
-
-	ctx->currentWidgetId++;
 
 	return changed;
 }

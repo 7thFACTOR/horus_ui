@@ -102,7 +102,7 @@ void Font::precacheGlyphs(u32* glyphs, u32 glyphCount)
 
 void Font::precacheLatinAlphabetGlyphs()
 {
-	std::string alphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890!@#$%^&*()_+-=~`[]{};':\",./<>?®© ";
+	static const std::string alphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890!@#$%^&*()_+-=~`[]{};':\",./<>?®© ";
 
 	for (auto code : alphabet)
 	{
@@ -144,7 +144,8 @@ FontGlyph* Font::cacheGlyph(GlyphCode glyphCode)
 	else
 	{
 		// if we are in resize mode, then just update the image buffer for the glyph and its size
-		auto img = ((Image*)fontGlyph->image);
+		auto img = (Image*)fontGlyph->image;
+
 		if (img)
 		{
 			delete[] img->imageData;
@@ -204,7 +205,7 @@ FontTextSize Font::computeTextSize(const GlyphCode* const text, u32 size, u32 ma
 			}
 
 			crtLineWidth = 0;
-			lineCount++;
+			++lineCount;
 			continue;
 		}
 
@@ -246,7 +247,7 @@ FontTextSize Font::computeTextSize(const GlyphCode* const text, u32 size, u32 ma
 		fsize.width = crtLineWidth;
 	}
 
-	lineCount++;
+	++lineCount;
 	fsize.height = lineCount * fontInfo.metrics.height;
 
 	return fsize;
@@ -254,7 +255,7 @@ FontTextSize Font::computeTextSize(const GlyphCode* const text, u32 size, u32 ma
 
 void Font::deleteGlyphs()
 {
-	for (auto glyph : glyphs)
+	for (auto& glyph : glyphs)
 	{
 		atlas->deleteImage((Image*)glyph.second->image);
 		delete[] glyph.second->rgbaBuffer;

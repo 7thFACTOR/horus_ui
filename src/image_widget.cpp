@@ -42,7 +42,7 @@ bool image(HImage img, f32 height, HAlignType horizontalAlign, VAlignType vertic
 		height = newHeight;
 	}
 
-	addWidgetItem(height);
+	addWidgetItem("", height);
 
 	Point pos = ctx->widget.rect.topLeft();
 
@@ -74,8 +74,6 @@ bool image(HImage img, f32 height, HAlignType horizontalAlign, VAlignType vertic
 		ctx->renderer->cmdSetColor(Color::white);
 		ctx->renderer->cmdDrawImage(imgPtr, ctx->widget.rect);
 	}
-
-	ctx->currentWidgetId++;
 
 	return false;
 }

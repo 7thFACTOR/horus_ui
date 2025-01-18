@@ -148,7 +148,7 @@ void setFocused()
 	ctx->focusChanged = true;
 }
 
-void addWidgetItem(f32 height)
+void addWidgetItem(const char* text, f32 height)
 {
 	ctx->widget.changeEnded = false;
 	height = round(height);
@@ -190,6 +190,10 @@ void addWidgetItem(f32 height)
 	{
 		ctx->penPosition.x += (width + ctx->widget.sameLineSpacing) * ctx->globalScale;
 	}
+
+	static std::string noLabelNeeded;
+
+	ctx->extractLabelAndId(text, ctx->widgetLabel, ctx->currentWidgetId);
 }
 
 void setFocusable()
@@ -485,7 +489,7 @@ bool hasNothingToDo()
 	return !ctx->mustRedraw
 		&& !ctx->mouseMoved
 		&& !ctx->events.size()
-		&& !ctx->dockingTabPane;
+		&& !ctx->dockingState.dragStarted;
 }
 
 void setDisableRendering(bool disable)
@@ -1660,7 +1664,7 @@ void endColumns()
 
 void columnHeader(const char* label, f32 width, f32 preferredWidth, f32 minWidth, f32 maxWidth)
 {
-	auto headerElemState = ctx->theme->getElement(WidgetElementId::ColumnsHeaderBody).normalState();
+	auto& headerElemState = ctx->theme->getElement(WidgetElementId::ColumnsHeaderBody).normalState();
 
 	ctx->widget.rect = {
 		ctx->layoutStack.back().position.x + ctx->columnPadding,
@@ -1668,6 +1672,8 @@ void columnHeader(const char* label, f32 width, f32 preferredWidth, f32 minWidth
 		ctx->layoutStack.back().width - ctx->columnPadding * 2.0f * ctx->globalScale,
 		headerElemState.height
 	};
+
+	addWidgetItem(label, ctx->widget.rect.height);
 
 	Rect rcText = ctx->widget.rect;
 
@@ -1677,10 +1683,8 @@ void columnHeader(const char* label, f32 width, f32 preferredWidth, f32 minWidth
 	ctx->renderer->cmdDrawImageBordered(headerElemState.image, headerElemState.border, ctx->widget.rect, ctx->globalScale);
 	ctx->renderer->cmdSetColor(headerElemState.textColor);
 	ctx->renderer->cmdSetFont(headerElemState.font);
-	ctx->renderer->cmdDrawTextInBox(label, rcText, HAlignType::Left, VAlignType::Center);
+	ctx->renderer->cmdDrawTextInBox(ctx->widgetLabel.c_str(), rcText, HAlignType::Left, VAlignType::Center);
 
-	addWidgetItem(ctx->widget.rect.height);
-	ctx->currentWidgetId++;
 }
 
 void pushLayoutPadding(f32 newPadding)

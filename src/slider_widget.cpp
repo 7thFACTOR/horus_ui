@@ -7,19 +7,21 @@
 
 namespace hui
 {
-bool sliderInternal(f32 minVal, f32 maxVal, f32& value, bool useStep, f32 step, bool isFloatValue)
+bool sliderInternal(const char* id, f32 minVal, f32 maxVal, f32& value, bool useStep, f32 step, bool isFloatValue)
 {
+	pushId(id);
 	static bool draggingKnob = false;
 	static Point dragDelta;
-	auto bodyElem = ctx->theme->getElement(WidgetElementId::SliderBody);
-	auto bodyFilledElem = ctx->theme->getElement(WidgetElementId::SliderBodyFilled);
-	auto knobElem = ctx->theme->getElement(WidgetElementId::SliderKnob);
+
+	auto& bodyElem = ctx->theme->getElement(WidgetElementId::SliderBody);
+	auto& bodyFilledElem = ctx->theme->getElement(WidgetElementId::SliderBodyFilled);
+	auto& knobElem = ctx->theme->getElement(WidgetElementId::SliderKnob);
 	bool wasModified = false;
 
 	// clamp
 	value = fmaxf(minVal, fminf(maxVal, value));
 
-	addWidgetItem(bodyElem.normalState().height * ctx->globalScale);
+	addWidgetItem(id, bodyElem.normalState().height * ctx->globalScale);
 	buttonBehavior();
 
 	ctx->widget.rect.x += knobElem.normalState().image->rect.width / 2.f * ctx->globalScale;
@@ -31,7 +33,6 @@ bool sliderInternal(f32 minVal, f32 maxVal, f32& value, bool useStep, f32 step, 
 	}
 
 	f32 percentFilled = 1.0f - (maxVal - value) / (maxVal - minVal);
-
 	Rect knobRect;
 	f32 valueWidth = ctx->widget.rect.width;
 
@@ -153,22 +154,24 @@ bool sliderInternal(f32 minVal, f32 maxVal, f32& value, bool useStep, f32 step, 
 		knobRect,
 		ctx->globalScale);
 	setFocusable();
-	ctx->currentWidgetId++;
+
+	popId();
 
 	return wasModified;
 }
 
-bool sliderInteger(i32 minVal, i32 maxVal, i32& value, bool useStep, i32 step)
+bool sliderInteger(const char* id, i32 minVal, i32 maxVal, i32& value, bool useStep, i32 step)
 {
 	f32 val = value;
-	bool ret = sliderInternal(minVal, maxVal, val, useStep, step, false);
+	bool ret = sliderInternal(id, minVal, maxVal, val, useStep, step, false);
 	value = val;
+
 	return ret;
 }
 
-bool sliderFloat(f32 minVal, f32 maxVal, f32& value, bool useStep, f32 step)
+bool sliderFloat(const char* id, f32 minVal, f32 maxVal, f32& value, bool useStep, f32 step)
 {
-	return sliderInternal(minVal, maxVal, value, useStep, step, true);
+	return sliderInternal(id, minVal, maxVal, value, useStep, step, true);
 }
 
 }

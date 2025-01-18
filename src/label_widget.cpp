@@ -8,12 +8,12 @@
 
 namespace hui
 {
-bool labelInternal(const char* labelText, HAlignType horizontalAlign, Font* font)
+bool labelInternal(const char* label, HAlignType horizontalAlign, Font* font)
 {
-	auto bodyElem = ctx->theme->getElement(WidgetElementId::LabelBody);
+	auto& bodyElem = ctx->theme->getElement(WidgetElementId::LabelBody);
 	f32 width = ctx->layoutStack.back().width;
 	f32 height = 0;
-	auto bodyElemState = bodyElem.normalState();
+	auto& bodyElemState = bodyElem.normalState();
 
 	height = bodyElemState.height;
 
@@ -22,7 +22,7 @@ bool labelInternal(const char* labelText, HAlignType horizontalAlign, Font* font
 		ctx->penPosition.y,
 		width, height };
 
-	addWidgetItem(rect.height * ctx->globalScale);
+	addWidgetItem(label, rect.height * ctx->globalScale);
 	buttonBehavior();
 
 	if (ctx->widget.hoveredWidgetId == ctx->currentWidgetId)
@@ -35,35 +35,33 @@ bool labelInternal(const char* labelText, HAlignType horizontalAlign, Font* font
 		ctx->renderer->cmdSetColor(bodyElemState.textColor * ctx->tint[(int)TintColorType::Text]);
 		ctx->renderer->cmdSetFont(font ? font : bodyElemState.font);
 		ctx->renderer->cmdDrawTextInBox(
-			labelText,
+			ctx->widgetLabel.c_str(),
 			ctx->widget.rect,
 			horizontalAlign,
 			VAlignType::Center);
 	}
 
-	ctx->currentWidgetId++;
-
 	return ctx->widget.clicked;
 }
 
-bool label(const char* labelText, HAlignType horizontalAlign)
+bool label(const char* label, HAlignType horizontalAlign)
 {
-	return labelInternal(labelText, horizontalAlign, nullptr);
+	return labelInternal(label, horizontalAlign, nullptr);
 }
 
-bool labelCustomFont(const char* labelText, HFont font, HAlignType horizontalAlign)
+bool labelCustomFont(const char* label, HFont font, HAlignType horizontalAlign)
 {
-	return labelInternal(labelText, horizontalAlign, (Font*)font);
+	return labelInternal(label, horizontalAlign, (Font*)font);
 }
 
-bool labelMultiline(const char* labelText, HAlignType horizontalAlign)
+bool labelMultiline(const char* label, HAlignType horizontalAlign)
 {
-	auto bodyElemState = ctx->theme->getElement(WidgetElementId::LabelBody).normalState();
+	auto& bodyElemState = ctx->theme->getElement(WidgetElementId::LabelBody).normalState();
 
-	return labelCustomFontMultiline(labelText, bodyElemState.font, horizontalAlign);
+	return labelCustomFontMultiline(label, bodyElemState.font, horizontalAlign);
 }
 
-bool labelCustomFontMultiline(const char* labelText, HFont font, HAlignType horizontalAlign)
+bool labelCustomFontMultiline(const char* label, HFont font, HAlignType horizontalAlign)
 {
 	auto& bodyElemState = ctx->theme->getElement(WidgetElementId::LabelBody).normalState();
 
@@ -72,25 +70,29 @@ bool labelCustomFontMultiline(const char* labelText, HFont font, HAlignType hori
 
 	f32 width = ctx->layoutStack.back().width;
 
-	auto rect = ctx->drawMultilineText(
-		labelText,
+	ctx->extractLabelAndId(label, ctx->widgetLabel, ctx->currentWidgetId);
+
+	auto textSize = ((Font*)font)->computeTextSize(ctx->widgetLabel.c_str());
+
+	addWidgetItem(label, textSize.height);
+
+	ctx->drawMultilineText(
+		ctx->widgetLabel.c_str(),
 		{
 			ctx->penPosition.x,
 			ctx->penPosition.y,
 			width,
-			0 },
-			horizontalAlign,
-			VAlignType::Center);
+			0
+		},
+		horizontalAlign,
+		VAlignType::Center);
 
-	addWidgetItem(rect.height);
 	buttonBehavior();
 
 	if (ctx->widget.hoveredWidgetId == ctx->currentWidgetId)
 	{
 		ctx->widget.hoveredWidgetType = WidgetType::Label;
 	}
-
-	ctx->currentWidgetId++;
 
 	return ctx->widget.pressed;
 }

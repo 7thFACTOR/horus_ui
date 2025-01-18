@@ -34,9 +34,9 @@ void beginBox(
 	WidgetStateType state,
 	f32 customHeight)
 {
-	auto boxElemState = &ctx->theme->getElement(widgetElementId).getState(state);
+	auto& boxElemState = ctx->theme->getElement(widgetElementId).getState(state);
 
-	beginBoxInternal(color, *boxElemState, customHeight);
+	beginBoxInternal(color, boxElemState, customHeight);
 }
 
 void beginBox(
@@ -49,14 +49,14 @@ void beginBox(
 
 	if (elem)
 	{
-		auto boxElemState = &elem->getState(state);
-		beginBoxInternal(color, *boxElemState, customHeight);
+		auto& boxElemState = elem->getState(state);
+		beginBoxInternal(color, boxElemState, customHeight);
 	}
 }
 
 bool endBox()
 {
-	auto boxElemState = ctx->layoutStack.back().themeWidgetElementState;
+	auto& boxElemState = ctx->layoutStack.back().themeWidgetElementState;
 	auto contentHeight = ctx->penPosition.y - ctx->layoutStack.back().position.y;
 	contentHeight -= ctx->spacing * ctx->globalScale;
 	contentHeight -= boxElemState->border * ctx->globalScale;
@@ -73,6 +73,8 @@ bool endBox()
 		ctx->layoutStack.back().width + (boxElemState->border * 2.0f + ctx->layoutPadding * 2.0f) * ctx->globalScale,
 		height
 	};
+
+	addWidgetItem("", height);
 
 	buttonBehavior();
 	auto cmdIndex = popDrawCommandIndex();
@@ -95,7 +97,6 @@ bool endBox()
 
 	ctx->layoutStack.pop_back();
 	ctx->penStack.pop_back();
-	ctx->currentWidgetId++;
 
 	return ctx->widget.pressed;
 }

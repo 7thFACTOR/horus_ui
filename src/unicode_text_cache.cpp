@@ -12,7 +12,7 @@ UnicodeTextCache::UnicodeTextCache()
 
 UnicodeTextCache::~UnicodeTextCache()
 {
-	for (auto txt : texts)
+	for (auto& txt : texts)
 	{
 		delete txt.second.text;
 	}

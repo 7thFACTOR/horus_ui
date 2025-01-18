@@ -39,7 +39,6 @@ struct Context
 	WindowFlags nextWindowFlags = WindowFlags::None;
 	HNativeWindow lastHoveredNativeWindow = nullptr;
 	bool hoveringThisWindow = false;
-	bool dockingTabPane = false;
 	f32 globalScale = 1.0f;
 	u32 atlasTextureSize = 4096;
 	Point mousePosition;
@@ -63,6 +62,7 @@ struct Context
 	u32 sameLineInfoCount = 0;
 	std::vector<ToolbarState> toolbarStack;
 	TooltipState tooltip;
+	std::string widgetLabel;
 
 	u32 layerIndex = 0;
 	u32 maxLayerIndex = 0;

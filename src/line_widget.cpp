@@ -11,7 +11,7 @@ void line()
 {
 	auto& bodyElemState = ctx->theme->getElement(WidgetElementId::LineBody).normalState();
 
-	addWidgetItem(bodyElemState.image->rect.height * ctx->globalScale);
+	addWidgetItem("", bodyElemState.image->rect.height * ctx->globalScale);
 	ctx->renderer->cmdSetColor(bodyElemState.color);
 	ctx->renderer->cmdDrawImageBordered(bodyElemState.image, bodyElemState.border,
 		{
@@ -19,7 +19,6 @@ void line()
 			ctx->widget.rect.y,
 			ctx->widget.rect.width,
 			ctx->widget.rect.height }, ctx->globalScale);
-	ctx->currentWidgetId++;
 }
 
 void gap(f32 size)
@@ -113,6 +112,7 @@ f32 popWidth()
 	{
 		ctx->widget.width = ctx->sameLineWidthStack.back();
 		ctx->sameLineWidthStack.pop_back();
+
 		return ctx->widget.width;
 	}
 

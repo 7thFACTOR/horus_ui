@@ -15,7 +15,7 @@ FontCache::~FontCache()
 
 Font* FontCache::createFont(const std::string& name, const std::string& filename, u32 size, bool packAtlasNow)
 {
-	for (auto fnt : cachedFonts)
+	for (auto& fnt : cachedFonts)
 	{
 		if (fnt.second->name == name
 			&& fnt.second->filename == filename
@@ -36,11 +36,6 @@ Font* FontCache::createFont(const std::string& name, const std::string& filename
 	newFont->name = name;
 	cachedFonts.insert(std::make_pair(&newFont->font, newFont));
 
-	//if (packAtlasNow)
-	//{
-	//	newFont->font.atlas->pack();
-	//}
-
 	return &newFont->font;
 }
 
@@ -51,7 +46,7 @@ void FontCache::releaseFont(Font* font)
 	if (iter == cachedFonts.end())
 		return;
 
-	iter->second->usageCount--;
+	--iter->second->usageCount;
 
 	if (!iter->second->usageCount)
 	{
@@ -62,7 +57,7 @@ void FontCache::releaseFont(Font* font)
 
 void FontCache::deleteFonts()
 {
-	for (auto font : cachedFonts)
+	for (auto& font : cachedFonts)
 	{
 		delete font.second;
 	}

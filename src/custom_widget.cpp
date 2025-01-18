@@ -11,24 +11,21 @@
 
 namespace hui
 {
-Rect beginCustomWidget(f32 height)
+Rect beginCustomWidget(const char* id, f32 height)
 {
 	if (height <= 0)
 	{
 		height = ctx->layoutStack.back().height - (ctx->penPosition.y - ctx->layoutStack.back().position.y);
 	}
 
-	addWidgetItem(height);
+	addWidgetItem(id, height);
 	buttonBehavior();
-	ctx->currentWidgetId++;
 
 	return ctx->widget.rect;
 }
 
 void endCustomWidget()
 {
-	auto wnd = ctx->providers->input->getCurrentWindow();
-	//TODO: auto rc = ctx->providers->input->getWindowRect(wnd);
 }
 
 Point getParentSize()
@@ -43,7 +40,13 @@ Point getParentSize()
 
 Rect getWidgetRect()
 {
-	return { ctx->widget.rect.x, ctx->widget.rect.y, ctx->widget.rect.width, ctx->widget.rect.height };
+	return 
+	{
+		ctx->widget.rect.x,
+		ctx->widget.rect.y,
+		ctx->widget.rect.width,
+		ctx->widget.rect.height
+	};
 }
 
 void pushDrawCommandIndex()
@@ -56,7 +59,9 @@ u32 popDrawCommandIndex()
 	if (ctx->drawCmdIndexStack.size())
 	{
 		auto idx = ctx->drawCmdIndexStack.back();
+	
 		ctx->drawCmdIndexStack.pop_back();
+		
 		return idx;
 	}
 

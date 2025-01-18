@@ -9,12 +9,12 @@
 
 namespace hui
 {
-bool dropdown(i32& selectedIndex, const char** items, u32 itemCount, u32 maxVisibleDropDownItems)
+bool dropdown(const char* id, i32& selectedIndex, const char** items, u32 itemCount, u32 maxVisibleDropDownItems)
 {
 	auto& bodyElem = ctx->theme->getElement(WidgetElementId::DropdownBody);
 	auto& arrowElem = ctx->theme->getElement(WidgetElementId::DropdownArrow);
 
-	addWidgetItem(bodyElem.normalState().height * ctx->globalScale);
+	addWidgetItem(id, nullptr, bodyElem.normalState().height * ctx->globalScale);
 	buttonBehavior();
 
 	auto bodyElemState = &bodyElem.normalState();
@@ -77,7 +77,6 @@ bool dropdown(i32& selectedIndex, const char** items, u32 itemCount, u32 maxVisi
 	}
 
 	setFocusable();
-	ctx->currentWidgetId++;
 
 	if (ctx->widget.clicked)
 	{
@@ -159,6 +158,7 @@ bool dropdown(i32& selectedIndex,
 	bool(*itemSource)(void* userdata, i32 index, char** outItemText),
 	u32 maxVisibleDropDownItems)
 {
+	//TODO
 	return false;
 }
 

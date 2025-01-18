@@ -2299,7 +2299,7 @@ HORUS_API bool panel(const char* labelText, bool* expandedVar = nullptr);
 /// \param itemCount the number of items in the list
 /// \param maxVisibleDropDownItems the maximum number of visible items in the drop down list, if ~0 then its automatic
 /// \return true if it the selection changed
-HORUS_API bool dropdown(i32& selectedIndex, const char** items, u32 itemCount, u32 maxVisibleDropDownItems = ~0);
+HORUS_API bool dropdown(const char* id, i32& selectedIndex, const char** items, u32 itemCount, u32 maxVisibleDropDownItems = ~0);
 
 /// Draw a custom data dropdown widget, good for many items in the list
 /// \param selectedIndex the current selected item index
@@ -2544,7 +2544,7 @@ HORUS_API u32 getDragDropObjectType();
 /// Begin drawing a custom widget
 /// \param height the widget height
 /// \return the widget rectangle in window coordinates
-HORUS_API Rect beginCustomWidget(f32 height = 0.0f);
+HORUS_API Rect beginCustomWidget(const char* id, f32 height = 0.0f);
 
 /// End custom widget drawing
 HORUS_API void endCustomWidget();

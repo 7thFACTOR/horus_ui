@@ -18,7 +18,7 @@ bool panel(const char* labelText, bool* expandedVar)
 	bool changed = false;
 	bool expanded = false;
 
-	addWidgetItem(bodyElemState->image->rect.height * ctx->globalScale);
+	addWidgetItem(labelText, &ctx->widgetLabel, bodyElemState->image->rect.height * ctx->globalScale);
 
 	// we want to have the panel all the way
 	ctx->widget.rect.x = ctx->penPosition.x;
@@ -98,11 +98,10 @@ bool panel(const char* labelText, bool* expandedVar)
 	ctx->renderer->pushClipRect(textRect);
 	ctx->renderer->cmdSetColor(bodyElemState->textColor * ctx->tint[(u32)TintColorType::Text]);
 	ctx->renderer->cmdDrawTextInBox(
-		labelText,
+		ctx->widgetLabel.c_str(),
 		textRect,
 		HAlignType::Left, VAlignType::Center);
 	ctx->renderer->popClipRect();
-	ctx->currentWidgetId++;
 	ctx->widget.changeEnded = changed;
 
 	return expanded;

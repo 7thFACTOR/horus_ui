@@ -197,18 +197,18 @@ void mouseDownOnlyButtonBehavior()
 	}
 }
 
-bool button(const char* labelText)
+bool button(const char* label)
 {
 	auto& btnBodyElem = ctx->theme->getElement(WidgetElementId::ButtonBody);
 
+	addWidgetItem(label, btnBodyElem.normalState().height * ctx->globalScale);
+	buttonBehavior();
+
 	if (ctx->widget.sameLine)
 	{
-		auto textWidth = btnBodyElem.normalState().font->computeTextSize(labelText);
+		auto textWidth = btnBodyElem.normalState().font->computeTextSize(ctx->widgetLabel.c_str());
 		ctx->widget.width = (btnBodyElem.normalState().border * 2.0f + textWidth.width) * ctx->globalScale;
 	}
-
-	addWidgetItem(btnBodyElem.normalState().height * ctx->globalScale);
-	buttonBehavior();
 
 	auto btnBodyElemState = &btnBodyElem.normalState();
 
@@ -227,7 +227,7 @@ bool button(const char* labelText)
 		ctx->renderer->cmdSetFont(btnBodyElemState->font);
 		ctx->renderer->pushClipRect(ctx->widget.rect);
 		ctx->renderer->cmdDrawTextInBox(
-			labelText,
+			ctx->widgetLabel.c_str(),
 			ctx->widget.pressed
 			? Rect(
 				ctx->widget.rect.x + 1,
@@ -241,7 +241,6 @@ bool button(const char* labelText)
 	}
 
 	setFocusable();
-	ctx->currentWidgetId++;
 
 	return ctx->widget.clicked;
 }
@@ -263,7 +262,7 @@ bool iconButtonInternal(HImage icon, HImage disabledIcon, f32 customHeight, bool
 	else
 		height = std::max(btnBodyElemState->height, iconImg->rect.height);
 
-	addWidgetItem(height * ctx->globalScale);
+	addWidgetItem("", height * ctx->globalScale);
 	buttonBehavior();
 
 	f32 pressedIncrement = 0.0f;
@@ -296,8 +295,6 @@ bool iconButtonInternal(HImage icon, HImage disabledIcon, f32 customHeight, bool
 	if (focusable)
 		setFocusable();
 
-	ctx->currentWidgetId++;
-
 	if (isClicked())
 		forceRepaint();
 
@@ -306,7 +303,7 @@ bool iconButtonInternal(HImage icon, HImage disabledIcon, f32 customHeight, bool
 
 bool iconButton(HImage icon, f32 customHeight, bool down)
 {
-	auto btnBodyElem = ctx->theme->getElement(WidgetElementId::ButtonBody);
+	auto& btnBodyElem = ctx->theme->getElement(WidgetElementId::ButtonBody);
 
 	return iconButtonInternal(icon, icon, customHeight, down, &btnBodyElem);
 }

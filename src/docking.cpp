@@ -2722,7 +2722,7 @@ void updateDockingSystem()
 		{
 			if (ds.hoveredNode)
 			{
-				auto rc = ds.rootNativeWindowDockNodes[ds.hoveredNode->nativeWindow]->rect;
+				auto& rc = ds.rootNativeWindowDockNodes[ds.hoveredNode->nativeWindow]->rect;
 
 				HORUS_INPUT->setCurrentWindow(ds.hoveredNode->nativeWindow);
 				ctx->renderer->disableRendering = false;

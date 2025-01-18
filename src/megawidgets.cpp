@@ -114,13 +114,18 @@ bool vecEditorInternal(f64& x, f64& y, f64& z, f64 scrollStep, bool useZ)
 	return modified;
 }
 
-bool vec3Editor(f64& x, f64& y, f64& z, f64 scrollStep)
+bool vec3Editor(const char* id, f64& x, f64& y, f64& z, f64 scrollStep)
 {
-	return vecEditorInternal(x, y, z, scrollStep, true);
+	pushId(id);
+	bool ret = vecEditorInternal(x, y, z, scrollStep, true);
+	popId();
+
+	return ret;
 }
 
-bool vec3Editor(f32& x, f32& y, f32& z, f32 scrollStep)
+bool vec3Editor(const char* id, f32& x, f32& y, f32& z, f32 scrollStep)
 {
+	pushId(id);
 	f64 xx = x, yy = y, zz = z;
 
 	auto ret = vecEditorInternal(xx, yy, zz, scrollStep, true);
@@ -129,28 +134,37 @@ bool vec3Editor(f32& x, f32& y, f32& z, f32 scrollStep)
 	y = yy;
 	z = zz;
 
+	popId();
+
 	return ret;
 }
 
-bool vec2Editor(f64& x, f64& y, f64 scrollStep)
+bool vec2Editor(const char* id, f64& x, f64& y, f64 scrollStep)
 {
-	f64 zz;
-	return vecEditorInternal(x, y, zz, scrollStep, false);
+	pushId(id);
+	
+	f64 zz = 0;
+	bool ret = vecEditorInternal(x, y, zz, scrollStep, false);
+
+	return ret;
 }
 
-bool vec2Editor(f32& x, f32& y, f32 scrollStep)
+bool vec2Editor(const char* id, f32& x, f32& y, f32 scrollStep)
 {
+	pushId(id);
 	f64 xx = x, yy = y, zz;
 	auto ret = vecEditorInternal(xx, yy, zz, scrollStep, false);
 
 	x = xx;
 	y = yy;
+	popId();
 
 	return ret;
 }
 
-bool objectRefEditor(HImage targetIcon, HImage clearIcon, const char* objectTypeName, const char* valueAsString, u32 objectType, void** outObject, bool* objectValueWasModified)
+bool objectRefEditor(const char* id, HImage targetIcon, HImage clearIcon, const char* objectTypeName, const char* valueAsString, u32 objectType, void** outObject, bool* objectValueWasModified)
 {
+	pushId(id);
 	bool returnValue = false;
 	bool changeEnded = false;
 
@@ -233,6 +247,8 @@ bool objectRefEditor(HImage targetIcon, HImage clearIcon, const char* objectType
 	endColumns();
 
 	ctx->widget.changeEnded = changeEnded;
+
+	popId();
 
 	return returnValue;
 }

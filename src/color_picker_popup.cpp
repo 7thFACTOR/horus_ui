@@ -6,25 +6,31 @@
 
 namespace hui
 {
+//TODO
 bool colorPickerPopup(const Color& currentColor, Color& outNewColor)
 {
 	Color newColor = currentColor;
 	f32 height = 250;
-	addWidgetItem(height);
+
+	addWidgetItem("", height);
 
 	ctx->renderer->cmdDrawInterpolatedColors(
 		{
 			ctx->widget.rect.x,
 			ctx->widget.rect.y,
 			ctx->widget.rect.width / 2,
-			ctx->widget.rect.height / 2 }
-	, Color::white, Color::black, Color::blue, Color::black);
+			ctx->widget.rect.height / 2
+		}
+		, Color::white, Color::black
+		, Color::blue, Color::black);
 
-	ctx->renderer->cmdDrawSpectrumColors({
-		ctx->widget.rect.x + ctx->widget.rect.width / 2,
-		ctx->widget.rect.y + ctx->widget.rect.height / 2,
-		ctx->widget.rect.width / 2,
-		ctx->widget.rect.height / 2 },
+	ctx->renderer->cmdDrawSpectrumColors(
+		{
+			ctx->widget.rect.x + ctx->widget.rect.width / 2,
+			ctx->widget.rect.y + ctx->widget.rect.height / 2,
+			ctx->widget.rect.width / 2,
+			ctx->widget.rect.height / 2
+		},
 		Renderer::DrawSpectrumBrightness::On,
 		Renderer::DrawSpectrumDirection::Horizontal);
 
@@ -33,17 +39,18 @@ bool colorPickerPopup(const Color& currentColor, Color& outNewColor)
 			ctx->widget.rect.x + ctx->widget.rect.width / 2,
 			ctx->widget.rect.y,
 			ctx->widget.rect.width / 2,
-			ctx->widget.rect.height / 2 }
-	, Color::red, Color::black);
+			ctx->widget.rect.height / 2
+		}
+		, Color::red, Color::black);
 	ctx->renderer->cmdDrawInterpolatedColorsLeftRight(
 		{
 			ctx->widget.rect.x,
 			ctx->widget.rect.y + ctx->widget.rect.height / 2,
 			ctx->widget.rect.width / 2,
-			ctx->widget.rect.height / 2 },
-			Color::white, Color::black);
+			ctx->widget.rect.height / 2
+		},
+		Color::white, Color::black);
 
-	ctx->currentWidgetId++;
 	return true;
 }
 
