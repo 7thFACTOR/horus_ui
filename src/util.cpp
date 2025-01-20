@@ -1,8 +1,8 @@
-#include "util.h"
 #include <algorithm>
 #include <string.h>
 #include <string>
 #include <vector>
+#include "util.h"
 #include "rapidhash.h"
 
 namespace hui

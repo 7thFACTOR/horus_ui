@@ -1,10 +1,8 @@
-#include "horus.h"
-#include "types.h"
+#include "context.h"
 #include "theme.h"
 #include "renderer.h"
 #include "unicode_text_cache.h"
 #include "font.h"
-#include "context.h"
 #include "util.h"
 #include <algorithm>
 
@@ -35,11 +33,11 @@ void endMenuBar()
 	ctx->currentMenuBarId = 0;
 }
 
-bool beginMenuInternal(const char* labelText, SelectableFlags stateFlags, bool contextMenu)
+bool beginMenuInternal(const char* label, SelectableFlags stateFlags, bool contextMenu)
 {
 	auto& menuBarItemElem = ctx->theme->getElement(WidgetElementId::MenuBarItem);
 	auto& menuBarItemElemState = menuBarItemElem.normalState();
-	Utf32String* uniStr = ctx->textCache->getText(labelText);
+	Utf32String* uniStr = ctx->textCache->getText(label);
 	FontTextSize fsize = menuBarItemElemState.font->computeTextSize(*uniStr);
 	auto isMenuBarItem = ctx->menuDepth == 0;
 
@@ -122,7 +120,7 @@ bool beginMenuInternal(const char* labelText, SelectableFlags stateFlags, bool c
 			ctx->renderer->cmdDrawImageBordered(menuBarItemElemState.image, menuBarItemElemState.border, ctx->widget.rect, ctx->globalScale);
 			ctx->renderer->cmdSetFont(menuBarItemElemState.font);
 			ctx->renderer->cmdSetColor(menuBarItemElemState.textColor);
-			ctx->renderer->cmdDrawTextInBox(labelText, ctx->widget.rect, HAlignType::Center, VAlignType::Center);
+			ctx->renderer->cmdDrawTextInBox(label, ctx->widget.rect, HAlignType::Center, VAlignType::Center);
 			ctx->penPosition.x += width;
 			ctx->penPosition.x = round(ctx->penPosition.x);
 		}
@@ -134,7 +132,7 @@ bool beginMenuInternal(const char* labelText, SelectableFlags stateFlags, bool c
 
 			ctx->renderer->pushClipRect(ctx->renderer->getWindowRect(), false);
 			pushSpacing(0);
-			beginPopup(
+			beginPopup("menuPopup",
 				ctx->menuStack[ctx->menuDepth].size.x + menuBodyElem.normalState().border * 2.0f + ctx->menuFillerWidth + ctx->menuIconSpace,
 				(contextMenu ? PopupFlags::CustomPosition : PopupFlags::BelowLastWidget)
 				 | PopupFlags::IsMenu,
@@ -153,7 +151,7 @@ bool beginMenuInternal(const char* labelText, SelectableFlags stateFlags, bool c
 			flags = flags | SelectableFlags::Selected;
 
 		ctx->isSubMenu = true;
-		menuItem(labelText, "", 0, flags);
+		menuItem(label, "", 0, flags);
 		ctx->isSubMenu = false;
 
 		if (ctx->widget.hovered)
@@ -175,7 +173,7 @@ bool beginMenuInternal(const char* labelText, SelectableFlags stateFlags, bool c
 			ctx->activeMenuBarItemWidgetWidth = rc.width;
 			ctx->renderer->pushClipRect(ctx->renderer->getWindowRect(), false);
 			pushSpacing(0);
-			beginPopup(
+			beginPopup("menuPopup",
 				ctx->menuStack[ctx->menuDepth].size.x + menuBodyElem.normalState().border * 2.0f + ctx->menuFillerWidth + ctx->menuIconSpace,
 				PopupFlags::CustomPosition | PopupFlags::IsMenu | PopupFlags::SameLayer,
 				Point(rc.right(), rc.top()),
@@ -260,9 +258,9 @@ void endMenuInternal(bool contextMenu)
 	}
 }
 
-bool beginMenu(const char* labelText, SelectableFlags stateFlags)
+bool beginMenu(const char* label, SelectableFlags stateFlags)
 {
-	return beginMenuInternal(labelText, stateFlags, false);
+	return beginMenuInternal(label, stateFlags, false);
 }
 
 void endMenu()
@@ -304,7 +302,7 @@ void endContextMenu()
 	endMenuInternal(true);
 }
 
-bool menuItem(const char* labelText, const char* shortcut, HImage icon, SelectableFlags stateFlags)
+bool menuItem(const char* label, const char* shortcut, HImage icon, SelectableFlags stateFlags)
 {
 	auto& menuItemShortcutElem = ctx->theme->getElement(WidgetElementId::MenuItemShortcut);
 	auto& bodyElem = ctx->theme->getElement(WidgetElementId::MenuItemBody);
@@ -312,7 +310,7 @@ bool menuItem(const char* labelText, const char* shortcut, HImage icon, Selectab
 	bool hasCheck = !!(stateFlags & SelectableFlags::Checkable);
 	bool isChecked = !!(stateFlags & SelectableFlags::Checked);
 
-	addWidgetItem(labelText, &ctx->widgetLabel, bodyElem.normalState().height * ctx->globalScale);
+	addWidgetItem(label, bodyElem.normalState().height * ctx->globalScale);
 	buttonBehavior(true);
 
 	if (
@@ -343,9 +341,9 @@ bool menuItem(const char* labelText, const char* shortcut, HImage icon, Selectab
 	}
 
 	// render menu item bg
-	ctx->renderer->cmdSetColor(bodyElemState->color * ctx->tint[(u32)TintColorType::Body]);
+	ctx->renderer->cmdSetColor(tintColor(bodyElemState->color, TintColorType::Body));
 	ctx->renderer->cmdDrawImageBordered(bodyElemState->image, bodyElemState->border, ctx->widget.rect, ctx->globalScale);
-	ctx->renderer->cmdSetColor(bodyElemState->textColor * ctx->tint[(u32)TintColorType::Text]);
+	ctx->renderer->cmdSetColor(tintColor(bodyElemState->textColor, TintColorType::Text));
 
 	// render menu item text
 	ctx->renderer->cmdSetFont(bodyElemState->font);
@@ -363,7 +361,7 @@ bool menuItem(const char* labelText, const char* shortcut, HImage icon, Selectab
 	ctx->renderer->popClipRect();
 
 	// render the shortcut text
-	ctx->renderer->cmdSetColor(shortcutElemState->textColor * ctx->tint[(u32)TintColorType::Text]);
+	ctx->renderer->cmdSetColor(tintColor(shortcutElemState->textColor, TintColorType::Text));
 	ctx->renderer->cmdSetFont(shortcutElemState->font);
 	ctx->renderer->pushClipRect(ctx->widget.rect);
 	ctx->renderer->cmdDrawTextInBox(

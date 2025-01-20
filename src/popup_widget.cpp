@@ -1,9 +1,7 @@
-#include "horus.h"
-#include "types.h"
+#include "context.h"
 #include "theme.h"
 #include "font.h"
 #include "util.h"
-#include "context.h"
 #include <limits.h>
 
 namespace hui

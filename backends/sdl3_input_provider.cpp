@@ -1,6 +1,5 @@
 #define NOMINMAX
 #include "sdl3_input_provider.h"
-#include <assert.h>
 #include <string.h>
 #include <SDL3/SDL_main.h>
 #include <glad/gl.h>
@@ -878,9 +877,9 @@ void Sdl3InputProvider::createSystemCursors()
 
 void initializeSdl(const SdlInitParams& params)
 {
-	assert(getContextSettings().providers.gfx);
+	HORUS_ASSERT(getContextSettings().providers.gfx);
 	auto sdlProvider = ((Sdl3InputProvider*)HORUS_INPUT);
-	assert(sdlProvider);
+	HORUS_ASSERT(sdlProvider);
 	printf("Initializing SDL...\n");
 
 	if (params.initializeSdl)

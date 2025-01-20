@@ -1,9 +1,9 @@
 #pragma once
-#include "horus.h"
 #include <vector>
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
+#include "horus.h"
 
 #ifdef _LINUX
 #include <sys/types.h>
@@ -45,11 +45,10 @@ struct ToolbarState
 	ToolbarDirection direction = ToolbarDirection::Horizontal;
 };
 
-struct WidgetLoopInfo
+struct TintState
 {
-	u32 previousId = 0;
-	u32 startId = 0;
-	u32 maxCount = 0;
+	Color color[(i32)TintColorType::Count];
+	TintColorOpType op[(i32)TintColorType::Count] = { TintColorOpType::None };
 };
 
 struct WidgetBoolState
@@ -187,10 +186,10 @@ struct LayoutState
 
 struct WidgetState
 {
-	u32 focusedWidgetId = 0;
-	u32 prevFocusableWidgetId = 0;
-	u32 nextFocusableWidgetId = 0;
-	u32 hoveredWidgetId = 0;
+	WidgetId focusedWidgetId = 0;
+	WidgetId prevFocusableWidgetId = 0;
+	WidgetId nextFocusableWidgetId = 0;
+	WidgetId hoveredWidgetId = 0;
 	f32 sameLineSpacing = 0;
 	f32 sameLineHeight = 0;
 	bool sameLine = false;
@@ -216,7 +215,7 @@ struct MenuWidgetState
 	Rect lastItemRect;
 	bool active = false;
 	bool activatedNow = false;
-	u32 widgetId = 0;
+	WidgetId widgetId = 0;
 	size_t hoveredItemIndex = ~0;
 	size_t selectedItemIndex = ~0;
 	size_t itemCount = 0;
@@ -227,7 +226,7 @@ struct PopupState
 {
 	f32 width = 0;
 	f32 height = 0;
-	u32 widgetId = 0;
+	WidgetId widgetId = 0;
 	PopupFlags flags = PopupFlags::None;
 	Point position;
 	Point moveOffset;
@@ -250,7 +249,7 @@ struct TooltipState
 	Point position;
 	f32 timer = 0;
 	f32 delayToShow = 1.0f;
-	u32 widgetId = 0;
+	WidgetId widgetId = 0;
 	bool show = false;
 	bool closeTooltipPopup = false;
 	f32 offsetFromCursor = 18.0f;
@@ -260,7 +259,7 @@ struct ScrollViewState
 {
 	bool draggingThumb = false;
 	Point dragDelta;
-	u32 widgetId = 0;
+	WidgetId widgetId = 0;
 	f32 size = 0.0f;
 	f32 virtualHeight = 0.0f;
 	f32 scrollPosition = 0.0f;
@@ -341,7 +340,7 @@ struct DockingState
 	bool drawingWindowTabs = false;
 	Window* dragWindow = nullptr;
 	Point dragWindowMouseDelta;
-	u64 nextDockNodeId = 1;
+	DockNodeId nextDockNodeId = 1;
 	Rect hitBoxLeft;
 	Rect hitBoxRight;
 	Rect hitBoxTop;
@@ -372,7 +371,7 @@ struct DragDropState
 	bool dropped = false;
 	bool allowDrop = false;
 	bool foundDropTarget = false;
-	u32 widgetId = 0;
+	WidgetId widgetId = 0;
 	Point lastMousePos;
 	HMouseCursor dropAllowedCursor = 0;
 	void* dragObject = nullptr;

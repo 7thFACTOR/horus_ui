@@ -1,13 +1,11 @@
 #include <math.h>
 #include <string.h>
 #include <algorithm>
-#include "horus.h"
-#include "types.h"
+#include "context.h"
 #include "theme.h"
 #include "renderer.h"
 #include "unicode_text_cache.h"
 #include "font.h"
-#include "context.h"
 #include "util.h"
 
 namespace hui
@@ -27,9 +25,9 @@ bool textInput(
 	auto& bodyTextDefaultElemState = ctx->theme->getElement(WidgetElementId::TextInputDefaultText).normalState();
 
 	// use ptr as id
-	pushId(text);
+	pushId((void*)text);
 	addWidgetItem("", fmaxf(bodyElem->normalState().height * ctx->globalScale, bodyElem->normalState().font->getMetrics().height));
-
+	ctx->currentWidgetId = hashString(std::to_string((u64)text).c_str());
 	if (!ctx->focusChanged)
 		buttonBehavior();
 

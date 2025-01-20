@@ -1,10 +1,6 @@
 #pragma once
 #include "types.h"
 #include "renderer.h"
-#include "horus_interfaces.h"
-#include <unordered_map>
-#include <string>
-#include <vector>
 
 namespace hui
 {

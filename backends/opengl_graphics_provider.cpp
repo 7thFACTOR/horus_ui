@@ -311,6 +311,7 @@ void OpenGLGraphicsProvider::commitRenderState()
 
 void OpenGLGraphicsProvider::setViewport(const Point& windowSize, const Rect& viewport)
 {
+	// our 0,0 origin is at top-left, we need to modify y
 	Rect glRc = { viewport.x, windowSize.y - viewport.y - viewport.height, viewport.width, viewport.height };
 	currentViewport = glRc;
 	glViewport(glRc.x, glRc.y, glRc.width, glRc.height);

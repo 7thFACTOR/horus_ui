@@ -1,14 +1,10 @@
-#ifdef _WINDOWS
-#include <windows.h>
-#endif
-
 #include <string.h>
 #include <algorithm>
+#include "context.h"
 #include "renderer.h"
 #include "atlas.h"
 #include "font.h"
 #include "theme.h"
-#include "context.h"
 #include "util.h"
 #include "unicode_text_cache.h"
 

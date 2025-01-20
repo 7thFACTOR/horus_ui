@@ -1,11 +1,8 @@
-#include "horus.h"
-#include "types.h"
+#include "context.h"
 #include "theme.h"
 #include "font.h"
-#include "context.h"
 #include "unicode_text_cache.h"
 #include "util.h"
-#include <math.h>
 
 namespace hui
 {
@@ -58,9 +55,9 @@ bool selectableInternal(const char* label, HFont font, SelectableFlags stateFlag
 	if (ctx->widget.visible)
 	{
 		ctx->renderer->pushClipRect(ctx->widget.rect);
-		ctx->renderer->cmdSetColor(bodyElemState->color * ctx->tint[(int)TintColorType::Body]);
+		ctx->renderer->cmdSetColor(tintColor(bodyElemState->color, TintColorType::Body));
 		ctx->renderer->cmdDrawImageBordered(bodyElemState->image, bodyElemState->border, ctx->widget.rect, ctx->globalScale);
-		ctx->renderer->cmdSetColor(bodyElemState->textColor * ctx->tint[(int)TintColorType::Text]);
+		ctx->renderer->cmdSetColor(tintColor(bodyElemState->textColor, TintColorType::Text));
 		ctx->renderer->cmdSetFont(fnt);
 		ctx->renderer->cmdDrawTextInBox(
 			ctx->widgetLabel.c_str(),

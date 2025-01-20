@@ -1,9 +1,6 @@
 #pragma once
 #include "types.h"
 #include "atlas.h"
-#include <string>
-#include <vector>
-#include <unordered_map>
 
 namespace hui
 {

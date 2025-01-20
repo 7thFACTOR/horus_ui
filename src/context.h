@@ -1,10 +1,6 @@
 #pragma once
-#include "horus.h"
-#include "horus_interfaces.h"
 #include "types.h"
 #include "text_input_state.h"
-#include <string>
-#include <unordered_map>
 
 namespace hui
 {
@@ -29,9 +25,7 @@ struct Context
 	u32 frameCount = 0;
 	f32 pruneUnusedTextTime = 0; //TODO: maybe make it frames
 	u32 currentWindowIndex = 0;
-	WidgetId currentWidgetId = 1;
-	std::vector<WidgetLoopInfo> widgetLoopStack;
-	WidgetId maxWidgetId = 0;
+	WidgetId currentWidgetId = 0;
 	bool mustRedraw = false;
 	bool focusChanged = false;
 	bool skipRenderAndInput = false;
@@ -140,8 +134,8 @@ struct Context
 	std::vector<HNativeWindow> nativeWindows;
 
 	// Colors and styles
-	std::unordered_map<u32, std::vector<Color>> tintStack;
-	Color tint[(u32)TintColorType::Count] = { Color::white, Color::white };
+	TintState tint;
+	std::vector<TintState> tintStack;
 	LineStyle lineStyle;
 	FillStyle fillStyle;
 
@@ -170,11 +164,6 @@ struct Context
 	inline bool isActiveLayer() const
 	{
 		return maxLayerIndex == layerIndex;
-	}
-
-	inline const Color& getTint(TintColorType type) const
-	{
-		return tint[(i32)type];
 	}
 
 	void extractLabelAndId(const char* text, std::string& label, WidgetId& id);

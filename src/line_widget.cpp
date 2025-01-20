@@ -1,8 +1,6 @@
-#include "horus.h"
-#include "types.h"
+#include "context.h"
 #include "renderer.h"
 #include "theme.h"
-#include "context.h"
 #include "util.h"
 
 namespace hui

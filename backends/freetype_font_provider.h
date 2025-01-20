@@ -1,6 +1,5 @@
 #pragma once
 #include <horus.h>
-#include <horus_interfaces.h>
 #include <ft2build.h>
 #include <freetype/freetype.h>
 

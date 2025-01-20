@@ -1,15 +1,13 @@
-#include "horus.h"
-#include "types.h"
+#include "context.h"
 #include "theme.h"
 #include "renderer.h"
 #include "unicode_text_cache.h"
 #include "font.h"
-#include "context.h"
 #include "util.h"
 
 namespace hui
 {
-bool panel(const char* labelText, bool* expandedVar)
+bool panel(const char* label, bool* expandedVar)
 {
 	auto& bodyElem = ctx->theme->getElement(WidgetElementId::PanelBody);
 	auto& panelCollapsedArrow = ctx->theme->getElement(WidgetElementId::PanelCollapsedArrow);
@@ -18,7 +16,7 @@ bool panel(const char* labelText, bool* expandedVar)
 	bool changed = false;
 	bool expanded = false;
 
-	addWidgetItem(labelText, &ctx->widgetLabel, bodyElemState->image->rect.height * ctx->globalScale);
+	addWidgetItem(label, bodyElemState->image->rect.height * ctx->globalScale);
 
 	// we want to have the panel all the way
 	ctx->widget.rect.x = ctx->penPosition.x;
@@ -62,7 +60,7 @@ bool panel(const char* labelText, bool* expandedVar)
 		bodyElemState = &bodyElem.getState(WidgetStateType::Pressed);
 	}
 
-	ctx->renderer->cmdSetColor(bodyElemState->color);
+	ctx->renderer->cmdSetColor(tintColor(bodyElemState->color, TintColorType::Body));
 	ctx->renderer->cmdDrawImageBordered(
 		bodyElemState->image,
 		bodyElemState->border, ctx->widget.rect, ctx->globalScale);
@@ -75,7 +73,7 @@ bool panel(const char* labelText, bool* expandedVar)
 		arrowElemState = &panelExpandedArrow.normalState();
 	}
 
-	ctx->renderer->cmdSetColor(arrowElemState->color);
+	ctx->renderer->cmdSetColor(tintColor(arrowElemState->color, TintColorType::Body));
 	ctx->renderer->cmdDrawImage(
 		arrowElemState->image,
 		{
@@ -85,7 +83,6 @@ bool panel(const char* labelText, bool* expandedVar)
 			arrowElemState->image->rect.height * ctx->globalScale
 		});
 
-	ctx->renderer->cmdSetColor(bodyElemState->textColor);
 	ctx->renderer->cmdSetFont(bodyElemState->font);
 
 	Rect textRect = {
@@ -96,7 +93,7 @@ bool panel(const char* labelText, bool* expandedVar)
 	};
 
 	ctx->renderer->pushClipRect(textRect);
-	ctx->renderer->cmdSetColor(bodyElemState->textColor * ctx->tint[(u32)TintColorType::Text]);
+	ctx->renderer->cmdSetColor(tintColor(bodyElemState->textColor, TintColorType::Text));
 	ctx->renderer->cmdDrawTextInBox(
 		ctx->widgetLabel.c_str(),
 		textRect,

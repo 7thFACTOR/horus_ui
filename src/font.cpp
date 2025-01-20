@@ -1,7 +1,6 @@
-﻿#include "font.h"
+﻿#include "horus.h"
+#include "font.h"
 #include "util.h"
-#include <assert.h>
-#include "horus_interfaces.h"
 #include <string.h>
 
 namespace hui

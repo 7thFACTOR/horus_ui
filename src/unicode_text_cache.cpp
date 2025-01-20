@@ -1,9 +1,7 @@
-#include "unicode_text_cache.h"
-#include "types.h"
 #include <algorithm>
 #include <string.h>
 #include "context.h"
-#include "horus_interfaces.h"
+#include "unicode_text_cache.h"
 
 namespace hui
 {

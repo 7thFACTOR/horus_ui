@@ -1,12 +1,10 @@
-#include "horus.h"
-#include "types.h"
+#include <algorithm>
+#include <string.h>
+#include "context.h"
 #include "theme.h"
 #include "unicode_text_cache.h"
 #include "font.h"
-#include "context.h"
 #include "util.h"
-#include <algorithm>
-#include <string.h> // memset
 
 namespace hui
 {
@@ -17,9 +15,9 @@ bool comboSliderInternal(f32& value, f32 minVal, f32 maxVal, bool useRange, f32 
 	static bool editingText = false;
 	static Point dragLastMousePos;
 	static char text[64] = "";
-	static u32 comboSliderWidgetId = 0;
+	static WidgetId comboSliderWidgetId = 0;
 	static bool requestChangeToOtherComboSlider = false;
-	static u32 newComboSliderId = 0;
+	static WidgetId newComboSliderId = 0;
 	auto& bodyElem = ctx->theme->getElement(WidgetElementId::ComboSliderBody);
 	auto& leftArrowElem = ctx->theme->getElement(WidgetElementId::ComboSliderLeftArrow);
 	auto& rightArrowElem = ctx->theme->getElement(WidgetElementId::ComboSliderRightArrow);
@@ -95,14 +93,15 @@ bool comboSliderInternal(f32& value, f32 minVal, f32 maxVal, bool useRange, f32 
 		forceRepaint();
 		ctx->penPosition.y -= ctx->spacing * ctx->globalScale + bodyElem.normalState().height;
 		textInput(text, 64, TextInputValueMode::NumericOnly);
+		setFocused();
 	}
 	else
 	if (editingText && comboSliderWidgetId == ctx->currentWidgetId)
 	{
 		textInput(text, 64, TextInputValueMode::NumericOnly);
 
-		if (!ctx->widget.focused
-			|| !ctx->textInput.widgetId
+		if (//!ctx->widget.focused
+			 !ctx->textInput.widgetId
 			|| requestChangeToOtherComboSlider
 			|| (ctx->event.type == InputEvent::Type::Key
 				&& ctx->event.key.down
@@ -133,7 +132,7 @@ bool comboSliderInternal(f32& value, f32 minVal, f32 maxVal, bool useRange, f32 
 			&& !dragging
 			&& ctx->isActiveLayer())
 		{
-			hui::setCapture();
+			//hui::setCapture();
 			dragLastMousePos = ctx->mousePosition;
 
 			if (!editingText)
@@ -244,12 +243,12 @@ bool comboSliderInternal(f32& value, f32 minVal, f32 maxVal, bool useRange, f32 
 			rightArrowElemState = &rightArrowElem.getState(WidgetStateType::Hovered);
 		}
 
-		ctx->renderer->cmdSetColor(bodyElemState->color * ctx->tint[(int)TintColorType::Body]);
+		ctx->renderer->cmdSetColor(tintColor(bodyElemState->color, TintColorType::Body));
 		ctx->renderer->cmdDrawImageBordered(bodyElemState->image, bodyElemState->border, ctx->widget.rect, ctx->globalScale);
 		
 		if (useRange)
 		{
-			ctx->renderer->cmdSetColor(rangeBarElemState->color * ctx->tint[(int)TintColorType::Body]);
+			ctx->renderer->cmdSetColor(tintColor(rangeBarElemState->color, TintColorType::Body));
 			ctx->renderer->cmdDrawImageBordered(rangeBarElemState->image, rangeBarElemState->border,
 				{
 					ctx->widget.rect.x + bodyElemState->border * ctx->globalScale,
@@ -260,7 +259,7 @@ bool comboSliderInternal(f32& value, f32 minVal, f32 maxVal, bool useRange, f32 
 				ctx->globalScale);
 		}
 
-		ctx->renderer->cmdSetColor(leftArrowElemState->color * ctx->tint[(int)TintColorType::Body]);
+		ctx->renderer->cmdSetColor(tintColor(leftArrowElemState->color, TintColorType::Body));
 
 		// dial down the height, since its already global scaled
 		auto arrowY = ((ctx->widget.rect.height / ctx->globalScale - leftArrowElemState->image->rect.height) / 2.0f + (ctx->widget.pressed ? 1.0f : 0.0f)) * ctx->globalScale;
@@ -273,7 +272,7 @@ bool comboSliderInternal(f32& value, f32 minVal, f32 maxVal, bool useRange, f32 
 				leftArrowElemState->image->rect.height * ctx->globalScale
 			});
 
-		ctx->renderer->cmdSetColor(rightArrowElemState->color * ctx->tint[(int)TintColorType::Body]);
+		ctx->renderer->cmdSetColor(tintColor(rightArrowElemState->color, TintColorType::Body));
 
 		// dial down the height, since its already global scaled
 		arrowY = ((ctx->widget.rect.height / ctx->globalScale - rightArrowElemState->image->rect.height) / 2.0f + (ctx->widget.pressed ? 1.0f : 0.0f)) * ctx->globalScale;
@@ -288,7 +287,7 @@ bool comboSliderInternal(f32& value, f32 minVal, f32 maxVal, bool useRange, f32 
 
 		char outStr[64];
 		toString(value, outStr, 64);
-		ctx->renderer->cmdSetColor(bodyElemState->textColor * ctx->tint[(int)TintColorType::Body]);
+		ctx->renderer->cmdSetColor(tintColor(bodyElemState->textColor, TintColorType::Body));
 		ctx->renderer->cmdDrawTextInBox(outStr, ctx->widget.rect, HAlignType::Center, VAlignType::Center);
 		setFocusable();
 	}

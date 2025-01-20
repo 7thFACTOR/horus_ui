@@ -1,4 +1,3 @@
-#include "horus.h"
 #include "context.h"
 #include "theme.h"
 #include "util.h"
@@ -74,9 +73,8 @@ bool endBox()
 		height
 	};
 
-	addWidgetItem("", height);
-
 	buttonBehavior();
+
 	auto cmdIndex = popDrawCommandIndex();
 	beginInsertDrawCommands(cmdIndex);
 	ctx->renderer->cmdSetColor(boxElemState->color * ctx->layoutStack.back().themeElementColorTint);

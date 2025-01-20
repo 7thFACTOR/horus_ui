@@ -1,9 +1,9 @@
+#include <string.h>
 #include "context.h"
 #include "font.h"
 #include "renderer.h"
 #include "util.h"
 #include "unicode_text_cache.h"
-#include <string.h>
 
 namespace hui
 {
@@ -18,8 +18,10 @@ void Context::extractLabelAndId(const char* text, std::string& label, WidgetId& 
 	char* textPtr = text ? text : "";
 	auto idStart = strstr(textPtr, "##");
 
+	id = 0;
+
 	// we have ###, forced id specified
-	if (idStart && *idStart == '#')
+	if (idStart && *(idStart + 2) == '#')
 	{
 		id = hashString(idStart, idStack.back());
 	}
@@ -28,7 +30,7 @@ void Context::extractLabelAndId(const char* text, std::string& label, WidgetId& 
 		id = hashString(textPtr, idStack.back());
 	}
 
-	label.assign(textPtr, idStart ? idStart : textPtr);
+	label.assign(textPtr, idStart ? idStart : textPtr + strlen(textPtr));
 
 	if (label == "" || id == 0)
 	{

@@ -1,9 +1,7 @@
-#include "horus.h"
-#include "types.h"
+#include "context.h"
 #include "theme.h"
 #include "unicode_text_cache.h"
 #include "font.h"
-#include "context.h"
 #include "util.h"
 #include "docking.h"
 #include <math.h>

@@ -1,11 +1,9 @@
-#include "horus.h"
-#include "types.h"
+#include "context.h"
 #include "renderer.h"
 #include "theme.h"
 #include "unicode_text_cache.h"
 #include "util.h"
 #include "font.h"
-#include "context.h"
 #define _USE_MATH_DEFINES
 #include <math.h>
 

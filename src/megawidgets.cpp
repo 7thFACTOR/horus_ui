@@ -1,5 +1,3 @@
-#include "horus.h"
-#include "types.h"
 #include "context.h"
 #include "theme.h"
 #include "util.h"
@@ -45,6 +43,7 @@ bool vecEditorInternal(f64& x, f64& y, f64& z, f64 scrollStep, bool useZ)
 		auto elem = ctx->theme->userElements[axisImageName];
 
 		// current widget + 2 since widget is computed in endBox and we have 1 image widget
+		//TODO: not working, since widget id is not incremental
 		hui::beginBox((draggingValue && (draggedWidgetId == (ctx->currentWidgetId + 2))) ? dragColor : normalColor, "axisBoxBody");
 		WidgetId imageWidgetId = hui::getWidgetId();
 		hui::image(elem->normalState().image, 13);

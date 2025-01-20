@@ -1,5 +1,5 @@
 #pragma once
-#include "horus_interfaces.h"
+#include "horus.h"
 #define SDL_MAIN_HANDLED
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_version.h>

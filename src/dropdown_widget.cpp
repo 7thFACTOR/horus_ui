@@ -1,11 +1,9 @@
-#include "horus.h"
-#include "types.h"
+#include <algorithm>
+#include "context.h"
 #include "theme.h"
 #include "unicode_text_cache.h"
 #include "font.h"
-#include "context.h"
 #include "util.h"
-#include <algorithm>
 
 namespace hui
 {
@@ -14,7 +12,7 @@ bool dropdown(const char* id, i32& selectedIndex, const char** items, u32 itemCo
 	auto& bodyElem = ctx->theme->getElement(WidgetElementId::DropdownBody);
 	auto& arrowElem = ctx->theme->getElement(WidgetElementId::DropdownArrow);
 
-	addWidgetItem(id, nullptr, bodyElem.normalState().height * ctx->globalScale);
+	addWidgetItem(id, bodyElem.normalState().height * ctx->globalScale);
 	buttonBehavior();
 
 	auto bodyElemState = &bodyElem.normalState();
@@ -36,9 +34,9 @@ bool dropdown(const char* id, i32& selectedIndex, const char** items, u32 itemCo
 		arrowElemState = &arrowElem.getState(WidgetStateType::Hovered);
 	}
 
-	ctx->renderer->cmdSetColor(bodyElemState->color * ctx->tint[(int)TintColorType::Body]);
+	ctx->renderer->cmdSetColor(tintColor(bodyElemState->color, TintColorType::Body));
 	ctx->renderer->cmdDrawImageBordered(bodyElemState->image, bodyElemState->border, ctx->widget.rect, ctx->globalScale);
-	ctx->renderer->cmdSetColor(arrowElemState->color * ctx->tint[(int)TintColorType::Body]);
+	ctx->renderer->cmdSetColor(tintColor(arrowElemState->color, TintColorType::Body));
 
 	// dial down the height, since its already global scaled
 	auto arrowY = ((ctx->widget.rect.height / ctx->globalScale - arrowElemState->image->rect.height) / 2.0f + (ctx->widget.pressed ? 1.0f : 0.0f)) * ctx->globalScale;
@@ -66,7 +64,7 @@ bool dropdown(const char* id, i32& selectedIndex, const char** items, u32 itemCo
 	if (selectedItemText)
 	{
 		ctx->renderer->pushClipRect(ctx->widget.rect);
-		ctx->renderer->cmdSetColor(bodyElemState->textColor * ctx->tint[(int)TintColorType::Text]);
+		ctx->renderer->cmdSetColor(tintColor(bodyElemState->textColor, TintColorType::Text));
 		ctx->renderer->cmdSetFont(bodyElemState->font);
 		ctx->renderer->cmdDrawTextInBox(
 			selectedItemText,
@@ -102,7 +100,7 @@ bool dropdown(const char* id, i32& selectedIndex, const char** items, u32 itemCo
 		// we need exact width, so don't scale the popup's width
 		ctx->popupUseGlobalScale = false;
 
-		beginPopup(ctx->widget.rect.width - bodyElem.normalState().border * 2,
+		beginPopup("popup", ctx->widget.rect.width - bodyElem.normalState().border * 2,
 			PopupFlags::CustomPosition,
 			posForPopup,
 			WidgetElementId::ButtonBody);

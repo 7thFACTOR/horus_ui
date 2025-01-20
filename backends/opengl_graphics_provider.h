@@ -1,5 +1,5 @@
 #pragma once
-#include "horus_interfaces.h"
+#include "horus.h"
 #include <string>
 #include <glad/gl.h>
 

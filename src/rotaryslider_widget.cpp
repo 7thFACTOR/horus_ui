@@ -1,10 +1,8 @@
-#include "horus.h"
-#include "types.h"
+#include "context.h"
 #include "renderer.h"
 #include "theme.h"
 #include "unicode_text_cache.h"
 #include "font.h"
-#include "context.h"
 #include "util.h"
 #include <algorithm>
 #define _USE_MATH_DEFINES
@@ -15,7 +13,7 @@ namespace hui
 bool rotarySliderFloat(const char* label, f32& value, f32 minVal, f32 maxVal, f32 step, bool twoSide, f32 fineStepDivideFactor)
 {
 	static Point lastMousePos;
-	static u32 rotarySliderWidgetId = 0;
+	static WidgetId rotarySliderWidgetId = 0;
 	static bool isFine = false;
 
 	auto& bodyElem = ctx->theme->getElement(WidgetElementId::RotarySliderBody);
@@ -36,7 +34,6 @@ bool rotarySliderFloat(const char* label, f32& value, f32 minVal, f32 maxVal, f3
 	{
 		rotarySliderWidgetId = 0;
 		ctx->widget.changeEnded = true;
-		ctx->widget.changeEnded = true;
 	}
 
 	if (ctx->event.type == InputEvent::Type::MouseMove
@@ -51,9 +48,14 @@ bool rotarySliderFloat(const char* label, f32& value, f32 minVal, f32 maxVal, f3
 		{
 		case SliderDragDirection::Any:
 			if (fabsf(delta.x) > fabsf(delta.y))
+			{
 				deltaValue = delta.x;
+			}
 			else
+			{
 				deltaValue = ctx->settings.sliderInvertVerticalDragAmount ? delta.y : -delta.y;
+			}
+
 			break;
 		case SliderDragDirection::VerticalOnly:
 			deltaValue = delta.y;
@@ -88,7 +90,7 @@ bool rotarySliderFloat(const char* label, f32& value, f32 minVal, f32 maxVal, f3
 
 	if (ctx->widget.visible)
 	{
-		ctx->renderer->cmdSetColor(bodyElemState->color * ctx->getTint(TintColorType::Body));
+		ctx->renderer->cmdSetColor(tintColor(bodyElemState->color, TintColorType::Body));
 		Rect rc = {
 			ctx->widget.rect.x + (ctx->widget.rect.width - bodyElemState->image->width * ctx->globalScale) / 2.0f,
 				ctx->widget.rect.y,
@@ -171,7 +173,7 @@ bool rotarySliderFloat(const char* label, f32& value, f32 minVal, f32 maxVal, f3
 		ctx->renderer->cmdDrawImage(markElemState->image, pos, ctx->globalScale);
 
 		// draw the text under the knob
-		ctx->renderer->cmdSetColor(bodyElemState->textColor * ctx->tint[(int)TintColorType::Text]);
+		ctx->renderer->cmdSetColor(tintColor(bodyElemState->textColor, TintColorType::Text));
 		ctx->renderer->cmdSetFont(bodyElemState->font);
 		ctx->renderer->pushClipRect(ctx->widget.rect);
 		ctx->renderer->cmdDrawTextInBox(

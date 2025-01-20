@@ -1,11 +1,8 @@
 #include <stdlib.h>
-#include <assert.h>
 #include <algorithm>
-#include "horus.h"
-#include "types.h"
+#include "context.h"
 #include "theme.h"
 #include "atlas.h"
-#include "context.h"
 #include "util.h"
 #include "renderer.h"
 #include "unicode_text_cache.h"
@@ -74,7 +71,7 @@ const Color Color::sky(0.f, 0.682f, 0.937f, 1);
 HContext createContext(struct ContextSettings& settings)
 {
 	Context* context = new Context();
-
+	HORUS_ASSERT(context);
 	context->settings = settings;
 	context->providers = &settings.providers;
 
@@ -188,10 +185,8 @@ void addWidgetItem(const char* text, f32 height)
 	}
 	else
 	{
-		ctx->penPosition.x += (width + ctx->widget.sameLineSpacing) * ctx->globalScale;
+		ctx->penPosition.x += width + ctx->widget.sameLineSpacing * ctx->globalScale;
 	}
-
-	static std::string noLabelNeeded;
 
 	ctx->extractLabelAndId(text, ctx->widgetLabel, ctx->currentWidgetId);
 }
@@ -203,11 +198,12 @@ void setFocusable()
 		ctx->widget.focusedWidgetRect = ctx->widget.rect;
 	}
 
-	if (!ctx->widget.nextFocusableWidgetId
-		&& ctx->currentWidgetId > ctx->widget.focusedWidgetId)
-	{
-		ctx->widget.nextFocusableWidgetId = ctx->currentWidgetId;
-	}
+	//TODO: not working since widget id not incremental
+	//if (!ctx->widget.nextFocusableWidgetId
+	//	&& ctx->currentWidgetId > ctx->widget.focusedWidgetId)
+	//{
+	//	ctx->widget.nextFocusableWidgetId = ctx->currentWidgetId;
+	//}
 }
 
 bool viewportImageFitSize(
@@ -309,15 +305,16 @@ void beginFrame()
 		ctx->widget.focusedWidgetId = ctx->widget.nextFocusableWidgetId;
 		ctx->focusChanged = true;
 
-		if (ctx->widget.focusedWidgetId > ctx->maxWidgetId)
-		{
-			ctx->widget.focusedWidgetId = 1;
-		}
+		//TODO: doesnt work anymore
+		//if (ctx->widget.focusedWidgetId > ctx->maxWidgetId)
+		//{
+		//	ctx->widget.focusedWidgetId = 1;
+		//}
 	}
 
 	ctx->mustRedraw = false;
 	ctx->skipRenderAndInput = false;
-	ctx->currentWidgetId = 1;
+	ctx->currentWidgetId = 0;
 	ctx->widget.enabled = true;
 	ctx->currentWindowIndex = 0;
 	ctx->layerIndex = 0;
@@ -412,7 +409,6 @@ void endFrame()
 	if (ctx->theme->atlas->packWithLastUsedParams())
 		skipThisFrame();
 
-	ctx->maxWidgetId = ctx->currentWidgetId;
 	ctx->focusChanged = false;
 	ctx->mouseMoved = false;
 
@@ -669,7 +665,7 @@ void setInputEvent(const InputEvent& event)
 
 void shutdown()
 {
-	assert(ctx);
+	HORUS_ASSERT(ctx);
 
 	if (ctx->providers->gfx)
 		ctx->providers->gfx->shutdown();
@@ -772,9 +768,9 @@ bool packAtlas(HAtlas atlas, u32 border)
 
 DockNodeId createRootDockNode(HNativeWindow nativeWnd)
 {
-	assert(nativeWnd);
+	HORUS_ASSERT(nativeWnd);
 	auto node = createNativeWindowRootDockNode(nativeWnd);
-	assert(node);
+	HORUS_ASSERT(node);
 
 	ctx->nativeWindows.push_back(nativeWnd);
 	ctx->dockingState.dockNodeIdsMap[node->id] = node;
@@ -1115,8 +1111,8 @@ void setWidgetStyle(WidgetType widgetType, const char* styleName)
 
 void setWidgetElementStyle(WidgetElementId widgetElementId, const char* styleName)
 {
-	assert(ctx);
-	assert(ctx->theme);
+	HORUS_ASSERT(ctx);
+	HORUS_ASSERT(ctx->theme);
 	ctx->theme->elements[(u32)widgetElementId].setStyle(styleName);
 }
 
@@ -1137,7 +1133,7 @@ void setUserWidgetElementStyle(const char* elementName, const char* styleName)
 
 void buildTheme(HTheme theme)
 {
-	assert(theme);
+	HORUS_ASSERT(theme);
 	Theme* themePtr = (Theme*)theme;
 
 	themePtr->packAtlas();
@@ -1151,8 +1147,8 @@ void setThemeWidgetElement(
 	const WidgetElementInfo& elementInfo,
 	const char* styleName)
 {
-	assert(theme);
-	assert(styleName);
+	HORUS_ASSERT(theme);
+	HORUS_ASSERT(styleName);
 
 	Theme* themePtr = (Theme*)theme;
 	u32 stateIndex = (u32)widgetStateType;
@@ -1196,7 +1192,7 @@ void setThemeUserWidgetElement(
 
 void setTheme(HTheme theme)
 {
-	assert(theme);
+	HORUS_ASSERT(theme);
 	ctx->theme = (Theme*)theme;
 }
 
@@ -1767,7 +1763,7 @@ f32 getColumnPadding()
 	return ctx->columnPadding;
 }
 
-void setGlobalScale(f32 scale)
+void changeGlobalScale(f32 scale)
 {
 	ctx->globalScale = scale;
 
@@ -1783,20 +1779,22 @@ f32 getGlobalScale()
 	return ctx->globalScale;
 }
 
-void pushTint(const Color& color, TintColorType type)
+void pushTint(const Color& color, TintColorType type, TintColorOpType opType)
 {
+	ctx->tintStack.push_back(ctx->tint);
+
 	switch (type)
 	{
 	case hui::TintColorType::Body:
 	case hui::TintColorType::Text:
-		ctx->tintStack[(u32)type].push_back(color);
-		ctx->tint[(u32)type] = color;
+		ctx->tint.color[(i32)type] = color;
+		ctx->tint.op[(i32)type] = opType;
 		break;
 	case hui::TintColorType::All:
-		for (int i = 0; i < (int)TintColorType::Count; i++)
+		for (i32 i = 0; i < (i32)TintColorType::Count; i++)
 		{
-			ctx->tintStack[i].push_back(color);
-			ctx->tint[i] = color;
+			ctx->tint.color[i] = color;
+			ctx->tint.op[i] = opType;
 		}
 		break;
 	default:
@@ -1804,42 +1802,44 @@ void pushTint(const Color& color, TintColorType type)
 	}
 }
 
-void popTint(TintColorType type)
+void popTint()
 {
-	switch (type)
+	if (!ctx->tintStack.empty())
 	{
-	case hui::TintColorType::Body:
-	case hui::TintColorType::Text:
-		if (ctx->tintStack[(u32)type].empty())
-			return;
-
-		ctx->tintStack[(u32)type].pop_back();
-
-		if (!ctx->tintStack[(u32)type].empty())
-			ctx->tint[(u32)type] = ctx->tintStack[(u32)type].back();
-		else
-			ctx->tint[(u32)type] = Color::white;
-		break;
-	case hui::TintColorType::All:
-		for (int i = 0; i < (int)TintColorType::Count; i++)
-		{
-			if (ctx->tintStack[i].empty())
-			{
-				ctx->tint[i] = Color::white;
-				continue;
-			}
-
-			ctx->tintStack[i].pop_back();
-
-			if (!ctx->tintStack[i].empty())
-				ctx->tint[i] = ctx->tintStack[i].back();
-			else
-				ctx->tint[i] = Color::white;
-		}
-		break;
-	default:
-		break;
+		ctx->tint = ctx->tintStack.back();
+		ctx->tintStack.pop_back();
 	}
+}
+
+Color tintColor(const Color& originalColor, TintColorType type)
+{
+	Color tintedColor;
+
+	if (ctx->tint.op[(i32)type] == TintColorOpType::Multiply)
+	{
+		tintedColor = originalColor * ctx->tint.color[(i32)type];
+	}
+	else
+	if (ctx->tint.op[(i32)type] == TintColorOpType::Add)
+	{
+		tintedColor = originalColor + ctx->tint.color[(i32)type];
+	}
+	else
+	if (ctx->tint.op[(i32)type] == TintColorOpType::Subtract)
+	{
+		tintedColor = originalColor - ctx->tint.color[(i32)type];
+	}
+	else
+	if (ctx->tint.op[(i32)type] == TintColorOpType::Replace)
+	{
+		tintedColor = ctx->tint.color[(i32)type];
+	}
+	else
+	{
+		tintedColor = originalColor;
+	}
+
+	return tintedColor;
 }
 
 bool isHovered()

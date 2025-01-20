@@ -1,9 +1,6 @@
-#include "horus.h"
-#include "types.h"
-#include "theme.h"
 #include "context.h"
+#include "theme.h"
 #include "util.h"
-#include <math.h>
 
 namespace hui
 {
@@ -17,7 +14,7 @@ void progress(f32 value)
 	const f32 maxValue = 1.0f;
 	value = fmaxf(0, fminf(maxValue, value));
 
-	addWidgetItem("", nullptr, backElem.normalState().height * ctx->globalScale);
+	addWidgetItem("", backElem.normalState().height * ctx->globalScale);
 
 	f32 percentFilled = value / maxValue;
 	f32 valueWidth = ctx->widget.rect.width;

@@ -1,11 +1,7 @@
-#include "types.h"
-#include "horus.h"
-#include "horus_interfaces.h"
-#include "docking.h"
 #include "context.h"
+#include "docking.h"
 #include "renderer.h"
 #include "theme.h"
-#include <assert.h>
 
 namespace hui
 {
@@ -84,12 +80,14 @@ bool beginWindow(const char* id, const char* title, Rect* initialRect, HImage ic
 	}
 
 	beginContainer(rc);
+	pushId((void*)wnd);
 
 	return true;
 }
 
 void endWindow()
 {
+	popId();
 	endContainer();
 	ctx->renderer->end();
 	ctx->currentWindowIndex++;
@@ -169,7 +167,7 @@ void dockWindow(const char* windowId, const char* targetWindowId, DockType dockT
 		}
 	}
 
-	assert(wnd1);
+	HORUS_ASSERT(wnd1);
 
 	if (wnd1)
 	{

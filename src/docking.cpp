@@ -1,10 +1,8 @@
 #include <cstring>
-#include <assert.h>
 #include <algorithm>
 #include <math.h>
-#include "horus.h"
-#include "docking.h"
 #include "context.h"
+#include "docking.h"
 #include "theme.h"
 
 namespace hui
@@ -118,7 +116,7 @@ DockNode* DockNode::removeFromParent()
 			// we need to remove this now, it will interfere with redudancy checks
 			auto iter = std::find(ctx->nativeWindows.begin(), ctx->nativeWindows.end(), nativeWindow);
 
-			assert(iter != ctx->nativeWindows.end());
+			HORUS_ASSERT(iter != ctx->nativeWindows.end());
 
 			if (iter != ctx->nativeWindows.end()) ctx->nativeWindows.erase(iter);
 
@@ -385,7 +383,7 @@ bool DockNode::checkRedundancy()
 			// find it again, remove it, leaving children in the parent node
 			iterPosThis = std::find(parent->children.begin(), parent->children.end(), this);
 
-			assert(iterPosThis != parent->children.end());
+			HORUS_ASSERT(iterPosThis != parent->children.end());
 
 			parent->children.erase(iterPosThis);
 			parent->adoptChildren();
@@ -697,7 +695,7 @@ DockNode* createNativeWindowRootDockNode(HNativeWindow nativeWindow)
 
 DockNode* getRootDockNode(HNativeWindow nativeWindow)
 {
-	assert(nativeWindow);
+	HORUS_ASSERT(nativeWindow);
 
 	if (!nativeWindow) return nullptr;
 
@@ -711,7 +709,7 @@ DockNode* getRootDockNode(HNativeWindow nativeWindow)
 
 void deleteRootDockNode(HNativeWindow nativeWindow)
 {
-	assert(nativeWindow);
+	HORUS_ASSERT(nativeWindow);
 
 	auto iterWnd = ctx->dockingState.rootNativeWindowDockNodes.find(nativeWindow);
 
@@ -873,7 +871,7 @@ bool dockWindow(Window* wnd, DockNode* targetNode, DockType dockType, u32 tabInd
 				target = newTarget;
 			}
 
-			// if there is just one nativeWindow in the source node, move the node and remove from current parent
+			// if there is just one window in the source node, move the node and remove from current parent
 			if (source && source->windows.size() == 1)
 			{
 				source = source->removeFromParent();
@@ -2622,7 +2620,9 @@ void updateDockingSystem()
 	{
 		for (auto& pair : ctx->dockingState.rootNativeWindowDockNodes)
 		{
-			pair.second->computeRect();
+			// we only check dock nodes that are not scheduled for deletion (those have nativeWindow null)
+			if (pair.second->nativeWindow)
+				pair.second->computeRect();
 		}
 	}
 

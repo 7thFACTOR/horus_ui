@@ -231,7 +231,7 @@ int main(int argc, char** args)
 				hui::popTint();
 				hui::endColumns();
 				static float val;
-				hui::sliderFloat(0, 100, val);
+				hui::sliderFloat("slider1", 0, 100, val);
 				static char txt[2000];
 				hui::textInput(txt, 2000, hui::TextInputValueMode::Any, "Write something here");
 				hui::space();

@@ -1,7 +1,5 @@
-#include "horus.h"
-#include "types.h"
-#include "theme.h"
 #include "context.h"
+#include "theme.h"
 #include "util.h"
 
 namespace hui
@@ -61,7 +59,7 @@ bool toolbarDropdown(const char* label, HImage normalIcon, HImage disabledIcon)
 void toolbarSeparator()
 {
 	auto elId = ctx->verticalToolbar ? WidgetElementId::ToolbarSeparatorHorizontalBody : WidgetElementId::ToolbarSeparatorVerticalBody;
-	auto bodyElemState = ctx->theme->getElement(elId).normalState();
+	auto& bodyElemState = ctx->theme->getElement(elId).normalState();
 
 	addWidgetItem("", bodyElemState.height * ctx->globalScale);
 	ctx->renderer->cmdSetColor(bodyElemState.color);

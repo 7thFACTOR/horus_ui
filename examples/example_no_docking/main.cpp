@@ -30,6 +30,7 @@ int main(int argc, char** args)
 	settings.providers.input = new hui::Sdl3InputProvider();
 	settings.providers.rectPack = new hui::StbRectPackProvider();
 	settings.providers.utf = new hui::UtfCppProvider();
+	//settings.sliderDragDirection = hui::SliderDragDirection::HorizontalOnly;
 
 	// Create the context
 	auto huiContext = hui::createContext(settings);
@@ -72,6 +73,8 @@ int main(int argc, char** args)
 	// Start the main loop
 	bool exitNow = false;
 
+	hui::changeGlobalScale(1.0f);
+
 	while (!exitNow)
 	{
 		// Clear the main window as a test
@@ -100,10 +103,9 @@ int main(int argc, char** args)
 				const int maxPts = 32;
 				hui::Point pts[maxPts] = { 0 };
 				u32 ptCount = 0;
-
-				hui::Rect rc = { 30, 30, 500, 400 };
+				hui::Rect rc = { 30, 30, 500*hui::getGlobalScale(), 400 * hui::getGlobalScale() };
 				hui::beginContainer(rc);
-				hui::pushLayoutPadding(20);
+				hui::pushLayoutPadding(10);
 				hui::beginBox(hui::Color::white, hui::WidgetElementId::WindowBody, hui::WidgetStateType::Normal);
 				hui::gap(20);
 
@@ -118,14 +120,28 @@ int main(int argc, char** args)
 				static bool chk = true;
 				hui::check("A simple check box", &chk);
 				
-				static i32 option = 0;
+				static i32 option1 = 0;
+				static i32 option2 = 0;
 				static bool showRadios = true;
-				
-				if (hui::panel("Radios"))
+				hui::pushTint(hui::Color::orange);
+				if (hui::panel("Radios 1##1"))
 				{
-					hui::radio("Radio value 0", &option, 0);
-					hui::radio("Radio value 1", &option, 1);
-					hui::radio("Radio value 2", &option, 2);
+					hui::radio("Radio value 0", &option1, 0);
+					hui::radio("Radio value 1", &option1, 1);
+					hui::radio("Radio value 2", &option1, 2);
+				}
+				hui::popTint();
+
+				static f32 val;
+				hui::rotarySliderFloat("Speed", val, -30, 100, 1, false);
+
+				hui::comboSliderFloat(val);
+
+				if (hui::panel("Radios 2##2"))
+				{
+					hui::radio("Radio value 0", &option2, 0);
+					hui::radio("Radio value 1", &option2, 1);
+					hui::radio("Radio value 2", &option2, 2);
 				}
 
 				hui::line();
@@ -134,11 +150,11 @@ int main(int argc, char** args)
 				hui::pushTint(hui::Color::red);
 				hui::button("  EXIT  ");
 				hui::popTint();
-				hui::pushTint(hui::Color::yellow);
+				hui::pushTint(hui::Color(1,0,0,1), hui::TintColorType::Body, hui::TintColorOpType::Replace);
 				hui::button("  ABORT  ");
 				hui::popTint();
-				hui::pushTint(hui::Color::sky);
-				hui::button("  QUIT  ");
+				hui::pushTint(hui::Color::sky, hui::TintColorType::Text);
+				hui::button("  QUIT APPLICATION ");
 				hui::popTint();
 				hui::endSameLine();
 

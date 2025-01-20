@@ -1,4 +1,4 @@
-#include "horus_interfaces.h"
+#include "horus.h"
 
 namespace hui
 {

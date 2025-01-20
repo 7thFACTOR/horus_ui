@@ -1,8 +1,6 @@
 #include "json_theme_provider.h"
-#include "horus_interfaces.h"
 #include <json/json.h>
 #include <json/reader.h>
-#include <assert.h>
 
 namespace hui
 {
@@ -214,7 +212,7 @@ void setThemeElement(
 	}
 
 	auto font = hui::getThemeFont(theme, fontName.c_str());
-	assert(font);
+	HORUS_ASSERT(font);
 
 	u32 r = 0, g = 0, b = 0, a = 255;
 	Color bgColor;

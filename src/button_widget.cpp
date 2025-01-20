@@ -1,12 +1,10 @@
-#include "horus.h"
-#include "types.h"
+#include <algorithm>
+#include "context.h"
 #include "renderer.h"
 #include "theme.h"
 #include "unicode_text_cache.h"
 #include "font.h"
-#include "context.h"
 #include "util.h"
-#include <algorithm>
 
 namespace hui
 {
@@ -201,14 +199,17 @@ bool button(const char* label)
 {
 	auto& btnBodyElem = ctx->theme->getElement(WidgetElementId::ButtonBody);
 
-	addWidgetItem(label, btnBodyElem.normalState().height * ctx->globalScale);
-	buttonBehavior();
-
 	if (ctx->widget.sameLine)
 	{
+		ctx->extractLabelAndId(label, ctx->widgetLabel, ctx->currentWidgetId);
+
 		auto textWidth = btnBodyElem.normalState().font->computeTextSize(ctx->widgetLabel.c_str());
 		ctx->widget.width = (btnBodyElem.normalState().border * 2.0f + textWidth.width) * ctx->globalScale;
 	}
+
+	addWidgetItem(label, btnBodyElem.normalState().height * ctx->globalScale);
+
+	buttonBehavior();
 
 	auto btnBodyElemState = &btnBodyElem.normalState();
 
@@ -221,9 +222,9 @@ bool button(const char* label)
 
 	if (ctx->widget.visible)
 	{
-		ctx->renderer->cmdSetColor(btnBodyElemState->color * ctx->tint[(int)TintColorType::Body]);
+		ctx->renderer->cmdSetColor(tintColor(btnBodyElemState->color,TintColorType::Body));
 		ctx->renderer->cmdDrawImageBordered(btnBodyElemState->image, btnBodyElemState->border, ctx->widget.rect, ctx->globalScale);
-		ctx->renderer->cmdSetColor(btnBodyElemState->textColor * ctx->tint[(int)TintColorType::Text]);
+		ctx->renderer->cmdSetColor(tintColor(btnBodyElemState->textColor,TintColorType::Text));
 		ctx->renderer->cmdSetFont(btnBodyElemState->font);
 		ctx->renderer->pushClipRect(ctx->widget.rect);
 		ctx->renderer->cmdDrawTextInBox(
@@ -281,9 +282,9 @@ bool iconButtonInternal(HImage icon, HImage disabledIcon, f32 customHeight, bool
 
 	if (ctx->widget.visible)
 	{
-		ctx->renderer->cmdSetColor(btnBodyElemState->color * ctx->tint[(int)TintColorType::Body]);
+		ctx->renderer->cmdSetColor(tintColor(btnBodyElemState->color, TintColorType::Body));
 		ctx->renderer->cmdDrawImageBordered(btnBodyElemState->image, btnBodyElemState->border, ctx->widget.rect, ctx->globalScale);
-		ctx->renderer->cmdSetColor(btnBodyElemState->textColor * ctx->tint[(int)TintColorType::Text]);
+		ctx->renderer->cmdSetColor(tintColor(btnBodyElemState->textColor, TintColorType::Text));
 		ctx->renderer->cmdSetFont(btnBodyElemState->font);
 		ctx->renderer->cmdDrawImage(
 			iconImg,

@@ -1,6 +1,4 @@
 #pragma once
-#include <unordered_map>
-#include "horus.h"
 #include "types.h"
 #include "atlas.h"
 

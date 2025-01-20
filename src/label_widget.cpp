@@ -1,8 +1,6 @@
-#include "horus.h"
-#include "types.h"
+#include "context.h"
 #include "theme.h"
 #include "font.h"
-#include "context.h"
 #include "unicode_text_cache.h"
 #include "util.h"
 
@@ -32,7 +30,7 @@ bool labelInternal(const char* label, HAlignType horizontalAlign, Font* font)
 
 	if (ctx->widget.visible)
 	{
-		ctx->renderer->cmdSetColor(bodyElemState.textColor * ctx->tint[(int)TintColorType::Text]);
+		ctx->renderer->cmdSetColor(tintColor(bodyElemState.textColor, TintColorType::Text));
 		ctx->renderer->cmdSetFont(font ? font : bodyElemState.font);
 		ctx->renderer->cmdDrawTextInBox(
 			ctx->widgetLabel.c_str(),
@@ -65,7 +63,7 @@ bool labelCustomFontMultiline(const char* label, HFont font, HAlignType horizont
 {
 	auto& bodyElemState = ctx->theme->getElement(WidgetElementId::LabelBody).normalState();
 
-	ctx->renderer->cmdSetColor(bodyElemState.textColor * ctx->tint[(int)TintColorType::Text]);
+	ctx->renderer->cmdSetColor(tintColor(bodyElemState.textColor, TintColorType::Text));
 	ctx->renderer->cmdSetFont((Font*)font);
 
 	f32 width = ctx->layoutStack.back().width;

@@ -1,11 +1,9 @@
 #include <string.h>
+#include <algorithm>
 #include "atlas.h"
-#include "horus_interfaces.h"
 #include "renderer.h"
 #include "context.h"
 #include "util.h"
-#include <assert.h>
-#include <algorithm>
 
 namespace hui
 {
@@ -212,7 +210,7 @@ bool Atlas::pack(
 		packIntoAtlasTex(newTexture);
 	}
 
-	assert(nonPackedImages.empty());
+	HORUS_ASSERT(nonPackedImages.empty());
 
 	// we have now the rects inside the atlas, copy to atlas textures
 	for (auto image : packedImages)
@@ -306,6 +304,8 @@ void Atlas::repackImages()
 	for (auto atlasTex : atlasTextures)
 	{
 		atlasTex->filledUp = false;
+		// clear the texture data
+		memset(atlasTex->textureImage, 0, (size_t)width * height * sizeof(Rgba32));
 		HORUS_RECTPACK->reset(atlasTex->packer, width, height);
 	}
 
@@ -314,7 +314,7 @@ void Atlas::repackImages()
 
 void Atlas::clearImages()
 {
-	for (auto image : images)
+	for (auto& image : images)
 	{
 		delete[] image.second->imageData;
 		delete image.second;

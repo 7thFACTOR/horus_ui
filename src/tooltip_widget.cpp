@@ -1,11 +1,9 @@
-#include "horus.h"
-#include "types.h"
+#include "context.h"
 #include "atlas.h"
 #include "theme.h"
 #include "renderer.h"
 #include "unicode_text_cache.h"
 #include "font.h"
-#include "context.h"
 #include "util.h"
 #include <limits.h>
 
@@ -13,6 +11,7 @@ namespace hui
 {
 bool tooltip(const char* text)
 {
+	//TODO: not working since widget id is not incremental
 	if ((ctx->currentWidgetId - 1) == ctx->widget.hoveredWidgetId
 		&& ctx->tooltip.show)
 	{
@@ -71,12 +70,14 @@ bool tooltip(const char* text)
 
 bool beginCustomTooltip(f32 width)
 {
+	//TODO: not working since widget id is not incremental
 	if ((ctx->currentWidgetId - 1) == ctx->widget.hoveredWidgetId
 		&& ctx->tooltip.show)
 	{
 		auto& bodyElemState = ctx->theme->getElement(WidgetElementId::TooltipBody).normalState();
 
 		beginPopup(
+			"",
 			width,
 			PopupFlags::CustomPosition | PopupFlags::TopMost,
 			{ ctx->tooltip.position.x + ctx->tooltip.offsetFromCursor, ctx->tooltip.position.y + ctx->tooltip.offsetFromCursor },
