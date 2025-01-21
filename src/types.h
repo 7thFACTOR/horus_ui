@@ -57,6 +57,20 @@ struct WidgetBoolState
 	bool value = false;
 };
 
+struct ComboSliderState
+{
+	static const size_t maxTextSize = 128;
+
+	bool mouseWasDown = false;
+	bool dragging = false;
+	bool editingText = false;
+	Point dragLastMousePos;
+	char text[maxTextSize] = {0};
+	WidgetId newId = 0;
+	WidgetId id = 0;
+	bool requestChangeToOtherComboSlider = false;
+};
+
 struct ThemeElement
 {
 	struct State
@@ -185,26 +199,23 @@ struct LayoutState
 
 struct WidgetState
 {
-	WidgetId focusedWidgetId = 0;
-	WidgetId prevFocusableWidgetId = 0;
-	WidgetId nextFocusableWidgetId = 0;
-	WidgetId hoveredWidgetId = 0;
-	f32 sameLineSpacing = 0;
-	f32 sameLineHeight = 0;
-	bool sameLine = false;
+	WidgetId focusedId = 0;
+	WidgetId prevFocusableId = 0;
+	WidgetId nextFocusableId = 0;
+	WidgetId hoveredId = 0;
 	f32 width = 0; // if 0 then it will be automatically computed, usually the parent container width
 	bool enabled = true;
 	bool pressed = false;
 	bool visible = true;
-	bool focusedWidgetPressed = false;
 	bool clicked = false;
 	bool hovered = false;
 	bool focused = false;
 	bool changeEnded = false;
+	bool focusedAndPressed = false;
 	Rect rect;
 	Rect hoveredWidgetRect;
 	Rect focusedWidgetRect;
-	WidgetType hoveredWidgetType = WidgetType::None;
+	WidgetType hoveredType = WidgetType::None;
 };
 
 struct MenuWidgetState
@@ -288,7 +299,7 @@ struct TextMarker
 	u32 line = 0;
 };
 
-struct DockPaneTabGroupState
+struct DockTabGroupState
 {
 	f32 tabWidth = 90;//TODO: externalize
 	bool forceSqueezeTabs = false;

@@ -44,7 +44,7 @@ bool vecEditorInternal(f64& x, f64& y, f64& z, f64 scrollStep, bool useZ)
 
 		// current widget + 2 since widget is computed in endBox and we have 1 image widget
 		//TODO: not working, since widget id is not incremental
-		hui::beginBox((draggingValue && (draggedWidgetId == (ctx->currentWidgetId + 2))) ? dragColor : normalColor, "axisBoxBody");
+		hui::beginBox((draggingValue && (draggedWidgetId == (ctx->id + 2))) ? dragColor : normalColor, "axisBoxBody");
 		WidgetId imageWidgetId = hui::getWidgetId();
 		hui::image(elem->normalState().image, 13);
 		bool imageHovered = hui::isHovered();
@@ -58,7 +58,7 @@ bool vecEditorInternal(f64& x, f64& y, f64& z, f64 scrollStep, bool useZ)
 			if (hui::isPressed() || imagePressed)
 			{
 				draggingValue = true;
-				draggedWidgetId = ctx->currentWidgetId;
+				draggedWidgetId = ctx->id;
 				lastMousePos = hui::getInputEvent().mouse.point;
 				hui::setCapture();
 			}
@@ -73,7 +73,7 @@ bool vecEditorInternal(f64& x, f64& y, f64& z, f64 scrollStep, bool useZ)
 		}
 
 		if (draggingValue
-			&& draggedWidgetId == ctx->currentWidgetId)
+			&& draggedWidgetId == ctx->id)
 		{
 			value = atof(strAxis);
 			f32 dx = hui::getInputEvent().mouse.point.x - lastMousePos.x;

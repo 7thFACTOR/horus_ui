@@ -12,7 +12,7 @@ namespace hui
 bool tooltip(const char* text)
 {
 	//TODO: not working since widget id is not incremental
-	if ((ctx->currentWidgetId - 1) == ctx->widget.hoveredWidgetId
+	if ((ctx->id - 1) == ctx->widget.hoveredId
 		&& ctx->tooltip.show)
 	{
 		auto bodyElemState = ctx->theme->getElement(WidgetElementId::TooltipBody).normalState();
@@ -71,7 +71,7 @@ bool tooltip(const char* text)
 bool beginCustomTooltip(f32 width)
 {
 	//TODO: not working since widget id is not incremental
-	if ((ctx->currentWidgetId - 1) == ctx->widget.hoveredWidgetId
+	if ((ctx->id - 1) == ctx->widget.hoveredId
 		&& ctx->tooltip.show)
 	{
 		auto& bodyElemState = ctx->theme->getElement(WidgetElementId::TooltipBody).normalState();

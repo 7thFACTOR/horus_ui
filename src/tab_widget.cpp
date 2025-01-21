@@ -36,7 +36,7 @@ void beginTabGroup(TabIndex selectedIndex)
 	ctx->renderer->cmdSetColor(tabGroupElemState.color);
 	ctx->renderer->cmdDrawImageBordered(tabGroupElemState.image, tabGroupElemState.border, ctx->widget.rect, ctx->scale);
 
-	if (ctx->dockingState.drawingWindowTabs)
+	if (ctx->docking.drawingWindowTabs)
 	{
 		// draw the vertical splitter for dock node resize
 		auto& windowVerticalSplitterElemState = ctx->theme->getElement(WidgetElementId::WindowVerticalSplitter).normalState();
@@ -81,9 +81,9 @@ TabIndex endTabGroup()
 
 	if (ctx->event.type == InputEvent::Type::MouseDown)
 	{
-		if (tabGroupWidgetRect.contains(ctx->mousePosition) && ctx->dockingState.currentDockNode)
+		if (tabGroupWidgetRect.contains(ctx->mousePosition) && ctx->docking.currentDockNode)
 		{
-			focusWindow(ctx->dockingState.currentDockNode->windows[ctx->selectedTabIndex]->id.c_str());
+			focusWindow(ctx->docking.currentDockNode->windows[ctx->selectedTabIndex]->id.c_str());
 		}
 	}
 
@@ -132,7 +132,7 @@ void tab(const char* label, HImage icon)
 	}
 
 	bool isActive = ctx->selectedTabIndex == ctx->currentTabIndex;
-	bool isFocused = ctx->currentWindow == ctx->dockingState.focusedWindow;
+	bool isFocused = ctx->currentWindow == ctx->docking.focusedWindow;
 
 	if (isActive)
 	{

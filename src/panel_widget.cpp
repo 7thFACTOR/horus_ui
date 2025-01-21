@@ -34,7 +34,7 @@ bool panel(const char* label, bool* expandedVar)
 		}
 		else
 		{
-			auto& wvs = ctx->widgetBoolState[ctx->currentWidgetId];
+			auto& wvs = ctx->widgetBools[ctx->id];
 			wvs.lastUsedFrame = ctx->frameCount;
 			wvs.value = (f32)!(bool)wvs.value;
 			expanded = (bool)wvs.value;
@@ -49,7 +49,7 @@ bool panel(const char* label, bool* expandedVar)
 		}
 		else
 		{
-			auto& wvs = ctx->widgetBoolState[ctx->currentWidgetId];
+			auto& wvs = ctx->widgetBools[ctx->id];
 			wvs.lastUsedFrame = ctx->frameCount;
 			expanded = (bool)wvs.value;
 		}
@@ -60,7 +60,7 @@ bool panel(const char* label, bool* expandedVar)
 		bodyElemState = &bodyElem.getState(WidgetStateType::Pressed);
 	}
 
-	ctx->renderer->cmdSetColor(tintColor(bodyElemState->color, TintColorType::Body));
+	ctx->renderer->cmdSetColor(applyTint(bodyElemState->color, TintColorType::Body));
 	ctx->renderer->cmdDrawImageBordered(
 		bodyElemState->image,
 		bodyElemState->border, ctx->widget.rect, ctx->scale);
@@ -73,7 +73,7 @@ bool panel(const char* label, bool* expandedVar)
 		arrowElemState = &panelExpandedArrow.normalState();
 	}
 
-	ctx->renderer->cmdSetColor(tintColor(arrowElemState->color, TintColorType::Body));
+	ctx->renderer->cmdSetColor(applyTint(arrowElemState->color, TintColorType::Body));
 	ctx->renderer->cmdDrawImage(
 		arrowElemState->image,
 		{
@@ -93,7 +93,7 @@ bool panel(const char* label, bool* expandedVar)
 	};
 
 	ctx->renderer->pushClipRect(textRect);
-	ctx->renderer->cmdSetColor(tintColor(bodyElemState->textColor, TintColorType::Text));
+	ctx->renderer->cmdSetColor(applyTint(bodyElemState->textColor, TintColorType::Text));
 	ctx->renderer->cmdDrawTextInBox(
 		ctx->widgetLabel.c_str(),
 		textRect,

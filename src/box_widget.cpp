@@ -5,17 +5,14 @@
 
 namespace hui
 {
-void beginBoxInternal(const Color& color, ThemeElement::State& state, f32 customHeight)
+static void beginBoxInternal(const Color& color, ThemeElement::State& state, f32 customHeight)
 {
 	const auto parentWidth = ctx->layout.width;
 
 	pushLayout();
 	ctx->layout.type = LayoutType::Container;
 	ctx->layout.savedPosition = ctx->position;
-
-	// move with padding
 	ctx->position.x += ctx->padding * ctx->scale + state.border * ctx->scale;
-	// take some padding and border from parentWidth
 	ctx->layout.width = parentWidth - (state.border * 2.0f + ctx->padding * 2.0f) * ctx->scale;
 	ctx->layout.height = customHeight * ctx->scale;
 	ctx->layout.themeWidgetElementState = &state;

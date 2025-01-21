@@ -29,9 +29,9 @@ void endToolbar()
 	ctx->verticalToolbar = false;
 
 	if (ctx->sameLineStack.size())
-		ctx->widget.sameLine = ctx->sameLineStack.back();
+		ctx->sameLine = ctx->sameLineStack.back();
 	else
-		ctx->widget.sameLine = false;
+		ctx->sameLine = false;
 }
 
 bool toolbarButton(HImage normalIcon, HImage disabledIcon, bool down)
@@ -44,7 +44,7 @@ bool toolbarButton(HImage normalIcon, HImage disabledIcon, bool down)
 		normalIcon, disabledIcon,
 		el->normalState().height,
 		down,
-		el, false);
+		el);
 
 	popWidth();
 	

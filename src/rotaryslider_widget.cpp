@@ -27,17 +27,17 @@ bool rotarySliderFloat(const char* label, f32& value, f32 minVal, f32 maxVal, f3
 	if (isHovered() && ctx->event.type == InputEvent::Type::MouseDown)
 	{
 		lastMousePos = ctx->mousePosition;
-		rotarySliderWidgetId = ctx->currentWidgetId;
+		rotarySliderWidgetId = ctx->id;
 	}
 
-	if (ctx->event.type == InputEvent::Type::MouseUp && rotarySliderWidgetId == ctx->currentWidgetId)
+	if (ctx->event.type == InputEvent::Type::MouseUp && rotarySliderWidgetId == ctx->id)
 	{
 		rotarySliderWidgetId = 0;
 		ctx->widget.changeEnded = true;
 	}
 
 	if (ctx->event.type == InputEvent::Type::MouseMove
-		&& rotarySliderWidgetId == ctx->currentWidgetId)
+		&& rotarySliderWidgetId == ctx->id)
 	{
 		f32 deltaValue = 0;
 		Point delta = ctx->mousePosition - lastMousePos;
@@ -90,7 +90,7 @@ bool rotarySliderFloat(const char* label, f32& value, f32 minVal, f32 maxVal, f3
 
 	if (ctx->widget.visible)
 	{
-		ctx->renderer->cmdSetColor(tintColor(bodyElemState->color, TintColorType::Body));
+		ctx->renderer->cmdSetColor(applyTint(bodyElemState->color, TintColorType::Body));
 		Rect rc = {
 			ctx->widget.rect.x + (ctx->widget.rect.width - bodyElemState->image->width * ctx->scale) / 2.0f,
 				ctx->widget.rect.y,
@@ -173,7 +173,7 @@ bool rotarySliderFloat(const char* label, f32& value, f32 minVal, f32 maxVal, f3
 		ctx->renderer->cmdDrawImage(markElemState->image, pos, ctx->scale);
 
 		// draw the text under the knob
-		ctx->renderer->cmdSetColor(tintColor(bodyElemState->textColor, TintColorType::Text));
+		ctx->renderer->cmdSetColor(applyTint(bodyElemState->textColor, TintColorType::Text));
 		ctx->renderer->cmdSetFont(bodyElemState->font);
 		ctx->renderer->pushClipRect(ctx->widget.rect);
 		ctx->renderer->cmdDrawTextInBox(

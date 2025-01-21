@@ -6,12 +6,12 @@ namespace hui
 {
 struct Context
 {
-	static const int maxLayerCount = 256;
-	static const int maxNestingIndex = 256;
-	static const int maxPopupIndex = 256;
-	static const int maxMenuDepth = 256;
-	static const int maxBoxDepth = 256;
-	static const int maxSameLineInfoIndex = 256;
+	static const size_t maxLayerCount = 256;
+	static const size_t maxNestingIndex = 256;
+	static const size_t maxPopupIndex = 256;
+	static const size_t maxMenuDepth = 256;
+	static const size_t maxBoxDepth = 256;
+	static const size_t maxSameLineInfoIndex = 256;
 
 	// Various providers and singletons
 	ServiceProviders* providers = nullptr;
@@ -24,54 +24,60 @@ struct Context
 	f32 totalTime = 0;
 	u32 frameCount = 0;
 	f32 pruneUnusedTextTime = 0; //TODO: maybe make it frames
-	WidgetId currentWidgetId = 0;
+	WidgetId id = 0;
 	bool mustRedraw = false;
 	bool focusChanged = false;
 	bool skipRenderAndInput = false;
+	bool hoveringThisWindow = false;
 	Window* currentWindow = nullptr;
 	WindowFlags nextWindowFlags = WindowFlags::None;
 	HNativeWindow lastHoveredNativeWindow = nullptr;
-	bool hoveringThisWindow = false;
 	f32 scale = 1.0f;
 	u32 atlasTextureSize = 4096;
 	Point mousePosition;
 
-	// Vertical toolbars
-	bool verticalToolbar = false;
-	std::vector<bool> verticalToolbarStack;
-
 	// Widgets
+	WidgetId id = 42;
+	WidgetState widget;
 	TextInputState textInput;
 	std::vector<TextLineState> textLines;
-	WidgetState widget;
-	WidgetId id = 42;
 	std::vector<WidgetId> idStack;
-	std::unordered_map<WidgetId, WidgetBoolState> widgetBoolState;
+	std::unordered_map<WidgetId, WidgetBoolState> widgetBools;
+
+	// Same line
+	bool sameLine = false;
+	size_t sameLineInfoIndex = 0;
+	size_t sameLineInfoCount = 0;
+	f32 sameLineSpacing = 0;
+	f32 sameLineHeight = 0;
 	std::vector<f32> sameLineWidthStack;
 	std::vector<f32> sameLineSpacingStack;
 	std::vector<u32> sameLineInfoIndexStack;
 	std::vector<bool> sameLineStack;
 	SameLineState sameLineInfo[maxSameLineInfoIndex];
-	u32 sameLineInfoIndex = 0;
-	u32 sameLineInfoCount = 0;
+
+	// Toolbars
 	std::vector<ToolbarState> toolbarStack;
 	TooltipState tooltip;
 	std::string widgetLabel;
+	bool verticalToolbar = false;
+	std::vector<bool> verticalToolbarStack;
 
-	u32 layerIndex = 0;
-	u32 maxLayerIndex = 0;
+	// Layers
+	size_t layerIndex = 0;
+	size_t maxLayerIndex = 0;
 
 	// Popups
 	std::vector<PopupState> popupStack;
 	bool popupUseGlobalScale = true;
-	u32 popupIndex = 0;
+	size_t popupIndex = 0;
 
 	// Virtual list
 	std::vector<VirtualListContentState> virtualListStack;
 
 	// Menus
 	std::vector<MenuWidgetState> menuStack;
-	u32 menuDepth = 0;
+	size_t menuDepth = 0;
 	WidgetId activeMenuBarItemWidgetId = 0;
 	bool contextMenuActive = false;
 	bool contextMenuClicked = false;
@@ -85,9 +91,9 @@ struct Context
 	Point activeMenuBarItemWidgetPos;
 	f32 activeMenuBarItemWidgetWidth = 0;
 	bool rightSideMenu = true;
-	u32 hoveredSimpleMenuItemMenuDepth = ~0;
-	u32 activeMenuBarId = 0;
-	u32 currentMenuBarId = 0;
+	size_t hoveredSimpleMenuItemMenuDepth = ~0;
+	WidgetId activeMenuBarId = 0;
+	WidgetId currentMenuBarId = 0;
 	f32 menuItemTextWidth = 0;
 	f32 menuItemTextSideSpacing = 10;
 	f32 menuIconSpace = 18;
@@ -120,9 +126,11 @@ struct Context
 	// Tabbing/focusing
 	TabIndex currentTabIndex = 0;
 	TabIndex selectedTabIndex = 0;
-	DockPaneTabGroupState paneGroupState;
+	DockTabGroupState tabGroup;
 
-	DropdownState dropdownState;
+	DropdownState dropdown;
+
+	ComboSliderState comboSlider;
 
 	// Input
 	InputEvent event;
@@ -144,8 +152,8 @@ struct Context
 	bool mouseMoved = false;
 	bool alreadyClickedOnSomething = false;
 
-	DragDropState dragDropState;
-	DockingState dockingState;
+	DragDropState dragDrop;
+	DockingState docking;
 
 	Context()
 	{

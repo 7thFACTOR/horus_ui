@@ -2539,7 +2539,7 @@ HORUS_API void pushTint(const Color& color, TintColorType type = TintColorType::
 /// Pop the old tint color from stack
 HORUS_API void popTint();
 
-HORUS_API Color tintColor(const Color& originalColor, TintColorType type);
+HORUS_API Color applyTint(const Color& originalColor, TintColorType type);
 
 /// Draw a delayed tooltip widget near the previous widget
 /// \param text the label of the tooltip

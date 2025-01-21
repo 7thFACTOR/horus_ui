@@ -10,12 +10,12 @@ namespace hui
 {
 void buttonBehavior(bool menuItem)
 {
-	ctx->widget.hovered = (ctx->currentWidgetId == ctx->widget.hoveredWidgetId);
-	ctx->widget.focused = (ctx->currentWidgetId == ctx->widget.focusedWidgetId);
+	ctx->widget.hovered = (ctx->id == ctx->widget.hoveredId);
+	ctx->widget.focused = (ctx->id == ctx->widget.focusedId);
 	ctx->widget.clicked = false;
 	ctx->widget.pressed = false;
 	ctx->widget.visible = true;
-	ctx->dragDropState.allowDrop = false;
+	ctx->dragDrop.allowDrop = false;
 
 	if (!ctx->isActiveLayer() && !menuItem)
 		return;
@@ -23,7 +23,7 @@ void buttonBehavior(bool menuItem)
 	if (!ctx->widget.enabled)
 		return;
 
-	if (ctx->currentWidgetId == ctx->widget.focusedWidgetId
+	if (ctx->id == ctx->widget.focusedId
 		&& ctx->event.type == InputEvent::Type::Key
 		&& (ctx->event.key.code == KeyCode::Enter
 			|| ctx->event.key.code == KeyCode::Space))
@@ -56,20 +56,20 @@ void buttonBehavior(bool menuItem)
 	// if we're inside the button
 	if (clippedRect.contains(ctx->mousePosition) && ctx->hoveringThisWindow)
 	{
-		bool alreadyCapturedSomeWidget = ctx->widget.focusedWidgetPressed && (ctx->currentWidgetId != ctx->widget.focusedWidgetId);
+		bool alreadyCapturedSomeWidget = ctx->widget.focusedAndPressed && (ctx->id != ctx->widget.focusedId);
 
 		if (!alreadyCapturedSomeWidget)
 		{
-			ctx->widget.hoveredWidgetId = ctx->currentWidgetId;
+			ctx->widget.hoveredId = ctx->id;
 			ctx->widget.hovered = true;
 			ctx->widget.hoveredWidgetRect = ctx->widget.rect;
 
 			if (ctx->event.type == InputEvent::Type::MouseDown
 				&& ctx->event.mouse.button == MouseButton::Left)
 			{
-				ctx->widget.focusedWidgetId = ctx->currentWidgetId;
+				ctx->widget.focusedId = ctx->id;
 				ctx->widget.pressed = true;
-				ctx->widget.focusedWidgetPressed = true;
+				ctx->widget.focusedAndPressed = true;
 
 				if (ctx->popupIndex)
 				{
@@ -83,36 +83,36 @@ void buttonBehavior(bool menuItem)
 			else if (ctx->event.type == InputEvent::Type::MouseUp
 				&& ctx->event.mouse.button == MouseButton::Left)
 			{
-				if (ctx->currentWidgetId == ctx->widget.focusedWidgetId)
+				if (ctx->id == ctx->widget.focusedId)
 				{
 					ctx->widget.clicked = true;
 					ctx->widget.pressed = false;
-					ctx->widget.focusedWidgetPressed = false;
+					ctx->widget.focusedAndPressed = false;
 				}
 			}
 
-			ctx->widget.pressed = ctx->widget.focusedWidgetPressed;
+			ctx->widget.pressed = ctx->widget.focusedAndPressed;
 		}
 	}
 	else
 	{
 		if (ctx->event.type == InputEvent::Type::MouseDown)
 		{
-			if (ctx->currentWidgetId == ctx->widget.focusedWidgetId)
+			if (ctx->id == ctx->widget.focusedId)
 			{
 				ctx->widget.pressed = false;
-				ctx->widget.focusedWidgetId = 0;
-				ctx->widget.focusedWidgetPressed = false;
+				ctx->widget.focusedId = 0;
+				ctx->widget.focusedAndPressed = false;
 			}
 		}
 
 		if (ctx->event.type == InputEvent::Type::MouseUp)
 		{
-			if (ctx->currentWidgetId == ctx->widget.focusedWidgetId)
+			if (ctx->id == ctx->widget.focusedId)
 			{
 				ctx->widget.pressed = false;
 				ctx->widget.clicked = false;
-				ctx->widget.focusedWidgetPressed = false;
+				ctx->widget.focusedAndPressed = false;
 			}
 		}
 	}
@@ -120,12 +120,12 @@ void buttonBehavior(bool menuItem)
 
 void mouseDownOnlyButtonBehavior()
 {
-	ctx->widget.hovered = (ctx->currentWidgetId == ctx->widget.hoveredWidgetId);
-	ctx->widget.focused = (ctx->currentWidgetId == ctx->widget.focusedWidgetId);
+	ctx->widget.hovered = (ctx->id == ctx->widget.hoveredId);
+	ctx->widget.focused = (ctx->id == ctx->widget.focusedId);
 	ctx->widget.clicked = false;
 	ctx->widget.pressed = false;
 	ctx->widget.visible = true;
-	ctx->dragDropState.allowDrop = false;
+	ctx->dragDrop.allowDrop = false;
 
 	if (!ctx->isActiveLayer())
 		return;
@@ -148,17 +148,17 @@ void mouseDownOnlyButtonBehavior()
 		ctx->widget.hovered = true;
 		ctx->widget.hoveredWidgetRect = ctx->widget.rect;
 
-		if (ctx->widget.hoveredWidgetId != ctx->currentWidgetId)
+		if (ctx->widget.hoveredId != ctx->id)
 		{
 			//ctx->tooltip.timer = 0;
 		}
 
-		ctx->widget.hoveredWidgetId = ctx->currentWidgetId;
+		ctx->widget.hoveredId = ctx->id;
 
 		if (ctx->event.type == InputEvent::Type::MouseDown
 			&& ctx->event.mouse.button == MouseButton::Left)
 		{
-			ctx->widget.focusedWidgetId = ctx->currentWidgetId;
+			ctx->widget.focusedId = ctx->id;
 			ctx->widget.pressed = true;
 
 			if (ctx->layerIndex)
@@ -167,9 +167,9 @@ void mouseDownOnlyButtonBehavior()
 				popup.alreadyClickedOnSomething = true;
 			}
 
-			if (ctx->currentWidgetId == ctx->widget.focusedWidgetId)
+			if (ctx->id == ctx->widget.focusedId)
 			{
-				ctx->widget.focusedWidgetId = 0;
+				ctx->widget.focusedId = 0;
 				ctx->widget.pressed = true;
 				ctx->widget.clicked = true;
 				return;
@@ -179,17 +179,17 @@ void mouseDownOnlyButtonBehavior()
 	else
 	{
 		if (ctx->event.type == InputEvent::Type::MouseDown
-			&& ctx->currentWidgetId == ctx->widget.focusedWidgetId)
+			&& ctx->id == ctx->widget.focusedId)
 		{
-			ctx->widget.focusedWidgetId = 0;
-			ctx->widget.focusedWidgetPressed = false;
+			ctx->widget.focusedId = 0;
+			ctx->widget.focusedAndPressed = false;
 			ctx->widget.pressed = false;
 		}
 
-		if (ctx->currentWidgetId == ctx->widget.hoveredWidgetId)
+		if (ctx->id == ctx->widget.hoveredId)
 		{
-			ctx->widget.hoveredWidgetId = 0;
-			ctx->widget.focusedWidgetPressed = false;
+			ctx->widget.hoveredId = 0;
+			ctx->widget.focusedAndPressed = false;
 			ctx->widget.pressed = false;
 		}
 	}
@@ -199,9 +199,9 @@ bool button(const char* label)
 {
 	auto& btnBodyElem = ctx->theme->getElement(WidgetElementId::ButtonBody);
 
-	if (ctx->widget.sameLine)
+	if (ctx->sameLine)
 	{
-		ctx->extractLabelAndId(label, ctx->widgetLabel, ctx->currentWidgetId);
+		ctx->extractLabelAndId(label, ctx->widgetLabel, ctx->id);
 
 		auto textWidth = btnBodyElem.normalState().font->computeTextSize(ctx->widgetLabel.c_str());
 		ctx->widget.width = (btnBodyElem.normalState().border * 2.0f + textWidth.width) * ctx->scale;
@@ -222,9 +222,9 @@ bool button(const char* label)
 
 	if (ctx->widget.visible)
 	{
-		ctx->renderer->cmdSetColor(tintColor(btnBodyElemState->color,TintColorType::Body));
+		ctx->renderer->cmdSetColor(applyTint(btnBodyElemState->color,TintColorType::Body));
 		ctx->renderer->cmdDrawImageBordered(btnBodyElemState->image, btnBodyElemState->border, ctx->widget.rect, ctx->scale);
-		ctx->renderer->cmdSetColor(tintColor(btnBodyElemState->textColor,TintColorType::Text));
+		ctx->renderer->cmdSetColor(applyTint(btnBodyElemState->textColor,TintColorType::Text));
 		ctx->renderer->cmdSetFont(btnBodyElemState->font);
 		ctx->renderer->pushClipRect(ctx->widget.rect);
 		ctx->renderer->cmdDrawTextInBox(
@@ -246,7 +246,7 @@ bool button(const char* label)
 	return ctx->widget.clicked;
 }
 
-bool iconButtonInternal(HImage icon, HImage disabledIcon, f32 customHeight, bool down, ThemeElement* btnBodyElem, bool focusable)
+bool iconButtonInternal(HImage icon, HImage disabledIcon, f32 customHeight, bool down, ThemeElement* btnBodyElem)
 {
 	auto btnBodyElemState = &btnBodyElem->normalState();
 	Image* iconImg = (Image*)icon;
@@ -275,26 +275,28 @@ bool iconButtonInternal(HImage icon, HImage disabledIcon, f32 customHeight, bool
 	}
 	else if (ctx->widget.pressed || down || isClicked())
 		btnBodyElemState = &btnBodyElem->getState(WidgetStateType::Pressed);
-	else if (ctx->widget.focused && focusable)
+	else if (ctx->widget.focused)
 		btnBodyElemState = &btnBodyElem->getState(WidgetStateType::Focused);
 	else if (ctx->widget.hovered)
 		btnBodyElemState = &btnBodyElem->getState(WidgetStateType::Hovered);
 
 	if (ctx->widget.visible)
 	{
-		ctx->renderer->cmdSetColor(tintColor(btnBodyElemState->color, TintColorType::Body));
+		ctx->renderer->cmdSetColor(applyTint(btnBodyElemState->color, TintColorType::Body));
 		ctx->renderer->cmdDrawImageBordered(btnBodyElemState->image, btnBodyElemState->border, ctx->widget.rect, ctx->scale);
-		ctx->renderer->cmdSetColor(tintColor(btnBodyElemState->textColor, TintColorType::Text));
+		ctx->renderer->cmdSetColor(applyTint(btnBodyElemState->textColor, TintColorType::Text));
 		ctx->renderer->cmdSetFont(btnBodyElemState->font);
 		ctx->renderer->cmdDrawImage(
 			iconImg,
-			{ round(ctx->widget.rect.x + (ctx->widget.rect.width - iconImg->rect.width * ctx->scale) / 2 + pressedIncrement * ctx->scale),
-			round(ctx->widget.rect.y + (ctx->widget.rect.height - iconImg->rect.height * ctx->scale) / 2 + pressedIncrement * ctx->scale),
-			iconImg->rect.width * ctx->scale, iconImg->rect.height * ctx->scale });
+			{
+				round(ctx->widget.rect.x + (ctx->widget.rect.width - iconImg->rect.width * ctx->scale) / 2 + pressedIncrement * ctx->scale),
+				round(ctx->widget.rect.y + (ctx->widget.rect.height - iconImg->rect.height * ctx->scale) / 2 + pressedIncrement * ctx->scale),
+				iconImg->rect.width * ctx->scale,
+				iconImg->rect.height * ctx->scale
+			});
 	}
 
-	if (focusable)
-		setFocusable();
+	setFocusable();
 
 	if (isClicked())
 		forceRepaint();

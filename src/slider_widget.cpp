@@ -84,7 +84,7 @@ bool sliderInternal(const char* id, f32 minVal, f32 maxVal, f32& value, bool use
 	}
 
 	if (draggingKnob
-		&& ctx->currentWidgetId == ctx->widget.focusedWidgetId
+		&& ctx->id == ctx->widget.focusedId
 		&& ctx->isActiveLayer())
 	{
 		f32 x = ctx->mousePosition.x - dragDelta.x;

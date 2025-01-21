@@ -12,7 +12,7 @@ void beginScrollView(f32 size, f32 scrollPos, f32 virtualHeight)
 
 	ctx->scrollViewStack[ctx->scrollViewDepth].size = size /* * ctx->scale*/; //TODO: scale height with UI scale ?
 	ctx->scrollViewStack[ctx->scrollViewDepth].virtualHeight = virtualHeight;
-	ctx->scrollViewStack[ctx->scrollViewDepth].widgetId = ctx->currentWidgetId;
+	ctx->scrollViewStack[ctx->scrollViewDepth].widgetId = ctx->id;
 	ctx->positionStack.push_back(ctx->position);
 	//TODO: scale height with UI scale ?
 	//size *= ctx->scale;
@@ -81,7 +81,7 @@ f32 endScrollView()
 	}
 
 	// auto scroll to the focused widget if curent widget changed
-	if (ctx->focusChanged && ctx->widget.focusedWidgetId == ctx->currentWidgetId)
+	if (ctx->focusChanged && ctx->widget.focusedId == ctx->id)
 	{
 		if (ctx->widget.focusedWidgetRect.y > clipRect.bottom())
 		{
@@ -154,7 +154,7 @@ f32 endScrollView()
 				scrollViewInfo.draggingThumb = true;
 				scrollViewInfo.dragDelta = ctx->mousePosition - rectScrollBarHandle.topLeft();
 				ctx->dragScrollViewHandleWidgetId = scrollViewInfo.widgetId;
-				ctx->widget.focusedWidgetId = ctx->currentWidgetId;
+				ctx->widget.focusedId = ctx->id;
 			}
 			else if (rectScrollBar.contains(ctx->mousePosition))
 			{

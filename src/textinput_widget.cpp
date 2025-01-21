@@ -27,19 +27,19 @@ bool textInput(
 	// use ptr as id
 	pushId((void*)text);
 	addWidgetItem("", fmaxf(bodyElem->normalState().height * ctx->scale, bodyElem->normalState().font->getMetrics().height));
-	ctx->currentWidgetId = hashString(std::to_string((u64)text).c_str());
+	ctx->id = hashString(std::to_string((u64)text).c_str());
 	if (!ctx->focusChanged)
 		buttonBehavior();
 
 	if (ctx->focusChanged
-		&& ctx->currentWidgetId != ctx->widget.focusedWidgetId)
+		&& ctx->id != ctx->widget.focusedId)
 	{
 		ctx->widget.changeEnded = true;
 	}
 
 	auto bodyElemState = &bodyElem->normalState();
 	bool isEditingThis =
-		ctx->currentWidgetId == ctx->textInput.widgetId
+		ctx->id == ctx->textInput.widgetId
 		&& ctx->widget.focused
 		&& ctx->isActiveLayer();
 
@@ -75,7 +75,7 @@ bool textInput(
 	{
 		if (!ctx->textInput.widgetId)
 		{
-			ctx->textInput.widgetId = ctx->currentWidgetId;
+			ctx->textInput.widgetId = ctx->id;
 			isEditingThis = true;
 			ctx->textInput.editNow = true;
 			ctx->textInput.selectAllOnFocus = true;
@@ -85,13 +85,13 @@ bool textInput(
 			ctx->textInput.widgetId = 0;
 			ctx->textInput.editNow = false;
 			isEditingThis = false;
-			ctx->widget.focusedWidgetId = 0;
+			ctx->widget.focusedId = 0;
 			ctx->widget.changeEnded = true;
 		}
 	}
 
 	if (ctx->focusChanged
-		&& ctx->currentWidgetId == ctx->widget.focusedWidgetId)
+		&& ctx->id == ctx->widget.focusedId)
 	{
 		ctx->textInput.editNow = true;
 		isEditingThis = 0 != ctx->textInput.widgetId;
@@ -99,20 +99,20 @@ bool textInput(
 
 		if (isEditingThis)
 		{
-			ctx->textInput.widgetId = ctx->currentWidgetId;
+			ctx->textInput.widgetId = ctx->id;
 		}
 	}
 
 	if (ctx->widget.pressed
-		&& ctx->currentWidgetId != ctx->textInput.widgetId)
+		&& ctx->id != ctx->textInput.widgetId)
 	{
-		ctx->textInput.widgetId = ctx->currentWidgetId;
+		ctx->textInput.widgetId = ctx->id;
 		ctx->textInput.editNow = true;
 		isEditingThis = true;
 		ctx->textInput.selectAllOnFocus = true;
 		ctx->textInput.firstMouseDown = true;
 		ctx->widget.pressed = false;
-		ctx->widget.focusedWidgetPressed = false;
+		ctx->widget.focusedAndPressed = false;
 	}
 
 	if (ctx->textInput.editNow)

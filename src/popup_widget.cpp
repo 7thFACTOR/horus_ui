@@ -156,7 +156,7 @@ void beginPopup(
 		bodyElemState.border,
 		popupRect, ctx->scale);
 
-	popup.widgetId = ctx->currentWidgetId;
+	popup.widgetId = ctx->id;
 
 	popId();
 }
@@ -168,9 +168,9 @@ void endPopup()
 	//TODO: make a better popup move
 	if (ctx->isActiveLayer()
 		&&
-		(ctx->widget.hoveredWidgetId == popup.widgetId
+		(ctx->widget.hoveredId == popup.widgetId
 			|| popup.startedToDrag
-			|| ctx->widget.hoveredWidgetType == WidgetType::Label))
+			|| ctx->widget.hoveredType == WidgetType::Label))
 	{
 		auto rect = Rect(popup.position.x, popup.position.y, popup.width, popup.height);
 
@@ -191,7 +191,7 @@ void endPopup()
 			if (popup.startedToDrag
 				&& popup.lastMouseDownPoint.getDistance(mousePos) >= movePopupMaxDistanceTrigger
 				&& !popup.draggingPopup
-				&& ctx->widget.hoveredWidgetId == popup.widgetId)
+				&& ctx->widget.hoveredId == popup.widgetId)
 			{
 				popup.dragDelta = popup.position - mousePos;
 				// clear the event so other widgets will not use it
@@ -252,7 +252,7 @@ void closePopup()
 		decrementWindowMaxLayerIndex();
 
 	ctx->event.type = InputEvent::Type::None;
-	ctx->widget.focusedWidgetId = 0;
+	ctx->widget.focusedId = 0;
 	skipThisFrame();
 	forceRepaint();
 }

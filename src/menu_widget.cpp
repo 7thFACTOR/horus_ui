@@ -20,7 +20,7 @@ void beginMenuBar()
 		height);
 	ctx->renderer->cmdSetColor(menuBarElem.normalState().color);
 	ctx->renderer->cmdDrawImageBordered(menuBarElem.normalState().image, menuBarElem.normalState().border, ctx->widget.rect, ctx->scale);
-	ctx->currentMenuBarId = ctx->currentWidgetId;
+	ctx->currentMenuBarId = ctx->id;
 }
 
 void endMenuBar()
@@ -59,7 +59,7 @@ bool beginMenuInternal(const char* label, SelectableFlags stateFlags, bool conte
 		ctx->hoveredSimpleMenuItemMenuDepth = ~0;
 		// check if clicked
 		mouseDownOnlyButtonBehavior();
-		auto thisMenuItemId = ctx->currentWidgetId;
+		auto thisMenuItemId = ctx->id;
 
 		if (ctx->activeMenuBarItemWidgetId
 			&& ctx->activeMenuBarItemWidgetId != thisMenuItemId
@@ -78,7 +78,7 @@ bool beginMenuInternal(const char* label, SelectableFlags stateFlags, bool conte
 		if (ctx->widget.pressed
 			|| (contextMenu && ctx->contextMenuClicked))
 		{
-			ctx->activeMenuBarItemWidgetId = ctx->currentWidgetId;
+			ctx->activeMenuBarItemWidgetId = ctx->id;
 			ctx->contextMenuClicked = false;
 
 			if (!contextMenu)
@@ -109,7 +109,7 @@ bool beginMenuInternal(const char* label, SelectableFlags stateFlags, bool conte
 			menuBarItemElemState = menuBarItemElem.getState(WidgetStateType::Pressed);
 		}
 		else if (ctx->widget.hovered
-			&& ctx->widget.hoveredWidgetId == thisMenuItemId)
+			&& ctx->widget.hoveredId == thisMenuItemId)
 		{
 			menuBarItemElemState = menuBarItemElem.getState(WidgetStateType::Hovered);
 		}
@@ -212,7 +212,7 @@ void endMenuInternal(bool contextMenu)
 			ctx->menuDepth = 0;
 			closePopup();
 			ctx->contextMenuActive = false;
-			ctx->widget.focusedWidgetPressed = false;
+			ctx->widget.focusedAndPressed = false;
 			ctx->pressedOnMenuItem = false;
 			ctx->clickedOnASubMenuItem = false;
 			ctx->switchedToAnotherMainMenu = false;
@@ -244,7 +244,7 @@ void endMenuInternal(bool contextMenu)
 			{
 				menu.active = false;
 				closePopup();
-				ctx->widget.focusedWidgetPressed = false;
+				ctx->widget.focusedAndPressed = false;
 				ctx->pressedOnMenuItem = false;
 				ctx->clickedOnASubMenuItem = false;
 			}
@@ -270,7 +270,7 @@ void endMenu()
 
 bool beginContextMenu(ContextMenuFlags flags)
 {
-	WidgetId widgetId = ctx->currentWidgetId;
+	WidgetId widgetId = ctx->id;
 	bool leftButton = has(flags, ContextMenuFlags::AllowLeftClickOpen) ? ctx->event.mouse.button == MouseButton::Left : false;
 
 	if (ctx->event.type == hui::InputEvent::Type::MouseDown
@@ -282,7 +282,7 @@ bool beginContextMenu(ContextMenuFlags flags)
 	{
 		ctx->contextMenuClicked = true;
 		ctx->contextMenuWidgetId = widgetId;
-		ctx->widget.focusedWidgetPressed = false;
+		ctx->widget.focusedAndPressed = false;
 	}
 
 	bool opened = false;
@@ -341,9 +341,9 @@ bool menuItem(const char* label, const char* shortcut, HImage icon, SelectableFl
 	}
 
 	// render menu item bg
-	ctx->renderer->cmdSetColor(tintColor(bodyElemState->color, TintColorType::Body));
+	ctx->renderer->cmdSetColor(applyTint(bodyElemState->color, TintColorType::Body));
 	ctx->renderer->cmdDrawImageBordered(bodyElemState->image, bodyElemState->border, ctx->widget.rect, ctx->scale);
-	ctx->renderer->cmdSetColor(tintColor(bodyElemState->textColor, TintColorType::Text));
+	ctx->renderer->cmdSetColor(applyTint(bodyElemState->textColor, TintColorType::Text));
 
 	// render menu item text
 	ctx->renderer->cmdSetFont(bodyElemState->font);
@@ -361,7 +361,7 @@ bool menuItem(const char* label, const char* shortcut, HImage icon, SelectableFl
 	ctx->renderer->popClipRect();
 
 	// render the shortcut text
-	ctx->renderer->cmdSetColor(tintColor(shortcutElemState->textColor, TintColorType::Text));
+	ctx->renderer->cmdSetColor(applyTint(shortcutElemState->textColor, TintColorType::Text));
 	ctx->renderer->cmdSetFont(shortcutElemState->font);
 	ctx->renderer->pushClipRect(ctx->widget.rect);
 	ctx->renderer->cmdDrawTextInBox(

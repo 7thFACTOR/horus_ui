@@ -8,23 +8,23 @@ namespace hui
 bool beginWindow(const char* id, const char* title, Rect* initialRect, HImage icon)
 {
 	Window* wnd = nullptr;
-	auto iterWnd = ctx->dockingState.windows.find(id);
-	auto iterClosed = ctx->dockingState.closedWindowsRects.find(id);
-	bool wasClosed = iterClosed != ctx->dockingState.closedWindowsRects.end();
+	auto iterWnd = ctx->docking.windows.find(id);
+	auto iterClosed = ctx->docking.closedWindowsRects.find(id);
+	bool wasClosed = iterClosed != ctx->docking.closedWindowsRects.end();
 	auto flags = ctx->nextWindowFlags;
 
 	ctx->nextWindowFlags = WindowFlags::None;
 
 	// if there is no window created, create one
-	if (iterWnd == ctx->dockingState.windows.end() && !wasClosed)
+	if (iterWnd == ctx->docking.windows.end() && !wasClosed)
 	{
 		// find docking info if there is anything there yet
-		auto iter = ctx->dockingState.windowsDockNodeAssignments.find(id);
+		auto iter = ctx->docking.windowsDockNodeAssignments.find(id);
 		DockNode* parentNode = nullptr;
 
-		if (iter != ctx->dockingState.windowsDockNodeAssignments.end())
+		if (iter != ctx->docking.windowsDockNodeAssignments.end())
 		{
-			parentNode = ctx->dockingState.dockNodeIdsMap[iter->second];
+			parentNode = ctx->docking.dockNodeIdsMap[iter->second];
 		}
 
 		wnd = createWindow(id, parentNode, parentNode ? DockType::AsTab : DockType::None, title, initialRect, 0, icon);
@@ -37,7 +37,7 @@ bool beginWindow(const char* id, const char* title, Rect* initialRect, HImage ic
 			return false;
 		}
 
-		wnd = ctx->dockingState.windows[id];
+		wnd = ctx->docking.windows[id];
 		wnd->icon = icon;
 	}
 
@@ -48,10 +48,10 @@ bool beginWindow(const char* id, const char* title, Rect* initialRect, HImage ic
 			&& !wnd->dockNode->parent
 			&& wnd->dockNode->children.empty())
 		{
-			ctx->dockingState.nativeWindowsToDelete.insert(wnd->dockNode->nativeWindow);
-			ctx->dockingState.windowsToDelete.insert(wnd);
-			ctx->dockingState.dockNodesToDelete.insert(wnd->dockNode);
-			ctx->dockingState.closedWindowsRects[id] = wnd->dockNode->rect;
+			ctx->docking.nativeWindowsToDelete.insert(wnd->dockNode->nativeWindow);
+			ctx->docking.windowsToDelete.insert(wnd);
+			ctx->docking.dockNodesToDelete.insert(wnd->dockNode);
+			ctx->docking.closedWindowsRects[id] = wnd->dockNode->rect;
 
 			return false;
 		}
@@ -98,21 +98,21 @@ void setWindowVisible(const char* windowId, bool visible)
 {
 	if (!visible)
 	{
-		auto iter = ctx->dockingState.windows.find(windowId);
+		auto iter = ctx->docking.windows.find(windowId);
 
-		if (iter == ctx->dockingState.windows.end())
+		if (iter == ctx->docking.windows.end())
 			return;
 
-		ctx->dockingState.windowsToDelete.insert(iter->second);
-		ctx->dockingState.closedWindowsRects[windowId] = iter->second->dockNode->rect;
+		ctx->docking.windowsToDelete.insert(iter->second);
+		ctx->docking.closedWindowsRects[windowId] = iter->second->dockNode->rect;
 	}
 	else
 	{
-		auto iter = ctx->dockingState.closedWindowsRects.find(windowId);
+		auto iter = ctx->docking.closedWindowsRects.find(windowId);
 
-		if (iter != ctx->dockingState.closedWindowsRects.end())
+		if (iter != ctx->docking.closedWindowsRects.end())
 		{
-			ctx->dockingState.closedWindowsRects.erase(iter);
+			ctx->docking.closedWindowsRects.erase(iter);
 		}
 	}
 }
@@ -124,24 +124,24 @@ void setNextWindowFlags(WindowFlags flags)
 
 void focusWindow(const char* windowId)
 {
-	auto wndIter = ctx->dockingState.windows.find(windowId);
+	auto wndIter = ctx->docking.windows.find(windowId);
 
-	if (wndIter == ctx->dockingState.windows.end())
+	if (wndIter == ctx->docking.windows.end())
 	{
 		return;
 	}
 
-	ctx->dockingState.focusedWindow = wndIter->second;
+	ctx->docking.focusedWindow = wndIter->second;
 
 	// change the title of the native window to the window tab title, but only if the native window was created automatically by the docking system, do not change title of a native window created by the user
 
-	auto iter = ctx->dockingState.rootNativeWindowDockNodes.find(ctx->dockingState.focusedWindow->dockNode->nativeWindow);
+	auto iter = ctx->docking.rootNativeWindowDockNodes.find(ctx->docking.focusedWindow->dockNode->nativeWindow);
 
-	if (iter != ctx->dockingState.rootNativeWindowDockNodes.end())
+	if (iter != ctx->docking.rootNativeWindowDockNodes.end())
 	{
 		if (iter->second->createdByDockingSystem)
 		{
-			HORUS_INPUT->setWindowTitle(ctx->dockingState.focusedWindow->dockNode->nativeWindow, ctx->dockingState.focusedWindow->title.c_str());
+			HORUS_INPUT->setWindowTitle(ctx->docking.focusedWindow->dockNode->nativeWindow, ctx->docking.focusedWindow->title.c_str());
 		}
 	}
 }
@@ -150,18 +150,18 @@ void dockWindow(const char* windowId, const char* targetWindowId, DockType dockT
 {
 	Window* wnd1 = nullptr, * wnd2 = nullptr;
 
-	auto iterWnd = ctx->dockingState.windows.find(windowId);
+	auto iterWnd = ctx->docking.windows.find(windowId);
 
-	if (iterWnd != ctx->dockingState.windows.end())
+	if (iterWnd != ctx->docking.windows.end())
 	{
 		wnd1 = iterWnd->second;
 	}
 
 	if (targetWindowId)
 	{
-		iterWnd = ctx->dockingState.windows.find(targetWindowId);
+		iterWnd = ctx->docking.windows.find(targetWindowId);
 		
-		if (iterWnd != ctx->dockingState.windows.end())
+		if (iterWnd != ctx->docking.windows.end())
 		{
 			wnd2 = iterWnd->second;
 		}
@@ -212,9 +212,9 @@ Rect getCurrentWindowClientRect()
 
 Rect getWindowClientRect(const char* windowId)
 {
-	auto iter = ctx->dockingState.windows.find(windowId);
+	auto iter = ctx->docking.windows.find(windowId);
 
-	if (iter == ctx->dockingState.windows.end()) return {};
+	if (iter == ctx->docking.windows.end()) return {};
 
 	return (*iter).second->clientRect;
 }

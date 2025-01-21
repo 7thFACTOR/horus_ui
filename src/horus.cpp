@@ -138,7 +138,7 @@ void setNextEnabled(bool enabled)
 
 void setNextFocused()
 {
-	ctx->widget.focusedWidgetPressed = true;
+	ctx->widget.focusedAndPressed = true;
 	ctx->widget.hovered = true;
 	ctx->widget.pressed = true;
 	ctx->widget.focused = true;
@@ -188,21 +188,21 @@ void addWidgetItem(const char* text, f32 height)
 		ctx->position.x += width + ctx->widget.sameLineSpacing * ctx->scale;
 	}
 
-	ctx->extractLabelAndId(text, ctx->widgetLabel, ctx->currentWidgetId);
+	ctx->extractLabelAndId(text, ctx->widgetLabel, ctx->id);
 }
 
 void setFocusable()
 {
-	if (ctx->widget.focusedWidgetId == ctx->currentWidgetId)
+	if (ctx->widget.focusedId == ctx->id)
 	{
 		ctx->widget.focusedWidgetRect = ctx->widget.rect;
 	}
 
 	//TODO: not working since widget id not incremental
-	//if (!ctx->widget.nextFocusableWidgetId
-	//	&& ctx->currentWidgetId > ctx->widget.focusedWidgetId)
+	//if (!ctx->widget.nextFocusableId
+	//	&& ctx->id > ctx->widget.focusedId)
 	//{
-	//	ctx->widget.nextFocusableWidgetId = ctx->currentWidgetId;
+	//	ctx->widget.nextFocusableId = ctx->id;
 	//}
 }
 
@@ -255,10 +255,10 @@ void beginFrame()
 
 	if (ctx->event.window)
 	{
-		if (ctx->event.type == InputEvent::Type::WindowMouseEnter && ctx->event.window != ctx->dockingState.dragIndicatorNativeWindow)
+		if (ctx->event.type == InputEvent::Type::WindowMouseEnter && ctx->event.window != ctx->docking.dragIndicatorNativeWindow)
 			ctx->lastHoveredNativeWindow = ctx->event.window;
 		
-		if (ctx->event.type == InputEvent::Type::WindowMouseLeave && ctx->event.window != ctx->dockingState.dragIndicatorNativeWindow)
+		if (ctx->event.type == InputEvent::Type::WindowMouseLeave && ctx->event.window != ctx->docking.dragIndicatorNativeWindow)
 			ctx->lastHoveredNativeWindow = 0;
 
 		if (ctx->event.type == InputEvent::Type::MouseDown
@@ -266,7 +266,7 @@ void beginFrame()
 			|| ctx->event.type == InputEvent::Type::MouseMove
 			|| ctx->event.type == InputEvent::Type::MouseWheel)
 		{
-			if (ctx->event.window && ctx->event.window != ctx->dockingState.dragIndicatorNativeWindow)
+			if (ctx->event.window && ctx->event.window != ctx->docking.dragIndicatorNativeWindow)
 			{
 				ctx->lastHoveredNativeWindow = ctx->event.window;
 				ctx->mousePosition = ctx->event.mouse.point;
@@ -291,25 +291,25 @@ void beginFrame()
 		&& ctx->event.key.down)
 	{
 		//TODO: wont work now
-		ctx->widget.focusedWidgetId--;
+		ctx->widget.focusedId--;
 		ctx->focusChanged = true;
 
-		if (ctx->widget.focusedWidgetId < 0)
+		if (ctx->widget.focusedId < 0)
 		{
-			ctx->widget.focusedWidgetId = 0;
+			ctx->widget.focusedId = 0;
 		}
 	}
 	else if (ctx->event.type == InputEvent::Type::Key
 		&& ctx->event.key.code == KeyCode::Tab
 		&& ctx->event.key.down)
 	{
-		ctx->widget.focusedWidgetId = ctx->widget.nextFocusableWidgetId;
+		ctx->widget.focusedId = ctx->widget.nextFocusableId;
 		ctx->focusChanged = true;
 
 		//TODO: doesnt work anymore
-		//if (ctx->widget.focusedWidgetId > ctx->maxWidgetId)
+		//if (ctx->widget.focusedId > ctx->maxWidgetId)
 		//{
-		//	ctx->widget.focusedWidgetId = 1;
+		//	ctx->widget.focusedId = 1;
 		//}
 	}
 
@@ -317,13 +317,13 @@ void beginFrame()
 	ctx->skipRenderAndInput = false;
 	ctx->widget.enabled = true;
 	ctx->layerIndex = 0;
-	ctx->widget.nextFocusableWidgetId = 0;
+	ctx->widget.nextFocusableId = 0;
 	ctx->menuDepth = 0;
 	ctx->popupIndex = 0;
 	ctx->menuItemChosen = false;
-	ctx->dragDropState.foundDropTarget = false;
-	ctx->widget.hoveredWidgetId = 0;
-	ctx->widget.hoveredWidgetType = WidgetType::None;
+	ctx->dragDrop.foundDropTarget = false;
+	ctx->widget.hoveredId = 0;
+	ctx->widget.hoveredType = WidgetType::None;
 	ctx->frameCount++;
 	ctx->totalTime += ctx->deltaTime;
 	ctx->pruneUnusedTextTime += ctx->deltaTime;
@@ -351,39 +351,39 @@ void beginFrame()
 
 void deferredDeleteObjects()
 {
-	for (auto& wnd : ctx->dockingState.windowsToDelete)
+	for (auto& wnd : ctx->docking.windowsToDelete)
 	{
-		auto iter = ctx->dockingState.windows.find(wnd->id);
+		auto iter = ctx->docking.windows.find(wnd->id);
 
-		if (iter != ctx->dockingState.windows.end())
+		if (iter != ctx->docking.windows.end())
 		{
-			ctx->dockingState.windows.erase(iter);
+			ctx->docking.windows.erase(iter);
 		}
 
-		ctx->dockingState.closedWindowsRects[wnd->id] = wnd->dockNode->rect;
+		ctx->docking.closedWindowsRects[wnd->id] = wnd->dockNode->rect;
 
-		auto iterWnd = ctx->dockingState.windowsDockNodeAssignments.find(wnd->id);
+		auto iterWnd = ctx->docking.windowsDockNodeAssignments.find(wnd->id);
 
-		if (iterWnd != ctx->dockingState.windowsDockNodeAssignments.end())
+		if (iterWnd != ctx->docking.windowsDockNodeAssignments.end())
 		{
-			ctx->dockingState.windowsDockNodeAssignments.erase(iterWnd);
+			ctx->docking.windowsDockNodeAssignments.erase(iterWnd);
 		}
 
 		delete wnd;
 	}
 
-	for (auto& dn : ctx->dockingState.dockNodesToDelete)
+	for (auto& dn : ctx->docking.dockNodesToDelete)
 	{
 		delete dn;
 	}
 
-	for (auto& wnd : ctx->dockingState.nativeWindowsToDelete)
+	for (auto& wnd : ctx->docking.nativeWindowsToDelete)
 	{
-		auto iter = ctx->dockingState.rootNativeWindowDockNodes.find(wnd);
+		auto iter = ctx->docking.rootNativeWindowDockNodes.find(wnd);
 
-		if (iter != ctx->dockingState.rootNativeWindowDockNodes.end())
+		if (iter != ctx->docking.rootNativeWindowDockNodes.end())
 		{
-			ctx->dockingState.rootNativeWindowDockNodes.erase(iter);
+			ctx->docking.rootNativeWindowDockNodes.erase(iter);
 		}
 
 		auto iter2 = std::find(ctx->nativeWindows.begin(), ctx->nativeWindows.end(), wnd);
@@ -396,9 +396,9 @@ void deferredDeleteObjects()
 		HORUS_INPUT->destroyWindow(wnd);
 	}
 
-	ctx->dockingState.dockNodesToDelete.clear();
-	ctx->dockingState.windowsToDelete.clear();
-	ctx->dockingState.nativeWindowsToDelete.clear();
+	ctx->docking.dockNodesToDelete.clear();
+	ctx->docking.windowsToDelete.clear();
+	ctx->docking.nativeWindowsToDelete.clear();
 }
 
 void endFrame()
@@ -409,17 +409,17 @@ void endFrame()
 	ctx->focusChanged = false;
 	ctx->mouseMoved = false;
 
-	if (ctx->dragDropState.begunDragging
+	if (ctx->dragDrop.begunDragging
 		&& ctx->event.type == InputEvent::Type::MouseUp)
 	{
-		ctx->dragDropState.begunDragging = false;
+		ctx->dragDrop.begunDragging = false;
 	}
 
-	if (ctx->dragDropState.begunDragging)
+	if (ctx->dragDrop.begunDragging)
 	{
-		if (ctx->dragDropState.foundDropTarget)
+		if (ctx->dragDrop.foundDropTarget)
 		{
-			setMouseCursor(ctx->dragDropState.dropAllowedCursor);
+			setMouseCursor(ctx->dragDrop.dropAllowedCursor);
 		}
 		else
 		{
@@ -450,23 +450,23 @@ void update()
 	clearInputEventQueue();
 	ctx->providers->input->processEvents();
 
-	if (ctx->widget.hoveredWidgetId && !ctx->tooltip.show)
+	if (ctx->widget.hoveredId && !ctx->tooltip.show)
 	{
 		ctx->tooltip.timer += ctx->deltaTime;
 	}
 
 	// tooltip handling
-	if (ctx->widget.hoveredWidgetId
-		&& ctx->widget.hoveredWidgetId != ctx->tooltip.widgetId
+	if (ctx->widget.hoveredId
+		&& ctx->widget.hoveredId != ctx->tooltip.widgetId
 		&& ctx->tooltip.timer >= ctx->tooltip.delayToShow)
 	{
-		ctx->tooltip.widgetId = ctx->widget.hoveredWidgetId;
+		ctx->tooltip.widgetId = ctx->widget.hoveredId;
 		ctx->tooltip.show = true;
 		ctx->mustRedraw = true;
 		ctx->tooltip.timer = 0;
 		ctx->tooltip.closeTooltipPopup = false;
 	}
-	else if (!ctx->widget.hoveredWidgetId && ctx->tooltip.show && ctx->tooltip.widgetId)
+	else if (!ctx->widget.hoveredId && ctx->tooltip.show && ctx->tooltip.widgetId)
 	{
 		ctx->tooltip.show = false;
 		ctx->tooltip.widgetId = 0;
@@ -485,7 +485,7 @@ bool hasNothingToDo()
 	return !ctx->mustRedraw
 		&& !ctx->mouseMoved
 		&& !ctx->events.size()
-		&& !ctx->dockingState.dragStarted;
+		&& !ctx->docking.dragStarted;
 }
 
 void setDisableRendering(bool disable)
@@ -574,9 +574,9 @@ static void presentWindow(HNativeWindow wnd)
 	ctx->renderer->setWindowSize(HORUS_INPUT->getWindowSize(wnd));
 	ctx->hoveringThisWindow = ctx->lastHoveredNativeWindow == wnd;
 	
-	auto iterWnd = ctx->dockingState.rootNativeWindowDockNodes.find(wnd);
+	auto iterWnd = ctx->docking.rootNativeWindowDockNodes.find(wnd);
 
-	if (iterWnd != ctx->dockingState.rootNativeWindowDockNodes.end())
+	if (iterWnd != ctx->docking.rootNativeWindowDockNodes.end())
 	{
 		ctx->renderer->begin();
 		dockNodeTabs(iterWnd->second);
@@ -773,14 +773,14 @@ DockNodeId createRootDockNode(HNativeWindow nativeWnd)
 	HORUS_ASSERT(node);
 
 	ctx->nativeWindows.push_back(nativeWnd);
-	ctx->dockingState.dockNodeIdsMap[node->id] = node;
+	ctx->docking.dockNodeIdsMap[node->id] = node;
 
 	return node->id;
 }
 
 void dockLayoutDeleteChildren(DockNodeId rootNodeId)
 {
-	DockNode* node = (DockNode*)ctx->dockingState.dockNodeIdsMap[rootNodeId];
+	DockNode* node = (DockNode*)ctx->docking.dockNodeIdsMap[rootNodeId];
 
 	if (node)
 	{
@@ -790,17 +790,17 @@ void dockLayoutDeleteChildren(DockNodeId rootNodeId)
 
 void dockLayoutSplit(DockNodeId nodeId, DockNodeSplitType splitType, f32 firstNodeSizeUnitPercent, DockNodeId* outNodeId1, DockNodeId* outNodeId2)
 {
-	DockNode* nodeToSplit = ctx->dockingState.dockNodeIdsMap[nodeId];
+	DockNode* nodeToSplit = ctx->docking.dockNodeIdsMap[nodeId];
 	DockNode* newNode1 = new DockNode();
 	DockNode* newNode2 = new DockNode();
 
-	ctx->dockingState.dockNodeIdsMap[newNode1->id] = newNode1;
-	ctx->dockingState.dockNodeIdsMap[newNode2->id] = newNode2;
+	ctx->docking.dockNodeIdsMap[newNode1->id] = newNode1;
+	ctx->docking.dockNodeIdsMap[newNode2->id] = newNode2;
 
 	// find if there is a window assigned to the node to be split, if so, reassign to the new node that has the parent's content
-	auto iterWindow = ctx->dockingState.windowsDockNodeAssignments.begin();
+	auto iterWindow = ctx->docking.windowsDockNodeAssignments.begin();
 
-	while (iterWindow != ctx->dockingState.windowsDockNodeAssignments.end())
+	while (iterWindow != ctx->docking.windowsDockNodeAssignments.end())
 	{
 		if (iterWindow->second == nodeToSplit->id)
 		{
@@ -877,14 +877,14 @@ void dockLayoutSplit(DockNodeId nodeId, DockNodeSplitType splitType, f32 firstNo
 
 void dockLayoutSetNodeWindow(DockNodeId parentNodeId, const char* windowId)
 {
-	DockNode* node = ctx->dockingState.dockNodeIdsMap[parentNodeId];
+	DockNode* node = ctx->docking.dockNodeIdsMap[parentNodeId];
 
-	ctx->dockingState.windowsDockNodeAssignments[windowId] = node->id;
+	ctx->docking.windowsDockNodeAssignments[windowId] = node->id;
 }
 
 void dockLayoutRecalculate()
 {
-	for (auto& pair : ctx->dockingState.rootNativeWindowDockNodes)
+	for (auto& pair : ctx->docking.rootNativeWindowDockNodes)
 	{
 		pair.second->checkRedundancy();
 		pair.second->computeRect();
@@ -1830,7 +1830,7 @@ void popTint()
 	}
 }
 
-Color tintColor(const Color& originalColor, TintColorType type)
+Color applyTint(const Color& originalColor, TintColorType type)
 {
 	Color tintedColor;
 
@@ -1893,7 +1893,7 @@ bool isChangeEnded()
 
 WidgetId getWidgetId()
 {
-	return ctx->currentWidgetId;
+	return ctx->id;
 }
 
 Point getMousePosition()
@@ -1934,32 +1934,32 @@ Point popPosition()
 bool wantsToDragDrop()
 {
 	if (ctx->event.type == InputEvent::Type::MouseDown
-		&& !ctx->dragDropState.draggingIntent
-		&& !ctx->dragDropState.dragging
+		&& !ctx->dragDrop.draggingIntent
+		&& !ctx->dragDrop.dragging
 		&& ctx->widget.hovered)
 	{
-		ctx->dragDropState.draggingIntent = true;
-		ctx->dragDropState.lastMousePos = ctx->mousePosition;
-		ctx->dragDropState.widgetId = ctx->currentWidgetId;
+		ctx->dragDrop.draggingIntent = true;
+		ctx->dragDrop.lastMousePos = ctx->mousePosition;
+		ctx->dragDrop.widgetId = ctx->id;
 	}
 
 	const u32 dragStartPixelDistance = 4;
 
-	if (ctx->dragDropState.draggingIntent
-		&& !ctx->dragDropState.dragging
-		&& ctx->currentWidgetId == ctx->dragDropState.widgetId
-		&& ctx->dragDropState.lastMousePos.getDistance(ctx->mousePosition) >= dragStartPixelDistance)
+	if (ctx->dragDrop.draggingIntent
+		&& !ctx->dragDrop.dragging
+		&& ctx->id == ctx->dragDrop.widgetId
+		&& ctx->dragDrop.lastMousePos.getDistance(ctx->mousePosition) >= dragStartPixelDistance)
 	{
-		ctx->dragDropState.dragging = true;
+		ctx->dragDrop.dragging = true;
 		return true;
 	}
 
 	if (ctx->event.type == InputEvent::Type::MouseUp
-		&& (ctx->dragDropState.draggingIntent ||
-			ctx->dragDropState.dragging))
+		&& (ctx->dragDrop.draggingIntent ||
+			ctx->dragDrop.dragging))
 	{
-		ctx->dragDropState.draggingIntent = false;
-		ctx->dragDropState.dragging = false;
+		ctx->dragDrop.draggingIntent = false;
+		ctx->dragDrop.dragging = false;
 		setMouseCursor(MouseCursorType::Arrow);
 	}
 
@@ -1968,59 +1968,59 @@ bool wantsToDragDrop()
 
 void setDragDropMouseCursor(HMouseCursor dropAllowedCursor)
 {
-	ctx->dragDropState.dropAllowedCursor = dropAllowedCursor;
+	ctx->dragDrop.dropAllowedCursor = dropAllowedCursor;
 }
 
 void beginDragDrop(u32 dragObjectType, void* dragObject)
 {
-	ctx->dragDropState.dragObject = dragObject;
-	ctx->dragDropState.dragObjectType = dragObjectType;
-	ctx->dragDropState.begunDragging = true;
+	ctx->dragDrop.dragObject = dragObject;
+	ctx->dragDrop.dragObjectType = dragObjectType;
+	ctx->dragDrop.begunDragging = true;
 
 	// we want other widgets to get hovered, so kill current one
-	ctx->widget.focusedWidgetPressed = false;
+	ctx->widget.focusedAndPressed = false;
 }
 
 void endDragDrop()
 {
-	ctx->dragDropState.dragging = false;
-	ctx->dragDropState.begunDragging = false;
-	ctx->dragDropState.draggingIntent = false;
-	ctx->dragDropState.dragObject = nullptr;
-	ctx->dragDropState.dragObjectType = 0;
+	ctx->dragDrop.dragging = false;
+	ctx->dragDrop.begunDragging = false;
+	ctx->dragDrop.draggingIntent = false;
+	ctx->dragDrop.dragObject = nullptr;
+	ctx->dragDrop.dragObjectType = 0;
 }
 
 void allowDragDrop()
 {
-	ctx->dragDropState.allowDrop = true;
+	ctx->dragDrop.allowDrop = true;
 
-	if (ctx->dragDropState.begunDragging)
+	if (ctx->dragDrop.begunDragging)
 	{
 		if (ctx->widget.hovered)
 		{
-			ctx->dragDropState.foundDropTarget = true;
+			ctx->dragDrop.foundDropTarget = true;
 		}
 	}
 }
 
 void disallowDragDrop()
 {
-	ctx->dragDropState.allowDrop = false;
+	ctx->dragDrop.allowDrop = false;
 }
 
 bool droppedOnWidget()
 {
-	if (ctx->dragDropState.begunDragging
+	if (ctx->dragDrop.begunDragging
 		&& ctx->hoveringThisWindow
 		&& HORUS_INPUT->getFocusedWindow() != ctx->currentWindow->dockNode->nativeWindow)
 	{
 		ctx->providers->input->raiseWindow(ctx->currentWindow->dockNode->nativeWindow);
 	}
 
-	if (ctx->dragDropState.begunDragging
+	if (ctx->dragDrop.begunDragging
 		&& ctx->widget.hovered
 		&& ctx->event.type == InputEvent::Type::MouseUp
-		&& ctx->dragDropState.allowDrop)
+		&& ctx->dragDrop.allowDrop)
 	{
 		return true;
 	}
@@ -2030,12 +2030,12 @@ bool droppedOnWidget()
 
 void* getDragDropObject()
 {
-	return ctx->dragDropState.dragObject;
+	return ctx->dragDrop.dragObject;
 }
 
 u32 getDragDropObjectType()
 {
-	return ctx->dragDropState.dragObjectType;
+	return ctx->dragDrop.dragObjectType;
 }
 
 }
