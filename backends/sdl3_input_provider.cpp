@@ -877,7 +877,7 @@ void Sdl3InputProvider::createSystemCursors()
 
 void initializeSdl(const SdlInitParams& params)
 {
-	HORUS_ASSERT(getContextSettings().providers.gfx);
+	HORUS_ASSERT(getSettings().providers.gfx);
 	auto sdlProvider = ((Sdl3InputProvider*)HORUS_INPUT);
 	HORUS_ASSERT(sdlProvider);
 	printf("Initializing SDL...\n");

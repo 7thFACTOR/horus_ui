@@ -17,7 +17,7 @@ struct Context
 	ServiceProviders* providers = nullptr;
 	Renderer* renderer = nullptr;
 	UnicodeTextCache* textCache = nullptr;
-	ContextSettings settings;
+	Settings settings;
 
 	// Global general state
 	f32 deltaTime = 0;
@@ -33,7 +33,7 @@ struct Context
 	WindowFlags nextWindowFlags = WindowFlags::None;
 	HNativeWindow lastHoveredNativeWindow = nullptr;
 	bool hoveringThisWindow = false;
-	f32 globalScale = 1.0f;
+	f32 scale = 1.0f;
 	u32 atlasTextureSize = 4096;
 	Point mousePosition;
 
@@ -159,7 +159,7 @@ struct Context
 
 	~Context();
 
-	void initializeGraphics();
+	void initializeRenderer();
 
 	inline bool isActiveLayer() const
 	{

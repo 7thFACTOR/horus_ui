@@ -58,7 +58,7 @@ bool tooltip(const char* text)
 		rc.y -= bodyElemState.border;
 		rc.height += bodyElemState.border * 2;
 		ctx->renderer->cmdDrawImageBordered(
-			bodyElemState.image, bodyElemState.border, rc, ctx->globalScale);
+			bodyElemState.image, bodyElemState.border, rc, ctx->scale);
 		ctx->renderer->popClipRect();
 		ctx->renderer->setZOrder(oldZ);
 

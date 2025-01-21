@@ -14,7 +14,7 @@ void progress(f32 value)
 	const f32 maxValue = 1.0f;
 	value = fmaxf(0, fminf(maxValue, value));
 
-	addWidgetItem("", backElem.normalState().height * ctx->globalScale);
+	addWidgetItem("", backElem.normalState().height * ctx->scale);
 
 	f32 percentFilled = value / maxValue;
 	f32 valueWidth = ctx->widget.rect.width;
@@ -26,17 +26,17 @@ void progress(f32 value)
 	ctx->renderer->cmdDrawImageBordered(backElemState.image, backElemState.border,
 		{
 			ctx->widget.rect.x,
-			ctx->widget.rect.y + (backElemState.height - backElemState.image->rect.height) / 2.0f * ctx->globalScale,
+			ctx->widget.rect.y + (backElemState.height - backElemState.image->rect.height) / 2.0f * ctx->scale,
 			ctx->widget.rect.width,
-			backElemState.image->rect.height * ctx->globalScale }, ctx->globalScale);
+			backElemState.image->rect.height * ctx->scale }, ctx->scale);
 
 	ctx->renderer->cmdSetColor(fillElemState.color);
 	ctx->renderer->cmdDrawImageBordered(fillElemState.image, fillElemState.border,
 		{
 			ctx->widget.rect.x,
-			ctx->widget.rect.y + (backElemState.height - fillElemState.image->rect.height) / 2.0f * ctx->globalScale,
+			ctx->widget.rect.y + (backElemState.height - fillElemState.image->rect.height) / 2.0f * ctx->scale,
 			ctx->widget.rect.width * percentFilled,
-			fillElemState.image->rect.height * ctx->globalScale }, ctx->globalScale);
+			fillElemState.image->rect.height * ctx->scale }, ctx->scale);
 }
 
 }

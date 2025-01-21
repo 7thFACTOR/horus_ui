@@ -16,7 +16,7 @@ bool panel(const char* label, bool* expandedVar)
 	bool changed = false;
 	bool expanded = false;
 
-	addWidgetItem(label, bodyElemState->image->rect.height * ctx->globalScale);
+	addWidgetItem(label, bodyElemState->image->rect.height * ctx->scale);
 
 	// we want to have the panel all the way
 	ctx->widget.rect.x = ctx->penPosition.x;
@@ -63,7 +63,7 @@ bool panel(const char* label, bool* expandedVar)
 	ctx->renderer->cmdSetColor(tintColor(bodyElemState->color, TintColorType::Body));
 	ctx->renderer->cmdDrawImageBordered(
 		bodyElemState->image,
-		bodyElemState->border, ctx->widget.rect, ctx->globalScale);
+		bodyElemState->border, ctx->widget.rect, ctx->scale);
 
 	auto arrowElemState = &panelCollapsedArrow.normalState();
 
@@ -77,18 +77,18 @@ bool panel(const char* label, bool* expandedVar)
 	ctx->renderer->cmdDrawImage(
 		arrowElemState->image,
 		{
-			round(ctx->widget.rect.x + bodyElemState->border * ctx->globalScale),
-			round(ctx->widget.rect.y + (ctx->widget.rect.height - arrowElemState->image->rect.height * ctx->globalScale) / 2.0f),
-			arrowElemState->image->rect.width * ctx->globalScale,
-			arrowElemState->image->rect.height * ctx->globalScale
+			round(ctx->widget.rect.x + bodyElemState->border * ctx->scale),
+			round(ctx->widget.rect.y + (ctx->widget.rect.height - arrowElemState->image->rect.height * ctx->scale) / 2.0f),
+			arrowElemState->image->rect.width * ctx->scale,
+			arrowElemState->image->rect.height * ctx->scale
 		});
 
 	ctx->renderer->cmdSetFont(bodyElemState->font);
 
 	Rect textRect = {
-		ctx->widget.rect.x + bodyElemState->border * ctx->globalScale + arrowElemState->image->rect.width * ctx->globalScale,
+		ctx->widget.rect.x + bodyElemState->border * ctx->scale + arrowElemState->image->rect.width * ctx->scale,
 		ctx->widget.rect.y,
-		ctx->widget.rect.width - bodyElemState->border * ctx->globalScale * 2.0f,
+		ctx->widget.rect.width - bodyElemState->border * ctx->scale * 2.0f,
 		ctx->widget.rect.height
 	};
 

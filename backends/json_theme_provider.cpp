@@ -302,7 +302,7 @@ WidgetStateType widgetStateFromText(const std::string& stateName)
 
 HTheme loadThemeFromJson(const char* filename, char* errorTextBuffer, size_t errorTextBufferSize)
 {
-	HTheme theme = hui::createTheme(hui::getContextSettings().defaultAtlasSize);
+	HTheme theme = hui::createTheme(hui::getSettings().defaultAtlasSize);
 
 	Json::Reader reader;
 	Json::Value root;

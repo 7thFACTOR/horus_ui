@@ -11,7 +11,7 @@ bool check(const char* label, bool* checkVar)
 	auto& checkBodyElem = ctx->theme->getElement(WidgetElementId::CheckBody);
 	auto& checkMarkElem = ctx->theme->getElement(WidgetElementId::CheckMark);
 
-	addWidgetItem(label, checkBodyElem.normalState().height * ctx->globalScale);
+	addWidgetItem(label, checkBodyElem.normalState().height * ctx->scale);
 	buttonBehavior();
 	bool changed = false;
 
@@ -48,7 +48,7 @@ bool check(const char* label, bool* checkVar)
 			round(ctx->widget.rect.y),
 			ctx->widget.rect.height,
 			ctx->widget.rect.height
-		}, ctx->globalScale);
+		}, ctx->scale);
 
 	if (checkVar && *checkVar)
 	{
@@ -57,15 +57,15 @@ bool check(const char* label, bool* checkVar)
 			checkMarkElemState->image,
 			checkMarkElemState->border,
 			{
-				ctx->widget.rect.x + (checkBodyElemState->width - checkMarkElemState->image->rect.width) / 2.0f * ctx->globalScale,
-				ctx->widget.rect.y + (checkBodyElemState->height - checkMarkElemState->image->rect.height) / 2.0f * ctx->globalScale,
-				checkMarkElemState->image->rect.width * ctx->globalScale,
-				checkMarkElemState->image->rect.height * ctx->globalScale
-			}, ctx->globalScale);
+				ctx->widget.rect.x + (checkBodyElemState->width - checkMarkElemState->image->rect.width) / 2.0f * ctx->scale,
+				ctx->widget.rect.y + (checkBodyElemState->height - checkMarkElemState->image->rect.height) / 2.0f * ctx->scale,
+				checkMarkElemState->image->rect.width * ctx->scale,
+				checkMarkElemState->image->rect.height * ctx->scale
+			}, ctx->scale);
 	}
 
 	const f32 bulletTextSpacingParam = checkBodyElem.currentStyle->getParameterValue("bulletTextSpacing", 5);
-	const f32 bulletTextSpacing = bulletTextSpacingParam * ctx->globalScale;
+	const f32 bulletTextSpacing = bulletTextSpacingParam * ctx->scale;
 
 	ctx->renderer->cmdSetColor(checkBodyElemState->textColor);
 	ctx->renderer->cmdSetFont(checkBodyElemState->font);

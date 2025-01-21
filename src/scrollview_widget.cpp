@@ -10,14 +10,14 @@ void beginScrollView(f32 size, f32 scrollPos, f32 virtualHeight)
 	auto& scrollViewElemState = ctx->theme->getElement(WidgetElementId::ScrollViewBody).normalState();
 	auto& scrollViewScrollThumbElemState = ctx->theme->getElement(WidgetElementId::ScrollViewScrollThumb).normalState();
 
-	ctx->scrollViewStack[ctx->scrollViewDepth].size = size /* * ctx->globalScale*/; //TODO: scale height with UI scale ?
+	ctx->scrollViewStack[ctx->scrollViewDepth].size = size /* * ctx->scale*/; //TODO: scale height with UI scale ?
 	ctx->scrollViewStack[ctx->scrollViewDepth].virtualHeight = virtualHeight;
 	ctx->scrollViewStack[ctx->scrollViewDepth].widgetId = ctx->currentWidgetId;
 	ctx->penStack.push_back(ctx->penPosition);
 	//TODO: scale height with UI scale ?
-	//size *= ctx->globalScale;
+	//size *= ctx->scale;
 	const f32 scrollViewPadding = 10;
-	auto internalPadding = scrollViewPadding * ctx->globalScale + (f32)scrollViewElemState.border * ctx->globalScale;
+	auto internalPadding = scrollViewPadding * ctx->scale + (f32)scrollViewElemState.border * ctx->scale;
 
 	Rect rect =
 	{
@@ -34,7 +34,7 @@ void beginScrollView(f32 size, f32 scrollPos, f32 virtualHeight)
 	clipRect.width -= scrollViewScrollThumbElemState.width;
 
 	ctx->renderer->cmdSetColor(scrollViewElemState.color);
-	ctx->renderer->cmdDrawImageBordered(scrollViewElemState.image, scrollViewElemState.border, rect, ctx->globalScale);
+	ctx->renderer->cmdDrawImageBordered(scrollViewElemState.image, scrollViewElemState.border, rect, ctx->scale);
 
 	ctx->scrollViewStack[ctx->scrollViewDepth].scrollPosition = scrollPos;
 	ctx->renderer->pushClipRect(clipRect);
@@ -74,7 +74,7 @@ f32 endScrollView()
 	{
 		if (fullRect.contains(ctx->mousePosition))
 		{
-			scrollAmount = ctx->event.mouse.wheel.y * (clipRect.height * ctx->scrollViewSpeed) * ctx->globalScale;
+			scrollAmount = ctx->event.mouse.wheel.y * (clipRect.height * ctx->scrollViewSpeed) * ctx->scale;
 			scrollPos -= scrollAmount;
 			forceRepaint();
 		}
@@ -120,9 +120,9 @@ f32 endScrollView()
 
 		Rect rectScrollBar =
 		{
-			rect.right() - scrollViewScrollBarElemState.width * ctx->globalScale,
+			rect.right() - scrollViewScrollBarElemState.width * ctx->scale,
 			rect.y,
-			scrollViewScrollBarElemState.width * ctx->globalScale,
+			scrollViewScrollBarElemState.width * ctx->scale,
 			rect.height
 		};
 
@@ -135,9 +135,9 @@ f32 endScrollView()
 
 		Rect rectScrollBarHandle =
 		{
-			rect.right() - scrollViewScrollThumbElemState.width * ctx->globalScale,
+			rect.right() - scrollViewScrollThumbElemState.width * ctx->scale,
 			rect.y + handleOffset,
-			scrollViewScrollThumbElemState.width * ctx->globalScale,
+			scrollViewScrollThumbElemState.width * ctx->scale,
 			handleSize
 		};
 
@@ -213,9 +213,9 @@ f32 endScrollView()
 
 			rectScrollBarHandle =
 			{
-				rect.right() - scrollViewScrollThumbElemState.width * ctx->globalScale,
+				rect.right() - scrollViewScrollThumbElemState.width * ctx->scale,
 				rect.y + handleOffset,
-				scrollViewScrollThumbElemState.width * ctx->globalScale,
+				scrollViewScrollThumbElemState.width * ctx->scale,
 				handleSize
 			};
 		}
@@ -231,11 +231,11 @@ f32 endScrollView()
 
 		// draw scroll bar line
 		ctx->renderer->cmdSetColor(scrollViewElemState.color);
-		ctx->renderer->cmdDrawImageBordered(scrollViewScrollBarElemState.image, scrollViewScrollBarElemState.border, rectScrollBar, ctx->globalScale);
+		ctx->renderer->cmdDrawImageBordered(scrollViewScrollBarElemState.image, scrollViewScrollBarElemState.border, rectScrollBar, ctx->scale);
 
 		// draw scroll bar thumb
 		ctx->renderer->cmdSetColor(scrollViewScrollThumbElemState.color);
-		ctx->renderer->cmdDrawImageBordered(scrollViewScrollThumbElemState.image, scrollViewScrollThumbElemState.border, rectScrollBarHandle, ctx->globalScale);
+		ctx->renderer->cmdDrawImageBordered(scrollViewScrollThumbElemState.image, scrollViewScrollThumbElemState.border, rectScrollBarHandle, ctx->scale);
 	}
 
 	scrollPos = (u32)scrollPos;

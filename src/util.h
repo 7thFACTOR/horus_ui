@@ -3,7 +3,6 @@
 
 namespace hui
 {
-void setEnabled(bool enabled);
 void addWidgetItem(const char* text, f32 height);
 void setFocusable();
 void buttonBehavior(bool menuItem = false);

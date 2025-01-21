@@ -26,7 +26,7 @@ bool textInput(
 
 	// use ptr as id
 	pushId((void*)text);
-	addWidgetItem("", fmaxf(bodyElem->normalState().height * ctx->globalScale, bodyElem->normalState().font->getMetrics().height));
+	addWidgetItem("", fmaxf(bodyElem->normalState().height * ctx->scale, bodyElem->normalState().font->getMetrics().height));
 	ctx->currentWidgetId = hashString(std::to_string((u64)text).c_str());
 	if (!ctx->focusChanged)
 		buttonBehavior();
@@ -152,7 +152,7 @@ bool textInput(
 	}
 
 	ctx->renderer->cmdSetColor(bodyElemState->color);
-	ctx->renderer->cmdDrawImageBordered(bodyElemState->image, bodyElemState->border, ctx->widget.rect, ctx->globalScale);
+	ctx->renderer->cmdDrawImageBordered(bodyElemState->image, bodyElemState->border, ctx->widget.rect, ctx->scale);
 	ctx->renderer->cmdSetColor(bodyElemState->textColor);
 	ctx->renderer->cmdSetFont(bodyElemState->font);
 	ctx->renderer->pushClipRect(clipRect);

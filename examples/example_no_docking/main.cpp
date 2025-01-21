@@ -20,7 +20,7 @@
 int main(int argc, char** args)
 {
 	// Setup a Horus UI context, with given service providers
-	hui::ContextSettings settings;
+	hui::Settings settings;
 
 	settings.providers.file = new hui::StdioFileProvider();
 	settings.providers.fileDialogs = new hui::NativeFileDialogsProvider();
@@ -73,7 +73,7 @@ int main(int argc, char** args)
 	// Start the main loop
 	bool exitNow = false;
 
-	hui::changeGlobalScale(1.0f);
+	hui::changeScale(1.0f);
 
 	while (!exitNow)
 	{
@@ -83,7 +83,7 @@ int main(int argc, char** args)
 		glClear(GL_COLOR_BUFFER_BIT);
 
 		// Get the events from SDL or whatever input provider is set, it will fill a queue of events
-		hui::processInputEvents();
+		hui::update();
 
 		// Check the event count
 		auto eventCount = hui::getInputEventCount();
@@ -103,7 +103,7 @@ int main(int argc, char** args)
 				const int maxPts = 32;
 				hui::Point pts[maxPts] = { 0 };
 				u32 ptCount = 0;
-				hui::Rect rc = { 30, 30, 500*hui::getGlobalScale(), 400 * hui::getGlobalScale() };
+				hui::Rect rc = { 30, 30, 500*hui::getScale(), 400 * hui::getScale() };
 				hui::beginContainer(rc);
 				hui::pushLayoutPadding(10);
 				hui::beginBox(hui::Color::white, hui::WidgetElementId::WindowBody, hui::WidgetStateType::Normal);

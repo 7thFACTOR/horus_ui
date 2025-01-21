@@ -224,7 +224,7 @@ void Context::setSkipRenderAndInput(bool skip)
 	renderer->skipRender = skip;
 }
 
-void Context::initializeGraphics()
+void Context::initializeRenderer()
 {
 	if (!renderer)
 	{

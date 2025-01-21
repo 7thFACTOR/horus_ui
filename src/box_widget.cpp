@@ -13,16 +13,16 @@ void beginBoxInternal(const Color& color, ThemeElement::State& state, f32 custom
 	ctx->layoutStack.back().savedPenPosition = ctx->penPosition;
 	ctx->penStack.push_back(ctx->penPosition);
 	// move with padding
-	ctx->penPosition.x += ctx->layoutPadding * ctx->globalScale + state.border * ctx->globalScale;
+	ctx->penPosition.x += ctx->layoutPadding * ctx->scale + state.border * ctx->scale;
 	ctx->layoutStack.back().position = ctx->penPosition;
 	// take some padding and border from width
-	ctx->layoutStack.back().width = width - (state.border * 2.0f + ctx->layoutPadding * 2.0f) * ctx->globalScale;
-	ctx->layoutStack.back().height = customHeight * ctx->globalScale;
+	ctx->layoutStack.back().width = width - (state.border * 2.0f + ctx->layoutPadding * 2.0f) * ctx->scale;
+	ctx->layoutStack.back().height = customHeight * ctx->scale;
 	ctx->layoutStack.back().themeWidgetElementState = &state;
 	ctx->layoutStack.back().themeElementColorTint = color;
 
 	if (customHeight <= 0.0f)
-		ctx->penPosition.y += state.border * ctx->globalScale;
+		ctx->penPosition.y += state.border * ctx->scale;
 
 	pushDrawCommandIndex();
 }
@@ -57,19 +57,19 @@ bool endBox()
 {
 	auto& boxElemState = ctx->layoutStack.back().themeWidgetElementState;
 	auto contentHeight = ctx->penPosition.y - ctx->layoutStack.back().position.y;
-	contentHeight -= ctx->spacing * ctx->globalScale;
-	contentHeight -= boxElemState->border * ctx->globalScale;
-	auto height = contentHeight + boxElemState->border * 2.0f * ctx->globalScale;
+	contentHeight -= ctx->spacing * ctx->scale;
+	contentHeight -= boxElemState->border * ctx->scale;
+	auto height = contentHeight + boxElemState->border * 2.0f * ctx->scale;
 
 	if (ctx->layoutStack.back().height > 0.0f)
 	{
-		height = ctx->layoutStack.back().height * ctx->globalScale;
+		height = ctx->layoutStack.back().height * ctx->scale;
 	}
 
 	ctx->widget.rect = {
 		ctx->layoutStack.back().savedPenPosition.x,
 		ctx->layoutStack.back().savedPenPosition.y,
-		ctx->layoutStack.back().width + (boxElemState->border * 2.0f + ctx->layoutPadding * 2.0f) * ctx->globalScale,
+		ctx->layoutStack.back().width + (boxElemState->border * 2.0f + ctx->layoutPadding * 2.0f) * ctx->scale,
 		height
 	};
 
@@ -83,14 +83,14 @@ bool endBox()
 		boxElemState->image,
 		boxElemState->border,
 		ctx->widget.rect,
-		ctx->globalScale);
+		ctx->scale);
 	endInsertDrawCommands();
 
 	ctx->penPosition.x = ctx->penStack.back().x;
 
 	if (ctx->layoutStack.back().height <= 0.0f)
 	{
-		ctx->penPosition.y += boxElemState->border * ctx->globalScale;
+		ctx->penPosition.y += boxElemState->border * ctx->scale;
 	}
 
 	ctx->layoutStack.pop_back();

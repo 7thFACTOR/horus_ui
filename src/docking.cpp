@@ -655,7 +655,7 @@ HNativeWindow createNativeWindow(const std::string& title, NativeWindowFlags fla
 
 	if (!ctx->renderer)
 	{
-		ctx->initializeGraphics();
+		ctx->initializeRenderer();
 	}
 
 	ctx->nativeWindows.push_back(wnd);
@@ -1586,7 +1586,7 @@ void dockNodeTabs(DockNode* node)
 		ctx->renderer->popClipRect();
 
 		//TODO: not use ? panes
-		if (ctx->layoutStack.back().width <= (node->windows.size() * (ctx->paneGroupState.tabWidth + ctx->paneGroupState.sideSpacing)) * ctx->globalScale)
+		if (ctx->layoutStack.back().width <= (node->windows.size() * (ctx->paneGroupState.tabWidth + ctx->paneGroupState.sideSpacing)) * ctx->scale)
 		{
 			ctx->paneGroupState.forceTabWidth = ctx->layoutStack.back().width / (f32)node->windows.size();
 			ctx->paneGroupState.forceSqueezeTabs = true;
@@ -2283,9 +2283,9 @@ void handleDockingMouseMove(const InputEvent& event, DockNode* node)
 			{
 				// use width of the images to compute hit box
 				// the guide images are considered to be square
-				auto boxSizeV = ctx->theme->getElement(WidgetElementId::WindowDockGuideVerticalSplit).normalState().image->width * ctx->globalScale * ctx->settings.dockIndicatorBoxScale;
-				auto boxSizeH = ctx->theme->getElement(WidgetElementId::WindowDockGuideHorizontalSplit).normalState().image->width * ctx->globalScale * ctx->settings.dockIndicatorBoxScale;
-				auto boxSizeT = ctx->theme->getElement(WidgetElementId::WindowDockGuideAsTab).normalState().image->width * ctx->globalScale * ctx->settings.dockIndicatorBoxScale;
+				auto boxSizeV = ctx->theme->getElement(WidgetElementId::WindowDockGuideVerticalSplit).normalState().image->width * ctx->scale * ctx->settings.dockIndicatorBoxScale;
+				auto boxSizeH = ctx->theme->getElement(WidgetElementId::WindowDockGuideHorizontalSplit).normalState().image->width * ctx->scale * ctx->settings.dockIndicatorBoxScale;
+				auto boxSizeT = ctx->theme->getElement(WidgetElementId::WindowDockGuideAsTab).normalState().image->width * ctx->scale * ctx->settings.dockIndicatorBoxScale;
 
 				auto boxGap = ctx->settings.dockIndicatorBoxSpacing;
 
@@ -2522,7 +2522,7 @@ void drawDockGuides()
 		dockGuideVerticalSplitHoveredElem.image : dockGuideVerticalSplitNormalElem.image,
 		ds.isHitBoxRootLeftHovered ?
 		dockGuideVerticalSplitHoveredElem.border : dockGuideVerticalSplitNormalElem.border,
-		ds.hitBoxRootLeft, ctx->globalScale);
+		ds.hitBoxRootLeft, ctx->scale);
 
 	ctx->renderer->cmdSetColor(ds.isHitBoxRootRightHovered ? dockGuideVerticalSplitHoveredElem.color : dockGuideVerticalSplitNormalElem.color);
 	ctx->renderer->cmdDrawImage(
@@ -2575,7 +2575,7 @@ void drawDockPreview(Window* window, const Rect& windowRect)
 	}
 
 	ctx->renderer->cmdSetColor(windowElem.color * tintColor);
-	ctx->renderer->cmdDrawImageBordered(windowElem.image, windowElem.border, windowRect, ctx->globalScale);
+	ctx->renderer->cmdDrawImageBordered(windowElem.image, windowElem.border, windowRect, ctx->scale);
 	pushLayoutPadding(0);
 	beginContainer(windowRect);
 	beginTabGroup(0);

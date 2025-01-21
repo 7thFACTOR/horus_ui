@@ -39,7 +39,13 @@ u32 Color::getArgb() const
 
 Color Color::random()
 {
-	return { (f32)rand() / (f32)RAND_MAX, (f32)rand() / (f32)RAND_MAX, (f32)rand() / (f32)RAND_MAX, 1 };
+	return 
+	{
+		(f32)rand() / (f32)RAND_MAX,
+		(f32)rand() / (f32)RAND_MAX,
+		(f32)rand() / (f32)RAND_MAX,
+		1 
+	};
 }
 
 const Color Color::transparent(0, 0, 0, 0);
@@ -68,9 +74,10 @@ const Color Color::gray(0.5f, 0.5f, 0.5f, 1);
 const Color Color::lightGray(0.7f, 0.7f, 0.7f, 1);
 const Color Color::sky(0.f, 0.682f, 0.937f, 1);
 
-HContext createContext(struct ContextSettings& settings)
+HContext createContext(struct Settings& settings)
 {
 	Context* context = new Context();
+	
 	HORUS_ASSERT(context);
 	context->settings = settings;
 	context->providers = &settings.providers;
@@ -89,6 +96,7 @@ HContext createContext(struct ContextSettings& settings)
 
 void setContext(HContext context)
 {
+	HORUS_ASSERT(context);
 	ctx = (Context*)context;
 }
 
@@ -99,24 +107,18 @@ HContext getContext()
 
 void deleteContext(HContext context)
 {
+	HORUS_ASSERT(context);
 	delete (Context*)context;
 }
 
-ContextSettings& getContextSettings()
+Settings& getSettings()
 {
 	return ctx->settings;
 }
 
 void initializeRenderer()
 {
-	ctx->initializeGraphics();
-}
-
-void clearNativeWindowBackground()
-{
-	const auto& windowElemState = ctx->theme->getElement(WidgetElementId::WindowBody).normalState();
-
-	clearBackground(windowElemState.color);
+	ctx->initializeRenderer();
 }
 
 void addRenderCallback(RenderCallback callback)
@@ -129,16 +131,14 @@ void clearBackground(const Color& color)
 	ctx->renderer->cmdClearBackground(color);
 }
 
-void setEnabled(bool enabled)
+void setNextEnabled(bool enabled)
 {
 	ctx->widget.enabled = enabled;
 }
 
-void setFocused()
+void setNextFocused()
 {
 	ctx->widget.focusedWidgetPressed = true;
-	ctx->widget.hoveredWidgetId = ctx->currentWidgetId;
-	ctx->widget.focusedWidgetId = ctx->currentWidgetId;
 	ctx->widget.hovered = true;
 	ctx->widget.pressed = true;
 	ctx->widget.focused = true;
@@ -156,7 +156,7 @@ void addWidgetItem(const char* text, f32 height)
 
 	f32 width = ctx->widget.sameLine ? pixelWidth : (pixelWidth != 0 ? pixelWidth : ctx->layoutStack.back().width);
 	f32 verticalOffset = 0;
-	const f32 totalHeight = ctx->spacing * ctx->globalScale + height;
+	const f32 totalHeight = ctx->spacing * ctx->scale + height;
 
 	if (!ctx->widget.sameLine)
 	{
@@ -185,7 +185,7 @@ void addWidgetItem(const char* text, f32 height)
 	}
 	else
 	{
-		ctx->penPosition.x += width + ctx->widget.sameLineSpacing * ctx->globalScale;
+		ctx->penPosition.x += width + ctx->widget.sameLineSpacing * ctx->scale;
 	}
 
 	ctx->extractLabelAndId(text, ctx->widgetLabel, ctx->currentWidgetId);
@@ -209,13 +209,13 @@ void setFocusable()
 bool viewportImageFitSize(
 	f32 imageWidth, f32 imageHeight,
 	f32 viewWidth, f32 viewHeight,
-	f32& newWidth, f32& newHeight,
+	f32& outNewWidth, f32& outNewHeight,
 	bool ignoreHeight, bool ignoreWidth)
 {
 	f32 aspectRatio = 1.0f;
 
-	newWidth = imageWidth;
-	newHeight = imageHeight;
+	outNewWidth = imageWidth;
+	outNewHeight = imageHeight;
 
 	if (imageWidth <= viewWidth
 		&& imageHeight <= viewHeight)
@@ -223,24 +223,24 @@ bool viewportImageFitSize(
 		return false;
 	}
 
-	if (newWidth >= viewWidth && !ignoreWidth)
+	if (outNewWidth >= viewWidth && !ignoreWidth)
 	{
-		if (newWidth < 0.0001f)
-			newWidth = 0.0001f;
+		if (outNewWidth < 0.0001f)
+			outNewWidth = 0.0001f;
 
-		aspectRatio = (f32)viewWidth / newWidth;
-		newWidth = viewWidth;
-		newHeight *= aspectRatio;
+		aspectRatio = (f32)viewWidth / outNewWidth;
+		outNewWidth = viewWidth;
+		outNewHeight *= aspectRatio;
 	}
 
-	if (newHeight >= viewHeight && !ignoreHeight)
+	if (outNewHeight >= viewHeight && !ignoreHeight)
 	{
-		if (newHeight < 0.0001f)
-			newHeight = 0.0001f;
+		if (outNewHeight < 0.0001f)
+			outNewHeight = 0.0001f;
 
-		aspectRatio = (f32)viewHeight / newHeight;
-		newHeight = viewHeight;
-		newWidth *= aspectRatio;
+		aspectRatio = (f32)viewHeight / outNewHeight;
+		outNewHeight = viewHeight;
+		outNewWidth *= aspectRatio;
 	}
 
 	return true;
@@ -290,6 +290,7 @@ void beginFrame()
 		&& !!(ctx->event.key.modifiers, KeyModifiers::Shift)
 		&& ctx->event.key.down)
 	{
+		//TODO: wont work now
 		ctx->widget.focusedWidgetId--;
 		ctx->focusChanged = true;
 
@@ -400,8 +401,6 @@ void deferredDeleteObjects()
 	ctx->dockingState.dockNodesToDelete.clear();
 	ctx->dockingState.windowsToDelete.clear();
 	ctx->dockingState.nativeWindowsToDelete.clear();
-
-	//debugWindows();
 }
 
 void endFrame()
@@ -448,11 +447,14 @@ void endFrame()
 	ctx->penStack.clear();
 }
 
-void update(f32 deltaTime)
+void update()
 {
+	clearInputEventQueue();
+	ctx->providers->input->processEvents();
+
 	if (ctx->widget.hoveredWidgetId && !ctx->tooltip.show)
 	{
-		ctx->tooltip.timer += deltaTime;
+		ctx->tooltip.timer += ctx->deltaTime;
 	}
 
 	// tooltip handling
@@ -573,19 +575,16 @@ static void presentWindow(HNativeWindow wnd)
 	ctx->renderer->setCurrentNativeWindow(wnd);
 	ctx->renderer->setWindowSize(HORUS_INPUT->getWindowSize(wnd));
 	ctx->hoveringThisWindow = ctx->lastHoveredNativeWindow == wnd;
-	ctx->renderer->begin();
-	dockNodeTabs(ctx->dockingState.rootNativeWindowDockNodes[wnd]);
-	ctx->renderer->end();
-	ctx->renderer->executeDrawCommands(wnd);
-	HORUS_INPUT->presentWindow(wnd);
-}
+	
+	auto iterWnd = ctx->dockingState.rootNativeWindowDockNodes.find(wnd);
 
-static void presentUserNativeWindow(HNativeWindow wnd)
-{
-	HORUS_INPUT->setCurrentWindow(wnd);
-	ctx->renderer->setCurrentNativeWindow(wnd);
-	ctx->renderer->setWindowSize(HORUS_INPUT->getWindowSize(wnd));
-	ctx->hoveringThisWindow = ctx->lastHoveredNativeWindow == wnd;
+	if (iterWnd != ctx->dockingState.rootNativeWindowDockNodes.end())
+	{
+		ctx->renderer->begin();
+		dockNodeTabs(iterWnd->second);
+		ctx->renderer->end();
+	}
+
 	ctx->renderer->executeDrawCommands(wnd);
 	HORUS_INPUT->presentWindow(wnd);
 }
@@ -595,9 +594,7 @@ void present()
 	// first, delete pending objects so we dont access them
 	deferredDeleteObjects();
 
-	bool allowRendering = !ctx->renderer->disableRendering && !ctx->renderer->skipRender;
-
-	if (allowRendering)
+	if (ctx->renderer->allowRendering())
 	{
 		for (auto& wnd : ctx->nativeWindows)
 		{
@@ -615,11 +612,9 @@ void presentNativeWindow(HNativeWindow nativeWnd)
 	// first, delete pending objects so we dont access them
 	deferredDeleteObjects();
 
-	bool allowRendering = !ctx->renderer->disableRendering && !ctx->renderer->skipRender;
-
-	if (allowRendering)
+	if (ctx->renderer->allowRendering())
 	{
-		presentUserNativeWindow(nativeWnd);
+		presentNativeWindow(nativeWnd);
 	}
 
 	ctx->renderer->resetWindowContexts();
@@ -648,12 +643,12 @@ void setMouseMoved(bool moved)
 	ctx->mouseMoved = moved;
 }
 
-u32 getInputEventCount()
+size_t getInputEventCount()
 {
 	return ctx->events.size();
 }
 
-InputEvent getInputEventAt(u32 index)
+InputEvent getInputEventAt(size_t index)
 {
 	return ctx->events[index];
 }
@@ -695,6 +690,7 @@ HImage loadImage(const char* filename)
 
 HImage createImage(Rgba32* pixels, u32 width, u32 height)
 {
+	HORUS_ASSERT(ctx->theme);
 	auto img = ctx->theme->addImage(pixels, width, height);
 
 	return img;
@@ -702,6 +698,7 @@ HImage createImage(Rgba32* pixels, u32 width, u32 height)
 
 Point getImageSize(HImage image)
 {
+	HORUS_ASSERT(image);
 	Image* img = (Image*)image;
 
 	return { img->rect.width, img->rect.height };
@@ -709,6 +706,8 @@ Point getImageSize(HImage image)
 
 void updateImagePixels(HImage image, Rgba32* pixels)
 {
+	HORUS_ASSERT(image);
+	HORUS_ASSERT(pixels);
 	Image* img = (Image*)image;
 
 	//TODO: check if image is rotated
@@ -729,6 +728,7 @@ ImageData loadImageData(const char* filename)
 
 void deleteImage(HImage image)
 {
+	HORUS_ASSERT(image);
 	Image* img = (Image*)image;
 	img->atlas->deleteImage(img);
 }
@@ -754,6 +754,7 @@ void deleteAtlas(HAtlas atlas)
 
 HImage addAtlasImage(HAtlas atlas, const ImageData& img)
 {
+	HORUS_ASSERT(atlas);
 	Atlas* atlasPtr = (Atlas*)atlas;
 
 	return atlasPtr->addImage((const Rgba32*)img.pixels, img.width, img.height);
@@ -761,6 +762,7 @@ HImage addAtlasImage(HAtlas atlas, const ImageData& img)
 
 bool packAtlas(HAtlas atlas, u32 border)
 {
+	HORUS_ASSERT(atlas);
 	Atlas* atlasPtr = (Atlas*)atlas;
 
 	return atlasPtr->pack(border);
@@ -783,7 +785,9 @@ void dockLayoutDeleteChildren(DockNodeId rootNodeId)
 	DockNode* node = (DockNode*)ctx->dockingState.dockNodeIdsMap[rootNodeId];
 
 	if (node)
+	{
 		node->removeWindowsAndDeleteChildrenRecursive();
+	}
 }
 
 void dockLayoutSplit(DockNodeId nodeId, DockNodeSplitType splitType, f32 firstNodeSizeUnitPercent, DockNodeId* outNodeId1, DockNodeId* outNodeId2)
@@ -887,14 +891,6 @@ void dockLayoutRecalculate()
 		pair.second->checkRedundancy();
 		pair.second->computeRect();
 	}
-}
-
-void processInputEvents()
-{
-	ctx->event = {};
-	clearInputEventQueue();
-	ctx->providers->input->processEvents();
-	hui::update(getFrameDeltaTime());
 }
 
 void setFrameDeltaTime(f32 dt)
@@ -1108,7 +1104,6 @@ void setWidgetStyle(WidgetType widgetType, const char* styleName)
 	}
 }
 
-
 void setWidgetElementStyle(WidgetElementId widgetElementId, const char* styleName)
 {
 	HORUS_ASSERT(ctx);
@@ -1234,7 +1229,7 @@ void getThemeUserWidgetElementInfo(const char* userElementName, WidgetStateType 
 	if (iter == ctx->theme->userElements.end())
 		return;
 
-	auto elemState = iter->second->getStyleState(styleName, state);
+	auto& elemState = iter->second->getStyleState(styleName, state);
 
 	outInfo.border = elemState.border;
 	outInfo.color = elemState.color;
@@ -1316,32 +1311,43 @@ const Color& getThemeUserWidgetElementColorParameter(HTheme theme, const char* u
 
 HFont createThemeFont(HTheme theme, const char* name, const char* fontFilename, u32 faceSize)
 {
-	auto fnt = (HFont)((Theme*)theme)->fontCache->createFont(name, fontFilename, faceSize * ctx->globalScale, false);
-	//TODO: check first if there is already set
-	((Theme*)theme)->fonts[name] = (Font*)fnt;
+	Theme* themePtr = (Theme*)theme;
+	auto fnt = (HFont)themePtr->fontCache->createFont(name, fontFilename, faceSize * ctx->scale, false);
+	
+	auto fontIter = themePtr->fonts.find(name);
+
+	if (fontIter != themePtr->fonts.end())
+	{
+		themePtr->fontCache->releaseFont(fontIter->second);
+		themePtr->fonts.erase(fontIter);
+	}
+
+	themePtr->fonts[name] = (Font*)fnt;
 
 	return fnt;
 }
 
 void releaseThemeFont(HTheme theme, HFont font)
 {
-	for (auto& fntPair : ((Theme*)theme)->fonts)
+	Theme* themePtr = (Theme*)theme;
+
+	for (auto& fntPair : themePtr->fonts)
 	{
 		if (fntPair.second == (Font*)font)
 		{
-			((Theme*)theme)->fonts.erase(fntPair.first);
+			themePtr->fonts.erase(fntPair.first);
 			break;
 		}
 	}
 
-	((Theme*)theme)->fontCache->releaseFont((Font*)font);
+	themePtr->fontCache->releaseFont((Font*)font);
 }
 
 HFont getThemeFont(HTheme theme, const char* themeFontName)
 {
-	Theme* themeObj = (Theme*)theme;
+	Theme* themePtr = (Theme*)theme;
 
-	return themeObj->fonts[themeFontName];
+	return themePtr->fonts[themeFontName];
 }
 
 HFont getFont(const char* themeFontName)
@@ -1402,7 +1408,7 @@ void popId()
 {
 	if (ctx->idStack.size() <= 1) // 1 because we pushed the initial seed id in the Context constructor
 	{
-		printf("popId used too many times\n");
+		HORUS_LOG("popId used too many times");
 		return;
 	}
 
@@ -1470,9 +1476,9 @@ static void computeColumnsPixelSize(LayoutState& parentLayout, LayoutState& layo
 
 			if (!layout.columnMinSizes.empty())
 			{
-				if (pixelSize < layout.columnMinSizes[i] * ctx->globalScale)
+				if (pixelSize < layout.columnMinSizes[i] * ctx->scale)
 				{
-					pixelSize = layout.columnMinSizes[i] * ctx->globalScale;
+					pixelSize = layout.columnMinSizes[i] * ctx->scale;
 				}
 			}
 
@@ -1512,7 +1518,7 @@ void beginColumns(u32 columnCount, const f32 widths[], const f32 minWidths[], co
 		if (widths)
 		{
 			columns.columnSizes.push_back(widths[i]);
-			columns.columnPixelSizes.push_back(round(widths[i] * ctx->globalScale));
+			columns.columnPixelSizes.push_back(round(widths[i] * ctx->scale));
 		}
 		else
 		{
@@ -1522,12 +1528,12 @@ void beginColumns(u32 columnCount, const f32 widths[], const f32 minWidths[], co
 
 		if (minWidths)
 		{
-			columns.columnMinSizes.push_back(round(minWidths[i] * ctx->globalScale));
+			columns.columnMinSizes.push_back(round(minWidths[i] * ctx->scale));
 		}
 
 		if (maxWidths)
 		{
-			columns.columnMaxSizes.push_back(round(maxWidths[i] * ctx->globalScale));
+			columns.columnMaxSizes.push_back(round(maxWidths[i] * ctx->scale));
 		}
 	}
 
@@ -1541,9 +1547,7 @@ void beginColumns(u32 columnCount, const f32 widths[], const f32 minWidths[], co
 void beginEqualColumns(u32 columnCount, const f32 minWidths[], const f32 maxWidths[])
 {
 	std::vector<f32> colWidths(columnCount);
-
 	f32 columnPercentSize = 1.0f / (f32)columnCount;
-
 
 	for (u32 i = 0; i < columnCount; i++)
 	{
@@ -1650,7 +1654,11 @@ void nextColumn()
 
 Rect getColumnRect()
 {
-	return Rect(ctx->lastColumnRect.x, ctx->lastColumnRect.y, ctx->lastColumnRect.width, ctx->lastColumnRect.height);
+	return Rect(
+		ctx->lastColumnRect.x,
+		ctx->lastColumnRect.y,
+		ctx->lastColumnRect.width,
+		ctx->lastColumnRect.height);
 }
 
 void endColumns()
@@ -1665,7 +1673,7 @@ void columnHeader(const char* label, f32 width, f32 preferredWidth, f32 minWidth
 	ctx->widget.rect = {
 		ctx->layoutStack.back().position.x + ctx->columnPadding,
 		ctx->layoutStack.back().position.y,
-		ctx->layoutStack.back().width - ctx->columnPadding * 2.0f * ctx->globalScale,
+		ctx->layoutStack.back().width - ctx->columnPadding * 2.0f * ctx->scale,
 		headerElemState.height
 	};
 
@@ -1673,14 +1681,13 @@ void columnHeader(const char* label, f32 width, f32 preferredWidth, f32 minWidth
 
 	Rect rcText = ctx->widget.rect;
 
-	rcText.x += 5.0f * ctx->globalScale;
+	rcText.x += 5.0f * ctx->scale;
 
 	ctx->renderer->cmdSetColor(headerElemState.color);
-	ctx->renderer->cmdDrawImageBordered(headerElemState.image, headerElemState.border, ctx->widget.rect, ctx->globalScale);
+	ctx->renderer->cmdDrawImageBordered(headerElemState.image, headerElemState.border, ctx->widget.rect, ctx->scale);
 	ctx->renderer->cmdSetColor(headerElemState.textColor);
 	ctx->renderer->cmdSetFont(headerElemState.font);
 	ctx->renderer->cmdDrawTextInBox(ctx->widgetLabel.c_str(), rcText, HAlignType::Left, VAlignType::Center);
-
 }
 
 void pushLayoutPadding(f32 newPadding)
@@ -1730,7 +1737,7 @@ void popSpacing()
 
 void pushColumnSpacing(f32 newSpacing)
 {
-	ctx->columnSpacingStack.push_back(ctx->spacing);
+	ctx->columnSpacingStack.push_back(ctx->columnSpacing);
 	ctx->columnSpacing = newSpacing;
 }
 
@@ -1763,9 +1770,9 @@ f32 getColumnPadding()
 	return ctx->columnPadding;
 }
 
-void changeGlobalScale(f32 scale)
+void changeScale(f32 scale)
 {
-	ctx->globalScale = scale;
+	ctx->scale = scale;
 
 	if (ctx->theme)
 	{
@@ -1774,9 +1781,9 @@ void changeGlobalScale(f32 scale)
 	}
 }
 
-f32 getGlobalScale()
+f32 getScale()
 {
-	return ctx->globalScale;
+	return ctx->scale;
 }
 
 void pushTint(const Color& color, TintColorType type, TintColorOpType opType)
@@ -1904,7 +1911,7 @@ bool wantsToDragDrop()
 		ctx->dragDropState.widgetId = ctx->currentWidgetId;
 	}
 
-	const int dragStartPixelDistance = 4;
+	const u32 dragStartPixelDistance = 4;
 
 	if (ctx->dragDropState.draggingIntent
 		&& !ctx->dragDropState.dragging

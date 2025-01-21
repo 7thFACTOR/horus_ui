@@ -11,7 +11,7 @@ namespace hui
 void beginMenuBar()
 {
 	auto& menuBarElem = ctx->theme->getElement(WidgetElementId::MenuBarBody);
-	f32 height = menuBarElem.normalState().height * ctx->globalScale;
+	f32 height = menuBarElem.normalState().height * ctx->scale;
 
 	ctx->widget.rect.set(
 		round(ctx->penPosition.x),
@@ -19,14 +19,14 @@ void beginMenuBar()
 		ctx->layoutStack.back().width,
 		height);
 	ctx->renderer->cmdSetColor(menuBarElem.normalState().color);
-	ctx->renderer->cmdDrawImageBordered(menuBarElem.normalState().image, menuBarElem.normalState().border, ctx->widget.rect, ctx->globalScale);
+	ctx->renderer->cmdDrawImageBordered(menuBarElem.normalState().image, menuBarElem.normalState().border, ctx->widget.rect, ctx->scale);
 	ctx->currentMenuBarId = ctx->currentWidgetId;
 }
 
 void endMenuBar()
 {
 	auto& menuBarElemState = ctx->theme->getElement(WidgetElementId::MenuBarBody).normalState();
-	f32 height = menuBarElemState.height * ctx->globalScale;
+	f32 height = menuBarElemState.height * ctx->scale;
 
 	ctx->penPosition.x = ctx->layoutStack.back().position.x;
 	ctx->penPosition.y += height;
@@ -48,12 +48,12 @@ bool beginMenuInternal(const char* label, SelectableFlags stateFlags, bool conte
 		//TODO: externalize this
 		const f32 leftIndent = 20;
 
-		f32 width = (leftIndent + std::fmaxf(fsize.width, menuBarItemElemState.width)) * ctx->globalScale;
-		f32 height = menuBarItemElemState.height * ctx->globalScale;
+		f32 width = (leftIndent + std::fmaxf(fsize.width, menuBarItemElemState.width)) * ctx->scale;
+		f32 height = menuBarItemElemState.height * ctx->scale;
 
 		ctx->widget.rect.set(
 			round(ctx->penPosition.x),
-			round(ctx->penPosition.y + menuBarItemElemState.height * ctx->globalScale - height),
+			round(ctx->penPosition.y + menuBarItemElemState.height * ctx->scale - height),
 			width,
 			height);
 		ctx->hoveredSimpleMenuItemMenuDepth = ~0;
@@ -117,7 +117,7 @@ bool beginMenuInternal(const char* label, SelectableFlags stateFlags, bool conte
 		if (!contextMenu)
 		{
 			ctx->renderer->cmdSetColor(menuBarItemElemState.color);
-			ctx->renderer->cmdDrawImageBordered(menuBarItemElemState.image, menuBarItemElemState.border, ctx->widget.rect, ctx->globalScale);
+			ctx->renderer->cmdDrawImageBordered(menuBarItemElemState.image, menuBarItemElemState.border, ctx->widget.rect, ctx->scale);
 			ctx->renderer->cmdSetFont(menuBarItemElemState.font);
 			ctx->renderer->cmdSetColor(menuBarItemElemState.textColor);
 			ctx->renderer->cmdDrawTextInBox(label, ctx->widget.rect, HAlignType::Center, VAlignType::Center);
@@ -310,7 +310,7 @@ bool menuItem(const char* label, const char* shortcut, HImage icon, SelectableFl
 	bool hasCheck = !!(stateFlags & SelectableFlags::Checkable);
 	bool isChecked = !!(stateFlags & SelectableFlags::Checked);
 
-	addWidgetItem(label, bodyElem.normalState().height * ctx->globalScale);
+	addWidgetItem(label, bodyElem.normalState().height * ctx->scale);
 	buttonBehavior(true);
 
 	if (
@@ -342,7 +342,7 @@ bool menuItem(const char* label, const char* shortcut, HImage icon, SelectableFl
 
 	// render menu item bg
 	ctx->renderer->cmdSetColor(tintColor(bodyElemState->color, TintColorType::Body));
-	ctx->renderer->cmdDrawImageBordered(bodyElemState->image, bodyElemState->border, ctx->widget.rect, ctx->globalScale);
+	ctx->renderer->cmdDrawImageBordered(bodyElemState->image, bodyElemState->border, ctx->widget.rect, ctx->scale);
 	ctx->renderer->cmdSetColor(tintColor(bodyElemState->textColor, TintColorType::Text));
 
 	// render menu item text
@@ -351,7 +351,7 @@ bool menuItem(const char* label, const char* shortcut, HImage icon, SelectableFl
 	ctx->renderer->cmdDrawTextInBox(
 		ctx->widgetLabel.c_str(),
 		Rect(
-			ctx->widget.rect.x + (ctx->menuItemTextSideSpacing + ctx->menuIconSpace) * ctx->globalScale,
+			ctx->widget.rect.x + (ctx->menuItemTextSideSpacing + ctx->menuIconSpace) * ctx->scale,
 			ctx->widget.rect.y,
 			ctx->widget.rect.width,
 			ctx->widget.rect.height)
@@ -369,7 +369,7 @@ bool menuItem(const char* label, const char* shortcut, HImage icon, SelectableFl
 		Rect(
 			ctx->widget.rect.x,
 			ctx->widget.rect.y,
-			ctx->widget.rect.width - (ctx->menuItemTextSideSpacing) * ctx->globalScale,
+			ctx->widget.rect.width - (ctx->menuItemTextSideSpacing) * ctx->scale,
 			ctx->widget.rect.height)
 		,
 		HAlignType::Right,
@@ -385,10 +385,10 @@ bool menuItem(const char* label, const char* shortcut, HImage icon, SelectableFl
 		auto& rc = ctx->widget.rect;
 
 		auto rcIcon = Rect(
-			rc.x + (ctx->menuIconSpace - noCheckMarkElem.normalState().width) / 2.0f * ctx->globalScale,
-			rc.y + (rc.height - noCheckMarkElem.normalState().image->rect.height * ctx->globalScale) / 2.0f,
-			noCheckMarkElem.normalState().image->rect.width * ctx->globalScale,
-			noCheckMarkElem.normalState().image->rect.height * ctx->globalScale
+			rc.x + (ctx->menuIconSpace - noCheckMarkElem.normalState().width) / 2.0f * ctx->scale,
+			rc.y + (rc.height - noCheckMarkElem.normalState().image->rect.height * ctx->scale) / 2.0f,
+			noCheckMarkElem.normalState().image->rect.width * ctx->scale,
+			noCheckMarkElem.normalState().image->rect.height * ctx->scale
 		);
 
 		ctx->renderer->cmdSetColor(noCheckMarkElem.normalState().color);
@@ -407,10 +407,10 @@ bool menuItem(const char* label, const char* shortcut, HImage icon, SelectableFl
 		Image* iconImg = (Image*)icon;
 
 		auto rcIcon = Rect(
-			rc.x + (ctx->menuIconSpace - iconImg->rect.width) / 2.0f * ctx->globalScale,
-			rc.y + (rc.height - iconImg->rect.height * ctx->globalScale) / 2.0f,
-			iconImg->rect.width * ctx->globalScale,
-			iconImg->rect.height * ctx->globalScale
+			rc.x + (ctx->menuIconSpace - iconImg->rect.width) / 2.0f * ctx->scale,
+			rc.y + (rc.height - iconImg->rect.height * ctx->scale) / 2.0f,
+			iconImg->rect.width * ctx->scale,
+			iconImg->rect.height * ctx->scale
 		);
 
 		ctx->renderer->cmdSetColor(Color::white);
@@ -460,10 +460,10 @@ bool menuItem(const char* label, const char* shortcut, HImage icon, SelectableFl
 		auto& rc = ctx->widget.rect;
 
 		auto rcArrow = Rect(
-			rc.right() - submenuArrowState->image->rect.width * ctx->globalScale,
-			rc.y + (rc.height - submenuArrowState->image->rect.height * ctx->globalScale) / 2.0f,
-			submenuArrowState->image->rect.width * ctx->globalScale,
-			submenuArrowState->image->rect.height * ctx->globalScale
+			rc.right() - submenuArrowState->image->rect.width * ctx->scale,
+			rc.y + (rc.height - submenuArrowState->image->rect.height * ctx->scale) / 2.0f,
+			submenuArrowState->image->rect.width * ctx->scale,
+			submenuArrowState->image->rect.height * ctx->scale
 		);
 
 		ctx->renderer->cmdSetColor(submenuArrowState->color);

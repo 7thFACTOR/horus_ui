@@ -204,10 +204,10 @@ bool button(const char* label)
 		ctx->extractLabelAndId(label, ctx->widgetLabel, ctx->currentWidgetId);
 
 		auto textWidth = btnBodyElem.normalState().font->computeTextSize(ctx->widgetLabel.c_str());
-		ctx->widget.width = (btnBodyElem.normalState().border * 2.0f + textWidth.width) * ctx->globalScale;
+		ctx->widget.width = (btnBodyElem.normalState().border * 2.0f + textWidth.width) * ctx->scale;
 	}
 
-	addWidgetItem(label, btnBodyElem.normalState().height * ctx->globalScale);
+	addWidgetItem(label, btnBodyElem.normalState().height * ctx->scale);
 
 	buttonBehavior();
 
@@ -223,7 +223,7 @@ bool button(const char* label)
 	if (ctx->widget.visible)
 	{
 		ctx->renderer->cmdSetColor(tintColor(btnBodyElemState->color,TintColorType::Body));
-		ctx->renderer->cmdDrawImageBordered(btnBodyElemState->image, btnBodyElemState->border, ctx->widget.rect, ctx->globalScale);
+		ctx->renderer->cmdDrawImageBordered(btnBodyElemState->image, btnBodyElemState->border, ctx->widget.rect, ctx->scale);
 		ctx->renderer->cmdSetColor(tintColor(btnBodyElemState->textColor,TintColorType::Text));
 		ctx->renderer->cmdSetFont(btnBodyElemState->font);
 		ctx->renderer->pushClipRect(ctx->widget.rect);
@@ -263,7 +263,7 @@ bool iconButtonInternal(HImage icon, HImage disabledIcon, f32 customHeight, bool
 	else
 		height = std::max(btnBodyElemState->height, iconImg->rect.height);
 
-	addWidgetItem("", height * ctx->globalScale);
+	addWidgetItem("", height * ctx->scale);
 	buttonBehavior();
 
 	f32 pressedIncrement = 0.0f;
@@ -283,14 +283,14 @@ bool iconButtonInternal(HImage icon, HImage disabledIcon, f32 customHeight, bool
 	if (ctx->widget.visible)
 	{
 		ctx->renderer->cmdSetColor(tintColor(btnBodyElemState->color, TintColorType::Body));
-		ctx->renderer->cmdDrawImageBordered(btnBodyElemState->image, btnBodyElemState->border, ctx->widget.rect, ctx->globalScale);
+		ctx->renderer->cmdDrawImageBordered(btnBodyElemState->image, btnBodyElemState->border, ctx->widget.rect, ctx->scale);
 		ctx->renderer->cmdSetColor(tintColor(btnBodyElemState->textColor, TintColorType::Text));
 		ctx->renderer->cmdSetFont(btnBodyElemState->font);
 		ctx->renderer->cmdDrawImage(
 			iconImg,
-			{ round(ctx->widget.rect.x + (ctx->widget.rect.width - iconImg->rect.width * ctx->globalScale) / 2 + pressedIncrement * ctx->globalScale),
-			round(ctx->widget.rect.y + (ctx->widget.rect.height - iconImg->rect.height * ctx->globalScale) / 2 + pressedIncrement * ctx->globalScale),
-			iconImg->rect.width * ctx->globalScale, iconImg->rect.height * ctx->globalScale });
+			{ round(ctx->widget.rect.x + (ctx->widget.rect.width - iconImg->rect.width * ctx->scale) / 2 + pressedIncrement * ctx->scale),
+			round(ctx->widget.rect.y + (ctx->widget.rect.height - iconImg->rect.height * ctx->scale) / 2 + pressedIncrement * ctx->scale),
+			iconImg->rect.width * ctx->scale, iconImg->rect.height * ctx->scale });
 	}
 
 	if (focusable)

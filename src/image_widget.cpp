@@ -11,22 +11,22 @@ bool image(HImage img, f32 height, HAlignType horizontalAlign, VAlignType vertic
 
 	if (height <= 0)
 	{
-		height = imgPtr->rect.height * ctx->globalScale;
+		height = imgPtr->rect.height * ctx->scale;
 		autoHeight = true;
 	}
 	else
 	{
-		height *= ctx->globalScale;
+		height *= ctx->scale;
 	}
 
-	f32 newWidth = imgPtr->rect.width * ctx->globalScale;
+	f32 newWidth = imgPtr->rect.width * ctx->scale;
 	f32 newHeight = height;
 
 	if (fit == ImageFitType::KeepAspect)
 	{
 		viewportImageFitSize(
-			imgPtr->rect.width * ctx->globalScale,
-			imgPtr->rect.height * ctx->globalScale,
+			imgPtr->rect.width * ctx->scale,
+			imgPtr->rect.height * ctx->scale,
 			ctx->layoutStack.back().width,
 			height, newWidth, newHeight, false, false);
 	}

@@ -22,7 +22,7 @@ void beginPopup(
 	popup.flags = flags;
 
 	if (ctx->popupUseGlobalScale)
-		width *= ctx->globalScale;
+		width *= ctx->scale;
 
 	//ctx->popupUseGlobalScale = true;
 
@@ -126,10 +126,10 @@ void beginPopup(
 	ctx->layoutStack.push_back(LayoutState(LayoutType::Container));
 	ctx->layoutStack.back().position =
 	{
-		pos.x + bodyElemState.border * ctx->globalScale,
-		pos.y + bodyElemState.border * ctx->globalScale
+		pos.x + bodyElemState.border * ctx->scale,
+		pos.y + bodyElemState.border * ctx->scale
 	};
-	ctx->layoutStack.back().width = width - bodyElemState.border * 2 * ctx->globalScale;
+	ctx->layoutStack.back().width = width - bodyElemState.border * 2 * ctx->scale;
 	ctx->layoutStack.back().savedPenPosition = ctx->penPosition;
 	ctx->penPosition = ctx->layoutStack.back().position;
 	ctx->sameLineStack.push_back(ctx->widget.sameLine);
@@ -147,14 +147,14 @@ void beginPopup(
 		ctx->renderer->cmdDrawImageBordered(
 			behindElemState.image,
 			behindElemState.border,
-			ctx->containerRect, ctx->globalScale);
+			ctx->containerRect, ctx->scale);
 	}
 
 	ctx->renderer->cmdSetColor(bodyElemState.color);
 	ctx->renderer->cmdDrawImageBordered(
 		bodyElemState.image,
 		bodyElemState.border,
-		popupRect, ctx->globalScale);
+		popupRect, ctx->scale);
 
 	popup.widgetId = ctx->currentWidgetId;
 
@@ -224,7 +224,7 @@ void endPopup()
 	}
 
 	auto& bodyElemState = ctx->theme->getElement(popup.widgetElementId).normalState();
-	popup.height = (ctx->penPosition.y - ctx->layoutStack.back().position.y) + bodyElemState.border * 2.0f * ctx->globalScale - ctx->spacing * ctx->globalScale;
+	popup.height = (ctx->penPosition.y - ctx->layoutStack.back().position.y) + bodyElemState.border * 2.0f * ctx->scale - ctx->spacing * ctx->scale;
 	
 	ctx->penPosition = ctx->layoutStack.back().savedPenPosition;
 	ctx->containerRect = popup.prevContainerRect;

@@ -76,7 +76,7 @@ bool beginWindow(const char* id, const char* title, Rect* initialRect, HImage ic
 		auto& windowElem = ctx->theme->getElement(WidgetElementId::WindowBody).normalState();
 
 		ctx->renderer->cmdSetColor(windowElem.color);
-		ctx->renderer->cmdDrawImageBordered(windowElem.image, windowElem.border, rc, ctx->globalScale);
+		ctx->renderer->cmdDrawImageBordered(windowElem.image, windowElem.border, rc, ctx->scale);
 	}
 
 	beginContainer(rc);

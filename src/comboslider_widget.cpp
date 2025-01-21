@@ -32,7 +32,7 @@ bool comboSliderInternal(f32& value, f32 minVal, f32 maxVal, bool useRange, f32 
 	// if we're not editing any text of this particular widget id
 	if (!editingText || comboSliderWidgetId != ctx->currentWidgetId)
 	{
-		addWidgetItem("", bodyElem.normalState().height * ctx->globalScale);
+		addWidgetItem("", bodyElem.normalState().height * ctx->scale);
 		buttonBehavior();
 	}
 
@@ -91,9 +91,9 @@ bool comboSliderInternal(f32& value, f32 minVal, f32 maxVal, bool useRange, f32 
 		ctx->textInput.selectAllOnFocus = true;
 		ctx->textInput.firstMouseDown = true;
 		forceRepaint();
-		ctx->penPosition.y -= ctx->spacing * ctx->globalScale + bodyElem.normalState().height;
+		ctx->penPosition.y -= ctx->spacing * ctx->scale + bodyElem.normalState().height;
+		setNextFocused();
 		textInput(text, 64, TextInputValueMode::NumericOnly);
-		setFocused();
 	}
 	else
 	if (editingText && comboSliderWidgetId == ctx->currentWidgetId)
@@ -244,45 +244,45 @@ bool comboSliderInternal(f32& value, f32 minVal, f32 maxVal, bool useRange, f32 
 		}
 
 		ctx->renderer->cmdSetColor(tintColor(bodyElemState->color, TintColorType::Body));
-		ctx->renderer->cmdDrawImageBordered(bodyElemState->image, bodyElemState->border, ctx->widget.rect, ctx->globalScale);
+		ctx->renderer->cmdDrawImageBordered(bodyElemState->image, bodyElemState->border, ctx->widget.rect, ctx->scale);
 		
 		if (useRange)
 		{
 			ctx->renderer->cmdSetColor(tintColor(rangeBarElemState->color, TintColorType::Body));
 			ctx->renderer->cmdDrawImageBordered(rangeBarElemState->image, rangeBarElemState->border,
 				{
-					ctx->widget.rect.x + bodyElemState->border * ctx->globalScale,
-					ctx->widget.rect.bottom() - bodyElemState->border * ctx->globalScale,
-					(valueWidth - bodyElemState->border * 2.0f * ctx->globalScale) * percentFilled,
-					rangeBarElemState->height * ctx->globalScale,
+					ctx->widget.rect.x + bodyElemState->border * ctx->scale,
+					ctx->widget.rect.bottom() - bodyElemState->border * ctx->scale,
+					(valueWidth - bodyElemState->border * 2.0f * ctx->scale) * percentFilled,
+					rangeBarElemState->height * ctx->scale,
 				},
-				ctx->globalScale);
+				ctx->scale);
 		}
 
 		ctx->renderer->cmdSetColor(tintColor(leftArrowElemState->color, TintColorType::Body));
 
 		// dial down the height, since its already global scaled
-		auto arrowY = ((ctx->widget.rect.height / ctx->globalScale - leftArrowElemState->image->rect.height) / 2.0f + (ctx->widget.pressed ? 1.0f : 0.0f)) * ctx->globalScale;
+		auto arrowY = ((ctx->widget.rect.height / ctx->scale - leftArrowElemState->image->rect.height) / 2.0f + (ctx->widget.pressed ? 1.0f : 0.0f)) * ctx->scale;
 
 		ctx->renderer->cmdDrawImage(leftArrowElemState->image,
 			{
-				ctx->widget.rect.x + bodyElemState->border + (ctx->widget.pressed ? 1.0f : 0.0f) * ctx->globalScale,
+				ctx->widget.rect.x + bodyElemState->border + (ctx->widget.pressed ? 1.0f : 0.0f) * ctx->scale,
 				ctx->widget.rect.top() + arrowY,
-				leftArrowElemState->image->rect.width * ctx->globalScale,
-				leftArrowElemState->image->rect.height * ctx->globalScale
+				leftArrowElemState->image->rect.width * ctx->scale,
+				leftArrowElemState->image->rect.height * ctx->scale
 			});
 
 		ctx->renderer->cmdSetColor(tintColor(rightArrowElemState->color, TintColorType::Body));
 
 		// dial down the height, since its already global scaled
-		arrowY = ((ctx->widget.rect.height / ctx->globalScale - rightArrowElemState->image->rect.height) / 2.0f + (ctx->widget.pressed ? 1.0f : 0.0f)) * ctx->globalScale;
+		arrowY = ((ctx->widget.rect.height / ctx->scale - rightArrowElemState->image->rect.height) / 2.0f + (ctx->widget.pressed ? 1.0f : 0.0f)) * ctx->scale;
 
 		ctx->renderer->cmdDrawImage(rightArrowElemState->image,
 			{
-				ctx->widget.rect.right() - bodyElemState->border - (rightArrowElemState->image->rect.width - (ctx->widget.pressed ? 1.0f : 0.0f)) * ctx->globalScale,
+				ctx->widget.rect.right() - bodyElemState->border - (rightArrowElemState->image->rect.width - (ctx->widget.pressed ? 1.0f : 0.0f)) * ctx->scale,
 				ctx->widget.rect.top() + arrowY,
-				rightArrowElemState->image->rect.width * ctx->globalScale,
-				rightArrowElemState->image->rect.height * ctx->globalScale
+				rightArrowElemState->image->rect.width * ctx->scale,
+				rightArrowElemState->image->rect.height * ctx->scale
 			});
 
 		char outStr[64];

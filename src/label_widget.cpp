@@ -20,7 +20,7 @@ bool labelInternal(const char* label, HAlignType horizontalAlign, Font* font)
 		ctx->penPosition.y,
 		width, height };
 
-	addWidgetItem(label, rect.height * ctx->globalScale);
+	addWidgetItem(label, rect.height * ctx->scale);
 	buttonBehavior();
 
 	if (ctx->widget.hoveredWidgetId == ctx->currentWidgetId)

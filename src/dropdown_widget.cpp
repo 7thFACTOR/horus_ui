@@ -12,7 +12,7 @@ bool dropdown(const char* id, i32& selectedIndex, const char** items, u32 itemCo
 	auto& bodyElem = ctx->theme->getElement(WidgetElementId::DropdownBody);
 	auto& arrowElem = ctx->theme->getElement(WidgetElementId::DropdownArrow);
 
-	addWidgetItem(id, bodyElem.normalState().height * ctx->globalScale);
+	addWidgetItem(id, bodyElem.normalState().height * ctx->scale);
 	buttonBehavior();
 
 	auto bodyElemState = &bodyElem.normalState();
@@ -35,18 +35,18 @@ bool dropdown(const char* id, i32& selectedIndex, const char** items, u32 itemCo
 	}
 
 	ctx->renderer->cmdSetColor(tintColor(bodyElemState->color, TintColorType::Body));
-	ctx->renderer->cmdDrawImageBordered(bodyElemState->image, bodyElemState->border, ctx->widget.rect, ctx->globalScale);
+	ctx->renderer->cmdDrawImageBordered(bodyElemState->image, bodyElemState->border, ctx->widget.rect, ctx->scale);
 	ctx->renderer->cmdSetColor(tintColor(arrowElemState->color, TintColorType::Body));
 
 	// dial down the height, since its already global scaled
-	auto arrowY = ((ctx->widget.rect.height / ctx->globalScale - arrowElemState->image->rect.height) / 2.0f + (ctx->widget.pressed ? 1.0f : 0.0f)) * ctx->globalScale;
+	auto arrowY = ((ctx->widget.rect.height / ctx->scale - arrowElemState->image->rect.height) / 2.0f + (ctx->widget.pressed ? 1.0f : 0.0f)) * ctx->scale;
 
 	ctx->renderer->cmdDrawImage(arrowElemState->image,
 		{
-			ctx->widget.rect.right() - (arrowElemState->image->rect.width - (ctx->widget.pressed ? 1.0f : 0.0f)) * ctx->globalScale,
+			ctx->widget.rect.right() - (arrowElemState->image->rect.width - (ctx->widget.pressed ? 1.0f : 0.0f)) * ctx->scale,
 			ctx->widget.rect.top() + arrowY,
-			arrowElemState->image->rect.width * ctx->globalScale,
-			arrowElemState->image->rect.height * ctx->globalScale
+			arrowElemState->image->rect.width * ctx->scale,
+			arrowElemState->image->rect.height * ctx->scale
 		});
 
 	const char* selectedItemText = nullptr;
@@ -57,7 +57,7 @@ bool dropdown(const char* id, i32& selectedIndex, const char** items, u32 itemCo
 	}
 
 	// add the border of the body element
-	ctx->widget.rect.x += bodyElemState->border * ctx->globalScale;
+	ctx->widget.rect.x += bodyElemState->border * ctx->scale;
 
 	const auto& posForPopup = ctx->widget.rect.bottomLeft();
 

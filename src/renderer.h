@@ -223,6 +223,7 @@ public:
 	void beginDrawCmdInsertion(u32 index) { currentWindowContext->drawCmdNextInsertIndex = index; }
 	void endDrawCmdInsertion() { currentWindowContext->drawCmdNextInsertIndex = ~0; }
 	void resetWindowContexts();
+	inline bool allowRendering() const { return !disableRendering && !skipRender; }
 
 	// Commands
 	void cmdCallback(RenderCallback callback);

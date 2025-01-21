@@ -11,7 +11,7 @@ bool radio(const char* label, i32* currentRadioValue, i32 thisValue)
 	auto& radioBodyElem = ctx->theme->getElement(WidgetElementId::RadioBody);
 	auto& radioMarkElem = ctx->theme->getElement(WidgetElementId::RadioMark);
 
-	addWidgetItem(label, radioBodyElem.normalState().height * ctx->globalScale);
+	addWidgetItem(label, radioBodyElem.normalState().height * ctx->scale);
 	buttonBehavior();
 	bool changed = false;
 
@@ -46,9 +46,9 @@ bool radio(const char* label, i32* currentRadioValue, i32 thisValue)
 		{
 			ctx->widget.rect.x,
 			ctx->widget.rect.y,
-			radioBodyElemState->width * ctx->globalScale,
+			radioBodyElemState->width * ctx->scale,
 			ctx->widget.rect.height
-		}, ctx->globalScale);
+		}, ctx->scale);
 
 	if (currentRadioValue && *currentRadioValue == thisValue)
 	{
@@ -56,15 +56,15 @@ bool radio(const char* label, i32* currentRadioValue, i32 thisValue)
 		ctx->renderer->cmdDrawImageBordered(
 			radioMarkElemState->image, radioMarkElemState->border,
 			{
-				ctx->widget.rect.x + (radioBodyElemState->width - radioMarkElemState->image->rect.width) / 2.0f * ctx->globalScale,
-				ctx->widget.rect.y + (radioBodyElemState->height - radioMarkElemState->image->rect.height) / 2.0f * ctx->globalScale,
-				radioMarkElemState->image->rect.width * ctx->globalScale,
-				radioMarkElemState->image->rect.height * ctx->globalScale
-			}, ctx->globalScale);
+				ctx->widget.rect.x + (radioBodyElemState->width - radioMarkElemState->image->rect.width) / 2.0f * ctx->scale,
+				ctx->widget.rect.y + (radioBodyElemState->height - radioMarkElemState->image->rect.height) / 2.0f * ctx->scale,
+				radioMarkElemState->image->rect.width * ctx->scale,
+				radioMarkElemState->image->rect.height * ctx->scale
+			}, ctx->scale);
 	}
 
 	const f32 bulletTextSpacingParam = radioBodyElem.currentStyle->getParameterValue("bulletTextSpacing", 5);
-	const f32 bulletTextSpacing = bulletTextSpacingParam * ctx->globalScale;
+	const f32 bulletTextSpacing = bulletTextSpacingParam * ctx->scale;
 
 	ctx->renderer->cmdSetColor(radioBodyElemState->textColor);
 	ctx->renderer->cmdSetFont(radioBodyElemState->font);

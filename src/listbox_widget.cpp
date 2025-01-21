@@ -40,7 +40,7 @@ bool selectableInternal(const char* label, HFont font, SelectableFlags stateFlag
 
 	addWidgetItem(label, fmaxf(
 		bodyElem.normalState().height,
-		fnt->getMetrics().height) * ctx->globalScale);
+		fnt->getMetrics().height) * ctx->scale);
 	buttonBehavior();
 
 	auto bodyElemState = &bodyElem.normalState();
@@ -56,7 +56,7 @@ bool selectableInternal(const char* label, HFont font, SelectableFlags stateFlag
 	{
 		ctx->renderer->pushClipRect(ctx->widget.rect);
 		ctx->renderer->cmdSetColor(tintColor(bodyElemState->color, TintColorType::Body));
-		ctx->renderer->cmdDrawImageBordered(bodyElemState->image, bodyElemState->border, ctx->widget.rect, ctx->globalScale);
+		ctx->renderer->cmdDrawImageBordered(bodyElemState->image, bodyElemState->border, ctx->widget.rect, ctx->scale);
 		ctx->renderer->cmdSetColor(tintColor(bodyElemState->textColor, TintColorType::Text));
 		ctx->renderer->cmdSetFont(fnt);
 		ctx->renderer->cmdDrawTextInBox(

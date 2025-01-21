@@ -141,14 +141,14 @@ inline enumBasicType fromFlags(T x) { return (enumBasicType)x; };
 template <typename T> inline T toFlags(int x) { return (T)x; };
 
 // Some shortcuts for the service providers
-#define HORUS_FILE hui::getContextSettings().providers.file
-#define HORUS_FILEDIALOGS hui::getContextSettings().providers.fileDialogs
-#define HORUS_GFX hui::getContextSettings().providers.gfx
-#define HORUS_INPUT hui::getContextSettings().providers.input
-#define HORUS_UTF hui::getContextSettings().providers.utf
-#define HORUS_IMAGE hui::getContextSettings().providers.image
-#define HORUS_FONT hui::getContextSettings().providers.font
-#define HORUS_RECTPACK hui::getContextSettings().providers.rectPack
+#define HORUS_FILE hui::getSettings().providers.file
+#define HORUS_FILEDIALOGS hui::getSettings().providers.fileDialogs
+#define HORUS_GFX hui::getSettings().providers.gfx
+#define HORUS_INPUT hui::getSettings().providers.input
+#define HORUS_UTF hui::getSettings().providers.utf
+#define HORUS_IMAGE hui::getSettings().providers.image
+#define HORUS_FONT hui::getSettings().providers.font
+#define HORUS_RECTPACK hui::getSettings().providers.rectPack
 
 typedef void* HImage;
 typedef void* HTheme;
@@ -1591,7 +1591,7 @@ struct DisplayInfo
 };
 
 /// Various HorusUI per-context global settings
-struct ContextSettings
+struct Settings
 {
 	ServiceProviders providers;
 	TextCachePruneMode textCachePruneMode = TextCachePruneMode::Time; /// how to prune the unicode text cache which is not used for a while
@@ -2048,10 +2048,9 @@ struct UtfProvider
 //////////////////////////////////////////////////////////////////////////
 
 /// Create a new HorusUI context
-/// \param customInputProvider a custom input provider which will handle input and windowing
-/// \param customGfxProvider a custom graphics provider which will handle rendering of the UI
+/// \param settings context settings
 /// \return the created context handle
-HORUS_API HContext createContext(struct ContextSettings& settings);
+HORUS_API HContext createContext(struct Settings& settings);
 
 /// Set the current context
 /// \param ctx the context
@@ -2065,12 +2064,9 @@ HORUS_API HContext getContext();
 HORUS_API void deleteContext(HContext ctx);
 
 /// \return the context settings reference so you can modify them in realtime
-HORUS_API ContextSettings& getContextSettings();
+HORUS_API Settings& getSettings();
 
 HORUS_API void initializeRenderer();
-
-/// Gather and process the input events, including window events, called in a main loop
-HORUS_API void processInputEvents();
 
 /// Set the current frame time delta. Used for tooltips and other timed things.
 /// Must be called continuously in the main loop. If initializeWithSDL is used, no need to call it, the SDL input provider will update it.
@@ -2080,6 +2076,8 @@ HORUS_API void setFrameDeltaTime(f32 dt);
 /// \return delta time in seconds
 HORUS_API f32 getFrameDeltaTime();
 
+HORUS_API void update();
+
 /// Begin a frame which means the rendering of UI across one or many windows. This must be called first when rendering UI
 HORUS_API void beginFrame();
 
@@ -2088,8 +2086,6 @@ HORUS_API void endFrame();
 
 HORUS_API void addRenderCallback(RenderCallback callback);
 
-/// Clear the current OS window background with the color found in the current theme
-HORUS_API void clearNativeWindowBackground();
 HORUS_API void clearBackground(const Color& color);
 
 /// \return true if there is nothing to do in the UI (like redrawing or layout computations), used to not render continuously when its not needed, for applications that do not need realtime continuous rendering
@@ -2129,11 +2125,11 @@ HORUS_API void addInputEvent(const InputEvent& event);
 HORUS_API void setMouseMoved(bool moved);
 
 /// \return the input event count in the event queue
-HORUS_API u32 getInputEventCount();
+HORUS_API size_t getInputEventCount();
 
 /// \return the input event at the index
 /// \param index the event index (maximum is getInputEventCount())
-HORUS_API InputEvent getInputEventAt(u32 index);
+HORUS_API InputEvent getInputEventAt(size_t index);
 
 /// Set the current input event, usually called by input providers
 /// \param event the event to be set
@@ -2528,10 +2524,10 @@ HORUS_API f32 getColumnPadding();
 
 /// Set the global UI scale, this will scale all the elements from widgets to text, but not the docking views rectangles
 /// \param scale a value between 0 and N, no higher limit, but use with consideration
-HORUS_API void changeGlobalScale(f32 scale);
+HORUS_API void changeScale(f32 scale);
 
 /// \return the current global UI scale
-HORUS_API f32 getGlobalScale();
+HORUS_API f32 getScale();
 
 /// Push and set a new tinting color on stack, to colorize the next widget on specific parts
 /// \param color the tint color
@@ -2629,10 +2625,10 @@ HORUS_API MessageBoxButtons messageBox(
 
 /// Set the next widget as enabled or not
 /// \param enabled if true, the widget is enabled for input
-HORUS_API void setEnabled(bool enabled);
+HORUS_API void setNextEnabled(bool enabled);
 
 /// Set next widget as focused
-HORUS_API void setFocused();
+HORUS_API void setNextFocused();
 
 /// Draw a button widget
 /// \param label the button text

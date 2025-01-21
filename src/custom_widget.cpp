@@ -140,7 +140,7 @@ void drawBorderedImage(HImage image, u32 border, const Rect& rect)
 {
 	Image* img = (Image*)image;
 
-	ctx->renderer->cmdDrawImageBordered(img, border, Rect(rect.x + ctx->renderer->viewportOffset.x, rect.y + ctx->renderer->viewportOffset.y, rect.width, rect.height), ctx->globalScale);
+	ctx->renderer->cmdDrawImageBordered(img, border, Rect(rect.x + ctx->renderer->viewportOffset.x, rect.y + ctx->renderer->viewportOffset.y, rect.width, rect.height), ctx->scale);
 }
 
 void setLineStyle(const LineStyle& style)

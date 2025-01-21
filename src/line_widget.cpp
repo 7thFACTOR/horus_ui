@@ -9,24 +9,24 @@ void line()
 {
 	auto& bodyElemState = ctx->theme->getElement(WidgetElementId::LineBody).normalState();
 
-	addWidgetItem("", bodyElemState.image->rect.height * ctx->globalScale);
+	addWidgetItem("", bodyElemState.image->rect.height * ctx->scale);
 	ctx->renderer->cmdSetColor(bodyElemState.color);
 	ctx->renderer->cmdDrawImageBordered(bodyElemState.image, bodyElemState.border,
 		{
 			ctx->widget.rect.x,
 			ctx->widget.rect.y,
 			ctx->widget.rect.width,
-			ctx->widget.rect.height }, ctx->globalScale);
+			ctx->widget.rect.height }, ctx->scale);
 }
 
 void gap(f32 size)
 {
-	ctx->penPosition.y += size * ctx->globalScale;
+	ctx->penPosition.y += size * ctx->scale;
 }
 
 void space()
 {
-	ctx->penPosition.y += ctx->spacing * ctx->globalScale;
+	ctx->penPosition.y += ctx->spacing * ctx->scale;
 }
 
 void beginSameLine(f32 spacing)
