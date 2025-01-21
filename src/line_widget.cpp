@@ -21,12 +21,12 @@ void line()
 
 void gap(f32 size)
 {
-	ctx->penPosition.y += size * ctx->scale;
+	ctx->position.y += size * ctx->scale;
 }
 
 void space()
 {
-	ctx->penPosition.y += ctx->spacing * ctx->scale;
+	ctx->position.y += ctx->spacing * ctx->scale;
 }
 
 void beginSameLine(f32 spacing)
@@ -46,7 +46,7 @@ void beginSameLine(f32 spacing)
 
 	//// only a root same line can start a new line, the others will just follow
 	//if (ctx->sameLineInfoIndexStack.size() <= 1)
-	//	ctx->penPosition.x = ctx->layoutStack.back().position.x;
+	//	ctx->position.x = ctx->layoutStack.back().position.x;
 
 	// push current line index to stack, so we recover it
 	ctx->sameLineInfoIndexStack.push_back(ctx->sameLineInfoIndex);
@@ -67,7 +67,7 @@ void endSameLine()
 		ctx->widget.sameLine = false;
 
 	if (!ctx->sameLineInfoIndexStack.size())
-		ctx->penPosition.y += ctx->sameLineInfo[ctx->sameLineInfoIndex].lineHeight;
+		ctx->position.y += ctx->sameLineInfo[ctx->sameLineInfoIndex].lineHeight;
 	else
 	{
 		//TODO: not working here, needs a proper stack

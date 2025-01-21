@@ -9,7 +9,7 @@ Rect beginViewport(f32 height)
 {
 	if (height <= 0)
 	{
-		height = ctx->layoutStack.back().height - (ctx->penPosition.y - ctx->layoutStack.back().position.y);
+		height = ctx->layoutStack.back().height - (ctx->position.y - ctx->layoutStack.back().position.y);
 	}
 
 	addWidgetItem("", height);

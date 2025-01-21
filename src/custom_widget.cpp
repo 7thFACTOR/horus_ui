@@ -13,7 +13,7 @@ Rect beginCustomWidget(const char* id, f32 height)
 {
 	if (height <= 0)
 	{
-		height = ctx->layoutStack.back().height - (ctx->penPosition.y - ctx->layoutStack.back().position.y);
+		height = ctx->layout.height - (ctx->position.y - ctx->layout.savedPosition.y);
 	}
 
 	addWidgetItem(id, height);
@@ -30,8 +30,8 @@ Point getParentSize()
 {
 	Point pt;
 
-	pt.x = ctx->layoutStack.back().width;
-	pt.y = ctx->layoutStack.back().height;
+	pt.x = ctx->layout.width;
+	pt.y = ctx->layout.height;
 
 	return pt;
 }

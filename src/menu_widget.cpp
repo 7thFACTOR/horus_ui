@@ -14,8 +14,8 @@ void beginMenuBar()
 	f32 height = menuBarElem.normalState().height * ctx->scale;
 
 	ctx->widget.rect.set(
-		round(ctx->penPosition.x),
-		round(ctx->penPosition.y),
+		round(ctx->position.x),
+		round(ctx->position.y),
 		ctx->layoutStack.back().width,
 		height);
 	ctx->renderer->cmdSetColor(menuBarElem.normalState().color);
@@ -28,8 +28,8 @@ void endMenuBar()
 	auto& menuBarElemState = ctx->theme->getElement(WidgetElementId::MenuBarBody).normalState();
 	f32 height = menuBarElemState.height * ctx->scale;
 
-	ctx->penPosition.x = ctx->layoutStack.back().position.x;
-	ctx->penPosition.y += height;
+	ctx->position.x = ctx->layoutStack.back().position.x;
+	ctx->position.y += height;
 	ctx->currentMenuBarId = 0;
 }
 
@@ -52,8 +52,8 @@ bool beginMenuInternal(const char* label, SelectableFlags stateFlags, bool conte
 		f32 height = menuBarItemElemState.height * ctx->scale;
 
 		ctx->widget.rect.set(
-			round(ctx->penPosition.x),
-			round(ctx->penPosition.y + menuBarItemElemState.height * ctx->scale - height),
+			round(ctx->position.x),
+			round(ctx->position.y + menuBarItemElemState.height * ctx->scale - height),
 			width,
 			height);
 		ctx->hoveredSimpleMenuItemMenuDepth = ~0;
@@ -121,8 +121,8 @@ bool beginMenuInternal(const char* label, SelectableFlags stateFlags, bool conte
 			ctx->renderer->cmdSetFont(menuBarItemElemState.font);
 			ctx->renderer->cmdSetColor(menuBarItemElemState.textColor);
 			ctx->renderer->cmdDrawTextInBox(label, ctx->widget.rect, HAlignType::Center, VAlignType::Center);
-			ctx->penPosition.x += width;
-			ctx->penPosition.x = round(ctx->penPosition.x);
+			ctx->position.x += width;
+			ctx->position.x = round(ctx->position.x);
 		}
 
 		if (ctx->activeMenuBarItemWidgetId == thisMenuItemId

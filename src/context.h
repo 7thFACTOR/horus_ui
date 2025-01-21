@@ -24,7 +24,6 @@ struct Context
 	f32 totalTime = 0;
 	u32 frameCount = 0;
 	f32 pruneUnusedTextTime = 0; //TODO: maybe make it frames
-	u32 currentWindowIndex = 0;
 	WidgetId currentWidgetId = 0;
 	bool mustRedraw = false;
 	bool focusChanged = false;
@@ -45,6 +44,7 @@ struct Context
 	TextInputState textInput;
 	std::vector<TextLineState> textLines;
 	WidgetState widget;
+	WidgetId id = 42;
 	std::vector<WidgetId> idStack;
 	std::unordered_map<WidgetId, WidgetBoolState> widgetBoolState;
 	std::vector<f32> sameLineWidthStack;
@@ -105,20 +105,17 @@ struct Context
 	Theme* theme = nullptr;
 	std::vector<Theme*> themes;
 
-	// Containers
-	Rect containerRect;
-	Point penPosition;
+	LayoutState layout;
 	std::vector<LayoutState> layoutStack;
 	Rect lastColumnRect;
-	std::vector<f32> layoutPaddingStack;
-	std::vector<f32> columnPaddingStack;
+	std::vector<f32> paddingStack;
 	std::vector<f32> spacingStack;
 	std::vector<f32> columnSpacingStack;
-	f32 layoutPadding = 10;
-	f32 columnPadding = 0;
+	f32 padding = 10;
 	f32 columnSpacing = 4;
 	f32 spacing = 4;
-	std::vector<Point> penStack;
+	Point position = { 0, 0 };
+	std::vector<Point> positionStack;
 
 	// Tabbing/focusing
 	TabIndex currentTabIndex = 0;

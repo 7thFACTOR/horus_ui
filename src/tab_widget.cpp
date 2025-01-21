@@ -16,8 +16,8 @@ void beginTabGroup(TabIndex selectedIndex)
 	f32 height = tabGroupElemState.height * ctx->scale;
 
 	ctx->widget.rect.set(
-		round(ctx->penPosition.x),
-		round(ctx->penPosition.y),
+		round(ctx->position.x),
+		round(ctx->position.y),
 		ctx->layoutStack.back().width + ctx->settings.dockNodeSpacing, // extend so we can draw the dock spacing on right
 		height);
 
@@ -27,8 +27,8 @@ void beginTabGroup(TabIndex selectedIndex)
 	ctx->renderer->cmdSetColor(tabGroupElemState.color);
 	ctx->renderer->pushClipRect(
 		{
-			round(ctx->penPosition.x),
-			round(ctx->penPosition.y),
+			round(ctx->position.x),
+			round(ctx->position.y),
 			ctx->layoutStack.back().width + ctx->settings.dockNodeSpacing, // extend so we cover the dock spacing on right
 			ctx->layoutStack.back().height + ctx->settings.dockNodeSpacing + 1 // extend so we can draw the dock spacing on bottom
 		});
@@ -74,9 +74,9 @@ TabIndex endTabGroup()
 	auto& tabGroupElemState = ctx->theme->getElement(WidgetElementId::TabGroupBody).normalState();
 	f32 height = tabGroupElemState.height * ctx->scale;
 
-	ctx->penPosition.x = ctx->layoutStack.back().position.x;
-	ctx->penPosition.y += height;
-	ctx->penPosition.y = round(ctx->penPosition.y);
+	ctx->position.x = ctx->layoutStack.back().position.x;
+	ctx->position.y += height;
+	ctx->position.y = round(ctx->position.y);
 	ctx->renderer->popClipRect();
 
 	if (ctx->event.type == InputEvent::Type::MouseDown)
@@ -117,12 +117,12 @@ void tab(const char* label, HImage icon)
 	f32 height = tabElemState->height * ctx->scale;
 
 	ctx->widget.rect.set(
-		round(ctx->penPosition.x),
-		round(ctx->penPosition.y + tabGroupElemState.height * ctx->scale - height),
+		round(ctx->position.x),
+		round(ctx->position.y + tabGroupElemState.height * ctx->scale - height),
 		width,
 		height);
-	ctx->penPosition.x += width;
-	ctx->penPosition.x = round(ctx->penPosition.x);
+	ctx->position.x += width;
+	ctx->position.x = round(ctx->position.x);
 
 	mouseDownOnlyButtonBehavior();
 

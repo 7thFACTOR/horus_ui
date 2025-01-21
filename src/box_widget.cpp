@@ -7,22 +7,22 @@ namespace hui
 {
 void beginBoxInternal(const Color& color, ThemeElement::State& state, f32 customHeight)
 {
-	const auto width = ctx->layoutStack.back().width;
+	const auto parentWidth = ctx->layout.width;
 
-	ctx->layoutStack.push_back(LayoutState(LayoutType::Container));
-	ctx->layoutStack.back().savedPenPosition = ctx->penPosition;
-	ctx->penStack.push_back(ctx->penPosition);
+	pushLayout();
+	ctx->layout.type = LayoutType::Container;
+	ctx->layout.savedPosition = ctx->position;
+
 	// move with padding
-	ctx->penPosition.x += ctx->layoutPadding * ctx->scale + state.border * ctx->scale;
-	ctx->layoutStack.back().position = ctx->penPosition;
-	// take some padding and border from width
-	ctx->layoutStack.back().width = width - (state.border * 2.0f + ctx->layoutPadding * 2.0f) * ctx->scale;
-	ctx->layoutStack.back().height = customHeight * ctx->scale;
-	ctx->layoutStack.back().themeWidgetElementState = &state;
-	ctx->layoutStack.back().themeElementColorTint = color;
+	ctx->position.x += ctx->padding * ctx->scale + state.border * ctx->scale;
+	// take some padding and border from parentWidth
+	ctx->layout.width = parentWidth - (state.border * 2.0f + ctx->padding * 2.0f) * ctx->scale;
+	ctx->layout.height = customHeight * ctx->scale;
+	ctx->layout.themeWidgetElementState = &state;
+	ctx->layout.themeElementColorTint = color;
 
 	if (customHeight <= 0.0f)
-		ctx->penPosition.y += state.border * ctx->scale;
+		ctx->position.y += state.border * ctx->scale;
 
 	pushDrawCommandIndex();
 }
@@ -55,29 +55,30 @@ void beginBox(
 
 bool endBox()
 {
-	auto& boxElemState = ctx->layoutStack.back().themeWidgetElementState;
-	auto contentHeight = ctx->penPosition.y - ctx->layoutStack.back().position.y;
+	auto& boxElemState = ctx->layout.themeWidgetElementState;
+	auto contentHeight = ctx->position.y - ctx->layout.savedPosition.y;
 	contentHeight -= ctx->spacing * ctx->scale;
 	contentHeight -= boxElemState->border * ctx->scale;
 	auto height = contentHeight + boxElemState->border * 2.0f * ctx->scale;
 
-	if (ctx->layoutStack.back().height > 0.0f)
+	if (ctx->layout.height > 0.0f)
 	{
-		height = ctx->layoutStack.back().height * ctx->scale;
+		height = ctx->layout.height * ctx->scale;
 	}
 
 	ctx->widget.rect = {
-		ctx->layoutStack.back().savedPenPosition.x,
-		ctx->layoutStack.back().savedPenPosition.y,
-		ctx->layoutStack.back().width + (boxElemState->border * 2.0f + ctx->layoutPadding * 2.0f) * ctx->scale,
+		ctx->layout.savedPosition.x,
+		ctx->layout.savedPosition.y,
+		ctx->layout.width + (boxElemState->border * 2.0f + ctx->padding * 2.0f) * ctx->scale,
 		height
 	};
 
 	buttonBehavior();
 
+	// insert box draw commands at previous saved draw cmd index
 	auto cmdIndex = popDrawCommandIndex();
 	beginInsertDrawCommands(cmdIndex);
-	ctx->renderer->cmdSetColor(boxElemState->color * ctx->layoutStack.back().themeElementColorTint);
+	ctx->renderer->cmdSetColor(boxElemState->color * ctx->layout.themeElementColorTint);
 	ctx->renderer->cmdSetAtlas(ctx->theme->atlas);
 	ctx->renderer->cmdDrawImageBordered(
 		boxElemState->image,
@@ -86,15 +87,14 @@ bool endBox()
 		ctx->scale);
 	endInsertDrawCommands();
 
-	ctx->penPosition.x = ctx->penStack.back().x;
+	ctx->position.x = ctx->layout.savedPosition.x;
 
-	if (ctx->layoutStack.back().height <= 0.0f)
+	if (ctx->layout.height <= 0.0f)
 	{
-		ctx->penPosition.y += boxElemState->border * ctx->scale;
+		ctx->position.y += boxElemState->border * ctx->scale;
 	}
 
-	ctx->layoutStack.pop_back();
-	ctx->penStack.pop_back();
+	popLayout();
 
 	return ctx->widget.pressed;
 }

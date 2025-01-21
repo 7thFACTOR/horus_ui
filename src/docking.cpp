@@ -1586,9 +1586,9 @@ void dockNodeTabs(DockNode* node)
 		ctx->renderer->popClipRect();
 
 		//TODO: not use ? panes
-		if (ctx->layoutStack.back().width <= (node->windows.size() * (ctx->paneGroupState.tabWidth + ctx->paneGroupState.sideSpacing)) * ctx->scale)
+		if (ctx->layout.width <= (node->windows.size() * (ctx->paneGroupState.tabWidth + ctx->paneGroupState.sideSpacing)) * ctx->scale)
 		{
-			ctx->paneGroupState.forceTabWidth = ctx->layoutStack.back().width / (f32)node->windows.size();
+			ctx->paneGroupState.forceTabWidth = ctx->layout.width / (f32)node->windows.size();
 			ctx->paneGroupState.forceSqueezeTabs = true;
 		}
 		else
@@ -1611,14 +1611,14 @@ void dockNodeTabs(DockNode* node)
 		{
 			if (node->windows[i]->dockingNow)
 			{
-				ctx->penPosition.x += node->windows[i]->tabRect.width;
+				ctx->position.x += node->windows[i]->tabRect.width;
 
 				continue;
 			}
 
 			if (node->dockingTabSpaceIndex == i)
 			{
-				ctx->penPosition.x += node->dockingTabSpaceWidth;
+				ctx->position.x += node->dockingTabSpaceWidth;
 			}
 
 			ctx->currentWindow = node->windows[i];
@@ -1690,7 +1690,7 @@ f32 getRemainingDockNodeClientHeight(HDockNode node)
 {
 	DockNode* nodeObj = (DockNode*)node;
 
-	return round((f32)nodeObj->rect.height - (ctx->penPosition.y - nodeObj->rect.y));
+	return round((f32)nodeObj->rect.height - (ctx->position.y - nodeObj->rect.y));
 }
 
 Rect getWindowClientRect(Window* window)

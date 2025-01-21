@@ -2422,6 +2422,8 @@ HORUS_API void pushId(const char* id);
 HORUS_API void pushId(u32 id);
 HORUS_API void pushId(const void* id);
 HORUS_API void popId();
+HORUS_API void pushLayout();
+HORUS_API void popLayout();
 
 /// Begin a layout made up as columns which can have percentage based widths or fixed
 /// \param columnCount the number of columns to be created
@@ -2987,11 +2989,14 @@ HORUS_API Rect beginCustomWidget(const char* id, f32 height = 0.0f);
 /// End custom widget drawing
 HORUS_API void endCustomWidget();
 
-/// \return the current widget drawing pen position in the parent layout/container
-HORUS_API Point getPenPosition();
+/// Set the next widget position
+HORUS_API void setPosition(const Point& position);
 
-/// Set the widget pen position
-HORUS_API void setPenPosition(const Point& penPosition);
+/// \return the current widget drawing position
+HORUS_API Point getPosition();
+
+HORUS_API void pushPosition();
+HORUS_API Point popPosition();
 
 /// Increment the widget layer index, the highest layer index will be the active one
 HORUS_API void incrementLayerIndex();

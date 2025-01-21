@@ -78,7 +78,7 @@ void toolbarGap(f32 gapSize)
 	if (ctx->verticalToolbar)
 		gap(gapSize);
 	else
-		ctx->penPosition.x += gapSize;
+		ctx->position.x += gapSize;
 }
 
 bool toolbarTextInputFilter(char* outText, u32 maxOutTextSize, u32& filterIndex, const char** filterNames, u32 filterNameCount)

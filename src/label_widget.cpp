@@ -16,8 +16,8 @@ bool labelInternal(const char* label, HAlignType horizontalAlign, Font* font)
 	height = bodyElemState.height;
 
 	Rect rect = {
-		ctx->penPosition.x,
-		ctx->penPosition.y,
+		ctx->position.x,
+		ctx->position.y,
 		width, height };
 
 	addWidgetItem(label, rect.height * ctx->scale);
@@ -77,8 +77,8 @@ bool labelCustomFontMultiline(const char* label, HFont font, HAlignType horizont
 	ctx->drawMultilineText(
 		ctx->widgetLabel.c_str(),
 		{
-			ctx->penPosition.x,
-			ctx->penPosition.y,
+			ctx->position.x,
+			ctx->position.y,
 			width,
 			0
 		},

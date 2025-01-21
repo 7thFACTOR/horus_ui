@@ -13,7 +13,7 @@ void beginScrollView(f32 size, f32 scrollPos, f32 virtualHeight)
 	ctx->scrollViewStack[ctx->scrollViewDepth].size = size /* * ctx->scale*/; //TODO: scale height with UI scale ?
 	ctx->scrollViewStack[ctx->scrollViewDepth].virtualHeight = virtualHeight;
 	ctx->scrollViewStack[ctx->scrollViewDepth].widgetId = ctx->currentWidgetId;
-	ctx->penStack.push_back(ctx->penPosition);
+	ctx->positionStack.push_back(ctx->position);
 	//TODO: scale height with UI scale ?
 	//size *= ctx->scale;
 	const f32 scrollViewPadding = 10;
@@ -21,8 +21,8 @@ void beginScrollView(f32 size, f32 scrollPos, f32 virtualHeight)
 
 	Rect rect =
 	{
-		round(ctx->penPosition.x),
-		round(ctx->penPosition.y),
+		round(ctx->position.x),
+		round(ctx->position.y),
 		ctx->layoutStack.back().width,
 		size
 	};
@@ -38,22 +38,22 @@ void beginScrollView(f32 size, f32 scrollPos, f32 virtualHeight)
 
 	ctx->scrollViewStack[ctx->scrollViewDepth].scrollPosition = scrollPos;
 	ctx->renderer->pushClipRect(clipRect);
-	ctx->penPosition.y -= scrollPos;
-	ctx->penPosition.y += internalPadding;
+	ctx->position.y -= scrollPos;
+	ctx->position.y += internalPadding;
 
 	ctx->layoutStack.push_back(LayoutState(LayoutType::ScrollView));
 	ctx->layoutStack.back().position = { clipRect.x, clipRect.y };
 	ctx->layoutStack.back().width = clipRect.width;
 	ctx->layoutStack.back().height = clipRect.height;
-	ctx->layoutStack.back().savedPenPosition = ctx->penPosition;
-	ctx->penPosition.x = ctx->layoutStack.back().position.x;
+	ctx->layoutStack.back().savedPosition = ctx->position;
+	ctx->position.x = ctx->layoutStack.back().position.x;
 	ctx->scrollViewDepth++;
 }
 
 f32 endScrollView()
 {
 	ctx->scrollViewDepth--;
-	auto& prevPenPos = ctx->layoutStack.back().savedPenPosition;
+	auto& prevPenPos = ctx->layoutStack.back().savedPosition;
 	ctx->layoutStack.pop_back();
 	auto& clipRect = ctx->renderer->getClipRect();
 	ctx->renderer->popClipRect();
@@ -62,7 +62,7 @@ f32 endScrollView()
 	auto& scrollViewElemState = ctx->theme->getElement(WidgetElementId::ScrollViewBody).normalState();
 	f32 scrollPos = scrollViewInfo.scrollPosition;
 	f32 size = scrollViewInfo.size;
-	f32 scrollContentSize = ctx->penPosition.y - prevPenPos.y;
+	f32 scrollContentSize = ctx->position.y - prevPenPos.y;
 	f32 scrollAmount = 0;
 
 	// make the rect for the scrollbars, without the UI element border
@@ -104,7 +104,7 @@ f32 endScrollView()
 	}
 
 	// if we reached bottom of the content, stop
-	if (ctx->penPosition.y + scrollAmount < clipRect.bottom())
+	if (ctx->position.y + scrollAmount < clipRect.bottom())
 	{
 		if (scrollContentSize > clipRect.height)
 		{
@@ -200,7 +200,7 @@ f32 endScrollView()
 				forceRepaint();
 			}
 
-			if (ctx->penPosition.y + scrollAmount < clipRect.bottom())
+			if (ctx->position.y + scrollAmount < clipRect.bottom())
 			{
 				if (scrollContentSize > clipRect.height)
 				{
@@ -239,8 +239,8 @@ f32 endScrollView()
 	}
 
 	scrollPos = (u32)scrollPos;
-	ctx->penPosition = ctx->penStack.back();
-	ctx->penStack.pop_back();
+	ctx->position = ctx->positionStack.back();
+	ctx->positionStack.pop_back();
 	addWidgetItem("", size);
 
 	return scrollPos;
@@ -249,8 +249,8 @@ f32 endScrollView()
 void beginVirtualListContent(u32 totalRowCount, u32 itemHeight, f32 scrollPos)
 {
 	f32 skipRows = scrollPos / itemHeight;
-	auto penPos = hui::getPenPosition();
-	hui::setPenPosition({ penPos.x, penPos.y + (int)skipRows * itemHeight });
+	auto penPos = hui::getPosition();
+	hui::setPosition({ penPos.x, penPos.y + (int)skipRows * itemHeight });
 	ctx->virtualListStack.push_back(VirtualListContentState());
 	ctx->virtualListStack.back().totalRowCount = totalRowCount;
 	ctx->virtualListStack.back().itemHeight = itemHeight;
@@ -259,7 +259,7 @@ void beginVirtualListContent(u32 totalRowCount, u32 itemHeight, f32 scrollPos)
 
 void endVirtualListContent()
 {
-	hui::setPenPosition(
+	hui::setPosition(
 		{
 			ctx->virtualListStack.back().lastPenPosition.x,
 			ctx->virtualListStack.back().lastPenPosition.y + ctx->virtualListStack.back().totalRowCount * ctx->virtualListStack.back().itemHeight

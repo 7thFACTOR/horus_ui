@@ -91,7 +91,7 @@ bool comboSliderInternal(f32& value, f32 minVal, f32 maxVal, bool useRange, f32 
 		ctx->textInput.selectAllOnFocus = true;
 		ctx->textInput.firstMouseDown = true;
 		forceRepaint();
-		ctx->penPosition.y -= ctx->spacing * ctx->scale + bodyElem.normalState().height;
+		ctx->position.y -= ctx->spacing * ctx->scale + bodyElem.normalState().height;
 		setNextFocused();
 		textInput(text, 64, TextInputValueMode::NumericOnly);
 	}

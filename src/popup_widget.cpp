@@ -130,8 +130,8 @@ void beginPopup(
 		pos.y + bodyElemState.border * ctx->scale
 	};
 	ctx->layoutStack.back().width = width - bodyElemState.border * 2 * ctx->scale;
-	ctx->layoutStack.back().savedPenPosition = ctx->penPosition;
-	ctx->penPosition = ctx->layoutStack.back().position;
+	ctx->layoutStack.back().savedPosition = ctx->position;
+	ctx->position = ctx->layoutStack.back().position;
 	ctx->sameLineStack.push_back(ctx->widget.sameLine);
 	ctx->widget.sameLine = false; // reset the same line, we don't need that at the popup start
 	popup.prevContainerRect = ctx->containerRect;
@@ -224,9 +224,9 @@ void endPopup()
 	}
 
 	auto& bodyElemState = ctx->theme->getElement(popup.widgetElementId).normalState();
-	popup.height = (ctx->penPosition.y - ctx->layoutStack.back().position.y) + bodyElemState.border * 2.0f * ctx->scale - ctx->spacing * ctx->scale;
+	popup.height = (ctx->position.y - ctx->layoutStack.back().position.y) + bodyElemState.border * 2.0f * ctx->scale - ctx->spacing * ctx->scale;
 	
-	ctx->penPosition = ctx->layoutStack.back().savedPenPosition;
+	ctx->position = ctx->layoutStack.back().savedPosition;
 	ctx->containerRect = popup.prevContainerRect;
 	ctx->renderer->popClipRect();
 	ctx->layoutStack.pop_back();

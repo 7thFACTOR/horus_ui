@@ -172,8 +172,7 @@ struct LayoutState
 	std::vector<f32> columnMinSizes;
 	std::vector<f32> columnMaxSizes;
 	std::vector<f32> columnPixelSizes;
-	Point position = { 0, 0 };
-	Point savedPenPosition = { 0, 0 };
+	Point savedPosition = { 0, 0 };
 	bool savedSameLine = false;
 	f32 savedHighestSameLineY = 0;
 	f32 savedPreviousSameLineY = 0;
