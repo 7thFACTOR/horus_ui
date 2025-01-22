@@ -2671,9 +2671,9 @@ HORUS_API bool sliderInteger(const char* id, i32 minVal, i32 maxVal, i32& value,
 /// \return true if value was modified
 HORUS_API bool sliderFloat(const char* id, f32 minVal, f32 maxVal, f32& value, bool useStep = false, f32 step = 0);
 
-HORUS_API bool comboSliderFloat(f32& value, f32 stepsPerPixel = 1.0f, f32 arrowStep = 1.0f);
-HORUS_API bool comboSliderFloatRanged(f32& value, f32 minVal, f32 maxVal, f32 stepsPerPixel = 1.0f, f32 arrowStep = 1.0f);
-HORUS_API bool rotarySliderFloat(const char* label, f32& value, f32 minVal, f32 maxVal, f32 step, bool twoSide = false, f32 fineStepDivideFactor = 10.f);
+HORUS_API bool comboSliderFloat(f32* value, f32 stepsPerPixel = 1.0f, f32 arrowStep = 1.0f);
+HORUS_API bool comboSliderFloatRanged(f32* value, f32 minVal, f32 maxVal, f32 stepsPerPixel = 1.0f, f32 arrowStep = 1.0f);
+HORUS_API bool rotarySliderFloat(const char* label, f32* value, f32 minVal, f32 maxVal, f32 step, bool twoSide = false, f32 fineStepDivideFactor = 10.f);
 
 /// Draw a image widget
 /// \param image the image to draw
@@ -2996,7 +2996,7 @@ HORUS_API void setPosition(const Point& position);
 HORUS_API Point getPosition();
 
 HORUS_API void pushPosition();
-HORUS_API Point popPosition();
+HORUS_API void popPosition();
 
 /// Increment the widget layer index, the highest layer index will be the active one
 HORUS_API void incrementLayerIndex();

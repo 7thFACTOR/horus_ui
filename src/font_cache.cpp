@@ -22,6 +22,7 @@ Font* FontCache::createFont(const std::string& name, const std::string& filename
 			&& fnt.second->size == size)
 		{
 			fnt.second->usageCount++;
+
 			return fnt.first;
 		}
 	}

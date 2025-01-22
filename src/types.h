@@ -187,12 +187,13 @@ struct LayoutState
 	std::vector<f32> columnMaxSizes;
 	std::vector<f32> columnPixelSizes;
 	Point savedPosition = { 0, 0 };
+	Point columnsPosition = { 0, 0 };
 	bool savedSameLine = false;
 	f32 savedHighestSameLineY = 0;
 	f32 savedPreviousSameLineY = 0;
 	f32 width = 0;
 	f32 height = 0;
-	f32 maxPenPositionY = -10000000000;
+	f32 maxPositionY = -10000000000;
 	ThemeElement::State* themeWidgetElementState = nullptr;
 	Color themeElementColorTint;
 };
@@ -204,7 +205,7 @@ struct WidgetState
 	WidgetId nextFocusableId = 0;
 	WidgetId hoveredId = 0;
 	f32 width = 0; // if 0 then it will be automatically computed, usually the parent container width
-	bool enabled = true;
+	bool disabled = false;
 	bool pressed = false;
 	bool visible = true;
 	bool clicked = false;

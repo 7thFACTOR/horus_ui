@@ -13,17 +13,15 @@ bool check(const char* label, bool* checkVar)
 
 	addWidgetItem(label, checkBodyElem.normalState().height * ctx->scale);
 	buttonBehavior();
-	bool changed = false;
+	ctx->widget.changeEnded = false;
 
 	if (ctx->widget.clicked)
 	{
-		ctx->widget.changeEnded = true;
-		
 		if (checkVar)
 			*checkVar = !*checkVar;
 		
 		forceRepaint();
-		changed = true;
+		ctx->widget.changeEnded = true;
 	}
 
 	auto checkBodyElemState = &checkBodyElem.normalState();
@@ -79,7 +77,7 @@ bool check(const char* label, bool* checkVar)
 		HAlignType::Left,
 		VAlignType::Center);
 
-	return changed;
+	return ctx->widget.changeEnded;
 }
 
 }

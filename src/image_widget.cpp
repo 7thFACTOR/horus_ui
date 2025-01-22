@@ -27,12 +27,12 @@ bool image(HImage img, f32 height, HAlignType horizontalAlign, VAlignType vertic
 		viewportImageFitSize(
 			imgPtr->rect.width * ctx->scale,
 			imgPtr->rect.height * ctx->scale,
-			ctx->layoutStack.back().width,
+			ctx->layout.width,
 			height, newWidth, newHeight, false, false);
 	}
 	else if (fit == ImageFitType::Stretch)
 	{
-		newWidth = ctx->layoutStack.back().width;
+		newWidth = ctx->layout.width;
 	}
 
 	if (autoHeight)
@@ -40,6 +40,7 @@ bool image(HImage img, f32 height, HAlignType horizontalAlign, VAlignType vertic
 		height = newHeight;
 	}
 
+	//TODO: img can be the id
 	addWidgetItem("", height);
 
 	Point pos = ctx->widget.rect.topLeft();
@@ -73,7 +74,7 @@ bool image(HImage img, f32 height, HAlignType horizontalAlign, VAlignType vertic
 		ctx->renderer->cmdDrawImage(imgPtr, ctx->widget.rect);
 	}
 
-	return false;
+	return ctx->widget.clicked;
 }
 
 }

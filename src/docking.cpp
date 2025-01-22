@@ -522,21 +522,6 @@ size_t DockNode::getWindowIndex(Window* window)
 	return std::distance(windows.begin(), iter);
 }
 
-DockNode* DockNode::findDockNode(const Point& pt)
-{
-	if (rect.contains(pt)) return this;
-
-	for (auto& child : children)
-	{
-		auto node = child->findDockNode(pt);
-		
-		if (node)
-			return node;
-	}
-
-	return nullptr;
-}
-
 std::vector<DockNode*>::iterator DockNode::findNextSiblingOf(DockNode* node)
 {
 	auto iter = std::find(children.begin(), children.end(), node);

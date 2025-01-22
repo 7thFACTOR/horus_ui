@@ -16,7 +16,7 @@ struct DockNode
 	};
 
 	u64 id = 0;
-	bool createdByDockingSystem = false;
+	bool createdByDockingSystem = false; /// only dock nodes created by the docking system can be deleted automatically, user ones cannot
 	DockNode* parent = nullptr;
 	std::vector<DockNode*> children;
 	std::vector<Window*> windows;
@@ -42,7 +42,6 @@ struct DockNode
 	void gatherWindowTabsNodes(std::vector<DockNode*>& outNodes);
 	DockNode* findResizeDockNode(const Point& pt);
 	DockNode* findTargetDockNode(const Point& pt);
-	DockNode* findDockNode(const Point& pt);
 	std::vector<DockNode*>::iterator findNextSiblingOf(DockNode* node);
 	std::vector<DockNode*>::reverse_iterator findPrevSiblingOf(DockNode* node);
 	std::vector<DockNode*>::iterator getIteratorOf(DockNode* node);

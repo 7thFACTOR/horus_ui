@@ -9,7 +9,7 @@ namespace hui
 bool labelInternal(const char* label, HAlignType horizontalAlign, Font* font)
 {
 	auto& bodyElem = ctx->theme->getElement(WidgetElementId::LabelBody);
-	f32 width = ctx->layoutStack.back().width;
+	f32 width = ctx->layout.width;
 	f32 height = 0;
 	auto& bodyElemState = bodyElem.normalState();
 
@@ -66,7 +66,7 @@ bool labelCustomFontMultiline(const char* label, HFont font, HAlignType horizont
 	ctx->renderer->cmdSetColor(applyTint(bodyElemState.textColor, TintColorType::Text));
 	ctx->renderer->cmdSetFont((Font*)font);
 
-	f32 width = ctx->layoutStack.back().width;
+	f32 width = ctx->layout.width;
 
 	ctx->extractLabelAndId(label, ctx->widgetLabel, ctx->id);
 

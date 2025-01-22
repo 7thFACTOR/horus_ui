@@ -20,7 +20,7 @@ void buttonBehavior(bool menuItem)
 	if (!ctx->isActiveLayer() && !menuItem)
 		return;
 
-	if (!ctx->widget.enabled)
+	if (ctx->widget.disabled)
 		return;
 
 	if (ctx->id == ctx->widget.focusedId
@@ -130,7 +130,7 @@ void mouseDownOnlyButtonBehavior()
 	if (!ctx->isActiveLayer())
 		return;
 
-	if (!ctx->widget.enabled)
+	if (ctx->widget.disabled)
 		return;
 
 	// return if the widget is not visible, that is outside current clip rect
@@ -268,7 +268,7 @@ bool iconButtonInternal(HImage icon, HImage disabledIcon, f32 customHeight, bool
 
 	f32 pressedIncrement = 0.0f;
 
-	if (!ctx->widget.enabled && disabledIconImg)
+	if (ctx->widget.disabled && disabledIconImg)
 	{
 		btnBodyElemState = &btnBodyElem->getState(WidgetStateType::Disabled);
 		iconImg = disabledIconImg;

@@ -131,9 +131,9 @@ void clearBackground(const Color& color)
 	ctx->renderer->cmdClearBackground(color);
 }
 
-void setNextEnabled(bool enabled)
+void setNextDisabled()
 {
-	ctx->widget.enabled = enabled;
+	ctx->widget.disabled = true;
 }
 
 void setNextFocused()
@@ -154,11 +154,11 @@ void addWidgetItem(const char* text, f32 height)
 
 	if (ctx->widget.width == 0) pixelWidth = 0;
 
-	f32 width = ctx->widget.sameLine ? pixelWidth : (pixelWidth != 0 ? pixelWidth : ctx->layout.width);
+	f32 width = ctx->sameLine ? pixelWidth : (pixelWidth != 0 ? pixelWidth : ctx->layout.width);
 	f32 verticalOffset = 0;
 	const f32 totalHeight = ctx->spacing * ctx->scale + height;
 
-	if (!ctx->widget.sameLine)
+	if (!ctx->sameLine)
 	{
 		ctx->position.x = ctx->layout.savedPosition.x;
 	}
@@ -178,14 +178,14 @@ void addWidgetItem(const char* text, f32 height)
 		width,
 		height);
 
-	if (!ctx->widget.sameLine)
+	if (!ctx->sameLine)
 	{
 		ctx->position.y += totalHeight;
 		ctx->position.y = round(ctx->position.y);
 	}
 	else
 	{
-		ctx->position.x += width + ctx->widget.sameLineSpacing * ctx->scale;
+		ctx->position.x += width + ctx->sameLineSpacing * ctx->scale;
 	}
 
 	ctx->extractLabelAndId(text, ctx->widgetLabel, ctx->id);
@@ -291,7 +291,7 @@ void beginFrame()
 		&& ctx->event.key.down)
 	{
 		//TODO: wont work now
-		ctx->widget.focusedId--;
+		//ctx->widget.focusedId--;
 		ctx->focusChanged = true;
 
 		if (ctx->widget.focusedId < 0)
@@ -315,7 +315,7 @@ void beginFrame()
 
 	ctx->mustRedraw = false;
 	ctx->skipRenderAndInput = false;
-	ctx->widget.enabled = true;
+	ctx->widget.disabled = false;
 	ctx->layerIndex = 0;
 	ctx->widget.nextFocusableId = 0;
 	ctx->menuDepth = 0;
@@ -1365,7 +1365,7 @@ void beginContainer(const Rect& rect)
 	ctx->layout.height = paddedRect.height;
 	ctx->renderer->pushClipRect(paddedRect);
 	ctx->position = { paddedRect.x, paddedRect.y };
-	ctx->widget.sameLine = false;
+	ctx->sameLine = false;
 }
 
 void endContainer()
@@ -1420,6 +1420,7 @@ void popLayout()
 		return;
 	}
 
+	ctx->layout = ctx->layoutStack.back();
 	ctx->layoutStack.pop_back();
 }
 
@@ -1548,7 +1549,6 @@ void beginColumns(u32 columnCount, const f32 widths[], const f32 minWidths[], co
 	}
 
 	columns.savedPosition = ctx->position;
-	pushPosition();
 	computeColumnsPixelSize(ctx->layout, columns);
 	ctx->layout = columns;
 	nextColumn();
@@ -1600,18 +1600,19 @@ void nextColumn()
 	// if we're adding the first column, called from beginColumns()
 	if (layout.type == LayoutType::Columns)
 	{
+		pushLayout();
 		// lets just add the first column
 		newColumn.type = LayoutType::Column;
 		newColumn.savedPosition = ctx->position;
 		newColumn.width = layout.columnPixelSizes[layout.currentColumn];
-		ctx->layoutStack.push_back(newColumn);
+		ctx->layout = newColumn;
 		return;
 	}
 	else if (layout.type == LayoutType::Column)
 	{
 		// take out the last column
-		ctx->layoutStack.pop_back();
-		auto& columnsLayout = ctx->layoutStack.back();
+		popLayout();
+		auto& columnsLayout = ctx->layout;
 
 		// wrong placement, here must be a Columns
 		if (columnsLayout.type != LayoutType::Columns)
@@ -1621,43 +1622,42 @@ void nextColumn()
 		columnsLayout.currentColumn++;
 
 		// set max column Y in columns
-		if (columnsLayout.maxPenPositionY < ctx->position.y)
-			columnsLayout.maxPenPositionY = ctx->position.y;
+		if (columnsLayout.maxPositionY < ctx->position.y)
+			columnsLayout.maxPositionY = ctx->position.y;
 
-		ctx->lastColumnRect.set(ctx->position.x, ctx->position.y, layout.width, ctx->position.y - layout.position.y);
+		ctx->lastColumnRect.set(ctx->position.x, ctx->position.y, layout.width, ctx->position.y - layout.savedPosition.y);
 
 		// if we're done with the columns, move to the parent layout
 		if (columnsLayout.currentColumn >= columnsLayout.columnSizes.size())
 		{
-			f32 maxY = columnsLayout.maxPenPositionY;
+			f32 maxY = columnsLayout.maxPositionY;
 			// pop out the columns layout
-			ctx->layoutStack.pop_back();
-			auto& parentLayout = ctx->layoutStack.back();
+			popLayout();
+			auto& parentLayout = ctx->layout;
 
 			// set max column Y in parent
-			if (parentLayout.maxPenPositionY < maxY)
-				parentLayout.maxPenPositionY = maxY;
+			if (parentLayout.maxPositionY < maxY)
+				parentLayout.maxPositionY = maxY;
 
 			ctx->position = {
-				parentLayout.position.x,
+				parentLayout.savedPosition.x,
 				maxY };
-
-			ctx->position.x = ctx->positionStack.back().x;
-			ctx->positionStack.pop_back();
 			return;
 		}
 		else
 		{
 			// increment the columns' current column X
 			ctx->position = {
-				columnsLayout.position.x += columnsLayout.columnPixelSizes[(size_t)columnsLayout.currentColumn - 1] + ctx->columnSpacing,
-				columnsLayout.position.y };
+				columnsLayout.columnsPosition.x += columnsLayout.columnPixelSizes[(size_t)columnsLayout.currentColumn - 1] + ctx->columnSpacing,
+				columnsLayout.columnsPosition.y };
+
+			pushLayout();
 
 			// lets add a new column
 			newColumn.type = LayoutType::Column;
-			newColumn.position = ctx->position;
+			newColumn.columnsPosition = ctx->position;
 			newColumn.width = columnsLayout.columnPixelSizes[columnsLayout.currentColumn];
-			ctx->layoutStack.push_back(newColumn);
+			ctx->layout = newColumn;
 		}
 	}
 
@@ -1683,9 +1683,9 @@ void columnHeader(const char* label, f32 width, f32 preferredWidth, f32 minWidth
 	auto& headerElemState = ctx->theme->getElement(WidgetElementId::ColumnsHeaderBody).normalState();
 
 	ctx->widget.rect = {
-		ctx->layoutStack.back().position.x + ctx->columnPadding,
-		ctx->layoutStack.back().position.y,
-		ctx->layoutStack.back().width - ctx->columnPadding * 2.0f * ctx->scale,
+		ctx->position.x + ctx->padding,
+		ctx->position.y,
+		ctx->layout.width - ctx->padding * 2.0f * ctx->scale,
 		headerElemState.height
 	};
 
@@ -1704,31 +1704,16 @@ void columnHeader(const char* label, f32 width, f32 preferredWidth, f32 minWidth
 
 void pushLayoutPadding(f32 newPadding)
 {
-	ctx->layoutPaddingStack.push_back(ctx->padding);
+	ctx->paddingStack.push_back(ctx->padding);
 	ctx->padding = newPadding;
 }
 
 void popLayoutPadding()
 {
-	if (!ctx->layoutPaddingStack.empty())
+	if (!ctx->paddingStack.empty())
 	{
-		ctx->padding = ctx->layoutPaddingStack.back();
-		ctx->layoutPaddingStack.pop_back();
-	}
-}
-
-void pushColumnPadding(f32 newPadding)
-{
-	ctx->columnPaddingStack.push_back(ctx->columnPadding);
-	ctx->columnPadding = newPadding;
-}
-
-void popColumnPadding()
-{
-	if (!ctx->columnPaddingStack.empty())
-	{
-		ctx->columnPadding = ctx->columnPaddingStack.back();
-		ctx->columnPaddingStack.pop_back();
+		ctx->padding = ctx->paddingStack.back();
+		ctx->paddingStack.pop_back();
 	}
 }
 
@@ -1747,39 +1732,14 @@ void popSpacing()
 	}
 }
 
-void pushColumnSpacing(f32 newSpacing)
-{
-	ctx->columnSpacingStack.push_back(ctx->columnSpacing);
-	ctx->columnSpacing = newSpacing;
-}
-
-void popColumnSpacing()
-{
-	if (!ctx->columnSpacingStack.empty())
-	{
-		ctx->columnSpacing = ctx->columnSpacingStack.back();
-		ctx->columnSpacingStack.pop_back();
-	}
-}
-
 f32 getSpacing()
 {
 	return ctx->spacing;
 }
 
-f32 getColumnSpacing()
-{
-	return ctx->columnSpacing;
-}
-
-f32 getLayoutPadding()
+f32 getPadding()
 {
 	return ctx->padding;
-}
-
-f32 getColumnPadding()
-{
-	return ctx->columnPadding;
 }
 
 void changeScale(f32 scale)
@@ -1916,19 +1876,13 @@ void pushPosition()
 	ctx->positionStack.push_back(ctx->position);
 }
 
-Point popPosition()
+void popPosition()
 {
 	if (!ctx->positionStack.empty())
 	{
-		Point ret = ctx->positionStack.back();
-		
-		ctx->position = ret;
+		ctx->position = ctx->positionStack.back();
 		ctx->positionStack.pop_back();
-
-		return ret;
 	}
-
-	return Point();
 }
 
 bool wantsToDragDrop()

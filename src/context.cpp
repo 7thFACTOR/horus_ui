@@ -53,7 +53,7 @@ Rect Context::drawMultilineText(
 	GlyphCode lastGlyphCode = 0;
 	Rect newRect = rect;
 
-	if (!strcmp(text, ""))
+	if (!text || !strcmp(text, ""))
 		return newRect;
 
 	TextLineState line;
@@ -181,10 +181,13 @@ Rect Context::drawMultilineText(
 		break;
 	}
 
-	for (size_t i = 0; i < textLines.size(); i++)
+	FontTextSize fsize;
+	Utf32String lineText;
+
+	for (size_t i = 0, iCount = textLines.size(); i < iCount; i++)
 	{
 		auto& line = textLines[i];
-		FontTextSize fsize = crtFont->computeTextSize(utext.data() + line.start, line.length);
+		fsize = crtFont->computeTextSize(utext.data() + line.start, line.length);
 
 		switch (horizontal)
 		{
@@ -201,10 +204,9 @@ Rect Context::drawMultilineText(
 			break;
 		}
 
-		Utf32String lineText;
-
 		lineText = Utf32String(utext.begin() + line.start, utext.begin() + line.start + line.length);
 
+		//TODO: maybe put in ctx or Renderer
 		static char strUtf8[1024] = { 0 };
 
 		HORUS_UTF->utf32To8NoAlloc(lineText, strUtf8, 1024);

@@ -8,7 +8,7 @@
 
 namespace hui
 {
-static bool comboSliderInternal(f32& value, f32 minVal, f32 maxVal, bool useRange, f32 stepsPerPixel, f32 arrowStep)
+static bool comboSliderInternal(f32* value, f32 minVal, f32 maxVal, bool useRange, f32 stepsPerPixel, f32 arrowStep)
 {
 	auto& bodyElem = ctx->theme->getElement(WidgetElementId::ComboSliderBody);
 	auto& leftArrowElem = ctx->theme->getElement(WidgetElementId::ComboSliderLeftArrow);
@@ -18,17 +18,17 @@ static bool comboSliderInternal(f32& value, f32 minVal, f32 maxVal, bool useRang
 
 	if (useRange)
 	{
-		ctx->widget.changeEnded = clampValue(value, minVal, maxVal);
+		ctx->widget.changeEnded = clampValue(*value, minVal, maxVal);
 	}
 
 	// if we're not editing any text of this particular widget id
-	if (!ctx->comboSlider.editingText || comboSliderWidgetId != ctx->id)
+	if (!ctx->comboSlider.editingText || ctx->comboSlider.id != ctx->id)
 	{
-		addWidgetItem("", bodyElem.normalState().height * ctx->scale);
+		addWidgetItem("##comboSlider", bodyElem.normalState().height * ctx->scale);
 		buttonBehavior();
 	}
 
-	if (dragging && comboSliderWidgetId == ctx->id)
+	if (ctx->comboSlider.dragging && ctx->comboSlider.id == ctx->id)
 	{
 		ctx->widget.pressed = true;
 	}
@@ -54,111 +54,111 @@ static bool comboSliderInternal(f32& value, f32 minVal, f32 maxVal, bool useRang
 	if (isClicked()
 		&& ctx->mousePosition.x <= ctx->widget.rect.x + leftArrowElem.normalState().image->width)
 	{
-		value -= arrowStep;
+		*value -= arrowStep;
 		arrowStepped = true;
-		if (useRange) changed = clampValue(value, minVal, maxVal);
+		if (useRange) clampValue(*value, minVal, maxVal);
 		ctx->widget.changeEnded = true;
 	}
 	else if (isClicked() && ctx->mousePosition.x >= ctx->widget.rect.right() - rightArrowElem.normalState().image->width)
 	{
-		value += arrowStep;
+		*value += arrowStep;
 		arrowStepped = true;
-		if (useRange) changed = clampValue(value, minVal, maxVal);
+		if (useRange) clampValue(*value, minVal, maxVal);
 		ctx->widget.changeEnded = true;
 	}
 
-	if (isClicked() && !dragging && !arrowStepped)
+	if (isClicked() && !ctx->comboSlider.dragging && !arrowStepped)
 	{
-		editingText = true;
-		comboSliderWidgetId = ctx->id;
-		mouseWasDown = false;
-		dragging = false;
+		ctx->comboSlider.editingText = true;
+		ctx->comboSlider.id = ctx->id;
+		ctx->comboSlider.mouseWasDown = false;
+		ctx->comboSlider.dragging = false;
 		ctx->widget.focusedId = ctx->id;
 		ctx->widget.focused = true;
 		ctx->focusChanged = true;
 		ctx->textInput.widgetId = ctx->id;
-		memset(text, 64, 0);
-		toString(value, text, 64);
+		memset(ctx->comboSlider.text, 64, 0);
+		toString(*value, ctx->comboSlider.text, ComboSliderState::maxTextSize);
 		ctx->textInput.editNow = true;
 		ctx->textInput.selectAllOnFocus = true;
 		ctx->textInput.firstMouseDown = true;
 		forceRepaint();
 		ctx->position.y -= ctx->spacing * ctx->scale + bodyElem.normalState().height;
 		setNextFocused();
-		textInput(text, 64, TextInputValueMode::NumericOnly);
+		textInput(ctx->comboSlider.text, ComboSliderState::maxTextSize, TextInputValueMode::NumericOnly);
 	}
 	else
-	if (editingText && comboSliderWidgetId == ctx->id)
+	if (ctx->comboSlider.editingText && ctx->comboSlider.id == ctx->id)
 	{
-		textInput(text, 64, TextInputValueMode::NumericOnly);
+		textInput(ctx->comboSlider.text, ComboSliderState::maxTextSize, TextInputValueMode::NumericOnly);
 
 		if (//!ctx->widget.focused
 			 !ctx->textInput.widgetId
-			|| requestChangeToOtherComboSlider
+			|| ctx->comboSlider.requestChangeToOtherComboSlider
 			|| (ctx->event.type == InputEvent::Type::Key
 				&& ctx->event.key.down
 				&& ctx->event.key.code == KeyCode::Esc
 				&& ctx->isActiveLayer()))
 		{
-			editingText = false;
-			comboSliderWidgetId = 0;
-			value = atof(text);
-			if (useRange) changed = clampValue(value, minVal, maxVal);
+			ctx->comboSlider.editingText = false;
+			ctx->comboSlider.id = 0;
+			*value = atof(ctx->comboSlider.text);
+			if (useRange) clampValue(*value, minVal, maxVal);
 			ctx->widget.changeEnded = true;
 
-			if (requestChangeToOtherComboSlider)
+			if (ctx->comboSlider.requestChangeToOtherComboSlider)
 			{
-				comboSliderWidgetId = newComboSliderId;
-				newComboSliderId = 0;
-				requestChangeToOtherComboSlider = false;
+				ctx->comboSlider.id = ctx->comboSlider.newId;
+				ctx->comboSlider.newId = 0;
+				ctx->comboSlider.requestChangeToOtherComboSlider = false;
 			}
 		}
 	}
 	else
 	{
-		f32 percentFilled = 1.0f - (maxVal - value) / (maxVal - minVal);
+		f32 percentFilled = 1.0f - (maxVal - *value) / (maxVal - minVal);
 		f32 valueWidth = ctx->widget.rect.width;
 
 		if (ctx->event.type == InputEvent::Type::MouseDown
 			&& isHovered()
-			&& !dragging
+			&& !ctx->comboSlider.dragging
 			&& ctx->isActiveLayer())
 		{
 			//hui::setCapture();
-			dragLastMousePos = ctx->mousePosition;
+			ctx->comboSlider.dragLastMousePos = ctx->mousePosition;
 
-			if (!editingText)
+			if (!ctx->comboSlider.editingText)
 			{
-				comboSliderWidgetId = ctx->id;
+				ctx->comboSlider.id = ctx->id;
 			}
 			else
 			{
-				requestChangeToOtherComboSlider = true;
-				newComboSliderId = ctx->id;
+				ctx->comboSlider.requestChangeToOtherComboSlider = true;
+				ctx->comboSlider.newId = ctx->id;
 				forceRepaint();
 			}
 
-			mouseWasDown = true;
+			ctx->comboSlider.mouseWasDown = true;
 		}
 
-		if (mouseWasDown
+		if (ctx->comboSlider.mouseWasDown
 			&& ctx->event.type == InputEvent::Type::MouseMove
-			&& comboSliderWidgetId == ctx->id)
+			&& ctx->comboSlider.id == ctx->id)
 		{
-			if (dragLastMousePos.getDistance(ctx->mousePosition) > ctx->settings.dragStartDistance)
+			if (ctx->comboSlider.dragLastMousePos.getDistance(ctx->mousePosition) > ctx->settings.dragStartDistance)
 			{
-				dragging = true;
-				dragLastMousePos = ctx->mousePosition;
-				mouseWasDown = false;
+				ctx->comboSlider.dragging = true;
+				ctx->comboSlider.dragLastMousePos = ctx->mousePosition;
+				ctx->comboSlider.mouseWasDown = false;
 			}
 		}
 
-		if (dragging
-			&& ctx->id == comboSliderWidgetId
+		if (ctx->comboSlider.dragging
+			&& ctx->id == ctx->comboSlider.id
 			&& ctx->isActiveLayer())
 		{
-			Point delta = ctx->mousePosition - dragLastMousePos;
-			dragLastMousePos = ctx->mousePosition;
+			Point delta = ctx->mousePosition - ctx->comboSlider.dragLastMousePos;
+			ctx->comboSlider.dragLastMousePos = ctx->mousePosition;
 			f32 deltaValue = 0;
 
 			switch (ctx->settings.sliderDragDirection)
@@ -179,25 +179,25 @@ static bool comboSliderInternal(f32& value, f32 minVal, f32 maxVal, bool useRang
 
 			if (useRange)
 			{
-				value += deltaValue * stepsPerPixel;
-				changed = clampValue(value, minVal, maxVal);
-				percentFilled = 1.0f - (maxVal - value) / (maxVal - minVal);
+				*value += deltaValue * stepsPerPixel;
+				ctx->widget.changeEnded = clampValue(*value, minVal, maxVal);
+				percentFilled = 1.0f - (maxVal - *value) / (maxVal - minVal);
 			}
 			else
 			{
-				value += deltaValue * stepsPerPixel;
-				changed = true;
+				*value += deltaValue * stepsPerPixel;
+				ctx->widget.changeEnded = true;
 			}
 		}
 
 		if (ctx->event.type == InputEvent::Type::MouseUp
-			&& (dragging || mouseWasDown)
+			&& (ctx->comboSlider.dragging || ctx->comboSlider.mouseWasDown)
 			&& ctx->isActiveLayer()
-			&& comboSliderWidgetId == ctx->id)
+			&& ctx->comboSlider.id == ctx->id)
 		{
-			dragging = false;
-			mouseWasDown = false;
-			comboSliderWidgetId = 0;
+			ctx->comboSlider.dragging = false;
+			ctx->comboSlider.mouseWasDown = false;
+			ctx->comboSlider.id = 0;
 			//TODO: releaseCapture();
 			ctx->widget.changeEnded = true;
 		}
@@ -277,22 +277,22 @@ static bool comboSliderInternal(f32& value, f32 minVal, f32 maxVal, bool useRang
 				rightArrowElemState->image->rect.height * ctx->scale
 			});
 
-		char outStr[64];
-		toString(value, outStr, 64);
+		char outStr[ComboSliderState::maxTextSize] = { 0 };
+		toString(*value, outStr, ComboSliderState::maxTextSize);
 		ctx->renderer->cmdSetColor(applyTint(bodyElemState->textColor, TintColorType::Body));
 		ctx->renderer->cmdDrawTextInBox(outStr, ctx->widget.rect, HAlignType::Center, VAlignType::Center);
 		setFocusable();
 	}
 
-	return changed;
+	return ctx->widget.changeEnded;
 }
 
-bool comboSliderFloat(f32& value, f32 stepsPerPixel, f32 arrowStep)
+bool comboSliderFloat(f32* value, f32 stepsPerPixel, f32 arrowStep)
 {
 	return comboSliderInternal(value, 0, 0, false, stepsPerPixel, arrowStep);
 }
 
-bool comboSliderFloatRanged(f32& value, f32 minVal, f32 maxVal, f32 stepsPerPixel, f32 arrowStep)
+bool comboSliderFloatRanged(f32* value, f32 minVal, f32 maxVal, f32 stepsPerPixel, f32 arrowStep)
 {
 	return comboSliderInternal(value, minVal, maxVal, true, stepsPerPixel, arrowStep);
 }
