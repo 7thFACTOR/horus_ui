@@ -23,11 +23,11 @@ void Context::extractLabelAndId(const char* text, std::string& label, WidgetId& 
 	// we have ###, forced id specified
 	if (idStart && *(idStart + 2) == '#')
 	{
-		id = hashString(idStart, idStack.back());
+		id = genId(idStart);
 	}
 	else if (idStart) // we have ##, hash the whole text
 	{
-		id = hashString(textPtr, idStack.back());
+		id = genId(textPtr);
 	}
 
 	label.assign(textPtr, idStart ? idStart : textPtr + strlen(textPtr));
@@ -35,7 +35,7 @@ void Context::extractLabelAndId(const char* text, std::string& label, WidgetId& 
 	if (label == "" || id == 0)
 	{
 		auto posStr = std::to_string(ctx->position.x) + std::to_string(ctx->position.y);
-		id = hashString(posStr.c_str(), idStack.back());
+		id = genId(posStr.c_str());
 	}
 }
 

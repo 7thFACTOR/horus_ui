@@ -12,7 +12,7 @@ void beginScrollView(f32 size, f32 scrollPos, f32 virtualHeight)
 
 	ctx->scrollViewStack[ctx->scrollViewDepth].size = size /* * ctx->scale*/; //TODO: scale height with UI scale ?
 	ctx->scrollViewStack[ctx->scrollViewDepth].virtualHeight = virtualHeight;
-	ctx->scrollViewStack[ctx->scrollViewDepth].widgetId = ctx->id;
+	ctx->scrollViewStack[ctx->scrollViewDepth].id = ctx->id;
 	ctx->positionStack.push_back(ctx->position);
 	//TODO: scale height with UI scale ?
 	//size *= ctx->scale;
@@ -23,7 +23,7 @@ void beginScrollView(f32 size, f32 scrollPos, f32 virtualHeight)
 	{
 		round(ctx->position.x),
 		round(ctx->position.y),
-		ctx->layoutStack.back().width,
+		ctx->layout.width,
 		size
 	};
 
@@ -40,21 +40,21 @@ void beginScrollView(f32 size, f32 scrollPos, f32 virtualHeight)
 	ctx->renderer->pushClipRect(clipRect);
 	ctx->position.y -= scrollPos;
 	ctx->position.y += internalPadding;
-
-	ctx->layoutStack.push_back(LayoutState(LayoutType::ScrollView));
-	ctx->layoutStack.back().position = { clipRect.x, clipRect.y };
-	ctx->layoutStack.back().width = clipRect.width;
-	ctx->layoutStack.back().height = clipRect.height;
-	ctx->layoutStack.back().savedPosition = ctx->position;
-	ctx->position.x = ctx->layoutStack.back().position.x;
+	pushLayout();
+	pushPosition();
+	ctx->layout = LayoutState(LayoutType::ScrollView);
+	ctx->layout.savedPosition = ctx->position;
+	ctx->position = { clipRect.x, clipRect.y };
+	ctx->layout.width = clipRect.width;
+	ctx->layout.height = clipRect.height;
 	ctx->scrollViewDepth++;
 }
 
 f32 endScrollView()
 {
 	ctx->scrollViewDepth--;
-	auto& prevPenPos = ctx->layoutStack.back().savedPosition;
-	ctx->layoutStack.pop_back();
+	auto& prevPenPos = ctx->layout.savedPosition;
+	popLayout();
 	auto& clipRect = ctx->renderer->getClipRect();
 	ctx->renderer->popClipRect();
 	auto& scrollViewInfo = ctx->scrollViewStack[ctx->scrollViewDepth];
@@ -142,7 +142,7 @@ f32 endScrollView()
 		};
 
 		if (ctx->isActiveLayer())
-		if (rectScrollBarHandle.contains(ctx->mousePosition) || (scrollViewInfo.draggingThumb && ctx->dragScrollViewHandleWidgetId == scrollViewInfo.widgetId))
+		if (rectScrollBarHandle.contains(ctx->mousePosition) || (scrollViewInfo.draggingThumb && ctx->dragScrollViewHandleWidgetId == scrollViewInfo.id))
 		{
 			scrollViewScrollThumbElemState = ctx->theme->getElement(WidgetElementId::ScrollViewScrollThumb).getState(WidgetStateType::Hovered);
 		}
@@ -153,7 +153,7 @@ f32 endScrollView()
 			{
 				scrollViewInfo.draggingThumb = true;
 				scrollViewInfo.dragDelta = ctx->mousePosition - rectScrollBarHandle.topLeft();
-				ctx->dragScrollViewHandleWidgetId = scrollViewInfo.widgetId;
+				ctx->dragScrollViewHandleWidgetId = scrollViewInfo.id;
 				ctx->widget.focusedId = ctx->id;
 			}
 			else if (rectScrollBar.contains(ctx->mousePosition))
@@ -175,7 +175,7 @@ f32 endScrollView()
 		else if (ctx->mouseMoved
 			&& ctx->event.type != InputEvent::Type::MouseUp
 			&& scrollViewInfo.draggingThumb
-			&& ctx->dragScrollViewHandleWidgetId == scrollViewInfo.widgetId)
+			&& ctx->dragScrollViewHandleWidgetId == scrollViewInfo.id)
 		{
 			f32 crtLocalY = ctx->mousePosition.y - scrollViewInfo.dragDelta.y - rect.y;
 			f32 trackSize = rect.height - handleSize;
@@ -223,7 +223,7 @@ f32 endScrollView()
 		if (ctx->event.type == InputEvent::Type::MouseUp
 			&& ctx->isActiveLayer()
 			&& scrollViewInfo.draggingThumb
-			&& ctx->dragScrollViewHandleWidgetId == scrollViewInfo.widgetId)
+			&& ctx->dragScrollViewHandleWidgetId == scrollViewInfo.id)
 		{
 			scrollViewInfo.draggingThumb = false;
 			ctx->dragScrollViewHandleWidgetId = 0;
@@ -239,9 +239,8 @@ f32 endScrollView()
 	}
 
 	scrollPos = (u32)scrollPos;
-	ctx->position = ctx->positionStack.back();
-	ctx->positionStack.pop_back();
-	addWidgetItem("", size);
+	popPosition();
+	addWidget("", size);
 
 	return scrollPos;
 }
@@ -249,20 +248,20 @@ f32 endScrollView()
 void beginVirtualListContent(u32 totalRowCount, u32 itemHeight, f32 scrollPos)
 {
 	f32 skipRows = scrollPos / itemHeight;
-	auto penPos = hui::getPosition();
-	hui::setPosition({ penPos.x, penPos.y + (int)skipRows * itemHeight });
+	auto& pos = ctx->position;
+	ctx->position = { pos.x, pos.y + (i32)skipRows * itemHeight };
 	ctx->virtualListStack.push_back(VirtualListContentState());
 	ctx->virtualListStack.back().totalRowCount = totalRowCount;
 	ctx->virtualListStack.back().itemHeight = itemHeight;
-	ctx->virtualListStack.back().lastPenPosition = penPos;
+	ctx->virtualListStack.back().lastPosition = pos;
 }
 
 void endVirtualListContent()
 {
 	hui::setPosition(
 		{
-			ctx->virtualListStack.back().lastPenPosition.x,
-			ctx->virtualListStack.back().lastPenPosition.y + ctx->virtualListStack.back().totalRowCount * ctx->virtualListStack.back().itemHeight
+			ctx->virtualListStack.back().lastPosition.x,
+			ctx->virtualListStack.back().lastPosition.y + ctx->virtualListStack.back().totalRowCount * ctx->virtualListStack.back().itemHeight
 		});
 
 	ctx->virtualListStack.pop_back();

@@ -9,10 +9,10 @@ Rect beginViewport(f32 height)
 {
 	if (height <= 0)
 	{
-		height = ctx->layoutStack.back().height - (ctx->position.y - ctx->layoutStack.back().position.y);
+		height = ctx->layout.height - (ctx->position.y - ctx->layout.savedPosition.y);
 	}
 
-	addWidgetItem("", height);
+	addWidget("##viewport", height);
 	buttonBehavior();
 
 	auto scissor = ctx->renderer->pushClipRect(ctx->widget.rect);

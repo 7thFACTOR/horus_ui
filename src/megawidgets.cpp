@@ -6,30 +6,18 @@ namespace hui
 {
 bool vecEditorInternal(f64& x, f64& y, f64& z, f64 scrollStep, bool useZ)
 {
-	//TODO: place statics into context struct
-	static bool draggingValue;
-	static Point lastMousePos;
-	static u32 draggedWidgetId = 0;
+	sprintf(ctx->vecEditor.strX, "%.8g", x);
+	sprintf(ctx->vecEditor.strY, "%.8g", y);
+	sprintf(ctx->vecEditor.strZ, "%.8g", z);
 
-	const int maxStrSize = 50;
-	char strX[maxStrSize] = { 0 };
-	char strY[maxStrSize] = { 0 };
-	char strZ[maxStrSize] = { 0 };
-
-	sprintf(strX, "%.8g", x);
-	sprintf(strY, "%.8g", y);
-	sprintf(strZ, "%.8g", z);
-
-	f32 colWidthsPRS[] = { 13, -1, 13, -1, 13, -1 };
-
-	hui::beginColumns(useZ ? 6 : 4, colWidthsPRS);
+	hui::beginColumns(useZ ? 6 : 4, ctx->vecEditor.colWidthsPRS);
 
 	bool modified = false;
 	bool changedEndedX = false;
 	bool changedEndedY = false;
 	bool changedEndedZ = false;
 
-	auto editValue = [maxStrSize](
+	auto editValue = [](
 		char* axisName,
 		char* axisImageName,
 		char* strAxis,
@@ -44,49 +32,49 @@ bool vecEditorInternal(f64& x, f64& y, f64& z, f64 scrollStep, bool useZ)
 
 		// current widget + 2 since widget is computed in endBox and we have 1 image widget
 		//TODO: not working, since widget id is not incremental
-		hui::beginBox((draggingValue && (draggedWidgetId == (ctx->id + 2))) ? dragColor : normalColor, "axisBoxBody");
+		hui::beginBox((ctx->vecEditor.draggingValue && (ctx->vecEditor.draggedId == (ctx->id + 2))) ? dragColor : normalColor, "axisBoxBody");
 		WidgetId imageWidgetId = hui::getWidgetId();
-		hui::image(elem->normalState().image, 13);
+		hui::image(elem->normalState().image, 14);
 		bool imageHovered = hui::isHovered();
 		bool imagePressed = hui::isPressed();
 		hui::endBox();
 
-		if (hui::isHovered() || imageHovered || draggingValue)
+		if (hui::isHovered() || imageHovered || ctx->vecEditor.draggingValue)
 		{
 			hui::setMouseCursor(hui::MouseCursorType::SizeWE);
 
 			if (hui::isPressed() || imagePressed)
 			{
-				draggingValue = true;
-				draggedWidgetId = ctx->id;
-				lastMousePos = hui::getInputEvent().mouse.point;
+				ctx->vecEditor.draggingValue = true;
+				ctx->vecEditor.draggedId = ctx->id;
+				ctx->vecEditor.lastMousePos = hui::getInputEvent().mouse.point;
 				hui::setCapture();
 			}
 		}
 
 		if (hui::getInputEvent().type == hui::InputEvent::Type::MouseUp)
 		{
-			draggingValue = false;
-			draggedWidgetId = 0;
+			ctx->vecEditor.draggingValue = false;
+			ctx->vecEditor.draggedId = 0;
 			hui::releaseCapture();
 			changeEnded = true;
 		}
 
-		if (draggingValue
-			&& draggedWidgetId == ctx->id)
+		if (ctx->vecEditor.draggingValue
+			&& ctx->vecEditor.draggedId == ctx->id)
 		{
 			value = atof(strAxis);
-			f32 dx = hui::getInputEvent().mouse.point.x - lastMousePos.x;
+			f32 dx = hui::getInputEvent().mouse.point.x - ctx->vecEditor.lastMousePos.x;
 			f32 unitPerPixel = scrollStep;
 
 			value += (f64)dx * unitPerPixel;
-			lastMousePos = hui::getInputEvent().mouse.point;
-			hui::toString((f32)value, strAxis, maxStrSize);
+			ctx->vecEditor.lastMousePos = hui::getInputEvent().mouse.point;
+			hui::toString((f32)value, strAxis, VectorEditorState::maxStrSize);
 			modified = true;
 		}
 
 		hui::nextColumn();
-		modified = hui::textInput(strAxis, maxStrSize) || modified;
+		modified = hui::textInput(strAxis, VectorEditorState::maxStrSize) || modified;
 
 		if (isChangeEnded())
 			changeEnded = true;
@@ -97,14 +85,14 @@ bool vecEditorInternal(f64& x, f64& y, f64& z, f64 scrollStep, bool useZ)
 		}
 	};
 
-	editValue("X", "axisBoxXImage", strX, x, Color::veryDarkRed, Color::red, scrollStep, modified, changedEndedX);
+	editValue("X", "axisBoxXImage", ctx->vecEditor.strX, x, Color::veryDarkRed, Color::red, scrollStep, modified, changedEndedX);
 	hui::nextColumn();
-	editValue("Y", "axisBoxYImage", strY, y, Color::veryDarkGreen, Color::green, scrollStep, modified, changedEndedY);
+	editValue("Y", "axisBoxYImage", ctx->vecEditor.strY, y, Color::veryDarkGreen, Color::green, scrollStep, modified, changedEndedY);
 
 	if (useZ)
 	{
 		hui::nextColumn();
-		editValue("Z", "axisBoxZImage", strZ, z, Color::veryDarkCyan, Color::cyan, scrollStep, modified, changedEndedZ);
+		editValue("Z", "axisBoxZImage", ctx->vecEditor.strZ, z, Color::veryDarkCyan, Color::cyan, scrollStep, modified, changedEndedZ);
 	}
 
 	endColumns();

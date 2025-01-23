@@ -1,6 +1,7 @@
 #include "text_input_state.h"
 #include "util.h"
 #include "font.h"
+#include "context.h"
 
 namespace hui
 {
@@ -11,7 +12,7 @@ bool TextInputState::processEvent(const InputEvent& ev)
 {
 	textChanged = false;
 
-	if (!widgetId)
+	if (!id)
 	{
 		return false;
 	}
@@ -21,7 +22,7 @@ bool TextInputState::processEvent(const InputEvent& ev)
 		// we're out, no more text editing
 		if (!rect.contains(ev.mouse.point))
 		{
-			widgetId = 0;
+			id = 0;
 			return false;
 		}
 
@@ -154,7 +155,7 @@ bool TextInputState::processEvent(const InputEvent& ev)
 void TextInputState::deleteSelection()
 {
 	Utf32String str1, str2;
-	int startSel = selectionBegin, endSel = selectionEnd, tmpSel;
+	i32 startSel = selectionBegin, endSel = selectionEnd, tmpSel;
 
 	if (startSel > endSel)
 	{
@@ -298,14 +299,14 @@ void TextInputState::processKeyEvent(const InputEvent& ev)
 			{
 				if (caretPosition > 0)
 				{
-					int cart = caretPosition;
+					i32 newCaretPos = caretPosition;
 
-					cart--;
+					newCaretPos--;
 
 					if (caretPosition >= text.size())
-						cart = text.size() - 1;
+						newCaretPos = text.size() - 1;
 
-					text.erase(text.begin() + cart);
+					text.erase(text.begin() + newCaretPos);
 					--caretPosition;
 					textChanged = true;
 				}
@@ -323,7 +324,7 @@ void TextInputState::processKeyEvent(const InputEvent& ev)
 	else if (ev.key.code == KeyCode::End || ev.key.code == KeyCode::ArrowDown)
 	{
 		// do we select ?
-		if (!!(ev.key.modifiers & KeyModifiers::Shift))
+		if (has(ev.key.modifiers, KeyModifiers::Shift))
 		{
 			if (!selectionActive)
 			{
@@ -346,7 +347,7 @@ void TextInputState::processKeyEvent(const InputEvent& ev)
 	else if (ev.key.code == KeyCode::Home || ev.key.code == KeyCode::ArrowUp)
 	{
 		// do we select ?
-		if (!!(ev.key.modifiers & KeyModifiers::Shift))
+		if (has(ev.key.modifiers, KeyModifiers::Shift))
 		{
 			if (!selectionActive)
 			{
@@ -454,7 +455,7 @@ void TextInputState::insertTextAtCaret(const Utf32String& newText)
 		return;
 	}
 
-	int offs = caretPosition;
+	i32 offs = caretPosition;
 
 	if (caretPosition > text.size() && !text.empty())
 		offs = text.size() - 1;
@@ -563,15 +564,14 @@ void TextInputState::computeScrollAmount()
 	}
 
 	f32 absCursorPosX = clipRect.x + textSizeToCaret.width - scrollOffset;
-	const f32 stepAmount = 30; //TODO: make public
 
 	if (absCursorPosX < clipRect.x)
 	{
-		scrollOffset -= (clipRect.x - absCursorPosX) + stepAmount;
+		scrollOffset -= (clipRect.x - absCursorPosX) + ctx->settings.textScrollStepAmount;
 	}
 	else if (absCursorPosX > clipRect.right())
 	{
-		scrollOffset += absCursorPosX - clipRect.right() + stepAmount;
+		scrollOffset += absCursorPosX - clipRect.right() + ctx->settings.textScrollStepAmount;
 	}
 
 	if (scrollOffset < 0)

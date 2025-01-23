@@ -24,7 +24,7 @@ static bool comboSliderInternal(f32* value, f32 minVal, f32 maxVal, bool useRang
 	// if we're not editing any text of this particular widget id
 	if (!ctx->comboSlider.editingText || ctx->comboSlider.id != ctx->id)
 	{
-		addWidgetItem("##comboSlider", bodyElem.normalState().height * ctx->scale);
+		addWidget("##comboSlider", bodyElem.normalState().height * ctx->scale);
 		buttonBehavior();
 	}
 
@@ -76,7 +76,7 @@ static bool comboSliderInternal(f32* value, f32 minVal, f32 maxVal, bool useRang
 		ctx->widget.focusedId = ctx->id;
 		ctx->widget.focused = true;
 		ctx->focusChanged = true;
-		ctx->textInput.widgetId = ctx->id;
+		ctx->textInput.id = ctx->id;
 		memset(ctx->comboSlider.text, 64, 0);
 		toString(*value, ctx->comboSlider.text, ComboSliderState::maxTextSize);
 		ctx->textInput.editNow = true;
@@ -93,7 +93,7 @@ static bool comboSliderInternal(f32* value, f32 minVal, f32 maxVal, bool useRang
 		textInput(ctx->comboSlider.text, ComboSliderState::maxTextSize, TextInputValueMode::NumericOnly);
 
 		if (//!ctx->widget.focused
-			 !ctx->textInput.widgetId
+			 !ctx->textInput.id
 			|| ctx->comboSlider.requestChangeToOtherComboSlider
 			|| (ctx->event.type == InputEvent::Type::Key
 				&& ctx->event.key.down

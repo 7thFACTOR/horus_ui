@@ -10,39 +10,35 @@
 
 namespace hui
 {
-bool rotarySliderFloat(const char* label, f32& value, f32 minVal, f32 maxVal, f32 step, bool twoSide, f32 fineStepDivideFactor)
+bool rotarySliderFloat(const char* label, f32* value, f32 minVal, f32 maxVal, f32 step, bool twoSide, f32 fineStepDivideFactor)
 {
-	static Point lastMousePos;
-	static WidgetId rotarySliderWidgetId = 0;
-	static bool isFine = false;
-
 	auto& bodyElem = ctx->theme->getElement(WidgetElementId::RotarySliderBody);
 	auto& markElem = ctx->theme->getElement(WidgetElementId::RotarySliderMark);
 	auto& valueDotElem = ctx->theme->getElement(WidgetElementId::RotarySliderValueDot);
 	bool wasModified = false;
 
-	addWidgetItem(label, bodyElem.normalState().height * ctx->scale);
+	addWidget(label, bodyElem.normalState().height * ctx->scale);
 	buttonBehavior();
 
 	if (isHovered() && ctx->event.type == InputEvent::Type::MouseDown)
 	{
-		lastMousePos = ctx->mousePosition;
-		rotarySliderWidgetId = ctx->id;
+		ctx->rotarySlider.lastMousePos = ctx->mousePosition;
+		ctx->rotarySlider.id = ctx->id;
 	}
 
-	if (ctx->event.type == InputEvent::Type::MouseUp && rotarySliderWidgetId == ctx->id)
+	if (ctx->event.type == InputEvent::Type::MouseUp && ctx->rotarySlider.id == ctx->id)
 	{
-		rotarySliderWidgetId = 0;
+		ctx->rotarySlider.id = 0;
 		ctx->widget.changeEnded = true;
 	}
 
 	if (ctx->event.type == InputEvent::Type::MouseMove
-		&& rotarySliderWidgetId == ctx->id)
+		&& ctx->rotarySlider.id == ctx->id)
 	{
 		f32 deltaValue = 0;
-		Point delta = ctx->mousePosition - lastMousePos;
+		Point delta = ctx->mousePosition - ctx->rotarySlider.lastMousePos;
 		
-		lastMousePos = ctx->mousePosition;
+		ctx->rotarySlider.lastMousePos = ctx->mousePosition;
 
 		switch (ctx->settings.sliderDragDirection)
 		{
@@ -65,8 +61,8 @@ bool rotarySliderFloat(const char* label, f32& value, f32 minVal, f32 maxVal, f3
 			break;
 		}
 
-		value += deltaValue * step * ((bool)(ctx->event.mouse.modifiers & KeyModifiers::Control) ? 1.0f / fineStepDivideFactor : 1.0f);
-		wasModified = clampValue(value, minVal, maxVal);
+		*value += deltaValue * step * ((bool)(ctx->event.mouse.modifiers & KeyModifiers::Control) ? 1.0f / fineStepDivideFactor : 1.0f);
+		wasModified = clampValue(*value, minVal, maxVal);
 	}
 	
 	auto bodyElemState = &bodyElem.normalState();
@@ -100,7 +96,7 @@ bool rotarySliderFloat(const char* label, f32& value, f32 minVal, f32 maxVal, f3
 		ctx->renderer->cmdDrawImage(bodyElemState->image, rc);
 
 		Point center = rc.center();
-		f32 percent = 1.0f - (maxVal - value) / (maxVal - minVal);
+		f32 percent = 1.0f - (maxVal - *value) / (maxVal - minVal);
 		
 		f32 limitOffset = valueDotElem.currentStyle->getParameterValue("limitOffset", 0.3f);
 		f32 dotCount = valueDotElem.currentStyle->getParameterValue("count", 20);
@@ -141,7 +137,7 @@ bool rotarySliderFloat(const char* label, f32& value, f32 minVal, f32 maxVal, f3
 				pos.x = cosf(angle) * dotPlacementRadius * ctx->scale + center.x - valueDotElem.normalState().image->width * ctx->scale / 2;
 				pos.y = sinf(angle) * dotPlacementRadius * ctx->scale + center.y - valueDotElem.normalState().image->height * ctx->scale / 2;
 				ctx->renderer->cmdDrawImage(valueDotElem.normalState().image, pos, ctx->scale);
-				angle += step * sgn(value);
+				angle += step * sgn(*value);
 			}
 
 			pos.x = cosf(radians) * dotPlacementRadius * ctx->scale + center.x - valueDotElem.normalState().image->width * ctx->scale / 2;

@@ -24,7 +24,6 @@ struct Context
 	f32 totalTime = 0;
 	u32 frameCount = 0;
 	f32 pruneUnusedTextTime = 0; //TODO: maybe make it frames
-	WidgetId id = 0;
 	bool mustRedraw = false;
 	bool focusChanged = false;
 	bool skipRenderAndInput = false;
@@ -129,8 +128,11 @@ struct Context
 	DockTabGroupState tabGroup;
 
 	DropdownState dropdown;
-
 	ComboSliderState comboSlider;
+	VectorEditorState vecEditor;
+	RotarySliderState rotarySlider;
+	SliderState slider;
+	Rect tabGroupWidgetRect;
 
 	// Input
 	InputEvent event;

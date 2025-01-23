@@ -1,10 +1,10 @@
+#include <algorithm>
 #include "context.h"
 #include "theme.h"
 #include "renderer.h"
 #include "unicode_text_cache.h"
 #include "font.h"
 #include "util.h"
-#include <algorithm>
 
 namespace hui
 {
@@ -16,7 +16,7 @@ void beginMenuBar()
 	ctx->widget.rect.set(
 		round(ctx->position.x),
 		round(ctx->position.y),
-		ctx->layoutStack.back().width,
+		ctx->layout.width,
 		height);
 	ctx->renderer->cmdSetColor(menuBarElem.normalState().color);
 	ctx->renderer->cmdDrawImageBordered(menuBarElem.normalState().image, menuBarElem.normalState().border, ctx->widget.rect, ctx->scale);
@@ -28,7 +28,7 @@ void endMenuBar()
 	auto& menuBarElemState = ctx->theme->getElement(WidgetElementId::MenuBarBody).normalState();
 	f32 height = menuBarElemState.height * ctx->scale;
 
-	ctx->position.x = ctx->layoutStack.back().position.x;
+	ctx->position.x = ctx->layout.savedPosition.x;
 	ctx->position.y += height;
 	ctx->currentMenuBarId = 0;
 }
@@ -270,7 +270,7 @@ void endMenu()
 
 bool beginContextMenu(ContextMenuFlags flags)
 {
-	WidgetId widgetId = ctx->id;
+	WidgetId id = ctx->id;
 	bool leftButton = has(flags, ContextMenuFlags::AllowLeftClickOpen) ? ctx->event.mouse.button == MouseButton::Left : false;
 
 	if (ctx->event.type == hui::InputEvent::Type::MouseDown
@@ -281,14 +281,14 @@ bool beginContextMenu(ContextMenuFlags flags)
 		&& !ctx->contextMenuWidgetId)
 	{
 		ctx->contextMenuClicked = true;
-		ctx->contextMenuWidgetId = widgetId;
+		ctx->contextMenuWidgetId = id;
 		ctx->widget.focusedAndPressed = false;
 	}
 
 	bool opened = false;
 
 	if ((ctx->contextMenuActive || ctx->contextMenuClicked)
-		&& ctx->contextMenuWidgetId == widgetId)
+		&& ctx->contextMenuWidgetId == id)
 	{
 		opened = true;
 		beginMenuInternal("", SelectableFlags::Selected, true);
@@ -310,7 +310,7 @@ bool menuItem(const char* label, const char* shortcut, HImage icon, SelectableFl
 	bool hasCheck = !!(stateFlags & SelectableFlags::Checkable);
 	bool isChecked = !!(stateFlags & SelectableFlags::Checked);
 
-	addWidgetItem(label, bodyElem.normalState().height * ctx->scale);
+	addWidget(label, bodyElem.normalState().height * ctx->scale);
 	buttonBehavior(true);
 
 	if (

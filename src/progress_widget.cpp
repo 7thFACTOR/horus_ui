@@ -14,7 +14,7 @@ void progress(f32 value)
 	const f32 maxValue = 1.0f;
 	value = fmaxf(0, fminf(maxValue, value));
 
-	addWidgetItem("", backElem.normalState().height * ctx->scale);
+	addWidget("##progress", backElem.normalState().height * ctx->scale);
 
 	f32 percentFilled = value / maxValue;
 	f32 valueWidth = ctx->widget.rect.width;

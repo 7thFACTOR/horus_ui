@@ -1,4 +1,3 @@
-#include <math.h>
 #include <string.h>
 #include <algorithm>
 #include "context.h"
@@ -26,8 +25,10 @@ bool textInput(
 
 	// use ptr as id
 	pushId((void*)text);
-	addWidgetItem("", fmaxf(bodyElem->normalState().height * ctx->scale, bodyElem->normalState().font->getMetrics().height));
-	ctx->id = hashString(std::to_string((u64)text).c_str());
+	auto id = ctx->id;
+	addWidget(nullptr, fmaxf(bodyElem->normalState().height * ctx->scale, bodyElem->normalState().font->getMetrics().height));
+	ctx->id = id;
+
 	if (!ctx->focusChanged)
 		buttonBehavior();
 
@@ -39,7 +40,7 @@ bool textInput(
 
 	auto bodyElemState = &bodyElem->normalState();
 	bool isEditingThis =
-		ctx->id == ctx->textInput.widgetId
+		ctx->id == ctx->textInput.id
 		&& ctx->widget.focused
 		&& ctx->isActiveLayer();
 
@@ -73,16 +74,16 @@ bool textInput(
 		&& ctx->event.key.down
 		&& ctx->widget.focused)
 	{
-		if (!ctx->textInput.widgetId)
+		if (!ctx->textInput.id)
 		{
-			ctx->textInput.widgetId = ctx->id;
+			ctx->textInput.id = ctx->id;
 			isEditingThis = true;
 			ctx->textInput.editNow = true;
 			ctx->textInput.selectAllOnFocus = true;
 		}
 		else
 		{
-			ctx->textInput.widgetId = 0;
+			ctx->textInput.id = 0;
 			ctx->textInput.editNow = false;
 			isEditingThis = false;
 			ctx->widget.focusedId = 0;
@@ -94,19 +95,19 @@ bool textInput(
 		&& ctx->id == ctx->widget.focusedId)
 	{
 		ctx->textInput.editNow = true;
-		isEditingThis = 0 != ctx->textInput.widgetId;
+		isEditingThis = 0 != ctx->textInput.id;
 		ctx->textInput.selectAllOnFocus = true;
 
 		if (isEditingThis)
 		{
-			ctx->textInput.widgetId = ctx->id;
+			ctx->textInput.id = ctx->id;
 		}
 	}
 
 	if (ctx->widget.pressed
-		&& ctx->id != ctx->textInput.widgetId)
+		&& ctx->id != ctx->textInput.id)
 	{
-		ctx->textInput.widgetId = ctx->id;
+		ctx->textInput.id = ctx->id;
 		ctx->textInput.editNow = true;
 		isEditingThis = true;
 		ctx->textInput.selectAllOnFocus = true;

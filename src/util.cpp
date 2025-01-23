@@ -4,9 +4,25 @@
 #include <vector>
 #include "util.h"
 #include "rapidhash.h"
+#include "context.h"
 
 namespace hui
 {
+WidgetId genId(const char* text)
+{
+	return hashString(text, ctx->idStack.empty() ? 0 : ctx->idStack.back());
+}
+
+WidgetId genId(u32 id)
+{
+	return hashData(&id, sizeof(id), ctx->idStack.empty() ? 0 : ctx->idStack.back());
+}
+
+WidgetId genId(void* ptr)
+{
+	return hashData(&ptr, sizeof(ptr), ctx->idStack.empty() ? 0 : ctx->idStack.back());
+}
+
 void toString(i32 value, char* outString, u32 outStringMaxSize, u32 fillerZeroesCount)
 {
 	if (fillerZeroesCount)

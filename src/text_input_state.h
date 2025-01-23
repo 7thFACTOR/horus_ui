@@ -5,7 +5,7 @@ namespace hui
 {
 struct TextInputState
 {
-	WidgetId widgetId = 0;
+	WidgetId id = 0;
 	bool editNow = false;
 
 	struct EditKeyShiftInfo

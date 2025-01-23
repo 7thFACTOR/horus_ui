@@ -11,7 +11,7 @@ bool check(const char* label, bool* checkVar)
 	auto& checkBodyElem = ctx->theme->getElement(WidgetElementId::CheckBody);
 	auto& checkMarkElem = ctx->theme->getElement(WidgetElementId::CheckMark);
 
-	addWidgetItem(label, checkBodyElem.normalState().height * ctx->scale);
+	addWidget(label, checkBodyElem.normalState().height * ctx->scale);
 	buttonBehavior();
 	ctx->widget.changeEnded = false;
 

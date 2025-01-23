@@ -7,12 +7,12 @@ namespace hui
 void beginToolbar(ToolbarDirection dir)
 {
 	ctx->verticalToolbar = dir == ToolbarDirection::Vertical;
-	ctx->sameLineStack.push_back(ctx->widget.sameLine);
+	ctx->sameLineStack.push_back(ctx->sameLine);
 
 	if (!ctx->verticalToolbar)
 		beginSameLine();
 	else
-		ctx->widget.sameLine = false;
+		ctx->sameLine = false;
 
 	ctx->verticalToolbarStack.push_back(ctx->verticalToolbar);
 }
@@ -61,7 +61,7 @@ void toolbarSeparator()
 	auto elId = ctx->verticalToolbar ? WidgetElementId::ToolbarSeparatorHorizontalBody : WidgetElementId::ToolbarSeparatorVerticalBody;
 	auto& bodyElemState = ctx->theme->getElement(elId).normalState();
 
-	addWidgetItem("", bodyElemState.height * ctx->scale);
+	addWidget("##toolbarSeparator", bodyElemState.height * ctx->scale);
 	ctx->renderer->cmdSetColor(bodyElemState.color);
 	ctx->renderer->cmdDrawImageBordered(bodyElemState.image, bodyElemState.border,
 		{
@@ -70,15 +70,15 @@ void toolbarSeparator()
 			(f32)bodyElemState.width,
 			ctx->widget.rect.height }, ctx->scale);
 
-	toolbarGap();
+	toolbarSpace();
 }
 
-void toolbarGap(f32 gapSize)
+void toolbarSpace(f32 size)
 {
 	if (ctx->verticalToolbar)
-		gap(gapSize);
+		customSpace(size);
 	else
-		ctx->position.x += gapSize;
+		ctx->position.x += size;
 }
 
 bool toolbarTextInputFilter(char* outText, u32 maxOutTextSize, u32& filterIndex, const char** filterNames, u32 filterNameCount)

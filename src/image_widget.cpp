@@ -41,7 +41,7 @@ bool image(HImage img, f32 height, HAlignType horizontalAlign, VAlignType vertic
 	}
 
 	//TODO: img can be the id
-	addWidgetItem("", height);
+	addWidget("", height);
 
 	Point pos = ctx->widget.rect.topLeft();
 

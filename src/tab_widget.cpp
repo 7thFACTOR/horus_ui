@@ -4,12 +4,9 @@
 #include "font.h"
 #include "util.h"
 #include "docking.h"
-#include <math.h>
 
 namespace hui
 {
-Rect tabGroupWidgetRect;
-
 void beginTabGroup(TabIndex selectedIndex)
 {
 	auto& tabGroupElemState = ctx->theme->getElement(WidgetElementId::TabGroupBody).normalState();
@@ -18,10 +15,10 @@ void beginTabGroup(TabIndex selectedIndex)
 	ctx->widget.rect.set(
 		round(ctx->position.x),
 		round(ctx->position.y),
-		ctx->layoutStack.back().width + ctx->settings.dockNodeSpacing, // extend so we can draw the dock spacing on right
+		ctx->layout.width + ctx->settings.dockNodeSpacing, // extend so we can draw the dock spacing on right
 		height);
 
-	tabGroupWidgetRect = ctx->widget.rect;
+	ctx->tabGroupWidgetRect = ctx->widget.rect;
 
 	// tab group background
 	ctx->renderer->cmdSetColor(tabGroupElemState.color);
@@ -29,8 +26,8 @@ void beginTabGroup(TabIndex selectedIndex)
 		{
 			round(ctx->position.x),
 			round(ctx->position.y),
-			ctx->layoutStack.back().width + ctx->settings.dockNodeSpacing, // extend so we cover the dock spacing on right
-			ctx->layoutStack.back().height + ctx->settings.dockNodeSpacing + 1 // extend so we can draw the dock spacing on bottom
+			ctx->layout.width + ctx->settings.dockNodeSpacing, // extend so we cover the dock spacing on right
+			ctx->layout.height + ctx->settings.dockNodeSpacing + 1 // extend so we can draw the dock spacing on bottom
 		});
 
 	ctx->renderer->cmdSetColor(tabGroupElemState.color);
@@ -48,7 +45,7 @@ void beginTabGroup(TabIndex selectedIndex)
 				ctx->widget.rect.right() - ctx->settings.dockNodeSpacing,
 				ctx->widget.rect.y + height,
 				ctx->settings.dockNodeSpacing,
-				ctx->containerRect.height - height + ctx->settings.dockNodeSpacing // add dock node spacing to cover that too
+				ctx->docking.currentDockNode->rect.height - height + ctx->settings.dockNodeSpacing // add dock node spacing to cover that too
 			}, ctx->scale);
 
 		// draw the horizontal splitter for dock node resize
@@ -59,8 +56,8 @@ void beginTabGroup(TabIndex selectedIndex)
 			windowHorizontalSplitterElemState.border,
 			{
 				ctx->widget.rect.x,
-				ctx->widget.rect.y + ctx->containerRect.height,
-				ctx->containerRect.width,
+				ctx->widget.rect.y + ctx->docking.currentDockNode->rect.height,
+				ctx->docking.currentDockNode->rect.width,
 				ctx->settings.dockNodeSpacing,
 			}, ctx->scale);
 	}
@@ -74,14 +71,14 @@ TabIndex endTabGroup()
 	auto& tabGroupElemState = ctx->theme->getElement(WidgetElementId::TabGroupBody).normalState();
 	f32 height = tabGroupElemState.height * ctx->scale;
 
-	ctx->position.x = ctx->layoutStack.back().position.x;
+	ctx->position.x = ctx->layout.savedPosition.x;
 	ctx->position.y += height;
 	ctx->position.y = round(ctx->position.y);
 	ctx->renderer->popClipRect();
 
 	if (ctx->event.type == InputEvent::Type::MouseDown)
 	{
-		if (tabGroupWidgetRect.contains(ctx->mousePosition) && ctx->docking.currentDockNode)
+		if (ctx->tabGroupWidgetRect.contains(ctx->mousePosition) && ctx->docking.currentDockNode)
 		{
 			focusWindow(ctx->docking.currentDockNode->windows[ctx->selectedTabIndex]->id.c_str());
 		}
@@ -109,8 +106,7 @@ void tab(const char* label, HImage icon)
 		iconWidth = ico->rect.width;
 	}
 
-	const f32 iconTextSpacing = 4;
-	f32 textAndIconWidth = (fsize.width + iconWidth * 2.0f /* some space after text as icon width */ + iconTextSpacing) * ctx->scale;
+	f32 textAndIconWidth = (fsize.width + iconWidth * 2.0f /* some space after text as icon width */ + ctx->settings.dockTabIconTextSpacing) * ctx->scale;
 	
 	width = textAndIconWidth + tabElemState->border * 2.0f * ctx->scale;
 
@@ -171,18 +167,18 @@ void tab(const char* label, HImage icon)
 	ctx->renderer->cmdSetColor(tabElemState->textColor);
 
 	Rect textRc = {
-			ctx->widget.rect.x + (tabElemState->border + iconWidth + iconTextSpacing) * ctx->scale,
+			ctx->widget.rect.x + (tabElemState->border + iconWidth + ctx->settings.dockTabIconTextSpacing) * ctx->scale,
 			ctx->widget.rect.y,
 			width,
 			ctx->widget.rect.height,
 	};
 
 	ctx->renderer->pushClipRect(textRc);
-
-	ctx->renderer->cmdDrawTextInBox(label,
+	ctx->renderer->cmdDrawTextInBox(
+		label,
 		textRc,
-		HAlignType::Left, VAlignType::Center);
-
+		HAlignType::Left,
+		VAlignType::Center);
 	ctx->renderer->popClipRect();
 	ctx->currentTabIndex++;
 }

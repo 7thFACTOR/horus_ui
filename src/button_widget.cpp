@@ -207,7 +207,7 @@ bool button(const char* label)
 		ctx->widget.width = (btnBodyElem.normalState().border * 2.0f + textWidth.width) * ctx->scale;
 	}
 
-	addWidgetItem(label, btnBodyElem.normalState().height * ctx->scale);
+	addWidget(label, btnBodyElem.normalState().height * ctx->scale);
 
 	buttonBehavior();
 
@@ -263,7 +263,7 @@ bool iconButtonInternal(HImage icon, HImage disabledIcon, f32 customHeight, bool
 	else
 		height = std::max(btnBodyElemState->height, iconImg->rect.height);
 
-	addWidgetItem("", height * ctx->scale);
+	addWidget("", height * ctx->scale);
 	buttonBehavior();
 
 	f32 pressedIncrement = 0.0f;

@@ -1600,6 +1600,7 @@ struct Settings
 	f32 textCachePruneIntervalSec = 5; /// after each interval has passed, the pruning of unused texts is executed, will delete the texts that were not used for the last textCachePruneMaxTimeMs or textCachePruneMaxFrames, depending on the prune mode
 	f32 textCaretBlinkDelay = 0.4f;
 	bool textCaretBlinkEnable = true;
+	f32 textScrollStepAmount = 30; /// scroll pixel amount when moving inside text input
 	u32 defaultAtlasSize = 4096; /// default atlas textures size in pixels
 	SliderDragDirection sliderDragDirection = SliderDragDirection::Any; /// allows to change slider value from any direction drag, vertical or horizontal
 	bool sliderInvertVerticalDragAmount = false; /// if true and vertical sliding allowed, it will invert the drag amount
@@ -1620,6 +1621,9 @@ struct Settings
 	f32 dockNodeDockingSizeRatio = 0.33f; /// ratio of the new size of a docked node in regard to the node we're docking in (if dockNodeProportionalResize is true)
 	f32 dockNodeRootDockingHitSize = 40;
 	f32 dockNodeDockingHitSizeRatio = 0.5f; /// unit percent from the size of a window used for the docking hit box
+	f32 dockTabIconTextSpacing = 4;
+	f32 movePopupMaxDistanceTrigger = 5; /// distance of dragging with mouse for when to initiate popup dragging
+	f32 defaultBulletTextSpacing = 5; /// space size between bullet/check/radio and the label, might get overriden by the theme settings
 };
 
 enum class FileSeekMode
@@ -2420,7 +2424,7 @@ HORUS_API void beginContainer(const Rect& rect);
 HORUS_API void endContainer();
 HORUS_API void pushId(const char* id);
 HORUS_API void pushId(u32 id);
-HORUS_API void pushId(const void* id);
+HORUS_API void pushId(void* id);
 HORUS_API void popId();
 HORUS_API void pushLayout();
 HORUS_API void popLayout();
@@ -2785,8 +2789,8 @@ HORUS_API bool selectableCustomFont(const char* label, HFont font, SelectableFla
 HORUS_API void line();
 
 /// Leave a space between previous widget and next one
-/// \param size the size of the gap
-HORUS_API void gap(f32 size);
+/// \param size the size of the space
+HORUS_API void customSpace(f32 size);
 
 /// Leave a normal space between previous widget and next one
 HORUS_API void space();
@@ -2880,7 +2884,7 @@ HORUS_API bool toolbarDropdown(const char* label, HImage normalIcon = 0, HImage 
 HORUS_API void toolbarSeparator();
 
 /// Leave a gap horizontally in the toolbar
-HORUS_API void toolbarGap(f32 gapSize = 5);
+HORUS_API void toolbarSpace(f32 gapSize = 5);
 
 /// Draw a text input filter editor in the toolbar
 /// \param outText the text buffer to edit

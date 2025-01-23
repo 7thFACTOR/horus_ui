@@ -145,7 +145,7 @@ void setNextFocused()
 	ctx->focusChanged = true;
 }
 
-void addWidgetItem(const char* text, f32 height)
+void addWidget(const char* text, f32 height)
 {
 	ctx->widget.changeEnded = false;
 	height = round(height);
@@ -248,7 +248,7 @@ bool viewportImageFitSize(
 
 void beginFrame()
 {
-	if (ctx->textInput.widgetId)
+	if (ctx->textInput.id)
 	{
 		ctx->textInput.processEvent(ctx->event);
 	}
@@ -457,19 +457,19 @@ void update()
 
 	// tooltip handling
 	if (ctx->widget.hoveredId
-		&& ctx->widget.hoveredId != ctx->tooltip.widgetId
+		&& ctx->widget.hoveredId != ctx->tooltip.id
 		&& ctx->tooltip.timer >= ctx->tooltip.delayToShow)
 	{
-		ctx->tooltip.widgetId = ctx->widget.hoveredId;
+		ctx->tooltip.id = ctx->widget.hoveredId;
 		ctx->tooltip.show = true;
 		ctx->mustRedraw = true;
 		ctx->tooltip.timer = 0;
 		ctx->tooltip.closeTooltipPopup = false;
 	}
-	else if (!ctx->widget.hoveredId && ctx->tooltip.show && ctx->tooltip.widgetId)
+	else if (!ctx->widget.hoveredId && ctx->tooltip.show && ctx->tooltip.id)
 	{
 		ctx->tooltip.show = false;
-		ctx->tooltip.widgetId = 0;
+		ctx->tooltip.id = 0;
 		ctx->tooltip.closeTooltipPopup = true;
 	}
 
@@ -1379,20 +1379,17 @@ void endContainer()
 
 void pushId(const char* id)
 {
-	ctx->idStack.push_back(ctx->id);
-	ctx->id = hashString(id, ctx->id);
+	ctx->idStack.push_back(genId(id));
 }
 
 void pushId(u32 id)
 {
-	ctx->idStack.push_back(ctx->id);
-	ctx->id = hashData((void*)&id, sizeof(id), ctx->id);
+	ctx->idStack.push_back(genId(id));
 }
 
-void pushId(const void* id)
+void pushId(void* id)
 {
-	ctx->idStack.push_back(ctx->id);
-	ctx->id = hashData((void*)&id, sizeof(id), ctx->id);
+	ctx->idStack.push_back(genId(id));
 }
 
 void popId()
@@ -1403,7 +1400,6 @@ void popId()
 		return;
 	}
 
-	ctx->id = ctx->idStack.back();
 	ctx->idStack.pop_back();
 }
 
@@ -1689,7 +1685,7 @@ void columnHeader(const char* label, f32 width, f32 preferredWidth, f32 minWidth
 		headerElemState.height
 	};
 
-	addWidgetItem(label, ctx->widget.rect.height);
+	addWidget(label, ctx->widget.rect.height);
 
 	Rect rcText = ctx->widget.rect;
 
@@ -1894,14 +1890,14 @@ bool wantsToDragDrop()
 	{
 		ctx->dragDrop.draggingIntent = true;
 		ctx->dragDrop.lastMousePos = ctx->mousePosition;
-		ctx->dragDrop.widgetId = ctx->id;
+		ctx->dragDrop.id = ctx->id;
 	}
 
 	const u32 dragStartPixelDistance = 4;
 
 	if (ctx->dragDrop.draggingIntent
 		&& !ctx->dragDrop.dragging
-		&& ctx->id == ctx->dragDrop.widgetId
+		&& ctx->id == ctx->dragDrop.id
 		&& ctx->dragDrop.lastMousePos.getDistance(ctx->mousePosition) >= dragStartPixelDistance)
 	{
 		ctx->dragDrop.dragging = true;

@@ -1,3 +1,4 @@
+#include <limits.h>
 #include "context.h"
 #include "atlas.h"
 #include "theme.h"
@@ -5,17 +6,15 @@
 #include "unicode_text_cache.h"
 #include "font.h"
 #include "util.h"
-#include <limits.h>
 
 namespace hui
 {
 bool tooltip(const char* text)
 {
-	//TODO: not working since widget id is not incremental
-	if ((ctx->id - 1) == ctx->widget.hoveredId
+	if (ctx->id == ctx->widget.hoveredId
 		&& ctx->tooltip.show)
 	{
-		auto bodyElemState = ctx->theme->getElement(WidgetElementId::TooltipBody).normalState();
+		auto& bodyElemState = ctx->theme->getElement(WidgetElementId::TooltipBody).normalState();
 
 		FontTextSize fsize = bodyElemState.font->computeTextSize(text);
 		Rect rect = {
@@ -70,14 +69,13 @@ bool tooltip(const char* text)
 
 bool beginCustomTooltip(f32 width)
 {
-	//TODO: not working since widget id is not incremental
-	if ((ctx->id - 1) == ctx->widget.hoveredId
+	if (ctx->id == ctx->widget.hoveredId
 		&& ctx->tooltip.show)
 	{
 		auto& bodyElemState = ctx->theme->getElement(WidgetElementId::TooltipBody).normalState();
 
 		beginPopup(
-			"",
+			"##customTooltip",
 			width,
 			PopupFlags::CustomPosition | PopupFlags::TopMost,
 			{ ctx->tooltip.position.x + ctx->tooltip.offsetFromCursor, ctx->tooltip.position.y + ctx->tooltip.offsetFromCursor },

@@ -278,6 +278,7 @@ int main(int argc, char** args)
 				hui::textInput(txt, 2000, hui::TextInputValueMode::Any, "Write something here");
 			
 				hui::space();
+				hui::line();
 				if (hui::button("Dock Left"))
 				{
 					hui::dockWindow("inspector", txt, hui::DockType::Left);
@@ -317,6 +318,8 @@ int main(int argc, char** args)
 				hui::textInput(txt, 2000, hui::TextInputValueMode::Any, "Write something here");
 
 				hui::space();
+				hui::line();
+
 				if (hui::button("Dock Left"))
 				{
 					hui::dockWindow("assets", txt, hui::DockType::Left);

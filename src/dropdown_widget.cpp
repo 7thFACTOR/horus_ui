@@ -12,7 +12,7 @@ bool dropdown(const char* id, i32& selectedIndex, const char** items, u32 itemCo
 	auto& bodyElem = ctx->theme->getElement(WidgetElementId::DropdownBody);
 	auto& arrowElem = ctx->theme->getElement(WidgetElementId::DropdownArrow);
 
-	addWidgetItem(id, bodyElem.normalState().height * ctx->scale);
+	addWidget(id, bodyElem.normalState().height * ctx->scale);
 	buttonBehavior();
 
 	auto bodyElemState = &bodyElem.normalState();
@@ -83,17 +83,17 @@ bool dropdown(const char* id, i32& selectedIndex, const char** items, u32 itemCo
 
 		if (ctx->dropdown.active)
 		{
-			ctx->dropdown.widgetId = ctx->id;
+			ctx->dropdown.id = ctx->id;
 		}
 		else
 		{
-			ctx->dropdown.widgetId = 0;
+			ctx->dropdown.id = 0;
 		}
 	}
 
 	bool selectedNewItem = false;
 
-	if (ctx->dropdown.active && ctx->id == ctx->dropdown.widgetId)
+	if (ctx->dropdown.active && ctx->id == ctx->dropdown.id)
 	{
 		auto& bodyElem = ctx->theme->getElement(WidgetElementId::DropdownBody);
 

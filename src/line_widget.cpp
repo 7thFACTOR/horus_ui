@@ -9,7 +9,7 @@ void line()
 {
 	auto& bodyElemState = ctx->theme->getElement(WidgetElementId::LineBody).normalState();
 
-	addWidgetItem("", bodyElemState.image->rect.height * ctx->scale);
+	addWidget("##line", bodyElemState.image->rect.height * ctx->scale);
 	ctx->renderer->cmdSetColor(bodyElemState.color);
 	ctx->renderer->cmdDrawImageBordered(bodyElemState.image, bodyElemState.border,
 		{
@@ -19,7 +19,7 @@ void line()
 			ctx->widget.rect.height }, ctx->scale);
 }
 
-void gap(f32 size)
+void customSpace(f32 size)
 {
 	ctx->position.y += size * ctx->scale;
 }
@@ -50,11 +50,11 @@ void beginSameLine(f32 spacing)
 
 	// push current line index to stack, so we recover it
 	ctx->sameLineInfoIndexStack.push_back(ctx->sameLineInfoIndex);
-	ctx->widget.sameLine = true;
+	ctx->sameLine = true;
 	ctx->sameLineInfoCount++;
 
 	if (spacing > 0.0f)
-		ctx->widget.sameLineSpacing = spacing;
+		ctx->sameLineSpacing = spacing;
 }
 
 void endSameLine()
@@ -64,7 +64,7 @@ void endSameLine()
 
 	// we stop same line if this is a root same line
 	//if (!ctx->sameLineInfoIndexStack.size())
-		ctx->widget.sameLine = false;
+		ctx->sameLine = false;
 
 	if (!ctx->sameLineInfoIndexStack.size())
 		ctx->position.y += ctx->sameLineInfo[ctx->sameLineInfoIndex].lineHeight;
@@ -82,17 +82,17 @@ void endSameLine()
 
 void pushSameLineSpacing(f32 horizontalSpace)
 {
-	ctx->sameLineSpacingStack.push_back(ctx->widget.sameLineSpacing);
-	ctx->widget.sameLineSpacing = horizontalSpace;
+	ctx->sameLineSpacingStack.push_back(ctx->sameLineSpacing);
+	ctx->sameLineSpacing = horizontalSpace;
 }
 
 f32 popSameLineSpacing()
 {
 	if (ctx->sameLineSpacingStack.size())
 	{
-		ctx->widget.sameLineSpacing = ctx->sameLineSpacingStack.back();
+		ctx->sameLineSpacing = ctx->sameLineSpacingStack.back();
 		ctx->sameLineSpacingStack.pop_back();
-		return ctx->widget.sameLineSpacing;
+		return ctx->sameLineSpacing;
 	}
 
 	return 0;

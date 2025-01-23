@@ -107,7 +107,7 @@ int main(int argc, char** args)
 				hui::beginContainer(rc);
 				hui::pushLayoutPadding(10);
 				hui::beginBox(hui::Color::white, hui::WidgetElementId::WindowBody, hui::WidgetStateType::Normal);
-				hui::gap(20);
+				hui::customSpace(20);
 
 				hui::labelCustomFont("Once upon a time...", hui::getThemeFont(theme, "title"), hui::HAlignType::Center);
 				hui::line();
@@ -133,9 +133,9 @@ int main(int argc, char** args)
 				hui::popTint();
 
 				static f32 val;
-				hui::rotarySliderFloat("Speed", val, -30, 100, 1, false);
+				hui::rotarySliderFloat("Speed", &val, -30, 100, 1, false);
 
-				hui::comboSliderFloat(val);
+				hui::comboSliderFloat(&val);
 
 				if (hui::panel("Radios 2##2"))
 				{
@@ -158,7 +158,7 @@ int main(int argc, char** args)
 				hui::popTint();
 				hui::endSameLine();
 
-				hui::gap(20);
+				hui::customSpace(20);
 				hui::endBox();
 				hui::popLayoutPadding();
 				hui::endContainer();

@@ -71,6 +71,28 @@ struct ComboSliderState
 	bool requestChangeToOtherComboSlider = false;
 };
 
+struct VectorEditorState
+{
+	bool draggingValue = false;
+	Point lastMousePos;
+	WidgetId draggedId = 0;
+	static const size_t maxStrSize = 50;
+	char strX[maxStrSize] = { 0 };
+	char strY[maxStrSize] = { 0 };
+	char strZ[maxStrSize] = { 0 };
+	f32 colWidthsPRS[6];
+
+	VectorEditorState()
+	{
+		colWidthsPRS[0] = 14;
+		colWidthsPRS[1] = -1;
+		colWidthsPRS[2] = 14;
+		colWidthsPRS[3] = -1;
+		colWidthsPRS[4] = 14;
+		colWidthsPRS[5] = -1;
+	};
+};
+
 struct ThemeElement
 {
 	struct State
@@ -226,7 +248,7 @@ struct MenuWidgetState
 	Rect lastItemRect;
 	bool active = false;
 	bool activatedNow = false;
-	WidgetId widgetId = 0;
+	WidgetId id = 0;
 	size_t hoveredItemIndex = ~0;
 	size_t selectedItemIndex = ~0;
 	size_t itemCount = 0;
@@ -237,7 +259,7 @@ struct PopupState
 {
 	f32 width = 0;
 	f32 height = 0;
-	WidgetId widgetId = 0;
+	WidgetId id = 0;
 	PopupFlags flags = PopupFlags::None;
 	Point position;
 	Point moveOffset;
@@ -252,7 +274,13 @@ struct PopupState
 	HNativeWindow ownerWindow = 0;
 	Point dragDelta, lastMouseDownPoint;
 	Point lastMousePoint;
-	Rect prevContainerRect;
+};
+
+struct RotarySliderState
+{
+	Point lastMousePos;
+	WidgetId id = 0;
+	bool isFine = false;
 };
 
 struct TooltipState
@@ -260,7 +288,7 @@ struct TooltipState
 	Point position;
 	f32 timer = 0;
 	f32 delayToShow = 1.0f;
-	WidgetId widgetId = 0;
+	WidgetId id = 0;
 	bool show = false;
 	bool closeTooltipPopup = false;
 	f32 offsetFromCursor = 18.0f;
@@ -270,7 +298,7 @@ struct ScrollViewState
 {
 	bool draggingThumb = false;
 	Point dragDelta;
-	WidgetId widgetId = 0;
+	WidgetId id = 0;
 	f32 size = 0.0f;
 	f32 virtualHeight = 0.0f;
 	f32 scrollPosition = 0.0f;
@@ -311,7 +339,13 @@ struct DockTabGroupState
 struct DropdownState
 {
 	bool active = false;
-	WidgetId widgetId = 0;
+	WidgetId id = 0;
+};
+
+struct SliderState
+{
+	bool draggingKnob = false;
+	Point dragDelta;
 };
 
 struct Window
@@ -382,7 +416,7 @@ struct DragDropState
 	bool dropped = false;
 	bool allowDrop = false;
 	bool foundDropTarget = false;
-	WidgetId widgetId = 0;
+	WidgetId id = 0;
 	Point lastMousePos;
 	HMouseCursor dropAllowedCursor = 0;
 	void* dragObject = nullptr;
@@ -391,7 +425,7 @@ struct DragDropState
 
 struct VirtualListContentState
 {
-	Point lastPenPosition;
+	Point lastPosition;
 	u32 totalRowCount = 0;
 	f32 itemHeight = 0;
 };

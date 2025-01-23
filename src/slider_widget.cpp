@@ -8,8 +8,6 @@ namespace hui
 bool sliderInternal(const char* id, f32 minVal, f32 maxVal, f32& value, bool useStep, f32 step, bool isFloatValue)
 {
 	pushId(id);
-	static bool draggingKnob = false;
-	static Point dragDelta;
 
 	auto& bodyElem = ctx->theme->getElement(WidgetElementId::SliderBody);
 	auto& bodyFilledElem = ctx->theme->getElement(WidgetElementId::SliderBodyFilled);
@@ -19,7 +17,7 @@ bool sliderInternal(const char* id, f32 minVal, f32 maxVal, f32& value, bool use
 	// clamp
 	value = fmaxf(minVal, fminf(maxVal, value));
 
-	addWidgetItem(id, bodyElem.normalState().height * ctx->scale);
+	addWidget(id, bodyElem.normalState().height * ctx->scale);
 	buttonBehavior();
 
 	ctx->widget.rect.x += knobElem.normalState().image->rect.width / 2.f * ctx->scale;
@@ -61,20 +59,20 @@ bool sliderInternal(const char* id, f32 minVal, f32 maxVal, f32& value, bool use
 	bool recomputeKnobRect = false;
 
 	if (ctx->event.type == InputEvent::Type::MouseDown
-		&& !draggingKnob
+		&& !ctx->slider.draggingKnob
 		&& ctx->isActiveLayer()
 		&& ctx->hoveringThisWindow)
 	{
 		if (knobRect.contains(ctx->mousePosition))
 		{
 			setCapture();
-			draggingKnob = true;
-			dragDelta.x = ctx->mousePosition.x - (knobRect.x + knobRect.width / 2.0f);
+			ctx->slider.draggingKnob = true;
+			ctx->slider.dragDelta.x = ctx->mousePosition.x - (knobRect.x + knobRect.width / 2.0f);
 		}
 		else if (ctx->widget.rect.contains(ctx->mousePosition))
 		{
-			draggingKnob = true;
-			dragDelta.x = 0;
+			ctx->slider.draggingKnob = true;
+			ctx->slider.dragDelta.x = 0;
 			f32 t = (ctx->mousePosition.x - ctx->widget.rect.x) / valueWidth;
 			value = minVal + (maxVal - minVal) * t;
 			percentFilled = 1.0f - (maxVal - value) / (maxVal - minVal);
@@ -83,11 +81,11 @@ bool sliderInternal(const char* id, f32 minVal, f32 maxVal, f32& value, bool use
 		}
 	}
 
-	if (draggingKnob
+	if (ctx->slider.draggingKnob
 		&& ctx->id == ctx->widget.focusedId
 		&& ctx->isActiveLayer())
 	{
-		f32 x = ctx->mousePosition.x - dragDelta.x;
+		f32 x = ctx->mousePosition.x - ctx->slider.dragDelta.x;
 
 		if (x < ctx->widget.rect.x)
 			x = ctx->widget.rect.x;
@@ -103,10 +101,10 @@ bool sliderInternal(const char* id, f32 minVal, f32 maxVal, f32& value, bool use
 	}
 
 	if (ctx->event.type == InputEvent::Type::MouseUp
-		&& draggingKnob
+		&& ctx->slider.draggingKnob
 		&& ctx->isActiveLayer())
 	{
-		draggingKnob = false;
+		ctx->slider.draggingKnob = false;
 		releaseCapture();
 		ctx->widget.changeEnded = true;
 	}

@@ -90,7 +90,6 @@ void endWindow()
 	popId();
 	endContainer();
 	ctx->renderer->end();
-	ctx->currentWindowIndex++;
 	//TODO: make scroll struct stack
 }
 

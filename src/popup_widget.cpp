@@ -6,9 +6,6 @@
 
 namespace hui
 {
-//TODO: place into public settings
-static f32 movePopupMaxDistanceTrigger = 5;
-
 void beginPopup(
 	const char* id,
 	f32 width,
@@ -63,7 +60,7 @@ void beginPopup(
 
 	f32 height = popup.height;
 	auto& bodyElemState = ctx->theme->getElement(widgetElementId).normalState();
-	Point pos = { ctx->containerRect.x, ctx->containerRect.y };
+	Point pos;
 
 	if (has(flags, PopupFlags::Centered))
 	{
@@ -123,19 +120,18 @@ void beginPopup(
 	popup.position = pos;
 	Rect popupRect = { pos.x, pos.y, width, height };
 
-	ctx->layoutStack.push_back(LayoutState(LayoutType::Container));
-	ctx->layoutStack.back().position =
+	pushLayout();
+
+	ctx->layout = LayoutState(LayoutType::Container);
+	ctx->position =
 	{
 		pos.x + bodyElemState.border * ctx->scale,
 		pos.y + bodyElemState.border * ctx->scale
 	};
-	ctx->layoutStack.back().width = width - bodyElemState.border * 2 * ctx->scale;
-	ctx->layoutStack.back().savedPosition = ctx->position;
-	ctx->position = ctx->layoutStack.back().position;
-	ctx->sameLineStack.push_back(ctx->widget.sameLine);
-	ctx->widget.sameLine = false; // reset the same line, we don't need that at the popup start
-	popup.prevContainerRect = ctx->containerRect;
-	ctx->containerRect = ctx->renderer->getWindowRect();
+	ctx->layout.width = width - bodyElemState.border * 2 * ctx->scale;
+	ctx->layout.savedPosition = ctx->position;
+	ctx->sameLineStack.push_back(ctx->sameLine);
+	ctx->sameLine = false; // reset the same line, we don't need that at the popup start
 
 	ctx->renderer->pushClipRect(ctx->renderer->getWindowRect(), false);
 
@@ -147,7 +143,7 @@ void beginPopup(
 		ctx->renderer->cmdDrawImageBordered(
 			behindElemState.image,
 			behindElemState.border,
-			ctx->containerRect, ctx->scale);
+			ctx->renderer->getWindowRect(), ctx->scale);
 	}
 
 	ctx->renderer->cmdSetColor(bodyElemState.color);
@@ -156,7 +152,7 @@ void beginPopup(
 		bodyElemState.border,
 		popupRect, ctx->scale);
 
-	popup.widgetId = ctx->id;
+	popup.id = ctx->id;
 
 	popId();
 }
@@ -168,7 +164,7 @@ void endPopup()
 	//TODO: make a better popup move
 	if (ctx->isActiveLayer()
 		&&
-		(ctx->widget.hoveredId == popup.widgetId
+		(ctx->widget.hoveredId == popup.id
 			|| popup.startedToDrag
 			|| ctx->widget.hoveredType == WidgetType::Label))
 	{
@@ -189,9 +185,9 @@ void endPopup()
 			auto mousePos = ctx->providers->input->getAbsoluteMousePosition();
 
 			if (popup.startedToDrag
-				&& popup.lastMouseDownPoint.getDistance(mousePos) >= movePopupMaxDistanceTrigger
+				&& popup.lastMouseDownPoint.getDistance(mousePos) >= ctx->settings.movePopupMaxDistanceTrigger
 				&& !popup.draggingPopup
-				&& ctx->widget.hoveredId == popup.widgetId)
+				&& ctx->widget.hoveredId == popup.id)
 			{
 				popup.dragDelta = popup.position - mousePos;
 				// clear the event so other widgets will not use it
@@ -224,13 +220,12 @@ void endPopup()
 	}
 
 	auto& bodyElemState = ctx->theme->getElement(popup.widgetElementId).normalState();
-	popup.height = (ctx->position.y - ctx->layoutStack.back().position.y) + bodyElemState.border * 2.0f * ctx->scale - ctx->spacing * ctx->scale;
+	popup.height = (ctx->position.y - ctx->layout.savedPosition.y) + bodyElemState.border * 2.0f * ctx->scale - ctx->spacing * ctx->scale;
 	
-	ctx->position = ctx->layoutStack.back().savedPosition;
-	ctx->containerRect = popup.prevContainerRect;
+	ctx->position = ctx->layout.savedPosition;
 	ctx->renderer->popClipRect();
-	ctx->layoutStack.pop_back();
-	ctx->widget.sameLine = ctx->sameLineStack.back();
+	popLayout();
+	ctx->sameLine = ctx->sameLineStack.back();
 	ctx->sameLineStack.pop_back();
 
 	if (!has(popup.flags, PopupFlags::SameLayer))
@@ -262,7 +257,7 @@ bool clickedOutsidePopup()
 	if (ctx->event.type != InputEvent::Type::MouseDown)
 		return false;
 
-	if (ctx->layoutStack.back().type == LayoutType::Container
+	if (ctx->layout.type == LayoutType::Container
 		&& ctx->isActiveLayer())
 	{
 		auto& popup = ctx->popupStack[ctx->popupIndex - 1];
@@ -284,7 +279,7 @@ bool clickedOutsidePopup()
 
 bool mouseOutsidePopup()
 {
-	if (ctx->layoutStack.back().type == LayoutType::Container
+	if (ctx->layout.type == LayoutType::Container
 		&& ctx->isActiveLayer())
 	{
 		auto& popup = ctx->popupStack[ctx->popupIndex - 1];
@@ -311,7 +306,7 @@ bool pressedEscapeOnPopup()
 	if (popup.alreadyClosedWithEscape)
 		return false;
 
-	if (ctx->layoutStack.back().type == LayoutType::Container
+	if (ctx->layout.type == LayoutType::Container
 		&& ctx->event.type == InputEvent::Type::Key
 		&& ctx->event.key.down
 		&& ctx->event.key.code == KeyCode::Esc
@@ -381,7 +376,7 @@ MessageBoxButtons messageBox(
 	hui::image((HImage)iconElem->normalState().image, 0, hui::HAlignType::Right);
 	endColumns();
 
-	hui::gap(10);
+	hui::customSpace(10);
 
 	MessageBoxButtons returnBtns = MessageBoxButtons::None;
 

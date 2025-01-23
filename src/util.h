@@ -3,7 +3,10 @@
 
 namespace hui
 {
-void addWidgetItem(const char* text, f32 height);
+void addWidget(const char* text, f32 height);
+WidgetId genId(const char* text);
+WidgetId genId(u32 id);
+WidgetId genId(void* ptr);
 void setFocusable();
 void buttonBehavior(bool menuItem = false);
 void mouseDownOnlyButtonBehavior();

@@ -16,11 +16,11 @@ bool panel(const char* label, bool* expandedVar)
 	bool changed = false;
 	bool expanded = false;
 
-	addWidgetItem(label, bodyElemState->image->rect.height * ctx->scale);
+	addWidget(label, bodyElemState->image->rect.height * ctx->scale);
 
 	// we want to have the panel all the way
 	ctx->widget.rect.x = ctx->position.x;
-	ctx->widget.rect.width = ctx->layoutStack.back().width;
+	ctx->widget.rect.width = ctx->layout.width;
 
 	buttonBehavior();
 

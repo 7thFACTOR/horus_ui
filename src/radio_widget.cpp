@@ -11,7 +11,7 @@ bool radio(const char* label, i32* currentRadioValue, i32 thisValue)
 	auto& radioBodyElem = ctx->theme->getElement(WidgetElementId::RadioBody);
 	auto& radioMarkElem = ctx->theme->getElement(WidgetElementId::RadioMark);
 
-	addWidgetItem(label, radioBodyElem.normalState().height * ctx->scale);
+	addWidget(label, radioBodyElem.normalState().height * ctx->scale);
 	buttonBehavior();
 	bool changed = false;
 
@@ -63,7 +63,7 @@ bool radio(const char* label, i32* currentRadioValue, i32 thisValue)
 			}, ctx->scale);
 	}
 
-	const f32 bulletTextSpacingParam = radioBodyElem.currentStyle->getParameterValue("bulletTextSpacing", 5);
+	const f32 bulletTextSpacingParam = radioBodyElem.currentStyle->getParameterValue("bulletTextSpacing", ctx->settings.defaultBulletTextSpacing);
 	const f32 bulletTextSpacing = bulletTextSpacingParam * ctx->scale;
 
 	ctx->renderer->cmdSetColor(radioBodyElemState->textColor);

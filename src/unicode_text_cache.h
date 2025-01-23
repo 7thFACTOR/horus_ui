@@ -19,6 +19,7 @@ protected:
 		Utf32String* text = nullptr;
 		f32 lastUsedTimeOrFrame = 0;
 	};
+
 	std::unordered_map<std::string, CachedText> texts;
 };
 
