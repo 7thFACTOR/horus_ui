@@ -612,7 +612,7 @@ void presentNativeWindow(HNativeWindow nativeWnd)
 
 	if (ctx->renderer->allowRendering())
 	{
-		presentNativeWindow(nativeWnd);
+		presentWindow(nativeWnd);
 	}
 
 	ctx->renderer->resetWindowContexts();
