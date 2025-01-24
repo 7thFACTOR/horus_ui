@@ -108,7 +108,7 @@ macro(link_libs TARGET_LIST)
 
 	if (WIN32)
 		target_link_libraries(${TARGET_LIST} PUBLIC debug freetyped optimized freetype)
-		target_link_libraries(${TARGET_LIST} PUBLIC debug SDL3 optimized SDL3)
+		target_link_libraries(${TARGET_LIST} PUBLIC SDL3::SDL3)
 		#target_link_libraries(${TARGET_LIST} PUBLIC debug SDL3_mixerd optimized SDL3_mixer)
 		#target_link_libraries(${TARGET_LIST} PUBLIC debug libGLEW32d optimized libGLEW32)
 		#target_link_libraries(${TARGET_LIST} PUBLIC debug glfw3 optimized glfw3)
