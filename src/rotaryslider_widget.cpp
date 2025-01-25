@@ -17,7 +17,8 @@ bool rotarySliderFloat(const char* label, f32* value, f32 minVal, f32 maxVal, f3
 	auto& valueDotElem = ctx->theme->getElement(WidgetElementId::RotarySliderValueDot);
 	bool wasModified = false;
 
-	addWidget(label, bodyElem.normalState().height * ctx->scale);
+	ctx->extractLabelAndId(label);
+	addWidget(bodyElem.normalState().height * ctx->scale);
 	buttonBehavior();
 
 	if (isHovered() && ctx->event.type == InputEvent::Type::MouseDown)

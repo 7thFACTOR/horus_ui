@@ -310,7 +310,8 @@ bool menuItem(const char* label, const char* shortcut, HImage icon, SelectableFl
 	bool hasCheck = !!(stateFlags & SelectableFlags::Checkable);
 	bool isChecked = !!(stateFlags & SelectableFlags::Checked);
 
-	addWidget(label, bodyElem.normalState().height * ctx->scale);
+	ctx->extractLabelAndId(label);
+	addWidget(bodyElem.normalState().height * ctx->scale);
 	buttonBehavior(true);
 
 	if (

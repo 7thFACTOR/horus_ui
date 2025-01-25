@@ -173,7 +173,7 @@ struct Context
 		return maxLayerIndex == layerIndex;
 	}
 
-	void extractLabelAndId(const char* text, std::string& label, WidgetId& id);
+	void extractLabelAndId(const char* text);
 
 	void setSkipRenderAndInput(bool skip);
 

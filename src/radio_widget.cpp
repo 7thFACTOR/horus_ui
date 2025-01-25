@@ -11,7 +11,8 @@ bool radio(const char* label, i32* currentRadioValue, i32 thisValue)
 	auto& radioBodyElem = ctx->theme->getElement(WidgetElementId::RadioBody);
 	auto& radioMarkElem = ctx->theme->getElement(WidgetElementId::RadioMark);
 
-	addWidget(label, radioBodyElem.normalState().height * ctx->scale);
+	ctx->extractLabelAndId(label);
+	addWidget(radioBodyElem.normalState().height * ctx->scale);
 	buttonBehavior();
 	bool changed = false;
 

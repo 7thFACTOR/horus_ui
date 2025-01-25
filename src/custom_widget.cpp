@@ -16,7 +16,8 @@ Rect beginCustomWidget(const char* id, f32 height)
 		height = ctx->layout.height - (ctx->position.y - ctx->layout.savedPosition.y);
 	}
 
-	addWidget(id, height);
+	ctx->id = genId(id);
+	addWidget(height);
 	buttonBehavior();
 
 	return ctx->widget.rect;

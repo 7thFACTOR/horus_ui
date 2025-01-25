@@ -240,7 +240,8 @@ f32 endScrollView()
 
 	scrollPos = (u32)scrollPos;
 	popPosition();
-	addWidget("", size);
+	ctx->extractLabelAndId(nullptr);
+	addWidget(size);
 
 	return scrollPos;
 }

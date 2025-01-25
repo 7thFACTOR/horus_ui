@@ -199,16 +199,15 @@ bool button(const char* label)
 {
 	auto& btnBodyElem = ctx->theme->getElement(WidgetElementId::ButtonBody);
 
+	ctx->extractLabelAndId(label);
+
 	if (ctx->sameLine)
 	{
-		ctx->extractLabelAndId(label, ctx->widgetLabel, ctx->id);
-
 		auto textWidth = btnBodyElem.normalState().font->computeTextSize(ctx->widgetLabel.c_str());
 		ctx->widget.width = (btnBodyElem.normalState().border * 2.0f + textWidth.width) * ctx->scale;
 	}
 
-	addWidget(label, btnBodyElem.normalState().height * ctx->scale);
-
+	addWidget(btnBodyElem.normalState().height * ctx->scale);
 	buttonBehavior();
 
 	auto btnBodyElemState = &btnBodyElem.normalState();
@@ -263,7 +262,8 @@ bool iconButtonInternal(HImage icon, HImage disabledIcon, f32 customHeight, bool
 	else
 		height = std::max(btnBodyElemState->height, iconImg->rect.height);
 
-	addWidget("", height * ctx->scale);
+	ctx->extractLabelAndId(nullptr);
+	addWidget(height * ctx->scale);
 	buttonBehavior();
 
 	f32 pressedIncrement = 0.0f;

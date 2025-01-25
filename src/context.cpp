@@ -13,7 +13,7 @@ Context::~Context()
 {
 }
 
-void Context::extractLabelAndId(const char* text, std::string& label, WidgetId& id)
+void Context::extractLabelAndId(const char* text)
 {
 	char* textPtr = text ? text : "";
 	auto idStart = strstr(textPtr, "##");
@@ -30,9 +30,9 @@ void Context::extractLabelAndId(const char* text, std::string& label, WidgetId& 
 		id = genId(textPtr);
 	}
 
-	label.assign(textPtr, idStart ? idStart : textPtr + strlen(textPtr));
+	widgetLabel.assign(textPtr, idStart ? idStart : textPtr + strlen(textPtr));
 
-	if (label == "" || id == 0)
+	if (widgetLabel == "" || id == 0)
 	{
 		auto posStr = std::to_string(ctx->position.x) + std::to_string(ctx->position.y);
 		id = genId(posStr.c_str());

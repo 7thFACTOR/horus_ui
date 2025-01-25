@@ -12,7 +12,8 @@ bool dropdown(const char* id, i32& selectedIndex, const char** items, u32 itemCo
 	auto& bodyElem = ctx->theme->getElement(WidgetElementId::DropdownBody);
 	auto& arrowElem = ctx->theme->getElement(WidgetElementId::DropdownArrow);
 
-	addWidget(id, bodyElem.normalState().height * ctx->scale);
+	ctx->id = genId(id);
+	addWidget(bodyElem.normalState().height * ctx->scale);
 	buttonBehavior();
 
 	auto bodyElemState = &bodyElem.normalState();

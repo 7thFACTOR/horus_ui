@@ -15,77 +15,78 @@ static bool comboSliderInternal(f32* value, f32 minVal, f32 maxVal, bool useRang
 	auto& rightArrowElem = ctx->theme->getElement(WidgetElementId::ComboSliderRightArrow);
 	auto& rangeBarElem = ctx->theme->getElement(WidgetElementId::ComboSliderRangeBar);
 	ctx->widget.changeEnded = false;
+	bool arrowStepped = false;
+	bool arrowHoveredLeft = false;
+	bool arrowHoveredRight = false;
 
 	if (useRange)
 	{
 		ctx->widget.changeEnded = clampValue(*value, minVal, maxVal);
 	}
 
+	ctx->id = genId(value);
+
 	// if we're not editing any text of this particular widget id
-	if (!ctx->comboSlider.editingText || ctx->comboSlider.id != ctx->id)
+	if (!ctx->comboSlider.editingText && ctx->comboSlider.id != ctx->id)
 	{
-		addWidget("##comboSlider", bodyElem.normalState().height * ctx->scale);
+		addWidget(bodyElem.normalState().height * ctx->scale);
 		buttonBehavior();
-	}
 
-	if (ctx->comboSlider.dragging && ctx->comboSlider.id == ctx->id)
-	{
-		ctx->widget.pressed = true;
-	}
+		if (ctx->comboSlider.dragging)
+		{
+			ctx->widget.pressed = true;
+		}
 
-	if (isHovered() || isPressed())
-	{
-		setMouseCursor(MouseCursorType::HandPointing);
-	}
+		if (isHovered() || isPressed())
+		{
+			setMouseCursor(MouseCursorType::SizeWE);
+		}
 
-	bool arrowStepped = false;
-	bool arrowHoveredLeft = false;
-	bool arrowHoveredRight = false;
+		if (isHovered() && ctx->mousePosition.x <= ctx->widget.rect.x + leftArrowElem.normalState().image->width)
+		{
+			arrowHoveredLeft = true;
+		}
+		else if (isHovered() && ctx->mousePosition.x >= ctx->widget.rect.right() - rightArrowElem.normalState().image->width)
+		{
+			arrowHoveredRight = true;
+		}
 
-	if (isHovered() && ctx->mousePosition.x <= ctx->widget.rect.x + leftArrowElem.normalState().image->width)
-	{
-		arrowHoveredLeft = true;
-	}
-	else if (isHovered() && ctx->mousePosition.x >= ctx->widget.rect.right() - rightArrowElem.normalState().image->width)
-	{
-		arrowHoveredRight = true;
-	}
+		if (isClicked()
+			&& ctx->mousePosition.x <= ctx->widget.rect.x + leftArrowElem.normalState().image->width)
+		{
+			*value -= arrowStep;
+			arrowStepped = true;
+			if (useRange) clampValue(*value, minVal, maxVal);
+			ctx->widget.changeEnded = true;
+		}
+		else if (isClicked() && ctx->mousePosition.x >= ctx->widget.rect.right() - rightArrowElem.normalState().image->width)
+		{
+			*value += arrowStep;
+			arrowStepped = true;
+			if (useRange) clampValue(*value, minVal, maxVal);
+			ctx->widget.changeEnded = true;
+		}
 
-	if (isClicked()
-		&& ctx->mousePosition.x <= ctx->widget.rect.x + leftArrowElem.normalState().image->width)
-	{
-		*value -= arrowStep;
-		arrowStepped = true;
-		if (useRange) clampValue(*value, minVal, maxVal);
-		ctx->widget.changeEnded = true;
-	}
-	else if (isClicked() && ctx->mousePosition.x >= ctx->widget.rect.right() - rightArrowElem.normalState().image->width)
-	{
-		*value += arrowStep;
-		arrowStepped = true;
-		if (useRange) clampValue(*value, minVal, maxVal);
-		ctx->widget.changeEnded = true;
-	}
-
-	if (isClicked() && !ctx->comboSlider.dragging && !arrowStepped)
-	{
-		ctx->comboSlider.editingText = true;
-		ctx->comboSlider.id = ctx->id;
-		ctx->comboSlider.mouseWasDown = false;
-		ctx->comboSlider.dragging = false;
-		ctx->widget.focusedId = ctx->id;
-		ctx->widget.focused = true;
-		ctx->focusChanged = true;
-		ctx->textInput.id = ctx->id;
-		memset(ctx->comboSlider.text, 64, 0);
-		toString(*value, ctx->comboSlider.text, ComboSliderState::maxTextSize);
-		ctx->textInput.editNow = true;
-		ctx->textInput.selectAllOnFocus = true;
-		ctx->textInput.firstMouseDown = true;
-		forceRepaint();
-		ctx->position.y -= ctx->spacing * ctx->scale + bodyElem.normalState().height;
-		setNextFocused();
-		textInput(ctx->comboSlider.text, ComboSliderState::maxTextSize, TextInputValueMode::NumericOnly);
+		if (isClicked() && !ctx->comboSlider.dragging && !arrowStepped)
+		{
+			ctx->comboSlider.editingText = true;
+			ctx->comboSlider.id = ctx->id;
+			ctx->comboSlider.mouseWasDown = false;
+			ctx->comboSlider.dragging = false;
+			ctx->widget.focusedId = ctx->id;
+			ctx->widget.focused = true;
+			ctx->focusChanged = true;
+			ctx->textInput.id = ctx->id;
+			memset(ctx->comboSlider.text, 64, 0);
+			toString(*value, ctx->comboSlider.text, ComboSliderState::maxTextSize);
+			ctx->textInput.editNow = true;
+			ctx->textInput.selectAllOnFocus = true;
+			ctx->textInput.firstMouseDown = true;
+			forceRepaint();
+			ctx->position.y -= ctx->spacing * ctx->scale + bodyElem.normalState().height;
+			setNextFocused();
+			textInput(ctx->comboSlider.text, ComboSliderState::maxTextSize, TextInputValueMode::NumericOnly);
+		}
 	}
 	else
 	if (ctx->comboSlider.editingText && ctx->comboSlider.id == ctx->id)
@@ -114,7 +115,8 @@ static bool comboSliderInternal(f32* value, f32 minVal, f32 maxVal, bool useRang
 			}
 		}
 	}
-	else
+	
+	if (!ctx->comboSlider.editingText && ctx->comboSlider.id != ctx->id)
 	{
 		f32 percentFilled = 1.0f - (maxVal - *value) / (maxVal - minVal);
 		f32 valueWidth = ctx->widget.rect.width;

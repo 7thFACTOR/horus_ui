@@ -20,7 +20,8 @@ bool labelInternal(const char* label, HAlignType horizontalAlign, Font* font)
 		ctx->position.y,
 		width, height };
 
-	addWidget(label, rect.height * ctx->scale);
+	ctx->extractLabelAndId(label);
+	addWidget(rect.height * ctx->scale);
 	buttonBehavior();
 
 	if (ctx->widget.hoveredId == ctx->id)
@@ -68,11 +69,11 @@ bool labelCustomFontMultiline(const char* label, HFont font, HAlignType horizont
 
 	f32 width = ctx->layout.width;
 
-	ctx->extractLabelAndId(label, ctx->widgetLabel, ctx->id);
+	ctx->extractLabelAndId(label);
 
 	auto textSize = ((Font*)font)->computeTextSize(ctx->widgetLabel.c_str());
 
-	addWidget(label, textSize.height);
+	addWidget(textSize.height);
 
 	ctx->drawMultilineText(
 		ctx->widgetLabel.c_str(),

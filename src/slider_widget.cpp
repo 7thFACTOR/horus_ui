@@ -7,8 +7,6 @@ namespace hui
 {
 bool sliderInternal(const char* id, f32 minVal, f32 maxVal, f32& value, bool useStep, f32 step, bool isFloatValue)
 {
-	pushId(id);
-
 	auto& bodyElem = ctx->theme->getElement(WidgetElementId::SliderBody);
 	auto& bodyFilledElem = ctx->theme->getElement(WidgetElementId::SliderBodyFilled);
 	auto& knobElem = ctx->theme->getElement(WidgetElementId::SliderKnob);
@@ -17,7 +15,8 @@ bool sliderInternal(const char* id, f32 minVal, f32 maxVal, f32& value, bool use
 	// clamp
 	value = fmaxf(minVal, fminf(maxVal, value));
 
-	addWidget(id, bodyElem.normalState().height * ctx->scale);
+	ctx->id = genId(id);
+	addWidget(bodyElem.normalState().height * ctx->scale);
 	buttonBehavior();
 
 	ctx->widget.rect.x += knobElem.normalState().image->rect.width / 2.f * ctx->scale;
@@ -150,8 +149,6 @@ bool sliderInternal(const char* id, f32 minVal, f32 maxVal, f32& value, bool use
 		knobRect,
 		ctx->scale);
 	setFocusable();
-
-	popId();
 
 	return wasModified;
 }

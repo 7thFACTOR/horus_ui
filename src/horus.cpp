@@ -145,7 +145,7 @@ void setNextFocused()
 	ctx->focusChanged = true;
 }
 
-void addWidget(const char* text, f32 height)
+void addWidget(f32 height)
 {
 	ctx->widget.changeEnded = false;
 	height = round(height);
@@ -187,8 +187,6 @@ void addWidget(const char* text, f32 height)
 	{
 		ctx->position.x += width + ctx->sameLineSpacing * ctx->scale;
 	}
-
-	ctx->extractLabelAndId(text, ctx->widgetLabel, ctx->id);
 }
 
 void setFocusable()
@@ -1685,7 +1683,8 @@ void columnHeader(const char* label, f32 width, f32 preferredWidth, f32 minWidth
 		headerElemState.height
 	};
 
-	addWidget(label, ctx->widget.rect.height);
+	ctx->extractLabelAndId(label);
+	addWidget(ctx->widget.rect.height);
 
 	Rect rcText = ctx->widget.rect;
 

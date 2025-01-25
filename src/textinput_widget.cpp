@@ -24,10 +24,8 @@ bool textInput(
 	auto& bodyTextDefaultElemState = ctx->theme->getElement(WidgetElementId::TextInputDefaultText).normalState();
 
 	// use ptr as id
-	pushId((void*)text);
-	auto id = ctx->id;
-	addWidget(nullptr, fmaxf(bodyElem->normalState().height * ctx->scale, bodyElem->normalState().font->getMetrics().height));
-	ctx->id = id;
+	ctx->id = genId((void*)text);
+	addWidget(fmaxf(bodyElem->normalState().height * ctx->scale, bodyElem->normalState().font->getMetrics().height));
 
 	if (!ctx->focusChanged)
 		buttonBehavior();

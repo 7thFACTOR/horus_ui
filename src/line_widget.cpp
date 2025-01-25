@@ -9,7 +9,8 @@ void line()
 {
 	auto& bodyElemState = ctx->theme->getElement(WidgetElementId::LineBody).normalState();
 
-	addWidget("##line", bodyElemState.image->rect.height * ctx->scale);
+	ctx->extractLabelAndId(nullptr);
+	addWidget(bodyElemState.image->rect.height * ctx->scale);
 	ctx->renderer->cmdSetColor(bodyElemState.color);
 	ctx->renderer->cmdDrawImageBordered(bodyElemState.image, bodyElemState.border,
 		{
@@ -46,7 +47,7 @@ void beginSameLine(f32 spacing)
 
 	//// only a root same line can start a new line, the others will just follow
 	//if (ctx->sameLineInfoIndexStack.size() <= 1)
-	//	ctx->position.x = ctx->layoutStack.back().position.x;
+	//	ctx->position.x = ctx->layout.savedPosition.x;
 
 	// push current line index to stack, so we recover it
 	ctx->sameLineInfoIndexStack.push_back(ctx->sameLineInfoIndex);

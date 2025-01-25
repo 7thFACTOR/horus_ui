@@ -61,7 +61,8 @@ void toolbarSeparator()
 	auto elId = ctx->verticalToolbar ? WidgetElementId::ToolbarSeparatorHorizontalBody : WidgetElementId::ToolbarSeparatorVerticalBody;
 	auto& bodyElemState = ctx->theme->getElement(elId).normalState();
 
-	addWidget("##toolbarSeparator", bodyElemState.height * ctx->scale);
+	ctx->extractLabelAndId(nullptr);
+	addWidget(bodyElemState.height * ctx->scale);
 	ctx->renderer->cmdSetColor(bodyElemState.color);
 	ctx->renderer->cmdDrawImageBordered(bodyElemState.image, bodyElemState.border,
 		{

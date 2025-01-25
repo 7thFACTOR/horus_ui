@@ -38,7 +38,8 @@ bool selectableInternal(const char* label, HFont font, SelectableFlags stateFlag
 	auto& bodyElem = ctx->theme->getElement(WidgetElementId::SelectableBody);
 	Font* fnt = font ? (Font*)font : bodyElem.normalState().font;
 
-	addWidget(label, fmaxf(
+	ctx->extractLabelAndId(label);
+	addWidget(fmaxf(
 		bodyElem.normalState().height,
 		fnt->getMetrics().height) * ctx->scale);
 	buttonBehavior();
