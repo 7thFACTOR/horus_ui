@@ -24,23 +24,21 @@ static bool comboSliderInternal(f32* value, f32 minVal, f32 maxVal, bool useRang
 		ctx->widget.changeEnded = clampValue(*value, minVal, maxVal);
 	}
 
-	ctx->id = genId(value);
+	ctx->id = genId((void*)value);
 
-	// if we're not editing any text of this particular widget id
-	if (!ctx->comboSlider.editingText && ctx->comboSlider.id != ctx->id)
+	bool notEditingText = (ctx->comboSlider.editingText && ctx->comboSlider.id != ctx->id) || !ctx->comboSlider.editingText;
+
+	if (notEditingText)
 	{
 		addWidget(bodyElem.normalState().height * ctx->scale);
 		buttonBehavior();
 
-		if (ctx->comboSlider.dragging)
+		if (ctx->comboSlider.dragging && ctx->id == ctx->comboSlider.id)
 		{
 			ctx->widget.pressed = true;
 		}
 
-		if (isHovered() || isPressed())
-		{
-			setMouseCursor(MouseCursorType::SizeWE);
-		}
+		auto cursor = 0;
 
 		if (isHovered() && ctx->mousePosition.x <= ctx->widget.rect.x + leftArrowElem.normalState().image->width)
 		{
@@ -67,6 +65,14 @@ static bool comboSliderInternal(f32* value, f32 minVal, f32 maxVal, bool useRang
 			ctx->widget.changeEnded = true;
 		}
 
+		if (isHovered() || isPressed())
+		{
+			if (arrowHoveredLeft || arrowHoveredRight)
+				setMouseCursor(MouseCursorType::Arrow);
+			else
+				setMouseCursor(MouseCursorType::SizeWE);
+		}
+
 		if (isClicked() && !ctx->comboSlider.dragging && !arrowStepped)
 		{
 			ctx->comboSlider.editingText = true;
@@ -86,6 +92,7 @@ static bool comboSliderInternal(f32* value, f32 minVal, f32 maxVal, bool useRang
 			ctx->position.y -= ctx->spacing * ctx->scale + bodyElem.normalState().height;
 			setNextFocused();
 			textInput(ctx->comboSlider.text, ComboSliderState::maxTextSize, TextInputValueMode::NumericOnly);
+			ctx->widget.focusedId = ctx->id;
 		}
 	}
 	else
@@ -93,12 +100,12 @@ static bool comboSliderInternal(f32* value, f32 minVal, f32 maxVal, bool useRang
 	{
 		textInput(ctx->comboSlider.text, ComboSliderState::maxTextSize, TextInputValueMode::NumericOnly);
 
-		if (//!ctx->widget.focused
-			 !ctx->textInput.id
+		if (!ctx->textInput.id
 			|| ctx->comboSlider.requestChangeToOtherComboSlider
 			|| (ctx->event.type == InputEvent::Type::Key
 				&& ctx->event.key.down
-				&& ctx->event.key.code == KeyCode::Esc
+				&& (ctx->event.key.code == KeyCode::Esc ||
+				ctx->event.key.code == KeyCode::Enter)
 				&& ctx->isActiveLayer()))
 		{
 			ctx->comboSlider.editingText = false;
@@ -115,8 +122,8 @@ static bool comboSliderInternal(f32* value, f32 minVal, f32 maxVal, bool useRang
 			}
 		}
 	}
-	
-	if (!ctx->comboSlider.editingText && ctx->comboSlider.id != ctx->id)
+		
+	if (notEditingText)
 	{
 		f32 percentFilled = 1.0f - (maxVal - *value) / (maxVal - minVal);
 		f32 valueWidth = ctx->widget.rect.width;

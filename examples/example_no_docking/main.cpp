@@ -133,9 +133,12 @@ int main(int argc, char** args)
 				hui::popTint();
 
 				static f32 val;
+				static f32 val2;
 				hui::rotarySliderFloat("Speed", &val, -30, 100, 1, false);
 
 				hui::comboSliderFloat(&val);
+
+				hui::comboSliderFloat(&val2);
 
 				if (hui::panel("Radios 2##2"))
 				{
