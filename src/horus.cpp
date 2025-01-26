@@ -138,7 +138,6 @@ void setNextDisabled()
 
 void setNextFocused()
 {
-	ctx->widget.focusedAndPressed = true;
 	ctx->widget.hovered = true;
 	ctx->widget.pressed = true;
 	ctx->widget.focused = true;
@@ -1925,9 +1924,6 @@ void beginDragDrop(u32 dragObjectType, void* dragObject)
 	ctx->dragDrop.dragObject = dragObject;
 	ctx->dragDrop.dragObjectType = dragObjectType;
 	ctx->dragDrop.begunDragging = true;
-
-	// we want other widgets to get hovered, so kill current one
-	ctx->widget.focusedAndPressed = false;
 }
 
 void endDragDrop()

@@ -68,24 +68,36 @@ bool textInput(
 	ctx->textInput.passwordCharUnicode = pwdStr;
 
 	if (ctx->event.type == InputEvent::Type::Key
-		&& ctx->event.key.code == KeyCode::Enter
 		&& ctx->event.key.down
 		&& ctx->widget.focused)
 	{
-		if (!ctx->textInput.id)
+		if (ctx->event.key.code == KeyCode::Enter)
 		{
-			ctx->textInput.id = ctx->id;
-			isEditingThis = true;
-			ctx->textInput.editNow = true;
-			ctx->textInput.selectAllOnFocus = true;
+			if (!ctx->textInput.id)
+			{
+				ctx->textInput.id = ctx->id;
+				isEditingThis = true;
+				ctx->textInput.editNow = true;
+				ctx->textInput.selectAllOnFocus = true;
+			}
+			else
+			{
+				ctx->textInput.id = 0;
+				ctx->textInput.editNow = false;
+				isEditingThis = false;
+				ctx->widget.focusedId = 0;
+				ctx->widget.changeEnded = true;
+				ctx->widget.pressed = false;
+			}
 		}
-		else
+		else if (ctx->event.key.code == KeyCode::Esc)
 		{
 			ctx->textInput.id = 0;
 			ctx->textInput.editNow = false;
 			isEditingThis = false;
 			ctx->widget.focusedId = 0;
 			ctx->widget.changeEnded = true;
+			ctx->widget.pressed = false;
 		}
 	}
 
@@ -110,8 +122,6 @@ bool textInput(
 		isEditingThis = true;
 		ctx->textInput.selectAllOnFocus = true;
 		ctx->textInput.firstMouseDown = true;
-		ctx->widget.pressed = false;
-		ctx->widget.focusedAndPressed = false;
 	}
 
 	if (ctx->textInput.editNow)
@@ -296,8 +306,6 @@ bool textInput(
 			ctx->textInput.caretBlinkTimer = 0;
 		}
 	}
-	
-	popId();
 
 	return ctx->textInput.textChanged;
 }

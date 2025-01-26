@@ -100,19 +100,24 @@ static bool comboSliderInternal(f32* value, f32 minVal, f32 maxVal, bool useRang
 	{
 		textInput(ctx->comboSlider.text, ComboSliderState::maxTextSize, TextInputValueMode::NumericOnly);
 
-		if (!ctx->textInput.id
-			|| ctx->comboSlider.requestChangeToOtherComboSlider
-			|| (ctx->event.type == InputEvent::Type::Key
-				&& ctx->event.key.down
-				&& (ctx->event.key.code == KeyCode::Esc ||
-				ctx->event.key.code == KeyCode::Enter)
-				&& ctx->isActiveLayer()))
+		bool isKeyEvent = ctx->event.key.down && ctx->event.type == InputEvent::Type::Key;
+		bool isEscPressed = isKeyEvent && ctx->event.key.code == KeyCode::Esc;
+		bool isEnterPressed = isKeyEvent && ctx->event.key.code == KeyCode::Enter;
+
+		if ((!ctx->textInput.id
+			|| ctx->comboSlider.requestChangeToOtherComboSlider)
+			&& (isEnterPressed || isEscPressed || ctx->widget.focusedId != ctx->id)
+			&& ctx->isActiveLayer())
 		{
 			ctx->comboSlider.editingText = false;
 			ctx->comboSlider.id = 0;
-			*value = atof(ctx->comboSlider.text);
-			if (useRange) clampValue(*value, minVal, maxVal);
 			ctx->widget.changeEnded = true;
+
+			if (!isEscPressed)
+			{
+				*value = atof(ctx->comboSlider.text);
+				if (useRange) clampValue(*value, minVal, maxVal);
+			}
 
 			if (ctx->comboSlider.requestChangeToOtherComboSlider)
 			{

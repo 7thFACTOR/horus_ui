@@ -13,7 +13,7 @@ void buttonBehavior(bool menuItem)
 	ctx->widget.hovered = (ctx->id == ctx->widget.hoveredId);
 	ctx->widget.focused = (ctx->id == ctx->widget.focusedId);
 	ctx->widget.clicked = false;
-	ctx->widget.pressed = false;
+	ctx->widget.pressed = ctx->widget.captureId == ctx->id;
 	ctx->widget.visible = true;
 	ctx->dragDrop.allowDrop = false;
 
@@ -56,9 +56,11 @@ void buttonBehavior(bool menuItem)
 	// if we're inside the button
 	if (clippedRect.contains(ctx->mousePosition) && ctx->hoveringThisWindow)
 	{
-		bool alreadyCapturedSomeWidget = ctx->widget.focusedAndPressed && (ctx->id != ctx->widget.focusedId);
+		bool anotherWidgetHasCapture = 
+			ctx->widget.captureId 
+			&& ctx->id != ctx->widget.captureId;
 
-		if (!alreadyCapturedSomeWidget)
+		if (!anotherWidgetHasCapture)
 		{
 			ctx->widget.hoveredId = ctx->id;
 			ctx->widget.hovered = true;
@@ -68,8 +70,9 @@ void buttonBehavior(bool menuItem)
 				&& ctx->event.mouse.button == MouseButton::Left)
 			{
 				ctx->widget.focusedId = ctx->id;
+				ctx->widget.captureId = ctx->id;
 				ctx->widget.pressed = true;
-				ctx->widget.focusedAndPressed = true;
+				ctx->widget.focused = true;
 
 				if (ctx->popupIndex)
 				{
@@ -83,26 +86,27 @@ void buttonBehavior(bool menuItem)
 			else if (ctx->event.type == InputEvent::Type::MouseUp
 				&& ctx->event.mouse.button == MouseButton::Left)
 			{
-				if (ctx->id == ctx->widget.focusedId)
+				if (ctx->id == ctx->widget.captureId)
 				{
 					ctx->widget.clicked = true;
 					ctx->widget.pressed = false;
-					ctx->widget.focusedAndPressed = false;
+					ctx->widget.focused = true;
 				}
-			}
 
-			ctx->widget.pressed = ctx->widget.focusedAndPressed;
+				ctx->widget.captureId = 0;
+			}
 		}
 	}
-	else
+	else // outside the widget
 	{
 		if (ctx->event.type == InputEvent::Type::MouseDown)
 		{
 			if (ctx->id == ctx->widget.focusedId)
 			{
 				ctx->widget.pressed = false;
+				ctx->widget.focused = false;
 				ctx->widget.focusedId = 0;
-				ctx->widget.focusedAndPressed = false;
+				ctx->widget.captureId = 0;
 			}
 		}
 
@@ -112,7 +116,7 @@ void buttonBehavior(bool menuItem)
 			{
 				ctx->widget.pressed = false;
 				ctx->widget.clicked = false;
-				ctx->widget.focusedAndPressed = false;
+				ctx->widget.captureId = 0;
 			}
 		}
 	}
@@ -123,7 +127,7 @@ void mouseDownOnlyButtonBehavior()
 	ctx->widget.hovered = (ctx->id == ctx->widget.hoveredId);
 	ctx->widget.focused = (ctx->id == ctx->widget.focusedId);
 	ctx->widget.clicked = false;
-	ctx->widget.pressed = false;
+	ctx->widget.pressed = ctx->widget.captureId == ctx->id;
 	ctx->widget.visible = true;
 	ctx->dragDrop.allowDrop = false;
 
@@ -159,37 +163,27 @@ void mouseDownOnlyButtonBehavior()
 			&& ctx->event.mouse.button == MouseButton::Left)
 		{
 			ctx->widget.focusedId = ctx->id;
+			ctx->widget.captureId = ctx->id;
 			ctx->widget.pressed = true;
+			ctx->widget.clicked = true;
+			ctx->widget.focused = true;
 
 			if (ctx->layerIndex)
 			{
 				auto& popup = ctx->popupStack[ctx->layerIndex - 1];
 				popup.alreadyClickedOnSomething = true;
 			}
-
-			if (ctx->id == ctx->widget.focusedId)
-			{
-				ctx->widget.focusedId = 0;
-				ctx->widget.pressed = true;
-				ctx->widget.clicked = true;
-				return;
-			}
 		}
 	}
-	else
+	else // outside widget
 	{
-		if (ctx->event.type == InputEvent::Type::MouseDown
-			&& ctx->id == ctx->widget.focusedId)
+		if ((ctx->event.type == InputEvent::Type::MouseDown
+			|| ctx->event.type == InputEvent::Type::MouseUp)
+				&& ctx->id == ctx->widget.focusedId)
 		{
 			ctx->widget.focusedId = 0;
-			ctx->widget.focusedAndPressed = false;
-			ctx->widget.pressed = false;
-		}
-
-		if (ctx->id == ctx->widget.hoveredId)
-		{
-			ctx->widget.hoveredId = 0;
-			ctx->widget.focusedAndPressed = false;
+			ctx->widget.captureId = 0;
+			ctx->widget.focused = false;
 			ctx->widget.pressed = false;
 		}
 	}

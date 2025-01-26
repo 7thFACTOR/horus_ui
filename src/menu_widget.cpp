@@ -212,7 +212,6 @@ void endMenuInternal(bool contextMenu)
 			ctx->menuDepth = 0;
 			closePopup();
 			ctx->contextMenuActive = false;
-			ctx->widget.focusedAndPressed = false;
 			ctx->pressedOnMenuItem = false;
 			ctx->clickedOnASubMenuItem = false;
 			ctx->switchedToAnotherMainMenu = false;
@@ -244,7 +243,6 @@ void endMenuInternal(bool contextMenu)
 			{
 				menu.active = false;
 				closePopup();
-				ctx->widget.focusedAndPressed = false;
 				ctx->pressedOnMenuItem = false;
 				ctx->clickedOnASubMenuItem = false;
 			}
@@ -282,7 +280,6 @@ bool beginContextMenu(ContextMenuFlags flags)
 	{
 		ctx->contextMenuClicked = true;
 		ctx->contextMenuWidgetId = id;
-		ctx->widget.focusedAndPressed = false;
 	}
 
 	bool opened = false;

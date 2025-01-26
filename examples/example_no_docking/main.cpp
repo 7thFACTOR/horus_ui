@@ -134,7 +134,12 @@ int main(int argc, char** args)
 
 				static f32 val;
 				static f32 val2;
+
+
+
 				hui::rotarySliderFloat("Speed", &val, -30, 100, 1, false);
+				static char txt[1000];
+				hui::textInput(txt, 1000);
 
 				hui::comboSliderFloat(&val);
 

@@ -226,6 +226,7 @@ struct WidgetState
 	WidgetId prevFocusableId = 0;
 	WidgetId nextFocusableId = 0;
 	WidgetId hoveredId = 0;
+	WidgetId captureId = 0;
 	f32 width = 0; // if 0 then it will be automatically computed, usually the parent container width
 	bool disabled = false;
 	bool pressed = false;
@@ -234,7 +235,6 @@ struct WidgetState
 	bool hovered = false;
 	bool focused = false;
 	bool changeEnded = false;
-	bool focusedAndPressed = false;
 	Rect rect;
 	Rect hoveredWidgetRect;
 	Rect focusedWidgetRect;
