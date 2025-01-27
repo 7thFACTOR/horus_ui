@@ -12,6 +12,17 @@ bool radio(const char* label, i32* currentRadioValue, i32 thisValue)
 	auto& radioMarkElem = ctx->theme->getElement(WidgetElementId::RadioMark);
 
 	ctx->extractLabelAndId(label);
+	
+	auto textSize = radioBodyElem.normalState().font->computeTextSize(ctx->widgetLabel.c_str());
+
+	f32 bulletTextSpacingParam = radioBodyElem.currentStyle->getParameterValue("bulletTextSpacing", ctx->settings.defaultBulletTextSpacing);
+
+	f32 bulletTextSpacing = bulletTextSpacingParam * ctx->scale;
+	f32 height = radioBodyElem.normalState().height * ctx->scale;
+
+	// height is the same as bullet width, since its square, so we use height
+	ctx->widget.width = textSize.width + height + bulletTextSpacing;
+	
 	addWidget(radioBodyElem.normalState().height * ctx->scale);
 	buttonBehavior();
 	bool changed = false;
@@ -64,9 +75,6 @@ bool radio(const char* label, i32* currentRadioValue, i32 thisValue)
 			}, ctx->scale);
 	}
 
-	const f32 bulletTextSpacingParam = radioBodyElem.currentStyle->getParameterValue("bulletTextSpacing", ctx->settings.defaultBulletTextSpacing);
-	const f32 bulletTextSpacing = bulletTextSpacingParam * ctx->scale;
-
 	ctx->renderer->cmdSetColor(radioBodyElemState->textColor);
 	ctx->renderer->cmdSetFont(radioBodyElemState->font);
 	ctx->renderer->cmdDrawTextInBox(
@@ -78,6 +86,8 @@ bool radio(const char* label, i32* currentRadioValue, i32 thisValue)
 			ctx->widget.rect.height),
 		HAlignType::Left,
 		VAlignType::Center);
+
+	ctx->widget.width = 0;
 
 	return changed;
 }

@@ -56,10 +56,13 @@ void beginSameLine(f32 spacing)
 
 	if (spacing > 0.0f)
 		ctx->sameLineSpacing = spacing;
+
+	pushPosition();
 }
 
 void endSameLine()
 {
+	popPosition();
 	ctx->sameLineInfoIndex = ctx->sameLineInfoIndexStack.back();
 	ctx->sameLineInfoIndexStack.pop_back();
 

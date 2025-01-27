@@ -11,6 +11,7 @@ static void beginBoxInternal(const Color& color, ThemeElement::State& state, f32
 
 	pushLayout();
 	ctx->layout.type = LayoutType::Container;
+	ctx->layout.id = genIdFromPosition("box");
 	ctx->layout.savedPosition = ctx->position;
 	ctx->position.x += ctx->padding * ctx->scale + state.border * ctx->scale;
 	ctx->layout.width = parentWidth - (state.border * 2.0f + ctx->padding * 2.0f) * ctx->scale;
@@ -70,6 +71,7 @@ bool endBox()
 		height
 	};
 
+	ctx->id = ctx->layout.id;
 	buttonBehavior();
 
 	// insert box draw commands at previous saved draw cmd index

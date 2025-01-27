@@ -23,6 +23,13 @@ WidgetId genId(void* ptr)
 	return hashData(&ptr, sizeof(ptr), ctx->idStack.empty() ? 0 : ctx->idStack.back());
 }
 
+WidgetId genIdFromPosition(const char* text)
+{
+	auto posStr = std::to_string(ctx->position.x) + std::to_string(ctx->position.y);
+
+	return genId((std::string(text) + posStr).c_str());
+}
+
 void toString(i32 value, char* outString, u32 outStringMaxSize, u32 fillerZeroesCount)
 {
 	if (fillerZeroesCount)

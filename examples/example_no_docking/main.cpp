@@ -103,10 +103,12 @@ int main(int argc, char** args)
 				const int maxPts = 32;
 				hui::Point pts[maxPts] = { 0 };
 				u32 ptCount = 0;
-				hui::Rect rc = { 30, 30, 500*hui::getScale(), 400 * hui::getScale() };
+				hui::Rect rc = { 30, 30, 1200*hui::getScale(), 1500 * hui::getScale() };
 				hui::beginContainer(rc);
-				hui::pushLayoutPadding(10);
 				hui::beginBox(hui::Color::white, hui::WidgetElementId::WindowBody, hui::WidgetStateType::Normal);
+				hui::space();
+				hui::beginBox(hui::Color::white, hui::WidgetElementId::WindowBody, hui::WidgetStateType::Normal);
+				hui::pushPadding(10);
 				hui::customSpace(20);
 
 				hui::labelCustomFont("Once upon a time...", hui::getThemeFont(theme, "title"), hui::HAlignType::Center);
@@ -141,9 +143,15 @@ int main(int argc, char** args)
 				static char txt[1000];
 				hui::textInput(txt, 1000);
 
-				hui::comboSliderFloat(&val);
+				hui::comboSliderFloat(&val, 1, 1, "°");
 
-				hui::comboSliderFloat(&val2);
+				hui::comboSliderFloat(&val2, 1, 1, "cm");
+
+				static i32 sel = 0;
+
+				const char* items[3] = { "aaa", "bbbb", "ccccc" };
+
+				sel = hui::dropdown("m", sel, items, 3);
 
 				if (hui::panel("Radios 2##2"))
 				{
@@ -153,7 +161,27 @@ int main(int argc, char** args)
 				}
 
 				hui::line();
-
+				
+				if (hui::panel("Many buttons##3"))
+				for (int i = 0; i < 20; i++)
+				{
+					hui::beginSameLine();
+					hui::button("Accelerate");
+					hui::button("Accelerate");
+					hui::button("Accelerate");
+					hui::button("Accelerate");
+					hui::button("Accelerate");
+					hui::button("Accelerate");
+					hui::button("Accelerate");
+					hui::button("Accelerate");
+					hui::button("Accelerate");
+					hui::button("Accelerate");
+					hui::button("Accelerate");
+					hui::button("Accelerate");
+					hui::button("Accelerate");
+					hui::endSameLine();
+				}
+				
 				hui::beginSameLine(5);
 				hui::pushTint(hui::Color::red);
 				hui::button("  EXIT  ");
@@ -167,8 +195,10 @@ int main(int argc, char** args)
 				hui::endSameLine();
 
 				hui::customSpace(20);
+				hui::popPadding();
 				hui::endBox();
-				hui::popLayoutPadding();
+				hui::space();
+				hui::endBox();
 				hui::endContainer();
 
 				hui::endFrame();

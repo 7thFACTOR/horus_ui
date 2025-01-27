@@ -109,7 +109,7 @@ bool dropdown(const char* id, i32& selectedIndex, const char** items, u32 itemCo
 		auto& selectableBodyElem = ctx->theme->getElement(WidgetElementId::SelectableBody).normalState();
 
 		pushSpacing(0);
-		pushLayoutPadding(0);
+		pushPadding(0);
 
 		if (maxVisibleDropDownItems < itemCount)
 		{
@@ -121,7 +121,9 @@ bool dropdown(const char* id, i32& selectedIndex, const char** items, u32 itemCo
 
 		for (u32 i = 0; i < itemCount; i++)
 		{
-			if (selectable(items[i]))
+			auto selectedFlag = i == selectedIndex ? SelectableFlags::Selected : SelectableFlags::Normal;
+
+			if (selectable(items[i], selectedFlag))
 			{
 				selectedIndex = i;
 				selectedNewItem = true;
@@ -137,7 +139,7 @@ bool dropdown(const char* id, i32& selectedIndex, const char** items, u32 itemCo
 		}
 
 		popSpacing();
-		popLayoutPadding();
+		popPadding();
 
 		if (selectedNewItem || mustClosePopup())
 		{

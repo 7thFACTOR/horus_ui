@@ -12,7 +12,18 @@ bool check(const char* label, bool* checkVar)
 	auto& checkMarkElem = ctx->theme->getElement(WidgetElementId::CheckMark);
 
 	ctx->extractLabelAndId(label);
-	addWidget(checkBodyElem.normalState().height * ctx->scale);
+
+	auto textSize = checkBodyElem.normalState().font->computeTextSize(ctx->widgetLabel.c_str());
+
+	f32 bulletTextSpacingParam = checkBodyElem.currentStyle->getParameterValue("bulletTextSpacing", ctx->settings.defaultBulletTextSpacing);
+
+	f32 bulletTextSpacing = bulletTextSpacingParam * ctx->scale;
+	f32 height = checkBodyElem.normalState().height * ctx->scale;
+
+	// height is the same as bullet width, since its square, so we use height
+	ctx->widget.width = textSize.width + height + bulletTextSpacing;
+
+	addWidget(height);
 	buttonBehavior();
 	ctx->widget.changeEnded = false;
 
@@ -63,9 +74,6 @@ bool check(const char* label, bool* checkVar)
 			}, ctx->scale);
 	}
 
-	const f32 bulletTextSpacingParam = checkBodyElem.currentStyle->getParameterValue("bulletTextSpacing", 5);
-	const f32 bulletTextSpacing = bulletTextSpacingParam * ctx->scale;
-
 	ctx->renderer->cmdSetColor(checkBodyElemState->textColor);
 	ctx->renderer->cmdSetFont(checkBodyElemState->font);
 	ctx->renderer->cmdDrawTextInBox(
@@ -77,6 +85,8 @@ bool check(const char* label, bool* checkVar)
 			ctx->widget.rect.height),
 		HAlignType::Left,
 		VAlignType::Center);
+
+	ctx->widget.width = 0;
 
 	return ctx->widget.changeEnded;
 }

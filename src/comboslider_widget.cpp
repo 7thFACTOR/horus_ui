@@ -8,7 +8,7 @@
 
 namespace hui
 {
-static bool comboSliderInternal(f32* value, f32 minVal, f32 maxVal, bool useRange, f32 stepsPerPixel, f32 arrowStep)
+static bool comboSliderInternal(f32* value, f32 minVal, f32 maxVal, bool useRange, f32 stepsPerPixel, f32 arrowStep, const char* unitName)
 {
 	auto& bodyElem = ctx->theme->getElement(WidgetElementId::ComboSliderBody);
 	auto& leftArrowElem = ctx->theme->getElement(WidgetElementId::ComboSliderLeftArrow);
@@ -138,7 +138,6 @@ static bool comboSliderInternal(f32* value, f32 minVal, f32 maxVal, bool useRang
 			&& !ctx->comboSlider.dragging
 			&& ctx->isActiveLayer())
 		{
-			//hui::setCapture();
 			ctx->comboSlider.dragLastMousePos = ctx->mousePosition;
 
 			if (!ctx->comboSlider.editingText)
@@ -291,24 +290,38 @@ static bool comboSliderInternal(f32* value, f32 minVal, f32 maxVal, bool useRang
 				rightArrowElemState->image->rect.height * ctx->scale
 			});
 
-		char outStr[ComboSliderState::maxTextSize] = { 0 };
+		static char outStr[ComboSliderState::maxTextSize] = { 0 };
+		static char outStrWithUnitName[ComboSliderState::maxTextSize] = { 0 };
+		char* str = nullptr;
+
 		toString(*value, outStr, ComboSliderState::maxTextSize);
+
+		if (!unitName)
+		{
+			str = outStr;
+		}
+		else
+		{
+			sprintf(outStrWithUnitName, "%s %s", outStr, unitName);
+			str = outStrWithUnitName;
+		}
+
 		ctx->renderer->cmdSetColor(applyTint(bodyElemState->textColor, TintColorType::Body));
-		ctx->renderer->cmdDrawTextInBox(outStr, ctx->widget.rect, HAlignType::Center, VAlignType::Center);
+		ctx->renderer->cmdDrawTextInBox(str, ctx->widget.rect, HAlignType::Center, VAlignType::Center);
 		setFocusable();
 	}
 
 	return ctx->widget.changeEnded;
 }
 
-bool comboSliderFloat(f32* value, f32 stepsPerPixel, f32 arrowStep)
+bool comboSliderFloat(f32* value, f32 stepsPerPixel, f32 arrowStep, const char* unitName)
 {
-	return comboSliderInternal(value, 0, 0, false, stepsPerPixel, arrowStep);
+	return comboSliderInternal(value, 0, 0, false, stepsPerPixel, arrowStep, unitName);
 }
 
-bool comboSliderFloatRanged(f32* value, f32 minVal, f32 maxVal, f32 stepsPerPixel, f32 arrowStep)
+bool comboSliderFloatRanged(f32* value, f32 minVal, f32 maxVal, f32 stepsPerPixel, f32 arrowStep, const char* unitName)
 {
-	return comboSliderInternal(value, minVal, maxVal, true, stepsPerPixel, arrowStep);
+	return comboSliderInternal(value, minVal, maxVal, true, stepsPerPixel, arrowStep, unitName);
 }
 
 }

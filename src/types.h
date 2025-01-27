@@ -211,6 +211,7 @@ struct LayoutState
 	Point savedPosition = { 0, 0 };
 	Point columnsPosition = { 0, 0 };
 	bool savedSameLine = false;
+	WidgetId id = 0;
 	f32 savedHighestSameLineY = 0;
 	f32 savedPreviousSameLineY = 0;
 	f32 width = 0;

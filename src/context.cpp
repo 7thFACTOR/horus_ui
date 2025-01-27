@@ -34,8 +34,7 @@ void Context::extractLabelAndId(const char* text)
 
 	if (widgetLabel == "" || id == 0)
 	{
-		auto posStr = std::to_string(ctx->position.x) + std::to_string(ctx->position.y);
-		id = genId(posStr.c_str());
+		id = genIdFromPosition("fromPos");
 	}
 }
 

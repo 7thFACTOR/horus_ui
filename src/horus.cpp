@@ -157,11 +157,7 @@ void addWidget(f32 height)
 	f32 verticalOffset = 0;
 	const f32 totalHeight = ctx->spacing * ctx->scale + height;
 
-	if (!ctx->sameLine)
-	{
-		ctx->position.x = ctx->layout.savedPosition.x;
-	}
-	else
+	if (ctx->sameLine)
 	{
 		if (ctx->sameLineInfo[ctx->sameLineInfoIndex].computeHeight)
 		{
@@ -291,10 +287,10 @@ void beginFrame()
 		//ctx->widget.focusedId--;
 		ctx->focusChanged = true;
 
-		if (ctx->widget.focusedId < 0)
-		{
-			ctx->widget.focusedId = 0;
-		}
+		//if (ctx->widget.focusedId < 0)
+		//{
+		//	ctx->widget.focusedId = 0;
+		//}
 	}
 	else if (ctx->event.type == InputEvent::Type::Key
 		&& ctx->event.key.code == KeyCode::Tab
@@ -1696,13 +1692,13 @@ void columnHeader(const char* label, f32 width, f32 preferredWidth, f32 minWidth
 	ctx->renderer->cmdDrawTextInBox(ctx->widgetLabel.c_str(), rcText, HAlignType::Left, VAlignType::Center);
 }
 
-void pushLayoutPadding(f32 newPadding)
+void pushPadding(f32 newPadding)
 {
 	ctx->paddingStack.push_back(ctx->padding);
 	ctx->padding = newPadding;
 }
 
-void popLayoutPadding()
+void popPadding()
 {
 	if (!ctx->paddingStack.empty())
 	{

@@ -2494,10 +2494,10 @@ HORUS_API void endVirtualListContent();
 
 /// Push the old padding and set a new one, padding is the left and right side horizontal spacing for widgets
 /// \param newPadding the new horizontal padding value
-HORUS_API void pushLayoutPadding(f32 newPadding);
+HORUS_API void pushPadding(f32 newPadding);
 
 /// Pop the previous padding value from stack and set it as current
-HORUS_API void popLayoutPadding();
+HORUS_API void popPadding();
 
 /// Push a new padding for column content
 HORUS_API void pushColumnPadding(f32 newPadding);
@@ -2675,8 +2675,8 @@ HORUS_API bool sliderInteger(const char* id, i32 minVal, i32 maxVal, i32& value,
 /// \return true if value was modified
 HORUS_API bool sliderFloat(const char* id, f32 minVal, f32 maxVal, f32& value, bool useStep = false, f32 step = 0);
 
-HORUS_API bool comboSliderFloat(f32* value, f32 stepsPerPixel = 1.0f, f32 arrowStep = 1.0f);
-HORUS_API bool comboSliderFloatRanged(f32* value, f32 minVal, f32 maxVal, f32 stepsPerPixel = 1.0f, f32 arrowStep = 1.0f);
+HORUS_API bool comboSliderFloat(f32* value, f32 stepsPerPixel = 1.0f, f32 arrowStep = 1.0f, const char* unitName = nullptr);
+HORUS_API bool comboSliderFloatRanged(f32* value, f32 minVal, f32 maxVal, f32 stepsPerPixel = 1.0f, f32 arrowStep = 1.0f, const char* unitName = nullptr);
 HORUS_API bool rotarySliderFloat(const char* label, f32* value, f32 minVal, f32 maxVal, f32 step, bool twoSide = false, f32 fineStepDivideFactor = 10.f);
 
 /// Draw a image widget
