@@ -46,7 +46,7 @@ int main(int argc, char** args)
 	hui::initializeSdl(sdlParams);
 
 	// Create the main window (this will also create a graphics (GL/VK/D3D/etc.) context)
-	auto mainWnd = HORUS_INPUT->createWindow("Horus Examples", hui::NativeWindowFlags::Resizable, hui::NativeWindowState::Maximized, hui::Rect(0, 0, 1500, 800));
+	auto mainWnd = HORUS_INPUT->createWindow("Horus Examples - All Widgets", hui::NativeWindowFlags::Resizable, hui::NativeWindowState::Maximized, hui::Rect(0, 0, 1500, 800));
 
 	// Create a main dock node for the main window, so we can dock windows in there
 	hui::DockNodeId mainDockNode = hui::createRootDockNode(mainWnd);

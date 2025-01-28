@@ -43,7 +43,7 @@ int main(int argc, char** args)
 	hui::initializeSdl(sdlParams);
 
 	// Create the main window (this will also create a graphics (GL/VK/D3D/etc.) context)
-	auto mainWnd = HORUS_INPUT->createWindow("Horus Example - Custom Widget", hui::NativeWindowFlags::Resizable, hui::NativeWindowState::Maximized, hui::Rect(0, 0, 1000, 800));
+	auto mainWnd = HORUS_INPUT->createWindow("Horus Example - No Docking", hui::NativeWindowFlags::Resizable, hui::NativeWindowState::Maximized, hui::Rect(0, 0, 1000, 800));
 
 	// Initialize the graphics API, since now we have a first window created
 	// (we cant initialize the graphics api without a window)
