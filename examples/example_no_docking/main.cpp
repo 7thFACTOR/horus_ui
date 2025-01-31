@@ -138,7 +138,7 @@ int main(int argc, char** args)
 				static f32 val2;
 
 				static f32 scrollPos = 0;
-				hui::beginScrollView(60, scrollPos);
+				hui::beginScrollView(180, scrollPos);
 				hui::rotarySliderFloat("Speed", &val, -30, 100, 1, false);
 				static char txt[1000];
 				hui::textInput(txt, 1000);
@@ -146,7 +146,6 @@ int main(int argc, char** args)
 				hui::comboSliderFloat(&val, 1, 1, "°");
 
 				hui::comboSliderFloat(&val2, 1, 1, "cm");
-				scrollPos = hui::endScrollView();
 				static i32 sel = 0;
 
 				const char* items[6] = { "aaa", "bbbb", "ccccc", "ddd", "eeee", "ffff"};
@@ -161,7 +160,8 @@ int main(int argc, char** args)
 				}
 
 				hui::line();
-				
+				scrollPos = hui::endScrollView();
+
 				if (hui::panel("Many buttons##3"))
 				for (int i = 0; i < 20; i++)
 				{
@@ -181,7 +181,7 @@ int main(int argc, char** args)
 					hui::button("Accelerate");
 					hui::endSameLine();
 				}
-				
+
 				hui::beginSameLine(5);
 				hui::pushTint(hui::Color::red);
 				hui::button("  EXIT  ");

@@ -15,10 +15,9 @@ void beginScrollView(f32 size, f32 scrollPos, f32 virtualHeight)
 	ctx->scrollViewStack[ctx->scrollViewDepth].size = size /* * ctx->scale*/; //TODO: scale height with UI scale ?
 	ctx->scrollViewStack[ctx->scrollViewDepth].virtualHeight = virtualHeight;
 	ctx->scrollViewStack[ctx->scrollViewDepth].id = ctx->id;
-	pushPosition();
 	//TODO: scale height with UI scale ?
 	//size *= ctx->scale;
-	const f32 scrollViewPadding = 10;
+	const f32 scrollViewPadding = 0;
 	auto internalPadding = scrollViewPadding * ctx->scale + (f32)scrollViewElemState.border * ctx->scale;
 
 	Rect rect =
@@ -40,14 +39,14 @@ void beginScrollView(f32 size, f32 scrollPos, f32 virtualHeight)
 
 	ctx->scrollViewStack[ctx->scrollViewDepth].scrollPosition = scrollPos;
 	ctx->renderer->pushClipRect(clipRect);
+	pushPosition();
+	ctx->position = { clipRect.x, clipRect.y };
 	ctx->position.y -= scrollPos;
 	ctx->position.y += internalPadding;
 	pushLayout();
-	pushPosition();
 	ctx->layout = LayoutState(LayoutType::ScrollView);
-	ctx->layout.savedPosition = ctx->position;	
+	ctx->layout.savedPosition = ctx->position;
 	ctx->layout.id = ctx->id;
-	ctx->position = { clipRect.x, clipRect.y };
 	ctx->layout.width = clipRect.width;
 	ctx->layout.height = clipRect.height;
 	ctx->scrollViewDepth++;
@@ -57,10 +56,8 @@ f32 endScrollView()
 {
 	ctx->id = ctx->layout.id;
 	ctx->scrollViewDepth--;
-	auto& prevPenPos = ctx->layout.savedPosition;
-	popPosition();
-	popLayout();
-	auto& clipRect = ctx->renderer->getClipRect();
+	auto prevPenPos = ctx->layout.savedPosition;
+	auto clipRect = ctx->renderer->getClipRect();
 	ctx->renderer->popClipRect();
 	auto& scrollViewInfo = ctx->scrollViewStack[ctx->scrollViewDepth];
 	const auto& fullRect = scrollViewInfo.rect;
@@ -126,30 +123,34 @@ f32 endScrollView()
 		Rect rectScrollBar =
 		{
 			rect.right() - scrollViewScrollBarElemState.width * ctx->scale,
-			rect.y,
+			clipRect.y,
 			scrollViewScrollBarElemState.width * ctx->scale,
-			rect.height
+			clipRect.height
 		};
 
-		f32 handleSize = rectScrollBar.height * rectScrollBar.height / (scrollContentSize + 20);
+		f32 handleSize = rectScrollBar.height * rectScrollBar.height / scrollContentSize;
 
 		if (handleSize < ctx->settings.minScrollViewHandleSize)
 			handleSize = ctx->settings.minScrollViewHandleSize;
-
-		f32 handleOffset = (rectScrollBar.height - handleSize) * scrollPos / ((scrollContentSize + 20) - rect.height);
+		
+		f32 maxScroll = scrollContentSize - rectScrollBar.height;
+		f32 handleOffset = (scrollPos / maxScroll) * (rectScrollBar.height - handleSize);
 
 		Rect rectScrollBarHandle =
 		{
 			rect.right() - scrollViewScrollThumbElemState.width * ctx->scale,
-			rect.y + handleOffset,
+			rectScrollBar.y + handleOffset,
 			scrollViewScrollThumbElemState.width * ctx->scale,
 			handleSize
 		};
 
 		if (ctx->isActiveLayer())
-		if (rectScrollBarHandle.contains(ctx->mousePosition) || (scrollViewInfo.draggingThumb && ctx->dragScrollViewHandleWidgetId == scrollViewInfo.id))
 		{
-			scrollViewScrollThumbElemState = ctx->theme->getElement(WidgetElementId::ScrollViewScrollThumb).getState(WidgetStateType::Hovered);
+			if (rectScrollBarHandle.contains(ctx->mousePosition) 
+				|| (scrollViewInfo.draggingThumb && ctx->dragScrollViewHandleWidgetId == scrollViewInfo.id))
+			{
+				scrollViewScrollThumbElemState = ctx->theme->getElement(WidgetElementId::ScrollViewScrollThumb).getState(WidgetStateType::Hovered);
+			}
 		}
 
 		if (ctx->event.type == InputEvent::Type::MouseDown && ctx->isActiveLayer())
@@ -182,14 +183,14 @@ f32 endScrollView()
 			&& scrollViewInfo.draggingThumb
 			&& ctx->dragScrollViewHandleWidgetId == scrollViewInfo.id)
 		{
-			f32 crtLocalY = ctx->mousePosition.y - scrollViewInfo.dragDelta.y - rect.y;
-			f32 trackSize = rect.height - handleSize;
+			f32 crtLocalY = ctx->mousePosition.y - scrollViewInfo.dragDelta.y - clipRect.y;
+			f32 trackSize = clipRect.height - handleSize;
 			f32 percent = crtLocalY / trackSize;
 			f32 oldScrollPos = scrollPos;
 
 			// kill event, only we're dragging now
 			hui::cancelEvent();
-			scrollPos = percent * ((scrollContentSize + 20) - rect.height);
+			scrollPos = percent * (scrollContentSize - clipRect.height);
 			scrollAmount = oldScrollPos - scrollPos;
 
 			//TODO: duplicated code see above scrollPos correction
@@ -214,12 +215,13 @@ f32 endScrollView()
 			}
 			// end duplicated code
 
-			handleOffset = (rectScrollBar.height - handleSize) * scrollPos / ((scrollContentSize + 20) - rect.height);
+			maxScroll = scrollContentSize - rectScrollBar.height;
+			handleOffset = (scrollPos / maxScroll) * (rectScrollBar.height - handleSize);
 
 			rectScrollBarHandle =
 			{
 				rect.right() - scrollViewScrollThumbElemState.width * ctx->scale,
-				rect.y + handleOffset,
+				clipRect.y + handleOffset,
 				scrollViewScrollThumbElemState.width * ctx->scale,
 				handleSize
 			};
@@ -246,6 +248,7 @@ f32 endScrollView()
 	scrollPos = (u32)scrollPos;
 	popPosition();
 	addWidget(size);
+	popLayout();
 
 	return scrollPos;
 }
