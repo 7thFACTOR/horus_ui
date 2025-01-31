@@ -137,8 +137,8 @@ int main(int argc, char** args)
 				static f32 val;
 				static f32 val2;
 
-
-
+				static f32 scrollPos = 0;
+				hui::beginScrollView(60, scrollPos);
 				hui::rotarySliderFloat("Speed", &val, -30, 100, 1, false);
 				static char txt[1000];
 				hui::textInput(txt, 1000);
@@ -146,12 +146,12 @@ int main(int argc, char** args)
 				hui::comboSliderFloat(&val, 1, 1, "°");
 
 				hui::comboSliderFloat(&val2, 1, 1, "cm");
-
+				scrollPos = hui::endScrollView();
 				static i32 sel = 0;
 
-				const char* items[3] = { "aaa", "bbbb", "ccccc" };
+				const char* items[6] = { "aaa", "bbbb", "ccccc", "ddd", "eeee", "ffff"};
 
-				sel = hui::dropdown("m", sel, items, 3);
+				hui::dropdown("m", sel, items, 6, 3);
 
 				if (hui::panel("Radios 2##2"))
 				{

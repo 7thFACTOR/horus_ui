@@ -13,15 +13,13 @@ void beginPopup(
 	const Point& position,
 	WidgetElementId widgetElementId)
 {
-	pushId(id);
+	ctx->id = genId(id);
 	auto& popup = ctx->popupStack[ctx->popupIndex];
 
 	popup.flags = flags;
 
 	if (ctx->popupUseGlobalScale)
 		width *= ctx->scale;
-
-	//ctx->popupUseGlobalScale = true;
 
 	if (!has(flags, PopupFlags::SameLayer))
 		incrementLayerIndex();
@@ -123,6 +121,7 @@ void beginPopup(
 	pushLayout();
 
 	ctx->layout = LayoutState(LayoutType::Container);
+	pushPosition();
 	ctx->position =
 	{
 		pos.x + bodyElemState.border * ctx->scale,
@@ -153,8 +152,6 @@ void beginPopup(
 		popupRect, ctx->scale);
 
 	popup.id = ctx->id;
-
-	popId();
 }
 
 void endPopup()
@@ -224,6 +221,7 @@ void endPopup()
 	
 	ctx->position = ctx->layout.savedPosition;
 	ctx->renderer->popClipRect();
+	popPosition();
 	popLayout();
 	ctx->sameLine = ctx->sameLineStack.back();
 	ctx->sameLineStack.pop_back();

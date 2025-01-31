@@ -10,10 +10,12 @@ void beginScrollView(f32 size, f32 scrollPos, f32 virtualHeight)
 	auto& scrollViewElemState = ctx->theme->getElement(WidgetElementId::ScrollViewBody).normalState();
 	auto& scrollViewScrollThumbElemState = ctx->theme->getElement(WidgetElementId::ScrollViewScrollThumb).normalState();
 
+	ctx->id = genIdFromPosition("scrollView");
+
 	ctx->scrollViewStack[ctx->scrollViewDepth].size = size /* * ctx->scale*/; //TODO: scale height with UI scale ?
 	ctx->scrollViewStack[ctx->scrollViewDepth].virtualHeight = virtualHeight;
 	ctx->scrollViewStack[ctx->scrollViewDepth].id = ctx->id;
-	ctx->positionStack.push_back(ctx->position);
+	pushPosition();
 	//TODO: scale height with UI scale ?
 	//size *= ctx->scale;
 	const f32 scrollViewPadding = 10;
@@ -43,7 +45,8 @@ void beginScrollView(f32 size, f32 scrollPos, f32 virtualHeight)
 	pushLayout();
 	pushPosition();
 	ctx->layout = LayoutState(LayoutType::ScrollView);
-	ctx->layout.savedPosition = ctx->position;
+	ctx->layout.savedPosition = ctx->position;	
+	ctx->layout.id = ctx->id;
 	ctx->position = { clipRect.x, clipRect.y };
 	ctx->layout.width = clipRect.width;
 	ctx->layout.height = clipRect.height;
@@ -52,8 +55,10 @@ void beginScrollView(f32 size, f32 scrollPos, f32 virtualHeight)
 
 f32 endScrollView()
 {
+	ctx->id = ctx->layout.id;
 	ctx->scrollViewDepth--;
 	auto& prevPenPos = ctx->layout.savedPosition;
+	popPosition();
 	popLayout();
 	auto& clipRect = ctx->renderer->getClipRect();
 	ctx->renderer->popClipRect();
@@ -240,7 +245,6 @@ f32 endScrollView()
 
 	scrollPos = (u32)scrollPos;
 	popPosition();
-	ctx->extractLabelAndId(nullptr);
 	addWidget(size);
 
 	return scrollPos;
