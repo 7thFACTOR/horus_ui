@@ -187,7 +187,7 @@ struct ThemeElement
 
 enum class LayoutType
 {
-	Container,
+	Generic,
 	Vertical,
 	Columns,
 	Column,
@@ -209,6 +209,7 @@ struct LayoutState
 	std::vector<f32> columnMaxSizes;
 	std::vector<f32> columnPixelSizes;
 	Point savedPosition = { 0, 0 };
+	Point savedPadding;
 	Point columnsPosition = { 0, 0 };
 	bool savedSameLine = false;
 	WidgetId id = 0;

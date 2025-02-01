@@ -1565,7 +1565,8 @@ void dockNodeTabs(DockNode* node)
 	if (node->windows.size())
 	{
 		pushPadding(0);
-		beginContainer(node->rect);
+		beginLayout(node->rect);
+		popPadding();
 		// pop the clip rect, we dont want clipping since draw tabs bar beyond the node rect width
 		auto oldClipRect = ctx->renderer->getClipRect();
 		ctx->renderer->popClipRect();
@@ -1661,8 +1662,7 @@ void dockNodeTabs(DockNode* node)
 
 		// just push the old clip rect so endContainer can pop it
 		ctx->renderer->pushClipRect(oldClipRect, false);
-		endContainer();
-		popPadding();
+		endLayout();
 	}
 
 	for (auto& child : node->children)
@@ -2562,12 +2562,12 @@ void drawDockPreview(Window* window, const Rect& windowRect)
 	ctx->renderer->cmdSetColor(windowElem.color * tintColor);
 	ctx->renderer->cmdDrawImageBordered(windowElem.image, windowElem.border, windowRect, ctx->scale);
 	pushPadding(0);
-	beginContainer(windowRect);
+	beginLayout(windowRect);
+	popPadding();
 	beginTabGroup(0);
 	hui::tab(window->title.c_str(), window->icon);
 	endTabGroup();
-	endContainer();
-	popPadding();
+	endLayout();
 	ctx->renderer->popClipRect();
 }
 

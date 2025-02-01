@@ -1346,22 +1346,20 @@ HFont getFont(const char* themeFontName)
 	return getThemeFont(getTheme(), themeFontName);
 }
 
-void beginContainer(const Rect& rect)
+void beginLayout(const Rect& rect)
 {
-	auto paddedRect = rect.contract(ctx->padding);
-
 	pushLayout();
-
-	ctx->layout.type = LayoutType::Container;
-	ctx->layout.savedPosition = paddedRect.topLeft();
-	ctx->layout.width = paddedRect.width;
-	ctx->layout.height = paddedRect.height;
-	ctx->renderer->pushClipRect(paddedRect);
-	ctx->position = { paddedRect.x, paddedRect.y };
+	auto paddedRect = rect.contract(ctx->padding);
+	ctx->layout.type = LayoutType::Generic;
+	ctx->layout.savedPosition = rect.topLeft();
+	ctx->layout.width = rect.width;
+	ctx->layout.height = rect.height;
+	ctx->renderer->pushClipRect(rect);
+	ctx->position = { rect.x, rect.y};
 	ctx->sameLine = false;
 }
 
-void endContainer()
+void endLayout()
 {
 	ctx->renderer->popClipRect();
 	popLayout();
@@ -1672,9 +1670,9 @@ void columnHeader(const char* label, f32 width, f32 preferredWidth, f32 minWidth
 	auto& headerElemState = ctx->theme->getElement(WidgetElementId::ColumnsHeaderBody).normalState();
 
 	ctx->widget.rect = {
-		ctx->position.x + ctx->padding,
+		ctx->position.x,
 		ctx->position.y,
-		ctx->layout.width - ctx->padding * 2.0f * ctx->scale,
+		ctx->layout.width,
 		headerElemState.height
 	};
 
@@ -1692,10 +1690,10 @@ void columnHeader(const char* label, f32 width, f32 preferredWidth, f32 minWidth
 	ctx->renderer->cmdDrawTextInBox(ctx->widgetLabel.c_str(), rcText, HAlignType::Left, VAlignType::Center);
 }
 
-void pushPadding(f32 newPadding)
+void pushPadding(const Point& newPadding)
 {
 	ctx->paddingStack.push_back(ctx->padding);
-	ctx->padding = newPadding;
+	ctx->padding = newPadding * ctx->scale;
 }
 
 void popPadding()
@@ -1727,7 +1725,7 @@ f32 getSpacing()
 	return ctx->spacing;
 }
 
-f32 getPadding()
+Point getPadding()
 {
 	return ctx->padding;
 }

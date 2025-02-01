@@ -134,9 +134,9 @@ int main(int argc, char** args)
 
 			hui::Rect rc = {30, 30, 500, 400};
 
-			hui::beginContainer(rc);
+			hui::beginLayout(rc);
 			curveEditor(55, maxPts, pts, ptCount, hui::Color::red);
-			hui::endContainer();
+			hui::endLayout();
 
 			hui::endFrame();
 			hui::endRendering();

@@ -104,11 +104,10 @@ int main(int argc, char** args)
 				hui::Point pts[maxPts] = { 0 };
 				u32 ptCount = 0;
 				hui::Rect rc = { 30, 30, 1200*hui::getScale(), 1500 * hui::getScale() };
-				hui::beginContainer(rc);
+				hui::beginLayout(rc);
+				hui::pushPadding({10, 10});
 				hui::beginBox(hui::Color::white, hui::WidgetElementId::WindowBody, hui::WidgetStateType::Normal);
-				hui::space();
-				hui::beginBox(hui::Color::white, hui::WidgetElementId::WindowBody, hui::WidgetStateType::Normal);
-				hui::pushPadding(10);
+				hui::popPadding();
 				hui::customSpace(20);
 
 				hui::labelCustomFont("Once upon a time...", hui::getThemeFont(theme, "title"), hui::HAlignType::Center);
@@ -138,7 +137,9 @@ int main(int argc, char** args)
 				static f32 val2;
 
 				static f32 scrollPos = 0;
+				hui::pushPadding({ 10, 0 });
 				hui::beginScrollView(180, scrollPos);
+				hui::popPadding();
 				hui::rotarySliderFloat("Speed", &val, -30, 100, 1, false);
 				static char txt[1000];
 				hui::textInput(txt, 1000);
@@ -160,6 +161,7 @@ int main(int argc, char** args)
 				}
 
 				hui::line();
+				
 				scrollPos = hui::endScrollView();
 
 				if (hui::panel("Many buttons##3"))
@@ -195,12 +197,9 @@ int main(int argc, char** args)
 				hui::endSameLine();
 
 				hui::customSpace(20);
-				hui::popPadding();
+				
 				hui::endBox();
-				hui::space();
-				hui::endBox();
-				hui::endContainer();
-
+				hui::endLayout();
 				hui::endFrame();
 				hui::endRendering();
 

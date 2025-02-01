@@ -17,8 +17,7 @@ void beginScrollView(f32 size, f32 scrollPos, f32 virtualHeight)
 	ctx->scrollViewStack[ctx->scrollViewDepth].id = ctx->id;
 	//TODO: scale height with UI scale ?
 	//size *= ctx->scale;
-	const f32 scrollViewPadding = 0;
-	auto internalPadding = scrollViewPadding * ctx->scale + (f32)scrollViewElemState.border * ctx->scale;
+	auto internalPadding = (f32)scrollViewElemState.border * ctx->scale;
 
 	Rect rect =
 	{
@@ -30,8 +29,8 @@ void beginScrollView(f32 size, f32 scrollPos, f32 virtualHeight)
 
 	ctx->scrollViewStack[ctx->scrollViewDepth].rect = rect;
 
-	Rect clipRect = rect.contract(internalPadding);
-
+	Rect clipRect = rect;
+	
 	clipRect.width -= scrollViewScrollThumbElemState.width;
 
 	ctx->renderer->cmdSetColor(scrollViewElemState.color);
@@ -42,7 +41,6 @@ void beginScrollView(f32 size, f32 scrollPos, f32 virtualHeight)
 	pushPosition();
 	ctx->position = { clipRect.x, clipRect.y };
 	ctx->position.y -= scrollPos;
-	ctx->position.y += internalPadding;
 	pushLayout();
 	ctx->layout = LayoutState(LayoutType::ScrollView);
 	ctx->layout.savedPosition = ctx->position;

@@ -10,17 +10,23 @@ static void beginBoxInternal(const Color& color, ThemeElement::State& state, f32
 	const auto parentWidth = ctx->layout.width;
 
 	pushLayout();
-	ctx->layout.type = LayoutType::Container;
+	ctx->layout.type = LayoutType::Generic;
 	ctx->layout.id = genIdFromPosition("box");
 	ctx->layout.savedPosition = ctx->position;
-	ctx->position.x += ctx->padding * ctx->scale + state.border * ctx->scale;
-	ctx->layout.width = parentWidth - (state.border * 2.0f + ctx->padding * 2.0f) * ctx->scale;
-	ctx->layout.height = customHeight * ctx->scale;
+	ctx->layout.savedPadding = ctx->padding;
+	ctx->position.x += state.border * ctx->scale + ctx->padding.x;
+	ctx->layout.width = parentWidth - ctx->padding.x * 2.0f - (state.border * 2.0f) * ctx->scale;
 	ctx->layout.themeWidgetElementState = &state;
 	ctx->layout.themeElementColorTint = color;
 
 	if (customHeight <= 0.0f)
-		ctx->position.y += state.border * ctx->scale;
+	{
+		ctx->position.y += state.border * ctx->scale + ctx->padding.y;
+	}
+	else
+	{
+		ctx->layout.height = customHeight * ctx->scale;
+	}
 
 	pushDrawCommandIndex();
 }
@@ -57,7 +63,7 @@ bool endBox()
 	auto contentHeight = ctx->position.y - ctx->layout.savedPosition.y;
 	contentHeight -= ctx->spacing * ctx->scale;
 	contentHeight -= boxElemState->border * ctx->scale;
-	auto height = contentHeight + boxElemState->border * 2.0f * ctx->scale;
+	auto height = contentHeight + boxElemState->border * 2.0f * ctx->scale + ctx->layout.savedPadding.y * 2.0f;
 
 	if (ctx->layout.height > 0.0f)
 	{
@@ -67,7 +73,7 @@ bool endBox()
 	ctx->widget.rect = {
 		ctx->layout.savedPosition.x,
 		ctx->layout.savedPosition.y,
-		ctx->layout.width + (boxElemState->border * 2.0f + ctx->padding * 2.0f) * ctx->scale,
+		ctx->layout.width + (boxElemState->border * 2.0f) * ctx->scale + ctx->layout.savedPadding.x * 2.0f,
 		height
 	};
 
@@ -90,7 +96,7 @@ bool endBox()
 
 	if (ctx->layout.height <= 0.0f)
 	{
-		ctx->position.y += boxElemState->border * ctx->scale;
+		ctx->position.y += boxElemState->border * ctx->scale + ctx->layout.savedPadding.y;
 	}
 
 	popLayout();

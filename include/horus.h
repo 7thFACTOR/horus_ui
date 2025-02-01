@@ -1268,6 +1268,21 @@ struct Rect
 		return expand(-amount);
 	}
 
+	inline Rect contract(const Point& amount) const
+	{
+		return expand(amount.getNegated());
+	}
+
+	inline Rect expand(const Point& amount) const
+	{
+		return {
+			x - amount.x,
+			y - amount.y,
+			width + 2.0f * amount.x,
+			height + 2.0f * amount.y
+		};
+	}
+
 	inline Point getSize() const
 	{
 		return { width, height };
@@ -2414,14 +2429,13 @@ HORUS_API HFont getFont(const char* themeFontName);
 HORUS_API HFont getThemeFont(HTheme theme, const char* themeFontName);
 
 //////////////////////////////////////////////////////////////////////////
-// Layout and containers
+// Layouts
 //////////////////////////////////////////////////////////////////////////
 
-/// Begin a widget container, an invisible rectangle on the current window area where widgets will be laid out
-HORUS_API void beginContainer(const Rect& rect);
+/// Begin a layout area, an invisible rectangle on the current window area where widgets will be laid out
+HORUS_API void beginLayout(const Rect& rect);
 
-/// End the current widget container
-HORUS_API void endContainer();
+HORUS_API void endLayout();
 HORUS_API void pushId(const char* id);
 HORUS_API void pushId(u32 id);
 HORUS_API void pushId(void* id);
@@ -2494,7 +2508,7 @@ HORUS_API void endVirtualListContent();
 
 /// Push the old padding and set a new one, padding is the left and right side horizontal spacing for widgets
 /// \param newPadding the new horizontal padding value
-HORUS_API void pushPadding(f32 newPadding);
+HORUS_API void pushPadding(const Point& newPadding);
 
 /// Pop the previous padding value from stack and set it as current
 HORUS_API void popPadding();
@@ -2524,7 +2538,7 @@ HORUS_API f32 getSpacing();
 HORUS_API f32 getColumnSpacing();
 
 /// \return the current horizontal left and right side padding value
-HORUS_API f32 getLayoutPadding();
+HORUS_API Point getPadding();
 
 HORUS_API f32 getColumnPadding();
 

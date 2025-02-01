@@ -79,7 +79,7 @@ bool beginWindow(const char* id, const char* title, Rect* initialRect, HImage ic
 		ctx->renderer->cmdDrawImageBordered(windowElem.image, windowElem.border, rc, ctx->scale);
 	}
 
-	beginContainer(rc);
+	beginLayout(rc);
 	pushId((void*)wnd);
 
 	return true;
@@ -88,7 +88,7 @@ bool beginWindow(const char* id, const char* title, Rect* initialRect, HImage ic
 void endWindow()
 {
 	popId();
-	endContainer();
+	endLayout();
 	ctx->renderer->end();
 	//TODO: make scroll struct stack
 }

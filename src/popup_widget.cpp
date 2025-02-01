@@ -120,7 +120,7 @@ void beginPopup(
 
 	pushLayout();
 
-	ctx->layout = LayoutState(LayoutType::Container);
+	ctx->layout = LayoutState(LayoutType::Generic);
 	pushPosition();
 	ctx->position =
 	{
@@ -255,7 +255,7 @@ bool clickedOutsidePopup()
 	if (ctx->event.type != InputEvent::Type::MouseDown)
 		return false;
 
-	if (ctx->layout.type == LayoutType::Container
+	if (ctx->layout.type == LayoutType::Generic
 		&& ctx->isActiveLayer())
 	{
 		auto& popup = ctx->popupStack[ctx->popupIndex - 1];
@@ -277,7 +277,7 @@ bool clickedOutsidePopup()
 
 bool mouseOutsidePopup()
 {
-	if (ctx->layout.type == LayoutType::Container
+	if (ctx->layout.type == LayoutType::Generic
 		&& ctx->isActiveLayer())
 	{
 		auto& popup = ctx->popupStack[ctx->popupIndex - 1];
@@ -304,7 +304,7 @@ bool pressedEscapeOnPopup()
 	if (popup.alreadyClosedWithEscape)
 		return false;
 
-	if (ctx->layout.type == LayoutType::Container
+	if (ctx->layout.type == LayoutType::Generic
 		&& ctx->event.type == InputEvent::Type::Key
 		&& ctx->event.key.down
 		&& ctx->event.key.code == KeyCode::Esc
