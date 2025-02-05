@@ -13,15 +13,16 @@ static void beginBoxInternal(const Color& color, ThemeElement::State& state, f32
 	ctx->layout.type = LayoutType::Generic;
 	ctx->layout.id = genIdFromPosition("box");
 	ctx->layout.savedPosition = ctx->position;
-	ctx->layout.savedPadding = ctx->padding;
-	ctx->position.x += state.border * ctx->scale + ctx->padding.x;
-	ctx->layout.width = parentWidth - ctx->padding.x * 2.0f - (state.border * 2.0f) * ctx->scale;
+	auto& padding = getWidgetPadding();
+	ctx->layout.savedPadding = padding;
+	ctx->position.x += state.border * ctx->scale + padding.x;
+	ctx->layout.width = parentWidth - padding.x * 2.0f - (state.border * 2.0f) * ctx->scale;
 	ctx->layout.themeWidgetElementState = &state;
 	ctx->layout.themeElementColorTint = color;
 
 	if (customHeight <= 0.0f)
 	{
-		ctx->position.y += state.border * ctx->scale + ctx->padding.y;
+		ctx->position.y += state.border * ctx->scale + padding.y;
 	}
 	else
 	{

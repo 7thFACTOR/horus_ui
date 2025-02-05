@@ -113,10 +113,10 @@ struct Context
 	LayoutState layout;
 	std::vector<LayoutState> layoutStack;
 	Rect lastColumnRect;
-	std::vector<Point> paddingStack;
+	std::vector<Point> paddingStack[(i32)PaddingType::Count];
 	std::vector<f32> spacingStack;
 	std::vector<f32> columnSpacingStack;
-	Point padding = { 0, 0 };
+	Point padding[(i32)PaddingType::Count] = { 0, 0 };
 	f32 columnSpacing = 4;
 	f32 spacing = 4;
 	Point position = { 0, 0 };

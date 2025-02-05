@@ -14,18 +14,21 @@ bool radio(const char* label, i32* currentRadioValue, i32 thisValue)
 	ctx->extractLabelAndId(label);
 	
 	auto textSize = radioBodyElem.normalState().font->computeTextSize(ctx->widgetLabel.c_str());
-
+	auto& padding = getWidgetPadding();
 	f32 bulletTextSpacingParam = radioBodyElem.currentStyle->getParameterValue("bulletTextSpacing", ctx->settings.defaultBulletTextSpacing);
-
 	f32 bulletTextSpacing = bulletTextSpacingParam * ctx->scale;
 	f32 height = radioBodyElem.normalState().height * ctx->scale;
+	f32 markWidth = padding.x * 2.0f + radioBodyElem.normalState().width;
+	f32 markHeight = padding.y * 2.0f + radioBodyElem.normalState().height;
+	f32 markWidthScaled = markWidth * ctx->scale;
+	f32 markHeightScaled = markHeight * ctx->scale;
 
 	// height is the same as bullet width, since its square, so we use height
-	ctx->widget.width = textSize.width + height + bulletTextSpacing;
+	ctx->widget.width = markWidthScaled + textSize.width + bulletTextSpacing;
 	
-	addWidget(radioBodyElem.normalState().height * ctx->scale);
+	addWidget(std::max(textSize.height, markHeightScaled));
 	buttonBehavior();
-	bool changed = false;
+	ctx->widget.changeEnded = false;
 
 	if (ctx->widget.clicked)
 	{
@@ -34,7 +37,6 @@ bool radio(const char* label, i32* currentRadioValue, i32 thisValue)
 		
 		ctx->widget.changeEnded = true;
 		forceRepaint();
-		changed = true;
 	}
 
 	auto radioBodyElemState = &radioBodyElem.normalState();
@@ -58,8 +60,8 @@ bool radio(const char* label, i32* currentRadioValue, i32 thisValue)
 		{
 			ctx->widget.rect.x,
 			ctx->widget.rect.y,
-			radioBodyElemState->width * ctx->scale,
-			ctx->widget.rect.height
+			markWidthScaled,
+			markHeightScaled
 		}, ctx->scale);
 
 	if (currentRadioValue && *currentRadioValue == thisValue)
@@ -68,8 +70,8 @@ bool radio(const char* label, i32* currentRadioValue, i32 thisValue)
 		ctx->renderer->cmdDrawImageBordered(
 			radioMarkElemState->image, radioMarkElemState->border,
 			{
-				ctx->widget.rect.x + (radioBodyElemState->width - radioMarkElemState->image->rect.width) / 2.0f * ctx->scale,
-				ctx->widget.rect.y + (radioBodyElemState->height - radioMarkElemState->image->rect.height) / 2.0f * ctx->scale,
+				ctx->widget.rect.x + (markWidth - radioMarkElemState->image->width) / 2.0f * ctx->scale,
+				ctx->widget.rect.y + (markHeight - radioMarkElemState->image->height) / 2.0f * ctx->scale,
 				radioMarkElemState->image->rect.width * ctx->scale,
 				radioMarkElemState->image->rect.height * ctx->scale
 			}, ctx->scale);
@@ -80,7 +82,7 @@ bool radio(const char* label, i32* currentRadioValue, i32 thisValue)
 	ctx->renderer->cmdDrawTextInBox(
 		ctx->widgetLabel.c_str(),
 		Rect(
-			ctx->widget.rect.x + ctx->widget.rect.height + bulletTextSpacing,
+			ctx->widget.rect.x + markWidthScaled + bulletTextSpacing,
 			ctx->widget.rect.y,
 			ctx->widget.rect.width,
 			ctx->widget.rect.height),
@@ -89,7 +91,7 @@ bool radio(const char* label, i32* currentRadioValue, i32 thisValue)
 
 	ctx->widget.width = 0;
 
-	return changed;
+	return ctx->widget.changeEnded;
 }
 
 }

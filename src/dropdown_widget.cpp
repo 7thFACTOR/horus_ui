@@ -109,7 +109,7 @@ bool dropdown(const char* id, i32& selectedIndex, const char** items, u32 itemCo
 		auto& selectableBodyElem = ctx->theme->getElement(WidgetElementId::SelectableBody).normalState();
 
 		pushSpacing(0);
-		pushPadding(0);
+		pushPadding(PaddingType::ScrollView, Point());
 
 		if (maxVisibleDropDownItems < itemCount)
 		{
@@ -139,7 +139,7 @@ bool dropdown(const char* id, i32& selectedIndex, const char** items, u32 itemCo
 		}
 
 		popSpacing();
-		popPadding();
+		popPadding(PaddingType::ScrollView);
 
 		if (selectedNewItem || mustClosePopup())
 		{

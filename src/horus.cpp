@@ -323,6 +323,11 @@ void beginFrame()
 	ctx->sameLineInfoIndex = 0;
 	ctx->sameLineInfoCount = 0;
 
+	ctx->padding[(i32)PaddingType::Layout] = ctx->settings.defaultLayoutPadding;
+	ctx->padding[(i32)PaddingType::ScrollView] = ctx->settings.defaultScrollViewPadding;
+	ctx->padding[(i32)PaddingType::Widget] = ctx->settings.defaultWidgetPadding;
+
+
 	if (ctx->pruneUnusedTextTime >= ctx->settings.textCachePruneIntervalSec)
 	{
 		ctx->textCache->pruneUnusedText();
@@ -1349,7 +1354,7 @@ HFont getFont(const char* themeFontName)
 void beginLayout(const Rect& rect)
 {
 	pushLayout();
-	auto paddedRect = rect.contract(ctx->padding);
+	auto paddedRect = rect.contract(getPadding(PaddingType::Layout));
 	ctx->layout.type = LayoutType::Generic;
 	ctx->layout.savedPosition = rect.topLeft();
 	ctx->layout.width = rect.width;
@@ -1690,19 +1695,39 @@ void columnHeader(const char* label, f32 width, f32 preferredWidth, f32 minWidth
 	ctx->renderer->cmdDrawTextInBox(ctx->widgetLabel.c_str(), rcText, HAlignType::Left, VAlignType::Center);
 }
 
-void pushPadding(const Point& newPadding)
+void pushPadding(PaddingType type, const Point& newPadding)
 {
-	ctx->paddingStack.push_back(ctx->padding);
-	ctx->padding = newPadding * ctx->scale;
+	ctx->paddingStack[(i32)type].push_back(ctx->padding[(i32)type]);
+	ctx->padding[(i32)type] = newPadding;
 }
 
-void popPadding()
+void pushWidgetPadding(const Point& newPadding)
 {
-	if (!ctx->paddingStack.empty())
+	pushPadding(PaddingType::Widget, newPadding);
+}
+
+void popPadding(PaddingType type)
+{
+	if (!ctx->paddingStack[(i32)type].empty())
 	{
-		ctx->padding = ctx->paddingStack.back();
-		ctx->paddingStack.pop_back();
+		ctx->padding[(i32)type] = ctx->paddingStack[(i32)type].back();
+		ctx->paddingStack[(i32)type].pop_back();
 	}
+}
+
+void popWidgetPadding()
+{
+	popPadding(PaddingType::Widget);
+}
+
+const Point& getPadding(PaddingType type)
+{
+	return ctx->padding[(i32)type];
+}
+
+const Point& getWidgetPadding()
+{
+	return ctx->padding[(i32)PaddingType::Widget];
 }
 
 void pushSpacing(f32 newSpacing)
@@ -1723,11 +1748,6 @@ void popSpacing()
 f32 getSpacing()
 {
 	return ctx->spacing;
-}
-
-Point getPadding()
-{
-	return ctx->padding;
 }
 
 void changeScale(f32 scale)

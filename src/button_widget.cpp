@@ -195,13 +195,15 @@ bool button(const char* label)
 
 	ctx->extractLabelAndId(label);
 
+	auto& padding = getWidgetPadding();
+
 	if (ctx->sameLine)
 	{
 		auto textWidth = btnBodyElem.normalState().font->computeTextSize(ctx->widgetLabel.c_str());
-		ctx->widget.width = (btnBodyElem.normalState().border * 2.0f + textWidth.width) * ctx->scale;
+		ctx->widget.width = ((btnBodyElem.normalState().border + padding.x) * 2.0f + textWidth.width) * ctx->scale;
 	}
 
-	addWidget(btnBodyElem.normalState().height * ctx->scale);
+	addWidget((btnBodyElem.normalState().height + padding.y * 2.0f) * ctx->scale);
 	buttonBehavior();
 
 	auto btnBodyElemState = &btnBodyElem.normalState();
@@ -215,9 +217,9 @@ bool button(const char* label)
 
 	if (ctx->widget.visible)
 	{
-		ctx->renderer->cmdSetColor(applyTint(btnBodyElemState->color,TintColorType::Body));
+		ctx->renderer->cmdSetColor(applyTint(btnBodyElemState->color, TintColorType::Body));
 		ctx->renderer->cmdDrawImageBordered(btnBodyElemState->image, btnBodyElemState->border, ctx->widget.rect, ctx->scale);
-		ctx->renderer->cmdSetColor(applyTint(btnBodyElemState->textColor,TintColorType::Text));
+		ctx->renderer->cmdSetColor(applyTint(btnBodyElemState->textColor, TintColorType::Text));
 		ctx->renderer->cmdSetFont(btnBodyElemState->font);
 		ctx->renderer->pushClipRect(ctx->widget.rect);
 		ctx->renderer->cmdDrawTextInBox(

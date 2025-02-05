@@ -14,16 +14,18 @@ bool check(const char* label, bool* checkVar)
 	ctx->extractLabelAndId(label);
 
 	auto textSize = checkBodyElem.normalState().font->computeTextSize(ctx->widgetLabel.c_str());
-
+	auto& padding = getWidgetPadding();
 	f32 bulletTextSpacingParam = checkBodyElem.currentStyle->getParameterValue("bulletTextSpacing", ctx->settings.defaultBulletTextSpacing);
-
 	f32 bulletTextSpacing = bulletTextSpacingParam * ctx->scale;
-	f32 height = checkBodyElem.normalState().height * ctx->scale;
+	f32 markWidth = padding.x * 2.0f + checkBodyElem.normalState().width;
+	f32 markHeight = padding.y * 2.0f + checkBodyElem.normalState().height;
+	f32 markWidthScaled = markWidth * ctx->scale;
+	f32 markHeightScaled = markHeight * ctx->scale;
 
 	// height is the same as bullet width, since its square, so we use height
-	ctx->widget.width = textSize.width + height + bulletTextSpacing;
+	ctx->widget.width = markWidthScaled + textSize.width + bulletTextSpacing;
 
-	addWidget(height);
+	addWidget(std::max(textSize.height, markHeightScaled));
 	buttonBehavior();
 	ctx->widget.changeEnded = false;
 
@@ -56,8 +58,8 @@ bool check(const char* label, bool* checkVar)
 		{
 			round(ctx->widget.rect.x),
 			round(ctx->widget.rect.y),
-			ctx->widget.rect.height,
-			ctx->widget.rect.height
+			markWidthScaled,
+			markHeightScaled
 		}, ctx->scale);
 
 	if (checkVar && *checkVar)
@@ -67,10 +69,10 @@ bool check(const char* label, bool* checkVar)
 			checkMarkElemState->image,
 			checkMarkElemState->border,
 			{
-				ctx->widget.rect.x + (checkBodyElemState->width - checkMarkElemState->image->rect.width) / 2.0f * ctx->scale,
-				ctx->widget.rect.y + (checkBodyElemState->height - checkMarkElemState->image->rect.height) / 2.0f * ctx->scale,
-				checkMarkElemState->image->rect.width * ctx->scale,
-				checkMarkElemState->image->rect.height * ctx->scale
+				ctx->widget.rect.x + (markWidth - checkMarkElemState->image->width) / 2.0f * ctx->scale,
+				ctx->widget.rect.y + (markHeight - checkMarkElemState->image->height) / 2.0f * ctx->scale,
+				checkMarkElemState->image->width * ctx->scale,
+				checkMarkElemState->image->height * ctx->scale
 			}, ctx->scale);
 	}
 
@@ -79,13 +81,14 @@ bool check(const char* label, bool* checkVar)
 	ctx->renderer->cmdDrawTextInBox(
 		ctx->widgetLabel.c_str(),
 		Rect(
-			ctx->widget.rect.x + ctx->widget.rect.height + bulletTextSpacing,
+			ctx->widget.rect.x + markWidthScaled + bulletTextSpacing,
 			ctx->widget.rect.y,
 			ctx->widget.rect.width,
 			ctx->widget.rect.height),
 		HAlignType::Left,
 		VAlignType::Center);
 
+	// reset custom width
 	ctx->widget.width = 0;
 
 	return ctx->widget.changeEnded;

@@ -205,6 +205,15 @@ enum class FontStyle
 	Count
 };
 
+enum class PaddingType
+{
+	Layout,
+	ScrollView,
+	Widget,
+
+	Count
+};
+
 /// Current supported widget types, used form themes
 enum class WidgetType
 {
@@ -1617,14 +1626,15 @@ struct Settings
 	bool textCaretBlinkEnable = true;
 	f32 textScrollStepAmount = 30; /// scroll pixel amount when moving inside text input
 	u32 defaultAtlasSize = 4096; /// default atlas textures size in pixels
+	Point defaultLayoutPadding = {10, 10};
+	Point defaultScrollViewPadding = { 10, 10 };
+	Point defaultWidgetPadding = { 0, 0 };
 	SliderDragDirection sliderDragDirection = SliderDragDirection::Any; /// allows to change slider value from any direction drag, vertical or horizontal
 	bool sliderInvertVerticalDragAmount = false; /// if true and vertical sliding allowed, it will invert the drag amount
 	f32 dragStartDistance = 3; /// the max distance after which a dragging operation starts to occur when mouse down and moved, in pixels
 	f32 whiteImageUvBorder = 0.001f; /// this value is subtracted from the white image used to draw lines, to avoid black border artifacts
 	f32 sameLineHeight = 20.0f; /// the height of a line when sameLine() is used to position widgets on a single row/line. Used to center various widget heights vertically. This must be non-zero, otherwise the widgets will align wrongly.
 	f32 minScrollViewHandleSize = 20.0f; /// the minimum allowed scroll handle size (height)
-	u32 widgetLoopStartId = 1000000000; /// when pushing loops into loop stack, the widget ids will start from here. Basically this avoids the user to specify IDs when creating widgets in a loop, taking into account the fact there will not be so many widgets created anyway.
-	u32 widgetLoopMaxCount = 500000; /// current increment after each loop push to stack
 	DockingGuidesStyle dockingStyle = DockingGuidesStyle::Auto; /// use DockingGuidesStyle::InsideNativeWindows for Linux
 	//TODO: this could be per native window
 	bool dockAllowUndockingToNewNativeWindow = true; /// allow view tabs to be undocked as native OS windows, outside of the main window, else windows will only be allowed to dock in their owner OS windows
@@ -2508,10 +2518,12 @@ HORUS_API void endVirtualListContent();
 
 /// Push the old padding and set a new one, padding is the left and right side horizontal spacing for widgets
 /// \param newPadding the new horizontal padding value
-HORUS_API void pushPadding(const Point& newPadding);
+HORUS_API void pushPadding(PaddingType type, const Point& newPadding);
+HORUS_API void pushWidgetPadding(const Point& newPadding);
 
 /// Pop the previous padding value from stack and set it as current
-HORUS_API void popPadding();
+HORUS_API void popPadding(PaddingType type);
+HORUS_API void popWidgetPadding();
 
 /// Push a new padding for column content
 HORUS_API void pushColumnPadding(f32 newPadding);
@@ -2538,7 +2550,10 @@ HORUS_API f32 getSpacing();
 HORUS_API f32 getColumnSpacing();
 
 /// \return the current horizontal left and right side padding value
-HORUS_API Point getPadding();
+HORUS_API const Point& getPadding(PaddingType type);
+
+// Handy version to get widget padding
+HORUS_API const Point& getWidgetPadding();
 
 HORUS_API f32 getColumnPadding();
 

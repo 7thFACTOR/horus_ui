@@ -18,6 +18,7 @@ static bool comboSliderInternal(f32* value, f32 minVal, f32 maxVal, bool useRang
 	bool arrowStepped = false;
 	bool arrowHoveredLeft = false;
 	bool arrowHoveredRight = false;
+	auto& padding = getWidgetPadding();
 
 	if (useRange)
 	{
@@ -30,7 +31,7 @@ static bool comboSliderInternal(f32* value, f32 minVal, f32 maxVal, bool useRang
 
 	if (notEditingText)
 	{
-		addWidget(bodyElem.normalState().height * ctx->scale);
+		addWidget((bodyElem.normalState().height + padding.y * 2.0f) * ctx->scale);
 		buttonBehavior();
 
 		if (ctx->comboSlider.dragging && ctx->id == ctx->comboSlider.id)
@@ -40,24 +41,28 @@ static bool comboSliderInternal(f32* value, f32 minVal, f32 maxVal, bool useRang
 
 		auto cursor = 0;
 
-		if (isHovered() && ctx->mousePosition.x <= ctx->widget.rect.x + leftArrowElem.normalState().image->width)
+		// check left arrow
+		if (isHovered() 
+			&& ctx->mousePosition.x <= ctx->widget.rect.x + leftArrowElem.normalState().image->width + padding.x)
 		{
 			arrowHoveredLeft = true;
 		}
-		else if (isHovered() && ctx->mousePosition.x >= ctx->widget.rect.right() - rightArrowElem.normalState().image->width)
+		// check right arrow
+		else if (isHovered()
+			&& ctx->mousePosition.x >= ctx->widget.rect.right() - rightArrowElem.normalState().image->width - padding.x)
 		{
 			arrowHoveredRight = true;
 		}
 
 		if (isClicked()
-			&& ctx->mousePosition.x <= ctx->widget.rect.x + leftArrowElem.normalState().image->width)
+			&& ctx->mousePosition.x <= ctx->widget.rect.x + leftArrowElem.normalState().image->width + padding.x)
 		{
 			*value -= arrowStep;
 			arrowStepped = true;
 			if (useRange) clampValue(*value, minVal, maxVal);
 			ctx->widget.changeEnded = true;
 		}
-		else if (isClicked() && ctx->mousePosition.x >= ctx->widget.rect.right() - rightArrowElem.normalState().image->width)
+		else if (isClicked() && ctx->mousePosition.x >= ctx->widget.rect.right() - rightArrowElem.normalState().image->width - padding.x)
 		{
 			*value += arrowStep;
 			arrowStepped = true;

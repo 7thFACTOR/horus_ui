@@ -105,9 +105,9 @@ int main(int argc, char** args)
 				u32 ptCount = 0;
 				hui::Rect rc = { 30, 30, 1200*hui::getScale(), 1500 * hui::getScale() };
 				hui::beginLayout(rc);
-				hui::pushPadding({10, 10});
+				hui::pushWidgetPadding({10, 10});
 				hui::beginBox(hui::Color::white, hui::WidgetElementId::WindowBody, hui::WidgetStateType::Normal);
-				hui::popPadding();
+				hui::popWidgetPadding();
 				hui::customSpace(20);
 
 				hui::labelCustomFont("Once upon a time...", hui::getThemeFont(theme, "title"), hui::HAlignType::Center);
@@ -119,37 +119,41 @@ int main(int argc, char** args)
 				}
 
 				static bool chk = true;
+				hui::pushWidgetPadding(10);
 				hui::check("A simple check box", &chk);
-				
+				hui::popWidgetPadding();
+
 				static i32 option1 = 0;
 				static i32 option2 = 0;
 				static bool showRadios = true;
 				hui::pushTint(hui::Color::orange);
+				hui::pushWidgetPadding(10);
 				if (hui::panel("Radios 1##1"))
 				{
 					hui::radio("Radio value 0", &option1, 0);
 					hui::radio("Radio value 1", &option1, 1);
 					hui::radio("Radio value 2", &option1, 2);
 				}
+				hui::popWidgetPadding();
 				hui::popTint();
 
 				static f32 val;
 				static f32 val2;
 
 				static f32 scrollPos = 0;
-				hui::pushPadding({ 10, 0 });
+				hui::pushPadding(hui::PaddingType::ScrollView, { 10, 0 });
 				hui::beginScrollView(180, scrollPos);
-				hui::popPadding();
+				hui::popPadding(hui::PaddingType::ScrollView);
 				hui::rotarySliderFloat("Speed", &val, -30, 100, 1, false);
 				static char txt[1000];
 				hui::textInput(txt, 1000);
-
+				hui::pushWidgetPadding(10);
 				hui::comboSliderFloat(&val, 1, 1, "°");
-
-				hui::comboSliderFloat(&val2, 1, 1, "cm");
+				hui::popWidgetPadding();
+				hui::comboSliderFloatRanged(&val2, 0, 100, 1, 1, "cm");
 				static i32 sel = 0;
 
-				const char* items[6] = { "aaa", "bbbb", "ccccc", "ddd", "eeee", "ffff"};
+				const char* items[6] = { "One", "Two", "Three", "Four", "Five", "Six"};
 
 				hui::dropdown("m", sel, items, 6, 3);
 
@@ -184,6 +188,7 @@ int main(int argc, char** args)
 					hui::endSameLine();
 				}
 
+				hui::pushWidgetPadding({ 10, 10 });
 				hui::beginSameLine(5);
 				hui::pushTint(hui::Color::red);
 				hui::button("  EXIT  ");
@@ -195,6 +200,7 @@ int main(int argc, char** args)
 				hui::button("  QUIT APPLICATION ");
 				hui::popTint();
 				hui::endSameLine();
+				hui::popWidgetPadding();
 
 				hui::customSpace(20);
 				

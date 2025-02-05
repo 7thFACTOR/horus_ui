@@ -1564,9 +1564,9 @@ void dockNodeTabs(DockNode* node)
 {
 	if (node->windows.size())
 	{
-		pushPadding(0);
+		pushPadding(PaddingType::Layout, Point());
 		beginLayout(node->rect);
-		popPadding();
+		popPadding(PaddingType::Layout);
 		// pop the clip rect, we dont want clipping since draw tabs bar beyond the node rect width
 		auto oldClipRect = ctx->renderer->getClipRect();
 		ctx->renderer->popClipRect();
@@ -2561,9 +2561,9 @@ void drawDockPreview(Window* window, const Rect& windowRect)
 
 	ctx->renderer->cmdSetColor(windowElem.color * tintColor);
 	ctx->renderer->cmdDrawImageBordered(windowElem.image, windowElem.border, windowRect, ctx->scale);
-	pushPadding(0);
+	pushPadding(PaddingType::Layout, Point());
 	beginLayout(windowRect);
-	popPadding();
+	popPadding(PaddingType::Layout);
 	beginTabGroup(0);
 	hui::tab(window->title.c_str(), window->icon);
 	endTabGroup();
