@@ -271,28 +271,26 @@ static bool comboSliderInternal(f32* value, f32 minVal, f32 maxVal, bool useRang
 
 		ctx->renderer->cmdSetColor(applyTint(leftArrowElemState->color, TintColorType::Body));
 
-		// dial down the height, since its already global scaled
-		auto arrowY = ((ctx->widget.rect.height / ctx->scale - leftArrowElemState->image->rect.height) / 2.0f + (ctx->widget.pressed ? 1.0f : 0.0f)) * ctx->scale;
+		auto arrowY = ((ctx->widget.rect.height - leftArrowElemState->image->height * ctx->scale) / 2.0f + (ctx->widget.pressed ? 1.0f : 0.0f)) * ctx->scale;
 
 		ctx->renderer->cmdDrawImage(leftArrowElemState->image,
 			{
-				ctx->widget.rect.x + bodyElemState->border + (ctx->widget.pressed ? 1.0f : 0.0f) * ctx->scale,
+				ctx->widget.rect.x + (bodyElemState->border + padding.x + (ctx->widget.pressed ? 1.0f : 0.0f)) * ctx->scale,
 				ctx->widget.rect.top() + arrowY,
-				leftArrowElemState->image->rect.width * ctx->scale,
-				leftArrowElemState->image->rect.height * ctx->scale
+				leftArrowElemState->image->width * ctx->scale,
+				leftArrowElemState->image->height * ctx->scale
 			});
 
 		ctx->renderer->cmdSetColor(applyTint(rightArrowElemState->color, TintColorType::Body));
 
-		// dial down the height, since its already global scaled
-		arrowY = ((ctx->widget.rect.height / ctx->scale - rightArrowElemState->image->rect.height) / 2.0f + (ctx->widget.pressed ? 1.0f : 0.0f)) * ctx->scale;
+		arrowY = ((ctx->widget.rect.height - rightArrowElemState->image->rect.height * ctx->scale) / 2.0f + (ctx->widget.pressed ? 1.0f : 0.0f)) * ctx->scale;
 
 		ctx->renderer->cmdDrawImage(rightArrowElemState->image,
 			{
-				ctx->widget.rect.right() - bodyElemState->border - (rightArrowElemState->image->rect.width - (ctx->widget.pressed ? 1.0f : 0.0f)) * ctx->scale,
+				ctx->widget.rect.right() - (bodyElemState->border + padding.x + rightArrowElemState->image->width + (ctx->widget.pressed ? -1.0f : 0.0f)) * ctx->scale,
 				ctx->widget.rect.top() + arrowY,
-				rightArrowElemState->image->rect.width * ctx->scale,
-				rightArrowElemState->image->rect.height * ctx->scale
+				rightArrowElemState->image->width * ctx->scale,
+				rightArrowElemState->image->height * ctx->scale
 			});
 
 		static char outStr[ComboSliderState::maxTextSize] = { 0 };
