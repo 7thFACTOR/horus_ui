@@ -14,6 +14,7 @@ static bool comboSliderInternal(f32* value, f32 minVal, f32 maxVal, bool useRang
 	auto& leftArrowElem = ctx->theme->getElement(WidgetElementId::ComboSliderLeftArrow);
 	auto& rightArrowElem = ctx->theme->getElement(WidgetElementId::ComboSliderRightArrow);
 	auto& rangeBarElem = ctx->theme->getElement(WidgetElementId::ComboSliderRangeBar);
+	auto& verticalLineElem = ctx->theme->getElement(WidgetElementId::ComboSliderVerticalLine);
 	ctx->widget.changeEnded = false;
 	bool arrowStepped = false;
 	bool arrowHoveredLeft = false;
@@ -224,6 +225,7 @@ static bool comboSliderInternal(f32* value, f32 minVal, f32 maxVal, bool useRang
 		auto leftArrowElemState = &leftArrowElem.normalState();
 		auto rightArrowElemState = &rightArrowElem.normalState();
 		auto rangeBarElemState = &rangeBarElem.normalState();
+		auto verticalLineElemState = &verticalLineElem.normalState();
 
 		if (ctx->widget.pressed)
 		{
@@ -269,10 +271,10 @@ static bool comboSliderInternal(f32* value, f32 minVal, f32 maxVal, bool useRang
 				ctx->scale);
 		}
 
-		ctx->renderer->cmdSetColor(applyTint(leftArrowElemState->color, TintColorType::Body));
 
 		auto arrowY = ((ctx->widget.rect.height - leftArrowElemState->image->height * ctx->scale) / 2.0f + (ctx->widget.pressed ? 1.0f : 0.0f)) * ctx->scale;
 
+		ctx->renderer->cmdSetColor(applyTint(leftArrowElemState->color, TintColorType::Body));
 		ctx->renderer->cmdDrawImage(leftArrowElemState->image,
 			{
 				ctx->widget.rect.x + (bodyElemState->border + padding.x + (ctx->widget.pressed ? 1.0f : 0.0f)) * ctx->scale,
@@ -281,10 +283,24 @@ static bool comboSliderInternal(f32* value, f32 minVal, f32 maxVal, bool useRang
 				leftArrowElemState->image->height * ctx->scale
 			});
 
-		ctx->renderer->cmdSetColor(applyTint(rightArrowElemState->color, TintColorType::Body));
+
+		auto lineHeight = verticalLineElemState->height + padding.y * 2.0f;
+		auto lineY = ((ctx->widget.rect.height - lineHeight * ctx->scale) / 2.0f + (ctx->widget.pressed ? 1.0f : 0.0f)) * ctx->scale;
+
+		ctx->renderer->cmdSetColor(applyTint(verticalLineElemState->color, TintColorType::Body));
+
+		ctx->renderer->cmdDrawImage(verticalLineElemState->image,
+			{
+				ctx->widget.rect.x + (leftArrowElemState->image->width + bodyElemState->border + padding.x + (ctx->widget.pressed ? 1.0f : 0.0f)) * ctx->scale,
+				ctx->widget.rect.top() + lineY,
+				verticalLineElemState->image->width * ctx->scale,
+				lineHeight
+			});
+
 
 		arrowY = ((ctx->widget.rect.height - rightArrowElemState->image->rect.height * ctx->scale) / 2.0f + (ctx->widget.pressed ? 1.0f : 0.0f)) * ctx->scale;
 
+		ctx->renderer->cmdSetColor(applyTint(rightArrowElemState->color, TintColorType::Body));
 		ctx->renderer->cmdDrawImage(rightArrowElemState->image,
 			{
 				ctx->widget.rect.right() - (bodyElemState->border + padding.x + rightArrowElemState->image->width + (ctx->widget.pressed ? -1.0f : 0.0f)) * ctx->scale,

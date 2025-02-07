@@ -135,6 +135,7 @@ WidgetElementId getWidgetElementFromName(std::string name)
 	if (name == "comboSliderLeftArrow") return WidgetElementId::ComboSliderLeftArrow;
 	if (name == "comboSliderRightArrow") return WidgetElementId::ComboSliderRightArrow;
 	if (name == "comboSliderRangeBar") return WidgetElementId::ComboSliderRangeBar;
+	if (name == "comboSliderVerticalLine") return WidgetElementId::ComboSliderVerticalLine;
 	if (name == "rotarySliderBody") return WidgetElementId::RotarySliderBody;
 	if (name == "rotarySliderMark") return WidgetElementId::RotarySliderMark;
 	if (name == "rotarySliderValueDot") return WidgetElementId::RotarySliderValueDot;

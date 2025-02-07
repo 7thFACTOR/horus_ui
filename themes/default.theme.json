@@ -246,6 +246,14 @@
 				"hovered": { "image": "default/comboslider_range_bar", "border": 1, "color": "sky", "textColor": "white", "font": "normal" },
 				"pressed": { "image": "default/comboslider_range_bar", "border": 1, "color": "sky", "textColor": "white", "font": "normal" },
 				"focused": { "image": "default/comboslider_range_bar", "border": 1, "color": "sky", "textColor": "white", "font": "normal" }
+			},
+			"comboSliderVerticalLine":
+			{
+				"height": 16,
+				"normal": { "image": "default/comboslider_vertical_line", "border": 0, "color": "lightGray", "textColor": "white", "font": "normal" },
+				"hovered": { "image": "default/comboslider_vertical_line", "border": 0, "color": "white", "textColor": "white", "font": "normal" },
+				"pressed": { "image": "default/comboslider_vertical_line", "border": 0, "color": "white", "textColor": "white", "font": "normal" },
+				"focused": { "image": "default/comboslider_vertical_line", "border": 0, "color": "white", "textColor": "white", "font": "normal" }
 			}
 		},
 		"rotarySlider":

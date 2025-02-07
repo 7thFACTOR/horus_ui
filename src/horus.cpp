@@ -1091,6 +1091,7 @@ void setWidgetStyle(WidgetType widgetType, const char* styleName)
 		ctx->theme->elements[(u32)WidgetElementId::ComboSliderLeftArrow].setStyle(styleName);
 		ctx->theme->elements[(u32)WidgetElementId::ComboSliderRangeBar].setStyle(styleName);
 		ctx->theme->elements[(u32)WidgetElementId::ComboSliderRightArrow].setStyle(styleName);
+		ctx->theme->elements[(u32)WidgetElementId::ComboSliderVerticalLine].setStyle(styleName);
 		break;
 	case WidgetType::RotarySlider:
 		ctx->theme->elements[(u32)WidgetElementId::RotarySliderBody].setStyle(styleName);

@@ -325,6 +325,7 @@ enum class WidgetElementId
 	ComboSliderLeftArrow,
 	ComboSliderRightArrow,
 	ComboSliderRangeBar,
+	ComboSliderVerticalLine,
 	RotarySliderBody,
 	RotarySliderMark,
 	RotarySliderValueDot,
