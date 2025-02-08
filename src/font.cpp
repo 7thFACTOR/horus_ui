@@ -169,18 +169,23 @@ Image* Font::getGlyphImage(GlyphCode glyphCode)
 	return (Image*)iter->second->image;
 }
 
+void Font::cacheEllipsisSize()
+{
+	ellipsisSize = computeTextSize("...");
+}
+
 FontTextSize Font::computeTextSize(const Utf32String& text)
 {
 	return computeTextSize(text.data(), text.size());
 }
 
-FontTextSize Font::computeTextSize(const char* text)
+FontTextSize Font::computeTextSize(const char* text, u32 maxWidth)
 {
 	static Utf32String str;
 
 	HORUS_UTF->utf8To32(text, str);
 
-	return computeTextSize(str.data(), str.size());
+	return computeTextSize(str.data(), str.size(), maxWidth);
 }
 
 FontTextSize Font::computeTextSize(const GlyphCode* const text, u32 size, u32 maxWidth)
@@ -216,17 +221,14 @@ FontTextSize Font::computeTextSize(const GlyphCode* const text, u32 size, u32 ma
 
 			if (maxWidth != ~0)
 			{
-				if (maxWidth <= crtLineWidth + glyph->advanceX + kern)
+				if (maxWidth <= crtLineWidth + ellipsisSize.width)
 				{
 					fsize.maxLength = i - 1;
 					break;
 				}
 			}
-			else
-			{
-				crtLineWidth += glyph->advanceX + kern;
-			}
-			
+
+			crtLineWidth += glyph->advanceX + kern;
 			lastChr = chr;
 
 			if (fsize.maxGlyphHeight < fabs(top - bottom))

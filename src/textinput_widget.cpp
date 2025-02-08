@@ -22,10 +22,13 @@ bool textInput(
 	auto& bodyTextCaretElemState = ctx->theme->getElement(WidgetElementId::TextInputCaret).normalState();
 	auto& bodyTextSelectionElemState = ctx->theme->getElement(WidgetElementId::TextInputSelection).normalState();
 	auto& bodyTextDefaultElemState = ctx->theme->getElement(WidgetElementId::TextInputDefaultText).normalState();
+	auto& padding = getWidgetPadding();
 
 	// use ptr as id
 	ctx->id = genId((void*)text);
-	addWidget(fmaxf(bodyElem->normalState().height * ctx->scale, bodyElem->normalState().font->getMetrics().height));
+	addWidget(fmaxf(
+		(bodyElem->normalState().height + padding.y * 2.0f) * ctx->scale, 
+		bodyElem->normalState().font->getMetrics().height));
 
 	if (!ctx->focusChanged)
 		buttonBehavior();
@@ -50,10 +53,10 @@ bool textInput(
 	}
 
 	auto clipRect = Rect(
-		ctx->widget.rect.x + bodyElemState->border,
-		ctx->widget.rect.y + bodyElemState->border,
-		ctx->widget.rect.width - bodyElemState->border * 2,
-		ctx->widget.rect.height - bodyElemState->border * 2);
+		ctx->widget.rect.x + (bodyElemState->border + padding.x) * ctx->scale,
+		ctx->widget.rect.y + (bodyElemState->border + padding.y) * ctx->scale,
+		ctx->widget.rect.width - (bodyElemState->border + padding.x) * 2.0f * ctx->scale,
+		ctx->widget.rect.height - (bodyElemState->border + padding.y) * 2.0f * ctx->scale);
 
 	const size_t maxHiddenCharLen = 1024;
 	static char hiddenPwdText[maxHiddenCharLen] = "";

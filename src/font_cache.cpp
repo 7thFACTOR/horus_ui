@@ -31,6 +31,7 @@ Font* FontCache::createFont(const std::string& name, const std::string& filename
 
 	newFont->font.load(filename, size, atlas);
 	newFont->font.precacheLatinAlphabetGlyphs();
+	newFont->font.cacheEllipsisSize();
 	newFont->size = size;
 	newFont->usageCount = 1;
 	newFont->filename = filename;

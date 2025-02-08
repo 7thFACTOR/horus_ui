@@ -153,10 +153,12 @@ int main(int argc, char** args)
 				hui::comboSliderFloatRanged(&val2, 0, 100, 1, 1, "cm");
 				static i32 sel = 0;
 
-				const char* items[6] = { "One", "Two", "Three", "Four", "Five", "Six"};
-
+				const char* items[6] = { "One", "Two", "Three", "Four", "Five Hundred Billion Trillion", "Six"};
+				hui::pushWidgetPadding(10);
+				hui::pushWidth(120);
 				hui::dropdown("m", sel, items, 6, 3);
-
+				hui::popWidth();
+				hui::popWidgetPadding();
 				if (hui::panel("Radios 2##2"))
 				{
 					hui::radio("Radio value 0", &option2, 0);

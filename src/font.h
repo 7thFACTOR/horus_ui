@@ -21,8 +21,9 @@ public:
 	void precacheGlyphs(u32* glyphs, u32 glyphCount);
 	void precacheLatinAlphabetGlyphs();
 	FontTextSize computeTextSize(const GlyphCode* const text, u32 size, u32 maxWidth = ~0);
+	void cacheEllipsisSize();
 	FontTextSize computeTextSize(const Utf32String& text);
-	FontTextSize computeTextSize(const char* text);
+	FontTextSize computeTextSize(const char* text, u32 maxWidth = ~0);
 	void deleteGlyphs();
 
 	Atlas* atlas = nullptr;
@@ -31,6 +32,7 @@ protected:
 	FontGlyph* cacheGlyph(GlyphCode glyphCode);
 
 	FontInfo fontInfo;
+	FontTextSize ellipsisSize;
 	bool resizeFaceMode = false;
 	std::string filename;
 	u32 faceSize = 12;

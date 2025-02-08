@@ -11,9 +11,10 @@ bool dropdown(const char* id, i32& selectedIndex, const char** items, u32 itemCo
 {
 	auto& bodyElem = ctx->theme->getElement(WidgetElementId::DropdownBody);
 	auto& arrowElem = ctx->theme->getElement(WidgetElementId::DropdownArrow);
+	auto& padding = getWidgetPadding();
 
 	ctx->id = genId(id);
-	addWidget(bodyElem.normalState().height * ctx->scale);
+	addWidget((bodyElem.normalState().height + padding.y * 2.0f) * ctx->scale);
 	buttonBehavior();
 
 	auto bodyElemState = &bodyElem.normalState();
@@ -40,14 +41,14 @@ bool dropdown(const char* id, i32& selectedIndex, const char** items, u32 itemCo
 	ctx->renderer->cmdSetColor(applyTint(arrowElemState->color, TintColorType::Body));
 
 	// dial down the height, since its already global scaled
-	auto arrowY = ((ctx->widget.rect.height / ctx->scale - arrowElemState->image->rect.height) / 2.0f + (ctx->widget.pressed ? 1.0f : 0.0f)) * ctx->scale;
+	auto arrowY = ctx->widget.rect.height / 2.0f - ((arrowElemState->image->height) / 2.0f + (ctx->widget.pressed ? 1.0f : 0.0f)) * ctx->scale;
 
 	ctx->renderer->cmdDrawImage(arrowElemState->image,
 		{
-			ctx->widget.rect.right() - (arrowElemState->image->rect.width - (ctx->widget.pressed ? 1.0f : 0.0f)) * ctx->scale,
+			ctx->widget.rect.right() - (padding.y + arrowElemState->image->width - (ctx->widget.pressed ? 1.0f : 0.0f)) * ctx->scale,
 			ctx->widget.rect.top() + arrowY,
-			arrowElemState->image->rect.width * ctx->scale,
-			arrowElemState->image->rect.height * ctx->scale
+			arrowElemState->image->width * ctx->scale,
+			arrowElemState->image->height * ctx->scale
 		});
 
 	const char* selectedItemText = nullptr;
@@ -64,15 +65,24 @@ bool dropdown(const char* id, i32& selectedIndex, const char** items, u32 itemCo
 
 	if (selectedItemText)
 	{
-		ctx->renderer->pushClipRect(ctx->widget.rect);
+		auto textRc = Rect {
+				ctx->widget.rect.x + padding.x * ctx->scale,
+				ctx->widget.rect.y,
+				ctx->widget.rect.width - ((padding.x + bodyElemState->border) * 2.0f + arrowElemState->image->width) * ctx->scale,
+				ctx->widget.rect.height
+		};
+		auto fsize = bodyElemState->font->computeTextSize(selectedItemText, textRc.width);
+		//ctx->renderer->pushClipRect(textRc);
 		ctx->renderer->cmdSetColor(applyTint(bodyElemState->textColor, TintColorType::Text));
 		ctx->renderer->cmdSetFont(bodyElemState->font);
 		ctx->renderer->cmdDrawTextInBox(
-			selectedItemText,
-			ctx->widget.rect,
+			fsize.maxLength == 0 ?
+			selectedItemText :
+			(std::string(selectedItemText, (size_t)fsize.maxLength) + "...").c_str(),
+			textRc,
 			HAlignType::Left,
 			VAlignType::Center);
-		ctx->renderer->popClipRect();
+		//ctx->renderer->popClipRect();
 	}
 
 	setFocusable();
@@ -101,7 +111,7 @@ bool dropdown(const char* id, i32& selectedIndex, const char** items, u32 itemCo
 		// we need exact width, so don't scale the popup's width
 		ctx->popupUseGlobalScale = false;
 
-		beginPopup("popup", ctx->widget.rect.width - bodyElem.normalState().border * 2,
+		beginPopup("popup", ctx->widget.rect.width - bodyElem.normalState().border * 2.0f,
 			PopupFlags::CustomPosition,
 			posForPopup,
 			WidgetElementId::ButtonBody);

@@ -291,12 +291,11 @@ static bool comboSliderInternal(f32* value, f32 minVal, f32 maxVal, bool useRang
 
 		ctx->renderer->cmdDrawImage(verticalLineElemState->image,
 			{
-				ctx->widget.rect.x + (leftArrowElemState->image->width + bodyElemState->border + padding.x + (ctx->widget.pressed ? 1.0f : 0.0f)) * ctx->scale,
+				ctx->widget.rect.x + (bodyElemState->border + padding.x * 2.0f + leftArrowElemState->image->width + (ctx->widget.pressed ? 1.0f : 0.0f)) * ctx->scale,
 				ctx->widget.rect.top() + lineY,
 				verticalLineElemState->image->width * ctx->scale,
 				lineHeight
 			});
-
 
 		arrowY = ((ctx->widget.rect.height - rightArrowElemState->image->rect.height * ctx->scale) / 2.0f + (ctx->widget.pressed ? 1.0f : 0.0f)) * ctx->scale;
 
@@ -307,6 +306,16 @@ static bool comboSliderInternal(f32* value, f32 minVal, f32 maxVal, bool useRang
 				ctx->widget.rect.top() + arrowY,
 				rightArrowElemState->image->width * ctx->scale,
 				rightArrowElemState->image->height * ctx->scale
+			});
+
+		ctx->renderer->cmdSetColor(applyTint(verticalLineElemState->color, TintColorType::Body));
+
+		ctx->renderer->cmdDrawImage(verticalLineElemState->image,
+			{
+				ctx->widget.rect.right() - (bodyElemState->border + padding.x * 2.0f + rightArrowElemState->image->width + (ctx->widget.pressed ? 1.0f : 0.0f)) * ctx->scale,
+				ctx->widget.rect.top() + lineY,
+				verticalLineElemState->image->width * ctx->scale,
+				lineHeight
 			});
 
 		static char outStr[ComboSliderState::maxTextSize] = { 0 };
