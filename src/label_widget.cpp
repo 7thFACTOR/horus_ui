@@ -27,11 +27,18 @@ bool labelInternal(const char* label, HAlignType horizontalAlign, Font* font)
 
 	if (ctx->widget.visible)
 	{
+		Rect textRc = {
+			ctx->widget.rect.x + padding.x * ctx->scale,
+			ctx->widget.rect.y,
+			ctx->widget.rect.width - padding.x * ctx->scale,
+			ctx->widget.rect.height
+		}
+
 		ctx->renderer->cmdSetColor(applyTint(bodyElemState.textColor, TintColorType::Text));
 		ctx->renderer->cmdSetFont(font ? font : bodyElemState.font);
 		ctx->renderer->cmdDrawTextInBox(
 			ctx->widgetLabel.c_str(),
-			ctx->widget.rect,
+			textRc,
 			horizontalAlign,
 			VAlignType::Center);
 	}
