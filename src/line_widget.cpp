@@ -8,9 +8,10 @@ namespace hui
 void line()
 {
 	auto& bodyElemState = ctx->theme->getElement(WidgetElementId::LineBody).normalState();
+	auto& padding = getWidgetPadding();
 
 	ctx->extractLabelAndId(nullptr);
-	addWidget(bodyElemState.image->rect.height * ctx->scale);
+	addWidget((bodyElemState.image->height + padding.y * 2.0f) * ctx->scale);
 	ctx->renderer->cmdSetColor(bodyElemState.color);
 	ctx->renderer->cmdDrawImageBordered(bodyElemState.image, bodyElemState.border,
 		{

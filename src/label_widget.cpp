@@ -32,7 +32,7 @@ bool labelInternal(const char* label, HAlignType horizontalAlign, Font* font)
 			ctx->widget.rect.y,
 			ctx->widget.rect.width - padding.x * ctx->scale,
 			ctx->widget.rect.height
-		}
+		};
 
 		ctx->renderer->cmdSetColor(applyTint(bodyElemState.textColor, TintColorType::Text));
 		ctx->renderer->cmdSetFont(font ? font : bodyElemState.font);
