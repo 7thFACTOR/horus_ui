@@ -15,14 +15,10 @@ bool panel(const char* label, bool* expandedVar)
 	auto bodyElemState = &bodyElem.normalState();
 	bool changed = false;
 	bool expanded = false;
+	auto& padding = getWidgetPadding();
 
 	ctx->extractLabelAndId(label);
-	addWidget(bodyElemState->image->rect.height * ctx->scale);
-
-	// we want to have the panel all the way
-	ctx->widget.rect.x = ctx->position.x;
-	ctx->widget.rect.width = ctx->layout.width;
-
+	addWidget((bodyElemState->image->rect.height + padding.y * 2.0f) * ctx->scale);
 	buttonBehavior();
 
 	if (ctx->widget.clicked)
@@ -64,7 +60,9 @@ bool panel(const char* label, bool* expandedVar)
 	ctx->renderer->cmdSetColor(applyTint(bodyElemState->color, TintColorType::Body));
 	ctx->renderer->cmdDrawImageBordered(
 		bodyElemState->image,
-		bodyElemState->border, ctx->widget.rect, ctx->scale);
+		bodyElemState->border, 
+		ctx->widget.rect,
+		ctx->scale);
 
 	auto arrowElemState = &panelCollapsedArrow.normalState();
 
@@ -78,18 +76,18 @@ bool panel(const char* label, bool* expandedVar)
 	ctx->renderer->cmdDrawImage(
 		arrowElemState->image,
 		{
-			round(ctx->widget.rect.x + bodyElemState->border * ctx->scale),
-			round(ctx->widget.rect.y + (ctx->widget.rect.height - arrowElemState->image->rect.height * ctx->scale) / 2.0f),
-			arrowElemState->image->rect.width * ctx->scale,
-			arrowElemState->image->rect.height * ctx->scale
+			round(ctx->widget.rect.x + (padding.x + bodyElemState->border) * ctx->scale),
+			round(ctx->widget.rect.y + (ctx->widget.rect.height - arrowElemState->image->height * ctx->scale) / 2.0f),
+			arrowElemState->image->width * ctx->scale,
+			arrowElemState->image->height * ctx->scale
 		});
 
 	ctx->renderer->cmdSetFont(bodyElemState->font);
 
 	Rect textRect = {
-		ctx->widget.rect.x + bodyElemState->border * ctx->scale + arrowElemState->image->rect.width * ctx->scale,
+		ctx->widget.rect.x + (bodyElemState->border + arrowElemState->image->width + padding.x) * ctx->scale,
 		ctx->widget.rect.y,
-		ctx->widget.rect.width - bodyElemState->border * ctx->scale * 2.0f,
+		ctx->widget.rect.width - (padding.x + bodyElemState->border) * 2.0f * ctx->scale,
 		ctx->widget.rect.height
 	};
 

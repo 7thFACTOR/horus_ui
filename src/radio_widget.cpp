@@ -15,7 +15,7 @@ bool radio(const char* label, i32* currentRadioValue, i32 thisValue)
 	
 	auto textSize = radioBodyElem.normalState().font->computeTextSize(ctx->widgetLabel.c_str());
 	auto& padding = getWidgetPadding();
-	f32 bulletTextSpacingParam = radioBodyElem.currentStyle->getParameterValue("bulletTextSpacing", ctx->settings.defaultBulletTextSpacing);
+	f32 bulletTextSpacingParam = radioBodyElem.currentStyle->getParameter("bulletTextSpacing", ctx->settings.defaultBulletTextSpacing);
 	f32 bulletTextSpacing = bulletTextSpacingParam * ctx->scale;
 	f32 height = radioBodyElem.normalState().height * ctx->scale;
 	f32 markWidth = padding.x * 2.0f + radioBodyElem.normalState().width;

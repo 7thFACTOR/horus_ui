@@ -99,10 +99,10 @@ bool rotarySliderFloat(const char* label, f32* value, f32 minVal, f32 maxVal, f3
 		Point center = rc.center();
 		f32 percent = 1.0f - (maxVal - *value) / (maxVal - minVal);
 		
-		f32 limitOffset = valueDotElem.currentStyle->getParameterValue("limitOffset", 0.3f);
-		f32 dotCount = valueDotElem.currentStyle->getParameterValue("count", 20);
-		f32 dotPlacementRadius = valueDotElem.currentStyle->getParameterValue("placementRadius", 35);
-		f32 markPlacementRadius = markElem.currentStyle->getParameterValue("placementRadius", 25);
+		f32 limitOffset = valueDotElem.currentStyle->getParameter("limitOffset", 0.3f);
+		f32 dotCount = valueDotElem.currentStyle->getParameter("count", 20);
+		f32 dotPlacementRadius = valueDotElem.currentStyle->getParameter("placementRadius", 35);
+		f32 markPlacementRadius = markElem.currentStyle->getParameter("placementRadius", 25);
 		f32 lowLimitRadians;
 		f32 highLimitRadians;
 
@@ -125,8 +125,8 @@ bool rotarySliderFloat(const char* label, f32* value, f32 minVal, f32 maxVal, f3
 
 		if (twoSide)
 		{
-			Color negativeColor = valueDotElem.currentStyle->getParameterValue("negativeColor");
-			Color positiveColor = valueDotElem.currentStyle->getParameterValue("positiveColor");
+			Color negativeColor = valueDotElem.currentStyle->getColorParameter("negativeColor");
+			Color positiveColor = valueDotElem.currentStyle->getColorParameter("positiveColor");
 
 			angle = 1.5f * M_PI;
 			step = (highLimitRadians - lowLimitRadians) / dotCount;

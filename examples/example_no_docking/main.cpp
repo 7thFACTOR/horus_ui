@@ -118,6 +118,18 @@ int main(int argc, char** args)
 					printf("No you haven't!");
 				}
 
+				static f32 pv = 0, pv2 = 0;
+				hui::pushWidgetPadding(10);
+				hui::progress(pv);
+				hui::progress(pv2, 2500, true, true);
+				hui::progress(pv2, 1700, true, false);
+				hui::progress(-.4, 0, true, false, "Searching...");
+				hui::popWidgetPadding();
+
+				pv += 0.01f;
+				if (pv > 1) pv = 1;
+				pv2 += 0.5f;
+
 				static bool chk = true;
 				hui::pushWidgetPadding(10);
 				hui::check("A simple check box", &chk);
@@ -160,12 +172,17 @@ int main(int argc, char** args)
 				hui::label("TEST");
 				//hui::popWidth();
 				hui::popWidgetPadding();
+
+				hui::pushWidgetPadding(10);
 				if (hui::panel("Radios 2##2"))
 				{
+					hui::pushWidgetPadding(0);
 					hui::radio("Radio value 0", &option2, 0);
 					hui::radio("Radio value 1", &option2, 1);
 					hui::radio("Radio value 2", &option2, 2);
+					hui::popWidgetPadding();
 				}
+				hui::popWidgetPadding();
 
 				hui::line();
 				

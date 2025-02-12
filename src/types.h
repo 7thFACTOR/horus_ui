@@ -113,7 +113,7 @@ struct ThemeElement
 		std::unordered_map<std::string, f32> cachedFloatParameters;
 		std::unordered_map<std::string, Color> cachedColorParameters;
 
-		f32 getParameterValue(const std::string& name, f32 defaultValue)
+		f32 getParameter(const std::string& name, f32 defaultValue)
 		{
 			auto iter = cachedFloatParameters.find(name);
 
@@ -135,7 +135,7 @@ struct ThemeElement
 			return iter->second;
 		}
 
-		Color getParameterValue(const std::string& name, const Color& defaultValue = Color::white)
+		Color getColorParameter(const std::string& name, const Color& defaultValue = Color::white)
 		{
 			auto iter = cachedColorParameters.find(name);
 

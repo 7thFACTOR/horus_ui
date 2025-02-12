@@ -2719,8 +2719,8 @@ HORUS_API bool rotarySliderFloat(const char* label, f32* value, f32 minVal, f32 
 HORUS_API bool image(HImage image, f32 height = 0, HAlignType horizontalAlign = HAlignType::Center, VAlignType verticalAlign = VAlignType::Center, ImageFitType fit = ImageFitType::KeepAspect);
 
 /// Draw a progress bar widget
-/// \param value the progress as a percentage from 0.0f to 1.0f (meaning 100%)
-HORUS_API void progress(f32 value);
+/// \param value the progress as a percentage
+HORUS_API void progress(f32 value, f32 maxValue = 0.0f, bool showText = false, bool showRealValues = true, const char* indeterminateText = nullptr);
 
 /// Draw a check box widget
 /// \param label the check's label

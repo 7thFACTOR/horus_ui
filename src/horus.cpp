@@ -1258,14 +1258,14 @@ f32 getThemeWidgetElementFloatParameter(HTheme theme, WidgetElementId elementId,
 {
 	auto& style = ((Theme*)theme)->elements[(int)elementId].styles[styleName];
 
-	return style.getParameterValue(paramName, defaultValue);
+	return style.getParameter(paramName, defaultValue);
 }
 
 const Color& getThemeWidgetElementColorParameter(HTheme theme, WidgetElementId elementId, const char* styleName, const char* paramName, const Color& defaultValue)
 {
 	auto& style = ((Theme*)theme)->elements[(int)elementId].styles[styleName];
 
-	return style.getParameterValue(paramName, defaultValue);
+	return style.getColorParameter(paramName, defaultValue);
 }
 
 void setThemeUserWidgetElementParameter(HTheme theme, const char* userElementName, const char* styleName, const char* paramName, const char* paramValue)
@@ -1296,14 +1296,14 @@ f32 getThemeUserWidgetElementFloatParameter(HTheme theme, const char* userElemen
 {
 	auto& style = ((Theme*)theme)->userElements[userElementName]->styles[styleName];
 
-	return style.getParameterValue(paramName, defaultValue);
+	return style.getParameter(paramName, defaultValue);
 }
 
 const Color& getThemeUserWidgetElementColorParameter(HTheme theme, const char* userElementName, const char* styleName, const char* paramName, const Color& defaultValue)
 {
 	auto& style = ((Theme*)theme)->userElements[userElementName]->styles[styleName];
 
-	return style.getParameterValue(paramName, defaultValue);
+	return style.getColorParameter(paramName, defaultValue);
 }
 
 HFont createThemeFont(HTheme theme, const char* name, const char* fontFilename, u32 faceSize)

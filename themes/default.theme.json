@@ -440,12 +440,14 @@
 		{
 			"progressBack":
 			{
-				"height": 16,
+				"height": 24,
 				"normal": { "image": "default/progress_back", "border": 6, "color": "white", "textColor": "white", "font": "normal" }
 			},
 			"progressFill":
 			{
-				"height": 16,
+				"barTextSpacing": 5,
+				"textShadowColor": "black",
+				"height": 22,
 				"normal": { "image": "default/progress_fill", "border": 6, "color": "white", "textColor": "white", "font": "normal" }
 			}
 		},
