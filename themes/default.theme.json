@@ -3,7 +3,7 @@
 	{
 		"normal": { "file": "fonts/Inter-Regular.ttf", "size": 12 },
 		"normal-unicode": { "file": "fonts/Inter-Regular.ttf", "size": 12 },
-		"normal-bold": { "file": "fonts/Inter-Regular.ttf", "size": 12 },
+		"normal-bold": { "file": "fonts/Inter-Bold.ttf", "size": 12 },
 		"normal-italic": { "file": "fonts/Roboto-Italic.ttf", "size": 12 },
 		"medium": { "file": "fonts/Inter-Regular.ttf", "size": 13 },
 		"medium-bold": { "file": "fonts/Inter-Bold.ttf", "size": 13 },
@@ -440,14 +440,14 @@
 		{
 			"progressBack":
 			{
-				"height": 24,
+				"height": 20,
 				"normal": { "image": "default/progress_back", "border": 6, "color": "white", "textColor": "white", "font": "normal" }
 			},
 			"progressFill":
 			{
 				"barTextSpacing": 5,
 				"textShadowColor": "black",
-				"height": 22,
+				"height": 20,
 				"normal": { "image": "default/progress_fill", "border": 6, "color": "white", "textColor": "white", "font": "normal" }
 			}
 		},

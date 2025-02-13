@@ -47,7 +47,7 @@ void progress(f32 value, f32 maxValue, bool showText, bool showRealValues, const
 			ctx->widget.rect.x + animPosX,
 			ctx->widget.rect.y + (backElemState.height - fillElemState.height) / 2.0f * ctx->scale,
 			percentValueWidth,
-			fillElemState.height * ctx->scale };
+			fillElemState.height };
 
 	if (isIndeterminate)
 	{
@@ -89,7 +89,7 @@ void progress(f32 value, f32 maxValue, bool showText, bool showRealValues, const
 
 	if (!isIndeterminate)
 	{
-		FontTextSize fsize = backElemState.font->computeTextSize(text.c_str());
+		FontTextSize fsize = fillElemState.font->computeTextSize(text.c_str());
 		Rect textRc = fillRc;
 		f32 spacing = fillElem.currentStyle->getParameter("barTextSpacing", 4.0f);
 
@@ -101,6 +101,7 @@ void progress(f32 value, f32 maxValue, bool showText, bool showRealValues, const
 			textRc.width = rightSide - textRc.x;
 		}
 
+		ctx->renderer->cmdSetFont(fillElemState.font);
 		ctx->renderer->cmdSetColor(applyTint(textShadowColor, TintColorType::Text));
 		ctx->renderer->cmdDrawTextInBox(text.c_str(),
 			textRc, HAlignType::Right, VAlignType::Center);
