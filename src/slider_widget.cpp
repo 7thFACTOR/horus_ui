@@ -11,16 +11,17 @@ bool sliderInternal(const char* id, f32 minVal, f32 maxVal, f32& value, bool use
 	auto& bodyFilledElem = ctx->theme->getElement(WidgetElementId::SliderBodyFilled);
 	auto& knobElem = ctx->theme->getElement(WidgetElementId::SliderKnob);
 	bool wasModified = false;
+	auto& padding = getWidgetPadding();
 
 	// clamp
 	value = fmaxf(minVal, fminf(maxVal, value));
 
 	ctx->id = genId(id);
-	addWidget(bodyElem.normalState().height * ctx->scale);
+	addWidget((bodyElem.normalState().height + padding.y * 2.0f) * ctx->scale);
 	buttonBehavior();
 
-	ctx->widget.rect.x += knobElem.normalState().image->rect.width / 2.f * ctx->scale;
-	ctx->widget.rect.width -= knobElem.normalState().image->rect.width * ctx->scale;
+	ctx->widget.rect.x += knobElem.normalState().image->width / 2.0f * ctx->scale;
+	ctx->widget.rect.width -= knobElem.normalState().image->width * ctx->scale;
 
 	if (isHovered())
 	{

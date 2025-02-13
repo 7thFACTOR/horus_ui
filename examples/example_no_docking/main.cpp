@@ -136,7 +136,7 @@ int main(int argc, char** args)
 				static i32 option2 = 0;
 				static bool showRadios = true;
 				hui::pushTint(hui::Color::orange);
-				if (hui::panel("Radios 1##1"))
+				if (hui::expandable("Radios 1##1"))
 				{
 					hui::radio("Radio value 0", &option1, 0);
 					hui::radio("Radio value 1", &option1, 1);
@@ -164,7 +164,7 @@ int main(int argc, char** args)
 				hui::label("TEST");
 				//hui::popWidth();
 
-				if (hui::panel("Radios 2##2"))
+				if (hui::expandable("Radios 2##2"))
 				{
 					hui::radio("Radio value 0", &option2, 0);
 					hui::radio("Radio value 1", &option2, 1);
@@ -175,7 +175,7 @@ int main(int argc, char** args)
 				
 				scrollPos = hui::endScrollView();
 
-				if (hui::panel("Many buttons##3"))
+				if (hui::expandable("Many buttons##3"))
 				for (int i = 0; i < 10; i++)
 				{
 					hui::beginSameLine();

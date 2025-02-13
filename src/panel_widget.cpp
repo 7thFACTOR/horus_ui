@@ -7,7 +7,7 @@
 
 namespace hui
 {
-bool panel(const char* label, bool* expandedVar)
+bool expandable(const char* label, bool* expandedVar)
 {
 	auto& bodyElem = ctx->theme->getElement(WidgetElementId::PanelBody);
 	auto& panelCollapsedArrow = ctx->theme->getElement(WidgetElementId::PanelCollapsedArrow);

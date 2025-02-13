@@ -1636,6 +1636,8 @@ struct Settings
 	f32 whiteImageUvBorder = 0.001f; /// this value is subtracted from the white image used to draw lines, to avoid black border artifacts
 	f32 sameLineHeight = 20.0f; /// the height of a line when sameLine() is used to position widgets on a single row/line. Used to center various widget heights vertically. This must be non-zero, otherwise the widgets will align wrongly.
 	f32 minScrollViewHandleSize = 20.0f; /// the minimum allowed scroll handle size (height)
+	bool scaleScrollViewHeight = false;
+	bool scaleContainers = true;
 	DockingGuidesStyle dockingStyle = DockingGuidesStyle::Auto; /// use DockingGuidesStyle::InsideNativeWindows for Linux
 	//TODO: this could be per native window
 	bool dockAllowUndockingToNewNativeWindow = true; /// allow view tabs to be undocked as native OS windows, outside of the main window, else windows will only be allowed to dock in their owner OS windows
@@ -2765,7 +2767,7 @@ HORUS_API bool labelCustomFontMultiline(const char* label, HFont font, HAlignTyp
 /// \param label the text of the panel
 /// \param expandedVar keeps true if the panel is expanded
 /// \return true if the panel state changed
-HORUS_API bool panel(const char* label, bool* expandedVar = nullptr);
+HORUS_API bool expandable(const char* label, bool* expandedVar = nullptr);
 
 /// Draw a dropdown widget
 /// \param selectedIndex the current selected item index
