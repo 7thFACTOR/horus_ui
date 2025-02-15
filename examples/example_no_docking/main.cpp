@@ -108,8 +108,16 @@ int main(int argc, char** args)
 				hui::pushWidgetPadding(10);
 				hui::beginBox(hui::Color::white, hui::WidgetElementId::WindowBody, hui::WidgetStateType::Normal);
 				hui::popWidgetPadding();
-				hui::pushWidgetPadding(10);
+				hui::pushWidgetPadding(0);
 				hui::customSpace(20);
+				static hui::TabIndex selTab = 0;
+
+				hui::beginTabGroup(selTab);
+				hui::tab("One", 0);
+				hui::tab("Two", 0);
+				hui::tab("Three", 0);
+				hui::tab("Four", 0);
+				selTab = hui::endTabGroup();
 
 				hui::labelCustomFont("Once upon a time...", hui::getThemeFont(theme, "title"), hui::HAlignType::Center);
 				hui::line();

@@ -93,7 +93,8 @@ void tab(const char* label, HImage icon)
 	auto& tabActiveElem = ctx->theme->getElement(WidgetElementId::TabBodyActive);
 	auto& tabInactiveElem = ctx->theme->getElement(WidgetElementId::TabBodyInactive);
 	auto tabElemState = &tabActiveElem.normalState();
-	
+	auto& padding = getWidgetPadding();
+
 	Utf32String* uniStr = ctx->textCache->getText(label);
 	FontTextSize fsize = tabElemState->font->computeTextSize(*uniStr);
 	Image* ico = (Image*)icon;
@@ -108,13 +109,13 @@ void tab(const char* label, HImage icon)
 
 	f32 textAndIconWidth = (fsize.width + iconWidth * 2.0f /* some space after text as icon width */ + ctx->settings.dockTabIconTextSpacing) * ctx->scale;
 	
-	width = textAndIconWidth + tabElemState->border * 2.0f * ctx->scale;
+	width = textAndIconWidth + (tabElemState->border + padding.x) * 2.0f * ctx->scale;
 
-	f32 height = tabElemState->height * ctx->scale;
+	f32 height = (tabElemState->height + padding.y * 2.0f) * ctx->scale;
 
 	ctx->widget.rect.set(
 		round(ctx->position.x),
-		round(ctx->position.y + tabGroupElemState.height * ctx->scale - height),
+		round(ctx->position.y + std::max(tabGroupElemState.height * ctx->scale, height) - height),
 		width,
 		height);
 	ctx->position.x += width;
@@ -151,7 +152,7 @@ void tab(const char* label, HImage icon)
 	ctx->renderer->cmdDrawImageBordered(tabElemState->image, tabElemState->border, ctx->widget.rect, ctx->scale);
 
 	Rect rcTextAndIcon = {
-		ctx->widget.rect.x + (tabElemState->border) * ctx->scale,
+		ctx->widget.rect.x + (tabElemState->border + padding.x) * ctx->scale,
 		ctx->widget.rect.y,
 		textAndIconWidth,
 		ctx->widget.rect.height };
@@ -167,7 +168,7 @@ void tab(const char* label, HImage icon)
 	ctx->renderer->cmdSetColor(tabElemState->textColor);
 
 	Rect textRc = {
-			ctx->widget.rect.x + (tabElemState->border + iconWidth + ctx->settings.dockTabIconTextSpacing) * ctx->scale,
+			ctx->widget.rect.x + (padding.x + tabElemState->border + iconWidth + ctx->settings.dockTabIconTextSpacing) * ctx->scale,
 			ctx->widget.rect.y,
 			width,
 			ctx->widget.rect.height,
