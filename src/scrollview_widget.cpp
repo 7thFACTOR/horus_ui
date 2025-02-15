@@ -12,11 +12,13 @@ void beginScrollView(f32 size, f32 scrollPos, f32 virtualHeight)
 
 	ctx->id = genIdFromPosition("scrollView");
 
-	ctx->scrollViewStack[ctx->scrollViewDepth].size = size /* * ctx->scale*/; //TODO: scale height with UI scale ?
+	if (ctx->settings.scaleScrollViewHeight)
+		size *= ctx->scale;
+
+	ctx->scrollViewStack[ctx->scrollViewDepth].size = size;
 	ctx->scrollViewStack[ctx->scrollViewDepth].virtualHeight = virtualHeight;
 	ctx->scrollViewStack[ctx->scrollViewDepth].id = ctx->id;
-	//TODO: scale height with UI scale ?
-	//size *= ctx->scale;
+
 	auto& padding = getPadding(PaddingType::ScrollView);
 	auto internalPadding = (f32)scrollViewElemState.border * ctx->scale + padding.x;
 

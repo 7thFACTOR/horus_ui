@@ -108,7 +108,7 @@ int main(int argc, char** args)
 				hui::pushWidgetPadding(10);
 				hui::beginBox(hui::Color::white, hui::WidgetElementId::WindowBody, hui::WidgetStateType::Normal);
 				hui::popWidgetPadding();
-				hui::pushWidgetPadding(0);
+				hui::pushWidgetPadding(10);
 				hui::customSpace(20);
 
 				hui::labelCustomFont("Once upon a time...", hui::getThemeFont(theme, "title"), hui::HAlignType::Center);
@@ -132,6 +132,8 @@ int main(int argc, char** args)
 				static bool chk = true;
 				hui::check("A simple check box", &chk);
 
+				static f32 sli = 0;
+				hui::sliderFloat("x", 0, 1, sli, false);
 				static i32 option1 = 0;
 				static i32 option2 = 0;
 				static bool showRadios = true;

@@ -16,9 +16,10 @@ bool rotarySliderFloat(const char* label, f32* value, f32 minVal, f32 maxVal, f3
 	auto& markElem = ctx->theme->getElement(WidgetElementId::RotarySliderMark);
 	auto& valueDotElem = ctx->theme->getElement(WidgetElementId::RotarySliderValueDot);
 	bool wasModified = false;
+	auto& padding = getWidgetPadding();
 
 	ctx->extractLabelAndId(label);
-	addWidget(bodyElem.normalState().height * ctx->scale);
+	addWidget((bodyElem.normalState().height + padding.y * 2.0f) * ctx->scale);
 	buttonBehavior();
 
 	if (isHovered() && ctx->event.type == InputEvent::Type::MouseDown)
@@ -138,7 +139,7 @@ bool rotarySliderFloat(const char* label, f32* value, f32 minVal, f32 maxVal, f3
 				pos.x = cosf(angle) * dotPlacementRadius * ctx->scale + center.x - valueDotElem.normalState().image->width * ctx->scale / 2;
 				pos.y = sinf(angle) * dotPlacementRadius * ctx->scale + center.y - valueDotElem.normalState().image->height * ctx->scale / 2;
 				ctx->renderer->cmdDrawImage(valueDotElem.normalState().image, pos, ctx->scale);
-				angle += step * sgn(*value);
+				angle += step * (value ? sgn(*value) : 1.0f);
 			}
 
 			pos.x = cosf(radians) * dotPlacementRadius * ctx->scale + center.x - valueDotElem.normalState().image->width * ctx->scale / 2;

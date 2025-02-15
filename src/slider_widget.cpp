@@ -50,10 +50,10 @@ bool sliderInternal(const char* id, f32 minVal, f32 maxVal, f32& value, bool use
 	}
 
 	knobRect = {
-		ctx->widget.rect.x + valueWidth * percentFilled - knobElemState->image->rect.width / 2.0f * ctx->scale,
-		ctx->widget.rect.y + (bodyElemState->height - knobElemState->image->rect.height) / 2.0f * ctx->scale,
-		knobElemState->image->rect.width * ctx->scale,
-		knobElemState->image->rect.height * ctx->scale
+		ctx->widget.rect.x + valueWidth * percentFilled - knobElemState->image->width / 2.0f * ctx->scale,
+		ctx->widget.rect.y + (ctx->widget.rect.height - knobElemState->image->height) / 2.0f * ctx->scale,
+		knobElemState->image->width * ctx->scale,
+		knobElemState->image->height * ctx->scale
 	};
 
 	bool recomputeKnobRect = false;
@@ -113,7 +113,7 @@ bool sliderInternal(const char* id, f32 minVal, f32 maxVal, f32& value, bool use
 	{
 		knobRect = {
 			ctx->widget.rect.x + valueWidth * percentFilled - knobElemState->image->rect.width / 2.0f * ctx->scale,
-			ctx->widget.rect.y + (bodyElemState->height - knobElemState->image->rect.height) / 2.0f * ctx->scale,
+			ctx->widget.rect.y + (ctx->widget.rect.height - knobElemState->image->rect.height) / 2.0f * ctx->scale,
 			knobElemState->image->rect.width * ctx->scale,
 			knobElemState->image->rect.height * ctx->scale
 		};
@@ -125,9 +125,9 @@ bool sliderInternal(const char* id, f32 minVal, f32 maxVal, f32& value, bool use
 		bodyElemState->border,
 		{
 			ctx->widget.rect.x,
-			ctx->widget.rect.y + (bodyElemState->height - bodyElemState->image->rect.height) / 2.0f * ctx->scale,
+			ctx->widget.rect.y + (ctx->widget.rect.height - bodyElemState->image->height) / 2.0f * ctx->scale,
 			ctx->widget.rect.width,
-			bodyElemState->image->rect.height * ctx->scale
+			bodyElemState->image->height * ctx->scale
 		},
 		ctx->scale);
 
@@ -137,9 +137,9 @@ bool sliderInternal(const char* id, f32 minVal, f32 maxVal, f32& value, bool use
 		bodyFilledElemState->border,
 		{
 			ctx->widget.rect.x,
-			ctx->widget.rect.y + (bodyElemState->height - bodyFilledElemState->image->rect.height) / 2.f * ctx->scale,
+			ctx->widget.rect.y + (ctx->widget.rect.height - bodyFilledElemState->image->height) / 2.f * ctx->scale,
 			ctx->widget.rect.width * percentFilled,
-			bodyFilledElemState->image->rect.height * ctx->scale
+			bodyFilledElemState->image->height * ctx->scale
 		},
 		ctx->scale);
 

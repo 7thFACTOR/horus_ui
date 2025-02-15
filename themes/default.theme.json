@@ -447,7 +447,7 @@
 			{
 				"barTextSpacing": 5,
 				"textShadowColor": "black",
-				"height": 20,
+				"height": 19,
 				"normal": { "image": "default/progress_fill", "border": 6, "color": "white", "textColor": "white", "font": "normal" }
 			}
 		},
