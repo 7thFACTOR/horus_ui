@@ -232,6 +232,7 @@ enum class WidgetType
 	Check,
 	Radio,
 	Label,
+	Expandable,
 	Panel,
 	Popup,
 	Dropdown,
@@ -273,8 +274,12 @@ enum class WidgetElementId
 	LineBody,
 	LabelBody,
 	PanelBody,
-	PanelCollapsedArrow,
-	PanelExpandedArrow,
+	PanelTitleBody,
+	PanelCloseButton,
+	PanelResizeHandle,
+	ExpandableBody,
+	ExpandableCollapsedArrow,
+	ExpandableExpandedArrow,
 	TextInputBody,
 	TextInputCaret,
 	TextInputSelection,
@@ -387,6 +392,18 @@ enum class WindowFlags : u32
 	Disabled = HORUS_BIT(2)
 };
 HORUS_ENUM_AS_FLAGS(WindowFlags);
+
+/// Panel flags
+enum class PanelFlags : u32
+{
+	None = HORUS_BIT(0),
+	CanClose = HORUS_BIT(1),
+	CanMove = HORUS_BIT(2),
+	CanResize = HORUS_BIT(3),
+	CanMinimize = HORUS_BIT(4),
+	Disabled = HORUS_BIT(5)
+};
+HORUS_ENUM_AS_FLAGS(PanelFlags);
 
 /// Image fit mode, used in the image widget
 enum class ImageFitType
@@ -2447,7 +2464,6 @@ HORUS_API HFont getThemeFont(HTheme theme, const char* themeFontName);
 
 /// Begin a layout area, an invisible rectangle on the current window area where widgets will be laid out
 HORUS_API void beginLayout(const Rect& rect);
-
 HORUS_API void endLayout();
 HORUS_API void pushId(const char* id);
 HORUS_API void pushId(u32 id);
@@ -2519,6 +2535,9 @@ HORUS_API void beginVirtualListContent(u32 totalRowCount, u32 itemHeight, f32 sc
 /// End a virtual list content area
 HORUS_API void endVirtualListContent();
 
+HORUS_API bool beginPanel(const char* title, bool* visiblePtr, Point* position, Point* size, PanelFlags flags);
+HORUS_API void endPanel();
+
 /// Push the old padding and set a new one, padding is the left and right side horizontal spacing for widgets
 /// \param newPadding the new horizontal padding value
 HORUS_API void pushPadding(PaddingType type, const Point& newPadding);
@@ -2560,8 +2579,8 @@ HORUS_API const Point& getWidgetPadding();
 
 HORUS_API f32 getColumnPadding();
 
-/// Set the global UI scale, this will scale all the elements from widgets to text, but not the docking views rectangles
-/// \param scale a value between 0 and N, no higher limit, but use with consideration
+/// Set the global UI scale, this will scale all the elements from widgets to text
+/// \param scale a value, use with consideration, will regenerate font atlas, slow
 HORUS_API void changeScale(f32 scale);
 
 /// \return the current global UI scale

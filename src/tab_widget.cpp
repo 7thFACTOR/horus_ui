@@ -113,6 +113,8 @@ void tab(const char* label, HImage icon)
 
 	f32 height = (tabElemState->height + padding.y * 2.0f) * ctx->scale;
 
+	ctx->id = genIdFromPosition(label);
+
 	ctx->widget.rect.set(
 		round(ctx->position.x),
 		round(ctx->position.y + std::max(tabGroupElemState.height * ctx->scale, height) - height),

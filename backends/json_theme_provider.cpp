@@ -48,6 +48,7 @@ WidgetType getWidgetTypeFromName(std::string name)
 	if (name == "radio") return WidgetType::Radio;
 	if (name == "label") return WidgetType::Label;
 	if (name == "panel") return WidgetType::Panel;
+	if (name == "expandable") return WidgetType::Expandable;
 	if (name == "popup") return WidgetType::Popup;
 	if (name == "dropdown") return WidgetType::Dropdown;
 	if (name == "list") return WidgetType::List;
@@ -84,8 +85,12 @@ WidgetElementId getWidgetElementFromName(std::string name)
 	if (name == "lineBody") return WidgetElementId::LineBody;
 	if (name == "labelBody") return WidgetElementId::LabelBody;
 	if (name == "panelBody") return WidgetElementId::PanelBody;
-	if (name == "panelCollapsedArrow") return WidgetElementId::PanelCollapsedArrow;
-	if (name == "panelExpandedArrow") return WidgetElementId::PanelExpandedArrow;
+	if (name == "panelTitleBody") return WidgetElementId::PanelBody;
+	if (name == "panelCloseButton") return WidgetElementId::PanelBody;
+	if (name == "panelResizeHandle") return WidgetElementId::PanelBody;
+	if (name == "expandableBody") return WidgetElementId::ExpandableBody;
+	if (name == "expandableCollapsedArrow") return WidgetElementId::ExpandableCollapsedArrow;
+	if (name == "expandableExpandedArrow") return WidgetElementId::ExpandableExpandedArrow;
 	if (name == "textInputBody") return WidgetElementId::TextInputBody;
 	if (name == "textInputCaret") return WidgetElementId::TextInputCaret;
 	if (name == "textInputSelection") return WidgetElementId::TextInputSelection;

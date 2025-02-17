@@ -1011,8 +1011,14 @@ void setWidgetStyle(WidgetType widgetType, const char* styleName)
 		break;
 	case WidgetType::Panel:
 		ctx->theme->elements[(u32)WidgetElementId::PanelBody].setStyle(styleName);
-		ctx->theme->elements[(u32)WidgetElementId::PanelCollapsedArrow].setStyle(styleName);
-		ctx->theme->elements[(u32)WidgetElementId::PanelExpandedArrow].setStyle(styleName);
+		ctx->theme->elements[(u32)WidgetElementId::PanelCloseButton].setStyle(styleName);
+		ctx->theme->elements[(u32)WidgetElementId::PanelResizeHandle].setStyle(styleName);
+		ctx->theme->elements[(u32)WidgetElementId::PanelTitleBody].setStyle(styleName);
+		break;
+	case WidgetType::Expandable:
+		ctx->theme->elements[(u32)WidgetElementId::ExpandableBody].setStyle(styleName);
+		ctx->theme->elements[(u32)WidgetElementId::ExpandableCollapsedArrow].setStyle(styleName);
+		ctx->theme->elements[(u32)WidgetElementId::ExpandableExpandedArrow].setStyle(styleName);
 		break;
 	case WidgetType::Popup:
 		ctx->theme->elements[(u32)WidgetElementId::PopupBody].setStyle(styleName);

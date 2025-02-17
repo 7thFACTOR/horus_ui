@@ -9,9 +9,9 @@ namespace hui
 {
 bool expandable(const char* label, bool* expandedVar)
 {
-	auto& bodyElem = ctx->theme->getElement(WidgetElementId::PanelBody);
-	auto& panelCollapsedArrow = ctx->theme->getElement(WidgetElementId::PanelCollapsedArrow);
-	auto& panelExpandedArrow = ctx->theme->getElement(WidgetElementId::PanelExpandedArrow);
+	auto& bodyElem = ctx->theme->getElement(WidgetElementId::ExpandableBody);
+	auto& panelCollapsedArrow = ctx->theme->getElement(WidgetElementId::ExpandableCollapsedArrow);
+	auto& panelExpandedArrow = ctx->theme->getElement(WidgetElementId::ExpandableExpandedArrow);
 	auto bodyElemState = &bodyElem.normalState();
 	bool changed = false;
 	bool expanded = false;
