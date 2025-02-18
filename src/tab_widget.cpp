@@ -12,6 +12,8 @@ void beginTabGroup(TabIndex selectedIndex)
 	auto& tabGroupElemState = ctx->theme->getElement(WidgetElementId::TabGroupBody).normalState();
 	f32 height = tabGroupElemState.height * ctx->scale;
 
+	pushPosition();
+
 	ctx->widget.rect.set(
 		round(ctx->position.x),
 		round(ctx->position.y),
@@ -71,7 +73,8 @@ TabIndex endTabGroup()
 	auto& tabGroupElemState = ctx->theme->getElement(WidgetElementId::TabGroupBody).normalState();
 	f32 height = tabGroupElemState.height * ctx->scale;
 
-	ctx->position.x = ctx->layout.savedPosition.x;
+	popPosition();
+
 	ctx->position.y += height;
 	ctx->position.y = round(ctx->position.y);
 	ctx->renderer->popClipRect();

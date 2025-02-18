@@ -336,6 +336,8 @@
 		{
 			"windowBody":
 			{
+				"paddingX" : 10,
+				"paddingY" : 10,
 				"normal": { "image": "default/window_body", "border": 2, "color": "white", "textColor": "white", "font": "normal" }
 			},
 			"windowHorizontalSplitter":

@@ -78,7 +78,12 @@ bool beginWindow(const char* id, const char* title, Rect* initialRect, HImage ic
 		ctx->renderer->cmdSetColor(windowElem.color);
 		ctx->renderer->cmdDrawImageBordered(windowElem.image, windowElem.border, rc, ctx->scale);
 	}
+	auto style = ctx->theme->getElement(WidgetElementId::WindowBody).currentStyle;
+	Point padding = {
+		style->getParameter("paddingX", 10),
+		style->getParameter("paddingY", 10) };
 
+	pushPadding(PaddingType::Layout, padding);
 	beginLayout(rc);
 	pushId((void*)wnd);
 
@@ -89,6 +94,7 @@ void endWindow()
 {
 	popId();
 	endLayout();
+	popPadding(PaddingType::Layout);
 	ctx->renderer->end();
 	//TODO: make scroll struct stack
 }

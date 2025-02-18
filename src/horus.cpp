@@ -1363,11 +1363,11 @@ void beginLayout(const Rect& rect)
 	pushLayout();
 	auto paddedRect = rect.contract(getPadding(PaddingType::Layout));
 	ctx->layout.type = LayoutType::Generic;
-	ctx->layout.savedPosition = rect.topLeft();
-	ctx->layout.width = rect.width;
-	ctx->layout.height = rect.height;
-	ctx->renderer->pushClipRect(rect);
-	ctx->position = { rect.x, rect.y};
+	ctx->layout.savedPosition = paddedRect.topLeft();
+	ctx->layout.width = paddedRect.width;
+	ctx->layout.height = paddedRect.height;
+	ctx->renderer->pushClipRect(paddedRect);
+	ctx->position = { paddedRect.x, paddedRect.y};
 	ctx->sameLine = false;
 }
 
