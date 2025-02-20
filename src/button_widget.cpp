@@ -163,7 +163,6 @@ void mouseDownOnlyButtonBehavior()
 			&& ctx->event.mouse.button == MouseButton::Left)
 		{
 			ctx->widget.focusedId = ctx->id;
-			ctx->widget.captureId = ctx->id;
 			ctx->widget.pressed = true;
 			ctx->widget.clicked = true;
 			ctx->widget.focused = true;
