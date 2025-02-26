@@ -95,7 +95,7 @@ macro(link_libs TARGET_LIST)
 		pkg_check_modules(GTK REQUIRED gtk+-3.0)
 
 		target_include_directories(${TARGET_LIST} PRIVATE ${GTK_INCLUDE_DIRS})
-		target_link_libraries(${TARGET_LIST} PRIVATE ${GTK_LIBRARIES})
+		target_link_libraries(${TARGET_LIST} PRIVATE ${GTK_LIBRARIES} HarfBuzz::HarfBuzz)
 
 		#target_compile_options(${TARGET_LIST} PRIVATE -Werror=return-type -std=c++17 -lstdc++fs)
 

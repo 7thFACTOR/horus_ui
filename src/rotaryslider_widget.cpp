@@ -132,7 +132,7 @@ bool rotarySliderFloat(const char* label, f32* value, f32 minVal, f32 maxVal, f3
 			angle = 1.5f * M_PI;
 			step = (highLimitRadians - lowLimitRadians) / dotCount;
 			activeDots = fabs(dotCount * (percent - 0.5f));
-			ctx->renderer->cmdSetColor(value < 0 ? negativeColor : positiveColor);
+			ctx->renderer->cmdSetColor(*value < 0 ? negativeColor : positiveColor);
 
 			for (i32 i = 0; i <= activeDots; i++)
 			{

@@ -117,7 +117,7 @@ typedef double f64;
 #endif
 
 #ifndef HORUS_LOG
-#define HORUS_LOG(format, ...) printf(format##"\n", ##__VA_ARGS__)
+#define HORUS_LOG(format, ...) printf(format"\n", ##__VA_ARGS__)
 #endif
 
 namespace hui
