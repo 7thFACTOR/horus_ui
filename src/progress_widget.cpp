@@ -13,6 +13,7 @@ void progress(f32 value, f32 maxValue, bool showText, bool showRealValues, const
 
 	ctx->extractLabelAndId(nullptr);
 	addWidget((backElem.normalState().height + padding.y * 2.0) * ctx->scale);
+	buttonBehavior();
 
 	const bool isSubUnit = value <= 1.0f && maxValue == 0.0f;
 	const bool isIndeterminate = value < 0;

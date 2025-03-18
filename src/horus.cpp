@@ -466,6 +466,7 @@ void update()
 	}
 	else if (!ctx->widget.hoveredId && ctx->tooltip.show && ctx->tooltip.id)
 	{
+		ctx->tooltip.timer = 0;
 		ctx->tooltip.show = false;
 		ctx->tooltip.id = 0;
 		ctx->tooltip.closeTooltipPopup = true;
@@ -474,7 +475,7 @@ void update()
 	if (ctx->tooltip.show)
 	{
 		// track mouse pos
-		ctx->tooltip.position = ctx->providers->input->getAbsoluteMousePosition();
+		ctx->tooltip.position = ctx->mousePosition;
 	}
 }
 

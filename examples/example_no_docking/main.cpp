@@ -129,6 +129,7 @@ int main(int argc, char** args)
 
 				static f32 pv = 0, pv2 = 0;
 				hui::progress(pv);
+				hui::tooltip("The real progress");
 				hui::progress(pv2, 2500, true, true);
 				hui::progress(pv2, 1700, true, false);
 				hui::progress(-1, 0, true, false, "Searching records...");
