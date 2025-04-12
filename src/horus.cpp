@@ -447,26 +447,32 @@ void update()
 {
 	clearInputEventQueue();
 	ctx->providers->input->processEvents();
-
-	if (ctx->widget.hoveredId && !ctx->tooltip.show)
+	
+	// tooltip handling
+	//TODO: move to own func
+	if (ctx->tooltip.id && !ctx->tooltip.show)
 	{
 		ctx->tooltip.timer += ctx->deltaTime;
 	}
 
-	// tooltip handling
-	if (ctx->widget.hoveredId
-		&& ctx->widget.hoveredId != ctx->tooltip.id
-		&& ctx->tooltip.timer >= ctx->tooltip.delayToShow)
+	if (!ctx->tooltip.wasShown)
 	{
-		ctx->tooltip.id = ctx->widget.hoveredId;
+		ctx->tooltip.resetTimer += ctx->deltaTime;
+	}
+	
+	if (ctx->tooltip.id
+		&& (ctx->tooltip.timer >= ctx->tooltip.delayToShow
+			|| ctx->tooltip.resetTimer < ctx->tooltip.delayToShowConsecutive))
+	{
 		ctx->tooltip.show = true;
 		ctx->mustRedraw = true;
 		ctx->tooltip.timer = 0;
 		ctx->tooltip.closeTooltipPopup = false;
 	}
-	else if (!ctx->widget.hoveredId && ctx->tooltip.show && ctx->tooltip.id)
+	else if (ctx->tooltip.show && !ctx->tooltip.wasShown)
 	{
 		ctx->tooltip.timer = 0;
+		ctx->tooltip.resetTimer = 0;
 		ctx->tooltip.show = false;
 		ctx->tooltip.id = 0;
 		ctx->tooltip.closeTooltipPopup = true;
@@ -477,6 +483,8 @@ void update()
 		// track mouse pos
 		ctx->tooltip.position = ctx->mousePosition;
 	}
+
+	ctx->tooltip.wasShown = false;
 }
 
 bool hasNothingToDo()

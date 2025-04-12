@@ -126,11 +126,13 @@ int main(int argc, char** args)
 				{
 					printf("No you haven't!");
 				}
+				hui::tooltip("Button to push");
 
 				static f32 pv = 0, pv2 = 0;
 				hui::progress(pv);
 				hui::tooltip("The real progress");
 				hui::progress(pv2, 2500, true, true);
+				hui::tooltip("The other progress");
 				hui::progress(pv2, 1700, true, false);
 				hui::progress(-1, 0, true, false, "Searching records...");
 
@@ -140,6 +142,13 @@ int main(int argc, char** args)
 
 				static bool chk = true;
 				hui::check("A simple check box", &chk);
+
+				if (hui::beginCustomTooltip(160))
+				{
+					hui::labelCustomFont("Header", hui::getFont("medium-bold"));
+					hui::labelMultiline("A longer explanation that needs to explain what is to be explained because of corse its needed.", hui::HAlignType::Left);
+				}
+				hui::endCustomTooltip();
 
 				static f32 sli = 0;
 				hui::sliderFloat("x", 0, 1, sli, false);
@@ -187,9 +196,19 @@ int main(int argc, char** args)
 				scrollPos = hui::endScrollView();
 
 				if (hui::expandable("Many buttons##3"))
-				for (int i = 0; i < 10; i++)
+				for (int i = 0; i < 20; i++)
 				{
 					hui::beginSameLine();
+					hui::button("Accelerate");
+					hui::button("Accelerate");
+					hui::button("Accelerate");
+					hui::button("Accelerate");
+					hui::button("Accelerate");
+					hui::button("Accelerate");
+					hui::button("Accelerate");
+					hui::button("Accelerate");
+					hui::button("Accelerate");
+					hui::button("Accelerate");
 					hui::button("Accelerate");
 					hui::button("Accelerate");
 					hui::button("Accelerate");

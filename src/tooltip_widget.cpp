@@ -11,9 +11,16 @@ namespace hui
 {
 bool tooltip(const char* text)
 {
-	if (ctx->id == ctx->widget.hoveredId
+	if (ctx->id != ctx->tooltip.id && ctx->id == ctx->widget.hoveredId && !ctx->tooltip.show)
+	{
+		ctx->tooltip.id = ctx->id;
+		ctx->tooltip.timer = 0;
+	}
+
+	if (ctx->id == ctx->widget.hoveredId && ctx->tooltip.id
 		&& ctx->tooltip.show)
 	{
+		ctx->tooltip.wasShown = true;
 		auto& bodyElemState = ctx->theme->getElement(WidgetElementId::TooltipBody).normalState();
 
 		FontTextSize fsize = bodyElemState.font->computeTextSize(text);
@@ -66,14 +73,23 @@ bool tooltip(const char* text)
 
 	return false;
 }
-
+static bool tt = false;
 bool beginCustomTooltip(f32 width)
 {
-	if (ctx->id == ctx->widget.hoveredId
+	if (ctx->id != ctx->tooltip.id
+		&& ctx->id == ctx->widget.hoveredId
+		&& !ctx->tooltip.show)
+	{
+		ctx->tooltip.id = ctx->id;
+		ctx->tooltip.timer = 0;
+	}
+
+	if (ctx->id == ctx->widget.hoveredId && ctx->tooltip.id
 		&& ctx->tooltip.show)
 	{
+		ctx->tooltip.wasShown = true;
 		auto& bodyElemState = ctx->theme->getElement(WidgetElementId::TooltipBody).normalState();
-
+		tt = true;
 		beginPopup(
 			"##customTooltip",
 			width,
@@ -86,7 +102,8 @@ bool beginCustomTooltip(f32 width)
 
 	if (ctx->tooltip.closeTooltipPopup)
 	{
-		closePopup();
+		//closePopup();
+		ctx->tooltip.closeTooltipPopup = false;
 		return true;
 	}
 
@@ -95,10 +112,9 @@ bool beginCustomTooltip(f32 width)
 
 void endCustomTooltip()
 {
-	if (ctx->tooltip.show || ctx->tooltip.closeTooltipPopup)
+	if (tt&&ctx->tooltip.wasShown)
 	{
 		endPopup();
-		ctx->tooltip.closeTooltipPopup = false;
 	}
 }
 

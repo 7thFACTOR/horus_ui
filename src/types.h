@@ -289,9 +289,12 @@ struct TooltipState
 {
 	Point position;
 	f32 timer = 0;
+	f32 resetTimer = 10;
 	f32 delayToShow = 1.0f;
+	f32 delayToShowConsecutive = 0.5f;
 	WidgetId id = 0;
 	bool show = false;
+	bool wasShown = false;
 	bool closeTooltipPopup = false;
 	f32 offsetFromCursor = 18.0f;
 };

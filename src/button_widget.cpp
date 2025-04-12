@@ -151,12 +151,6 @@ void mouseDownOnlyButtonBehavior()
 	{
 		ctx->widget.hovered = true;
 		ctx->widget.hoveredWidgetRect = ctx->widget.rect;
-
-		if (ctx->widget.hoveredId != ctx->id)
-		{
-			//ctx->tooltip.timer = 0;
-		}
-
 		ctx->widget.hoveredId = ctx->id;
 
 		if (ctx->event.type == InputEvent::Type::MouseDown
