@@ -145,10 +145,31 @@ int main(int argc, char** args)
 
 				if (hui::beginCustomTooltip(160))
 				{
+					hui::pushTint(hui::Color::black, hui::TintColorType::Text);
 					hui::labelCustomFont("Header", hui::getFont("medium-bold"));
-					hui::labelMultiline("A longer explanation that needs to explain what is to be explained because of corse its needed.", hui::HAlignType::Left);
+					//hui::labelMultiline("A longer explanation that needs to explain what is to be explained because of corse its needed.", hui::HAlignType::Left);
+					hui::popTint();
+					hui::endCustomTooltip();
 				}
-				hui::endCustomTooltip();
+
+				static bool popup = false;
+
+				if (hui::button("POPUP"))
+				{
+					popup = true;
+				}
+
+				if (popup)
+				{
+					hui::beginPopup("_popup", 300, hui::PopupFlags::Centered|hui::PopupFlags::FadeBackground);
+					hui::label("A sample popup");
+					if (hui::button("Close this"))
+					{
+						hui::closePopup();
+						popup = false;
+					}
+					hui::endPopup();
+				}
 
 				static f32 sli = 0;
 				hui::sliderFloat("x", 0, 1, sli, false);

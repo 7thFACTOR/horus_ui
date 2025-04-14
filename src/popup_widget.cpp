@@ -119,9 +119,9 @@ void beginPopup(
 	Rect popupRect = { pos.x, pos.y, width, height };
 
 	pushLayout();
+	pushPosition();
 
 	ctx->layout = LayoutState(LayoutType::Generic);
-	pushPosition();
 	ctx->position =
 	{
 		pos.x + bodyElemState.border * ctx->scale,

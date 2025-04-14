@@ -73,7 +73,7 @@ bool tooltip(const char* text)
 
 	return false;
 }
-static bool tt = false;
+
 bool beginCustomTooltip(f32 width)
 {
 	if (ctx->id != ctx->tooltip.id
@@ -84,12 +84,11 @@ bool beginCustomTooltip(f32 width)
 		ctx->tooltip.timer = 0;
 	}
 
-	if (ctx->id == ctx->widget.hoveredId && ctx->tooltip.id
+	if (ctx->id == ctx->tooltip.id
 		&& ctx->tooltip.show)
 	{
 		ctx->tooltip.wasShown = true;
 		auto& bodyElemState = ctx->theme->getElement(WidgetElementId::TooltipBody).normalState();
-		tt = true;
 		beginPopup(
 			"##customTooltip",
 			width,
@@ -97,13 +96,12 @@ bool beginCustomTooltip(f32 width)
 			{ ctx->tooltip.position.x + ctx->tooltip.offsetFromCursor, ctx->tooltip.position.y + ctx->tooltip.offsetFromCursor },
 			WidgetElementId::TooltipBody);
 
-		return true;
-	}
+		if (ctx->tooltip.closeTooltipPopup)
+		{
+			closePopup();
+			ctx->tooltip.closeTooltipPopup = false;
+		}
 
-	if (ctx->tooltip.closeTooltipPopup)
-	{
-		//closePopup();
-		ctx->tooltip.closeTooltipPopup = false;
 		return true;
 	}
 
@@ -112,7 +110,7 @@ bool beginCustomTooltip(f32 width)
 
 void endCustomTooltip()
 {
-	if (tt&&ctx->tooltip.wasShown)
+	if (ctx->tooltip.wasShown)
 	{
 		endPopup();
 	}
