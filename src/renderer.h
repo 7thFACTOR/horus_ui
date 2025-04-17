@@ -298,7 +298,7 @@ protected:
 	void needToAddVertexCount(u32 count);
 	char* addUtf8TextToBuffer(const char* text, u32 sizeBytes);
 	void addBatch();
-	void addDrawCommand(const DrawCommand& cmd);
+	void addDrawCommand(DrawCommand& cmd);
 
 	struct NativeWindowRenderContext
 	{

@@ -594,7 +594,6 @@ void Renderer::cmdCallback(RenderCallback callback)
 {
 	DrawCommand cmd(DrawCommand::Type::Callback);
 
-	cmd.zOrder = zOrder;
 	cmd.data.callback = callback;
 	addDrawCommand(cmd);
 }
@@ -603,7 +602,6 @@ void Renderer::cmdClearBackground(const Color& color)
 {
 	DrawCommand cmd(DrawCommand::Type::ClearBackground);
 
-	cmd.zOrder = zOrder;
 	cmd.data.setColor = color;
 	addDrawCommand(cmd);
 }
@@ -617,7 +615,6 @@ Rect Renderer::pushClipRect(const Rect& rect, bool clipToParent)
 
 	DrawCommand cmd(DrawCommand::Type::ClipRect);
 
-	cmd.zOrder = zOrder;
 	cmd.data.clipRect = currentClipRect;
 	cmd.data.clipToParent = clipToParent;
 	addDrawCommand(cmd);
@@ -637,7 +634,6 @@ void Renderer::popClipRect()
 
 	DrawCommand cmd(DrawCommand::Type::ClipRect);
 
-	cmd.zOrder = zOrder;
 	cmd.data.clipRect = currentClipRect;
 	cmd.data.popClipRect = true;
 	addDrawCommand(cmd);
@@ -680,7 +676,6 @@ void Renderer::end()
 void Renderer::cmdSetColor(const Color& newColor)
 {
 	DrawCommand cmd(DrawCommand::Type::SetColor);
-	cmd.zOrder = zOrder;
 	cmd.data.setColor = newColor;
 	addDrawCommand(cmd);
 }
@@ -688,7 +683,6 @@ void Renderer::cmdSetColor(const Color& newColor)
 void Renderer::cmdSetAtlas(Atlas* newAtlas)
 {
 	DrawCommand cmd(DrawCommand::Type::SetAtlas);
-	cmd.zOrder = zOrder;
 	cmd.data.setAtlas = newAtlas;
 	currentAtlas = newAtlas;
 	addDrawCommand(cmd);
@@ -697,7 +691,6 @@ void Renderer::cmdSetAtlas(Atlas* newAtlas)
 void Renderer::cmdSetFont(Font* font)
 {
 	DrawCommand cmd(DrawCommand::Type::SetFont);
-	cmd.zOrder = zOrder;
 	cmd.data.setFont = font;
 	currentFont = font;
 	addDrawCommand(cmd);
@@ -707,7 +700,6 @@ void Renderer::cmdSetTextUnderline(bool underline)
 {
 	DrawCommand cmd(DrawCommand::Type::SetTextStyle);
 	currentTextStyle.underline = underline;
-	cmd.zOrder = zOrder;
 	cmd.data.setTextStyle = currentTextStyle;
 	addDrawCommand(cmd);
 }
@@ -716,7 +708,6 @@ void Renderer::cmdSetTextBackfill(bool backfill)
 {
 	DrawCommand cmd(DrawCommand::Type::SetTextStyle);
 	currentTextStyle.backFill = backfill;
-	cmd.zOrder = zOrder;
 	cmd.data.setTextStyle = currentTextStyle;
 	addDrawCommand(cmd);
 }
@@ -725,7 +716,6 @@ void Renderer::cmdSetTextBackfillColor(const Color& color)
 {
 	DrawCommand cmd(DrawCommand::Type::SetTextStyle);
 	currentTextStyle.backFillColor = color;
-	cmd.zOrder = zOrder;
 	cmd.data.setTextStyle = currentTextStyle;
 	addDrawCommand(cmd);
 }
@@ -733,7 +723,6 @@ void Renderer::cmdSetTextBackfillColor(const Color& color)
 void Renderer::cmdSetLineStyle(const LineStyle& style)
 {
 	DrawCommand cmd(DrawCommand::Type::SetLineStyle);
-	cmd.zOrder = zOrder;
 	currentLineStyle = cmd.data.setLineStyle = style;
 	addDrawCommand(cmd);
 }
@@ -741,7 +730,6 @@ void Renderer::cmdSetLineStyle(const LineStyle& style)
 void Renderer::cmdSetFillStyle(const FillStyle& style)
 {
 	DrawCommand cmd(DrawCommand::Type::SetFillStyle);
-	cmd.zOrder = zOrder;
 	currentFillStyle = cmd.data.setFillStyle = style;
 	addDrawCommand(cmd);
 }
@@ -749,7 +737,6 @@ void Renderer::cmdSetFillStyle(const FillStyle& style)
 void Renderer::cmdDrawImage(Image* image, const Point& position, f32 scale)
 {
 	DrawCommand cmd(DrawCommand::Type::DrawRect);
-	cmd.zOrder = zOrder;
 	cmd.data.drawRect.rect = Rect(position.x, position.y, image->rect.width * scale, image->rect.height * scale);
 	cmd.data.drawRect.uvRect = image->uvRect;
 	cmd.data.drawRect.rotated = image->rotated;
@@ -760,7 +747,6 @@ void Renderer::cmdDrawImage(Image* image, const Point& position, f32 scale)
 void Renderer::cmdDrawImage(Image* image, const Rect& rect)
 {
 	DrawCommand cmd(DrawCommand::Type::DrawRect);
-	cmd.zOrder = zOrder;
 	cmd.data.drawRect.rect = rect;
 	cmd.data.drawRect.uvRect = image->uvRect;
 	cmd.data.drawRect.rotated = image->rotated;
@@ -771,7 +757,6 @@ void Renderer::cmdDrawImage(Image* image, const Rect& rect)
 void Renderer::cmdDrawImage(Image* image, const Rect& rect, const Rect& uvRect)
 {
 	DrawCommand cmd(DrawCommand::Type::DrawRect);
-	cmd.zOrder = zOrder;
 	cmd.data.drawRect.rect = rect;
 	cmd.data.drawRect.uvRect = uvRect;
 	cmd.data.drawRect.rotated = image->rotated;
@@ -782,7 +767,6 @@ void Renderer::cmdDrawImage(Image* image, const Rect& rect, const Rect& uvRect)
 void Renderer::cmdDrawQuad(Image* image, const Point& p1, const Point& p2, const Point& p3, const Point& p4)
 {
 	DrawCommand cmd(DrawCommand::Type::DrawQuad);
-	cmd.zOrder = zOrder;
 	cmd.data.drawQuad.corners[0] = p1;
 	cmd.data.drawQuad.corners[1] = p2;
 	cmd.data.drawQuad.corners[2] = p3;
@@ -795,7 +779,6 @@ void Renderer::cmdDrawQuad(Image* image, const Point& p1, const Point& p2, const
 void Renderer::cmdDrawImageBordered(Image* image, u32 border, const Rect& rect, f32 scale)
 {
 	DrawCommand cmd(DrawCommand::Type::DrawImageBordered);
-	cmd.zOrder = zOrder;
 	cmd.data.drawImageBordered.rect = rect;
 	cmd.data.drawImageBordered.image = image;
 	cmd.data.drawImageBordered.border = border;
@@ -863,7 +846,6 @@ void Renderer::cmdDrawSolidRectangle(const Rect& rect)
 void Renderer::cmdDrawInterpolatedColors(const Rect& rect, const Color& topLeft, const Color& bottomLeft, const Color& topRight, const Color& bottomRight)
 {
 	DrawCommand cmd(DrawCommand::Type::DrawInterpolatedColors);
-	cmd.zOrder = zOrder;
 	cmd.data.drawInterpolatedColors.rect = rect;
 	cmd.data.drawInterpolatedColors.bottomLeft = bottomLeft;
 	cmd.data.drawInterpolatedColors.bottomRight = bottomRight;
@@ -890,7 +872,6 @@ void Renderer::cmdDrawInterpolatedColorsLeftRight(const Rect& rect, const Color&
 void Renderer::cmdDrawLine(const Point& a, const Point& b)
 {
 	DrawCommand cmd(DrawCommand::Type::DrawLine);
-	cmd.zOrder = zOrder;
 	cmd.data.drawLine.a = a;
 	cmd.data.drawLine.b = b;
 	addDrawCommand(cmd);
@@ -899,7 +880,6 @@ void Renderer::cmdDrawLine(const Point& a, const Point& b)
 void Renderer::cmdDrawPolyLine(const Point* points, u32 pointCount, bool closed)
 {
 	DrawCommand cmd(DrawCommand::Type::DrawPolyLine);
-	cmd.zOrder = zOrder;
 	cmd.data.drawPolyLine.count = pointCount;
 	cmd.data.drawPolyLine.closed = closed;
 	cmd.data.drawPolyLine.points = &currentWindowContext->pointBuffer[currentWindowContext->pointBufferPosition];
@@ -911,7 +891,6 @@ void Renderer::cmdDrawPolyLine(const Point* points, u32 pointCount, bool closed)
 void Renderer::cmdDrawSolidTriangle(const Point& p1, const Point& p2, const Point& p3)
 {
 	DrawCommand cmd(DrawCommand::Type::DrawSolidTriangle);
-	cmd.zOrder = zOrder;
 	cmd.data.drawTriangle.p1 = p1;
 	cmd.data.drawTriangle.p2 = p2;
 	cmd.data.drawTriangle.p3 = p3;
@@ -930,7 +909,6 @@ FontTextSize Renderer::cmdDrawTextAt(
 {
 	FontTextSize fsize = currentFont->computeTextSize(text);
 	DrawCommand cmd(DrawCommand::Type::DrawText);
-	cmd.zOrder = zOrder;
 	cmd.data.drawText.position = position;
 	cmd.data.drawText.text = addUtf8TextToBuffer(text, strlen(text));
 	addDrawCommand(cmd);
@@ -979,7 +957,6 @@ FontTextSize Renderer::cmdDrawTextInBox(
 		break;
 	}
 
-	cmd.zOrder = zOrder;
 	cmd.data.drawText.position = pos;
 	cmd.data.drawText.text = addUtf8TextToBuffer(text, strlen(text));
 	addDrawCommand(cmd);
@@ -2170,10 +2147,12 @@ void Renderer::addBatch()
 	currentBatch->textureArray = currentAtlas->textureArray;
 }
 
-void Renderer::addDrawCommand(const DrawCommand& cmd)
+void Renderer::addDrawCommand(DrawCommand& cmd)
 {
 	if (disableRendering || skipRender)
 		return;
+
+	cmd.zOrder = zOrder;
 
 	if (currentWindowContext->drawCmdNextInsertIndex == ~0)
 	{

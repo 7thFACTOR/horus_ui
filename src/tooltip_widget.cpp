@@ -76,15 +76,13 @@ bool tooltip(const char* text)
 
 bool beginCustomTooltip(f32 width)
 {
-	if (ctx->id != ctx->tooltip.id
-		&& ctx->id == ctx->widget.hoveredId
-		&& !ctx->tooltip.show)
+	if (ctx->id != ctx->tooltip.id && ctx->id == ctx->widget.hoveredId && !ctx->tooltip.show)
 	{
 		ctx->tooltip.id = ctx->id;
 		ctx->tooltip.timer = 0;
 	}
 
-	if (ctx->id == ctx->tooltip.id
+	if (ctx->id == ctx->widget.hoveredId && ctx->tooltip.id
 		&& ctx->tooltip.show)
 	{
 		ctx->tooltip.wasShown = true;
@@ -92,17 +90,16 @@ bool beginCustomTooltip(f32 width)
 		beginPopup(
 			"##customTooltip",
 			width,
-			PopupFlags::CustomPosition | PopupFlags::TopMost,
+			PopupFlags::CustomPosition | PopupFlags::TopMost | PopupFlags::SameLayer,
 			{ ctx->tooltip.position.x + ctx->tooltip.offsetFromCursor, ctx->tooltip.position.y + ctx->tooltip.offsetFromCursor },
 			WidgetElementId::TooltipBody);
-
-		if (ctx->tooltip.closeTooltipPopup)
-		{
-			closePopup();
-			ctx->tooltip.closeTooltipPopup = false;
-		}
-
 		return true;
+	}
+
+	if (ctx->tooltip.closeTooltipPopup)
+	{
+		closePopup();
+		ctx->tooltip.closeTooltipPopup = false;
 	}
 
 	return false;

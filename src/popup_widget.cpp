@@ -226,11 +226,11 @@ void endPopup()
 	ctx->sameLine = ctx->sameLineStack.back();
 	ctx->sameLineStack.pop_back();
 
-	if (!has(popup.flags, PopupFlags::SameLayer))
-		decrementLayerIndex();
-
 	if (has(popup.flags, PopupFlags::TopMost))
 		ctx->renderer->setZOrder(popup.oldZOrder);
+
+	if (!has(popup.flags, PopupFlags::SameLayer))
+		decrementLayerIndex();
 
 	ctx->popupIndex--;
 }
