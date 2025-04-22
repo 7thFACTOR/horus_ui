@@ -327,7 +327,6 @@ void beginFrame()
 	ctx->padding[(i32)PaddingType::ScrollView] = ctx->settings.defaultScrollViewPadding;
 	ctx->padding[(i32)PaddingType::Widget] = ctx->settings.defaultWidgetPadding;
 
-
 	if (ctx->pruneUnusedTextTime >= ctx->settings.textCachePruneIntervalSec)
 	{
 		ctx->textCache->pruneUnusedText();
@@ -460,7 +459,7 @@ void update()
 		ctx->tooltip.resetTimer += ctx->deltaTime;
 	}
 	
-	if (ctx->tooltip.id
+	if (!ctx->tooltip.show && ctx->tooltip.id
 		&& (ctx->tooltip.timer >= ctx->tooltip.delayToShow
 			|| ctx->tooltip.resetTimer < ctx->tooltip.delayToShowConsecutive))
 	{
@@ -469,7 +468,7 @@ void update()
 		ctx->tooltip.timer = 0;
 		ctx->tooltip.closeTooltipPopup = false;
 	}
-	else if (ctx->tooltip.show && !ctx->tooltip.wasShown)
+	else if (ctx->savedEventType == InputEvent::Type::MouseDown || (ctx->tooltip.show && !ctx->tooltip.wasShown))
 	{
 		ctx->tooltip.timer = 0;
 		ctx->tooltip.resetTimer = 0;

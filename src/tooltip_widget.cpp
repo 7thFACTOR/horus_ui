@@ -82,8 +82,8 @@ bool beginCustomTooltip(f32 width)
 		ctx->tooltip.timer = 0;
 	}
 
-	if (ctx->id == ctx->widget.hoveredId && ctx->tooltip.id
-		&& ctx->tooltip.show)
+	if ((ctx->id == ctx->widget.hoveredId && ctx->tooltip.id
+		&& ctx->tooltip.show) || ctx->tooltip.closeTooltipPopup)
 	{
 		ctx->tooltip.wasShown = true;
 		auto& bodyElemState = ctx->theme->getElement(WidgetElementId::TooltipBody).normalState();
@@ -93,13 +93,14 @@ bool beginCustomTooltip(f32 width)
 			PopupFlags::CustomPosition | PopupFlags::TopMost | PopupFlags::SameLayer,
 			{ ctx->tooltip.position.x + ctx->tooltip.offsetFromCursor, ctx->tooltip.position.y + ctx->tooltip.offsetFromCursor },
 			WidgetElementId::TooltipBody);
-		return true;
-	}
 
-	if (ctx->tooltip.closeTooltipPopup)
-	{
-		closePopup();
-		ctx->tooltip.closeTooltipPopup = false;
+		if (ctx->tooltip.closeTooltipPopup)
+		{
+			closePopup();
+			ctx->tooltip.closeTooltipPopup = false;
+		}
+
+		return true;
 	}
 
 	return false;
