@@ -74,6 +74,9 @@ void buttonBehavior(bool menuItem)
 				ctx->widget.pressed = true;
 				ctx->widget.focused = true;
 
+				ctx->tooltip.show = false;
+				ctx->tooltip.lastId = ctx->tooltip.id;
+
 				if (ctx->popupIndex)
 				{
 					auto& popup = ctx->popupStack[ctx->popupIndex - 1];
@@ -99,6 +102,11 @@ void buttonBehavior(bool menuItem)
 	}
 	else // outside the widget
 	{
+		if (ctx->tooltip.lastId == ctx->id)
+		{
+			ctx->tooltip.lastId = 0;
+		}
+
 		if (ctx->event.type == InputEvent::Type::MouseDown)
 		{
 			if (ctx->id == ctx->widget.focusedId)
@@ -161,6 +169,9 @@ void mouseDownOnlyButtonBehavior()
 			ctx->widget.clicked = true;
 			ctx->widget.focused = true;
 
+			ctx->tooltip.show = false;
+			ctx->tooltip.lastId = ctx->tooltip.id;
+
 			if (ctx->layerIndex)
 			{
 				auto& popup = ctx->popupStack[ctx->layerIndex - 1];
@@ -170,6 +181,11 @@ void mouseDownOnlyButtonBehavior()
 	}
 	else // outside widget
 	{
+		if (ctx->tooltip.lastId == ctx->id)
+		{
+			ctx->tooltip.lastId = 0;
+		}
+
 		if ((ctx->event.type == InputEvent::Type::MouseDown
 			|| ctx->event.type == InputEvent::Type::MouseUp)
 				&& ctx->id == ctx->widget.focusedId)

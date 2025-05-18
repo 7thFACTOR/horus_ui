@@ -449,7 +449,7 @@ void update()
 	
 	// tooltip handling
 	//TODO: move to own func
-	if (ctx->tooltip.id && !ctx->tooltip.show)
+	if (ctx->tooltip.id && ctx->tooltip.id != ctx->tooltip.lastId && !ctx->tooltip.show)
 	{
 		ctx->tooltip.timer += ctx->deltaTime;
 	}
@@ -466,9 +466,10 @@ void update()
 		ctx->tooltip.show = true;
 		ctx->mustRedraw = true;
 		ctx->tooltip.timer = 0;
+		ctx->tooltip.lastId = 0;
 		ctx->tooltip.closeTooltipPopup = false;
 	}
-	else if (ctx->savedEventType == InputEvent::Type::MouseDown || (ctx->tooltip.show && !ctx->tooltip.wasShown))
+	else if (ctx->tooltip.show && !ctx->tooltip.wasShown)
 	{
 		ctx->tooltip.timer = 0;
 		ctx->tooltip.resetTimer = 0;

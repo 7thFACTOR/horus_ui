@@ -293,6 +293,7 @@ struct TooltipState
 	f32 delayToShow = 1.0f;
 	f32 delayToShowConsecutive = 0.5f;
 	WidgetId id = 0;
+	WidgetId lastId = 0;
 	bool show = false;
 	bool wasShown = false;
 	bool closeTooltipPopup = false;
