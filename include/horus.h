@@ -11,7 +11,7 @@
 ------------------------------------------------------------------------------
 	Immediate Mode Graphical User Interface Library
 
-	(C) All rights reserved 2016-2023 7thFACTOR Software - Nicusor Nedelcu (nekitu)
+	(C) All rights reserved 2016-2025 7thFACTOR Software - Nicusor Nedelcu (nekitu)
 ------------------------------------------------------------------------------
 */
 
