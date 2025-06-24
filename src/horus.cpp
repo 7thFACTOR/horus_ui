@@ -322,6 +322,7 @@ void beginFrame()
 	ctx->pruneUnusedTextTime += ctx->deltaTime;
 	ctx->sameLineInfoIndex = 0;
 	ctx->sameLineInfoCount = 0;
+	ctx->fontStack.clear();
 
 	ctx->padding[(i32)PaddingType::Layout] = ctx->settings.defaultLayoutPadding;
 	ctx->padding[(i32)PaddingType::ScrollView] = ctx->settings.defaultScrollViewPadding;
@@ -400,6 +401,9 @@ void deferredDeleteObjects()
 
 void endFrame()
 {
+	//TODO: check stacks to see if there is are items on them
+	// the stacks should be empty, otherwise push/pop count not matching
+
 	if (ctx->theme->atlas->packWithLastUsedParams())
 		skipThisFrame();
 

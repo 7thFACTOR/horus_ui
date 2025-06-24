@@ -140,11 +140,12 @@ struct Context
 	InputEvent::Type savedEventType = InputEvent::Type::None;
 	std::vector<HNativeWindow> nativeWindows;
 
-	// Colors and styles
+	// Colors, fonts and styles
 	TintState tint;
 	std::vector<TintState> tintStack;
 	LineStyle lineStyle;
 	FillStyle fillStyle;
+	std::vector<HFont> fontStack;
 
 	std::vector<u32> drawCmdIndexStack;
 

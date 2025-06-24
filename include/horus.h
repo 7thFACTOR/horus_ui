@@ -440,18 +440,6 @@ enum class SelectableFlags : u32
 };
 HORUS_ENUM_AS_FLAGS(SelectableFlags);
 
-enum class TabGroupState
-{
-	Auto,
-	Disabled
-};
-
-enum class TabState
-{
-	Auto,
-	Disabled
-};
-
 /// When pushTint is called, specifies what element is color tinted
 enum class TintColorType
 {
@@ -3063,7 +3051,7 @@ HORUS_API u32 decrementLayerIndex();
 HORUS_API void decrementWindowMaxLayerIndex();
 
 ///
-HORUS_API Point getParentSize();
+HORUS_API Point geLayoutSize();
 
 ///
 HORUS_API Rect getWidgetRect();

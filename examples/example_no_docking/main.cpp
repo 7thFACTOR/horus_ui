@@ -119,6 +119,37 @@ int main(int argc, char** args)
 				hui::tab("Four", 0);
 				selTab = hui::endTabGroup();
 
+				hui::beginMenuBar();
+
+				if (hui::beginMenu("File"))
+				{
+					hui::menuItem("New", "Ctrl+N");
+					hui::menuItem("Open", "Ctrl+O");
+					hui::menuItem("Print", "Ctrl+P");
+					hui::menuSeparator();
+					hui::menuItem("Exit", "Alt+F4");
+					
+				}
+				hui::endMenu();
+				if (hui::beginMenu("Edit"))
+				{
+					hui::menuItem("Cut", "Ctrl+X");
+					hui::menuItem("Copy", "Ctrl+C");
+					hui::menuItem("Paste", "Ctrl+V");
+					hui::menuItem("Delete", "Del");
+					
+				}
+				hui::endMenu();
+
+				if (hui::beginMenu("View"))
+				{
+					hui::menuItem("Close", 0);
+					hui::menuItem("Close All", 0);
+				}
+				hui::endMenu();
+
+				hui::endMenuBar();
+
 				hui::labelCustomFont("Once upon a time...", hui::getThemeFont(theme, "title"), hui::HAlignType::Center);
 				hui::line();
 				

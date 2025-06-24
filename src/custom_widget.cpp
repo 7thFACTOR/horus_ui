@@ -27,7 +27,7 @@ void endCustomWidget()
 {
 }
 
-Point getParentSize()
+Point geLayoutSize()
 {
 	Point pt;
 
@@ -80,6 +80,21 @@ void endInsertDrawCommands()
 void setFont(HFont font)
 {
 	ctx->renderer->cmdSetFont((Font*)font);
+}
+
+void pushFont(HFont font)
+{
+	ctx->fontStack.push_back((HFont)ctx->renderer->getFont());
+	setFont(font);
+}
+
+void popFont()
+{
+	if (ctx->fontStack.size())
+	{
+		setFont(ctx->fontStack.back());
+		ctx->fontStack.pop_back();
+	}
 }
 
 void setColor(const Color& color)

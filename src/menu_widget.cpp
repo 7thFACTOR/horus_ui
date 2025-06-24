@@ -28,7 +28,6 @@ void endMenuBar()
 	auto& menuBarElemState = ctx->theme->getElement(WidgetElementId::MenuBarBody).normalState();
 	f32 height = menuBarElemState.height * ctx->scale;
 
-	ctx->position.x = ctx->layout.savedPosition.x;
 	ctx->position.y += height;
 	ctx->currentMenuBarId = 0;
 }
@@ -359,20 +358,23 @@ bool menuItem(const char* label, const char* shortcut, HImage icon, SelectableFl
 	ctx->renderer->popClipRect();
 
 	// render the shortcut text
-	ctx->renderer->cmdSetColor(applyTint(shortcutElemState->textColor, TintColorType::Text));
-	ctx->renderer->cmdSetFont(shortcutElemState->font);
-	ctx->renderer->pushClipRect(ctx->widget.rect);
-	ctx->renderer->cmdDrawTextInBox(
-		shortcut,
-		Rect(
-			ctx->widget.rect.x,
-			ctx->widget.rect.y,
-			ctx->widget.rect.width - (ctx->menuItemTextSideSpacing) * ctx->scale,
-			ctx->widget.rect.height)
-		,
-		HAlignType::Right,
-		VAlignType::Center);
-	ctx->renderer->popClipRect();
+	if (shortcut)
+	{
+		ctx->renderer->cmdSetColor(applyTint(shortcutElemState->textColor, TintColorType::Text));
+		ctx->renderer->cmdSetFont(shortcutElemState->font);
+		ctx->renderer->pushClipRect(ctx->widget.rect);
+		ctx->renderer->cmdDrawTextInBox(
+			shortcut,
+			Rect(
+				ctx->widget.rect.x,
+				ctx->widget.rect.y,
+				ctx->widget.rect.width - (ctx->menuItemTextSideSpacing) * ctx->scale,
+				ctx->widget.rect.height)
+			,
+			HAlignType::Right,
+			VAlignType::Center);
+		ctx->renderer->popClipRect();
+	}
 
 	if (hasCheck)
 	{
@@ -418,7 +420,7 @@ bool menuItem(const char* label, const char* shortcut, HImage icon, SelectableFl
 	setFocusable();
 
 	auto menuItemTextWidth = bodyElemState->font->computeTextSize(
-		*ctx->textCache->getText(ctx->widgetLabel.c_str())).width + menuItemShortcutElem.normalState().font->computeTextSize(*ctx->textCache->getText(shortcut)).width;
+		*ctx->textCache->getText(ctx->widgetLabel.c_str())).width + menuItemShortcutElem.normalState().font->computeTextSize(*ctx->textCache->getText(shortcut ? shortcut : "")).width;
 
 	ctx->menuStack[ctx->menuDepth - 1].size.x = std::max(
 		menuItemTextWidth,
