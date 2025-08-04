@@ -121,7 +121,7 @@ int main(int argc, char** args)
 
 				hui::beginMenuBar();
 
-				if (hui::beginMenu("File"))
+				/*if (hui::beginMenu("File"))
 				{
 					hui::menuItem("New", "Ctrl+N");
 					hui::menuItem("Open", "Ctrl+O");
@@ -130,8 +130,8 @@ int main(int argc, char** args)
 					hui::menuItem("Exit", "Alt+F4");
 					
 				}
-				hui::endMenu();
-				if (hui::beginMenu("Edit"))
+				hui::endMenu();*/
+				/*if (hui::beginMenu("Edit"))
 				{
 					hui::menuItem("Cut", "Ctrl+X");
 					hui::menuItem("Copy", "Ctrl+C");
@@ -146,7 +146,7 @@ int main(int argc, char** args)
 					hui::menuItem("Close", 0);
 					hui::menuItem("Close All", 0);
 				}
-				hui::endMenu();
+				hui::endMenu();*/
 
 				hui::endMenuBar();
 

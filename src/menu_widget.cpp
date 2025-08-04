@@ -13,6 +13,8 @@ void beginMenuBar()
 	auto& menuBarElem = ctx->theme->getElement(WidgetElementId::MenuBarBody);
 	f32 height = menuBarElem.normalState().height * ctx->scale;
 
+	ctx->layout.savedPosition = ctx->position;
+	ctx->layoutStack.push_back(ctx->layout);
 	ctx->widget.rect.set(
 		round(ctx->position.x),
 		round(ctx->position.y),
@@ -28,6 +30,9 @@ void endMenuBar()
 	auto& menuBarElemState = ctx->theme->getElement(WidgetElementId::MenuBarBody).normalState();
 	f32 height = menuBarElemState.height * ctx->scale;
 
+	ctx->layout = ctx->layoutStack.back();
+	ctx->layoutStack.pop_back();
+	ctx->position = ctx->layout.savedPosition;
 	ctx->position.y += height;
 	ctx->currentMenuBarId = 0;
 }
