@@ -2861,7 +2861,7 @@ HORUS_API void endViewport();
 //////////////////////////////////////////////////////////////////////////
 
 /// Begin a menu bar widget
-HORUS_API void beginMenuBar();
+HORUS_API bool beginMenuBar();
 
 /// End the current menu bar widget
 HORUS_API void endMenuBar();
@@ -2888,7 +2888,7 @@ HORUS_API void endContextMenu();
 /// \param icon the menu item left side icon
 /// \param flags the menu item flags
 /// \return true if the menu item was clicked on
-HORUS_API bool menuItem(const char* label, const char* shortcut, HImage icon = 0, SelectableFlags flags = SelectableFlags::Normal);
+HORUS_API bool menuItem(const char* label, const char* shortcut = "", HImage icon = 0, SelectableFlags flags = SelectableFlags::Normal);
 
 /// Draw a menu item separator
 HORUS_API void menuSeparator();

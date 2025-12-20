@@ -8,13 +8,18 @@
 
 namespace hui
 {
-void beginMenuBar()
+bool beginMenuBar()
 {
 	auto& menuBarElem = ctx->theme->getElement(WidgetElementId::MenuBarBody);
 	f32 height = menuBarElem.normalState().height * ctx->scale;
 
-	ctx->layout.savedPosition = ctx->position;
+	ctx->id = genId("__MENUBAR__");
+
+	if (!ctx->widget.visible)
+		return false;
+
 	ctx->layoutStack.push_back(ctx->layout);
+	ctx->layout.savedPosition = ctx->position;
 	ctx->widget.rect.set(
 		round(ctx->position.x),
 		round(ctx->position.y),
@@ -23,6 +28,8 @@ void beginMenuBar()
 	ctx->renderer->cmdSetColor(menuBarElem.normalState().color);
 	ctx->renderer->cmdDrawImageBordered(menuBarElem.normalState().image, menuBarElem.normalState().border, ctx->widget.rect, ctx->scale);
 	ctx->currentMenuBarId = ctx->id;
+
+	return true;
 }
 
 void endMenuBar()
@@ -30,9 +37,9 @@ void endMenuBar()
 	auto& menuBarElemState = ctx->theme->getElement(WidgetElementId::MenuBarBody).normalState();
 	f32 height = menuBarElemState.height * ctx->scale;
 
+	ctx->position = ctx->layout.savedPosition;
 	ctx->layout = ctx->layoutStack.back();
 	ctx->layoutStack.pop_back();
-	ctx->position = ctx->layout.savedPosition;
 	ctx->position.y += height;
 	ctx->currentMenuBarId = 0;
 }
@@ -40,8 +47,11 @@ void endMenuBar()
 bool beginMenuInternal(const char* label, SelectableFlags stateFlags, bool contextMenu)
 {
 	auto& menuBarItemElem = ctx->theme->getElement(WidgetElementId::MenuBarItem);
-	auto& menuBarItemElemState = menuBarItemElem.normalState();
-	Utf32String* uniStr = ctx->textCache->getText(label);
+	auto menuBarItemElemState = menuBarItemElem.normalState();
+	
+	ctx->extractLabelAndId(label);
+	
+	Utf32String* uniStr = ctx->textCache->getText(ctx->widgetLabel.c_str());
 	FontTextSize fsize = menuBarItemElemState.font->computeTextSize(*uniStr);
 	auto isMenuBarItem = ctx->menuDepth == 0;
 
@@ -124,7 +134,7 @@ bool beginMenuInternal(const char* label, SelectableFlags stateFlags, bool conte
 			ctx->renderer->cmdDrawImageBordered(menuBarItemElemState.image, menuBarItemElemState.border, ctx->widget.rect, ctx->scale);
 			ctx->renderer->cmdSetFont(menuBarItemElemState.font);
 			ctx->renderer->cmdSetColor(menuBarItemElemState.textColor);
-			ctx->renderer->cmdDrawTextInBox(label, ctx->widget.rect, HAlignType::Center, VAlignType::Center);
+			ctx->renderer->cmdDrawTextInBox(ctx->widgetLabel.c_str(), ctx->widget.rect, HAlignType::Center, VAlignType::Center);
 			ctx->position.x += width;
 			ctx->position.x = round(ctx->position.x);
 		}
@@ -155,7 +165,7 @@ bool beginMenuInternal(const char* label, SelectableFlags stateFlags, bool conte
 			flags = flags | SelectableFlags::Selected;
 
 		ctx->isSubMenu = true;
-		menuItem(label, "", 0, flags);
+		menuItem(ctx->widgetLabel.c_str(), "", 0, flags);
 		ctx->isSubMenu = false;
 
 		if (ctx->widget.hovered)

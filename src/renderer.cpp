@@ -911,7 +911,10 @@ FontTextSize Renderer::cmdDrawTextAt(
 	DrawCommand cmd(DrawCommand::Type::DrawText);
 	cmd.data.drawText.position = position;
 	cmd.data.drawText.text = addUtf8TextToBuffer(text, strlen(text));
-	addDrawCommand(cmd);
+	if (cmd.data.drawText.text)
+	{
+		addDrawCommand(cmd);
+	}
 	return fsize;
 }
 
@@ -959,7 +962,11 @@ FontTextSize Renderer::cmdDrawTextInBox(
 
 	cmd.data.drawText.position = pos;
 	cmd.data.drawText.text = addUtf8TextToBuffer(text, strlen(text));
-	addDrawCommand(cmd);
+	
+	if (cmd.data.drawText.text)
+	{
+		addDrawCommand(cmd);
+	}
 	return fsize;
 }
 
@@ -2120,10 +2127,7 @@ void Renderer::needToAddVertexCount(u32 count)
 		return;
 	}
 
-	std::vector<Vertex> verts = vertexBufferData.vertices;
-
 	vertexBufferData.vertices.resize(vertexBufferData.vertices.size() * vertexBufferData.vertexCountGrowFactor + count);
-	vertexBufferData.vertices.insert(vertexBufferData.vertices.begin(), verts.begin(), verts.end());
 	vertexBuffer->resize(vertexBufferData.vertices.size());
 }
 

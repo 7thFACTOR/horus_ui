@@ -112,43 +112,43 @@ int main(int argc, char** args)
 				hui::customSpace(20);
 				static hui::TabIndex selTab = 0;
 
-				hui::beginTabGroup(selTab);
+				/*hui::beginTabGroup(selTab);
 				hui::tab("One", 0);
 				hui::tab("Two", 0);
 				hui::tab("Three", 0);
 				hui::tab("Four", 0);
-				selTab = hui::endTabGroup();
+				selTab = hui::endTabGroup();*/
 
-				hui::beginMenuBar();
-
-				/*if (hui::beginMenu("File"))
+				if (hui::beginMenuBar())
 				{
-					hui::menuItem("New", "Ctrl+N");
-					hui::menuItem("Open", "Ctrl+O");
-					hui::menuItem("Print", "Ctrl+P");
-					hui::menuSeparator();
-					hui::menuItem("Exit", "Alt+F4");
-					
-				}
-				hui::endMenu();*/
-				/*if (hui::beginMenu("Edit"))
-				{
-					hui::menuItem("Cut", "Ctrl+X");
-					hui::menuItem("Copy", "Ctrl+C");
-					hui::menuItem("Paste", "Ctrl+V");
-					hui::menuItem("Delete", "Del");
-					
-				}
-				hui::endMenu();
+					if (hui::beginMenu("File##1"))
+					{
+						hui::menuItem("New", "Ctrl+N");
+						hui::menuItem("Open", "Ctrl+O");
+						hui::menuItem("Print", "Ctrl+P");
+						hui::menuSeparator();
+						hui::menuItem("Exit", "Alt+F4");
+						hui::endMenu();
+					}
 
-				if (hui::beginMenu("View"))
-				{
-					hui::menuItem("Close", 0);
-					hui::menuItem("Close All", 0);
-				}
-				hui::endMenu();*/
+					if (hui::beginMenu("Edit##2"))
+					{
+						hui::menuItem("Cut", "Ctrl+X");
+						hui::menuItem("Copy", "Ctrl+C");
+						hui::menuItem("Paste", "Ctrl+V");
+						hui::menuItem("Delete", "Del");
+						hui::endMenu();
+					}
 
-				hui::endMenuBar();
+					if (hui::beginMenu("View"))
+					{
+						hui::menuItem("Close", 0);
+						hui::menuItem("Close All", 0);
+						hui::endMenu();
+					}
+
+					hui::endMenuBar();
+				}
 
 				hui::labelCustomFont("Once upon a time...", hui::getThemeFont(theme, "title"), hui::HAlignType::Center);
 				hui::line();
@@ -166,6 +166,15 @@ int main(int argc, char** args)
 				hui::tooltip("The other progress");
 				hui::progress(pv2, 1700, true, false);
 				hui::progress(-1, 0, true, false, "Searching records...");
+
+				if (hui::beginContextMenu())
+				{
+					hui::menuItem("Delete");
+					hui::menuItem("Copy");
+					hui::menuItem("Restore");
+
+					hui::endContextMenu();
+				}
 
 				pv += 0.01f;
 				if (pv > 1) pv = 1;

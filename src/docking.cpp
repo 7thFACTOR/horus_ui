@@ -378,15 +378,22 @@ bool DockNode::checkRedundancy()
 		{
 			auto iterPosThis = std::find(parent->children.begin(), parent->children.end(), this);
 
-			parent->children.insert(iterPosThis, children.begin(), children.end());
-			
+			if (iterPosThis != parent->children.end())
+			{
+				parent->children.insert(iterPosThis, children.begin(), children.end());
+			}
+
 			// find it again, remove it, leaving children in the parent node
 			iterPosThis = std::find(parent->children.begin(), parent->children.end(), this);
 
 			HORUS_ASSERT(iterPosThis != parent->children.end());
 
-			parent->children.erase(iterPosThis);
-			parent->adoptChildren();
+			if (iterPosThis != parent->children.end())
+			{
+				parent->children.erase(iterPosThis);
+				parent->adoptChildren();
+				parent->computeRect();
+			}
 			
 			deleteThis = true;
 		}
