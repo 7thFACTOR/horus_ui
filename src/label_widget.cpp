@@ -71,7 +71,7 @@ bool labelCustomFontMultiline(const char* label, HFont font, HAlignType horizont
 
 	ctx->extractLabelAndId(label);
 
-	auto textSize = ((Font*)font)->computeTextSize(ctx->widgetLabel.c_str());
+	auto textSize = ((Font*)font)->computeTextSize(ctx->widgetLabel.c_str(), (u32)round(width));
 
 	addWidget(textSize.height + padding.y * 2.0f * ctx->scale);
 
