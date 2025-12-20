@@ -8,7 +8,7 @@ namespace hui
 void beginScrollView(f32 size, f32 scrollPos, f32 virtualHeight)
 {
 	auto& scrollViewElemState = ctx->theme->getElement(WidgetElementId::ScrollViewBody).normalState();
-	auto& scrollViewScrollThumbElemState = ctx->theme->getElement(WidgetElementId::ScrollViewScrollThumb).normalState();
+	auto scrollViewScrollThumbElemState = ctx->theme->getElement(WidgetElementId::ScrollViewScrollThumb).normalState();
 
 	ctx->id = genIdFromPosition("scrollView");
 
@@ -260,7 +260,7 @@ f32 endScrollView()
 void beginVirtualListContent(u32 totalRowCount, u32 itemHeight, f32 scrollPos)
 {
 	f32 skipRows = scrollPos / itemHeight;
-	auto& pos = ctx->position;
+	auto pos = ctx->position;
 	ctx->position = { pos.x, pos.y + (i32)skipRows * itemHeight };
 	ctx->virtualListStack.push_back(VirtualListContentState());
 	ctx->virtualListStack.back().totalRowCount = totalRowCount;
