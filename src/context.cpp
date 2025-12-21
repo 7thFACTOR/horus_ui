@@ -78,7 +78,7 @@ Rect Context::drawMultilineText(
 
 			line.length = i - line.start;
 			textLines.push_back(line);
-			line.start = i;
+			line.start = i + 1; // start at next char (skip the newline itself)
 
 			continue;
 		}
@@ -157,8 +157,18 @@ Rect Context::drawMultilineText(
 		}
 	}
 
-	line.length = utext.size() - line.start;
-	textLines.push_back(line);
+	// Avoid pushing a trailing empty line created by a final '\n'.
+	// If line.start is at the end of the string, and there are no chars after it, skip adding an extra empty line.
+	if (line.start < utext.size())
+	{
+		line.length = utext.size() - line.start;
+		textLines.push_back(line);
+	}
+	else if (utext.empty())
+	{
+		// nothing to push
+	}
+	// else: trailing newline -> do not push an extra empty line (keeps layout stable)
 
 	Point pos;
 
@@ -214,7 +224,8 @@ Rect Context::drawMultilineText(
 		pos.y += crtFont->getMetrics().height;
 	}
 
-	newRect.height = fabs(rect.height - textLines.size() * crtFont->getMetrics().height);
+	// Return the actual content height (lines * line height).
+	newRect.height = textLines.size() * crtFont->getMetrics().height;
 
 	return newRect;
 }

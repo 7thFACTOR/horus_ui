@@ -1828,6 +1828,7 @@ void Renderer::drawPolyLine(const Point* points, u32 pointCount, bool closed)
 				d1 = Point(pts[p + 1].x - pts[p].x, pts[p + 1].y - pts[p].y);
 				n2 = Point(d1.y, -d1.x).getNormalized();
 				lastN2 = n2;
+				extrudeScale2 = 1;
 			}
 		}
 		else if (p < pointCount - 2)
@@ -1993,16 +1994,24 @@ void Renderer::drawTextInternal(
 	Point underlineStartPos = pos;
 
 	/////////////////////////////
-	// DRAW CHARS
+	// DRAW CHARS (support new lines)
 	/////////////////////////////
 	const Utf32String& utext = *ctx->textCache->getText(text);
+
+	const f32 lineHeight = currentFont->getMetrics().height;
+	const f32 startX = pos.x;
 
 	for (int i = 0; i < utext.size(); i++)
 	{
 		auto chr = utext[i];
 
+		// explicit newline -> move to next line baseline
 		if (chr == '\n')
 		{
+			// reset X to start of line, advance Y by font line height and reset kerning
+			pos.x = startX;
+			pos.y += lineHeight;
+			lastChr = 0;
 			continue;
 		}
 
@@ -2021,22 +2030,21 @@ void Renderer::drawTextInternal(
 		lastChr = chr;
 	}
 
-	// render underline
+	// render underline (single continuous underline across computed width)
 	if (currentTextStyle.underline)
 	{
 		auto fsize = currentFont->computeTextSize(utext);
 		auto image = currentAtlas->whiteImage;
 
+		Rect underlineRect(
+			underlineStartPos.x,
+			underlineStartPos.y - currentFont->getMetrics().underlinePosition,
+			fsize.width,
+			currentFont->getMetrics().underlineThickness);
+
 		if (!image->rotated)
 		{
-			drawQuad(
-				{
-					underlineStartPos.x,
-					underlineStartPos.y - currentFont->getMetrics().underlinePosition,
-					fsize.width,
-					currentFont->getMetrics().underlineThickness
-				},
-				image->uvRect);
+			drawQuad(underlineRect, image->uvRect);
 		}
 		else
 		{

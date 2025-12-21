@@ -206,7 +206,7 @@ int main(int argc, char** args)
 				if (hui::button("Show UI window"))
 					hui::setWindowVisible("ui", true);
 				static bool chk1, chk2, chk3;
-				hui::beginTwoColumns();
+				/*hui::beginTwoColumns();
 				hui::check("Option 1", &chk1);
 				hui::check("Option 2", &chk2);
 				hui::nextColumn();
@@ -229,7 +229,7 @@ int main(int argc, char** args)
 				}
 
 				hui::popTint();
-				hui::endColumns();
+				hui::endColumns();*/
 				static float val;
 				hui::sliderFloat("slider1", 0, 100, val);
 				static char txt[2000];
@@ -247,7 +247,7 @@ int main(int argc, char** args)
 				if (hui::button("Exit"))
 					exitNow = true;
 				hui::popTint();
-
+				/*
 				hui::beginColumns(5);
 				hui::pushWidth(0.5);
 				hui::iconButton(icon1, 32);
@@ -263,7 +263,7 @@ int main(int argc, char** args)
 				hui::nextColumn();
 				hui::iconButton(icon5, 32);
 				hui::endColumns();
-
+				*/
 				//hui::endContainer();
 				hui::endWindow();
 			}
