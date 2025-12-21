@@ -903,71 +903,331 @@ void Renderer::cmdDrawSolidTriangle(const Point& p1, const Point& p2, const Poin
 	addDrawCommand(cmd);
 }
 
-FontTextSize Renderer::cmdDrawTextAt(
+FontTextSize Renderer::computeSizeOrDrawText(
 	const char* text,
-	const Point& position)
+	const Point& position,
+	FontTextSize* outSize,
+	bool doDraw,
+	Font* font,
+	u32 maxWidth)
 {
-	FontTextSize fsize = currentFont->computeTextSize(text);
-	DrawCommand cmd(DrawCommand::Type::DrawText);
-	cmd.data.drawText.position = position;
-	cmd.data.drawText.text = addUtf8TextToBuffer(text, strlen(text));
-	if (cmd.data.drawText.text)
+	if (!text || !strcmp(text, ""))
 	{
-		addDrawCommand(cmd);
+		if (outSize) *outSize = FontTextSize();
+		return FontTextSize();
 	}
+
+	// reuse text cache to get utf32 string
+	const Utf32String& utext = *ctx->textCache->getText(text);
+	return computeSizeOrDrawText(utext.data(), (u32)utext.size(), position, outSize, doDraw, font, maxWidth);
+}
+
+FontTextSize Renderer::computeSizeOrDrawText(
+	const GlyphCode* const text,
+	u32 size,
+	const Point& position,
+	FontTextSize* outSize,
+	bool doDraw,
+	Font* font,
+	u32 maxWidth)
+{
+	FontTextSize fsize;
+	Font* fnt = font ? font : currentFont;
+
+	if (!fnt || size == 0)
+	{
+		if (outSize) *outSize = fsize;
+		return fsize;
+	}
+
+	// measurement with wrapping (port of original Font::computeTextSize)
+	u32 lastChr = 0;
+	u32 lineCount = 1;
+	f32 crtLineWidth = 0.0f;
+	f32 crtWordWidth = 0.0f;
+	u32 currentLineChars = 0;
+	u32 longestLineChars = 0;
+	u32 lastWordIndex = 0;
+	u32 lineStart = 0;
+
+	std::vector<std::pair<u32, u32>> lines; // start, len
+
+	for (u32 i = 0; i < size; ++i)
+	{
+		auto chr = text[i];
+
+		// explicit newline -> finish current line and start new one
+		if (chr == '\n')
+		{
+			// finalize this line
+			lines.push_back({ lineStart, currentLineChars });
+
+			if (fsize.width < crtLineWidth)
+				fsize.width = crtLineWidth;
+			
+			fsize.lineHeights.push_back(fnt->getMetrics().height);
+			
+			if (longestLineChars < currentLineChars)
+				longestLineChars = currentLineChars;
+
+			// reset for next line
+			crtLineWidth = 0.0f;
+			crtWordWidth = 0.0f;
+			currentLineChars = 0;
+			lastChr = 0;
+			lastWordIndex = i + 1;
+			lineStart = i + 1;
+			++lineCount;
+			continue;
+		}
+
+		auto glyph = fnt->getGlyph(chr);
+		if (!glyph)
+			continue;
+
+		// track word boundaries
+		if (chr == ' ')
+		{
+			lastWordIndex = i + 1;
+			crtWordWidth = 0.0f;
+		}
+
+		// compute advance including kerning with previous glyph on same line
+		auto kern = fnt->getKerning(lastChr, chr);
+		f32 glyphAdvance = glyph->advanceX + kern;
+		f32 projectedLineWidth = crtLineWidth + glyphAdvance;
+		f32 projectedWordWidth = crtWordWidth + glyphAdvance;
+
+		// wrapping when maxWidth specified
+		if (maxWidth != ~0u && projectedLineWidth >= (f32)maxWidth)
+		{
+			// If we are at start of line we must break inside word (force at least one glyph)
+			if (currentLineChars == 0 || projectedWordWidth >= (f32)maxWidth)
+			{
+				// find break position inside the word (from lastWordIndex to i)
+				f32 wordSize = 0.0f;
+				u32 breakPos = lastWordIndex;
+				GlyphCode localLast = 0;
+
+				for (u32 k = lastWordIndex; k <= i; ++k)
+				{
+					auto g2 = fnt->getGlyph(text[k]);
+					if (!g2) continue;
+
+					auto kern2 = fnt->getKerning(localLast, text[k]);
+					f32 cw = g2->advanceX + kern2;
+					wordSize += cw;
+
+					if (wordSize >= (f32)maxWidth)
+					{
+						breakPos = k + 1; // break AFTER k so that we place glyphs up to k in this line
+						break;
+					}
+
+					localLast = text[k];
+				}
+
+				// ensure we advance at least one glyph if breakPos didn't move
+				if (breakPos <= lineStart)
+					breakPos = lineStart + 1;
+
+				// finalize current line [lineStart .. breakPos-1]
+				u32 lineLen = breakPos > lineStart ? breakPos - lineStart : 0;
+
+				// compute actual width for the pushed segment to update fsize.width correctly
+				f32 segmentWidth = 0.0f;
+				GlyphCode segLast = 0;
+				for (u32 k = lineStart; k < lineStart + lineLen && k < size; ++k)
+				{
+					auto g2 = fnt->getGlyph(text[k]);
+					if (!g2) continue;
+					auto kern2 = fnt->getKerning(segLast, text[k]);
+					segmentWidth += g2->advanceX + kern2;
+					segLast = text[k];
+				}
+
+				lines.push_back({ lineStart, lineLen });
+
+				if (fsize.width < segmentWidth) fsize.width = segmentWidth;
+				fsize.lineHeights.push_back(fnt->getMetrics().height);
+				if (longestLineChars < currentLineChars) longestLineChars = currentLineChars;
+				++lineCount;
+
+				// start new line at breakPos
+				crtLineWidth = 0.0f;
+				crtWordWidth = 0.0f;
+				currentLineChars = 0;
+				lastChr = 0;
+				lineStart = breakPos;
+				lastWordIndex = breakPos;
+
+				// set iterator so loop will process breakPos next
+				if (breakPos > 0) i = breakPos - 1;
+				else i = breakPos;
+
+				continue;
+			}
+			else
+			{
+				// move whole word to next line (only valid when there's already content on current line)
+				// avoid pushing zero-length lines
+				if (currentLineChars > 0)
+				{
+					lines.push_back({ lineStart, currentLineChars });
+
+					if (fsize.width < crtLineWidth) fsize.width = crtLineWidth;
+					fsize.lineHeights.push_back(fnt->getMetrics().height);
+					if (longestLineChars < currentLineChars) longestLineChars = currentLineChars;
+					++lineCount;
+				}
+
+				// start new line at lastWordIndex
+				crtLineWidth = 0.0f;
+				crtWordWidth = 0.0f;
+				currentLineChars = 0;
+				lastChr = 0;
+
+				u32 newStart = lastWordIndex;
+				if (lastWordIndex > 0) i = lastWordIndex - 1;
+				else i = lastWordIndex;
+
+				lineStart = newStart;
+				lastWordIndex = newStart;
+				continue;
+			}
+		}
+
+		// accept glyph into current line
+		crtLineWidth = projectedLineWidth;
+		crtWordWidth = projectedWordWidth;
+		++currentLineChars;
+		lastChr = chr;
+
+		// keep vertical metrics for centering
+		f32 top = glyph->bearingY;
+		f32 bottom = -(glyph->pixelHeight - glyph->bearingY);
+		f32 glyphHeight = fabs(top - bottom);
+
+		if (fsize.maxGlyphHeight < glyphHeight) fsize.maxGlyphHeight = glyphHeight;
+		if (fsize.maxBearingY < glyph->bearingY) fsize.maxBearingY = glyph->bearingY;
+	}
+
+	// finalize last line
+	if (fsize.width < crtLineWidth) fsize.width = crtLineWidth;
+	lines.push_back({ lineStart, currentLineChars });
+
+	// If text ends with a trailing newline, remove the artificially pushed empty line
+	if (size > 0 && text[size - 1] == '\n')
+	{
+		if (lineCount > 0) --lineCount;
+		if (!fsize.lineHeights.empty())
+			fsize.lineHeights.pop_back();
+	}
+
+	// ensure last line height recorded
+	if (fsize.lineHeights.empty() || (fsize.lineHeights.size() < lineCount))
+		fsize.lineHeights.push_back(fnt->getMetrics().height);
+
+	// finalize longest line char count with the last line
+	if (longestLineChars < currentLineChars) longestLineChars = currentLineChars;
+
+	// total height = number of lines * metrics.height
+	fsize.height = (f32)lineCount * fnt->getMetrics().height;
+	fsize.maxLength = longestLineChars;
+
+	// fill out output size if requested
+	if (outSize) *outSize = fsize;
+
+	// DRAW pass (if requested) - iterate lines and draw glyphs per-line
+	if (doDraw)
+	{
+		Point pos = position;
+		pos.x = round(pos.x);
+		pos.y = round(pos.y);
+
+		const f32 lineHeight = fnt->getMetrics().height;
+		const f32 startX = pos.x;
+
+		for (size_t li = 0; li < lines.size(); ++li)
+		{
+			auto start = lines[li].first;
+			auto len = lines[li].second;
+
+			// if the last line can be an empty line created by trailing newline, skip drawing glyphs for zero len
+			if (len == 0)
+			{
+				pos.x = startX;
+				//pos.y += lineHeight;
+				continue;
+			}
+
+			GlyphCode lastDrawChr = 0;
+
+			// draw glyphs in the line
+			for (u32 j = 0; j < len; ++j)
+			{
+				u32 idx = start + j;
+				if (idx >= size) break;
+				auto chr = text[idx];
+
+				auto glyph = fnt->getGlyph(chr);
+				auto img = fnt->getGlyphImage(chr);
+
+				if (!glyph)
+				{
+					continue;
+				}
+
+				auto kern = fnt->getKerning(lastDrawChr, chr);
+				pos.x += kern;
+				if (img) drawTextGlyph(img, { pos.x + glyph->bitmapLeft, pos.y - glyph->bitmapTop });
+				pos.x += glyph->advanceX;
+				lastDrawChr = chr;
+			}
+
+			// move to next line baseline
+			pos.x = startX;
+			pos.y += lineHeight;
+		}
+
+		// render underline (single continuous underline across computed width)
+		if (currentTextStyle.underline)
+		{
+			auto image = currentAtlas->whiteImage;
+
+			Rect underlineRect(
+				position.x,
+				position.y - fnt->getMetrics().underlinePosition,
+				fsize.width,
+				fnt->getMetrics().underlineThickness);
+
+			if (!image->rotated)
+			{
+				drawQuad(underlineRect, image->uvRect);
+			}
+			else
+			{
+				drawQuadRot90(
+					{
+						position.x,
+						position.y - fnt->getMetrics().underlinePosition,
+						fsize.width,
+						fnt->getMetrics().underlineThickness
+					},
+					image->uvRect);
+			}
+		}
+	}
+
 	return fsize;
 }
 
-FontTextSize Renderer::cmdDrawTextInBox(
+// keep old name delegating to new combined implementation for compatibility with existing code
+void Renderer::drawTextInternal(
 	const char* text,
-	const Rect& rect,
-	HAlignType horizontal,
-	VAlignType vertical)
+	const Point& position)
 {
-	FontTextSize fsize = currentFont->computeTextSize(text);
-	DrawCommand cmd(DrawCommand::Type::DrawText);
-	Point pos;
-
-	switch (vertical)
-	{
-	case hui::VAlignType::Top:
-		pos.y = rect.y + currentFont->getMetrics().ascender;
-		break;
-	case hui::VAlignType::Bottom:
-		pos.y = rect.bottom() + currentFont->getMetrics().descender;
-		break;
-	case hui::VAlignType::Center:
-		pos.y = rect.y + (rect.height - fsize.maxGlyphHeight) / 2.0f + fsize.maxBearingY;
-		break;
-	default:
-		pos.y = rect.y;
-		break;
-	}
-
-	switch (horizontal)
-	{
-	case hui::HAlignType::Left:
-		pos.x = rect.x;
-		break;
-	case hui::HAlignType::Right:
-		pos.x = rect.right() - fsize.width;
-		break;
-	case hui::HAlignType::Center:
-		pos.x = rect.x + (rect.width - fsize.width) / 2.0f;
-		break;
-	default:
-		pos.x = rect.x;
-		break;
-	}
-
-	cmd.data.drawText.position = pos;
-	cmd.data.drawText.text = addUtf8TextToBuffer(text, strlen(text));
-	
-	if (cmd.data.drawText.text)
-	{
-		addDrawCommand(cmd);
-	}
-	return fsize;
+	computeSizeOrDrawText(text, position, nullptr, true, nullptr, ~0u);
 }
 
 void Renderer::drawAtlasRegion(bool rotated, const Rect& rect, const Rect& uvRect)
@@ -1223,10 +1483,10 @@ void Renderer::drawSpectrumColors(
 		for (size_t y = 0; y < height; y++)
 		{
 			t = (f32)y / height;
-			size_t index = t * spectrumCount;
-			size_t indexNext = index + 1;
-			f32 indexF = t * (f32)spectrumCount;
-			f32 fraction = indexF - (f32)index;
+		 size_t index = t * spectrumCount;
+		 size_t indexNext = index + 1;
+		 f32 indexF = t * (f32)spectrumCount;
+		 f32 fraction = indexF - (f32)index;
 
 			if (indexNext == spectrumCount)
 				indexNext = 0;
@@ -1553,7 +1813,7 @@ void Renderer::drawImageBordered(Image* image, u32 border, const Rect& rect, f32
 void Renderer::drawLine(const Point& a, const Point& b)
 {
 	Point pts[] = { a, b };
-	drawPolyLine(pts, 2, false);
+drawPolyLine(pts, 2, false);
 }
 
 void Renderer::drawPolyLine(const Point* points, u32 pointCount, bool closed)
@@ -1976,90 +2236,6 @@ void Renderer::drawTriangle(
 	vertexBufferData.drawVertexCount = i;
 }
 
-void Renderer::drawTextInternal(
-	const char* text,
-	const Point& position)
-{
-	if (!strcmp(text, ""))
-	{
-		return;
-	}
-
-	Point pos = position;
-
-	pos.x = round(pos.x);
-	pos.y = round(pos.y);
-
-	GlyphCode lastChr = 0;
-	Point underlineStartPos = pos;
-
-	/////////////////////////////
-	// DRAW CHARS (support new lines)
-	/////////////////////////////
-	const Utf32String& utext = *ctx->textCache->getText(text);
-
-	const f32 lineHeight = currentFont->getMetrics().height;
-	const f32 startX = pos.x;
-
-	for (int i = 0; i < utext.size(); i++)
-	{
-		auto chr = utext[i];
-
-		// explicit newline -> move to next line baseline
-		if (chr == '\n')
-		{
-			// reset X to start of line, advance Y by font line height and reset kerning
-			pos.x = startX;
-			pos.y += lineHeight;
-			lastChr = 0;
-			continue;
-		}
-
-		auto glyph = currentFont->getGlyph(chr);
-		auto img = currentFont->getGlyphImage(chr);
-
-		if (!glyph)
-		{
-			continue;
-		}
-
-		auto kern = currentFont->getKerning(lastChr, chr);
-		pos.x += kern;
-		if (img) drawTextGlyph(img, { pos.x + glyph->bitmapLeft, pos.y - glyph->bitmapTop });
-		pos.x += glyph->advanceX;
-		lastChr = chr;
-	}
-
-	// render underline (single continuous underline across computed width)
-	if (currentTextStyle.underline)
-	{
-		auto fsize = currentFont->computeTextSize(utext);
-		auto image = currentAtlas->whiteImage;
-
-		Rect underlineRect(
-			underlineStartPos.x,
-			underlineStartPos.y - currentFont->getMetrics().underlinePosition,
-			fsize.width,
-			currentFont->getMetrics().underlineThickness);
-
-		if (!image->rotated)
-		{
-			drawQuad(underlineRect, image->uvRect);
-		}
-		else
-		{
-			drawQuadRot90(
-				{
-					underlineStartPos.x,
-					underlineStartPos.y - currentFont->getMetrics().underlinePosition,
-					fsize.width,
-					currentFont->getMetrics().underlineThickness
-				},
-				image->uvRect);
-		}
-	}
-}
-
 bool Renderer::clipRectNoRot(Rect& rect, Rect& uvRect)
 {
 	if (rect.outside(currentClipRect))
@@ -2177,4 +2353,73 @@ void Renderer::addDrawCommand(DrawCommand& cmd)
 	}
 }
 
+FontTextSize Renderer::cmdDrawTextAt(
+	const char* text,
+	const Point& position)
+{
+	// compute only the size (no draw) using the renderer's combined routine
+	FontTextSize fsize = computeSizeOrDrawText(text, Point(), nullptr, false, currentFont, ~0u);
+
+	DrawCommand cmd(DrawCommand::Type::DrawText);
+	cmd.data.drawText.position = position;
+	cmd.data.drawText.text = addUtf8TextToBuffer(text, (u32)strlen(text));
+	if (cmd.data.drawText.text)
+	{
+		addDrawCommand(cmd);
+	}
+	return fsize;
+}
+
+FontTextSize Renderer::cmdDrawTextInBox(
+	const char* text,
+	const Rect& rect,
+	HAlignType horizontal,
+	VAlignType vertical)
+{
+	// compute size with wrapping constrained to rect.width
+	FontTextSize fsize = computeSizeOrDrawText(text, Point(), nullptr, false, currentFont, rect.width);
+
+	DrawCommand cmd(DrawCommand::Type::DrawText);
+	Point pos;
+
+	switch (vertical)
+	{
+	case hui::VAlignType::Top:
+		pos.y = rect.y + currentFont->getMetrics().ascender;
+		break;
+	case hui::VAlignType::Bottom:
+		pos.y = rect.bottom() + currentFont->getMetrics().descender;
+		break;
+	case hui::VAlignType::Center:
+		pos.y = rect.y + (rect.height - fsize.maxGlyphHeight) / 2.0f + fsize.maxBearingY;
+		break;
+	default:
+		pos.y = rect.y;
+		break;
+	}
+
+	switch (horizontal)
+	{
+	case hui::HAlignType::Left:
+		pos.x = rect.x;
+		break;
+	case hui::HAlignType::Right:
+		pos.x = rect.right() - fsize.width;
+		break;
+	case hui::HAlignType::Center:
+		pos.x = rect.x + (rect.width - fsize.width) / 2.0f;
+		break;
+	default:
+		pos.x = rect.x;
+		break;
+	}
+
+	cmd.data.drawText.position = pos;
+	cmd.data.drawText.text = addUtf8TextToBuffer(text, (u32)strlen(text));
+	if (cmd.data.drawText.text)
+	{
+		addDrawCommand(cmd);
+	}
+	return fsize;
+}
 }

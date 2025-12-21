@@ -268,15 +268,38 @@ public:
 	LineStyle currentLineStyle;
 	FillStyle currentFillStyle;
 
-protected:
-	void drawAtlasRegion(bool rotatedUv, const Rect& rect, const Rect& atlasUvRect);
+	void drawAtlasRegion(bool rotated, const Rect& rect, const Rect& atlasUvRect);
 	void drawTextGlyph(Image* image, const Point& pos);
 	void drawQuad(Image* image, const Point& p1, const Point& p2, const Point& p3, const Point& p4);
 	void drawQuad(const Rect& rect, const Rect& uvRect);
 	void drawQuadRot90(const Rect& rect, const Rect& uvRect);
+
+	// New combined API: compute size from text (Utf32 or utf8) and optionally draw it.
+	// - If outSize != nullptr the function fills it with computed metrics.
+	// - If doDraw == true the function will render the text (uses renderer state).
+	// - If font == nullptr the renderer's currentFont is used for metrics/drawing.
+	FontTextSize computeSizeOrDrawText(
+		const char* text,
+		const Point& position = Point(),
+		FontTextSize* outSize = nullptr,
+		bool doDraw = false,
+		Font* font = nullptr,
+		u32 maxWidth = ~0);
+
+	FontTextSize computeSizeOrDrawText(
+		const GlyphCode* const text,
+		u32 size,
+		const Point& position = Point(),
+		FontTextSize* outSize = nullptr,
+		bool doDraw = false,
+		Font* font = nullptr,
+		u32 maxWidth = ~0);
+
+	// kept for compatibility - delegates to combined API
 	void drawTextInternal(
 		const char* text,
 		const Point& rect);
+
 	void drawInterpolatedColors(
 		const Rect& rect,
 		const Rect& uvRect,

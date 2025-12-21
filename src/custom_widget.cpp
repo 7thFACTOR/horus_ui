@@ -119,7 +119,9 @@ Point getTextSize(const char* text)
 	if (!ctx->renderer->getFont())
 		return Point();
 
-	auto fntInfo = ctx->renderer->getFont()->computeTextSize(*ctx->textCache->getText(text));
+	FontTextSize fntInfo;
+	// ask renderer to compute size (no draw)
+	ctx->renderer->computeSizeOrDrawText(text, Point(), &fntInfo, false, ctx->renderer->getFont());
 
 	return { fntInfo.width, fntInfo.height };
 }

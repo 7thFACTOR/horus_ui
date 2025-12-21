@@ -72,12 +72,12 @@ bool labelCustomFontMultiline(const char* label, HFont font, HAlignType horizont
 	ctx->extractLabelAndId(label);
 
 	auto textSize = ((Font*)font)->computeTextSize(ctx->widgetLabel.c_str(), (u32)round(width));
-
+	printf("lines: %d\n", textSize.lineHeights.size());
 	addWidget(textSize.height + padding.y * 2.0f * ctx->scale);
 
 	ctx->renderer->cmdSetColor(applyTint(bodyElemState.textColor, TintColorType::Text));
 	ctx->renderer->cmdSetFont((Font*)font);
-	ctx->drawMultilineText(
+	ctx->renderer->cmdDrawTextInBox(
 		ctx->widgetLabel.c_str(),
 		{
 			ctx->widget.rect.x + padding.x * ctx->scale,
