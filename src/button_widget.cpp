@@ -209,7 +209,11 @@ bool button(const char* label)
 	if (ctx->sameLine)
 	{
 		auto textWidth = btnBodyElem.normalState().font->computeTextSize(ctx->widgetLabel.c_str());
-		ctx->widget.width = ((btnBodyElem.normalState().border + padding.x) * 2.0f + textWidth.width) * ctx->scale;
+		ctx->widget.width = ((btnBodyElem.normalState().border + padding.x) * 2.0f) * ctx->scale + textWidth.width;
+	}
+	else
+	{
+		ctx->widget.width = 0; // auto width
 	}
 
 	addWidget((btnBodyElem.normalState().height + padding.y * 2.0f) * ctx->scale);

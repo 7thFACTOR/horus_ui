@@ -46,9 +46,9 @@ void progress(f32 value, f32 maxValue, bool showText, bool showRealValues, const
 
 	Rect fillRc = {
 			ctx->widget.rect.x + animPosX,
-			ctx->widget.rect.y + (ctx->widget.rect.height - (fillElemState.height + padding.y * 2.0f)) / 2.0f * ctx->scale,
+			ctx->widget.rect.y + (ctx->widget.rect.height - (fillElemState.height * ctx->scale + padding.y * 2.0f * ctx->scale)) / 2.0f,
 			percentValueWidth,
-			fillElemState.height + padding.y * 2.0f };
+			fillElemState.height * ctx->scale + padding.y * 2.0f * ctx->scale };
 
 	if (isIndeterminate)
 	{

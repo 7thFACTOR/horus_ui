@@ -43,7 +43,7 @@
 					"buttonBody":
 					{
 						"width": 0,
-						"height": 20,
+						"height": 24,
 						"normal": { "image": "default/button_normal", "border": 3, "color": "115 115 115 255", "textColor": "white", "font": "normal" },
 						"hovered": { "image": "default/button_normal", "border": 3, "color": "155 200 200 255", "textColor": "white", "font": "normal" },
 						"pressed": { "image": "default/button_pressed", "border": 3, "color": "white", "textColor": "white", "font": "normal" },
@@ -134,7 +134,7 @@
 		{
 			"labelBody":
 			{
-				"height": 20,
+				"height": 0,
 				"normal": { "image": "", "border": 0, "color": "white", "textColor": "white", "font": "normal" }
 			}
 		},	

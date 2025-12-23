@@ -948,7 +948,8 @@ FontTextSize Renderer::computeSizeOrDrawText(
 	u32 lastWordIndex = 0;
 	u32 lineStart = 0;
 
-	std::vector<std::pair<u32, u32>> lines; // start, len
+	struct LineInfo { u32 start; u32 len; f32 width; };
+	std::vector<LineInfo> lines; // start, len, width
 
 	for (u32 i = 0; i < size; ++i)
 	{
@@ -958,13 +959,14 @@ FontTextSize Renderer::computeSizeOrDrawText(
 		if (chr == '\n')
 		{
 			// finalize this line
-			lines.push_back({ lineStart, currentLineChars });
+			f32 segmentWidth = crtLineWidth;
+			lines.push_back({ lineStart, currentLineChars, segmentWidth });
 
-			if (fsize.width < crtLineWidth)
-				fsize.width = crtLineWidth;
-			
+			if (fsize.width < segmentWidth)
+				fsize.width = segmentWidth;
+
 			fsize.lineHeights.push_back(fnt->getMetrics().height);
-			
+
 			if (longestLineChars < currentLineChars)
 				longestLineChars = currentLineChars;
 
@@ -996,8 +998,8 @@ FontTextSize Renderer::computeSizeOrDrawText(
 		f32 projectedLineWidth = crtLineWidth + glyphAdvance;
 		f32 projectedWordWidth = crtWordWidth + glyphAdvance;
 
-		// wrapping when maxWidth specified
-		if (projectedLineWidth >= rect.width)
+		// wrapping when maxWidth specified (rect.width used as constraint)
+		if (projectedLineWidth > rect.width)
 		{
 			// If we are at start of line we must break inside word (force at least one glyph)
 			if (currentLineChars == 0 || projectedWordWidth >= rect.width)
@@ -1018,7 +1020,8 @@ FontTextSize Renderer::computeSizeOrDrawText(
 
 					if (wordSize >= (f32)rect.width)
 					{
-						breakPos = k + 1; // break AFTER k so that we place glyphs up to k in this line
+						// break AFTER k so that we place glyphs up to k in this line
+						breakPos = k + 1;
 						break;
 					}
 
@@ -1044,7 +1047,7 @@ FontTextSize Renderer::computeSizeOrDrawText(
 					segLast = text[k];
 				}
 
-				lines.push_back({ lineStart, lineLen });
+				lines.push_back({ lineStart, lineLen, segmentWidth });
 
 				if (fsize.width < segmentWidth) fsize.width = segmentWidth;
 				fsize.lineHeights.push_back(fnt->getMetrics().height);
@@ -1059,9 +1062,15 @@ FontTextSize Renderer::computeSizeOrDrawText(
 				lineStart = breakPos;
 				lastWordIndex = breakPos;
 
-				// set iterator so loop will process breakPos next
-				if (breakPos > 0) i = breakPos - 1;
-				else i = breakPos;
+				// advance lineStart to first non-space to avoid leading spaces
+				while (lineStart < size && text[lineStart] == ' ')
+					++lineStart;
+
+				lastWordIndex = lineStart;
+
+				// set iterator so loop will process lineStart next
+				if (lineStart > 0) i = lineStart - 1;
+				else i = lineStart;
 
 				continue;
 			}
@@ -1069,28 +1078,50 @@ FontTextSize Renderer::computeSizeOrDrawText(
 			{
 				// move whole word to next line (only valid when there's already content on current line)
 				// avoid pushing zero-length lines
-				if (currentLineChars > 0)
-				{
-					lines.push_back({ lineStart, currentLineChars });
+				// Previously we pushed `currentLineChars` which could include a partial word.
+				// Instead push only up to the last word boundary (lastWordIndex).
+				u32 pushLen = 0;
+				if (lastWordIndex > lineStart)
+					pushLen = lastWordIndex - lineStart;
 
-					if (fsize.width < crtLineWidth) fsize.width = crtLineWidth;
+				if (pushLen > 0)
+				{
+					// compute actual width for the pushed segment (lineStart .. lineStart+pushLen-1)
+					f32 segmentWidth = 0.0f;
+					GlyphCode segLast = 0;
+					for (u32 k = lineStart; k < lineStart + pushLen && k < size; ++k)
+					{
+						auto g2 = fnt->getGlyph(text[k]);
+						if (!g2) continue;
+						auto kern2 = fnt->getKerning(segLast, text[k]);
+						segmentWidth += g2->advanceX + kern2;
+						segLast = text[k];
+					}
+
+					lines.push_back({ lineStart, pushLen, segmentWidth });
+
+					if (fsize.width < segmentWidth) fsize.width = segmentWidth;
 					fsize.lineHeights.push_back(fnt->getMetrics().height);
-					if (longestLineChars < currentLineChars) longestLineChars = currentLineChars;
+					if (longestLineChars < pushLen) longestLineChars = pushLen;
 					++lineCount;
 				}
 
-				// start new line at lastWordIndex
+				// start new line at lastWordIndex (skip leading spaces)
 				crtLineWidth = 0.0f;
 				crtWordWidth = 0.0f;
 				currentLineChars = 0;
 				lastChr = 0;
 
 				u32 newStart = lastWordIndex;
-				if (lastWordIndex > 0) i = lastWordIndex - 1;
-				else i = lastWordIndex;
+				while (newStart < size && text[newStart] == ' ')
+					++newStart;
 
 				lineStart = newStart;
 				lastWordIndex = newStart;
+
+				if (lineStart > 0) i = lineStart - 1;
+				else i = lineStart;
+
 				continue;
 			}
 		}
@@ -1112,7 +1143,7 @@ FontTextSize Renderer::computeSizeOrDrawText(
 
 	// finalize last line
 	if (fsize.width < crtLineWidth) fsize.width = crtLineWidth;
-	lines.push_back({ lineStart, currentLineChars });
+	lines.push_back({ lineStart, currentLineChars, crtLineWidth });
 
 	// If text ends with a trailing newline, remove the artificially pushed empty line
 	if (size > 0 && text[size - 1] == '\n')
@@ -1147,42 +1178,41 @@ FontTextSize Renderer::computeSizeOrDrawText(
 			pos.y = rect.bottom() + fnt->getMetrics().descender;
 			break;
 		case hui::VAlignType::Center:
-			// Center the whole block of lines inside rect.
-			// Compute the top of the text block as rect center minus half the block height,
-			// then position the first-line baseline by adding the max bearing (distance from baseline to glyph top).
-			pos.y = rect.y + (rect.height * 0.5f) - (fsize.height * 0.5f) + fsize.maxBearingY;
+			pos.y = rect.y + (rect.height - (fnt->getMetrics().ascender - fnt->getMetrics().descender) * (f32)lineCount) * .5f + fnt->getMetrics().ascender;
 			break;
 		default:
 			pos.y = rect.y;
 			break;
 		}
 
-		switch (horizAlign)
-		{
-		case hui::HAlignType::Left:
-			pos.x = rect.x;
-			break;
-		case hui::HAlignType::Right:
-			pos.x = rect.right() - fsize.width;
-			break;
-		case hui::HAlignType::Center:
-			pos.x = rect.x + (rect.width - fsize.width) / 2.0f;
-			break;
-		default:
-			pos.x = rect.x;
-			break;
-		}
-
-		pos.x = round(pos.x);
 		pos.y = round(pos.y);
 
 		const f32 lineHeight = fnt->getMetrics().height;
-		const f32 startX = pos.x;
 
 		for (size_t li = 0; li < lines.size(); ++li)
 		{
-			auto start = lines[li].first;
-			auto len = lines[li].second;
+			auto start = lines[li].start;
+			auto len = lines[li].len;
+			auto lineWidth = lines[li].width;
+
+			switch (horizAlign)
+			{
+			case hui::HAlignType::Left:
+				pos.x = rect.x;
+				break;
+			case hui::HAlignType::Right:
+				pos.x = rect.right() - lineWidth;
+				break;
+			case hui::HAlignType::Center:
+				pos.x = rect.x + (rect.width - lineWidth) / 2.0f;
+				break;
+			default:
+				pos.x = rect.x;
+				break;
+			}
+
+			pos.x = round(pos.x);
+			const f32 startX = pos.x;
 
 			// if the last line can be an empty line created by trailing newline, skip drawing glyphs for zero len
 			if (len == 0)
@@ -1217,7 +1247,6 @@ FontTextSize Renderer::computeSizeOrDrawText(
 			}
 
 			// move to next line baseline
-			pos.x = startX;
 			pos.y += lineHeight;
 		}
 
@@ -1226,9 +1255,10 @@ FontTextSize Renderer::computeSizeOrDrawText(
 		{
 			auto image = currentAtlas->whiteImage;
 
+			// underline spans the whole measured width (max line width)
 			Rect underlineRect(
-				pos.x,
-				pos.y - fnt->getMetrics().underlinePosition,
+				rect.x,
+				rect.y - fnt->getMetrics().underlinePosition,
 				fsize.width,
 				fnt->getMetrics().underlineThickness);
 
@@ -1240,8 +1270,8 @@ FontTextSize Renderer::computeSizeOrDrawText(
 			{
 				drawQuadRot90(
 					{
-						pos.x,
-						pos.y - fnt->getMetrics().underlinePosition,
+						rect.x,
+						rect.y - fnt->getMetrics().underlinePosition,
 						fsize.width,
 						fnt->getMetrics().underlineThickness
 					},
@@ -2045,7 +2075,7 @@ void Renderer::drawPolyLine(const Point* points, u32 pointCount, bool closed)
 			seg2 = Point(pts[p + 2].x - pts[p + 1].x, pts[p + 2].y - pts[p + 1].y);
 			seg1.normalize();
 			seg2.normalize();
-			d1 = seg1 + seg2;
+		 d1 = seg1 + seg2;
 			d1.normalize();
 			sinAngle = (d1.x * seg2.y - d1.y * seg2.x);
 			auto a = seg1.dot(seg2);
@@ -2089,7 +2119,7 @@ void Renderer::drawPolyLine(const Point* points, u32 pointCount, bool closed)
 				seg2 = Point(pts[0].x - pts[p + 1].x, pts[0].y - pts[p + 1].y);
 				seg1.normalize();
 				seg2.normalize();
-				d1 = seg1 + seg2;
+			 d1 = seg1 + seg2;
 				d1.normalize();
 				sinAngle = (d1.x * seg2.y - d1.y * seg2.x);
 				extrudeScale2 = 1.0f / sinAngle;

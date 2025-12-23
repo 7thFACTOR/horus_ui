@@ -14,10 +14,13 @@ bool labelInternal(const char* label, HAlignType horizontalAlign, Font* font)
 	auto& bodyElemState = bodyElem.normalState();
 	auto& padding = getWidgetPadding();
 
-	height = bodyElemState.height + padding.y * 2.0f;
-
 	ctx->extractLabelAndId(label);
-	addWidget(height * ctx->scale);
+
+	auto fsize = font->computeTextSize(ctx->widgetLabel.c_str(), (u32)round(width - padding.x * 2.0f * ctx->scale));
+	height = (bodyElemState.height * ctx->scale > fsize.height ? bodyElemState.height * ctx->scale : fsize.height) + padding.y * 2.0f * ctx->scale;
+
+	//TODO: for sameline ctx->widget.width = fsize.width;
+	addWidget(height);
 	buttonBehavior();
 
 	if (ctx->widget.hoveredId == ctx->id)
@@ -83,10 +86,10 @@ bool labelCustomFontMultiline(const char* label, HFont font, HAlignType horizont
 			ctx->widget.rect.x + padding.x * ctx->scale,
 			ctx->widget.rect.y + padding.y * ctx->scale,
 			width,
-			0
+			0,
 		},
 		horizontalAlign,
-		VAlignType::Center);
+		VAlignType::Top);
 
 	buttonBehavior();
 

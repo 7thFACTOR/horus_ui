@@ -11,8 +11,8 @@ struct DockNode
 	{
 		None,
 		Tabs, //[A][B]
-		Vertical, // = vertical arrangement //TODO: maybe would be viceversa, vertical is actually |||||
-		Horizontal, // || horizontal arrangement
+		Vertical, // = vertical splits
+		Horizontal, // || horizontal splits
 	};
 
 	u64 id = 0;
@@ -52,7 +52,6 @@ struct DockNode
 	void moveWindowTabAt(const Point& mousePos, Window* window);
 	void debug(i32 level = 0);
 };
-
 
 HNativeWindow createNativeWindow(const std::string& title, NativeWindowFlags flags, NativeWindowState state, const Rect& rect);
 void destroyNativeWindow(HNativeWindow wnd);

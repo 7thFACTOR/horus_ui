@@ -175,14 +175,7 @@ struct Context
 	}
 
 	void extractLabelAndId(const char* text);
-
 	void setSkipRenderAndInput(bool skip);
-
-	Rect drawMultilineText(
-		const char* text,
-		const Rect& rect,
-		HAlignType horizontal = HAlignType::Left,
-		VAlignType vertical = VAlignType::Top);
 };
 
 /// the current context, used internally

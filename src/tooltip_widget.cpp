@@ -25,9 +25,9 @@ bool tooltip(const char* text)
 
 		FontTextSize fsize = bodyElemState.font->computeTextSize(text);
 		Rect rect = {
-			ctx->tooltip.position.x + ctx->tooltip.offsetFromCursor + bodyElemState.border,
-			ctx->tooltip.position.y + ctx->tooltip.offsetFromCursor + bodyElemState.border,
-			fsize.width + bodyElemState.border * 2.0f,	0 };
+			ctx->tooltip.position.x + ctx->tooltip.offsetFromCursor + bodyElemState.border * ctx->scale,
+			ctx->tooltip.position.y + ctx->tooltip.offsetFromCursor + bodyElemState.border * ctx->scale,
+			fsize.width, fsize.height };
 
 		if (rect.right() > ctx->renderer->getWindowRect().right())
 		{
@@ -54,15 +54,19 @@ bool tooltip(const char* text)
 		ctx->renderer->pushClipRect(ctx->renderer->getWindowRect(), false);
 		ctx->renderer->cmdSetColor(bodyElemState.textColor);
 		ctx->renderer->cmdSetFont(bodyElemState.font);
-		Rect rc = ctx->drawMultilineText(
+
+		Rect rc = rect;
+	
+		ctx->renderer->cmdDrawTextInBox(
 			text, rect,
-			HAlignType::Left, VAlignType::Center);
+			HAlignType::Center, VAlignType::Center);
 		// move back a layer
 		ctx->renderer->setZOrder(INT_MAX - 1);
 		ctx->renderer->cmdSetColor(bodyElemState.color);
-		rc.x -= bodyElemState.border;
-		rc.y -= bodyElemState.border;
-		rc.height += bodyElemState.border * 2;
+		rc.x -= bodyElemState.border * ctx->scale;
+		rc.y -= bodyElemState.border * ctx->scale;
+		rc.width += bodyElemState.border * 2 * ctx->scale;
+		rc.height += bodyElemState.border * 2 * ctx->scale;
 		ctx->renderer->cmdDrawImageBordered(
 			bodyElemState.image, bodyElemState.border, rc, ctx->scale);
 		ctx->renderer->popClipRect();
