@@ -528,7 +528,7 @@ void Renderer::executeDrawCommands(HNativeWindow wnd)
 			break;
 		}
 		case DrawCommand::Type::DrawText:
-			drawTextInternal(cmd.data.drawText.text, cmd.data.drawText.position);
+			computeSizeOrDrawText(cmd.data.drawText.text, cmd.data.drawText.rect, cmd.data.drawText.horizAlign, cmd.data.drawText.vertAlign, true, currentFont);
 			break;
 		case DrawCommand::Type::SetColor:
 			currentColor = cmd.data.setColor.getRgba();
@@ -905,38 +905,36 @@ void Renderer::cmdDrawSolidTriangle(const Point& p1, const Point& p2, const Poin
 
 FontTextSize Renderer::computeSizeOrDrawText(
 	const char* text,
-	const Point& position,
-	FontTextSize* outSize,
+	const Rect& rect,
+	HAlignType horizAlign,
+	VAlignType vertAlign,
 	bool doDraw,
-	Font* font,
-	u32 maxWidth)
+	Font* font)
 {
 	if (!text || !strcmp(text, ""))
 	{
-		if (outSize) *outSize = FontTextSize();
 		return FontTextSize();
 	}
 
 	// reuse text cache to get utf32 string
 	const Utf32String& utext = *ctx->textCache->getText(text);
-	return computeSizeOrDrawText(utext.data(), (u32)utext.size(), position, outSize, doDraw, font, maxWidth);
+	return computeSizeOrDrawText(utext.data(), (u32)utext.size(), rect, horizAlign, vertAlign, doDraw, font);
 }
 
 FontTextSize Renderer::computeSizeOrDrawText(
 	const GlyphCode* const text,
 	u32 size,
-	const Point& position,
-	FontTextSize* outSize,
+	const Rect& rect,
+	HAlignType horizAlign,
+	VAlignType vertAlign,
 	bool doDraw,
-	Font* font,
-	u32 maxWidth)
+	Font* font)
 {
 	FontTextSize fsize;
 	Font* fnt = font ? font : currentFont;
 
 	if (!fnt || size == 0)
 	{
-		if (outSize) *outSize = fsize;
 		return fsize;
 	}
 
@@ -999,10 +997,10 @@ FontTextSize Renderer::computeSizeOrDrawText(
 		f32 projectedWordWidth = crtWordWidth + glyphAdvance;
 
 		// wrapping when maxWidth specified
-		if (maxWidth != ~0u && projectedLineWidth >= (f32)maxWidth)
+		if (projectedLineWidth >= rect.width)
 		{
 			// If we are at start of line we must break inside word (force at least one glyph)
-			if (currentLineChars == 0 || projectedWordWidth >= (f32)maxWidth)
+			if (currentLineChars == 0 || projectedWordWidth >= rect.width)
 			{
 				// find break position inside the word (from lastWordIndex to i)
 				f32 wordSize = 0.0f;
@@ -1018,7 +1016,7 @@ FontTextSize Renderer::computeSizeOrDrawText(
 					f32 cw = g2->advanceX + kern2;
 					wordSize += cw;
 
-					if (wordSize >= (f32)maxWidth)
+					if (wordSize >= (f32)rect.width)
 					{
 						breakPos = k + 1; // break AFTER k so that we place glyphs up to k in this line
 						break;
@@ -1135,13 +1133,46 @@ FontTextSize Renderer::computeSizeOrDrawText(
 	fsize.height = (f32)lineCount * fnt->getMetrics().height;
 	fsize.maxLength = longestLineChars;
 
-	// fill out output size if requested
-	if (outSize) *outSize = fsize;
-
 	// DRAW pass (if requested) - iterate lines and draw glyphs per-line
 	if (doDraw)
 	{
-		Point pos = position;
+		Point pos;
+
+		switch (vertAlign)
+		{
+		case hui::VAlignType::Top:
+			pos.y = rect.y + fnt->getMetrics().ascender;
+			break;
+		case hui::VAlignType::Bottom:
+			pos.y = rect.bottom() + fnt->getMetrics().descender;
+			break;
+		case hui::VAlignType::Center:
+			// Center the whole block of lines inside rect.
+			// Compute the top of the text block as rect center minus half the block height,
+			// then position the first-line baseline by adding the max bearing (distance from baseline to glyph top).
+			pos.y = rect.y + (rect.height * 0.5f) - (fsize.height * 0.5f) + fsize.maxBearingY;
+			break;
+		default:
+			pos.y = rect.y;
+			break;
+		}
+
+		switch (horizAlign)
+		{
+		case hui::HAlignType::Left:
+			pos.x = rect.x;
+			break;
+		case hui::HAlignType::Right:
+			pos.x = rect.right() - fsize.width;
+			break;
+		case hui::HAlignType::Center:
+			pos.x = rect.x + (rect.width - fsize.width) / 2.0f;
+			break;
+		default:
+			pos.x = rect.x;
+			break;
+		}
+
 		pos.x = round(pos.x);
 		pos.y = round(pos.y);
 
@@ -1157,7 +1188,7 @@ FontTextSize Renderer::computeSizeOrDrawText(
 			if (len == 0)
 			{
 				pos.x = startX;
-				//pos.y += lineHeight;
+				pos.y += lineHeight;
 				continue;
 			}
 
@@ -1196,8 +1227,8 @@ FontTextSize Renderer::computeSizeOrDrawText(
 			auto image = currentAtlas->whiteImage;
 
 			Rect underlineRect(
-				position.x,
-				position.y - fnt->getMetrics().underlinePosition,
+				pos.x,
+				pos.y - fnt->getMetrics().underlinePosition,
 				fsize.width,
 				fnt->getMetrics().underlineThickness);
 
@@ -1209,8 +1240,8 @@ FontTextSize Renderer::computeSizeOrDrawText(
 			{
 				drawQuadRot90(
 					{
-						position.x,
-						position.y - fnt->getMetrics().underlinePosition,
+						pos.x,
+						pos.y - fnt->getMetrics().underlinePosition,
 						fsize.width,
 						fnt->getMetrics().underlineThickness
 					},
@@ -1220,14 +1251,6 @@ FontTextSize Renderer::computeSizeOrDrawText(
 	}
 
 	return fsize;
-}
-
-// keep old name delegating to new combined implementation for compatibility with existing code
-void Renderer::drawTextInternal(
-	const char* text,
-	const Point& position)
-{
-	computeSizeOrDrawText(text, position, nullptr, true, nullptr, ~0u);
 }
 
 void Renderer::drawAtlasRegion(bool rotated, const Rect& rect, const Rect& uvRect)
@@ -2354,72 +2377,48 @@ void Renderer::addDrawCommand(DrawCommand& cmd)
 }
 
 FontTextSize Renderer::cmdDrawTextAt(
-	const char* text,
+	const char* text, 
 	const Point& position)
 {
 	// compute only the size (no draw) using the renderer's combined routine
-	FontTextSize fsize = computeSizeOrDrawText(text, Point(), nullptr, false, currentFont, ~0u);
+	FontTextSize fsize = computeSizeOrDrawText(text, Rect(position.x, position.y, 0, 0), HAlignType::Left, VAlignType::Top, false, currentFont);
 
 	DrawCommand cmd(DrawCommand::Type::DrawText);
-	cmd.data.drawText.position = position;
+	cmd.data.drawText.rect = Rect(position.x, position.y, 0, 0);
+	cmd.data.drawText.horizAlign = HAlignType::Left;
+	cmd.data.drawText.vertAlign = VAlignType::Top;
 	cmd.data.drawText.text = addUtf8TextToBuffer(text, (u32)strlen(text));
+	
 	if (cmd.data.drawText.text)
 	{
 		addDrawCommand(cmd);
 	}
+	
 	return fsize;
 }
 
 FontTextSize Renderer::cmdDrawTextInBox(
 	const char* text,
 	const Rect& rect,
-	HAlignType horizontal,
-	VAlignType vertical)
+	HAlignType horizAlign,
+	VAlignType vertAlign)
 {
 	// compute size with wrapping constrained to rect.width
-	FontTextSize fsize = computeSizeOrDrawText(text, Point(), nullptr, false, currentFont, rect.width);
+	FontTextSize fsize = computeSizeOrDrawText(text, rect, horizAlign, vertAlign, false, currentFont);
 
 	DrawCommand cmd(DrawCommand::Type::DrawText);
-	Point pos;
 
-	switch (vertical)
-	{
-	case hui::VAlignType::Top:
-		pos.y = rect.y + currentFont->getMetrics().ascender;
-		break;
-	case hui::VAlignType::Bottom:
-		pos.y = rect.bottom() + currentFont->getMetrics().descender;
-		break;
-	case hui::VAlignType::Center:
-		pos.y = rect.y + (rect.height - fsize.maxGlyphHeight) / 2.0f + fsize.maxBearingY;
-		break;
-	default:
-		pos.y = rect.y;
-		break;
-	}
-
-	switch (horizontal)
-	{
-	case hui::HAlignType::Left:
-		pos.x = rect.x;
-		break;
-	case hui::HAlignType::Right:
-		pos.x = rect.right() - fsize.width;
-		break;
-	case hui::HAlignType::Center:
-		pos.x = rect.x + (rect.width - fsize.width) / 2.0f;
-		break;
-	default:
-		pos.x = rect.x;
-		break;
-	}
-
-	cmd.data.drawText.position = pos;
+	cmd.data.drawText.rect = rect;
+	cmd.data.drawText.horizAlign = horizAlign;
+	cmd.data.drawText.vertAlign = vertAlign;
 	cmd.data.drawText.text = addUtf8TextToBuffer(text, (u32)strlen(text));
+	
 	if (cmd.data.drawText.text)
 	{
 		addDrawCommand(cmd);
 	}
+	
 	return fsize;
 }
+
 }

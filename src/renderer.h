@@ -95,7 +95,9 @@ struct DrawCommand
 
 	struct CmdDrawText
 	{
-		Point position;
+		Rect rect;
+		HAlignType horizAlign;
+		VAlignType vertAlign;
 		char* text;
 	};
 
@@ -280,25 +282,20 @@ public:
 	// - If font == nullptr the renderer's currentFont is used for metrics/drawing.
 	FontTextSize computeSizeOrDrawText(
 		const char* text,
-		const Point& position = Point(),
-		FontTextSize* outSize = nullptr,
+		const Rect& rect,
+		HAlignType horizAlign,
+		VAlignType vertAlign,
 		bool doDraw = false,
-		Font* font = nullptr,
-		u32 maxWidth = ~0);
+		Font* font = nullptr);
 
 	FontTextSize computeSizeOrDrawText(
 		const GlyphCode* const text,
 		u32 size,
-		const Point& position = Point(),
-		FontTextSize* outSize = nullptr,
+		const Rect& rect,
+		HAlignType horizAlign,
+		VAlignType vertAlign,
 		bool doDraw = false,
-		Font* font = nullptr,
-		u32 maxWidth = ~0);
-
-	// kept for compatibility - delegates to combined API
-	void drawTextInternal(
-		const char* text,
-		const Point& rect);
+		Font* font = nullptr);
 
 	void drawInterpolatedColors(
 		const Rect& rect,

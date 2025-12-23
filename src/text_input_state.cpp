@@ -496,12 +496,11 @@ i32 TextInputState::getCharIndexAtX(f32 xPos)
 
 			if (!password)
 			{
-				// use renderer combined function (glyph-array overload)
-				rcLastChar = ctx->renderer->computeSizeOrDrawText(lastChar.data(), 1, Point(), nullptr, false, font);
+				rcLastChar = font->computeTextSize(lastChar.data(), 1);
 			}
 			else
 			{
-				rcLastChar = ctx->renderer->computeSizeOrDrawText(passwordCharUnicode.data(), (u32)passwordCharUnicode.size());
+				rcLastChar = font->computeTextSize(passwordCharUnicode.data(), (u32)passwordCharUnicode.size());
 			}
 		}
 		else
@@ -511,11 +510,11 @@ i32 TextInputState::getCharIndexAtX(f32 xPos)
 
 		if (!password)
 		{
-			rcCurrentRange = ctx->renderer->computeSizeOrDrawText(subStr.data(), (u32)subStr.size(), Point(), nullptr, false, font);
+			rcCurrentRange = font->computeTextSize(subStr.data(), (u32)subStr.size());
 		}
 		else
 		{
-			rcCurrentRange = ctx->renderer->computeSizeOrDrawText(passwordCharUnicode.data(), passwordCharUnicode.size());
+			rcCurrentRange = font->computeTextSize(passwordCharUnicode.data(), passwordCharUnicode.size());
 			rcCurrentRange.width *= subStr.size();
 		}
 
@@ -556,11 +555,11 @@ void TextInputState::computeScrollAmount()
 
 	if (!password)
 	{
-		textSizeToCaret = ctx->renderer->computeSizeOrDrawText(tmpStr.data(), (u32)tmpStr.size(), Point(), nullptr, false, (Font*)themeElement->normalState().font);
+		textSizeToCaret = themeElement->normalState().font->computeTextSize(tmpStr.data(), (u32)tmpStr.size());
 	}
 	else
 	{
-		textSizeToCaret = ctx->renderer->computeSizeOrDrawText(passwordCharUnicode.data(), passwordCharUnicode.size());
+		textSizeToCaret = themeElement->normalState().font->computeTextSize(passwordCharUnicode.data(), passwordCharUnicode.size());
 		textSizeToCaret.width *= tmpStr.size();
 	}
 
