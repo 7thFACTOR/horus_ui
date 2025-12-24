@@ -95,6 +95,7 @@ WidgetElementId getWidgetElementFromName(std::string name)
 	if (name == "textInputCaret") return WidgetElementId::TextInputCaret;
 	if (name == "textInputSelection") return WidgetElementId::TextInputSelection;
 	if (name == "textInputDefaultText") return WidgetElementId::TextInputDefaultText;
+	if (name == "textInputFilterClearIcon") return WidgetElementId::TextInputFilterClearIcon;
 	if (name == "sliderBody") return WidgetElementId::SliderBody;
 	if (name == "sliderBodyFilled") return WidgetElementId::SliderBodyFilled;
 	if (name == "sliderKnob") return WidgetElementId::SliderKnob;

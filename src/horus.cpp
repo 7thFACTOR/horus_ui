@@ -999,6 +999,7 @@ void setWidgetStyle(WidgetType widgetType, const char* styleName)
 		ctx->theme->elements[(u32)WidgetElementId::TextInputCaret].setStyle(styleName);
 		ctx->theme->elements[(u32)WidgetElementId::TextInputSelection].setStyle(styleName);
 		ctx->theme->elements[(u32)WidgetElementId::TextInputDefaultText].setStyle(styleName);
+		ctx->theme->elements[(u32)WidgetElementId::TextInputFilterClearIcon].setStyle(styleName);
 		break;
 	case WidgetType::Slider:
 		ctx->theme->elements[(u32)WidgetElementId::SliderBody].setStyle(styleName);

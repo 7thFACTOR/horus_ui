@@ -18,8 +18,8 @@ bool vecEditorInternal(f64& x, f64& y, f64& z, f64 scrollStep, bool useZ)
 	bool changedEndedZ = false;
 
 	auto editValue = [](
-		char* axisName,
-		char* axisImageName,
+		const char* axisName,
+		const char* axisImageName,
 		char* strAxis,
 		f64& value,
 		const Color& normalColor,

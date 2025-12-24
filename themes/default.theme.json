@@ -188,6 +188,10 @@
 			"textInputDefaultText":
 			{
 				"normal": { "image": "", "border": 0, "color": "gray", "textColor": "white", "font": "normal-unicode" }
+			},
+			"textInputFilterClearIcon":
+			{
+				"normal": { "image": "default/clear_icon", "border": 0, "color": "white", "textColor": "white", "font": "normal-unicode" }
 			}
 		},
 		"slider":

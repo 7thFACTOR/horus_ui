@@ -284,6 +284,7 @@ enum class WidgetElementId
 	TextInputCaret,
 	TextInputSelection,
 	TextInputDefaultText,
+	TextInputFilterClearIcon,
 	SliderBody,
 	SliderBodyFilled,
 	SliderKnob,

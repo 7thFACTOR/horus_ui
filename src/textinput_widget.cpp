@@ -22,6 +22,7 @@ bool textInput(
 	auto& bodyTextCaretElemState = ctx->theme->getElement(WidgetElementId::TextInputCaret).normalState();
 	auto& bodyTextSelectionElemState = ctx->theme->getElement(WidgetElementId::TextInputSelection).normalState();
 	auto& bodyTextDefaultElemState = ctx->theme->getElement(WidgetElementId::TextInputDefaultText).normalState();
+	auto& bodyTextFilterClearIconElem = ctx->theme->getElement(WidgetElementId::TextInputFilterClearIcon);
 	auto& padding = getWidgetPadding();
 
 	// use ptr as id
@@ -293,6 +294,13 @@ bool textInput(
 		textRect,
 		HAlignType::Left,
 		VAlignType::Bottom);
+
+	if (!isEmptyText && defaultText)
+	ctx->renderer->cmdDrawImage(bodyTextFilterClearIconElem.normalState().image,
+		Point(
+			clipRect.right() - (bodyTextFilterClearIconElem.normalState().border + padding.x) * ctx->scale - bodyTextFilterClearIconElem.normalState().image->width * ctx->scale,
+			clipRect.y + (clipRect.height - bodyTextFilterClearIconElem.normalState().image->height * ctx->scale) / 2.0f),
+		ctx->scale);
 
 	ctx->renderer->popClipRect();
 
