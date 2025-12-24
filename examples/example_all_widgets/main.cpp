@@ -275,7 +275,7 @@ int main(int argc, char** args)
 				static char txt[2000] = "hui";
 				
 				hui::label("Dock Target");
-				hui::textInput(txt, 2000, hui::TextInputValueMode::Any, "Write something here");
+				hui::textInput(txt, 2000, hui::TextInputValueMode::Any);
 			
 				hui::space();
 				hui::line();
@@ -315,7 +315,7 @@ int main(int argc, char** args)
 
 				hui::label("Dock Target");
 				
-				hui::textInput(txt, 2000, hui::TextInputValueMode::Any, "Write something here");
+				hui::textInput(txt, 2000, hui::TextInputValueMode::Any);
 
 				hui::space();
 				hui::line();

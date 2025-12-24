@@ -31,8 +31,8 @@ bool textInput(
 		(bodyElem->normalState().height + padding.y * 2.0f) * ctx->scale, 
 		bodyElem->normalState().font->getMetrics().height));
 
-	if (!ctx->focusChanged)
-		buttonBehavior();
+	// always run button behavior so hover state is updated even when focusChanged is set
+	buttonBehavior();
 
 	if (ctx->focusChanged
 		&& ctx->id != ctx->widget.focusedId)
@@ -159,7 +159,33 @@ bool textInput(
 		forceRepaint();
 	}
 
-	if (ctx->widget.hovered)
+	// Show clear icon only when defaultText is provided and the current text is not empty.
+	bool showClearIcon = defaultText && strcmp(text, "") && strcmp(defaultText, "");
+
+	// compute clear-filter hit rect here as well so the clear icon can be hovered
+	// even when the field is not focused (processEvent is only called for active editor).
+	if (showClearIcon)
+	{
+		Rect clearFilterRc = ctx->widget.rect;
+		auto& clearElemState = bodyTextFilterClearIconElem.normalState();
+		clearFilterRc.x = ctx->widget.rect.right() - (clearElemState.border + padding.x) * ctx->scale - clearElemState.image->width * ctx->scale;
+		clearFilterRc.width = clearElemState.image->width * ctx->scale;
+		clearFilterRc.height = clearElemState.image->height * ctx->scale;
+
+		// update hover flag based on global mouse position
+		ctx->textInput.clearFilterHovered = clearFilterRc.contains(ctx->mousePosition) && ctx->hoveringThisWindow;
+	}
+	else
+	{
+		ctx->textInput.clearFilterHovered = false;
+	}
+
+	// If hovering the clear button prefer Arrow, otherwise show I-beam when hovering the text area.
+	if (ctx->textInput.clearFilterHovered)
+	{
+		setMouseCursor(MouseCursorType::Arrow);
+	}
+	else if (ctx->widget.hovered)
 	{
 		setMouseCursor(MouseCursorType::IBeam);
 	}
@@ -295,12 +321,24 @@ bool textInput(
 		HAlignType::Left,
 		VAlignType::Bottom);
 
-	if (!isEmptyText && defaultText)
-	ctx->renderer->cmdDrawImage(bodyTextFilterClearIconElem.normalState().image,
-		Point(
-			clipRect.right() - (bodyTextFilterClearIconElem.normalState().border + padding.x) * ctx->scale - bodyTextFilterClearIconElem.normalState().image->width * ctx->scale,
-			clipRect.y + (clipRect.height - bodyTextFilterClearIconElem.normalState().image->height * ctx->scale) / 2.0f),
-		ctx->scale);
+	// draw clear icon only when visible
+	if (showClearIcon)
+	{
+		// Use hoveredState when clearFilterHovered is true, otherwise normalState.
+		ThemeElement::State* state = nullptr;
+
+		if (ctx->textInput.clearFilterHovered)
+			state = &bodyTextFilterClearIconElem.hoveredState();
+		else
+			state = &bodyTextFilterClearIconElem.normalState();
+
+		ctx->renderer->cmdSetColor(state->color);
+		ctx->renderer->cmdDrawImage(state->image,
+			Point(
+				clipRect.right() - (state->border + padding.x) * ctx->scale - state->image->width * ctx->scale,
+				clipRect.y + (clipRect.height - state->image->height * ctx->scale) / 2.0f),
+			ctx->scale);
+	}
 
 	ctx->renderer->popClipRect();
 

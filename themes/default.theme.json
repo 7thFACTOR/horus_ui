@@ -191,7 +191,8 @@
 			},
 			"textInputFilterClearIcon":
 			{
-				"normal": { "image": "default/clear_icon", "border": 0, "color": "white", "textColor": "white", "font": "normal-unicode" }
+				"normal": { "image": "default/clear_icon", "border": 0, "color": "gray", "textColor": "white", "font": "normal-unicode" },
+				"hovered": { "image": "default/clear_icon", "border": 0, "color": "white", "textColor": "white", "font": "normal-unicode" }
 			}
 		},
 		"slider":

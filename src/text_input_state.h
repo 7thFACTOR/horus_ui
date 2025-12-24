@@ -52,6 +52,7 @@ struct TextInputState
 	bool selectingWithMouse = false;
 	bool selectAllOnFocus = true;
 	bool textChanged = false;
+	bool clearFilterHovered = false;
 	u32 maxTextLength = 0;
 	bool password = false;
 	Utf32String passwordCharUnicode;

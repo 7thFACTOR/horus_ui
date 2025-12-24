@@ -2,6 +2,7 @@
 #include "util.h"
 #include "font.h"
 #include "context.h"
+#include "theme.h"
 
 namespace hui
 {
@@ -11,11 +12,26 @@ TextInputState::TextInputState()
 bool TextInputState::processEvent(const InputEvent& ev)
 {
 	textChanged = false;
+	clearFilterHovered = false;
 
 	if (!id)
 	{
 		return false;
 	}
+
+	const Point& mousePos = ctx->mousePosition;
+
+	Rect clearFilterRc = rect;
+	auto& bodyTextFilterClearIconElem = ctx->theme->getElement(WidgetElementId::TextInputFilterClearIcon);
+	auto& bodyTextElem = ctx->theme->getElement(WidgetElementId::TextInputBody);
+
+	clearFilterRc.x = rect.right() - (bodyTextElem.normalState().border + getWidgetPadding().x) * ctx->scale - bodyTextFilterClearIconElem.normalState().image->width * ctx->scale;
+	
+	clearFilterRc.width = (bodyTextElem.normalState().border + getWidgetPadding().x) * ctx->scale - bodyTextFilterClearIconElem.normalState().image->width * ctx->scale;
+
+	clearFilterRc.height = (bodyTextElem.normalState().border + getWidgetPadding().y) * 2.0f * ctx->scale - bodyTextFilterClearIconElem.normalState().image->height * ctx->scale;
+
+	clearFilterHovered = clearFilterRc.contains(mousePos);
 
 	if (ev.type == InputEvent::Type::MouseDown)
 	{
@@ -37,8 +53,6 @@ bool TextInputState::processEvent(const InputEvent& ev)
 	}
 	else if (ev.type == InputEvent::Type::MouseUp)
 	{
-		mouseDown = false;
-		selectingWithMouse = false;
 		computeScrollAmount();
 		releaseCapture();
 
@@ -47,6 +61,15 @@ bool TextInputState::processEvent(const InputEvent& ev)
 			selectAll();
 			firstMouseDown = false;
 		}
+
+		if (mouseDown && clearFilterHovered)
+		{
+			clearText();
+			textChanged = true;
+		}
+
+		mouseDown = false;
+		selectingWithMouse = false;
 	}
 	else if (ev.window == HORUS_INPUT->getFocusedWindow())
 	{
