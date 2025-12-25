@@ -13,7 +13,7 @@ bool beginMenuBar()
 	auto& menuBarElem = ctx->theme->getElement(WidgetElementId::MenuBarBody);
 	f32 height = menuBarElem.normalState().height * ctx->scale;
 
-	ctx->id = genId("__MENUBAR__");
+	ctx->id = genIdFromPosition("__MENUBAR__");
 
 	if (!ctx->widget.visible)
 		return false;

@@ -28,6 +28,12 @@ void customSpace(f32 size)
 
 void space()
 {
+	if (ctx->sameLine)
+	{
+		ctx->position.x += ctx->sameLineSpacing * ctx->scale;
+		return;
+	}
+
 	ctx->position.y += ctx->spacing * ctx->scale;
 }
 

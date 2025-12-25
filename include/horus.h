@@ -3182,6 +3182,7 @@ HORUS_API void toString(i32 value, char* outString, u32 outStringMaxSize, u32 fi
 HORUS_API void toString(f32 value, char* outString, u32 outStringMaxSize, u32 decimalPlaces = 4);
 
 HORUS_API Color getColorFromText(const char* colorText);
-
+HORUS_API Color hsvToRgb(const Color& hsv);
+HORUS_API Color rgbToHsv(const Color& rgb);
 }
 /** @}*/

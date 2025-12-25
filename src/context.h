@@ -47,7 +47,7 @@ struct Context
 	bool sameLine = false;
 	size_t sameLineInfoIndex = 0;
 	size_t sameLineInfoCount = 0;
-	f32 sameLineSpacing = 0;
+	f32 sameLineSpacing = 5;
 	f32 sameLineHeight = 0;
 	std::vector<f32> sameLineWidthStack;
 	std::vector<f32> sameLineSpacingStack;

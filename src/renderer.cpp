@@ -567,6 +567,15 @@ void Renderer::executeDrawCommands(HNativeWindow wnd)
 				cmd.data.drawTriangle.uv3,
 				cmd.data.drawTriangle.image);
 			break;
+		case DrawCommand::Type::DrawInterpolatedColors:
+			drawInterpolatedColors(
+				cmd.data.drawInterpolatedColors.rect,
+				cmd.data.drawInterpolatedColors.uvRect,
+				cmd.data.drawInterpolatedColors.topLeft,
+				cmd.data.drawInterpolatedColors.topRight,
+				cmd.data.drawInterpolatedColors.bottomRight,
+				cmd.data.drawInterpolatedColors.bottomLeft);
+			break;
 		case DrawCommand::Type::SetAtlas:
 			if (currentAtlas != cmd.data.setAtlas)
 			{
@@ -843,7 +852,7 @@ void Renderer::cmdDrawSolidRectangle(const Rect& rect)
 	cmdDrawImage(image, rect, uvRect);
 }
 
-void Renderer::cmdDrawInterpolatedColors(const Rect& rect, const Color& topLeft, const Color& bottomLeft, const Color& topRight, const Color& bottomRight)
+void Renderer::cmdDrawInterpolatedColors(const Rect& rect, const Color& topLeft, const Color& topRight, const Color& bottomRight, const Color& bottomLeft)
 {
 	DrawCommand cmd(DrawCommand::Type::DrawInterpolatedColors);
 	cmd.data.drawInterpolatedColors.rect = rect;
@@ -1372,6 +1381,54 @@ void Renderer::drawQuad(const Rect& rect, const Rect& uvRect)
 	currentBatch->vertexCount += 6;
 }
 
+void Renderer::drawQuadCornersColor(const Rect& rect, const Rect& uvRect, const Color& colTopLeft, const Color& colTopRight, const Color& colBottomRight, const Color& colBottomLeft)
+{
+	needToAddVertexCount(6);
+
+	u32 i = vertexBufferData.drawVertexCount;
+
+	vertexBufferData.vertices[i].position = rect.topLeft();
+	vertexBufferData.vertices[i].uv = uvRect.topLeft();
+	vertexBufferData.vertices[i].color = colTopLeft.getRgba();
+	vertexBufferData.vertices[i].textureIndex = atlasTextureIndex;
+	i++;
+
+	vertexBufferData.vertices[i].position = rect.topRight();
+	vertexBufferData.vertices[i].uv = uvRect.topRight();
+	vertexBufferData.vertices[i].color = colTopRight.getRgba();
+	vertexBufferData.vertices[i].textureIndex = atlasTextureIndex;
+	i++;
+
+	vertexBufferData.vertices[i].position = rect.bottomRight();
+	vertexBufferData.vertices[i].uv = uvRect.bottomRight();
+	vertexBufferData.vertices[i].color = colBottomRight.getRgba();
+	vertexBufferData.vertices[i].textureIndex = atlasTextureIndex;
+	i++;
+
+	// 2nd triangle
+	vertexBufferData.vertices[i].position = rect.topLeft();
+	vertexBufferData.vertices[i].uv = uvRect.topLeft();
+	vertexBufferData.vertices[i].color = colTopLeft.getRgba();
+	vertexBufferData.vertices[i].textureIndex = atlasTextureIndex;
+	i++;
+
+	vertexBufferData.vertices[i].position = rect.bottomRight();
+	vertexBufferData.vertices[i].uv = uvRect.bottomRight();
+	vertexBufferData.vertices[i].color = colBottomRight.getRgba();
+	vertexBufferData.vertices[i].textureIndex = atlasTextureIndex;
+	i++;
+
+	vertexBufferData.vertices[i].position = rect.bottomLeft();
+	vertexBufferData.vertices[i].uv = uvRect.bottomLeft();
+	vertexBufferData.vertices[i].color = colBottomLeft.getRgba();
+	vertexBufferData.vertices[i].textureIndex = atlasTextureIndex;
+	i++;
+
+	vertexBufferData.drawVertexCount = i;
+	currentBatch->vertexCount += 6;
+}
+
+
 void Renderer::drawQuadRot90(const Rect& rect, const Rect& uvRect)
 {
 	needToAddVertexCount(6);
@@ -1379,7 +1436,7 @@ void Renderer::drawQuadRot90(const Rect& rect, const Rect& uvRect)
 	u32 i = vertexBufferData.drawVertexCount;
 	Point t0(uvRect.topLeft());
 	Point t1(uvRect.topRight());
-	Point t2(uvRect.right(), uvRect.bottom());
+	Point t2(uvRect.bottomRight());
 	Point t3(uvRect.bottomLeft());
 
 	// t3-------t0
@@ -1433,44 +1490,23 @@ void Renderer::drawInterpolatedColors(
 	const Rect& rect,
 	const Rect& uvRect,
 	const Color& topLeft,
-	const Color& bottomLeft,
 	const Color& topRight,
-	const Color& bottomRight)
+	const Color& bottomRight,
+	const Color& bottomLeft)
 {
-	//TODO: optimize for speed and multiple textures
 	u32 width = rect.width;
 	u32 height = rect.height;
 
-	std::vector<u32> pixels;
-	auto t = 0.0f;
-	Color xcTop;
-	Color xcBottom;
-	Color c;
 
-	pixels.resize(width * height);
 
-	for (size_t x = 0; x < width; x++)
-	{
-		t = (f32)x / width;
-		xcTop = topLeft + (topRight - topLeft) * t;
-		xcBottom = bottomLeft + (bottomRight - bottomLeft) * t;
 
-		for (size_t y = 0; y < height; y++)
-		{
-			c = xcTop + (xcBottom - xcTop) * ((f32)y / height);
-			pixels[x + y * width] = c.getRgba();
-		}
-	}
-
-	//if (pixels.data())
-	//{
-	//	currentBatch->textureArray->updateRectData( pixels.data());
-	//}
-
-	//beginBatch(coloredQuadAtlas);
-	//atlasTextureIndex = 0;
-	//drawQuad(clippedUvRect, clippedRect);
-	//endBatch();
+	drawQuadCornersColor(
+		rect,
+		currentAtlas->whiteImage->uvRect.contract({0.001,0.001}),
+		topLeft,
+		topRight,
+		bottomRight,
+		bottomLeft);
 }
 
 void Renderer::drawSpectrumColors(

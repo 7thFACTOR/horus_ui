@@ -189,6 +189,87 @@ Color getColorFromText(const char* colorText)
 	return getColorFromText(std::string(colorText));
 }
 
+Color hsvToRgb(const Color& hsv)
+{
+	f32 h = hsv.r;
+	f32 s = hsv.g;
+	f32 v = hsv.b;
+	f32 r = 0;
+	f32 g = 0;
+	f32 b = 0;
+
+	if (s <= 0.0f)
+	{
+		// Gray
+		r = g = b = v;
+		return Color(r, g, b, 1);
+	}
+
+	h = std::fmod(h, 1.0f) * 6.0f;
+	i32 i = (int)std::floor(h);
+	f32 f = h - i;
+
+	f32 p = v * (1.0f - s);
+	f32 q = v * (1.0f - s * f);
+	f32 t = v * (1.0f - s * (1.0f - f));
+
+	switch (i)
+	{
+	case 0: r = v; g = t; b = p; break;
+	case 1: r = q; g = v; b = p; break;
+	case 2: r = p; g = v; b = t; break;
+	case 3: r = p; g = q; b = v; break;
+	case 4: r = t; g = p; b = v; break;
+	default: r = v; g = p; b = q; break;
+	}
+
+	return Color(r, g, b, 1);
+}
+
+Color rgbToHsv(const Color& rgb)
+{
+	f32 r = rgb.r, g = rgb.g, b = rgb.b;
+	f32 h = 0, s = 0, v = 0;
+
+	f32 max = std::max(r, std::max(g, b));
+	f32 min = std::min(r, std::min(g, b));
+	f32 delta = max - min;
+
+	v = max;
+
+	if (max <= 0.0f)
+	{
+		// Black
+		s = 0.0f;
+		h = 0.0f;
+		
+		return Color(h, s, v, 0);
+	}
+
+	s = delta / max;
+
+	if (delta <= 0.0f)
+	{
+		// Gray
+		h = 0.0f;
+		return Color(h, s, v, 0);
+	}
+
+	if (max == r)
+		h = (g - b) / delta;
+	else if (max == g)
+		h = 2.0f + (b - r) / delta;
+	else
+		h = 4.0f + (r - g) / delta;
+
+	h /= 6.0f;
+
+	if (h < 0.0f)
+		h += 1.0f;
+
+	return Color(h, s, v, 0);
+}
+
 void setThemeElement(
 	HTheme theme,
 	const std::string& themePath,

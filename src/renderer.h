@@ -114,8 +114,8 @@ struct DrawCommand
 		Rect rect;
 		Rect uvRect;
 		Color topLeft;
-		Color bottomLeft;
 		Color topRight;
+		Color bottomLeft;
 		Color bottomRight;
 	};
 
@@ -246,7 +246,7 @@ public:
 	void cmdDrawImageScaledAligned(Image* image, const Rect& rect, HAlignType halign, VAlignType valign, f32 scale);
 	void cmdDrawRectangle(const Rect& rect);
 	void cmdDrawSolidRectangle(const Rect& rect);
-	void cmdDrawInterpolatedColors(const Rect& rect, const Color& topLeft, const Color& bottomLeft, const Color& topRight, const Color& bottomRight);
+	void cmdDrawInterpolatedColors(const Rect& rect, const Color& topLeft, const Color& topRight, const Color& bottomRight, const Color& bottomLeft);
 	void cmdDrawSpectrumColors(const Rect& rect, DrawSpectrumBrightness brightness, DrawSpectrumDirection dir);
 	void cmdDrawInterpolatedColorsTopBottom(const Rect& rect, const Color& top, const Color& bottom);
 	void cmdDrawInterpolatedColorsLeftRight(const Rect& rect, const Color& left, const Color& right);
@@ -274,12 +274,8 @@ public:
 	void drawTextGlyph(Image* image, const Point& pos);
 	void drawQuad(Image* image, const Point& p1, const Point& p2, const Point& p3, const Point& p4);
 	void drawQuad(const Rect& rect, const Rect& uvRect);
+	void drawQuadCornersColor(const Rect& rect, const Rect& uvRect, const Color& colTopLeft, const Color& colTopRight, const Color& colBottomRight, const Color& colBottomLeft);
 	void drawQuadRot90(const Rect& rect, const Rect& uvRect);
-
-	// New combined API: compute size from text (Utf32 or utf8) and optionally draw it.
-	// - If outSize != nullptr the function fills it with computed metrics.
-	// - If doDraw == true the function will render the text (uses renderer state).
-	// - If font == nullptr the renderer's currentFont is used for metrics/drawing.
 	FontTextSize computeSizeOrDrawText(
 		const char* text,
 		const Rect& rect,

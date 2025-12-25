@@ -18,6 +18,10 @@ bool labelInternal(const char* label, HAlignType horizontalAlign, Font* font)
 
 	auto fsize = font->computeTextSize(ctx->widgetLabel.c_str(), (u32)round(width - padding.x * 2.0f * ctx->scale));
 	height = (bodyElemState.height * ctx->scale > fsize.height ? bodyElemState.height * ctx->scale : fsize.height) + padding.y * 2.0f * ctx->scale;
+	if (ctx->sameLine)
+	{
+		ctx->widget.width = fsize.width + padding.x * 2.0f * ctx->scale;
+	}
 
 	//TODO: for sameline ctx->widget.width = fsize.width;
 	addWidget(height);

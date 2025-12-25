@@ -17,12 +17,34 @@ bool colorPickerPopup(const Color& currentColor, Color& outNewColor)
 		{
 			ctx->widget.rect.x,
 			ctx->widget.rect.y,
-			ctx->widget.rect.width / 2,
-			ctx->widget.rect.height / 2
+			ctx->widget.rect.width,
+			ctx->widget.rect.height
 		}
-		, Color::white, Color::black
-		, Color::blue, Color::black);
+		, Color::white, Color::red
+		, Color::red, Color::white);
+	ctx->renderer->cmdDrawInterpolatedColors(
+		{
+			ctx->widget.rect.x,
+			ctx->widget.rect.y,
+			ctx->widget.rect.width,
+			ctx->widget.rect.height
+		}
+		, Color::transparent, Color::transparent
+		, Color::black, Color::black);
+	auto rc = ctx->widget.rect;
+	rc.width = 32;
+	rc.height = 32;
 
+	Color hsv;
+
+	hsv.r = 0;
+	hsv.g = (ctx->mousePosition.x - rc.x) / ctx->widget.rect.width;
+	hsv.b = 1.0f - (ctx->mousePosition.y - rc.y) / ctx->widget.rect.height;
+
+	ctx->renderer->cmdSetColor(hsvToRgb(hsv));
+	ctx->renderer->cmdDrawSolidRectangle(rc);
+
+	/*
 	ctx->renderer->cmdDrawSpectrumColors(
 		{
 			ctx->widget.rect.x + ctx->widget.rect.width / 2,
@@ -49,7 +71,7 @@ bool colorPickerPopup(const Color& currentColor, Color& outNewColor)
 			ctx->widget.rect.height / 2
 		},
 		Color::white, Color::black);
-
+		*/
 	return true;
 }
 
