@@ -13,7 +13,7 @@ bool colorPickerPopup(const Color& currentColor, Color& outNewColor)
 	ctx->extractLabelAndId(nullptr);
 	addWidget(height);
 
-	ctx->renderer->cmdDrawInterpolatedColors(
+	ctx->renderer->cmdDrawQuad4Colors(
 		{
 			ctx->widget.rect.x,
 			ctx->widget.rect.y,
@@ -22,7 +22,7 @@ bool colorPickerPopup(const Color& currentColor, Color& outNewColor)
 		}
 		, Color::white, Color::red
 		, Color::red, Color::white);
-	ctx->renderer->cmdDrawInterpolatedColors(
+	ctx->renderer->cmdDrawQuad4Colors(
 		{
 			ctx->widget.rect.x,
 			ctx->widget.rect.y,

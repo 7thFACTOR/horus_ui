@@ -1493,6 +1493,11 @@ struct HORUS_CLASS_API Color
 		return { r + other.r, g + other.g, b + other.b, a + other.a };
 	}
 
+	operator Rgba32() const
+	{
+		return getRgba();
+	}
+
 	static Color random();
 	static const Color transparent;
 	static const Color white;

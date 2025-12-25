@@ -150,12 +150,14 @@ bool clipLineToRect(
 	return accept;
 }
 
-void clipLeft(const Rect& rect, Point* inPoints, Point* inUvPoints, u32 inCount, Point* outPoints, Point* outUvPoints, u32& outCount)
+void clipLeft(const Rect& rect, Point* inPoints, Point* inUvPoints, Rgba32* inColors, u32 inCount, Point* outPoints, Point* outUvPoints, Rgba32* outColors, u32& outCount)
 {
 	Point* pp1;
 	Point* pp2;
 	Point* uvpp1;
 	Point* uvpp2;
+	Rgba32* cpp1;
+	Rgba32* cpp2;
 
 	for (u32 i = 0; i < inCount; i++)
 	{
@@ -165,6 +167,8 @@ void clipLeft(const Rect& rect, Point* inPoints, Point* inUvPoints, u32 inCount,
 			pp2 = &inPoints[0];
 			uvpp1 = &inUvPoints[i];
 			uvpp2 = &inUvPoints[0];
+			cpp1 = &inColors[i];
+			cpp2 = &inColors[0];
 		}
 		else
 		{
@@ -172,17 +176,22 @@ void clipLeft(const Rect& rect, Point* inPoints, Point* inUvPoints, u32 inCount,
 			pp2 = &inPoints[i + 1];
 			uvpp1 = &inUvPoints[i];
 			uvpp2 = &inUvPoints[i + 1];
+			cpp1 = &inColors[i];
+			cpp2 = &inColors[i + 1];
 		}
 
 		const Point& p1 = *pp1;
 		const Point& p2 = *pp2;
 		const Point& uvp1 = *uvpp1;
 		const Point& uvp2 = *uvpp2;
+		const Color cp1 = *cpp1;
+		const Color cp2 = *cpp2;
 
 		// inside
 		if (p1.x >= rect.x && p2.x >= rect.x)
 		{
 			outUvPoints[outCount] = uvp2;
+			outColors[outCount] = cp2;
 			outPoints[outCount++] = p2;
 		}
 
@@ -194,6 +203,7 @@ void clipLeft(const Rect& rect, Point* inPoints, Point* inUvPoints, u32 inCount,
 			auto y = p1.y + (p2.y - p1.y) * t;
 			auto x = rect.x;
 			outUvPoints[outCount] = uvp1 + (uvp2 - uvp1) * t;
+			outColors[outCount] = cp1 + (cp2 - cp1) * t;
 			outPoints[outCount++] = { x, y };
 		}
 
@@ -206,18 +216,22 @@ void clipLeft(const Rect& rect, Point* inPoints, Point* inUvPoints, u32 inCount,
 			auto x = rect.x;
 			outUvPoints[outCount] = uvp1 + (uvp2 - uvp1) * t;
 			outUvPoints[outCount + 1] = uvp2;
+			outColors[outCount] = cp1 + (cp2 - cp1) * t;
+			outColors[outCount + 1] = cp2;
 			outPoints[outCount++] = { x, y };
 			outPoints[outCount++] = p2;
 		}
 	}
 }
 
-void clipRight(const Rect& rect, Point* inPoints, Point* inUvPoints, u32 inCount, Point* outPoints, Point* outUvPoints, u32& outCount)
+void clipRight(const Rect& rect, Point* inPoints, Point* inUvPoints, Rgba32* inColors, u32 inCount, Point* outPoints, Point* outUvPoints, Rgba32* outColors, u32& outCount)
 {
 	Point* pp1;
 	Point* pp2;
 	Point* uvpp1;
 	Point* uvpp2;
+	Rgba32* cpp1;
+	Rgba32* cpp2;
 
 	for (u32 i = 0; i < inCount; i++)
 	{
@@ -227,6 +241,8 @@ void clipRight(const Rect& rect, Point* inPoints, Point* inUvPoints, u32 inCount
 			pp2 = &inPoints[0];
 			uvpp1 = &inUvPoints[i];
 			uvpp2 = &inUvPoints[0];
+			cpp1 = &inColors[i];
+			cpp2 = &inColors[0];
 		}
 		else
 		{
@@ -234,17 +250,22 @@ void clipRight(const Rect& rect, Point* inPoints, Point* inUvPoints, u32 inCount
 			pp2 = &inPoints[i + 1];
 			uvpp1 = &inUvPoints[i];
 			uvpp2 = &inUvPoints[i + 1];
+			cpp1 = &inColors[i];
+			cpp2 = &inColors[i + 1];
 		}
 
 		const Point& p1 = *pp1;
 		const Point& p2 = *pp2;
 		const Point& uvp1 = *uvpp1;
 		const Point& uvp2 = *uvpp2;
+		const Color cp1 = *cpp1;
+		const Color cp2 = *cpp2;
 
 		// inside
 		if (p1.x <= rect.right() && p2.x <= rect.right())
 		{
 			outUvPoints[outCount] = uvp2;
+			outColors[outCount] = cp2;
 			outPoints[outCount++] = p2;
 		}
 
@@ -256,6 +277,7 @@ void clipRight(const Rect& rect, Point* inPoints, Point* inUvPoints, u32 inCount
 			auto y = p1.y + (p2.y - p1.y) * t;
 			auto x = rect.right();
 			outUvPoints[outCount] = uvp1 + (uvp2 - uvp1) * t;
+			outColors[outCount] = cp1 + (cp2 - cp1) * t;
 			outPoints[outCount++] = { x, y };
 		}
 
@@ -268,18 +290,22 @@ void clipRight(const Rect& rect, Point* inPoints, Point* inUvPoints, u32 inCount
 			auto x = rect.right();
 			outUvPoints[outCount] = uvp1 + (uvp2 - uvp1) * t;
 			outUvPoints[outCount + 1] = uvp2;
+			outColors[outCount] = cp1 + (cp2 - cp1) * t;
+			outColors[outCount + 1] = cp2;
 			outPoints[outCount++] = { x, y };
 			outPoints[outCount++] = p2;
 		}
 	}
 }
 
-void clipTop(const Rect& rect, Point* inPoints, Point* inUvPoints, u32 inCount, Point* outPoints, Point* outUvPoints, u32& outCount)
+void clipTop(const Rect& rect, Point* inPoints, Point* inUvPoints, Rgba32* inColors, u32 inCount, Point* outPoints, Point* outUvPoints, Rgba32* outColors, u32& outCount)
 {
 	Point* pp1;
 	Point* pp2;
 	Point* uvpp1;
 	Point* uvpp2;
+	Rgba32* cpp1;
+	Rgba32* cpp2;
 
 	for (u32 i = 0; i < inCount; i++)
 	{
@@ -289,6 +315,8 @@ void clipTop(const Rect& rect, Point* inPoints, Point* inUvPoints, u32 inCount, 
 			pp2 = &inPoints[0];
 			uvpp1 = &inUvPoints[i];
 			uvpp2 = &inUvPoints[0];
+			cpp1 = &inColors[i];
+			cpp2 = &inColors[0];
 		}
 		else
 		{
@@ -296,17 +324,22 @@ void clipTop(const Rect& rect, Point* inPoints, Point* inUvPoints, u32 inCount, 
 			pp2 = &inPoints[i + 1];
 			uvpp1 = &inUvPoints[i];
 			uvpp2 = &inUvPoints[i + 1];
+			cpp1 = &inColors[i];
+			cpp2 = &inColors[i + 1];
 		}
 
 		const Point& p1 = *pp1;
 		const Point& p2 = *pp2;
 		const Point& uvp1 = *uvpp1;
 		const Point& uvp2 = *uvpp2;
+		const Color cp1 = *cpp1;
+		const Color cp2 = *cpp2;
 
 		// inside
 		if (p1.y >= rect.top() && p2.y >= rect.top())
 		{
 			outUvPoints[outCount] = uvp2;
+			outColors[outCount] = cp2;
 			outPoints[outCount++] = p2;
 		}
 
@@ -318,6 +351,7 @@ void clipTop(const Rect& rect, Point* inPoints, Point* inUvPoints, u32 inCount, 
 			auto x = p1.x + (p2.x - p1.x) * t;
 			auto y = rect.top();
 			outUvPoints[outCount] = uvp1 + (uvp2 - uvp1) * t;
+			outColors[outCount] = cp1 + (cp2 - cp1) * t;
 			outPoints[outCount++] = { x, y };
 		}
 
@@ -330,18 +364,22 @@ void clipTop(const Rect& rect, Point* inPoints, Point* inUvPoints, u32 inCount, 
 			auto y = rect.top();
 			outUvPoints[outCount] = uvp1 + (uvp2 - uvp1) * t;
 			outUvPoints[outCount + 1] = uvp2;
+			outColors[outCount] = cp1 + (cp2 - cp1) * t;
+			outColors[outCount + 1] = cp2;
 			outPoints[outCount++] = { x, y };
 			outPoints[outCount++] = p2;
 		}
 	}
 }
 
-void clipBottom(const Rect& rect, Point* inPoints, Point* inUvPoints, u32 inCount, Point* outPoints, Point* outUvPoints, u32& outCount)
+void clipBottom(const Rect& rect, Point* inPoints, Point* inUvPoints, Rgba32* inColors, u32 inCount, Point* outPoints, Point* outUvPoints, Rgba32* outColors, u32& outCount)
 {
 	Point* pp1;
 	Point* pp2;
 	Point* uvpp1;
 	Point* uvpp2;
+	Rgba32* cpp1;
+	Rgba32* cpp2;
 
 	for (u32 i = 0; i < inCount; i++)
 	{
@@ -351,6 +389,8 @@ void clipBottom(const Rect& rect, Point* inPoints, Point* inUvPoints, u32 inCoun
 			pp2 = &inPoints[0];
 			uvpp1 = &inUvPoints[i];
 			uvpp2 = &inUvPoints[0];
+			cpp1 = &inColors[i];
+			cpp2 = &inColors[0];
 		}
 		else
 		{
@@ -358,17 +398,22 @@ void clipBottom(const Rect& rect, Point* inPoints, Point* inUvPoints, u32 inCoun
 			pp2 = &inPoints[i + 1];
 			uvpp1 = &inUvPoints[i];
 			uvpp2 = &inUvPoints[i + 1];
+			cpp1 = &inColors[i];
+			cpp2 = &inColors[i + 1];
 		}
 
 		const Point& p1 = *pp1;
 		const Point& p2 = *pp2;
 		const Point& uvp1 = *uvpp1;
 		const Point& uvp2 = *uvpp2;
+		const Color cp1 = *cpp1;
+		const Color cp2 = *cpp2;
 
 		// inside
 		if (p1.y <= rect.bottom() && p2.y <= rect.bottom())
 		{
 			outUvPoints[outCount] = uvp2;
+			outColors[outCount] = cp2;
 			outPoints[outCount++] = p2;
 		}
 
@@ -380,6 +425,7 @@ void clipBottom(const Rect& rect, Point* inPoints, Point* inUvPoints, u32 inCoun
 			auto x = p1.x + (p2.x - p1.x) * t;
 			auto y = rect.bottom();
 			outUvPoints[outCount] = uvp1 + (uvp2 - uvp1) * t;
+			outColors[outCount] = cp1 + (cp2 - cp1) * t;
 			outPoints[outCount++] = { x, y };
 		}
 
@@ -392,6 +438,8 @@ void clipBottom(const Rect& rect, Point* inPoints, Point* inUvPoints, u32 inCoun
 			auto y = rect.bottom();
 			outUvPoints[outCount] = uvp1 + (uvp2 - uvp1) * t;
 			outUvPoints[outCount + 1] = uvp2;
+			outColors[outCount] = cp1 + (cp2 - cp1) * t;
+			outColors[outCount + 1] = cp2;
 			outPoints[outCount++] = { x, y };
 			outPoints[outCount++] = p2;
 		}
@@ -401,8 +449,9 @@ void clipBottom(const Rect& rect, Point* inPoints, Point* inUvPoints, u32 inCoun
 bool clipTriangleToRect(
 	const Point& p1, const Point& p2, const Point& p3,
 	const Point& uv1, const Point& uv2, const Point& uv3,
+	const Rgba32 c1, const Rgba32 c2, const Rgba32 c3, 
 	const Rect& rect,
-	Point* outPoints, Point* outUvPoints, u32& outCount)
+	Point* outPoints, Point* outUvPoints, Rgba32* outColors, u32& outCount)
 {
 	outCount = 0;
 	auto clip1 = computeLineClipCode(p1, rect);
@@ -419,27 +468,33 @@ bool clipTriangleToRect(
 		outUvPoints[0] = uv1;
 		outUvPoints[1] = uv2;
 		outUvPoints[2] = uv3;
+		outColors[0] = c1;
+		outColors[1] = c2;
+		outColors[2] = c3;
 		outCount = 3;
+
 		return true;
 	}
 
 	Point inPoints[] = {p1, p2, p3, Point(), Point(), Point(), Point(), Point(), Point(), Point(), Point(), Point() };
 	Point inUvPoints[] = { uv1, uv2, uv3, Point(), Point(), Point(), Point(), Point(), Point(), Point(), Point(), Point() };
+	Rgba32 inColors[] = { c1, c2, c3, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 	u32 inCount = 3;
 
 	outCount = 0;
-	clipLeft(rect, inPoints, inUvPoints, inCount, outPoints, outUvPoints, outCount);
+	clipLeft(rect, inPoints, inUvPoints, inColors, inCount, outPoints, outUvPoints, outColors, outCount);
 	inCount = 0;
-	clipTop(rect, outPoints, outUvPoints, outCount, inPoints, inUvPoints, inCount);
+	clipTop(rect, outPoints, outUvPoints, outColors, outCount, inPoints, inUvPoints, inColors, inCount);
 	outCount = 0;
-	clipRight(rect, inPoints, inUvPoints, inCount, outPoints, outUvPoints, outCount);
+	clipRight(rect, inPoints, inUvPoints, inColors, inCount, outPoints, outUvPoints, outColors, outCount);
 	inCount = 0;
-	clipBottom(rect, outPoints, outUvPoints, outCount, inPoints, inUvPoints, inCount);
+	clipBottom(rect, outPoints, outUvPoints, outColors, outCount, inPoints, inUvPoints, inColors, inCount);
 
 	for (u32 i = 0; i < inCount; i++)
 	{
 		outPoints[i] = inPoints[i];
 		outUvPoints[i] = inUvPoints[i];
+		outColors[i] = inColors[i];
 	}
 
 	outCount = inCount;
@@ -531,7 +586,7 @@ void Renderer::executeDrawCommands(HNativeWindow wnd)
 			computeSizeOrDrawText(cmd.data.drawText.text, cmd.data.drawText.rect, cmd.data.drawText.horizAlign, cmd.data.drawText.vertAlign, true, currentFont);
 			break;
 		case DrawCommand::Type::SetColor:
-			currentColor = cmd.data.setColor.getRgba();
+			currentColor = cmd.data.setColor;
 			break;
 		case DrawCommand::Type::SetFont:
 			currentFont = cmd.data.setFont;
@@ -549,15 +604,15 @@ void Renderer::executeDrawCommands(HNativeWindow wnd)
 			currentFillStyle = cmd.data.setFillStyle;
 			break;
 		case DrawCommand::Type::DrawLine:
-			currentColor = currentLineStyle.color.getRgba();
+			currentColor = currentLineStyle.color;
 			drawLine(cmd.data.drawLine.a, cmd.data.drawLine.b);
 			break;
 		case DrawCommand::Type::DrawPolyLine:
-			currentColor = currentLineStyle.color.getRgba();
+			currentColor = currentLineStyle.color;
 			drawPolyLine(cmd.data.drawPolyLine.points, cmd.data.drawPolyLine.count, cmd.data.drawPolyLine.closed);
 			break;
 		case DrawCommand::Type::DrawSolidTriangle:
-			currentColor = currentFillStyle.color.getRgba();
+			currentColor = currentFillStyle.color;
 			drawTriangle(
 				cmd.data.drawTriangle.p1,
 				cmd.data.drawTriangle.p2,
@@ -565,16 +620,19 @@ void Renderer::executeDrawCommands(HNativeWindow wnd)
 				cmd.data.drawTriangle.uv1,
 				cmd.data.drawTriangle.uv2,
 				cmd.data.drawTriangle.uv3,
+				cmd.data.drawTriangle.c1,
+				cmd.data.drawTriangle.c2,
+				cmd.data.drawTriangle.c3,
 				cmd.data.drawTriangle.image);
 			break;
-		case DrawCommand::Type::DrawInterpolatedColors:
-			drawInterpolatedColors(
-				cmd.data.drawInterpolatedColors.rect,
-				cmd.data.drawInterpolatedColors.uvRect,
-				cmd.data.drawInterpolatedColors.topLeft,
-				cmd.data.drawInterpolatedColors.topRight,
-				cmd.data.drawInterpolatedColors.bottomRight,
-				cmd.data.drawInterpolatedColors.bottomLeft);
+		case DrawCommand::Type::DrawQuad4Colors:
+			drawQuad4Colors(
+				cmd.data.drawQuad4Colors.rect,
+				currentAtlas->whiteImage->uvRect.contract({ ctx->settings.whiteImageUvBorder, ctx->settings.whiteImageUvBorder }),
+				cmd.data.drawQuad4Colors.topLeft,
+				cmd.data.drawQuad4Colors.topRight,
+				cmd.data.drawQuad4Colors.bottomRight,
+				cmd.data.drawQuad4Colors.bottomLeft);
 			break;
 		case DrawCommand::Type::SetAtlas:
 			if (currentAtlas != cmd.data.setAtlas)
@@ -607,7 +665,7 @@ void Renderer::cmdCallback(RenderCallback callback)
 	addDrawCommand(cmd);
 }
 
-void Renderer::cmdClearBackground(const Color& color)
+void Renderer::cmdClearBackground(const Rgba32 color)
 {
 	DrawCommand cmd(DrawCommand::Type::ClearBackground);
 
@@ -682,7 +740,7 @@ void Renderer::end()
 {
 }
 
-void Renderer::cmdSetColor(const Color& newColor)
+void Renderer::cmdSetColor(const Rgba32 newColor)
 {
 	DrawCommand cmd(DrawCommand::Type::SetColor);
 	cmd.data.setColor = newColor;
@@ -721,7 +779,7 @@ void Renderer::cmdSetTextBackfill(bool backfill)
 	addDrawCommand(cmd);
 }
 
-void Renderer::cmdSetTextBackfillColor(const Color& color)
+void Renderer::cmdSetTextBackfillColor(const Rgba32 color)
 {
 	DrawCommand cmd(DrawCommand::Type::SetTextStyle);
 	currentTextStyle.backFillColor = color;
@@ -852,30 +910,15 @@ void Renderer::cmdDrawSolidRectangle(const Rect& rect)
 	cmdDrawImage(image, rect, uvRect);
 }
 
-void Renderer::cmdDrawInterpolatedColors(const Rect& rect, const Color& topLeft, const Color& topRight, const Color& bottomRight, const Color& bottomLeft)
+void Renderer::cmdDrawQuad4Colors(const Rect& rect, const Rgba32 topLeft, const Rgba32 topRight, const Rgba32 bottomRight, const Rgba32 bottomLeft)
 {
-	DrawCommand cmd(DrawCommand::Type::DrawInterpolatedColors);
-	cmd.data.drawInterpolatedColors.rect = rect;
-	cmd.data.drawInterpolatedColors.bottomLeft = bottomLeft;
-	cmd.data.drawInterpolatedColors.bottomRight = bottomRight;
-	cmd.data.drawInterpolatedColors.topLeft = topLeft;
-	cmd.data.drawInterpolatedColors.topRight = topRight;
+	DrawCommand cmd(DrawCommand::Type::DrawQuad4Colors);
+	cmd.data.drawQuad4Colors.rect = rect;
+	cmd.data.drawQuad4Colors.bottomLeft = bottomLeft;
+	cmd.data.drawQuad4Colors.bottomRight = bottomRight;
+	cmd.data.drawQuad4Colors.topLeft = topLeft;
+	cmd.data.drawQuad4Colors.topRight = topRight;
 	addDrawCommand(cmd);
-}
-
-void Renderer::cmdDrawSpectrumColors(const Rect& rect, DrawSpectrumBrightness brightness, DrawSpectrumDirection dir)
-{
-	//TODO
-}
-
-void Renderer::cmdDrawInterpolatedColorsTopBottom(const Rect& rect, const Color& top, const Color& bottom)
-{
-	cmdDrawInterpolatedColors(rect, top, bottom, top, bottom);
-}
-
-void Renderer::cmdDrawInterpolatedColorsLeftRight(const Rect& rect, const Color& left, const Color& right)
-{
-	cmdDrawInterpolatedColors(rect, left, left, right, right);
 }
 
 void Renderer::cmdDrawLine(const Point& a, const Point& b)
@@ -897,7 +940,7 @@ void Renderer::cmdDrawPolyLine(const Point* points, u32 pointCount, bool closed)
 	addDrawCommand(cmd);
 }
 
-void Renderer::cmdDrawSolidTriangle(const Point& p1, const Point& p2, const Point& p3)
+void Renderer::cmdDrawSolidTriangle(const Point& p1, const Point& p2, const Point& p3, const Rgba32 c1, const Rgba32 c2, const Rgba32 c3)
 {
 	DrawCommand cmd(DrawCommand::Type::DrawSolidTriangle);
 	cmd.data.drawTriangle.p1 = p1;
@@ -908,6 +951,9 @@ void Renderer::cmdDrawSolidTriangle(const Point& p1, const Point& p2, const Poin
 	cmd.data.drawTriangle.uv1 = uvRc.topLeft();
 	cmd.data.drawTriangle.uv2 = uvRc.topRight();
 	cmd.data.drawTriangle.uv3 = uvRc.bottomRight();
+	cmd.data.drawTriangle.c1 = c1;
+	cmd.data.drawTriangle.c1 = c2;
+	cmd.data.drawTriangle.c1 = c3;
 	cmd.data.drawTriangle.image = ctx->theme->atlas->whiteImage;
 	addDrawCommand(cmd);
 }
@@ -1330,8 +1376,8 @@ void Renderer::drawTextGlyph(Image* image, const Point& position)
 
 void Renderer::drawQuad(Image* image, const Point& p1, const Point& p2, const Point& p3, const Point& p4)
 {
-	drawTriangle(p1, p2, p3, image->uvRect.topLeft(), image->uvRect.topRight(), image->uvRect.bottomRight(), image);
-	drawTriangle(p1, p3, p4, image->uvRect.topLeft(), image->uvRect.bottomRight(), image->uvRect.bottomLeft(), image);
+	drawTriangle(p1, p2, p3, image->uvRect.topLeft(), image->uvRect.topRight(), image->uvRect.bottomRight(), currentColor, currentColor, currentColor, image);
+	drawTriangle(p1, p3, p4, image->uvRect.topLeft(), image->uvRect.bottomRight(), image->uvRect.bottomLeft(), currentColor, currentColor, currentColor, image);
 }
 
 void Renderer::drawQuad(const Rect& rect, const Rect& uvRect)
@@ -1381,7 +1427,7 @@ void Renderer::drawQuad(const Rect& rect, const Rect& uvRect)
 	currentBatch->vertexCount += 6;
 }
 
-void Renderer::drawQuadCornersColor(const Rect& rect, const Rect& uvRect, const Color& colTopLeft, const Color& colTopRight, const Color& colBottomRight, const Color& colBottomLeft)
+void Renderer::drawQuad4Colors(const Rect& rect, const Rect& uvRect, const Rgba32 colTopLeft, const Rgba32 colTopRight, const Rgba32 colBottomRight, const Rgba32 colBottomLeft)
 {
 	needToAddVertexCount(6);
 
@@ -1389,45 +1435,44 @@ void Renderer::drawQuadCornersColor(const Rect& rect, const Rect& uvRect, const 
 
 	vertexBufferData.vertices[i].position = rect.topLeft();
 	vertexBufferData.vertices[i].uv = uvRect.topLeft();
-	vertexBufferData.vertices[i].color = colTopLeft.getRgba();
+	vertexBufferData.vertices[i].color = colTopLeft;
 	vertexBufferData.vertices[i].textureIndex = atlasTextureIndex;
 	i++;
 
 	vertexBufferData.vertices[i].position = rect.topRight();
 	vertexBufferData.vertices[i].uv = uvRect.topRight();
-	vertexBufferData.vertices[i].color = colTopRight.getRgba();
+	vertexBufferData.vertices[i].color = colTopRight;
 	vertexBufferData.vertices[i].textureIndex = atlasTextureIndex;
 	i++;
 
 	vertexBufferData.vertices[i].position = rect.bottomRight();
 	vertexBufferData.vertices[i].uv = uvRect.bottomRight();
-	vertexBufferData.vertices[i].color = colBottomRight.getRgba();
+	vertexBufferData.vertices[i].color = colBottomRight;
 	vertexBufferData.vertices[i].textureIndex = atlasTextureIndex;
 	i++;
 
 	// 2nd triangle
 	vertexBufferData.vertices[i].position = rect.topLeft();
 	vertexBufferData.vertices[i].uv = uvRect.topLeft();
-	vertexBufferData.vertices[i].color = colTopLeft.getRgba();
+	vertexBufferData.vertices[i].color = colTopLeft;
 	vertexBufferData.vertices[i].textureIndex = atlasTextureIndex;
 	i++;
 
 	vertexBufferData.vertices[i].position = rect.bottomRight();
 	vertexBufferData.vertices[i].uv = uvRect.bottomRight();
-	vertexBufferData.vertices[i].color = colBottomRight.getRgba();
+	vertexBufferData.vertices[i].color = colBottomRight;
 	vertexBufferData.vertices[i].textureIndex = atlasTextureIndex;
 	i++;
 
 	vertexBufferData.vertices[i].position = rect.bottomLeft();
 	vertexBufferData.vertices[i].uv = uvRect.bottomLeft();
-	vertexBufferData.vertices[i].color = colBottomLeft.getRgba();
+	vertexBufferData.vertices[i].color = colBottomLeft;
 	vertexBufferData.vertices[i].textureIndex = atlasTextureIndex;
 	i++;
 
 	vertexBufferData.drawVertexCount = i;
 	currentBatch->vertexCount += 6;
 }
-
 
 void Renderer::drawQuadRot90(const Rect& rect, const Rect& uvRect)
 {
@@ -1479,241 +1524,6 @@ void Renderer::drawQuadRot90(const Rect& rect, const Rect& uvRect)
 	vertexBufferData.vertices[i].position = rect.bottomLeft();
 	vertexBufferData.vertices[i].uv = t2;
 	vertexBufferData.vertices[i].color = currentColor;
-	vertexBufferData.vertices[i].textureIndex = atlasTextureIndex;
-	i++;
-
-	vertexBufferData.drawVertexCount = i;
-	currentBatch->vertexCount += 6;
-}
-
-void Renderer::drawInterpolatedColors(
-	const Rect& rect,
-	const Rect& uvRect,
-	const Color& topLeft,
-	const Color& topRight,
-	const Color& bottomRight,
-	const Color& bottomLeft)
-{
-	u32 width = rect.width;
-	u32 height = rect.height;
-
-
-
-
-	drawQuadCornersColor(
-		rect,
-		currentAtlas->whiteImage->uvRect.contract({0.001,0.001}),
-		topLeft,
-		topRight,
-		bottomRight,
-		bottomLeft);
-}
-
-void Renderer::drawSpectrumColors(
-	const Rect& rect,
-	DrawSpectrumBrightness brightness,
-	DrawSpectrumDirection dir)
-{
-	//TODO: optimize for speed and multiple textures
-	u32 width = rect.width;
-	u32 height = rect.height;
-
-	//spectrumQuadAtlas->textureArray->resize(1, width, height);
-
-	std::vector<u32> pixels;
-	auto t = 0.0f;
-	Color xcTop;
-	Color xcBottom;
-	Color c;
-	Color spectrum[] = { Color::red, Color::yellow, Color::green, Color::cyan, Color::blue, Color::magenta };
-	const int spectrumCount = 6;
-	Color top = Color::white;
-	Color bottom = Color::black;
-
-	pixels.resize(width * height);
-
-	if (dir == DrawSpectrumDirection::Horizontal)
-	{
-		for (size_t x = 0; x < width; x++)
-		{
-			t = (f32)x / width;
-			size_t index = t * spectrumCount;
-			size_t indexNext = index + 1;
-			f32 indexF = t * (f32)spectrumCount;
-			f32 fraction = indexF - (f32)index;
-
-			if (indexNext == spectrumCount)
-				indexNext = 0;
-
-			c = spectrum[index] + (spectrum[indexNext] - spectrum[index]) * fraction;
-			c.a = 1;
-			Color cf = c;
-
-			for (size_t y = 0; y < height; y++)
-			{
-				if (brightness == DrawSpectrumBrightness::On)
-				{
-					f32 b = (f32)y / height;
-
-					if (b <= 0.5f)
-						cf = Color::white + (c - Color::white) * (b / 0.5f);
-					else
-						cf = c + (Color::black - c) * ((b - 0.5f) / 0.5f);
-
-					cf.a = 1;
-				}
-
-				pixels[x + y * width] = cf.getRgba();
-			}
-		}
-	}
-	else
-	{
-		for (size_t y = 0; y < height; y++)
-		{
-			t = (f32)y / height;
-		 size_t index = t * spectrumCount;
-		 size_t indexNext = index + 1;
-		 f32 indexF = t * (f32)spectrumCount;
-		 f32 fraction = indexF - (f32)index;
-
-			if (indexNext == spectrumCount)
-				indexNext = 0;
-
-			c = spectrum[index] + (spectrum[indexNext] - spectrum[index]) * fraction;
-			c.a = 1;
-			u32 color = c.getRgba();
-			auto offs = y * width;
-
-			for (size_t x = 0; x < width; x++)
-			{
-				pixels[x + offs] = color;
-			}
-		}
-	}
-
-	//if (pixels.data())
-	//{
-	//	spectrumQuadAtlas->textureArray->updateData(pixels.data());
-	//}
-
-	//beginBatch(spectrumQuadAtlas);
-	//atlasTextureIndex = 0;
-	//drawQuad(clippedUvRect, clippedRect);
-	//endBatch();
-}
-
-void Renderer::drawInterpolatedColorsTopBottom(
-	const Rect& rect,
-	const Rect& uvRect,
-	const Color& top,
-	const Color& bottom)
-{
-	auto whiteImg = currentAtlas->whiteImage;
-	atlasTextureIndex = whiteImg->atlasTexture->textureIndex;
-
-	Color clippedTopColor = top;
-	Color clippedBottomColor = bottom;
-
-	if (uvRect.y > 0.0f)
-		clippedTopColor = top + (bottom - top) * uvRect.y;
-
-	if (uvRect.height < 1.0f && uvRect.y == 0.0f)
-		clippedBottomColor = top + (bottom - top) * uvRect.height;
-
-	needToAddVertexCount(6);
-
-	u32 i = vertexBufferData.drawVertexCount;
-
-	vertexBufferData.vertices[i].position = rect.topLeft();
-	vertexBufferData.vertices[i].color = clippedTopColor.getRgba();
-	vertexBufferData.vertices[i].uv = whiteImg->uvRect.topLeft();
-	vertexBufferData.vertices[i].textureIndex = atlasTextureIndex;
-	i++;
-
-	vertexBufferData.vertices[i].position = rect.topRight();
-	vertexBufferData.vertices[i].color = clippedTopColor.getRgba();
-	vertexBufferData.vertices[i].uv = whiteImg->uvRect.topRight();
-	vertexBufferData.vertices[i].textureIndex = atlasTextureIndex;
-	i++;
-
-	vertexBufferData.vertices[i].position = rect.bottomLeft();
-	vertexBufferData.vertices[i].color = clippedBottomColor.getRgba();
-	vertexBufferData.vertices[i].uv = whiteImg->uvRect.bottomLeft();
-	vertexBufferData.vertices[i].textureIndex = atlasTextureIndex;
-	i++;
-
-	// 2nd tri
-	vertexBufferData.vertices[i].position = rect.topRight();
-	vertexBufferData.vertices[i].color = clippedTopColor.getRgba();
-	vertexBufferData.vertices[i].uv = whiteImg->uvRect.topRight();
-	vertexBufferData.vertices[i].textureIndex = atlasTextureIndex;
-	i++;
-
-	vertexBufferData.vertices[i].position = rect.bottomRight();
-	vertexBufferData.vertices[i].color = clippedBottomColor.getRgba();
-	vertexBufferData.vertices[i].uv = whiteImg->uvRect.bottomRight();
-	vertexBufferData.vertices[i].textureIndex = atlasTextureIndex;
-	i++;
-
-	vertexBufferData.vertices[i].position = rect.bottomLeft();
-	vertexBufferData.vertices[i].color = clippedBottomColor.getRgba();
-	vertexBufferData.vertices[i].uv = whiteImg->uvRect.bottomLeft();
-	vertexBufferData.vertices[i].textureIndex = atlasTextureIndex;
-	i++;
-
-	vertexBufferData.drawVertexCount = i;
-	currentBatch->vertexCount += 6;
-}
-
-void Renderer::drawInterpolatedColorsLeftRight(
-	const Rect& rect,
-	const Rect& uvRect,
-	const Color& left,
-	const Color& right)
-{
-	auto whiteImg = currentAtlas->whiteImage;
-
-	atlasTextureIndex = whiteImg->atlasTexture->textureIndex;
-	needToAddVertexCount(6);
-
-	u32 i = vertexBufferData.drawVertexCount;
-
-	vertexBufferData.vertices[i].position = rect.topLeft();
-	vertexBufferData.vertices[i].color = left.getRgba();
-	vertexBufferData.vertices[i].uv = whiteImg->uvRect.topLeft();
-	vertexBufferData.vertices[i].textureIndex = atlasTextureIndex;
-	i++;
-
-	vertexBufferData.vertices[i].position = rect.topRight();
-	vertexBufferData.vertices[i].color = right.getRgba();
-	vertexBufferData.vertices[i].uv = whiteImg->uvRect.topRight();
-	vertexBufferData.vertices[i].textureIndex = atlasTextureIndex;
-	i++;
-
-	vertexBufferData.vertices[i].position = rect.bottomLeft();
-	vertexBufferData.vertices[i].color = left.getRgba();
-	vertexBufferData.vertices[i].uv = whiteImg->uvRect.bottomLeft();
-	vertexBufferData.vertices[i].textureIndex = atlasTextureIndex;
-	i++;
-
-	// 2nd tri
-
-	vertexBufferData.vertices[i].position = rect.topRight();
-	vertexBufferData.vertices[i].color = right.getRgba();
-	vertexBufferData.vertices[i].uv = whiteImg->uvRect.topRight();
-	vertexBufferData.vertices[i].textureIndex = atlasTextureIndex;
-	i++;
-
-	vertexBufferData.vertices[i].position = rect.bottomRight();
-	vertexBufferData.vertices[i].color = right.getRgba();
-	vertexBufferData.vertices[i].uv = whiteImg->uvRect.bottomRight();
-	vertexBufferData.vertices[i].textureIndex = atlasTextureIndex;
-	i++;
-
-	vertexBufferData.vertices[i].position = rect.bottomLeft();
-	vertexBufferData.vertices[i].color = left.getRgba();
-	vertexBufferData.vertices[i].uv = whiteImg->uvRect.bottomLeft();
 	vertexBufferData.vertices[i].textureIndex = atlasTextureIndex;
 	i++;
 
@@ -2037,7 +1847,7 @@ void Renderer::drawPolyLine(const Point* points, u32 pointCount, bool closed)
 	Point p22;
 	auto atlas = (Atlas*)currentBatch->atlas;
 	auto lineImage = atlas->whiteImage;
-	const auto color = currentLineStyle.color.getRgba();
+	const auto color = currentLineStyle.color;
 	auto rcUv = lineImage->uvRect;
 
 	rcUv.x += ctx->settings.whiteImageUvBorder;
@@ -2248,8 +2058,8 @@ void Renderer::drawPolyLine(const Point* points, u32 pointCount, bool closed)
 
 		if (drawIt)
 		{
-			drawTriangle(p11, p21, p22, uv11, uv21, uv22, lineImage);
-			drawTriangle(p11, p22, p12, uv11, uv22, uv12, lineImage);
+			drawTriangle(p11, p21, p22, uv11, uv21, uv22, currentColor, currentColor, currentColor, lineImage);
+			drawTriangle(p11, p22, p12, uv11, uv22, uv12, currentColor, currentColor, currentColor,lineImage);
 		}
 	}
 }
@@ -2257,11 +2067,13 @@ void Renderer::drawPolyLine(const Point* points, u32 pointCount, bool closed)
 void Renderer::drawTriangle(
 	const Point& p1, const Point& p2, const Point& p3,
 	const Point& uv1, const Point& uv2, const Point& uv3,
+	const Rgba32 c1, const Rgba32 c2, const Rgba32 c3,
 	Image* image)
 {
 	// not thread safe
 	static Point pts[12];
 	static Point uvPts[12];
+	static Rgba32 colors[12];
 	static u32 pointCount;
 	static Point newUv1, newUv2, newUv3;
 	auto img = image ? image : currentAtlas->whiteImage;
@@ -2286,14 +2098,15 @@ void Renderer::drawTriangle(
 	}
 
 	clipTriangleToRect(
-		p1, p2, p3, newUv1, newUv2, newUv3,
-		currentClipRect, pts, uvPts, pointCount);
+		p1, p2, p3, newUv1, newUv2, newUv3, c1, c2, c3,
+		currentClipRect, pts, uvPts, colors, pointCount);
 
 	if (!pointCount)
 		return;
 
-	Point& fp = pts[0];
-	Point& uvFp = uvPts[0];
+	Point& firstPoint = pts[0];
+	Point& firstUv = uvPts[0];
+	Rgba32 firstColor = colors[0];
 
 	atlasTextureIndex = img->atlasTexture->textureIndex;
 
@@ -2302,20 +2115,20 @@ void Renderer::drawTriangle(
 
 	for (int k = 1; k < pointCount - 1; k++)
 	{
-		vertexBufferData.vertices[i].position = fp;
-		vertexBufferData.vertices[i].color = currentColor;
-		vertexBufferData.vertices[i].uv = uvFp;
+		vertexBufferData.vertices[i].position = firstPoint;
+		vertexBufferData.vertices[i].color = firstColor;
+		vertexBufferData.vertices[i].uv = firstUv;
 		vertexBufferData.vertices[i].textureIndex = atlasTextureIndex;
 		i++;
 
 		vertexBufferData.vertices[i].position = pts[k];
-		vertexBufferData.vertices[i].color = currentColor;
+		vertexBufferData.vertices[i].color = colors[k];
 		vertexBufferData.vertices[i].uv = uvPts[k];
 		vertexBufferData.vertices[i].textureIndex = atlasTextureIndex;
 		i++;
 
 		vertexBufferData.vertices[i].position = pts[k+1];
-		vertexBufferData.vertices[i].color = currentColor;
+		vertexBufferData.vertices[i].color = colors[k+1];
 		vertexBufferData.vertices[i].uv = uvPts[k+1];
 		vertexBufferData.vertices[i].textureIndex = atlasTextureIndex;
 		i++;
@@ -2325,7 +2138,7 @@ void Renderer::drawTriangle(
 	vertexBufferData.drawVertexCount = i;
 }
 
-bool Renderer::clipRectNoRot(Rect& rect, Rect& uvRect)
+bool Renderer::clipRectNoRot(Rect& rect, Rect& uvRect, Rgba32* colors)
 {
 	if (rect.outside(currentClipRect))
 		return false;
@@ -2352,19 +2165,48 @@ bool Renderer::clipRectNoRot(Rect& rect, Rect& uvRect)
 	uvRect.width -= oldUvRect.width * tx;
 	uvRect.height -= oldUvRect.height * ty;
 
+	// If a color array is provided, treat it as in/out and update corners.
+	// colors layout: [0]=topLeft, [1]=topRight, [2]=bottomRight, [3]=bottomLeft
+	if (colors && rect.width > 0.0f && rect.height > 0.0f)
+	{
+		// normalized X positions of new left/right within original rect
+		f32 leftT = (newRect.x - rect.x) / rect.width;
+		f32 rightT = (newRect.right() - rect.x) / rect.width;
+
+		// read input colors into Color for interpolation
+		Color tl = colors[0];
+		Color tr = colors[1];
+		Color br = colors[2];
+		Color bl = colors[3];
+
+		// interpolate top edge colors at new left/right
+		Color newTL = tl + (tr - tl) * leftT;
+		Color newTR = tl + (tr - tl) * rightT;
+
+		// interpolate bottom edge colors at new left/right
+		Color newBL = bl + (br - bl) * leftT;
+		Color newBR = bl + (br - bl) * rightT;
+
+		// write back (Rgba32 supports assignment from Color)
+		colors[0] = newTL;
+		colors[1] = newTR;
+		colors[2] = newBR;
+		colors[3] = newBL;
+	}
+
 	rect = newRect;
 
 	return true;
 }
 
-bool Renderer::clipRectRot(Rect& rect, Rect& uvRect)
+bool Renderer::clipRectRot(Rect& rect, Rect& uvRect, Rgba32* colors)
 {
 	if (rect.outside(currentClipRect))
 		return false;
 
 	auto newRect = rect.clipInside(currentClipRect);
 
-	// clip left and top UVs
+	// clip left and top UVs (rotated handling)
 	auto tx = (newRect.x - rect.x) / rect.width;
 	auto ty = (newRect.y - rect.y) / rect.height;
 	uvRect.x += uvRect.width * ty;
@@ -2377,19 +2219,45 @@ bool Renderer::clipRectRot(Rect& rect, Rect& uvRect)
 	uvRect.y += uvRect.height * tx;
 	uvRect.width -= uvRect.width * ty;
 	uvRect.height -= uvRect.height * tx;
+
+	// If a color array is provided, treat it as in/out and update corners.
+	// colors layout: [0]=topLeft, [1]=topRight, [2]=bottomRight, [3]=bottomLeft
+	if (colors && rect.width > 0.0f && rect.height > 0.0f)
+	{
+		// normalized X positions of new left/right within original rect
+		f32 leftT = (newRect.x - rect.x) / rect.width;
+		f32 rightT = (newRect.right() - rect.x) / rect.width;
+
+		Color tl = colors[0];
+		Color tr = colors[1];
+		Color br = colors[2];
+		Color bl = colors[3];
+
+		// interpolate across X for top and bottom edges
+		Color newTL = tl + (tr - tl) * leftT;
+		Color newTR = tl + (tr - tl) * rightT;
+		Color newBL = bl + (br - bl) * leftT;
+		Color newBR = bl + (br - bl) * rightT;
+
+		colors[0] = newTL;
+		colors[1] = newTR;
+		colors[2] = newBR;
+		colors[3] = newBL;
+	}
+
 	rect = newRect;
 
 	return true;
 }
 
-bool Renderer::clipRect(bool rotated, Rect& rect, Rect& uvRect)
+bool Renderer::clipRect(bool rotated, Rect& rect, Rect& uvRect, Rgba32* colors)
 {
 	if (!rotated)
 	{
-		return clipRectNoRot(rect, uvRect);
+		return clipRectNoRot(rect, uvRect, colors);
 	}
 
-	return clipRectRot(rect, uvRect);
+	return clipRectRot(rect, uvRect, colors);
 }
 
 void Renderer::needToAddVertexCount(u32 count)
@@ -2407,9 +2275,12 @@ void Renderer::needToAddVertexCount(u32 count)
 char* Renderer::addUtf8TextToBuffer(const char* text, u32 sizeBytes)
 {
 	if (currentWindowContext->textBufferPosition + sizeBytes + 1 >= (u32)currentWindowContext->textBuffer.size()) return nullptr;
+	
 	auto textAddr = currentWindowContext->textBuffer.data() + currentWindowContext->textBufferPosition;
+	
 	memcpy(textAddr, text, sizeBytes + 1); // and zero
 	currentWindowContext->textBufferPosition += sizeBytes + 1;
+	
 	return textAddr;
 }
 

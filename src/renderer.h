@@ -19,7 +19,7 @@ enum class ImageSizingPolicy
 struct TextStyle
 {
 	FontStyle style = FontStyle::Normal; /// the font face style
-	Color backFillColor; /// the text color
+	Rgba32 backFillColor; /// the text color
 	bool underline = false; /// true if underline
 	bool backFill = false; /// true if back is filled color
 };
@@ -39,11 +39,11 @@ struct DrawCommand
 		None,
 		DrawRect,
 		DrawQuad,
+		DrawQuad4Colors,
 		DrawImageBordered,
 		DrawLine,
 		DrawPolyLine,
 		DrawText,
-		DrawInterpolatedColors,
 		DrawSolidTriangle,
 		ClipRect,
 		SetViewportOffset,
@@ -78,6 +78,7 @@ struct DrawCommand
 	{
 		Point p1, p2, p3;
 		Point uv1, uv2, uv3;
+		Rgba32 c1, c2, c3;
 		Image* image = nullptr;
 	};
 
@@ -109,14 +110,14 @@ struct DrawCommand
 		f32 scale;
 	};
 
-	struct CmdDrawInterpolatedColors
+	struct CmdDrawQuad4Colors
 	{
 		Rect rect;
 		Rect uvRect;
-		Color topLeft;
-		Color topRight;
-		Color bottomLeft;
-		Color bottomRight;
+		Rgba32 topLeft;
+		Rgba32 topRight;
+		Rgba32 bottomLeft;
+		Rgba32 bottomRight;
 	};
 
 	struct CmdSetViewportOffset
@@ -139,7 +140,7 @@ struct DrawCommand
 		CmdDrawPolyLine drawPolyLine;
 		CmdDrawText drawText;
 		CmdDrawImageBordered drawImageBordered;
-		CmdDrawInterpolatedColors drawInterpolatedColors;
+		CmdDrawQuad4Colors drawQuad4Colors;
 		CmdDrawTriangle drawTriangle;
 		CmdSetViewportOffset setViewportOffset;
 		RenderCallback callback;
@@ -147,9 +148,9 @@ struct DrawCommand
 		bool clipToParent;
 		bool popClipRect = false;
 		Atlas* setAtlas;
-		Color setColor;
+		Rgba32 setColor;
 		Font* setFont;
-		Color setTextColor;
+		Rgba32 setTextColor;
 		TextStyle setTextStyle;
 		LineStyle setLineStyle;
 		FillStyle setFillStyle;
@@ -170,7 +171,7 @@ struct DrawCommand
 		data.drawPolyLine = other.data.drawPolyLine;
 		data.drawText = other.data.drawText;
 		data.drawImageBordered = other.data.drawImageBordered;
-		data.drawInterpolatedColors = other.data.drawInterpolatedColors;
+		data.drawQuad4Colors = other.data.drawQuad4Colors;
 		data.drawTriangle = other.data.drawTriangle;
 		data.setViewportOffset = other.data.setViewportOffset;
 		data.clipRect = other.data.clipRect;
@@ -192,18 +193,6 @@ struct DrawCommand
 class Renderer
 {
 public:
-	enum class DrawSpectrumBrightness
-	{
-		On,
-		Off
-	};
-
-	enum class DrawSpectrumDirection
-	{
-		Horizontal,
-		Vertical
-	};
-
 	Renderer();
 	virtual ~Renderer();
 	void setCurrentNativeWindow(HNativeWindow wnd);
@@ -229,13 +218,13 @@ public:
 
 	// Commands
 	void cmdCallback(RenderCallback callback);
-	void cmdClearBackground(const Color& color);
-	void cmdSetColor(const Color& color);
+	void cmdClearBackground(const Rgba32 color);
+	void cmdSetColor(const Rgba32 color);
 	void cmdSetAtlas(Atlas* atlas);
 	void cmdSetFont(Font* font);
 	void cmdSetTextUnderline(bool underline);
 	void cmdSetTextBackfill(bool backfill);
-	void cmdSetTextBackfillColor(const Color& color);
+	void cmdSetTextBackfillColor(const Rgba32 color);
 	void cmdSetLineStyle(const LineStyle& style);
 	void cmdSetFillStyle(const FillStyle& style);
 	void cmdDrawQuad(Image* image, const Point& p1, const Point& p2, const Point& p3, const Point& p4);
@@ -246,13 +235,10 @@ public:
 	void cmdDrawImageScaledAligned(Image* image, const Rect& rect, HAlignType halign, VAlignType valign, f32 scale);
 	void cmdDrawRectangle(const Rect& rect);
 	void cmdDrawSolidRectangle(const Rect& rect);
-	void cmdDrawInterpolatedColors(const Rect& rect, const Color& topLeft, const Color& topRight, const Color& bottomRight, const Color& bottomLeft);
-	void cmdDrawSpectrumColors(const Rect& rect, DrawSpectrumBrightness brightness, DrawSpectrumDirection dir);
-	void cmdDrawInterpolatedColorsTopBottom(const Rect& rect, const Color& top, const Color& bottom);
-	void cmdDrawInterpolatedColorsLeftRight(const Rect& rect, const Color& left, const Color& right);
+	void cmdDrawQuad4Colors(const Rect& rect, const Rgba32 topLeft, const Rgba32 topRight, const Rgba32 bottomRight, const Rgba32 bottomLeft);
 	void cmdDrawLine(const Point& a, const Point& b);
 	void cmdDrawPolyLine(const Point* points, u32 pointCount, bool closed);
-	void cmdDrawSolidTriangle(const Point& p1, const Point& p2, const Point& p3);
+	void cmdDrawSolidTriangle(const Point& p1, const Point& p2, const Point& p3, const Rgba32 c1, const Rgba32 c2, const Rgba32 c3);
 	FontTextSize cmdDrawTextAt(
 		const char* text,
 		const Point& position);
@@ -274,7 +260,7 @@ public:
 	void drawTextGlyph(Image* image, const Point& pos);
 	void drawQuad(Image* image, const Point& p1, const Point& p2, const Point& p3, const Point& p4);
 	void drawQuad(const Rect& rect, const Rect& uvRect);
-	void drawQuadCornersColor(const Rect& rect, const Rect& uvRect, const Color& colTopLeft, const Color& colTopRight, const Color& colBottomRight, const Color& colBottomLeft);
+	void drawQuad4Colors(const Rect& rect, const Rect& uvRect, const Rgba32 colTopLeft, const Rgba32 colTopRight, const Rgba32 colBottomRight, const Rgba32 colBottomLeft);
 	void drawQuadRot90(const Rect& rect, const Rect& uvRect);
 	FontTextSize computeSizeOrDrawText(
 		const char* text,
@@ -293,24 +279,15 @@ public:
 		bool doDraw = false,
 		Font* font = nullptr);
 
-	void drawInterpolatedColors(
-		const Rect& rect,
-		const Rect& uvRect,
-		const Color& topLeft,
-		const Color& bottomLeft,
-		const Color& topRight,
-		const Color& bottomRight);
-	void drawSpectrumColors(const Rect& rect, DrawSpectrumBrightness brightness, DrawSpectrumDirection dir);
-	void drawInterpolatedColorsTopBottom(const Rect& rect, const Rect& uvRect, const Color& top, const Color& bottom);
-	void drawInterpolatedColorsLeftRight(const Rect& rect, const Rect& uvRect, const Color& left, const Color& right);
 	void drawImageBordered(Image* image, u32 border, const Rect& rect, f32 scale);
 	void drawLine(const Point& a, const Point& b);
 	void drawPolyLine(const Point* points, u32 pointCount, bool closed);
-	void drawTriangle(const Point& p1, const Point& p2, const Point& p3, const Point& uv1, const Point& uv2, const Point& uv3, Image* image);
+	void drawTriangle(const Point& p1, const Point& p2, const Point& p3, const Point& uv1, const Point& uv2, const Point& uv3, const Rgba32 c1, const Rgba32 c2, const Rgba32 c3,
+		Image* image);
 
-	bool clipRectNoRot(Rect& rect, Rect& uvRect);
-	bool clipRectRot(Rect& rect, Rect& uvRect);
-	bool clipRect(bool rotated, Rect& rect, Rect& uvRect);
+	bool clipRectNoRot(Rect& rect, Rect& uvRect, Rgba32* colors = nullptr);
+	bool clipRectRot(Rect& rect, Rect& uvRect, Rgba32* colors = nullptr);
+	bool clipRect(bool rotated, Rect& rect, Rect& uvRect, Rgba32* colors = nullptr);
 	void needToAddVertexCount(u32 count);
 	char* addUtf8TextToBuffer(const char* text, u32 sizeBytes);
 	void addBatch();
@@ -338,7 +315,7 @@ public:
 	Font* currentFont = nullptr;
 	Atlas* currentAtlas = nullptr;
 	Point windowSize;
-	u32 currentColor = 0xffffffff;
+	Rgba32 currentColor = 0xffffffff;
 	i32 zOrder = 0;
 	u32 atlasTextureIndex = 0;
 };

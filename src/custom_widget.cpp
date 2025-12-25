@@ -341,7 +341,7 @@ void drawSolidTriangle(
 	ctx->renderer->cmdDrawSolidTriangle(
 		p1 + ctx->renderer->viewportOffset,
 		p2 + ctx->renderer->viewportOffset,
-		p3 + ctx->renderer->viewportOffset);
+		p3 + ctx->renderer->viewportOffset, ctx->renderer->currentColor, ctx->renderer->currentColor, ctx->renderer->currentColor);
 }
 
 }
