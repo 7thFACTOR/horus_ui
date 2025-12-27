@@ -241,8 +241,13 @@ int main(int argc, char** args)
 				hui::beginScrollView(500, scrollPos);
 				
 				//hui::pushSpacing(500);
-				static hui::Color colq = hui::Color::blue;
-				hui::colorPickerPopup(hui::Color::white, colq);
+				static hui::Color col1 = hui::Color(3,0,0,1);
+				static hui::Color col2 = hui::Color::blue;
+				hui::colorPicker(&col1);
+				hui::comboSliderFloat(&col1.r);
+				hui::comboSliderFloat(&col1.g);
+				hui::comboSliderFloat(&col1.b);
+				hui::colorPicker(&col2);
 				//hui::popSpacing();
 				
 				hui::beginSameLine();

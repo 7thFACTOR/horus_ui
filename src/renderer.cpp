@@ -612,7 +612,6 @@ void Renderer::executeDrawCommands(HNativeWindow wnd)
 			drawPolyLine(cmd.data.drawPolyLine.points, cmd.data.drawPolyLine.count, cmd.data.drawPolyLine.closed);
 			break;
 		case DrawCommand::Type::DrawSolidTriangle:
-			currentColor = currentFillStyle.color;
 			drawTriangle(
 				cmd.data.drawTriangle.p1,
 				cmd.data.drawTriangle.p2,
@@ -628,7 +627,7 @@ void Renderer::executeDrawCommands(HNativeWindow wnd)
 		case DrawCommand::Type::DrawQuad4Colors:
 			drawQuad4Colors(
 				cmd.data.drawQuad4Colors.rect,
-				currentAtlas->whiteImage->uvRect.contract({ ctx->settings.whiteImageUvBorder, ctx->settings.whiteImageUvBorder }),
+				cmd.data.drawQuad4Colors.uvRect.contract({ ctx->settings.whiteImageUvBorder, ctx->settings.whiteImageUvBorder }),
 				cmd.data.drawQuad4Colors.topLeft,
 				cmd.data.drawQuad4Colors.topRight,
 				cmd.data.drawQuad4Colors.bottomRight,
@@ -743,6 +742,7 @@ void Renderer::end()
 void Renderer::cmdSetColor(const Rgba32 newColor)
 {
 	DrawCommand cmd(DrawCommand::Type::SetColor);
+	currentColor = newColor;
 	cmd.data.setColor = newColor;
 	addDrawCommand(cmd);
 }
@@ -890,6 +890,64 @@ void Renderer::cmdDrawImageScaledAligned(Image* image, const Rect& rect, HAlignT
 	cmdDrawImage(image, newRect);
 }
 
+void Renderer::cmdDrawImageTiled(Image* image, const Rect& destRect, const Point& offset, const Point& scale)
+{
+    f32 imageWidth = image->rect.width * scale.x;
+    f32 imageHeight = image->rect.height * scale.y;
+
+    if (imageWidth <= 0.0f || imageHeight <= 0.0f)
+        return;
+
+    // Normalize offset into [0, imageWidth) / [0, imageHeight)
+    f32 ox = fmodf(offset.x, imageWidth);
+    f32 oy = fmodf(offset.y, imageHeight);
+    if (ox < 0) ox += imageWidth;
+    if (oy < 0) oy += imageHeight;
+
+    // Start tiling so pattern is shifted by offset
+    f32 startX = destRect.x - ox;
+    f32 startY = destRect.y - oy;
+
+    for (f32 y = startY; y < destRect.bottom(); y += imageHeight)
+    {
+        for (f32 x = startX; x < destRect.right(); x += imageWidth)
+        {
+            // full tile rect (may extend outside destRect)
+            Rect tileRect = { x, y, imageWidth, imageHeight };
+
+            // compute intersection with destRect -> this is the visible portion we need to draw
+            Rect visibleRect = tileRect.clipInside(destRect);
+
+            if (visibleRect.width <= 0.0f || visibleRect.height <= 0.0f)
+                continue;
+
+            // Compute UV mapping for visibleRect.
+            // tileRect maps to the whole image UV; visibleRect is an offset sub-rect of tileRect.
+            // compute fraction of tile that is visible on each axis
+            f32 visOffsetX = visibleRect.x - tileRect.x; // pixels into the tile
+            f32 visOffsetY = visibleRect.y - tileRect.y;
+            f32 visW = visibleRect.width;
+            f32 visH = visibleRect.height;
+
+            // base UV for the tile (full tile)
+            f32 u0 = image->uvRect.x;
+            f32 v0 = image->uvRect.y;
+            f32 uScale = image->uvRect.width / imageWidth;
+            f32 vScale = image->uvRect.height / imageHeight;
+
+            Rect tileUvRect = {
+                u0 + visOffsetX * uScale,
+                v0 + visOffsetY * vScale,
+                visW * uScale,
+                visH * vScale
+            };
+
+            // Issue clipped tile using computed UVs
+            cmdDrawImage(image, visibleRect, tileUvRect);
+        }
+    }
+}
+
 void Renderer::cmdDrawRectangle(const Rect& rect)
 {
 	Point pts[4] = {
@@ -902,7 +960,7 @@ void Renderer::cmdDrawRectangle(const Rect& rect)
 	cmdDrawPolyLine(pts, 4, true);
 }
 
-void Renderer::cmdDrawSolidRectangle(const Rect& rect)
+void Renderer::cmdDrawFilledRectangle(const Rect& rect)
 {
 	auto image = currentAtlas->whiteImage;
 	auto uvRect = image->uvRect;
@@ -910,10 +968,12 @@ void Renderer::cmdDrawSolidRectangle(const Rect& rect)
 	cmdDrawImage(image, rect, uvRect);
 }
 
-void Renderer::cmdDrawQuad4Colors(const Rect& rect, const Rgba32 topLeft, const Rgba32 topRight, const Rgba32 bottomRight, const Rgba32 bottomLeft)
+void Renderer::cmdDrawRectangle4Colors(const Rect& rect, const Rgba32 topLeft, const Rgba32 topRight, const Rgba32 bottomRight, const Rgba32 bottomLeft)
 {
 	DrawCommand cmd(DrawCommand::Type::DrawQuad4Colors);
 	cmd.data.drawQuad4Colors.rect = rect;
+	cmd.data.drawQuad4Colors.uvRect = ctx->theme->atlas->whiteImage->uvRect.contract({ ctx->settings.whiteImageUvBorder, ctx->settings.whiteImageUvBorder });
+	cmd.data.drawQuad4Colors.image = ctx->theme->atlas->whiteImage;
 	cmd.data.drawQuad4Colors.bottomLeft = bottomLeft;
 	cmd.data.drawQuad4Colors.bottomRight = bottomRight;
 	cmd.data.drawQuad4Colors.topLeft = topLeft;
@@ -952,8 +1012,8 @@ void Renderer::cmdDrawSolidTriangle(const Point& p1, const Point& p2, const Poin
 	cmd.data.drawTriangle.uv2 = uvRc.topRight();
 	cmd.data.drawTriangle.uv3 = uvRc.bottomRight();
 	cmd.data.drawTriangle.c1 = c1;
-	cmd.data.drawTriangle.c1 = c2;
-	cmd.data.drawTriangle.c1 = c3;
+	cmd.data.drawTriangle.c2 = c2;
+	cmd.data.drawTriangle.c3 = c3;
 	cmd.data.drawTriangle.image = ctx->theme->atlas->whiteImage;
 	addDrawCommand(cmd);
 }
@@ -1429,49 +1489,12 @@ void Renderer::drawQuad(const Rect& rect, const Rect& uvRect)
 
 void Renderer::drawQuad4Colors(const Rect& rect, const Rect& uvRect, const Rgba32 colTopLeft, const Rgba32 colTopRight, const Rgba32 colBottomRight, const Rgba32 colBottomLeft)
 {
-	needToAddVertexCount(6);
-
-	u32 i = vertexBufferData.drawVertexCount;
-
-	vertexBufferData.vertices[i].position = rect.topLeft();
-	vertexBufferData.vertices[i].uv = uvRect.topLeft();
-	vertexBufferData.vertices[i].color = colTopLeft;
-	vertexBufferData.vertices[i].textureIndex = atlasTextureIndex;
-	i++;
-
-	vertexBufferData.vertices[i].position = rect.topRight();
-	vertexBufferData.vertices[i].uv = uvRect.topRight();
-	vertexBufferData.vertices[i].color = colTopRight;
-	vertexBufferData.vertices[i].textureIndex = atlasTextureIndex;
-	i++;
-
-	vertexBufferData.vertices[i].position = rect.bottomRight();
-	vertexBufferData.vertices[i].uv = uvRect.bottomRight();
-	vertexBufferData.vertices[i].color = colBottomRight;
-	vertexBufferData.vertices[i].textureIndex = atlasTextureIndex;
-	i++;
-
-	// 2nd triangle
-	vertexBufferData.vertices[i].position = rect.topLeft();
-	vertexBufferData.vertices[i].uv = uvRect.topLeft();
-	vertexBufferData.vertices[i].color = colTopLeft;
-	vertexBufferData.vertices[i].textureIndex = atlasTextureIndex;
-	i++;
-
-	vertexBufferData.vertices[i].position = rect.bottomRight();
-	vertexBufferData.vertices[i].uv = uvRect.bottomRight();
-	vertexBufferData.vertices[i].color = colBottomRight;
-	vertexBufferData.vertices[i].textureIndex = atlasTextureIndex;
-	i++;
-
-	vertexBufferData.vertices[i].position = rect.bottomLeft();
-	vertexBufferData.vertices[i].uv = uvRect.bottomLeft();
-	vertexBufferData.vertices[i].color = colBottomLeft;
-	vertexBufferData.vertices[i].textureIndex = atlasTextureIndex;
-	i++;
-
-	vertexBufferData.drawVertexCount = i;
-	currentBatch->vertexCount += 6;
+	drawTriangle(rect.topLeft(), rect.topRight(),  rect.bottomRight(),
+		uvRect.topLeft(), uvRect.topRight(), uvRect.bottomRight(),
+		colTopLeft, colTopRight, colBottomRight, currentAtlas->whiteImage);
+	drawTriangle(rect.topLeft(), rect.bottomRight(), rect.bottomLeft(),
+		uvRect.topLeft(), uvRect.bottomRight(), uvRect.bottomLeft(),
+		colTopLeft, colBottomRight, colBottomLeft, currentAtlas->whiteImage);
 }
 
 void Renderer::drawQuadRot90(const Rect& rect, const Rect& uvRect)
@@ -2059,7 +2082,7 @@ void Renderer::drawPolyLine(const Point* points, u32 pointCount, bool closed)
 		if (drawIt)
 		{
 			drawTriangle(p11, p21, p22, uv11, uv21, uv22, currentColor, currentColor, currentColor, lineImage);
-			drawTriangle(p11, p22, p12, uv11, uv22, uv12, currentColor, currentColor, currentColor,lineImage);
+			drawTriangle(p11, p22, p12, uv11, uv22, uv12, currentColor, currentColor, currentColor, lineImage);
 		}
 	}
 }
@@ -2070,32 +2093,16 @@ void Renderer::drawTriangle(
 	const Rgba32 c1, const Rgba32 c2, const Rgba32 c3,
 	Image* image)
 {
-	// not thread safe
+	//TODO: not thread safe
 	static Point pts[12];
 	static Point uvPts[12];
 	static Rgba32 colors[12];
 	static u32 pointCount;
 	static Point newUv1, newUv2, newUv3;
-	auto img = image ? image : currentAtlas->whiteImage;
 
-	if (image)
-	{
-		newUv1 = uv1;
-		newUv2 = uv2;
-		newUv3 = uv3;
-	}
-	else
-	{
-		newUv1 = img->uvRect.topLeft();
-		newUv1.x += ctx->settings.whiteImageUvBorder;
-		newUv1.y += ctx->settings.whiteImageUvBorder;
-		newUv2 = img->uvRect.topRight();
-		newUv2.x -= ctx->settings.whiteImageUvBorder;
-		newUv2.y += ctx->settings.whiteImageUvBorder;
-		newUv3 = img->uvRect.bottomRight();
-		newUv3.x -= ctx->settings.whiteImageUvBorder;
-		newUv3.y -= ctx->settings.whiteImageUvBorder;
-	}
+	newUv1 = uv1;
+	newUv2 = uv2;
+	newUv3 = uv3;
 
 	clipTriangleToRect(
 		p1, p2, p3, newUv1, newUv2, newUv3, c1, c2, c3,
@@ -2108,7 +2115,7 @@ void Renderer::drawTriangle(
 	Point& firstUv = uvPts[0];
 	Rgba32 firstColor = colors[0];
 
-	atlasTextureIndex = img->atlasTexture->textureIndex;
+	atlasTextureIndex = image->atlasTexture->textureIndex;
 
 	needToAddVertexCount((pointCount - 2) * 3);
 	u32 i = vertexBufferData.drawVertexCount;

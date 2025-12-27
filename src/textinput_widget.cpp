@@ -266,14 +266,14 @@ bool textInput(
 
 			// draw selection rect
 			ctx->renderer->cmdSetColor(bodyTextSelectionElemState.color);
-			ctx->renderer->cmdDrawSolidRectangle(selRect);
+			ctx->renderer->cmdDrawFilledRectangle(selRect);
 		}
 
 		// draw cursor/caret	
 		if (!ctx->settings.textCaretBlinkEnable || (ctx->textInput.caretBlinkTimer >= 0 && ctx->textInput.caretBlinkTimer <= 1))
 		{
 			ctx->renderer->cmdSetColor(bodyTextCaretElemState.color);
-			ctx->renderer->cmdDrawSolidRectangle(cursorRect);
+			ctx->renderer->cmdDrawFilledRectangle(cursorRect);
 		}
 	}
 

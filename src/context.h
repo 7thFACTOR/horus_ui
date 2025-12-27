@@ -132,6 +132,7 @@ struct Context
 	VectorEditorState vecEditor;
 	RotarySliderState rotarySlider;
 	SliderState slider;
+	ColorPickerState colorPickerState;
 	Rect tabGroupWidgetRect;
 
 	// Input

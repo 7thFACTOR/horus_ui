@@ -114,6 +114,7 @@ struct DrawCommand
 	{
 		Rect rect;
 		Rect uvRect;
+		Image* image = nullptr;
 		Rgba32 topLeft;
 		Rgba32 topRight;
 		Rgba32 bottomLeft;
@@ -233,9 +234,10 @@ public:
 	void cmdDrawImage(Image* image, const Rect& rect, const Rect& uvRect);
 	void cmdDrawImageBordered(Image* image, u32 border, const Rect& rect, f32 scale);
 	void cmdDrawImageScaledAligned(Image* image, const Rect& rect, HAlignType halign, VAlignType valign, f32 scale);
+	void cmdDrawImageTiled(Image* image, const Rect& rect, const Point& offset = {}, const Point& scale = {1, 1});
 	void cmdDrawRectangle(const Rect& rect);
-	void cmdDrawSolidRectangle(const Rect& rect);
-	void cmdDrawQuad4Colors(const Rect& rect, const Rgba32 topLeft, const Rgba32 topRight, const Rgba32 bottomRight, const Rgba32 bottomLeft);
+	void cmdDrawFilledRectangle(const Rect& rect);
+	void cmdDrawRectangle4Colors(const Rect& rect, const Rgba32 topLeft, const Rgba32 topRight, const Rgba32 bottomRight, const Rgba32 bottomLeft);
 	void cmdDrawLine(const Point& a, const Point& b);
 	void cmdDrawPolyLine(const Point* points, u32 pointCount, bool closed);
 	void cmdDrawSolidTriangle(const Point& p1, const Point& p2, const Point& p3, const Rgba32 c1, const Rgba32 c2, const Rgba32 c3);

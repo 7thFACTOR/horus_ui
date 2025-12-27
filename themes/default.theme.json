@@ -555,6 +555,17 @@
 				"height":20,
 				"normal": { "image": "default/header", "border": 4, "color": "white", "textColor": "white", "font": "normal" }
 			}
+		},
+		"colorPicker":
+		{
+			"colorPickerCheckers":
+			{
+				"normal": { "image": "default/checkers", "border": 0, "color": "white", "textColor": "white", "font": "normal" }
+			},
+			"colorPickerHueArrow":
+			{
+				"normal": { "image": "default/hue_arrow", "border": 0, "color": "white", "textColor": "white", "font": "normal" }
+			}
 		}
 	}
 }

@@ -256,6 +256,7 @@ enum class WidgetType
 	ColumnsHeader,
 	ComboSlider,
 	RotarySlider,
+	ColorPicker,
 
 	Count
 };
@@ -335,6 +336,8 @@ enum class WidgetElementId
 	RotarySliderBody,
 	RotarySliderMark,
 	RotarySliderValueDot,
+	ColorPickerCheckers,
+	ColorPickerHueArrow,
 
 	Count
 };
@@ -729,6 +732,17 @@ enum class PopupFlags : u32
 	IsMenu = HORUS_BIT(8) /// internal, when this popup is a menu
 };
 HORUS_ENUM_AS_FLAGS(PopupFlags);
+
+enum class ColorPickerFlags : u32
+{
+	NoAlpha = HORUS_BIT(0),
+	NoAlphaBar = HORUS_BIT(1),
+	NoSmallPreview = HORUS_BIT(2),
+	HalfAlphaPreview = HORUS_BIT(3),
+	NoOldColorPreview = HORUS_BIT(4),
+	Hdr = HORUS_BIT(5)
+};
+HORUS_ENUM_AS_FLAGS(ColorPickerFlags);
 
 /// A 2D point
 class Point
@@ -3143,7 +3157,7 @@ HORUS_API void drawSolidTriangle(const Point& p1, const Point& p2, const Point& 
 //////////////////////////////////////////////////////////////////////////
 
 /// Draw a color picker popup widget
-HORUS_API bool colorPickerPopup(const Color& currentColor, Color& outNewColor);
+HORUS_API bool colorPicker(Color* inOutColor, ColorPickerFlags flags = (ColorPickerFlags)0, const Color* oldColor = nullptr);
 
 /// Draw a 3D double vector editor widget
 HORUS_API bool vec3Editor(const char* id, f64& x, f64& y, f64& z, f64 scrollStep = 0.03f);
@@ -3189,5 +3203,7 @@ HORUS_API void toString(f32 value, char* outString, u32 outStringMaxSize, u32 de
 HORUS_API Color getColorFromText(const char* colorText);
 HORUS_API Color hsvToRgb(const Color& hsv);
 HORUS_API Color rgbToHsv(const Color& rgb);
+HORUS_API Color hueToRgb(f32 hue, f32 alpha = 1.0f);
+
 }
 /** @}*/

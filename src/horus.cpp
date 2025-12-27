@@ -1118,6 +1118,10 @@ void setWidgetStyle(WidgetType widgetType, const char* styleName)
 		ctx->theme->elements[(u32)WidgetElementId::RotarySliderMark].setStyle(styleName);
 		ctx->theme->elements[(u32)WidgetElementId::RotarySliderValueDot].setStyle(styleName);
 		break;
+	case WidgetType::ColorPicker:
+		ctx->theme->elements[(u32)WidgetElementId::ColorPickerCheckers].setStyle(styleName);
+		ctx->theme->elements[(u32)WidgetElementId::ColorPickerHueArrow].setStyle(styleName);
+		break;
 	}
 }
 

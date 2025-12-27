@@ -436,6 +436,14 @@ struct VirtualListContentState
 	f32 itemHeight = 0;
 };
 
+struct ColorPickerState
+{
+	u32 draggingElementId = 0;
+	Color currentHsv;
+	Color oldColor;
+	WidgetId currentEditingId = 0;
+};
+
 struct MemoryStream
 {
 	enum class Mode

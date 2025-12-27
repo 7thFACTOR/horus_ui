@@ -70,6 +70,7 @@ WidgetType getWidgetTypeFromName(std::string name)
 	if (name == "columnsHeader") return WidgetType::ColumnsHeader;
 	if (name == "comboSlider") return WidgetType::ComboSlider;
 	if (name == "rotarySlider") return WidgetType::RotarySlider;
+	if (name == "colorPicker") return WidgetType::ColorPicker;
 
 	return WidgetType::None;
 }
@@ -145,6 +146,8 @@ WidgetElementId getWidgetElementFromName(std::string name)
 	if (name == "rotarySliderBody") return WidgetElementId::RotarySliderBody;
 	if (name == "rotarySliderMark") return WidgetElementId::RotarySliderMark;
 	if (name == "rotarySliderValueDot") return WidgetElementId::RotarySliderValueDot;
+	if (name == "colorPickerCheckers") return WidgetElementId::ColorPickerCheckers;
+	if (name == "colorPickerHueArrow") return WidgetElementId::ColorPickerHueArrow;
 
 	return WidgetElementId::Custom;
 }
@@ -202,7 +205,7 @@ Color hsvToRgb(const Color& hsv)
 	{
 		// Gray
 		r = g = b = v;
-		return Color(r, g, b, 1);
+		return Color(r, g, b, hsv.a);
 	}
 
 	h = std::fmod(h, 1.0f) * 6.0f;
@@ -223,7 +226,7 @@ Color hsvToRgb(const Color& hsv)
 	default: r = v; g = p; b = q; break;
 	}
 
-	return Color(r, g, b, 1);
+	return Color(r, g, b, hsv.a);
 }
 
 Color rgbToHsv(const Color& rgb)
@@ -243,7 +246,7 @@ Color rgbToHsv(const Color& rgb)
 		s = 0.0f;
 		h = 0.0f;
 		
-		return Color(h, s, v, 0);
+		return Color(h, s, v, rgb.a);
 	}
 
 	s = delta / max;
@@ -252,7 +255,7 @@ Color rgbToHsv(const Color& rgb)
 	{
 		// Gray
 		h = 0.0f;
-		return Color(h, s, v, 0);
+		return Color(h, s, v, rgb.a);
 	}
 
 	if (max == r)
@@ -267,7 +270,33 @@ Color rgbToHsv(const Color& rgb)
 	if (h < 0.0f)
 		h += 1.0f;
 
-	return Color(h, s, v, 0);
+	return Color(h, s, v, rgb.a);
+}
+
+Color hueToRgb(f32 h, f32 alpha)
+{
+	h = std::fmod(h, 1.0f);
+	if (h < 0.0f) h += 1.0f;
+
+	f32 r, g, b;
+
+	f32 i = std::floor(h * 6.0f);
+	f32 f = h * 6.0f - i;
+
+	f32 q = 1.0f - f;
+	f32 t = f;
+
+	switch (i32(i) % 6)
+	{
+	case 0: r = 1; g = t; b = 0; break;
+	case 1: r = q; g = 1; b = 0; break;
+	case 2: r = 0; g = 1; b = t; break;
+	case 3: r = 0; g = q; b = 1; break;
+	case 4: r = t; g = 0; b = 1; break;
+	default:r = 1; g = 0; b = q; break;
+	}
+
+	return { r, g, b, alpha };
 }
 
 void setThemeElement(

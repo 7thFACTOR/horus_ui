@@ -229,7 +229,7 @@ void drawRectangle(const Rect& rc)
 
 void drawSolidRectangle(const Rect& rc)
 {
-	ctx->renderer->cmdDrawSolidRectangle(
+	ctx->renderer->cmdDrawFilledRectangle(
 		{
 			ctx->renderer->viewportOffset.x + rc.x,
 			ctx->renderer->viewportOffset.y + rc.y,
