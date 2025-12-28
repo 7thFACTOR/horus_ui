@@ -105,13 +105,14 @@ bool colorPicker(Color* inOutColor, ColorPickerFlags flags, const Color* oldColo
 
 	auto rcSV = ctx->widget.rect;
 
-	rcSV.width *= 0.8f;
+	rcSV.width *= 0.5f;
+	rcSV.height = rcSV.width; // make it square
 
-	auto rcH = ctx->widget.rect;
+	auto rcH = rcSV;
 	rcH.x = rcSV.right() + 10.0f * ctx->scale;
 	rcH.width = 32.0f * ctx->scale;
 
-	auto rcAlpha = ctx->widget.rect;
+	auto rcAlpha = rcH;
 
 	rcAlpha.x = rcH.right() + 10.0f * ctx->scale;
 	rcAlpha.width = 32.0f * ctx->scale;
@@ -230,16 +231,37 @@ bool colorPicker(Color* inOutColor, ColorPickerFlags flags, const Color* oldColo
 	rcSample.width = 64;
 	rcSample.height = 32;
 
-	auto rcNoAlphaSample = rcSample;
+	auto rcSampleNoAlpha = rcSample;
+	auto rcSampleWithAlpha = rcSample;
 
-	rcNoAlphaSample.width *= 0.5;
+	rcSampleNoAlpha.width = rcSample.width / 2.0f;
+	rcSampleWithAlpha.width = rcSample.width / 2.0f;
+	rcSampleWithAlpha.x = rcSampleNoAlpha.right();
 
 	ctx->renderer->cmdSetColor(Color::white);
 	ctx->renderer->cmdDrawImageTiled(
 		colorPickerCheckersImg,
 		rcSample, Point(), ctx->scale);
+
+	ctx->renderer->cmdSetColor(Color{ colorForAlphaBar.r, colorForAlphaBar.g, colorForAlphaBar.b, 1 });
+	ctx->renderer->cmdDrawFilledRectangle(rcSampleNoAlpha);
+
 	ctx->renderer->cmdSetColor(Color{ colorForAlphaBar.r, colorForAlphaBar.g, colorForAlphaBar.b, hsv.a });
-	ctx->renderer->cmdDrawFilledRectangle(rcNoAlphaSample);
+	ctx->renderer->cmdDrawFilledRectangle(rcSampleWithAlpha);
+
+	Rect rcCurrentSVIndicator = rcSV;
+	const f32 indicatorSize = 30.0f * ctx->scale;
+	rcCurrentSVIndicator.x = rcSV.x + (hsv.g * rcSV.width - indicatorSize / 2.0f * ctx->scale);
+	rcCurrentSVIndicator.y = rcSV.y + ((1.0f - hsv.b) * rcSV.height - indicatorSize / 2.0f * ctx->scale);
+
+	rcCurrentSVIndicator.width = indicatorSize / 2.0f;
+	rcCurrentSVIndicator.height = indicatorSize / 2.0f;
+	ctx->renderer->cmdSetColor(hsvToRgb({ hsv.r, hsv.g, hsv.b, 1 }));
+	ctx->renderer->cmdDrawFilledRectangle(rcCurrentSVIndicator);
+	ctx->renderer->cmdSetLineStyle(LineStyle(Color::black, 3));
+	ctx->renderer->cmdDrawRectangle(rcCurrentSVIndicator);
+	ctx->renderer->cmdSetLineStyle(LineStyle(Color::white, 1));
+	ctx->renderer->cmdDrawRectangle(rcCurrentSVIndicator);
 
 	*inOutColor = hsvToRgb(hsv);
 
