@@ -1,6 +1,8 @@
 #include "context.h"
 #include "theme.h"
 #include "util.h"
+#include "font.h"
+#include "unicode_text_cache.h"
 
 namespace hui
 {
@@ -82,29 +84,90 @@ static void drawEdgeTrianglesAt(
 	}
 }
 
-inline float CanonicalHue(float h)
+static void drawColorPreviewSwatch(const Rect& rc, const Color& color, const char* text)
 {
-	h = std::fmod(h, 1.0f);
-	if (h < 0.0f) h += 1.0f;
-	return h;
+	auto& colorPickerState = ctx->theme->getElement(WidgetElementId::ColorPickerBody).normalState();
+	auto& colorPickerCheckersState = ctx->theme->getElement(WidgetElementId::ColorPickerCheckers).normalState();
+	auto tsize = colorPickerState.font->computeTextSize(text);
+
+	ctx->renderer->cmdSetColor(colorPickerState.textColor);
+	ctx->renderer->cmdSetFont(colorPickerState.font);
+	ctx->renderer->cmdDrawTextInBox(
+		text,
+		{
+			rc.x,
+			rc.y,
+			rc.width,
+			tsize.height * ctx->scale
+		},
+		HAlignType::Left,
+		VAlignType::Center);
+
+	Rect rcSample = {
+		rc.x,
+		rc.y + tsize.height * ctx->scale + 5.0f * ctx->scale,
+		64 * ctx->scale,
+		32.0f * ctx->scale
+	};
+
+	auto rcSampleNoAlpha = rcSample;
+	auto rcSampleWithAlpha = rcSample;
+
+	rcSampleNoAlpha.width = rcSample.width / 2.0f;
+	rcSampleWithAlpha.width = rcSample.width / 2.0f;
+	rcSampleWithAlpha.x = rcSampleNoAlpha.right();
+
+	ctx->renderer->cmdSetColor(Color::white);
+	ctx->renderer->cmdDrawImageTiled(
+		colorPickerCheckersState.image,
+		rcSample, Point(), ctx->scale);
+
+	ctx->renderer->cmdSetColor(Color{ color.r, color.g, color.b, 1 });
+	ctx->renderer->cmdDrawFilledRectangle(rcSampleNoAlpha);
+
+	ctx->renderer->cmdSetColor(color);
+	ctx->renderer->cmdDrawFilledRectangle(rcSampleWithAlpha);
 }
 
-bool colorPicker(Color* inOutColor, ColorPickerFlags flags, const Color* oldColor)
+bool colorPicker(const char* id, Color* inOutColor, ColorPickerFlags flags, const Color* oldColor)
 {
+	//TODO: move constants to settings or theme
+	const f32 indicatorSize = 20.0f * ctx->scale;
 	Color crtColor = *inOutColor;
+	i32 crtR8 = (u32)(crtColor.r * 255.0f);
+	i32 crtG8 = (u32)(crtColor.g * 255.0f);
+	i32 crtB8 = (u32)(crtColor.b * 255.0f);
+	i32 crtA8 = (u32)(crtColor.a * 255.0f);
 	Color hsv = rgbToHsv(crtColor);
-	f32 height = ctx->layout.width;
-	ctx->id = genIdFromPosition("__COLOR_PICKER__");
+	f32 height = ctx->layout.width * 0.5f + indicatorSize;
+	ctx->id = genId(id);
+	
+	auto pickerId = ctx->id;
+	
 	addWidget(height);
 	buttonBehavior();
 
-	if (ctx->colorPickerState.currentEditingId == ctx->id)
+	if (ctx->colorPickerState.currentEditingId == pickerId)
 	{
 		hsv = ctx->colorPickerState.currentHsv;
+		crtColor = ctx->colorPickerState.currentRgb;
+		crtR8 = ctx->colorPickerState.intR;
+		crtG8 = ctx->colorPickerState.intG;
+		crtB8 = ctx->colorPickerState.intB;
+		crtA8 = ctx->colorPickerState.intA;
+	}
+	else
+	{
+		std::string hexColorStr;
+
+		hexColorStr = colorToHex(crtColor);
+		std::snprintf(ctx->colorPickerState.hexColor, ColorPickerState::maxHexColorSize, hexColorStr.c_str());
 	}
 
 	auto rcSV = ctx->widget.rect;
-
+	auto clippedRc = ctx->widget.rect.clipInside(ctx->renderer->getClipRect());
+	rcSV.x += indicatorSize / 2.0f + 1.0f;
+	rcSV.y += indicatorSize / 2.0f;
 	rcSV.width *= 0.5f;
 	rcSV.height = rcSV.width; // make it square
 
@@ -117,30 +180,41 @@ bool colorPicker(Color* inOutColor, ColorPickerFlags flags, const Color* oldColo
 	rcAlpha.x = rcH.right() + 10.0f * ctx->scale;
 	rcAlpha.width = 32.0f * ctx->scale;
 
+	auto clippedRcSV = rcSV.clipInside(ctx->renderer->getClipRect());
+	auto clippedRcHue = rcH.clipInside(ctx->renderer->getClipRect());
+	auto clippedRcAlpha = rcAlpha.clipInside(ctx->renderer->getClipRect());
+
 	if (ctx->event.type == InputEvent::Type::MouseDown)
 	{
-		if (rcSV.contains(ctx->mousePosition))
+		if (clippedRcSV.contains(ctx->mousePosition))
 		{
 			ctx->colorPickerState.currentEditingId = ctx->id;
 			ctx->colorPickerState.draggingElementId = 0;
 			ctx->widget.captureId = ctx->id;
 		}
-		else if (rcH.contains(ctx->mousePosition))
+		else if (clippedRcHue.contains(ctx->mousePosition))
 		{
 			ctx->colorPickerState.currentEditingId = ctx->id;
 			ctx->colorPickerState.draggingElementId = 1;
 			ctx->widget.captureId = ctx->id;
 		}
-		else if (rcAlpha.contains(ctx->mousePosition))
+		else if (clippedRcAlpha.contains(ctx->mousePosition))
 		{
 			ctx->colorPickerState.currentEditingId = ctx->id;
 			ctx->colorPickerState.draggingElementId = 2;
 			ctx->widget.captureId = ctx->id;
 		}
+		else if(clippedRc.contains(ctx->mousePosition))
+		{
+			ctx->colorPickerState.draggingElementId = ~0;
+			ctx->widget.captureId = 0;
+		}
 	}
 
 	if (ctx->widget.pressed)
 	{
+		bool hsvChanged = false;
+
 		if (ctx->colorPickerState.draggingElementId == 0)
 		{
 			hsv.g = (ctx->mousePosition.x - rcSV.x) / (rcSV.width > 0.0f ? rcSV.width : 1.0f);
@@ -148,21 +222,47 @@ bool colorPicker(Color* inOutColor, ColorPickerFlags flags, const Color* oldColo
 
 			clampValue(hsv.g, 0.0f, 1.0f);
 			clampValue(hsv.b, 0.0f, 1.0f);
+			hsvChanged = true;
 		}
 		else if (ctx->colorPickerState.draggingElementId == 1)
 		{
 			// compute normalized t and clamp immediately to avoid out-of-range hue
 			hsv.r = (ctx->mousePosition.y - rcH.y) / (rcH.height > 0.0f ? rcH.height : 1.0f);
 			clampValue(hsv.r, 0.0f, 1.0f);
+			hsvChanged = true;
 		}
 		else if (ctx->colorPickerState.draggingElementId == 2)
 		{
 			hsv.a = 1.0f - (ctx->mousePosition.y - rcAlpha.y) / (rcAlpha.height > 0.0f ? rcAlpha.height : 1.0f);
 			clampValue(hsv.a, 0.0f, 1.0f);
+			hsvChanged = true;
+		}
+
+		if (hsvChanged)
+		{
+			crtColor = hsvToRgb(hsv);
+
+			std::string hexColorStr;
+
+			if (!has(flags, ColorPickerFlags::Float))
+			{
+				ctx->colorPickerState.intR = crtR8 = crtColor.r * 255;
+				ctx->colorPickerState.intG = crtG8 = crtColor.g * 255;
+				ctx->colorPickerState.intB = crtB8 = crtColor.b * 255;
+				ctx->colorPickerState.intA = crtA8 = crtColor.a * 255;
+			}
+
+			std::snprintf(ctx->colorPickerState.hexColor, ColorPickerState::maxHexColorSize, hexColorStr.c_str());
 		}
 	}
 
-	Color hueOnlyColor = hueToRgb(hsv.r, 1);
+	auto clampedHsv = hsv;
+
+	clampedHsv.r = clampValue01(clampedHsv.r);
+	clampedHsv.g = clampValue01(clampedHsv.g);
+	clampedHsv.b = clampValue01(clampedHsv.b);
+
+	Color hueOnlyColor = hueToRgb(clampedHsv.r, 1);
 
 	ctx->renderer->cmdDrawRectangle4Colors(
 		rcSV
@@ -173,7 +273,7 @@ bool colorPicker(Color* inOutColor, ColorPickerFlags flags, const Color* oldColo
 		, Color::transparent, Color::transparent
 		, Color::black, Color::black);
 
-	Color hueColors[6] = {
+	static const Color hueColors[6] = {
 		Color::red,
 		Color::yellow,
 		Color::green,
@@ -198,7 +298,8 @@ bool colorPicker(Color* inOutColor, ColorPickerFlags flags, const Color* oldColo
 
 	auto& colorPickerCheckersElem = ctx->theme->getElement(WidgetElementId::ColorPickerCheckers);
 	auto& colorPickerCheckersImg = colorPickerCheckersElem.normalState().image;
-	Color colorForAlphaBar = hsvToRgb({ hsv.r, hsv.g, hsv.b, 1 });
+	Color colorForAlphaBar = hsvToRgb({ clampedHsv.r, clampedHsv.g, clampedHsv.b, 1 });
+
 	ctx->renderer->cmdSetColor(Color::white);
 	ctx->renderer->cmdDrawImageTiled(
 		colorPickerCheckersImg,
@@ -218,56 +319,209 @@ bool colorPicker(Color* inOutColor, ColorPickerFlags flags, const Color* oldColo
 		f32 outlineW = 1.0f * ctx->scale;
 
 		// hue indicators: use displayHue (preserved while dragging)
-		drawEdgeTrianglesAt(rcH, hsv.r, triW, triH, exterior, Color::white, Color::black, outlineW, true, true);
+		drawEdgeTrianglesAt(rcH, clampedHsv.r, triW, triH, exterior, Color::white, Color::black, outlineW, true, true);
 
 		// alpha indicator: use current color alpha normalized (0..1)
-		f32 alphaNorm = 1.0f - (f32)crtColor.a;
+		f32 alphaNorm = 1.0f - (f32)clampedHsv.a;
 		drawEdgeTrianglesAt(rcAlpha, alphaNorm, triW, triH, exterior, Color::white, Color::black, outlineW, true, true);
 	}
 
-	auto rcSample = ctx->widget.rect;
+	drawColorPreviewSwatch(
+		{
+			rcAlpha.right() + 10.0f * ctx->scale,
+			rcAlpha.y,
+			64,
+			64
+		},
+		hsvToRgb(clampedHsv),
+		"Preview");
 
-	rcSample.x = rcAlpha.right() + 10.0f * ctx->scale;
-	rcSample.width = 64;
-	rcSample.height = 32;
-
-	auto rcSampleNoAlpha = rcSample;
-	auto rcSampleWithAlpha = rcSample;
-
-	rcSampleNoAlpha.width = rcSample.width / 2.0f;
-	rcSampleWithAlpha.width = rcSample.width / 2.0f;
-	rcSampleWithAlpha.x = rcSampleNoAlpha.right();
-
-	ctx->renderer->cmdSetColor(Color::white);
-	ctx->renderer->cmdDrawImageTiled(
-		colorPickerCheckersImg,
-		rcSample, Point(), ctx->scale);
-
-	ctx->renderer->cmdSetColor(Color{ colorForAlphaBar.r, colorForAlphaBar.g, colorForAlphaBar.b, 1 });
-	ctx->renderer->cmdDrawFilledRectangle(rcSampleNoAlpha);
-
-	ctx->renderer->cmdSetColor(Color{ colorForAlphaBar.r, colorForAlphaBar.g, colorForAlphaBar.b, hsv.a });
-	ctx->renderer->cmdDrawFilledRectangle(rcSampleWithAlpha);
+	if (oldColor)
+	{
+		drawColorPreviewSwatch(
+			{
+				rcAlpha.right() + 10.0f * ctx->scale,
+				rcAlpha.y + 64 * ctx->scale,
+				64,
+				64
+			},
+			*oldColor,
+			"Old");
+	}
 
 	Rect rcCurrentSVIndicator = rcSV;
-	const f32 indicatorSize = 30.0f * ctx->scale;
-	rcCurrentSVIndicator.x = rcSV.x + (hsv.g * rcSV.width - indicatorSize / 2.0f * ctx->scale);
-	rcCurrentSVIndicator.y = rcSV.y + ((1.0f - hsv.b) * rcSV.height - indicatorSize / 2.0f * ctx->scale);
 
-	rcCurrentSVIndicator.width = indicatorSize / 2.0f;
-	rcCurrentSVIndicator.height = indicatorSize / 2.0f;
-	ctx->renderer->cmdSetColor(hsvToRgb({ hsv.r, hsv.g, hsv.b, 1 }));
+	rcCurrentSVIndicator.x = rcSV.x + clampedHsv.g * rcSV.width - indicatorSize / 2.0f * ctx->scale;
+	rcCurrentSVIndicator.y = rcSV.y + (1.0f - clampedHsv.b) * rcSV.height - indicatorSize / 2.0f * ctx->scale;
+	rcCurrentSVIndicator.width = indicatorSize;
+	rcCurrentSVIndicator.height = indicatorSize;
+	ctx->renderer->cmdSetColor(hsvToRgb({ clampedHsv.r, clampedHsv.g, clampedHsv.b, 1 }));
 	ctx->renderer->cmdDrawFilledRectangle(rcCurrentSVIndicator);
 	ctx->renderer->cmdSetLineStyle(LineStyle(Color::black, 3));
 	ctx->renderer->cmdDrawRectangle(rcCurrentSVIndicator);
 	ctx->renderer->cmdSetLineStyle(LineStyle(Color::white, 1));
 	ctx->renderer->cmdDrawRectangle(rcCurrentSVIndicator);
 
-	*inOutColor = hsvToRgb(hsv);
+	bool hsvChanged = false;
 
-	if (ctx->colorPickerState.currentEditingId == ctx->id)
+	if (hui::comboSliderFloat(&hsv.r, 0.001f, 0.001f, "H: %.4f"))
+	{
+		hsvChanged = true;
+	}
+
+	if (hui::comboSliderFloat(&hsv.g, 0.001f, 0.001f, "S: %.4f"))
+	{
+		hsvChanged = true;
+	}
+
+	if (hui::comboSliderFloat(&hsv.b, 0.001f, 0.001f, "V: %.4f"))
+	{
+		hsvChanged = true;
+	}
+
+	if (hsvChanged)
+	{
+		ctx->colorPickerState.currentEditingId = pickerId;
+
+		if (!(flags & ColorPickerFlags::Hdr))
+		{
+			hsv.r = clampValue01(hsv.r);
+		}
+		
+		if (!(flags & ColorPickerFlags::Hdr))
+		{
+			hsv.g = clampValue01(hsv.g);
+		}
+
+		if (!(flags & ColorPickerFlags::Hdr))
+		{
+			hsv.b = clampValue01(hsv.b);
+		}
+
+		crtColor = hsvToRgb(hsv);
+
+		std::string hexColorStr;
+
+		if (!has(flags, ColorPickerFlags::Float))
+		{
+			ctx->colorPickerState.intR = crtR8 = crtColor.r * 255;
+			ctx->colorPickerState.intG = crtG8 = crtColor.g * 255;
+			ctx->colorPickerState.intB = crtB8 = crtColor.b * 255;
+			ctx->colorPickerState.intA = crtA8 = crtColor.a * 255;
+		}
+
+		hexColorStr = colorToHex(crtColor);
+		std::snprintf(ctx->colorPickerState.hexColor, ColorPickerState::maxHexColorSize, hexColorStr.c_str());
+	}
+
+	bool rgbaChanged = false;
+
+	if (has(flags, ColorPickerFlags::Float))
+	{
+		if (hui::comboSliderFloat(&crtColor.r, 0.001f, 0.001f, "R: %.4f"))
+		{
+			rgbaChanged = true;
+		}
+
+		if (hui::comboSliderFloat(&crtColor.g, 0.001f, 0.001f, "G: %.4f"))
+		{
+			rgbaChanged = true;
+		}
+
+		if (hui::comboSliderFloat(&crtColor.b, 0.001f, 0.001f, "B: %.4f"))
+		{
+			rgbaChanged = true;
+		}
+
+		if (hui::comboSliderFloat(&crtColor.a, 0.001f, 0.001f, "A: %.4f"))
+		{
+			rgbaChanged = true;
+		}
+	}
+	else
+	{
+		if (hui::comboSliderInteger(&crtR8, 0.01f, 1, "R: %.0f"))
+		{
+			rgbaChanged = true;
+		}
+
+		if (hui::comboSliderInteger(&crtG8, 0.01f, 1, "G: %.0f"))
+		{
+			rgbaChanged = true;
+		}
+
+		if (hui::comboSliderInteger(&crtB8, 0.01f, 1, "B: %.0f"))
+		{
+			rgbaChanged = true;
+		}
+
+		if (hui::comboSliderInteger(&crtA8, 0.01f, 1, "A: %.0f"))
+		{
+			rgbaChanged = true;
+		}
+	}
+
+	if (rgbaChanged)
+	{
+		if (!has(flags, ColorPickerFlags::Float))
+		{
+			ctx->colorPickerState.intR = crtR8;
+			ctx->colorPickerState.intG = crtG8;
+			ctx->colorPickerState.intB = crtB8;
+			ctx->colorPickerState.intA = crtA8;
+			
+			crtColor = Color::fromU8(
+				ctx->colorPickerState.intR,
+				ctx->colorPickerState.intG,
+				ctx->colorPickerState.intB,
+				ctx->colorPickerState.intA);
+		}
+
+		ctx->colorPickerState.currentHsv = hsv = rgbToHsv(crtColor);
+		ctx->colorPickerState.currentEditingId = pickerId;
+		std::string hexColorStr;
+
+		hexColorStr = colorToHex(crtColor);
+		std::snprintf(ctx->colorPickerState.hexColor, ColorPickerState::maxHexColorSize, hexColorStr.c_str());
+	}
+
+	if (hui::textInput(ctx->colorPickerState.hexColor, ColorPickerState::maxHexColorSize,TextInputValueMode::HexOnly))
+	{
+		crtColor = colorFromHex(ctx->colorPickerState.hexColor);
+		ctx->colorPickerState.currentHsv = hsv = rgbToHsv(crtColor);
+
+		if (!has(flags, ColorPickerFlags::Float))
+		{
+			ctx->colorPickerState.intR = crtR8 = crtColor.r * 255;
+			ctx->colorPickerState.intG = crtG8 = crtColor.g * 255;
+			ctx->colorPickerState.intB = crtB8 = crtColor.b * 255;
+			ctx->colorPickerState.intA = crtA8 = crtColor.a * 255;
+		}
+
+		ctx->colorPickerState.currentRgb = crtColor;
+		ctx->colorPickerState.currentEditingId = pickerId;
+	}
+
+	if (ctx->colorPickerState.currentEditingId == pickerId)
 	{
 		ctx->colorPickerState.currentHsv = hsv;
+		ctx->colorPickerState.currentRgb = crtColor;
+		ctx->colorPickerState.intR = crtR8;
+		ctx->colorPickerState.intG = crtG8;
+		ctx->colorPickerState.intB = crtB8;
+		ctx->colorPickerState.intA = crtA8;
+	}
+
+	if (!has(flags, ColorPickerFlags::Float))
+	{
+		inOutColor->r = crtR8 / 255.0f;
+		inOutColor->g = crtG8 / 255.0f;
+		inOutColor->b = crtB8 / 255.0f;
+		inOutColor->a = crtA8 / 255.0f;
+	}
+	else
+	{
+		*inOutColor = hsvToRgb(hsv);
 	}
 
 	return true;

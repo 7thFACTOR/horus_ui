@@ -61,9 +61,11 @@ struct ComboSliderState
 {
 	static const size_t maxTextSize = 128;
 
+	f32 currentValue = 0;
 	bool mouseWasDown = false;
 	bool dragging = false;
 	bool editingText = false;
+	bool clickedToEditText = false;
 	Point dragLastMousePos;
 	char text[maxTextSize] = {0};
 	WidgetId newId = 0;
@@ -438,9 +440,13 @@ struct VirtualListContentState
 
 struct ColorPickerState
 {
-	u32 draggingElementId = 0;
+	u32 draggingElementId = ~0;
 	Color currentHsv;
+	Color currentRgb;
 	Color oldColor;
+	i32 intR, intG, intB, intA;
+	static const u32 maxHexColorSize = 9;
+	char hexColor[maxHexColorSize] = {0};
 	WidgetId currentEditingId = 0;
 };
 

@@ -30,7 +30,7 @@ WidgetId genIdFromPosition(const char* text)
 	return genId((std::string(text) + posStr).c_str());
 }
 
-void toString(i32 value, char* outString, u32 outStringMaxSize, u32 fillerZeroesCount)
+void toStringI32(i32 value, char* outString, u32 outStringMaxSize, u32 fillerZeroesCount)
 {
 	if (fillerZeroesCount)
 	{
@@ -44,9 +44,9 @@ void toString(i32 value, char* outString, u32 outStringMaxSize, u32 fillerZeroes
 		snprintf(outString, outStringMaxSize, "%d", value);
 }
 
-void toString(f32 value, char* outString, u32 outStringMaxSize, u32 decimalPlaces)
+void toStringF32(f32 value, char* outString, u32 outStringMaxSize, i32 decimalPlaces)
 {
-	if (decimalPlaces)
+	if (decimalPlaces >= 0)
 	{
 		std::string decimalsStr;
 		decimalsStr = std::to_string(decimalPlaces);

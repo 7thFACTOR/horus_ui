@@ -8,7 +8,7 @@
 
 namespace hui
 {
-static bool comboSliderInternal(f32* value, f32 minVal, f32 maxVal, bool useRange, f32 stepsPerPixel, f32 arrowStep, const char* unitName)
+static bool comboSliderInternal(bool isInt, f32* value, f32 minVal, f32 maxVal, bool useRange, f32 stepsPerPixel, f32 arrowStep, const char* formatStr, u32 decimalPlaces = 4)
 {
 	auto& bodyElem = ctx->theme->getElement(WidgetElementId::ComboSliderBody);
 	auto& leftArrowElem = ctx->theme->getElement(WidgetElementId::ComboSliderLeftArrow);
@@ -27,6 +27,7 @@ static bool comboSliderInternal(f32* value, f32 minVal, f32 maxVal, bool useRang
 	}
 
 	ctx->id = genId((void*)value);
+	auto comboId = ctx->id;
 
 	bool notEditingText = (ctx->comboSlider.editingText && ctx->comboSlider.id != ctx->id) || !ctx->comboSlider.editingText;
 
@@ -85,25 +86,36 @@ static bool comboSliderInternal(f32* value, f32 minVal, f32 maxVal, bool useRang
 			ctx->comboSlider.id = ctx->id;
 			ctx->comboSlider.mouseWasDown = false;
 			ctx->comboSlider.dragging = false;
-			ctx->widget.focusedId = ctx->id;
-			ctx->widget.focused = true;
-			ctx->focusChanged = true;
-			ctx->textInput.id = ctx->id;
-			memset(ctx->comboSlider.text, 64, 0);
-			toString(*value, ctx->comboSlider.text, ComboSliderState::maxTextSize);
+			ctx->comboSlider.clickedToEditText = true;
+			memset(ctx->comboSlider.text, ctx->comboSlider.maxTextSize, 0);
+			toStringF32(*value, ctx->comboSlider.text, ComboSliderState::maxTextSize, decimalPlaces);
+			
 			ctx->textInput.editNow = true;
 			ctx->textInput.selectAllOnFocus = true;
 			ctx->textInput.firstMouseDown = true;
-			forceRepaint();
+
 			ctx->position.y -= ctx->spacing * ctx->scale + bodyElem.normalState().height;
+
 			setNextFocused();
+
 			textInput(ctx->comboSlider.text, ComboSliderState::maxTextSize, TextInputValueMode::NumericOnly);
+			
 			ctx->widget.focusedId = ctx->id;
+			ctx->textInput.id = ctx->id;
+			ctx->textInput.editNow = true;
+			ctx->textInput.selectAllOnFocus = true;
+			forceRepaint();
 		}
 	}
 	else
-	if (ctx->comboSlider.editingText && ctx->comboSlider.id == ctx->id)
+	if (ctx->comboSlider.editingText && ctx->comboSlider.id == comboId)
 	{
+		if (ctx->comboSlider.clickedToEditText)
+		{
+			setNextFocused();
+			ctx->comboSlider.clickedToEditText = false;
+		}
+
 		textInput(ctx->comboSlider.text, ComboSliderState::maxTextSize, TextInputValueMode::NumericOnly);
 
 		bool isKeyEvent = ctx->event.key.down && ctx->event.type == InputEvent::Type::Key;
@@ -169,6 +181,7 @@ static bool comboSliderInternal(f32* value, f32 minVal, f32 maxVal, bool useRang
 				ctx->comboSlider.dragging = true;
 				ctx->comboSlider.dragLastMousePos = ctx->mousePosition;
 				ctx->comboSlider.mouseWasDown = false;
+				ctx->comboSlider.currentValue = *value;
 			}
 		}
 
@@ -198,14 +211,16 @@ static bool comboSliderInternal(f32* value, f32 minVal, f32 maxVal, bool useRang
 
 			if (useRange)
 			{
-				*value += deltaValue * stepsPerPixel;
-				ctx->widget.changeEnded = clampValue(*value, minVal, maxVal);
-				percentFilled = 1.0f - (maxVal - *value) / (maxVal - minVal);
+				ctx->comboSlider.currentValue += deltaValue * stepsPerPixel;
+				ctx->widget.changeEnded = clampValue(ctx->comboSlider.currentValue, minVal, maxVal);
+				percentFilled = 1.0f - (maxVal - ctx->comboSlider.currentValue) / (maxVal - minVal);
+				*value = ctx->comboSlider.currentValue;
 			}
 			else
 			{
-				*value += deltaValue * stepsPerPixel;
+				ctx->comboSlider.currentValue += deltaValue * stepsPerPixel;
 				ctx->widget.changeEnded = true;
+				*value = ctx->comboSlider.currentValue;
 			}
 		}
 
@@ -217,6 +232,8 @@ static bool comboSliderInternal(f32* value, f32 minVal, f32 maxVal, bool useRang
 			ctx->comboSlider.dragging = false;
 			ctx->comboSlider.mouseWasDown = false;
 			ctx->comboSlider.id = 0;
+			*value = ctx->comboSlider.currentValue;
+			if (isInt) *value = roundf(*value);
 			//TODO: releaseCapture();
 			ctx->widget.changeEnded = true;
 		}
@@ -319,19 +336,19 @@ static bool comboSliderInternal(f32* value, f32 minVal, f32 maxVal, bool useRang
 			});
 
 		static char outStr[ComboSliderState::maxTextSize] = { 0 };
-		static char outStrWithUnitName[ComboSliderState::maxTextSize] = { 0 };
+		static char outStrFormatted[ComboSliderState::maxTextSize] = { 0 };
 		char* str = nullptr;
 
-		toString(*value, outStr, ComboSliderState::maxTextSize);
+		toStringF32(*value, outStr, ComboSliderState::maxTextSize, decimalPlaces);
 
-		if (!unitName)
+		if (!formatStr)
 		{
 			str = outStr;
 		}
 		else
 		{
-			sprintf(outStrWithUnitName, "%s %s", outStr, unitName);
-			str = outStrWithUnitName;
+			sprintf(outStrFormatted, formatStr, *value);
+			str = outStrFormatted;
 		}
 
 		ctx->renderer->cmdSetColor(applyTint(bodyElemState->textColor, TintColorType::Body));
@@ -342,14 +359,41 @@ static bool comboSliderInternal(f32* value, f32 minVal, f32 maxVal, bool useRang
 	return ctx->widget.changeEnded;
 }
 
-bool comboSliderFloat(f32* value, f32 stepsPerPixel, f32 arrowStep, const char* unitName)
+bool comboSliderInteger(i32* value, f32 stepsPerPixel, i32 arrowStep, const char* formatStr)
 {
-	return comboSliderInternal(value, 0, 0, false, stepsPerPixel, arrowStep, unitName);
+	f32 fVal = *value;
+
+	pushId((void*)value);
+	bool ret = comboSliderInternal(true, &fVal, 0, 0, false, stepsPerPixel, (f32)arrowStep, formatStr, 0);
+	popId();
+
+	if (ret)
+		*value = (i32)fVal;
+
+	return ret;
 }
 
-bool comboSliderFloatRanged(f32* value, f32 minVal, f32 maxVal, f32 stepsPerPixel, f32 arrowStep, const char* unitName)
+bool comboSliderIntegerRanged(i32* value, i32 minVal, i32 maxVal, f32 stepsPerPixel, i32 arrowStep, const char* formatStr)
 {
-	return comboSliderInternal(value, minVal, maxVal, true, stepsPerPixel, arrowStep, unitName);
+	f32 fVal = *value;
+	pushId((void*)value);
+	bool ret = comboSliderInternal(true, &fVal, (f32)minVal, (f32)maxVal, true, stepsPerPixel, (f32)arrowStep, formatStr, 0);
+	popId();
+
+	if (ret)
+		*value = (i32)fVal;
+	
+	return ret;
+}
+
+bool comboSliderFloat(f32* value, f32 stepsPerPixel, f32 arrowStep, const char* formatStr)
+{
+	return comboSliderInternal(false, value, 0, 0, false, stepsPerPixel, arrowStep, formatStr);
+}
+
+bool comboSliderFloatRanged(f32* value, f32 minVal, f32 maxVal, f32 stepsPerPixel, f32 arrowStep, const char* formatStr)
+{
+	return comboSliderInternal(false, value, minVal, maxVal, true, stepsPerPixel, arrowStep, formatStr);
 }
 
 }

@@ -562,9 +562,9 @@
 			{
 				"normal": { "image": "default/checkers", "border": 0, "color": "white", "textColor": "white", "font": "normal" }
 			},
-			"colorPickerHueArrow":
+			"colorPickerBody":
 			{
-				"normal": { "image": "default/hue_arrow", "border": 0, "color": "white", "textColor": "white", "font": "normal" }
+				"normal": { "textColor": "white", "font": "normal" }
 			}
 		}
 	}

@@ -200,12 +200,12 @@ bool isMouseOverWindow()
 	return false;
 }
 
-void setCapture()
+void setWindowCapture()
 {
 	HORUS_INPUT->setCapture(ctx->currentWindow ? ctx->currentWindow->dockNode->nativeWindow : 0);
 }
 
-void releaseCapture()
+void releaseWindowCapture()
 {
 	HORUS_INPUT->releaseCapture();
 }

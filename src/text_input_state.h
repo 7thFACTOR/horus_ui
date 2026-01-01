@@ -21,7 +21,7 @@ struct TextInputState
 
 	TextInputState();
 
-	void selectAll() { selectionBegin = 0; selectionEnd = text.size(); selectionActive = true; caretPosition = text.size(); }
+	void selectAll() { selectionBegin = 0; selectionEnd = text.size(); selectionActive = true; caretPosition = text.size(); selectAllOnFocus = false; }
 	void deselect() { selectionBegin = 0; selectionEnd = 0; selectionActive = false; }
 	void deleteSelection();
 	Utf32String getSelection();

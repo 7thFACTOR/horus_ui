@@ -147,7 +147,7 @@ WidgetElementId getWidgetElementFromName(std::string name)
 	if (name == "rotarySliderMark") return WidgetElementId::RotarySliderMark;
 	if (name == "rotarySliderValueDot") return WidgetElementId::RotarySliderValueDot;
 	if (name == "colorPickerCheckers") return WidgetElementId::ColorPickerCheckers;
-	if (name == "colorPickerHueArrow") return WidgetElementId::ColorPickerHueArrow;
+	if (name == "colorPickerBody") return WidgetElementId::ColorPickerBody;
 
 	return WidgetElementId::Custom;
 }
@@ -190,6 +190,78 @@ static Color getColorFromText(std::string colorText)
 Color getColorFromText(const char* colorText)
 {
 	return getColorFromText(std::string(colorText));
+}
+
+static u8 hexByte(const char* p)
+{
+	auto hex = [](char c) -> u8
+		{
+			if (c >= '0' && c <= '9') return c - '0';
+			if (c >= 'a' && c <= 'f') return c - 'a' + 10;
+			if (c >= 'A' && c <= 'F') return c - 'A' + 10;
+			return 0;
+		};
+
+	return (hex(p[0]) << 4) | hex(p[1]);
+}
+
+Color colorFromHex(const char* hexText)
+{
+	Color out{ 1.f, 1.f, 1.f, 1.f };
+
+	if (!hexText)
+		return out;
+
+	// Skip optional '#'
+	if (hexText[0] == '#')
+		hexText++;
+
+	const size_t len = std::strlen(hexText);
+
+	if (len != 6 && len != 8)
+		return out;
+
+	u8 r = hexByte(hexText + 0);
+	u8 g = hexByte(hexText + 2);
+	u8 b = hexByte(hexText + 4);
+	u8 a = (len == 8) ? hexByte(hexText + 6) : 255;
+
+	out.r = r / 255.0f;
+	out.g = g / 255.0f;
+	out.b = b / 255.0f;
+	out.a = a / 255.0f;
+
+	return out;
+}
+
+u32 intColorFromHex(const char* hexText)
+{
+	return colorFromHex(hexText).getRgba();
+}
+
+std::string colorToHex(const Color& color)
+{
+	auto clampToByte = [](float v) -> u8
+		{
+			v = std::clamp(v, 0.0f, 1.0f);
+			return static_cast<u8>(v * 255.0f + 0.5f);
+		};
+
+	u8 r = clampToByte(color.r);
+	u8 g = clampToByte(color.g);
+	u8 b = clampToByte(color.b);
+	u8 a = clampToByte(color.a);
+
+	char buf[9];
+	
+	std::snprintf(buf, sizeof(buf), "%02X%02X%02X%02X", r, g, b, a);
+	
+	return std::string(buf);
+}
+
+std::string intColorToHex(const u32 color)
+{
+	return colorToHex(Color(color));
 }
 
 Color hsvToRgb(const Color& hsv)

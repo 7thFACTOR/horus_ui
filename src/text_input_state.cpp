@@ -54,14 +54,14 @@ bool TextInputState::processEvent(const InputEvent& ev)
 		selectionBegin = selectionEnd = caretPosition;
 		selectingWithMouse = false;
 		computeScrollAmount();
-		setCapture();
+		setWindowCapture();
 	}
 	else if (ev.type == InputEvent::Type::MouseUp)
 	{
 		computeScrollAmount();
-		releaseCapture();
+		releaseWindowCapture();
 
-		if (!mouseMoved && firstMouseDown)
+		if (!mouseMoved && firstMouseDown && !selectingWithMouse)
 		{
 			selectAll();
 			firstMouseDown = false;
@@ -624,6 +624,29 @@ void TextInputState::formatValue(Utf32String& value)
 				&& *iter != 'E' && *iter != '+')
 			{
 				iter = value.erase(iter);
+				continue;
+			}
+
+			iter++;
+		}
+
+		break;
+	}
+	case TextInputValueMode::HexOnly:
+	{
+		std::vector<u32>::iterator iter = value.begin();
+
+		while (iter != value.end())
+		{
+			if (!isxdigit(*iter))
+			{
+				iter = value.erase(iter);
+				continue;
+			}
+
+			if (islower(*iter))
+			{
+				*iter = toupper(*iter);
 				continue;
 			}
 

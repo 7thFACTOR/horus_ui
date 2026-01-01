@@ -65,7 +65,7 @@ bool sliderInternal(const char* id, f32 minVal, f32 maxVal, f32& value, bool use
 	{
 		if (knobRect.contains(ctx->mousePosition))
 		{
-			setCapture();
+			setWindowCapture();
 			ctx->slider.draggingKnob = true;
 			ctx->slider.dragDelta.x = ctx->mousePosition.x - (knobRect.x + knobRect.width / 2.0f);
 		}
@@ -105,7 +105,7 @@ bool sliderInternal(const char* id, f32 minVal, f32 maxVal, f32& value, bool use
 		&& ctx->isActiveLayer())
 	{
 		ctx->slider.draggingKnob = false;
-		releaseCapture();
+		releaseWindowCapture();
 		ctx->widget.changeEnded = true;
 	}
 

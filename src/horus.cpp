@@ -1120,7 +1120,7 @@ void setWidgetStyle(WidgetType widgetType, const char* styleName)
 		break;
 	case WidgetType::ColorPicker:
 		ctx->theme->elements[(u32)WidgetElementId::ColorPickerCheckers].setStyle(styleName);
-		ctx->theme->elements[(u32)WidgetElementId::ColorPickerHueArrow].setStyle(styleName);
+		ctx->theme->elements[(u32)WidgetElementId::ColorPickerBody].setStyle(styleName);
 		break;
 	}
 }

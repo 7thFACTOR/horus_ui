@@ -337,7 +337,7 @@ enum class WidgetElementId
 	RotarySliderMark,
 	RotarySliderValueDot,
 	ColorPickerCheckers,
-	ColorPickerHueArrow,
+	ColorPickerBody,
 
 	Count
 };
@@ -740,7 +740,8 @@ enum class ColorPickerFlags : u32
 	NoSmallPreview = HORUS_BIT(2),
 	HalfAlphaPreview = HORUS_BIT(3),
 	NoOldColorPreview = HORUS_BIT(4),
-	Hdr = HORUS_BIT(5)
+	Hdr = HORUS_BIT(5),
+	Float = HORUS_BIT(6)
 };
 HORUS_ENUM_AS_FLAGS(ColorPickerFlags);
 
@@ -1471,7 +1472,7 @@ struct HORUS_CLASS_API Color
 
 	static Color fromU8(u8 R, u8 G, u8 B, u8 A)
 	{
-		return Color(R / 255, G / 255, B / 255, A / 255);
+		return Color(R / 255.0f, G / 255.0f, B / 255.0f, A / 255.0f);
 	}
 
 	u32 getRgba() const;
@@ -2248,9 +2249,9 @@ HORUS_API void endRendering();
 
 HORUS_API bool isMouseOverWindow();
 
-HORUS_API void setCapture();
+HORUS_API void setWindowCapture();
 
-HORUS_API void releaseCapture();
+HORUS_API void releaseWindowCapture();
 
 /// \return the window client rect
 HORUS_API Rect getCurrentWindowClientRect();
@@ -2734,8 +2735,11 @@ HORUS_API bool sliderInteger(const char* id, i32 minVal, i32 maxVal, i32& value,
 /// \return true if value was modified
 HORUS_API bool sliderFloat(const char* id, f32 minVal, f32 maxVal, f32& value, bool useStep = false, f32 step = 0);
 
-HORUS_API bool comboSliderFloat(f32* value, f32 stepsPerPixel = 1.0f, f32 arrowStep = 1.0f, const char* unitName = nullptr);
-HORUS_API bool comboSliderFloatRanged(f32* value, f32 minVal, f32 maxVal, f32 stepsPerPixel = 1.0f, f32 arrowStep = 1.0f, const char* unitName = nullptr);
+
+HORUS_API bool comboSliderInteger(i32* value, f32 stepsPerPixel = 1.0f, i32 arrowStep = 1, const char* formatStr = nullptr);
+HORUS_API bool comboSliderIntegerRanged(i32* value, i32 minVal, i32 maxVal, f32 stepsPerPixel = 1, i32 arrowStep = 1.0f, const char* formatStr = nullptr);
+HORUS_API bool comboSliderFloat(f32* value, f32 stepsPerPixel = 1.0f, f32 arrowStep = 1.0f, const char* formatStr = nullptr);
+HORUS_API bool comboSliderFloatRanged(f32* value, f32 minVal, f32 maxVal, f32 stepsPerPixel = 1.0f, f32 arrowStep = 1.0f, const char* formatStr = nullptr);
 HORUS_API bool rotarySliderFloat(const char* label, f32* value, f32 minVal, f32 maxVal, f32 step, bool twoSide = false, f32 fineStepDivideFactor = 10.f);
 
 /// Draw a image widget
@@ -3157,7 +3161,7 @@ HORUS_API void drawSolidTriangle(const Point& p1, const Point& p2, const Point& 
 //////////////////////////////////////////////////////////////////////////
 
 /// Draw a color picker popup widget
-HORUS_API bool colorPicker(Color* inOutColor, ColorPickerFlags flags = (ColorPickerFlags)0, const Color* oldColor = nullptr);
+HORUS_API bool colorPicker(const char* id, Color* inOutColor, ColorPickerFlags flags = (ColorPickerFlags)0, const Color* oldColor = nullptr);
 
 /// Draw a 3D double vector editor widget
 HORUS_API bool vec3Editor(const char* id, f64& x, f64& y, f64& z, f64 scrollStep = 0.03f);
@@ -3195,12 +3199,16 @@ HORUS_API bool pickFolderDialog(const char* defaultPath, char* outPath, u32 maxO
 //////////////////////////////////////////////////////////////////////////
 
 /// Convert an int value to string
-HORUS_API void toString(i32 value, char* outString, u32 outStringMaxSize, u32 fillerZeroesCount = 0);
+HORUS_API void toStringI32(i32 value, char* outString, u32 outStringMaxSize, u32 fillerZeroesCount = 0);
 
 /// Convert a float value to string
-HORUS_API void toString(f32 value, char* outString, u32 outStringMaxSize, u32 decimalPlaces = 4);
+HORUS_API void toStringF32(f32 value, char* outString, u32 outStringMaxSize, i32 decimalPlaces = ~0);
 
 HORUS_API Color getColorFromText(const char* colorText);
+HORUS_API Color colorFromHex(const char* hexText);
+HORUS_API u32 intColorFromHex(const char* hexText);
+HORUS_API std::string colorToHex(const Color& color);
+HORUS_API std::string intColorToHex(const u32 color);
 HORUS_API Color hsvToRgb(const Color& hsv);
 HORUS_API Color rgbToHsv(const Color& rgb);
 HORUS_API Color hueToRgb(f32 hue, f32 alpha = 1.0f);
