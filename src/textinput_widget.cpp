@@ -146,7 +146,7 @@ bool textInput(
 
 		// this must be called to handle the event in the text input ways
 		// otherwise it needs a second click to do stuff for the edit box
-		ctx->textInput.processEvent(ctx->event);
+		//ctx->textInput.processEvent(ctx->event);
 
 		Rect rc;
 

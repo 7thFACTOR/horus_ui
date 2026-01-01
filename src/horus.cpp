@@ -243,6 +243,7 @@ void beginFrame()
 {
 	if (ctx->textInput.id)
 	{
+		ctx->textInput.textChanged = false;
 		ctx->textInput.processEvent(ctx->event);
 	}
 
@@ -317,6 +318,7 @@ void beginFrame()
 	ctx->dragDrop.foundDropTarget = false;
 	ctx->widget.hoveredId = 0;
 	ctx->widget.hoveredType = WidgetType::None;
+	ctx->widget.changeEnded = false;
 	ctx->frameCount++;
 	ctx->totalTime += ctx->deltaTime;
 	ctx->pruneUnusedTextTime += ctx->deltaTime;

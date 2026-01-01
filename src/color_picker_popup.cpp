@@ -134,10 +134,10 @@ bool colorPicker(const char* id, Color* inOutColor, ColorPickerFlags flags, cons
 	//TODO: move constants to settings or theme
 	const f32 indicatorSize = 20.0f * ctx->scale;
 	Color crtColor = *inOutColor;
-	i32 crtR8 = (u32)(crtColor.r * 255.0f);
-	i32 crtG8 = (u32)(crtColor.g * 255.0f);
-	i32 crtB8 = (u32)(crtColor.b * 255.0f);
-	i32 crtA8 = (u32)(crtColor.a * 255.0f);
+	i32 crtIntR = (u32)(crtColor.r * 255.0f);
+	i32 crtIntG = (u32)(crtColor.g * 255.0f);
+	i32 crtIntB = (u32)(crtColor.b * 255.0f);
+	i32 crtIntA = (u32)(crtColor.a * 255.0f);
 	Color hsv = rgbToHsv(crtColor);
 	f32 height = ctx->layout.width * 0.5f + indicatorSize;
 	ctx->id = genId(id);
@@ -151,18 +151,16 @@ bool colorPicker(const char* id, Color* inOutColor, ColorPickerFlags flags, cons
 	{
 		hsv = ctx->colorPickerState.currentHsv;
 		crtColor = ctx->colorPickerState.currentRgb;
-		crtR8 = ctx->colorPickerState.intR;
-		crtG8 = ctx->colorPickerState.intG;
-		crtB8 = ctx->colorPickerState.intB;
-		crtA8 = ctx->colorPickerState.intA;
+		crtIntR = ctx->colorPickerState.intR;
+		crtIntG = ctx->colorPickerState.intG;
+		crtIntB = ctx->colorPickerState.intB;
+		crtIntA = ctx->colorPickerState.intA;
 	}
-	else
-	{
-		std::string hexColorStr;
 
-		hexColorStr = colorToHex(crtColor);
-		std::snprintf(ctx->colorPickerState.hexColor, ColorPickerState::maxHexColorSize, hexColorStr.c_str());
-	}
+	std::string hexColorStr;
+
+	hexColorStr = colorToHex(crtColor);
+	std::snprintf(ctx->colorPickerState.hexColor, ColorPickerState::maxHexColorSize, hexColorStr.c_str());
 
 	auto rcSV = ctx->widget.rect;
 	auto clippedRc = ctx->widget.rect.clipInside(ctx->renderer->getClipRect());
@@ -211,10 +209,12 @@ bool colorPicker(const char* id, Color* inOutColor, ColorPickerFlags flags, cons
 		}
 	}
 
+	bool hueChanged = false;
+	bool svChanged = false;
+	bool alphaChanged = false;
+
 	if (ctx->widget.pressed)
 	{
-		bool hsvChanged = false;
-
 		if (ctx->colorPickerState.draggingElementId == 0)
 		{
 			hsv.g = (ctx->mousePosition.x - rcSV.x) / (rcSV.width > 0.0f ? rcSV.width : 1.0f);
@@ -222,36 +222,35 @@ bool colorPicker(const char* id, Color* inOutColor, ColorPickerFlags flags, cons
 
 			clampValue(hsv.g, 0.0f, 1.0f);
 			clampValue(hsv.b, 0.0f, 1.0f);
-			hsvChanged = true;
+			svChanged = true;
 		}
 		else if (ctx->colorPickerState.draggingElementId == 1)
 		{
 			// compute normalized t and clamp immediately to avoid out-of-range hue
 			hsv.r = (ctx->mousePosition.y - rcH.y) / (rcH.height > 0.0f ? rcH.height : 1.0f);
 			clampValue(hsv.r, 0.0f, 1.0f);
-			hsvChanged = true;
+			hueChanged = true;
 		}
 		else if (ctx->colorPickerState.draggingElementId == 2)
 		{
 			hsv.a = 1.0f - (ctx->mousePosition.y - rcAlpha.y) / (rcAlpha.height > 0.0f ? rcAlpha.height : 1.0f);
 			clampValue(hsv.a, 0.0f, 1.0f);
-			hsvChanged = true;
+			alphaChanged = true;
 		}
 
-		if (hsvChanged)
+		if (hueChanged || svChanged || alphaChanged)
 		{
 			crtColor = hsvToRgb(hsv);
 
-			std::string hexColorStr;
-
 			if (!has(flags, ColorPickerFlags::Float))
 			{
-				ctx->colorPickerState.intR = crtR8 = crtColor.r * 255;
-				ctx->colorPickerState.intG = crtG8 = crtColor.g * 255;
-				ctx->colorPickerState.intB = crtB8 = crtColor.b * 255;
-				ctx->colorPickerState.intA = crtA8 = crtColor.a * 255;
+				ctx->colorPickerState.intR = crtIntR = crtColor.r * 255;
+				ctx->colorPickerState.intG = crtIntG = crtColor.g * 255;
+				ctx->colorPickerState.intB = crtIntB = crtColor.b * 255;
+				ctx->colorPickerState.intA = crtIntA = crtColor.a * 255;
 			}
 
+			std::string hexColorStr = colorToHex(crtColor);
 			std::snprintf(ctx->colorPickerState.hexColor, ColorPickerState::maxHexColorSize, hexColorStr.c_str());
 		}
 	}
@@ -404,10 +403,10 @@ bool colorPicker(const char* id, Color* inOutColor, ColorPickerFlags flags, cons
 
 		if (!has(flags, ColorPickerFlags::Float))
 		{
-			ctx->colorPickerState.intR = crtR8 = crtColor.r * 255;
-			ctx->colorPickerState.intG = crtG8 = crtColor.g * 255;
-			ctx->colorPickerState.intB = crtB8 = crtColor.b * 255;
-			ctx->colorPickerState.intA = crtA8 = crtColor.a * 255;
+			ctx->colorPickerState.intR = crtIntR = crtColor.r * 255;
+			ctx->colorPickerState.intG = crtIntG = crtColor.g * 255;
+			ctx->colorPickerState.intB = crtIntB = crtColor.b * 255;
+			ctx->colorPickerState.intA = crtIntA = crtColor.a * 255;
 		}
 
 		hexColorStr = colorToHex(crtColor);
@@ -440,22 +439,22 @@ bool colorPicker(const char* id, Color* inOutColor, ColorPickerFlags flags, cons
 	}
 	else
 	{
-		if (hui::comboSliderInteger(&crtR8, 0.01f, 1, "R: %.0f"))
+		if (hui::comboSliderInteger(&crtIntR, 0.01f, 1, "R: %.0f"))
 		{
 			rgbaChanged = true;
 		}
 
-		if (hui::comboSliderInteger(&crtG8, 0.01f, 1, "G: %.0f"))
+		if (hui::comboSliderInteger(&crtIntG, 0.01f, 1, "G: %.0f"))
 		{
 			rgbaChanged = true;
 		}
 
-		if (hui::comboSliderInteger(&crtB8, 0.01f, 1, "B: %.0f"))
+		if (hui::comboSliderInteger(&crtIntB, 0.01f, 1, "B: %.0f"))
 		{
 			rgbaChanged = true;
 		}
 
-		if (hui::comboSliderInteger(&crtA8, 0.01f, 1, "A: %.0f"))
+		if (hui::comboSliderInteger(&crtIntA, 0.01f, 1, "A: %.0f"))
 		{
 			rgbaChanged = true;
 		}
@@ -465,10 +464,10 @@ bool colorPicker(const char* id, Color* inOutColor, ColorPickerFlags flags, cons
 	{
 		if (!has(flags, ColorPickerFlags::Float))
 		{
-			ctx->colorPickerState.intR = crtR8;
-			ctx->colorPickerState.intG = crtG8;
-			ctx->colorPickerState.intB = crtB8;
-			ctx->colorPickerState.intA = crtA8;
+			ctx->colorPickerState.intR = crtIntR;
+			ctx->colorPickerState.intG = crtIntG;
+			ctx->colorPickerState.intB = crtIntB;
+			ctx->colorPickerState.intA = crtIntA;
 			
 			crtColor = Color::fromU8(
 				ctx->colorPickerState.intR,
@@ -492,10 +491,10 @@ bool colorPicker(const char* id, Color* inOutColor, ColorPickerFlags flags, cons
 
 		if (!has(flags, ColorPickerFlags::Float))
 		{
-			ctx->colorPickerState.intR = crtR8 = crtColor.r * 255;
-			ctx->colorPickerState.intG = crtG8 = crtColor.g * 255;
-			ctx->colorPickerState.intB = crtB8 = crtColor.b * 255;
-			ctx->colorPickerState.intA = crtA8 = crtColor.a * 255;
+			ctx->colorPickerState.intR = crtIntR = crtColor.r * 255;
+			ctx->colorPickerState.intG = crtIntG = crtColor.g * 255;
+			ctx->colorPickerState.intB = crtIntB = crtColor.b * 255;
+			ctx->colorPickerState.intA = crtIntA = crtColor.a * 255;
 		}
 
 		ctx->colorPickerState.currentRgb = crtColor;
@@ -506,23 +505,13 @@ bool colorPicker(const char* id, Color* inOutColor, ColorPickerFlags flags, cons
 	{
 		ctx->colorPickerState.currentHsv = hsv;
 		ctx->colorPickerState.currentRgb = crtColor;
-		ctx->colorPickerState.intR = crtR8;
-		ctx->colorPickerState.intG = crtG8;
-		ctx->colorPickerState.intB = crtB8;
-		ctx->colorPickerState.intA = crtA8;
+		ctx->colorPickerState.intR = crtIntR;
+		ctx->colorPickerState.intG = crtIntG;
+		ctx->colorPickerState.intB = crtIntB;
+		ctx->colorPickerState.intA = crtIntA;
 	}
 
-	if (!has(flags, ColorPickerFlags::Float))
-	{
-		inOutColor->r = crtR8 / 255.0f;
-		inOutColor->g = crtG8 / 255.0f;
-		inOutColor->b = crtB8 / 255.0f;
-		inOutColor->a = crtA8 / 255.0f;
-	}
-	else
-	{
-		*inOutColor = hsvToRgb(hsv);
-	}
+	*inOutColor = crtColor;
 
 	return true;
 }
