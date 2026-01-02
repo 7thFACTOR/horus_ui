@@ -128,4 +128,9 @@ f32 popWidth()
 	return 0;
 }
 
+void setNextWidth(f32 width)
+{
+	ctx->widget.width = width;
+}
+
 }

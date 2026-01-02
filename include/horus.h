@@ -2871,6 +2871,7 @@ HORUS_API f32 popSameLineSpacing();
 HORUS_API void pushWidth(f32 width);
 
 HORUS_API f32 popWidth();
+HORUS_API void setNextWidth(f32 width);
 
 /// Begin a custom user viewport area
 /// \param height the height of the viewport, if zero, it will take the entire remaining container height
