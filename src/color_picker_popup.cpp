@@ -417,46 +417,97 @@ bool colorPicker(const char* id, Color* inOutColor, ColorPickerFlags flags, cons
 
 	if (has(flags, ColorPickerFlags::Float))
 	{
-		if (hui::comboSliderFloat(&crtColor.r, 0.001f, 0.001f, "R: %.4f"))
+		if (has(flags, ColorPickerFlags::Hdr))
 		{
-			rgbaChanged = true;
+			if (hui::comboSliderFloat(&crtColor.r, 0.001f, 0.001f, "R: %.4f"))
+			{
+				rgbaChanged = true;
+			}
+
+			if (hui::comboSliderFloat(&crtColor.g, 0.001f, 0.001f, "G: %.4f"))
+			{
+				rgbaChanged = true;
+			}
+
+			if (hui::comboSliderFloat(&crtColor.b, 0.001f, 0.001f, "B: %.4f"))
+			{
+				rgbaChanged = true;
+			}
+
+			if (hui::comboSliderFloat(&crtColor.a, 0.001f, 0.001f, "A: %.4f"))
+			{
+				rgbaChanged = true;
+			}
+		}
+		else
+		{
+			if (hui::comboSliderFloatRanged(&crtColor.r, 0, 1, 0.001f, 0.001f, "R: %.4f"))
+			{
+				rgbaChanged = true;
+			}
+
+			if (hui::comboSliderFloatRanged(&crtColor.g, 0, 1, 0.001f, 0.001f, "G: %.4f"))
+			{
+				rgbaChanged = true;
+			}
+
+			if (hui::comboSliderFloatRanged(&crtColor.b, 0, 1, 0.001f, 0.001f, "B: %.4f"))
+			{
+				rgbaChanged = true;
+			}
+
+			if (hui::comboSliderFloatRanged(&crtColor.a, 0, 1, 0.001f, 0.001f, "A: %.4f"))
+			{
+				rgbaChanged = true;
+			}
 		}
 
-		if (hui::comboSliderFloat(&crtColor.g, 0.001f, 0.001f, "G: %.4f"))
-		{
-			rgbaChanged = true;
-		}
-
-		if (hui::comboSliderFloat(&crtColor.b, 0.001f, 0.001f, "B: %.4f"))
-		{
-			rgbaChanged = true;
-		}
-
-		if (hui::comboSliderFloat(&crtColor.a, 0.001f, 0.001f, "A: %.4f"))
-		{
-			rgbaChanged = true;
-		}
 	}
 	else
 	{
-		if (hui::comboSliderInteger(&crtIntR, 0.01f, 1, "R: %.0f"))
+		if (has(flags, ColorPickerFlags::Hdr))
 		{
-			rgbaChanged = true;
-		}
+			if (hui::comboSliderInteger(&crtIntR, 0.1f, 1, "R: %.0f"))
+			{
+				rgbaChanged = true;
+			}
 
-		if (hui::comboSliderInteger(&crtIntG, 0.01f, 1, "G: %.0f"))
-		{
-			rgbaChanged = true;
-		}
+			if (hui::comboSliderInteger(&crtIntG, 0.1f, 1, "G: %.0f"))
+			{
+				rgbaChanged = true;
+			}
 
-		if (hui::comboSliderInteger(&crtIntB, 0.01f, 1, "B: %.0f"))
-		{
-			rgbaChanged = true;
-		}
+			if (hui::comboSliderInteger(&crtIntB, 0.1f, 1, "B: %.0f"))
+			{
+				rgbaChanged = true;
+			}
 
-		if (hui::comboSliderInteger(&crtIntA, 0.01f, 1, "A: %.0f"))
+			if (hui::comboSliderInteger(&crtIntA, 0.1f, 1, "A: %.0f"))
+			{
+				rgbaChanged = true;
+			}
+		}
+		else
 		{
-			rgbaChanged = true;
+			if (hui::comboSliderIntegerRanged(&crtIntR, 0, 255, 0.1f, 1, "R: %.0f"))
+			{
+				rgbaChanged = true;
+			}
+
+			if (hui::comboSliderIntegerRanged(&crtIntG, 0, 255, 0.1f, 1, "G: %.0f"))
+			{
+				rgbaChanged = true;
+			}
+
+			if (hui::comboSliderIntegerRanged(&crtIntB, 0, 255, 0.1f, 1, "B: %.0f"))
+			{
+				rgbaChanged = true;
+			}
+
+			if (hui::comboSliderIntegerRanged(&crtIntA, 0, 255, 0.1f, 1, "A: %.0f"))
+			{
+				rgbaChanged = true;
+			}
 		}
 	}
 

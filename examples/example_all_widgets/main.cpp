@@ -243,7 +243,7 @@ int main(int argc, char** args)
 				//hui::pushSpacing(500);
 				static hui::Color col1 = hui::Color(3,0,0,1);
 				static hui::Color col2 = hui::Color::blue;
-				hui::colorPicker("cp1",  & col1, (hui::ColorPickerFlags::Hdr));
+				hui::colorPicker("cp1",  &col1);
 				//hui::colorPicker("cp2", &col2);
 				//hui::popSpacing();
 				
