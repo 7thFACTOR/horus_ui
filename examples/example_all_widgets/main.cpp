@@ -253,13 +253,13 @@ int main(int argc, char** args)
 				hui::label("Text here", hui::HAlignType::Left);
 				hui::button("Button");
 				
+				hui::setNextWidth(100);
 				hui::comboSliderFloat(&scrollPos);
 				hui::label("Text here", hui::HAlignType::Left);
 				hui::endSameLine();
 
 				static i32 ival = 0;
 
-				hui::setNextWidth(100);
 				hui::comboSliderIntegerRanged(&ival, 0, 100, 0.01f, 1, "VAL: %.0f");
 
 				hui::image(img, 700, hui::HAlignType::Right);
