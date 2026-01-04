@@ -9,18 +9,19 @@ namespace hui
 bool labelInternal(const char* label, HAlignType horizontalAlign, Font* font)
 {
 	auto& bodyElem = ctx->theme->getElement(WidgetElementId::LabelBody);
-	f32 width = ctx->layout.width;
 	f32 height = 0;
 	auto& bodyElemState = bodyElem.normalState();
 	auto& padding = getWidgetPadding();
 
 	ctx->extractLabelAndId(label);
 
-	auto fsize = font->computeTextSize(ctx->widgetLabel.c_str(), (u32)round(width - padding.x * 2.0f * ctx->scale));
+	auto fsize = font->computeTextSize(ctx->widgetLabel.c_str(), (u32)round(ctx->layout.width - padding.x * 2.0f * ctx->scale));
 	height = (bodyElemState.height * ctx->scale > fsize.height ? bodyElemState.height * ctx->scale : fsize.height) + padding.y * 2.0f * ctx->scale;
+
 	if (ctx->sameLine)
 	{
-		ctx->widget.width = fsize.width + padding.x * 2.0f * ctx->scale;
+		ctx->widget.customWidth = fsize.width + padding.x * 2.0f * ctx->scale;
+		ctx->widget.hasCustomWidth = true;
 	}
 
 	//TODO: for sameline ctx->widget.width = fsize.width;

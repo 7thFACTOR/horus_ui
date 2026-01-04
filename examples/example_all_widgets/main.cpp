@@ -251,12 +251,50 @@ int main(int argc, char** args)
 
 				hui::label("Text here", hui::HAlignType::Right);
 				hui::label("Text here", hui::HAlignType::Left);
-				hui::button("Button");
+				hui::button("Button1");
+				hui::button("Button2");
+				hui::button("Button3");
 				
-				hui::setNextWidth(100);
+				static i32 ddIndex = 0;
+				static const char* items[10] = {
+					"Item 01",
+					"Item 02",
+					"Item 03",
+					"Item 04",
+					"Item 05",
+					"Item 06",
+					"Item 07",
+					"Item 08",
+					"Item 09",
+					"Item 10",
+				};
+
+				hui::setNextWidth(150);
+				hui::dropdown("dd", ddIndex, items, 10);
+
+				//hui::setNextWidth(100);
 				hui::comboSliderFloat(&scrollPos);
 				hui::label("Text here", hui::HAlignType::Left);
 				hui::endSameLine();
+
+				hui::beginSameLine();
+				hui::setNextWidth(0.33333f);
+				hui::button("Action1");
+				hui::setNextWidth(0.33333f);
+				hui::button("Action2");
+				hui::setNextWidth(0.33333f);
+				hui::button("Action3");
+				hui::endSameLine();
+
+				hui::beginSameLine();
+				hui::setNextWidth(0.1f);
+				hui::check("Check01", &chk1);
+				hui::setNextWidth(0.1f);
+				hui::check("Check02", &chk2);
+				hui::setNextWidth(0.5f);
+				hui::check("Check03", &chk3);
+				hui::endSameLine();
+
 
 				static i32 ival = 0;
 

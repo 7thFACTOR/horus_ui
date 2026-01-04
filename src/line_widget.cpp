@@ -130,7 +130,8 @@ f32 popWidth()
 
 void setNextWidth(f32 width)
 {
-	ctx->widget.width = width;
+	ctx->widget.nextWidth = width;
+	ctx->widget.hasNextWidth = true;
 }
 
 }

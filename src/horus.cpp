@@ -149,11 +149,20 @@ void addWidget(f32 height)
 	ctx->widget.changeEnded = false;
 	height = round(height);
 
+	// next width has priority over custom width
+	if (ctx->widget.hasNextWidth)
+	{
+		ctx->widget.width = ctx->widget.nextWidth * ctx->scale;
+	}
+	else
+	{
+		ctx->widget.width = ctx->sameLine || ctx->widget.hasCustomWidth ? ctx->widget.customWidth * ctx->scale : ctx->layout.width;
+	}
+
+	// if width is under 1, then it's a percentage of the layout width
+	// otherwise it's a fixed pixel width
 	auto pixelWidth = ctx->widget.width > 1 ? ctx->widget.width : ctx->widget.width * ctx->layout.width;
 
-	if (ctx->widget.width == 0) pixelWidth = 0;
-
-	f32 width = ctx->sameLine ? pixelWidth : (pixelWidth != 0 ? pixelWidth : ctx->layout.width);
 	f32 verticalOffset = 0;
 	const f32 totalHeight = ctx->spacing * ctx->scale + height;
 
@@ -167,10 +176,12 @@ void addWidget(f32 height)
 		verticalOffset = (ctx->sameLineInfo[ctx->sameLineInfoIndex].lineHeight - totalHeight) / 2.0f;
 	}
 
+	ctx->widget.width = pixelWidth;
+
 	ctx->widget.rect.set(
 		round(ctx->position.x),
 		round(ctx->position.y + verticalOffset),
-		width,
+		pixelWidth,
 		height);
 
 	if (!ctx->sameLine)
@@ -180,8 +191,11 @@ void addWidget(f32 height)
 	}
 	else
 	{
-		ctx->position.x += width + ctx->sameLineSpacing * ctx->scale;
+		ctx->position.x += pixelWidth + ctx->sameLineSpacing * ctx->scale;
 	}
+
+	ctx->widget.hasNextWidth = false;
+	ctx->widget.hasCustomWidth = false;
 }
 
 void setFocusable()

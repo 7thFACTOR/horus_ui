@@ -27,7 +27,7 @@ void endCustomWidget()
 {
 }
 
-Point geLayoutSize()
+Point getLayoutSize()
 {
 	Point pt;
 
@@ -39,13 +39,7 @@ Point geLayoutSize()
 
 Rect getWidgetRect()
 {
-	return 
-	{
-		ctx->widget.rect.x,
-		ctx->widget.rect.y,
-		ctx->widget.rect.width,
-		ctx->widget.rect.height
-	};
+	return ctx->widget.rect;
 }
 
 void pushDrawCommandIndex()

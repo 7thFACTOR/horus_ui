@@ -14,6 +14,13 @@ bool dropdown(const char* id, i32& selectedIndex, const char** items, u32 itemCo
 	auto& padding = getWidgetPadding();
 
 	ctx->id = genId(id);
+
+	if (ctx->sameLine)
+	{
+		ctx->widget.customWidth = 80; //TODO: compute based on text size
+		ctx->widget.hasCustomWidth = true;
+	}
+
 	addWidget((bodyElem.normalState().height + padding.y * 2.0f) * ctx->scale);
 	buttonBehavior();
 
@@ -61,7 +68,7 @@ bool dropdown(const char* id, i32& selectedIndex, const char** items, u32 itemCo
 	// add the border of the body element
 	ctx->widget.rect.x += bodyElemState->border * ctx->scale;
 
-	const auto& posForPopup = ctx->widget.rect.bottomLeft();
+	const auto& popupPos = ctx->widget.rect.bottomLeft();
 
 	if (selectedItemText)
 	{
@@ -72,17 +79,17 @@ bool dropdown(const char* id, i32& selectedIndex, const char** items, u32 itemCo
 				ctx->widget.rect.height
 		};
 		auto fsize = bodyElemState->font->computeTextSize(selectedItemText, textRc.width);
-		//ctx->renderer->pushClipRect(textRc);
+		ctx->renderer->pushClipRect(textRc);
 		ctx->renderer->cmdSetColor(applyTint(bodyElemState->textColor, TintColorType::Text));
 		ctx->renderer->cmdSetFont(bodyElemState->font);
 		ctx->renderer->cmdDrawTextInBox(
-			fsize.maxLength == 0 ?
+			fsize.maxLength >= strlen(selectedItemText) ?
 			selectedItemText :
-			(std::string(selectedItemText, (size_t)fsize.maxLength) + "...").c_str(),
+			(std::string(selectedItemText, (size_t)fsize.maxLength)).c_str(),
 			textRc,
 			HAlignType::Left,
 			VAlignType::Center);
-		//ctx->renderer->popClipRect();
+		ctx->renderer->popClipRect();
 	}
 
 	setFocusable();
@@ -113,7 +120,7 @@ bool dropdown(const char* id, i32& selectedIndex, const char** items, u32 itemCo
 
 		beginPopup("popup", ctx->widget.rect.width - bodyElem.normalState().border * 2.0f,
 			PopupFlags::CustomPosition,
-			posForPopup,
+			popupPos,
 			WidgetElementId::ButtonBody);
 
 		auto& selectableBodyElem = ctx->theme->getElement(WidgetElementId::SelectableBody).normalState();

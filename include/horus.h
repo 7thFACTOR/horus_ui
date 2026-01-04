@@ -3076,7 +3076,7 @@ HORUS_API u32 decrementLayerIndex();
 HORUS_API void decrementWindowMaxLayerIndex();
 
 ///
-HORUS_API Point geLayoutSize();
+HORUS_API Point getLayoutSize();
 
 ///
 HORUS_API Rect getWidgetRect();

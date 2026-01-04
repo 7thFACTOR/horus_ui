@@ -23,9 +23,14 @@ bool check(const char* label, bool* checkVar)
 	f32 markHeightScaled = markHeight * ctx->scale;
 
 	// height is the same as bullet width, since its square, so we use height
-	ctx->widget.width = markWidthScaled + textSize.width + bulletTextSpacing;
+	ctx->widget.customWidth = markWidthScaled + textSize.width + bulletTextSpacing;
+	ctx->widget.hasCustomWidth = true;
 
 	addWidget(std::max(textSize.height, markHeightScaled));
+
+	// set this width to just click on the bullet+text area
+	ctx->widget.rect.width = ctx->widget.customWidth;
+
 	buttonBehavior();
 	ctx->widget.changeEnded = false;
 

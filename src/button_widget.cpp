@@ -209,11 +209,8 @@ bool button(const char* label)
 	if (ctx->sameLine)
 	{
 		auto textWidth = btnBodyElem.normalState().font->computeTextSize(ctx->widgetLabel.c_str());
-		ctx->widget.width = ((btnBodyElem.normalState().border + padding.x) * 2.0f) * ctx->scale + textWidth.width;
-	}
-	else
-	{
-		ctx->widget.width = 0; // auto width
+		ctx->widget.customWidth = ((btnBodyElem.normalState().border + padding.x) * 2.0f) * ctx->scale + textWidth.width;
+		ctx->widget.hasCustomWidth = true;
 	}
 
 	addWidget((btnBodyElem.normalState().height + padding.y * 2.0f) * ctx->scale);
@@ -270,6 +267,12 @@ bool iconButtonInternal(HImage icon, HImage disabledIcon, f32 customHeight, bool
 		height = customHeight;
 	else
 		height = std::max(btnBodyElemState->height, iconImg->rect.height);
+
+	if (ctx->sameLine)
+	{
+		ctx->widget.customWidth = iconImg->rect.width;
+		ctx->widget.hasCustomWidth = true;
+	}
 
 	ctx->extractLabelAndId(nullptr);
 	addWidget(height * ctx->scale);

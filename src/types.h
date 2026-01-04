@@ -59,7 +59,7 @@ struct WidgetBoolState
 
 struct ComboSliderState
 {
-	static const size_t maxTextSize = 128;
+	static const size_t maxTextSize = 1024;
 
 	f32 currentValue = 0;
 	bool mouseWasDown = false;
@@ -232,6 +232,10 @@ struct WidgetState
 	WidgetId hoveredId = 0;
 	WidgetId captureId = 0;
 	f32 width = 0; // if 0 then it will be automatically computed, usually the parent container width
+	f32 nextWidth = 0; // if set, will be applied to the next widget
+	f32 customWidth = 0;
+	bool hasNextWidth = false; // whether nextWidth is set
+	bool hasCustomWidth = false;
 	bool disabled = false;
 	bool pressed = false;
 	bool visible = true;
