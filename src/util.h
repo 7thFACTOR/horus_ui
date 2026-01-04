@@ -16,7 +16,7 @@ bool viewportImageFitSize(
 	f32 viewWidth, f32 viewHeight,
 	f32& newWidth, f32& newHeight,
 	bool ignoreHeight, bool ignoreWidth);
-bool iconButtonInternal(HImage icon, HImage disabledIcon, f32 customHeight, bool down, ThemeElement* btnBodyElem);
+bool imageButtonInternal(HImage img, HImage disabledImg, f32 width, f32 height, bool down, ThemeElement* btnBodyElem);
 bool clampValue(f32& value, f32 minVal, f32 maxVal);
 inline f32 clampValue01(f32 value) { return fmax(0.0f, fmin(1.0f, value)); }
 

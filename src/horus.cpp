@@ -1008,14 +1008,15 @@ void setWidgetStyle(WidgetType widgetType, const char* styleName)
 	case WidgetType::Button:
 		ctx->theme->elements[(u32)WidgetElementId::ButtonBody].setStyle(styleName);
 		break;
-	case WidgetType::IconButton:
+	case WidgetType::ImageButton:
+		ctx->theme->elements[(u32)WidgetElementId::ImageButtonBody].setStyle(styleName);
 		break;
 	case WidgetType::TextInput:
 		ctx->theme->elements[(u32)WidgetElementId::TextInputBody].setStyle(styleName);
 		ctx->theme->elements[(u32)WidgetElementId::TextInputCaret].setStyle(styleName);
 		ctx->theme->elements[(u32)WidgetElementId::TextInputSelection].setStyle(styleName);
 		ctx->theme->elements[(u32)WidgetElementId::TextInputDefaultText].setStyle(styleName);
-		ctx->theme->elements[(u32)WidgetElementId::TextInputFilterClearIcon].setStyle(styleName);
+		ctx->theme->elements[(u32)WidgetElementId::TextInputFilterClearImage].setStyle(styleName);
 		break;
 	case WidgetType::Slider:
 		ctx->theme->elements[(u32)WidgetElementId::SliderBody].setStyle(styleName);
@@ -1098,10 +1099,10 @@ void setWidgetStyle(WidgetType widgetType, const char* styleName)
 	case WidgetType::Viewport:
 		break;
 	case WidgetType::MsgBox:
-		ctx->theme->elements[(u32)WidgetElementId::MessageBoxIconError].setStyle(styleName);
-		ctx->theme->elements[(u32)WidgetElementId::MessageBoxIconWarning].setStyle(styleName);
-		ctx->theme->elements[(u32)WidgetElementId::MessageBoxIconInfo].setStyle(styleName);
-		ctx->theme->elements[(u32)WidgetElementId::MessageBoxIconQuestion].setStyle(styleName);
+		ctx->theme->elements[(u32)WidgetElementId::MessageBoxImageError].setStyle(styleName);
+		ctx->theme->elements[(u32)WidgetElementId::MessageBoxImageWarning].setStyle(styleName);
+		ctx->theme->elements[(u32)WidgetElementId::MessageBoxImageInfo].setStyle(styleName);
+		ctx->theme->elements[(u32)WidgetElementId::MessageBoxImageQuestion].setStyle(styleName);
 		break;
 	case WidgetType::Box:
 		ctx->theme->elements[(u32)WidgetElementId::BoxBody].setStyle(styleName);

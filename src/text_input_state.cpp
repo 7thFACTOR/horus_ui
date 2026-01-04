@@ -21,16 +21,16 @@ bool TextInputState::processEvent(const InputEvent& ev)
 
 	const Point& mousePos = ctx->mousePosition;
 
-	// compute clear-filter hit rect (match how the widget draws the icon)
+	// compute clear-filter hit rect (match how the widget draws the image)
 	Rect clearFilterRc = rect;
-	auto& bodyTextFilterClearIconElem = ctx->theme->getElement(WidgetElementId::TextInputFilterClearIcon);
+	auto& bodyTextFilterClearImageElem = ctx->theme->getElement(WidgetElementId::TextInputFilterClearImage);
 	auto& bodyTextElem = ctx->theme->getElement(WidgetElementId::TextInputBody);
 
-	// icon size in screen pixels
-	auto imgW = bodyTextFilterClearIconElem.normalState().image->width * ctx->scale;
-	auto imgH = bodyTextFilterClearIconElem.normalState().image->height * ctx->scale;
+	// image size in screen pixels
+	auto imgW = bodyTextFilterClearImageElem.normalState().image->width * ctx->scale;
+	auto imgH = bodyTextFilterClearImageElem.normalState().image->height * ctx->scale;
 
-	// position icon at same X/Y used by the widget rendering
+	// position image at same X/Y used by the widget rendering
 	clearFilterRc.x = rect.right() - (bodyTextElem.normalState().border + getWidgetPadding().x) * ctx->scale - imgW;
 	clearFilterRc.width = imgW;
 	clearFilterRc.y = rect.y + (rect.height - imgH) / 2.0f;

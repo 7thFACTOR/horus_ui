@@ -90,7 +90,7 @@ TabIndex endTabGroup()
 	return ctx->selectedTabIndex;
 }
 
-void tab(const char* label, HImage icon)
+void tab(const char* label, HImage img)
 {
 	auto& tabGroupElemState = ctx->theme->getElement(WidgetElementId::TabGroupBody).normalState();
 	auto& tabActiveElem = ctx->theme->getElement(WidgetElementId::TabBodyActive);
@@ -100,19 +100,19 @@ void tab(const char* label, HImage icon)
 
 	Utf32String* uniStr = ctx->textCache->getText(label);
 	FontTextSize fsize = tabElemState->font->computeTextSize(*uniStr);
-	Image* ico = (Image*)icon;
+	Image* image = (Image*)img;
 
 	f32 width = 0;
-	f32 iconWidth = 0;
+	f32 imageWidth = 0;
 
-	if (icon)
+	if (image)
 	{
-		iconWidth = ico->rect.width;
+		imageWidth = image->rect.width;
 	}
 
-	f32 textAndIconWidth = (fsize.width + iconWidth * 2.0f /* some space after text as icon width */ + ctx->settings.dockTabIconTextSpacing) * ctx->scale;
+	f32 textAndImageWidth = (fsize.width + imageWidth * 2.0f /* some space after text as image width */ + ctx->settings.dockTabImageTextSpacing) * ctx->scale;
 	
-	width = textAndIconWidth + (tabElemState->border + padding.x) * 2.0f * ctx->scale;
+	width = textAndImageWidth + (tabElemState->border + padding.x) * 2.0f * ctx->scale;
 
 	f32 height = (tabElemState->height + padding.y * 2.0f) * ctx->scale;
 
@@ -156,24 +156,24 @@ void tab(const char* label, HImage icon)
 	ctx->renderer->cmdSetColor(tabElemState->color);
 	ctx->renderer->cmdDrawImageBordered(tabElemState->image, tabElemState->border, ctx->widget.rect, ctx->scale);
 
-	Rect rcTextAndIcon = {
+	Rect rcTextAndImage = {
 		ctx->widget.rect.x + (tabElemState->border + padding.x) * ctx->scale,
 		ctx->widget.rect.y,
-		textAndIconWidth,
+		textAndImageWidth,
 		ctx->widget.rect.height };
 
-	if (ico)
+	if (image)
 	{
 		ctx->renderer->cmdSetColor(tabElemState->textColor);
-		ctx->renderer->cmdDrawImageScaledAligned(ico,
-			rcTextAndIcon, HAlignType::Left, VAlignType::Center, ctx->scale);
+		ctx->renderer->cmdDrawImageScaledAligned(image,
+			rcTextAndImage, HAlignType::Left, VAlignType::Center, ctx->scale);
 	}
 
 	ctx->renderer->cmdSetFont(tabElemState->font);
 	ctx->renderer->cmdSetColor(tabElemState->textColor);
 
 	Rect textRc = {
-			ctx->widget.rect.x + (padding.x + tabElemState->border + iconWidth + ctx->settings.dockTabIconTextSpacing) * ctx->scale,
+			ctx->widget.rect.x + (padding.x + tabElemState->border + imageWidth + ctx->settings.dockTabImageTextSpacing) * ctx->scale,
 			ctx->widget.rect.y,
 			width,
 			ctx->widget.rect.height,

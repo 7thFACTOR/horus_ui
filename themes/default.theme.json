@@ -58,7 +58,37 @@
 						"height": 20,
 						"normal": { "image": "default/button_normal", "border": 3, "color": "red", "textColor": "white", "font": "normal" },
 						"hovered": { "image": "default/button_normal", "border": 3, "color": "yellow", "textColor": "white", "font": "normal" },
+						"pressed": { "image": "default/button_pressed", "border": 3, "color": "orange", "textColor": "white", "font": "normal" },
+						"focused": { "image": "default/button_normal", "border": 3, "color": "white", "textColor": "white", "font": "normal" }
+					}
+				}
+			}
+		},
+		"imageButton":
+		{
+			"styles":
+			{
+				"default":
+				{
+					"imageButtonBody":
+					{
+						"width": 0,
+						"height": 24,
+						"normal": { "image": "default/button_normal", "border": 3, "color": "115 115 115 255", "textColor": "white", "font": "normal" },
+						"hovered": { "image": "default/button_normal", "border": 3, "color": "155 200 200 255", "textColor": "white", "font": "normal" },
 						"pressed": { "image": "default/button_pressed", "border": 3, "color": "white", "textColor": "white", "font": "normal" },
+						"focused": { "image": "default/button_normal", "border": 3, "color": "115 115 115 255", "textColor": "white", "font": "normal" }
+					}
+				},
+				"important":
+				{
+					"imageButtonBody":
+					{
+						"width": 0,
+						"height": 20,
+						"normal": { "image": "default/button_normal", "border": 3, "color": "blue", "textColor": "white", "font": "normal" },
+						"hovered": { "image": "default/button_normal", "border": 3, "color": "yellow", "textColor": "white", "font": "normal" },
+						"pressed": { "image": "default/button_pressed", "border": 3, "color": "orange", "textColor": "white", "font": "normal" },
 						"focused": { "image": "default/button_normal", "border": 3, "color": "white", "textColor": "white", "font": "normal" }
 					}
 				}
@@ -189,10 +219,10 @@
 			{
 				"normal": { "image": "", "border": 0, "color": "gray", "textColor": "white", "font": "normal-unicode" }
 			},
-			"textInputFilterClearIcon":
+			"textInputFilterClearImage":
 			{
-				"normal": { "image": "default/clear_icon", "border": 0, "color": "gray", "textColor": "white", "font": "normal-unicode" },
-				"hovered": { "image": "default/clear_icon", "border": 0, "color": "white", "textColor": "white", "font": "normal-unicode" }
+				"normal": { "image": "default/clear", "border": 0, "color": "gray", "textColor": "white", "font": "normal-unicode" },
+				"hovered": { "image": "default/clear", "border": 0, "color": "white", "textColor": "white", "font": "normal-unicode" }
 			}
 		},
 		"slider":
@@ -460,10 +490,10 @@
 		},
 		"messageBox":
 		{
-			"errorIcon": { "normal": { "image": "default/sign-error", "border": 0, "color": "white", "textColor": "white", "font": "normal" } },
-			"infoIcon": { "normal": { "image": "default/sign-info", "border": 0, "color": "white", "textColor": "white", "font": "normal" } },
-			"questionIcon": { "normal": { "image": "default/sign-question", "border": 0, "color": "white", "textColor": "white", "font": "normal" } },
-			"warningIcon": { "normal": { "image": "default/sign-warning", "border": 0, "color": "white", "textColor": "white", "font": "normal" } }
+			"errorImage": { "normal": { "image": "default/sign-error", "border": 0, "color": "white", "textColor": "white", "font": "normal" } },
+			"infoImage": { "normal": { "image": "default/sign-info", "border": 0, "color": "white", "textColor": "white", "font": "normal" } },
+			"questionImage": { "normal": { "image": "default/sign-question", "border": 0, "color": "white", "textColor": "white", "font": "normal" } },
+			"warningImage": { "normal": { "image": "default/sign-warning", "border": 0, "color": "white", "textColor": "white", "font": "normal" } }
 		},
 		"selectable":
 		{
@@ -509,7 +539,7 @@
 			"targetObjectBody":
 			{
 				"height":20,
-				"normal": { "image": "default/target_icon", "border": 0, "color": "white", "textColor": "white", "font": "normal" }
+				"normal": { "image": "default/target", "border": 0, "color": "white", "textColor": "white", "font": "normal" }
 			}
 		},
 		"toolbar":

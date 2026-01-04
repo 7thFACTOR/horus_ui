@@ -583,7 +583,7 @@ void Renderer::executeDrawCommands(HNativeWindow wnd)
 			break;
 		}
 		case DrawCommand::Type::DrawText:
-			computeSizeOrDrawText(cmd.data.drawText.text, cmd.data.drawText.rect, cmd.data.drawText.horizAlign, cmd.data.drawText.vertAlign, true, currentFont);
+			computeSizeOrDrawText(cmd.data.drawText.text, cmd.data.drawText.rect, cmd.data.drawText.horizAlign, cmd.data.drawText.vertAlign, true, currentFont, cmd.data.drawText.singleLineEllipsis);
 			break;
 		case DrawCommand::Type::SetColor:
 			currentColor = cmd.data.setColor;
@@ -1024,7 +1024,8 @@ FontTextSize Renderer::computeSizeOrDrawText(
 	HAlignType horizAlign,
 	VAlignType vertAlign,
 	bool doDraw,
-	Font* font)
+	Font* font,
+	bool singleLineEllipsis)
 {
 	if (!text || !strcmp(text, ""))
 	{
@@ -1033,7 +1034,7 @@ FontTextSize Renderer::computeSizeOrDrawText(
 
 	// reuse text cache to get utf32 string
 	const Utf32String& utext = *ctx->textCache->getText(text);
-	return computeSizeOrDrawText(utext.data(), (u32)utext.size(), rect, horizAlign, vertAlign, doDraw, font);
+	return computeSizeOrDrawText(utext.data(), (u32)utext.size(), rect, horizAlign, vertAlign, doDraw, font, singleLineEllipsis);
 }
 
 FontTextSize Renderer::computeSizeOrDrawText(
@@ -1043,13 +1044,221 @@ FontTextSize Renderer::computeSizeOrDrawText(
 	HAlignType horizAlign,
 	VAlignType vertAlign,
 	bool doDraw,
-	Font* font)
+	Font* font,
+	bool singleLineEllipsis)
 {
 	FontTextSize fsize;
 	Font* fnt = font ? font : currentFont;
 
 	if (!fnt || size == 0)
 	{
+		return fsize;
+	}
+
+	// Helper: compute ellipsis width (prefer single U+2026 glyph, fall back to three dots)
+	auto computeEllipsisWidth = [&](Font* ff) -> f32 {
+		const GlyphCode uniEll = 0x2026;
+		auto gEll = ff->getGlyph(uniEll);
+		if (gEll)
+			return gEll->advanceX;
+		// fallback to three ASCII dots, include basic kerning conservatively
+		auto gDot = ff->getGlyph((GlyphCode)'.');
+		if (!gDot) return 0.0f;
+		// approximate three dots advance (simple approximation)
+		return gDot->advanceX * 3.0f;
+	};
+
+	// If singleLineEllipsis is requested, produce measurement/draw for exactly one line
+	if (singleLineEllipsis)
+	{
+		// find end of first logical line (stop at \n or end)
+		u32 lineEnd = 0;
+		while (lineEnd < size && text[lineEnd] != '\n') ++lineEnd;
+
+		// defensive: zero width rect -> nothing to draw
+		if (rect.width <= 0.0f)
+		{
+			// still provide height for one line
+			fsize.height = fnt->getMetrics().height;
+			fsize.lineHeights.push_back(fnt->getMetrics().height);
+			fsize.width = 0.0f;
+			return fsize;
+		}
+
+		// measure how many glyphs fit when appending an ellipsis if truncated
+		f32 ellWidth = computeEllipsisWidth(fnt);
+		u32 lastChr = 0;
+		f32 currWidth = 0.0f;
+		u32 fitCount = 0;
+
+		// Determine how many glyphs can be drawn while leaving room for ellipsis if needed
+		for (u32 i = 0; i < lineEnd; ++i)
+		{
+			auto chr = text[i];
+			auto glyph = fnt->getGlyph(chr);
+			
+			if (!glyph)
+				continue;
+
+			auto kern = fnt->getKerning(lastChr, chr);
+			f32 adv = glyph->advanceX + kern;
+
+			// If entire text fits without ellipsis, accept it.
+			// If not, ensure we leave space for ellipsis.
+			bool wouldExceed = (currWidth + adv > rect.width);
+			bool needsEllipsis = (lineEnd > 0 && (lineEnd - 0) > (i + 1)); // more glyphs after this one
+			
+			if (wouldExceed)
+			{
+				// can't accept this glyph; stop
+				break;
+			}
+			
+			// If there are remaining glyphs after this and adding them would later overflow,
+			// ensure we have room for ellipsis now. Conservative check: if next glyph would push us
+			// over and we don't have ellipsis room, stop before adding current glyph.
+			if (i + 1 < lineEnd)
+			{
+				// estimate minimal remaining (we don't know exactly next widths) - ensure ellipsis fits after adding this glyph
+				if (currWidth + adv + ellWidth > rect.width)
+				{
+					// if even zero glyphs fit but ellipsis itself fits, show only ellipsis
+					if (fitCount == 0)
+					{
+						// if ellipsis itself doesn't fit, we'll clamp width to rect.width and return
+						if (ellWidth > rect.width)
+						{
+							currWidth = rect.width;
+							fitCount = 0;
+							break;
+						}
+					}
+					// stop before adding this glyph so we can append ellipsis
+					break;
+				}
+			}
+
+			currWidth += adv;
+			lastChr = chr;
+			++fitCount;
+		}
+
+		// Decide final displayed width:
+		bool didTruncate = (fitCount < (lineEnd));
+		f32 displayedWidth = currWidth;
+		if (didTruncate)
+		{
+			// if nothing fits but ellipsis fits, display only ellipsis
+			if (fitCount == 0)
+			{
+				displayedWidth = std::min(ellWidth, rect.width);
+			}
+			else
+			{
+				displayedWidth = currWidth + ellWidth;
+				if (displayedWidth > rect.width) displayedWidth = rect.width;
+			}
+		}
+		else
+		{
+			// no truncation, displayedWidth is full measured width (currWidth) but ensure not exceeding rect
+			if (displayedWidth > rect.width) displayedWidth = rect.width;
+		}
+
+		// fill FontTextSize results
+		fsize.width = displayedWidth;
+		fsize.height = fnt->getMetrics().height;
+		fsize.lineHeights.push_back(fnt->getMetrics().height);
+		fsize.maxLength = fitCount;
+
+		// DRAW pass: draw the single aligned line with optional ellipsis
+		if (doDraw)
+		{
+			Point pos;
+
+			// vertical align: place baseline based on requested vertAlign (single line)
+			switch (vertAlign)
+			{
+			case hui::VAlignType::Top:
+				pos.y = rect.y + fnt->getMetrics().ascender;
+				break;
+			case hui::VAlignType::Bottom:
+				pos.y = rect.bottom() + fnt->getMetrics().descender;
+				break;
+			case hui::VAlignType::Center:
+				pos.y = rect.y + (rect.height - (fnt->getMetrics().ascender - fnt->getMetrics().descender)) * .5f + fnt->getMetrics().ascender;
+				break;
+			default:
+				pos.y = rect.y + fnt->getMetrics().ascender;
+				break;
+			}
+
+			// horizontal align based on displayedWidth (includes ellipsis if truncated)
+			switch (horizAlign)
+			{
+			case hui::HAlignType::Left:
+				pos.x = rect.x;
+				break;
+			case hui::HAlignType::Right:
+				pos.x = rect.right() - displayedWidth;
+				break;
+			case hui::HAlignType::Center:
+				pos.x = rect.x + (rect.width - displayedWidth) / 2.0f;
+				break;
+			default:
+				pos.x = rect.x;
+				break;
+			}
+
+			pos.x = round(pos.x);
+			pos.y = round(pos.y);
+
+			// draw the fitted glyphs
+			GlyphCode lastDrawChr = 0;
+			for (u32 j = 0; j < fitCount; ++j)
+			{
+				auto chr = text[j];
+				auto glyph = fnt->getGlyph(chr);
+				auto img = fnt->getGlyphImage(chr);
+
+				if (!glyph) continue;
+				auto kern = fnt->getKerning(lastDrawChr, chr);
+				pos.x += kern;
+				if (img) drawTextGlyph(img, { pos.x + glyph->bitmapLeft, pos.y - glyph->bitmapTop });
+				pos.x += glyph->advanceX;
+				lastDrawChr = chr;
+			}
+
+			// draw ellipsis if truncated
+			if (didTruncate)
+			{
+				const GlyphCode uniEll = 0x2026;
+				auto gEll = fnt->getGlyph(uniEll);
+				if (gEll && fnt->getGlyphImage(uniEll))
+				{
+					auto kern = fnt->getKerning(lastDrawChr, uniEll);
+					pos.x += kern;
+					drawTextGlyph(fnt->getGlyphImage(uniEll), { pos.x + gEll->bitmapLeft, pos.y - gEll->bitmapTop });
+					// advance x not needed further
+				}
+				else
+				{
+					// fallback: draw up to three '.' glyphs as ellipsis
+					auto gDot = fnt->getGlyph((GlyphCode)'.');
+					auto imgDot = fnt->getGlyphImage((GlyphCode)'.');
+					for (int d = 0; d < 3; ++d)
+					{
+						if (!gDot) break;
+						auto kern = fnt->getKerning(lastDrawChr, (GlyphCode)'.');
+						pos.x += kern;
+						if (imgDot) drawTextGlyph(imgDot, { pos.x + gDot->bitmapLeft, pos.y - gDot->bitmapTop });
+						pos.x += gDot->advanceX;
+						lastDrawChr = (GlyphCode)'.';
+					}
+				}
+			}
+		}
+
 		return fsize;
 	}
 
@@ -2320,13 +2529,10 @@ void Renderer::addDrawCommand(DrawCommand& cmd)
 	}
 }
 
-FontTextSize Renderer::cmdDrawTextAt(
+void Renderer::cmdDrawTextAt(
 	const char* text, 
 	const Point& position)
 {
-	// compute only the size (no draw) using the renderer's combined routine
-	FontTextSize fsize = computeSizeOrDrawText(text, Rect(position.x, position.y, 0, 0), HAlignType::Left, VAlignType::Top, false, currentFont);
-
 	DrawCommand cmd(DrawCommand::Type::DrawText);
 	cmd.data.drawText.rect = Rect(position.x, position.y, 0, 0);
 	cmd.data.drawText.horizAlign = HAlignType::Left;
@@ -2337,32 +2543,27 @@ FontTextSize Renderer::cmdDrawTextAt(
 	{
 		addDrawCommand(cmd);
 	}
-	
-	return fsize;
 }
 
-FontTextSize Renderer::cmdDrawTextInBox(
+void Renderer::cmdDrawTextInBox(
 	const char* text,
 	const Rect& rect,
 	HAlignType horizAlign,
-	VAlignType vertAlign)
+	VAlignType vertAlign,
+	bool singleLineEllipsis)
 {
-	// compute size with wrapping constrained to rect.width
-	FontTextSize fsize = computeSizeOrDrawText(text, rect, horizAlign, vertAlign, false, currentFont);
-
 	DrawCommand cmd(DrawCommand::Type::DrawText);
 
 	cmd.data.drawText.rect = rect;
 	cmd.data.drawText.horizAlign = horizAlign;
 	cmd.data.drawText.vertAlign = vertAlign;
 	cmd.data.drawText.text = addUtf8TextToBuffer(text, (u32)strlen(text));
-	
+	cmd.data.drawText.singleLineEllipsis = singleLineEllipsis;
+
 	if (cmd.data.drawText.text)
 	{
 		addDrawCommand(cmd);
 	}
-	
-	return fsize;
 }
 
 }

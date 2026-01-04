@@ -95,7 +95,7 @@ struct Context
 	WidgetId currentMenuBarId = 0;
 	f32 menuItemTextWidth = 0;
 	f32 menuItemTextSideSpacing = 10;
-	f32 menuIconSpace = 18;
+	f32 menuImageSpace = 18;
 	f32 menuFillerWidth = 30;
 
 	// Scrolling

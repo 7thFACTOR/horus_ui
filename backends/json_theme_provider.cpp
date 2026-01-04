@@ -39,7 +39,7 @@ WidgetType getWidgetTypeFromName(std::string name)
 	if (name == "window") return WidgetType::Window;
 	if (name == "tooltip") return WidgetType::Tooltip;
 	if (name == "button") return WidgetType::Button;
-	if (name == "iconButton") return WidgetType::IconButton;
+	if (name == "imageButton") return WidgetType::ImageButton;
 	if (name == "textInput") return WidgetType::TextInput;
 	if (name == "slider") return WidgetType::Slider;
 	if (name == "progress") return WidgetType::Progress;
@@ -79,6 +79,7 @@ WidgetElementId getWidgetElementFromName(std::string name)
 {
 	if (name == "windowBody") return WidgetElementId::WindowBody;
 	if (name == "buttonBody") return WidgetElementId::ButtonBody;
+	if (name == "imageButtonBody") return WidgetElementId::ImageButtonBody;
 	if (name == "checkBody") return WidgetElementId::CheckBody;
 	if (name == "checkMark") return WidgetElementId::CheckMark;
 	if (name == "radioBody") return WidgetElementId::RadioBody;
@@ -96,7 +97,7 @@ WidgetElementId getWidgetElementFromName(std::string name)
 	if (name == "textInputCaret") return WidgetElementId::TextInputCaret;
 	if (name == "textInputSelection") return WidgetElementId::TextInputSelection;
 	if (name == "textInputDefaultText") return WidgetElementId::TextInputDefaultText;
-	if (name == "textInputFilterClearIcon") return WidgetElementId::TextInputFilterClearIcon;
+	if (name == "textInputFilterClearImage") return WidgetElementId::TextInputFilterClearImage;
 	if (name == "sliderBody") return WidgetElementId::SliderBody;
 	if (name == "sliderBodyFilled") return WidgetElementId::SliderBodyFilled;
 	if (name == "sliderKnob") return WidgetElementId::SliderKnob;
@@ -127,10 +128,10 @@ WidgetElementId getWidgetElementFromName(std::string name)
 	if (name == "menuItemCheckMark") return WidgetElementId::MenuItemCheckMark;
 	if (name == "menuItemNoCheckMark") return WidgetElementId::MenuItemNoCheckMark;
 	if (name == "subMenuItemArrow") return WidgetElementId::SubMenuItemArrow;
-	if (name == "errorIcon") return WidgetElementId::MessageBoxIconError;
-	if (name == "infoIcon") return WidgetElementId::MessageBoxIconInfo;
-	if (name == "questionIcon") return WidgetElementId::MessageBoxIconQuestion;
-	if (name == "warningIcon") return WidgetElementId::MessageBoxIconWarning;
+	if (name == "errorImage") return WidgetElementId::MessageBoxImageError;
+	if (name == "infoImage") return WidgetElementId::MessageBoxImageInfo;
+	if (name == "questionImage") return WidgetElementId::MessageBoxImageQuestion;
+	if (name == "warningImage") return WidgetElementId::MessageBoxImageWarning;
 	if (name == "selectableBody") return WidgetElementId::SelectableBody;
 	if (name == "boxBody") return WidgetElementId::BoxBody;
 	if (name == "toolbarBody") return WidgetElementId::ToolbarBody;

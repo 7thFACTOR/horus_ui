@@ -90,7 +90,7 @@ int main(int argc, char** args)
 	// Set the current theme
 	hui::setTheme(theme);
 
-	// Grab some icon handles to use for the window icons
+	// Grab some image handles to use for the window icons
 	auto icon1 = hui::loadImage("../themes/icons/ic_attach_file_white_24dp.png");
 	auto icon2 = hui::loadImage("../themes/icons/ic_attach_money_white_24dp.png");
 	auto icon3 = hui::loadImage("../themes/icons/ic_border_all_white_24dp.png");
@@ -261,7 +261,7 @@ int main(int argc, char** args)
 					"Item 02",
 					"Item 03",
 					"Item 04",
-					"Item 05",
+					"Item 05 sd fasdf asfasdfa",
 					"Item 06",
 					"Item 07",
 					"Item 08",
@@ -270,7 +270,7 @@ int main(int argc, char** args)
 				};
 
 				hui::setNextWidth(150);
-				hui::dropdown("dd", ddIndex, items, 10);
+				hui::dropdown("dd", ddIndex, items, 10,6);
 
 				//hui::setNextWidth(100);
 				hui::comboSliderFloat(&scrollPos);
@@ -300,11 +300,30 @@ int main(int argc, char** args)
 
 				hui::comboSliderIntegerRanged(&ival, 0, 100, 0.01f, 1, "VAL: %.0f");
 
-				hui::image(img, 700, hui::HAlignType::Right);
+				hui::beginSameLine();
+				hui::pushSameLineSpacing(0);
+				hui::setNextWidth(0.25f);
+				hui::image(img, 150, hui::HAlignType::Center);
+				hui::setNextWidth(0.25f);
+				hui::image(img, 50, hui::HAlignType::Center);
+				hui::setNextWidth(0.25f);
+				hui::image(img, 50, hui::HAlignType::Center);
+				//hui::setNextWidth(0.25f);
+				hui::setWidgetStyle(hui::WidgetType::ImageButton, "important");
+				hui::imageButton(tabicon3, 50, 50);
+				static bool down = false;
+				if (hui::imageButton(tabicon3, 50, 50, 0, down))
+				{
+					down = !down;
+				}
+				hui::imageButton(tabicon3, 50, 50);
+				hui::setWidgetStyle(hui::WidgetType::ImageButton, "default");
+				hui::popSameLineSpacing();
+				hui::endSameLine();
 
 				hui::labelMultiline("Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum. Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium, totam rem aperiam, eaque ipsa quae ab illo inventore veritatis et quasi architecto beatae vitae dicta sunt explicabo. Nemo enim ipsam voluptatem quia voluptas sit aspernatur aut odit aut fugit, sed quia consequuntur magni dolores eos qui ratione voluptatem sequi nesciunt. Neque porro quisquam est, qui dolorem ipsum quia dolor sit amet, consectetur, adipisci velit, sed quia non numquam eius modi tempora incidunt ut labore et dolore magnam aliquam quaerat voluptatem. Ut enim ad minima veniam, quis nostrum exercitationem ullam corporis suscipit laboriosam, nisi ut aliquid ex ea commodi consequatur? Quis autem vel eum iure reprehenderit qui in ea voluptate velit esse quam nihil molestiae consequatur, vel illum qui dolorem eum fugiat quo voluptas nulla pariatur?", hui::HAlignType::Left);
 				hui::line();
-				hui::button("I AGREE");
+				hui::button("I AGREE Long text Label for this button to see ellipsis");
 				hui::line();
 				scrollPos = hui::endScrollView();
 				hui::pushTint(hui::Color::orange);
@@ -314,18 +333,18 @@ int main(int argc, char** args)
 				/*
 				hui::beginColumns(5);
 				hui::pushWidth(0.5);
-				hui::iconButton(icon1, 32);
+				hui::imageButton(icon1, 32);
 				hui::popWidth();
 				hui::nextColumn();
 				hui::pushWidth(1);
-				hui::iconButton(icon2, 32);
+				hui::imageButton(icon2, 32);
 				hui::popWidth();
 				hui::nextColumn();
-				hui::iconButton(icon3, 32);
+				hui::imageButton(icon3, 32);
 				hui::nextColumn();
-				hui::iconButton(icon4, 32);
+				hui::imageButton(icon4, 32);
 				hui::nextColumn();
-				hui::iconButton(icon5, 32);
+				hui::imageButton(icon5, 32);
 				hui::endColumns();
 				*/
 				//hui::endContainer();

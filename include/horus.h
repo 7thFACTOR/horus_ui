@@ -224,7 +224,7 @@ enum class WidgetType
 	Compound,
 	Tooltip,
 	Button,
-	IconButton,
+	ImageButton,
 	TextInput,
 	Slider,
 	Progress,
@@ -268,6 +268,7 @@ enum class WidgetElementId
 	Custom,
 	WindowBody,
 	ButtonBody,
+	ImageButtonBody,
 	CheckBody,
 	CheckMark,
 	RadioBody,
@@ -285,7 +286,7 @@ enum class WidgetElementId
 	TextInputCaret,
 	TextInputSelection,
 	TextInputDefaultText,
-	TextInputFilterClearIcon,
+	TextInputFilterClearImage,
 	SliderBody,
 	SliderBodyFilled,
 	SliderKnob,
@@ -316,10 +317,10 @@ enum class WidgetElementId
 	MenuItemCheckMark,
 	MenuItemNoCheckMark,
 	SubMenuItemArrow,
-	MessageBoxIconError,
-	MessageBoxIconInfo,
-	MessageBoxIconQuestion,
-	MessageBoxIconWarning,
+	MessageBoxImageError,
+	MessageBoxImageInfo,
+	MessageBoxImageQuestion,
+	MessageBoxImageWarning,
 	SelectableBody,
 	BoxBody,
 	ToolbarBody,
@@ -677,8 +678,8 @@ enum class DockingGuidesStyle
 	Auto
 };
 
-/// Common message box icons
-enum class MessageBoxIcon
+/// Common message box images
+enum class MessageBoxImage
 {
 	Error,
 	Info,
@@ -1675,7 +1676,7 @@ struct Settings
 	f32 dockNodeDockingSizeRatio = 0.33f; /// ratio of the new size of a docked node in regard to the node we're docking in (if dockNodeProportionalResize is true)
 	f32 dockNodeRootDockingHitSize = 40;
 	f32 dockNodeDockingHitSizeRatio = 0.5f; /// unit percent from the size of a window used for the docking hit box
-	f32 dockTabIconTextSpacing = 4;
+	f32 dockTabImageTextSpacing = 4;
 	f32 movePopupMaxDistanceTrigger = 5; /// distance of dragging with mouse for when to initiate popup dragging
 	f32 defaultBulletTextSpacing = 5; /// space size between bullet/check/radio and the label, might get overriden by the theme settings
 };
@@ -2234,7 +2235,7 @@ HORUS_API void dockLayoutSplit(DockNodeId nodeId, DockNodeSplitType splitType, f
 HORUS_API void dockLayoutSetNodeWindow(DockNodeId parentNode, const char* windowId);
 HORUS_API void dockLayoutRecalculate();
 
-HORUS_API bool beginWindow(const char* windowId, const char* title, Rect* initialRect, HImage icon);
+HORUS_API bool beginWindow(const char* windowId, const char* title, Rect* initialRect, HImage img);
 HORUS_API void endWindow();
 HORUS_API void setWindowVisible(const char* windowId, bool visible);
 HORUS_API void setNextWindowFlags(WindowFlags flags);
@@ -2677,17 +2678,17 @@ HORUS_API bool pressedEscapeOnPopup();
 /// \param title the message box title
 /// \param message the message
 /// \param buttons the visible buttons flags in the message box
-/// \param icon the icon of the message box
+/// \param img the image of the message box
 /// \param width the width of the message box
-/// \param customIcon the custom icon, if set in the icon param
+/// \param customImg the custom image, if set in the image param
 /// \return the pushed button in the message box
 HORUS_API MessageBoxButtons messageBox(
 	const char* title,
 	const char* message,
 	MessageBoxButtons buttons = MessageBoxButtons::Ok,
-	MessageBoxIcon icon = MessageBoxIcon::Info,
+	MessageBoxImage img = MessageBoxImage::Info,
 	u32 width = 400,
-	HImage customIcon = 0);
+	HImage customImg = 0);
 
 /// Set the next widget as enabled or not
 /// \param enabled if true, the widget is enabled for input
@@ -2701,21 +2702,21 @@ HORUS_API void setNextFocused();
 /// \return true if button was pressed
 HORUS_API bool button(const char* label);
 
-/// Draw a button with an icon on it
-/// \param icon the icon image
-/// \param height the button height, if zero then it takes the icon's height
+/// Draw a button with an image on it
+/// \param img the image
+/// \param height the button height, if zero then it takes the image's height
 /// \param down if true the button is in the pressed state
 /// \return true if the button was pressed
-HORUS_API bool iconButton(HImage icon, f32 height = 0.0f, bool down = false);
+HORUS_API bool imageButton(HImage img, f32 width, f32 height, HImage disabledImg = 0, bool down = false);
 
 /// Draw a text input widget
 /// \param text the text to be edited, provided by user
 /// \param maxTextSize the max size of the text buffer
 /// \param valueType the value type filter, what value is allowed in the text
 /// \param defaultText the grayed default text when there is no text value
-/// \param icon the icon drawn in the widget
+/// \param img the image drawn in the widget
 /// \return true if the text was modified
-HORUS_API bool textInput(char* text, u32 maxTextSize, TextInputValueMode valueType = TextInputValueMode::Any, const char* defaultText = nullptr, HImage icon = 0, bool password = false, const char* passwordChar = "\95");
+HORUS_API bool textInput(char* text, u32 maxTextSize, TextInputValueMode valueType = TextInputValueMode::Any, const char* defaultText = nullptr, HImage img = 0, bool password = false, const char* passwordChar = "\95");
 
 /// Draw an integer number slider widget
 /// \param minVal the minimum value
@@ -2829,7 +2830,7 @@ HORUS_API bool beginList(ListSelectionMode selectionType);
 HORUS_API void endList();
 
 /// TODO:
-HORUS_API void listItem(const char* labelText, SelectableFlags stateFlags, HImage icon);
+HORUS_API void listItem(const char* labelText, SelectableFlags stateFlags, HImage img);
 
 /// Draw a selectable label
 /// \param label the selectable's text
@@ -2910,10 +2911,10 @@ HORUS_API void endContextMenu();
 /// Draw a menu item widget, use inside begin/end menu (or context menu)
 /// \param label the menu item text
 /// \param shortcut the key shortcut text
-/// \param icon the menu item left side icon
+/// \param img the menu item left side image
 /// \param flags the menu item flags
 /// \return true if the menu item was clicked on
-HORUS_API bool menuItem(const char* label, const char* shortcut = "", HImage icon = 0, SelectableFlags flags = SelectableFlags::Normal);
+HORUS_API bool menuItem(const char* label, const char* shortcut = "", HImage img = 0, SelectableFlags flags = SelectableFlags::Normal);
 
 /// Draw a menu item separator
 HORUS_API void menuSeparator();
@@ -2930,19 +2931,19 @@ HORUS_API void beginToolbar(ToolbarDirection dir = ToolbarDirection::Horizontal)
 HORUS_API void endToolbar();
 
 /// Draw a toolbar button widget
-/// \param normalIcon the normal state icon
-/// \param disabledIcon the disabled state icon
+/// \param normalImg the normal state image
+/// \param disabledImg the disabled state image
 /// \param down true if the button state is down
 /// \return true if the button was pressed
-HORUS_API bool toolbarButton(HImage normalIcon, HImage disabledIcon = 0, bool down = false);
+HORUS_API bool toolbarButton(HImage normalImg, HImage disabledImg = 0, bool down = false);
 
 /// Draw a toolbar dropdown button widget
 /// \param label the label text
-/// \param normalIcon the normal state icon
-/// \param disabledIcon the disabled state icon
+/// \param normalImg the normal state image
+/// \param disabledImg the disabled state image
 /// \param down true if the button state is down
 /// \return true if the dropdown button was pressed
-HORUS_API bool toolbarDropdown(const char* label, HImage normalIcon = 0, HImage disabledIcon = 0);
+HORUS_API bool toolbarDropdown(const char* label, HImage normalImg = 0, HImage disabledImg = 0);
 
 /// Draw a toolbar item separator
 HORUS_API void toolbarSeparator();
@@ -2963,9 +2964,9 @@ HORUS_API bool toolbarTextInputFilter(char* outText, u32 maxOutTextSize, u32& fi
 /// \param outText the text buffer to edit
 /// \param maxOutTextSize the maximum size of the buffer
 /// \param hint the text hint
-/// \param icon the text edit icon
+/// \param img the text edit image
 /// \return true if the text was changed
-HORUS_API bool toolbarTextInput(char* outText, u32 maxOutTextSize, const char* hint = 0, HImage icon = 0);
+HORUS_API bool toolbarTextInput(char* outText, u32 maxOutTextSize, const char* hint = 0, HImage img = 0);
 
 //////////////////////////////////////////////////////////////////////////
 // Dockable Tabs
@@ -2977,8 +2978,8 @@ HORUS_API void beginTabGroup(TabIndex selectedIndex);
 
 /// Draw a tab widget
 /// \param label the text of the tab
-/// \param icon the icon of the tab
-HORUS_API void tab(const char* label, HImage icon);
+/// \param img the image of the tab
+HORUS_API void tab(const char* label, HImage img);
 
 /// End the tab group
 HORUS_API TabIndex endTabGroup();
@@ -3177,7 +3178,7 @@ HORUS_API bool vec2Editor(const char* id, f64& x, f64& y, f64 scrollStep = 0.03f
 HORUS_API bool vec2Editor(const char* id, f32& x, f32& y, f32 scrollStep = 0.03f);
 
 /// Draw an object reference editor
-HORUS_API bool objectRefEditor(const char* id, HImage targetIcon, HImage clearIcon, const char* objectTypeName, const char* valueAsString, u32 objectType, void** outObject, bool* objectValueWasModified);
+HORUS_API bool objectRefEditor(const char* id, HImage targetImg, HImage clearImg, const char* objectTypeName, const char* valueAsString, u32 objectType, void** outObject, bool* objectValueWasModified);
 
 //////////////////////////////////////////////////////////////////////////
 // System native file dialogs

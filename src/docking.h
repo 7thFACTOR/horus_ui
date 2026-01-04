@@ -58,7 +58,7 @@ void destroyNativeWindow(HNativeWindow wnd);
 DockNode* createNativeWindowRootDockNode(HNativeWindow nativeWindow);
 void deleteRootDockNode(HNativeWindow window);
 DockNode* getRootDockNode(HNativeWindow window);
-Window* createWindow(const std::string& id, DockNode* targetNode, DockType dockType, const std::string& title, Rect* initialRect, HNativeWindow nativeWnd, HImage icon);
+Window* createWindow(const std::string& id, DockNode* targetNode, DockType dockType, const std::string& title, Rect* initialRect, HNativeWindow nativeWnd, HImage img);
 void deleteWindow(Window* wnd);
 void closeWindow(Window* wnd);
 bool dockWindow(Window* wnd, DockNode* targetNode, DockType dockType, u32 tabIndex = 0, const Point* undockedWindowPos = nullptr);

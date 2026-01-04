@@ -5,7 +5,7 @@
 
 namespace hui
 {
-bool beginWindow(const char* id, const char* title, Rect* initialRect, HImage icon)
+bool beginWindow(const char* id, const char* title, Rect* initialRect, HImage img)
 {
 	Window* wnd = nullptr;
 	auto iterWnd = ctx->docking.windows.find(id);
@@ -27,7 +27,7 @@ bool beginWindow(const char* id, const char* title, Rect* initialRect, HImage ic
 			parentNode = ctx->docking.dockNodeIdsMap[iter->second];
 		}
 
-		wnd = createWindow(id, parentNode, parentNode ? DockType::AsTab : DockType::None, title, initialRect, 0, icon);
+		wnd = createWindow(id, parentNode, parentNode ? DockType::AsTab : DockType::None, title, initialRect, 0, img);
 		wnd->id = id;
 	}
 	else
@@ -38,7 +38,7 @@ bool beginWindow(const char* id, const char* title, Rect* initialRect, HImage ic
 		}
 
 		wnd = ctx->docking.windows[id];
-		wnd->icon = icon;
+		wnd->image = img;
 	}
 
 	if (ctx->event.type == InputEvent::Type::WindowClose)

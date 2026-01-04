@@ -147,7 +147,7 @@ bool beginMenuInternal(const char* label, SelectableFlags stateFlags, bool conte
 			ctx->renderer->pushClipRect(ctx->renderer->getWindowRect(), false);
 			pushSpacing(0);
 			beginPopup("menuPopup",
-				ctx->menuStack[ctx->menuDepth].size.x + menuBodyElem.normalState().border * 2.0f + ctx->menuFillerWidth + ctx->menuIconSpace,
+				ctx->menuStack[ctx->menuDepth].size.x + menuBodyElem.normalState().border * 2.0f + ctx->menuFillerWidth + ctx->menuImageSpace,
 				(contextMenu ? PopupFlags::CustomPosition : PopupFlags::BelowLastWidget)
 				 | PopupFlags::IsMenu,
 				ctx->activeMenuBarItemWidgetPos, WidgetElementId::MenuBody);
@@ -188,7 +188,7 @@ bool beginMenuInternal(const char* label, SelectableFlags stateFlags, bool conte
 			ctx->renderer->pushClipRect(ctx->renderer->getWindowRect(), false);
 			pushSpacing(0);
 			beginPopup("menuPopup",
-				ctx->menuStack[ctx->menuDepth].size.x + menuBodyElem.normalState().border * 2.0f + ctx->menuFillerWidth + ctx->menuIconSpace,
+				ctx->menuStack[ctx->menuDepth].size.x + menuBodyElem.normalState().border * 2.0f + ctx->menuFillerWidth + ctx->menuImageSpace,
 				PopupFlags::CustomPosition | PopupFlags::IsMenu | PopupFlags::SameLayer,
 				Point(rc.right(), rc.top()),
 				WidgetElementId::MenuBody);
@@ -313,11 +313,11 @@ void endContextMenu()
 	endMenuInternal(true);
 }
 
-bool menuItem(const char* label, const char* shortcut, HImage icon, SelectableFlags stateFlags)
+bool menuItem(const char* label, const char* shortcut, HImage img, SelectableFlags stateFlags)
 {
 	auto& menuItemShortcutElem = ctx->theme->getElement(WidgetElementId::MenuItemShortcut);
 	auto& bodyElem = ctx->theme->getElement(WidgetElementId::MenuItemBody);
-	bool hasIcon = icon != nullptr;
+	bool hasImage = img != nullptr;
 	bool hasCheck = !!(stateFlags & SelectableFlags::Checkable);
 	bool isChecked = !!(stateFlags & SelectableFlags::Checked);
 
@@ -363,7 +363,7 @@ bool menuItem(const char* label, const char* shortcut, HImage icon, SelectableFl
 	ctx->renderer->cmdDrawTextInBox(
 		ctx->widgetLabel.c_str(),
 		Rect(
-			ctx->widget.rect.x + (ctx->menuItemTextSideSpacing + ctx->menuIconSpace) * ctx->scale,
+			ctx->widget.rect.x + (ctx->menuItemTextSideSpacing + ctx->menuImageSpace) * ctx->scale,
 			ctx->widget.rect.y,
 			ctx->widget.rect.width,
 			ctx->widget.rect.height)
@@ -377,7 +377,6 @@ bool menuItem(const char* label, const char* shortcut, HImage icon, SelectableFl
 	{
 		ctx->renderer->cmdSetColor(applyTint(shortcutElemState->textColor, TintColorType::Text));
 		ctx->renderer->cmdSetFont(shortcutElemState->font);
-		ctx->renderer->pushClipRect(ctx->widget.rect);
 		ctx->renderer->cmdDrawTextInBox(
 			shortcut,
 			Rect(
@@ -387,8 +386,7 @@ bool menuItem(const char* label, const char* shortcut, HImage icon, SelectableFl
 				ctx->widget.rect.height)
 			,
 			HAlignType::Right,
-			VAlignType::Center);
-		ctx->renderer->popClipRect();
+			VAlignType::Center, true);
 	}
 
 	if (hasCheck)
@@ -396,40 +394,39 @@ bool menuItem(const char* label, const char* shortcut, HImage icon, SelectableFl
 		auto& checkMarkElem = ctx->theme->getElement(WidgetElementId::MenuItemCheckMark);
 		auto& noCheckMarkElem = ctx->theme->getElement(WidgetElementId::MenuItemNoCheckMark);
 
-		// draw icon or check mark
+		// draw image or check mark
 		auto& rc = ctx->widget.rect;
 
-		auto rcIcon = Rect(
-			rc.x + (ctx->menuIconSpace - noCheckMarkElem.normalState().width) / 2.0f * ctx->scale,
+		auto rcImage = Rect(
+			rc.x + (ctx->menuImageSpace - noCheckMarkElem.normalState().width) / 2.0f * ctx->scale,
 			rc.y + (rc.height - noCheckMarkElem.normalState().image->rect.height * ctx->scale) / 2.0f,
 			noCheckMarkElem.normalState().image->rect.width * ctx->scale,
 			noCheckMarkElem.normalState().image->rect.height * ctx->scale
 		);
 
 		ctx->renderer->cmdSetColor(noCheckMarkElem.normalState().color);
-		ctx->renderer->cmdDrawImage(noCheckMarkElem.normalState().image, rcIcon);
+		ctx->renderer->cmdDrawImage(noCheckMarkElem.normalState().image, rcImage);
 
 		if (isChecked)
 		{
 			ctx->renderer->cmdSetColor(checkMarkElem.normalState().color);
-			ctx->renderer->cmdDrawImage(checkMarkElem.normalState().image, rcIcon);
+			ctx->renderer->cmdDrawImage(checkMarkElem.normalState().image, rcImage);
 		}
 	}
-	else if (hasIcon)
+	else if (hasImage)
 	{
-		// draw icon
 		auto& rc = ctx->widget.rect;
-		Image* iconImg = (Image*)icon;
+		Image* image = (Image*)img;
 
-		auto rcIcon = Rect(
-			rc.x + (ctx->menuIconSpace - iconImg->rect.width) / 2.0f * ctx->scale,
-			rc.y + (rc.height - iconImg->rect.height * ctx->scale) / 2.0f,
-			iconImg->rect.width * ctx->scale,
-			iconImg->rect.height * ctx->scale
+		auto rcImage = Rect(
+			rc.x + (ctx->menuImageSpace - image->rect.width) / 2.0f * ctx->scale,
+			rc.y + (rc.height - image->rect.height * ctx->scale) / 2.0f,
+			image->rect.width * ctx->scale,
+			image->rect.height * ctx->scale
 		);
 
 		ctx->renderer->cmdSetColor(Color::white);
-		ctx->renderer->cmdDrawImage(iconImg, rcIcon);
+		ctx->renderer->cmdDrawImage(image, rcImage);
 	}
 
 	setFocusable();

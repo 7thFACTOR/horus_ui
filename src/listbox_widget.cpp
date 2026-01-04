@@ -28,7 +28,7 @@ void endList()
 {
 }
 
-void listItem(const char* label, SelectableFlags stateFlags, HImage icon)
+void listItem(const char* label, SelectableFlags stateFlags, HImage img)
 {
 
 }
@@ -55,7 +55,6 @@ bool selectableInternal(const char* label, HFont font, SelectableFlags stateFlag
 
 	if (ctx->widget.visible)
 	{
-		ctx->renderer->pushClipRect(ctx->widget.rect);
 		ctx->renderer->cmdSetColor(applyTint(bodyElemState->color, TintColorType::Body));
 		ctx->renderer->cmdDrawImageBordered(bodyElemState->image, bodyElemState->border, ctx->widget.rect, ctx->scale);
 		ctx->renderer->cmdSetColor(applyTint(bodyElemState->textColor, TintColorType::Text));
@@ -69,8 +68,7 @@ bool selectableInternal(const char* label, HFont font, SelectableFlags stateFlag
 				ctx->widget.rect.height - bodyElemState->border * 2)
 			,
 			HAlignType::Left,
-			VAlignType::Center);
-		ctx->renderer->popClipRect();
+			VAlignType::Center, true);
 	}
 
 	setFocusable();

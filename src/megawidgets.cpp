@@ -149,18 +149,18 @@ bool vec2Editor(const char* id, f32& x, f32& y, f32 scrollStep)
 	return ret;
 }
 
-bool objectRefEditor(const char* id, HImage targetIcon, HImage clearIcon, const char* objectTypeName, const char* valueAsString, u32 objectType, void** outObject, bool* objectValueWasModified)
+bool objectRefEditor(const char* id, HImage targetImg, HImage clearImg, const char* objectTypeName, const char* valueAsString, u32 objectType, void** outObject, bool* objectValueWasModified)
 {
 	pushId(id);
 	bool returnValue = false;
 	bool changeEnded = false;
 
-	f32 tgtRowIcons[] = { -1, 30, 20 };
+	f32 tgtRowImgs[] = { -1, 30, 20 };
 
 	if (objectValueWasModified)
 		*objectValueWasModified = false;
 
-	beginColumns(3, tgtRowIcons);
+	beginColumns(3, tgtRowImgs);
 	WidgetElementInfo targetElemInfo;
 
 	hui::getThemeUserWidgetElementInfo("targetObjectBody", WidgetStateType::Normal, targetElemInfo);
@@ -216,11 +216,11 @@ bool objectRefEditor(const char* id, HImage targetIcon, HImage clearIcon, const 
 	}
 
 	nextColumn();
-	returnValue = iconButton(targetIcon, targetElemInfo.height);
+	returnValue = imageButton(targetImg, targetElemInfo.height, targetElemInfo.height);
 	nextColumn();
 	pushTint(Color::darkRed);
 
-	if (iconButton(clearIcon, targetElemInfo.height))
+	if (imageButton(clearImg, targetElemInfo.height, targetElemInfo.height))
 	{
 		*outObject = nullptr;
 

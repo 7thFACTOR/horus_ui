@@ -34,14 +34,15 @@ void endToolbar()
 		ctx->sameLine = false;
 }
 
-bool toolbarButton(HImage normalIcon, HImage disabledIcon, bool down)
+bool toolbarButton(HImage normalImg, HImage disabledImg, bool down)
 {
 	auto el = &ctx->theme->getElement(WidgetElementId::ToolbarButtonBody);
 
 	pushWidth(el->normalState().width);
 
-	bool ret = iconButtonInternal(
-		normalIcon, disabledIcon,
+	bool ret = imageButtonInternal(
+		normalImg, disabledImg,
+		el->normalState().width,
 		el->normalState().height,
 		down,
 		el);
@@ -51,7 +52,7 @@ bool toolbarButton(HImage normalIcon, HImage disabledIcon, bool down)
 	return ret;
 }
 
-bool toolbarDropdown(const char* label, HImage normalIcon, HImage disabledIcon)
+bool toolbarDropdown(const char* label, HImage normalImg, HImage disabledImg)
 {
 	return false;
 }
@@ -87,9 +88,9 @@ bool toolbarTextInputFilter(char* outText, u32 maxOutTextSize, u32& filterIndex,
 	return false;
 }
 
-bool toolbarTextInput(char* outText, u32 maxOutTextSize, const char* hint, HImage icon)
+bool toolbarTextInput(char* outText, u32 maxOutTextSize, const char* hint, HImage img)
 {
-	return textInput(outText, maxOutTextSize, TextInputValueMode::Any, hint, icon);
+	return textInput(outText, maxOutTextSize, TextInputValueMode::Any, hint, img);
 }
 
 }

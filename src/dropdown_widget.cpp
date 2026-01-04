@@ -78,18 +78,14 @@ bool dropdown(const char* id, i32& selectedIndex, const char** items, u32 itemCo
 				ctx->widget.rect.width - ((padding.x + bodyElemState->border) * 2.0f + arrowElemState->image->width) * ctx->scale,
 				ctx->widget.rect.height
 		};
-		auto fsize = bodyElemState->font->computeTextSize(selectedItemText, textRc.width);
-		ctx->renderer->pushClipRect(textRc);
+
 		ctx->renderer->cmdSetColor(applyTint(bodyElemState->textColor, TintColorType::Text));
 		ctx->renderer->cmdSetFont(bodyElemState->font);
 		ctx->renderer->cmdDrawTextInBox(
-			fsize.maxLength >= strlen(selectedItemText) ?
-			selectedItemText :
-			(std::string(selectedItemText, (size_t)fsize.maxLength)).c_str(),
+			selectedItemText,
 			textRc,
 			HAlignType::Left,
-			VAlignType::Center);
-		ctx->renderer->popClipRect();
+			VAlignType::Center, true);
 	}
 
 	setFocusable();

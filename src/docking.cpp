@@ -719,7 +719,7 @@ void deleteRootDockNode(HNativeWindow nativeWindow)
 	}
 }
 
-Window* createWindow(const std::string& id, DockNode* targetNode, DockType dockType, const std::string& title, Rect* initialRect, HNativeWindow nativeWindow, HImage icon)
+Window* createWindow(const std::string& id, DockNode* targetNode, DockType dockType, const std::string& title, Rect* initialRect, HNativeWindow nativeWindow, HImage img)
 {
 	auto targetNodePtr = (DockNode*)targetNode;
 	auto newWnd = new Window();
@@ -727,7 +727,7 @@ Window* createWindow(const std::string& id, DockNode* targetNode, DockType dockT
 	
 	newWnd->title = title;
 	newWnd->id = id;
-	newWnd->icon = icon;
+	newWnd->image = img;
 
 	if (!targetNode)
 	{
@@ -1615,7 +1615,7 @@ void dockNodeTabs(DockNode* node)
 			}
 
 			ctx->currentWindow = node->windows[i];
-			hui::tab(node->windows[i]->title.c_str(), node->windows[i]->icon);
+			hui::tab(node->windows[i]->title.c_str(), node->windows[i]->image);
 			node->windows[i]->tabRect = ctx->widget.rect;
 
 			if (ctx->widget.hovered
@@ -2572,7 +2572,7 @@ void drawDockPreview(Window* window, const Rect& windowRect)
 	beginLayout(windowRect);
 	popPadding(PaddingType::Layout);
 	beginTabGroup(0);
-	hui::tab(window->title.c_str(), window->icon);
+	hui::tab(window->title.c_str(), window->image);
 	endTabGroup();
 	endLayout();
 	ctx->renderer->popClipRect();

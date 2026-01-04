@@ -14,7 +14,7 @@ bool textInput(
 	u32 maxLength,
 	TextInputValueMode valueMode,
 	const char* defaultText,
-	HImage icon,
+	HImage img,
 	bool password,
 	const char* passwordChar)
 {
@@ -22,7 +22,7 @@ bool textInput(
 	auto& bodyTextCaretElemState = ctx->theme->getElement(WidgetElementId::TextInputCaret).normalState();
 	auto& bodyTextSelectionElemState = ctx->theme->getElement(WidgetElementId::TextInputSelection).normalState();
 	auto& bodyTextDefaultElemState = ctx->theme->getElement(WidgetElementId::TextInputDefaultText).normalState();
-	auto& bodyTextFilterClearIconElem = ctx->theme->getElement(WidgetElementId::TextInputFilterClearIcon);
+	auto& bodyTextFilterClearImageElem = ctx->theme->getElement(WidgetElementId::TextInputFilterClearImage);
 	auto& padding = getWidgetPadding();
 
 	// use ptr as id
@@ -159,15 +159,15 @@ bool textInput(
 		forceRepaint();
 	}
 
-	// Show clear icon only when defaultText is provided and the current text is not empty.
-	bool showClearIcon = defaultText && strcmp(text, "") && strcmp(defaultText, "");
+	// Show clear image only when defaultText is provided and the current text is not empty.
+	bool showClearImage = defaultText && strcmp(text, "") && strcmp(defaultText, "");
 
-	// compute clear-filter hit rect here as well so the clear icon can be hovered
+	// compute clear-filter hit rect here as well so the clear image can be hovered
 	// even when the field is not focused (processEvent is only called for active editor).
-	if (showClearIcon)
+	if (showClearImage)
 	{
 		Rect clearFilterRc = ctx->widget.rect;
-		auto& clearElemState = bodyTextFilterClearIconElem.normalState();
+		auto& clearElemState = bodyTextFilterClearImageElem.normalState();
 		clearFilterRc.x = ctx->widget.rect.right() - (clearElemState.border + padding.x) * ctx->scale - clearElemState.image->width * ctx->scale;
 		clearFilterRc.width = clearElemState.image->width * ctx->scale;
 		clearFilterRc.height = clearElemState.image->height * ctx->scale;
@@ -296,7 +296,10 @@ bool textInput(
 		textToDraw = hiddenPwdText;
 	}
 
-	isEmptyText = !strcmp(textToDraw, "");
+	if (textToDraw)
+		isEmptyText = !strcmp(textToDraw, "");
+	else
+		isEmptyText = true;
 
 	if (isEmptyText && defaultText)
 	{
@@ -321,16 +324,16 @@ bool textInput(
 		HAlignType::Left,
 		VAlignType::Bottom);
 
-	// draw clear icon only when visible
-	if (showClearIcon)
+	// draw clear image only when visible
+	if (showClearImage)
 	{
 		// Use hoveredState when clearFilterHovered is true, otherwise normalState.
 		ThemeElement::State* state = nullptr;
 
 		if (ctx->textInput.clearFilterHovered)
-			state = &bodyTextFilterClearIconElem.hoveredState();
+			state = &bodyTextFilterClearImageElem.hoveredState();
 		else
-			state = &bodyTextFilterClearIconElem.normalState();
+			state = &bodyTextFilterClearImageElem.normalState();
 
 		ctx->renderer->cmdSetColor(state->color);
 		ctx->renderer->cmdDrawImage(state->image,

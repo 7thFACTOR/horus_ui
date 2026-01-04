@@ -326,25 +326,25 @@ MessageBoxButtons messageBox(
 	const char* title,
 	const char* message,
 	MessageBoxButtons buttons,
-	MessageBoxIcon icon,
+	MessageBoxImage img,
 	u32 width,
-	HImage customIcon)
+	HImage customImg)
 {
-	ThemeElement* iconElem = nullptr;
+	ThemeElement* imageElem = nullptr;
 
-	switch (icon)
+	switch (img)
 	{
-	case hui::MessageBoxIcon::Error:
-		iconElem = &ctx->theme->getElement(WidgetElementId::MessageBoxIconError);
+	case hui::MessageBoxImage::Error:
+		imageElem = &ctx->theme->getElement(WidgetElementId::MessageBoxImageError);
 		break;
-	case hui::MessageBoxIcon::Info:
-		iconElem = &ctx->theme->getElement(WidgetElementId::MessageBoxIconInfo);
+	case hui::MessageBoxImage::Info:
+		imageElem = &ctx->theme->getElement(WidgetElementId::MessageBoxImageInfo);
 		break;
-	case hui::MessageBoxIcon::Question:
-		iconElem = &ctx->theme->getElement(WidgetElementId::MessageBoxIconQuestion);
+	case hui::MessageBoxImage::Question:
+		imageElem = &ctx->theme->getElement(WidgetElementId::MessageBoxImageQuestion);
 		break;
-	case hui::MessageBoxIcon::Warning:
-		iconElem = &ctx->theme->getElement(WidgetElementId::MessageBoxIconWarning);
+	case hui::MessageBoxImage::Warning:
+		imageElem = &ctx->theme->getElement(WidgetElementId::MessageBoxImageWarning);
 		break;
 	default:
 		break;
@@ -366,12 +366,12 @@ MessageBoxButtons messageBox(
 	hui::popTint();
 	hui::line();
 
-	// body and icon
+	// body and image
 	f32 titleColWidths[2] = { 0.8, 0.2 };
 	beginColumns(2, titleColWidths);
 	hui::labelMultiline(message, HAlignType::Left);
 	nextColumn();
-	hui::image((HImage)iconElem->normalState().image, 0, hui::HAlignType::Right);
+	hui::image((HImage)imageElem->normalState().image, 0, hui::HAlignType::Right);
 	endColumns();
 
 	hui::customSpace(10);

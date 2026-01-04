@@ -231,7 +231,6 @@ bool button(const char* label)
 		ctx->renderer->cmdDrawImageBordered(btnBodyElemState->image, btnBodyElemState->border, ctx->widget.rect, ctx->scale);
 		ctx->renderer->cmdSetColor(applyTint(btnBodyElemState->textColor, TintColorType::Text));
 		ctx->renderer->cmdSetFont(btnBodyElemState->font);
-		ctx->renderer->pushClipRect(ctx->widget.rect);
 		ctx->renderer->cmdDrawTextInBox(
 			ctx->widgetLabel.c_str(),
 			ctx->widget.pressed
@@ -242,8 +241,7 @@ bool button(const char* label)
 				ctx->widget.rect.height)
 			: ctx->widget.rect,
 			HAlignType::Center,
-			VAlignType::Center);
-		ctx->renderer->popClipRect();
+			VAlignType::Center, true);
 	}
 
 	setFocusable();
@@ -251,26 +249,20 @@ bool button(const char* label)
 	return ctx->widget.clicked;
 }
 
-bool iconButtonInternal(HImage icon, HImage disabledIcon, f32 customHeight, bool down, ThemeElement* btnBodyElem)
+bool imageButtonInternal(HImage img, HImage disabledImg, f32 width, f32 height, bool down, ThemeElement* btnBodyElem)
 {
 	auto btnBodyElemState = &btnBodyElem->normalState();
-	Image* iconImg = (Image*)icon;
-	Image* disabledIconImg = (Image*)disabledIcon;
-	f32 height = 0.0f;
+	Image* image = (Image*)img;
+	Image* disabledImage = (Image*)disabledImg;
 
-	if (!iconImg)
+	if (!image)
 	{
 		return false;
 	}
 
-	if (customHeight > 0.0f)
-		height = customHeight;
-	else
-		height = std::max(btnBodyElemState->height, iconImg->rect.height);
-
-	if (ctx->sameLine)
+	//if (ctx->sameLine)
 	{
-		ctx->widget.customWidth = iconImg->rect.width;
+		ctx->widget.customWidth = width;
 		ctx->widget.hasCustomWidth = true;
 	}
 
@@ -280,13 +272,16 @@ bool iconButtonInternal(HImage icon, HImage disabledIcon, f32 customHeight, bool
 
 	f32 pressedIncrement = 0.0f;
 
-	if (ctx->widget.disabled && disabledIconImg)
+	if (ctx->widget.disabled && disabledImage)
 	{
 		btnBodyElemState = &btnBodyElem->getState(WidgetStateType::Disabled);
-		iconImg = disabledIconImg;
+		image = disabledImage;
 	}
 	else if (ctx->widget.pressed || down || isClicked())
+	{
 		btnBodyElemState = &btnBodyElem->getState(WidgetStateType::Pressed);
+		pressedIncrement = 1.0f;
+	}
 	else if (ctx->widget.focused)
 		btnBodyElemState = &btnBodyElem->getState(WidgetStateType::Focused);
 	else if (ctx->widget.hovered)
@@ -294,17 +289,22 @@ bool iconButtonInternal(HImage icon, HImage disabledIcon, f32 customHeight, bool
 
 	if (ctx->widget.visible)
 	{
+		auto imgWidth = image->rect.width * ctx->scale;
+		auto imgHeight = image->rect.height * ctx->scale;
+
+		viewportImageFitSize(imgWidth, imgHeight, ctx->widget.rect.width - (getWidgetPadding().x * 2.0f + btnBodyElemState->border * 2.0f) * ctx->scale, ctx->widget.rect.height - (getWidgetPadding().y * 2.0f + btnBodyElemState->border * 2.0f) * ctx->scale, imgWidth, imgHeight, false, false);
+
 		ctx->renderer->cmdSetColor(applyTint(btnBodyElemState->color, TintColorType::Body));
 		ctx->renderer->cmdDrawImageBordered(btnBodyElemState->image, btnBodyElemState->border, ctx->widget.rect, ctx->scale);
 		ctx->renderer->cmdSetColor(applyTint(btnBodyElemState->textColor, TintColorType::Text));
 		ctx->renderer->cmdSetFont(btnBodyElemState->font);
 		ctx->renderer->cmdDrawImage(
-			iconImg,
+			image,
 			{
-				round(ctx->widget.rect.x + (ctx->widget.rect.width - iconImg->rect.width * ctx->scale) / 2 + pressedIncrement * ctx->scale),
-				round(ctx->widget.rect.y + (ctx->widget.rect.height - iconImg->rect.height * ctx->scale) / 2 + pressedIncrement * ctx->scale),
-				iconImg->rect.width * ctx->scale,
-				iconImg->rect.height * ctx->scale
+				round(ctx->widget.rect.x + (ctx->widget.rect.width - imgWidth) / 2 + pressedIncrement * ctx->scale),
+				round(ctx->widget.rect.y + (ctx->widget.rect.height - imgHeight) / 2 + pressedIncrement * ctx->scale),
+				imgWidth,
+				imgHeight
 			});
 	}
 
@@ -316,11 +316,11 @@ bool iconButtonInternal(HImage icon, HImage disabledIcon, f32 customHeight, bool
 	return ctx->widget.clicked;
 }
 
-bool iconButton(HImage icon, f32 customHeight, bool down)
+bool imageButton(HImage img, f32 width, f32 height, HImage disabledImg, bool down)
 {
-	auto& btnBodyElem = ctx->theme->getElement(WidgetElementId::ButtonBody);
+	auto& btnBodyElem = ctx->theme->getElement(WidgetElementId::ImageButtonBody);
 
-	return iconButtonInternal(icon, icon, customHeight, down, &btnBodyElem);
+	return imageButtonInternal(img, disabledImg, width, height, down, &btnBodyElem);
 }
 
 }

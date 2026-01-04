@@ -100,6 +100,7 @@ struct DrawCommand
 		HAlignType horizAlign;
 		VAlignType vertAlign;
 		char* text;
+		bool singleLineEllipsis;
 	};
 
 	struct CmdDrawImageBordered
@@ -241,14 +242,15 @@ public:
 	void cmdDrawLine(const Point& a, const Point& b);
 	void cmdDrawPolyLine(const Point* points, u32 pointCount, bool closed);
 	void cmdDrawSolidTriangle(const Point& p1, const Point& p2, const Point& p3, const Rgba32 c1, const Rgba32 c2, const Rgba32 c3);
-	FontTextSize cmdDrawTextAt(
+	void cmdDrawTextAt(
 		const char* text,
 		const Point& position);
-	FontTextSize cmdDrawTextInBox(
+	void cmdDrawTextInBox(
 		const char* text,
 		const Rect& rect,
 		HAlignType horizontal = HAlignType::Left,
-		VAlignType vertical = VAlignType::Top);
+		VAlignType vertical = VAlignType::Top,
+		bool singleLineEllipsis = false);
 
 public:
 	bool skipRender = false;
@@ -270,7 +272,8 @@ public:
 		HAlignType horizAlign,
 		VAlignType vertAlign,
 		bool doDraw = false,
-		Font* font = nullptr);
+		Font* font = nullptr,
+		bool singleLineEllipsis = false);
 
 	FontTextSize computeSizeOrDrawText(
 		const GlyphCode* const text,
@@ -279,7 +282,8 @@ public:
 		HAlignType horizAlign,
 		VAlignType vertAlign,
 		bool doDraw = false,
-		Font* font = nullptr);
+		Font* font = nullptr,
+		bool singleLineEllipsis = false);
 
 	void drawImageBordered(Image* image, u32 border, const Rect& rect, f32 scale);
 	void drawLine(const Point& a, const Point& b);
