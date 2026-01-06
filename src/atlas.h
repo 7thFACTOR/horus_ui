@@ -4,7 +4,7 @@
 
 namespace hui
 {
-class Atlas;
+struct Atlas;
 
 struct AtlasTexture
 {
@@ -30,9 +30,8 @@ struct Image
 	bool bleedOut = false;
 };
 
-class Atlas
+struct Atlas
 {
-public:
 	Atlas() {}
 	Atlas(u32 width, u32 height);
 	~Atlas();

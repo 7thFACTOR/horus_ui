@@ -16,12 +16,12 @@
 
 namespace hui
 {
-class Renderer;
+struct Renderer;
 struct TextureArray;
-class Theme;
-class UnicodeTextCache;
-class FontCache;
-class Font;
+struct Theme;
+struct UnicodeTextCache;
+struct FontCache;
+struct Font;
 struct Image;
 struct DockNode;
 
@@ -37,12 +37,8 @@ struct SameLineState
 {
 	bool computeHeight = true;
 	f32 lineHeight = 0;
+	f32 frameHeight = 0;
 	f32 lineY = 0;
-};
-
-struct ToolbarState
-{
-	ToolbarDirection direction = ToolbarDirection::Horizontal;
 };
 
 struct TintState
@@ -282,6 +278,7 @@ struct PopupState
 	HNativeWindow ownerWindow = 0;
 	Point dragDelta, lastMouseDownPoint;
 	Point lastMousePoint;
+	std::vector<u32> savedSameLineInfoIndexStack;
 };
 
 struct RotarySliderState

@@ -11,7 +11,7 @@
 ------------------------------------------------------------------------------
 	Immediate Mode Graphical User Interface Library
 
-	(C) All rights reserved 2016-2025 7thFACTOR Software - Nicusor Nedelcu (nekitu)
+	(C) All rights reserved 2016-2026 7thFACTOR Software - Nicusor Nedelcu (nekitu)
 ------------------------------------------------------------------------------
 */
 
@@ -80,32 +80,32 @@ typedef double f64;
 
 #ifdef HORUS_STATIC
 	#define HORUS_API
-	#define HORUS_CLASS_API
+	#define HORUS_STRUCT_API
 #else
 #ifdef _WINDOWS
 	#ifdef HORUS_EXPORT
 		#define HORUS_API extern "C++" __declspec(dllexport)
-		#define HORUS_CLASS_API __declspec(dllexport)
+		#define HORUS_STRUCT_API __declspec(dllexport)
 	#else
 		#ifdef HORUS_IMPORT
 			#define HORUS_API extern "C++" __declspec(dllimport)
-			#define HORUS_CLASS_API __declspec(dllimport)
+			#define HORUS_STRUCT_API __declspec(dllimport)
 		#else
 			#define HORUS_API
-			#define HORUS_CLASS_API
+			#define HORUS_STRUCT_API
 		#endif
 	#endif
 #else
 	#ifdef HORUS_EXPORT
 		#define HORUS_API __attribute__((dllexport))
-		#define HORUS_CLASS_API __attribute__((dllexport))
+		#define HORUS_STRUCT_API __attribute__((dllexport))
 	#else
 		#ifdef HORUS_IMPORT
 			#define HORUS_API __attribute__((dllimport))
-			#define HORUS_CLASS_API __attribute__((dllimport))
+			#define HORUS_STRUCT_API __attribute__((dllimport))
 		#else
 			#define HORUS_API
-			#define HORUS_CLASS_API
+			#define HORUS_STRUCT_API
 		#endif
 	#endif
 #endif
@@ -192,17 +192,6 @@ enum class VAlignType
 	Top,
 	Bottom,
 	Center
-};
-
-/// Font style type
-enum class FontStyle
-{
-	Normal,
-	Bold,
-	Italic,
-	BoldItalic,
-
-	Count
 };
 
 enum class PaddingType
@@ -394,21 +383,13 @@ enum class WindowFlags : u32
 {
 	None = HORUS_BIT(0),
 	Transparent = HORUS_BIT(1),
-	Disabled = HORUS_BIT(2)
+	CanClose = HORUS_BIT(2),
+	CanMove = HORUS_BIT(3),
+	CanResize = HORUS_BIT(4),
+	CanMinimize = HORUS_BIT(5),
+	Disabled = HORUS_BIT(6)
 };
 HORUS_ENUM_AS_FLAGS(WindowFlags);
-
-/// Panel flags
-enum class PanelFlags : u32
-{
-	None = HORUS_BIT(0),
-	CanClose = HORUS_BIT(1),
-	CanMove = HORUS_BIT(2),
-	CanResize = HORUS_BIT(3),
-	CanMinimize = HORUS_BIT(4),
-	Disabled = HORUS_BIT(5)
-};
-HORUS_ENUM_AS_FLAGS(PanelFlags);
 
 /// Image fit mode, used in the image widget
 enum class ImageFitType
@@ -632,16 +613,6 @@ enum class SliderDragDirection
 	VerticalOnly
 };
 
-enum class AntiAliasing
-{
-	None,
-	MSAA4X,
-	MSAA8X,
-	MSAA16X,
-
-	Count
-};
-
 /// Docking modes for the windows
 enum class DockType
 {
@@ -707,12 +678,6 @@ enum class MessageBoxButtons : u32
 };
 HORUS_ENUM_AS_FLAGS(MessageBoxButtons);
 
-enum class ToolbarDirection
-{
-	Horizontal,
-	Vertical
-};
-
 enum class ContextMenuFlags
 {
 	None = 0,
@@ -737,19 +702,14 @@ HORUS_ENUM_AS_FLAGS(PopupFlags);
 enum class ColorPickerFlags : u32
 {
 	NoAlpha = HORUS_BIT(0),
-	NoAlphaBar = HORUS_BIT(1),
-	NoSmallPreview = HORUS_BIT(2),
-	HalfAlphaPreview = HORUS_BIT(3),
-	NoOldColorPreview = HORUS_BIT(4),
-	Hdr = HORUS_BIT(5),
-	Float = HORUS_BIT(6)
+	Hdr = HORUS_BIT(1),
+	Float = HORUS_BIT(2)
 };
 HORUS_ENUM_AS_FLAGS(ColorPickerFlags);
 
 /// A 2D point
-class Point
+struct Point
 {
-public:
 	Point()
 		: x(0.0f)
 		, y(0.0f)
@@ -1459,7 +1419,7 @@ struct InputEvent
 	HNativeWindow window = 0;
 };
 
-struct HORUS_CLASS_API Color
+struct HORUS_STRUCT_API Color
 {
 	Color() {}
 	Color(u32 color)
@@ -1551,11 +1511,7 @@ struct OpenMultipleFileSet
 	size_t* bufferIndices = nullptr; /// array containing indices into filenameBuffer, where each filename starts
 	u32 count = 0; /// the number of filenames
 
-	~OpenMultipleFileSet()
-	{
-		delete[] filenameBuffer;
-		delete[] bufferIndices;
-	}
+	~OpenMultipleFileSet();
 };
 
 /// Line drawing style
@@ -1712,7 +1668,7 @@ struct FileDialogsProvider
 	virtual bool pickFolderDialog(const char* defaultPath, char* outPath, u32 maxOutPathSize) = 0;
 };
 
-/// The input provider class is used for input and windowing services
+/// The input provider is used for input and windowing services
 struct InputProvider
 {
 	virtual ~InputProvider() {}
@@ -2064,7 +2020,6 @@ struct FontTextSize
 	f32 maxBearingY = 0;
 	f32 maxGlyphHeight = 0;
 	u32 lastFontIndex = 0;
-	std::vector<f32> lineHeights; // valid when text size is computed from multiple lines of text
 	u32 maxLength = 0; // valid with maxWidth argument of computeTextSize is valid (!= -1)
 };
 
@@ -2385,6 +2340,10 @@ HORUS_API void setThemeImage(HTheme theme, const char* imageName, HImage image);
 
 HORUS_API void setWidgetStyle(WidgetType widgetType, const char* styleName);
 
+HORUS_API void pushWidgetStyle(WidgetType widgetType, const char* styleName);
+
+HORUS_API void popWidgetStyle();
+
 HORUS_API void setWidgetElementStyle(WidgetElementId widgetElementId, const char* styleName);
 
 HORUS_API void setDefaultWidgetStyle(WidgetType widgetType);
@@ -2544,9 +2503,6 @@ HORUS_API void beginVirtualListContent(u32 totalRowCount, u32 itemHeight, f32 sc
 
 /// End a virtual list content area
 HORUS_API void endVirtualListContent();
-
-HORUS_API bool beginPanel(const char* title, bool* visiblePtr, Point* position, Point* size, PanelFlags flags);
-HORUS_API void endPanel();
 
 /// Push the old padding and set a new one, padding is the left and right side horizontal spacing for widgets
 /// \param newPadding the new horizontal padding value
@@ -2809,28 +2765,7 @@ HORUS_API bool expandable(const char* label, bool* expandedVar = nullptr);
 /// \return true if it the selection changed
 HORUS_API bool dropdown(const char* id, i32& selectedIndex, const char** items, u32 itemCount, u32 maxVisibleDropDownItems = ~0);
 
-/// Draw a custom data dropdown widget, good for many items in the list
-/// \param selectedIndex the current selected item index
-/// \param userdata the items user custom data
-/// \param itemSource a callback to use when rendering an item, returns false when item list ended
-/// \param maxVisibleDropDownItems the maximum number of visible items in the drop down list, if ~0 then its automatic
-/// \return true if it the selection changed
-HORUS_API bool dropdown(i32& selectedIndex, void* userdata, bool(*itemSource)(void* userdata, i32 index, char** outItemText), u32 maxVisibleDropDownItems = ~0);
-
-/// TODO:
 HORUS_API bool list(i32* selectedIndices, u32 maxSelectedIndices, ListSelectionMode selectionType, const char** items, u32 itemCount);
-
-/// TODO:
-HORUS_API bool list(i32* selectedIndices, u32 maxSelectedIndices, ListSelectionMode selectionType, void* userdata, bool(*itemSource)(void* userdata, i32 index, char** outItemText));
-
-/// TODO:
-HORUS_API bool beginList(ListSelectionMode selectionType);
-
-/// TODO:
-HORUS_API void endList();
-
-/// TODO:
-HORUS_API void listItem(const char* labelText, SelectableFlags stateFlags, HImage img);
 
 /// Draw a selectable label
 /// \param label the selectable's text
@@ -2852,12 +2787,8 @@ HORUS_API bool selectableCustomFont(const char* label, HFont font, SelectableFla
 /// Draw a horizontal line widget
 HORUS_API void line();
 
-/// Leave a space between previous widget and next one
-/// \param size the size of the space
-HORUS_API void customSpace(f32 size);
-
 /// Leave a normal space between previous widget and next one
-HORUS_API void space();
+HORUS_API void space(f32 customSpacing = 0.0f);
 
 /// Make next widget show on the same row as the last widget. The widget width depends on the widget type, the content inside it, etc.
 /// Not all widgets support the same line modifier, since some need content
@@ -2918,55 +2849,6 @@ HORUS_API bool menuItem(const char* label, const char* shortcut = "", HImage img
 
 /// Draw a menu item separator
 HORUS_API void menuSeparator();
-
-//////////////////////////////////////////////////////////////////////////
-// Toolbar
-//////////////////////////////////////////////////////////////////////////
-
-/// Begin drawing a toolbar widget
-/// \param direction the toolbar direction
-HORUS_API void beginToolbar(ToolbarDirection dir = ToolbarDirection::Horizontal);
-
-/// End the current toolbar
-HORUS_API void endToolbar();
-
-/// Draw a toolbar button widget
-/// \param normalImg the normal state image
-/// \param disabledImg the disabled state image
-/// \param down true if the button state is down
-/// \return true if the button was pressed
-HORUS_API bool toolbarButton(HImage normalImg, HImage disabledImg = 0, bool down = false);
-
-/// Draw a toolbar dropdown button widget
-/// \param label the label text
-/// \param normalImg the normal state image
-/// \param disabledImg the disabled state image
-/// \param down true if the button state is down
-/// \return true if the dropdown button was pressed
-HORUS_API bool toolbarDropdown(const char* label, HImage normalImg = 0, HImage disabledImg = 0);
-
-/// Draw a toolbar item separator
-HORUS_API void toolbarSeparator();
-
-/// Leave a gap horizontally in the toolbar
-HORUS_API void toolbarSpace(f32 gapSize = 5);
-
-/// Draw a text input filter editor in the toolbar
-/// \param outText the text buffer to edit
-/// \param maxOutTextSize the maximum size of the buffer
-/// \param filterIndex the current filter index
-/// \param filterNames the filter names
-/// \param filterNameCount the filter name count
-/// \return true if the text or filter changed
-HORUS_API bool toolbarTextInputFilter(char* outText, u32 maxOutTextSize, u32& filterIndex, const char** filterNames = 0, u32 filterNameCount = 0);
-
-/// Draw a text input widget in the toolbar
-/// \param outText the text buffer to edit
-/// \param maxOutTextSize the maximum size of the buffer
-/// \param hint the text hint
-/// \param img the text edit image
-/// \return true if the text was changed
-HORUS_API bool toolbarTextInput(char* outText, u32 maxOutTextSize, const char* hint = 0, HImage img = 0);
 
 //////////////////////////////////////////////////////////////////////////
 // Dockable Tabs

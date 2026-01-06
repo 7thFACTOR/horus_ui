@@ -24,7 +24,11 @@ bool radio(const char* label, i32* currentRadioValue, i32 thisValue)
 	f32 markHeightScaled = markHeight * ctx->scale;
 
 	// height is the same as bullet width, since its square, so we use height
-	ctx->widget.width = markWidthScaled + textSize.width + bulletTextSpacing;
+	if (!ctx->widget.hasNextWidth)
+	{
+		ctx->widget.customWidth = markWidthScaled + textSize.width + bulletTextSpacing;
+		ctx->widget.hasCustomWidth = true;
+	}
 	
 	addWidget(std::max(textSize.height, markHeightScaled));
 	buttonBehavior();

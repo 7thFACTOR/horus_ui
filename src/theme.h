@@ -4,9 +4,8 @@
 
 namespace hui
 {
-class Theme
+struct Theme
 {
-public:
 	Theme(u32 atlasTextureSize);
 	~Theme();
 

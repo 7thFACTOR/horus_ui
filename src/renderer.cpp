@@ -1080,7 +1080,6 @@ FontTextSize Renderer::computeSizeOrDrawText(
 		{
 			// still provide height for one line
 			fsize.height = fnt->getMetrics().height;
-			fsize.lineHeights.push_back(fnt->getMetrics().height);
 			fsize.width = 0.0f;
 			return fsize;
 		}
@@ -1168,7 +1167,6 @@ FontTextSize Renderer::computeSizeOrDrawText(
 		// fill FontTextSize results
 		fsize.width = displayedWidth;
 		fsize.height = fnt->getMetrics().height;
-		fsize.lineHeights.push_back(fnt->getMetrics().height);
 		fsize.maxLength = fitCount;
 
 		// DRAW pass: draw the single aligned line with optional ellipsis
@@ -1272,8 +1270,7 @@ FontTextSize Renderer::computeSizeOrDrawText(
 	u32 lastWordIndex = 0;
 	u32 lineStart = 0;
 
-	struct LineInfo { u32 start; u32 len; f32 width; };
-	std::vector<LineInfo> lines; // start, len, width
+	lines.clear();
 
 	for (u32 i = 0; i < size; ++i)
 	{
@@ -1288,8 +1285,6 @@ FontTextSize Renderer::computeSizeOrDrawText(
 
 			if (fsize.width < segmentWidth)
 				fsize.width = segmentWidth;
-
-			fsize.lineHeights.push_back(fnt->getMetrics().height);
 
 			if (longestLineChars < currentLineChars)
 				longestLineChars = currentLineChars;
@@ -1374,7 +1369,7 @@ FontTextSize Renderer::computeSizeOrDrawText(
 				lines.push_back({ lineStart, lineLen, segmentWidth });
 
 				if (fsize.width < segmentWidth) fsize.width = segmentWidth;
-				fsize.lineHeights.push_back(fnt->getMetrics().height);
+
 				if (longestLineChars < currentLineChars) longestLineChars = currentLineChars;
 				++lineCount;
 
@@ -1425,7 +1420,7 @@ FontTextSize Renderer::computeSizeOrDrawText(
 					lines.push_back({ lineStart, pushLen, segmentWidth });
 
 					if (fsize.width < segmentWidth) fsize.width = segmentWidth;
-					fsize.lineHeights.push_back(fnt->getMetrics().height);
+
 					if (longestLineChars < pushLen) longestLineChars = pushLen;
 					++lineCount;
 				}
@@ -1473,13 +1468,7 @@ FontTextSize Renderer::computeSizeOrDrawText(
 	if (size > 0 && text[size - 1] == '\n')
 	{
 		if (lineCount > 0) --lineCount;
-		if (!fsize.lineHeights.empty())
-			fsize.lineHeights.pop_back();
 	}
-
-	// ensure last line height recorded
-	if (fsize.lineHeights.empty() || (fsize.lineHeights.size() < lineCount))
-		fsize.lineHeights.push_back(fnt->getMetrics().height);
 
 	// finalize longest line char count with the last line
 	if (longestLineChars < currentLineChars) longestLineChars = currentLineChars;

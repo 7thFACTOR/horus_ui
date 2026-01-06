@@ -11,28 +11,6 @@ bool list(i32* selectedIndices, u32 maxSelectedIndices, ListSelectionMode select
 	return 0;
 }
 
-bool list(i32* selectedIndices, u32 maxSelectedIndices, ListSelectionMode selectionType, void* userdata,
-	bool(*itemSource)(void* userdata, i32 index, char** outItemText))
-{
-
-	return 0;
-}
-
-bool beginList(ListSelectionMode selectionType)
-{
-
-	return 0;
-}
-
-void endList()
-{
-}
-
-void listItem(const char* label, SelectableFlags stateFlags, HImage img)
-{
-
-}
-
 bool selectableInternal(const char* label, HFont font, SelectableFlags stateFlags)
 {
 	auto& bodyElem = ctx->theme->getElement(WidgetElementId::SelectableBody);

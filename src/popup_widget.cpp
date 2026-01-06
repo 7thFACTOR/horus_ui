@@ -131,6 +131,8 @@ void beginPopup(
 	ctx->layout.savedPosition = ctx->position;
 	ctx->sameLineStack.push_back(ctx->sameLine);
 	ctx->sameLine = false; // reset the same line, we don't need that at the popup start
+	popup.savedSameLineInfoIndexStack = ctx->sameLineInfoIndexStack;
+	ctx->sameLineInfoIndexStack.clear();
 
 	ctx->renderer->pushClipRect(ctx->renderer->getWindowRect(), false);
 
@@ -225,6 +227,7 @@ void endPopup()
 	popLayout();
 	ctx->sameLine = ctx->sameLineStack.back();
 	ctx->sameLineStack.pop_back();
+	ctx->sameLineInfoIndexStack = popup.savedSameLineInfoIndexStack;
 
 	if (has(popup.flags, PopupFlags::TopMost))
 		ctx->renderer->setZOrder(popup.oldZOrder);
@@ -374,7 +377,7 @@ MessageBoxButtons messageBox(
 	hui::image((HImage)imageElem->normalState().image, 0, hui::HAlignType::Right);
 	endColumns();
 
-	hui::customSpace(10);
+	hui::space(10);
 
 	MessageBoxButtons returnBtns = MessageBoxButtons::None;
 

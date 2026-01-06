@@ -172,15 +172,6 @@ Image* Font::getGlyphImage(GlyphCode glyphCode)
 	return (Image*)iter->second->image;
 }
 
-void Font::cacheEllipsisSize()
-{
-	// compute ellipsis size through renderer's combined function to avoid duplicating compute logic
-	if (ctx && ctx->renderer)
-	{
-		ellipsisSize = ctx->renderer->computeSizeOrDrawText("...", Rect(), HAlignType::Left, VAlignType::Top, false, this);
-	}
-}
-
 void Font::deleteGlyphs()
 {
 	for (auto& glyph : glyphs)

@@ -21,25 +21,24 @@ void line()
 			ctx->widget.rect.height }, ctx->scale);
 }
 
-void customSpace(f32 size)
-{
-	ctx->position.y += size * ctx->scale;
-}
-
-void space()
+void space(f32 customSpacing)
 {
 	if (ctx->sameLine)
 	{
-		ctx->position.x += ctx->sameLineSpacing * ctx->scale;
+		f32 spacing = customSpacing > 0 ? customSpacing : ctx->sameLineSpacing;
+
+		ctx->position.x += spacing * ctx->scale;
 		return;
 	}
 
-	ctx->position.y += ctx->spacing * ctx->scale;
+	f32 spacing = customSpacing > 0 ? customSpacing : ctx->spacing;
+	ctx->position.y += spacing * ctx->scale;
 }
 
 void beginSameLine(f32 spacing)
 {
 	ctx->sameLineInfoIndex = ctx->sameLineInfoCount;
+	ctx->sameLineInfo[ctx->sameLineInfoIndex].frameHeight = 0;
 
 	if (ctx->sameLineInfo[ctx->sameLineInfoIndex].lineHeight == 0)
 	{
@@ -86,6 +85,14 @@ void endSameLine()
 			ctx->sameLineInfo[ctx->sameLineInfoIndex - 1].lineHeight,
 			ctx->sameLineInfo[ctx->sameLineInfoIndex].lineHeight
 		);
+	}
+
+	if (ctx->sameLineInfo[ctx->sameLineInfoIndex].frameHeight != ctx->sameLineInfo[ctx->sameLineInfoIndex].lineHeight)
+	{
+		if (ctx->sameLineInfo[ctx->sameLineInfoIndex].frameHeight > ctx->sameLineInfo[ctx->sameLineInfoIndex].lineHeight)
+			skipThisFrame();
+		ctx->sameLineInfo[ctx->sameLineInfoIndex].lineHeight = ctx->sameLineInfo[ctx->sameLineInfoIndex].frameHeight;
+		forceRepaint();
 	}
 
 	ctx->widget.width = 0;

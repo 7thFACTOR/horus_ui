@@ -4,9 +4,8 @@
 
 namespace hui
 {
-class Font
+struct Font
 {
-public:
 	Font() {}
 	Font(const std::string& fontFilename, u32 fontFaceSize, Atlas* themeAtlas);
 	~Font();
@@ -20,7 +19,6 @@ public:
 	void precacheGlyphs(const Utf32String& glyphCodes);
 	void precacheGlyphs(u32* glyphs, u32 glyphCount);
 	void precacheLatinAlphabetGlyphs();
-	void cacheEllipsisSize();
 
 	// Restored computeTextSize overloads: forward to renderer's combined routine.
 	FontTextSize computeTextSize(const GlyphCode* const text, u32 size, u32 maxWidth = ~0);

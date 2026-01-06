@@ -13,7 +13,7 @@ void beginTabGroup(TabIndex selectedIndex)
 	f32 height = tabGroupElemState.height * ctx->scale;
 
 	pushPosition();
-
+	// round position only when it gets modified, to avoid accumulation of float precision errors
 	ctx->widget.rect.set(
 		round(ctx->position.x),
 		round(ctx->position.y),

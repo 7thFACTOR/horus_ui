@@ -25,6 +25,12 @@ bool textInput(
 	auto& bodyTextFilterClearImageElem = ctx->theme->getElement(WidgetElementId::TextInputFilterClearImage);
 	auto& padding = getWidgetPadding();
 
+	if (ctx->sameLine && !ctx->widget.hasNextWidth)
+	{
+		ctx->widget.customWidth = ((bodyElem->normalState().border + padding.x) * 2.0f) * ctx->scale;
+		ctx->widget.hasCustomWidth = true;
+	}
+
 	// use ptr as id
 	ctx->id = genId((void*)text);
 	addWidget(fmaxf(

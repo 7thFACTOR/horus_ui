@@ -11,6 +11,12 @@ void progress(f32 value, f32 maxValue, bool showText, bool showRealValues, const
 	auto& fillElem = ctx->theme->getElement(WidgetElementId::ProgressFill);
 	auto& padding = getWidgetPadding();
 
+	if (ctx->sameLine && !ctx->widget.hasNextWidth)
+	{
+		ctx->widget.customWidth = ((backElem.normalState().border + padding.x) * 2.0f) * ctx->scale;
+		ctx->widget.hasCustomWidth = true;
+	}
+
 	ctx->extractLabelAndId(nullptr);
 	addWidget((backElem.normalState().height + padding.y * 2.0) * ctx->scale);
 	buttonBehavior();

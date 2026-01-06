@@ -5,7 +5,7 @@
 
 namespace hui
 {
-bool sliderInternal(const char* id, f32 minVal, f32 maxVal, f32& value, bool useStep, f32 step, bool isFloatValue)
+static bool sliderInternal(const char* id, f32 minVal, f32 maxVal, f32& value, bool useStep, f32 step, bool isFloatValue)
 {
 	auto& bodyElem = ctx->theme->getElement(WidgetElementId::SliderBody);
 	auto& bodyFilledElem = ctx->theme->getElement(WidgetElementId::SliderBodyFilled);
@@ -15,6 +15,18 @@ bool sliderInternal(const char* id, f32 minVal, f32 maxVal, f32& value, bool use
 
 	// clamp
 	value = fmaxf(minVal, fminf(maxVal, value));
+
+	if (ctx->sameLine && !ctx->widget.hasNextWidth)
+	{
+		ctx->widget.customWidth = ((bodyElem.normalState().border + padding.x) * 2.0f + knobElem.normalState().image->width) * ctx->scale;
+		ctx->widget.hasCustomWidth = true;
+	}
+
+	if (ctx->sameLine && !ctx->widget.hasNextWidth)
+	{
+		ctx->widget.customWidth = bodyElem.normalState().width * ctx->scale;
+		ctx->widget.hasCustomWidth = true;
+	}
 
 	ctx->id = genId(id);
 	addWidget((bodyElem.normalState().height + padding.y * 2.0f) * ctx->scale);

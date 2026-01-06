@@ -167,13 +167,4 @@ bool dropdown(const char* id, i32& selectedIndex, const char** items, u32 itemCo
 	return selectedNewItem;
 }
 
-bool dropdown(i32& selectedIndex,
-	void* userdata,
-	bool(*itemSource)(void* userdata, i32 index, char** outItemText),
-	u32 maxVisibleDropDownItems)
-{
-	//TODO
-	return false;
-}
-
 }

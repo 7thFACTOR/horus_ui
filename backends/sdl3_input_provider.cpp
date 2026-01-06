@@ -900,22 +900,8 @@ void initializeSdl(const SdlInitParams& params)
 
 	if (HORUS_GFX->getApiType() == GraphicsProvider::ApiType::OpenGL)
 	{
-		if (params.antiAliasing != AntiAliasing::None)
-			SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
-
-		switch (params.antiAliasing)
-		{
-		case AntiAliasing::MSAA4X:
-			SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 4);
-			break;
-		case AntiAliasing::MSAA8X:
-			SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 8);
-			break;
-		case AntiAliasing::MSAA16X:
-			SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 16);
-			break;
-		}
-
+		//SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
+		//SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 2);
 		SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
 		SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
 		SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);

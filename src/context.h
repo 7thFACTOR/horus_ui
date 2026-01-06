@@ -55,8 +55,6 @@ struct Context
 	std::vector<bool> sameLineStack;
 	SameLineState sameLineInfo[maxSameLineInfoIndex];
 
-	// Toolbars
-	std::vector<ToolbarState> toolbarStack;
 	TooltipState tooltip;
 	std::string widgetLabel;
 	bool verticalToolbar = false;
@@ -109,6 +107,8 @@ struct Context
 	// Themes
 	Theme* theme = nullptr;
 	std::vector<Theme*> themes;
+	std::unordered_map<WidgetType, std::string> widgetCurrentStyle;
+	std::vector<std::pair<WidgetType, std::string>> widgetStyleStack;
 
 	LayoutState layout;
 	std::vector<LayoutState> layoutStack;

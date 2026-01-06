@@ -173,6 +173,8 @@ void addWidget(f32 height)
 			ctx->sameLineInfo[ctx->sameLineInfoIndex].lineHeight = round(fmax(totalHeight, ctx->sameLineInfo[ctx->sameLineInfoIndex].lineHeight));
 		}
 
+		ctx->sameLineInfo[ctx->sameLineInfoIndex].frameHeight = round(fmax(totalHeight, ctx->sameLineInfo[ctx->sameLineInfoIndex].frameHeight));
+
 		verticalOffset = (ctx->sameLineInfo[ctx->sameLineInfoIndex].lineHeight - totalHeight) / 2.0f;
 	}
 
@@ -1140,6 +1142,30 @@ void setWidgetStyle(WidgetType widgetType, const char* styleName)
 		ctx->theme->elements[(u32)WidgetElementId::ColorPickerBody].setStyle(styleName);
 		break;
 	}
+}
+
+void pushWidgetStyle(WidgetType widgetType, const char* styleName)
+{
+	if (ctx->widgetCurrentStyle.find(widgetType) == ctx->widgetCurrentStyle.end())
+	{
+		ctx->widgetCurrentStyle.insert(std::make_pair(widgetType, "default"));
+	}
+
+	ctx->widgetStyleStack.push_back(std::make_pair(widgetType, ctx->widgetCurrentStyle[widgetType]));
+
+	setWidgetStyle(widgetType, styleName);
+}
+
+void popWidgetStyle()
+{
+	HORUS_ASSERT(!ctx->widgetStyleStack.empty());
+	
+	if (ctx->widgetStyleStack.empty())
+		return;
+
+	auto& top = ctx->widgetStyleStack.back();
+	setWidgetStyle(top.first, top.second.c_str());
+	ctx->widgetStyleStack.pop_back();
 }
 
 void setWidgetElementStyle(WidgetElementId widgetElementId, const char* styleName)

@@ -3,9 +3,9 @@
 
 namespace hui
 {
-class Font;
+struct Font;
 struct Image;
-class Atlas;
+struct Atlas;
 struct FontTextSize;
 
 /// How an image is drawn, repeated or stretched across the rectangle
@@ -18,7 +18,6 @@ enum class ImageSizingPolicy
 /// Text styling info
 struct TextStyle
 {
-	FontStyle style = FontStyle::Normal; /// the font face style
 	Rgba32 backFillColor; /// the text color
 	bool underline = false; /// true if underline
 	bool backFill = false; /// true if back is filled color
@@ -192,9 +191,8 @@ struct DrawCommand
 	}
 };
 
-class Renderer
+struct Renderer
 {
-public:
 	Renderer();
 	virtual ~Renderer();
 	void setCurrentNativeWindow(HNativeWindow wnd);
@@ -324,6 +322,8 @@ public:
 	Rgba32 currentColor = 0xffffffff;
 	i32 zOrder = 0;
 	u32 atlasTextureIndex = 0;
+	struct LineInfo { u32 start; u32 len; f32 width; };
+	std::vector<LineInfo> lines;
 };
 
 }

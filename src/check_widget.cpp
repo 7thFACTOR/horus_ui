@@ -91,10 +91,7 @@ bool check(const char* label, bool* checkVar)
 			ctx->widget.rect.width,
 			ctx->widget.rect.height),
 		HAlignType::Left,
-		VAlignType::Center);
-
-	// reset custom width
-	ctx->widget.width = 0;
+		VAlignType::Center, true);
 
 	return ctx->widget.changeEnded;
 }

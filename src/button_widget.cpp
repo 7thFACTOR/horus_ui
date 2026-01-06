@@ -249,7 +249,7 @@ bool button(const char* label)
 	return ctx->widget.clicked;
 }
 
-bool imageButtonInternal(HImage img, HImage disabledImg, f32 width, f32 height, bool down, ThemeElement* btnBodyElem)
+static bool imageButtonInternal(HImage img, HImage disabledImg, f32 width, f32 height, bool down, ThemeElement* btnBodyElem)
 {
 	auto btnBodyElemState = &btnBodyElem->normalState();
 	Image* image = (Image*)img;
@@ -260,11 +260,8 @@ bool imageButtonInternal(HImage img, HImage disabledImg, f32 width, f32 height, 
 		return false;
 	}
 
-	//if (ctx->sameLine)
-	{
-		ctx->widget.customWidth = width;
-		ctx->widget.hasCustomWidth = true;
-	}
+	ctx->widget.customWidth = width;
+	ctx->widget.hasCustomWidth = true;
 
 	ctx->extractLabelAndId(nullptr);
 	addWidget(height * ctx->scale);

@@ -257,7 +257,7 @@ f32 endScrollView()
 	return scrollPos;
 }
 
-void beginVirtualListContent(u32 totalRowCount, u32 itemHeight, f32 scrollPos)
+void beginVirtualListContent(u32 totalRowCount, f32 itemHeight, f32 scrollPos)
 {
 	f32 skipRows = scrollPos / itemHeight;
 	auto pos = ctx->position;

@@ -2,6 +2,12 @@
 
 namespace hui
 {
+OpenMultipleFileSet::~OpenMultipleFileSet()
+{
+	delete[] filenameBuffer;
+	delete[] bufferIndices;
+}
+
 bool openFileDialog(const char* filterList, const char* defaultPath, char* outPath, u32 maxOutPathSize)
 {
 	return HORUS_FILEDIALOGS->openFileDialog(filterList, defaultPath, outPath, maxOutPathSize);

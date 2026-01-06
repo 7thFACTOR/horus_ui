@@ -6,7 +6,7 @@
 
 namespace hui
 {
-bool labelInternal(const char* label, HAlignType horizontalAlign, Font* font)
+static bool labelInternal(const char* label, HAlignType horizontalAlign, Font* font)
 {
 	auto& bodyElem = ctx->theme->getElement(WidgetElementId::LabelBody);
 	f32 height = 0;
@@ -24,7 +24,6 @@ bool labelInternal(const char* label, HAlignType horizontalAlign, Font* font)
 		ctx->widget.hasCustomWidth = true;
 	}
 
-	//TODO: for sameline ctx->widget.width = fsize.width;
 	addWidget(height);
 	buttonBehavior();
 

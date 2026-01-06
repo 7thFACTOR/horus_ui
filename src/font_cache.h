@@ -4,9 +4,8 @@
 
 namespace hui
 {
-class FontCache
+struct FontCache
 {
-public:
 	FontCache(Atlas* newAtlas);
 	~FontCache();
 	Font* createFont(const std::string& name, const std::string& filename, u32 size, bool packAtlasNow);
