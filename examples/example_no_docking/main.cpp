@@ -109,7 +109,7 @@ int main(int argc, char** args)
 				hui::beginBox(hui::Color::white, hui::WidgetElementId::WindowBody, hui::WidgetStateType::Normal);
 				hui::popWidgetPadding();
 				hui::pushWidgetPadding(0);
-				hui::customSpace(20);
+				hui::space(20);
 				static hui::TabIndex selTab = 0;
 
 				hui::beginTabGroup(selTab);
@@ -297,7 +297,7 @@ int main(int argc, char** args)
 				hui::popTint();
 				hui::endSameLine();
 
-				hui::customSpace(20);
+				hui::space(20);
 				
 				hui::popWidgetPadding();
 				hui::endBox();
