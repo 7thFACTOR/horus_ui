@@ -2765,7 +2765,7 @@ HORUS_API bool expandable(const char* label, bool* expandedVar = nullptr);
 /// \return true if it the selection changed
 HORUS_API bool dropdown(const char* id, i32& selectedIndex, const char** items, u32 itemCount, u32 maxVisibleDropDownItems = ~0);
 
-HORUS_API bool list(i32* selectedIndices, u32 maxSelectedIndices, ListSelectionMode selectionType, const char** items, u32 itemCount);
+HORUS_API bool list(const char* id, bool* selectedItems, ListSelectionMode selectionType, const char** items, u32 itemCount, f32 height = 200.0f);
 
 /// Draw a selectable label
 /// \param label the selectable's text

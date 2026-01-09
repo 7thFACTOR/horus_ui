@@ -504,7 +504,7 @@
 				"normal": { "image": "default/selectable", "border": 3, "color": "white", "textColor": "white", "font": "normal" },
 				"hovered": { "image": "default/selectable_hovered", "border": 3, "color": "white", "textColor": "black", "font": "normal" },
 				"pressed": { "image": "default/selectable_hovered", "border": 3, "color": "white", "textColor": "black", "font": "normal" },
-				"focused": { "image": "default/selectable_hovered", "border": 3, "color": "white", "textColor": "black", "font": "normal" }
+				"focused": { "image": "default/selectable", "border": 3, "color": "white", "textColor": "white", "font": "normal" }
 			}
 		},
 		"box":
