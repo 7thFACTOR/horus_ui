@@ -37,29 +37,12 @@ bool list(const char* id, bool* selectedItems, ListSelectionMode selectionType, 
 			widgetHeight = 200; // Default fallback
 	}
 
+	pushPadding(PaddingType::Layout, Point(0, 0));
+	pushPadding(PaddingType::ScrollView, Point(0, 0));
+
 	beginScrollView(widgetHeight, scrollPos, totalHeight);
 
 	bool changed = false;
-
-	// We can optimize by only drawing visible items, but for now simple loop
-	// ScrollView clip rect handles the actual clipping drawing-wise.
-	// beginScrollView sets up the clip.
-
-	// Optimization: Skip items above the view
-	// scrollPos is the offset.
-	// visible range is [scrollPos, scrollPos + widgetHeight]
-	
-	// However, we must call `selectable` for layout to work correctly if we are in a vertical layout?
-	// `selectable` calls `addWidget` which advances layout.
-	// If we skip `selectable`, we must manually advance spacing/position?
-	// Actually `beginScrollView` pushes a new layout `LayoutType::ScrollView`.
-	// Inside it, `addWidget` just adds to the current Y in the scroll layout.
-	// So if we skip calls, the Y won't advance.
-	// We can use `beginVirtualListContent` or just manually add space for skipped items.
-	
-	// Let's try to be simple first: render everything. `selectable` is cheap if clipped?
-	// `selectable` does `renderer->cmdDraw...`
-	// `renderer` usually has clipping check.
 
 	for (u32 i = 0; i < itemCount; i++)
 	{
@@ -93,6 +76,8 @@ bool list(const char* id, bool* selectedItems, ListSelectionMode selectionType, 
 	}
 
 	ctx->widgetScrollStates[listId] = endScrollView();
+	popPadding(PaddingType::ScrollView);
+	popPadding(PaddingType::Layout);
 
 	return changed;
 }
@@ -110,10 +95,10 @@ bool selectableInternal(const char* label, HFont font, SelectableFlags stateFlag
 
 	auto bodyElemState = &bodyElem.normalState();
 
-	if (ctx->widget.pressed || ((u32)stateFlags & (u32)SelectableFlags::Selected))
-		bodyElemState = &bodyElem.getState(WidgetStateType::Pressed);
-	else if (ctx->widget.hovered)
+	if (ctx->widget.hovered)
 		bodyElemState = &bodyElem.getState(WidgetStateType::Hovered);
+	else if (ctx->widget.pressed || ((u32)stateFlags & (u32)SelectableFlags::Selected))
+		bodyElemState = &bodyElem.getState(WidgetStateType::Pressed);
 
 	if (ctx->widget.visible)
 	{

@@ -534,7 +534,7 @@ int main(int argc, char** args)
 				static bool listSelection[5] = {false};
 				static const char* listItems[] = { "Apple", "Banana", "Cherry", "Date", "Elderberry" };
 				hui::label("List Box:");
-				hui::list("myList", listSelection, hui::ListSelectionMode::Single, listItems, 5, 50);
+				hui::list("myList", listSelection, hui::ListSelectionMode::Multiple, listItems, 5, 150);
 
 				hui::endWindow();
 			}

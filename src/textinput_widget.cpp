@@ -46,6 +46,43 @@ bool textInput(
 		ctx->widget.changeEnded = true;
 	}
 
+	// Show clear image only when defaultText is provided and the current text is not empty.
+	bool showClearImage = defaultText && strcmp(text, "") && strcmp(defaultText, "");
+
+	// compute clear-filter hit rect here as well so the clear image can be hovered
+	// even when the field is not focused (processEvent is only called for active editor).
+	if (showClearImage)
+	{
+		Rect clearFilterRc = ctx->widget.rect;
+		auto& clearElemState = bodyTextFilterClearImageElem.normalState();
+		clearFilterRc.x = ctx->widget.rect.right() - (clearElemState.border + padding.x) * ctx->scale - clearElemState.image->width * ctx->scale;
+		clearFilterRc.width = clearElemState.image->width * ctx->scale;
+		clearFilterRc.height = clearElemState.image->height * ctx->scale;
+
+		// update hover flag based on global mouse position
+		ctx->textInput.clearFilterHovered = clearFilterRc.contains(ctx->mousePosition) && ctx->hoveringThisWindow;
+	}
+	else
+	{
+		ctx->textInput.clearFilterHovered = false;
+	}
+
+	if (ctx->widget.pressed && ctx->textInput.clearFilterHovered)
+	{
+		if (text)
+		{
+			text[0] = 0;
+			if (ctx->textInput.id == ctx->id)
+			{
+				ctx->textInput.text.clear();
+				ctx->textInput.caretPosition = 0;
+				ctx->textInput.selectionActive = false;
+			}
+			ctx->textInput.textChanged = true;
+			forceRepaint();
+		}
+	}
+
 	auto bodyElemState = &bodyElem->normalState();
 	bool isEditingThis =
 		ctx->id == ctx->textInput.id
@@ -163,27 +200,6 @@ bool textInput(
 		HORUS_INPUT->startTextInput(ctx->lastHoveredNativeWindow, rc);
 		bodyElemState = &bodyElem->getState(WidgetStateType::Focused);
 		forceRepaint();
-	}
-
-	// Show clear image only when defaultText is provided and the current text is not empty.
-	bool showClearImage = defaultText && strcmp(text, "") && strcmp(defaultText, "");
-
-	// compute clear-filter hit rect here as well so the clear image can be hovered
-	// even when the field is not focused (processEvent is only called for active editor).
-	if (showClearImage)
-	{
-		Rect clearFilterRc = ctx->widget.rect;
-		auto& clearElemState = bodyTextFilterClearImageElem.normalState();
-		clearFilterRc.x = ctx->widget.rect.right() - (clearElemState.border + padding.x) * ctx->scale - clearElemState.image->width * ctx->scale;
-		clearFilterRc.width = clearElemState.image->width * ctx->scale;
-		clearFilterRc.height = clearElemState.image->height * ctx->scale;
-
-		// update hover flag based on global mouse position
-		ctx->textInput.clearFilterHovered = clearFilterRc.contains(ctx->mousePosition) && ctx->hoveringThisWindow;
-	}
-	else
-	{
-		ctx->textInput.clearFilterHovered = false;
 	}
 
 	// If hovering the clear button prefer Arrow, otherwise show I-beam when hovering the text area.

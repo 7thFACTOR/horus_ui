@@ -93,7 +93,9 @@ bool dropdown(const char* id, i32& selectedIndex, const char** items, u32 itemCo
 	if (ctx->widget.clicked)
 	{
 		ctx->dropdown.active = !ctx->dropdown.active;
-		ctx->dropDownScrollViewPos = 0;
+
+		auto& bodyElem = ctx->theme->getElement(WidgetElementId::SelectableBody);
+		ctx->dropDownScrollViewPos = selectedIndex * bodyElem.normalState().height * ctx->scale;
 
 		if (ctx->dropdown.active)
 		{
