@@ -1,3 +1,5 @@
+#include <algorithm>
+#include <unordered_map>
 #include "context.h"
 #include "theme.h"
 #include "font.h"
@@ -6,6 +8,8 @@
 
 namespace hui
 {
+static std::unordered_map<u32, i32> listAnchors;
+
 bool list(const char* id, bool* selectedItems, ListSelectionMode selectionType, const char** items, u32 itemCount, f32 height)
 {
 	if (!items || itemCount == 0 || !selectedItems)
@@ -42,7 +46,36 @@ bool list(const char* id, bool* selectedItems, ListSelectionMode selectionType, 
 
 	beginScrollView(widgetHeight, scrollPos, totalHeight);
 
+	Rect viewRect = ctx->scrollViewStack[ctx->scrollViewDepth - 1].rect;
 	bool changed = false;
+
+	// Ensure anchor state exists
+	if (listAnchors.find(listId) == listAnchors.end())
+		listAnchors[listId] = -1;
+
+	i32& anchor = listAnchors[listId];
+
+	if (ctx->isActiveLayer() && viewRect.contains(ctx->mousePosition))
+	{
+		if (ctx->event.type == InputEvent::Type::Key && ctx->event.key.down)
+		{
+			if (ctx->event.key.code == KeyCode::Esc)
+			{
+				for (u32 i = 0; i < itemCount; i++) selectedItems[i] = false;
+				changed = true;
+				anchor = -1;
+				cancelEvent();
+			}
+			else if (selectionType == ListSelectionMode::Multiple
+				&& ctx->event.key.code == KeyCode::A
+				&& (has(ctx->event.key.modifiers, KeyModifiers::Control)))
+			{
+				for (u32 i = 0; i < itemCount; i++) selectedItems[i] = true;
+				changed = true;
+				cancelEvent();
+			}
+		}
+	}
 
 	for (u32 i = 0; i < itemCount; i++)
 	{
@@ -50,11 +83,14 @@ bool list(const char* id, bool* selectedItems, ListSelectionMode selectionType, 
 
 		if (selectable(items[i], isSelected ? SelectableFlags::Selected : SelectableFlags::Normal))
 		{
+			auto mods = ctx->event.mouse.modifiers;
+
 			if (selectionType == ListSelectionMode::Single)
 			{
 				if (isSelected)
 				{
 					selectedItems[i] = false;
+					anchor = -1;
 				}
 				else
 				{
@@ -63,13 +99,39 @@ bool list(const char* id, bool* selectedItems, ListSelectionMode selectionType, 
 						selectedItems[j] = false;
 
 					selectedItems[i] = true;
+					anchor = i;
 				}
 				changed = true;
 			}
 			else
 			{
-				// Toggle selection for multiple
-				selectedItems[i] = !selectedItems[i];
+				if (has(mods, KeyModifiers::Shift) && anchor != -1)
+				{
+					// Range selection
+					// If Ctrl is NOT pressed, clear selection first
+					if (!(mods & KeyModifiers::Control))
+					{
+						for (u32 j = 0; j < itemCount; j++) selectedItems[j] = false;
+					}
+
+					u32 start = std::min((u32)anchor, i);
+					u32 end = std::max((u32)anchor, i);
+
+					for (u32 j = start; j <= end; j++) selectedItems[j] = true;
+				}
+				else if (has(mods, KeyModifiers::Control))
+				{
+					// Toggle selection for multiple
+					selectedItems[i] = !selectedItems[i];
+					anchor = i;
+				}
+				else
+				{
+					// Normal click: Select only this
+					for (u32 j = 0; j < itemCount; j++) selectedItems[j] = false;
+					selectedItems[i] = true;
+					anchor = i;
+				}
 				changed = true;
 			}
 		}
