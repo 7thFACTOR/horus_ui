@@ -1905,10 +1905,10 @@ struct RenderBatch
 	DrawCommandCallback commandCallback = nullptr;
 };
 
-/// The graphics provider, used to render UI
+/// The graphics provider
 struct GraphicsProvider
 {
-	/// The supported graphics APIs
+	/// The graphics API
 	enum class ApiType
 	{
 		OpenGL,
@@ -1965,7 +1965,7 @@ struct GraphicsProvider
 	virtual void draw(struct RenderBatch* batches, u32 count) = 0;
 };
 
-struct PackRect
+struct PackedRect
 {
 	u32 id = 0; // used to identify the rect, because the rect pack might reorder them in the rect array
 	Rect rect;
@@ -1977,7 +1977,7 @@ struct RectPackProvider
 	virtual HRectPacker createRectPacker() = 0;
 	virtual void deleteRectPacker(HRectPacker packer) = 0;
 	virtual void reset(HRectPacker packer, u32 atlasWidth, u32 atlasHeight) = 0;
-	virtual bool packRects(HRectPacker packer, PackRect* rects, size_t rectCount) = 0;
+	virtual bool packRects(HRectPacker packer, PackedRect* rects, size_t rectCount) = 0;
 };
 
 struct FontGlyph
@@ -2019,7 +2019,6 @@ struct FontTextSize
 	f32 height = 0;
 	f32 maxBearingY = 0;
 	f32 maxGlyphHeight = 0;
-	u32 lastFontIndex = 0;
 	u32 maxLength = 0; // valid with maxWidth argument of computeTextSize is valid (!= -1)
 };
 
@@ -2061,7 +2060,7 @@ struct UtfProvider
 // Core
 //////////////////////////////////////////////////////////////////////////
 
-/// Create a new HorusUI context
+/// Create a new context
 /// \param settings context settings
 /// \return the created context handle
 HORUS_API HContext createContext(struct Settings& settings);
@@ -2083,13 +2082,14 @@ HORUS_API Settings& getSettings();
 HORUS_API void initializeRenderer();
 
 /// Set the current frame time delta. Used for tooltips and other timed things.
-/// Must be called continuously in the main loop. If initializeWithSDL is used, no need to call it, the SDL input provider will update it.
+/// Must be called continuously in the main loop. If initializeWithSDL is used, no need to call it, the SDL input provider will update it (unless overridden by this call).
 /// \param dt delta time value, in seconds
 HORUS_API void setFrameDeltaTime(f32 dt);
 
 /// \return delta time in seconds
 HORUS_API f32 getFrameDeltaTime();
 
+/// Update the UI context, process input events, update animations, etc. This must be called once per frame, before beginFrame()
 HORUS_API void update();
 
 /// Begin a frame which means the rendering of UI across one or many windows. This must be called first when rendering UI
@@ -2098,8 +2098,10 @@ HORUS_API void beginFrame();
 /// Ends an UI frame
 HORUS_API void endFrame();
 
+/// A render callback is called when the UI is rendered, used to issue custom rendering commands
 HORUS_API void addRenderCallback(RenderCallback callback);
 
+/// Clear the background with a specified color, called at the beginning of each frame automatically
 HORUS_API void clearBackground(const Color& color);
 
 /// \return true if there is nothing to do in the UI (like redrawing or layout computations), used to not render continuously when its not needed, for applications that do not need realtime continuous rendering
@@ -2646,9 +2648,8 @@ HORUS_API MessageBoxButtons messageBox(
 	u32 width = 400,
 	HImage customImg = 0);
 
-/// Set the next widget as enabled or not
-/// \param enabled if true, the widget is enabled for input
-HORUS_API void setNextEnabled(bool enabled);
+/// Set the next widget as disabled or not
+HORUS_API void setNextDisabled();
 
 /// Set next widget as focused
 HORUS_API void setNextFocused();

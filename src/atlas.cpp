@@ -118,7 +118,7 @@ bool Atlas::pack(
 	Rect packedRect;
 	bool rotated = false;
 	bool allTexturesDirty = false;
-	std::vector<PackRect> packRects;
+	std::vector<PackedRect> packRects;
 	const u32 maxAtlasPageCount = 64;
 	u32 atlasPageCount = 0;
 	std::vector<Image*> packedImages;
@@ -131,7 +131,7 @@ bool Atlas::pack(
 		if (img->width == 0 || img->height == 0)
 			continue;
 
-		PackRect prc;
+		PackedRect prc;
 		prc.id = img->id;
 		prc.rect.width = img->width + border2;
 		prc.rect.height = img->height + border2;
@@ -143,7 +143,7 @@ bool Atlas::pack(
 		packRects.clear();
 		for (auto img : nonPackedImages)
 		{
-			PackRect rc;
+			PackedRect rc;
 			rc.id = img->id;
 			rc.rect = { 0.f, 0.f, (f32)img->width + border2, (f32)img->height + border2 };
 			packRects.push_back(rc);

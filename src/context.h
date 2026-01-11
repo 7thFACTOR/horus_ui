@@ -71,6 +71,9 @@ struct Context
 
 	// Virtual list
 	std::vector<VirtualListContentState> virtualListStack;
+	
+	// List
+	std::unordered_map<u32, i32> listAnchors;
 
 	// Menus
 	std::vector<MenuWidgetState> menuStack;

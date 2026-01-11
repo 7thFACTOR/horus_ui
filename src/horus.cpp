@@ -133,7 +133,7 @@ void clearBackground(const Color& color)
 
 void setNextDisabled()
 {
-	ctx->widget.disabled = true;
+	ctx->widget.nextDisabled = true;
 }
 
 void setNextFocused()

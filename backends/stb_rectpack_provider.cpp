@@ -30,7 +30,7 @@ void StbRectPackProvider::reset(HRectPacker packer, u32 atlasWidth, u32 atlasHei
 	stbrp_init_target(&stbPacker->ctx, atlasWidth, atlasHeight, stbPacker->nodes.data(), stbPacker->nodes.size());
 }
 
-bool StbRectPackProvider::packRects(HRectPacker packer, PackRect* rects, size_t rectCount)
+bool StbRectPackProvider::packRects(HRectPacker packer, PackedRect* rects, size_t rectCount)
 {
 	StbRectPackProxy* stbPacker = (StbRectPackProxy*)packer;
 

@@ -8,8 +8,6 @@
 
 namespace hui
 {
-static std::unordered_map<u32, i32> listAnchors;
-
 bool list(const char* id, bool* selectedItems, ListSelectionMode selectionType, const char** items, u32 itemCount, f32 height)
 {
 	if (!items || itemCount == 0 || !selectedItems)
@@ -50,10 +48,10 @@ bool list(const char* id, bool* selectedItems, ListSelectionMode selectionType, 
 	bool changed = false;
 
 	// Ensure anchor state exists
-	if (listAnchors.find(listId) == listAnchors.end())
-		listAnchors[listId] = -1;
+	if (ctx->listAnchors.find(listId) == ctx->listAnchors.end())
+		ctx->listAnchors[listId] = -1;
 
-	i32& anchor = listAnchors[listId];
+	i32& anchor = ctx->listAnchors[listId];
 
 	if (ctx->isActiveLayer() && viewRect.contains(ctx->mousePosition))
 	{

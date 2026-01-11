@@ -14,7 +14,7 @@ struct AtlasTexture
 	HRectPacker packer = 0;
 	bool dirty = false;
 	bool filledUp = false;
-	std::vector<PackRect> rects;
+	std::vector<PackedRect> rects;
 };
 
 struct Image

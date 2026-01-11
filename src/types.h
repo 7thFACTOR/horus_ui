@@ -239,6 +239,7 @@ struct WidgetState
 	bool hovered = false;
 	bool focused = false;
 	bool changeEnded = false;
+	bool nextDisabled = false; // whether the next widget will be disabled
 	Rect rect;
 	Rect hoveredWidgetRect;
 	Rect focusedWidgetRect;
