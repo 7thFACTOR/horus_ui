@@ -160,7 +160,7 @@ struct ThemeElement
 	Style* currentStyle = nullptr;
 
 	inline void setDefaultStyle() { currentStyle = &styles["default"]; }
-	inline void setStyle(const char* styleName) 
+	inline void setStyle(const char* styleName)
 	{
 		auto iter = styles.find(styleName);
 
@@ -450,6 +450,44 @@ struct ColorPickerState
 	static const u32 maxHexColorSize = 9;
 	char hexColor[maxHexColorSize] = {0};
 	WidgetId currentEditingId = 0;
+};
+
+struct TableState
+{
+	struct Column
+	{
+		f32 width = 0;
+		f32 minWidth = 0;
+		f32 maxWidth = 0;
+		bool isResizable = false;
+		bool isStretchable = false;
+		bool isHidden = false;
+	};
+
+	std::vector<Column> columns;
+	u32 currentColumn = 0;
+	WidgetId id = 0;
+	Rect headerRect;
+	Rect tableRect;
+	f32 innerWidth = 0;
+	f32 innerHeight = 0;
+	bool resizingColumn = false;
+	u32 resizingColumnIndex = ~0;
+	Point lastMousePos;
+
+	// New fields for dynamic layout
+	bool isInHeader = false;
+	u32 currentRow = 0;
+	f32 currentRowY = 0;
+	TableFlags flags = TableFlags::None;
+	f32 currentMaxRowHeight = 0;
+	f32 rowStartY = 0;
+	f32 cellStartY = 0;
+    f32 rowHeight = 0;
+    u32 rowDrawCmdIndex = 0;
+
+    std::vector<f32> rowSeparators;
+    f32 bodyStartY = 0.0f;
 };
 
 struct MemoryStream

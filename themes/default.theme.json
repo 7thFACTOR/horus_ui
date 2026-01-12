@@ -583,7 +583,7 @@
 			"columnsHeaderBody":
 			{
 				"height":20,
-				"normal": { "image": "default/header", "border": 4, "color": "white", "textColor": "white", "font": "normal" }
+				"normal": { "image": "default/header", "border": 4, "color": "gray", "textColor": "white", "font": "normal" }
 			}
 		},
 		"colorPicker":

@@ -34,11 +34,11 @@ int main(int argc, char** args)
 	settings.dockNodeResizeSplitterHitSize = 8;
 	//settings.dockingStyle = hui::DockingGuidesStyle::InsideNativeWindows;
 	//settings.dockNodeDockingSizeRatio = 0.33f;
-	
+
 	// Create the context
 	auto huiContext = hui::createContext(settings);
 	hui::setContext(huiContext); // set as current context
-	
+
 	// Initialize SDL input provider
 	hui::SdlInitParams sdlParams;
 
@@ -86,7 +86,7 @@ int main(int argc, char** args)
 
 	// Grab a font handle from the theme to use later
 	auto largeFnt = hui::getThemeFont(theme, "title");
-	
+
 	// Set the current theme
 	hui::setTheme(theme);
 
@@ -118,7 +118,7 @@ int main(int argc, char** args)
 
 		// Get the events from SDL or whatever input provider is set, it will fill a queue of events
 		hui::update();
-		
+
 		// Check the event count
 		auto eventCount = hui::getInputEventCount();
 
@@ -198,7 +198,7 @@ int main(int argc, char** args)
 				// begin a widget container (it doesnt draw anything, a container is a layouting rectangle)
 				//hui::beginContainer(panelRect);
 				hui::labelCustomFont("Information", largeFnt);
-				
+
 				if (hui::button("DEBUG TREE"))
 				{
 					hui::debugWindows();
@@ -239,14 +239,14 @@ int main(int argc, char** args)
 
 				static f32 scrollPos = 0;
 				hui::beginScrollView(500, scrollPos);
-				
+
 				//hui::pushSpacing(500);
 				static hui::Color col1 = hui::Color(3,0,0,1);
 				static hui::Color col2 = hui::Color::blue;
 				hui::colorPicker("cp1",  &col1, hui::ColorPickerFlags(0), &col2);
 				//hui::colorPicker("cp2", &col2);
 				//hui::popSpacing();
-				
+
 				hui::beginSameLine();
 
 				hui::label("Text here", hui::HAlignType::Right);
@@ -254,7 +254,7 @@ int main(int argc, char** args)
 				hui::button("Button1");
 				hui::button("Button2");
 				hui::button("Button3");
-				
+
 				static i32 ddIndex = 0;
 				static const char* items[10] = {
 					"Item 01",
@@ -351,7 +351,7 @@ int main(int argc, char** args)
 					hui::space(5);
 					//hui::setNextWidth(0.5f);
 					hui::button("Another Action");
-					
+
 					hui::endSameLine();
 					hui::line();
 					hui::label("sdf sdf asdf adsfasd");
@@ -395,16 +395,16 @@ int main(int argc, char** args)
 				//hui::endContainer();
 				hui::endWindow();
 			}
-			
+
 			// start to add widgets in the window
 			if (hui::beginWindow("inspector", "Inspector", nullptr, tabicon2))
 			{
 				hui::labelCustomFont("SETTINGS AND STUFF", hui::getFont("large"));
 				static char txt[2000] = "hui";
-				
+
 				hui::label("Dock Target");
 				hui::textInput(txt, 2000, hui::TextInputValueMode::Any);
-			
+
 				hui::space();
 				hui::line();
 				if (hui::button("Dock Left"))
@@ -433,7 +433,7 @@ int main(int argc, char** args)
 				}
 				hui::endWindow();
 			}
-			
+
 
 			// start to add widgets in the window
 			if (hui::beginWindow("assets", "Assets", nullptr, tabicon3))
@@ -442,7 +442,7 @@ int main(int argc, char** args)
 				static char txt[2000] = "hui";
 
 				hui::label("Dock Target");
-				
+
 				hui::textInput(txt, 2000, hui::TextInputValueMode::Any);
 
 				hui::space();
@@ -485,7 +485,7 @@ int main(int argc, char** args)
 				}
 
 				static bool confine = false;
-				
+
 				if (hui::check("Confine scene to this window rectangle", &confine))
 				{
 					confineSceneToWindow = confine;
@@ -536,6 +536,64 @@ int main(int argc, char** args)
 				hui::label("List Box:");
 				hui::list("myList", listSelection, hui::ListSelectionMode::Multiple, listItems, 5, 150);
 
+				hui::space();
+				hui::label("Table Widget:");
+				if (hui::beginTable("myTable", 3, 0, hui::TableFlags::Borders | hui::TableFlags::BordersInner | hui::TableFlags::AltRowBg | hui::TableFlags::Resizable | hui::TableFlags::Stretch))
+				{
+					hui::startHeader();
+					hui::label("Column 1");
+					hui::nextCell();
+					hui::label("Column 2");
+					hui::nextCell();
+					hui::label("Column 3");
+
+					hui::nextRow();
+					hui::label("Row 1, Cell 1");
+					hui::nextCell();
+					hui::label("Row 1, Cell 2");
+					hui::nextCell();
+					hui::label("Row 1, Cell 3");
+
+					hui::nextRow();
+					hui::label("Row 2, Cell 1\n(Multi-line)");
+					hui::button("Tall Button");
+					hui::nextCell();
+					hui::label("Row 2, Cell 2\nWith more content\nto test dynamic height");
+					hui::nextCell();
+					hui::label("Row 2, Cell 3");
+
+					hui::nextRow();
+					hui::label("Row 3, Cell 1");
+					hui::nextCell();
+					// Nested Table
+					hui::label("Nested Table:");
+					if (0&&hui::beginTable("nestedTable", 2, 0, hui::TableFlags::Borders | hui::TableFlags::AltRowBg))
+					{
+						hui::startHeader();
+						hui::label("Sub 1");
+						hui::nextCell();
+						hui::label("Sub 2");
+
+						hui::nextRow();
+						hui::label("A");
+						hui::nextCell();
+						hui::label("B");
+
+						hui::nextRow();
+						hui::label("C");
+						hui::nextCell();
+						hui::label("D");
+
+						hui::endTable();
+					}
+					hui::nextCell();
+					hui::label("Row 3, Cell 3");
+
+
+
+					hui::endTable();
+				}
+
 				hui::endWindow();
 			}
 
@@ -577,7 +635,7 @@ int main(int argc, char** args)
 			}
 
 			hui::endFrame();
-			
+
 			if (lastEventInQueue)
 				hui::present();
 		};
@@ -588,7 +646,7 @@ int main(int argc, char** args)
 			for (int i = 0; i < eventCount; i++)
 			{
 				hui::setInputEvent(hui::getInputEventAt(i));
-				
+
 				if (hui::getInputEvent().type == hui::InputEvent::Type::WindowClose)
 				{
 					if (hui::getInputEvent().window == mainWnd)

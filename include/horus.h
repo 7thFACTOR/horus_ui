@@ -426,6 +426,36 @@ enum class SelectableFlags : u32
 };
 HORUS_ENUM_AS_FLAGS(SelectableFlags);
 
+enum class TableFlags : u32
+{
+	None = 0,
+
+	// Layout / sizing
+	FixedFit = HORUS_BIT(0),
+	Stretch = HORUS_BIT(1),
+	FixedSize = HORUS_BIT(2), // New flag: Table stays at column width sum, doesn't expand to layout
+
+	// Visual
+	Borders = HORUS_BIT(3),
+	BordersOuter = HORUS_BIT(4),
+	BordersInner = HORUS_BIT(5),
+	AltRowBg = HORUS_BIT(6),
+	HeaderBg = HORUS_BIT(7),
+	NoBg = HORUS_BIT(8),
+
+	// Scrolling
+	ScrollX = HORUS_BIT(9),
+	ScrollY = HORUS_BIT(10),
+	FreezeHeaderRow = HORUS_BIT(11),
+
+	// Interaction
+	Resizable = HORUS_BIT(12),
+	Reorderable = HORUS_BIT(13),
+	Hideable = HORUS_BIT(14),
+	Sortable = HORUS_BIT(15),
+};
+HORUS_ENUM_AS_FLAGS(TableFlags);
+
 /// When pushTint is called, specifies what element is color tinted
 enum class TintColorType
 {
@@ -643,7 +673,7 @@ enum class DockingGuidesStyle
 	/// and updating the contents of the dragged window to match the dock indicators
 	InsideNativeWindows,
 	/// Only change the cursor to a special drag window cursor
-	/// docking guides and preview are drawn inside the native window 
+	/// docking guides and preview are drawn inside the native window
 	MouseCursorOnly,
 	/// Automatically will choose a style based on the platform OS' capabilities
 	Auto
@@ -1613,6 +1643,7 @@ struct Settings
 	Point defaultLayoutPadding = {10, 10};
 	Point defaultScrollViewPadding = { 10, 10 };
 	Point defaultWidgetPadding = { 0, 0 };
+	f32 defaultWidgetWidth = 150;
 	SliderDragDirection sliderDragDirection = SliderDragDirection::Any; /// allows to change slider value from any direction drag, vertical or horizontal
 	bool sliderInvertVerticalDragAmount = false; /// if true and vertical sliding allowed, it will invert the drag amount
 	f32 dragStartDistance = 3; /// the max distance after which a dragging operation starts to occur when mouse down and moved, in pixels
@@ -1747,7 +1778,7 @@ struct InputProvider
 	/// \param window the window
 	virtual Point getWindowPosition(HNativeWindow window) = 0;
 
-	/// Return the window current state  
+	/// Return the window current state
 	virtual NativeWindowState getWindowState(HNativeWindow window) = 0;
 
 	/// Present the backbuffer of the specified window
@@ -2436,12 +2467,19 @@ HORUS_API HFont getThemeFont(HTheme theme, const char* themeFontName);
 /// Begin a layout area, an invisible rectangle on the current window area where widgets will be laid out
 HORUS_API void beginLayout(const Rect& rect);
 HORUS_API void endLayout();
+HORUS_API void pushLayout();
+HORUS_API void popLayout();
 HORUS_API void pushId(const char* id);
 HORUS_API void pushId(u32 id);
 HORUS_API void pushId(void* id);
 HORUS_API void popId();
-HORUS_API void pushLayout();
-HORUS_API void popLayout();
+
+HORUS_API bool beginTable(const char* id, u32 columnCount, f32 height = -1, TableFlags flags = TableFlags::None);
+HORUS_API void endTable();
+HORUS_API void startHeader();
+HORUS_API void nextRow();
+HORUS_API void nextCell();
+HORUS_API void setCellSpan(u32 colSpan, u32 rowSpan);
 
 /// Begin a layout made up as columns which can have percentage based widths or fixed
 /// \param columnCount the number of columns to be created
