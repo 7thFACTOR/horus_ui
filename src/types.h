@@ -485,9 +485,9 @@ struct TableState
 	f32 cellStartY = 0;
     f32 rowHeight = 0;
     u32 rowDrawCmdIndex = 0;
-
     std::vector<f32> rowSeparators;
     f32 bodyStartY = 0.0f;
+	bool isClipping = false;
 };
 
 struct MemoryStream

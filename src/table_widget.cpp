@@ -393,6 +393,13 @@ void endTable()
 		}
 	}
 
+	// Pop any remaining clip rect
+	if (state.isClipping)
+	{
+		ctx->renderer->popClipRect();
+		state.isClipping = false;
+	}
+
 	tableStack.pop_back();
 }
 
@@ -470,12 +477,25 @@ void startHeader()
 		ctx->layout.width = state.columns[state.currentColumn].width - (cellPaddingX * 2.0f);
 		ctx->position.x = state.tableRect.x + cellPaddingX;
 		ctx->position.y = state.rowStartY + cellPaddingY;
+
+		// Start Clipping for first cell
+		if (state.isClipping) ctx->renderer->popClipRect(); // Should not happen here usually, but safe
+		Rect clipRect(state.tableRect.x, state.rowStartY, state.columns[state.currentColumn].width, headerHeight); // Clip to header height
+		ctx->renderer->pushClipRect(clipRect);
+		state.isClipping = true;
 	}
 }
 
 void nextRow()
 {
 	auto& state = currentTable();
+
+	// Pop clip rect from previous cell in previous row
+	if (state.isClipping)
+	{
+		ctx->renderer->popClipRect();
+		state.isClipping = false;
+	}
 
 	// Finish previous row
 	finishRow(state);
@@ -497,12 +517,29 @@ void nextRow()
 		ctx->layout.width = state.columns[state.currentColumn].width - (cellPaddingX * 2.0f);
 		ctx->position.x = state.tableRect.x + cellPaddingX;
 		ctx->position.y = state.rowStartY + cellPaddingY;
+
+		// Start Clipping
+		// Note: We don't know the full row height yet, so we clip to a large height or wait?
+		// But widgets are drawn immediately. We must clip now.
+		// Since we handle dynamic row height, maybe we clip 9999 height?
+		// Or update clip rect later? Creating a clip rect with limited width and "infinite" height
+		// (clipped by parent window/panel) is the standard way to handle auto-height cells.
+		Rect clipRect(state.tableRect.x, state.rowStartY, state.columns[state.currentColumn].width, 99999.0f);
+		ctx->renderer->pushClipRect(clipRect);
+		state.isClipping = true;
 	}
 }
 
 void nextCell()
 {
 	auto& state = currentTable();
+
+	// Pop previous clip
+	if (state.isClipping)
+	{
+		ctx->renderer->popClipRect();
+		state.isClipping = false;
+	}
 
 	if (state.currentColumn < state.columns.size())
 	{
@@ -527,6 +564,12 @@ void nextCell()
 			ctx->position.x = cellX + cellPaddingX;
 			ctx->position.y = state.rowStartY + cellPaddingY; // Reset Y to top of row
 			state.cellStartY = state.rowStartY; // New cell starts at row top
+
+			// Push Clip
+			f32 clipHeight = state.isInHeader ? (state.headerRect.height) : 99999.0f;
+			Rect clipRect(cellX, state.rowStartY, state.columns[state.currentColumn].width, clipHeight);
+			ctx->renderer->pushClipRect(clipRect);
+			state.isClipping = true;
 		}
 	}
 }
