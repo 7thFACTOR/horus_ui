@@ -352,6 +352,102 @@ void endTable()
 		state.isClipping = false;
 	}
 
+	// Handle column resizing
+	if (has(state.flags, TableFlags::Resizable))
+	{
+		auto& persistent = ctx->tablePersistentStates[state.id];
+		f32 currentX = state.tableRect.x;
+		f32 separatorWidth = 4.0f;
+
+		for (u32 i = 0; i < state.columns.size(); i++)
+		{
+			if (state.columns[i].isHidden) continue;
+
+			currentX += state.columns[i].width;
+
+			u32 nextColIndex = i + 1;
+			while (nextColIndex < state.columns.size() && state.columns[nextColIndex].isHidden)
+				nextColIndex++;
+
+			if (nextColIndex >= state.columns.size())
+				break;
+
+			if (persistent.resizingColumn && persistent.resizingColumnIndex == i)
+			{
+				ctx->mouseCursor = MouseCursorType::SizeWE;
+
+				if (ctx->event.type == InputEvent::Type::MouseUp && ctx->event.mouse.button == MouseButton::Left)
+				{
+					persistent.resizingColumn = false;
+					persistent.resizingColumnIndex = ~0;
+				}
+				else
+				{
+					f32 delta = ctx->mousePosition.x - persistent.lastMousePos.x;
+					if (fabsf(delta) > 0.001f)
+					{
+						if (persistent.columns[i].isPercentage)
+						{
+							persistent.columns[i].specifiedSize = state.columns[i].width;
+							persistent.columns[i].isPercentage = false;
+						}
+						if (persistent.columns[nextColIndex].isPercentage)
+						{
+							persistent.columns[nextColIndex].specifiedSize = state.columns[nextColIndex].width;
+							persistent.columns[nextColIndex].isPercentage = false;
+						}
+
+						f32 newWidth1 = persistent.columns[i].specifiedSize + delta;
+						f32 newWidth2 = persistent.columns[nextColIndex].specifiedSize - delta;
+
+						if (newWidth1 < 10.0f)
+						{
+							f32 diff = 10.0f - newWidth1;
+							newWidth1 = 10.0f;
+							newWidth2 -= diff;
+						}
+						if (newWidth2 < 10.0f)
+						{
+							f32 diff = 10.0f - newWidth2;
+							newWidth2 = 10.0f;
+							newWidth1 -= diff;
+						}
+
+						persistent.columns[i].specifiedSize = newWidth1;
+						persistent.columns[nextColIndex].specifiedSize = newWidth2;
+						persistent.lastMousePos = ctx->mousePosition;
+					}
+				}
+			}
+			else if (!persistent.resizingColumn)
+			{
+				Rect separatorRect(currentX - separatorWidth, state.tableRect.y, separatorWidth * 2.0f, finalHeight);
+
+				if (separatorRect.contains(ctx->mousePosition))
+				{
+					ctx->mouseCursor = MouseCursorType::SizeWE;
+
+					if (ctx->event.type == InputEvent::Type::MouseDown && ctx->event.mouse.button == MouseButton::Left)
+					{
+						persistent.resizingColumn = true;
+						persistent.resizingColumnIndex = i;
+						persistent.lastMousePos = ctx->mousePosition;
+
+						// Lock current widths into specifiedSize for both columns involved in resize
+						// This handles percentage, auto, and fill columns by converting them to fixed pixel size
+						persistent.columns[i].specifiedSize = state.columns[i].width;
+						persistent.columns[i].isPercentage = false;
+						persistent.columns[i].userResized = true;
+
+						persistent.columns[nextColIndex].specifiedSize = state.columns[nextColIndex].width;
+						persistent.columns[nextColIndex].isPercentage = false;
+						persistent.columns[nextColIndex].userResized = true;
+					}
+				}
+			}
+		}
+	}
+
 	ctx->renderer->cmdSetLineStyle(LineStyle(Color::white, 1.0f));
 
 	// Batch draw borders if enabled
@@ -676,10 +772,13 @@ void setupColumn(u32 columnIndex, f32 size, bool isFillRemaining)
 
 	if (columnIndex >= persistent.columns.size()) return;
 
-	persistent.columns[columnIndex].specifiedSize = size;
-	// Auto-detect: values <= 1 are percentages, values > 1 are pixels
-	persistent.columns[columnIndex].isPercentage = (size <= 1.0f && size > 0.0f && !isFillRemaining);
-	persistent.columns[columnIndex].isFillRemaining = isFillRemaining;
+	if (!persistent.columns[columnIndex].userResized)
+	{
+		persistent.columns[columnIndex].specifiedSize = size;
+		// Auto-detect: values <= 1 are percentages, values > 1 are pixels
+		persistent.columns[columnIndex].isPercentage = (size <= 1.0f && size > 0.0f && !isFillRemaining);
+		persistent.columns[columnIndex].isFillRemaining = isFillRemaining;
+	}
 }
 
 }

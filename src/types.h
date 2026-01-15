@@ -270,6 +270,7 @@ struct TablePersistentState
 		bool isFillRemaining = false; // If true, this column fills remaining space
 		bool isHidden = false;
 		bool isStretchable = true; // Track if this column should participate in auto-stretch
+		bool userResized = false; // Track if this column was manually resized by user
 	};
 
 	std::vector<ColumnState> columns;
