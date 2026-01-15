@@ -548,10 +548,10 @@ int main(int argc, char** args)
 				if (hui::beginTable("myTable", 4, 0, hui::TableFlags::Borders  | hui::TableFlags::AltRowBg | hui::TableFlags::Resizable | hui::TableFlags::Stretch))
 				{
 					hui::startHeader();
-					hui::setupColumn(0, 0, true); // 70 pixels
-					hui::setupColumn(1, 180); // 30% width
-					hui::setupColumn(2, 110); // Fill remaining
-					hui::setupColumn(3, 0, true); // Fill remaining
+					hui::setupColumn(0, 0);
+					hui::setupColumn(1, 0);
+					hui::setupColumn(2, 0);
+					hui::setupColumn(3, 0);
 
 					hui::label("Column 1", hui::HAlignType::Center);
 					hui::nextCell();

@@ -241,18 +241,70 @@ bool beginTable(const char* id, u32 columnCount, f32 height, TableFlags flags)
 		}
 	}
 
+	// Calculate explicit weights for fill columns
+	f32 totalExplicitWeight = 0.0f;
+	u32 pureFillCount = 0;
+
+	for (u32 i = 0; i < columnCount; i++)
+	{
+		auto& pCol = persistent.columns[i];
+		if (state.columns[i].isHidden) continue;
+
+		if (pCol.isFillRemaining)
+		{
+			if (pCol.specifiedSize > 0 && pCol.specifiedSize <= 1.0f)
+			{
+				totalExplicitWeight += pCol.specifiedSize;
+			}
+			else
+			{
+				pureFillCount++;
+			}
+		}
+	}
+
 	// Distribute remaining space to fill columns
 	if (fillCount > 0)
 	{
 		f32 remainingWidth = widgetWidth - specifiedWidth;
 		if (remainingWidth > 0)
 		{
-			f32 widthPerFillColumn = remainingWidth / fillCount;
+			// Verify if we need to normalize weights or share remaining space
+			f32 weightNormalizer = 1.0f;
+			f32 weightForPureFills = 0.0f;
+
+			if (pureFillCount == 0)
+			{
+				// Only explicit weights: Normalize them to fill the space
+				if (totalExplicitWeight > 0)
+					weightNormalizer = 1.0f / totalExplicitWeight;
+			}
+			else
+			{
+				// Mixed explicit and pure: Pure fills divide the remaining weight
+				// (e.g. 1.0 - 0.7 = 0.3 for pure fills)
+				if (totalExplicitWeight < 1.0f)
+					weightForPureFills = (1.0f - totalExplicitWeight);
+			}
+
+			f32 widthPerPureFill = 0;
+			if (pureFillCount > 0)
+				widthPerPureFill = (remainingWidth * weightForPureFills) / pureFillCount;
+
 			for (u32 i = 0; i < columnCount; i++)
 			{
 				if (!state.columns[i].isHidden && persistent.columns[i].isFillRemaining)
 				{
-					state.columns[i].width = widthPerFillColumn;
+					if (persistent.columns[i].specifiedSize > 0 && persistent.columns[i].specifiedSize <= 1.0f)
+					{
+						// Weighted Fill
+						state.columns[i].width = remainingWidth * (persistent.columns[i].specifiedSize * weightNormalizer);
+					}
+					else
+					{
+						// Pure Fill
+						state.columns[i].width = widthPerPureFill;
+					}
 				}
 			}
 		}
@@ -403,55 +455,22 @@ void endTable()
 				}
 				else
 				{
-					// Determine Target (same logic as MouseDown)
-					u32 targetColIndex = i;
-					bool inverted = false;
-					if (persistent.columns[i].isFillRemaining && nextColIndex < state.columns.size() && !persistent.columns[nextColIndex].isFillRemaining)
-					{
-						targetColIndex = nextColIndex;
-						inverted = true;
-					}
+					// Reciprocal Resize: Change Left and Right columns
+					f32 idealDelta = ctx->mousePosition.x - persistent.resizeStartX;
 
-					// Calculate Absolute Delta
-					f32 delta = ctx->mousePosition.x - persistent.resizeStartX;
-					if (inverted) delta = -delta;
+					f32 leftStart = persistent.resizeStartWidth;
+					f32 rightStart = persistent.resizeStartWidthRight;
 
-					f32 newWidth = persistent.resizeStartWidth + delta;
-					if (newWidth < 10.0f) newWidth = 10.0f;
+					// Clamp delta against min widths (10px)
+					f32 maxNegativeDelta = -(leftStart - 10.0f); // Limit shrinking Left
+					f32 maxPositiveDelta = (rightStart - 10.0f); // Limit shrinking Right (by growing Left)
 
-					f32 widgetWidth = state.tableRect.width;
+					if (idealDelta < maxNegativeDelta) idealDelta = maxNegativeDelta;
+					if (idealDelta > maxPositiveDelta) idealDelta = maxPositiveDelta;
 
-					// Check Global Constraint: Don't squeeze downstream Flex columns below limit
-					if (widgetWidth > 0 && !has(state.flags, TableFlags::FixedSize))
-					{
-						// Calculate total width of all OTHER fixed columns
-						f32 otherFixedSum = 0;
-						f32 minFlexSum = 0;
-
-						for (u32 k = 0; k < persistent.columns.size(); k++)
-						{
-							if (persistent.columns[k].isHidden) continue;
-							if (k == targetColIndex) continue; // Exclude ours
-
-							if (persistent.columns[k].isFillRemaining)
-							{
-								minFlexSum += 20.0f; // Assume 20px Min Width for Flex
-							}
-							else
-							{
-								// Ideally use specifiedSize, but safe to use current width for others
-								// as they are theoretically stable during our resize (unless they are being pushed)
-								// Since we push adjacent fixed columns, their size doesn't change, so using specifiedSize or width is fine.
-								otherFixedSum += persistent.columns[k].specifiedSize;
-							}
-						}
-
-						f32 maxAvailable = widgetWidth - otherFixedSum - minFlexSum;
-						if (newWidth > maxAvailable) newWidth = maxAvailable;
-					}
-
-					persistent.columns[targetColIndex].specifiedSize = newWidth;
-					// persistent.lastMousePos no longer needed for delta, but kept for legacy
+					// Apply
+					persistent.columns[i].specifiedSize = leftStart + idealDelta;
+					persistent.columns[nextColIndex].specifiedSize = rightStart - idealDelta;
 				}
 			}
 			else if (!persistent.resizingColumn)
@@ -468,41 +487,31 @@ void endTable()
 						persistent.resizingColumnIndex = i; // Store SEPARATOR index
 						persistent.resizeStartX = ctx->mousePosition.x; // Store Absolute Start X
 
-						// Determine Target
-						u32 targetColIndex = i;
-						bool inverted = false;
+						// Reciprocal Resize Setup: Capture BOTH Left and Right attributes
+						persistent.resizeStartWidth = state.columns[i].width;
+						persistent.resizeStartWidthRight = state.columns[nextColIndex].width;
 
-						if (persistent.columns[i].isFillRemaining && nextColIndex < state.columns.size() && !persistent.columns[nextColIndex].isFillRemaining)
+						// Synchronize ALL columns to their current visual width to prevent jumps
+						for (u32 k = 0; k < persistent.columns.size(); k++)
 						{
-							targetColIndex = nextColIndex;
-							inverted = true;
-						}
-
-						// Store Initial Width
-						persistent.resizeStartWidth = state.columns[targetColIndex].width; // Use current width as start basis
-
-						// Lock Target
-						persistent.columns[targetColIndex].specifiedSize = state.columns[targetColIndex].width;
-						persistent.columns[targetColIndex].isPercentage = false;
-						persistent.columns[targetColIndex].isFillRemaining = false;
-						persistent.columns[targetColIndex].isStretchable = false;
-						persistent.columns[targetColIndex].userResized = true;
-
-						// Lock Preceding Fills to stabilize left side
-						u32 lockUntil = targetColIndex;
-						if (inverted) lockUntil = targetColIndex - 1;
-
-						for (u32 k = 0; k < lockUntil; k++)
-						{
-							if (persistent.columns[k].isFillRemaining || persistent.columns[k].isStretchable)
+							if (!state.columns[k].isHidden)
 							{
 								persistent.columns[k].specifiedSize = state.columns[k].width;
-								persistent.columns[k].isPercentage = false;
-								persistent.columns[k].isFillRemaining = false;
-								persistent.columns[k].isStretchable = false;
-								persistent.columns[k].userResized = true;
+								// We don't disable other flags here, just update the size base
 							}
 						}
+
+						// Lock Left Column
+						persistent.columns[i].specifiedSize = state.columns[i].width;
+						persistent.columns[i].isPercentage = false;
+						persistent.columns[i].isFillRemaining = false;
+						persistent.columns[i].userResized = true;
+
+						// Lock Right Column
+						persistent.columns[nextColIndex].specifiedSize = state.columns[nextColIndex].width;
+						persistent.columns[nextColIndex].isPercentage = false;
+						persistent.columns[nextColIndex].isFillRemaining = false;
+						persistent.columns[nextColIndex].userResized = true;
 					}
 				}
 			}
@@ -821,7 +830,7 @@ void popCellPadding()
 	}
 }
 
-void setupColumn(u32 columnIndex, f32 size, bool isFillRemaining)
+void setupColumn(u32 columnIndex, f32 size)
 {
 	if (ctx->tableStack.empty()) return;
 	auto& state = ctx->tableStack.back();
@@ -831,14 +840,28 @@ void setupColumn(u32 columnIndex, f32 size, bool isFillRemaining)
 	if (iter == ctx->tablePersistentStates.end()) return;
 	auto& persistent = iter->second;
 
+	if (persistent.columns[columnIndex].userResized)
+		return;
+
 	if (columnIndex >= persistent.columns.size()) return;
 
-	if (!persistent.columns[columnIndex].userResized)
+	persistent.columns[columnIndex].specifiedSize = size;
+
+	// Auto-detect: values <= 1 are percentages/weighted fill, values > 1 are pixels. 0 is pure fill.
+	if (size > 0.0f && size <= 1.0f)
 	{
-		persistent.columns[columnIndex].specifiedSize = size;
-		// Auto-detect: values <= 1 are percentages, values > 1 are pixels
-		persistent.columns[columnIndex].isPercentage = (size <= 1.0f && size > 0.0f && !isFillRemaining);
-		persistent.columns[columnIndex].isFillRemaining = isFillRemaining;
+		persistent.columns[columnIndex].isPercentage = false; // User requested percentage not be forced
+		persistent.columns[columnIndex].isFillRemaining = true;
+	}
+	else if (size == 0.0f)
+	{
+		persistent.columns[columnIndex].isPercentage = false;
+		persistent.columns[columnIndex].isFillRemaining = true;
+	}
+	else
+	{
+		persistent.columns[columnIndex].isPercentage = false;
+		persistent.columns[columnIndex].isFillRemaining = false;
 	}
 }
 

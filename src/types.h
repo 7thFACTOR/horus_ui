@@ -281,6 +281,7 @@ struct TablePersistentState
 	u32 resizingColumnIndex = ~0;
 	f32 resizeStartX = 0;
 	f32 resizeStartWidth = 0;
+	f32 resizeStartWidthRight = 0;
 	Point lastMousePos;
 };
 

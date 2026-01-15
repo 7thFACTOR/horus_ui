@@ -2477,7 +2477,7 @@ HORUS_API void popId();
 HORUS_API bool beginTable(const char* id, u32 columnCount, f32 height = -1, TableFlags flags = TableFlags::None);
 HORUS_API void endTable();
 HORUS_API void startHeader();
-HORUS_API void setupColumn(u32 columnIndex, f32 size, bool isFillRemaining = false);
+HORUS_API void setupColumn(u32 columnIndex, f32 size);
 HORUS_API void nextRow();
 HORUS_API void nextCell();
 HORUS_API void setCellColumnSpan(u32 colSpan);
