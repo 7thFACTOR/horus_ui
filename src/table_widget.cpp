@@ -403,34 +403,55 @@ void endTable()
 				}
 				else
 				{
-					f32 delta = ctx->mousePosition.x - persistent.lastMousePos.x;
-					if (fabsf(delta) > 0.001f)
+					// Determine Target (same logic as MouseDown)
+					u32 targetColIndex = i;
+					bool inverted = false;
+					if (persistent.columns[i].isFillRemaining && nextColIndex < state.columns.size() && !persistent.columns[nextColIndex].isFillRemaining)
 					{
-						// Check if we are in "Inverted" mode (resizing the right column)
-						// We need to reconstruct the logic used in MouseDown to know which column we are resizing
-						// Actually, persistent.resizingColumnIndex stores the SEPARATOR index (i), not the target column index.
-						// Wait, previously we stored 'i' as resizingColumnIndex.
-						// Let's re-evaluate the target determination based on 'i'.
+						targetColIndex = nextColIndex;
+						inverted = true;
+					}
 
-						u32 targetColIndex = i;
-						bool inverted = false;
+					// Calculate Absolute Delta
+					f32 delta = ctx->mousePosition.x - persistent.resizeStartX;
+					if (inverted) delta = -delta;
 
-						// Same logic as MouseDown override
-						if (persistent.columns[i].isFillRemaining && nextColIndex < state.columns.size() && !persistent.columns[nextColIndex].isFillRemaining)
+					f32 newWidth = persistent.resizeStartWidth + delta;
+					if (newWidth < 10.0f) newWidth = 10.0f;
+
+					f32 widgetWidth = state.tableRect.width;
+
+					// Check Global Constraint: Don't squeeze downstream Flex columns below limit
+					if (widgetWidth > 0 && !has(state.flags, TableFlags::FixedSize))
+					{
+						// Calculate total width of all OTHER fixed columns
+						f32 otherFixedSum = 0;
+						f32 minFlexSum = 0;
+
+						for (u32 k = 0; k < persistent.columns.size(); k++)
 						{
-							targetColIndex = nextColIndex;
-							inverted = true;
+							if (persistent.columns[k].isHidden) continue;
+							if (k == targetColIndex) continue; // Exclude ours
+
+							if (persistent.columns[k].isFillRemaining)
+							{
+								minFlexSum += 20.0f; // Assume 20px Min Width for Flex
+							}
+							else
+							{
+								// Ideally use specifiedSize, but safe to use current width for others
+								// as they are theoretically stable during our resize (unless they are being pushed)
+								// Since we push adjacent fixed columns, their size doesn't change, so using specifiedSize or width is fine.
+								otherFixedSum += persistent.columns[k].specifiedSize;
+							}
 						}
 
-						// Apply delta
-						if (inverted) delta = -delta;
-
-						f32 newWidth = persistent.columns[targetColIndex].specifiedSize + delta;
-						if (newWidth < 10.0f) newWidth = 10.0f;
-
-						persistent.columns[targetColIndex].specifiedSize = newWidth;
-						persistent.lastMousePos = ctx->mousePosition;
+						f32 maxAvailable = widgetWidth - otherFixedSum - minFlexSum;
+						if (newWidth > maxAvailable) newWidth = maxAvailable;
 					}
+
+					persistent.columns[targetColIndex].specifiedSize = newWidth;
+					// persistent.lastMousePos no longer needed for delta, but kept for legacy
 				}
 			}
 			else if (!persistent.resizingColumn)
@@ -445,7 +466,7 @@ void endTable()
 					{
 						persistent.resizingColumn = true;
 						persistent.resizingColumnIndex = i; // Store SEPARATOR index
-						persistent.lastMousePos = ctx->mousePosition;
+						persistent.resizeStartX = ctx->mousePosition.x; // Store Absolute Start X
 
 						// Determine Target
 						u32 targetColIndex = i;
@@ -457,6 +478,9 @@ void endTable()
 							inverted = true;
 						}
 
+						// Store Initial Width
+						persistent.resizeStartWidth = state.columns[targetColIndex].width; // Use current width as start basis
+
 						// Lock Target
 						persistent.columns[targetColIndex].specifiedSize = state.columns[targetColIndex].width;
 						persistent.columns[targetColIndex].isPercentage = false;
@@ -465,10 +489,6 @@ void endTable()
 						persistent.columns[targetColIndex].userResized = true;
 
 						// Lock Preceding Fills to stabilize left side
-						// If inverted, we rely on targetColIndex-1 (Col i) to be the buffer, so don't lock it.
-						// Lock everything before that.
-						// If NOT inverted, we resize Col i. We should lock everything before i.
-
 						u32 lockUntil = targetColIndex;
 						if (inverted) lockUntil = targetColIndex - 1;
 

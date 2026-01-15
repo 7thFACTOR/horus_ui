@@ -280,6 +280,7 @@ struct TablePersistentState
 	bool resizingColumn = false;
 	u32 resizingColumnIndex = ~0;
 	f32 resizeStartX = 0;
+	f32 resizeStartWidth = 0;
 	Point lastMousePos;
 };
 
