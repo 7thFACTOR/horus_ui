@@ -266,6 +266,26 @@ bool beginTable(const char* id, u32 columnCount, f32 height, TableFlags flags)
 			totalColumnsWidth += col.width;
 	}
 
+	// Collapse logic: if content exceeds widget width, scale down proportionally (respecting min width)
+	if (!has(flags, TableFlags::FixedSize) && totalColumnsWidth > widgetWidth && widgetWidth > 0)
+	{
+		f32 scale = widgetWidth / totalColumnsWidth;
+
+		// If scale is too aggressive (collapsing to near zero), clamp it or rely on min width loop
+		// But we apply min width check inside.
+
+		totalColumnsWidth = 0;
+		for (auto& col : state.columns)
+		{
+			if (!col.isHidden)
+			{
+				col.width *= scale;
+				if (col.width < 20.0f) col.width = 20.0f; // Hard floor for visibility
+				totalColumnsWidth += col.width;
+			}
+		}
+	}
+
 	// Stretch logic: distribute space proportionally based on column widths
 	if (has(flags, TableFlags::Stretch) && widgetWidth != totalColumnsWidth)
 	{

@@ -14,8 +14,8 @@ static bool labelInternal(const char* label, HAlignType horizontalAlign, Font* f
 	auto& padding = getWidgetPadding();
 
 	ctx->extractLabelAndId(label);
-
-	auto fsize = font->computeTextSize(ctx->widgetLabel.c_str(), (u32)round(ctx->layout.width - padding.x * 2.0f * ctx->scale));
+	auto maxWidth = (u32)round(ctx->layout.width - padding.x * 2.0f * ctx->scale);
+	auto fsize = ctx->renderer->computeSizeOrDrawText(ctx->widgetLabel.c_str(), Rect(0, 0, maxWidth, FLT_MAX), HAlignType::Left, VAlignType::Top, false, font, true);
 	height = (bodyElemState.height * ctx->scale > fsize.height ? bodyElemState.height * ctx->scale : fsize.height) + padding.y * 2.0f * ctx->scale;
 
 	if (ctx->sameLine)
@@ -47,7 +47,7 @@ static bool labelInternal(const char* label, HAlignType horizontalAlign, Font* f
 			ctx->widgetLabel.c_str(),
 			textRc,
 			horizontalAlign,
-			VAlignType::Center);
+			VAlignType::Center, true);
 	}
 
 	return ctx->widget.clicked;
