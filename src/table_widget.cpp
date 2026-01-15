@@ -195,7 +195,7 @@ bool beginTable(const char* id, u32 columnCount, f32 height, TableFlags flags)
 	state.flags = flags;
 	state.headerRect = Rect(0,0,0,0);
 	state.rowSeparators.clear(); // Clear separate list
-	state.rowSpanInfo.clear(); // Clear span info for all rows
+	state.columnSpans.clear(); // Clear span info for all rows
 
 	// Copy persistent data to transient state
 	for (u32 i = 0; i < columnCount; i++)
@@ -410,13 +410,13 @@ void endTable()
 			bool hasOuter = has(state.flags, TableFlags::Borders) || has(state.flags, TableFlags::BordersOuter);
 
 			// Draw vertical lines for each row
-			for (u32 rowIdx = 0; rowIdx < state.rowSpanInfo.size(); rowIdx++)
+			for (u32 rowIdx = 0; rowIdx < state.columnSpans.size(); rowIdx++)
 			{
 				f32 lineStartY = rowIdx < state.rowSeparators.size() && rowIdx > 0 ? state.rowSeparators[rowIdx - 1] : state.bodyStartY;
 				f32 lineEndY = rowIdx < state.rowSeparators.size() ? state.rowSeparators[rowIdx] : state.currentRowY;
 				
 				f32 currentX = state.tableRect.x;
-				const auto& rowSpans = state.rowSpanInfo[rowIdx];
+				const auto& colSpans = state.columnSpans[rowIdx];
 
 				// Draw leftmost line if outer borders are needed
 				if (hasOuter)
@@ -431,12 +431,12 @@ void endTable()
 					{
 						// Check if this column is inside a span from a previous column
 						bool isInsideSpan = false;
-						for (u32 j = 0; j < i && j < rowSpans.size(); j++)
+						for (u32 j = 0; j < i && j < colSpans.size(); j++)
 						{
-							if (rowSpans[j] > 0)
+							if (colSpans[j] > 0)
 							{
 								// Check if this column i is within the span starting at j
-								if (i < j + rowSpans[j])
+								if (i < j + colSpans[j])
 								{
 									isInsideSpan = true;
 									break;
@@ -542,7 +542,7 @@ void nextRow()
 	state.isInHeader = false;
 	
 	// Add new row for span info
-	state.rowSpanInfo.push_back(std::vector<u32>(state.columns.size(), 0));
+	state.columnSpans.push_back(std::vector<u32>(state.columns.size(), 0));
 
 	state.rowStartY = state.currentRowY;
 	state.rowDrawCmdIndex = ctx->renderer->getDrawCommandCount();
@@ -617,7 +617,7 @@ void nextCell()
 	}
 }
 
-void setCellSpan(u32 colSpan, u32 rowSpan)
+void setCellColumnSpan(u32 colSpan)
 {
 	auto& state = currentTable();
 	if (colSpan > 1)
@@ -626,9 +626,9 @@ void setCellSpan(u32 colSpan, u32 rowSpan)
 		state.currentColSpan = colSpan;
 		
 		// Record span info for border drawing in the current row
-		if (!state.rowSpanInfo.empty() && state.currentColumn < state.rowSpanInfo.back().size())
+		if (!state.columnSpans.empty() && state.currentColumn < state.columnSpans.back().size())
 		{
-			state.rowSpanInfo.back()[state.currentColumn] = colSpan;
+			state.columnSpans.back()[state.currentColumn] = colSpan;
 		}
 
 		// Calculate total width of spanned columns

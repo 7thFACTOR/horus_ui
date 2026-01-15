@@ -561,7 +561,7 @@ int main(int argc, char** args)
 					hui::label("Column 4", hui::HAlignType::Center);
 
 					hui::nextRow();
-					hui::setCellSpan(3, 1); // span 2 columns
+					hui::setCellColumnSpan(3); // span 2 columns
 					hui::label("Row 1, Cell 1 wdf dfasfasf asdf asf sadf asdf asfasf asf asf ");
 					hui::nextCell();
 					hui::label("AOAKAOAO1");
@@ -570,7 +570,7 @@ int main(int argc, char** args)
 					hui::label("AOAKAOAO4");
 
 					hui::nextRow();
-					hui::setCellSpan(2, 1); // Make this cell span 2 columns
+					hui::setCellColumnSpan(2); // Make this cell span 2 columns
 					hui::label("Row 2, Cell 1\n(Multi-line)");
 					hui::button("Tall Button");
 					hui::nextCell();
