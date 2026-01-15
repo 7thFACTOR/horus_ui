@@ -488,6 +488,8 @@ struct TableState
     std::vector<f32> rowSeparators;
     f32 bodyStartY = 0.0f;
 	bool isClipping = false;
+	u32 currentColSpan = 1; // Track current cell's column span
+	std::vector<std::vector<u32>> rowSpanInfo; // For each row, stores column span info
 };
 
 struct MemoryStream

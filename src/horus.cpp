@@ -163,8 +163,18 @@ void addWidget(f32 height)
 	// otherwise it's a fixed pixel width
 	auto pixelWidth = ctx->widget.width > 1 ? ctx->widget.width : ctx->widget.width * ctx->layout.width;
 
+	f32 spacing = ctx->spacing * ctx->scale;
+	// Check if this is the first item in the layout to avoid top spacing (gap behavior)
+	bool isFirstItem = (fabs(ctx->position.y - ctx->layout.savedPosition.y) < 0.1f);
+
+	if (!ctx->sameLine && !isFirstItem)
+	{
+		ctx->position.y += spacing;
+		ctx->position.y = round(ctx->position.y);
+	}
+
 	f32 verticalOffset = 0;
-	const f32 totalHeight = ctx->spacing * ctx->scale + height;
+	const f32 totalHeight = height;
 
 	if (ctx->sameLine)
 	{
@@ -1482,6 +1492,18 @@ void popLayout()
 
 	ctx->layout = ctx->layoutStack.back();
 	ctx->layoutStack.pop_back();
+}
+
+f32 getRemainingHeight()
+{
+	f32 remainingHeight = ctx->layout.height - (ctx->position.y - ctx->layout.savedPosition.y);
+	return remainingHeight > 0 ? remainingHeight : 0;
+}
+
+f32 getRemainingWidth()
+{
+	f32 remainingWidth = ctx->layout.width - (ctx->position.x - ctx->layout.savedPosition.x);
+	return remainingWidth > 0 ? remainingWidth : 0;
 }
 
 void incrementLayerIndex()

@@ -2477,9 +2477,16 @@ HORUS_API void popId();
 HORUS_API bool beginTable(const char* id, u32 columnCount, f32 height = -1, TableFlags flags = TableFlags::None);
 HORUS_API void endTable();
 HORUS_API void startHeader();
+HORUS_API void setupColumn(u32 columnIndex, f32 size, bool isFillRemaining = false);
 HORUS_API void nextRow();
 HORUS_API void nextCell();
 HORUS_API void setCellSpan(u32 colSpan, u32 rowSpan);
+
+/// Get the remaining height in the current layout from current position to bottom
+HORUS_API f32 getRemainingHeight();
+
+/// Get the remaining width in the current layout from current position to right edge
+HORUS_API f32 getRemainingWidth();
 
 /// Begin a layout made up as columns which can have percentage based widths or fixed
 /// \param columnCount the number of columns to be created

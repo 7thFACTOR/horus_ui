@@ -12,24 +12,21 @@ struct TablePersistentState
 	struct ColumnState
 	{
 		f32 width = 100.0f;
-		f32 userWidth = 100.0f; // Width explicitly set by user interaction
+		f32 specifiedSize = 0.0f; // User-specified size (percentage or pixels)
+		bool isPercentage = false; // If true, specifiedSize is 0..1 percentage
+		bool isFillRemaining = false; // If true, this column fills remaining space
 		bool isHidden = false;
 		bool isStretchable = true; // Track if this column should participate in auto-stretch
-		bool manuallyResized = false;
 	};
 
 	std::vector<ColumnState> columns;
-	bool resizingColumn = false;
-	u32 resizingColumnIndex = ~0;
-	Point lastMousePos;
 	bool initialized = false;
-	f32 resizeStartX = 0; // Starting X coordinate of the column being resized
 };
 
 static std::vector<TableState> tableStack;
 static std::map<WidgetId, TablePersistentState> persistentStates;
-static const f32 cellPaddingX = 5.0f;
-static const f32 cellPaddingY = 3.0f;
+static const f32 cellPaddingX = 2.0f;
+static const f32 cellPaddingY = 2.0f;
 
 static TableState& currentTable()
 {
@@ -43,7 +40,7 @@ static void finishRow(TableState& state)
 {
 	// Calculate height of the last cell in the row
 	// Note: ctx->position.y points to where the next widget would go, so it represents the bottom of content
-	f32 lastCellHeight = ctx->position.y - state.cellStartY + (cellPaddingY * 2.0f);
+	f32 lastCellHeight = ctx->position.y - state.cellStartY + cellPaddingY;
 	state.currentMaxRowHeight = std::max(state.currentMaxRowHeight, lastCellHeight);
 
 	// Ensure row has at least the minimum height (e.g. from theme)
@@ -65,7 +62,10 @@ static void finishRow(TableState& state)
 				state.innerWidth,
 				state.currentMaxRowHeight
 			);
-			ctx->renderer->cmdSetColor(Color::fromU8(125, 125, 125, 255));
+
+			rowRect = rowRect.contract(1.0);
+
+			ctx->renderer->cmdSetColor(Color::fromU8(60, 60, 60, 255));
 			ctx->renderer->cmdDrawFilledRectangle(rowRect);
 		}
 
@@ -76,6 +76,90 @@ static void finishRow(TableState& state)
 
 		// Advance Y position ONLY if we actually finished a row (not header)
 		state.currentRowY += state.currentMaxRowHeight;
+		ctx->position.y = state.currentRowY;
+	}
+	else
+	{
+		// Header deferred drawing
+		ctx->renderer->beginDrawCmdInsertion(state.rowDrawCmdIndex);
+
+		f32 headerHeight = state.currentMaxRowHeight;
+
+		state.headerRect = Rect(
+			state.tableRect.x,
+			state.tableRect.y,
+			state.innerWidth,
+			headerHeight
+		);
+
+		auto& bodyElem = ctx->theme->getElement(WidgetElementId::ColumnsHeaderBody);
+		auto& bodyElemState = bodyElem.normalState();
+
+		// Draw header background
+		ctx->renderer->cmdSetColor(bodyElemState.color);
+		ctx->renderer->cmdDrawFilledRectangle(state.headerRect);
+
+		// Draw vertical separators between columns
+		f32 currentX = state.headerRect.x;
+		bool innerOnly = has(state.flags, TableFlags::BordersInner) && !has(state.flags, TableFlags::Borders) && !has(state.flags, TableFlags::BordersOuter);
+		bool hasOuter = has(state.flags, TableFlags::Borders) || has(state.flags, TableFlags::BordersOuter);
+		
+		ctx->renderer->cmdSetLineStyle(LineStyle(Color::white, 1.0f));
+
+		// Draw leftmost line first if outer borders are needed
+		if (hasOuter)
+		{
+			// Draw Left line
+			ctx->renderer->cmdDrawLine(
+				Point(currentX, state.headerRect.y),
+				Point(currentX, state.headerRect.y + state.headerRect.height)
+			);
+		}
+
+		for (u32 i = 0; i < state.columns.size(); i++)
+		{
+			if (!state.columns[i].isHidden)
+			{
+				// Draw left line for this column
+				// Skip the first column's left line only if:
+				// - We already drew it as the leftmost outer border (hasOuter and i==0)
+				// - OR we're in inner-only mode and it's the first column
+				bool drawLeftLine = true;
+				if (i == 0 && (hasOuter || innerOnly))
+					drawLeftLine = false;
+
+				if (drawLeftLine)
+				{
+					ctx->renderer->cmdDrawLine(
+						Point(currentX, state.headerRect.y),
+						Point(currentX, state.headerRect.y + state.headerRect.height)
+					);
+				}
+
+				currentX += state.columns[i].width;
+			}
+		}
+
+		// Draw Rightmost line after all columns (skip if only inner borders)
+		if (!innerOnly)
+		{
+			// Draw Right line for last column
+			ctx->renderer->cmdDrawLine(
+				Point(currentX, state.headerRect.y),
+				Point(currentX, state.headerRect.y + state.headerRect.height)
+			);
+		}
+
+		// Draw header bottom border AFTER vertical separators
+		ctx->renderer->cmdDrawLine(
+			Point(state.headerRect.x, state.headerRect.y + state.headerRect.height),
+			Point(state.headerRect.x + state.headerRect.width, state.headerRect.y + state.headerRect.height)
+		);
+
+		ctx->renderer->endDrawCmdInsertion();
+
+		state.currentRowY += headerHeight;
+		state.bodyStartY = state.currentRowY;
 		ctx->position.y = state.currentRowY;
 	}
 }
@@ -95,10 +179,8 @@ bool beginTable(const char* id, u32 columnCount, f32 height, TableFlags flags)
 		for (u32 i = 0; i < columnCount; i++)
 		{
 			persistent.columns[i].width = 100.0f;
-			persistent.columns[i].userWidth = 100.0f;
 			persistent.columns[i].isHidden = false;
 			persistent.columns[i].isStretchable = has(flags, TableFlags::Stretch);
-			persistent.columns[i].manuallyResized = false;
 		}
 		persistent.initialized = true;
 	}
@@ -113,20 +195,15 @@ bool beginTable(const char* id, u32 columnCount, f32 height, TableFlags flags)
 	state.flags = flags;
 	state.headerRect = Rect(0,0,0,0);
 	state.rowSeparators.clear(); // Clear separate list
+	state.rowSpanInfo.clear(); // Clear span info for all rows
 
 	// Copy persistent data to transient state
 	for (u32 i = 0; i < columnCount; i++)
 	{
 		state.columns[i].width = persistent.columns[i].width;
-		state.columns[i].minWidth = 50.0f;
-		state.columns[i].maxWidth = 500.0f;
-		state.columns[i].isResizable = has(flags, TableFlags::Resizable);
 
-		// If manually resized, disable stretching for this column
-		if (persistent.columns[i].manuallyResized)
-			state.columns[i].isStretchable = false;
-		else
-			state.columns[i].isStretchable = persistent.columns[i].isStretchable; // Should match persistent/flags
+		// Always use the persistent stretchable state (from flags)
+		state.columns[i].isStretchable = persistent.columns[i].isStretchable;
 
 		state.columns[i].isHidden = persistent.columns[i].isHidden;
 	}
@@ -141,21 +218,101 @@ bool beginTable(const char* id, u32 columnCount, f32 height, TableFlags flags)
 
 	// Get widget width (use available width if not set)
 	f32 widgetWidth = ctx->widget.width > 0 ? ctx->widget.width : ctx->layout.width;
+	
+	// Account for left and right borders (2px total) when Borders or BordersOuter flags are set
+	bool hasBorders = has(flags, TableFlags::Borders) || has(flags, TableFlags::BordersOuter);
+	if (hasBorders)
+		widgetWidth -= 2.0f;
 
-	// Stretch logic: distribute extra space
-	if (has(flags, TableFlags::Stretch) && widgetWidth > totalColumnsWidth)
+	// Apply column size specifications (percentage, pixels, or fill)
+	f32 specifiedWidth = 0; // Total width of columns with specific sizes
+	u32 fillCount = 0; // Number of columns that fill remaining space
+	
+	for (u32 i = 0; i < columnCount; i++)
 	{
-		f32 extraWidth = widgetWidth - totalColumnsWidth;
-		u32 stretchableCount = 0;
-
-		for (const auto& col : state.columns)
-			if (col.isStretchable && !col.isHidden) stretchableCount++;
-
-		if (stretchableCount > 0)
+		auto& pCol = persistent.columns[i];
+		auto& sCol = state.columns[i];
+		
+		if (sCol.isHidden) continue;
+		
+		if (pCol.isFillRemaining)
 		{
-			f32 widthPerColumn = extraWidth / stretchableCount;
+			fillCount++;
+		}
+		else if (pCol.specifiedSize > 0)
+		{
+			if (pCol.isPercentage)
+			{
+				// Percentage of table width (0..1)
+				sCol.width = widgetWidth * pCol.specifiedSize;
+			}
+			else
+			{
+				// Fixed pixel size
+				sCol.width = pCol.specifiedSize;
+			}
+			specifiedWidth += sCol.width;
+		}
+		else
+		{
+			// Use default width from persistent state
+			specifiedWidth += sCol.width;
+		}
+	}
+	
+	// Distribute remaining space to fill columns
+	if (fillCount > 0)
+	{
+		f32 remainingWidth = widgetWidth - specifiedWidth;
+		if (remainingWidth > 0)
+		{
+			f32 widthPerFillColumn = remainingWidth / fillCount;
+			for (u32 i = 0; i < columnCount; i++)
+			{
+				if (!state.columns[i].isHidden && persistent.columns[i].isFillRemaining)
+				{
+					state.columns[i].width = widthPerFillColumn;
+				}
+			}
+		}
+	}
+	
+	// Recalculate total width after applying specifications
+	totalColumnsWidth = 0;
+	for (const auto& col : state.columns)
+	{
+		if (!col.isHidden)
+			totalColumnsWidth += col.width;
+	}
+
+	// Stretch logic: distribute space proportionally based on column widths
+	if (has(flags, TableFlags::Stretch) && widgetWidth != totalColumnsWidth)
+	{
+		// Calculate total width of stretchable columns
+		f32 stretchableWidth = 0;
+		for (const auto& col : state.columns)
+			if (col.isStretchable && !col.isHidden) 
+				stretchableWidth += col.width;
+
+		if (stretchableWidth > 0)
+		{
+			// Calculate the target width for stretchable columns
+			f32 nonStretchableWidth = 0;
+			for (const auto& col : state.columns)
+				if (!col.isStretchable && !col.isHidden)
+					nonStretchableWidth += col.width;
+
+			f32 availableWidth = widgetWidth - nonStretchableWidth;
+			
+			// Scale each stretchable column proportionally
 			for (auto& col : state.columns)
-				if (col.isStretchable && !col.isHidden) col.width += widthPerColumn;
+			{
+				if (col.isStretchable && !col.isHidden)
+				{
+					f32 proportion = col.width / stretchableWidth;
+					col.width = availableWidth * proportion;
+				}
+			}
 			totalColumnsWidth = widgetWidth;
 		}
 	}
@@ -167,11 +324,12 @@ bool beginTable(const char* id, u32 columnCount, f32 height, TableFlags flags)
 		if (widgetWidth > totalColumnsWidth)
 			totalColumnsWidth = widgetWidth;
 	}
-
+	
 	state.innerWidth = totalColumnsWidth;
 	state.innerHeight = height; // If 0, auto height
 
 	// Store table rectangle start
+	// Start 1px to the right to leave room for the left border
 	state.tableRect = Rect(
 		ctx->position.x + 1.0f,
 		ctx->position.y,
@@ -191,109 +349,6 @@ bool beginTable(const char* id, u32 columnCount, f32 height, TableFlags flags)
 	auto& bodyElem = ctx->theme->getElement(WidgetElementId::ColumnsHeaderBody);
 	auto& bodyElemState = bodyElem.normalState();
 	tableStack.back().rowHeight = bodyElemState.height > 0 ? bodyElemState.height : 25.0f;
-
-	// Handle Resizing Logic Here (Global resize)
-	if (has(flags, TableFlags::Resizable))
-	{
-		f32 currentX = state.tableRect.x;
-		const f32 resizeGrabWidth = 8.0f;
-		f32 resizeHeight = height > 0 ? height : 99999.0f; // Use huge height if auto, clipped by window/scissor ideally
-		// Only clamp to resize in current view if needed, but for now assuming full height or large enough
-		if (height <= 0) resizeHeight = ctx->renderer->getClipRect().height; // Approximation
-
-		// Force resize cursor if currently resizing, regardless of hover
-		if (persistent.resizingColumn)
-			ctx->mouseCursor = MouseCursorType::SizeWE;
-
-		for (u32 i = 0; i < state.columns.size(); i++)
-		{
-			if (state.columns[i].isHidden) continue;
-
-			// currentX is the START of column i
-			f32 columnStartX = currentX;
-			currentX += state.columns[i].width;
-			// currentX is now the END of column i (separator position)
-
-			if (state.columns[i].isResizable)
-			{
-				// Splitter rect centered at the end of the column
-				Rect resizeRect(currentX - resizeGrabWidth/2, state.tableRect.y, resizeGrabWidth, resizeHeight);
-
-				bool hovered = resizeRect.contains(ctx->mousePosition);
-
-				if (persistent.resizingColumn)
-				{
-					if (persistent.resizingColumnIndex == i)
-					{
-						if (ctx->event.type == InputEvent::Type::MouseUp)
-						{
-							persistent.resizingColumn = false;
-							persistent.resizingColumnIndex = ~0;
-						}
-						else if (ctx->event.type == InputEvent::Type::MouseMove)
-						{
-							// Calculate NEW width based on absolute mouse position relative to column start
-							// This avoids the 'delta' issue when sticking at min/max limits
-							f32 newWidth = ctx->mousePosition.x - persistent.resizeStartX;
-
-							// Enforce constraints on newWidth
-							if (newWidth < state.columns[i].minWidth)
-								newWidth = state.columns[i].minWidth;
-							if (newWidth > state.columns[i].maxWidth)
-								newWidth = state.columns[i].maxWidth;
-
-							// Calculate delta for userWidth update if needed, or just set it
-							// But we need to update persistent state
-							persistent.columns[i].width = newWidth;
-							persistent.columns[i].userWidth = newWidth;
-
-							// Mark as manually resized
-							persistent.columns[i].manuallyResized = true;
-							persistent.columns[i].isStretchable = false;
-							tableStack.back().columns[i].isStretchable = false;
-
-							// Update transient state
-							tableStack.back().columns[i].width = newWidth;
-
-							persistent.lastMousePos = ctx->mousePosition;
-							ctx->mustRedraw = true;
-						}
-					}
-				}
-				else if (hovered)
-				{
-					ctx->mouseCursor = MouseCursorType::SizeWE;
-					if (ctx->event.type == InputEvent::Type::MouseDown && ctx->event.mouse.button == MouseButton::Left)
-					{
-						persistent.resizingColumn = true;
-						persistent.resizingColumnIndex = i;
-						persistent.lastMousePos = ctx->mousePosition;
-						// Store the starting X of this column so we can calculate width from mouse pos
-						persistent.resizeStartX = columnStartX;
-
-						// Lock ALL columns to their current visual size on first interaction.
-						// This prevents other columns from shifting/resizing due to "Stretch" logic
-						// as soon as we start modifying one.
-						for (u32 k = 0; k < state.columns.size(); k++)
-						{
-							if (persistent.columns[k].isStretchable)
-							{
-								// Bake the current stretched width into the persistent width
-								persistent.columns[k].width = state.columns[k].width;
-								persistent.columns[k].userWidth = state.columns[k].width;
-								persistent.columns[k].isStretchable = false;
-								persistent.columns[k].manuallyResized = true;
-
-								// Update transient state immediately to match
-								tableStack.back().columns[k].isStretchable = false;
-							}
-						}
-					}
-				}
-			}
-		}
-	}
-
 	state.rowDrawCmdIndex = ctx->renderer->getDrawCommandCount();
 
 	return true;
@@ -309,23 +364,33 @@ void endTable()
 
 	f32 finalHeight = state.currentRowY - state.tableRect.y;
 
+	// Pop any remaining clip rect BEFORE drawing borders so they don't get clipped
+	if (state.isClipping)
+	{
+		ctx->renderer->popClipRect();
+		state.isClipping = false;
+	}
+
+	ctx->renderer->cmdSetLineStyle(LineStyle(Color::white, 1.0f));
+
 	// Batch draw borders if enabled
 	if (has(state.flags, TableFlags::Borders) || has(state.flags, TableFlags::BordersOuter) || has(state.flags, TableFlags::BordersInner))
 	{
-		ctx->renderer->cmdSetLineStyle(LineStyle(Color::fromU8(200, 200, 200, 255), 1.0f));
-
 		// Draw Inner Horizontal Lines
 		if (has(state.flags, TableFlags::BordersInner) || has(state.flags, TableFlags::Borders))
 		{
 			for (size_t i = 0; i < state.rowSeparators.size(); i++)
 			{
 				bool draw = true;
-				// Skip last line if outer borders are drawn (because outer border draws the bottom
-				// line, and we don't want to draw over it or double draw)
-				// However, if we want to ensure robustness, we can draw it.
-				// Let's stick to standard behavior: if BordersOuter is ON, skip last separator.
-				if (i == state.rowSeparators.size() - 1 && has(state.flags, TableFlags::Borders))
-					draw = false;
+				// Skip last line if only inner borders (not outer) or if Borders flag is set
+				if (i == state.rowSeparators.size() - 1)
+				{
+					// Skip bottom line if we're only drawing inner borders (no outer borders)
+					if (has(state.flags, TableFlags::BordersInner) && !has(state.flags, TableFlags::Borders) && !has(state.flags, TableFlags::BordersOuter))
+						draw = false;
+					else if (has(state.flags, TableFlags::Borders))
+						draw = false; // Outer border will draw it
+				}
 
 				if (draw)
 				{
@@ -338,33 +403,66 @@ void endTable()
 		}
 
 		// Draw Vertical Lines (Inner + Outer Left/Right)
-		// We iterate columns and draw Left side of each.
+		// We need to draw these per-row to respect column spans
 		if (has(state.flags, TableFlags::BordersInner) || has(state.flags, TableFlags::Borders))
 		{
-			f32 currentX = state.tableRect.x;
-			f32 lineStartY = state.bodyStartY; // Start below header if present
-			f32 lineEndY = state.currentRowY;   // End at table bottom
+			bool innerOnly = has(state.flags, TableFlags::BordersInner) && !has(state.flags, TableFlags::Borders) && !has(state.flags, TableFlags::BordersOuter);
+			bool hasOuter = has(state.flags, TableFlags::Borders) || has(state.flags, TableFlags::BordersOuter);
 
-			for (u32 i = 0; i < state.columns.size(); i++)
+			// Draw vertical lines for each row
+			for (u32 rowIdx = 0; rowIdx < state.rowSpanInfo.size(); rowIdx++)
 			{
-				if (!state.columns[i].isHidden)
+				f32 lineStartY = rowIdx < state.rowSeparators.size() && rowIdx > 0 ? state.rowSeparators[rowIdx - 1] : state.bodyStartY;
+				f32 lineEndY = rowIdx < state.rowSeparators.size() ? state.rowSeparators[rowIdx] : state.currentRowY;
+				
+				f32 currentX = state.tableRect.x;
+				const auto& rowSpans = state.rowSpanInfo[rowIdx];
+
+				// Draw leftmost line if outer borders are needed
+				if (hasOuter)
 				{
-					bool drawLine = true;
-					// Logic for first line (Leftmost)
-					// If Borders (Outer) is ON, it draws the box. Do we want double draw?
-					// Optimization request says "draw border on top at the end".
-					// Drawing the box is fine, but maybe redundant if we draw per-column.
-					// Let's draw ALL vertical dividers here.
-
 					ctx->renderer->cmdDrawLine(Point(currentX, lineStartY), Point(currentX, lineEndY));
+				}
 
-					currentX += state.columns[i].width;
-
-					// Draw Rightmost line of last column
-					if (i == state.columns.size() - 1)
+				// Draw vertical lines between columns
+				for (u32 i = 0; i < state.columns.size(); i++)
+				{
+					if (!state.columns[i].isHidden)
 					{
-						ctx->renderer->cmdDrawLine(Point(currentX, lineStartY), Point(currentX, lineEndY));
+						// Check if this column is inside a span from a previous column
+						bool isInsideSpan = false;
+						for (u32 j = 0; j < i && j < rowSpans.size(); j++)
+						{
+							if (rowSpans[j] > 0)
+							{
+								// Check if this column i is within the span starting at j
+								if (i < j + rowSpans[j])
+								{
+									isInsideSpan = true;
+									break;
+								}
+							}
+						}
+						
+						// Draw left line for this column
+						bool drawLeftLine = true;
+						if (i == 0 && (hasOuter || innerOnly))
+							drawLeftLine = false;
+						if (isInsideSpan)
+							drawLeftLine = false;
+
+						if (drawLeftLine)
+						{
+							ctx->renderer->cmdDrawLine(Point(currentX, lineStartY), Point(currentX, lineEndY));
+						}
+						currentX += state.columns[i].width;
 					}
+				}
+
+				// Draw Rightmost line after all columns (skip if only inner borders)
+				if (!innerOnly)
+				{
+					ctx->renderer->cmdDrawLine(Point(currentX, lineStartY), Point(currentX, lineEndY));
 				}
 			}
 		}
@@ -393,13 +491,6 @@ void endTable()
 		}
 	}
 
-	// Pop any remaining clip rect
-	if (state.isClipping)
-	{
-		ctx->renderer->popClipRect();
-		state.isClipping = false;
-	}
-
 	tableStack.pop_back();
 }
 
@@ -417,61 +508,6 @@ void startHeader()
 	// Setup for first cell
 	state.cellStartY = state.rowStartY;
 
-	// Get theme info
-	auto& bodyElem = ctx->theme->getElement(WidgetElementId::ColumnsHeaderBody);
-	auto& bodyElemState = bodyElem.normalState();
-	f32 headerHeight = bodyElemState.height > 0 ? bodyElemState.height : 25.0f;
-
-	state.headerRect = Rect(
-		state.tableRect.x,
-		state.tableRect.y,
-		state.innerWidth,
-		headerHeight
-	);
-
-	// Draw header background
-	ctx->renderer->cmdSetColor(bodyElemState.color);
-	ctx->renderer->cmdDrawFilledRectangle(state.headerRect);
-
-	// Draw vertical separators between columns
-	f32 currentX = state.headerRect.x;
-	for (u32 i = 0; i < state.columns.size(); i++)
-	{
-		if (!state.columns[i].isHidden)
-		{
-			// Draw Left line for each column
-			ctx->renderer->cmdSetLineStyle(LineStyle(Color::fromU8(180, 180, 180, 255), 1.0f));
-
-			// Full height now, because bottom border will draw over it ideally
-			ctx->renderer->cmdDrawLine(
-				Point(currentX, state.headerRect.y),
-				Point(currentX, state.headerRect.y + state.headerRect.height)
-			);
-
-			currentX += state.columns[i].width;
-
-			if (i == state.columns.size() - 1)
-			{
-				// Draw Right line for last column
-				ctx->renderer->cmdDrawLine(
-					Point(currentX, state.headerRect.y),
-					Point(currentX, state.headerRect.y + state.headerRect.height)
-				);
-			}
-		}
-	}
-
-	// Draw header bottom border AFTER vertical separators
-	ctx->renderer->cmdSetLineStyle(LineStyle(Color::fromU8(150, 150, 150, 255), 2.0f)); // Thicker line
-	ctx->renderer->cmdDrawLine(
-		Point(state.headerRect.x, state.headerRect.y + state.headerRect.height),
-		Point(state.headerRect.x + state.headerRect.width, state.headerRect.y + state.headerRect.height)
-	);
-
-	// Set position for first header cell
-	state.currentRowY = state.tableRect.y + headerHeight;
-	state.bodyStartY = state.currentRowY; // Update Start of Body to be below header
-
 	if (state.currentColumn < state.columns.size())
 	{
 		ctx->layout.width = state.columns[state.currentColumn].width - (cellPaddingX * 2.0f);
@@ -480,7 +516,7 @@ void startHeader()
 
 		// Start Clipping for first cell
 		if (state.isClipping) ctx->renderer->popClipRect(); // Should not happen here usually, but safe
-		Rect clipRect(state.tableRect.x, state.rowStartY, state.columns[state.currentColumn].width, headerHeight); // Clip to header height
+		Rect clipRect(state.tableRect.x, state.rowStartY, state.columns[state.currentColumn].width, 99999.0f);
 		ctx->renderer->pushClipRect(clipRect);
 		state.isClipping = true;
 	}
@@ -504,10 +540,13 @@ void nextRow()
 	state.currentRow++;
 	state.currentColumn = 0;
 	state.isInHeader = false;
+	
+	// Add new row for span info
+	state.rowSpanInfo.push_back(std::vector<u32>(state.columns.size(), 0));
 
 	state.rowStartY = state.currentRowY;
 	state.rowDrawCmdIndex = ctx->renderer->getDrawCommandCount();
-	state.currentMaxRowHeight = state.rowHeight; // Use theme default height as min
+	state.currentMaxRowHeight = 3;// state.rowHeight; // Use theme default height as min
 
 	state.cellStartY = state.rowStartY;
 
@@ -545,10 +584,14 @@ void nextCell()
 	{
 		// Calculate height of the cell we just finished
 		// Note: ctx->position.y points to where the next widget would go, so it represents the bottom of content
-		f32 finishedCellHeight = ctx->position.y - state.cellStartY + (cellPaddingY * 2.0f);
+		// position.y already includes the top padding we added at start of cell, so we only need to add bottom padding
+		f32 finishedCellHeight = ctx->position.y - state.cellStartY + cellPaddingY; 
 		state.currentMaxRowHeight = std::max(state.currentMaxRowHeight, finishedCellHeight);
-
-		state.currentColumn++;
+		
+		// Advance by the span amount (default is 1)
+		state.currentColumn += state.currentColSpan;
+		// Reset span for next cell
+		state.currentColSpan = 1;
 
 		// Move to next column
 		f32 cellX = state.tableRect.x;
@@ -566,7 +609,7 @@ void nextCell()
 			state.cellStartY = state.rowStartY; // New cell starts at row top
 
 			// Push Clip
-			f32 clipHeight = state.isInHeader ? (state.headerRect.height) : 99999.0f;
+			f32 clipHeight = 99999.0f;
 			Rect clipRect(cellX, state.rowStartY, state.columns[state.currentColumn].width, clipHeight);
 			ctx->renderer->pushClipRect(clipRect);
 			state.isClipping = true;
@@ -579,8 +622,64 @@ void setCellSpan(u32 colSpan, u32 rowSpan)
 	auto& state = currentTable();
 	if (colSpan > 1)
 	{
-		state.currentColumn += (colSpan - 1);
+		// Store the span for use in nextCell()
+		state.currentColSpan = colSpan;
+		
+		// Record span info for border drawing in the current row
+		if (!state.rowSpanInfo.empty() && state.currentColumn < state.rowSpanInfo.back().size())
+		{
+			state.rowSpanInfo.back()[state.currentColumn] = colSpan;
+		}
+
+		// Calculate total width of spanned columns
+		f32 spanWidth = 0;
+		for (u32 i = 0; i < colSpan && (state.currentColumn + i) < state.columns.size(); i++)
+		{
+			if (!state.columns[state.currentColumn + i].isHidden)
+				spanWidth += state.columns[state.currentColumn + i].width;
+		}
+
+		// Update layout width to cover spanned columns
+		ctx->layout.width = spanWidth - (cellPaddingX * 2.0f);
+
+		// Pop current clip rect and push new one covering the span
+		if (state.isClipping)
+		{
+			ctx->renderer->popClipRect();
+		}
+
+		// Calculate cell X position
+		f32 cellX = state.tableRect.x;
+		for (u32 i = 0; i < state.currentColumn && i < state.columns.size(); i++)
+		{
+			if (!state.columns[i].isHidden)
+				cellX += state.columns[i].width;
+		}
+
+		// Push new clip rect with spanned width
+		f32 clipHeight = 99999.0f;
+		Rect clipRect(cellX, state.rowStartY, spanWidth, clipHeight);
+		ctx->renderer->pushClipRect(clipRect);
+		state.isClipping = true;
 	}
+}
+
+void setupColumn(u32 columnIndex, f32 size, bool isFillRemaining)
+{
+	if (tableStack.empty()) return;
+	auto& state = tableStack.back();
+	
+	// Get persistent state
+	auto iter = persistentStates.find(state.id);
+	if (iter == persistentStates.end()) return;
+	auto& persistent = iter->second;
+	
+	if (columnIndex >= persistent.columns.size()) return;
+	
+	persistent.columns[columnIndex].specifiedSize = size;
+	// Auto-detect: values <= 1 are percentages, values > 1 are pixels
+	persistent.columns[columnIndex].isPercentage = (size <= 1.0f && size > 0.0f && !isFillRemaining);
+	persistent.columns[columnIndex].isFillRemaining = isFillRemaining;
 }
 
 }

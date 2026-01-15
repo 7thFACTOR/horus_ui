@@ -531,6 +531,11 @@ int main(int argc, char** args)
 				}
 
 				hui::space();
+
+				static f32 scroller = 0;
+
+				hui::beginScrollView(0, scroller);
+
 				static bool listSelection[5] = {false};
 				static const char* listItems[] = { "Apple", "Banana", "Cherry", "Date", "Elderberry" };
 				hui::label("List Box:");
@@ -538,36 +543,48 @@ int main(int argc, char** args)
 
 				hui::space();
 				hui::label("Table Widget:");
-				if (hui::beginTable("myTable", 3, 0, hui::TableFlags::Borders | hui::TableFlags::BordersInner | hui::TableFlags::AltRowBg | hui::TableFlags::Resizable | hui::TableFlags::Stretch))
+				hui::pushSpacing(0);
+				hui::pushWidgetPadding(0);
+				if (hui::beginTable("myTable", 4, 0, hui::TableFlags::Borders  | hui::TableFlags::AltRowBg | hui::TableFlags::Resizable | hui::TableFlags::Stretch))
 				{
 					hui::startHeader();
-					hui::label("Column 1");
+					hui::setupColumn(0, 0, true); // 70 pixels
+					hui::setupColumn(1, 180); // 30% width
+					hui::setupColumn(2, 220); // Fill remaining
+
+					hui::label("Column 1", hui::HAlignType::Center);
 					hui::nextCell();
-					hui::label("Column 2");
+					hui::label("Column 2", hui::HAlignType::Center);
 					hui::nextCell();
-					hui::label("Column 3");
+					hui::button("Column 3");
+					hui::nextCell();
+					hui::label("Column 4", hui::HAlignType::Center);
 
 					hui::nextRow();
-					hui::label("Row 1, Cell 1");
+					hui::setCellSpan(3, 1); // span 2 columns
+					hui::label("Row 1, Cell 1 wdf dfasfasf asdf asf sadf asdf asfasf asf asf ");
 					hui::nextCell();
-					hui::label("Row 1, Cell 2");
-					hui::nextCell();
-					hui::label("Row 1, Cell 3");
+					hui::label("AOAKAOAO1");
+					hui::label("AOAKAOAO2");
+					hui::label("AOAKAOAO3");
+					hui::label("AOAKAOAO4");
 
 					hui::nextRow();
+					hui::setCellSpan(2, 1); // Make this cell span 2 columns
 					hui::label("Row 2, Cell 1\n(Multi-line)");
 					hui::button("Tall Button");
 					hui::nextCell();
-					hui::label("Row 2, Cell 2\nWith more content\nto test dynamic height");
+					// Skip cell 2 since previous cell spanned it
+					hui::label("Row 2, Cell 3 (prev cols spanned)");
 					hui::nextCell();
-					hui::label("Row 2, Cell 3");
+					hui::label("Row 2, Cell 3 (prev cols spanned)");
 
 					hui::nextRow();
 					hui::label("Row 3, Cell 1");
 					hui::nextCell();
 					// Nested Table
 					hui::label("Nested Table:");
-					if (0&&hui::beginTable("nestedTable", 2, 0, hui::TableFlags::Borders | hui::TableFlags::AltRowBg))
+					if (1&&hui::beginTable("nestedTable", 2, 0, hui::TableFlags::Borders | hui::TableFlags::AltRowBg|hui::TableFlags::Stretch))
 					{
 						hui::startHeader();
 						hui::label("Sub 1");
@@ -589,9 +606,35 @@ int main(int argc, char** args)
 					hui::nextCell();
 					hui::label("Row 3, Cell 3");
 
+					hui::nextCell();
+					hui::label("Row 3, Cell 3");
 
+					for (int k = 0; k < 4; k++)
+					{
+						hui::nextRow();
+						hui::label("Row 4, Cell 1");
+						hui::nextCell();
+						hui::label("Row 4, Cell 2");
+						hui::nextCell();
+						hui::label("Row 4, Cell 3");
+						hui::nextCell();
+						hui::label("Row 4, Cell 4");
+					}
+
+					hui::nextRow();
+					hui::button("Row 3, Cell 3");
+					hui::nextCell();
+					hui::label("Row 3, Cell 3");
+					hui::nextCell();
+					hui::label("Row 3, Cell 3");
+					hui::nextCell();
+					hui::label("Row jgW3, Cell 3");
 
 					hui::endTable();
+					hui::popWidgetPadding();
+					hui::popSpacing();
+
+					scroller = hui::endScrollView();
 				}
 
 				hui::endWindow();

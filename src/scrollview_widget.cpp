@@ -12,6 +12,17 @@ void beginScrollView(f32 size, f32 scrollPos, f32 virtualHeight)
 
 	ctx->id = genIdFromPosition("scrollView");
 
+	if (size <= 0.0f)
+	{
+		// Use remaining height in layout
+		size = getRemainingHeight();
+		if (size <= 0)
+		{
+			// Fallback to a reasonable default if no space available
+			size = 10.0f;
+		}
+	}
+
 	if (ctx->settings.scaleScrollViewHeight)
 		size *= ctx->scale;
 
@@ -68,7 +79,9 @@ f32 endScrollView()
 	auto& scrollViewElemState = ctx->theme->getElement(WidgetElementId::ScrollViewBody).normalState();
 	f32 scrollPos = scrollViewInfo.scrollPosition;
 	f32 size = scrollViewInfo.size;
-	f32 scrollContentSize = ctx->position.y - prevPenPos.y;
+	auto& padding = getPadding(PaddingType::ScrollView);
+	auto internalPadding = (f32)scrollViewElemState.border * ctx->scale + padding.x;
+	f32 scrollContentSize = ctx->position.y - prevPenPos.y + internalPadding; // Add bottom padding to prevent clipping
 	f32 scrollAmount = 0;
 
 	// make the rect for the scrollbars, without the UI element border
