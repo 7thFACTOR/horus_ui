@@ -456,6 +456,15 @@ enum class TableFlags : u32
 };
 HORUS_ENUM_AS_FLAGS(TableFlags);
 
+enum class TableColumnFlags : u32
+{
+	None = 0,
+	Fixed = HORUS_BIT(0), // Cannot be resized
+	FixedResize = HORUS_BIT(1), // Can be resized, but maintains fixed pixel width when other columns resize
+	Stretch = HORUS_BIT(2), // Resizes proportionally to fill available space
+};
+HORUS_ENUM_AS_FLAGS(TableColumnFlags);
+
 /// When pushTint is called, specifies what element is color tinted
 enum class TintColorType
 {
@@ -2477,7 +2486,7 @@ HORUS_API void popId();
 HORUS_API bool beginTable(const char* id, u32 columnCount, f32 height = -1, TableFlags flags = TableFlags::None);
 HORUS_API void endTable();
 HORUS_API void startHeader();
-HORUS_API void setupColumn(u32 columnIndex, f32 size);
+HORUS_API void setupColumn(u32 columnIndex, f32 size, TableColumnFlags flags = TableColumnFlags::None);
 HORUS_API void nextRow();
 HORUS_API void nextCell();
 HORUS_API void setCellColumnSpan(u32 colSpan);

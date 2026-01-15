@@ -216,13 +216,15 @@ bool beginTable(const char* id, u32 columnCount, f32 height, TableFlags flags)
 
 		if (sCol.isHidden) continue;
 
-		if (pCol.isFillRemaining)
+		bool isFixed = static_cast<bool>(pCol.flags & TableColumnFlags::Fixed) || static_cast<bool>(pCol.flags & TableColumnFlags::FixedResize);
+
+		if (pCol.isFillRemaining && !isFixed)
 		{
 			fillCount++;
 		}
 		else if (pCol.specifiedSize > 0)
 		{
-			if (pCol.isPercentage)
+			if (pCol.isPercentage && !isFixed)
 			{
 				// Percentage of table width (0..1)
 				sCol.width = widgetWidth * pCol.specifiedSize;
@@ -250,7 +252,9 @@ bool beginTable(const char* id, u32 columnCount, f32 height, TableFlags flags)
 		auto& pCol = persistent.columns[i];
 		if (state.columns[i].isHidden) continue;
 
-		if (pCol.isFillRemaining)
+		bool isFixed = static_cast<bool>(pCol.flags & TableColumnFlags::Fixed) || static_cast<bool>(pCol.flags & TableColumnFlags::FixedResize);
+
+		if (pCol.isFillRemaining && !isFixed)
 		{
 			if (pCol.specifiedSize > 0 && pCol.specifiedSize <= 1.0f)
 			{
@@ -441,8 +445,24 @@ void endTable()
 			while (nextColIndex < state.columns.size() && state.columns[nextColIndex].isHidden)
 				nextColIndex++;
 
-			if (nextColIndex >= state.columns.size())
-				break;
+			u32 targetRightIndex = nextColIndex;
+
+			// Find the first column to the right that CAN be resized (absorb the delta)
+			// Pass-through Fixed and FixedResize columns
+			while (targetRightIndex < state.columns.size() &&
+				   (static_cast<bool>(persistent.columns[targetRightIndex].flags & TableColumnFlags::Fixed) ||
+					static_cast<bool>(persistent.columns[targetRightIndex].flags & TableColumnFlags::FixedResize)))
+			{
+				targetRightIndex++;
+			}
+
+			// If no valid column to the right provided space, we cannot resize from this separator
+			if (targetRightIndex >= state.columns.size())
+				continue;
+
+			// If the LEFT column is Fixed, we cannot move this separator (because that would change Left's width)
+			if (static_cast<bool>(persistent.columns[i].flags & TableColumnFlags::Fixed))
+				continue;
 
 			if (persistent.resizingColumn && persistent.resizingColumnIndex == i)
 			{
@@ -470,7 +490,7 @@ void endTable()
 
 					// Apply
 					persistent.columns[i].specifiedSize = leftStart + idealDelta;
-					persistent.columns[nextColIndex].specifiedSize = rightStart - idealDelta;
+					persistent.columns[targetRightIndex].specifiedSize = rightStart - idealDelta;
 				}
 			}
 			else if (!persistent.resizingColumn)
@@ -489,7 +509,7 @@ void endTable()
 
 						// Reciprocal Resize Setup: Capture BOTH Left and Right attributes
 						persistent.resizeStartWidth = state.columns[i].width;
-						persistent.resizeStartWidthRight = state.columns[nextColIndex].width;
+						persistent.resizeStartWidthRight = state.columns[targetRightIndex].width;
 
 						// Synchronize ALL columns to their current visual width to prevent jumps
 						for (u32 k = 0; k < persistent.columns.size(); k++)
@@ -497,7 +517,6 @@ void endTable()
 							if (!state.columns[k].isHidden)
 							{
 								persistent.columns[k].specifiedSize = state.columns[k].width;
-								// We don't disable other flags here, just update the size base
 							}
 						}
 
@@ -508,10 +527,10 @@ void endTable()
 						persistent.columns[i].userResized = true;
 
 						// Lock Right Column
-						persistent.columns[nextColIndex].specifiedSize = state.columns[nextColIndex].width;
-						persistent.columns[nextColIndex].isPercentage = false;
-						persistent.columns[nextColIndex].isFillRemaining = false;
-						persistent.columns[nextColIndex].userResized = true;
+						persistent.columns[targetRightIndex].specifiedSize = state.columns[targetRightIndex].width;
+						persistent.columns[targetRightIndex].isPercentage = false;
+						persistent.columns[targetRightIndex].isFillRemaining = false;
+						persistent.columns[targetRightIndex].userResized = true;
 					}
 				}
 			}
@@ -830,7 +849,7 @@ void popCellPadding()
 	}
 }
 
-void setupColumn(u32 columnIndex, f32 size)
+void setupColumn(u32 columnIndex, f32 size, TableColumnFlags flags)
 {
 	if (ctx->tableStack.empty()) return;
 	auto& state = ctx->tableStack.back();
@@ -840,28 +859,59 @@ void setupColumn(u32 columnIndex, f32 size)
 	if (iter == ctx->tablePersistentStates.end()) return;
 	auto& persistent = iter->second;
 
-	if (persistent.columns[columnIndex].userResized)
-		return;
-
 	if (columnIndex >= persistent.columns.size()) return;
 
-	persistent.columns[columnIndex].specifiedSize = size;
+	// Always update flags
+	persistent.columns[columnIndex].flags = flags;
 
-	// Auto-detect: values <= 1 are percentages/weighted fill, values > 1 are pixels. 0 is pure fill.
-	if (size > 0.0f && size <= 1.0f)
+	// If user resized, we generally respect that, BUT we might want to re-apply flags logic?
+	// The prompt implies we want to set these properties.
+	// If userResized is true, the width is fixed to what they set.
+	// However, flags like 'Fixed' might imply it can NEVER be resized?
+	// Let's apply properties based on size first, then override with flags.
+
+	if (!persistent.columns[columnIndex].userResized)
 	{
-		persistent.columns[columnIndex].isPercentage = false; // User requested percentage not be forced
-		persistent.columns[columnIndex].isFillRemaining = true;
+		persistent.columns[columnIndex].specifiedSize = size;
+
+		// Auto-detect: values <= 1 are percentages/weighted fill, values > 1 are pixels. 0 is pure fill.
+		if (size > 0.0f && size <= 1.0f)
+		{
+			persistent.columns[columnIndex].isPercentage = false; // User requested percentage not be forced
+			persistent.columns[columnIndex].isFillRemaining = true;
+			persistent.columns[columnIndex].isStretchable = true;
+		}
+		else if (size == 0.0f)
+		{
+			persistent.columns[columnIndex].isPercentage = false;
+			persistent.columns[columnIndex].isFillRemaining = true;
+			persistent.columns[columnIndex].isStretchable = true;
+		}
+		else
+		{
+			persistent.columns[columnIndex].isPercentage = false;
+			persistent.columns[columnIndex].isFillRemaining = false;
+			persistent.columns[columnIndex].isStretchable = false;
+		}
 	}
-	else if (size == 0.0f)
+
+	// Apply overrides from flags (Precedence over auto-detect)
+	if (static_cast<bool>(flags & TableColumnFlags::Fixed))
 	{
-		persistent.columns[columnIndex].isPercentage = false;
-		persistent.columns[columnIndex].isFillRemaining = true;
-	}
-	else
-	{
-		persistent.columns[columnIndex].isPercentage = false;
+		persistent.columns[columnIndex].isStretchable = false;
 		persistent.columns[columnIndex].isFillRemaining = false;
+		// Ideally Fixed also means not resizable by user? We should handle that in resize logic.
+	}
+	else if (static_cast<bool>(flags & TableColumnFlags::FixedResize))
+	{
+		persistent.columns[columnIndex].isStretchable = false;
+		persistent.columns[columnIndex].isFillRemaining = false;
+	}
+	else if (static_cast<bool>(flags & TableColumnFlags::Stretch))
+	{
+		persistent.columns[columnIndex].isStretchable = true;
+		// Should Stretch implies fill remaining? Usually yes.
+		persistent.columns[columnIndex].isFillRemaining = true;
 	}
 }
 
