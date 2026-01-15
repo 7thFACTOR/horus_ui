@@ -453,6 +453,8 @@ enum class TableFlags : u32
 	Reorderable = HORUS_BIT(13),
 	Hideable = HORUS_BIT(14),
 	Sortable = HORUS_BIT(15),
+	BordersV = HORUS_BIT(16),
+	BordersH = HORUS_BIT(17),
 };
 HORUS_ENUM_AS_FLAGS(TableFlags);
 

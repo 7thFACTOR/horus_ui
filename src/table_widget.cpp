@@ -590,10 +590,10 @@ void endTable()
 	ctx->renderer->cmdSetLineStyle(LineStyle(Color::white, 1.0f));
 
 	// Batch draw borders if enabled
-	if (has(state.flags, TableFlags::Borders) || has(state.flags, TableFlags::BordersOuter) || has(state.flags, TableFlags::BordersInner))
+	if (has(state.flags, TableFlags::Borders) || has(state.flags, TableFlags::BordersOuter) || has(state.flags, TableFlags::BordersInner) || has(state.flags, TableFlags::BordersV) || has(state.flags, TableFlags::BordersH))
 	{
 		// Draw Inner Horizontal Lines
-		if (has(state.flags, TableFlags::BordersInner) || has(state.flags, TableFlags::Borders))
+		if (has(state.flags, TableFlags::BordersInner) || has(state.flags, TableFlags::Borders) || has(state.flags, TableFlags::BordersH))
 		{
 			for (size_t i = 0; i < state.rowSeparators.size(); i++)
 			{
@@ -620,7 +620,7 @@ void endTable()
 
 		// Draw Vertical Lines (Inner + Outer Left/Right)
 		// We need to draw these per-row to respect column spans
-		if (has(state.flags, TableFlags::BordersInner) || has(state.flags, TableFlags::Borders))
+		if (has(state.flags, TableFlags::BordersInner) || has(state.flags, TableFlags::Borders) || has(state.flags, TableFlags::BordersV))
 		{
 			bool innerOnly = has(state.flags, TableFlags::BordersInner) && !has(state.flags, TableFlags::Borders) && !has(state.flags, TableFlags::BordersOuter);
 			bool hasOuter = has(state.flags, TableFlags::Borders) || has(state.flags, TableFlags::BordersOuter);

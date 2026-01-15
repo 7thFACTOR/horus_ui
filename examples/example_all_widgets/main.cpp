@@ -545,7 +545,7 @@ int main(int argc, char** args)
 				hui::label("Table Widget:");
 				hui::pushSpacing(0);
 				hui::pushWidgetPadding(0);
-				if (hui::beginTable("myTable", 4, 0, hui::TableFlags::Borders  | hui::TableFlags::AltRowBg | hui::TableFlags::Resizable | hui::TableFlags::Stretch))
+				if (hui::beginTable("myTable", 4, 0, hui::TableFlags::BordersH | hui::TableFlags::BordersOuter | hui::TableFlags::AltRowBg | hui::TableFlags::Resizable | hui::TableFlags::Stretch))
 				{
 					hui::startHeader();
 					hui::setupColumn(0, 0);
