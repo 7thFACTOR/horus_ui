@@ -325,20 +325,70 @@ bool beginTable(const char* id, u32 columnCount, f32 height, TableFlags flags)
 	// Collapse logic: if content exceeds widget width, scale down proportionally (respecting min width)
 	if (!has(flags, TableFlags::FixedSize) && totalColumnsWidth > widgetWidth && widgetWidth > 0)
 	{
-		f32 scale = widgetWidth / totalColumnsWidth;
+		f32 totalFixed = 0;
+		f32 totalFlexible = 0;
 
-		// If scale is too aggressive (collapsing to near zero), clamp it or rely on min width loop
-		// But we apply min width check inside.
+		for (u32 i = 0; i < columnCount; i++)
+		{
+			if (state.columns[i].isHidden) continue;
 
+			bool isFixed = static_cast<bool>(persistent.columns[i].flags & TableColumnFlags::Fixed) ||
+						   static_cast<bool>(persistent.columns[i].flags & TableColumnFlags::FixedResize);
+
+			if (isFixed)
+				totalFixed += state.columns[i].width;
+			else
+				totalFlexible += state.columns[i].width;
+		}
+
+		if (totalFixed < widgetWidth)
+		{
+			// We have room for fixed columns, shrink flexible ones
+			f32 scale = 0.0f;
+			if (totalFlexible > 0)
+				scale = (widgetWidth - totalFixed) / totalFlexible;
+
+			for (u32 i = 0; i < columnCount; i++)
+			{
+				if (state.columns[i].isHidden) continue;
+
+				bool isFixed = static_cast<bool>(persistent.columns[i].flags & TableColumnFlags::Fixed) ||
+							   static_cast<bool>(persistent.columns[i].flags & TableColumnFlags::FixedResize);
+
+				if (!isFixed)
+				{
+					state.columns[i].width *= scale;
+					// Apply min width floor for flexible columns to avoid complete collapse if desired,
+					// but rigorous math says we should fit. If we clamp, we might overflow.
+					// Let's stick to the math 'scale' but ensure at least 1px to avoid div by zero issues elsewhere.
+					if (state.columns[i].width < 1.0f) state.columns[i].width = 1.0f;
+				}
+			}
+		}
+		else
+		{
+			// Fixed columns alone take up too much space.
+			// We must keep Fixed columns as is (overflow), and crush flexible columns.
+			for (u32 i = 0; i < columnCount; i++)
+			{
+				if (state.columns[i].isHidden) continue;
+
+				bool isFixed = static_cast<bool>(persistent.columns[i].flags & TableColumnFlags::Fixed) ||
+							   static_cast<bool>(persistent.columns[i].flags & TableColumnFlags::FixedResize);
+
+				if (!isFixed)
+				{
+					state.columns[i].width = 1.0f; // Collapse flexible to minimum
+				}
+			}
+		}
+
+		// Re-sum for final total
 		totalColumnsWidth = 0;
 		for (auto& col : state.columns)
 		{
 			if (!col.isHidden)
-			{
-				col.width *= scale;
-				if (col.width < 20.0f) col.width = 20.0f; // Hard floor for visibility
 				totalColumnsWidth += col.width;
-			}
 		}
 	}
 
