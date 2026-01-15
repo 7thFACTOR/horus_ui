@@ -126,6 +126,13 @@ struct Context
 	Point position = { 0, 0 };
 	std::vector<Point> positionStack;
 
+	// Table
+	std::unordered_map<WidgetId, TablePersistentState> tablePersistentStates;
+	std::vector<TableState> tableStack;
+
+	Point cellPadding = { 2.0f, 2.0f };
+	std::vector<Point> cellPaddingStack;
+
 	// Tabbing/focusing
 	TabIndex currentTabIndex = 0;
 	TabIndex selectedTabIndex = 0;

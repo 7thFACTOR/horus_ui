@@ -2488,6 +2488,9 @@ HORUS_API f32 getRemainingHeight();
 /// Get the remaining width in the current layout from current position to right edge
 HORUS_API f32 getRemainingWidth();
 
+HORUS_API void pushCellPadding(f32 paddingX, f32 paddingY);
+HORUS_API void popCellPadding();
+
 /// Begin a layout made up as columns which can have percentage based widths or fixed
 /// \param columnCount the number of columns to be created
 /// \param preferredWidths a float array of the preferred width for each columns, if width is smaller of equal to 1.0f it is considered a percentage of the parent layout, if it is greater than 1.0f it is considered a fixed pixel size

@@ -260,6 +260,68 @@ struct MenuWidgetState
 	Point size;
 };
 
+struct TablePersistentState
+{
+	struct ColumnState
+	{
+		f32 width = 100.0f;
+		f32 specifiedSize = 0.0f; // User-specified size (percentage or pixels)
+		bool isPercentage = false; // If true, specifiedSize is 0..1 percentage
+		bool isFillRemaining = false; // If true, this column fills remaining space
+		bool isHidden = false;
+		bool isStretchable = true; // Track if this column should participate in auto-stretch
+	};
+
+	std::vector<ColumnState> columns;
+	bool initialized = false;
+
+	// Resizing state
+	bool resizingColumn = false;
+	u32 resizingColumnIndex = ~0;
+	f32 resizeStartX = 0;
+	Point lastMousePos;
+};
+
+struct TableState
+{
+	struct Column
+	{
+		f32 width = 0;
+		f32 minWidth = 0;
+		f32 maxWidth = 0;
+		bool isResizable = false;
+		bool isStretchable = false;
+		bool isHidden = false;
+	};
+
+	std::vector<Column> columns;
+	u32 currentColumn = 0;
+	WidgetId id = 0;
+	Rect headerRect;
+	Rect tableRect;
+	f32 innerWidth = 0;
+	f32 innerHeight = 0;
+	bool resizingColumn = false;
+	u32 resizingColumnIndex = ~0;
+	Point lastMousePos;
+
+	// New fields for dynamic layout
+	bool isInHeader = false;
+	u32 currentRow = 0;
+	f32 currentRowY = 0;
+	TableFlags flags = TableFlags::None;
+	f32 currentMaxRowHeight = 0;
+	f32 rowStartY = 0;
+	f32 cellStartY = 0;
+	f32 rowHeight = 0;
+	u32 rowDrawCmdIndex = 0;
+	std::vector<f32> rowSeparators;
+	f32 bodyStartY = 0.0f;
+	bool isClipping = false;
+	u32 currentColSpan = 1; // Track current cell's column span
+	std::vector<std::vector<u32>> columnSpans; // For each row, stores column span info
+};
+
 struct PopupState
 {
 	f32 width = 0;
@@ -450,46 +512,6 @@ struct ColorPickerState
 	static const u32 maxHexColorSize = 9;
 	char hexColor[maxHexColorSize] = {0};
 	WidgetId currentEditingId = 0;
-};
-
-struct TableState
-{
-	struct Column
-	{
-		f32 width = 0;
-		f32 minWidth = 0;
-		f32 maxWidth = 0;
-		bool isResizable = false;
-		bool isStretchable = false;
-		bool isHidden = false;
-	};
-
-	std::vector<Column> columns;
-	u32 currentColumn = 0;
-	WidgetId id = 0;
-	Rect headerRect;
-	Rect tableRect;
-	f32 innerWidth = 0;
-	f32 innerHeight = 0;
-	bool resizingColumn = false;
-	u32 resizingColumnIndex = ~0;
-	Point lastMousePos;
-
-	// New fields for dynamic layout
-	bool isInHeader = false;
-	u32 currentRow = 0;
-	f32 currentRowY = 0;
-	TableFlags flags = TableFlags::None;
-	f32 currentMaxRowHeight = 0;
-	f32 rowStartY = 0;
-	f32 cellStartY = 0;
-    f32 rowHeight = 0;
-    u32 rowDrawCmdIndex = 0;
-    std::vector<f32> rowSeparators;
-    f32 bodyStartY = 0.0f;
-	bool isClipping = false;
-	u32 currentColSpan = 1; // Track current cell's column span
-	std::vector<std::vector<u32>> columnSpans; // For each row, stores column span info
 };
 
 struct MemoryStream
