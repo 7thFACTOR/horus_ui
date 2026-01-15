@@ -386,35 +386,29 @@ void endTable()
 					f32 delta = ctx->mousePosition.x - persistent.lastMousePos.x;
 					if (fabsf(delta) > 0.001f)
 					{
-						if (persistent.columns[i].isPercentage)
+						// Check if we are in "Inverted" mode (resizing the right column)
+						// We need to reconstruct the logic used in MouseDown to know which column we are resizing
+						// Actually, persistent.resizingColumnIndex stores the SEPARATOR index (i), not the target column index.
+						// Wait, previously we stored 'i' as resizingColumnIndex.
+						// Let's re-evaluate the target determination based on 'i'.
+
+						u32 targetColIndex = i;
+						bool inverted = false;
+
+						// Same logic as MouseDown override
+						if (persistent.columns[i].isFillRemaining && nextColIndex < state.columns.size() && !persistent.columns[nextColIndex].isFillRemaining)
 						{
-							persistent.columns[i].specifiedSize = state.columns[i].width;
-							persistent.columns[i].isPercentage = false;
-						}
-						if (persistent.columns[nextColIndex].isPercentage)
-						{
-							persistent.columns[nextColIndex].specifiedSize = state.columns[nextColIndex].width;
-							persistent.columns[nextColIndex].isPercentage = false;
+							targetColIndex = nextColIndex;
+							inverted = true;
 						}
 
-						f32 newWidth1 = persistent.columns[i].specifiedSize + delta;
-						f32 newWidth2 = persistent.columns[nextColIndex].specifiedSize - delta;
+						// Apply delta
+						if (inverted) delta = -delta;
 
-						if (newWidth1 < 10.0f)
-						{
-							f32 diff = 10.0f - newWidth1;
-							newWidth1 = 10.0f;
-							newWidth2 -= diff;
-						}
-						if (newWidth2 < 10.0f)
-						{
-							f32 diff = 10.0f - newWidth2;
-							newWidth2 = 10.0f;
-							newWidth1 -= diff;
-						}
+						f32 newWidth = persistent.columns[targetColIndex].specifiedSize + delta;
+						if (newWidth < 10.0f) newWidth = 10.0f;
 
-						persistent.columns[i].specifiedSize = newWidth1;
-						persistent.columns[nextColIndex].specifiedSize = newWidth2;
+						persistent.columns[targetColIndex].specifiedSize = newWidth;
 						persistent.lastMousePos = ctx->mousePosition;
 					}
 				}
@@ -430,18 +424,45 @@ void endTable()
 					if (ctx->event.type == InputEvent::Type::MouseDown && ctx->event.mouse.button == MouseButton::Left)
 					{
 						persistent.resizingColumn = true;
-						persistent.resizingColumnIndex = i;
+						persistent.resizingColumnIndex = i; // Store SEPARATOR index
 						persistent.lastMousePos = ctx->mousePosition;
 
-						// Lock current widths into specifiedSize for both columns involved in resize
-						// This handles percentage, auto, and fill columns by converting them to fixed pixel size
-						persistent.columns[i].specifiedSize = state.columns[i].width;
-						persistent.columns[i].isPercentage = false;
-						persistent.columns[i].userResized = true;
+						// Determine Target
+						u32 targetColIndex = i;
+						bool inverted = false;
 
-						persistent.columns[nextColIndex].specifiedSize = state.columns[nextColIndex].width;
-						persistent.columns[nextColIndex].isPercentage = false;
-						persistent.columns[nextColIndex].userResized = true;
+						if (persistent.columns[i].isFillRemaining && nextColIndex < state.columns.size() && !persistent.columns[nextColIndex].isFillRemaining)
+						{
+							targetColIndex = nextColIndex;
+							inverted = true;
+						}
+
+						// Lock Target
+						persistent.columns[targetColIndex].specifiedSize = state.columns[targetColIndex].width;
+						persistent.columns[targetColIndex].isPercentage = false;
+						persistent.columns[targetColIndex].isFillRemaining = false;
+						persistent.columns[targetColIndex].isStretchable = false;
+						persistent.columns[targetColIndex].userResized = true;
+
+						// Lock Preceding Fills to stabilize left side
+						// If inverted, we rely on targetColIndex-1 (Col i) to be the buffer, so don't lock it.
+						// Lock everything before that.
+						// If NOT inverted, we resize Col i. We should lock everything before i.
+
+						u32 lockUntil = targetColIndex;
+						if (inverted) lockUntil = targetColIndex - 1;
+
+						for (u32 k = 0; k < lockUntil; k++)
+						{
+							if (persistent.columns[k].isFillRemaining || persistent.columns[k].isStretchable)
+							{
+								persistent.columns[k].specifiedSize = state.columns[k].width;
+								persistent.columns[k].isPercentage = false;
+								persistent.columns[k].isFillRemaining = false;
+								persistent.columns[k].isStretchable = false;
+								persistent.columns[k].userResized = true;
+							}
+						}
 					}
 				}
 			}
