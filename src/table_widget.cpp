@@ -539,8 +539,17 @@ void endTable()
 					if (idealDelta > maxPositiveDelta) idealDelta = maxPositiveDelta;
 
 					// Apply
+
 					persistent.columns[i].specifiedSize = leftStart + idealDelta;
 					persistent.columns[targetRightIndex].specifiedSize = rightStart - idealDelta;
+
+					// Draw Resize Guide Line (Cyan) at the CLAMPED column width
+					f32 newWidth = leftStart + idealDelta;
+					f32 guideLineX = (currentX - state.columns[i].width) + newWidth;
+					
+					ctx->renderer->cmdSetLineStyle(LineStyle(Color(0.0f, 1.0f, 1.0f, 1.0f), 2.0f));
+					ctx->renderer->cmdDrawLine(Point(guideLineX, state.tableRect.y), 
+											   Point(guideLineX, state.tableRect.y + finalHeight));
 				}
 			}
 			else if (!persistent.resizingColumn)
@@ -599,6 +608,11 @@ void endTable()
 				else if (separatorRect.contains(ctx->mousePosition))
 				{
 					ctx->mouseCursor = MouseCursorType::SizeWE;
+
+					// Draw Hover Guide Line (Cyan)
+					ctx->renderer->cmdSetLineStyle(LineStyle(Color(0.0f, 1.0f, 1.0f, 1.0f), 2.0f));
+					ctx->renderer->cmdDrawLine(Point(currentX, state.tableRect.y), 
+											   Point(currentX, state.tableRect.y + finalHeight));
 
 					if (ctx->event.type == InputEvent::Type::MouseDown && ctx->event.mouse.button == MouseButton::Left)
 					{
