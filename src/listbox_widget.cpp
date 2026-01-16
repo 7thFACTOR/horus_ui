@@ -22,7 +22,6 @@ bool list(const char* id, bool* selectedItems, ListSelectionMode selectionType, 
 	f32 totalHeight = itemHeight * itemCount;
 	f32 scrollPos = 0;
 	
-	// Generate an ID for storage
 	u32 listId = genId(id);
 	ctx->id = listId;
 
@@ -41,8 +40,8 @@ bool list(const char* id, bool* selectedItems, ListSelectionMode selectionType, 
 
 	pushPadding(PaddingType::Layout, Point(0, 0));
 	pushPadding(PaddingType::ScrollView, Point(0, 0));
-
-	beginScrollView(widgetHeight, scrollPos, totalHeight);
+	pushId(listId);
+	beginScrollView("listScrollView", widgetHeight, scrollPos, totalHeight);
 
 	Rect viewRect = ctx->scrollViewStack[ctx->scrollViewDepth - 1].rect;
 	bool changed = false;
@@ -136,6 +135,7 @@ bool list(const char* id, bool* selectedItems, ListSelectionMode selectionType, 
 	}
 
 	ctx->widgetScrollStates[listId] = endScrollView();
+	popId();
 	popPadding(PaddingType::ScrollView);
 	popPadding(PaddingType::Layout);
 

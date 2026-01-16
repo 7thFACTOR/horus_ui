@@ -17,6 +17,23 @@
 #include "stdio_file_provider.h"
 #include "utfcpp_provider.h"
 
+// Grab some image handles to use for the window icons
+hui::HImage icon1, icon2, icon3, icon4, icon5, tabicon1, tabicon2, tabicon3, img;
+
+void loadImages()
+{
+	// Grab some image handles to use for the window icons
+	icon1 = hui::loadImage("../themes/icons/ic_attach_file_white_24dp.png");
+	icon2 = hui::loadImage("../themes/icons/ic_attach_money_white_24dp.png");
+	icon3 = hui::loadImage("../themes/icons/ic_border_all_white_24dp.png");
+	icon4 = hui::loadImage("../themes/icons/ic_border_inner_white_24dp.png");
+	icon5 = hui::loadImage("../themes/icons/ic_border_outer_white_24dp.png");
+	tabicon1 = hui::loadImage("../themes/icons/icons8-equivalent-20.png");
+	tabicon2 = hui::loadImage("../themes/icons/icons8-settings-20.png");
+	tabicon3 = hui::loadImage("../themes/icons/icons8-opened-folder-20.png");
+	img = hui::loadImage("../themes/default/lena.png");
+}
+
 int main(int argc, char** args)
 {
 	// Setup a Horus UI context, with given service providers
@@ -46,7 +63,7 @@ int main(int argc, char** args)
 	hui::initializeSdl(sdlParams);
 
 	// Create the main window (this will also create a graphics (GL/VK/D3D/etc.) context)
-	auto mainWnd = HORUS_INPUT->createWindow("Horus Examples - All Widgets", hui::NativeWindowFlags::Resizable, hui::NativeWindowState::Maximized, hui::Rect(0, 0, 1500, 800));
+	auto mainWnd = HORUS_INPUT->createWindow("HorusUI Widget Examples", hui::NativeWindowFlags::Resizable, hui::NativeWindowState::Maximized, hui::Rect(0, 0, 1500, 800));
 
 	// Create a main dock node for the main window, so we can dock windows in there
 	hui::DockNodeId mainDockNode = hui::createRootDockNode(mainWnd);
@@ -86,16 +103,7 @@ int main(int argc, char** args)
 	// Set the current theme
 	hui::setTheme(theme);
 
-	// Grab some image handles to use for the window icons
-	auto icon1 = hui::loadImage("../themes/icons/ic_attach_file_white_24dp.png");
-	auto icon2 = hui::loadImage("../themes/icons/ic_attach_money_white_24dp.png");
-	auto icon3 = hui::loadImage("../themes/icons/ic_border_all_white_24dp.png");
-	auto icon4 = hui::loadImage("../themes/icons/ic_border_inner_white_24dp.png");
-	auto icon5 = hui::loadImage("../themes/icons/ic_border_outer_white_24dp.png");
-	auto tabicon1 = hui::loadImage("../themes/icons/icons8-equivalent-20.png");
-	auto tabicon2 = hui::loadImage("../themes/icons/icons8-settings-20.png");
-	auto tabicon3 = hui::loadImage("../themes/icons/icons8-opened-folder-20.png");
-	auto img = hui::loadImage("../themes/default/lena.png");
+	loadImages();
 
 	// Build the theme
 	// After we load the theme and more images and fonts, we need to rebuild the theme (into the image atlas)
@@ -111,6 +119,47 @@ int main(int argc, char** args)
 		HORUS_INPUT->setCurrentWindow(mainWnd);
 		glClearColor(1, 1, 0, 1);
 		glClear(GL_COLOR_BUFFER_BIT);
+
+		static f32 timePassed = 0;
+		timePassed += hui::getFrameDeltaTime();
+		if (timePassed > 1.0f)
+		{
+			timePassed = 0;
+			auto newTheme = hui::hotReloadTheme("../themes/default.theme.json", err, errSize);
+
+			if (newTheme)
+			{
+				// delete old theme
+				if (theme) hui::deleteTheme(theme);
+				theme = newTheme;
+				hui::setTheme(theme);
+
+				// Reload resources
+				largeFnt = hui::getThemeFont(theme, "title");
+				loadImages();
+				hui::buildTheme(theme);
+				printf("Theme reloaded!\n");
+			}
+		}
+
+		auto reloadTheme = [&]()
+		{
+			auto newTheme = hui::loadThemeFromJson("../themes/default.theme.json", err, errSize);
+
+			if (newTheme)
+			{
+				// delete old theme
+				if (theme) hui::deleteTheme(theme);
+				theme = newTheme;
+				hui::setTheme(theme);
+
+				// Reload resources
+				largeFnt = hui::getThemeFont(theme, "title");
+				loadImages();
+				hui::buildTheme(theme);
+				printf("Theme reloaded via F2!\n");
+			}
+		};
 
 		// Get the events from SDL or whatever input provider is set, it will fill a queue of events
 		hui::update();
@@ -234,7 +283,7 @@ int main(int argc, char** args)
 				hui::space();
 
 				static f32 scrollPos = 0;
-				hui::beginScrollView(500, scrollPos);
+				hui::beginScrollView("scrollView1", 500, scrollPos);
 
 				//hui::pushSpacing(500);
 				static hui::Color col1 = hui::Color(3,0,0,1);
@@ -421,12 +470,12 @@ int main(int argc, char** args)
 			{
 				static f32 scroller = 0;
 
-				hui::beginScrollView(0, scroller);
+				hui::beginScrollView("scrl1", 0, scroller);
 
 				static bool listSelection[5] = {false};
 				static const char* listItems[] = { "Apple", "Banana", "Cherry", "Date", "Elderberry" };
 				hui::label("List Box:");
-				hui::list("myList", listSelection, hui::ListSelectionMode::Multiple, listItems, 5, 150);
+				hui::list("myList", listSelection, hui::ListSelectionMode::Multiple, listItems, 5, 250);
 
 				hui::space();
 				hui::label("Table Widget:");
@@ -540,6 +589,13 @@ int main(int argc, char** args)
 			for (int i = 0; i < eventCount; i++)
 			{
 				hui::setInputEvent(hui::getInputEventAt(i));
+
+				if (hui::getInputEvent().type == hui::InputEvent::Type::Key &&
+					hui::getInputEvent().key.code == hui::KeyCode::F2 &&
+					hui::getInputEvent().key.down)
+				{
+					reloadTheme();
+				}
 
 				if (hui::getInputEvent().type == hui::InputEvent::Type::WindowClose)
 				{

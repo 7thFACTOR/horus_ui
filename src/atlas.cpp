@@ -80,6 +80,11 @@ void Atlas::updateImageData(ImageId imgId, const Rgba32* imageData, u32 width, u
 
 void Atlas::deleteImage(Image* image)
 {
+	// seems space glyph doesnt have an image, just check...
+	//TODO: maybe space should also have an image
+	if (!image)
+		return;
+
 	auto iter = images.find(image->id);
 
 	if (iter == images.end())

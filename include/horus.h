@@ -2550,7 +2550,7 @@ HORUS_API void columnHeader(const char* label, f32 width, f32 preferredWidth, f3
 /// \param height the height of the scroll area
 /// \param scrollPosition the current scroll position (given by endScrollView)
 /// \param virtualHeight the virtual inside scroll height, if its zero then its automatically calculated from the child widgets inside this area
-HORUS_API void beginScrollView(f32 height, f32 scrollPosition, f32 virtualHeight = 0.0f);
+HORUS_API void beginScrollView(const char* id, f32 height, f32 scrollPosition, f32 virtualHeight = 0.0f);
 
 /// Ends a scroll view area widget
 /// \return the current scroll position (offset)
@@ -2560,7 +2560,7 @@ HORUS_API f32 endScrollView();
 /// \param totalRowCount the number of rows
 /// \param itemHeight the height of one item
 /// \param scrollPosition the current scroll offset of the scroll view widget
-HORUS_API void beginVirtualListContent(u32 totalRowCount, u32 itemHeight, f32 scrollPosition);
+HORUS_API void beginVirtualListContent(u32 totalRowCount, f32 itemHeight, f32 scrollPosition);
 
 /// End a virtual list content area
 HORUS_API void endVirtualListContent();

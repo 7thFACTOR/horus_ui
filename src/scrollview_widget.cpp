@@ -5,12 +5,12 @@
 
 namespace hui
 {
-void beginScrollView(f32 size, f32 scrollPos, f32 virtualHeight)
+void beginScrollView(const char* id, f32 size, f32 scrollPos, f32 virtualHeight)
 {
 	auto& scrollViewElemState = ctx->theme->getElement(WidgetElementId::ScrollViewBody).normalState();
 	auto scrollViewScrollThumbElemState = ctx->theme->getElement(WidgetElementId::ScrollViewScrollThumb).normalState();
 
-	ctx->id = genIdFromPosition("scrollView");
+	ctx->id = genId(id);
 
 	if (size <= 0.0f)
 	{
