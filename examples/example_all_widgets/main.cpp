@@ -55,14 +55,10 @@ int main(int argc, char** args)
 	{
 		hui::DockNodeId n1, n2;
 		hui::dockLayoutSplit(mainDockNode, hui::DockNodeSplitType::Left, 0.5f, &n1, &n2 );
-		hui::dockLayoutSetNodeWindow(n1, "ui");
+		hui::dockLayoutSetNodeWindow(n1, "hui");
+		hui::dockLayoutSetNodeWindow(n2, "scene");
+		hui::dockLayoutSplit(mainDockNode, hui::DockNodeSplitType::Top, 0.5f, &n1, &n2);
 		hui::dockLayoutSetNodeWindow(n2, "inspector");
-
-		auto inspectorNodeId = n2;
-		hui::dockLayoutSplit(mainDockNode, hui::DockNodeSplitType::Top, 0.25f, &n1, &n2);
-		hui::dockLayoutSetNodeWindow(n2, "hui");
-		hui::dockLayoutSplit(inspectorNodeId, hui::DockNodeSplitType::Right, 0.25f, &n1, &n2);
-		hui::dockLayoutSetNodeWindow(n1, "scene");
 		hui::dockLayoutRecalculate();
 	}
 
@@ -174,7 +170,7 @@ int main(int argc, char** args)
 				glEnd();
 
 				x = sinf(t);
-				t += 0.01f;
+				t += hui::getFrameDeltaTime();
 				glViewport(vp[0], vp[1], vp[2], vp[3]);
 			};
 
@@ -185,7 +181,7 @@ int main(int argc, char** args)
 			// we only render on the last event in the queue
 			hui::setDisableRendering(!lastEventInQueue);
 
-			if (hui::beginWindow("hui", "HUI", nullptr, tabicon1))
+			if (0&&hui::beginWindow("hui", "HUI", nullptr, tabicon1))
 			{
 				// lets first draw a rect with a theme, for the panel
 				hui::Rect panelRect = { 5, 5, 300, 500 };
@@ -399,79 +395,6 @@ int main(int argc, char** args)
 			// start to add widgets in the window
 			if (hui::beginWindow("inspector", "Inspector", nullptr, tabicon2))
 			{
-				hui::labelCustomFont("SETTINGS AND STUFF", hui::getFont("large"));
-				static char txt[2000] = "hui";
-
-				hui::label("Dock Target");
-				hui::textInput(txt, 2000, hui::TextInputValueMode::Any);
-
-				hui::space();
-				hui::line();
-				if (hui::button("Dock Left"))
-				{
-					hui::dockWindow("inspector", txt, hui::DockType::Left);
-				}
-				if (hui::button("Dock Right"))
-				{
-					hui::dockWindow("inspector", txt, hui::DockType::Right);
-				}
-				if (hui::button("Dock Top"))
-				{
-					hui::dockWindow("inspector", txt, hui::DockType::Top);
-				}
-				if (hui::button("Dock Bottom"))
-				{
-					hui::dockWindow("inspector", txt, hui::DockType::Bottom);
-				}
-				if (hui::button("Dock As tab"))
-				{
-					hui::dockWindow("inspector", txt, hui::DockType::AsTab);
-				}
-				if (hui::button("UnDock"))
-				{
-					hui::undockWindow("inspector", HORUS_INPUT->getAbsoluteMousePosition());
-				}
-				hui::endWindow();
-			}
-
-
-			// start to add widgets in the window
-			if (hui::beginWindow("assets", "Assets", nullptr, tabicon3))
-			{
-				hui::labelCustomFont("ASSETS OF COURSE", hui::getFont("heading"));
-				static char txt[2000] = "hui";
-
-				hui::label("Dock Target");
-
-				hui::textInput(txt, 2000, hui::TextInputValueMode::Any);
-
-				hui::space();
-				hui::line();
-
-				if (hui::button("Dock Left"))
-				{
-					hui::dockWindow("assets", txt, hui::DockType::Left);
-				}
-				if (hui::button("Dock Right"))
-				{
-					hui::dockWindow("assets", txt, hui::DockType::Right);
-				}
-				if (hui::button("Dock Top"))
-				{
-					hui::dockWindow("assets", txt, hui::DockType::Top);
-				}
-				if (hui::button("Dock Bottom"))
-				{
-					hui::dockWindow("assets", txt, hui::DockType::Bottom);
-				}
-				if (hui::button("Dock As tab"))
-				{
-					hui::dockWindow("assets", txt, hui::DockType::AsTab);
-				}
-				if (hui::button("UnDock"))
-				{
-					hui::dockWindow("assets", 0, hui::DockType::Floating);
-				}
 				hui::endWindow();
 			}
 
@@ -494,44 +417,8 @@ int main(int argc, char** args)
 				hui::endWindow();
 			}
 
-			if (hui::beginWindow("ui", "UI", nullptr, tabicon3))
+			if (hui::beginWindow("hui", "Widget Examples", nullptr, tabicon3))
 			{
-
-				hui::labelCustomFont("UI", hui::getFont("heading"));
-				static char txt[2000] = "hui";
-
-				hui::label("Dock Target");
-
-				hui::textInput(txt, 2000, hui::TextInputValueMode::Any, "Write something here");
-
-				hui::space();
-				if (hui::button("Dock Left"))
-				{
-					hui::dockWindow("ui", txt, hui::DockType::Left);
-				}
-				if (hui::button("Dock Right"))
-				{
-					hui::dockWindow("ui", txt, hui::DockType::Right);
-				}
-				if (hui::button("Dock Top"))
-				{
-					hui::dockWindow("ui", txt, hui::DockType::Top);
-				}
-				if (hui::button("Dock Bottom"))
-				{
-					hui::dockWindow("ui", txt, hui::DockType::Bottom);
-				}
-				if (hui::button("Dock As tab"))
-				{
-					hui::dockWindow("ui", txt, hui::DockType::AsTab);
-				}
-				if (hui::button("UnDock"))
-				{
-					hui::dockWindow("ui", 0, hui::DockType::Floating);
-				}
-
-				hui::space();
-
 				static f32 scroller = 0;
 
 				hui::beginScrollView(0, scroller);
@@ -638,43 +525,6 @@ int main(int argc, char** args)
 					scroller = hui::endScrollView();
 				}
 
-				hui::endWindow();
-			}
-
-			if (hui::beginWindow("log", "Log", nullptr, tabicon3))
-			{
-				hui::labelCustomFont("LOG", hui::getFont("heading"));
-				static char txt[2000] = "hui";
-
-				hui::label("Dock Target");
-
-				hui::textInput(txt, 2000, hui::TextInputValueMode::Any, "Write something here");
-
-				hui::space();
-				if (hui::button("Dock Left"))
-				{
-					hui::dockWindow("log", txt, hui::DockType::Left);
-				}
-				if (hui::button("Dock Right"))
-				{
-					hui::dockWindow("log", txt, hui::DockType::Right);
-				}
-				if (hui::button("Dock Top"))
-				{
-					hui::dockWindow("log", txt, hui::DockType::Top);
-				}
-				if (hui::button("Dock Bottom"))
-				{
-					hui::dockWindow("log", txt, hui::DockType::Bottom);
-				}
-				if (hui::button("Dock As tab"))
-				{
-					hui::dockWindow("log", txt, hui::DockType::AsTab);
-				}
-				if (hui::button("UnDock"))
-				{
-					hui::dockWindow("log", 0, hui::DockType::Floating);
-				}
 				hui::endWindow();
 			}
 

@@ -170,7 +170,7 @@ bool beginTable(const char* id, u32 columnCount, f32 height, TableFlags flags)
 	if (persistent.resizingColumn && persistent.resizingColumnIndex < columnCount)
 	{
 		u32 i = persistent.resizingColumnIndex;
-		
+
 		// Find target right column (same logic as endTable)
 		u32 targetRightIndex = i + 1;
 		while (targetRightIndex < columnCount &&
@@ -179,21 +179,21 @@ bool beginTable(const char* id, u32 columnCount, f32 height, TableFlags flags)
 		{
 			targetRightIndex++;
 		}
-		
+
 		if (targetRightIndex < columnCount)
 		{
 			// Calculate delta
 			f32 idealDelta = ctx->mousePosition.x - persistent.resizeStartX;
 			f32 leftStart = persistent.resizeStartWidth;
 			f32 rightStart = persistent.resizeStartWidthRight;
-			
+
 			// Clamp delta against min widths (10px)
 			f32 maxNegativeDelta = -(leftStart - 10.0f);
 			f32 maxPositiveDelta = (rightStart - 10.0f);
-			
+
 			if (idealDelta < maxNegativeDelta) idealDelta = maxNegativeDelta;
 			if (idealDelta > maxPositiveDelta) idealDelta = maxPositiveDelta;
-			
+
 			// Apply
 			persistent.columns[i].specifiedSize = leftStart + idealDelta;
 			persistent.columns[targetRightIndex].specifiedSize = rightStart - idealDelta;
@@ -540,20 +540,14 @@ void endTable()
 				targetRightIndex++;
 			}
 
-			// If no valid column to the right provided space, we cannot resize from this separator
-			if (targetRightIndex >= state.columns.size())
-				continue;
-
-			// If the LEFT column is Fixed, we cannot move this separator (because that would change Left's width)
-			if (static_cast<bool>(persistent.columns[i].flags & TableColumnFlags::Fixed))
-				continue;
-
 			if (persistent.resizingColumn && persistent.resizingColumnIndex == i)
 			{
 				ctx->mouseCursor = MouseCursorType::SizeWE;
 
-				if (ctx->event.type == InputEvent::Type::MouseUp && ctx->event.mouse.button == MouseButton::Left)
+				if (ctx->event.type == InputEvent::Type::MouseUp || ctx->event.type == InputEvent::Type::WindowLostFocus)
 				{
+					releaseWindowCapture();
+					ctx->widget.captureId = 0;
 					persistent.resizingColumn = false;
 					persistent.resizingColumnIndex = ~0;
 				}
@@ -561,104 +555,132 @@ void endTable()
 				{
 					// Draw Resize Guide Line (Cyan) - width already applied in beginTable
 					f32 guideLineX = currentX;
-					
+
 					ctx->renderer->cmdSetLineStyle(LineStyle(Color(0.0f, 1.0f, 1.0f, 1.0f), 2.0f));
-					ctx->renderer->cmdDrawLine(Point(guideLineX, state.tableRect.y), 
+					ctx->renderer->cmdDrawLine(Point(guideLineX, state.tableRect.y),
 											   Point(guideLineX, state.tableRect.y + finalHeight));
+
+					// Only apply resize if validity checks pass (though we started, so they should)
+					if (targetRightIndex < state.columns.size() && !(static_cast<bool>(persistent.columns[i].flags & TableColumnFlags::Fixed)))
+					{
+						// Reciprocal Resize: Change Left and Right columns
+						f32 idealDelta = ctx->mousePosition.x - persistent.resizeStartX;
+
+						f32 leftStart = persistent.resizeStartWidth;
+						f32 rightStart = persistent.resizeStartWidthRight;
+
+						// Clamp delta against min widths (10px)
+						f32 maxNegativeDelta = -(leftStart - 10.0f); // Limit shrinking Left
+						f32 maxPositiveDelta = (rightStart - 10.0f); // Limit shrinking Right (by growing Left)
+
+						if (idealDelta < maxNegativeDelta) idealDelta = maxNegativeDelta;
+						if (idealDelta > maxPositiveDelta) idealDelta = maxPositiveDelta;
+
+						// Apply
+						persistent.columns[i].specifiedSize = leftStart + idealDelta;
+						persistent.columns[targetRightIndex].specifiedSize = rightStart - idealDelta;
+					}
 				}
 			}
 			else if (!persistent.resizingColumn)
 			{
-				Rect separatorRect(currentX - separatorWidth, state.tableRect.y, separatorWidth * 2.0f, finalHeight);
+				// Only allow NEW interaction if guards pass
+				if (targetRightIndex < state.columns.size() &&
+					!(static_cast<bool>(persistent.columns[i].flags & TableColumnFlags::Fixed)))
+				{
+					Rect separatorRect(currentX - separatorWidth, state.tableRect.y, separatorWidth * 2.0f, finalHeight);
 
-				// Determine if this separator is covered by a column span in the row under the mouse
-				bool isSeparatorCovered = false;
-				
-				// Find which row the mouse is in
-				i32 hoveredRowIndex = -1;
-				f32 mouseY = ctx->mousePosition.y;
-				
-				if (state.rowSeparators.empty())
-				{
-					// Fallback for single row table if logic failed elsewhere
-					if (mouseY >= state.bodyStartY && mouseY < state.currentRowY)
-						hoveredRowIndex = 0;
-				}
-				else
-				{
-					for (size_t r = 0; r < state.rowSeparators.size(); r++)
+					// Determine if this separator is covered by a column span in the row under the mouse
+					bool isSeparatorCovered = false;
+
+					// Find which row the mouse is in
+					i32 hoveredRowIndex = -1;
+					f32 mouseY = ctx->mousePosition.y;
+
+					if (state.rowSeparators.empty())
 					{
-						f32 rowTop = (r == 0) ? state.bodyStartY : state.rowSeparators[r - 1];
-						f32 rowBottom = state.rowSeparators[r];
-						
-						if (mouseY >= rowTop && mouseY <= rowBottom)
-						{
-							hoveredRowIndex = (i32)r;
-							break;
-						}
+						// Fallback for single row table if logic failed elsewhere
+						if (mouseY >= state.bodyStartY && mouseY < state.currentRowY)
+							hoveredRowIndex = 0;
 					}
-				}
-				
-				if (hoveredRowIndex >= 0 && hoveredRowIndex < (i32)state.columnSpans.size())
-				{
-					const auto& spans = state.columnSpans[hoveredRowIndex];
-					// Check if separator 'i' (between col i and i+1) is covered
-					for (u32 c = 0; c <= i; c++)
+					else
 					{
-						if (c < spans.size() && spans[c] > 1)
+						for (size_t r = 0; r < state.rowSeparators.size(); r++)
 						{
-							if (c + spans[c] > i + 1)
+							f32 rowTop = (r == 0) ? state.bodyStartY : state.rowSeparators[r - 1];
+							f32 rowBottom = state.rowSeparators[r];
+
+							if (mouseY >= rowTop && mouseY <= rowBottom)
 							{
-								isSeparatorCovered = true;
+								hoveredRowIndex = (i32)r;
 								break;
 							}
 						}
 					}
-				}
 
-				if (isSeparatorCovered && separatorRect.contains(ctx->mousePosition))
-				{
-					ctx->mouseCursor = MouseCursorType::Arrow;
-				}
-				else if (separatorRect.contains(ctx->mousePosition))
-				{
-					ctx->mouseCursor = MouseCursorType::SizeWE;
-
-					// Draw Hover Guide Line (Cyan)
-					ctx->renderer->cmdSetLineStyle(LineStyle(Color(0.0f, 1.0f, 1.0f, 1.0f), 2.0f));
-					ctx->renderer->cmdDrawLine(Point(currentX, state.tableRect.y), 
-											   Point(currentX, state.tableRect.y + finalHeight));
-
-					if (ctx->event.type == InputEvent::Type::MouseDown && ctx->event.mouse.button == MouseButton::Left)
+					if (hoveredRowIndex >= 0 && hoveredRowIndex < (i32)state.columnSpans.size())
 					{
-						persistent.resizingColumn = true;
-						persistent.resizingColumnIndex = i; // Store SEPARATOR index
-						persistent.resizeStartX = ctx->mousePosition.x; // Store Absolute Start X
-
-						// Reciprocal Resize Setup: Capture BOTH Left and Right attributes
-						persistent.resizeStartWidth = state.columns[i].width;
-						persistent.resizeStartWidthRight = state.columns[targetRightIndex].width;
-
-						// Synchronize ALL columns to their current visual width to prevent jumps
-						for (u32 k = 0; k < persistent.columns.size(); k++)
+						const auto& spans = state.columnSpans[hoveredRowIndex];
+						// Check if separator 'i' (between col i and i+1) is covered
+						for (u32 c = 0; c <= i; c++)
 						{
-							if (!state.columns[k].isHidden)
+							if (c < spans.size() && spans[c] > 1)
 							{
-								persistent.columns[k].specifiedSize = state.columns[k].width;
+								if (c + spans[c] > i + 1)
+								{
+									isSeparatorCovered = true;
+									break;
+								}
 							}
 						}
+					}
 
-						// Lock Left Column
-						persistent.columns[i].specifiedSize = state.columns[i].width;
-						persistent.columns[i].isPercentage = false;
-						persistent.columns[i].isFillRemaining = false;
-						persistent.columns[i].userResized = true;
+					if (isSeparatorCovered && separatorRect.contains(ctx->mousePosition))
+					{
+						ctx->mouseCursor = MouseCursorType::Arrow;
+					}
+					else if (separatorRect.contains(ctx->mousePosition))
+					{
+						ctx->mouseCursor = MouseCursorType::SizeWE;
 
-						// Lock Right Column
-						persistent.columns[targetRightIndex].specifiedSize = state.columns[targetRightIndex].width;
-						persistent.columns[targetRightIndex].isPercentage = false;
-						persistent.columns[targetRightIndex].isFillRemaining = false;
-						persistent.columns[targetRightIndex].userResized = true;
+						// Draw Hover Guide Line (Cyan)
+						ctx->renderer->cmdSetLineStyle(LineStyle(Color(0.0f, 1.0f, 1.0f, 1.0f), 2.0f));
+						ctx->renderer->cmdDrawLine(Point(currentX, state.tableRect.y),
+												   Point(currentX, state.tableRect.y + finalHeight));
+
+						if (ctx->event.type == InputEvent::Type::MouseDown && ctx->event.mouse.button == MouseButton::Left)
+						{
+							setWindowCapture();
+							ctx->widget.captureId = state.id;
+							persistent.resizingColumn = true;
+							persistent.resizingColumnIndex = i; // Store SEPARATOR index
+							persistent.resizeStartX = ctx->mousePosition.x; // Store Absolute Start X
+
+							// Reciprocal Resize Setup: Capture BOTH Left and Right attributes
+							persistent.resizeStartWidth = state.columns[i].width;
+							persistent.resizeStartWidthRight = state.columns[targetRightIndex].width;
+
+							// Synchronize ALL columns to their current visual width to prevent jumps
+							for (u32 k = 0; k < persistent.columns.size(); k++)
+							{
+								if (!state.columns[k].isHidden)
+								{
+									persistent.columns[k].specifiedSize = state.columns[k].width;
+								}
+							}
+
+							// Lock Left Column
+							persistent.columns[i].specifiedSize = state.columns[i].width;
+							persistent.columns[i].isPercentage = false;
+							persistent.columns[i].isFillRemaining = false;
+							persistent.columns[i].userResized = true;
+
+							// Lock Right Column
+							persistent.columns[targetRightIndex].specifiedSize = state.columns[targetRightIndex].width;
+							persistent.columns[targetRightIndex].isPercentage = false;
+							persistent.columns[targetRightIndex].isFillRemaining = false;
+							persistent.columns[targetRightIndex].userResized = true;
+						}
 					}
 				}
 			}
