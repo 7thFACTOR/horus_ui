@@ -549,7 +549,7 @@ int main(int argc, char** args)
 				{
 					hui::startHeader();
 					hui::setupColumn(0, 0);
-					hui::setupColumn(1, 110, hui::TableColumnFlags::Fixed);
+					hui::setupColumn(1, 110, hui::TableColumnFlags::FixedResize);
 					hui::setupColumn(2, 0);
 					hui::setupColumn(3, 0);
 

@@ -166,6 +166,40 @@ bool beginTable(const char* id, u32 columnCount, f32 height, TableFlags flags)
 		persistent.initialized = true;
 	}
 
+	// Apply active resize BEFORE calculating widths
+	if (persistent.resizingColumn && persistent.resizingColumnIndex < columnCount)
+	{
+		u32 i = persistent.resizingColumnIndex;
+		
+		// Find target right column (same logic as endTable)
+		u32 targetRightIndex = i + 1;
+		while (targetRightIndex < columnCount &&
+			   (static_cast<bool>(persistent.columns[targetRightIndex].flags & TableColumnFlags::Fixed) ||
+				static_cast<bool>(persistent.columns[targetRightIndex].flags & TableColumnFlags::FixedResize)))
+		{
+			targetRightIndex++;
+		}
+		
+		if (targetRightIndex < columnCount)
+		{
+			// Calculate delta
+			f32 idealDelta = ctx->mousePosition.x - persistent.resizeStartX;
+			f32 leftStart = persistent.resizeStartWidth;
+			f32 rightStart = persistent.resizeStartWidthRight;
+			
+			// Clamp delta against min widths (10px)
+			f32 maxNegativeDelta = -(leftStart - 10.0f);
+			f32 maxPositiveDelta = (rightStart - 10.0f);
+			
+			if (idealDelta < maxNegativeDelta) idealDelta = maxNegativeDelta;
+			if (idealDelta > maxPositiveDelta) idealDelta = maxPositiveDelta;
+			
+			// Apply
+			persistent.columns[i].specifiedSize = leftStart + idealDelta;
+			persistent.columns[targetRightIndex].specifiedSize = rightStart - idealDelta;
+		}
+	}
+
 	// Create new transient table state
 	TableState state;
 	state.id = tableId;
@@ -525,27 +559,8 @@ void endTable()
 				}
 				else
 				{
-					// Reciprocal Resize: Change Left and Right columns
-					f32 idealDelta = ctx->mousePosition.x - persistent.resizeStartX;
-
-					f32 leftStart = persistent.resizeStartWidth;
-					f32 rightStart = persistent.resizeStartWidthRight;
-
-					// Clamp delta against min widths (10px)
-					f32 maxNegativeDelta = -(leftStart - 10.0f); // Limit shrinking Left
-					f32 maxPositiveDelta = (rightStart - 10.0f); // Limit shrinking Right (by growing Left)
-
-					if (idealDelta < maxNegativeDelta) idealDelta = maxNegativeDelta;
-					if (idealDelta > maxPositiveDelta) idealDelta = maxPositiveDelta;
-
-					// Apply
-
-					persistent.columns[i].specifiedSize = leftStart + idealDelta;
-					persistent.columns[targetRightIndex].specifiedSize = rightStart - idealDelta;
-
-					// Draw Resize Guide Line (Cyan) at the CLAMPED column width
-					f32 newWidth = leftStart + idealDelta;
-					f32 guideLineX = (currentX - state.columns[i].width) + newWidth;
+					// Draw Resize Guide Line (Cyan) - width already applied in beginTable
+					f32 guideLineX = currentX;
 					
 					ctx->renderer->cmdSetLineStyle(LineStyle(Color(0.0f, 1.0f, 1.0f, 1.0f), 2.0f));
 					ctx->renderer->cmdDrawLine(Point(guideLineX, state.tableRect.y), 
