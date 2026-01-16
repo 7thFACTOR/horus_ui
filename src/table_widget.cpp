@@ -547,7 +547,56 @@ void endTable()
 			{
 				Rect separatorRect(currentX - separatorWidth, state.tableRect.y, separatorWidth * 2.0f, finalHeight);
 
-				if (separatorRect.contains(ctx->mousePosition))
+				// Determine if this separator is covered by a column span in the row under the mouse
+				bool isSeparatorCovered = false;
+				
+				// Find which row the mouse is in
+				i32 hoveredRowIndex = -1;
+				f32 mouseY = ctx->mousePosition.y;
+				
+				if (state.rowSeparators.empty())
+				{
+					// Fallback for single row table if logic failed elsewhere
+					if (mouseY >= state.bodyStartY && mouseY < state.currentRowY)
+						hoveredRowIndex = 0;
+				}
+				else
+				{
+					for (size_t r = 0; r < state.rowSeparators.size(); r++)
+					{
+						f32 rowTop = (r == 0) ? state.bodyStartY : state.rowSeparators[r - 1];
+						f32 rowBottom = state.rowSeparators[r];
+						
+						if (mouseY >= rowTop && mouseY <= rowBottom)
+						{
+							hoveredRowIndex = (i32)r;
+							break;
+						}
+					}
+				}
+				
+				if (hoveredRowIndex >= 0 && hoveredRowIndex < (i32)state.columnSpans.size())
+				{
+					const auto& spans = state.columnSpans[hoveredRowIndex];
+					// Check if separator 'i' (between col i and i+1) is covered
+					for (u32 c = 0; c <= i; c++)
+					{
+						if (c < spans.size() && spans[c] > 1)
+						{
+							if (c + spans[c] > i + 1)
+							{
+								isSeparatorCovered = true;
+								break;
+							}
+						}
+					}
+				}
+
+				if (isSeparatorCovered && separatorRect.contains(ctx->mousePosition))
+				{
+					ctx->mouseCursor = MouseCursorType::Arrow;
+				}
+				else if (separatorRect.contains(ctx->mousePosition))
 				{
 					ctx->mouseCursor = MouseCursorType::SizeWE;
 
@@ -833,7 +882,7 @@ void nextCell()
 	}
 }
 
-void setCellColumnSpan(u32 colSpan)
+void setCellColSpan(u32 colSpan)
 {
 	auto& state = currentTable();
 	if (colSpan > 1)

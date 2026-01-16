@@ -2491,7 +2491,7 @@ HORUS_API void startHeader();
 HORUS_API void setupColumn(u32 columnIndex, f32 size, TableColumnFlags flags = TableColumnFlags::None);
 HORUS_API void nextRow();
 HORUS_API void nextCell();
-HORUS_API void setCellColumnSpan(u32 colSpan);
+HORUS_API void setCellColSpan(u32 colSpan);
 
 /// Get the remaining height in the current layout from current position to bottom
 HORUS_API f32 getRemainingHeight();
