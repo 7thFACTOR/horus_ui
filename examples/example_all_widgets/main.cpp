@@ -3,6 +3,7 @@
 
 #define _USE_MATH_DEFINES
 #include <cmath>
+#include <filesystem>
 
 // backends
 #include "sdl3_input_provider.h"
@@ -120,12 +121,13 @@ int main(int argc, char** args)
 		glClearColor(1, 1, 0, 1);
 		glClear(GL_COLOR_BUFFER_BIT);
 
-		static f32 timePassed = 0;
-		timePassed += hui::getFrameDeltaTime();
-		if (timePassed > 1.0f)
+		// Theme file path
+		static const char* themeFilePath = "../themes/default.theme.json";
+
+		// Theme reload function (used by F2 key and auto-reload)
+		auto reloadTheme = [&]()
 		{
-			timePassed = 0;
-			auto newTheme = hui::hotReloadTheme("../themes/default.theme.json", err, errSize);
+			auto newTheme = hui::loadThemeFromJson(themeFilePath, err, errSize);
 
 			if (newTheme)
 			{
@@ -140,26 +142,33 @@ int main(int argc, char** args)
 				hui::buildTheme(theme);
 				printf("Theme reloaded!\n");
 			}
-		}
-
-		auto reloadTheme = [&]()
-		{
-			auto newTheme = hui::loadThemeFromJson("../themes/default.theme.json", err, errSize);
-
-			if (newTheme)
-			{
-				// delete old theme
-				if (theme) hui::deleteTheme(theme);
-				theme = newTheme;
-				hui::setTheme(theme);
-
-				// Reload resources
-				largeFnt = hui::getThemeFont(theme, "title");
-				loadImages();
-				hui::buildTheme(theme);
-				printf("Theme reloaded via F2!\n");
-			}
 		};
+
+		// Track theme file modification time for auto-reload
+		static auto lastModTime = std::filesystem::last_write_time(themeFilePath);
+		static f32 checkTimer = 0;
+		
+		checkTimer += hui::getFrameDeltaTime();
+		
+		// Check if theme file has been modified (every 1 second)
+		if (checkTimer >= 1.0f)
+		{
+			checkTimer = 0;
+			
+			try
+			{
+				auto currentModTime = std::filesystem::last_write_time(themeFilePath);
+				if (currentModTime != lastModTime)
+				{
+					lastModTime = currentModTime;
+					reloadTheme();
+				}
+			}
+			catch (...)
+			{
+				// Ignore filesystem errors
+			}
+		}
 
 		// Get the events from SDL or whatever input provider is set, it will fill a queue of events
 		hui::update();
@@ -475,7 +484,7 @@ int main(int argc, char** args)
 				static bool listSelection[5] = {false};
 				static const char* listItems[] = { "Apple", "Banana", "Cherry", "Date", "Elderberry" };
 				hui::label("List Box:");
-				hui::list("myList", listSelection, hui::ListSelectionMode::Multiple, listItems, 5, 250);
+				hui::list("myList", listSelection, hui::ListSelectionMode::Multiple, listItems,5, 78);
 
 				hui::space();
 				hui::label("Table Widget:");
@@ -498,16 +507,18 @@ int main(int argc, char** args)
 					hui::label("Column 4", hui::HAlignType::Center);
 
 					hui::nextRow();
-					hui::setCellColSpan(3); // span 2 columns
+					hui::setCellColumnSpan(3); // span 2 columns
 					hui::label("Row 1, Cell 1 wdf dfasfasf asdf asf sadf asdf asfasf asf asf ");
 					hui::nextCell();
+					hui::setCellColor(hui::Color::red);
 					hui::label("AOAKAOAO1");
 					hui::label("AOAKAOAO2");
 					hui::label("AOAKAOAO3");
 					hui::label("AOAKAOAO4");
 
 					hui::nextRow();
-					hui::setCellColSpan(2); // Make this cell span 2 columns
+					hui::setRowColor(hui::Color::blue);
+					hui::setCellColumnSpan(2); // Make this cell span 2 columns
 					hui::label("Row 2, Cell 1\n(Multi-line)");
 					hui::button("Tall Button");
 					hui::nextCell();

@@ -91,10 +91,11 @@ f32 endScrollView()
 	if (ctx->event.type == InputEvent::Type::MouseWheel
 		&& ctx->isActiveLayer())
 	{
-		if (fullRect.contains(ctx->mousePosition))
+		if (rect.contains(ctx->mousePosition))
 		{
-			scrollAmount = ctx->event.mouse.wheel.y * (clipRect.height * ctx->scrollViewSpeed) * ctx->scale;
+			scrollAmount = ctx->event.mouse.wheel.y * (fullRect.height * ctx->scrollViewSpeed) * ctx->scale;
 			scrollPos -= scrollAmount;
+			ctx->event.type = InputEvent::Type::None;
 			forceRepaint();
 		}
 	}
@@ -102,9 +103,9 @@ f32 endScrollView()
 	// auto scroll to the focused widget if curent widget changed
 	if (ctx->focusChanged && ctx->widget.focusedId == ctx->id)
 	{
-		if (ctx->widget.focusedWidgetRect.y > clipRect.bottom())
+		if (ctx->widget.focusedWidgetRect.y > rect.bottom())
 		{
-			scrollPos = (ctx->widget.focusedWidgetRect.y + scrollPos) - clipRect.y;
+			scrollPos = (ctx->widget.focusedWidgetRect.y + scrollPos) - rect.y;
 		}
 	}
 
@@ -116,23 +117,23 @@ f32 endScrollView()
 	}
 
 	// if content is smaller than scroll view, just set pos to 0
-	if (scrollContentSize < clipRect.height && fabs(scrollPos) > 0)
+	if (scrollContentSize < rect.height && fabs(scrollPos) > 0)
 	{
 		scrollPos = 0;
 		forceRepaint();
 	}
 
 	// if we reached bottom of the content, stop
-	if (ctx->position.y + scrollAmount < clipRect.bottom())
+	if (ctx->position.y + scrollAmount < rect.bottom())
 	{
-		if (scrollContentSize > clipRect.height)
+		if (scrollContentSize > rect.height)
 		{
-			scrollPos = scrollContentSize - clipRect.height;
+			scrollPos = scrollContentSize - rect.height;
 		}
 	}
 
 	// draw scrollbar if content is bigger than scroll view
-	if (scrollContentSize > clipRect.height)
+	if (scrollContentSize > rect.height)
 	{
 		auto scrollViewScrollBarElemState = ctx->theme->getElement(WidgetElementId::ScrollViewScrollBar).normalState();
 		auto scrollViewScrollThumbElemState = ctx->theme->getElement(WidgetElementId::ScrollViewScrollThumb).normalState();
@@ -140,9 +141,9 @@ f32 endScrollView()
 		Rect rectScrollBar =
 		{
 			rect.right() - scrollViewScrollBarElemState.width * ctx->scale,
-			clipRect.y,
+			rect.y,
 			scrollViewScrollBarElemState.width * ctx->scale,
-			clipRect.height
+			rect.height
 		};
 
 		f32 handleSize = rectScrollBar.height * rectScrollBar.height / scrollContentSize;
@@ -200,14 +201,14 @@ f32 endScrollView()
 			&& scrollViewInfo.draggingThumb
 			&& ctx->dragScrollViewHandleWidgetId == scrollViewInfo.id)
 		{
-			f32 crtLocalY = ctx->mousePosition.y - scrollViewInfo.dragDelta.y - clipRect.y;
-			f32 trackSize = clipRect.height - handleSize;
+			f32 crtLocalY = ctx->mousePosition.y - scrollViewInfo.dragDelta.y - rect.y;
+			f32 trackSize = rect.height - handleSize;
 			f32 percent = crtLocalY / trackSize;
 			f32 oldScrollPos = scrollPos;
 
 			// kill event, only we're dragging now
 			hui::cancelEvent();
-			scrollPos = percent * (scrollContentSize - clipRect.height);
+			scrollPos = percent * (scrollContentSize - rect.height);
 			scrollAmount = oldScrollPos - scrollPos;
 
 			//TODO: duplicated code see above scrollPos correction
@@ -217,17 +218,17 @@ f32 endScrollView()
 				forceRepaint();
 			}
 
-			if (scrollContentSize < clipRect.height && fabs(scrollPos) > 0)
+			if (scrollContentSize < rect.height && fabs(scrollPos) > 0)
 			{
 				scrollPos = 0;
 				forceRepaint();
 			}
 
-			if (ctx->position.y + scrollAmount < clipRect.bottom())
+			if (ctx->position.y + scrollAmount < rect.bottom())
 			{
-				if (scrollContentSize > clipRect.height)
+				if (scrollContentSize > rect.height)
 				{
-					scrollPos = scrollContentSize - clipRect.height;
+					scrollPos = scrollContentSize - rect.height;
 				}
 			}
 			// end duplicated code
@@ -238,7 +239,7 @@ f32 endScrollView()
 			rectScrollBarHandle =
 			{
 				rect.right() - scrollViewScrollThumbElemState.width * ctx->scale,
-				clipRect.y + handleOffset,
+				rect.y + handleOffset,
 				scrollViewScrollThumbElemState.width * ctx->scale,
 				handleSize
 			};

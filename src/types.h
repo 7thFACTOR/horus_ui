@@ -314,6 +314,10 @@ struct TableState
 	bool isInHeader = false;
 	u32 currentRow = 0;
 	f32 currentRowY = 0;
+	Color currentRowColor;
+	bool currentRowColorSet = false;
+	Color currentCellColor;
+	bool currentCellColorSet = false;
 	TableFlags flags = TableFlags::None;
 	f32 currentMaxRowHeight = 0;
 	f32 rowStartY = 0;

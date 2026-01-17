@@ -34,8 +34,7 @@ bool list(const char* id, bool* selectedItems, ListSelectionMode selectionType, 
 
 	if (height <= 0)
 	{
-		if (widgetHeight == 0)
-			widgetHeight = 200; // Default fallback
+		widgetHeight = 200; // Default fallback
 	}
 
 	pushPadding(PaddingType::Layout, Point(0, 0));

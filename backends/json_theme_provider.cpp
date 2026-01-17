@@ -1,7 +1,6 @@
 #include "json_theme_provider.h"
 #include <json/json.h>
 #include <json/reader.h>
-#include <sys/stat.h>
 #include <unordered_map>
 
 namespace hui
@@ -639,44 +638,6 @@ HTheme loadThemeFromJson(const char* filename, char* errorTextBuffer, size_t err
 	buildTheme(theme);
 
 	return theme;
-}
-
-static std::unordered_map<std::string, time_t> themeFileModTimes;
-
-static time_t getFileModTime(const char* filename)
-{
-	struct stat result;
-	if (stat(filename, &result) == 0)
-	{
-		return result.st_mtime;
-	}
-	return 0;
-}
-
-HTheme hotReloadTheme(const char* filename, char* errorTextBuffer, size_t errorTextBufferSize)
-{
-	time_t currentModTime = getFileModTime(filename);
-
-	if (currentModTime == 0)
-		return nullptr; // File not found or error
-
-	auto it = themeFileModTimes.find(filename);
-
-	if (it == themeFileModTimes.end())
-	{
-		// First run, just store time
-		themeFileModTimes[filename] = currentModTime;
-		return nullptr;
-	}
-
-	if (it->second != currentModTime)
-	{
-		// Changed!
-		themeFileModTimes[filename] = currentModTime;
-		return loadThemeFromJson(filename, errorTextBuffer, errorTextBufferSize);
-	}
-
-	return nullptr;
 }
 
 }
