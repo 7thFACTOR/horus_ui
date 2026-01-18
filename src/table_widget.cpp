@@ -50,7 +50,7 @@ static void finishRow(TableState& state)
 			ctx->renderer->cmdDrawFilledRectangle(rowRect);
 		}
 		// Draw alternating row background if enabled and no custom color
-		else if (has(state.flags, TableFlags::AltRowBg) && (state.currentRow % 2 == 1))
+		else if (has(state.flags, TableFlags::AltRowBg))
 		{
 			Rect rowRect(
 				state.tableRect.x,
@@ -60,8 +60,17 @@ static void finishRow(TableState& state)
 			);
 
 			rowRect = rowRect.contract(1.0);
-
-			ctx->renderer->cmdSetColor(Color::fromU8(60, 60, 60, 255));
+			auto& tableBodyElem = ctx->theme->getElement(WidgetElementId::TableBody);
+			
+			if (state.currentRow % 2 == 1)
+			{
+				ctx->renderer->cmdSetColor(tableBodyElem.currentStyle->getColorParameter("rowAltBgColor0", Color::transparent));
+			}
+			else
+			{
+				ctx->renderer->cmdSetColor(tableBodyElem.currentStyle->getColorParameter("rowAltBgColor1", Color::transparent));
+			}
+			
 			ctx->renderer->cmdDrawFilledRectangle(rowRect);
 		}
 
@@ -91,7 +100,7 @@ static void finishRow(TableState& state)
 			headerHeight
 		);
 
-		auto& bodyElem = ctx->theme->getElement(WidgetElementId::ColumnsHeaderBody);
+		auto& bodyElem = ctx->theme->getElement(WidgetElementId::TableHeaderBody);
 		auto& bodyElemState = bodyElem.normalState();
 
 		// Draw header background
@@ -106,7 +115,8 @@ static void finishRow(TableState& state)
 			bool innerOnly = has(state.flags, TableFlags::BordersInner) && !has(state.flags, TableFlags::Borders) && !has(state.flags, TableFlags::BordersOuter);
 			bool hasOuter = has(state.flags, TableFlags::Borders) || has(state.flags, TableFlags::BordersOuter);
 
-			ctx->renderer->cmdSetLineStyle(LineStyle(Color::white, 1.0f));
+			auto& tableHeaderElem = ctx->theme->getElement(WidgetElementId::TableHeaderBody);
+			ctx->renderer->cmdSetLineStyle(LineStyle(tableHeaderElem.currentStyle->getColorParameter("borderColor", Color::white), 1.0f));
 
 			// Draw leftmost line first if outer borders are needed
 			if (hasOuter)
@@ -157,7 +167,8 @@ static void finishRow(TableState& state)
 		if (has(state.flags, TableFlags::BordersInner) || has(state.flags, TableFlags::Borders) || 
 			has(state.flags, TableFlags::BordersOuter) || has(state.flags, TableFlags::BordersH))
 		{
-			ctx->renderer->cmdSetLineStyle(LineStyle(Color::white, 1.0f));
+			auto& tableHeaderElem = ctx->theme->getElement(WidgetElementId::TableHeaderBody);
+			ctx->renderer->cmdSetLineStyle(LineStyle(tableHeaderElem.currentStyle->getColorParameter("borderColor", Color::white), 1.0f));
 			ctx->renderer->cmdDrawLine(
 				Point(state.headerRect.x, state.headerRect.y + state.headerRect.height),
 				Point(state.headerRect.x + state.headerRect.width, state.headerRect.y + state.headerRect.height)
@@ -514,9 +525,9 @@ bool beginTable(const char* id, u32 columnCount, f32 height, TableFlags flags)
 	ctx->tableStack.push_back(state);
 
 	// Get row height from theme
-	auto& bodyElem = ctx->theme->getElement(WidgetElementId::ColumnsHeaderBody);
+	auto& bodyElem = ctx->theme->getElement(WidgetElementId::TableBody);
 	auto& bodyElemState = bodyElem.normalState();
-	ctx->tableStack.back().rowHeight = bodyElemState.height > 0 ? bodyElemState.height : 25.0f;
+	ctx->tableStack.back().rowHeight = bodyElem.currentStyle->getParameter("rowHeight", 25);
 	state.rowDrawCmdIndex = ctx->renderer->getDrawCommandCount();
 
 	return true;
@@ -580,10 +591,11 @@ void endTable()
 				}
 				else
 				{
-					// Draw Resize Guide Line (Cyan) - width already applied in beginTable
+					// Draw Resize Guide Line - width already applied in beginTable
 					f32 guideLineX = currentX;
-
-					ctx->renderer->cmdSetLineStyle(LineStyle(Color(0.0f, 1.0f, 1.0f, 1.0f), 2.0f));
+					
+					auto& tableBodyElem = ctx->theme->getElement(WidgetElementId::TableBody);
+					ctx->renderer->cmdSetLineStyle(LineStyle(tableBodyElem.currentStyle->getColorParameter("columnResizeLineColor", Color(0.0f, 1.0f, 1.0f, 1.0f)), 2.0f));
 					ctx->renderer->cmdDrawLine(Point(guideLineX, state.tableRect.y),
 											   Point(guideLineX, state.tableRect.y + finalHeight));
 
@@ -670,8 +682,9 @@ void endTable()
 					{
 						ctx->mouseCursor = MouseCursorType::SizeWE;
 
-						// Draw Hover Guide Line (Cyan)
-						ctx->renderer->cmdSetLineStyle(LineStyle(Color(0.0f, 1.0f, 1.0f, 1.0f), 2.0f));
+						// Draw Hover Guide Line
+						auto& tableBodyElem = ctx->theme->getElement(WidgetElementId::TableBody);
+						ctx->renderer->cmdSetLineStyle(LineStyle(tableBodyElem.currentStyle->getColorParameter("columnResizeLineColor", Color(0.0f, 1.0f, 1.0f, 1.0f)), 2.0f));
 						ctx->renderer->cmdDrawLine(Point(currentX, state.tableRect.y),
 												   Point(currentX, state.tableRect.y + finalHeight));
 
@@ -713,8 +726,14 @@ void endTable()
 			}
 		}
 	}
-
-	ctx->renderer->cmdSetLineStyle(LineStyle(Color::white, 1.0f));
+	
+	auto& tableBodyElem = ctx->theme->getElement(WidgetElementId::TableBody);
+	
+	// Determine which color to use based on border type (inner vs outer)
+	Color innerHColor = tableBodyElem.currentStyle->getColorParameter("innerHorizontalLineColor", Color::white);
+	Color innerVColor = tableBodyElem.currentStyle->getColorParameter("innerVerticalLineColor", Color::white);
+	Color outerHColor = tableBodyElem.currentStyle->getColorParameter("outerHorizontalLineColor", Color::white);
+	Color outerVColor = tableBodyElem.currentStyle->getColorParameter("outerVerticalLineColor", Color::white);
 
 	// Batch draw borders if enabled
 	if (has(state.flags, TableFlags::Borders) || has(state.flags, TableFlags::BordersOuter) || has(state.flags, TableFlags::BordersInner) || has(state.flags, TableFlags::BordersV) || has(state.flags, TableFlags::BordersH))
@@ -722,6 +741,7 @@ void endTable()
 		// Draw Inner Horizontal Lines
 		if (has(state.flags, TableFlags::BordersInner) || has(state.flags, TableFlags::Borders) || has(state.flags, TableFlags::BordersH))
 		{
+			ctx->renderer->cmdSetLineStyle(LineStyle(innerHColor, 1.0f));
 			for (size_t i = 0; i < state.rowSeparators.size(); i++)
 			{
 				bool draw = true;
@@ -749,6 +769,7 @@ void endTable()
 		// We need to draw these per-row to respect column spans
 		if (has(state.flags, TableFlags::BordersInner) || has(state.flags, TableFlags::Borders) || has(state.flags, TableFlags::BordersV))
 		{
+			ctx->renderer->cmdSetLineStyle(LineStyle(innerVColor, 1.0f));
 			bool innerOnly = has(state.flags, TableFlags::BordersInner) && !has(state.flags, TableFlags::Borders) && !has(state.flags, TableFlags::BordersOuter);
 			bool hasOuter = has(state.flags, TableFlags::Borders) || has(state.flags, TableFlags::BordersOuter);
 
@@ -815,6 +836,7 @@ void endTable()
 		if (has(state.flags, TableFlags::Borders) || has(state.flags, TableFlags::BordersOuter))
 		{
 			// Top Line (at tableRect.y)
+			ctx->renderer->cmdSetLineStyle(LineStyle(outerHColor, 1.0f));
 			ctx->renderer->cmdDrawLine(Point(state.tableRect.x, state.tableRect.y),
 									   Point(state.tableRect.x + state.innerWidth, state.tableRect.y));
 
@@ -826,6 +848,7 @@ void endTable()
 			if (!has(state.flags, TableFlags::BordersInner) && !has(state.flags, TableFlags::Borders))
 			{
 				// Draw Sides
+				ctx->renderer->cmdSetLineStyle(LineStyle(outerVColor, 1.0f));
 				ctx->renderer->cmdDrawLine(Point(state.tableRect.x, state.tableRect.y),
 										   Point(state.tableRect.x, state.tableRect.y + finalHeight));
 				ctx->renderer->cmdDrawLine(Point(state.tableRect.x + state.innerWidth, state.tableRect.y),

@@ -210,7 +210,6 @@ enum class WidgetType
 	Custom,
 	Window,
 	Layout,
-	Compound,
 	Tooltip,
 	Button,
 	ImageButton,
@@ -238,14 +237,10 @@ enum class WidgetType
 	Viewport,
 	MsgBox,
 	Box,
-	Toolbar,
-	ToolbarButton,
-	ToolbarDropdown,
-	ToolbarSeparator,
-	ColumnsHeader,
 	ComboSlider,
 	RotarySlider,
 	ColorPicker,
+	Table,
 
 	Count
 };
@@ -264,10 +259,6 @@ enum class WidgetElementId
 	RadioMark,
 	LineBody,
 	LabelBody,
-	PanelBody,
-	PanelTitleBody,
-	PanelCloseButton,
-	PanelResizeHandle,
 	ExpandableBody,
 	ExpandableCollapsedArrow,
 	ExpandableExpandedArrow,
@@ -312,12 +303,6 @@ enum class WidgetElementId
 	MessageBoxImageWarning,
 	SelectableBody,
 	BoxBody,
-	ToolbarBody,
-	ToolbarButtonBody,
-	ToolbarDropdownBody,
-	ToolbarSeparatorVerticalBody,
-	ToolbarSeparatorHorizontalBody,
-	ColumnsHeaderBody,
 	ComboSliderBody,
 	ComboSliderLeftArrow,
 	ComboSliderRightArrow,
@@ -328,6 +313,8 @@ enum class WidgetElementId
 	RotarySliderValueDot,
 	ColorPickerCheckers,
 	ColorPickerBody,
+	TableBody,
+	TableHeaderBody,
 
 	Count
 };
@@ -2505,50 +2492,6 @@ HORUS_API f32 getRemainingWidth();
 HORUS_API void pushCellPadding(f32 paddingX, f32 paddingY);
 HORUS_API void popCellPadding();
 
-/// Begin a layout made up as columns which can have percentage based widths or fixed
-/// \param columnCount the number of columns to be created
-/// \param preferredWidths a float array of the preferred width for each columns, if width is smaller of equal to 1.0f it is considered a percentage of the parent layout, if it is greater than 1.0f it is considered a fixed pixel size
-/// \param minWidths a float array of the minimal width for each columns, if width is smaller of equal to 1.0f it is considered a percentage of the parent layout, if it is greater than 1.0f it is considered a fixed pixel size
-/// \param maxWidths a float array of the maximum width for each columns, if width is smaller of equal to 1.0f it is considered a percentage of the parent layout, if it is greater than 1.0f it is considered a fixed pixel size
-HORUS_API void beginColumns(u32 columnCount, const f32 preferredWidths[] = nullptr, const f32 minWidths[] = nullptr, const f32 maxWidths[] = nullptr);
-
-/// Begin an equal widths array of columns
-/// \param columnCount the column count
-/// \param minWidths a float array of the minimal width for each columns, if width is smaller of equal to 1.0f it is considered a percentage of the parent layout, if it is greater than 1.0f it is considered a fixed pixel size
-/// \param addPadding true if you want padding to be added to left and right sides of the columns group
-HORUS_API void beginEqualColumns(u32 columnCount, const f32 minWidths[] = nullptr, const f32 maxWidths[] = nullptr);
-
-/// Begin a two columns layout
-HORUS_API void beginTwoColumns();
-
-/// Begin a three columns layout
-HORUS_API void beginThreeColumns();
-
-/// Begin a four columns layout
-HORUS_API void beginFourColumns();
-
-/// Begin a five column layout
-HORUS_API void beginFiveColumns();
-
-/// Begin a six column layout
-HORUS_API void beginSixColumns();
-
-/// Advance to next column in the current column layout
-HORUS_API void nextColumn();
-
-/// \return the current column's rectangle in coordinates relative to current window
-HORUS_API Rect getColumnRect();
-
-/// End the columns layout (does the same thing as nextColumn, for the last column)
-HORUS_API void endColumns();
-
-/// Draw a column header widget, usually called inside a column layout. This widget might get resized with mouse, so its parent column could get resized
-/// \param label the label of the header
-/// \param preferredWidth the normal width of the column header
-/// \param minWidth the minimal width of the column header
-/// \param maxWidth the maximal width of the column header
-HORUS_API void columnHeader(const char* label, f32 width, f32 preferredWidth, f32 minWidth, f32 maxWidth);
-
 /// Begin a scroll view area widget
 /// \param height the height of the scroll area
 /// \param scrollPosition the current scroll position (given by endScrollView)
@@ -2576,11 +2519,6 @@ HORUS_API void pushWidgetPadding(const Point& newPadding);
 /// Pop the previous padding value from stack and set it as current
 HORUS_API void popPadding(PaddingType type);
 HORUS_API void popWidgetPadding();
-
-/// Push a new padding for column content
-HORUS_API void pushColumnPadding(f32 newPadding);
-
-HORUS_API void popColumnPadding();
 
 /// Push the old spacing value to stack and set a new spacing value, spacing is the vertical space between widgets
 /// \param newSpacing the new vertical spacing value

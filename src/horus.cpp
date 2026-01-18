@@ -1012,8 +1012,6 @@ void setWidgetStyle(WidgetType widgetType, const char* styleName)
 		break;
 	case WidgetType::Layout:
 		break;
-	case WidgetType::Compound:
-		break;
 	case WidgetType::Tooltip:
 		ctx->theme->elements[(u32)WidgetElementId::TooltipBody].setStyle(styleName);
 		break;
@@ -1051,12 +1049,6 @@ void setWidgetStyle(WidgetType widgetType, const char* styleName)
 		break;
 	case WidgetType::Label:
 		ctx->theme->elements[(u32)WidgetElementId::LabelBody].setStyle(styleName);
-		break;
-	case WidgetType::Panel:
-		ctx->theme->elements[(u32)WidgetElementId::PanelBody].setStyle(styleName);
-		ctx->theme->elements[(u32)WidgetElementId::PanelCloseButton].setStyle(styleName);
-		ctx->theme->elements[(u32)WidgetElementId::PanelResizeHandle].setStyle(styleName);
-		ctx->theme->elements[(u32)WidgetElementId::PanelTitleBody].setStyle(styleName);
 		break;
 	case WidgetType::Expandable:
 		ctx->theme->elements[(u32)WidgetElementId::ExpandableBody].setStyle(styleName);
@@ -1119,22 +1111,6 @@ void setWidgetStyle(WidgetType widgetType, const char* styleName)
 	case WidgetType::Box:
 		ctx->theme->elements[(u32)WidgetElementId::BoxBody].setStyle(styleName);
 		break;
-	case WidgetType::Toolbar:
-		ctx->theme->elements[(u32)WidgetElementId::ToolbarBody].setStyle(styleName);
-		break;
-	case WidgetType::ToolbarButton:
-		ctx->theme->elements[(u32)WidgetElementId::ToolbarButtonBody].setStyle(styleName);
-		break;
-	case WidgetType::ToolbarDropdown:
-		ctx->theme->elements[(u32)WidgetElementId::ToolbarDropdownBody].setStyle(styleName);
-		break;
-	case WidgetType::ToolbarSeparator:
-		ctx->theme->elements[(u32)WidgetElementId::ToolbarSeparatorVerticalBody].setStyle(styleName);
-		ctx->theme->elements[(u32)WidgetElementId::ToolbarSeparatorHorizontalBody].setStyle(styleName);
-		break;
-	case WidgetType::ColumnsHeader:
-		ctx->theme->elements[(u32)WidgetElementId::ColumnsHeaderBody].setStyle(styleName);
-		break;
 	case WidgetType::ComboSlider:
 		ctx->theme->elements[(u32)WidgetElementId::ComboSliderBody].setStyle(styleName);
 		ctx->theme->elements[(u32)WidgetElementId::ComboSliderLeftArrow].setStyle(styleName);
@@ -1150,6 +1126,10 @@ void setWidgetStyle(WidgetType widgetType, const char* styleName)
 	case WidgetType::ColorPicker:
 		ctx->theme->elements[(u32)WidgetElementId::ColorPickerCheckers].setStyle(styleName);
 		ctx->theme->elements[(u32)WidgetElementId::ColorPickerBody].setStyle(styleName);
+		break;
+	case WidgetType::Table:
+		ctx->theme->elements[(u32)WidgetElementId::TableBody].setStyle(styleName);
+		ctx->theme->elements[(u32)WidgetElementId::TableHeaderBody].setStyle(styleName);
 		break;
 	}
 }
@@ -1497,12 +1477,14 @@ void popLayout()
 f32 getRemainingHeight()
 {
 	f32 remainingHeight = ctx->layout.height - (ctx->position.y - ctx->layout.savedPosition.y);
+
 	return remainingHeight > 0 ? remainingHeight : 0;
 }
 
 f32 getRemainingWidth()
 {
 	f32 remainingWidth = ctx->layout.width - (ctx->position.x - ctx->layout.savedPosition.x);
+
 	return remainingWidth > 0 ? remainingWidth : 0;
 }
 
@@ -1533,256 +1515,6 @@ void decrementWindowMaxLayerIndex()
 	{
 		ctx->maxLayerIndex = 0;
 	}
-}
-
-static void computeColumnsPixelSize(LayoutState& parentLayout, LayoutState& layout)
-{
-	f32 availableWidth = parentLayout.width - ctx->columnSpacing * (layout.columnSizes.size() - 1);
-	u32 fullFillerCount = 0;
-
-	// alloc fixed pixel size columns
-	for (size_t i = 0; i < layout.columnSizes.size(); i++)
-	{
-		// if its pixels units
-		if (layout.columnSizes[i] > 1.0f)
-		{
-			availableWidth -= layout.columnPixelSizes[i];
-		}
-
-		// if its a column that wants to get equal part of remaining space
-		if (layout.columnSizes[i] <= 0.0f)
-		{
-			fullFillerCount++;
-		}
-	}
-
-	f32 decrementAvailableWidth = 0;
-	// alloc percentage size columns
-	for (size_t i = 0; i < layout.columnSizes.size(); i++)
-	{
-		// if the column width is a percentage (0-1 range)
-		if (layout.columnSizes[i] > 0.0f && layout.columnSizes[i] <= 1.0f)
-		{
-			f32 pixelSize = layout.columnSizes[i] * availableWidth;
-
-			if (!layout.columnMinSizes.empty())
-			{
-				if (pixelSize < layout.columnMinSizes[i] * ctx->scale)
-				{
-					pixelSize = layout.columnMinSizes[i] * ctx->scale;
-				}
-			}
-
-			layout.columnPixelSizes[i] = round(pixelSize);
-			decrementAvailableWidth += round(pixelSize);
-		}
-	}
-
-	availableWidth -= decrementAvailableWidth;
-
-	// alloc what's left for the fill up size columns
-	f32 partitionForFillers = round(availableWidth / (f32)fullFillerCount);
-
-	for (size_t i = 0; i < layout.columnSizes.size(); i++)
-	{
-		if (layout.columnSizes[i] <= 0.0f)
-		{
-			layout.columnPixelSizes[i] = partitionForFillers;
-		}
-	}
-}
-
-void beginColumns(u32 columnCount, const f32 widths[], const f32 minWidths[], const f32 maxWidths[])
-{
-	if (columnCount == 0)
-	{
-		return;
-	}
-
-	pushLayout();
-
-	LayoutState columns;
-
-	columns.currentColumn = 0;
-	columns.type = LayoutType::Columns;
-
-	for (u32 i = 0; i < columnCount; i++)
-	{
-		if (widths)
-		{
-			columns.columnSizes.push_back(widths[i]);
-			columns.columnPixelSizes.push_back(round(widths[i] * ctx->scale));
-		}
-		else
-		{
-			columns.columnSizes.push_back(-1);
-			columns.columnPixelSizes.push_back(-1);
-		}
-
-		if (minWidths)
-		{
-			columns.columnMinSizes.push_back(round(minWidths[i] * ctx->scale));
-		}
-
-		if (maxWidths)
-		{
-			columns.columnMaxSizes.push_back(round(maxWidths[i] * ctx->scale));
-		}
-	}
-
-	columns.savedPosition = ctx->position;
-	computeColumnsPixelSize(ctx->layout, columns);
-	ctx->layout = columns;
-	nextColumn();
-}
-
-void beginEqualColumns(u32 columnCount, const f32 minWidths[], const f32 maxWidths[])
-{
-	std::vector<f32> colWidths(columnCount);
-	f32 columnPercentSize = 1.0f / (f32)columnCount;
-
-	for (u32 i = 0; i < columnCount; i++)
-	{
-		colWidths[i] = columnPercentSize;
-	}
-
-	beginColumns(columnCount, colWidths.data(), minWidths, nullptr);
-}
-
-void beginTwoColumns()
-{
-	beginEqualColumns(2);
-}
-
-void beginThreeColumns()
-{
-	beginEqualColumns(3);
-}
-
-void beginFourColumns()
-{
-	beginEqualColumns(4);
-}
-
-void beginFiveColumns()
-{
-	beginEqualColumns(5);
-}
-
-void beginSixColumns()
-{
-	beginEqualColumns(6);
-}
-
-void nextColumn()
-{
-	auto& layout = ctx->layout;
-	LayoutState newColumn;
-
-	// if we're adding the first column, called from beginColumns()
-	if (layout.type == LayoutType::Columns)
-	{
-		pushLayout();
-		// lets just add the first column
-		newColumn.type = LayoutType::Column;
-		newColumn.savedPosition = ctx->position;
-		newColumn.width = layout.columnPixelSizes[layout.currentColumn];
-		ctx->layout = newColumn;
-		return;
-	}
-	else if (layout.type == LayoutType::Column)
-	{
-		// take out the last column
-		popLayout();
-		auto& columnsLayout = ctx->layout;
-
-		// wrong placement, here must be a Columns
-		if (columnsLayout.type != LayoutType::Columns)
-			return;
-
-		// now we're in the Columns layout
-		columnsLayout.currentColumn++;
-
-		// set max column Y in columns
-		if (columnsLayout.maxPositionY < ctx->position.y)
-			columnsLayout.maxPositionY = ctx->position.y;
-
-		ctx->lastColumnRect.set(ctx->position.x, ctx->position.y, layout.width, ctx->position.y - layout.savedPosition.y);
-
-		// if we're done with the columns, move to the parent layout
-		if (columnsLayout.currentColumn >= columnsLayout.columnSizes.size())
-		{
-			f32 maxY = columnsLayout.maxPositionY;
-			// pop out the columns layout
-			popLayout();
-			auto& parentLayout = ctx->layout;
-
-			// set max column Y in parent
-			if (parentLayout.maxPositionY < maxY)
-				parentLayout.maxPositionY = maxY;
-
-			ctx->position = {
-				parentLayout.savedPosition.x,
-				maxY };
-			return;
-		}
-		else
-		{
-			// increment the columns' current column X
-			ctx->position = {
-				columnsLayout.columnsPosition.x += columnsLayout.columnPixelSizes[(size_t)columnsLayout.currentColumn - 1] + ctx->columnSpacing,
-				columnsLayout.columnsPosition.y };
-
-			pushLayout();
-
-			// lets add a new column
-			newColumn.type = LayoutType::Column;
-			newColumn.columnsPosition = ctx->position;
-			newColumn.width = columnsLayout.columnPixelSizes[columnsLayout.currentColumn];
-			ctx->layout = newColumn;
-		}
-	}
-
-	popLayout();
-}
-
-Rect getColumnRect()
-{
-	return Rect(
-		ctx->lastColumnRect.x,
-		ctx->lastColumnRect.y,
-		ctx->lastColumnRect.width,
-		ctx->lastColumnRect.height);
-}
-
-void endColumns()
-{
-	nextColumn();
-}
-
-void columnHeader(const char* label, f32 width, f32 preferredWidth, f32 minWidth, f32 maxWidth)
-{
-	auto& headerElemState = ctx->theme->getElement(WidgetElementId::ColumnsHeaderBody).normalState();
-
-	ctx->widget.rect = {
-		ctx->position.x,
-		ctx->position.y,
-		ctx->layout.width,
-		headerElemState.height
-	};
-
-	ctx->extractLabelAndId(label);
-	addWidget(ctx->widget.rect.height);
-
-	Rect rcText = ctx->widget.rect;
-
-	rcText.x += 5.0f * ctx->scale;
-
-	ctx->renderer->cmdSetColor(headerElemState.color);
-	ctx->renderer->cmdDrawImageBordered(headerElemState.image, headerElemState.border, ctx->widget.rect, ctx->scale);
-	ctx->renderer->cmdSetColor(headerElemState.textColor);
-	ctx->renderer->cmdSetFont(headerElemState.font);
-	ctx->renderer->cmdDrawTextInBox(ctx->widgetLabel.c_str(), rcText, HAlignType::Left, VAlignType::Center);
 }
 
 void pushPadding(PaddingType type, const Point& newPadding)

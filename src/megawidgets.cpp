@@ -10,7 +10,7 @@ bool vecEditorInternal(f64& x, f64& y, f64& z, f64 scrollStep, bool useZ)
 	sprintf(ctx->vecEditor.strY, "%.8g", y);
 	sprintf(ctx->vecEditor.strZ, "%.8g", z);
 
-	hui::beginColumns(useZ ? 6 : 4, ctx->vecEditor.colWidthsPRS);
+	//hui::beginColumns(useZ ? 6 : 4, ctx->vecEditor.colWidthsPRS);
 
 	bool modified = false;
 	bool changedEndedX = false;
@@ -73,7 +73,7 @@ bool vecEditorInternal(f64& x, f64& y, f64& z, f64 scrollStep, bool useZ)
 			modified = true;
 		}
 
-		hui::nextColumn();
+		//hui::nextColumn();
 		modified = hui::textInput(strAxis, VectorEditorState::maxStrSize) || modified;
 
 		if (isChangeEnded())
@@ -86,16 +86,16 @@ bool vecEditorInternal(f64& x, f64& y, f64& z, f64 scrollStep, bool useZ)
 	};
 
 	editValue("X", "axisBoxXImage", ctx->vecEditor.strX, x, Color::veryDarkRed, Color::red, scrollStep, modified, changedEndedX);
-	hui::nextColumn();
+	//hui::nextColumn();
 	editValue("Y", "axisBoxYImage", ctx->vecEditor.strY, y, Color::veryDarkGreen, Color::green, scrollStep, modified, changedEndedY);
 
 	if (useZ)
 	{
-		hui::nextColumn();
+		//hui::nextColumn();
 		editValue("Z", "axisBoxZImage", ctx->vecEditor.strZ, z, Color::veryDarkCyan, Color::cyan, scrollStep, modified, changedEndedZ);
 	}
 
-	endColumns();
+	//endColumns();
 	ctx->widget.changeEnded = changedEndedX || changedEndedY || changedEndedZ;
 
 	return modified;
@@ -160,7 +160,7 @@ bool objectRefEditor(const char* id, HImage targetImg, HImage clearImg, const ch
 	if (objectValueWasModified)
 		*objectValueWasModified = false;
 
-	beginColumns(3, tgtRowImgs);
+	//beginColumns(3, tgtRowImgs);
 	WidgetElementInfo targetElemInfo;
 
 	hui::getThemeUserWidgetElementInfo("targetObjectBody", WidgetStateType::Normal, targetElemInfo);
@@ -215,9 +215,9 @@ bool objectRefEditor(const char* id, HImage targetImg, HImage clearImg, const ch
 		forceRepaint();
 	}
 
-	nextColumn();
+	//nextColumn();
 	returnValue = imageButton(targetImg, targetElemInfo.height, targetElemInfo.height);
-	nextColumn();
+	//nextColumn();
 	pushTint(Color::darkRed);
 
 	if (imageButton(clearImg, targetElemInfo.height, targetElemInfo.height))
@@ -231,7 +231,7 @@ bool objectRefEditor(const char* id, HImage targetImg, HImage clearImg, const ch
 	}
 
 	popTint();
-	endColumns();
+	//endColumns();
 
 	ctx->widget.changeEnded = changeEnded;
 

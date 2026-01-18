@@ -65,13 +65,10 @@ WidgetType getWidgetTypeFromName(std::string name)
 	if (name == "messageBox") return WidgetType::MsgBox;
 	if (name == "selectable") return WidgetType::Selectable;
 	if (name == "box") return WidgetType::Box;
-	if (name == "toolbar") return WidgetType::Toolbar;
-	if (name == "toolbarButton") return WidgetType::ToolbarButton;
-	if (name == "toolbarSeparator") return WidgetType::ToolbarSeparator;
-	if (name == "columnsHeader") return WidgetType::ColumnsHeader;
 	if (name == "comboSlider") return WidgetType::ComboSlider;
 	if (name == "rotarySlider") return WidgetType::RotarySlider;
 	if (name == "colorPicker") return WidgetType::ColorPicker;
+	if (name == "table") return WidgetType::Table;
 
 	return WidgetType::None;
 }
@@ -87,10 +84,6 @@ WidgetElementId getWidgetElementFromName(std::string name)
 	if (name == "radioMark") return WidgetElementId::RadioMark;
 	if (name == "lineBody") return WidgetElementId::LineBody;
 	if (name == "labelBody") return WidgetElementId::LabelBody;
-	if (name == "panelBody") return WidgetElementId::PanelBody;
-	if (name == "panelTitleBody") return WidgetElementId::PanelBody;
-	if (name == "panelCloseButton") return WidgetElementId::PanelBody;
-	if (name == "panelResizeHandle") return WidgetElementId::PanelBody;
 	if (name == "expandableBody") return WidgetElementId::ExpandableBody;
 	if (name == "expandableCollapsedArrow") return WidgetElementId::ExpandableCollapsedArrow;
 	if (name == "expandableExpandedArrow") return WidgetElementId::ExpandableExpandedArrow;
@@ -135,11 +128,6 @@ WidgetElementId getWidgetElementFromName(std::string name)
 	if (name == "warningImage") return WidgetElementId::MessageBoxImageWarning;
 	if (name == "selectableBody") return WidgetElementId::SelectableBody;
 	if (name == "boxBody") return WidgetElementId::BoxBody;
-	if (name == "toolbarBody") return WidgetElementId::ToolbarBody;
-	if (name == "toolbarButtonBody") return WidgetElementId::ToolbarButtonBody;
-	if (name == "toolbarSeparatorVerticalBody") return WidgetElementId::ToolbarSeparatorVerticalBody;
-	if (name == "toolbarSeparatorHorizontalBody") return WidgetElementId::ToolbarSeparatorHorizontalBody;
-	if (name == "columnsHeaderBody") return WidgetElementId::ColumnsHeaderBody;
 	if (name == "comboSliderBody") return WidgetElementId::ComboSliderBody;
 	if (name == "comboSliderLeftArrow") return WidgetElementId::ComboSliderLeftArrow;
 	if (name == "comboSliderRightArrow") return WidgetElementId::ComboSliderRightArrow;
@@ -150,6 +138,8 @@ WidgetElementId getWidgetElementFromName(std::string name)
 	if (name == "rotarySliderValueDot") return WidgetElementId::RotarySliderValueDot;
 	if (name == "colorPickerCheckers") return WidgetElementId::ColorPickerCheckers;
 	if (name == "colorPickerBody") return WidgetElementId::ColorPickerBody;
+	if (name == "tableBody") return WidgetElementId::TableBody;
+	if (name == "tableHeaderBody") return WidgetElementId::TableHeaderBody;
 
 	return WidgetElementId::Custom;
 }
@@ -403,7 +393,6 @@ void setThemeElement(
 	}
 
 	auto font = hui::getThemeFont(theme, fontName.c_str());
-	HORUS_ASSERT(font);
 
 	u32 r = 0, g = 0, b = 0, a = 255;
 	Color bgColor;

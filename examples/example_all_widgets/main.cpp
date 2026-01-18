@@ -532,7 +532,7 @@ int main(int argc, char** args)
 					hui::nextCell();
 					// Nested Table
 					hui::label("Nested Table:");
-					if (1&&hui::beginTable("nestedTable", 2, 0, hui::TableFlags::Borders | hui::TableFlags::AltRowBg|hui::TableFlags::Stretch))
+					if (1&&hui::beginTable("nestedTable", 2, 0, hui::TableFlags::Borders | hui::TableFlags::AltRowBg|hui::TableFlags::Stretch|hui::TableFlags::Resizable))
 					{
 						hui::startHeader();
 						hui::label("Sub 1");

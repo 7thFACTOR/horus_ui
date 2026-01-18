@@ -371,11 +371,11 @@ MessageBoxButtons messageBox(
 
 	// body and image
 	f32 titleColWidths[2] = { 0.8, 0.2 };
-	beginColumns(2, titleColWidths);
+	//beginColumns(2, titleColWidths);
 	hui::labelMultiline(message, HAlignType::Left);
-	nextColumn();
+	//nextColumn();
 	hui::image((HImage)imageElem->normalState().image, 0, hui::HAlignType::Right);
-	endColumns();
+	//endColumns();
 
 	hui::space(10);
 
@@ -391,7 +391,7 @@ MessageBoxButtons messageBox(
 	if (!!(buttons & MessageBoxButtons::Retry)) colCount++;
 	if (!!(buttons & MessageBoxButtons::Abort)) colCount++;
 
-	hui::beginColumns(colCount, colWidths);
+	//hui::beginColumns(colCount, colWidths);
 
 	if (!!(buttons & MessageBoxButtons::Ok))
 	{
@@ -400,7 +400,7 @@ MessageBoxButtons messageBox(
 			returnBtns |= MessageBoxButtons::Ok;
 		}
 
-		hui::nextColumn();
+		//hui::nextColumn();
 	}
 
 	if (!!(buttons & MessageBoxButtons::Cancel))
@@ -410,7 +410,7 @@ MessageBoxButtons messageBox(
 			returnBtns |= MessageBoxButtons::Cancel;
 		}
 
-		hui::nextColumn();
+		//hui::nextColumn();
 	}
 
 	if (!!(buttons & MessageBoxButtons::Yes))
@@ -420,7 +420,7 @@ MessageBoxButtons messageBox(
 			returnBtns |= buttons & MessageBoxButtons::Yes;
 		}
 
-		hui::nextColumn();
+		//hui::nextColumn();
 	}
 
 	if (!!(buttons & MessageBoxButtons::No))
@@ -430,7 +430,7 @@ MessageBoxButtons messageBox(
 			returnBtns |= MessageBoxButtons::No;
 		}
 
-		hui::nextColumn();
+		//hui::nextColumn();
 	}
 
 	if (!!(buttons & MessageBoxButtons::Retry))
@@ -440,7 +440,7 @@ MessageBoxButtons messageBox(
 			returnBtns |= MessageBoxButtons::Retry;
 		}
 
-		hui::nextColumn();
+		//hui::nextColumn();
 	}
 
 	if (!!(buttons & MessageBoxButtons::Abort))
@@ -450,10 +450,10 @@ MessageBoxButtons messageBox(
 			returnBtns |= MessageBoxButtons::Abort;
 		}
 
-		hui::nextColumn();
+		//hui::nextColumn();
 	}
 
-	hui::endColumns();
+	//hui::endColumns();
 
 	if (mustClosePopup())
 	{

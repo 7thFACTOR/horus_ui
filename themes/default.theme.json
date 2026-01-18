@@ -578,6 +578,26 @@
 				"normal": { "image": "default/toolbar_separator", "border": 2, "color": "white", "textColor": "white", "font": "normal" }
 			}
 		},
+		"table":
+		{
+			"tableBody":
+			{
+				"rowAltBgColor0" : "green",
+				"rowAltBgColor1" : "magenta",
+				"innerHorizontalLineColor": "white",
+				"innerVerticalLineColor": "white",
+				"outerHorizontalLineColor": "white",
+				"outerVerticalLineColor": "white",
+				"columnResizeLineColor": "cyan",
+				"rowHeight": 25.0
+			},
+			"tableHeaderBody":
+			{
+				"height": 25,
+				"borderColor": "red",
+				"normal": {"color": "lightGray"}
+			}		
+		},
 		"columnsHeader":
 		{
 			"columnsHeaderBody":
