@@ -701,15 +701,18 @@ void Renderer::setWindowSize(const Point& size)
 	ctx->providers->gfx->setViewport(windowSize, currentClipRect);
 }
 
-void Renderer::beginDrawCmdLayers(u32 count)
+void Renderer::pushDrawCmdLayers(u32 count)
 {
-	drawCmdLayers.resize(count);
+	drawCmdLayers.resize(drawCmdLayers.size() + count);
 	currentDrawCmdLayerIndex = 0;
 	drawCmdLayersEnabled = true;
 
-	for (u32 i = 0; i < drawCmdLayers.size(); i++)
+	DrawCmdLayersOp op;
+	op.count = count;
+
+	for (u32 i = 0; i < count; i++)
 	{
-		drawCmdLayers[i].clear();
+		op.offsets[i] = drawCmdLayers[i].size();
 	}
 }
 
@@ -724,9 +727,14 @@ void Renderer::setDrawCmdLayer(u32 index)
 	currentDrawCmdLayerIndex = index;
 }
 
-void Renderer::endDrawCmdLayers()
+void Renderer::popDrawCmdLayers()
 {
-	drawCmdLayersEnabled = false;
+	DrawCmdLayersOp op = drawCmdLayersOpStack.back();
+
+	drawCmdLayersOpStack.pop_back();
+
+	if (drawCmdLayersOpStack.empty())
+		drawCmdLayersEnabled = false;
 
 	for (u32 i = 0; i < drawCmdLayers.size(); i++)
 	{

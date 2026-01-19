@@ -207,9 +207,9 @@ struct Renderer
 	Font* getFont() const { return currentFont; }
 	void setWindowDrawCmdLayer(u32 index);
 	u32 getWindowDrawCmdLayerCount() const { return windowDrawCmdLayerCount; }
-	void beginDrawCmdLayers(u32 count);
+	void pushDrawCmdLayers(u32 count);
 	void setDrawCmdLayer(u32 index);
-	void endDrawCmdLayers();
+	void popDrawCmdLayers();
 	void resetWindowContexts();
 	inline bool allowRendering() const { return !disableRendering && !skipRender; }
 
@@ -294,6 +294,9 @@ public:
 	void addBatch();
 	void addDrawCommand(DrawCommand& cmd);
 
+	const u32 maxWindowDrawCmdLayerCount = 32;
+	const u32 maxDrawCmdLayerCount = 32;
+
 	struct NativeWindowRenderContext
 	{
 		u32 textBufferPosition = 0;
@@ -305,11 +308,18 @@ public:
 		std::vector<Rect> clipRectStack;
 		u32 currentDrawCmdLayerIndex = 0;
 	};
-	
-	const u32 windowDrawCmdLayerCount = 32;
+
+	struct DrawCmdLayersOp
+	{
+		u32 offsets[maxDrawCmdLayerCount];
+		u32 count = 0;
+	};
+
 	std::vector<std::vector<DrawCommand>> drawCmdLayers;
+	std::vector<DrawCmdLayersOp> drawCmdLayersOpStack;
 	u32 currentDrawCmdLayerIndex = 0;
 	bool drawCmdLayersEnabled = false;
+
 	HNativeWindow currentWindow = 0;
 	NativeWindowRenderContext* currentWindowContext = nullptr;
 	std::unordered_map<HNativeWindow, NativeWindowRenderContext> windowContexts;
