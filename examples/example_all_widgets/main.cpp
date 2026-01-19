@@ -490,7 +490,7 @@ int main(int argc, char** args)
 				hui::label("Table Widget:");
 				hui::pushSpacing(0);
 				hui::pushWidgetPadding(0);
-				if (hui::beginTable("myTable", 4, 0, hui::TableFlags::BordersH | hui::TableFlags::None | hui::TableFlags::AltRowBg | hui::TableFlags::Resizable | hui::TableFlags::Stretch))
+				if (hui::beginTable("myTable", 4, 0, hui::TableFlags::Borders | hui::TableFlags::None | hui::TableFlags::AltRowBg | hui::TableFlags::Resizable | hui::TableFlags::Stretch))
 				{
 					hui::startHeader();
 					hui::setupColumn(0, 0);
@@ -502,12 +502,16 @@ int main(int argc, char** args)
 					hui::nextCell();
 					hui::label("Column 2", hui::HAlignType::Center);
 					hui::nextCell();
-					hui::button("Column 3");
+					hui::label("Column 3", hui::HAlignType::Center);
 					hui::nextCell();
 					hui::label("Column 4", hui::HAlignType::Center);
 
 					hui::nextRow();
-					hui::setCellColumnSpan(3); // span 2 columns
+					
+					hui::label("Row 1, Cell 1 wdf dfasfasf asdf asf sadf asdf asfasf asf asf ");
+					hui::nextCell();
+					hui::label("Row 1, Cell 1 wdf dfasfasf asdf asf sadf asdf asfasf asf asf ");
+					hui::nextCell();
 					hui::label("Row 1, Cell 1 wdf dfasfasf asdf asf sadf asdf asfasf asf asf ");
 					hui::nextCell();
 					hui::setCellColor(hui::Color::red);
@@ -518,12 +522,18 @@ int main(int argc, char** args)
 
 					hui::nextRow();
 					hui::setRowColor(hui::Color::blue);
-					hui::setCellColumnSpan(2); // Make this cell span 2 columns
+					hui::label("Row 1, Cell 1 wdf dfasfasf asdf asf sadf asdf asfasf asf asf ");
+
+					hui::nextCell();
+					hui::label("Row 1, Cell 1 wdf dfasfasf asdf asf sadf asdf asfasf asf asf ");
+
+					hui::nextCell();
 					hui::label("Row 2, Cell 1\n(Multi-line)");
 					hui::button("Tall Button");
+
 					hui::nextCell();
-					// Skip cell 2 since previous cell spanned it
 					hui::label("Row 2, Cell 3 (prev cols spanned)");
+
 					hui::nextCell();
 					hui::label("Row 2, Cell 3 (prev cols spanned)");
 
@@ -571,10 +581,13 @@ int main(int argc, char** args)
 
 					hui::nextRow();
 					hui::button("Row 3, Cell 3");
+
 					hui::nextCell();
 					hui::label("Row 3, Cell 3");
+
 					hui::nextCell();
 					hui::label("Row 3, Cell 3");
+
 					hui::nextCell();
 					hui::label("Row jgW3, Cell 3");
 

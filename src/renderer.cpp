@@ -535,122 +535,111 @@ void Renderer::executeDrawCommands(HNativeWindow wnd)
 		return;
 
 	currentWindowContext = &windowContexts[wnd];
-
-	auto sortDrawCommands = [](const DrawCommand& a, const DrawCommand& b) -> bool
-		{
-			if (a.zOrder < b.zOrder)
-				return true;
-
-			return false;
-		};
-
-	auto& wndCmds = currentWindowContext->drawCommands;
-	//TODO: optimization: just sort some indices/ptrs and not the whole command structs, too much data to move
-	std::stable_sort(wndCmds.begin(), wndCmds.end(), sortDrawCommands);
-
 	currentAtlas = nullptr;
 	currentBatch = nullptr;
 	currentWindowContext->batches.clear();
 	vertexBufferData.drawVertexCount = 0;
 	currentWindow = wnd;
 
-	// generate the batches
-	for (auto& cmd : wndCmds)
+	for (auto& layerCmds : currentWindowContext->drawCmdLayers)
 	{
-		switch (cmd.type)
+		for (auto& cmd : layerCmds)
 		{
-		case DrawCommand::Type::DrawImageBordered:
-			drawImageBordered(cmd.data.drawImageBordered.image, cmd.data.drawImageBordered.border, cmd.data.drawImageBordered.rect, cmd.data.drawImageBordered.scale);
-			break;
-		case DrawCommand::Type::DrawQuad:
-			drawQuad(cmd.data.drawQuad.image, cmd.data.drawQuad.corners[0], cmd.data.drawQuad.corners[1], cmd.data.drawQuad.corners[2], cmd.data.drawQuad.corners[3]);
-			break;
-		case DrawCommand::Type::DrawRect:
-		{
-			atlasTextureIndex = cmd.data.drawRect.textureIndex;
+			switch (cmd.type)
+			{
+			case DrawCommand::Type::DrawImageBordered:
+				drawImageBordered(cmd.data.drawImageBordered.image, cmd.data.drawImageBordered.border, cmd.data.drawImageBordered.rect, cmd.data.drawImageBordered.scale);
+				break;
+			case DrawCommand::Type::DrawQuad:
+				drawQuad(cmd.data.drawQuad.image, cmd.data.drawQuad.corners[0], cmd.data.drawQuad.corners[1], cmd.data.drawQuad.corners[2], cmd.data.drawQuad.corners[3]);
+				break;
+			case DrawCommand::Type::DrawRect:
+			{
+				atlasTextureIndex = cmd.data.drawRect.textureIndex;
 
-			if (clipRect(cmd.data.drawRect.rotated, cmd.data.drawRect.rect, cmd.data.drawRect.uvRect))
-			{
-				if (cmd.data.drawRect.rotated)
+				if (clipRect(cmd.data.drawRect.rotated, cmd.data.drawRect.rect, cmd.data.drawRect.uvRect))
 				{
-					drawQuadRot90(cmd.data.drawRect.rect, cmd.data.drawRect.uvRect);
+					if (cmd.data.drawRect.rotated)
+					{
+						drawQuadRot90(cmd.data.drawRect.rect, cmd.data.drawRect.uvRect);
+					}
+					else
+					{
+						drawQuad(cmd.data.drawRect.rect, cmd.data.drawRect.uvRect);
+					}
 				}
-				else
+				break;
+			}
+			case DrawCommand::Type::DrawText:
+				computeSizeOrDrawText(cmd.data.drawText.text, cmd.data.drawText.rect, cmd.data.drawText.horizAlign, cmd.data.drawText.vertAlign, true, currentFont, cmd.data.drawText.singleLineEllipsis);
+				break;
+			case DrawCommand::Type::SetColor:
+				currentColor = cmd.data.setColor;
+				break;
+			case DrawCommand::Type::SetFont:
+				currentFont = cmd.data.setFont;
+				break;
+			case DrawCommand::Type::ClipRect:
+				currentClipRect = cmd.data.clipRect;
+				break;
+			case DrawCommand::Type::SetTextStyle:
+				currentTextStyle = cmd.data.setTextStyle;
+				break;
+			case DrawCommand::Type::SetLineStyle:
+				currentLineStyle = cmd.data.setLineStyle;
+				break;
+			case DrawCommand::Type::SetFillStyle:
+				currentFillStyle = cmd.data.setFillStyle;
+				break;
+			case DrawCommand::Type::DrawLine:
+				currentColor = currentLineStyle.color;
+				drawLine(cmd.data.drawLine.a, cmd.data.drawLine.b);
+				break;
+			case DrawCommand::Type::DrawPolyLine:
+				currentColor = currentLineStyle.color;
+				drawPolyLine(cmd.data.drawPolyLine.points, cmd.data.drawPolyLine.count, cmd.data.drawPolyLine.closed);
+				break;
+			case DrawCommand::Type::DrawSolidTriangle:
+				drawTriangle(
+					cmd.data.drawTriangle.p1,
+					cmd.data.drawTriangle.p2,
+					cmd.data.drawTriangle.p3,
+					cmd.data.drawTriangle.uv1,
+					cmd.data.drawTriangle.uv2,
+					cmd.data.drawTriangle.uv3,
+					cmd.data.drawTriangle.c1,
+					cmd.data.drawTriangle.c2,
+					cmd.data.drawTriangle.c3,
+					cmd.data.drawTriangle.image);
+				break;
+			case DrawCommand::Type::DrawQuad4Colors:
+				drawQuad4Colors(
+					cmd.data.drawQuad4Colors.rect,
+					cmd.data.drawQuad4Colors.uvRect.contract({ ctx->settings.whiteImageUvBorder, ctx->settings.whiteImageUvBorder }),
+					cmd.data.drawQuad4Colors.topLeft,
+					cmd.data.drawQuad4Colors.topRight,
+					cmd.data.drawQuad4Colors.bottomRight,
+					cmd.data.drawQuad4Colors.bottomLeft);
+				break;
+			case DrawCommand::Type::SetAtlas:
+				if (currentAtlas != cmd.data.setAtlas)
 				{
-					drawQuad(cmd.data.drawRect.rect, cmd.data.drawRect.uvRect);
+					currentAtlas = cmd.data.setAtlas;
+					addBatch();
 				}
+				break;
+			case DrawCommand::Type::ClearBackground:
+				ctx->providers->gfx->clear(cmd.data.setColor);
+				break;
+			case DrawCommand::Type::Callback:
+				cmd.data.callback(currentWindow);
+				break;
+			default:
+				break;
 			}
-			break;
-		}
-		case DrawCommand::Type::DrawText:
-			computeSizeOrDrawText(cmd.data.drawText.text, cmd.data.drawText.rect, cmd.data.drawText.horizAlign, cmd.data.drawText.vertAlign, true, currentFont, cmd.data.drawText.singleLineEllipsis);
-			break;
-		case DrawCommand::Type::SetColor:
-			currentColor = cmd.data.setColor;
-			break;
-		case DrawCommand::Type::SetFont:
-			currentFont = cmd.data.setFont;
-			break;
-		case DrawCommand::Type::ClipRect:
-			currentClipRect = cmd.data.clipRect;
-			break;
-		case DrawCommand::Type::SetTextStyle:
-			currentTextStyle = cmd.data.setTextStyle;
-			break;
-		case DrawCommand::Type::SetLineStyle:
-			currentLineStyle = cmd.data.setLineStyle;
-			break;
-		case DrawCommand::Type::SetFillStyle:
-			currentFillStyle = cmd.data.setFillStyle;
-			break;
-		case DrawCommand::Type::DrawLine:
-			currentColor = currentLineStyle.color;
-			drawLine(cmd.data.drawLine.a, cmd.data.drawLine.b);
-			break;
-		case DrawCommand::Type::DrawPolyLine:
-			currentColor = currentLineStyle.color;
-			drawPolyLine(cmd.data.drawPolyLine.points, cmd.data.drawPolyLine.count, cmd.data.drawPolyLine.closed);
-			break;
-		case DrawCommand::Type::DrawSolidTriangle:
-			drawTriangle(
-				cmd.data.drawTriangle.p1,
-				cmd.data.drawTriangle.p2,
-				cmd.data.drawTriangle.p3,
-				cmd.data.drawTriangle.uv1,
-				cmd.data.drawTriangle.uv2,
-				cmd.data.drawTriangle.uv3,
-				cmd.data.drawTriangle.c1,
-				cmd.data.drawTriangle.c2,
-				cmd.data.drawTriangle.c3,
-				cmd.data.drawTriangle.image);
-			break;
-		case DrawCommand::Type::DrawQuad4Colors:
-			drawQuad4Colors(
-				cmd.data.drawQuad4Colors.rect,
-				cmd.data.drawQuad4Colors.uvRect.contract({ ctx->settings.whiteImageUvBorder, ctx->settings.whiteImageUvBorder }),
-				cmd.data.drawQuad4Colors.topLeft,
-				cmd.data.drawQuad4Colors.topRight,
-				cmd.data.drawQuad4Colors.bottomRight,
-				cmd.data.drawQuad4Colors.bottomLeft);
-			break;
-		case DrawCommand::Type::SetAtlas:
-			if (currentAtlas != cmd.data.setAtlas)
-			{
-				currentAtlas = cmd.data.setAtlas;
-				addBatch();
-			}
-			break;
-		case DrawCommand::Type::ClearBackground:
-			ctx->providers->gfx->clear(cmd.data.setColor);
-			break;
-		case DrawCommand::Type::Callback:
-			cmd.data.callback(currentWindow);
-			break;
-		default:
-			break;
 		}
 	}
-
+	
 	vertexBuffer->updateData(vertexBufferData.vertices.data(), 0, vertexBufferData.drawVertexCount);
 	// render the batches
 	ctx->providers->gfx->draw(currentWindowContext->batches.data(), currentWindowContext->batches.size());
@@ -712,24 +701,65 @@ void Renderer::setWindowSize(const Point& size)
 	ctx->providers->gfx->setViewport(windowSize, currentClipRect);
 }
 
+void Renderer::beginDrawCmdLayers(u32 count)
+{
+	drawCmdLayers.resize(count);
+	currentDrawCmdLayerIndex = 0;
+	drawCmdLayersEnabled = true;
+
+	for (u32 i = 0; i < drawCmdLayers.size(); i++)
+	{
+		drawCmdLayers[i].clear();
+	}
+}
+
+void Renderer::setWindowDrawCmdLayer(u32 index)
+{
+	HORUS_ASSERT(currentWindowContext);
+	currentWindowContext->currentDrawCmdLayerIndex = index;
+}
+
+void Renderer::setDrawCmdLayer(u32 index)
+{
+	currentDrawCmdLayerIndex = index;
+}
+
+void Renderer::endDrawCmdLayers()
+{
+	drawCmdLayersEnabled = false;
+
+	for (u32 i = 0; i < drawCmdLayers.size(); i++)
+	{
+		auto& layerCmds = drawCmdLayers[i];
+
+		currentWindowContext->drawCmdLayers[currentWindowContext->currentDrawCmdLayerIndex].insert(
+			currentWindowContext->drawCmdLayers[currentWindowContext->currentDrawCmdLayerIndex].end(),
+			layerCmds.begin(),
+			layerCmds.end());
+	}
+}
+
 void Renderer::resetWindowContexts()
 {
 	for (auto& wc : windowContexts)
 	{
 		wc.second.batches.clear();
 		wc.second.clipRectStack.clear();
-		wc.second.drawCmdNextInsertIndex = ~0;
-		wc.second.drawCommands.clear();
+		wc.second.currentDrawCmdLayerIndex = 0;
 		wc.second.pointBufferPosition = 0;
 		wc.second.textBufferPosition = 0;
 		wc.second.textBuffer.resize(textBufferMaxSize);
 		wc.second.pointBuffer.resize(pointBufferMaxSize);
+
+		for (auto& layer : wc.second.drawCmdLayers)
+		{
+			layer.clear();
+		}
 	}
 }
 
 void Renderer::begin()
 {
-	zOrder = 0;
 	currentAtlas = nullptr;
 	currentBatch = nullptr;
 	cmdSetAtlas(ctx->theme->atlas);
@@ -2505,16 +2535,13 @@ void Renderer::addDrawCommand(DrawCommand& cmd)
 	if (disableRendering || skipRender)
 		return;
 
-	cmd.zOrder = zOrder;
-
-	if (currentWindowContext->drawCmdNextInsertIndex == ~0)
+	if (!drawCmdLayersEnabled)
 	{
-		currentWindowContext->drawCommands.push_back(cmd);
+		currentWindowContext->drawCmdLayers[currentWindowContext->currentDrawCmdLayerIndex].push_back(cmd);
 	}
 	else
 	{
-		currentWindowContext->drawCommands.insert(currentWindowContext->drawCommands.begin() + currentWindowContext->drawCmdNextInsertIndex, cmd);
-		currentWindowContext->drawCmdNextInsertIndex++;
+		drawCmdLayers[currentDrawCmdLayerIndex].push_back(cmd);
 	}
 }
 

@@ -1491,7 +1491,7 @@ f32 getRemainingWidth()
 void incrementLayerIndex()
 {
 	ctx->layerIndex++;
-	ctx->renderer->incrementZOrder();
+	ctx->renderer->setWindowDrawCmdLayer(ctx->layerIndex);
 
 	if (ctx->maxLayerIndex < ctx->layerIndex)
 	{
@@ -1502,7 +1502,7 @@ void incrementLayerIndex()
 u32 decrementLayerIndex()
 {
 	ctx->layerIndex--;
-	ctx->renderer->decrementZOrder();
+	ctx->renderer->setWindowDrawCmdLayer(ctx->layerIndex);
 
 	return ctx->layerIndex;
 }

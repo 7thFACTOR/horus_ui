@@ -42,35 +42,6 @@ Rect getWidgetRect()
 	return ctx->widget.rect;
 }
 
-void pushDrawCommandIndex()
-{
-	ctx->drawCmdIndexStack.push_back(ctx->renderer->getDrawCommandCount());
-}
-
-u32 popDrawCommandIndex()
-{
-	if (ctx->drawCmdIndexStack.size())
-	{
-		auto idx = ctx->drawCmdIndexStack.back();
-	
-		ctx->drawCmdIndexStack.pop_back();
-		
-		return idx;
-	}
-
-	return 0;
-}
-
-void beginInsertDrawCommands(u32 index)
-{
-	ctx->renderer->beginDrawCmdInsertion(index);
-}
-
-void endInsertDrawCommands()
-{
-	ctx->renderer->endDrawCmdInsertion();
-}
-
 void setFont(HFont font)
 {
 	ctx->renderer->cmdSetFont((Font*)font);

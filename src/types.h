@@ -309,6 +309,7 @@ struct TableState
 	bool resizingColumn = false;
 	u32 resizingColumnIndex = ~0;
 	Point lastMousePos;
+	bool hasTableClip = false;
 
 	// New fields for dynamic layout
 	bool isInHeader = false;
@@ -327,8 +328,6 @@ struct TableState
 	std::vector<f32> rowSeparators;
 	f32 bodyStartY = 0.0f;
 	bool isClipping = false;
-	u32 currentColSpan = 1; // Track current cell's column span
-	std::vector<std::vector<u32>> columnSpans; // For each row, stores column span info
 };
 
 struct PopupState

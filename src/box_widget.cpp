@@ -29,7 +29,7 @@ static void beginBoxInternal(const Color& color, ThemeElement::State& state, f32
 		ctx->layout.height = customHeight * ctx->scale;
 	}
 
-	pushDrawCommandIndex();
+	//ctx->renderer->beginDrawCmdLayers(2);
 }
 
 void beginBox(
@@ -82,8 +82,8 @@ bool endBox()
 	buttonBehavior();
 
 	// insert box draw commands at previous saved draw cmd index
-	auto cmdIndex = popDrawCommandIndex();
-	beginInsertDrawCommands(cmdIndex);
+	//auto cmdIndex = popDrawCommandIndex();
+	//beginInsertDrawCommands(cmdIndex);
 	ctx->renderer->cmdSetColor(boxElemState->color * ctx->layout.themeElementColorTint);
 	ctx->renderer->cmdSetAtlas(ctx->theme->atlas);
 	ctx->renderer->cmdDrawImageBordered(
@@ -91,7 +91,7 @@ bool endBox()
 		boxElemState->border,
 		ctx->widget.rect,
 		ctx->scale);
-	endInsertDrawCommands();
+	//endInsertDrawCommands();
 
 	ctx->position.x = ctx->layout.savedPosition.x;
 

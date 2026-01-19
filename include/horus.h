@@ -2478,7 +2478,6 @@ HORUS_API void startHeader();
 HORUS_API void setupColumn(u32 columnIndex, f32 size, TableColumnFlags flags = TableColumnFlags::None);
 HORUS_API void nextRow();
 HORUS_API void nextCell();
-HORUS_API void setCellColumnSpan(u32 colSpan);
 HORUS_API Rect getCellRect();
 HORUS_API void setRowColor(const Color& color);
 HORUS_API void setCellColor(const Color& color);
@@ -2964,18 +2963,6 @@ HORUS_API Point getLayoutSize();
 
 ///
 HORUS_API Rect getWidgetRect();
-
-///
-HORUS_API void pushDrawCommandIndex();
-
-///
-HORUS_API u32 popDrawCommandIndex();
-
-///
-HORUS_API void beginInsertDrawCommands(u32 atIndex);
-
-///
-HORUS_API void endInsertDrawCommands();
 
 ///
 HORUS_API void setFont(HFont font);

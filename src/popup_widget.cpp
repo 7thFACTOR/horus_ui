@@ -13,7 +13,7 @@ void beginPopup(
 	const Point& position,
 	WidgetElementId widgetElementId)
 {
-	ctx->id = genIdFromPosition(id);
+	ctx->id = genId(id);
 	auto& popup = ctx->popupStack[ctx->popupIndex];
 
 	popup.flags = flags;

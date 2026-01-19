@@ -132,7 +132,7 @@ struct DrawCommand
 	{}
 
 	Type type = Type::None;
-	u32 zOrder = 0;
+	
 	union CmdData
 	{
 		CmdDrawRect drawRect;
@@ -165,7 +165,6 @@ struct DrawCommand
 	DrawCommand& operator = (const DrawCommand& other)
 	{
 		type = other.type;
-		zOrder = other.zOrder;
 		data.drawRect = other.data.drawRect;
 		data.drawQuad = other.data.drawQuad;
 		data.drawLine = other.data.drawLine;
@@ -203,16 +202,14 @@ struct Renderer
 	void setWindowSize(const Point& size);
 	const Point& getWindowSize() const { return windowSize; }
 	Rect getWindowRect() const { return { 0, 0, windowSize.x, windowSize.y }; }
-	u32 setZOrder(u32 zorder) { auto oldZOrder = zOrder; zOrder = zorder; return oldZOrder; }
-	void incrementZOrder() { zOrder++; }
-	void decrementZOrder() { zOrder--; }
-	u32 getZOrder() const { return zOrder; }
 	void begin();
 	void end();
 	Font* getFont() const { return currentFont; }
-	u32 getDrawCommandCount() { return currentWindowContext->drawCommands.size(); }
-	void beginDrawCmdInsertion(u32 index) { currentWindowContext->drawCmdNextInsertIndex = index; }
-	void endDrawCmdInsertion() { currentWindowContext->drawCmdNextInsertIndex = ~0; }
+	void setWindowDrawCmdLayer(u32 index);
+	u32 getWindowDrawCmdLayerCount() const { return windowDrawCmdLayerCount; }
+	void beginDrawCmdLayers(u32 count);
+	void setDrawCmdLayer(u32 index);
+	void endDrawCmdLayers();
 	void resetWindowContexts();
 	inline bool allowRendering() const { return !disableRendering && !skipRender; }
 
@@ -303,12 +300,16 @@ public:
 		std::vector<char> textBuffer;
 		u32 pointBufferPosition = 0;
 		std::vector<Point> pointBuffer;
-		std::vector<DrawCommand> drawCommands;
+		std::vector<std::vector<DrawCommand>> drawCmdLayers;
 		std::vector<RenderBatch> batches;
 		std::vector<Rect> clipRectStack;
-		u32 drawCmdNextInsertIndex = ~0;
+		u32 currentDrawCmdLayerIndex = 0;
 	};
 	
+	const u32 windowDrawCmdLayerCount = 32;
+	std::vector<std::vector<DrawCommand>> drawCmdLayers;
+	u32 currentDrawCmdLayerIndex = 0;
+	bool drawCmdLayersEnabled = false;
 	HNativeWindow currentWindow = 0;
 	NativeWindowRenderContext* currentWindowContext = nullptr;
 	std::unordered_map<HNativeWindow, NativeWindowRenderContext> windowContexts;

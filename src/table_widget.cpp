@@ -248,7 +248,6 @@ bool beginTable(const char* id, u32 columnCount, f32 height, TableFlags flags)
 	state.flags = flags;
 	state.headerRect = Rect(0,0,0,0);
 	state.rowSeparators.clear(); // Clear separate list
-	state.columnSpans.clear(); // Clear span info for all rows
 
 	// Copy persistent data to transient state
 	for (u32 i = 0; i < columnCount; i++)
@@ -530,6 +529,32 @@ bool beginTable(const char* id, u32 columnCount, f32 height, TableFlags flags)
 	ctx->tableStack.back().rowHeight = bodyElem.currentStyle->getParameter("rowHeight", 25);
 	state.rowDrawCmdIndex = ctx->renderer->getDrawCommandCount();
 
+	// Push a clip rect for the entire table to prevent backgrounds from extending too far
+	// Start 1px to the left to include the left border, and add 2px to width for both borders
+	auto& currentState = ctx->tableStack.back();
+	Rect tableClipRect(currentState.tableRect.x - 1.0f, currentState.tableRect.y, currentState.innerWidth + 2.0f, 10000.0f);
+	ctx->renderer->pushClipRect(tableClipRect);
+	currentState.hasTableClip = true;
+	ctx->tableStack.back().hasTableClip = true;
+
+	// Draw first row background (row 0) before any content
+	// Note: If user calls startHeader, this will be overdrawn by header background
+	if (has(currentState.flags, TableFlags::AltRowBg))
+	{
+		Rect rowRect(
+			currentState.tableRect.x,
+			currentState.rowStartY,
+			currentState.innerWidth,
+			9999.0f  // Use large height, actual row height not known yet
+		);
+
+		rowRect = rowRect.contract(1.0);
+		
+		// First row is row 0, so use rowAltBgColor1 (even row)
+		ctx->renderer->cmdSetColor(bodyElem.currentStyle->getColorParameter("rowAltBgColor1", Color::transparent));
+		ctx->renderer->cmdDrawFilledRectangle(rowRect);
+	}
+
 	return true;
 }
 
@@ -657,23 +682,6 @@ void endTable()
 						}
 					}
 
-					if (hoveredRowIndex >= 0 && hoveredRowIndex < (i32)state.columnSpans.size())
-					{
-						const auto& spans = state.columnSpans[hoveredRowIndex];
-						// Check if separator 'i' (between col i and i+1) is covered
-						for (u32 c = 0; c <= i; c++)
-						{
-							if (c < spans.size() && spans[c] > 1)
-							{
-								if (c + spans[c] > i + 1)
-								{
-									isSeparatorCovered = true;
-									break;
-								}
-							}
-						}
-					}
-
 					if (isSeparatorCovered && separatorRect.contains(ctx->mousePosition))
 					{
 						ctx->mouseCursor = MouseCursorType::Arrow;
@@ -774,18 +782,19 @@ void endTable()
 			bool hasOuter = has(state.flags, TableFlags::Borders) || has(state.flags, TableFlags::BordersOuter);
 
 			// Draw vertical lines for each row
-			for (u32 rowIdx = 0; rowIdx < state.columnSpans.size(); rowIdx++)
+			for (u32 rowIdx = 0; rowIdx < state.rowSeparators.size() + 1; rowIdx++)
 			{
 				f32 lineStartY = rowIdx < state.rowSeparators.size() && rowIdx > 0 ? state.rowSeparators[rowIdx - 1] : state.bodyStartY;
 				f32 lineEndY = rowIdx < state.rowSeparators.size() ? state.rowSeparators[rowIdx] : state.currentRowY;
 
 				f32 currentX = state.tableRect.x;
-				const auto& colSpans = state.columnSpans[rowIdx];
 
 				// Draw leftmost line if outer borders are needed
 				if (hasOuter)
 				{
+					ctx->renderer->cmdSetLineStyle(LineStyle(outerVColor, 1.0f));
 					ctx->renderer->cmdDrawLine(Point(currentX, lineStartY), Point(currentX, lineEndY));
+					ctx->renderer->cmdSetLineStyle(LineStyle(innerVColor, 1.0f));
 				}
 
 				// Draw vertical lines between columns
@@ -793,26 +802,9 @@ void endTable()
 				{
 					if (!state.columns[i].isHidden)
 					{
-						// Check if this column is inside a span from a previous column
-						bool isInsideSpan = false;
-						for (u32 j = 0; j < i && j < colSpans.size(); j++)
-						{
-							if (colSpans[j] > 0)
-							{
-								// Check if this column i is within the span starting at j
-								if (i < j + colSpans[j])
-								{
-									isInsideSpan = true;
-									break;
-								}
-							}
-						}
-
 						// Draw left line for this column
 						bool drawLeftLine = true;
 						if (i == 0 && (hasOuter || innerOnly))
-							drawLeftLine = false;
-						if (isInsideSpan)
 							drawLeftLine = false;
 
 						if (drawLeftLine)
@@ -826,6 +818,7 @@ void endTable()
 				// Draw Rightmost line after all columns (skip if only inner borders)
 				if (!innerOnly)
 				{
+					ctx->renderer->cmdSetLineStyle(LineStyle(outerVColor, 1.0f));
 					ctx->renderer->cmdDrawLine(Point(currentX, lineStartY), Point(currentX, lineEndY));
 				}
 			}
@@ -855,6 +848,12 @@ void endTable()
 										   Point(state.tableRect.x + state.innerWidth, state.tableRect.y + finalHeight));
 			}
 		}
+	}
+
+	// Pop table clip rect if it was pushed
+	if (state.hasTableClip)
+	{
+		ctx->renderer->popClipRect();
 	}
 
 	ctx->tableStack.pop_back();
@@ -907,14 +906,52 @@ void nextRow()
 	state.currentColumn = 0;
 	state.isInHeader = false;
 
-	// Add new row for span info
-	state.columnSpans.push_back(std::vector<u32>(state.columns.size(), 0));
-
 	state.rowStartY = state.currentRowY;
 	state.rowDrawCmdIndex = ctx->renderer->getDrawCommandCount();
 	state.currentMaxRowHeight = 3;// state.rowHeight; // Use theme default height as min
 
 	state.cellStartY = state.rowStartY;
+
+	// Draw row background BEFORE any content (use large height, will be clipped/overdrawn)
+	// Draw custom row color if set
+	if (state.currentRowColorSet)
+	{
+		Rect rowRect(
+			state.tableRect.x,
+			state.rowStartY,
+			state.innerWidth,
+			9999.0f  // Use large height, actual row height not known yet
+		);
+
+		rowRect = rowRect.contract(1.0);
+
+		ctx->renderer->cmdSetColor(state.currentRowColor);
+		ctx->renderer->cmdDrawFilledRectangle(rowRect);
+	}
+	// Draw alternating row background if enabled and no custom color
+	else if (has(state.flags, TableFlags::AltRowBg))
+	{
+		Rect rowRect(
+			state.tableRect.x,
+			state.rowStartY,
+			state.innerWidth,
+			9999.0f  // Use large height, actual row height not known yet
+		);
+
+		rowRect = rowRect.contract(1.0);
+		auto& tableBodyElem = ctx->theme->getElement(WidgetElementId::TableBody);
+		
+		if (state.currentRow % 2 == 1)
+		{
+			ctx->renderer->cmdSetColor(tableBodyElem.currentStyle->getColorParameter("rowAltBgColor0", Color::transparent));
+		}
+		else
+		{
+			ctx->renderer->cmdSetColor(tableBodyElem.currentStyle->getColorParameter("rowAltBgColor1", Color::transparent));
+		}
+		
+		ctx->renderer->cmdDrawFilledRectangle(rowRect);
+	}
 
 	// Setup for first cell
 	if (state.currentColumn < state.columns.size())
@@ -948,52 +985,17 @@ void nextCell()
 
 	if (state.currentColumn < state.columns.size())
 	{
-		// Draw custom cell background if set (using deferred rendering)
-		if (state.currentCellColorSet)
-		{
-			// Use deferred rendering to draw cell background behind content
-			ctx->renderer->beginDrawCmdInsertion(state.rowDrawCmdIndex);
-
-			// Calculate cell rect
-			f32 cellX = state.tableRect.x;
-			for (u32 i = 0; i < state.currentColumn && i < state.columns.size(); i++)
-			{
-				if (!state.columns[i].isHidden)
-					cellX += state.columns[i].width;
-			}
-
-			// Calculate span width
-			f32 spanWidth = 0;
-			for (u32 i = 0; i < state.currentColSpan && (state.currentColumn + i) < state.columns.size(); i++)
-			{
-				if (!state.columns[state.currentColumn + i].isHidden)
-					spanWidth += state.columns[state.currentColumn + i].width;
-			}
-
-			f32 cellHeight = ctx->position.y - state.cellStartY + ctx->cellPadding.y;
-
-			Rect cellRect(cellX, state.rowStartY, spanWidth, cellHeight);
-			cellRect = cellRect.contract(1.0);
-
-			ctx->renderer->cmdSetColor(state.currentCellColor);
-			ctx->renderer->cmdDrawFilledRectangle(cellRect);
-
-			ctx->renderer->endDrawCmdInsertion();
-		}
-
 		// Calculate height of the cell we just finished
 		// Note: ctx->position.y points to where the next widget would go, so it represents the bottom of content
 		// position.y already includes the top padding we added at start of cell, so we only need to add bottom padding
 		f32 finishedCellHeight = ctx->position.y - state.cellStartY + ctx->cellPadding.y;
 		state.currentMaxRowHeight = std::max(state.currentMaxRowHeight, finishedCellHeight);
 
-		// Reset cell color flag
+		// Reset cell color flag for previous cell
 		state.currentCellColorSet = false;
 
-		// Advance by the span amount (default is 1)
-		state.currentColumn += state.currentColSpan;
-		// Reset span for next cell
-		state.currentColSpan = 1;
+		// Advance to next column (no spanning)
+		state.currentColumn++;
 
 		// Move to next column
 		f32 cellX = state.tableRect.x;
@@ -1019,56 +1021,6 @@ void nextCell()
 	}
 }
 
-void setCellColumnSpan(u32 colSpan)
-{
-	auto& state = currentTable();
-	if (colSpan > 1)
-	{
-		// Store the span for use in nextCell()
-		state.currentColSpan = colSpan;
-
-		// Record span info for border drawing in the current row
-		if (!state.columnSpans.empty() && state.currentColumn < state.columnSpans.back().size())
-		{
-			state.columnSpans.back()[state.currentColumn] = colSpan;
-		}
-
-		// Calculate total width of spanned columns
-		f32 spanWidth = 0;
-		for (u32 i = 0; i < colSpan && (state.currentColumn + i) < state.columns.size(); i++)
-		{
-			if (!state.columns[state.currentColumn + i].isHidden)
-				spanWidth += state.columns[state.currentColumn + i].width;
-		}
-
-		// Update layout width to cover spanned columns
-		ctx->layout.width = spanWidth - (ctx->cellPadding.x * 2.0f);
-
-		// Pop current clip rect and push new one covering the span
-		if (state.isClipping)
-		{
-			ctx->renderer->popClipRect();
-		}
-
-		// Calculate cell X position
-		f32 cellX = state.tableRect.x;
-		for (u32 i = 0; i < state.currentColumn && i < state.columns.size(); i++)
-		{
-			if (!state.columns[i].isHidden)
-				cellX += state.columns[i].width;
-		}
-
-		// Update position for content
-		ctx->position.x = cellX + ctx->cellPadding.x;
-		ctx->position.y = state.rowStartY + ctx->cellPadding.y;
-
-		// Push new clip rect with spanned width
-		f32 clipHeight = 99999.0f;
-		Rect clipRect(cellX, state.rowStartY, spanWidth, clipHeight);
-		ctx->renderer->pushClipRect(clipRect);
-		state.isClipping = true;
-	}
-}
 
 Rect getCellRect()
 {
@@ -1085,13 +1037,11 @@ Rect getCellRect()
 			cellX += state.columns[i].width;
 	}
 
-	// Calculate total width of spanned columns
-	f32 spanWidth = 0;
-	
-	for (u32 i = 0; i < state.currentColSpan && (state.currentColumn + i) < state.columns.size(); i++)
+	// Get current column width (no spanning)
+	f32 cellWidth = 0;
+	if (!state.columns[state.currentColumn].isHidden)
 	{
-		if (!state.columns[state.currentColumn + i].isHidden)
-			spanWidth += state.columns[state.currentColumn + i].width;
+		cellWidth = state.columns[state.currentColumn].width;
 	}
 	
 	// Current row height so far
@@ -1100,7 +1050,7 @@ Rect getCellRect()
 	return Rect(
 		cellX,
 		state.rowStartY,
-		spanWidth,
+		cellWidth,
 		currentRowHeight
 	);
 }
@@ -1117,6 +1067,28 @@ void setCellColor(const Color& color)
 	auto& state = currentTable();
 	state.currentCellColor = color;
 	state.currentCellColorSet = true;
+
+	// Draw cell background immediately (single column width only)
+	// Calculate cell X position
+	f32 cellX = state.tableRect.x;
+	for (u32 i = 0; i < state.currentColumn && i < state.columns.size(); i++)
+	{
+		if (!state.columns[i].isHidden)
+			cellX += state.columns[i].width;
+	}
+
+	// Use current column width (no spanning)
+	f32 cellWidth = 0;
+	if (state.currentColumn < state.columns.size() && !state.columns[state.currentColumn].isHidden)
+	{
+		cellWidth = state.columns[state.currentColumn].width;
+	}
+
+	Rect cellRect(cellX, state.rowStartY, cellWidth, 9999.0f);  // Use large height
+	cellRect = cellRect.contract(1.0);
+
+	ctx->renderer->cmdSetColor(state.currentCellColor);
+	ctx->renderer->cmdDrawFilledRectangle(cellRect);
 }
 
 void pushCellPadding(f32 paddingX, f32 paddingY)
