@@ -24,10 +24,10 @@ enum LineClipBit
 };
 
 // Function to compute region code for a point(x, y)
-int computeLineClipCode(const Point& p, const Rect& rect)
+static i32 computeLineClipCode(const Point& p, const Rect& rect)
 {
 	// initialized as being inside
-	int code = LineClipBit::Inside;
+	i32 code = LineClipBit::Inside;
 
 	if (p.x < rect.left())       // to the left of rectangle
 		code |= LineClipBit::Left;
@@ -41,7 +41,7 @@ int computeLineClipCode(const Point& p, const Rect& rect)
 	return code;
 }
 
-bool clipLineToRect(
+static bool clipLineToRect(
 	const Point& p1, const Point& p2,
 	const Point& uv1, const Point& uv2,
 	const Rect& rect,
@@ -150,7 +150,7 @@ bool clipLineToRect(
 	return accept;
 }
 
-void clipLeft(const Rect& rect, Point* inPoints, Point* inUvPoints, Rgba32* inColors, u32 inCount, Point* outPoints, Point* outUvPoints, Rgba32* outColors, u32& outCount)
+static void clipLeft(const Rect& rect, Point* inPoints, Point* inUvPoints, Rgba32* inColors, u32 inCount, Point* outPoints, Point* outUvPoints, Rgba32* outColors, u32& outCount)
 {
 	Point* pp1;
 	Point* pp2;
@@ -224,7 +224,7 @@ void clipLeft(const Rect& rect, Point* inPoints, Point* inUvPoints, Rgba32* inCo
 	}
 }
 
-void clipRight(const Rect& rect, Point* inPoints, Point* inUvPoints, Rgba32* inColors, u32 inCount, Point* outPoints, Point* outUvPoints, Rgba32* outColors, u32& outCount)
+static void clipRight(const Rect& rect, Point* inPoints, Point* inUvPoints, Rgba32* inColors, u32 inCount, Point* outPoints, Point* outUvPoints, Rgba32* outColors, u32& outCount)
 {
 	Point* pp1;
 	Point* pp2;
@@ -298,7 +298,7 @@ void clipRight(const Rect& rect, Point* inPoints, Point* inUvPoints, Rgba32* inC
 	}
 }
 
-void clipTop(const Rect& rect, Point* inPoints, Point* inUvPoints, Rgba32* inColors, u32 inCount, Point* outPoints, Point* outUvPoints, Rgba32* outColors, u32& outCount)
+static void clipTop(const Rect& rect, Point* inPoints, Point* inUvPoints, Rgba32* inColors, u32 inCount, Point* outPoints, Point* outUvPoints, Rgba32* outColors, u32& outCount)
 {
 	Point* pp1;
 	Point* pp2;
@@ -372,7 +372,7 @@ void clipTop(const Rect& rect, Point* inPoints, Point* inUvPoints, Rgba32* inCol
 	}
 }
 
-void clipBottom(const Rect& rect, Point* inPoints, Point* inUvPoints, Rgba32* inColors, u32 inCount, Point* outPoints, Point* outUvPoints, Rgba32* outColors, u32& outCount)
+static void clipBottom(const Rect& rect, Point* inPoints, Point* inUvPoints, Rgba32* inColors, u32 inCount, Point* outPoints, Point* outUvPoints, Rgba32* outColors, u32& outCount)
 {
 	Point* pp1;
 	Point* pp2;
@@ -446,7 +446,7 @@ void clipBottom(const Rect& rect, Point* inPoints, Point* inUvPoints, Rgba32* in
 	}
 }
 
-bool clipTriangleToRect(
+static bool clipTriangleToRect(
 	const Point& p1, const Point& p2, const Point& p3,
 	const Point& uv1, const Point& uv2, const Point& uv3,
 	const Rgba32 c1, const Rgba32 c2, const Rgba32 c3, 
@@ -500,6 +500,44 @@ bool clipTriangleToRect(
 	outCount = inCount;
 
 	return true;
+}
+
+DrawCmdLayerSplitter::DrawCmdLayerSplitter()
+{ }
+
+void DrawCmdLayerSplitter::split(u32 layerCount)
+{
+	if (layers.size() != layerCount)
+	{
+		layers.resize(layerCount);
+	}
+
+	setLayer(0);
+}
+
+void DrawCmdLayerSplitter::merge()
+{
+	if (layers.empty())
+		return;
+
+	setLayer(0);
+
+	for (u32 i = 1; i < layers.size(); i++)
+	{
+		auto& layer = layers[i];
+		layers[0].insert(layers[0].end(), layer.begin(), layer.end());
+		layer.clear();
+	}
+}
+
+void DrawCmdLayerSplitter::setLayer(u32 index)
+{
+	if (index == currentLayerIndex)
+		return;
+
+	memcpy(&layers[currentLayerIndex], &ctx->renderer->currentWindowContext->drawCmdLayers[(u32)ctx->renderer->currentWindowContext->currentDrawCmdLayer], sizeof(DrawCommandVector));
+	currentLayerIndex = index;
+	memcpy(&ctx->renderer->currentWindowContext->drawCmdLayers[(u32)ctx->renderer->currentWindowContext->currentDrawCmdLayer], &layers[currentLayerIndex], sizeof(DrawCommandVector));
 }
 
 Renderer::Renderer()
@@ -701,25 +739,38 @@ void Renderer::setWindowSize(const Point& size)
 	ctx->providers->gfx->setViewport(windowSize, currentClipRect);
 }
 
-void Renderer::pushDrawCmdLayers(u32 count)
-{
-	drawCmdLayers.resize(drawCmdLayers.size() + count);
-	currentDrawCmdLayerIndex = 0;
-	drawCmdLayersEnabled = true;
-
-	DrawCmdLayersOp op;
-	op.count = count;
-
-	for (u32 i = 0; i < count; i++)
-	{
-		op.offsets[i] = drawCmdLayers[i].size();
-	}
-}
-
-void Renderer::setWindowDrawCmdLayer(u32 index)
+void Renderer::pushWindowDrawCmdLayer(DrawCmdLayerType type)
 {
 	HORUS_ASSERT(currentWindowContext);
-	currentWindowContext->currentDrawCmdLayerIndex = index;
+	currentWindowContext->drawCmdLayerTypeStack.push_back(currentWindowContext->currentDrawCmdLayer);
+	currentWindowContext->currentDrawCmdLayer = type;
+}
+
+void Renderer::popWindowDrawCmdLayer()
+{
+	HORUS_ASSERT(currentWindowContext);
+	currentWindowContext->currentDrawCmdLayer = currentWindowContext->drawCmdLayerTypeStack.back();
+	currentWindowContext->drawCmdLayerTypeStack.pop_back();
+}
+
+void Renderer::pushDrawCmdLayersRequest(u32 count)
+{
+	// increase the number of layers
+	drawCmdLayers.resize(drawCmdLayers.size() + count);
+	
+	//TODO: maybe optimize this allocation, reuse from a pool etc
+	DrawCmdLayersRequest req;
+
+	req.currentOffsets.resize(drawCmdLayers.size());
+	req.layerCount = count;
+	req.activeLayerIndex = currentDrawCmdLayerIndex;
+
+	for (u32 i = 0; i < drawCmdLayers.size(); i++)
+	{
+		req.currentOffsets[i] = drawCmdLayers[i].size();
+	}
+
+	drawCmdLayersRequestStack.push_back(req);
 }
 
 void Renderer::setDrawCmdLayer(u32 index)
@@ -727,24 +778,21 @@ void Renderer::setDrawCmdLayer(u32 index)
 	currentDrawCmdLayerIndex = index;
 }
 
-void Renderer::popDrawCmdLayers()
+void Renderer::popDrawCmdLayersRequest()
 {
-	DrawCmdLayersOp op = drawCmdLayersOpStack.back();
-
-	drawCmdLayersOpStack.pop_back();
-
-	if (drawCmdLayersOpStack.empty())
-		drawCmdLayersEnabled = false;
+	const DrawCmdLayersRequest& req = drawCmdLayersRequestStack.back();
 
 	for (u32 i = 0; i < drawCmdLayers.size(); i++)
 	{
 		auto& layerCmds = drawCmdLayers[i];
 
-		currentWindowContext->drawCmdLayers[currentWindowContext->currentDrawCmdLayerIndex].insert(
+		currentWindowContext->drawCmdLayers[req.activeLayerIndex].insert(
 			currentWindowContext->drawCmdLayers[currentWindowContext->currentDrawCmdLayerIndex].end(),
 			layerCmds.begin(),
 			layerCmds.end());
 	}
+
+	drawCmdLayersRequestStack.pop_back();
 }
 
 void Renderer::resetWindowContexts()

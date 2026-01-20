@@ -8,6 +8,8 @@ struct Image;
 struct Atlas;
 struct FontTextSize;
 
+typedef std::vector<DrawCommand> DrawCommandVector;
+
 /// How an image is drawn, repeated or stretched across the rectangle
 enum class ImageSizingPolicy
 {
@@ -29,6 +31,18 @@ struct VertexBufferData
 	std::vector<Vertex> vertices;
 	u32 drawVertexCount = 0;
 	f32 vertexCountGrowFactor = 1.5f;
+};
+
+struct DrawCmdLayerSplitter
+{
+	std::vector<DrawCommandVector> layers;
+	size_t currentLayerIndex = 0;
+
+	DrawCmdLayerSplitter();
+	~DrawCmdLayerSplitter()	{}
+	void split(u32 layerCount);
+	void merge();
+	void setLayer(u32 index);
 };
 
 struct DrawCommand
@@ -205,11 +219,12 @@ struct Renderer
 	void begin();
 	void end();
 	Font* getFont() const { return currentFont; }
-	void setWindowDrawCmdLayer(u32 index);
-	u32 getWindowDrawCmdLayerCount() const { return windowDrawCmdLayerCount; }
-	void pushDrawCmdLayers(u32 count);
+	
+	void pushWindowDrawCmdLayer(DrawCmdLayerType type);
+	void popWindowDrawCmdLayer();
 	void setDrawCmdLayer(u32 index);
-	void popDrawCmdLayers();
+	void pushDrawCmdLayersRequest(u32 count);
+	void popDrawCmdLayersRequest();
 	void resetWindowContexts();
 	inline bool allowRendering() const { return !disableRendering && !skipRender; }
 
@@ -303,22 +318,23 @@ public:
 		std::vector<char> textBuffer;
 		u32 pointBufferPosition = 0;
 		std::vector<Point> pointBuffer;
-		std::vector<std::vector<DrawCommand>> drawCmdLayers;
+		DrawCommandVector drawCmdLayers[(u32)DrawCmdLayerType::Count];
 		std::vector<RenderBatch> batches;
 		std::vector<Rect> clipRectStack;
-		u32 currentDrawCmdLayerIndex = 0;
+		std::vector<DrawCmdLayerType> drawCmdLayerTypeStack;
+		DrawCmdLayerType currentDrawCmdLayer = DrawCmdLayerType::Normal;
 	};
 
-	struct DrawCmdLayersOp
+	struct DrawCmdLayersRequest
 	{
-		u32 offsets[maxDrawCmdLayerCount];
-		u32 count = 0;
+		std::vector<u32> currentOffsets;
+		u32 layerCount = 0;
+		u32 activeLayerIndex = 0;
 	};
 
 	std::vector<std::vector<DrawCommand>> drawCmdLayers;
-	std::vector<DrawCmdLayersOp> drawCmdLayersOpStack;
+	std::vector<DrawCmdLayersRequest> drawCmdLayersRequestStack;
 	u32 currentDrawCmdLayerIndex = 0;
-	bool drawCmdLayersEnabled = false;
 
 	HNativeWindow currentWindow = 0;
 	NativeWindowRenderContext* currentWindowContext = nullptr;

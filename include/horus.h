@@ -378,6 +378,14 @@ enum class WindowFlags : u32
 };
 HORUS_ENUM_AS_FLAGS(WindowFlags);
 
+enum class DrawCmdLayerType
+{
+	Normal,
+	Foreground,
+	Overlay,
+	Count
+};
+
 /// Image fit mode, used in the image widget
 enum class ImageFitType
 {
