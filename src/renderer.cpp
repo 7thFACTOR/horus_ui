@@ -505,6 +505,16 @@ static bool clipTriangleToRect(
 DrawCmdLayerSplitter::DrawCmdLayerSplitter()
 { }
 
+void DrawCmdLayerSplitter::clear()
+{
+	for (auto& layer : layers)
+	{
+		layer.clear();
+	}
+
+	currentLayerIndex = 0;
+}
+
 void DrawCmdLayerSplitter::split(u32 layerCount)
 {
 	auto prevCount = layers.size();
@@ -514,19 +524,10 @@ void DrawCmdLayerSplitter::split(u32 layerCount)
 		layers.resize(layerCount);
 	}
 
-	for (size_t i = 1; i < layers.size(); i++)
+	for (size_t i = 0; i < layers.size(); i++)
 	{
-		if (i >= prevCount)
-		{
-			new (&layers[i]) DrawCommandVector();
-		}
-		else
-		{
-			layers[i].clear();
-		}
+		layers[i].clear();
 	}
-
-	memset(&layers[0], 0, sizeof(DrawCommandVector));
 }
 
 void DrawCmdLayerSplitter::merge()
@@ -542,6 +543,8 @@ void DrawCmdLayerSplitter::merge()
 		layers[0].insert(layers[0].end(), layer.begin(), layer.end());
 		layer.clear();
 	}
+
+	ctx->renderer->currentWindowContext->drawCmdLayers[(u32)ctx->renderer->currentWindowContext->currentDrawCmdLayer].insert(ctx->renderer->currentWindowContext->drawCmdLayers[(u32)ctx->renderer->currentWindowContext->currentDrawCmdLayer].end(), layers[0].begin(), layers[0].end());
 }
 
 void DrawCmdLayerSplitter::setLayer(u32 index)
@@ -549,9 +552,9 @@ void DrawCmdLayerSplitter::setLayer(u32 index)
 	if (index == currentLayerIndex)
 		return;
 
-	memcpy(&layers[currentLayerIndex], &ctx->renderer->currentWindowContext->drawCmdLayers[(u32)ctx->renderer->currentWindowContext->currentDrawCmdLayer], sizeof(DrawCommandVector));
+	layers[currentLayerIndex].swap(ctx->renderer->currentWindowContext->drawCmdLayers[(u32)ctx->renderer->currentWindowContext->currentDrawCmdLayer]);
 	currentLayerIndex = index;
-	memcpy(&ctx->renderer->currentWindowContext->drawCmdLayers[(u32)ctx->renderer->currentWindowContext->currentDrawCmdLayer], &layers[currentLayerIndex], sizeof(DrawCommandVector));
+	ctx->renderer->currentWindowContext->drawCmdLayers[(u32)ctx->renderer->currentWindowContext->currentDrawCmdLayer].swap(layers[currentLayerIndex]);
 }
 
 Renderer::Renderer()
@@ -2560,7 +2563,7 @@ void Renderer::addBatch()
 	currentBatch->textureArray = currentAtlas->textureArray;
 }
 
-void Renderer::addDrawCommand(DrawCommand& cmd)
+void Renderer::addDrawCommand(const DrawCommand& cmd)
 {
 	if (disableRendering || skipRender)
 		return;

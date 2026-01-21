@@ -40,6 +40,7 @@ struct DrawCmdLayerSplitter
 
 	DrawCmdLayerSplitter();
 	~DrawCmdLayerSplitter()	{}
+	void clear();
 	void split(u32 layerCount);
 	void merge();
 	void setLayer(u32 index);
@@ -307,7 +308,7 @@ public:
 	void needToAddVertexCount(u32 count);
 	char* addUtf8TextToBuffer(const char* text, u32 sizeBytes);
 	void addBatch();
-	void addDrawCommand(DrawCommand& cmd);
+	void addDrawCommand(const DrawCommand& cmd);
 
 	struct NativeWindowRenderContext
 	{

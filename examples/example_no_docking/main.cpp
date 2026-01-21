@@ -73,7 +73,7 @@ int main(int argc, char** args)
 	// Start the main loop
 	bool exitNow = false;
 
-	hui::changeScale(2.0f);
+	hui::changeScale(1.0f);
 
 	while (!exitNow)
 	{
@@ -103,10 +103,20 @@ int main(int argc, char** args)
 				const int maxPts = 32;
 				hui::Point pts[maxPts] = { 0 };
 				u32 ptCount = 0;
-				hui::Rect rc = { 30, 30, 1200*hui::getScale(), 1500 * hui::getScale() };
+				hui::Rect rc = { 30, 30, 700*hui::getScale(), 1500 * hui::getScale() };
 				hui::beginLayout(rc);
 				hui::pushWidgetPadding(10);
-				hui::beginBox(hui::Color::white, hui::WidgetElementId::WindowBody, hui::WidgetStateType::Normal);
+				hui::beginBox("box1", hui::Color::white, hui::WidgetElementId::WindowBody, hui::WidgetStateType::Normal);
+				hui::beginBox("box2", hui::Color::red, hui::WidgetElementId::WindowBody, hui::WidgetStateType::Normal);
+				hui::button("A BUTTON");
+				hui::beginBox("box3", hui::Color::blue, hui::WidgetElementId::WindowBody, hui::WidgetStateType::Normal);
+				hui::button("A BUTTON2");
+				hui::beginBox("box4", hui::Color::green, hui::WidgetElementId::WindowBody, hui::WidgetStateType::Normal);
+				hui::button("ANOE BUTTON");
+				hui::endBox();
+
+				hui::endBox();
+				hui::endBox();
 				hui::popWidgetPadding();
 				hui::pushWidgetPadding(0);
 				hui::space(20);
@@ -129,7 +139,7 @@ int main(int argc, char** args)
 
 				scrollPos = hui::endScrollView();
 
-				if (0&&hui::beginMenuBar())
+				if (hui::beginMenuBar())
 				{
 					if (hui::beginMenu("File##1"))
 					{

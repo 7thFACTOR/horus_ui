@@ -2590,6 +2590,7 @@ HORUS_API void endCustomTooltip();
 /// \param state the widget element state to draw with
 /// \param customHeight a forced custom height, otherwise auto calculated from the total height the child widgets have
 HORUS_API void beginBox(
+	const char* id,
 	const Color& color,
 	WidgetElementId widgetElementId = WidgetElementId::BoxBody,
 	WidgetStateType state = WidgetStateType::Normal,
@@ -2601,6 +2602,7 @@ HORUS_API void beginBox(
 /// \param state the widget element state to draw with
 /// \param customHeight a forced custom height, otherwise auto calculated from the total height the child widgets have
 HORUS_API void beginBox(
+	const char* id,
 	const Color& color,
 	const char* userElementName,
 	WidgetStateType state = WidgetStateType::Normal,

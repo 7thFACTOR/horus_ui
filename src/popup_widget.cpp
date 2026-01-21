@@ -24,7 +24,7 @@ void beginPopup(
 	if (!has(flags, PopupFlags::SameLayer))
 		incrementLayerIndex();
 
-	if (has(flags, PopupFlags::TopMost))
+	//if (has(flags, PopupFlags::TopMost))
 	{
 		//popup.oldZOrder = ctx->renderer->getZOrder();
 		//ctx->renderer->setZOrder(INT_MAX - 1);
@@ -230,7 +230,7 @@ void endPopup()
 	ctx->sameLineStack.pop_back();
 	ctx->sameLineInfoIndexStack = popup.savedSameLineInfoIndexStack;
 
-	if (has(popup.flags, PopupFlags::TopMost))
+	//if (has(popup.flags, PopupFlags::TopMost))
 		ctx->renderer->popWindowDrawCmdLayer();
 
 	if (!has(popup.flags, PopupFlags::SameLayer))

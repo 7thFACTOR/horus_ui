@@ -5,13 +5,15 @@
 
 namespace hui
 {
-static void beginBoxInternal(const Color& color, ThemeElement::State& state, f32 customHeight)
+std::unordered_map<WidgetId, DrawCmdLayerSplitter> splitter;
+
+static void beginBoxInternal(const char* id, const Color& color, ThemeElement::State& state, f32 customHeight)
 {
 	const auto parentWidth = ctx->layout.width;
 
 	pushLayout();
 	ctx->layout.type = LayoutType::Generic;
-	ctx->layout.id = genIdFromPosition("box");
+	ctx->layout.id = ctx->id = genId(id);
 	ctx->layout.savedPosition = ctx->position;
 	auto& padding = getWidgetPadding();
 	ctx->layout.savedPadding = padding;
@@ -29,10 +31,13 @@ static void beginBoxInternal(const Color& color, ThemeElement::State& state, f32
 		ctx->layout.height = customHeight * ctx->scale;
 	}
 
-	//ctx->renderer->beginDrawCmdLayers(2);
+	splitter[ctx->id].clear();
+	splitter[ctx->id].split(2);
+	splitter[ctx->id].setLayer(1);
 }
 
 void beginBox(
+	const char* id,
 	const Color& color,
 	WidgetElementId widgetElementId,
 	WidgetStateType state,
@@ -40,10 +45,11 @@ void beginBox(
 {
 	auto& boxElemState = ctx->theme->getElement(widgetElementId).getState(state);
 
-	beginBoxInternal(color, boxElemState, customHeight);
+	beginBoxInternal(id, color, boxElemState, customHeight);
 }
 
 void beginBox(
+	const char* id,
 	const Color& color,
 	const char* userElementName,
 	WidgetStateType state,
@@ -54,7 +60,7 @@ void beginBox(
 	if (elem)
 	{
 		auto& boxElemState = elem->getState(state);
-		beginBoxInternal(color, boxElemState, customHeight);
+		beginBoxInternal(id, color, boxElemState, customHeight);
 	}
 }
 
@@ -68,7 +74,7 @@ bool endBox()
 
 	if (ctx->layout.height > 0.0f)
 	{
-		height = ctx->layout.height * ctx->scale;
+		//height = ctx->layout.height * ctx->scale;
 	}
 
 	ctx->widget.rect = {
@@ -80,6 +86,8 @@ bool endBox()
 
 	ctx->id = ctx->layout.id;
 	buttonBehavior();
+
+	splitter[ctx->id].setLayer(0);
 
 	// insert box draw commands at previous saved draw cmd index
 	//auto cmdIndex = popDrawCommandIndex();
@@ -100,6 +108,7 @@ bool endBox()
 		ctx->position.y += boxElemState->border * ctx->scale + ctx->layout.savedPadding.y;
 	}
 
+	splitter[ctx->id].merge();
 	popLayout();
 
 	return ctx->widget.pressed;

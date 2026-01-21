@@ -13,10 +13,7 @@ bool beginMenuBar()
 	auto& menuBarElem = ctx->theme->getElement(WidgetElementId::MenuBarBody);
 	f32 height = menuBarElem.normalState().height * ctx->scale;
 
-	ctx->id = genIdFromPosition("__MENUBAR__");
-
-	if (!ctx->widget.visible)
-		return false;
+	ctx->id = genId("__MENUBAR__");
 
 	ctx->layoutStack.push_back(ctx->layout);
 	ctx->layout.savedPosition = ctx->position;
@@ -25,6 +22,11 @@ bool beginMenuBar()
 		round(ctx->position.y),
 		ctx->layout.width,
 		height);
+
+	//TODO: check if menu bar is visible
+	//if (!ctx->widget.visible)
+	//	return false;
+
 	ctx->renderer->cmdSetColor(menuBarElem.normalState().color);
 	ctx->renderer->cmdDrawImageBordered(menuBarElem.normalState().image, menuBarElem.normalState().border, ctx->widget.rect, ctx->scale);
 	ctx->currentMenuBarId = ctx->id;
