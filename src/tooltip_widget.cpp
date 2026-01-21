@@ -49,19 +49,11 @@ bool tooltip(const char* text)
 			rect.y = 0;
 		}
 
-		u32 oldZ = ctx->renderer->getZOrder();
-		ctx->renderer->setZOrder(INT_MAX);
+		ctx->renderer->pushWindowDrawCmdLayer(DrawCmdLayerType::Overlay);
 		ctx->renderer->pushClipRect(ctx->renderer->getWindowRect(), false);
-		ctx->renderer->cmdSetColor(bodyElemState.textColor);
-		ctx->renderer->cmdSetFont(bodyElemState.font);
 
 		Rect rc = rect;
 	
-		ctx->renderer->cmdDrawTextInBox(
-			text, rect,
-			HAlignType::Center, VAlignType::Center);
-		// move back a layer
-		ctx->renderer->setZOrder(INT_MAX - 1);
 		ctx->renderer->cmdSetColor(bodyElemState.color);
 		rc.x -= bodyElemState.border * ctx->scale;
 		rc.y -= bodyElemState.border * ctx->scale;
@@ -69,8 +61,15 @@ bool tooltip(const char* text)
 		rc.height += bodyElemState.border * 2 * ctx->scale;
 		ctx->renderer->cmdDrawImageBordered(
 			bodyElemState.image, bodyElemState.border, rc, ctx->scale);
+
+		ctx->renderer->cmdSetColor(bodyElemState.textColor);
+		ctx->renderer->cmdSetFont(bodyElemState.font);
+		ctx->renderer->cmdDrawTextInBox(
+			text, rect,
+			HAlignType::Center, VAlignType::Center);
+
 		ctx->renderer->popClipRect();
-		ctx->renderer->setZOrder(oldZ);
+		ctx->renderer->popWindowDrawCmdLayer();
 
 		return true;
 	}

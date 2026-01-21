@@ -2722,12 +2722,13 @@ void updateDockingSystem()
 				ctx->renderer->setWindowSize(rc.getSize());
 				ctx->renderer->begin();
 				// we need to render last, so choose the highest z order
-				auto oldZOrder = ctx->renderer->setZOrder(~0);
+				//auto oldZOrder = ctx->renderer->setZOrder(~0);
+				ctx->renderer->pushWindowDrawCmdLayer(DrawCmdLayerType::Overlay);
 				drawDockPreview(ds.dragWindow, ds.dragRect);
 				drawDockGuides();
-				ctx->renderer->end();
+				ctx->renderer->popWindowDrawCmdLayer();
 				// restore z order
-				ctx->renderer->setZOrder(oldZOrder);
+				//ctx->renderer->setZOrder(oldZOrder);
 				ctx->renderer->executeDrawCommands(ds.hoveredNode->nativeWindow);
 			}
 		}

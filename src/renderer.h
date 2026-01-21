@@ -8,7 +8,7 @@ struct Image;
 struct Atlas;
 struct FontTextSize;
 
-typedef std::vector<DrawCommand> DrawCommandVector;
+typedef std::vector<struct DrawCommand> DrawCommandVector;
 
 /// How an image is drawn, repeated or stretched across the rectangle
 enum class ImageSizingPolicy
@@ -309,9 +309,6 @@ public:
 	void addBatch();
 	void addDrawCommand(DrawCommand& cmd);
 
-	const u32 maxWindowDrawCmdLayerCount = 32;
-	const u32 maxDrawCmdLayerCount = 32;
-
 	struct NativeWindowRenderContext
 	{
 		u32 textBufferPosition = 0;
@@ -324,17 +321,6 @@ public:
 		std::vector<DrawCmdLayerType> drawCmdLayerTypeStack;
 		DrawCmdLayerType currentDrawCmdLayer = DrawCmdLayerType::Normal;
 	};
-
-	struct DrawCmdLayersRequest
-	{
-		std::vector<u32> currentOffsets;
-		u32 layerCount = 0;
-		u32 activeLayerIndex = 0;
-	};
-
-	std::vector<std::vector<DrawCommand>> drawCmdLayers;
-	std::vector<DrawCmdLayersRequest> drawCmdLayersRequestStack;
-	u32 currentDrawCmdLayerIndex = 0;
 
 	HNativeWindow currentWindow = 0;
 	NativeWindowRenderContext* currentWindowContext = nullptr;

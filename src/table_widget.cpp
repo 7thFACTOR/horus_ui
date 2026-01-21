@@ -32,7 +32,7 @@ static void finishRow(TableState& state)
 	// We should only draw here for body rows.
 	if (!state.isInHeader)
 	{
-		ctx->renderer->beginDrawCmdInsertion(state.rowDrawCmdIndex);
+		//ctx->renderer->beginDrawCmdInsertion(state.rowDrawCmdIndex);
 
 		// Draw custom row color if set
 		if (state.currentRowColorSet)
@@ -74,7 +74,7 @@ static void finishRow(TableState& state)
 			ctx->renderer->cmdDrawFilledRectangle(rowRect);
 		}
 
-		ctx->renderer->endDrawCmdInsertion();
+		//ctx->renderer->endDrawCmdInsertion();
 
 		// Store the bottom Y position of this row for deferred border drawing
 		state.rowSeparators.push_back(state.rowStartY + state.currentMaxRowHeight);
@@ -89,7 +89,7 @@ static void finishRow(TableState& state)
 	else
 	{
 		// Header deferred drawing
-		ctx->renderer->beginDrawCmdInsertion(state.rowDrawCmdIndex);
+		//ctx->renderer->beginDrawCmdInsertion(state.rowDrawCmdIndex);
 
 		f32 headerHeight = state.currentMaxRowHeight;
 
@@ -175,7 +175,7 @@ static void finishRow(TableState& state)
 			);
 		}
 
-		ctx->renderer->endDrawCmdInsertion();
+		//ctx->renderer->endDrawCmdInsertion();
 
 		state.currentRowY += headerHeight;
 		state.bodyStartY = state.currentRowY;
@@ -527,7 +527,7 @@ bool beginTable(const char* id, u32 columnCount, f32 height, TableFlags flags)
 	auto& bodyElem = ctx->theme->getElement(WidgetElementId::TableBody);
 	auto& bodyElemState = bodyElem.normalState();
 	ctx->tableStack.back().rowHeight = bodyElem.currentStyle->getParameter("rowHeight", 25);
-	state.rowDrawCmdIndex = ctx->renderer->getDrawCommandCount();
+	//state.rowDrawCmdIndex = ctx->renderer->getDrawCommandCount();
 
 	// Push a clip rect for the entire table to prevent backgrounds from extending too far
 	// Start 1px to the left to include the left border, and add 2px to width for both borders
@@ -867,7 +867,7 @@ void startHeader()
 
 	// Reset row parameters
 	state.rowStartY = state.currentRowY;
-	state.rowDrawCmdIndex = ctx->renderer->getDrawCommandCount();
+	//state.rowDrawCmdIndex = ctx->renderer->getDrawCommandCount();
 	state.currentMaxRowHeight = state.rowHeight; // Use theme default height as min
 
 	// Setup for first cell
@@ -907,7 +907,7 @@ void nextRow()
 	state.isInHeader = false;
 
 	state.rowStartY = state.currentRowY;
-	state.rowDrawCmdIndex = ctx->renderer->getDrawCommandCount();
+	//state.rowDrawCmdIndex = ctx->renderer->getDrawCommandCount();
 	state.currentMaxRowHeight = 3;// state.rowHeight; // Use theme default height as min
 
 	state.cellStartY = state.rowStartY;

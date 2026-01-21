@@ -507,12 +507,26 @@ DrawCmdLayerSplitter::DrawCmdLayerSplitter()
 
 void DrawCmdLayerSplitter::split(u32 layerCount)
 {
+	auto prevCount = layers.size();
+
 	if (layers.size() != layerCount)
 	{
 		layers.resize(layerCount);
 	}
 
-	setLayer(0);
+	for (size_t i = 1; i < layers.size(); i++)
+	{
+		if (i >= prevCount)
+		{
+			new (&layers[i]) DrawCommandVector();
+		}
+		else
+		{
+			layers[i].clear();
+		}
+	}
+
+	memset(&layers[0], 0, sizeof(DrawCommandVector));
 }
 
 void DrawCmdLayerSplitter::merge()
@@ -676,6 +690,8 @@ void Renderer::executeDrawCommands(HNativeWindow wnd)
 				break;
 			}
 		}
+
+		layerCmds.clear();
 	}
 	
 	vertexBuffer->updateData(vertexBufferData.vertices.data(), 0, vertexBufferData.drawVertexCount);
@@ -753,55 +769,13 @@ void Renderer::popWindowDrawCmdLayer()
 	currentWindowContext->drawCmdLayerTypeStack.pop_back();
 }
 
-void Renderer::pushDrawCmdLayersRequest(u32 count)
-{
-	// increase the number of layers
-	drawCmdLayers.resize(drawCmdLayers.size() + count);
-	
-	//TODO: maybe optimize this allocation, reuse from a pool etc
-	DrawCmdLayersRequest req;
-
-	req.currentOffsets.resize(drawCmdLayers.size());
-	req.layerCount = count;
-	req.activeLayerIndex = currentDrawCmdLayerIndex;
-
-	for (u32 i = 0; i < drawCmdLayers.size(); i++)
-	{
-		req.currentOffsets[i] = drawCmdLayers[i].size();
-	}
-
-	drawCmdLayersRequestStack.push_back(req);
-}
-
-void Renderer::setDrawCmdLayer(u32 index)
-{
-	currentDrawCmdLayerIndex = index;
-}
-
-void Renderer::popDrawCmdLayersRequest()
-{
-	const DrawCmdLayersRequest& req = drawCmdLayersRequestStack.back();
-
-	for (u32 i = 0; i < drawCmdLayers.size(); i++)
-	{
-		auto& layerCmds = drawCmdLayers[i];
-
-		currentWindowContext->drawCmdLayers[req.activeLayerIndex].insert(
-			currentWindowContext->drawCmdLayers[currentWindowContext->currentDrawCmdLayerIndex].end(),
-			layerCmds.begin(),
-			layerCmds.end());
-	}
-
-	drawCmdLayersRequestStack.pop_back();
-}
-
 void Renderer::resetWindowContexts()
 {
 	for (auto& wc : windowContexts)
 	{
 		wc.second.batches.clear();
 		wc.second.clipRectStack.clear();
-		wc.second.currentDrawCmdLayerIndex = 0;
+		wc.second.currentDrawCmdLayer = DrawCmdLayerType::Normal;
 		wc.second.pointBufferPosition = 0;
 		wc.second.textBufferPosition = 0;
 		wc.second.textBuffer.resize(textBufferMaxSize);
@@ -2591,14 +2565,7 @@ void Renderer::addDrawCommand(DrawCommand& cmd)
 	if (disableRendering || skipRender)
 		return;
 
-	if (!drawCmdLayersEnabled)
-	{
-		currentWindowContext->drawCmdLayers[currentWindowContext->currentDrawCmdLayerIndex].push_back(cmd);
-	}
-	else
-	{
-		drawCmdLayers[currentDrawCmdLayerIndex].push_back(cmd);
-	}
+	currentWindowContext->drawCmdLayers[(u32)currentWindowContext->currentDrawCmdLayer].push_back(cmd);
 }
 
 void Renderer::cmdDrawTextAt(

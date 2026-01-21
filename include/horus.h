@@ -359,7 +359,7 @@ HORUS_ENUM_AS_FLAGS(NativeWindowFlags);
 
 enum class NativeWindowState
 {
-	Normal,
+	Normal = 0,
 	Minimized,
 	Maximized,
 	Hidden
@@ -378,9 +378,9 @@ enum class WindowFlags : u32
 };
 HORUS_ENUM_AS_FLAGS(WindowFlags);
 
-enum class DrawCmdLayerType
+enum class DrawCmdLayerType : u32
 {
-	Normal,
+	Normal = 0,
 	Foreground,
 	Overlay,
 	Count
