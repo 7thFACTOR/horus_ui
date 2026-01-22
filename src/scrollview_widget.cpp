@@ -5,7 +5,7 @@
 
 namespace hui
 {
-void beginScrollView(const char* id, f32 size, f32 scrollPos, f32 virtualHeight)
+void beginScrollView(const char* id, f32 size, f32 scrollPos, f32 virtualHeight, ScrollViewFlags flags)
 {
 	auto& scrollViewElemState = ctx->theme->getElement(WidgetElementId::ScrollViewBody).normalState();
 	auto scrollViewScrollThumbElemState = ctx->theme->getElement(WidgetElementId::ScrollViewScrollThumb).normalState();
@@ -44,7 +44,7 @@ void beginScrollView(const char* id, f32 size, f32 scrollPos, f32 virtualHeight)
 	ctx->scrollViewStack[ctx->scrollViewDepth].rect = rect;
 
 	Rect clipRect = rect;
-	
+
 	clipRect.x += internalPadding;
 	clipRect.y += (f32)scrollViewElemState.border * ctx->scale;
 	clipRect.width -= scrollViewScrollThumbElemState.width + internalPadding * 2.0f;
@@ -150,7 +150,7 @@ f32 endScrollView()
 
 		if (handleSize < ctx->settings.minScrollViewHandleSize)
 			handleSize = ctx->settings.minScrollViewHandleSize;
-		
+
 		f32 maxScroll = scrollContentSize - rectScrollBar.height;
 		f32 handleOffset = (scrollPos / maxScroll) * (rectScrollBar.height - handleSize);
 
@@ -164,7 +164,7 @@ f32 endScrollView()
 
 		if (ctx->isActiveLayer())
 		{
-			if (rectScrollBarHandle.contains(ctx->mousePosition) 
+			if (rectScrollBarHandle.contains(ctx->mousePosition)
 				|| (scrollViewInfo.draggingThumb && ctx->dragScrollViewHandleWidgetId == scrollViewInfo.id))
 			{
 				scrollViewScrollThumbElemState = ctx->theme->getElement(WidgetElementId::ScrollViewScrollThumb).getState(WidgetStateType::Hovered);

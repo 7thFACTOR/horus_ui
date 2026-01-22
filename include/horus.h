@@ -453,6 +453,14 @@ enum class TableFlags : u32
 };
 HORUS_ENUM_AS_FLAGS(TableFlags);
 
+enum class ScrollViewFlags : u32
+{
+	None = 0,
+	NoBorder = HORUS_BIT(0),
+	NoPadding = HORUS_BIT(1)
+};
+HORUS_ENUM_AS_FLAGS(ScrollViewFlags);
+
 enum class TableColumnFlags : u32
 {
 	None = 0,
@@ -2503,7 +2511,7 @@ HORUS_API void popCellPadding();
 /// \param height the height of the scroll area
 /// \param scrollPosition the current scroll position (given by endScrollView)
 /// \param virtualHeight the virtual inside scroll height, if its zero then its automatically calculated from the child widgets inside this area
-HORUS_API void beginScrollView(const char* id, f32 height, f32 scrollPosition, f32 virtualHeight = 0.0f);
+HORUS_API void beginScrollView(const char* id, f32 height, f32 scrollPosition, f32 virtualHeight = 0.0f, ScrollViewFlags flags = ScrollViewFlags::None);
 
 /// Ends a scroll view area widget
 /// \return the current scroll position (offset)

@@ -161,7 +161,11 @@ static Color getColorFromText(std::string colorText)
 	if (colorText == "darkGreen") { return Color::darkGreen; }
 	if (colorText == "veryDarkGreen") { return Color::veryDarkGreen; }
 	if (colorText == "blue") { return Color::blue; }
+	if (colorText == "darkBlue") { return Color::darkBlue; }
+	if (colorText == "veryDarkBlue") { return Color::veryDarkBlue; }
 	if (colorText == "yellow") { return Color::yellow; }
+	if (colorText == "darkYellow") { return Color::darkYellow; }
+	if (colorText == "veryDarkYellow") { return Color::veryDarkYellow; }
 	if (colorText == "magenta") { return Color::magenta; }
 	if (colorText == "cyan") { return Color::cyan; }
 	if (colorText == "darkCyan") { return Color::darkCyan; }
@@ -172,6 +176,7 @@ static Color getColorFromText(std::string colorText)
 	if (colorText == "gray") { return Color::gray; }
 	if (colorText == "darkGray") { return Color::darkGray; }
 	if (colorText == "sky") { return Color::sky; }
+	if (colorText == "transparent") { return Color::transparent; }
 
 	u32 r, g, b, a;
 	sscanf(colorText.c_str(), "%d %d %d %d", &r, &g, &b, &a);

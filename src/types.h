@@ -260,21 +260,27 @@ struct MenuWidgetState
 	Point size;
 };
 
+struct TableColumnState
+{
+	f32 width = 100.0f;
+	f32 specifiedSize = 0.0f; // User-specified size (percentage or pixels)
+	f32 minWidth = 10.0f;
+	f32 maxWidth = 10000.0f;
+	bool isResizable = false; // Derived from flags usually, but can be explicit
+	bool isPercentage = false; // If true, specifiedSize is 0..1 percentage
+	bool isFillRemaining = false; // If true, this column fills remaining space
+	bool isHidden = false;
+	bool isStretchable = true; // Track if this column should participate in auto-stretch
+	bool userResized = false; // Track if this column was manually resized by user
+	TableColumnFlags flags = TableColumnFlags::None;
+};
+
 struct TablePersistentState
 {
-	struct ColumnState
-	{
-		f32 width = 100.0f;
-		f32 specifiedSize = 0.0f; // User-specified size (percentage or pixels)
-		bool isPercentage = false; // If true, specifiedSize is 0..1 percentage
-		bool isFillRemaining = false; // If true, this column fills remaining space
-		bool isHidden = false;
-		bool isStretchable = true; // Track if this column should participate in auto-stretch
-		bool userResized = false; // Track if this column was manually resized by user
-		TableColumnFlags flags = TableColumnFlags::None;
-	};
+	TablePersistentState();
+	~TablePersistentState();
 
-	std::vector<ColumnState> columns;
+	std::vector<TableColumnState> columns;
 	bool initialized = false;
 
 	// Resizing state
@@ -284,31 +290,22 @@ struct TablePersistentState
 	f32 resizeStartWidth = 0;
 	f32 resizeStartWidthRight = 0;
 	Point lastMousePos;
+	struct DrawCmdLayerSplitter* splitter = nullptr;
 };
 
 struct TableState
 {
-	struct Column
-	{
-		f32 width = 0;
-		f32 minWidth = 0;
-		f32 maxWidth = 0;
-		bool isResizable = false;
-		bool isStretchable = false;
-		bool isHidden = false;
-		TableColumnFlags flags = TableColumnFlags::None;
-	};
-
-	std::vector<Column> columns;
+	TablePersistentState* persistent = nullptr;
 	u32 currentColumn = 0;
 	WidgetId id = 0;
 	Rect headerRect;
 	Rect tableRect;
 	f32 innerWidth = 0;
 	f32 innerHeight = 0;
-	bool resizingColumn = false;
-	u32 resizingColumnIndex = ~0;
-	Point lastMousePos;
+	// Resizing state is now in persistent state only
+	// bool resizingColumn = false; // REMOVED
+	// u32 resizingColumnIndex = ~0; // REMOVED
+	// Point lastMousePos; // REMOVED (using persistent.lastMousePos)
 	bool hasTableClip = false;
 
 	// New fields for dynamic layout
@@ -326,6 +323,12 @@ struct TableState
 	f32 rowHeight = 0;
 	u32 rowDrawCmdIndex = 0;
 	std::vector<f32> rowSeparators;
+	struct CellColorRequest
+	{
+		u32 columnIndex;
+		Color color;
+	};
+	std::vector<CellColorRequest> cellColorRequests;
 	f32 bodyStartY = 0.0f;
 	bool isClipping = false;
 };

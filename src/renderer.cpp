@@ -544,7 +544,8 @@ void DrawCmdLayerSplitter::merge()
 		layer.clear();
 	}
 
-	ctx->renderer->currentWindowContext->drawCmdLayers[(u32)ctx->renderer->currentWindowContext->currentDrawCmdLayer].insert(ctx->renderer->currentWindowContext->drawCmdLayers[(u32)ctx->renderer->currentWindowContext->currentDrawCmdLayer].end(), layers[0].begin(), layers[0].end());
+	HORUS_ASSERT(ctx->renderer->currentDrawCmdLayer);
+	ctx->renderer->currentDrawCmdLayer->insert(ctx->renderer->currentDrawCmdLayer->end(), layers[0].begin(), layers[0].end());
 }
 
 void DrawCmdLayerSplitter::setLayer(u32 index)
@@ -552,9 +553,10 @@ void DrawCmdLayerSplitter::setLayer(u32 index)
 	if (index == currentLayerIndex)
 		return;
 
-	layers[currentLayerIndex].swap(ctx->renderer->currentWindowContext->drawCmdLayers[(u32)ctx->renderer->currentWindowContext->currentDrawCmdLayer]);
+	HORUS_ASSERT(ctx->renderer->currentDrawCmdLayer);
+	layers[currentLayerIndex].swap(*ctx->renderer->currentDrawCmdLayer);
 	currentLayerIndex = index;
-	ctx->renderer->currentWindowContext->drawCmdLayers[(u32)ctx->renderer->currentWindowContext->currentDrawCmdLayer].swap(layers[currentLayerIndex]);
+	ctx->renderer->currentDrawCmdLayer->swap(layers[currentLayerIndex]);
 }
 
 Renderer::Renderer()
@@ -581,6 +583,7 @@ void Renderer::setCurrentNativeWindow(HNativeWindow wnd)
 	}
 
 	currentWindowContext = &windowContexts[wnd];
+	currentDrawCmdLayer = &currentWindowContext->drawCmdLayers[(u32)currentWindowContext->currentDrawCmdLayer];
 }
 
 void Renderer::executeDrawCommands(HNativeWindow wnd)
@@ -763,6 +766,7 @@ void Renderer::pushWindowDrawCmdLayer(DrawCmdLayerType type)
 	HORUS_ASSERT(currentWindowContext);
 	currentWindowContext->drawCmdLayerTypeStack.push_back(currentWindowContext->currentDrawCmdLayer);
 	currentWindowContext->currentDrawCmdLayer = type;
+	currentDrawCmdLayer = &currentWindowContext->drawCmdLayers[(u32)type];
 }
 
 void Renderer::popWindowDrawCmdLayer()
@@ -770,6 +774,7 @@ void Renderer::popWindowDrawCmdLayer()
 	HORUS_ASSERT(currentWindowContext);
 	currentWindowContext->currentDrawCmdLayer = currentWindowContext->drawCmdLayerTypeStack.back();
 	currentWindowContext->drawCmdLayerTypeStack.pop_back();
+	currentDrawCmdLayer = &currentWindowContext->drawCmdLayers[(u32)currentWindowContext->currentDrawCmdLayer];
 }
 
 void Renderer::resetWindowContexts()
@@ -2568,7 +2573,8 @@ void Renderer::addDrawCommand(const DrawCommand& cmd)
 	if (disableRendering || skipRender)
 		return;
 
-	currentWindowContext->drawCmdLayers[(u32)currentWindowContext->currentDrawCmdLayer].push_back(cmd);
+	HORUS_ASSERT(currentDrawCmdLayer);
+	currentDrawCmdLayer->push_back(cmd);
 }
 
 void Renderer::cmdDrawTextAt(

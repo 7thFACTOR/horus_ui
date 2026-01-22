@@ -479,7 +479,7 @@ int main(int argc, char** args)
 			{
 				static f32 scroller = 0;
 
-				hui::beginScrollView("scrl1", 0, scroller);
+				hui::beginScrollView("scrl1", 0, scroller, 0, hui::ScrollViewFlags::NoBorder);
 
 				static bool listSelection[5] = {false};
 				static const char* listItems[] = { "Apple", "Banana", "Cherry", "Date", "Elderberry" };
@@ -490,7 +490,7 @@ int main(int argc, char** args)
 				hui::label("Table Widget:");
 				hui::pushSpacing(0);
 				hui::pushWidgetPadding(0);
-				if (hui::beginTable("myTable", 4, 0, hui::TableFlags::Borders | hui::TableFlags::None | hui::TableFlags::AltRowBg | hui::TableFlags::Resizable | hui::TableFlags::Stretch))
+				if (hui::beginTable("myTable", 4, 440, hui::TableFlags::Borders | hui::TableFlags::None | hui::TableFlags::AltRowBg | hui::TableFlags::Resizable | hui::TableFlags::Stretch| hui::TableFlags::ScrollY))
 				{
 					hui::startHeader();
 					hui::setupColumn(0, 0);
@@ -514,14 +514,14 @@ int main(int argc, char** args)
 					hui::nextCell();
 					hui::label("Row 1, Cell 1 wdf dfasfasf asdf asf sadf asdf asfasf asf asf ");
 					hui::nextCell();
-					hui::setCellColor(hui::Color::red);
+					//hui::setCellColor(hui::Color::red);
 					hui::label("AOAKAOAO1");
 					hui::label("AOAKAOAO2");
 					hui::label("AOAKAOAO3");
 					hui::label("AOAKAOAO4");
 
 					hui::nextRow();
-					hui::setRowColor(hui::Color::blue);
+					//hui::setRowColor(hui::Color::blue);
 					hui::label("Row 1, Cell 1 wdf dfasfasf asdf asf sadf asdf asfasf asf asf ");
 
 					hui::nextCell();
@@ -567,7 +567,7 @@ int main(int argc, char** args)
 					hui::nextCell();
 					hui::label("Row 3, Cell 3");
 
-					for (int k = 0; k < 4; k++)
+					for (int k = 0; k < 134; k++)
 					{
 						hui::nextRow();
 						hui::label("Row 4, Cell 1");

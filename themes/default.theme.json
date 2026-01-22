@@ -582,20 +582,21 @@
 		{
 			"tableBody":
 			{
-				"rowAltBgColor0" : "black",
-				"rowAltBgColor1" : "green",
-				"innerHorizontalLineColor": "white",
-				"innerVerticalLineColor": "white",
-				"outerHorizontalLineColor": "white",
-				"outerVerticalLineColor": "white",
+				"rowAltBgColor0" : "255 255 255 15",
+				"rowAltBgColor1" : "0 0 0 20",
+				"innerBorderColorV": "black",
+				"innerBorderColorH": "black",
+				"outerBorderColorV": "darkCyan",
+				"outerBorderColorH": "darkCyan",
 				"columnResizeLineColor": "cyan",
 				"rowHeight": 0.0
 			},
 			"tableHeaderBody":
 			{
 				"height": 25,
-				"borderColor": "white",
-				"normal": {"color": "70 70 70 255"}
+				"borderColorV": "darkCyan",
+				"borderColorH": "black",
+				"normal": {"color": "70 120 130 255"}
 			}		
 		},
 		"columnsHeader":

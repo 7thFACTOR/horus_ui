@@ -223,9 +223,6 @@ struct Renderer
 	
 	void pushWindowDrawCmdLayer(DrawCmdLayerType type);
 	void popWindowDrawCmdLayer();
-	void setDrawCmdLayer(u32 index);
-	void pushDrawCmdLayersRequest(u32 count);
-	void popDrawCmdLayersRequest();
 	void resetWindowContexts();
 	inline bool allowRendering() const { return !disableRendering && !skipRender; }
 
@@ -325,6 +322,7 @@ public:
 
 	HNativeWindow currentWindow = 0;
 	NativeWindowRenderContext* currentWindowContext = nullptr;
+	DrawCommandVector* currentDrawCmdLayer = nullptr;
 	std::unordered_map<HNativeWindow, NativeWindowRenderContext> windowContexts;
 	VertexBufferData vertexBufferData;
 	VertexBuffer* vertexBuffer = nullptr;
