@@ -202,6 +202,13 @@ int main(int argc, char** args)
 
 				static bool chk = true;
 				hui::check("A simple check box", &chk);
+				hui::beginSameLine();
+				// aici nu merge 0.5 corect pt ca avem si spacing pe orizontal si nu ia in calcul si spatiul ala
+				hui::setNextWidth(0.5);
+				hui::button("Check me1!");
+				hui::setNextWidth(0.5);
+				hui::button("Check me2! Other text");
+				hui::endSameLine();
 
 				if (hui::beginCustomTooltip(160))
 				{

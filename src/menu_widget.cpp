@@ -167,6 +167,7 @@ bool beginMenuInternal(const char* label, SelectableFlags stateFlags, bool conte
 			flags = flags | SelectableFlags::Selected;
 
 		ctx->isSubMenu = true;
+		//TODO: this needs a proper unique id too
 		menuItem(ctx->widgetLabel.c_str(), "", 0, flags);
 		ctx->isSubMenu = false;
 
