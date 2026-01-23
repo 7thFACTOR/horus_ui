@@ -173,32 +173,26 @@ void addWidget(f32 height)
 		ctx->position.y = round(ctx->position.y);
 	}
 
-	f32 verticalOffset = 0;
-	const f32 totalHeight = height;
-
-	//if (ctx->sameLine)
-	//{
-	//	if (ctx->sameLineInfo[ctx->sameLineInfoIndex].computeHeight)
-	//	{
-	//		ctx->sameLineInfo[ctx->sameLineInfoIndex].lineHeight = round(fmax(totalHeight, ctx->sameLineInfo[ctx->sameLineInfoIndex].lineHeight));
-	//	}
-
-	//	ctx->sameLineInfo[ctx->sameLineInfoIndex].frameHeight = round(fmax(totalHeight, ctx->sameLineInfo[ctx->sameLineInfoIndex].frameHeight));
-
-	//	verticalOffset = (ctx->sameLineInfo[ctx->sameLineInfoIndex].lineHeight - totalHeight) / 2.0f;
-	//}
+	if (!ctx->sameLine)
+	{
+		ctx->sameLineTopY = ctx->position.y;
+		ctx->sameLineX = ctx->position.x;
+	}
+	else
+	{
+		ctx->position.y = ctx->sameLineTopY;
+	}
 
 	ctx->widget.width = pixelWidth;
-
 	ctx->widget.rect.set(
 		round(ctx->position.x),
-		round(ctx->position.y + verticalOffset),
+		round(ctx->position.y),
 		pixelWidth,
 		height);
 
 	if (!ctx->sameLine)
 	{
-		ctx->position.y += totalHeight;
+		ctx->position.y += height;
 		ctx->position.y = round(ctx->position.y);
 	}
 	else

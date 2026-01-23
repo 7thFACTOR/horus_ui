@@ -143,15 +143,9 @@ void setNextWidth(f32 width)
 
 void sameLine(f32 offsetX, f32 spacing)
 {
-	// Move cursor back up by the last widget's height
-	ctx->position.y -= ctx->widget.rect.height;
-	ctx->sameLineInfo[0].lineY = ctx->position.x;
-	
-	// Add spacing
 	f32 actualSpacing = spacing > 0 ? spacing : ctx->spacing;
 	ctx->position.x += actualSpacing * ctx->scale;
 	
-	// Add optional offset
 	if (offsetX > 0)
 	{
 		ctx->position.x += offsetX * ctx->scale;
