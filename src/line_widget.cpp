@@ -37,65 +37,65 @@ void space(f32 customSpacing)
 
 void beginSameLine(f32 spacing)
 {
-	ctx->sameLineInfoIndex = ctx->sameLineInfoCount;
-	ctx->sameLineInfo[ctx->sameLineInfoIndex].frameHeight = 0;
+	//ctx->sameLineInfoIndex = ctx->sameLineInfoCount;
+	//ctx->sameLineInfo[ctx->sameLineInfoIndex].frameHeight = 0;
 
-	if (ctx->sameLineInfo[ctx->sameLineInfoIndex].lineHeight == 0)
-	{
-		ctx->sameLineInfo[ctx->sameLineInfoIndex].computeHeight = true;
-		skipThisFrame();
-		forceRepaint();
-	}
-	else
-	{
-		ctx->sameLineInfo[ctx->sameLineInfoIndex].computeHeight = false;
-	}
+	//if (ctx->sameLineInfo[ctx->sameLineInfoIndex].lineHeight == 0)
+	//{
+	//	ctx->sameLineInfo[ctx->sameLineInfoIndex].computeHeight = true;
+	//	skipThisFrame();
+	//	forceRepaint();
+	//}
+	//else
+	//{
+	//	ctx->sameLineInfo[ctx->sameLineInfoIndex].computeHeight = false;
+	//}
 
-	//// only a root same line can start a new line, the others will just follow
-	//if (ctx->sameLineInfoIndexStack.size() <= 1)
-	//	ctx->position.x = ctx->layout.savedPosition.x;
+	////// only a root same line can start a new line, the others will just follow
+	////if (ctx->sameLineInfoIndexStack.size() <= 1)
+	////	ctx->position.x = ctx->layout.savedPosition.x;
 
-	// push current line index to stack, so we recover it
-	ctx->sameLineInfoIndexStack.push_back(ctx->sameLineInfoIndex);
-	ctx->sameLine = true;
-	ctx->sameLineInfoCount++;
+	//// push current line index to stack, so we recover it
+	//ctx->sameLineInfoIndexStack.push_back(ctx->sameLineInfoIndex);
+	//ctx->sameLine = true;
+	//ctx->sameLineInfoCount++;
 
-	if (spacing > 0.0f)
-		ctx->sameLineSpacing = spacing;
+	//if (spacing > 0.0f)
+	//	ctx->sameLineSpacing = spacing;
 
-	pushPosition();
+	//pushPosition();
 }
 
 void endSameLine()
 {
-	popPosition();
-	ctx->sameLineInfoIndex = ctx->sameLineInfoIndexStack.back();
-	ctx->sameLineInfoIndexStack.pop_back();
+	//popPosition();
+	//ctx->sameLineInfoIndex = ctx->sameLineInfoIndexStack.back();
+	//ctx->sameLineInfoIndexStack.pop_back();
 
-	// we stop same line if this is a root same line
+	//// we stop same line if this is a root same line
+	////if (!ctx->sameLineInfoIndexStack.size())
+	//	ctx->sameLine = false;
+
 	//if (!ctx->sameLineInfoIndexStack.size())
-		ctx->sameLine = false;
+	//	ctx->position.y += ctx->sameLineInfo[ctx->sameLineInfoIndex].lineHeight;
+	//else
+	//{
+	//	//TODO: not working here, needs a proper stack
+	//	ctx->sameLineInfo[ctx->sameLineInfoIndex-1].lineHeight = fmaxf(
+	//		ctx->sameLineInfo[ctx->sameLineInfoIndex - 1].lineHeight,
+	//		ctx->sameLineInfo[ctx->sameLineInfoIndex].lineHeight
+	//	);
+	//}
 
-	if (!ctx->sameLineInfoIndexStack.size())
-		ctx->position.y += ctx->sameLineInfo[ctx->sameLineInfoIndex].lineHeight;
-	else
-	{
-		//TODO: not working here, needs a proper stack
-		ctx->sameLineInfo[ctx->sameLineInfoIndex-1].lineHeight = fmaxf(
-			ctx->sameLineInfo[ctx->sameLineInfoIndex - 1].lineHeight,
-			ctx->sameLineInfo[ctx->sameLineInfoIndex].lineHeight
-		);
-	}
+	//if (ctx->sameLineInfo[ctx->sameLineInfoIndex].frameHeight != ctx->sameLineInfo[ctx->sameLineInfoIndex].lineHeight)
+	//{
+	//	if (ctx->sameLineInfo[ctx->sameLineInfoIndex].frameHeight > ctx->sameLineInfo[ctx->sameLineInfoIndex].lineHeight)
+	//		skipThisFrame();
+	//	ctx->sameLineInfo[ctx->sameLineInfoIndex].lineHeight = ctx->sameLineInfo[ctx->sameLineInfoIndex].frameHeight;
+	//	forceRepaint();
+	//}
 
-	if (ctx->sameLineInfo[ctx->sameLineInfoIndex].frameHeight != ctx->sameLineInfo[ctx->sameLineInfoIndex].lineHeight)
-	{
-		if (ctx->sameLineInfo[ctx->sameLineInfoIndex].frameHeight > ctx->sameLineInfo[ctx->sameLineInfoIndex].lineHeight)
-			skipThisFrame();
-		ctx->sameLineInfo[ctx->sameLineInfoIndex].lineHeight = ctx->sameLineInfo[ctx->sameLineInfoIndex].frameHeight;
-		forceRepaint();
-	}
-
-	ctx->widget.width = 0;
+	//ctx->widget.width = 0;
 }
 
 void pushSameLineSpacing(f32 horizontalSpace)
@@ -139,6 +139,25 @@ void setNextWidth(f32 width)
 {
 	ctx->widget.nextWidth = width;
 	ctx->widget.hasNextWidth = true;
+}
+
+void sameLine(f32 offsetX, f32 spacing)
+{
+	// Move cursor back up by the last widget's height
+	ctx->position.y -= ctx->widget.rect.height;
+	ctx->sameLineInfo[0].lineY = ctx->position.x;
+	
+	// Add spacing
+	f32 actualSpacing = spacing > 0 ? spacing : ctx->spacing;
+	ctx->position.x += actualSpacing * ctx->scale;
+	
+	// Add optional offset
+	if (offsetX > 0)
+	{
+		ctx->position.x += offsetX * ctx->scale;
+	}
+
+	ctx->sameLine = true;
 }
 
 }

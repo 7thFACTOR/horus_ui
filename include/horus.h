@@ -2814,6 +2814,13 @@ HORUS_API void beginSameLine(f32 spacing = 0.0f);
 
 HORUS_API void endSameLine();
 
+/// Make the next widget appear on the same line as the previous widget (Dear ImGui style)
+/// Call this after a widget to position the next widget horizontally
+/// After each widget, same-line mode automatically ends, so you must call sameLine() again for each subsequent widget
+/// \param offsetX optional additional horizontal offset
+/// \param spacing optional spacing between widgets, if 0 uses default spacing
+HORUS_API void sameLine(f32 offsetX = 0.0f, f32 spacing = 0.0f);
+
 HORUS_API void pushSameLineSpacing(f32 horizontalSpace = 0.0f);
 
 HORUS_API f32 popSameLineSpacing();

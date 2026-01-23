@@ -43,10 +43,9 @@ struct Context
 	std::vector<WidgetId> idStack;
 	std::unordered_map<WidgetId, WidgetBoolState> widgetBools;
 
+
 	// Same line
 	bool sameLine = false;
-	size_t sameLineInfoIndex = 0;
-	size_t sameLineInfoCount = 0;
 	f32 sameLineSpacing = 5;
 	f32 sameLineHeight = 0;
 	std::vector<f32> sameLineWidthStack;

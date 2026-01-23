@@ -176,17 +176,17 @@ void addWidget(f32 height)
 	f32 verticalOffset = 0;
 	const f32 totalHeight = height;
 
-	if (ctx->sameLine)
-	{
-		if (ctx->sameLineInfo[ctx->sameLineInfoIndex].computeHeight)
-		{
-			ctx->sameLineInfo[ctx->sameLineInfoIndex].lineHeight = round(fmax(totalHeight, ctx->sameLineInfo[ctx->sameLineInfoIndex].lineHeight));
-		}
+	//if (ctx->sameLine)
+	//{
+	//	if (ctx->sameLineInfo[ctx->sameLineInfoIndex].computeHeight)
+	//	{
+	//		ctx->sameLineInfo[ctx->sameLineInfoIndex].lineHeight = round(fmax(totalHeight, ctx->sameLineInfo[ctx->sameLineInfoIndex].lineHeight));
+	//	}
 
-		ctx->sameLineInfo[ctx->sameLineInfoIndex].frameHeight = round(fmax(totalHeight, ctx->sameLineInfo[ctx->sameLineInfoIndex].frameHeight));
+	//	ctx->sameLineInfo[ctx->sameLineInfoIndex].frameHeight = round(fmax(totalHeight, ctx->sameLineInfo[ctx->sameLineInfoIndex].frameHeight));
 
-		verticalOffset = (ctx->sameLineInfo[ctx->sameLineInfoIndex].lineHeight - totalHeight) / 2.0f;
-	}
+	//	verticalOffset = (ctx->sameLineInfo[ctx->sameLineInfoIndex].lineHeight - totalHeight) / 2.0f;
+	//}
 
 	ctx->widget.width = pixelWidth;
 
@@ -208,6 +208,7 @@ void addWidget(f32 height)
 
 	ctx->widget.hasNextWidth = false;
 	ctx->widget.hasCustomWidth = false;
+	ctx->sameLine = false;
 }
 
 void setFocusable()
@@ -348,8 +349,8 @@ void beginFrame()
 	ctx->frameCount++;
 	ctx->totalTime += ctx->deltaTime;
 	ctx->pruneUnusedTextTime += ctx->deltaTime;
-	ctx->sameLineInfoIndex = 0;
-	ctx->sameLineInfoCount = 0;
+	//ctx->sameLineInfoIndex = 0;
+	//ctx->sameLineInfoCount = 0;
 	ctx->fontStack.clear();
 
 	ctx->padding[(i32)PaddingType::Layout] = ctx->settings.defaultLayoutPadding;
@@ -465,10 +466,10 @@ void endFrame()
 		ctx->providers->input->setCustomCursor(ctx->customMouseCursor);
 	}
 
-	for (u32 i = 0; i < ctx->sameLineInfoCount; i++)
-	{
-		ctx->sameLineInfo[i].computeHeight = false;
-	}
+	//for (u32 i = 0; i < ctx->sameLineInfoCount; i++)
+	//{
+	//	ctx->sameLineInfo[i].computeHeight = false;
+	//}
 
 	ctx->event.type = ctx->savedEventType;
 	ctx->positionStack.clear();
