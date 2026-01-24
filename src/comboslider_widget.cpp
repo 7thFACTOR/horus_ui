@@ -33,11 +33,8 @@ static bool comboSliderInternal(bool isInt, f32* value, f32 minVal, f32 maxVal, 
 
 	if (notEditingText)
 	{
-		if (ctx->sameLine)
-		{
-			ctx->widget.customWidth = 80; //TODO: compute based on text size
-			ctx->widget.hasCustomWidth = true;
-		}
+		ctx->widget.customWidth = ctx->layout.width;
+		ctx->widget.hasCustomWidth = true;
 
 		addWidget((bodyElem.normalState().height + padding.y * 2.0f) * ctx->scale);
 		buttonBehavior();

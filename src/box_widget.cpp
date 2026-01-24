@@ -6,6 +6,8 @@
 namespace hui
 {
 std::unordered_map<WidgetId, DrawCmdLayerSplitter> splitter;
+std::unordered_map<WidgetId, Point> size;
+
 
 static void beginBoxInternal(const char* id, const Color& color, ThemeElement::State& state, f32 customHeight)
 {
@@ -18,6 +20,7 @@ static void beginBoxInternal(const char* id, const Color& color, ThemeElement::S
 	auto& padding = getWidgetPadding();
 	ctx->layout.savedPadding = padding;
 	ctx->position.x += state.border * ctx->scale + padding.x;
+	size[ctx->id] = Point(parentWidth, 0);
 	ctx->layout.width = parentWidth - padding.x * 2.0f - (state.border * 2.0f) * ctx->scale;
 	ctx->layout.themeWidgetElementState = &state;
 	ctx->layout.themeElementColorTint = color;
@@ -77,21 +80,18 @@ bool endBox()
 		//height = ctx->layout.height * ctx->scale;
 	}
 
+	ctx->id = ctx->layout.id;
+
 	ctx->widget.rect = {
 		ctx->layout.savedPosition.x,
 		ctx->layout.savedPosition.y,
-		ctx->layout.width + (boxElemState->border * 2.0f) * ctx->scale + ctx->layout.savedPadding.x * 2.0f,
+		size[ctx->id].x,
 		height
 	};
 
-	ctx->id = ctx->layout.id;
 	buttonBehavior();
 
 	splitter[ctx->id].setLayer(0);
-
-	// insert box draw commands at previous saved draw cmd index
-	//auto cmdIndex = popDrawCommandIndex();
-	//beginInsertDrawCommands(cmdIndex);
 	ctx->renderer->cmdSetColor(boxElemState->color * ctx->layout.themeElementColorTint);
 	ctx->renderer->cmdSetAtlas(ctx->theme->atlas);
 	ctx->renderer->cmdDrawImageBordered(
@@ -99,7 +99,6 @@ bool endBox()
 		boxElemState->border,
 		ctx->widget.rect,
 		ctx->scale);
-	//endInsertDrawCommands();
 
 	ctx->position.x = ctx->layout.savedPosition.x;
 

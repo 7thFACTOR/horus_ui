@@ -206,12 +206,9 @@ bool button(const char* label)
 
 	auto& padding = getWidgetPadding();
 
-	if (ctx->sameLine)
-	{
-		auto textWidth = btnBodyElem.normalState().font->computeTextSize(ctx->widgetLabel.c_str());
-		ctx->widget.customWidth = ((btnBodyElem.normalState().border + padding.x) * 2.0f) * ctx->scale + textWidth.width;
-		ctx->widget.hasCustomWidth = true;
-	}
+	auto textWidth = btnBodyElem.normalState().font->computeTextSize(ctx->widgetLabel.c_str());
+	ctx->widget.customWidth = ((btnBodyElem.normalState().border + padding.x) * 2.0f) * ctx->scale + textWidth.width;
+	ctx->widget.hasCustomWidth = true;
 
 	addWidget((btnBodyElem.normalState().height + padding.y * 2.0f) * ctx->scale);
 	buttonBehavior();

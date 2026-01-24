@@ -25,9 +25,9 @@ bool textInput(
 	auto& bodyTextFilterClearImageElem = ctx->theme->getElement(WidgetElementId::TextInputFilterClearImage);
 	auto& padding = getWidgetPadding();
 
-	if (ctx->sameLine && !ctx->widget.hasNextWidth)
+	if (!ctx->widget.hasNextWidth)
 	{
-		ctx->widget.customWidth = ((bodyElem->normalState().border + padding.x) * 2.0f) * ctx->scale;
+		ctx->widget.customWidth = ctx->layout.width;
 		ctx->widget.hasCustomWidth = true;
 	}
 

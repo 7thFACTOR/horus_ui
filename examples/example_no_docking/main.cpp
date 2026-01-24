@@ -107,6 +107,7 @@ int main(int argc, char** args)
 				hui::beginLayout(rc);
 				hui::pushWidgetPadding(10);
 				hui::beginBox("box1", hui::Color::white, hui::WidgetElementId::WindowBody, hui::WidgetStateType::Normal);
+
 				hui::beginBox("box2", hui::Color::red, hui::WidgetElementId::WindowBody, hui::WidgetStateType::Normal);
 				hui::button("A BUTTON");
 				hui::beginBox("box3", hui::Color::blue, hui::WidgetElementId::WindowBody, hui::WidgetStateType::Normal);
@@ -114,9 +115,9 @@ int main(int argc, char** args)
 				hui::beginBox("box4", hui::Color::green, hui::WidgetElementId::WindowBody, hui::WidgetStateType::Normal);
 				hui::button("ANOE BUTTON");
 				hui::endBox();
+				hui::endBox();
+				hui::endBox();
 
-				hui::endBox();
-				hui::endBox();
 				hui::popWidgetPadding();
 				hui::pushWidgetPadding(0);
 				hui::space(20);
@@ -201,13 +202,14 @@ int main(int argc, char** args)
 				pv2 += 0.5f;
 
 				static bool chk = true;
+
+				//hui::sameLine();
 				hui::check("A simple check box", &chk);
-				hui::setNextWidth(0.5);
 				hui::button("Check me1!");
-				
-				hui::setNextWidth(0.5);
 				hui::sameLine();
 				hui::button("Check me2! Other text");
+				hui::sameLine();
+				hui::button("HOKA");
 
 				if (hui::beginCustomTooltip(160))
 				{
@@ -265,8 +267,8 @@ int main(int argc, char** args)
 				hui::rotarySliderFloat("Speed", &val, -30, 100, 1, false);
 				static char txt[1000];
 				hui::textInput(txt, 1000);
-				hui::comboSliderFloat(&val, 1, 1, "°");
-				hui::comboSliderFloatRanged(&val2, 0, 100, 1, 1, "cm");
+				hui::comboSliderFloat(&val, 1, 1, "%.4f °");
+				hui::comboSliderFloatRanged(&val2, 0, 100, 1, 1, "%.4f cm");
 				static i32 sel = 0;
 
 				const char* items[6] = { "One", "Two", "Three", "Four", "Five Hundred Billion Trillion", "Six"};

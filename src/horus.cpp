@@ -156,7 +156,7 @@ void addWidget(f32 height)
 	}
 	else
 	{
-		ctx->widget.width = ctx->sameLine || ctx->widget.hasCustomWidth ? ctx->widget.customWidth * ctx->scale : ctx->layout.width;
+		ctx->widget.width = ctx->widget.hasCustomWidth ? ctx->widget.customWidth * ctx->scale : ctx->layout.width;
 	}
 
 	// if width is under 1, then it's a percentage of the layout width
@@ -167,20 +167,31 @@ void addWidget(f32 height)
 	// Check if this is the first item in the layout to avoid top spacing (gap behavior)
 	bool isFirstItem = (fabs(ctx->position.y - ctx->layout.savedPosition.y) < 0.1f);
 
-	if (!ctx->sameLine && !isFirstItem)
-	{
-		ctx->position.y += spacing;
-		ctx->position.y = round(ctx->position.y);
-	}
-
 	if (!ctx->sameLine)
 	{
 		ctx->sameLineTopY = ctx->position.y;
+
+		if (ctx->wasSameLine)
+		{
+			ctx->position.x = ctx->sameLineX;
+			ctx->wasSameLine = false;
+			ctx->position.y += ctx->sameLineHeight;
+			ctx->sameLineHeight = 0;
+		}
+
 		ctx->sameLineX = ctx->position.x;
+		
+		if (!isFirstItem)
+			ctx->position.y += spacing;
+		
+		ctx->position.y = round(ctx->position.y);
 	}
 	else
 	{
-		ctx->position.y = ctx->sameLineTopY;
+		ctx->position.y = ctx->sameLineTopY + spacing;
+		
+		if (!ctx->wasSameLine)
+			ctx->position.x += ctx->widget.rect.width + ctx->sameLineSpacing * ctx->scale;
 	}
 
 	ctx->widget.width = pixelWidth;
@@ -194,10 +205,13 @@ void addWidget(f32 height)
 	{
 		ctx->position.y += height;
 		ctx->position.y = round(ctx->position.y);
+		ctx->position.x = ctx->sameLineX;
 	}
 	else
 	{
 		ctx->position.x += pixelWidth + ctx->sameLineSpacing * ctx->scale;
+		ctx->wasSameLine = true;
+		ctx->sameLineHeight = std::max(ctx->sameLineHeight, height);
 	}
 
 	ctx->widget.hasNextWidth = false;
@@ -1497,7 +1511,6 @@ void incrementLayerIndex()
 u32 decrementLayerIndex()
 {
 	ctx->layerIndex--;
-	//ctx->renderer->setWindowDrawCmdLayer(ctx->layerIndex);
 
 	return ctx->layerIndex;
 }
