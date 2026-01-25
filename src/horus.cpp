@@ -164,13 +164,12 @@ void addWidget(f32 height)
 	auto pixelWidth = ctx->widget.width > 1 ? ctx->widget.width : ctx->widget.width * ctx->layout.width;
 
 	f32 spacing = ctx->spacing * ctx->scale;
-	// Check if this is the first item in the layout to avoid top spacing (gap behavior)
-	bool isFirstItem = (fabs(ctx->position.y - ctx->layout.savedPosition.y) < 0.1f);
 
 	if (!ctx->sameLine)
 	{
-		ctx->sameLineTopY = ctx->position.y;
+		auto oldY = ctx->position.y;
 
+		// new line after same line
 		if (ctx->wasSameLine)
 		{
 			ctx->position.x = ctx->sameLineX;
@@ -178,17 +177,26 @@ void addWidget(f32 height)
 			ctx->position.y += ctx->sameLineHeight;
 			ctx->sameLineHeight = 0;
 		}
-
-		ctx->sameLineX = ctx->position.x;
+		else
+		{
+			ctx->sameLineX = ctx->position.x;
+			ctx->sameLineTopY = oldY + (ctx->layout.firstWidgetInLayout ? 0 : spacing);
+		}
 		
-		if (!isFirstItem)
+		if (!ctx->layout.firstWidgetInLayout)
+		{
 			ctx->position.y += spacing;
+		}
+		else
+		{
+			ctx->layout.firstWidgetInLayout = false;
+		}
 		
 		ctx->position.y = round(ctx->position.y);
 	}
 	else
 	{
-		ctx->position.y = ctx->sameLineTopY + spacing;
+		ctx->position.y = ctx->sameLineTopY;
 		
 		if (!ctx->wasSameLine)
 			ctx->position.x += ctx->widget.rect.width + ctx->sameLineSpacing * ctx->scale;
@@ -357,6 +365,7 @@ void beginFrame()
 	ctx->frameCount++;
 	ctx->totalTime += ctx->deltaTime;
 	ctx->pruneUnusedTextTime += ctx->deltaTime;
+	ctx->wasSameLine = false;
 	//ctx->sameLineInfoIndex = 0;
 	//ctx->sameLineInfoCount = 0;
 	ctx->fontStack.clear();
@@ -1426,6 +1435,7 @@ void beginLayout(const Rect& rect)
 	ctx->layout.savedPosition = paddedRect.topLeft();
 	ctx->layout.width = paddedRect.width;
 	ctx->layout.height = paddedRect.height;
+	ctx->layout.firstWidgetInLayout = true;
 	ctx->renderer->pushClipRect(paddedRect);
 	ctx->position = { paddedRect.x, paddedRect.y};
 	ctx->sameLine = false;

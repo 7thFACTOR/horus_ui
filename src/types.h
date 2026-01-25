@@ -210,6 +210,7 @@ struct LayoutState
 	Point savedPadding;
 	Point columnsPosition = { 0, 0 };
 	bool savedSameLine = false;
+	bool firstWidgetInLayout = true;
 	WidgetId id = 0;
 	f32 savedHighestSameLineY = 0;
 	f32 savedPreviousSameLineY = 0;

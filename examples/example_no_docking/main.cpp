@@ -104,16 +104,32 @@ int main(int argc, char** args)
 				hui::Point pts[maxPts] = { 0 };
 				u32 ptCount = 0;
 				hui::Rect rc = { 30, 30, 700*hui::getScale(), 1500 * hui::getScale() };
+				hui::pushPadding(hui::PaddingType::Layout, 0);
 				hui::beginLayout(rc);
-				hui::pushWidgetPadding(10);
+				hui::pushPadding(hui::PaddingType::Layout, 10);
+				
 				hui::beginBox("box1", hui::Color::white, hui::WidgetElementId::WindowBody, hui::WidgetStateType::Normal);
 
+				hui::button("BUTTON0");
+
 				hui::beginBox("box2", hui::Color::red, hui::WidgetElementId::WindowBody, hui::WidgetStateType::Normal);
-				hui::button("A BUTTON");
+				
+				//hui::button("BUTTON1");
+				
 				hui::beginBox("box3", hui::Color::blue, hui::WidgetElementId::WindowBody, hui::WidgetStateType::Normal);
-				hui::button("A BUTTON2");
+				
+				//hui::button("BUTTON2");
+				
 				hui::beginBox("box4", hui::Color::green, hui::WidgetElementId::WindowBody, hui::WidgetStateType::Normal);
-				hui::button("ANOE BUTTON");
+				
+				hui::button("BUTTON3"); hui::sameLine();
+				hui::button("BUTTON3g"); hui::sameLine();
+				hui::button("BUTTON3n"); hui::sameLine();
+				hui::button("BUTTON3nn"); hui::sameLine();
+				hui::button("BUTTONnnnn3");
+				hui::button("BUTTONnnnn3");
+				hui::button("BUTTONnnnn3");
+				
 				hui::endBox();
 				hui::endBox();
 				hui::endBox();
@@ -322,6 +338,7 @@ int main(int argc, char** args)
 				hui::popWidgetPadding();
 				hui::endBox();
 				hui::endLayout();
+				hui::popPadding(hui::PaddingType::Layout);
 				hui::endFrame();
 				hui::endRendering();
 
