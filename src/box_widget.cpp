@@ -14,7 +14,7 @@ struct BoxState
 std::unordered_map<WidgetId, DrawCmdLayerSplitter> boxDrawCmdSplitter;
 std::unordered_map<WidgetId, BoxState> boxState;
 
-static void beginBoxInternal(const char* id, const Color& color, ThemeElement::State& state, f32 customHeight)
+static void beginBoxLayoutInternal(const char* id, const Color& color, ThemeElement::State& state, f32 customHeight)
 {
 	const auto parentWidth = ctx->layout.width;
 	auto& padding = getPadding(PaddingType::Layout);
@@ -46,21 +46,21 @@ static void beginBoxInternal(const char* id, const Color& color, ThemeElement::S
 	boxDrawCmdSplitter[ctx->id].setLayer(1);
 }
 
-void beginBox(
+void beginBoxLayout(
 	const char* id,
-	const Color& color,
+	const Color& tintColor,
 	WidgetElementId widgetElementId,
 	WidgetStateType state,
 	f32 customHeight)
 {
 	auto& boxElemState = ctx->theme->getElement(widgetElementId).getState(state);
 
-	beginBoxInternal(id, color, boxElemState, customHeight);
+	beginBoxLayoutInternal(id, tintColor, boxElemState, customHeight);
 }
 
-void beginBox(
+void beginBoxLayoutUserElement(
 	const char* id,
-	const Color& color,
+	const Color& tintColor,
 	const char* userElementName,
 	WidgetStateType state,
 	f32 customHeight)
@@ -70,18 +70,18 @@ void beginBox(
 	if (elem)
 	{
 		auto& boxElemState = elem->getState(state);
-		beginBoxInternal(id, color, boxElemState, customHeight);
+		beginBoxLayoutInternal(id, tintColor, boxElemState, customHeight);
 	}
 }
 
-bool endBox()
+bool endBoxLayout()
 {
 	auto& boxElemState = ctx->layout.themeWidgetElementState;
 
-	if (ctx->wasSameLine)
+	if (ctx->sameLine.wasEnabled)
 	{
-		ctx->position.y += ctx->sameLineHeight;
-		ctx->wasSameLine = false;
+		ctx->position.y += ctx->sameLine.maxHeight;
+		ctx->sameLine.wasEnabled = false;
 	}
 
 	auto contentHeight = ctx->position.y - ctx->layout.savedPosition.y;

@@ -449,7 +449,7 @@ static void clipBottom(const Rect& rect, Point* inPoints, Point* inUvPoints, Rgb
 static bool clipTriangleToRect(
 	const Point& p1, const Point& p2, const Point& p3,
 	const Point& uv1, const Point& uv2, const Point& uv3,
-	const Rgba32 c1, const Rgba32 c2, const Rgba32 c3, 
+	const Rgba32 c1, const Rgba32 c2, const Rgba32 c3,
 	const Rect& rect,
 	Point* outPoints, Point* outUvPoints, Rgba32* outColors, u32& outCount)
 {
@@ -699,7 +699,7 @@ void Renderer::executeDrawCommands(HNativeWindow wnd)
 
 		layerCmds.clear();
 	}
-	
+
 	vertexBuffer->updateData(vertexBufferData.vertices.data(), 0, vertexBufferData.drawVertexCount);
 	// render the batches
 	ctx->providers->gfx->draw(currentWindowContext->batches.data(), currentWindowContext->batches.size());
@@ -1163,7 +1163,7 @@ FontTextSize Renderer::computeSizeOrDrawText(
 		{
 			auto chr = text[i];
 			auto glyph = fnt->getGlyph(chr);
-			
+
 			if (!glyph)
 				continue;
 
@@ -1174,13 +1174,13 @@ FontTextSize Renderer::computeSizeOrDrawText(
 			// If not, ensure we leave space for ellipsis.
 			bool wouldExceed = (currWidth + adv > rect.width);
 			bool needsEllipsis = (lineEnd > 0 && (lineEnd - 0) > (i + 1)); // more glyphs after this one
-			
+
 			if (wouldExceed)
 			{
 				// can't accept this glyph; stop
 				break;
 			}
-			
+
 			// If there are remaining glyphs after this and adding them would later overflow,
 			// ensure we have room for ellipsis now. Conservative check: if next glyph would push us
 			// over and we don't have ellipsis room, stop before adding current glyph.
@@ -1211,8 +1211,9 @@ FontTextSize Renderer::computeSizeOrDrawText(
 		}
 
 		// Decide final displayed width:
-		bool didTruncate = (fitCount < (lineEnd));
+		bool didTruncate = fitCount < lineEnd;
 		f32 displayedWidth = currWidth;
+
 		if (didTruncate)
 		{
 			// if nothing fits but ellipsis fits, display only ellipsis
@@ -2548,12 +2549,12 @@ void Renderer::needToAddVertexCount(u32 count)
 char* Renderer::addUtf8TextToBuffer(const char* text, u32 sizeBytes)
 {
 	if (currentWindowContext->textBufferPosition + sizeBytes + 1 >= (u32)currentWindowContext->textBuffer.size()) return nullptr;
-	
+
 	auto textAddr = currentWindowContext->textBuffer.data() + currentWindowContext->textBufferPosition;
-	
+
 	memcpy(textAddr, text, sizeBytes + 1); // and zero
 	currentWindowContext->textBufferPosition += sizeBytes + 1;
-	
+
 	return textAddr;
 }
 
@@ -2578,7 +2579,7 @@ void Renderer::addDrawCommand(const DrawCommand& cmd)
 }
 
 void Renderer::cmdDrawTextAt(
-	const char* text, 
+	const char* text,
 	const Point& position)
 {
 	DrawCommand cmd(DrawCommand::Type::DrawText);
@@ -2586,7 +2587,7 @@ void Renderer::cmdDrawTextAt(
 	cmd.data.drawText.horizAlign = HAlignType::Left;
 	cmd.data.drawText.vertAlign = VAlignType::Top;
 	cmd.data.drawText.text = addUtf8TextToBuffer(text, (u32)strlen(text));
-	
+
 	if (cmd.data.drawText.text)
 	{
 		addDrawCommand(cmd);

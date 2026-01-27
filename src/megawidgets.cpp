@@ -32,12 +32,12 @@ bool vecEditorInternal(f64& x, f64& y, f64& z, f64 scrollStep, bool useZ)
 
 		// current widget + 2 since widget is computed in endBox and we have 1 image widget
 		//TODO: not working, since widget id is not incremental
-		hui::beginBox("axisBody", (ctx->vecEditor.draggingValue && (ctx->vecEditor.draggedId == (ctx->id + 2))) ? dragColor : normalColor, "axisBoxBody");
+		hui::beginBoxLayoutUserElement("axisBody", (ctx->vecEditor.draggingValue && (ctx->vecEditor.draggedId == (ctx->id + 2))) ? dragColor : normalColor, "axisBoxBody");
 		WidgetId imageWidgetId = hui::getWidgetId();
 		hui::image(elem->normalState().image, 14);
 		bool imageHovered = hui::isHovered();
 		bool imagePressed = hui::isPressed();
-		hui::endBox();
+		hui::endBoxLayout();
 
 		if (hui::isHovered() || imageHovered || ctx->vecEditor.draggingValue)
 		{
@@ -165,7 +165,7 @@ bool objectRefEditor(const char* id, HImage targetImg, HImage clearImg, const ch
 
 	hui::getThemeUserWidgetElementInfo("targetObjectBody", WidgetStateType::Normal, targetElemInfo);
 
-	beginBox(
+	beginBoxLayout(
 		"targetObjectBody",
 		Color::white,
 		WidgetElementId::TextInputBody,
@@ -199,7 +199,7 @@ bool objectRefEditor(const char* id, HImage targetImg, HImage clearImg, const ch
 	if (!noVal)
 		popTint();
 
-	endBox();
+	endBoxLayout();
 
 	if (getDragDropObjectType() == objectType)
 		allowDragDrop();

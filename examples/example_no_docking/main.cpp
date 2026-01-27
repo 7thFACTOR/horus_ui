@@ -108,19 +108,19 @@ int main(int argc, char** args)
 				hui::beginLayout(rc);
 				hui::pushPadding(hui::PaddingType::Layout, 10);
 				
-				hui::beginBox("box1", hui::Color::white, hui::WidgetElementId::WindowBody, hui::WidgetStateType::Normal);
+				hui::beginBoxLayout("box1", hui::Color::white, hui::WidgetElementId::WindowBody);
 
 				hui::button("BUTTON0");
 
-				hui::beginBox("box2", hui::Color::red, hui::WidgetElementId::WindowBody, hui::WidgetStateType::Normal);
+				hui::beginBoxLayout("box2", hui::Color::red);
 				
 				//hui::button("BUTTON1");
 				
-				hui::beginBox("box3", hui::Color::blue, hui::WidgetElementId::WindowBody, hui::WidgetStateType::Normal);
+				hui::beginBoxLayout("box3", hui::Color::blue);
 				
 				//hui::button("BUTTON2");
 				
-				hui::beginBox("box4", hui::Color::green, hui::WidgetElementId::WindowBody, hui::WidgetStateType::Normal);
+				hui::beginBoxLayout("box4", hui::Color::green);
 				
 				hui::button("BUTTON3"); hui::sameLine();
 				hui::button("BUTTON3g"); hui::sameLine();
@@ -130,9 +130,9 @@ int main(int argc, char** args)
 				hui::button("BUTTONnnnn3");
 				hui::button("BUTTONnnnn3");
 				
-				hui::endBox();
-				hui::endBox();
-				hui::endBox();
+				hui::endBoxLayout();
+				hui::endBoxLayout();
+				hui::endBoxLayout();
 
 				hui::popWidgetPadding();
 				hui::pushWidgetPadding(0);
@@ -250,7 +250,7 @@ int main(int argc, char** args)
 				if (popup)
 				{
 					hui::beginPopup("_popup", 300, hui::PopupFlags::Centered|hui::PopupFlags::FadeBackground);
-					hui::label("A sample popup");
+					hui::label("A sample popup"); hui::sameLine();
 					if (hui::button("Close this"))
 					{
 						hui::closePopup();
@@ -307,36 +307,36 @@ int main(int argc, char** args)
 				if (hui::expandable("Many buttons##3"))
 				for (int i = 0; i < 20; i++)
 				{
-					hui::beginSameLine();
-					hui::button("Accelerate");
-					hui::button("Accelerate");
-					hui::button("Accelerate");
-					hui::button("Accelerate");
-					hui::button("Accelerate");
-					hui::button("Accelerate");
-					hui::button("Accelerate");
-					hui::button("Accelerate");
-					hui::endSameLine();
+					hui::pushId(i);
+					hui::button("Accelerate1"); hui::sameLine();
+					hui::button("Accelerate2"); hui::sameLine();
+					hui::button("Accelerate3"); hui::sameLine();
+					hui::button("Accelerate4"); hui::sameLine();
+					hui::button("Accelerate5"); hui::sameLine();
+					hui::button("Accelerate6"); hui::sameLine();
+					hui::button("Accelerate7"); hui::sameLine();
+					hui::button("Accelerate8");
+					hui::popId();
 				}
 
 				
 				hui::pushTint(hui::Color::red);
-				hui::button("  EXIT  ");
+				hui::button("  EXIT    ");
 				hui::popTint();
 				hui::pushTint(hui::Color(1,0,0,1), hui::TintColorType::Body, hui::TintColorOpType::Replace);
 				hui::sameLine();
-				hui::button("  ABORT  ");
+				hui::button("               ABORT  ");
 				hui::popTint();
 				hui::pushTint(hui::Color::sky, hui::TintColorType::Text);
 				hui::sameLine();
-				hui::button("  QUIT APPLICATION ");
+				hui::button("QUIT APPLICATION");
 				hui::popTint();
 				
 
 				hui::space(20);
 				
 				hui::popWidgetPadding();
-				hui::endBox();
+				hui::endBoxLayout();
 				hui::endLayout();
 				hui::popPadding(hui::PaddingType::Layout);
 				hui::endFrame();

@@ -18,7 +18,7 @@ bool rotarySliderFloat(const char* label, f32* value, f32 minVal, f32 maxVal, f3
 	bool wasModified = false;
 	auto& padding = getWidgetPadding();
 
-	if (ctx->sameLine && !ctx->widget.hasNextWidth)
+	if (ctx->sameLine.enabled && !ctx->widget.hasNextWidth)
 	{
 		ctx->widget.customWidth = ((bodyElem.normalState().border + padding.x) * 2.0f) * ctx->scale;
 		ctx->widget.hasCustomWidth = true;

@@ -35,20 +35,12 @@ struct TextLineState
 
 struct SameLineState
 {
-	bool computeHeight = true;
-	f32 lineHeight = 0;
-	f32 frameHeight = 0;
-	f32 lineY = 0;
-};
-
-struct SameLineContextState
-{
-	bool sameLine = false;
-	bool wasSameLine = false;
-	f32 sameLineSpacing = 5;
-	f32 sameLineHeight = 0;
-	f32 sameLineTopY = 0;
-	f32 sameLineX = 0;
+	bool enabled = false;
+	bool wasEnabled = false;
+	f32 spacing = 5;
+	f32 maxHeight = 0;
+	f32 currentY = 0;
+	f32 currentX = 0;
 };
 
 struct TintState
@@ -219,7 +211,7 @@ struct LayoutState
 	Point savedPosition = { 0, 0 };
 	Point savedPadding;
 	Point columnsPosition = { 0, 0 };
-	bool savedSameLine = false;
+	SameLineState savedSameLine;
 	bool firstWidgetInLayout = true;
 	WidgetId id = 0;
 	f32 savedHighestSameLineY = 0;
@@ -364,7 +356,7 @@ struct PopupState
 	Point dragDelta, lastMouseDownPoint;
 	Point lastMousePoint;
 	std::vector<u32> savedSameLineInfoIndexStack;
-	SameLineContextState savedSameLineContext;
+	SameLineState savedSameLine;
 };
 
 struct RotarySliderState

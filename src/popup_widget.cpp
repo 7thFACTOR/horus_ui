@@ -24,13 +24,7 @@ void beginPopup(
 	if (!has(flags, PopupFlags::SameLayer))
 		incrementLayerIndex();
 
-	//if (has(flags, PopupFlags::TopMost))
-	{
-		//popup.oldZOrder = ctx->renderer->getZOrder();
-		//ctx->renderer->setZOrder(INT_MAX - 1);
-		ctx->renderer->pushWindowDrawCmdLayer(DrawCmdLayerType::Foreground);
-	}
-
+	ctx->renderer->pushWindowDrawCmdLayer(DrawCmdLayerType::Foreground);
 	ctx->popupIndex++;
 
 	// not active, first show, do not render anything, next frame
@@ -132,21 +126,12 @@ void beginPopup(
 	ctx->layout.savedPosition = ctx->position;
 	
 	// Save the complete sameLine context state
-	popup.savedSameLineContext.sameLine = ctx->sameLine;
-	popup.savedSameLineContext.wasSameLine = ctx->wasSameLine;
-	popup.savedSameLineContext.sameLineSpacing = ctx->sameLineSpacing;
-	popup.savedSameLineContext.sameLineHeight = ctx->sameLineHeight;
-	popup.savedSameLineContext.sameLineTopY = ctx->sameLineTopY;
-	popup.savedSameLineContext.sameLineX = ctx->sameLineX;
+	popup.savedSameLine = ctx->sameLine;
 	
 	// Reset sameLine state for the popup
-	ctx->sameLine = false;
-	ctx->wasSameLine = false;
-	ctx->sameLineHeight = 0;
-	
-	popup.savedSameLineInfoIndexStack = ctx->sameLineInfoIndexStack;
-	ctx->sameLineInfoIndexStack.clear();
-
+	ctx->sameLine.enabled = false;
+	ctx->sameLine.wasEnabled = false;
+	ctx->sameLine.maxHeight = 0;
 	ctx->renderer->pushClipRect(ctx->renderer->getWindowRect(), false);
 
 	if (has(flags, PopupFlags::FadeBackground))
@@ -240,17 +225,8 @@ void endPopup()
 	popLayout();
 	
 	// Restore the complete sameLine context state
-	ctx->sameLine = popup.savedSameLineContext.sameLine;
-	ctx->wasSameLine = popup.savedSameLineContext.wasSameLine;
-	ctx->sameLineSpacing = popup.savedSameLineContext.sameLineSpacing;
-	ctx->sameLineHeight = popup.savedSameLineContext.sameLineHeight;
-	ctx->sameLineTopY = popup.savedSameLineContext.sameLineTopY;
-	ctx->sameLineX = popup.savedSameLineContext.sameLineX;
-	
-	ctx->sameLineInfoIndexStack = popup.savedSameLineInfoIndexStack;
-
-	//if (has(popup.flags, PopupFlags::TopMost))
-		ctx->renderer->popWindowDrawCmdLayer();
+	ctx->sameLine = popup.savedSameLine;
+	ctx->renderer->popWindowDrawCmdLayer();
 
 	if (!has(popup.flags, PopupFlags::SameLayer))
 		decrementLayerIndex();

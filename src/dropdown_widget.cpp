@@ -15,7 +15,7 @@ bool dropdown(const char* id, i32& selectedIndex, const char** items, u32 itemCo
 
 	ctx->id = genId(id);
 
-	if (ctx->sameLine)
+	if (ctx->sameLine.enabled)
 	{
 		ctx->widget.customWidth = 80; //TODO: compute based on text size
 		ctx->widget.hasCustomWidth = true;

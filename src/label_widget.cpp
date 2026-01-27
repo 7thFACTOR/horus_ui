@@ -18,7 +18,7 @@ static bool labelInternal(const char* label, HAlignType horizontalAlign, Font* f
 	auto fsize = ctx->renderer->computeSizeOrDrawText(ctx->widgetLabel.c_str(), Rect(0, 0, maxWidth, FLT_MAX), HAlignType::Left, VAlignType::Top, false, font, true);
 	height = (bodyElemState.height * ctx->scale > fsize.height ? bodyElemState.height * ctx->scale : fsize.height) + padding.y * 2.0f * ctx->scale;
 
-	if (ctx->sameLine)
+	if (ctx->sameLine.enabled)
 	{
 		ctx->widget.customWidth = fsize.width + padding.x * 2.0f * ctx->scale;
 		ctx->widget.hasCustomWidth = true;

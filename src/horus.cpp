@@ -165,22 +165,24 @@ void addWidget(f32 height)
 
 	f32 spacing = ctx->spacing * ctx->scale;
 
-	if (!ctx->sameLine)
+	if (!ctx->sameLine.enabled)
 	{
 		auto oldY = ctx->position.y;
 
 		// new line after same line
-		if (ctx->wasSameLine)
+		if (ctx->sameLine.wasEnabled)
 		{
-			ctx->position.x = ctx->sameLineX;
-			ctx->wasSameLine = false;
-			ctx->position.y += ctx->sameLineHeight;
-			ctx->sameLineHeight = 0;
+			ctx->position.x = ctx->sameLine.currentX;
+			ctx->sameLine.wasEnabled = false;
+			// add the previous line max height
+			ctx->position.y += ctx->sameLine.maxHeight;
+			ctx->sameLine.maxHeight = 0;
+			ctx->sameLine.currentY = ctx->position.y + (ctx->layout.firstWidgetInLayout ? 0 : spacing);
 		}
 		else
 		{
-			ctx->sameLineX = ctx->position.x;
-			ctx->sameLineTopY = oldY + (ctx->layout.firstWidgetInLayout ? 0 : spacing);
+			ctx->sameLine.currentX = ctx->position.x;
+			ctx->sameLine.currentY = oldY + (ctx->layout.firstWidgetInLayout ? 0 : spacing);
 		}
 		
 		if (!ctx->layout.firstWidgetInLayout)
@@ -196,10 +198,10 @@ void addWidget(f32 height)
 	}
 	else
 	{
-		ctx->position.y = ctx->sameLineTopY;
+		ctx->position.y = ctx->sameLine.currentY;
 		
-		if (!ctx->wasSameLine)
-			ctx->position.x += ctx->widget.rect.width + ctx->sameLineSpacing * ctx->scale;
+		if (!ctx->sameLine.wasEnabled)
+			ctx->position.x += ctx->widget.rect.width + ctx->sameLine.spacing * ctx->scale;
 	}
 
 	ctx->widget.width = pixelWidth;
@@ -209,22 +211,22 @@ void addWidget(f32 height)
 		pixelWidth,
 		height);
 
-	if (!ctx->sameLine)
+	if (!ctx->sameLine.enabled)
 	{
 		ctx->position.y += height;
 		ctx->position.y = round(ctx->position.y);
-		ctx->position.x = ctx->sameLineX;
+		ctx->position.x = ctx->sameLine.currentX;
 	}
 	else
 	{
-		ctx->position.x += pixelWidth + ctx->sameLineSpacing * ctx->scale;
-		ctx->wasSameLine = true;
-		ctx->sameLineHeight = std::max(ctx->sameLineHeight, height);
+		ctx->position.x += pixelWidth + ctx->sameLine.spacing * ctx->scale;
+		ctx->sameLine.wasEnabled = true;
+		ctx->sameLine.maxHeight = std::max(ctx->sameLine.maxHeight, height);
 	}
 
 	ctx->widget.hasNextWidth = false;
 	ctx->widget.hasCustomWidth = false;
-	ctx->sameLine = false;
+	ctx->sameLine.enabled = false;
 }
 
 void setFocusable()
@@ -365,7 +367,7 @@ void beginFrame()
 	ctx->frameCount++;
 	ctx->totalTime += ctx->deltaTime;
 	ctx->pruneUnusedTextTime += ctx->deltaTime;
-	ctx->wasSameLine = false;
+	ctx->sameLine.wasEnabled = false;
 	//ctx->sameLineInfoIndex = 0;
 	//ctx->sameLineInfoCount = 0;
 	ctx->fontStack.clear();
@@ -1438,7 +1440,7 @@ void beginLayout(const Rect& rect)
 	ctx->layout.firstWidgetInLayout = true;
 	ctx->renderer->pushClipRect(paddedRect);
 	ctx->position = { paddedRect.x, paddedRect.y};
-	ctx->sameLine = false;
+	ctx->sameLine.enabled = false;
 }
 
 void endLayout()

@@ -16,15 +16,9 @@ static bool sliderInternal(const char* id, f32 minVal, f32 maxVal, f32& value, b
 	// clamp
 	value = fmaxf(minVal, fminf(maxVal, value));
 
-	if (ctx->sameLine && !ctx->widget.hasNextWidth)
+	if (ctx->sameLine.enabled && !ctx->widget.hasNextWidth)
 	{
 		ctx->widget.customWidth = ((bodyElem.normalState().border + padding.x) * 2.0f + knobElem.normalState().image->width) * ctx->scale;
-		ctx->widget.hasCustomWidth = true;
-	}
-
-	if (ctx->sameLine && !ctx->widget.hasNextWidth)
-	{
-		ctx->widget.customWidth = bodyElem.normalState().width * ctx->scale;
 		ctx->widget.hasCustomWidth = true;
 	}
 

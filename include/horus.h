@@ -2614,7 +2614,9 @@ HORUS_API void endCustomTooltip();
 /// \param customHeight a forced custom height, otherwise auto calculated from the total height the child widgets have
 HORUS_API void beginBoxLayout(
 	const char* id,
-	const Color& color,
+	const Color& tintColor,
+	WidgetElementId widgetElementId = WidgetElementId::BoxBody,
+	WidgetStateType state = WidgetStateType::Normal,
 	f32 customHeight = 0.0f);
 
 /// Begin draw a box, which may contain other widgets
@@ -2624,7 +2626,7 @@ HORUS_API void beginBoxLayout(
 /// \param customHeight a forced custom height, otherwise auto calculated from the total height the child widgets have
 HORUS_API void beginBoxLayoutUserElement(
 	const char* id,
-	const Color& color,
+	const Color& tintColor,
 	const char* userElementName,
 	WidgetStateType state = WidgetStateType::Normal,
 	f32 customHeight = 0.0f);
@@ -2821,12 +2823,6 @@ HORUS_API void line();
 /// Leave a normal space between previous widget and next one
 HORUS_API void space(f32 customSpacing = 0.0f);
 
-/// Make next widget show on the same row as the last widget. The widget width depends on the widget type, the content inside it, etc.
-/// Not all widgets support the same line modifier, since some need content
-HORUS_API void beginSameLine(f32 spacing = 0.0f);
-
-HORUS_API void endSameLine();
-
 /// Make the next widget appear on the same line as the previous widget (Dear ImGui style)
 /// Call this after a widget to position the next widget horizontally
 /// After each widget, same-line mode automatically ends, so you must call sameLine() again for each subsequent widget
@@ -2834,13 +2830,6 @@ HORUS_API void endSameLine();
 /// \param spacing optional spacing between widgets, if 0 uses default spacing
 HORUS_API void sameLine(f32 offsetX = 0.0f, f32 spacing = 0.0f);
 
-HORUS_API void pushSameLineSpacing(f32 horizontalSpace = 0.0f);
-
-HORUS_API f32 popSameLineSpacing();
-
-HORUS_API void pushWidth(f32 width);
-
-HORUS_API f32 popWidth();
 HORUS_API void setNextWidth(f32 width);
 
 /// Begin a custom user viewport area
