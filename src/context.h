@@ -54,7 +54,6 @@ struct Context
 	std::vector<f32> sameLineWidthStack;
 	std::vector<f32> sameLineSpacingStack;
 	std::vector<u32> sameLineInfoIndexStack;
-	std::vector<bool> sameLineStack;
 	SameLineState sameLineInfo[maxSameLineInfoIndex];
 
 	TooltipState tooltip;

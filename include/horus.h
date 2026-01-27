@@ -1618,6 +1618,21 @@ struct WidgetElementInfo
 	f32 height = 0;
 };
 
+struct VirtualScrollInfo
+{
+	VirtualScrollInfo(u32 itemCount, f32 itemHeight)
+	{
+		totalItemCount = itemCount;
+		this->itemHeight = itemHeight;
+	}
+
+	u32 totalItemCount = 0; /// total number of items in the list
+	f32 itemHeight = 20.0f; /// height of each item in pixels
+	u32 firstVisibleItem = 0; /// index of the first visible item
+	u32 visibleItemCount = 0; /// number of visible items in the current scroll position
+	f32 scrollOffsetY = 0.0f; /// current scroll offset in pixels
+};
+
 struct ServiceProviders
 {
 	struct InputProvider* input = 0;
@@ -2597,11 +2612,9 @@ HORUS_API void endCustomTooltip();
 /// \param widgetElementId the widget element id image to use when drawing the box
 /// \param state the widget element state to draw with
 /// \param customHeight a forced custom height, otherwise auto calculated from the total height the child widgets have
-HORUS_API void beginBox(
+HORUS_API void beginBoxLayout(
 	const char* id,
 	const Color& color,
-	WidgetElementId widgetElementId = WidgetElementId::BoxBody,
-	WidgetStateType state = WidgetStateType::Normal,
 	f32 customHeight = 0.0f);
 
 /// Begin draw a box, which may contain other widgets
@@ -2609,15 +2622,15 @@ HORUS_API void beginBox(
 /// \param userElementName the user widget element name whose image to use when drawing the box
 /// \param state the widget element state to draw with
 /// \param customHeight a forced custom height, otherwise auto calculated from the total height the child widgets have
-HORUS_API void beginBox(
+HORUS_API void beginBoxLayoutUserElement(
 	const char* id,
 	const Color& color,
 	const char* userElementName,
 	WidgetStateType state = WidgetStateType::Normal,
 	f32 customHeight = 0.0f);
 
-/// End the box widget
-HORUS_API bool endBox();
+/// End the box layout
+HORUS_API bool endBoxLayout();
 
 /// Begin drawing a modal popup widget on top of all other popups or widgets
 /// \param width the width of the popup

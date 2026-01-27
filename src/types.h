@@ -41,6 +41,16 @@ struct SameLineState
 	f32 lineY = 0;
 };
 
+struct SameLineContextState
+{
+	bool sameLine = false;
+	bool wasSameLine = false;
+	f32 sameLineSpacing = 5;
+	f32 sameLineHeight = 0;
+	f32 sameLineTopY = 0;
+	f32 sameLineX = 0;
+};
+
 struct TintState
 {
 	Color color[(i32)TintColorType::Count];
@@ -354,6 +364,7 @@ struct PopupState
 	Point dragDelta, lastMouseDownPoint;
 	Point lastMousePoint;
 	std::vector<u32> savedSameLineInfoIndexStack;
+	SameLineContextState savedSameLineContext;
 };
 
 struct RotarySliderState

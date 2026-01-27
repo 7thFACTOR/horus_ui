@@ -130,8 +130,20 @@ void beginPopup(
 	};
 	ctx->layout.width = width - bodyElemState.border * 2 * ctx->scale;
 	ctx->layout.savedPosition = ctx->position;
-	ctx->sameLineStack.push_back(ctx->sameLine);
-	ctx->sameLine = false; // reset the same line, we don't need that at the popup start
+	
+	// Save the complete sameLine context state
+	popup.savedSameLineContext.sameLine = ctx->sameLine;
+	popup.savedSameLineContext.wasSameLine = ctx->wasSameLine;
+	popup.savedSameLineContext.sameLineSpacing = ctx->sameLineSpacing;
+	popup.savedSameLineContext.sameLineHeight = ctx->sameLineHeight;
+	popup.savedSameLineContext.sameLineTopY = ctx->sameLineTopY;
+	popup.savedSameLineContext.sameLineX = ctx->sameLineX;
+	
+	// Reset sameLine state for the popup
+	ctx->sameLine = false;
+	ctx->wasSameLine = false;
+	ctx->sameLineHeight = 0;
+	
 	popup.savedSameLineInfoIndexStack = ctx->sameLineInfoIndexStack;
 	ctx->sameLineInfoIndexStack.clear();
 
@@ -226,8 +238,15 @@ void endPopup()
 	ctx->renderer->popClipRect();
 	popPosition();
 	popLayout();
-	ctx->sameLine = ctx->sameLineStack.back();
-	ctx->sameLineStack.pop_back();
+	
+	// Restore the complete sameLine context state
+	ctx->sameLine = popup.savedSameLineContext.sameLine;
+	ctx->wasSameLine = popup.savedSameLineContext.wasSameLine;
+	ctx->sameLineSpacing = popup.savedSameLineContext.sameLineSpacing;
+	ctx->sameLineHeight = popup.savedSameLineContext.sameLineHeight;
+	ctx->sameLineTopY = popup.savedSameLineContext.sameLineTopY;
+	ctx->sameLineX = popup.savedSameLineContext.sameLineX;
+	
 	ctx->sameLineInfoIndexStack = popup.savedSameLineInfoIndexStack;
 
 	//if (has(popup.flags, PopupFlags::TopMost))
