@@ -642,10 +642,7 @@ void endTable()
 	auto& state = ctx->tableStack.back();
 
 	// Finish the last row
-	// Finish the last row
 	finishRow(state);
-
-
 
 	f32 finalHeight = state.currentRowY - state.tableRect.y;
 

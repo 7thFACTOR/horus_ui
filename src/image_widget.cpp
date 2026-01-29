@@ -8,33 +8,36 @@ bool image(HImage img, f32 height, HAlignType horizontalAlign, VAlignType vertic
 {
 	Image* imgPtr = (Image*)img;
 	bool autoHeight = false;
-	auto& padding = getWidgetPadding();
 
 	if (height <= 0)
 	{
-		height = (imgPtr->height + padding.y * 2.0f) * ctx->scale;
+		height = imgPtr->height * ctx->scale;
 		autoHeight = true;
 	}
 	else
 	{
-		height += padding.y * 2.0f;
 		height *= ctx->scale;
 	}
 
 	f32 newWidth = imgPtr->width * ctx->scale;
 	f32 newHeight = height;
 
-	if (fit == ImageFitType::KeepAspect)
+	auto& padding = getWidgetPadding();
+
+	if (!ctx->sameLine.enabled)
 	{
-		viewportImageFitSize(
-			imgPtr->width * ctx->scale,
-			imgPtr->height * ctx->scale,
-			ctx->layout.width - padding.x * 2.0f * ctx->scale,
-			height, newWidth, newHeight, false, false);
-	}
-	else if (fit == ImageFitType::Stretch)
-	{
-		newWidth = ctx->layout.width - padding.x * 2.0f * ctx->scale;
+		if (fit == ImageFitType::KeepAspect)
+		{
+			viewportImageFitSize(
+				imgPtr->width * ctx->scale,
+				imgPtr->height * ctx->scale,
+				ctx->layout.width - padding.x * 2.0f * ctx->scale,
+				height, newWidth, newHeight, false, false);
+		}
+		else if (fit == ImageFitType::Stretch)
+		{
+			newWidth = ctx->layout.width - padding.x * 2.0f * ctx->scale;
+		}
 	}
 
 	if (autoHeight)

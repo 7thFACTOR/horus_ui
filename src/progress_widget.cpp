@@ -17,7 +17,7 @@ void progress(f32 value, f32 maxValue, bool showText, bool showRealValues, const
 		ctx->widget.hasCustomWidth = true;
 	}
 
-	ctx->extractLabelAndId(nullptr);
+	ctx->setLabelAndId(nullptr);
 	addWidget((backElem.normalState().height + padding.y * 2.0) * ctx->scale);
 	buttonBehavior();
 

@@ -11,7 +11,7 @@ bool radio(const char* label, i32* currentRadioValue, i32 thisValue)
 	auto& radioBodyElem = ctx->theme->getElement(WidgetElementId::RadioBody);
 	auto& radioMarkElem = ctx->theme->getElement(WidgetElementId::RadioMark);
 
-	ctx->extractLabelAndId(label);
+	ctx->setLabelAndId(label);
 	
 	auto textSize = radioBodyElem.normalState().font->computeTextSize(ctx->widgetLabel.c_str());
 	auto& padding = getWidgetPadding();

@@ -1157,57 +1157,93 @@ FontTextSize Renderer::computeSizeOrDrawText(
 		u32 lastChr = 0;
 		f32 currWidth = 0.0f;
 		u32 fitCount = 0;
+		bool forceTruncationLogic = false;
 
-		// Determine how many glyphs can be drawn while leaving room for ellipsis if needed
-		for (u32 i = 0; i < lineEnd; ++i)
+		// 1. Check if the entire line fits without truncation.
 		{
-			auto chr = text[i];
-			auto glyph = fnt->getGlyph(chr);
-
-			if (!glyph)
-				continue;
-
-			auto kern = fnt->getKerning(lastChr, chr);
-			f32 adv = glyph->advanceX + kern;
-
-			// If entire text fits without ellipsis, accept it.
-			// If not, ensure we leave space for ellipsis.
-			bool wouldExceed = (currWidth + adv > rect.width);
-			bool needsEllipsis = (lineEnd > 0 && (lineEnd - 0) > (i + 1)); // more glyphs after this one
-
-			if (wouldExceed)
+			f32 w = 0.0f;
+			u32 lChr = 0;
+			u32 cnt = 0;
+			for (u32 i = 0; i < lineEnd; ++i)
 			{
-				// can't accept this glyph; stop
-				break;
+				auto chr = text[i];
+				auto glyph = fnt->getGlyph(chr);
+				if (!glyph) continue;
+				auto kern = fnt->getKerning(lChr, chr);
+				w += glyph->advanceX + kern;
+				lChr = chr;
+				cnt++;
 			}
 
-			// If there are remaining glyphs after this and adding them would later overflow,
-			// ensure we have room for ellipsis now. Conservative check: if next glyph would push us
-			// over and we don't have ellipsis room, stop before adding current glyph.
-			if (i + 1 < lineEnd)
+			// Tolerance for floating point precision issues
+			if (w <= rect.width + 0.001f)
 			{
-				// estimate minimal remaining (we don't know exactly next widths) - ensure ellipsis fits after adding this glyph
-				if (currWidth + adv + ellWidth > rect.width)
+				currWidth = w;
+				fitCount = cnt;
+			}
+			else
+			{
+				forceTruncationLogic = true;
+			}
+		}
+
+		if (forceTruncationLogic)
+		{
+			currWidth = 0.0f;
+			fitCount = 0;
+			lastChr = 0;
+
+			// Determine how many glyphs can be drawn while leaving room for ellipsis if needed
+			for (u32 i = 0; i < lineEnd; ++i)
+			{
+				auto chr = text[i];
+				auto glyph = fnt->getGlyph(chr);
+
+				if (!glyph)
+					continue;
+
+				auto kern = fnt->getKerning(lastChr, chr);
+				f32 adv = glyph->advanceX + kern;
+
+				// If entire text fits without ellipsis, accept it.
+				// If not, ensure we leave space for ellipsis.
+				bool wouldExceed = (currWidth > rect.width);
+				bool needsEllipsis = (lineEnd > 0 && (lineEnd - 0) > (i + 1)); // more glyphs after this one
+
+				if (wouldExceed)
 				{
-					// if even zero glyphs fit but ellipsis itself fits, show only ellipsis
-					if (fitCount == 0)
-					{
-						// if ellipsis itself doesn't fit, we'll clamp width to rect.width and return
-						if (ellWidth > rect.width)
-						{
-							currWidth = rect.width;
-							fitCount = 0;
-							break;
-						}
-					}
-					// stop before adding this glyph so we can append ellipsis
+					// can't accept this glyph; stop
 					break;
 				}
-			}
 
-			currWidth += adv;
-			lastChr = chr;
-			++fitCount;
+				// If there are remaining glyphs after this and adding them would later overflow,
+				// ensure we have room for ellipsis now. Conservative check: if next glyph would push us
+				// over and we don't have ellipsis room, stop before adding current glyph.
+				if (i + 1 < lineEnd)
+				{
+					// estimate minimal remaining (we don't know exactly next widths) - ensure ellipsis fits after adding this glyph
+					if (currWidth + adv + ellWidth > rect.width)
+					{
+						// if even zero glyphs fit but ellipsis itself fits, show only ellipsis
+						if (fitCount == 0)
+						{
+							// if ellipsis itself doesn't fit, we'll clamp width to rect.width and return
+							if (ellWidth > rect.width)
+							{
+								currWidth = rect.width;
+								fitCount = 0;
+								break;
+							}
+						}
+						// stop before adding this glyph so we can append ellipsis
+						break;
+					}
+				}
+
+				currWidth += adv;
+				lastChr = chr;
+				++fitCount;
+			}
 		}
 
 		// Decide final displayed width:

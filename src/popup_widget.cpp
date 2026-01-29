@@ -158,6 +158,12 @@ void endPopup()
 {
 	auto& popup = ctx->popupStack[ctx->popupIndex - 1];
 
+	if (ctx->sameLine.wasEnabled)
+	{
+		ctx->position.y += ctx->sameLine.maxHeight;
+		ctx->sameLine.wasEnabled = false;
+	}
+
 	//TODO: make a better popup move
 	if (ctx->isActiveLayer()
 		&&

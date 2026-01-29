@@ -13,7 +13,7 @@ Context::~Context()
 {
 }
 
-void Context::extractLabelAndId(const char* text)
+void Context::setLabelAndId(const char* text)
 {
 	const char* textPtr = text ? text : "";
 	auto idStart = strstr(textPtr, "##");

@@ -11,16 +11,14 @@ static bool labelInternal(const char* label, HAlignType horizontalAlign, Font* f
 	auto& bodyElem = ctx->theme->getElement(WidgetElementId::LabelBody);
 	f32 height = 0;
 	auto& bodyElemState = bodyElem.normalState();
-	auto& padding = getWidgetPadding();
 
-	ctx->extractLabelAndId(label);
-	auto maxWidth = (u32)round(ctx->layout.width - padding.x * 2.0f * ctx->scale);
-	auto fsize = ctx->renderer->computeSizeOrDrawText(ctx->widgetLabel.c_str(), Rect(0, 0, maxWidth, FLT_MAX), HAlignType::Left, VAlignType::Top, false, font, true);
-	height = (bodyElemState.height * ctx->scale > fsize.height ? bodyElemState.height * ctx->scale : fsize.height) + padding.y * 2.0f * ctx->scale;
+	ctx->setLabelAndId(label);
+	auto fsize = ctx->renderer->computeSizeOrDrawText(ctx->widgetLabel.c_str(), Rect(0, 0, ctx->layout.width , FLT_MAX), HAlignType::Left, VAlignType::Top, false, font, true);
+	height = (bodyElemState.height > fsize.height ? bodyElemState.height : fsize.height);
 
-	if (ctx->sameLine.enabled)
+	if (!ctx->widget.hasNextWidth)
 	{
-		ctx->widget.customWidth = fsize.width + padding.x * 2.0f * ctx->scale;
+		ctx->widget.customWidth = fsize.width;
 		ctx->widget.hasCustomWidth = true;
 	}
 
@@ -35,9 +33,9 @@ static bool labelInternal(const char* label, HAlignType horizontalAlign, Font* f
 	if (ctx->widget.visible)
 	{
 		Rect textRc = {
-			ctx->widget.rect.x + padding.x * ctx->scale,
+			ctx->widget.rect.x,
 			ctx->widget.rect.y,
-			ctx->widget.rect.width - padding.x * ctx->scale,
+			ctx->widget.rect.width,
 			ctx->widget.rect.height
 		};
 
@@ -76,7 +74,7 @@ bool labelCustomFontMultiline(const char* label, HFont font, HAlignType horizont
 	auto& padding = getWidgetPadding();
 	f32 width = ctx->layout.width - padding.x * 2.0f * ctx->scale;
 
-	ctx->extractLabelAndId(label);
+	ctx->setLabelAndId(label);
 
 	auto textSize = ((Font*)font)->computeTextSize(ctx->widgetLabel.c_str(), (u32)round(width));
 

@@ -24,7 +24,7 @@ bool rotarySliderFloat(const char* label, f32* value, f32 minVal, f32 maxVal, f3
 		ctx->widget.hasCustomWidth = true;
 	}
 
-	ctx->extractLabelAndId(label);
+	ctx->setLabelAndId(label);
 	addWidget((bodyElem.normalState().height + padding.y * 2.0f) * ctx->scale);
 	buttonBehavior();
 

@@ -3,6 +3,7 @@
 
 #define _USE_MATH_DEFINES
 #include <cmath>
+#include <filesystem>
 
 // backends
 #include "sdl3_input_provider.h"
@@ -82,6 +83,55 @@ int main(int argc, char** args)
 		glClearColor(0.1f, 0.4f, 0.4f, 1);
 		glClear(GL_COLOR_BUFFER_BIT);
 
+
+		// Theme file path
+		static const char* themeFilePath = "../themes/default.theme.json";
+
+		// Theme reload function (used by F2 key and auto-reload)
+		auto reloadTheme = [&]()
+			{
+				auto newTheme = hui::loadThemeFromJson(themeFilePath, err, errSize);
+
+				if (newTheme)
+				{
+					// delete old theme
+					if (theme) hui::deleteTheme(theme);
+					theme = newTheme;
+					hui::setTheme(theme);
+
+					// Reload resources
+					hui::buildTheme(theme);
+					printf("Theme reloaded!\n");
+				}
+			};
+
+		// Track theme file modification time for auto-reload
+		static auto lastModTime = std::filesystem::last_write_time(themeFilePath);
+		static f32 checkTimer = 0;
+
+		checkTimer += hui::getFrameDeltaTime();
+
+		// Check if theme file has been modified (every 1 second)
+		if (checkTimer >= 1.0f)
+		{
+			checkTimer = 0;
+
+			try
+			{
+				auto currentModTime = std::filesystem::last_write_time(themeFilePath);
+				if (currentModTime != lastModTime)
+				{
+					lastModTime = currentModTime;
+					reloadTheme();
+				}
+			}
+			catch (...)
+			{
+				// Ignore filesystem errors
+			}
+		}
+
+
 		// Get the events from SDL or whatever input provider is set, it will fill a queue of events
 		hui::update();
 
@@ -148,7 +198,7 @@ int main(int argc, char** args)
 
 				static f32 scrollPos = 0;
 				hui::space();
-				hui::beginScrollView("scrl1", 200, scrollPos);
+				hui::beginScrollView("scrl1", 200, scrollPos, 0, hui::ScrollViewFlags::NoBorder);
 				hui::labelMultiline("Lorem ipsum dolor sit amet, consectetur\nvelit esasdf asdf asdf asdf asdfsaf asdf asdf asdf asdf asdf asf asf asdf asdf asdf asfas fasdf asdf asdfasdf asdf asf asf asdf asdf asd fasdf asdf asf asf asdf asf asdf asdf asdf asdf asdf sadf dsf fasf asdf asdf asdf asdfasdf asdf asdfdasdasdfjksadkjf \nESCAPSIMG\n\n\n\naksdf kasjdfk sad fsadjf kjsadf asd fkasdfk sadksakd ksadfsadkf askd fasfsdf asd fasdf asdf asdf skd fsad fasd fasdkfj sadkjf sakdjf askdjf skadf asdf sadf se quam nihil molestiae consequatur, vel illum qui dolorem eum fugiat quo voluptas nulla pariatur? Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum. Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium, totam rem aperiam, eaque ipsa quae ab illo inventore veritatis et quasi architecto beatae vitae dicta sunt explicabo. Nemo enim ipsam voluptatem quia voluptas sit aspernatur aut odit aut fugit, sed quia consequuntur magni dolores eos qui ratione voluptatem sequi nesciunt. Neque porro quisquam est, qui dolorem ipsum quia dolor sit amet, consectetur, adipisci velit, sed quia non numquam eius modi tempora incidunt ut labore et dolore magnam aliquam quaerat voluptatem. Ut enim ad minima veniam, quis nostrum exercitationem ullam corporis suscipit laboriosam, nisi ut aliquid ex ea commodi consequatur? Quis autem vel eum iure reprehenderit qui in ea voluptate velit esse quam nihil molestiae consequatur, vel illum qui dolorem eum fugiat quo voluptas nulla pariatur? Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum. Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium, totam rem aperiam, eaque ipsa quae ab illo inventore veritatis et quasi architecto beatae vitae dicta sunt explicabo. Nemo enim ipsam voluptatem quia voluptas sit aspernatur aut odit aut fugit, sed quia consequuntur magni dolores eos qui ratione voluptatem sequi nesciunt. Neque porro quisquam est, qui dolorem ipsum quia dolor sit amet, consectetur, adipisci velit, sed quia non numquam eius modi tempora incidunt ut labore et dolore magnam aliquam quaerat voluptatem. Ut enim ad minima veniam, quis nostrum exercitationem ullam corporis suscipit laboriosam, nisi ut aliquid ex ea commodi consequatur? Quis autem vel eum iure reprehenderit qui in ea voluptate velit esse quam nihil molestiae consequatur, vel illum qui dolorem eum fugiat quo voluptas nulla pariatur? NU!", hui::HAlignType::Left);
 				hui::line();
 				hui::button("I AGREE");
@@ -187,7 +237,7 @@ int main(int argc, char** args)
 					hui::endMenuBar();
 				}
 
-				hui::labelCustomFont("Once upon a time...", hui::getThemeFont(theme, "title"), hui::HAlignType::Center);
+				hui::labelCustomFont("Once upon a time in the west", hui::getThemeFont(theme, "title"), hui::HAlignType::Center);
 				hui::line();
 				
 				if (hui::button("Do not push this button"))
@@ -242,7 +292,7 @@ int main(int argc, char** args)
 
 				static bool popup = false;
 
-				if (hui::button("POPUP"))
+				if (hui::button("SHOW POPUP"))
 				{
 					popup = true;
 				}
@@ -325,7 +375,7 @@ int main(int argc, char** args)
 				hui::popTint();
 				hui::pushTint(hui::Color(1,0,0,1), hui::TintColorType::Body, hui::TintColorOpType::Replace);
 				hui::sameLine();
-				hui::button("               ABORT  ");
+				hui::button("   ABORT   ");
 				hui::popTint();
 				hui::pushTint(hui::Color::sky, hui::TintColorType::Text);
 				hui::sameLine();

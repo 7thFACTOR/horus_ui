@@ -29,9 +29,11 @@ void beginScrollView(const char* id, f32 size, f32 scrollPos, f32 virtualHeight,
 	ctx->scrollViewStack[ctx->scrollViewDepth].size = size;
 	ctx->scrollViewStack[ctx->scrollViewDepth].virtualHeight = virtualHeight;
 	ctx->scrollViewStack[ctx->scrollViewDepth].id = ctx->id;
+	ctx->scrollViewStack[ctx->scrollViewDepth].flags = flags;
 
-	auto& padding = getPadding(PaddingType::ScrollView);
-	auto internalPadding = (f32)scrollViewElemState.border * ctx->scale + padding.x;
+	const auto& padding = getPadding(PaddingType::ScrollView);
+	const auto border = (has(flags, ScrollViewFlags::NoBorder) ? (f32)scrollViewElemState.border * ctx->scale : 0);
+	auto internalPadding = border + padding.x;
 
 	Rect rect =
 	{
@@ -46,12 +48,15 @@ void beginScrollView(const char* id, f32 size, f32 scrollPos, f32 virtualHeight,
 	Rect clipRect = rect;
 
 	clipRect.x += internalPadding;
-	clipRect.y += (f32)scrollViewElemState.border * ctx->scale;
+	clipRect.y += border;
 	clipRect.width -= scrollViewScrollThumbElemState.width + internalPadding * 2.0f;
-	clipRect.height -= (f32)scrollViewElemState.border * ctx->scale * 2.0f;
+	clipRect.height -= border * ctx->scale * 2.0f;
 
-	ctx->renderer->cmdSetColor(scrollViewElemState.color);
-	ctx->renderer->cmdDrawImageBordered(scrollViewElemState.image, scrollViewElemState.border, rect, ctx->scale);
+	if (!has(flags, ScrollViewFlags::NoBorder))
+	{
+		ctx->renderer->cmdSetColor(scrollViewElemState.color);
+		ctx->renderer->cmdDrawImageBordered(scrollViewElemState.image, scrollViewElemState.border, rect, ctx->scale);
+	}
 
 	ctx->scrollViewStack[ctx->scrollViewDepth].scrollPosition = scrollPos;
 	ctx->renderer->pushClipRect(clipRect);
@@ -79,8 +84,9 @@ f32 endScrollView()
 	auto& scrollViewElemState = ctx->theme->getElement(WidgetElementId::ScrollViewBody).normalState();
 	f32 scrollPos = scrollViewInfo.scrollPosition;
 	f32 size = scrollViewInfo.size;
-	auto& padding = getPadding(PaddingType::ScrollView);
-	auto internalPadding = (f32)scrollViewElemState.border * ctx->scale + padding.x;
+	const auto& padding = getPadding(PaddingType::ScrollView);
+	const auto border = (has(scrollViewInfo.flags, ScrollViewFlags::NoBorder) ? (f32)scrollViewElemState.border * ctx->scale : 0);
+	auto internalPadding = border + padding.x;
 	f32 scrollContentSize = ctx->position.y - prevPenPos.y + internalPadding; // Add bottom padding to prevent clipping
 	f32 scrollAmount = 0;
 
@@ -135,8 +141,8 @@ f32 endScrollView()
 	// draw scrollbar if content is bigger than scroll view
 	if (scrollContentSize > rect.height)
 	{
-		auto scrollViewScrollBarElemState = ctx->theme->getElement(WidgetElementId::ScrollViewScrollBar).normalState();
-		auto scrollViewScrollThumbElemState = ctx->theme->getElement(WidgetElementId::ScrollViewScrollThumb).normalState();
+		auto& scrollViewScrollBarElemState = ctx->theme->getElement(WidgetElementId::ScrollViewScrollBar).normalState();
+		auto& scrollViewScrollThumbElemState = ctx->theme->getElement(WidgetElementId::ScrollViewScrollThumb).normalState();
 
 		Rect rectScrollBar =
 		{

@@ -12,7 +12,7 @@ Rect beginViewport(f32 height)
 		height = ctx->layout.height - (ctx->position.y - ctx->layout.savedPosition.y);
 	}
 
-	ctx->extractLabelAndId("##viewport");
+	ctx->setLabelAndId("##viewport");
 	addWidget(height);
 	buttonBehavior();
 

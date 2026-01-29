@@ -17,7 +17,7 @@ bool expandable(const char* label, bool* expandedVar)
 	bool expanded = false;
 	const auto& padding = getWidgetPadding();
 
-	ctx->extractLabelAndId(label);
+	ctx->setLabelAndId(label);
 	addWidget((bodyElemState->image->rect.height + padding.y * 2.0f) * ctx->scale);
 	buttonBehavior();
 

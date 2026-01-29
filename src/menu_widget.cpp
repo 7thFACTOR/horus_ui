@@ -51,7 +51,7 @@ bool beginMenuInternal(const char* label, SelectableFlags stateFlags, bool conte
 	auto& menuBarItemElem = ctx->theme->getElement(WidgetElementId::MenuBarItem);
 	auto menuBarItemElemState = menuBarItemElem.normalState();
 	
-	ctx->extractLabelAndId(label);
+	ctx->setLabelAndId(label);
 	
 	Utf32String* uniStr = ctx->textCache->getText(ctx->widgetLabel.c_str());
 	FontTextSize fsize = menuBarItemElemState.font->computeTextSize(*uniStr);
@@ -324,7 +324,7 @@ bool menuItem(const char* label, const char* shortcut, HImage img, SelectableFla
 	bool hasCheck = !!(stateFlags & SelectableFlags::Checkable);
 	bool isChecked = !!(stateFlags & SelectableFlags::Checked);
 
-	ctx->extractLabelAndId(label);
+	ctx->setLabelAndId(label);
 	addWidget(bodyElem.normalState().height * ctx->scale);
 	buttonBehavior(true);
 

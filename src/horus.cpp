@@ -147,12 +147,12 @@ void setNextFocused()
 void addWidget(f32 height)
 {
 	ctx->widget.changeEnded = false;
-	height = round(height);
+	height = round((height + getWidgetPadding().y * 2.0f) * ctx->scale);
 
 	// next width has priority over custom width
 	if (ctx->widget.hasNextWidth)
 	{
-		ctx->widget.width = ctx->widget.nextWidth * ctx->scale;
+		ctx->widget.width = (ctx->widget.nextWidth + getWidgetPadding().x * 2.0f) * ctx->scale;
 	}
 	else
 	{
@@ -162,7 +162,6 @@ void addWidget(f32 height)
 	// if width is under 1, then it's a percentage of the layout width
 	// otherwise it's a fixed pixel width
 	auto pixelWidth = ctx->widget.width > 1 ? ctx->widget.width : ctx->widget.width * ctx->layout.width;
-
 	f32 spacing = ctx->spacing * ctx->scale;
 
 	if (!ctx->sameLine.enabled)
@@ -201,7 +200,9 @@ void addWidget(f32 height)
 		ctx->position.y = ctx->sameLine.currentY;
 		
 		if (!ctx->sameLine.wasEnabled)
+		{
 			ctx->position.x += ctx->widget.rect.width + ctx->sameLine.spacing * ctx->scale;
+		}
 	}
 
 	ctx->widget.width = pixelWidth;

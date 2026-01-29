@@ -200,17 +200,14 @@ void mouseDownOnlyButtonBehavior()
 
 bool button(const char* label)
 {
+	ctx->setLabelAndId(label);
+
 	auto& btnBodyElem = ctx->theme->getElement(WidgetElementId::ButtonBody);
-
-	ctx->extractLabelAndId(label);
-
-	auto& padding = getWidgetPadding();
-
 	auto textWidth = btnBodyElem.normalState().font->computeTextSize(ctx->widgetLabel.c_str());
-	ctx->widget.customWidth = (btnBodyElem.normalState().border + padding.x) * 2.0f * ctx->scale + textWidth.width;
-	ctx->widget.hasCustomWidth = true;
 
-	addWidget((btnBodyElem.normalState().height + padding.y * 2.0f) * ctx->scale);
+	ctx->widget.customWidth = btnBodyElem.normalState().border * 2.0f + textWidth.width;
+	ctx->widget.hasCustomWidth = true;
+	addWidget(btnBodyElem.normalState().height);
 	buttonBehavior();
 
 	auto btnBodyElemState = &btnBodyElem.normalState();
@@ -232,8 +229,8 @@ bool button(const char* label)
 			ctx->widgetLabel.c_str(),
 			ctx->widget.pressed
 			? Rect(
-				ctx->widget.rect.x,
-				ctx->widget.rect.y,
+				ctx->widget.rect.x + ctx->scale, //TODO: press depth from theme ?
+				ctx->widget.rect.y + ctx->scale,
 				ctx->widget.rect.width,
 				ctx->widget.rect.height)
 			: ctx->widget.rect,
@@ -260,7 +257,7 @@ static bool imageButtonInternal(HImage img, HImage disabledImg, f32 width, f32 h
 	ctx->widget.customWidth = width;
 	ctx->widget.hasCustomWidth = true;
 
-	ctx->extractLabelAndId(nullptr);
+	ctx->setLabelAndId(nullptr);
 	addWidget(height * ctx->scale);
 	buttonBehavior();
 

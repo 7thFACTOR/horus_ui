@@ -11,7 +11,7 @@ bool check(const char* label, bool* checkVar)
 	auto& checkBodyElem = ctx->theme->getElement(WidgetElementId::CheckBody);
 	auto& checkMarkElem = ctx->theme->getElement(WidgetElementId::CheckMark);
 
-	ctx->extractLabelAndId(label);
+	ctx->setLabelAndId(label);
 
 	auto textSize = checkBodyElem.normalState().font->computeTextSize(ctx->widgetLabel.c_str());
 	auto& padding = getWidgetPadding();

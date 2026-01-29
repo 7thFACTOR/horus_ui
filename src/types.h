@@ -197,30 +197,17 @@ enum class LayoutType
 struct LayoutState
 {
 	LayoutState() {}
-
 	LayoutState(LayoutType newType)
 		: type(newType)
 	{}
 
 	LayoutType type = LayoutType::Vertical;
-	i32 currentColumn = 0;
-	std::vector<f32> columnSizes;
-	std::vector<f32> columnMinSizes;
-	std::vector<f32> columnMaxSizes;
-	std::vector<f32> columnPixelSizes;
-	Point savedPosition = { 0, 0 };
-	Point savedPadding;
-	Point columnsPosition = { 0, 0 };
-	SameLineState savedSameLine;
 	bool firstWidgetInLayout = true;
 	WidgetId id = 0;
-	f32 savedHighestSameLineY = 0;
-	f32 savedPreviousSameLineY = 0;
+	Point savedPosition = { 0, 0 };
+	SameLineState savedSameLine;
 	f32 width = 0;
 	f32 height = 0;
-	f32 maxPositionY = -10000000000;
-	ThemeElement::State* themeWidgetElementState = nullptr;
-	Color themeElementColorTint;
 };
 
 struct WidgetState
@@ -390,6 +377,7 @@ struct ScrollViewState
 	f32 virtualHeight = 0.0f;
 	f32 scrollPosition = 0.0f;
 	Rect rect;
+	ScrollViewFlags flags = ScrollViewFlags::None;
 };
 
 struct TextMarker
