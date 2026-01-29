@@ -321,6 +321,7 @@ struct TableState
 	std::vector<CellColorRequest> cellColorRequests;
 	f32 bodyStartY = 0.0f;
 	bool isClipping = false;
+	f32 savedLayoutWidth = 0.0f;
 };
 
 struct PopupState

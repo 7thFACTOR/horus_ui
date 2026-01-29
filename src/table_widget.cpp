@@ -343,6 +343,7 @@ bool beginTable(const char* id, u32 columnCount, f32 height, TableFlags flags)
 	state.flags = flags;
 	state.headerRect = Rect(0,0,0,0);
 	state.rowSeparators.clear(); // Clear separate list
+	state.savedLayoutWidth = ctx->layout.width; // Save layout width to restore later
 
 	// Copy persistent data to transient state -> REMOVED
 	// We now use persistent directly
@@ -360,7 +361,7 @@ bool beginTable(const char* id, u32 columnCount, f32 height, TableFlags flags)
 	}
 
 	// Get widget width (use available width if not set)
-	f32 widgetWidth = ctx->widget.width > 0 ? ctx->widget.width : ctx->layout.width;
+	f32 widgetWidth = ctx->layout.width;
 
 	// Account for left and right borders (2px total) when Borders or BordersOuter flags are set
 	bool hasBorders = has(flags, TableFlags::Borders) || has(flags, TableFlags::BordersOuter);
@@ -941,6 +942,13 @@ void endTable()
 	// Merge layers: Background (0) and Content (1)
 	state.persistent->splitter->merge();
 
+	// Restore layout width and cursor X position
+	// We want the cursor to be at the start of the layout (left indentation) for the next widget
+	// The table started at state.tableRect.x - 1.0f (since we added 1px shift left).
+	// So we restore it to that.
+	ctx->layout.width = state.savedLayoutWidth;
+	ctx->position.x = state.tableRect.x - 1.0f;
+
 	ctx->tableStack.pop_back();
 }
 
@@ -993,7 +1001,7 @@ void nextRow()
 
 	state.rowStartY = state.currentRowY;
 	//state.rowDrawCmdIndex = ctx->renderer->getDrawCommandCount();
-	state.currentMaxRowHeight = 3;// state.rowHeight; // Use theme default height as min
+	state.currentMaxRowHeight = state.rowHeight; // Use theme default height as min
 
 	state.cellStartY = state.rowStartY;
 

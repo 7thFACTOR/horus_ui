@@ -476,7 +476,7 @@ int main(int argc, char** args)
 				hui::label("Table Widget:");
 				hui::pushSpacing(0);
 				hui::pushWidgetPadding(0);
-				if (hui::beginTable("myTable", 4, 440, hui::TableFlags::Borders | hui::TableFlags::None | hui::TableFlags::AltRowBg | hui::TableFlags::Resizable | hui::TableFlags::Stretch| hui::TableFlags::ScrollY))
+				if (hui::beginTable("myTable", 4, 440, hui::TableFlags::Borders | hui::TableFlags::None | hui::TableFlags::AltRowBg | hui::TableFlags::Resizable | hui::TableFlags::Stretch))
 				{
 					hui::startHeader();
 					hui::setupColumn(0, 0);
@@ -580,6 +580,8 @@ int main(int argc, char** args)
 					hui::endTable();
 					hui::popWidgetPadding();
 					hui::popSpacing();
+
+					hui::label("End of tableo");
 
 					scroller = hui::endScrollView();
 				}
