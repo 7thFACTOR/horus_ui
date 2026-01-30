@@ -42,13 +42,13 @@ static void finishRow(TableState& state)
 	// We should only draw here for body rows.
 	if (!state.isInHeader)
 	{
-		//ctx->renderer->beginDrawCmdInsertion(state.rowDrawCmdIndex);
-
+		f32 baseX = state.needsScrollViewStart ? state.scrollViewBaseX : state.tableRect.x;
+		
 		// Draw custom row color if set
 		if (state.currentRowColorSet)
 		{
 			Rect rowRect(
-				state.tableRect.x,
+				baseX,
 				state.rowStartY,
 				state.innerWidth,
 				state.currentMaxRowHeight
@@ -66,7 +66,7 @@ static void finishRow(TableState& state)
 		else if (has(state.flags, TableFlags::AltRowBg))
 		{
 			Rect rowRect(
-				state.tableRect.x,
+				baseX,
 				state.rowStartY,
 				state.innerWidth,
 				state.currentMaxRowHeight
@@ -99,7 +99,7 @@ static void finishRow(TableState& state)
 			state.persistent->splitter->setLayer(0);
 			for (const auto& req : state.cellColorRequests)
 			{
-				f32 cx = state.tableRect.x;
+				f32 cx = baseX;
 				f32 cw = 0;
 				// Find column x and width
 				for (u32 i = 0; i < state.persistent->columns.size(); i++)
@@ -126,29 +126,6 @@ static void finishRow(TableState& state)
 
 		// Clear requests for next row
 		state.cellColorRequests.clear();
-
-		//ctx->renderer->endDrawCmdInsertion();
-
-		// Store the bottom Y position of this row for deferred border drawing
-		// If we are scrolling, rowSeparators might be in scroll space?
-		// Borders are drawn in endTable using rowSeparators?
-		// endTable draws vertical lines using rowSeparators.
-		// If separators are in scroll space, and we draw them in endTable (table space), they will be WRONG if unrelated.
-		// actually vertical lines draw logic iterates rowSeparators.
-		// If we scroll, we probably shouldn't draw per-row vertical lines in `endTable` because they would need to be inside the scroll view?
-		// OR we draw them inside `finishRow`?
-		// `finishRow` already draws horizontal lines?
-		// `table_widget.cpp` around line 196 (Header) and line 778 (Body?)
-		// Wait, `finishRow` does NOT draw body borders usually?
-		// `finishRow` draws header borders (lines 196+).
-		// Body borders are drawn in `endTable` (lines 816+).
-		// This is a problem for scrolling. `endTable` happens outside scroll.
-		// We need to move border drawing into `finishRow` or inside scroll view.
-		// Given the constraints, moving vertical/horizontal lines to `finishRow` for the body is safer for scrolling.
-		// I'll defer this refactor for a moment in thoughts, but for now `rowSeparators.push_back` stores Y.
-		// If Y is scroll-relative, `endTable` using it outside scroll view is wrong.
-		// So `endTable` border logic MUST change or be moved.
-		// Ideally, we move body border drawing to `finishRow` (deferred per row).
 		state.rowSeparators.push_back(state.rowStartY + state.currentMaxRowHeight);
 
 		// Reset row color flag
@@ -160,9 +137,7 @@ static void finishRow(TableState& state)
 	}
 	else
 	{
-		// Header deferred drawing
-		//ctx->renderer->beginDrawCmdInsertion(state.rowDrawCmdIndex);
-
+		// Header drawing
 		f32 headerHeight = state.currentMaxRowHeight;
 
 		state.headerRect = Rect(
@@ -269,11 +244,31 @@ static void finishRow(TableState& state)
 			);
 		}
 
-		//ctx->renderer->endDrawCmdInsertion();
-
 		state.currentRowY += headerHeight;
 		state.bodyStartY = state.currentRowY;
 		ctx->position.y = state.currentRowY;
+
+		// Start scroll view for the body content
+		f32 scrollViewHeight = state.innerHeight > 0 ? state.innerHeight : 200.0f;
+		if (scrollViewHeight > 0)
+		{
+			// Calculate scroll view padding to compensate
+			const auto& padding = getPadding(PaddingType::ScrollView);
+			
+			// Adjust position left by padding, and increase width by padding to compensate
+			// This makes the content area align with table edge while scrollbar stays at right edge
+			ctx->position.x = state.tableRect.x - padding.x;
+			ctx->layout.width = state.innerWidth + padding.x;
+			
+			beginScrollView("##tableScrollView", scrollViewHeight, state.persistent->scrollViewScrollPos, 10000.0f, ScrollViewFlags::NoBorder);
+			state.needsScrollViewStart = true;
+			
+			// After scroll view starts, ctx->position.x should now align with table edge
+			state.scrollViewBaseX = ctx->position.x;
+			state.currentRowY = ctx->position.y;
+			state.rowStartY = ctx->position.y;
+			state.bodyStartY = ctx->position.y;
+		}
 	}
 }
 
@@ -631,8 +626,8 @@ bool beginTable(const char* id, u32 columnCount, f32 height, TableFlags flags)
 	currentState.persistent->splitter->split(2);
 	currentState.persistent->splitter->setLayer(1);
 
-	// Draw first row background (row 0) - REMOVED, deferred to finishRow
-	// if (has(currentState.flags, TableFlags::AltRowBg)) ...
+	// Store that we need to begin scroll view after header
+	currentState.needsScrollViewStart = false;
 
 	return true;
 }
@@ -644,6 +639,106 @@ void endTable()
 
 	// Finish the last row
 	finishRow(state);
+
+	// Draw borders for body rows BEFORE ending scroll view so they get clipped
+	if (state.needsScrollViewStart)
+	{
+		auto& tableBodyElem = ctx->theme->getElement(WidgetElementId::TableBody);
+		
+		// Determine which color to use based on border type (inner vs outer)
+		Color innerHColor = tableBodyElem.currentStyle->getColorParameter("innerBorderColorH", Color::white);
+		Color innerVColor = tableBodyElem.currentStyle->getColorParameter("innerBorderColorV", Color::white);
+		Color outerVColor = tableBodyElem.currentStyle->getColorParameter("outerBorderColorV", Color::white);
+		
+		// Draw borders if enabled
+		// Use the splitter so borders are rendered in correct order with backgrounds
+		if (has(state.flags, TableFlags::Borders) || has(state.flags, TableFlags::BordersOuter) || has(state.flags, TableFlags::BordersInner) || has(state.flags, TableFlags::BordersV) || has(state.flags, TableFlags::BordersH))
+		{
+			state.persistent->splitter->setLayer(0);
+			
+			f32 baseX = state.scrollViewBaseX;
+			
+			// Draw Inner Horizontal Lines
+			if (has(state.flags, TableFlags::BordersInner) || has(state.flags, TableFlags::Borders) || has(state.flags, TableFlags::BordersH))
+			{
+				ctx->renderer->cmdSetLineStyle(LineStyle(innerHColor, 1.0f));
+				for (size_t i = 0; i < state.rowSeparators.size(); i++)
+				{
+					bool draw = true;
+					// Skip last line if only inner borders (not outer) or if Borders flag is set
+					if (i == state.rowSeparators.size() - 1)
+					{
+						// Skip bottom line if we're only drawing inner borders (no outer borders)
+						if (has(state.flags, TableFlags::BordersInner) && !has(state.flags, TableFlags::Borders) && !has(state.flags, TableFlags::BordersOuter))
+							draw = false;
+						else if (has(state.flags, TableFlags::Borders))
+							draw = false; // Outer border will draw it
+					}
+					
+					if (draw)
+					{
+						ctx->renderer->cmdDrawLine(
+							Point(baseX, state.rowSeparators[i]),
+							Point(baseX + state.innerWidth, state.rowSeparators[i])
+						);
+					}
+				}
+			}
+			
+			// Draw Vertical Lines (Inner + Outer Left/Right)
+			if (has(state.flags, TableFlags::BordersInner) || has(state.flags, TableFlags::Borders) || has(state.flags, TableFlags::BordersV))
+			{
+				ctx->renderer->cmdSetLineStyle(LineStyle(innerVColor, 1.0f));
+				bool innerOnly = has(state.flags, TableFlags::BordersInner) && !has(state.flags, TableFlags::Borders) && !has(state.flags, TableFlags::BordersOuter);
+				bool hasOuter = has(state.flags, TableFlags::Borders) || has(state.flags, TableFlags::BordersOuter);
+				
+				// Draw vertical lines for each row
+				for (u32 rowIdx = 0; rowIdx < state.rowSeparators.size() + 1; rowIdx++)
+				{
+					f32 lineStartY = rowIdx < state.rowSeparators.size() && rowIdx > 0 ? state.rowSeparators[rowIdx - 1] : state.bodyStartY;
+					f32 lineEndY = rowIdx < state.rowSeparators.size() ? state.rowSeparators[rowIdx] : state.currentRowY;
+					
+					f32 currentX = baseX;
+					
+					// Draw vertical lines between columns
+					for (u32 i = 0; i < state.persistent->columns.size(); i++)
+					{
+						if (!state.persistent->columns[i].isHidden)
+						{
+							// Draw left line for this column
+							bool drawLeftLine = true;
+							if (i == 0 && (hasOuter || innerOnly))
+								drawLeftLine = false;
+							
+							if (drawLeftLine)
+							{
+								ctx->renderer->cmdDrawLine(Point(currentX, lineStartY), Point(currentX, lineEndY));
+							}
+							currentX += state.persistent->columns[i].width;
+						}
+					}
+					
+					// Draw Rightmost line after all columns (skip if only inner borders or if handled by outer box)
+					if (!innerOnly && !hasOuter)
+					{
+						ctx->renderer->cmdSetLineStyle(LineStyle(outerVColor, 1.0f));
+						ctx->renderer->cmdDrawLine(Point(currentX, lineStartY), Point(currentX, lineEndY));
+					}
+				}
+			}
+			
+			state.persistent->splitter->setLayer(1);
+		}
+		
+		// Merge splitter layers BEFORE ending scroll view so deferred rendering happens with clip rect active
+		state.persistent->splitter->merge();
+	}
+
+	// End scroll view if it was started
+	if (state.needsScrollViewStart)
+	{
+		state.persistent->scrollViewScrollPos = endScrollView();
+	}
 
 	f32 finalHeight = state.currentRowY - state.tableRect.y;
 
@@ -816,121 +911,32 @@ void endTable()
 
 	auto& tableBodyElem = ctx->theme->getElement(WidgetElementId::TableBody);
 
-	// Determine which color to use based on border type (inner vs outer)
-	Color innerHColor = tableBodyElem.currentStyle->getColorParameter("innerBorderColorH", Color::white);
-	Color innerVColor = tableBodyElem.currentStyle->getColorParameter("innerBorderColorV", Color::white);
-	Color outerHColor = tableBodyElem.currentStyle->getColorParameter("outerBorderColorH", Color::white);
-	Color outerVColor = tableBodyElem.currentStyle->getColorParameter("outerBorderColorV", Color::white);
-
-	// Batch draw borders if enabled
-	if (has(state.flags, TableFlags::Borders) || has(state.flags, TableFlags::BordersOuter) || has(state.flags, TableFlags::BordersInner) || has(state.flags, TableFlags::BordersV) || has(state.flags, TableFlags::BordersH))
+	// Draw outer box for entire table (header + body) if borders are enabled
+	// This is drawn outside the scroll view to frame the entire table
+	if (!state.needsScrollViewStart && (has(state.flags, TableFlags::Borders) || has(state.flags, TableFlags::BordersOuter)))
 	{
-		// Borders usually go on top or effectively layer 0?
-		// If we put them on layer 0, they are behind content.
-		// If we put them on layer 1 (default), they are with content.
-		// Let's explicitly put them on Layer 0 AFTER background so they are visible but behind content widgets?
-		// Actually, standard table borders are usually "background element".
+		Color outerHColor = tableBodyElem.currentStyle->getColorParameter("outerBorderColorH", Color::white);
+		Color outerVColor = tableBodyElem.currentStyle->getColorParameter("outerBorderColorV", Color::white);
+		
 		state.persistent->splitter->setLayer(0);
+		
+		// Top Line (at tableRect.y)
+		ctx->renderer->cmdSetLineStyle(LineStyle(outerHColor, 1.0f));
+		ctx->renderer->cmdDrawLine(Point(state.tableRect.x, state.tableRect.y),
+								   Point(state.tableRect.x + state.innerWidth, state.tableRect.y));
 
-		// Draw Inner Horizontal Lines
-		if (has(state.flags, TableFlags::BordersInner) || has(state.flags, TableFlags::Borders) || has(state.flags, TableFlags::BordersH))
-		{
-			ctx->renderer->cmdSetLineStyle(LineStyle(innerHColor, 1.0f));
-			for (size_t i = 0; i < state.rowSeparators.size(); i++)
-			{
-				bool draw = true;
-				// Skip last line if only inner borders (not outer) or if Borders flag is set
-				if (i == state.rowSeparators.size() - 1)
-				{
-					// Skip bottom line if we're only drawing inner borders (no outer borders)
-					if (has(state.flags, TableFlags::BordersInner) && !has(state.flags, TableFlags::Borders) && !has(state.flags, TableFlags::BordersOuter))
-						draw = false;
-					else if (has(state.flags, TableFlags::Borders))
-						draw = false; // Outer border will draw it
-				}
+		// Bottom Line (at finalHeight)
+		ctx->renderer->cmdDrawLine(Point(state.tableRect.x, state.tableRect.y + finalHeight),
+								   Point(state.tableRect.x + state.innerWidth, state.tableRect.y + finalHeight));
 
-				if (draw)
-				{
-					ctx->renderer->cmdDrawLine(
-						Point(state.tableRect.x, state.rowSeparators[i]),
-						Point(state.tableRect.x + state.innerWidth, state.rowSeparators[i])
-					);
-				}
-			}
-		}
-
-		// Draw Vertical Lines (Inner + Outer Left/Right)
-		// We need to draw these per-row to respect column spans
-		if (has(state.flags, TableFlags::BordersInner) || has(state.flags, TableFlags::Borders) || has(state.flags, TableFlags::BordersV))
-		{
-			ctx->renderer->cmdSetLineStyle(LineStyle(innerVColor, 1.0f));
-			bool innerOnly = has(state.flags, TableFlags::BordersInner) && !has(state.flags, TableFlags::Borders) && !has(state.flags, TableFlags::BordersOuter);
-			bool hasOuter = has(state.flags, TableFlags::Borders) || has(state.flags, TableFlags::BordersOuter);
-
-			// Draw vertical lines for each row
-			for (u32 rowIdx = 0; rowIdx < state.rowSeparators.size() + 1; rowIdx++)
-			{
-				f32 lineStartY = rowIdx < state.rowSeparators.size() && rowIdx > 0 ? state.rowSeparators[rowIdx - 1] : state.bodyStartY;
-				f32 lineEndY = rowIdx < state.rowSeparators.size() ? state.rowSeparators[rowIdx] : state.currentRowY;
-
-				f32 currentX = state.tableRect.x;
-
-				// Draw leftmost line if outer borders are needed
-				// DETACHED: handled by outer box
-				if (hasOuter)
-				{
-					// ctx->renderer->cmdSetLineStyle(LineStyle(outerVColor, 1.0f));
-					// ctx->renderer->cmdDrawLine(Point(currentX, lineStartY), Point(currentX, lineEndY));
-					// ctx->renderer->cmdSetLineStyle(LineStyle(innerVColor, 1.0f));
-				}
-
-				// Draw vertical lines between columns
-				for (u32 i = 0; i < state.persistent->columns.size(); i++)
-				{
-					if (!state.persistent->columns[i].isHidden)
-					{
-						// Draw left line for this column
-						bool drawLeftLine = true;
-						if (i == 0 && (hasOuter || innerOnly))
-							drawLeftLine = false;
-
-						if (drawLeftLine)
-						{
-							ctx->renderer->cmdDrawLine(Point(currentX, lineStartY), Point(currentX, lineEndY));
-						}
-						currentX += state.persistent->columns[i].width;
-					}
-				}
-
-				// Draw Rightmost line after all columns (skip if only inner borders or if handled by outer box)
-				if (!innerOnly && !hasOuter)
-				{
-					ctx->renderer->cmdSetLineStyle(LineStyle(outerVColor, 1.0f));
-					ctx->renderer->cmdDrawLine(Point(currentX, lineStartY), Point(currentX, lineEndY));
-				}
-			}
-		}
-
-		// Draw Outer Box (Top and Bottom only if vertical lines cover sides?)
-		// To be safe and ensure corners are perfect:
-		if (has(state.flags, TableFlags::Borders) || has(state.flags, TableFlags::BordersOuter))
-		{
-			// Top Line (at tableRect.y)
-			ctx->renderer->cmdSetLineStyle(LineStyle(outerHColor, 1.0f));
-			ctx->renderer->cmdDrawLine(Point(state.tableRect.x, state.tableRect.y),
-									   Point(state.tableRect.x + state.innerWidth, state.tableRect.y));
-
-			// Bottom Line (at finalHeight)
-			ctx->renderer->cmdDrawLine(Point(state.tableRect.x, state.tableRect.y + finalHeight),
-									   Point(state.tableRect.x + state.innerWidth, state.tableRect.y + finalHeight));
-
-			// Sides
-			ctx->renderer->cmdSetLineStyle(LineStyle(outerVColor, 1.0f));
-			ctx->renderer->cmdDrawLine(Point(state.tableRect.x, state.tableRect.y),
-									   Point(state.tableRect.x, state.tableRect.y + finalHeight));
-			ctx->renderer->cmdDrawLine(Point(state.tableRect.x + state.innerWidth, state.tableRect.y),
-									   Point(state.tableRect.x + state.innerWidth, state.tableRect.y + finalHeight));
-		}
+		// Sides
+		ctx->renderer->cmdSetLineStyle(LineStyle(outerVColor, 1.0f));
+		ctx->renderer->cmdDrawLine(Point(state.tableRect.x, state.tableRect.y),
+								   Point(state.tableRect.x, state.tableRect.y + finalHeight));
+		ctx->renderer->cmdDrawLine(Point(state.tableRect.x + state.innerWidth, state.tableRect.y),
+								   Point(state.tableRect.x + state.innerWidth, state.tableRect.y + finalHeight));
+		
+		state.persistent->splitter->setLayer(1);
 	}
 
 	// Pop table clip rect if it was pushed
@@ -940,7 +946,11 @@ void endTable()
 	}
 
 	// Merge layers: Background (0) and Content (1)
-	state.persistent->splitter->merge();
+	// Only merge if we didn't already merge before ending scroll view
+	if (!state.needsScrollViewStart)
+	{
+		state.persistent->splitter->merge();
+	}
 
 	// Restore layout width and cursor X position
 	// We want the cursor to be at the start of the layout (left indentation) for the next widget
@@ -948,7 +958,6 @@ void endTable()
 	// So we restore it to that.
 	ctx->layout.width = state.savedLayoutWidth;
 	ctx->position.x = state.tableRect.x - 1.0f;
-
 	ctx->tableStack.pop_back();
 }
 
@@ -1012,18 +1021,21 @@ void nextRow()
 	if (state.currentColumn < state.persistent->columns.size())
 	{
 		ctx->layout.width = state.persistent->columns[state.currentColumn].width - (ctx->cellPadding.x * 2.0f);
-		ctx->position.x = state.tableRect.x + ctx->cellPadding.x;
+		
+		// Use scrollViewBaseX if scroll view is active, otherwise use tableRect.x
+		f32 baseX = state.needsScrollViewStart ? state.scrollViewBaseX : state.tableRect.x;
+		ctx->position.x = baseX + ctx->cellPadding.x;
 		ctx->position.y = state.rowStartY + ctx->cellPadding.y;
 
 		// Start Clipping
-		// Note: We don't know the full row height yet, so we clip to a large height or wait?
-		// But widgets are drawn immediately. We must clip now.
-		// Since we handle dynamic row height, maybe we clip 9999 height?
-		// Or update clip rect later? Creating a clip rect with limited width and "infinite" height
-		// (clipped by parent window/panel) is the standard way to handle auto-height cells.
-		Rect clipRect(state.tableRect.x, state.rowStartY, state.persistent->columns[state.currentColumn].width, 99999.0f);
-		ctx->renderer->pushClipRect(clipRect);
-		state.isClipping = true;
+		// Note: When inside scroll view, we don't need per-cell clipping as scroll view already clips
+		// Per-cell clipping can cause issues with left edge being clipped
+		if (!state.needsScrollViewStart)
+		{
+			Rect clipRect(baseX, state.rowStartY, state.persistent->columns[state.currentColumn].width, 99999.0f);
+			ctx->renderer->pushClipRect(clipRect);
+			state.isClipping = true;
+		}
 	}
 }
 
@@ -1053,7 +1065,8 @@ void nextCell()
 		state.currentColumn++;
 
 		// Move to next column
-		f32 cellX = state.tableRect.x;
+		f32 baseX = state.needsScrollViewStart ? state.scrollViewBaseX : state.tableRect.x;
+		f32 cellX = baseX;
 		for (u32 i = 0; i < state.currentColumn && i < state.persistent->columns.size(); i++)
 		{
 			if (!state.persistent->columns[i].isHidden)
@@ -1068,10 +1081,14 @@ void nextCell()
 			state.cellStartY = state.rowStartY; // New cell starts at row top
 
 			// Push Clip
-			f32 clipHeight = 99999.0f;
-			Rect clipRect(cellX, state.rowStartY, state.persistent->columns[state.currentColumn].width, clipHeight);
-			ctx->renderer->pushClipRect(clipRect);
-			state.isClipping = true;
+			// Skip clipping when inside scroll view to prevent left edge clipping
+			if (!state.needsScrollViewStart)
+			{
+				f32 clipHeight = 99999.0f;
+				Rect clipRect(cellX, state.rowStartY, state.persistent->columns[state.currentColumn].width, clipHeight);
+				ctx->renderer->pushClipRect(clipRect);
+				state.isClipping = true;
+			}
 		}
 	}
 }
@@ -1084,7 +1101,8 @@ Rect getCellRect()
 	if (state.currentColumn >= state.persistent->columns.size()) return Rect();
 
 	// Calculate cell X position
-	f32 cellX = state.tableRect.x;
+	f32 baseX = state.needsScrollViewStart ? state.scrollViewBaseX : state.tableRect.x;
+	f32 cellX = baseX;
 
 	for (u32 i = 0; i < state.currentColumn; i++)
 	{

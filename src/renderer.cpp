@@ -2038,7 +2038,7 @@ void Renderer::drawImageBordered(Image* image, u32 border, const Rect& rect, f32
 void Renderer::drawLine(const Point& a, const Point& b)
 {
 	Point pts[] = { a, b };
-drawPolyLine(pts, 2, false);
+	drawPolyLine(pts, 2, false);
 }
 
 void Renderer::drawPolyLine(const Point* points, u32 pointCount, bool closed)
@@ -2247,7 +2247,7 @@ void Renderer::drawPolyLine(const Point* points, u32 pointCount, bool closed)
 			seg2 = Point(pts[p + 2].x - pts[p + 1].x, pts[p + 2].y - pts[p + 1].y);
 			seg1.normalize();
 			seg2.normalize();
-		 d1 = seg1 + seg2;
+			d1 = seg1 + seg2;
 			d1.normalize();
 			sinAngle = (d1.x * seg2.y - d1.y * seg2.x);
 			auto a = seg1.dot(seg2);

@@ -32,7 +32,7 @@ void beginScrollView(const char* id, f32 size, f32 scrollPos, f32 virtualHeight,
 	ctx->scrollViewStack[ctx->scrollViewDepth].flags = flags;
 
 	const auto& padding = getPadding(PaddingType::ScrollView);
-	const auto border = (has(flags, ScrollViewFlags::NoBorder) ? (f32)scrollViewElemState.border * ctx->scale : 0);
+	const auto border = (has(flags, ScrollViewFlags::NoBorder) ? 0 : (f32)scrollViewElemState.border * ctx->scale);
 	auto internalPadding = border + padding.x;
 
 	Rect rect =
@@ -85,7 +85,7 @@ f32 endScrollView()
 	f32 scrollPos = scrollViewInfo.scrollPosition;
 	f32 size = scrollViewInfo.size;
 	const auto& padding = getPadding(PaddingType::ScrollView);
-	const auto border = (has(scrollViewInfo.flags, ScrollViewFlags::NoBorder) ? (f32)scrollViewElemState.border * ctx->scale : 0);
+	const auto border = (has(scrollViewInfo.flags, ScrollViewFlags::NoBorder) ? 0 : (f32)scrollViewElemState.border * ctx->scale);
 	auto internalPadding = border + padding.x;
 	f32 scrollContentSize = ctx->position.y - prevPenPos.y + internalPadding; // Add bottom padding to prevent clipping
 	f32 scrollAmount = 0;

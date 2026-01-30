@@ -281,6 +281,7 @@ struct TablePersistentState
 	f32 resizeStartWidthRight = 0;
 	Point lastMousePos;
 	struct DrawCmdLayerSplitter* splitter = nullptr;
+	f32 scrollViewScrollPos = 0.0f;
 };
 
 struct TableState
@@ -322,6 +323,8 @@ struct TableState
 	f32 bodyStartY = 0.0f;
 	bool isClipping = false;
 	f32 savedLayoutWidth = 0.0f;
+	bool needsScrollViewStart = false;
+	f32 scrollViewBaseX = 0.0f;
 };
 
 struct PopupState
