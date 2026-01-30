@@ -366,6 +366,14 @@ bool beginTable(const char* id, u32 columnCount, f32 height, TableFlags flags)
 	bool hasBorders = has(flags, TableFlags::Borders) || has(flags, TableFlags::BordersOuter);
 	if (hasBorders)
 		widgetWidth -= 2.0f;
+	
+	// Account for scrollbar width when height is specified (scroll view will be present)
+	// Also apply if height is 0 (default 200px scroll view)
+	if (height >= 0)
+	{
+		auto& scrollViewScrollThumbElemState = ctx->theme->getElement(WidgetElementId::ScrollViewScrollThumb).normalState();
+		widgetWidth -= scrollViewScrollThumbElemState.width * ctx->scale;
+	}
 
 	// Apply column size specifications (percentage, pixels, or fill)
 	f32 specifiedWidth = 0; // Total width of columns with specific sizes
@@ -797,8 +805,10 @@ void endTable()
 					// Draw Resize Guide Line - width already applied in beginTable
 					f32 guideLineX = currentX;
 					// Clip line to scroll view bounds if inside scroll view
+					// Use headerRect.height to be safe (or calculate it)
+					f32 svHeight = (state.innerHeight > 0 ? state.innerHeight : 200.0f);
 					f32 lineBottomY = state.needsScrollViewStart ? 
-						(state.bodyStartY + (state.innerHeight > 0 ? state.innerHeight : 200.0f)) :
+						(state.tableRect.y + state.headerRect.height + svHeight) :
 						(state.tableRect.y + finalHeight);
 
 					auto& tableBodyElem = ctx->theme->getElement(WidgetElementId::TableBody);
@@ -874,8 +884,9 @@ void endTable()
 
 						// Draw Hover Guide Line
 						// Clip line to scroll view bounds if inside scroll view
+						f32 svHeight = (state.innerHeight > 0 ? state.innerHeight : 200.0f);
 						f32 lineBottomY = state.needsScrollViewStart ? 
-							(state.bodyStartY + (state.innerHeight > 0 ? state.innerHeight : 200.0f)) :
+							(state.tableRect.y + state.headerRect.height + svHeight) :
 							(state.tableRect.y + finalHeight);
 						
 						auto& tableBodyElem = ctx->theme->getElement(WidgetElementId::TableBody);
