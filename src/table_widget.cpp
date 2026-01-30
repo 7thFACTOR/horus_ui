@@ -57,10 +57,12 @@ static void finishRow(TableState& state)
 			rowRect = rowRect.contract(1.0);
 
 			ctx->renderer->cmdSetColor(state.currentRowColor);
-			ctx->renderer->cmdSetColor(state.currentRowColor);
-			state.persistent->splitter->setLayer(0);
+			// Skip splitter when inside scroll view to respect clip rect
+			if (!state.needsScrollViewStart)
+				state.persistent->splitter->setLayer(0);
 			ctx->renderer->cmdDrawFilledRectangle(rowRect);
-			state.persistent->splitter->setLayer(1);
+			if (!state.needsScrollViewStart)
+				state.persistent->splitter->setLayer(1);
 		}
 		// Draw alternating row background if enabled and no custom color
 		else if (has(state.flags, TableFlags::AltRowBg))
@@ -75,8 +77,9 @@ static void finishRow(TableState& state)
 			rowRect = rowRect.contract(1.0);
 			auto& tableBodyElem = ctx->theme->getElement(WidgetElementId::TableBody);
 
-			// Switch to background layer (0)
-			state.persistent->splitter->setLayer(0);
+			// Switch to background layer (0), skip splitter when inside scroll view
+			if (!state.needsScrollViewStart)
+				state.persistent->splitter->setLayer(0);
 
 			if (state.currentRow % 2 == 1)
 			{
@@ -90,7 +93,8 @@ static void finishRow(TableState& state)
 			ctx->renderer->cmdDrawFilledRectangle(rowRect);
 
 			// Switch back to content layer (1)
-			state.persistent->splitter->setLayer(1);
+			if (!state.needsScrollViewStart)
+				state.persistent->splitter->setLayer(1);
 		}
 
 		// Draw pending cell backgrounds (on top of row background)
@@ -651,10 +655,12 @@ void endTable()
 		Color outerVColor = tableBodyElem.currentStyle->getColorParameter("outerBorderColorV", Color::white);
 		
 		// Draw borders if enabled
-		// Use the splitter so borders are rendered in correct order with backgrounds
+		// Skip splitter when inside scroll view to respect clip rect immediately
 		if (has(state.flags, TableFlags::Borders) || has(state.flags, TableFlags::BordersOuter) || has(state.flags, TableFlags::BordersInner) || has(state.flags, TableFlags::BordersV) || has(state.flags, TableFlags::BordersH))
 		{
-			state.persistent->splitter->setLayer(0);
+			// Only use splitter if not in scroll view
+			if (!state.needsScrollViewStart)
+				state.persistent->splitter->setLayer(0);
 			
 			f32 baseX = state.scrollViewBaseX;
 			
@@ -727,11 +733,9 @@ void endTable()
 				}
 			}
 			
-			state.persistent->splitter->setLayer(1);
+			if (!state.needsScrollViewStart)
+				state.persistent->splitter->setLayer(1);
 		}
-		
-		// Merge splitter layers BEFORE ending scroll view so deferred rendering happens with clip rect active
-		state.persistent->splitter->merge();
 	}
 
 	// End scroll view if it was started
@@ -946,11 +950,7 @@ void endTable()
 	}
 
 	// Merge layers: Background (0) and Content (1)
-	// Only merge if we didn't already merge before ending scroll view
-	if (!state.needsScrollViewStart)
-	{
-		state.persistent->splitter->merge();
-	}
+	state.persistent->splitter->merge();
 
 	// Restore layout width and cursor X position
 	// We want the cursor to be at the start of the layout (left indentation) for the next widget
