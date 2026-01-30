@@ -796,11 +796,15 @@ void endTable()
 				{
 					// Draw Resize Guide Line - width already applied in beginTable
 					f32 guideLineX = currentX;
+					// Clip line to scroll view bounds if inside scroll view
+					f32 lineBottomY = state.needsScrollViewStart ? 
+						(state.bodyStartY + (state.innerHeight > 0 ? state.innerHeight : 200.0f)) :
+						(state.tableRect.y + finalHeight);
 
 					auto& tableBodyElem = ctx->theme->getElement(WidgetElementId::TableBody);
 					ctx->renderer->cmdSetLineStyle(LineStyle(tableBodyElem.currentStyle->getColorParameter("columnResizeLineColor", Color(0.0f, 1.0f, 1.0f, 1.0f)), 2.0f));
 					ctx->renderer->cmdDrawLine(Point(guideLineX, state.tableRect.y),
-											   Point(guideLineX, state.tableRect.y + finalHeight));
+											   Point(guideLineX, lineBottomY));
 
 					// Only apply resize if validity checks pass (though we started, so they should)
 					if (targetRightIndex < persistent.columns.size() && !(static_cast<bool>(persistent.columns[i].flags & TableColumnFlags::Fixed)))
@@ -869,10 +873,15 @@ void endTable()
 						ctx->mouseCursor = MouseCursorType::SizeWE;
 
 						// Draw Hover Guide Line
+						// Clip line to scroll view bounds if inside scroll view
+						f32 lineBottomY = state.needsScrollViewStart ? 
+							(state.bodyStartY + (state.innerHeight > 0 ? state.innerHeight : 200.0f)) :
+							(state.tableRect.y + finalHeight);
+						
 						auto& tableBodyElem = ctx->theme->getElement(WidgetElementId::TableBody);
 						ctx->renderer->cmdSetLineStyle(LineStyle(tableBodyElem.currentStyle->getColorParameter("columnResizeLineColor", Color::cyan), 2.0f));
 						ctx->renderer->cmdDrawLine(Point(currentX, state.tableRect.y),
-												   Point(currentX, state.tableRect.y + finalHeight));
+												   Point(currentX, lineBottomY));
 
 						if (ctx->event.type == InputEvent::Type::MouseDown && ctx->event.mouse.button == MouseButton::Left)
 						{
