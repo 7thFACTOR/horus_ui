@@ -369,14 +369,7 @@ bool beginTable(const char* id, u32 columnCount, f32 height, TableFlags flags)
 	if (hasBorders)
 		widgetWidth -= 2.0f;
 	
-	// Account for scrollbar width when scroll view will be present
-	// Scroll view is enabled when height > 0 OR ScrollY flag is set
-	if (height > 0 || has(flags, TableFlags::ScrollY))
-	{
-		auto& scrollViewScrollThumbElemState = ctx->theme->getElement(WidgetElementId::ScrollViewScrollThumb).normalState();
-		widgetWidth -= scrollViewScrollThumbElemState.width * ctx->scale;
-	}
-
+	
 	// Apply column size specifications (percentage, pixels, or fill)
 	f32 specifiedWidth = 0; // Total width of columns with specific sizes
 	u32 fillCount = 0; // Number of columns that fill remaining space
@@ -654,7 +647,20 @@ void endTable()
 	// Finish the last row
 	finishRow(state);
 
-	// Draw borders for body rows BEFORE ending scroll view so they get clipped
+
+
+	
+
+	f32 finalHeight = state.currentRowY - state.tableRect.y;
+
+	// Pop any remaining clip rect BEFORE drawing borders so they don't get clipped
+	if (state.isClipping)
+	{
+		ctx->renderer->popClipRect();
+		state.isClipping = false;
+	}
+	
+	// Draw borders for body rows AFTER clip rect is popped but BEFORE ending scroll view
 	if (state.needsScrollViewStart)
 	{
 		auto& tableBodyElem = ctx->theme->getElement(WidgetElementId::TableBody);
@@ -665,13 +671,8 @@ void endTable()
 		Color outerVColor = tableBodyElem.currentStyle->getColorParameter("outerBorderColorV", Color::white);
 		
 		// Draw borders if enabled
-		// Skip splitter when inside scroll view to respect clip rect immediately
 		if (has(state.flags, TableFlags::Borders) || has(state.flags, TableFlags::BordersOuter) || has(state.flags, TableFlags::BordersInner) || has(state.flags, TableFlags::BordersV) || has(state.flags, TableFlags::BordersH))
 		{
-			// Only use splitter if not in scroll view
-			if (!state.needsScrollViewStart)
-				state.persistent->splitter->setLayer(0);
-			
 			f32 baseX = state.scrollViewBaseX;
 			
 			// Draw Inner Horizontal Lines
@@ -742,21 +743,7 @@ void endTable()
 					}
 				}
 			}
-			
-			if (!state.needsScrollViewStart)
-				state.persistent->splitter->setLayer(1);
 		}
-	}
-
-	
-
-	f32 finalHeight = state.currentRowY - state.tableRect.y;
-
-	// Pop any remaining clip rect BEFORE drawing borders so they don't get clipped
-	if (state.isClipping)
-	{
-		ctx->renderer->popClipRect();
-		state.isClipping = false;
 	}
 	
 	// End scroll view if it was started
@@ -1152,8 +1139,9 @@ void nextCell()
 			state.cellStartY = state.rowStartY; // New cell starts at row top
 
 			// Push Clip rect to prevent cell content from overflowing
+			// Add 1px to width to include the border line on the right
 			f32 clipHeight = 99999.0f;
-			Rect clipRect(cellX, state.rowStartY, state.persistent->columns[state.currentColumn].width, clipHeight);
+			Rect clipRect(cellX, state.rowStartY, state.persistent->columns[state.currentColumn].width + 1.0f, clipHeight);
 			ctx->renderer->pushClipRect(clipRect);
 			state.isClipping = true;
 		}
