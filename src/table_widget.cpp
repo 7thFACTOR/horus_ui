@@ -764,6 +764,27 @@ void endTable()
 	// Handle column resizing
 	if (has(state.flags, TableFlags::Resizable))
 	{
+		// Only process resize logic if mouse is within the table's visible bounds
+		// This prevents triggering when hovering over other widgets below the table
+		f32 visibleHeight = state.needsScrollViewStart ? 
+			(state.headerRect.height + (state.innerHeight > 0 ? state.innerHeight : 200.0f)) : 
+			finalHeight;
+
+		if (state.tableRect.y + finalHeight > ctx->currentWindow->clientRect.bottom())
+		{
+			// Clip visible height to window bottom
+			visibleHeight = ctx->currentWindow->clientRect.bottom() - state.tableRect.y;
+		}
+		
+		// Check if mouse is within table bounds AND hovering this window
+		if (!ctx->hoveringThisWindow || 
+			ctx->mousePosition.y < state.tableRect.y || 
+			ctx->mousePosition.y > state.tableRect.y + visibleHeight)
+		{
+			// Mouse is outside table bounds or not hovering this window, skip resize handling
+		}
+		else
+		{
 		auto& persistent = *state.persistent;
 		f32 currentX = state.tableRect.x;
 		f32 separatorWidth = 4.0f;
@@ -846,11 +867,13 @@ void endTable()
 				{
 					// Limit separator height to visible table area
 					f32 separatorHeight = finalHeight;
+
 					if (state.needsScrollViewStart)
 					{
 						f32 svHeight = (state.innerHeight > 0 ? state.innerHeight : 200.0f);
 						separatorHeight = state.headerRect.height + svHeight;
 					}
+
 					Rect separatorRect(currentX - separatorWidth, state.tableRect.y, separatorWidth * 2.0f, separatorHeight);
 
 					// Determine if this separator is covered by a column span in the row under the mouse
@@ -887,11 +910,6 @@ void endTable()
 					}
 					else if (separatorRect.contains(ctx->mousePosition))
 					{
-						// Ensure mouse is within the table's visible area to prevent triggering on other widgets
-						Rect tableVisibleRect(state.tableRect.x, state.tableRect.y, state.tableRect.width, separatorHeight);
-						if (!tableVisibleRect.contains(ctx->mousePosition))
-							continue;
-						
 						ctx->mouseCursor = MouseCursorType::SizeWE;
 
 						// Draw Hover Guide Line
@@ -943,6 +961,7 @@ void endTable()
 				}
 			}
 		}
+		} // End of mouse-in-bounds check
 	}
 
 	auto& tableBodyElem = ctx->theme->getElement(WidgetElementId::TableBody);
