@@ -63,7 +63,8 @@ bool TextInputState::processEvent(const InputEvent& ev)
 
 		if (!mouseMoved && firstMouseDown && !selectingWithMouse)
 		{
-			selectAll();
+			if (has(flags, TextInputFlags::AutoSelectAll) && selectAllOnFocus)
+				selectAll();
 			firstMouseDown = false;
 		}
 
@@ -151,6 +152,15 @@ bool TextInputState::processEvent(const InputEvent& ev)
 					selectionEnd = caretPosition;
 				}
 			}
+		}
+	}
+
+	if (ev.type == InputEvent::Type::MouseDown
+		&& ev.mouse.clickCount == 3)
+	{
+		if (ev.mouse.button == MouseButton::Left)
+		{
+			selectAll();
 		}
 	}
 
@@ -610,9 +620,7 @@ void TextInputState::computeScrollAmount()
 
 void TextInputState::formatValue(Utf32String& value)
 {
-	switch (valueType)
-	{
-	case TextInputValueMode::NumericOnly:
+	if (has(flags, TextInputFlags::NumericOnly))
 	{
 		std::vector<u32>::iterator iter = value.begin();
 
@@ -629,10 +637,8 @@ void TextInputState::formatValue(Utf32String& value)
 
 			iter++;
 		}
-
-		break;
 	}
-	case TextInputValueMode::HexOnly:
+	else if (has(flags, TextInputFlags::HexOnly))
 	{
 		std::vector<u32>::iterator iter = value.begin();
 
@@ -652,11 +658,6 @@ void TextInputState::formatValue(Utf32String& value)
 
 			iter++;
 		}
-
-		break;
-	}
-	default:
-		break;
 	}
 }
 

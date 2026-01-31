@@ -115,6 +115,7 @@ struct DrawCommand
 		VAlignType vertAlign;
 		char* text;
 		bool singleLineEllipsis;
+		bool noWordWrap;
 	};
 
 	struct CmdDrawImageBordered
@@ -258,7 +259,8 @@ struct Renderer
 		const Rect& rect,
 		HAlignType horizontal = HAlignType::Left,
 		VAlignType vertical = VAlignType::Top,
-		bool singleLineEllipsis = false);
+		bool singleLineEllipsis = false,
+		bool noWordWrap = false);
 
 public:
 	bool skipRender = false;
@@ -281,7 +283,8 @@ public:
 		VAlignType vertAlign,
 		bool doDraw = false,
 		Font* font = nullptr,
-		bool singleLineEllipsis = false);
+		bool singleLineEllipsis = false,
+		bool noWordWrap = false);
 
 	FontTextSize computeSizeOrDrawText(
 		const GlyphCode* const text,
@@ -291,7 +294,8 @@ public:
 		VAlignType vertAlign,
 		bool doDraw = false,
 		Font* font = nullptr,
-		bool singleLineEllipsis = false);
+		bool singleLineEllipsis = false,
+		bool noWordWrap = false);
 
 	void drawImageBordered(Image* image, u32 border, const Rect& rect, f32 scale);
 	void drawLine(const Point& a, const Point& b);

@@ -288,7 +288,7 @@ int main(int argc, char** args)
 				static float val;
 				hui::sliderFloat("slider1", 0, 100, val);
 				static char txt[2000];
-				hui::textInput(txt, 2000, hui::TextInputValueMode::Any, "Write something here");
+				hui::textInput("txt", txt, 2000, hui::TextInputFlags::None, "Write something here");
 				hui::space();
 
 				static f32 scrollPos = 0;
@@ -473,10 +473,14 @@ int main(int argc, char** args)
 				hui::list("myList", listSelection, hui::ListSelectionMode::Multiple, listItems,5, 78);
 
 				hui::space();
+
+				static char text[400] = { 0 };
+				hui::textInput("SHEIDD", text, 400, hui::TextInputFlags::AutoSelectAll);
+
 				hui::label("Table Widget:");
 				hui::pushSpacing(0);
 				hui::pushWidgetPadding(0);
-				if (hui::beginTable("myTable", 4, 500, hui::TableFlags::Borders | hui::TableFlags::None | hui::TableFlags::AltRowBg | hui::TableFlags::Resizable | hui::TableFlags::Stretch))
+				if (hui::beginTable("myTable", 4, 450, hui::TableFlags::Borders | hui::TableFlags::None | hui::TableFlags::AltRowBg | hui::TableFlags::Resizable | hui::TableFlags::Stretch))
 				{
 					hui::startHeader();
 					hui::setupColumn(0, 0);
@@ -489,6 +493,7 @@ int main(int argc, char** args)
 					hui::label("Column 2", hui::HAlignType::Center);
 					hui::nextCell();
 					hui::label("Column 3", hui::HAlignType::Center);
+					
 					hui::nextCell();
 					hui::label("Column 4", hui::HAlignType::Center);
 
@@ -553,12 +558,24 @@ int main(int argc, char** args)
 					//hui::nextCell();
 					//hui::label("Row 3, Cell 3");
 
-					for (int k = 0; k < 134; k++)
+					for (int k = 0; k < 100; k++)
 					{
 						hui::nextRow();
-						hui::label("Col1");
+						auto is = std::to_string(k);
+						hui::label(is.c_str());
+						hui::sameLine();
+						hui::button(("Btn " + is).c_str());
+						//hui::label(" - ");
 						hui::nextCell();
-						hui::label("Col 2");
+						static char col2[100] = { 0 };
+						hui::pushId(k);
+						hui::setNextWidth(100);
+						hui::textInput(("ed" + is).c_str(), col2, 100);
+						hui::sameLine();
+						hui::button(("Remove##" + is).c_str());
+						hui::sameLine();
+						hui::button(("Clone##" + is).c_str());
+						hui::popId();
 						hui::nextCell();
 						hui::label("Col 3");
 						hui::nextCell();

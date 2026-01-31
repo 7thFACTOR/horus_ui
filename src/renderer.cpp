@@ -629,7 +629,7 @@ void Renderer::executeDrawCommands(HNativeWindow wnd)
 				break;
 			}
 			case DrawCommand::Type::DrawText:
-				computeSizeOrDrawText(cmd.data.drawText.text, cmd.data.drawText.rect, cmd.data.drawText.horizAlign, cmd.data.drawText.vertAlign, true, currentFont, cmd.data.drawText.singleLineEllipsis);
+				computeSizeOrDrawText(cmd.data.drawText.text, cmd.data.drawText.rect, cmd.data.drawText.horizAlign, cmd.data.drawText.vertAlign, true, currentFont, cmd.data.drawText.singleLineEllipsis, cmd.data.drawText.noWordWrap);
 				break;
 			case DrawCommand::Type::SetColor:
 				currentColor = cmd.data.setColor;
@@ -1093,7 +1093,8 @@ FontTextSize Renderer::computeSizeOrDrawText(
 	VAlignType vertAlign,
 	bool doDraw,
 	Font* font,
-	bool singleLineEllipsis)
+	bool singleLineEllipsis,
+	bool noWordWrap)
 {
 	if (!text || !strcmp(text, ""))
 	{
@@ -1102,7 +1103,7 @@ FontTextSize Renderer::computeSizeOrDrawText(
 
 	// reuse text cache to get utf32 string
 	const Utf32String& utext = *ctx->textCache->getText(text);
-	return computeSizeOrDrawText(utext.data(), (u32)utext.size(), rect, horizAlign, vertAlign, doDraw, font, singleLineEllipsis);
+	return computeSizeOrDrawText(utext.data(), (u32)utext.size(), rect, horizAlign, vertAlign, doDraw, font, singleLineEllipsis, noWordWrap);
 }
 
 FontTextSize Renderer::computeSizeOrDrawText(
@@ -1113,7 +1114,8 @@ FontTextSize Renderer::computeSizeOrDrawText(
 	VAlignType vertAlign,
 	bool doDraw,
 	Font* font,
-	bool singleLineEllipsis)
+	bool singleLineEllipsis,
+	bool noWordWrap)
 {
 	FontTextSize fsize;
 	Font* fnt = font ? font : currentFont;
@@ -1382,7 +1384,8 @@ FontTextSize Renderer::computeSizeOrDrawText(
 		auto chr = text[i];
 
 		// explicit newline -> finish current line and start new one
-		if (chr == '\n')
+		// Skip newline handling if noWordWrap is enabled - treat as space instead
+		if (!noWordWrap && chr == '\n')
 		{
 			// finalize this line
 			f32 segmentWidth = crtLineWidth;
@@ -1404,6 +1407,11 @@ FontTextSize Renderer::computeSizeOrDrawText(
 			++lineCount;
 			continue;
 		}
+		else if (noWordWrap && chr == '\n')
+		{
+			// When noWordWrap is enabled, treat newlines as spaces
+			chr = ' ';
+		}
 
 		auto glyph = fnt->getGlyph(chr);
 		if (!glyph)
@@ -1423,7 +1431,8 @@ FontTextSize Renderer::computeSizeOrDrawText(
 		f32 projectedWordWidth = crtWordWidth + glyphAdvance;
 
 		// wrapping when maxWidth specified (rect.width used as constraint)
-		if (projectedLineWidth > rect.width)
+		// Skip wrapping if noWordWrap is enabled - render as single line
+		if (!noWordWrap && projectedLineWidth > rect.width)
 		{
 			// If we are at start of line we must break inside word (force at least one glyph)
 			if (currentLineChars == 0 || projectedWordWidth >= rect.width)
@@ -2635,7 +2644,8 @@ void Renderer::cmdDrawTextInBox(
 	const Rect& rect,
 	HAlignType horizAlign,
 	VAlignType vertAlign,
-	bool singleLineEllipsis)
+	bool singleLineEllipsis,
+	bool noWordWrap)
 {
 	DrawCommand cmd(DrawCommand::Type::DrawText);
 
@@ -2644,6 +2654,7 @@ void Renderer::cmdDrawTextInBox(
 	cmd.data.drawText.vertAlign = vertAlign;
 	cmd.data.drawText.text = addUtf8TextToBuffer(text, (u32)strlen(text));
 	cmd.data.drawText.singleLineEllipsis = singleLineEllipsis;
+	cmd.data.drawText.noWordWrap = noWordWrap;
 
 	if (cmd.data.drawText.text)
 	{

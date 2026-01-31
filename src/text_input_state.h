@@ -38,7 +38,7 @@ struct TextInputState
 	Rect clipRect;
 	Utf32String text;
 	Utf32String defaultText;
-	TextInputValueMode valueType = TextInputValueMode::Any;
+	TextInputFlags flags = TextInputFlags::None;
 	u32 decimalPlaces = 2;
 	i32 selectionBegin = 0;
 	i32 mouseDownSelectionBegin = 0;

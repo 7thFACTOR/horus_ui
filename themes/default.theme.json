@@ -193,7 +193,7 @@
 			"textInputBody":
 			{
 				"width": 0,
-				"height": 25,
+				"height": 22,
 				"normal": { "image": "default/text_input_normal", "border": 3, "color": "white", "textColor": "white", "font": "normal-unicode" },
 				"hovered": { "image": "default/text_input_normal", "border": 3, "color": "white", "textColor": "white", "font": "normal-unicode" },
 				"pressed": { "image": "default/text_input_normal", "border": 3, "color": "white", "textColor": "white", "font": "normal-unicode" },

@@ -101,7 +101,7 @@ static bool comboSliderInternal(bool isInt, f32* value, f32 minVal, f32 maxVal, 
 
 			setNextFocused();
 
-			textInput(ctx->comboSlider.text, ComboSliderState::maxTextSize, TextInputValueMode::NumericOnly);
+			textInput("comboSliderEditText", ctx->comboSlider.text, ComboSliderState::maxTextSize, TextInputFlags::NumericOnly);
 			
 			ctx->widget.focusedId = ctx->id;
 			ctx->textInput.id = ctx->id;
@@ -119,7 +119,7 @@ static bool comboSliderInternal(bool isInt, f32* value, f32 minVal, f32 maxVal, 
 			ctx->comboSlider.clickedToEditText = false;
 		}
 
-		textInput(ctx->comboSlider.text, ComboSliderState::maxTextSize, TextInputValueMode::NumericOnly);
+		textInput("comboSliderEditText", ctx->comboSlider.text, ComboSliderState::maxTextSize, TextInputFlags::NumericOnly);
 
 		bool isKeyEvent = ctx->event.key.down && ctx->event.type == InputEvent::Type::Key;
 		bool isEscPressed = isKeyEvent && ctx->event.key.code == KeyCode::Esc;

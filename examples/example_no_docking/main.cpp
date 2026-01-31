@@ -332,7 +332,7 @@ int main(int argc, char** args)
 				hui::popPadding(hui::PaddingType::ScrollView);
 				hui::rotarySliderFloat("Speed", &val, -30, 100, 1, false);
 				static char txt[1000];
-				hui::textInput(txt, 1000);
+				hui::textInput("txt1", txt, 1000);
 				hui::comboSliderFloat(&val, 1, 1, "%.4f °");
 				hui::comboSliderFloatRanged(&val2, 0, 100, 1, 1, "%.4f cm");
 				static i32 sel = 0;

@@ -253,8 +253,10 @@ static void finishRow(TableState& state)
 		ctx->position.y = state.currentRowY;
 
 		// Start scroll view for the body content
+		// Enable scroll view if height > 0 or ScrollY flag is set
+		// height == 0 means auto-grow without scroll view
 		f32 scrollViewHeight = state.innerHeight > 0 ? state.innerHeight : 200.0f;
-		if (scrollViewHeight > 0)
+		if (state.innerHeight > 0 || has(state.flags, TableFlags::ScrollY))
 		{
 			// Calculate scroll view padding to compensate
 			const auto& padding = getPadding(PaddingType::ScrollView);
@@ -367,9 +369,9 @@ bool beginTable(const char* id, u32 columnCount, f32 height, TableFlags flags)
 	if (hasBorders)
 		widgetWidth -= 2.0f;
 	
-	// Account for scrollbar width when height is specified (scroll view will be present)
-	// Also apply if height is 0 (default 200px scroll view)
-	if (height >= 0)
+	// Account for scrollbar width when scroll view will be present
+	// Scroll view is enabled when height > 0 OR ScrollY flag is set
+	if (height > 0 || has(flags, TableFlags::ScrollY))
 	{
 		auto& scrollViewScrollThumbElemState = ctx->theme->getElement(WidgetElementId::ScrollViewScrollThumb).normalState();
 		widgetWidth -= scrollViewScrollThumbElemState.width * ctx->scale;
@@ -968,28 +970,33 @@ void endTable()
 
 	// Draw outer box for entire table (header + body) if borders are enabled
 	// This is drawn outside the scroll view to frame the entire table
-	if (!state.needsScrollViewStart && (has(state.flags, TableFlags::Borders) || has(state.flags, TableFlags::BordersOuter)))
+	if (has(state.flags, TableFlags::Borders) || has(state.flags, TableFlags::BordersOuter))
 	{
 		Color outerHColor = tableBodyElem.currentStyle->getColorParameter("outerBorderColorH", Color::white);
 		Color outerVColor = tableBodyElem.currentStyle->getColorParameter("outerBorderColorV", Color::white);
 		
 		state.persistent->splitter->setLayer(0);
 		
+		// Calculate border height: for scroll view, use header + scroll view height; otherwise use full height
+		f32 borderHeight = state.needsScrollViewStart ? 
+			(state.headerRect.height + (state.innerHeight > 0 ? state.innerHeight : 200.0f)) :
+			finalHeight;
+		
 		// Top Line (at tableRect.y)
 		ctx->renderer->cmdSetLineStyle(LineStyle(outerHColor, 1.0f));
 		ctx->renderer->cmdDrawLine(Point(state.tableRect.x, state.tableRect.y),
 								   Point(state.tableRect.x + state.innerWidth, state.tableRect.y));
 
-		// Bottom Line (at finalHeight)
-		ctx->renderer->cmdDrawLine(Point(state.tableRect.x, state.tableRect.y + finalHeight),
-								   Point(state.tableRect.x + state.innerWidth, state.tableRect.y + finalHeight));
+		// Bottom Line
+		ctx->renderer->cmdDrawLine(Point(state.tableRect.x, state.tableRect.y + borderHeight),
+								   Point(state.tableRect.x + state.innerWidth, state.tableRect.y + borderHeight));
 
 		// Sides
 		ctx->renderer->cmdSetLineStyle(LineStyle(outerVColor, 1.0f));
 		ctx->renderer->cmdDrawLine(Point(state.tableRect.x, state.tableRect.y),
-								   Point(state.tableRect.x, state.tableRect.y + finalHeight));
+								   Point(state.tableRect.x, state.tableRect.y + borderHeight));
 		ctx->renderer->cmdDrawLine(Point(state.tableRect.x + state.innerWidth, state.tableRect.y),
-								   Point(state.tableRect.x + state.innerWidth, state.tableRect.y + finalHeight));
+								   Point(state.tableRect.x + state.innerWidth, state.tableRect.y + borderHeight));
 		
 		state.persistent->splitter->setLayer(1);
 	}
@@ -1093,6 +1100,17 @@ void nextRow()
 void nextCell()
 {
 	auto& state = currentTable();
+
+	// Handle end of same-line if it was active (similar to addWidget)
+	if (ctx->sameLine.wasEnabled)
+	{
+		ctx->position.x = ctx->sameLine.currentX;
+		ctx->sameLine.wasEnabled = false;
+		// Add the previous line max height
+		ctx->position.y += ctx->sameLine.maxHeight;
+		ctx->sameLine.maxHeight = 0;
+		ctx->sameLine.currentY = ctx->position.y;
+	}
 
 	// Pop previous clip
 	if (state.isClipping)

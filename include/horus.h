@@ -395,13 +395,15 @@ enum class ImageFitType
 };
 
 /// Text input modes for the textInput widget
-enum class TextInputValueMode
+enum class TextInputFlags
 {
-	Any,
+	None,
 	NumericOnly,
 	HexOnly,
-	Custom
+	Custom,
+	AutoSelectAll
 };
+HORUS_ENUM_AS_FLAGS(TextInputFlags);
 
 /// List selection mode
 enum class ListSelectionMode
@@ -1664,7 +1666,7 @@ struct Settings
 	f32 textCachePruneMaxTimeSec = 5; /// after this time, if an Unicode text is not accessed, it's discarded from cache, textCachePruneMode must be Time
 	f32 textCachePruneMaxFrames = 500; /// after this frame count, if an Unicode text is not accessed, it's discarded from cache, textCachePruneMode must be Frames
 	f32 textCachePruneIntervalSec = 5; /// after each interval has passed, the pruning of unused texts is executed, will delete the texts that were not used for the last textCachePruneMaxTimeMs or textCachePruneMaxFrames, depending on the prune mode
-	f32 textCaretBlinkDelay = 0.4f;
+	f32 textCaretBlinkSpeed = 2.0f;
 	bool textCaretBlinkEnable = true;
 	f32 textScrollStepAmount = 30; /// scroll pixel amount when moving inside text input
 	u32 defaultAtlasSize = 4096; /// default atlas textures size in pixels
@@ -2700,11 +2702,11 @@ HORUS_API bool imageButton(HImage img, f32 width, f32 height, HImage disabledImg
 /// Draw a text input widget
 /// \param text the text to be edited, provided by user
 /// \param maxTextSize the max size of the text buffer
-/// \param valueType the value type filter, what value is allowed in the text
+/// \param flags various flags for text input
 /// \param defaultText the grayed default text when there is no text value
 /// \param img the image drawn in the widget
 /// \return true if the text was modified
-HORUS_API bool textInput(char* text, u32 maxTextSize, TextInputValueMode valueType = TextInputValueMode::Any, const char* defaultText = nullptr, HImage img = 0, bool password = false, const char* passwordChar = "\95");
+HORUS_API bool textInput(const char* id, char* text, u32 maxTextSize, TextInputFlags flags = TextInputFlags::None, const char* defaultText = nullptr, HImage img = 0, bool password = false, const char* passwordChar = "\95");
 
 /// Draw an integer number slider widget
 /// \param minVal the minimum value

@@ -10,9 +10,10 @@
 namespace hui
 {
 bool textInput(
+	const char* id,
 	char* text,
 	u32 maxLength,
-	TextInputValueMode valueMode,
+	TextInputFlags flags,
 	const char* defaultText,
 	HImage img,
 	bool password,
@@ -32,7 +33,7 @@ bool textInput(
 	}
 
 	// use ptr as id
-	ctx->id = genId((void*)text);
+	ctx->id = genId(id);
 	addWidget(fmaxf(
 		(bodyElem->normalState().height + padding.y * 2.0f) * ctx->scale, 
 		bodyElem->normalState().font->getMetrics().height));
@@ -177,19 +178,28 @@ bool textInput(
 		ctx->textInput.clipRect = clipRect;
 		ctx->textInput.maxTextLength = maxLength;
 		ctx->textInput.selectionActive = false;
-		ctx->textInput.valueType = valueMode;
+		ctx->textInput.flags = flags;
 		ctx->textInput.scrollOffset = 0;
 		HORUS_UTF->utf8To32(text, ctx->textInput.text);
 		HORUS_UTF->utf8To32(defaultText, ctx->textInput.defaultText);
 
-		if (ctx->textInput.selectAllOnFocus)
+		if (ctx->textInput.selectAllOnFocus && has(flags, TextInputFlags::AutoSelectAll))
 		{
 			ctx->textInput.selectAll();
 		}
-
-		// this must be called to handle the event in the text input ways
-		// otherwise it needs a second click to do stuff for the edit box
-		//ctx->textInput.processEvent(ctx->event);
+		else
+		{
+			ctx->textInput.selectionActive = true;
+			ctx->textInput.caretPosition = ctx->textInput.getCharIndexAtX(ctx->mousePosition.x);
+			ctx->textInput.selectionBegin = ctx->textInput.caretPosition;
+			ctx->textInput.selectionEnd = ctx->textInput.caretPosition;
+			ctx->textInput.mouseDown = true;
+			ctx->textInput.mouseDownSelectionBegin = ctx->textInput.caretPosition;
+			ctx->textInput.mouseMoved = false;
+			ctx->textInput.selectingWithMouse = false;
+			ctx->textInput.computeScrollAmount();
+			setWindowCapture();
+		}
 
 		Rect rc;
 
@@ -344,7 +354,7 @@ bool textInput(
 		textToDraw,
 		textRect,
 		HAlignType::Left,
-		VAlignType::Bottom);
+		VAlignType::Bottom, false, true);
 
 	// draw clear image only when visible
 	if (showClearImage)
@@ -369,11 +379,11 @@ bool textInput(
 
 	setFocusable();
 
-	if (ctx->settings.textCaretBlinkDelay > 0)
+	if (ctx->settings.textCaretBlinkSpeed > 0 && ctx->widget.focused)
 	{
 		// this will work even if deltaTime is always zero, caret wont blink ever
 		// dt zero happens when UI is not drawn continuously
-		ctx->textInput.caretBlinkTimer += ctx->deltaTime * ctx->settings.textCaretBlinkDelay;
+		ctx->textInput.caretBlinkTimer += ctx->deltaTime * ctx->settings.textCaretBlinkSpeed;
 
 		if (ctx->textInput.caretBlinkTimer > 2.0f)
 		{

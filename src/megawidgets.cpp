@@ -74,7 +74,7 @@ bool vecEditorInternal(f64& x, f64& y, f64& z, f64 scrollStep, bool useZ)
 		}
 
 		//hui::nextColumn();
-		modified = hui::textInput(strAxis, VectorEditorState::maxStrSize) || modified;
+		modified = hui::textInput("axisEdit", strAxis, VectorEditorState::maxStrSize) || modified;
 
 		if (isChangeEnded())
 			changeEnded = true;

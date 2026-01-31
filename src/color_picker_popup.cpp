@@ -535,7 +535,7 @@ bool colorPicker(const char* id, Color* inOutColor, ColorPickerFlags flags, cons
 		std::snprintf(ctx->colorPickerState.hexColor, ColorPickerState::maxHexColorSize, hexColorStr.c_str());
 	}
 
-	if (hui::textInput(ctx->colorPickerState.hexColor, ColorPickerState::maxHexColorSize,TextInputValueMode::HexOnly))
+	if (hui::textInput("colorPicker_hexColorEdit", ctx->colorPickerState.hexColor, ColorPickerState::maxHexColorSize, TextInputFlags::HexOnly))
 	{
 		crtColor = colorFromHex(ctx->colorPickerState.hexColor);
 		ctx->colorPickerState.currentHsv = hsv = rgbToHsv(crtColor);
