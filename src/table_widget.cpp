@@ -748,11 +748,7 @@ void endTable()
 		}
 	}
 
-	// End scroll view if it was started
-	if (state.needsScrollViewStart)
-	{
-		state.persistent->scrollViewScrollPos = endScrollView();
-	}
+	
 
 	f32 finalHeight = state.currentRowY - state.tableRect.y;
 
@@ -762,7 +758,13 @@ void endTable()
 		ctx->renderer->popClipRect();
 		state.isClipping = false;
 	}
-
+	
+	// End scroll view if it was started
+	if (state.needsScrollViewStart)
+	{
+		state.persistent->scrollViewScrollPos = endScrollView();
+	}
+	
 	// Handle column resizing
 	if (has(state.flags, TableFlags::Resizable))
 	{
@@ -1149,15 +1151,11 @@ void nextCell()
 			ctx->position.y = state.rowStartY + ctx->cellPadding.y; // Reset Y to top of row
 			state.cellStartY = state.rowStartY; // New cell starts at row top
 
-			// Push Clip
-			// Skip clipping when inside scroll view to prevent left edge clipping
-			if (!state.needsScrollViewStart)
-			{
-				f32 clipHeight = 99999.0f;
-				Rect clipRect(cellX, state.rowStartY, state.persistent->columns[state.currentColumn].width, clipHeight);
-				ctx->renderer->pushClipRect(clipRect);
-				state.isClipping = true;
-			}
+			// Push Clip rect to prevent cell content from overflowing
+			f32 clipHeight = 99999.0f;
+			Rect clipRect(cellX, state.rowStartY, state.persistent->columns[state.currentColumn].width, clipHeight);
+			ctx->renderer->pushClipRect(clipRect);
+			state.isClipping = true;
 		}
 	}
 }
