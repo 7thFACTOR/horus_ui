@@ -844,7 +844,14 @@ void endTable()
 				if (targetRightIndex < persistent.columns.size() &&
 					!(static_cast<bool>(persistent.columns[i].flags & TableColumnFlags::Fixed)))
 				{
-					Rect separatorRect(currentX - separatorWidth, state.tableRect.y, separatorWidth * 2.0f, finalHeight);
+					// Limit separator height to visible table area
+					f32 separatorHeight = finalHeight;
+					if (state.needsScrollViewStart)
+					{
+						f32 svHeight = (state.innerHeight > 0 ? state.innerHeight : 200.0f);
+						separatorHeight = state.headerRect.height + svHeight;
+					}
+					Rect separatorRect(currentX - separatorWidth, state.tableRect.y, separatorWidth * 2.0f, separatorHeight);
 
 					// Determine if this separator is covered by a column span in the row under the mouse
 					bool isSeparatorCovered = false;
@@ -880,6 +887,11 @@ void endTable()
 					}
 					else if (separatorRect.contains(ctx->mousePosition))
 					{
+						// Ensure mouse is within the table's visible area to prevent triggering on other widgets
+						Rect tableVisibleRect(state.tableRect.x, state.tableRect.y, state.tableRect.width, separatorHeight);
+						if (!tableVisibleRect.contains(ctx->mousePosition))
+							continue;
+						
 						ctx->mouseCursor = MouseCursorType::SizeWE;
 
 						// Draw Hover Guide Line
