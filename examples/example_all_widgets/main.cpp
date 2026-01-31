@@ -574,7 +574,14 @@ int main(int argc, char** args)
 						hui::sameLine();
 						hui::button(("Remove##" + is).c_str());
 						hui::sameLine();
-						hui::button(("Clone##" + is).c_str());
+						hui::button(("Clone##" + is).c_str()); hui::sameLine();
+						static bool chk = false;
+						static i32 rad = 0;
+						hui::check(("Chk##" + is).c_str(), &chk);
+						hui::sameLine();
+						hui::radio(("Rad1i##" + is).c_str(), &rad, 0);
+						//hui::sameLine();
+						hui::radio(("Rad2i##" + is).c_str(), &rad, 1);
 						hui::popId();
 						hui::nextCell();
 						hui::label("Col 3");
