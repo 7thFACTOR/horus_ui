@@ -401,16 +401,27 @@
 			{
 				"normal": { "image": "default/scrollview", "border": 3, "color": "white", "textColor": "white", "font": "normal" }
 			},
-			"scrollViewScrollBar":
+			"scrollViewScrollBarV":
 			{
 				"width": 8,
 				"normal": { "image": "default/scrollview_scrollbar", "border": 1, "color": "white", "textColor": "white", "font": "normal" }
 			},
-			"scrollViewScrollThumb":
+			"scrollViewScrollThumbV":
 			{
 				"width": 10,
 				"normal": { "image": "default/scrollview_scrollthumb", "border": 1, "color": "160 160 160 255", "textColor": "white", "font": "normal" },
 				"hovered": { "image": "default/scrollview_scrollthumb", "border": 1, "color": "200 200 200 255", "textColor": "white", "font": "normal" }
+			},
+			"scrollViewScrollBarH":
+			{
+				"height": 8,
+				"normal": { "image": "default/scrollview_scrollbar_h", "border": 1, "color": "white", "textColor": "white", "font": "normal" }
+			},
+			"scrollViewScrollThumbH":
+			{
+				"height": 10,
+				"normal": { "image": "default/scrollview_scrollthumb_h", "border": 1, "color": "160 160 160 255", "textColor": "white", "font": "normal" },
+				"hovered": { "image": "default/scrollview_scrollthumb_h", "border": 1, "color": "200 200 200 255", "textColor": "white", "font": "normal" }
 			}
 		},
 		"menuBar":

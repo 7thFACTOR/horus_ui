@@ -281,7 +281,7 @@ struct TablePersistentState
 	f32 resizeStartWidthRight = 0;
 	Point lastMousePos;
 	struct DrawCmdLayerSplitter* splitter = nullptr;
-	f32 scrollViewScrollPos = 0.0f;
+	Point scrollViewScrollPos;
 };
 
 struct TableState
@@ -382,6 +382,13 @@ struct ScrollViewState
 	f32 scrollPosition = 0.0f;
 	Rect rect;
 	ScrollViewFlags flags = ScrollViewFlags::None;
+	
+	// Horizontal scrolling support
+	f32 virtualWidth = 0.0f;
+	f32 scrollPositionX = 0.0f;
+	bool draggingThumbX = false;
+	Point dragDeltaX;
+	f32 maxContentX = 0.0f; // Track rightmost position for content width
 };
 
 struct TextMarker

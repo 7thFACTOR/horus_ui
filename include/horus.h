@@ -278,8 +278,10 @@ enum class WidgetElementId
 	DropdownBody,
 	DropdownArrow,
 	ScrollViewBody,
-	ScrollViewScrollBar,
-	ScrollViewScrollThumb,
+	ScrollViewScrollBarV,
+	ScrollViewScrollThumbV,
+	ScrollViewScrollBarH,
+	ScrollViewScrollThumbH,
 	TabGroupBody,
 	TabBodyActive,
 	TabBodyInactive,
@@ -2515,11 +2517,14 @@ HORUS_API void popCellPadding();
 /// \param height the height of the scroll area
 /// \param scrollPosition the current scroll position (given by endScrollView)
 /// \param virtualHeight the virtual inside scroll height, if its zero then its automatically calculated from the child widgets inside this area
-HORUS_API void beginScrollView(const char* id, f32 height, f32 scrollPosition, f32 virtualHeight = 0.0f, ScrollViewFlags flags = ScrollViewFlags::None);
+HORUS_API void beginScrollView(const char* id, f32 height, f32 scrollPosition, f32 virtualHeight, ScrollViewFlags flags);
+void beginScrollView(const char* id, f32 size, f32 scrollPos);
+void beginScrollView(const char* id, f32 size, f32 scrollPos, f32 virtualHeight);
+void beginScrollView(const char* id, f32 size, f32 scrollPos, f32 virtualHeight, ScrollViewFlags flags, f32 scrollPosX, f32 virtualWidth);
 
 /// Ends a scroll view area widget
 /// \return the current scroll position (offset)
-HORUS_API f32 endScrollView();
+HORUS_API Point endScrollView();
 
 /// Begin a virtual list content area, used for many items, inside the beginScrollView/endScrollView
 /// \param totalRowCount the number of rows

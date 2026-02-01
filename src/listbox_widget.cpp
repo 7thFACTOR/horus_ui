@@ -20,7 +20,7 @@ bool list(const char* id, bool* selectedItems, ListSelectionMode selectionType, 
 	f32 itemHeight = fmaxf(bodyElemState.height, fnt->getMetrics().height) * ctx->scale;
 
 	f32 totalHeight = itemHeight * itemCount;
-	f32 scrollPos = 0;
+	Point scrollPos = 0;
 	
 	u32 listId = genId(id);
 	ctx->id = listId;
@@ -40,7 +40,7 @@ bool list(const char* id, bool* selectedItems, ListSelectionMode selectionType, 
 	pushPadding(PaddingType::Layout, Point(0, 0));
 	pushPadding(PaddingType::ScrollView, Point(0, 0));
 	pushId(listId);
-	beginScrollView("listScrollView", widgetHeight, scrollPos, totalHeight);
+	beginScrollView("listScrollView", widgetHeight, scrollPos.y, totalHeight);
 
 	Rect viewRect = ctx->scrollViewStack[ctx->scrollViewDepth - 1].rect;
 	bool changed = false;

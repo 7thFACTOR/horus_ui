@@ -97,8 +97,8 @@ struct Context
 	f32 scrollViewScrollPageSize = 0.4f;
 	size_t scrollViewDepth = 0;
 	WidgetId dragScrollViewHandleWidgetId = 0;
-	f32 dropDownScrollViewPos = 0;
-	std::unordered_map<WidgetId, f32> widgetScrollStates;
+	Point dropDownScrollViewPos;
+	std::unordered_map<WidgetId, Point> widgetScrollStates;
 
 	// Themes
 	Theme* theme = nullptr;

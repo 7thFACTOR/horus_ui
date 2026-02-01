@@ -211,7 +211,7 @@ void addWidget(f32 height)
 		round(ctx->position.y),
 		pixelWidth,
 		height);
-
+	
 	if (!ctx->sameLine.enabled)
 	{
 		ctx->position.y += height;
@@ -223,6 +223,17 @@ void addWidget(f32 height)
 		ctx->position.x += pixelWidth + ctx->sameLine.spacing * ctx->scale;
 		ctx->sameLine.wasEnabled = true;
 		ctx->sameLine.maxHeight = std::max(ctx->sameLine.maxHeight, height);
+	}
+
+	// Track maximum X position for horizontal scrolling content width
+	if (ctx->scrollViewDepth > 0 && ctx->layout.type == LayoutType::ScrollView)
+	{
+		f32 widgetRightEdge = ctx->position.x + pixelWidth;
+		
+		if (widgetRightEdge > ctx->scrollViewStack[ctx->scrollViewDepth - 1].maxContentX)
+		{
+			ctx->scrollViewStack[ctx->scrollViewDepth - 1].maxContentX = widgetRightEdge;
+		}
 	}
 
 	ctx->widget.hasNextWidth = false;
@@ -1098,8 +1109,10 @@ void setWidgetStyle(WidgetType widgetType, const char* styleName)
 		break;
 	case WidgetType::ScrollView:
 		ctx->theme->elements[(u32)WidgetElementId::ScrollViewBody].setStyle(styleName);
-		ctx->theme->elements[(u32)WidgetElementId::ScrollViewScrollBar].setStyle(styleName);
-		ctx->theme->elements[(u32)WidgetElementId::ScrollViewScrollThumb].setStyle(styleName);
+		ctx->theme->elements[(u32)WidgetElementId::ScrollViewScrollBarV].setStyle(styleName);
+		ctx->theme->elements[(u32)WidgetElementId::ScrollViewScrollThumbV].setStyle(styleName);
+		ctx->theme->elements[(u32)WidgetElementId::ScrollViewScrollBarH].setStyle(styleName);
+		ctx->theme->elements[(u32)WidgetElementId::ScrollViewScrollThumbH].setStyle(styleName);
 		break;
 	case WidgetType::MenuBar:
 		ctx->theme->elements[(u32)WidgetElementId::MenuBarBody].setStyle(styleName);

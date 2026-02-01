@@ -129,7 +129,7 @@ bool dropdown(const char* id, i32& selectedIndex, const char** items, u32 itemCo
 		if (maxVisibleDropDownItems < itemCount)
 		{
 			pushId(ctx->id);
-			beginScrollView("dropDownScrollView", std::min(itemCount, maxVisibleDropDownItems) * selectableBodyElem.height, ctx->dropDownScrollViewPos);
+			beginScrollView("dropDownScrollView", std::min(itemCount, maxVisibleDropDownItems) * selectableBodyElem.height, ctx->dropDownScrollViewPos.y);
 		}
 
 		// we don't want tinting for items, just the dropdown is tinted

@@ -103,8 +103,10 @@ WidgetElementId getWidgetElementFromName(std::string name)
 	if (name == "dropdownBody") return WidgetElementId::DropdownBody;
 	if (name == "dropdownArrow") return WidgetElementId::DropdownArrow;
 	if (name == "scrollViewBody") return WidgetElementId::ScrollViewBody;
-	if (name == "scrollViewScrollBar") return WidgetElementId::ScrollViewScrollBar;
-	if (name == "scrollViewScrollThumb") return WidgetElementId::ScrollViewScrollThumb;
+	if (name == "scrollViewScrollBarV") return WidgetElementId::ScrollViewScrollBarV;
+	if (name == "scrollViewScrollThumbV") return WidgetElementId::ScrollViewScrollThumbV;
+	if (name == "scrollViewScrollBarH") return WidgetElementId::ScrollViewScrollBarH;
+	if (name == "scrollViewScrollThumbH") return WidgetElementId::ScrollViewScrollThumbH;
 	if (name == "tabGroupBody") return WidgetElementId::TabGroupBody;
 	if (name == "tabBodyActive") return WidgetElementId::TabBodyActive;
 	if (name == "tabBodyInactive") return WidgetElementId::TabBodyInactive;

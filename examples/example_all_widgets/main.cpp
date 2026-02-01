@@ -239,7 +239,7 @@ int main(int argc, char** args)
 			// we only render on the last event in the queue
 			hui::setDisableRendering(!lastEventInQueue);
 
-			if (0&&hui::beginWindow("hui", "HUI", nullptr, tabicon1))
+			if (hui::beginWindow("hui2", "HUI", nullptr, tabicon1))
 			{
 				// lets first draw a rect with a theme, for the panel
 				hui::Rect panelRect = { 5, 5, 300, 500 };
@@ -291,9 +291,9 @@ int main(int argc, char** args)
 				hui::textInput("txt", txt, 2000, hui::TextInputFlags::None, "Write something here");
 				hui::space();
 
-				static f32 scrollPos = 0;
-				hui::beginScrollView("scrollView1", 500, scrollPos);
-
+				static hui::Point scrollPos = 0;
+				hui::beginScrollView("scrollView1", 500, scrollPos.y, 0, hui::ScrollViewFlags::None, scrollPos.x, 0);
+				hui::button("asdf asdf asdf asdf asdf asdf asdf asdf asdf asdf ad");
 				//hui::pushSpacing(500);
 				static hui::Color col1 = hui::Color(3,0,0,1);
 				static hui::Color col2 = hui::Color::blue;
@@ -326,7 +326,7 @@ int main(int argc, char** args)
 				hui::dropdown("dd", ddIndex, items, 10,6);
 
 				//hui::setNextWidth(100);
-				hui::comboSliderFloat(&scrollPos);
+				hui::comboSliderFloat(&scrollPos.y);
 				hui::label("Text here", hui::HAlignType::Left);
 
 				hui::setNextWidth(0.33333f);
