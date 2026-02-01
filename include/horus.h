@@ -431,27 +431,15 @@ enum class TableFlags : u32
 	FixedFit = HORUS_BIT(0),
 	Stretch = HORUS_BIT(1),
 	FixedSize = HORUS_BIT(2), // New flag: Table stays at column width sum, doesn't expand to layout
-
-	// Visual
 	Borders = HORUS_BIT(3),
 	BordersOuter = HORUS_BIT(4),
 	BordersInner = HORUS_BIT(5),
 	AltRowBg = HORUS_BIT(6),
-	HeaderBg = HORUS_BIT(7),
-	NoBg = HORUS_BIT(8),
-
-	// Scrolling
-	ScrollX = HORUS_BIT(9),
-	ScrollY = HORUS_BIT(10),
-	FreezeHeaderRow = HORUS_BIT(11),
-
-	// Interaction
-	Resizable = HORUS_BIT(12),
-	Reorderable = HORUS_BIT(13),
-	Hideable = HORUS_BIT(14),
-	Sortable = HORUS_BIT(15),
-	BordersV = HORUS_BIT(16),
-	BordersH = HORUS_BIT(17),
+	ScrollX = HORUS_BIT(7),
+	Resizable = HORUS_BIT(8),
+	Reorderable = HORUS_BIT(9),
+	BordersV = HORUS_BIT(10),
+	BordersH = HORUS_BIT(11),
 };
 HORUS_ENUM_AS_FLAGS(TableFlags);
 

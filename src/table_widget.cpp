@@ -256,7 +256,7 @@ static void finishRow(TableState& state)
 		// Enable scroll view if height > 0 or ScrollY flag is set
 		// height == 0 means auto-grow without scroll view
 		f32 scrollViewHeight = state.innerHeight > 0 ? state.innerHeight : 200.0f;
-		if (state.innerHeight > 0 || has(state.flags, TableFlags::ScrollY))
+		if (state.innerHeight > 0)
 		{
 			// Calculate scroll view padding to compensate
 			const auto& padding = getPadding(PaddingType::ScrollView);
