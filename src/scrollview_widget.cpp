@@ -221,6 +221,7 @@ Point endScrollView()
 		{
 			if (rectScrollBarHandle.contains(ctx->mousePosition))
 			{
+				setWindowCapture();  // Capture mouse to get events outside window
 				scrollViewInfo.draggingThumb = true;
 				scrollViewInfo.dragDelta = ctx->mousePosition - rectScrollBarHandle.topLeft();
 				ctx->dragScrollViewHandleWidgetId = scrollViewInfo.id;
@@ -292,12 +293,12 @@ Point endScrollView()
 		}
 
 		if (ctx->event.type == InputEvent::Type::MouseUp
-			&& ctx->isActiveLayer()
 			&& scrollViewInfo.draggingThumb
 			&& ctx->dragScrollViewHandleWidgetId == scrollViewInfo.id)
 		{
 			scrollViewInfo.draggingThumb = false;
 			ctx->dragScrollViewHandleWidgetId = 0;
+			releaseWindowCapture();  // Release mouse capture
 		}
 
 		// draw scroll bar line
@@ -361,6 +362,7 @@ Point endScrollView()
 		{
 			if (rectScrollBarHandleX.contains(ctx->mousePosition))
 			{
+				setWindowCapture();  // Capture mouse to get events outside window
 				scrollViewInfo.draggingThumbX = true;
 				scrollViewInfo.dragDeltaX = ctx->mousePosition - rectScrollBarHandleX.topLeft();
 				ctx->dragScrollViewHandleWidgetId = scrollViewInfo.id;
@@ -430,12 +432,12 @@ Point endScrollView()
 		}
 
 		if (ctx->event.type == InputEvent::Type::MouseUp
-			&& ctx->isActiveLayer()
 			&& scrollViewInfo.draggingThumbX
 			&& ctx->dragScrollViewHandleWidgetId == scrollViewInfo.id)
 		{
 			scrollViewInfo.draggingThumbX = false;
 			ctx->dragScrollViewHandleWidgetId = 0;
+			releaseWindowCapture();  // Release mouse capture
 		}
 
 		// draw horizontal scroll bar line
