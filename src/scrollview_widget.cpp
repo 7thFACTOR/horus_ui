@@ -177,7 +177,7 @@ Point endScrollView()
 		auto& scrollViewScrollBarElemStateH = ctx->theme->getElement(WidgetElementId::ScrollViewScrollBarH).normalState();
 
 		// Adjust height to not overlap with horizontal scrollbar if present
-		f32 scrollBarHeight = rect.height;
+		f32 scrollBarHeight = rect.height - border * 2.0f;
 		if (scrollViewInfo.virtualWidth > 0 || scrollContentWidth > rect.width)
 		{
 			scrollBarHeight -= scrollViewScrollBarElemStateH.height * ctx->scale;
@@ -186,17 +186,17 @@ Point endScrollView()
 		Rect rectScrollBar =
 		{
 			rect.right() - scrollViewScrollBarElemState.width * ctx->scale,
-			rect.y,
+			rect.y + border,
 			scrollViewScrollBarElemState.width * ctx->scale,
 			scrollBarHeight
 		};
 
-		f32 handleSize = rectScrollBar.height * rectScrollBar.height / scrollContentSize;
+		f32 handleSize = rectScrollBar.height * rect.height / scrollContentSize;
 
 		if (handleSize < ctx->settings.minScrollViewHandleSize)
 			handleSize = ctx->settings.minScrollViewHandleSize;
 
-		f32 maxScroll = scrollContentSize - rectScrollBar.height;
+		f32 maxScroll = scrollContentSize - rect.height;
 		f32 handleOffset = (scrollPos / maxScroll) * (rectScrollBar.height - handleSize);
 
 		Rect rectScrollBarHandle =
@@ -247,8 +247,8 @@ Point endScrollView()
 			&& scrollViewInfo.draggingThumb
 			&& ctx->dragScrollViewHandleWidgetId == scrollViewInfo.id)
 		{
-			f32 crtLocalY = ctx->mousePosition.y - scrollViewInfo.dragDelta.y - rect.y;
-			f32 trackSize = rect.height - handleSize;
+			f32 crtLocalY = ctx->mousePosition.y - scrollViewInfo.dragDelta.y - rectScrollBar.y;
+			f32 trackSize = rectScrollBar.height - handleSize;
 			f32 percent = crtLocalY / trackSize;
 			f32 oldScrollPos = scrollPos;
 
@@ -279,13 +279,13 @@ Point endScrollView()
 			}
 			// end duplicated code
 
-			maxScroll = scrollContentSize - rectScrollBar.height;
+			maxScroll = scrollContentSize - rect.height;
 			handleOffset = (scrollPos / maxScroll) * (rectScrollBar.height - handleSize);
 
 			rectScrollBarHandle =
 			{
 				rect.right() - scrollViewScrollThumbElemState.width * ctx->scale,
-				rect.y + handleOffset,
+				rectScrollBar.y + handleOffset,
 				scrollViewScrollThumbElemState.width * ctx->scale,
 				handleSize
 			};

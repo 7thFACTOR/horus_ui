@@ -187,6 +187,7 @@ static bool comboSliderInternal(bool isInt, f32* value, f32 minVal, f32 maxVal, 
 			}
 
 			ctx->comboSlider.mouseWasDown = true;
+			setWindowCapture();
 		}
 
 		if (ctx->comboSlider.mouseWasDown
@@ -251,7 +252,7 @@ static bool comboSliderInternal(bool isInt, f32* value, f32 minVal, f32 maxVal, 
 			ctx->comboSlider.id = 0;
 			*value = ctx->comboSlider.currentValue;
 			if (isInt) *value = roundf(*value);
-			//TODO: releaseCapture();
+			releaseWindowCapture();
 			ctx->widget.changeEnded = true;
 		}
 
