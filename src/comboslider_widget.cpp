@@ -100,26 +100,39 @@ static bool comboSliderInternal(bool isInt, f32* value, f32 minVal, f32 maxVal, 
 			ctx->position.y -= ctx->spacing * ctx->scale + bodyElem.normalState().height;
 
 			setNextFocused();
-
 			textInput("comboSliderEditText", ctx->comboSlider.text, ComboSliderState::maxTextSize, TextInputFlags::NumericOnly);
 			
 			ctx->widget.focusedId = ctx->id;
 			ctx->textInput.id = ctx->id;
 			ctx->textInput.editNow = true;
 			ctx->textInput.selectAllOnFocus = true;
+			ctx->textInput.selectionActive = false;
+			ctx->textInput.selectingWithMouse = false;
+			ctx->textInput.mouseDown = false;
 			forceRepaint();
 		}
 	}
 	else
 	if (ctx->comboSlider.editingText && ctx->comboSlider.id == comboId)
 	{
-		if (ctx->comboSlider.clickedToEditText)
+		bool wasClickedToEdit = ctx->comboSlider.clickedToEditText;
+
+		if (wasClickedToEdit)
 		{
 			setNextFocused();
 			ctx->comboSlider.clickedToEditText = false;
 		}
 
 		textInput("comboSliderEditText", ctx->comboSlider.text, ComboSliderState::maxTextSize, TextInputFlags::NumericOnly);
+
+		if (wasClickedToEdit)
+		{
+			ctx->textInput.selectingWithMouse = false;
+			ctx->textInput.mouseDownSelectionBegin = false;
+			ctx->textInput.selectionActive = true;
+			ctx->textInput.selectAll();
+			ctx->textInput.mouseDown = false;
+		}
 
 		bool isKeyEvent = ctx->event.key.down && ctx->event.type == InputEvent::Type::Key;
 		bool isEscPressed = isKeyEvent && ctx->event.key.code == KeyCode::Esc;
@@ -133,6 +146,7 @@ static bool comboSliderInternal(bool isInt, f32* value, f32 minVal, f32 maxVal, 
 			ctx->comboSlider.editingText = false;
 			ctx->comboSlider.id = 0;
 			ctx->widget.changeEnded = true;
+			releaseWindowCapture();
 
 			if (!isEscPressed)
 			{

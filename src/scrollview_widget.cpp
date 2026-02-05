@@ -70,11 +70,10 @@ void beginScrollView(const char* id, f32 size, f32 scrollPos, f32 virtualHeight,
 	clipRect.width -= scrollViewScrollThumbElemStateV.width + internalPadding * 2.0f;
 	clipRect.height -= border * ctx->scale * 2.0f;
 	
-	// Reserve space for horizontal scrollbar if needed
-	if (virtualWidth > 0)
-	{
-		clipRect.height -= scrollViewScrollThumbElemStateV.height * ctx->scale;
-	}
+	// Always reserve space for horizontal scrollbar to prevent overlap
+	// Even if content doesn't need it, this ensures consistency
+	auto scrollViewScrollThumbElemStateH = ctx->theme->getElement(WidgetElementId::ScrollViewScrollThumbH).normalState();
+	clipRect.height -= scrollViewScrollThumbElemStateH.height * ctx->scale + padding.y;
 
 	if (!has(flags, ScrollViewFlags::NoBorder))
 	{
@@ -179,7 +178,7 @@ Point endScrollView()
 
 		// Adjust height to not overlap with horizontal scrollbar if present
 		f32 scrollBarHeight = rect.height;
-		if (scrollViewInfo.virtualWidth > 0 && scrollContentWidth > rect.width)
+		if (scrollViewInfo.virtualWidth > 0 || scrollContentWidth > rect.width)
 		{
 			scrollBarHeight -= scrollViewScrollBarElemStateH.height * ctx->scale;
 		}
@@ -298,6 +297,7 @@ Point endScrollView()
 		{
 			scrollViewInfo.draggingThumb = false;
 			ctx->dragScrollViewHandleWidgetId = 0;
+			ctx->widget.captureId = 0;
 			releaseWindowCapture();  // Release mouse capture
 		}
 
@@ -328,7 +328,7 @@ Point endScrollView()
 		Rect rectScrollBarX =
 		{
 			rect.x,
-			rect.bottom() - scrollViewScrollBarElemState.height * ctx->scale,
+			rect.bottom() - border - scrollViewScrollBarElemState.height * ctx->scale,
 			scrollBarWidth,
 			scrollViewScrollBarElemState.height * ctx->scale
 		};
@@ -344,7 +344,7 @@ Point endScrollView()
 		Rect rectScrollBarHandleX =
 		{
 			rectScrollBarX.x + handleOffsetX,
-			rect.bottom() - scrollViewScrollThumbElemState.height * ctx->scale,
+			rect.bottom() - border - scrollViewScrollThumbElemState.height * ctx->scale,
 			handleSizeX,
 			scrollViewScrollThumbElemState.height * ctx->scale
 		};
@@ -425,7 +425,7 @@ Point endScrollView()
 			rectScrollBarHandleX =
 			{
 				rectScrollBarX.x + handleOffsetX,
-				rect.bottom() - scrollViewScrollThumbElemState.height * ctx->scale,
+				rect.bottom() - border - scrollViewScrollThumbElemState.height * ctx->scale,
 				handleSizeX,
 				scrollViewScrollThumbElemState.height * ctx->scale
 			};
@@ -437,6 +437,7 @@ Point endScrollView()
 		{
 			scrollViewInfo.draggingThumbX = false;
 			ctx->dragScrollViewHandleWidgetId = 0;
+			ctx->widget.captureId = 0;
 			releaseWindowCapture();  // Release mouse capture
 		}
 

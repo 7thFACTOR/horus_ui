@@ -72,7 +72,7 @@ bool list(const char* id, bool* selectedItems, ListSelectionMode selectionType, 
 			}
 		}
 	}
-
+	pushSpacing(0.0f);
 	for (u32 i = 0; i < itemCount; i++)
 	{
 		bool isSelected = selectedItems[i];
@@ -133,6 +133,7 @@ bool list(const char* id, bool* selectedItems, ListSelectionMode selectionType, 
 		}
 	}
 
+	popSpacing();
 	ctx->widgetScrollStates[listId] = endScrollView();
 	popId();
 	popPadding(PaddingType::ScrollView);

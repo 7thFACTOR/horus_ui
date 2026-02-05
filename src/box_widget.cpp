@@ -5,7 +5,7 @@
 
 namespace hui
 {
-
+//TODO: move to types.h
 struct BoxState
 {
 	f32 width = 0.0f;
@@ -14,6 +14,7 @@ struct BoxState
 	Point savedPadding;
 };
 
+//TODO: move to context
 std::unordered_map<WidgetId, DrawCmdLayerSplitter> boxDrawCmdSplitter;
 std::unordered_map<WidgetId, BoxState> boxState;
 

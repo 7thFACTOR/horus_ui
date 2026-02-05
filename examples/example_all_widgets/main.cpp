@@ -292,6 +292,7 @@ int main(int argc, char** args)
 				hui::space();
 
 				static hui::Point scrollPos = 0;
+				hui::pushPadding(hui::PaddingType::ScrollView, hui::Point(0, 0));
 				hui::beginScrollView("scrollView1", 500, scrollPos.y, 0, hui::ScrollViewFlags::None, scrollPos.x, 0);
 				hui::button("asdf asdf asdf asdf asdf asdf asdf asdf asdf asdf ad");
 				//hui::pushSpacing(500);
@@ -411,6 +412,7 @@ int main(int argc, char** args)
 				hui::button("I AGREE Long text Label for this button to see ellipsis");
 				hui::line();
 				scrollPos = hui::endScrollView();
+				hui::popPadding(hui::PaddingType::ScrollView);
 				hui::pushTint(hui::Color::orange);
 				if (hui::button("Exit"))
 					exitNow = true;
