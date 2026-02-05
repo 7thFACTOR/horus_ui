@@ -587,6 +587,7 @@ struct ScrollViewState
 	bool draggingThumbX = false;
 	Point dragDeltaX;
 	f32 maxContentX = 0.0f; // Track rightmost position for content width
+	bool wasHorizontalScrollbarVisible = false; // Track if H-bar was visible last frame to reserve space consistently
 };
 
 struct TextMarker

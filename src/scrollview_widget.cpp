@@ -70,10 +70,17 @@ void beginScrollView(const char* id, f32 size, f32 scrollPos, f32 virtualHeight,
 	clipRect.width -= scrollViewScrollThumbElemStateV.width + internalPadding * 2.0f;
 	clipRect.height -= border * ctx->scale * 2.0f;
 	
-	// Always reserve space for horizontal scrollbar to prevent overlap
-	// Even if content doesn't need it, this ensures consistency
-	auto scrollViewScrollThumbElemStateH = ctx->theme->getElement(WidgetElementId::ScrollViewScrollThumbH).normalState();
-	clipRect.height -= scrollViewScrollThumbElemStateH.height * ctx->scale + padding.y;
+	// Reserve space if we know we need horizontal scrollbar OR if content overflowed (previous frame)
+	// Reserve space if we know we need horizontal scrollbar
+	// If virtualWidth is 0 (dynamic), we rely on the previous frame's visibility status.
+	// This avoids "phantom gaps" when shrinking because if the bar wasn't there (content wrapped), we don't reserve.
+	auto& scrollViewInfo = ctx->scrollViewStack[ctx->scrollViewDepth];
+	auto scrollViewScrollBarElemStateH = ctx->theme->getElement(WidgetElementId::ScrollViewScrollBarH).normalState();
+	
+	if (virtualWidth > rect.width || (virtualWidth == 0 && scrollViewInfo.wasHorizontalScrollbarVisible))
+	{
+		clipRect.height -= scrollViewScrollBarElemStateH.height* ctx->scale + padding.y;
+	}
 
 	if (!has(flags, ScrollViewFlags::NoBorder))
 	{
@@ -113,16 +120,25 @@ Point endScrollView()
 	f32 size = scrollViewInfo.size;
 	const auto& padding = getPadding(PaddingType::ScrollView);
 	const auto border = (has(scrollViewInfo.flags, ScrollViewFlags::NoBorder) ? 0 : (f32)scrollViewElemState.border * ctx->scale);
-	auto internalPadding = border + padding.x;
-	f32 scrollContentSize = ctx->position.y - prevPenPos.y + internalPadding; // Add bottom padding to prevent clipping
+	auto internalPaddingX = border + padding.x;
+	auto internalPaddingY = border + padding.y;
+	f32 scrollContentSize = ctx->position.y - prevPenPos.y + internalPaddingY; // Add bottom padding to prevent clipping
 	
 	// Use maxContentX (highest X reached) for horizontal content width, not final position
-	f32 scrollContentWidth = scrollViewInfo.maxContentX - prevPenPos.x + internalPadding;
+	f32 scrollContentWidth = scrollViewInfo.maxContentX - prevPenPos.x + internalPaddingX;
 	f32 scrollAmount = 0;
 	f32 scrollAmountX = 0;
 
 	// make the rect for the scrollbars, without the UI element border
 	auto rect = fullRect.contract(scrollViewElemState.border);
+	
+	bool hasHorizontalScrollbar = (scrollViewInfo.virtualWidth > 0 || scrollContentWidth > rect.width);
+	auto scrollViewScrollBarElemStateH = ctx->theme->getElement(WidgetElementId::ScrollViewScrollBarH).normalState();
+	f32 effectiveViewHeight = rect.height;
+	if (hasHorizontalScrollbar)
+	{
+		effectiveViewHeight -= scrollViewScrollBarElemStateH.height * ctx->scale;
+	}
 
 	// scroll view with mouse wheel
 	if (ctx->event.type == InputEvent::Type::MouseWheel
@@ -130,12 +146,16 @@ Point endScrollView()
 	{
 		if (rect.contains(ctx->mousePosition))
 		{
-			scrollAmount = ctx->event.mouse.wheel.y * (fullRect.height * ctx->scrollViewSpeed) * ctx->scale;
+			scrollAmount = ctx->event.mouse.wheel.y * (effectiveViewHeight * ctx->scrollViewSpeed) * ctx->scale;
 			scrollPos -= scrollAmount;
 			ctx->event.type = InputEvent::Type::None;
 			forceRepaint();
 		}
 	}
+	
+	// Store the relative content width for the next frame's usage
+	scrollViewInfo.maxContentX = scrollContentWidth;
+	scrollViewInfo.wasHorizontalScrollbarVisible = hasHorizontalScrollbar; // Persist visibility for next frame reservation
 
 	// auto scroll to the focused widget if curent widget changed
 	if (ctx->focusChanged && ctx->widget.focusedId == ctx->id)
@@ -154,23 +174,23 @@ Point endScrollView()
 	}
 
 	// if content is smaller than scroll view, just set pos to 0
-	if (scrollContentSize < rect.height && fabs(scrollPos) > 0)
+	if (scrollContentSize < effectiveViewHeight && fabs(scrollPos) > 0)
 	{
 		scrollPos = 0;
 		forceRepaint();
 	}
 
 	// if we reached bottom of the content, stop
-	if (ctx->position.y + scrollAmount < rect.bottom())
+	if (ctx->position.y + scrollAmount + internalPaddingY < rect.y + effectiveViewHeight)
 	{
-		if (scrollContentSize > rect.height)
+		if (scrollContentSize > effectiveViewHeight)
 		{
-			scrollPos = scrollContentSize - rect.height;
+			scrollPos = scrollContentSize - effectiveViewHeight;
 		}
 	}
 
 	// draw scrollbar if content is bigger than scroll view
-	if (scrollContentSize > rect.height)
+	if (scrollContentSize > effectiveViewHeight)
 	{
 		auto& scrollViewScrollBarElemState = ctx->theme->getElement(WidgetElementId::ScrollViewScrollBarV).normalState();
 		auto scrollViewScrollThumbElemState = ctx->theme->getElement(WidgetElementId::ScrollViewScrollThumbV).normalState();  // Use auto, not auto& to avoid mutating cache
@@ -191,12 +211,12 @@ Point endScrollView()
 			scrollBarHeight
 		};
 
-		f32 handleSize = rectScrollBar.height * rect.height / scrollContentSize;
+		f32 handleSize = rectScrollBar.height * effectiveViewHeight / scrollContentSize;
 
 		if (handleSize < ctx->settings.minScrollViewHandleSize)
 			handleSize = ctx->settings.minScrollViewHandleSize;
 
-		f32 maxScroll = scrollContentSize - rect.height;
+		f32 maxScroll = scrollContentSize - effectiveViewHeight;
 		f32 handleOffset = (scrollPos / maxScroll) * (rectScrollBar.height - handleSize);
 
 		Rect rectScrollBarHandle =
@@ -254,7 +274,7 @@ Point endScrollView()
 
 			// kill event, only we're dragging now
 			hui::cancelEvent();
-			scrollPos = percent * (scrollContentSize - rect.height);
+			scrollPos = percent * (scrollContentSize - effectiveViewHeight);
 			scrollAmount = oldScrollPos - scrollPos;
 
 			//TODO: duplicated code see above scrollPos correction
@@ -264,22 +284,22 @@ Point endScrollView()
 				forceRepaint();
 			}
 
-			if (scrollContentSize < rect.height && fabs(scrollPos) > 0)
+			if (scrollContentSize < effectiveViewHeight && fabs(scrollPos) > 0)
 			{
 				scrollPos = 0;
 				forceRepaint();
 			}
 
-			if (ctx->position.y + scrollAmount < rect.bottom())
+			if (ctx->position.y + scrollAmount + internalPaddingY < rect.y + effectiveViewHeight)
 			{
-				if (scrollContentSize > rect.height)
+				if (scrollContentSize > effectiveViewHeight)
 				{
-					scrollPos = scrollContentSize - rect.height;
+					scrollPos = scrollContentSize - effectiveViewHeight;
 				}
 			}
 			// end duplicated code
-
-			maxScroll = scrollContentSize - rect.height;
+			
+			maxScroll = scrollContentSize - effectiveViewHeight;
 			handleOffset = (scrollPos / maxScroll) * (rectScrollBar.height - handleSize);
 
 			rectScrollBarHandle =
@@ -328,7 +348,7 @@ Point endScrollView()
 		Rect rectScrollBarX =
 		{
 			rect.x,
-			rect.bottom() - border - scrollViewScrollBarElemState.height * ctx->scale,
+			rect.bottom() - scrollViewScrollBarElemState.height * ctx->scale,
 			scrollBarWidth,
 			scrollViewScrollBarElemState.height * ctx->scale
 		};
@@ -344,7 +364,7 @@ Point endScrollView()
 		Rect rectScrollBarHandleX =
 		{
 			rectScrollBarX.x + handleOffsetX,
-			rect.bottom() - border - scrollViewScrollThumbElemState.height * ctx->scale,
+			rect.bottom() - scrollViewScrollThumbElemState.height * ctx->scale,
 			handleSizeX,
 			scrollViewScrollThumbElemState.height * ctx->scale
 		};
@@ -425,7 +445,7 @@ Point endScrollView()
 			rectScrollBarHandleX =
 			{
 				rectScrollBarX.x + handleOffsetX,
-				rect.bottom() - border - scrollViewScrollThumbElemState.height * ctx->scale,
+				rect.bottom() - scrollViewScrollThumbElemState.height * ctx->scale,
 				handleSizeX,
 				scrollViewScrollThumbElemState.height * ctx->scale
 			};
