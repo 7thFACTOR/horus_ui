@@ -26,6 +26,196 @@ struct Image;
 struct DockNode;
 
 typedef u32 ImageId;
+typedef std::vector<struct DrawCommand> DrawCommandVector;
+
+/// How an image is drawn, repeated or stretched across the rectangle
+enum class ImageSizingPolicy
+{
+	Stretch,
+	Repeat
+};
+
+/// Text styling info
+struct TextStyle
+{
+	Rgba32 backFillColor; /// the text color
+	bool underline = false; /// true if underline
+	bool backFill = false; /// true if back is filled color
+};
+
+struct DrawCmdLayerSplitter
+{
+	std::vector<DrawCommandVector> layers;
+	size_t currentLayerIndex = 0;
+
+	DrawCmdLayerSplitter();
+	~DrawCmdLayerSplitter() {}
+	void clear();
+	void split(u32 layerCount);
+	void merge();
+	void setLayer(u32 index);
+};
+
+struct DrawCommand
+{
+	enum class Type
+	{
+		None,
+		DrawRect,
+		DrawQuad,
+		DrawQuad4Colors,
+		DrawImageBordered,
+		DrawLine,
+		DrawPolyLine,
+		DrawText,
+		DrawSolidTriangle,
+		ClipRect,
+		SetViewportOffset,
+		SetAtlas,
+		SetColor,
+		SetFont,
+		SetTextStyle,
+		SetLineStyle,
+		SetFillStyle,
+		ClearBackground,
+		Callback,
+
+		Count
+	};
+
+	struct CmdDrawRect
+	{
+		Rect rect;
+		Rect uvRect;
+		bool rotated;
+		u32 textureIndex;
+		bool wire = false;
+	};
+
+	struct CmdDrawQuad
+	{
+		Point corners[4];
+		Image* image = nullptr;
+	};
+
+	struct CmdDrawTriangle
+	{
+		Point p1, p2, p3;
+		Point uv1, uv2, uv3;
+		Rgba32 c1, c2, c3;
+		Image* image = nullptr;
+	};
+
+	struct CmdDrawLine
+	{
+		Point a, b;
+	};
+
+	struct CmdDrawPolyLine
+	{
+		Point* points;
+		u32 count;
+		bool closed;
+	};
+
+	struct CmdDrawText
+	{
+		Rect rect;
+		HAlignType horizAlign;
+		VAlignType vertAlign;
+		char* text;
+		bool singleLineEllipsis;
+		bool noWordWrap;
+	};
+
+	struct CmdDrawImageBordered
+	{
+		Rect rect;
+		Image* image;
+		f32 border;
+		f32 scale;
+	};
+
+	struct CmdDrawQuad4Colors
+	{
+		Rect rect;
+		Rect uvRect;
+		Image* image = nullptr;
+		Rgba32 topLeft;
+		Rgba32 topRight;
+		Rgba32 bottomLeft;
+		Rgba32 bottomRight;
+	};
+
+	struct CmdSetViewportOffset
+	{
+		Point offset;
+	};
+
+	DrawCommand() {}
+	DrawCommand(Type newType)
+		: type(newType)
+	{
+	}
+
+	Type type = Type::None;
+
+	union CmdData
+	{
+		CmdDrawRect drawRect;
+		CmdDrawQuad drawQuad;
+		CmdDrawLine drawLine;
+		CmdDrawPolyLine drawPolyLine;
+		CmdDrawText drawText;
+		CmdDrawImageBordered drawImageBordered;
+		CmdDrawQuad4Colors drawQuad4Colors;
+		CmdDrawTriangle drawTriangle;
+		CmdSetViewportOffset setViewportOffset;
+		RenderCallback callback;
+		Rect clipRect;
+		bool clipToParent;
+		bool popClipRect = false;
+		struct Atlas* setAtlas;
+		Rgba32 setColor;
+		struct Font* setFont;
+		Rgba32 setTextColor;
+		TextStyle setTextStyle;
+		LineStyle setLineStyle;
+		FillStyle setFillStyle;
+	} data;
+
+	DrawCommand(const DrawCommand& other)
+	{
+		*this = other;
+	}
+
+	DrawCommand& operator = (const DrawCommand& other)
+	{
+		type = other.type;
+		data.drawRect = other.data.drawRect;
+		data.drawQuad = other.data.drawQuad;
+		data.drawLine = other.data.drawLine;
+		data.drawPolyLine = other.data.drawPolyLine;
+		data.drawText = other.data.drawText;
+		data.drawImageBordered = other.data.drawImageBordered;
+		data.drawQuad4Colors = other.data.drawQuad4Colors;
+		data.drawTriangle = other.data.drawTriangle;
+		data.setViewportOffset = other.data.setViewportOffset;
+		data.clipRect = other.data.clipRect;
+		data.clipToParent = other.data.clipToParent;
+		data.popClipRect = other.data.popClipRect;
+		data.setAtlas = other.data.setAtlas;
+		data.setColor = other.data.setColor;
+		data.setFont = other.data.setFont;
+		data.setTextColor = other.data.setTextColor;
+		data.setTextStyle = other.data.setTextStyle;
+		data.setLineStyle = other.data.setLineStyle;
+		data.setFillStyle = other.data.setFillStyle;
+		data.callback = other.data.callback;
+
+		return *this;
+	}
+};
 
 struct TextLineState
 {
@@ -282,6 +472,14 @@ struct TablePersistentState
 	Point lastMousePos;
 	struct DrawCmdLayerSplitter* splitter = nullptr;
 	Point scrollViewScrollPos;
+};
+
+struct BoxState
+{
+	f32 width = 0.0f;
+	ThemeElement::State* themeWidgetElementState = nullptr;
+	Color themeElementColorTint;
+	Point savedPadding;
 };
 
 struct TableState

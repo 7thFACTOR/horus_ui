@@ -5,19 +5,6 @@
 
 namespace hui
 {
-//TODO: move to types.h
-struct BoxState
-{
-	f32 width = 0.0f;
-	ThemeElement::State* themeWidgetElementState = nullptr;
-	Color themeElementColorTint;
-	Point savedPadding;
-};
-
-//TODO: move to context
-std::unordered_map<WidgetId, DrawCmdLayerSplitter> boxDrawCmdSplitter;
-std::unordered_map<WidgetId, BoxState> boxState;
-
 static void beginBoxLayoutInternal(const char* id, const Color& color, ThemeElement::State& state, f32 customHeight)
 {
 	const auto parentWidth = ctx->layout.width;
@@ -29,10 +16,13 @@ static void beginBoxLayoutInternal(const char* id, const Color& color, ThemeElem
 	ctx->layout.savedPosition = ctx->position;
 	ctx->layout.width = parentWidth - (state.border + padding.x) * ctx->scale * 2.0f;
 	ctx->layout.firstWidgetInLayout = true;
-	boxState[ctx->id].savedPadding = padding;
-	boxState[ctx->id].themeWidgetElementState = &state;
-	boxState[ctx->id].themeElementColorTint = color;
-	boxState[ctx->id].width = parentWidth;
+	
+	auto& boxState = ctx->boxState[ctx->id];
+
+	boxState.savedPadding = padding;
+	boxState.themeWidgetElementState = &state;
+	boxState.themeElementColorTint = color;
+	boxState.width = parentWidth;
 	ctx->position.x += (state.border + padding.x) * ctx->scale;
 
 	if (customHeight <= 0.0f)
@@ -44,9 +34,9 @@ static void beginBoxLayoutInternal(const char* id, const Color& color, ThemeElem
 		ctx->layout.height = customHeight;
 	}
 
-	boxDrawCmdSplitter[ctx->id].clear();
-	boxDrawCmdSplitter[ctx->id].split(2);
-	boxDrawCmdSplitter[ctx->id].setLayer(1);
+	ctx->boxDrawCmdSplitter[ctx->id].clear();
+	ctx->boxDrawCmdSplitter[ctx->id].split(2);
+	ctx->boxDrawCmdSplitter[ctx->id].setLayer(1);
 }
 
 void beginBoxLayout(
@@ -80,8 +70,8 @@ void beginBoxLayoutUserElement(
 bool endBoxLayout()
 {
 	ctx->id = ctx->layout.id;
-
-	auto& boxElemState = boxState[ctx->id].themeWidgetElementState;
+	auto& boxState = ctx->boxState[ctx->id];
+	auto& boxElemState = boxState.themeWidgetElementState;
 
 	// finish same line
 	if (ctx->sameLine.wasEnabled)
@@ -91,19 +81,19 @@ bool endBoxLayout()
 	}
 
 	auto contentHeight = ctx->position.y - ctx->layout.savedPosition.y;
-	contentHeight -= (boxElemState->border + boxState[ctx->id].savedPadding.y) * ctx->scale;
-	auto height = contentHeight + (boxElemState->border + boxState[ctx->id].savedPadding.y) * ctx->scale * 2.0f;
+	contentHeight -= (boxElemState->border + boxState.savedPadding.y) * ctx->scale;
+	auto height = contentHeight + (boxElemState->border + boxState.savedPadding.y) * ctx->scale * 2.0f;
 
 	ctx->widget.rect = {
 		ctx->layout.savedPosition.x,
 		ctx->layout.savedPosition.y,
-		boxState[ctx->id].width,
+		boxState.width,
 		height
 	};
 
 	buttonBehavior();
-	boxDrawCmdSplitter[ctx->id].setLayer(0);
-	ctx->renderer->cmdSetColor(boxElemState->color * boxState[ctx->id].themeElementColorTint);
+	ctx->boxDrawCmdSplitter[ctx->id].setLayer(0);
+	ctx->renderer->cmdSetColor(boxElemState->color * boxState.themeElementColorTint);
 	ctx->renderer->cmdSetAtlas(ctx->theme->atlas);
 	ctx->renderer->cmdDrawImageBordered(
 		boxElemState->image,
@@ -116,11 +106,11 @@ bool endBoxLayout()
 
 	if (ctx->layout.height <= 0.0f)
 	{
-		ctx->position.y += (boxElemState->border + boxState[ctx->id].savedPadding.y ) * ctx->scale;
+		ctx->position.y += (boxElemState->border + boxState.savedPadding.y ) * ctx->scale;
 	}
 	
 	ctx->position.y += height;
-	boxDrawCmdSplitter[ctx->id].merge();
+	ctx->boxDrawCmdSplitter[ctx->id].merge();
 	popLayout();
 
 	return ctx->widget.pressed;

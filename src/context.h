@@ -91,6 +91,9 @@ struct Context
 	f32 menuImageSpace = 18;
 	f32 menuFillerWidth = 30;
 
+	std::unordered_map<WidgetId, struct DrawCmdLayerSplitter> boxDrawCmdSplitter;
+	std::unordered_map<WidgetId, BoxState> boxState;
+
 	// Scrolling
 	ScrollViewState scrollViewStack[maxNestingIndex];
 	f32 scrollViewSpeed = 0.2f;

@@ -196,9 +196,9 @@ int main(int argc, char** args)
 				hui::tab("Four", 0);
 				selTab = hui::endTabGroup();
 
-				static f32 scrollPos = 0;
+				static hui::Point scrollPos = 0;
 				hui::space();
-				hui::beginScrollView("scrl1", 200, scrollPos, 0, hui::ScrollViewFlags::NoBorder);
+				hui::beginScrollView("scrl1", 200, scrollPos.y, 0, hui::ScrollViewFlags::NoBorder, scrollPos.x, 0);
 				hui::labelMultiline("Lorem ipsum dolor sit amet, consectetur\nvelit esasdf asdf asdf asdf asdfsaf asdf asdf asdf asdf asdf asf asf asdf asdf asdf asfas fasdf asdf asdfasdf asdf asf asf asdf asdf asd fasdf asdf asf asf asdf asf asdf asdf asdf asdf asdf sadf dsf fasf asdf asdf asdf asdfasdf asdf asdfdasdasdfjksadkjf \nESCAPSIMG\n\n\n\naksdf kasjdfk sad fsadjf kjsadf asd fkasdfk sadksakd ksadfsadkf askd fasfsdf asd fasdf asdf asdf skd fsad fasd fasdkfj sadkjf sakdjf askdjf skadf asdf sadf se quam nihil molestiae consequatur, vel illum qui dolorem eum fugiat quo voluptas nulla pariatur? Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum. Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium, totam rem aperiam, eaque ipsa quae ab illo inventore veritatis et quasi architecto beatae vitae dicta sunt explicabo. Nemo enim ipsam voluptatem quia voluptas sit aspernatur aut odit aut fugit, sed quia consequuntur magni dolores eos qui ratione voluptatem sequi nesciunt. Neque porro quisquam est, qui dolorem ipsum quia dolor sit amet, consectetur, adipisci velit, sed quia non numquam eius modi tempora incidunt ut labore et dolore magnam aliquam quaerat voluptatem. Ut enim ad minima veniam, quis nostrum exercitationem ullam corporis suscipit laboriosam, nisi ut aliquid ex ea commodi consequatur? Quis autem vel eum iure reprehenderit qui in ea voluptate velit esse quam nihil molestiae consequatur, vel illum qui dolorem eum fugiat quo voluptas nulla pariatur? Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum. Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium, totam rem aperiam, eaque ipsa quae ab illo inventore veritatis et quasi architecto beatae vitae dicta sunt explicabo. Nemo enim ipsam voluptatem quia voluptas sit aspernatur aut odit aut fugit, sed quia consequuntur magni dolores eos qui ratione voluptatem sequi nesciunt. Neque porro quisquam est, qui dolorem ipsum quia dolor sit amet, consectetur, adipisci velit, sed quia non numquam eius modi tempora incidunt ut labore et dolore magnam aliquam quaerat voluptatem. Ut enim ad minima veniam, quis nostrum exercitationem ullam corporis suscipit laboriosam, nisi ut aliquid ex ea commodi consequatur? Quis autem vel eum iure reprehenderit qui in ea voluptate velit esse quam nihil molestiae consequatur, vel illum qui dolorem eum fugiat quo voluptas nulla pariatur? NU!", hui::HAlignType::Left);
 				hui::line();
 				hui::button("I AGREE");
@@ -326,9 +326,9 @@ int main(int argc, char** args)
 				static f32 val;
 				static f32 val2;
 
-				static f32 scrollPos2 = 0;
+				static hui::Point scrollPos2 = 0;
 				hui::pushPadding(hui::PaddingType::ScrollView, { 10, 0 });
-				hui::beginScrollView("scrl2", 180, scrollPos2);
+				hui::beginScrollView("scrl2", 180, scrollPos2.x);
 				hui::popPadding(hui::PaddingType::ScrollView);
 				hui::rotarySliderFloat("Speed", &val, -30, 100, 1, false);
 				static char txt[1000];
