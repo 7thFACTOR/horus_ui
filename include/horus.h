@@ -449,6 +449,7 @@ enum class ScrollViewFlags : u32
 {
 	None = 0,
 	NoBorder = HORUS_BIT(0),
+	NoHorizontalScroll = HORUS_BIT(1),
 };
 HORUS_ENUM_AS_FLAGS(ScrollViewFlags);
 

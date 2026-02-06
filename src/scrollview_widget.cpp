@@ -26,6 +26,7 @@ void beginScrollView(const char* id, f32 size, f32 scrollPos, f32 virtualHeight,
 {
 	auto& scrollViewElemState = ctx->theme->getElement(WidgetElementId::ScrollViewBody).normalState();
 	auto scrollViewScrollThumbElemStateV = ctx->theme->getElement(WidgetElementId::ScrollViewScrollThumbV).normalState();
+	auto scrollViewScrollBarElemStateV = ctx->theme->getElement(WidgetElementId::ScrollViewScrollBarV).normalState();
 
 	ctx->id = genId(id);
 
@@ -67,7 +68,7 @@ void beginScrollView(const char* id, f32 size, f32 scrollPos, f32 virtualHeight,
 
 	clipRect.x += internalPadding;
 	clipRect.y += border;
-	clipRect.width -= scrollViewScrollThumbElemStateV.width + internalPadding * 2.0f;
+	clipRect.width -= scrollViewScrollBarElemStateV.width + internalPadding * 2.0f;
 	clipRect.height -= border * ctx->scale * 2.0f;
 	
 	// Reserve space if we know we need horizontal scrollbar OR if content overflowed (previous frame)
@@ -132,7 +133,8 @@ Point endScrollView()
 	// make the rect for the scrollbars, without the UI element border
 	auto rect = fullRect.contract(scrollViewElemState.border);
 	
-	bool hasHorizontalScrollbar = (scrollViewInfo.virtualWidth > 0 || scrollContentWidth > rect.width);
+	bool hasHorizontalScrollbar = !has(scrollViewInfo.flags, ScrollViewFlags::NoHorizontalScroll) && 
+								  (scrollViewInfo.virtualWidth > 0 || scrollContentWidth > rect.width);
 	auto scrollViewScrollBarElemStateH = ctx->theme->getElement(WidgetElementId::ScrollViewScrollBarH).normalState();
 	f32 effectiveViewHeight = rect.height;
 	if (hasHorizontalScrollbar)
@@ -332,7 +334,7 @@ Point endScrollView()
 
 	// ========== HORIZONTAL SCROLLBAR ==========
 	// Draw horizontal scrollbar if content is wider than view and virtualWidth is set
-	if (scrollViewInfo.virtualWidth > 0 || scrollContentWidth > rect.width)
+	if (hasHorizontalScrollbar)
 	{
 		auto& scrollViewScrollBarElemState = ctx->theme->getElement(WidgetElementId::ScrollViewScrollBarH).normalState();
 		auto scrollViewScrollThumbElemState = ctx->theme->getElement(WidgetElementId::ScrollViewScrollThumbH).normalState();  // Use auto, not auto& to avoid mutating cache

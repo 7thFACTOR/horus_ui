@@ -40,7 +40,7 @@ bool list(const char* id, bool* selectedItems, ListSelectionMode selectionType, 
 	pushPadding(PaddingType::Layout, Point(0, 0));
 	pushPadding(PaddingType::ScrollView, Point(0, 0));
 	pushId(listId);
-	beginScrollView("listScrollView", widgetHeight, scrollPos.y, totalHeight);
+	beginScrollView("listScrollView", widgetHeight, scrollPos.y, totalHeight, ScrollViewFlags::NoHorizontalScroll);
 
 	Rect viewRect = ctx->scrollViewStack[ctx->scrollViewDepth - 1].rect;
 	bool changed = false;
