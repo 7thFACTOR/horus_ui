@@ -147,14 +147,14 @@ int main(int argc, char** args)
 		// Track theme file modification time for auto-reload
 		static auto lastModTime = std::filesystem::last_write_time(themeFilePath);
 		static f32 checkTimer = 0;
-		
+
 		checkTimer += hui::getFrameDeltaTime();
-		
+
 		// Check if theme file has been modified (every 1 second)
 		if (checkTimer >= 1.0f)
 		{
 			checkTimer = 0;
-			
+
 			try
 			{
 				auto currentModTime = std::filesystem::last_write_time(themeFilePath);
@@ -292,7 +292,7 @@ int main(int argc, char** args)
 				hui::space();
 
 				static hui::Point scrollPos = 0;
-				hui::pushPadding(hui::PaddingType::ScrollView, hui::Point(0, 0));
+				hui::pushPadding(hui::PaddingType::ScrollView, hui::Point(5, 5));
 				hui::beginScrollView("scrollView1", 500, scrollPos.y, 0, hui::ScrollViewFlags::None, scrollPos.x, 0);
 				hui::button("asdf asdf asdf asdf asdf asdf asdf asdf asdf asdf ad");
 				//hui::pushSpacing(500);
@@ -324,7 +324,7 @@ int main(int argc, char** args)
 				};
 
 				hui::setNextWidth(150);
-				hui::dropdown("dd", ddIndex, items, 10,6);
+				//hui::dropdown("dd", ddIndex, items, 10,6);
 
 				//hui::setNextWidth(100);
 				hui::comboSliderFloat(&scrollPos.y);
@@ -463,7 +463,7 @@ int main(int argc, char** args)
 				hui::endWindow();
 			}
 
-			if (hui::beginWindow("hui", "Widget Examples", nullptr, tabicon3))
+			if (0&&hui::beginWindow("hui", "Widget Examples", nullptr, tabicon3))
 			{
 				static f32 scroller = 0;
 
@@ -472,7 +472,7 @@ int main(int argc, char** args)
 				static bool listSelection[5] = {false};
 				static const char* listItems[] = { "Apple", "Banana", "Cherry", "Date", "Elderberry" };
 				hui::label("List Box:");
-				hui::list("myList", listSelection, hui::ListSelectionMode::Multiple, listItems,5, 78);
+				//hui::list("myList", listSelection, hui::ListSelectionMode::Multiple, listItems,5, 78);
 
 				hui::space();
 
@@ -495,7 +495,7 @@ int main(int argc, char** args)
 					hui::label("Column 2", hui::HAlignType::Center);
 					hui::nextCell();
 					hui::label("Column 3", hui::HAlignType::Center);
-					
+
 					hui::nextCell();
 					hui::label("Column 4", hui::HAlignType::Center);
 

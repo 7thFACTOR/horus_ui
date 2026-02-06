@@ -21,13 +21,13 @@ bool list(const char* id, bool* selectedItems, ListSelectionMode selectionType, 
 
 	f32 totalHeight = itemHeight * itemCount;
 	Point scrollPos = 0;
-	
+
 	u32 listId = genId(id);
 	ctx->id = listId;
 
 	auto iter = ctx->widgetScrollStates.find(listId);
 	if (iter != ctx->widgetScrollStates.end())
-		scrollPos = iter->second;
+		scrollPos = iter->second.scrollPosition;
 
 	// Use specific height if set, otherwise fill available space or use default
 	f32 widgetHeight = height;
@@ -134,7 +134,7 @@ bool list(const char* id, bool* selectedItems, ListSelectionMode selectionType, 
 	}
 
 	popSpacing();
-	ctx->widgetScrollStates[listId] = endScrollView();
+	ctx->widgetScrollStates[listId].scrollPosition = endScrollView();
 	popId();
 	popPadding(PaddingType::ScrollView);
 	popPadding(PaddingType::Layout);

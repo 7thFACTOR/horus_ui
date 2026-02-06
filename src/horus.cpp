@@ -39,12 +39,12 @@ u32 Color::getArgb() const
 
 Color Color::random()
 {
-	return 
+	return
 	{
 		(f32)rand() / (f32)RAND_MAX,
 		(f32)rand() / (f32)RAND_MAX,
 		(f32)rand() / (f32)RAND_MAX,
-		1 
+		1
 	};
 }
 
@@ -77,7 +77,7 @@ const Color Color::sky(0.f, 0.682f, 0.937f, 1);
 HContext createContext(struct Settings& settings)
 {
 	Context* context = new Context();
-	
+
 	HORUS_ASSERT(context);
 	context->settings = settings;
 	context->providers = &settings.providers;
@@ -183,7 +183,7 @@ void addWidget(f32 height)
 			ctx->sameLine.currentX = ctx->position.x;
 			ctx->sameLine.currentY = oldY + (ctx->layout.firstWidgetInLayout ? 0 : spacing);
 		}
-		
+
 		if (!ctx->layout.firstWidgetInLayout)
 		{
 			ctx->position.y += spacing;
@@ -192,13 +192,13 @@ void addWidget(f32 height)
 		{
 			ctx->layout.firstWidgetInLayout = false;
 		}
-		
+
 		ctx->position.y = round(ctx->position.y);
 	}
 	else
 	{
 		ctx->position.y = ctx->sameLine.currentY;
-		
+
 		if (!ctx->sameLine.wasEnabled)
 		{
 			ctx->position.x += ctx->widget.rect.width + ctx->sameLine.spacing * ctx->scale;
@@ -211,7 +211,7 @@ void addWidget(f32 height)
 		round(ctx->position.y),
 		pixelWidth,
 		height);
-	
+
 	if (!ctx->sameLine.enabled)
 	{
 		ctx->position.y += height;
@@ -228,8 +228,8 @@ void addWidget(f32 height)
 	// Track maximum X position for horizontal scrolling content width
 	if (ctx->scrollViewDepth > 0 && ctx->layout.type == LayoutType::ScrollView)
 	{
-		f32 widgetRightEdge = ctx->position.x + pixelWidth;
-		
+		f32 widgetRightEdge = ctx->widget.rect.right();
+
 		if (widgetRightEdge > ctx->scrollViewStack[ctx->scrollViewDepth - 1].maxContentX)
 		{
 			ctx->scrollViewStack[ctx->scrollViewDepth - 1].maxContentX = widgetRightEdge;
@@ -308,7 +308,7 @@ void beginFrame()
 	{
 		if (ctx->event.type == InputEvent::Type::WindowMouseEnter && ctx->event.window != ctx->docking.dragIndicatorNativeWindow)
 			ctx->lastHoveredNativeWindow = ctx->event.window;
-		
+
 		if (ctx->event.type == InputEvent::Type::WindowMouseLeave && ctx->event.window != ctx->docking.dragIndicatorNativeWindow)
 			ctx->lastHoveredNativeWindow = 0;
 
@@ -510,7 +510,7 @@ void update()
 {
 	clearInputEventQueue();
 	ctx->providers->input->processEvents();
-	
+
 	// tooltip handling
 	//TODO: move to own func
 	if (ctx->tooltip.id && ctx->tooltip.id != ctx->tooltip.lastId && !ctx->tooltip.show)
@@ -522,7 +522,7 @@ void update()
 	{
 		ctx->tooltip.resetTimer += ctx->deltaTime;
 	}
-	
+
 	if (!ctx->tooltip.show && ctx->tooltip.id
 		&& (ctx->tooltip.timer >= ctx->tooltip.delayToShow
 			|| ctx->tooltip.resetTimer < ctx->tooltip.delayToShowConsecutive))
@@ -644,7 +644,7 @@ static void presentWindow(HNativeWindow wnd)
 	ctx->renderer->setCurrentNativeWindow(wnd);
 	ctx->renderer->setWindowSize(HORUS_INPUT->getWindowSize(wnd));
 	ctx->hoveringThisWindow = ctx->lastHoveredNativeWindow == wnd;
-	
+
 	auto iterWnd = ctx->docking.rootNativeWindowDockNodes.find(wnd);
 
 	if (iterWnd != ctx->docking.rootNativeWindowDockNodes.end())
@@ -1183,7 +1183,7 @@ void pushWidgetStyle(WidgetType widgetType, const char* styleName)
 void popWidgetStyle()
 {
 	HORUS_ASSERT(!ctx->widgetStyleStack.empty());
-	
+
 	if (ctx->widgetStyleStack.empty())
 		return;
 
@@ -1401,7 +1401,7 @@ HFont createThemeFont(HTheme theme, const char* name, const char* fontFilename, 
 {
 	Theme* themePtr = (Theme*)theme;
 	auto fnt = (HFont)themePtr->fontCache->createFont(name, fontFilename, faceSize * ctx->scale, false);
-	
+
 	auto fontIter = themePtr->fonts.find(name);
 
 	if (fontIter != themePtr->fonts.end())

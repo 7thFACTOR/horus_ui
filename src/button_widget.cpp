@@ -56,8 +56,8 @@ void buttonBehavior(bool menuItem)
 	// if we're inside the button
 	if (clippedRect.contains(ctx->mousePosition) && ctx->hoveringThisWindow)
 	{
-		bool anotherWidgetHasCapture = 
-			ctx->widget.captureId 
+		bool anotherWidgetHasCapture =
+			ctx->widget.captureId
 			&& ctx->id != ctx->widget.captureId;
 
 		if (!anotherWidgetHasCapture)

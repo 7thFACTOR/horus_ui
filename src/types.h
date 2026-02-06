@@ -570,8 +570,20 @@ struct TooltipState
 	f32 offsetFromCursor = 18.0f;
 };
 
+struct ScrollViewPersistentState
+{
+	Point scrollPosition;
+	bool draggingThumb = false;
+	Point dragDelta;
+	bool draggingThumbX = false;
+	Point dragDeltaX;
+	f32 maxContentX = 0.0f;
+	bool wasHorizontalScrollbarVisible = false;
+};
+
 struct ScrollViewState
 {
+	// Transient state (copied from persistent state at beginScrollView, or calculated per frame)
 	bool draggingThumb = false;
 	Point dragDelta;
 	WidgetId id = 0;
@@ -580,14 +592,14 @@ struct ScrollViewState
 	f32 scrollPosition = 0.0f;
 	Rect rect;
 	ScrollViewFlags flags = ScrollViewFlags::None;
-	
+
 	// Horizontal scrolling support
 	f32 virtualWidth = 0.0f;
 	f32 scrollPositionX = 0.0f;
 	bool draggingThumbX = false;
 	Point dragDeltaX;
-	f32 maxContentX = 0.0f; // Track rightmost position for content width
-	bool wasHorizontalScrollbarVisible = false; // Track if H-bar was visible last frame to reserve space consistently
+	f32 maxContentX = 0.0f;
+	bool wasHorizontalScrollbarVisible = false;
 };
 
 struct TextMarker

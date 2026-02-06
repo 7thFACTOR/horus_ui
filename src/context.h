@@ -63,7 +63,7 @@ struct Context
 
 	// Virtual list
 	std::vector<VirtualListContentState> virtualListStack;
-	
+
 	// List
 	std::unordered_map<u32, i32> listAnchors;
 
@@ -101,7 +101,7 @@ struct Context
 	size_t scrollViewDepth = 0;
 	WidgetId dragScrollViewHandleWidgetId = 0;
 	Point dropDownScrollViewPos;
-	std::unordered_map<WidgetId, Point> widgetScrollStates;
+	std::unordered_map<WidgetId, ScrollViewPersistentState> widgetScrollStates;
 
 	// Themes
 	Theme* theme = nullptr;
