@@ -572,6 +572,14 @@ struct TooltipState
 
 struct ScrollViewPersistentState
 {
+	struct ScrollbarState
+	{
+		f32 scrollOffset; // authoritative
+		f32 scrollMax;    // max(0, contentSize - viewSize)
+	};
+
+	ScrollbarState vertical;
+	ScrollbarState horizontal;
 	Point scrollPosition;
 	bool draggingThumb = false;
 	Point dragDelta;
