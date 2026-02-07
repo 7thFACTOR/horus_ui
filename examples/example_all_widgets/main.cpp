@@ -463,7 +463,7 @@ int main(int argc, char** args)
 				hui::endWindow();
 			}
 
-			if (0&&hui::beginWindow("hui", "Widget Examples", nullptr, tabicon3))
+			if (1&&hui::beginWindow("hui", "Widget Examples", nullptr, tabicon3))
 			{
 				static f32 scroller = 0;
 

@@ -570,17 +570,33 @@ struct TooltipState
 	f32 offsetFromCursor = 18.0f;
 };
 
+enum class ScrollToItemSnapMode
+{
+	Minimal,
+	AlignStart,
+	AlignCenter,
+	AlignEnd
+};
+
+struct ScrollToItemBounds
+{
+	f32 min; // start (top / left) in content space
+	f32 max; // end   (bottom / right) in content space
+};
+
+struct ScrollbarState
+{
+	f32 scrollOffset; // authoritative
+	f32 scrollMax;    // max(0, contentSize - viewSize)
+};
+
 struct ScrollViewPersistentState
 {
-	struct ScrollbarState
-	{
-		f32 scrollOffset; // authoritative
-		f32 scrollMax;    // max(0, contentSize - viewSize)
-	};
-
 	ScrollbarState vertical;
 	ScrollbarState horizontal;
+
 	Point scrollPosition;
+	Point lastMousePos;
 	bool draggingThumb = false;
 	Point dragDelta;
 	bool draggingThumbX = false;
