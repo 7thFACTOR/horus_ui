@@ -20,6 +20,7 @@
 
 // Grab some image handles to use for the window icons
 hui::HImage icon1, icon2, icon3, icon4, icon5, tabicon1, tabicon2, tabicon3, img;
+//hui::HTexture tex1, tex2;
 
 void loadImages()
 {
@@ -33,6 +34,8 @@ void loadImages()
 	tabicon2 = hui::loadImage("../themes/icons/icons8-settings-20.png");
 	tabicon3 = hui::loadImage("../themes/icons/icons8-opened-folder-20.png");
 	img = hui::loadImage("../themes/default/lena.png");
+	//tex1 = hui::loadTexture("../themes/default/lena.png");
+	//tex2 = hui::loadTexture("../themes/default/lena.png");
 }
 
 int main(int argc, char** args)
@@ -291,6 +294,10 @@ int main(int argc, char** args)
 
 				hui::popTint();
 				hui::endColumns();*/
+				
+				//hui::texture(tex1, 100, hui::HAlignType::Left);
+				//hui::texture(tex2, 100, hui::HAlignType::Left);
+
 				static float val;
 				hui::sliderFloat("slider1", 0, 100, val);
 				static char txt[2000];

@@ -380,6 +380,7 @@ void setThemeElement(
 	Json::Value state,
 	i32 width, i32 height)
 {
+	WidgetElementInfo elemInfo;
 	auto imageName = state.get("image", "").asString();
 	auto border = state.get("border", 0).asInt();
 	auto color = state.get("color", "white").asString();
@@ -408,8 +409,6 @@ void setThemeElement(
 	bgColor = getColorFromText(color);
 	txtColor = getColorFromText(textColor);
 
-	WidgetElementInfo elemInfo;
-
 	elemInfo.image = image;
 	elemInfo.border = border;
 	elemInfo.color = bgColor;
@@ -431,6 +430,7 @@ void setUserElement(
 	Json::Value state,
 	i32 width, i32 height)
 {
+	WidgetElementInfo elemInfo;
 	auto imageName = state.get("image", "").asString();
 	auto border = state.get("border", 0).asInt();
 	auto color = state.get("color", "white").asString();
@@ -458,8 +458,6 @@ void setUserElement(
 	bgColor = getColorFromText(color);
 	txtColor = getColorFromText(textColor);
 
-	WidgetElementInfo elemInfo;
-
 	elemInfo.image = image;
 	elemInfo.border = border;
 	elemInfo.color = bgColor;
@@ -471,7 +469,7 @@ void setUserElement(
 	setThemeUserWidgetElement(theme, elemName.c_str(), widgetStateType, elemInfo, styleName);
 }
 
-WidgetStateType widgetStateFromText(const std::string& stateName)
+static WidgetStateType widgetStateFromText(const std::string& stateName)
 {
 	if (stateName == "normal")
 		return WidgetStateType::Normal;

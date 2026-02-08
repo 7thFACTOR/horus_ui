@@ -615,6 +615,16 @@ void Renderer::executeDrawCommands(HNativeWindow wnd)
 			{
 				atlasTextureIndex = cmd.data.drawRect.textureIndex;
 
+				if (cmd.data.drawRect.atlas && cmd.data.drawRect.atlas != currentAtlas)
+				{
+					addBatch();
+					currentAtlas = cmd.data.drawRect.atlas;
+				}
+				else
+				{
+					currentAtlas = defaultAtlas;
+				}
+
 				if (clipRect(cmd.data.drawRect.rotated, cmd.data.drawRect.rect, cmd.data.drawRect.uvRect))
 				{
 					if (cmd.data.drawRect.rotated)
@@ -800,6 +810,7 @@ void Renderer::begin()
 {
 	currentAtlas = nullptr;
 	currentBatch = nullptr;
+	defaultAtlas = ctx->theme->atlas;
 	cmdSetAtlas(ctx->theme->atlas);
 }
 
@@ -875,6 +886,7 @@ void Renderer::cmdDrawImage(Image* image, const Point& position, f32 scale)
 	cmd.data.drawRect.rect = Rect(position.x, position.y, image->rect.width * scale, image->rect.height * scale);
 	cmd.data.drawRect.uvRect = image->uvRect;
 	cmd.data.drawRect.rotated = image->rotated;
+	cmd.data.drawRect.atlas = image->atlas;
 	cmd.data.drawRect.textureIndex = image->atlasTexture->textureIndex;
 	addDrawCommand(cmd);
 }
@@ -885,6 +897,7 @@ void Renderer::cmdDrawImage(Image* image, const Rect& rect)
 	cmd.data.drawRect.rect = rect;
 	cmd.data.drawRect.uvRect = image->uvRect;
 	cmd.data.drawRect.rotated = image->rotated;
+	cmd.data.drawRect.atlas = image->atlas;
 	cmd.data.drawRect.textureIndex = image->atlasTexture->textureIndex;
 	addDrawCommand(cmd);
 }
@@ -895,6 +908,7 @@ void Renderer::cmdDrawImage(Image* image, const Rect& rect, const Rect& uvRect)
 	cmd.data.drawRect.rect = rect;
 	cmd.data.drawRect.uvRect = uvRect;
 	cmd.data.drawRect.rotated = image->rotated;
+	cmd.data.drawRect.atlas = image->atlas;
 	cmd.data.drawRect.textureIndex = image->atlasTexture->textureIndex;
 	addDrawCommand(cmd);
 }

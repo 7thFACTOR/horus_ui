@@ -144,6 +144,7 @@ public:
 	Rect currentClipRect;
 	Font* currentFont = nullptr;
 	Atlas* currentAtlas = nullptr;
+	Atlas* defaultAtlas = nullptr;
 	Point windowSize;
 	Rgba32 currentColor = 0xffffffff;
 	i32 zOrder = 0;

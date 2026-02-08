@@ -821,7 +821,7 @@ void deleteAtlas(HAtlas atlas)
 	delete (Atlas*)atlas;
 }
 
-HImage addAtlasImage(HAtlas atlas, const ImageData& img)
+HImage addImageToAtlas(HAtlas atlas, const ImageData& img)
 {
 	HORUS_ASSERT(atlas);
 	Atlas* atlasPtr = (Atlas*)atlas;

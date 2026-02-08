@@ -88,6 +88,7 @@ struct DrawCommand
 		Rect rect;
 		Rect uvRect;
 		bool rotated;
+		struct Atlas* atlas = nullptr;
 		u32 textureIndex;
 		bool wire = false;
 	};

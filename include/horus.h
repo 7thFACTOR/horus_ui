@@ -1591,23 +1591,9 @@ struct ImageData
 	u32 bpp = 0;
 };
 
-enum class WidgetElementValidValueFlags
-{
-	None = 0,
-	Border = HORUS_BIT(0),
-	Color = HORUS_BIT(1),
-	TextColor = HORUS_BIT(2),
-	Font = HORUS_BIT(3),
-	Width = HORUS_BIT(4),
-	Height = HORUS_BIT(5),
-	Image = HORUS_BIT(6)
-};
-HORUS_ENUM_AS_FLAGS(WidgetElementValidValueFlags);
-
 /// Info about a widget element
 struct WidgetElementInfo
 {
-	WidgetElementValidValueFlags validValueFlags = WidgetElementValidValueFlags::None;
 	/// the image from the theme, used to draw the element
 	HImage image = 0;
 	/// the border size used to draw 9-cell resizable element
@@ -2365,7 +2351,7 @@ HORUS_API void deleteAtlas(HAtlas atlas);
 /// \param atlas the image atlas
 /// \param image the raw image to be queued for add
 /// \return the new image handle created in the image atlas
-HORUS_API HImage addAtlasImage(HAtlas atlas, const ImageData& image);
+HORUS_API HImage addImageToAtlas(HAtlas atlas, const ImageData& image);
 
 /// Pack image atlas. This will optimally fit all the queued images into the image atlas. This operation might add new textures to the atlas' texture array if some of the images do not fit inside the current atlas texture(s)
 /// \param atlas the atlas to be packed
@@ -2411,10 +2397,6 @@ HORUS_API void setWidgetStyle(WidgetType widgetType, const char* styleName);
 HORUS_API void pushWidgetStyle(WidgetType widgetType, const char* styleName);
 
 HORUS_API void popWidgetStyle();
-
-HORUS_API void pushWidgetStyleOverride(WidgetType widgetType, const char* styleName);
-
-HORUS_API void popWidgetStyleOverride();
 
 HORUS_API void setWidgetElementStyle(WidgetElementId widgetElementId, const char* styleName);
 
