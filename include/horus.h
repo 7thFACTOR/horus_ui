@@ -1591,9 +1591,23 @@ struct ImageData
 	u32 bpp = 0;
 };
 
+enum class WidgetElementValidValueFlags
+{
+	None = 0,
+	Border = HORUS_BIT(0),
+	Color = HORUS_BIT(1),
+	TextColor = HORUS_BIT(2),
+	Font = HORUS_BIT(3),
+	Width = HORUS_BIT(4),
+	Height = HORUS_BIT(5),
+	Image = HORUS_BIT(6)
+};
+HORUS_ENUM_AS_FLAGS(WidgetElementValidValueFlags);
+
 /// Info about a widget element
 struct WidgetElementInfo
 {
+	WidgetElementValidValueFlags validValueFlags = WidgetElementValidValueFlags::None;
 	/// the image from the theme, used to draw the element
 	HImage image = 0;
 	/// the border size used to draw 9-cell resizable element
@@ -2398,6 +2412,10 @@ HORUS_API void pushWidgetStyle(WidgetType widgetType, const char* styleName);
 
 HORUS_API void popWidgetStyle();
 
+HORUS_API void pushWidgetStyleOverride(WidgetType widgetType, const char* styleName);
+
+HORUS_API void popWidgetStyleOverride();
+
 HORUS_API void setWidgetElementStyle(WidgetElementId widgetElementId, const char* styleName);
 
 HORUS_API void setDefaultWidgetStyle(WidgetType widgetType);
@@ -2552,17 +2570,8 @@ HORUS_API void pushSpacing(f32 newSpacing);
 /// Pop old spacing value from stack and set it as current
 HORUS_API void popSpacing();
 
-/// Push the old spacing value to stack and set a new spacing value, spacing is the vertical space between widgets
-/// \param newSpacing the new vertical spacing value
-HORUS_API void pushColumnSpacing(f32 newSpacing);
-
-/// Pop old spacing value from stack and set it as current
-HORUS_API void popColumnSpacing();
-
 /// \return the current vertical spacing value
 HORUS_API f32 getSpacing();
-
-HORUS_API f32 getColumnSpacing();
 
 /// \return the current horizontal left and right side padding value
 HORUS_API const Point& getPadding(PaddingType type);

@@ -317,29 +317,6 @@ Point endScrollView()
 			}
 		}
 
-		//// if we reached the top and trying to scroll more, just set to 0
-		//if (scrollPos < 0)
-		//{
-		//	scrollPos = 0;
-		//	forceRepaint();
-		//}
-
-		//// if content is smaller than scroll view, just set pos to 0
-		//if (scrollContentSize < effectiveViewHeight && fabs(scrollPos) > 0)
-		//{
-		//	scrollPos = 0;
-		//	forceRepaint();
-		//}
-
-		//// if we reached bottom of the content, stop
-		//if (ctx->position.y + scrollAmount + internalPaddingY < rectNoBorders.y + effectiveViewHeight)
-		//{
-		//	if (scrollContentSize > effectiveViewHeight)
-		//	{
-		//		scrollPos = scrollContentSize - effectiveViewHeight;
-		//	}
-		//}
-
 		// draw scrollbar if content is bigger than scroll view
 		if (scrollContentSizeV > scrollAreaV)
 		{
@@ -347,29 +324,22 @@ Point endScrollView()
 			auto scrollViewScrollThumbElemStateV = ctx->theme->getElement(WidgetElementId::ScrollViewScrollThumbV).normalState();
 			const auto& scrollViewScrollBarElemStateH = ctx->theme->getElement(WidgetElementId::ScrollViewScrollBarH).normalState();
 
-			// Adjust height to not overlap with horizontal scrollbar if present
-			f32 scrollBarHeight = rectNoBorders.height;
-
+			// the actual scroll bar height, without the borders, for handle to be drawn correctly
+			f32 scrollBarHeightFull = rectNoBorders.height;
+			
 			if (hasHorizontalScrollbar)
 			{
-				scrollBarHeight -= scrollViewScrollBarElemStateH.height * ctx->scale;
+				scrollBarHeightFull -= scrollViewScrollBarElemStateH.height * ctx->scale;
 			}
+			f32 scrollBarHeight = scrollBarHeightFull - scrollViewScrollBarElemStateV.border* ctx->scale * 2.0f;
 
 			Rect rectScrollBarV =
 			{
 				rectNoBorders.right() - scrollViewScrollBarElemStateV.width * ctx->scale,
 				rectNoBorders.y,
 				scrollViewScrollBarElemStateV.width * ctx->scale,
-				scrollBarHeight
+				scrollBarHeightFull
 			};
-
-			//f32 handleSize = rectScrollBar.height * effectiveViewHeight / scrollContentSize;
-
-			//if (handleSize < ctx->settings.minScrollViewHandleSize)
-			//	handleSize = ctx->settings.minScrollViewHandleSize;
-
-			//f32 maxScroll = scrollContentSize - effectiveViewHeight;
-			//f32 handleOffset = (scrollPos / maxScroll) * (rectScrollBar.height - handleSize);
 
 			updateScrollMax(scrollViewState.vertical, scrollContentSizeV, scrollAreaV);
 			f32 handleSize = computeHandleSize(scrollBarHeight, scrollContentSizeV, scrollAreaV, ctx->settings.minScrollViewHandleSize);
@@ -377,8 +347,8 @@ Point endScrollView()
 
 			Rect rectScrollBarHandleV =
 			{
-				rectNoBorders.right() - scrollViewScrollThumbElemStateV.width * ctx->scale,
-				rectScrollBarV.y + handleOffset,
+				rectScrollBarV.x + (scrollViewScrollBarElemStateV.width - scrollViewScrollThumbElemStateV.width) * ctx->scale * 0.5f,
+				rectScrollBarV.y + handleOffset + scrollViewScrollBarElemStateV.border * ctx->scale,
 				scrollViewScrollThumbElemStateV.width * ctx->scale,
 				handleSize
 			};
@@ -405,18 +375,6 @@ Point endScrollView()
 				}
 				else if (rectScrollBarV.contains(ctx->mousePosition))
 				{
-					//f32 pageSize = (rectNoBorders.height * ctx->scrollViewScrollPageSize);
-
-					//// page up
-					//if (ctx->mousePosition.y < rectScrollBarHandle.y)
-					//{
-					//	scrollPos -= pageSize;
-					//}
-					//// page down
-					//else if (ctx->mousePosition.y > rectScrollBarHandle.bottom())
-					//{
-					//	scrollPos += pageSize;
-					//}
 					applyPageScroll(scrollViewState.vertical, scrollAreaV, ctx->scrollViewScrollPageSize, (ctx->mousePosition.y < rectScrollBarHandleV.y) ? -1.0f : 1.0f);
 				}
 			}
@@ -425,49 +383,7 @@ Point endScrollView()
 				&& scrollViewState.vertical.draggingThumb
 				&& ctx->dragScrollViewHandleWidgetId == scrollViewState.id)
 			{
-				//f32 crtLocalY = ctx->mousePosition.y - persistent.dragDelta.y - rectScrollBar.y;
-				//f32 trackSize = rectScrollBar.height - handleSize;
-				//f32 percent = crtLocalY / trackSize;
-				//f32 oldScrollPos = scrollPos;
-
-				//// kill event, only we're dragging now
-				//hui::cancelEvent();
-				//scrollPos = percent * (scrollContentSize - scrollAreaV);
-				//scrollAmount = oldScrollPos - scrollPos;
-
-				////TODO: duplicated code see above scrollPos correction
-				//if (scrollPos < 0)
-				//{
-				//	scrollPos = 0;
-				//	forceRepaint();
-				//}
-
-				//if (scrollContentSize < scrollAreaV && fabs(scrollPos) > 0)
-				//{
-				//	scrollPos = 0;
-				//	forceRepaint();
-				//}
-
-				//if (ctx->position.y + scrollAmount + internalPaddingY < rectNoBorders.y + scrollAreaV)
-				//{
-				//	if (scrollContentSize > scrollAreaV)
-				//	{
-				//		scrollPos = scrollContentSize - scrollAreaV;
-				//	}
-				//}
-				//// end duplicated code
-
-				//maxScroll = scrollContentSize - scrollAreaV;
-				//handleOffset = (scrollPos / maxScroll) * (rectScrollBar.height - handleSize);
-
-				//rectScrollBarHandle =
-				//{
-				//	rectNoBorders.right() - scrollViewScrollThumbElemState.width * ctx->scale,
-				//	rectScrollBar.y + handleOffset,
-				//	scrollViewScrollThumbElemState.width * ctx->scale,
-				//	handleSize
-				//};
-					// kill event, only we're dragging now
+				// kill event, only we're dragging now
 				hui::cancelEvent();
 				applyHandleDrag(
 					scrollViewState.vertical,
@@ -482,14 +398,10 @@ Point endScrollView()
 				&& scrollViewState.vertical.draggingThumb
 				&& ctx->dragScrollViewHandleWidgetId == scrollViewState.id)
 			{
-				//persistent.draggingThumb = false;
-				//ctx->dragScrollViewHandleWidgetId = 0;
-				//ctx->widget.captureId = 0;
-				//releaseWindowCapture();  // Release mouse capture
 				scrollViewState.vertical.draggingThumb = false;
 				ctx->dragScrollViewHandleWidgetId = 0;
 				ctx->widget.captureId = 0;
-				releaseWindowCapture();  // Release mouse capture
+				releaseWindowCapture();
 			}
 
 			updateScrollMax(scrollViewState.vertical, scrollContentSizeV, scrollAreaV);
@@ -498,8 +410,8 @@ Point endScrollView()
 
 			rectScrollBarHandleV =
 			{
-				rectScrollBarV.x,
-				rectScrollBarV.y + handleOffset,
+				rectScrollBarV.x + (scrollViewScrollBarElemStateV.width - scrollViewScrollThumbElemStateV.width) * ctx->scale * 0.5f,
+				rectScrollBarV.y + handleOffset + scrollViewScrollBarElemStateV.border * ctx->scale,
 				scrollViewScrollThumbElemStateV.width * ctx->scale,
 				handleSize
 			};
@@ -521,20 +433,24 @@ Point endScrollView()
 		auto& scrollViewScrollBarElemStateV = ctx->theme->getElement(WidgetElementId::ScrollViewScrollBarV).normalState();
 		auto& scrollViewScrollBarElemStateH = ctx->theme->getElement(WidgetElementId::ScrollViewScrollBarH).normalState();
 		auto scrollViewScrollThumbElemStateH = ctx->theme->getElement(WidgetElementId::ScrollViewScrollThumbH).normalState();
-		f32 scrollBarWidth = rectNoBorders.width;
+
+		// the actual scroll bar width, without the borders, for handle to be drawn correctly
+		f32 scrollBarWidth = rectNoBorders.width - scrollViewScrollBarElemStateH.border * ctx->scale * 2.0f;
+		f32 scrollBarWidthFull = rectNoBorders.width;
 
 		if (scrollContentSizeV > rectNoBorders.height)
 		{
 			auto& scrollViewScrollThumbElemStateV = ctx->theme->getElement(WidgetElementId::ScrollViewScrollThumbV).normalState();
 			scrollBarWidth -= scrollViewScrollBarElemStateV.width * ctx->scale;
 			scrollAreaWidth -= scrollViewScrollBarElemStateV.width * ctx->scale;
+			scrollBarWidthFull -= scrollViewScrollBarElemStateV.width * ctx->scale;
 		}
 
 		Rect rectScrollBarH =
 		{
 			rectNoBorders.x,
 			rectNoBorders.bottom() - scrollViewScrollBarElemStateH.height * ctx->scale,
-			scrollBarWidth,
+			scrollBarWidthFull,
 			scrollViewScrollBarElemStateH.height * ctx->scale
 		};
 	
@@ -544,8 +460,8 @@ Point endScrollView()
 
 		Rect rectScrollBarHandleH =
 		{
-			rectScrollBarH.x + handleOffset,
-			rectNoBorders.bottom() - scrollViewScrollThumbElemStateH.height * ctx->scale,
+			rectScrollBarH.x + handleOffset + scrollViewScrollBarElemStateH.border * ctx->scale,
+			rectNoBorders.bottom() - scrollViewScrollBarElemStateH.height * ctx->scale + (scrollViewScrollBarElemStateH.height - scrollViewScrollThumbElemStateH.height) * ctx->scale * 0.5f,
 			handleSize,
 			scrollViewScrollThumbElemStateH.height * ctx->scale
 		};
@@ -607,8 +523,8 @@ Point endScrollView()
 
 		rectScrollBarHandleH =
 		{
-			rectScrollBarH.x + handleOffset,
-			rectNoBorders.bottom() - scrollViewScrollThumbElemStateH.height * ctx->scale,
+			rectScrollBarH.x + handleOffset + scrollViewScrollBarElemStateH.border * ctx->scale,
+			rectNoBorders.bottom() - scrollViewScrollBarElemStateH.height * ctx->scale + (scrollViewScrollBarElemStateH.height - scrollViewScrollThumbElemStateH.height) * ctx->scale * 0.5f,
 			handleSize,
 			scrollViewScrollThumbElemStateH.height * ctx->scale
 		};

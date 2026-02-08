@@ -110,7 +110,7 @@ int main(int argc, char** args)
 	// After we load the theme and more images and fonts, we need to rebuild the theme (into the image atlas)
 	hui::buildTheme(theme);
 
-
+	//hui::changeScale(1.5f);
 	// Start the main loop
 	bool exitNow = false;
 
@@ -172,7 +172,13 @@ int main(int argc, char** args)
 
 		// Get the events from SDL or whatever input provider is set, it will fill a queue of events
 		hui::update();
-
+		
+		if (hui::getInputEvent().type == hui::InputEvent::Type::Key
+			&& hui::getInputEvent().key.code == hui::KeyCode::F2
+			&& hui::getInputEvent().key.down)
+		{
+			reloadTheme();
+		}
 		// Check the event count
 		auto eventCount = hui::getInputEventCount();
 

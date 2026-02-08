@@ -1192,6 +1192,16 @@ void popWidgetStyle()
 	ctx->widgetStyleStack.pop_back();
 }
 
+void pushWidgetStyleOverride(WidgetType widgetType, const char* styleName)
+{
+
+}
+
+void popWidgetStyleOverride()
+{
+
+}
+
 void setWidgetElementStyle(WidgetElementId widgetElementId, const char* styleName)
 {
 	HORUS_ASSERT(ctx);
