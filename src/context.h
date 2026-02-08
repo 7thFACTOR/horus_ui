@@ -95,13 +95,13 @@ struct Context
 	std::unordered_map<WidgetId, BoxState> boxState;
 
 	// Scrolling
-	ScrollViewState scrollViewStack[maxNestingIndex];
+	f32 maxContentWidth = 0;
+	std::vector<f32> maxContentWidthStack;
 	f32 scrollViewSpeed = 0.2f;
 	f32 scrollViewScrollPageSize = 0.4f;
-	size_t scrollViewDepth = 0;
 	WidgetId dragScrollViewHandleWidgetId = 0;
 	Point dropDownScrollViewPos;
-	std::unordered_map<WidgetId, ScrollViewPersistentState> widgetScrollStates;
+	std::unordered_map<WidgetId, ScrollViewState> scrollViewState;
 
 	// Themes
 	Theme* theme = nullptr;

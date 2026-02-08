@@ -588,42 +588,24 @@ struct ScrollbarState
 {
 	f32 scrollOffset; // authoritative
 	f32 scrollMax;    // max(0, contentSize - viewSize)
-};
-
-struct ScrollViewPersistentState
-{
-	ScrollbarState vertical;
-	ScrollbarState horizontal;
-
-	Point scrollPosition;
-	Point lastMousePos;
 	bool draggingThumb = false;
 	Point dragDelta;
-	bool draggingThumbX = false;
-	Point dragDeltaX;
-	f32 maxContentX = 0.0f;
-	bool wasHorizontalScrollbarVisible = false;
+	bool wasVisible = false;
 };
 
 struct ScrollViewState
 {
-	// Transient state (copied from persistent state at beginScrollView, or calculated per frame)
-	bool draggingThumb = false;
-	Point dragDelta;
-	WidgetId id = 0;
-	f32 size = 0.0f;
-	f32 virtualHeight = 0.0f;
-	f32 scrollPosition = 0.0f;
-	Rect rect;
-	ScrollViewFlags flags = ScrollViewFlags::None;
+	ScrollbarState vertical;
+	ScrollbarState horizontal;
+	Point scrollOffset;
+	Point lastMousePos;
 
-	// Horizontal scrolling support
-	f32 virtualWidth = 0.0f;
-	f32 scrollPositionX = 0.0f;
-	bool draggingThumbX = false;
-	Point dragDeltaX;
-	f32 maxContentX = 0.0f;
-	bool wasHorizontalScrollbarVisible = false;
+	// Transient layout data (reset/set every frame in beginScrollView)
+	WidgetId id = 0;
+	Rect rect;
+	f32 height = 0.0f;
+	Point virtualSize;
+	ScrollViewFlags flags = ScrollViewFlags::None;
 };
 
 struct TextMarker

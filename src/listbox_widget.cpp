@@ -20,14 +20,15 @@ bool list(const char* id, bool* selectedItems, ListSelectionMode selectionType, 
 	f32 itemHeight = fmaxf(bodyElemState.height, fnt->getMetrics().height) * ctx->scale;
 
 	f32 totalHeight = itemHeight * itemCount;
-	Point scrollPos = 0;
+	Point scrollOffset;
 
 	u32 listId = genId(id);
 	ctx->id = listId;
 
-	auto iter = ctx->widgetScrollStates.find(listId);
-	if (iter != ctx->widgetScrollStates.end())
-		scrollPos = iter->second.scrollPosition;
+	auto iter = ctx->scrollViewState.find(listId);
+	
+	if (iter != ctx->scrollViewState.end())
+		scrollOffset = iter->second.scrollOffset;
 
 	// Use specific height if set, otherwise fill available space or use default
 	f32 widgetHeight = height;
@@ -40,9 +41,9 @@ bool list(const char* id, bool* selectedItems, ListSelectionMode selectionType, 
 	pushPadding(PaddingType::Layout, Point(0, 0));
 	pushPadding(PaddingType::ScrollView, Point(0, 0));
 	pushId(listId);
-	beginScrollView("listScrollView", widgetHeight, scrollPos.y, totalHeight, ScrollViewFlags::NoHorizontalScroll);
+	beginScrollView("listScrollView", widgetHeight, scrollOffset.y, totalHeight, ScrollViewFlags::NoHorizontalScroll);
 
-	Rect viewRect = ctx->scrollViewStack[ctx->scrollViewDepth - 1].rect;
+	Rect viewRect = ctx->widget.rect;
 	bool changed = false;
 
 	// Ensure anchor state exists
@@ -134,7 +135,7 @@ bool list(const char* id, bool* selectedItems, ListSelectionMode selectionType, 
 	}
 
 	popSpacing();
-	ctx->widgetScrollStates[listId].scrollPosition = endScrollView();
+	ctx->scrollViewState[listId].scrollOffset = endScrollView();
 	popId();
 	popPadding(PaddingType::ScrollView);
 	popPadding(PaddingType::Layout);

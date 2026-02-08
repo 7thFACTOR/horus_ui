@@ -2521,7 +2521,7 @@ HORUS_API void popCellPadding();
 HORUS_API void beginScrollView(const char* id, f32 height, f32 scrollPosition, f32 virtualHeight, ScrollViewFlags flags);
 void beginScrollView(const char* id, f32 size, f32 scrollPos);
 void beginScrollView(const char* id, f32 size, f32 scrollPos, f32 virtualHeight);
-void beginScrollView(const char* id, f32 size, f32 scrollPos, f32 virtualHeight, ScrollViewFlags flags, f32 scrollPosX, f32 virtualWidth);
+void beginScrollView(const char* id, f32 height, Point scrollOffset, Point virtualSize, ScrollViewFlags flags);
 
 /// Ends a scroll view area widget
 /// \return the current scroll position (offset)

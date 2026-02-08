@@ -226,13 +226,13 @@ void addWidget(f32 height)
 	}
 
 	// Track maximum X position for horizontal scrolling content width
-	if (ctx->scrollViewDepth > 0 && ctx->layout.type == LayoutType::ScrollView)
+	if (ctx->layout.type == LayoutType::ScrollView)
 	{
 		f32 widgetRightEdge = ctx->widget.rect.right();
 
-		if (widgetRightEdge > ctx->scrollViewStack[ctx->scrollViewDepth - 1].maxContentX)
+		if (widgetRightEdge > ctx->maxContentWidth)
 		{
-			ctx->scrollViewStack[ctx->scrollViewDepth - 1].maxContentX = widgetRightEdge;
+			ctx->maxContentWidth = widgetRightEdge;
 		}
 	}
 
@@ -1463,7 +1463,6 @@ void endLayout()
 	popLayout();
 	ctx->currentTabIndex = 0;
 	ctx->selectedTabIndex = 0;
-	ctx->scrollViewDepth = 0;
 }
 
 void pushId(const char* id)
