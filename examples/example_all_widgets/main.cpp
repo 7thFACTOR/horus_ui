@@ -365,13 +365,13 @@ int main(int argc, char** args)
 				hui::image(img, 50, hui::HAlignType::Center);
 				//hui::setNextWidth(0.25f);
 				hui::pushWidgetStyle(hui::WidgetType::ImageButton, "important");
-				hui::imageButton(tabicon3, 50, 50);
+				hui::imageButton(tabicon3, 50, 50); hui::sameLine();
 				static bool down = false;
 				if (hui::imageButton(tabicon3, 50, 50, 0, down))
 				{
 					down = !down;
 				}
-
+				hui::sameLine();
 				static bool showpop = false;
 
 				if (hui::imageButton(tabicon3, 50, 50, 0, showpop))
