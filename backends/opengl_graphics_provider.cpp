@@ -240,7 +240,7 @@ void OpenGLGraphicsProvider::shutdown()
 
 TextureArray* OpenGLGraphicsProvider::createTextureArray()
 {
-	return (TextureArray*)new OpenGLTextureArray();
+	return (TextureArray*)new OpenGLTexture();
 }
 
 VertexBuffer* OpenGLGraphicsProvider::createVertexBuffer()

@@ -6,16 +6,15 @@
 
 namespace hui
 {
-Font::Font(const std::string& fontFilename, u32 faceSize, Atlas* themeAtlas)
+Font::Font(const std::string& fontFilename, u32 faceSize)
 {
-	load(fontFilename, faceSize, themeAtlas);
+	load(fontFilename, faceSize);
 }
 
-void Font::load(const std::string& fontFilename, u32 facePointSize, Atlas* themeAtlas)
+void Font::load(const std::string& fontFilename, u32 facePointSize)
 {
 	filename = fontFilename;
 	faceSize = facePointSize;
-	atlas = themeAtlas;
 
 	if (fontInfo.fontFace)
 	{
@@ -30,7 +29,7 @@ void Font::load(const std::string& fontFilename, u32 facePointSize, Atlas* theme
 void Font::resetFaceSize(u32 fontFaceSize)
 {
 	faceSize = fontFaceSize;
-	load(filename, faceSize, atlas);
+	load(filename, faceSize);
 	resizeFaceMode = true;
 
 	for (auto& glyph : glyphs)
@@ -136,7 +135,7 @@ FontGlyph* Font::cacheGlyph(GlyphCode glyphCode)
 	{
 		glyphs.insert(std::make_pair(glyphCode, fontGlyph));
 
-		auto image = atlas->addImage(
+		auto image = ctx->atlas->addImage(
 			fontGlyph->rgbaBuffer,
 			fontGlyph->pixelWidth,
 			fontGlyph->pixelHeight);
@@ -150,12 +149,12 @@ FontGlyph* Font::cacheGlyph(GlyphCode glyphCode)
 
 		if (img)
 		{
-			delete[] img->imageData;
+			img->imageData.clear();
 			auto imgSize = (size_t)fontGlyph->pixelWidth * fontGlyph->pixelHeight * sizeof(Rgba32);
-			img->imageData = new Rgba32[imgSize];
+			img->imageData.resize(imgSize);
 			img->width = fontGlyph->pixelWidth;
 			img->height = fontGlyph->pixelHeight;
-			memcpy(img->imageData, fontGlyph->rgbaBuffer, imgSize);
+			memcpy(&img->imageData[0], fontGlyph->rgbaBuffer, imgSize);
 		}
 	}
 
@@ -176,7 +175,7 @@ void Font::deleteGlyphs()
 {
 	for (auto& glyph : glyphs)
 	{
-		atlas->deleteImage((Image*)glyph.second->image);
+		ctx->atlas->deleteImage((Image*)glyph.second->image);
 		delete[] glyph.second->rgbaBuffer;
 		delete glyph.second;
 	}
@@ -184,8 +183,6 @@ void Font::deleteGlyphs()
 	kerningPairs.clear();
 	glyphs.clear();
 }
-
-// --- Restored computeTextSize implementations that forward to renderer ---
 
 FontTextSize Font::computeTextSize(const GlyphCode* const text, u32 size, u32 maxWidth)
 {

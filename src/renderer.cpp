@@ -2621,11 +2621,10 @@ void Renderer::addBatch()
 {
 	currentWindowContext->batches.push_back(RenderBatch());
 	currentBatch = &currentWindowContext->batches.back();
-	currentBatch->atlas = currentAtlas;
 	currentBatch->primitiveType = RenderBatch::PrimitiveType::TriangleList;
 	currentBatch->startVertexIndex = vertexBufferData.drawVertexCount;
 	currentBatch->vertexBuffer = vertexBuffer;
-	currentBatch->textureArray = currentAtlas->textureArray;
+	currentBatch->texture = currentAtlas->textureArray->getHandle();
 }
 
 void Renderer::addDrawCommand(const DrawCommand& cmd)

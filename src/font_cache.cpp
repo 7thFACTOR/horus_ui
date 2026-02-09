@@ -3,9 +3,8 @@
 
 namespace hui
 {
-FontCache::FontCache(Atlas* newAtlas)
+FontCache::FontCache()
 {
-	atlas = newAtlas;
 }
 
 FontCache::~FontCache()
@@ -13,7 +12,7 @@ FontCache::~FontCache()
 	deleteFonts();
 }
 
-Font* FontCache::createFont(const std::string& name, const std::string& filename, u32 size, bool packAtlasNow)
+Font* FontCache::createFont(const std::string& name, const std::string& filename, u32 size)
 {
 	for (auto& fnt : cachedFonts)
 	{
@@ -29,7 +28,7 @@ Font* FontCache::createFont(const std::string& name, const std::string& filename
 
 	CachedFontInfo* newFont = new CachedFontInfo();
 
-	newFont->font.load(filename, size, atlas);
+	newFont->font.load(filename, size);
 	newFont->font.precacheLatinAlphabetGlyphs();
 	newFont->size = size;
 	newFont->usageCount = 1;

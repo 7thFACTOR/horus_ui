@@ -6,29 +6,14 @@ namespace hui
 Theme::Theme(u32 atlasTextureSize)
 {
 	atlas = new Atlas(atlasTextureSize, atlasTextureSize);
-	fontCache = new FontCache(atlas);
-	auto whiteImage = atlas->addWhiteImage(32);
+	fontCache = new FontCache();
+	atlas->addWhiteImage(4);
 }
 
 Theme::~Theme()
 {
 	delete fontCache;
 	delete atlas;
-}
-
-Image* Theme::addImage(const Rgba32* pixels, u32 width, u32 height)
-{
-	if (!pixels || !width || !height)
-	{
-		return 0;
-	}
-
-	return atlas->addImage(pixels, width, height);
-}
-
-void Theme::packAtlas()
-{
-	atlas->pack();
 }
 
 void Theme::setDefaultWidgetStyle()

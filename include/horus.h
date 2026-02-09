@@ -152,7 +152,6 @@ template <typename T> inline T toFlags(int x) { return (T)x; };
 
 typedef void* HImage;
 typedef void* HTheme;
-typedef void* HAtlas;
 typedef void* HFont;
 typedef void* HThemeWidgetElement;
 typedef void* HNativeWindow;
@@ -160,7 +159,6 @@ typedef void* HDockNode;
 typedef void* HMouseCursor;
 typedef void* HGraphicsApiContext;
 typedef void* HGraphicsApiTexture;
-typedef void* HGraphicsApiRenderTarget;
 typedef void* HGraphicsApiVertexBuffer;
 typedef void* HContext;
 typedef void* HFile;
@@ -1873,28 +1871,21 @@ struct Vertex
 {
 	Point position;
 	Point uv;
-	u32 color = 0xffffffff;
-	u32 textureIndex = 0; /// what atlas texture array index this vertex is using
+	u32 color = 0xFFFFFFFF;
 };
 
-/// A graphics texture array
-struct TextureArray
+/// A graphics api texture
+struct Texture
 {
-	virtual ~TextureArray() {}
+	virtual ~Texture() {}
 
-	/// Resize the texture array, this will not preserve the current texture data
-	/// \param count the new number of textures in the array
+	/// Resize the texture, this will not preserve the current texture data
 	/// \param newWidth the new width, ideally power of two
 	/// \param newHeight the new height, ideally power of two
-	virtual void resize(u32 count, u32 newWidth, u32 newHeight) = 0;
+	virtual void resize(u32 newWidth, u32 newHeight) = 0;
 
-	/// Update the texture array data, this is the whole array of textures, no mipmaps
+	/// Update the texture data, this is the whole array of textures, no mipmaps
 	virtual void updateData(Rgba32* pixels) = 0;
-
-	/// Update a specified texture in the array
-	/// \param textureIndex the 0-based texture index to be updated
-	/// \param pixels the RGBA 32bit pixel buffer
-	virtual void updateLayerData(u32 textureIndex, Rgba32* pixels) = 0;
 
 	/// Update a specified texture area defined by a rectangle, in the texture array
 	/// \param textureIndex the 0-based texture index to be updated
@@ -1935,9 +1926,11 @@ struct VertexBuffer
 
 /// A render batch is a single drawcall, which renders the whole UI or part of it.
 /// More render batches are generated when the various parts of the UI cannot be rendered together,
-/// for example when a different texture atlas is used or different render states
+/// for example when a different texture is used or different render states
 struct RenderBatch
 {
+	typedef void(*RenderBatchCallback)(void* userdata, const RenderBatch& batch);
+
 	enum class PrimitiveType
 	{
 		TriangleList,
@@ -1947,14 +1940,10 @@ struct RenderBatch
 
 	PrimitiveType primitiveType = PrimitiveType::TriangleList;
 	VertexBuffer* vertexBuffer = nullptr; /// which vertex buffer to use for rendering
-	TextureArray* textureArray = nullptr; /// which texture array to use for rendering
-	HAtlas atlas = nullptr; /// handle to the corresponding image atlas
+	HGraphicsApiTexture texture = nullptr; /// which texture to use for rendering
 	u32 startVertexIndex = 0; /// where to start rendering
 	u32 vertexCount = 0; /// how many vertices to use for rendering the primitives
-	/// The draw command callback is used when the user wants to render this batch
-	typedef void(*DrawCommandCallback)(void* userdata, RenderBatch& batch);
-	/// User defined command callback
-	DrawCommandCallback commandCallback = nullptr;
+	RenderBatchCallback commandCallback = nullptr;
 };
 
 /// The graphics provider
@@ -1985,23 +1974,12 @@ struct GraphicsProvider
 	/// \return the graphics API type
 	virtual ApiType getApiType() const = 0;
 
-	/// Create a new texture array object used for UI image atlas
-	virtual TextureArray* createTextureArray() = 0;
+	/// Create a new texture object used for the UI image atlas
+	virtual Texture* createTexture() = 0;
 
 	/// Create a new vertex buffer
 	/// \return new vertex buffer
 	virtual VertexBuffer* createVertexBuffer() = 0;
-
-	/// Create a new render target texture
-	/// \param width the texture width
-	/// \param height the texture height
-	virtual HGraphicsApiRenderTarget createRenderTarget(u32 width, u32 height) = 0;
-
-	/// Delete a render target
-	virtual void destroyRenderTarget(HGraphicsApiRenderTarget rt) = 0;
-
-	/// Set the current render target
-	virtual void setRenderTarget(HGraphicsApiRenderTarget rt) = 0;
 
 	/// Set the current viewport and scissor box
 	/// \param windowSize the native window's current size
@@ -2296,69 +2274,6 @@ HORUS_API void presentNativeWindow(HNativeWindow nativeWnd);
 HORUS_API void shutdown();
 
 //////////////////////////////////////////////////////////////////////////
-// Images
-//////////////////////////////////////////////////////////////////////////
-
-/// Load a PNG image from file (it doesn't need to be power of two in dimension) and add it to the theme's image atlas.
-/// \param filename the PNG filename, relative to the executable
-/// \return the created image or nullptr if it cannot be loaded
-HORUS_API HImage loadImage(const char* filename);
-
-/// Create an image from memory
-/// \param pixels the RGBA 32bit color pixels buffer
-/// \param width the width in pixels
-/// \param height the height in pixels
-/// \return the created image or nullptr if error
-HORUS_API HImage createImage(Rgba32* pixels, u32 width, u32 height);
-
-/// \return an image size as a point (x = width, y = height)
-/// \param image the image
-HORUS_API Point getImageSize(HImage image);
-
-/// Update an image's pixel data
-/// \param image the image to be updated
-/// \param pixels the new pixels of the image
-HORUS_API void updateImagePixels(HImage image, Rgba32* pixels);
-
-/// Delete an image
-/// \param image the image to be deleted
-HORUS_API void deleteImage(HImage image);
-
-/// Load an image from a PNG file, it will not add it to the theme's image atlas. Used when you need an image data for something else.
-/// \param filename the PNG filename
-/// \return the raw image info and data
-HORUS_API ImageData loadImageData(const char* filename);
-
-/// Delete a image object after your used/copied its contents
-/// \param image the raw image
-HORUS_API void deleteImageData(ImageData& image);
-
-//////////////////////////////////////////////////////////////////////////
-// Image atlas
-//////////////////////////////////////////////////////////////////////////
-
-/// Create a new image atlas. Usually used for collections of images (for making thumbnail browsers for example)
-/// \param width the width of the atlas image
-/// \param height the height of the atlas image
-/// \return the new atlas handle
-HORUS_API HAtlas createAtlas(u32 width, u32 height);
-
-/// Delete an image atlas
-/// \param atlas the atlas to be deleted
-HORUS_API void deleteAtlas(HAtlas atlas);
-
-/// Add an image to an image atlas (it will just queue it, to pack the images into the atlas, call packAtlas)
-/// \param atlas the image atlas
-/// \param image the raw image to be queued for add
-/// \return the new image handle created in the image atlas
-HORUS_API HImage addImageToAtlas(HAtlas atlas, const ImageData& image);
-
-/// Pack image atlas. This will optimally fit all the queued images into the image atlas. This operation might add new textures to the atlas' texture array if some of the images do not fit inside the current atlas texture(s)
-/// \param atlas the atlas to be packed
-/// \return true if all queued images were packed ok
-HORUS_API bool packAtlas(HAtlas atlas, u32 border = 2);
-
-//////////////////////////////////////////////////////////////////////////
 // Themes
 //////////////////////////////////////////////////////////////////////////
 
@@ -2382,15 +2297,9 @@ HORUS_API void setThemeUserSetting(HTheme theme, const char* name, const char* v
 
 HORUS_API const char* getThemeUserSetting(HTheme theme, const char* name);
 
-/// Add a image to a theme's atlas (it will not pack it yet to the atlas, call buildTheme for that)
-/// \param theme the theme
-/// \param img the image to be added
-/// \return the newly created image handle
-HORUS_API HImage addThemeImage(HTheme theme, const ImageData& img);
+HORUS_API HImage addThemeImage(HTheme theme, const char* id, const ImageData& img);
 
-HORUS_API HImage getThemeImage(HTheme theme, const char* imageName);
-
-HORUS_API void setThemeImage(HTheme theme, const char* imageName, HImage image);
+HORUS_API HImage getThemeImage(HTheme theme, const char* id);
 
 HORUS_API void setWidgetStyle(WidgetType widgetType, const char* styleName);
 

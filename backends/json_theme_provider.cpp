@@ -394,7 +394,7 @@ void setThemeElement(
 
 	if (!image)
 	{
-		auto imageData = hui::loadImageData(imageFilename.c_str());
+		auto imageData = loadImageData(imageFilename.c_str());
 		image = addThemeImage(theme, imageData);
 		deleteImageData(imageData);
 		hui::setThemeImage(theme, imageFilename.c_str(), image);

@@ -9,13 +9,11 @@ struct Theme
 	Theme(u32 atlasTextureSize);
 	~Theme();
 
-	Image* addImage(const Rgba32* pixels, u32 width, u32 height);
-	void packAtlas();
 	inline ThemeElement& getElement(WidgetElementId id) { return elements[(u32)id]; }
 	void setDefaultWidgetStyle();
 
-	std::unordered_map<std::string, Font*> fonts;
-	std::unordered_map<std::string, Image*> images;
+	std::unordered_map<std::string/*path*/, Font*> fonts;
+	std::unordered_map<std::string/*path*/, Image*> images;
 	ThemeElement elements[(int)WidgetElementId::Count];
 	std::unordered_map<std::string, ThemeElement*> userElements;
 	std::unordered_map<std::string, std::string> userSettings;

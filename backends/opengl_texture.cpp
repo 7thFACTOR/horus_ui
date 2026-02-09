@@ -3,23 +3,23 @@
 
 namespace hui
 {
-OpenGLTextureArray::OpenGLTextureArray(u32 count, u32 newWidth, u32 newHeight, Rgba32* pixels)
+OpenGLTexture::OpenGLTexture(u32 count, u32 newWidth, u32 newHeight, Rgba32* pixels)
 {
 	resize(count, newWidth, newHeight);
 	updateData(pixels);
 }
 
-OpenGLTextureArray::OpenGLTextureArray(u32 count, u32 newWidth, u32 newHeight)
+OpenGLTexture::OpenGLTexture(u32 count, u32 newWidth, u32 newHeight)
 {
 	resize(count, newWidth, newHeight);
 }
 
-OpenGLTextureArray::~OpenGLTextureArray()
+OpenGLTexture::~OpenGLTexture()
 {
 	destroy();
 }
 
-void OpenGLTextureArray::resize(u32 count, u32 newWidth, u32 newHeight)
+void OpenGLTexture::resize(u32 count, u32 newWidth, u32 newHeight)
 {
 	textureCount = count;
 
@@ -43,7 +43,7 @@ void OpenGLTextureArray::resize(u32 count, u32 newWidth, u32 newHeight)
 	OGL_CHECK_ERROR;
 }
 
-void OpenGLTextureArray::updateData(Rgba32* pixels)
+void OpenGLTexture::updateData(Rgba32* pixels)
 {
 	glBindTexture(GL_TEXTURE_2D_ARRAY, handle);
 	OGL_CHECK_ERROR;
@@ -55,7 +55,7 @@ void OpenGLTextureArray::updateData(Rgba32* pixels)
 	OGL_CHECK_ERROR;
 }
 
-void OpenGLTextureArray::updateLayerData(u32 textureIndex, Rgba32* pixels)
+void OpenGLTexture::updateLayerData(u32 textureIndex, Rgba32* pixels)
 {
 	glBindTexture(GL_TEXTURE_2D_ARRAY, handle);
 	OGL_CHECK_ERROR;
@@ -70,7 +70,7 @@ void OpenGLTextureArray::updateLayerData(u32 textureIndex, Rgba32* pixels)
 	OGL_CHECK_ERROR;
 }
 
-void OpenGLTextureArray::updateRectData(u32 textureIndex, const Rect& rect, Rgba32* pixels)
+void OpenGLTexture::updateRectData(u32 textureIndex, const Rect& rect, Rgba32* pixels)
 {
 	glBindTexture(GL_TEXTURE_2D_ARRAY, handle);
 	OGL_CHECK_ERROR;
@@ -81,7 +81,7 @@ void OpenGLTextureArray::updateRectData(u32 textureIndex, const Rect& rect, Rgba
 	OGL_CHECK_ERROR;
 }
 
-void OpenGLTextureArray::destroy()
+void OpenGLTexture::destroy()
 {
 	if (!handle)
 	{

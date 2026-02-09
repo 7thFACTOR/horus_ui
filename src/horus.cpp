@@ -996,11 +996,20 @@ const char* getThemeUserSetting(HTheme theme, const char* name)
 	return iter->second.c_str();
 }
 
-HImage addThemeImage(HTheme theme, const ImageData& img)
+HImage addThemeImage(HTheme theme, const char* id, const ImageData& img)
 {
 	Theme* themePtr = (Theme*)theme;
 
-	return themePtr->addImage((const Rgba32*)img.pixels, img.width, img.height);
+	auto img = themePtr->atlas->addImage((const Rgba32*)img.pixels, img.width, img.height);
+	auto iter = themePtr->images.find(id);
+
+	if (iter != themePtr->images.end())
+	{
+		iter->second = (Image*)image;
+		return;
+	}
+
+	themePtr->images[id] = (Image*)image;
 }
 
 HImage getThemeImage(HTheme theme, const char* imageName)
@@ -1013,21 +1022,6 @@ HImage getThemeImage(HTheme theme, const char* imageName)
 		return iter->second;
 
 	return nullptr;
-}
-
-void setThemeImage(HTheme theme, const char* imageName, HImage image)
-{
-	Theme* themePtr = (Theme*)theme;
-
-	auto iter = themePtr->images.find(imageName);
-
-	if (iter != themePtr->images.end())
-	{
-		iter->second = (Image*)image;
-		return;
-	}
-
-	themePtr->images[imageName] = (Image*)image;
 }
 
 void setWidgetStyle(WidgetType widgetType, const char* styleName)

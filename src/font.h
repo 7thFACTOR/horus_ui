@@ -7,10 +7,10 @@ namespace hui
 struct Font
 {
 	Font() {}
-	Font(const std::string& fontFilename, u32 fontFaceSize, Atlas* themeAtlas);
+	Font(const std::string& fontFilename, u32 fontFaceSize);
 	~Font();
 
-	void load(const std::string& fontFilename, u32 fontFaceSize, Atlas* themeAtlas);
+	void load(const std::string& fontFilename, u32 fontFaceSize);
 	void resetFaceSize(u32 fontFaceSize);
 	FontGlyph* getGlyph(GlyphCode glyphCode);
 	Image* getGlyphImage(GlyphCode glyphCode);
@@ -19,15 +19,12 @@ struct Font
 	void precacheGlyphs(const Utf32String& glyphCodes);
 	void precacheGlyphs(u32* glyphs, u32 glyphCount);
 	void precacheLatinAlphabetGlyphs();
+	void deleteGlyphs();
 
 	// Restored computeTextSize overloads: forward to renderer's combined routine.
 	FontTextSize computeTextSize(const GlyphCode* const text, u32 size, u32 maxWidth = ~0);
 	FontTextSize computeTextSize(const Utf32String& text);
 	FontTextSize computeTextSize(const char* text, u32 maxWidth = ~0);
-
-	void deleteGlyphs();
-
-	Atlas* atlas = nullptr;
 
 protected:
 	FontGlyph* cacheGlyph(GlyphCode glyphCode);

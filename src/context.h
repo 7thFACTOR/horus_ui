@@ -13,11 +13,13 @@ struct Context
 	static const size_t maxBoxDepth = 256;
 	static const size_t maxSameLineInfoIndex = 256;
 
-	// Various providers and singletons
+	Settings settings;
+
+	// Various service providers
 	ServiceProviders* providers = nullptr;
 	Renderer* renderer = nullptr;
 	UnicodeTextCache* textCache = nullptr;
-	Settings settings;
+	Atlas* atlas = nullptr;
 
 	// Global general state
 	f32 deltaTime = 0;
@@ -32,7 +34,6 @@ struct Context
 	WindowFlags nextWindowFlags = WindowFlags::None;
 	HNativeWindow lastHoveredNativeWindow = nullptr;
 	f32 scale = 1.0f;
-	u32 atlasTextureSize = 4096;
 	Point mousePosition;
 
 	// Widgets
