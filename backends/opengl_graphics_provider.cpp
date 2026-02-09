@@ -248,57 +248,6 @@ VertexBuffer* OpenGLGraphicsProvider::createVertexBuffer()
 	return (VertexBuffer*)new OpenGLVertexBuffer();
 }
 
-HGraphicsApiRenderTarget OpenGLGraphicsProvider::createRenderTarget(u32 width, u32 height)
-{
-	OpenGLRenderTarget* rt = new OpenGLRenderTarget();
-	GLuint fb;
-	GLuint tex;
-
-	rt->width = width;
-	rt->height = height;
-	glGenFramebuffers(1, &fb);
-	OGL_CHECK_ERROR;
-	glGenTextures(1, &tex);
-	OGL_CHECK_ERROR;
-	glBindTexture(GL_TEXTURE_2D, tex);
-	OGL_CHECK_ERROR;
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
-	OGL_CHECK_ERROR;
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex, 0);
-	OGL_CHECK_ERROR;
-	rt->frameBuffer = fb;
-	rt->texture = tex;
-
-	return rt;
-}
-
-void OpenGLGraphicsProvider::destroyRenderTarget(HGraphicsApiRenderTarget rt)
-{
-	if (!rt)
-	{
-		return;
-	}
-
-	OpenGLRenderTarget* oglRt = (OpenGLRenderTarget*)rt;
-
-	GLuint tex = (GLuint)oglRt->texture;
-	GLuint fb = (GLuint)oglRt->frameBuffer;
-
-	glDeleteFramebuffers(1, &fb);
-	OGL_CHECK_ERROR;
-	glDeleteTextures(1, &tex);
-	OGL_CHECK_ERROR;
-
-	delete rt;
-}
-
-void OpenGLGraphicsProvider::setRenderTarget(HGraphicsApiRenderTarget rt)
-{
-	OpenGLRenderTarget* oglRt = (OpenGLRenderTarget*)rt;
-	glBindFramebuffer(GL_FRAMEBUFFER, (GLuint)oglRt->frameBuffer);
-	OGL_CHECK_ERROR;
-}
-
 void OpenGLGraphicsProvider::commitRenderState()
 {
 	glEnable(GL_BLEND);
