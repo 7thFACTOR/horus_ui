@@ -22,9 +22,9 @@ hui::WidgetElementInfo inf;
 void curveEditor(f32 height, u32 maxPoints, hui::Point* points, u32& pointCount, const hui::Color& lineColor)
 {
 	hui::beginCustomWidget("curveEditor", height);
-	hui::setColor(hui::isPressed() ? hui::Color::red : hui::Color::white);
+	hui::color(hui::isPressed() ? hui::Color::red : hui::Color::white);
 	hui::drawBorderedImage(inf.image, inf.border, hui::getWidgetRect());
-	hui::setLineStyle({ hui::Color::orange, 1.5f });
+	hui::lineStyle({ hui::Color::orange, 1.5f });
 	hui::drawLine({ 10,10 }, { 10,110 });
 	hui::SplineControlPoint p[4];
 	p[0].center = { 10, 20 };

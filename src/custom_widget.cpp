@@ -42,66 +42,66 @@ Rect getWidgetRect()
 	return ctx->widget.rect;
 }
 
-void setFont(HFont font)
+void font(HFont font)
 {
-	ctx->renderer->cmdSetFont((Font*)font);
+	ctx->renderer.cmdSetFont((Font*)font);
 }
 
 void pushFont(HFont font)
 {
-	ctx->fontStack.push_back((HFont)ctx->renderer->getFont());
-	setFont(font);
+	ctx->fontStack.push_back((HFont)ctx->renderer.getFont());
+	font(font);
 }
 
 void popFont()
 {
 	if (ctx->fontStack.size())
 	{
-		setFont(ctx->fontStack.back());
+		font(ctx->fontStack.back());
 		ctx->fontStack.pop_back();
 	}
 }
 
-void setColor(const Color& color)
+void color(const Color& color)
 {
-	ctx->renderer->cmdSetColor(color);
+	ctx->renderer.cmdSetColor(color);
 }
 
 void setLineColor(const Color& color)
 {
-	ctx->renderer->currentLineStyle.color = color;
-	ctx->renderer->cmdSetLineStyle(ctx->renderer->currentLineStyle);
+	ctx->renderer.currentLineStyle.color = color;
+	ctx->renderer.cmdSetLineStyle(ctx->renderer.currentLineStyle);
 }
 
 void setFillColor(const Color& color)
 {
-	ctx->renderer->currentFillStyle.color = color;
-	ctx->renderer->cmdSetFillStyle(ctx->renderer->currentFillStyle);
+	ctx->renderer.currentFillStyle.color = color;
+	ctx->renderer.cmdSetFillStyle(ctx->renderer.currentFillStyle);
 }
 
 Point getTextSize(const char* text)
 {
-	if (!ctx->renderer->getFont())
+	if (!ctx->renderer.getFont())
 		return Point();
 
 	FontTextSize fntInfo = 
-	ctx->renderer->computeSizeOrDrawText(text, Rect(), HAlignType::Left, VAlignType::Top, false, ctx->renderer->getFont());
+	ctx->renderer.computeSizeOrDrawText(text, Rect(), HAlignType::Left, VAlignType::Top, false, ctx->renderer.getFont());
 
 	return { fntInfo.width, fntInfo.height };
 }
 
 void drawTextAt(const char* text, const Point& position)
 {
-	ctx->renderer->cmdDrawTextAt(text, position + ctx->renderer->viewportOffset);
+	ctx->renderer.cmdDrawTextAt(text, position + ctx->renderer.viewportOffset);
 }
 
 void drawTextInBox(const char* text, const Rect& rect, HAlignType horizontalAlign, VAlignType verticalAlign)
 {
-	ctx->renderer->cmdDrawTextInBox(
+	ctx->renderer.cmdDrawTextInBox(
 		text,
 		Rect(
-			rect.x + ctx->renderer->viewportOffset.x,
-			rect.y + ctx->renderer->viewportOffset.y,
+			rect.x + ctx->renderer.viewportOffset.x,
+			rect.y + ctx->renderer.viewportOffset.y,
 			rect.width, rect.height),
 		horizontalAlign, verticalAlign);
 }
@@ -109,36 +109,36 @@ void drawTextInBox(const char* text, const Rect& rect, HAlignType horizontalAlig
 void drawImage(HImage image, const Point& position, f32 scale)
 {
 	Image* img = (Image*)image;
-	ctx->renderer->cmdDrawImage(img, position + ctx->renderer->viewportOffset, scale);
+	ctx->renderer.cmdDrawImage(img, position + ctx->renderer.viewportOffset, scale);
 }
 
 void drawStretchedImage(HImage image, const Rect& rect)
 {
 	Image* img = (Image*)image;
-	ctx->renderer->cmdDrawImage(img, Rect(rect.x + ctx->renderer->viewportOffset.x, rect.y + ctx->renderer->viewportOffset.y, rect.width, rect.height));
+	ctx->renderer.cmdDrawImage(img, Rect(rect.x + ctx->renderer.viewportOffset.x, rect.y + ctx->renderer.viewportOffset.y, rect.width, rect.height));
 }
 
 void drawBorderedImage(HImage image, u32 border, const Rect& rect)
 {
 	Image* img = (Image*)image;
 
-	ctx->renderer->cmdDrawImageBordered(img, border, Rect(rect.x + ctx->renderer->viewportOffset.x, rect.y + ctx->renderer->viewportOffset.y, rect.width, rect.height), ctx->scale);
+	ctx->renderer.cmdDrawImageBordered(img, border, Rect(rect.x + ctx->renderer.viewportOffset.x, rect.y + ctx->renderer.viewportOffset.y, rect.width, rect.height), ctx->scale);
 }
 
-void setLineStyle(const LineStyle& style)
+void lineStyle(const LineStyle& style)
 {
-	ctx->renderer->cmdSetLineStyle(style);
+	ctx->renderer.cmdSetLineStyle(style);
 }
 
-void setFillStyle(const FillStyle& style)
+void fillStyle(const FillStyle& style)
 {
 	ctx->fillStyle = style;
-	ctx->renderer->cmdSetColor(style.color);
+	ctx->renderer.cmdSetColor(style.color);
 }
 
 void drawLine(const Point& a, const Point& b)
 {
-	ctx->renderer->cmdDrawLine(a + ctx->renderer->viewportOffset, b + ctx->renderer->viewportOffset);
+	ctx->renderer.cmdDrawLine(a + ctx->renderer.viewportOffset, b + ctx->renderer.viewportOffset);
 }
 
 void drawPolyLine(const Point* points, u32 pointCount, bool closed)
@@ -149,10 +149,10 @@ void drawPolyLine(const Point* points, u32 pointCount, bool closed)
 
 	for (u32 i = 0; i < pointCount; i++)
 	{
-		pts[i] = points[i] + ctx->renderer->viewportOffset;
+		pts[i] = points[i] + ctx->renderer.viewportOffset;
 	}
 
-	ctx->renderer->cmdDrawPolyLine(pts.data(), pointCount, closed);
+	ctx->renderer.cmdDrawPolyLine(pts.data(), pointCount, closed);
 }
 
 void drawCircle(const Point& center, f32 radius, u32 segments)
@@ -173,31 +173,31 @@ void drawEllipse(const Point& center, f32 radiusX, f32 radiusY, u32 segments)
 	{
 		pt.x = center.x + radiusX * sinf(crtAngle);
 		pt.y = center.y + radiusY * cosf(crtAngle);
-		pts.push_back(pt + ctx->renderer->viewportOffset);
+		pts.push_back(pt + ctx->renderer.viewportOffset);
 		crtAngle += step;
 	}
 
-	ctx->renderer->cmdDrawPolyLine(pts.data(), pts.size(), true);
+	ctx->renderer.cmdDrawPolyLine(pts.data(), pts.size(), true);
 }
 
 void drawRectangle(const Rect& rc)
 {
 	Point pts[4] = {
-		rc.topLeft() + ctx->renderer->viewportOffset,
-		rc.topRight() + ctx->renderer->viewportOffset,
-		rc.bottomRight() + ctx->renderer->viewportOffset,
-		rc.bottomLeft() + ctx->renderer->viewportOffset
+		rc.topLeft() + ctx->renderer.viewportOffset,
+		rc.topRight() + ctx->renderer.viewportOffset,
+		rc.bottomRight() + ctx->renderer.viewportOffset,
+		rc.bottomLeft() + ctx->renderer.viewportOffset
 	};
 
-	ctx->renderer->cmdDrawPolyLine(pts, 4, true);
+	ctx->renderer.cmdDrawPolyLine(pts, 4, true);
 }
 
 void drawSolidRectangle(const Rect& rc)
 {
-	ctx->renderer->cmdDrawFilledRectangle(
+	ctx->renderer.cmdDrawFilledRectangle(
 		{
-			ctx->renderer->viewportOffset.x + rc.x,
-			ctx->renderer->viewportOffset.y + rc.y,
+			ctx->renderer.viewportOffset.x + rc.x,
+			ctx->renderer.viewportOffset.y + rc.y,
 			rc.width,
 			rc.height
 		});
@@ -303,10 +303,10 @@ void drawArrow(const Point& a, const Point& b, f32 tipLength, f32 tipWidth, bool
 void drawSolidTriangle(
 	const Point& p1, const Point& p2, const Point& p3)
 {
-	ctx->renderer->cmdDrawSolidTriangle(
-		p1 + ctx->renderer->viewportOffset,
-		p2 + ctx->renderer->viewportOffset,
-		p3 + ctx->renderer->viewportOffset, ctx->renderer->currentColor, ctx->renderer->currentColor, ctx->renderer->currentColor);
+	ctx->renderer.cmdDrawSolidTriangle(
+		p1 + ctx->renderer.viewportOffset,
+		p2 + ctx->renderer.viewportOffset,
+		p3 + ctx->renderer.viewportOffset, ctx->renderer.currentColor, ctx->renderer.currentColor, ctx->renderer.currentColor);
 }
 
 }

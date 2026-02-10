@@ -125,8 +125,8 @@ static bool sliderInternal(const char* id, f32 minVal, f32 maxVal, f32& value, b
 		};
 	}
 
-	ctx->renderer->cmdSetColor(bodyElemState->color);
-	ctx->renderer->cmdDrawImageBordered(
+	ctx->renderer.cmdSetColor(bodyElemState->color);
+	ctx->renderer.cmdDrawImageBordered(
 		bodyElemState->image,
 		bodyElemState->border,
 		{
@@ -137,8 +137,8 @@ static bool sliderInternal(const char* id, f32 minVal, f32 maxVal, f32& value, b
 		},
 		ctx->scale);
 
-	ctx->renderer->cmdSetColor(bodyFilledElemState->color);
-	ctx->renderer->cmdDrawImageBordered(
+	ctx->renderer.cmdSetColor(bodyFilledElemState->color);
+	ctx->renderer.cmdDrawImageBordered(
 		bodyFilledElemState->image,
 		bodyFilledElemState->border,
 		{
@@ -149,8 +149,8 @@ static bool sliderInternal(const char* id, f32 minVal, f32 maxVal, f32& value, b
 		},
 		ctx->scale);
 
-	ctx->renderer->cmdSetColor(knobElemState->color);
-	ctx->renderer->cmdDrawImageBordered(
+	ctx->renderer.cmdSetColor(knobElemState->color);
+	ctx->renderer.cmdDrawImageBordered(
 		knobElemState->image,
 		knobElemState->border,
 		knobRect,

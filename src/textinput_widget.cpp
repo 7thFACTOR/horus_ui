@@ -222,11 +222,11 @@ bool textInput(
 		setMouseCursor(MouseCursorType::IBeam);
 	}
 
-	ctx->renderer->cmdSetColor(bodyElemState->color);
-	ctx->renderer->cmdDrawImageBordered(bodyElemState->image, bodyElemState->border, ctx->widget.rect, ctx->scale);
-	ctx->renderer->cmdSetColor(bodyElemState->textColor);
-	ctx->renderer->cmdSetFont(bodyElemState->font);
-	ctx->renderer->pushClipRect(clipRect);
+	ctx->renderer.cmdSetColor(bodyElemState->color);
+	ctx->renderer.cmdDrawImageBordered(bodyElemState->image, bodyElemState->border, ctx->widget.rect, ctx->scale);
+	ctx->renderer.cmdSetColor(bodyElemState->textColor);
+	ctx->renderer.cmdSetFont(bodyElemState->font);
+	ctx->renderer.pushClipRect(clipRect);
 
 	if (isEditingThis)
 	{
@@ -297,15 +297,15 @@ bool textInput(
 				clipRect.height);
 
 			// draw selection rect
-			ctx->renderer->cmdSetColor(bodyTextSelectionElemState.color);
-			ctx->renderer->cmdDrawFilledRectangle(selRect);
+			ctx->renderer.cmdSetColor(bodyTextSelectionElemState.color);
+			ctx->renderer.cmdDrawFilledRectangle(selRect);
 		}
 
 		// draw cursor/caret	
 		if (!ctx->settings.textCaretBlinkEnable || (ctx->textInput.caretBlinkTimer >= 0 && ctx->textInput.caretBlinkTimer <= 1))
 		{
-			ctx->renderer->cmdSetColor(bodyTextCaretElemState.color);
-			ctx->renderer->cmdDrawFilledRectangle(cursorRect);
+			ctx->renderer.cmdSetColor(bodyTextCaretElemState.color);
+			ctx->renderer.cmdDrawFilledRectangle(cursorRect);
 		}
 	}
 
@@ -336,11 +336,11 @@ bool textInput(
 	if (isEmptyText && defaultText)
 	{
 		textToDraw = (char*)defaultText;
-		ctx->renderer->cmdSetColor(bodyTextDefaultElemState.color);
+		ctx->renderer.cmdSetColor(bodyTextDefaultElemState.color);
 	}
 	else
 	{
-		ctx->renderer->cmdSetColor(bodyElemState->color);
+		ctx->renderer.cmdSetColor(bodyElemState->color);
 	}
 
 	auto textRect = Rect(
@@ -350,7 +350,7 @@ bool textInput(
 		clipRect.height);
 
 	// draw the actual text
-	ctx->renderer->cmdDrawTextInBox(
+	ctx->renderer.cmdDrawTextInBox(
 		textToDraw,
 		textRect,
 		HAlignType::Left,
@@ -367,15 +367,15 @@ bool textInput(
 		else
 			state = &bodyTextFilterClearImageElem.normalState();
 
-		ctx->renderer->cmdSetColor(state->color);
-		ctx->renderer->cmdDrawImage(state->image,
+		ctx->renderer.cmdSetColor(state->color);
+		ctx->renderer.cmdDrawImage(state->image,
 			Point(
 				clipRect.right() - (state->border + padding.x) * ctx->scale - state->image->width * ctx->scale,
 				clipRect.y + (clipRect.height - state->image->height * ctx->scale) / 2.0f),
 			ctx->scale);
 	}
 
-	ctx->renderer->popClipRect();
+	ctx->renderer.popClipRect();
 
 	setFocusable();
 

@@ -38,8 +38,8 @@ static void drawEdgeTrianglesAt(
 	f32 insetInside = triWidth * 0.75f;
 
 	// set fill color and enqueue fill triangles
-	ctx->renderer->cmdSetColor(fillColor);
-	Rgba32 fillCol = ctx->renderer->currentColor;
+	ctx->renderer.cmdSetColor(fillColor);
+	Rgba32 fillCol = ctx->renderer.currentColor;
 
 	if (drawLeft)
 	{
@@ -49,16 +49,16 @@ static void drawEdgeTrianglesAt(
 		Point leftBaseBottom = { rc.x - exteriorOffset, centerY + halfH };
 
 		// draw filled triangle
-		ctx->renderer->cmdDrawSolidTriangle(leftBaseTop, leftBaseBottom, leftTip, fillCol, fillCol, fillCol);
+		ctx->renderer.cmdDrawSolidTriangle(leftBaseTop, leftBaseBottom, leftTip, fillCol, fillCol, fillCol);
 
 		// draw outline
 		Point outlinePts[3] = { leftBaseTop, leftBaseBottom, leftTip };
-		LineStyle oldLs = ctx->renderer->currentLineStyle;
+		LineStyle oldLs = ctx->renderer.currentLineStyle;
 		LineStyle ls(outlineColor, outlineWidth);
-		ctx->renderer->cmdSetLineStyle(ls);
-		ctx->renderer->cmdDrawPolyLine(outlinePts, 3, true);
+		ctx->renderer.cmdSetLineStyle(ls);
+		ctx->renderer.cmdDrawPolyLine(outlinePts, 3, true);
 		// restore previous line style
-		ctx->renderer->cmdSetLineStyle(oldLs);
+		ctx->renderer.cmdSetLineStyle(oldLs);
 	}
 
 	if (drawRight)
@@ -69,18 +69,18 @@ static void drawEdgeTrianglesAt(
 		Point rightBaseBottom = { rc.right() + exteriorOffset, centerY + halfH };
 
 		// draw filled triangle
-		ctx->renderer->cmdSetColor(fillColor);
-		fillCol = ctx->renderer->currentColor;
-		ctx->renderer->cmdDrawSolidTriangle(rightTip, rightBaseTop, rightBaseBottom, fillCol, fillCol, fillCol);
+		ctx->renderer.cmdSetColor(fillColor);
+		fillCol = ctx->renderer.currentColor;
+		ctx->renderer.cmdDrawSolidTriangle(rightTip, rightBaseTop, rightBaseBottom, fillCol, fillCol, fillCol);
 
 		// draw outline
 		Point outlinePts[3] = { rightTip, rightBaseTop, rightBaseBottom };
-		LineStyle oldLs = ctx->renderer->currentLineStyle;
+		LineStyle oldLs = ctx->renderer.currentLineStyle;
 		LineStyle ls(outlineColor, outlineWidth);
-		ctx->renderer->cmdSetLineStyle(ls);
-		ctx->renderer->cmdDrawPolyLine(outlinePts, 3, true);
+		ctx->renderer.cmdSetLineStyle(ls);
+		ctx->renderer.cmdDrawPolyLine(outlinePts, 3, true);
 		// restore previous line style
-		ctx->renderer->cmdSetLineStyle(oldLs);
+		ctx->renderer.cmdSetLineStyle(oldLs);
 	}
 }
 
@@ -90,9 +90,9 @@ static void drawColorPreviewSwatch(const Rect& rc, const Color& color, const cha
 	auto& colorPickerCheckersState = ctx->theme->getElement(WidgetElementId::ColorPickerCheckers).normalState();
 	auto tsize = colorPickerState.font->computeTextSize(text);
 
-	ctx->renderer->cmdSetColor(colorPickerState.textColor);
-	ctx->renderer->cmdSetFont(colorPickerState.font);
-	ctx->renderer->cmdDrawTextInBox(
+	ctx->renderer.cmdSetColor(colorPickerState.textColor);
+	ctx->renderer.cmdSetFont(colorPickerState.font);
+	ctx->renderer.cmdDrawTextInBox(
 		text,
 		{
 			rc.x,
@@ -117,16 +117,16 @@ static void drawColorPreviewSwatch(const Rect& rc, const Color& color, const cha
 	rcSampleWithAlpha.width = rcSample.width / 2.0f;
 	rcSampleWithAlpha.x = rcSampleNoAlpha.right();
 
-	ctx->renderer->cmdSetColor(Color::white);
-	ctx->renderer->cmdDrawImageTiled(
+	ctx->renderer.cmdSetColor(Color::white);
+	ctx->renderer.cmdDrawImageTiled(
 		colorPickerCheckersState.image,
 		rcSample, Point(), ctx->scale);
 
-	ctx->renderer->cmdSetColor(Color{ color.r, color.g, color.b, 1 });
-	ctx->renderer->cmdDrawFilledRectangle(rcSampleNoAlpha);
+	ctx->renderer.cmdSetColor(Color{ color.r, color.g, color.b, 1 });
+	ctx->renderer.cmdDrawFilledRectangle(rcSampleNoAlpha);
 
-	ctx->renderer->cmdSetColor(color);
-	ctx->renderer->cmdDrawFilledRectangle(rcSampleWithAlpha);
+	ctx->renderer.cmdSetColor(color);
+	ctx->renderer.cmdDrawFilledRectangle(rcSampleWithAlpha);
 }
 
 bool colorPicker(const char* id, Color* inOutColor, ColorPickerFlags flags, const Color* oldColor)
@@ -163,7 +163,7 @@ bool colorPicker(const char* id, Color* inOutColor, ColorPickerFlags flags, cons
 	std::snprintf(ctx->colorPickerState.hexColor, ColorPickerState::maxHexColorSize, hexColorStr.c_str());
 
 	auto rcSV = ctx->widget.rect;
-	auto clippedRc = ctx->widget.rect.clipInside(ctx->renderer->getClipRect());
+	auto clippedRc = ctx->widget.rect.clipInside(ctx->renderer.getClipRect());
 	rcSV.x += indicatorSize / 2.0f + 1.0f;
 	rcSV.y += indicatorSize / 2.0f;
 	rcSV.width *= 0.5f;
@@ -178,9 +178,9 @@ bool colorPicker(const char* id, Color* inOutColor, ColorPickerFlags flags, cons
 	rcAlpha.x = rcH.right() + 10.0f * ctx->scale;
 	rcAlpha.width = 32.0f * ctx->scale;
 
-	auto clippedRcSV = rcSV.clipInside(ctx->renderer->getClipRect());
-	auto clippedRcHue = rcH.clipInside(ctx->renderer->getClipRect());
-	auto clippedRcAlpha = rcAlpha.clipInside(ctx->renderer->getClipRect());
+	auto clippedRcSV = rcSV.clipInside(ctx->renderer.getClipRect());
+	auto clippedRcHue = rcH.clipInside(ctx->renderer.getClipRect());
+	auto clippedRcAlpha = rcAlpha.clipInside(ctx->renderer.getClipRect());
 
 	if (ctx->event.type == InputEvent::Type::MouseDown)
 	{
@@ -263,11 +263,11 @@ bool colorPicker(const char* id, Color* inOutColor, ColorPickerFlags flags, cons
 
 	Color hueOnlyColor = hueToRgb(clampedHsv.r, 1);
 
-	ctx->renderer->cmdDrawRectangle4Colors(
+	ctx->renderer.cmdDrawRectangle4Colors(
 		rcSV
 		, Color::white, hueOnlyColor
 		, hueOnlyColor, Color::white);
-	ctx->renderer->cmdDrawRectangle4Colors(
+	ctx->renderer.cmdDrawRectangle4Colors(
 		rcSV
 		, Color::transparent, Color::transparent
 		, Color::black, Color::black);
@@ -284,7 +284,7 @@ bool colorPicker(const char* id, Color* inOutColor, ColorPickerFlags flags, cons
 	for (i32 i = 0; i < 6; i++)
 	{
 		f32 segmentHeight = rcH.height / 6.0f;
-		ctx->renderer->cmdDrawRectangle4Colors(
+		ctx->renderer.cmdDrawRectangle4Colors(
 			{
 				rcH.x,
 				rcH.y + i * segmentHeight,
@@ -299,11 +299,11 @@ bool colorPicker(const char* id, Color* inOutColor, ColorPickerFlags flags, cons
 	auto& colorPickerCheckersImg = colorPickerCheckersElem.normalState().image;
 	Color colorForAlphaBar = hsvToRgb({ clampedHsv.r, clampedHsv.g, clampedHsv.b, 1 });
 
-	ctx->renderer->cmdSetColor(Color::white);
-	ctx->renderer->cmdDrawImageTiled(
+	ctx->renderer.cmdSetColor(Color::white);
+	ctx->renderer.cmdDrawImageTiled(
 		colorPickerCheckersImg,
 		rcAlpha, Point(), ctx->scale);
-	ctx->renderer->cmdDrawRectangle4Colors(rcAlpha,
+	ctx->renderer.cmdDrawRectangle4Colors(rcAlpha,
 		colorForAlphaBar,
 		colorForAlphaBar,
 		Color::transparent,
@@ -354,12 +354,12 @@ bool colorPicker(const char* id, Color* inOutColor, ColorPickerFlags flags, cons
 	rcCurrentSVIndicator.y = rcSV.y + (1.0f - clampedHsv.b) * rcSV.height - indicatorSize / 2.0f * ctx->scale;
 	rcCurrentSVIndicator.width = indicatorSize;
 	rcCurrentSVIndicator.height = indicatorSize;
-	ctx->renderer->cmdSetColor(hsvToRgb({ clampedHsv.r, clampedHsv.g, clampedHsv.b, 1 }));
-	ctx->renderer->cmdDrawFilledRectangle(rcCurrentSVIndicator);
-	ctx->renderer->cmdSetLineStyle(LineStyle(Color::black, 3));
-	ctx->renderer->cmdDrawRectangle(rcCurrentSVIndicator);
-	ctx->renderer->cmdSetLineStyle(LineStyle(Color::white, 1));
-	ctx->renderer->cmdDrawRectangle(rcCurrentSVIndicator);
+	ctx->renderer.cmdSetColor(hsvToRgb({ clampedHsv.r, clampedHsv.g, clampedHsv.b, 1 }));
+	ctx->renderer.cmdDrawFilledRectangle(rcCurrentSVIndicator);
+	ctx->renderer.cmdSetLineStyle(LineStyle(Color::black, 3));
+	ctx->renderer.cmdDrawRectangle(rcCurrentSVIndicator);
+	ctx->renderer.cmdSetLineStyle(LineStyle(Color::white, 1));
+	ctx->renderer.cmdDrawRectangle(rcCurrentSVIndicator);
 
 	bool hsvChanged = false;
 

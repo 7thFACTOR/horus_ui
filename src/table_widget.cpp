@@ -56,11 +56,11 @@ static void finishRow(TableState& state)
 
 			rowRect = rowRect.contract(1.0);
 
-			ctx->renderer->cmdSetColor(state.currentRowColor);
+			ctx->renderer.cmdSetColor(state.currentRowColor);
 			// Skip splitter when inside scroll view to respect clip rect
 			if (!state.needsScrollViewStart)
 				state.persistent->splitter->setLayer(0);
-			ctx->renderer->cmdDrawFilledRectangle(rowRect);
+			ctx->renderer.cmdDrawFilledRectangle(rowRect);
 			if (!state.needsScrollViewStart)
 				state.persistent->splitter->setLayer(1);
 		}
@@ -83,14 +83,14 @@ static void finishRow(TableState& state)
 
 			if (state.currentRow % 2 == 1)
 			{
-				ctx->renderer->cmdSetColor(tableBodyElem.currentStyle->getColorParameter("rowAltBgColor0", Color::transparent));
+				ctx->renderer.cmdSetColor(tableBodyElem.currentStyle->getColorParameter("rowAltBgColor0", Color::transparent));
 			}
 			else
 			{
-				ctx->renderer->cmdSetColor(tableBodyElem.currentStyle->getColorParameter("rowAltBgColor1", Color::transparent));
+				ctx->renderer.cmdSetColor(tableBodyElem.currentStyle->getColorParameter("rowAltBgColor1", Color::transparent));
 			}
 
-			ctx->renderer->cmdDrawFilledRectangle(rowRect);
+			ctx->renderer.cmdDrawFilledRectangle(rowRect);
 
 			// Switch back to content layer (1)
 			if (!state.needsScrollViewStart)
@@ -121,8 +121,8 @@ static void finishRow(TableState& state)
 				{
 					Rect cellRect(cx, state.rowStartY, cw, state.currentMaxRowHeight);
 					cellRect = cellRect.contract(1.0f);
-					ctx->renderer->cmdSetColor(req.color);
-					ctx->renderer->cmdDrawFilledRectangle(cellRect);
+					ctx->renderer.cmdSetColor(req.color);
+					ctx->renderer.cmdDrawFilledRectangle(cellRect);
 				}
 			}
 			state.persistent->splitter->setLayer(1);
@@ -156,8 +156,8 @@ static void finishRow(TableState& state)
 
 		// Draw header background
 		state.persistent->splitter->setLayer(0);
-		ctx->renderer->cmdSetColor(bodyElemState.color);
-		ctx->renderer->cmdDrawFilledRectangle(state.headerRect);
+		ctx->renderer.cmdSetColor(bodyElemState.color);
+		ctx->renderer.cmdDrawFilledRectangle(state.headerRect);
 
 		// Header pending cell backgrounds? Usually not used, but supported just in case
 		if (!state.cellColorRequests.empty())
@@ -181,8 +181,8 @@ static void finishRow(TableState& state)
 				{
 					Rect cellRect(cx, state.tableRect.y, cw, headerHeight);
 					cellRect = cellRect.contract(1.0f);
-					ctx->renderer->cmdSetColor(req.color);
-					ctx->renderer->cmdDrawFilledRectangle(cellRect);
+					ctx->renderer.cmdSetColor(req.color);
+					ctx->renderer.cmdDrawFilledRectangle(cellRect);
 				}
 			}
 			state.cellColorRequests.clear();
@@ -199,7 +199,7 @@ static void finishRow(TableState& state)
 			bool hasOuter = has(state.flags, TableFlags::Borders) || has(state.flags, TableFlags::BordersOuter);
 
 			auto& tableHeaderElem = ctx->theme->getElement(WidgetElementId::TableHeaderBody);
-			ctx->renderer->cmdSetLineStyle(LineStyle(tableHeaderElem.currentStyle->getColorParameter("borderColorV", Color::white), 1.0f));
+			ctx->renderer.cmdSetLineStyle(LineStyle(tableHeaderElem.currentStyle->getColorParameter("borderColorV", Color::white), 1.0f));
 
 			for (u32 i = 0; i < state.persistent->columns.size(); i++)
 			{
@@ -215,7 +215,7 @@ static void finishRow(TableState& state)
 
 					if (drawLeftLine)
 					{
-						ctx->renderer->cmdDrawLine(
+						ctx->renderer.cmdDrawLine(
 							Point(currentX, state.headerRect.y),
 							Point(currentX, state.headerRect.y + state.headerRect.height)
 						);
@@ -229,7 +229,7 @@ static void finishRow(TableState& state)
 			if (!innerOnly && !hasOuter)
 			{
 				// Draw Right line for last column
-				ctx->renderer->cmdDrawLine(
+				ctx->renderer.cmdDrawLine(
 					Point(currentX, state.headerRect.y),
 					Point(currentX, state.headerRect.y + state.headerRect.height)
 				);
@@ -241,8 +241,8 @@ static void finishRow(TableState& state)
 			has(state.flags, TableFlags::BordersOuter) || has(state.flags, TableFlags::BordersH))
 		{
 			auto& tableHeaderElem = ctx->theme->getElement(WidgetElementId::TableHeaderBody);
-			ctx->renderer->cmdSetLineStyle(LineStyle(tableHeaderElem.currentStyle->getColorParameter("borderColorH", Color::white), 1.0f));
-			ctx->renderer->cmdDrawLine(
+			ctx->renderer.cmdSetLineStyle(LineStyle(tableHeaderElem.currentStyle->getColorParameter("borderColorH", Color::white), 1.0f));
+			ctx->renderer.cmdDrawLine(
 				Point(state.headerRect.x, state.headerRect.y + state.headerRect.height),
 				Point(state.headerRect.x + state.headerRect.width, state.headerRect.y + state.headerRect.height)
 			);
@@ -618,13 +618,13 @@ bool beginTable(const char* id, u32 columnCount, f32 height, TableFlags flags)
 	auto& bodyElem = ctx->theme->getElement(WidgetElementId::TableBody);
 	auto& bodyElemState = bodyElem.normalState();
 	ctx->tableStack.back().rowHeight = bodyElem.currentStyle->getParameter("rowHeight", 25);
-	//state.rowDrawCmdIndex = ctx->renderer->getDrawCommandCount();
+	//state.rowDrawCmdIndex = ctx->renderer.getDrawCommandCount();
 
 	// Push a clip rect for the entire table to prevent backgrounds from extending too far
 	// Start 1px to the left to include the left border, and add 2px to width for both borders
 	auto& currentState = ctx->tableStack.back();
 	Rect tableClipRect(currentState.tableRect.x - 1.0f, currentState.tableRect.y, currentState.innerWidth + 2.0f, 10000.0f);
-	ctx->renderer->pushClipRect(tableClipRect);
+	ctx->renderer.pushClipRect(tableClipRect);
 	currentState.hasTableClip = true;
 	ctx->tableStack.back().hasTableClip = true;
 
@@ -656,7 +656,7 @@ void endTable()
 	// Pop any remaining clip rect BEFORE drawing borders so they don't get clipped
 	if (state.isClipping)
 	{
-		ctx->renderer->popClipRect();
+		ctx->renderer.popClipRect();
 		state.isClipping = false;
 	}
 	
@@ -678,7 +678,7 @@ void endTable()
 			// Draw Inner Horizontal Lines
 			if (has(state.flags, TableFlags::BordersInner) || has(state.flags, TableFlags::Borders) || has(state.flags, TableFlags::BordersH))
 			{
-				ctx->renderer->cmdSetLineStyle(LineStyle(innerHColor, 1.0f));
+				ctx->renderer.cmdSetLineStyle(LineStyle(innerHColor, 1.0f));
 				for (size_t i = 0; i < state.rowSeparators.size(); i++)
 				{
 					bool draw = true;
@@ -694,7 +694,7 @@ void endTable()
 					
 					if (draw)
 					{
-						ctx->renderer->cmdDrawLine(
+						ctx->renderer.cmdDrawLine(
 							Point(baseX, state.rowSeparators[i]),
 							Point(baseX + state.innerWidth, state.rowSeparators[i])
 						);
@@ -705,7 +705,7 @@ void endTable()
 			// Draw Vertical Lines (Inner + Outer Left/Right)
 			if (has(state.flags, TableFlags::BordersInner) || has(state.flags, TableFlags::Borders) || has(state.flags, TableFlags::BordersV))
 			{
-				ctx->renderer->cmdSetLineStyle(LineStyle(innerVColor, 1.0f));
+				ctx->renderer.cmdSetLineStyle(LineStyle(innerVColor, 1.0f));
 				bool innerOnly = has(state.flags, TableFlags::BordersInner) && !has(state.flags, TableFlags::Borders) && !has(state.flags, TableFlags::BordersOuter);
 				bool hasOuter = has(state.flags, TableFlags::Borders) || has(state.flags, TableFlags::BordersOuter);
 				
@@ -729,7 +729,7 @@ void endTable()
 							
 							if (drawLeftLine)
 							{
-								ctx->renderer->cmdDrawLine(Point(currentX, lineStartY), Point(currentX, lineEndY));
+								ctx->renderer.cmdDrawLine(Point(currentX, lineStartY), Point(currentX, lineEndY));
 							}
 							currentX += state.persistent->columns[i].width;
 						}
@@ -738,8 +738,8 @@ void endTable()
 					// Draw Rightmost line after all columns (skip if only inner borders or if handled by outer box)
 					if (!innerOnly && !hasOuter)
 					{
-						ctx->renderer->cmdSetLineStyle(LineStyle(outerVColor, 1.0f));
-						ctx->renderer->cmdDrawLine(Point(currentX, lineStartY), Point(currentX, lineEndY));
+						ctx->renderer.cmdSetLineStyle(LineStyle(outerVColor, 1.0f));
+						ctx->renderer.cmdDrawLine(Point(currentX, lineStartY), Point(currentX, lineEndY));
 					}
 				}
 			}
@@ -824,8 +824,8 @@ void endTable()
 						(state.tableRect.y + finalHeight);
 
 					auto& tableBodyElem = ctx->theme->getElement(WidgetElementId::TableBody);
-					ctx->renderer->cmdSetLineStyle(LineStyle(tableBodyElem.currentStyle->getColorParameter("columnResizeLineColor", Color(0.0f, 1.0f, 1.0f, 1.0f)), 2.0f));
-					ctx->renderer->cmdDrawLine(Point(guideLineX, state.tableRect.y),
+					ctx->renderer.cmdSetLineStyle(LineStyle(tableBodyElem.currentStyle->getColorParameter("columnResizeLineColor", Color(0.0f, 1.0f, 1.0f, 1.0f)), 2.0f));
+					ctx->renderer.cmdDrawLine(Point(guideLineX, state.tableRect.y),
 											   Point(guideLineX, lineBottomY));
 
 					// Only apply resize if validity checks pass (though we started, so they should)
@@ -911,8 +911,8 @@ void endTable()
 							(state.tableRect.y + finalHeight);
 						
 						auto& tableBodyElem = ctx->theme->getElement(WidgetElementId::TableBody);
-						ctx->renderer->cmdSetLineStyle(LineStyle(tableBodyElem.currentStyle->getColorParameter("columnResizeLineColor", Color::cyan), 2.0f));
-						ctx->renderer->cmdDrawLine(Point(currentX, state.tableRect.y),
+						ctx->renderer.cmdSetLineStyle(LineStyle(tableBodyElem.currentStyle->getColorParameter("columnResizeLineColor", Color::cyan), 2.0f));
+						ctx->renderer.cmdDrawLine(Point(currentX, state.tableRect.y),
 												   Point(currentX, lineBottomY));
 
 						if (ctx->event.type == InputEvent::Type::MouseDown && ctx->event.mouse.button == MouseButton::Left)
@@ -972,19 +972,19 @@ void endTable()
 			finalHeight;
 		
 		// Top Line (at tableRect.y)
-		ctx->renderer->cmdSetLineStyle(LineStyle(outerHColor, 1.0f));
-		ctx->renderer->cmdDrawLine(Point(state.tableRect.x, state.tableRect.y),
+		ctx->renderer.cmdSetLineStyle(LineStyle(outerHColor, 1.0f));
+		ctx->renderer.cmdDrawLine(Point(state.tableRect.x, state.tableRect.y),
 								   Point(state.tableRect.x + state.innerWidth, state.tableRect.y));
 
 		// Bottom Line
-		ctx->renderer->cmdDrawLine(Point(state.tableRect.x, state.tableRect.y + borderHeight),
+		ctx->renderer.cmdDrawLine(Point(state.tableRect.x, state.tableRect.y + borderHeight),
 								   Point(state.tableRect.x + state.innerWidth, state.tableRect.y + borderHeight));
 
 		// Sides
-		ctx->renderer->cmdSetLineStyle(LineStyle(outerVColor, 1.0f));
-		ctx->renderer->cmdDrawLine(Point(state.tableRect.x, state.tableRect.y),
+		ctx->renderer.cmdSetLineStyle(LineStyle(outerVColor, 1.0f));
+		ctx->renderer.cmdDrawLine(Point(state.tableRect.x, state.tableRect.y),
 								   Point(state.tableRect.x, state.tableRect.y + borderHeight));
-		ctx->renderer->cmdDrawLine(Point(state.tableRect.x + state.innerWidth, state.tableRect.y),
+		ctx->renderer.cmdDrawLine(Point(state.tableRect.x + state.innerWidth, state.tableRect.y),
 								   Point(state.tableRect.x + state.innerWidth, state.tableRect.y + borderHeight));
 		
 		state.persistent->splitter->setLayer(1);
@@ -993,7 +993,7 @@ void endTable()
 	// Pop table clip rect if it was pushed
 	if (state.hasTableClip)
 	{
-		ctx->renderer->popClipRect();
+		ctx->renderer.popClipRect();
 	}
 
 	// Merge layers: Background (0) and Content (1)
@@ -1016,7 +1016,7 @@ void startHeader()
 
 	// Reset row parameters
 	state.rowStartY = state.currentRowY;
-	//state.rowDrawCmdIndex = ctx->renderer->getDrawCommandCount();
+	//state.rowDrawCmdIndex = ctx->renderer.getDrawCommandCount();
 	state.currentMaxRowHeight = state.rowHeight; // Use theme default height as min
 
 	// Setup for first cell
@@ -1029,9 +1029,9 @@ void startHeader()
 		ctx->position.y = state.rowStartY + ctx->cellPadding.y;
 
 		// Start Clipping for first cell
-		if (state.isClipping) ctx->renderer->popClipRect(); // Should not happen here usually, but safe
+		if (state.isClipping) ctx->renderer.popClipRect(); // Should not happen here usually, but safe
 		Rect clipRect(state.tableRect.x, state.rowStartY, state.persistent->columns[state.currentColumn].width, 99999.0f);
-		ctx->renderer->pushClipRect(clipRect);
+		ctx->renderer.pushClipRect(clipRect);
 		state.isClipping = true;
 	}
 }
@@ -1043,7 +1043,7 @@ void nextRow()
 	// Pop clip rect from previous cell in previous row
 	if (state.isClipping)
 	{
-		ctx->renderer->popClipRect();
+		ctx->renderer.popClipRect();
 		state.isClipping = false;
 	}
 
@@ -1056,7 +1056,7 @@ void nextRow()
 	state.isInHeader = false;
 
 	state.rowStartY = state.currentRowY;
-	//state.rowDrawCmdIndex = ctx->renderer->getDrawCommandCount();
+	//state.rowDrawCmdIndex = ctx->renderer.getDrawCommandCount();
 	state.currentMaxRowHeight = state.rowHeight; // Use theme default height as min
 
 	state.cellStartY = state.rowStartY;
@@ -1080,7 +1080,7 @@ void nextRow()
 		if (!state.needsScrollViewStart)
 		{
 			Rect clipRect(baseX, state.rowStartY, state.persistent->columns[state.currentColumn].width, 99999.0f);
-			ctx->renderer->pushClipRect(clipRect);
+			ctx->renderer.pushClipRect(clipRect);
 			state.isClipping = true;
 		}
 	}
@@ -1104,7 +1104,7 @@ void nextCell()
 	// Pop previous clip
 	if (state.isClipping)
 	{
-		ctx->renderer->popClipRect();
+		ctx->renderer.popClipRect();
 		state.isClipping = false;
 	}
 
@@ -1142,7 +1142,7 @@ void nextCell()
 			// Add 1px to width to include the border line on the right
 			f32 clipHeight = 99999.0f;
 			Rect clipRect(cellX, state.rowStartY, state.persistent->columns[state.currentColumn].width + 1.0f, clipHeight);
-			ctx->renderer->pushClipRect(clipRect);
+			ctx->renderer.pushClipRect(clipRect);
 			state.isClipping = true;
 		}
 	}

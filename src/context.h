@@ -1,6 +1,9 @@
 #pragma once
 #include "types.h"
 #include "text_input_state.h"
+#include "renderer.h"
+#include "unicode_text_cache.h"
+#include "atlas.h"
 
 namespace hui
 {
@@ -14,15 +17,12 @@ struct Context
 	static const size_t maxSameLineInfoIndex = 256;
 
 	Settings settings;
-
-	// Various service providers
-	ServiceProviders* providers = nullptr;
-	Renderer* renderer = nullptr;
-	UnicodeTextCache* textCache = nullptr;
-	Atlas* atlas = nullptr;
+	Renderer renderer;
+	Atlas atlas;
+	HTexture atlasTexture = 0;
+	UnicodeTextCache textCache;
 
 	// Global general state
-	f32 deltaTime = 0;
 	f32 totalTime = 0;
 	u32 frameCount = 0;
 	f32 pruneUnusedTextTime = 0; //TODO: maybe make it frames

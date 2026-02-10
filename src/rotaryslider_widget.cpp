@@ -94,14 +94,14 @@ bool rotarySliderFloat(const char* label, f32* value, f32 minVal, f32 maxVal, f3
 
 	if (ctx->widget.visible)
 	{
-		ctx->renderer->cmdSetColor(applyTint(bodyElemState->color, TintColorType::Body));
+		ctx->renderer.cmdSetColor(applyTint(bodyElemState->color, TintColorType::Body));
 		Rect rc = {
 			ctx->widget.rect.x + (ctx->widget.rect.width - bodyElemState->image->width * ctx->scale) / 2.0f,
 				ctx->widget.rect.y,
 				(f32)bodyElemState->image->width * ctx->scale,
 				(f32)bodyElemState->image->height * ctx->scale };
 		
-		ctx->renderer->cmdDrawImage(bodyElemState->image, rc);
+		ctx->renderer.cmdDrawImage(bodyElemState->image, rc);
 
 		Point center = rc.center();
 		f32 percent = 1.0f - (maxVal - *value) / (maxVal - minVal);
@@ -138,19 +138,19 @@ bool rotarySliderFloat(const char* label, f32* value, f32 minVal, f32 maxVal, f3
 			angle = 1.5f * M_PI;
 			step = (highLimitRadians - lowLimitRadians) / dotCount;
 			activeDots = fabs(dotCount * (percent - 0.5f));
-			ctx->renderer->cmdSetColor(*value < 0 ? negativeColor : positiveColor);
+			ctx->renderer.cmdSetColor(*value < 0 ? negativeColor : positiveColor);
 
 			for (i32 i = 0; i <= activeDots; i++)
 			{
 				pos.x = cosf(angle) * dotPlacementRadius * ctx->scale + center.x - valueDotElem.normalState().image->width * ctx->scale / 2;
 				pos.y = sinf(angle) * dotPlacementRadius * ctx->scale + center.y - valueDotElem.normalState().image->height * ctx->scale / 2;
-				ctx->renderer->cmdDrawImage(valueDotElem.normalState().image, pos, ctx->scale);
+				ctx->renderer.cmdDrawImage(valueDotElem.normalState().image, pos, ctx->scale);
 				angle += step * (value ? sgn(*value) : 1.0f);
 			}
 
 			pos.x = cosf(radians) * dotPlacementRadius * ctx->scale + center.x - valueDotElem.normalState().image->width * ctx->scale / 2;
 			pos.y = sinf(radians) * dotPlacementRadius * ctx->scale + center.y - valueDotElem.normalState().image->height * ctx->scale / 2;
-			ctx->renderer->cmdDrawImage(valueDotElem.normalState().image, pos, ctx->scale);
+			ctx->renderer.cmdDrawImage(valueDotElem.normalState().image, pos, ctx->scale);
 		}
 		else
 		{
@@ -158,29 +158,29 @@ bool rotarySliderFloat(const char* label, f32* value, f32 minVal, f32 maxVal, f3
 			{
 				pos.x = cosf(angle) * dotPlacementRadius * ctx->scale + center.x - valueDotElem.normalState().image->width * ctx->scale / 2;
 				pos.y = sinf(angle) * dotPlacementRadius * ctx->scale + center.y - valueDotElem.normalState().image->height * ctx->scale / 2;
-				ctx->renderer->cmdSetColor(valueDotElem.getState(WidgetStateType::Pressed).color);
-				ctx->renderer->cmdDrawImage(valueDotElem.normalState().image, pos, ctx->scale);
+				ctx->renderer.cmdSetColor(valueDotElem.getState(WidgetStateType::Pressed).color);
+				ctx->renderer.cmdDrawImage(valueDotElem.normalState().image, pos, ctx->scale);
 				angle += step;
 			}
 
 			pos.x = cosf(radians) * dotPlacementRadius * ctx->scale + center.x - valueDotElem.normalState().image->width * ctx->scale / 2;
 			pos.y = sinf(radians) * dotPlacementRadius * ctx->scale + center.y - valueDotElem.normalState().image->height * ctx->scale / 2;
-			ctx->renderer->cmdSetColor(valueDotElem.getState(WidgetStateType::Pressed).color);
-			ctx->renderer->cmdDrawImage(valueDotElem.normalState().image, pos, ctx->scale);
+			ctx->renderer.cmdSetColor(valueDotElem.getState(WidgetStateType::Pressed).color);
+			ctx->renderer.cmdDrawImage(valueDotElem.normalState().image, pos, ctx->scale);
 		}
 
 		// draw the knob cursor
 		pos.x = center.x + markPlacementRadius * cosf(radians) * ctx->scale - markElemState->image->width * ctx->scale / 2;
 		pos.y = center.y + markPlacementRadius * sinf(radians) * ctx->scale - markElemState->image->height * ctx->scale / 2;
 
-		ctx->renderer->cmdSetColor(markElemState->color);
-		ctx->renderer->cmdDrawImage(markElemState->image, pos, ctx->scale);
+		ctx->renderer.cmdSetColor(markElemState->color);
+		ctx->renderer.cmdDrawImage(markElemState->image, pos, ctx->scale);
 
 		// draw the text under the knob
-		ctx->renderer->cmdSetColor(applyTint(bodyElemState->textColor, TintColorType::Text));
-		ctx->renderer->cmdSetFont(bodyElemState->font);
-		ctx->renderer->pushClipRect(ctx->widget.rect);
-		ctx->renderer->cmdDrawTextInBox(
+		ctx->renderer.cmdSetColor(applyTint(bodyElemState->textColor, TintColorType::Text));
+		ctx->renderer.cmdSetFont(bodyElemState->font);
+		ctx->renderer.pushClipRect(ctx->widget.rect);
+		ctx->renderer.cmdDrawTextInBox(
 			ctx->widgetLabel.c_str(),
 			Rect(
 				ctx->widget.rect.x,
@@ -189,7 +189,7 @@ bool rotarySliderFloat(const char* label, f32* value, f32 minVal, f32 maxVal, f3
 				ctx->widget.rect.height),
 			HAlignType::Center,
 			VAlignType::Bottom);
-		ctx->renderer->popClipRect();
+		ctx->renderer.popClipRect();
 	}
 
 	setFocusable();

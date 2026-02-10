@@ -1575,8 +1575,8 @@ void dockNodeTabs(DockNode* node)
 		beginLayout(node->rect);
 		popPadding(PaddingType::Layout);
 		// pop the clip rect, we dont want clipping since draw tabs bar beyond the node rect width
-		auto oldClipRect = ctx->renderer->getClipRect();
-		ctx->renderer->popClipRect();
+		auto oldClipRect = ctx->renderer.getClipRect();
+		ctx->renderer.popClipRect();
 
 		//TODO: not use ? panes
 		if (ctx->layout.width <= (node->windows.size() * (ctx->tabGroup.tabWidth + ctx->tabGroup.sideSpacing)) * ctx->scale)
@@ -1596,7 +1596,7 @@ void dockNodeTabs(DockNode* node)
 
 		// set clip rect for whole native window
 		auto& rc = ctx->docking.rootNativeWindowDockNodes[node->nativeWindow]->rect;
-		ctx->renderer->pushClipRect(rc, false);
+		ctx->renderer.pushClipRect(rc, false);
 		ctx->docking.currentDockNode = node;
 		beginTabGroup(node->selectedTabIndex);
 
@@ -1629,7 +1629,7 @@ void dockNodeTabs(DockNode* node)
 		}
 
 		selectedIndex = hui::endTabGroup();
-		ctx->renderer->popClipRect();
+		ctx->renderer.popClipRect();
 		ctx->docking.drawingWindowTabs = false;
 
 		if (closeTabIndex != ~0)
@@ -1668,7 +1668,7 @@ void dockNodeTabs(DockNode* node)
 		}
 
 		// just push the old clip rect so endContainer can pop it
-		ctx->renderer->pushClipRect(oldClipRect, false);
+		ctx->renderer.pushClipRect(oldClipRect, false);
 		endLayout();
 	}
 
@@ -2483,59 +2483,59 @@ void drawDockGuides()
 	auto& dockGuideAsTabHoveredElem = ctx->theme->getElement(WidgetElementId::WindowDockGuideAsTab).hoveredState();
 
 	// draw the guides
-	ctx->renderer->cmdSetColor(ds.isHitBoxLeftHovered ? dockGuideVerticalSplitHoveredElem.color : dockGuideVerticalSplitNormalElem.color);
-	ctx->renderer->cmdDrawImage(
+	ctx->renderer.cmdSetColor(ds.isHitBoxLeftHovered ? dockGuideVerticalSplitHoveredElem.color : dockGuideVerticalSplitNormalElem.color);
+	ctx->renderer.cmdDrawImage(
 		ds.isHitBoxLeftHovered ?
 		dockGuideVerticalSplitHoveredElem.image : dockGuideVerticalSplitNormalElem.image,
 		ds.hitBoxLeft);
 
-	ctx->renderer->cmdSetColor(ds.isHitBoxRightHovered ? dockGuideVerticalSplitHoveredElem.color : dockGuideVerticalSplitNormalElem.color);
-	ctx->renderer->cmdDrawImage(
+	ctx->renderer.cmdSetColor(ds.isHitBoxRightHovered ? dockGuideVerticalSplitHoveredElem.color : dockGuideVerticalSplitNormalElem.color);
+	ctx->renderer.cmdDrawImage(
 		ds.isHitBoxRightHovered ?
 		dockGuideVerticalSplitHoveredElem.image : dockGuideVerticalSplitNormalElem.image,
 		ds.hitBoxRight);
 
-	ctx->renderer->cmdSetColor(ds.isHitBoxTopHovered ? dockGuideHorizontalSplitHoveredElem.color : dockGuideHorizontalSplitNormalElem.color);
-	ctx->renderer->cmdDrawImage(
+	ctx->renderer.cmdSetColor(ds.isHitBoxTopHovered ? dockGuideHorizontalSplitHoveredElem.color : dockGuideHorizontalSplitNormalElem.color);
+	ctx->renderer.cmdDrawImage(
 		ds.isHitBoxTopHovered ?
 		dockGuideHorizontalSplitHoveredElem.image : dockGuideHorizontalSplitNormalElem.image,
 		ds.hitBoxTop);
 
-	ctx->renderer->cmdSetColor(ds.isHitBoxBottomHovered ? dockGuideHorizontalSplitHoveredElem.color : dockGuideHorizontalSplitNormalElem.color);
-	ctx->renderer->cmdDrawImage(
+	ctx->renderer.cmdSetColor(ds.isHitBoxBottomHovered ? dockGuideHorizontalSplitHoveredElem.color : dockGuideHorizontalSplitNormalElem.color);
+	ctx->renderer.cmdDrawImage(
 		ds.isHitBoxBottomHovered ?
 		dockGuideHorizontalSplitHoveredElem.image : dockGuideHorizontalSplitNormalElem.image,
 		ds.hitBoxBottom);
 
 	// root node guides
-	ctx->renderer->cmdSetColor(ds.isHitBoxRootLeftHovered ? dockGuideVerticalSplitHoveredElem.color : dockGuideVerticalSplitNormalElem.color);
-	ctx->renderer->cmdDrawImageBordered(
+	ctx->renderer.cmdSetColor(ds.isHitBoxRootLeftHovered ? dockGuideVerticalSplitHoveredElem.color : dockGuideVerticalSplitNormalElem.color);
+	ctx->renderer.cmdDrawImageBordered(
 		ds.isHitBoxRootLeftHovered ?
 		dockGuideVerticalSplitHoveredElem.image : dockGuideVerticalSplitNormalElem.image,
 		ds.isHitBoxRootLeftHovered ?
 		dockGuideVerticalSplitHoveredElem.border : dockGuideVerticalSplitNormalElem.border,
 		ds.hitBoxRootLeft, ctx->scale);
 
-	ctx->renderer->cmdSetColor(ds.isHitBoxRootRightHovered ? dockGuideVerticalSplitHoveredElem.color : dockGuideVerticalSplitNormalElem.color);
-	ctx->renderer->cmdDrawImage(
+	ctx->renderer.cmdSetColor(ds.isHitBoxRootRightHovered ? dockGuideVerticalSplitHoveredElem.color : dockGuideVerticalSplitNormalElem.color);
+	ctx->renderer.cmdDrawImage(
 		ds.isHitBoxRootRightHovered ?
 		dockGuideVerticalSplitHoveredElem.image : dockGuideVerticalSplitNormalElem.image,
 		ds.hitBoxRootRight);
 
-	ctx->renderer->cmdSetColor(ds.isHitBoxRootTopHovered ? dockGuideHorizontalSplitHoveredElem.color : dockGuideHorizontalSplitNormalElem.color);
-	ctx->renderer->cmdDrawImage(
+	ctx->renderer.cmdSetColor(ds.isHitBoxRootTopHovered ? dockGuideHorizontalSplitHoveredElem.color : dockGuideHorizontalSplitNormalElem.color);
+	ctx->renderer.cmdDrawImage(
 		ds.isHitBoxRootTopHovered ?
 		dockGuideHorizontalSplitHoveredElem.image : dockGuideHorizontalSplitNormalElem.image,
 		ds.hitBoxRootTop);
 
-	ctx->renderer->cmdSetColor(ds.isHitBoxRootBottomHovered ? dockGuideHorizontalSplitHoveredElem.color : dockGuideHorizontalSplitNormalElem.color);
-	ctx->renderer->cmdDrawImage(
+	ctx->renderer.cmdSetColor(ds.isHitBoxRootBottomHovered ? dockGuideHorizontalSplitHoveredElem.color : dockGuideHorizontalSplitNormalElem.color);
+	ctx->renderer.cmdDrawImage(
 		ds.isHitBoxRootBottomHovered ?
 		dockGuideHorizontalSplitHoveredElem.image : dockGuideHorizontalSplitNormalElem.image,
 		ds.hitBoxRootBottom);
 
-	ctx->renderer->cmdSetColor(ds.isHitBoxTabsHovered ? dockGuideAsTabHoveredElem.color : dockGuideAsTabNormalElem.color);
-	ctx->renderer->cmdDrawImage(
+	ctx->renderer.cmdSetColor(ds.isHitBoxTabsHovered ? dockGuideAsTabHoveredElem.color : dockGuideAsTabNormalElem.color);
+	ctx->renderer.cmdDrawImage(
 		ds.isHitBoxTabsHovered ?
 		dockGuideAsTabHoveredElem.image : dockGuideAsTabNormalElem.image,
 		ds.hitBoxTabs);
@@ -2545,7 +2545,7 @@ void drawDockPreview(Window* window, const Rect& windowRect)
 {
 	auto& ds = ctx->docking;
 
-	ctx->renderer->pushClipRect(windowRect, false);
+	ctx->renderer.pushClipRect(windowRect, false);
 
 	auto& windowElem = ctx->theme->getElement(WidgetElementId::WindowBody).normalState();
 
@@ -2566,8 +2566,8 @@ void drawDockPreview(Window* window, const Rect& windowRect)
 			tintColor = getColorFromText(tintColorStr);
 	}
 
-	ctx->renderer->cmdSetColor(windowElem.color * tintColor);
-	ctx->renderer->cmdDrawImageBordered(windowElem.image, windowElem.border, windowRect, ctx->scale);
+	ctx->renderer.cmdSetColor(windowElem.color * tintColor);
+	ctx->renderer.cmdDrawImageBordered(windowElem.image, windowElem.border, windowRect, ctx->scale);
 	pushPadding(PaddingType::Layout, Point());
 	beginLayout(windowRect);
 	popPadding(PaddingType::Layout);
@@ -2575,7 +2575,7 @@ void drawDockPreview(Window* window, const Rect& windowRect)
 	hui::tab(window->title.c_str(), window->image);
 	endTabGroup();
 	endLayout();
-	ctx->renderer->popClipRect();
+	ctx->renderer.popClipRect();
 }
 
 void updateDockingSystem()
@@ -2698,15 +2698,15 @@ void updateDockingSystem()
 			if (ctx->docking.dragIndicatorNativeWindow)
 			{
 				HORUS_INPUT->setCurrentWindow(ds.dragIndicatorNativeWindow);
-				ctx->renderer->disableRendering = false;
-				ctx->renderer->setCurrentNativeWindow(ds.dragIndicatorNativeWindow);
-				ctx->renderer->setWindowSize(screenRect.getSize());
-				ctx->renderer->begin();
+				ctx->renderer.disableRendering = false;
+				ctx->renderer.setCurrentNativeWindow(ds.dragIndicatorNativeWindow);
+				ctx->renderer.setWindowSize(screenRect.getSize());
+				ctx->renderer.begin();
 				// the rect is in screen coords, just make it relative to our dragged indicator window
 				screenRect.x = screenRect.y = 0;
 				drawDockPreview(ds.dragWindow, screenRect);
-				ctx->renderer->end();
-				ctx->renderer->executeDrawCommands(ds.dragIndicatorNativeWindow);
+				ctx->renderer.end();
+				ctx->renderer.executeDrawCommands(ds.dragIndicatorNativeWindow);
 				HORUS_INPUT->presentWindow(ds.dragIndicatorNativeWindow);
 			}
 		}
@@ -2717,19 +2717,19 @@ void updateDockingSystem()
 				auto& rc = ds.rootNativeWindowDockNodes[ds.hoveredNode->nativeWindow]->rect;
 
 				HORUS_INPUT->setCurrentWindow(ds.hoveredNode->nativeWindow);
-				ctx->renderer->disableRendering = false;
-				ctx->renderer->setCurrentNativeWindow(ds.hoveredNode->nativeWindow);
-				ctx->renderer->setWindowSize(rc.getSize());
-				ctx->renderer->begin();
+				ctx->renderer.disableRendering = false;
+				ctx->renderer.setCurrentNativeWindow(ds.hoveredNode->nativeWindow);
+				ctx->renderer.setWindowSize(rc.getSize());
+				ctx->renderer.begin();
 				// we need to render last, so choose the highest z order
-				//auto oldZOrder = ctx->renderer->setZOrder(~0);
-				ctx->renderer->pushWindowDrawCmdLayer(DrawCmdLayerType::Overlay);
+				//auto oldZOrder = ctx->renderer.setZOrder(~0);
+				ctx->renderer.pushWindowDrawCmdLayer(DrawCmdLayerType::Overlay);
 				drawDockPreview(ds.dragWindow, ds.dragRect);
 				drawDockGuides();
-				ctx->renderer->popWindowDrawCmdLayer();
+				ctx->renderer.popWindowDrawCmdLayer();
 				// restore z order
-				//ctx->renderer->setZOrder(oldZOrder);
-				ctx->renderer->executeDrawCommands(ds.hoveredNode->nativeWindow);
+				//ctx->renderer.setZOrder(oldZOrder);
+				ctx->renderer.executeDrawCommands(ds.hoveredNode->nativeWindow);
 			}
 		}
 	}

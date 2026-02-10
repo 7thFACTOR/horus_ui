@@ -66,17 +66,17 @@ bool beginWindow(const char* id, const char* title, Rect* initialRect, HImage im
 	
 	ctx->currentWindow = wnd;
 	ctx->hoveringThisWindow = wnd->dockNode->nativeWindow == ctx->lastHoveredNativeWindow;
-	ctx->renderer->setCurrentNativeWindow(wnd->dockNode->nativeWindow);
-	ctx->renderer->setWindowSize(HORUS_INPUT->getWindowSize(wnd->dockNode->nativeWindow));
-	ctx->renderer->begin();
+	ctx->renderer.setCurrentNativeWindow(wnd->dockNode->nativeWindow);
+	ctx->renderer.setWindowSize(HORUS_INPUT->getWindowSize(wnd->dockNode->nativeWindow));
+	ctx->renderer.begin();
 	auto rc = wnd->clientRect;
 
 	if (!(flags & WindowFlags::Transparent))
 	{
 		auto& windowElem = ctx->theme->getElement(WidgetElementId::WindowBody).normalState();
 
-		ctx->renderer->cmdSetColor(windowElem.color);
-		ctx->renderer->cmdDrawImageBordered(windowElem.image, windowElem.border, rc, ctx->scale);
+		ctx->renderer.cmdSetColor(windowElem.color);
+		ctx->renderer.cmdDrawImageBordered(windowElem.image, windowElem.border, rc, ctx->scale);
 	}
 	auto style = ctx->theme->getElement(WidgetElementId::WindowBody).currentStyle;
 	Point padding = {
@@ -95,7 +95,7 @@ void endWindow()
 	popId();
 	endLayout();
 	popPadding(PaddingType::Layout);
-	ctx->renderer->end();
+	ctx->renderer.end();
 	//TODO: make scroll struct stack
 }
 

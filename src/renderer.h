@@ -41,7 +41,7 @@ struct Renderer
 	void cmdCallback(RenderCallback callback);
 	void cmdClearBackground(const Rgba32 color);
 	void cmdSetColor(const Rgba32 color);
-	void cmdSetAtlas(Atlas* atlas);
+	void cmdSetTexture(HTexture textureHandle);
 	void cmdSetFont(Font* font);
 	void cmdSetTextUnderline(bool underline);
 	void cmdSetTextBackfill(bool backfill);
@@ -73,12 +73,25 @@ struct Renderer
 		bool noWordWrap = false);
 
 public:
-	bool skipRender = false;
-	bool disableRendering = false;
-	Point viewportOffset;
-	TextStyle currentTextStyle;
-	LineStyle currentLineStyle;
-	FillStyle currentFillStyle;
+	struct NativeWindowRenderContext
+	{
+		u32 textBufferPosition = 0;
+		std::vector<char> textBuffer;
+		u32 pointBufferPosition = 0;
+		std::vector<Point> pointBuffer;
+		DrawCommandVector drawCmdLayers[(u32)DrawCmdLayerType::Count];
+		std::vector<RenderBatch> batches;
+		std::vector<Rect> clipRectStack;
+		std::vector<DrawCmdLayerType> drawCmdLayerTypeStack;
+		DrawCmdLayerType currentDrawCmdLayer = DrawCmdLayerType::Normal;
+	};
+
+	struct LineInfo
+	{
+		u32 start;
+		u32 len;
+		f32 width;
+	};
 
 	void drawAtlasRegion(bool rotated, const Rect& rect, const Rect& atlasUvRect);
 	void drawTextGlyph(Image* image, const Point& pos);
@@ -113,44 +126,33 @@ public:
 	void drawTriangle(const Point& p1, const Point& p2, const Point& p3, const Point& uv1, const Point& uv2, const Point& uv3, const Rgba32 c1, const Rgba32 c2, const Rgba32 c3,
 		Image* image);
 
-	bool clipRectNoRot(Rect& rect, Rect& uvRect, Rgba32* colors = nullptr);
-	bool clipRectRot(Rect& rect, Rect& uvRect, Rgba32* colors = nullptr);
-	bool clipRect(bool rotated, Rect& rect, Rect& uvRect, Rgba32* colors = nullptr);
+	bool clipRectNoRot(Rect& rect, Rect& uvRect, Rgba32* colors = nullptr) const;
+	bool clipRectRot(Rect& rect, Rect& uvRect, Rgba32* colors = nullptr) const;
+	bool clipRect(bool rotated, Rect& rect, Rect& uvRect, Rgba32* colors = nullptr) const;
 	void needToAddVertexCount(u32 count);
 	char* addUtf8TextToBuffer(const char* text, u32 sizeBytes);
 	void addBatch();
 	void addDrawCommand(const DrawCommand& cmd);
 
-	struct NativeWindowRenderContext
-	{
-		u32 textBufferPosition = 0;
-		std::vector<char> textBuffer;
-		u32 pointBufferPosition = 0;
-		std::vector<Point> pointBuffer;
-		DrawCommandVector drawCmdLayers[(u32)DrawCmdLayerType::Count];
-		std::vector<RenderBatch> batches;
-		std::vector<Rect> clipRectStack;
-		std::vector<DrawCmdLayerType> drawCmdLayerTypeStack;
-		DrawCmdLayerType currentDrawCmdLayer = DrawCmdLayerType::Normal;
-	};
-
+	bool skipRender = false;
+	bool disableRendering = false;
+	Point viewportOffset;
+	TextStyle currentTextStyle;
+	LineStyle currentLineStyle;
+	FillStyle currentFillStyle;
 	HNativeWindow currentWindow = 0;
 	NativeWindowRenderContext* currentWindowContext = nullptr;
 	DrawCommandVector* currentDrawCmdLayer = nullptr;
-	std::unordered_map<HNativeWindow, NativeWindowRenderContext> windowContexts;
-	VertexBufferData vertexBufferData;
-	VertexBuffer* vertexBuffer = nullptr;
 	RenderBatch* currentBatch = nullptr;
 	Rect currentClipRect;
 	Font* currentFont = nullptr;
-	Atlas* currentAtlas = nullptr;
-	Atlas* defaultAtlas = nullptr;
-	Point windowSize;
 	Rgba32 currentColor = 0xffffffff;
-	i32 zOrder = 0;
-	u32 atlasTextureIndex = 0;
-	struct LineInfo { u32 start; u32 len; f32 width; };
+	HTexture currentTexture = 0;
+	u32 currentTextureWidth = 0, currentTextureHeight = 0;
+	Point windowSize;
+	VertexBufferData vertexBufferData;
 	std::vector<LineInfo> lines;
+	std::unordered_map<HNativeWindow, NativeWindowRenderContext> windowContexts;
 };
 
 }

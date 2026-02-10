@@ -23,8 +23,8 @@ void beginTabGroup(TabIndex selectedIndex)
 	ctx->tabGroupWidgetRect = ctx->widget.rect;
 
 	// tab group background
-	ctx->renderer->cmdSetColor(tabGroupElemState.color);
-	ctx->renderer->pushClipRect(
+	ctx->renderer.cmdSetColor(tabGroupElemState.color);
+	ctx->renderer.pushClipRect(
 		{
 			round(ctx->position.x),
 			round(ctx->position.y),
@@ -32,15 +32,15 @@ void beginTabGroup(TabIndex selectedIndex)
 			ctx->layout.height + ctx->settings.dockNodeSpacing + 1 // extend so we can draw the dock spacing on bottom
 		});
 
-	ctx->renderer->cmdSetColor(tabGroupElemState.color);
-	ctx->renderer->cmdDrawImageBordered(tabGroupElemState.image, tabGroupElemState.border, ctx->widget.rect, ctx->scale);
+	ctx->renderer.cmdSetColor(tabGroupElemState.color);
+	ctx->renderer.cmdDrawImageBordered(tabGroupElemState.image, tabGroupElemState.border, ctx->widget.rect, ctx->scale);
 
 	if (ctx->docking.drawingWindowTabs)
 	{
 		// draw the vertical splitter for dock node resize
 		auto& windowVerticalSplitterElemState = ctx->theme->getElement(WidgetElementId::WindowVerticalSplitter).normalState();
-		ctx->renderer->cmdSetColor(windowVerticalSplitterElemState.color);
-		ctx->renderer->cmdDrawImageBordered(
+		ctx->renderer.cmdSetColor(windowVerticalSplitterElemState.color);
+		ctx->renderer.cmdDrawImageBordered(
 			windowVerticalSplitterElemState.image,
 			windowVerticalSplitterElemState.border,
 			{
@@ -52,8 +52,8 @@ void beginTabGroup(TabIndex selectedIndex)
 
 		// draw the horizontal splitter for dock node resize
 		auto& windowHorizontalSplitterElemState = ctx->theme->getElement(WidgetElementId::WindowHorizontalSplitter).normalState();
-		ctx->renderer->cmdSetColor(windowHorizontalSplitterElemState.color);
-		ctx->renderer->cmdDrawImageBordered(
+		ctx->renderer.cmdSetColor(windowHorizontalSplitterElemState.color);
+		ctx->renderer.cmdDrawImageBordered(
 			windowHorizontalSplitterElemState.image,
 			windowHorizontalSplitterElemState.border,
 			{
@@ -77,7 +77,7 @@ TabIndex endTabGroup()
 
 	ctx->position.y += height;
 	ctx->position.y = round(ctx->position.y);
-	ctx->renderer->popClipRect();
+	ctx->renderer.popClipRect();
 
 	if (ctx->event.type == InputEvent::Type::MouseDown)
 	{
@@ -98,7 +98,7 @@ void tab(const char* label, HImage img)
 	auto tabElemState = &tabActiveElem.normalState();
 	auto& padding = getWidgetPadding();
 
-	Utf32String* uniStr = ctx->textCache->getText(label);
+	Utf32String* uniStr = ctx->textCache.getText(label);
 	FontTextSize fsize = tabElemState->font->computeTextSize(*uniStr);
 	Image* image = (Image*)img;
 
@@ -153,8 +153,8 @@ void tab(const char* label, HImage img)
 			tabElemState = &tabInactiveElem.normalState();
 	}
 
-	ctx->renderer->cmdSetColor(tabElemState->color);
-	ctx->renderer->cmdDrawImageBordered(tabElemState->image, tabElemState->border, ctx->widget.rect, ctx->scale);
+	ctx->renderer.cmdSetColor(tabElemState->color);
+	ctx->renderer.cmdDrawImageBordered(tabElemState->image, tabElemState->border, ctx->widget.rect, ctx->scale);
 
 	Rect rcTextAndImage = {
 		ctx->widget.rect.x + (tabElemState->border + padding.x) * ctx->scale,
@@ -164,13 +164,13 @@ void tab(const char* label, HImage img)
 
 	if (image)
 	{
-		ctx->renderer->cmdSetColor(tabElemState->textColor);
-		ctx->renderer->cmdDrawImageScaledAligned(image,
+		ctx->renderer.cmdSetColor(tabElemState->textColor);
+		ctx->renderer.cmdDrawImageScaledAligned(image,
 			rcTextAndImage, HAlignType::Left, VAlignType::Center, ctx->scale);
 	}
 
-	ctx->renderer->cmdSetFont(tabElemState->font);
-	ctx->renderer->cmdSetColor(tabElemState->textColor);
+	ctx->renderer.cmdSetFont(tabElemState->font);
+	ctx->renderer.cmdSetColor(tabElemState->textColor);
 
 	Rect textRc = {
 			ctx->widget.rect.x + (padding.x + tabElemState->border + imageWidth + ctx->settings.dockTabImageTextSpacing) * ctx->scale,
@@ -179,13 +179,13 @@ void tab(const char* label, HImage img)
 			ctx->widget.rect.height,
 	};
 
-	ctx->renderer->pushClipRect(textRc);
-	ctx->renderer->cmdDrawTextInBox(
+	ctx->renderer.pushClipRect(textRc);
+	ctx->renderer.cmdDrawTextInBox(
 		label,
 		textRc,
 		HAlignType::Left,
 		VAlignType::Center);
-	ctx->renderer->popClipRect();
+	ctx->renderer.popClipRect();
 	ctx->currentTabIndex++;
 }
 

@@ -343,6 +343,13 @@ enum class NativeWindowState
 	Hidden
 };
 
+enum class FileSeekMode
+{
+	Start,
+	Set,
+	End
+};
+
 /// Window flags
 enum class WindowFlags : u32
 {
@@ -1684,6 +1691,11 @@ struct FontInfo
 	FontMetrics metrics;
 };
 
+struct WindowsDockingState
+{
+	//TODO
+};
+
 struct Services
 {
 	// Input
@@ -1725,7 +1737,8 @@ struct Services
 	// Graphics
 	const char* (*getGfxApiName)() = nullptr;
 	void (*setViewport)(const Point& windowSize, const Rect& viewport) = nullptr;
-	void (*draw)(struct RenderBatch* batches, u32 count) = nullptr;
+	void (*clearBackbuffer)(const Color& color) = nullptr;
+	void (*draw)(Vertex* vertices, u32 vertexCount, struct RenderBatch* batches, u32 count) = nullptr;
 
 	// Rect packing
 	bool (*packRects)(PackedRect* rects, size_t rectCount) = nullptr;
@@ -1740,6 +1753,14 @@ struct Services
 	bool (*utf8To32)(const char* utf8Str, Utf32String& outUtf32Str) = nullptr;
 	bool (*utf32To8NoAlloc)(const u32* utf32Str, size_t utf32StrSize, const char* outUtf8Str, size_t maxOutUtf8StrSize) = nullptr;
 	size_t (*utf8Length)(const char* utf8Str) = nullptr;
+
+	// File I/O
+	HFile (*open)(const char* path, const char* mode) = nullptr;
+	size_t(*read)(HFile file, void* outData, size_t bytesToRead) = nullptr;
+	size_t(*write)(HFile file, void* data, size_t bytesToWrite) = nullptr;
+	void (*close)(HFile file) = nullptr;
+	bool (*seek)(HFile file, FileSeekMode mode, size_t pos) = nullptr;
+	size_t(*tell)(HFile file) = nullptr;
 
 	bool allInputFunctionsSet() const
 	{
@@ -1784,6 +1805,7 @@ struct Services
 	{
 		return getGfxApiName != nullptr &&
 			setViewport != nullptr &&
+			clearBackbuffer != nullptr &&
 			draw != nullptr;
 	}
 
@@ -1803,6 +1825,22 @@ struct Services
 			utf32To8NoAlloc != nullptr &&
 			utf8Length != nullptr;
 	}
+
+	bool allFileIoFunctionsSet() const
+	{
+		return
+			open != nullptr &&
+			read != nullptr &&
+			write != nullptr &&
+			close != nullptr &&
+			seek != nullptr &&
+			tell != nullptr;
+	}
+
+	bool allFunctionsSet() const
+	{
+		return allInputFunctionsSet() && allGfxFunctionsSet() && allFontFunctionsSet() && allTextEncodingFunctionsSet() && allFileIoFunctionsSet();
+	}
 };
 
 /// Various HorusUI per-context global settings
@@ -1821,6 +1859,8 @@ struct Settings
 	Point defaultScrollViewPadding = { 10, 10 };
 	Point defaultWidgetPadding = { 0, 0 };
 	f32 defaultWidgetWidth = 150;
+	u32 textBufferMaxSize = 1024 * 1024 * 5;/// 5MB of text on screen at once its more than enough for now
+	u32 pointBufferMaxSize = 500000; /// more than enough for a full screen of lines, around 5MB
 	SliderDragDirection sliderDragDirection = SliderDragDirection::Any; /// allows to change slider value from any direction drag, vertical or horizontal
 	bool sliderInvertVerticalDragAmount = false; /// if true and vertical sliding allowed, it will invert the drag amount
 	f32 dragStartDistance = 3; /// the max distance after which a dragging operation starts to occur when mouse down and moved, in pixels
@@ -1851,9 +1891,9 @@ struct Settings
 //////////////////////////////////////////////////////////////////////////
 
 /// Create a new context
-/// \param settings context settings
+/// \param settings the startup context user defined settings
 /// \return the created context handle
-HORUS_API HContext createContext(struct Settings& settings);
+HORUS_API HContext createContext(const Settings& settings);
 
 /// Set the current context
 /// \param ctx the context
@@ -1993,19 +2033,8 @@ HORUS_API Rect getCurrentWindowClientRect();
 /// \return the window client rect, used usually to render custom scenes
 HORUS_API Rect getWindowClientRect(const char* windowId);
 
-/// Save the windows docking state
-/// \param filename the *.hui filename relative to executable where to save the state
-/// \return true if save was ok
-HORUS_API bool saveDockingState(const char* filename);
-/// Save the docking state to memory, the returned data ptr contains the state info and it is now owned by you
-HORUS_API u8* saveDockingStateToMemory(size_t& outStateInfoSize);
-//TODO: save docking state to structures too
-
-/// Load the docking state
-/// \param filename the *.hui filename relative to executable from where to load the state
-/// \return true if the load was ok
-HORUS_API bool loadDockingState(const char* filename);
-HORUS_API bool loadDockingStateFromMemory(const u8* stateInfo, size_t stateInfoSize);
+HORUS_API void saveDockingStateToMemory(WindowsDockingState& dockingState);
+HORUS_API void loadDockingStateFromMemory(const WindowsDockingState& dockingState);
 
 ///////////////////////////////////////////////////////////////////////////////
 // Application functions
@@ -2365,7 +2394,6 @@ HORUS_API bool sliderInteger(const char* id, i32 minVal, i32 maxVal, i32& value,
 /// \return true if value was modified
 HORUS_API bool sliderFloat(const char* id, f32 minVal, f32 maxVal, f32& value, bool useStep = false, f32 step = 0);
 
-
 HORUS_API bool comboSliderInteger(i32* value, f32 stepsPerPixel = 1.0f, i32 arrowStep = 1, const char* formatStr = nullptr);
 HORUS_API bool comboSliderIntegerRanged(i32* value, i32 minVal, i32 maxVal, f32 stepsPerPixel = 1, i32 arrowStep = 1.0f, const char* formatStr = nullptr);
 HORUS_API bool comboSliderFloat(f32* value, f32 stepsPerPixel = 1.0f, f32 arrowStep = 1.0f, const char* formatStr = nullptr);
@@ -2631,69 +2659,27 @@ HORUS_API Point getLayoutSize();
 ///
 HORUS_API Rect getWidgetRect();
 
-///
-HORUS_API void setFont(HFont font);
-HORUS_API void pushFont(HFont font);
-HORUS_API void popFont();
-
-///
-HORUS_API void setColor(const Color& color);
-
-///
-HORUS_API void setLineColor(const Color& color);
-
-///
-HORUS_API void setFillColor(const Color& color);
-
-///
-HORUS_API void drawTextAt(const char* text, const Point& position);
-
-///
-HORUS_API void drawTextInBox(const char* text, const Rect& rect, HAlignType horizontalAlign, VAlignType verticalAlign);
-
-///
-HORUS_API Point getTextSize(const char* text);
-
-///
-HORUS_API void drawImage(HImage image, const Point& position, f32 scale);
-
-///
-HORUS_API void drawStretchedImage(HImage image, const Rect& rect);
-
-///
-HORUS_API void drawBorderedImage(HImage image, u32 border, const Rect& rect);
-
-///
-HORUS_API void setLineStyle(const LineStyle& style);
-
-///
-HORUS_API void setFillStyle(const FillStyle& style);
-
-///
-HORUS_API void drawLine(const Point& a, const Point& b);
-
-///
-HORUS_API void drawPolyLine(const Point* points, u32 pointCount, bool closed = false);
-
-///
-HORUS_API void drawCircle(const Point& center, f32 radius, u32 segments = 32);
-
-///
-HORUS_API void drawEllipse(const Point& center, f32 radiusX, f32 radiusY, u32 segments = 32);
-
-///
-HORUS_API void drawRectangle(const Rect& rc);
-
-///
-HORUS_API void drawSolidRectangle(const Rect& rc);
-
-///
-HORUS_API void drawSpline(SplineControlPoint* points, u32 count, f32 segmentSize = 15);
-
-///
-HORUS_API void drawArrow(const Point& startPoint, const Point& endPoint, f32 tipLength, f32 tipWidth, bool drawBodyLine = true);
-
-HORUS_API void drawSolidTriangle(const Point& p1, const Point& p2, const Point& p3);
+HORUS_API void rendererSetFont(HFont font);
+HORUS_API void rendererSetColor(const Color& color);
+HORUS_API void rendererSetLineColor(const Color& color);
+HORUS_API void rendererSetFillColor(const Color& color);
+HORUS_API void rendererDrawTextAt(const char* text, const Point& position);
+HORUS_API void rendererDrawTextInBox(const char* text, const Rect& rect, HAlignType horizontalAlign, VAlignType verticalAlign);
+HORUS_API Point rendererGetTextSize(const char* text);
+HORUS_API void rendererDrawImage(HImage image, const Point& position, f32 scale);
+HORUS_API void rendererDrawStretchedImage(HImage image, const Rect& rect);
+HORUS_API void rendererDrawBorderedImage(HImage image, u32 border, const Rect& rect);
+HORUS_API void rendererSetLineStyle(const LineStyle& style);
+HORUS_API void rendererSetFillStyle(const FillStyle& style);
+HORUS_API void rendererDrawLine(const Point& a, const Point& b);
+HORUS_API void rendererDrawPolyLine(const Point* points, u32 pointCount, bool closed = false);
+HORUS_API void rendererDrawCircle(const Point& center, f32 radius, u32 segments = 32);
+HORUS_API void rendererDrawEllipse(const Point& center, f32 radiusX, f32 radiusY, u32 segments = 32);
+HORUS_API void rendererDrawRectangle(const Rect& rc);
+HORUS_API void rendererDrawSolidRectangle(const Rect& rc);
+HORUS_API void rendererDrawSpline(SplineControlPoint* points, u32 count, f32 segmentSize = 15);
+HORUS_API void rendererDrawArrow(const Point& startPoint, const Point& endPoint, f32 tipLength, f32 tipWidth, bool drawBodyLine = true);
+HORUS_API void rendererDrawSolidTriangle(const Point& p1, const Point& p2, const Point& p3);
 
 //////////////////////////////////////////////////////////////////////////
 // Utility and complex/combined widgets

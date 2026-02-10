@@ -163,11 +163,11 @@ bool selectableInternal(const char* label, HFont font, SelectableFlags stateFlag
 
 	if (ctx->widget.visible)
 	{
-		ctx->renderer->cmdSetColor(applyTint(bodyElemState->color, TintColorType::Body));
-		ctx->renderer->cmdDrawImageBordered(bodyElemState->image, bodyElemState->border, ctx->widget.rect, ctx->scale);
-		ctx->renderer->cmdSetColor(applyTint(bodyElemState->textColor, TintColorType::Text));
-		ctx->renderer->cmdSetFont(fnt);
-		ctx->renderer->cmdDrawTextInBox(
+		ctx->renderer.cmdSetColor(applyTint(bodyElemState->color, TintColorType::Body));
+		ctx->renderer.cmdDrawImageBordered(bodyElemState->image, bodyElemState->border, ctx->widget.rect, ctx->scale);
+		ctx->renderer.cmdSetColor(applyTint(bodyElemState->textColor, TintColorType::Text));
+		ctx->renderer.cmdSetFont(fnt);
+		ctx->renderer.cmdDrawTextInBox(
 			ctx->widgetLabel.c_str(),
 			Rect(
 				ctx->widget.rect.x + bodyElemState->border,

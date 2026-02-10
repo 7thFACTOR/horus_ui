@@ -1,6 +1,5 @@
 #pragma once
 #include "types.h"
-#include "renderer.h"
 
 namespace hui
 {
@@ -41,7 +40,6 @@ protected:
 	Color bgColor = Color::black;
 	std::vector<Rgba32> atlasImageData;
 	std::unordered_map<ImageId, Image*> images;
-	HRectPacker rectPacker = nullptr;
 	bool lastPackSuccess = false;
 };
 

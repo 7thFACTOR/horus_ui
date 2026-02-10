@@ -5,8 +5,8 @@
 #include FT_STROKER_H
 #include FT_LCD_FILTER_H
 
-#define PIXEL(x) ((((x)+63) & -64)>>6)
-#define PIXEL2(x) ((x) >> 6)
+#define HUI_FT_PIXEL(x) ((((x)+63) & -64)>>6)
+#define HUI_FT_PIXEL2(x) ((x) >> 6)
 
 namespace hui
 {
@@ -16,38 +16,9 @@ struct FTContextInfo
 	bool hasUserLibHandle = false;
 };
 
-FTContextInfo ftContext;
+static FTContextInfo ftContext;
 
-FreetypeFontProvider::FreetypeFontProvider(FT_Library context)
-{
-	initializeFreetype(context);
-}
-
-FreetypeFontProvider::~FreetypeFontProvider()
-{
-	shutdownFreetype();
-}
-
-void FreetypeFontProvider::initializeFreetype(FT_Library context)
-{
-	ftContext.libHandle = context;
-	ftContext.hasUserLibHandle = context != 0;
-
-	if (!context)
-	{
-		FT_Init_FreeType(&ftContext.libHandle);
-	}
-}
-
-void FreetypeFontProvider::shutdownFreetype()
-{
-	if (!ftContext.hasUserLibHandle)
-	{
-		FT_Done_FreeType(ftContext.libHandle);
-	}
-}
-
-bool FreetypeFontProvider::loadFont(const char* path, u32 faceSize, FontInfo& outFontInfo)
+static bool loadFont(const char* path, u32 faceSize, FontInfo& outFontInfo)
 {
 	auto face = new FT_Face();
 
@@ -70,11 +41,11 @@ bool FreetypeFontProvider::loadFont(const char* path, u32 faceSize, FontInfo& ou
 	//FT_Set_Char_Size((FT_Face)face, faceSize << 6, faceSize << 6, 96, 96);
 	FT_Set_Pixel_Sizes((FT_Face)face, 0, faceSize);
 
-	outFontInfo.metrics.ascender = PIXEL2(((FT_Face)face)->size->metrics.ascender);
-	outFontInfo.metrics.descender = PIXEL2(((FT_Face)face)->size->metrics.descender);
-	outFontInfo.metrics.height = PIXEL2(((FT_Face)face)->size->metrics.height);
-	outFontInfo.metrics.underlinePosition = PIXEL2(((FT_Face)face)->underline_position);
-	outFontInfo.metrics.underlineThickness = PIXEL2(((FT_Face)face)->underline_thickness);
+	outFontInfo.metrics.ascender = HUI_FT_PIXEL2(((FT_Face)face)->size->metrics.ascender);
+	outFontInfo.metrics.descender = HUI_FT_PIXEL2(((FT_Face)face)->size->metrics.descender);
+	outFontInfo.metrics.height = HUI_FT_PIXEL2(((FT_Face)face)->size->metrics.height);
+	outFontInfo.metrics.underlinePosition = HUI_FT_PIXEL2(((FT_Face)face)->underline_position);
+	outFontInfo.metrics.underlineThickness = HUI_FT_PIXEL2(((FT_Face)face)->underline_thickness);
 
 	// if its too big, clamp it
 	if (outFontInfo.metrics.underlinePosition < -2)
@@ -86,7 +57,7 @@ bool FreetypeFontProvider::loadFont(const char* path, u32 faceSize, FontInfo& ou
 	return true;
 }
 
-void FreetypeFontProvider::freeFont(HFontFace font)
+static void freeFont(HFontFace font)
 {
 	if (font)
 	{
@@ -94,7 +65,7 @@ void FreetypeFontProvider::freeFont(HFontFace font)
 	}
 }
 
-f32 FreetypeFontProvider::getKerning(HFontFace font, GlyphCode leftGlyphCode, GlyphCode rightGlyphCode)
+static f32 getFontKerning(HFontFace font, GlyphCode leftGlyphCode, GlyphCode rightGlyphCode)
 {
 	FT_Vector kerning;
 
@@ -108,7 +79,7 @@ f32 FreetypeFontProvider::getKerning(HFontFace font, GlyphCode leftGlyphCode, Gl
 	return kerning.x >> 6;
 }
 
-bool FreetypeFontProvider::rasterizeGlyph(HFontFace font, GlyphCode glyphCode, FontGlyph& outGlyph)
+static bool rasterizeFontGlyph(HFontFace font, GlyphCode glyphCode, FontGlyph& outGlyph)
 {
 	FT_GlyphSlot slot = ((FT_Face)font)->glyph;
 
@@ -174,6 +145,35 @@ bool FreetypeFontProvider::rasterizeGlyph(HFontFace font, GlyphCode glyphCode, F
 	outGlyph.bitmapTop = slot->bitmap_top;
 
 	return true;
+}
+
+void initFreetypeFontService(Services& services, FT_Library context)
+{
+	ftContext.libHandle = context;
+	ftContext.hasUserLibHandle = context != 0;
+
+	if (!context)
+	{
+		FT_Init_FreeType(&ftContext.libHandle);
+	}
+
+	services.loadFont = loadFont;
+	services.freeFont = freeFont;
+	services.getFontKerning = getFontKerning;
+	services.rasterizeFontGlyph = rasterizeFontGlyph;
+}
+
+void shutdownFreetypeFontService(Services& services)
+{
+	if (!ftContext.hasUserLibHandle)
+	{
+		FT_Done_FreeType(ftContext.libHandle);
+	}
+
+	services.loadFont = nullptr;
+	services.freeFont = nullptr;
+	services.getFontKerning = nullptr;
+	services.rasterizeFontGlyph = nullptr;
 }
 
 }

@@ -123,12 +123,12 @@ void initializeRenderer()
 
 void addRenderCallback(RenderCallback callback)
 {
-	ctx->renderer->cmdCallback(callback);
+	ctx->renderer.cmdCallback(callback);
 }
 
 void clearBackground(const Color& color)
 {
-	ctx->renderer->cmdClearBackground(color);
+	ctx->renderer.cmdClearBackground(color);
 }
 
 void setNextDisabled()
@@ -390,7 +390,7 @@ void beginFrame()
 
 	if (ctx->pruneUnusedTextTime >= ctx->settings.textCachePruneIntervalSec)
 	{
-		ctx->textCache->pruneUnusedText();
+		ctx->textCache.pruneUnusedText();
 		ctx->pruneUnusedTextTime = 0;
 	}
 
@@ -561,7 +561,7 @@ bool hasNothingToDo()
 
 void setDisableRendering(bool disable)
 {
-	ctx->renderer->disableRendering = disable;
+	ctx->renderer.disableRendering = disable;
 }
 
 void forceRepaint()
@@ -623,38 +623,38 @@ void setCurrentNativeWindow(HNativeWindow wnd)
 {
 	ctx->providers->input->setCurrentWindow(wnd);
 	auto size = HORUS_INPUT->getWindowSize(wnd);
-	ctx->renderer->setCurrentNativeWindow(wnd);
-	ctx->renderer->setWindowSize(size);
+	ctx->renderer.setCurrentNativeWindow(wnd);
+	ctx->renderer.setWindowSize(size);
 	ctx->hoveringThisWindow = ctx->lastHoveredNativeWindow == wnd;
 }
 
 void beginRendering()
 {
-	ctx->renderer->begin();
+	ctx->renderer.begin();
 }
 
 void endRendering()
 {
-	ctx->renderer->end();
+	ctx->renderer.end();
 }
 
 static void presentWindow(HNativeWindow wnd)
 {
 	HORUS_INPUT->setCurrentWindow(wnd);
-	ctx->renderer->setCurrentNativeWindow(wnd);
-	ctx->renderer->setWindowSize(HORUS_INPUT->getWindowSize(wnd));
+	ctx->renderer.setCurrentNativeWindow(wnd);
+	ctx->renderer.setWindowSize(HORUS_INPUT->getWindowSize(wnd));
 	ctx->hoveringThisWindow = ctx->lastHoveredNativeWindow == wnd;
 
 	auto iterWnd = ctx->docking.rootNativeWindowDockNodes.find(wnd);
 
 	if (iterWnd != ctx->docking.rootNativeWindowDockNodes.end())
 	{
-		ctx->renderer->begin();
+		ctx->renderer.begin();
 		dockNodeTabs(iterWnd->second);
-		ctx->renderer->end();
+		ctx->renderer.end();
 	}
 
-	ctx->renderer->executeDrawCommands(wnd);
+	ctx->renderer.executeDrawCommands(wnd);
 	HORUS_INPUT->presentWindow(wnd);
 }
 
@@ -663,7 +663,7 @@ void present()
 	// first, delete pending objects so we dont access them
 	deferredDeleteObjects();
 
-	if (ctx->renderer->allowRendering())
+	if (ctx->renderer.allowRendering())
 	{
 		for (auto& wnd : ctx->nativeWindows)
 		{
@@ -671,9 +671,9 @@ void present()
 		}
 	}
 
-	ctx->renderer->resetWindowContexts();
-	ctx->renderer->skipRender = false;
-	ctx->renderer->disableRendering = false;
+	ctx->renderer.resetWindowContexts();
+	ctx->renderer.skipRender = false;
+	ctx->renderer.disableRendering = false;
 }
 
 void presentNativeWindow(HNativeWindow nativeWnd)
@@ -681,14 +681,14 @@ void presentNativeWindow(HNativeWindow nativeWnd)
 	// first, delete pending objects so we dont access them
 	deferredDeleteObjects();
 
-	if (ctx->renderer->allowRendering())
+	if (ctx->renderer.allowRendering())
 	{
 		presentWindow(nativeWnd);
 	}
 
-	ctx->renderer->resetWindowContexts();
-	ctx->renderer->skipRender = false;
-	ctx->renderer->disableRendering = false;
+	ctx->renderer.resetWindowContexts();
+	ctx->renderer.skipRender = false;
+	ctx->renderer.disableRendering = false;
 }
 
 void cancelEvent()
@@ -732,29 +732,10 @@ void shutdown()
 	HORUS_ASSERT(ctx);
 
 	if (ctx->providers->gfx)
-		ctx->providers->gfx->shutdown();
+		ctx->settings.services.shutdown();
 
 	if (ctx->providers->input)
 		ctx->providers->input->shutdown();
-}
-
-HImage loadImage(const char* filename)
-{
-	ImageData imgData = loadImageData(filename);
-
-	if (!imgData.pixels)
-		return nullptr;
-
-	if (imgData.bpp != 32)
-	{
-		return nullptr;
-	}
-
-	HImage img = createImage((Rgba32*)imgData.pixels, imgData.width, imgData.height);
-
-	deleteImageData(imgData);
-
-	return img;
 }
 
 HImage createImage(Rgba32* pixels, u32 width, u32 height)
@@ -763,78 +744,6 @@ HImage createImage(Rgba32* pixels, u32 width, u32 height)
 	auto img = ctx->theme->addImage(pixels, width, height);
 
 	return img;
-}
-
-Point getImageSize(HImage image)
-{
-	HORUS_ASSERT(image);
-	Image* img = (Image*)image;
-
-	return { img->rect.width, img->rect.height };
-}
-
-void updateImagePixels(HImage image, Rgba32* pixels)
-{
-	HORUS_ASSERT(image);
-	HORUS_ASSERT(pixels);
-	Image* img = (Image*)image;
-
-	//TODO: check if image is rotated
-	img->atlasTexture->textureArray->updateRectData(img->atlasTexture->textureIndex, img->rect, pixels);
-}
-
-ImageData loadImageData(const char* filename)
-{
-	ImageData imgData;
-
-	if (!ctx->providers->image->loadImage(filename, imgData))
-	{
-		return ImageData();
-	}
-
-	return imgData;
-}
-
-void deleteImage(HImage image)
-{
-	HORUS_ASSERT(image);
-	Image* img = (Image*)image;
-	img->atlas->deleteImage(img);
-}
-
-void deleteImageData(ImageData& image)
-{
-	delete[] image.pixels;
-	image.pixels = nullptr;
-	image.width = 0;
-	image.height = 0;
-	image.bpp = 0;
-}
-
-HAtlas createAtlas(u32 width, u32 height)
-{
-	return new Atlas(width, height);
-}
-
-void deleteAtlas(HAtlas atlas)
-{
-	delete (Atlas*)atlas;
-}
-
-HImage addImageToAtlas(HAtlas atlas, const ImageData& img)
-{
-	HORUS_ASSERT(atlas);
-	Atlas* atlasPtr = (Atlas*)atlas;
-
-	return atlasPtr->addImage((const Rgba32*)img.pixels, img.width, img.height);
-}
-
-bool packAtlas(HAtlas atlas, u32 border)
-{
-	HORUS_ASSERT(atlas);
-	Atlas* atlasPtr = (Atlas*)atlas;
-
-	return atlasPtr->pack(border);
 }
 
 DockNodeId createRootDockNode(HNativeWindow nativeWnd)
@@ -1456,14 +1365,14 @@ void beginLayout(const Rect& rect)
 	ctx->layout.width = paddedRect.width;
 	ctx->layout.height = paddedRect.height;
 	ctx->layout.firstWidgetInLayout = true;
-	ctx->renderer->pushClipRect(paddedRect);
+	ctx->renderer.pushClipRect(paddedRect);
 	ctx->position = { paddedRect.x, paddedRect.y};
 	ctx->sameLine.enabled = false;
 }
 
 void endLayout()
 {
-	ctx->renderer->popClipRect();
+	ctx->renderer.popClipRect();
 	popLayout();
 	ctx->currentTabIndex = 0;
 	ctx->selectedTabIndex = 0;
@@ -1529,7 +1438,7 @@ f32 getRemainingWidth()
 void incrementLayerIndex()
 {
 	ctx->layerIndex++;
-	//ctx->renderer->setWindowDrawCmdLayer(ctx->layerIndex);
+	//ctx->renderer.setWindowDrawCmdLayer(ctx->layerIndex);
 
 	if (ctx->maxLayerIndex < ctx->layerIndex)
 	{
@@ -1854,6 +1763,230 @@ void* getDragDropObject()
 u32 getDragDropObjectType()
 {
 	return ctx->dragDrop.dragObjectType;
+}
+
+
+static Color getColorFromText(std::string colorText)
+{
+	if (colorText == "white") { return Color::white; }
+	if (colorText == "black") { return Color::black; }
+	if (colorText == "red") { return Color::red; }
+	if (colorText == "darkRed") { return Color::darkRed; }
+	if (colorText == "veryDarkRed") { return Color::veryDarkRed; }
+	if (colorText == "green") { return Color::green; }
+	if (colorText == "darkGreen") { return Color::darkGreen; }
+	if (colorText == "veryDarkGreen") { return Color::veryDarkGreen; }
+	if (colorText == "blue") { return Color::blue; }
+	if (colorText == "darkBlue") { return Color::darkBlue; }
+	if (colorText == "veryDarkBlue") { return Color::veryDarkBlue; }
+	if (colorText == "yellow") { return Color::yellow; }
+	if (colorText == "darkYellow") { return Color::darkYellow; }
+	if (colorText == "veryDarkYellow") { return Color::veryDarkYellow; }
+	if (colorText == "magenta") { return Color::magenta; }
+	if (colorText == "cyan") { return Color::cyan; }
+	if (colorText == "darkCyan") { return Color::darkCyan; }
+	if (colorText == "veryDarkCyan") { return Color::veryDarkCyan; }
+	if (colorText == "orange") { return Color::orange; }
+	if (colorText == "darkOrange") { return Color::darkOrange; }
+	if (colorText == "lightGray") { return Color::lightGray; }
+	if (colorText == "gray") { return Color::gray; }
+	if (colorText == "darkGray") { return Color::darkGray; }
+	if (colorText == "sky") { return Color::sky; }
+	if (colorText == "transparent") { return Color::transparent; }
+
+	u32 r, g, b, a;
+
+#ifdef _WINDOWS
+	sscanf_s(colorText.c_str(), "%d %d %d %d", &r, &g, &b, &a);
+#else
+	sscanf(colorText.c_str(), "%d %d %d %d", &r, &g, &b, &a);
+#endif
+
+	return Color((f32)r / 255.0f, (f32)g / 255.0f, (f32)b / 255.0f, (f32)a / 255.0f);
+}
+
+Color getColorFromText(const char* colorText)
+{
+	return getColorFromText(std::string(colorText));
+}
+
+static u8 hexByte(const char* p)
+{
+	auto hex = [](char c) -> u8
+		{
+			if (c >= '0' && c <= '9') return c - '0';
+			if (c >= 'a' && c <= 'f') return c - 'a' + 10;
+			if (c >= 'A' && c <= 'F') return c - 'A' + 10;
+			return 0;
+		};
+
+	return (hex(p[0]) << 4) | hex(p[1]);
+}
+
+Color colorFromHex(const char* hexText)
+{
+	Color out{ 1.f, 1.f, 1.f, 1.f };
+
+	if (!hexText)
+		return out;
+
+	// Skip optional '#'
+	if (hexText[0] == '#')
+		hexText++;
+
+	const size_t len = std::strlen(hexText);
+
+	if (len != 6 && len != 8)
+		return out;
+
+	u8 r = hexByte(hexText + 0);
+	u8 g = hexByte(hexText + 2);
+	u8 b = hexByte(hexText + 4);
+	u8 a = (len == 8) ? hexByte(hexText + 6) : 255;
+
+	out.r = r / 255.0f;
+	out.g = g / 255.0f;
+	out.b = b / 255.0f;
+	out.a = a / 255.0f;
+
+	return out;
+}
+
+u32 intColorFromHex(const char* hexText)
+{
+	return colorFromHex(hexText).getRgba();
+}
+
+std::string colorToHex(const Color& color)
+{
+	auto clampToByte = [](float v) -> u8
+		{
+			v = std::clamp(v, 0.0f, 1.0f);
+			return static_cast<u8>(v * 255.0f + 0.5f);
+		};
+
+	u8 r = clampToByte(color.r);
+	u8 g = clampToByte(color.g);
+	u8 b = clampToByte(color.b);
+	u8 a = clampToByte(color.a);
+
+	char buf[9];
+
+	std::snprintf(buf, sizeof(buf), "%02X%02X%02X%02X", r, g, b, a);
+
+	return std::string(buf);
+}
+
+std::string intColorToHex(const u32 color)
+{
+	return colorToHex(Color(color));
+}
+
+Color hsvToRgb(const Color& hsv)
+{
+	f32 h = hsv.r;
+	f32 s = hsv.g;
+	f32 v = hsv.b;
+	f32 r = 0;
+	f32 g = 0;
+	f32 b = 0;
+
+	if (s <= 0.0f)
+	{
+		// Gray
+		r = g = b = v;
+		return Color(r, g, b, hsv.a);
+	}
+
+	h = std::fmod(h, 1.0f) * 6.0f;
+	i32 i = (int)std::floor(h);
+	f32 f = h - i;
+
+	f32 p = v * (1.0f - s);
+	f32 q = v * (1.0f - s * f);
+	f32 t = v * (1.0f - s * (1.0f - f));
+
+	switch (i)
+	{
+	case 0: r = v; g = t; b = p; break;
+	case 1: r = q; g = v; b = p; break;
+	case 2: r = p; g = v; b = t; break;
+	case 3: r = p; g = q; b = v; break;
+	case 4: r = t; g = p; b = v; break;
+	default: r = v; g = p; b = q; break;
+	}
+
+	return Color(r, g, b, hsv.a);
+}
+
+Color rgbToHsv(const Color& rgb)
+{
+	f32 r = rgb.r, g = rgb.g, b = rgb.b;
+	f32 h = 0, s = 0, v = 0;
+
+	f32 max = std::max(r, std::max(g, b));
+	f32 min = std::min(r, std::min(g, b));
+	f32 delta = max - min;
+
+	v = max;
+
+	if (max <= 0.0f)
+	{
+		// Black
+		s = 0.0f;
+		h = 0.0f;
+
+		return Color(h, s, v, rgb.a);
+	}
+
+	s = delta / max;
+
+	if (delta <= 0.0f)
+	{
+		// Gray
+		h = 0.0f;
+		return Color(h, s, v, rgb.a);
+	}
+
+	if (max == r)
+		h = (g - b) / delta;
+	else if (max == g)
+		h = 2.0f + (b - r) / delta;
+	else
+		h = 4.0f + (r - g) / delta;
+
+	h /= 6.0f;
+
+	if (h < 0.0f)
+		h += 1.0f;
+
+	return Color(h, s, v, rgb.a);
+}
+
+Color hueToRgb(f32 h, f32 alpha)
+{
+	h = std::fmod(h, 1.0f);
+	if (h < 0.0f) h += 1.0f;
+
+	f32 r, g, b;
+
+	f32 i = std::floor(h * 6.0f);
+	f32 f = h * 6.0f - i;
+
+	f32 q = 1.0f - f;
+	f32 t = f;
+
+	switch (i32(i) % 6)
+	{
+	case 0: r = 1; g = t; b = 0; break;
+	case 1: r = q; g = 1; b = 0; break;
+	case 2: r = 0; g = 1; b = t; break;
+	case 3: r = 0; g = q; b = 1; break;
+	case 4: r = t; g = 0; b = 1; break;
+	default:r = 1; g = 0; b = q; break;
+	}
+
+	return { r, g, b, alpha };
 }
 
 }

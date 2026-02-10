@@ -290,13 +290,13 @@ static bool comboSliderInternal(bool isInt, f32* value, f32 minVal, f32 maxVal, 
 			rightArrowElemState = &rightArrowElem.getState(WidgetStateType::Hovered);
 		}
 
-		ctx->renderer->cmdSetColor(applyTint(bodyElemState->color, TintColorType::Body));
-		ctx->renderer->cmdDrawImageBordered(bodyElemState->image, bodyElemState->border, ctx->widget.rect, ctx->scale);
+		ctx->renderer.cmdSetColor(applyTint(bodyElemState->color, TintColorType::Body));
+		ctx->renderer.cmdDrawImageBordered(bodyElemState->image, bodyElemState->border, ctx->widget.rect, ctx->scale);
 		
 		if (useRange)
 		{
-			ctx->renderer->cmdSetColor(applyTint(rangeBarElemState->color, TintColorType::Body));
-			ctx->renderer->cmdDrawImageBordered(rangeBarElemState->image, rangeBarElemState->border,
+			ctx->renderer.cmdSetColor(applyTint(rangeBarElemState->color, TintColorType::Body));
+			ctx->renderer.cmdDrawImageBordered(rangeBarElemState->image, rangeBarElemState->border,
 				{
 					ctx->widget.rect.x + bodyElemState->border * ctx->scale,
 					ctx->widget.rect.bottom() - bodyElemState->border * ctx->scale,
@@ -309,8 +309,8 @@ static bool comboSliderInternal(bool isInt, f32* value, f32 minVal, f32 maxVal, 
 
 		auto arrowY = ((ctx->widget.rect.height - leftArrowElemState->image->height * ctx->scale) / 2.0f + (ctx->widget.pressed ? 1.0f : 0.0f)) * ctx->scale;
 
-		ctx->renderer->cmdSetColor(applyTint(leftArrowElemState->color, TintColorType::Body));
-		ctx->renderer->cmdDrawImage(leftArrowElemState->image,
+		ctx->renderer.cmdSetColor(applyTint(leftArrowElemState->color, TintColorType::Body));
+		ctx->renderer.cmdDrawImage(leftArrowElemState->image,
 			{
 				ctx->widget.rect.x + (bodyElemState->border + padding.x + (ctx->widget.pressed ? 1.0f : 0.0f)) * ctx->scale,
 				ctx->widget.rect.top() + arrowY,
@@ -322,9 +322,9 @@ static bool comboSliderInternal(bool isInt, f32* value, f32 minVal, f32 maxVal, 
 		auto lineHeight = verticalLineElemState->height + padding.y * 2.0f;
 		auto lineY = ((ctx->widget.rect.height - lineHeight * ctx->scale) / 2.0f + (ctx->widget.pressed ? 1.0f : 0.0f)) * ctx->scale;
 
-		ctx->renderer->cmdSetColor(applyTint(verticalLineElemState->color, TintColorType::Body));
+		ctx->renderer.cmdSetColor(applyTint(verticalLineElemState->color, TintColorType::Body));
 
-		ctx->renderer->cmdDrawImage(verticalLineElemState->image,
+		ctx->renderer.cmdDrawImage(verticalLineElemState->image,
 			{
 				ctx->widget.rect.x + (bodyElemState->border + padding.x * 2.0f + leftArrowElemState->image->width + (ctx->widget.pressed ? 1.0f : 0.0f)) * ctx->scale,
 				ctx->widget.rect.top() + lineY,
@@ -334,8 +334,8 @@ static bool comboSliderInternal(bool isInt, f32* value, f32 minVal, f32 maxVal, 
 
 		arrowY = ((ctx->widget.rect.height - rightArrowElemState->image->rect.height * ctx->scale) / 2.0f + (ctx->widget.pressed ? 1.0f : 0.0f)) * ctx->scale;
 
-		ctx->renderer->cmdSetColor(applyTint(rightArrowElemState->color, TintColorType::Body));
-		ctx->renderer->cmdDrawImage(rightArrowElemState->image,
+		ctx->renderer.cmdSetColor(applyTint(rightArrowElemState->color, TintColorType::Body));
+		ctx->renderer.cmdDrawImage(rightArrowElemState->image,
 			{
 				ctx->widget.rect.right() - (bodyElemState->border + padding.x + rightArrowElemState->image->width + (ctx->widget.pressed ? -1.0f : 0.0f)) * ctx->scale,
 				ctx->widget.rect.top() + arrowY,
@@ -343,9 +343,9 @@ static bool comboSliderInternal(bool isInt, f32* value, f32 minVal, f32 maxVal, 
 				rightArrowElemState->image->height * ctx->scale
 			});
 
-		ctx->renderer->cmdSetColor(applyTint(verticalLineElemState->color, TintColorType::Body));
+		ctx->renderer.cmdSetColor(applyTint(verticalLineElemState->color, TintColorType::Body));
 
-		ctx->renderer->cmdDrawImage(verticalLineElemState->image,
+		ctx->renderer.cmdDrawImage(verticalLineElemState->image,
 			{
 				ctx->widget.rect.right() - (bodyElemState->border + padding.x * 2.0f + rightArrowElemState->image->width + (ctx->widget.pressed ? 1.0f : 0.0f)) * ctx->scale,
 				ctx->widget.rect.top() + lineY,
@@ -369,8 +369,8 @@ static bool comboSliderInternal(bool isInt, f32* value, f32 minVal, f32 maxVal, 
 			str = outStrFormatted;
 		}
 
-		ctx->renderer->cmdSetColor(applyTint(bodyElemState->textColor, TintColorType::Body));
-		ctx->renderer->cmdDrawTextInBox(str, ctx->widget.rect, HAlignType::Center, VAlignType::Center);
+		ctx->renderer.cmdSetColor(applyTint(bodyElemState->textColor, TintColorType::Body));
+		ctx->renderer.cmdDrawTextInBox(str, ctx->widget.rect, HAlignType::Center, VAlignType::Center);
 		setFocusable();
 	}
 

@@ -93,8 +93,8 @@ bool endBoxLayout()
 
 	buttonBehavior();
 	ctx->boxDrawCmdSplitter[ctx->id].setLayer(0);
-	ctx->renderer->cmdSetColor(boxElemState->color * boxState.themeElementColorTint);
-	ctx->renderer->cmdDrawImageBordered(
+	ctx->renderer.cmdSetColor(boxElemState->color * boxState.themeElementColorTint);
+	ctx->renderer.cmdDrawImageBordered(
 		boxElemState->image,
 		boxElemState->border,
 		ctx->widget.rect,

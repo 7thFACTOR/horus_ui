@@ -57,8 +57,8 @@ bool radio(const char* label, i32* currentRadioValue, i32 thisValue)
 		radioMarkElemState = &radioMarkElem.getState(WidgetStateType::Hovered);
 	}
 
-	ctx->renderer->cmdSetColor(radioBodyElemState->color);
-	ctx->renderer->cmdDrawImageBordered(
+	ctx->renderer.cmdSetColor(radioBodyElemState->color);
+	ctx->renderer.cmdDrawImageBordered(
 		radioBodyElemState->image,
 		radioBodyElemState->border,
 		{
@@ -70,8 +70,8 @@ bool radio(const char* label, i32* currentRadioValue, i32 thisValue)
 
 	if (currentRadioValue && *currentRadioValue == thisValue)
 	{
-		ctx->renderer->cmdSetColor(radioMarkElemState->color);
-		ctx->renderer->cmdDrawImageBordered(
+		ctx->renderer.cmdSetColor(radioMarkElemState->color);
+		ctx->renderer.cmdDrawImageBordered(
 			radioMarkElemState->image, radioMarkElemState->border,
 			{
 				ctx->widget.rect.x + (markWidth - radioMarkElemState->image->width) / 2.0f * ctx->scale,
@@ -81,9 +81,9 @@ bool radio(const char* label, i32* currentRadioValue, i32 thisValue)
 			}, ctx->scale);
 	}
 
-	ctx->renderer->cmdSetColor(radioBodyElemState->textColor);
-	ctx->renderer->cmdSetFont(radioBodyElemState->font);
-	ctx->renderer->cmdDrawTextInBox(
+	ctx->renderer.cmdSetColor(radioBodyElemState->textColor);
+	ctx->renderer.cmdSetFont(radioBodyElemState->font);
+	ctx->renderer.cmdDrawTextInBox(
 		ctx->widgetLabel.c_str(),
 		Rect(
 			ctx->widget.rect.x + markWidthScaled + bulletTextSpacing,

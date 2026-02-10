@@ -46,8 +46,8 @@ void progress(f32 value, f32 maxValue, bool showText, bool showRealValues, const
 	auto& backElemState = backElem.normalState();
 	auto& fillElemState = fillElem.normalState();
 
-	ctx->renderer->cmdSetColor(applyTint(backElemState.color, TintColorType::Body));
-	ctx->renderer->cmdDrawImageBordered(backElemState.image, backElemState.border,
+	ctx->renderer.cmdSetColor(applyTint(backElemState.color, TintColorType::Body));
+	ctx->renderer.cmdDrawImageBordered(backElemState.image, backElemState.border,
 		ctx->widget.rect, ctx->scale);
 
 	Rect fillRc = {
@@ -71,8 +71,8 @@ void progress(f32 value, f32 maxValue, bool showText, bool showRealValues, const
 		}
 	}
 
-	ctx->renderer->cmdSetColor(applyTint(fillElemState.color, TintColorType::Body));
-	ctx->renderer->cmdDrawImageBordered(fillElemState.image, fillElemState.border,
+	ctx->renderer.cmdSetColor(applyTint(fillElemState.color, TintColorType::Body));
+	ctx->renderer.cmdDrawImageBordered(fillElemState.image, fillElemState.border,
 		fillRc, ctx->scale);
 
 	std::string text;
@@ -108,27 +108,27 @@ void progress(f32 value, f32 maxValue, bool showText, bool showRealValues, const
 			textRc.width = rightSide - textRc.x;
 		}
 
-		ctx->renderer->cmdSetFont(fillElemState.font);
-		ctx->renderer->cmdSetColor(applyTint(textShadowColor, TintColorType::Text));
-		ctx->renderer->cmdDrawTextInBox(text.c_str(),
+		ctx->renderer.cmdSetFont(fillElemState.font);
+		ctx->renderer.cmdSetColor(applyTint(textShadowColor, TintColorType::Text));
+		ctx->renderer.cmdDrawTextInBox(text.c_str(),
 			textRc, HAlignType::Right, VAlignType::Center);
 
-		ctx->renderer->cmdSetColor(applyTint(fillElemState.textColor, TintColorType::Text));
+		ctx->renderer.cmdSetColor(applyTint(fillElemState.textColor, TintColorType::Text));
 		textRc -= Point(1, 1);
-		ctx->renderer->cmdDrawTextInBox(text.c_str(),
+		ctx->renderer.cmdDrawTextInBox(text.c_str(),
 			textRc, HAlignType::Right, VAlignType::Center);
 	}
 	else
 	{
 		Rect textRc = ctx->widget.rect;
 
-		ctx->renderer->cmdSetColor(applyTint(textShadowColor, TintColorType::Text));
-		ctx->renderer->cmdDrawTextInBox(text.c_str(),
+		ctx->renderer.cmdSetColor(applyTint(textShadowColor, TintColorType::Text));
+		ctx->renderer.cmdDrawTextInBox(text.c_str(),
 			ctx->widget.rect, HAlignType::Center, VAlignType::Center);
 
-		ctx->renderer->cmdSetColor(applyTint(fillElemState.textColor, TintColorType::Text));
+		ctx->renderer.cmdSetColor(applyTint(fillElemState.textColor, TintColorType::Text));
 		textRc -= Point(1, 1);
-		ctx->renderer->cmdDrawTextInBox(text.c_str(),
+		ctx->renderer.cmdDrawTextInBox(text.c_str(),
 			textRc, HAlignType::Center, VAlignType::Center);
 	}
 }

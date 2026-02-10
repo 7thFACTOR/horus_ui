@@ -2,27 +2,119 @@
 #include <json/json.h>
 #include <json/reader.h>
 #include <unordered_map>
+#include <filesystem>
+#define STB_IMAGE_IMPLEMENTATION
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include <stb/stb_image.h>
+#include <stb/stb_image_write.h>
 
 namespace hui
 {
+bool loadPngImage(const char* path, ImageData& outImage)
+{
+	i32 width = 0;
+	i32 height = 0;
+	i32 comp = 0;
+	stbi_uc* imgFileData = nullptr;
+	HFile file = getSettings().services.open(path, "rb");
+	u64 fsize = 0;
+
+	if (file)
+	{
+		getSettings().services.seek(file, FileSeekMode::End, 0);
+		fsize = getSettings().services.tell(file);
+		imgFileData = new stbi_uc[fsize];
+		
+		if (fsize != getSettings().services.read(file, imgFileData, fsize))
+		{
+			getSettings().services.close(file);
+
+			return false;
+		}
+	}
+	
+	getSettings().services.close(file);
+
+	stbi_uc* data = stbi_load_from_memory(imgFileData, fsize, &width, &height, &comp, 4);
+
+	delete [] imgFileData;
+	outImage.pixels = (u8*)data;
+	outImage.bpp = 32;
+	outImage.width = width;
+	outImage.height = height;
+
+	if (!data || !width || !height || !comp)
+		return false;
+
+	return true;
+}
+
+bool savePngImage(const char* path, const ImageData& image)
+{
+	auto write_func = [](void* context, void* data, int size)
+	{
+		const char* path = (const char*)context;
+		HFile file = getSettings().services.open(path, "wb");
+
+		if (!file)
+			return;
+
+		getSettings().services.write(file, data, size);
+		getSettings().services.close(file);
+	};
+
+	return 0 != stbi_write_png_to_func(write_func, (void*)path, image.width, image.height, image.bpp / 8, image.pixels, 0);
+}
+
+void deleteImageData(ImageData& image)
+{
+	delete[] image.pixels;
+	image.pixels = nullptr;
+	image.width = 0;
+	image.height = 0;
+	image.bpp = 0;
+}
+
+static HImage loadImage(const char* filename)
+{
+	ImageData imgData;
+	
+	if (!loadPngImage(filename, imgData))
+		return 0;
+
+	if (!imgData.pixels)
+		return 0;
+
+	if (imgData.bpp != 32)
+	{
+		return 0;
+	}
+
+	HImage img = addThemeImage(getTheme(), filename, imgData);
+
+	deleteImageData(imgData);
+
+	return img;
+}
+
 static std::string readTextFile(const char* path)
 {
-	auto file = HORUS_FILE->open(path, "rb");
+	auto file = getSettings().services.open(path, "rb");
 
 	if (!file)
 		return std::string("");
 
-	HORUS_FILE->seek(file, FileSeekMode::End, 0);
-	auto size = HORUS_FILE->tell(file);
+	getSettings().services.seek(file, FileSeekMode::End, 0);
+	auto size = getSettings().services.tell(file);
 	std::string text;
 
 	if (size != -1)
 	{
-		HORUS_FILE->seek(file, FileSeekMode::Set, 0);
+		getSettings().services.seek(file, FileSeekMode::Set, 0);
 
 		char* buffer = new char[size + 1];
 		buffer[size] = 0;
-		auto readBytes = HORUS_FILE->read(file, buffer, size);
+		auto readBytes = getSettings().services.read(file, buffer, size);
 
 		if (readBytes == size)
 			text = buffer;
@@ -30,7 +122,7 @@ static std::string readTextFile(const char* path)
 		delete[] buffer;
 	}
 
-	HORUS_FILE->close(file);
+	getSettings().services.close(file);
 
 	return text;
 }
@@ -148,229 +240,10 @@ WidgetElementId getWidgetElementFromName(std::string name)
 
 static std::string getPath(const std::string& fname)
 {
-	size_t pos = fname.find_last_of("\\/");
-	return (std::string::npos == pos) ? "" : fname.substr(0, pos);
+	return std::filesystem::path(fname).parent_path().string();
 }
 
-static Color getColorFromText(std::string colorText)
-{
-	if (colorText == "white") { return Color::white; }
-	if (colorText == "black") { return Color::black; }
-	if (colorText == "red") { return Color::red; }
-	if (colorText == "darkRed") { return Color::darkRed; }
-	if (colorText == "veryDarkRed") { return Color::veryDarkRed; }
-	if (colorText == "green") { return Color::green; }
-	if (colorText == "darkGreen") { return Color::darkGreen; }
-	if (colorText == "veryDarkGreen") { return Color::veryDarkGreen; }
-	if (colorText == "blue") { return Color::blue; }
-	if (colorText == "darkBlue") { return Color::darkBlue; }
-	if (colorText == "veryDarkBlue") { return Color::veryDarkBlue; }
-	if (colorText == "yellow") { return Color::yellow; }
-	if (colorText == "darkYellow") { return Color::darkYellow; }
-	if (colorText == "veryDarkYellow") { return Color::veryDarkYellow; }
-	if (colorText == "magenta") { return Color::magenta; }
-	if (colorText == "cyan") { return Color::cyan; }
-	if (colorText == "darkCyan") { return Color::darkCyan; }
-	if (colorText == "veryDarkCyan") { return Color::veryDarkCyan; }
-	if (colorText == "orange") { return Color::orange; }
-	if (colorText == "darkOrange") { return Color::darkOrange; }
-	if (colorText == "lightGray") { return Color::lightGray; }
-	if (colorText == "gray") { return Color::gray; }
-	if (colorText == "darkGray") { return Color::darkGray; }
-	if (colorText == "sky") { return Color::sky; }
-	if (colorText == "transparent") { return Color::transparent; }
-
-	u32 r, g, b, a;
-	sscanf(colorText.c_str(), "%d %d %d %d", &r, &g, &b, &a);
-
-	return Color((f32)r / 255.0f, (f32)g / 255.0f, (f32)b / 255.0f, (f32)a / 255.0f);
-}
-
-Color getColorFromText(const char* colorText)
-{
-	return getColorFromText(std::string(colorText));
-}
-
-static u8 hexByte(const char* p)
-{
-	auto hex = [](char c) -> u8
-		{
-			if (c >= '0' && c <= '9') return c - '0';
-			if (c >= 'a' && c <= 'f') return c - 'a' + 10;
-			if (c >= 'A' && c <= 'F') return c - 'A' + 10;
-			return 0;
-		};
-
-	return (hex(p[0]) << 4) | hex(p[1]);
-}
-
-Color colorFromHex(const char* hexText)
-{
-	Color out{ 1.f, 1.f, 1.f, 1.f };
-
-	if (!hexText)
-		return out;
-
-	// Skip optional '#'
-	if (hexText[0] == '#')
-		hexText++;
-
-	const size_t len = std::strlen(hexText);
-
-	if (len != 6 && len != 8)
-		return out;
-
-	u8 r = hexByte(hexText + 0);
-	u8 g = hexByte(hexText + 2);
-	u8 b = hexByte(hexText + 4);
-	u8 a = (len == 8) ? hexByte(hexText + 6) : 255;
-
-	out.r = r / 255.0f;
-	out.g = g / 255.0f;
-	out.b = b / 255.0f;
-	out.a = a / 255.0f;
-
-	return out;
-}
-
-u32 intColorFromHex(const char* hexText)
-{
-	return colorFromHex(hexText).getRgba();
-}
-
-std::string colorToHex(const Color& color)
-{
-	auto clampToByte = [](float v) -> u8
-		{
-			v = std::clamp(v, 0.0f, 1.0f);
-			return static_cast<u8>(v * 255.0f + 0.5f);
-		};
-
-	u8 r = clampToByte(color.r);
-	u8 g = clampToByte(color.g);
-	u8 b = clampToByte(color.b);
-	u8 a = clampToByte(color.a);
-
-	char buf[9];
-
-	std::snprintf(buf, sizeof(buf), "%02X%02X%02X%02X", r, g, b, a);
-
-	return std::string(buf);
-}
-
-std::string intColorToHex(const u32 color)
-{
-	return colorToHex(Color(color));
-}
-
-Color hsvToRgb(const Color& hsv)
-{
-	f32 h = hsv.r;
-	f32 s = hsv.g;
-	f32 v = hsv.b;
-	f32 r = 0;
-	f32 g = 0;
-	f32 b = 0;
-
-	if (s <= 0.0f)
-	{
-		// Gray
-		r = g = b = v;
-		return Color(r, g, b, hsv.a);
-	}
-
-	h = std::fmod(h, 1.0f) * 6.0f;
-	i32 i = (int)std::floor(h);
-	f32 f = h - i;
-
-	f32 p = v * (1.0f - s);
-	f32 q = v * (1.0f - s * f);
-	f32 t = v * (1.0f - s * (1.0f - f));
-
-	switch (i)
-	{
-	case 0: r = v; g = t; b = p; break;
-	case 1: r = q; g = v; b = p; break;
-	case 2: r = p; g = v; b = t; break;
-	case 3: r = p; g = q; b = v; break;
-	case 4: r = t; g = p; b = v; break;
-	default: r = v; g = p; b = q; break;
-	}
-
-	return Color(r, g, b, hsv.a);
-}
-
-Color rgbToHsv(const Color& rgb)
-{
-	f32 r = rgb.r, g = rgb.g, b = rgb.b;
-	f32 h = 0, s = 0, v = 0;
-
-	f32 max = std::max(r, std::max(g, b));
-	f32 min = std::min(r, std::min(g, b));
-	f32 delta = max - min;
-
-	v = max;
-
-	if (max <= 0.0f)
-	{
-		// Black
-		s = 0.0f;
-		h = 0.0f;
-
-		return Color(h, s, v, rgb.a);
-	}
-
-	s = delta / max;
-
-	if (delta <= 0.0f)
-	{
-		// Gray
-		h = 0.0f;
-		return Color(h, s, v, rgb.a);
-	}
-
-	if (max == r)
-		h = (g - b) / delta;
-	else if (max == g)
-		h = 2.0f + (b - r) / delta;
-	else
-		h = 4.0f + (r - g) / delta;
-
-	h /= 6.0f;
-
-	if (h < 0.0f)
-		h += 1.0f;
-
-	return Color(h, s, v, rgb.a);
-}
-
-Color hueToRgb(f32 h, f32 alpha)
-{
-	h = std::fmod(h, 1.0f);
-	if (h < 0.0f) h += 1.0f;
-
-	f32 r, g, b;
-
-	f32 i = std::floor(h * 6.0f);
-	f32 f = h * 6.0f - i;
-
-	f32 q = 1.0f - f;
-	f32 t = f;
-
-	switch (i32(i) % 6)
-	{
-	case 0: r = 1; g = t; b = 0; break;
-	case 1: r = q; g = 1; b = 0; break;
-	case 2: r = 0; g = 1; b = t; break;
-	case 3: r = 0; g = q; b = 1; break;
-	case 4: r = t; g = 0; b = 1; break;
-	default:r = 1; g = 0; b = q; break;
-	}
-
-	return { r, g, b, alpha };
-}
-
-void setThemeElement(
+static void setThemeElement(
 	HTheme theme,
 	const std::string& themePath,
 	const char* styleName,
@@ -394,7 +267,7 @@ void setThemeElement(
 
 	if (!image)
 	{
-		auto imageData = loadImageData(imageFilename.c_str());
+		auto imageData = loadImage(imageFilename.c_str());
 		image = addThemeImage(theme, imageData);
 		deleteImageData(imageData);
 		hui::setThemeImage(theme, imageFilename.c_str(), image);

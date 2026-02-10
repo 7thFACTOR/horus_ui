@@ -221,15 +221,15 @@ void beginScrollView(const char* id, f32 height, Point scrollOffset, Point virtu
 
 	if (!has(flags, ScrollViewFlags::NoBorder))
 	{
-		ctx->renderer->cmdSetColor(scrollViewElemState.color);
-		ctx->renderer->cmdDrawImageBordered(scrollViewElemState.image, scrollViewElemState.border, rect, ctx->scale);
+		ctx->renderer.cmdSetColor(scrollViewElemState.color);
+		ctx->renderer.cmdDrawImageBordered(scrollViewElemState.image, scrollViewElemState.border, rect, ctx->scale);
 	}
 
 	scrollViewState.scrollOffset = scrollOffset;
 	ctx->maxContentWidthStack.push_back(ctx->maxContentWidth);
 	ctx->maxContentWidth = 0.0f;
 
-	ctx->renderer->pushClipRect(clipRect);
+	ctx->renderer.pushClipRect(clipRect);
 	pushPosition();
 	ctx->position = { clipRect.x, clipRect.y };
 	ctx->position -= scrollOffset;
@@ -246,9 +246,9 @@ Point endScrollView()
 	ctx->id = ctx->layout.id;
 
 	auto prevPenPos = ctx->layout.savedPosition;
-	auto clipRect = ctx->renderer->getClipRect();
+	auto clipRect = ctx->renderer.getClipRect();
 
-	ctx->renderer->popClipRect();
+	ctx->renderer.popClipRect();
 
 	auto& scrollViewState = ctx->scrollViewState[ctx->id];
 	const auto& fullRect = scrollViewState.rect;
@@ -417,12 +417,12 @@ Point endScrollView()
 			};
 
 			// draw scroll bar line
-			ctx->renderer->cmdSetColor(scrollViewElemState.color);
-			ctx->renderer->cmdDrawImageBordered(scrollViewScrollBarElemStateV.image, scrollViewScrollBarElemStateV.border, rectScrollBarV, ctx->scale);
+			ctx->renderer.cmdSetColor(scrollViewElemState.color);
+			ctx->renderer.cmdDrawImageBordered(scrollViewScrollBarElemStateV.image, scrollViewScrollBarElemStateV.border, rectScrollBarV, ctx->scale);
 
 			// draw scroll bar thumb
-			ctx->renderer->cmdSetColor(scrollViewScrollThumbElemStateV.color);
-			ctx->renderer->cmdDrawImageBordered(scrollViewScrollThumbElemStateV.image, scrollViewScrollThumbElemStateV.border, rectScrollBarHandleV, ctx->scale);
+			ctx->renderer.cmdSetColor(scrollViewScrollThumbElemStateV.color);
+			ctx->renderer.cmdDrawImageBordered(scrollViewScrollThumbElemStateV.image, scrollViewScrollThumbElemStateV.border, rectScrollBarHandleV, ctx->scale);
 		}
 	}
 
@@ -530,12 +530,12 @@ Point endScrollView()
 		};
 
 		// draw horizontal scroll bar
-		ctx->renderer->cmdSetColor(scrollViewElemState.color);
-		ctx->renderer->cmdDrawImageBordered(scrollViewScrollBarElemStateH.image, scrollViewScrollBarElemStateH.border, rectScrollBarH, ctx->scale);
+		ctx->renderer.cmdSetColor(scrollViewElemState.color);
+		ctx->renderer.cmdDrawImageBordered(scrollViewScrollBarElemStateH.image, scrollViewScrollBarElemStateH.border, rectScrollBarH, ctx->scale);
 
 		// draw horizontal scroll bar thumb
-		ctx->renderer->cmdSetColor(scrollViewScrollThumbElemStateH.color);
-		ctx->renderer->cmdDrawImageBordered(scrollViewScrollThumbElemStateH.image, scrollViewScrollThumbElemStateH.border, rectScrollBarHandleH, ctx->scale);
+		ctx->renderer.cmdSetColor(scrollViewScrollThumbElemStateH.color);
+		ctx->renderer.cmdDrawImageBordered(scrollViewScrollThumbElemStateH.image, scrollViewScrollThumbElemStateH.border, rectScrollBarHandleH, ctx->scale);
 	}
 
 	updateScrollMax(scrollViewState.horizontal, scrollContentH, scrollAreaWidth);

@@ -57,8 +57,8 @@ bool expandable(const char* label, bool* expandedVar)
 		bodyElemState = &bodyElem.getState(WidgetStateType::Pressed);
 	}
 
-	ctx->renderer->cmdSetColor(applyTint(bodyElemState->color, TintColorType::Body));
-	ctx->renderer->cmdDrawImageBordered(
+	ctx->renderer.cmdSetColor(applyTint(bodyElemState->color, TintColorType::Body));
+	ctx->renderer.cmdDrawImageBordered(
 		bodyElemState->image,
 		bodyElemState->border, 
 		ctx->widget.rect,
@@ -72,8 +72,8 @@ bool expandable(const char* label, bool* expandedVar)
 		arrowElemState = &panelExpandedArrow.normalState();
 	}
 
-	ctx->renderer->cmdSetColor(applyTint(arrowElemState->color, TintColorType::Body));
-	ctx->renderer->cmdDrawImage(
+	ctx->renderer.cmdSetColor(applyTint(arrowElemState->color, TintColorType::Body));
+	ctx->renderer.cmdDrawImage(
 		arrowElemState->image,
 		{
 			round(ctx->widget.rect.x + (padding.x + bodyElemState->border) * ctx->scale),
@@ -82,7 +82,7 @@ bool expandable(const char* label, bool* expandedVar)
 			arrowElemState->image->height * ctx->scale
 		});
 
-	ctx->renderer->cmdSetFont(bodyElemState->font);
+	ctx->renderer.cmdSetFont(bodyElemState->font);
 
 	Rect textRect = {
 		ctx->widget.rect.x + (bodyElemState->border + arrowElemState->image->width + padding.x) * ctx->scale,
@@ -91,13 +91,13 @@ bool expandable(const char* label, bool* expandedVar)
 		ctx->widget.rect.height
 	};
 
-	ctx->renderer->pushClipRect(textRect);
-	ctx->renderer->cmdSetColor(applyTint(bodyElemState->textColor, TintColorType::Text));
-	ctx->renderer->cmdDrawTextInBox(
+	ctx->renderer.pushClipRect(textRect);
+	ctx->renderer.cmdSetColor(applyTint(bodyElemState->textColor, TintColorType::Text));
+	ctx->renderer.cmdDrawTextInBox(
 		ctx->widgetLabel.c_str(),
 		textRect,
 		HAlignType::Left, VAlignType::Center);
-	ctx->renderer->popClipRect();
+	ctx->renderer.popClipRect();
 	ctx->widget.changeEnded = changed;
 
 	return expanded;

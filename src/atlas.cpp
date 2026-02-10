@@ -9,19 +9,15 @@ namespace hui
 {
 
 Atlas::Atlas()
-{
-	rectPacker = HORUS_RECTPACK->createRectPacker();
-}
+{}
 
 Atlas::Atlas(u32 textureWidth, u32 textureHeight, u32 spacing, const Color& bgColor)
 {
-	rectPacker = HORUS_RECTPACK->createRectPacker();
 	create(textureWidth, textureHeight, spacing, bgColor);
 }
 
 Atlas::~Atlas()
 {
-	HORUS_RECTPACK->deleteRectPacker(rectPacker);
 	clearImages();
 }
 
@@ -130,8 +126,7 @@ bool Atlas::pack()
 		packRects.push_back(prc);
 	}
 
-	HORUS_RECTPACK->reset(rectPacker, width, height);
-	auto ret = HORUS_RECTPACK->packRects(rectPacker, packRects.data(), packRects.size());
+	auto ret = ctx->settings.services.packRects(packRects.data(), packRects.size());
 	u32 packedOkCount = 0;
 
 	for (auto& prc : packRects)
@@ -215,7 +210,7 @@ bool Atlas::pack()
 		}
 	}
 
-	return true;
+	return lastPackSuccess;
 }
 
 void Atlas::clearImages()

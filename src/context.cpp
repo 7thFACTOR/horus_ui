@@ -10,8 +10,7 @@ namespace hui
 Context* ctx = nullptr;
 
 Context::~Context()
-{
-}
+{}
 
 void Context::setLabelAndId(const char* text)
 {
@@ -41,16 +40,8 @@ void Context::setLabelAndId(const char* text)
 void Context::setSkipRenderAndInput(bool skip)
 {
 	skipRenderAndInput = skip;
-	renderer->skipRender = skip;
+	renderer.skipRender = skip;
 }
 
-void Context::initializeRenderer()
-{
-	if (!renderer)
-	{
-		renderer = new Renderer();
-		textCache = new UnicodeTextCache();
-	}
-}
 
 }

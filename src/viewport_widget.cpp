@@ -16,17 +16,17 @@ Rect beginViewport(f32 height)
 	addWidget(height);
 	buttonBehavior();
 
-	auto scissor = ctx->renderer->pushClipRect(ctx->widget.rect);
+	auto scissor = ctx->renderer.pushClipRect(ctx->widget.rect);
 
-	ctx->renderer->viewportOffset = ctx->widget.rect.topLeft();
+	ctx->renderer.viewportOffset = ctx->widget.rect.topLeft();
 
 	return scissor;
 }
 
 void endViewport()
 {
-	ctx->renderer->popClipRect();
-	ctx->renderer->viewportOffset = Point();
+	ctx->renderer.popClipRect();
+	ctx->renderer.viewportOffset = Point();
 }
 
 }

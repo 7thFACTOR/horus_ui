@@ -190,7 +190,7 @@ FontTextSize Font::computeTextSize(const GlyphCode* const text, u32 size, u32 ma
 	if (ctx && ctx->renderer)
 	{
 		// glyph-array overload on renderer expects (text, size, position, outSize, doDraw, font, maxWidth)
-		return ctx->renderer->computeSizeOrDrawText(text, size, Rect(0, 0, FLT_MAX, FLT_MAX), HAlignType::Left, VAlignType::Top, false, this);
+		return ctx->renderer.computeSizeOrDrawText(text, size, Rect(0, 0, FLT_MAX, FLT_MAX), HAlignType::Left, VAlignType::Top, false, this);
 	}
 	return fsize;
 }
@@ -201,7 +201,7 @@ FontTextSize Font::computeTextSize(const Utf32String& text)
 
 	if (ctx && ctx->renderer)
 	{
-		return ctx->renderer->computeSizeOrDrawText(text.data(), (u32)text.size(), Rect(0, 0, FLT_MAX, FLT_MAX), HAlignType::Left, VAlignType::Top, false, this);
+		return ctx->renderer.computeSizeOrDrawText(text.data(), (u32)text.size(), Rect(0, 0, FLT_MAX, FLT_MAX), HAlignType::Left, VAlignType::Top, false, this);
 	}
 
 	return fsize;
@@ -212,7 +212,7 @@ FontTextSize Font::computeTextSize(const char* text, u32 maxWidth)
 	FontTextSize fsize;
 	if (ctx && ctx->renderer)
 	{
-		return ctx->renderer->computeSizeOrDrawText(text, Rect(0, 0, maxWidth, FLT_MAX), HAlignType::Left, VAlignType::Top, false, this);
+		return ctx->renderer.computeSizeOrDrawText(text, Rect(0, 0, maxWidth, FLT_MAX), HAlignType::Left, VAlignType::Top, false, this);
 	}
 	return fsize;
 }

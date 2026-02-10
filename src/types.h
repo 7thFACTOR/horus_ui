@@ -80,7 +80,7 @@ struct DrawCommand
 		DrawSolidTriangle,
 		ClipRect,
 		SetViewportOffset,
-		SetAtlas,
+		SetTexture,
 		SetColor,
 		SetFont,
 		SetTextStyle,
@@ -97,7 +97,7 @@ struct DrawCommand
 		Rect rect;
 		Rect uvRect;
 		bool rotated;
-		struct Atlas* atlas = nullptr;
+		HTexture texture = 0;
 		u32 textureIndex;
 		bool wire = false;
 	};
@@ -180,18 +180,17 @@ struct DrawCommand
 		CmdDrawImageBordered drawImageBordered;
 		CmdDrawQuad4Colors drawQuad4Colors;
 		CmdDrawTriangle drawTriangle;
-		CmdSetViewportOffset setViewportOffset;
+		CmdSetViewportOffset viewportOffset;
 		RenderCallback callback;
 		Rect clipRect;
 		bool clipToParent;
 		bool popClipRect = false;
-		struct Atlas* setAtlas;
-		Rgba32 setColor;
-		struct Font* setFont;
-		Rgba32 setTextColor;
-		TextStyle setTextStyle;
-		LineStyle setLineStyle;
-		FillStyle setFillStyle;
+		HTexture texture;
+		Rgba32 color;
+		struct Font* font;
+		TextStyle textStyle;
+		LineStyle lineStyle;
+		FillStyle fillStyle;
 	} data;
 
 	DrawCommand(const DrawCommand& other)
@@ -210,17 +209,16 @@ struct DrawCommand
 		data.drawImageBordered = other.data.drawImageBordered;
 		data.drawQuad4Colors = other.data.drawQuad4Colors;
 		data.drawTriangle = other.data.drawTriangle;
-		data.setViewportOffset = other.data.setViewportOffset;
+		data.viewportOffset = other.data.viewportOffset;
 		data.clipRect = other.data.clipRect;
 		data.clipToParent = other.data.clipToParent;
 		data.popClipRect = other.data.popClipRect;
-		data.setAtlas = other.data.setAtlas;
-		data.setColor = other.data.setColor;
-		data.setFont = other.data.setFont;
-		data.setTextColor = other.data.setTextColor;
-		data.setTextStyle = other.data.setTextStyle;
-		data.setLineStyle = other.data.setLineStyle;
-		data.setFillStyle = other.data.setFillStyle;
+		data.texture = other.data.texture;
+		data.color = other.data.color;
+		data.font = other.data.font;
+		data.textStyle = other.data.textStyle;
+		data.lineStyle = other.data.lineStyle;
+		data.fillStyle = other.data.fillStyle;
 		data.callback = other.data.callback;
 
 		return *this;

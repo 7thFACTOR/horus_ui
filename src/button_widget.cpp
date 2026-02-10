@@ -45,13 +45,13 @@ void buttonBehavior(bool menuItem)
 	}
 
 	// return if the widget is not visible, that is outside current clip rect
-	if (ctx->widget.rect.outside(ctx->renderer->getClipRect()))
+	if (ctx->widget.rect.outside(ctx->renderer.getClipRect()))
 	{
 		ctx->widget.visible = false;
 		return;
 	}
 
-	Rect clippedRect = ctx->widget.rect.clipInside(ctx->renderer->getClipRect());
+	Rect clippedRect = ctx->widget.rect.clipInside(ctx->renderer.getClipRect());
 
 	// if we're inside the button
 	if (clippedRect.contains(ctx->mousePosition) && ctx->hoveringThisWindow)
@@ -146,14 +146,14 @@ void mouseDownOnlyButtonBehavior()
 		return;
 
 	// return if the widget is not visible, that is outside current clip rect
-	if (ctx->widget.rect.outside(ctx->renderer->getClipRect()))
+	if (ctx->widget.rect.outside(ctx->renderer.getClipRect()))
 	{
 		ctx->widget.hovered = false;
 		ctx->widget.visible = false;
 		return;
 	}
 
-	Rect clippedRect = ctx->widget.rect.clipInside(ctx->renderer->getClipRect());
+	Rect clippedRect = ctx->widget.rect.clipInside(ctx->renderer.getClipRect());
 
 	if (clippedRect.contains(ctx->mousePosition) && ctx->hoveringThisWindow)
 	{
@@ -221,11 +221,11 @@ bool button(const char* label)
 
 	if (ctx->widget.visible)
 	{
-		ctx->renderer->cmdSetColor(applyTint(btnBodyElemState->color, TintColorType::Body));
-		ctx->renderer->cmdDrawImageBordered(btnBodyElemState->image, btnBodyElemState->border, ctx->widget.rect, ctx->scale);
-		ctx->renderer->cmdSetColor(applyTint(btnBodyElemState->textColor, TintColorType::Text));
-		ctx->renderer->cmdSetFont(btnBodyElemState->font);
-		ctx->renderer->cmdDrawTextInBox(
+		ctx->renderer.cmdSetColor(applyTint(btnBodyElemState->color, TintColorType::Body));
+		ctx->renderer.cmdDrawImageBordered(btnBodyElemState->image, btnBodyElemState->border, ctx->widget.rect, ctx->scale);
+		ctx->renderer.cmdSetColor(applyTint(btnBodyElemState->textColor, TintColorType::Text));
+		ctx->renderer.cmdSetFont(btnBodyElemState->font);
+		ctx->renderer.cmdDrawTextInBox(
 			ctx->widgetLabel.c_str(),
 			ctx->widget.pressed
 			? Rect(
@@ -285,11 +285,11 @@ static bool imageButtonInternal(HImage img, HImage disabledImg, f32 width, f32 h
 
 		viewportImageFitSize(imgWidth, imgHeight, ctx->widget.rect.width - (getWidgetPadding().x * 2.0f + btnBodyElemState->border * 2.0f) * ctx->scale, ctx->widget.rect.height - (getWidgetPadding().y * 2.0f + btnBodyElemState->border * 2.0f) * ctx->scale, imgWidth, imgHeight, false, false);
 
-		ctx->renderer->cmdSetColor(applyTint(btnBodyElemState->color, TintColorType::Body));
-		ctx->renderer->cmdDrawImageBordered(btnBodyElemState->image, btnBodyElemState->border, ctx->widget.rect, ctx->scale);
-		ctx->renderer->cmdSetColor(applyTint(btnBodyElemState->textColor, TintColorType::Text));
-		ctx->renderer->cmdSetFont(btnBodyElemState->font);
-		ctx->renderer->cmdDrawImage(
+		ctx->renderer.cmdSetColor(applyTint(btnBodyElemState->color, TintColorType::Body));
+		ctx->renderer.cmdDrawImageBordered(btnBodyElemState->image, btnBodyElemState->border, ctx->widget.rect, ctx->scale);
+		ctx->renderer.cmdSetColor(applyTint(btnBodyElemState->textColor, TintColorType::Text));
+		ctx->renderer.cmdSetFont(btnBodyElemState->font);
+		ctx->renderer.cmdDrawImage(
 			image,
 			{
 				round(ctx->widget.rect.x + (ctx->widget.rect.width - imgWidth) / 2 + pressedIncrement * ctx->scale),

@@ -75,8 +75,8 @@ bool image(HImage img, f32 height, HAlignType horizontalAlign, VAlignType vertic
 
 	if (ctx->widget.visible)
 	{
-		ctx->renderer->cmdSetColor(Color::white);
-		ctx->renderer->cmdDrawImage(imgPtr, ctx->widget.rect);
+		ctx->renderer.cmdSetColor(Color::white);
+		ctx->renderer.cmdDrawImage(imgPtr, ctx->widget.rect);
 	}
 
 	return ctx->widget.clicked;

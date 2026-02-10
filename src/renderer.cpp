@@ -10,10 +10,6 @@
 
 namespace hui
 {
-//TODO: make them grow dynamically like the vertex buffer
-const u32 textBufferMaxSize = 1024 * 1024 * 5;/// 5MB of text on screen at once its more than enough for now
-const u32 pointBufferMaxSize = 500000; /// more than enough for a full screen of lines, around 5MB
-
 enum LineClipBit
 {
 	Inside = 0,
@@ -503,7 +499,7 @@ static bool clipTriangleToRect(
 }
 
 DrawCmdLayerSplitter::DrawCmdLayerSplitter()
-{ }
+{}
 
 void DrawCmdLayerSplitter::clear()
 {
@@ -544,8 +540,8 @@ void DrawCmdLayerSplitter::merge()
 		layer.clear();
 	}
 
-	HORUS_ASSERT(ctx->renderer->currentDrawCmdLayer);
-	ctx->renderer->currentDrawCmdLayer->insert(ctx->renderer->currentDrawCmdLayer->end(), layers[0].begin(), layers[0].end());
+	HORUS_ASSERT(ctx->renderer.currentDrawCmdLayer);
+	ctx->renderer.currentDrawCmdLayer->insert(ctx->renderer.currentDrawCmdLayer->end(), layers[0].begin(), layers[0].end());
 }
 
 void DrawCmdLayerSplitter::setLayer(u32 index)
@@ -553,21 +549,17 @@ void DrawCmdLayerSplitter::setLayer(u32 index)
 	if (index == currentLayerIndex)
 		return;
 
-	HORUS_ASSERT(ctx->renderer->currentDrawCmdLayer);
-	layers[currentLayerIndex].swap(*ctx->renderer->currentDrawCmdLayer);
+	HORUS_ASSERT(ctx->renderer.currentDrawCmdLayer);
+	layers[currentLayerIndex].swap(*ctx->renderer.currentDrawCmdLayer);
 	currentLayerIndex = index;
-	ctx->renderer->currentDrawCmdLayer->swap(layers[currentLayerIndex]);
+	ctx->renderer.currentDrawCmdLayer->swap(layers[currentLayerIndex]);
 }
 
 Renderer::Renderer()
-{
-	vertexBuffer = ctx->providers->gfx->createVertexBuffer();
-}
+{}
 
 Renderer::~Renderer()
-{
-	delete vertexBuffer;
-}
+{}
 
 void Renderer::setCurrentNativeWindow(HNativeWindow wnd)
 {
@@ -578,8 +570,8 @@ void Renderer::setCurrentNativeWindow(HNativeWindow wnd)
 	{
 		windowContexts.insert({ wnd, NativeWindowRenderContext() });
 		auto& wndCtx = windowContexts[wnd];
-		wndCtx.textBuffer.resize(textBufferMaxSize);
-		wndCtx.pointBuffer.resize(pointBufferMaxSize);
+		wndCtx.textBuffer.resize(ctx->settings.textBufferMaxSize);
+		wndCtx.pointBuffer.resize(ctx->settings.pointBufferMaxSize);
 	}
 
 	currentWindowContext = &windowContexts[wnd];
@@ -593,7 +585,7 @@ void Renderer::executeDrawCommands(HNativeWindow wnd)
 		return;
 
 	currentWindowContext = &windowContexts[wnd];
-	currentAtlas = nullptr;
+	currentTexture = ctx->atlasTexture;
 	currentBatch = nullptr;
 	currentWindowContext->batches.clear();
 	vertexBufferData.drawVertexCount = 0;
@@ -613,16 +605,14 @@ void Renderer::executeDrawCommands(HNativeWindow wnd)
 				break;
 			case DrawCommand::Type::DrawRect:
 			{
-				atlasTextureIndex = cmd.data.drawRect.textureIndex;
-
-				if (cmd.data.drawRect.atlas && cmd.data.drawRect.atlas != currentAtlas)
+				if (cmd.data.drawRect.texture && cmd.data.drawRect.texture != currentTexture)
 				{
 					addBatch();
-					currentAtlas = cmd.data.drawRect.atlas;
+					currentTexture = cmd.data.drawRect.texture;
 				}
 				else
 				{
-					currentAtlas = defaultAtlas;
+					currentTexture = ctx->atlasTexture;
 				}
 
 				if (clipRect(cmd.data.drawRect.rotated, cmd.data.drawRect.rect, cmd.data.drawRect.uvRect))
@@ -642,22 +632,22 @@ void Renderer::executeDrawCommands(HNativeWindow wnd)
 				computeSizeOrDrawText(cmd.data.drawText.text, cmd.data.drawText.rect, cmd.data.drawText.horizAlign, cmd.data.drawText.vertAlign, true, currentFont, cmd.data.drawText.singleLineEllipsis, cmd.data.drawText.noWordWrap);
 				break;
 			case DrawCommand::Type::SetColor:
-				currentColor = cmd.data.setColor;
+				currentColor = cmd.data.color;
 				break;
 			case DrawCommand::Type::SetFont:
-				currentFont = cmd.data.setFont;
+				currentFont = cmd.data.font;
 				break;
 			case DrawCommand::Type::ClipRect:
 				currentClipRect = cmd.data.clipRect;
 				break;
 			case DrawCommand::Type::SetTextStyle:
-				currentTextStyle = cmd.data.setTextStyle;
+				currentTextStyle = cmd.data.textStyle;
 				break;
 			case DrawCommand::Type::SetLineStyle:
-				currentLineStyle = cmd.data.setLineStyle;
+				currentLineStyle = cmd.data.lineStyle;
 				break;
 			case DrawCommand::Type::SetFillStyle:
-				currentFillStyle = cmd.data.setFillStyle;
+				currentFillStyle = cmd.data.fillStyle;
 				break;
 			case DrawCommand::Type::DrawLine:
 				currentColor = currentLineStyle.color;
@@ -689,15 +679,15 @@ void Renderer::executeDrawCommands(HNativeWindow wnd)
 					cmd.data.drawQuad4Colors.bottomRight,
 					cmd.data.drawQuad4Colors.bottomLeft);
 				break;
-			case DrawCommand::Type::SetAtlas:
-				if (currentAtlas != cmd.data.setAtlas)
+			case DrawCommand::Type::SetTexture:
+				if (currentTexture != cmd.data.texture)
 				{
-					currentAtlas = cmd.data.setAtlas;
+					currentTexture = cmd.data.texture;
 					addBatch();
 				}
 				break;
 			case DrawCommand::Type::ClearBackground:
-				ctx->providers->gfx->clear(cmd.data.setColor);
+				ctx->settings.services.clearBackbuffer(cmd.data.color);
 				break;
 			case DrawCommand::Type::Callback:
 				cmd.data.callback(currentWindow);
@@ -710,9 +700,7 @@ void Renderer::executeDrawCommands(HNativeWindow wnd)
 		layerCmds.clear();
 	}
 
-	vertexBuffer->updateData(vertexBufferData.vertices.data(), 0, vertexBufferData.drawVertexCount);
-	// render the batches
-	ctx->providers->gfx->draw(currentWindowContext->batches.data(), currentWindowContext->batches.size());
+	ctx->settings.services.draw(vertexBufferData.vertices.data(), vertexBufferData.drawVertexCount, currentWindowContext->batches.data(), currentWindowContext->batches.size());
 }
 
 void Renderer::cmdCallback(RenderCallback callback)
@@ -727,7 +715,7 @@ void Renderer::cmdClearBackground(const Rgba32 color)
 {
 	DrawCommand cmd(DrawCommand::Type::ClearBackground);
 
-	cmd.data.setColor = color;
+	cmd.data.color = color;
 	addDrawCommand(cmd);
 }
 
@@ -768,7 +756,7 @@ void Renderer::setWindowSize(const Point& size)
 {
 	windowSize = size;
 	currentClipRect = { 0, 0, windowSize.x, windowSize.y };
-	ctx->providers->gfx->setViewport(windowSize, currentClipRect);
+	ctx->settings.services.setViewport(windowSize, currentClipRect);
 }
 
 void Renderer::pushWindowDrawCmdLayer(DrawCmdLayerType type)
@@ -796,8 +784,8 @@ void Renderer::resetWindowContexts()
 		wc.second.currentDrawCmdLayer = DrawCmdLayerType::Normal;
 		wc.second.pointBufferPosition = 0;
 		wc.second.textBufferPosition = 0;
-		wc.second.textBuffer.resize(textBufferMaxSize);
-		wc.second.pointBuffer.resize(pointBufferMaxSize);
+		wc.second.textBuffer.resize(ctx->settings.textBufferMaxSize);
+		wc.second.pointBuffer.resize(ctx->settings.pointBufferMaxSize);
 
 		for (auto& layer : wc.second.drawCmdLayers)
 		{
@@ -808,10 +796,8 @@ void Renderer::resetWindowContexts()
 
 void Renderer::begin()
 {
-	currentAtlas = nullptr;
 	currentBatch = nullptr;
-	defaultAtlas = ctx->theme->atlas;
-	cmdSetAtlas(ctx->theme->atlas);
+	cmdSetTexture(ctx->atlasTexture);
 }
 
 void Renderer::end()
@@ -821,23 +807,26 @@ void Renderer::end()
 void Renderer::cmdSetColor(const Rgba32 newColor)
 {
 	DrawCommand cmd(DrawCommand::Type::SetColor);
+	
 	currentColor = newColor;
-	cmd.data.setColor = newColor;
+	cmd.data.color = newColor;
 	addDrawCommand(cmd);
 }
 
-void Renderer::cmdSetAtlas(Atlas* newAtlas)
+void Renderer::cmdSetTexture(HTexture textureHandle)
 {
-	DrawCommand cmd(DrawCommand::Type::SetAtlas);
-	cmd.data.setAtlas = newAtlas;
-	currentAtlas = newAtlas;
+	DrawCommand cmd(DrawCommand::Type::SetTexture);
+	
+	cmd.data.texture = textureHandle;
+	currentTexture = textureHandle;
 	addDrawCommand(cmd);
 }
 
 void Renderer::cmdSetFont(Font* font)
 {
 	DrawCommand cmd(DrawCommand::Type::SetFont);
-	cmd.data.setFont = font;
+	
+	cmd.data.font = font;
 	currentFont = font;
 	addDrawCommand(cmd);
 }
@@ -845,89 +834,92 @@ void Renderer::cmdSetFont(Font* font)
 void Renderer::cmdSetTextUnderline(bool underline)
 {
 	DrawCommand cmd(DrawCommand::Type::SetTextStyle);
+	
 	currentTextStyle.underline = underline;
-	cmd.data.setTextStyle = currentTextStyle;
+	cmd.data.textStyle = currentTextStyle;
 	addDrawCommand(cmd);
 }
 
 void Renderer::cmdSetTextBackfill(bool backfill)
 {
 	DrawCommand cmd(DrawCommand::Type::SetTextStyle);
+	
 	currentTextStyle.backFill = backfill;
-	cmd.data.setTextStyle = currentTextStyle;
+	cmd.data.textStyle = currentTextStyle;
 	addDrawCommand(cmd);
 }
 
 void Renderer::cmdSetTextBackfillColor(const Rgba32 color)
 {
 	DrawCommand cmd(DrawCommand::Type::SetTextStyle);
+	
 	currentTextStyle.backFillColor = color;
-	cmd.data.setTextStyle = currentTextStyle;
+	cmd.data.textStyle = currentTextStyle;
 	addDrawCommand(cmd);
 }
 
 void Renderer::cmdSetLineStyle(const LineStyle& style)
 {
 	DrawCommand cmd(DrawCommand::Type::SetLineStyle);
-	currentLineStyle = cmd.data.setLineStyle = style;
+
+	currentLineStyle = cmd.data.lineStyle = style;
 	addDrawCommand(cmd);
 }
 
 void Renderer::cmdSetFillStyle(const FillStyle& style)
 {
 	DrawCommand cmd(DrawCommand::Type::SetFillStyle);
-	currentFillStyle = cmd.data.setFillStyle = style;
+
+	currentFillStyle = cmd.data.fillStyle = style;
 	addDrawCommand(cmd);
 }
 
 void Renderer::cmdDrawImage(Image* image, const Point& position, f32 scale)
 {
 	DrawCommand cmd(DrawCommand::Type::DrawRect);
+
 	cmd.data.drawRect.rect = Rect(position.x, position.y, image->rect.width * scale, image->rect.height * scale);
 	cmd.data.drawRect.uvRect = image->uvRect;
 	cmd.data.drawRect.rotated = image->rotated;
-	cmd.data.drawRect.atlas = image->atlas;
-	cmd.data.drawRect.textureIndex = image->atlasTexture->textureIndex;
 	addDrawCommand(cmd);
 }
 
 void Renderer::cmdDrawImage(Image* image, const Rect& rect)
 {
 	DrawCommand cmd(DrawCommand::Type::DrawRect);
+
 	cmd.data.drawRect.rect = rect;
 	cmd.data.drawRect.uvRect = image->uvRect;
 	cmd.data.drawRect.rotated = image->rotated;
-	cmd.data.drawRect.atlas = image->atlas;
-	cmd.data.drawRect.textureIndex = image->atlasTexture->textureIndex;
 	addDrawCommand(cmd);
 }
 
 void Renderer::cmdDrawImage(Image* image, const Rect& rect, const Rect& uvRect)
 {
 	DrawCommand cmd(DrawCommand::Type::DrawRect);
+
 	cmd.data.drawRect.rect = rect;
 	cmd.data.drawRect.uvRect = uvRect;
 	cmd.data.drawRect.rotated = image->rotated;
-	cmd.data.drawRect.atlas = image->atlas;
-	cmd.data.drawRect.textureIndex = image->atlasTexture->textureIndex;
 	addDrawCommand(cmd);
 }
 
 void Renderer::cmdDrawQuad(Image* image, const Point& p1, const Point& p2, const Point& p3, const Point& p4)
 {
 	DrawCommand cmd(DrawCommand::Type::DrawQuad);
+
 	cmd.data.drawQuad.corners[0] = p1;
 	cmd.data.drawQuad.corners[1] = p2;
 	cmd.data.drawQuad.corners[2] = p3;
 	cmd.data.drawQuad.corners[3] = p4;
 	cmd.data.drawQuad.image = image;
-
 	addDrawCommand(cmd);
 }
 
 void Renderer::cmdDrawImageBordered(Image* image, u32 border, const Rect& rect, f32 scale)
 {
 	DrawCommand cmd(DrawCommand::Type::DrawImageBordered);
+
 	cmd.data.drawImageBordered.rect = rect;
 	cmd.data.drawImageBordered.image = image;
 	cmd.data.drawImageBordered.border = border;
@@ -949,7 +941,7 @@ void Renderer::cmdDrawImageScaledAligned(Image* image, const Rect& rect, HAlignT
 		newRect.x = rect.right() - newWidth;
 		break;
 	case hui::HAlignType::Center:
-		newRect.x = newRect.x + (rect.width - newWidth) / 2.f;
+		newRect.x = newRect.x + (rect.width - newWidth) / 2.0f;
 		break;
 	default:
 		break;
@@ -963,7 +955,7 @@ void Renderer::cmdDrawImageScaledAligned(Image* image, const Rect& rect, HAlignT
 		newRect.y = rect.bottom() - newHeight;
 		break;
 	case hui::VAlignType::Center:
-		newRect.y = newRect.y + (rect.height - newHeight) / 2.f;
+		newRect.y = newRect.y + (rect.height - newHeight) / 2.0f;
 		break;
 	default:
 		break;
@@ -1044,7 +1036,7 @@ void Renderer::cmdDrawRectangle(const Rect& rect)
 
 void Renderer::cmdDrawFilledRectangle(const Rect& rect)
 {
-	auto image = currentAtlas->whiteImage;
+	auto image = ctx->atlas.whiteImage;
 	auto uvRect = image->uvRect;
 	uvRect = uvRect.contract(ctx->settings.whiteImageUvBorder);
 	cmdDrawImage(image, rect, uvRect);
@@ -1053,6 +1045,7 @@ void Renderer::cmdDrawFilledRectangle(const Rect& rect)
 void Renderer::cmdDrawRectangle4Colors(const Rect& rect, const Rgba32 topLeft, const Rgba32 topRight, const Rgba32 bottomRight, const Rgba32 bottomLeft)
 {
 	DrawCommand cmd(DrawCommand::Type::DrawQuad4Colors);
+	
 	cmd.data.drawQuad4Colors.rect = rect;
 	cmd.data.drawQuad4Colors.uvRect = ctx->theme->atlas->whiteImage->uvRect.contract({ ctx->settings.whiteImageUvBorder, ctx->settings.whiteImageUvBorder });
 	cmd.data.drawQuad4Colors.image = ctx->theme->atlas->whiteImage;
@@ -1066,6 +1059,7 @@ void Renderer::cmdDrawRectangle4Colors(const Rect& rect, const Rgba32 topLeft, c
 void Renderer::cmdDrawLine(const Point& a, const Point& b)
 {
 	DrawCommand cmd(DrawCommand::Type::DrawLine);
+	
 	cmd.data.drawLine.a = a;
 	cmd.data.drawLine.b = b;
 	addDrawCommand(cmd);
@@ -1074,6 +1068,7 @@ void Renderer::cmdDrawLine(const Point& a, const Point& b)
 void Renderer::cmdDrawPolyLine(const Point* points, u32 pointCount, bool closed)
 {
 	DrawCommand cmd(DrawCommand::Type::DrawPolyLine);
+	
 	cmd.data.drawPolyLine.count = pointCount;
 	cmd.data.drawPolyLine.closed = closed;
 	cmd.data.drawPolyLine.points = &currentWindowContext->pointBuffer[currentWindowContext->pointBufferPosition];
@@ -1085,6 +1080,7 @@ void Renderer::cmdDrawPolyLine(const Point* points, u32 pointCount, bool closed)
 void Renderer::cmdDrawSolidTriangle(const Point& p1, const Point& p2, const Point& p3, const Rgba32 c1, const Rgba32 c2, const Rgba32 c3)
 {
 	DrawCommand cmd(DrawCommand::Type::DrawSolidTriangle);
+	
 	cmd.data.drawTriangle.p1 = p1;
 	cmd.data.drawTriangle.p2 = p2;
 	cmd.data.drawTriangle.p3 = p3;
@@ -1116,7 +1112,7 @@ FontTextSize Renderer::computeSizeOrDrawText(
 	}
 
 	// reuse text cache to get utf32 string
-	const Utf32String& utext = *ctx->textCache->getText(text);
+	const Utf32String& utext = *ctx->textCache.getText(text);
 	return computeSizeOrDrawText(utext.data(), (u32)utext.size(), rect, horizAlign, vertAlign, doDraw, font, singleLineEllipsis, noWordWrap);
 }
 
@@ -1143,11 +1139,15 @@ FontTextSize Renderer::computeSizeOrDrawText(
 	auto computeEllipsisWidth = [&](Font* ff) -> f32 {
 		const GlyphCode uniEll = 0x2026;
 		auto gEll = ff->getGlyph(uniEll);
+
 		if (gEll)
 			return gEll->advanceX;
+
 		// fallback to three ASCII dots, include basic kerning conservatively
 		auto gDot = ff->getGlyph((GlyphCode)'.');
+
 		if (!gDot) return 0.0f;
+
 		// approximate three dots advance (simple approximation)
 		return gDot->advanceX * 3.0f;
 	};
@@ -1157,6 +1157,7 @@ FontTextSize Renderer::computeSizeOrDrawText(
 	{
 		// find end of first logical line (stop at \n or end)
 		u32 lineEnd = 0;
+
 		while (lineEnd < size && text[lineEnd] != '\n') ++lineEnd;
 
 		// defensive: zero width rect -> nothing to draw
@@ -1165,6 +1166,7 @@ FontTextSize Renderer::computeSizeOrDrawText(
 			// still provide height for one line
 			fsize.height = fnt->getMetrics().height;
 			fsize.width = 0.0f;
+
 			return fsize;
 		}
 
@@ -1180,11 +1182,14 @@ FontTextSize Renderer::computeSizeOrDrawText(
 			f32 w = 0.0f;
 			u32 lChr = 0;
 			u32 cnt = 0;
+
 			for (u32 i = 0; i < lineEnd; ++i)
 			{
 				auto chr = text[i];
 				auto glyph = fnt->getGlyph(chr);
+				
 				if (!glyph) continue;
+
 				auto kern = fnt->getKerning(lChr, chr);
 				w += glyph->advanceX + kern;
 				lChr = chr;
@@ -1694,7 +1699,7 @@ FontTextSize Renderer::computeSizeOrDrawText(
 		// render underline (single continuous underline across computed width)
 		if (currentTextStyle.underline)
 		{
-			auto image = currentAtlas->whiteImage;
+			auto image = ctx->atlas.whiteImage;
 
 			// underline spans the whole measured width (max line width)
 			Rect underlineRect(
@@ -1741,9 +1746,6 @@ void Renderer::drawAtlasRegion(bool rotated, const Rect& rect, const Rect& uvRec
 
 void Renderer::drawTextGlyph(Image* image, const Point& position)
 {
-	if (!image->atlasTexture) return;
-
-	atlasTextureIndex = image->atlasTexture->textureIndex;
 	Rect rect = Rect(
 		position.x,
 		position.y,
@@ -1775,38 +1777,32 @@ void Renderer::drawQuad(const Rect& rect, const Rect& uvRect)
 	vertexBufferData.vertices[i].position = rect.topLeft();
 	vertexBufferData.vertices[i].uv = uvRect.topLeft();
 	vertexBufferData.vertices[i].color = currentColor;
-	vertexBufferData.vertices[i].textureIndex = atlasTextureIndex;
 	i++;
 
 	vertexBufferData.vertices[i].position = rect.topRight();
 	vertexBufferData.vertices[i].uv = uvRect.topRight();
 	vertexBufferData.vertices[i].color = currentColor;
-	vertexBufferData.vertices[i].textureIndex = atlasTextureIndex;
 	i++;
 
 	vertexBufferData.vertices[i].position = rect.bottomLeft();
 	vertexBufferData.vertices[i].uv = uvRect.bottomLeft();
 	vertexBufferData.vertices[i].color = currentColor;
-	vertexBufferData.vertices[i].textureIndex = atlasTextureIndex;
 	i++;
 
 	// 2nd triangle
 	vertexBufferData.vertices[i].position = rect.topRight();
 	vertexBufferData.vertices[i].uv = uvRect.topRight();
 	vertexBufferData.vertices[i].color = currentColor;
-	vertexBufferData.vertices[i].textureIndex = atlasTextureIndex;
 	i++;
 
 	vertexBufferData.vertices[i].position = rect.bottomRight();
 	vertexBufferData.vertices[i].uv = uvRect.bottomRight();
 	vertexBufferData.vertices[i].color = currentColor;
-	vertexBufferData.vertices[i].textureIndex = atlasTextureIndex;
 	i++;
 
 	vertexBufferData.vertices[i].position = rect.bottomLeft();
 	vertexBufferData.vertices[i].uv = uvRect.bottomLeft();
 	vertexBufferData.vertices[i].color = currentColor;
-	vertexBufferData.vertices[i].textureIndex = atlasTextureIndex;
 	i++;
 
 	vertexBufferData.drawVertexCount = i;
@@ -1815,12 +1811,12 @@ void Renderer::drawQuad(const Rect& rect, const Rect& uvRect)
 
 void Renderer::drawQuad4Colors(const Rect& rect, const Rect& uvRect, const Rgba32 colTopLeft, const Rgba32 colTopRight, const Rgba32 colBottomRight, const Rgba32 colBottomLeft)
 {
-	drawTriangle(rect.topLeft(), rect.topRight(),  rect.bottomRight(),
+	drawTriangle(rect.topLeft(), rect.topRight(), rect.bottomRight(),
 		uvRect.topLeft(), uvRect.topRight(), uvRect.bottomRight(),
-		colTopLeft, colTopRight, colBottomRight, currentAtlas->whiteImage);
+		colTopLeft, colTopRight, colBottomRight, ctx->atlas.whiteImage);
 	drawTriangle(rect.topLeft(), rect.bottomRight(), rect.bottomLeft(),
 		uvRect.topLeft(), uvRect.bottomRight(), uvRect.bottomLeft(),
-		colTopLeft, colBottomRight, colBottomLeft, currentAtlas->whiteImage);
+		colTopLeft, colBottomRight, colBottomLeft, ctx->atlas.whiteImage);
 }
 
 void Renderer::drawQuadRot90(const Rect& rect, const Rect& uvRect)
@@ -1841,19 +1837,16 @@ void Renderer::drawQuadRot90(const Rect& rect, const Rect& uvRect)
 	vertexBufferData.vertices[i].position = rect.topLeft();
 	vertexBufferData.vertices[i].uv = t3;
 	vertexBufferData.vertices[i].color = currentColor;
-	vertexBufferData.vertices[i].textureIndex = atlasTextureIndex;
 	i++;
 
 	vertexBufferData.vertices[i].position = rect.topRight();
 	vertexBufferData.vertices[i].uv = t0;
 	vertexBufferData.vertices[i].color = currentColor;
-	vertexBufferData.vertices[i].textureIndex = atlasTextureIndex;
 	i++;
 
 	vertexBufferData.vertices[i].position = rect.bottomLeft();
 	vertexBufferData.vertices[i].uv = t2;
 	vertexBufferData.vertices[i].color = currentColor;
-	vertexBufferData.vertices[i].textureIndex = atlasTextureIndex;
 	i++;
 
 	// 2nd triangle
@@ -1861,19 +1854,16 @@ void Renderer::drawQuadRot90(const Rect& rect, const Rect& uvRect)
 	vertexBufferData.vertices[i].position = rect.topRight();
 	vertexBufferData.vertices[i].uv = t0;
 	vertexBufferData.vertices[i].color = currentColor;
-	vertexBufferData.vertices[i].textureIndex = atlasTextureIndex;
 	i++;
 
 	vertexBufferData.vertices[i].position = rect.bottomRight();
 	vertexBufferData.vertices[i].uv = t1;
 	vertexBufferData.vertices[i].color = currentColor;
-	vertexBufferData.vertices[i].textureIndex = atlasTextureIndex;
 	i++;
 
 	vertexBufferData.vertices[i].position = rect.bottomLeft();
 	vertexBufferData.vertices[i].uv = t2;
 	vertexBufferData.vertices[i].color = currentColor;
-	vertexBufferData.vertices[i].textureIndex = atlasTextureIndex;
 	i++;
 
 	vertexBufferData.drawVertexCount = i;
@@ -1888,8 +1878,6 @@ void Renderer::drawImageBordered(Image* image, u32 border, const Rect& rect, f32
 	screenRect.y = round(screenRect.y);
 	screenRect.width = round(screenRect.width);
 	screenRect.height = round(screenRect.height);
-
-	atlasTextureIndex = image->atlasTexture->textureIndex;
 
 	if (screenRect.width < 1
 		|| screenRect.height < 1)
@@ -1914,8 +1902,8 @@ void Renderer::drawImageBordered(Image* image, u32 border, const Rect& rect, f32
 	//TODO: optimize this, maybe special shader for 9 cell?
 	// compute the UV sizes for the border corners
 	f32 fborder = (f32)border;
-	f32 borderU = fborder / (f32)currentBatch->textureArray->getWidth();
-	f32 borderV = fborder / (f32)currentBatch->textureArray->getHeight();
+	f32 borderU = fborder / (f32)currentTextureWidth;
+	f32 borderV = fborder / (f32)currentTextureHeight;
 
 	// this is the double size, two borders used in computations
 	f32 borderU2 = borderU * 2.0f;
@@ -2194,8 +2182,7 @@ void Renderer::drawPolyLine(const Point* points, u32 pointCount, bool closed)
 	Point p12;
 	Point p21;
 	Point p22;
-	auto atlas = (Atlas*)currentBatch->atlas;
-	auto lineImage = atlas->whiteImage;
+	auto lineImage = ctx->atlas.whiteImage;
 	const auto color = currentLineStyle.color;
 	auto rcUv = lineImage->uvRect;
 
@@ -2223,7 +2210,7 @@ void Renderer::drawPolyLine(const Point* points, u32 pointCount, bool closed)
 	Point seg1, seg2;
 	bool stippleToggle = true;
 
-	for (int p = 0; p < pointCount; p++)
+	for (auto p = 0; p < pointCount; p++)
 	{
 		extrudeScale1 = 1;
 		extrudeScale2 = 1;
@@ -2314,7 +2301,7 @@ void Renderer::drawPolyLine(const Point* points, u32 pointCount, bool closed)
 				seg2 = Point(pts[0].x - pts[p + 1].x, pts[0].y - pts[p + 1].y);
 				seg1.normalize();
 				seg2.normalize();
-			 d1 = seg1 + seg2;
+				d1 = seg1 + seg2;
 				d1.normalize();
 				sinAngle = (d1.x * seg2.y - d1.y * seg2.x);
 				extrudeScale2 = 1.0f / sinAngle;
@@ -2327,7 +2314,9 @@ void Renderer::drawPolyLine(const Point* points, u32 pointCount, bool closed)
 					extrudeScale2 = 1;
 				}
 				else
+				{
 					n2 = d1;
+				}
 
 				lastN2 = n2;
 			}
@@ -2419,7 +2408,7 @@ void Renderer::drawTriangle(
 	const Rgba32 c1, const Rgba32 c2, const Rgba32 c3,
 	Image* image)
 {
-	//TODO: not thread safe
+	//TODO: not thread safe, but we dont support MT anyway, so should be fine for now, just avoid recursive calls to drawTriangle
 	static Point pts[12];
 	static Point uvPts[12];
 	static Rgba32 colors[12];
@@ -2441,8 +2430,6 @@ void Renderer::drawTriangle(
 	Point& firstUv = uvPts[0];
 	Rgba32 firstColor = colors[0];
 
-	atlasTextureIndex = image->atlasTexture->textureIndex;
-
 	needToAddVertexCount((pointCount - 2) * 3);
 	u32 i = vertexBufferData.drawVertexCount;
 
@@ -2451,19 +2438,16 @@ void Renderer::drawTriangle(
 		vertexBufferData.vertices[i].position = firstPoint;
 		vertexBufferData.vertices[i].color = firstColor;
 		vertexBufferData.vertices[i].uv = firstUv;
-		vertexBufferData.vertices[i].textureIndex = atlasTextureIndex;
 		i++;
 
 		vertexBufferData.vertices[i].position = pts[k];
 		vertexBufferData.vertices[i].color = colors[k];
 		vertexBufferData.vertices[i].uv = uvPts[k];
-		vertexBufferData.vertices[i].textureIndex = atlasTextureIndex;
 		i++;
 
 		vertexBufferData.vertices[i].position = pts[k+1];
 		vertexBufferData.vertices[i].color = colors[k+1];
 		vertexBufferData.vertices[i].uv = uvPts[k+1];
-		vertexBufferData.vertices[i].textureIndex = atlasTextureIndex;
 		i++;
 	}
 
@@ -2471,7 +2455,7 @@ void Renderer::drawTriangle(
 	vertexBufferData.drawVertexCount = i;
 }
 
-bool Renderer::clipRectNoRot(Rect& rect, Rect& uvRect, Rgba32* colors)
+bool Renderer::clipRectNoRot(Rect& rect, Rect& uvRect, Rgba32* colors) const
 {
 	if (rect.outside(currentClipRect))
 		return false;
@@ -2532,7 +2516,7 @@ bool Renderer::clipRectNoRot(Rect& rect, Rect& uvRect, Rgba32* colors)
 	return true;
 }
 
-bool Renderer::clipRectRot(Rect& rect, Rect& uvRect, Rgba32* colors)
+bool Renderer::clipRectRot(Rect& rect, Rect& uvRect, Rgba32* colors) const
 {
 	if (rect.outside(currentClipRect))
 		return false;
@@ -2583,7 +2567,7 @@ bool Renderer::clipRectRot(Rect& rect, Rect& uvRect, Rgba32* colors)
 	return true;
 }
 
-bool Renderer::clipRect(bool rotated, Rect& rect, Rect& uvRect, Rgba32* colors)
+bool Renderer::clipRect(bool rotated, Rect& rect, Rect& uvRect, Rgba32* colors) const
 {
 	if (!rotated)
 	{
@@ -2602,7 +2586,6 @@ void Renderer::needToAddVertexCount(u32 count)
 	}
 
 	vertexBufferData.vertices.resize(vertexBufferData.vertices.size() * vertexBufferData.vertexCountGrowFactor + count);
-	vertexBuffer->resize(vertexBufferData.vertices.size());
 }
 
 char* Renderer::addUtf8TextToBuffer(const char* text, u32 sizeBytes)
@@ -2623,8 +2606,7 @@ void Renderer::addBatch()
 	currentBatch = &currentWindowContext->batches.back();
 	currentBatch->primitiveType = RenderBatch::PrimitiveType::TriangleList;
 	currentBatch->startVertexIndex = vertexBufferData.drawVertexCount;
-	currentBatch->vertexBuffer = vertexBuffer;
-	currentBatch->texture = currentAtlas->textureArray->getHandle();
+	currentBatch->texture = currentTexture;
 }
 
 void Renderer::addDrawCommand(const DrawCommand& cmd)

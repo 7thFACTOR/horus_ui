@@ -57,8 +57,8 @@ bool check(const char* label, bool* checkVar)
 		checkMarkElemState = &checkMarkElem.getState(WidgetStateType::Hovered);
 	}
 
-	ctx->renderer->cmdSetColor(checkBodyElemState->color);
-	ctx->renderer->cmdDrawImageBordered(
+	ctx->renderer.cmdSetColor(checkBodyElemState->color);
+	ctx->renderer.cmdDrawImageBordered(
 		checkBodyElemState->image, checkBodyElemState->border,
 		{
 			round(ctx->widget.rect.x),
@@ -69,8 +69,8 @@ bool check(const char* label, bool* checkVar)
 
 	if (checkVar && *checkVar)
 	{
-		ctx->renderer->cmdSetColor(checkMarkElemState->color);
-		ctx->renderer->cmdDrawImageBordered(
+		ctx->renderer.cmdSetColor(checkMarkElemState->color);
+		ctx->renderer.cmdDrawImageBordered(
 			checkMarkElemState->image,
 			checkMarkElemState->border,
 			{
@@ -81,9 +81,9 @@ bool check(const char* label, bool* checkVar)
 			}, ctx->scale);
 	}
 
-	ctx->renderer->cmdSetColor(checkBodyElemState->textColor);
-	ctx->renderer->cmdSetFont(checkBodyElemState->font);
-	ctx->renderer->cmdDrawTextInBox(
+	ctx->renderer.cmdSetColor(checkBodyElemState->textColor);
+	ctx->renderer.cmdSetFont(checkBodyElemState->font);
+	ctx->renderer.cmdDrawTextInBox(
 		ctx->widgetLabel.c_str(),
 		Rect(
 			ctx->widget.rect.x + markWidthScaled + bulletTextSpacing,

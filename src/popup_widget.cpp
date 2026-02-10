@@ -24,7 +24,7 @@ void beginPopup(
 	if (!has(flags, PopupFlags::SameLayer))
 		incrementLayerIndex();
 
-	ctx->renderer->pushWindowDrawCmdLayer(DrawCmdLayerType::Foreground);
+	ctx->renderer.pushWindowDrawCmdLayer(DrawCmdLayerType::Foreground);
 	ctx->popupIndex++;
 
 	// not active, first show, do not render anything, next frame
@@ -58,8 +58,8 @@ void beginPopup(
 	if (has(flags, PopupFlags::Centered))
 	{
 		pos = {
-			(ctx->renderer->getWindowSize().x - width) / 2.0f,
-			(ctx->renderer->getWindowSize().y - height) / 2.0f 
+			(ctx->renderer.getWindowSize().x - width) / 2.0f,
+			(ctx->renderer.getWindowSize().y - height) / 2.0f 
 		};
 		pos += popup.moveOffset;
 	}
@@ -76,7 +76,7 @@ void beginPopup(
 	}
 
 	// limit to right side
-	if (pos.x + width > ctx->renderer->getWindowSize().x)
+	if (pos.x + width > ctx->renderer.getWindowSize().x)
 	{
 		if (has(flags, PopupFlags::IsMenu))
 		{
@@ -85,14 +85,14 @@ void beginPopup(
 		}
 		else
 		{
-			pos.x = ctx->renderer->getWindowSize().x - width;
+			pos.x = ctx->renderer.getWindowSize().x - width;
 		}
 	}
 
 	// limit to top
-	if (pos.y + height > ctx->renderer->getWindowSize().y)
+	if (pos.y + height > ctx->renderer.getWindowSize().y)
 	{
-		pos.y = ctx->renderer->getWindowSize().y - height;
+		pos.y = ctx->renderer.getWindowSize().y - height;
 	}
 
 	// limit to left
@@ -132,21 +132,21 @@ void beginPopup(
 	ctx->sameLine.enabled = false;
 	ctx->sameLine.wasEnabled = false;
 	ctx->sameLine.maxHeight = 0;
-	ctx->renderer->pushClipRect(ctx->renderer->getWindowRect(), false);
+	ctx->renderer.pushClipRect(ctx->renderer.getWindowRect(), false);
 
 	if (has(flags, PopupFlags::FadeBackground))
 	{
 		auto& behindElemState = ctx->theme->getElement(WidgetElementId::PopupBehind).normalState();
 
-		ctx->renderer->cmdSetColor(behindElemState.color);
-		ctx->renderer->cmdDrawImageBordered(
+		ctx->renderer.cmdSetColor(behindElemState.color);
+		ctx->renderer.cmdDrawImageBordered(
 			behindElemState.image,
 			behindElemState.border,
-			ctx->renderer->getWindowRect(), ctx->scale);
+			ctx->renderer.getWindowRect(), ctx->scale);
 	}
 
-	ctx->renderer->cmdSetColor(bodyElemState.color);
-	ctx->renderer->cmdDrawImageBordered(
+	ctx->renderer.cmdSetColor(bodyElemState.color);
+	ctx->renderer.cmdDrawImageBordered(
 		bodyElemState.image,
 		bodyElemState.border,
 		popupRect, ctx->scale);
@@ -226,13 +226,13 @@ void endPopup()
 	popup.height = (ctx->position.y - ctx->layout.savedPosition.y) + bodyElemState.border * 2.0f * ctx->scale - ctx->spacing * ctx->scale;
 	
 	ctx->position = ctx->layout.savedPosition;
-	ctx->renderer->popClipRect();
+	ctx->renderer.popClipRect();
 	popPosition();
 	popLayout();
 	
 	// Restore the complete sameLine context state
 	ctx->sameLine = popup.savedSameLine;
-	ctx->renderer->popWindowDrawCmdLayer();
+	ctx->renderer.popWindowDrawCmdLayer();
 
 	if (!has(popup.flags, PopupFlags::SameLayer))
 		decrementLayerIndex();

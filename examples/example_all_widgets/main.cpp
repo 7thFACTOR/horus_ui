@@ -254,7 +254,7 @@ int main(int argc, char** args)
 				hui::Rect panelRect = { 5, 5, 300, 500 };
 				hui::WidgetElementInfo elemInfo;
 				hui::getThemeWidgetElementInfo(hui::WidgetElementId::PopupBody, hui::WidgetStateType::Normal, elemInfo);
-				hui::setColor(hui::Color::white);
+				hui::color(hui::Color::white);
 				// draw before the beginContainer, because it will clip our panel image (using padding)
 				//hui::drawBorderedImage(elemInfo.image, elemInfo.border, panelRect);
 

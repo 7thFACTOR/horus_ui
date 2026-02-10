@@ -29,14 +29,14 @@ bool tooltip(const char* text)
 			ctx->tooltip.position.y + ctx->tooltip.offsetFromCursor + bodyElemState.border * ctx->scale,
 			fsize.width, fsize.height };
 
-		if (rect.right() > ctx->renderer->getWindowRect().right())
+		if (rect.right() > ctx->renderer.getWindowRect().right())
 		{
-			rect.x = ctx->renderer->getWindowRect().right() - rect.width;
+			rect.x = ctx->renderer.getWindowRect().right() - rect.width;
 		}
 
-		if (rect.bottom() > ctx->renderer->getWindowRect().bottom())
+		if (rect.bottom() > ctx->renderer.getWindowRect().bottom())
 		{
-			rect.y = ctx->renderer->getWindowRect().bottom() - rect.height;
+			rect.y = ctx->renderer.getWindowRect().bottom() - rect.height;
 		}
 
 		if (rect.x < 0)
@@ -49,27 +49,27 @@ bool tooltip(const char* text)
 			rect.y = 0;
 		}
 
-		ctx->renderer->pushWindowDrawCmdLayer(DrawCmdLayerType::Overlay);
-		ctx->renderer->pushClipRect(ctx->renderer->getWindowRect(), false);
+		ctx->renderer.pushWindowDrawCmdLayer(DrawCmdLayerType::Overlay);
+		ctx->renderer.pushClipRect(ctx->renderer.getWindowRect(), false);
 
 		Rect rc = rect;
 	
-		ctx->renderer->cmdSetColor(bodyElemState.color);
+		ctx->renderer.cmdSetColor(bodyElemState.color);
 		rc.x -= bodyElemState.border * ctx->scale;
 		rc.y -= bodyElemState.border * ctx->scale;
 		rc.width += bodyElemState.border * 2 * ctx->scale;
 		rc.height += bodyElemState.border * 2 * ctx->scale;
-		ctx->renderer->cmdDrawImageBordered(
+		ctx->renderer.cmdDrawImageBordered(
 			bodyElemState.image, bodyElemState.border, rc, ctx->scale);
 
-		ctx->renderer->cmdSetColor(bodyElemState.textColor);
-		ctx->renderer->cmdSetFont(bodyElemState.font);
-		ctx->renderer->cmdDrawTextInBox(
+		ctx->renderer.cmdSetColor(bodyElemState.textColor);
+		ctx->renderer.cmdSetFont(bodyElemState.font);
+		ctx->renderer.cmdDrawTextInBox(
 			text, rect,
 			HAlignType::Center, VAlignType::Center);
 
-		ctx->renderer->popClipRect();
-		ctx->renderer->popWindowDrawCmdLayer();
+		ctx->renderer.popClipRect();
+		ctx->renderer.popWindowDrawCmdLayer();
 
 		return true;
 	}

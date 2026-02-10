@@ -27,8 +27,8 @@ bool beginMenuBar()
 	//if (!ctx->widget.visible)
 	//	return false;
 
-	ctx->renderer->cmdSetColor(menuBarElem.normalState().color);
-	ctx->renderer->cmdDrawImageBordered(menuBarElem.normalState().image, menuBarElem.normalState().border, ctx->widget.rect, ctx->scale);
+	ctx->renderer.cmdSetColor(menuBarElem.normalState().color);
+	ctx->renderer.cmdDrawImageBordered(menuBarElem.normalState().image, menuBarElem.normalState().border, ctx->widget.rect, ctx->scale);
 	ctx->currentMenuBarId = ctx->id;
 
 	return true;
@@ -53,7 +53,7 @@ bool beginMenuInternal(const char* label, SelectableFlags stateFlags, bool conte
 	
 	ctx->setLabelAndId(label);
 	
-	Utf32String* uniStr = ctx->textCache->getText(ctx->widgetLabel.c_str());
+	Utf32String* uniStr = ctx->textCache.getText(ctx->widgetLabel.c_str());
 	FontTextSize fsize = menuBarItemElemState.font->computeTextSize(*uniStr);
 	auto isMenuBarItem = ctx->menuDepth == 0;
 
@@ -81,7 +81,7 @@ bool beginMenuInternal(const char* label, SelectableFlags stateFlags, bool conte
 			&& ctx->activeMenuBarItemWidgetId != thisMenuItemId
 			&& ctx->activeMenuBarId == ctx->currentMenuBarId)
 		{
-			Rect clippedRect = ctx->widget.rect.clipInside(ctx->renderer->getClipRect());
+			Rect clippedRect = ctx->widget.rect.clipInside(ctx->renderer.getClipRect());
 
 			if (clippedRect.contains(ctx->mousePosition))
 			{
@@ -132,11 +132,11 @@ bool beginMenuInternal(const char* label, SelectableFlags stateFlags, bool conte
 
 		if (!contextMenu)
 		{
-			ctx->renderer->cmdSetColor(menuBarItemElemState.color);
-			ctx->renderer->cmdDrawImageBordered(menuBarItemElemState.image, menuBarItemElemState.border, ctx->widget.rect, ctx->scale);
-			ctx->renderer->cmdSetFont(menuBarItemElemState.font);
-			ctx->renderer->cmdSetColor(menuBarItemElemState.textColor);
-			ctx->renderer->cmdDrawTextInBox(ctx->widgetLabel.c_str(), ctx->widget.rect, HAlignType::Center, VAlignType::Center);
+			ctx->renderer.cmdSetColor(menuBarItemElemState.color);
+			ctx->renderer.cmdDrawImageBordered(menuBarItemElemState.image, menuBarItemElemState.border, ctx->widget.rect, ctx->scale);
+			ctx->renderer.cmdSetFont(menuBarItemElemState.font);
+			ctx->renderer.cmdSetColor(menuBarItemElemState.textColor);
+			ctx->renderer.cmdDrawTextInBox(ctx->widgetLabel.c_str(), ctx->widget.rect, HAlignType::Center, VAlignType::Center);
 			ctx->position.x += width;
 			ctx->position.x = round(ctx->position.x);
 		}
@@ -146,7 +146,7 @@ bool beginMenuInternal(const char* label, SelectableFlags stateFlags, bool conte
 		{
 			auto& menuBodyElem = ctx->theme->getElement(WidgetElementId::MenuBody);
 
-			ctx->renderer->pushClipRect(ctx->renderer->getWindowRect(), false);
+			ctx->renderer.pushClipRect(ctx->renderer.getWindowRect(), false);
 			pushSpacing(0);
 			beginPopup("menuPopup",
 				ctx->menuStack[ctx->menuDepth].size.x + menuBodyElem.normalState().border * 2.0f + ctx->menuFillerWidth + ctx->menuImageSpace,
@@ -188,7 +188,7 @@ bool beginMenuInternal(const char* label, SelectableFlags stateFlags, bool conte
 			auto rc = getWidgetRect();
 			auto& menuBodyElem = ctx->theme->getElement(WidgetElementId::MenuBody);
 			ctx->activeMenuBarItemWidgetWidth = rc.width;
-			ctx->renderer->pushClipRect(ctx->renderer->getWindowRect(), false);
+			ctx->renderer.pushClipRect(ctx->renderer.getWindowRect(), false);
 			pushSpacing(0);
 			beginPopup("menuPopup",
 				ctx->menuStack[ctx->menuDepth].size.x + menuBodyElem.normalState().border * 2.0f + ctx->menuFillerWidth + ctx->menuImageSpace,
@@ -237,7 +237,7 @@ void endMenuInternal(bool contextMenu)
 
 		endPopup();
 		popSpacing();
-		ctx->renderer->popClipRect();
+		ctx->renderer.popClipRect();
 		ctx->menuDepth = 0;
 	}
 	else if (ctx->menuDepth > 1)
@@ -266,7 +266,7 @@ void endMenuInternal(bool contextMenu)
 
 			endPopup();
 			popSpacing();
-			ctx->renderer->popClipRect();
+			ctx->renderer.popClipRect();
 		}
 
 		ctx->menuDepth--;
@@ -356,14 +356,14 @@ bool menuItem(const char* label, const char* shortcut, HImage img, SelectableFla
 	}
 
 	// render menu item bg
-	ctx->renderer->cmdSetColor(applyTint(bodyElemState->color, TintColorType::Body));
-	ctx->renderer->cmdDrawImageBordered(bodyElemState->image, bodyElemState->border, ctx->widget.rect, ctx->scale);
-	ctx->renderer->cmdSetColor(applyTint(bodyElemState->textColor, TintColorType::Text));
+	ctx->renderer.cmdSetColor(applyTint(bodyElemState->color, TintColorType::Body));
+	ctx->renderer.cmdDrawImageBordered(bodyElemState->image, bodyElemState->border, ctx->widget.rect, ctx->scale);
+	ctx->renderer.cmdSetColor(applyTint(bodyElemState->textColor, TintColorType::Text));
 
 	// render menu item text
-	ctx->renderer->cmdSetFont(bodyElemState->font);
-	ctx->renderer->pushClipRect(ctx->widget.rect);
-	ctx->renderer->cmdDrawTextInBox(
+	ctx->renderer.cmdSetFont(bodyElemState->font);
+	ctx->renderer.pushClipRect(ctx->widget.rect);
+	ctx->renderer.cmdDrawTextInBox(
 		ctx->widgetLabel.c_str(),
 		Rect(
 			ctx->widget.rect.x + (ctx->menuItemTextSideSpacing + ctx->menuImageSpace) * ctx->scale,
@@ -373,14 +373,14 @@ bool menuItem(const char* label, const char* shortcut, HImage img, SelectableFla
 		,
 		HAlignType::Left,
 		VAlignType::Center);
-	ctx->renderer->popClipRect();
+	ctx->renderer.popClipRect();
 
 	// render the shortcut text
 	if (shortcut)
 	{
-		ctx->renderer->cmdSetColor(applyTint(shortcutElemState->textColor, TintColorType::Text));
-		ctx->renderer->cmdSetFont(shortcutElemState->font);
-		ctx->renderer->cmdDrawTextInBox(
+		ctx->renderer.cmdSetColor(applyTint(shortcutElemState->textColor, TintColorType::Text));
+		ctx->renderer.cmdSetFont(shortcutElemState->font);
+		ctx->renderer.cmdDrawTextInBox(
 			shortcut,
 			Rect(
 				ctx->widget.rect.x,
@@ -407,13 +407,13 @@ bool menuItem(const char* label, const char* shortcut, HImage img, SelectableFla
 			noCheckMarkElem.normalState().image->rect.height * ctx->scale
 		);
 
-		ctx->renderer->cmdSetColor(noCheckMarkElem.normalState().color);
-		ctx->renderer->cmdDrawImage(noCheckMarkElem.normalState().image, rcImage);
+		ctx->renderer.cmdSetColor(noCheckMarkElem.normalState().color);
+		ctx->renderer.cmdDrawImage(noCheckMarkElem.normalState().image, rcImage);
 
 		if (isChecked)
 		{
-			ctx->renderer->cmdSetColor(checkMarkElem.normalState().color);
-			ctx->renderer->cmdDrawImage(checkMarkElem.normalState().image, rcImage);
+			ctx->renderer.cmdSetColor(checkMarkElem.normalState().color);
+			ctx->renderer.cmdDrawImage(checkMarkElem.normalState().image, rcImage);
 		}
 	}
 	else if (hasImage)
@@ -428,14 +428,14 @@ bool menuItem(const char* label, const char* shortcut, HImage img, SelectableFla
 			image->rect.height * ctx->scale
 		);
 
-		ctx->renderer->cmdSetColor(Color::white);
-		ctx->renderer->cmdDrawImage(image, rcImage);
+		ctx->renderer.cmdSetColor(Color::white);
+		ctx->renderer.cmdDrawImage(image, rcImage);
 	}
 
 	setFocusable();
 
 	auto menuItemTextWidth = bodyElemState->font->computeTextSize(
-		*ctx->textCache->getText(ctx->widgetLabel.c_str())).width + menuItemShortcutElem.normalState().font->computeTextSize(*ctx->textCache->getText(shortcut ? shortcut : "")).width;
+		*ctx->textCache.getText(ctx->widgetLabel.c_str())).width + menuItemShortcutElem.normalState().font->computeTextSize(*ctx->textCache.getText(shortcut ? shortcut : "")).width;
 
 	ctx->menuStack[ctx->menuDepth - 1].size.x = std::max(
 		menuItemTextWidth,
@@ -481,8 +481,8 @@ bool menuItem(const char* label, const char* shortcut, HImage img, SelectableFla
 			submenuArrowState->image->rect.height * ctx->scale
 		);
 
-		ctx->renderer->cmdSetColor(submenuArrowState->color);
-		ctx->renderer->cmdDrawImage(submenuArrowState->image, rcArrow);
+		ctx->renderer.cmdSetColor(submenuArrowState->color);
+		ctx->renderer.cmdDrawImage(submenuArrowState->image, rcArrow);
 	}
 
 	return ctx->widget.clicked;

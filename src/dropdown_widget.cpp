@@ -43,14 +43,14 @@ bool dropdown(const char* id, i32& selectedIndex, const char** items, u32 itemCo
 		arrowElemState = &arrowElem.getState(WidgetStateType::Hovered);
 	}
 
-	ctx->renderer->cmdSetColor(applyTint(bodyElemState->color, TintColorType::Body));
-	ctx->renderer->cmdDrawImageBordered(bodyElemState->image, bodyElemState->border, ctx->widget.rect, ctx->scale);
-	ctx->renderer->cmdSetColor(applyTint(arrowElemState->color, TintColorType::Body));
+	ctx->renderer.cmdSetColor(applyTint(bodyElemState->color, TintColorType::Body));
+	ctx->renderer.cmdDrawImageBordered(bodyElemState->image, bodyElemState->border, ctx->widget.rect, ctx->scale);
+	ctx->renderer.cmdSetColor(applyTint(arrowElemState->color, TintColorType::Body));
 
 	// dial down the height, since its already global scaled
 	auto arrowY = ctx->widget.rect.height / 2.0f - ((arrowElemState->image->height) / 2.0f + (ctx->widget.pressed ? 1.0f : 0.0f)) * ctx->scale;
 
-	ctx->renderer->cmdDrawImage(arrowElemState->image,
+	ctx->renderer.cmdDrawImage(arrowElemState->image,
 		{
 			ctx->widget.rect.right() - (padding.y + arrowElemState->image->width - (ctx->widget.pressed ? 1.0f : 0.0f)) * ctx->scale,
 			ctx->widget.rect.top() + arrowY,
@@ -79,9 +79,9 @@ bool dropdown(const char* id, i32& selectedIndex, const char** items, u32 itemCo
 				ctx->widget.rect.height
 		};
 
-		ctx->renderer->cmdSetColor(applyTint(bodyElemState->textColor, TintColorType::Text));
-		ctx->renderer->cmdSetFont(bodyElemState->font);
-		ctx->renderer->cmdDrawTextInBox(
+		ctx->renderer.cmdSetColor(applyTint(bodyElemState->textColor, TintColorType::Text));
+		ctx->renderer.cmdSetFont(bodyElemState->font);
+		ctx->renderer.cmdDrawTextInBox(
 			selectedItemText,
 			textRc,
 			HAlignType::Left,
