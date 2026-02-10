@@ -111,15 +111,6 @@ typedef double f64;
 #endif
 #endif
 
-#ifndef HORUS_ASSERT
-#include <assert.h>
-#define HORUS_ASSERT(cond) assert(cond)
-#endif
-
-#ifndef HORUS_LOG
-#define HORUS_LOG(format, ...) printf(format"\n", ##__VA_ARGS__)
-#endif
-
 namespace hui
 {
 #define HORUS_BIT(bit) (1<<bit)
@@ -140,16 +131,6 @@ inline bool has(T x, T y) { return ((enumBasicType)x & (enumBasicType)y) != 0; }
 inline enumBasicType fromFlags(T x) { return (enumBasicType)x; };
 template <typename T> inline T toFlags(int x) { return (T)x; };
 
-// Some shortcuts for the service providers
-#define HORUS_FILE hui::getSettings().providers.file
-#define HORUS_FILEDIALOGS hui::getSettings().providers.fileDialogs
-#define HORUS_GFX hui::getSettings().providers.gfx
-#define HORUS_INPUT hui::getSettings().providers.input
-#define HORUS_UTF hui::getSettings().providers.utf
-#define HORUS_IMAGE hui::getSettings().providers.image
-#define HORUS_FONT hui::getSettings().providers.font
-#define HORUS_RECTPACK hui::getSettings().providers.rectPack
-
 typedef void* HImage;
 typedef void* HTheme;
 typedef void* HFont;
@@ -157,20 +138,17 @@ typedef void* HThemeWidgetElement;
 typedef void* HNativeWindow;
 typedef void* HDockNode;
 typedef void* HMouseCursor;
-typedef void* HGraphicsApiContext;
-typedef void* HGraphicsApiTexture;
-typedef void* HGraphicsApiVertexBuffer;
+typedef void* HTexture;
 typedef void* HContext;
 typedef void* HFile;
-typedef void* HRectPacker;
 typedef void* HFontFace;
 
 typedef u32 Rgba32;
 typedef u32 TabIndex;
 typedef u32 GlyphCode;
-typedef std::vector<GlyphCode> Utf32String;
 typedef u64 DockNodeId;
 typedef u64 WidgetId;
+typedef std::vector<GlyphCode> Utf32String;
 
 typedef void (*RenderCallback)(HNativeWindow wnd);
 
@@ -426,7 +404,6 @@ HORUS_ENUM_AS_FLAGS(SelectableFlags);
 enum class TableFlags : u32
 {
 	None = 0,
-
 	// Layout / sizing
 	FixedFit = HORUS_BIT(0),
 	Stretch = HORUS_BIT(1),
@@ -714,8 +691,7 @@ HORUS_ENUM_AS_FLAGS(MessageBoxButtons);
 
 enum class ContextMenuFlags
 {
-	None = 0,
-	AllowLeftClickOpen = HORUS_BIT(1)
+	None = 0
 };
 HORUS_ENUM_AS_FLAGS(ContextMenuFlags);
 
@@ -1538,16 +1514,6 @@ struct HORUS_STRUCT_API Color
 	f32 r = 0.0f, g = 0.0f, b = 0.0f, a = 1.0f;
 };
 
-/// Used by the openMultipleFileDialog function. Warning! the pointers will be deleted on struct's instance out of scope
-struct OpenMultipleFileSet
-{
-	char* filenameBuffer = nullptr; /// buffer used to store the filenames, created by the library
-	size_t* bufferIndices = nullptr; /// array containing indices into filenameBuffer, where each filename starts
-	u32 count = 0; /// the number of filenames
-
-	~OpenMultipleFileSet();
-};
-
 /// Line drawing style
 struct LineStyle
 {
@@ -1576,7 +1542,7 @@ struct FillStyle
 	{}
 
 	Color color = Color::white;
-	HGraphicsApiTexture texture = 0;
+	HImage image = 0;
 	Point scale;
 };
 
@@ -1623,19 +1589,6 @@ struct VirtualScrollInfo
 	f32 scrollOffsetY = 0.0f; /// current scroll offset in pixels
 };
 
-struct ServiceProviders
-{
-	struct InputProvider* input = 0;
-	struct GraphicsProvider* gfx = 0;
-	struct ImageProvider* image = 0;
-	struct FileProvider* file = 0;
-	struct FileDialogsProvider* fileDialogs = 0;
-	struct UtfProvider* utf = 0;
-	struct FontProvider* font = 0;
-	struct RectPackProvider* rectPack = 0;
-	struct LogProvider* log = 0;
-};
-
 struct DisplayInfo
 {
 	std::string name;
@@ -1647,281 +1600,12 @@ struct DisplayInfo
 	//f32 diagonalDpi = 0, horizontalDpi = 0, verticalDpi = 0;
 };
 
-/// Various HorusUI per-context global settings
-struct Settings
-{
-	ServiceProviders providers;
-	TextCachePruneMode textCachePruneMode = TextCachePruneMode::Time; /// how to prune the unicode text cache which is not used for a while
-	f32 textCachePruneMaxTimeSec = 5; /// after this time, if an Unicode text is not accessed, it's discarded from cache, textCachePruneMode must be Time
-	f32 textCachePruneMaxFrames = 500; /// after this frame count, if an Unicode text is not accessed, it's discarded from cache, textCachePruneMode must be Frames
-	f32 textCachePruneIntervalSec = 5; /// after each interval has passed, the pruning of unused texts is executed, will delete the texts that were not used for the last textCachePruneMaxTimeMs or textCachePruneMaxFrames, depending on the prune mode
-	f32 textCaretBlinkSpeed = 2.0f;
-	bool textCaretBlinkEnable = true;
-	f32 textScrollStepAmount = 30; /// scroll pixel amount when moving inside text input
-	u32 defaultAtlasSize = 4096; /// default atlas textures size in pixels
-	Point defaultLayoutPadding = {10, 10};
-	Point defaultScrollViewPadding = { 10, 10 };
-	Point defaultWidgetPadding = { 0, 0 };
-	f32 defaultWidgetWidth = 150;
-	SliderDragDirection sliderDragDirection = SliderDragDirection::Any; /// allows to change slider value from any direction drag, vertical or horizontal
-	bool sliderInvertVerticalDragAmount = false; /// if true and vertical sliding allowed, it will invert the drag amount
-	f32 dragStartDistance = 3; /// the max distance after which a dragging operation starts to occur when mouse down and moved, in pixels
-	f32 whiteImageUvBorder = 0.001f; /// this value is subtracted from the white image used to draw lines, to avoid black border artifacts
-	f32 sameLineHeight = 20.0f; /// the height of a line when sameLine() is used to position widgets on a single row/line. Used to center various widget heights vertically. This must be non-zero, otherwise the widgets will align wrongly.
-	f32 minScrollViewHandleSize = 20.0f; /// the minimum allowed scroll handle size (height)
-	bool scaleScrollViewHeight = false;
-	bool scaleContainers = true;
-	DockingGuidesStyle dockingStyle = DockingGuidesStyle::Auto; /// use DockingGuidesStyle::InsideNativeWindows for Linux
-	//TODO: this could be per native window
-	bool dockAllowUndockingToNewNativeWindow = true; /// allow view tabs to be undocked as native OS windows, outside of the main window, else windows will only be allowed to dock in their owner OS windows
-	f32 dockNodeSpacing = 3;
-	f32 dockNodeResizeSplitterHitSize = 6;
-	f32 dockNodeMinSize = 100;
-	f32 dockIndicatorBoxScale = 1.0f;
-	f32 dockIndicatorBoxSpacing = 4;
-	f32 dockNodeDockingSizeRatio = 0.33f; /// ratio of the new size of a docked node in regard to the node we're docking in (if dockNodeProportionalResize is true)
-	f32 dockNodeRootDockingHitSize = 40;
-	f32 dockNodeDockingHitSizeRatio = 0.5f; /// unit percent from the size of a window used for the docking hit box
-	f32 dockTabImageTextSpacing = 4;
-	f32 movePopupMaxDistanceTrigger = 5; /// distance of dragging with mouse for when to initiate popup dragging
-	f32 defaultBulletTextSpacing = 5; /// space size between bullet/check/radio and the label, might get overriden by the theme settings
-};
-
-enum class FileSeekMode
-{
-	Current = 1,
-	End = 2,
-	Set = 0,
-};
-
-struct FileProvider
-{
-	virtual ~FileProvider() {};
-	virtual HFile open(const char* path, const char* mode) = 0;
-	virtual size_t read(HFile file, void* outData, size_t bytesToRead) = 0;
-	virtual size_t write(HFile file, void* data, size_t bytesToWrite) = 0;
-	virtual void close(HFile file) = 0;
-	virtual bool seek(HFile file, FileSeekMode mode, size_t pos = 0) = 0;
-	virtual size_t tell(HFile file) = 0;
-};
-
-struct FileDialogsProvider
-{
-	virtual ~FileDialogsProvider() {}
-	/// Show an open file dialog
-	virtual bool openFileDialog(const char* filterList, const char* defaultPath, char* outPath, u32 maxOutPathSize) = 0;
-	/// Show an open multiple file dialog
-	virtual bool openMultipleFileDialog(const char* filterList, const char* defaultPath, OpenMultipleFileSet& outPathSet) = 0;
-	/// Show an save file dialog
-	virtual bool saveFileDialog(const char* filterList, const char* defaultPath, char* outPath, u32 maxOutPathSize) = 0;
-	/// Show a pick folder dialog
-	virtual bool pickFolderDialog(const char* defaultPath, char* outPath, u32 maxOutPathSize) = 0;
-};
-
-/// The input provider is used for input and windowing services
-struct InputProvider
-{
-	virtual ~InputProvider() {}
-	/// Start text input, usually called by the library to show IME suggestions boxes
-	/// \param window the window where the text started to be input
-	/// \param imeRect the rectangle where to show the suggestion box
-	virtual void startTextInput(HNativeWindow window, const Rect& imeRect) = 0;
-
-	/// Called when the text input ends
-	virtual void stopTextInput() = 0;
-
-	/// Copy UTF8 text to clipboard
-	/// \param text UTF8 text
-	/// \return true if all ok and text was copied to clipboard
-	virtual bool copyToClipboard(const char* text) = 0;
-
-	/// Paste UTF8 text from clipboard
-	/// \param outText user text buffer, already allocated
-	/// \param maxTextSize the user text buffer size
-	/// \return true if the paste into the buffer was successful
-	virtual bool pasteFromClipboard(char* outText, u32 maxTextSize) = 0;
-
-	/// Process the events in the queue, place events in the library's queue
-	virtual void processEvents() = 0;
-
-	/// Set the current native window, where drawing and input testing is occurring
-	virtual void setCurrentWindow(HNativeWindow window) = 0;
-
-	/// \return the current native window
-	virtual HNativeWindow getCurrentWindow() = 0;
-
-	/// \return the focused native window
-	virtual HNativeWindow getFocusedWindow() = 0;
-
-	/// \return the hovered native window
-	virtual HNativeWindow getHoveredWindow() = 0;
-
-	/// Create a new native window
-	/// \param title the window title, UTF8 text
-	/// \param width the window width
-	/// \param height the window height
-	/// \param flags the window flags
-	/// \param customPosition if the positionType is custom, then this is the window's initial position
-	/// \return the new window handle
-	virtual HNativeWindow createWindow(const char* title, NativeWindowFlags flags, NativeWindowState state, const Rect& rect) = 0;
-
-	/// Set window title
-	/// \param window the window
-	/// \param title UTF8 text for the title
-	virtual void setWindowTitle(HNativeWindow window, const char* title) = 0;
-
-	/// Get window title
-	virtual std::string getWindowTitle(HNativeWindow window) = 0;
-
-	virtual u32 getWindowDisplayIndex(HNativeWindow window) = 0;
-
-	virtual u32 getDisplayCount() const = 0;
-
-	virtual DisplayInfo getDisplayInfo(u32 displayIndex) = 0;
-
-	/// Set the window client area size
-	/// \param window the window
-	/// \param size the width and height
-	virtual void setWindowSize(HNativeWindow window, const Point& size) = 0;
-
-	/// Get the window client area size
-	/// \param window the window
-	virtual Point getWindowSize(HNativeWindow window) = 0;
-
-	/// Set the window absolute screen position
-	/// \param window the window
-	/// \param pos the position
-	virtual void setWindowPosition(HNativeWindow window, const Point& pos) = 0;
-
-	/// Get the window absolute screen position
-	/// \param window the window
-	virtual Point getWindowPosition(HNativeWindow window) = 0;
-
-	/// Return the window current state
-	virtual NativeWindowState getWindowState(HNativeWindow window) = 0;
-
-	/// Present the backbuffer of the specified window
-	/// \param window the window to present
-	virtual void presentWindow(HNativeWindow window) = 0;
-
-	/// Destroy a native window
-	/// \param window the window
-	virtual void destroyWindow(HNativeWindow window) = 0;
-
-	/// Show a native window
-	/// \param window the window to show
-	virtual void showWindow(HNativeWindow window) = 0;
-
-	/// Hide a native window
-	/// \param window the window to hide
-	virtual void hideWindow(HNativeWindow window) = 0;
-
-	/// Bring a native window to front of all windows, on supported OS-es
-	/// \param window the window
-	virtual void raiseWindow(HNativeWindow window) = 0;
-
-	/// Maximize a native window
-	/// \param window the window
-	virtual void maximizeWindow(HNativeWindow window) = 0;
-
-	/// Minimize a native window
-	/// \param window the window
-	virtual void minimizeWindow(HNativeWindow window) = 0;
-
-	/// Set the input capture to a specified window
-	/// \param window the window
-	virtual void setCapture(HNativeWindow window) = 0;
-
-	/// Release capture from the captured window (if any)
-	virtual void releaseCapture() = 0;
-
-	/// \return the current screen mouse position
-	virtual Point getAbsoluteMousePosition() = 0;
-
-	/// \return true if the mouse button is down right now, no matter the events
-	virtual bool isMouseButtonDownNow(MouseButton button) = 0;
-
-	/// Set the current mouse cursor type
-	/// \param type the mouse cursor type
-	virtual void setCursor(MouseCursorType type) = 0;
-
-	/// Create a custom mouse cursor
-	/// \param pixels the mouse cursor image as 32bit RGBA
-	/// \param width mouse cursor image width
-	/// \param height mouse cursor image height
-	/// \param x mouse cursor x hot spot in the image
-	/// \param y mouse cursor y hot spot in the image
-	/// \return the new mouse cursor handle
-	virtual HMouseCursor createCustomCursor(Rgba32* pixels, u32 width, u32 height, u32 hotX, u32 hotY) = 0;
-
-	/// Delete a custom mouse cursor
-	/// \param cursor the cursor handle
-	virtual void deleteCustomCursor(HMouseCursor cursor) = 0;
-
-	/// Set the current mouse cursor to a custom cursor
-	/// \param cursor the custom cursor handle
-	virtual void setCustomCursor(HMouseCursor cursor) = 0;
-
-	/// Shutdown the input provider
-	virtual void shutdown() = 0;
-};
-
 /// A vertex struct for rendering UI
 struct Vertex
 {
 	Point position;
 	Point uv;
 	u32 color = 0xFFFFFFFF;
-};
-
-/// A graphics api texture
-struct Texture
-{
-	virtual ~Texture() {}
-
-	/// Resize the texture, this will not preserve the current texture data
-	/// \param newWidth the new width, ideally power of two
-	/// \param newHeight the new height, ideally power of two
-	virtual void resize(u32 newWidth, u32 newHeight) = 0;
-
-	/// Update the texture data, this is the whole array of textures, no mipmaps
-	virtual void updateData(Rgba32* pixels) = 0;
-
-	/// Update a specified texture area defined by a rectangle, in the texture array
-	/// \param textureIndex the 0-based texture index to be updated
-	/// \param rect the rectangle area to be updated
-	/// \param pixels the RGBA 32bit pixel buffer
-	virtual void updateRectData(u32 textureIndex, const Rect& rect, Rgba32* pixels) = 0;
-
-	/// \return the graphics API handle of the texture, you may cast it to the proper handle for your graphics API
-	virtual HGraphicsApiTexture getHandle() const = 0;
-
-	/// \return the textures width
-	virtual u32 getWidth() const = 0;
-
-	/// \return the textures height
-	virtual u32 getHeight() const = 0;
-
-	/// \return the textures count
-	virtual u32 getCount() const = 0;
-};
-
-/// A vertex buffer used to hold UI vertices
-struct VertexBuffer
-{
-	virtual ~VertexBuffer() {}
-
-	/// Resize the vertex buffer, it will not keep the old contents
-	virtual void resize(u32 count) = 0;
-
-	/// Update the vertex data on a specified range
-	/// \param vertices the new vertex data slice
-	/// \param startVertexIndex the start vertex index offset
-	/// \param count the vertex count to update
-	virtual void updateData(Vertex* vertices, u32 startVertexIndex, u32 count) = 0;
-
-	/// \return the graphics API handle for this vertex buffer, you may cast it to the proper handle your graphics API uses
-	virtual HGraphicsApiVertexBuffer getHandle() const = 0;
 };
 
 /// A render batch is a single drawcall, which renders the whole UI or part of it.
@@ -1939,60 +1623,10 @@ struct RenderBatch
 	};
 
 	PrimitiveType primitiveType = PrimitiveType::TriangleList;
-	VertexBuffer* vertexBuffer = nullptr; /// which vertex buffer to use for rendering
-	HGraphicsApiTexture texture = nullptr; /// which texture to use for rendering
+	HTexture texture = nullptr; /// which texture to use for rendering
 	u32 startVertexIndex = 0; /// where to start rendering
 	u32 vertexCount = 0; /// how many vertices to use for rendering the primitives
 	RenderBatchCallback commandCallback = nullptr;
-};
-
-/// The graphics provider
-struct GraphicsProvider
-{
-	/// The graphics API
-	enum class ApiType
-	{
-		OpenGL,
-		Vulkan,
-		Metal,
-		Direct3D11,
-		Direct3D12,
-		Custom,
-
-		Count
-	};
-
-	virtual ~GraphicsProvider() {}
-
-	/// Initialize the graphics provider and it's API objects
-	/// \return true if all ok
-	virtual bool initialize() = 0;
-
-	/// Destroy the graphics provider's API objects
-	virtual void shutdown() = 0;
-
-	/// \return the graphics API type
-	virtual ApiType getApiType() const = 0;
-
-	/// Create a new texture object used for the UI image atlas
-	virtual Texture* createTexture() = 0;
-
-	/// Create a new vertex buffer
-	/// \return new vertex buffer
-	virtual VertexBuffer* createVertexBuffer() = 0;
-
-	/// Set the current viewport and scissor box
-	/// \param windowSize the native window's current size
-	/// \param viewport the viewport with top-left corner as (0,0)
-	virtual void setViewport(const Point& windowSize, const Rect& viewport) = 0;
-
-	virtual Rect getViewport() const = 0;
-
-	/// Clear the current backbuffer with a specified color
-	virtual void clear(const Color& color) = 0;
-
-	/// Draw the given render batch array
-	virtual void draw(struct RenderBatch* batches, u32 count) = 0;
 };
 
 struct PackedRect
@@ -2000,14 +1634,6 @@ struct PackedRect
 	u32 id = 0; // used to identify the rect, because the rect pack might reorder them in the rect array
 	Rect rect;
 	bool packedOk = false;
-};
-
-struct RectPackProvider
-{
-	virtual HRectPacker createRectPacker() = 0;
-	virtual void deleteRectPacker(HRectPacker packer) = 0;
-	virtual void reset(HRectPacker packer, u32 atlasWidth, u32 atlasHeight) = 0;
-	virtual bool packRects(HRectPacker packer, PackedRect* rects, size_t rectCount) = 0;
 };
 
 struct FontGlyph
@@ -2058,32 +1684,166 @@ struct FontInfo
 	FontMetrics metrics;
 };
 
-struct FontProvider
+struct Services
 {
-	virtual ~FontProvider() {}
-	virtual bool loadFont(const char* path, u32 faceSize, FontInfo& fontInfo) = 0;
-	virtual void freeFont(HFontFace fontFace) = 0;
-	virtual f32 getKerning(HFontFace fontFace, GlyphCode leftGlyphCode, GlyphCode rightGlyphCode) = 0;
-	virtual bool rasterizeGlyph(HFontFace fontFace, GlyphCode glyphCode, FontGlyph& outGlyph) = 0;
+	// Input
+	void (*startTextInput)(HNativeWindow window, const Rect& imeRect) = nullptr;
+	void (*stopTextInput)() = nullptr;
+	bool (*copyToClipboard)(const char* text) = nullptr;
+	bool (*pasteFromClipboard)(char* outText, u32 maxTextSize) = nullptr;
+	void (*processWindowEvents)() = nullptr;
+	void (*setCurrentWindow)(HNativeWindow window) = nullptr;
+	HNativeWindow (*getCurrentWindow)() = nullptr;
+	HNativeWindow (*getFocusedWindow)() = nullptr;
+	HNativeWindow (*getHoveredWindow)() = nullptr;
+	HNativeWindow (*createWindow)(const char* title, NativeWindowFlags flags, NativeWindowState state, const Rect& rect) = nullptr;
+	void (*setWindowTitle)(HNativeWindow window, const char* title) = nullptr;
+	u32 (*getWindowDisplayIndex)(HNativeWindow window) = nullptr;
+	u32(*getDisplayCount)() = nullptr;
+	DisplayInfo(*getDisplayInfo)(u32 displayIndex) = nullptr;
+	void (*setWindowSize)(HNativeWindow window, const Point& size) = nullptr;
+	Point(*getWindowSize)(HNativeWindow window) = nullptr;
+	void (*setWindowPosition)(HNativeWindow window, const Point& pos) = nullptr;
+	Point(*getWindowPosition)(HNativeWindow window) = nullptr;
+	NativeWindowState(*getWindowState)(HNativeWindow window) = nullptr;
+	void (*presentWindow)(HNativeWindow window) = nullptr;
+	void (*destroyWindow)(HNativeWindow window) = nullptr;
+	void (*showWindow)(HNativeWindow window) = nullptr;
+	void (*hideWindow)(HNativeWindow window) = nullptr;
+	void (*raiseWindow)(HNativeWindow window) = nullptr;
+	void (*maximizeWindow)(HNativeWindow window) = nullptr;
+	void (*minimizeWindow)(HNativeWindow window) = nullptr;
+	void (*setCapture)(HNativeWindow window) = nullptr;
+	void (*releaseCapture)() = nullptr;
+	Point (*getAbsoluteMousePosition)() = nullptr;
+	bool (*isMouseButtonDownNow)(MouseButton button) = nullptr;
+	void (*setCursor)(MouseCursorType type) = nullptr;
+	HMouseCursor (*createCustomCursor)(Rgba32* pixels, u32 width, u32 height, u32 hotX, u32 hotY) = nullptr;
+	void (*deleteCustomCursor)(HMouseCursor cursor) = nullptr;
+	void (*setCustomCursor)(HMouseCursor cursor) = nullptr;
+
+	// Graphics
+	const char* (*getGfxApiName)() = nullptr;
+	void (*setViewport)(const Point& windowSize, const Rect& viewport) = nullptr;
+	void (*draw)(struct RenderBatch* batches, u32 count) = nullptr;
+
+	// Rect packing
+	bool (*packRects)(PackedRect* rects, size_t rectCount) = nullptr;
+
+	// Fonts
+	bool (*loadFont)(const char* path, u32 faceSize, FontInfo& fontInfo) = nullptr;
+	void (*freeFont)(HFontFace fontFace) = nullptr;
+	f32 (*getFontKerning)(HFontFace fontFace, GlyphCode leftGlyphCode, GlyphCode rightGlyphCode) = nullptr;
+	bool (*rasterizeFontGlyph)(HFontFace fontFace, GlyphCode glyphCode, FontGlyph& outGlyph) = nullptr;
+
+	// Text encoding
+	bool (*utf8To32)(const char* utf8Str, Utf32String& outUtf32Str) = nullptr;
+	bool (*utf32To8NoAlloc)(const u32* utf32Str, size_t utf32StrSize, const char* outUtf8Str, size_t maxOutUtf8StrSize) = nullptr;
+	size_t (*utf8Length)(const char* utf8Str) = nullptr;
+
+	bool allInputFunctionsSet() const
+	{
+		return
+			startTextInput != nullptr &&
+			stopTextInput != nullptr &&
+			copyToClipboard != nullptr &&
+			pasteFromClipboard != nullptr &&
+			processWindowEvents != nullptr &&
+			setCurrentWindow != nullptr &&
+			getCurrentWindow != nullptr &&
+			getFocusedWindow != nullptr &&
+			getHoveredWindow != nullptr &&
+			createWindow != nullptr &&
+			setWindowTitle != nullptr &&
+			getWindowDisplayIndex != nullptr &&
+			getDisplayCount != nullptr &&
+			getDisplayInfo != nullptr &&
+			setWindowSize != nullptr &&
+			getWindowSize != nullptr &&
+			setWindowPosition != nullptr &&
+			getWindowPosition != nullptr &&
+			getWindowState != nullptr &&
+			presentWindow != nullptr &&
+			destroyWindow != nullptr &&
+			showWindow != nullptr &&
+			hideWindow != nullptr &&
+			raiseWindow != nullptr &&
+			maximizeWindow != nullptr &&
+			minimizeWindow != nullptr &&
+			setCapture != nullptr &&
+			releaseCapture != nullptr &&
+			getAbsoluteMousePosition != nullptr &&
+			isMouseButtonDownNow != nullptr &&
+			setCursor != nullptr &&
+			createCustomCursor != nullptr &&
+			deleteCustomCursor != nullptr &&
+			setCustomCursor != nullptr;
+	}
+
+	bool allGfxFunctionsSet() const
+	{
+		return getGfxApiName != nullptr &&
+			setViewport != nullptr &&
+			draw != nullptr;
+	}
+
+	bool allFontFunctionsSet() const
+	{
+		return
+			loadFont != nullptr &&
+			freeFont != nullptr &&
+			getFontKerning != nullptr &&
+			rasterizeFontGlyph != nullptr;
+	}
+
+	bool allTextEncodingFunctionsSet() const
+	{
+		return
+			utf8To32 != nullptr &&
+			utf32To8NoAlloc != nullptr &&
+			utf8Length != nullptr;
+	}
 };
 
-struct ImageProvider
+/// Various HorusUI per-context global settings
+struct Settings
 {
-	virtual ~ImageProvider() {}
-	virtual bool loadImage(const char* path, ImageData& outImage) = 0;
-	virtual bool savePngImage(const char* path, const ImageData& image) = 0;
-};
-
-struct UtfProvider
-{
-	virtual ~UtfProvider() {}
-	virtual bool utf8To32(const char* utf8Str, Utf32String& outUtf32Str) = 0;
-	virtual bool utf32To16(const Utf32String& utf32Str, wchar_t** outUtf16Str, size_t& outUtf16StrLen) = 0;
-	virtual bool utf32To8(const Utf32String& utf32Str, char** outUtf8Str) = 0;
-	virtual bool utf16To8(const wchar_t* utf16Str, char** outUtf8Str) = 0;
-	virtual bool utf32To8NoAlloc(const Utf32String& utf32Str, const char* outUtf8Str, size_t maxUtf8StrLen) = 0;
-	virtual bool utf32To8NoAlloc(const u32* utf32Str, size_t utf32StrSize, const char* outUtf8Str, size_t maxOutUtf8StrSize) = 0;
-	virtual size_t utf8Length(const char* utf8Str) = 0;
+	Services services;
+	TextCachePruneMode textCachePruneMode = TextCachePruneMode::Time; /// how to prune the unicode text cache which is not used for a while
+	f32 textCachePruneMaxTimeSec = 5; /// after this time, if an Unicode text is not accessed, it's discarded from cache, textCachePruneMode must be Time
+	f32 textCachePruneMaxFrames = 500; /// after this frame count, if an Unicode text is not accessed, it's discarded from cache, textCachePruneMode must be Frames
+	f32 textCachePruneIntervalSec = 5; /// after each interval has passed, the pruning of unused texts is executed, will delete the texts that were not used for the last textCachePruneMaxTimeMs or textCachePruneMaxFrames, depending on the prune mode
+	f32 textCaretBlinkSpeed = 2.0f;
+	bool textCaretBlinkEnable = true;
+	f32 textScrollStepAmount = 30; /// scroll pixel amount when moving inside text input
+	u32 defaultAtlasSize = 4096; /// default atlas textures size in pixels
+	Point defaultLayoutPadding = {10, 10};
+	Point defaultScrollViewPadding = { 10, 10 };
+	Point defaultWidgetPadding = { 0, 0 };
+	f32 defaultWidgetWidth = 150;
+	SliderDragDirection sliderDragDirection = SliderDragDirection::Any; /// allows to change slider value from any direction drag, vertical or horizontal
+	bool sliderInvertVerticalDragAmount = false; /// if true and vertical sliding allowed, it will invert the drag amount
+	f32 dragStartDistance = 3; /// the max distance after which a dragging operation starts to occur when mouse down and moved, in pixels
+	f32 whiteImageUvBorder = 0.001f; /// this value is subtracted from the white image used to draw lines, to avoid black border artifacts
+	f32 sameLineHeight = 20.0f; /// the height of a line when sameLine() is used to position widgets on a single row/line. Used to center various widget heights vertically. This must be non-zero, otherwise the widgets will align wrongly.
+	f32 minScrollViewHandleSize = 20.0f; /// the minimum allowed scroll handle size (height)
+	f32 deltaTime = 0;
+	bool scaleScrollViewHeight = false;
+	bool scaleLayouts = true;
+	DockingGuidesStyle dockingStyle = DockingGuidesStyle::Auto; /// use DockingGuidesStyle::InsideNativeWindows for Linux
+	//TODO: this could be per native window
+	bool dockAllowUndockingToNewNativeWindow = true; /// allow view tabs to be undocked as native OS windows, outside of the main window, else windows will only be allowed to dock in their owner OS windows
+	f32 dockNodeSpacing = 3;
+	f32 dockNodeResizeSplitterHitSize = 6;
+	f32 dockNodeMinSize = 100;
+	f32 dockIndicatorBoxScale = 1.0f;
+	f32 dockIndicatorBoxSpacing = 4;
+	f32 dockNodeDockingSizeRatio = 0.33f; /// ratio of the new size of a docked node in regard to the node we're docking in (if dockNodeProportionalResize is true)
+	f32 dockNodeRootDockingHitSize = 40;
+	f32 dockNodeDockingHitSizeRatio = 0.5f; /// unit percent from the size of a window used for the docking hit box
+	f32 dockTabImageTextSpacing = 4;
+	f32 movePopupMaxDistanceTrigger = 5; /// distance of dragging with mouse for when to initiate popup dragging
+	f32 defaultBulletTextSpacing = 5; /// space size between bullet/check/radio and the label, might get overriden by the theme settings
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -2109,16 +1869,6 @@ HORUS_API void deleteContext(HContext ctx);
 /// \return the context settings reference so you can modify them in realtime
 HORUS_API Settings& getSettings();
 
-HORUS_API void initializeRenderer();
-
-/// Set the current frame time delta. Used for tooltips and other timed things.
-/// Must be called continuously in the main loop. If initializeWithSDL is used, no need to call it, the SDL input provider will update it (unless overridden by this call).
-/// \param dt delta time value, in seconds
-HORUS_API void setFrameDeltaTime(f32 dt);
-
-/// \return delta time in seconds
-HORUS_API f32 getFrameDeltaTime();
-
 /// Update the UI context, process input events, update animations, etc. This must be called once per frame, before beginFrame()
 HORUS_API void update();
 
@@ -2130,9 +1880,6 @@ HORUS_API void endFrame();
 
 /// A render callback is called when the UI is rendered, used to issue custom rendering commands
 HORUS_API void addRenderCallback(RenderCallback callback);
-
-/// Clear the background with a specified color, called at the beginning of each frame automatically
-HORUS_API void clearBackground(const Color& color);
 
 /// \return true if there is nothing to do in the UI (like redrawing or layout computations), used to not render continuously when its not needed, for applications that do not need realtime continuous rendering
 HORUS_API bool hasNothingToDo();
@@ -2413,6 +2160,8 @@ HORUS_API void nextCell();
 HORUS_API Rect getCellRect();
 HORUS_API void setRowColor(const Color& color);
 HORUS_API void setCellColor(const Color& color);
+HORUS_API void pushCellPadding(f32 paddingX, f32 paddingY);
+HORUS_API void popCellPadding();
 
 /// Get the remaining height in the current layout from current position to bottom
 HORUS_API f32 getRemainingHeight();
@@ -2420,8 +2169,6 @@ HORUS_API f32 getRemainingHeight();
 /// Get the remaining width in the current layout from current position to right edge
 HORUS_API f32 getRemainingWidth();
 
-HORUS_API void pushCellPadding(f32 paddingX, f32 paddingY);
-HORUS_API void popCellPadding();
 
 /// Begin a scroll view area widget
 /// \param height the height of the scroll area
@@ -2469,8 +2216,6 @@ HORUS_API const Point& getPadding(PaddingType type);
 
 // Handy version to get widget padding
 HORUS_API const Point& getWidgetPadding();
-
-HORUS_API f32 getColumnPadding();
 
 /// Set the global UI scale, this will scale all the elements from widgets to text
 /// \param scale a value, use with consideration, will regenerate font atlas, slow
@@ -2951,7 +2696,7 @@ HORUS_API void drawArrow(const Point& startPoint, const Point& endPoint, f32 tip
 HORUS_API void drawSolidTriangle(const Point& p1, const Point& p2, const Point& p3);
 
 //////////////////////////////////////////////////////////////////////////
-// Utility panels and complex/combined mega-widgets
+// Utility and complex/combined widgets
 //////////////////////////////////////////////////////////////////////////
 
 /// Draw a color picker popup widget
@@ -2971,22 +2716,6 @@ HORUS_API bool vec2Editor(const char* id, f32& x, f32& y, f32 scrollStep = 0.03f
 
 /// Draw an object reference editor
 HORUS_API bool objectRefEditor(const char* id, HImage targetImg, HImage clearImg, const char* objectTypeName, const char* valueAsString, u32 objectType, void** outObject, bool* objectValueWasModified);
-
-//////////////////////////////////////////////////////////////////////////
-// System native file dialogs
-//////////////////////////////////////////////////////////////////////////
-
-/// Show a native open file dialog
-HORUS_API bool openFileDialog(const char* filterList, const char* defaultPath, char* outPath, u32 maxOutPathSize);
-
-/// Show a native open multiple file dialog
-HORUS_API bool openMultipleFileDialog(const char* filterList, const char* defaultPath, OpenMultipleFileSet& outPathSet);
-
-/// Show a native save file dialog
-HORUS_API bool saveFileDialog(const char* filterList, const char* defaultPath, char* outPath, u32 maxOutPathSize);
-
-/// Show a native pick folder dialog
-HORUS_API bool pickFolderDialog(const char* defaultPath, char* outPath, u32 maxOutPathSize);
 
 //////////////////////////////////////////////////////////////////////////
 // Utility functions

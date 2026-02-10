@@ -286,10 +286,10 @@ void endMenu()
 bool beginContextMenu(ContextMenuFlags flags)
 {
 	WidgetId id = ctx->id;
-	bool leftButton = has(flags, ContextMenuFlags::AllowLeftClickOpen) ? ctx->event.mouse.button == MouseButton::Left : false;
+	
 
 	if (ctx->event.type == hui::InputEvent::Type::MouseDown
-		&& (ctx->event.mouse.button == MouseButton::Right || leftButton)
+		&& (ctx->event.mouse.button == MouseButton::Right)
 		&& ctx->widget.rect.contains(ctx->mousePosition)
 		&& !ctx->activeMenuBarItemWidgetId
 		&& !ctx->contextMenuClicked
