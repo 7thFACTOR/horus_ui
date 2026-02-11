@@ -75,28 +75,6 @@ void deleteImageData(ImageData& image)
 	image.bpp = 0;
 }
 
-static HImage loadImage(const char* filename)
-{
-	ImageData imgData;
-	
-	if (!loadPngImage(filename, imgData))
-		return 0;
-
-	if (!imgData.pixels)
-		return 0;
-
-	if (imgData.bpp != 32)
-	{
-		return 0;
-	}
-
-	HImage img = addThemeImage(getTheme(), filename, imgData);
-
-	deleteImageData(imgData);
-
-	return img;
-}
-
 static std::string readTextFile(const char* path)
 {
 	auto file = getSettings().services.open(path, "rb");
@@ -254,6 +232,7 @@ static void setThemeElement(
 	i32 width, i32 height)
 {
 	WidgetElementInfo elemInfo;
+
 	auto imageName = state.get("image", "").asString();
 	auto border = state.get("border", 0).asInt();
 	auto color = state.get("color", "white").asString();
@@ -267,10 +246,13 @@ static void setThemeElement(
 
 	if (!image)
 	{
-		auto imageData = loadImage(imageFilename.c_str());
-		image = addThemeImage(theme, imageData);
-		deleteImageData(imageData);
-		hui::setThemeImage(theme, imageFilename.c_str(), image);
+		ImageData imageData;
+
+		if (loadPngImage(imageFilename.c_str(), imageData))
+		{
+			image = addThemeImage(theme, imageFilename.c_str(), imageData);
+			deleteImageData(imageData);
+		}
 	}
 
 	auto font = hui::getThemeFont(theme, fontName.c_str());
@@ -279,8 +261,8 @@ static void setThemeElement(
 	Color bgColor;
 	Color txtColor;
 
-	bgColor = getColorFromText(color);
-	txtColor = getColorFromText(textColor);
+	bgColor = getColorFromText(color.c_str());
+	txtColor = getColorFromText(textColor.c_str());
 
 	elemInfo.image = image;
 	elemInfo.border = border;
@@ -316,10 +298,13 @@ void setUserElement(
 
 	if (!image)
 	{
-		auto imageData = loadImageData(imageFilename.c_str());
-		image = addThemeImage(theme, imageData);
-		deleteImageData(imageData);
-		hui::setThemeImage(theme, imageFilename.c_str(), image);
+		ImageData imageData;
+		
+		if (loadPngImage(imageFilename.c_str(), imageData) && imageData.pixels)
+		{
+			image = addThemeImage(theme, imageFilename.c_str(), imageData);
+			deleteImageData(imageData);
+		}
 	}
 
 	auto font = hui::getThemeFont(theme, fontName.c_str());
@@ -328,8 +313,8 @@ void setUserElement(
 	Color bgColor;
 	Color txtColor;
 
-	bgColor = getColorFromText(color);
-	txtColor = getColorFromText(textColor);
+	bgColor = getColorFromText(color.c_str());
+	txtColor = getColorFromText(textColor.c_str());
 
 	elemInfo.image = image;
 	elemInfo.border = border;

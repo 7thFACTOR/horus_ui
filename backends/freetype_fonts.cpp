@@ -1,4 +1,4 @@
-#include "freetype_font_provider.h"
+#include "freetype_fonts.h"
 #include <freetype/ftglyph.h>
 #include <freetype/ftoutln.h>
 #include <freetype/fttrigon.h>

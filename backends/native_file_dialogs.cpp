@@ -1,10 +1,16 @@
-#include "nativefiledialogs_provider.h"
+#include "native_file_dialogs.h"
 #include <nfd.h>
 #include <string.h>
 
 namespace hui
 {
-bool NativeFileDialogsProvider::openFileDialog(const char* filterList, const char* defaultPath, char* outPath, u32 maxOutPathSize)
+OpenMultipleFileSet::~OpenMultipleFileSet()
+{
+	delete[] filenameBuffer;
+	delete[] bufferIndices;
+}
+
+bool openFileDialog(const char* filterList, const char* defaultPath, char* outPath, u32 maxOutPathSize)
 {
 	char* path = 0;
 	auto res = NFD_OpenDialog(filterList, defaultPath, &path);
@@ -25,7 +31,7 @@ bool NativeFileDialogsProvider::openFileDialog(const char* filterList, const cha
 	return true;
 }
 
-bool NativeFileDialogsProvider::openMultipleFileDialog(const char* filterList, const char* defaultPath, OpenMultipleFileSet& outPathSet)
+bool openMultipleFileDialog(const char* filterList, const char* defaultPath, OpenMultipleFileSet& outPathSet)
 {
 	nfdpathset_t outPaths;
 	auto res = NFD_OpenDialogMultiple(filterList, defaultPath, &outPaths);
@@ -42,7 +48,7 @@ bool NativeFileDialogsProvider::openMultipleFileDialog(const char* filterList, c
 	return true;
 }
 
-bool NativeFileDialogsProvider::saveFileDialog(const char* filterList, const char* defaultPath, char* outPath, u32 maxOutPathSize)
+bool saveFileDialog(const char* filterList, const char* defaultPath, char* outPath, u32 maxOutPathSize)
 {
 	char* path = 0;
 	auto res = NFD_SaveDialog(filterList, defaultPath, &path);
@@ -58,7 +64,7 @@ bool NativeFileDialogsProvider::saveFileDialog(const char* filterList, const cha
 	return true;
 }
 
-bool NativeFileDialogsProvider::pickFolderDialog(const char* defaultPath, char* outPath, u32 maxOutPathSize)
+bool pickFolderDialog(const char* defaultPath, char* outPath, u32 maxOutPathSize)
 {
 	char* path = 0;
 	auto res = NFD_PickFolder(defaultPath, &path);
