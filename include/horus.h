@@ -1741,7 +1741,7 @@ struct Services
 	void (*draw)(Vertex* vertices, u32 vertexCount, struct RenderBatch* batches, u32 count) = nullptr;
 
 	// Rect packing
-	bool (*packRects)(PackedRect* rects, size_t rectCount) = nullptr;
+	bool (*packRects)(PackedRect* rects, size_t rectCount, u32 atlasWidth, u32 atlasHeight) = nullptr;
 
 	// Fonts
 	bool (*loadFont)(const char* path, u32 faceSize, FontInfo& fontInfo) = nullptr;
@@ -1756,11 +1756,11 @@ struct Services
 
 	// File I/O
 	HFile (*open)(const char* path, const char* mode) = nullptr;
-	size_t(*read)(HFile file, void* outData, size_t bytesToRead) = nullptr;
-	size_t(*write)(HFile file, void* data, size_t bytesToWrite) = nullptr;
+	size_t (*read)(HFile file, void* outData, size_t bytesToRead) = nullptr;
+	size_t (*write)(HFile file, void* data, size_t bytesToWrite) = nullptr;
 	void (*close)(HFile file) = nullptr;
 	bool (*seek)(HFile file, FileSeekMode mode, size_t pos) = nullptr;
-	size_t(*tell)(HFile file) = nullptr;
+	size_t (*tell)(HFile file) = nullptr;
 
 	bool allInputFunctionsSet() const
 	{

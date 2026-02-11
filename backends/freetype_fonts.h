@@ -5,6 +5,6 @@
 
 namespace hui
 {
-void initFreetypeFontService(Services& services, FT_Library freetypeContext = 0);
-void shutdownFreetypeFontService(Services& services);
+void initFreetype(Services& services, FT_Library freetypeContext = 0);
+void shutdownFreetype(Services& services);
 }

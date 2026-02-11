@@ -1,4 +1,4 @@
-#include "stdio_file_provider.h"
+#include "stdio_fileio.h"
 
 namespace hui
 {
@@ -44,7 +44,7 @@ static size_t tell(HFile file)
 #endif
 }
 
-void initStdioFileService(Services& services)
+void initStdioFileIO(Services& services)
 {
 	services.open = open;
 	services.read = read;
@@ -54,7 +54,7 @@ void initStdioFileService(Services& services)
 	services.tell = tell;
 }
 
-void shutdownStdioFileService(Services& services)
+void shutdownStdioFileIO(Services& services)
 {
 	services.open = nullptr;
 	services.read = nullptr;

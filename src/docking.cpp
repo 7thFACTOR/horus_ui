@@ -2634,7 +2634,7 @@ void updateDockingSystem()
 	}
 
 	// if we release the mouse button, wherever it is, over a window or not
-	// then force a mouse up button
+	// then force a mouse up button, because we dont do capturing so we cant detect it when not in a window
 	if (!HORUS_INPUT->isMouseButtonDownNow(MouseButton::Left)
 		&& ds.dragWindow)
 	{

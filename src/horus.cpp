@@ -509,7 +509,7 @@ void endFrame()
 void update()
 {
 	clearInputEventQueue();
-	ctx->providers->input->processEvents();
+	ctx->providers->input->processWindowEvents();
 
 	// tooltip handling
 	//TODO: move to own func

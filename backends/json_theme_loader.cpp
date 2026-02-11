@@ -1,4 +1,4 @@
-#include "json_theme_provider.h"
+#include "json_theme_loader.h"
 #include <json/json.h>
 #include <json/reader.h>
 #include <unordered_map>
@@ -105,7 +105,7 @@ static std::string readTextFile(const char* path)
 	return text;
 }
 
-WidgetType getWidgetTypeFromName(std::string name)
+static WidgetType getWidgetTypeFromName(std::string name)
 {
 	if (name == "window") return WidgetType::Window;
 	if (name == "tooltip") return WidgetType::Tooltip;
@@ -143,7 +143,7 @@ WidgetType getWidgetTypeFromName(std::string name)
 	return WidgetType::None;
 }
 
-WidgetElementId getWidgetElementFromName(std::string name)
+static WidgetElementId getWidgetElementFromName(std::string name)
 {
 	if (name == "windowBody") return WidgetElementId::WindowBody;
 	if (name == "buttonBody") return WidgetElementId::ButtonBody;
@@ -275,7 +275,7 @@ static void setThemeElement(
 	hui::setThemeWidgetElement(theme, elemId, widgetStateType, elemInfo, styleName);
 }
 
-void setUserElement(
+static void setUserElement(
 	HTheme theme,
 	const std::string& themePath,
 	const char* styleName,

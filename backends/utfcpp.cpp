@@ -1,11 +1,11 @@
-#include "utfcpp_provider.h"
+#include "utfcpp.h"
 #include <utf8.h>
 #include <algorithm>
 #include <string.h>
 
 namespace hui
 {
-bool UtfCppProvider::utf8To32(const char* utf8Str, Utf32String& outUtf32Str)
+static bool utf8To32(const char* utf8Str, Utf32String& outUtf32Str)
 {
 	if (!utf8Str)
 		return false;
@@ -28,28 +28,7 @@ bool UtfCppProvider::utf8To32(const char* utf8Str, Utf32String& outUtf32Str)
 	return true;
 }
 
-bool UtfCppProvider::utf32To16(const Utf32String& utf32Str, wchar_t** outUtf16Str, size_t& outUtf16StrLen)
-{
-	*outUtf16Str = new wchar_t[utf32Str.size()];
-
-	if (*outUtf16Str)
-	{
-		for (size_t i = 0; i < utf32Str.size(); i++)
-		{
-			(*outUtf16Str)[i] = (wchar_t)utf32Str[i];
-		}
-
-		outUtf16StrLen = utf32Str.size();
-
-		return true;
-	}
-
-	outUtf16StrLen = 0;
-
-	return false;
-}
-
-bool UtfCppProvider::utf32To8(const Utf32String& utf32Str, char** outUtf8Str)
+static bool utf32To8(const Utf32String& utf32Str, char** outUtf8Str)
 {
 	std::vector<char> chars;
 
@@ -79,37 +58,7 @@ bool UtfCppProvider::utf32To8(const Utf32String& utf32Str, char** outUtf8Str)
 	return true;
 }
 
-bool UtfCppProvider::utf16To8(const wchar_t* utf16Str, char** outUtf8Str)
-{
-	std::vector<char> chars;
-
-	try
-	{
-		utf8::utf32to8(
-			utf16Str,
-			utf16Str + wcslen(utf16Str),
-			std::back_inserter(chars));
-	}
-
-	catch (utf8::invalid_utf8 ex)
-	{
-		return false;
-	}
-
-	*outUtf8Str = new char[chars.size() + 1];
-	memset((char*)*outUtf8Str, 0, chars.size() + 1);
-
-	auto str = (char*)*outUtf8Str;
-
-	for (int i = 0; i < chars.size(); i++)
-	{
-		str[i] = chars[i];
-	}
-
-	return true;
-}
-
-bool UtfCppProvider::utf32To8NoAlloc(const Utf32String& utf32Str, const char* outUtf8Str, size_t maxUtf8StrLen)
+static bool utf32To8NoAlloc(const Utf32String& utf32Str, const char* outUtf8Str, size_t maxUtf8StrLen)
 {
 	std::vector<char> chars;
 
@@ -143,12 +92,12 @@ bool UtfCppProvider::utf32To8NoAlloc(const Utf32String& utf32Str, const char* ou
 	return true;
 }
 
-size_t UtfCppProvider::utf8Length(const char* utf8Str)
+static size_t utf8Length(const char* utf8Str)
 {
 	return utf8::distance(utf8Str, utf8Str + strlen(utf8Str));
 }
 
-bool UtfCppProvider::utf32To8NoAlloc(const u32* utf32Str, size_t utf32StrSize, const char* outUtf8Str, size_t maxOutUtf8StrSize)
+static bool utf32To8NoAlloc(const u32* utf32Str, size_t utf32StrSize, const char* outUtf8Str, size_t maxOutUtf8StrSize)
 {
 	std::vector<char> chars;
 
@@ -180,6 +129,20 @@ bool UtfCppProvider::utf32To8NoAlloc(const u32* utf32Str, size_t utf32StrSize, c
 	((char*)outUtf8Str)[i] = 0;
 
 	return true;
+}
+
+void initUtf(Services& services)
+{
+	services.utf32To8NoAlloc = utf32To8NoAlloc;
+	services.utf8To32 = utf8To32;
+	services.utf8Length = utf8Length;
+}
+
+void shutdownUtf(Services& services)
+{
+	services.utf32To8NoAlloc = nullptr;
+	services.utf8To32 = nullptr;
+	services.utf8Length = nullptr;
 }
 
 }

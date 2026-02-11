@@ -147,7 +147,7 @@ static bool rasterizeFontGlyph(HFontFace font, GlyphCode glyphCode, FontGlyph& o
 	return true;
 }
 
-void initFreetypeFontService(Services& services, FT_Library context)
+void initFreetype(Services& services, FT_Library context)
 {
 	ftContext.libHandle = context;
 	ftContext.hasUserLibHandle = context != 0;
@@ -163,7 +163,7 @@ void initFreetypeFontService(Services& services, FT_Library context)
 	services.rasterizeFontGlyph = rasterizeFontGlyph;
 }
 
-void shutdownFreetypeFontService(Services& services)
+void shutdownFreetype(Services& services)
 {
 	if (!ftContext.hasUserLibHandle)
 	{

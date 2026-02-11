@@ -3,6 +3,6 @@
 
 namespace hui
 {
-void initStdioFileService(Services& services);
-void shutdownStdioFileService(Services& services);
+void initStdioFileIO(Services& services);
+void shutdownStdioFileIO(Services& services);
 }

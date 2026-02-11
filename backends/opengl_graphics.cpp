@@ -271,7 +271,7 @@ void main()\
 }\
 ";
 
-void commitRenderState()
+static void commitRenderState()
 {
 	glEnable(GL_BLEND);
 	glBlendEquationSeparate(GL_FUNC_ADD, GL_FUNC_ADD);
@@ -281,7 +281,7 @@ void commitRenderState()
 	glDisable(GL_DEPTH_TEST);
 }
 
-void setViewport(const Point& windowSize, const Rect& viewport)
+static void setViewport(const Point& windowSize, const Rect& viewport)
 {
 	// our 0,0 origin is at top-left, we need to modify y
 	Rect glRc = { viewport.x, windowSize.y - viewport.y - viewport.height, viewport.width, viewport.height };
@@ -290,7 +290,7 @@ void setViewport(const Point& windowSize, const Rect& viewport)
 	OGL_CHECK_ERROR;
 }
 
-void clearBackbuffer(const Color& color)
+static void clearBackbuffer(const Color& color)
 {
 	glClearColor(color.r, color.g, color.b, color.a);
 	OGL_CHECK_ERROR;
@@ -298,7 +298,7 @@ void clearBackbuffer(const Color& color)
 	OGL_CHECK_ERROR;
 }
 
-void draw(Vertex* vertices, u32 vertexCount, struct RenderBatch* batches, u32 count)
+static void draw(Vertex* vertices, u32 vertexCount, struct RenderBatch* batches, u32 count)
 {
 	glUseProgram(program);
 	OGL_CHECK_ERROR;
@@ -311,7 +311,7 @@ void draw(Vertex* vertices, u32 vertexCount, struct RenderBatch* batches, u32 co
 	vertexBuffer.updateData(vertices, 0, vertexCount);
 
 	// render the batches
-#define OGL_VBUFFER_OFFSET(i) ((void*)(i))
+	#define OGL_VBUFFER_OFFSET(i) ((void*)(i))
 
 	for (u32 i = 0; i < count; i++)
 	{
@@ -443,7 +443,7 @@ void draw(Vertex* vertices, u32 vertexCount, struct RenderBatch* batches, u32 co
 	OGL_CHECK_ERROR;
 }
 
-bool initOpenGLGraphics(Services& services)
+bool initOpenGL(Services& services)
 {
 	GLchar errorLog[1024] = { 0 };
 
@@ -546,7 +546,7 @@ bool initOpenGLGraphics(Services& services)
 	return true;
 }
 
-void shutdownOpenGLGraphics(Services& services)
+void shutdownOpenGL(Services& services)
 {
 	glDeleteShader(vertexShader);
 	glDeleteShader(pixelShader);

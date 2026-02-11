@@ -42,6 +42,6 @@ struct OpenGLVertexBuffer
 	u32 count = 0;
 };
 
-bool initOpenGLGraphics(Services& services);
-void shutdownOpenGLGraphics(Services& services);
+bool initOpenGL(Services& services);
+void shutdownOpenGL(Services& services);
 }
