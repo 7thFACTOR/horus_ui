@@ -102,6 +102,7 @@ namespace hui
 }
 #endif
 
+//TODO: make it a map
 static KeyCode fromSdlKey(int code)
 {
 	KeyCode key = KeyCode::None;
@@ -595,17 +596,17 @@ static void processWindowEvents()
 	processSdlEvents();
 }
 
-static f32 getSdl3DeltaTime()
+f32 getSdl3DeltaTime()
 {
 	return sdl3InputContext->deltaTime;
 }
 
-void setCursor(MouseCursorType type)
+static void setCursor(MouseCursorType type)
 {
 	SDL_SetCursor(sdl3InputContext->cursors[(int)type]);
 }
 
-HMouseCursor createCustomCursor(Rgba32* pixels, u32 width, u32 height, u32 hotX, u32 hotY)
+static HMouseCursor createCustomCursor(Rgba32* pixels, u32 width, u32 height, u32 hotX, u32 hotY)
 {
 	SDL_Surface* surf = SDL_CreateSurfaceFrom(width, height, SDL_PIXELFORMAT_RGBA32, pixels, width * 4);
 
@@ -617,7 +618,7 @@ HMouseCursor createCustomCursor(Rgba32* pixels, u32 width, u32 height, u32 hotX,
 	return cur;
 }
 
-void deleteCustomCursor(HMouseCursor cursor)
+static void deleteCustomCursor(HMouseCursor cursor)
 {
 	for (size_t i = 0; i < sdl3InputContext->customCursors.size(); i++)
 	{
@@ -632,12 +633,12 @@ void deleteCustomCursor(HMouseCursor cursor)
 	}
 }
 
-void setCustomCursor(HMouseCursor cursor)
+static void setCustomCursor(HMouseCursor cursor)
 {
 	SDL_SetCursor((SDL_Cursor*)cursor);
 }
 
-void setCurrentWindow(HNativeWindow window)
+static void setCurrentWindow(HNativeWindow window)
 {
 	if (sdl3InputContext->initParams.gfxApi == Sdl3GfxApi::OpenGL)
 	{
@@ -648,27 +649,27 @@ void setCurrentWindow(HNativeWindow window)
 	sdl3InputContext->currentWindow = ((SdlWindowProxy*)window);
 }
 
-HNativeWindow getCurrentWindow()
+static HNativeWindow getCurrentWindow()
 {
 	return sdl3InputContext->currentWindow;
 }
 
-HNativeWindow getFocusedWindow()
+static HNativeWindow getFocusedWindow()
 {
 	return sdl3InputContext->focusedWindow;
 }
 
-HNativeWindow getHoveredWindow()
+static HNativeWindow getHoveredWindow()
 {
 	return sdl3InputContext->hoveredWindow;
 }
 
 // Hit-test callback that makes the window transparent to mouse events
-SDL_HitTestResult hitTestCallback(SDL_Window* win, const SDL_Point* area, void* data) {
+static SDL_HitTestResult hitTestCallback(SDL_Window* win, const SDL_Point* area, void* data) {
 	return SDL_HITTEST_NORMAL; // Ignore input, pass through to windows underneath
 }
 
-HNativeWindow createWindow(
+static HNativeWindow createWindow(
 	const char* title, NativeWindowFlags flags, NativeWindowState state, const Rect& rect)
 {
 	int sdlflags = 0;
@@ -691,10 +692,10 @@ HNativeWindow createWindow(
 	if (sdl3InputContext->initParams.gfxApi == Sdl3GfxApi::OpenGL)
 		sdlflags |= SDL_WINDOW_OPENGL;
 
-	if (sdl3InputContext->initParams.gfxApi == Sdl3GfxApi::OpenGL)
+	if (sdl3InputContext->initParams.gfxApi == Sdl3GfxApi::Vulkan)
 		sdlflags |= SDL_WINDOW_VULKAN;
 
-	if (sdl3InputContext->initParams.gfxApi == Sdl3GfxApi::OpenGL)
+	if (sdl3InputContext->initParams.gfxApi == Sdl3GfxApi::Metal)
 		sdlflags |= SDL_WINDOW_METAL;
 
 	auto wnd = SDL_CreateWindow(
@@ -752,17 +753,17 @@ HNativeWindow createWindow(
 	return newWnd;
 }
 
-void setWindowTitle(HNativeWindow window, const char* title)
+static void setWindowTitle(HNativeWindow window, const char* title)
 {
 	SDL_SetWindowTitle(((SdlWindowProxy*)window)->sdlWindow, title);
 }
 
-u32 getWindowDisplayIndex(HNativeWindow window)
+static u32 getWindowDisplayIndex(HNativeWindow window)
 {
 	return SDL_GetDisplayForWindow(((SdlWindowProxy*)window)->sdlWindow);
 }
 
-u32 getDisplayCount()
+static u32 getDisplayCount()
 {
 	i32 count = 0;
 	SDL_DisplayID* displays = SDL_GetDisplays(&count);
@@ -772,7 +773,7 @@ u32 getDisplayCount()
 	return count;
 }
 
-DisplayInfo getDisplayInfo(u32 displayIndex)
+static DisplayInfo getDisplayInfo(u32 displayIndex)
 {
 	DisplayInfo info;
 
@@ -789,12 +790,12 @@ DisplayInfo getDisplayInfo(u32 displayIndex)
 	return info;
 }
 
-void setWindowSize(HNativeWindow window, const Point& size)
+static void setWindowSize(HNativeWindow window, const Point& size)
 {
 	SDL_SetWindowSize(((SdlWindowProxy*)window)->sdlWindow, size.x, size.y);
 }
 
-Point getWindowSize(HNativeWindow window)
+static Point getWindowSize(HNativeWindow window)
 {
 	int w = 0, h = 0;
 
@@ -804,12 +805,12 @@ Point getWindowSize(HNativeWindow window)
 	return { (f32)w, (f32)h };
 }
 
-void setWindowPosition(HNativeWindow window, const Point& pos)
+static void setWindowPosition(HNativeWindow window, const Point& pos)
 {
 	SDL_SetWindowPosition(((SdlWindowProxy*)window)->sdlWindow, pos.x, pos.y);
 }
 
-Point getWindowPosition(HNativeWindow window)
+static Point getWindowPosition(HNativeWindow window)
 {
 	int x = 0, y = 0;
 
@@ -818,7 +819,7 @@ Point getWindowPosition(HNativeWindow window)
 	return { (f32)x, (f32)y };
 }
 
-void presentWindow(HNativeWindow window)
+static void presentWindow(HNativeWindow window)
 {
 	if (sdl3InputContext->initParams.gfxApi == Sdl3GfxApi::OpenGL)
 	{
@@ -826,7 +827,7 @@ void presentWindow(HNativeWindow window)
 	}
 }
 
-void destroyWindow(HNativeWindow window)
+static void destroyWindow(HNativeWindow window)
 {
 	SDL_DestroyWindow(((SdlWindowProxy*)window)->sdlWindow);
 	auto iter = std::find(sdl3InputContext->windows.begin(), sdl3InputContext->windows.end(), window);
@@ -838,32 +839,32 @@ void destroyWindow(HNativeWindow window)
 	}
 }
 
-void showWindow(HNativeWindow window)
+static void showWindow(HNativeWindow window)
 {
 	SDL_ShowWindow(((SdlWindowProxy*)window)->sdlWindow);
 }
 
-void hideWindow(HNativeWindow window)
+static void hideWindow(HNativeWindow window)
 {
 	SDL_HideWindow(((SdlWindowProxy*)window)->sdlWindow);
 }
 
-void raiseWindow(HNativeWindow window)
+static void raiseWindow(HNativeWindow window)
 {
 	SDL_RaiseWindow(((SdlWindowProxy*)window)->sdlWindow);
 }
 
-void maximizeWindow(HNativeWindow window)
+static void maximizeWindow(HNativeWindow window)
 {
 	SDL_MaximizeWindow(((SdlWindowProxy*)window)->sdlWindow);
 }
 
-void minimizeWindow(HNativeWindow window)
+static void minimizeWindow(HNativeWindow window)
 {
 	SDL_MinimizeWindow(((SdlWindowProxy*)window)->sdlWindow);
 }
 
-NativeWindowState getWindowState(HNativeWindow window)
+static NativeWindowState getWindowState(HNativeWindow window)
 {
 	auto flags = SDL_GetWindowFlags(((SdlWindowProxy*)window)->sdlWindow);
 
@@ -885,17 +886,17 @@ NativeWindowState getWindowState(HNativeWindow window)
 	return NativeWindowState::Normal;
 }
 
-void setCapture(HNativeWindow window)
+static void setCapture(HNativeWindow window)
 {
 	SDL_CaptureMouse(true);
 }
 
-void releaseCapture()
+static void releaseCapture()
 {
 	SDL_CaptureMouse(false);
 }
 
-Point getAbsoluteMousePosition()
+static Point getAbsoluteMousePosition()
 {
 	f32 x, y;
 
@@ -904,7 +905,7 @@ Point getAbsoluteMousePosition()
 	return { (f32)x , (f32)y };
 }
 
-bool isMouseButtonDownNow(MouseButton button)
+static bool isMouseButtonDownNow(MouseButton button)
 {
 	f32 x = 0, y = 0;
 	auto buttons = SDL_GetGlobalMouseState(&x, &y);
@@ -916,7 +917,7 @@ bool isMouseButtonDownNow(MouseButton button)
 	return false;
 }
 
-void createSystemCursors()
+static void createSystemCursors()
 {
 	for (int i = 0; i < SDL_SYSTEM_CURSOR_COUNT; i++)
 	{

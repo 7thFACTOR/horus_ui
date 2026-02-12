@@ -27,12 +27,9 @@ struct Atlas
 	Image* addWhiteImage(u32 width = 4);
 	bool pack();
 	void clearImages();
-
-	Image* whiteImage = nullptr;
-
-protected:
 	Image* addImageInternal(ImageId imgId, const Rgba32* imageData, u32 imageWidth, u32 imageHeight, bool addBleedOut);
 
+	Image* whiteImage = nullptr;
 	u32 lastImageId = 1;
 	u32 width = 0;
 	u32 height = 0;
@@ -41,6 +38,7 @@ protected:
 	std::vector<Rgba32> atlasImageData;
 	std::unordered_map<ImageId, Image*> images;
 	bool lastPackSuccess = false;
+	HTexture texture = 0;
 };
 
 }

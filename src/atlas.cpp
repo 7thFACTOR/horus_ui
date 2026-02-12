@@ -126,7 +126,7 @@ bool Atlas::pack()
 		packRects.push_back(prc);
 	}
 
-	auto ret = ctx->settings.services.packRects(packRects.data(), packRects.size());
+	auto ret = ctx->settings.services.packRects(packRects.data(), packRects.size(), width, height);
 	u32 packedOkCount = 0;
 
 	for (auto& prc : packRects)

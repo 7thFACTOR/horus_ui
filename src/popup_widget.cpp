@@ -185,7 +185,7 @@ void endPopup()
 		// popup drag by mouse
 		if (popup.startedToDrag || popup.draggingPopup)
 		{
-			auto mousePos = ctx->providers->input->getAbsoluteMousePosition();
+			auto mousePos = ctx->settings.services.getAbsoluteMousePosition();
 
 			if (popup.startedToDrag
 				&& popup.lastMouseDownPoint.getDistance(mousePos) >= ctx->settings.movePopupMaxDistanceTrigger

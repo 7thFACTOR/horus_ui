@@ -6,17 +6,14 @@
 #include <filesystem>
 
 // backends
-#include "sdl3_input_provider.h"
-#include "opengl_graphics_provider.h"
-#include "opengl_vertex_buffer.h"
-#include "opengl_texture_array.h"
-#include "stb_image_provider.h"
-#include "json_theme_provider.h"
-#include "stb_rectpack_provider.h"
-#include "freetype_font_provider.h"
-#include "nativefiledialogs_provider.h"
-#include "stdio_file_provider.h"
-#include "utfcpp_provider.h"
+#include "sdl3_input.h"
+#include "opengl_graphics.h"
+#include "json_theme_loader.h"
+#include "stb_rectpack.h"
+#include "freetype_fonts.h"
+#include "native_file_dialogs.h"
+#include "stdio_fileio.h"
+#include "utfcpp.h"
 
 // Grab some image handles to use for the window icons
 hui::HImage icon1, icon2, icon3, icon4, icon5, tabicon1, tabicon2, tabicon3, img;
@@ -24,50 +21,48 @@ hui::HImage icon1, icon2, icon3, icon4, icon5, tabicon1, tabicon2, tabicon3, img
 
 void loadImages()
 {
+	auto theme = hui::getTheme();
 	// Grab some image handles to use for the window icons
-	icon1 = hui::loadImage("../themes/icons/ic_attach_file_white_24dp.png");
-	icon2 = hui::loadImage("../themes/icons/ic_attach_money_white_24dp.png");
-	icon3 = hui::loadImage("../themes/icons/ic_border_all_white_24dp.png");
-	icon4 = hui::loadImage("../themes/icons/ic_border_inner_white_24dp.png");
-	icon5 = hui::loadImage("../themes/icons/ic_border_outer_white_24dp.png");
-	tabicon1 = hui::loadImage("../themes/icons/icons8-equivalent-20.png");
-	tabicon2 = hui::loadImage("../themes/icons/icons8-settings-20.png");
-	tabicon3 = hui::loadImage("../themes/icons/icons8-opened-folder-20.png");
-	img = hui::loadImage("../themes/default/lena.png");
+	icon1 = hui::loadThemeImage(theme, "../themes/icons/ic_attach_file_white_24dp.png");
+	icon2 = hui::loadThemeImage(theme, "../themes/icons/ic_attach_money_white_24dp.png");
+	icon3 = hui::loadThemeImage(theme, "../themes/icons/ic_border_all_white_24dp.png");
+	icon4 = hui::loadThemeImage(theme, "../themes/icons/ic_border_inner_white_24dp.png");
+	icon5 = hui::loadThemeImage(theme, "../themes/icons/ic_border_outer_white_24dp.png");
+	tabicon1 = hui::loadThemeImage(theme, "../themes/icons/icons8-equivalent-20.png");
+	tabicon2 = hui::loadThemeImage(theme, "../themes/icons/icons8-settings-20.png");
+	tabicon3 = hui::loadThemeImage(theme, "../themes/icons/icons8-opened-folder-20.png");
+	img = hui::loadThemeImage(theme, "../themes/default/lena.png");
 	//tex1 = hui::loadTexture("../themes/default/lena.png");
 	//tex2 = hui::loadTexture("../themes/default/lena.png");
 }
 
 int main(int argc, char** args)
 {
+	// Initialize SDL input provider
+	hui::Sdl3InitParams sdlParams;
+
+	sdlParams.vSync = false;
+
 	// Setup a Horus UI context, with given service providers
 	hui::Settings settings;
 
-	settings.providers.file = new hui::StdioFileProvider();
-	settings.providers.fileDialogs = new hui::NativeFileDialogsProvider();
-	settings.providers.font = new hui::FreetypeFontProvider();
-	settings.providers.gfx = new hui::OpenGLGraphicsProvider();
-	settings.providers.image = new hui::StbImageProvider();
-	settings.providers.input = new hui::Sdl3InputProvider();
-	settings.providers.rectPack = new hui::StbRectPackProvider();
-	settings.providers.utf = new hui::UtfCppProvider();
+	hui::initStdioFileIO(settings.services);
+	hui::initFreetype(settings.services);
+	hui::initSdl3(settings.services, sdlParams);
+	hui::initStbRectPack(settings.services);
+	hui::initUtf(settings.services);
+
 	settings.dockNodeSpacing = 3;
 	settings.dockNodeResizeSplitterHitSize = 8;
-	//settings.dockingStyle = hui::DockingGuidesStyle::InsideNativeWindows;
-	//settings.dockNodeDockingSizeRatio = 0.33f;
 
 	// Create the context
 	auto huiContext = hui::createContext(settings);
 	hui::setContext(huiContext); // set as current context
 
-	// Initialize SDL input provider
-	hui::SdlInitParams sdlParams;
-
-	sdlParams.vSync = false;
-	hui::initializeSdl(sdlParams);
-
 	// Create the main window (this will also create a graphics (GL/VK/D3D/etc.) context)
-	auto mainWnd = HORUS_INPUT->createWindow("HorusUI Widget Examples", hui::NativeWindowFlags::Resizable, hui::NativeWindowState::Maximized, hui::Rect(0, 0, 1500, 800));
+	auto mainWnd = settings.services.createWindow("HorusUI Widget Examples", hui::NativeWindowFlags::Resizable, hui::NativeWindowState::Maximized, hui::Rect(0, 0, 1500, 800));
+
+	hui::initOpenGL(settings.services);
 
 	// Create a main dock node for the main window, so we can dock windows in there
 	hui::DockNodeId mainDockNode = hui::createRootDockNode(mainWnd);
@@ -83,17 +78,14 @@ int main(int argc, char** args)
 		hui::dockLayoutRecalculate();
 	}
 
-	// Initialize the graphics API, since now we have a first window created
-	// (we cant initialize the graphics api without a window)
-	HORUS_GFX->initialize();
-
-	// Initialize the UI renderer for the current context
-	hui::initializeRenderer();
-
 	// Load a theme
 	const u32 errSize = 2048;
 	char err[errSize] = { 0 };
-	auto theme = hui::loadThemeFromJson("../themes/default.theme.json", err, errSize);
+
+	// Theme file path
+	static const char* themeFilePath = "../themes/default.theme.json";
+
+	auto theme = hui::loadThemeFromJson(themeFilePath, err, errSize);
 
 	if (!theme)
 	{
@@ -113,6 +105,11 @@ int main(int argc, char** args)
 	// After we load the theme and more images and fonts, we need to rebuild the theme (into the image atlas)
 	hui::buildTheme(theme);
 
+	hui::ImageData atlasImageData = hui::getThemeAtlasImageData();
+	hui::OpenGLTexture texAtlas(atlasImageData.width, atlasImageData.height);
+
+	texAtlas.updateData((hui::Rgba32*)atlasImageData.pixels);
+
 	//hui::changeScale(1.5f);
 	// Start the main loop
 	bool exitNow = false;
@@ -120,38 +117,18 @@ int main(int argc, char** args)
 	while (!exitNow)
 	{
 		// Clear the main window as a test
-		HORUS_INPUT->setCurrentWindow(mainWnd);
+		settings.services.setCurrentWindow(mainWnd);
 		glClearColor(1, 1, 0, 1);
 		glClear(GL_COLOR_BUFFER_BIT);
 
-		// Theme file path
-		static const char* themeFilePath = "../themes/default.theme.json";
-
-		// Theme reload function (used by F2 key and auto-reload)
-		auto reloadTheme = [&]()
-		{
-			auto newTheme = hui::loadThemeFromJson(themeFilePath, err, errSize);
-
-			if (newTheme)
-			{
-				// delete old theme
-				if (theme) hui::deleteTheme(theme);
-				theme = newTheme;
-				hui::setTheme(theme);
-
-				// Reload resources
-				largeFnt = hui::getThemeFont(theme, "title");
-				loadImages();
-				hui::buildTheme(theme);
-				printf("Theme reloaded!\n");
-			}
-		};
 
 		// Track theme file modification time for auto-reload
 		static auto lastModTime = std::filesystem::last_write_time(themeFilePath);
 		static f32 checkTimer = 0;
 
-		checkTimer += hui::getFrameDeltaTime();
+		hui::getSettings().deltaTime = hui::getSdl3DeltaTime();
+
+		checkTimer += hui::getSettings().deltaTime;
 
 		// Check if theme file has been modified (every 1 second)
 		if (checkTimer >= 1.0f)
@@ -164,7 +141,7 @@ int main(int argc, char** args)
 				if (currentModTime != lastModTime)
 				{
 					lastModTime = currentModTime;
-					reloadTheme();
+					//reloadTheme();
 				}
 			}
 			catch (...)
@@ -180,7 +157,7 @@ int main(int argc, char** args)
 			&& hui::getInputEvent().key.code == hui::KeyCode::F2
 			&& hui::getInputEvent().key.down)
 		{
-			reloadTheme();
+			//reloadTheme();
 		}
 		// Check the event count
 		auto eventCount = hui::getInputEventCount();
@@ -192,7 +169,7 @@ int main(int argc, char** args)
 
 			auto userDrawing = [](hui::HNativeWindow wnd)
 			{
-				auto nativeWndSize = HORUS_INPUT->getWindowSize(wnd);
+				auto nativeWndSize = hui::getSettings().services.getWindowSize(wnd);
 				hui::Rect rc;
 
 				if (confineSceneToWindow)
@@ -237,7 +214,7 @@ int main(int argc, char** args)
 				glEnd();
 
 				x = sinf(t);
-				t += hui::getFrameDeltaTime();
+				t += hui::getSettings().deltaTime;
 				glViewport(vp[0], vp[1], vp[2], vp[3]);
 			};
 
@@ -254,7 +231,7 @@ int main(int argc, char** args)
 				hui::Rect panelRect = { 5, 5, 300, 500 };
 				hui::WidgetElementInfo elemInfo;
 				hui::getThemeWidgetElementInfo(hui::WidgetElementId::PopupBody, hui::WidgetStateType::Normal, elemInfo);
-				hui::color(hui::Color::white);
+				hui::rendererSetColor(hui::Color::white);
 				// draw before the beginContainer, because it will clip our panel image (using padding)
 				//hui::drawBorderedImage(elemInfo.image, elemInfo.border, panelRect);
 
@@ -633,7 +610,7 @@ int main(int argc, char** args)
 					hui::getInputEvent().key.code == hui::KeyCode::F2 &&
 					hui::getInputEvent().key.down)
 				{
-					reloadTheme();
+					//reloadTheme();
 				}
 
 				if (hui::getInputEvent().type == hui::InputEvent::Type::WindowClose)
@@ -654,18 +631,15 @@ int main(int argc, char** args)
 		}
 	}
 
+	hui::shutdownStdioFileIO(settings.services);
+	hui::shutdownFreetype(settings.services);
+	hui::shutdownSdl3(settings.services);
+	hui::shutdownStbRectPack(settings.services);
+	hui::shutdownUtf(settings.services);
+	hui::shutdownOpenGL(settings.services);
+
 	hui::shutdown();
 	hui::deleteContext(huiContext);
-
-	// delete owned pointers
-	delete settings.providers.file;
-	delete settings.providers.fileDialogs;
-	delete settings.providers.font;
-	delete settings.providers.gfx;
-	delete settings.providers.image;
-	delete settings.providers.input;
-	delete settings.providers.rectPack;
-	delete settings.providers.utf;
 
 	return 0;
 }

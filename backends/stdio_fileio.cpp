@@ -28,10 +28,16 @@ static void close(HFile file)
 
 static bool seek(HFile file, FileSeekMode mode, size_t pos)
 {
+	int m = 0;
+
+	if (mode == FileSeekMode::Set) m = SEEK_SET;
+	if (mode == FileSeekMode::End) m = SEEK_END;
+	if (mode == FileSeekMode::Current) m = SEEK_CUR;
+
 #ifdef _WIN64
-	return 0 == _fseeki64((FILE*)file, pos, (int)mode);
+	return 0 == _fseeki64((FILE*)file, pos, m);
 #else
-	return 0 == fseek((FILE*)file, pos, (int)mode);
+	return 0 == fseek((FILE*)file, pos, m);
 #endif
 }
 

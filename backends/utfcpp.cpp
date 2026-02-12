@@ -135,6 +135,7 @@ void initUtf(Services& services)
 {
 	services.utf32To8NoAlloc = utf32To8NoAlloc;
 	services.utf8To32 = utf8To32;
+	services.utf32To8 = utf32To8;
 	services.utf8Length = utf8Length;
 }
 
@@ -142,6 +143,7 @@ void shutdownUtf(Services& services)
 {
 	services.utf32To8NoAlloc = nullptr;
 	services.utf8To32 = nullptr;
+	services.utf32To8 = nullptr;
 	services.utf8Length = nullptr;
 }
 

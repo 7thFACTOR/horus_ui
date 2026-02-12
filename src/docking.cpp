@@ -190,7 +190,7 @@ void DockNode::computeRect()
 {
 	if (!parent)
 	{
-		auto size = HORUS_INPUT->getWindowSize(nativeWindow);
+		auto size = ctx->settings.services.getWindowSize(nativeWindow);
 		rect = { 0, 0, size.x, size.y };
 
 	}
@@ -643,12 +643,7 @@ bool loadDockingStateFromMemory(const u8* stateInfo, size_t stateInfoSize)
 
 HNativeWindow createNativeWindow(const std::string& title, NativeWindowFlags flags, NativeWindowState state, const Rect& rect)
 {
-	auto wnd = ctx->providers->input->createWindow(title.c_str(), flags, state, rect);
-
-	if (!ctx->renderer)
-	{
-		ctx->initializeRenderer();
-	}
+	auto wnd = ctx->settings.services.createWindow(title.c_str(), flags, state, rect);
 
 	ctx->nativeWindows.push_back(wnd);
 
@@ -673,7 +668,7 @@ void destroyNativeWindow(HNativeWindow nativeWnd)
 
 DockNode* createNativeWindowRootDockNode(HNativeWindow nativeWindow)
 {
-	auto size = HORUS_INPUT->getWindowSize(nativeWindow);
+	auto size = ctx->settings.services.getWindowSize(nativeWindow);
 	Rect rect = { 0, 0, size.x, size.y };
 	auto dockNode = new DockNode();
 
@@ -1838,7 +1833,7 @@ void handleDockingMouseUp()
 				auto& rc = ds.dragWindow->dockNode->rect;
 
 				// we use the current screen mouse pos to undock the window to
-				pos = HORUS_INPUT->getAbsoluteMousePosition();
+				pos = ctx->settings.services.getAbsoluteMousePosition();
 				// put the window in the middle of the mouse coordinates
 				pos.x -= rc.width / 2.0f;
 				pos.y -= rc.height / 2.0f;
@@ -1868,7 +1863,7 @@ void handleDockingMouseUp()
 
 	if (ds.dragIndicatorNativeWindow)
 	{
-		HORUS_INPUT->destroyWindow(ds.dragIndicatorNativeWindow);
+		ctx->settings.services.destroyWindow(ds.dragIndicatorNativeWindow);
 		ds.dragIndicatorNativeWindow = nullptr;
 	}
 
@@ -2594,7 +2589,7 @@ void updateDockingSystem()
 
 	ds.mouseDragDelta = mousePos - ds.lastMousePos;
 
-	auto screenMousePos = HORUS_INPUT->getAbsoluteMousePosition();
+	auto screenMousePos = ctx->settings.services.getAbsoluteMousePosition();
 	Rect screenRect;
 
 	// remember last valid hovered node to remove insertion space when changed
@@ -2624,18 +2619,18 @@ void updateDockingSystem()
 		&& !ds.dragIndicatorNativeWindow
 		&& ctx->lastHoveredNativeWindow)
 	{
-		Point wndPos = HORUS_INPUT->getWindowPosition(ctx->lastHoveredNativeWindow);
+		Point wndPos = ctx->settings.services.getWindowPosition(ctx->lastHoveredNativeWindow);
 
 		screenRect = ds.dragRect + wndPos;
 
-		ds.dragIndicatorNativeWindow = HORUS_INPUT->createWindow(ds.dragWindow->title.c_str(), NativeWindowFlags::NoInput | NativeWindowFlags::NoDecoration | NativeWindowFlags::Resizable, NativeWindowState::Normal, screenRect);
+		ds.dragIndicatorNativeWindow = ctx->settings.services.createWindow(ds.dragWindow->title.c_str(), NativeWindowFlags::NoInput | NativeWindowFlags::NoDecoration | NativeWindowFlags::Resizable, NativeWindowState::Normal, screenRect);
 
 		ds.dragWindow->dockingNow = true;
 	}
 
 	// if we release the mouse button, wherever it is, over a window or not
 	// then force a mouse up button, because we dont do capturing so we cant detect it when not in a window
-	if (!HORUS_INPUT->isMouseButtonDownNow(MouseButton::Left)
+	if (!ctx->settings.services.isMouseButtonDownNow(MouseButton::Left)
 		&& ds.dragWindow)
 	{
 		ctx->event.type = InputEvent::Type::MouseUp;
@@ -2661,7 +2656,7 @@ void updateDockingSystem()
 			&& ds.dockType != DockType::Floating
 			&& ds.hoveredNode)
 		{
-			auto pos = HORUS_INPUT->getWindowPosition(ds.hoveredNode->nativeWindow);
+			auto pos = ctx->settings.services.getWindowPosition(ds.hoveredNode->nativeWindow);
 
 			screenRect = ds.dragRect;
 			screenRect += pos;
@@ -2669,7 +2664,7 @@ void updateDockingSystem()
 		else
 		{
 			// resize window as floating window
-			auto mousePosAbs = HORUS_INPUT->getAbsoluteMousePosition();
+			auto mousePosAbs = ctx->settings.services.getAbsoluteMousePosition();
 			screenRect = ds.dragWindow->dockNode->rect;
 			screenRect *= 0.6f; // scale back a bit from original size
 			screenRect.x = mousePosAbs.x - screenRect.width / 2;
@@ -2677,8 +2672,8 @@ void updateDockingSystem()
 		}
 
 		ds.dockType = DockType::Floating;
-		HORUS_INPUT->setWindowPosition(ds.dragIndicatorNativeWindow, screenRect.topLeft());
-		HORUS_INPUT->setWindowSize(ds.dragIndicatorNativeWindow, screenRect.getSize());
+		ctx->settings.services.setWindowPosition(ds.dragIndicatorNativeWindow, screenRect.topLeft());
+		ctx->settings.services.setWindowSize(ds.dragIndicatorNativeWindow, screenRect.getSize());
 	}
 
 	if (ds.dragWindow
@@ -2697,7 +2692,7 @@ void updateDockingSystem()
 		{
 			if (ctx->docking.dragIndicatorNativeWindow)
 			{
-				HORUS_INPUT->setCurrentWindow(ds.dragIndicatorNativeWindow);
+				ctx->settings.services.setCurrentWindow(ds.dragIndicatorNativeWindow);
 				ctx->renderer.disableRendering = false;
 				ctx->renderer.setCurrentNativeWindow(ds.dragIndicatorNativeWindow);
 				ctx->renderer.setWindowSize(screenRect.getSize());
@@ -2707,7 +2702,7 @@ void updateDockingSystem()
 				drawDockPreview(ds.dragWindow, screenRect);
 				ctx->renderer.end();
 				ctx->renderer.executeDrawCommands(ds.dragIndicatorNativeWindow);
-				HORUS_INPUT->presentWindow(ds.dragIndicatorNativeWindow);
+				ctx->settings.services.presentWindow(ds.dragIndicatorNativeWindow);
 			}
 		}
 		else
@@ -2716,19 +2711,15 @@ void updateDockingSystem()
 			{
 				auto& rc = ds.rootNativeWindowDockNodes[ds.hoveredNode->nativeWindow]->rect;
 
-				HORUS_INPUT->setCurrentWindow(ds.hoveredNode->nativeWindow);
+				ctx->settings.services.setCurrentWindow(ds.hoveredNode->nativeWindow);
 				ctx->renderer.disableRendering = false;
 				ctx->renderer.setCurrentNativeWindow(ds.hoveredNode->nativeWindow);
 				ctx->renderer.setWindowSize(rc.getSize());
 				ctx->renderer.begin();
-				// we need to render last, so choose the highest z order
-				//auto oldZOrder = ctx->renderer.setZOrder(~0);
 				ctx->renderer.pushWindowDrawCmdLayer(DrawCmdLayerType::Overlay);
 				drawDockPreview(ds.dragWindow, ds.dragRect);
 				drawDockGuides();
 				ctx->renderer.popWindowDrawCmdLayer();
-				// restore z order
-				//ctx->renderer.setZOrder(oldZOrder);
 				ctx->renderer.executeDrawCommands(ds.hoveredNode->nativeWindow);
 			}
 		}

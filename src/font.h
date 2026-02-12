@@ -25,8 +25,6 @@ struct Font
 	FontTextSize computeTextSize(const GlyphCode* const text, u32 size, u32 maxWidth = ~0);
 	FontTextSize computeTextSize(const Utf32String& text);
 	FontTextSize computeTextSize(const char* text, u32 maxWidth = ~0);
-
-protected:
 	FontGlyph* cacheGlyph(GlyphCode glyphCode);
 
 	FontInfo fontInfo;

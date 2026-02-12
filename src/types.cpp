@@ -1,4 +1,5 @@
 #include "types.h"
+#include "context.h"
 #include "docking.h"
 #include <cstring>
 
@@ -12,7 +13,7 @@ DockingState::~DockingState()
 	{
 		pair.second->removeWindowsAndDeleteChildrenRecursive();
 		delete pair.second;
-		HORUS_INPUT->destroyWindow(pair.first);
+		ctx->settings.services.destroyWindow(pair.first);
 	}
 }
 

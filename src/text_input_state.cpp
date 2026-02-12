@@ -77,7 +77,7 @@ bool TextInputState::processEvent(const InputEvent& ev)
 		mouseDown = false;
 		selectingWithMouse = false;
 	}
-	else if (ev.window == HORUS_INPUT->getFocusedWindow())
+	else if (ev.window == ctx->settings.services.getFocusedWindow())
 	{
 		auto chrPos = getCharIndexAtX(ev.mouse.point.x);
 
@@ -168,7 +168,7 @@ bool TextInputState::processEvent(const InputEvent& ev)
 	{
 		Utf32String txt;
 
-		HORUS_UTF->utf8To32(ev.text.text, txt);
+		ctx->settings.services.utf8To32(ev.text.text, txt);
 		formatValue(txt);
 		insertTextAtCaret(txt);
 		textChanged = true;
@@ -420,7 +420,7 @@ void TextInputState::processKeyEvent(const InputEvent& ev)
 		{
 			char* tmpStr = 0;
 
-			HORUS_UTF->utf32To8(str, &tmpStr);
+			ctx->settings.services.utf32To8(str, &tmpStr);
 			copyToClipboard(tmpStr);
 			delete[] tmpStr;
 		}
@@ -438,7 +438,7 @@ void TextInputState::processKeyEvent(const InputEvent& ev)
 
 		pasteFromClipboard(tmpStr, maxTextSize);
 
-		if (HORUS_UTF->utf8To32(tmpStr, utf32Str))
+		if (ctx->settings.services.utf8To32(tmpStr, utf32Str))
 		{
 			if (utf32Str.size() + text.size() < maxTextLength)
 			{
@@ -466,7 +466,7 @@ void TextInputState::processKeyEvent(const InputEvent& ev)
 
 			char* str8 = 0;
 
-			if (HORUS_UTF->utf32To8(str, &str8))
+			if (ctx->settings.services.utf32To8(str, &str8))
 			{
 				copyToClipboard(str8);
 				delete[] str8;

@@ -30,8 +30,7 @@ struct Renderer
 	Rect getWindowRect() const { return { 0, 0, windowSize.x, windowSize.y }; }
 	void begin();
 	void end();
-	Font* getFont() const { return currentFont; }
-	
+	Font* getFont() const { return currentFont; }	
 	void pushWindowDrawCmdLayer(DrawCmdLayerType type);
 	void popWindowDrawCmdLayer();
 	void resetWindowContexts();

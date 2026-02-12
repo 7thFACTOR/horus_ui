@@ -24,7 +24,7 @@ Utf32String* UnicodeTextCache::getText(const char* text)
 	{
 		Utf32String* txt = new Utf32String();
 
-		if (HORUS_UTF->utf8To32((char*)text, *txt))
+		if (ctx->settings.services.utf8To32((char*)text, *txt))
 		{
 			CachedText ct;
 

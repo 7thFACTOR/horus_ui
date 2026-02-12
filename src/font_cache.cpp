@@ -1,5 +1,6 @@
 #include "font_cache.h"
 #include "atlas.h"
+#include "theme.h"
 
 namespace hui
 {
@@ -70,6 +71,22 @@ void FontCache::rescaleFonts(f32 scale)
 	for (auto& font : cachedFonts)
 	{
 		font.second->font.resetFaceSize(font.second->size * scale);
+	}
+}
+
+void FontCache::addGlyphsToAtlas(struct Atlas* atlas)
+{
+	for (auto& cachedFont : cachedFonts)
+	{
+		for (auto& glyphPair : cachedFont.second->font.glyphs)
+		{
+			auto fontGlyph = glyphPair.second;
+			auto image = atlas->addImage(
+				fontGlyph->rgbaBuffer,
+				fontGlyph->pixelWidth,
+				fontGlyph->pixelHeight);
+			fontGlyph->image = image;
+		}
 	}
 }
 

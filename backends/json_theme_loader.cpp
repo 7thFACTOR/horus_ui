@@ -91,7 +91,7 @@ static std::string readTextFile(const char* path)
 		getSettings().services.seek(file, FileSeekMode::Set, 0);
 
 		char* buffer = new char[size + 1];
-		buffer[size] = 0;
+		memset(buffer, 0, size + 1);
 		auto readBytes = getSettings().services.read(file, buffer, size);
 
 		if (readBytes == size)
@@ -246,13 +246,7 @@ static void setThemeElement(
 
 	if (!image)
 	{
-		ImageData imageData;
-
-		if (loadPngImage(imageFilename.c_str(), imageData))
-		{
-			image = addThemeImage(theme, imageFilename.c_str(), imageData);
-			deleteImageData(imageData);
-		}
+		image = loadThemeImage(theme, imageFilename.c_str());
 	}
 
 	auto font = hui::getThemeFont(theme, fontName.c_str());
@@ -298,13 +292,7 @@ static void setUserElement(
 
 	if (!image)
 	{
-		ImageData imageData;
-		
-		if (loadPngImage(imageFilename.c_str(), imageData) && imageData.pixels)
-		{
-			image = addThemeImage(theme, imageFilename.c_str(), imageData);
-			deleteImageData(imageData);
-		}
+		image = loadThemeImage(theme, imageFilename.c_str());
 	}
 
 	auto font = hui::getThemeFont(theme, fontName.c_str());
@@ -369,7 +357,7 @@ HTheme loadThemeFromJson(const char* filename, char* errorTextBuffer, size_t err
 
 	for (size_t i = 0; i < fontNames.size(); i++)
 	{
-		auto name = fontNames[i];
+		auto& name = fontNames[i];
 		auto fnt = fonts.get(name.c_str(), Json::Value());
 
 		std::string fontFilename = fnt.get("file", "").asString();
@@ -387,7 +375,7 @@ HTheme loadThemeFromJson(const char* filename, char* errorTextBuffer, size_t err
 
 	for (size_t i = 0; i < settingNames.size(); i++)
 	{
-		auto name = settingNames[i];
+		auto& name = settingNames[i];
 		auto val = settings.get(name.c_str(), Json::Value());
 		hui::setThemeUserSetting(theme, name.c_str(), val.asCString());
 	}
@@ -397,7 +385,7 @@ HTheme loadThemeFromJson(const char* filename, char* errorTextBuffer, size_t err
 
 	for (size_t i = 0; i < widgetNames.size(); i++)
 	{
-		auto widgetName = widgetNames[i];
+		auto& widgetName = widgetNames[i];
 		auto widget = widgets.get(widgetName.c_str(), Json::Value());
 		WidgetType widgetType = getWidgetTypeFromName(widgetName);
 		auto widgetMemberNames = widget.getMemberNames();
@@ -469,7 +457,7 @@ HTheme loadThemeFromJson(const char* filename, char* errorTextBuffer, size_t err
 			// read all styles
 			for (size_t k = 0; k < styleNames.size(); k++)
 			{
-				auto styleName = styleNames[k];
+				auto& styleName = styleNames[k];
 				auto styleElem = styles.get(styleName, Json::Value());
 
 				if (widgetType != WidgetType::None)
@@ -487,9 +475,21 @@ HTheme loadThemeFromJson(const char* filename, char* errorTextBuffer, size_t err
 		}
 	}
 
-	buildTheme(theme);
-
 	return theme;
 }
+
+HImage loadThemeImage(HTheme theme, const char* pngFilename)
+{
+	ImageData img;
+	bool ret = loadPngImage(pngFilename, img);
+
+	if (ret && img.pixels)
+	{
+		return addThemeImage(theme, pngFilename, img);
+	}
+
+	return 0;
+}
+
 
 }

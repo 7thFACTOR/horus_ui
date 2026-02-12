@@ -28,5 +28,5 @@ struct Sdl3InitParams
 
 void initSdl3(Services& services, const Sdl3InitParams& params);
 void shutdownSdl3(Services& services);
-f32 getSdl3DeltaTime();
+HORUS_API f32 getSdl3DeltaTime();
 }

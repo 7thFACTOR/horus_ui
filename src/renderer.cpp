@@ -585,7 +585,7 @@ void Renderer::executeDrawCommands(HNativeWindow wnd)
 		return;
 
 	currentWindowContext = &windowContexts[wnd];
-	currentTexture = ctx->atlasTexture;
+	currentTexture = ctx->theme->atlas->texture;
 	currentBatch = nullptr;
 	currentWindowContext->batches.clear();
 	vertexBufferData.drawVertexCount = 0;
@@ -612,7 +612,7 @@ void Renderer::executeDrawCommands(HNativeWindow wnd)
 				}
 				else
 				{
-					currentTexture = ctx->atlasTexture;
+					currentTexture = ctx->theme->atlas->texture;
 				}
 
 				if (clipRect(cmd.data.drawRect.rotated, cmd.data.drawRect.rect, cmd.data.drawRect.uvRect))
@@ -797,7 +797,7 @@ void Renderer::resetWindowContexts()
 void Renderer::begin()
 {
 	currentBatch = nullptr;
-	cmdSetTexture(ctx->atlasTexture);
+	cmdSetTexture(ctx->theme->atlas->texture);
 }
 
 void Renderer::end()
@@ -1036,7 +1036,7 @@ void Renderer::cmdDrawRectangle(const Rect& rect)
 
 void Renderer::cmdDrawFilledRectangle(const Rect& rect)
 {
-	auto image = ctx->atlas.whiteImage;
+	auto image = ctx->theme->atlas->whiteImage;
 	auto uvRect = image->uvRect;
 	uvRect = uvRect.contract(ctx->settings.whiteImageUvBorder);
 	cmdDrawImage(image, rect, uvRect);
@@ -1699,7 +1699,7 @@ FontTextSize Renderer::computeSizeOrDrawText(
 		// render underline (single continuous underline across computed width)
 		if (currentTextStyle.underline)
 		{
-			auto image = ctx->atlas.whiteImage;
+			auto image = ctx->theme->atlas->whiteImage;
 
 			// underline spans the whole measured width (max line width)
 			Rect underlineRect(
@@ -1813,10 +1813,10 @@ void Renderer::drawQuad4Colors(const Rect& rect, const Rect& uvRect, const Rgba3
 {
 	drawTriangle(rect.topLeft(), rect.topRight(), rect.bottomRight(),
 		uvRect.topLeft(), uvRect.topRight(), uvRect.bottomRight(),
-		colTopLeft, colTopRight, colBottomRight, ctx->atlas.whiteImage);
+		colTopLeft, colTopRight, colBottomRight, ctx->theme->atlas->whiteImage);
 	drawTriangle(rect.topLeft(), rect.bottomRight(), rect.bottomLeft(),
 		uvRect.topLeft(), uvRect.bottomRight(), uvRect.bottomLeft(),
-		colTopLeft, colBottomRight, colBottomLeft, ctx->atlas.whiteImage);
+		colTopLeft, colBottomRight, colBottomLeft, ctx->theme->atlas->whiteImage);
 }
 
 void Renderer::drawQuadRot90(const Rect& rect, const Rect& uvRect)
@@ -2182,7 +2182,7 @@ void Renderer::drawPolyLine(const Point* points, u32 pointCount, bool closed)
 	Point p12;
 	Point p21;
 	Point p22;
-	auto lineImage = ctx->atlas.whiteImage;
+	auto lineImage = ctx->theme->atlas->whiteImage;
 	const auto color = currentLineStyle.color;
 	auto rcUv = lineImage->uvRect;
 

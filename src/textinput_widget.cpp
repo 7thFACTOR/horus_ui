@@ -109,7 +109,7 @@ bool textInput(
 	char* textToDraw = (char*)text;
 	Utf32String pwdStr;
 
-	HORUS_UTF->utf8To32(passwordChar, pwdStr);
+	ctx->settings.services.utf8To32(passwordChar, pwdStr);
 
 	ctx->textInput.editNow = false;
 	ctx->textInput.password = password;
@@ -180,8 +180,8 @@ bool textInput(
 		ctx->textInput.selectionActive = false;
 		ctx->textInput.flags = flags;
 		ctx->textInput.scrollOffset = 0;
-		HORUS_UTF->utf8To32(text, ctx->textInput.text);
-		HORUS_UTF->utf8To32(defaultText, ctx->textInput.defaultText);
+		ctx->settings.services.utf8To32(text, ctx->textInput.text);
+		ctx->settings.services.utf8To32(defaultText, ctx->textInput.defaultText);
 
 		if (ctx->textInput.selectAllOnFocus && has(flags, TextInputFlags::AutoSelectAll))
 		{
@@ -207,7 +207,7 @@ bool textInput(
 		rc.y = ctx->widget.rect.y;
 		rc.width = ctx->widget.rect.width;
 		rc.height = ctx->widget.rect.height;
-		HORUS_INPUT->startTextInput(ctx->lastHoveredNativeWindow, rc);
+		ctx->settings.services.startTextInput(ctx->lastHoveredNativeWindow, rc);
 		bodyElemState = &bodyElem->getState(WidgetStateType::Focused);
 		forceRepaint();
 	}
@@ -312,12 +312,12 @@ bool textInput(
 	if (isEditingThis)
 	{
 		memset((char*)text, 0, maxLength);
-		HORUS_UTF->utf32To8NoAlloc(ctx->textInput.text, text, maxLength);
+		ctx->settings.services.utf32To8NoAlloc(ctx->textInput.text.data(), ctx->textInput.text.size(), text, maxLength);
 	}
 
 	if (password && defaultText != textToDraw)
 	{
-		u32 len = std::min(HORUS_UTF->utf8Length(textToDraw), maxHiddenCharLen);
+		u32 len = std::min(ctx->settings.services.utf8Length(textToDraw), maxHiddenCharLen);
 		hiddenPwdText[0] = 0;
 
 		for (i32 i = 0; i < len; i++)
@@ -383,7 +383,7 @@ bool textInput(
 	{
 		// this will work even if deltaTime is always zero, caret wont blink ever
 		// dt zero happens when UI is not drawn continuously
-		ctx->textInput.caretBlinkTimer += ctx->deltaTime * ctx->settings.textCaretBlinkSpeed;
+		ctx->textInput.caretBlinkTimer += ctx->settings.deltaTime * ctx->settings.textCaretBlinkSpeed;
 
 		if (ctx->textInput.caretBlinkTimer > 2.0f)
 		{

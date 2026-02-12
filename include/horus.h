@@ -345,8 +345,8 @@ enum class NativeWindowState
 
 enum class FileSeekMode
 {
-	Start,
-	Set,
+	Set = 0,
+	Current,
 	End
 };
 
@@ -1751,6 +1751,7 @@ struct Services
 
 	// Text encoding
 	bool (*utf8To32)(const char* utf8Str, Utf32String& outUtf32Str) = nullptr;
+	bool (*utf32To8)(const Utf32String& utf32Str, char** outUtf8Str) = nullptr;
 	bool (*utf32To8NoAlloc)(const u32* utf32Str, size_t utf32StrSize, const char* outUtf8Str, size_t maxOutUtf8StrSize) = nullptr;
 	size_t (*utf8Length)(const char* utf8Str) = nullptr;
 
@@ -1984,12 +1985,6 @@ HORUS_API void setMouseCursor(MouseCursorType type);
 /// \return the created mouse cursor
 HORUS_API HMouseCursor createMouseCursor(Rgba32* pixels, u32 width, u32 height, u32 hotSpotX = 0, u32 hotSpotY = 0);
 
-/// Create a mouse cursor from a bitmap loaded from a PNG image file
-/// \param hotSpotX the cursor pointer hot spot X coordinate, relative to the bitmap size
-/// \param hotSpotY the cursor pointer hot spot Y coordinate, relative to the bitmap size
-/// \return the created mouse cursor
-HORUS_API HMouseCursor loadMouseCursor(const char* imageFilename, u32 hotSpotX = 0, u32 hotSpotY = 0);
-
 /// Delete a custom mouse cursor
 /// \param cursor the cursor to be deleted
 HORUS_API void deleteMouseCursor(HMouseCursor cursor);
@@ -2060,6 +2055,9 @@ HORUS_API void setTheme(HTheme theme);
 /// \return the current theme
 HORUS_API HTheme getTheme();
 
+HORUS_API ImageData getThemeAtlasImageData();
+HORUS_API void setThemeAtlasTexture(HTexture texture);
+
 /// Delete a theme
 /// \param theme the theme to be deleted, if this is the current theme it will be set to null
 HORUS_API void deleteTheme(HTheme theme);
@@ -2073,7 +2071,7 @@ HORUS_API void setThemeUserSetting(HTheme theme, const char* name, const char* v
 
 HORUS_API const char* getThemeUserSetting(HTheme theme, const char* name);
 
-HORUS_API HImage addThemeImage(HTheme theme, const char* id, const ImageData& img);
+HORUS_API HImage addThemeImage(HTheme theme, const char* id, const ImageData& imgData);
 
 HORUS_API HImage getThemeImage(HTheme theme, const char* id);
 
@@ -2503,7 +2501,7 @@ HORUS_API void setNextWidth(f32 width);
 /// Begin a custom user viewport area
 /// \param height the height of the viewport, if zero, it will take the entire remaining container height
 /// \return the rectangle in window coordinates of the actual viewport area, use this to draw your custom things in
-HORUS_API Rect beginViewport(f32 height = 0);
+HORUS_API Rect beginViewport(const char* id, f32 height = 0);
 
 /// End the current user viewport
 HORUS_API void endViewport();
@@ -2546,7 +2544,7 @@ HORUS_API bool menuItem(const char* label, const char* shortcut = "", HImage img
 HORUS_API void menuSeparator();
 
 //////////////////////////////////////////////////////////////////////////
-// Dockable Tabs
+// Tabs
 //////////////////////////////////////////////////////////////////////////
 
 /// Start a tab group

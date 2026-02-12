@@ -5,14 +5,14 @@
 
 namespace hui
 {
-Rect beginViewport(f32 height)
+Rect beginViewport(const char* id, f32 height)
 {
 	if (height <= 0)
 	{
 		height = ctx->layout.height - (ctx->position.y - ctx->layout.savedPosition.y);
 	}
 
-	ctx->setLabelAndId("##viewport");
+	ctx->setLabelAndId(id);
 	addWidget(height);
 	buttonBehavior();
 

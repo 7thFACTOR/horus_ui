@@ -7,7 +7,6 @@ Theme::Theme(u32 atlasTextureSize)
 {
 	atlas = new Atlas(atlasTextureSize, atlasTextureSize);
 	fontCache = new FontCache();
-	atlas->addWhiteImage(4);
 }
 
 Theme::~Theme()
@@ -26,6 +25,20 @@ void Theme::setDefaultWidgetStyle()
 	for (auto& elem : userElements)
 	{
 		elem.second->setDefaultStyle();
+	}
+}
+
+void Theme::addImagesToAtlas()
+{
+	atlas->addWhiteImage(4);
+	
+	for (auto& img : images)
+	{
+		atlas->addImage(
+			img.second->imageData.data(),
+			img.second->width,
+			img.second->height,
+			true);
 	}
 }
 

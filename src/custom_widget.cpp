@@ -42,44 +42,44 @@ Rect getWidgetRect()
 	return ctx->widget.rect;
 }
 
-void font(HFont font)
+void rendererSetFont(HFont font)
 {
 	ctx->renderer.cmdSetFont((Font*)font);
 }
 
-void pushFont(HFont font)
+void rendererPushFont(HFont font)
 {
 	ctx->fontStack.push_back((HFont)ctx->renderer.getFont());
-	font(font);
+	rendererSetFont(font);
 }
 
-void popFont()
+void rendererPopFont()
 {
 	if (ctx->fontStack.size())
 	{
-		font(ctx->fontStack.back());
+		rendererSetFont(ctx->fontStack.back());
 		ctx->fontStack.pop_back();
 	}
 }
 
-void color(const Color& color)
+void rendererSetColor(const Color& color)
 {
 	ctx->renderer.cmdSetColor(color);
 }
 
-void setLineColor(const Color& color)
+void rendererSetLineColor(const Color& color)
 {
 	ctx->renderer.currentLineStyle.color = color;
 	ctx->renderer.cmdSetLineStyle(ctx->renderer.currentLineStyle);
 }
 
-void setFillColor(const Color& color)
+void rendererSetFillColor(const Color& color)
 {
 	ctx->renderer.currentFillStyle.color = color;
 	ctx->renderer.cmdSetFillStyle(ctx->renderer.currentFillStyle);
 }
 
-Point getTextSize(const char* text)
+Point rendererGetTextSize(const char* text)
 {
 	if (!ctx->renderer.getFont())
 		return Point();
@@ -90,12 +90,12 @@ Point getTextSize(const char* text)
 	return { fntInfo.width, fntInfo.height };
 }
 
-void drawTextAt(const char* text, const Point& position)
+void rendererDrawTextAt(const char* text, const Point& position)
 {
 	ctx->renderer.cmdDrawTextAt(text, position + ctx->renderer.viewportOffset);
 }
 
-void drawTextInBox(const char* text, const Rect& rect, HAlignType horizontalAlign, VAlignType verticalAlign)
+void rendererDrawTextInBox(const char* text, const Rect& rect, HAlignType horizontalAlign, VAlignType verticalAlign)
 {
 	ctx->renderer.cmdDrawTextInBox(
 		text,
@@ -106,42 +106,42 @@ void drawTextInBox(const char* text, const Rect& rect, HAlignType horizontalAlig
 		horizontalAlign, verticalAlign);
 }
 
-void drawImage(HImage image, const Point& position, f32 scale)
+void rendererDrawImage(HImage image, const Point& position, f32 scale)
 {
 	Image* img = (Image*)image;
 	ctx->renderer.cmdDrawImage(img, position + ctx->renderer.viewportOffset, scale);
 }
 
-void drawStretchedImage(HImage image, const Rect& rect)
+void rendererDrawStretchedImage(HImage image, const Rect& rect)
 {
 	Image* img = (Image*)image;
 	ctx->renderer.cmdDrawImage(img, Rect(rect.x + ctx->renderer.viewportOffset.x, rect.y + ctx->renderer.viewportOffset.y, rect.width, rect.height));
 }
 
-void drawBorderedImage(HImage image, u32 border, const Rect& rect)
+void rendererDrawBorderedImage(HImage image, u32 border, const Rect& rect)
 {
 	Image* img = (Image*)image;
 
 	ctx->renderer.cmdDrawImageBordered(img, border, Rect(rect.x + ctx->renderer.viewportOffset.x, rect.y + ctx->renderer.viewportOffset.y, rect.width, rect.height), ctx->scale);
 }
 
-void lineStyle(const LineStyle& style)
+void rendererLineStyle(const LineStyle& style)
 {
 	ctx->renderer.cmdSetLineStyle(style);
 }
 
-void fillStyle(const FillStyle& style)
+void rendererSetFillStyle(const FillStyle& style)
 {
 	ctx->fillStyle = style;
 	ctx->renderer.cmdSetColor(style.color);
 }
 
-void drawLine(const Point& a, const Point& b)
+void rendererDrawLine(const Point& a, const Point& b)
 {
 	ctx->renderer.cmdDrawLine(a + ctx->renderer.viewportOffset, b + ctx->renderer.viewportOffset);
 }
 
-void drawPolyLine(const Point* points, u32 pointCount, bool closed)
+void rendererDrawPolyLine(const Point* points, u32 pointCount, bool closed)
 {
 	std::vector<Point> pts;
 
@@ -155,12 +155,12 @@ void drawPolyLine(const Point* points, u32 pointCount, bool closed)
 	ctx->renderer.cmdDrawPolyLine(pts.data(), pointCount, closed);
 }
 
-void drawCircle(const Point& center, f32 radius, u32 segments)
+void rendererDrawCircle(const Point& center, f32 radius, u32 segments)
 {
-	drawEllipse(center, radius, radius, segments);
+	rendererDrawEllipse(center, radius, radius, segments);
 }
 
-void drawEllipse(const Point& center, f32 radiusX, f32 radiusY, u32 segments)
+void rendererDrawEllipse(const Point& center, f32 radiusX, f32 radiusY, u32 segments)
 {
 	std::vector<Point> pts;
 	Point pt;
@@ -180,7 +180,7 @@ void drawEllipse(const Point& center, f32 radiusX, f32 radiusY, u32 segments)
 	ctx->renderer.cmdDrawPolyLine(pts.data(), pts.size(), true);
 }
 
-void drawRectangle(const Rect& rc)
+void rendererDrawRectangle(const Rect& rc)
 {
 	Point pts[4] = {
 		rc.topLeft() + ctx->renderer.viewportOffset,
@@ -192,7 +192,7 @@ void drawRectangle(const Rect& rc)
 	ctx->renderer.cmdDrawPolyLine(pts, 4, true);
 }
 
-void drawSolidRectangle(const Rect& rc)
+void rendererDrawSolidRectangle(const Rect& rc)
 {
 	ctx->renderer.cmdDrawFilledRectangle(
 		{
@@ -211,7 +211,7 @@ void drawSolidRectangle(const Rect& rc)
 
 #define HORUS_HERMITE_FIRST_TANGENT(a, b, c, tt) (((a - b) * 1.5f - c * 0.5f) * (1.0f - tt))
 
-Point hermitePoint(
+static Point hermitePoint(
 	const Point& controlPtA,
 	const Point& tangentA,
 	const Point& tangentB,
@@ -237,7 +237,7 @@ Point hermitePoint(
 
 // Compute a length of a spline segment by using 5-point Legendre-Gauss quadrature
 // https://en.wikipedia.org/wiki/Gaussian_quadrature
-f32 computeSplineLength(const Point& start, const Point& start_tangent,
+static f32 computeSplineLength(const Point& start, const Point& start_tangent,
 	const Point& end, Point const& end_tangent)
 {
 	// Cubic Hermite spline derivative coefficients
@@ -276,7 +276,7 @@ f32 computeSplineLength(const Point& start, const Point& start_tangent,
 	return 0.5f * length;
 }
 
-void drawSpline(SplineControlPoint* points, u32 count, f32 segmentSize)
+void rendererDrawSpline(SplineControlPoint* points, u32 count, f32 segmentSize)
 {
 	std::vector<Point> pts;
 
@@ -292,15 +292,15 @@ void drawSpline(SplineControlPoint* points, u32 count, f32 segmentSize)
 		}
 	}
 
-	drawPolyLine(pts.data(), pts.size());
+	rendererDrawPolyLine(pts.data(), pts.size(), false);
 }
 
-void drawArrow(const Point& a, const Point& b, f32 tipLength, f32 tipWidth, bool drawBodyLine)
+void rendererDrawArrow(const Point& a, const Point& b, f32 tipLength, f32 tipWidth, bool drawBodyLine)
 {
 	//TODO
 }
 
-void drawSolidTriangle(
+void rendererDrawSolidTriangle(
 	const Point& p1, const Point& p2, const Point& p3)
 {
 	ctx->renderer.cmdDrawSolidTriangle(

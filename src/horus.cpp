@@ -74,13 +74,12 @@ const Color Color::gray(0.5f, 0.5f, 0.5f, 1);
 const Color Color::lightGray(0.7f, 0.7f, 0.7f, 1);
 const Color Color::sky(0.f, 0.682f, 0.937f, 1);
 
-HContext createContext(struct Settings& settings)
+HContext createContext(const Settings& settings)
 {
 	Context* context = new Context();
 
 	HORUS_ASSERT(context);
 	context->settings = settings;
-	context->providers = &settings.providers;
 
 	if (context->settings.dockingStyle == DockingGuidesStyle::Auto)
 	{
@@ -114,11 +113,6 @@ void deleteContext(HContext context)
 Settings& getSettings()
 {
 	return ctx->settings;
-}
-
-void initializeRenderer()
-{
-	ctx->initializeRenderer();
 }
 
 void addRenderCallback(RenderCallback callback)
@@ -330,8 +324,8 @@ void beginFrame()
 		// use last hovered window as reference for the global position to subtract from
 		if (ctx->lastHoveredNativeWindow)
 		{
-			auto wndPos = HORUS_INPUT->getWindowPosition(ctx->lastHoveredNativeWindow);
-			auto absMousePos = HORUS_INPUT->getAbsoluteMousePosition();
+			auto wndPos = ctx->settings.services.getWindowPosition(ctx->lastHoveredNativeWindow);
+			auto absMousePos = ctx->settings.services.getAbsoluteMousePosition();
 			ctx->mousePosition = absMousePos - wndPos;
 		}
 	}
@@ -356,12 +350,6 @@ void beginFrame()
 	{
 		ctx->widget.focusedId = ctx->widget.nextFocusableId;
 		ctx->focusChanged = true;
-
-		//TODO: doesnt work anymore
-		//if (ctx->widget.focusedId > ctx->maxWidgetId)
-		//{
-		//	ctx->widget.focusedId = 1;
-		//}
 	}
 
 	ctx->mustRedraw = false;
@@ -377,11 +365,9 @@ void beginFrame()
 	ctx->widget.hoveredType = WidgetType::None;
 	ctx->widget.changeEnded = false;
 	ctx->frameCount++;
-	ctx->totalTime += ctx->deltaTime;
-	ctx->pruneUnusedTextTime += ctx->deltaTime;
+	ctx->totalTime += ctx->settings.deltaTime;
+	ctx->pruneUnusedTextTime += ctx->settings.deltaTime;
 	ctx->sameLine.wasEnabled = false;
-	//ctx->sameLineInfoIndex = 0;
-	//ctx->sameLineInfoCount = 0;
 	ctx->fontStack.clear();
 
 	ctx->padding[(i32)PaddingType::Layout] = ctx->settings.defaultLayoutPadding;
@@ -451,7 +437,7 @@ void deferredDeleteObjects()
 			ctx->nativeWindows.erase(iter2);
 		}
 
-		HORUS_INPUT->destroyWindow(wnd);
+		ctx->settings.services.destroyWindow(wnd);
 	}
 
 	ctx->docking.dockNodesToDelete.clear();
@@ -463,10 +449,6 @@ void endFrame()
 {
 	//TODO: check stacks to see if there is are items on them
 	// the stacks should be empty, otherwise push/pop count not matching
-
-	if (ctx->theme->atlas->packWithLastUsedParams())
-		skipThisFrame();
-
 	ctx->focusChanged = false;
 	ctx->mouseMoved = false;
 
@@ -490,17 +472,12 @@ void endFrame()
 
 	if (ctx->mouseCursor != MouseCursorType::Custom)
 	{
-		ctx->providers->input->setCursor(ctx->mouseCursor);
+		ctx->settings.services.setCursor(ctx->mouseCursor);
 	}
 	else if (ctx->customMouseCursor)
 	{
-		ctx->providers->input->setCustomCursor(ctx->customMouseCursor);
+		ctx->settings.services.setCustomCursor(ctx->customMouseCursor);
 	}
-
-	//for (u32 i = 0; i < ctx->sameLineInfoCount; i++)
-	//{
-	//	ctx->sameLineInfo[i].computeHeight = false;
-	//}
 
 	ctx->event.type = ctx->savedEventType;
 	ctx->positionStack.clear();
@@ -509,18 +486,18 @@ void endFrame()
 void update()
 {
 	clearInputEventQueue();
-	ctx->providers->input->processWindowEvents();
+	ctx->settings.services.processWindowEvents();
 
 	// tooltip handling
 	//TODO: move to own func
 	if (ctx->tooltip.id && ctx->tooltip.id != ctx->tooltip.lastId && !ctx->tooltip.show)
 	{
-		ctx->tooltip.timer += ctx->deltaTime;
+		ctx->tooltip.timer += ctx->settings.deltaTime;
 	}
 
 	if (!ctx->tooltip.wasShown)
 	{
-		ctx->tooltip.resetTimer += ctx->deltaTime;
+		ctx->tooltip.resetTimer += ctx->settings.deltaTime;
 	}
 
 	if (!ctx->tooltip.show && ctx->tooltip.id
@@ -576,12 +553,12 @@ void skipThisFrame()
 
 bool copyToClipboard(const char* text)
 {
-	return ctx->providers->input->copyToClipboard(text);
+	return ctx->settings.services.copyToClipboard(text);
 }
 
 bool pasteFromClipboard(char* outText, u32 maxTextSize)
 {
-	return ctx->providers->input->pasteFromClipboard(outText, maxTextSize);
+	return ctx->settings.services.pasteFromClipboard(outText, maxTextSize);
 }
 
 const InputEvent& getInputEvent()
@@ -596,21 +573,12 @@ void setMouseCursor(MouseCursorType type)
 
 HMouseCursor createMouseCursor(Rgba32* pixels, u32 width, u32 height, u32 hotSpotX, u32 hotSpotY)
 {
-	return ctx->providers->input->createCustomCursor(pixels, width, height, hotSpotX, hotSpotY);
-}
-
-HMouseCursor loadMouseCursor(const char* imageFilename, u32 hotSpotX, u32 hotSpotY)
-{
-	auto img = hui::loadImageData(imageFilename);
-	auto cur = hui::createMouseCursor((Rgba32*)img.pixels, img.width, img.height, hotSpotX, hotSpotY);
-	deleteImageData(img);
-
-	return cur;
+	return ctx->settings.services.createCustomCursor(pixels, width, height, hotSpotX, hotSpotY);
 }
 
 void deleteMouseCursor(HMouseCursor cursor)
 {
-	ctx->providers->input->deleteCustomCursor(cursor);
+	ctx->settings.services.deleteCustomCursor(cursor);
 }
 
 void setMouseCursor(HMouseCursor cursor)
@@ -621,8 +589,8 @@ void setMouseCursor(HMouseCursor cursor)
 
 void setCurrentNativeWindow(HNativeWindow wnd)
 {
-	ctx->providers->input->setCurrentWindow(wnd);
-	auto size = HORUS_INPUT->getWindowSize(wnd);
+	ctx->settings.services.setCurrentWindow(wnd);
+	auto size = ctx->settings.services.getWindowSize(wnd);
 	ctx->renderer.setCurrentNativeWindow(wnd);
 	ctx->renderer.setWindowSize(size);
 	ctx->hoveringThisWindow = ctx->lastHoveredNativeWindow == wnd;
@@ -640,9 +608,9 @@ void endRendering()
 
 static void presentWindow(HNativeWindow wnd)
 {
-	HORUS_INPUT->setCurrentWindow(wnd);
+	ctx->settings.services.setCurrentWindow(wnd);
 	ctx->renderer.setCurrentNativeWindow(wnd);
-	ctx->renderer.setWindowSize(HORUS_INPUT->getWindowSize(wnd));
+	ctx->renderer.setWindowSize(ctx->settings.services.getWindowSize(wnd));
 	ctx->hoveringThisWindow = ctx->lastHoveredNativeWindow == wnd;
 
 	auto iterWnd = ctx->docking.rootNativeWindowDockNodes.find(wnd);
@@ -655,7 +623,7 @@ static void presentWindow(HNativeWindow wnd)
 	}
 
 	ctx->renderer.executeDrawCommands(wnd);
-	HORUS_INPUT->presentWindow(wnd);
+	ctx->settings.services.presentWindow(wnd);
 }
 
 void present()
@@ -730,20 +698,6 @@ void setInputEvent(const InputEvent& event)
 void shutdown()
 {
 	HORUS_ASSERT(ctx);
-
-	if (ctx->providers->gfx)
-		ctx->settings.services.shutdown();
-
-	if (ctx->providers->input)
-		ctx->providers->input->shutdown();
-}
-
-HImage createImage(Rgba32* pixels, u32 width, u32 height)
-{
-	HORUS_ASSERT(ctx->theme);
-	auto img = ctx->theme->addImage(pixels, width, height);
-
-	return img;
 }
 
 DockNodeId createRootDockNode(HNativeWindow nativeWnd)
@@ -871,16 +825,6 @@ void dockLayoutRecalculate()
 	}
 }
 
-void setFrameDeltaTime(f32 dt)
-{
-	ctx->deltaTime = dt;
-}
-
-f32 getFrameDeltaTime()
-{
-	return ctx->deltaTime;
-}
-
 HTheme createTheme(u32 atlasTextureSize)
 {
 	Theme* theme = new Theme(atlasTextureSize);
@@ -905,20 +849,22 @@ const char* getThemeUserSetting(HTheme theme, const char* name)
 	return iter->second.c_str();
 }
 
-HImage addThemeImage(HTheme theme, const char* id, const ImageData& img)
+HImage addThemeImage(HTheme theme, const char* id, const ImageData& imgData)
 {
 	Theme* themePtr = (Theme*)theme;
 
-	auto img = themePtr->atlas->addImage((const Rgba32*)img.pixels, img.width, img.height);
 	auto iter = themePtr->images.find(id);
 
 	if (iter != themePtr->images.end())
 	{
-		iter->second = (Image*)image;
-		return;
+		return iter->second;
 	}
 
-	themePtr->images[id] = (Image*)image;
+	auto img = themePtr->atlas->addImage((const Rgba32*)imgData.pixels, imgData.width, imgData.height);
+
+	themePtr->images[id] = (Image*)img;
+
+	return img;
 }
 
 HImage getThemeImage(HTheme theme, const char* imageName)
@@ -1095,16 +1041,6 @@ void popWidgetStyle()
 	ctx->widgetStyleStack.pop_back();
 }
 
-void pushWidgetStyleOverride(WidgetType widgetType, const char* styleName)
-{
-
-}
-
-void popWidgetStyleOverride()
-{
-
-}
-
 void setWidgetElementStyle(WidgetElementId widgetElementId, const char* styleName)
 {
 	HORUS_ASSERT(ctx);
@@ -1132,7 +1068,10 @@ void buildTheme(HTheme theme)
 	HORUS_ASSERT(theme);
 	Theme* themePtr = (Theme*)theme;
 
-	themePtr->packAtlas();
+	themePtr->atlas->clearImages();
+	themePtr->addImagesToAtlas();
+	themePtr->fontCache->addGlyphsToAtlas(themePtr->atlas);
+	themePtr->atlas->pack();
 	themePtr->setDefaultWidgetStyle();
 }
 
@@ -1195,6 +1134,23 @@ void setTheme(HTheme theme)
 HTheme getTheme()
 {
 	return ctx->theme;
+}
+
+ImageData getThemeAtlasImageData()
+{
+	ImageData img;
+
+	img.width = ctx->theme->atlas->width;
+	img.height = ctx->theme->atlas->height;
+	img.pixels = (u8*)ctx->theme->atlas->atlasImageData.data();
+	img.bpp = 32;
+
+	return img;
+}
+
+void setThemeAtlasTexture(HTexture texture)
+{
+	ctx->theme->atlas->texture = texture;
 }
 
 void deleteTheme(HTheme theme)
@@ -1313,17 +1269,7 @@ const Color& getThemeUserWidgetElementColorParameter(HTheme theme, const char* u
 HFont createThemeFont(HTheme theme, const char* name, const char* fontFilename, u32 faceSize)
 {
 	Theme* themePtr = (Theme*)theme;
-	auto fnt = (HFont)themePtr->fontCache->createFont(name, fontFilename, faceSize * ctx->scale, false);
-
-	auto fontIter = themePtr->fonts.find(name);
-
-	if (fontIter != themePtr->fonts.end())
-	{
-		themePtr->fontCache->releaseFont(fontIter->second);
-		themePtr->fonts.erase(fontIter);
-	}
-
-	themePtr->fonts[name] = (Font*)fnt;
+	auto fnt = (HFont)themePtr->fontCache->createFont(name, fontFilename, faceSize * ctx->scale);
 
 	return fnt;
 }
@@ -1332,15 +1278,6 @@ void releaseThemeFont(HTheme theme, HFont font)
 {
 	Theme* themePtr = (Theme*)theme;
 
-	for (auto& fntPair : themePtr->fonts)
-	{
-		if (fntPair.second == (Font*)font)
-		{
-			themePtr->fonts.erase(fntPair.first);
-			break;
-		}
-	}
-
 	themePtr->fontCache->releaseFont((Font*)font);
 }
 
@@ -1348,7 +1285,7 @@ HFont getThemeFont(HTheme theme, const char* themeFontName)
 {
 	Theme* themePtr = (Theme*)theme;
 
-	return themePtr->fonts[themeFontName];
+	return themePtr->fontCache->c[themeFontName];
 }
 
 HFont getFont(const char* themeFontName)
@@ -1438,7 +1375,6 @@ f32 getRemainingWidth()
 void incrementLayerIndex()
 {
 	ctx->layerIndex++;
-	//ctx->renderer.setWindowDrawCmdLayer(ctx->layerIndex);
 
 	if (ctx->maxLayerIndex < ctx->layerIndex)
 	{
@@ -1525,7 +1461,7 @@ void changeScale(f32 scale)
 	if (ctx->theme)
 	{
 		ctx->theme->fontCache->rescaleFonts(scale);
-		ctx->theme->atlas->repackImages();
+		ctx->theme->atlas->pack();
 	}
 }
 
@@ -1739,9 +1675,10 @@ bool droppedOnWidget()
 {
 	if (ctx->dragDrop.begunDragging
 		&& ctx->hoveringThisWindow
-		&& HORUS_INPUT->getFocusedWindow() != ctx->currentWindow->dockNode->nativeWindow)
+		&& ctx->settings.services.getFocusedWindow() != ctx->currentWindow->dockNode->nativeWindow)
 	{
-		ctx->providers->input->raiseWindow(ctx->currentWindow->dockNode->nativeWindow);
+		//TODO: should it raise it or not ?
+		ctx->settings.services.raiseWindow(ctx->currentWindow->dockNode->nativeWindow);
 	}
 
 	if (ctx->dragDrop.begunDragging
@@ -1764,7 +1701,6 @@ u32 getDragDropObjectType()
 {
 	return ctx->dragDrop.dragObjectType;
 }
-
 
 static Color getColorFromText(std::string colorText)
 {

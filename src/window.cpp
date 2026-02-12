@@ -67,7 +67,7 @@ bool beginWindow(const char* id, const char* title, Rect* initialRect, HImage im
 	ctx->currentWindow = wnd;
 	ctx->hoveringThisWindow = wnd->dockNode->nativeWindow == ctx->lastHoveredNativeWindow;
 	ctx->renderer.setCurrentNativeWindow(wnd->dockNode->nativeWindow);
-	ctx->renderer.setWindowSize(HORUS_INPUT->getWindowSize(wnd->dockNode->nativeWindow));
+	ctx->renderer.setWindowSize(ctx->settings.services.getWindowSize(wnd->dockNode->nativeWindow));
 	ctx->renderer.begin();
 	auto rc = wnd->clientRect;
 
@@ -146,7 +146,7 @@ void focusWindow(const char* windowId)
 	{
 		if (iter->second->createdByDockingSystem)
 		{
-			HORUS_INPUT->setWindowTitle(ctx->docking.focusedWindow->dockNode->nativeWindow, ctx->docking.focusedWindow->title.c_str());
+			ctx->settings.services.setWindowTitle(ctx->docking.focusedWindow->dockNode->nativeWindow, ctx->docking.focusedWindow->title.c_str());
 		}
 	}
 }
@@ -202,12 +202,12 @@ bool isMouseOverWindow()
 
 void setWindowCapture()
 {
-	HORUS_INPUT->setCapture(ctx->currentWindow ? ctx->currentWindow->dockNode->nativeWindow : 0);
+	ctx->settings.services.setCapture(ctx->currentWindow ? ctx->currentWindow->dockNode->nativeWindow : 0);
 }
 
 void releaseWindowCapture()
 {
-	HORUS_INPUT->releaseCapture();
+	ctx->settings.services.releaseCapture();
 }
 
 Rect getCurrentWindowClientRect()

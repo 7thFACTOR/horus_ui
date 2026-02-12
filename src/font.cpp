@@ -1,6 +1,7 @@
 ﻿#include "horus.h"
 #include "font.h"
 #include "util.h"
+#include "theme.h"
 #include <string.h>
 #include "context.h"
 
@@ -18,11 +19,11 @@ void Font::load(const std::string& fontFilename, u32 facePointSize)
 
 	if (fontInfo.fontFace)
 	{
-		HORUS_FONT->freeFont(fontInfo.fontFace);
+		ctx->settings.services.freeFont(fontInfo.fontFace);
 		fontInfo.fontFace = 0;
 	}
 
-	if (!HORUS_FONT->loadFont(fontFilename.c_str(), facePointSize, fontInfo))
+	if (!ctx->settings.services.loadFont(fontFilename.c_str(), facePointSize, fontInfo))
 		return;
 }
 
@@ -44,7 +45,7 @@ Font::~Font()
 {
 	if (fontInfo.fontFace)
 	{
-		HORUS_FONT->freeFont(fontInfo.fontFace);
+		ctx->settings.services.freeFont(fontInfo.fontFace);
 	}
 
 	deleteGlyphs();
@@ -76,7 +77,7 @@ f32 Font::getKerning(GlyphCode leftGlyphCode, GlyphCode rightGlyphCode)
 	}
 	else
 	{
-		auto kern = HORUS_FONT->getKerning(fontInfo.fontFace, leftGlyphCode, rightGlyphCode);
+		auto kern = ctx->settings.services.getFontKerning(fontInfo.fontFace, leftGlyphCode, rightGlyphCode);
 		kerningPairs[hash] = kern;
 
 		return kern;
@@ -128,18 +129,12 @@ FontGlyph* Font::cacheGlyph(GlyphCode glyphCode)
 	if (resizeFaceMode)
 		delete[] fontGlyph->rgbaBuffer;
 
-	auto ret = HORUS_FONT->rasterizeGlyph(fontInfo.fontFace, glyphCode, *fontGlyph);
+	auto ret = ctx->settings.services.rasterizeFontGlyph(fontInfo.fontFace, glyphCode, *fontGlyph);
 
-	// if we do not currently resizing the font glyphs, then create and insert the image into the atlas
+	// if we do not currently resizing the font glyphs
 	if (!resizeFaceMode)
 	{
 		glyphs.insert(std::make_pair(glyphCode, fontGlyph));
-
-		auto image = ctx->atlas->addImage(
-			fontGlyph->rgbaBuffer,
-			fontGlyph->pixelWidth,
-			fontGlyph->pixelHeight);
-
 		fontGlyph->image = image;
 	}
 	else
@@ -175,7 +170,6 @@ void Font::deleteGlyphs()
 {
 	for (auto& glyph : glyphs)
 	{
-		ctx->atlas->deleteImage((Image*)glyph.second->image);
 		delete[] glyph.second->rgbaBuffer;
 		delete glyph.second;
 	}
@@ -187,11 +181,13 @@ void Font::deleteGlyphs()
 FontTextSize Font::computeTextSize(const GlyphCode* const text, u32 size, u32 maxWidth)
 {
 	FontTextSize fsize;
-	if (ctx && ctx->renderer)
+
+	if (ctx)
 	{
 		// glyph-array overload on renderer expects (text, size, position, outSize, doDraw, font, maxWidth)
 		return ctx->renderer.computeSizeOrDrawText(text, size, Rect(0, 0, FLT_MAX, FLT_MAX), HAlignType::Left, VAlignType::Top, false, this);
 	}
+	
 	return fsize;
 }
 
@@ -199,7 +195,7 @@ FontTextSize Font::computeTextSize(const Utf32String& text)
 {
 	FontTextSize fsize;
 
-	if (ctx && ctx->renderer)
+	if (ctx)
 	{
 		return ctx->renderer.computeSizeOrDrawText(text.data(), (u32)text.size(), Rect(0, 0, FLT_MAX, FLT_MAX), HAlignType::Left, VAlignType::Top, false, this);
 	}
@@ -210,10 +206,12 @@ FontTextSize Font::computeTextSize(const Utf32String& text)
 FontTextSize Font::computeTextSize(const char* text, u32 maxWidth)
 {
 	FontTextSize fsize;
-	if (ctx && ctx->renderer)
+
+	if (ctx)
 	{
 		return ctx->renderer.computeSizeOrDrawText(text, Rect(0, 0, maxWidth, FLT_MAX), HAlignType::Left, VAlignType::Top, false, this);
 	}
+	
 	return fsize;
 }
 

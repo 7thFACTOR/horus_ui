@@ -18,8 +18,6 @@ struct Context
 
 	Settings settings;
 	Renderer renderer;
-	Atlas atlas;
-	HTexture atlasTexture = 0;
 	UnicodeTextCache textCache;
 
 	// Global general state
@@ -43,7 +41,6 @@ struct Context
 	std::vector<TextLineState> textLines;
 	std::vector<WidgetId> idStack;
 	std::unordered_map<WidgetId, WidgetBoolState> widgetBools;
-
 
 	// Same line
 	SameLineState sameLine;
@@ -174,8 +171,6 @@ struct Context
 	}
 
 	~Context();
-
-	void initializeRenderer();
 
 	inline bool isActiveLayer() const
 	{
