@@ -62,7 +62,7 @@ int main(int argc, char** args)
 	// Create the main window (this will also create a graphics (GL/VK/D3D/etc.) context)
 	auto mainWnd = settings.services.createWindow("HorusUI Widget Examples", hui::NativeWindowFlags::Resizable, hui::NativeWindowState::Maximized, hui::Rect(0, 0, 1500, 800));
 
-	hui::initOpenGL(settings.services);
+	hui::initOpenGL(hui::getSettings().services);
 
 	// Create a main dock node for the main window, so we can dock windows in there
 	hui::DockNodeId mainDockNode = hui::createRootDockNode(mainWnd);
@@ -100,7 +100,6 @@ int main(int argc, char** args)
 	hui::setTheme(theme);
 
 	loadImages();
-
 	// Build the theme
 	// After we load the theme and more images and fonts, we need to rebuild the theme (into the image atlas)
 	hui::buildTheme(theme);
@@ -109,6 +108,18 @@ int main(int argc, char** args)
 	hui::OpenGLTexture texAtlas(atlasImageData.width, atlasImageData.height);
 
 	texAtlas.updateData((hui::Rgba32*)atlasImageData.pixels);
+
+	hui::setThemeAtlasTexture(texAtlas.getHandle());
+
+	icon1 = hui::loadThemeImage(theme, "../themes/icons/ic_attach_file_white_24dp.png");
+	icon2 = hui::loadThemeImage(theme, "../themes/icons/ic_attach_money_white_24dp.png");
+	icon3 = hui::loadThemeImage(theme, "../themes/icons/ic_border_all_white_24dp.png");
+	icon4 = hui::loadThemeImage(theme, "../themes/icons/ic_border_inner_white_24dp.png");
+	icon5 = hui::loadThemeImage(theme, "../themes/icons/ic_border_outer_white_24dp.png");
+	tabicon1 = hui::loadThemeImage(theme, "../themes/icons/icons8-equivalent-20.png");
+	tabicon2 = hui::loadThemeImage(theme, "../themes/icons/icons8-settings-20.png");
+	tabicon3 = hui::loadThemeImage(theme, "../themes/icons/icons8-opened-folder-20.png");
+	img = hui::loadThemeImage(theme, "../themes/default/lena.png");
 
 	//hui::changeScale(1.5f);
 	// Start the main loop
@@ -440,7 +451,7 @@ int main(int argc, char** args)
 			{
 				if (lastEventInQueue)
 				{
-					hui::addRenderCallback(userDrawing);
+					//hui::addRenderCallback(userDrawing);
 				}
 
 				static bool confine = false;
@@ -631,6 +642,8 @@ int main(int argc, char** args)
 		}
 	}
 
+	hui::deleteContext(huiContext);
+
 	hui::shutdownStdioFileIO(settings.services);
 	hui::shutdownFreetype(settings.services);
 	hui::shutdownSdl3(settings.services);
@@ -639,7 +652,6 @@ int main(int argc, char** args)
 	hui::shutdownOpenGL(settings.services);
 
 	hui::shutdown();
-	hui::deleteContext(huiContext);
 
 	return 0;
 }

@@ -126,6 +126,10 @@ bool Atlas::pack()
 		packRects.push_back(prc);
 	}
 
+	std::sort(packRects.begin(), packRects.end(), [](const PackedRect& a, const PackedRect& b) {
+		return a.id < b.id;
+	});
+
 	auto ret = ctx->settings.services.packRects(packRects.data(), packRects.size(), width, height);
 	u32 packedOkCount = 0;
 
@@ -163,7 +167,7 @@ bool Atlas::pack()
 		}
 
 		// if packed width != from image width, it was rotated CW
-		image->rotated = image->rect.width != image->width;
+		image->rotated = (u32)image->rect.width != image->width;
 
 		image->uvRect.set(
 			(f32)image->rect.x / (f32)width,

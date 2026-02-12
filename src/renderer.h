@@ -40,7 +40,7 @@ struct Renderer
 	void cmdCallback(RenderCallback callback);
 	void cmdClearBackground(const Rgba32 color);
 	void cmdSetColor(const Rgba32 color);
-	void cmdSetTexture(HTexture textureHandle);
+	void cmdSetTexture(HTexture textureHandle, u32 width, u32 height);
 	void cmdSetFont(Font* font);
 	void cmdSetTextUnderline(bool underline);
 	void cmdSetTextBackfill(bool backfill);

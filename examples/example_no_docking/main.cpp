@@ -6,31 +6,20 @@
 #include <filesystem>
 
 // backends
-#include "sdl3_input_provider.h"
-#include "opengl_graphics_provider.h"
-#include "opengl_vertex_buffer.h"
-#include "opengl_texture_array.h"
-#include "stb_image_provider.h"
-#include "json_theme_provider.h"
-#include "stb_rectpack_provider.h"
-#include "freetype_font_provider.h"
-#include "nativefiledialogs_provider.h"
-#include "stdio_file_provider.h"
-#include "utfcpp_provider.h"
+#include "sdl3_input.h"
+#include "opengl_graphics.h"
+#include "json_theme_loader.h"
+#include "stb_rectpack.h"
+#include "freetype_fonts.h"
+#include "native_file_dialogs.h"
+#include "stdio_fileio.h"
+#include "utfcpp.h"
 
 int main(int argc, char** args)
 {
 	// Setup a Horus UI context, with given service providers
 	hui::Settings settings;
 
-	settings.providers.file = new hui::StdioFileProvider();
-	settings.providers.fileDialogs = new hui::NativeFileDialogsProvider();
-	settings.providers.font = new hui::FreetypeFontProvider();
-	settings.providers.gfx = new hui::OpenGLGraphicsProvider();
-	settings.providers.image = new hui::StbImageProvider();
-	settings.providers.input = new hui::Sdl3InputProvider();
-	settings.providers.rectPack = new hui::StbRectPackProvider();
-	settings.providers.utf = new hui::UtfCppProvider();
 	//settings.sliderDragDirection = hui::SliderDragDirection::HorizontalOnly;
 
 	// Create the context
@@ -38,7 +27,7 @@ int main(int argc, char** args)
 	hui::setContext(huiContext); // set as current context
 
 	// Initialize SDL input provider
-	hui::SdlInitParams sdlParams;
+	hui::Sdl3InitParams sdlParams;
 
 	sdlParams.vSync = false;
 	hui::initializeSdl(sdlParams);

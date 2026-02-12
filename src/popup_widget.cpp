@@ -356,12 +356,12 @@ MessageBoxButtons messageBox(
 	}
 
 	hui::beginPopup(title, 500, PopupFlags::FadeBackground | PopupFlags::Centered);
-	auto iterFnt = ctx->theme->fonts.find("title");
+	auto fnt = ctx->theme->getFont("title");
 	hui::pushTint(Color::cyan);
 
-	if (iterFnt != ctx->theme->fonts.end())
+	if (fnt)
 	{
-		hui::labelCustomFont(title, (HImage)iterFnt->second);
+		hui::labelCustomFont(title, fnt);
 	}
 	else
 	{

@@ -585,7 +585,9 @@ void Renderer::executeDrawCommands(HNativeWindow wnd)
 		return;
 
 	currentWindowContext = &windowContexts[wnd];
-	currentTexture = ctx->theme->atlas->texture;
+	currentTexture = nullptr;
+	currentTextureWidth = 0;
+	currentTextureHeight = 0;
 	currentBatch = nullptr;
 	currentWindowContext->batches.clear();
 	vertexBufferData.drawVertexCount = 0;
@@ -613,6 +615,8 @@ void Renderer::executeDrawCommands(HNativeWindow wnd)
 				else
 				{
 					currentTexture = ctx->theme->atlas->texture;
+					currentTextureWidth = ctx->theme->atlas->width;
+					currentTextureHeight = ctx->theme->atlas->height;
 				}
 
 				if (clipRect(cmd.data.drawRect.rotated, cmd.data.drawRect.rect, cmd.data.drawRect.uvRect))
@@ -680,9 +684,15 @@ void Renderer::executeDrawCommands(HNativeWindow wnd)
 					cmd.data.drawQuad4Colors.bottomLeft);
 				break;
 			case DrawCommand::Type::SetTexture:
-				if (currentTexture != cmd.data.texture)
+				HORUS_ASSERT(cmd.data.setTexture.texture);
+				HORUS_ASSERT(cmd.data.setTexture.width);
+				HORUS_ASSERT(cmd.data.setTexture.height);
+
+				if (currentTexture != cmd.data.setTexture.texture && cmd.data.setTexture.texture)
 				{
-					currentTexture = cmd.data.texture;
+					currentTexture = cmd.data.setTexture.texture;
+					currentTextureWidth = cmd.data.setTexture.width;
+					currentTextureHeight = cmd.data.setTexture.height;
 					addBatch();
 				}
 				break;
@@ -700,6 +710,7 @@ void Renderer::executeDrawCommands(HNativeWindow wnd)
 		layerCmds.clear();
 	}
 
+	HORUS_ASSERT(currentWindowContext->batches.size());
 	ctx->settings.services.draw(vertexBufferData.vertices.data(), vertexBufferData.drawVertexCount, currentWindowContext->batches.data(), currentWindowContext->batches.size());
 }
 
@@ -796,8 +807,7 @@ void Renderer::resetWindowContexts()
 
 void Renderer::begin()
 {
-	currentBatch = nullptr;
-	cmdSetTexture(ctx->theme->atlas->texture);
+	cmdSetTexture(ctx->theme->atlas->texture, ctx->theme->atlas->width, ctx->theme->atlas->height);
 }
 
 void Renderer::end()
@@ -807,25 +817,26 @@ void Renderer::end()
 void Renderer::cmdSetColor(const Rgba32 newColor)
 {
 	DrawCommand cmd(DrawCommand::Type::SetColor);
-	
+
 	currentColor = newColor;
 	cmd.data.color = newColor;
 	addDrawCommand(cmd);
 }
 
-void Renderer::cmdSetTexture(HTexture textureHandle)
+void Renderer::cmdSetTexture(HTexture textureHandle, u32 width, u32 height)
 {
 	DrawCommand cmd(DrawCommand::Type::SetTexture);
-	
-	cmd.data.texture = textureHandle;
-	currentTexture = textureHandle;
+
+	cmd.data.setTexture.texture = textureHandle;
+	cmd.data.setTexture.width = width;
+	cmd.data.setTexture.height = height;
 	addDrawCommand(cmd);
 }
 
 void Renderer::cmdSetFont(Font* font)
 {
 	DrawCommand cmd(DrawCommand::Type::SetFont);
-	
+
 	cmd.data.font = font;
 	currentFont = font;
 	addDrawCommand(cmd);
@@ -834,7 +845,7 @@ void Renderer::cmdSetFont(Font* font)
 void Renderer::cmdSetTextUnderline(bool underline)
 {
 	DrawCommand cmd(DrawCommand::Type::SetTextStyle);
-	
+
 	currentTextStyle.underline = underline;
 	cmd.data.textStyle = currentTextStyle;
 	addDrawCommand(cmd);
@@ -843,7 +854,7 @@ void Renderer::cmdSetTextUnderline(bool underline)
 void Renderer::cmdSetTextBackfill(bool backfill)
 {
 	DrawCommand cmd(DrawCommand::Type::SetTextStyle);
-	
+
 	currentTextStyle.backFill = backfill;
 	cmd.data.textStyle = currentTextStyle;
 	addDrawCommand(cmd);
@@ -852,7 +863,7 @@ void Renderer::cmdSetTextBackfill(bool backfill)
 void Renderer::cmdSetTextBackfillColor(const Rgba32 color)
 {
 	DrawCommand cmd(DrawCommand::Type::SetTextStyle);
-	
+
 	currentTextStyle.backFillColor = color;
 	cmd.data.textStyle = currentTextStyle;
 	addDrawCommand(cmd);
@@ -881,6 +892,7 @@ void Renderer::cmdDrawImage(Image* image, const Point& position, f32 scale)
 	cmd.data.drawRect.rect = Rect(position.x, position.y, image->rect.width * scale, image->rect.height * scale);
 	cmd.data.drawRect.uvRect = image->uvRect;
 	cmd.data.drawRect.rotated = image->rotated;
+	cmd.data.drawRect.texture = 0;
 	addDrawCommand(cmd);
 }
 
@@ -891,6 +903,7 @@ void Renderer::cmdDrawImage(Image* image, const Rect& rect)
 	cmd.data.drawRect.rect = rect;
 	cmd.data.drawRect.uvRect = image->uvRect;
 	cmd.data.drawRect.rotated = image->rotated;
+	cmd.data.drawRect.texture = 0;
 	addDrawCommand(cmd);
 }
 
@@ -901,6 +914,7 @@ void Renderer::cmdDrawImage(Image* image, const Rect& rect, const Rect& uvRect)
 	cmd.data.drawRect.rect = rect;
 	cmd.data.drawRect.uvRect = uvRect;
 	cmd.data.drawRect.rotated = image->rotated;
+	cmd.data.drawRect.texture = 0;
 	addDrawCommand(cmd);
 }
 
@@ -1045,7 +1059,7 @@ void Renderer::cmdDrawFilledRectangle(const Rect& rect)
 void Renderer::cmdDrawRectangle4Colors(const Rect& rect, const Rgba32 topLeft, const Rgba32 topRight, const Rgba32 bottomRight, const Rgba32 bottomLeft)
 {
 	DrawCommand cmd(DrawCommand::Type::DrawQuad4Colors);
-	
+
 	cmd.data.drawQuad4Colors.rect = rect;
 	cmd.data.drawQuad4Colors.uvRect = ctx->theme->atlas->whiteImage->uvRect.contract({ ctx->settings.whiteImageUvBorder, ctx->settings.whiteImageUvBorder });
 	cmd.data.drawQuad4Colors.image = ctx->theme->atlas->whiteImage;
@@ -1059,7 +1073,7 @@ void Renderer::cmdDrawRectangle4Colors(const Rect& rect, const Rgba32 topLeft, c
 void Renderer::cmdDrawLine(const Point& a, const Point& b)
 {
 	DrawCommand cmd(DrawCommand::Type::DrawLine);
-	
+
 	cmd.data.drawLine.a = a;
 	cmd.data.drawLine.b = b;
 	addDrawCommand(cmd);
@@ -1068,7 +1082,7 @@ void Renderer::cmdDrawLine(const Point& a, const Point& b)
 void Renderer::cmdDrawPolyLine(const Point* points, u32 pointCount, bool closed)
 {
 	DrawCommand cmd(DrawCommand::Type::DrawPolyLine);
-	
+
 	cmd.data.drawPolyLine.count = pointCount;
 	cmd.data.drawPolyLine.closed = closed;
 	cmd.data.drawPolyLine.points = &currentWindowContext->pointBuffer[currentWindowContext->pointBufferPosition];
@@ -1080,7 +1094,7 @@ void Renderer::cmdDrawPolyLine(const Point* points, u32 pointCount, bool closed)
 void Renderer::cmdDrawSolidTriangle(const Point& p1, const Point& p2, const Point& p3, const Rgba32 c1, const Rgba32 c2, const Rgba32 c3)
 {
 	DrawCommand cmd(DrawCommand::Type::DrawSolidTriangle);
-	
+
 	cmd.data.drawTriangle.p1 = p1;
 	cmd.data.drawTriangle.p2 = p2;
 	cmd.data.drawTriangle.p3 = p3;
@@ -1187,7 +1201,7 @@ FontTextSize Renderer::computeSizeOrDrawText(
 			{
 				auto chr = text[i];
 				auto glyph = fnt->getGlyph(chr);
-				
+
 				if (!glyph) continue;
 
 				auto kern = fnt->getKerning(lChr, chr);
@@ -1904,7 +1918,8 @@ void Renderer::drawImageBordered(Image* image, u32 border, const Rect& rect, f32
 	f32 fborder = (f32)border;
 	f32 borderU = fborder / (f32)currentTextureWidth;
 	f32 borderV = fborder / (f32)currentTextureHeight;
-
+	HORUS_ASSERT(currentTextureWidth);
+	HORUS_ASSERT(currentTextureHeight);
 	// this is the double size, two borders used in computations
 	f32 borderU2 = borderU * 2.0f;
 	f32 borderV2 = borderV * 2.0f;

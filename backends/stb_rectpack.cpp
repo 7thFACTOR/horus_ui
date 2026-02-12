@@ -5,7 +5,7 @@
 
 namespace hui
 {
-bool packRects(PackedRect* rects, size_t rectCount, u32 atlasWidth, u32 atlasHeight)
+static bool packRects(PackedRect* rects, size_t rectCount, u32 atlasWidth, u32 atlasHeight)
 {
 	stbrp_context rpctx = {};
 	std::vector<stbrp_rect> stbrects;
@@ -17,6 +17,7 @@ bool packRects(PackedRect* rects, size_t rectCount, u32 atlasWidth, u32 atlasHei
 	for (size_t i = 0; i < rectCount; ++i)
 	{
 		stbrp_rect rc;
+
 		rc.w = rects[i].rect.width;
 		rc.h = rects[i].rect.height;
 		stbrects.push_back(rc);

@@ -1556,10 +1556,9 @@ struct FillStyle
 /// Image data info
 struct ImageData
 {
-	u8* pixels = nullptr;
+	Rgba32* pixels = nullptr;
 	u32 width = 0;
 	u32 height = 0;
-	u32 bpp = 0;
 };
 
 /// Info about a widget element

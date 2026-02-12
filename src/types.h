@@ -162,6 +162,13 @@ struct DrawCommand
 		Point offset;
 	};
 
+	struct CmdSetTexture
+	{
+		HTexture texture;
+		u32 width;
+		u32 height;
+	};
+
 	DrawCommand() {}
 	DrawCommand(Type newType)
 		: type(newType)
@@ -181,11 +188,11 @@ struct DrawCommand
 		CmdDrawQuad4Colors drawQuad4Colors;
 		CmdDrawTriangle drawTriangle;
 		CmdSetViewportOffset viewportOffset;
+		CmdSetTexture setTexture;
 		RenderCallback callback;
 		Rect clipRect;
 		bool clipToParent;
 		bool popClipRect = false;
-		HTexture texture;
 		Rgba32 color;
 		struct Font* font;
 		TextStyle textStyle;
@@ -213,7 +220,7 @@ struct DrawCommand
 		data.clipRect = other.data.clipRect;
 		data.clipToParent = other.data.clipToParent;
 		data.popClipRect = other.data.popClipRect;
-		data.texture = other.data.texture;
+		data.setTexture = other.data.setTexture;
 		data.color = other.data.color;
 		data.font = other.data.font;
 		data.textStyle = other.data.textStyle;

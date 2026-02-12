@@ -125,7 +125,7 @@ void rendererDrawBorderedImage(HImage image, u32 border, const Rect& rect)
 	ctx->renderer.cmdDrawImageBordered(img, border, Rect(rect.x + ctx->renderer.viewportOffset.x, rect.y + ctx->renderer.viewportOffset.y, rect.width, rect.height), ctx->scale);
 }
 
-void rendererLineStyle(const LineStyle& style)
+void rendererSetLineStyle(const LineStyle& style)
 {
 	ctx->renderer.cmdSetLineStyle(style);
 }

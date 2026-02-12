@@ -6,7 +6,6 @@
 #include "util.h"
 #include "renderer.h"
 #include "unicode_text_cache.h"
-#include "font_cache.h"
 #include "docking.h"
 
 namespace hui
@@ -622,6 +621,7 @@ static void presentWindow(HNativeWindow wnd)
 		ctx->renderer.end();
 	}
 
+	ctx->settings.services.clearBackbuffer(Color::blue);
 	ctx->renderer.executeDrawCommands(wnd);
 	ctx->settings.services.presentWindow(wnd);
 }
@@ -697,7 +697,6 @@ void setInputEvent(const InputEvent& event)
 
 void shutdown()
 {
-	HORUS_ASSERT(ctx);
 }
 
 DockNodeId createRootDockNode(HNativeWindow nativeWnd)
@@ -857,14 +856,19 @@ HImage addThemeImage(HTheme theme, const char* id, const ImageData& imgData)
 
 	if (iter != themePtr->images.end())
 	{
-		return iter->second;
+		return iter->second.atlasImage;
 	}
 
-	auto img = themePtr->atlas->addImage((const Rgba32*)imgData.pixels, imgData.width, imgData.height);
+	ThemeImage timg;
 
-	themePtr->images[id] = (Image*)img;
+	timg.imageData.width = imgData.width;
+	timg.imageData.height = imgData.height;
+	timg.imageData.pixels = new Rgba32[imgData.width * imgData.height];
+	memcpy(timg.imageData.pixels, imgData.pixels, sizeof(Rgba32) * imgData.width * imgData.height);
+	timg.atlasImage = themePtr->atlas->addImage(imgData.pixels, imgData.width, imgData.height, true);
+	themePtr->images[id] = timg;
 
-	return img;
+	return timg.atlasImage;
 }
 
 HImage getThemeImage(HTheme theme, const char* imageName)
@@ -874,7 +878,7 @@ HImage getThemeImage(HTheme theme, const char* imageName)
 	auto iter = themePtr->images.find(imageName);
 
 	if (iter != themePtr->images.end())
-		return iter->second;
+		return iter->second.atlasImage;
 
 	return nullptr;
 }
@@ -1070,7 +1074,7 @@ void buildTheme(HTheme theme)
 
 	themePtr->atlas->clearImages();
 	themePtr->addImagesToAtlas();
-	themePtr->fontCache->addGlyphsToAtlas(themePtr->atlas);
+	themePtr->addFontGlyphsToAtlas();
 	themePtr->atlas->pack();
 	themePtr->setDefaultWidgetStyle();
 }
@@ -1142,8 +1146,7 @@ ImageData getThemeAtlasImageData()
 
 	img.width = ctx->theme->atlas->width;
 	img.height = ctx->theme->atlas->height;
-	img.pixels = (u8*)ctx->theme->atlas->atlasImageData.data();
-	img.bpp = 32;
+	img.pixels = ctx->theme->atlas->atlasImageData.data();
 
 	return img;
 }
@@ -1269,7 +1272,7 @@ const Color& getThemeUserWidgetElementColorParameter(HTheme theme, const char* u
 HFont createThemeFont(HTheme theme, const char* name, const char* fontFilename, u32 faceSize)
 {
 	Theme* themePtr = (Theme*)theme;
-	auto fnt = (HFont)themePtr->fontCache->createFont(name, fontFilename, faceSize * ctx->scale);
+	auto fnt = (HFont)themePtr->createFont(name, fontFilename, faceSize * ctx->scale);
 
 	return fnt;
 }
@@ -1278,14 +1281,14 @@ void releaseThemeFont(HTheme theme, HFont font)
 {
 	Theme* themePtr = (Theme*)theme;
 
-	themePtr->fontCache->releaseFont((Font*)font);
+	themePtr->deleteFont((Font*)font);
 }
 
 HFont getThemeFont(HTheme theme, const char* themeFontName)
 {
 	Theme* themePtr = (Theme*)theme;
 
-	return themePtr->fontCache->c[themeFontName];
+	return themePtr->getFont(themeFontName);
 }
 
 HFont getFont(const char* themeFontName)
@@ -1460,8 +1463,7 @@ void changeScale(f32 scale)
 
 	if (ctx->theme)
 	{
-		ctx->theme->fontCache->rescaleFonts(scale);
-		ctx->theme->atlas->pack();
+		ctx->theme->rescaleFonts(scale);
 	}
 }
 

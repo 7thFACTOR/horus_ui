@@ -23,9 +23,11 @@ bool loadPngImage(const char* path, ImageData& outImage)
 	{
 		getSettings().services.seek(file, FileSeekMode::End, 0);
 		fsize = getSettings().services.tell(file);
+		getSettings().services.seek(file, FileSeekMode::Set, 0);
 		imgFileData = new stbi_uc[fsize];
-		
-		if (fsize != getSettings().services.read(file, imgFileData, fsize))
+		auto readSize = getSettings().services.read(file, imgFileData, fsize);
+
+		if (fsize != readSize)
 		{
 			getSettings().services.close(file);
 
@@ -37,16 +39,21 @@ bool loadPngImage(const char* path, ImageData& outImage)
 
 	stbi_uc* data = stbi_load_from_memory(imgFileData, fsize, &width, &height, &comp, 4);
 
-	delete [] imgFileData;
-	outImage.pixels = (u8*)data;
-	outImage.bpp = 32;
+	outImage.pixels = new Rgba32[width * height];
+	memcpy(outImage.pixels, (Rgba32*)data, sizeof(Rgba32) * width * height);
 	outImage.width = width;
 	outImage.height = height;
 
-	if (!data || !width || !height || !comp)
-		return false;
+	bool result = !(!data || !width || !height || !comp);
+	
+	if (data)
+	{
+		stbi_image_free(data);
+	}
 
-	return true;
+	delete[] imgFileData;
+
+	return result;
 }
 
 bool savePngImage(const char* path, const ImageData& image)
@@ -63,16 +70,15 @@ bool savePngImage(const char* path, const ImageData& image)
 		getSettings().services.close(file);
 	};
 
-	return 0 != stbi_write_png_to_func(write_func, (void*)path, image.width, image.height, image.bpp / 8, image.pixels, 0);
+	return 0 != stbi_write_png_to_func(write_func, (void*)path, image.width, image.height, 32 / 8, image.pixels, 0);
 }
 
 void deleteImageData(ImageData& image)
 {
-	delete[] image.pixels;
+	delete [] image.pixels;
 	image.pixels = nullptr;
 	image.width = 0;
 	image.height = 0;
-	image.bpp = 0;
 }
 
 static std::string readTextFile(const char* path)
@@ -244,7 +250,7 @@ static void setThemeElement(
 	width = state.get("width", width).asInt();
 	height = state.get("height", height).asInt();
 
-	if (!image)
+	if (!image && !imageName.empty())
 	{
 		image = loadThemeImage(theme, imageFilename.c_str());
 	}
@@ -290,7 +296,7 @@ static void setUserElement(
 	width = state.get("width", width).asInt();
 	height = state.get("height", height).asInt();
 
-	if (!image)
+	if (!image && !imageName.empty())
 	{
 		image = loadThemeImage(theme, imageFilename.c_str());
 	}
@@ -461,9 +467,13 @@ HTheme loadThemeFromJson(const char* filename, char* errorTextBuffer, size_t err
 				auto styleElem = styles.get(styleName, Json::Value());
 
 				if (widgetType != WidgetType::None)
+				{
 					readElements(styleName, styleElem);
+				}
 				else
+				{
 					readUserElements(styleName, styleElem);
+				}
 			}
 		}
 		else
