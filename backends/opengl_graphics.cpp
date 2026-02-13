@@ -332,9 +332,13 @@ static void draw(Vertex* vertices, u32 vertexCount, struct RenderBatch* batches,
 		OGL_CHECK_ERROR;
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 		OGL_CHECK_ERROR;
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+		const int filter = GL_LINEAR;
+		//const int filter = GL_NEAREST;
+
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, filter);
 		OGL_CHECK_ERROR;
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, filter);
 		OGL_CHECK_ERROR;
 
 		GLint loc = glGetUniformLocation((GLuint)program, "mvp");

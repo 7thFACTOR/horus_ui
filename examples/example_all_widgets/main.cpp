@@ -108,13 +108,14 @@ int main(int argc, char** args)
 	texAtlas.updateData((hui::Rgba32*)atlasImageData.pixels);
 	hui::setThemeAtlasTexture(texAtlas.getHandle());
 
-	hui::changeScale(1.5f);
+	hui::changeScale(1.f);
 	hui::buildTheme(theme);
 	texAtlas.updateData((hui::Rgba32*)atlasImageData.pixels);
 	hui::setThemeAtlasTexture(texAtlas.getHandle());
 
 	// Start the main loop
 	bool exitNow = false;
+	f32 lastMs = 0;
 
 	while (!exitNow)
 	{
@@ -154,6 +155,7 @@ int main(int argc, char** args)
 
 		// Get the events from SDL or whatever input provider is set, it will fill a queue of events
 		hui::update();
+
 		
 		if (hui::getInputEvent().type == hui::InputEvent::Type::Key
 			&& hui::getInputEvent().key.code == hui::KeyCode::F2
@@ -240,6 +242,14 @@ int main(int argc, char** args)
 				// begin a widget container (it doesnt draw anything, a container is a layouting rectangle)
 				//hui::beginContainer(panelRect);
 				hui::labelCustomFont("Information", largeFnt);
+				hui::label("Frame MS: "); hui::sameLine();
+				hui::label(std::to_string(lastMs).c_str());
+
+				hui::label("Peak Frame MS: "); hui::sameLine();
+				hui::label(std::to_string(hui::getPeakFrameTimeMs()).c_str());
+
+				hui::label("Avg Frame MS: "); hui::sameLine();
+				hui::label(std::to_string(hui::getAvgFrameTimeMs()).c_str());
 
 				if (hui::button("DEBUG TREE"))
 				{
@@ -406,8 +416,11 @@ int main(int argc, char** args)
 				scrollPos = hui::endScrollView();
 				hui::popPadding(hui::PaddingType::ScrollView);
 				hui::pushTint(hui::Color::orange);
+				hui::setNextWidth(1);
+				hui::pushWidgetStyle(hui::WidgetType::Button, "important");
 				if (hui::button("Exit"))
 					exitNow = true;
+				hui::popWidgetStyle();
 				hui::popTint();
 				/*
 				hui::beginColumns(5);
@@ -597,6 +610,8 @@ int main(int argc, char** args)
 
 			hui::endFrame();
 
+			lastMs = hui::getLastFrameTimeMs();
+
 			if (lastEventInQueue)
 				hui::present();
 		};
@@ -604,6 +619,7 @@ int main(int argc, char** args)
 		// if we have events, then go through all of them and call the frame render and input
 		if (eventCount)
 		{
+			printf("%d\n", eventCount);
 			for (int i = 0; i < eventCount; i++)
 			{
 				hui::setInputEvent(hui::getInputEventAt(i));

@@ -29,14 +29,15 @@ void Atlas::create(u32 textureWidth, u32 textureHeight, u32 spacing, const Color
 	this->spacing = spacing;
 	this->bgColor = bgColor;
 	atlasImageData.resize((size_t)width * height);
+	memset(atlasImageData.data(), 0, atlasImageData.size());
 }
 
-bool Atlas::addImage(ImageId id, Rgba32* imageData, u32 width, u32 height, bool addBleedOut)
+bool Atlas::addImage(ImageId id, Rgba32* imageData, u32 width, u32 height, bool halfTexelInset)
 {
-	return addImageInternal(id, imageData, width, height, addBleedOut);
+	return addImageInternal(id, imageData, width, height, halfTexelInset);
 }
 
-bool Atlas::addImageInternal(ImageId imgId, Rgba32* imageData, u32 imageWidth, u32 imageHeight, bool addBleedOut)
+bool Atlas::addImageInternal(ImageId imgId, Rgba32* imageData, u32 imageWidth, u32 imageHeight, bool halfTexelInset)
 {
 	if (!imageWidth || !imageHeight)
 		return false;
@@ -51,7 +52,7 @@ bool Atlas::addImageInternal(ImageId imgId, Rgba32* imageData, u32 imageWidth, u
 	image.height = imageHeight;
 	image.uvRect.set(0, 0, 0, 0);
 	image.rect.set(0, 0, 0, 0);
-	image.bleedOut = addBleedOut;
+	image.halfTexelInset = halfTexelInset;
 	images.insert(std::make_pair(imgId, image));
 
 	return true;
@@ -110,16 +111,6 @@ bool Atlas::pack()
 		image.rect.width -= border2;
 		image.rect.height -= border2;
 
-		// if bleedOut, then limit/shrink the rect so we sample from within the image
-		if (image.bleedOut)
-		{
-			const i32 bleedOutSize = 3;
-			image.rect.x += bleedOutSize;
-			image.rect.y += bleedOutSize;
-			image.rect.width -= bleedOutSize * 2;
-			image.rect.height -= bleedOutSize * 2;
-		}
-
 		// if packed width != from image width, it was rotated CW
 		image.rotated = (u32)image.rect.width != image.width;
 
@@ -128,6 +119,16 @@ bool Atlas::pack()
 			(f32)image.rect.y / (f32)height,
 			(f32)image.rect.width / (f32)width,
 			(f32)image.rect.height / (f32)height);
+
+		if (image.halfTexelInset)
+		{
+			f32 halfTexelU = 0.5f / width;
+			f32 halfTexelV = 0.5f / height;
+			image.uvRect.x += halfTexelU;
+			image.uvRect.y += halfTexelV;
+			image.uvRect.width -= halfTexelU * 2.0f;
+			image.uvRect.height -= halfTexelV * 2.0f;
+		}
 
 		if (image.rotated)
 		{

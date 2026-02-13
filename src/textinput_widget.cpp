@@ -28,7 +28,7 @@ bool textInput(
 
 	if (!ctx->widget.hasNextWidth)
 	{
-		ctx->widget.customWidth = ctx->layout.width;
+		ctx->widget.customWidth = ctx->layout.width/ctx->scale;
 		ctx->widget.hasCustomWidth = true;
 	}
 

@@ -1918,6 +1918,15 @@ HORUS_API void beginFrame();
 /// Ends an UI frame
 HORUS_API void endFrame();
 
+/// Get the duration of the last frame in milliseconds
+HORUS_API f32 getLastFrameTimeMs();
+
+/// Get the peak (maximum) frame time in milliseconds since app start
+HORUS_API f32 getPeakFrameTimeMs();
+
+/// Get the average frame time in milliseconds (rolling 60 frame window)
+HORUS_API f32 getAvgFrameTimeMs();
+
 /// A render callback is called when the UI is rendered, used to issue custom rendering commands
 HORUS_API void addRenderCallback(RenderCallback callback);
 

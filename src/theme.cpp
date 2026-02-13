@@ -49,7 +49,7 @@ void Theme::addImagesToAtlas()
 			img.second->pixels.data(),
 			img.second->width,
 			img.second->height,
-			false);
+			true);
 	}
 }
 
@@ -165,7 +165,7 @@ void Theme::addFontGlyphsToAtlas()
 					imgId,
 					fontGlyph->rgbaBuffer,
 					fontGlyph->pixelWidth,
-					fontGlyph->pixelHeight);
+					fontGlyph->pixelHeight, false);
 			}
 		}
 	}
@@ -194,7 +194,7 @@ Image* Theme::getImage(ImageId id)
 
 void Theme::build()
 {
-	atlas.create(atlasSize, atlasSize, 2);
+	atlas.create(atlasSize, atlasSize, 5);
 	HORUS_ASSERT(whiteImage);
 	addImagesToAtlas();
 	addFontGlyphsToAtlas();

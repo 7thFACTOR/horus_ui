@@ -78,7 +78,9 @@ bool beginWindow(const char* id, const char* title, Rect* initialRect, HImage im
 		ctx->renderer.cmdSetColor(windowElem.color);
 		ctx->renderer.cmdDrawImageBordered(windowElem.image, windowElem.border, rc, ctx->scale);
 	}
+	
 	auto style = ctx->theme->getElement(WidgetElementId::WindowBody).currentStyle;
+	
 	Point padding = {
 		style->getParameter("paddingX", 10),
 		style->getParameter("paddingY", 10) };
@@ -153,7 +155,8 @@ void focusWindow(const char* windowId)
 
 void dockWindow(const char* windowId, const char* targetWindowId, DockType dockType, const Point* undockedWindowPos)
 {
-	Window* wnd1 = nullptr, * wnd2 = nullptr;
+	Window* wnd1 = nullptr;
+	Window* wnd2 = nullptr;
 
 	auto iterWnd = ctx->docking.windows.find(windowId);
 

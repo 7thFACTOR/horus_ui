@@ -542,7 +542,7 @@ Point endScrollView()
 	scrollOffset.x = scrollViewState.horizontal.scrollOffset;
 	scrollOffset.y = scrollViewState.vertical.scrollOffset;
 	popPosition();
-	addWidget(height);
+	addWidget(height/ctx->scale);
 	popLayout();
 
 	return scrollOffset;

@@ -1,4 +1,5 @@
 #pragma once
+#include <chrono>
 #include "types.h"
 #include "text_input_state.h"
 #include "renderer.h"
@@ -24,6 +25,12 @@ struct Context
 	f32 totalTime = 0;
 	u32 frameCount = 0;
 	f32 pruneUnusedTextTime = 0; //TODO: maybe make it frames
+	std::chrono::high_resolution_clock::time_point frameStartTime;
+	f32 lastFrameTimeMs = 0.0f;
+	f32 peakFrameTimeMs = 0.0f;
+	f32 avgFrameTimeMs = 0.0f;
+	f32 frameTimes[60] = {}; // Rolling buffer for average calculation
+	u32 frameTimeIndex = 0;
 	bool mustRedraw = false;
 	bool focusChanged = false;
 	bool skipRenderAndInput = false;

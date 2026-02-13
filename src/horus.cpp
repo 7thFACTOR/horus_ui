@@ -291,6 +291,8 @@ bool viewportImageFitSize(
 
 void beginFrame()
 {
+	ctx->frameStartTime = std::chrono::high_resolution_clock::now();
+
 	if (ctx->textInput.id)
 	{
 		ctx->textInput.textChanged = false;
@@ -480,6 +482,39 @@ void endFrame()
 
 	ctx->event.type = ctx->savedEventType;
 	ctx->positionStack.clear();
+
+	auto frameEndTime = std::chrono::high_resolution_clock::now();
+	std::chrono::duration<double, std::milli> frameDuration = frameEndTime - ctx->frameStartTime;
+	ctx->lastFrameTimeMs = (f32)frameDuration.count();
+
+	// Update peak
+	if (ctx->lastFrameTimeMs < 10 && ctx->lastFrameTimeMs > ctx->peakFrameTimeMs)
+		ctx->peakFrameTimeMs = ctx->lastFrameTimeMs;
+
+	// Update rolling average
+	ctx->frameTimes[ctx->frameTimeIndex] = ctx->lastFrameTimeMs;
+	ctx->frameTimeIndex = (ctx->frameTimeIndex + 1) % 60;
+
+	f32 sum = 0.0f;
+	u32 count = ctx->frameCount < 60 ? ctx->frameCount : 60;
+	for (u32 i = 0; i < count; i++)
+		sum += ctx->frameTimes[i];
+	ctx->avgFrameTimeMs = count > 0 ? sum / (f32)count : 0.0f;
+}
+
+f32 getLastFrameTimeMs()
+{
+	return ctx->lastFrameTimeMs;
+}
+
+f32 getPeakFrameTimeMs()
+{
+	return ctx->peakFrameTimeMs;
+}
+
+f32 getAvgFrameTimeMs()
+{
+	return ctx->avgFrameTimeMs;
 }
 
 void update()
@@ -621,7 +656,6 @@ static void presentWindow(HNativeWindow wnd)
 		ctx->renderer.end();
 	}
 
-	ctx->settings.services.clearBackbuffer(Color::blue);
 	ctx->renderer.executeDrawCommands(wnd);
 	ctx->settings.services.presentWindow(wnd);
 }

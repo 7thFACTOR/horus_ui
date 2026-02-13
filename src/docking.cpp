@@ -200,7 +200,7 @@ void DockNode::computeRect()
 	case DockNode::Type::None:
 	case DockNode::Type::Tabs:
 	{
-		auto tabGroupHeight = ctx->theme ? ctx->theme->getElement(WidgetElementId::TabGroupBody).normalState().height : 0;
+		auto tabGroupHeight = ctx->theme ? ctx->theme->getElement(WidgetElementId::TabGroupBody).normalState().height * ctx->scale : 0;
 
 		for (auto& wnd : windows)
 		{
@@ -565,7 +565,7 @@ std::vector<DockNode*>::reverse_iterator DockNode::getReverseIteratorOf(DockNode
 
 void DockNode::insertTabSpaceAt(const Point& mousePos, f32 spaceWidth)
 {
-	for (auto i = 0; i < windows.size(); i++)
+	for (size_t i = 0; i < windows.size(); i++)
 	{
 		if (windows[i]->dockingNow)
 			continue;
@@ -1573,7 +1573,6 @@ void dockNodeTabs(DockNode* node)
 		auto oldClipRect = ctx->renderer.getClipRect();
 		ctx->renderer.popClipRect();
 
-		//TODO: not use ? panes
 		if (ctx->layout.width <= (node->windows.size() * (ctx->tabGroup.tabWidth + ctx->tabGroup.sideSpacing)) * ctx->scale)
 		{
 			ctx->tabGroup.forceTabWidth = ctx->layout.width / (f32)node->windows.size();
@@ -1624,6 +1623,7 @@ void dockNodeTabs(DockNode* node)
 		}
 
 		selectedIndex = hui::endTabGroup();
+
 		ctx->renderer.popClipRect();
 		ctx->docking.drawingWindowTabs = false;
 
@@ -1683,7 +1683,7 @@ f32 getRemainingDockNodeClientHeight(HDockNode node)
 Rect getWindowClientRect(Window* window)
 {
 	auto rc = window->dockNode->rect;
-	auto tabHeight = ctx->theme->getElement(WidgetElementId::TabBodyActive).normalState().height;
+	auto tabHeight = ctx->theme->getElement(WidgetElementId::TabGroupBody).normalState().height * ctx->scale;
 	rc.y += tabHeight;
 	rc.height -= tabHeight;
 
@@ -2248,7 +2248,7 @@ void handleDockingMouseMove(const InputEvent& event, DockNode* node)
 				ds.hitBoxBottom.height *= ctx->settings.dockNodeDockingSizeRatio * ctx->settings.dockNodeDockingHitSizeRatio;
 
 				ds.hitBoxTabs.width += ctx->settings.dockNodeSpacing;
-				ds.hitBoxTabs.height = tabGroupElem.normalState().height * 2.0f;
+				ds.hitBoxTabs.height = tabGroupElem.normalState().height * 2.0f * ctx->scale;
 
 				ds.hitBoxRootLeft = rootNode->rect;
 				ds.hitBoxRootRight = rootNode->rect;
@@ -2305,7 +2305,7 @@ void handleDockingMouseMove(const InputEvent& event, DockNode* node)
 					parentRect.x,
 					parentRect.y,
 					parentRect.width,
-					tabGroupElem.normalState().height);
+					tabGroupElem.normalState().height * ctx->scale);
 
 				ds.hitBoxRootLeft = Rect(
 					boxGap,
@@ -2418,7 +2418,7 @@ void handleDockingMouseMove(const InputEvent& event, DockNode* node)
 					ds.dragRect = parentRect;
 					ds.dragRect.x = mousePos.x - ds.dragWindowMouseDelta.x;
 					ds.dragRect.width = ds.dragWindow->tabRect.width;
-					ds.dragRect.height = tabGroupElem.normalState().height;
+					ds.dragRect.height = tabGroupElem.normalState().height * ctx->scale;
 				}
 				else
 				{
