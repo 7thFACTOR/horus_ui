@@ -5,10 +5,14 @@
 
 namespace hui
 {
-struct ThemeImage
+struct Image
 {
-	Image* atlasImage = nullptr;
-	ImageData imageData;
+	ImageId id = 0;
+	std::vector<Rgba32> pixels;
+	u32 width = 0, height = 0;
+	bool rotated = false;
+	Rect uvRect;
+	Rect rect;
 };
 
 struct Theme
@@ -26,6 +30,9 @@ struct Theme
 	void rescaleFonts(f32 scale);
 	void addFontGlyphsToAtlas();
 	Font* getFont(const char* name);
+	Image* getImage(ImageId id);
+	void addWhiteImage(u32 width);
+	void build();
 
 	struct FontVariation
 	{
@@ -36,10 +43,13 @@ struct Theme
 		u32 usageCount = 0;
 	};
 
-	Atlas* atlas = nullptr;
+	Atlas atlas;
+	u32 atlasSize = 4069;
+	HTexture texture = 0;
+	Image* whiteImage = nullptr;
 	std::vector<FontVariation*> fonts;
-	std::unordered_map<std::string/*path*/, ThemeImage> images;
-	ThemeElement elements[(int)WidgetElementId::Count];
+	std::unordered_map<ImageId, Image*> images;
+	ThemeElement elements[(u32)WidgetElementId::Count];
 	std::unordered_map<std::string, ThemeElement*> userElements;
 	std::unordered_map<std::string, std::string> userSettings;
 };

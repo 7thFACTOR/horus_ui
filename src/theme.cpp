@@ -1,17 +1,30 @@
 #include "theme.h"
+#include "util.h"
 
 namespace hui
 {
 Theme::Theme(u32 atlasTextureSize)
 {
-	atlas = new Atlas(atlasTextureSize, atlasTextureSize);
+	atlasSize = atlasTextureSize;
+	addWhiteImage(32); // this is ok (with 4 doesnt work for example), we need a bigger white image since it will be trimmed by inset offsets etc.
 }
 
 Theme::~Theme()
 {
 	deleteImages();
 	deleteFonts();
-	delete atlas;
+}
+
+void Theme::addWhiteImage(u32 width)
+{
+	u32 whiteImageSize = width * width;
+	whiteImage = new Image();
+	whiteImage->pixels.resize(whiteImageSize);
+	whiteImage->width = width;
+	whiteImage->height = width;
+	memset(whiteImage->pixels.data(), 0xFF, (size_t)whiteImageSize * sizeof(Rgba32));
+	whiteImage->id = hashString("__WHITEIMAGE__");
+	images[whiteImage->id] = whiteImage;
 }
 
 void Theme::setDefaultWidgetStyle()
@@ -29,42 +42,14 @@ void Theme::setDefaultWidgetStyle()
 
 void Theme::addImagesToAtlas()
 {
-	atlas->addWhiteImage(32); // this is ok (with 4 doesnt work for example), we need a bigger white image since it will be trimmed by inset offsets etc.
-
-	std::unordered_map<Image*, std::string> oldImages;
-
 	for (auto& img : images)
 	{
-		oldImages[img.second.atlasImage] = img.first;
-
-		auto image = atlas->addImage(
-			img.second.imageData.pixels,
-			img.second.imageData.width,
-			img.second.imageData.height,
+		atlas.addImage(
+			img.first,
+			img.second->pixels.data(),
+			img.second->width,
+			img.second->height,
 			false);
-		img.second.atlasImage = image;
-	}
-
-	for (u32 i = 0; i < (int)WidgetElementId::Count; i++)
-	{
-		for (auto& style : elements[i].styles)
-		{
-			for(u32 j = 0; j < (u32)WidgetStateType::Count; j++)
-			{
-				style.second.states[j].image = images[oldImages[style.second.states[j].image]].atlasImage;
-			}
-		}
-	}
-
-	for (auto& userElem : userElements)
-	{
-		for (auto& style : userElem.second->styles)
-		{
-			for (u32 j = 0; j < (u32)WidgetStateType::Count; j++)
-			{
-				style.second.states[j].image = images[oldImages[style.second.states[j].image]].atlasImage;
-			}
-		}
 	}
 }
 
@@ -137,7 +122,7 @@ void Theme::deleteImages()
 {
 	for (auto& img : images)
 	{
-		delete [] img.second.imageData.pixels;
+		delete img.second;
 	}
 
 	images.clear();
@@ -158,11 +143,30 @@ void Theme::addFontGlyphsToAtlas()
 		for (auto& glyphPair : fontVar->font.glyphs)
 		{
 			auto fontGlyph = glyphPair.second;
-			auto image = atlas->addImage(
-				fontGlyph->rgbaBuffer,
-				fontGlyph->pixelWidth,
-				fontGlyph->pixelHeight);
-			fontGlyph->image = image;
+
+			ImageId imgId = hashString(("__FONTGLYPH__" + std::to_string(fontGlyph->code) + std::string(fontVar->name)).c_str());
+			
+			// we check for buffer valid, since SPACE glyph might not have one
+			if (fontGlyph->rgbaBuffer)
+			{
+				Image* glyphImage = (Image*)fontGlyph->image;
+
+				if (!glyphImage)
+				{
+					glyphImage = new Image();
+					glyphImage->id = imgId;
+					glyphImage->width = fontGlyph->pixelWidth;
+					glyphImage->height = fontGlyph->pixelHeight;
+					fontGlyph->image = glyphImage;
+				}
+				
+				// Add to atlas for packing
+				atlas.addImage(
+					imgId,
+					fontGlyph->rgbaBuffer,
+					fontGlyph->pixelWidth,
+					fontGlyph->pixelHeight);
+			}
 		}
 	}
 }
@@ -176,6 +180,62 @@ Font* Theme::getFont(const char* name)
 	}
 
 	return nullptr;
+}
+
+Image* Theme::getImage(ImageId id)
+{
+	auto iter = images.find(id);
+
+	if (iter == images.end())
+		return nullptr;
+
+	return images[id];
+}
+
+void Theme::build()
+{
+	atlas.create(atlasSize, atlasSize, 2);
+	HORUS_ASSERT(whiteImage);
+	addImagesToAtlas();
+	addFontGlyphsToAtlas();
+	atlas.pack();
+
+	for (auto& packedImage : atlas.images)
+	{
+		auto& img = packedImage.second;
+		auto iterImages = images.find(img.id);
+
+		if (iterImages != images.end())
+		{
+			iterImages->second->rect = img.rect;
+			iterImages->second->uvRect = img.uvRect;
+			iterImages->second->rotated = img.rotated;
+		}
+		else
+		{
+			//TODO: this isnt the fastest, but its ok on rebuilding theme
+			for (auto& fontVar : fonts)
+			{
+				for (auto& glyphPair : fontVar->font.glyphs)
+				{
+					auto fontGlyph = glyphPair.second;
+					auto fntImage = (Image*)fontGlyph->image;
+
+					if (fntImage)
+					{
+						if (fntImage->id == img.id)
+						{
+							fntImage->rect = img.rect;
+							fntImage->uvRect = img.uvRect;
+							fntImage->rotated = img.rotated;
+						}
+					}
+				}
+			}
+		}
+	}
+
+	setDefaultWidgetStyle();
 }
 
 }

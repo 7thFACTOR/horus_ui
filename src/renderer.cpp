@@ -614,9 +614,9 @@ void Renderer::executeDrawCommands(HNativeWindow wnd)
 				}
 				else
 				{
-					currentTexture = ctx->theme->atlas->texture;
-					currentTextureWidth = ctx->theme->atlas->width;
-					currentTextureHeight = ctx->theme->atlas->height;
+					currentTexture = ctx->theme->texture;
+					currentTextureWidth = ctx->theme->atlas.width;
+					currentTextureHeight = ctx->theme->atlas.height;
 				}
 
 				if (clipRect(cmd.data.drawRect.rotated, cmd.data.drawRect.rect, cmd.data.drawRect.uvRect))
@@ -807,7 +807,10 @@ void Renderer::resetWindowContexts()
 
 void Renderer::begin()
 {
-	cmdSetTexture(ctx->theme->atlas->texture, ctx->theme->atlas->width, ctx->theme->atlas->height);
+	cmdSetTexture(
+		ctx->theme->texture,
+		ctx->theme->atlas.width,
+		ctx->theme->atlas.height);
 }
 
 void Renderer::end()
@@ -1050,7 +1053,7 @@ void Renderer::cmdDrawRectangle(const Rect& rect)
 
 void Renderer::cmdDrawFilledRectangle(const Rect& rect)
 {
-	auto image = ctx->theme->atlas->whiteImage;
+	auto image = ctx->theme->whiteImage;
 	auto uvRect = image->uvRect;
 	uvRect = uvRect.contract(ctx->settings.whiteImageUvBorder);
 	cmdDrawImage(image, rect, uvRect);
@@ -1061,8 +1064,8 @@ void Renderer::cmdDrawRectangle4Colors(const Rect& rect, const Rgba32 topLeft, c
 	DrawCommand cmd(DrawCommand::Type::DrawQuad4Colors);
 
 	cmd.data.drawQuad4Colors.rect = rect;
-	cmd.data.drawQuad4Colors.uvRect = ctx->theme->atlas->whiteImage->uvRect.contract({ ctx->settings.whiteImageUvBorder, ctx->settings.whiteImageUvBorder });
-	cmd.data.drawQuad4Colors.image = ctx->theme->atlas->whiteImage;
+	cmd.data.drawQuad4Colors.uvRect = ctx->theme->whiteImage->uvRect.contract({ ctx->settings.whiteImageUvBorder, ctx->settings.whiteImageUvBorder });
+	cmd.data.drawQuad4Colors.image = ctx->theme->whiteImage;
 	cmd.data.drawQuad4Colors.bottomLeft = bottomLeft;
 	cmd.data.drawQuad4Colors.bottomRight = bottomRight;
 	cmd.data.drawQuad4Colors.topLeft = topLeft;
@@ -1098,7 +1101,7 @@ void Renderer::cmdDrawSolidTriangle(const Point& p1, const Point& p2, const Poin
 	cmd.data.drawTriangle.p1 = p1;
 	cmd.data.drawTriangle.p2 = p2;
 	cmd.data.drawTriangle.p3 = p3;
-	auto uvRc =  ctx->theme->atlas->whiteImage->uvRect;
+	auto uvRc = ctx->theme->whiteImage->uvRect;
 	uvRc = uvRc.contract(ctx->settings.whiteImageUvBorder);
 	cmd.data.drawTriangle.uv1 = uvRc.topLeft();
 	cmd.data.drawTriangle.uv2 = uvRc.topRight();
@@ -1106,7 +1109,7 @@ void Renderer::cmdDrawSolidTriangle(const Point& p1, const Point& p2, const Poin
 	cmd.data.drawTriangle.c1 = c1;
 	cmd.data.drawTriangle.c2 = c2;
 	cmd.data.drawTriangle.c3 = c3;
-	cmd.data.drawTriangle.image = ctx->theme->atlas->whiteImage;
+	cmd.data.drawTriangle.image = ctx->theme->whiteImage;
 	addDrawCommand(cmd);
 }
 
@@ -1713,7 +1716,7 @@ FontTextSize Renderer::computeSizeOrDrawText(
 		// render underline (single continuous underline across computed width)
 		if (currentTextStyle.underline)
 		{
-			auto image = ctx->theme->atlas->whiteImage;
+			auto image = ctx->theme->whiteImage;
 
 			// underline spans the whole measured width (max line width)
 			Rect underlineRect(
@@ -1827,10 +1830,10 @@ void Renderer::drawQuad4Colors(const Rect& rect, const Rect& uvRect, const Rgba3
 {
 	drawTriangle(rect.topLeft(), rect.topRight(), rect.bottomRight(),
 		uvRect.topLeft(), uvRect.topRight(), uvRect.bottomRight(),
-		colTopLeft, colTopRight, colBottomRight, ctx->theme->atlas->whiteImage);
+		colTopLeft, colTopRight, colBottomRight, ctx->theme->whiteImage);
 	drawTriangle(rect.topLeft(), rect.bottomRight(), rect.bottomLeft(),
 		uvRect.topLeft(), uvRect.bottomRight(), uvRect.bottomLeft(),
-		colTopLeft, colBottomRight, colBottomLeft, ctx->theme->atlas->whiteImage);
+		colTopLeft, colBottomRight, colBottomLeft, ctx->theme->whiteImage);
 }
 
 void Renderer::drawQuadRot90(const Rect& rect, const Rect& uvRect)
@@ -2197,7 +2200,7 @@ void Renderer::drawPolyLine(const Point* points, u32 pointCount, bool closed)
 	Point p12;
 	Point p21;
 	Point p22;
-	auto lineImage = ctx->theme->atlas->whiteImage;
+	auto lineImage = ctx->theme->whiteImage;
 	const auto color = currentLineStyle.color;
 	auto rcUv = lineImage->uvRect;
 

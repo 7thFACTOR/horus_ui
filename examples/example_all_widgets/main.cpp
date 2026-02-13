@@ -103,25 +103,16 @@ int main(int argc, char** args)
 	// Build the theme
 	// After we load the theme and more images and fonts, we need to rebuild the theme (into the image atlas)
 	hui::buildTheme(theme);
-
 	hui::ImageData atlasImageData = hui::getThemeAtlasImageData();
 	hui::OpenGLTexture texAtlas(atlasImageData.width, atlasImageData.height);
-
 	texAtlas.updateData((hui::Rgba32*)atlasImageData.pixels);
-
 	hui::setThemeAtlasTexture(texAtlas.getHandle());
 
-	icon1 = hui::loadThemeImage(theme, "../themes/icons/ic_attach_file_white_24dp.png");
-	icon2 = hui::loadThemeImage(theme, "../themes/icons/ic_attach_money_white_24dp.png");
-	icon3 = hui::loadThemeImage(theme, "../themes/icons/ic_border_all_white_24dp.png");
-	icon4 = hui::loadThemeImage(theme, "../themes/icons/ic_border_inner_white_24dp.png");
-	icon5 = hui::loadThemeImage(theme, "../themes/icons/ic_border_outer_white_24dp.png");
-	tabicon1 = hui::loadThemeImage(theme, "../themes/icons/icons8-equivalent-20.png");
-	tabicon2 = hui::loadThemeImage(theme, "../themes/icons/icons8-settings-20.png");
-	tabicon3 = hui::loadThemeImage(theme, "../themes/icons/icons8-opened-folder-20.png");
-	img = hui::loadThemeImage(theme, "../themes/default/lena.png");
+	hui::changeScale(1.5f);
+	hui::buildTheme(theme);
+	texAtlas.updateData((hui::Rgba32*)atlasImageData.pixels);
+	hui::setThemeAtlasTexture(texAtlas.getHandle());
 
-	//hui::changeScale(1.5f);
 	// Start the main loop
 	bool exitNow = false;
 

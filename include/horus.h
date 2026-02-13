@@ -1637,14 +1637,14 @@ struct RenderBatch
 
 struct PackedRect
 {
-	u32 id = 0; // used to identify the rect, because the rect pack might reorder them in the rect array
+	u64 id = 0; // used to identify the rect, because the rect pack might reorder them in the rect array
 	Rect rect;
 	bool packedOk = false;
 };
 
 struct FontGlyph
 {
-	HImage image = nullptr; // will be created by atlas
+	HImage image = 0; // will be created by atlas
 	GlyphCode code = 0;
 	f32 bearingX = 0.0f;
 	f32 bearingY = 0.0f;

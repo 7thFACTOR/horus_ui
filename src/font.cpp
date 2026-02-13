@@ -135,7 +135,6 @@ FontGlyph* Font::cacheGlyph(GlyphCode glyphCode)
 	if (!resizeFaceMode)
 	{
 		glyphs.insert(std::make_pair(glyphCode, fontGlyph));
-		fontGlyph->image = image;
 	}
 	else
 	{
@@ -144,12 +143,16 @@ FontGlyph* Font::cacheGlyph(GlyphCode glyphCode)
 
 		if (img)
 		{
-			img->imageData.clear();
+			img->pixels.clear();
 			auto imgSize = (size_t)fontGlyph->pixelWidth * fontGlyph->pixelHeight * sizeof(Rgba32);
-			img->imageData.resize(imgSize);
+			img->pixels.resize(imgSize);
 			img->width = fontGlyph->pixelWidth;
 			img->height = fontGlyph->pixelHeight;
-			memcpy(&img->imageData[0], fontGlyph->rgbaBuffer, imgSize);
+			
+			if (imgSize)
+			{
+				memcpy(&img->pixels[0], fontGlyph->rgbaBuffer, imgSize);
+			}
 		}
 	}
 

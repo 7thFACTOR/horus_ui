@@ -851,34 +851,34 @@ const char* getThemeUserSetting(HTheme theme, const char* name)
 HImage addThemeImage(HTheme theme, const char* id, const ImageData& imgData)
 {
 	Theme* themePtr = (Theme*)theme;
+	ImageId nid = hashString(id);
 
-	auto iter = themePtr->images.find(id);
+	auto iter = themePtr->images.find(nid);
 
 	if (iter != themePtr->images.end())
 	{
-		return iter->second.atlasImage;
+		return iter->second;
 	}
 
-	ThemeImage timg;
+	Image* timg = new Image();
 
-	timg.imageData.width = imgData.width;
-	timg.imageData.height = imgData.height;
-	timg.imageData.pixels = new Rgba32[imgData.width * imgData.height];
-	memcpy(timg.imageData.pixels, imgData.pixels, sizeof(Rgba32) * imgData.width * imgData.height);
-	timg.atlasImage = themePtr->atlas->addImage(imgData.pixels, imgData.width, imgData.height, true);
-	themePtr->images[id] = timg;
+	timg->width = imgData.width;
+	timg->height = imgData.height;
+	timg->pixels.resize(imgData.width * imgData.height);
+	memcpy(timg->pixels.data(), imgData.pixels, sizeof(Rgba32) * imgData.width * imgData.height);
+	themePtr->images[nid] = timg;
 
-	return timg.atlasImage;
+	return timg;
 }
 
-HImage getThemeImage(HTheme theme, const char* imageName)
+HImage getThemeImage(HTheme theme, const char* id)
 {
 	Theme* themePtr = (Theme*)theme;
 
-	auto iter = themePtr->images.find(imageName);
+	auto iter = themePtr->images.find(hashString(id));
 
 	if (iter != themePtr->images.end())
-		return iter->second.atlasImage;
+		return iter->second;
 
 	return nullptr;
 }
@@ -1072,11 +1072,7 @@ void buildTheme(HTheme theme)
 	HORUS_ASSERT(theme);
 	Theme* themePtr = (Theme*)theme;
 
-	themePtr->atlas->clearImages();
-	themePtr->addImagesToAtlas();
-	themePtr->addFontGlyphsToAtlas();
-	themePtr->atlas->pack();
-	themePtr->setDefaultWidgetStyle();
+	themePtr->build();
 }
 
 void setThemeWidgetElement(
@@ -1144,16 +1140,16 @@ ImageData getThemeAtlasImageData()
 {
 	ImageData img;
 
-	img.width = ctx->theme->atlas->width;
-	img.height = ctx->theme->atlas->height;
-	img.pixels = ctx->theme->atlas->atlasImageData.data();
+	img.width = ctx->theme->atlas.width;
+	img.height = ctx->theme->atlas.height;
+	img.pixels = ctx->theme->atlas.atlasImageData.data();
 
 	return img;
 }
 
 void setThemeAtlasTexture(HTexture texture)
 {
-	ctx->theme->atlas->texture = texture;
+	ctx->theme->texture = texture;
 }
 
 void deleteTheme(HTheme theme)

@@ -34,9 +34,7 @@ bool textInput(
 
 	// use ptr as id
 	ctx->id = genId(id);
-	addWidget(fmaxf(
-		(bodyElem->normalState().height + padding.y * 2.0f) * ctx->scale, 
-		bodyElem->normalState().font->getMetrics().height));
+	addWidget(bodyElem->normalState().height);
 
 	// always run button behavior so hover state is updated even when focusChanged is set
 	buttonBehavior();

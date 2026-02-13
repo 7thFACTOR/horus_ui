@@ -26,15 +26,14 @@
 namespace hui
 {
 struct Renderer;
-struct TextureArray;
 struct Theme;
 struct UnicodeTextCache;
-struct FontCache;
 struct Font;
 struct Image;
 struct DockNode;
 
-typedef u32 ImageId;
+typedef u64 ImageId;
+
 typedef std::vector<struct DrawCommand> DrawCommandVector;
 
 /// How an image is drawn, repeated or stretched across the rectangle
