@@ -4,8 +4,8 @@
 #define GLAD_GL_IMPLEMENTATION
 #include <glad/gl.h>
 
-#ifndef _DEBUG
-#define OGL_CHECK_ERROR { char errStr[1024] = {0}; sprintf(errStr, "File: %s, line: %d", __FILE__, __LINE__); checkErrorGL(errStr); };
+#ifdef _DEBUG
+#define OGL_CHECK_ERROR { sprintf(errStr, "File: %s, line: %d", __FILE__, __LINE__); checkErrorGL(errStr); };
 #else
 #define OGL_CHECK_ERROR
 #endif
@@ -18,8 +18,9 @@ static GLuint vertexShader = 0;
 static GLuint pixelShader = 0;
 static GLuint program = 0;
 static OpenGLVertexBuffer vertexBuffer;
+static char errStr[1024] = { 0 };
 
-void checkErrorGL(const char* where)
+static void checkErrorGL(const char* where)
 {
 	GLuint err = glGetError();
 	std::string str;
@@ -454,7 +455,7 @@ static void draw(Vertex* vertices, u32 vertexCount, struct RenderBatch* batches,
 
 bool initOpenGL(Services& services)
 {
-	GLchar errorLog[1024] = { 0 };
+	static GLchar errorLog[1024] = { 0 };
 
 	printf("Initializing HorusUI OpenGL provider...\n");
 	program = glCreateProgram();

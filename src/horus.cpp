@@ -5,7 +5,6 @@
 #include "atlas.h"
 #include "util.h"
 #include "renderer.h"
-#include "unicode_text_cache.h"
 #include "docking.h"
 
 namespace hui
@@ -145,7 +144,8 @@ void addWidget(f32 height)
 	// next width has priority over custom width
 	if (ctx->widget.hasNextWidth)
 	{
-		ctx->widget.width = (ctx->widget.nextWidth + getWidgetPadding().x * 2.0f) * ctx->scale;
+		// nextWidth specifies the TOTAL widget width (including padding)
+		ctx->widget.width = ctx->widget.nextWidth * ctx->scale;
 	}
 	else
 	{
@@ -194,7 +194,7 @@ void addWidget(f32 height)
 
 		if (!ctx->sameLine.wasEnabled)
 		{
-			ctx->position.x += ctx->widget.rect.width + ctx->sameLine.spacing * ctx->scale;
+			ctx->position.x += pixelWidth + ctx->sameLine.nextSpacing * ctx->scale;
 		}
 	}
 
@@ -213,7 +213,7 @@ void addWidget(f32 height)
 	}
 	else
 	{
-		ctx->position.x += pixelWidth + ctx->sameLine.spacing * ctx->scale;
+		ctx->position.x += pixelWidth + ctx->sameLine.nextSpacing * ctx->scale;
 		ctx->sameLine.wasEnabled = true;
 		ctx->sameLine.maxHeight = std::max(ctx->sameLine.maxHeight, height);
 	}
@@ -374,13 +374,6 @@ void beginFrame()
 	ctx->padding[(i32)PaddingType::Layout] = ctx->settings.defaultLayoutPadding;
 	ctx->padding[(i32)PaddingType::ScrollView] = ctx->settings.defaultScrollViewPadding;
 	ctx->padding[(i32)PaddingType::Widget] = ctx->settings.defaultWidgetPadding;
-
-	if (ctx->pruneUnusedTextTime >= ctx->settings.textCachePruneIntervalSec)
-	{
-		ctx->textCache.pruneUnusedText();
-		ctx->pruneUnusedTextTime = 0;
-	}
-
 	ctx->savedEventType = ctx->event.type;
 
 	for (auto& popup : ctx->popupStack)
@@ -1955,6 +1948,58 @@ Color hueToRgb(f32 h, f32 alpha)
 	}
 
 	return { r, g, b, alpha };
+}
+
+void beginSameLineGroup(u32 widgetCount)
+{
+	if (widgetCount == 0)
+		return;
+
+	ctx->sameLineGroup.active = true;
+	ctx->sameLineGroup.widgetCount = widgetCount;
+	ctx->sameLineGroup.currentWidget = 0;
+	
+	// Calculate equal width for each widget, accounting for spacing between them
+	f32 totalSpacing = ctx->sameLine.spacing * (f32)(widgetCount - 1);
+	
+	ctx->sameLineGroup.widgetWidth = (ctx->layout.width - totalSpacing) / (f32)widgetCount;
+	
+	// Set nextSpacing to control the spacing after the first widget
+	ctx->sameLine.nextSpacing = ctx->sameLine.spacing;
+	
+	// Set width for first widget using the proper API
+	setNextWidth(ctx->sameLineGroup.widgetWidth);
+}
+
+void nextSameLineGroupWidget()
+{
+	if (!ctx->sameLineGroup.active)
+		return;
+
+	ctx->sameLineGroup.currentWidget++;
+	
+	if (ctx->sameLineGroup.currentWidget >= ctx->sameLineGroup.widgetCount)
+		return;
+	
+	// sameLine() will set nextSpacing automatically
+	sameLine();
+	
+	// Set width for next widget using the proper API
+	setNextWidth(ctx->sameLineGroup.widgetWidth);
+}
+
+void endSameLineGroup()
+{
+	if (!ctx->sameLineGroup.active)
+		return;
+	
+	// Disable sameLine
+	ctx->sameLine.enabled = false;
+	
+	// Reset state
+	ctx->sameLineGroup.active = false;
+	ctx->sameLineGroup.widgetCount = 0;
+	ctx->sameLineGroup.currentWidget = 0;
 }
 
 }

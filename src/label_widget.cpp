@@ -1,7 +1,6 @@
 #include "context.h"
 #include "theme.h"
 #include "font.h"
-#include "unicode_text_cache.h"
 #include "util.h"
 
 namespace hui

@@ -207,8 +207,8 @@ void beginScrollView(const char* id, f32 height, Point scrollOffset, Point virtu
 	Rect clipRect = rect;
 
 	clipRect.x += internalPadding;
-	clipRect.y += border;
-	clipRect.width -= scrollViewScrollBarElemStateV.width + internalPadding * 2.0f;
+	clipRect.y += border * ctx->scale;
+	clipRect.width -= scrollViewScrollBarElemStateV.width * ctx->scale + internalPadding * 2.0f;
 	clipRect.height -= border * ctx->scale * 2.0f;
 
 	auto& scrollViewScrollBarElemStateH = ctx->theme->getElement(WidgetElementId::ScrollViewScrollBarH).normalState();

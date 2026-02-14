@@ -3,7 +3,6 @@
 #include "types.h"
 #include "text_input_state.h"
 #include "renderer.h"
-#include "unicode_text_cache.h"
 #include "atlas.h"
 
 namespace hui
@@ -19,7 +18,6 @@ struct Context
 
 	Settings settings;
 	Renderer renderer;
-	UnicodeTextCache textCache;
 
 	// Global general state
 	f32 totalTime = 0;
@@ -51,6 +49,7 @@ struct Context
 
 	// Same line
 	SameLineState sameLine;
+	SameLineGroupState sameLineGroup;
 
 	TooltipState tooltip;
 	std::string widgetLabel;

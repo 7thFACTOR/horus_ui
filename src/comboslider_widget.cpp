@@ -2,7 +2,6 @@
 #include <string.h>
 #include "context.h"
 #include "theme.h"
-#include "unicode_text_cache.h"
 #include "font.h"
 #include "util.h"
 

@@ -242,9 +242,21 @@ struct SameLineState
 	bool enabled = false;
 	bool wasEnabled = false;
 	f32 spacing = 5;
+	f32 nextSpacing = 0;
 	f32 maxHeight = 0;
 	f32 currentY = 0;
 	f32 currentX = 0;
+};
+
+struct SameLineGroupState
+{
+	bool active = false;
+	u32 widgetCount = 0;
+	u32 currentWidget = 0;
+	f32 widgetWidth = 0;
+	f32 savedLayoutWidth = 0;
+	f32 startX = 0;
+	f32 startY = 0;
 };
 
 struct TintState

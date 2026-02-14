@@ -1,7 +1,6 @@
 #include "context.h"
 #include "renderer.h"
 #include "theme.h"
-#include "unicode_text_cache.h"
 #include "font.h"
 #include "util.h"
 #include <algorithm>

@@ -2236,6 +2236,25 @@ HORUS_API void pushWidgetPadding(const Point& newPadding);
 HORUS_API void popPadding(PaddingType type);
 HORUS_API void popWidgetPadding();
 
+/// \return the current vertical spacing value
+HORUS_API f32 getSpacing();
+
+/// \return the current horizontal left and right side padding value
+HORUS_API const Point& getPadding(PaddingType type);
+
+/// Begin a same-line group where all widgets get equal width from available layout width
+/// \param widgetCount the number of widgets that will be in this group
+HORUS_API void beginSameLineGroup(u32 widgetCount);
+
+/// Move to the next widget position in the same-line group
+HORUS_API void nextSameLineGroupWidget();
+
+/// End the same-line group
+HORUS_API void endSameLineGroup();
+
+// Handy version to get widget padding
+HORUS_API const Point& getWidgetPadding();
+
 /// Push the old spacing value to stack and set a new spacing value, spacing is the vertical space between widgets
 /// \param newSpacing the new vertical spacing value
 HORUS_API void pushSpacing(f32 newSpacing);

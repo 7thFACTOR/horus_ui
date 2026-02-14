@@ -3,7 +3,6 @@
 #include "atlas.h"
 #include "theme.h"
 #include "renderer.h"
-#include "unicode_text_cache.h"
 #include "font.h"
 #include "util.h"
 

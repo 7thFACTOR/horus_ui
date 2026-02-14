@@ -1,6 +1,5 @@
 #include "context.h"
 #include "theme.h"
-#include "unicode_text_cache.h"
 #include "font.h"
 #include "util.h"
 #include "docking.h"
@@ -98,8 +97,10 @@ void tab(const char* label, HImage img)
 	auto tabElemState = &tabActiveElem.normalState();
 	auto& padding = getWidgetPadding();
 
-	Utf32String* uniStr = ctx->textCache.getText(label);
-	FontTextSize fsize = tabElemState->font->computeTextSize(*uniStr);
+	Utf32String uniStr;
+
+	ctx->settings.services.utf8To32(label, uniStr);
+	FontTextSize fsize = tabElemState->font->computeTextSize(uniStr);
 	Image* image = (Image*)img;
 
 	f32 width = 0;

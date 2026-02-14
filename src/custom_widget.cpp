@@ -1,7 +1,6 @@
 #include "context.h"
 #include "renderer.h"
 #include "theme.h"
-#include "unicode_text_cache.h"
 #include "util.h"
 #include "font.h"
 #define _USE_MATH_DEFINES

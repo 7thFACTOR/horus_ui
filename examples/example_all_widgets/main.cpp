@@ -103,19 +103,32 @@ int main(int argc, char** args)
 	// Build the theme
 	// After we load the theme and more images and fonts, we need to rebuild the theme (into the image atlas)
 	hui::buildTheme(theme);
-	hui::ImageData atlasImageData = hui::getThemeAtlasImageData();
-	hui::OpenGLTexture texAtlas(atlasImageData.width, atlasImageData.height);
-	texAtlas.updateData((hui::Rgba32*)atlasImageData.pixels);
+	
+	hui::OpenGLTexture texAtlas(hui::getThemeAtlasImageData().width, hui::getThemeAtlasImageData().height);
+	texAtlas.updateData(hui::getThemeAtlasImageData().pixels);
 	hui::setThemeAtlasTexture(texAtlas.getHandle());
 
 	hui::changeScale(1.f);
 	hui::buildTheme(theme);
-	texAtlas.updateData((hui::Rgba32*)atlasImageData.pixels);
+	texAtlas.updateData(hui::getThemeAtlasImageData().pixels);
 	hui::setThemeAtlasTexture(texAtlas.getHandle());
 
 	// Start the main loop
 	bool exitNow = false;
 	f32 lastMs = 0;
+
+	auto reloadTheme = [theme, &err, errSize, &texAtlas, &largeFnt]()
+		{
+			hui::deleteTheme(theme);
+			auto theme = hui::loadThemeFromJson(themeFilePath, err, errSize);
+			hui::setTheme(theme);
+			loadImages();
+			largeFnt = hui::getThemeFont(theme, "title");
+			hui::buildTheme(theme);
+			texAtlas.updateData(hui::getThemeAtlasImageData().pixels);
+			hui::setThemeAtlasTexture(texAtlas.getHandle());
+		};
+
 
 	while (!exitNow)
 	{
@@ -144,7 +157,7 @@ int main(int argc, char** args)
 				if (currentModTime != lastModTime)
 				{
 					lastModTime = currentModTime;
-					//reloadTheme();
+					reloadTheme();
 				}
 			}
 			catch (...)
@@ -155,13 +168,12 @@ int main(int argc, char** args)
 
 		// Get the events from SDL or whatever input provider is set, it will fill a queue of events
 		hui::update();
-
 		
 		if (hui::getInputEvent().type == hui::InputEvent::Type::Key
 			&& hui::getInputEvent().key.code == hui::KeyCode::F2
 			&& hui::getInputEvent().key.down)
 		{
-			//reloadTheme();
+			reloadTheme();
 		}
 		// Check the event count
 		auto eventCount = hui::getInputEventCount();
@@ -242,8 +254,8 @@ int main(int argc, char** args)
 				// begin a widget container (it doesnt draw anything, a container is a layouting rectangle)
 				//hui::beginContainer(panelRect);
 				hui::labelCustomFont("Information", largeFnt);
-				hui::label("Frame MS: "); hui::sameLine();
-				hui::label(std::to_string(lastMs).c_str());
+				hui::label("Frame MS: ##121"); hui::sameLine();
+				hui::label((std::to_string(lastMs) + "##rer").c_str());
 
 				hui::label("Peak Frame MS: "); hui::sameLine();
 				hui::label(std::to_string(hui::getPeakFrameTimeMs()).c_str());
@@ -251,10 +263,13 @@ int main(int argc, char** args)
 				hui::label("Avg Frame MS: "); hui::sameLine();
 				hui::label(std::to_string(hui::getAvgFrameTimeMs()).c_str());
 
-				if (hui::button("DEBUG TREE"))
+				
+
+				if (hui::button("DEBUG TREE PRINT"))
 				{
 					hui::debugWindows();
 				}
+				printf("ID %ld\n", hui::getWidgetId());
 
 				if (hui::button("Show UI window"))
 					hui::setWindowVisible("ui", true);
@@ -294,7 +309,7 @@ int main(int argc, char** args)
 				hui::space();
 
 				static hui::Point scrollPos = 0;
-				hui::pushPadding(hui::PaddingType::ScrollView, hui::Point(5, 5));
+				hui::pushPadding(hui::PaddingType::ScrollView, hui::Point(0, 0));
 				hui::beginScrollView("scrollView1", 500, scrollPos, 0, hui::ScrollViewFlags::None);
 				hui::button("asdf asdf asdf asdf asdf asdf asdf asdf asdf asdf ad");
 				//hui::pushSpacing(500);
@@ -303,7 +318,15 @@ int main(int argc, char** args)
 				hui::colorPicker("cp1",  &col1, hui::ColorPickerFlags(0), &col2);
 				//hui::colorPicker("cp2", &col2);
 				//hui::popSpacing();
-
+				hui::beginSameLineGroup(3);
+				hui::button("COKCO1");
+				hui::nextSameLineGroupWidget();
+				hui::button("COKCO2");
+				hui::nextSameLineGroupWidget();
+				hui::button("COKCO3");
+				hui::endSameLineGroup();
+				hui::setNextWidth(1);
+				hui::button("COKCO33");
 
 				hui::label("Text here", hui::HAlignType::Right);
 				hui::label("Text here", hui::HAlignType::Left);
@@ -619,17 +642,9 @@ int main(int argc, char** args)
 		// if we have events, then go through all of them and call the frame render and input
 		if (eventCount)
 		{
-			printf("%d\n", eventCount);
 			for (int i = 0; i < eventCount; i++)
 			{
 				hui::setInputEvent(hui::getInputEventAt(i));
-
-				if (hui::getInputEvent().type == hui::InputEvent::Type::Key &&
-					hui::getInputEvent().key.code == hui::KeyCode::F2 &&
-					hui::getInputEvent().key.down)
-				{
-					//reloadTheme();
-				}
 
 				if (hui::getInputEvent().type == hui::InputEvent::Type::WindowClose)
 				{

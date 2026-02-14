@@ -44,15 +44,11 @@ void setNextWidth(f32 width)
 
 void sameLine(f32 offsetX, f32 spacing)
 {
-	f32 actualSpacing = spacing > 0 ? spacing : ctx->spacing;
+	f32 actualSpacing = spacing > 0 ? spacing : ctx->sameLine.spacing;
 	
+	actualSpacing += offsetX * ctx->scale;
+	ctx->sameLine.nextSpacing = actualSpacing;
 	ctx->position.x += actualSpacing * ctx->scale;
-
-	if (offsetX > 0)
-	{
-		ctx->position.x += offsetX * ctx->scale;
-	}
-
 	ctx->sameLine.enabled = true;
 }
 

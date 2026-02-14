@@ -2,7 +2,6 @@
 #include "context.h"
 #include "theme.h"
 #include "renderer.h"
-#include "unicode_text_cache.h"
 #include "font.h"
 #include "util.h"
 
@@ -53,8 +52,10 @@ bool beginMenuInternal(const char* label, SelectableFlags stateFlags, bool conte
 	
 	ctx->setLabelAndId(label);
 	
-	Utf32String* uniStr = ctx->textCache.getText(ctx->widgetLabel.c_str());
-	FontTextSize fsize = menuBarItemElemState.font->computeTextSize(*uniStr);
+	Utf32String uniStr;
+	
+	ctx->settings.services.utf8To32(ctx->widgetLabel.c_str(), uniStr);
+	FontTextSize fsize = menuBarItemElemState.font->computeTextSize(uniStr);
 	auto isMenuBarItem = ctx->menuDepth == 0;
 
 	if (isMenuBarItem || contextMenu)
@@ -433,9 +434,13 @@ bool menuItem(const char* label, const char* shortcut, HImage img, SelectableFla
 	}
 
 	setFocusable();
+	
+	Utf32String uniStr, uniShortcutStr;
 
-	auto menuItemTextWidth = bodyElemState->font->computeTextSize(
-		*ctx->textCache.getText(ctx->widgetLabel.c_str())).width + menuItemShortcutElem.normalState().font->computeTextSize(*ctx->textCache.getText(shortcut ? shortcut : "")).width;
+	ctx->settings.services.utf8To32(ctx->widgetLabel.c_str(), uniStr);
+	ctx->settings.services.utf8To32(shortcut ? shortcut : "", uniShortcutStr);
+
+	auto menuItemTextWidth = bodyElemState->font->computeTextSize(uniStr).width + menuItemShortcutElem.normalState().font->computeTextSize(uniShortcutStr).width;
 
 	ctx->menuStack[ctx->menuDepth - 1].size.x = std::max(
 		menuItemTextWidth,

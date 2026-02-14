@@ -6,7 +6,6 @@
 #include "font.h"
 #include "theme.h"
 #include "util.h"
-#include "unicode_text_cache.h"
 
 namespace hui
 {
@@ -1128,9 +1127,11 @@ FontTextSize Renderer::computeSizeOrDrawText(
 		return FontTextSize();
 	}
 
-	// reuse text cache to get utf32 string
-	const Utf32String& utext = *ctx->textCache.getText(text);
-	return computeSizeOrDrawText(utext.data(), (u32)utext.size(), rect, horizAlign, vertAlign, doDraw, font, singleLineEllipsis, noWordWrap);
+	Utf32String uniText;
+
+	ctx->settings.services.utf8To32(text, uniText);
+
+	return computeSizeOrDrawText(uniText.data(), (u32)uniText.size(), rect, horizAlign, vertAlign, doDraw, font, singleLineEllipsis, noWordWrap);
 }
 
 FontTextSize Renderer::computeSizeOrDrawText(

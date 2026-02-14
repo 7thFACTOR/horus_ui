@@ -2,19 +2,9 @@
 #include "theme.h"
 #include "util.h"
 #include "font.h"
-#include "unicode_text_cache.h"
 
 namespace hui
 {
-
-// Generic helper: draw a pair of edge triangles at a normalized vertical position inside a rect.
-// - rc : target rectangle (triangles positioned on its left and right edges)
-// - tNormalized : 0..1 vertical position inside rc
-// - triWidth/triHeight : triangle size in pixels (caller should scale by ctx->scale if desired)
-// - exteriorOffset : how many pixels the triangle base extends outside the rect
-// - fillColor : color used for triangle fill
-// - outlineColor : color used for triangle outline (drawn with cmdDrawPolyLine)
-// - outlineWidth : line width for outline in pixels
 static void drawEdgeTrianglesAt(
 	const Rect& rc,
 	f32 tNormalized,
@@ -363,20 +353,28 @@ bool colorPicker(const char* id, Color* inOutColor, ColorPickerFlags flags, cons
 
 	bool hsvChanged = false;
 
+	hui::beginSameLineGroup(3);
+
 	if (hui::comboSliderFloat(&hsv.r, 0.001f, 0.001f, "H: %.4f"))
 	{
 		hsvChanged = true;
 	}
+
+	hui::nextSameLineGroupWidget();
 
 	if (hui::comboSliderFloat(&hsv.g, 0.001f, 0.001f, "S: %.4f"))
 	{
 		hsvChanged = true;
 	}
 
+	hui::nextSameLineGroupWidget();
+
 	if (hui::comboSliderFloat(&hsv.b, 0.001f, 0.001f, "V: %.4f"))
 	{
 		hsvChanged = true;
 	}
+
+	hui::endSameLineGroup();
 
 	if (hsvChanged)
 	{
