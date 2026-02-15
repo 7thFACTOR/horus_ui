@@ -2401,6 +2401,15 @@ HORUS_API bool imageButton(HImage img, f32 width, f32 height, HImage disabledImg
 /// \return true if the text was modified
 HORUS_API bool textInput(const char* id, char* text, u32 maxTextSize, TextInputFlags flags = TextInputFlags::None, const char* defaultText = nullptr, HImage img = 0, bool password = false, const char* passwordChar = "\95");
 
+/// Multi-line text input widget. Enter key creates a new line instead of submitting.
+/// \param id widget unique identifier
+/// \param text the text buffer to edit
+/// \param maxTextSize maximum size of the text buffer
+/// \param visibleLines number of visible lines in the text area
+/// \param flags input flags (numeric only, hex only, etc.)
+/// \return true if the text was changed
+HORUS_API bool multilineTextInput(const char* id, char* text, u32 maxTextSize, u32 visibleLines = 10, TextInputFlags flags = TextInputFlags::None);
+
 /// Draw an integer number slider widget
 /// \param minVal the minimum value
 /// \param maxVal the maximum value

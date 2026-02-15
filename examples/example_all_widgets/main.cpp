@@ -438,6 +438,12 @@ int main(int argc, char** args)
 				hui::line();
 				scrollPos = hui::endScrollView();
 				hui::popPadding(hui::PaddingType::ScrollView);
+
+				static char strMulti[5000];
+
+				hui::multilineTextInput("mti", strMulti, 5000, 10);
+
+
 				hui::pushTint(hui::Color::orange);
 				hui::setNextWidth(1);
 				hui::pushWidgetStyle(hui::WidgetType::Button, "important");

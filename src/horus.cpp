@@ -167,7 +167,7 @@ void addWidget(f32 height)
 		ctx->sameLine.maxHeight = 0;
 		ctx->sameLine.lastLineWidth = 0; // Reset to prevent stale values
 	}
-	
+
 	// Handle first widget or transition to new line in normal mode
 	if (!ctx->sameLine.enabled && !ctx->sameLine.wasEnabled)
 	{
@@ -180,17 +180,17 @@ void addWidget(f32 height)
 		{
 			ctx->layout.firstWidgetInLayout = false;
 		}
-		
+
 		// Store the line start position for sameLine to restore to
 		ctx->sameLine.currentPosition = ctx->position;
 		ctx->sameLine.lastLineWidth = 0; // Reset for new line
 	}
-	
+
 	// If in sameLine mode, align Y to the same line and advance X from previous widget
 	if (ctx->sameLine.enabled)
 	{
 		ctx->position.y = ctx->sameLine.currentPosition.y;
-		
+
 		// If first widget in sameLine, advance X by the previous normal widget's width
 		if (!ctx->sameLine.wasEnabled)
 		{
@@ -300,6 +300,12 @@ void beginFrame()
 	{
 		ctx->textInput.textChanged = false;
 		ctx->textInput.processEvent(ctx->event);
+	}
+
+	if (ctx->multilineTextInput.id)
+	{
+		ctx->multilineTextInput.textChanged = false;
+		ctx->multilineTextInput.processEvent(ctx->event);
 	}
 
 	if (ctx->event.window)
@@ -1958,15 +1964,15 @@ void beginSameLineGroup(u32 widgetCount)
 	ctx->sameLineGroup.active = true;
 	ctx->sameLineGroup.widgetCount = widgetCount;
 	ctx->sameLineGroup.currentWidget = 0;
-	
+
 	// Calculate equal width for each widget, accounting for spacing between them
 	f32 totalSpacing = ctx->sameLine.spacing * (f32)(widgetCount - 1);
-	
+
 	ctx->sameLineGroup.widgetWidth = (ctx->layout.width - totalSpacing) / (f32)widgetCount;
-	
+
 	// Set nextSpacing to control the spacing after the first widget
 	ctx->sameLine.nextSpacing = ctx->sameLine.spacing;
-	
+
 	// Set width for first widget using the proper API
 	setNextWidth(ctx->sameLineGroup.widgetWidth);
 }
@@ -1977,13 +1983,13 @@ void nextSameLineGroupWidget()
 		return;
 
 	ctx->sameLineGroup.currentWidget++;
-	
+
 	if (ctx->sameLineGroup.currentWidget >= ctx->sameLineGroup.widgetCount)
 		return;
-	
+
 	// sameLine() will set nextSpacing automatically
 	sameLine();
-	
+
 	// Set width for next widget using the proper API
 	setNextWidth(ctx->sameLineGroup.widgetWidth);
 }
@@ -1992,10 +1998,10 @@ void endSameLineGroup()
 {
 	if (!ctx->sameLineGroup.active)
 		return;
-	
+
 	// Disable sameLine
 	ctx->sameLine.enabled = false;
-	
+
 	// Reset state
 	ctx->sameLineGroup.active = false;
 	ctx->sameLineGroup.widgetCount = 0;

@@ -2,6 +2,7 @@
 #include <chrono>
 #include "types.h"
 #include "text_input_state.h"
+#include "multiline_text_input_state.h"
 #include "renderer.h"
 #include "atlas.h"
 
@@ -43,6 +44,7 @@ struct Context
 	WidgetId id = 42;
 	WidgetState widget;
 	TextInputState textInput;
+	MultilineTextInputState multilineTextInput;
 	std::vector<TextLineState> textLines;
 	std::vector<WidgetId> idStack;
 	std::unordered_map<WidgetId, WidgetBoolState> widgetBools;
