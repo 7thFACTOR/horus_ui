@@ -296,13 +296,25 @@ Point endScrollView()
 		// scroll view with mouse wheel
 		if (ctx->isActiveLayer() && ctx->event.type == InputEvent::Type::MouseWheel)
 		{
+			// Only scroll if mouse is over this scroll view AND this window is the hovered window
 			if (rectNoBorders.contains(ctx->mousePosition))
 			{
-				f32 scrollAmount = ctx->event.mouse.wheel.y * (scrollAreaV * ctx->scrollViewSpeed) * ctx->scale;
-				scrollOffset.y -= scrollAmount;
-				scrollViewState.vertical.scrollOffset = scrollOffset.y;
-				cancelEvent();
-				forceRepaint();
+				bool isWindowHovered = true;
+				// Check if the window containing this scrollview is the hovered window
+				// This prevents scrolling when another Horus window is on top
+				if (ctx->settings.services.getCurrentWindow && ctx->settings.services.getHoveredWindow)
+				{
+					isWindowHovered = (ctx->settings.services.getCurrentWindow() == ctx->settings.services.getHoveredWindow());
+				}
+				
+				if (isWindowHovered)
+				{
+					f32 scrollAmount = ctx->event.mouse.wheel.y * (scrollAreaV * ctx->scrollViewSpeed) * ctx->scale;
+					scrollOffset.y -= scrollAmount;
+					scrollViewState.vertical.scrollOffset = scrollOffset.y;
+					cancelEvent();
+					forceRepaint();
+				}
 			}
 		}
 

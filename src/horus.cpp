@@ -638,10 +638,7 @@ void endRendering()
 
 static void presentWindow(HNativeWindow wnd)
 {
-	ctx->settings.services.setCurrentWindow(wnd);
-	ctx->renderer.setCurrentNativeWindow(wnd);
-	ctx->renderer.setWindowSize(ctx->settings.services.getWindowSize(wnd));
-	ctx->hoveringThisWindow = ctx->lastHoveredNativeWindow == wnd;
+	setCurrentNativeWindow(wnd);
 
 	auto iterWnd = ctx->docking.rootNativeWindowDockNodes.find(wnd);
 

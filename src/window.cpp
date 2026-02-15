@@ -65,9 +65,7 @@ bool beginWindow(const char* id, const char* title, Rect* initialRect, HImage im
 	}
 	
 	ctx->currentWindow = wnd;
-	ctx->hoveringThisWindow = wnd->dockNode->nativeWindow == ctx->lastHoveredNativeWindow;
-	ctx->renderer.setCurrentNativeWindow(wnd->dockNode->nativeWindow);
-	ctx->renderer.setWindowSize(ctx->settings.services.getWindowSize(wnd->dockNode->nativeWindow));
+	setCurrentNativeWindow(wnd->dockNode->nativeWindow);	
 	ctx->renderer.begin();
 	auto rc = wnd->clientRect;
 

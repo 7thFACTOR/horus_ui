@@ -270,7 +270,6 @@ int main(int argc, char** args)
 				{
 					hui::debugWindows();
 				}
-				printf("ID %ld\n", hui::getWidgetId());
 
 				if (hui::button("Show UI window"))
 					hui::setWindowVisible("ui", true);
