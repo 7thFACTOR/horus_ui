@@ -157,26 +157,21 @@ void addWidget(f32 height)
 	auto pixelWidth = ctx->widget.width > 1 ? ctx->widget.width : ctx->widget.width * ctx->layout.width;
 	f32 spacing = ctx->spacing * ctx->scale;
 
-	if (!ctx->sameLine.enabled)
+	// Handle transition from sameLine back to normal layout
+	if (!ctx->sameLine.enabled && ctx->sameLine.wasEnabled)
 	{
-		auto oldY = ctx->position.y;
-
-		// new line after same line
-		if (ctx->sameLine.wasEnabled)
-		{
-			ctx->position.x = ctx->sameLine.currentX;
-			ctx->sameLine.wasEnabled = false;
-			// add the previous line max height
-			ctx->position.y += ctx->sameLine.maxHeight;
-			ctx->sameLine.maxHeight = 0;
-			ctx->sameLine.currentY = ctx->position.y + (ctx->layout.firstWidgetInLayout ? 0 : spacing);
-		}
-		else
-		{
-			ctx->sameLine.currentX = ctx->position.x;
-			ctx->sameLine.currentY = oldY + (ctx->layout.firstWidgetInLayout ? 0 : spacing);
-		}
-
+		// End of same-line group - move to next line
+		ctx->position.x = ctx->sameLine.currentPosition.x;
+		ctx->position.y += ctx->sameLine.maxHeight + spacing;
+		ctx->sameLine.wasEnabled = false;
+		ctx->sameLine.maxHeight = 0;
+		ctx->sameLine.lastLineWidth = 0; // Reset to prevent stale values
+	}
+	
+	// Handle first widget or transition to new line in normal mode
+	if (!ctx->sameLine.enabled && !ctx->sameLine.wasEnabled)
+	{
+		// Normal vertical layout
 		if (!ctx->layout.firstWidgetInLayout)
 		{
 			ctx->position.y += spacing;
@@ -185,16 +180,21 @@ void addWidget(f32 height)
 		{
 			ctx->layout.firstWidgetInLayout = false;
 		}
-
-		ctx->position.y = round(ctx->position.y);
+		
+		// Store the line start position for sameLine to restore to
+		ctx->sameLine.currentPosition = ctx->position;
+		ctx->sameLine.lastLineWidth = 0; // Reset for new line
 	}
-	else
+	
+	// If in sameLine mode, align Y to the same line and advance X from previous widget
+	if (ctx->sameLine.enabled)
 	{
-		ctx->position.y = ctx->sameLine.currentY;
-
+		ctx->position.y = ctx->sameLine.currentPosition.y;
+		
+		// If first widget in sameLine, advance X by the previous normal widget's width
 		if (!ctx->sameLine.wasEnabled)
 		{
-			ctx->position.x += pixelWidth + ctx->sameLine.nextSpacing * ctx->scale;
+			ctx->position.x += ctx->sameLine.lastLineWidth + ctx->sameLine.nextSpacing * ctx->scale;
 		}
 	}
 
@@ -205,14 +205,17 @@ void addWidget(f32 height)
 		pixelWidth,
 		height);
 
+	// Advance cursor after placing widget
 	if (!ctx->sameLine.enabled)
 	{
+		// Normal mode: advance Y (vertical)
 		ctx->position.y += height;
 		ctx->position.y = round(ctx->position.y);
-		ctx->position.x = ctx->sameLine.currentX;
+		ctx->sameLine.lastLineWidth = pixelWidth; // Track for sameLine transition
 	}
 	else
 	{
+		// SameLine mode: advance X (horizontal)
 		ctx->position.x += pixelWidth + ctx->sameLine.nextSpacing * ctx->scale;
 		ctx->sameLine.wasEnabled = true;
 		ctx->sameLine.maxHeight = std::max(ctx->sameLine.maxHeight, height);

@@ -254,8 +254,9 @@ int main(int argc, char** args)
 				// begin a widget container (it doesnt draw anything, a container is a layouting rectangle)
 				//hui::beginContainer(panelRect);
 				hui::labelCustomFont("Information", largeFnt);
-				hui::label("Frame MS: ##121"); hui::sameLine();
-				hui::label((std::to_string(lastMs) + "##rer").c_str());
+				hui::label("Frame MS: "); hui::sameLine();
+				hui::label("TEST");
+				//hui::label((std::to_string(lastMs) + "##rer").c_str());
 
 				hui::label("Peak Frame MS: "); hui::sameLine();
 				hui::label(std::to_string(hui::getPeakFrameTimeMs()).c_str());

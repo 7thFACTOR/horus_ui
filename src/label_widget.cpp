@@ -12,7 +12,7 @@ static bool labelInternal(const char* label, HAlignType horizontalAlign, Font* f
 	auto& bodyElemState = bodyElem.normalState();
 
 	ctx->setLabelAndId(label);
-	auto fsize = ctx->renderer.computeSizeOrDrawText(ctx->widgetLabel.c_str(), Rect(0, 0, ctx->layout.width , FLT_MAX), HAlignType::Left, VAlignType::Top, false, font, true);
+	auto fsize = ctx->renderer.computeSizeOrDrawText(ctx->widgetLabel.c_str(), Rect(0, 0, ctx->layout.width , FLT_MAX), HAlignType::Left, VAlignType::Top, false, font ? font : bodyElem.normalState().font, true);
 	height = (bodyElemState.height > fsize.height ? bodyElemState.height : fsize.height);
 
 	if (!ctx->widget.hasNextWidth)

@@ -244,8 +244,8 @@ struct SameLineState
 	f32 spacing = 5;
 	f32 nextSpacing = 0;
 	f32 maxHeight = 0;
-	f32 currentY = 0;
-	f32 currentX = 0;
+	Point currentPosition;
+	f32 lastLineWidth = 0;
 };
 
 struct SameLineGroupState

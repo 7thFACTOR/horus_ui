@@ -1093,12 +1093,12 @@ void nextCell()
 	// Handle end of same-line if it was active (similar to addWidget)
 	if (ctx->sameLine.wasEnabled)
 	{
-		ctx->position.x = ctx->sameLine.currentX;
+		ctx->position.x = ctx->sameLine.currentPosition.x;
 		ctx->sameLine.wasEnabled = false;
 		// Add the previous line max height
 		ctx->position.y += ctx->sameLine.maxHeight;
 		ctx->sameLine.maxHeight = 0;
-		ctx->sameLine.currentY = ctx->position.y;
+		ctx->sameLine.currentPosition.y = ctx->position.y;
 	}
 
 	// Pop previous clip
