@@ -125,7 +125,6 @@ void MultilineTextInputState::clearText()
 	currentLine = 0;
 	caretColumn = 0;
 	deselect();
-	scrollOffsetX = scrollOffsetY = 0;
 	textChanged = true;
 }
 
@@ -173,71 +172,43 @@ Point MultilineTextInputState::getCaretScreenPosition()
 	FontTextSize textSize = font->computeTextSize(textToCaretlinear.data(), (u32)textToCaretlinear.size());
 	f32 lineHeight = font->getMetrics().height;
 
+	auto& scrollState = ctx->scrollViewState[scrollId];
+
 	return Point(
-		clipRect.x + textSize.width - scrollOffsetX,
-		clipRect.y + currentLine * lineHeight - scrollOffsetY
+		clipRect.x + textSize.width - scrollState.scrollOffset.x,
+		clipRect.y + currentLine * lineHeight - scrollState.scrollOffset.y
 	);
 }
 
-void MultilineTextInputState::computeScrollAmount()
-{
-	Point caretPos = getCaretScreenPosition();
-	auto& elemState = themeElement->normalState();
-	Font* font = elemState.font;
-	f32 lineHeight = font ? font->getMetrics().height : 20.0f;
 
-	// Calculate total content size
-	f32 totalHeight = lines.size() * lineHeight;
-	f32 maxLineWidth = 0;
-
-	for (const auto& line : lines)
-	{
-		FontTextSize size = font->computeTextSize(line.data(), (u32)line.size());
-		if (size.width > maxLineWidth)
-			maxLineWidth = size.width;
-	}
-
-	// Clamp Vertical scrolling
-	f32 maxScrollY = std::max(0.0f, totalHeight - clipRect.height + lineHeight); // Allow scrolling one line past end
-	
-	if (scrollOffsetY < 0) scrollOffsetY = 0;
-	if (scrollOffsetY > maxScrollY) scrollOffsetY = maxScrollY;
-
-	// Clamp Horizontal scrolling
-	f32 maxScrollX = std::max(0.0f, maxLineWidth - clipRect.width + 20.0f); // Add some padding
-
-	if (scrollOffsetX < 0) scrollOffsetX = 0;
-	if (scrollOffsetX > maxScrollX) scrollOffsetX = maxScrollX;
-}
 
 void MultilineTextInputState::ensureCaretVisible()
 {
-	Point caretPos = getCaretScreenPosition();
 	auto& elemState = themeElement->normalState();
 	Font* font = elemState.font;
 	f32 lineHeight = font ? font->getMetrics().height : 20.0f;
+	auto& scrollState = ctx->scrollViewState[scrollId];
+	Point caretPos = getCaretScreenPosition();
 
 	// Auto-scroll to caret if needed (only if caret moved)
 	if (caretPos.x < clipRect.x)
-		scrollOffsetX -= (clipRect.x - caretPos.x) + 10;
+		scrollState.scrollOffset.x -= (clipRect.x - caretPos.x) + 10;
 	else if (caretPos.x > clipRect.right())
-		scrollOffsetX += (caretPos.x - clipRect.right()) + 10;
+		scrollState.scrollOffset.x += (caretPos.x - clipRect.right()) + 10;
 
 	// Calculate effective line height including spacing if any
 	// (currently text input uses tight line spacing, but let's be safe)
 	
 	if (caretPos.y < clipRect.y)
 	{
-		scrollOffsetY -= (clipRect.y - caretPos.y);
+		scrollState.scrollOffset.y -= (clipRect.y - caretPos.y);
 	}
 	else if (caretPos.y + lineHeight > clipRect.bottom())
 	{
 		// Scroll enough to show the full line plus a small margin to avoid feeling cramped
 		// Using 2.0f as a safe margin
-		scrollOffsetY += (caretPos.y + lineHeight - clipRect.bottom()) + 2.0f;
+		scrollState.scrollOffset.y += (caretPos.y + lineHeight - clipRect.bottom()) + 2.0f;
 	}
-	
-	computeScrollAmount();
 }
 
 void MultilineTextInputState::formatValue()
@@ -252,7 +223,8 @@ i32 MultilineTextInputState::getCharIndexAtPoint(const Point& pt)
 		return 0;
 
 	f32 lineHeight = font->getMetrics().height;
-	f32 adjustedY = pt.y + scrollOffsetY - clipRect.y;
+	auto& scrollState = ctx->scrollViewState[scrollId];
+	f32 adjustedY = pt.y + scrollState.scrollOffset.y - clipRect.y;
 	i32 line = (i32)(adjustedY / lineHeight);
 
 	if (line < 0) line = 0;
@@ -261,7 +233,7 @@ i32 MultilineTextInputState::getCharIndexAtPoint(const Point& pt)
 	currentLine = line;
 
 	// Find column
-	f32 adjustedX = pt.x + scrollOffsetX;
+	f32 adjustedX = pt.x + scrollState.scrollOffset.x;
 	const auto& lineText = lines[line];
 
 	for (size_t i = 0; i <= lineText.size(); i++)
@@ -351,30 +323,24 @@ bool MultilineTextInputState::processEvent(const InputEvent& ev)
 	{
 		Utf32String txt;
 		ctx->settings.services.utf8To32(ev.text.text, txt);
-		insertTextAtCaret(txt);
-		textChanged = true;
+		
+		// Filter out control characters that we handle via Key events (Enter, Tab, Backspace)
+		Utf32String filteredTxt;
+		for (u32 c : txt)
+		{
+			if (c >= 32 && c != 127) // Only printable characters
+				filteredTxt.push_back(c);
+		}
+
+		if (!filteredTxt.empty())
+		{
+			insertTextAtCaret(filteredTxt);
+			textChanged = true;
+		}
 	}
 	else if (ev.type == InputEvent::Type::Key)
 	{
 		processKeyEvent(ev);
-	}
-	else if (ev.type == InputEvent::Type::MouseWheel)
-	{
-		if (rect.contains(ctx->mousePosition))
-		{
-			f32 scrollAmountY = ev.mouse.wheel.y * 30.0f * ctx->scale; // TODO: make speed configurable
-			f32 scrollAmountX = ev.mouse.wheel.x * 30.0f * ctx->scale;
-
-			if (has(ev.mouse.modifiers, KeyModifiers::Shift))
-			{
-				std::swap(scrollAmountX, scrollAmountY);
-			}
-
-			scrollOffsetY -= scrollAmountY;
-			scrollOffsetX -= scrollAmountX;
-
-			computeScrollAmount();
-		}
 	}
 
 	return true;
@@ -384,6 +350,12 @@ void MultilineTextInputState::processKeyEvent(const InputEvent& ev)
 {
 	if (ev.type != InputEvent::Type::Key || !ev.key.down)
 		return;
+
+	// Prevent duplicate processing of the same key event in the same frame
+	if (lastKeyProcessFrame == ctx->frameCount)
+		return;
+
+	lastKeyProcessFrame = ctx->frameCount;
 
 	Font* font = themeElement ? themeElement->normalState().font : nullptr;
 	bool hasSelection = selectionActive;

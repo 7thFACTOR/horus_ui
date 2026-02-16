@@ -20,7 +20,6 @@ struct MultilineTextInputState
 	bool processEvent(const InputEvent& ev);
 	void processKeyEvent(const InputEvent& ev);
 	Point getCaretScreenPosition();
-	void computeScrollAmount();
 	void formatValue();
 	i32 getCharIndexAtPoint(const Point& pt);
 	void ensureCaretVisible();
@@ -46,8 +45,8 @@ struct MultilineTextInputState
 	i32 mouseDownSelectionStartColumn = 0;
 
 	// Scrolling
-	f32 scrollOffsetX = 0;
-	f32 scrollOffsetY = 0; // Vertical scroll in pixels
+	// Handled by ScrollView widget now
+	WidgetId scrollId = 0;
 	i32 firstVisibleLine = 0;
 
 	// Mouse state
@@ -61,6 +60,9 @@ struct MultilineTextInputState
 	u32 maxTextLength = 0;
 	f32 caretBlinkTimer = 0;
 	u32 visibleLineCount = 10; // How many lines to display
+	
+	// Duplicate event protection
+	u32 lastKeyProcessFrame = 0;
 };
 
 }

@@ -84,7 +84,13 @@ bool multilineTextInput(
 		state.selectAllOnFocus = true;
 
 		if (isEditingThis)
+		{
 			state.id = ctx->id;
+			// Reset scroll offset when starting to edit
+			std::string scrollIdName = std::string(id) + ".scroller";
+			WidgetId scrollerId = genId(scrollIdName.c_str());
+			ctx->scrollViewState[scrollerId].scrollOffset = {0, 0};
+		}
 	}
 
 	if (ctx->widget.pressed && ctx->id != state.id)
@@ -94,6 +100,11 @@ bool multilineTextInput(
 		isEditingThis = true;
 		state.selectAllOnFocus = true;
 		state.firstMouseDown = true;
+		
+		// Reset scroll offset when starting to edit
+		std::string scrollIdName = std::string(id) + ".scroller";
+		WidgetId scrollerId = genId(scrollIdName.c_str());
+		ctx->scrollViewState[scrollerId].scrollOffset = {0, 0};
 	}
 
 	if (state.editNow)
@@ -103,7 +114,8 @@ bool multilineTextInput(
 		state.maxTextLength = maxLength;
 		state.selectionActive = false;
 		state.flags = flags;
-		state.scrollOffsetX = state.scrollOffsetY = 0;
+		
+
 
 		// Parse existing text into lines
 		Utf32String fullText;
@@ -155,106 +167,154 @@ bool multilineTextInput(
 	if (ctx->widget.hovered)
 		setMouseCursor(MouseCursorType::IBeam);
 
+	// Update state rects every frame so ensureCaretVisible works correctly
+	state.rect = ctx->widget.rect;
+	state.clipRect = clipRect;
+	
+	// Pre-calculate scroll ID so that processEvent -> ensureCaretVisible can update the correct scroll state
+	std::string scrollIdName = std::string(id) + ".scroller";
+	state.scrollId = genId(scrollIdName.c_str());
+
+	// Process Input (Typing, Navigation)
+	if (isEditingThis)
+	{
+		state.processEvent(ctx->event);
+	}
+
 	// Draw background
 	ctx->renderer.cmdSetColor(bodyElemState->color);
 	ctx->renderer.cmdDrawImageBordered(bodyElemState->image, bodyElemState->border, ctx->widget.rect, ctx->scale);
 	ctx->renderer.cmdSetColor(bodyElemState->textColor);
 	ctx->renderer.cmdSetFont(bodyElemState->font);
-	ctx->renderer.pushClipRect(clipRect);
-
-	// Draw text lines
-	if (isEditingThis)
+	// Calculate content size for ScrollView
+	f32 maxLineWidth = 0;
+	for (const auto& line : state.lines)
 	{
-		// Draw selection
-		if (state.selectionActive)
+		FontTextSize size = font->computeTextSize(line.data(), (u32)line.size());
+		if (size.width > maxLineWidth)
+			maxLineWidth = size.width;
+	}
+	f32 totalContentHeight = state.lines.size() * lineHeight;
+
+	// Begin ScrollView (it handles layout, scrollbars, and inputs)
+	// We must reset position to inside the wrapper because addWidget() moved it to the bottom
+	Point wrapperEndPos = ctx->position;
+	ctx->position = { clipRect.x, clipRect.y };
+	
+	// Ensure we pass a unique ID for the scroll view distinct from the wrapper if needed, 
+	// or append string to ID.
+	// (scrollIdName was already generated above)
+	
+	// Fix 2: Constrain ScrollView width to the clipRect width (since we indented position)
+	f32 savedLayoutWidth = ctx->layout.width;
+	ctx->layout.width = clipRect.width;
+
+	// Scale height down because beginScrollView scales it up again (double-scaling fix)
+	f32 scrollViewHeight = clipRect.height;
+	if (ctx->settings.scaleScrollViewHeight)
+		scrollViewHeight /= ctx->scale;
+
+	// Use existing scroll offset if available to persist scrolling
+	Point initialScroll = {0, 0};
+	if (state.scrollId != 0)
+	{
+		auto it = ctx->scrollViewState.find(state.scrollId);
+		if (it != ctx->scrollViewState.end())
+			initialScroll = it->second.scrollOffset;
+	}
+
+	beginScrollView(scrollIdName.c_str(), scrollViewHeight, initialScroll, { maxLineWidth + 10.0f, totalContentHeight }, ScrollViewFlags::NoBorder | ScrollViewFlags::NoPadding);
+	
+	ctx->layout.width = savedLayoutWidth; // Restore layout width immediately (beginScrollView captured it)
+
+	// state.scrollId is already set above
+
+	// Gets current scroll state to use for culling
+	auto& scrollState = ctx->scrollViewState[state.scrollId];
+	f32 currentScrollY = scrollState.scrollOffset.y;
+	f32 currentScrollX = scrollState.scrollOffset.x;
+
+	ctx->renderer.cmdSetColor(bodyElemState->textColor);
+
+	// Draw visible lines
+	i32 firstLine = (i32)(currentScrollY / lineHeight);
+	i32 lastLine = firstLine + visibleLines + 2; // +buffer
+
+	// Draw selection
+	if (isEditingThis && state.selectionActive)
+	{
+		i32 startLine = state.selectionStartLine;
+		i32 startCol = state.selectionStartColumn;
+		i32 endLine = state.selectionEndLine;
+		i32 endCol = state.selectionEndColumn;
+
+		if (startLine > endLine || (startLine == endLine && startCol > endCol))
 		{
-			i32 startLine = state.selectionStartLine;
-			i32 startCol = state.selectionStartColumn;
-			i32 endLine = state.selectionEndLine;
-			i32 endCol = state.selectionEndColumn;
-
-			if (startLine > endLine || (startLine == endLine && startCol > endCol))
-			{
-				std::swap(startLine, endLine);
-				std::swap(startCol, endCol);
-			}
-
-			for (i32 line = startLine; line <= endLine && line < state.lines.size(); line++)
-			{
-				f32 yPos = clipRect.y + line * lineHeight - state.scrollOffsetY;
-
-				if (yPos + lineHeight < clipRect.y || yPos > clipRect.bottom())
-					continue;
-
-				i32 colStart = (line == startLine) ? startCol : 0;
-				i32 colEnd = (line == endLine) ? endCol : state.lines[line].size();
-
-				Utf32String textToStart(state.lines[line].begin(), state.lines[line].begin() + colStart);
-				Utf32String selectedText(state.lines[line].begin() + colStart, state.lines[line].begin() + colEnd);
-
-				FontTextSize toStartSize = font->computeTextSize(textToStart.data(), (u32)textToStart.size());
-				FontTextSize selectedSize = font->computeTextSize(selectedText.data(), (u32)selectedText.size());
-
-				Rect selRect;
-				selRect.x = clipRect.x + toStartSize.width - state.scrollOffsetX;
-				selRect.y = yPos;
-				selRect.width = selectedSize.width;
-				selRect.height = lineHeight;
-
-				ctx->renderer.cmdSetColor(bodyTextSelectionElemState.color);
-				ctx->renderer.cmdDrawFilledRectangle(selRect);
-			}
+			std::swap(startLine, endLine);
+			std::swap(startCol, endCol);
 		}
 
-		// Draw caret
-		if (!ctx->settings.textCaretBlinkEnable || (state.caretBlinkTimer >= 0 && state.caretBlinkTimer <= 1))
+		for (i32 line = startLine; line <= endLine && line < state.lines.size(); line++)
 		{
-			Point caretPos = state.getCaretScreenPosition();
-			const f32 cursorWidth = bodyTextCaretElemState.width;
-			const f32 cursorBorder = bodyTextCaretElemState.border;
+			f32 yPos = clipRect.y + line * lineHeight - currentScrollY;
 
-			Rect cursorRect;
-			cursorRect.x = caretPos.x;
-			cursorRect.y = caretPos.y + cursorBorder;
-			cursorRect.width = cursorWidth;
-			cursorRect.height = lineHeight - cursorBorder * 2;
+			if (yPos + lineHeight < clipRect.y || yPos > clipRect.bottom())
+				continue;
 
+			i32 colStart = (line == startLine) ? startCol : 0;
+			i32 colEnd = (line == endLine) ? endCol : state.lines[line].size();
+
+			Utf32String textToStart(state.lines[line].begin(), state.lines[line].begin() + colStart);
+			Utf32String selectedText(state.lines[line].begin() + colStart, state.lines[line].begin() + colEnd);
+
+			FontTextSize toStartSize = font->computeTextSize(textToStart.data(), (u32)textToStart.size());
+			FontTextSize selectedSize = font->computeTextSize(selectedText.data(), (u32)selectedText.size());
+
+			Rect selRect;
+			selRect.x = clipRect.x + toStartSize.width - currentScrollX;
+			selRect.y = yPos;
+			selRect.width = selectedSize.width;
+			selRect.height = lineHeight;
+
+			ctx->renderer.cmdSetColor(bodyTextSelectionElemState.color);
+			ctx->renderer.cmdDrawFilledRectangle(selRect);
+		}
+	}
+
+	// Draw caret
+	if (isEditingThis && (!ctx->settings.textCaretBlinkEnable || (state.caretBlinkTimer >= 0 && state.caretBlinkTimer <= 1)))
+	{
+		Point caretPos = state.getCaretScreenPosition();
+		const f32 cursorWidth = bodyTextCaretElemState.width;
+		const f32 cursorBorder = bodyTextCaretElemState.border;
+
+		Rect cursorRect;
+		cursorRect.x = caretPos.x;
+		cursorRect.y = caretPos.y + cursorBorder;
+		cursorRect.width = cursorWidth;
+		cursorRect.height = lineHeight - cursorBorder * 2;
+		
+		// Ensure caret is drawn within clip rect (ScrollView handles clipping too, but we draw explicitly)
+		if (cursorRect.y + cursorRect.height > clipRect.y && cursorRect.y < clipRect.bottom())
+		{
 			ctx->renderer.cmdSetColor(bodyTextCaretElemState.color);
 			ctx->renderer.cmdDrawFilledRectangle(cursorRect);
 		}
 	}
 
-	// Update text from state
-	if (isEditingThis)
-	{
-		// Rebuild text from lines
-		Utf32String fullText;
-		for (size_t i = 0; i < state.lines.size(); i++)
-		{
-			fullText.insert(fullText.end(), state.lines[i].begin(), state.lines[i].end());
-			if (i < state.lines.size() - 1)
-				fullText.push_back('\n');
-		}
-
-		memset(text, 0, maxLength);
-		ctx->settings.services.utf32To8NoAlloc(fullText.data(), fullText.size(), text, maxLength);
-	}
-
-	// Draw all visible lines
-	i32 firstLine = (i32)(state.scrollOffsetY / lineHeight);
-	i32 lastLine = firstLine + visibleLines + 1;
-
+	// Draw text
 	for (i32 i = firstLine; i < lastLine && i < state.lines.size(); i++)
 	{
-		f32 yPos = clipRect.y + i * lineHeight - state.scrollOffsetY;
+		f32 yPos = clipRect.y + i * lineHeight - currentScrollY;
 
+		// Double check visibility
 		if (yPos + lineHeight < clipRect.y || yPos > clipRect.bottom())
 			continue;
 
 		Rect textRect;
-		textRect.x = clipRect.x - (isEditingThis ? state.scrollOffsetX : 0);
+		textRect.x = clipRect.x - (isEditingThis ? currentScrollX : 0);
 		textRect.y = yPos;
-		textRect.width = clipRect.width;
+		textRect.width = clipRect.width; 
 		textRect.height = lineHeight;
 
 		ctx->renderer.cmdSetColor(bodyElemState->textColor);
@@ -275,7 +335,12 @@ bool multilineTextInput(
 			delete[] lineText;
 	}
 
-	ctx->renderer.popClipRect();
+	// Advance layout position so ScrollView knows the content height
+	ctx->position.y += totalContentHeight;
+
+	endScrollView();
+	ctx->position = wrapperEndPos; // Restore layout position
+	// Fix 3: Removed unbalanced popClipRect() here (beginScrollView handles its own push/pop)
 
 	setFocusable();
 

@@ -310,7 +310,7 @@ int main(int argc, char** args)
 
 				static hui::Point scrollPos = 0;
 				hui::pushPadding(hui::PaddingType::ScrollView, hui::Point(0, 0));
-				hui::beginScrollView("scrollView1", 500, scrollPos, 0, hui::ScrollViewFlags::None);
+				hui::beginScrollView("scrollView1", 200, scrollPos, 0, hui::ScrollViewFlags::None);
 				hui::button("asdf asdf asdf asdf asdf asdf asdf asdf asdf asdf ad");
 				//hui::pushSpacing(500);
 				static hui::Color col1 = hui::Color(3,0,0,1);

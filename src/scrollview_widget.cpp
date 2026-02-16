@@ -192,7 +192,7 @@ void beginScrollView(const char* id, f32 height, Point scrollOffset, Point virtu
 
 	const auto& padding = getPadding(PaddingType::ScrollView);
 	const auto border = (has(flags, ScrollViewFlags::NoBorder) ? 0 : (f32)scrollViewElemState.border * ctx->scale);
-	auto internalPadding = border + padding.x;
+	auto internalPadding = border + (has(flags, ScrollViewFlags::NoPadding) ? 0 : padding.x);
 
 	Rect rect =
 	{
@@ -266,6 +266,9 @@ Point endScrollView()
 	auto& scrollViewScrollBarElemStateV = ctx->theme->getElement(WidgetElementId::ScrollViewScrollBarV).normalState();
 
 	f32 scrollContentH = ctx->maxContentWidth - rectNoBorders.x - internalPadding.x + scrollViewState.horizontal.scrollOffset;
+
+	if (scrollViewState.virtualSize.x > scrollContentH)
+		scrollContentH = scrollViewState.virtualSize.x;
 	
 	// Restore previous max content X
 	ctx->maxContentWidth = ctx->maxContentWidthStack.back();
@@ -280,7 +283,7 @@ Point endScrollView()
 
 	bool hasHorizontalScrollbar = 
 		!has(scrollViewState.flags, ScrollViewFlags::NoHorizontalScroll)
-		&& (scrollViewState.virtualSize.x > 0 || scrollContentH > availableWidth);
+		&& ((scrollViewState.virtualSize.x > 0 && scrollViewState.virtualSize.x > availableWidth) || scrollContentH > availableWidth);
 	
 	f32 scrollAreaV = rectNoBorders.height;
 	
@@ -553,6 +556,7 @@ Point endScrollView()
 	updateScrollMax(scrollViewState.horizontal, scrollContentH, scrollAreaWidth);
 	scrollOffset.x = scrollViewState.horizontal.scrollOffset;
 	scrollOffset.y = scrollViewState.vertical.scrollOffset;
+	scrollViewState.scrollOffset = scrollOffset; // Persist the updated offset to state
 	popPosition();
 	addWidget(height/ctx->scale);
 	popLayout();
