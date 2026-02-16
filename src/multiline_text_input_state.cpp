@@ -125,6 +125,7 @@ void MultilineTextInputState::clearText()
 	currentLine = 0;
 	caretColumn = 0;
 	deselect();
+	scrollOffsetX = scrollOffsetY = 0;
 	textChanged = true;
 }
 
@@ -172,43 +173,76 @@ Point MultilineTextInputState::getCaretScreenPosition()
 	FontTextSize textSize = font->computeTextSize(textToCaretlinear.data(), (u32)textToCaretlinear.size());
 	f32 lineHeight = font->getMetrics().height;
 
-	auto& scrollState = ctx->scrollViewState[scrollId];
+	// Use scroll state from context if available
+	f32 sX = scrollOffsetX;
+	f32 sY = scrollOffsetY;
+
+	if (scrollId)
+	{
+		auto& scrollState = ctx->scrollViewState[scrollId];
+
+		sX = scrollState.scrollOffset.x;
+		sY = scrollState.scrollOffset.y;
+	}
 
 	return Point(
-		clipRect.x + textSize.width - scrollState.scrollOffset.x,
-		clipRect.y + currentLine * lineHeight - scrollState.scrollOffset.y
+		clipRect.x + textSize.width - sX,
+		clipRect.y + currentLine * lineHeight - sY
 	);
 }
 
-
-
-void MultilineTextInputState::ensureCaretVisible()
+void MultilineTextInputState::computeScrollAmount()
 {
+	// Ensure we have the latest scroll offset before calculations
+	if (scrollId)
+	{
+		auto& scrollState = ctx->scrollViewState[scrollId];
+		scrollOffsetX = scrollState.scrollOffset.x;
+		scrollOffsetY = scrollState.scrollOffset.y;
+	}
+
+	Point caretPos = getCaretScreenPosition();
 	auto& elemState = themeElement->normalState();
 	Font* font = elemState.font;
 	f32 lineHeight = font ? font->getMetrics().height : 20.0f;
-	auto& scrollState = ctx->scrollViewState[scrollId];
-	Point caretPos = getCaretScreenPosition();
 
-	// Auto-scroll to caret if needed (only if caret moved)
+	// Horizontal scrolling
 	if (caretPos.x < clipRect.x)
-		scrollState.scrollOffset.x -= (clipRect.x - caretPos.x) + 10;
+		scrollOffsetX -= (clipRect.x - caretPos.x) + 10;
 	else if (caretPos.x > clipRect.right())
-		scrollState.scrollOffset.x += (caretPos.x - clipRect.right()) + 10;
+		scrollOffsetX += (caretPos.x - clipRect.right()) + 10;
 
-	// Calculate effective line height including spacing if any
-	// (currently text input uses tight line spacing, but let's be safe)
-	
+	if (scrollOffsetX < 0)
+		scrollOffsetX = 0;
+
+	// Vertical scrolling
 	if (caretPos.y < clipRect.y)
-	{
-		scrollState.scrollOffset.y -= (clipRect.y - caretPos.y);
-	}
+		scrollOffsetY -= (clipRect.y - caretPos.y); // Snap exactly to top
 	else if (caretPos.y + lineHeight > clipRect.bottom())
+		scrollOffsetY += (caretPos.y + lineHeight - clipRect.bottom()); // Snap exactly to bottom
+
+	if (scrollOffsetY < 0)
+		scrollOffsetY = 0;
+
+	// Update context scroll state and force repaint if changed
+	if (scrollId)
 	{
-		// Scroll enough to show the full line plus a small margin to avoid feeling cramped
-		// Using 2.0f as a safe margin
-		scrollState.scrollOffset.y += (caretPos.y + lineHeight - clipRect.bottom()) + 2.0f;
+		auto& scrollState = ctx->scrollViewState[scrollId];
+		if (scrollState.scrollOffset.y != scrollOffsetY || scrollState.scrollOffset.x != scrollOffsetX)
+		{
+			scrollState.scrollOffset.x = scrollOffsetX;
+			scrollState.scrollOffset.y = scrollOffsetY;
+			// Also update the axis-specific state which ScrollView logic relies on
+			scrollState.horizontal.scrollOffset = scrollOffsetX;
+			scrollState.vertical.scrollOffset = scrollOffsetY;
+			forceRepaint();
+		}
 	}
+}
+
+void MultilineTextInputState::ensureCaretVisible()
+{
+	computeScrollAmount();
 }
 
 void MultilineTextInputState::formatValue()
@@ -223,8 +257,7 @@ i32 MultilineTextInputState::getCharIndexAtPoint(const Point& pt)
 		return 0;
 
 	f32 lineHeight = font->getMetrics().height;
-	auto& scrollState = ctx->scrollViewState[scrollId];
-	f32 adjustedY = pt.y + scrollState.scrollOffset.y - clipRect.y;
+	f32 adjustedY = pt.y + scrollOffsetY - clipRect.y;
 	i32 line = (i32)(adjustedY / lineHeight);
 
 	if (line < 0) line = 0;
@@ -233,7 +266,7 @@ i32 MultilineTextInputState::getCharIndexAtPoint(const Point& pt)
 	currentLine = line;
 
 	// Find column
-	f32 adjustedX = pt.x + scrollState.scrollOffset.x;
+	f32 adjustedX = pt.x + scrollOffsetX;
 	const auto& lineText = lines[line];
 
 	for (size_t i = 0; i <= lineText.size(); i++)
@@ -269,6 +302,13 @@ bool MultilineTextInputState::processEvent(const InputEvent& ev)
 			return false;
 		}
 
+		// If click is within widget bounds but outside clip rect (e.g. on scrollbar),
+		// ignore it here so ScrollView can handle it, but keep focus (don't clear id).
+		if (!clipRect.contains(ev.mouse.point))
+		{
+			return false;
+		}
+
 		mouseDown = true;
 		getCharIndexAtPoint(ev.mouse.point);
 		mouseDownSelectionStartLine = currentLine;
@@ -282,7 +322,9 @@ bool MultilineTextInputState::processEvent(const InputEvent& ev)
 	}
 	else if (ev.type == InputEvent::Type::MouseUp)
 	{
-		ensureCaretVisible();
+		if (mouseDown || selectingWithMouse)
+			ensureCaretVisible();
+
 		releaseWindowCapture();
 
 		if (!mouseMoved && firstMouseDown && !selectingWithMouse)
@@ -323,20 +365,17 @@ bool MultilineTextInputState::processEvent(const InputEvent& ev)
 	{
 		Utf32String txt;
 		ctx->settings.services.utf8To32(ev.text.text, txt);
-		
-		// Filter out control characters that we handle via Key events (Enter, Tab, Backspace)
-		Utf32String filteredTxt;
-		for (u32 c : txt)
+
+		// Strictly filter out newlines - if any newline char is present,
+		// assume it is handled by Key event and do nothing here.
+		for (u32 ch : txt)
 		{
-			if (c >= 32 && c != 127) // Only printable characters
-				filteredTxt.push_back(c);
+			if (ch == '\n' || ch == '\r')
+				return true; // Ignore this event completely
 		}
 
-		if (!filteredTxt.empty())
-		{
-			insertTextAtCaret(filteredTxt);
-			textChanged = true;
-		}
+		insertTextAtCaret(txt);
+		textChanged = true;
 	}
 	else if (ev.type == InputEvent::Type::Key)
 	{
@@ -350,12 +389,6 @@ void MultilineTextInputState::processKeyEvent(const InputEvent& ev)
 {
 	if (ev.type != InputEvent::Type::Key || !ev.key.down)
 		return;
-
-	// Prevent duplicate processing of the same key event in the same frame
-	if (lastKeyProcessFrame == ctx->frameCount)
-		return;
-
-	lastKeyProcessFrame = ctx->frameCount;
 
 	Font* font = themeElement ? themeElement->normalState().font : nullptr;
 	bool hasSelection = selectionActive;
@@ -432,9 +465,9 @@ void MultilineTextInputState::processKeyEvent(const InputEvent& ev)
 			}
 			else
 			{
-				// Clamp caret column to new line's size if needed
-				if (caretColumn > lines[currentLine].size())
-					caretColumn = lines[currentLine].size();
+			// Clamp caret column to new line's size if needed
+			if (caretColumn > lines[currentLine].size())
+				caretColumn = lines[currentLine].size();
 			}
 
 			selectionEndLine = currentLine;
@@ -465,17 +498,9 @@ void MultilineTextInputState::processKeyEvent(const InputEvent& ev)
 				selectionStartColumn = prevColumn;
 			}
 
-			// If we're at the last line and couldn't move down, move caret to end of line
-			if (currentLine == lines.size() - 1 && prevLine == currentLine)
-			{
+			// Clamp caret column to new line's size if needed
+			if (caretColumn > lines[currentLine].size())
 				caretColumn = lines[currentLine].size();
-			}
-			else
-			{
-				// Clamp caret column to new line's size if needed
-				if (caretColumn > lines[currentLine].size())
-					caretColumn = lines[currentLine].size();
-			}
 
 			selectionEndLine = currentLine;
 			selectionEndColumn = caretColumn;
@@ -488,16 +513,19 @@ void MultilineTextInputState::processKeyEvent(const InputEvent& ev)
 			deselect();
 		}
 	}
+
 	else if (ev.key.code == KeyCode::Enter)
 	{
-		// Create new line
-		Utf32String remaining(lines[currentLine].begin() + caretColumn, lines[currentLine].end());
-		lines[currentLine].erase(lines[currentLine].begin() + caretColumn, lines[currentLine].end());
-		currentLine++;
-		lines.insert(lines.begin() + currentLine, remaining);
-		caretColumn = 0;
-		deselect();
-		textChanged = true;
+		// Debounce Enter key to prevent double insertion from same-frame events
+		if (lastKeyProcessFrame == ctx->frameCount)
+			return;
+
+		lastKeyProcessFrame = ctx->frameCount;
+
+		// Use insertTextAtCaret to handle selection deletion and consistent newline insertion
+		Utf32String newline;
+		newline.push_back('\n');
+		insertTextAtCaret(newline);
 	}
 	else if (ev.key.code == KeyCode::Backspace)
 	{
@@ -609,14 +637,6 @@ void MultilineTextInputState::processKeyEvent(const InputEvent& ev)
 			insertTextAtCaret(utf32Str);
 			textChanged = true;
 		}
-	}
-	else if (ev.key.code == KeyCode::Tab)
-	{
-		// Insert tab character (or spaces)
-		Utf32String tabStr;
-		tabStr.push_back('\t');
-		insertTextAtCaret(tabStr);
-		textChanged = true;
 	}
 	else if (ev.key.code == KeyCode::X && has(ev.key.modifiers, KeyModifiers::Control))
 	{

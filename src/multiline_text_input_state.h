@@ -46,6 +46,9 @@ struct MultilineTextInputState
 
 	// Scrolling
 	// Handled by ScrollView widget now
+	f32 scrollOffsetX = 0;
+	f32 scrollOffsetY = 0;
+	void computeScrollAmount();
 	WidgetId scrollId = 0;
 	i32 firstVisibleLine = 0;
 
@@ -60,7 +63,7 @@ struct MultilineTextInputState
 	u32 maxTextLength = 0;
 	f32 caretBlinkTimer = 0;
 	u32 visibleLineCount = 10; // How many lines to display
-	
+
 	// Duplicate event protection
 	u32 lastKeyProcessFrame = 0;
 };

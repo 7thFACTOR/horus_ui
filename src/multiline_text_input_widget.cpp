@@ -32,20 +32,25 @@ bool multilineTextInput(
 	// Calculate height based on visible line count
 	Font* font = bodyElem->normalState().font;
 	f32 lineHeight = font ? font->getMetrics().height : 20.0f;
-	f32 totalHeight = visibleLines * lineHeight + (padding.y * 2.0f);
+	f32 border = bodyElem->normalState().border;
+	f32 totalHeight = visibleLines * lineHeight + (padding.y + border) * 2.0f;
 
 	ctx->id = genId(id);
 	addWidget(totalHeight);
 
 	buttonBehavior();
 
-	if (ctx->focusChanged && ctx->id != ctx->widget.focusedId)
+	// Pre-calculate scroll ID for focus checks
+	std::string scrollIdName = std::string(id) + ".scroller";
+	state.scrollId = genId(scrollIdName.c_str());
+
+	if (ctx->focusChanged && ctx->id != ctx->widget.focusedId && ctx->widget.focusedId != state.scrollId)
 		ctx->widget.changeEnded = true;
 
 	auto bodyElemState = &bodyElem->normalState();
 	bool isEditingThis =
-		ctx->id == state.id
-		&& ctx->widget.focused
+		(ctx->id == state.id || state.id == ctx->widget.focusedId)
+		&& (ctx->widget.focused || ctx->widget.focusedId == state.scrollId)
 		&& ctx->isActiveLayer();
 
 	state.themeElement = bodyElem;
@@ -100,7 +105,7 @@ bool multilineTextInput(
 		isEditingThis = true;
 		state.selectAllOnFocus = true;
 		state.firstMouseDown = true;
-		
+
 		// Reset scroll offset when starting to edit
 		std::string scrollIdName = std::string(id) + ".scroller";
 		WidgetId scrollerId = genId(scrollIdName.c_str());
@@ -114,7 +119,7 @@ bool multilineTextInput(
 		state.maxTextLength = maxLength;
 		state.selectionActive = false;
 		state.flags = flags;
-		
+
 
 
 		// Parse existing text into lines
@@ -167,18 +172,30 @@ bool multilineTextInput(
 	if (ctx->widget.hovered)
 		setMouseCursor(MouseCursorType::IBeam);
 
-	// Update state rects every frame so ensureCaretVisible works correctly
-	state.rect = ctx->widget.rect;
-	state.clipRect = clipRect;
-	
-	// Pre-calculate scroll ID so that processEvent -> ensureCaretVisible can update the correct scroll state
-	std::string scrollIdName = std::string(id) + ".scroller";
-	state.scrollId = genId(scrollIdName.c_str());
+
+	// state.scrollId is already calculated above
+
 
 	// Process Input (Typing, Navigation)
+	// Input processing is handled in beginFrame() for the active widget
+	// so we don't need to call it manually here to avoid double processing.
 	if (isEditingThis)
 	{
-		state.processEvent(ctx->event);
+		// state.processEvent(ctx->event);
+	}
+
+	if (isEditingThis)
+	{
+		// Write back to text buffer
+		Utf32String fullText;
+		for (size_t i = 0; i < state.lines.size(); i++)
+		{
+			fullText.insert(fullText.end(), state.lines[i].begin(), state.lines[i].end());
+			if (i < state.lines.size() - 1)
+				fullText.push_back('\n');
+		}
+
+		ctx->settings.services.utf32To8NoAlloc(fullText.data(), fullText.size(), text, maxLength);
 	}
 
 	// Draw background
@@ -200,11 +217,11 @@ bool multilineTextInput(
 	// We must reset position to inside the wrapper because addWidget() moved it to the bottom
 	Point wrapperEndPos = ctx->position;
 	ctx->position = { clipRect.x, clipRect.y };
-	
-	// Ensure we pass a unique ID for the scroll view distinct from the wrapper if needed, 
+
+	// Ensure we pass a unique ID for the scroll view distinct from the wrapper if needed,
 	// or append string to ID.
 	// (scrollIdName was already generated above)
-	
+
 	// Fix 2: Constrain ScrollView width to the clipRect width (since we indented position)
 	f32 savedLayoutWidth = ctx->layout.width;
 	ctx->layout.width = clipRect.width;
@@ -224,8 +241,18 @@ bool multilineTextInput(
 	}
 
 	beginScrollView(scrollIdName.c_str(), scrollViewHeight, initialScroll, { maxLineWidth + 10.0f, totalContentHeight }, ScrollViewFlags::NoBorder | ScrollViewFlags::NoPadding);
-	
+
+
 	ctx->layout.width = savedLayoutWidth; // Restore layout width immediately (beginScrollView captured it)
+
+	// Update state clip rect to the inner clip rect (excluding scrollbars)
+	// This prevents drawing over scrollbars and ensures clicks on scrollbars aren't handled as text input
+	Rect innerClipRect = ctx->renderer.getClipRect();
+	state.clipRect = innerClipRect;
+	state.rect = ctx->widget.rect;
+
+	// Use inner clip rect for local drawing logic
+	clipRect = innerClipRect;
 
 	// state.scrollId is already set above
 
@@ -293,7 +320,7 @@ bool multilineTextInput(
 		cursorRect.y = caretPos.y + cursorBorder;
 		cursorRect.width = cursorWidth;
 		cursorRect.height = lineHeight - cursorBorder * 2;
-		
+
 		// Ensure caret is drawn within clip rect (ScrollView handles clipping too, but we draw explicitly)
 		if (cursorRect.y + cursorRect.height > clipRect.y && cursorRect.y < clipRect.bottom())
 		{
@@ -312,9 +339,9 @@ bool multilineTextInput(
 			continue;
 
 		Rect textRect;
-		textRect.x = clipRect.x - (isEditingThis ? currentScrollX : 0);
+		textRect.x = clipRect.x - currentScrollX;
 		textRect.y = yPos;
-		textRect.width = clipRect.width; 
+		textRect.width = clipRect.width;
 		textRect.height = lineHeight;
 
 		ctx->renderer.cmdSetColor(bodyElemState->textColor);
