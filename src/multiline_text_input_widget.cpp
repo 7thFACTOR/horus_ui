@@ -4,6 +4,7 @@
 #include "theme.h"
 #include "renderer.h"
 #include "font.h"
+#include <cmath>
 #include "util.h"
 
 namespace hui
@@ -173,6 +174,28 @@ bool multilineTextInput(
 		setMouseCursor(MouseCursorType::IBeam);
 
 
+	// calculate sidebar width based on line count
+	auto digitCount = [](int n) {
+		if (n == 0) return 1;
+		return (int)(std::floor(std::log10(std::abs(n))) + 1);
+	};
+		
+	u32 digits = digitCount(state.lines.size());
+	f32 charWidth = font->computeTextSize("0", 1).width;
+	f32 sidebarWidth = digits * charWidth + 10.0f; // Padding
+
+	// save original clip rect for sidebar drawing
+	Rect originalClipRect = clipRect;
+
+	// adjust clip rect to exclude sidebar
+	f32 sidebarTextGap = 5.0f * ctx->scale;
+	clipRect.x += sidebarWidth + sidebarTextGap;
+	clipRect.width -= (sidebarWidth + sidebarTextGap);
+
+	// update state rects every frame so ensureCaretVisible works correctly
+	state.rect = ctx->widget.rect;
+	state.clipRect = clipRect;
+
 	// state.scrollId is already calculated above
 
 
@@ -201,17 +224,125 @@ bool multilineTextInput(
 	// draw background
 	ctx->renderer.cmdSetColor(bodyElemState->color);
 	ctx->renderer.cmdDrawImageBordered(bodyElemState->image, bodyElemState->border, ctx->widget.rect, ctx->scale);
+	
+	// calculate total content height early for scrollbar detection
+	f32 totalContentHeight = state.lines.size() * lineHeight;
+
+	// calculate maxLineWidth early for scrollbar detection
+	f32 maxLineWidth = 0;
+	{
+		Font* calcFont = bodyElemState->font;
+		if (calcFont)
+		{
+			for (const auto& line : state.lines)
+			{
+				FontTextSize size = calcFont->computeTextSize(line.data(), (u32)line.size());
+				if (size.width > maxLineWidth)
+					maxLineWidth = size.width;
+			}
+		}
+	}
+	
+	f32 scrollAreaV = clipRect.height;
+	f32 scrollAreaH = clipRect.width;
+	bool hasVerticalScrollbar = false;
+	bool hasHorizontalScrollbar = false;
+
+	auto& sbV = ctx->theme->getElement(WidgetElementId::ScrollViewScrollBarV).normalState();
+	auto& sbH = ctx->theme->getElement(WidgetElementId::ScrollViewScrollBarH).normalState();
+
+	// check if horizontal scrollbar is needed first (simplified logic from ScrollView)
+	if ((maxLineWidth + 10.0f) > scrollAreaH)
+	{
+		hasHorizontalScrollbar = true;
+		scrollAreaV -= sbH.height * ctx->scale;
+	}
+
+	// check if vertical scrollbar is needed
+	if (totalContentHeight > scrollAreaV)
+	{
+		hasVerticalScrollbar = true;
+		scrollAreaH -= sbV.width * ctx->scale;
+	}
+
+	// re-check horizontal with reduced width
+	if (!hasHorizontalScrollbar && (maxLineWidth + 10.0f) > scrollAreaH)
+	{
+		hasHorizontalScrollbar = true;
+		scrollAreaV -= sbH.height * ctx->scale;
+		
+		// re-check vertical with reduced height
+		if (!hasVerticalScrollbar && totalContentHeight > scrollAreaV)
+		{
+			hasVerticalScrollbar = true;
+		}
+	}
+
+	// draw sidebar background
+	ctx->renderer.pushClipRect(originalClipRect);
+	
+	Rect sidebarRect = originalClipRect;
+	sidebarRect.width = sidebarWidth;
+	ctx->renderer.cmdSetColor(Color::darkGray); // Gray
+	ctx->renderer.cmdDrawFilledRectangle(sidebarRect);
+
 	ctx->renderer.cmdSetColor(bodyElemState->textColor);
 	ctx->renderer.cmdSetFont(bodyElemState->font);
-	// calculate content size for ScrollView
-	f32 maxLineWidth = 0;
-	for (const auto& line : state.lines)
+	
+	// gets current scroll state to use for sidebar culling
+	auto& scrollStateEarly = ctx->scrollViewState[state.scrollId];
+	f32 currentScrollYEarly = scrollStateEarly.scrollOffset.y;
+	
+	i32 startLine = (i32)(currentScrollYEarly / lineHeight);
+	i32 endLine = startLine + visibleLines + 2;
+	
+	// draw line highlights and numbers
+	for (i32 i = startLine; i < endLine && i < state.lines.size(); i++)
 	{
-		FontTextSize size = font->computeTextSize(line.data(), (u32)line.size());
-		if (size.width > maxLineWidth)
-			maxLineWidth = size.width;
+		f32 yPos = clipRect.y + i * lineHeight - currentScrollYEarly;
+		
+		// use originalClipRect for visibility check because clipRect is indented
+		if (yPos + lineHeight < originalClipRect.y || yPos > originalClipRect.bottom())
+			continue;
+
+		// current line highlighting
+		if (i == state.currentLine && isEditingThis)
+		{
+			// line number highlight (Dark Cyan)
+			Rect lineNumRect = sidebarRect;
+			lineNumRect.y = yPos;
+			lineNumRect.height = lineHeight;
+			ctx->renderer.cmdSetColor(Color::black);
+			ctx->renderer.cmdDrawFilledRectangle(lineNumRect);
+
+			// text highlight (Dark Green)
+			Rect lineTextRect = clipRect;
+			lineTextRect.y = yPos;
+			lineTextRect.height = lineHeight;
+			
+			// trim highlight width to avoid drawing under vertical scrollbar
+			if (hasVerticalScrollbar)
+			{
+				lineTextRect.width -= sbV.width * ctx->scale;
+			}
+			
+			// clip the highlight to the text area (using clipRect)
+			ctx->renderer.cmdDrawFilledRectangle(lineTextRect);
+		}
+
+		// draw line number
+		char numStr[32];
+		sprintf(numStr, "%d", i + 1);
+		Rect numRect = sidebarRect;
+		numRect.y = yPos;
+		numRect.height = lineHeight;
+		numRect.width -= 5.0f; // Padding
+		
+		ctx->renderer.cmdSetColor(Color::white);
+		ctx->renderer.cmdDrawTextInBox(numStr, numRect, HAlignType::Right, VAlignType::Center, false, true);
 	}
-	f32 totalContentHeight = state.lines.size() * lineHeight;
+	
+	ctx->renderer.popClipRect();
 
 	// set cursor to IBeam only if not hovering over scrollbars
 	if (ctx->widget.hovered)
