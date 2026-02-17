@@ -27,6 +27,8 @@ struct MultilineTextInputState
 	struct ThemeElement* themeElement = nullptr;
 	Rect rect;
 	Rect clipRect;
+	Rect scrollbarRectV;
+	Rect scrollbarRectH;
 	std::vector<Utf32String> lines; // Each line is a separate string
 	MultilineTextInputFlags flags = MultilineTextInputFlags::None;
 

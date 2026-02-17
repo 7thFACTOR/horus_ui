@@ -166,6 +166,7 @@ bool TextInputState::processEvent(const InputEvent& ev)
 
 	if (ev.type == InputEvent::Type::Text)
 	{
+		caretBlinkTimer = 0;
 		Utf32String txt;
 
 		ctx->settings.services.utf8To32(ev.text.text, txt);
@@ -175,6 +176,7 @@ bool TextInputState::processEvent(const InputEvent& ev)
 	}
 	else if (ev.type == InputEvent::Type::Key)
 	{
+		caretBlinkTimer = 0;
 		if (ev.key.down)
 		{
 			if (ev.key.code == KeyCode::Enter)

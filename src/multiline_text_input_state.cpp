@@ -361,7 +361,9 @@ bool MultilineTextInputState::processEvent(const InputEvent& ev)
 
 		// if click is within widget bounds but outside clip rect (e.g. on scrollbar),
 		// ignore it here so ScrollView can handle it, but keep focus (don't clear id).
-		if (!clipRect.contains(ev.mouse.point))
+		if (!clipRect.contains(ev.mouse.point)
+			|| scrollbarRectV.contains(ev.mouse.point)
+			|| scrollbarRectH.contains(ev.mouse.point))
 		{
 			return false;
 		}
@@ -420,6 +422,7 @@ bool MultilineTextInputState::processEvent(const InputEvent& ev)
 
 	if (ev.type == InputEvent::Type::Text)
 	{
+		caretBlinkTimer = 0;
 		Utf32String txt;
 		ctx->settings.services.utf8To32(ev.text.text, txt);
 
@@ -446,6 +449,8 @@ void MultilineTextInputState::processKeyEvent(const InputEvent& ev)
 {
 	if (ev.type != InputEvent::Type::Key || !ev.key.down)
 		return;
+
+	caretBlinkTimer = 0;
 
 	Font* font = themeElement ? themeElement->normalState().font : nullptr;
 	bool hasSelection = selectionActive;

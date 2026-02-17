@@ -404,10 +404,12 @@ bool multilineTextInput(
 				hasVerticalScrollbar = true;
 		}
 
+	// vertical scrollbar rect (right side of clipRect)
+		Rect vRect;
 		if (hasVerticalScrollbar)
 		{
 			// vertical scrollbar rect (right side of clipRect)
-			Rect vRect = clipRect;
+			vRect = clipRect;
 			vRect.x = vRect.right() - sbV.width * ctx->scale;
 			vRect.width = sbV.width * ctx->scale;
 			// be careful: ScrollView might deduce height if H-scroll is present
@@ -418,10 +420,11 @@ bool multilineTextInput(
 				overScrollbar = true;
 		}
 
+		Rect hRect;
 		if (hasHorizontalScrollbar)
 		{
 			// horizontal scrollbar rect (bottom of clipRect)
-			Rect hRect = clipRect;
+			hRect = clipRect;
 			hRect.y = hRect.bottom() - sbH.height * ctx->scale;
 			hRect.height = sbH.height * ctx->scale;
 			// be careful: if V-scroll is present, full width might be reduced?
@@ -435,6 +438,12 @@ bool multilineTextInput(
 
 			if (hRect.contains(ctx->mousePosition))
 				overScrollbar = true;
+		}
+
+		if (state.id == ctx->id)
+		{
+			state.scrollbarRectV = hasVerticalScrollbar ? vRect : Rect();
+			state.scrollbarRectH = hasHorizontalScrollbar ? hRect : Rect();
 		}
 
 		if (overScrollbar)
