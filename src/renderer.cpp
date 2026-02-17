@@ -1153,6 +1153,11 @@ FontTextSize Renderer::computeSizeOrDrawText(
 		return fsize;
 	}
 
+	f32 spaceWidth = 0.0f;
+	auto gSpace = fnt->getGlyph(' ');
+	if (gSpace) spaceWidth = gSpace->advanceX;
+	f32 tabWidth = spaceWidth * (f32)ctx->settings.tabSize;
+
 	// Helper: compute ellipsis width (prefer single U+2026 glyph, fall back to three dots)
 	auto computeEllipsisWidth = [&](Font* ff) -> f32 {
 		const GlyphCode uniEll = 0x2026;
@@ -1206,10 +1211,21 @@ FontTextSize Renderer::computeSizeOrDrawText(
 				auto chr = text[i];
 				auto glyph = fnt->getGlyph(chr);
 
-				if (!glyph) continue;
+				if (!glyph && chr != '\t') continue;
 
 				auto kern = fnt->getKerning(lChr, chr);
-				w += glyph->advanceX + kern;
+				f32 adv = 0;
+
+				if (chr == '\t')
+				{
+					adv = tabWidth;
+				}
+				else
+				{
+					adv = glyph->advanceX + kern;
+				}
+
+				w += adv;
 				lChr = chr;
 				cnt++;
 			}
@@ -1238,11 +1254,20 @@ FontTextSize Renderer::computeSizeOrDrawText(
 				auto chr = text[i];
 				auto glyph = fnt->getGlyph(chr);
 
-				if (!glyph)
+				if (!glyph && chr != '\t')
 					continue;
 
 				auto kern = fnt->getKerning(lastChr, chr);
-				f32 adv = glyph->advanceX + kern;
+				f32 adv = 0;
+
+				if (chr == '\t')
+				{
+					adv = tabWidth;
+				}
+				else
+				{
+					adv = glyph->advanceX + kern;
+				}
 
 				// If entire text fits without ellipsis, accept it.
 				// If not, ensure we leave space for ellipsis.
@@ -1363,11 +1388,20 @@ FontTextSize Renderer::computeSizeOrDrawText(
 				auto glyph = fnt->getGlyph(chr);
 				auto img = fnt->getGlyphImage(chr);
 
-				if (!glyph) continue;
+				if (!glyph && chr != '\t') continue;
 				auto kern = fnt->getKerning(lastDrawChr, chr);
 				pos.x += kern;
-				if (img) drawTextGlyph(img, { pos.x + glyph->bitmapLeft, pos.y - glyph->bitmapTop });
-				pos.x += glyph->advanceX;
+
+				if (chr == '\t')
+				{
+					pos.x += tabWidth;
+				}
+				else
+				{
+					if (img) drawTextGlyph(img, { pos.x + glyph->bitmapLeft, pos.y - glyph->bitmapTop });
+					pos.x += glyph->advanceX;
+				}
+
 				lastDrawChr = chr;
 			}
 
@@ -1451,11 +1485,11 @@ FontTextSize Renderer::computeSizeOrDrawText(
 		}
 
 		auto glyph = fnt->getGlyph(chr);
-		if (!glyph)
+		if (!glyph && chr != '\t')
 			continue;
 
 		// track word boundaries
-		if (chr == ' ')
+		if (chr == ' ' || chr == '\t')
 		{
 			lastWordIndex = i + 1;
 			crtWordWidth = 0.0f;
@@ -1463,7 +1497,17 @@ FontTextSize Renderer::computeSizeOrDrawText(
 
 		// compute advance including kerning with previous glyph on same line
 		auto kern = fnt->getKerning(lastChr, chr);
-		f32 glyphAdvance = glyph->advanceX + kern;
+		f32 glyphAdvance = 0;
+
+		if (chr == '\t')
+		{
+			glyphAdvance = tabWidth;
+		}
+		else
+		{
+			glyphAdvance = glyph->advanceX + kern;
+		}
+
 		f32 projectedLineWidth = crtLineWidth + glyphAdvance;
 		f32 projectedWordWidth = crtWordWidth + glyphAdvance;
 
@@ -1482,10 +1526,20 @@ FontTextSize Renderer::computeSizeOrDrawText(
 				for (u32 k = lastWordIndex; k <= i; ++k)
 				{
 					auto g2 = fnt->getGlyph(text[k]);
-					if (!g2) continue;
+					if (!g2 && text[k] != '\t') continue;
 
 					auto kern2 = fnt->getKerning(localLast, text[k]);
-					f32 cw = g2->advanceX + kern2;
+					f32 cw = 0;
+
+					if (text[k] == '\t')
+					{
+						cw = tabWidth;
+					}
+					else
+					{
+						cw = g2->advanceX + kern2;
+					}
+
 					wordSize += cw;
 
 					if (wordSize >= (f32)rect.width)
@@ -1511,9 +1565,18 @@ FontTextSize Renderer::computeSizeOrDrawText(
 				for (u32 k = lineStart; k < lineStart + lineLen && k < size; ++k)
 				{
 					auto g2 = fnt->getGlyph(text[k]);
-					if (!g2) continue;
+					if (!g2 && text[k] != '\t') continue;
 					auto kern2 = fnt->getKerning(segLast, text[k]);
-					segmentWidth += g2->advanceX + kern2;
+
+					if (text[k] == '\t')
+					{
+						segmentWidth += tabWidth;
+					}
+					else
+					{
+						segmentWidth += g2->advanceX + kern2;
+					}
+
 					segLast = text[k];
 				}
 
@@ -1562,9 +1625,18 @@ FontTextSize Renderer::computeSizeOrDrawText(
 					for (u32 k = lineStart; k < lineStart + pushLen && k < size; ++k)
 					{
 						auto g2 = fnt->getGlyph(text[k]);
-						if (!g2) continue;
+						if (!g2 && text[k] != '\t') continue;
 						auto kern2 = fnt->getKerning(segLast, text[k]);
-						segmentWidth += g2->advanceX + kern2;
+
+						if (text[k] == '\t')
+						{
+							segmentWidth += tabWidth;
+						}
+						else
+						{
+							segmentWidth += g2->advanceX + kern2;
+						}
+
 						segLast = text[k];
 					}
 
@@ -1698,15 +1770,24 @@ FontTextSize Renderer::computeSizeOrDrawText(
 				auto glyph = fnt->getGlyph(chr);
 				auto img = fnt->getGlyphImage(chr);
 
-				if (!glyph)
+				if (!glyph && chr != '\t')
 				{
 					continue;
 				}
 
 				auto kern = fnt->getKerning(lastDrawChr, chr);
 				pos.x += kern;
-				if (img) drawTextGlyph(img, { pos.x + glyph->bitmapLeft, pos.y - glyph->bitmapTop });
-				pos.x += glyph->advanceX;
+
+				if (chr == '\t')
+				{
+					pos.x += tabWidth;
+				}
+				else
+				{
+					if (img) drawTextGlyph(img, { pos.x + glyph->bitmapLeft, pos.y - glyph->bitmapTop });
+					pos.x += glyph->advanceX;
+				}
+
 				lastDrawChr = chr;
 			}
 

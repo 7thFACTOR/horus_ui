@@ -171,13 +171,24 @@ void MultilineTextInputState::insertTextAtCaret(const Utf32String& newText)
 		}
 		else if (ch == '\t')
 		{
-			// expand tab to 4 spaces
-			for (int k = 0; k < 4; k++)
+			if (has(flags, MultilineTextInputFlags::SpacesOnTab))
 			{
-				if (totalLength >= maxTextLength)
-					break;
-				
-				lines[currentLine].insert(lines[currentLine].begin() + caretColumn, ' ');
+				u32 tabSize = ctx->settings.tabSize;
+
+				// expand tab to N spaces
+				for (u32 k = 0; k < tabSize; k++)
+				{
+					if (totalLength >= maxTextLength)
+						break;
+
+					lines[currentLine].insert(lines[currentLine].begin() + caretColumn, ' ');
+					caretColumn++;
+					totalLength++;
+				}
+			}
+			else
+			{
+				lines[currentLine].insert(lines[currentLine].begin() + caretColumn, '\t');
 				caretColumn++;
 				totalLength++;
 			}
@@ -299,7 +310,11 @@ i32 MultilineTextInputState::getCharIndexAtPoint(const Point& pt)
 		return 0;
 
 	f32 lineHeight = font->getMetrics().height;
+
+	// ensure adjustedY is at least 0 to prevent negative line indexing
 	f32 adjustedY = pt.y + scrollOffsetY - clipRect.y;
+	if (adjustedY < 0) adjustedY = 0;
+
 	i32 line = (i32)(adjustedY / lineHeight);
 
 	if (line < 0) line = 0;
@@ -371,7 +386,7 @@ bool MultilineTextInputState::processEvent(const InputEvent& ev)
 
 		if (!mouseMoved && firstMouseDown && !selectingWithMouse)
 		{
-			if (has(flags, TextInputFlags::AutoSelectAll) && selectAllOnFocus)
+			if (has(flags, MultilineTextInputFlags::AutoSelectAll) && selectAllOnFocus)
 				selectAll();
 			firstMouseDown = false;
 		}
@@ -627,8 +642,20 @@ void MultilineTextInputState::processKeyEvent(const InputEvent& ev)
 	}
 	else if (ev.key.code == KeyCode::Home)
 	{
-		i32 prevColumn = caretColumn;
-		caretColumn = 0;
+		// calculate indentation (first non-whitespace char)
+		i32 indentation = 0;
+		if (currentLine < lines.size())
+		{
+			const auto& line = lines[currentLine];
+			for (size_t i = 0; i < line.size(); i++)
+			{
+				if (line[i] != ' ' && line[i] != '\t')
+				{
+					indentation = (i32)i;
+					break;
+				}
+			}
+		}
 
 		if (has(ev.key.modifiers, KeyModifiers::Shift))
 		{
@@ -636,32 +663,119 @@ void MultilineTextInputState::processKeyEvent(const InputEvent& ev)
 			{
 				selectionActive = true;
 				selectionStartLine = currentLine;
-				selectionStartColumn = prevColumn;
+				selectionStartColumn = caretColumn;
 			}
+
+			// toggle behavior: if at 0, go to indentation. if at indentation, go to 0. otherwise go to indentation first?
+			// User request: "should select only to line start, and on next presses should toggle select the indenting..."
+			// implying: standard is 0. then indent.
+			// VS Code behavior: Home goes to indent first, then 0.
+			// Let's implement: if caret is at 0, go to indent. if caret is at indent, go to 0. if caret is elsewhere, go to indent (or 0?).
+			// strict reading of user request: "select only to line start [0], and on next presses toggle... [indent]"
+
+			if (caretColumn == 0)
+				caretColumn = indentation;
+			else
+				caretColumn = 0;
+
 			selectionEndLine = currentLine;
 			selectionEndColumn = caretColumn;
 		}
 		else
+		{
+			if (caretColumn == 0)
+				caretColumn = indentation;
+			else
+				caretColumn = 0;
+
 			deselect();
+		}
 	}
 	else if (ev.key.code == KeyCode::End)
 	{
-		i32 prevColumn = caretColumn;
-		caretColumn = lines[currentLine].size();
-
 		if (has(ev.key.modifiers, KeyModifiers::Shift))
 		{
 			if (!selectionActive)
 			{
 				selectionActive = true;
 				selectionStartLine = currentLine;
+				selectionStartColumn = caretColumn;
+			}
+
+			caretColumn = lines[currentLine].size();
+
+			selectionEndLine = currentLine;
+			selectionEndColumn = caretColumn;
+		}
+		else
+		{
+			caretColumn = lines[currentLine].size();
+			deselect();
+		}
+	}
+	else if (ev.key.code == KeyCode::PgUp)
+	{
+		i32 prevLine = currentLine;
+		i32 prevColumn = caretColumn;
+
+		currentLine -= visibleLineCount;
+		if (currentLine < 0)
+		{
+			currentLine = 0;
+			caretColumn = 0;
+		}
+		else if (caretColumn > lines[currentLine].size())
+		{
+			caretColumn = lines[currentLine].size();
+		}
+
+		if (has(ev.key.modifiers, KeyModifiers::Shift))
+		{
+			if (!selectionActive)
+			{
+				selectionActive = true;
+				selectionStartLine = prevLine;
 				selectionStartColumn = prevColumn;
 			}
 			selectionEndLine = currentLine;
 			selectionEndColumn = caretColumn;
 		}
 		else
+		{
 			deselect();
+		}
+	}
+	else if (ev.key.code == KeyCode::PgDown)
+	{
+		i32 prevLine = currentLine;
+		i32 prevColumn = caretColumn;
+
+		currentLine += visibleLineCount;
+		if (currentLine >= lines.size())
+		{
+			currentLine = lines.size() - 1;
+			caretColumn = lines[currentLine].size();
+		}
+		else if (caretColumn > lines[currentLine].size())
+		{
+			caretColumn = lines[currentLine].size();
+		}
+
+		if (has(ev.key.modifiers, KeyModifiers::Shift))
+		{
+			if (!selectionActive)
+			{
+				selectionActive = true;
+				selectionStartLine = prevLine;
+				selectionStartColumn = prevColumn;
+			}
+			selectionEndLine = currentLine;
+			selectionEndColumn = caretColumn;
+		}
+		else
+		{
+			deselect();
+		}
 	}
 	else if (ev.key.code == KeyCode::A && has(ev.key.modifiers, KeyModifiers::Control))
 	{

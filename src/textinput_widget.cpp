@@ -268,6 +268,11 @@ bool textInput(
 				endSel = tmpSel;
 			}
 
+			if (endSel > ctx->textInput.text.size())
+				endSel = ctx->textInput.text.size();
+			if (startSel > ctx->textInput.text.size())
+				startSel = ctx->textInput.text.size();
+
 			FontTextSize selectedTextSize;
 			FontTextSize textToSelectionStartSize;
 
@@ -298,7 +303,7 @@ bool textInput(
 			ctx->renderer.cmdDrawFilledRectangle(selRect);
 		}
 
-		// draw cursor/caret	
+		// draw cursor/caret
 		if (!ctx->settings.textCaretBlinkEnable || (ctx->textInput.caretBlinkTimer >= 0 && ctx->textInput.caretBlinkTimer <= 1))
 		{
 			ctx->renderer.cmdSetColor(bodyTextCaretElemState.color);

@@ -380,15 +380,25 @@ enum class ImageFitType
 };
 
 /// Text input modes for the textInput widget
-enum class TextInputFlags
+enum class TextInputFlags : u32
 {
-	None,
-	NumericOnly,
-	HexOnly,
-	Custom,
-	AutoSelectAll
+	None = HORUS_BIT(0),
+	NumericOnly = HORUS_BIT(1),
+	HexOnly = HORUS_BIT(2),
+	Custom = HORUS_BIT(3),
+	AutoSelectAll = HORUS_BIT(4)
 };
 HORUS_ENUM_AS_FLAGS(TextInputFlags);
+
+enum class MultilineTextInputFlags : u32
+{
+	None = HORUS_BIT(0),
+	SpacesOnTab = HORUS_BIT(1),
+	LineNumbers = HORUS_BIT(2),
+	AutoSelectAll = HORUS_BIT(3),
+	HighlightCurrentLine = HORUS_BIT(4)
+};
+HORUS_ENUM_AS_FLAGS(MultilineTextInputFlags);
 
 /// List selection mode
 enum class ListSelectionMode
@@ -1694,6 +1704,7 @@ struct FontInfo
 struct WindowsDockingState
 {
 	//TODO
+	//make sure one can save docking per group of windows or global
 };
 
 struct Services
@@ -1885,6 +1896,7 @@ struct Settings
 	f32 dockTabImageTextSpacing = 4;
 	f32 movePopupMaxDistanceTrigger = 5; /// distance of dragging with mouse for when to initiate popup dragging
 	f32 defaultBulletTextSpacing = 5; /// space size between bullet/check/radio and the label, might get overriden by the theme settings
+	u32 tabSize = 4; /// tab size in spaces
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -2409,7 +2421,7 @@ HORUS_API bool textInput(const char* id, char* text, u32 maxTextSize, TextInputF
 /// \param visibleLines number of visible lines in the text area
 /// \param flags input flags (numeric only, hex only, etc.)
 /// \return true if the text was changed
-HORUS_API bool multilineTextInput(const char* id, char* text, u32 maxTextSize, u32 visibleLines = 10, TextInputFlags flags = TextInputFlags::None);
+HORUS_API bool multilineTextInput(const char* id, char* text, u32 maxTextSize, u32 visibleLines = 10, MultilineTextInputFlags flags = MultilineTextInputFlags::None);
 
 /// Draw an integer number slider widget
 /// \param minVal the minimum value

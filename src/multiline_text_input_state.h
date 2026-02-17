@@ -28,7 +28,7 @@ struct MultilineTextInputState
 	Rect rect;
 	Rect clipRect;
 	std::vector<Utf32String> lines; // Each line is a separate string
-	TextInputFlags flags = TextInputFlags::None;
+	MultilineTextInputFlags flags = MultilineTextInputFlags::None;
 
 	// Caret position
 	i32 currentLine = 0;

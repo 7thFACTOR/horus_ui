@@ -14,7 +14,7 @@ bool multilineTextInput(
 	char* text,
 	u32 maxLength,
 	u32 visibleLines,
-	TextInputFlags flags)
+	MultilineTextInputFlags flags)
 {
 	auto bodyElem = &ctx->theme->getElement(WidgetElementId::TextInputBody);
 	auto& bodyTextCaretElemState = ctx->theme->getElement(WidgetElementId::TextInputCaret).normalState();
@@ -43,7 +43,9 @@ bool multilineTextInput(
 
 	// pre-calculate scroll ID for focus checks
 	std::string scrollIdName = std::string(id) + ".scroller";
-	state.scrollId = genId(scrollIdName.c_str());
+	WidgetId scrollId = genId(scrollIdName.c_str());
+	if (state.id == ctx->id)
+		state.scrollId = scrollId;
 
 	if (ctx->focusChanged && ctx->id != ctx->widget.focusedId && ctx->widget.focusedId != state.scrollId)
 		ctx->widget.changeEnded = true;
@@ -92,10 +94,6 @@ bool multilineTextInput(
 		if (isEditingThis)
 		{
 			state.id = ctx->id;
-			// reset scroll offset when starting to edit
-			std::string scrollIdName = std::string(id) + ".scroller";
-			WidgetId scrollerId = genId(scrollIdName.c_str());
-			ctx->scrollViewState[scrollerId].scrollOffset = {0, 0};
 		}
 	}
 
@@ -106,11 +104,6 @@ bool multilineTextInput(
 		isEditingThis = true;
 		state.selectAllOnFocus = true;
 		state.firstMouseDown = true;
-
-		// reset scroll offset when starting to edit
-		std::string scrollIdName = std::string(id) + ".scroller";
-		WidgetId scrollerId = genId(scrollIdName.c_str());
-		ctx->scrollViewState[scrollerId].scrollOffset = {0, 0};
 	}
 
 	if (state.editNow)
@@ -145,7 +138,7 @@ bool multilineTextInput(
 		if (state.lines.empty())
 			state.lines.push_back(Utf32String());
 
-		if (state.selectAllOnFocus && has(flags, TextInputFlags::AutoSelectAll))
+		if (state.selectAllOnFocus && has(flags, MultilineTextInputFlags::AutoSelectAll))
 			state.selectAll();
 		else
 		{
@@ -154,6 +147,9 @@ bool multilineTextInput(
 			state.mouseDown = true;
 			state.mouseDownSelectionStartLine = state.currentLine;
 			state.mouseDownSelectionStartColumn = state.caretColumn;
+			// Reset selection start/end to current cursor position to ensure drag selection starts correctly
+			state.selectionStartLine = state.selectionEndLine = state.currentLine;
+			state.selectionStartColumn = state.selectionEndColumn = state.caretColumn;
 			state.mouseMoved = false;
 			state.selectingWithMouse = false;
 			state.ensureCaretVisible();
@@ -175,26 +171,32 @@ bool multilineTextInput(
 
 
 	// calculate sidebar width based on line count
-	auto digitCount = [](int n) {
-		if (n == 0) return 1;
-		return (int)(std::floor(std::log10(std::abs(n))) + 1);
-	};
-		
-	u32 digits = digitCount(state.lines.size());
-	f32 charWidth = font->computeTextSize("0", 1).width;
-	f32 sidebarWidth = digits * charWidth + 10.0f; // Padding
-
-	// save original clip rect for sidebar drawing
+	f32 sidebarWidth = 0.0f;
 	Rect originalClipRect = clipRect;
 
-	// adjust clip rect to exclude sidebar
-	f32 sidebarTextGap = 5.0f * ctx->scale;
-	clipRect.x += sidebarWidth + sidebarTextGap;
-	clipRect.width -= (sidebarWidth + sidebarTextGap);
+	if (has(flags, MultilineTextInputFlags::LineNumbers))
+	{
+		auto digitCount = [](int n) {
+			if (n == 0) return 1;
+			return (int)(std::floor(std::log10(std::abs(n))) + 1);
+		};
+
+		u32 digits = digitCount(state.lines.size());
+		f32 charWidth = font->computeTextSize("0", 1).width;
+		sidebarWidth = digits * charWidth + 10.0f; // Padding
+
+		// adjust clip rect to exclude sidebar
+		f32 sidebarTextGap = 5.0f * ctx->scale;
+		clipRect.x += sidebarWidth + sidebarTextGap;
+		clipRect.width -= (sidebarWidth + sidebarTextGap);
+	}
 
 	// update state rects every frame so ensureCaretVisible works correctly
-	state.rect = ctx->widget.rect;
-	state.clipRect = clipRect;
+	if (state.id == ctx->id)
+	{
+		state.rect = ctx->widget.rect;
+		state.clipRect = clipRect;
+	}
 
 	// state.scrollId is already calculated above
 
@@ -224,7 +226,7 @@ bool multilineTextInput(
 	// draw background
 	ctx->renderer.cmdSetColor(bodyElemState->color);
 	ctx->renderer.cmdDrawImageBordered(bodyElemState->image, bodyElemState->border, ctx->widget.rect, ctx->scale);
-	
+
 	// calculate total content height early for scrollbar detection
 	f32 totalContentHeight = state.lines.size() * lineHeight;
 
@@ -242,7 +244,7 @@ bool multilineTextInput(
 			}
 		}
 	}
-	
+
 	f32 scrollAreaV = clipRect.height;
 	f32 scrollAreaH = clipRect.width;
 	bool hasVerticalScrollbar = false;
@@ -270,7 +272,7 @@ bool multilineTextInput(
 	{
 		hasHorizontalScrollbar = true;
 		scrollAreaV -= sbH.height * ctx->scale;
-		
+
 		// re-check vertical with reduced height
 		if (!hasVerticalScrollbar && totalContentHeight > scrollAreaV)
 		{
@@ -279,28 +281,37 @@ bool multilineTextInput(
 	}
 
 	// draw sidebar background
-	ctx->renderer.pushClipRect(originalClipRect);
-	
 	Rect sidebarRect = originalClipRect;
-	sidebarRect.width = sidebarWidth;
-	ctx->renderer.cmdSetColor(Color::darkGray); // Gray
-	ctx->renderer.cmdDrawFilledRectangle(sidebarRect);
+
+	if (has(flags, MultilineTextInputFlags::LineNumbers))
+	{
+		ctx->renderer.pushClipRect(originalClipRect);
+
+		sidebarRect.width = sidebarWidth;
+		ctx->renderer.cmdSetColor(Color::darkGray); // Gray
+		ctx->renderer.cmdDrawFilledRectangle(sidebarRect);
+	}
+	else
+	{
+		// if no sidebar, push clip rect anyway to match popping later and for safety
+		ctx->renderer.pushClipRect(originalClipRect);
+	}
 
 	ctx->renderer.cmdSetColor(bodyElemState->textColor);
 	ctx->renderer.cmdSetFont(bodyElemState->font);
-	
+
 	// gets current scroll state to use for sidebar culling
 	auto& scrollStateEarly = ctx->scrollViewState[state.scrollId];
 	f32 currentScrollYEarly = scrollStateEarly.scrollOffset.y;
-	
+
 	i32 startLine = (i32)(currentScrollYEarly / lineHeight);
 	i32 endLine = startLine + visibleLines + 2;
-	
+
 	// draw line highlights and numbers
 	for (i32 i = startLine; i < endLine && i < state.lines.size(); i++)
 	{
 		f32 yPos = clipRect.y + i * lineHeight - currentScrollYEarly;
-		
+
 		// use originalClipRect for visibility check because clipRect is indented
 		if (yPos + lineHeight < originalClipRect.y || yPos > originalClipRect.bottom())
 			continue;
@@ -308,50 +319,60 @@ bool multilineTextInput(
 		// current line highlighting
 		if (i == state.currentLine && isEditingThis)
 		{
-			// line number highlight (Dark Cyan)
-			Rect lineNumRect = sidebarRect;
-			lineNumRect.y = yPos;
-			lineNumRect.height = lineHeight;
 			ctx->renderer.cmdSetColor(Color::black);
-			ctx->renderer.cmdDrawFilledRectangle(lineNumRect);
+
+			// line number highlight (Dark Cyan)
+			if (has(flags, MultilineTextInputFlags::LineNumbers))
+			{
+				Rect lineNumRect = sidebarRect;
+				lineNumRect.y = yPos;
+				lineNumRect.height = lineHeight;
+				ctx->renderer.cmdDrawFilledRectangle(lineNumRect);
+			}
 
 			// text highlight (Dark Green)
-			Rect lineTextRect = clipRect;
-			lineTextRect.y = yPos;
-			lineTextRect.height = lineHeight;
-			
-			// trim highlight width to avoid drawing under vertical scrollbar
-			if (hasVerticalScrollbar)
+			if (has(flags, MultilineTextInputFlags::HighlightCurrentLine))
 			{
-				lineTextRect.width -= sbV.width * ctx->scale;
+				Rect lineTextRect = clipRect;
+				lineTextRect.y = yPos;
+				lineTextRect.height = lineHeight;
+
+				// trim highlight width to avoid drawing under vertical scrollbar
+				if (hasVerticalScrollbar)
+				{
+					lineTextRect.width -= sbV.width * ctx->scale;
+				}
+
+				// clip the highlight to the text area (using clipRect)
+				ctx->renderer.cmdDrawFilledRectangle(lineTextRect);
 			}
-			
-			// clip the highlight to the text area (using clipRect)
-			ctx->renderer.cmdDrawFilledRectangle(lineTextRect);
 		}
 
 		// draw line number
-		char numStr[32];
-		sprintf(numStr, "%d", i + 1);
-		Rect numRect = sidebarRect;
-		numRect.y = yPos;
-		numRect.height = lineHeight;
-		numRect.width -= 5.0f; // Padding
-		
-		ctx->renderer.cmdSetColor(Color::white);
-		ctx->renderer.cmdDrawTextInBox(numStr, numRect, HAlignType::Right, VAlignType::Center, false, true);
+		if (has(flags, MultilineTextInputFlags::LineNumbers))
+		{
+			char numStr[32];
+			sprintf(numStr, "%d", i + 1);
+			Rect numRect = sidebarRect;
+			numRect.y = yPos;
+			numRect.height = lineHeight;
+			numRect.width -= 5.0f; // Padding
+
+			ctx->renderer.cmdSetColor(Color::white);
+			ctx->renderer.cmdDrawTextInBox(numStr, numRect, HAlignType::Right, VAlignType::Center, false, true);
+		}
 	}
-	
+
 	ctx->renderer.popClipRect();
 
 	// set cursor to IBeam only if not hovering over scrollbars
 	if (ctx->widget.hovered)
 	{
 		bool overScrollbar = false;
-		
+
 		auto& sbV = ctx->theme->getElement(WidgetElementId::ScrollViewScrollBarV).normalState();
 		auto& sbH = ctx->theme->getElement(WidgetElementId::ScrollViewScrollBarH).normalState();
-		
+
 		f32 scrollAreaV = clipRect.height;
 		f32 availableWidth = clipRect.width;
 
@@ -396,14 +417,14 @@ bool multilineTextInput(
 			if (vRect.contains(ctx->mousePosition))
 				overScrollbar = true;
 		}
-		
+
 		if (hasHorizontalScrollbar)
 		{
 			// horizontal scrollbar rect (bottom of clipRect)
 			Rect hRect = clipRect;
 			hRect.y = hRect.bottom() - sbH.height * ctx->scale;
 			hRect.height = sbH.height * ctx->scale;
-			// be careful: if V-scroll is present, full width might be reduced? 
+			// be careful: if V-scroll is present, full width might be reduced?
 			// in ScrollView:
 			// f32 scrollBarWidthFull = rectNoBorders.width;
 			// if (scrollContentSizeV > ...) scrollBarWidthFull -= ...;
@@ -421,6 +442,8 @@ bool multilineTextInput(
 		else
 			setMouseCursor(MouseCursorType::IBeam);
 	}
+
+	pushLayout();
 
 	// begin ScrollView (it handles layout, scrollbars, and inputs)
 	// we must reset position to inside the wrapper because addWidget() moved it to the bottom
@@ -457,8 +480,11 @@ bool multilineTextInput(
 	// update state clip rect to the inner clip rect (excluding scrollbars)
 	// this prevents drawing over scrollbars and ensures clicks on scrollbars aren't handled as text input
 	Rect innerClipRect = ctx->renderer.getClipRect();
-	state.clipRect = innerClipRect;
-	state.rect = ctx->widget.rect;
+	if (state.id == ctx->id)
+	{
+		state.clipRect = innerClipRect;
+		state.rect = ctx->widget.rect;
+	}
 
 	// use inner clip rect for local drawing logic
 	clipRect = innerClipRect;
@@ -511,6 +537,16 @@ bool multilineTextInput(
 			selRect.y = yPos;
 			selRect.width = selectedSize.width;
 			selRect.height = lineHeight;
+
+			// if selection width is 0 and we are selecting a newline (endCol == size), give it a width of a space
+			// to visualize the newline selection
+			if (selRect.width <= 0.001f && colEnd == state.lines[line].size())
+			{
+				static f32 spaceWidth = 0.0f;
+				if (spaceWidth == 0.0f)
+					spaceWidth = font->computeTextSize(" ", 1).width;
+				selRect.width = spaceWidth;
+			}
 
 			ctx->renderer.cmdSetColor(bodyTextSelectionElemState.color);
 			ctx->renderer.cmdDrawFilledRectangle(selRect);
@@ -587,6 +623,8 @@ bool multilineTextInput(
 		if (state.caretBlinkTimer > 2.0f)
 			state.caretBlinkTimer = 0;
 	}
+
+	popLayout();
 
 	return state.textChanged;
 }

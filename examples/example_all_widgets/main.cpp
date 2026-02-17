@@ -103,7 +103,7 @@ int main(int argc, char** args)
 	// Build the theme
 	// After we load the theme and more images and fonts, we need to rebuild the theme (into the image atlas)
 	hui::buildTheme(theme);
-	
+
 	hui::OpenGLTexture texAtlas(hui::getThemeAtlasImageData().width, hui::getThemeAtlasImageData().height);
 	texAtlas.updateData(hui::getThemeAtlasImageData().pixels);
 	hui::setThemeAtlasTexture(texAtlas.getHandle());
@@ -168,7 +168,7 @@ int main(int argc, char** args)
 
 		// Get the events from SDL or whatever input provider is set, it will fill a queue of events
 		hui::update();
-		
+
 		if (hui::getInputEvent().type == hui::InputEvent::Type::Key
 			&& hui::getInputEvent().key.code == hui::KeyCode::F2
 			&& hui::getInputEvent().key.down)
@@ -264,7 +264,7 @@ int main(int argc, char** args)
 				hui::label("Avg Frame MS: "); hui::sameLine();
 				hui::label(std::to_string(hui::getAvgFrameTimeMs()).c_str());
 
-				
+
 
 				if (hui::button("DEBUG TREE PRINT"))
 				{
@@ -298,7 +298,7 @@ int main(int argc, char** args)
 
 				hui::popTint();
 				hui::endColumns();*/
-				
+
 				//hui::texture(tex1, 100, hui::HAlignType::Left);
 				//hui::texture(tex2, 100, hui::HAlignType::Left);
 
@@ -440,8 +440,12 @@ int main(int argc, char** args)
 				hui::popPadding(hui::PaddingType::ScrollView);
 
 				static char strMulti[5000];
+				static bool med = true;
 
-				hui::multilineTextInput("mti", strMulti, 5000, 10);
+				hui::check("med", &med);
+
+				if (med)
+					hui::multilineTextInput("mti", strMulti, 5000, 10/*, hui::MultilineTextInputFlags::LineNumbers*/);
 
 
 				hui::pushTint(hui::Color::orange);
