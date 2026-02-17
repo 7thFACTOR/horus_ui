@@ -2460,9 +2460,9 @@ void handleDockNodeEvents(DockNode* node)
 	{
 		if (event.type == InputEvent::Type::MouseDown)
 			handleDockingMouseDown(event, node);
-	};
 
-	handleDockingMouseMove(event, node);
+		handleDockingMouseMove(event, node);
+	};
 }
 
 void drawDockGuides()

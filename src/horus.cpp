@@ -244,12 +244,7 @@ void setFocusable()
 		ctx->widget.focusedWidgetRect = ctx->widget.rect;
 	}
 
-	//TODO: not working since widget id not incremental
-	//if (!ctx->widget.nextFocusableId
-	//	&& ctx->id > ctx->widget.focusedId)
-	//{
-	//	ctx->widget.nextFocusableId = ctx->id;
-	//}
+	ctx->focusableWidgets.push_back(ctx->id);
 }
 
 bool viewportImageFitSize(
@@ -295,6 +290,13 @@ bool viewportImageFitSize(
 void beginFrame()
 {
 	ctx->frameStartTime = std::chrono::high_resolution_clock::now();
+
+	// swap focusable widgets lists
+	std::swap(ctx->focusableWidgets, ctx->lastFrameFocusableWidgets);
+	ctx->focusableWidgets.clear();
+	// reserve some space to avoid allocations
+	if (ctx->focusableWidgets.capacity() < ctx->lastFrameFocusableWidgets.size())
+		ctx->focusableWidgets.reserve(ctx->lastFrameFocusableWidgets.size());
 
 	if (ctx->textInput.id)
 	{
@@ -342,25 +344,49 @@ void beginFrame()
 
 	if (ctx->event.type == InputEvent::Type::Key
 		&& ctx->event.key.code == KeyCode::Tab
-		&& !!(ctx->event.key.modifiers, KeyModifiers::Shift)
 		&& ctx->event.key.down
-		&& !ctx->multilineTextInput.id) //TODO: make it a generic ctx->ignoreTabKey Don't switch focus if editing multiline text
+		&& !ctx->multilineTextInput.id // Don't switch focus if editing multiline text
+		&& !ctx->lastFrameFocusableWidgets.empty())
 	{
-		//TODO: wont work now
-		//ctx->widget.focusedId--;
-		ctx->focusChanged = true;
+		bool shift = has(ctx->event.key.modifiers, KeyModifiers::Shift);
+		size_t currentIndex = ~0;
 
-		//if (ctx->widget.focusedId < 0)
-		//{
-		//	ctx->widget.focusedId = 0;
-		//}
-	}
-	else if (ctx->event.type == InputEvent::Type::Key
-		&& ctx->event.key.code == KeyCode::Tab
-		&& ctx->event.key.down
-		&& !ctx->multilineTextInput.id) // Don't switch focus if editing multiline text
-	{
-		ctx->widget.focusedId = ctx->widget.nextFocusableId;
+		// find current focused widget index
+		for (size_t i = 0; i < ctx->lastFrameFocusableWidgets.size(); i++)
+		{
+			if (ctx->lastFrameFocusableWidgets[i] == ctx->widget.focusedId)
+			{
+				currentIndex = i;
+				break;
+			}
+		}
+
+		if (currentIndex == ~0)
+		{
+			// if nothing focused, start from beginning (or end if shift)
+			if (shift)
+				ctx->widget.focusedId = ctx->lastFrameFocusableWidgets.back();
+			else
+				ctx->widget.focusedId = ctx->lastFrameFocusableWidgets.front();
+		}
+		else
+		{
+			if (shift)
+			{
+				if (currentIndex > 0)
+					ctx->widget.focusedId = ctx->lastFrameFocusableWidgets[currentIndex - 1];
+				else
+					ctx->widget.focusedId = ctx->lastFrameFocusableWidgets.back(); // wrap to end
+			}
+			else
+			{
+				if (currentIndex < ctx->lastFrameFocusableWidgets.size() - 1)
+					ctx->widget.focusedId = ctx->lastFrameFocusableWidgets[currentIndex + 1];
+				else
+					ctx->widget.focusedId = ctx->lastFrameFocusableWidgets.front(); // wrap to start
+			}
+		}
+
 		ctx->focusChanged = true;
 	}
 

@@ -17,30 +17,28 @@
 
 int main(int argc, char** args)
 {
-	// Setup a Horus UI context, with given service providers
-	hui::Settings settings;
-
-	//settings.sliderDragDirection = hui::SliderDragDirection::HorizontalOnly;
-
-	// Create the context
-	auto huiContext = hui::createContext(settings);
-	hui::setContext(huiContext); // set as current context
-
 	// Initialize SDL input provider
 	hui::Sdl3InitParams sdlParams;
 
 	sdlParams.vSync = false;
-	hui::initializeSdl(sdlParams);
+
+	// Setup a Horus UI context, with given service providers
+	hui::Settings settings;
+
+	hui::initStdioFileIO(settings.services);
+	hui::initFreetype(settings.services);
+	hui::initSdl3(settings.services, sdlParams);
+	hui::initStbRectPack(settings.services);
+	hui::initUtf(settings.services);
+	
+	// Create the context
+	auto huiContext = hui::createContext(settings);
+	hui::setContext(huiContext); // set as current context
 
 	// Create the main window (this will also create a graphics (GL/VK/D3D/etc.) context)
-	auto mainWnd = HORUS_INPUT->createWindow("Horus Example - No Docking", hui::NativeWindowFlags::Resizable, hui::NativeWindowState::Maximized, hui::Rect(0, 0, 1000, 800));
-
-	// Initialize the graphics API, since now we have a first window created
-	// (we cant initialize the graphics api without a window)
-	HORUS_GFX->initialize();
-
-	// Initialize the UI renderer for the current context
-	hui::initializeRenderer();
+	auto mainWnd = settings.services.createWindow("Horus Example - No Docking", hui::NativeWindowFlags::Resizable, hui::NativeWindowState::Maximized, hui::Rect(0, 0, 1000, 800));
+	
+	hui::initOpenGL(hui::getSettings().services);
 
 	// Load a theme
 	const u32 errSize = 2048;
@@ -59,6 +57,10 @@ int main(int argc, char** args)
 	// Build the theme
 	// After we load the theme and more images and fonts, we need to rebuild the theme (into the image atlas)
 	hui::buildTheme(theme);
+	
+	hui::OpenGLTexture texAtlas(hui::getThemeAtlasImageData().width, hui::getThemeAtlasImageData().height);
+	texAtlas.updateData(hui::getThemeAtlasImageData().pixels);
+	hui::setThemeAtlasTexture(texAtlas.getHandle());
 
 	// Start the main loop
 	bool exitNow = false;
@@ -68,7 +70,7 @@ int main(int argc, char** args)
 	while (!exitNow)
 	{
 		// Clear the main window as a test
-		HORUS_INPUT->setCurrentWindow(mainWnd);
+		settings.services.setCurrentWindow(mainWnd);
 		glClearColor(0.1f, 0.4f, 0.4f, 1);
 		glClear(GL_COLOR_BUFFER_BIT);
 
@@ -90,6 +92,9 @@ int main(int argc, char** args)
 
 					// Reload resources
 					hui::buildTheme(theme);
+					texAtlas.updateData(hui::getThemeAtlasImageData().pixels);
+					hui::setThemeAtlasTexture(texAtlas.getHandle());
+					
 					printf("Theme reloaded!\n");
 				}
 			};
@@ -98,7 +103,7 @@ int main(int argc, char** args)
 		static auto lastModTime = std::filesystem::last_write_time(themeFilePath);
 		static f32 checkTimer = 0;
 
-		checkTimer += hui::getFrameDeltaTime();
+		checkTimer += hui::getSettings().deltaTime;
 
 		// Check if theme file has been modified (every 1 second)
 		if (checkTimer >= 1.0f)
@@ -323,7 +328,7 @@ int main(int argc, char** args)
 
 				static hui::Point scrollPos2 = 0;
 				hui::pushPadding(hui::PaddingType::ScrollView, { 10, 0 });
-				hui::beginScrollView("scrl2", 180, scrollPos2.x);
+				hui::beginScrollView("scrl2", 180, scrollPos2.y);
 				hui::popPadding(hui::PaddingType::ScrollView);
 				hui::rotarySliderFloat("Speed", &val, -30, 100, 1, false);
 				static char txt[1000];
@@ -347,7 +352,7 @@ int main(int argc, char** args)
 
 				hui::line();
 				
-				scrollPos2 = hui::endScrollView();
+				
 
 				if (hui::expandable("Many buttons##3"))
 				for (int i = 0; i < 20; i++)
@@ -379,7 +384,9 @@ int main(int argc, char** args)
 				
 
 				hui::space(20);
-				
+
+				scrollPos2 = hui::endScrollView();
+
 				hui::popWidgetPadding();
 				hui::endBoxLayout();
 				hui::endLayout();
@@ -416,18 +423,14 @@ int main(int argc, char** args)
 		}
 	}
 
-	hui::shutdown();
 	hui::deleteContext(huiContext);
+	hui::shutdownStdioFileIO(settings.services);
+	hui::shutdownFreetype(settings.services);
+	hui::shutdownSdl3(settings.services);
+	hui::shutdownStbRectPack(settings.services);
+	hui::shutdownUtf(settings.services);
+	hui::shutdownOpenGL(settings.services);
 
-	// delete owned pointers
-	delete settings.providers.file;
-	delete settings.providers.fileDialogs;
-	delete settings.providers.font;
-	delete settings.providers.gfx;
-	delete settings.providers.image;
-	delete settings.providers.input;
-	delete settings.providers.rectPack;
-	delete settings.providers.utf;
-
+	hui::shutdown();
 	return 0;
 }

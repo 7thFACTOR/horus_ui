@@ -161,6 +161,8 @@ struct Context
 	std::vector<HFont> fontStack;
 
 	std::vector<u32> drawCmdIndexStack;
+	std::vector<WidgetId> focusableWidgets;
+	std::vector<WidgetId> lastFrameFocusableWidgets;
 
 	// Mouse
 	MouseCursorType mouseCursor = MouseCursorType::Arrow;

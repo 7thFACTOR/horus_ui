@@ -108,10 +108,10 @@ int main(int argc, char** args)
 	texAtlas.updateData(hui::getThemeAtlasImageData().pixels);
 	hui::setThemeAtlasTexture(texAtlas.getHandle());
 
-	hui::changeScale(1.f);
+	/*hui::changeScale(1.f);
 	hui::buildTheme(theme);
 	texAtlas.updateData(hui::getThemeAtlasImageData().pixels);
-	hui::setThemeAtlasTexture(texAtlas.getHandle());
+	hui::setThemeAtlasTexture(texAtlas.getHandle());*/
 
 	// Start the main loop
 	bool exitNow = false;
