@@ -138,9 +138,15 @@ void MultilineTextInputState::insertTextAtCaret(const Utf32String& newText)
 		return;
 
 	// Handle newlines in pasted text
+	// Handle newlines in pasted text
 	for (u32 ch : newText)
 	{
-		if (ch == '\n' || ch == '\r')
+		if (ch == '\r')
+		{
+			// Ignore carriage return, wait for newline
+			continue;
+		}
+		else if (ch == '\n')
 		{
 			// Split line at caret
 			Utf32String remaining(lines[currentLine].begin() + caretColumn, lines[currentLine].end());
@@ -498,9 +504,17 @@ void MultilineTextInputState::processKeyEvent(const InputEvent& ev)
 				selectionStartColumn = prevColumn;
 			}
 
-			// Clamp caret column to new line's size if needed
-			if (caretColumn > lines[currentLine].size())
+			// If we're at the last line and couldn't move down, move caret to end of line
+			if (currentLine == lines.size() - 1 && prevLine == currentLine)
+			{
 				caretColumn = lines[currentLine].size();
+			}
+			else
+			{
+				// Clamp caret column to new line's size if needed
+				if (caretColumn > lines[currentLine].size())
+					caretColumn = lines[currentLine].size();
+			}
 
 			selectionEndLine = currentLine;
 			selectionEndColumn = caretColumn;
