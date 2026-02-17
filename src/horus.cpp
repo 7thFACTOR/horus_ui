@@ -343,7 +343,8 @@ void beginFrame()
 	if (ctx->event.type == InputEvent::Type::Key
 		&& ctx->event.key.code == KeyCode::Tab
 		&& !!(ctx->event.key.modifiers, KeyModifiers::Shift)
-		&& ctx->event.key.down)
+		&& ctx->event.key.down
+		&& !ctx->multilineTextInput.id) //TODO: make it a generic ctx->ignoreTabKey Don't switch focus if editing multiline text
 	{
 		//TODO: wont work now
 		//ctx->widget.focusedId--;
@@ -356,7 +357,8 @@ void beginFrame()
 	}
 	else if (ctx->event.type == InputEvent::Type::Key
 		&& ctx->event.key.code == KeyCode::Tab
-		&& ctx->event.key.down)
+		&& ctx->event.key.down
+		&& !ctx->multilineTextInput.id) // Don't switch focus if editing multiline text
 	{
 		ctx->widget.focusedId = ctx->widget.nextFocusableId;
 		ctx->focusChanged = true;

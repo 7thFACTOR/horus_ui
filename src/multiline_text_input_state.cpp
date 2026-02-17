@@ -169,6 +169,19 @@ void MultilineTextInputState::insertTextAtCaret(const Utf32String& newText)
 			caretColumn = 0;
 			totalLength++;
 		}
+		else if (ch == '\t')
+		{
+			// expand tab to 4 spaces
+			for (int k = 0; k < 4; k++)
+			{
+				if (totalLength >= maxTextLength)
+					break;
+				
+				lines[currentLine].insert(lines[currentLine].begin() + caretColumn, ' ');
+				caretColumn++;
+				totalLength++;
+			}
+		}
 		else
 		{
 			lines[currentLine].insert(lines[currentLine].begin() + caretColumn, ch);
@@ -551,6 +564,13 @@ void MultilineTextInputState::processKeyEvent(const InputEvent& ev)
 		}
 	}
 
+	else if (ev.key.code == KeyCode::Tab)
+	{
+		// use insertTextAtCaret to handle selection deletion etc
+		Utf32String tabStr;
+		tabStr.push_back('\t');
+		insertTextAtCaret(tabStr);
+	}
 	else if (ev.key.code == KeyCode::Enter)
 	{
 		// debounce Enter key to prevent double insertion from same-frame events
