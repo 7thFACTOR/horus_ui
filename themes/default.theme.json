@@ -221,6 +221,27 @@
 				"hovered": { "image": "default/clear", "border": 0, "color": "white", "textColor": "white", "font": "normal-unicode" }
 			}
 		},
+		"multilineTextInput":
+		{
+			"multilineTextInputBody":
+			{
+				"width": 0,
+				"height": 0,
+				"normal": { "image": "default/text_input_normal", "border": 3, "color": "white", "textColor": "white", "font": "normal-unicode" },
+				"hovered": { "image": "default/text_input_normal", "border": 3, "color": "white", "textColor": "white", "font": "normal-unicode" },
+				"pressed": { "image": "default/text_input_normal", "border": 3, "color": "white", "textColor": "white", "font": "normal-unicode" },
+				"focused": { "image": "default/text_input_focused", "border": 3, "color": "white", "textColor": "white", "font": "normal-unicode" }
+			},
+			"multilineTextInputLineNumbers":
+			{
+				"width": 30,
+				"normal": { "image": "", "border": 0, "color": "lightGray", "textColor": "gray", "font": "small" }
+			},
+			"multilineTextInputCurrentLineHighlight":
+			{
+				"normal": { "image": "", "border": 0, "color": "255 255 255 20", "textColor": "white", "font": "normal" }
+			}
+		},
 		"slider":
 		{
 			"sliderBody":

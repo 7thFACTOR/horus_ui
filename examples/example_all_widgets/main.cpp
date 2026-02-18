@@ -444,8 +444,16 @@ int main(int argc, char** args)
 
 				hui::check("med", &med);
 
+				static hui::KeywordInfo kws[] = {
+					{"function", hui::Color::orange},
+					{"end", hui::Color::orange },
+					{"local", hui::Color::green},
+					{"(", hui::Color::yellow},
+					{")", hui::Color::yellow}
+				};
+
 				if (med)
-					hui::multilineTextInput("mti", strMulti, 5000, 10/*, hui::MultilineTextInputFlags::LineNumbers*/);
+					hui::multilineTextInput("mti", strMulti, 5000, 10/*, hui::MultilineTextInputFlags::LineNumbers*/, hui::MultilineTextInputFlags::LineNumbers| hui::MultilineTextInputFlags::HighlightCurrentLine, kws, 5);
 
 
 				hui::pushTint(hui::Color::orange);

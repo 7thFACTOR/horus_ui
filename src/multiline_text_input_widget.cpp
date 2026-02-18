@@ -14,7 +14,9 @@ bool multilineTextInput(
 	char* text,
 	u32 maxLength,
 	u32 visibleLines,
-	MultilineTextInputFlags flags)
+	MultilineTextInputFlags flags,
+	KeywordInfo* keywords,
+	u32 keywordCount)
 {
 	auto bodyElem = &ctx->theme->getElement(WidgetElementId::TextInputBody);
 	auto& bodyTextCaretElemState = ctx->theme->getElement(WidgetElementId::TextInputCaret).normalState();
@@ -225,7 +227,11 @@ bool multilineTextInput(
 
 	// draw background
 	ctx->renderer.cmdSetColor(bodyElemState->color);
-	ctx->renderer.cmdDrawImageBordered(bodyElemState->image, bodyElemState->border, ctx->widget.rect, ctx->scale);
+	
+	if (bodyElemState->image)
+		ctx->renderer.cmdDrawImageBordered(bodyElemState->image, bodyElemState->border, ctx->widget.rect, ctx->scale);
+	else
+		ctx->renderer.cmdDrawFilledRectangle(ctx->widget.rect);
 
 	// calculate total content height early for scrollbar detection
 	f32 totalContentHeight = state.lines.size() * lineHeight;
@@ -632,6 +638,8 @@ bool multilineTextInput(
 		}
 	}
 
+
+
 	// draw caret
 	if (isEditingThis && (!ctx->settings.textCaretBlinkEnable || (state.caretBlinkTimer >= 0 && state.caretBlinkTimer <= 1)))
 	{
@@ -662,6 +670,10 @@ bool multilineTextInput(
 		if (yPos + lineHeight < clipRect.y || yPos > clipRect.bottom())
 			continue;
 
+
+
+
+
 		Rect textRect;
 		textRect.x = clipRect.x - currentScrollX;
 		textRect.y = yPos;
@@ -675,11 +687,91 @@ bool multilineTextInput(
 
 		if (lineText && lineText[0])
 		{
-			ctx->renderer.cmdDrawTextInBox(
-				lineText,
-				textRect,
-				HAlignType::Left,
-				VAlignType::Bottom, false, true);
+			if (keywords && keywordCount > 0)
+			{
+				f32 currentX = textRect.x;
+				char* currentPtr = lineText;
+
+				while (*currentPtr)
+				{
+					// Find nearest keyword
+					KeywordInfo* bestKw = nullptr;
+					size_t bestDist = (size_t)-1;
+					char* bestPtr = nullptr;
+
+					for (u32 k = 0; k < keywordCount; k++)
+					{
+						char* ptr = strstr(currentPtr, keywords[k].keyword);
+						if (ptr)
+						{
+							size_t dist = ptr - currentPtr;
+							if (dist < bestDist)
+							{
+								bestDist = dist;
+								bestKw = &keywords[k];
+								bestPtr = ptr;
+							}
+						}
+					}
+
+					if (bestKw)
+					{
+						// Draw text before keyword
+						if (bestDist > 0)
+						{
+							std::string segment(currentPtr, bestDist);
+							ctx->renderer.cmdSetColor(bodyElemState->textColor);
+							
+							Rect segRect = textRect;
+							segRect.x = currentX;
+							
+							ctx->renderer.cmdDrawTextInBox(
+								segment.c_str(),
+								segRect,
+								HAlignType::Left,
+								VAlignType::Bottom, false, true);
+
+							currentX += font->computeTextSize(segment.c_str()).width;
+						}
+
+						// Draw keyword
+						ctx->renderer.cmdSetColor(bestKw->color);
+						Rect kwRect = textRect;
+						kwRect.x = currentX;
+
+						ctx->renderer.cmdDrawTextInBox(
+							bestKw->keyword,
+							kwRect,
+							HAlignType::Left,
+							VAlignType::Bottom, false, true);
+
+						currentX += font->computeTextSize(bestKw->keyword).width;
+						currentPtr = bestPtr + strlen(bestKw->keyword);
+					}
+					else
+					{
+						// No more keywords, draw rest
+						ctx->renderer.cmdSetColor(bodyElemState->textColor);
+						Rect endRect = textRect;
+						endRect.x = currentX;
+
+						ctx->renderer.cmdDrawTextInBox(
+							currentPtr,
+							endRect,
+							HAlignType::Left,
+							VAlignType::Bottom, false, true);
+						break;
+					}
+				}
+			}
+			else
+			{
+				ctx->renderer.cmdDrawTextInBox(
+					lineText,
+					textRect,
+					HAlignType::Left,
+					VAlignType::Bottom, false, true);
+			}
 		}
 
 		if (lineText)

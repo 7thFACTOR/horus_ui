@@ -974,6 +974,13 @@ void setWidgetStyle(WidgetType widgetType, const char* styleName)
 		ctx->theme->elements[(u32)WidgetElementId::TextInputDefaultText].setStyle(styleName);
 		ctx->theme->elements[(u32)WidgetElementId::TextInputFilterClearImage].setStyle(styleName);
 		break;
+	case WidgetType::MultilineTextInput:
+		ctx->theme->elements[(u32)WidgetElementId::MultilineTextInputBody].setStyle(styleName);
+		ctx->theme->elements[(u32)WidgetElementId::TextInputCaret].setStyle(styleName); // Reuse caret
+		ctx->theme->elements[(u32)WidgetElementId::TextInputSelection].setStyle(styleName); // Reuse selection
+		ctx->theme->elements[(u32)WidgetElementId::MultilineTextInputLineNumbers].setStyle(styleName);
+		ctx->theme->elements[(u32)WidgetElementId::MultilineTextInputCurrentLineHighlight].setStyle(styleName);
+		break;
 	case WidgetType::Slider:
 		ctx->theme->elements[(u32)WidgetElementId::SliderBody].setStyle(styleName);
 		ctx->theme->elements[(u32)WidgetElementId::SliderBodyFilled].setStyle(styleName);

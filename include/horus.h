@@ -190,6 +190,7 @@ enum class WidgetType
 	Button,
 	ImageButton,
 	TextInput,
+	MultilineTextInput,
 	Slider,
 	Progress,
 	Image,
@@ -243,6 +244,9 @@ enum class WidgetElementId
 	TextInputSelection,
 	TextInputDefaultText,
 	TextInputFilterClearImage,
+	MultilineTextInputBody,
+	MultilineTextInputLineNumbers,
+	MultilineTextInputCurrentLineHighlight,
 	SliderBody,
 	SliderBodyFilled,
 	SliderKnob,
@@ -1564,6 +1568,12 @@ struct FillStyle
 	Point scale;
 };
 
+struct KeywordInfo
+{
+	const char* keyword;
+	Color color;
+};
+
 /// Image data info
 struct ImageData
 {
@@ -2421,7 +2431,7 @@ HORUS_API bool textInput(const char* id, char* text, u32 maxTextSize, TextInputF
 /// \param visibleLines number of visible lines in the text area
 /// \param flags input flags (numeric only, hex only, etc.)
 /// \return true if the text was changed
-HORUS_API bool multilineTextInput(const char* id, char* text, u32 maxTextSize, u32 visibleLines = 10, MultilineTextInputFlags flags = MultilineTextInputFlags::None);
+HORUS_API bool multilineTextInput(const char* id, char* text, u32 maxTextSize, u32 visibleLines = 10, MultilineTextInputFlags flags = MultilineTextInputFlags::None, KeywordInfo* keywords = nullptr, u32 keywordCount = 0);
 
 /// Draw an integer number slider widget
 /// \param minVal the minimum value
