@@ -625,6 +625,16 @@ void MultilineTextInputState::processKeyEvent(const InputEvent& ev)
 			currentLine--;
 			textChanged = true;
 		}
+
+		// soft scroll up if we have empty space at bottom
+		if (textChanged)
+		{
+			f32 lineHeight = font ? font->getMetrics().height : 20.0f;
+			f32 contentHeight = lines.size() * lineHeight;
+			f32 maxScrollY = std::max(0.0f, contentHeight - clipRect.height);
+			if (scrollOffsetY > maxScrollY)
+				scrollOffsetY = std::max(maxScrollY, scrollOffsetY - lineHeight);
+		}
 	}
 	else if (ev.key.code == KeyCode::Delete)
 	{
@@ -643,6 +653,16 @@ void MultilineTextInputState::processKeyEvent(const InputEvent& ev)
 			lines[currentLine].insert(lines[currentLine].end(), lines[currentLine + 1].begin(), lines[currentLine + 1].end());
 			lines.erase(lines.begin() + currentLine + 1);
 			textChanged = true;
+		}
+
+		// soft scroll up if we have empty space at bottom
+		if (textChanged)
+		{
+			f32 lineHeight = font ? font->getMetrics().height : 20.0f;
+			f32 contentHeight = lines.size() * lineHeight;
+			f32 maxScrollY = std::max(0.0f, contentHeight - clipRect.height);
+			if (scrollOffsetY > maxScrollY)
+				scrollOffsetY = std::max(maxScrollY, scrollOffsetY - lineHeight);
 		}
 	}
 	else if (ev.key.code == KeyCode::Home)
