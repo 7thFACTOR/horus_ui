@@ -477,8 +477,78 @@ bool multilineTextInput(
 	if (state.scrollId != 0)
 	{
 		auto it = ctx->scrollViewState.find(state.scrollId);
-		if (it != ctx->scrollViewState.end())
 			initialScroll = it->second.scrollOffset;
+	}
+
+	// prevent scroll "jump" when deleting lines from the end:
+	// ensure content height is at least (currentScroll + viewHeight) so ScrollView doesn't clamp it up.
+	// But ONLY do this if the real content is large enough to warrant scrolling (i.e. > viewHeight).
+	// If the entire text fits in the view, let it snap to top naturally.
+	if (totalContentHeight > scrollViewHeight)
+	{
+		if (totalContentHeight < initialScroll.y + scrollViewHeight)
+		{
+			// Smart Drift Buffer Refined:
+			// "Freeze" the view ONLY if we have more than 1 line of NON-EMPTY context visible starting from the scroll position.
+			// This addresses the issue where trailing empty lines were counting as context, preventing scroll up.
+			// We iterate through lines starting from the current scroll position to find 2 non-empty lines.
+
+			int visibleNonEmptyLines = 0;
+			if (lineHeight > 0)
+			{
+				size_t firstLineIndex = (size_t)(initialScroll.y / lineHeight);
+				// Check up to a reasonable number of lines to avoid performance hit, though usually view is small.
+				// We stop as soon as we find 2 non-empty lines.
+				for (size_t i = firstLineIndex; i < state.lines.size(); ++i)
+				{
+					// Check if line has meaningful content (not empty and not just whitespace/newline).
+					// User said "consider an empty line one that only has \n too", which implies visible glyphs.
+					// We check for any character > 32 (space). This handles spaces, tabs, newlines (if present), etc.
+					bool hasContent = false;
+					for (u32 ch : state.lines[i])
+					{
+						// Check against whitespace AND invisible characters (like NBSP 160)
+						if (ch > 32 && ch != 160)
+						{
+							hasContent = true;
+							break;
+						}
+					}
+
+					if (hasContent)
+					{
+						visibleNonEmptyLines++;
+						if (visibleNonEmptyLines >= 2)
+							break;
+					}
+				}
+			}
+
+			// Check if caret is at the top of the visible area (Top 2.5 lines to be safe and generous)
+			bool caretAtTop = false;
+			Point caretPos = state.getCaretScreenPosition();
+			if (caretPos.y < clipRect.y + lineHeight * 2.5f)
+				caretAtTop = true;
+
+			// Freeze ONLY if we have context AND the caret is not at the top edge (user sees context above).
+			if (visibleNonEmptyLines >= 2 && !caretAtTop)
+			{
+				totalContentHeight = initialScroll.y + scrollViewHeight; // Freeze
+			}
+			else
+			{
+				// "Drift Up": Reduce padding to allow scroll to decrease by 1 line/frame
+				// until we find content + buffer (2 non-empty lines) OR until caret is not at top.
+				f32 paddedHeight = initialScroll.y + scrollViewHeight - lineHeight;
+				if (paddedHeight > totalContentHeight)
+					totalContentHeight = paddedHeight;
+			}
+		}
+	}
+	else
+	{
+		// Force snap to top if content fits in view
+		initialScroll = { 0,0 };
 	}
 
 	beginScrollView(scrollIdName.c_str(), scrollViewHeight, initialScroll, { maxLineWidth + 10.0f, totalContentHeight }, ScrollViewFlags::NoBorder | ScrollViewFlags::NoPadding);
