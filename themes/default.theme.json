@@ -241,6 +241,12 @@
 			"multilineTextInputCurrentLineHighlight":
 			{
 				"normal": { "image": "", "border": 0, "color": "255 255 255 20", "textColor": "white", "font": "normal" }
+			},
+			"multilineTextInputWordWrap":
+			{
+				"width": 16,
+				"height": 11,
+				"normal": { "image": "default/multiline_text_input_wordwrap", "border": 0, "color": "255 255 255 100", "textColor": "white", "font": "normal" }
 			}
 		},
 		"slider":

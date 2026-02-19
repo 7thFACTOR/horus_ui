@@ -247,6 +247,7 @@ enum class WidgetElementId
 	MultilineTextInputBody,
 	MultilineTextInputLineNumbers,
 	MultilineTextInputCurrentLineHighlight,
+	MultilineTextInputWordWrap,
 	SliderBody,
 	SliderBodyFilled,
 	SliderKnob,

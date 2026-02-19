@@ -58,6 +58,7 @@ struct MultilineTextInputState
 	bool firstMouseDown = true;
 	bool mouseDown = false;
 	bool mouseMoved = false;
+	bool caretPreferLineEnd = false;
 
 	// Misc
 	bool selectAllOnFocus = true;

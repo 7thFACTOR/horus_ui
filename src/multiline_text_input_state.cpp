@@ -215,7 +215,7 @@ Point MultilineTextInputState::getCaretScreenPosition()
 	f32 lineHeight = font->getMetrics().height;
 
 	i32 foundVisualLine = -1;
-	
+
 	for (size_t i = 0; i < visualLines.size(); ++i)
 	{
 		const auto& vl = visualLines[i];
@@ -230,10 +230,17 @@ Point MultilineTextInputState::getCaretScreenPosition()
 				foundVisualLine = (i32)i;
 				break;
 			}
-			if (isLastSegment && caretColumn == vl.startColumn + vl.length)
+
+			// Ambiguous case: caret is at the end of this visual line (which equals start of next if wrapped).
+			// If caretPreferLineEnd is true, we snap to this line.
+			// If isLastSegment (end of logical line), we always snap to this line.
+			if (caretColumn == vl.startColumn + vl.length)
 			{
-				foundVisualLine = (i32)i;
-				break;
+				if (isLastSegment || caretPreferLineEnd)
+				{
+					foundVisualLine = (i32)i;
+					break;
+				}
 			}
 		}
 	}
@@ -241,7 +248,7 @@ Point MultilineTextInputState::getCaretScreenPosition()
 	if (foundVisualLine == -1 && !visualLines.empty())
 	{
 		if (currentLine >= lines.size()) foundVisualLine = (i32)visualLines.size() - 1;
-		else 
+		else
 		{
 			for (i32 i = (i32)visualLines.size() - 1; i >= 0; i--)
 			{
@@ -254,12 +261,12 @@ Point MultilineTextInputState::getCaretScreenPosition()
 		}
 	}
 
-	if (foundVisualLine == -1) 
+	if (foundVisualLine == -1)
 		return Point(clipRect.x - scrollOffsetX, clipRect.y - scrollOffsetY);
 
 	const auto& vl = visualLines[foundVisualLine];
 	Utf32String textStr = lines[currentLine];
-	
+
 	i32 relCaret = caretColumn - vl.startColumn;
 	if (relCaret < 0) relCaret = 0;
 	if (relCaret > vl.length) relCaret = vl.length;
@@ -370,10 +377,10 @@ i32 MultilineTextInputState::getCharIndexAtPoint(const Point& pt)
 
 	// find column within this visual segment
 	f32 adjustedX = pt.x + scrollOffsetX;
-	
+
 	// The text on this visual line is a substring of logical line
 	const auto& lineText = lines[currentLine];
-	
+
 	// Optimization: Only measure the substring for this visual line
 	Utf32String segmentText(lineText.begin() + vl.startColumn, lineText.begin() + vl.startColumn + vl.length);
 
@@ -453,7 +460,7 @@ void MultilineTextInputState::computeVisualLines(Font* font, f32 availableWidth)
 
 			// Optimization: Start closer to expected length if possible?
 			// For now standard binary search on substring length.
-			
+
 			// To avoid O(N log N) text measurement, we can just measure char by char? No, shaping.
 			// Binary search is reasonable.
 			while (low <= high)
@@ -477,7 +484,7 @@ void MultilineTextInputState::computeVisualLines(Font* font, f32 availableWidth)
 			if (fitLength == 0 && remaining > 0)
 			{
 				// If strictly nothing fits (e.g. one very wide char > width), force 1 char
-				fitLength = 1; 
+				fitLength = 1;
 			}
 
 			i32 lengthOnLine = fitLength;
@@ -516,7 +523,7 @@ void MultilineTextInputState::computeVisualLines(Font* font, f32 availableWidth)
 			// avoiding alloc again if possible, but state update is rare compared to draw
 			Utf32String seg(line.begin() + currentStart, line.begin() + currentStart + lengthOnLine);
 			vl.width = font->computeTextSize(seg.data(), (u32)seg.size()).width;
-			
+
 			visualLines.push_back(vl);
 
 			currentStart += lengthOnLine;
@@ -639,6 +646,7 @@ void MultilineTextInputState::processKeyEvent(const InputEvent& ev)
 
 	if (ev.key.code == KeyCode::ArrowLeft)
 	{
+		caretPreferLineEnd = false;
 		i32 prevLine = currentLine;
 		i32 prevColumn = caretColumn;
 
@@ -657,7 +665,7 @@ void MultilineTextInputState::processKeyEvent(const InputEvent& ev)
 				// 1. Skip preceding whitespace
 				while (caretColumn > 0 && isspace(lines[currentLine][caretColumn - 1]))
 					caretColumn--;
-				
+
 				// 2. Skip preceding non-whitespace
 				while (caretColumn > 0 && !isspace(lines[currentLine][caretColumn - 1]))
 					caretColumn--;
@@ -690,6 +698,7 @@ void MultilineTextInputState::processKeyEvent(const InputEvent& ev)
 	}
 	else if (ev.key.code == KeyCode::ArrowRight)
 	{
+		caretPreferLineEnd = false;
 		i32 prevLine = currentLine;
 		i32 prevColumn = caretColumn;
 
@@ -708,7 +717,7 @@ void MultilineTextInputState::processKeyEvent(const InputEvent& ev)
 				// 1. Skip succeeding non-whitespace
 				while (caretColumn < lines[currentLine].size() && !isspace(lines[currentLine][caretColumn]))
 					caretColumn++;
-				
+
 				// 2. Skip succeeding whitespace
 				while (caretColumn < lines[currentLine].size() && isspace(lines[currentLine][caretColumn]))
 					caretColumn++;
@@ -757,11 +766,26 @@ void MultilineTextInputState::processKeyEvent(const InputEvent& ev)
 					if (caretColumn >= vl.startColumn && caretColumn <= vl.startColumn + vl.length)
 					{
 						vIdx = (i32)i;
-						if (caretColumn < vl.startColumn + vl.length) break; // Exact match or inside
-						// If at end, keep checking in case it's the split point (prefer current unless next line starts here)
+						if (caretColumn < vl.startColumn + vl.length)
+						{
+							vIdx = (i32)i;
+							break;
+						}
+						// Ambiguous case: caret is exactly at split point (end of this line, start of next)
+						// If isLastSegment, it's definitely this line.
+						// If caretPreferLineEnd is true, we want this line.
+						// Otherwise we prioritize the NEXT line (which will be found in next iteration).
+						bool isLastSegment = (i + 1 >= visualLines.size() || visualLines[i+1].logicalLineIndex != currentLine);
+						if (isLastSegment || caretPreferLineEnd)
+						{
+							vIdx = (i32)i;
+							break;
+						}
 					}
 				}
 			}
+			// Reset affinity after moving off the line
+			caretPreferLineEnd = false;
 			// Use last match if ambiguous (e.g. end of line) and we are at end of segment?
 			// Actually getCaretScreenPosition logic was specific.
 			// Simple logic: if caretColumn is within [start, start+length], pick it.
@@ -794,7 +818,7 @@ void MultilineTextInputState::processKeyEvent(const InputEvent& ev)
 
 				i32 dist = caretColumn - currVl.startColumn;
 				// target is min(dist, prevVl.length) relative to start
-				
+
 				currentLine = prevVl.logicalLineIndex;
 				caretColumn = prevVl.startColumn + std::min(dist, prevVl.length);
 			}
@@ -809,6 +833,112 @@ void MultilineTextInputState::processKeyEvent(const InputEvent& ev)
 				selectionStartColumn = prevColumn;
 			}
 
+			selectionEndLine = currentLine;
+			selectionEndColumn = caretColumn;
+		}
+		else
+		{
+			deselect();
+		}
+	}
+	else if (ev.key.code == KeyCode::Home)
+	{
+		caretPreferLineEnd = false;
+		i32 prevLine = currentLine;
+		i32 prevColumn = caretColumn;
+
+		// Move to start of visual line
+		if (!visualLines.empty())
+		{
+			// Find current visual line
+			for (size_t i = 0; i < visualLines.size(); ++i)
+			{
+				const auto& vl = visualLines[i];
+				if (vl.logicalLineIndex == currentLine)
+				{
+					bool isLastSeg = (i + 1 >= visualLines.size() || visualLines[i + 1].logicalLineIndex != currentLine);
+
+					bool match = false;
+					if (isLastSeg)
+						match = (caretColumn >= vl.startColumn && caretColumn <= vl.startColumn + vl.length);
+					else
+						match = (caretColumn >= vl.startColumn && caretColumn < vl.startColumn + vl.length);
+
+					if (match)
+					{
+						// Found it
+						caretColumn = vl.startColumn;
+						break;
+					}
+				}
+			}
+		}
+		else
+		{
+			caretColumn = 0;
+		}
+
+		if (has(ev.key.modifiers, KeyModifiers::Shift))
+		{
+			if (!selectionActive)
+			{
+				selectionActive = true;
+				selectionStartLine = prevLine;
+				selectionStartColumn = prevColumn;
+			}
+			selectionEndLine = currentLine;
+			selectionEndColumn = caretColumn;
+		}
+		else
+		{
+			deselect();
+		}
+	}
+	else if (ev.key.code == KeyCode::End)
+	{
+		caretPreferLineEnd = true;
+		i32 prevLine = currentLine;
+		i32 prevColumn = caretColumn;
+
+		// Move to end of visual line
+		if (!visualLines.empty())
+		{
+			// Find current visual line
+			for (size_t i = 0; i < visualLines.size(); ++i)
+			{
+				const auto& vl = visualLines[i];
+				if (vl.logicalLineIndex == currentLine)
+				{
+					bool isLastSeg = (i + 1 >= visualLines.size() || visualLines[i + 1].logicalLineIndex != currentLine);
+
+					bool match = false;
+					if (isLastSeg)
+						match = (caretColumn >= vl.startColumn && caretColumn <= vl.startColumn + vl.length);
+					else
+						match = (caretColumn >= vl.startColumn && caretColumn < vl.startColumn + vl.length);
+
+					if (match)
+					{
+						// Found it
+						caretColumn = vl.startColumn + vl.length;
+						break;
+					}
+				}
+			}
+		}
+		else
+		{
+			caretColumn = lines[currentLine].size();
+		}
+
+		if (has(ev.key.modifiers, KeyModifiers::Shift))
+		{
+			if (!selectionActive)
+			{
+				selectionActive = true;
+				selectionStartLine = prevLine;
+				selectionStartColumn = prevColumn;
+			}
 			selectionEndLine = currentLine;
 			selectionEndColumn = caretColumn;
 		}
@@ -839,22 +969,30 @@ void MultilineTextInputState::processKeyEvent(const InputEvent& ev)
 					// Let's bias towards the START of the next line if ambiguous?
 					// No, bias towards END of current line if ambiguous (e.g. typing)
 					// But for navigation, we usually want stability.
-					
+
 					bool isLastSeg = (i + 1 >= visualLines.size() || visualLines[i+1].logicalLineIndex != currentLine);
-					
+
 					if (caretColumn >= vl.startColumn && caretColumn < vl.startColumn + vl.length)
-					{
-						vIdx = (i32)i;
-						break; 
-					}
-					if (isLastSeg && caretColumn == vl.startColumn + vl.length)
 					{
 						vIdx = (i32)i;
 						break;
 					}
+
+					bool isLastSegment = (i + 1 >= visualLines.size() || visualLines[i+1].logicalLineIndex != currentLine);
+					if (caretColumn == vl.startColumn + vl.length)
+					{
+						if (isLastSegment || caretPreferLineEnd)
+						{
+							vIdx = (i32)i;
+							break;
+						}
+					}
 				}
 			}
-			
+
+			// Reset affinity after choice
+			caretPreferLineEnd = false;
+
 			// Fallback
 			if (vIdx == -1)
 			{
@@ -868,7 +1006,7 @@ void MultilineTextInputState::processKeyEvent(const InputEvent& ev)
 				const auto& nextVl = visualLines[vIdx + 1];
 
 				i32 dist = caretColumn - currVl.startColumn;
-				
+
 				currentLine = nextVl.logicalLineIndex;
 				caretColumn = nextVl.startColumn + std::min(dist, nextVl.length);
 			}

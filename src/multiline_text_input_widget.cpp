@@ -203,9 +203,17 @@ bool multilineTextInput(
 
 	// Update visual lines if needed
 	// We need to anticipate if vertical scrollbar will appear.
-	// Reserve space for continuation indicator (approx 10px) 
-	f32 indicatorMargin = 10.0f; 
-	f32 effectiveWidth = clipRect.width - indicatorMargin;
+	// Reserve space for continuation indicator
+	// Reserve space for continuation indicator
+	auto& breakLineElem = ctx->theme->getElement(WidgetElementId::MultilineTextInputWordWrap);
+	f32 markerWidth = breakLineElem.normalState().width * ctx->scale;
+	if (markerWidth <= 0) markerWidth = 4.0f * ctx->scale;
+	f32 markerGap = markerWidth; // Use width as gap
+	f32 markerHeight = breakLineElem.normalState().height * ctx->scale;
+	if (markerHeight <= 0) markerHeight = bodyElemState->font->getMetrics().height * 0.2f;
+	f32 overhangBuffer = 5.0f;
+	f32 indicatorMargin = std::ceil(markerGap + markerWidth + overhangBuffer);
+	f32 effectiveWidth = std::floor(clipRect.width - indicatorMargin);
 
 	if (state.textChanged || std::abs(state.lastLayoutWidth - effectiveWidth) > 0.1f || state.visualLines.empty())
 	{
@@ -222,8 +230,9 @@ bool multilineTextInput(
 	if (hasVerticalScrollbar && has(flags, MultilineTextInputFlags::WordWrap))
 	{
 		auto& sbV_check = ctx->theme->getElement(WidgetElementId::ScrollViewScrollBarV).normalState();
-		f32 reducedWidth = clipRect.width - sbV_check.width * ctx->scale - indicatorMargin;
-		
+		f32 vBarWidth = std::ceil(sbV_check.width * ctx->scale);
+		f32 reducedWidth = std::floor(clipRect.width - vBarWidth - indicatorMargin);
+
 		if (std::abs(state.lastLayoutWidth - reducedWidth) > 0.1f)
 		{
 			state.computeVisualLines(bodyElemState->font, reducedWidth);
@@ -260,7 +269,7 @@ bool multilineTextInput(
 
 	// draw background
 	ctx->renderer.cmdSetColor(bodyElemState->color);
-	
+
 	if (bodyElemState->image)
 		ctx->renderer.cmdDrawImageBordered(bodyElemState->image, bodyElemState->border, ctx->widget.rect, ctx->scale);
 	else
@@ -295,7 +304,7 @@ bool multilineTextInput(
 	auto& sbH = ctx->theme->getElement(WidgetElementId::ScrollViewScrollBarH).normalState();
 
 	// check if horizontal scrollbar is needed first (simplified logic from ScrollView)
-	if (!has(flags, MultilineTextInputFlags::WordWrap) && (maxLineWidth + 10.0f) > scrollAreaH)
+	if (!has(flags, MultilineTextInputFlags::WordWrap) && (maxLineWidth + indicatorMargin) > scrollAreaH)
 	{
 		hasHorizontalScrollbar = true;
 		scrollAreaV -= sbH.height * ctx->scale;
@@ -309,7 +318,7 @@ bool multilineTextInput(
 	}
 
 	// re-check horizontal with reduced width
-	if (!hasHorizontalScrollbar && (maxLineWidth + 10.0f) > scrollAreaH)
+	if (!hasHorizontalScrollbar && (maxLineWidth + indicatorMargin) > scrollAreaH)
 	{
 		hasHorizontalScrollbar = true;
 		scrollAreaV -= sbH.height * ctx->scale;
@@ -399,10 +408,10 @@ bool multilineTextInput(
 		{
 			// ... (drawing logic below needs to be inside loop or separate?)
 			// The original code had separate loops for highlights and numbers?
-			// Let's check original code. 
+			// Let's check original code.
 			// Original code: LOOP 1 draws highlights. LOOP 2 draws numbers (lines 658+).
 			// This loop (lines 322-364) seems to draw highlights AND potentially line number background?
-			// Yes, line 338 draws "line number highlight". 
+			// Yes, line 338 draws "line number highlight".
 			// Line numbers themselves are drawn later (line 658).
 		}
 	}
@@ -424,7 +433,7 @@ bool multilineTextInput(
 		bool hasHorizontalScrollbar = false;
 		// logic from ScrollView: (virtualSize.x > 0 && virtualSize.x > availableWidth) || scrollContentH > availableWidth
 		// here virtualSize.x is maxLineWidth. scrollContentH is roughly maxLineWidth if we trust Multiline input structure.
-		if ((maxLineWidth + 10.0f) > availableWidth)
+		if ((maxLineWidth + indicatorMargin) > availableWidth)
 		{
 			hasHorizontalScrollbar = true;
 			scrollAreaV -= sbH.height * ctx->scale;
@@ -439,7 +448,7 @@ bool multilineTextInput(
 		}
 
 		// re-evaluate Horizontal with reduced available width if Vertical is present
-		if (!hasHorizontalScrollbar && (maxLineWidth + 10.0f) > availableWidth)
+		if (!hasHorizontalScrollbar && (maxLineWidth + indicatorMargin) > availableWidth)
 		{
 			hasHorizontalScrollbar = true;
 			scrollAreaV -= sbH.height * ctx->scale;
@@ -573,7 +582,7 @@ bool multilineTextInput(
 							// We might want to prefer the NEXT segment if possible?
 							// For now, simple match is sufficient to prevent drift.
 							// We continue to see if we find a "better" match? No.
-							break; 
+							break;
 						}
 					}
 				}
@@ -581,10 +590,10 @@ bool multilineTextInput(
 
 			if (lineHeight > 0)
 			{
-				// Fix: Use VISUAL lines for iteration, not logical lines directly, 
+				// Fix: Use VISUAL lines for iteration, not logical lines directly,
 				// because scroll position is in visual units.
 				size_t firstVisualLineIndex = (size_t)(initialScroll.y / lineHeight);
-				
+
 				for (size_t i = firstVisualLineIndex; i < state.visualLines.size(); ++i)
 				{
 					const auto& vl = state.visualLines[i];
@@ -593,7 +602,7 @@ bool multilineTextInput(
 					// Check if this visual segment has meaningful content
 					// We need to check the specific substring for this visual line
 					bool hasContent = false;
-					
+
 					// Optimization: Just check if the segment length > 0 and if it contains non-whitespace
 					if (vl.length > 0)
 					{
@@ -607,10 +616,10 @@ bool multilineTextInput(
 							}
 						}
 					}
-					// Special case: If it's an empty logical line (length 0), it might be wrapping? 
+					// Special case: If it's an empty logical line (length 0), it might be wrapping?
 					// No, visual lines for successful wrap shouldn't be empty unless logical line is empty.
 					// If logical line is empty, it has 0 length.
-					
+
 					// Force content if caret is here
 					if (isEditingThis && i == caretVisualLineIndex)
 					{
@@ -648,11 +657,11 @@ bool multilineTextInput(
 		}
 	}
 
-	// Removed redundant else { initialScroll = {0,0} } block 
+	// Removed redundant else { initialScroll = {0,0} } block
 	// because beginScrollView handles clamping if content is smaller than view.
 	// This prevents accidental jumps if height comparison is fuzzy.
 
-	beginScrollView(scrollIdName.c_str(), scrollViewHeight, initialScroll, { maxLineWidth + 10.0f, totalContentHeight }, ScrollViewFlags::NoBorder | ScrollViewFlags::NoPadding);
+	beginScrollView(scrollIdName.c_str(), scrollViewHeight, initialScroll, { maxLineWidth + indicatorMargin, totalContentHeight }, ScrollViewFlags::NoBorder | ScrollViewFlags::NoPadding);
 
 
 	ctx->layout.width = savedLayoutWidth; // Restore layout width immediately (beginScrollView captured it)
@@ -722,7 +731,7 @@ bool multilineTextInput(
 				if (endCol <= vl.startColumn) continue; // Selection ends before this segment
 				selEndOnLine = std::min(vl.length, endCol - vl.startColumn);
 			}
-			
+
 			// handle case where we select the newline character (effectively selecting past the end)
 			// in visual lines, likely only the last segment of a logical line should visualize newline selection?
 			// if vl is the last segment of a logical line:
@@ -762,7 +771,7 @@ bool multilineTextInput(
 				static f32 spaceWidth = 0.0f;
 				if (spaceWidth == 0.0f)
 					spaceWidth = font->computeTextSize(" ", 1).width;
-				selRect.width += spaceWidth; 
+				selRect.width += spaceWidth;
 			}
 
 			// if selection width is 0 (point selection? should be handled by loop check)
@@ -820,12 +829,12 @@ bool multilineTextInput(
 		auto& lnState = lineNumbersElem.normalState();
 		ctx->renderer.cmdSetColor(lnState.textColor);
 		ctx->renderer.cmdSetFont(lnState.font);
-		
+
 		for (i32 i = firstLine; i < lastLine && i < state.visualLines.size(); i++)
 		{
 			const auto& vl = state.visualLines[i];
 			f32 yPos = clipRect.y + i * lineHeight - currentScrollY;
-			
+
 			if (yPos + lineHeight < clipRect.y || yPos > clipRect.bottom())
 				continue;
 
@@ -834,7 +843,7 @@ bool multilineTextInput(
 			{
 				char numStr[32];
 				sprintf(numStr, "%d", vl.logicalLineIndex + 1);
-				
+
 				Rect lnRect;
 				lnRect.x = clipRect.x - sidebarWidth + 5.0f;
 				lnRect.y = yPos;
@@ -848,7 +857,7 @@ bool multilineTextInput(
 					VAlignType::Bottom, false, true);
 			}
 		}
-		
+
 		ctx->renderer.popClipRect(); // Pop sidebar clip
 		ctx->renderer.cmdSetFont(bodyElemState->font); // Restore font
 		ctx->renderer.pushClipRect(clipRect); // Restore inner clip
@@ -874,9 +883,9 @@ bool multilineTextInput(
 
 		// Extract segment text
 		// Utf32String doesn't have substr, construct from iterator range
-		if (vl.startColumn >= state.lines[vl.logicalLineIndex].size()) 
+		if (vl.startColumn >= state.lines[vl.logicalLineIndex].size())
 			continue; // Should not happen for valid segments unless empty line
-			
+
 		auto& logicLine = state.lines[vl.logicalLineIndex];
 		size_t safelyEnd = std::min(logicLine.size(), (size_t)(vl.startColumn + vl.length));
 		Utf32String segmentText(logicLine.begin() + vl.startColumn, logicLine.begin() + safelyEnd);
@@ -920,10 +929,10 @@ bool multilineTextInput(
 						{
 							std::string segment(currentPtr, bestDist);
 							ctx->renderer.cmdSetColor(bodyElemState->textColor);
-							
+
 							Rect segRect = textRect;
 							segRect.x = currentX;
-							
+
 							ctx->renderer.cmdDrawTextInBox(
 								segment.c_str(),
 								segRect,
@@ -984,13 +993,21 @@ bool multilineTextInput(
 				textWidth = font->computeTextSize(lineText).width;
 
 			Rect contRect;
-			contRect.x = textRect.x + textWidth + 2.0f;
-			contRect.y = yPos + lineHeight * 0.4f;
-			contRect.width = 4.0f; 
-			contRect.height = lineHeight * 0.2f;
+			contRect.x = textRect.x + textWidth + markerGap;
+			contRect.y = yPos + (lineHeight - markerHeight) / 2.0f;
+			contRect.width = markerWidth;
+			contRect.height = markerHeight;
 
-			ctx->renderer.cmdSetColor(Color(1.0f, 0.0f, 0.0f, 1.0f)); // Red
-			ctx->renderer.cmdDrawFilledRectangle(contRect);
+			ctx->renderer.cmdSetColor(breakLineElem.normalState().color);
+
+			if (breakLineElem.normalState().image)
+			{
+				ctx->renderer.cmdDrawImage(breakLineElem.normalState().image, contRect);
+			}
+			else
+			{
+				ctx->renderer.cmdDrawFilledRectangle(contRect);
+			}
 		}
 
 		if (lineText)

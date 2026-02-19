@@ -34,7 +34,7 @@ bool loadPngImage(const char* path, ImageData& outImage)
 			return false;
 		}
 	}
-	
+
 	getSettings().services.close(file);
 
 	stbi_uc* data = stbi_load_from_memory(imgFileData, fsize, &width, &height, &comp, 4);
@@ -45,7 +45,7 @@ bool loadPngImage(const char* path, ImageData& outImage)
 	outImage.height = height;
 
 	bool result = !(!data || !width || !height || !comp);
-	
+
 	if (data)
 	{
 		stbi_image_free(data);
@@ -222,6 +222,7 @@ static WidgetElementId getWidgetElementFromName(std::string name)
 	if (name == "multilineTextInputBody") return WidgetElementId::MultilineTextInputBody;
 	if (name == "multilineTextInputLineNumbers") return WidgetElementId::MultilineTextInputLineNumbers;
 	if (name == "multilineTextInputCurrentLineHighlight") return WidgetElementId::MultilineTextInputCurrentLineHighlight;
+	if (name == "multilineTextInputWordWrap") return WidgetElementId::MultilineTextInputWordWrap;
 
 	return WidgetElementId::Custom;
 }
