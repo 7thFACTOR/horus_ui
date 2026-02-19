@@ -209,30 +209,67 @@ Point MultilineTextInputState::getCaretScreenPosition()
 	auto& elemState = themeElement->normalState();
 	Font* font = elemState.font;
 
-	if (!font || currentLine >= lines.size())
+	if (!font || lines.empty())
 		return Point(clipRect.x, clipRect.y);
 
-	Utf32String textToCaretlinear(lines[currentLine].begin(),
-		lines[currentLine].begin() + std::min((i32)lines[currentLine].size(), caretColumn));
-
-	FontTextSize textSize = font->computeTextSize(textToCaretlinear.data(), (u32)textToCaretlinear.size());
 	f32 lineHeight = font->getMetrics().height;
 
-	// use scroll state from context if available
-	f32 sX = scrollOffsetX;
-	f32 sY = scrollOffsetY;
-
-	if (scrollId)
+	i32 foundVisualLine = -1;
+	
+	for (size_t i = 0; i < visualLines.size(); ++i)
 	{
-		auto& scrollState = ctx->scrollViewState[scrollId];
+		const auto& vl = visualLines[i];
+		if (vl.logicalLineIndex == currentLine)
+		{
+			bool isLastSegment = true;
+			if (i + 1 < visualLines.size() && visualLines[i+1].logicalLineIndex == currentLine)
+				isLastSegment = false;
 
-		sX = scrollState.scrollOffset.x;
-		sY = scrollState.scrollOffset.y;
+			if (caretColumn >= vl.startColumn && caretColumn < vl.startColumn + vl.length)
+			{
+				foundVisualLine = (i32)i;
+				break;
+			}
+			if (isLastSegment && caretColumn == vl.startColumn + vl.length)
+			{
+				foundVisualLine = (i32)i;
+				break;
+			}
+		}
 	}
 
+	if (foundVisualLine == -1 && !visualLines.empty())
+	{
+		if (currentLine >= lines.size()) foundVisualLine = (i32)visualLines.size() - 1;
+		else 
+		{
+			for (i32 i = (i32)visualLines.size() - 1; i >= 0; i--)
+			{
+				if (visualLines[i].logicalLineIndex == currentLine)
+				{
+					foundVisualLine = i;
+					break;
+				}
+			}
+		}
+	}
+
+	if (foundVisualLine == -1) 
+		return Point(clipRect.x - scrollOffsetX, clipRect.y - scrollOffsetY);
+
+	const auto& vl = visualLines[foundVisualLine];
+	Utf32String textStr = lines[currentLine];
+	
+	i32 relCaret = caretColumn - vl.startColumn;
+	if (relCaret < 0) relCaret = 0;
+	if (relCaret > vl.length) relCaret = vl.length;
+
+	Utf32String segText(textStr.begin() + vl.startColumn, textStr.begin() + vl.startColumn + relCaret);
+	f32 xOffset = font->computeTextSize(segText.data(), (u32)segText.size()).width;
+
 	return Point(
-		clipRect.x + textSize.width - sX,
-		clipRect.y + currentLine * lineHeight - sY
+		clipRect.x + xOffset - scrollOffsetX,
+		clipRect.y + foundVisualLine * lineHeight - scrollOffsetY
 	);
 }
 
@@ -287,6 +324,14 @@ void MultilineTextInputState::computeScrollAmount()
 
 void MultilineTextInputState::ensureCaretVisible()
 {
+	if (textChanged && lastLayoutWidth > 0 && themeElement)
+	{
+		Font* font = themeElement->normalState().font;
+		if (font)
+		{
+			computeVisualLines(font, lastLayoutWidth);
+		}
+	}
 	computeScrollAmount();
 }
 
@@ -306,7 +351,7 @@ i32 MultilineTextInputState::getCharIndexAtPoint(const Point& pt)
 	}
 
 	Font* font = themeElement ? themeElement->normalState().font : nullptr;
-	if (!font)
+	if (!font || visualLines.empty())
 		return 0;
 
 	f32 lineHeight = font->getMetrics().height;
@@ -315,31 +360,168 @@ i32 MultilineTextInputState::getCharIndexAtPoint(const Point& pt)
 	f32 adjustedY = pt.y + scrollOffsetY - clipRect.y;
 	if (adjustedY < 0) adjustedY = 0;
 
-	i32 line = (i32)(adjustedY / lineHeight);
+	i32 visualLineIdx = (i32)(adjustedY / lineHeight);
 
-	if (line < 0) line = 0;
-	if (line >= lines.size()) line = lines.size() - 1;
+	if (visualLineIdx < 0) visualLineIdx = 0;
+	if (visualLineIdx >= visualLines.size()) visualLineIdx = (i32)visualLines.size() - 1;
 
-	currentLine = line;
+	const VisualLine& vl = visualLines[visualLineIdx];
+	currentLine = vl.logicalLineIndex;
 
-	// find column
+	// find column within this visual segment
 	f32 adjustedX = pt.x + scrollOffsetX;
-	const auto& lineText = lines[line];
+	
+	// The text on this visual line is a substring of logical line
+	const auto& lineText = lines[currentLine];
+	
+	// Optimization: Only measure the substring for this visual line
+	Utf32String segmentText(lineText.begin() + vl.startColumn, lineText.begin() + vl.startColumn + vl.length);
 
-	for (size_t i = 0; i <= lineText.size(); i++)
+	// Using binary search or linear scan for character position?
+	// Linear scan is acceptable for now.
+	for (size_t i = 0; i <= segmentText.size(); i++)
 	{
-		Utf32String substr(lineText.begin(), lineText.begin() + i);
+		Utf32String substr(segmentText.begin(), segmentText.begin() + i);
 		FontTextSize size = font->computeTextSize(substr.data(), (u32)substr.size());
 
 		if (clipRect.x + size.width >= adjustedX)
 		{
-			caretColumn = (i > 0) ? i - 1 : 0;
+			// found split point
+			// closer to this char or the previous one?
+			// standard behavior is hit testing.
+			i32 relCol = (i > 0) ? (i32)i - 1 : 0;
+			// check if click is past half width of char?
+			// Ignoring half-width check for simplicity to match previous style
+			caretColumn = vl.startColumn + relCol;
 			return caretColumn;
 		}
 	}
 
-	caretColumn = lineText.size();
+	// if past end of visual line's content, place at end of visual line
+	caretColumn = vl.startColumn + vl.length;
 	return caretColumn;
+}
+
+void MultilineTextInputState::computeVisualLines(Font* font, f32 availableWidth)
+{
+	visualLines.clear();
+
+	if (!font || lines.empty())
+		return;
+
+	if (!has(flags, MultilineTextInputFlags::WordWrap))
+	{
+		for (size_t i = 0; i < lines.size(); ++i)
+		{
+			VisualLine vl;
+			vl.logicalLineIndex = (i32)i;
+			vl.startColumn = 0;
+			vl.length = (i32)lines[i].size();
+			vl.width = font->computeTextSize(lines[i].data(), (u32)lines[i].size()).width;
+			visualLines.push_back(vl);
+		}
+		return;
+	}
+
+	for (size_t i = 0; i < lines.size(); ++i)
+	{
+		const Utf32String& line = lines[i];
+
+		if (line.empty())
+		{
+			VisualLine vl;
+			vl.logicalLineIndex = (i32)i;
+			vl.startColumn = 0;
+			vl.length = 0;
+			vl.width = 0;
+			visualLines.push_back(vl);
+			continue;
+		}
+
+		i32 currentStart = 0;
+
+		while (currentStart < line.size())
+		{
+			i32 remaining = (i32)line.size() - currentStart;
+			i32 bestLength = 0;
+
+			// Binary search for length that fits
+			i32 low = 1;
+			i32 high = remaining;
+			i32 fitLength = 0;
+			FontTextSize textSize;
+
+			// Optimization: Start closer to expected length if possible?
+			// For now standard binary search on substring length.
+			
+			// To avoid O(N log N) text measurement, we can just measure char by char? No, shaping.
+			// Binary search is reasonable.
+			while (low <= high)
+			{
+				i32 mid = low + (high - low) / 2;
+				// TODO: Avoid alloc here
+				Utf32String sub(line.begin() + currentStart, line.begin() + currentStart + mid);
+				textSize = font->computeTextSize(sub.data(), (u32)sub.size());
+
+				if (textSize.width <= availableWidth)
+				{
+					fitLength = mid;
+					low = mid + 1;
+				}
+				else
+				{
+					high = mid - 1;
+				}
+			}
+
+			if (fitLength == 0 && remaining > 0)
+			{
+				// If strictly nothing fits (e.g. one very wide char > width), force 1 char
+				fitLength = 1; 
+			}
+
+			i32 lengthOnLine = fitLength;
+			bool forceWrap = false;
+
+			// If we are wrapping (not at end of line), try to break at space
+			if (currentStart + fitLength < line.size())
+			{
+				bool foundBreak = false;
+				i32 breakIdx = fitLength;
+
+				// search backwards for space
+				for (i32 k = fitLength; k > 0; k--)
+				{
+					// Check char at index (currentStart + k - 1)
+					u32 ch = line[currentStart + k - 1];
+					if (ch == ' ' || ch == '\t' || ch == '-')
+					{
+						breakIdx = k;
+						foundBreak = true;
+						break;
+					}
+				}
+
+				if (foundBreak)
+				{
+					lengthOnLine = breakIdx;
+				}
+			}
+
+			VisualLine vl;
+			vl.logicalLineIndex = (i32)i;
+			vl.startColumn = currentStart;
+			vl.length = lengthOnLine;
+			// Measure actual width of this segment for alignment/layout (optional but good)
+			// avoiding alloc again if possible, but state update is rare compared to draw
+			Utf32String seg(line.begin() + currentStart, line.begin() + currentStart + lengthOnLine);
+			vl.width = font->computeTextSize(seg.data(), (u32)seg.size()).width;
+			
+			visualLines.push_back(vl);
+
+			currentStart += lengthOnLine;
+		}
+	}
 }
 
 bool MultilineTextInputState::processEvent(const InputEvent& ev)
@@ -562,8 +744,61 @@ void MultilineTextInputState::processKeyEvent(const InputEvent& ev)
 		i32 prevLine = currentLine;
 		i32 prevColumn = caretColumn;
 
-		if (currentLine > 0)
-			currentLine--;
+		// Move visually up
+		if (!visualLines.empty())
+		{
+			i32 vIdx = -1;
+			// Find current visual line
+			for (size_t i = 0; i < visualLines.size(); ++i)
+			{
+				const auto& vl = visualLines[i];
+				if (vl.logicalLineIndex == currentLine)
+				{
+					if (caretColumn >= vl.startColumn && caretColumn <= vl.startColumn + vl.length)
+					{
+						vIdx = (i32)i;
+						if (caretColumn < vl.startColumn + vl.length) break; // Exact match or inside
+						// If at end, keep checking in case it's the split point (prefer current unless next line starts here)
+					}
+				}
+			}
+			// Use last match if ambiguous (e.g. end of line) and we are at end of segment?
+			// Actually getCaretScreenPosition logic was specific.
+			// Simple logic: if caretColumn is within [start, start+length], pick it.
+			// If at split point (end of one, start of next), which one?
+			// If we are at end of a wrapped line, we are visually at end of that line.
+			// If we are at start of next wrapped line, we are visually at start.
+			// They are the same logical index!
+			// We need to decide based on "affinity".
+			// But for ArrowUp, we just want "the visual line we are on".
+			// If we are at split point, logically we are at index X.
+			// Visually, index X is end of line A and start of line B.
+			// Standard behavior: if I press End, I'm at end of A. If I type char, it stays on A (until wrap).
+			// If I just arrived there, usually I am at B start if wrapped?
+			// Let's assume strict inequality for start: caretColumn < start + length, except for last segment.
+
+			if (vIdx == -1 && !visualLines.empty())
+			{
+				// fallback search
+				for (size_t i = 0; i < visualLines.size(); ++i)
+				{
+					if (visualLines[i].logicalLineIndex == currentLine) vIdx = (i32)i; // last one
+					if (visualLines[i].logicalLineIndex > currentLine) break;
+				}
+			}
+
+			if (vIdx > 0)
+			{
+				const auto& currVl = visualLines[vIdx];
+				const auto& prevVl = visualLines[vIdx - 1];
+
+				i32 dist = caretColumn - currVl.startColumn;
+				// target is min(dist, prevVl.length) relative to start
+				
+				currentLine = prevVl.logicalLineIndex;
+				caretColumn = prevVl.startColumn + std::min(dist, prevVl.length);
+			}
+		}
 
 		if (has(ev.key.modifiers, KeyModifiers::Shift))
 		{
@@ -574,26 +809,11 @@ void MultilineTextInputState::processKeyEvent(const InputEvent& ev)
 				selectionStartColumn = prevColumn;
 			}
 
-			// if we're at the first line and couldn't move up, move caret to start of line
-			if (currentLine == 0 && prevLine == 0)
-			{
-				caretColumn = 0;
-			}
-			else
-			{
-			// clamp caret column to new line's size if needed
-			if (caretColumn > lines[currentLine].size())
-				caretColumn = lines[currentLine].size();
-			}
-
 			selectionEndLine = currentLine;
 			selectionEndColumn = caretColumn;
 		}
 		else
 		{
-			if (caretColumn > lines[currentLine].size())
-				caretColumn = lines[currentLine].size();
-
 			deselect();
 		}
 	}
@@ -602,8 +822,57 @@ void MultilineTextInputState::processKeyEvent(const InputEvent& ev)
 		i32 prevLine = currentLine;
 		i32 prevColumn = caretColumn;
 
-		if (currentLine < lines.size() - 1)
-			currentLine++;
+		// Move visually down
+		if (!visualLines.empty())
+		{
+			i32 vIdx = -1;
+			// Find current visual line
+			for (size_t i = 0; i < visualLines.size(); ++i)
+			{
+				const auto& vl = visualLines[i];
+				if (vl.logicalLineIndex == currentLine)
+				{
+					// logic to find correct visual segment:
+					// if caret < start + length, found.
+					// if caret == start + length, it could be this one (if last) or next one (if wrapped).
+					// usually cursor stays on previous line if possible? No, it flows.
+					// Let's bias towards the START of the next line if ambiguous?
+					// No, bias towards END of current line if ambiguous (e.g. typing)
+					// But for navigation, we usually want stability.
+					
+					bool isLastSeg = (i + 1 >= visualLines.size() || visualLines[i+1].logicalLineIndex != currentLine);
+					
+					if (caretColumn >= vl.startColumn && caretColumn < vl.startColumn + vl.length)
+					{
+						vIdx = (i32)i;
+						break; 
+					}
+					if (isLastSeg && caretColumn == vl.startColumn + vl.length)
+					{
+						vIdx = (i32)i;
+						break;
+					}
+				}
+			}
+			
+			// Fallback
+			if (vIdx == -1)
+			{
+				for (size_t i = 0; i < visualLines.size(); ++i)
+					if (visualLines[i].logicalLineIndex == currentLine) vIdx = (i32)i;
+			}
+
+			if (vIdx != -1 && vIdx < (i32)visualLines.size() - 1)
+			{
+				const auto& currVl = visualLines[vIdx];
+				const auto& nextVl = visualLines[vIdx + 1];
+
+				i32 dist = caretColumn - currVl.startColumn;
+				
+				currentLine = nextVl.logicalLineIndex;
+				caretColumn = nextVl.startColumn + std::min(dist, nextVl.length);
+			}
+		}
 
 		if (has(ev.key.modifiers, KeyModifiers::Shift))
 		{
@@ -614,26 +883,11 @@ void MultilineTextInputState::processKeyEvent(const InputEvent& ev)
 				selectionStartColumn = prevColumn;
 			}
 
-			// if we're at the last line and couldn't move down, move caret to end of line
-			if (currentLine == lines.size() - 1 && prevLine == currentLine)
-			{
-				caretColumn = lines[currentLine].size();
-			}
-			else
-			{
-				// clamp caret column to new line's size if needed
-				if (caretColumn > lines[currentLine].size())
-					caretColumn = lines[currentLine].size();
-			}
-
 			selectionEndLine = currentLine;
 			selectionEndColumn = caretColumn;
 		}
 		else
 		{
-			if (caretColumn > lines[currentLine].size())
-				caretColumn = lines[currentLine].size();
-
 			deselect();
 		}
 	}

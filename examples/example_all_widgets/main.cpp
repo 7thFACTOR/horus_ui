@@ -453,7 +453,12 @@ int main(int argc, char** args)
 				};
 
 				if (med)
-					hui::multilineTextInput("mti", strMulti, 5000, 10/*, hui::MultilineTextInputFlags::LineNumbers*/, hui::MultilineTextInputFlags::LineNumbers| hui::MultilineTextInputFlags::HighlightCurrentLine, kws, 5);
+					hui::multilineTextInput("mti", strMulti, 5000, 10/*, hui::MultilineTextInputFlags::LineNumbers*/,
+						hui::MultilineTextInputFlags::LineNumbers
+						| hui::MultilineTextInputFlags::HighlightCurrentLine
+						|hui::MultilineTextInputFlags::WordWrap
+						| hui::MultilineTextInputFlags::SpacesOnTab
+						, kws, 5);
 
 
 				hui::pushTint(hui::Color::orange);

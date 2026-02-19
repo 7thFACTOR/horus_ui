@@ -400,7 +400,8 @@ enum class MultilineTextInputFlags : u32
 	SpacesOnTab = HORUS_BIT(1),
 	LineNumbers = HORUS_BIT(2),
 	AutoSelectAll = HORUS_BIT(3),
-	HighlightCurrentLine = HORUS_BIT(4)
+	HighlightCurrentLine = HORUS_BIT(4),
+	WordWrap = HORUS_BIT(5)
 };
 HORUS_ENUM_AS_FLAGS(MultilineTextInputFlags);
 

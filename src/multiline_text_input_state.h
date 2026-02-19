@@ -68,6 +68,18 @@ struct MultilineTextInputState
 
 	// Duplicate event protection
 	u32 lastKeyProcessFrame = 0;
+
+	struct VisualLine
+	{
+		i32 logicalLineIndex = 0;
+		i32 startColumn = 0;
+		i32 length = 0;
+		f32 width = 0;
+	};
+
+	std::vector<VisualLine> visualLines;
+	void computeVisualLines(class Font* font, f32 availableWidth);
+	f32 lastLayoutWidth = 0.0f;
 };
 
 }
