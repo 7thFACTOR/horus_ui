@@ -22,6 +22,7 @@ bool multilineTextInput(
 	auto& lineNumbersElem = ctx->theme->getElement(WidgetElementId::MultilineTextInputLineNumbers);
 	auto& bodyTextCaretElemState = ctx->theme->getElement(WidgetElementId::TextInputCaret).normalState();
 	auto& bodyTextSelectionElemState = ctx->theme->getElement(WidgetElementId::TextInputSelection).normalState();
+	auto& currentLineHighlightElemState = ctx->theme->getElement(WidgetElementId::MultilineTextInputCurrentLineHighlight).normalState();
 	auto& padding = getWidgetPadding();
 
 	auto& state = ctx->multilineTextInput;
@@ -374,9 +375,9 @@ bool multilineTextInput(
 		// current line highlighting
 		if (vl.logicalLineIndex == state.currentLine && isEditingThis)
 		{
-			ctx->renderer.cmdSetColor(Color::black);
+			ctx->renderer.cmdSetColor(currentLineHighlightElemState.color);
 
-			// line number highlight (Dark Cyan)
+			// line number highlight
 			if (has(flags, MultilineTextInputFlags::LineNumbers))
 			{
 				Rect lineNumRect = sidebarRect;
@@ -385,7 +386,7 @@ bool multilineTextInput(
 				ctx->renderer.cmdDrawFilledRectangle(lineNumRect);
 			}
 
-			// text highlight (Dark Green)
+			// text highlight
 			if (has(flags, MultilineTextInputFlags::HighlightCurrentLine))
 			{
 				Rect lineTextRect = clipRect;

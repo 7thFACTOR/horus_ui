@@ -457,7 +457,7 @@ int main(int argc, char** args)
 						hui::MultilineTextInputFlags::LineNumbers
 						| hui::MultilineTextInputFlags::HighlightCurrentLine
 						|hui::MultilineTextInputFlags::WordWrap
-						| hui::MultilineTextInputFlags::SpacesOnTab
+						| hui::MultilineTextInputFlags::None
 						, kws, 5);
 
 

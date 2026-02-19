@@ -240,7 +240,7 @@
 			},
 			"multilineTextInputCurrentLineHighlight":
 			{
-				"normal": { "image": "", "border": 0, "color": "255 255 255 20", "textColor": "white", "font": "normal" }
+				"normal": { "image": "", "border": 0, "color": "100 255 255 20", "textColor": "white", "font": "normal" }
 			},
 			"multilineTextInputWordWrap":
 			{
