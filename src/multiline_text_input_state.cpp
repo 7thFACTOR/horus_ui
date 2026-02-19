@@ -457,12 +457,39 @@ void MultilineTextInputState::processKeyEvent(const InputEvent& ev)
 
 	if (ev.key.code == KeyCode::ArrowLeft)
 	{
-		if (caretColumn > 0)
-			caretColumn--;
-		else if (currentLine > 0)
+		i32 prevLine = currentLine;
+		i32 prevColumn = caretColumn;
+
+		if (has(ev.key.modifiers, KeyModifiers::Control))
 		{
-			currentLine--;
-			caretColumn = lines[currentLine].size();
+			if (caretColumn == 0)
+			{
+				if (currentLine > 0)
+				{
+					currentLine--;
+					caretColumn = lines[currentLine].size();
+				}
+			}
+			else
+			{
+				// 1. Skip preceding whitespace
+				while (caretColumn > 0 && isspace(lines[currentLine][caretColumn - 1]))
+					caretColumn--;
+				
+				// 2. Skip preceding non-whitespace
+				while (caretColumn > 0 && !isspace(lines[currentLine][caretColumn - 1]))
+					caretColumn--;
+			}
+		}
+		else
+		{
+			if (caretColumn > 0)
+				caretColumn--;
+			else if (currentLine > 0)
+			{
+				currentLine--;
+				caretColumn = lines[currentLine].size();
+			}
 		}
 
 		if (has(ev.key.modifiers, KeyModifiers::Shift))
@@ -470,8 +497,8 @@ void MultilineTextInputState::processKeyEvent(const InputEvent& ev)
 			if (!selectionActive)
 			{
 				selectionActive = true;
-				selectionStartLine = currentLine;
-				selectionStartColumn = caretColumn + 1;
+				selectionStartLine = prevLine;
+				selectionStartColumn = prevColumn;
 			}
 			selectionEndLine = currentLine;
 			selectionEndColumn = caretColumn;
@@ -481,12 +508,39 @@ void MultilineTextInputState::processKeyEvent(const InputEvent& ev)
 	}
 	else if (ev.key.code == KeyCode::ArrowRight)
 	{
-		if (caretColumn < lines[currentLine].size())
-			caretColumn++;
-		else if (currentLine < lines.size () - 1)
+		i32 prevLine = currentLine;
+		i32 prevColumn = caretColumn;
+
+		if (has(ev.key.modifiers, KeyModifiers::Control))
 		{
-			currentLine++;
-			caretColumn = 0;
+			if (caretColumn >= lines[currentLine].size())
+			{
+				if (currentLine < lines.size() - 1)
+				{
+					currentLine++;
+					caretColumn = 0;
+				}
+			}
+			else
+			{
+				// 1. Skip succeeding non-whitespace
+				while (caretColumn < lines[currentLine].size() && !isspace(lines[currentLine][caretColumn]))
+					caretColumn++;
+				
+				// 2. Skip succeeding whitespace
+				while (caretColumn < lines[currentLine].size() && isspace(lines[currentLine][caretColumn]))
+					caretColumn++;
+			}
+		}
+		else
+		{
+			if (caretColumn < lines[currentLine].size())
+				caretColumn++;
+			else if (currentLine < lines.size() - 1)
+			{
+				currentLine++;
+				caretColumn = 0;
+			}
 		}
 
 		if (has(ev.key.modifiers, KeyModifiers::Shift))
@@ -494,8 +548,8 @@ void MultilineTextInputState::processKeyEvent(const InputEvent& ev)
 			if (!selectionActive)
 			{
 				selectionActive = true;
-				selectionStartLine = currentLine;
-				selectionStartColumn = caretColumn - 1;
+				selectionStartLine = prevLine;
+				selectionStartColumn = prevColumn;
 			}
 			selectionEndLine = currentLine;
 			selectionEndColumn = caretColumn;

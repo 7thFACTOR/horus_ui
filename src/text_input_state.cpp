@@ -260,9 +260,28 @@ void TextInputState::processKeyEvent(const InputEvent& ev)
 	if (!ev.key.down)
 		return;
 
-	if (ev.key.code == KeyCode::ArrowLeft)
+	else if (ev.key.code == KeyCode::ArrowLeft)
 	{
-		caretPosition--;
+		i32 oldCaretPos = caretPosition;
+
+		if (has(ev.key.modifiers, KeyModifiers::Control))
+		{
+			// Word jump left
+			// 1. Skip preceding whitespace
+			while (caretPosition > 0 && caretPosition <= text.size() && isspace(text[caretPosition - 1]))
+			{
+				caretPosition--;
+			}
+			// 2. Skip preceding non-whitespace
+			while (caretPosition > 0 && caretPosition <= text.size() && !isspace(text[caretPosition - 1]))
+			{
+				caretPosition--;
+			}
+		}
+		else
+		{
+			caretPosition--;
+		}
 
 		if (caretPosition < 0)
 			caretPosition = 0;
@@ -273,7 +292,7 @@ void TextInputState::processKeyEvent(const InputEvent& ev)
 			if (!selectionActive)
 			{
 				selectionActive = true;
-				selectionBegin = caretPosition + 1;
+				selectionBegin = oldCaretPos; // Start from where we were
 				selectionEnd = caretPosition;
 			}
 			else
@@ -288,7 +307,26 @@ void TextInputState::processKeyEvent(const InputEvent& ev)
 	}
 	else if (ev.key.code == KeyCode::ArrowRight)
 	{
-		caretPosition++;
+		i32 oldCaretPos = caretPosition;
+
+		if (has(ev.key.modifiers, KeyModifiers::Control))
+		{
+			// Word jump right
+			// 1. Skip succeeding non-whitespace
+			while (caretPosition < text.size() && !isspace(text[caretPosition]))
+			{
+				caretPosition++;
+			}
+			// 2. Skip succeeding whitespace
+			while (caretPosition < text.size() && isspace(text[caretPosition]))
+			{
+				caretPosition++;
+			}
+		}
+		else
+		{
+			caretPosition++;
+		}
 
 		if (caretPosition > text.size())
 			caretPosition = text.size();
@@ -299,7 +337,7 @@ void TextInputState::processKeyEvent(const InputEvent& ev)
 			if (!selectionActive)
 			{
 				selectionActive = true;
-				selectionBegin = caretPosition - 1;
+				selectionBegin = oldCaretPos; // Start from where we were
 				selectionEnd = caretPosition;
 			}
 			else

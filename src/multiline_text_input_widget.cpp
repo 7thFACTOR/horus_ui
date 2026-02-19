@@ -18,7 +18,8 @@ bool multilineTextInput(
 	KeywordInfo* keywords,
 	u32 keywordCount)
 {
-	auto bodyElem = &ctx->theme->getElement(WidgetElementId::TextInputBody);
+	auto bodyElem = &ctx->theme->getElement(WidgetElementId::MultilineTextInputBody);
+	auto& lineNumbersElem = ctx->theme->getElement(WidgetElementId::MultilineTextInputLineNumbers);
 	auto& bodyTextCaretElemState = ctx->theme->getElement(WidgetElementId::TextInputCaret).normalState();
 	auto& bodyTextSelectionElemState = ctx->theme->getElement(WidgetElementId::TextInputSelection).normalState();
 	auto& padding = getWidgetPadding();
@@ -184,7 +185,7 @@ bool multilineTextInput(
 		};
 
 		u32 digits = digitCount(state.lines.size());
-		f32 charWidth = font->computeTextSize("0", 1).width;
+		f32 charWidth = lineNumbersElem.normalState().font->computeTextSize("0", 1).width;
 		sidebarWidth = digits * charWidth + 10.0f; // Padding
 
 		// adjust clip rect to exclude sidebar
@@ -294,8 +295,12 @@ bool multilineTextInput(
 		ctx->renderer.pushClipRect(originalClipRect);
 
 		sidebarRect.width = sidebarWidth;
-		ctx->renderer.cmdSetColor(Color::darkGray); // Gray
-		ctx->renderer.cmdDrawFilledRectangle(sidebarRect);
+		auto& lnState = lineNumbersElem.normalState();
+		ctx->renderer.cmdSetColor(lnState.color);
+		if (lnState.image)
+			ctx->renderer.cmdDrawImageBordered(lnState.image, lnState.border, sidebarRect, ctx->scale);
+		else
+			ctx->renderer.cmdDrawFilledRectangle(sidebarRect);
 	}
 	else
 	{
@@ -355,18 +360,7 @@ bool multilineTextInput(
 		}
 
 		// draw line number
-		if (has(flags, MultilineTextInputFlags::LineNumbers))
-		{
-			char numStr[32];
-			sprintf(numStr, "%d", i + 1);
-			Rect numRect = sidebarRect;
-			numRect.y = yPos;
-			numRect.height = lineHeight;
-			numRect.width -= 5.0f; // Padding
 
-			ctx->renderer.cmdSetColor(Color::white);
-			ctx->renderer.cmdDrawTextInBox(numStr, numRect, HAlignType::Right, VAlignType::Center, false, true);
-		}
 	}
 
 	ctx->renderer.popClipRect();
@@ -659,6 +653,42 @@ bool multilineTextInput(
 			ctx->renderer.cmdSetColor(bodyTextCaretElemState.color);
 			ctx->renderer.cmdDrawFilledRectangle(cursorRect);
 		}
+	}
+
+	// draw line numbers
+	if (has(flags, MultilineTextInputFlags::LineNumbers))
+	{
+		ctx->renderer.popClipRect(); // Pop inner clip to draw in sidebar
+
+		auto& lnState = lineNumbersElem.normalState();
+		ctx->renderer.cmdSetColor(lnState.textColor);
+		ctx->renderer.cmdSetFont(lnState.font);
+		
+		for (i32 i = firstLine; i < lastLine && i < state.lines.size(); i++)
+		{
+			f32 yPos = clipRect.y + i * lineHeight - currentScrollY;
+			
+			if (yPos + lineHeight < clipRect.y || yPos > clipRect.bottom())
+				continue;
+
+			char numStr[32];
+			sprintf(numStr, "%d", i + 1);
+			
+			Rect lnRect;
+			lnRect.x = clipRect.x - sidebarWidth + 5.0f;
+			lnRect.y = yPos;
+			lnRect.width = sidebarWidth - 10.0f;
+			lnRect.height = lineHeight;
+
+			ctx->renderer.cmdDrawTextInBox(
+				numStr,
+				lnRect,
+				HAlignType::Right,
+				VAlignType::Bottom, false, true);
+		}
+		
+		ctx->renderer.cmdSetFont(bodyElemState->font); // Restore font
+		ctx->renderer.pushClipRect(clipRect); // Restore inner clip
 	}
 
 	// draw text

@@ -145,6 +145,7 @@ static WidgetType getWidgetTypeFromName(std::string name)
 	if (name == "rotarySlider") return WidgetType::RotarySlider;
 	if (name == "colorPicker") return WidgetType::ColorPicker;
 	if (name == "table") return WidgetType::Table;
+	if (name == "multilineTextInput") return WidgetType::MultilineTextInput;
 
 	return WidgetType::None;
 }
@@ -218,6 +219,9 @@ static WidgetElementId getWidgetElementFromName(std::string name)
 	if (name == "colorPickerBody") return WidgetElementId::ColorPickerBody;
 	if (name == "tableBody") return WidgetElementId::TableBody;
 	if (name == "tableHeaderBody") return WidgetElementId::TableHeaderBody;
+	if (name == "multilineTextInputBody") return WidgetElementId::MultilineTextInputBody;
+	if (name == "multilineTextInputLineNumbers") return WidgetElementId::MultilineTextInputLineNumbers;
+	if (name == "multilineTextInputCurrentLineHighlight") return WidgetElementId::MultilineTextInputCurrentLineHighlight;
 
 	return WidgetElementId::Custom;
 }
