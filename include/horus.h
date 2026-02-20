@@ -2426,6 +2426,14 @@ HORUS_API bool imageButton(HImage img, f32 width, f32 height, HImage disabledImg
 /// \return true if the text was modified
 HORUS_API bool textInput(const char* id, char* text, u32 maxTextSize, TextInputFlags flags = TextInputFlags::None, const char* defaultText = nullptr, HImage img = 0, bool password = false, const char* passwordChar = "\95");
 
+struct RangeHighlight
+{
+	const char* beginKeyword;
+	const char* endKeyword;
+	Color color;
+	const char* escapeKeyword = nullptr;
+};
+
 /// Multi-line text input widget. Enter key creates a new line instead of submitting.
 /// \param id widget unique identifier
 /// \param text the text buffer to edit
@@ -2433,7 +2441,7 @@ HORUS_API bool textInput(const char* id, char* text, u32 maxTextSize, TextInputF
 /// \param visibleLines number of visible lines in the text area
 /// \param flags input flags (numeric only, hex only, etc.)
 /// \return true if the text was changed
-HORUS_API bool multilineTextInput(const char* id, char* text, u32 maxTextSize, u32 visibleLines = 10, MultilineTextInputFlags flags = MultilineTextInputFlags::None, KeywordInfo* keywords = nullptr, u32 keywordCount = 0);
+HORUS_API bool multilineTextInput(const char* id, char* text, u32 maxTextSize, u32 visibleLines = 10, MultilineTextInputFlags flags = MultilineTextInputFlags::None, KeywordInfo* keywords = nullptr, u32 keywordCount = 0, const RangeHighlight* rangeHighlights = nullptr, u32 rangeHighlightCount = 0);
 
 /// Draw an integer number slider widget
 /// \param minVal the minimum value

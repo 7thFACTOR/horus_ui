@@ -271,13 +271,308 @@ Point MultilineTextInputState::getCaretScreenPosition()
 	if (relCaret < 0) relCaret = 0;
 	if (relCaret > vl.length) relCaret = vl.length;
 
-	Utf32String segText(textStr.begin() + vl.startColumn, textStr.begin() + vl.startColumn + relCaret);
-	f32 xOffset = font->computeTextSize(segText.data(), (u32)segText.size()).width;
+	// Use robust measurement that matches renderer logic (tokens)
+	f32 xOffset = calculateTextSegmentWidth(font, textStr, vl.startColumn, relCaret, vl.logicalLineIndex);
 
 	return Point(
 		clipRect.x + xOffset - scrollOffsetX,
 		clipRect.y + foundVisualLine * lineHeight - scrollOffsetY
 	);
+}
+
+f32 MultilineTextInputState::calculateTextSegmentWidth(Font* font, const Utf32String& line, i32 startCol, i32 length, i32 logicalLineIndex)
+{
+	if (length <= 0) return 0.0f;
+	if (!font) return 0.0f;
+
+	// Determine starting state
+	i32 currentState = -1;
+	if (lineStates.size() > logicalLineIndex && logicalLineIndex >= 0)
+		currentState = lineStates[logicalLineIndex];
+
+	// Fast-forward state if needed
+	if (startCol > 0 && !rules32.empty())
+	{
+		// Scan from 0 to startCol
+		for (i32 c = 0; c < startCol; )
+		{
+			if (currentState != -1)
+			{
+				const auto& endKw = rules32[currentState].end;
+				if (endKw.empty()) { currentState = -1; break; } // EOL
+
+				bool match = true;
+				if (c + endKw.size() > startCol) { 
+					// Match crosses boundary? We assume state persists until end of match?
+					// Ideally we scan char by char.
+					// If match starts before startCol, and ends after/at startCol, we exit state at endKw.
+					// But we only care about state AT startCol.
+					// If match ends after startCol, we are technically "inside" the rule until match ends?
+					// Or does rule end AT start of endKw?
+					// Renderer: `c += endKw.size(); currentState = -1;`
+					// So until we consume endKw, we are in state.
+				}
+				
+				// Check match at c
+				if (c + endKw.size() <= line.size())
+				{
+					for (size_t k = 0; k < endKw.size(); k++)
+						if (line[c + k] != endKw[k]) { match = false; break; }
+				} else match = false;
+
+				if (match)
+				{
+					// Check escape
+					bool escaped = false;
+					const auto& escKw = rules32[currentState].escape;
+					if (!escKw.empty())
+					{
+						size_t escCount = 0;
+						size_t backIdx = c;
+						while (backIdx >= escKw.size())
+						{
+							backIdx -= escKw.size();
+							bool escMatch = true;
+							for (size_t k = 0; k < escKw.size(); k++)
+								if (line[backIdx+k] != escKw[k]) { escMatch = false; break; }
+							if (escMatch) escCount++; else break;
+						}
+						if (escCount % 2 != 0) escaped = true;
+					}
+
+					if (!escaped)
+					{
+						c += endKw.size();
+						currentState = -1;
+						continue;
+					}
+				}
+				c++;
+			}
+			else
+			{
+				i32 bestRule = -1;
+				// Check rule starts
+				for (u32 r = 0; r < rules32.size(); r++)
+				{
+					const auto& startKw = rules32[r].begin;
+					if (startKw.empty()) continue;
+					if (c + startKw.size() > line.size()) continue;
+
+					bool match = true;
+					for (size_t k = 0; k < startKw.size(); k++)
+						if (line[c + k] != startKw[k]) { match = false; break; }
+
+					if (match)
+					{
+						bestRule = (i32)r;
+						break; // Priority
+					}
+				}
+
+				if (bestRule != -1)
+				{
+					currentState = bestRule;
+					c += rules32[bestRule].begin.size();
+				}
+				else
+				{
+					c++;
+				}
+			}
+		}
+	}
+
+	// Now measure from startCol to startCol + length
+	f32 totalWidth = 0.0f;
+	i32 endCol = startCol + length;
+	if (endCol > line.size()) endCol = (i32)line.size();
+
+	for (i32 c = startCol; c < endCol; )
+	{
+		size_t segStart = c;
+		size_t segEnd = endCol;
+		bool advanceState = false;
+		i32 nextState = currentState;
+
+		if (currentState != -1)
+		{
+			const auto& endKw = rules32[currentState].end;
+			if (endKw.empty())
+			{
+				segEnd = endCol;
+				// nextState = -1; // Effectively EOL
+			}
+			else
+			{
+				// Search for endKw
+				size_t matchPos = std::string::npos;
+				for (size_t i = c; i + endKw.size() <= endCol; i++) // only search up to endCol? No, rule can end AFTER visible area?
+				// But we only measure up to endCol.
+				// If rule ends AFTER endCol, then [c, endCol) is all inside rule.
+				// But what if rule ends EXACTLY at range boundary?
+				// We need to find match even if it crosses boundary?
+				// No, we only measure text UP TO endCol.
+				// If match starts at endCol, it's outside.
+				// If match starts before endCol, we should split there.
+				{
+					bool found = true;
+					for (size_t k = 0; k < endKw.size(); k++)
+						if (line[i+k] != endKw[k]) { found = false; break; }
+					
+					if (found)
+					{
+						// Check escape
+						bool escaped = false;
+						const auto& escKw = rules32[currentState].escape;
+						if (!escKw.empty())
+						{
+							size_t escCount = 0;
+							size_t backIdx = i;
+							while (backIdx >= escKw.size())
+							{
+								backIdx -= escKw.size();
+								bool escMatch = true;
+								for (size_t k = 0; k < escKw.size(); k++)
+									if (line[backIdx+k] != escKw[k]) { escMatch = false; break; }
+								if (escMatch) escCount++; else break;
+							}
+							if (escCount % 2 != 0) escaped = true;
+						}
+
+						if (!escaped)
+						{
+							matchPos = i;
+							break;
+						}
+					}
+				}
+
+				if (matchPos != std::string::npos)
+				{
+					segEnd = matchPos + endKw.size();
+					if (segEnd > endCol) segEnd = endCol; // Clamp if endKw crosses boundary?
+					// Actually if matchPos < endCol, but matchPos + len > endCol.
+					// We measure up to endCol.
+					// But logic says we consume the token.
+					// If we are measuring visual WIDTH.
+					// We should measure [c, matchPos) then [matchPos, matchPos+len).
+					// But syntax highlighting changes color, not necessarily font.
+					// However, splitting breaks kerning.
+					// So yes, we must process the split.
+					if (matchPos < endCol)
+					{
+						segEnd = matchPos + endKw.size(); // This might exceed endCol, handled by measure clamp?
+						nextState = -1;
+					}
+				}
+			}
+		}
+		else
+		{
+			// Check Keywords/Ranges
+			size_t bestPos = std::string::npos;
+			i32 foundRule = -1;
+			const Keyword32* foundKw = nullptr;
+
+			for (u32 r = 0; r < rules32.size(); r++)
+			{
+				const auto& startKw = rules32[r].begin;
+				if (startKw.empty()) continue;
+				// Search limit is endCol?
+				// If match starts before endCol.
+				size_t limit = (bestPos == std::string::npos) ? endCol : bestPos;
+				if (c + startKw.size() > line.size()) continue;
+
+				for (size_t i = c; i + startKw.size() <= limit && i + startKw.size() <= line.size(); i++)
+				{
+					bool match = true;
+					for (size_t k = 0; k < startKw.size(); k++)
+						if (line[i+k] != startKw[k]) { match = false; break; }
+					
+					if (match)
+					{
+						bestPos = i;
+						foundRule = (i32)r;
+						foundKw = nullptr;
+						limit = bestPos;
+						break;
+					}
+				}
+			}
+
+			if (!keywords32.empty())
+			{
+				size_t limit = (bestPos == std::string::npos) ? endCol : bestPos;
+				
+				for (u32 k = 0; k < keywords32.size(); k++)
+				{
+					const auto& kwStr = keywords32[k].keyword;
+					if (c + kwStr.size() > limit) continue;
+
+					for (size_t i = c; i + kwStr.size() <= limit && i + kwStr.size() <= line.size(); i++)
+					{
+                        if (i == bestPos && foundRule != -1) break; 
+						bool match = true;
+						for (size_t sub = 0; sub < kwStr.size(); sub++)
+							if (line[i+sub] != kwStr[sub]) { match = false; break; }
+						
+						if (match)
+						{
+                            if (i < bestPos || bestPos == std::string::npos)
+                            {
+                                bestPos = i;
+                                foundRule = -1;
+                                foundKw = &keywords32[k];
+                                limit = bestPos;
+                            }
+							break;
+						}
+					}
+				}
+			}
+
+			if (bestPos != std::string::npos && bestPos < endCol)
+			{
+				if (bestPos > c)
+				{
+					segEnd = bestPos; // Draw normal text up to match
+					// Next iter will handle match
+				}
+				else
+				{
+					// At match
+					if (foundRule != -1)
+					{
+						currentState = foundRule;
+						continue; // Re-eval loop to handle rule inside
+					}
+					else if (foundKw)
+					{
+						segEnd = c + foundKw->keyword.size();
+						// nextState -1
+					}
+				}
+			}
+		}
+
+		// Measure [segStart, segEnd)
+		// Clamp to endCol (we only want width up to caret)
+		size_t measureEnd = segEnd;
+		if (measureEnd > endCol) measureEnd = endCol;
+		
+		if (measureEnd > segStart)
+		{
+			// Construct substring
+			Utf32String segment(line.begin() + segStart, line.begin() + measureEnd);
+			totalWidth += font->computeTextSize(segment).width;
+		}
+
+		c = segEnd; // Advance to next segment (might be past endCol if token crossed, but checking loop condition)
+		currentState = nextState;
+	}
+
+	return totalWidth;
 }
 
 void MultilineTextInputState::computeScrollAmount()
@@ -1299,6 +1594,178 @@ void MultilineTextInputState::processKeyEvent(const InputEvent& ev)
 	}
 
 	ensureCaretVisible();
+}
+
+// Helper to hash rules
+static u64 computeRulesHash(const RangeHighlight* rules, u32 count, const KeywordInfo* keywords, u32 keywordCount)
+{
+	u64 h = 0;
+	for (u32 i = 0; i < count; i++)
+	{
+		// simple pointer/color hash
+		h ^= (u64)rules[i].beginKeyword;
+		h = (h << 5) | (h >> 59); // rotate
+		h ^= (u64)rules[i].endKeyword;
+		h ^= rules[i].color.getRgba();
+	}
+	for (u32 i = 0; i < keywordCount; i++)
+	{
+		h ^= (u64)keywords[i].keyword;
+		h = (h << 3) | (h >> 61);
+		h ^= keywords[i].color.getRgba();
+	}
+	return h;
+}
+
+void MultilineTextInputState::updateSyntaxHighlighting(const RangeHighlight* rules, u32 count, const KeywordInfo* keywords, u32 keywordCount)
+{
+	u64 newHash = computeRulesHash(rules, count, keywords, keywordCount);
+
+	if (!textChanged && newHash == lastRulesHash && lineStates.size() == lines.size())
+		return;
+
+	lastRulesHash = newHash;
+	lineStates.resize(lines.size());
+
+	std::fill(lineStates.begin(), lineStates.end(), -1);
+
+	// Convert rules/keywords to UTF-32
+	rules32.resize(count);
+	for (u32 i = 0; i < count; i++)
+	{
+		ctx->settings.services.utf8To32(rules[i].beginKeyword, rules32[i].begin);
+		ctx->settings.services.utf8To32(rules[i].endKeyword, rules32[i].end);
+		if (rules[i].escapeKeyword)
+			ctx->settings.services.utf8To32(rules[i].escapeKeyword, rules32[i].escape);
+	}
+
+	keywords32.resize(keywordCount);
+	for (u32 i = 0; i < keywordCount; i++)
+	{
+		ctx->settings.services.utf8To32(keywords[i].keyword, keywords32[i].keyword);
+		keywords32[i].info = &keywords[i];
+	}
+
+	if (lines.empty()) return;
+
+	i32 currentState = -1;
+
+	for (size_t i = 0; i < lines.size(); i++)
+	{
+		lineStates[i] = currentState;
+		const Utf32String& line = lines[i];
+
+		for (size_t c = 0; c < line.size(); )
+		{
+			// If inside a rule, check for end
+			if (currentState != -1)
+			{
+				const auto& endKw = rules32[currentState].end;
+				
+				// Handle empty end keyword as "end of line"
+				if (endKw.empty())
+				{
+					// It ends at newline, which effectively means end of this string (since lines are split by newline)
+					// So we just break and set state to -1 for next line
+					currentState = -1;
+					break; 
+				}
+
+				bool match = true;
+				if (c + endKw.size() > line.size()) match = false;
+				else
+				{
+					for (size_t k = 0; k < endKw.size(); k++)
+						if (line[c + k] != endKw[k]) { match = false; break; }
+
+					if (match)
+					{
+						// Check for escape sequence
+						const auto& escKw = rules32[currentState].escape;
+						if (!escKw.empty())
+						{
+							// Count consecutive escapes ending at c-1
+							size_t escCount = 0;
+							size_t backIdx = c;
+							while (backIdx >= escKw.size())
+							{
+								backIdx -= escKw.size();
+								bool escMatch = true;
+								for (size_t k = 0; k < escKw.size(); k++)
+								{
+									if (line[backIdx + k] != escKw[k]) { escMatch = false; break; }
+								}
+								if (escMatch) escCount++;
+								else break;
+							}
+
+							// If odd number of escapes, checking backwards from endKw, then this endKw is escaped.
+							if (escCount % 2 != 0)
+							{
+								match = false;
+							}
+						}
+					}
+				}
+
+				if (match)
+				{
+					c += endKw.size();
+					currentState = -1;
+				}
+				else
+				{
+					c++;
+				}
+			}
+			else
+			{
+				// Check for rule starts
+				i32 bestRule = -1;
+				
+				// Check in order of definition
+				for (u32 r = 0; r < count; r++)
+				{
+					const auto& startKw = rules32[r].begin;
+					if (startKw.empty()) continue;
+
+					bool match = true;
+					if (c + startKw.size() > line.size()) match = false;
+					else
+					{
+						for (size_t k = 0; k < startKw.size(); k++)
+							if (line[c + k] != startKw[k]) { match = false; break; }
+					}
+
+					if (match)
+					{
+						bestRule = (i32)r;
+						break; // Found first matching rule
+					}
+				}
+
+				if (bestRule != -1)
+				{
+					currentState = bestRule;
+					c += rules32[bestRule].begin.size();
+				}
+				else
+				{
+					c++;
+				}
+			}
+		}
+
+		// Handle single-line rules explicitly if end keyword was empty or a newline
+		if (currentState != -1)
+		{
+			// If rule end is empty or \n, reset state
+			if (rules32[currentState].end.empty() || (rules32[currentState].end.size() == 1 && rules32[currentState].end[0] == '\n'))
+			{
+				currentState = -1;
+			}
+		}
+	}
 }
 
 }

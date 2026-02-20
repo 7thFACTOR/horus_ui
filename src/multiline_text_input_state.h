@@ -81,6 +81,26 @@ struct MultilineTextInputState
 	std::vector<VisualLine> visualLines;
 	void computeVisualLines(class Font* font, f32 availableWidth);
 	f32 lastLayoutWidth = 0.0f;
+
+	// Syntax highlighting state
+	std::vector<i32> lineStates; // Index of active range highlight at start of line, -1 if none
+	u64 lastRulesHash = 0;
+	void updateSyntaxHighlighting(const struct RangeHighlight* rules, u32 count, const struct KeywordInfo* keywords, u32 keywordCount);
+
+	struct Rule32 {
+		Utf32String begin;
+		Utf32String end;
+		Utf32String escape;
+	};
+	std::vector<Rule32> rules32;
+
+	struct Keyword32 {
+		Utf32String keyword;
+		const KeywordInfo* info;
+	};
+	std::vector<Keyword32> keywords32;
+
+	f32 calculateTextSegmentWidth(class Font* font, const Utf32String& line, i32 startCol, i32 length, i32 logicalLineIndex);
 };
 
 }

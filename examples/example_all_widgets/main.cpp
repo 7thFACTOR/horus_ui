@@ -452,13 +452,20 @@ int main(int argc, char** args)
 					{")", hui::Color::yellow}
 				};
 
+				static hui::RangeHighlight rh[] = {
+					{"\"", "\"", hui::Color::red},
+					{"'", "'", hui::Color::orange},
+					{"/*", "*/", hui::Color::green},
+					{"--", "", hui::Color::lightGray}
+				};
+
 				if (med)
 					hui::multilineTextInput("mti", strMulti, 5000, 10/*, hui::MultilineTextInputFlags::LineNumbers*/,
 						hui::MultilineTextInputFlags::LineNumbers
 						| hui::MultilineTextInputFlags::HighlightCurrentLine
 						|hui::MultilineTextInputFlags::WordWrap
 						| hui::MultilineTextInputFlags::None
-						, kws, 5);
+						, kws, 5, rh, 4);
 
 
 				hui::pushTint(hui::Color::orange);
