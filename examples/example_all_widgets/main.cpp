@@ -453,10 +453,10 @@ int main(int argc, char** args)
 				};
 
 				static hui::RangeHighlight rh[] = {
-					{"\"", "\"", hui::Color::red},
-					{"'", "'", hui::Color::orange},
-					{"/*", "*/", hui::Color::green},
-					{"--", "", hui::Color::lightGray}
+					{ "\"", "\"", hui::Color::red, "\\"},
+					{ "'", "'", hui::Color::cyan},
+					{ "--", 0, hui::Color::lightGray},
+					{ "/*", "*/", hui::Color::green}
 				};
 
 				if (med)

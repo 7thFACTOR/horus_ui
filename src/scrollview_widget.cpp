@@ -173,7 +173,7 @@ void beginScrollView(const char* id, f32 height, Point scrollOffset, Point virtu
 	{
 		// Use remaining height in layout
 		height = getRemainingHeight();
-		
+
 		if (height <= 0)
 		{
 			// Fallback to a reasonable default if no space available
@@ -208,13 +208,33 @@ void beginScrollView(const char* id, f32 height, Point scrollOffset, Point virtu
 
 	clipRect.x += internalPadding;
 	clipRect.y += border * ctx->scale;
-	clipRect.width -= scrollViewScrollBarElemStateV.width * ctx->scale + internalPadding * 2.0f;
 	clipRect.height -= border * ctx->scale * 2.0f;
 
 	auto& scrollViewScrollBarElemStateH = ctx->theme->getElement(WidgetElementId::ScrollViewScrollBarH).normalState();
+	f32 hBarHeight = scrollViewScrollBarElemStateH.height * ctx->scale;
 
-	if (virtualSize.x > rect.width
-		|| (virtualSize.x == 0 && scrollViewState.horizontal.wasVisible))
+	bool willHaveHBar = !has(flags, ScrollViewFlags::NoHorizontalScroll)
+		&& (virtualSize.x > rect.width || (virtualSize.x == 0 && scrollViewState.horizontal.wasVisible));
+
+	f32 approximateScrollAreaV = clipRect.height;
+	if (willHaveHBar)
+	{
+		approximateScrollAreaV -= hBarHeight + padding.y;
+	}
+
+	bool reserveVBar = true;
+	// if we passed a known virtual height and it doesn't exceed our area, we don't need a VBar!
+	if (virtualSize.y > 0 && virtualSize.y <= approximateScrollAreaV)
+	{
+		reserveVBar = false;
+	}
+
+	if (reserveVBar)
+	{
+		clipRect.width -= scrollViewScrollBarElemStateV.width * ctx->scale + internalPadding * 2.0f;
+	}
+
+	if (willHaveHBar)
 	{
 		clipRect.height -= scrollViewScrollBarElemStateH.height * ctx->scale + padding.y;
 	}
@@ -269,7 +289,7 @@ Point endScrollView()
 
 	if (scrollViewState.virtualSize.x > scrollContentH)
 		scrollContentH = scrollViewState.virtualSize.x;
-	
+
 	// Restore previous max content X
 	ctx->maxContentWidth = ctx->maxContentWidthStack.back();
 	ctx->maxContentWidthStack.pop_back();
@@ -281,12 +301,12 @@ Point endScrollView()
 		availableWidth -= scrollViewScrollBarElemStateV.width * ctx->scale;
 	}
 
-	bool hasHorizontalScrollbar = 
+	bool hasHorizontalScrollbar =
 		!has(scrollViewState.flags, ScrollViewFlags::NoHorizontalScroll)
 		&& ((scrollViewState.virtualSize.x > 0 && scrollViewState.virtualSize.x > availableWidth) || scrollContentH > availableWidth);
-	
+
 	f32 scrollAreaV = rectNoBorders.height;
-	
+
 	if (hasHorizontalScrollbar)
 	{
 		scrollAreaV -= scrollViewScrollBarElemStateH.height * ctx->scale;
@@ -309,7 +329,7 @@ Point endScrollView()
 				{
 					isWindowHovered = (ctx->settings.services.getCurrentWindow() == ctx->settings.services.getHoveredWindow());
 				}
-				
+
 				if (isWindowHovered)
 				{
 					f32 scrollAmount = ctx->event.mouse.wheel.y * (scrollAreaV * ctx->scrollViewSpeed) * ctx->scale;
@@ -341,7 +361,7 @@ Point endScrollView()
 
 			// the actual scroll bar height, without the borders, for handle to be drawn correctly
 			f32 scrollBarHeightFull = rectNoBorders.height;
-			
+
 			if (hasHorizontalScrollbar)
 			{
 				scrollBarHeightFull -= scrollViewScrollBarElemStateH.height * ctx->scale;
@@ -468,7 +488,7 @@ Point endScrollView()
 			scrollBarWidthFull,
 			scrollViewScrollBarElemStateH.height * ctx->scale
 		};
-	
+
 		updateScrollMax(scrollViewState.horizontal, scrollContentH, scrollAreaWidth);
 		f32 handleSize = computeHandleSize(scrollBarWidth, scrollContentH, scrollAreaWidth, ctx->settings.minScrollViewHandleSize);
 		f32 handleOffset = computeHandleOffset(scrollViewState.horizontal, scrollBarWidth, handleSize);

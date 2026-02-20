@@ -44,7 +44,7 @@ bool textInput(
 		ctx->widget.changeEnded = true;
 	}
 
-	// Show clear image only when defaultText is provided and the current text is not empty.
+	// show clear image only when defaultText is provided and the current text is not empty.
 	bool showClearImage = defaultText && strcmp(text, "") && strcmp(defaultText, "");
 
 	// compute clear-filter hit rect here as well so the clear image can be hovered
@@ -209,7 +209,7 @@ bool textInput(
 		forceRepaint();
 	}
 
-	// If hovering the clear button prefer Arrow, otherwise show I-beam when hovering the text area.
+	// if hovering the clear button prefer Arrow, otherwise show I-beam when hovering the text area.
 	if (ctx->textInput.clearFilterHovered)
 	{
 		setMouseCursor(MouseCursorType::Arrow);
@@ -361,7 +361,7 @@ bool textInput(
 	// draw clear image only when visible
 	if (showClearImage)
 	{
-		// Use hoveredState when clearFilterHovered is true, otherwise normalState.
+		// use hoveredState when clearFilterHovered is true, otherwise normalState.
 		ThemeElement::State* state = nullptr;
 
 		if (ctx->textInput.clearFilterHovered)

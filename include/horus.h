@@ -1576,6 +1576,14 @@ struct KeywordInfo
 	Color color;
 };
 
+struct RangeHighlight
+{
+	const char* beginKeyword;
+	const char* endKeyword;
+	Color color;
+	const char* escapeKeyword = nullptr;
+};
+
 /// Image data info
 struct ImageData
 {
@@ -1715,8 +1723,22 @@ struct FontInfo
 
 struct WindowsDockingState
 {
-	//TODO
-	//make sure one can save docking per group of windows or global
+	struct WindowInfo
+	{
+		std::string id, title;
+	};
+
+	struct DockNodeInfo
+	{
+		DockNodeId nodeId = 0; // unique id of the node
+		DockNodeId parentNodeIndex = 0; // index of the parent node in the nodes array, root node has parentNodeIndex = 0
+		DockType dockType = DockType::None; // how the window is docked in its parent node
+		Rect rect;
+		size_t selectedTabIndex = 0;
+		std::vector<WindowInfo> windows; // the windows docked in this node
+	};
+
+	std::vector<DockNodeInfo> dockNodes; // all the dock nodes in the docking layout
 };
 
 struct Services
@@ -2441,7 +2463,7 @@ struct RangeHighlight
 /// \param visibleLines number of visible lines in the text area
 /// \param flags input flags (numeric only, hex only, etc.)
 /// \return true if the text was changed
-HORUS_API bool multilineTextInput(const char* id, char* text, u32 maxTextSize, u32 visibleLines = 10, MultilineTextInputFlags flags = MultilineTextInputFlags::None, KeywordInfo* keywords = nullptr, u32 keywordCount = 0, const RangeHighlight* rangeHighlights = nullptr, u32 rangeHighlightCount = 0);
+HORUS_API bool multilineTextInput(const char* id, char* text, u32 maxTextSize, u32 visibleLines = 10, MultilineTextInputFlags flags = MultilineTextInputFlags::None, KeywordInfo* keywords = nullptr, u32 keywordCount = 0, RangeHighlight* rangeHighlights = nullptr, u32 rangeHighlightCount = 0);
 
 /// Draw an integer number slider widget
 /// \param minVal the minimum value
