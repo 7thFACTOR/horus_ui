@@ -439,7 +439,7 @@ int main(int argc, char** args)
 				scrollPos = hui::endScrollView();
 				hui::popPadding(hui::PaddingType::ScrollView);
 
-				static char strMulti[5000];
+				static char strMulti[300000];
 				static bool med = true;
 
 				hui::check("med", &med);
@@ -460,7 +460,7 @@ int main(int argc, char** args)
 				};
 
 				if (med)
-					hui::multilineTextInput("mti", strMulti, 5000, 10/*, hui::MultilineTextInputFlags::LineNumbers*/,
+					hui::multilineTextInput("mti", strMulti, 300000, 10/*, hui::MultilineTextInputFlags::LineNumbers*/,
 						hui::MultilineTextInputFlags::LineNumbers
 						| hui::MultilineTextInputFlags::HighlightCurrentLine
 						|hui::MultilineTextInputFlags::WordWrap

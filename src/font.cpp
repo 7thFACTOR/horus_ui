@@ -104,7 +104,7 @@ void Font::precacheGlyphs(u32* glyphs, u32 glyphCount)
 
 void Font::precacheLatinAlphabetGlyphs()
 {
-	static const std::string alphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890!@#$%^&*()_+-=~`[]{};':\",./<>?®© ";
+	static const std::string alphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890!@#$%^&*()_+-=~`[]{};':\",./<>?\\|?®© ";
 
 	for (auto code : alphabet)
 	{

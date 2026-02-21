@@ -5,7 +5,7 @@
 		"normal-unicode": { "file": "fonts/Inter-Regular.ttf", "size": 12 },
 		"normal-bold": { "file": "fonts/Inter-Bold.ttf", "size": 12 },
 		"normal-italic": { "file": "fonts/Roboto-Italic.ttf", "size": 12 },
-		"code-normal": { "file": "fonts/Ubuntu-R.ttf", "size": 14 },
+		"code-normal": { "file": "fonts/JetBrainsMono-Regular.ttf", "size": 26 },
 		"medium": { "file": "fonts/Inter-Regular.ttf", "size": 13 },
 		"medium-bold": { "file": "fonts/Inter-Bold.ttf", "size": 13 },
 		"medium-italic": { "file": "fonts/Roboto-Italic.ttf", "size": 13 },
@@ -229,14 +229,12 @@
 				"width": 0,
 				"height": 0,
 				"normal": { "image": "default/text_input_normal", "border": 3, "color": "white", "textColor": "white", "font": "code-normal" },
-				"hovered": { "image": "default/text_input_normal", "border": 3, "color": "white", "textColor": "white", "font": "code-normal" },
-				"pressed": { "image": "default/text_input_normal", "border": 3, "color": "white", "textColor": "white", "font": "code-normal" },
 				"focused": { "image": "default/text_input_focused", "border": 3, "color": "white", "textColor": "white", "font": "code-normal" }
 			},
 			"multilineTextInputLineNumbers":
 			{
 				"width": 30,
-				"normal": { "image": "default/multiline_text_input_linenumbg", "border": 3, "color": "white", "textColor": "white", "font": "normal" }
+				"normal": { "image": "default/multiline_text_input_linenumbg", "border": 3, "color": "white", "textColor": "white", "font": "code-normal" }
 			},
 			"multilineTextInputCurrentLineHighlight":
 			{

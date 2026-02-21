@@ -3,6 +3,8 @@
 #include "font.h"
 #include "context.h"
 #include "theme.h"
+#include <chrono>
+#include <algorithm>
 
 namespace hui
 {
@@ -47,10 +49,27 @@ void MultilineTextInputState::deleteSelection()
 		std::swap(startCol, endCol);
 	}
 
+	// Calculate deleted length BEFORE modifying lines
+	size_t deletedCount = 0;
+	if (startLine == endLine)
+	{
+		deletedCount = endCol - startCol;
+	}
+	else
+	{
+		deletedCount = (lines[startLine].size() - startCol) + endCol + (endLine - startLine);
+		for (i32 i = startLine + 1; i < endLine; i++)
+			deletedCount += lines[i].size();
+	}
+
+	if (deletedCount > totalTextLength) totalTextLength = 0;
+	else totalTextLength -= deletedCount;
+
 	if (startLine == endLine)
 	{
 		// single line deletion
 		lines[startLine].erase(lines[startLine].begin() + startCol, lines[startLine].begin() + endCol);
+		markLineDirty(startLine);
 	}
 	else
 	{
@@ -63,10 +82,33 @@ void MultilineTextInputState::deleteSelection()
 		// remove all lines in between
 		lines.erase(lines.begin() + startLine, lines.begin() + endLine + 1);
 		lines.insert(lines.begin() + startLine, remainingText);
+
+		// Synchronize other per-line caches
+		if (lineVisuals.size() > (size_t)endLine)
+		{
+			lineVisuals.erase(lineVisuals.begin() + startLine, lineVisuals.begin() + endLine + 1);
+			lineVisuals.insert(lineVisuals.begin() + startLine, std::vector<VisualLine>());
+		}
+		if (lineStates.size() > (size_t)endLine)
+		{
+			lineStates.erase(lineStates.begin() + startLine, lineStates.begin() + endLine + 1);
+			lineStates.insert(lineStates.begin() + startLine, -1);
+		}
+
+		markLineDirty(startLine);
 	}
+
+	// Prevent stale pointers: visualLines holds pointers into lineVisuals; clear and force recompute.
+	visualLines.clear();
+	lineVisuals.resize(lines.size());
+	if (lineStates.size() != lines.size()) lineStates.resize(lines.size(), -1);
+	caretVisualLineIndex = (size_t)-1;
+	firstDirtyLine = 0;
+	forceLayoutUpdate = true;
 
 	currentLine = startLine;
 	caretColumn = startCol;
+	caretVisualLineIndex = (size_t)-1;
 	deselect();
 	textChanged = true;
 }
@@ -127,6 +169,8 @@ void MultilineTextInputState::clearText()
 	deselect();
 	scrollOffsetX = scrollOffsetY = 0;
 	textChanged = true;
+	totalTextLength = 0;
+	markLineDirty(0);
 }
 
 void MultilineTextInputState::insertTextAtCaret(const Utf32String& newText)
@@ -134,24 +178,20 @@ void MultilineTextInputState::insertTextAtCaret(const Utf32String& newText)
 	if (selectionActive)
 		deleteSelection();
 
+	caretVisualLineIndex = (size_t)-1;
+	markLineDirty(currentLine);
+
 	if (newText.empty())
 		return;
 
-	// calculate current total length
-	size_t totalLength = 0;
-	for (const auto& line : lines)
-		totalLength += line.size();
-	if (!lines.empty())
-		totalLength += lines.size() - 1; // count newlines
-
-	if (totalLength >= maxTextLength)
+	if (totalTextLength >= maxTextLength)
 		return;
 
 	// handle newlines in pasted text
 	for (u32 ch : newText)
 	{
 		// check limit
-		if (totalLength >= maxTextLength)
+		if (totalTextLength >= maxTextLength)
 			break;
 
 		if (ch == '\r')
@@ -166,8 +206,12 @@ void MultilineTextInputState::insertTextAtCaret(const Utf32String& newText)
 			lines[currentLine].erase(lines[currentLine].begin() + caretColumn, lines[currentLine].end());
 			currentLine++;
 			lines.insert(lines.begin() + currentLine, remaining);
+			if (lineVisuals.size() > (size_t)currentLine - 1)
+				lineVisuals.insert(lineVisuals.begin() + currentLine, std::vector<VisualLine>());
+			if (lineStates.size() > (size_t)currentLine - 1)
+				lineStates.insert(lineStates.begin() + currentLine, -1);
 			caretColumn = 0;
-			totalLength++;
+			totalTextLength++;
 		}
 		else if (ch == '\t')
 		{
@@ -178,28 +222,36 @@ void MultilineTextInputState::insertTextAtCaret(const Utf32String& newText)
 				// expand tab to N spaces
 				for (u32 k = 0; k < tabSize; k++)
 				{
-					if (totalLength >= maxTextLength)
+					if (totalTextLength >= maxTextLength)
 						break;
 
 					lines[currentLine].insert(lines[currentLine].begin() + caretColumn, ' ');
 					caretColumn++;
-					totalLength++;
+					totalTextLength++;
 				}
 			}
 			else
 			{
 				lines[currentLine].insert(lines[currentLine].begin() + caretColumn, '\t');
 				caretColumn++;
-				totalLength++;
+				totalTextLength++;
 			}
 		}
 		else
 		{
 			lines[currentLine].insert(lines[currentLine].begin() + caretColumn, ch);
 			caretColumn++;
-			totalLength++;
+			totalTextLength++;
 		}
 	}
+
+	// Prevent stale pointers: visualLines holds pointers into lineVisuals; clear and force recompute.
+	visualLines.clear();
+	lineVisuals.resize(lines.size());
+	if (lineStates.size() != lines.size()) lineStates.resize(lines.size(), -1);
+	caretVisualLineIndex = (size_t)-1;
+	firstDirtyLine = 0;
+	forceLayoutUpdate = true;
 
 	textChanged = true;
 }
@@ -214,69 +266,79 @@ Point MultilineTextInputState::getCaretScreenPosition()
 
 	f32 lineHeight = font->getMetrics().height;
 
-	i32 foundVisualLine = -1;
+	size_t foundVisualLine = caretVisualLineIndex;
 
-	for (size_t i = 0; i < visualLines.size(); ++i)
+	if (foundVisualLine == (size_t)-1 || foundVisualLine >= visualLines.size()
+		|| visualLines[foundVisualLine]->logicalLineIndex != currentLine)
 	{
-		const auto& vl = visualLines[i];
-		if (vl.logicalLineIndex == currentLine)
+		// Fallback: search if cache is invalid using Binary Search (O(log N))
+		auto it = std::lower_bound(visualLines.begin(), visualLines.end(), currentLine, 
+			[](const VisualLine* vl, i32 lineIdx) {
+				return vl->logicalLineIndex < lineIdx;
+			});
+
+		if (it != visualLines.end() && (*it)->logicalLineIndex == currentLine)
 		{
-			bool isLastSegment = true;
-			if (i + 1 < visualLines.size() && visualLines[i+1].logicalLineIndex == currentLine)
-				isLastSegment = false;
+			size_t startIdx = std::distance(visualLines.begin(), it);
+			foundVisualLine = startIdx;
 
-			if (caretColumn >= vl.startColumn && caretColumn < vl.startColumn + vl.length)
+			// Check if we need to refine for wrapped lines
+			for (size_t i = startIdx; i < visualLines.size() && visualLines[i]->logicalLineIndex == currentLine; ++i)
 			{
-				foundVisualLine = (i32)i;
-				break;
-			}
+				const auto vl = visualLines[i];
+				bool isLastSegment = true;
+				if (i + 1 < visualLines.size() && visualLines[i + 1]->logicalLineIndex == currentLine)
+					isLastSegment = false;
 
-			// Ambiguous case: caret is at the end of this visual line (which equals start of next if wrapped).
-			// If caretPreferLineEnd is true, we snap to this line.
-			// If isLastSegment (end of logical line), we always snap to this line.
-			if (caretColumn == vl.startColumn + vl.length)
-			{
-				if (isLastSegment || caretPreferLineEnd)
-				{
-					foundVisualLine = (i32)i;
-					break;
-				}
-			}
-		}
-	}
-
-	if (foundVisualLine == -1 && !visualLines.empty())
-	{
-		if (currentLine >= lines.size()) foundVisualLine = (i32)visualLines.size() - 1;
-		else
-		{
-			for (i32 i = (i32)visualLines.size() - 1; i >= 0; i--)
-			{
-				if (visualLines[i].logicalLineIndex == currentLine)
+				if (caretColumn >= vl->startColumn && caretColumn < vl->startColumn + vl->length)
 				{
 					foundVisualLine = i;
 					break;
 				}
+
+				if (caretColumn == vl->startColumn + vl->length)
+				{
+					if (isLastSegment || caretPreferLineEnd)
+					{
+						foundVisualLine = i;
+						break;
+					}
+				}
 			}
 		}
 	}
 
-	if (foundVisualLine == -1)
+	if (foundVisualLine == (size_t)-1 && !visualLines.empty())
+	{
+		if (currentLine >= (i32)lines.size()) foundVisualLine = visualLines.size() - 1;
+		else
+		{
+			for (i32 i = (i32)visualLines.size() - 1; i >= 0; i--)
+			{
+				if (visualLines[i]->logicalLineIndex == currentLine)
+				{
+					foundVisualLine = (size_t)i;
+					break;
+				}
+			}
+		}
+	}
+
+	if (foundVisualLine == (size_t)-1)
 		return Point(clipRect.x - scrollOffsetX, clipRect.y - scrollOffsetY);
 
-	const auto& vl = visualLines[foundVisualLine];
-	Utf32String textStr = lines[currentLine];
-
-	i32 relCaret = caretColumn - vl.startColumn;
+	const auto vl = visualLines[foundVisualLine];
+	
+	i32 relCaret = caretColumn - vl->startColumn;
 	if (relCaret < 0) relCaret = 0;
-	if (relCaret > vl.length) relCaret = vl.length;
+	if (relCaret > vl->length) relCaret = vl->length;
 
 	// Use robust measurement that matches renderer logic (tokens)
-	f32 xOffset = calculateTextSegmentWidth(font, textStr, vl.startColumn, relCaret, vl.logicalLineIndex);
+	f32 xOffset = calculateTextSegmentWidth(font, lines[currentLine], vl->startColumn, relCaret, vl->logicalLineIndex);
 
 	return Point(
 		clipRect.x + xOffset - scrollOffsetX,
-		clipRect.y + foundVisualLine * lineHeight - scrollOffsetY
+		clipRect.y + (f32)foundVisualLine * lineHeight - scrollOffsetY
 	);
 }
 
@@ -559,16 +621,14 @@ f32 MultilineTextInputState::calculateTextSegmentWidth(Font* font, const Utf32St
 		// Measure [segStart, segEnd)
 		// Clamp to endCol (we only want width up to caret)
 		size_t measureEnd = segEnd;
-		if (measureEnd > endCol) measureEnd = endCol;
+		if (measureEnd > (size_t)endCol) measureEnd = (size_t)endCol;
 		
 		if (measureEnd > segStart)
 		{
-			// Construct substring
-			Utf32String segment(line.begin() + segStart, line.begin() + measureEnd);
-			totalWidth += font->computeTextSize(segment).width;
+			totalWidth += font->computeTextSize(line.data() + segStart, (u32)(measureEnd - segStart)).width;
 		}
 
-		c = segEnd; // Advance to next segment (might be past endCol if token crossed, but checking loop condition)
+		c = (i32)segEnd; // Advance to next segment (might be past endCol if token crossed, but checking loop condition)
 		currentState = nextState;
 	}
 
@@ -631,7 +691,7 @@ void MultilineTextInputState::ensureCaretVisible()
 		Font* font = themeElement->normalState().font;
 		if (font)
 		{
-			computeVisualLines(font, lastLayoutWidth);
+			computeVisualLines(font, lastLayoutWidth, nullptr, 0, nullptr, 0);
 		}
 	}
 	computeScrollAmount();
@@ -667,8 +727,8 @@ i32 MultilineTextInputState::getCharIndexAtPoint(const Point& pt)
 	if (visualLineIdx < 0) visualLineIdx = 0;
 	if (visualLineIdx >= visualLines.size()) visualLineIdx = (i32)visualLines.size() - 1;
 
-	const VisualLine& vl = visualLines[visualLineIdx];
-	currentLine = vl.logicalLineIndex;
+	const auto vl = visualLines[visualLineIdx];
+	currentLine = vl->logicalLineIndex;
 
 	// find column within this visual segment
 	f32 adjustedX = pt.x + scrollOffsetX;
@@ -677,7 +737,7 @@ i32 MultilineTextInputState::getCharIndexAtPoint(const Point& pt)
 	const auto& lineText = lines[currentLine];
 
 	// Optimization: Only measure the substring for this visual line
-	Utf32String segmentText(lineText.begin() + vl.startColumn, lineText.begin() + vl.startColumn + vl.length);
+	Utf32String segmentText(lineText.begin() + vl->startColumn, lineText.begin() + vl->startColumn + vl->length);
 
 	// Using binary search or linear scan for character position?
 	// Linear scan is acceptable for now.
@@ -694,135 +754,247 @@ i32 MultilineTextInputState::getCharIndexAtPoint(const Point& pt)
 			i32 relCol = (i > 0) ? (i32)i - 1 : 0;
 			// check if click is past half width of char?
 			// Ignoring half-width check for simplicity to match previous style
-			caretColumn = vl.startColumn + relCol;
+			caretColumn = vl->startColumn + relCol;
 			return caretColumn;
 		}
 	}
 
 	// if past end of visual line's content, place at end of visual line
-	caretColumn = vl.startColumn + vl.length;
+	caretColumn = vl->startColumn + vl->length;
+	caretVisualLineIndex = (size_t)visualLineIdx; // Update cache immediately on click!
 	return caretColumn;
 }
 
-void MultilineTextInputState::computeVisualLines(Font* font, f32 availableWidth)
+void MultilineTextInputState::computeVisualLines(Font* font, f32 availableWidth, const RangeHighlight* rules, u32 ruleCount, const KeywordInfo* keywords, u32 keywordCount)
 {
-	visualLines.clear();
-
 	if (!font || lines.empty())
+	{
+		visualLines.clear();
+		lineVisuals.clear();
+		maxLineWidth = 0.0f;
+		caretVisualLineIndex = (size_t)-1;
+		return;
+	}
+
+	bool widthChanged = std::abs(lastLayoutWidth - availableWidth) > 0.1f;
+	if (widthChanged || lineVisuals.empty() || forceLayoutUpdate)
+	{
+		lineVisuals.clear();
+		lineVisuals.resize(lines.size());
+		firstDirtyLine = 0;
+		lastLayoutWidth = availableWidth;
+	}
+
+	if (lineVisuals.size() != lines.size())
+	{
+		lineVisuals.resize(lines.size());
+		// markLineDirty should have been called by mutation methods
+	}
+
+	if (firstDirtyLine == -1 && !visualLines.empty() && !forceLayoutUpdate)
 		return;
 
-	if (!has(flags, MultilineTextInputFlags::WordWrap))
+	printf("MultilineTextInputState::computeVisualLines entering: firstDirtyLine=%d, visualLines.empty=%d, forceLayoutUpdate=%d, textChanged=%d\n", 
+		firstDirtyLine, (int)visualLines.empty(), (int)forceLayoutUpdate, (int)textChanged);
+
+	auto total_layout_start = std::chrono::high_resolution_clock::now();
+	i32 lines_processed = 0;
+
+	i32 start = (firstDirtyLine == -1) ? 0 : firstDirtyLine;
+	bool isWrapping = has(flags, MultilineTextInputFlags::WordWrap);
+
+	for (size_t i = start; i < lines.size(); ++i)
 	{
-		for (size_t i = 0; i < lines.size(); ++i)
+		lines_processed++;
+		const Utf32String& line = lines[i];
+		auto& visuals = lineVisuals[i];
+		
+		// For stable stop, keep track of what we had
+		std::vector<VisualLine> oldVisuals = visuals;
+		visuals.clear();
+
+		if (!isWrapping)
 		{
 			VisualLine vl;
 			vl.logicalLineIndex = (i32)i;
 			vl.startColumn = 0;
-			vl.length = (i32)lines[i].size();
-			vl.width = font->computeTextSize(lines[i].data(), (u32)lines[i].size()).width;
-			visualLines.push_back(vl);
+			vl.length = (i32)line.size();
+			vl.width = font->computeTextSize(line.data(), (u32)line.size()).width;
+			visuals.push_back(vl);
 		}
-		return;
-	}
-
-	for (size_t i = 0; i < lines.size(); ++i)
-	{
-		const Utf32String& line = lines[i];
-
-		if (line.empty())
+		else if (line.empty())
 		{
 			VisualLine vl;
 			vl.logicalLineIndex = (i32)i;
 			vl.startColumn = 0;
 			vl.length = 0;
 			vl.width = 0;
-			visualLines.push_back(vl);
-			continue;
+			visuals.push_back(vl);
+		}
+		else
+		{
+			i32 currentStart = 0;
+			while (currentStart < (i32)line.size())
+			{
+				i32 remaining = (i32)line.size() - currentStart;
+				i32 low = 1;
+				i32 high = remaining;
+				i32 fitLength = 0;
+
+				while (low <= high)
+				{
+					i32 mid = low + (high - low) / 2;
+					f32 w = font->computeTextSize(line.data() + currentStart, (u32)mid).width;
+					if (w <= availableWidth)
+					{
+						fitLength = mid;
+						low = mid + 1;
+					}
+					else high = mid - 1;
+				}
+
+				if (fitLength == 0 && remaining > 0) fitLength = 1;
+
+				i32 lengthOnLine = fitLength;
+				if (currentStart + fitLength < (i32)line.size())
+				{
+					i32 breakIdx = fitLength;
+					bool foundBreak = false;
+					for (i32 k = fitLength; k > 0; k--)
+					{
+						u32 ch = line[currentStart + k - 1];
+						if (ch == ' ' || ch == '\t' || ch == '-') { breakIdx = k; foundBreak = true; break; }
+					}
+					if (foundBreak) lengthOnLine = breakIdx;
+				}
+
+				VisualLine vl;
+				vl.logicalLineIndex = (i32)i;
+				vl.startColumn = currentStart;
+				vl.length = lengthOnLine;
+				vl.width = font->computeTextSize(line.data() + currentStart, (u32)lengthOnLine).width;
+				visuals.push_back(vl);
+
+				currentStart += lengthOnLine;
+			}
 		}
 
-		i32 currentStart = 0;
+		// Calculate segments for the logical line
+		tempSegments.clear();
+		i32 initialState = (i < (size_t)lineStates.size()) ? lineStates[i] : -1;
+		calculateSegments(line, initialState, tempSegments, rules, ruleCount, keywords, keywordCount);
 
-		while (currentStart < line.size())
+		// Distribute segments across visual lines
+		for (auto& vl : visuals)
 		{
-			i32 remaining = (i32)line.size() - currentStart;
-			i32 bestLength = 0;
+			vl.segments.clear();
+			i32 vlEnd = vl.startColumn + vl.length;
+			i32 currentPos = 0;
 
-			// Binary search for length that fits
-			i32 low = 1;
-			i32 high = remaining;
-			i32 fitLength = 0;
-			FontTextSize textSize;
-
-			// Optimization: Start closer to expected length if possible?
-			// For now standard binary search on substring length.
-
-			// To avoid O(N log N) text measurement, we can just measure char by char? No, shaping.
-			// Binary search is reasonable.
-			while (low <= high)
+			for (const auto& seg : tempSegments)
 			{
-				i32 mid = low + (high - low) / 2;
-				// TODO: Avoid alloc here
-				Utf32String sub(line.begin() + currentStart, line.begin() + currentStart + mid);
-				textSize = font->computeTextSize(sub.data(), (u32)sub.size());
+				i32 segEnd = currentPos + seg.length;
 
-				if (textSize.width <= availableWidth)
+				// Does this segment overlap with the visual line?
+				i32 overlapStart = std::max(vl.startColumn, currentPos);
+				i32 overlapEnd = std::min(vlEnd, segEnd);
+
+				if (overlapStart < overlapEnd)
 				{
-					fitLength = mid;
-					low = mid + 1;
+					VisualSegment vseg;
+					vseg.length = overlapEnd - overlapStart;
+					vseg.color = seg.color;
+					vl.segments.push_back(vseg);
+				}
+
+				currentPos = segEnd;
+				if (currentPos >= vlEnd) break;
+			}
+		}
+
+		// Stable stop check
+		if (firstDirtyLine != -1 && (i32)i > firstDirtyLine && visuals.size() == oldVisuals.size())
+		{
+			bool match = true;
+			for (size_t v = 0; v < visuals.size(); v++)
+			{
+				if (visuals[v].startColumn != oldVisuals[v].startColumn ||
+					visuals[v].length != oldVisuals[v].length ||
+					std::abs(visuals[v].width - oldVisuals[v].width) > 0.01f ||
+					visuals[v].segments.size() != oldVisuals[v].segments.size())
+				{
+					match = false;
+					break;
+				}
+				// check segments
+				if (v < oldVisuals.size() && visuals[v].segments.size() == oldVisuals[v].segments.size())
+				{
+					for (size_t s = 0; s < visuals[v].segments.size(); s++)
+					{
+						if (visuals[v].segments[s].length != oldVisuals[v].segments[s].length ||
+							visuals[v].segments[s].color.getRgba() != oldVisuals[v].segments[s].color.getRgba())
+						{
+							match = false;
+							break;
+						}
+					}
 				}
 				else
 				{
-					high = mid - 1;
+					match = false;
 				}
+				if (!match) break;
 			}
 
-			if (fitLength == 0 && remaining > 0)
+			if (match)
 			{
-				// If strictly nothing fits (e.g. one very wide char > width), force 1 char
-				fitLength = 1;
+				// Stable! We can stop here.
+				printf("computeVisualLines: stable stop at line %d (lines left: %zu)\n", (i32)i, lines.size() - i - 1);
+				break;
 			}
+		}
+	}
 
-			i32 lengthOnLine = fitLength;
-			bool forceWrap = false;
+	if (lines_processed > 0 || visualLines.empty())
+	{
+		// Flatten results
+		visualLines.clear();
+		maxLineWidth = 0.0f;
+		// DO NOT reset caretVisualLineIndex to -1 here if we are returning early or not re-calculating!
+		// It should persist if the layout is stable.
+		caretVisualLineIndex = (size_t)-1;
 
-			// If we are wrapping (not at end of line), try to break at space
-			if (currentStart + fitLength < line.size())
+		// Pre-allocation to avoid re-allocs
+		size_t estimatedTotal = lines.size();
+		if (isWrapping) estimatedTotal = (size_t)(estimatedTotal * 1.2f);
+		visualLines.reserve(estimatedTotal);
+
+		for (size_t i = 0; i < lineVisuals.size(); ++i)
+		{
+			for (const auto& vl : lineVisuals[i])
 			{
-				bool foundBreak = false;
-				i32 breakIdx = fitLength;
+				visualLines.push_back(&vl); // Store pointers to avoid O(N) vector copies!
+				if (vl.width > maxLineWidth) maxLineWidth = vl.width;
 
-				// search backwards for space
-				for (i32 k = fitLength; k > 0; k--)
+				if (vl.logicalLineIndex == currentLine)
 				{
-					// Check char at index (currentStart + k - 1)
-					u32 ch = line[currentStart + k - 1];
-					if (ch == ' ' || ch == '\t' || ch == '-')
+					if (caretColumn >= vl.startColumn && caretColumn <= vl.startColumn + vl.length)
 					{
-						breakIdx = k;
-						foundBreak = true;
-						break;
+						if (caretVisualLineIndex == (size_t)-1 || caretColumn == vl.startColumn)
+							caretVisualLineIndex = visualLines.size() - 1;
 					}
 				}
-
-				if (foundBreak)
-				{
-					lengthOnLine = breakIdx;
-				}
 			}
-
-			VisualLine vl;
-			vl.logicalLineIndex = (i32)i;
-			vl.startColumn = currentStart;
-			vl.length = lengthOnLine;
-			// Measure actual width of this segment for alignment/layout (optional but good)
-			// avoiding alloc again if possible, but state update is rare compared to draw
-			Utf32String seg(line.begin() + currentStart, line.begin() + currentStart + lengthOnLine);
-			vl.width = font->computeTextSize(seg.data(), (u32)seg.size()).width;
-
-			visualLines.push_back(vl);
-
-			currentStart += lengthOnLine;
 		}
+	}
+
+	auto total_layout_end = std::chrono::high_resolution_clock::now();
+	std::chrono::duration<double, std::milli> total_layout_elapsed = total_layout_end - total_layout_start;
+	if (lines_processed > 0)
+	{
+		printf("computeVisualLines: processed %d lines in %.3f ms (avg %.4f/line, start: %d, reason: %s)\n", 
+			lines_processed, total_layout_elapsed.count(), total_layout_elapsed.count() / lines_processed, 
+			start, forceLayoutUpdate ? "force" : (visualLines.empty() ? "empty" : "dirty"));
 	}
 }
 
@@ -1052,25 +1224,22 @@ void MultilineTextInputState::processKeyEvent(const InputEvent& ev)
 		if (!visualLines.empty())
 		{
 			i32 vIdx = -1;
-			// Find current visual line
+			// Find visual index for caret - deterministic search
 			for (size_t i = 0; i < visualLines.size(); ++i)
 			{
-				const auto& vl = visualLines[i];
-				if (vl.logicalLineIndex == currentLine)
+				const auto vl = visualLines[i];
+				if (vl->logicalLineIndex == currentLine)
 				{
-					if (caretColumn >= vl.startColumn && caretColumn <= vl.startColumn + vl.length)
+					bool isLastSegment = (i + 1 >= visualLines.size() || visualLines[i + 1]->logicalLineIndex != currentLine);
+
+					if (caretColumn >= vl->startColumn && caretColumn < vl->startColumn + vl->length)
 					{
 						vIdx = (i32)i;
-						if (caretColumn < vl.startColumn + vl.length)
-						{
-							vIdx = (i32)i;
-							break;
-						}
-						// Ambiguous case: caret is exactly at split point (end of this line, start of next)
-						// If isLastSegment, it's definitely this line.
-						// If caretPreferLineEnd is true, we want this line.
-						// Otherwise we prioritize the NEXT line (which will be found in next iteration).
-						bool isLastSegment = (i + 1 >= visualLines.size() || visualLines[i+1].logicalLineIndex != currentLine);
+						break;
+					}
+
+					if (caretColumn == vl->startColumn + vl->length)
+					{
 						if (isLastSegment || caretPreferLineEnd)
 						{
 							vIdx = (i32)i;
@@ -1079,46 +1248,35 @@ void MultilineTextInputState::processKeyEvent(const InputEvent& ev)
 					}
 				}
 			}
-			// Reset affinity after moving off the line
-			caretPreferLineEnd = false;
-			// Use last match if ambiguous (e.g. end of line) and we are at end of segment?
-			// Actually getCaretScreenPosition logic was specific.
-			// Simple logic: if caretColumn is within [start, start+length], pick it.
-			// If at split point (end of one, start of next), which one?
-			// If we are at end of a wrapped line, we are visually at end of that line.
-			// If we are at start of next wrapped line, we are visually at start.
-			// They are the same logical index!
-			// We need to decide based on "affinity".
-			// But for ArrowUp, we just want "the visual line we are on".
-			// If we are at split point, logically we are at index X.
-			// Visually, index X is end of line A and start of line B.
-			// Standard behavior: if I press End, I'm at end of A. If I type char, it stays on A (until wrap).
-			// If I just arrived there, usually I am at B start if wrapped?
-			// Let's assume strict inequality for start: caretColumn < start + length, except for last segment.
 
-			if (vIdx == -1 && !visualLines.empty())
+			 // fallback to last visual segment for the current logical line
+			if (vIdx == -1)
 			{
-				// fallback search
 				for (size_t i = 0; i < visualLines.size(); ++i)
 				{
-					if (visualLines[i].logicalLineIndex == currentLine) vIdx = (i32)i; // last one
-					if (visualLines[i].logicalLineIndex > currentLine) break;
+					if (visualLines[i]->logicalLineIndex == currentLine) vIdx = (i32)i;
+					if (visualLines[i]->logicalLineIndex > currentLine) break;
 				}
 			}
+
+			// Reset affinity after moving off the line
+			caretPreferLineEnd = false;
 
 			if (vIdx > 0)
 			{
-				const auto& currVl = visualLines[vIdx];
-				const auto& prevVl = visualLines[vIdx - 1];
+				const auto currVl = visualLines[vIdx];
+				const auto prevVl = visualLines[vIdx - 1];
 
-				i32 dist = caretColumn - currVl.startColumn;
-				// target is min(dist, prevVl.length) relative to start
+				i32 dist = caretColumn - currVl->startColumn;
+				currentLine = prevVl->logicalLineIndex;
+				caretColumn = prevVl->startColumn + std::min(dist, prevVl->length);
 
-				currentLine = prevVl.logicalLineIndex;
-				caretColumn = prevVl.startColumn + std::min(dist, prevVl.length);
+				// update cached visual index
+				caretVisualLineIndex = (size_t)(vIdx - 1);
 			}
 		}
 
+		// selection handling unchanged...
 		if (has(ev.key.modifiers, KeyModifiers::Shift))
 		{
 			if (!selectionActive)
@@ -1128,112 +1286,6 @@ void MultilineTextInputState::processKeyEvent(const InputEvent& ev)
 				selectionStartColumn = prevColumn;
 			}
 
-			selectionEndLine = currentLine;
-			selectionEndColumn = caretColumn;
-		}
-		else
-		{
-			deselect();
-		}
-	}
-	else if (ev.key.code == KeyCode::Home)
-	{
-		caretPreferLineEnd = false;
-		i32 prevLine = currentLine;
-		i32 prevColumn = caretColumn;
-
-		// Move to start of visual line
-		if (!visualLines.empty())
-		{
-			// Find current visual line
-			for (size_t i = 0; i < visualLines.size(); ++i)
-			{
-				const auto& vl = visualLines[i];
-				if (vl.logicalLineIndex == currentLine)
-				{
-					bool isLastSeg = (i + 1 >= visualLines.size() || visualLines[i + 1].logicalLineIndex != currentLine);
-
-					bool match = false;
-					if (isLastSeg)
-						match = (caretColumn >= vl.startColumn && caretColumn <= vl.startColumn + vl.length);
-					else
-						match = (caretColumn >= vl.startColumn && caretColumn < vl.startColumn + vl.length);
-
-					if (match)
-					{
-						// Found it
-						caretColumn = vl.startColumn;
-						break;
-					}
-				}
-			}
-		}
-		else
-		{
-			caretColumn = 0;
-		}
-
-		if (has(ev.key.modifiers, KeyModifiers::Shift))
-		{
-			if (!selectionActive)
-			{
-				selectionActive = true;
-				selectionStartLine = prevLine;
-				selectionStartColumn = prevColumn;
-			}
-			selectionEndLine = currentLine;
-			selectionEndColumn = caretColumn;
-		}
-		else
-		{
-			deselect();
-		}
-	}
-	else if (ev.key.code == KeyCode::End)
-	{
-		caretPreferLineEnd = true;
-		i32 prevLine = currentLine;
-		i32 prevColumn = caretColumn;
-
-		// Move to end of visual line
-		if (!visualLines.empty())
-		{
-			// Find current visual line
-			for (size_t i = 0; i < visualLines.size(); ++i)
-			{
-				const auto& vl = visualLines[i];
-				if (vl.logicalLineIndex == currentLine)
-				{
-					bool isLastSeg = (i + 1 >= visualLines.size() || visualLines[i + 1].logicalLineIndex != currentLine);
-
-					bool match = false;
-					if (isLastSeg)
-						match = (caretColumn >= vl.startColumn && caretColumn <= vl.startColumn + vl.length);
-					else
-						match = (caretColumn >= vl.startColumn && caretColumn < vl.startColumn + vl.length);
-
-					if (match)
-					{
-						// Found it
-						caretColumn = vl.startColumn + vl.length;
-						break;
-					}
-				}
-			}
-		}
-		else
-		{
-			caretColumn = lines[currentLine].size();
-		}
-
-		if (has(ev.key.modifiers, KeyModifiers::Shift))
-		{
-			if (!selectionActive)
-			{
-				selectionActive = true;
-				selectionStartLine = prevLine;
-				selectionStartColumn = prevColumn;
-			}
 			selectionEndLine = currentLine;
 			selectionEndColumn = caretColumn;
 		}
@@ -1251,30 +1303,21 @@ void MultilineTextInputState::processKeyEvent(const InputEvent& ev)
 		if (!visualLines.empty())
 		{
 			i32 vIdx = -1;
-			// Find current visual line
+			// Find current visual index same deterministic way as ArrowUp
 			for (size_t i = 0; i < visualLines.size(); ++i)
 			{
-				const auto& vl = visualLines[i];
-				if (vl.logicalLineIndex == currentLine)
+				const auto vl = visualLines[i];
+				if (vl->logicalLineIndex == currentLine)
 				{
-					// logic to find correct visual segment:
-					// if caret < start + length, found.
-					// if caret == start + length, it could be this one (if last) or next one (if wrapped).
-					// usually cursor stays on previous line if possible? No, it flows.
-					// Let's bias towards the START of the next line if ambiguous?
-					// No, bias towards END of current line if ambiguous (e.g. typing)
-					// But for navigation, we usually want stability.
+					bool isLastSegment = (i + 1 >= visualLines.size() || visualLines[i + 1]->logicalLineIndex != currentLine);
 
-					bool isLastSeg = (i + 1 >= visualLines.size() || visualLines[i+1].logicalLineIndex != currentLine);
-
-					if (caretColumn >= vl.startColumn && caretColumn < vl.startColumn + vl.length)
+					if (caretColumn >= vl->startColumn && caretColumn < vl->startColumn + vl->length)
 					{
 						vIdx = (i32)i;
 						break;
 					}
 
-					bool isLastSegment = (i + 1 >= visualLines.size() || visualLines[i+1].logicalLineIndex != currentLine);
-					if (caretColumn == vl.startColumn + vl.length)
+					if (caretColumn == vl->startColumn + vl->length)
 					{
 						if (isLastSegment || caretPreferLineEnd)
 						{
@@ -1285,28 +1328,31 @@ void MultilineTextInputState::processKeyEvent(const InputEvent& ev)
 				}
 			}
 
-			// Reset affinity after choice
-			caretPreferLineEnd = false;
-
 			// Fallback
 			if (vIdx == -1)
 			{
 				for (size_t i = 0; i < visualLines.size(); ++i)
-					if (visualLines[i].logicalLineIndex == currentLine) vIdx = (i32)i;
+					if (visualLines[i]->logicalLineIndex == currentLine) vIdx = (i32)i;
 			}
+
+			caretPreferLineEnd = false;
 
 			if (vIdx != -1 && vIdx < (i32)visualLines.size() - 1)
 			{
-				const auto& currVl = visualLines[vIdx];
-				const auto& nextVl = visualLines[vIdx + 1];
+				const auto currVl = visualLines[vIdx];
+				const auto nextVl = visualLines[vIdx + 1];
 
-				i32 dist = caretColumn - currVl.startColumn;
+				i32 dist = caretColumn - currVl->startColumn;
 
-				currentLine = nextVl.logicalLineIndex;
-				caretColumn = nextVl.startColumn + std::min(dist, nextVl.length);
+				currentLine = nextVl->logicalLineIndex;
+				caretColumn = nextVl->startColumn + std::min(dist, nextVl->length);
+
+				// update cached visual index
+				caretVisualLineIndex = (size_t)(vIdx + 1);
 			}
 		}
 
+		// selection handling unchanged...
 		if (has(ev.key.modifiers, KeyModifiers::Shift))
 		{
 			if (!selectionActive)
@@ -1324,7 +1370,6 @@ void MultilineTextInputState::processKeyEvent(const InputEvent& ev)
 			deselect();
 		}
 	}
-
 	else if (ev.key.code == KeyCode::Tab)
 	{
 		// use insertTextAtCaret to handle selection deletion etc
@@ -1356,6 +1401,7 @@ void MultilineTextInputState::processKeyEvent(const InputEvent& ev)
 			lines[currentLine].erase(lines[currentLine].begin() + caretColumn - 1);
 			caretColumn--;
 			textChanged = true;
+			markLineDirty(currentLine);
 		}
 		else if (currentLine > 0)
 		{
@@ -1365,6 +1411,15 @@ void MultilineTextInputState::processKeyEvent(const InputEvent& ev)
 			lines.erase(lines.begin() + currentLine);
 			currentLine--;
 			textChanged = true;
+			markLineDirty(currentLine);
+
+			// Prevent stale visual pointers after mutate
+			visualLines.clear();
+			lineVisuals.resize(lines.size());
+			if (lineStates.size() != lines.size()) lineStates.resize(lines.size(), -1);
+			caretVisualLineIndex = (size_t)-1;
+			firstDirtyLine = 0;
+			forceLayoutUpdate = true;
 		}
 
 		// soft scroll up if we have empty space at bottom
@@ -1387,6 +1442,7 @@ void MultilineTextInputState::processKeyEvent(const InputEvent& ev)
 		{
 			lines[currentLine].erase(lines[currentLine].begin() + caretColumn);
 			textChanged = true;
+			markLineDirty(currentLine);
 		}
 		else if (currentLine < lines.size() - 1)
 		{
@@ -1394,6 +1450,15 @@ void MultilineTextInputState::processKeyEvent(const InputEvent& ev)
 			lines[currentLine].insert(lines[currentLine].end(), lines[currentLine + 1].begin(), lines[currentLine + 1].end());
 			lines.erase(lines.begin() + currentLine + 1);
 			textChanged = true;
+			markLineDirty(currentLine);
+
+			// Prevent stale visual pointers after mutate
+			visualLines.clear();
+			lineVisuals.resize(lines.size());
+			if (lineStates.size() != lines.size()) lineStates.resize(lines.size(), -1);
+			caretVisualLineIndex = (size_t)-1;
+			firstDirtyLine = 0;
+			forceLayoutUpdate = true;
 		}
 
 		// soft scroll up if we have empty space at bottom
@@ -1599,35 +1664,58 @@ void MultilineTextInputState::processKeyEvent(const InputEvent& ev)
 // Helper to hash rules
 static u64 computeRulesHash(const RangeHighlight* rules, u32 count, const KeywordInfo* keywords, u32 keywordCount)
 {
-	u64 h = 0;
+	u64 h = 0x811c9dc5; // FNV offset basis
+	auto hashStr = [&](const char* s) {
+		if (!s) return;
+		while (*s) {
+			h ^= (u64)*s++;
+			h *= 0x100000001b3; // FNV prime
+		}
+	};
+
 	for (u32 i = 0; i < count; i++)
 	{
-		// simple pointer/color hash
-		h ^= (u64)rules[i].beginKeyword;
-		h = (h << 5) | (h >> 59); // rotate
-		h ^= (u64)rules[i].endKeyword;
+		hashStr(rules[i].beginKeyword);
+		hashStr(rules[i].endKeyword);
+		hashStr(rules[i].escapeKeyword);
 		h ^= rules[i].color.getRgba();
+		h *= 0x100000001b3;
 	}
 	for (u32 i = 0; i < keywordCount; i++)
 	{
-		h ^= (u64)keywords[i].keyword;
-		h = (h << 3) | (h >> 61);
+		hashStr(keywords[i].keyword);
 		h ^= keywords[i].color.getRgba();
+		h *= 0x100000001b3;
 	}
 	return h;
 }
 
 void MultilineTextInputState::updateSyntaxHighlighting(const RangeHighlight* rules, u32 count, const KeywordInfo* keywords, u32 keywordCount)
 {
-	u64 newHash = computeRulesHash(rules, count, keywords, keywordCount);
-
-	if (!textChanged && newHash == lastRulesHash && lineStates.size() == lines.size())
+	// O(1) fast-path check: if pointers and counts match and text is clean, skip everything
+	if (!textChanged 
+		&& rules == lastRulesPtr 
+		&& count == lastRuleCount 
+		&& keywords == lastKeywordsPtr 
+		&& keywordCount == lastKeywordCount 
+		&& lineStates.size() == lines.size())
 		return;
 
-	lastRulesHash = newHash;
-	lineStates.resize(lines.size());
+	u64 newHash = computeRulesHash(rules, count, keywords, keywordCount);
+	u64 prevHash = lastRulesHash; // save previous hash to decide incremental vs full
 
-	std::fill(lineStates.begin(), lineStates.end(), -1);
+	// Update pointers/counters used for future fast-path checks (but don't use lastRulesHash yet)
+	lastRulesPtr = rules;
+	lastRuleCount = count;
+	lastKeywordsPtr = keywords;
+	lastKeywordCount = keywordCount;
+
+	if (lineStates.size() != lines.size())
+		lineStates.resize(lines.size(), -1);
+
+	printf("MultilineTextInputState::updateSyntaxHighlighting entering: firstDirtyLine=%d, textChanged=%d\n", firstDirtyLine, (int)textChanged);
+	auto total_syntax_start = std::chrono::high_resolution_clock::now();
+	i32 syntax_lines_processed = 0;
 
 	// Convert rules/keywords to UTF-32
 	rules32.resize(count);
@@ -1637,6 +1725,7 @@ void MultilineTextInputState::updateSyntaxHighlighting(const RangeHighlight* rul
 		ctx->settings.services.utf8To32(rules[i].endKeyword, rules32[i].end);
 		if (rules[i].escapeKeyword)
 			ctx->settings.services.utf8To32(rules[i].escapeKeyword, rules32[i].escape);
+		rules32[i].info = &rules[i];
 	}
 
 	keywords32.resize(keywordCount);
@@ -1646,12 +1735,38 @@ void MultilineTextInputState::updateSyntaxHighlighting(const RangeHighlight* rul
 		keywords32[i].info = &keywords[i];
 	}
 
-	if (lines.empty()) return;
+	if (lines.empty())
+	{
+		lastRulesHash = newHash;
+		return;
+	}
 
+	i32 start = 0;
 	i32 currentState = -1;
 
-	for (size_t i = 0; i < lines.size(); i++)
+	// Decide incremental vs full rescan using previous hash (prevHash)
+	if (prevHash == newHash && !lineStates.empty() && firstDirtyLine != -1)
 	{
+		// incremental: start one line earlier to preserve multi-line rule state
+		start = std::max(0, firstDirtyLine - 1);
+		// seed currentState from previous line if available
+		if (start > 0)
+			currentState = lineStates[start - 1];
+		else
+			currentState = -1;
+	}
+	else
+	{
+		// full rescan needed: reset states
+		start = 0;
+		currentState = -1;
+		std::fill(lineStates.begin(), lineStates.end(), -1);
+	}
+
+	// Perform scan starting at 'start'
+	for (size_t i = (size_t)start; i < lines.size(); ++i)
+	{
+		syntax_lines_processed++;
 		lineStates[i] = currentState;
 		const Utf32String& line = lines[i];
 
@@ -1661,50 +1776,36 @@ void MultilineTextInputState::updateSyntaxHighlighting(const RangeHighlight* rul
 			if (currentState != -1)
 			{
 				const auto& endKw = rules32[currentState].end;
-				
+
 				// Handle empty end keyword as "end of line"
 				if (endKw.empty())
 				{
-					// It ends at newline, which effectively means end of this string (since lines are split by newline)
-					// So we just break and set state to -1 for next line
 					currentState = -1;
-					break; 
+					break;
 				}
 
 				bool match = true;
 				if (c + endKw.size() > line.size()) match = false;
 				else
 				{
-					for (size_t k = 0; k < endKw.size(); k++)
-						if (line[c + k] != endKw[k]) { match = false; break; }
+					for (size_t k = 0; k < endKw.size(); k++) if (line[c + k] != endKw[k]) { match = false; break; }
 
-					if (match)
+					if (match && !rules32[currentState].escape.empty())
 					{
-						// Check for escape sequence
-						const auto& escKw = rules32[currentState].escape;
-						if (!escKw.empty())
+						// Count consecutive escapes ending at c-1
+						size_t escCount = 0;
+						size_t backIdx = c;
+						while (backIdx >= rules32[currentState].escape.size())
 						{
-							// Count consecutive escapes ending at c-1
-							size_t escCount = 0;
-							size_t backIdx = c;
-							while (backIdx >= escKw.size())
-							{
-								backIdx -= escKw.size();
-								bool escMatch = true;
-								for (size_t k = 0; k < escKw.size(); k++)
-								{
-									if (line[backIdx + k] != escKw[k]) { escMatch = false; break; }
-								}
-								if (escMatch) escCount++;
-								else break;
-							}
-
-							// If odd number of escapes, checking backwards from endKw, then this endKw is escaped.
-							if (escCount % 2 != 0)
-							{
-								match = false;
-							}
+							backIdx -= rules32[currentState].escape.size();
+							bool escMatch = true;
+							for (size_t k = 0; k < rules32[currentState].escape.size(); k++)
+								if (line[backIdx + k] != rules32[currentState].escape[k]) { escMatch = false; break; }
+							if (escMatch) escCount++;
+							else break;
 						}
+						if (escCount % 2 != 0)
+							match = false;
 					}
 				}
 
@@ -1722,8 +1823,6 @@ void MultilineTextInputState::updateSyntaxHighlighting(const RangeHighlight* rul
 			{
 				// Check for rule starts
 				i32 bestRule = -1;
-				
-				// Check in order of definition
 				for (u32 r = 0; r < count; r++)
 				{
 					const auto& startKw = rules32[r].begin;
@@ -1740,7 +1839,7 @@ void MultilineTextInputState::updateSyntaxHighlighting(const RangeHighlight* rul
 					if (match)
 					{
 						bestRule = (i32)r;
-						break; // Found first matching rule
+						break;
 					}
 				}
 
@@ -1756,16 +1855,161 @@ void MultilineTextInputState::updateSyntaxHighlighting(const RangeHighlight* rul
 			}
 		}
 
-		// Handle single-line rules explicitly if end keyword was empty or a newline
+		// If a rule is still open and its end is single-line, close it here
 		if (currentState != -1)
 		{
-			// If rule end is empty or \n, reset state
 			if (rules32[currentState].end.empty() || (rules32[currentState].end.size() == 1 && rules32[currentState].end[0] == '\n'))
 			{
 				currentState = -1;
 			}
 		}
+
+		// Incremental stop: if we've passed the dirty region and state matches next line, stop
+		if (firstDirtyLine != -1 && (i32)i > firstDirtyLine && (i32)i + 1 < (i32)lineStates.size())
+		{
+			if (lineStates[i + 1] == currentState)
+			{
+				break;
+			}
+		}
 	}
+
+	// commit the new rules hash after processing
+	lastRulesHash = newHash;
+
+	auto total_syntax_end = std::chrono::high_resolution_clock::now();
+	std::chrono::duration<double, std::milli> total_syntax_elapsed = total_syntax_end - total_syntax_start;
+	if (syntax_lines_processed > 0)
+	{
+		printf("updateSyntaxHighlighting: processed %d lines in %.3f ms (avg %.4f ms/line)\n",
+			syntax_lines_processed, total_syntax_elapsed.count(), total_syntax_elapsed.count() / syntax_lines_processed);
+	}
+}
+
+void MultilineTextInputState::markLineDirty(i32 logicalLineIndex)
+{
+	if (logicalLineIndex < 0) return;
+	if (firstDirtyLine == -1 || logicalLineIndex < firstDirtyLine)
+		firstDirtyLine = logicalLineIndex;
+}
+
+void MultilineTextInputState::calculateSegments(const Utf32String& line, i32 initialState, std::vector<VisualSegment>& outSegments,
+	const RangeHighlight* rules, u32 ruleCount, const KeywordInfo* keywords, u32 keywordCount)
+{
+	outSegments.clear();
+	if (line.empty()) return;
+	auto start_time = std::chrono::high_resolution_clock::now();
+
+	i32 currentState = initialState;
+	i32 lastSwitchPos = 0;
+	Color defaultColor = themeElement->normalState().textColor;
+
+	// Helper to add segment
+	auto appendSegment = [&](i32 end, Color color) {
+		if (end > lastSwitchPos)
+		{
+			VisualSegment seg;
+			seg.length = end - lastSwitchPos;
+			seg.color = color;
+			outSegments.push_back(seg);
+			lastSwitchPos = end;
+		}
+	};
+
+	for (size_t c = 0; c < line.size(); )
+	{
+		i32 oldState = currentState;
+		if (currentState != -1)
+		{
+			const auto& endKw = rules32[currentState].end;
+			if (endKw.empty()) { currentState = -1; appendSegment((i32)line.size(), rules32[oldState].info->color); break; }
+
+			bool match = true;
+			if (c + endKw.size() > line.size()) match = false;
+			else
+			{
+				for (size_t k = 0; k < endKw.size(); k++) if (line[c + k] != endKw[k]) { match = false; break; }
+				if (match && !rules32[currentState].escape.empty())
+				{
+					size_t escCount = 0; i32 backIdx = (i32)c;
+					while (backIdx >= (i32)rules32[currentState].escape.size())
+					{
+						backIdx -= (i32)rules32[currentState].escape.size();
+						bool escMatch = true;
+						for (size_t k = 0; k < rules32[currentState].escape.size(); k++) if (line[backIdx + k] != rules32[currentState].escape[k]) { escMatch = false; break; }
+						if (escMatch) escCount++; else break;
+					}
+					if (escCount % 2 != 0) match = false;
+				}
+			}
+
+			if (match)
+			{
+				appendSegment((i32)c + (i32)endKw.size(), rules32[currentState].info->color);
+				c += endKw.size();
+				currentState = -1;
+			}
+			else c++;
+		}
+		else
+		{
+			// Try keywords first
+			bool keywordMatched = false;
+			for (u32 k = 0; k < keywords32.size(); k++)
+			{
+				const auto& kw = keywords32[k].keyword;
+				if (c + kw.size() <= line.size())
+				{
+					// Boundary check
+					bool bound = true;
+					if (c > 0) { u32 prev = line[c - 1]; if ((prev >= 'a' && prev <= 'z') || (prev >= 'A' && prev <= 'Z') || (prev >= '0' && prev <= '9') || prev == '_') bound = false; }
+					if (bound && c + kw.size() < line.size()) { u32 next = line[c + kw.size()]; if ((next >= 'a' && next <= 'z') || (next >= 'A' && next <= 'Z') || (next >= '0' && next <= '9') || next == '_') bound = false; }
+					
+					if (bound)
+					{
+						bool match = true;
+						for (size_t i = 0; i < kw.size(); i++) if (line[c + i] != kw[i]) { match = false; break; }
+						if (match)
+						{
+							appendSegment((i32)c, defaultColor);
+							appendSegment((i32)c + (i32)kw.size(), keywords32[k].info->color);
+							c += kw.size();
+							keywordMatched = true;
+							break;
+						}
+					}
+				}
+			}
+
+			if (!keywordMatched)
+			{
+				i32 bestRule = -1;
+				for (u32 r = 0; r < rules32.size(); r++)
+				{
+					const auto& startKw = rules32[r].begin;
+					if (startKw.empty()) continue;
+					bool match = true;
+					if (c + startKw.size() > line.size()) match = false;
+					else for (size_t k = 0; k < startKw.size(); k++) if (line[c + k] != startKw[k]) { match = false; break; }
+					if (match) { bestRule = (i32)r; break; }
+				}
+
+				if (bestRule != -1)
+				{
+					appendSegment((i32)c, defaultColor);
+					currentState = bestRule;
+					c += rules32[bestRule].begin.size();
+				}
+				else c++;
+			}
+		}
+	}
+	appendSegment((i32)line.size(), (initialState != -1) ? rules32[initialState].info->color : defaultColor);
+
+	auto end_time = std::chrono::high_resolution_clock::now();
+	std::chrono::duration<double, std::milli> elapsed = end_time - start_time;
+	if (elapsed.count() > 0.1) // Only print if it's significant to avoid spam
+		printf("calculateSegments took %.3f ms\n", elapsed.count());
 }
 
 }

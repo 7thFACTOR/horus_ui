@@ -70,27 +70,45 @@ struct MultilineTextInputState
 	// Duplicate event protection
 	u32 lastKeyProcessFrame = 0;
 
+	struct VisualSegment
+	{
+		i32 length = 0;
+		Color color;
+	};
+
 	struct VisualLine
 	{
 		i32 logicalLineIndex = 0;
 		i32 startColumn = 0;
 		i32 length = 0;
 		f32 width = 0;
+		std::vector<VisualSegment> segments;
 	};
 
-	std::vector<VisualLine> visualLines;
-	void computeVisualLines(class Font* font, f32 availableWidth);
+	std::vector<const VisualLine*> visualLines;
+	std::vector<std::vector<VisualLine>> lineVisuals; // Per-logical-line cache
+	void computeVisualLines(class Font* font, f32 availableWidth, 
+		const struct RangeHighlight* rules, u32 ruleCount, 
+		const struct KeywordInfo* keywords, u32 keywordCount);
 	f32 lastLayoutWidth = 0.0f;
+	f32 maxLineWidth = 0.0f;
+	size_t caretVisualLineIndex = (size_t)-1;
 
 	// Syntax highlighting state
 	std::vector<i32> lineStates; // Index of active range highlight at start of line, -1 if none
 	u64 lastRulesHash = 0;
+	const struct RangeHighlight* lastRulesPtr = nullptr;
+	const struct KeywordInfo* lastKeywordsPtr = nullptr;
+	u32 lastRuleCount = 0;
+	u32 lastKeywordCount = 0;
+	std::vector<VisualSegment> tempSegments;
 	void updateSyntaxHighlighting(const struct RangeHighlight* rules, u32 count, const struct KeywordInfo* keywords, u32 keywordCount);
 
 	struct Rule32 {
 		Utf32String begin;
 		Utf32String end;
 		Utf32String escape;
+		const struct RangeHighlight* info;
 	};
 	std::vector<Rule32> rules32;
 
@@ -100,7 +118,18 @@ struct MultilineTextInputState
 	};
 	std::vector<Keyword32> keywords32;
 
+	void calculateSegments(const Utf32String& line, i32 initialState, std::vector<VisualSegment>& outSegments,
+		const struct RangeHighlight* rules, u32 ruleCount, 
+		const struct KeywordInfo* keywords, u32 keywordCount);
 	f32 calculateTextSegmentWidth(class Font* font, const Utf32String& line, i32 startCol, i32 length, i32 logicalLineIndex);
+	std::vector<char> utf8LineBuffer;
+
+	// Incremental updates
+	i32 firstDirtyLine = -1;
+	bool forceLayoutUpdate = false;
+	bool lastHasScrollbarV = false;
+	size_t totalTextLength = 0;
+	void markLineDirty(i32 logicalLineIndex);
 };
 
 }

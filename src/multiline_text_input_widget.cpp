@@ -6,6 +6,7 @@
 #include "font.h"
 #include <cmath>
 #include "util.h"
+#include <chrono>
 
 namespace hui
 {
@@ -15,9 +16,9 @@ bool multilineTextInput(
 	u32 maxLength,
 	u32 visibleLines,
 	MultilineTextInputFlags flags,
-	KeywordInfo* keywords,
+	const KeywordInfo* keywords,
 	u32 keywordCount,
-	RangeHighlight* rangeHighlights,
+	const RangeHighlight* rangeHighlights,
 	u32 rangeHighlightCount)
 {
 	auto bodyElem = &ctx->theme->getElement(WidgetElementId::MultilineTextInputBody);
@@ -120,6 +121,8 @@ bool multilineTextInput(
 		state.selectionActive = false;
 		state.flags = flags;
 
+		printf("multilineTextInput: full re-parse/edit triggered (ID: %s)\n", id);
+
 
 
 		// parse existing text into lines
@@ -143,6 +146,12 @@ bool multilineTextInput(
 		state.lines.push_back(currentLine);
 		if (state.lines.empty())
 			state.lines.push_back(Utf32String());
+
+		state.totalTextLength = 0;
+		for (const auto& line : state.lines)
+			state.totalTextLength += line.size();
+		if (state.lines.size() > 1)
+			state.totalTextLength += state.lines.size() - 1; // newlines
 
 		if (state.selectAllOnFocus && has(flags, MultilineTextInputFlags::AutoSelectAll))
 			state.selectAll();
@@ -170,6 +179,7 @@ bool multilineTextInput(
 		ctx->settings.services.startTextInput(ctx->lastHoveredNativeWindow, rc);
 		bodyElemState = &bodyElem->getState(WidgetStateType::Focused);
 		forceRepaint();
+		state.editNow = false;
 	}
 
 	if (ctx->widget.hovered)
@@ -204,6 +214,8 @@ bool multilineTextInput(
 		state.clipRect = clipRect;
 	}
 
+	state.updateSyntaxHighlighting(rangeHighlights, rangeHighlightCount, keywords, keywordCount);
+
 	// update visual lines if needed
 	// we need to anticipate if vertical scrollbar will appear.
 	// reserve space for continuation indicator
@@ -211,52 +223,57 @@ bool multilineTextInput(
 	auto& breakLineElem = ctx->theme->getElement(WidgetElementId::MultilineTextInputWordWrap);
 	f32 markerWidth = breakLineElem.normalState().width * ctx->scale;
 	if (markerWidth <= 0) markerWidth = 4.0f * ctx->scale;
-	f32 markerGap = 2.0f * ctx->scale; // gap between text and marker, and right edge
+	f32 markerGap = 4.0f * ctx->scale; // gap between text and marker, and right edge
 	f32 markerHeight = breakLineElem.normalState().height * ctx->scale;
 	if (markerHeight <= 0) markerHeight = bodyElemState->font->getMetrics().height * 0.2f;
-	f32 overhangBuffer = 2.0f * ctx->scale;
+	f32 overhangBuffer = 4.0f * ctx->scale;
 	f32 indicatorMargin = markerGap + markerWidth + overhangBuffer;
-	f32 effectiveWidth = clipRect.width - indicatorMargin;
-
-	if (state.textChanged || std::abs(state.lastLayoutWidth - effectiveWidth) > 0.1f || state.visualLines.empty())
+	
+	// Use previous frame's scrollbar state to stabilize width and avoid oscillation
+	f32 vBarWidth = 0.0f;
+	if (state.lastHasScrollbarV && has(flags, MultilineTextInputFlags::WordWrap))
 	{
-		state.computeVisualLines(bodyElemState->font, effectiveWidth);
+		auto& sbV_check = ctx->theme->getElement(WidgetElementId::ScrollViewScrollBarV).normalState();
+		vBarWidth = std::ceil(sbV_check.width * ctx->scale);
+	}
+
+	f32 effectiveWidth = std::floor(clipRect.width - indicatorMargin - vBarWidth);
+
+	if (state.textChanged || std::abs(state.lastLayoutWidth - effectiveWidth) > 0.5f || state.visualLines.empty())
+	{
+		printf("multilineTextInput: triggered computeVisualLines. textChanged=%d, width(%.1f -> %.1f), empty=%d\n", 
+			(int)state.textChanged, state.lastLayoutWidth, effectiveWidth, (int)state.visualLines.empty());
+		state.computeVisualLines(bodyElemState->font, effectiveWidth, rangeHighlights, rangeHighlightCount, keywords, keywordCount);
 		state.lastLayoutWidth = effectiveWidth;
 	}
 
-	// pre-calculate content height and VBar need for correct wrapping
+	// calculate content height and VBar need for correct wrapping
 	f32 totalContentHeight = state.visualLines.size() * lineHeight;
 	f32 scrollAreaV = clipRect.height;
 	bool hasVerticalScrollbar = totalContentHeight > scrollAreaV;
+	state.lastHasScrollbarV = hasVerticalScrollbar;
 
-	// if we need VBar and wrapping is ON, re-compute lines with reduced width
-	if (hasVerticalScrollbar && has(flags, MultilineTextInputFlags::WordWrap))
+	// if we need VBar but didn't account for it, or don't need it but did account for it, re-compute
+	if (has(flags, MultilineTextInputFlags::WordWrap))
 	{
-		auto& sbV_check = ctx->theme->getElement(WidgetElementId::ScrollViewScrollBarV).normalState();
-		f32 vBarWidth = std::ceil(sbV_check.width * ctx->scale);
-		f32 reducedWidth = std::floor(clipRect.width - vBarWidth - indicatorMargin);
-
-		if (std::abs(state.lastLayoutWidth - reducedWidth) > 0.1f)
+		f32 actualWidth = std::floor(clipRect.width - indicatorMargin - (hasVerticalScrollbar ? vBarWidth : 0.0f));
+		if (std::abs(state.lastLayoutWidth - actualWidth) > 0.5f)
 		{
-			state.computeVisualLines(bodyElemState->font, reducedWidth);
-			state.lastLayoutWidth = reducedWidth;
-			// update total content height after re-wrap
+			printf("multilineTextInput: re-triggered computeVisualLines (Scrollbar changed). width(%.1f -> %.1f)\n", 
+				state.lastLayoutWidth, actualWidth);
+			state.computeVisualLines(bodyElemState->font, actualWidth, rangeHighlights, rangeHighlightCount, keywords, keywordCount);
+			state.lastLayoutWidth = actualWidth;
+			// Height might change after re-wrap
 			totalContentHeight = state.visualLines.size() * lineHeight;
 		}
 	}
-
-	// state.scrollId is already calculated above
-
-
 	// process Input (Typing, Navigation)
-	// input processing is handled in beginFrame() for the active widget
-	// so we don't need to call it manually here to avoid double processing.
 	if (isEditingThis)
 	{
-		// state.processEvent(ctx->event);
+		// state.processEvent is handled in beginFrame
 	}
 
-	if (isEditingThis)
+	if (isEditingThis && state.textChanged)
 	{
 		// write back to text buffer
 		Utf32String fullText;
@@ -267,7 +284,7 @@ bool multilineTextInput(
 				fullText.push_back('\n');
 		}
 
-		ctx->settings.services.utf32To8NoAlloc(fullText.data(), fullText.size(), text, maxLength);
+		ctx->settings.services.utf32To8NoAlloc(fullText.data(), (u32)fullText.size(), text, maxLength);
 	}
 
 	// draw background
@@ -278,25 +295,8 @@ bool multilineTextInput(
 	else
 		ctx->renderer.cmdDrawFilledRectangle(ctx->widget.rect);
 
-	// calculate total content height early for scrollbar detection
-	// f32 totalContentHeight = state.visualLines.size() * lineHeight;
-
-	// calculate maxLineWidth early for scrollbar detection
-	f32 maxLineWidth = 0;
-	{
-		if (has(flags, MultilineTextInputFlags::WordWrap))
-		{
-			maxLineWidth = 1.0f; // small value to ensure no HBar, ScrollView expands layout to view width anyway
-		}
-		else
-		{
-			for (const auto& vl : state.visualLines)
-			{
-				if (vl.width > maxLineWidth)
-					maxLineWidth = vl.width;
-			}
-		}
-	}
+	// used cached maxLineWidth
+	f32 maxLineWidth = state.maxLineWidth;
 
 	// f32 scrollAreaV = clipRect.height;
 	f32 scrollAreaH = clipRect.width;
@@ -367,7 +367,10 @@ bool multilineTextInput(
 	// draw line highlights and numbers
 	for (i32 i = startLine; i < endLine && i < state.visualLines.size(); i++)
 	{
-		const auto& vl = state.visualLines[i];
+		const auto vl = state.visualLines[i];
+		// defensive: skip invalid visual lines
+		if (!vl) continue;
+		if ((size_t)vl->logicalLineIndex >= state.lines.size()) continue;
 		f32 yPos = clipRect.y + i * lineHeight - currentScrollYEarly;
 
 		// use originalClipRect for visibility check because clipRect is indented
@@ -375,7 +378,7 @@ bool multilineTextInput(
 			continue;
 
 		// current line highlighting
-		if (vl.logicalLineIndex == state.currentLine && isEditingThis)
+		if (vl->logicalLineIndex == state.currentLine && isEditingThis)
 		{
 			ctx->renderer.cmdSetColor(currentLineHighlightElemState.color);
 
@@ -407,7 +410,7 @@ bool multilineTextInput(
 		}
 
 		// draw line number only on first visual line of a logical line
-		if (has(flags, MultilineTextInputFlags::LineNumbers) && vl.startColumn == 0)
+		if (has(flags, MultilineTextInputFlags::LineNumbers) && vl->startColumn == 0)
 		{
 			// ... (drawing logic below needs to be inside loop or separate?)
 			// the original code had separate loops for highlights and numbers?
@@ -557,39 +560,7 @@ bool multilineTextInput(
 			// we iterate through lines starting from the current scroll position to find 2 non-empty lines.
 
 			int visibleNonEmptyLines = 0;
-			size_t caretVisualLineIndex = (size_t)-1;
-
-			// find caret visual line index to treat it as "Content"
-			if (isEditingThis)
-			{
-				for (size_t i = 0; i < state.visualLines.size(); ++i)
-				{
-					const auto& vl = state.visualLines[i];
-					if (vl.logicalLineIndex == state.currentLine)
-					{
-						if (state.caretColumn >= vl.startColumn && state.caretColumn <= vl.startColumn + vl.length)
-						{
-							caretVisualLineIndex = i;
-							// if we are exactly at the split point, we might match the first segment.
-							// for drift logic, this is fine.
-							// we prioritize the LAST matching segment if we want to follow the cursor precisely?
-							// actually, break on first match is safer for performance, and usually correct enough for drift.
-							// if we are at the START of a wrapped line, we match the second segment.
-							// if we are at the END of a wrapped line, we match the first segment.
-							// basically, if the visual line contains the caret, we drift-protect it.
-							// if caret is at split point, preserving either is usually fine as they are adjacent.
-							// let's refine: if caretColumn == vl.startColumn, we definitely match this line.
-							// if caretColumn == vl.startCol + vl.length...
-							// if this is the LAST segment of the logical line, we match.
-							// if there is a NEXT segment (wrap), it will likely start at caretColumn.
-							// we might want to prefer the NEXT segment if possible?
-							// for now, simple match is sufficient to prevent drift.
-							// we continue to see if we find a "better" match? No.
-							break;
-						}
-					}
-				}
-			}
+			size_t caretVisualLineIndex = state.caretVisualLineIndex;
 
 			if (lineHeight > 0)
 			{
@@ -597,21 +568,27 @@ bool multilineTextInput(
 				// because scroll position is in visual units.
 				size_t firstVisualLineIndex = (size_t)(initialScroll.y / lineHeight);
 
-				for (size_t i = firstVisualLineIndex; i < state.visualLines.size(); ++i)
+				// limit scan to 20 lines to avoid O(N) hit on 100k+ line files
+				size_t scanLimit = std::min(state.visualLines.size(), firstVisualLineIndex + 20);
+
+				for (size_t i = firstVisualLineIndex; i < scanLimit; ++i)
 				{
-					const auto& vl = state.visualLines[i];
-					const auto& lineText = state.lines[vl.logicalLineIndex];
+					const auto vl = state.visualLines[i];
+					// defensive: skip invalid visual lines
+					if (!vl) continue;
+					if ((size_t)vl->logicalLineIndex >= state.lines.size()) continue;
+					const auto& lineText = state.lines[vl->logicalLineIndex];
 
 					// check if this visual segment has meaningful content
 					// we need to check the specific substring for this visual line
 					bool hasContent = false;
 
 					// optimization: Just check if the segment length > 0 and if it contains non-whitespace
-					if (vl.length > 0)
+					if (vl->length > 0)
 					{
-						for (size_t c = 0; c < vl.length; c++)
+						for (size_t c = 0; c < vl->length; c++)
 						{
-							u32 ch = lineText[vl.startColumn + c];
+							u32 ch = lineText[vl->startColumn + c];
 							if (ch > 32 && ch != 160)
 							{
 								hasContent = true;
@@ -697,6 +674,7 @@ bool multilineTextInput(
 	// draw selection
 	if (isEditingThis && state.selectionActive)
 	{
+		auto sel_start = std::chrono::high_resolution_clock::now();
 		i32 startLine = state.selectionStartLine;
 		i32 startCol = state.selectionStartColumn;
 		i32 endLine = state.selectionEndLine;
@@ -708,45 +686,50 @@ bool multilineTextInput(
 			std::swap(startCol, endCol);
 		}
 
-		for (i32 i = firstLine; i < lastLine && i < state.visualLines.size(); i++)
+		for (i32 i = firstLine; i < lastLine && i < (i32)state.visualLines.size(); i++)
 		{
-			const auto& vl = state.visualLines[i];
+			const auto vl = state.visualLines[i];
+			// defensive: skip invalid visual lines
+			if (!vl) continue;
+			if ((size_t)vl->logicalLineIndex >= state.lines.size()) continue;
 			f32 yPos = clipRect.y + i * lineHeight - currentScrollY;
 
 			if (yPos + lineHeight < clipRect.y || yPos > clipRect.bottom())
 				continue;
 
-			// check if this visual line is within the selection range
-			if (vl.logicalLineIndex < startLine || vl.logicalLineIndex > endLine)
+				// check if this visual line is within the selection range
+			if (vl->logicalLineIndex < startLine || vl->logicalLineIndex > endLine)
 				continue;
 
 			i32 selStartOnLine = 0;
-			i32 selEndOnLine = vl.length;
+			i32 selEndOnLine = vl->length;
 
-			if (vl.logicalLineIndex == startLine)
+			if (vl->logicalLineIndex == startLine)
 			{
-				if (startCol >= vl.startColumn + vl.length) continue; // selection starts after this segment
-				selStartOnLine = std::max(0, startCol - vl.startColumn);
+				if (startCol >= vl->startColumn + vl->length) continue; // selection starts after this segment
+				selStartOnLine = std::max(0, startCol - vl->startColumn);
 			}
 
-			if (vl.logicalLineIndex == endLine)
+			if (vl->logicalLineIndex == endLine)
 			{
-				if (endCol <= vl.startColumn) continue; // selection ends before this segment
-				selEndOnLine = std::min(vl.length, endCol - vl.startColumn);
+				if (endCol <= vl->startColumn) continue; // selection ends before this segment
+				selEndOnLine = std::min(vl->length, endCol - vl->startColumn);
 			}
 
 			// handle case where we select the newline character (effectively selecting past the end)
 			// in visual lines, likely only the last segment of a logical line should visualize newline selection?
 			// if vl is the last segment of a logical line:
-			bool isLastSegment = (vl.startColumn + vl.length == state.lines[vl.logicalLineIndex].size());
+			// make sure startColumn index is valid for the referenced logical line
+			auto& logicalLine = state.lines[vl->logicalLineIndex];
+			bool isLastSegment = (vl->startColumn + vl->length == (i32)logicalLine.size());
 			bool selectingNewline = false;
 
-			if (vl.logicalLineIndex < endLine && isLastSegment)
+			if (vl->logicalLineIndex < endLine && isLastSegment)
 			{
 				// we are selecting past this line, so we are selecting the newline
 				selectingNewline = true;
 			}
-			else if (vl.logicalLineIndex == endLine && endCol == state.lines[vl.logicalLineIndex].size() && isLastSegment)
+			else if (vl->logicalLineIndex == endLine && (size_t)endCol == logicalLine.size() && isLastSegment)
 			{
 				// explicitly selecting to end of line
 				selectingNewline = false; // usually standard editors don't select newline if just at end, unless endLine > currentLine
@@ -757,8 +740,8 @@ bool multilineTextInput(
 			if (selStartOnLine >= selEndOnLine && !selectingNewline)
 				continue;
 
-			Utf32String textToStart(state.lines[vl.logicalLineIndex].begin() + vl.startColumn, state.lines[vl.logicalLineIndex].begin() + vl.startColumn + selStartOnLine);
-			Utf32String selectedText(state.lines[vl.logicalLineIndex].begin() + vl.startColumn + selStartOnLine, state.lines[vl.logicalLineIndex].begin() + vl.startColumn + selEndOnLine);
+			Utf32String textToStart(logicalLine.begin() + vl->startColumn, logicalLine.begin() + vl->startColumn + selStartOnLine);
+			Utf32String selectedText(logicalLine.begin() + vl->startColumn + selStartOnLine, logicalLine.begin() + vl->startColumn + selEndOnLine);
 
 			FontTextSize toStartSize = font->computeTextSize(textToStart.data(), (u32)textToStart.size());
 			FontTextSize selectedSize = font->computeTextSize(selectedText.data(), (u32)selectedText.size());
@@ -793,6 +776,9 @@ bool multilineTextInput(
 				ctx->renderer.cmdDrawFilledRectangle(selRect);
 			}
 		}
+		auto sel_end = std::chrono::high_resolution_clock::now();
+		std::chrono::duration<double, std::milli> sel_elapsed = sel_end - sel_start;
+		if (sel_elapsed.count() > 0.05) printf("Selection rendering took %.3f ms\n", sel_elapsed.count());
 	}
 
 
@@ -833,19 +819,22 @@ bool multilineTextInput(
 		ctx->renderer.cmdSetColor(lnState.textColor);
 		ctx->renderer.cmdSetFont(lnState.font);
 
-		for (i32 i = firstLine; i < lastLine && i < state.visualLines.size(); i++)
+		for (i32 i = firstLine; i < lastLine && i < (i32)state.visualLines.size(); i++)
 		{
-			const auto& vl = state.visualLines[i];
+			const auto vl = state.visualLines[i];
+			// defensive: skip invalid visual lines
+			if (!vl) continue;
+			if ((size_t)vl->logicalLineIndex >= state.lines.size()) continue;
 			f32 yPos = clipRect.y + i * lineHeight - currentScrollY;
 
 			if (yPos + lineHeight < clipRect.y || yPos > clipRect.bottom())
 				continue;
 
 			// only draw line number for the first segment of a logical line
-			if (vl.startColumn == 0)
+			if (vl->startColumn == 0)
 			{
 				char numStr[32];
-				sprintf(numStr, "%d", vl.logicalLineIndex + 1);
+				sprintf(numStr, "%d", vl->logicalLineIndex + 1);
 
 				Rect lnRect;
 				lnRect.x = clipRect.x - sidebarWidth + 5.0f;
@@ -866,97 +855,15 @@ bool multilineTextInput(
 		ctx->renderer.pushClipRect(clipRect); // restore inner clip
 	}
 
-	// compute active range at start of first visible line
-	RangeHighlight* activeRangeAtStart = nullptr;
-	if (rangeHighlights && rangeHighlightCount > 0 && !state.visualLines.empty())
-	{
-		u32 targetLine = state.visualLines[firstLine].logicalLineIndex;
-		RangeHighlight* currentRange = nullptr;
-
-		for (u32 l = 0; l < targetLine && l < state.lines.size(); l++)
-		{
-			auto& logicLine = state.lines[l];
-			char* utf8Text = nullptr;
-			ctx->settings.services.utf32To8(logicLine, &utf8Text);
-			if (utf8Text)
-			{
-				char* ptr = utf8Text;
-				while (*ptr)
-				{
-					if (currentRange)
-					{
-						if (currentRange->endKeyword && currentRange->endKeyword[0] != '\0')
-						{
-							char* searchPtr = ptr;
-							char* endPtr = nullptr;
-							while (true)
-							{
-								endPtr = strstr(searchPtr, currentRange->endKeyword);
-								if (endPtr && currentRange->escapeKeyword)
-								{
-									size_t escLen = strlen(currentRange->escapeKeyword);
-									if ((size_t)(endPtr - utf8Text) >= escLen && strncmp(endPtr - escLen, currentRange->escapeKeyword, escLen) == 0)
-									{
-										searchPtr = endPtr + 1;
-										continue;
-									}
-								}
-								break;
-							}
-							if (endPtr)
-							{
-								ptr = endPtr + strlen(currentRange->endKeyword);
-								currentRange = nullptr;
-							}
-							else
-							{
-								break; // continued on next line
-							}
-						}
-						else
-						{
-							break; // ends at end of line
-						}
-					}
-					else
-					{
-						RangeHighlight* bestRange = nullptr;
-						char* bestPtr = nullptr;
-						for (u32 r = 0; r < rangeHighlightCount; r++)
-						{
-							char* match = strstr(ptr, rangeHighlights[r].beginKeyword);
-							if (match && (!bestPtr || match < bestPtr))
-							{
-								bestPtr = match;
-								bestRange = &rangeHighlights[r];
-							}
-						}
-						if (bestRange)
-						{
-							currentRange = bestRange;
-							ptr = bestPtr + strlen(bestRange->beginKeyword);
-						}
-						else
-						{
-							break;
-						}
-					}
-				}
-				delete[] utf8Text;
-				// if currentRange has no endKeyword, it effectively terminates at EOL
-				if (currentRange && (!currentRange->endKeyword || currentRange->endKeyword[0] == '\0'))
-					currentRange = nullptr;
-			}
-		}
-		activeRangeAtStart = currentRange;
-	}
-
-	RangeHighlight* currentActiveRange = activeRangeAtStart;
 
 	// draw text
-	for (i32 i = firstLine; i < lastLine && i < state.visualLines.size(); i++)
+	auto text_start = std::chrono::high_resolution_clock::now();
+	for (i32 i = firstLine; i < lastLine && i < (i32)state.visualLines.size(); i++)
 	{
-		const auto& vl = state.visualLines[i];
+		const auto vl = state.visualLines[i];
+		// defensive: skip invalid visual lines
+		if (!vl) continue;
+		if ((size_t)vl->logicalLineIndex >= state.lines.size()) continue;
 		f32 yPos = clipRect.y + i * lineHeight - currentScrollY;
 
 		// double check visibility
@@ -973,187 +880,46 @@ bool multilineTextInput(
 
 		// extract segment text
 		// utf32String doesn't have substr, construct from iterator range
-		if (vl.startColumn >= state.lines[vl.logicalLineIndex].size())
-			continue; // should not happen for valid segments unless empty line
-
-		auto& logicLine = state.lines[vl.logicalLineIndex];
-		size_t safelyEnd = std::min(logicLine.size(), (size_t)(vl.startColumn + vl.length));
-		Utf32String segmentText(logicLine.begin() + vl.startColumn, logicLine.begin() + safelyEnd);
-
-		char* lineText = nullptr;
-		ctx->settings.services.utf32To8(segmentText, &lineText);
+		// ensure startColumn is valid for the referenced logical line
+		auto& logicLine = state.lines[vl->logicalLineIndex];
+		if ((size_t)vl->startColumn >= logicLine.size())
+			continue; // nothing to draw for this visual segment (defensive)
+		size_t safelyEnd = std::min(logicLine.size(), (size_t)(vl->startColumn + vl->length));
+		
+		// Use persistent buffer to avoid per-line allocations
+		state.utf8LineBuffer.resize((safelyEnd - vl->startColumn) * 4 + 1);
+		char* lineText = state.utf8LineBuffer.data();
+		ctx->settings.services.utf32To8NoAlloc(logicLine.data() + vl->startColumn, (u32)(safelyEnd - vl->startColumn), lineText, (u32)state.utf8LineBuffer.size());
 
 		if (lineText && lineText[0])
 		{
-			if ((keywords && keywordCount > 0) || (rangeHighlights && rangeHighlightCount > 0))
+			f32 currentX = textRect.x;
+			i32 vsegOffset = 0;
+
+			for (const auto& vseg : vl->segments)
 			{
-				f32 currentX = textRect.x;
-				char* currentPtr = lineText;
+				if (vseg.length <= 0) continue;
 
-				while (*currentPtr)
-				{
-					if (currentActiveRange)
-					{
-						char* bestEnd = nullptr;
-						if (currentActiveRange->endKeyword && currentActiveRange->endKeyword[0] != '\0')
-						{
-							char* searchPtr = currentPtr;
-							while (true)
-							{
-								bestEnd = strstr(searchPtr, currentActiveRange->endKeyword);
-								if (bestEnd && currentActiveRange->escapeKeyword)
-								{
-									size_t escLen = strlen(currentActiveRange->escapeKeyword);
-									if ((size_t)(bestEnd - lineText) >= escLen && strncmp(bestEnd - escLen, currentActiveRange->escapeKeyword, escLen) == 0)
-									{
-										searchPtr = bestEnd + 1;
-										continue;
-									}
-								}
-								break;
-							}
-						}
+				char* vsegTextBuf = state.utf8LineBuffer.data();
+				// Use the persistent buffer for this specific segment to ensure null-termination
+				ctx->settings.services.utf32To8NoAlloc(logicLine.data() + vl->startColumn + vsegOffset, (u32)vseg.length, vsegTextBuf, (u32)state.utf8LineBuffer.size());
 
-						if (bestEnd)
-						{
-							size_t len = (bestEnd - currentPtr) + strlen(currentActiveRange->endKeyword);
-							std::string segment(currentPtr, len);
-
-							ctx->renderer.cmdSetColor(currentActiveRange->color);
-							Rect segRect = textRect;
-							segRect.x = currentX;
-							ctx->renderer.cmdDrawTextInBox(
-								segment.c_str(),
-								segRect,
-								HAlignType::Left,
-								VAlignType::Bottom, false, true);
-
-							currentX += font->computeTextSize(segment.c_str()).width;
-							currentPtr += len;
-							currentActiveRange = nullptr;
-						}
-						else
-						{
-							ctx->renderer.cmdSetColor(currentActiveRange->color);
-							Rect segRect = textRect;
-							segRect.x = currentX;
-							ctx->renderer.cmdDrawTextInBox(
-								currentPtr,
-								segRect,
-								HAlignType::Left,
-								VAlignType::Bottom, false, true);
-							break;
-						}
-					}
-					else
-					{
-						KeywordInfo* bestKw = nullptr;
-						RangeHighlight* bestRange = nullptr;
-						char* bestPtr = nullptr;
-
-						if (keywords)
-						{
-							for (u32 k = 0; k < keywordCount; k++)
-							{
-								char* ptr = strstr(currentPtr, keywords[k].keyword);
-								if (ptr && (!bestPtr || ptr < bestPtr))
-								{
-									bestPtr = ptr;
-									bestKw = &keywords[k];
-									bestRange = nullptr;
-								}
-							}
-						}
-
-						if (rangeHighlights)
-						{
-							for (u32 r = 0; r < rangeHighlightCount; r++)
-							{
-								char* ptr = strstr(currentPtr, rangeHighlights[r].beginKeyword);
-								if (ptr && (!bestPtr || ptr < bestPtr))
-								{
-									bestPtr = ptr;
-									bestRange = &rangeHighlights[r];
-									bestKw = nullptr;
-								}
-							}
-						}
-
-						if (bestPtr)
-						{
-							size_t dist = bestPtr - currentPtr;
-							if (dist > 0)
-							{
-								std::string segment(currentPtr, dist);
-								ctx->renderer.cmdSetColor(bodyElemState->textColor);
-								Rect segRect = textRect;
-								segRect.x = currentX;
-								ctx->renderer.cmdDrawTextInBox(
-									segment.c_str(),
-									segRect,
-									HAlignType::Left,
-									VAlignType::Bottom, false, true);
-								currentX += font->computeTextSize(segment.c_str()).width;
-							}
-
-							if (bestRange)
-							{
-								ctx->renderer.cmdSetColor(bestRange->color);
-								Rect kwRect = textRect;
-								kwRect.x = currentX;
-								ctx->renderer.cmdDrawTextInBox(
-									bestRange->beginKeyword,
-									kwRect,
-									HAlignType::Left,
-									VAlignType::Bottom, false, true);
-
-								currentX += font->computeTextSize(bestRange->beginKeyword).width;
-								currentActiveRange = bestRange;
-								currentPtr = bestPtr + strlen(bestRange->beginKeyword);
-								continue;
-							}
-							else if (bestKw)
-							{
-								ctx->renderer.cmdSetColor(bestKw->color);
-								Rect kwRect = textRect;
-								kwRect.x = currentX;
-								ctx->renderer.cmdDrawTextInBox(
-									bestKw->keyword,
-									kwRect,
-									HAlignType::Left,
-									VAlignType::Bottom, false, true);
-
-								currentX += font->computeTextSize(bestKw->keyword).width;
-								currentPtr = bestPtr + strlen(bestKw->keyword);
-							}
-						}
-						else
-						{
-							ctx->renderer.cmdSetColor(bodyElemState->textColor);
-							Rect endRect = textRect;
-							endRect.x = currentX;
-							ctx->renderer.cmdDrawTextInBox(
-								currentPtr,
-								endRect,
-								HAlignType::Left,
-								VAlignType::Bottom, false, true);
-							break;
-						}
-					}
-				}
-			}
-			else
-			{
+				ctx->renderer.cmdSetColor(vseg.color);
+				Rect segRect = textRect;
+				segRect.x = currentX;
 				ctx->renderer.cmdDrawTextInBox(
-					lineText,
-					textRect,
+					vsegTextBuf,
+					segRect,
 					HAlignType::Left,
 					VAlignType::Bottom, false, true);
+
+				currentX += font->computeTextSize(vsegTextBuf).width;
+				vsegOffset += vseg.length;
 			}
 		}
 
 		// draw continuation symbol if this segment is followed by more content on the same logical line
-		if (vl.startColumn + vl.length < state.lines[vl.logicalLineIndex].size())
+		if (vl->startColumn + vl->length < (i32)logicLine.size())
 		{
 			// draw simple filled rect at end of line
 			// x position is fixed to the right side of the view area
@@ -1176,18 +942,11 @@ bool multilineTextInput(
 				ctx->renderer.cmdDrawFilledRectangle(contRect);
 			}
 		}
-		else
-		{
-			// end of logical line. Clear currentActiveRange if it has no endKeyword
-			if (currentActiveRange && (!currentActiveRange->endKeyword || currentActiveRange->endKeyword[0] == '\0'))
-			{
-				currentActiveRange = nullptr;
-			}
+			// end of logical line.
 		}
-
-		if (lineText)
-			delete[] lineText;
-	}
+	auto text_end = std::chrono::high_resolution_clock::now();
+	std::chrono::duration<double, std::milli> text_elapsed = text_end - text_start;
+	if (text_elapsed.count() > 0.05) printf("Text rendering took %.3f ms\n", text_elapsed.count());
 
 	// advance layout position so ScrollView knows the content height
 	ctx->position.y += totalContentHeight;
@@ -1208,7 +967,11 @@ bool multilineTextInput(
 
 	popLayout();
 
-	return state.textChanged;
+	bool changed = state.textChanged;
+	state.textChanged = false;
+	state.firstDirtyLine = -1;
+	state.forceLayoutUpdate = false;
+	return changed;
 }
 
 }
