@@ -3,7 +3,6 @@
 #include "font.h"
 #include "context.h"
 #include "theme.h"
-#include <chrono>
 #include <algorithm>
 
 namespace hui
@@ -49,7 +48,7 @@ void MultilineTextInputState::deleteSelection()
 		std::swap(startCol, endCol);
 	}
 
-	// Calculate deleted length BEFORE modifying lines
+	// calculate deleted length BEFORE modifying lines
 	size_t deletedCount = 0;
 	if (startLine == endLine)
 	{
@@ -83,12 +82,13 @@ void MultilineTextInputState::deleteSelection()
 		lines.erase(lines.begin() + startLine, lines.begin() + endLine + 1);
 		lines.insert(lines.begin() + startLine, remainingText);
 
-		// Synchronize other per-line caches
+		// synchronize other per-line caches
 		if (lineVisuals.size() > (size_t)endLine)
 		{
 			lineVisuals.erase(lineVisuals.begin() + startLine, lineVisuals.begin() + endLine + 1);
 			lineVisuals.insert(lineVisuals.begin() + startLine, std::vector<VisualLine>());
 		}
+		
 		if (lineStates.size() > (size_t)endLine)
 		{
 			lineStates.erase(lineStates.begin() + startLine, lineStates.begin() + endLine + 1);
@@ -98,14 +98,16 @@ void MultilineTextInputState::deleteSelection()
 		markLineDirty(startLine);
 	}
 
-	// Prevent stale pointers: visualLines holds pointers into lineVisuals; clear and force recompute.
+	// prevent stale pointers: visualLines holds pointers into lineVisuals, clear and force recompute
 	visualLines.clear();
 	lineVisuals.resize(lines.size());
-	if (lineStates.size() != lines.size()) lineStates.resize(lines.size(), -1);
+	
+	if (lineStates.size() != lines.size())
+		lineStates.resize(lines.size(), -1);
+	
 	caretVisualLineIndex = (size_t)-1;
 	firstDirtyLine = 0;
 	forceLayoutUpdate = true;
-
 	currentLine = startLine;
 	caretColumn = startCol;
 	caretVisualLineIndex = (size_t)-1;
@@ -203,13 +205,17 @@ void MultilineTextInputState::insertTextAtCaret(const Utf32String& newText)
 		{
 			// split line at caret
 			Utf32String remaining(lines[currentLine].begin() + caretColumn, lines[currentLine].end());
+
 			lines[currentLine].erase(lines[currentLine].begin() + caretColumn, lines[currentLine].end());
 			currentLine++;
 			lines.insert(lines.begin() + currentLine, remaining);
+
 			if (lineVisuals.size() > (size_t)currentLine - 1)
 				lineVisuals.insert(lineVisuals.begin() + currentLine, std::vector<VisualLine>());
+
 			if (lineStates.size() > (size_t)currentLine - 1)
 				lineStates.insert(lineStates.begin() + currentLine, -1);
+
 			caretColumn = 0;
 			totalTextLength++;
 		}
@@ -245,14 +251,16 @@ void MultilineTextInputState::insertTextAtCaret(const Utf32String& newText)
 		}
 	}
 
-	// Prevent stale pointers: visualLines holds pointers into lineVisuals; clear and force recompute.
+	// prevent stale pointers: visualLines holds pointers into lineVisuals, clear and force recompute
 	visualLines.clear();
 	lineVisuals.resize(lines.size());
-	if (lineStates.size() != lines.size()) lineStates.resize(lines.size(), -1);
+
+	if (lineStates.size() != lines.size())
+		lineStates.resize(lines.size(), -1);
+
 	caretVisualLineIndex = (size_t)-1;
 	firstDirtyLine = 0;
 	forceLayoutUpdate = true;
-
 	textChanged = true;
 }
 
@@ -265,13 +273,13 @@ Point MultilineTextInputState::getCaretScreenPosition()
 		return Point(clipRect.x, clipRect.y);
 
 	f32 lineHeight = font->getMetrics().height;
-
 	size_t foundVisualLine = caretVisualLineIndex;
 
-	if (foundVisualLine == (size_t)-1 || foundVisualLine >= visualLines.size()
+	if (foundVisualLine == (size_t)-1
+		|| foundVisualLine >= visualLines.size()
 		|| visualLines[foundVisualLine]->logicalLineIndex != currentLine)
 	{
-		// Fallback: search if cache is invalid using Binary Search (O(log N))
+		// fallback: search if cache is invalid
 		auto it = std::lower_bound(visualLines.begin(), visualLines.end(), currentLine, 
 			[](const VisualLine* vl, i32 lineIdx) {
 				return vl->logicalLineIndex < lineIdx;
@@ -282,11 +290,12 @@ Point MultilineTextInputState::getCaretScreenPosition()
 			size_t startIdx = std::distance(visualLines.begin(), it);
 			foundVisualLine = startIdx;
 
-			// Check if we need to refine for wrapped lines
+			// check if we need to refine for wrapped lines
 			for (size_t i = startIdx; i < visualLines.size() && visualLines[i]->logicalLineIndex == currentLine; ++i)
 			{
 				const auto vl = visualLines[i];
 				bool isLastSegment = true;
+				
 				if (i + 1 < visualLines.size() && visualLines[i + 1]->logicalLineIndex == currentLine)
 					isLastSegment = false;
 
@@ -310,7 +319,10 @@ Point MultilineTextInputState::getCaretScreenPosition()
 
 	if (foundVisualLine == (size_t)-1 && !visualLines.empty())
 	{
-		if (currentLine >= (i32)lines.size()) foundVisualLine = visualLines.size() - 1;
+		if (currentLine >= (i32)lines.size())
+		{
+			foundVisualLine = visualLines.size() - 1;
+		}
 		else
 		{
 			for (i32 i = (i32)visualLines.size() - 1; i >= 0; i--)
@@ -328,12 +340,10 @@ Point MultilineTextInputState::getCaretScreenPosition()
 		return Point(clipRect.x - scrollOffsetX, clipRect.y - scrollOffsetY);
 
 	const auto vl = visualLines[foundVisualLine];
-	
 	i32 relCaret = caretColumn - vl->startColumn;
 	if (relCaret < 0) relCaret = 0;
 	if (relCaret > vl->length) relCaret = vl->length;
 
-	// Use robust measurement that matches renderer logic (tokens)
 	f32 xOffset = calculateTextSegmentWidth(font, lines[currentLine], vl->startColumn, relCaret, vl->logicalLineIndex);
 
 	return Point(
@@ -347,8 +357,9 @@ f32 MultilineTextInputState::calculateTextSegmentWidth(Font* font, const Utf32St
 	if (length <= 0) return 0.0f;
 	if (!font) return 0.0f;
 
-	// Determine starting state
+	// determine starting state
 	i32 currentState = -1;
+
 	if (lineStates.size() > logicalLineIndex && logicalLineIndex >= 0)
 		currentState = lineStates[logicalLineIndex];
 
@@ -497,7 +508,6 @@ f32 MultilineTextInputState::calculateTextSegmentWidth(Font* font, const Utf32St
 								bool escMatch = true;
 								for (size_t k = 0; k < escKw.size(); k++)
 									if (line[backIdx+k] != escKw[k]) { escMatch = false; break; }
-								if (escMatch) escCount++; else break;
 							}
 							if (escCount % 2 != 0) escaped = true;
 						}
@@ -516,12 +526,8 @@ f32 MultilineTextInputState::calculateTextSegmentWidth(Font* font, const Utf32St
 					if (segEnd > endCol) segEnd = endCol; // Clamp if endKw crosses boundary?
 					// Actually if matchPos < endCol, but matchPos + len > endCol.
 					// We measure up to endCol.
-					// But logic says we consume the token.
-					// If we are measuring visual WIDTH.
-					// We should measure [c, matchPos) then [matchPos, matchPos+len).
-					// But syntax highlighting changes color, not necessarily font.
-					// However, splitting breaks kerning.
-					// So yes, we must process the split.
+					// If match starts at endCol, it's outside.
+					// If match starts before endCol, we should split there.
 					if (matchPos < endCol)
 					{
 						segEnd = matchPos + endKw.size(); // This might exceed endCol, handled by measure clamp?
@@ -634,6 +640,9 @@ f32 MultilineTextInputState::calculateTextSegmentWidth(Font* font, const Utf32St
 
 	return totalWidth;
 }
+
+// forward declaration so updateSyntaxHighlighting can call it
+static u64 computeRulesHash(const RangeHighlight* rules, u32 count, const KeywordInfo* keywords, u32 keywordCount);
 
 void MultilineTextInputState::computeScrollAmount()
 {
@@ -776,6 +785,19 @@ void MultilineTextInputState::computeVisualLines(Font* font, f32 availableWidth,
 		return;
 	}
 
+	// Ensure syntax rule caches are up-to-date when caller passed rules/keywds.
+	// calculateSegments relies on rules32/keywords32 populated by updateSyntaxHighlighting.
+	if (rules != nullptr || keywords != nullptr)
+	{
+		updateSyntaxHighlighting(rules, ruleCount, keywords, keywordCount);
+	}
+	else if (lastRulesPtr != nullptr || lastKeywordsPtr != nullptr)
+	{
+		// No new rules provided by caller — make sure cached rules/states are current
+		// so calculateSegments has correct initialState for multi-line ranges.
+		updateSyntaxHighlighting(lastRulesPtr, lastRuleCount, lastKeywordsPtr, lastKeywordCount);
+	}
+
 	bool widthChanged = std::abs(lastLayoutWidth - availableWidth) > 0.1f;
 	if (widthChanged || lineVisuals.empty() || forceLayoutUpdate)
 	{
@@ -794,12 +816,7 @@ void MultilineTextInputState::computeVisualLines(Font* font, f32 availableWidth,
 	if (firstDirtyLine == -1 && !visualLines.empty() && !forceLayoutUpdate)
 		return;
 
-	printf("MultilineTextInputState::computeVisualLines entering: firstDirtyLine=%d, visualLines.empty=%d, forceLayoutUpdate=%d, textChanged=%d\n", 
-		firstDirtyLine, (int)visualLines.empty(), (int)forceLayoutUpdate, (int)textChanged);
-
-	auto total_layout_start = std::chrono::high_resolution_clock::now();
 	i32 lines_processed = 0;
-
 	i32 start = (firstDirtyLine == -1) ? 0 : firstDirtyLine;
 	bool isWrapping = has(flags, MultilineTextInputFlags::WordWrap);
 
@@ -949,7 +966,6 @@ void MultilineTextInputState::computeVisualLines(Font* font, f32 availableWidth,
 			if (match)
 			{
 				// Stable! We can stop here.
-				printf("computeVisualLines: stable stop at line %d (lines left: %zu)\n", (i32)i, lines.size() - i - 1);
 				break;
 			}
 		}
@@ -987,15 +1003,360 @@ void MultilineTextInputState::computeVisualLines(Font* font, f32 availableWidth,
 			}
 		}
 	}
+}
 
-	auto total_layout_end = std::chrono::high_resolution_clock::now();
-	std::chrono::duration<double, std::milli> total_layout_elapsed = total_layout_end - total_layout_start;
-	if (lines_processed > 0)
+void MultilineTextInputState::updateSyntaxHighlighting(const RangeHighlight* rules, u32 count, const KeywordInfo* keywords, u32 keywordCount)
+{
+	// O(1) fast-path check: if pointers and counts match and text is clean and nothing is dirty, skip everything
+	if (!textChanged
+		&& rules == lastRulesPtr
+		&& count == lastRuleCount
+		&& keywords == lastKeywordsPtr
+		&& keywordCount == lastKeywordCount
+		&& lineStates.size() == lines.size()
+		&& firstDirtyLine == -1) // <- ensure we don't skip when there is dirty work
+		return;
+
+	u64 newHash = computeRulesHash(rules, count, keywords, keywordCount);
+	u64 prevHash = lastRulesHash; // save previous hash to decide incremental vs full
+
+	// Update pointers/counters used for future fast-path checks (but don't use lastRulesHash yet)
+	lastRulesPtr = rules;
+	lastRuleCount = count;
+	lastKeywordsPtr = keywords;
+	lastKeywordCount = keywordCount;
+
+	if (lineStates.size() != lines.size())
+		lineStates.resize(lines.size(), -1);
+
+	// Convert rules/keywords to UTF-32
+	rules32.resize(count);
+	for (u32 i = 0; i < count; i++)
 	{
-		printf("computeVisualLines: processed %d lines in %.3f ms (avg %.4f/line, start: %d, reason: %s)\n", 
-			lines_processed, total_layout_elapsed.count(), total_layout_elapsed.count() / lines_processed, 
-			start, forceLayoutUpdate ? "force" : (visualLines.empty() ? "empty" : "dirty"));
+		ctx->settings.services.utf8To32(rules[i].beginKeyword, rules32[i].begin);
+		ctx->settings.services.utf8To32(rules[i].endKeyword, rules32[i].end);
+		if (rules[i].escapeKeyword)
+			ctx->settings.services.utf8To32(rules[i].escapeKeyword, rules32[i].escape);
+		rules32[i].info = &rules[i];
 	}
+
+	keywords32.resize(keywordCount);
+	for (u32 i = 0; i < keywordCount; i++)
+	{
+		ctx->settings.services.utf8To32(keywords[i].keyword, keywords32[i].keyword);
+		keywords32[i].info = &keywords[i];
+	}
+
+	// If there are no lines, commit hash and return
+	if (lines.empty())
+	{
+		lastRulesHash = newHash;
+		return;
+	}
+
+	// If any rule is a multi-line range (end is not empty and not just '\n'),
+	// we won't rely on incremental heuristics for correctness.
+	bool hasMultilineRanges = false;
+	for (const auto& r : rules32)
+	{
+		if (!r.end.empty())
+		{
+			// treat a single '\n' end as single-line; anything else can be multi-line
+			if (!(r.end.size() == 1 && r.end[0] == '\n'))
+			{
+				hasMultilineRanges = true;
+				break;
+			}
+		}
+	}
+
+	i32 start = 0;
+	i32 currentState = -1;
+
+	// Decide incremental vs full rescan using previous hash (prevHash).
+	// We only allow incremental seed when rules didn't change and there is a dirty region
+	// AND we don't have multi-line ranges (they make incremental seeding fragile).
+	if (!hasMultilineRanges && prevHash == newHash && !lineStates.empty() && firstDirtyLine != -1)
+	{
+		// incremental: start one line earlier to preserve multi-line rule state
+		start = std::max(0, firstDirtyLine - 1);
+		// seed currentState from previous line if available
+		if (start > 0)
+			currentState = lineStates[start - 1];
+		else
+			currentState = -1;
+	}
+	else
+	{
+		// full rescan needed: reset states
+		start = 0;
+		currentState = -1;
+		std::fill(lineStates.begin(), lineStates.end(), -1);
+	}
+
+	// Perform scan starting at 'start' and proceed to the end (no early incremental stop).
+	for (size_t i = (size_t)start; i < lines.size(); ++i)
+	{
+		lineStates[i] = currentState;
+		const Utf32String& line = lines[i];
+
+		for (size_t c = 0; c < line.size(); )
+		{
+			// If inside a rule, check for end
+			if (currentState != -1)
+			{
+				const auto& endKw = rules32[currentState].end;
+
+				// Handle empty end keyword as "end of line"
+				if (endKw.empty())
+				{
+					currentState = -1;
+					break;
+				}
+
+				bool match = true;
+				if (c + endKw.size() > line.size()) match = false;
+				else
+				{
+					for (size_t k = 0; k < endKw.size(); k++) if (line[c + k] != endKw[k]) { match = false; break; }
+
+					if (match && !rules32[currentState].escape.empty())
+					{
+						// Count consecutive escapes ending at c-1
+						size_t escCount = 0;
+						size_t backIdx = c;
+						while (backIdx >= (i32)rules32[currentState].escape.size())
+						{
+							backIdx -= (i32)rules32[currentState].escape.size();
+							bool escMatch = true;
+							for (size_t k = 0; k < rules32[currentState].escape.size(); k++) if (line[backIdx + k] != rules32[currentState].escape[k]) { escMatch = false; break; }
+							if (escMatch) escCount++; else break;
+						}
+						if (escCount % 2 != 0) match = false;
+					}
+				}
+
+				if (match)
+				{
+					c += endKw.size();
+					currentState = -1;
+				}
+				else
+				{
+					c++;
+				}
+			}
+			else
+			{
+				// Check for rule starts
+				i32 bestRule = -1;
+				for (u32 r = 0; r < count; r++)
+				{
+					const auto& startKw = rules32[r].begin;
+					if (startKw.empty()) continue;
+
+					bool match = true;
+					if (c + startKw.size() > line.size()) match = false;
+					else for (size_t k = 0; k < startKw.size(); k++) if (line[c + k] != startKw[k]) { match = false; break; }
+					if (match) { bestRule = (i32)r; break; }
+				}
+
+				if (bestRule != -1)
+				{
+					currentState = bestRule;
+					c += rules32[bestRule].begin.size();
+				}
+				else c++;
+			}
+		}
+
+		// If a rule is still open and its end is single-line, close it here
+		if (currentState != -1)
+		{
+			if (rules32[currentState].end.empty() || (rules32[currentState].end.size() == 1 && rules32[currentState].end[0] == '\n'))
+			{
+				currentState = -1;
+			}
+		}
+
+		// NOTE: no early incremental stop — we must compute all states to be correct.
+	}
+
+	// commit the new rules hash after processing
+	lastRulesHash = newHash;
+
+	// Ensure visual layout is recomputed and repainted so multi-line ranges update immediately.
+	// Setting firstDirtyLine = 0 forces a full recompute.
+	firstDirtyLine = 0;
+	forceLayoutUpdate = true;
+	forceRepaint();
+}
+
+void MultilineTextInputState::markLineDirty(i32 logicalLineIndex)
+{
+	if (logicalLineIndex < 0) return;
+	if (firstDirtyLine == -1 || logicalLineIndex < firstDirtyLine)
+		firstDirtyLine = logicalLineIndex;
+}
+
+void MultilineTextInputState::calculateSegments(const Utf32String& line, i32 initialState, std::vector<VisualSegment>& outSegments,
+	const RangeHighlight* rules, u32 ruleCount, const KeywordInfo* keywords, u32 keywordCount)
+{
+	outSegments.clear();
+	if (line.empty()) return;
+
+	i32 currentState = initialState;
+	i32 lastSwitchPos = 0;
+	Color defaultColor = themeElement->normalState().textColor;
+
+	// Helper to add segment
+	auto appendSegment = [&](i32 end, Color color) {
+		if (end > lastSwitchPos)
+		{
+			VisualSegment seg;
+			seg.length = end - lastSwitchPos;
+			seg.color = color;
+			outSegments.push_back(seg);
+			lastSwitchPos = end;
+		}
+	};
+
+	for (size_t c = 0; c < line.size(); )
+	{
+		i32 oldState = currentState;
+		if (currentState != -1)
+		{
+			const auto& endKw = rules32[currentState].end;
+			if (endKw.empty()) { currentState = -1; appendSegment((i32)line.size(), rules32[oldState].info->color); break; }
+
+			bool match = true;
+			if (c + endKw.size() > line.size()) match = false;
+			else
+			{
+				for (size_t k = 0; k < endKw.size(); k++) if (line[c + k] != endKw[k]) { match = false; break; }
+
+				if (match && !rules32[currentState].escape.empty())
+				{
+					// Count consecutive escapes ending at c-1
+					size_t escCount = 0;
+					i32 backIdx = (i32)c;
+					while (backIdx >= (i32)rules32[currentState].escape.size())
+					{
+						backIdx -= (i32)rules32[currentState].escape.size();
+						bool escMatch = true;
+						for (size_t k = 0; k < rules32[currentState].escape.size(); k++) if (line[backIdx + k] != rules32[currentState].escape[k]) { escMatch = false; break; }
+						if (escMatch) escCount++; else break;
+					}
+					if (escCount % 2 != 0) match = false;
+				}
+			}
+
+			if (match)
+			{
+				appendSegment((i32)c + (i32)endKw.size(), rules32[currentState].info->color);
+				c += endKw.size();
+				currentState = -1;
+			}
+			else c++;
+		}
+		else
+		{
+			// Try keywords first
+			bool keywordMatched = false;
+			for (u32 k = 0; k < keywords32.size(); k++)
+			{
+				const auto& kw = keywords32[k].keyword;
+				if (c + kw.size() <= line.size())
+				{
+					// Boundary check
+					bool bound = true;
+					if (c > 0) { u32 prev = line[c - 1]; if ((prev >= 'a' && prev <= 'z') || (prev >= 'A' && prev <= 'Z') || (prev >= '0' && prev <= '9') || prev == '_') bound = false; }
+					if (bound && c + kw.size() < line.size()) { u32 next = line[c + kw.size()]; if ((next >= 'a' && next <= 'z') || (next >= 'A' && next <= 'Z') || (next >= '0' && next <= '9') || next == '_') bound = false; }
+					
+					if (bound)
+					{
+						bool match = true;
+						for (size_t i = 0; i < kw.size(); i++) if (line[c + i] != kw[i]) { match = false; break; }
+						if (match)
+						{
+							appendSegment((i32)c, defaultColor);
+							appendSegment((i32)c + (i32)kw.size(), keywords32[k].info->color);
+							c += kw.size();
+							keywordMatched = true;
+							break;
+						}
+					}
+				}
+			}
+
+			if (!keywordMatched)
+			{
+				i32 bestRule = -1;
+				for (u32 r = 0; r < rules32.size(); r++)
+				{
+					const auto& startKw = rules32[r].begin;
+					if (startKw.empty()) continue;
+					bool match = true;
+					if (c + startKw.size() > line.size()) match = false;
+					else for (size_t k = 0; k < startKw.size(); k++) if (line[c + k] != startKw[k]) { match = false; break; }
+					if (match) { bestRule = (i32)r; break; }
+				}
+
+				if (bestRule != -1)
+				{
+					appendSegment((i32)c, defaultColor);
+					currentState = bestRule;
+					c += rules32[bestRule].begin.size();
+				}
+				else c++;
+			}
+		}
+	}
+
+	// Determine correct color for trailing text: use the live currentState if it's still open,
+	// otherwise fall back to the default text color. Do NOT use initialState here — that would
+	// incorrectly color text after a mid-line close.
+	Color tailColor = defaultColor;
+	if (currentState != -1)
+		tailColor = rules32[currentState].info->color;
+
+	appendSegment((i32)line.size(), tailColor);
+}
+
+// computeRulesHash: stable hash of rules + keywords for incremental checks
+static u64 computeRulesHash(const RangeHighlight* rules, u32 count, const KeywordInfo* keywords, u32 keywordCount)
+{
+	// FNV-1a 64-bit
+	u64 h = 0xCBF29CE484222325ULL; // FNV offset basis (64-bit)
+	auto hashStr = [&](const char* s) {
+		if (!s) return;
+		const unsigned char* p = (const unsigned char*)s;
+		while (*p) {
+			h ^= (u64)*p++;
+			h *= 0x100000001b3ULL; // FNV prime
+		}
+		};
+
+	for (u32 i = 0; i < count; ++i)
+	{
+		if (!rules) break;
+		hashStr(rules[i].beginKeyword);
+		hashStr(rules[i].endKeyword);
+		hashStr(rules[i].escapeKeyword);
+		// color hashing - relies on RangeHighlight having a color member as used elsewhere
+		h ^= (u64)rules[i].color.getRgba();
+		h *= 0x100000001b3ULL;
+	}
+
+	for (u32 i = 0; i < keywordCount; ++i)
+	{
+		if (!keywords) break;
+		hashStr(keywords[i].keyword);
+		h ^= (u64)keywords[i].color.getRgba();
+		h *= 0x100000001b3ULL;
+	}
+
+	return h;
 }
 
 bool MultilineTextInputState::processEvent(const InputEvent& ev)
@@ -1129,11 +1490,8 @@ void MultilineTextInputState::processKeyEvent(const InputEvent& ev)
 			}
 			else
 			{
-				// 1. Skip preceding whitespace
 				while (caretColumn > 0 && isspace(lines[currentLine][caretColumn - 1]))
 					caretColumn--;
-
-				// 2. Skip preceding non-whitespace
 				while (caretColumn > 0 && !isspace(lines[currentLine][caretColumn - 1]))
 					caretColumn--;
 			}
@@ -1181,11 +1539,8 @@ void MultilineTextInputState::processKeyEvent(const InputEvent& ev)
 			}
 			else
 			{
-				// 1. Skip succeeding non-whitespace
 				while (caretColumn < lines[currentLine].size() && !isspace(lines[currentLine][caretColumn]))
 					caretColumn++;
-
-				// 2. Skip succeeding whitespace
 				while (caretColumn < lines[currentLine].size() && isspace(lines[currentLine][caretColumn]))
 					caretColumn++;
 			}
@@ -1220,11 +1575,9 @@ void MultilineTextInputState::processKeyEvent(const InputEvent& ev)
 		i32 prevLine = currentLine;
 		i32 prevColumn = caretColumn;
 
-		// Move visually up
 		if (!visualLines.empty())
 		{
 			i32 vIdx = -1;
-			// Find visual index for caret - deterministic search
 			for (size_t i = 0; i < visualLines.size(); ++i)
 			{
 				const auto vl = visualLines[i];
@@ -1249,7 +1602,6 @@ void MultilineTextInputState::processKeyEvent(const InputEvent& ev)
 				}
 			}
 
-			 // fallback to last visual segment for the current logical line
 			if (vIdx == -1)
 			{
 				for (size_t i = 0; i < visualLines.size(); ++i)
@@ -1259,7 +1611,6 @@ void MultilineTextInputState::processKeyEvent(const InputEvent& ev)
 				}
 			}
 
-			// Reset affinity after moving off the line
 			caretPreferLineEnd = false;
 
 			if (vIdx > 0)
@@ -1271,12 +1622,10 @@ void MultilineTextInputState::processKeyEvent(const InputEvent& ev)
 				currentLine = prevVl->logicalLineIndex;
 				caretColumn = prevVl->startColumn + std::min(dist, prevVl->length);
 
-				// update cached visual index
 				caretVisualLineIndex = (size_t)(vIdx - 1);
 			}
 		}
 
-		// selection handling unchanged...
 		if (has(ev.key.modifiers, KeyModifiers::Shift))
 		{
 			if (!selectionActive)
@@ -1285,7 +1634,6 @@ void MultilineTextInputState::processKeyEvent(const InputEvent& ev)
 				selectionStartLine = prevLine;
 				selectionStartColumn = prevColumn;
 			}
-
 			selectionEndLine = currentLine;
 			selectionEndColumn = caretColumn;
 		}
@@ -1299,11 +1647,9 @@ void MultilineTextInputState::processKeyEvent(const InputEvent& ev)
 		i32 prevLine = currentLine;
 		i32 prevColumn = caretColumn;
 
-		// Move visually down
 		if (!visualLines.empty())
 		{
 			i32 vIdx = -1;
-			// Find current visual index same deterministic way as ArrowUp
 			for (size_t i = 0; i < visualLines.size(); ++i)
 			{
 				const auto vl = visualLines[i];
@@ -1328,7 +1674,6 @@ void MultilineTextInputState::processKeyEvent(const InputEvent& ev)
 				}
 			}
 
-			// Fallback
 			if (vIdx == -1)
 			{
 				for (size_t i = 0; i < visualLines.size(); ++i)
@@ -1347,12 +1692,10 @@ void MultilineTextInputState::processKeyEvent(const InputEvent& ev)
 				currentLine = nextVl->logicalLineIndex;
 				caretColumn = nextVl->startColumn + std::min(dist, nextVl->length);
 
-				// update cached visual index
 				caretVisualLineIndex = (size_t)(vIdx + 1);
 			}
 		}
 
-		// selection handling unchanged...
 		if (has(ev.key.modifiers, KeyModifiers::Shift))
 		{
 			if (!selectionActive)
@@ -1361,7 +1704,6 @@ void MultilineTextInputState::processKeyEvent(const InputEvent& ev)
 				selectionStartLine = prevLine;
 				selectionStartColumn = prevColumn;
 			}
-
 			selectionEndLine = currentLine;
 			selectionEndColumn = caretColumn;
 		}
@@ -1372,20 +1714,17 @@ void MultilineTextInputState::processKeyEvent(const InputEvent& ev)
 	}
 	else if (ev.key.code == KeyCode::Tab)
 	{
-		// use insertTextAtCaret to handle selection deletion etc
 		Utf32String tabStr;
 		tabStr.push_back('\t');
 		insertTextAtCaret(tabStr);
 	}
 	else if (ev.key.code == KeyCode::Enter)
 	{
-		// debounce Enter key to prevent double insertion from same-frame events
 		if (lastKeyProcessFrame == ctx->frameCount)
 			return;
 
 		lastKeyProcessFrame = ctx->frameCount;
 
-		// use insertTextAtCaret to handle selection deletion and consistent newline insertion
 		Utf32String newline;
 		newline.push_back('\n');
 		insertTextAtCaret(newline);
@@ -1405,7 +1744,6 @@ void MultilineTextInputState::processKeyEvent(const InputEvent& ev)
 		}
 		else if (currentLine > 0)
 		{
-			// merge with previous line
 			caretColumn = lines[currentLine - 1].size();
 			lines[currentLine - 1].insert(lines[currentLine - 1].end(), lines[currentLine].begin(), lines[currentLine].end());
 			lines.erase(lines.begin() + currentLine);
@@ -1413,7 +1751,6 @@ void MultilineTextInputState::processKeyEvent(const InputEvent& ev)
 			textChanged = true;
 			markLineDirty(currentLine);
 
-			// Prevent stale visual pointers after mutate
 			visualLines.clear();
 			lineVisuals.resize(lines.size());
 			if (lineStates.size() != lines.size()) lineStates.resize(lines.size(), -1);
@@ -1422,7 +1759,6 @@ void MultilineTextInputState::processKeyEvent(const InputEvent& ev)
 			forceLayoutUpdate = true;
 		}
 
-		// soft scroll up if we have empty space at bottom
 		if (textChanged)
 		{
 			f32 lineHeight = font ? font->getMetrics().height : 20.0f;
@@ -1446,13 +1782,11 @@ void MultilineTextInputState::processKeyEvent(const InputEvent& ev)
 		}
 		else if (currentLine < lines.size() - 1)
 		{
-			// merge with next line
 			lines[currentLine].insert(lines[currentLine].end(), lines[currentLine + 1].begin(), lines[currentLine + 1].end());
 			lines.erase(lines.begin() + currentLine + 1);
 			textChanged = true;
 			markLineDirty(currentLine);
 
-			// Prevent stale visual pointers after mutate
 			visualLines.clear();
 			lineVisuals.resize(lines.size());
 			if (lineStates.size() != lines.size()) lineStates.resize(lines.size(), -1);
@@ -1461,7 +1795,6 @@ void MultilineTextInputState::processKeyEvent(const InputEvent& ev)
 			forceLayoutUpdate = true;
 		}
 
-		// soft scroll up if we have empty space at bottom
 		if (textChanged)
 		{
 			f32 lineHeight = font ? font->getMetrics().height : 20.0f;
@@ -1473,7 +1806,6 @@ void MultilineTextInputState::processKeyEvent(const InputEvent& ev)
 	}
 	else if (ev.key.code == KeyCode::Home)
 	{
-		// calculate indentation (first non-whitespace char)
 		i32 indentation = 0;
 		if (currentLine < lines.size())
 		{
@@ -1496,13 +1828,6 @@ void MultilineTextInputState::processKeyEvent(const InputEvent& ev)
 				selectionStartLine = currentLine;
 				selectionStartColumn = caretColumn;
 			}
-
-			// toggle behavior: if at 0, go to indentation. if at indentation, go to 0. otherwise go to indentation first?
-			// User request: "should select only to line start, and on next presses should toggle select the indenting..."
-			// implying: standard is 0. then indent.
-			// VS Code behavior: Home goes to indent first, then 0.
-			// Let's implement: if caret is at 0, go to indent. if caret is at indent, go to 0. if caret is elsewhere, go to indent (or 0?).
-			// strict reading of user request: "select only to line start [0], and on next presses toggle... [indent]"
 
 			if (caretColumn == 0)
 				caretColumn = indentation;
@@ -1659,357 +1984,6 @@ void MultilineTextInputState::processKeyEvent(const InputEvent& ev)
 	}
 
 	ensureCaretVisible();
-}
-
-// Helper to hash rules
-static u64 computeRulesHash(const RangeHighlight* rules, u32 count, const KeywordInfo* keywords, u32 keywordCount)
-{
-	u64 h = 0x811c9dc5; // FNV offset basis
-	auto hashStr = [&](const char* s) {
-		if (!s) return;
-		while (*s) {
-			h ^= (u64)*s++;
-			h *= 0x100000001b3; // FNV prime
-		}
-	};
-
-	for (u32 i = 0; i < count; i++)
-	{
-		hashStr(rules[i].beginKeyword);
-		hashStr(rules[i].endKeyword);
-		hashStr(rules[i].escapeKeyword);
-		h ^= rules[i].color.getRgba();
-		h *= 0x100000001b3;
-	}
-	for (u32 i = 0; i < keywordCount; i++)
-	{
-		hashStr(keywords[i].keyword);
-		h ^= keywords[i].color.getRgba();
-		h *= 0x100000001b3;
-	}
-	return h;
-}
-
-void MultilineTextInputState::updateSyntaxHighlighting(const RangeHighlight* rules, u32 count, const KeywordInfo* keywords, u32 keywordCount)
-{
-	// O(1) fast-path check: if pointers and counts match and text is clean, skip everything
-	if (!textChanged 
-		&& rules == lastRulesPtr 
-		&& count == lastRuleCount 
-		&& keywords == lastKeywordsPtr 
-		&& keywordCount == lastKeywordCount 
-		&& lineStates.size() == lines.size())
-		return;
-
-	u64 newHash = computeRulesHash(rules, count, keywords, keywordCount);
-	u64 prevHash = lastRulesHash; // save previous hash to decide incremental vs full
-
-	// Update pointers/counters used for future fast-path checks (but don't use lastRulesHash yet)
-	lastRulesPtr = rules;
-	lastRuleCount = count;
-	lastKeywordsPtr = keywords;
-	lastKeywordCount = keywordCount;
-
-	if (lineStates.size() != lines.size())
-		lineStates.resize(lines.size(), -1);
-
-	printf("MultilineTextInputState::updateSyntaxHighlighting entering: firstDirtyLine=%d, textChanged=%d\n", firstDirtyLine, (int)textChanged);
-	auto total_syntax_start = std::chrono::high_resolution_clock::now();
-	i32 syntax_lines_processed = 0;
-
-	// Convert rules/keywords to UTF-32
-	rules32.resize(count);
-	for (u32 i = 0; i < count; i++)
-	{
-		ctx->settings.services.utf8To32(rules[i].beginKeyword, rules32[i].begin);
-		ctx->settings.services.utf8To32(rules[i].endKeyword, rules32[i].end);
-		if (rules[i].escapeKeyword)
-			ctx->settings.services.utf8To32(rules[i].escapeKeyword, rules32[i].escape);
-		rules32[i].info = &rules[i];
-	}
-
-	keywords32.resize(keywordCount);
-	for (u32 i = 0; i < keywordCount; i++)
-	{
-		ctx->settings.services.utf8To32(keywords[i].keyword, keywords32[i].keyword);
-		keywords32[i].info = &keywords[i];
-	}
-
-	if (lines.empty())
-	{
-		lastRulesHash = newHash;
-		return;
-	}
-
-	i32 start = 0;
-	i32 currentState = -1;
-
-	// Decide incremental vs full rescan using previous hash (prevHash)
-	if (prevHash == newHash && !lineStates.empty() && firstDirtyLine != -1)
-	{
-		// incremental: start one line earlier to preserve multi-line rule state
-		start = std::max(0, firstDirtyLine - 1);
-		// seed currentState from previous line if available
-		if (start > 0)
-			currentState = lineStates[start - 1];
-		else
-			currentState = -1;
-	}
-	else
-	{
-		// full rescan needed: reset states
-		start = 0;
-		currentState = -1;
-		std::fill(lineStates.begin(), lineStates.end(), -1);
-	}
-
-	// Perform scan starting at 'start'
-	for (size_t i = (size_t)start; i < lines.size(); ++i)
-	{
-		syntax_lines_processed++;
-		lineStates[i] = currentState;
-		const Utf32String& line = lines[i];
-
-		for (size_t c = 0; c < line.size(); )
-		{
-			// If inside a rule, check for end
-			if (currentState != -1)
-			{
-				const auto& endKw = rules32[currentState].end;
-
-				// Handle empty end keyword as "end of line"
-				if (endKw.empty())
-				{
-					currentState = -1;
-					break;
-				}
-
-				bool match = true;
-				if (c + endKw.size() > line.size()) match = false;
-				else
-				{
-					for (size_t k = 0; k < endKw.size(); k++) if (line[c + k] != endKw[k]) { match = false; break; }
-
-					if (match && !rules32[currentState].escape.empty())
-					{
-						// Count consecutive escapes ending at c-1
-						size_t escCount = 0;
-						size_t backIdx = c;
-						while (backIdx >= rules32[currentState].escape.size())
-						{
-							backIdx -= rules32[currentState].escape.size();
-							bool escMatch = true;
-							for (size_t k = 0; k < rules32[currentState].escape.size(); k++)
-								if (line[backIdx + k] != rules32[currentState].escape[k]) { escMatch = false; break; }
-							if (escMatch) escCount++;
-							else break;
-						}
-						if (escCount % 2 != 0)
-							match = false;
-					}
-				}
-
-				if (match)
-				{
-					c += endKw.size();
-					currentState = -1;
-				}
-				else
-				{
-					c++;
-				}
-			}
-			else
-			{
-				// Check for rule starts
-				i32 bestRule = -1;
-				for (u32 r = 0; r < count; r++)
-				{
-					const auto& startKw = rules32[r].begin;
-					if (startKw.empty()) continue;
-
-					bool match = true;
-					if (c + startKw.size() > line.size()) match = false;
-					else
-					{
-						for (size_t k = 0; k < startKw.size(); k++)
-							if (line[c + k] != startKw[k]) { match = false; break; }
-					}
-
-					if (match)
-					{
-						bestRule = (i32)r;
-						break;
-					}
-				}
-
-				if (bestRule != -1)
-				{
-					currentState = bestRule;
-					c += rules32[bestRule].begin.size();
-				}
-				else
-				{
-					c++;
-				}
-			}
-		}
-
-		// If a rule is still open and its end is single-line, close it here
-		if (currentState != -1)
-		{
-			if (rules32[currentState].end.empty() || (rules32[currentState].end.size() == 1 && rules32[currentState].end[0] == '\n'))
-			{
-				currentState = -1;
-			}
-		}
-
-		// Incremental stop: if we've passed the dirty region and state matches next line, stop
-		if (firstDirtyLine != -1 && (i32)i > firstDirtyLine && (i32)i + 1 < (i32)lineStates.size())
-		{
-			if (lineStates[i + 1] == currentState)
-			{
-				break;
-			}
-		}
-	}
-
-	// commit the new rules hash after processing
-	lastRulesHash = newHash;
-
-	auto total_syntax_end = std::chrono::high_resolution_clock::now();
-	std::chrono::duration<double, std::milli> total_syntax_elapsed = total_syntax_end - total_syntax_start;
-	if (syntax_lines_processed > 0)
-	{
-		printf("updateSyntaxHighlighting: processed %d lines in %.3f ms (avg %.4f ms/line)\n",
-			syntax_lines_processed, total_syntax_elapsed.count(), total_syntax_elapsed.count() / syntax_lines_processed);
-	}
-}
-
-void MultilineTextInputState::markLineDirty(i32 logicalLineIndex)
-{
-	if (logicalLineIndex < 0) return;
-	if (firstDirtyLine == -1 || logicalLineIndex < firstDirtyLine)
-		firstDirtyLine = logicalLineIndex;
-}
-
-void MultilineTextInputState::calculateSegments(const Utf32String& line, i32 initialState, std::vector<VisualSegment>& outSegments,
-	const RangeHighlight* rules, u32 ruleCount, const KeywordInfo* keywords, u32 keywordCount)
-{
-	outSegments.clear();
-	if (line.empty()) return;
-	auto start_time = std::chrono::high_resolution_clock::now();
-
-	i32 currentState = initialState;
-	i32 lastSwitchPos = 0;
-	Color defaultColor = themeElement->normalState().textColor;
-
-	// Helper to add segment
-	auto appendSegment = [&](i32 end, Color color) {
-		if (end > lastSwitchPos)
-		{
-			VisualSegment seg;
-			seg.length = end - lastSwitchPos;
-			seg.color = color;
-			outSegments.push_back(seg);
-			lastSwitchPos = end;
-		}
-	};
-
-	for (size_t c = 0; c < line.size(); )
-	{
-		i32 oldState = currentState;
-		if (currentState != -1)
-		{
-			const auto& endKw = rules32[currentState].end;
-			if (endKw.empty()) { currentState = -1; appendSegment((i32)line.size(), rules32[oldState].info->color); break; }
-
-			bool match = true;
-			if (c + endKw.size() > line.size()) match = false;
-			else
-			{
-				for (size_t k = 0; k < endKw.size(); k++) if (line[c + k] != endKw[k]) { match = false; break; }
-				if (match && !rules32[currentState].escape.empty())
-				{
-					size_t escCount = 0; i32 backIdx = (i32)c;
-					while (backIdx >= (i32)rules32[currentState].escape.size())
-					{
-						backIdx -= (i32)rules32[currentState].escape.size();
-						bool escMatch = true;
-						for (size_t k = 0; k < rules32[currentState].escape.size(); k++) if (line[backIdx + k] != rules32[currentState].escape[k]) { escMatch = false; break; }
-						if (escMatch) escCount++; else break;
-					}
-					if (escCount % 2 != 0) match = false;
-				}
-			}
-
-			if (match)
-			{
-				appendSegment((i32)c + (i32)endKw.size(), rules32[currentState].info->color);
-				c += endKw.size();
-				currentState = -1;
-			}
-			else c++;
-		}
-		else
-		{
-			// Try keywords first
-			bool keywordMatched = false;
-			for (u32 k = 0; k < keywords32.size(); k++)
-			{
-				const auto& kw = keywords32[k].keyword;
-				if (c + kw.size() <= line.size())
-				{
-					// Boundary check
-					bool bound = true;
-					if (c > 0) { u32 prev = line[c - 1]; if ((prev >= 'a' && prev <= 'z') || (prev >= 'A' && prev <= 'Z') || (prev >= '0' && prev <= '9') || prev == '_') bound = false; }
-					if (bound && c + kw.size() < line.size()) { u32 next = line[c + kw.size()]; if ((next >= 'a' && next <= 'z') || (next >= 'A' && next <= 'Z') || (next >= '0' && next <= '9') || next == '_') bound = false; }
-					
-					if (bound)
-					{
-						bool match = true;
-						for (size_t i = 0; i < kw.size(); i++) if (line[c + i] != kw[i]) { match = false; break; }
-						if (match)
-						{
-							appendSegment((i32)c, defaultColor);
-							appendSegment((i32)c + (i32)kw.size(), keywords32[k].info->color);
-							c += kw.size();
-							keywordMatched = true;
-							break;
-						}
-					}
-				}
-			}
-
-			if (!keywordMatched)
-			{
-				i32 bestRule = -1;
-				for (u32 r = 0; r < rules32.size(); r++)
-				{
-					const auto& startKw = rules32[r].begin;
-					if (startKw.empty()) continue;
-					bool match = true;
-					if (c + startKw.size() > line.size()) match = false;
-					else for (size_t k = 0; k < startKw.size(); k++) if (line[c + k] != startKw[k]) { match = false; break; }
-					if (match) { bestRule = (i32)r; break; }
-				}
-
-				if (bestRule != -1)
-				{
-					appendSegment((i32)c, defaultColor);
-					currentState = bestRule;
-					c += rules32[bestRule].begin.size();
-				}
-				else c++;
-			}
-		}
-	}
-	appendSegment((i32)line.size(), (initialState != -1) ? rules32[initialState].info->color : defaultColor);
-
-	auto end_time = std::chrono::high_resolution_clock::now();
-	std::chrono::duration<double, std::milli> elapsed = end_time - start_time;
-	if (elapsed.count() > 0.1) // Only print if it's significant to avoid spam
-		printf("calculateSegments took %.3f ms\n", elapsed.count());
 }
 
 }

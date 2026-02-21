@@ -6,7 +6,6 @@
 #include "font.h"
 #include <cmath>
 #include "util.h"
-#include <chrono>
 
 namespace hui
 {
@@ -27,8 +26,8 @@ bool multilineTextInput(
 	auto& bodyTextSelectionElemState = ctx->theme->getElement(WidgetElementId::TextInputSelection).normalState();
 	auto& currentLineHighlightElemState = ctx->theme->getElement(WidgetElementId::MultilineTextInputCurrentLineHighlight).normalState();
 	auto& padding = getWidgetPadding();
-
 	auto& state = ctx->multilineTextInput;
+
 	state.visibleLineCount = visibleLines;
 
 	if (!ctx->widget.hasNextWidth)
@@ -45,12 +44,12 @@ bool multilineTextInput(
 
 	ctx->id = genId(id);
 	addWidget(totalHeight);
-
 	buttonBehavior();
 
 	// pre-calculate scroll ID for focus checks
 	std::string scrollIdName = std::string(id) + ".scroller";
 	WidgetId scrollId = genId(scrollIdName.c_str());
+
 	if (state.id == ctx->id)
 		state.scrollId = scrollId;
 
@@ -76,7 +75,7 @@ bool multilineTextInput(
 
 	state.editNow = false;
 
-	// handle Enter key differently - don't end editing
+	// handle Enter key differently don't end editing
 	if (ctx->event.type == InputEvent::Type::Key
 		&& ctx->event.key.down
 		&& ctx->widget.focused)
@@ -121,16 +120,13 @@ bool multilineTextInput(
 		state.selectionActive = false;
 		state.flags = flags;
 
-		printf("multilineTextInput: full re-parse/edit triggered (ID: %s)\n", id);
-
-
-
 		// parse existing text into lines
 		Utf32String fullText;
-		ctx->settings.services.utf8To32(text, fullText);
-
-		state.lines.clear();
 		Utf32String currentLine;
+
+		ctx->settings.services.utf8To32(text, fullText);
+		state.lines.clear();
+
 		for (u32 ch : fullText)
 		{
 			if (ch == '\n')
@@ -143,18 +139,24 @@ bool multilineTextInput(
 				currentLine.push_back(ch);
 			}
 		}
+
 		state.lines.push_back(currentLine);
+
 		if (state.lines.empty())
 			state.lines.push_back(Utf32String());
 
 		state.totalTextLength = 0;
+
 		for (const auto& line : state.lines)
 			state.totalTextLength += line.size();
+
 		if (state.lines.size() > 1)
 			state.totalTextLength += state.lines.size() - 1; // newlines
 
 		if (state.selectAllOnFocus && has(flags, MultilineTextInputFlags::AutoSelectAll))
+		{
 			state.selectAll();
+		}
 		else
 		{
 			state.selectionActive = false;
@@ -172,6 +174,7 @@ bool multilineTextInput(
 		}
 
 		Rect rc;
+
 		rc.x = ctx->widget.rect.x;
 		rc.y = ctx->widget.rect.y;
 		rc.width = ctx->widget.rect.width;
@@ -184,7 +187,6 @@ bool multilineTextInput(
 
 	if (ctx->widget.hovered)
 		setMouseCursor(MouseCursorType::IBeam);
-
 
 	// calculate sidebar width based on line count
 	f32 sidebarWidth = 0.0f;
@@ -199,10 +201,10 @@ bool multilineTextInput(
 
 		u32 digits = digitCount(state.lines.size());
 		f32 charWidth = lineNumbersElem.normalState().font->computeTextSize("0", 1).width;
-		sidebarWidth = digits * charWidth + 10.0f; // padding
+		sidebarWidth = digits * charWidth + 10.0f; //TODO: make padding configurable in theme
 
 		// adjust clip rect to exclude sidebar
-		f32 sidebarTextGap = 5.0f * ctx->scale;
+		f32 sidebarTextGap = 5.0f * ctx->scale; //TODO: make this configurable in theme
 		clipRect.x += sidebarWidth + sidebarTextGap;
 		clipRect.width -= (sidebarWidth + sidebarTextGap);
 	}
@@ -216,21 +218,16 @@ bool multilineTextInput(
 
 	state.updateSyntaxHighlighting(rangeHighlights, rangeHighlightCount, keywords, keywordCount);
 
-	// update visual lines if needed
-	// we need to anticipate if vertical scrollbar will appear.
-	// reserve space for continuation indicator
-	// reserve space for continuation indicator
 	auto& breakLineElem = ctx->theme->getElement(WidgetElementId::MultilineTextInputWordWrap);
 	f32 markerWidth = breakLineElem.normalState().width * ctx->scale;
 	if (markerWidth <= 0) markerWidth = 4.0f * ctx->scale;
-	f32 markerGap = 4.0f * ctx->scale; // gap between text and marker, and right edge
+	f32 markerGap = 4.0f * ctx->scale; // gap between text and marker, and right edge //TODO: make these configurable in theme
 	f32 markerHeight = breakLineElem.normalState().height * ctx->scale;
 	if (markerHeight <= 0) markerHeight = bodyElemState->font->getMetrics().height * 0.2f;
-	f32 overhangBuffer = 4.0f * ctx->scale;
+	f32 overhangBuffer = 4.0f * ctx->scale; // extra buffer to prevent layout oscillation when scrollbar appears/disappears. this accounts for small discrepancies in scrollbar width calculations and ensures we don't keep toggling scrollbar visibility due to minor width changes //TODO: make this configurable in theme
 	f32 indicatorMargin = markerGap + markerWidth + overhangBuffer;
-	
-	// Use previous frame's scrollbar state to stabilize width and avoid oscillation
 	f32 vBarWidth = 0.0f;
+
 	if (state.lastHasScrollbarV && has(flags, MultilineTextInputFlags::WordWrap))
 	{
 		auto& sbV_check = ctx->theme->getElement(WidgetElementId::ScrollViewScrollBarV).normalState();
@@ -241,8 +238,6 @@ bool multilineTextInput(
 
 	if (state.textChanged || std::abs(state.lastLayoutWidth - effectiveWidth) > 0.5f || state.visualLines.empty())
 	{
-		printf("multilineTextInput: triggered computeVisualLines. textChanged=%d, width(%.1f -> %.1f), empty=%d\n", 
-			(int)state.textChanged, state.lastLayoutWidth, effectiveWidth, (int)state.visualLines.empty());
 		state.computeVisualLines(bodyElemState->font, effectiveWidth, rangeHighlights, rangeHighlightCount, keywords, keywordCount);
 		state.lastLayoutWidth = effectiveWidth;
 	}
@@ -259,18 +254,11 @@ bool multilineTextInput(
 		f32 actualWidth = std::floor(clipRect.width - indicatorMargin - (hasVerticalScrollbar ? vBarWidth : 0.0f));
 		if (std::abs(state.lastLayoutWidth - actualWidth) > 0.5f)
 		{
-			printf("multilineTextInput: re-triggered computeVisualLines (Scrollbar changed). width(%.1f -> %.1f)\n", 
-				state.lastLayoutWidth, actualWidth);
 			state.computeVisualLines(bodyElemState->font, actualWidth, rangeHighlights, rangeHighlightCount, keywords, keywordCount);
 			state.lastLayoutWidth = actualWidth;
 			// Height might change after re-wrap
 			totalContentHeight = state.visualLines.size() * lineHeight;
 		}
-	}
-	// process Input (Typing, Navigation)
-	if (isEditingThis)
-	{
-		// state.processEvent is handled in beginFrame
 	}
 
 	if (isEditingThis && state.textChanged)
@@ -280,6 +268,7 @@ bool multilineTextInput(
 		for (size_t i = 0; i < state.lines.size(); i++)
 		{
 			fullText.insert(fullText.end(), state.lines[i].begin(), state.lines[i].end());
+
 			if (i < state.lines.size() - 1)
 				fullText.push_back('\n');
 		}
@@ -297,12 +286,9 @@ bool multilineTextInput(
 
 	// used cached maxLineWidth
 	f32 maxLineWidth = state.maxLineWidth;
-
-	// f32 scrollAreaV = clipRect.height;
 	f32 scrollAreaH = clipRect.width;
 	hasVerticalScrollbar = false;
 	bool hasHorizontalScrollbar = false;
-
 	auto& sbV = ctx->theme->getElement(WidgetElementId::ScrollViewScrollBarV).normalState();
 	auto& sbH = ctx->theme->getElement(WidgetElementId::ScrollViewScrollBarH).normalState();
 
@@ -339,10 +325,10 @@ bool multilineTextInput(
 	if (has(flags, MultilineTextInputFlags::LineNumbers))
 	{
 		ctx->renderer.pushClipRect(originalClipRect);
-
 		sidebarRect.width = sidebarWidth;
 		auto& lnState = lineNumbersElem.normalState();
 		ctx->renderer.cmdSetColor(lnState.color);
+
 		if (lnState.image)
 			ctx->renderer.cmdDrawImageBordered(lnState.image, lnState.border, sidebarRect, ctx->scale);
 		else
@@ -360,7 +346,6 @@ bool multilineTextInput(
 	// gets current scroll state to use for sidebar culling
 	auto& scrollStateEarly = ctx->scrollViewState[state.scrollId];
 	f32 currentScrollYEarly = scrollStateEarly.scrollOffset.y;
-
 	i32 startLine = (i32)(currentScrollYEarly / lineHeight);
 	i32 endLine = startLine + visibleLines + 2;
 
@@ -368,8 +353,10 @@ bool multilineTextInput(
 	for (i32 i = startLine; i < endLine && i < state.visualLines.size(); i++)
 	{
 		const auto vl = state.visualLines[i];
+
 		// defensive: skip invalid visual lines
 		if (!vl) continue;
+
 		if ((size_t)vl->logicalLineIndex >= state.lines.size()) continue;
 		f32 yPos = clipRect.y + i * lineHeight - currentScrollYEarly;
 
@@ -408,18 +395,6 @@ bool multilineTextInput(
 				ctx->renderer.cmdDrawFilledRectangle(lineTextRect);
 			}
 		}
-
-		// draw line number only on first visual line of a logical line
-		if (has(flags, MultilineTextInputFlags::LineNumbers) && vl->startColumn == 0)
-		{
-			// ... (drawing logic below needs to be inside loop or separate?)
-			// the original code had separate loops for highlights and numbers?
-			// let's check original code.
-			// original code: LOOP 1 draws highlights. LOOP 2 draws numbers (lines 658+).
-			// this loop (lines 322-364) seems to draw highlights AND potentially line number background?
-			// yes, line 338 draws "line number highlight".
-			// line numbers themselves are drawn later (line 658).
-		}
 	}
 
 	ctx->renderer.popClipRect();
@@ -428,25 +403,19 @@ bool multilineTextInput(
 	if (ctx->widget.hovered)
 	{
 		bool overScrollbar = false;
-
 		auto& sbV = ctx->theme->getElement(WidgetElementId::ScrollViewScrollBarV).normalState();
 		auto& sbH = ctx->theme->getElement(WidgetElementId::ScrollViewScrollBarH).normalState();
-
 		f32 scrollAreaV = clipRect.height;
 		f32 availableWidth = clipRect.width;
-
-		// horizontal scrollbar logic
 		bool hasHorizontalScrollbar = false;
-		// logic from ScrollView: (virtualSize.x > 0 && virtualSize.x > availableWidth) || scrollContentH > availableWidth
-		// here virtualSize.x is maxLineWidth. scrollContentH is roughly maxLineWidth if we trust Multiline input structure.
+		bool hasVerticalScrollbar = false;
+
 		if ((maxLineWidth + indicatorMargin) > availableWidth)
 		{
 			hasHorizontalScrollbar = true;
 			scrollAreaV -= sbH.height * ctx->scale;
 		}
 
-		// vertical scrollbar logic
-		bool hasVerticalScrollbar = false;
 		if (totalContentHeight > scrollAreaV)
 		{
 			hasVerticalScrollbar = true;
@@ -458,12 +427,13 @@ bool multilineTextInput(
 		{
 			hasHorizontalScrollbar = true;
 			scrollAreaV -= sbH.height * ctx->scale;
+
 			// re-evaluate Vertical with reduced height (optional, but consistent)
 			if (!hasVerticalScrollbar && totalContentHeight > scrollAreaV)
 				hasVerticalScrollbar = true;
 		}
 
-	// vertical scrollbar rect (right side of clipRect)
+		// vertical scrollbar rect (right side of clipRect)
 		Rect vRect;
 		if (hasVerticalScrollbar)
 		{
@@ -486,12 +456,7 @@ bool multilineTextInput(
 			hRect = clipRect;
 			hRect.y = hRect.bottom() - sbH.height * ctx->scale;
 			hRect.height = sbH.height * ctx->scale;
-			// be careful: if V-scroll is present, full width might be reduced?
-			// in ScrollView:
-			// f32 scrollBarWidthFull = rectNoBorders.width;
-			// if (scrollContentSizeV > ...) scrollBarWidthFull -= ...;
-			// rect rectScrollBarH = { ..., scrollBarWidthFull, ... }
-			// so yes, H scrollbar doesn't extend under V scrollbar usually.
+
 			if (hasVerticalScrollbar)
 				hRect.width -= sbV.width * ctx->scale;
 
@@ -518,11 +483,6 @@ bool multilineTextInput(
 	Point wrapperEndPos = ctx->position;
 	ctx->position = { clipRect.x, clipRect.y };
 
-	// ensure we pass a unique ID for the scroll view distinct from the wrapper if needed,
-	// or append string to ID.
-	// (scrollIdName was already generated above)
-
-	// fix 2: constrain ScrollView width to the clipRect width (since we indented position)
 	f32 savedLayoutWidth = ctx->layout.width;
 	ctx->layout.width = clipRect.width;
 
@@ -543,11 +503,6 @@ bool multilineTextInput(
 	state.scrollOffsetX = initialScroll.x;
 	state.scrollOffsetY = initialScroll.y;
 
-	// prevent scroll "jump" when deleting lines from the end:
-	// ensure content height is at least (currentScroll + viewHeight) so ScrollView doesn't clamp it up.
-	// but ONLY do this if the real content is large enough to warrant scrolling (i.e. > viewHeight).
-	// if the entire text fits in the view, let it snap to top naturally.
-	// use pixel height for consistent drift logic comparisons
 	f32 viewPixelHeight = clipRect.height;
 
 	if (totalContentHeight > viewPixelHeight)
@@ -568,8 +523,8 @@ bool multilineTextInput(
 				// because scroll position is in visual units.
 				size_t firstVisualLineIndex = (size_t)(initialScroll.y / lineHeight);
 
-				// limit scan to 20 lines to avoid O(N) hit on 100k+ line files
-				size_t scanLimit = std::min(state.visualLines.size(), firstVisualLineIndex + 20);
+				// limit scan to N lines to avoid O(N) hit on 100k+ line files
+				size_t scanLimit = std::min(state.visualLines.size(), firstVisualLineIndex + 20); //TODO: make this configurable in theme or settings
 
 				for (size_t i = firstVisualLineIndex; i < scanLimit; ++i)
 				{
@@ -589,16 +544,13 @@ bool multilineTextInput(
 						for (size_t c = 0; c < vl->length; c++)
 						{
 							u32 ch = lineText[vl->startColumn + c];
-							if (ch > 32 && ch != 160)
+							if (ch > 32 && ch != 160) //TODO: const for non-breaking space and other whitespace chars?
 							{
 								hasContent = true;
 								break;
 							}
 						}
 					}
-					// special case: If it's an empty logical line (length 0), it might be wrapping?
-					// no, visual lines for successful wrap shouldn't be empty unless logical line is empty.
-					// if logical line is empty, it has 0 length.
 
 					// force content if caret is here
 					if (isEditingThis && i == caretVisualLineIndex)
@@ -637,12 +589,7 @@ bool multilineTextInput(
 		}
 	}
 
-	// removed redundant else { initialScroll = {0,0} } block
-	// because beginScrollView handles clamping if content is smaller than view.
-	// this prevents accidental jumps if height comparison is fuzzy.
-
 	beginScrollView(scrollIdName.c_str(), scrollViewHeight, initialScroll, { maxLineWidth + indicatorMargin, totalContentHeight }, ScrollViewFlags::NoBorder | ScrollViewFlags::NoPadding);
-
 
 	ctx->layout.width = savedLayoutWidth; // restore layout width immediately (beginScrollView captured it)
 
@@ -657,8 +604,6 @@ bool multilineTextInput(
 
 	// use inner clip rect for local drawing logic
 	clipRect = innerClipRect;
-
-	// state.scrollId is already set above
 
 	// gets current scroll state to use for culling
 	auto& scrollState = ctx->scrollViewState[state.scrollId];
@@ -689,15 +634,17 @@ bool multilineTextInput(
 		for (i32 i = firstLine; i < lastLine && i < (i32)state.visualLines.size(); i++)
 		{
 			const auto vl = state.visualLines[i];
+
 			// defensive: skip invalid visual lines
 			if (!vl) continue;
+
 			if ((size_t)vl->logicalLineIndex >= state.lines.size()) continue;
 			f32 yPos = clipRect.y + i * lineHeight - currentScrollY;
 
 			if (yPos + lineHeight < clipRect.y || yPos > clipRect.bottom())
 				continue;
 
-				// check if this visual line is within the selection range
+			// check if this visual line is within the selection range
 			if (vl->logicalLineIndex < startLine || vl->logicalLineIndex > endLine)
 				continue;
 
@@ -716,10 +663,6 @@ bool multilineTextInput(
 				selEndOnLine = std::min(vl->length, endCol - vl->startColumn);
 			}
 
-			// handle case where we select the newline character (effectively selecting past the end)
-			// in visual lines, likely only the last segment of a logical line should visualize newline selection?
-			// if vl is the last segment of a logical line:
-			// make sure startColumn index is valid for the referenced logical line
 			auto& logicalLine = state.lines[vl->logicalLineIndex];
 			bool isLastSegment = (vl->startColumn + vl->length == (i32)logicalLine.size());
 			bool selectingNewline = false;
@@ -732,8 +675,7 @@ bool multilineTextInput(
 			else if (vl->logicalLineIndex == endLine && (size_t)endCol == logicalLine.size() && isLastSegment)
 			{
 				// explicitly selecting to end of line
-				selectingNewline = false; // usually standard editors don't select newline if just at end, unless endLine > currentLine
-				// actually if startLine != endLine, then this line is fully selected including newline.
+				selectingNewline = false;
 				if (startLine != endLine) selectingNewline = true;
 			}
 
@@ -760,8 +702,6 @@ bool multilineTextInput(
 				selRect.width += spaceWidth;
 			}
 
-			// if selection width is 0 (point selection? should be handled by loop check)
-			// but if just newline is selected:
 			if (selRect.width <= 0.001f && selectingNewline)
 			{
 				static f32 spaceWidth = 0.0f;
@@ -776,12 +716,7 @@ bool multilineTextInput(
 				ctx->renderer.cmdDrawFilledRectangle(selRect);
 			}
 		}
-		auto sel_end = std::chrono::high_resolution_clock::now();
-		std::chrono::duration<double, std::milli> sel_elapsed = sel_end - sel_start;
-		if (sel_elapsed.count() > 0.05) printf("Selection rendering took %.3f ms\n", sel_elapsed.count());
 	}
-
-
 
 	// draw caret
 	if (isEditingThis && (!ctx->settings.textCaretBlinkEnable || (state.caretBlinkTimer >= 0 && state.caretBlinkTimer <= 1)))
@@ -789,7 +724,6 @@ bool multilineTextInput(
 		Point caretPos = state.getCaretScreenPosition();
 		const f32 cursorWidth = bodyTextCaretElemState.width;
 		const f32 cursorBorder = bodyTextCaretElemState.border;
-
 		Rect cursorRect;
 		cursorRect.x = caretPos.x;
 		cursorRect.y = caretPos.y + cursorBorder;
@@ -819,12 +753,18 @@ bool multilineTextInput(
 		ctx->renderer.cmdSetColor(lnState.textColor);
 		ctx->renderer.cmdSetFont(lnState.font);
 
+		char numStr[32];
+		Rect lnRect;
+
 		for (i32 i = firstLine; i < lastLine && i < (i32)state.visualLines.size(); i++)
 		{
 			const auto vl = state.visualLines[i];
+
 			// defensive: skip invalid visual lines
 			if (!vl) continue;
+
 			if ((size_t)vl->logicalLineIndex >= state.lines.size()) continue;
+
 			f32 yPos = clipRect.y + i * lineHeight - currentScrollY;
 
 			if (yPos + lineHeight < clipRect.y || yPos > clipRect.bottom())
@@ -833,10 +773,8 @@ bool multilineTextInput(
 			// only draw line number for the first segment of a logical line
 			if (vl->startColumn == 0)
 			{
-				char numStr[32];
 				sprintf(numStr, "%d", vl->logicalLineIndex + 1);
 
-				Rect lnRect;
 				lnRect.x = clipRect.x - sidebarWidth + 5.0f;
 				lnRect.y = yPos;
 				lnRect.width = sidebarWidth - 10.0f;
@@ -855,22 +793,24 @@ bool multilineTextInput(
 		ctx->renderer.pushClipRect(clipRect); // restore inner clip
 	}
 
-
 	// draw text
-	auto text_start = std::chrono::high_resolution_clock::now();
+	Rect textRect;
+
 	for (i32 i = firstLine; i < lastLine && i < (i32)state.visualLines.size(); i++)
 	{
 		const auto vl = state.visualLines[i];
+
 		// defensive: skip invalid visual lines
 		if (!vl) continue;
+
 		if ((size_t)vl->logicalLineIndex >= state.lines.size()) continue;
+
 		f32 yPos = clipRect.y + i * lineHeight - currentScrollY;
 
 		// double check visibility
 		if (yPos + lineHeight < clipRect.y || yPos > clipRect.bottom())
 			continue;
 
-		Rect textRect;
 		textRect.x = clipRect.x - currentScrollX;
 		textRect.y = yPos;
 		textRect.width = clipRect.width;
@@ -879,14 +819,14 @@ bool multilineTextInput(
 		ctx->renderer.cmdSetColor(bodyElemState->textColor);
 
 		// extract segment text
-		// utf32String doesn't have substr, construct from iterator range
-		// ensure startColumn is valid for the referenced logical line
 		auto& logicLine = state.lines[vl->logicalLineIndex];
+
 		if ((size_t)vl->startColumn >= logicLine.size())
 			continue; // nothing to draw for this visual segment (defensive)
+
 		size_t safelyEnd = std::min(logicLine.size(), (size_t)(vl->startColumn + vl->length));
 		
-		// Use persistent buffer to avoid per-line allocations
+		// use persistent buffer to avoid per-line allocations
 		state.utf8LineBuffer.resize((safelyEnd - vl->startColumn) * 4 + 1);
 		char* lineText = state.utf8LineBuffer.data();
 		ctx->settings.services.utf32To8NoAlloc(logicLine.data() + vl->startColumn, (u32)(safelyEnd - vl->startColumn), lineText, (u32)state.utf8LineBuffer.size());
@@ -901,11 +841,14 @@ bool multilineTextInput(
 				if (vseg.length <= 0) continue;
 
 				char* vsegTextBuf = state.utf8LineBuffer.data();
+
 				// Use the persistent buffer for this specific segment to ensure null-termination
 				ctx->settings.services.utf32To8NoAlloc(logicLine.data() + vl->startColumn + vsegOffset, (u32)vseg.length, vsegTextBuf, (u32)state.utf8LineBuffer.size());
 
 				ctx->renderer.cmdSetColor(vseg.color);
+
 				Rect segRect = textRect;
+
 				segRect.x = currentX;
 				ctx->renderer.cmdDrawTextInBox(
 					vsegTextBuf,
@@ -942,19 +885,12 @@ bool multilineTextInput(
 				ctx->renderer.cmdDrawFilledRectangle(contRect);
 			}
 		}
-			// end of logical line.
-		}
-	auto text_end = std::chrono::high_resolution_clock::now();
-	std::chrono::duration<double, std::milli> text_elapsed = text_end - text_start;
-	if (text_elapsed.count() > 0.05) printf("Text rendering took %.3f ms\n", text_elapsed.count());
+	}
 
 	// advance layout position so ScrollView knows the content height
 	ctx->position.y += totalContentHeight;
-
 	endScrollView();
 	ctx->position = wrapperEndPos; // restore layout position
-	// fix 3: Removed unbalanced popClipRect() here (beginScrollView handles its own push/pop)
-
 	setFocusable();
 
 	if (ctx->settings.textCaretBlinkSpeed > 0 && ctx->widget.focused)
