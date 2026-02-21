@@ -203,12 +203,56 @@ void MultilineTextInputState::insertTextAtCaret(const Utf32String& newText)
 		}
 		else if (ch == '\n')
 		{
-			// split line at caret
+			// split line at caret and copy previous line indentation into the new line
+			// compute indentation from the current line (leading spaces/tabs)
+			size_t prevIndentCount = 0;
+			Utf32String indentStr;
+			if (currentLine < (i32)lines.size())
+			{
+				const auto& srcLine = lines[currentLine];
+				for (size_t i = 0; i < srcLine.size(); ++i)
+				{
+					if (srcLine[i] == ' ' || srcLine[i] == '\t')
+						prevIndentCount++;
+					else
+						break;
+				}
+				if (prevIndentCount > 0)
+					indentStr = Utf32String(srcLine.begin(), srcLine.begin() + prevIndentCount);
+			}
+
+			// determine how many indent chars we can actually insert given maxTextLength
+			size_t allowed = (totalTextLength >= maxTextLength) ? 0 : (maxTextLength - totalTextLength);
+			if (allowed == 0)
+				break; // shouldn't happen due to outer check, but safe-guard
+
+			// newline itself consumes 1
+			// compute how many indent chars we can add (may be 0)
+			size_t actualIndent = 0;
+			if (allowed <= 1)
+			{
+				actualIndent = 0;
+			}
+			else
+			{
+				size_t want = prevIndentCount;
+				size_t can = allowed - 1; // reserve 1 for newline
+				actualIndent = std::min(want, can);
+			}
+
+			// Build remaining text (text after caret) from original line
 			Utf32String remaining(lines[currentLine].begin() + caretColumn, lines[currentLine].end());
 
+			// Erase tail from current line
 			lines[currentLine].erase(lines[currentLine].begin() + caretColumn, lines[currentLine].end());
+
+			// Insert new line with indentation (partial if truncated by max length)
 			currentLine++;
-			lines.insert(lines.begin() + currentLine, remaining);
+			Utf32String newLine;
+			if (actualIndent > 0)
+				newLine.insert(newLine.end(), indentStr.begin(), indentStr.begin() + actualIndent);
+			newLine.insert(newLine.end(), remaining.begin(), remaining.end());
+			lines.insert(lines.begin() + currentLine, newLine);
 
 			if (lineVisuals.size() > (size_t)currentLine - 1)
 				lineVisuals.insert(lineVisuals.begin() + currentLine, std::vector<VisualLine>());
@@ -216,8 +260,11 @@ void MultilineTextInputState::insertTextAtCaret(const Utf32String& newText)
 			if (lineStates.size() > (size_t)currentLine - 1)
 				lineStates.insert(lineStates.begin() + currentLine, -1);
 
-			caretColumn = 0;
-			totalTextLength++;
+			// place caret after inserted indentation
+			caretColumn = (i32)actualIndent;
+
+			// account for inserted newline + indentation in total length
+			totalTextLength += 1 + actualIndent;
 		}
 		else if (ch == '\t')
 		{
