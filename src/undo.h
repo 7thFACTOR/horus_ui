@@ -1,5 +1,5 @@
 #pragma once
-#include "types.h" // for Utf32String
+#include "types.h" // for Utf32String and i32
 #include <vector>
 #include <optional>
 #include <cstddef>
@@ -7,14 +7,22 @@
 namespace hui
 {
 
-// Simple undo / redo stack that stores full Utf32String snapshots.
+// Snapshot for text widgets: full text + caret position
+struct UndoSnapshot
+{
+    Utf32String text;
+    i32 caretLine = 0;
+    i32 caretColumn = 0;
+};
+
+// Simple undo / redo stack that stores full snapshots.
 // - push(state) appends a new state, truncating any redo history.
 // - undo() moves to the previous snapshot and returns it (std::nullopt if none).
 // - redo() moves forward and returns it (std::nullopt if none).
 // The implementation keeps a bounded history (maxHistory).
 struct UndoStack
 {
-    using State = Utf32String;
+    using State = UndoSnapshot;
 
     explicit UndoStack(std::size_t maxHistory = 200) noexcept;
 

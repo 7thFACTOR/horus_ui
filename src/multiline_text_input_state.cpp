@@ -10,6 +10,70 @@ namespace hui
 MultilineTextInputState::MultilineTextInputState()
 {
 	lines.push_back(Utf32String()); // start with one empty line
+
+	// push initial empty snapshot so undo has something
+	pushUndoSnapshot();
+
+	// initialize coalescing state
+	undoTypingActive = false;
+	undoTypingLine = -1;
+	undoTypingNextColumn = -1;
+}
+
+void MultilineTextInputState::pushUndoSnapshot()
+{
+	UndoStack::State snap;
+	// join lines with '\n'
+	Utf32String joined;
+	joined.reserve(totalTextLength + (lines.size() > 0 ? lines.size()-1 : 0));
+	for (size_t li = 0; li < lines.size(); ++li)
+	{
+		if (li) joined.push_back('\n');
+		joined.insert(joined.end(), lines[li].begin(), lines[li].end());
+	}
+	snap.text = std::move(joined);
+	snap.caretLine = currentLine;
+	snap.caretColumn = caretColumn;
+	undoStack.push(std::move(snap));
+}
+
+void MultilineTextInputState::applyUndoSnapshot(const UndoStack::State& s)
+{
+	// restore text
+	lines.clear();
+	Utf32String cur;
+	for (u32 ch : s.text)
+	{
+		if (ch == '\n')
+		{
+			lines.push_back(cur);
+			cur.clear();
+		}
+		else
+			cur.push_back(ch);
+	}
+	lines.push_back(cur);
+
+	// clamp caret
+	currentLine = std::max<i32>(0, std::min<i32>((i32)lines.size() - 1, s.caretLine));
+	caretColumn = std::max<i32>(0, std::min<i32>((i32)lines[currentLine].size(), s.caretColumn));
+
+	// recompute caches
+	visualLines.clear();
+	lineVisuals.resize(lines.size());
+	if (lineStates.size() != lines.size()) lineStates.resize(lines.size(), -1);
+	caretVisualLineIndex = (size_t)-1;
+	firstDirtyLine = 0;
+	forceLayoutUpdate = true;
+	textChanged = true;
+
+	// recompute totalTextLength
+	size_t total = 0;
+	for (size_t i = 0; i < lines.size(); ++i) total += lines[i].size();
+	if (lines.size() > 0) total += (lines.size() - 1);
+	totalTextLength = total;
+
+	forceRepaint();
 }
 
 void MultilineTextInputState::selectAll()
@@ -22,6 +86,8 @@ void MultilineTextInputState::selectAll()
 	currentLine = selectionEndLine;
 	caretColumn = selectionEndColumn;
 	selectAllOnFocus = false;
+	// selecting breaks typing coalescing
+	undoTypingActive = false;
 }
 
 void MultilineTextInputState::deselect()
@@ -29,10 +95,15 @@ void MultilineTextInputState::deselect()
 	selectionActive = false;
 	selectionStartLine = selectionStartColumn = 0;
 	selectionEndLine = selectionEndColumn = 0;
+	// explicit deselect breaks typing coalescing
+	undoTypingActive = false;
 }
 
 void MultilineTextInputState::deleteSelection()
 {
+	// deletion of a selection is a non-typing operation: break any typing coalescing
+	undoTypingActive = false;
+
 	if (!selectionActive)
 		return;
 
@@ -63,6 +134,9 @@ void MultilineTextInputState::deleteSelection()
 
 	if (deletedCount > totalTextLength) totalTextLength = 0;
 	else totalTextLength -= deletedCount;
+
+	// push snapshot BEFORE modifying so undo restores previous content
+	pushUndoSnapshot();
 
 	if (startLine == endLine)
 	{
@@ -164,6 +238,10 @@ Utf32String MultilineTextInputState::getSelection()
 
 void MultilineTextInputState::clearText()
 {
+	// push snapshot before clearing
+	pushUndoSnapshot();
+	undoTypingActive = false;
+
 	lines.clear();
 	lines.push_back(Utf32String());
 	currentLine = 0;
@@ -177,9 +255,8 @@ void MultilineTextInputState::clearText()
 
 void MultilineTextInputState::insertTextAtCaret(const Utf32String& newText)
 {
-	if (selectionActive)
-		deleteSelection();
-
+	// do not push duplicate snapshot if a selection will be deleted:
+	// deleteSelection() itself pushes a snapshot.
 	caretVisualLineIndex = (size_t)-1;
 	markLineDirty(currentLine);
 
@@ -189,7 +266,35 @@ void MultilineTextInputState::insertTextAtCaret(const Utf32String& newText)
 	if (totalTextLength >= maxTextLength)
 		return;
 
-	// handle newlines in pasted text
+	// Decide whether this is a single-character typing insert that can be coalesced.
+	bool isSingleCharTyping = (!selectionActive && newText.size() == 1 &&
+		newText[0] != '\n' && newText[0] != '\r' && newText[0] != '\t');
+
+	i32 startLineBefore = currentLine;
+	i32 startColBefore = caretColumn;
+
+	if (isSingleCharTyping)
+	{
+		// If this is the start of a typing sequence OR caret/line differs from sequence expectation -> push snapshot
+		if (!undoTypingActive || undoTypingLine != startLineBefore || startColBefore != undoTypingNextColumn)
+		{
+			pushUndoSnapshot();
+			undoTypingActive = true;
+			undoTypingLine = startLineBefore;
+			// next column will be updated after insertion loop
+		}
+		// else: continuation of typing sequence; do NOT push another snapshot
+	}
+	else
+	{
+		// Non-typing operations: push snapshot (unless a selection will be deleted by deleteSelection())
+		if (!selectionActive)
+			pushUndoSnapshot();
+		// break typing coalescing on non-typing insertion
+		undoTypingActive = false;
+	}
+
+	// handle newlines in pasted text and character insertion
 	for (u32 ch : newText)
 	{
 		// check limit
@@ -296,6 +401,12 @@ void MultilineTextInputState::insertTextAtCaret(const Utf32String& newText)
 			caretColumn++;
 			totalTextLength++;
 		}
+	}
+
+	// After insertion, if it was a single-char typing sequence, update the expected next column
+	if (isSingleCharTyping && undoTypingActive && undoTypingLine == startLineBefore)
+	{
+		undoTypingNextColumn = caretColumn;
 	}
 
 	// prevent stale pointers: visualLines holds pointers into lineVisuals, clear and force recompute
@@ -529,10 +640,8 @@ f32 MultilineTextInputState::calculateTextSegmentWidth(Font* font, const Utf32St
 				size_t matchPos = std::string::npos;
 				for (size_t i = c; i + endKw.size() <= endCol; i++) // only search up to endCol? No, rule can end AFTER visible area?
 				// But we only measure up to endCol.
-				// If rule ends AFTER endCol, then [c, endCol) is all inside rule.
-				// But what if rule ends EXACTLY at range boundary?
-				// We need to find match even if it crosses boundary?
-				// No, we only measure text UP TO endCol.
+				// If matchPos < endCol, but matchPos + len > endCol.
+				// We measure up to endCol.
 				// If match starts at endCol, it's outside.
 				// If match starts before endCol, we should split there.
 				{
@@ -1775,6 +1884,30 @@ void MultilineTextInputState::processKeyEvent(const InputEvent& ev)
 		Utf32String newline;
 		newline.push_back('\n');
 		insertTextAtCaret(newline);
+	}
+	// Undo (Ctrl+Z)
+	else if (ev.key.code == KeyCode::Z && has(ev.key.modifiers, KeyModifiers::Control))
+	{
+		// break typing coalescing
+		undoTypingActive = false;
+
+		auto s = undoStack.undo();
+		if (s)
+		{
+			applyUndoSnapshot(*s);
+		}
+	}
+	// Redo (Ctrl+Y)
+	else if (ev.key.code == KeyCode::Y && has(ev.key.modifiers, KeyModifiers::Control))
+	{
+		// break typing coalescing
+		undoTypingActive = false;
+
+		auto s = undoStack.redo();
+		if (s)
+		{
+			applyUndoSnapshot(*s);
+		}
 	}
 	else if (ev.key.code == KeyCode::Backspace)
 	{

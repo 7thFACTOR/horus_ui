@@ -1,5 +1,6 @@
 #pragma once
 #include "types.h"
+#include "undo.h"
 #include <vector>
 
 namespace hui
@@ -67,8 +68,22 @@ struct MultilineTextInputState
 	f32 caretBlinkTimer = 0;
 	u32 visibleLineCount = 10; // How many lines to display
 
+	// undo/redo support (per-widget)
+	UndoStack undoStack;
+
+	// Coalescing continuous typing on same logical line into a single undo step.
+	// When true, single-character inserts on the same line at the expected insertion
+	// column will NOT push a new snapshot (they're grouped into the previously pushed snapshot).
+	bool undoTypingActive = false;
+	i32 undoTypingLine = -1;
+	i32 undoTypingNextColumn = -1;
+
 	// Duplicate event protection
 	u32 lastKeyProcessFrame = 0;
+
+	// Helpers for undo
+	void pushUndoSnapshot(); // push current state into undo stack
+	void applyUndoSnapshot(const UndoStack::State& s); // restore a snapshot and mark dirty
 
 	struct VisualSegment
 	{

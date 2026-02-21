@@ -448,14 +448,15 @@ int main(int argc, char** args)
 					{"function", hui::Color::orange},
 					{"end", hui::Color::orange },
 					{"local", hui::Color::green},
-					{"(", hui::Color::yellow},
-					{")", hui::Color::yellow}
+					{"(", hui::Color::blue},
+					{")", hui::Color::blue}
 				};
 
 				static hui::RangeHighlight rh[] = {
 					{ "\"", "\"", hui::Color::red, "\\"},
 					{ "'", "'", hui::Color::cyan},
 					{ "--", 0, hui::Color::lightGray},
+					{ "//", 0, hui::Color::lightGray},
 					{ "/*", "*/", hui::Color::green}
 				};
 
@@ -465,7 +466,7 @@ int main(int argc, char** args)
 						| hui::MultilineTextInputFlags::HighlightCurrentLine
 						|hui::MultilineTextInputFlags::WordWrap
 						| hui::MultilineTextInputFlags::None
-						, kws, 5, rh, 4);
+						, kws, 5, rh, 5);
 
 
 				hui::pushTint(hui::Color::orange);
