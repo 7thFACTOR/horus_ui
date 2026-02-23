@@ -21,7 +21,6 @@ struct MultilineTextInputState
 	bool processEvent(const InputEvent& ev);
 	void processKeyEvent(const InputEvent& ev);
 	Point getCaretScreenPosition();
-	void formatValue();
 	i32 getCharIndexAtPoint(const Point& pt);
 	void ensureCaretVisible();
 
