@@ -11,13 +11,13 @@ UndoStack::UndoStack(std::size_t maxHistory) noexcept
 
 void UndoStack::push(const State& state)
 {
-    // If there is redo history (m_pos not at end) truncate it.
+    // if there is redo history (m_pos not at end) truncate it.
     if (m_pos != npos && m_pos + 1 < m_history.size())
         m_history.erase(m_history.begin() + (m_pos + 1), m_history.end());
 
     m_history.push_back(state);
 
-    // Enforce max history length
+    // enforce max history length
     if (m_history.size() > m_maxHistory)
     {
         // drop the oldest entry

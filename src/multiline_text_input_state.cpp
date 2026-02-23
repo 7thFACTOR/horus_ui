@@ -30,7 +30,9 @@ void MultilineTextInputState::pushUndoSnapshot()
 
 	for (size_t li = 0; li < lines.size(); ++li)
 	{
-		if (li) joined.push_back('\n');
+		if (li)
+			joined.push_back('\n');
+
 		joined.insert(joined.end(), lines[li].begin(), lines[li].end());
 	}
 
@@ -229,16 +231,19 @@ Utf32String MultilineTextInputState::getSelection()
 
 	// multi-line selection
 	Utf32String result;
+	
 	for (i32 i = startLine; i <= endLine; i++)
 	{
 		if (i == startLine)
 		{
 			Utf32String part(lines[i].begin() + startCol, lines[i].end());
+			
 			result.insert(result.end(), part.begin(), part.end());
 		}
 		else if (i == endLine)
 		{
 			Utf32String part(lines[i].begin(), lines[i].begin() + endCol);
+			
 			result.insert(result.end(), part.begin(), part.end());
 		}
 		else
@@ -283,7 +288,7 @@ void MultilineTextInputState::insertTextAtCaret(const Utf32String& newText)
 	if (totalTextLength >= maxTextLength)
 		return;
 
-	// Decide whether this is a single-character typing insert that can be coalesced.
+	// decide whether this is a single-character typing insert that can be coalesced.
 	bool isSingleCharTyping = (!selectionActive && newText.size() == 1 &&
 		newText[0] != '\n' && newText[0] != '\r' && newText[0] != '\t');
 
@@ -292,21 +297,20 @@ void MultilineTextInputState::insertTextAtCaret(const Utf32String& newText)
 
 	if (isSingleCharTyping)
 	{
-		// If this is the start of a typing sequence OR caret/line differs from sequence expectation -> push snapshot
+		// if this is the start of a typing sequence OR caret/line differs from sequence expectation -> push snapshot
 		if (!undoTypingActive || undoTypingLine != startLineBefore || startColBefore != undoTypingNextColumn)
 		{
 			pushUndoSnapshot();
 			undoTypingActive = true;
 			undoTypingLine = startLineBefore;
-			// next column will be updated after insertion loop
 		}
-		// else: continuation of typing sequence; do NOT push another snapshot
 	}
 	else
 	{
-		// Non-typing operations: push snapshot (unless a selection will be deleted by deleteSelection())
+		// non-typing operations: push snapshot (unless a selection will be deleted by deleteSelection())
 		if (!selectionActive)
 			pushUndoSnapshot();
+
 		// break typing coalescing on non-typing insertion
 		undoTypingActive = false;
 	}
@@ -329,9 +333,11 @@ void MultilineTextInputState::insertTextAtCaret(const Utf32String& newText)
 			// compute indentation from the current line (leading spaces/tabs)
 			size_t prevIndentCount = 0;
 			Utf32String indentStr;
+
 			if (currentLine < (i32)lines.size())
 			{
 				const auto& srcLine = lines[currentLine];
+			
 				for (size_t i = 0; i < srcLine.size(); ++i)
 				{
 					if (srcLine[i] == ' ' || srcLine[i] == '\t')
@@ -339,18 +345,21 @@ void MultilineTextInputState::insertTextAtCaret(const Utf32String& newText)
 					else
 						break;
 				}
+				
 				if (prevIndentCount > 0)
 					indentStr = Utf32String(srcLine.begin(), srcLine.begin() + prevIndentCount);
 			}
 
 			// determine how many indent chars we can actually insert given maxTextLength
 			size_t allowed = (totalTextLength >= maxTextLength) ? 0 : (maxTextLength - totalTextLength);
+			
 			if (allowed == 0)
-				break; // shouldn't happen due to outer check, but safe-guard
+				break;
 
 			// newline itself consumes 1
 			// compute how many indent chars we can add (may be 0)
 			size_t actualIndent = 0;
+			
 			if (allowed <= 1)
 			{
 				actualIndent = 0;
@@ -362,17 +371,20 @@ void MultilineTextInputState::insertTextAtCaret(const Utf32String& newText)
 				actualIndent = std::min(want, can);
 			}
 
-			// Build remaining text (text after caret) from original line
+			// build remaining text (text after caret) from original line
 			Utf32String remaining(lines[currentLine].begin() + caretColumn, lines[currentLine].end());
 
-			// Erase tail from current line
+			// erase tail from current line
 			lines[currentLine].erase(lines[currentLine].begin() + caretColumn, lines[currentLine].end());
 
-			// Insert new line with indentation (partial if truncated by max length)
+			// insert new line with indentation (partial if truncated by max length)
 			currentLine++;
+		
 			Utf32String newLine;
+			
 			if (actualIndent > 0)
 				newLine.insert(newLine.end(), indentStr.begin(), indentStr.begin() + actualIndent);
+			
 			newLine.insert(newLine.end(), remaining.begin(), remaining.end());
 			lines.insert(lines.begin() + currentLine, newLine);
 
@@ -420,7 +432,7 @@ void MultilineTextInputState::insertTextAtCaret(const Utf32String& newText)
 		}
 	}
 
-	// After insertion, if it was a single-char typing sequence, update the expected next column
+	// after insertion, if it was a single-char typing sequence, update the expected next column
 	if (isSingleCharTyping && undoTypingActive && undoTypingLine == startLineBefore)
 	{
 		undoTypingNextColumn = caretColumn;
@@ -463,6 +475,7 @@ Point MultilineTextInputState::getCaretScreenPosition()
 		if (it != visualLines.end() && (*it)->logicalLineIndex == currentLine)
 		{
 			size_t startIdx = std::distance(visualLines.begin(), it);
+			
 			foundVisualLine = startIdx;
 
 			// check if we need to refine for wrapped lines
@@ -512,12 +525,18 @@ Point MultilineTextInputState::getCaretScreenPosition()
 	}
 
 	if (foundVisualLine == (size_t)-1)
+	{
 		return Point(clipRect.x - scrollOffsetX, clipRect.y - scrollOffsetY);
+	}
 
 	const auto vl = visualLines[foundVisualLine];
 	i32 relCaret = caretColumn - vl->startColumn;
-	if (relCaret < 0) relCaret = 0;
-	if (relCaret > vl->length) relCaret = vl->length;
+	
+	if (relCaret < 0)
+		relCaret = 0;
+
+	if (relCaret > vl->length)
+		relCaret = vl->length;
 
 	f32 xOffset = calculateTextSegmentWidth(font, lines[currentLine], vl->startColumn, relCaret, vl->logicalLineIndex);
 
@@ -529,8 +548,11 @@ Point MultilineTextInputState::getCaretScreenPosition()
 
 f32 MultilineTextInputState::calculateTextSegmentWidth(Font* font, const Utf32String& line, i32 startCol, i32 length, i32 logicalLineIndex)
 {
-	if (length <= 0) return 0.0f;
-	if (!font) return 0.0f;
+	if (length <= 0)
+		return 0.0f;
+
+	if (!font)
+		return 0.0f;
 
 	// determine starting state
 	i32 currentState = -1;
@@ -538,54 +560,70 @@ f32 MultilineTextInputState::calculateTextSegmentWidth(Font* font, const Utf32St
 	if (lineStates.size() > logicalLineIndex && logicalLineIndex >= 0)
 		currentState = lineStates[logicalLineIndex];
 
-	// Fast-forward state if needed
+	// fast-forward state if needed
 	if (startCol > 0 && !rules32.empty())
 	{
-		// Scan from 0 to startCol
-		for (i32 c = 0; c < startCol; )
+		// scan from 0 to startCol
+		for (i32 c = 0; c < startCol;)
 		{
 			if (currentState != -1)
 			{
 				const auto& endKw = rules32[currentState].end;
-				if (endKw.empty()) { currentState = -1; break; } // EOL
+
+				if (endKw.empty())
+				{
+					currentState = -1;
+					break;
+				} // eol
 
 				bool match = true;
-				if (c + endKw.size() > startCol) { 
-					// Match crosses boundary? We assume state persists until end of match?
-					// Ideally we scan char by char.
-					// If match starts before startCol, and ends after/at startCol, we exit state at endKw.
-					// But we only care about state AT startCol.
-					// If match ends after startCol, we are technically "inside" the rule until match ends?
-					// Or does rule end AT start of endKw?
-					// Renderer: `c += endKw.size(); currentState = -1;`
-					// So until we consume endKw, we are in state.
-				}
 				
-				// Check match at c
+				// check match at c
 				if (c + endKw.size() <= line.size())
 				{
 					for (size_t k = 0; k < endKw.size(); k++)
-						if (line[c + k] != endKw[k]) { match = false; break; }
-				} else match = false;
+						if (line[c + k] != endKw[k])
+						{
+							match = false;
+							break;
+						}
+				}
+				else
+				{
+					match = false;
+				}
 
 				if (match)
 				{
-					// Check escape
+					// check escape
 					bool escaped = false;
 					const auto& escKw = rules32[currentState].escape;
+				
 					if (!escKw.empty())
 					{
 						size_t escCount = 0;
 						size_t backIdx = c;
+
 						while (backIdx >= escKw.size())
 						{
 							backIdx -= escKw.size();
 							bool escMatch = true;
+							
 							for (size_t k = 0; k < escKw.size(); k++)
-								if (line[backIdx+k] != escKw[k]) { escMatch = false; break; }
-							if (escMatch) escCount++; else break;
+								if (line[backIdx+k] != escKw[k])
+								{
+									escMatch = false;
+									break;
+								}
+
+							if (escMatch)
+								escCount++;
+							else
+								break;
 						}
-						if (escCount % 2 != 0) escaped = true;
+
+						if (escCount % 2 != 0)
+							escaped = true;
 					}
 
 					if (!escaped)
@@ -600,7 +638,7 @@ f32 MultilineTextInputState::calculateTextSegmentWidth(Font* font, const Utf32St
 			else
 			{
 				i32 bestRule = -1;
-				// Check rule starts
+				// check rule starts
 				for (u32 r = 0; r < rules32.size(); r++)
 				{
 					const auto& startKw = rules32[r].begin;
@@ -631,7 +669,7 @@ f32 MultilineTextInputState::calculateTextSegmentWidth(Font* font, const Utf32St
 		}
 	}
 
-	// Now measure from startCol to startCol + length
+	// now measure from startCol to startCol + length
 	f32 totalWidth = 0.0f;
 	i32 endCol = startCol + length;
 	if (endCol > line.size()) endCol = (i32)line.size();
@@ -649,18 +687,18 @@ f32 MultilineTextInputState::calculateTextSegmentWidth(Font* font, const Utf32St
 			if (endKw.empty())
 			{
 				segEnd = endCol;
-				// nextState = -1; // Effectively EOL
+				// nextState = -1; // effectively eol
 			}
 			else
 			{
-				// Search for endKw
+				// search for endKw
 				size_t matchPos = std::string::npos;
 				for (size_t i = c; i + endKw.size() <= endCol; i++) // only search up to endCol? No, rule can end AFTER visible area?
-				// But we only measure up to endCol.
-				// If matchPos < endCol, but matchPos + len > endCol.
-				// We measure up to endCol.
-				// If match starts at endCol, it's outside.
-				// If match starts before endCol, we should split there.
+				// but we only measure up to endCol.
+				// if matchPos < endCol, but matchPos + len > endCol.
+				// we measure up to endCol.
+				// if match starts at endCol, it's outside.
+				// if match starts before endCol, we should split there.
 				{
 					bool found = true;
 					for (size_t k = 0; k < endKw.size(); k++)
@@ -668,7 +706,7 @@ f32 MultilineTextInputState::calculateTextSegmentWidth(Font* font, const Utf32St
 					
 					if (found)
 					{
-						// Check escape
+						// check escape
 						bool escaped = false;
 						const auto& escKw = rules32[currentState].escape;
 						if (!escKw.empty())
