@@ -417,95 +417,134 @@ bool colorPicker(const char* id, Color* inOutColor, ColorPickerFlags flags, cons
 	{
 		if (has(flags, ColorPickerFlags::Hdr))
 		{
+			hui::beginSameLineGroup(4);
+
 			if (hui::comboSliderFloat(&crtColor.r, 0.001f, 0.001f, "R: %.4f"))
 			{
 				rgbaChanged = true;
 			}
+
+			hui::nextSameLineGroupWidget();
 
 			if (hui::comboSliderFloat(&crtColor.g, 0.001f, 0.001f, "G: %.4f"))
 			{
 				rgbaChanged = true;
 			}
 
+			hui::nextSameLineGroupWidget();
+
 			if (hui::comboSliderFloat(&crtColor.b, 0.001f, 0.001f, "B: %.4f"))
 			{
 				rgbaChanged = true;
 			}
 
+			hui::nextSameLineGroupWidget();
+
 			if (hui::comboSliderFloat(&crtColor.a, 0.001f, 0.001f, "A: %.4f"))
 			{
 				rgbaChanged = true;
 			}
+
+			hui::endSameLineGroup();
 		}
 		else
 		{
+			hui::beginSameLineGroup(4);
+
 			if (hui::comboSliderFloatRanged(&crtColor.r, 0, 1, 0.001f, 0.001f, "R: %.4f"))
 			{
 				rgbaChanged = true;
 			}
+
+			hui::nextSameLineGroupWidget();
 
 			if (hui::comboSliderFloatRanged(&crtColor.g, 0, 1, 0.001f, 0.001f, "G: %.4f"))
 			{
 				rgbaChanged = true;
 			}
 
+			hui::nextSameLineGroupWidget();
+
 			if (hui::comboSliderFloatRanged(&crtColor.b, 0, 1, 0.001f, 0.001f, "B: %.4f"))
 			{
 				rgbaChanged = true;
 			}
 
+			hui::nextSameLineGroupWidget();
+
 			if (hui::comboSliderFloatRanged(&crtColor.a, 0, 1, 0.001f, 0.001f, "A: %.4f"))
 			{
 				rgbaChanged = true;
 			}
-		}
 
+			hui::endSameLineGroup();
+		}
 	}
 	else
 	{
 		if (has(flags, ColorPickerFlags::Hdr))
 		{
+			hui::beginSameLineGroup(4);
+
 			if (hui::comboSliderInteger(&crtIntR, 0.1f, 1, "R: %.0f"))
 			{
 				rgbaChanged = true;
 			}
+
+			hui::nextSameLineGroupWidget();
 
 			if (hui::comboSliderInteger(&crtIntG, 0.1f, 1, "G: %.0f"))
 			{
 				rgbaChanged = true;
 			}
 
+			hui::nextSameLineGroupWidget();
+
 			if (hui::comboSliderInteger(&crtIntB, 0.1f, 1, "B: %.0f"))
 			{
 				rgbaChanged = true;
 			}
 
+			hui::nextSameLineGroupWidget();
+
 			if (hui::comboSliderInteger(&crtIntA, 0.1f, 1, "A: %.0f"))
 			{
 				rgbaChanged = true;
 			}
+
+			hui::endSameLineGroup();
 		}
 		else
 		{
+			hui::beginSameLineGroup(4);
+
 			if (hui::comboSliderIntegerRanged(&crtIntR, 0, 255, 0.1f, 1, "R: %.0f"))
 			{
 				rgbaChanged = true;
 			}
+
+			hui::nextSameLineGroupWidget();
 
 			if (hui::comboSliderIntegerRanged(&crtIntG, 0, 255, 0.1f, 1, "G: %.0f"))
 			{
 				rgbaChanged = true;
 			}
 
+			hui::nextSameLineGroupWidget();
+
 			if (hui::comboSliderIntegerRanged(&crtIntB, 0, 255, 0.1f, 1, "B: %.0f"))
 			{
 				rgbaChanged = true;
 			}
 
+			hui::nextSameLineGroupWidget();
+
 			if (hui::comboSliderIntegerRanged(&crtIntA, 0, 255, 0.1f, 1, "A: %.0f"))
 			{
 				rgbaChanged = true;
 			}
+
+			hui::endSameLineGroup();
 		}
 	}
 

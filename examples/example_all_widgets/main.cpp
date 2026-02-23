@@ -448,8 +448,8 @@ int main(int argc, char** args)
 					{"function", hui::Color::orange},
 					{"end", hui::Color::orange },
 					{"local", hui::Color::green},
-					{"(", hui::Color::blue},
-					{")", hui::Color::blue}
+					{"(", hui::Color::blue, hui::KeywordInfo::Type::Delimiter},
+					{")", hui::Color::blue, hui::KeywordInfo::Type::Delimiter}
 				};
 
 				static hui::RangeHighlight rh[] = {

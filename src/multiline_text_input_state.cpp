@@ -23,14 +23,17 @@ MultilineTextInputState::MultilineTextInputState()
 void MultilineTextInputState::pushUndoSnapshot()
 {
 	UndoStack::State snap;
-	// join lines with '\n'
 	Utf32String joined;
+
+	// join lines with '\n'
 	joined.reserve(totalTextLength + (lines.size() > 0 ? lines.size()-1 : 0));
+
 	for (size_t li = 0; li < lines.size(); ++li)
 	{
 		if (li) joined.push_back('\n');
 		joined.insert(joined.end(), lines[li].begin(), lines[li].end());
 	}
+
 	snap.text = std::move(joined);
 	snap.caretLine = currentLine;
 	snap.caretColumn = caretColumn;
@@ -39,9 +42,11 @@ void MultilineTextInputState::pushUndoSnapshot()
 
 void MultilineTextInputState::applyUndoSnapshot(const UndoStack::State& s)
 {
+	Utf32String cur;
+
 	// restore text
 	lines.clear();
-	Utf32String cur;
+
 	for (u32 ch : s.text)
 	{
 		if (ch == '\n')
@@ -52,6 +57,7 @@ void MultilineTextInputState::applyUndoSnapshot(const UndoStack::State& s)
 		else
 			cur.push_back(ch);
 	}
+
 	lines.push_back(cur);
 
 	// clamp caret
@@ -61,7 +67,10 @@ void MultilineTextInputState::applyUndoSnapshot(const UndoStack::State& s)
 	// recompute caches
 	visualLines.clear();
 	lineVisuals.resize(lines.size());
-	if (lineStates.size() != lines.size()) lineStates.resize(lines.size(), -1);
+	
+	if (lineStates.size() != lines.size())
+		lineStates.resize(lines.size(), -1);
+	
 	caretVisualLineIndex = (size_t)-1;
 	firstDirtyLine = 0;
 	forceLayoutUpdate = true;
@@ -69,10 +78,14 @@ void MultilineTextInputState::applyUndoSnapshot(const UndoStack::State& s)
 
 	// recompute totalTextLength
 	size_t total = 0;
-	for (size_t i = 0; i < lines.size(); ++i) total += lines[i].size();
-	if (lines.size() > 0) total += (lines.size() - 1);
+	
+	for (size_t i = 0; i < lines.size(); ++i)
+		total += lines[i].size();
+	
+	if (lines.size() > 0)
+		total += (lines.size() - 1);
+	
 	totalTextLength = total;
-
 	forceRepaint();
 }
 
@@ -121,6 +134,7 @@ void MultilineTextInputState::deleteSelection()
 
 	// calculate deleted length BEFORE modifying lines
 	size_t deletedCount = 0;
+	
 	if (startLine == endLine)
 	{
 		deletedCount = endCol - startCol;
@@ -128,12 +142,15 @@ void MultilineTextInputState::deleteSelection()
 	else
 	{
 		deletedCount = (lines[startLine].size() - startCol) + endCol + (endLine - startLine);
+
 		for (i32 i = startLine + 1; i < endLine; i++)
 			deletedCount += lines[i].size();
 	}
 
-	if (deletedCount > totalTextLength) totalTextLength = 0;
-	else totalTextLength -= deletedCount;
+	if (deletedCount > totalTextLength)
+		totalTextLength = 0;
+	else
+		totalTextLength -= deletedCount;
 
 	// push snapshot BEFORE modifying so undo restores previous content
 	pushUndoSnapshot();
@@ -710,11 +727,11 @@ f32 MultilineTextInputState::calculateTextSegmentWidth(Font* font, const Utf32St
 
 				for (size_t i = c; i + startKw.size() <= limit && i + startKw.size() <= line.size(); i++)
 				{
-					bool match = true;
+					bool found = true;
 					for (size_t k = 0; k < startKw.size(); k++)
-						if (line[i+k] != startKw[k]) { match = false; break; }
+						if (line[i+k] != startKw[k]) { found = false; break; }
 					
-					if (match)
+					if (found)
 					{
 						bestPos = i;
 						foundRule = (i32)r;
@@ -742,16 +759,31 @@ f32 MultilineTextInputState::calculateTextSegmentWidth(Font* font, const Utf32St
 							if (line[i+sub] != kwStr[sub]) { match = false; break; }
 						
 						if (match)
-						{
-                            if (i < bestPos || bestPos == std::string::npos)
-                            {
-                                bestPos = i;
-                                foundRule = -1;
-                                foundKw = &keywords32[k];
-                                limit = bestPos;
-                            }
-							break;
-						}
+							{
+								// boundary check unless keyword is a symbol
+								bool bound = true;
+								if (keywords32[k].info && keywords32[k].info->type == KeywordInfo::Type::Delimiter)
+								{
+									bound = true;
+								}
+								else
+								{
+									if (i > 0) { u32 prev = line[i - 1]; if ((prev >= 'a' && prev <= 'z') || (prev >= 'A' && prev <= 'Z') || (prev >= '0' && prev <= '9') || prev == '_') bound = false; }
+									if (bound && i + kwStr.size() < line.size()) { u32 next = line[i + kwStr.size()]; if ((next >= 'a' && next <= 'z') || (next >= 'A' && next <= 'Z') || (next >= '0' && next <= '9') || next == '_') bound = false; }
+								}
+
+								if (bound)
+								{
+									if (i < bestPos || bestPos == std::string::npos)
+									{
+										bestPos = i;
+										foundRule = -1;
+										foundKw = &keywords32[k];
+										limit = bestPos;
+									}
+									break;
+								}
+							}
 					}
 				}
 			}
@@ -980,8 +1012,10 @@ void MultilineTextInputState::computeVisualLines(Font* font, f32 availableWidth,
 	{
 		lines_processed++;
 		const Utf32String& line = lines[i];
+
+		// ensure we operate on the per-logical-line visuals container
 		auto& visuals = lineVisuals[i];
-		
+
 		// For stable stop, keep track of what we had
 		std::vector<VisualLine> oldVisuals = visuals;
 		visuals.clear();
@@ -1235,7 +1269,7 @@ void MultilineTextInputState::updateSyntaxHighlighting(const RangeHighlight* rul
 	if (!hasMultilineRanges && prevHash == newHash && !lineStates.empty() && firstDirtyLine != -1)
 	{
 		// incremental: start one line earlier to preserve multi-line rule state
-		start = std::max(0, firstDirtyLine - 1);
+		start = std::max((i32)0, firstDirtyLine - 1);
 		// seed currentState from previous line if available
 		if (start > 0)
 			currentState = lineStates[start - 1];
@@ -1280,7 +1314,7 @@ void MultilineTextInputState::updateSyntaxHighlighting(const RangeHighlight* rul
 					{
 						// Count consecutive escapes ending at c-1
 						size_t escCount = 0;
-						size_t backIdx = c;
+						i32 backIdx = (i32)c;
 						while (backIdx >= (i32)rules32[currentState].escape.size())
 						{
 							backIdx -= (i32)rules32[currentState].escape.size();
@@ -1297,10 +1331,7 @@ void MultilineTextInputState::updateSyntaxHighlighting(const RangeHighlight* rul
 					c += endKw.size();
 					currentState = -1;
 				}
-				else
-				{
-					c++;
-				}
+				else c++;
 			}
 			else
 			{
@@ -1426,9 +1457,17 @@ void MultilineTextInputState::calculateSegments(const Utf32String& line, i32 ini
 				{
 					// Boundary check
 					bool bound = true;
-					if (c > 0) { u32 prev = line[c - 1]; if ((prev >= 'a' && prev <= 'z') || (prev >= 'A' && prev <= 'Z') || (prev >= '0' && prev <= '9') || prev == '_') bound = false; }
-					if (bound && c + kw.size() < line.size()) { u32 next = line[c + kw.size()]; if ((next >= 'a' && next <= 'z') || (next >= 'A' && next <= 'Z') || (next >= '0' && next <= '9') || next == '_') bound = false; }
-					
+					// If this keyword is marked as a symbol, skip boundary checks
+					if (keywords32[k].info && keywords32[k].info->type == KeywordInfo::Type::Delimiter)
+					{
+						bound = true;
+					}
+					else
+					{
+						if (c > 0) { u32 prev = line[c - 1]; if ((prev >= 'a' && prev <= 'z') || (prev >= 'A' && prev <= 'Z') || (prev >= '0' && prev <= '9') || prev == '_') bound = false; }
+						if (bound && c + kw.size() < line.size()) { u32 next = line[c + (u32)kw.size()]; if ((next >= 'a' && next <= 'z') || (next >= 'A' && next <= 'Z') || (next >= '0' && next <= '9') || next == '_') bound = false; }
+					}
+
 					if (bound)
 					{
 						bool match = true;
@@ -1510,6 +1549,9 @@ static u64 computeRulesHash(const RangeHighlight* rules, u32 count, const Keywor
 		hashStr(keywords[i].keyword);
 		h ^= (u64)keywords[i].color.getRgba();
 		h *= 0x100000001b3ULL;
+		// include asSymbol flag in hash to detect changes
+		h ^= (u64)(keywords[i].type == KeywordInfo::Type::Delimiter ? 1ULL : 0ULL);
+		h *= 0x100000001b3ULL;
 	}
 
 	return h;
@@ -1590,6 +1632,139 @@ bool MultilineTextInputState::processEvent(const InputEvent& ev)
 				selectionActive = true;
 				ensureCaretVisible();
 			}
+		}
+	}
+
+	// Double-click: select word under cursor. Triple-click: select all.
+	if (ev.type == InputEvent::Type::MouseDown && ev.mouse.clickCount == 2)
+	{
+		if (ev.mouse.button == MouseButton::Left)
+		{
+			// reset any coalesced typing
+			undoTypingActive = false;
+
+			// position caret at click
+			deselect();
+			getCharIndexAtPoint(ev.mouse.point);
+
+			selectionActive = true;
+			selectionStartLine = selectionEndLine = currentLine;
+
+			// If empty line -> nothing to select
+			if (currentLine < 0 || currentLine >= (i32)lines.size() || lines[currentLine].empty())
+			{
+				selectionStartColumn = selectionEndColumn = caretColumn;
+			}
+			else
+			{
+				const Utf32String& line = lines[currentLine];
+				size_t n = line.size();
+				size_t pos = (size_t)caretColumn;
+				if (pos > n) pos = n;
+
+				// Choose a character index to examine (prefer char to left when caret at boundary)
+				size_t idx;
+				if (pos == 0)
+					idx = 0;
+				else if (pos == n)
+					idx = n - 1;
+				else
+				{
+					// If caret is on whitespace, try to move right to first non-space,
+					// otherwise use current position or left char.
+					if (std::isspace((int)line[pos]))
+						idx = pos;
+					else
+						idx = pos;
+				}
+
+				// If we landed on whitespace, skip to next non-space to the right
+				while (idx < n && std::isspace((int)line[idx]))
+					idx++;
+
+				// If still whitespace / at end, try to find a word to the left
+				if (idx >= n || std::isspace((int)line[idx]))
+				{
+					if (pos == 0)
+					{
+						selectionStartColumn = selectionEndColumn = 0;
+					}
+					else
+					{
+						// move left from pos-1 to find non-space
+						size_t lidx = (pos == 0) ? 0 : pos - 1;
+						while (true)
+						{
+							if (!std::isspace((int)line[lidx])) break;
+							if (lidx == 0) break;
+							--lidx;
+						}
+
+						if (std::isspace((int)line[lidx]))
+						{
+							selectionStartColumn = selectionEndColumn = (i32)pos;
+						}
+						else
+						{
+							// expand around lidx
+							size_t start = lidx;
+							while (start > 0 && !std::isspace((int)line[start - 1])) start--;
+							size_t end = lidx;
+							while (end + 1 < n && !std::isspace((int)line[end + 1])) end++;
+							selectionStartColumn = (i32)start;
+							selectionEndColumn = (i32)(end + 1);
+							caretColumn = selectionEndColumn;
+						}
+					}
+				}
+				else
+				{
+					// idx is at a non-space character inside a word -> expand to word boundaries
+					size_t start = idx;
+					while (start > 0 && !std::isspace((int)line[start - 1])) start--;
+					size_t end = idx;
+					while (end + 1 < n && !std::isspace((int)line[end + 1])) end++;
+					selectionStartColumn = (i32)start;
+					selectionEndColumn = (i32)(end + 1);
+					caretColumn = selectionEndColumn;
+				}
+			}
+
+			selectAllOnFocus = false;
+			caretVisualLineIndex = (size_t)-1;
+			ensureCaretVisible();
+		}
+	}
+	else if (ev.type == InputEvent::Type::MouseDown && ev.mouse.clickCount == 3)
+	{
+		if (ev.mouse.button == MouseButton::Left)
+		{
+			// triple click -> select the entire logical line (not the whole document)
+			// break typing coalescing
+			undoTypingActive = false;
+
+			// position caret at click (refresh currentLine)
+			deselect();
+			getCharIndexAtPoint(ev.mouse.point);
+
+			selectionActive = true;
+			selectionStartLine = selectionEndLine = currentLine;
+
+			if (currentLine < 0 || currentLine >= (i32)lines.size())
+			{
+				selectionStartColumn = selectionEndColumn = 0;
+				caretColumn = 0;
+			}
+			else
+			{
+				selectionStartColumn = 0;
+				selectionEndColumn = (i32)lines[currentLine].size();
+				caretColumn = selectionEndColumn;
+			}
+
+			selectAllOnFocus = false;
+			caretVisualLineIndex = (size_t)-1;
+			ensureCaretVisible();
 		}
 	}
 
@@ -1870,9 +2045,202 @@ void MultilineTextInputState::processKeyEvent(const InputEvent& ev)
 	}
 	else if (ev.key.code == KeyCode::Tab)
 	{
-		Utf32String tabStr;
-		tabStr.push_back('\t');
-		insertTextAtCaret(tabStr);
+		// If multiple lines are selected, indent/unindent all selected lines at once.
+		// Shift+Tab -> unindent, Tab -> indent.
+		bool shiftDown = has(ev.key.modifiers, KeyModifiers::Shift);
+
+		// Normalize selection range
+		i32 startLine = selectionStartLine;
+		i32 startCol = selectionStartColumn;
+		i32 endLine = selectionEndLine;
+		i32 endCol = selectionEndColumn;
+		if (startLine > endLine || (startLine == endLine && startCol > endCol))
+		{
+			std::swap(startLine, endLine);
+			std::swap(startCol, endCol);
+		}
+
+		// Helper: build indent string
+		Utf32String indentStr;
+		u32 tabSize = ctx->settings.tabSize;
+		if (has(flags, MultilineTextInputFlags::SpacesOnTab))
+		{
+			for (u32 k = 0; k < tabSize; ++k) indentStr.push_back(' ');
+		}
+		else
+		{
+			indentStr.push_back('\t');
+		}
+		i32 indentLen = (i32)indentStr.size();
+
+		// Multi-line selection indentation
+		if (selectionActive && startLine != endLine)
+		{
+			// break typing coalescing and snapshot once for whole operation
+			undoTypingActive = false;
+			pushUndoSnapshot();
+
+			i32 totalAdded = 0;
+			i32 totalRemoved = 0;
+
+			for (i32 L = startLine; L <= endLine; ++L)
+			{
+				auto& line = lines[L];
+
+				if (!shiftDown)
+				{
+					// indent: insert indentStr at beginning of line
+					line.insert(line.begin(), indentStr.begin(), indentStr.end());
+					totalAdded += indentLen;
+					markLineDirty(L);
+				}
+				else
+				{
+					// unindent: remove up to indentLen worth of leading whitespace/tab
+					i32 removed = 0;
+					if (has(flags, MultilineTextInputFlags::SpacesOnTab))
+					{
+						// remove up to tabSize leading spaces
+						while (removed < indentLen && removed < (i32)line.size() && line[removed] == ' ')
+							++removed;
+					}
+					else
+					{
+						// prefer removing a leading '\t' if present, otherwise remove up to tabSize spaces
+						if (!line.empty() && line[0] == '\t')
+						{
+							removed = 1;
+						}
+						else
+						{
+							while (removed < indentLen && removed < (i32)line.size() && line[removed] == ' ')
+								++removed;
+						}
+					}
+
+					if (removed > 0)
+					{
+						line.erase(line.begin(), line.begin() + removed);
+						totalRemoved += removed;
+						markLineDirty(L);
+					}
+				}
+			}
+
+			// Adjust totalTextLength
+			if (totalAdded > 0) totalTextLength = std::min(totalTextLength + (size_t)totalAdded, (size_t)maxTextLength);
+			if (totalRemoved > 0) totalTextLength = (totalRemoved > (i32)totalTextLength) ? 0 : totalTextLength - totalRemoved;
+
+			// Update selection and caret columns: shift start/end columns on first/last lines
+			if (!shiftDown)
+			{
+				// Indenting increases columns on start and end lines
+				if (startLine >= 0 && startLine < (i32)lines.size())
+					selectionStartColumn = startCol + indentLen;
+				if (endLine >= 0 && endLine < (i32)lines.size())
+					selectionEndColumn = endCol + indentLen;
+			}
+			else
+			{
+				// Unindent decreases columns on start and end lines (clamp to 0)
+				// Need to recompute how many chars were removed from start/end lines specifically.
+				// Simplify: clamp by indentLen (safe and consistent)
+				if (startLine >= 0 && startLine < (i32)lines.size())
+					selectionStartColumn = std::max<i32>(0, startCol - indentLen);
+				if (endLine >= 0 && endLine < (i32)lines.size())
+					selectionEndColumn = std::max<i32>(0, endCol - indentLen);
+			}
+
+			// Place caret at end of selection
+			currentLine = selectionEndLine = endLine;
+			caretColumn = selectionEndColumn;
+			selectionStartLine = startLine;
+
+			// Refresh caches
+			visualLines.clear();
+			lineVisuals.resize(lines.size());
+			if (lineStates.size() != lines.size()) lineStates.resize(lines.size(), -1);
+			caretVisualLineIndex = (size_t)-1;
+			firstDirtyLine = 0;
+			forceLayoutUpdate = true;
+			textChanged = true;
+		}
+		else
+		{
+			// Single-line or no multi-line selection: fall back to normal behavior.
+			if (!shiftDown)
+			{
+				// normal tab insertion at caret
+				Utf32String tabStr;
+				if (has(flags, MultilineTextInputFlags::SpacesOnTab))
+				{
+					for (u32 k = 0; k < tabSize; ++k) tabStr.push_back(' ');
+				}
+				else
+				{
+					tabStr.push_back('\t');
+				}
+				insertTextAtCaret(tabStr);
+			}
+			else
+			{
+				// Shift+Tab single-line unindent: remove up to indentLen chars from start of current line
+				undoTypingActive = false;
+				pushUndoSnapshot();
+
+				auto& line = lines[currentLine];
+				int removed = 0;
+				if (has(flags, MultilineTextInputFlags::SpacesOnTab))
+				{
+					while (removed < indentLen && removed < (i32)line.size() && line[removed] == ' ')
+						++removed;
+				}
+				else
+				{
+					if (!line.empty() && line[0] == '\t')
+					{
+						removed = 1;
+					}
+					else
+					{
+						while (removed < indentLen && removed < (i32)line.size() && line[removed] == ' ')
+							++removed;
+					}
+				}
+
+				if (removed > 0)
+				{
+					line.erase(line.begin(), line.begin() + removed);
+					if ((size_t)removed > totalTextLength) totalTextLength = 0;
+					else totalTextLength -= removed;
+					markLineDirty(currentLine);
+
+					// adjust caret/selection if they were on the line
+					if (!selectionActive)
+					{
+						caretColumn = std::max<i32>(0, caretColumn - removed);
+					}
+					else
+					{
+						// If selection was only single-line, update selection columns
+						if (selectionStartLine == selectionEndLine && selectionStartLine == currentLine)
+						{
+							selectionStartColumn = std::max<i32>(0, selectionStartColumn - removed);
+							selectionEndColumn = std::max<i32>(0, selectionEndColumn - removed);
+							caretColumn = selectionEndColumn;
+						}
+					}
+
+					visualLines.clear();
+					lineVisuals.resize(lines.size());
+					if (lineStates.size() != lines.size()) lineStates.resize(lines.size(), -1);
+					caretVisualLineIndex = (size_t)-1;
+					firstDirtyLine = 0;
+					forceLayoutUpdate = true;
+					textChanged = true;
+				}
+			}
+		}
 	}
 	else if (ev.key.code == KeyCode::Enter)
 	{

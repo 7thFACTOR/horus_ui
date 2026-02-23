@@ -1572,15 +1572,22 @@ struct FillStyle
 
 struct KeywordInfo
 {
-	const char* keyword;
-	Color color;
+	enum class Type
+	{
+		Keyword,
+		Delimiter
+	};
+
+	const char* keyword = nullptr;
+	Color color = Color::white;
+	Type type = Type::Keyword;
 };
 
 struct RangeHighlight
 {
-	const char* beginKeyword;
-	const char* endKeyword;
-	Color color;
+	const char* beginKeyword = nullptr;
+	const char* endKeyword = nullptr;
+	Color color = Color::white;
 	const char* escapeKeyword = nullptr;
 };
 
