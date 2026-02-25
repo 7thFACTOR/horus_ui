@@ -624,45 +624,11 @@ void endVirtualListContent()
 		{
 			ctx->virtualListStack.back().lastPosition.x,
 			// ensure we reserve at least the rounded-up total height to avoid underestimating content size
-			ctx->virtualListStack.back().lastPosition.y + std::ceil(ctx->virtualListStack.back().totalRowCount * ctx->virtualListStack.back().itemHeight)
+			// Add one extra pixel to avoid off-by-one/float precision cases that made the last item unreachable.
+			ctx->virtualListStack.back().lastPosition.y + std::ceil(ctx->virtualListStack.back().totalRowCount * ctx->virtualListStack.back().itemHeight) + 1.0f
 		});
 
 	ctx->virtualListStack.pop_back();
-}
-
-// Compute a sensible item height when the user didn't provide one.
-// Used as an approximation before the first-item measurement.
-static f32 computeDefaultItemHeight(f32 requestedHeight)
-{
-	if (requestedHeight > 0.0f)
-		return requestedHeight;
-
-	// start with configured sameLineHeight as a fallback
-	f32 result = ctx->settings.sameLineHeight;
-
-	// try several theme widget elements to infer a reasonable item height
-	if (ctx->theme)
-	{
-		auto tryElem = [&](WidgetElementId id) -> f32 {
-			auto& elemState = ctx->theme->getElement(id).normalState();
-			f32 h = elemState.height;
-			if (elemState.font)
-			{
-				h = fmaxf(h, elemState.font->getMetrics().height);
-			}
-			return h * ctx->scale;
-		};
-
-		result = fmaxf(result, tryElem(WidgetElementId::SelectableBody));
-		result = fmaxf(result, tryElem(WidgetElementId::ButtonBody));
-		result = fmaxf(result, tryElem(WidgetElementId::LabelBody));
-	}
-
-	// final defensive minimum
-	if (result <= 0.0f)
-		result = 1.0f;
-
-	return result;
 }
 
 void beginVirtualListContent(VirtualScrollInfo& info)
@@ -677,7 +643,8 @@ void beginVirtualListContent(VirtualScrollInfo& info)
 	// Set a provisional authoritative vertical virtual height for the scroll view
 	// (virtual-list code owns vertical size now). This is overwritten once measurement completes.
 	// Round up the virtual size to avoid floating-point underestimation that can make the last item unreachable.
-	svState.virtualSize.y = std::ceil(info.totalItemCount * itemH);
+	// Add a 1-pixel epsilon to cope with rounding/precision and ensure the final item is reachable.
+	svState.virtualSize.y = std::ceil(info.totalItemCount * itemH) + 1.0f;
 
 	// Push internal virtual-list state (used by endVirtualListContent to reserve height)
 	ctx->virtualListStack.push_back(VirtualListContentState());
@@ -766,7 +733,8 @@ bool VirtualScrollInfo::advance()
 
 		// update the scroll view authoritative virtual size using the measured height
 		// round up the total height to avoid floating point underestimation that can leave the last item unreachable.
-		svState.virtualSize.y = std::ceil(totalItemCount * measuredH);
+		// Add a 1-pixel epsilon to cope with rounding/precision and ensure the final item is reachable.
+		svState.virtualSize.y = std::ceil(totalItemCount * measuredH) + 1.0f;
 		vstate.itemHeight = measuredH;
 		vstate.totalHeight = svState.virtualSize.y;
 
