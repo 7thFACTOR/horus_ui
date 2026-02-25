@@ -1620,17 +1620,38 @@ struct WidgetElementInfo
 
 struct VirtualScrollInfo
 {
-	VirtualScrollInfo(u32 itemCount, f32 itemHeight)
+	// Construct with total item count only (like Dear ImGui clipper)
+	VirtualScrollInfo(u32 itemCount = 0)
 	{
 		totalItemCount = itemCount;
-		this->itemHeight = itemHeight;
 	}
 
 	u32 totalItemCount = 0; /// total number of items in the list
-	f32 itemHeight = 20.0f; /// height of each item in pixels
-	u32 firstVisibleItem = 0; /// index of the first visible item
-	u32 visibleItemCount = 0; /// number of visible items in the current scroll position
+
+	// Item height (user may set). If zero, the library will compute it automatically
+	// by measuring the first rendered item when using advance().
+	f32 itemHeight = 0.0f; /// height of each item in pixels (0 = auto)
+
+	// Results computed by advance()
+	u32 firstVisibleItem = 0; /// index of the first visible item (DisplayStart)
+	u32 visibleItemCount = 0; /// number of visible items in the current step (DisplayEnd - DisplayStart)
 	f32 scrollOffsetY = 0.0f; /// current scroll offset in pixels
+
+	// Internal state used by advance() - user shouldn't touch
+	bool _started = false;         // overall finished flag (advance returns false after complete)
+	int _step = 0;                 // 0 = not started, 1 = measured-first-item, 2 = final range issued
+	f32 _measureStartY = 0.0f;     // recorded y before first item drawing (for automatic measurement)
+	f32 _measuredItemHeight = 0.0f;// measured item height from first item (if auto)
+
+	// Step/Advance API (implemented in cpp). Returns true while there is a range to render.
+	// Usage:
+	//    beginVirtualListContent(vinfo);
+	//    while (vinfo.advance())
+	//    {
+	//        for (u32 i = vinfo.firstVisibleItem; i < vinfo.firstVisibleItem + vinfo.visibleItemCount; ++i)
+	//            ... draw item i ...
+	//    }
+	bool advance();
 };
 
 struct DisplayInfo
@@ -2277,6 +2298,10 @@ HORUS_API Point endScrollView();
 /// \param itemHeight the height of one item
 /// \param scrollPosition the current scroll offset of the scroll view widget
 HORUS_API void beginVirtualListContent(u32 totalRowCount, f32 itemHeight, f32 scrollPosition);
+
+/// Begin a virtual list content area, used for many items, inside the beginScrollView/endScrollView
+/// \param info the virtual scroll information
+HORUS_API void beginVirtualListContent(VirtualScrollInfo& info);
 
 /// End a virtual list content area
 HORUS_API void endVirtualListContent();

@@ -757,6 +757,7 @@ struct VirtualListContentState
 	Point lastPosition;
 	u32 totalRowCount = 0;
 	f32 itemHeight = 0;
+	f32 totalHeight = 0; // <- added: reserve total virtual height for measured/variable lists
 };
 
 struct ColorPickerState

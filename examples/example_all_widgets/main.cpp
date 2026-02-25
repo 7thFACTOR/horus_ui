@@ -662,6 +662,56 @@ int main(int argc, char** args)
 				hui::endWindow();
 			}
 
+			// --- virtual list demo window (modified)
+			if (hui::beginWindow("virtual_list", "Virtual List Demo", nullptr, tabicon1))
+			{
+				// persistent virtual list state: only provide item count here
+				static hui::VirtualScrollInfo vinfo(100000); // 100k items
+				static hui::Point vscroll = { 0, 0 };
+
+				hui::label("Virtualized list example (100k buttons)");
+
+				// begin scroll view (viewport height 300)
+				f32 viewH = 300.0f;
+				// NOTE: we no longer need to pass vertical content height here; beginVirtualListContent sets it.
+				hui::beginScrollView("##virt_list_scroll", viewH, vscroll, hui::Point(0, 0), hui::ScrollViewFlags::NoBorder);
+
+				// initialize virtual list content (this sets the scrollview virtual height)
+				hui::beginVirtualListContent(vinfo);
+
+				// Step loop (like Dear ImGui's ListClipper)
+				while (vinfo.advance())
+				{
+					u32 start = vinfo.firstVisibleItem;
+					u32 count = vinfo.visibleItemCount;
+					for (u32 i = start; i < start + count; ++i)
+					{
+						char buf[64];
+						snprintf(buf, sizeof(buf), "Item %06u", i);
+						if (hui::button(buf))
+						{
+							printf("clicked virtual item %u\n", i);
+						}
+						hui::space(2.0f);
+					}
+				}
+
+				hui::endVirtualListContent();
+				vscroll = hui::endScrollView();
+
+				// show small status
+				char info[128];
+				snprintf(info, sizeof(info), "visible: %u..%u (count=%u)  scrollY=%.1f",
+					vinfo.firstVisibleItem,
+					vinfo.firstVisibleItem + vinfo.visibleItemCount - 1,
+					vinfo.visibleItemCount,
+					vinfo.scrollOffsetY);
+				hui::space(6);
+				hui::label(info);
+
+				hui::endWindow();
+			}
+
 			hui::endFrame();
 
 			lastMs = hui::getLastFrameTimeMs();
