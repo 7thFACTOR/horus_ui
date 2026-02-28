@@ -679,20 +679,21 @@ int main(int argc, char** args)
 				// initialize virtual list content (this sets the scrollview virtual height)
 				hui::beginVirtualListContent(vinfo);
 
-				// Step loop (like Dear ImGui's ListClipper)
-				while (vinfo.advance())
+				// Step loop (measures first item, then issues remaining range)
+				while (vinfo.nextStep())
 				{
-					u32 start = vinfo.firstVisibleItem;
-					u32 count = vinfo.visibleItemCount;
-					for (u32 i = start; i < start + count; ++i)
+					if (vinfo.startIndex <= vinfo.endIndex)
 					{
-						char buf[64];
-						snprintf(buf, sizeof(buf), "Item %06u", i);
-						if (hui::button(buf))
+						for (u32 i = vinfo.startIndex; i <= vinfo.endIndex; ++i)
 						{
-							printf("clicked virtual item %u\n", i);
+							char buf[64];
+							snprintf(buf, sizeof(buf), "Item %06u", i);
+							if (hui::button(buf))
+							{
+								printf("clicked virtual item %u\n", i);
+							}
+							hui::space(2.0f);
 						}
-						hui::space(2.0f);
 					}
 				}
 
@@ -702,9 +703,9 @@ int main(int argc, char** args)
 				// show small status
 				char info[128];
 				snprintf(info, sizeof(info), "visible: %u..%u (count=%u)  scrollY=%.1f",
-					vinfo.firstVisibleItem,
-					vinfo.firstVisibleItem + vinfo.visibleItemCount - 1,
-					vinfo.visibleItemCount,
+					vinfo.startIndex,
+					vinfo.endIndex,
+					vinfo.endIndex - vinfo.startIndex,
 					vinfo.scrollOffsetY);
 				hui::space(6);
 				hui::label(info);

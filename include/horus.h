@@ -1629,16 +1629,16 @@ struct VirtualScrollInfo
 	u32 totalItemCount = 0; /// total number of items in the list
 
 	// Item height (user may set). If zero, the library will compute it automatically
-	// by measuring the first rendered item when using advance().
+	// by measuring the first rendered item when using nextStep().
 	f32 itemHeight = 0.0f; /// height of each item in pixels (0 = auto)
 
-	// Results computed by advance()
-	u32 firstVisibleItem = 0; /// index of the first visible item (DisplayStart)
-	u32 visibleItemCount = 0; /// number of visible items in the current step (DisplayEnd - DisplayStart)
+	// Results computed by nextStep()
+	u32 startIndex = 0; /// inclusive index of the first item to render in the current step
+	u32 endIndex = 0;   /// inclusive index of the last item to render in the current step
 	f32 scrollOffsetY = 0.0f; /// current scroll offset in pixels
 
-	// Internal state used by advance() - user shouldn't touch
-	bool _started = false;         // overall finished flag (advance returns false after complete)
+	// Internal state used by nextStep() - user shouldn't touch
+	bool _started = false;         // overall finished flag (nextStep returns false after complete)
 	int _step = 0;                 // 0 = not started, 1 = measured-first-item, 2 = final range issued
 	f32 _measureStartY = 0.0f;     // recorded y before first item drawing (for automatic measurement)
 	f32 _measuredItemHeight = 0.0f;// measured item height from first item (if auto)
@@ -1646,12 +1646,14 @@ struct VirtualScrollInfo
 	// Step/Advance API (implemented in cpp). Returns true while there is a range to render.
 	// Usage:
 	//    beginVirtualListContent(vinfo);
-	//    while (vinfo.advance())
+	//    while (vinfo.nextStep())
 	//    {
-	//        for (u32 i = vinfo.firstVisibleItem; i < vinfo.firstVisibleItem + vinfo.visibleItemCount; ++i)
-	//            ... draw item i ...
+	//        if (vinfo.startIndex <= vinfo.endIndex) {
+	//            for (u32 i = vinfo.startIndex; i <= vinfo.endIndex; ++i)
+	//                ... draw item i ...
+	//        }
 	//    }
-	bool advance();
+	bool nextStep();
 };
 
 struct DisplayInfo
