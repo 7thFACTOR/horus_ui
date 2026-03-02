@@ -255,14 +255,29 @@ void beginScrollView(const char* id, f32 height, Point scrollOffset, Point virtu
 		ctx->renderer.cmdDrawImageBordered(scrollViewElemState.image, scrollViewElemState.border, rect, ctx->scale);
 	}
 
-	scrollViewState.scrollOffset = scrollOffset;
+	// Do not blindly overwrite the authoritative scrollbar state with the caller-provided
+	// scrollOffset while this scrollview may be actively dragged. Use the authoritative
+	// per-axis state when dragging; otherwise accept the incoming offset.
+	bool draggingThisBegin = (ctx->dragScrollViewHandleWidgetId == scrollViewState.id)
+		|| scrollViewState.vertical.draggingThumb
+		|| scrollViewState.horizontal.draggingThumb;
+
+	if (!draggingThisBegin)
+	{
+		// Accept caller offset when not dragging (will be clamped/finalized in endScrollView).
+		scrollViewState.scrollOffset = scrollOffset;
+	}
+	// Use authoritative per-axis offset for layout positioning in this frame.
+	Point useOffset = scrollViewState.scrollOffset;
+
 	ctx->maxContentWidthStack.push_back(ctx->maxContentWidth);
 	ctx->maxContentWidth = 0.0f;
 
 	ctx->renderer.pushClipRect(clipRect);
 	pushPosition();
 	ctx->position = { clipRect.x, clipRect.y };
-	ctx->position -= scrollOffset;
+	ctx->position -= useOffset;
+
 	pushLayout();
 	ctx->layout = LayoutState(LayoutType::ScrollView);
 	ctx->layout.savedPosition = ctx->position;
@@ -640,10 +655,33 @@ Point endScrollView()
 		ctx->renderer.cmdDrawImageBordered(scrollViewScrollThumbElemStateH.image, scrollViewScrollThumbElemStateH.border, rectScrollBarHandleH, ctx->scale);
 	}
 
+	// Final synchronization of authoritative scrollbar offsets.
+	// Recompute horizontal/vertical scrollMax before clamping.
 	updateScrollMax(scrollViewState.horizontal, scrollContentH, scrollAreaWidth);
-	scrollOffset.x = scrollViewState.horizontal.scrollOffset;
-	scrollOffset.y = scrollViewState.vertical.scrollOffset;
-	scrollViewState.scrollOffset = scrollOffset; // Persist the updated offset to state
+	updateScrollMax(scrollViewState.vertical, contentSizeForClamp, scrollAreaV);
+
+	bool draggingThis = (ctx->dragScrollViewHandleWidgetId == scrollViewState.id)
+		|| scrollViewState.vertical.draggingThumb
+		|| scrollViewState.horizontal.draggingThumb;
+
+	if (!draggingThis)
+	{
+		// Accept external caller-provided scrollOffset only when not dragging.
+		// Mirror the caller values into the authoritative per-axis scrollbar states,
+		// clamping to the recomputed scrollMax above.
+		scrollViewState.horizontal.scrollOffset = std::clamp(scrollOffset.x, 0.0f, scrollViewState.horizontal.scrollMax);
+		scrollViewState.vertical.scrollOffset = std::clamp(scrollOffset.y, 0.0f, scrollViewState.vertical.scrollMax);
+	}
+	else
+	{
+		// While dragging, the per-axis scrollbar states are authoritative.
+		// Use them as the scrollOffset to return to the caller.
+		scrollOffset.x = scrollViewState.horizontal.scrollOffset;
+		scrollOffset.y = scrollViewState.vertical.scrollOffset;
+	}
+
+	// Persist combined authoritative offset and return it.
+	scrollViewState.scrollOffset = scrollOffset;
 	popPosition();
 	addWidget(height/ctx->scale);
 	popLayout();
@@ -664,7 +702,6 @@ void beginVirtualListContent(u32 totalRowCount, f32 itemHeight, f32 scrollPos)
 
 void endVirtualListContent()
 {
-	// reserve the authoritative totalHeight rather than recomputing/ceil+1
 	hui::setPosition(
 		{
 			ctx->virtualListStack.back().lastPosition.x,
@@ -702,10 +739,6 @@ void beginVirtualListContent(VirtualScrollInfo& info)
 	info.scrollOffsetY = svState.scrollOffset.y;
 }
 
-// Step-like API with automatic first-item measurement.
-// First nextStep() call issues a range of 1 item (the first visible item) so caller can draw it and allow us to measure its height.
-// Second nextStep() call computes a measured item height from ctx->position delta and issues the remaining visible range.
-// After that nextStep() returns false.
 bool VirtualScrollInfo::nextStep()
 {
 	// If we've finished all steps, no further ranges.
@@ -715,7 +748,6 @@ bool VirtualScrollInfo::nextStep()
 	// Acquire current scroll view info
 	WidgetId svId = ctx->layout.id;
 	auto& svState = ctx->scrollViewState[svId];
-
 	f32 scrollY = svState.scrollOffset.y;
 	f32 viewHeight = ctx->layout.height;
 
@@ -726,35 +758,44 @@ bool VirtualScrollInfo::nextStep()
 		_started = true;
 		return false;
 	}
+
 	auto& vstate = ctx->virtualListStack.back();
 	Point basePos = vstate.lastPosition;
 
-	// Approximate item height for the first-step positioning:
-	// If user supplied itemHeight use it; otherwise use a simple fallback (sameLineHeight)
-	// The precise item height will be measured after drawing the first item.
-	f32 approxH = (itemHeight > 0.0f) ? itemHeight : ctx->settings.sameLineHeight;
-
-	const i32 buffer = 3;
+	const i32 buffer = 0;
 
 	// Step 0: issue first-visible single item so caller can render it and we can measure.
 	if (_step == 0)
 	{
-		i32 firstVisible = (i32)std::floor(scrollY / approxH);
-		if (firstVisible < 0) firstVisible = 0;
-		if (firstVisible > (i32)totalItemCount - 1) firstVisible = (i32)totalItemCount - 1;
+		// Compute a robust guess of the first visible index:
+		// Prefer a known itemHeight (info.itemHeight), then previously measured height (vstate.itemHeight).
+		// Fall back to an estimate based on the view height (avoid dividing by zero).
+		f32 estimateH = 0.0f;
+		if (itemHeight > 0.0f)
+			estimateH = itemHeight;
+		else if (vstate.itemHeight > 0.0f)
+			estimateH = vstate.itemHeight;
+		else
+		{
+			// fallback: assume ~10 items visible to get a reasonable estimate
+			u32 denom = std::min<u32>(10, std::max<u32>(1, totalItemCount));
+			estimateH = std::max(1.0f, viewHeight / (f32)denom);
+		}
 
-		// Issue only the first item for measurement: set start/end to that single index.
+		i32 firstVisible = 0;
+		if (estimateH > 0.0f)
+		{
+			firstVisible = (i32)std::floor(scrollY / estimateH);
+		}
+		// clamp
+		if (firstVisible < 0) firstVisible = 0;
+		if ((u32)firstVisible >= totalItemCount)
+			firstVisible = (i32)std::max(0u, totalItemCount - 1);
+
 		startIndex = (u32)firstVisible;
 		endIndex = (u32)firstVisible;
 		scrollOffsetY = scrollY;
-
-		// position the pen to the start of the first visible item
-		f32 skipY = (f32)firstVisible * approxH;
-		ctx->position = { basePos.x, basePos.y + skipY };
-
-		// record start y for measurement after the caller draws the first item
 		_measureStartY = ctx->position.y;
-
 		_step = 1;
 		return true;
 	}
@@ -767,40 +808,54 @@ bool VirtualScrollInfo::nextStep()
 		f32 afterY = ctx->position.y;
 		f32 measuredH = afterY - _measureStartY;
 
-		// fallback if measurement failed
-		if (measuredH <= 0.0f)
-			measuredH = approxH;
+		// Guard against zero or NaN measured heights to avoid division by zero or crazy indices.
+		if (!(measuredH > 0.0f) || !std::isfinite(measuredH))
+		{
+			// Prefer declared itemHeight if available, otherwise use a conservative default.
+			if (itemHeight > 0.0f)
+				measuredH = itemHeight;
+			else
+				measuredH = std::max(1.0f, viewHeight / 10.0f);
+		}
 
-		_measuredItemHeight = measuredH;
-
-		 // DEBUG: log measured item height and computed virtual total
-		std::printf("[DBG measure] measuredH=%.6f totalH=%.3f (totalCount=%u)\n",
-			measuredH, std::ceil(totalItemCount * measuredH), totalItemCount);
-
-		// update the scroll view authoritative virtual size using the measured height
-		// Round up the total height; keep a small epsilon so the final item is reachable.
-		svState.virtualSize.y = std::ceil(totalItemCount * measuredH) + 1.0f;
+		// store measured values
+		svState.virtualSize.y = (f32)totalItemCount * measuredH;
 		vstate.itemHeight = measuredH;
 		vstate.totalHeight = svState.virtualSize.y;
-		// keep the VirtualScrollInfo in sync with the measured height
 		itemHeight = measuredH;
+		_measuredItemHeight = measuredH;
 
 		// compute the final visible range using measured height
-		i32 firstVisible = (i32)std::floor(scrollY / measuredH);
+		i32 firstVisible = (i32)std::floor(scrollY / measuredH) - 1; // give a small above-buffer
 		if (firstVisible < 0) firstVisible = 0;
+		if ((u32)firstVisible >= totalItemCount)
+			firstVisible = (i32)std::max(0u, totalItemCount - 1);
 
-		i32 approxVisible = (i32)std::ceil(viewHeight / measuredH);
+		// how many items approximately fit in view
+		i32 approxVisible = (i32)std::ceil(viewHeight / measuredH) + 1; // +1 for safety
+
+		// clamp so we don't overflow total count
+		if ((u64)firstVisible + (u64)approxVisible >= (u64)totalItemCount)
+		{
+			approxVisible = (i32)std::max<i64>(0, (i64)totalItemCount - (i64)firstVisible - 1);
+		}
+
 		i32 lastVisible = firstVisible + approxVisible + buffer;
-		if (lastVisible > (i32)totalItemCount - 1) lastVisible = (i32)totalItemCount - 1;
 		if (lastVisible < firstVisible) lastVisible = firstVisible;
+		if ((u32)lastVisible >= totalItemCount) lastVisible = (i32)std::max(0u, totalItemCount - 1);
 
-		// We already rendered the first visible item; issue the remaining range starting at firstVisible+1
-		i32 remainingStart = firstVisible + 1;
+		// We already drew one item (the one returned in step 0). Start remaining from firstVisible+1 if that same index was drawn,
+		// otherwise start at firstVisible (covers the case where our initial guess was off but measurement corrected it).
+		i32 remainingStart = firstVisible;
+		// if the caller drew exactly firstVisible earlier, skip it
+		if (startIndex == (u32)firstVisible)
+			remainingStart = firstVisible + 1;
 
-		// Set startIndex/endIndex for the remaining batch (inclusive indices).
+		if (remainingStart < 0) remainingStart = 0;
+		if ((u32)remainingStart >= totalItemCount) remainingStart = (i32)std::max(0u, totalItemCount - 1);
+
 		startIndex = (u32)remainingStart;
 		endIndex = (u32)lastVisible;
-
 		scrollOffsetY = scrollY;
 
 		// position the pen to the start of the remainingStart item

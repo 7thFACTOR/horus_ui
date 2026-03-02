@@ -666,7 +666,7 @@ int main(int argc, char** args)
 			if (hui::beginWindow("virtual_list", "Virtual List Demo", nullptr, tabicon1))
 			{
 				// persistent virtual list state: only provide item count here
-				static hui::VirtualScrollInfo vinfo(100000); // 100k items
+				static hui::VirtualScrollInfo vinfo(100000000); // 100k items
 				static hui::Point vscroll = { 0, 0 };
 
 				hui::label("Virtualized list example (100k buttons)");
@@ -674,7 +674,7 @@ int main(int argc, char** args)
 				// begin scroll view (viewport height 300)
 				f32 viewH = 300.0f;
 				// NOTE: we no longer need to pass vertical content height here; beginVirtualListContent sets it.
-				hui::beginScrollView("##virt_list_scroll", viewH, vscroll, hui::Point(0, 0), hui::ScrollViewFlags::NoBorder);
+				hui::beginScrollView("##virt_list_scroll", viewH, vscroll, hui::Point(0, 0), hui::ScrollViewFlags::None);
 
 				// initialize virtual list content (this sets the scrollview virtual height)
 				hui::beginVirtualListContent(vinfo);
@@ -692,7 +692,7 @@ int main(int argc, char** args)
 							{
 								printf("clicked virtual item %u\n", i);
 							}
-							hui::space(2.0f);
+							//hui::space(2.0f);
 						}
 					}
 				}

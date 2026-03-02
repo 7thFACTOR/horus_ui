@@ -172,13 +172,13 @@ void addWidget(f32 height)
 	if (!ctx->sameLine.enabled && !ctx->sameLine.wasEnabled)
 	{
 		// Normal vertical layout
-		if (!ctx->layout.firstWidgetInLayout)
+		//if (!ctx->layout.firstWidgetInLayout)
 		{
 			ctx->position.y += spacing;
 		}
-		else
+		//else
 		{
-			ctx->layout.firstWidgetInLayout = false;
+			//ctx->layout.firstWidgetInLayout = false;
 		}
 
 		// Store the line start position for sameLine to restore to
