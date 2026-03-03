@@ -168,30 +168,18 @@ void addWidget(f32 height)
 		ctx->sameLine.lastLineWidth = 0; // Reset to prevent stale values
 	}
 
-	// Handle first widget or transition to new line in normal mode
 	if (!ctx->sameLine.enabled && !ctx->sameLine.wasEnabled)
 	{
-		// Normal vertical layout
-		//if (!ctx->layout.firstWidgetInLayout)
-		{
-			ctx->position.y += spacing;
-		}
-		//else
-		{
-			//ctx->layout.firstWidgetInLayout = false;
-		}
-
-		// Store the line start position for sameLine to restore to
 		ctx->sameLine.currentPosition = ctx->position;
 		ctx->sameLine.lastLineWidth = 0; // Reset for new line
 	}
 
-	// If in sameLine mode, align Y to the same line and advance X from previous widget
+	// if in sameLine mode, align Y to the same line and advance X from previous widget
 	if (ctx->sameLine.enabled)
 	{
 		ctx->position.y = ctx->sameLine.currentPosition.y;
 
-		// If first widget in sameLine, advance X by the previous normal widget's width
+		// if first widget in sameLine, advance X by the previous normal widget's width
 		if (!ctx->sameLine.wasEnabled)
 		{
 			ctx->position.x += ctx->sameLine.lastLineWidth + ctx->sameLine.nextSpacing * ctx->scale;
@@ -205,23 +193,22 @@ void addWidget(f32 height)
 		pixelWidth,
 		height);
 
-	// Advance cursor after placing widget
+	// advance cursor after placing widget
 	if (!ctx->sameLine.enabled)
 	{
-		// Normal mode: advance Y (vertical)
-		ctx->position.y += height;
-		ctx->position.y = round(ctx->position.y);
-		ctx->sameLine.lastLineWidth = pixelWidth; // Track for sameLine transition
+		// normal mode: advance Y (vertical)
+		ctx->position.y += height + spacing;
+		ctx->sameLine.lastLineWidth = pixelWidth; // track for sameLine transition
 	}
 	else
 	{
-		// SameLine mode: advance X (horizontal)
+		// sameLine mode: advance X (horizontal)
 		ctx->position.x += pixelWidth + ctx->sameLine.nextSpacing * ctx->scale;
 		ctx->sameLine.wasEnabled = true;
 		ctx->sameLine.maxHeight = std::max(ctx->sameLine.maxHeight, height);
 	}
 
-	// Track maximum X position for horizontal scrolling content width
+	// track maximum X position for horizontal scrolling content width
 	if (ctx->layout.type == LayoutType::ScrollView)
 	{
 		f32 widgetRightEdge = ctx->widget.rect.right();
@@ -1368,7 +1355,6 @@ void beginLayout(const Rect& rect)
 	ctx->layout.savedPosition = paddedRect.topLeft();
 	ctx->layout.width = paddedRect.width;
 	ctx->layout.height = paddedRect.height;
-	ctx->layout.firstWidgetInLayout = true;
 	ctx->renderer.pushClipRect(paddedRect);
 	ctx->position = { paddedRect.x, paddedRect.y};
 	ctx->sameLine.enabled = false;

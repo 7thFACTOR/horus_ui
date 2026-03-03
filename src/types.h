@@ -418,7 +418,6 @@ struct LayoutState
 	{}
 
 	LayoutType type = LayoutType::Vertical;
-	bool firstWidgetInLayout = true;
 	WidgetId id = 0;
 	Point savedPosition = { 0, 0 };
 	SameLineState savedSameLine;

@@ -290,20 +290,8 @@ int main(int argc, char** args)
 						printf("Browsed for `%s`\n", path);
 					}
 				}
-
-				if (hui::button("Show UI"))
-				{
-					hui::setWindowVisible("ui", true);
-				}
-
-				hui::popTint();
-				hui::endColumns();*/
-
-				//hui::texture(tex1, 100, hui::HAlignType::Left);
-				//hui::texture(tex2, 100, hui::HAlignType::Left);
-
-				static float val;
-				hui::sliderFloat("slider1", 0, 100, val);
+				*/
+				//hui::sliderFloat("slider1", 0, 100, val);
 				static char txt[2000];
 				hui::textInput("txt", txt, 2000, hui::TextInputFlags::None, "Write something here");
 				hui::space();
@@ -558,97 +546,50 @@ int main(int argc, char** args)
 					hui::nextCell();
 					hui::label("Column 4", hui::HAlignType::Center);
 
-					//hui::nextRow();
-					//
-					//hui::label("Row 1, Cell 1 wdf dfasfasf asdf asf sadf asdf asfasf asf asf ");
-					//hui::nextCell();
-					//hui::label("Row 1, Cell 1 wdf dfasfasf asdf asf sadf asdf asfasf asf asf ");
-					//hui::nextCell();
-					//hui::label("Row 1, Cell 1 wdf dfasfasf asdf asf sadf asdf asfasf asf asf ");
-					//hui::nextCell();
-					////hui::setCellColor(hui::Color::red);
-					//hui::label("AOAKAOAO1");
-					//hui::label("AOAKAOAO2");
-					//hui::label("AOAKAOAO3");
-					//hui::label("AOAKAOAO4");
+					
 
-					//hui::nextRow();
-					////hui::setRowColor(hui::Color::blue);
-					//hui::label("Row 1, Cell 1 wdf dfasfasf asdf asf sadf asdf asfasf asf asf ");
+					// Virtualized rows: 10000 rows using VirtualScrollInfo
+					static hui::VirtualScrollInfo vtableInfo(10000); // 10k rows
+					// Initialize virtual list inside the table body
+					hui::beginVirtualListContent(vtableInfo);
 
-					//hui::nextCell();
-					//hui::label("Row 1, Cell 1 wdf dfasfasf asdf asf sadf asdf asfasf asf asf ");
-
-					//hui::nextCell();
-					//hui::label("Row 2, Cell 1\n(Multi-line)");
-					//hui::button("Tall Button");
-
-					//hui::nextCell();
-					//hui::label("Row 2, Cell 3 (prev cols spanned)");
-
-					//hui::nextCell();
-					//hui::label("Row 2, Cell 3 (prev cols spanned)");
-
-					//hui::nextRow();
-					//hui::label("Row 3, Cell 1");
-					//hui::nextCell();
-					//// Nested Table
-					//hui::label("Nested Table:");
-					//if (1&&hui::beginTable("nestedTable", 2, 0, hui::TableFlags::Borders | hui::TableFlags::AltRowBg|hui::TableFlags::Stretch|hui::TableFlags::Resizable))
-					//{
-					//	hui::startHeader();
-					//	hui::label("Sub 1");
-					//	hui::nextCell();
-					//	hui::label("Sub 2");
-
-					//	hui::nextRow();
-					//	hui::label("A");
-					//	hui::nextCell();
-					//	hui::label("B");
-
-					//	hui::nextRow();
-					//	hui::label("C");
-					//	hui::nextCell();
-					//	hui::label("D");
-
-					//	hui::endTable();
-					//}
-					//hui::nextCell();
-					//hui::label("Row 3, Cell 3");
-
-					//hui::nextCell();
-					//hui::label("Row 3, Cell 3");
-
-					for (int k = 0; k < 100; k++)
+					// render the visible slice
+					while (vtableInfo.nextStep())
 					{
-						hui::nextRow();
-						auto is = std::to_string(k);
-						hui::label(is.c_str());
-						hui::sameLine();
-						hui::button(("Btn " + is).c_str());
-						//hui::label(" - ");
-						hui::nextCell();
-						static char col2[100] = { 0 };
-						hui::pushId(k);
-						hui::setNextWidth(100);
-						hui::textInput(("ed" + is).c_str(), col2, 100);
-						hui::sameLine();
-						hui::button(("Remove##" + is).c_str());
-						hui::sameLine();
-						hui::button(("Clone##" + is).c_str()); hui::sameLine();
-						static bool chk = false;
-						static i32 rad = 0;
-						hui::check(("Chk##" + is).c_str(), &chk);
-						hui::sameLine();
-						hui::radio(("Rad1i##" + is).c_str(), &rad, 0);
-						//hui::sameLine();
-						hui::radio(("Rad2i##" + is).c_str(), &rad, 1);
-						hui::popId();
-						hui::nextCell();
-						hui::label("Col 3");
-						hui::nextCell();
-						hui::label("Col 4");
+						if (vtableInfo.startIndex <= vtableInfo.endIndex)
+						{
+							for (u32 k = vtableInfo.startIndex; k <= vtableInfo.endIndex; ++k)
+							{
+								hui::nextRow();
+								auto is = std::to_string(k);
+								hui::label(is.c_str());
+								hui::sameLine();
+								hui::button(("Btn " + is).c_str());
+								hui::nextCell();
+								static char col2[100] = { 0 };
+								hui::pushId((int)k);
+								hui::setNextWidth(100);
+								hui::textInput(("ed" + is).c_str(), col2, 100);
+								hui::sameLine();
+								hui::button(("Remove##" + is).c_str());
+								hui::sameLine();
+								hui::button(("Clone##" + is).c_str()); hui::sameLine();
+								static bool chk = false;
+								static i32 rad = 0;
+								hui::check(("Chk##" + is).c_str(), &chk);
+								hui::sameLine();
+								hui::radio(("Rad1i##" + is).c_str(), &rad, 0);
+								hui::radio(("Rad2i##" + is).c_str(), &rad, 1);
+								hui::popId();
+								hui::nextCell();
+								hui::label("Col 3");
+								hui::nextCell();
+								hui::label("Col 4");
+							}
+						}
 					}
+
+					hui::endVirtualListContent();
 
 					hui::endTable();
 					hui::popWidgetPadding();
@@ -666,7 +607,7 @@ int main(int argc, char** args)
 			if (hui::beginWindow("virtual_list", "Virtual List Demo", nullptr, tabicon1))
 			{
 				// persistent virtual list state: only provide item count here
-				static hui::VirtualScrollInfo vinfo(100000000); // 100k items
+				static hui::VirtualScrollInfo vinfo(10000); // 100k items
 				static hui::Point vscroll = { 0, 0 };
 
 				hui::label("Virtualized list example (100k buttons)");
@@ -692,7 +633,7 @@ int main(int argc, char** args)
 							{
 								printf("clicked virtual item %u\n", i);
 							}
-							//hui::space(2.0f);
+							//hui::space(22.0f);
 						}
 					}
 				}

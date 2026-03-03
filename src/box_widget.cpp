@@ -15,7 +15,6 @@ static void beginBoxLayoutInternal(const char* id, const Color& color, ThemeElem
 	ctx->layout.id = ctx->id = genId(id);
 	ctx->layout.savedPosition = ctx->position;
 	ctx->layout.width = parentWidth - (state.border + padding.x) * ctx->scale * 2.0f;
-	ctx->layout.firstWidgetInLayout = true;
 	
 	auto& boxState = ctx->boxState[ctx->id];
 
