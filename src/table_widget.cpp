@@ -1078,6 +1078,14 @@ void nextRow()
 	// finish previous row
 	finishRow(state);
 
+	// If an external system (e.g. VirtualScrollInfo) moved ctx->position.y forward to skip items,
+	// synchronize the table's internal currentRowY so subsequent rows start at the correct Y.
+	// This prevents overlap/hiding when virtual-list logic adjusts ctx->position directly.
+	if (ctx->position.y > state.currentRowY)
+	{
+		state.currentRowY = ctx->position.y;
+	}
+
 	// start new row
 	state.currentRow++;
 	state.currentColumn = 0;
