@@ -147,7 +147,17 @@ static void finishRow(TableState& state)
 
 		// advance Y position ONLY if we actually finished a row (not header)
 		state.currentRowY += state.currentMaxRowHeight;
-		ctx->position.y = state.currentRowY;
+
+		// Respect external advances (virtual list). If ctx->position.y already moved past our computed row end,
+		// adopt the external position instead of forcing ctx->position.y backwards.
+		std::printf("[TABLE] finishRow row=%u rowStartY=%.3f maxRowH=%.3f computedRowY=%.3f ctx.pos.y=%.3f rowSeparators.back()=%.3f\n",
+			(unsigned)state.currentRow, state.rowStartY, state.currentMaxRowHeight, state.currentRowY, ctx->position.y,
+			(!state.rowSeparators.empty() ? state.rowSeparators.back() : -1.0f));
+
+		if (ctx->position.y < state.currentRowY)
+			ctx->position.y = state.currentRowY;
+		else
+			state.currentRowY = ctx->position.y;
 	}
 	else
 	{
@@ -268,7 +278,12 @@ static void finishRow(TableState& state)
 
 		state.currentRowY += headerHeight;
 		state.bodyStartY = state.currentRowY;
-		ctx->position.y = state.currentRowY;
+
+		// Respect external advances (virtual list) for header as well
+		if (ctx->position.y < state.currentRowY)
+			ctx->position.y = state.currentRowY;
+		else
+			state.currentRowY = ctx->position.y;
 
 		// start scroll view for the body content
 		// enable scroll view if height > 0 or ScrollY flag is set
@@ -1080,9 +1095,19 @@ void nextRow()
 
 	// If an external system (e.g. VirtualScrollInfo) moved ctx->position.y forward to skip items,
 	// synchronize the table's internal currentRowY so subsequent rows start at the correct Y.
-	// This prevents overlap/hiding when virtual-list logic adjusts ctx->position directly.
+	// Also record a separator for the skipped region so borders/vertical lines and clipping are correct.
 	if (ctx->position.y > state.currentRowY)
 	{
+		// only push a separator if it increases the list (avoid duplicates)
+		if (state.rowSeparators.empty() || ctx->position.y > state.rowSeparators.back())
+		{
+			// record the virtual-skip boundary so drawing code knows there was a gap
+			state.rowSeparators.push_back(ctx->position.y);
+		}
+
+		std::printf("[TABLE] nextRow detected virtual skip ctx.pos.y=%.3f oldCurrentRowY=%.3f newCurrentRowY=%.3f lastSeparator=%.3f\n",
+			ctx->position.y, state.currentRowY, ctx->position.y, state.rowSeparators.back());
+
 		state.currentRowY = ctx->position.y;
 	}
 

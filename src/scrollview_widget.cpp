@@ -797,6 +797,10 @@ bool VirtualScrollInfo::nextStep()
 		scrollOffsetY = scrollY;
 		_measureStartY = ctx->position.y;
 		_step = 1;
+
+		std::printf("[VIRT] step0 startIndex=%u scrollY=%.3f estimateH=%.3f _measureStartY=%.3f basePos.y=%.3f\n",
+			startIndex, scrollY, estimateH, _measureStartY, basePos.y);
+
 		return true;
 	}
 
@@ -808,8 +812,25 @@ bool VirtualScrollInfo::nextStep()
 		f32 afterY = ctx->position.y;
 		f32 measuredH = afterY - _measureStartY;
 
+		std::printf("[VIRT] pre-measure _measureStartY=%.3f afterY=%.3f rawMeasuredH=%.3f viewH=%.3f\n",
+			_measureStartY, afterY, measuredH, viewHeight);
+
 		// Guard against zero or NaN measured heights to avoid division by zero or crazy indices.
+		// Also guard against implausibly large measurements (likely caused by header finishing or other layout moves).
+		bool measuredInvalid = false;
 		if (!(measuredH > 0.0f) || !std::isfinite(measuredH))
+			measuredInvalid = true;
+		// treat measurements larger than the viewport as suspicious (e.g. header + row)
+		// allow a small margin (90% of view) but clamp very large values
+		if (!measuredInvalid && viewHeight > 0.0f)
+		{
+			const f32 LARGE_MEASURE_RATIO = 0.9f; // if measuredH > 90% of viewHeight, treat as invalid
+			const f32 HARD_MAX = 10000.0f;        // absolute sanity cap
+			if (measuredH > viewHeight * LARGE_MEASURE_RATIO || measuredH > HARD_MAX)
+				measuredInvalid = true;
+		}
+
+		if (measuredInvalid)
 		{
 			// Prefer declared itemHeight if available, otherwise use a conservative default.
 			if (itemHeight > 0.0f)
@@ -861,6 +882,9 @@ bool VirtualScrollInfo::nextStep()
 		// position the pen to the start of the remainingStart item
 		f32 skipY = (f32)remainingStart * measuredH;
 		ctx->position = { basePos.x, basePos.y + skipY };
+
+		std::printf("[VIRT] step1 measuredH=%.3f virtualSize.y=%.3f firstVisible=%d approxVisible=%d remainingStart=%d skipY=%.3f\n",
+			measuredH, svState.virtualSize.y, firstVisible, approxVisible, remainingStart, (f32)remainingStart * measuredH);
 
 		// mark finished after this step
 		_step = 2;
