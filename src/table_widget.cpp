@@ -300,7 +300,7 @@ static void finishRow(TableState& state)
 			ctx->position.x = state.tableRect.x - padding.x;
 			ctx->layout.width = state.innerWidth + padding.x;
 			
-			beginScrollView("##tableScrollView", scrollViewHeight, state.persistent->scrollViewScrollPos.y, 10000.0f, ScrollViewFlags::NoBorder);
+			beginScrollView("##tableScrollView", scrollViewHeight, state.persistent->scrollViewScrollPos.y, 0.0f, ScrollViewFlags::NoBorder);
 			state.needsScrollViewStart = true;
 			
 			// after scroll view starts, ctx->position.x should now align with table edge
