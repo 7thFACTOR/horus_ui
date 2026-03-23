@@ -2,7 +2,9 @@
 #include "sdl3_input.h"
 #include <string.h>
 #include <SDL3/SDL_main.h>
+#include <SDL3/SDL_vulkan.h>
 #include <glad/gl.h>
+#include "vulkan_graphics.h"
 #ifdef _WINDOWS
 #include <windows.h>
 #include <d3d11.h>
@@ -35,6 +37,8 @@ struct SdlWindowProxy
 	void* dx12RTV = nullptr;
 	u32 dx12CurrentBackBuffer = 0;
 #endif
+	// Vulkan surface (if using Vulkan)
+	VkSurfaceKHR surface = VK_NULL_HANDLE;
 };
 
 #ifdef _WINDOWS
@@ -941,7 +945,7 @@ static HNativeWindow createWindow(
 
 		if (g_dx12CommandQueue) {
 			DXGI_SWAP_CHAIN_DESC1 sd{};
-			sd.BufferCount = 2;
+		 sd.BufferCount = 2;
 			sd.Width = rect.width;
 			sd.Height = rect.height;
 			sd.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
@@ -984,6 +988,35 @@ static HNativeWindow createWindow(
 	SDL_SetWindowPosition(wnd, rect.x, rect.y);
 	SDL_SyncWindow(wnd);
 	SDL_RaiseWindow(wnd);
+
+	// If using Vulkan, and the Vulkan backend is initialized, create a VkSurface for this SDL window
+	if (sdl3InputContext->initParams.gfxApi == Sdl3GfxApi::Vulkan)
+	{
+		// create the surface via the Vulkan backend helper (if it's initialized)
+		if (hui::isVulkanInitialized())
+		{
+			VkSurfaceKHR surf = VK_NULL_HANDLE;
+			if (hui::createSurfaceForSdlWindow(wnd, &surf))
+			{
+				newWnd->surface = surf;
+
+				// Create swapchain for this window (use rect for initial size and sdl init vSync setting)
+				if (!hui::createSwapchainForWindow(wnd, surf, rect.width, rect.height, sdl3InputContext->initParams.vSync))
+				{
+					printf("Warning: failed to create Vulkan swapchain for SDL window\n");
+				}
+			}
+			else
+			{
+				printf("Warning: failed to create Vulkan surface for SDL window\n");
+			}
+		}
+		else
+		{
+			// Vulkan not initialized yet - the Vulkan backend should create swapchain later when initVulkan runs.
+			// We keep sdlWindow pointer and allow the backend to create swapchain after init.
+		}
+	}
 
 	return newWnd;
 }
@@ -1085,10 +1118,36 @@ static void presentWindow(HNativeWindow window)
 		}
 #endif
 	}
+	else if (sdl3InputContext->initParams.gfxApi == Sdl3GfxApi::Vulkan)
+	{
+		// Present via Vulkan backend
+		if (proxy->surface != VK_NULL_HANDLE)
+		{
+			if (!hui::presentSwapchainForWindow(proxy->sdlWindow))
+			{
+				// If presentation failed, fallback to no-op (swapchain may need recreation)
+				// The backend will log errors / handle recreation if implemented.
+			}
+		}
+	}
 }
 
 static void destroyWindow(HNativeWindow window)
 {
+	// if Vulkan surface was created, destroy swapchain then surface
+	if (sdl3InputContext->initParams.gfxApi == Sdl3GfxApi::Vulkan)
+	{
+		auto proxy = (SdlWindowProxy*)window;
+		if (proxy->surface != VK_NULL_HANDLE)
+		{
+			// Destroy any backend swapchain/resources associated with this SDL window first
+			hui::destroySwapchainForWindow(((SdlWindowProxy*)window)->sdlWindow);
+
+			hui::destroySurface(proxy->surface);
+			proxy->surface = VK_NULL_HANDLE;
+		}
+	}
+
 	SDL_DestroyWindow(((SdlWindowProxy*)window)->sdlWindow);
 	auto iter = std::find(sdl3InputContext->windows.begin(), sdl3InputContext->windows.end(), window);
 
