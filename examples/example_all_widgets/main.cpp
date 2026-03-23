@@ -8,6 +8,9 @@
 // backends
 #include "sdl3_input.h"
 #include "opengl_graphics.h"
+#include "dx11_graphics.h"
+#include "dx12_graphics.h"
+#include "vulkan_graphics.h"
 #include "json_theme_loader.h"
 #include "stb_rectpack.h"
 #include "freetype_fonts.h"
@@ -42,6 +45,10 @@ int main(int argc, char** args)
 	hui::Sdl3InitParams sdlParams;
 
 	sdlParams.vSync = false;
+	//sdlParams.gfxApi = hui::Sdl3GfxApi::OpenGL;
+	//sdlParams.gfxApi = hui::Sdl3GfxApi::Direct3D11;
+	sdlParams.gfxApi = hui::Sdl3GfxApi::Direct3D12;
+	//sdlParams.gfxApi = hui::Sdl3GfxApi::Vulkan;
 
 	// Setup a Horus UI context, with given service providers
 	hui::Settings settings;
@@ -62,7 +69,10 @@ int main(int argc, char** args)
 	// Create the main window (this will also create a graphics (GL/VK/D3D/etc.) context)
 	auto mainWnd = settings.services.createWindow("HorusUI Widget Examples", hui::NativeWindowFlags::Resizable, hui::NativeWindowState::Maximized, hui::Rect(0, 0, 1500, 800));
 
-	hui::initOpenGL(hui::getSettings().services);
+	//hui::initOpenGL(hui::getSettings().services);
+	//hui::initDx11(hui::getSettings().services);
+	//hui::initDx12(hui::getSettings().services);
+	hui::initVulkan(hui::getSettings().services);
 
 	// Create a main dock node for the main window, so we can dock windows in there
 	hui::DockNodeId mainDockNode = hui::createRootDockNode(mainWnd);
@@ -104,7 +114,12 @@ int main(int argc, char** args)
 	// After we load the theme and more images and fonts, we need to rebuild the theme (into the image atlas)
 	hui::buildTheme(theme);
 
-	hui::OpenGLTexture texAtlas(hui::getThemeAtlasImageData().width, hui::getThemeAtlasImageData().height);
+	//hui::OpenGLTexture texAtlas(hui::getThemeAtlasImageData().width, hui::getThemeAtlasImageData().height);
+	//hui::Dx11Texture texAtlas(hui::getThemeAtlasImageData().width, hui::getThemeAtlasImageData().height);
+
+	hui::Dx12Texture texAtlas(hui::getThemeAtlasImageData().width, hui::getThemeAtlasImageData().height);
+	//hui::Dx11Texture texAtlas(hui::getThemeAtlasImageData().width, hui::getThemeAtlasImageData().height);
+
 	texAtlas.updateData(hui::getThemeAtlasImageData().pixels);
 	hui::setThemeAtlasTexture(texAtlas.getHandle());
 
@@ -133,10 +148,11 @@ int main(int argc, char** args)
 	while (!exitNow)
 	{
 		// Clear the main window as a test
-		settings.services.setCurrentWindow(mainWnd);
-		glClearColor(1, 1, 0, 1);
-		glClear(GL_COLOR_BUFFER_BIT);
+		hui::getSettings().services.setCurrentWindow(mainWnd);
 
+		hui::getSettings().services.clearBackbuffer({ 0.1f, 0.0f, 0.1f, 1 });
+		//glClearColor(1, 1, 0, 1);
+		//glClear(GL_COLOR_BUFFER_BIT);
 
 		// Track theme file modification time for auto-reload
 		static auto lastModTime = std::filesystem::last_write_time(themeFilePath);
@@ -201,37 +217,37 @@ int main(int argc, char** args)
 				static f32 t = 1;
 				i32 vp[4];
 
-				glClearColor(0,.4,0,1);
-				glClear(GL_COLOR_BUFFER_BIT);
-				glGetIntegerv(GL_VIEWPORT, vp);
-				glViewport(rc.x, nativeWndSize.y - rc.bottom(), rc.width, rc.height);
-				glMatrixMode(GL_PROJECTION);
-				glLoadIdentity();
-				glOrtho(0, 1, 0, 1, -1, 1);
-				glMatrixMode(GL_MODELVIEW);
-				glLoadIdentity();
+				//glClearColor(0,.4,0,1);
+				//glClear(GL_COLOR_BUFFER_BIT);
+				//glGetIntegerv(GL_VIEWPORT, vp);
+				//glViewport(rc.x, nativeWndSize.y - rc.bottom(), rc.width, rc.height);
+				//glMatrixMode(GL_PROJECTION);
+				//glLoadIdentity();
+				//glOrtho(0, 1, 0, 1, -1, 1);
+				//glMatrixMode(GL_MODELVIEW);
+				//glLoadIdentity();
 
-				glBegin(GL_TRIANGLES);
+				//glBegin(GL_TRIANGLES);
 
-				f32 radius1 = 0;
-				f32 radius2 = 0.5;
-				f32 step = 2 * M_PI / 10.0f;
+				//f32 radius1 = 0;
+				//f32 radius2 = 0.5;
+				//f32 step = 2 * M_PI / 10.0f;
 
-				for (f32 u = 0; u < 2 * M_PI; u += step)
-				{
-					glColor3f(.1, 0.1, 0.1);
-					glVertex2f(0.5f + radius1 * sinf(u + t), 0.5f + radius1 * cosf(u + t));
-					glColor3f(.8, .8, 0);
-					glVertex2f(0.5f + radius2 * sinf(u + t), 0.5f + radius2 * cosf(u + t));
-					glColor3f(.1, 0.1, .1);
-					glVertex2f(0.5f + radius2 * sinf(u + step + t), 0.5f + radius2 * cosf(u + step + t));
-				}
+				//for (f32 u = 0; u < 2 * M_PI; u += step)
+				//{
+				//	glColor3f(.1, 0.1, 0.1);
+				//	glVertex2f(0.5f + radius1 * sinf(u + t), 0.5f + radius1 * cosf(u + t));
+				//	glColor3f(.8, .8, 0);
+				//	glVertex2f(0.5f + radius2 * sinf(u + t), 0.5f + radius2 * cosf(u + t));
+				//	glColor3f(.1, 0.1, .1);
+				//	glVertex2f(0.5f + radius2 * sinf(u + step + t), 0.5f + radius2 * cosf(u + step + t));
+				//}
 
-				glEnd();
+				//glEnd();
 
-				x = sinf(t);
-				t += hui::getSettings().deltaTime;
-				glViewport(vp[0], vp[1], vp[2], vp[3]);
+				//x = sinf(t);
+				//t += hui::getSettings().deltaTime;
+				//glViewport(vp[0], vp[1], vp[2], vp[3]);
 			};
 
 			// Begin an actual frame of the gui
@@ -700,7 +716,10 @@ int main(int argc, char** args)
 	hui::shutdownSdl3(settings.services);
 	hui::shutdownStbRectPack(settings.services);
 	hui::shutdownUtf(settings.services);
-	hui::shutdownOpenGL(settings.services);
+	//hui::shutdownOpenGL(settings.services);
+	//hui::shutdownDx11(settings.services);
+	//hui::shutdownDx12(settings.services);
+	hui::shutdownVulkan(settings.services);
 
 	hui::shutdown();
 

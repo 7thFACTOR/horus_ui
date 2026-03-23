@@ -196,7 +196,8 @@ void OpenGLVertexBuffer::updateData(Vertex* vertices, u32 startVertexIndex, u32 
 
 void OpenGLVertexBuffer::destroy()
 {
-	glDeleteBuffers(1, &handle);
+	if (handle)
+		glDeleteBuffers(1, &handle);
 	handle = 0;
 	count = 0;
 }

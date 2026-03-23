@@ -21,7 +21,8 @@ target_include_directories(${PROJECT_NAME} PUBLIC
 	../libs/stb
 	../libs/utfcpp/source
 	../libs
-	../libs/freetype/include)
+	../libs/freetype/include
+	../libs/vulkan/Include)
 
 link_libs(${PROJECT_NAME})
 

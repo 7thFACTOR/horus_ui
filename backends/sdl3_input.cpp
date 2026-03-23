@@ -5,6 +5,9 @@
 #include <glad/gl.h>
 #ifdef _WINDOWS
 #include <windows.h>
+#include <d3d11.h>
+#include <d3d12.h>
+#include <dxgi1_4.h>
 #endif
 #include <algorithm>
 
@@ -22,8 +25,26 @@ namespace hui
 struct SdlWindowProxy
 {
 	SDL_Window* sdlWindow = nullptr;
-	// add here any graphics API aux data (DX11 swapchain etc.)
+#ifdef _WINDOWS
+	// dx11
+	void* dx11SwapChain = nullptr;
+	void* dx11RTV = nullptr;
+	// dx12
+	void* dx12SwapChain = nullptr;
+	void* dx12RTVHeap = nullptr;
+	void* dx12RTV = nullptr;
+	u32 dx12CurrentBackBuffer = 0;
+#endif
 };
+
+#ifdef _WINDOWS
+ID3D11Device* g_dx11Device = nullptr;
+ID3D11DeviceContext* g_dx11DeviceContext = nullptr;
+ID3D12Device* g_dx12Device = nullptr;
+ID3D12CommandQueue* g_dx12CommandQueue = nullptr;
+ID3D12CommandAllocator* g_dx12CommandAllocator = nullptr;
+ID3D12GraphicsCommandList* g_dx12CommandList = nullptr;
+#endif
 
 struct Sdl3InputContext
 {
@@ -532,8 +553,64 @@ static void addSdlEvent(SDL_Event& ev)
 	case SDL_EVENT_WINDOW_RESTORED:
 	case SDL_EVENT_WINDOW_EXPOSED:
 	case SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED:
+	{
 		outEvent.type = InputEvent::Type::WindowResized;
+		auto proxy = findSdlWindow(SDL_GetWindowFromID(ev.window.windowID));
+		if (proxy)
+		{
+#ifdef _WINDOWS
+			if (sdl3InputContext->initParams.gfxApi == Sdl3GfxApi::Direct3D11 && proxy->dx11SwapChain)
+			{
+				g_dx11DeviceContext->OMSetRenderTargets(0, nullptr, nullptr);
+				if (proxy->dx11RTV) {
+					((ID3D11RenderTargetView*)proxy->dx11RTV)->Release();
+					proxy->dx11RTV = nullptr;
+				}
+
+				auto sc = (IDXGISwapChain*)proxy->dx11SwapChain;
+				sc->ResizeBuffers(0, 0, 0, DXGI_FORMAT_UNKNOWN, 0);
+
+				ID3D11Texture2D* backBuffer = nullptr;
+				sc->GetBuffer(0, __uuidof(ID3D11Texture2D), (void**)&backBuffer);
+				ID3D11RenderTargetView* rtv = nullptr;
+				g_dx11Device->CreateRenderTargetView(backBuffer, nullptr, &rtv);
+				proxy->dx11RTV = rtv;
+				backBuffer->Release();
+			}
+			else if (sdl3InputContext->initParams.gfxApi == Sdl3GfxApi::Direct3D12 && proxy->dx12SwapChain)
+			{
+				auto sc = (IDXGISwapChain3*)proxy->dx12SwapChain;
+				
+				ID3D12Resource* b1 = nullptr;
+				ID3D12Resource* b2 = nullptr;
+				sc->GetBuffer(0, IID_PPV_ARGS(&b1));
+				sc->GetBuffer(1, IID_PPV_ARGS(&b2));
+				
+				extern void dx12PreResize(ID3D12Resource** buffers, int count);
+				ID3D12Resource* buffers[2] = { b1, b2 };
+				dx12PreResize(buffers, 2);
+				
+				if (b1) b1->Release();
+				if (b2) b2->Release();
+
+				sc->ResizeBuffers(0, 0, 0, DXGI_FORMAT_UNKNOWN, 0);
+
+				auto rtvHeap = (ID3D12DescriptorHeap*)proxy->dx12RTVHeap;
+				SIZE_T rtvDescriptorSize = g_dx12Device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
+				D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle = rtvHeap->GetCPUDescriptorHandleForHeapStart();
+				for (UINT n = 0; n < 2; n++) {
+					ID3D12Resource* backBuffer = nullptr;
+					sc->GetBuffer(n, IID_PPV_ARGS(&backBuffer));
+					g_dx12Device->CreateRenderTargetView(backBuffer, nullptr, rtvHandle);
+					backBuffer->Release();
+					rtvHandle.ptr += rtvDescriptorSize;
+				}
+				proxy->dx12CurrentBackBuffer = sc->GetCurrentBackBufferIndex();
+			}
+#endif
+		}
 		break;
+	}
 	case SDL_EVENT_WINDOW_FOCUS_GAINED:
 	{
 		outEvent.type = InputEvent::Type::WindowGotFocus;
@@ -645,6 +722,38 @@ static void setCurrentWindow(HNativeWindow window)
 		SDL_GL_MakeCurrent(((SdlWindowProxy*)window)->sdlWindow, sdl3InputContext->initParams.sdlGlContext);
 		SDL_GL_SetSwapInterval(sdl3InputContext->initParams.vSync ? 1 : 0);
 	}
+	else if (sdl3InputContext->initParams.gfxApi == Sdl3GfxApi::Direct3D11)
+	{
+#ifdef _WINDOWS
+		auto proxy = (SdlWindowProxy*)window;
+		if (proxy->dx11RTV) {
+			ID3D11RenderTargetView* rtv[] = { (ID3D11RenderTargetView*)proxy->dx11RTV };
+			g_dx11DeviceContext->OMSetRenderTargets(1, rtv, nullptr);
+		}
+#endif
+	}
+	else if (sdl3InputContext->initParams.gfxApi == Sdl3GfxApi::Direct3D12)
+	{
+#ifdef _WINDOWS
+		auto proxy = (SdlWindowProxy*)window;
+		if (proxy->dx12RTVHeap && proxy->dx12SwapChain) {
+			auto sc = (IDXGISwapChain3*)proxy->dx12SwapChain;
+			proxy->dx12CurrentBackBuffer = sc->GetCurrentBackBufferIndex();
+			
+			auto heap = (ID3D12DescriptorHeap*)proxy->dx12RTVHeap;
+			SIZE_T size = g_dx12Device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
+			D3D12_CPU_DESCRIPTOR_HANDLE handle = heap->GetCPUDescriptorHandleForHeapStart();
+			handle.ptr += size * proxy->dx12CurrentBackBuffer;
+			
+			ID3D12Resource* backBuffer = nullptr;
+			sc->GetBuffer(proxy->dx12CurrentBackBuffer, IID_PPV_ARGS(&backBuffer));
+			
+			extern void dx12SetCurrentRenderTarget(SIZE_T rtvPtr, ID3D12Resource* backBuffer);
+			dx12SetCurrentRenderTarget(handle.ptr, backBuffer);
+			if (backBuffer) backBuffer->Release();
+		}
+#endif
+	}
 
 	sdl3InputContext->currentWindow = ((SdlWindowProxy*)window);
 }
@@ -745,6 +854,132 @@ static HNativeWindow createWindow(
 		printf("GL Renderer: %s\n", renderer);
 		printf("GL Version: %s\n", version);
 	}
+	else if (sdl3InputContext->initParams.gfxApi == Sdl3GfxApi::Direct3D11)
+	{
+#ifdef _WINDOWS
+		HWND hwnd = (HWND)SDL_GetPointerProperty(SDL_GetWindowProperties(wnd), SDL_PROP_WINDOW_WIN32_HWND_POINTER, NULL);
+		if (!g_dx11Device) {
+			UINT createDeviceFlags = 0;
+#ifdef _DEBUG
+			createDeviceFlags |= D3D11_CREATE_DEVICE_DEBUG;
+#endif
+			D3D_FEATURE_LEVEL featureLevel = D3D_FEATURE_LEVEL_11_0;
+			D3D11CreateDevice(nullptr, D3D_DRIVER_TYPE_HARDWARE, nullptr, createDeviceFlags, &featureLevel, 1, D3D11_SDK_VERSION, &g_dx11Device, nullptr, &g_dx11DeviceContext);
+		}
+
+		DXGI_SWAP_CHAIN_DESC sd{};
+		sd.BufferCount = 2;
+		sd.BufferDesc.Width = rect.width;
+		sd.BufferDesc.Height = rect.height;
+		sd.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+		sd.BufferDesc.RefreshRate.Numerator = 60;
+		sd.BufferDesc.RefreshRate.Denominator = 1;
+		sd.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
+		sd.OutputWindow = hwnd;
+		sd.SampleDesc.Count = 1;
+		sd.SampleDesc.Quality = 0;
+		sd.Windowed = TRUE;
+		sd.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
+
+		IDXGIDevice* dxgiDevice = nullptr;
+		g_dx11Device->QueryInterface(__uuidof(IDXGIDevice), (void**)&dxgiDevice);
+		IDXGIAdapter* dxgiAdapter = nullptr;
+		dxgiDevice->GetParent(__uuidof(IDXGIAdapter), (void**)&dxgiAdapter);
+		IDXGIFactory* dxgiFactory = nullptr;
+		dxgiAdapter->GetParent(__uuidof(IDXGIFactory), (void**)&dxgiFactory);
+
+		IDXGISwapChain* swapchain = nullptr;
+		dxgiFactory->CreateSwapChain(g_dx11Device, &sd, &swapchain);
+		newWnd->dx11SwapChain = swapchain;
+
+		ID3D11Texture2D* backBuffer = nullptr;
+		swapchain->GetBuffer(0, __uuidof(ID3D11Texture2D), (void**)&backBuffer);
+		ID3D11RenderTargetView* rtv = nullptr;
+		g_dx11Device->CreateRenderTargetView(backBuffer, nullptr, &rtv);
+		newWnd->dx11RTV = rtv;
+		backBuffer->Release();
+
+		dxgiFactory->Release();
+		dxgiAdapter->Release();
+		dxgiDevice->Release();
+#endif
+	}
+	else if (sdl3InputContext->initParams.gfxApi == Sdl3GfxApi::Direct3D12)
+	{
+#ifdef _WINDOWS
+		HWND hwnd = (HWND)SDL_GetPointerProperty(SDL_GetWindowProperties(wnd), SDL_PROP_WINDOW_WIN32_HWND_POINTER, NULL);
+		if (!g_dx12Device) {
+#if defined(_DEBUG)
+			ID3D12Debug* debugController;
+			if (SUCCEEDED(D3D12GetDebugInterface(IID_PPV_ARGS(&debugController)))) {
+				debugController->EnableDebugLayer();
+				debugController->Release();
+			}
+#endif
+			IDXGIFactory4* factory = nullptr;
+			CreateDXGIFactory1(IID_PPV_ARGS(&factory));
+			IDXGIAdapter1* adapter = nullptr;
+			for (UINT i = 0; factory->EnumAdapters1(i, &adapter) != DXGI_ERROR_NOT_FOUND; ++i) {
+				DXGI_ADAPTER_DESC1 desc;
+				adapter->GetDesc1(&desc);
+				if (desc.Flags & DXGI_ADAPTER_FLAG_SOFTWARE) continue;
+				if (SUCCEEDED(D3D12CreateDevice(adapter, D3D_FEATURE_LEVEL_11_0, IID_PPV_ARGS(&g_dx12Device)))) break;
+				adapter->Release(); adapter = nullptr;
+			}
+			if (g_dx12Device) {
+				D3D12_COMMAND_QUEUE_DESC queueDesc{};
+				queueDesc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
+				queueDesc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
+				g_dx12Device->CreateCommandQueue(&queueDesc, IID_PPV_ARGS(&g_dx12CommandQueue));
+				g_dx12Device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&g_dx12CommandAllocator));
+				g_dx12Device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, g_dx12CommandAllocator, nullptr, IID_PPV_ARGS(&g_dx12CommandList));
+				g_dx12CommandList->Close();
+			}
+			if (adapter) adapter->Release();
+			if (factory) factory->Release();
+		}
+
+		if (g_dx12CommandQueue) {
+			DXGI_SWAP_CHAIN_DESC1 sd{};
+			sd.BufferCount = 2;
+			sd.Width = rect.width;
+			sd.Height = rect.height;
+			sd.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+			sd.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
+			sd.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
+			sd.SampleDesc.Count = 1;
+
+			IDXGIFactory4* factory = nullptr;
+			CreateDXGIFactory1(IID_PPV_ARGS(&factory));
+			IDXGISwapChain1* swapChain1 = nullptr;
+			factory->CreateSwapChainForHwnd(g_dx12CommandQueue, hwnd, &sd, nullptr, nullptr, &swapChain1);
+			IDXGISwapChain3* swapchain = nullptr;
+			swapChain1->QueryInterface(IID_PPV_ARGS(&swapchain));
+			newWnd->dx12SwapChain = swapchain;
+			swapChain1->Release();
+			factory->Release();
+
+			D3D12_DESCRIPTOR_HEAP_DESC rtvHeapDesc{};
+			rtvHeapDesc.NumDescriptors = 2;
+			rtvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
+			rtvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
+			ID3D12DescriptorHeap* rtvHeap = nullptr;
+			g_dx12Device->CreateDescriptorHeap(&rtvHeapDesc, IID_PPV_ARGS(&rtvHeap));
+			newWnd->dx12RTVHeap = rtvHeap;
+
+			SIZE_T rtvDescriptorSize = g_dx12Device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
+			D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle = rtvHeap->GetCPUDescriptorHandleForHeapStart();
+			for (UINT n = 0; n < 2; n++) {
+				ID3D12Resource* backBuffer = nullptr;
+				swapchain->GetBuffer(n, IID_PPV_ARGS(&backBuffer));
+				g_dx12Device->CreateRenderTargetView(backBuffer, nullptr, rtvHandle);
+				backBuffer->Release();
+				rtvHandle.ptr += rtvDescriptorSize;
+			}
+			newWnd->dx12CurrentBackBuffer = swapchain->GetCurrentBackBufferIndex();
+		}
+#endif
+	}
 
 	SDL_SetWindowPosition(wnd, rect.x, rect.y);
 	SDL_SyncWindow(wnd);
@@ -821,9 +1056,34 @@ static Point getWindowPosition(HNativeWindow window)
 
 static void presentWindow(HNativeWindow window)
 {
+	auto proxy = (SdlWindowProxy*)window;
 	if (sdl3InputContext->initParams.gfxApi == Sdl3GfxApi::OpenGL)
 	{
-		SDL_GL_SwapWindow(((SdlWindowProxy*)window)->sdlWindow);
+		SDL_GL_SwapWindow(proxy->sdlWindow);
+	}
+	else if (sdl3InputContext->initParams.gfxApi == Sdl3GfxApi::Direct3D11)
+	{
+#ifdef _WINDOWS
+		if (proxy->dx11SwapChain)
+			((IDXGISwapChain*)proxy->dx11SwapChain)->Present(sdl3InputContext->initParams.vSync ? 1 : 0, 0);
+#endif
+	}
+	else if (sdl3InputContext->initParams.gfxApi == Sdl3GfxApi::Direct3D12)
+	{
+#ifdef _WINDOWS
+		if (proxy->dx12SwapChain) {
+			auto sc = (IDXGISwapChain3*)proxy->dx12SwapChain;
+			ID3D12Resource* backBuffer = nullptr;
+			sc->GetBuffer(proxy->dx12CurrentBackBuffer, IID_PPV_ARGS(&backBuffer));
+			
+			extern void dx12PreparePresent(ID3D12Resource* backBuffer);
+			dx12PreparePresent(backBuffer);
+			if (backBuffer) backBuffer->Release();
+			
+			sc->Present(sdl3InputContext->initParams.vSync ? 1 : 0, 0);
+			proxy->dx12CurrentBackBuffer = sc->GetCurrentBackBufferIndex();
+		}
+#endif
 	}
 }
 
@@ -956,6 +1216,14 @@ void initSdl3(Services& services, const Sdl3InitParams& params)
 		SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
 		SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
 	}
+	else if (sdl3InputContext->initParams.gfxApi == Sdl3GfxApi::Direct3D11)
+	{
+		// TODO: Init any DX11 specific SDL hints
+	}
+	else if (sdl3InputContext->initParams.gfxApi == Sdl3GfxApi::Direct3D12)
+	{
+		// TODO: Init any DX12 specific SDL hints
+	}
 
 	createSystemCursors();
 	SDL_SetHint(SDL_HINT_MOUSE_AUTO_CAPTURE, "0");
@@ -1000,8 +1268,19 @@ void initSdl3(Services& services, const Sdl3InitParams& params)
 
 void shutdownSdl3(Services& services)
 {
-	if (sdl3InputContext->ownsGlContext)
-		SDL_GL_DestroyContext(sdl3InputContext->initParams.sdlGlContext);
+	if (sdl3InputContext->initParams.gfxApi == Sdl3GfxApi::OpenGL)
+	{
+		if (sdl3InputContext->ownsGlContext)
+			SDL_GL_DestroyContext(sdl3InputContext->initParams.sdlGlContext);
+	}
+	else if (sdl3InputContext->initParams.gfxApi == Sdl3GfxApi::Direct3D11)
+	{
+		// TODO: Clean up DX11 specific context
+	}
+	else if (sdl3InputContext->initParams.gfxApi == Sdl3GfxApi::Direct3D12)
+	{
+		// TODO: Clean up DX12 specific context
+	}
 
 	if (sdl3InputContext->ownsSdlInit)
 		SDL_Quit();

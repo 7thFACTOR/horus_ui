@@ -36,7 +36,7 @@ if(LINUX)
 	add_definitions(-w)
 endif(LINUX)
 
-link_directories(${FULL_PROJECTS_PATH}/lib)
+link_directories(${FULL_PROJECTS_PATH}/libs)
 
 if(LINUX)
 list(APPEND NFD_SRCS
@@ -118,5 +118,11 @@ macro(link_libs TARGET_LIST)
 		target_link_libraries(${TARGET_LIST} PUBLIC debug jsoncpp_static optimized jsoncpp_static)
 		#target_link_libraries(${TARGET_LIST} PUBLIC debug spdlogd optimized spdlog)
 	endif(WIN32)
-	
+
+	if (WIN32)
+		target_include_directories(${TARGET_LIST} PRIVATE ${CODE_ROOT}/libs/vulkan/Include)
+		target_link_directories(${TARGET_LIST} PRIVATE ${CODE_ROOT}/libs/vulkan/Lib)
+		target_link_libraries(${TARGET_LIST} PRIVATE vulkan-1.lib)
+	endif(WIN32)
+
 endmacro(link_libs)

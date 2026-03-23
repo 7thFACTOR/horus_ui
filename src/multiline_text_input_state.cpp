@@ -277,6 +277,11 @@ void MultilineTextInputState::clearText()
 
 void MultilineTextInputState::insertTextAtCaret(const Utf32String& newText)
 {
+	bool hadSelection = selectionActive;
+
+	if (selectionActive)
+		deleteSelection();
+
 	// do not push duplicate snapshot if a selection will be deleted:
 	// deleteSelection() itself pushes a snapshot.
 	caretVisualLineIndex = (size_t)-1;
@@ -289,7 +294,7 @@ void MultilineTextInputState::insertTextAtCaret(const Utf32String& newText)
 		return;
 
 	// decide whether this is a single-character typing insert that can be coalesced.
-	bool isSingleCharTyping = (!selectionActive && newText.size() == 1 &&
+	bool isSingleCharTyping = (!hadSelection && newText.size() == 1 &&
 		newText[0] != '\n' && newText[0] != '\r' && newText[0] != '\t');
 
 	i32 startLineBefore = currentLine;
@@ -308,7 +313,7 @@ void MultilineTextInputState::insertTextAtCaret(const Utf32String& newText)
 	else
 	{
 		// non-typing operations: push snapshot (unless a selection will be deleted by deleteSelection())
-		if (!selectionActive)
+		if (!hadSelection)
 			pushUndoSnapshot();
 
 		// break typing coalescing on non-typing insertion
@@ -1095,7 +1100,7 @@ void MultilineTextInputState::computeVisualLines(Font* font, f32 availableWidth,
 	}
 	else if (lastRulesPtr != nullptr || lastKeywordsPtr != nullptr)
 	{
-		// no new rules provided by caller — make sure cached rules/states are current
+		// no new rules provided by caller ï¿½ make sure cached rules/states are current
 		// so calculateSegments has correct initialState for multi-line ranges.
 		updateSyntaxHighlighting(lastRulesPtr, lastRuleCount, lastKeywordsPtr, lastKeywordCount);
 	}
@@ -1771,7 +1776,7 @@ void MultilineTextInputState::calculateSegments(const Utf32String& line, i32 ini
 	}
 
 	// determine correct color for trailing text: use the live currentState if it's still open,
-	// otherwise fall back to the default text color. Do NOT use initialState here — that would
+	// otherwise fall back to the default text color. Do NOT use initialState here ï¿½ that would
 	// incorrectly color text after a mid-line close.
 	Color tailColor = defaultColor;
 	
@@ -2842,9 +2847,6 @@ void MultilineTextInputState::processKeyEvent(const InputEvent& ev)
 	}
 	else if (ev.key.code == KeyCode::V && has(ev.key.modifiers, KeyModifiers::Control))
 	{
-		if (selectionActive)
-			deleteSelection();
-
 		static const u32 maxTextSize = 8192;
 		char tmpStr[maxTextSize];
 		Utf32String utf32Str;
