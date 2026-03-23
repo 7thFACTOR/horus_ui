@@ -116,9 +116,8 @@ int main(int argc, char** args)
 
 	//hui::OpenGLTexture texAtlas(hui::getThemeAtlasImageData().width, hui::getThemeAtlasImageData().height);
 	//hui::Dx11Texture texAtlas(hui::getThemeAtlasImageData().width, hui::getThemeAtlasImageData().height);
-
-	hui::Dx12Texture texAtlas(hui::getThemeAtlasImageData().width, hui::getThemeAtlasImageData().height);
-	//hui::Dx11Texture texAtlas(hui::getThemeAtlasImageData().width, hui::getThemeAtlasImageData().height);
+	//hui::Dx12Texture texAtlas(hui::getThemeAtlasImageData().width, hui::getThemeAtlasImageData().height);
+	hui::VulkanTexture texAtlas(hui::getThemeAtlasImageData().width, hui::getThemeAtlasImageData().height);
 
 	texAtlas.updateData(hui::getThemeAtlasImageData().pixels);
 	hui::setThemeAtlasTexture(texAtlas.getHandle());
