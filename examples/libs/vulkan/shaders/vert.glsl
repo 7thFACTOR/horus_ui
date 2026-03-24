@@ -13,7 +13,6 @@ void main()
 {
     // convert pixel coords to NDC (assuming inPosition in pixels)
     vec2 ndc = (inPosition / pc.viewport) * 2.0 - 1.0;
-    ndc.y = -ndc.y;
     gl_Position = vec4(ndc, 0.0, 1.0);
     vUv = inUv;
     vColor = inColor;

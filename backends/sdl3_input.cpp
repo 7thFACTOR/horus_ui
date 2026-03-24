@@ -758,6 +758,11 @@ static void setCurrentWindow(HNativeWindow window)
 		}
 #endif
 	}
+	else if (sdl3InputContext->initParams.gfxApi == Sdl3GfxApi::Vulkan)
+	{
+		auto proxy = (SdlWindowProxy*)window;
+		hui::vulkanSetCurrentWindow(proxy ? proxy->sdlWindow : nullptr);
+	}
 
 	sdl3InputContext->currentWindow = ((SdlWindowProxy*)window);
 }

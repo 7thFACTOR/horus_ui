@@ -25,6 +25,7 @@ static u32 graphicsQueueFamilyIndex = 0;
 
 static Rect currentViewport;
 static Color clearColor = Color::black;
+static void* g_currentWindow = nullptr;
 
 // small utility
 static void checkErrorVK(VkResult result, const char* where)
@@ -444,6 +445,8 @@ struct SwapchainContext
 	VkBuffer vertexBuffer = VK_NULL_HANDLE;
 	VkDeviceMemory vertexBufferMemory = VK_NULL_HANDLE;
 	u32 vertexBufferCount = 0;
+
+	bool vSync = true;
 };
 
 static std::map<void*, SwapchainContext> g_swapchains; // keyed by SDL_Window*
@@ -464,45 +467,74 @@ static std::vector<char> readFileBytes(const std::string& filename)
 
 // Embedded SPIR-V for ui.vert and ui.frag (single definitions)
 static const uint32_t ui_vert_spv[] = {
-    0x07230203,0x00010000,0x0008000a,0x0000005d,0x00000000,0x00020011,0x00000001,0x0006000b,
-    0x00000001,0x4c534c47,0x6474732e,0x3035342e,0x00000000,0x0003000e,0x00000000,0x00000001,
-    0x0009000f,0x00000000,0x00000004,0x6d61696e,0x00000000,0x00000009,0x0000000b,0x0000001a,
-    0x0000003a,0x00030003,0x00000002,0x000001c2,0x00040005,0x00000004,0x6d61696e,0x00000000,
-    0x00050005,0x00000009,0x6f705f76,0x69746973,0x0000006f,0x00050005,0x0000000b,0x565f6f63,
-    0x5f74756f,0x00626f6c,0x00050005,0x00000014,0x6f6c6f63,0x6361705f,0x00000000,0x00050006,
-    0x00000014,0x00000000,0x6f705f76,0x00000000,0x00040006,0x00000014,0x00000001,0x00000077,
-    0x00040006,0x00000014,0x00000002,0x00000075,0x00030005,0x00000016,0x00000000,0x00040047,
-    0x00000009,0x0000001e,0x00000000,0x00040047,0x0000000b,0x0000001e,0x00000000,0x00040047,
-    0x0000001a,0x0000001e,0x00000000,0x00040047,0x0000003a,0x0000001e,0x00000000,0x00020013,
-    0x00000002,0x00030021,0x00000003,0x00000002,0x00030016,0x00000006,0x00000020,0x00040017,
-    0x00000007,0x00000006,0x00000002,0x00040020,0x00000008,0x00000003,0x00000007,0x0004003b,
-    0x00000008,0x00000009,0x00000003,0x00040015,0x0000000a,0x00000020,0x00000000,0x00040020,
-    0x0000000b,0x00000003,0x00000007,0x00040017,0x0000000e,0x00000006,0x00000004,0x00040020,
-    0x00000013,0x00000003,0x0000000e,0x0004003b,0x00000013,0x00000014,0x00000003,0x0004002b,
-    0x00000006,0x00000017,0x00000000,0x00040020,0x00000019,0x00000001,0x00000007,0x0004003b,
-    0x00000019,0x0000001a,0x00000001,0x00040020,0x00000039,0x00000001,0x0000000e,0x0004003b,
-    0x00000039,0x0000003a,0x00000001,0x00050036,0x00000002,0x00000004,0x00000000,0x00000003,
-    0x000200f8,0x00000005,0x0004003d,0x00000007,0x0000000c,0x00000009,0x0004003d,0x0000000e,
-    0x00000015,0x00000014,0x00050051,0x00000006,0x00000018,0x00000015,0x00000000,0x0003003e,
-    0x0000001a,0x0000000c,0x000200f9,0x00000005,0x000200f8,0x00000005,0x000100fd,0x00010038
+    0x07230203,0x00010000,0x000d000b,0x00000031,0x00000000,0x00020011,0x00000001,0x0006000b,0x00000001,0x4c534c47,
+    0x6474732e,0x3035342e,0x00000000,0x0003000e,0x00000000,0x00000001,0x000b000f,0x00000000,0x00000004,0x6e69616d,
+    0x00000000,0x0000000b,0x00000021,0x0000002a,0x0000002b,0x0000002d,0x0000002f,0x00030003,0x00000002,0x000001c2,
+    0x000a0004,0x475f4c47,0x4c474f4f,0x70635f45,0x74735f70,0x5f656c79,0x656e696c,0x7269645f,0x69746365,0x00006576,
+    0x00080004,0x475f4c47,0x4c474f4f,0x6e695f45,0x64756c63,0x69645f65,0x74636572,0x00657669,0x00040005,0x00000004,
+    0x6e69616d,0x00000000,0x00030005,0x00000009,0x0063646e,0x00050005,0x0000000b,0x6f506e69,0x69746973,0x00006e6f,
+    0x00040005,0x0000000d,0x68737550,0x00000000,0x00060006,0x0000000d,0x00000000,0x77656976,0x74726f70,0x00000000,
+    0x00050006,0x0000000d,0x00000001,0x6d6d7564,0x00000079,0x00030005,0x0000000f,0x00006370,0x00060005,0x0000001f,
+    0x505f6c67,0x65567265,0x78657472,0x00000000,0x00060006,0x0000001f,0x00000000,0x505f6c67,0x7469736f,0x006e6f69,
+    0x00070006,0x0000001f,0x00000001,0x505f6c67,0x746e696f,0x657a6953,0x00000000,0x00070006,0x0000001f,0x00000002,
+    0x435f6c67,0x4470696c,0x61747369,0x0065636e,0x00070006,0x0000001f,0x00000003,0x435f6c67,0x446c6c75,0x61747369,
+    0x0065636e,0x00030005,0x00000021,0x00000000,0x00030005,0x0000002a,0x00765576,0x00040005,0x0000002b,0x76556e69,
+    0x00000000,0x00040005,0x0000002d,0x6c6f4376,0x0000726f,0x00040005,0x0000002f,0x6f436e69,0x00726f6c,0x00040047,
+    0x0000000b,0x0000001e,0x00000000,0x00030047,0x0000000d,0x00000002,0x00050048,0x0000000d,0x00000000,0x00000023,
+    0x00000000,0x00050048,0x0000000d,0x00000001,0x00000023,0x00000008,0x00030047,0x0000001f,0x00000002,0x00050048,
+    0x0000001f,0x00000000,0x0000000b,0x00000000,0x00050048,0x0000001f,0x00000001,0x0000000b,0x00000001,0x00050048,
+    0x0000001f,0x00000002,0x0000000b,0x00000003,0x00050048,0x0000001f,0x00000003,0x0000000b,0x00000004,0x00040047,
+    0x0000002a,0x0000001e,0x00000000,0x00040047,0x0000002b,0x0000001e,0x00000001,0x00040047,0x0000002d,0x0000001e,
+    0x00000001,0x00040047,0x0000002f,0x0000001e,0x00000002,0x00020013,0x00000002,0x00030021,0x00000003,0x00000002,
+    0x00030016,0x00000006,0x00000020,0x00040017,0x00000007,0x00000006,0x00000002,0x00040020,0x00000008,0x00000007,
+    0x00000007,0x00040020,0x0000000a,0x00000001,0x00000007,0x0004003b,0x0000000a,0x0000000b,0x00000001,0x0004001e,
+    0x0000000d,0x00000007,0x00000007,0x00040020,0x0000000e,0x00000009,0x0000000d,0x0004003b,0x0000000e,0x0000000f,
+    0x00000009,0x00040015,0x00000010,0x00000020,0x00000001,0x0004002b,0x00000010,0x00000011,0x00000000,0x00040020,
+    0x00000012,0x00000009,0x00000007,0x0004002b,0x00000006,0x00000016,0x40000000,0x0004002b,0x00000006,0x00000018,
+    0x3f800000,0x00040017,0x0000001b,0x00000006,0x00000004,0x00040015,0x0000001c,0x00000020,0x00000000,0x0004002b,
+    0x0000001c,0x0000001d,0x00000001,0x0004001c,0x0000001e,0x00000006,0x0000001d,0x0006001e,0x0000001f,0x0000001b,
+    0x00000006,0x0000001e,0x0000001e,0x00040020,0x00000020,0x00000003,0x0000001f,0x0004003b,0x00000020,0x00000021,
+    0x00000003,0x0004002b,0x00000006,0x00000023,0x00000000,0x00040020,0x00000027,0x00000003,0x0000001b,0x00040020,
+    0x00000029,0x00000003,0x00000007,0x0004003b,0x00000029,0x0000002a,0x00000003,0x0004003b,0x0000000a,0x0000002b,
+    0x00000001,0x0004003b,0x00000027,0x0000002d,0x00000003,0x00040020,0x0000002e,0x00000001,0x0000001b,0x0004003b,
+    0x0000002e,0x0000002f,0x00000001,0x00050036,0x00000002,0x00000004,0x00000000,0x00000003,0x000200f8,0x00000005,
+    0x0004003b,0x00000008,0x00000009,0x00000007,0x0004003d,0x00000007,0x0000000c,0x0000000b,0x00050041,0x00000012,
+    0x00000013,0x0000000f,0x00000011,0x0004003d,0x00000007,0x00000014,0x00000013,0x00050088,0x00000007,0x00000015,
+    0x0000000c,0x00000014,0x0005008e,0x00000007,0x00000017,0x00000015,0x00000016,0x00050050,0x00000007,0x00000019,
+    0x00000018,0x00000018,0x00050083,0x00000007,0x0000001a,0x00000017,0x00000019,0x0003003e,0x00000009,0x0000001a,
+    0x0004003d,0x00000007,0x00000022,0x00000009,0x00050051,0x00000006,0x00000024,0x00000022,0x00000000,0x00050051,
+    0x00000006,0x00000025,0x00000022,0x00000001,0x00070050,0x0000001b,0x00000026,0x00000024,0x00000025,0x00000023,
+    0x00000018,0x00050041,0x00000027,0x00000028,0x00000021,0x00000011,0x0003003e,0x00000028,0x00000026,0x0004003d,
+    0x00000007,0x0000002c,0x0000002b,0x0003003e,0x0000002a,0x0000002c,0x0004003d,0x0000001b,0x00000030,0x0000002f,
+    0x0003003e,0x0000002d,0x00000030,0x000100fd,0x00010038
 };
+
 static const size_t ui_vert_spv_size = sizeof(ui_vert_spv);
 
 static const uint32_t ui_frag_spv[] = {
-    0x07230203,0x00010000,0x0008000a,0x00000036,0x00000000,0x00020011,0x00000001,0x0006000b,
+    0x07230203,0x00010000,0x0008000b,0x0000001b,0x00000000,0x00020011,0x00000001,0x0006000b,
     0x00000001,0x4c534c47,0x6474732e,0x3035342e,0x00000000,0x0003000e,0x00000000,0x00000001,
-    0x0007000f,0x00000000,0x00000004,0x6d61696e,0x00000000,0x00000007,0x0000000b,0x00030003,
-    0x00000002,0x000001c2,0x00040005,0x00000004,0x6d61696e,0x00000000,0x00040005,0x00000007,
-    0x766f6c63,0x00000000,0x00040005,0x0000000b,0x6f6c6f63,0x00000000,0x00040047,0x00000007,
-    0x0000001e,0x00000000,0x00040047,0x0000000b,0x0000001e,0x00000000,0x00020013,0x00000002,
-    0x00030021,0x00000003,0x00000002,0x00030016,0x00000006,0x00000020,0x00040017,0x00000007,
-    0x00000006,0x00000004,0x00040020,0x00000008,0x00000003,0x00000007,0x0004003b,0x00000008,
-    0x00000007,0x00000003,0x00040020,0x0000000a,0x00000001,0x00000007,0x0004003b,0x0000000a,
-    0x0000000b,0x00000001,0x00040015,0x0000000c,0x00000020,0x00000000,0x0004002b,0x00000006,
-    0x0000000e,0x3f800000,0x00040020,0x0000000f,0x00000003,0x00000007,0x00050036,0x00000002,
-    0x00000004,0x00000000,0x00000003,0x000200f8,0x00000005,0x0004003d,0x00000007,0x00000009,
-    0x00000007,0x0004003d,0x00000007,0x0000000c,0x0000000b,0x00050081,0x00000007,0x0000000d,
-    0x00000009,0x0000000c,0x0003003e,0x00000007,0x0000000d,0x000100fd,0x00010038
+    0x0008000f,0x00000004,0x00000004,0x6e69616d,0x00000000,0x00000011,0x00000015,0x00000018,
+    0x00030010,0x00000004,0x00000007,0x00030003,0x00000002,0x000001c2,0x00040005,0x00000004,
+    0x6e69616d,0x00000000,0x00030005,0x00000009,0x00786574,0x00040005,0x0000000d,0x78655475,
+    0x00000000,0x00030005,0x00000011,0x00765576,0x00050005,0x00000015,0x4374756f,0x726f6c6f,
+    0x00000000,0x00040005,0x00000018,0x6c6f4376,0x0000726f,0x00040047,0x0000000d,0x00000021,
+    0x00000000,0x00040047,0x0000000d,0x00000022,0x00000000,0x00040047,0x00000011,0x0000001e,
+    0x00000000,0x00040047,0x00000015,0x0000001e,0x00000000,0x00040047,0x00000018,0x0000001e,
+    0x00000001,0x00020013,0x00000002,0x00030021,0x00000003,0x00000002,0x00030016,0x00000006,
+    0x00000020,0x00040017,0x00000007,0x00000006,0x00000004,0x00040020,0x00000008,0x00000007,
+    0x00000007,0x00090019,0x0000000a,0x00000006,0x00000001,0x00000000,0x00000000,0x00000000,
+    0x00000001,0x00000000,0x0003001b,0x0000000b,0x0000000a,0x00040020,0x0000000c,0x00000000,
+    0x0000000b,0x0004003b,0x0000000c,0x0000000d,0x00000000,0x00040017,0x0000000f,0x00000006,
+    0x00000002,0x00040020,0x00000010,0x00000001,0x0000000f,0x0004003b,0x00000010,0x00000011,
+    0x00000001,0x00040020,0x00000014,0x00000003,0x00000007,0x0004003b,0x00000014,0x00000015,
+    0x00000003,0x00040020,0x00000017,0x00000001,0x00000007,0x0004003b,0x00000017,0x00000018,
+    0x00000001,0x00050036,0x00000002,0x00000004,0x00000000,0x00000003,0x000200f8,0x00000005,
+    0x0004003b,0x00000008,0x00000009,0x00000007,0x0004003d,0x0000000b,0x0000000e,0x0000000d,
+    0x0004003d,0x0000000f,0x00000012,0x00000011,0x00050057,0x00000007,0x00000013,0x0000000e,
+    0x00000012,0x0003003e,0x00000009,0x00000013,0x0004003d,0x00000007,0x00000016,0x00000009,
+    0x0004003d,0x00000007,0x00000019,0x00000018,0x00050085,0x00000007,0x0000001a,0x00000016,
+    0x00000019,0x0003003e,0x00000015,0x0000001a,0x000100fd,0x00010038
 };
 static const size_t ui_frag_spv_size = sizeof(ui_frag_spv);
 
@@ -949,6 +981,7 @@ bool createSwapchainForWindow(void* sdlWindow, VkSurfaceKHR surface, u32 width, 
 	ctx.vertexBufferMemory = VK_NULL_HANDLE;
 	ctx.vertexBufferCount = 0;
 
+	ctx.vSync = vSync;
 	g_swapchains[sdlWindow] = ctx;
 	return true;
 }
@@ -968,22 +1001,20 @@ void destroySwapchainForWindow(void* sdlWindow)
 	if (ctx.descriptorPool != VK_NULL_HANDLE) { vkDestroyDescriptorPool(device, ctx.descriptorPool, nullptr); ctx.descriptorPool = VK_NULL_HANDLE; }
 	if (ctx.descriptorSetLayout != VK_NULL_HANDLE) { vkDestroyDescriptorSetLayout(device, ctx.descriptorSetLayout, nullptr); ctx.descriptorSetLayout = VK_NULL_HANDLE; }
 	if (ctx.sampler != VK_NULL_HANDLE) { vkDestroySampler(device, ctx.sampler, nullptr); ctx.sampler = VK_NULL_HANDLE; }
+	
+	if (ctx.commandBuffer != VK_NULL_HANDLE) { vkFreeCommandBuffers(device, commandPool, 1, &ctx.commandBuffer); ctx.commandBuffer = VK_NULL_HANDLE; }
+	if (ctx.renderFinishedSemaphore != VK_NULL_HANDLE) { vkDestroySemaphore(device, ctx.renderFinishedSemaphore, nullptr); ctx.renderFinishedSemaphore = VK_NULL_HANDLE; }
+	if (ctx.imageAvailableSemaphore != VK_NULL_HANDLE) { vkDestroySemaphore(device, ctx.imageAvailableSemaphore, nullptr); ctx.imageAvailableSemaphore = VK_NULL_HANDLE; }
+	if (ctx.inFlightFence != VK_NULL_HANDLE) { vkDestroyFence(device, ctx.inFlightFence, nullptr); ctx.inFlightFence = VK_NULL_HANDLE; }
 
-	for (auto fb : ctx.framebuffers) if (fb) vkDestroyFramebuffer(device, fb, nullptr);
+	for (auto fb : ctx.framebuffers) vkDestroyFramebuffer(device, fb, nullptr);
 	ctx.framebuffers.clear();
-
 	if (ctx.renderPass != VK_NULL_HANDLE) { vkDestroyRenderPass(device, ctx.renderPass, nullptr); ctx.renderPass = VK_NULL_HANDLE; }
-
-	for (auto iv : ctx.imageViews) if (iv) vkDestroyImageView(device, iv, nullptr);
+	for (auto iv : ctx.imageViews) vkDestroyImageView(device, iv, nullptr);
 	ctx.imageViews.clear();
 
 	if (ctx.swapchain != VK_NULL_HANDLE) { vkDestroySwapchainKHR(device, ctx.swapchain, nullptr); ctx.swapchain = VK_NULL_HANDLE; }
 
-	if (ctx.imageAvailableSemaphore != VK_NULL_HANDLE) { vkDestroySemaphore(device, ctx.imageAvailableSemaphore, nullptr); ctx.imageAvailableSemaphore = VK_NULL_HANDLE; }
-	if (ctx.renderFinishedSemaphore != VK_NULL_HANDLE) { vkDestroySemaphore(device, ctx.renderFinishedSemaphore, nullptr); ctx.renderFinishedSemaphore = VK_NULL_HANDLE; }
-	if (ctx.inFlightFence != VK_NULL_HANDLE) { vkDestroyFence(device, ctx.inFlightFence, nullptr); ctx.inFlightFence = VK_NULL_HANDLE; }
-
-	// destroy surface is responsibility of caller
 	g_swapchains.erase(it);
 }
 
@@ -1010,6 +1041,16 @@ struct DrawSubmission
 };
 static std::map<void*, DrawSubmission> g_drawSubmissions;
 
+static void vulkanSetCurrentWindowInternal(void* wnd)
+{
+	g_currentWindow = wnd;
+}
+
+void vulkanSetCurrentWindow(void* sdlWindow)
+{
+	g_currentWindow = sdlWindow;
+}
+
 static void setViewport(const Point& windowSize, const Rect& viewport)
 {
 	currentViewport = viewport;
@@ -1023,7 +1064,7 @@ static void clearBackbuffer(const Color& color)
 static void draw(Vertex* vertices, u32 vertexCount, struct RenderBatch* batches, u32 batchCount)
 {
 	if (!device || !vertices || vertexCount == 0) return;
-	void* wnd = (void*)nullptr;
+	void* wnd = g_currentWindow;
 	auto& sub = g_drawSubmissions[wnd];
 	sub.vertices.assign(vertices, vertices + vertexCount);
 	sub.batches.clear();
@@ -1041,31 +1082,48 @@ bool presentSwapchainForWindow(void* sdlWindow)
 	vkWaitForFences(device, 1, &ctx.inFlightFence, VK_TRUE, UINT64_MAX);
 	vkResetFences(device, 1, &ctx.inFlightFence);
 
+	if (ctx.descriptorPool != VK_NULL_HANDLE)
+		vkResetDescriptorPool(device, ctx.descriptorPool, 0);
+
 	uint32_t imageIndex;
 	VkResult res = vkAcquireNextImageKHR(device, ctx.swapchain, UINT64_MAX, ctx.imageAvailableSemaphore, VK_NULL_HANDLE, &imageIndex);
 	if (res == VK_ERROR_OUT_OF_DATE_KHR)
 	{
-		// TODO: handle recreation
+		vkDeviceWaitIdle(device);
+		VkSurfaceKHR surface = ctx.surface;
+		bool vSync = ctx.vSync;
+		int w, h;
+		SDL_GetWindowSizeInPixels((SDL_Window*)sdlWindow, &w, &h);
+		if (w > 0 && h > 0)
+		{
+			destroySwapchainForWindow(sdlWindow);
+			createSwapchainForWindow(sdlWindow, surface, (u32)w, (u32)h, vSync);
+		}
 		return false;
 	}
-	else if (res != VK_SUCCESS && res != VK_SUBOPTIMAL_KHR)
+	else if (res == VK_SUBOPTIMAL_KHR)
+	{
+		// ignore for now to avoid infinite loops
+	}
+	else if (res != VK_SUCCESS)
 	{
 		printf("Failed to acquire swapchain image\n");
 		return false;
 	}
 
-	void* key = nullptr;
+	void* key = sdlWindow;
 	auto dit = g_drawSubmissions.find(key);
-	if (dit == g_drawSubmissions.end()) return false;
-	DrawSubmission& sub = dit->second;
-	if (sub.vertices.empty()) return true;
+	DrawSubmission* sub = (dit != g_drawSubmissions.end()) ? &dit->second : nullptr;
 
-	ensureVertexBuffer(ctx, (u32)sub.vertices.size());
-	// copy vertex data
-	void* data;
-	vkMapMemory(device, ctx.vertexBufferMemory, 0, sizeof(Vertex) * sub.vertices.size(), 0, &data);
-	memcpy(data, sub.vertices.data(), sizeof(Vertex) * sub.vertices.size());
-	vkUnmapMemory(device, ctx.vertexBufferMemory);
+	if (sub && !sub->vertices.empty())
+	{
+		ensureVertexBuffer(ctx, (u32)sub->vertices.size());
+		// copy vertex data
+		void* data;
+		vkMapMemory(device, ctx.vertexBufferMemory, 0, sizeof(Vertex) * sub->vertices.size(), 0, &data);
+		memcpy(data, sub->vertices.data(), sizeof(Vertex) * sub->vertices.size());
+		vkUnmapMemory(device, ctx.vertexBufferMemory);
+	}
 
 	// record command buffer
 	VkCommandBufferBeginInfo cbbi{};
@@ -1087,7 +1145,7 @@ bool presentSwapchainForWindow(void* sdlWindow)
 
 	vkCmdBeginRenderPass(ctx.commandBuffer, &rpbi, VK_SUBPASS_CONTENTS_INLINE);
 
-	if (ctx.pipeline != VK_NULL_HANDLE)
+	if (sub && !sub->vertices.empty() && ctx.pipeline != VK_NULL_HANDLE)
 	{
 		vkCmdBindPipeline(ctx.commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, ctx.pipeline);
 		VkDeviceSize offsets[] = { 0 };
@@ -1096,9 +1154,10 @@ bool presentSwapchainForWindow(void* sdlWindow)
 		float pc[4] = { (float)ctx.extent.width, (float)ctx.extent.height, 0.0f, 0.0f };
 		vkCmdPushConstants(ctx.commandBuffer, ctx.pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(pc), pc);
 
-		for (size_t b = 0; b < sub.batches.size(); ++b)
+		for (size_t b = 0; b < sub->batches.size(); ++b)
 		{
-			RenderBatch& rb = sub.batches[b];
+			RenderBatch& rb = sub->batches[b];
+			if (rb.vertexCount == 0) continue;
 			VkDescriptorSet descSet = VK_NULL_HANDLE;
 			if (ctx.descriptorPool != VK_NULL_HANDLE && ctx.descriptorSetLayout != VK_NULL_HANDLE)
 			{
@@ -1130,6 +1189,7 @@ bool presentSwapchainForWindow(void* sdlWindow)
 					wds.descriptorCount = 1;
 					wds.pImageInfo = &imgInfo;
 					vkUpdateDescriptorSets(device, 1, &wds, 0, nullptr);
+					vkCmdBindDescriptorSets(ctx.commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, ctx.pipelineLayout, 0, 1, &descSet, 0, nullptr);
 				}
 			}
 
@@ -1168,13 +1228,29 @@ bool presentSwapchainForWindow(void* sdlWindow)
 	presentInfo.pResults = nullptr;
 
 	VkResult pres = vkQueuePresentKHR(graphicsQueue, &presentInfo);
-	if (pres == VK_ERROR_OUT_OF_DATE_KHR || pres == VK_SUBOPTIMAL_KHR)
+	if (pres == VK_ERROR_OUT_OF_DATE_KHR)
 	{
-		// TODO: recreate swapchain
+		vkDeviceWaitIdle(device);
+		VkSurfaceKHR surface = ctx.surface;
+		bool vSync = ctx.vSync;
+		int w, h;
+		SDL_GetWindowSizeInPixels((SDL_Window*)sdlWindow, &w, &h);
+		if (w > 0 && h > 0)
+		{
+			destroySwapchainForWindow(sdlWindow);
+			createSwapchainForWindow(sdlWindow, surface, (u32)w, (u32)h, vSync);
+		}
+		return false;
 	}
-	if (ctx.descriptorPool != VK_NULL_HANDLE)
-		vkResetDescriptorPool(device, ctx.descriptorPool, 0);
-
+	else if (pres == VK_SUBOPTIMAL_KHR)
+	{
+		// ignore for now
+	}
+	else if (pres != VK_SUCCESS)
+	{
+		printf("Failed to present swapchain image %d\n", pres);
+		return false;
+	}
 	return true;
 }
 

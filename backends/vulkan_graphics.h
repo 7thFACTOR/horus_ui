@@ -16,7 +16,7 @@ struct VulkanTexture
 	void resize(u32 newWidth, u32 newHeight);
 	void updateData(Rgba32* pixels);
 	void updateRectData(const Rect& rect, Rgba32* pixels);
-	HTexture getHandle() const { return (HTexture)handle; }
+	HTexture getHandle() const { return (HTexture)this; }
 	VkImage getImage() const { return handle; }
 	VkImageView getView() const { return view; }
 	u32 getWidth() const { return width; }
@@ -67,5 +67,8 @@ bool presentSwapchainForWindow(void* sdlWindow);
 
 // Optional: call to set a global default white texture for UI
 void setDefaultWhiteTexture(VulkanTexture* tex);
+
+// set the current window for draw submissions
+void vulkanSetCurrentWindow(void* sdlWindow);
 
 }
