@@ -150,9 +150,9 @@ static void finishRow(TableState& state)
 
 		// Respect external advances (virtual list). If ctx->position.y already moved past our computed row end,
 		// adopt the external position instead of forcing ctx->position.y backwards.
-		std::printf("[TABLE] finishRow row=%u rowStartY=%.3f maxRowH=%.3f computedRowY=%.3f ctx.pos.y=%.3f rowSeparators.back()=%.3f\n",
+		/*std::printf("[TABLE] finishRow row=%u rowStartY=%.3f maxRowH=%.3f computedRowY=%.3f ctx.pos.y=%.3f rowSeparators.back()=%.3f\n",
 			(unsigned)state.currentRow, state.rowStartY, state.currentMaxRowHeight, state.currentRowY, ctx->position.y,
-			(!state.rowSeparators.empty() ? state.rowSeparators.back() : -1.0f));
+			(!state.rowSeparators.empty() ? state.rowSeparators.back() : -1.0f));*/
 
 		if (ctx->position.y < state.currentRowY)
 			ctx->position.y = state.currentRowY;
@@ -1105,8 +1105,8 @@ void nextRow()
 			state.rowSeparators.push_back(ctx->position.y);
 		}
 
-		std::printf("[TABLE] nextRow detected virtual skip ctx.pos.y=%.3f oldCurrentRowY=%.3f newCurrentRowY=%.3f lastSeparator=%.3f\n",
-			ctx->position.y, state.currentRowY, ctx->position.y, state.rowSeparators.back());
+		/*std::printf("[TABLE] nextRow detected virtual skip ctx.pos.y=%.3f oldCurrentRowY=%.3f newCurrentRowY=%.3f lastSeparator=%.3f\n",
+			ctx->position.y, state.currentRowY, ctx->position.y, state.rowSeparators.back());*/
 
 		state.currentRowY = ctx->position.y;
 	}

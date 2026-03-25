@@ -417,6 +417,8 @@ void VulkanVertexBuffer::destroy()
 // -------------------------------------------------------------------------
 // Swapchain & pipeline per-window
 // -------------------------------------------------------------------------
+#define MAX_FRAMES_IN_FLIGHT 2
+
 struct SwapchainContext
 {
 	VkSurfaceKHR surface = VK_NULL_HANDLE;
@@ -432,19 +434,23 @@ struct SwapchainContext
 	VkPipeline pipeline = VK_NULL_HANDLE;
 
 	VkDescriptorSetLayout descriptorSetLayout = VK_NULL_HANDLE;
-	VkDescriptorPool descriptorPool = VK_NULL_HANDLE;
+	VkDescriptorPool descriptorPools[MAX_FRAMES_IN_FLIGHT];
 	VkSampler sampler = VK_NULL_HANDLE;
 
-	// per-swapchain synchronization (single in-flight)
-	VkSemaphore imageAvailableSemaphore = VK_NULL_HANDLE;
-	VkSemaphore renderFinishedSemaphore = VK_NULL_HANDLE;
-	VkFence inFlightFence = VK_NULL_HANDLE;
+	// per-frame and per-image synchronization
+	std::vector<VkSemaphore> imageAvailableSemaphores;
+	VkSemaphore renderFinishedSemaphores[MAX_FRAMES_IN_FLIGHT];
+	VkFence inFlightFences[MAX_FRAMES_IN_FLIGHT];
+	std::vector<VkFence> imagesInFlight;
+	uint32_t currentFrame = 0;
+	uint32_t acquireSemIndex = 0;
 
-	// command buffer to record rendering each frame
-	VkCommandBuffer commandBuffer = VK_NULL_HANDLE;
-	VkBuffer vertexBuffer = VK_NULL_HANDLE;
-	VkDeviceMemory vertexBufferMemory = VK_NULL_HANDLE;
-	u32 vertexBufferCount = 0;
+	// command buffers
+	VkCommandBuffer commandBuffers[MAX_FRAMES_IN_FLIGHT];
+
+	VkBuffer vertexBuffers[MAX_FRAMES_IN_FLIGHT];
+	VkDeviceMemory vertexBufferMemories[MAX_FRAMES_IN_FLIGHT];
+	u32 vertexBufferCounts[MAX_FRAMES_IN_FLIGHT];
 
 	bool vSync = true;
 };
@@ -793,22 +799,6 @@ static bool createPipelineForSwapchain(SwapchainContext& ctx)
 		checkErrorVK(vkCreateSampler(device, &sci, nullptr, &ctx.sampler), "create sampler");
 	}
 
-	// create descriptor pool for one combined image sampler
-	if (ctx.descriptorPool == VK_NULL_HANDLE)
-	{
-		VkDescriptorPoolSize poolSize{};
-		poolSize.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-		poolSize.descriptorCount = 1;
-
-		VkDescriptorPoolCreateInfo dpci{};
-		dpci.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-		dpci.poolSizeCount = 1;
-		dpci.pPoolSizes = &poolSize;
-		dpci.maxSets = 1;
-
-		checkErrorVK(vkCreateDescriptorPool(device, &dpci, nullptr, &ctx.descriptorPool), "create descriptor pool");
-	}
-
 	return true;
 }
 
@@ -882,8 +872,7 @@ bool createSwapchainForWindow(void* sdlWindow, VkSurfaceKHR surface, u32 width, 
 
 	SwapchainContext ctx{};
 	ctx.surface = surface;
-	ctx.extent = { (uint32_t)width, (uint32_t)height };
-	ctx.format = VK_FORMAT_R8G8B8A8_UNORM;
+	ctx.vSync = vSync;
 
 	// query surface capabilities & present modes
 	VkSurfaceCapabilitiesKHR caps{};
@@ -892,6 +881,18 @@ bool createSwapchainForWindow(void* sdlWindow, VkSurfaceKHR surface, u32 width, 
 		printf("Failed to query surface capabilities\n");
 		return false;
 	}
+
+	if (caps.currentExtent.width != 0xFFFFFFFF)
+	{
+		ctx.extent = caps.currentExtent;
+	}
+	else
+	{
+		ctx.extent.width = std::max(caps.minImageExtent.width, std::min(caps.maxImageExtent.width, (uint32_t)width));
+		ctx.extent.height = std::max(caps.minImageExtent.height, std::min(caps.maxImageExtent.height, (uint32_t)height));
+	}
+
+	ctx.format = VK_FORMAT_R8G8B8A8_UNORM;
 
 	// choose present mode
 	VkPresentModeKHR presentMode = VK_PRESENT_MODE_FIFO_KHR; // FIFO = vsync
@@ -951,23 +952,47 @@ bool createSwapchainForWindow(void* sdlWindow, VkSurfaceKHR surface, u32 width, 
 	if (!createFramebuffersForSwapchain(ctx)) return false;
 
 	// allocate one command buffer
+	// allocate command buffers
 	VkCommandBufferAllocateInfo cbai{};
 	cbai.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
 	cbai.commandPool = commandPool;
 	cbai.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-	cbai.commandBufferCount = 1;
-	vkAllocateCommandBuffers(device, &cbai, &ctx.commandBuffer);
+	cbai.commandBufferCount = MAX_FRAMES_IN_FLIGHT;
+	vkAllocateCommandBuffers(device, &cbai, ctx.commandBuffers);
 
 	// create sync objects
 	VkSemaphoreCreateInfo sciInfo{};
 	sciInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-	vkCreateSemaphore(device, &sciInfo, nullptr, &ctx.imageAvailableSemaphore);
-	vkCreateSemaphore(device, &sciInfo, nullptr, &ctx.renderFinishedSemaphore);
+	VkFenceCreateInfo fciInfo{};
+	fciInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+	fciInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
 
-	VkFenceCreateInfo fci{};
-	fci.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-	fci.flags = VK_FENCE_CREATE_SIGNALED_BIT;
-	vkCreateFence(device, &fci, nullptr, &ctx.inFlightFence);
+	ctx.imageAvailableSemaphores.resize(ctx.images.size());
+	for (size_t i = 0; i < ctx.images.size(); i++)
+	{
+		vkCreateSemaphore(device, &sciInfo, nullptr, &ctx.imageAvailableSemaphores[i]);
+	}
+
+	for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
+	{
+		vkCreateSemaphore(device, &sciInfo, nullptr, &ctx.renderFinishedSemaphores[i]);
+		vkCreateFence(device, &fciInfo, nullptr, &ctx.inFlightFences[i]);
+	}
+	ctx.imagesInFlight.assign(ctx.images.size(), VK_NULL_HANDLE);
+	ctx.currentFrame = 0;
+
+	// create descriptor pools
+	VkDescriptorPoolSize poolSizes[] = { { VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1000 } };
+	VkDescriptorPoolCreateInfo poolInfo{};
+	poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+	poolInfo.poolSizeCount = 1;
+	poolInfo.pPoolSizes = poolSizes;
+	poolInfo.maxSets = 1000;
+
+	for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
+	{
+		vkCreateDescriptorPool(device, &poolInfo, nullptr, &ctx.descriptorPools[i]);
+	}
 
 	// create pipeline & descriptor layouts (requires shaders)
 	if (!createPipelineForSwapchain(ctx))
@@ -977,9 +1002,12 @@ bool createSwapchainForWindow(void* sdlWindow, VkSurfaceKHR surface, u32 width, 
 	}
 
 	// store vertex buffer placeholders (none yet)
-	ctx.vertexBuffer = VK_NULL_HANDLE;
-	ctx.vertexBufferMemory = VK_NULL_HANDLE;
-	ctx.vertexBufferCount = 0;
+	for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
+	{
+		ctx.vertexBuffers[i] = VK_NULL_HANDLE;
+		ctx.vertexBufferMemories[i] = VK_NULL_HANDLE;
+		ctx.vertexBufferCounts[i] = 0;
+	}
 
 	ctx.vSync = vSync;
 	g_swapchains[sdlWindow] = ctx;
@@ -993,19 +1021,28 @@ void destroySwapchainForWindow(void* sdlWindow)
 	SwapchainContext& ctx = it->second;
 	vkDeviceWaitIdle(device);
 
-	if (ctx.vertexBuffer != VK_NULL_HANDLE) { vkDestroyBuffer(device, ctx.vertexBuffer, nullptr); ctx.vertexBuffer = VK_NULL_HANDLE; }
-	if (ctx.vertexBufferMemory != VK_NULL_HANDLE) { vkFreeMemory(device, ctx.vertexBufferMemory, nullptr); ctx.vertexBufferMemory = VK_NULL_HANDLE; }
+	for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
+	{
+		if (ctx.vertexBuffers[i] != VK_NULL_HANDLE) { vkDestroyBuffer(device, ctx.vertexBuffers[i], nullptr); ctx.vertexBuffers[i] = VK_NULL_HANDLE; }
+		if (ctx.vertexBufferMemories[i] != VK_NULL_HANDLE) { vkFreeMemory(device, ctx.vertexBufferMemories[i], nullptr); ctx.vertexBufferMemories[i] = VK_NULL_HANDLE; }
+	}
 
 	if (ctx.pipeline != VK_NULL_HANDLE) { vkDestroyPipeline(device, ctx.pipeline, nullptr); ctx.pipeline = VK_NULL_HANDLE; }
 	if (ctx.pipelineLayout != VK_NULL_HANDLE) { vkDestroyPipelineLayout(device, ctx.pipelineLayout, nullptr); ctx.pipelineLayout = VK_NULL_HANDLE; }
-	if (ctx.descriptorPool != VK_NULL_HANDLE) { vkDestroyDescriptorPool(device, ctx.descriptorPool, nullptr); ctx.descriptorPool = VK_NULL_HANDLE; }
+	for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
+	{
+		if (ctx.descriptorPools[i] != VK_NULL_HANDLE) { vkDestroyDescriptorPool(device, ctx.descriptorPools[i], nullptr); ctx.descriptorPools[i] = VK_NULL_HANDLE; }
+	}
 	if (ctx.descriptorSetLayout != VK_NULL_HANDLE) { vkDestroyDescriptorSetLayout(device, ctx.descriptorSetLayout, nullptr); ctx.descriptorSetLayout = VK_NULL_HANDLE; }
 	if (ctx.sampler != VK_NULL_HANDLE) { vkDestroySampler(device, ctx.sampler, nullptr); ctx.sampler = VK_NULL_HANDLE; }
 	
-	if (ctx.commandBuffer != VK_NULL_HANDLE) { vkFreeCommandBuffers(device, commandPool, 1, &ctx.commandBuffer); ctx.commandBuffer = VK_NULL_HANDLE; }
-	if (ctx.renderFinishedSemaphore != VK_NULL_HANDLE) { vkDestroySemaphore(device, ctx.renderFinishedSemaphore, nullptr); ctx.renderFinishedSemaphore = VK_NULL_HANDLE; }
-	if (ctx.imageAvailableSemaphore != VK_NULL_HANDLE) { vkDestroySemaphore(device, ctx.imageAvailableSemaphore, nullptr); ctx.imageAvailableSemaphore = VK_NULL_HANDLE; }
-	if (ctx.inFlightFence != VK_NULL_HANDLE) { vkDestroyFence(device, ctx.inFlightFence, nullptr); ctx.inFlightFence = VK_NULL_HANDLE; }
+	vkFreeCommandBuffers(device, commandPool, MAX_FRAMES_IN_FLIGHT, ctx.commandBuffers);
+	for (auto s : ctx.imageAvailableSemaphores) vkDestroySemaphore(device, s, nullptr);
+	for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
+	{
+		vkDestroySemaphore(device, ctx.renderFinishedSemaphores[i], nullptr);
+		vkDestroyFence(device, ctx.inFlightFences[i], nullptr);
+	}
 
 	for (auto fb : ctx.framebuffers) vkDestroyFramebuffer(device, fb, nullptr);
 	ctx.framebuffers.clear();
@@ -1019,17 +1056,17 @@ void destroySwapchainForWindow(void* sdlWindow)
 }
 
 // update/create vertex buffer for context
-static bool ensureVertexBuffer(SwapchainContext& ctx, u32 vertexCount)
+static bool ensureVertexBuffer(SwapchainContext& ctx, u32 frameIndex, u32 vertexCount)
 {
-	if (ctx.vertexBufferCount >= vertexCount) return true;
+	if (ctx.vertexBufferCounts[frameIndex] >= vertexCount) return true;
 
 	// destroy old
-	if (ctx.vertexBuffer != VK_NULL_HANDLE) { vkDestroyBuffer(device, ctx.vertexBuffer, nullptr); ctx.vertexBuffer = VK_NULL_HANDLE; }
-	if (ctx.vertexBufferMemory != VK_NULL_HANDLE) { vkFreeMemory(device, ctx.vertexBufferMemory, nullptr); ctx.vertexBufferMemory = VK_NULL_HANDLE; }
+	if (ctx.vertexBuffers[frameIndex] != VK_NULL_HANDLE) { vkDestroyBuffer(device, ctx.vertexBuffers[frameIndex], nullptr); ctx.vertexBuffers[frameIndex] = VK_NULL_HANDLE; }
+	if (ctx.vertexBufferMemories[frameIndex] != VK_NULL_HANDLE) { vkFreeMemory(device, ctx.vertexBufferMemories[frameIndex], nullptr); ctx.vertexBufferMemories[frameIndex] = VK_NULL_HANDLE; }
 
 	VkDeviceSize size = sizeof(Vertex) * vertexCount;
-	createBuffer(size, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, ctx.vertexBuffer, ctx.vertexBufferMemory);
-	ctx.vertexBufferCount = vertexCount;
+	createBuffer(size, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, ctx.vertexBuffers[frameIndex], ctx.vertexBufferMemories[frameIndex]);
+	ctx.vertexBufferCounts[frameIndex] = vertexCount;
 	return true;
 }
 
@@ -1075,18 +1112,35 @@ static void draw(Vertex* vertices, u32 vertexCount, struct RenderBatch* batches,
 bool presentSwapchainForWindow(void* sdlWindow)
 {
 	auto it = g_swapchains.find(sdlWindow);
+	if (it == g_swapchains.end())
+	{
+		VkSurfaceKHR surface = VK_NULL_HANDLE;
+		if (createSurfaceForSdlWindow(sdlWindow, &surface))
+		{
+			int w, h;
+			SDL_GetWindowSizeInPixels((SDL_Window*)sdlWindow, &w, &h);
+			if (w > 0 && h > 0)
+			{
+				createSwapchainForWindow(sdlWindow, surface, (u32)w, (u32)h, true);
+				it = g_swapchains.find(sdlWindow);
+			}
+		}
+	}
 	if (it == g_swapchains.end()) return false;
 	SwapchainContext& ctx = it->second;
-	if (!ctx.swapchain) return false;
+	if (!ctx.swapchain || ctx.extent.width == 0 || ctx.extent.height == 0) return false;
 
-	vkWaitForFences(device, 1, &ctx.inFlightFence, VK_TRUE, UINT64_MAX);
-	vkResetFences(device, 1, &ctx.inFlightFence);
+	// 1. Wait for the host to finish using the synchronization objects for this frame index
+	vkWaitForFences(device, 1, &ctx.inFlightFences[ctx.currentFrame], VK_TRUE, UINT64_MAX);
 
-	if (ctx.descriptorPool != VK_NULL_HANDLE)
-		vkResetDescriptorPool(device, ctx.descriptorPool, 0);
-
+	// 2. Acquire an image from the swapchain
 	uint32_t imageIndex;
-	VkResult res = vkAcquireNextImageKHR(device, ctx.swapchain, UINT64_MAX, ctx.imageAvailableSemaphore, VK_NULL_HANDLE, &imageIndex);
+	// We use the semaphore corresponding to the NEXT acquisition slot. 
+	// Since we don't know the image index yet, we use a per-frame acquisition semaphore.
+	VkSemaphore acquireSemaphore = ctx.imageAvailableSemaphores[ctx.acquireSemIndex];
+	
+	VkResult res = vkAcquireNextImageKHR(device, ctx.swapchain, UINT64_MAX, acquireSemaphore, VK_NULL_HANDLE, &imageIndex);
+	
 	if (res == VK_ERROR_OUT_OF_DATE_KHR)
 	{
 		vkDeviceWaitIdle(device);
@@ -1101,15 +1155,22 @@ bool presentSwapchainForWindow(void* sdlWindow)
 		}
 		return false;
 	}
-	else if (res == VK_SUBOPTIMAL_KHR)
+	else if (res != VK_SUCCESS && res != VK_SUBOPTIMAL_KHR)
 	{
-		// ignore for now to avoid infinite loops
-	}
-	else if (res != VK_SUCCESS)
-	{
-		printf("Failed to acquire swapchain image\n");
+		printf("Vulkan: Failed to acquire swapchain image\n");
 		return false;
 	}
+
+	// 3. Synchronization for the acquired image
+	if (ctx.imagesInFlight[imageIndex] != VK_NULL_HANDLE)
+	{
+		vkWaitForFences(device, 1, &ctx.imagesInFlight[imageIndex], VK_TRUE, UINT64_MAX);
+	}
+	ctx.imagesInFlight[imageIndex] = ctx.inFlightFences[ctx.currentFrame];
+
+	// Reset descriptor pool for this frame
+	if (ctx.descriptorPools[ctx.currentFrame] != VK_NULL_HANDLE)
+		vkResetDescriptorPool(device, ctx.descriptorPools[ctx.currentFrame], 0);
 
 	void* key = sdlWindow;
 	auto dit = g_drawSubmissions.find(key);
@@ -1117,19 +1178,22 @@ bool presentSwapchainForWindow(void* sdlWindow)
 
 	if (sub && !sub->vertices.empty())
 	{
-		ensureVertexBuffer(ctx, (u32)sub->vertices.size());
+		ensureVertexBuffer(ctx, ctx.currentFrame, (u32)sub->vertices.size());
 		// copy vertex data
 		void* data;
-		vkMapMemory(device, ctx.vertexBufferMemory, 0, sizeof(Vertex) * sub->vertices.size(), 0, &data);
+		vkMapMemory(device, ctx.vertexBufferMemories[ctx.currentFrame], 0, sizeof(Vertex) * sub->vertices.size(), 0, &data);
 		memcpy(data, sub->vertices.data(), sizeof(Vertex) * sub->vertices.size());
-		vkUnmapMemory(device, ctx.vertexBufferMemory);
+		vkUnmapMemory(device, ctx.vertexBufferMemories[ctx.currentFrame]);
 	}
 
 	// record command buffer
+	VkCommandBuffer commandBuffer = ctx.commandBuffers[ctx.currentFrame];
+	vkResetFences(device, 1, &ctx.inFlightFences[ctx.currentFrame]);
+
 	VkCommandBufferBeginInfo cbbi{};
 	cbbi.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 	cbbi.flags = 0;
-	vkBeginCommandBuffer(ctx.commandBuffer, &cbbi);
+	vkBeginCommandBuffer(commandBuffer, &cbbi);
 
 	VkClearValue clearValue{};
 	clearValue.color = { { clearColor.r, clearColor.g, clearColor.b, clearColor.a } };
@@ -1143,27 +1207,27 @@ bool presentSwapchainForWindow(void* sdlWindow)
 	rpbi.clearValueCount = 1;
 	rpbi.pClearValues = &clearValue;
 
-	vkCmdBeginRenderPass(ctx.commandBuffer, &rpbi, VK_SUBPASS_CONTENTS_INLINE);
+	vkCmdBeginRenderPass(commandBuffer, &rpbi, VK_SUBPASS_CONTENTS_INLINE);
 
 	if (sub && !sub->vertices.empty() && ctx.pipeline != VK_NULL_HANDLE)
 	{
-		vkCmdBindPipeline(ctx.commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, ctx.pipeline);
+		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, ctx.pipeline);
 		VkDeviceSize offsets[] = { 0 };
-		vkCmdBindVertexBuffers(ctx.commandBuffer, 0, 1, &ctx.vertexBuffer, offsets);
+		vkCmdBindVertexBuffers(commandBuffer, 0, 1, &ctx.vertexBuffers[ctx.currentFrame], offsets);
 
 		float pc[4] = { (float)ctx.extent.width, (float)ctx.extent.height, 0.0f, 0.0f };
-		vkCmdPushConstants(ctx.commandBuffer, ctx.pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(pc), pc);
+		vkCmdPushConstants(commandBuffer, ctx.pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(pc), pc);
 
 		for (size_t b = 0; b < sub->batches.size(); ++b)
 		{
 			RenderBatch& rb = sub->batches[b];
 			if (rb.vertexCount == 0) continue;
 			VkDescriptorSet descSet = VK_NULL_HANDLE;
-			if (ctx.descriptorPool != VK_NULL_HANDLE && ctx.descriptorSetLayout != VK_NULL_HANDLE)
+			if (ctx.descriptorPools[ctx.currentFrame] != VK_NULL_HANDLE && ctx.descriptorSetLayout != VK_NULL_HANDLE)
 			{
 				VkDescriptorSetAllocateInfo dsai{};
 				dsai.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-				dsai.descriptorPool = ctx.descriptorPool;
+				dsai.descriptorPool = ctx.descriptorPools[ctx.currentFrame];
 				dsai.descriptorSetCount = 1;
 				dsai.pSetLayouts = &ctx.descriptorSetLayout;
 				if (vkAllocateDescriptorSets(device, &dsai, &descSet) == VK_SUCCESS)
@@ -1189,38 +1253,43 @@ bool presentSwapchainForWindow(void* sdlWindow)
 					wds.descriptorCount = 1;
 					wds.pImageInfo = &imgInfo;
 					vkUpdateDescriptorSets(device, 1, &wds, 0, nullptr);
-					vkCmdBindDescriptorSets(ctx.commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, ctx.pipelineLayout, 0, 1, &descSet, 0, nullptr);
+					vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, ctx.pipelineLayout, 0, 1, &descSet, 0, nullptr);
+				}
+				else
+				{
+					static bool printedAllocate = false;
+					if (!printedAllocate) { printf("Vulkan: Failed to allocate descriptor set for window %p\n", sdlWindow); printedAllocate = true; }
 				}
 			}
 
-			vkCmdDraw(ctx.commandBuffer, rb.vertexCount, 1, rb.startVertexIndex, 0);
+			vkCmdDraw(commandBuffer, rb.vertexCount, 1, rb.startVertexIndex, 0);
 		}
 	}
 
-	vkCmdEndRenderPass(ctx.commandBuffer);
-	vkEndCommandBuffer(ctx.commandBuffer);
+	vkCmdEndRenderPass(commandBuffer);
+	vkEndCommandBuffer(commandBuffer);
 
 	VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
 	VkSubmitInfo submitInfo{};
 	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 	submitInfo.waitSemaphoreCount = 1;
-	submitInfo.pWaitSemaphores = &ctx.imageAvailableSemaphore;
+	submitInfo.pWaitSemaphores = &acquireSemaphore;
 	submitInfo.pWaitDstStageMask = waitStages;
 	submitInfo.commandBufferCount = 1;
-	submitInfo.pCommandBuffers = &ctx.commandBuffer;
+	submitInfo.pCommandBuffers = &commandBuffer;
 	submitInfo.signalSemaphoreCount = 1;
-	submitInfo.pSignalSemaphores = &ctx.renderFinishedSemaphore;
+	submitInfo.pSignalSemaphores = &ctx.renderFinishedSemaphores[ctx.currentFrame];
 
-	if (vkQueueSubmit(graphicsQueue, 1, &submitInfo, ctx.inFlightFence) != VK_SUCCESS)
+	if (vkQueueSubmit(graphicsQueue, 1, &submitInfo, ctx.inFlightFences[ctx.currentFrame]) != VK_SUCCESS)
 	{
-		printf("Failed to submit draw command buffer\n");
+		printf("Vulkan: Failed to submit command buffer for window %p\n", sdlWindow);
 		return false;
 	}
 
 	VkPresentInfoKHR presentInfo{};
 	presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
 	presentInfo.waitSemaphoreCount = 1;
-	presentInfo.pWaitSemaphores = &ctx.renderFinishedSemaphore;
+	presentInfo.pWaitSemaphores = &ctx.renderFinishedSemaphores[ctx.currentFrame];
 	presentInfo.swapchainCount = 1;
 	VkSwapchainKHR sc = ctx.swapchain;
 	presentInfo.pSwapchains = &sc;
@@ -1228,7 +1297,7 @@ bool presentSwapchainForWindow(void* sdlWindow)
 	presentInfo.pResults = nullptr;
 
 	VkResult pres = vkQueuePresentKHR(graphicsQueue, &presentInfo);
-	if (pres == VK_ERROR_OUT_OF_DATE_KHR)
+	if (pres == VK_ERROR_OUT_OF_DATE_KHR || pres == VK_SUBOPTIMAL_KHR)
 	{
 		vkDeviceWaitIdle(device);
 		VkSurfaceKHR surface = ctx.surface;
@@ -1240,17 +1309,15 @@ bool presentSwapchainForWindow(void* sdlWindow)
 			destroySwapchainForWindow(sdlWindow);
 			createSwapchainForWindow(sdlWindow, surface, (u32)w, (u32)h, vSync);
 		}
-		return false;
-	}
-	else if (pres == VK_SUBOPTIMAL_KHR)
-	{
-		// ignore for now
 	}
 	else if (pres != VK_SUCCESS)
 	{
-		printf("Failed to present swapchain image %d\n", pres);
+		printf("Vulkan: Failed to present swapchain image %d\n", pres);
 		return false;
 	}
+
+	ctx.currentFrame = (ctx.currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
+	ctx.acquireSemIndex = (ctx.acquireSemIndex + 1) % ctx.imageAvailableSemaphores.size();
 	return true;
 }
 

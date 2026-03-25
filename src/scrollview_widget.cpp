@@ -324,8 +324,8 @@ Point endScrollView()
 	f32 contentSizeForClamp = std::max(scrollContentSizeV, scrollViewState.virtualSize.y);
 
 	// DEBUG: log measured vs authoritative content size
-	std::printf("[DBG] scrollContentSizeV=%.3f virtualSize.y=%.3f contentSizeForClamp=%.3f\n",
-		scrollContentSizeV, scrollViewState.virtualSize.y, contentSizeForClamp);
+	/*std::printf("[DBG] scrollContentSizeV=%.3f virtualSize.y=%.3f contentSizeForClamp=%.3f\n",
+		scrollContentSizeV, scrollViewState.virtualSize.y, contentSizeForClamp);*/
 
 	f32 availableWidth = rectNoBorders.width - padding.x * 2.0f;
 
@@ -348,20 +348,20 @@ Point endScrollView()
 	bool hasVerticalScrollbar = scrollContentSizeV > scrollAreaV;
 
 	// Extra diagnostic info (moved after scrollAreaV / hasVerticalScrollbar are available)
-	std::printf("[DBG SV] id=%llu rectNoBorders.h=%.3f layout.h=%.3f scrollAreaV=%.3f internalPadding.y=%.3f\n",
+	/*std::printf("[DBG SV] id=%llu rectNoBorders.h=%.3f layout.h=%.3f scrollAreaV=%.3f internalPadding.y=%.3f\n",
 		(unsigned long long)scrollViewState.id,
 		rectNoBorders.height,
 		ctx->layout.height,
 		scrollAreaV,
-		internalPadding.y);
+		internalPadding.y);*/
 
     // Extra diagnostic info to debug unreachable last item
-    std::printf("[DBG SV] id=%llu rectNoBorders.h=%.3f layout.h=%.3f clip.h=%.3f internalPadding.y=%.3f\n",
-        (unsigned long long)scrollViewState.id,
-        rectNoBorders.height,
-        ctx->layout.height,
-        /* there is no direct clipRect variable here, output saved position delta as proxy */ (prevPenPos.y - ctx->layout.savedPosition.y),
-        internalPadding.y);
+    //std::printf("[DBG SV] id=%llu rectNoBorders.h=%.3f layout.h=%.3f clip.h=%.3f internalPadding.y=%.3f\n",
+    //    (unsigned long long)scrollViewState.id,
+    //    rectNoBorders.height,
+    //    ctx->layout.height,
+    //    /* there is no direct clipRect variable here, output saved position delta as proxy */ (prevPenPos.y - ctx->layout.savedPosition.y),
+    //    internalPadding.y);
 
 	if (hasVerticalScrollbar)
 	{
@@ -370,8 +370,8 @@ Point endScrollView()
         updateScrollMax(scrollViewState.vertical, contentSizeForClamp, scrollAreaV);
 
         // Log scroll math used for vertical scrollbar
-        std::printf("[DBG SCROLL] scrollAreaV=%.3f contentSizeForClamp=%.3f vertical.scrollMax=%.3f vertical.scrollOffset=%.3f viewHeight(clip)=%f\n",
-            scrollAreaV, contentSizeForClamp, scrollViewState.vertical.scrollMax, scrollViewState.vertical.scrollOffset, ctx->layout.height);
+        /*std::printf("[DBG SCROLL] scrollAreaV=%.3f contentSizeForClamp=%.3f vertical.scrollMax=%.3f vertical.scrollOffset=%.3f viewHeight(clip)=%f\n",
+            scrollAreaV, contentSizeForClamp, scrollViewState.vertical.scrollMax, scrollViewState.vertical.scrollOffset, ctx->layout.height);*/
 
         // scroll view with mouse wheel
         if (ctx->isActiveLayer() && ctx->event.type == InputEvent::Type::MouseWheel)
@@ -394,8 +394,8 @@ Point endScrollView()
                     v.scrollOffset = std::clamp(v.scrollOffset - delta, 0.0f, v.scrollMax);
 
                     // DEBUG: log wheel delta and post-clamp values
-                    std::printf("[DBG wheel] delta=%.3f v.scrollMax=%.3f v.scrollOffset=%.3f (gap=%.3f)\n",
-                        delta, v.scrollMax, v.scrollOffset, v.scrollMax - v.scrollOffset);
+                    /*std::printf("[DBG wheel] delta=%.3f v.scrollMax=%.3f v.scrollOffset=%.3f (gap=%.3f)\n",
+                        delta, v.scrollMax, v.scrollOffset, v.scrollMax - v.scrollOffset);*/
 
                     // Snap small rounding differences to the exact max
                     if (v.scrollMax > 0.0f && (v.scrollMax - v.scrollOffset) <= SCROLL_SNAP_EPS)
@@ -798,8 +798,8 @@ bool VirtualScrollInfo::nextStep()
 		_measureStartY = ctx->position.y;
 		_step = 1;
 
-		std::printf("[VIRT] step0 startIndex=%u scrollY=%.3f estimateH=%.3f _measureStartY=%.3f basePos.y=%.3f\n",
-			startIndex, scrollY, estimateH, _measureStartY, basePos.y);
+		//std::printf("[VIRT] step0 startIndex=%u scrollY=%.3f estimateH=%.3f _measureStartY=%.3f basePos.y=%.3f\n",
+		//	startIndex, scrollY, estimateH, _measureStartY, basePos.y);
 
 		return true;
 	}
@@ -812,8 +812,8 @@ bool VirtualScrollInfo::nextStep()
 		f32 afterY = ctx->position.y;
 		f32 measuredH = afterY - _measureStartY;
 
-		std::printf("[VIRT] pre-measure _measureStartY=%.3f afterY=%.3f rawMeasuredH=%.3f viewH=%.3f\n",
-			_measureStartY, afterY, measuredH, viewHeight);
+		/*std::printf("[VIRT] pre-measure _measureStartY=%.3f afterY=%.3f rawMeasuredH=%.3f viewH=%.3f\n",
+			_measureStartY, afterY, measuredH, viewHeight);*/
 
 		// Guard against zero or NaN measured heights to avoid division by zero or crazy indices.
 		// Also guard against implausibly large measurements (likely caused by header finishing or other layout moves).
@@ -883,8 +883,8 @@ bool VirtualScrollInfo::nextStep()
 		f32 skipY = (f32)remainingStart * measuredH;
 		ctx->position = { basePos.x, basePos.y + skipY };
 
-		std::printf("[VIRT] step1 measuredH=%.3f virtualSize.y=%.3f firstVisible=%d approxVisible=%d remainingStart=%d skipY=%.3f\n",
-			measuredH, svState.virtualSize.y, firstVisible, approxVisible, remainingStart, (f32)remainingStart * measuredH);
+		/*std::printf("[VIRT] step1 measuredH=%.3f virtualSize.y=%.3f firstVisible=%d approxVisible=%d remainingStart=%d skipY=%.3f\n",
+			measuredH, svState.virtualSize.y, firstVisible, approxVisible, remainingStart, (f32)remainingStart * measuredH);*/
 
 		// mark finished after this step
 		_step = 2;
