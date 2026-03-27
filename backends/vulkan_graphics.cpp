@@ -11,8 +11,77 @@
 #include <cstdint>
 #include <cstddef>
 
+#include "vulkan_graphics.h"
+#include <vulkan/vulkan.h>
+#include <iostream>
+#include <stdexcept>
+#include <string.h>
+#include <SDL3/SDL_vulkan.h>
+#include <vector>
+#include <map>
+#include <fstream>
+#include <array>
+#include <cstdint>
+#include <cstddef>
+
+#include "vulkan_graphics.h"
+#include <vulkan/vulkan.h>
+#include <iostream>
+#include <stdexcept>
+#include <string.h>
+#include <SDL3/SDL_vulkan.h>
+#include <vector>
+#include <map>
+#include <fstream>
+#include <array>
+#include <cstdint>
+#include <cstddef>
+#include <algorithm>
+
+#include "vulkan_graphics.h"
+#include <vulkan/vulkan.h>
+#include <iostream>
+#include <stdexcept>
+#include <string.h>
+#include <SDL3/SDL_vulkan.h>
+#include <vector>
+#include <map>
+#include <fstream>
+#include <array>
+#include <cstdint>
+#include <cstddef>
+
+#include "vulkan_graphics.h"
+#include <vulkan/vulkan.h>
+#include <iostream>
+#include <stdexcept>
+#include <string.h>
+#include <SDL3/SDL_vulkan.h>
+#include <vector>
+#include <map>
+#include <fstream>
+#include <array>
+#include <cstdint>
+#include <cstddef>
+
+#include "vulkan_graphics.h"
+#include <vulkan/vulkan.h>
+#include <iostream>
+#include <stdexcept>
+#include <string.h>
+#include <SDL3/SDL_vulkan.h>
+#include <vector>
+#include <map>
+#include <fstream>
+#include <array>
+#include <cstdint>
+#include <cstddef>
+#include <algorithm>
+
 namespace hui
 {
+
+#define MAX_FRAMES_IN_FLIGHT 2
 
 // --- Global Vulkan State ---
 static VkInstance instance = VK_NULL_HANDLE;
@@ -26,6 +95,51 @@ static u32 graphicsQueueFamilyIndex = 0;
 static Rect currentViewport;
 static Color clearColor = Color::black;
 static void* g_currentWindow = nullptr;
+
+// -------------------------------------------------------------------------
+// Swapchain & pipeline per-window
+// -------------------------------------------------------------------------
+struct SwapchainContext
+{
+	VkSurfaceKHR surface = VK_NULL_HANDLE;
+	VkSwapchainKHR swapchain = VK_NULL_HANDLE;
+	std::vector<VkImage> images;
+	std::vector<VkImageView> imageViews;
+	std::vector<VkFramebuffer> framebuffers;
+	VkRenderPass renderPass = VK_NULL_HANDLE;
+	VkExtent2D extent = { 0, 0 };
+	VkFormat format = VK_FORMAT_R8G8B8A8_UNORM;
+
+	VkPipelineLayout pipelineLayout = VK_NULL_HANDLE;
+	VkPipeline pipeline = VK_NULL_HANDLE;
+
+	VkDescriptorSetLayout descriptorSetLayout = VK_NULL_HANDLE;
+	VkDescriptorPool descriptorPools[MAX_FRAMES_IN_FLIGHT];
+	VkSampler sampler = VK_NULL_HANDLE;
+
+	// per-frame and per-image synchronization
+	std::vector<VkSemaphore> imageAvailableSemaphores;     // per-image (acquire)
+	std::vector<VkSemaphore> renderFinishedSemaphores;     // per-image (signal + present wait)
+	VkFence inFlightFences[MAX_FRAMES_IN_FLIGHT];          // per-frame in-flight fence
+	std::vector<VkFence> imagesInFlight;                   // per-image fence tracking (stores fence used when that image was submitted)
+	uint32_t currentFrame = 0;
+	uint32_t acquireSemIndex = 0;
+
+	// command buffers (per-frame)
+	VkCommandBuffer commandBuffers[MAX_FRAMES_IN_FLIGHT];
+
+	VkBuffer vertexBuffers[MAX_FRAMES_IN_FLIGHT];
+	VkDeviceMemory vertexBufferMemories[MAX_FRAMES_IN_FLIGHT];
+	u32 vertexBufferCounts[MAX_FRAMES_IN_FLIGHT];
+
+	bool vSync = true;
+};
+
+static std::map<void*, SwapchainContext> g_swapchains; // keyed by SDL_Window*
+static VulkanTexture* g_defaultWhiteTexture = nullptr;
+
+// Pending deferred destroys to avoid racing the OS/driver
+static std::vector<void*> g_pendingSwapchainDestroys;
 
 // small utility
 static void checkErrorVK(VkResult result, const char* where)
@@ -413,50 +527,6 @@ void VulkanVertexBuffer::destroy()
 	if (memory != VK_NULL_HANDLE) { vkFreeMemory(device, memory, nullptr); memory = VK_NULL_HANDLE; }
 	count = 0;
 }
-
-// -------------------------------------------------------------------------
-// Swapchain & pipeline per-window
-// -------------------------------------------------------------------------
-#define MAX_FRAMES_IN_FLIGHT 2
-
-struct SwapchainContext
-{
-	VkSurfaceKHR surface = VK_NULL_HANDLE;
-	VkSwapchainKHR swapchain = VK_NULL_HANDLE;
-	std::vector<VkImage> images;
-	std::vector<VkImageView> imageViews;
-	std::vector<VkFramebuffer> framebuffers;
-	VkRenderPass renderPass = VK_NULL_HANDLE;
-	VkExtent2D extent = { 0, 0 };
-	VkFormat format = VK_FORMAT_R8G8B8A8_UNORM;
-
-	VkPipelineLayout pipelineLayout = VK_NULL_HANDLE;
-	VkPipeline pipeline = VK_NULL_HANDLE;
-
-	VkDescriptorSetLayout descriptorSetLayout = VK_NULL_HANDLE;
-	VkDescriptorPool descriptorPools[MAX_FRAMES_IN_FLIGHT];
-	VkSampler sampler = VK_NULL_HANDLE;
-
-	// per-frame and per-image synchronization
-	std::vector<VkSemaphore> imageAvailableSemaphores;
-	VkSemaphore renderFinishedSemaphores[MAX_FRAMES_IN_FLIGHT];
-	VkFence inFlightFences[MAX_FRAMES_IN_FLIGHT];
-	std::vector<VkFence> imagesInFlight;
-	uint32_t currentFrame = 0;
-	uint32_t acquireSemIndex = 0;
-
-	// command buffers
-	VkCommandBuffer commandBuffers[MAX_FRAMES_IN_FLIGHT];
-
-	VkBuffer vertexBuffers[MAX_FRAMES_IN_FLIGHT];
-	VkDeviceMemory vertexBufferMemories[MAX_FRAMES_IN_FLIGHT];
-	u32 vertexBufferCounts[MAX_FRAMES_IN_FLIGHT];
-
-	bool vSync = true;
-};
-
-static std::map<void*, SwapchainContext> g_swapchains; // keyed by SDL_Window*
-static VulkanTexture* g_defaultWhiteTexture = nullptr;
 
 // Shader loader helper
 static std::vector<char> readFileBytes(const std::string& filename)
@@ -865,7 +935,107 @@ static bool createFramebuffersForSwapchain(SwapchainContext& ctx)
 	return true;
 }
 
-// helper to create swapchain for a surface (basic)
+// Immediate destroy implementation (internal)
+static void destroySwapchainForWindowImmediate(void* sdlWindow)
+{
+	auto it = g_swapchains.find(sdlWindow);
+	if (it == g_swapchains.end()) return;
+	SwapchainContext& ctx = it->second;
+
+	// Debug: print context state to help find races
+	printf("Vulkan: destroySwapchainForWindowImmediate window=%p swapchain=%p images=%zu imageViews=%zu framebuffers=%zu availSem=%zu finishSem=%zu fences=%d\n",
+		sdlWindow,
+		(void*)ctx.swapchain,
+		ctx.images.size(),
+		ctx.imageViews.size(),
+		ctx.framebuffers.size(),
+		ctx.imageAvailableSemaphores.size(),
+		ctx.renderFinishedSemaphores.size(),
+		MAX_FRAMES_IN_FLIGHT);
+
+	// Defensive waits: ensure GPU/queue and any fences referencing swapchain images are finished.
+	if (graphicsQueue != VK_NULL_HANDLE) {
+		vkQueueWaitIdle(graphicsQueue);
+	}
+	if (device != VK_NULL_HANDLE) {
+		// Wait per-frame fences
+		for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
+			if (ctx.inFlightFences[i] != VK_NULL_HANDLE) {
+				vkWaitForFences(device, 1, &ctx.inFlightFences[i], VK_TRUE, UINT64_MAX);
+			}
+		}
+		// Wait per-image fences that track images in-flight
+		for (size_t i = 0; i < ctx.imagesInFlight.size(); ++i) {
+			if (ctx.imagesInFlight[i] != VK_NULL_HANDLE) {
+				vkWaitForFences(device, 1, &ctx.imagesInFlight[i], VK_TRUE, UINT64_MAX);
+			}
+		}
+		// Final device idle to be extra-safe
+		vkDeviceWaitIdle(device);
+	}
+
+	// Now perform cleanup (same order as creation, swapchain last)
+	for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
+	{
+		if (ctx.vertexBuffers[i] != VK_NULL_HANDLE) { vkDestroyBuffer(device, ctx.vertexBuffers[i], nullptr); ctx.vertexBuffers[i] = VK_NULL_HANDLE; }
+		if (ctx.vertexBufferMemories[i] != VK_NULL_HANDLE) { vkFreeMemory(device, ctx.vertexBufferMemories[i], nullptr); ctx.vertexBufferMemories[i] = VK_NULL_HANDLE; }
+	}
+
+	if (ctx.pipeline != VK_NULL_HANDLE) { vkDestroyPipeline(device, ctx.pipeline, nullptr); ctx.pipeline = VK_NULL_HANDLE; }
+	if (ctx.pipelineLayout != VK_NULL_HANDLE) { vkDestroyPipelineLayout(device, ctx.pipelineLayout, nullptr); ctx.pipelineLayout = VK_NULL_HANDLE; }
+
+	for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
+	{
+		if (ctx.descriptorPools[i] != VK_NULL_HANDLE) { vkDestroyDescriptorPool(device, ctx.descriptorPools[i], nullptr); ctx.descriptorPools[i] = VK_NULL_HANDLE; }
+	}
+	if (ctx.descriptorSetLayout != VK_NULL_HANDLE) { vkDestroyDescriptorSetLayout(device, ctx.descriptorSetLayout, nullptr); ctx.descriptorSetLayout = VK_NULL_HANDLE; }
+	if (ctx.sampler != VK_NULL_HANDLE) { vkDestroySampler(device, ctx.sampler, nullptr); ctx.sampler = VK_NULL_HANDLE; }
+
+	if (commandPool != VK_NULL_HANDLE) {
+		vkFreeCommandBuffers(device, commandPool, MAX_FRAMES_IN_FLIGHT, ctx.commandBuffers);
+	}
+
+	for (auto s : ctx.imageAvailableSemaphores) if (s != VK_NULL_HANDLE) vkDestroySemaphore(device, s, nullptr);
+	for (auto s : ctx.renderFinishedSemaphores) if (s != VK_NULL_HANDLE) vkDestroySemaphore(device, s, nullptr);
+	ctx.imageAvailableSemaphores.clear();
+	ctx.renderFinishedSemaphores.clear();
+
+	for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
+	{
+		if (ctx.inFlightFences[i] != VK_NULL_HANDLE) { vkDestroyFence(device, ctx.inFlightFences[i], nullptr); ctx.inFlightFences[i] = VK_NULL_HANDLE; }
+	}
+
+	for (auto fb : ctx.framebuffers) if (fb != VK_NULL_HANDLE) vkDestroyFramebuffer(device, fb, nullptr);
+	ctx.framebuffers.clear();
+
+	if (ctx.renderPass != VK_NULL_HANDLE) { vkDestroyRenderPass(device, ctx.renderPass, nullptr); ctx.renderPass = VK_NULL_HANDLE; }
+	for (auto iv : ctx.imageViews) if (iv != VK_NULL_HANDLE) vkDestroyImageView(device, iv, nullptr);
+	ctx.imageViews.clear();
+
+	// swapchain last
+	if (ctx.swapchain != VK_NULL_HANDLE) {
+		printf("Vulkan: vkDestroySwapchainKHR(%p)\n", (void*)ctx.swapchain);
+		vkDestroySwapchainKHR(device, ctx.swapchain, nullptr);
+		ctx.swapchain = VK_NULL_HANDLE;
+	}
+
+	g_swapchains.erase(it);
+
+	printf("Vulkan: swapchain destroyed for window=%p\n", sdlWindow);
+}
+
+// flush pending scheduled swapchain destroys
+static void flushPendingSwapchainDestroys()
+{
+	if (g_pendingSwapchainDestroys.empty()) return;
+	auto pending = g_pendingSwapchainDestroys;
+	g_pendingSwapchainDestroys.clear();
+	for (void* w : pending)
+	{
+		destroySwapchainForWindowImmediate(w);
+	}
+}
+
 bool createSwapchainForWindow(void* sdlWindow, VkSurfaceKHR surface, u32 width, u32 height, bool vSync)
 {
 	if (!isVulkanInitialized()) return false;
@@ -874,14 +1044,16 @@ bool createSwapchainForWindow(void* sdlWindow, VkSurfaceKHR surface, u32 width, 
 	ctx.surface = surface;
 	ctx.vSync = vSync;
 
-	// query surface capabilities & present modes
+	// query surface capabilities
 	VkSurfaceCapabilitiesKHR caps{};
-	if (vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice, surface, &caps) != VK_SUCCESS)
+	VkResult r = vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice, surface, &caps);
+	if (r != VK_SUCCESS)
 	{
-		printf("Failed to query surface capabilities\n");
+		printf("Failed to query surface capabilities: %d\n", r);
 		return false;
 	}
 
+	// choose extent
 	if (caps.currentExtent.width != 0xFFFFFFFF)
 	{
 		ctx.extent = caps.currentExtent;
@@ -892,37 +1064,102 @@ bool createSwapchainForWindow(void* sdlWindow, VkSurfaceKHR surface, u32 width, 
 		ctx.extent.height = std::max(caps.minImageExtent.height, std::min(caps.maxImageExtent.height, (uint32_t)height));
 	}
 
-	ctx.format = VK_FORMAT_R8G8B8A8_UNORM;
+	// query supported surface formats
+	uint32_t formatCount = 0;
+	r = vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surface, &formatCount, nullptr);
+	if (r != VK_SUCCESS || formatCount == 0)
+	{
+		printf("vkGetPhysicalDeviceSurfaceFormatsKHR failed or returned 0: %d\n", r);
+		return false;
+	}
+	std::vector<VkSurfaceFormatKHR> formats(formatCount);
+	vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surface, &formatCount, formats.data());
 
-	// choose present mode
-	VkPresentModeKHR presentMode = VK_PRESENT_MODE_FIFO_KHR; // FIFO = vsync
+	// pick a format: prefer R8G8B8A8_UNORM + SRGB_NONLINEAR, otherwise take first available
+	VkSurfaceFormatKHR chosenFormat = formats[0];
+	if (formatCount == 1 && formats[0].format == VK_FORMAT_UNDEFINED)
+	{
+		chosenFormat.format = VK_FORMAT_R8G8B8A8_UNORM;
+		chosenFormat.colorSpace = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR;
+	}
+	else
+	{
+		bool found = false;
+		for (auto& f : formats)
+		{
+			if (f.format == VK_FORMAT_R8G8B8A8_UNORM && f.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
+			{
+				chosenFormat = f;
+				found = true;
+				break;
+			}
+		}
+		if (!found) chosenFormat = formats[0];
+	}
+	ctx.format = chosenFormat.format;
+
+	// query present modes and choose one
+	uint32_t presentModeCount = 0;
+	r = vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, surface, &presentModeCount, nullptr);
+	if (r != VK_SUCCESS || presentModeCount == 0)
+	{
+		printf("vkGetPhysicalDeviceSurfacePresentModesKHR failed or returned 0: %d\n", r);
+		return false;
+	}
+	std::vector<VkPresentModeKHR> presentModes(presentModeCount);
+	vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, surface, &presentModeCount, presentModes.data());
+
+	VkPresentModeKHR chosenPresent = VK_PRESENT_MODE_FIFO_KHR; // guaranteed to be supported
+	if (!vSync) {
+		// prefer MAILBOX, then IMMEDIATE, then FIFO
+		for (auto pm : presentModes) {
+			if (pm == VK_PRESENT_MODE_MAILBOX_KHR) { chosenPresent = pm; break; }
+			if (pm == VK_PRESENT_MODE_IMMEDIATE_KHR) chosenPresent = pm;
+		}
+	}
+	else {
+		chosenPresent = VK_PRESENT_MODE_FIFO_KHR;
+	}
+
+	// choose image count (clamp to min/max)
+	uint32_t imageCount = caps.minImageCount + 1;
+	if (caps.maxImageCount > 0 && imageCount > caps.maxImageCount) imageCount = caps.maxImageCount;
+
 	// create swapchain
 	VkSwapchainCreateInfoKHR sci{};
 	sci.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
 	sci.surface = surface;
-	sci.minImageCount = std::max<uint32_t>(2, caps.minImageCount);
-	sci.imageFormat = ctx.format;
-	sci.imageColorSpace = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR;
+	sci.minImageCount = imageCount;
+	sci.imageFormat = chosenFormat.format;
+	sci.imageColorSpace = chosenFormat.colorSpace;
 	sci.imageExtent = ctx.extent;
 	sci.imageArrayLayers = 1;
 	sci.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 	sci.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
-	sci.preTransform = caps.currentTransform;
+	sci.preTransform = (caps.supportedTransforms & VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR) ? VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR : caps.currentTransform;
 	sci.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
-	sci.presentMode = presentMode;
+	sci.presentMode = chosenPresent;
 	sci.clipped = VK_TRUE;
 	sci.oldSwapchain = VK_NULL_HANDLE;
-	if (vkCreateSwapchainKHR(device, &sci, nullptr, &ctx.swapchain) != VK_SUCCESS)
+
+	r = vkCreateSwapchainKHR(device, &sci, nullptr, &ctx.swapchain);
+	if (r != VK_SUCCESS)
 	{
-		printf("Failed to create swapchain\n");
+		printf("vkCreateSwapchainKHR failed: %d\n", r);
 		return false;
 	}
 
 	// get images
-	uint32_t imageCount = 0;
-	vkGetSwapchainImagesKHR(device, ctx.swapchain, &imageCount, nullptr);
-	ctx.images.resize(imageCount);
-	vkGetSwapchainImagesKHR(device, ctx.swapchain, &imageCount, ctx.images.data());
+	uint32_t gotImageCount = 0;
+	r = vkGetSwapchainImagesKHR(device, ctx.swapchain, &gotImageCount, nullptr);
+	if (r != VK_SUCCESS || gotImageCount == 0)
+	{
+		printf("vkGetSwapchainImagesKHR failed or returned 0: %d\n", r);
+		vkDestroySwapchainKHR(device, ctx.swapchain, nullptr);
+		return false;
+	}
+	ctx.images.resize(gotImageCount);
+	vkGetSwapchainImagesKHR(device, ctx.swapchain, &gotImageCount, ctx.images.data());
 
 	// create image views
 	ctx.imageViews.resize(ctx.images.size());
@@ -938,20 +1175,34 @@ bool createSwapchainForWindow(void* sdlWindow, VkSurfaceKHR surface, u32 width, 
 		viewInfo.subresourceRange.levelCount = 1;
 		viewInfo.subresourceRange.baseArrayLayer = 0;
 		viewInfo.subresourceRange.layerCount = 1;
-		if (vkCreateImageView(device, &viewInfo, nullptr, &ctx.imageViews[i]) != VK_SUCCESS)
+		r = vkCreateImageView(device, &viewInfo, nullptr, &ctx.imageViews[i]);
+		if (r != VK_SUCCESS)
 		{
-			printf("Failed to create image view\n");
+			printf("vkCreateImageView failed for index %zu: %d\n", i, r);
+			// cleanup partial
+			for (size_t j = 0; j < i; ++j) vkDestroyImageView(device, ctx.imageViews[j], nullptr);
+			vkDestroySwapchainKHR(device, ctx.swapchain, nullptr);
 			return false;
 		}
 	}
 
 	// create render pass
-	if (!createRenderPassForSwapchain(ctx)) return false;
+	if (!createRenderPassForSwapchain(ctx)) {
+		// cleanup views & swapchain
+		for (auto iv : ctx.imageViews) vkDestroyImageView(device, iv, nullptr);
+		vkDestroySwapchainKHR(device, ctx.swapchain, nullptr);
+		return false;
+	}
 
 	// create framebuffers
-	if (!createFramebuffersForSwapchain(ctx)) return false;
+	if (!createFramebuffersForSwapchain(ctx))
+	{
+		for (auto iv : ctx.imageViews) vkDestroyImageView(device, iv, nullptr);
+		if (ctx.renderPass != VK_NULL_HANDLE) vkDestroyRenderPass(device, ctx.renderPass, nullptr);
+		vkDestroySwapchainKHR(device, ctx.swapchain, nullptr);
+		return false;
+	}
 
-	// allocate one command buffer
 	// allocate command buffers
 	VkCommandBufferAllocateInfo cbai{};
 	cbai.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
@@ -961,47 +1212,35 @@ bool createSwapchainForWindow(void* sdlWindow, VkSurfaceKHR surface, u32 width, 
 	vkAllocateCommandBuffers(device, &cbai, ctx.commandBuffers);
 
 	// create sync objects
-	VkSemaphoreCreateInfo sciInfo{};
-	sciInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-	VkFenceCreateInfo fciInfo{};
-	fciInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-	fciInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
+	VkSemaphoreCreateInfo sciInfo{}; sciInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+	VkFenceCreateInfo fciInfo{}; fciInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO; fciInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
 
 	ctx.imageAvailableSemaphores.resize(ctx.images.size());
-	for (size_t i = 0; i < ctx.images.size(); i++)
-	{
-		vkCreateSemaphore(device, &sciInfo, nullptr, &ctx.imageAvailableSemaphores[i]);
-	}
+	for (size_t i = 0; i < ctx.images.size(); i++) vkCreateSemaphore(device, &sciInfo, nullptr, &ctx.imageAvailableSemaphores[i]);
 
-	for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
-	{
-		vkCreateSemaphore(device, &sciInfo, nullptr, &ctx.renderFinishedSemaphores[i]);
-		vkCreateFence(device, &fciInfo, nullptr, &ctx.inFlightFences[i]);
-	}
+	ctx.renderFinishedSemaphores.resize(ctx.images.size());
+	for (size_t i = 0; i < ctx.images.size(); ++i) vkCreateSemaphore(device, &sciInfo, nullptr, &ctx.renderFinishedSemaphores[i]);
+
+	for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) vkCreateFence(device, &fciInfo, nullptr, &ctx.inFlightFences[i]);
+
 	ctx.imagesInFlight.assign(ctx.images.size(), VK_NULL_HANDLE);
 	ctx.currentFrame = 0;
 
-	// create descriptor pools
+	// descriptor pools
 	VkDescriptorPoolSize poolSizes[] = { { VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1000 } };
 	VkDescriptorPoolCreateInfo poolInfo{};
 	poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
 	poolInfo.poolSizeCount = 1;
 	poolInfo.pPoolSizes = poolSizes;
 	poolInfo.maxSets = 1000;
+	for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) vkCreateDescriptorPool(device, &poolInfo, nullptr, &ctx.descriptorPools[i]);
 
-	for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
-	{
-		vkCreateDescriptorPool(device, &poolInfo, nullptr, &ctx.descriptorPools[i]);
-	}
-
-	// create pipeline & descriptor layouts (requires shaders)
+	// pipeline (attempt; if fails we keep swapchain but disable rendering)
 	if (!createPipelineForSwapchain(ctx))
 	{
-		// pipeline creation failed (likely shaders missing) -> still keep swapchain though
 		printf("Pipeline creation failed for swapchain; rendering will be disabled until shaders are available.\n");
 	}
 
-	// store vertex buffer placeholders (none yet)
 	for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
 	{
 		ctx.vertexBuffers[i] = VK_NULL_HANDLE;
@@ -1014,45 +1253,13 @@ bool createSwapchainForWindow(void* sdlWindow, VkSurfaceKHR surface, u32 width, 
 	return true;
 }
 
+// replace immediate destroy with scheduler to avoid races with the OS/driver
 void destroySwapchainForWindow(void* sdlWindow)
 {
-	auto it = g_swapchains.find(sdlWindow);
-	if (it == g_swapchains.end()) return;
-	SwapchainContext& ctx = it->second;
-	vkDeviceWaitIdle(device);
-
-	for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
-	{
-		if (ctx.vertexBuffers[i] != VK_NULL_HANDLE) { vkDestroyBuffer(device, ctx.vertexBuffers[i], nullptr); ctx.vertexBuffers[i] = VK_NULL_HANDLE; }
-		if (ctx.vertexBufferMemories[i] != VK_NULL_HANDLE) { vkFreeMemory(device, ctx.vertexBufferMemories[i], nullptr); ctx.vertexBufferMemories[i] = VK_NULL_HANDLE; }
-	}
-
-	if (ctx.pipeline != VK_NULL_HANDLE) { vkDestroyPipeline(device, ctx.pipeline, nullptr); ctx.pipeline = VK_NULL_HANDLE; }
-	if (ctx.pipelineLayout != VK_NULL_HANDLE) { vkDestroyPipelineLayout(device, ctx.pipelineLayout, nullptr); ctx.pipelineLayout = VK_NULL_HANDLE; }
-	for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
-	{
-		if (ctx.descriptorPools[i] != VK_NULL_HANDLE) { vkDestroyDescriptorPool(device, ctx.descriptorPools[i], nullptr); ctx.descriptorPools[i] = VK_NULL_HANDLE; }
-	}
-	if (ctx.descriptorSetLayout != VK_NULL_HANDLE) { vkDestroyDescriptorSetLayout(device, ctx.descriptorSetLayout, nullptr); ctx.descriptorSetLayout = VK_NULL_HANDLE; }
-	if (ctx.sampler != VK_NULL_HANDLE) { vkDestroySampler(device, ctx.sampler, nullptr); ctx.sampler = VK_NULL_HANDLE; }
-	
-	vkFreeCommandBuffers(device, commandPool, MAX_FRAMES_IN_FLIGHT, ctx.commandBuffers);
-	for (auto s : ctx.imageAvailableSemaphores) vkDestroySemaphore(device, s, nullptr);
-	for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
-	{
-		vkDestroySemaphore(device, ctx.renderFinishedSemaphores[i], nullptr);
-		vkDestroyFence(device, ctx.inFlightFences[i], nullptr);
-	}
-
-	for (auto fb : ctx.framebuffers) vkDestroyFramebuffer(device, fb, nullptr);
-	ctx.framebuffers.clear();
-	if (ctx.renderPass != VK_NULL_HANDLE) { vkDestroyRenderPass(device, ctx.renderPass, nullptr); ctx.renderPass = VK_NULL_HANDLE; }
-	for (auto iv : ctx.imageViews) vkDestroyImageView(device, iv, nullptr);
-	ctx.imageViews.clear();
-
-	if (ctx.swapchain != VK_NULL_HANDLE) { vkDestroySwapchainKHR(device, ctx.swapchain, nullptr); ctx.swapchain = VK_NULL_HANDLE; }
-
-	g_swapchains.erase(it);
+	// schedule immediate destroy at a safe point (flushPendingSwapchainDestroys will run at next present / shutdown)
+	for (auto p : g_pendingSwapchainDestroys) if (p == sdlWindow) return;
+	g_pendingSwapchainDestroys.push_back(sdlWindow);
+	printf("Vulkan: scheduled swapchain destroy for window=%p\n", sdlWindow);
 }
 
 // update/create vertex buffer for context
@@ -1111,6 +1318,9 @@ static void draw(Vertex* vertices, u32 vertexCount, struct RenderBatch* batches,
 // present implementation
 bool presentSwapchainForWindow(void* sdlWindow)
 {
+	// Flush any pending destroys at a safe point before creating/presenting swapchains.
+	flushPendingSwapchainDestroys();
+
 	auto it = g_swapchains.find(sdlWindow);
 	if (it == g_swapchains.end())
 	{
@@ -1135,12 +1345,19 @@ bool presentSwapchainForWindow(void* sdlWindow)
 
 	// 2. Acquire an image from the swapchain
 	uint32_t imageIndex;
-	// We use the semaphore corresponding to the NEXT acquisition slot. 
-	// Since we don't know the image index yet, we use a per-frame acquisition semaphore.
-	VkSemaphore acquireSemaphore = ctx.imageAvailableSemaphores[ctx.acquireSemIndex];
-	
+
+	// Safe acquire semaphore handling: the vector may be empty in some partial/failed states.
+	size_t semCount = ctx.imageAvailableSemaphores.size();
+	VkSemaphore acquireSemaphore = VK_NULL_HANDLE;
+	if (semCount > 0)
+	{
+		// ensure acquire index is in-range
+		ctx.acquireSemIndex = ctx.acquireSemIndex % static_cast<uint32_t>(semCount);
+		acquireSemaphore = ctx.imageAvailableSemaphores[ctx.acquireSemIndex];
+	}
+
 	VkResult res = vkAcquireNextImageKHR(device, ctx.swapchain, UINT64_MAX, acquireSemaphore, VK_NULL_HANDLE, &imageIndex);
-	
+
 	if (res == VK_ERROR_OUT_OF_DATE_KHR)
 	{
 		vkDeviceWaitIdle(device);
@@ -1166,6 +1383,7 @@ bool presentSwapchainForWindow(void* sdlWindow)
 	{
 		vkWaitForFences(device, 1, &ctx.imagesInFlight[imageIndex], VK_TRUE, UINT64_MAX);
 	}
+	// mark this image as now being in-flight with the current frame's fence
 	ctx.imagesInFlight[imageIndex] = ctx.inFlightFences[ctx.currentFrame];
 
 	// Reset descriptor pool for this frame
@@ -1202,7 +1420,7 @@ bool presentSwapchainForWindow(void* sdlWindow)
 	rpbi.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
 	rpbi.renderPass = ctx.renderPass;
 	rpbi.framebuffer = ctx.framebuffers[imageIndex];
-	rpbi.renderArea.offset = {0,0};
+	rpbi.renderArea.offset = { 0,0 };
 	rpbi.renderArea.extent = ctx.extent;
 	rpbi.clearValueCount = 1;
 	rpbi.pClearValues = &clearValue;
@@ -1269,16 +1487,42 @@ bool presentSwapchainForWindow(void* sdlWindow)
 	vkCmdEndRenderPass(commandBuffer);
 	vkEndCommandBuffer(commandBuffer);
 
+	// Submit: only wait on the acquire semaphore if we actually provided one
 	VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
 	VkSubmitInfo submitInfo{};
 	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-	submitInfo.waitSemaphoreCount = 1;
-	submitInfo.pWaitSemaphores = &acquireSemaphore;
-	submitInfo.pWaitDstStageMask = waitStages;
+
+	if (acquireSemaphore != VK_NULL_HANDLE)
+	{
+		submitInfo.waitSemaphoreCount = 1;
+		submitInfo.pWaitSemaphores = &acquireSemaphore;
+		submitInfo.pWaitDstStageMask = waitStages;
+	}
+	else
+	{
+		submitInfo.waitSemaphoreCount = 0;
+		submitInfo.pWaitSemaphores = nullptr;
+		submitInfo.pWaitDstStageMask = nullptr;
+	}
+
 	submitInfo.commandBufferCount = 1;
 	submitInfo.pCommandBuffers = &commandBuffer;
-	submitInfo.signalSemaphoreCount = 1;
-	submitInfo.pSignalSemaphores = &ctx.renderFinishedSemaphores[ctx.currentFrame];
+
+	// Use the render-finished semaphore for THIS acquired image (unique per-image)
+	VkSemaphore signalSem = VK_NULL_HANDLE;
+	if (!ctx.renderFinishedSemaphores.empty() && imageIndex < ctx.renderFinishedSemaphores.size())
+		signalSem = ctx.renderFinishedSemaphores[imageIndex];
+
+	if (signalSem != VK_NULL_HANDLE)
+	{
+		submitInfo.signalSemaphoreCount = 1;
+		submitInfo.pSignalSemaphores = &signalSem;
+	}
+	else
+	{
+		submitInfo.signalSemaphoreCount = 0;
+		submitInfo.pSignalSemaphores = nullptr;
+	}
 
 	if (vkQueueSubmit(graphicsQueue, 1, &submitInfo, ctx.inFlightFences[ctx.currentFrame]) != VK_SUCCESS)
 	{
@@ -1288,8 +1532,19 @@ bool presentSwapchainForWindow(void* sdlWindow)
 
 	VkPresentInfoKHR presentInfo{};
 	presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
-	presentInfo.waitSemaphoreCount = 1;
-	presentInfo.pWaitSemaphores = &ctx.renderFinishedSemaphores[ctx.currentFrame];
+
+	// Present should wait on the SAME render-finished semaphore for this image
+	if (signalSem != VK_NULL_HANDLE)
+	{
+		presentInfo.waitSemaphoreCount = 1;
+		presentInfo.pWaitSemaphores = &signalSem;
+	}
+	else
+	{
+		presentInfo.waitSemaphoreCount = 0;
+		presentInfo.pWaitSemaphores = nullptr;
+	}
+
 	presentInfo.swapchainCount = 1;
 	VkSwapchainKHR sc = ctx.swapchain;
 	presentInfo.pSwapchains = &sc;
@@ -1317,7 +1572,11 @@ bool presentSwapchainForWindow(void* sdlWindow)
 	}
 
 	ctx.currentFrame = (ctx.currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
-	ctx.acquireSemIndex = (ctx.acquireSemIndex + 1) % ctx.imageAvailableSemaphores.size();
+	// update the acquisition index only if we have semaphores
+	if (semCount > 0)
+	{
+		ctx.acquireSemIndex = (ctx.acquireSemIndex + 1) % static_cast<uint32_t>(semCount);
+	}
 	return true;
 }
 
@@ -1326,8 +1585,6 @@ void setDefaultWhiteTexture(VulkanTexture* tex)
 {
 	g_defaultWhiteTexture = tex;
 }
-
-// ---------------- init/shutdown ----------------
 
 bool initVulkan(Services& services)
 {
@@ -1355,14 +1612,21 @@ bool initVulkan(Services& services)
 	for (Uint32 i = 0; i < sdlExtCount; ++i)
 		extensions.push_back(sdlExts[i]);
 
+	// Always request debug utils extension so we can create a messenger when available
 	extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
 
-	// validation layer
+	// Validation layer request only in debug builds, but gracefully fall back
 	const char* validationLayer = "VK_LAYER_KHRONOS_validation";
+	bool requestValidation =
+#if defined(_DEBUG) || defined(DEBUG)
+		true;
+#else
+		false;
+#endif
+
 	bool enableValidation = false;
 	uint32_t layerCount = 0;
-	vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
-	if (layerCount > 0)
+	if (vkEnumerateInstanceLayerProperties(&layerCount, nullptr) == VK_SUCCESS && layerCount > 0)
 	{
 		std::vector<VkLayerProperties> availableLayers(layerCount);
 		vkEnumerateInstanceLayerProperties(&layerCount, availableLayers.data());
@@ -1370,10 +1634,15 @@ bool initVulkan(Services& services)
 		{
 			if (strcmp(layer.layerName, validationLayer) == 0)
 			{
-				enableValidation = true;
+				enableValidation = requestValidation;
 				break;
 			}
 		}
+	}
+
+	if (requestValidation && !enableValidation)
+	{
+		printf("Vulkan: validation layer requested but not available. Continuing without validation.\n");
 	}
 
 	VkInstanceCreateInfo createInfo{};
@@ -1491,12 +1760,13 @@ bool initVulkan(Services& services)
 
 void shutdownVulkan(Services& services)
 {
-	// destroy all swapchains
-	for (auto it = g_swapchains.begin(); it != g_swapchains.end(); )
+	// schedule destroy for all swapchains
+	for (auto it = g_swapchains.begin(); it != g_swapchains.end(); ++it)
 	{
 		destroySwapchainForWindow(it->first);
-		it = g_swapchains.begin(); // restart since destroy erases
 	}
+	// flush scheduled destroys now (will perform waits and actual vkDestroySwapchainKHR)
+	flushPendingSwapchainDestroys();
 
 	if (device != VK_NULL_HANDLE)
 	{
@@ -1562,12 +1832,33 @@ bool createSurfaceForSdlWindow(void* sdlWindowVoid, VkSurfaceKHR* outSurface)
 
 void destroySurface(VkSurfaceKHR surface)
 {
-	if (surface != VK_NULL_HANDLE && instance != VK_NULL_HANDLE)
+	if (surface == VK_NULL_HANDLE || instance == VK_NULL_HANDLE) return;
+
+	// Ensure any swapchains created for this surface are destroyed first to satisfy the Vulkan spec
+	// (All VkSwapchainKHR objects created for a VkSurfaceKHR must be destroyed prior to destroying the surface.)
+	for (auto it = g_swapchains.begin(); it != g_swapchains.end(); )
 	{
-		SDL_Vulkan_DestroySurface(instance, surface, nullptr);
+		if (it->second.surface == surface)
+		{
+			void* wnd = it->first;
+			// Remove any scheduled deferred destroy for this window (we will destroy immediately here)
+			g_pendingSwapchainDestroys.erase(std::remove(g_pendingSwapchainDestroys.begin(), g_pendingSwapchainDestroys.end(), wnd), g_pendingSwapchainDestroys.end());
+			// Perform immediate destroy (this waits on fences / device idle internally)
+			destroySwapchainForWindowImmediate(wnd);
+			// restart iteration since destroySwapchainForWindowImmediate erases entries
+			it = g_swapchains.begin();
+		}
+		else
+		{
+			++it;
+		}
 	}
+
+	// Also flush any other pending destroys to be safe
+	flushPendingSwapchainDestroys();
+
+	// Now safe to destroy the surface
+	SDL_Vulkan_DestroySurface(instance, surface, nullptr);
 }
 
-// Add near your helper functions in vulkan_graphics.cpp
-
-} // namespace hui
+}

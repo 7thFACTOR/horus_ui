@@ -65,14 +65,14 @@ int main(int argc, char** args)
 	// Create the context
 	auto huiContext = hui::createContext(settings);
 	hui::setContext(huiContext); // set as current context
-
+	hui::initVulkan(hui::getSettings().services);
 	// Create the main window (this will also create a graphics (GL/VK/D3D/etc.) context)
 	auto mainWnd = settings.services.createWindow("HorusUI Widget Examples", hui::NativeWindowFlags::Resizable, hui::NativeWindowState::Maximized, hui::Rect(0, 0, 1500, 800));
 
 	//hui::initOpenGL(hui::getSettings().services);
 	//hui::initDx11(hui::getSettings().services);
 	//hui::initDx12(hui::getSettings().services);
-	hui::initVulkan(hui::getSettings().services);
+	
 
 	// Create a main dock node for the main window, so we can dock windows in there
 	hui::DockNodeId mainDockNode = hui::createRootDockNode(mainWnd);
