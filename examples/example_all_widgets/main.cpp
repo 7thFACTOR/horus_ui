@@ -46,9 +46,9 @@ int main(int argc, char** args)
 
 	sdlParams.vSync = false;
 	//sdlParams.gfxApi = hui::Sdl3GfxApi::OpenGL;
-	//sdlParams.gfxApi = hui::Sdl3GfxApi::Direct3D11;
+	sdlParams.gfxApi = hui::Sdl3GfxApi::Direct3D11;
 	//sdlParams.gfxApi = hui::Sdl3GfxApi::Direct3D12;
-	sdlParams.gfxApi = hui::Sdl3GfxApi::Vulkan;
+	//sdlParams.gfxApi = hui::Sdl3GfxApi::Vulkan;
 
 	// Setup a Horus UI context, with given service providers
 	hui::Settings settings;
@@ -65,13 +65,13 @@ int main(int argc, char** args)
 	// Create the context
 	auto huiContext = hui::createContext(settings);
 	hui::setContext(huiContext); // set as current context
-	hui::initVulkan(hui::getSettings().services);
+	//hui::initOpenGL(hui::getSettings().services);
+	hui::initDx11(hui::getSettings().services);
+	//hui::initDx12(hui::getSettings().services);
+	//hui::initVulkan(hui::getSettings().services);
+	
 	// Create the main window (this will also create a graphics (GL/VK/D3D/etc.) context)
 	auto mainWnd = settings.services.createWindow("HorusUI Widget Examples", hui::NativeWindowFlags::Resizable, hui::NativeWindowState::Maximized, hui::Rect(0, 0, 1500, 800));
-
-	//hui::initOpenGL(hui::getSettings().services);
-	//hui::initDx11(hui::getSettings().services);
-	//hui::initDx12(hui::getSettings().services);
 	
 
 	// Create a main dock node for the main window, so we can dock windows in there
@@ -115,9 +115,9 @@ int main(int argc, char** args)
 	hui::buildTheme(theme);
 
 	//hui::OpenGLTexture texAtlas(hui::getThemeAtlasImageData().width, hui::getThemeAtlasImageData().height);
-	//hui::Dx11Texture texAtlas(hui::getThemeAtlasImageData().width, hui::getThemeAtlasImageData().height);
+	hui::Dx11Texture texAtlas(hui::getThemeAtlasImageData().width, hui::getThemeAtlasImageData().height);
 	//hui::Dx12Texture texAtlas(hui::getThemeAtlasImageData().width, hui::getThemeAtlasImageData().height);
-	hui::VulkanTexture texAtlas(hui::getThemeAtlasImageData().width, hui::getThemeAtlasImageData().height);
+	//hui::VulkanTexture texAtlas(hui::getThemeAtlasImageData().width, hui::getThemeAtlasImageData().height);
 
 	texAtlas.updateData(hui::getThemeAtlasImageData().pixels);
 	hui::setThemeAtlasTexture(texAtlas.getHandle());
@@ -716,9 +716,9 @@ int main(int argc, char** args)
 	hui::shutdownStbRectPack(settings.services);
 	hui::shutdownUtf(settings.services);
 	//hui::shutdownOpenGL(settings.services);
-	//hui::shutdownDx11(settings.services);
+	hui::shutdownDx11(settings.services);
 	//hui::shutdownDx12(settings.services);
-	hui::shutdownVulkan(settings.services);
+	//hui::shutdownVulkan(settings.services);
 
 	hui::shutdown();
 
