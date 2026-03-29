@@ -495,7 +495,39 @@ bool initDx12(Services& services)
 
 	if (!device)
 	{
-		printf("Direct3D 12 device not created by window manager!\n");
+#if defined(_DEBUG)
+		ID3D12Debug* debugController;
+		if (SUCCEEDED(D3D12GetDebugInterface(IID_PPV_ARGS(&debugController)))) {
+			debugController->EnableDebugLayer();
+			debugController->Release();
+		}
+#endif
+		IDXGIFactory4* factory = nullptr;
+		CreateDXGIFactory1(IID_PPV_ARGS(&factory));
+		IDXGIAdapter1* adapter = nullptr;
+		for (UINT i = 0; factory->EnumAdapters1(i, &adapter) != DXGI_ERROR_NOT_FOUND; ++i) {
+			DXGI_ADAPTER_DESC1 desc;
+			adapter->GetDesc1(&desc);
+			if (desc.Flags & DXGI_ADAPTER_FLAG_SOFTWARE) continue;
+			if (SUCCEEDED(D3D12CreateDevice(adapter, D3D_FEATURE_LEVEL_11_0, IID_PPV_ARGS(&g_dx12Device)))) break;
+			adapter->Release(); adapter = nullptr;
+		}
+		if (g_dx12Device) {
+			D3D12_COMMAND_QUEUE_DESC queueDesc{};
+			queueDesc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
+			queueDesc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
+			g_dx12Device->CreateCommandQueue(&queueDesc, IID_PPV_ARGS(&g_dx12CommandQueue));
+			g_dx12Device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&g_dx12CommandAllocator));
+			g_dx12Device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, g_dx12CommandAllocator, nullptr, IID_PPV_ARGS(&g_dx12CommandList));
+			g_dx12CommandList->Close();
+		}
+		if (adapter) adapter->Release();
+		if (factory) factory->Release();
+	}
+
+	if (!device)
+	{
+		printf("Direct3D 12 device creation failed!\n");
 		return false;
 	}
 

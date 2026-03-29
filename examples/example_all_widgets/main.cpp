@@ -21,6 +21,10 @@
 // Grab some image handles to use for the window icons
 hui::HImage icon1, icon2, icon3, icon4, icon5, tabicon1, tabicon2, tabicon3, img;
 //hui::HTexture tex1, tex2;
+hui::OpenGLTexture texAtlasGL;
+hui::Dx11Texture texAtlasDX11;
+hui::Dx12Texture texAtlasDX12;
+hui::VulkanTexture texAtlasVK;
 
 void loadImages()
 {
@@ -46,12 +50,15 @@ int main(int argc, char** args)
 
 	sdlParams.vSync = false;
 	//sdlParams.gfxApi = hui::Sdl3GfxApi::OpenGL;
-	sdlParams.gfxApi = hui::Sdl3GfxApi::Direct3D11;
-	//sdlParams.gfxApi = hui::Sdl3GfxApi::Direct3D12;
+	//sdlParams.gfxApi = hui::Sdl3GfxApi::DX11;
+	sdlParams.gfxApi = hui::Sdl3GfxApi::DX12;
 	//sdlParams.gfxApi = hui::Sdl3GfxApi::Vulkan;
 
 	// Setup a Horus UI context, with given service providers
 	hui::Settings settings;
+
+	settings.dockNodeSpacing = 3;
+	settings.dockNodeResizeSplitterHitSize = 8;
 
 	hui::initStdioFileIO(settings.services);
 	hui::initFreetype(settings.services);
@@ -59,20 +66,27 @@ int main(int argc, char** args)
 	hui::initStbRectPack(settings.services);
 	hui::initUtf(settings.services);
 
-	settings.dockNodeSpacing = 3;
-	settings.dockNodeResizeSplitterHitSize = 8;
+	switch (sdlParams.gfxApi)
+	{
+	case hui::Sdl3GfxApi::OpenGL:
+		hui::initOpenGL(settings.services);
+		break;
+	case hui::Sdl3GfxApi::DX11:
+		hui::initDx11(settings.services);
+		break;
+	case hui::Sdl3GfxApi::DX12:
+		hui::initDx12(settings.services);
+		break;
+	case hui::Sdl3GfxApi::Vulkan:
+		hui::initVulkan(settings.services);
+		break;
+	}
 
-	// Create the context
 	auto huiContext = hui::createContext(settings);
 	hui::setContext(huiContext); // set as current context
-	//hui::initOpenGL(hui::getSettings().services);
-	hui::initDx11(hui::getSettings().services);
-	//hui::initDx12(hui::getSettings().services);
-	//hui::initVulkan(hui::getSettings().services);
-	
+
 	// Create the main window (this will also create a graphics (GL/VK/D3D/etc.) context)
-	auto mainWnd = settings.services.createWindow("HorusUI Widget Examples", hui::NativeWindowFlags::Resizable, hui::NativeWindowState::Maximized, hui::Rect(0, 0, 1500, 800));
-	
+	auto mainWnd = hui::getSettings().services.createWindow("HorusUI Widget Examples", hui::NativeWindowFlags::Resizable, hui::NativeWindowState::Maximized, hui::Rect(0, 0, 1500, 800));
 
 	// Create a main dock node for the main window, so we can dock windows in there
 	hui::DockNodeId mainDockNode = hui::createRootDockNode(mainWnd);
@@ -114,24 +128,34 @@ int main(int argc, char** args)
 	// After we load the theme and more images and fonts, we need to rebuild the theme (into the image atlas)
 	hui::buildTheme(theme);
 
-	//hui::OpenGLTexture texAtlas(hui::getThemeAtlasImageData().width, hui::getThemeAtlasImageData().height);
-	hui::Dx11Texture texAtlas(hui::getThemeAtlasImageData().width, hui::getThemeAtlasImageData().height);
-	//hui::Dx12Texture texAtlas(hui::getThemeAtlasImageData().width, hui::getThemeAtlasImageData().height);
-	//hui::VulkanTexture texAtlas(hui::getThemeAtlasImageData().width, hui::getThemeAtlasImageData().height);
+	switch (sdlParams.gfxApi)
+	{
+	case hui::Sdl3GfxApi::OpenGL:
+		texAtlasGL.resize(hui::getThemeAtlasImageData().width, hui::getThemeAtlasImageData().height);
+		texAtlasGL.updateData(hui::getThemeAtlasImageData().pixels);
+		hui::setThemeAtlasTexture(texAtlasGL.getHandle());
+		break;
+	case hui::Sdl3GfxApi::DX11:
+		texAtlasDX11.resize(hui::getThemeAtlasImageData().width, hui::getThemeAtlasImageData().height);
+		texAtlasDX11.updateData(hui::getThemeAtlasImageData().pixels);
+		hui::setThemeAtlasTexture(texAtlasDX11.getHandle());
+		break;
+	case hui::Sdl3GfxApi::DX12:
+		texAtlasDX12.resize(hui::getThemeAtlasImageData().width, hui::getThemeAtlasImageData().height);
+		texAtlasDX12.updateData(hui::getThemeAtlasImageData().pixels);
+		hui::setThemeAtlasTexture(texAtlasDX12.getHandle());
+		break;
+	case hui::Sdl3GfxApi::Vulkan:
+		texAtlasVK.resize(hui::getThemeAtlasImageData().width, hui::getThemeAtlasImageData().height);
+		texAtlasVK.updateData(hui::getThemeAtlasImageData().pixels);
+		hui::setThemeAtlasTexture(texAtlasVK.getHandle());
+		break;
+	}
 
-	texAtlas.updateData(hui::getThemeAtlasImageData().pixels);
-	hui::setThemeAtlasTexture(texAtlas.getHandle());
-
-	/*hui::changeScale(1.f);
-	hui::buildTheme(theme);
-	texAtlas.updateData(hui::getThemeAtlasImageData().pixels);
-	hui::setThemeAtlasTexture(texAtlas.getHandle());*/
-
-	// Start the main loop
 	bool exitNow = false;
 	f32 lastMs = 0;
 
-	auto reloadTheme = [theme, &err, errSize, &texAtlas, &largeFnt]()
+	auto reloadTheme = [theme, sdlParams, &err, errSize, &largeFnt]()
 		{
 			hui::deleteTheme(theme);
 			auto theme = hui::loadThemeFromJson(themeFilePath, err, errSize);
@@ -139,8 +163,28 @@ int main(int argc, char** args)
 			loadImages();
 			largeFnt = hui::getThemeFont(theme, "title");
 			hui::buildTheme(theme);
-			texAtlas.updateData(hui::getThemeAtlasImageData().pixels);
-			hui::setThemeAtlasTexture(texAtlas.getHandle());
+
+			switch (sdlParams.gfxApi)
+			{
+			case hui::Sdl3GfxApi::OpenGL:
+				texAtlasGL.updateData(hui::getThemeAtlasImageData().pixels);
+				hui::setThemeAtlasTexture(texAtlasGL.getHandle());
+				break;
+			case hui::Sdl3GfxApi::DX11:
+				texAtlasDX11.updateData(hui::getThemeAtlasImageData().pixels);
+				hui::setThemeAtlasTexture(texAtlasDX11.getHandle());
+				break;
+			case hui::Sdl3GfxApi::DX12:
+				texAtlasDX12.updateData(hui::getThemeAtlasImageData().pixels);
+				hui::setThemeAtlasTexture(texAtlasDX12.getHandle());
+				break;
+			case hui::Sdl3GfxApi::Vulkan:
+				texAtlasVK.updateData(hui::getThemeAtlasImageData().pixels);
+				hui::setThemeAtlasTexture(texAtlasVK.getHandle());
+				break;
+			default:
+				break;
+			}
 		};
 
 
@@ -148,20 +192,16 @@ int main(int argc, char** args)
 	{
 		// Clear the main window as a test
 		hui::getSettings().services.setCurrentWindow(mainWnd);
-
 		hui::getSettings().services.clearBackbuffer({ 0.1f, 0.0f, 0.1f, 1 });
-		//glClearColor(1, 1, 0, 1);
-		//glClear(GL_COLOR_BUFFER_BIT);
 
-		// Track theme file modification time for auto-reload
+		// track theme file modification time for auto-reload
 		static auto lastModTime = std::filesystem::last_write_time(themeFilePath);
 		static f32 checkTimer = 0;
 
 		hui::getSettings().deltaTime = hui::getSdl3DeltaTime();
-
 		checkTimer += hui::getSettings().deltaTime;
 
-		// Check if theme file has been modified (every 1 second)
+		// check if theme file has been modified (every 1 second)
 		if (checkTimer >= 1.0f)
 		{
 			checkTimer = 0;
@@ -177,20 +217,21 @@ int main(int argc, char** args)
 			}
 			catch (...)
 			{
-				// Ignore filesystem errors
+				// ignore filesystem errors
 			}
 		}
 
-		// Get the events from SDL or whatever input provider is set, it will fill a queue of events
+		// get the events from SDL or whatever input provider is set, it will fill a queue of events
 		hui::update();
 
+		// reload theme on F2 key press
 		if (hui::getInputEvent().type == hui::InputEvent::Type::Key
 			&& hui::getInputEvent().key.code == hui::KeyCode::F2
 			&& hui::getInputEvent().key.down)
 		{
 			reloadTheme();
 		}
-		// Check the event count
+
 		auto eventCount = hui::getInputEventCount();
 
 		// the main frame rendering and input handling

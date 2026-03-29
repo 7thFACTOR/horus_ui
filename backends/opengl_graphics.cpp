@@ -19,6 +19,7 @@ static GLuint pixelShader = 0;
 static GLuint program = 0;
 static OpenGLVertexBuffer vertexBuffer;
 static char errStr[1024] = { 0 };
+static bool shadersInitialized = false;
 
 static void checkErrorGL(const char* where)
 {
@@ -170,6 +171,9 @@ void OpenGLVertexBuffer::resize(u32 count)
 
 void OpenGLVertexBuffer::updateData(Vertex* vertices, u32 startVertexIndex, u32 count)
 {
+	if (count == 0 || !vertices) return;
+
+
 	glBindBuffer(GL_ARRAY_BUFFER, handle);
 	OGL_CHECK_ERROR;
 
@@ -305,8 +309,13 @@ static void clearBackbuffer(const Color& color)
 	OGL_CHECK_ERROR;
 }
 
+static void lazyInitShaders();
+
 static void draw(Vertex* vertices, u32 vertexCount, struct RenderBatch* batches, u32 count)
 {
+	if (vertexCount == 0 || count == 0) return;
+
+	lazyInitShaders();
 	glUseProgram(program);
 	OGL_CHECK_ERROR;
 
@@ -454,11 +463,13 @@ static void draw(Vertex* vertices, u32 vertexCount, struct RenderBatch* batches,
 	OGL_CHECK_ERROR;
 }
 
-bool initOpenGL(Services& services)
+static void lazyInitShaders()
 {
-	static GLchar errorLog[1024] = { 0 };
+	if (shadersInitialized)
+		return;
 
-	printf("Initializing HorusUI OpenGL provider...\n");
+	static GLchar errorLog[1024] = { 0 };
+	
 	program = glCreateProgram();
 
 	pixelShader = glCreateShader(GL_FRAGMENT_SHADER);
@@ -505,7 +516,6 @@ bool initOpenGL(Services& services)
 		glGetShaderInfoLog((GLuint)pixelShader, 1024, NULL, errorLog);
 		OGL_CHECK_ERROR;
 		printf("Error validating pixel shader: '%s'\n", errorLog);
-		return false;
 	}
 
 	glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &err);
@@ -516,7 +526,6 @@ bool initOpenGL(Services& services)
 		glGetShaderInfoLog((GLuint)vertexShader, 1024, NULL, errorLog);
 		OGL_CHECK_ERROR;
 		printf("Error validating vertex shader: '%s'\n", errorLog);
-		return false;
 	}
 
 	glValidateProgram((GLuint)program);
@@ -531,7 +540,6 @@ bool initOpenGL(Services& services)
 		glGetProgramInfoLog((GLuint)program, 1024, NULL, errorLog);
 		OGL_CHECK_ERROR;
 		printf("Error validating program: '%s'\n", errorLog);
-		return false;
 	}
 
 	GLint numAttrs;
@@ -549,6 +557,13 @@ bool initOpenGL(Services& services)
 	}
 
 	vertexBuffer.create(10000);
+	
+	shadersInitialized = true;
+}
+
+bool initOpenGL(Services& services)
+{
+	printf("Initializing HorusUI OpenGL provider...\n");
 
 	services.setViewport = setViewport;
 	services.clearBackbuffer = clearBackbuffer;

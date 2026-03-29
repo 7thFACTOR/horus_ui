@@ -12,8 +12,8 @@ namespace hui
 enum class Sdl3GfxApi
 {
 	OpenGL,
-	Direct3D11,
-	Direct3D12,
+	DX11,
+	DX12,
 	Vulkan,
 	Metal
 };

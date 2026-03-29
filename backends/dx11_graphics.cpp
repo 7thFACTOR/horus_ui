@@ -352,7 +352,17 @@ bool initDx11(Services& services)
 
 	if (!device)
 	{
-		printf("Direct3D 11 device not created by window manager!\n");
+		UINT createDeviceFlags = 0;
+#ifdef _DEBUG
+		createDeviceFlags |= D3D11_CREATE_DEVICE_DEBUG;
+#endif
+		D3D_FEATURE_LEVEL featureLevel = D3D_FEATURE_LEVEL_11_0;
+		D3D11CreateDevice(nullptr, D3D_DRIVER_TYPE_HARDWARE, nullptr, createDeviceFlags, &featureLevel, 1, D3D11_SDK_VERSION, &g_dx11Device, nullptr, &g_dx11DeviceContext);
+	}
+
+	if (!device)
+	{
+		printf("Direct3D 11 device creation failed!\n");
 		return false;
 	}
 
