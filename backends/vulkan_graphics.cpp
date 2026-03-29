@@ -11,90 +11,11 @@
 #include <cstdint>
 #include <cstddef>
 
-#include "vulkan_graphics.h"
-#include <vulkan/vulkan.h>
-#include <iostream>
-#include <stdexcept>
-#include <string.h>
-#include <SDL3/SDL_vulkan.h>
-#include <vector>
-#include <map>
-#include <fstream>
-#include <array>
-#include <cstdint>
-#include <cstddef>
-
-#include "vulkan_graphics.h"
-#include <vulkan/vulkan.h>
-#include <iostream>
-#include <stdexcept>
-#include <string.h>
-#include <SDL3/SDL_vulkan.h>
-#include <vector>
-#include <map>
-#include <fstream>
-#include <array>
-#include <cstdint>
-#include <cstddef>
-#include <algorithm>
-
-#include "vulkan_graphics.h"
-#include <vulkan/vulkan.h>
-#include <iostream>
-#include <stdexcept>
-#include <string.h>
-#include <SDL3/SDL_vulkan.h>
-#include <vector>
-#include <map>
-#include <fstream>
-#include <array>
-#include <cstdint>
-#include <cstddef>
-
-#include "vulkan_graphics.h"
-#include <vulkan/vulkan.h>
-#include <iostream>
-#include <stdexcept>
-#include <string.h>
-#include <SDL3/SDL_vulkan.h>
-#include <vector>
-#include <map>
-#include <fstream>
-#include <array>
-#include <cstdint>
-#include <cstddef>
-
-#include "vulkan_graphics.h"
-#include <vulkan/vulkan.h>
-#include <iostream>
-#include <stdexcept>
-#include <string.h>
-#include <SDL3/SDL_vulkan.h>
-#include <vector>
-#include <map>
-#include <fstream>
-#include <array>
-#include <cstdint>
-#include <cstddef>
-#include <algorithm>
-
 namespace hui
 {
 
-#define MAX_FRAMES_IN_FLIGHT 2
+#define HUI_VK_MAX_FRAMES_IN_FLIGHT 2
 
-// --- Global Vulkan State ---
-static VkInstance instance = VK_NULL_HANDLE;
-static VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
-static VkDevice device = VK_NULL_HANDLE;
-static VkQueue graphicsQueue = VK_NULL_HANDLE;
-static VkCommandPool commandPool = VK_NULL_HANDLE;
-static VkDebugUtilsMessengerEXT debugMessenger = VK_NULL_HANDLE;
-static u32 graphicsQueueFamilyIndex = 0;
-
-static Rect currentViewport;
-static Color clearColor = Color::black;
-static void* g_currentWindow = nullptr;
 
 // -------------------------------------------------------------------------
 // Swapchain & pipeline per-window
@@ -109,36 +30,40 @@ struct SwapchainContext
 	VkRenderPass renderPass = VK_NULL_HANDLE;
 	VkExtent2D extent = { 0, 0 };
 	VkFormat format = VK_FORMAT_R8G8B8A8_UNORM;
-
 	VkPipelineLayout pipelineLayout = VK_NULL_HANDLE;
 	VkPipeline pipeline = VK_NULL_HANDLE;
-
 	VkDescriptorSetLayout descriptorSetLayout = VK_NULL_HANDLE;
-	VkDescriptorPool descriptorPools[MAX_FRAMES_IN_FLIGHT];
+	VkDescriptorPool descriptorPools[HUI_VK_MAX_FRAMES_IN_FLIGHT];
 	VkSampler sampler = VK_NULL_HANDLE;
-
 	// per-frame and per-image synchronization
 	std::vector<VkSemaphore> imageAvailableSemaphores;     // per-image (acquire)
 	std::vector<VkSemaphore> renderFinishedSemaphores;     // per-image (signal + present wait)
-	VkFence inFlightFences[MAX_FRAMES_IN_FLIGHT];          // per-frame in-flight fence
+	VkFence inFlightFences[HUI_VK_MAX_FRAMES_IN_FLIGHT];          // per-frame in-flight fence
 	std::vector<VkFence> imagesInFlight;                   // per-image fence tracking (stores fence used when that image was submitted)
 	uint32_t currentFrame = 0;
 	uint32_t acquireSemIndex = 0;
-
-	// command buffers (per-frame)
-	VkCommandBuffer commandBuffers[MAX_FRAMES_IN_FLIGHT];
-
-	VkBuffer vertexBuffers[MAX_FRAMES_IN_FLIGHT];
-	VkDeviceMemory vertexBufferMemories[MAX_FRAMES_IN_FLIGHT];
-	u32 vertexBufferCounts[MAX_FRAMES_IN_FLIGHT];
-
+	VkCommandBuffer commandBuffers[HUI_VK_MAX_FRAMES_IN_FLIGHT];
+	VkBuffer vertexBuffers[HUI_VK_MAX_FRAMES_IN_FLIGHT];
+	VkDeviceMemory vertexBufferMemories[HUI_VK_MAX_FRAMES_IN_FLIGHT];
+	u32 vertexBufferCounts[HUI_VK_MAX_FRAMES_IN_FLIGHT];
 	bool vSync = true;
 };
 
+// --- Global Vulkan State ---
+static VkInstance instance = VK_NULL_HANDLE;
+static VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
+static VkDevice device = VK_NULL_HANDLE;
+static VkQueue graphicsQueue = VK_NULL_HANDLE;
+static VkCommandPool commandPool = VK_NULL_HANDLE;
+static VkDebugUtilsMessengerEXT debugMessenger = VK_NULL_HANDLE;
+static u32 graphicsQueueFamilyIndex = 0;
+
+static Rect currentViewport;
+static Color clearColor = Color::black;
+static void* g_currentWindow = nullptr;
 static std::map<void*, SwapchainContext> g_swapchains; // keyed by SDL_Window*
 static VulkanTexture* g_defaultWhiteTexture = nullptr;
-
-// Pending deferred destroys to avoid racing the OS/driver
+// pending deferred destroys to avoid racing the OS/driver
 static std::vector<void*> g_pendingSwapchainDestroys;
 
 // small utility
@@ -951,7 +876,7 @@ static void destroySwapchainForWindowImmediate(void* sdlWindow)
 		ctx.framebuffers.size(),
 		ctx.imageAvailableSemaphores.size(),
 		ctx.renderFinishedSemaphores.size(),
-		MAX_FRAMES_IN_FLIGHT);
+		HUI_VK_MAX_FRAMES_IN_FLIGHT);
 
 	// Defensive waits: ensure GPU/queue and any fences referencing swapchain images are finished.
 	if (graphicsQueue != VK_NULL_HANDLE) {
@@ -959,7 +884,7 @@ static void destroySwapchainForWindowImmediate(void* sdlWindow)
 	}
 	if (device != VK_NULL_HANDLE) {
 		// Wait per-frame fences
-		for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
+		for (int i = 0; i < HUI_VK_MAX_FRAMES_IN_FLIGHT; ++i) {
 			if (ctx.inFlightFences[i] != VK_NULL_HANDLE) {
 				vkWaitForFences(device, 1, &ctx.inFlightFences[i], VK_TRUE, UINT64_MAX);
 			}
@@ -975,7 +900,7 @@ static void destroySwapchainForWindowImmediate(void* sdlWindow)
 	}
 
 	// Now perform cleanup (same order as creation, swapchain last)
-	for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
+	for (int i = 0; i < HUI_VK_MAX_FRAMES_IN_FLIGHT; i++)
 	{
 		if (ctx.vertexBuffers[i] != VK_NULL_HANDLE) { vkDestroyBuffer(device, ctx.vertexBuffers[i], nullptr); ctx.vertexBuffers[i] = VK_NULL_HANDLE; }
 		if (ctx.vertexBufferMemories[i] != VK_NULL_HANDLE) { vkFreeMemory(device, ctx.vertexBufferMemories[i], nullptr); ctx.vertexBufferMemories[i] = VK_NULL_HANDLE; }
@@ -984,7 +909,7 @@ static void destroySwapchainForWindowImmediate(void* sdlWindow)
 	if (ctx.pipeline != VK_NULL_HANDLE) { vkDestroyPipeline(device, ctx.pipeline, nullptr); ctx.pipeline = VK_NULL_HANDLE; }
 	if (ctx.pipelineLayout != VK_NULL_HANDLE) { vkDestroyPipelineLayout(device, ctx.pipelineLayout, nullptr); ctx.pipelineLayout = VK_NULL_HANDLE; }
 
-	for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
+	for (int i = 0; i < HUI_VK_MAX_FRAMES_IN_FLIGHT; i++)
 	{
 		if (ctx.descriptorPools[i] != VK_NULL_HANDLE) { vkDestroyDescriptorPool(device, ctx.descriptorPools[i], nullptr); ctx.descriptorPools[i] = VK_NULL_HANDLE; }
 	}
@@ -992,7 +917,7 @@ static void destroySwapchainForWindowImmediate(void* sdlWindow)
 	if (ctx.sampler != VK_NULL_HANDLE) { vkDestroySampler(device, ctx.sampler, nullptr); ctx.sampler = VK_NULL_HANDLE; }
 
 	if (commandPool != VK_NULL_HANDLE) {
-		vkFreeCommandBuffers(device, commandPool, MAX_FRAMES_IN_FLIGHT, ctx.commandBuffers);
+		vkFreeCommandBuffers(device, commandPool, HUI_VK_MAX_FRAMES_IN_FLIGHT, ctx.commandBuffers);
 	}
 
 	for (auto s : ctx.imageAvailableSemaphores) if (s != VK_NULL_HANDLE) vkDestroySemaphore(device, s, nullptr);
@@ -1000,7 +925,7 @@ static void destroySwapchainForWindowImmediate(void* sdlWindow)
 	ctx.imageAvailableSemaphores.clear();
 	ctx.renderFinishedSemaphores.clear();
 
-	for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
+	for (int i = 0; i < HUI_VK_MAX_FRAMES_IN_FLIGHT; i++)
 	{
 		if (ctx.inFlightFences[i] != VK_NULL_HANDLE) { vkDestroyFence(device, ctx.inFlightFences[i], nullptr); ctx.inFlightFences[i] = VK_NULL_HANDLE; }
 	}
@@ -1208,7 +1133,7 @@ bool createSwapchainForWindow(void* sdlWindow, VkSurfaceKHR surface, u32 width, 
 	cbai.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
 	cbai.commandPool = commandPool;
 	cbai.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-	cbai.commandBufferCount = MAX_FRAMES_IN_FLIGHT;
+	cbai.commandBufferCount = HUI_VK_MAX_FRAMES_IN_FLIGHT;
 	vkAllocateCommandBuffers(device, &cbai, ctx.commandBuffers);
 
 	// create sync objects
@@ -1221,7 +1146,7 @@ bool createSwapchainForWindow(void* sdlWindow, VkSurfaceKHR surface, u32 width, 
 	ctx.renderFinishedSemaphores.resize(ctx.images.size());
 	for (size_t i = 0; i < ctx.images.size(); ++i) vkCreateSemaphore(device, &sciInfo, nullptr, &ctx.renderFinishedSemaphores[i]);
 
-	for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) vkCreateFence(device, &fciInfo, nullptr, &ctx.inFlightFences[i]);
+	for (int i = 0; i < HUI_VK_MAX_FRAMES_IN_FLIGHT; i++) vkCreateFence(device, &fciInfo, nullptr, &ctx.inFlightFences[i]);
 
 	ctx.imagesInFlight.assign(ctx.images.size(), VK_NULL_HANDLE);
 	ctx.currentFrame = 0;
@@ -1233,7 +1158,7 @@ bool createSwapchainForWindow(void* sdlWindow, VkSurfaceKHR surface, u32 width, 
 	poolInfo.poolSizeCount = 1;
 	poolInfo.pPoolSizes = poolSizes;
 	poolInfo.maxSets = 1000;
-	for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) vkCreateDescriptorPool(device, &poolInfo, nullptr, &ctx.descriptorPools[i]);
+	for (int i = 0; i < HUI_VK_MAX_FRAMES_IN_FLIGHT; i++) vkCreateDescriptorPool(device, &poolInfo, nullptr, &ctx.descriptorPools[i]);
 
 	// pipeline (attempt; if fails we keep swapchain but disable rendering)
 	if (!createPipelineForSwapchain(ctx))
@@ -1241,7 +1166,7 @@ bool createSwapchainForWindow(void* sdlWindow, VkSurfaceKHR surface, u32 width, 
 		printf("Pipeline creation failed for swapchain; rendering will be disabled until shaders are available.\n");
 	}
 
-	for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
+	for (int i = 0; i < HUI_VK_MAX_FRAMES_IN_FLIGHT; i++)
 	{
 		ctx.vertexBuffers[i] = VK_NULL_HANDLE;
 		ctx.vertexBufferMemories[i] = VK_NULL_HANDLE;
@@ -1571,7 +1496,7 @@ bool presentSwapchainForWindow(void* sdlWindow)
 		return false;
 	}
 
-	ctx.currentFrame = (ctx.currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
+	ctx.currentFrame = (ctx.currentFrame + 1) % HUI_VK_MAX_FRAMES_IN_FLIGHT;
 	// update the acquisition index only if we have semaphores
 	if (semCount > 0)
 	{

@@ -49,9 +49,9 @@ int main(int argc, char** args)
 	hui::Sdl3InitParams sdlParams;
 
 	sdlParams.vSync = false;
-	//sdlParams.gfxApi = hui::Sdl3GfxApi::OpenGL;
+	sdlParams.gfxApi = hui::Sdl3GfxApi::OpenGL;
 	//sdlParams.gfxApi = hui::Sdl3GfxApi::DX11;
-	sdlParams.gfxApi = hui::Sdl3GfxApi::DX12;
+	//sdlParams.gfxApi = hui::Sdl3GfxApi::DX12;
 	//sdlParams.gfxApi = hui::Sdl3GfxApi::Vulkan;
 
 	// Setup a Horus UI context, with given service providers

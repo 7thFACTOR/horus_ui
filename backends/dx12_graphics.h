@@ -26,6 +26,7 @@ struct Dx12Texture
 	u32 srvHeapIndex = 0;
 	u32 width = 0;
 	u32 height = 0;
+	bool isUploaded = false; // tracks state: false = COPY_DEST, true = PIXEL_SHADER_RESOURCE
 };
 
 struct Dx12VertexBuffer

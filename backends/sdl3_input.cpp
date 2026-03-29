@@ -1035,7 +1035,6 @@ static Point getWindowSize(HNativeWindow window)
 {
 	int w = 0, h = 0;
 
-	SDL_SyncWindow(((SdlWindowProxy*)window)->sdlWindow);
 	SDL_GetWindowSize(((SdlWindowProxy*)window)->sdlWindow, &w, &h);
 
 	return { (f32)w, (f32)h };

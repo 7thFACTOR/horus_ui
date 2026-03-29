@@ -28,7 +28,31 @@ static Rect currentViewport;
 static ID3D12RootSignature* rootSignature = nullptr;
 static ID3D12PipelineState* pipelineState = nullptr;
 static D3D12_CPU_DESCRIPTOR_HANDLE currentRtvHandle = {};
-static Dx12VertexBuffer sharedVb;
+
+#define NUM_FRAMES_IN_FLIGHT 3
+
+struct FrameData {
+    ID3D12CommandAllocator* commandAllocator = nullptr;
+    UINT64 fenceValue = 0;
+    std::vector<Dx12VertexBuffer*> vertexBuffers;
+    u32 currentVbIndex = 0;
+
+    Dx12VertexBuffer* getNextVertexBuffer() {
+        if (currentVbIndex >= vertexBuffers.size()) {
+            vertexBuffers.push_back(new Dx12VertexBuffer());
+        }
+        return vertexBuffers[currentVbIndex++];
+    }
+
+    void destroy() {
+        if (commandAllocator) { commandAllocator->Release(); commandAllocator = nullptr; }
+        for (auto vb : vertexBuffers) { delete vb; }
+        vertexBuffers.clear();
+    }
+};
+
+static FrameData g_frames[NUM_FRAMES_IN_FLIGHT];
+static u32 g_currentFrameIndex = 0;
 
 static ID3D12DescriptorHeap* srvHeap = nullptr;
 static u32 srvHeapIndexCount = 1;
@@ -40,6 +64,7 @@ static std::unordered_set<ID3D12Resource*> rtStateResources;
 static ID3D12Fence* globalFence = nullptr;
 static UINT64 fenceValue = 0;
 static HANDLE fenceEvent = nullptr;
+static UINT64 pendingUploadFenceValue = 0; // tracks last submitted (but not waited) upload
 
 // -------------------------------------------------------------------------
 // Dx12Texture implementation
@@ -144,11 +169,24 @@ void Dx12Texture::resize(u32 newWidth, u32 newHeight)
 	device->CreateShaderResourceView(handle, &srvViewDesc, handleCpu);
 }
 
-extern void flushDX12Queue();
-
 void Dx12Texture::updateData(Rgba32* pixels)
 {
 	if (!device || !handle || !uploadBuffer || !pixels) return;
+
+	// Ensure the fence + event exist (created lazily)
+	if (!globalFence) {
+		device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&globalFence));
+		fenceEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
+	}
+
+	// Wait for the PREVIOUS upload to finish before resetting the upload allocator.
+	// We do NOT wait for the current upload — it is submitted asynchronously and
+	// will complete on the GPU before any draw commands issued after this point
+	// (queue ordering guarantees this).
+	if (pendingUploadFenceValue > 0 && globalFence->GetCompletedValue() < pendingUploadFenceValue) {
+		globalFence->SetEventOnCompletion(pendingUploadFenceValue, fenceEvent);
+		WaitForSingleObject(fenceEvent, INFINITE);
+	}
 
 	UINT rowPitch = width * sizeof(Rgba32);
 	UINT alignedPitch = (rowPitch + 255) & ~255;
@@ -157,46 +195,64 @@ void Dx12Texture::updateData(Rgba32* pixels)
 	D3D12_RANGE readRange{0, 0};
 	if (SUCCEEDED(uploadBuffer->Map(0, &readRange, &mappedData)))
 	{
-        u8* dst = (u8*)mappedData;
-        u8* src = (u8*)pixels;
-        for(u32 y=0; y<height; ++y) {
-		    memcpy(dst, src, rowPitch);
-            dst += alignedPitch;
-            src += rowPitch;
-        }
+		u8* dst = (u8*)mappedData;
+		u8* src = (u8*)pixels;
+		for (u32 y = 0; y < height; ++y) {
+			memcpy(dst, src, rowPitch);
+			dst += alignedPitch;
+			src += rowPitch;
+		}
 		uploadBuffer->Unmap(0, nullptr);
 	}
 
 	uploadAllocator->Reset();
 	uploadCmdList->Reset(uploadAllocator, nullptr);
-	
+
+	// If already uploaded the texture is in PIXEL_SHADER_RESOURCE state;
+	// transition it back to COPY_DEST before copying.
+	if (isUploaded) {
+		D3D12_RESOURCE_BARRIER toCopyDest{};
+		toCopyDest.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+		toCopyDest.Transition.pResource = handle;
+		toCopyDest.Transition.StateBefore = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
+		toCopyDest.Transition.StateAfter = D3D12_RESOURCE_STATE_COPY_DEST;
+		toCopyDest.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+		uploadCmdList->ResourceBarrier(1, &toCopyDest);
+	}
+
 	D3D12_TEXTURE_COPY_LOCATION dst{};
 	dst.pResource = handle;
 	dst.Type = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
 	dst.SubresourceIndex = 0;
-	
+
 	D3D12_TEXTURE_COPY_LOCATION src{};
 	src.pResource = uploadBuffer;
 	src.Type = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT;
-	
+
 	D3D12_RESOURCE_DESC desc = handle->GetDesc();
 	device->GetCopyableFootprints(&desc, 0, 1, 0, &src.PlacedFootprint, nullptr, nullptr, nullptr);
-	
 	uploadCmdList->CopyTextureRegion(&dst, 0, 0, 0, &src, nullptr);
-	
-	D3D12_RESOURCE_BARRIER barrier{};
-	barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-	barrier.Transition.pResource = handle;
-	barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_COPY_DEST;
-	barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
-	barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
-	
-	uploadCmdList->ResourceBarrier(1, &barrier);
+
+	// Transition to PIXEL_SHADER_RESOURCE so it is ready for drawing.
+	D3D12_RESOURCE_BARRIER toSRV{};
+	toSRV.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+	toSRV.Transition.pResource = handle;
+	toSRV.Transition.StateBefore = D3D12_RESOURCE_STATE_COPY_DEST;
+	toSRV.Transition.StateAfter = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
+	toSRV.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+	uploadCmdList->ResourceBarrier(1, &toSRV);
 	uploadCmdList->Close();
-	
+
 	ID3D12CommandList* ppCmds[] = { uploadCmdList };
 	commandQueue->ExecuteCommandLists(1, ppCmds);
-	flushDX12Queue();
+
+	// Signal the fence async — do NOT wait here. Any draw commands submitted
+	// after this on the same queue are guaranteed to execute after this upload.
+	fenceValue++;
+	pendingUploadFenceValue = fenceValue;
+	commandQueue->Signal(globalFence, fenceValue);
+
+	isUploaded = true;
 }
 
 void Dx12Texture::updateRectData(const Rect& rect, Rgba32* pixels)
@@ -354,10 +410,11 @@ static void draw(Vertex* vertices, u32 vertexCount, struct RenderBatch* batches,
     commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
 	// 2. update shared vertex buffer
-	if (sharedVb.count < vertexCount) sharedVb.resize(vertexCount);
-	if (!sharedVb.handle) return;
-	sharedVb.updateData(vertices, 0, vertexCount);
-	commandList->IASetVertexBuffers(0, 1, &sharedVb.view);
+	auto vb = g_frames[g_currentFrameIndex].getNextVertexBuffer();
+	if (vb->count < vertexCount) vb->resize(vertexCount);
+	if (!vb->handle) return;
+	vb->updateData(vertices, 0, vertexCount);
+	commandList->IASetVertexBuffers(0, 1, &vb->view);
 
 	// 3. update mvp
 	f32 m[16] = { 0 };
@@ -408,17 +465,50 @@ static void flushDX12Queue() {
     }
 }
 
+static void submitAndAdvance() {
+    if (!commandListRecording) return;
+    commandList->Close();
+    ID3D12CommandList* ppCommandLists[] = { commandList };
+    commandQueue->ExecuteCommandLists(1, ppCommandLists);
+    
+    if (!globalFence) {
+        device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&globalFence));
+        fenceEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
+    }
+
+    fenceValue++;
+    g_frames[g_currentFrameIndex].fenceValue = fenceValue;
+    commandQueue->Signal(globalFence, fenceValue);
+    
+    g_currentFrameIndex = (g_currentFrameIndex + 1) % NUM_FRAMES_IN_FLIGHT;
+    commandListRecording = false;
+}
+
+static void beginRecordingIfNeeded() {
+    if (commandListRecording) return;
+    
+    if (!globalFence) {
+        device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&globalFence));
+        fenceEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
+    }
+
+    if (globalFence->GetCompletedValue() < g_frames[g_currentFrameIndex].fenceValue) {
+        globalFence->SetEventOnCompletion(g_frames[g_currentFrameIndex].fenceValue, fenceEvent);
+        WaitForSingleObject(fenceEvent, INFINITE);
+    }
+    
+    g_frames[g_currentFrameIndex].commandAllocator->Reset();
+    commandList->Reset(g_frames[g_currentFrameIndex].commandAllocator, pipelineState);
+    g_frames[g_currentFrameIndex].currentVbIndex = 0;
+    commandListRecording = true;
+}
+
 void dx12PreResize(ID3D12Resource** buffers, int count)
 {
     if (commandListRecording) {
-        commandList->Close();
-        ID3D12CommandList* ppCommandLists[] = { commandList };
-        commandQueue->ExecuteCommandLists(1, ppCommandLists);
-        flushDX12Queue();
-        commandListRecording = false;
-    } else {
-        flushDX12Queue();
+        submitAndAdvance();
     }
+    flushDX12Queue();
     
     for (int i = 0; i < count; i++) {
         if (buffers[i]) {
@@ -430,16 +520,10 @@ void dx12PreResize(ID3D12Resource** buffers, int count)
 void dx12SetCurrentRenderTarget(SIZE_T rtvPtr, ID3D12Resource* backBuffer)
 {
     if (commandListRecording) {
-        commandList->Close();
-        ID3D12CommandList* ppCommandLists[] = { commandList };
-        commandQueue->ExecuteCommandLists(1, ppCommandLists);
-        flushDX12Queue();
-        commandListRecording = false;
+        submitAndAdvance();
     }
 
-    commandAllocator->Reset();
-    commandList->Reset(commandAllocator, pipelineState);
-    commandListRecording = true;
+    beginRecordingIfNeeded();
 
     currentRtvHandle.ptr = rtvPtr;
     if (backBuffer) {
@@ -475,13 +559,7 @@ void dx12PreparePresent(ID3D12Resource* backBuffer)
                 rtStateResources.erase(backBuffer);
             }
         }
-        commandList->Close();
-        
-        ID3D12CommandList* ppCommandLists[] = { commandList };
-        commandQueue->ExecuteCommandLists(1, ppCommandLists);
-        flushDX12Queue();
-        
-        commandListRecording = false;
+        submitAndAdvance();
     }
 }
 
@@ -520,6 +598,12 @@ bool initDx12(Services& services)
 			g_dx12Device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&g_dx12CommandAllocator));
 			g_dx12Device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, g_dx12CommandAllocator, nullptr, IID_PPV_ARGS(&g_dx12CommandList));
 			g_dx12CommandList->Close();
+            
+            for (int i = 0; i < NUM_FRAMES_IN_FLIGHT; ++i) {
+                g_dx12Device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&g_frames[i].commandAllocator));
+                g_frames[i].fenceValue = 0;
+            }
+            g_currentFrameIndex = 0;
 		}
 		if (adapter) adapter->Release();
 		if (factory) factory->Release();
@@ -737,7 +821,12 @@ float4 PSMain(PS_INPUT input) : SV_TARGET {
 
 void shutdownDx12(Services& services)
 {
-	sharedVb.destroy();
+    flushDX12Queue();
+
+    for (int i = 0; i < NUM_FRAMES_IN_FLIGHT; ++i) {
+        g_frames[i].destroy();
+        g_frames[i].fenceValue = 0;
+    }
 
 	if (rootSignature) { rootSignature->Release(); rootSignature = nullptr; }
 	if (pipelineState) { pipelineState->Release(); pipelineState = nullptr; }
