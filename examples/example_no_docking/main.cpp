@@ -30,16 +30,15 @@ int main(int argc, char** args)
 	hui::initSdl3(settings.services, sdlParams);
 	hui::initStbRectPack(settings.services);
 	hui::initUtf(settings.services);
-	
+	hui::initOpenGL(settings.services);
+
 	// Create the context
 	auto huiContext = hui::createContext(settings);
 	hui::setContext(huiContext); // set as current context
 
 	// Create the main window (this will also create a graphics (GL/VK/D3D/etc.) context)
-	auto mainWnd = settings.services.createWindow("Horus Example - No Docking", hui::NativeWindowFlags::Resizable, hui::NativeWindowState::Maximized, hui::Rect(0, 0, 1000, 800));
+	auto mainWnd = hui::getSettings().services.createWindow("Horus Example - No Docking", hui::NativeWindowFlags::Resizable, hui::NativeWindowState::Maximized, hui::Rect(0, 0, 1000, 800));
 	
-	hui::initOpenGL(hui::getSettings().services);
-
 	// Load a theme
 	const u32 errSize = 2048;
 	char err[errSize] = { 0 };
@@ -73,7 +72,6 @@ int main(int argc, char** args)
 		settings.services.setCurrentWindow(mainWnd);
 		glClearColor(0.1f, 0.4f, 0.4f, 1);
 		glClear(GL_COLOR_BUFFER_BIT);
-
 
 		// Theme file path
 		static const char* themeFilePath = "../themes/default.theme.json";
