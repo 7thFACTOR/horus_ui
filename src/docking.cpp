@@ -1728,7 +1728,7 @@ void printInfo(int level, DockNode* node)
 	}
 }
 
-void debugWindows()
+void debugPrintWindows()
 {
 	printf("------------------------------------------------------------------------------------------------------------\n");
 	printf("Debug windows:\n\n");

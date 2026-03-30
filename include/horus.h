@@ -149,10 +149,7 @@ typedef u32 GlyphCode;
 typedef u64 DockNodeId;
 typedef u64 WidgetId;
 typedef std::vector<GlyphCode> Utf32String;
-
 typedef void (*RenderCallback)(HNativeWindow wnd);
-
-const f32 ColumnFill = -1;
 
 /// Horizontal align type, for text and images
 enum class HAlignType
@@ -203,7 +200,6 @@ enum class WidgetType
 	Dropdown,
 	List,
 	Selectable,
-	ResizeGrip,
 	Line,
 	Space,
 	ScrollView,
@@ -629,15 +625,6 @@ enum class MouseCursorType
 	Custom,
 
 	Count
-};
-
-/// Text cache pruning mode. The text cache is keeping unicode text transformed from utf8 to be faster to render each frame
-/// When the UI is rendered continuously every frame the cache is pruned for non used text, based on last time access.
-/// When the UI is rendered only when needed, the cache is pruned for non used text, based on frame count, if that is greater than a specified max frames, then the unicode text is discarded from cache.
-enum class TextCachePruneMode
-{
-	Time, /// delete unused text after some time
-	Frames /// delete unused text after N frames
 };
 
 /// Slider drag direction modes
@@ -1400,7 +1387,7 @@ struct InputEvent
 
 	struct TextData
 	{
-		static const int maxTextBufferSize = 64;
+		static const u32 maxTextBufferSize = 64;
 		char text[maxTextBufferSize] = { 0 };
 	};
 
@@ -1665,8 +1652,6 @@ struct Vertex
 /// for example when a different texture is used or different render states
 struct RenderBatch
 {
-	typedef void(*RenderBatchCallback)(void* userdata, const RenderBatch& batch);
-
 	enum class PrimitiveType
 	{
 		TriangleList,
@@ -1678,7 +1663,6 @@ struct RenderBatch
 	HTexture texture = nullptr; /// which texture to use for rendering
 	u32 startVertexIndex = 0; /// where to start rendering
 	u32 vertexCount = 0; /// how many vertices to use for rendering the primitives
-	RenderBatchCallback commandCallback = nullptr;
 };
 
 struct PackedRect
@@ -1908,10 +1892,6 @@ struct Services
 struct Settings
 {
 	Services services;
-	TextCachePruneMode textCachePruneMode = TextCachePruneMode::Time; /// how to prune the unicode text cache which is not used for a while
-	f32 textCachePruneMaxTimeSec = 5; /// after this time, if an Unicode text is not accessed, it's discarded from cache, textCachePruneMode must be Time
-	f32 textCachePruneMaxFrames = 500; /// after this frame count, if an Unicode text is not accessed, it's discarded from cache, textCachePruneMode must be Frames
-	f32 textCachePruneIntervalSec = 5; /// after each interval has passed, the pruning of unused texts is executed, will delete the texts that were not used for the last textCachePruneMaxTimeMs or textCachePruneMaxFrames, depending on the prune mode
 	f32 textCaretBlinkSpeed = 2.0f;
 	bool textCaretBlinkEnable = true;
 	f32 textScrollStepAmount = 30; /// scroll pixel amount when moving inside text input
@@ -1928,7 +1908,7 @@ struct Settings
 	f32 whiteImageUvBorder = 0.001f; /// this value is subtracted from the white image used to draw lines, to avoid black border artifacts
 	f32 sameLineHeight = 20.0f; /// the height of a line when sameLine() is used to position widgets on a single row/line. Used to center various widget heights vertically. This must be non-zero, otherwise the widgets will align wrongly.
 	f32 minScrollViewHandleSize = 20.0f; /// the minimum allowed scroll handle size (height)
-	f32 deltaTime = 0;
+	f32 deltaTime = 0; /// you need to set this if you want to use the built in animations, otherwise they will not animate because they rely on this value to compute animation progress. This is the time elapsed between the current frame and the previous frame, in seconds
 	bool scaleScrollViewHeight = false;
 	bool scaleLayouts = true;
 	DockingGuidesStyle dockingStyle = DockingGuidesStyle::Auto; /// use DockingGuidesStyle::InsideNativeWindows for Linux
@@ -1968,7 +1948,7 @@ HORUS_API HContext getContext();
 /// \param ctx the context to be deleted
 HORUS_API void deleteContext(HContext ctx);
 
-/// \return the context settings reference so you can modify them in realtime
+/// \return the context settings reference so you can read/modify them in realtime
 HORUS_API Settings& getSettings();
 
 /// Update the UI context, process input events, update animations, etc. This must be called once per frame, before beginFrame()
@@ -1980,15 +1960,19 @@ HORUS_API void beginFrame();
 /// Ends an UI frame
 HORUS_API void endFrame();
 
-/// Get the duration of the last frame in milliseconds
+HORUS_API void beginRendering();
+HORUS_API void endRendering();
+
+/// Get the duration of the last UI frame in milliseconds
 HORUS_API f32 getLastFrameTimeMs();
 
-/// Get the peak (maximum) frame time in milliseconds since app start
+/// Get the peak (maximum) UI frame time in milliseconds since app start
 HORUS_API f32 getPeakFrameTimeMs();
 
-/// Get the average frame time in milliseconds (rolling 60 frame window)
+/// Get the average UI frame time in milliseconds (rolling 60 frame window)
 HORUS_API f32 getAvgFrameTimeMs();
 
+/// Add a render callback at the current UI command list position 
 /// A render callback is called when the UI is rendered, used to issue custom rendering commands
 HORUS_API void addRenderCallback(RenderCallback callback);
 
@@ -2079,25 +2063,17 @@ HORUS_API void endWindow();
 HORUS_API void setWindowVisible(const char* windowId, bool visible);
 HORUS_API void setNextWindowFlags(WindowFlags flags);
 HORUS_API void focusWindow(const char* windowId);
-HORUS_API void debugWindows();
 HORUS_API void dockWindow(const char* windowId, const char* targetWindowId, DockType dockType);
 HORUS_API void undockWindow(const char* windowId, const Point& windowPos = Point());
-
 HORUS_API void setCurrentNativeWindow(HNativeWindow nativeWnd);
-HORUS_API void beginRendering();
-HORUS_API void endRendering();
-
+HORUS_API void debugPrintWindows();
 HORUS_API bool isMouseOverWindow();
-
 HORUS_API void setWindowCapture();
-
 HORUS_API void releaseWindowCapture();
-
 /// \return the window client rect
-HORUS_API Rect getCurrentWindowClientRect();
+HORUS_API Rect getWindowClientRect();
 /// \return the window client rect, used usually to render custom scenes
-HORUS_API Rect getWindowClientRect(const char* windowId);
-
+HORUS_API Rect getWindowClientRectById(const char* windowId);
 HORUS_API void saveDockingStateToMemory(WindowsDockingState& dockingState);
 HORUS_API void loadDockingStateFromMemory(const WindowsDockingState& dockingState);
 
@@ -2136,27 +2112,16 @@ HORUS_API void deleteTheme(HTheme theme);
 /// \param atlasTextureSize the width and height of the atlas texture, where theme images are kept
 /// \return the newly created theme
 HORUS_API HTheme createTheme(u32 atlasTextureSize);
-
 HORUS_API void setThemeUserSetting(HTheme theme, const char* name, const char* value);
-
 HORUS_API const char* getThemeUserSetting(HTheme theme, const char* name);
-
 HORUS_API HImage addThemeImage(HTheme theme, const char* id, const ImageData& imgData);
-
 HORUS_API HImage getThemeImage(HTheme theme, const char* id);
-
 HORUS_API void setWidgetStyle(WidgetType widgetType, const char* styleName);
-
 HORUS_API void pushWidgetStyle(WidgetType widgetType, const char* styleName);
-
 HORUS_API void popWidgetStyle();
-
 HORUS_API void setWidgetElementStyle(WidgetElementId widgetElementId, const char* styleName);
-
 HORUS_API void setDefaultWidgetStyle(WidgetType widgetType);
-
 HORUS_API void setDefaultWidgetElementStyle(WidgetElementId widgetElementId);
-
 HORUS_API void setUserWidgetElementStyle(const char* elementName, const char* styleName);
 
 /// Set a theme's widget element info
@@ -2265,7 +2230,6 @@ HORUS_API f32 getRemainingHeight();
 
 /// Get the remaining width in the current layout from current position to right edge
 HORUS_API f32 getRemainingWidth();
-
 
 /// Begin a scroll view area widget
 /// \param height the height of the scroll area

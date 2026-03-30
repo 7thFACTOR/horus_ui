@@ -96,7 +96,6 @@ void endWindow()
 	endLayout();
 	popPadding(PaddingType::Layout);
 	ctx->renderer.end();
-	//TODO: make scroll struct stack
 }
 
 void setWindowVisible(const char* windowId, bool visible)

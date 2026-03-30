@@ -54,21 +54,21 @@ void shutdownVulkan(Services& services);
 bool isVulkanInitialized();
 
 // create/destroy a VkSurfaceKHR for an SDL_Window (returns true on success)
-bool createSurfaceForSdlWindow(void* sdlWindow, VkSurfaceKHR* outSurface);
-void destroySurface(VkSurfaceKHR surface);
+bool createSurfaceForSdlWindowVk(void* sdlWindow, VkSurfaceKHR* outSurface);
+void destroySurfaceVk(VkSurfaceKHR surface);
 
 // Create/destroy per-window swapchain & resources (surface must be valid).
 // sdlWindow is the SDL_Window* pointer used as a key.
-bool createSwapchainForWindow(void* sdlWindow, VkSurfaceKHR surface, u32 width, u32 height, bool vSync = true);
-void destroySwapchainForWindow(void* sdlWindow);
+bool createSwapchainForWindowVk(void* sdlWindow, VkSurfaceKHR surface, u32 width, u32 height, bool vSync = true);
+void destroySwapchainForWindowVk(void* sdlWindow);
 
 // Present the window swapchain (acquire, draw recorded content, present)
-bool presentSwapchainForWindow(void* sdlWindow);
+bool presentSwapchainForWindowVk(void* sdlWindow);
 
 // Optional: call to set a global default white texture for UI
-void setDefaultWhiteTexture(VulkanTexture* tex);
+void setDefaultWhiteTextureVk(VulkanTexture* tex);
 
 // set the current window for draw submissions
-void vulkanSetCurrentWindow(void* sdlWindow);
+void setCurrentWindowVk(void* sdlWindow);
 
 }

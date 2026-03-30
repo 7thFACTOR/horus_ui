@@ -504,11 +504,11 @@ void endFrame()
 	std::chrono::duration<double, std::milli> frameDuration = frameEndTime - ctx->frameStartTime;
 	ctx->lastFrameTimeMs = (f32)frameDuration.count();
 
-	// Update peak
-	if (ctx->lastFrameTimeMs < 10 && ctx->lastFrameTimeMs > ctx->peakFrameTimeMs)
+	// update peak
+	if (ctx->lastFrameTimeMs < 5 && ctx->lastFrameTimeMs > ctx->peakFrameTimeMs)
 		ctx->peakFrameTimeMs = ctx->lastFrameTimeMs;
 
-	// Update rolling average
+	// update rolling average
 	ctx->frameTimes[ctx->frameTimeIndex] = ctx->lastFrameTimeMs;
 	ctx->frameTimeIndex = (ctx->frameTimeIndex + 1) % 60;
 
@@ -517,6 +517,16 @@ void endFrame()
 	for (u32 i = 0; i < count; i++)
 		sum += ctx->frameTimes[i];
 	ctx->avgFrameTimeMs = count > 0 ? sum / (f32)count : 0.0f;
+}
+
+void beginRendering()
+{
+	ctx->renderer.begin();
+}
+
+void endRendering()
+{
+	ctx->renderer.end();
 }
 
 f32 getLastFrameTimeMs()
@@ -645,16 +655,6 @@ void setCurrentNativeWindow(HNativeWindow wnd)
 	ctx->renderer.setCurrentNativeWindow(wnd);
 	ctx->renderer.setWindowSize(size);
 	ctx->hoveringThisWindow = ctx->lastHoveredNativeWindow == wnd;
-}
-
-void beginRendering()
-{
-	ctx->renderer.begin();
-}
-
-void endRendering()
-{
-	ctx->renderer.end();
 }
 
 static void presentWindow(HNativeWindow wnd)
@@ -1007,8 +1007,6 @@ void setWidgetStyle(WidgetType widgetType, const char* styleName)
 		break;
 	case WidgetType::Selectable:
 		ctx->theme->elements[(u32)WidgetElementId::SelectableBody].setStyle(styleName);
-		break;
-	case WidgetType::ResizeGrip:
 		break;
 	case WidgetType::Line:
 		ctx->theme->elements[(u32)WidgetElementId::LineBody].setStyle(styleName);

@@ -961,7 +961,7 @@ static void flushPendingSwapchainDestroys()
 	}
 }
 
-bool createSwapchainForWindow(void* sdlWindow, VkSurfaceKHR surface, u32 width, u32 height, bool vSync)
+bool createSwapchainForWindowVk(void* sdlWindow, VkSurfaceKHR surface, u32 width, u32 height, bool vSync)
 {
 	if (!isVulkanInitialized()) return false;
 
@@ -1179,7 +1179,7 @@ bool createSwapchainForWindow(void* sdlWindow, VkSurfaceKHR surface, u32 width, 
 }
 
 // replace immediate destroy with scheduler to avoid races with the OS/driver
-void destroySwapchainForWindow(void* sdlWindow)
+void destroySwapchainForWindowVk(void* sdlWindow)
 {
 	// schedule immediate destroy at a safe point (flushPendingSwapchainDestroys will run at next present / shutdown)
 	for (auto p : g_pendingSwapchainDestroys) if (p == sdlWindow) return;
@@ -1215,7 +1215,7 @@ static void vulkanSetCurrentWindowInternal(void* wnd)
 	g_currentWindow = wnd;
 }
 
-void vulkanSetCurrentWindow(void* sdlWindow)
+void setCurrentWindowVk(void* sdlWindow)
 {
 	g_currentWindow = sdlWindow;
 }
@@ -1241,7 +1241,7 @@ static void draw(Vertex* vertices, u32 vertexCount, struct RenderBatch* batches,
 }
 
 // present implementation
-bool presentSwapchainForWindow(void* sdlWindow)
+bool presentSwapchainForWindowVk(void* sdlWindow)
 {
 	// Flush any pending destroys at a safe point before creating/presenting swapchains.
 	flushPendingSwapchainDestroys();
@@ -1250,13 +1250,13 @@ bool presentSwapchainForWindow(void* sdlWindow)
 	if (it == g_swapchains.end())
 	{
 		VkSurfaceKHR surface = VK_NULL_HANDLE;
-		if (createSurfaceForSdlWindow(sdlWindow, &surface))
+		if (createSurfaceForSdlWindowVk(sdlWindow, &surface))
 		{
 			int w, h;
 			SDL_GetWindowSizeInPixels((SDL_Window*)sdlWindow, &w, &h);
 			if (w > 0 && h > 0)
 			{
-				createSwapchainForWindow(sdlWindow, surface, (u32)w, (u32)h, true);
+				createSwapchainForWindowVk(sdlWindow, surface, (u32)w, (u32)h, true);
 				it = g_swapchains.find(sdlWindow);
 			}
 		}
@@ -1292,8 +1292,8 @@ bool presentSwapchainForWindow(void* sdlWindow)
 		SDL_GetWindowSizeInPixels((SDL_Window*)sdlWindow, &w, &h);
 		if (w > 0 && h > 0)
 		{
-			destroySwapchainForWindow(sdlWindow);
-			createSwapchainForWindow(sdlWindow, surface, (u32)w, (u32)h, vSync);
+			destroySwapchainForWindowVk(sdlWindow);
+			createSwapchainForWindowVk(sdlWindow, surface, (u32)w, (u32)h, vSync);
 		}
 		return false;
 	}
@@ -1486,8 +1486,8 @@ bool presentSwapchainForWindow(void* sdlWindow)
 		SDL_GetWindowSizeInPixels((SDL_Window*)sdlWindow, &w, &h);
 		if (w > 0 && h > 0)
 		{
-			destroySwapchainForWindow(sdlWindow);
-			createSwapchainForWindow(sdlWindow, surface, (u32)w, (u32)h, vSync);
+			destroySwapchainForWindowVk(sdlWindow);
+			createSwapchainForWindowVk(sdlWindow, surface, (u32)w, (u32)h, vSync);
 		}
 	}
 	else if (pres != VK_SUCCESS)
@@ -1506,7 +1506,7 @@ bool presentSwapchainForWindow(void* sdlWindow)
 }
 
 // Set default white texture handle (optional)
-void setDefaultWhiteTexture(VulkanTexture* tex)
+void setDefaultWhiteTextureVk(VulkanTexture* tex)
 {
 	g_defaultWhiteTexture = tex;
 }
@@ -1688,7 +1688,7 @@ void shutdownVulkan(Services& services)
 	// schedule destroy for all swapchains
 	for (auto it = g_swapchains.begin(); it != g_swapchains.end(); ++it)
 	{
-		destroySwapchainForWindow(it->first);
+		destroySwapchainForWindowVk(it->first);
 	}
 	// flush scheduled destroys now (will perform waits and actual vkDestroySwapchainKHR)
 	flushPendingSwapchainDestroys();
@@ -1729,7 +1729,7 @@ bool isVulkanInitialized()
 	return instance != VK_NULL_HANDLE && device != VK_NULL_HANDLE;
 }
 
-bool createSurfaceForSdlWindow(void* sdlWindowVoid, VkSurfaceKHR* outSurface)
+bool createSurfaceForSdlWindowVk(void* sdlWindowVoid, VkSurfaceKHR* outSurface)
 {
 	if (!isVulkanInitialized() || !sdlWindowVoid || !outSurface)
 		return false;
@@ -1755,7 +1755,7 @@ bool createSurfaceForSdlWindow(void* sdlWindowVoid, VkSurfaceKHR* outSurface)
 	return true;
 }
 
-void destroySurface(VkSurfaceKHR surface)
+void destroySurfaceVk(VkSurfaceKHR surface)
 {
 	if (surface == VK_NULL_HANDLE || instance == VK_NULL_HANDLE) return;
 

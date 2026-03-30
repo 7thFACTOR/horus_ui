@@ -129,7 +129,6 @@ static WidgetType getWidgetTypeFromName(std::string name)
 	if (name == "popup") return WidgetType::Popup;
 	if (name == "dropdown") return WidgetType::Dropdown;
 	if (name == "list") return WidgetType::List;
-	if (name == "resizeGrip") return WidgetType::ResizeGrip;
 	if (name == "line") return WidgetType::Line;
 	if (name == "space") return WidgetType::Space;
 	if (name == "scrollView") return WidgetType::ScrollView;

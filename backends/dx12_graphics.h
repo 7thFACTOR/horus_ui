@@ -44,10 +44,10 @@ struct Dx12VertexBuffer
 	u32 count = 0;
 };
 
-// initializes the directx 12 graphics backend
+void createWindowDx12(HWND hwnd, struct SdlWindowProxy* proxy, const Rect& rect);
+void setCurrentWindowDx12(struct SdlWindowProxy* proxy);
+void resizeSwapchainForSdlWindowDx12(struct SdlWindowProxy* proxy);
 bool initDx12(Services& services);
-
-// shuts down the directx 12 graphics backend
 void shutdownDx12(Services& services);
 
 }

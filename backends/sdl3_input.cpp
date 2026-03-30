@@ -4,13 +4,6 @@
 #include <SDL3/SDL_main.h>
 #include <SDL3/SDL_vulkan.h>
 #include <glad/gl.h>
-#include "vulkan_graphics.h"
-#ifdef _WINDOWS
-#include <windows.h>
-#include <d3d11.h>
-#include <d3d12.h>
-#include <dxgi1_4.h>
-#endif
 #include <algorithm>
 
 #ifdef _LINUX
@@ -18,37 +11,13 @@
 #include <X11/Xutil.h>
 #include <X11/Xatom.h>
 #include <X11/extensions/shape.h>
-#include <SDL3/SDL_main.h>
 #include <stdio.h>
 #endif
 
 namespace hui
 {
-struct SdlWindowProxy
-{
-	SDL_Window* sdlWindow = nullptr;
-#ifdef _WINDOWS
-	// dx11
-	void* dx11SwapChain = nullptr;
-	void* dx11RTV = nullptr;
-	// dx12
-	void* dx12SwapChain = nullptr;
-	void* dx12RTVHeap = nullptr;
-	void* dx12RTV = nullptr;
-	u32 dx12CurrentBackBuffer = 0;
-#endif
-	// Vulkan surface (if using Vulkan)
-	VkSurfaceKHR surface = VK_NULL_HANDLE;
-};
-
-#ifdef _WINDOWS
-ID3D11Device* g_dx11Device = nullptr;
-ID3D11DeviceContext* g_dx11DeviceContext = nullptr;
-ID3D12Device* g_dx12Device = nullptr;
-ID3D12CommandQueue* g_dx12CommandQueue = nullptr;
-ID3D12CommandAllocator* g_dx12CommandAllocator = nullptr;
-ID3D12GraphicsCommandList* g_dx12CommandList = nullptr;
-#endif
+extern void resizeSwapchainForSdlWindowDx11(struct SdlWindowProxy* proxy);
+extern void resizeSwapchainForSdlWindowDx12(struct SdlWindowProxy* proxy);
 
 struct Sdl3InputContext
 {
@@ -565,51 +534,11 @@ static void addSdlEvent(SDL_Event& ev)
 #ifdef _WINDOWS
 			if (sdl3InputContext->initParams.gfxApi == Sdl3GfxApi::DX11 && proxy->dx11SwapChain)
 			{
-				g_dx11DeviceContext->OMSetRenderTargets(0, nullptr, nullptr);
-				if (proxy->dx11RTV) {
-					((ID3D11RenderTargetView*)proxy->dx11RTV)->Release();
-					proxy->dx11RTV = nullptr;
-				}
-
-				auto sc = (IDXGISwapChain*)proxy->dx11SwapChain;
-				sc->ResizeBuffers(0, 0, 0, DXGI_FORMAT_UNKNOWN, 0);
-
-				ID3D11Texture2D* backBuffer = nullptr;
-				sc->GetBuffer(0, __uuidof(ID3D11Texture2D), (void**)&backBuffer);
-				ID3D11RenderTargetView* rtv = nullptr;
-				g_dx11Device->CreateRenderTargetView(backBuffer, nullptr, &rtv);
-				proxy->dx11RTV = rtv;
-				backBuffer->Release();
+				resizeSwapchainForSdlWindowDx11(proxy);
 			}
 			else if (sdl3InputContext->initParams.gfxApi == Sdl3GfxApi::DX12 && proxy->dx12SwapChain)
 			{
-				auto sc = (IDXGISwapChain3*)proxy->dx12SwapChain;
-				
-				ID3D12Resource* b1 = nullptr;
-				ID3D12Resource* b2 = nullptr;
-				sc->GetBuffer(0, IID_PPV_ARGS(&b1));
-				sc->GetBuffer(1, IID_PPV_ARGS(&b2));
-				
-				extern void dx12PreResize(ID3D12Resource** buffers, int count);
-				ID3D12Resource* buffers[2] = { b1, b2 };
-				dx12PreResize(buffers, 2);
-				
-				if (b1) b1->Release();
-				if (b2) b2->Release();
-
-				sc->ResizeBuffers(0, 0, 0, DXGI_FORMAT_UNKNOWN, 0);
-
-				auto rtvHeap = (ID3D12DescriptorHeap*)proxy->dx12RTVHeap;
-				SIZE_T rtvDescriptorSize = g_dx12Device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
-				D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle = rtvHeap->GetCPUDescriptorHandleForHeapStart();
-				for (UINT n = 0; n < 2; n++) {
-					ID3D12Resource* backBuffer = nullptr;
-					sc->GetBuffer(n, IID_PPV_ARGS(&backBuffer));
-					g_dx12Device->CreateRenderTargetView(backBuffer, nullptr, rtvHandle);
-					backBuffer->Release();
-					rtvHandle.ptr += rtvDescriptorSize;
-				}
-				proxy->dx12CurrentBackBuffer = sc->GetCurrentBackBufferIndex();
+				resizeSwapchainForSdlWindowDx12(proxy);
 			}
 #endif
 		}
@@ -721,47 +650,26 @@ static void setCustomCursor(HMouseCursor cursor)
 
 static void setCurrentWindow(HNativeWindow window)
 {
+	auto proxy = (SdlWindowProxy*)window;
+
 	if (sdl3InputContext->initParams.gfxApi == Sdl3GfxApi::OpenGL)
 	{
-		SDL_GL_MakeCurrent(((SdlWindowProxy*)window)->sdlWindow, sdl3InputContext->initParams.sdlGlContext);
+		SDL_GL_MakeCurrent(proxy->sdlWindow, sdl3InputContext->initParams.sdlGlContext);
 		SDL_GL_SetSwapInterval(sdl3InputContext->initParams.vSync ? 1 : 0);
 	}
 	else if (sdl3InputContext->initParams.gfxApi == Sdl3GfxApi::DX11)
 	{
-#ifdef _WINDOWS
-		auto proxy = (SdlWindowProxy*)window;
-		if (proxy->dx11RTV) {
-			ID3D11RenderTargetView* rtv[] = { (ID3D11RenderTargetView*)proxy->dx11RTV };
-			g_dx11DeviceContext->OMSetRenderTargets(1, rtv, nullptr);
-		}
-#endif
+		extern void setCurrentWindowDx11(SdlWindowProxy* proxy);
+		setCurrentWindowDx11(proxy);
 	}
 	else if (sdl3InputContext->initParams.gfxApi == Sdl3GfxApi::DX12)
 	{
-#ifdef _WINDOWS
-		auto proxy = (SdlWindowProxy*)window;
-		if (proxy->dx12RTVHeap && proxy->dx12SwapChain) {
-			auto sc = (IDXGISwapChain3*)proxy->dx12SwapChain;
-			proxy->dx12CurrentBackBuffer = sc->GetCurrentBackBufferIndex();
-			
-			auto heap = (ID3D12DescriptorHeap*)proxy->dx12RTVHeap;
-			SIZE_T size = g_dx12Device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
-			D3D12_CPU_DESCRIPTOR_HANDLE handle = heap->GetCPUDescriptorHandleForHeapStart();
-			handle.ptr += size * proxy->dx12CurrentBackBuffer;
-			
-			ID3D12Resource* backBuffer = nullptr;
-			sc->GetBuffer(proxy->dx12CurrentBackBuffer, IID_PPV_ARGS(&backBuffer));
-			
-			extern void dx12SetCurrentRenderTarget(SIZE_T rtvPtr, ID3D12Resource* backBuffer);
-			dx12SetCurrentRenderTarget(handle.ptr, backBuffer);
-			if (backBuffer) backBuffer->Release();
-		}
-#endif
+		extern void setCurrentWindowDx12(SdlWindowProxy * proxy);
+		setCurrentWindowDx12(proxy);
 	}
 	else if (sdl3InputContext->initParams.gfxApi == Sdl3GfxApi::Vulkan)
 	{
-		auto proxy = (SdlWindowProxy*)window;
-		hui::vulkanSetCurrentWindow(proxy ? proxy->sdlWindow : nullptr);
+		setCurrentWindowVk(proxy);
 	}
 
 	sdl3InputContext->currentWindow = ((SdlWindowProxy*)window);
@@ -867,89 +775,16 @@ static HNativeWindow createWindow(
 	{
 #ifdef _WINDOWS
 		HWND hwnd = (HWND)SDL_GetPointerProperty(SDL_GetWindowProperties(wnd), SDL_PROP_WINDOW_WIN32_HWND_POINTER, NULL);
-
-		DXGI_SWAP_CHAIN_DESC sd{};
-		sd.BufferCount = 2;
-		sd.BufferDesc.Width = rect.width;
-		sd.BufferDesc.Height = rect.height;
-		sd.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-		sd.BufferDesc.RefreshRate.Numerator = 60;
-		sd.BufferDesc.RefreshRate.Denominator = 1;
-		sd.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-		sd.OutputWindow = hwnd;
-		sd.SampleDesc.Count = 1;
-		sd.SampleDesc.Quality = 0;
-		sd.Windowed = TRUE;
-		sd.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
-
-		IDXGIDevice* dxgiDevice = nullptr;
-		g_dx11Device->QueryInterface(__uuidof(IDXGIDevice), (void**)&dxgiDevice);
-		IDXGIAdapter* dxgiAdapter = nullptr;
-		dxgiDevice->GetParent(__uuidof(IDXGIAdapter), (void**)&dxgiAdapter);
-		IDXGIFactory* dxgiFactory = nullptr;
-		dxgiAdapter->GetParent(__uuidof(IDXGIFactory), (void**)&dxgiFactory);
-
-		IDXGISwapChain* swapchain = nullptr;
-		dxgiFactory->CreateSwapChain(g_dx11Device, &sd, &swapchain);
-		newWnd->dx11SwapChain = swapchain;
-
-		ID3D11Texture2D* backBuffer = nullptr;
-		swapchain->GetBuffer(0, __uuidof(ID3D11Texture2D), (void**)&backBuffer);
-		ID3D11RenderTargetView* rtv = nullptr;
-		g_dx11Device->CreateRenderTargetView(backBuffer, nullptr, &rtv);
-		newWnd->dx11RTV = rtv;
-		backBuffer->Release();
-
-		dxgiFactory->Release();
-		dxgiAdapter->Release();
-		dxgiDevice->Release();
+		extern void createWindowDx11(HWND hwnd, struct SdlWindowProxy* proxy, const Rect & rect);
+		createWindowDx11(hwnd, newWnd, rect);
 #endif
 	}
 	else if (sdl3InputContext->initParams.gfxApi == Sdl3GfxApi::DX12)
 	{
 #ifdef _WINDOWS
 		HWND hwnd = (HWND)SDL_GetPointerProperty(SDL_GetWindowProperties(wnd), SDL_PROP_WINDOW_WIN32_HWND_POINTER, NULL);
-
-
-		if (g_dx12CommandQueue) {
-			DXGI_SWAP_CHAIN_DESC1 sd{};
-		 sd.BufferCount = 2;
-			sd.Width = rect.width;
-			sd.Height = rect.height;
-			sd.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-			sd.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-			sd.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
-			sd.SampleDesc.Count = 1;
-
-			IDXGIFactory4* factory = nullptr;
-			CreateDXGIFactory1(IID_PPV_ARGS(&factory));
-			IDXGISwapChain1* swapChain1 = nullptr;
-			factory->CreateSwapChainForHwnd(g_dx12CommandQueue, hwnd, &sd, nullptr, nullptr, &swapChain1);
-			IDXGISwapChain3* swapchain = nullptr;
-			swapChain1->QueryInterface(IID_PPV_ARGS(&swapchain));
-			newWnd->dx12SwapChain = swapchain;
-			swapChain1->Release();
-			factory->Release();
-
-			D3D12_DESCRIPTOR_HEAP_DESC rtvHeapDesc{};
-			rtvHeapDesc.NumDescriptors = 2;
-			rtvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
-			rtvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
-			ID3D12DescriptorHeap* rtvHeap = nullptr;
-			g_dx12Device->CreateDescriptorHeap(&rtvHeapDesc, IID_PPV_ARGS(&rtvHeap));
-			newWnd->dx12RTVHeap = rtvHeap;
-
-			SIZE_T rtvDescriptorSize = g_dx12Device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
-			D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle = rtvHeap->GetCPUDescriptorHandleForHeapStart();
-			for (UINT n = 0; n < 2; n++) {
-				ID3D12Resource* backBuffer = nullptr;
-				swapchain->GetBuffer(n, IID_PPV_ARGS(&backBuffer));
-				g_dx12Device->CreateRenderTargetView(backBuffer, nullptr, rtvHandle);
-				backBuffer->Release();
-				rtvHandle.ptr += rtvDescriptorSize;
-			}
-			newWnd->dx12CurrentBackBuffer = swapchain->GetCurrentBackBufferIndex();
-		}
+		extern void createWindowDx12(HWND hwnd, struct SdlWindowProxy* proxy, const Rect & rect);
+		createWindowDx12(hwnd, newWnd, rect);
 #endif
 	}
 
@@ -964,12 +799,12 @@ static HNativeWindow createWindow(
 		if (hui::isVulkanInitialized())
 		{
 			VkSurfaceKHR surf = VK_NULL_HANDLE;
-			if (hui::createSurfaceForSdlWindow(wnd, &surf))
+			if (hui::createSurfaceForSdlWindowVk(wnd, &surf))
 			{
 				newWnd->surface = surf;
 
 				// Create swapchain for this window (use rect for initial size and sdl init vSync setting)
-				if (!hui::createSwapchainForWindow(wnd, surf, rect.width, rect.height, sdl3InputContext->initParams.vSync))
+				if (!hui::createSwapchainForWindowVk(wnd, surf, rect.width, rect.height, sdl3InputContext->initParams.vSync))
 				{
 					printf("Warning: failed to create Vulkan swapchain for SDL window\n");
 				}
@@ -1090,7 +925,7 @@ static void presentWindow(HNativeWindow window)
 		// Present via Vulkan backend
 		if (proxy->surface != VK_NULL_HANDLE)
 		{
-			if (!hui::presentSwapchainForWindow(proxy->sdlWindow))
+			if (!hui::presentSwapchainForWindowVk(proxy->sdlWindow))
 			{
 				// If presentation failed, fallback to no-op (swapchain may need recreation)
 				// The backend will log errors / handle recreation if implemented.
@@ -1108,9 +943,9 @@ static void destroyWindow(HNativeWindow window)
 		if (proxy->surface != VK_NULL_HANDLE)
 		{
 			// Destroy any backend swapchain/resources associated with this SDL window first
-			hui::destroySwapchainForWindow(((SdlWindowProxy*)window)->sdlWindow);
+			hui::destroySwapchainForWindowVk(((SdlWindowProxy*)window)->sdlWindow);
 
-			hui::destroySurface(proxy->surface);
+			hui::destroySurfaceVk(proxy->surface);
 			proxy->surface = VK_NULL_HANDLE;
 		}
 	}

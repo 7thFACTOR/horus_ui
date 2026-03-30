@@ -41,10 +41,10 @@ struct Dx11VertexBuffer
 	u32 count = 0;
 };
 
-// initializes the directx 11 graphics backend
+void createWindowDx11(HWND hwnd, struct SdlWindowProxy* proxy, const Rect& rect);
+void resizeSwapchainForSdlWindowDx11(struct SdlWindowProxy* proxy);
+void setCurrentWindowDx11(struct SdlWindowProxy* proxy);
 bool initDx11(Services& services);
-
-// shuts down the directx 11 graphics backend
 void shutdownDx11(Services& services);
 
 }

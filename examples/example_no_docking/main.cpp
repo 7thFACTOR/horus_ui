@@ -142,7 +142,6 @@ int main(int argc, char** args)
 			{
 				hui::setCurrentNativeWindow(mainWnd);
 				hui::beginRendering();
-				// Begin an actual frame of the gui
 				hui::beginFrame();
 				// disable rendering if its not the last event in the queue
 				// no need to render while handling all the input events

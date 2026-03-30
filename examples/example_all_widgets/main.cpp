@@ -246,7 +246,7 @@ int main(int argc, char** args)
 
 				if (confineSceneToWindow)
 				{
-					rc = hui::getWindowClientRect("scene");
+					rc = hui::getWindowClientRectById("scene");
 				}
 				else
 				{
@@ -324,7 +324,7 @@ int main(int argc, char** args)
 
 				if (hui::button("DEBUG TREE PRINT"))
 				{
-					hui::debugWindows();
+					hui::debugPrintWindows();
 				}
 
 				if (hui::button("Show UI window"))
