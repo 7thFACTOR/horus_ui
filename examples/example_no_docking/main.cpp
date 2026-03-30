@@ -200,7 +200,7 @@ int main(int argc, char** args)
 				hui::beginScrollView("scrl1", 200, scrollPos, 0, hui::ScrollViewFlags::NoBorder);
 				
 				int counter = 0;
-				for (int i = 0; i < 5000; i++)
+				for (int i = 0; i < 100; i++)
 				{
 					hui::button(("Button " + std::to_string(i)).c_str());
 					if (++counter % 8) hui::sameLine();
