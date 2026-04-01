@@ -49,10 +49,10 @@ int main(int argc, char** args)
 	hui::Sdl3InitParams sdlParams;
 
 	sdlParams.vSync = false;
-	sdlParams.gfxApi = hui::Sdl3GfxApi::OpenGL;
+	//sdlParams.gfxApi = hui::Sdl3GfxApi::OpenGL;
 	//sdlParams.gfxApi = hui::Sdl3GfxApi::DX11;
 	//sdlParams.gfxApi = hui::Sdl3GfxApi::DX12;
-	//sdlParams.gfxApi = hui::Sdl3GfxApi::Vulkan;
+	sdlParams.gfxApi = hui::Sdl3GfxApi::Vulkan;
 
 	// Setup a Horus UI context, with given service providers
 	hui::Settings settings;
@@ -192,7 +192,7 @@ int main(int argc, char** args)
 	{
 		// Clear the main window as a test
 		hui::getSettings().services.setCurrentWindow(mainWnd);
-		hui::getSettings().services.clearBackbuffer({ 0.1f, 0.0f, 0.1f, 1 });
+		hui::getSettings().services.clearBackbuffer({ 0.3f, 0.0f, 0.1f, 1 });
 
 		// track theme file modification time for auto-reload
 		static auto lastModTime = std::filesystem::last_write_time(themeFilePath);

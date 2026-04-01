@@ -21,6 +21,7 @@ int main(int argc, char** args)
 	hui::Sdl3InitParams sdlParams;
 
 	sdlParams.vSync = false;
+	sdlParams.gfxApi = hui::Sdl3GfxApi::Vulkan;
 
 	// Setup a Horus UI context, with given service providers
 	hui::Settings settings;
@@ -30,8 +31,8 @@ int main(int argc, char** args)
 	hui::initSdl3(settings.services, sdlParams);
 	hui::initStbRectPack(settings.services);
 	hui::initUtf(settings.services);
-	hui::initOpenGL(settings.services);
-
+	//hui::initOpenGL(settings.services);
+	hui::initVulkan(settings.services);
 	// Create the context
 	auto huiContext = hui::createContext(settings);
 	hui::setContext(huiContext); // set as current context
@@ -57,7 +58,7 @@ int main(int argc, char** args)
 	// After we load the theme and more images and fonts, we need to rebuild the theme (into the image atlas)
 	hui::buildTheme(theme);
 	
-	hui::OpenGLTexture texAtlas(hui::getThemeAtlasImageData().width, hui::getThemeAtlasImageData().height);
+	hui::VulkanTexture texAtlas(hui::getThemeAtlasImageData().width, hui::getThemeAtlasImageData().height);
 	texAtlas.updateData(hui::getThemeAtlasImageData().pixels);
 	hui::setThemeAtlasTexture(texAtlas.getHandle());
 
@@ -69,10 +70,9 @@ int main(int argc, char** args)
 	while (!exitNow)
 	{
 		// Clear the main window as a test
-		settings.services.setCurrentWindow(mainWnd);
-		glClearColor(0.1f, 0.4f, 0.4f, 1);
-		glClear(GL_COLOR_BUFFER_BIT);
-
+		hui::getSettings().services.setCurrentWindow(mainWnd);
+		hui::getSettings().services.clearBackbuffer(hui::Color(0.8f, 0.4f, 0.4f, 1));
+		
 		// Theme file path
 		static const char* themeFilePath = "../themes/default.theme.json";
 

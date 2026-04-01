@@ -18,6 +18,7 @@ namespace hui
 {
 extern void resizeSwapchainForSdlWindowDx11(struct SdlWindowProxy* proxy);
 extern void resizeSwapchainForSdlWindowDx12(struct SdlWindowProxy* proxy);
+extern void resizeSwapchainForSdlWindowVk(void* sdlWindow);
 
 struct Sdl3InputContext
 {
@@ -540,6 +541,10 @@ static void addSdlEvent(SDL_Event& ev)
 			{
 				resizeSwapchainForSdlWindowDx12(proxy);
 			}
+			else if (sdl3InputContext->initParams.gfxApi == Sdl3GfxApi::Vulkan)
+			{
+				resizeSwapchainForSdlWindowVk(proxy->sdlWindow);
+			}
 #endif
 		}
 		break;
@@ -669,7 +674,7 @@ static void setCurrentWindow(HNativeWindow window)
 	}
 	else if (sdl3InputContext->initParams.gfxApi == Sdl3GfxApi::Vulkan)
 	{
-		setCurrentWindowVk(proxy);
+		setCurrentWindowVk(proxy->sdlWindow);
 	}
 
 	sdl3InputContext->currentWindow = ((SdlWindowProxy*)window);
@@ -820,6 +825,8 @@ static HNativeWindow createWindow(
 			// We keep sdlWindow pointer and allow the backend to create swapchain after init.
 		}
 	}
+
+	setCurrentWindow(newWnd);
 
 	return newWnd;
 }

@@ -10,6 +10,7 @@
 #include <array>
 #include <cstdint>
 #include <cstddef>
+#include <algorithm>
 
 namespace hui
 {
@@ -748,6 +749,16 @@ static bool createPipelineForSwapchain(SwapchainContext& ctx)
 	if (ctx.pipelineLayout == VK_NULL_HANDLE)
 		vkCreatePipelineLayout(device, &plc, nullptr, &ctx.pipelineLayout);
 
+	VkDynamicState dynamicStates[] = {
+		VK_DYNAMIC_STATE_VIEWPORT,
+		VK_DYNAMIC_STATE_SCISSOR
+	};
+
+	VkPipelineDynamicStateCreateInfo dynamicState{};
+	dynamicState.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
+	dynamicState.dynamicStateCount = 2;
+	dynamicState.pDynamicStates = dynamicStates;
+
 	VkGraphicsPipelineCreateInfo pipelineInfo{};
 	pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
 	pipelineInfo.stageCount = 2;
@@ -758,6 +769,7 @@ static bool createPipelineForSwapchain(SwapchainContext& ctx)
 	pipelineInfo.pRasterizationState = &rs;
 	pipelineInfo.pMultisampleState = &ms;
 	pipelineInfo.pColorBlendState = &cb;
+	pipelineInfo.pDynamicState = &dynamicState;
 	pipelineInfo.layout = ctx.pipelineLayout;
 	pipelineInfo.renderPass = ctx.renderPass;
 	pipelineInfo.subpass = 0;
@@ -868,7 +880,7 @@ static void destroySwapchainForWindowImmediate(void* sdlWindow)
 	SwapchainContext& ctx = it->second;
 
 	// Debug: print context state to help find races
-	printf("Vulkan: destroySwapchainForWindowImmediate window=%p swapchain=%p images=%zu imageViews=%zu framebuffers=%zu availSem=%zu finishSem=%zu fences=%d\n",
+	/*printf("Vulkan: destroySwapchainForWindowImmediate window=%p swapchain=%p images=%zu imageViews=%zu framebuffers=%zu availSem=%zu finishSem=%zu fences=%d\n",
 		sdlWindow,
 		(void*)ctx.swapchain,
 		ctx.images.size(),
@@ -877,7 +889,7 @@ static void destroySwapchainForWindowImmediate(void* sdlWindow)
 		ctx.imageAvailableSemaphores.size(),
 		ctx.renderFinishedSemaphores.size(),
 		HUI_VK_MAX_FRAMES_IN_FLIGHT);
-
+		*/
 	// Defensive waits: ensure GPU/queue and any fences referencing swapchain images are finished.
 	if (graphicsQueue != VK_NULL_HANDLE) {
 		vkQueueWaitIdle(graphicsQueue);
@@ -939,14 +951,29 @@ static void destroySwapchainForWindowImmediate(void* sdlWindow)
 
 	// swapchain last
 	if (ctx.swapchain != VK_NULL_HANDLE) {
-		printf("Vulkan: vkDestroySwapchainKHR(%p)\n", (void*)ctx.swapchain);
+		//printf("Vulkan: vkDestroySwapchainKHR(%p)\n", (void*)ctx.swapchain);
 		vkDestroySwapchainKHR(device, ctx.swapchain, nullptr);
 		ctx.swapchain = VK_NULL_HANDLE;
 	}
 
 	g_swapchains.erase(it);
 
-	printf("Vulkan: swapchain destroyed for window=%p\n", sdlWindow);
+	//printf("Vulkan: swapchain destroyed for window=%p\n", sdlWindow);
+}
+
+void resizeSwapchainForSdlWindowVk(void* sdlWindow)
+{
+	auto it = g_swapchains.find(sdlWindow);
+	if (it == g_swapchains.end()) return;
+
+	VkSurfaceKHR surface = it->second.surface;
+	bool vSync = it->second.vSync;
+
+	int w, h;
+	SDL_GetWindowSizeInPixels((SDL_Window*)sdlWindow, &w, &h);
+
+	destroySwapchainForWindowImmediate(sdlWindow);
+	createSwapchainForWindowVk(sdlWindow, surface, (u32)w, (u32)h, vSync);
 }
 
 // flush pending scheduled swapchain destroys
@@ -1184,7 +1211,7 @@ void destroySwapchainForWindowVk(void* sdlWindow)
 	// schedule immediate destroy at a safe point (flushPendingSwapchainDestroys will run at next present / shutdown)
 	for (auto p : g_pendingSwapchainDestroys) if (p == sdlWindow) return;
 	g_pendingSwapchainDestroys.push_back(sdlWindow);
-	printf("Vulkan: scheduled swapchain destroy for window=%p\n", sdlWindow);
+	//printf("Vulkan: scheduled swapchain destroy for window=%p\n", sdlWindow);
 }
 
 // update/create vertex buffer for context
@@ -1355,6 +1382,21 @@ bool presentSwapchainForWindowVk(void* sdlWindow)
 	if (sub && !sub->vertices.empty() && ctx.pipeline != VK_NULL_HANDLE)
 	{
 		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, ctx.pipeline);
+
+		VkViewport viewport{};
+		viewport.x = 0.0f;
+		viewport.y = 0.0f;
+		viewport.width = (float)ctx.extent.width;
+		viewport.height = (float)ctx.extent.height;
+		viewport.minDepth = 0.0f;
+		viewport.maxDepth = 1.0f;
+		vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
+
+		VkRect2D scissor{};
+		scissor.offset = { 0, 0 };
+		scissor.extent = ctx.extent;
+		vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
+
 		VkDeviceSize offsets[] = { 0 };
 		vkCmdBindVertexBuffers(commandBuffer, 0, 1, &ctx.vertexBuffers[ctx.currentFrame], offsets);
 
@@ -1616,7 +1658,40 @@ bool initVulkan(Services& services)
 	}
 	std::vector<VkPhysicalDevice> devices(deviceCount);
 	vkEnumeratePhysicalDevices(instance, &deviceCount, devices.data());
-	physicalDevice = devices[0];
+
+	struct DeviceCandidate {
+		VkPhysicalDevice dev;
+		int score;
+		std::string name;
+	};
+	std::vector<DeviceCandidate> candidates;
+
+	for (const auto& dev : devices) {
+		VkPhysicalDeviceProperties props;
+		vkGetPhysicalDeviceProperties(dev, &props);
+		VkPhysicalDeviceFeatures feats;
+		vkGetPhysicalDeviceFeatures(dev, &feats);
+
+		int score = 0;
+		if (props.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU) score += 1000;
+		if (props.deviceType == VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU) score += 500;
+		score += props.limits.maxImageDimension2D / 100;
+
+		candidates.push_back({ dev, score, props.deviceName });
+	}
+
+	std::sort(candidates.begin(), candidates.end(), [](const DeviceCandidate& a, const DeviceCandidate& b) {
+		return a.score > b.score;
+	});
+
+	if (!candidates.empty()) {
+		physicalDevice = candidates[0].dev;
+		printf("Selected GPU: %s (score=%d)\n", candidates[0].name.c_str(), candidates[0].score);
+	}
+	else {
+		printf("Failed to find a suitable Vulkan physical device!\n");
+		return false;
+	}
 
 	// find queue family
 	uint32_t queueFamilyCount = 0;
@@ -1679,6 +1754,10 @@ bool initVulkan(Services& services)
 	services.draw = draw;
 	services.getGfxApiName = []() -> const char* { return "Vulkan"; };
 
+	// Create default white texture for batches without a texture
+	Rgba32 white = 0xFFFFFFFF;
+	g_defaultWhiteTexture = new VulkanTexture(1, 1, &white);
+
 	printf("Vulkan Backend initialized successfully.\n");
 	return true;
 }
@@ -1696,6 +1775,12 @@ void shutdownVulkan(Services& services)
 	if (device != VK_NULL_HANDLE)
 	{
 		vkDeviceWaitIdle(device);
+
+		if (g_defaultWhiteTexture)
+		{
+			delete g_defaultWhiteTexture;
+			g_defaultWhiteTexture = nullptr;
+		}
 
 		if (commandPool != VK_NULL_HANDLE) {
 			vkDestroyCommandPool(device, commandPool, nullptr);
@@ -1739,7 +1824,7 @@ bool createSurfaceForSdlWindowVk(void* sdlWindowVoid, VkSurfaceKHR* outSurface)
 	VkSurfaceKHR surface = VK_NULL_HANDLE;
 	if (!SDL_Vulkan_CreateSurface(sdlWindow, instance, nullptr, &surface))
 	{
-		printf("SDL_Vulkan_CreateSurface failed: %s\n", SDL_GetError());
+		//printf("SDL_Vulkan_CreateSurface failed: %s\n", SDL_GetError());
 		return false;
 	}
 
