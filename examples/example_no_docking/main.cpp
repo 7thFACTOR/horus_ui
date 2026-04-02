@@ -8,6 +8,9 @@
 // backends
 #include "sdl3_input.h"
 #include "opengl_graphics.h"
+#include "dx11_graphics.h"
+#include "dx12_graphics.h"
+#include "vulkan_graphics.h"
 #include "json_theme_loader.h"
 #include "stb_rectpack.h"
 #include "freetype_fonts.h"
@@ -21,6 +24,9 @@ int main(int argc, char** args)
 	hui::Sdl3InitParams sdlParams;
 
 	sdlParams.vSync = false;
+	//sdlParams.gfxApi = hui::Sdl3GfxApi::OpenGL;
+	//sdlParams.gfxApi = hui::Sdl3GfxApi::DX11;
+	//sdlParams.gfxApi = hui::Sdl3GfxApi::DX12;
 	sdlParams.gfxApi = hui::Sdl3GfxApi::Vulkan;
 
 	// Setup a Horus UI context, with given service providers
@@ -31,14 +37,35 @@ int main(int argc, char** args)
 	hui::initSdl3(settings.services, sdlParams);
 	hui::initStbRectPack(settings.services);
 	hui::initUtf(settings.services);
-	//hui::initOpenGL(settings.services);
-	hui::initVulkan(settings.services);
+
+	std::string gfxApiName;
+
+	switch (sdlParams.gfxApi)
+	{
+	case hui::Sdl3GfxApi::OpenGL:
+		gfxApiName = "OpenGL";
+		hui::initOpenGL(settings.services);
+		break;
+	case hui::Sdl3GfxApi::DX11:
+		gfxApiName = "DX11";
+		hui::initDx11(settings.services);
+		break;
+	case hui::Sdl3GfxApi::DX12:
+		gfxApiName = "DX12";
+		hui::initDx12(settings.services);
+		break;
+	case hui::Sdl3GfxApi::Vulkan:
+		gfxApiName = "Vulkan";
+		hui::initVulkan(settings.services);
+		break;
+	}
+	
 	// Create the context
 	auto huiContext = hui::createContext(settings);
 	hui::setContext(huiContext); // set as current context
 
 	// Create the main window (this will also create a graphics (GL/VK/D3D/etc.) context)
-	auto mainWnd = hui::getSettings().services.createWindow("Horus Example - No Docking", hui::NativeWindowFlags::Resizable, hui::NativeWindowState::Maximized, hui::Rect(0, 0, 1000, 800));
+	auto mainWnd = hui::getSettings().services.createWindow((std::string("Horus Example - No Docking - ") + gfxApiName).c_str(), hui::NativeWindowFlags::Resizable, hui::NativeWindowState::Maximized, hui::Rect(0, 0, 1000, 800));
 	
 	// Load a theme
 	const u32 errSize = 2048;
@@ -71,7 +98,7 @@ int main(int argc, char** args)
 	{
 		// Clear the main window as a test
 		hui::getSettings().services.setCurrentWindow(mainWnd);
-		hui::getSettings().services.clearBackbuffer(hui::Color(0.8f, 0.4f, 0.4f, 1));
+		hui::getSettings().services.clearBackbuffer(hui::Color(0.1f, 0.4f, 0.4f, 1));
 		
 		// Theme file path
 		static const char* themeFilePath = "../themes/default.theme.json";
@@ -436,8 +463,23 @@ int main(int argc, char** args)
 	hui::shutdownSdl3(settings.services);
 	hui::shutdownStbRectPack(settings.services);
 	hui::shutdownUtf(settings.services);
-	hui::shutdownOpenGL(settings.services);
 
+	switch (sdlParams.gfxApi)
+	{
+	case hui::Sdl3GfxApi::OpenGL:
+		hui::shutdownOpenGL(settings.services);
+		break;
+	case hui::Sdl3GfxApi::DX11:
+		hui::shutdownDx11(settings.services);
+		break;
+	case hui::Sdl3GfxApi::DX12:
+		hui::shutdownDx12(settings.services);
+		break;
+	case hui::Sdl3GfxApi::Vulkan:
+		hui::shutdownVulkan(settings.services);
+		break;
+	}
+	
 	hui::shutdown();
 	return 0;
 }

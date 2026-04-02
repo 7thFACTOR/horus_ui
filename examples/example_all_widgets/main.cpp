@@ -66,18 +66,24 @@ int main(int argc, char** args)
 	hui::initStbRectPack(settings.services);
 	hui::initUtf(settings.services);
 
+	std::string gfxApiName;
+
 	switch (sdlParams.gfxApi)
 	{
 	case hui::Sdl3GfxApi::OpenGL:
+		gfxApiName = "OpenGL";
 		hui::initOpenGL(settings.services);
 		break;
 	case hui::Sdl3GfxApi::DX11:
+		gfxApiName = "DX11";
 		hui::initDx11(settings.services);
 		break;
 	case hui::Sdl3GfxApi::DX12:
+		gfxApiName = "DX12";
 		hui::initDx12(settings.services);
 		break;
 	case hui::Sdl3GfxApi::Vulkan:
+		gfxApiName = "Vulkan";
 		hui::initVulkan(settings.services);
 		break;
 	}
@@ -86,7 +92,7 @@ int main(int argc, char** args)
 	hui::setContext(huiContext); // set as current context
 
 	// Create the main window (this will also create a graphics (GL/VK/D3D/etc.) context)
-	auto mainWnd = hui::getSettings().services.createWindow("HorusUI Widget Examples", hui::NativeWindowFlags::Resizable, hui::NativeWindowState::Maximized, hui::Rect(0, 0, 1500, 800));
+	auto mainWnd = hui::getSettings().services.createWindow((std::string("Horus Example - All Widgets - ") + gfxApiName).c_str(), hui::NativeWindowFlags::Resizable, hui::NativeWindowState::Maximized, hui::Rect(0, 0, 1500, 800));
 
 	// Create a main dock node for the main window, so we can dock windows in there
 	hui::DockNodeId mainDockNode = hui::createRootDockNode(mainWnd);
@@ -756,10 +762,22 @@ int main(int argc, char** args)
 	hui::shutdownSdl3(settings.services);
 	hui::shutdownStbRectPack(settings.services);
 	hui::shutdownUtf(settings.services);
-	//hui::shutdownOpenGL(settings.services);
-	hui::shutdownDx11(settings.services);
-	//hui::shutdownDx12(settings.services);
-	//hui::shutdownVulkan(settings.services);
+
+	switch (sdlParams.gfxApi)
+	{
+	case hui::Sdl3GfxApi::OpenGL:
+		hui::shutdownOpenGL(settings.services);
+		break;
+	case hui::Sdl3GfxApi::DX11:
+		hui::shutdownDx11(settings.services);
+		break;
+	case hui::Sdl3GfxApi::DX12:
+		hui::shutdownDx12(settings.services);
+		break;
+	case hui::Sdl3GfxApi::Vulkan:
+		hui::shutdownVulkan(settings.services);
+		break;
+	}
 
 	hui::shutdown();
 
