@@ -16,7 +16,7 @@ bool openFileDialog(const char* filterList, const char* defaultPath, char* outPa
 	auto res = NFD_OpenDialog(filterList, defaultPath, &path);
 
 	// we clear the events, some get pushed when dialog is open
-	clearInputEventQueue();
+	inputEventQueueClear();
 
 	if (res == NFD_OKAY)
 	{

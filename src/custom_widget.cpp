@@ -8,7 +8,7 @@
 
 namespace hui
 {
-Rect beginCustomWidget(const char* id, f32 height)
+Rect customWidgetBegin(const char* id, f32 height)
 {
 	if (height <= 0)
 	{
@@ -16,17 +16,17 @@ Rect beginCustomWidget(const char* id, f32 height)
 	}
 
 	ctx->id = genId(id);
-	addWidget(height);
+	widgetAdd(height);
 	buttonBehavior();
 
 	return ctx->widget.rect;
 }
 
-void endCustomWidget()
+void customWidgetEnd()
 {
 }
 
-Point getLayoutSize()
+Point layoutSizeGet()
 {
 	Point pt;
 
@@ -36,49 +36,49 @@ Point getLayoutSize()
 	return pt;
 }
 
-Rect getWidgetRect()
+Rect widgetRectGet()
 {
 	return ctx->widget.rect;
 }
 
-void rendererSetFont(HFont font)
+void rendererFontSet(HFont font)
 {
 	ctx->renderer.cmdSetFont((Font*)font);
 }
 
-void rendererPushFont(HFont font)
+void rendererFontPush(HFont font)
 {
 	ctx->fontStack.push_back((HFont)ctx->renderer.getFont());
-	rendererSetFont(font);
+	rendererFontSet(font);
 }
 
-void rendererPopFont()
+void rendererFontPop()
 {
 	if (ctx->fontStack.size())
 	{
-		rendererSetFont(ctx->fontStack.back());
+		rendererFontSet(ctx->fontStack.back());
 		ctx->fontStack.pop_back();
 	}
 }
 
-void rendererSetColor(const Color& color)
+void rendererColorSet(const Color& color)
 {
 	ctx->renderer.cmdSetColor(color);
 }
 
-void rendererSetLineColor(const Color& color)
+void rendererLineColorSet(const Color& color)
 {
 	ctx->renderer.currentLineStyle.color = color;
 	ctx->renderer.cmdSetLineStyle(ctx->renderer.currentLineStyle);
 }
 
-void rendererSetFillColor(const Color& color)
+void rendererFillColorSet(const Color& color)
 {
 	ctx->renderer.currentFillStyle.color = color;
 	ctx->renderer.cmdSetFillStyle(ctx->renderer.currentFillStyle);
 }
 
-Point rendererGetTextSize(const char* text)
+Point rendererTextSizeGet(const char* text)
 {
 	if (!ctx->renderer.getFont())
 		return Point();
@@ -89,12 +89,12 @@ Point rendererGetTextSize(const char* text)
 	return { fntInfo.width, fntInfo.height };
 }
 
-void rendererDrawTextAt(const char* text, const Point& position)
+void rendererTextAtDraw(const char* text, const Point& position)
 {
 	ctx->renderer.cmdDrawTextAt(text, position + ctx->renderer.viewportOffset);
 }
 
-void rendererDrawTextInBox(const char* text, const Rect& rect, HAlignType horizontalAlign, VAlignType verticalAlign)
+void rendererTextInBoxDraw(const char* text, const Rect& rect, HAlignType horizontalAlign, VAlignType verticalAlign)
 {
 	ctx->renderer.cmdDrawTextInBox(
 		text,
@@ -105,42 +105,42 @@ void rendererDrawTextInBox(const char* text, const Rect& rect, HAlignType horizo
 		horizontalAlign, verticalAlign);
 }
 
-void rendererDrawImage(HImage image, const Point& position, f32 scale)
+void rendererImageDraw(HImage image, const Point& position, f32 scale)
 {
 	Image* img = (Image*)image;
 	ctx->renderer.cmdDrawImage(img, position + ctx->renderer.viewportOffset, scale);
 }
 
-void rendererDrawStretchedImage(HImage image, const Rect& rect)
+void rendererStretchedImageDraw(HImage image, const Rect& rect)
 {
 	Image* img = (Image*)image;
 	ctx->renderer.cmdDrawImage(img, Rect(rect.x + ctx->renderer.viewportOffset.x, rect.y + ctx->renderer.viewportOffset.y, rect.width, rect.height));
 }
 
-void rendererDrawBorderedImage(HImage image, u32 border, const Rect& rect)
+void rendererBorderedImageDraw(HImage image, u32 border, const Rect& rect)
 {
 	Image* img = (Image*)image;
 
 	ctx->renderer.cmdDrawImageBordered(img, border, Rect(rect.x + ctx->renderer.viewportOffset.x, rect.y + ctx->renderer.viewportOffset.y, rect.width, rect.height), ctx->scale);
 }
 
-void rendererSetLineStyle(const LineStyle& style)
+void rendererLineStyleSet(const LineStyle& style)
 {
 	ctx->renderer.cmdSetLineStyle(style);
 }
 
-void rendererSetFillStyle(const FillStyle& style)
+void rendererFillStyleSet(const FillStyle& style)
 {
 	ctx->fillStyle = style;
 	ctx->renderer.cmdSetColor(style.color);
 }
 
-void rendererDrawLine(const Point& a, const Point& b)
+void rendererLineDraw(const Point& a, const Point& b)
 {
 	ctx->renderer.cmdDrawLine(a + ctx->renderer.viewportOffset, b + ctx->renderer.viewportOffset);
 }
 
-void rendererDrawPolyLine(const Point* points, u32 pointCount, bool closed)
+void rendererPolyLineDraw(const Point* points, u32 pointCount, bool closed)
 {
 	std::vector<Point> pts;
 
@@ -154,12 +154,12 @@ void rendererDrawPolyLine(const Point* points, u32 pointCount, bool closed)
 	ctx->renderer.cmdDrawPolyLine(pts.data(), pointCount, closed);
 }
 
-void rendererDrawCircle(const Point& center, f32 radius, u32 segments)
+void rendererCircleDraw(const Point& center, f32 radius, u32 segments)
 {
-	rendererDrawEllipse(center, radius, radius, segments);
+	rendererEllipseDraw(center, radius, radius, segments);
 }
 
-void rendererDrawEllipse(const Point& center, f32 radiusX, f32 radiusY, u32 segments)
+void rendererEllipseDraw(const Point& center, f32 radiusX, f32 radiusY, u32 segments)
 {
 	std::vector<Point> pts;
 	Point pt;
@@ -179,7 +179,7 @@ void rendererDrawEllipse(const Point& center, f32 radiusX, f32 radiusY, u32 segm
 	ctx->renderer.cmdDrawPolyLine(pts.data(), pts.size(), true);
 }
 
-void rendererDrawRectangle(const Rect& rc)
+void rendererRectangleDraw(const Rect& rc)
 {
 	Point pts[4] = {
 		rc.topLeft() + ctx->renderer.viewportOffset,
@@ -191,7 +191,7 @@ void rendererDrawRectangle(const Rect& rc)
 	ctx->renderer.cmdDrawPolyLine(pts, 4, true);
 }
 
-void rendererDrawSolidRectangle(const Rect& rc)
+void rendererSolidRectangleDraw(const Rect& rc)
 {
 	ctx->renderer.cmdDrawFilledRectangle(
 		{
@@ -275,7 +275,7 @@ static f32 computeSplineLength(const Point& start, const Point& start_tangent,
 	return 0.5f * length;
 }
 
-void rendererDrawSpline(SplineControlPoint* points, u32 count, f32 segmentSize)
+void rendererSplineDraw(SplineControlPoint* points, u32 count, f32 segmentSize)
 {
 	std::vector<Point> pts;
 
@@ -291,15 +291,15 @@ void rendererDrawSpline(SplineControlPoint* points, u32 count, f32 segmentSize)
 		}
 	}
 
-	rendererDrawPolyLine(pts.data(), pts.size(), false);
+	rendererPolyLineDraw(pts.data(), pts.size(), false);
 }
 
-void rendererDrawArrow(const Point& a, const Point& b, f32 tipLength, f32 tipWidth, bool drawBodyLine)
+void rendererArrowDraw(const Point& a, const Point& b, f32 tipLength, f32 tipWidth, bool drawBodyLine)
 {
 	//TODO
 }
 
-void rendererDrawSolidTriangle(
+void rendererSolidTriangleDraw(
 	const Point& p1, const Point& p2, const Point& p3)
 {
 	ctx->renderer.cmdDrawSolidTriangle(

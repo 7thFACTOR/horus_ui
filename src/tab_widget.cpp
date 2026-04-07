@@ -6,12 +6,12 @@
 
 namespace hui
 {
-void beginTabGroup(TabIndex selectedIndex)
+void tabGroupBegin(TabIndex selectedIndex)
 {
 	auto& tabGroupElemState = ctx->theme->getElement(WidgetElementId::TabGroupBody).normalState();
 	f32 height = tabGroupElemState.height * ctx->scale;
 
-	pushPosition();
+	widgetPositionPush();
 	// round position only when it gets modified, to avoid accumulation of float precision errors
 	ctx->widget.rect.set(
 		round(ctx->position.x),
@@ -67,12 +67,12 @@ void beginTabGroup(TabIndex selectedIndex)
 	ctx->currentTabIndex = 0;
 }
 
-TabIndex endTabGroup()
+TabIndex tabGroupEnd()
 {
 	auto& tabGroupElemState = ctx->theme->getElement(WidgetElementId::TabGroupBody).normalState();
 	f32 height = tabGroupElemState.height * ctx->scale;
 
-	popPosition();
+	widgetPositionPop();
 
 	ctx->position.y += height;
 	ctx->position.y = round(ctx->position.y);
@@ -82,7 +82,7 @@ TabIndex endTabGroup()
 	{
 		if (ctx->tabGroupWidgetRect.contains(ctx->mousePosition) && ctx->docking.currentDockNode)
 		{
-			focusWindow(ctx->docking.currentDockNode->windows[ctx->selectedTabIndex]->id.c_str());
+			windowFocus(ctx->docking.currentDockNode->windows[ctx->selectedTabIndex]->id.c_str());
 		}
 	}
 
@@ -95,7 +95,7 @@ void tab(const char* label, HImage img)
 	auto& tabActiveElem = ctx->theme->getElement(WidgetElementId::TabBodyActive);
 	auto& tabInactiveElem = ctx->theme->getElement(WidgetElementId::TabBodyInactive);
 	auto tabElemState = &tabActiveElem.normalState();
-	auto& padding = getWidgetPadding();
+	auto& padding = widgetPaddingGet();
 
 	Utf32String uniStr;
 
@@ -117,7 +117,7 @@ void tab(const char* label, HImage img)
 
 	f32 height = (tabElemState->height + padding.y * 2.0f) * ctx->scale;
 
-	ctx->id = genIdFromPosition(label);
+	ctx->id = idFromPositionGen(label);
 
 	ctx->widget.rect.set(
 		round(ctx->position.x),

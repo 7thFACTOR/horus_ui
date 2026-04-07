@@ -8,11 +8,11 @@ namespace hui
 static void beginBoxLayoutInternal(const char* id, const Color& color, ThemeElement::State& state, f32 customHeight)
 {
 	const auto parentWidth = ctx->layout.width;
-	const auto& padding = getPadding(PaddingType::Layout);
+	const auto& padding = paddingGet(PaddingType::Layout);
 
-	pushLayout();
+	layoutPush();
 	ctx->layout.type = LayoutType::Generic;
-	ctx->layout.id = ctx->id = genId(id);
+	ctx->layout.id = ctx->id = idGen(id);
 	ctx->layout.savedPosition = ctx->position;
 	ctx->layout.width = parentWidth - (state.border + padding.x) * ctx->scale * 2.0f;
 	
@@ -38,7 +38,7 @@ static void beginBoxLayoutInternal(const char* id, const Color& color, ThemeElem
 	ctx->boxDrawCmdSplitter[ctx->id].setLayer(1);
 }
 
-void beginBoxLayout(
+void boxBegin(
 	const char* id,
 	const Color& tintColor,
 	WidgetElementId widgetElementId,
@@ -50,7 +50,7 @@ void beginBoxLayout(
 	beginBoxLayoutInternal(id, tintColor, boxElemState, customHeight);
 }
 
-void beginBoxLayoutUserElement(
+void boxBeginUserElement(
 	const char* id,
 	const Color& tintColor,
 	const char* userElementName,
@@ -66,7 +66,7 @@ void beginBoxLayoutUserElement(
 	}
 }
 
-bool endBoxLayout()
+bool boxEnd()
 {
 	ctx->id = ctx->layout.id;
 	auto& boxState = ctx->boxState[ctx->id];
@@ -109,7 +109,7 @@ bool endBoxLayout()
 	
 	ctx->position.y += height;
 	ctx->boxDrawCmdSplitter[ctx->id].merge();
-	popLayout();
+	layoutPop();
 
 	return ctx->widget.pressed;
 }

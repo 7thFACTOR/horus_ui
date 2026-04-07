@@ -54,12 +54,12 @@ bool TextInputState::processEvent(const InputEvent& ev)
 		selectionBegin = selectionEnd = caretPosition;
 		selectingWithMouse = false;
 		computeScrollAmount();
-		setWindowCapture();
+		windowSetCapture();
 	}
 	else if (ev.type == InputEvent::Type::MouseUp)
 	{
 		computeScrollAmount();
-		releaseWindowCapture();
+		windowReleaseCapture();
 
 		if (!mouseMoved && firstMouseDown && !selectingWithMouse)
 		{
@@ -461,7 +461,7 @@ void TextInputState::processKeyEvent(const InputEvent& ev)
 			char* tmpStr = 0;
 
 			ctx->settings.services.utf32To8(str, &tmpStr);
-			copyToClipboard(tmpStr);
+			clipboardCopy(tmpStr);
 			delete[] tmpStr;
 		}
 	}
@@ -476,7 +476,7 @@ void TextInputState::processKeyEvent(const InputEvent& ev)
 		char tmpStr[maxTextSize];
 		Utf32String utf32Str;
 
-		pasteFromClipboard(tmpStr, maxTextSize);
+		clipboardPaste(tmpStr, maxTextSize);
 
 		if (ctx->settings.services.utf8To32(tmpStr, utf32Str))
 		{
@@ -508,7 +508,7 @@ void TextInputState::processKeyEvent(const InputEvent& ev)
 
 			if (ctx->settings.services.utf32To8(str, &str8))
 			{
-				copyToClipboard(str8);
+				clipboardCopy(str8);
 				delete[] str8;
 				textChanged = true;
 			}

@@ -9,14 +9,14 @@ namespace hui
 {
 bool button(const char* label)
 {
-	ctx->setLabelAndId(label);
+	ctx->labelAndIdSet(label);
 
 	auto& btnBodyElem = ctx->theme->getElement(WidgetElementId::ButtonBody);
 	auto textWidth = btnBodyElem.normalState().font->computeTextSize(ctx->widgetLabel.c_str());
 
 	ctx->widget.customWidth = btnBodyElem.normalState().border * 2.0f + textWidth.width;
 	ctx->widget.hasCustomWidth = true;
-	addWidget(btnBodyElem.normalState().height);
+	widgetAdd(btnBodyElem.normalState().height);
 	buttonBehavior();
 
 	auto btnBodyElemState = &btnBodyElem.normalState();
@@ -30,9 +30,9 @@ bool button(const char* label)
 
 	if (ctx->widget.visible)
 	{
-		ctx->renderer.cmdSetColor(applyTint(btnBodyElemState->color, TintColorType::Body));
+		ctx->renderer.cmdSetColor(tintApply(btnBodyElemState->color, TintColorType::Body));
 		ctx->renderer.cmdDrawImageBordered(btnBodyElemState->image, btnBodyElemState->border, ctx->widget.rect, ctx->scale);
-		ctx->renderer.cmdSetColor(applyTint(btnBodyElemState->textColor, TintColorType::Text));
+		ctx->renderer.cmdSetColor(tintApply(btnBodyElemState->textColor, TintColorType::Text));
 		ctx->renderer.cmdSetFont(btnBodyElemState->font);
 		ctx->renderer.cmdDrawTextInBox(
 			ctx->widgetLabel.c_str(),
@@ -47,7 +47,7 @@ bool button(const char* label)
 			VAlignType::Center, true);
 	}
 
-	setFocusable();
+	focusableSet();
 
 	return ctx->widget.clicked;
 }
@@ -66,8 +66,8 @@ static bool imageButtonInternal(HImage img, HImage disabledImg, f32 width, f32 h
 	ctx->widget.customWidth = width;
 	ctx->widget.hasCustomWidth = true;
 
-	ctx->setLabelAndId(nullptr);
-	addWidget(height * ctx->scale);
+	ctx->labelAndIdSet(nullptr);
+	widgetAdd(height * ctx->scale);
 	buttonBehavior();
 
 	f32 pressedIncrement = 0.0f;
@@ -77,7 +77,7 @@ static bool imageButtonInternal(HImage img, HImage disabledImg, f32 width, f32 h
 		btnBodyElemState = &btnBodyElem->getState(WidgetStateType::Disabled);
 		image = disabledImage;
 	}
-	else if (ctx->widget.pressed || down || isClicked())
+	else if (ctx->widget.pressed || down || widgetIsClicked())
 	{
 		btnBodyElemState = &btnBodyElem->getState(WidgetStateType::Pressed);
 		pressedIncrement = 1.0f;
@@ -92,11 +92,11 @@ static bool imageButtonInternal(HImage img, HImage disabledImg, f32 width, f32 h
 		auto imgWidth = image->rect.width * ctx->scale;
 		auto imgHeight = image->rect.height * ctx->scale;
 
-		viewportImageFitSize(imgWidth, imgHeight, ctx->widget.rect.width - (getWidgetPadding().x * 2.0f + btnBodyElemState->border * 2.0f) * ctx->scale, ctx->widget.rect.height - (getWidgetPadding().y * 2.0f + btnBodyElemState->border * 2.0f) * ctx->scale, imgWidth, imgHeight, false, false);
+		viewportImageSizeFit(imgWidth, imgHeight, ctx->widget.rect.width - (widgetPaddingGet().x * 2.0f + btnBodyElemState->border * 2.0f) * ctx->scale, ctx->widget.rect.height - (widgetPaddingGet().y * 2.0f + btnBodyElemState->border * 2.0f) * ctx->scale, imgWidth, imgHeight, false, false);
 
-		ctx->renderer.cmdSetColor(applyTint(btnBodyElemState->color, TintColorType::Body));
+		ctx->renderer.cmdSetColor(tintApply(btnBodyElemState->color, TintColorType::Body));
 		ctx->renderer.cmdDrawImageBordered(btnBodyElemState->image, btnBodyElemState->border, ctx->widget.rect, ctx->scale);
-		ctx->renderer.cmdSetColor(applyTint(btnBodyElemState->textColor, TintColorType::Text));
+		ctx->renderer.cmdSetColor(tintApply(btnBodyElemState->textColor, TintColorType::Text));
 		ctx->renderer.cmdSetFont(btnBodyElemState->font);
 		ctx->renderer.cmdDrawImage(
 			image,
@@ -108,15 +108,15 @@ static bool imageButtonInternal(HImage img, HImage disabledImg, f32 width, f32 h
 			});
 	}
 
-	setFocusable();
+	focusableSet();
 
-	if (isClicked())
+	if (widgetIsClicked())
 		forceRepaint();
 
 	return ctx->widget.clicked;
 }
 
-bool imageButton(HImage img, f32 width, f32 height, HImage disabledImg, bool down)
+bool buttonImage(HImage img, f32 width, f32 height, HImage disabledImg, bool down)
 {
 	auto& btnBodyElem = ctx->theme->getElement(WidgetElementId::ImageButtonBody);
 

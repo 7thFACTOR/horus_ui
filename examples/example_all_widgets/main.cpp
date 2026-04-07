@@ -28,7 +28,7 @@ hui::VulkanTexture texAtlasVK;
 
 void loadImages()
 {
-	auto theme = hui::getTheme();
+	auto theme = hui::themeGet();
 	// Grab some image handles to use for the window icons
 	icon1 = hui::loadThemeImage(theme, "../themes/icons/ic_attach_file_white_24dp.png");
 	icon2 = hui::loadThemeImage(theme, "../themes/icons/ic_attach_money_white_24dp.png");
@@ -88,24 +88,24 @@ int main(int argc, char** args)
 		break;
 	}
 
-	auto huiContext = hui::createContext(settings);
-	hui::setContext(huiContext); // set as current context
+	auto huiContext = hui::contextCreate(settings);
+	hui::contextSet(huiContext); // set as current context
 
 	// Create the main window (this will also create a graphics (GL/VK/D3D/etc.) context)
 	auto mainWnd = hui::getSettings().services.createWindow((std::string("Horus Example - All Widgets - ") + gfxApiName).c_str(), hui::NativeWindowFlags::Resizable, hui::NativeWindowState::Maximized, hui::Rect(0, 0, 1500, 800));
 
 	// Create a main dock node for the main window, so we can dock windows in there
-	hui::DockNodeId mainDockNode = hui::createRootDockNode(mainWnd);
+	hui::DockNodeId mainDockNode = hui::dockNodeCreateRoot(mainWnd);
 
 	// Create the docking layout by splitting dock nodes around
 	{
 		hui::DockNodeId n1, n2;
-		hui::dockLayoutSplit(mainDockNode, hui::DockNodeSplitType::Left, 0.5f, &n1, &n2 );
-		hui::dockLayoutSetNodeWindow(n1, "hui");
-		hui::dockLayoutSetNodeWindow(n2, "scene");
-		hui::dockLayoutSplit(mainDockNode, hui::DockNodeSplitType::Top, 0.5f, &n1, &n2);
-		hui::dockLayoutSetNodeWindow(n2, "inspector");
-		hui::dockLayoutRecalculate();
+		hui::dockNodeSplit(mainDockNode, hui::DockNodeSplitType::Left, 0.5f, &n1, &n2 );
+		hui::dockNodeSetWindow(n1, "hui");
+		hui::dockNodeSetWindow(n2, "scene");
+		hui::dockNodeSplit(mainDockNode, hui::DockNodeSplitType::Top, 0.5f, &n1, &n2);
+		hui::dockNodeSetWindow(n2, "inspector");
+		hui::dockNodeRecalculateLayout();
 	}
 
 	// Load a theme
@@ -127,34 +127,34 @@ int main(int argc, char** args)
 	auto largeFnt = hui::getThemeFont(theme, "title");
 
 	// Set the current theme
-	hui::setTheme(theme);
+	hui::themeSet(theme);
 
 	loadImages();
 	// Build the theme
 	// After we load the theme and more images and fonts, we need to rebuild the theme (into the image atlas)
-	hui::buildTheme(theme);
+	hui::themeBuild(theme);
 
 	switch (sdlParams.gfxApi)
 	{
 	case hui::Sdl3GfxApi::OpenGL:
-		texAtlasGL.resize(hui::getThemeAtlasImageData().width, hui::getThemeAtlasImageData().height);
-		texAtlasGL.updateData(hui::getThemeAtlasImageData().pixels);
-		hui::setThemeAtlasTexture(texAtlasGL.getHandle());
+		texAtlasGL.resize(hui::themeGetAtlasImageData().width, hui::themeGetAtlasImageData().height);
+		texAtlasGL.updateData(hui::themeGetAtlasImageData().pixels);
+		hui::themeSetAtlasTexture(texAtlasGL.getHandle());
 		break;
 	case hui::Sdl3GfxApi::DX11:
-		texAtlasDX11.resize(hui::getThemeAtlasImageData().width, hui::getThemeAtlasImageData().height);
-		texAtlasDX11.updateData(hui::getThemeAtlasImageData().pixels);
-		hui::setThemeAtlasTexture(texAtlasDX11.getHandle());
+		texAtlasDX11.resize(hui::themeGetAtlasImageData().width, hui::themeGetAtlasImageData().height);
+		texAtlasDX11.updateData(hui::themeGetAtlasImageData().pixels);
+		hui::themeSetAtlasTexture(texAtlasDX11.getHandle());
 		break;
 	case hui::Sdl3GfxApi::DX12:
-		texAtlasDX12.resize(hui::getThemeAtlasImageData().width, hui::getThemeAtlasImageData().height);
-		texAtlasDX12.updateData(hui::getThemeAtlasImageData().pixels);
-		hui::setThemeAtlasTexture(texAtlasDX12.getHandle());
+		texAtlasDX12.resize(hui::themeGetAtlasImageData().width, hui::themeGetAtlasImageData().height);
+		texAtlasDX12.updateData(hui::themeGetAtlasImageData().pixels);
+		hui::themeSetAtlasTexture(texAtlasDX12.getHandle());
 		break;
 	case hui::Sdl3GfxApi::Vulkan:
-		texAtlasVK.resize(hui::getThemeAtlasImageData().width, hui::getThemeAtlasImageData().height);
-		texAtlasVK.updateData(hui::getThemeAtlasImageData().pixels);
-		hui::setThemeAtlasTexture(texAtlasVK.getHandle());
+		texAtlasVK.resize(hui::themeGetAtlasImageData().width, hui::themeGetAtlasImageData().height);
+		texAtlasVK.updateData(hui::themeGetAtlasImageData().pixels);
+		hui::themeSetAtlasTexture(texAtlasVK.getHandle());
 		break;
 	}
 
@@ -163,30 +163,30 @@ int main(int argc, char** args)
 
 	auto reloadTheme = [theme, sdlParams, &err, errSize, &largeFnt]()
 		{
-			hui::deleteTheme(theme);
+			hui::themeDestroy(theme);
 			auto theme = hui::loadThemeFromJson(themeFilePath, err, errSize);
-			hui::setTheme(theme);
+			hui::themeSet(theme);
 			loadImages();
 			largeFnt = hui::getThemeFont(theme, "title");
-			hui::buildTheme(theme);
+			hui::themeBuild(theme);
 
 			switch (sdlParams.gfxApi)
 			{
 			case hui::Sdl3GfxApi::OpenGL:
-				texAtlasGL.updateData(hui::getThemeAtlasImageData().pixels);
-				hui::setThemeAtlasTexture(texAtlasGL.getHandle());
+				texAtlasGL.updateData(hui::themeGetAtlasImageData().pixels);
+				hui::themeSetAtlasTexture(texAtlasGL.getHandle());
 				break;
 			case hui::Sdl3GfxApi::DX11:
-				texAtlasDX11.updateData(hui::getThemeAtlasImageData().pixels);
-				hui::setThemeAtlasTexture(texAtlasDX11.getHandle());
+				texAtlasDX11.updateData(hui::themeGetAtlasImageData().pixels);
+				hui::themeSetAtlasTexture(texAtlasDX11.getHandle());
 				break;
 			case hui::Sdl3GfxApi::DX12:
-				texAtlasDX12.updateData(hui::getThemeAtlasImageData().pixels);
-				hui::setThemeAtlasTexture(texAtlasDX12.getHandle());
+				texAtlasDX12.updateData(hui::themeGetAtlasImageData().pixels);
+				hui::themeSetAtlasTexture(texAtlasDX12.getHandle());
 				break;
 			case hui::Sdl3GfxApi::Vulkan:
-				texAtlasVK.updateData(hui::getThemeAtlasImageData().pixels);
-				hui::setThemeAtlasTexture(texAtlasVK.getHandle());
+				texAtlasVK.updateData(hui::themeGetAtlasImageData().pixels);
+				hui::themeSetAtlasTexture(texAtlasVK.getHandle());
 				break;
 			default:
 				break;
@@ -197,8 +197,8 @@ int main(int argc, char** args)
 	while (!exitNow)
 	{
 		// Clear the main window as a test
-		hui::getSettings().services.setCurrentWindow(mainWnd);
-		hui::getSettings().services.clearBackbuffer({ 0.3f, 0.0f, 0.1f, 1 });
+		HUI_SERVICES.setCurrentWindow(mainWnd);
+		HUI_SERVICES.clearBackbuffer({ 0.3f, 0.0f, 0.1f, 1 });
 
 		// track theme file modification time for auto-reload
 		static auto lastModTime = std::filesystem::last_write_time(themeFilePath);
@@ -252,7 +252,7 @@ int main(int argc, char** args)
 
 				if (confineSceneToWindow)
 				{
-					rc = hui::getWindowClientRectById("scene");
+					rc = hui::windowGetClientRectById("scene");
 				}
 				else
 				{
@@ -297,18 +297,18 @@ int main(int argc, char** args)
 			};
 
 			// Begin an actual frame of the gui
-			hui::beginFrame();
+			hui::frameBegin();
 			// disable rendering if its not the last event in the queue
 			// no need to render while handling all the input events
 			// we only render on the last event in the queue
 			hui::setDisableRendering(!lastEventInQueue);
 
-			if (hui::beginWindow("hui2", "HUI", nullptr, tabicon1))
+			if (hui::windowBegin("hui2", "HUI", nullptr, tabicon1))
 			{
 				// lets first draw a rect with a theme, for the panel
 				hui::Rect panelRect = { 5, 5, 300, 500 };
 				hui::WidgetElementInfo elemInfo;
-				hui::getThemeWidgetElementInfo(hui::WidgetElementId::PopupBody, hui::WidgetStateType::Normal, elemInfo);
+				hui::themeGetWidgetElementInfo(hui::WidgetElementId::PopupBody, hui::WidgetStateType::Normal, elemInfo);
 				hui::rendererSetColor(hui::Color::white);
 				// draw before the beginContainer, because it will clip our panel image (using padding)
 				//hui::drawBorderedImage(elemInfo.image, elemInfo.border, panelRect);
@@ -330,11 +330,11 @@ int main(int argc, char** args)
 
 				if (hui::button("DEBUG TREE PRINT"))
 				{
-					hui::debugPrintWindows();
+					hui::windowDebugPrint();
 				}
 
 				if (hui::button("Show UI window"))
-					hui::setWindowVisible("ui", true);
+					hui::windowSetVisible("ui", true);
 				static bool chk1, chk2, chk3;
 				/*hui::beginTwoColumns();
 				hui::check("Option 1", &chk1);
@@ -439,7 +439,7 @@ int main(int argc, char** args)
 				hui::setNextWidth(0.25f);
 				hui::image(img, 50, hui::HAlignType::Center);
 				//hui::setNextWidth(0.25f);
-				hui::pushWidgetStyle(hui::WidgetType::ImageButton, "important");
+				hui::widgetPushStyle(hui::WidgetType::ImageButton, "important");
 				hui::imageButton(tabicon3, 50, 50); hui::sameLine();
 				static bool down = false;
 				if (hui::imageButton(tabicon3, 50, 50, 0, down))
@@ -480,7 +480,7 @@ int main(int argc, char** args)
 					hui::endPopup();
 				}
 
-				hui::popWidgetStyle();
+				hui::widgetPopStyle();
 				hui::line();
 				hui::labelMultiline("Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum. Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium, totam rem aperiam, eaque ipsa quae ab illo inventore veritatis et quasi architecto beatae vitae dicta sunt explicabo. Nemo enim ipsam voluptatem quia voluptas sit aspernatur aut odit aut fugit, sed quia consequuntur magni dolores eos qui ratione voluptatem sequi nesciunt. Neque porro quisquam est, qui dolorem ipsum quia dolor sit amet, consectetur, adipisci velit, sed quia non numquam eius modi tempora incidunt ut labore et dolore magnam aliquam quaerat voluptatem. Ut enim ad minima veniam, quis nostrum exercitationem ullam corporis suscipit laboriosam, nisi ut aliquid ex ea commodi consequatur? Quis autem vel eum iure reprehenderit qui in ea voluptate velit esse quam nihil molestiae consequatur, vel illum qui dolorem eum fugiat quo voluptas nulla pariatur?", hui::HAlignType::Left);
 				hui::line();
@@ -521,10 +521,10 @@ int main(int argc, char** args)
 
 				hui::pushTint(hui::Color::orange);
 				hui::setNextWidth(1);
-				hui::pushWidgetStyle(hui::WidgetType::Button, "important");
+				hui::widgetPushStyle(hui::WidgetType::Button, "important");
 				if (hui::button("Exit"))
 					exitNow = true;
-				hui::popWidgetStyle();
+				hui::widgetPopStyle();
 				hui::popTint();
 				/*
 				hui::beginColumns(5);
@@ -544,18 +544,18 @@ int main(int argc, char** args)
 				hui::endColumns();
 				*/
 				//hui::endContainer();
-				hui::endWindow();
+				hui::windowEnd();
 			}
 
 			// start to add widgets in the window
-			if (hui::beginWindow("inspector", "Inspector", nullptr, tabicon2))
+			if (hui::windowBegin("inspector", "Inspector", nullptr, tabicon2))
 			{
-				hui::endWindow();
+				hui::windowEnd();
 			}
 
-			hui::setNextWindowFlags(hui::WindowFlags::Transparent);
+			hui::windowSetNextFlags(hui::WindowFlags::Transparent);
 
-			if (hui::beginWindow("scene", "Scene", nullptr, tabicon3))
+			if (hui::windowBegin("scene", "Scene", nullptr, tabicon3))
 			{
 				if (lastEventInQueue)
 				{
@@ -569,10 +569,10 @@ int main(int argc, char** args)
 					confineSceneToWindow = confine;
 				}
 
-				hui::endWindow();
+				hui::windowEnd();
 			}
 
-			if (1&&hui::beginWindow("hui", "Widget Examples", nullptr, tabicon3))
+			if (1&&hui::windowBegin("hui", "Widget Examples", nullptr, tabicon3))
 			{
 				static f32 scroller = 0;
 
@@ -668,11 +668,11 @@ int main(int argc, char** args)
 					//scroller = hui::endScrollView();
 				}
 
-				hui::endWindow();
+				hui::windowEnd();
 			}
 
 			// --- virtual list demo window (modified)
-			if (hui::beginWindow("virtual_list", "Virtual List Demo", nullptr, tabicon1))
+			if (hui::windowBegin("virtual_list", "Virtual List Demo", nullptr, tabicon1))
 			{
 				// persistent virtual list state: only provide item count here
 				static hui::VirtualScrollInfo vinfo(10000); // 100k items
@@ -719,10 +719,10 @@ int main(int argc, char** args)
 				hui::space(6);
 				hui::label(info);
 
-				hui::endWindow();
+				hui::windowEnd();
 			}
 
-			hui::endFrame();
+			hui::frameEnd();
 
 			lastMs = hui::getLastFrameTimeMs();
 
@@ -735,7 +735,7 @@ int main(int argc, char** args)
 		{
 			for (int i = 0; i < eventCount; i++)
 			{
-				hui::setInputEvent(hui::getInputEventAt(i));
+				hui::setInputEvent(hui::inputEventGetAt(i));
 
 				if (hui::getInputEvent().type == hui::InputEvent::Type::WindowClose)
 				{
@@ -755,7 +755,7 @@ int main(int argc, char** args)
 		}
 	}
 
-	hui::deleteContext(huiContext);
+	hui::contextDestroy(huiContext);
 
 	hui::shutdownStdioFileIO(settings.services);
 	hui::shutdownFreetype(settings.services);

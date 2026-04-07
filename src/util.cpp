@@ -8,29 +8,29 @@
 
 namespace hui
 {
-WidgetId genId(const char* text)
+WidgetId idGen(const char* text)
 {
 	return hashString(text, ctx->idStack.empty() ? 0 : ctx->idStack.back());
 }
 
-WidgetId genId(u32 id)
+WidgetId idGen(u32 id)
 {
 	return hashData(&id, sizeof(id), ctx->idStack.empty() ? 0 : ctx->idStack.back());
 }
 
-WidgetId genId(void* ptr)
+WidgetId idGen(void* ptr)
 {
 	return hashData(&ptr, sizeof(ptr), ctx->idStack.empty() ? 0 : ctx->idStack.back());
 }
 
-WidgetId genIdFromPosition(const char* text)
+WidgetId idFromPositionGen(const char* text)
 {
 	auto posStr = std::to_string(ctx->position.x) + std::to_string(ctx->position.y);
 
-	return genId((std::string(text) + posStr).c_str());
+	return idGen((std::string(text) + posStr).c_str());
 }
 
-void toStringI32(i32 value, char* outString, u32 outStringMaxSize, u32 fillerZeroesCount)
+void stringFromI32(i32 value, char* outString, u32 outStringMaxSize, u32 fillerZeroesCount)
 {
 	if (fillerZeroesCount)
 	{
@@ -44,7 +44,7 @@ void toStringI32(i32 value, char* outString, u32 outStringMaxSize, u32 fillerZer
 		snprintf(outString, outStringMaxSize, "%d", value);
 }
 
-void toStringF32(f32 value, char* outString, u32 outStringMaxSize, i32 decimalPlaces)
+void stringFromF32(f32 value, char* outString, u32 outStringMaxSize, i32 decimalPlaces)
 {
 	if (decimalPlaces >= 0)
 	{

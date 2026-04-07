@@ -11,7 +11,7 @@ static bool labelInternal(const char* label, HAlignType horizontalAlign, Font* f
 	f32 height = 0;
 	auto& bodyElemState = bodyElem.normalState();
 
-	ctx->setLabelAndId(label);
+	ctx->labelAndIdSet(label);
 	auto fsize = ctx->renderer.computeSizeOrDrawText(ctx->widgetLabel.c_str(), Rect(0, 0, ctx->layout.width , FLT_MAX), HAlignType::Left, VAlignType::Top, false, font ? font : bodyElem.normalState().font, true);
 	height = (bodyElemState.height > fsize.height ? bodyElemState.height : fsize.height);
 
@@ -21,7 +21,7 @@ static bool labelInternal(const char* label, HAlignType horizontalAlign, Font* f
 		ctx->widget.hasCustomWidth = true;
 	}
 
-	addWidget(height);
+	widgetAdd(height);
 	buttonBehavior();
 
 	if (ctx->widget.hoveredId == ctx->id)
@@ -38,7 +38,7 @@ static bool labelInternal(const char* label, HAlignType horizontalAlign, Font* f
 			ctx->widget.rect.height
 		};
 
-		ctx->renderer.cmdSetColor(applyTint(bodyElemState.textColor, TintColorType::Text));
+		ctx->renderer.cmdSetColor(tintApply(bodyElemState.textColor, TintColorType::Text));
 		ctx->renderer.cmdSetFont(font ? font : bodyElemState.font);
 		ctx->renderer.cmdDrawTextInBox(
 			ctx->widgetLabel.c_str(),
@@ -70,16 +70,16 @@ bool labelMultiline(const char* label, HAlignType horizontalAlign)
 bool labelCustomFontMultiline(const char* label, HFont font, HAlignType horizontalAlign)
 {
 	auto& bodyElemState = ctx->theme->getElement(WidgetElementId::LabelBody).normalState();
-	auto& padding = getWidgetPadding();
+	auto& padding = widgetPaddingGet();
 	f32 width = ctx->layout.width - padding.x * 2.0f * ctx->scale;
 
-	ctx->setLabelAndId(label);
+	ctx->labelAndIdSet(label);
 
 	auto textSize = ((Font*)font)->computeTextSize(ctx->widgetLabel.c_str(), (u32)round(width));
 
-	addWidget(textSize.height + padding.y * 2.0f * ctx->scale);
+	widgetAdd(textSize.height + padding.y * 2.0f * ctx->scale);
 
-	ctx->renderer.cmdSetColor(applyTint(bodyElemState.textColor, TintColorType::Text));
+	ctx->renderer.cmdSetColor(tintApply(bodyElemState.textColor, TintColorType::Text));
 	ctx->renderer.cmdSetFont((Font*)font);
 	ctx->renderer.cmdDrawTextInBox(
 		ctx->widgetLabel.c_str(),

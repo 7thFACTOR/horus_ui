@@ -9,7 +9,7 @@ void progress(f32 value, f32 maxValue, bool showText, bool showRealValues, const
 {
 	auto& backElem = ctx->theme->getElement(WidgetElementId::ProgressBack);
 	auto& fillElem = ctx->theme->getElement(WidgetElementId::ProgressFill);
-	auto& padding = getWidgetPadding();
+	auto& padding = widgetPaddingGet();
 
 	if (ctx->sameLine.enabled && !ctx->widget.hasNextWidth)
 	{
@@ -17,8 +17,8 @@ void progress(f32 value, f32 maxValue, bool showText, bool showRealValues, const
 		ctx->widget.hasCustomWidth = true;
 	}
 
-	ctx->setLabelAndId(nullptr);
-	addWidget((backElem.normalState().height + padding.y * 2.0) * ctx->scale);
+	ctx->labelAndIdSet(nullptr);
+	widgetAdd((backElem.normalState().height + padding.y * 2.0) * ctx->scale);
 	buttonBehavior();
 
 	const bool isSubUnit = value <= 1.0f && maxValue == 0.0f;
@@ -46,7 +46,7 @@ void progress(f32 value, f32 maxValue, bool showText, bool showRealValues, const
 	auto& backElemState = backElem.normalState();
 	auto& fillElemState = fillElem.normalState();
 
-	ctx->renderer.cmdSetColor(applyTint(backElemState.color, TintColorType::Body));
+	ctx->renderer.cmdSetColor(tintApply(backElemState.color, TintColorType::Body));
 	ctx->renderer.cmdDrawImageBordered(backElemState.image, backElemState.border,
 		ctx->widget.rect, ctx->scale);
 
@@ -71,7 +71,7 @@ void progress(f32 value, f32 maxValue, bool showText, bool showRealValues, const
 		}
 	}
 
-	ctx->renderer.cmdSetColor(applyTint(fillElemState.color, TintColorType::Body));
+	ctx->renderer.cmdSetColor(tintApply(fillElemState.color, TintColorType::Body));
 	ctx->renderer.cmdDrawImageBordered(fillElemState.image, fillElemState.border,
 		fillRc, ctx->scale);
 
@@ -109,11 +109,11 @@ void progress(f32 value, f32 maxValue, bool showText, bool showRealValues, const
 		}
 
 		ctx->renderer.cmdSetFont(fillElemState.font);
-		ctx->renderer.cmdSetColor(applyTint(textShadowColor, TintColorType::Text));
+		ctx->renderer.cmdSetColor(tintApply(textShadowColor, TintColorType::Text));
 		ctx->renderer.cmdDrawTextInBox(text.c_str(),
 			textRc, HAlignType::Right, VAlignType::Center);
 
-		ctx->renderer.cmdSetColor(applyTint(fillElemState.textColor, TintColorType::Text));
+		ctx->renderer.cmdSetColor(tintApply(fillElemState.textColor, TintColorType::Text));
 		textRc -= Point(1, 1);
 		ctx->renderer.cmdDrawTextInBox(text.c_str(),
 			textRc, HAlignType::Right, VAlignType::Center);
@@ -122,11 +122,11 @@ void progress(f32 value, f32 maxValue, bool showText, bool showRealValues, const
 	{
 		Rect textRc = ctx->widget.rect;
 
-		ctx->renderer.cmdSetColor(applyTint(textShadowColor, TintColorType::Text));
+		ctx->renderer.cmdSetColor(tintApply(textShadowColor, TintColorType::Text));
 		ctx->renderer.cmdDrawTextInBox(text.c_str(),
 			ctx->widget.rect, HAlignType::Center, VAlignType::Center);
 
-		ctx->renderer.cmdSetColor(applyTint(fillElemState.textColor, TintColorType::Text));
+		ctx->renderer.cmdSetColor(tintApply(fillElemState.textColor, TintColorType::Text));
 		textRc -= Point(1, 1);
 		ctx->renderer.cmdDrawTextInBox(text.c_str(),
 			textRc, HAlignType::Center, VAlignType::Center);

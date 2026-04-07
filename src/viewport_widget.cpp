@@ -5,7 +5,7 @@
 
 namespace hui
 {
-Rect beginViewport(const char* id, f32 height)
+Rect viewportBegin(const char* id, f32 height)
 {
 	if (height <= 0)
 	{
@@ -23,7 +23,7 @@ Rect beginViewport(const char* id, f32 height)
 	return scissor;
 }
 
-void endViewport()
+void viewportEnd()
 {
 	ctx->renderer.popClipRect();
 	ctx->renderer.viewportOffset = Point();

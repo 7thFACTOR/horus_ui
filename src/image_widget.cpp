@@ -22,13 +22,13 @@ bool image(HImage img, f32 height, HAlignType horizontalAlign, VAlignType vertic
 	f32 newWidth = imgPtr->width * ctx->scale;
 	f32 newHeight = height;
 
-	auto& padding = getWidgetPadding();
+	auto& padding = widgetPaddingGet();
 
 	if (!ctx->sameLine.enabled)
 	{
 		if (fit == ImageFitType::KeepAspect)
 		{
-			viewportImageFitSize(
+			viewportImageSizeFit(
 				imgPtr->width * ctx->scale,
 				imgPtr->height * ctx->scale,
 				ctx->layout.width - padding.x * 2.0f * ctx->scale,
@@ -45,8 +45,8 @@ bool image(HImage img, f32 height, HAlignType horizontalAlign, VAlignType vertic
 		height = newHeight;
 	}
 
-	ctx->id = genId(img);
-	addWidget(height);
+	ctx->id = idGen(img);
+	widgetAdd(height);
 
 	Point pos = ctx->widget.rect.topLeft();
 

@@ -623,7 +623,7 @@ bool saveDockingState(const char* filename)
 	return true;
 }
 
-u8* saveDockingStateToMemory(size_t& outStateInfoSize)
+u8* dockingSaveStateToMemory(size_t& outStateInfoSize)
 {
 	//TODO
 	return 0;
@@ -635,7 +635,7 @@ bool loadDockingState(const char* filename)
 	return false;
 }
 
-bool loadDockingStateFromMemory(const u8* stateInfo, size_t stateInfoSize)
+bool dockingLoadStateFromMemory(const u8* stateInfo, size_t stateInfoSize)
 {
 	//TODO
 	return true;
@@ -650,7 +650,7 @@ HNativeWindow createNativeWindow(const std::string& title, NativeWindowFlags fla
 	return wnd;
 }
 
-void destroyNativeWindow(HNativeWindow nativeWnd)
+void nativeWindowDestroy(HNativeWindow nativeWnd)
 {
 	auto iterWnd = ctx->docking.rootNativeWindowDockNodes.find(nativeWnd);
 
@@ -666,7 +666,7 @@ void destroyNativeWindow(HNativeWindow nativeWnd)
 		ctx->docking.nativeWindowsToDelete.insert(nativeWnd);
 }
 
-DockNode* createNativeWindowRootDockNode(HNativeWindow nativeWindow)
+DockNode* dockNodeRootCreateInternal(HNativeWindow nativeWindow)
 {
 	auto size = ctx->settings.services.getWindowSize(nativeWindow);
 	Rect rect = { 0, 0, size.x, size.y };
@@ -680,7 +680,7 @@ DockNode* createNativeWindowRootDockNode(HNativeWindow nativeWindow)
 	return dockNode;
 }
 
-DockNode* getRootDockNode(HNativeWindow nativeWindow)
+DockNode* dockNodeRootGet(HNativeWindow nativeWindow)
 {
 	HORUS_ASSERT(nativeWindow);
 
@@ -694,7 +694,7 @@ DockNode* getRootDockNode(HNativeWindow nativeWindow)
 	return iterWnd->second;
 }
 
-void deleteRootDockNode(HNativeWindow nativeWindow)
+void dockNodeRootDelete(HNativeWindow nativeWindow)
 {
 	HORUS_ASSERT(nativeWindow);
 
@@ -714,7 +714,7 @@ void deleteRootDockNode(HNativeWindow nativeWindow)
 	}
 }
 
-Window* createWindow(const std::string& id, DockNode* targetNode, DockType dockType, const std::string& title, Rect* initialRect, HNativeWindow nativeWindow, HImage img)
+Window* windowCreateInternal(const std::string& id, DockNode* targetNode, DockType dockType, const std::string& title, Rect* initialRect, HNativeWindow nativeWindow, HImage img)
 {
 	auto targetNodePtr = (DockNode*)targetNode;
 	auto newWnd = new Window();
@@ -728,10 +728,10 @@ Window* createWindow(const std::string& id, DockNode* targetNode, DockType dockT
 	{
 		if (!nativeWindow)
 		{
-			nativeWindow = createNativeWindow(title, NativeWindowFlags::Resizable, NativeWindowState::Normal, initialRect ? *initialRect : defaultRect);
+			nativeWindow = nativeWindowCreate(title, NativeWindowFlags::Resizable, NativeWindowState::Normal, initialRect ? *initialRect : defaultRect);
 		}
 		
-		newWnd->dockNode = createNativeWindowRootDockNode(nativeWindow);
+		newWnd->dockNode = dockNodeRootCreateInternal(nativeWindow);
 		newWnd->dockNode->createdByDockingSystem = true;
 		newWnd->dockNode->windows.push_back(newWnd);
 		newWnd->clientRect = newWnd->dockNode->rect;
@@ -742,13 +742,13 @@ Window* createWindow(const std::string& id, DockNode* targetNode, DockType dockT
 
 	if (targetNode)
 	{
-		dockWindow(newWnd, targetNode, dockType);
+		windowDockInternal(newWnd, targetNode, dockType);
 	}
 
 	return newWnd;
 }
 
-void deleteWindow(Window* wnd)
+void windowDeleteInternal(Window* wnd)
 {
 	DockNode* node = wnd->dockNode;
 
@@ -756,11 +756,11 @@ void deleteWindow(Window* wnd)
 
 	if (!node->parent)
 	{
-		destroyNativeWindow(node->nativeWindow);
+		nativeWindowDestroy(node->nativeWindow);
 	}
 }
 
-void closeWindow(Window* wnd)
+void windowCloseInternal(Window* wnd)
 {
 	DockNode* node = wnd->dockNode;
 
@@ -769,12 +769,12 @@ void closeWindow(Window* wnd)
 		&& node->children.empty()
 		&& node->windows.size() == 1)
 	{
-		destroyNativeWindow(node->nativeWindow);
+		nativeWindowDestroy(node->nativeWindow);
 		node->nativeWindow = nullptr;
 	}
 }
 
-bool dockWindow(Window* wnd, DockNode* targetNode, DockType dockType, u32 tabIndex, const Point* undockedWindowPos)
+bool windowDockInternal(Window* wnd, DockNode* targetNode, DockType dockType, u32 tabIndex, const Point* undockedWindowPos)
 {
 	auto source = wnd->dockNode;
 	DockNode* target = targetNode;
@@ -1546,7 +1546,7 @@ bool dockWindow(Window* wnd, DockNode* targetNode, DockType dockType, u32 tabInd
 		break;
 	}
 
-	focusWindow(wnd->id.c_str());
+	windowFocus(wnd->id.c_str());
 
 	for (auto& pair : ctx->docking.rootNativeWindowDockNodes)
 	{
@@ -1680,7 +1680,7 @@ f32 getRemainingDockNodeClientHeight(HDockNode node)
 	return round((f32)nodeObj->rect.height - (ctx->position.y - nodeObj->rect.y));
 }
 
-Rect getWindowClientRect(Window* window)
+Rect windowGetClientRect(Window* window)
 {
 	auto rc = window->dockNode->rect;
 	auto tabHeight = ctx->theme->getElement(WidgetElementId::TabGroupBody).normalState().height * ctx->scale;
@@ -1728,7 +1728,7 @@ void printInfo(int level, DockNode* node)
 	}
 }
 
-void debugPrintWindows()
+void windowDebugPrint()
 {
 	printf("------------------------------------------------------------------------------------------------------------\n");
 	printf("Debug windows:\n\n");
@@ -1762,7 +1762,7 @@ void handleDockingMouseDown(const InputEvent& event, DockNode* node)
 
 		if (wnd.second->clientRect.contains(mousePos) && wnd.second->dockNode->selectedTabIndex == wnd.second->dockNode->getWindowIndex(wnd.second))
 		{
-			focusWindow(wnd.second->id.c_str());
+			windowFocus(wnd.second->id.c_str());
 		}
 
 		// return if the widget is not visible, that is outside current clip rect
@@ -1776,7 +1776,7 @@ void handleDockingMouseDown(const InputEvent& event, DockNode* node)
 		if (clippedRect.contains(mousePos.x, mousePos.y))
 		{
 			ds.dragWindow = wnd.second;
-			focusWindow(wnd.second->id.c_str());
+			windowFocus(wnd.second->id.c_str());
 			ds.dragWindowMouseDelta = mousePos - ds.dragWindow->tabRect.topLeft();
 			break;
 		}
@@ -1840,7 +1840,7 @@ void handleDockingMouseUp()
 				wndPos = &pos;
 			}
 
-			dockWindow(ds.dragWindow, ds.dockToNode, ds.dockType, tabIndex, wndPos);
+			windowDockInternal(ds.dragWindow, ds.dockToNode, ds.dockType, tabIndex, wndPos);
 		}
 		else
 		{
@@ -2441,7 +2441,7 @@ void handleDockingMouseMove(const InputEvent& event, DockNode* node)
 	handleDockNodeResize(node);
 }
 
-void handleDockNodeEvents(DockNode* node)
+void dockNodeEventsHandle(DockNode* node)
 {
 	auto& rect = node->rect;
 	auto& event = hui::getInputEvent();
@@ -2548,14 +2548,14 @@ void drawDockPreview(Window* window, const Rect& windowRect)
 
 	if (ctx->settings.dockingStyle == DockingGuidesStyle::NativeWindows)
 	{
-		auto tintColorStr = hui::getThemeUserSetting(ctx->theme, "dockPreviewNativeWindowsColorTint");
+		auto tintColorStr = hui::themeGetUserSetting(ctx->theme, "dockPreviewNativeWindowsColorTint");
 
 		if (tintColorStr && strcmp(tintColorStr, ""))
 			tintColor = getColorFromText(tintColorStr);
 	}
 	else
 	{
-		auto tintColorStr = hui::getThemeUserSetting(ctx->theme, "dockPreviewInsideWindowsColorTint");
+		auto tintColorStr = hui::themeGetUserSetting(ctx->theme, "dockPreviewInsideWindowsColorTint");
 
 		if (tintColorStr && strcmp(tintColorStr, ""))
 			tintColor = getColorFromText(tintColorStr);
@@ -2573,7 +2573,7 @@ void drawDockPreview(Window* window, const Rect& windowRect)
 	ctx->renderer.popClipRect();
 }
 
-void updateDockingSystem()
+void dockingSystemUpdate()
 {
 	if (ctx->docking.rootNativeWindowDockNodes.empty())
 		return;
@@ -2600,7 +2600,7 @@ void updateDockingSystem()
 
 	for (auto& wnd : copyOfRootNativeWindowDockNodes)
 	{
-		handleDockNodeEvents(wnd.second);
+		dockNodeEventsHandle(wnd.second);
 	}
 
 	if (ctx->event.type == InputEvent::Type::WindowResized || ctx->event.type == InputEvent::Type::WindowMoved)
@@ -2638,7 +2638,7 @@ void updateDockingSystem()
 
 	if (ctx->event.type == InputEvent::Type::MouseUp)
 	{
-		handleDockingMouseUp();
+		dockingMouseUpHandle();
 	}
 
 	if (ds.lastHoveredNode && ds.lastHoveredNode != ds.hoveredNode)
@@ -2694,7 +2694,7 @@ void updateDockingSystem()
 			{
 				ctx->settings.services.setCurrentWindow(ds.dragIndicatorNativeWindow);
 				ctx->renderer.disableRendering = false;
-				ctx->renderer.setCurrentNativeWindow(ds.dragIndicatorNativeWindow);
+				ctx->renderer.nativeWindowSetCurrent(ds.dragIndicatorNativeWindow);
 				ctx->renderer.setWindowSize(screenRect.getSize());
 				ctx->renderer.begin();
 				// the rect is in screen coords, just make it relative to our dragged indicator window
@@ -2713,7 +2713,7 @@ void updateDockingSystem()
 
 				ctx->settings.services.setCurrentWindow(ds.hoveredNode->nativeWindow);
 				ctx->renderer.disableRendering = false;
-				ctx->renderer.setCurrentNativeWindow(ds.hoveredNode->nativeWindow);
+				ctx->renderer.nativeWindowSetCurrent(ds.hoveredNode->nativeWindow);
 				ctx->renderer.setWindowSize(rc.getSize());
 				ctx->renderer.begin();
 				ctx->renderer.pushWindowDrawCmdLayer(DrawCmdLayerType::Overlay);

@@ -5,7 +5,7 @@
 
 namespace hui
 {
-bool beginWindow(const char* id, const char* title, Rect* initialRect, HImage img)
+bool windowBegin(const char* id, const char* title, Rect* initialRect, HImage img)
 {
 	Window* wnd = nullptr;
 	auto iterWnd = ctx->docking.windows.find(id);
@@ -27,7 +27,7 @@ bool beginWindow(const char* id, const char* title, Rect* initialRect, HImage im
 			parentNode = ctx->docking.dockNodeIdsMap[iter->second];
 		}
 
-		wnd = createWindow(id, parentNode, parentNode ? DockType::AsTab : DockType::None, title, initialRect, 0, img);
+		wnd = windowCreateInternal(id, parentNode, parentNode ? DockType::AsTab : DockType::None, title, initialRect, 0, img);
 		wnd->id = id;
 	}
 	else
@@ -65,7 +65,7 @@ bool beginWindow(const char* id, const char* title, Rect* initialRect, HImage im
 	}
 	
 	ctx->currentWindow = wnd;
-	setCurrentNativeWindow(wnd->dockNode->nativeWindow);	
+	nativeWindowCurrentSet(wnd->dockNode->nativeWindow);	
 	ctx->renderer.begin();
 	auto rc = wnd->clientRect;
 
@@ -84,21 +84,21 @@ bool beginWindow(const char* id, const char* title, Rect* initialRect, HImage im
 		style->getParameter("paddingY", 10) };
 
 	pushPadding(PaddingType::Layout, padding);
-	beginLayout(rc);
+	layoutBegin(rc);
 	pushId((void*)wnd);
 
 	return true;
 }
 
-void endWindow()
+void windowEnd()
 {
 	popId();
-	endLayout();
+	layoutEnd();
 	popPadding(PaddingType::Layout);
 	ctx->renderer.end();
 }
 
-void setWindowVisible(const char* windowId, bool visible)
+void windowVisibleSet(const char* windowId, bool visible)
 {
 	if (!visible)
 	{
@@ -121,12 +121,12 @@ void setWindowVisible(const char* windowId, bool visible)
 	}
 }
 
-void setNextWindowFlags(WindowFlags flags)
+void windowNextFlagsSet(WindowFlags flags)
 {
 	ctx->nextWindowFlags = flags;
 }
 
-void focusWindow(const char* windowId)
+void windowFocus(const char* windowId)
 {
 	auto wndIter = ctx->docking.windows.find(windowId);
 
@@ -150,7 +150,7 @@ void focusWindow(const char* windowId)
 	}
 }
 
-void dockWindow(const char* windowId, const char* targetWindowId, DockType dockType, const Point* undockedWindowPos)
+void windowDock(const char* windowId, const char* targetWindowId, DockType dockType, const Point* undockedWindowPos)
 {
 	Window* wnd1 = nullptr;
 	Window* wnd2 = nullptr;
@@ -176,21 +176,21 @@ void dockWindow(const char* windowId, const char* targetWindowId, DockType dockT
 
 	if (wnd1)
 	{
-		dockWindow(wnd1, wnd2 ? wnd2->dockNode : nullptr, dockType, 0, undockedWindowPos);
+		windowDockInternal(wnd1, wnd2 ? wnd2->dockNode : nullptr, dockType, 0, undockedWindowPos);
 	}
 }
 
-void dockWindow(const char* windowId, const char* targetWindowId, DockType dockType)
+void windowDock(const char* windowId, const char* targetWindowId, DockType dockType)
 {
-	dockWindow(windowId, targetWindowId, dockType, nullptr);
+	windowDock(windowId, targetWindowId, dockType, nullptr);
 }
 
-void undockWindow(const char* windowId, const Point& windowPos)
+void windowUndock(const char* windowId, const Point& windowPos)
 {
-	dockWindow(windowId, nullptr, DockType::Floating, &windowPos);
+	windowDock(windowId, nullptr, DockType::Floating, &windowPos);
 }
 
-bool isMouseOverWindow()
+bool windowIsMouseOver()
 {
 	if (ctx->currentWindow)
 	{
@@ -200,22 +200,22 @@ bool isMouseOverWindow()
 	return false;
 }
 
-void setWindowCapture()
+void windowCaptureSet()
 {
 	ctx->settings.services.setCapture(ctx->currentWindow ? ctx->currentWindow->dockNode->nativeWindow : 0);
 }
 
-void releaseWindowCapture()
+void windowCaptureRelease()
 {
 	ctx->settings.services.releaseCapture();
 }
 
-Rect getCurrentWindowClientRect()
+Rect windowClientRectGet()
 {
 	return ctx->currentWindow->clientRect;
 }	
 
-Rect getWindowClientRect(const char* windowId)
+Rect windowClientRectGetById(const char* windowId)
 {
 	auto iter = ctx->docking.windows.find(windowId);
 

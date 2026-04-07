@@ -358,12 +358,12 @@ static void stopTextInput()
 	SDL_StopTextInput(sdl3InputContext->textInputWindow);
 }
 
-static bool copyToClipboard(const char* text)
+static bool clipboardCopy(const char* text)
 {
 	return 0 == SDL_SetClipboardText(text);
 }
 
-static bool pasteFromClipboard(char* outText, u32 maxTextSize)
+static bool clipboardPaste(char* outText, u32 maxTextSize)
 {
 	if (!SDL_HasClipboardText())
 		return false;
@@ -401,7 +401,7 @@ static void addSdlEvent(SDL_Event& ev)
 		if (!sdl3InputContext->addedMouseMove)
 		{
 			sdl3InputContext->addedMouseMove = true;
-			hui::setMouseMoved(true);
+			hui::inputSetMouseMoved(true);
 			outEvent.type = InputEvent::Type::MouseMove;
 			outEvent.mouse.point.x = ev.motion.x;
 			outEvent.mouse.point.y = ev.motion.y;
@@ -1100,8 +1100,8 @@ void initSdl3(Services& services, const Sdl3InitParams& params)
 
 	services.startTextInput = startTextInput;
 	services.stopTextInput = stopTextInput;
-	services.copyToClipboard = copyToClipboard;
-	services.pasteFromClipboard = pasteFromClipboard;
+	services.clipboardCopy = clipboardCopy;
+	services.clipboardPaste = clipboardPaste;
 	services.processWindowEvents = processWindowEvents;
 	services.setCurrentWindow = setCurrentWindow;
 	services.getCurrentWindow = getCurrentWindow;
@@ -1164,8 +1164,8 @@ void shutdownSdl3(Services& services)
 
 	services.startTextInput = nullptr;
 	services.stopTextInput = nullptr;
-	services.copyToClipboard = nullptr;
-	services.pasteFromClipboard = nullptr;
+	services.clipboardCopy = nullptr;
+	services.clipboardPaste = nullptr;
 	services.processWindowEvents = nullptr;
 	services.setCurrentWindow = nullptr;
 	services.getCurrentWindow = nullptr;

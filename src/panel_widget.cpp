@@ -14,10 +14,10 @@ bool expandable(const char* label, bool* expandedVar)
 	auto bodyElemState = &bodyElem.normalState();
 	bool changed = false;
 	bool expanded = false;
-	const auto& padding = getWidgetPadding();
+	const auto& padding = widgetPaddingGet();
 
-	ctx->setLabelAndId(label);
-	addWidget((bodyElemState->image->rect.height + padding.y * 2.0f) * ctx->scale);
+	ctx->labelAndIdSet(label);
+	widgetAdd((bodyElemState->image->rect.height + padding.y * 2.0f) * ctx->scale);
 	buttonBehavior();
 
 	if (ctx->widget.clicked)
@@ -56,7 +56,7 @@ bool expandable(const char* label, bool* expandedVar)
 		bodyElemState = &bodyElem.getState(WidgetStateType::Pressed);
 	}
 
-	ctx->renderer.cmdSetColor(applyTint(bodyElemState->color, TintColorType::Body));
+	ctx->renderer.cmdSetColor(tintApply(bodyElemState->color, TintColorType::Body));
 	ctx->renderer.cmdDrawImageBordered(
 		bodyElemState->image,
 		bodyElemState->border, 
@@ -71,7 +71,7 @@ bool expandable(const char* label, bool* expandedVar)
 		arrowElemState = &panelExpandedArrow.normalState();
 	}
 
-	ctx->renderer.cmdSetColor(applyTint(arrowElemState->color, TintColorType::Body));
+	ctx->renderer.cmdSetColor(tintApply(arrowElemState->color, TintColorType::Body));
 	ctx->renderer.cmdDrawImage(
 		arrowElemState->image,
 		{
@@ -91,7 +91,7 @@ bool expandable(const char* label, bool* expandedVar)
 	};
 
 	ctx->renderer.pushClipRect(textRect);
-	ctx->renderer.cmdSetColor(applyTint(bodyElemState->textColor, TintColorType::Text));
+	ctx->renderer.cmdSetColor(tintApply(bodyElemState->textColor, TintColorType::Text));
 	ctx->renderer.cmdDrawTextInBox(
 		ctx->widgetLabel.c_str(),
 		textRect,

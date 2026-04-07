@@ -6,14 +6,14 @@
 
 namespace hui
 {
-void beginPopup(
+void popupBegin(
 	const char* id,
 	f32 width,
 	PopupFlags flags,
 	const Point& position,
 	WidgetElementId widgetElementId)
 {
-	ctx->id = genId(id);
+	ctx->id = idGen(id);
 	auto& popup = ctx->popupStack[ctx->popupIndex];
 
 	popup.flags = flags;
@@ -22,7 +22,7 @@ void beginPopup(
 		width *= ctx->scale;
 
 	if (!has(flags, PopupFlags::SameLayer))
-		incrementLayerIndex();
+		layerIncrement();
 
 	ctx->renderer.pushWindowDrawCmdLayer(DrawCmdLayerType::Foreground);
 	ctx->popupIndex++;
@@ -30,7 +30,7 @@ void beginPopup(
 	// not active, first show, do not render anything, next frame
 	if (!popup.active)
 	{
-		skipThisFrame();
+		skipFrame();
 		popup.active = true;
 		popup.height = 0;
 		popup.widgetElementId = widgetElementId;
@@ -113,8 +113,8 @@ void beginPopup(
 	popup.position = pos;
 	Rect popupRect = { pos.x, pos.y, width, height };
 
-	pushLayout();
-	pushPosition();
+	layoutPush();
+	widgetPositionPush();
 
 	ctx->layout = LayoutState(LayoutType::Generic);
 	ctx->position =
@@ -154,7 +154,7 @@ void beginPopup(
 	popup.id = ctx->id;
 }
 
-void endPopup()
+void popupEnd()
 {
 	auto& popup = ctx->popupStack[ctx->popupIndex - 1];
 
@@ -227,35 +227,35 @@ void endPopup()
 	
 	ctx->position = ctx->layout.savedPosition;
 	ctx->renderer.popClipRect();
-	popPosition();
-	popLayout();
+	widgetPositionPop();
+	layoutPop();
 	
 	// Restore the complete sameLine context state
 	ctx->sameLine = popup.savedSameLine;
-	ctx->renderer.popWindowDrawCmdLayer();
+	windowLayerIndexMaxDecrement();
 
 	if (!has(popup.flags, PopupFlags::SameLayer))
-		decrementLayerIndex();
+		layerDecrement();
 
 	ctx->popupIndex--;
 }
 
-void closePopup()
+void popupClose()
 {
 	auto& popup = ctx->popupStack[(size_t)ctx->popupIndex - 1];
 
 	popup.active = false;
 
 	if (!has(popup.flags, PopupFlags::SameLayer))
-		decrementWindowMaxLayerIndex();
+		windowLayerIndexMaxDecrement();
 
 	ctx->event.type = InputEvent::Type::None;
 	ctx->widget.focusedId = 0;
-	skipThisFrame();
+	skipFrame();
 	forceRepaint();
 }
 
-bool clickedOutsidePopup()
+bool popupClickedOutside()
 {
 	if (ctx->event.type != InputEvent::Type::MouseDown)
 		return false;
@@ -280,7 +280,7 @@ bool clickedOutsidePopup()
 	return false;
 }
 
-bool mouseOutsidePopup()
+bool popupMouseOutside()
 {
 	if (ctx->layout.type == LayoutType::Generic
 		&& ctx->isActiveLayer())
@@ -302,7 +302,7 @@ bool mouseOutsidePopup()
 	return false;
 }
 
-bool pressedEscapeOnPopup()
+bool popupPressedEscape()
 {
 	auto& popup = ctx->popupStack[ctx->popupIndex - 1];
 
@@ -322,9 +322,9 @@ bool pressedEscapeOnPopup()
 	return false;
 }
 
-bool mustClosePopup()
+bool popupMustClose()
 {
-	return pressedEscapeOnPopup() || clickedOutsidePopup();
+	return popupEscapePressed() || popupOutsideClicked();
 }
 
 MessageBoxButtons messageBox(
@@ -355,9 +355,9 @@ MessageBoxButtons messageBox(
 		break;
 	}
 
-	hui::beginPopup(title, 500, PopupFlags::FadeBackground | PopupFlags::Centered);
+	hui::popupBegin(title, (f32)500, PopupFlags::FadeBackground | PopupFlags::Centered);
 	auto fnt = ctx->theme->getFont("title");
-	hui::pushTint(Color::cyan);
+	hui::tintPush(Color::cyan);
 
 	if (fnt)
 	{
@@ -368,11 +368,11 @@ MessageBoxButtons messageBox(
 		hui::label(title);
 	}
 
-	hui::popTint();
+	hui::tintPop();
 	hui::line();
 
 	// body and image
-	f32 titleColWidths[2] = { 0.8, 0.2 };
+	f32 titleColWidths[2] = { 0.8f, 0.2f };
 	//beginColumns(2, titleColWidths);
 	hui::labelMultiline(message, HAlignType::Left);
 	//nextColumn();
@@ -457,20 +457,20 @@ MessageBoxButtons messageBox(
 
 	//hui::endColumns();
 
-	if (mustClosePopup())
+	if (popupMustClose())
 	{
 		returnBtns = MessageBoxButtons::Abort
 			| MessageBoxButtons::Cancel
 			| MessageBoxButtons::ClosedByEscape
 			| MessageBoxButtons::No;
-		closePopup();
+		popupClose();
 	}
 	else if (!!returnBtns)
 	{
-		closePopup();
+		popupClose();
 	}
 
-	hui::endPopup();
+	hui::popupEnd();
 
 	return returnBtns;
 }

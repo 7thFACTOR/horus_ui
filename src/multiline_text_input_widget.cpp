@@ -9,7 +9,7 @@
 
 namespace hui
 {
-bool multilineTextInput(
+bool textMultilineInput(
 	const char* id,
 	char* text,
 	u32 maxLength,
@@ -25,7 +25,7 @@ bool multilineTextInput(
 	auto& bodyTextCaretElemState = ctx->theme->getElement(WidgetElementId::TextInputCaret).normalState();
 	auto& bodyTextSelectionElemState = ctx->theme->getElement(WidgetElementId::TextInputSelection).normalState();
 	auto& currentLineHighlightElemState = ctx->theme->getElement(WidgetElementId::MultilineTextInputCurrentLineHighlight).normalState();
-	auto& padding = getWidgetPadding();
+	auto& padding = widgetPaddingGet();
 	auto& state = ctx->multilineTextInput;
 
 	state.visibleLineCount = visibleLines;
@@ -43,7 +43,7 @@ bool multilineTextInput(
 	f32 totalHeight = visibleLines * lineHeight + (padding.y + border) * 2.0f;
 
 	ctx->id = genId(id);
-	addWidget(totalHeight);
+	widgetAdd(totalHeight);
 	buttonBehavior();
 
 	// pre-calculate scroll ID for focus checks
@@ -170,7 +170,7 @@ bool multilineTextInput(
 			state.mouseMoved = false;
 			state.selectingWithMouse = false;
 			state.ensureCaretVisible();
-			setWindowCapture();
+			windowCaptureSet();
 		}
 
 		Rect rc;
@@ -186,7 +186,7 @@ bool multilineTextInput(
 	}
 
 	if (ctx->widget.hovered)
-		setMouseCursor(MouseCursorType::IBeam);
+		cursorTypeSet(MouseCursorType::IBeam);
 
 	// calculate sidebar width based on line count
 	f32 sidebarWidth = 0.0f;
@@ -489,12 +489,12 @@ bool multilineTextInput(
 		}
 
 		if (overScrollbar)
-			setMouseCursor(MouseCursorType::Arrow);
+			cursorTypeSet(MouseCursorType::Arrow);
 		else
-			setMouseCursor(MouseCursorType::IBeam);
+			cursorTypeSet(MouseCursorType::IBeam);
 	}
 
-	pushLayout();
+	layoutPush();
 
 	// begin ScrollView (it handles layout, scrollbars, and inputs)
 	// we must reset position to inside the wrapper because addWidget() moved it to the bottom
@@ -616,7 +616,7 @@ bool multilineTextInput(
 		}
 	}
 
-	beginScrollView(scrollIdName.c_str(), scrollViewHeight, initialScroll, { maxLineWidth + indicatorMargin, totalContentHeight }, ScrollViewFlags::NoBorder | ScrollViewFlags::NoPadding);
+	scrollViewBegin(scrollIdName.c_str(), scrollViewHeight, initialScroll, { maxLineWidth + indicatorMargin, totalContentHeight }, ScrollViewFlags::NoBorder | ScrollViewFlags::NoPadding);
 
 	ctx->layout.width = savedLayoutWidth; // restore layout width immediately (beginScrollView captured it)
 
@@ -936,9 +936,9 @@ bool multilineTextInput(
 
 	// advance layout position so ScrollView knows the content height
 	ctx->position.y += totalContentHeight;
-	endScrollView();
+	scrollViewEnd();
 	ctx->position = wrapperEndPos; // restore layout position
-	setFocusable();
+	focusableSet();
 
 	if (ctx->settings.textCaretBlinkSpeed > 0 && ctx->widget.focused)
 	{
@@ -948,7 +948,7 @@ bool multilineTextInput(
 			state.caretBlinkTimer = 0;
 	}
 
-	popLayout();
+	layoutPop();
 
 	bool changed = state.textChanged;
 	

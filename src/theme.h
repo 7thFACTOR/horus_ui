@@ -21,7 +21,7 @@ struct Theme
 	~Theme();
 
 	inline ThemeElement& getElement(WidgetElementId id) { return elements[(u32)id]; }
-	void setDefaultWidgetStyle();
+	void widgetSetDefaultStyle();
 	void addImagesToAtlas();
 	Font* createFont(const std::string& name, const std::string& filename, u32 size);
 	void deleteFont(Font* font);

@@ -21,7 +21,7 @@ bool list(const char* id, bool* selectedItems, ListSelectionMode selectionType, 
 	f32 totalHeight = itemHeight * itemCount;
 	Point scrollOffset;
 
-	u32 listId = genId(id);
+	u32 listId = idGen(id);
 	ctx->id = listId;
 
 	auto iter = ctx->scrollViewState.find(listId);
@@ -37,10 +37,10 @@ bool list(const char* id, bool* selectedItems, ListSelectionMode selectionType, 
 		widgetHeight = 200; // Default fallback
 	}
 
-	pushPadding(PaddingType::Layout, Point(0, 0));
-	pushPadding(PaddingType::ScrollView, Point(0, 0));
-	pushId(listId);
-	beginScrollView("listScrollView", widgetHeight, scrollOffset.y, totalHeight, ScrollViewFlags::NoHorizontalScroll);
+	paddingPush(PaddingType::Layout, Point(0, 0));
+	paddingPush(PaddingType::ScrollView, Point(0, 0));
+	idPush(listId);
+	scrollViewBegin("listScrollView", widgetHeight, scrollOffset.y, totalHeight, ScrollViewFlags::NoHorizontalScroll);
 
 	Rect viewRect = ctx->widget.rect;
 	bool changed = false;
@@ -60,7 +60,7 @@ bool list(const char* id, bool* selectedItems, ListSelectionMode selectionType, 
 				for (u32 i = 0; i < itemCount; i++) selectedItems[i] = false;
 				changed = true;
 				anchor = -1;
-				cancelEvent();
+				eventCancel();
 			}
 			else if (selectionType == ListSelectionMode::Multiple
 				&& ctx->event.key.code == KeyCode::A
@@ -68,11 +68,11 @@ bool list(const char* id, bool* selectedItems, ListSelectionMode selectionType, 
 			{
 				for (u32 i = 0; i < itemCount; i++) selectedItems[i] = true;
 				changed = true;
-				cancelEvent();
+				eventCancel();
 			}
 		}
 	}
-	pushSpacing(0.0f);
+	spacingPush(0.0f);
 	for (u32 i = 0; i < itemCount; i++)
 	{
 		bool isSelected = selectedItems[i];
@@ -133,11 +133,11 @@ bool list(const char* id, bool* selectedItems, ListSelectionMode selectionType, 
 		}
 	}
 
-	popSpacing();
-	ctx->scrollViewState[listId].scrollOffset = endScrollView();
-	popId();
-	popPadding(PaddingType::ScrollView);
-	popPadding(PaddingType::Layout);
+	spacingPop();
+	ctx->scrollViewState[listId].scrollOffset = scrollViewEnd();
+	idPop();
+	paddingPop(PaddingType::ScrollView);
+	paddingPop(PaddingType::Layout);
 
 	return changed;
 }
@@ -147,8 +147,8 @@ bool selectableInternal(const char* label, HFont font, SelectableFlags stateFlag
 	auto& bodyElem = ctx->theme->getElement(WidgetElementId::SelectableBody);
 	Font* fnt = font ? (Font*)font : bodyElem.normalState().font;
 
-	ctx->setLabelAndId(label);
-	addWidget(fmaxf(
+	ctx->labelAndIdSet(label);
+	widgetAdd(fmaxf(
 		bodyElem.normalState().height,
 		fnt->getMetrics().height) * ctx->scale);
 	buttonBehavior();
@@ -162,9 +162,9 @@ bool selectableInternal(const char* label, HFont font, SelectableFlags stateFlag
 
 	if (ctx->widget.visible)
 	{
-		ctx->renderer.cmdSetColor(applyTint(bodyElemState->color, TintColorType::Body));
+		ctx->renderer.cmdSetColor(tintApply(bodyElemState->color, TintColorType::Body));
 		ctx->renderer.cmdDrawImageBordered(bodyElemState->image, bodyElemState->border, ctx->widget.rect, ctx->scale);
-		ctx->renderer.cmdSetColor(applyTint(bodyElemState->textColor, TintColorType::Text));
+		ctx->renderer.cmdSetColor(tintApply(bodyElemState->textColor, TintColorType::Text));
 		ctx->renderer.cmdSetFont(fnt);
 		ctx->renderer.cmdDrawTextInBox(
 			ctx->widgetLabel.c_str(),
@@ -178,7 +178,7 @@ bool selectableInternal(const char* label, HFont font, SelectableFlags stateFlag
 			VAlignType::Center, true);
 	}
 
-	setFocusable();
+	focusableSet();
 	ctx->menuItemTextWidth = fnt->computeTextSize(ctx->widgetLabel.c_str()).width + bodyElemState->border * 2.0f;
 
 	return ctx->widget.clicked;

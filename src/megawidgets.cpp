@@ -32,31 +32,31 @@ bool vecEditorInternal(f64& x, f64& y, f64& z, f64 scrollStep, bool useZ)
 
 		// current widget + 2 since widget is computed in endBox and we have 1 image widget
 		//TODO: not working, since widget id is not incremental
-		hui::beginBoxLayoutUserElement("axisBody", (ctx->vecEditor.draggingValue && (ctx->vecEditor.draggedId == (ctx->id + 2))) ? dragColor : normalColor, "axisBoxBody");
-		WidgetId imageWidgetId = hui::getWidgetId();
+		hui::boxBeginUserElement("axisBody", (ctx->vecEditor.draggingValue && (ctx->vecEditor.draggedId == (ctx->id + 2))) ? dragColor : normalColor, "axisBoxBody");
+		WidgetId imageWidgetId = hui::widgetIdGet();
 		hui::image(elem->normalState().image, 14);
-		bool imageHovered = hui::isHovered();
-		bool imagePressed = hui::isPressed();
-		hui::endBoxLayout();
+		bool imageHovered = hui::widgetIsHovered();
+		bool imagePressed = hui::widgetIsPressed();
+		hui::boxEnd();
 
-		if (hui::isHovered() || imageHovered || ctx->vecEditor.draggingValue)
+		if (hui::widgetIsHovered() || imageHovered || ctx->vecEditor.draggingValue)
 		{
-			hui::setMouseCursor(hui::MouseCursorType::SizeWE);
+			hui::cursorTypeSet(hui::MouseCursorType::SizeWE);
 
-			if (hui::isPressed() || imagePressed)
+			if (hui::widgetIsPressed() || imagePressed)
 			{
 				ctx->vecEditor.draggingValue = true;
 				ctx->vecEditor.draggedId = ctx->id;
-				ctx->vecEditor.lastMousePos = hui::getInputEvent().mouse.point;
-				hui::setWindowCapture();
+				ctx->vecEditor.lastMousePos = hui::inputEventGet().mouse.point;
+				hui::windowCaptureSet();
 			}
 		}
 
-		if (hui::getInputEvent().type == hui::InputEvent::Type::MouseUp)
+		if (hui::inputEventGet().type == hui::InputEvent::Type::MouseUp)
 		{
 			ctx->vecEditor.draggingValue = false;
 			ctx->vecEditor.draggedId = 0;
-			hui::releaseWindowCapture();
+			hui::windowCaptureRelease();
 			changeEnded = true;
 		}
 
@@ -64,11 +64,11 @@ bool vecEditorInternal(f64& x, f64& y, f64& z, f64 scrollStep, bool useZ)
 			&& ctx->vecEditor.draggedId == ctx->id)
 		{
 			value = atof(strAxis);
-			f32 dx = hui::getInputEvent().mouse.point.x - ctx->vecEditor.lastMousePos.x;
-			f32 unitPerPixel = scrollStep;
+			f32 dx = hui::inputEventGet().mouse.point.x - ctx->vecEditor.lastMousePos.x;
+			f32 unitPerPixel = (f32)scrollStep;
 
 			value += (f64)dx * unitPerPixel;
-			ctx->vecEditor.lastMousePos = hui::getInputEvent().mouse.point;
+			ctx->vecEditor.lastMousePos = hui::inputEventGet().mouse.point;
 			hui::toStringF32((f32)value, strAxis, VectorEditorState::maxStrSize, 4);
 			modified = true;
 		}
@@ -76,7 +76,7 @@ bool vecEditorInternal(f64& x, f64& y, f64& z, f64 scrollStep, bool useZ)
 		//hui::nextColumn();
 		modified = hui::textInput("axisEdit", strAxis, VectorEditorState::maxStrSize) || modified;
 
-		if (isChangeEnded())
+		if (widgetIsChangeEnded())
 			changeEnded = true;
 
 		if (modified)
@@ -103,55 +103,56 @@ bool vecEditorInternal(f64& x, f64& y, f64& z, f64 scrollStep, bool useZ)
 
 bool vec3Editor(const char* id, f64& x, f64& y, f64& z, f64 scrollStep)
 {
-	pushId(id);
+	idPush(id);
 	bool ret = vecEditorInternal(x, y, z, scrollStep, true);
-	popId();
+	idPop();
 
 	return ret;
 }
 
 bool vec3Editor(const char* id, f32& x, f32& y, f32& z, f32 scrollStep)
 {
-	pushId(id);
+	idPush(id);
 	f64 xx = x, yy = y, zz = z;
 
 	auto ret = vecEditorInternal(xx, yy, zz, scrollStep, true);
 
-	x = xx;
-	y = yy;
-	z = zz;
+	x = (f32)xx;
+	y = (f32)yy;
+	z = (f32)zz;
 
-	popId();
+	idPop();
 
 	return ret;
 }
 
 bool vec2Editor(const char* id, f64& x, f64& y, f64 scrollStep)
 {
-	pushId(id);
+	idPush(id);
 	
 	f64 zz = 0;
 	bool ret = vecEditorInternal(x, y, zz, scrollStep, false);
+	idPop();
 
 	return ret;
 }
 
 bool vec2Editor(const char* id, f32& x, f32& y, f32 scrollStep)
 {
-	pushId(id);
-	f64 xx = x, yy = y, zz;
+	idPush(id);
+	f64 xx = x, yy = y, zz = 0;
 	auto ret = vecEditorInternal(xx, yy, zz, scrollStep, false);
 
-	x = xx;
-	y = yy;
-	popId();
+	x = (f32)xx;
+	y = (f32)yy;
+	idPop();
 
 	return ret;
 }
 
 bool objectRefEditor(const char* id, HImage targetImg, HImage clearImg, const char* objectTypeName, const char* valueAsString, u32 objectType, void** outObject, bool* objectValueWasModified)
 {
-	pushId(id);
+	idPush(id);
 	bool returnValue = false;
 	bool changeEnded = false;
 
@@ -163,9 +164,9 @@ bool objectRefEditor(const char* id, HImage targetImg, HImage clearImg, const ch
 	//beginColumns(3, tgtRowImgs);
 	WidgetElementInfo targetElemInfo;
 
-	hui::getThemeUserWidgetElementInfo("targetObjectBody", WidgetStateType::Normal, targetElemInfo);
+	hui::themeUserWidgetElementInfoGet("targetObjectBody", WidgetStateType::Normal, targetElemInfo);
 
-	beginBoxLayout(
+	boxBegin(
 		"targetObjectBody",
 		Color::white,
 		WidgetElementId::TextInputBody,
@@ -180,7 +181,7 @@ bool objectRefEditor(const char* id, HImage targetImg, HImage clearImg, const ch
 	}
 
 	if (!noVal)
-		pushTint(Color::yellow);
+		tintPush(Color::yellow);
 
 	std::string str;
 
@@ -197,17 +198,17 @@ bool objectRefEditor(const char* id, HImage targetImg, HImage clearImg, const ch
 	}
 
 	if (!noVal)
-		popTint();
+		tintPop();
 
-	endBoxLayout();
+	boxEnd();
 
-	if (getDragDropObjectType() == objectType)
-		allowDragDrop();
+	if (dragDropObjectTypeGet() == objectType)
+		dragDropAllow();
 
-	if (droppedOnWidget() && getDragDropObjectType() == objectType)
+	if (widgetDroppedOn() && dragDropObjectTypeGet() == objectType)
 	{
-		*outObject = getDragDropObject();
-		endDragDrop();
+		*outObject = dragDropObjectGet();
+		dragDropEnd();
 
 		if (objectValueWasModified)
 			*objectValueWasModified = true;
@@ -217,11 +218,11 @@ bool objectRefEditor(const char* id, HImage targetImg, HImage clearImg, const ch
 	}
 
 	//nextColumn();
-	returnValue = imageButton(targetImg, targetElemInfo.height, targetElemInfo.height);
+	returnValue = buttonImage(targetImg, targetElemInfo.height, targetElemInfo.height);
 	//nextColumn();
-	pushTint(Color::darkRed);
+	tintPush(Color::darkRed);
 
-	if (imageButton(clearImg, targetElemInfo.height, targetElemInfo.height))
+	if (buttonImage(clearImg, targetElemInfo.height, targetElemInfo.height))
 	{
 		*outObject = nullptr;
 
@@ -231,12 +232,12 @@ bool objectRefEditor(const char* id, HImage targetImg, HImage clearImg, const ch
 		changeEnded = true;
 	}
 
-	popTint();
+	tintPop();
 	//endColumns();
 
 	ctx->widget.changeEnded = changeEnded;
 
-	popId();
+	idPop();
 
 	return returnValue;
 }

@@ -9,13 +9,13 @@
 
 namespace hui
 {
-bool rotarySliderFloat(const char* label, f32* value, f32 minVal, f32 maxVal, f32 step, bool twoSide, f32 fineStepDivideFactor)
+bool sliderRotary(const char* label, f32* value, f32 minVal, f32 maxVal, f32 step, bool twoSide, f32 fineStepDivideFactor)
 {
 	auto& bodyElem = ctx->theme->getElement(WidgetElementId::RotarySliderBody);
 	auto& markElem = ctx->theme->getElement(WidgetElementId::RotarySliderMark);
 	auto& valueDotElem = ctx->theme->getElement(WidgetElementId::RotarySliderValueDot);
 	bool wasModified = false;
-	auto& padding = getWidgetPadding();
+	auto& padding = widgetPaddingGet();
 
 	if (ctx->sameLine.enabled && !ctx->widget.hasNextWidth)
 	{
@@ -23,11 +23,11 @@ bool rotarySliderFloat(const char* label, f32* value, f32 minVal, f32 maxVal, f3
 		ctx->widget.hasCustomWidth = true;
 	}
 
-	ctx->setLabelAndId(label);
-	addWidget((bodyElem.normalState().height + padding.y * 2.0f) * ctx->scale);
+	ctx->labelAndIdSet(label);
+	widgetAdd((bodyElem.normalState().height + padding.y * 2.0f) * ctx->scale);
 	buttonBehavior();
 
-	if (isHovered() && ctx->event.type == InputEvent::Type::MouseDown)
+	if (widgetIsHovered() && ctx->event.type == InputEvent::Type::MouseDown)
 	{
 		ctx->rotarySlider.lastMousePos = ctx->mousePosition;
 		ctx->rotarySlider.id = ctx->id;
@@ -93,7 +93,7 @@ bool rotarySliderFloat(const char* label, f32* value, f32 minVal, f32 maxVal, f3
 
 	if (ctx->widget.visible)
 	{
-		ctx->renderer.cmdSetColor(applyTint(bodyElemState->color, TintColorType::Body));
+		ctx->renderer.cmdSetColor(tintApply(bodyElemState->color, TintColorType::Body));
 		Rect rc = {
 			ctx->widget.rect.x + (ctx->widget.rect.width - bodyElemState->image->width * ctx->scale) / 2.0f,
 				ctx->widget.rect.y,
@@ -176,7 +176,7 @@ bool rotarySliderFloat(const char* label, f32* value, f32 minVal, f32 maxVal, f3
 		ctx->renderer.cmdDrawImage(markElemState->image, pos, ctx->scale);
 
 		// draw the text under the knob
-		ctx->renderer.cmdSetColor(applyTint(bodyElemState->textColor, TintColorType::Text));
+		ctx->renderer.cmdSetColor(tintApply(bodyElemState->textColor, TintColorType::Text));
 		ctx->renderer.cmdSetFont(bodyElemState->font);
 		ctx->renderer.pushClipRect(ctx->widget.rect);
 		ctx->renderer.cmdDrawTextInBox(
@@ -191,7 +191,7 @@ bool rotarySliderFloat(const char* label, f32* value, f32 minVal, f32 maxVal, f3
 		ctx->renderer.popClipRect();
 	}
 
-	setFocusable();
+	focusableSet();
 
 	return wasModified;
 }

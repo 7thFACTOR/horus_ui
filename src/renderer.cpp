@@ -560,7 +560,7 @@ Renderer::Renderer()
 Renderer::~Renderer()
 {}
 
-void Renderer::setCurrentNativeWindow(HNativeWindow wnd)
+void Renderer::nativeWindowSetCurrent(HNativeWindow wnd)
 {
 	currentWindow = wnd;
 	auto iter = windowContexts.find(wnd);

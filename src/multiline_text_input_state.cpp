@@ -1869,14 +1869,14 @@ bool MultilineTextInputState::processEvent(const InputEvent& ev)
 		selectionStartColumn = selectionEndColumn = caretColumn;
 		selectingWithMouse = false;
 		ensureCaretVisible();
-		setWindowCapture();
+		windowSetCapture();
 	}
 	else if (ev.type == InputEvent::Type::MouseUp)
 	{
 		if (mouseDown || selectingWithMouse)
 			ensureCaretVisible();
 
-		releaseWindowCapture();
+		windowReleaseCapture();
 
 		if (!mouseMoved && firstMouseDown && !selectingWithMouse)
 		{
@@ -2841,7 +2841,7 @@ void MultilineTextInputState::processKeyEvent(const InputEvent& ev)
 			char* tmpStr = nullptr;
 		
 			ctx->settings.services.utf32To8(str, &tmpStr);
-			copyToClipboard(tmpStr);
+			clipboardCopy(tmpStr);
 			delete[] tmpStr;
 		}
 	}
@@ -2851,7 +2851,7 @@ void MultilineTextInputState::processKeyEvent(const InputEvent& ev)
 		char tmpStr[maxTextSize];
 		Utf32String utf32Str;
 
-		pasteFromClipboard(tmpStr, maxTextSize);
+		clipboardPaste(tmpStr, maxTextSize);
 
 		if (ctx->settings.services.utf8To32(tmpStr, utf32Str))
 		{
@@ -2871,7 +2871,7 @@ void MultilineTextInputState::processKeyEvent(const InputEvent& ev)
 			
 			if (ctx->settings.services.utf32To8(str, &str8))
 			{
-				copyToClipboard(str8);
+				clipboardCopy(str8);
 				delete[] str8;
 				textChanged = true;
 			}

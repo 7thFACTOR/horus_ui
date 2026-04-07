@@ -8,10 +8,10 @@ namespace hui
 void line()
 {
 	auto& bodyElemState = ctx->theme->getElement(WidgetElementId::LineBody).normalState();
-	auto& padding = getWidgetPadding();
+	auto& padding = widgetPaddingGet();
 
-	ctx->setLabelAndId(nullptr);
-	addWidget(bodyElemState.image->height + padding.y * 2.0f);
+	ctx->labelAndIdSet(nullptr);
+	widgetAdd(bodyElemState.image->height + padding.y * 2.0f);
 	ctx->renderer.cmdSetColor(bodyElemState.color);
 	ctx->renderer.cmdDrawImageBordered(bodyElemState.image, bodyElemState.border,
 		{
@@ -36,7 +36,7 @@ void space(f32 customSpacing)
 	ctx->position.y += spacing * ctx->scale;
 }
 
-void setNextWidth(f32 width)
+void widgetNextWidthSet(f32 width)
 {
 	ctx->widget.nextWidth = width;
 	ctx->widget.hasNextWidth = true;

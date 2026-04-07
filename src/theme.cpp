@@ -27,7 +27,7 @@ void Theme::addWhiteImage(u32 width)
 	images[whiteImage->id] = whiteImage;
 }
 
-void Theme::setDefaultWidgetStyle()
+void Theme::widgetSetDefaultStyle()
 {
 	for (u32 i = 0; i < (u32)WidgetElementId::Count; i++)
 	{
@@ -235,7 +235,7 @@ void Theme::build()
 		}
 	}
 
-	setDefaultWidgetStyle();
+	widgetSetDefaultStyle();
 }
 
 }

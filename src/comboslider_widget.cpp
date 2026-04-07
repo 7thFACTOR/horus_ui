@@ -77,9 +77,9 @@ static bool comboSliderInternal(bool isInt, f32* value, f32 minVal, f32 maxVal, 
 		if (isHovered() || isPressed())
 		{
 			if (arrowHoveredLeft || arrowHoveredRight)
-				setMouseCursor(MouseCursorType::Arrow);
+				mouseCursorSetType(MouseCursorType::Arrow);
 			else
-				setMouseCursor(MouseCursorType::SizeWE);
+				mouseCursorSetType(MouseCursorType::SizeWE);
 		}
 
 		if (isClicked() && !ctx->comboSlider.dragging && !arrowStepped)
@@ -145,7 +145,7 @@ static bool comboSliderInternal(bool isInt, f32* value, f32 minVal, f32 maxVal, 
 			ctx->comboSlider.editingText = false;
 			ctx->comboSlider.id = 0;
 			ctx->widget.changeEnded = true;
-			releaseWindowCapture();
+			windowReleaseCapture();
 
 			if (!isEscPressed)
 			{
@@ -186,7 +186,7 @@ static bool comboSliderInternal(bool isInt, f32* value, f32 minVal, f32 maxVal, 
 			}
 
 			ctx->comboSlider.mouseWasDown = true;
-			setWindowCapture();
+			windowSetCapture();
 		}
 
 		if (ctx->comboSlider.mouseWasDown
@@ -251,7 +251,7 @@ static bool comboSliderInternal(bool isInt, f32* value, f32 minVal, f32 maxVal, 
 			ctx->comboSlider.id = 0;
 			*value = ctx->comboSlider.currentValue;
 			if (isInt) *value = roundf(*value);
-			releaseWindowCapture();
+			windowReleaseCapture();
 			ctx->widget.changeEnded = true;
 		}
 

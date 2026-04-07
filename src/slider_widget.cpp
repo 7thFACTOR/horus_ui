@@ -11,7 +11,7 @@ static bool sliderInternal(const char* id, f32 minVal, f32 maxVal, f32& value, b
 	auto& bodyFilledElem = ctx->theme->getElement(WidgetElementId::SliderBodyFilled);
 	auto& knobElem = ctx->theme->getElement(WidgetElementId::SliderKnob);
 	bool wasModified = false;
-	auto& padding = getWidgetPadding();
+	auto& padding = widgetPaddingGet();
 
 	// clamp
 	value = fmaxf(minVal, fminf(maxVal, value));
@@ -22,16 +22,16 @@ static bool sliderInternal(const char* id, f32 minVal, f32 maxVal, f32& value, b
 		ctx->widget.hasCustomWidth = true;
 	}
 
-	ctx->id = genId(id);
-	addWidget((bodyElem.normalState().height + padding.y * 2.0f) * ctx->scale);
+	ctx->id = idGen(id);
+	widgetAdd((bodyElem.normalState().height + padding.y * 2.0f) * ctx->scale);
 	buttonBehavior();
 
 	ctx->widget.rect.x += knobElem.normalState().image->width / 2.0f * ctx->scale;
 	ctx->widget.rect.width -= knobElem.normalState().image->width * ctx->scale;
 
-	if (isHovered())
+	if (widgetIsHovered())
 	{
-		setMouseCursor(MouseCursorType::HandPointing);
+		cursorTypeSet(MouseCursorType::HandPointing);
 	}
 
 	f32 percentFilled = 1.0f - (maxVal - value) / (maxVal - minVal);
@@ -71,7 +71,7 @@ static bool sliderInternal(const char* id, f32 minVal, f32 maxVal, f32& value, b
 	{
 		if (knobRect.contains(ctx->mousePosition))
 		{
-			setWindowCapture();
+			windowCaptureSet();
 			ctx->slider.draggingKnob = true;
 			ctx->slider.dragDelta.x = ctx->mousePosition.x - (knobRect.x + knobRect.width / 2.0f);
 		}
@@ -111,7 +111,7 @@ static bool sliderInternal(const char* id, f32 minVal, f32 maxVal, f32& value, b
 		&& ctx->isActiveLayer())
 	{
 		ctx->slider.draggingKnob = false;
-		releaseWindowCapture();
+		windowCaptureRelease();
 		ctx->widget.changeEnded = true;
 	}
 
@@ -155,12 +155,12 @@ static bool sliderInternal(const char* id, f32 minVal, f32 maxVal, f32& value, b
 		knobElemState->border,
 		knobRect,
 		ctx->scale);
-	setFocusable();
+	focusableSet();
 
 	return wasModified;
 }
 
-bool sliderInteger(const char* id, i32 minVal, i32 maxVal, i32& value, bool useStep, i32 step)
+bool sliderInt(const char* id, i32 minVal, i32 maxVal, i32& value, bool useStep, i32 step)
 {
 	f32 val = value;
 	bool ret = sliderInternal(id, minVal, maxVal, val, useStep, step, false);

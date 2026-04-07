@@ -293,14 +293,14 @@ static void finishRow(TableState& state)
 		if (state.innerHeight > 0)
 		{
 			// calculate scroll view padding to compensate
-			const auto& padding = getPadding(PaddingType::ScrollView);
+			const auto& padding = paddingGet(PaddingType::ScrollView);
 			
 			// adjust position left by padding, and increase width by padding to compensate
 			// this makes the content area align with table edge while scrollbar stays at right edge
 			ctx->position.x = state.tableRect.x - padding.x;
 			ctx->layout.width = state.innerWidth + padding.x;
 			
-			beginScrollView("##tableScrollView", scrollViewHeight, state.persistent->scrollViewScrollPos.y, 0.0f, ScrollViewFlags::NoBorder);
+			scrollViewBegin("##tableScrollView", scrollViewHeight, state.persistent->scrollViewScrollPos.y, 0.0f, ScrollViewFlags::NoBorder);
 			state.needsScrollViewStart = true;
 			
 			// after scroll view starts, ctx->position.x should now align with table edge
@@ -312,7 +312,7 @@ static void finishRow(TableState& state)
 	}
 }
 
-bool beginTable(const char* id, u32 columnCount, f32 height, TableFlags flags)
+bool tableBegin(const char* id, u32 columnCount, f32 height, TableFlags flags)
 {
 	if (columnCount == 0)
 		return false;
@@ -684,7 +684,7 @@ bool beginTable(const char* id, u32 columnCount, f32 height, TableFlags flags)
 	return true;
 }
 
-void endTable()
+void tableEnd()
 {
 	if (ctx->tableStack.empty()) return;
 	auto& state = ctx->tableStack.back();
@@ -793,7 +793,7 @@ void endTable()
 	// end scroll view if it was started
 	if (state.needsScrollViewStart)
 	{
-		state.persistent->scrollViewScrollPos = endScrollView();
+		state.persistent->scrollViewScrollPos = scrollViewEnd();
 	}
 	
 	// handle column resizing
@@ -852,7 +852,7 @@ void endTable()
 
 					if (ctx->event.type == InputEvent::Type::MouseUp || ctx->event.type == InputEvent::Type::WindowLostFocus)
 					{
-						releaseWindowCapture();
+						windowCaptureRelease();
 						ctx->widget.captureId = 0;
 						persistent.resizingColumn = false;
 						persistent.resizingColumnIndex = ~0;
@@ -961,7 +961,7 @@ void endTable()
 
 							if (ctx->event.type == InputEvent::Type::MouseDown && ctx->event.mouse.button == MouseButton::Left)
 							{
-								setWindowCapture();
+								windowCaptureSet();
 								ctx->widget.captureId = state.id;
 								persistent.resizingColumn = true;
 								persistent.resizingColumnIndex = i; // store SEPARATOR index
@@ -1052,7 +1052,7 @@ void endTable()
 	ctx->tableStack.pop_back();
 }
 
-void startHeader()
+void tableHeaderBegin()
 {
 	auto& state = currentTable();
 	state.isInHeader = true;
@@ -1079,7 +1079,7 @@ void startHeader()
 	}
 }
 
-void nextRow()
+void tableRowNext()
 {
 	auto& state = currentTable();
 
@@ -1144,7 +1144,7 @@ void nextRow()
 	}
 }
 
-void nextCell()
+void tableCellNext()
 {
 	auto& state = currentTable();
 
@@ -1210,7 +1210,7 @@ void nextCell()
 }
 
 
-Rect getCellRect()
+Rect tableCellGetRect()
 {
 	auto& state = currentTable();
 
@@ -1245,14 +1245,14 @@ Rect getCellRect()
 	);
 }
 
-void setRowColor(const Color& color)
+void tableRowSetColor(const Color& color)
 {
 	auto& state = currentTable();
 	state.currentRowColor = color;
 	state.currentRowColorSet = true;
 }
 
-void setCellColor(const Color& color)
+void tableCellSetColor(const Color& color)
 {
 	auto& state = currentTable();
 
@@ -1262,13 +1262,13 @@ void setCellColor(const Color& color)
 	state.cellColorRequests.push_back({ state.currentColumn, state.currentCellColor });
 }
 
-void pushCellPadding(f32 paddingX, f32 paddingY)
+void tableCellPaddingPush(f32 paddingX, f32 paddingY)
 {
 	ctx->cellPaddingStack.push_back(ctx->cellPadding);
 	ctx->cellPadding = Point(paddingX, paddingY);
 }
 
-void popCellPadding()
+void tableCellPaddingPop()
 {
 	if (!ctx->cellPaddingStack.empty())
 	{
@@ -1277,7 +1277,7 @@ void popCellPadding()
 	}
 }
 
-void setupColumn(u32 columnIndex, f32 size, TableColumnFlags flags)
+void tableColumnSetup(u32 columnIndex, f32 size, TableColumnFlags flags)
 {
 	if (ctx->tableStack.empty())
 		return;

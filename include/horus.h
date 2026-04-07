@@ -111,6 +111,8 @@ typedef double f64;
 #endif
 #endif
 
+#define HUI_SERVICES hui::getSettings().services
+
 namespace hui
 {
 #define HORUS_BIT(bit) (1<<bit)
@@ -129,6 +131,7 @@ inline bool checkFlags(T x) { return (enumBasicType)x != 0; }; \
 inline bool any(T x) { return (enumBasicType)x != 0; }; \
 inline bool has(T x, T y) { return ((enumBasicType)x & (enumBasicType)y) != 0; }; \
 inline enumBasicType fromFlags(T x) { return (enumBasicType)x; };
+
 template <typename T> inline T toFlags(int x) { return (T)x; };
 
 typedef void* HImage;
@@ -1745,8 +1748,8 @@ struct Services
 	// Input
 	void (*startTextInput)(HNativeWindow window, const Rect& imeRect) = nullptr;
 	void (*stopTextInput)() = nullptr;
-	bool (*copyToClipboard)(const char* text) = nullptr;
-	bool (*pasteFromClipboard)(char* outText, u32 maxTextSize) = nullptr;
+	bool (*clipboardCopy)(const char* text) = nullptr;
+	bool (*clipboardPaste)(char* outText, u32 maxTextSize) = nullptr;
 	void (*processWindowEvents)() = nullptr;
 	void (*setCurrentWindow)(HNativeWindow window) = nullptr;
 	HNativeWindow (*getCurrentWindow)() = nullptr;
@@ -1812,8 +1815,8 @@ struct Services
 		return
 			startTextInput != nullptr &&
 			stopTextInput != nullptr &&
-			copyToClipboard != nullptr &&
-			pasteFromClipboard != nullptr &&
+			clipboardCopy != nullptr &&
+			clipboardPaste != nullptr &&
 			processWindowEvents != nullptr &&
 			setCurrentWindow != nullptr &&
 			getCurrentWindow != nullptr &&
@@ -1935,100 +1938,100 @@ struct Settings
 /// Create a new context
 /// \param settings the startup context user defined settings
 /// \return the created context handle
-HORUS_API HContext createContext(const Settings& settings);
+HORUS_API HContext contextCreate(const Settings& settings);
 
 /// Set the current context
 /// \param ctx the context
-HORUS_API void setContext(HContext ctx);
+HORUS_API void contextSet(HContext ctx);
 
 /// \return the current context
-HORUS_API HContext getContext();
+HORUS_API HContext contextGet();
 
 /// Delete a context
 /// \param ctx the context to be deleted
-HORUS_API void deleteContext(HContext ctx);
+HORUS_API void contextDestroy(HContext ctx);
 
 /// \return the context settings reference so you can read/modify them in realtime
-HORUS_API Settings& getSettings();
+HORUS_API Settings& settingsGet();
 
-/// Update the UI context, process input events, update animations, etc. This must be called once per frame, before beginFrame()
-HORUS_API void update();
+/// Update the UI context, process input events, update animations, etc. This must be called once per frame, before frameBegin()
+HORUS_API void contextUpdate();
 
 /// Begin a frame which means the rendering of UI across one or many windows. This must be called first when rendering UI
-HORUS_API void beginFrame();
+HORUS_API void frameBegin();
 
 /// Ends an UI frame
-HORUS_API void endFrame();
+HORUS_API void frameEnd();
 
-HORUS_API void beginRendering();
-HORUS_API void endRendering();
+HORUS_API void renderBegin();
+HORUS_API void renderEnd();
 
 /// Get the duration of the last UI frame in milliseconds
-HORUS_API f32 getLastFrameTimeMs();
+HORUS_API f32 frameTimeLastGetMs();
 
 /// Get the peak (maximum) UI frame time in milliseconds since app start
-HORUS_API f32 getPeakFrameTimeMs();
+HORUS_API f32 frameTimePeakGetMs();
 
 /// Get the average UI frame time in milliseconds (rolling 60 frame window)
-HORUS_API f32 getAvgFrameTimeMs();
+HORUS_API f32 frameTimeAvgGetMs();
 
 /// Add a render callback at the current UI command list position 
 /// A render callback is called when the UI is rendered, used to issue custom rendering commands
-HORUS_API void addRenderCallback(RenderCallback callback);
+HORUS_API void renderCallbackAdd(RenderCallback callback);
 
 /// \return true if there is nothing to do in the UI (like redrawing or layout computations), used to not render continuously when its not needed, for applications that do not need realtime continuous rendering
 HORUS_API bool hasNothingToDo();
 
 /// This will disable rendering functions, used when only widget logic needs to be run, but no drawing, used mostly internally for layout computations
 /// \param disable if true, disable the rendering functions
-HORUS_API void setDisableRendering(bool disable);
+HORUS_API void skipRenderingThisFrame(bool disable);
 
 /// Call this when you need to repaint the UI, due to data/layout changes
 HORUS_API void forceRepaint();
 
-/// If called, rendering and input will be ignored until the endFrame and the loop will redraw again, used mostly internally when layout is computed
-HORUS_API void skipThisFrame();
+/// If called, rendering and input will be ignored until the frameEnd and the loop will redraw again, used mostly internally when layout is computed
+HORUS_API void skipFrame();
 
 /// Copy UTF8 text to the clipboard
 /// \param text the null ended UTF8 text
 /// \return true if text was copied to clipboard
-HORUS_API bool copyToClipboard(const char* text);
+HORUS_API bool clipboardTextSet(const char* text);
 
 /// Paste UTF8 from clipboard
 /// \param outText a pointer to a buffer where to store the text, provided by user
 /// \param maxTextSize the available text buffer size
 /// \return true if text was pasted
-HORUS_API bool pasteFromClipboard(char* outText, u32 maxTextSize);
+HORUS_API bool clipboardTextGet(char* outText, u32 maxTextSize);
 
 /// \return the current input event which was popped from the event queue
-HORUS_API const InputEvent& getInputEvent();
+HORUS_API const InputEvent& eventGet();
 
 /// Cancel the current event, after this function call the event will be null, so no widget/window will react
-HORUS_API void cancelEvent();
+HORUS_API void eventCancel();
 
 /// Add an input event to the queue, usually used by input providers to push events to event queue
-HORUS_API void addInputEvent(const InputEvent& event);
+HORUS_API void eventAdd(const InputEvent& event);
 
 /// Signal that the mouse was moved, used by input providers
-HORUS_API void setMouseMoved(bool moved);
+HORUS_API void inputMouseMovedSet(bool moved);
 
 /// \return the input event count in the event queue
-HORUS_API size_t getInputEventCount();
+HORUS_API size_t eventCountGet();
 
 /// \return the input event at the index
 /// \param index the event index (maximum is getInputEventCount())
-HORUS_API InputEvent getInputEventAt(size_t index);
+HORUS_API InputEvent eventGetAt(size_t index);
 
 /// Set the current input event, usually called by input providers
 /// \param event the event to be set
-HORUS_API void setInputEvent(const InputEvent& event);
+HORUS_API void eventSet(const InputEvent& event);
 
 /// Clear the input event queue, usually called by input providers
-HORUS_API void clearInputEventQueue();
+HORUS_API void eventQueueClear();
 
 /// Set the current mouse cursor type
 /// \param type the cursor type
-HORUS_API void setMouseCursor(MouseCursorType type);
+HORUS_API void cursorTypeSet(MouseCursorType type);
 
 /// Create a mouse cursor from a bitmap
 /// \param pixels the 32bit color bitmap, RGBA
@@ -2037,58 +2040,57 @@ HORUS_API void setMouseCursor(MouseCursorType type);
 /// \param hotSpotX the cursor pointer hot spot X coordinate, relative to the bitmap size
 /// \param hotSpotY the cursor pointer hot spot Y coordinate, relative to the bitmap size
 /// \return the created mouse cursor
-HORUS_API HMouseCursor createMouseCursor(Rgba32* pixels, u32 width, u32 height, u32 hotSpotX = 0, u32 hotSpotY = 0);
+HORUS_API HMouseCursor cursorCreate(Rgba32* pixels, u32 width, u32 height, u32 hotSpotX = 0, u32 hotSpotY = 0);
 
 /// Delete a custom mouse cursor
 /// \param cursor the cursor to be deleted
-HORUS_API void deleteMouseCursor(HMouseCursor cursor);
+HORUS_API void cursorDestroy(HMouseCursor cursor);
 
 /// Set the current custom mouse cursor
 /// \param cursor the custom mouse cursor to be set
-HORUS_API void setMouseCursor(HMouseCursor cursor);
+HORUS_API void cursorTypeSet(HMouseCursor cursor);
 
 //////////////////////////////////////////////////////////////////////////
 // Windowing & docking functions
 //////////////////////////////////////////////////////////////////////////
 
-HORUS_API DockNodeId createRootDockNode(HNativeWindow nativeWnd);
+HORUS_API DockNodeId dockNodeRootCreate(HNativeWindow nativeWnd);
+HORUS_API void dockNodeChildrenDelete(DockNodeId rootNodeId);
+HORUS_API void dockNodeSplit(DockNodeId nodeId, DockNodeSplitType splitType, f32 firstNodeSizeUnitPercent, DockNodeId* outNodeId1, DockNodeId* outNodeId2);
+HORUS_API void dockNodeWindowSet(DockNodeId parentNode, const char* windowId);
+HORUS_API void dockNodeLayoutRecalculate();
 
-HORUS_API void dockLayoutDeleteChildren(DockNodeId rootNodeId);
-HORUS_API void dockLayoutSplit(DockNodeId nodeId, DockNodeSplitType splitType, f32 firstNodeSizeUnitPercent, DockNodeId* outNodeId1, DockNodeId* outNodeId2);
-HORUS_API void dockLayoutSetNodeWindow(DockNodeId parentNode, const char* windowId);
-HORUS_API void dockLayoutRecalculate();
-
-HORUS_API bool beginWindow(const char* windowId, const char* title, Rect* initialRect, HImage img);
-HORUS_API void endWindow();
-HORUS_API void setWindowVisible(const char* windowId, bool visible);
-HORUS_API void setNextWindowFlags(WindowFlags flags);
-HORUS_API void focusWindow(const char* windowId);
-HORUS_API void dockWindow(const char* windowId, const char* targetWindowId, DockType dockType);
-HORUS_API void undockWindow(const char* windowId, const Point& windowPos = Point());
-HORUS_API void setCurrentNativeWindow(HNativeWindow nativeWnd);
-HORUS_API void debugPrintWindows();
-HORUS_API bool isMouseOverWindow();
-HORUS_API void setWindowCapture();
-HORUS_API void releaseWindowCapture();
+HORUS_API bool windowBegin(const char* windowId, const char* title, Rect* initialRect, HImage img);
+HORUS_API void windowEnd();
+HORUS_API void windowVisibleSet(const char* windowId, bool visible);
+HORUS_API void windowNextFlagsSet(WindowFlags flags);
+HORUS_API void windowFocusSet(const char* windowId);
+HORUS_API void windowDockSet(const char* windowId, const char* targetWindowId, DockType dockType);
+HORUS_API void windowUndock(const char* windowId, const Point& windowPos = Point());
+HORUS_API void nativeWindowCurrentSet(HNativeWindow nativeWnd);
+HORUS_API void windowDebugPrint();
+HORUS_API bool windowIsMouseOver();
+HORUS_API void windowCaptureSet();
+HORUS_API void windowCaptureRelease();
 /// \return the window client rect
-HORUS_API Rect getWindowClientRect();
+HORUS_API Rect windowClientRectGet();
 /// \return the window client rect, used usually to render custom scenes
-HORUS_API Rect getWindowClientRectById(const char* windowId);
-HORUS_API void saveDockingStateToMemory(WindowsDockingState& dockingState);
-HORUS_API void loadDockingStateFromMemory(const WindowsDockingState& dockingState);
+HORUS_API Rect windowClientRectByIdGet(const char* windowId);
+HORUS_API void dockingStateSave(WindowsDockingState& dockingState);
+HORUS_API void dockingStateLoad(const WindowsDockingState& dockingState);
 
 ///////////////////////////////////////////////////////////////////////////////
 // Application functions
 ///////////////////////////////////////////////////////////////////////////////
 
 /// Present the contents of the backbuffer for each OS native window, called after all rendering is done
-HORUS_API void present();
+HORUS_API void backbufferPresent();
 
 /// Present the contents of the backbuffer for a custom OS native window, called after all rendering is done
-HORUS_API void presentNativeWindow(HNativeWindow nativeWnd);
+HORUS_API void nativeWindowPresent(HNativeWindow nativeWnd);
 
 /// Shut down the library
-HORUS_API void shutdown();
+HORUS_API void horusShutdown();
 
 //////////////////////////////////////////////////////////////////////////
 // Themes
@@ -2096,40 +2098,40 @@ HORUS_API void shutdown();
 
 /// Set the current theme
 /// \param theme the theme to be set as current
-HORUS_API void setTheme(HTheme theme);
+HORUS_API void themeSet(HTheme theme);
 
 /// \return the current theme
-HORUS_API HTheme getTheme();
+HORUS_API HTheme themeGet();
 
-HORUS_API ImageData getThemeAtlasImageData();
-HORUS_API void setThemeAtlasTexture(HTexture texture);
+HORUS_API ImageData themeAtlasImageDataGet();
+HORUS_API void themeAtlasTextureSet(HTexture texture);
 
 /// Delete a theme
 /// \param theme the theme to be deleted, if this is the current theme it will be set to null
-HORUS_API void deleteTheme(HTheme theme);
+HORUS_API void themeDestroy(HTheme theme);
 
 /// Create a new theme
 /// \param atlasTextureSize the width and height of the atlas texture, where theme images are kept
 /// \return the newly created theme
-HORUS_API HTheme createTheme(u32 atlasTextureSize);
-HORUS_API void setThemeUserSetting(HTheme theme, const char* name, const char* value);
-HORUS_API const char* getThemeUserSetting(HTheme theme, const char* name);
-HORUS_API HImage addThemeImage(HTheme theme, const char* id, const ImageData& imgData);
-HORUS_API HImage getThemeImage(HTheme theme, const char* id);
-HORUS_API void setWidgetStyle(WidgetType widgetType, const char* styleName);
-HORUS_API void pushWidgetStyle(WidgetType widgetType, const char* styleName);
-HORUS_API void popWidgetStyle();
-HORUS_API void setWidgetElementStyle(WidgetElementId widgetElementId, const char* styleName);
-HORUS_API void setDefaultWidgetStyle(WidgetType widgetType);
-HORUS_API void setDefaultWidgetElementStyle(WidgetElementId widgetElementId);
-HORUS_API void setUserWidgetElementStyle(const char* elementName, const char* styleName);
+HORUS_API HTheme themeCreate(u32 atlasTextureSize);
+HORUS_API void themeUserSettingSet(HTheme theme, const char* name, const char* value);
+HORUS_API const char* themeUserSettingGet(HTheme theme, const char* name);
+HORUS_API HImage themeImageAdd(HTheme theme, const char* id, const ImageData& imgData);
+HORUS_API HImage themeImageGet(HTheme theme, const char* id);
+HORUS_API void widgetStyleSet(WidgetType widgetType, const char* styleName);
+HORUS_API void widgetPushStyle(WidgetType widgetType, const char* styleName);
+HORUS_API void widgetPopStyle();
+HORUS_API void widgetElementStyleSet(WidgetElementId widgetElementId, const char* styleName);
+HORUS_API void widgetDefaultStyleSet(WidgetType widgetType);
+HORUS_API void widgetDefaultElementStyleSet(WidgetElementId widgetElementId);
+HORUS_API void widgetUserElementStyleSet(const char* elementName, const char* styleName);
 
 /// Set a theme's widget element info
 /// \param theme the theme of the widget element
 /// \param elementId the element to be set
 /// \param widgetStateType which state to be set
 /// \param elementInfo the element info to be set
-HORUS_API void setThemeWidgetElement(
+HORUS_API void themeWidgetElementSet(
 	HTheme theme,
 	WidgetElementId elementId,
 	WidgetStateType widgetStateType,
@@ -2138,14 +2140,14 @@ HORUS_API void setThemeWidgetElement(
 
 /// Build a theme after images were added to its atlas, respectively packing the theme's image atlas
 /// \param theme the theme to be built
-void buildTheme(HTheme theme);
+void themeBuild(HTheme theme);
 
 /// Set a theme's user widget element info
 /// \param theme the theme of the widget element
 /// \param userElementName the element name
 /// \param widgetStateType which state to be set
 /// \param elementInfo the element info to be set
-HORUS_API void setThemeUserWidgetElement(
+HORUS_API void themeUserWidgetElementSet(
 	HTheme theme,
 	const char* userElementName,
 	WidgetStateType widgetStateType,
@@ -2156,29 +2158,16 @@ HORUS_API void setThemeUserWidgetElement(
 /// \param elementId the widget element id
 /// \param state the element state
 /// \param outInfo returned element info
-HORUS_API void getThemeWidgetElementInfo(WidgetElementId elementId, WidgetStateType state, WidgetElementInfo& outInfo, const char* styleName = "default");
-
-/// Return current theme user widget element's info
-/// \param userElementName the user widget element name
-/// \param state the element state
-/// \param outInfo returned element info
-HORUS_API void getThemeUserWidgetElementInfo(const char* userElementName, WidgetStateType state, WidgetElementInfo& outInfo, const char* styleName = "default");
-
-HORUS_API void setThemeWidgetElementParameter(HTheme theme, WidgetElementId elementId, const char* styleName, const char* paramName, const char* paramValue);
-
-HORUS_API const char* getThemeWidgetElementStringParameter(HTheme theme, WidgetElementId elementId, const char* styleName, const char* paramName, const char* defaultValue = "");
-
-HORUS_API f32 getThemeWidgetElementFloatParameter(HTheme theme, WidgetElementId elementId, const char* styleName, const char* paramName, f32 defaultValue = 0.0f);
-
-HORUS_API const Color& getThemeWidgetElementColorParameter(HTheme theme, WidgetElementId elementId, const char* styleName, const char* paramName, const Color& defaultValue = Color());
-
-HORUS_API void setThemeUserWidgetElementParameter(HTheme theme, const char* userElementName, const char* styleName, const char* paramName, const char* paramValue);
-
-HORUS_API const char* getThemeUserWidgetElementStringParameter(HTheme theme, const char* userElementName, const char* styleName, const char* paramName, const char* defaultValue = "");
-
-HORUS_API f32 getThemeUserWidgetElementFloatParameter(HTheme theme, const char* userElementName, const char* styleName, const char* paramName, f32 defaultValue = 0.0f);
-
-HORUS_API const Color& getThemeUserWidgetElementColorParameter(HTheme theme, const char* userElementName, const char* styleName, const char* paramName, const Color& defaultValue = Color());
+HORUS_API void themeWidgetElementInfoGet(WidgetElementId elementId, WidgetStateType state, WidgetElementInfo& outInfo, const char* styleName = "default");
+HORUS_API void themeUserWidgetElementInfoGet(const char* userElementName, WidgetStateType state, WidgetElementInfo& outInfo, const char* styleName = "default");
+HORUS_API void themeWidgetElementParameterSet(HTheme theme, WidgetElementId elementId, const char* styleName, const char* paramName, const char* paramValue);
+HORUS_API const char* themeWidgetElementParameterStringGet(HTheme theme, WidgetElementId elementId, const char* styleName, const char* paramName, const char* defaultValue = "");
+HORUS_API f32 themeWidgetElementParameterFloatGet(HTheme theme, WidgetElementId elementId, const char* styleName, const char* paramName, f32 defaultValue = 0.0f);
+HORUS_API const Color& themeWidgetElementParameterColorGet(HTheme theme, WidgetElementId elementId, const char* styleName, const char* paramName, const Color& defaultValue = Color());
+HORUS_API void themeUserWidgetElementParameterSet(HTheme theme, const char* userElementName, const char* styleName, const char* paramName, const char* paramValue);
+HORUS_API const char* themeUserWidgetElementParameterStringGet(HTheme theme, const char* userElementName, const char* styleName, const char* paramName, const char* defaultValue = "");
+HORUS_API f32 themeUserWidgetElementParameterFloatGet(HTheme theme, const char* userElementName, const char* styleName, const char* paramName, f32 defaultValue = 0.0f);
+HORUS_API const Color& themeUserWidgetElementParameterColorGet(HTheme theme, const char* userElementName, const char* styleName, const char* paramName, const Color& defaultValue = Color());
 
 /// Create a new font object
 /// \param theme the theme where to place the font
@@ -2186,137 +2175,130 @@ HORUS_API const Color& getThemeUserWidgetElementColorParameter(HTheme theme, con
 /// \param fontFilename the TTF/OTF font filename, relative to executable
 /// \param faceSize the font face size in font units
 /// \return the newly created font handle
-HORUS_API HFont createThemeFont(HTheme theme, const char* name, const char* fontFilename, u32 faceSize);
+HORUS_API HFont themeFontCreate(HTheme theme, const char* name, const char* fontFilename, u32 faceSize);
 
 /// Release font reference, if font usage is zero, the font is deleted
 /// \param font the font to be reference released
-HORUS_API void releaseThemeFont(HTheme theme, HFont font);
+HORUS_API void themeFontDestroy(HTheme theme, HFont font);
 
 /// \return the font by name, from the current theme
 /// \param themeFontName the name of the font as it is in the theme
-HORUS_API HFont getFont(const char* themeFontName);
+HORUS_API HFont themeFontGet(const char* themeFontName);
 
 /// \return the font by name, from the specified theme
-HORUS_API HFont getThemeFont(HTheme theme, const char* themeFontName);
+HORUS_API HFont themeFontGetFromTheme(HTheme theme, const char* themeFontName);
 
 //////////////////////////////////////////////////////////////////////////
 // Layouts
 //////////////////////////////////////////////////////////////////////////
 
 /// Begin a layout area, an invisible rectangle on the current window area where widgets will be laid out
-HORUS_API void beginLayout(const Rect& rect);
-HORUS_API void endLayout();
-HORUS_API void pushLayout();
-HORUS_API void popLayout();
-HORUS_API void pushId(const char* id);
-HORUS_API void pushId(u32 id);
-HORUS_API void pushId(void* id);
-HORUS_API void popId();
+HORUS_API void layoutBegin(const Rect& rect);
+HORUS_API void layoutEnd();
+HORUS_API void layoutPush();
+HORUS_API void layoutPop();
+HORUS_API void idPush(const char* id);
+HORUS_API void idPush(u32 id);
+HORUS_API void idPush(void* id);
+HORUS_API void idPop();
 
-HORUS_API bool beginTable(const char* id, u32 columnCount, f32 height = -1, TableFlags flags = TableFlags::None);
-HORUS_API void endTable();
-HORUS_API void startHeader();
-HORUS_API void setupColumn(u32 columnIndex, f32 size, TableColumnFlags flags = TableColumnFlags::None);
-HORUS_API void nextRow();
-HORUS_API void nextCell();
-HORUS_API Rect getCellRect();
-HORUS_API void setRowColor(const Color& color);
-HORUS_API void setCellColor(const Color& color);
-HORUS_API void pushCellPadding(f32 paddingX, f32 paddingY);
-HORUS_API void popCellPadding();
+HORUS_API bool tableBegin(const char* id, u32 columnCount, f32 height = -1, TableFlags flags = TableFlags::None);
+HORUS_API void tableEnd();
+HORUS_API void tableHeaderBegin();
+HORUS_API void tableColumnSetup(u32 columnIndex, f32 size, TableColumnFlags flags = TableColumnFlags::None);
+HORUS_API void tableRowNext();
+HORUS_API void tableCellNext();
+HORUS_API Rect tableCellRectGet();
+HORUS_API void tableRowSetColor(const Color& color);
+HORUS_API void tableCellSetColor(const Color& color);
+HORUS_API void tableCellPaddingPush(f32 paddingX, f32 paddingY);
+HORUS_API void tableCellPaddingPop();
 
 /// Get the remaining height in the current layout from current position to bottom
-HORUS_API f32 getRemainingHeight();
+HORUS_API f32 layoutRemainingHeightGet();
 
 /// Get the remaining width in the current layout from current position to right edge
-HORUS_API f32 getRemainingWidth();
+HORUS_API f32 layoutRemainingWidthGet();
 
 /// Begin a scroll view area widget
 /// \param height the height of the scroll area
 /// \param scrollPosition the current scroll position (given by endScrollView)
 /// \param virtualHeight the virtual inside scroll height, if its zero then its automatically calculated from the child widgets inside this area
-HORUS_API void beginScrollView(const char* id, f32 height, f32 scrollPosition, f32 virtualHeight, ScrollViewFlags flags);
-void beginScrollView(const char* id, f32 size, f32 scrollPos);
-void beginScrollView(const char* id, f32 size, f32 scrollPos, f32 virtualHeight);
-void beginScrollView(const char* id, f32 height, Point scrollOffset, Point virtualSize, ScrollViewFlags flags);
+HORUS_API void scrollViewBegin(const char* id, f32 height, f32 scrollPosition, f32 virtualHeight, ScrollViewFlags flags);
+void scrollViewBegin(const char* id, f32 size, f32 scrollPos);
+void scrollViewBegin(const char* id, f32 size, f32 scrollPos, f32 virtualHeight);
+void scrollViewBegin(const char* id, f32 height, Point scrollOffset, Point virtualSize, ScrollViewFlags flags);
 
 /// Ends a scroll view area widget
 /// \return the current scroll position (offset)
-HORUS_API Point endScrollView();
+HORUS_API Point scrollViewEnd();
 
 /// Begin a virtual list content area, used for many items, inside the beginScrollView/endScrollView
 /// \param totalRowCount the number of rows
 /// \param itemHeight the height of one item
 /// \param scrollPosition the current scroll offset of the scroll view widget
-HORUS_API void beginVirtualListContent(u32 totalRowCount, f32 itemHeight, f32 scrollPosition);
+HORUS_API void virtualListBegin(u32 totalRowCount, f32 itemHeight, f32 scrollPosition);
 
 /// Begin a virtual list content area, used for many items, inside the beginScrollView/endScrollView
 /// \param info the virtual scroll information
-HORUS_API void beginVirtualListContent(VirtualScrollInfo& info);
+HORUS_API void virtualListBegin(VirtualScrollInfo& info);
 
 /// End a virtual list content area
-HORUS_API void endVirtualListContent();
+HORUS_API void virtualListEnd();
 
 /// Push the old padding and set a new one, padding is the left and right side horizontal spacing for widgets
 /// \param newPadding the new horizontal padding value
-HORUS_API void pushPadding(PaddingType type, const Point& newPadding);
-HORUS_API void pushWidgetPadding(const Point& newPadding);
+HORUS_API void paddingPush(PaddingType type, const Point& newPadding);
+HORUS_API void widgetPaddingPush(const Point& newPadding);
 
 /// Pop the previous padding value from stack and set it as current
-HORUS_API void popPadding(PaddingType type);
-HORUS_API void popWidgetPadding();
+HORUS_API void paddingPop(PaddingType type);
+HORUS_API void widgetPaddingPop();
 
 /// \return the current vertical spacing value
-HORUS_API f32 getSpacing();
+HORUS_API f32 spacingGet();
 
 /// \return the current horizontal left and right side padding value
-HORUS_API const Point& getPadding(PaddingType type);
+HORUS_API const Point& paddingGet(PaddingType type);
 
 /// Begin a same-line group where all widgets get equal width from available layout width
 /// \param widgetCount the number of widgets that will be in this group
-HORUS_API void beginSameLineGroup(u32 widgetCount);
+HORUS_API void sameLineGroupBegin(u32 widgetCount);
 
 /// Move to the next widget position in the same-line group
-HORUS_API void nextSameLineGroupWidget();
+HORUS_API void sameLineGroupNext();
 
 /// End the same-line group
-HORUS_API void endSameLineGroup();
+HORUS_API void sameLineGroupEnd();
 
 // Handy version to get widget padding
-HORUS_API const Point& getWidgetPadding();
+HORUS_API const Point& widgetPaddingGet();
 
 /// Push the old spacing value to stack and set a new spacing value, spacing is the vertical space between widgets
 /// \param newSpacing the new vertical spacing value
-HORUS_API void pushSpacing(f32 newSpacing);
+HORUS_API void spacingPush(f32 newSpacing);
 
 /// Pop old spacing value from stack and set it as current
-HORUS_API void popSpacing();
+HORUS_API void spacingPop();
 
-/// \return the current vertical spacing value
-HORUS_API f32 getSpacing();
 
-/// \return the current horizontal left and right side padding value
-HORUS_API const Point& getPadding(PaddingType type);
-
-// Handy version to get widget padding
-HORUS_API const Point& getWidgetPadding();
 
 /// Set the global UI scale, this will scale all the elements from widgets to text
 /// \param scale a value, use with consideration, will regenerate font atlas, slow
-HORUS_API void changeScale(f32 scale);
+HORUS_API void scaleSet(f32 scale);
 
 /// \return the current global UI scale
-HORUS_API f32 getScale();
+HORUS_API f32 scaleGet();
 
 /// Push and set a new tinting color on stack, to colorize the next widget on specific parts
 /// \param color the tint color
 /// \param type what elements of the widget to tint
-HORUS_API void pushTint(const Color& color, TintColorType type = TintColorType::All, TintColorOpType opType = TintColorOpType::Multiply);
+HORUS_API void tintPush(const Color& color, TintColorType type = TintColorType::All, TintColorOpType opType = TintColorOpType::Multiply);
 
 /// Pop the old tint color from stack
-HORUS_API void popTint();
+HORUS_API void tintPop();
 
-HORUS_API Color applyTint(const Color& originalColor, TintColorType type);
+HORUS_API Color tintApply(const Color& originalColor, TintColorType type);
 
 /// Draw a delayed tooltip widget near the previous widget
 /// \param text the label of the tooltip
@@ -2326,17 +2308,17 @@ HORUS_API bool tooltip(const char* text);
 /// Begin drawing a custom tooltip (delayed), which contains other widgets like image and labels etc.
 /// \param width the tooltip width
 /// \return true if the tooltip is visible now
-HORUS_API bool beginCustomTooltip(f32 width);
+HORUS_API bool customTooltipBegin(f32 width);
 
 /// End drawing a custom tooltip
-HORUS_API void endCustomTooltip();
+HORUS_API void customTooltipEnd();
 
 /// Begin draw a box, which may contain other widgets
 /// \param color the box tint color
 /// \param widgetElementId the widget element id image to use when drawing the box
 /// \param state the widget element state to draw with
 /// \param customHeight a forced custom height, otherwise auto calculated from the total height the child widgets have
-HORUS_API void beginBoxLayout(
+HORUS_API void boxBegin(
 	const char* id,
 	const Color& tintColor,
 	WidgetElementId widgetElementId = WidgetElementId::BoxBody,
@@ -2348,7 +2330,7 @@ HORUS_API void beginBoxLayout(
 /// \param userElementName the user widget element name whose image to use when drawing the box
 /// \param state the widget element state to draw with
 /// \param customHeight a forced custom height, otherwise auto calculated from the total height the child widgets have
-HORUS_API void beginBoxLayoutUserElement(
+HORUS_API void boxBeginUserElement(
 	const char* id,
 	const Color& tintColor,
 	const char* userElementName,
@@ -2356,14 +2338,14 @@ HORUS_API void beginBoxLayoutUserElement(
 	f32 customHeight = 0.0f);
 
 /// End the box layout
-HORUS_API bool endBoxLayout();
+HORUS_API bool boxEnd();
 
 /// Begin drawing a modal popup widget on top of all other popups or widgets
 /// \param width the width of the popup
 /// \param flags the popup flags
 /// \param position when custom position, this is the window coordinates of the popup
 /// \param widgetElementId will use this element's theme to draw the popup body
-HORUS_API void beginPopup(
+HORUS_API void popupBegin(
 	const char* id,
 	f32 width,
 	PopupFlags flags = PopupFlags::BelowLastWidget,
@@ -2371,22 +2353,22 @@ HORUS_API void beginPopup(
 	WidgetElementId widgetElementId = WidgetElementId::PopupBody);
 
 /// End a popup widget
-HORUS_API void endPopup();
+HORUS_API void popupEnd();
 
 /// Close the current popup, used inside begin/endPopup
-HORUS_API void closePopup();
+HORUS_API void popupClose();
 
 /// \return true if the popup must be closed, due to user input, used inside begin/endPopup
-HORUS_API bool mustClosePopup();
+HORUS_API bool popupMustClose();
 
 /// \return true if the user clicked outside popup's rect, used inside begin/endPopup
-HORUS_API bool clickedOutsidePopup();
+HORUS_API bool popupClickedOutside();
 
 /// \return true if mouse is inside popup's rect, used inside begin/endPopup
-HORUS_API bool mouseOutsidePopup();
+HORUS_API bool popupMouseOutside();
 
 /// \return true if the user pressed escape while current popup is active, used inside begin/endPopup
-HORUS_API bool pressedEscapeOnPopup();
+HORUS_API bool popupPressedEscape();
 
 /// Draw a message box popup
 /// \param title the message box title
@@ -2405,10 +2387,10 @@ HORUS_API MessageBoxButtons messageBox(
 	HImage customImg = 0);
 
 /// Set the next widget as disabled or not
-HORUS_API void setNextDisabled();
+HORUS_API void widgetNextDisabledSet();
 
 /// Set next widget as focused
-HORUS_API void setNextFocused();
+HORUS_API void widgetNextFocusedSet();
 
 /// Draw a button widget
 /// \param label the button text
@@ -2420,7 +2402,7 @@ HORUS_API bool button(const char* label);
 /// \param height the button height, if zero then it takes the image's height
 /// \param down if true the button is in the pressed state
 /// \return true if the button was pressed
-HORUS_API bool imageButton(HImage img, f32 width, f32 height, HImage disabledImg = 0, bool down = false);
+HORUS_API bool buttonImage(HImage img, f32 width, f32 height, HImage disabledImg = 0, bool down = false);
 
 /// Draw a text input widget
 /// \param text the text to be edited, provided by user
@@ -2432,13 +2414,7 @@ HORUS_API bool imageButton(HImage img, f32 width, f32 height, HImage disabledImg
 HORUS_API bool textInput(const char* id, char* text, u32 maxTextSize, TextInputFlags flags = TextInputFlags::None, const char* defaultText = nullptr, HImage img = 0, bool password = false, const char* passwordChar = "\95");
 
 /// Multi-line text input widget. Enter key creates a new line instead of submitting.
-/// \param id widget unique identifier
-/// \param text the text buffer to edit
-/// \param maxTextSize maximum size of the text buffer
-/// \param visibleLines number of visible lines in the text area
-/// \param flags input flags (numeric only, hex only, etc.)
-/// \return true if the text was changed
-HORUS_API bool multilineTextInput(const char* id, char* text, u32 maxTextSize, u32 visibleLines = 10, MultilineTextInputFlags flags = MultilineTextInputFlags::None, const KeywordInfo* keywords = nullptr, u32 keywordCount = 0, const RangeHighlight* rangeHighlights = nullptr, u32 rangeHighlightCount = 0);
+HORUS_API bool textMultilineInput(const char* id, char* text, u32 maxTextSize, u32 visibleLines = 10, MultilineTextInputFlags flags = MultilineTextInputFlags::None, const KeywordInfo* keywords = nullptr, u32 keywordCount = 0, const RangeHighlight* rangeHighlights = nullptr, u32 rangeHighlightCount = 0);
 
 /// Draw an integer number slider widget
 /// \param minVal the minimum value
@@ -2447,7 +2423,7 @@ HORUS_API bool multilineTextInput(const char* id, char* text, u32 maxTextSize, u
 /// \param useStep use stepping when moving slider
 /// \param step if useStep is true, then this is the step size
 /// \return true if value was modified
-HORUS_API bool sliderInteger(const char* id, i32 minVal, i32 maxVal, i32& value, bool useStep = false, i32 step = 0);
+HORUS_API bool sliderInt(const char* id, i32 minVal, i32 maxVal, i32& value, bool useStep = false, i32 step = 0);
 
 /// Draw a float number slider widget
 /// \param minVal the minimum value
@@ -2458,8 +2434,8 @@ HORUS_API bool sliderInteger(const char* id, i32 minVal, i32 maxVal, i32& value,
 /// \return true if value was modified
 HORUS_API bool sliderFloat(const char* id, f32 minVal, f32 maxVal, f32& value, bool useStep = false, f32 step = 0);
 
-HORUS_API bool comboSliderInteger(i32* value, f32 stepsPerPixel = 1.0f, i32 arrowStep = 1, const char* formatStr = nullptr);
-HORUS_API bool comboSliderIntegerRanged(i32* value, i32 minVal, i32 maxVal, f32 stepsPerPixel = 1, i32 arrowStep = 1.0f, const char* formatStr = nullptr);
+HORUS_API bool comboSliderInt(i32* value, f32 stepsPerPixel = 1.0f, i32 arrowStep = 1, const char* formatStr = nullptr);
+HORUS_API bool comboSliderIntRanged(i32* value, i32 minVal, i32 maxVal, f32 stepsPerPixel = 1, i32 arrowStep = 1.0f, const char* formatStr = nullptr);
 HORUS_API bool comboSliderFloat(f32* value, f32 stepsPerPixel = 1.0f, f32 arrowStep = 1.0f, const char* formatStr = nullptr);
 HORUS_API bool comboSliderFloatRanged(f32* value, f32 minVal, f32 maxVal, f32 stepsPerPixel = 1.0f, f32 arrowStep = 1.0f, const char* formatStr = nullptr);
 HORUS_API bool rotarySliderFloat(const char* label, f32* value, f32 minVal, f32 maxVal, f32 step, bool twoSide = false, f32 fineStepDivideFactor = 10.f);
@@ -2562,41 +2538,41 @@ HORUS_API void space(f32 customSpacing = 0.0f);
 /// \param spacing optional spacing between widgets, if 0 uses default spacing
 HORUS_API void sameLine(f32 offsetX = 0.0f, f32 spacing = 0.0f);
 
-HORUS_API void setNextWidth(f32 width);
+HORUS_API void widgetNextWidthSet(f32 width);
 
 /// Begin a custom user viewport area
 /// \param height the height of the viewport, if zero, it will take the entire remaining container height
 /// \return the rectangle in window coordinates of the actual viewport area, use this to draw your custom things in
-HORUS_API Rect beginViewport(const char* id, f32 height = 0);
+HORUS_API Rect viewportBegin(const char* id, f32 height = 0);
 
 /// End the current user viewport
-HORUS_API void endViewport();
+HORUS_API void viewportEnd();
 
 //////////////////////////////////////////////////////////////////////////
 // Menus
 //////////////////////////////////////////////////////////////////////////
 
 /// Begin a menu bar widget
-HORUS_API bool beginMenuBar();
+HORUS_API bool menuBarBegin();
 
 /// End the current menu bar widget
-HORUS_API void endMenuBar();
+HORUS_API void menuBarEnd();
 
 /// Begin a menu panel widget (it will show up only when clicked)
 /// \param label the menu text
 /// \param flags the menu flags
 /// \return true if the menu is visible, use it in a if() statement to show menu items
-HORUS_API bool beginMenu(const char* label, SelectableFlags flags = SelectableFlags::Normal);
+HORUS_API bool menuBegin(const char* label, SelectableFlags flags = SelectableFlags::Normal);
 
 /// End the current menu
-HORUS_API void endMenu();
+HORUS_API void menuEnd();
 
 /// Begin drawing a context menu which will open on right click on the previous widget
 /// \return true if the menu is opened/visible
-HORUS_API bool beginContextMenu(ContextMenuFlags flags = ContextMenuFlags::None);
+HORUS_API bool contextMenuBegin(ContextMenuFlags flags = ContextMenuFlags::None);
 
 /// End the current context menu
-HORUS_API void endContextMenu();
+HORUS_API void contextMenuEnd();
 
 /// Draw a menu item widget, use inside begin/end menu (or context menu)
 /// \param label the menu item text
@@ -2615,7 +2591,7 @@ HORUS_API void menuSeparator();
 
 /// Start a tab group
 /// \param selectedIndex the selected tab index
-HORUS_API void beginTabGroup(TabIndex selectedIndex);
+HORUS_API void tabGroupBegin(TabIndex selectedIndex);
 
 /// Draw a tab widget
 /// \param label the text of the tab
@@ -2623,69 +2599,69 @@ HORUS_API void beginTabGroup(TabIndex selectedIndex);
 HORUS_API void tab(const char* label, HImage img);
 
 /// End the tab group
-HORUS_API TabIndex endTabGroup();
+HORUS_API TabIndex tabGroupEnd();
 
 //////////////////////////////////////////////////////////////////////////
 // Immediate state query for the last widget
 //////////////////////////////////////////////////////////////////////////
 
 /// \return true if the previous widget is hovered
-HORUS_API bool isHovered();
+HORUS_API bool widgetIsHovered();
 
 /// \return true if the previous widget is focused
-HORUS_API bool isFocused();
+HORUS_API bool widgetIsFocused();
 
 /// \return true if the previous widget is pressed down
-HORUS_API bool isPressed();
+HORUS_API bool widgetIsPressed();
 
 /// \return true if the previous widget is clicked
-HORUS_API bool isClicked();
+HORUS_API bool widgetIsClicked();
 
 /// \return true if the previous widget is visible
-HORUS_API bool isVisible();
+HORUS_API bool widgetIsVisible();
 
 /// \return true if the change for the widget's value ended, used for undo systems to add the undo action only after the drag/edit ended
-HORUS_API bool isChangeEnded();
+HORUS_API bool widgetIsChangeEnded();
 
 /// \return the current widget id (the next widget's id)
-HORUS_API WidgetId getWidgetId();
+HORUS_API WidgetId widgetIdGet();
 
 /// \return the current mouse position inside current window
-HORUS_API Point getMousePosition();
+HORUS_API Point mousePositionGet();
 
 //////////////////////////////////////////////////////////////////////////
 // Drag and drop logic support
 //////////////////////////////////////////////////////////////////////////
 
 /// \return true if there is a drag intent
-HORUS_API bool wantsToDragDrop();
+HORUS_API bool dragDropWantsTo();
 
 /// set the mouse cursor to be used when dropping allowed
 /// \param dropAllowedCursor the mouse cursor
-HORUS_API void setDragDropMouseCursor(HMouseCursor dropAllowedCursor);
+HORUS_API void dragDropMouseCursorSet(HMouseCursor dropAllowedCursor);
 
 /// Begin dragging an object
 /// \param dragObjectUserType the user type for the object
 /// \param dragObject the user object to drag as payload
-HORUS_API void beginDragDrop(u32 dragObjectUserType, void* dragObject);
+HORUS_API void dragDropBegin(u32 dragObjectUserType, void* dragObject);
 
 /// End drag and drop operation
-HORUS_API void endDragDrop();
+HORUS_API void dragDropEnd();
 
 /// Allow drag drop for the next widgets
-HORUS_API void allowDragDrop();
+HORUS_API void dragDropAllow();
 
 /// Disallow drop for the next widgets
-HORUS_API void disallowDragDrop();
+HORUS_API void dragDropDisallow();
 
 /// \return true if the user dropped payload on previous widget
-HORUS_API bool droppedOnWidget();
+HORUS_API bool dragDropDroppedOnWidget();
 
 /// \return the drag drop payload user object pointer
-HORUS_API void* getDragDropObject();
+HORUS_API void* dragDropObjectGet();
 
 /// \return the drag drop payload user object type
-HORUS_API u32 getDragDropObjectType();
+HORUS_API u32 dragDropObjectTypeGet();
 
 //////////////////////////////////////////////////////////////////////////
 // Custom widgets
@@ -2694,56 +2670,32 @@ HORUS_API u32 getDragDropObjectType();
 /// Begin drawing a custom widget
 /// \param height the widget height
 /// \return the widget rectangle in window coordinates
-HORUS_API Rect beginCustomWidget(const char* id, f32 height = 0.0f);
+HORUS_API Rect customWidgetBegin(const char* id, f32 height = 0.0f);
 
 /// End custom widget drawing
-HORUS_API void endCustomWidget();
+HORUS_API void customWidgetEnd();
 
 /// Set the next widget position
-HORUS_API void setPosition(const Point& position);
+HORUS_API void widgetPositionSet(const Point& position);
 
 /// \return the current widget drawing position
-HORUS_API Point getPosition();
-
-HORUS_API void pushPosition();
-HORUS_API void popPosition();
-
-/// Increment the widget layer index, the highest layer index will be the active one
-HORUS_API void incrementLayerIndex();
-
-/// \return the layer index, after decrementing it
-HORUS_API u32 decrementLayerIndex();
-
-///
-HORUS_API void decrementWindowMaxLayerIndex();
-
-///
-HORUS_API Point getLayoutSize();
-
-///
-HORUS_API Rect getWidgetRect();
-
-HORUS_API void rendererSetFont(HFont font);
-HORUS_API void rendererSetColor(const Color& color);
-HORUS_API void rendererSetLineColor(const Color& color);
-HORUS_API void rendererSetFillColor(const Color& color);
-HORUS_API void rendererDrawTextAt(const char* text, const Point& position);
-HORUS_API void rendererDrawTextInBox(const char* text, const Rect& rect, HAlignType horizontalAlign, VAlignType verticalAlign);
-HORUS_API Point rendererGetTextSize(const char* text);
-HORUS_API void rendererDrawImage(HImage image, const Point& position, f32 scale);
-HORUS_API void rendererDrawStretchedImage(HImage image, const Rect& rect);
-HORUS_API void rendererDrawBorderedImage(HImage image, u32 border, const Rect& rect);
-HORUS_API void rendererSetLineStyle(const LineStyle& style);
-HORUS_API void rendererSetFillStyle(const FillStyle& style);
-HORUS_API void rendererDrawLine(const Point& a, const Point& b);
-HORUS_API void rendererDrawPolyLine(const Point* points, u32 pointCount, bool closed = false);
-HORUS_API void rendererDrawCircle(const Point& center, f32 radius, u32 segments = 32);
-HORUS_API void rendererDrawEllipse(const Point& center, f32 radiusX, f32 radiusY, u32 segments = 32);
-HORUS_API void rendererDrawRectangle(const Rect& rc);
-HORUS_API void rendererDrawSolidRectangle(const Rect& rc);
-HORUS_API void rendererDrawSpline(SplineControlPoint* points, u32 count, f32 segmentSize = 15);
-HORUS_API void rendererDrawArrow(const Point& startPoint, const Point& endPoint, f32 tipLength, f32 tipWidth, bool drawBodyLine = true);
-HORUS_API void rendererDrawSolidTriangle(const Point& p1, const Point& p2, const Point& p3);
+HORUS_API Point widgetPositionGet();
+HORUS_API void rendererTextInBoxDraw(const char* text, const Rect& rect, HAlignType horizontalAlign, VAlignType verticalAlign);
+HORUS_API Point rendererTextSizeGet(const char* text);
+HORUS_API void rendererImageDraw(HImage image, const Point& position, f32 scale);
+HORUS_API void rendererStretchedImageDraw(HImage image, const Rect& rect);
+HORUS_API void rendererBorderedImageDraw(HImage image, u32 border, const Rect& rect);
+HORUS_API void rendererLineStyleSet(const LineStyle& style);
+HORUS_API void rendererFillStyleSet(const FillStyle& style);
+HORUS_API void rendererLineDraw(const Point& a, const Point& b);
+HORUS_API void rendererPolyLineDraw(const Point* points, u32 pointCount, bool closed = false);
+HORUS_API void rendererCircleDraw(const Point& center, f32 radius, u32 segments = 32);
+HORUS_API void rendererEllipseDraw(const Point& center, f32 radiusX, f32 radiusY, u32 segments = 32);
+HORUS_API void rendererRectangleDraw(const Rect& rc);
+HORUS_API void rendererSolidRectangleDraw(const Rect& rc);
+HORUS_API void rendererSplineDraw(SplineControlPoint* points, u32 count, f32 segmentSize = 15);
+HORUS_API void rendererArrowDraw(const Point& startPoint, const Point& endPoint, f32 tipLength, f32 tipWidth, bool drawBodyLine = true);
+HORUS_API void rendererSolidTriangleDraw(const Point& p1, const Point& p2, const Point& p3);
 
 //////////////////////////////////////////////////////////////////////////
 // Utility and complex/combined widgets
@@ -2772,19 +2724,10 @@ HORUS_API bool objectRefEditor(const char* id, HImage targetImg, HImage clearImg
 //////////////////////////////////////////////////////////////////////////
 
 /// Convert an int value to string
-HORUS_API void toStringI32(i32 value, char* outString, u32 outStringMaxSize, u32 fillerZeroesCount = 0);
+HORUS_API void stringFromI32(i32 value, char* outString, u32 outStringMaxSize, u32 fillerZeroesCount = 0);
 
 /// Convert a float value to string
-HORUS_API void toStringF32(f32 value, char* outString, u32 outStringMaxSize, i32 decimalPlaces = ~0);
-
-HORUS_API Color getColorFromText(const char* colorText);
-HORUS_API Color colorFromHex(const char* hexText);
-HORUS_API u32 intColorFromHex(const char* hexText);
-HORUS_API std::string colorToHex(const Color& color);
-HORUS_API std::string intColorToHex(const u32 color);
-HORUS_API Color hsvToRgb(const Color& hsv);
-HORUS_API Color rgbToHsv(const Color& rgb);
-HORUS_API Color hueToRgb(f32 hue, f32 alpha = 1.0f);
+HORUS_API void stringFromF32(f32 value, char* outString, u32 outStringMaxSize, i32 decimalPlaces = ~0);
 
 }
 /** @}*/

@@ -53,19 +53,19 @@ struct DockNode
 	void debug(i32 level = 0);
 };
 
-HNativeWindow createNativeWindow(const std::string& title, NativeWindowFlags flags, NativeWindowState state, const Rect& rect);
-void destroyNativeWindow(HNativeWindow wnd);
-DockNode* createNativeWindowRootDockNode(HNativeWindow nativeWindow);
-void deleteRootDockNode(HNativeWindow window);
-DockNode* getRootDockNode(HNativeWindow window);
-Window* createWindow(const std::string& id, DockNode* targetNode, DockType dockType, const std::string& title, Rect* initialRect, HNativeWindow nativeWnd, HImage img);
-void deleteWindow(Window* wnd);
-void closeWindow(Window* wnd);
-bool dockWindow(Window* wnd, DockNode* targetNode, DockType dockType, u32 tabIndex = 0, const Point* undockedWindowPos = nullptr);
+HNativeWindow nativeWindowCreate(const std::string& title, NativeWindowFlags flags, NativeWindowState state, const Rect& rect);
+void nativeWindowDestroy(HNativeWindow wnd);
+DockNode* dockNodeRootCreateInternal(HNativeWindow nativeWindow);
+void dockNodeRootDelete(HNativeWindow window);
+DockNode* dockNodeRootGet(HNativeWindow window);
+Window* windowCreateInternal(const std::string& id, DockNode* targetNode, DockType dockType, const std::string& title, Rect* initialRect, HNativeWindow nativeWnd, HImage img);
+void windowDeleteInternal(Window* wnd);
+void windowCloseInternal(Window* wnd);
+bool windowDockInternal(Window* wnd, DockNode* targetNode, DockType dockType, u32 tabIndex = 0, const Point* undockedWindowPos = nullptr);
 void dockNodeTabs(DockNode* node);
-void updateDockingSystem();
-void handleDockNodeEvents(DockNode* node);
-void handleDockingMouseUp();
+void dockingSystemUpdate();
+void dockNodeEventsHandle(DockNode* node);
+void dockingMouseUpHandle();
 
 
 }

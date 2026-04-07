@@ -150,23 +150,23 @@ static void applyHandleDrag(
 		state.scrollOffset = state.scrollMax;
 }
 
-void beginScrollView(const char* id, f32 size, f32 scrollPos)
+void scrollViewBegin(const char* id, f32 size, f32 scrollPos)
 {
-	beginScrollView(id, size, { 0, scrollPos }, 0, ScrollViewFlags::None);
+	scrollViewBegin(id, size, { 0, scrollPos }, 0, ScrollViewFlags::None);
 }
 
-void beginScrollView(const char* id, f32 size, f32 scrollPos, f32 virtualHeight)
+void scrollViewBegin(const char* id, f32 size, f32 scrollPos, f32 virtualHeight)
 {
-	beginScrollView(id, size, { 0, scrollPos }, { 0, virtualHeight }, ScrollViewFlags::None);
+	scrollViewBegin(id, size, { 0, scrollPos }, { 0, virtualHeight }, ScrollViewFlags::None);
 }
 
-void beginScrollView(const char* id, f32 size, f32 scrollPos, f32 virtualHeight, ScrollViewFlags flags)
+void scrollViewBegin(const char* id, f32 size, f32 scrollPos, f32 virtualHeight, ScrollViewFlags flags)
 {
-	beginScrollView(id, size, { 0, scrollPos }, { 0, virtualHeight }, flags);
+	scrollViewBegin(id, size, { 0, scrollPos }, { 0, virtualHeight }, flags);
 }
 
 // Main implementation with all parameters
-void beginScrollView(const char* id, f32 height, Point scrollOffset, Point virtualSize, ScrollViewFlags flags)
+void scrollViewBegin(const char* id, f32 height, Point scrollOffset, Point virtualSize, ScrollViewFlags flags)
 {
 	auto& scrollViewElemState = ctx->theme->getElement(WidgetElementId::ScrollViewBody).normalState();
 	auto& scrollViewScrollThumbElemStateV = ctx->theme->getElement(WidgetElementId::ScrollViewScrollThumbV).normalState();
@@ -177,7 +177,7 @@ void beginScrollView(const char* id, f32 height, Point scrollOffset, Point virtu
 	if (height <= 0.0f)
 	{
 		// Use remaining height in layout
-		height = getRemainingHeight();
+		height = layoutRemainingHeightGet();
 
 		if (height <= 0)
 		{
@@ -200,7 +200,7 @@ void beginScrollView(const char* id, f32 height, Point scrollOffset, Point virtu
 	scrollViewState.id = ctx->id;
 	scrollViewState.flags = flags;
 
-	const auto& padding = getPadding(PaddingType::ScrollView);
+	const auto& padding = paddingGet(PaddingType::ScrollView);
 	const auto border = (has(flags, ScrollViewFlags::NoBorder) ? 0 : (f32)scrollViewElemState.border * ctx->scale);
 	auto internalPadding = border + (has(flags, ScrollViewFlags::NoPadding) ? 0 : padding.x);
 
@@ -274,11 +274,11 @@ void beginScrollView(const char* id, f32 height, Point scrollOffset, Point virtu
 	ctx->maxContentWidth = 0.0f;
 
 	ctx->renderer.pushClipRect(clipRect);
-	pushPosition();
+	widgetPositionPush();
 	ctx->position = { clipRect.x, clipRect.y };
 	ctx->position -= useOffset;
 
-	pushLayout();
+	layoutPush();
 	ctx->layout = LayoutState(LayoutType::ScrollView);
 	ctx->layout.savedPosition = ctx->position;
 	ctx->layout.id = ctx->id;
@@ -286,7 +286,7 @@ void beginScrollView(const char* id, f32 height, Point scrollOffset, Point virtu
 	ctx->layout.height = clipRect.height;
 }
 
-Point endScrollView()
+Point scrollViewEnd()
 {
 	ctx->id = ctx->layout.id;
 
@@ -300,7 +300,7 @@ Point endScrollView()
 	auto& scrollViewElemState = ctx->theme->getElement(WidgetElementId::ScrollViewBody).normalState();
 	auto scrollOffset = scrollViewState.scrollOffset;
 	f32 height = scrollViewState.height;
-	const auto& padding = getPadding(PaddingType::ScrollView);
+	const auto& padding = paddingGet(PaddingType::ScrollView);
 	const auto border = (has(scrollViewState.flags, ScrollViewFlags::NoBorder) ? 0 : (f32)scrollViewElemState.border * ctx->scale);
 	auto internalPadding = padding + border;
 
@@ -473,7 +473,7 @@ Point endScrollView()
 			{
 				if (rectScrollBarHandleV.contains(ctx->mousePosition))
 				{
-					setWindowCapture();  // Capture mouse to get events outside window
+					windowCaptureSet();  // Capture mouse to get events outside window
 					scrollViewState.vertical.draggingThumb = true;
 					scrollViewState.vertical.dragDelta = ctx->mousePosition - rectScrollBarHandleV.topLeft();
 					ctx->dragScrollViewHandleWidgetId = scrollViewState.id;
@@ -508,7 +508,7 @@ Point endScrollView()
 				scrollViewState.vertical.draggingThumb = false;
 				ctx->dragScrollViewHandleWidgetId = 0;
 				ctx->widget.captureId = 0;
-				releaseWindowCapture();
+				windowCaptureRelease();
 
 				// snap any tiny rounding residual to the exact max so last item becomes reachable
 				auto& v = scrollViewState.vertical;
@@ -596,7 +596,7 @@ Point endScrollView()
 		{
 			if (rectScrollBarHandleH.contains(ctx->mousePosition))
 			{
-				setWindowCapture();  // Capture mouse to get events outside window
+				windowCaptureSet();  // Capture mouse to get events outside window
 				scrollViewState.horizontal.draggingThumb = true;
 				scrollViewState.horizontal.dragDelta = ctx->mousePosition - rectScrollBarHandleH.topLeft();
 				ctx->dragScrollViewHandleWidgetId = scrollViewState.id;
@@ -631,7 +631,7 @@ Point endScrollView()
 			scrollViewState.horizontal.draggingThumb = false;
 			ctx->dragScrollViewHandleWidgetId = 0;
 			ctx->widget.captureId = 0;
-			releaseWindowCapture();  // Release mouse capture
+			windowCaptureRelease();  // Release mouse capture
 		}
 
 		updateScrollMax(scrollViewState.horizontal, scrollContentH, scrollAreaWidth);
@@ -682,14 +682,14 @@ Point endScrollView()
 
 	// Persist combined authoritative offset and return it.
 	scrollViewState.scrollOffset = scrollOffset;
-	popPosition();
+	widgetPositionPop();
 	addWidget(height/ctx->scale);
-	popLayout();
+	layoutPop();
 
 	return scrollOffset;
 }
 
-void beginVirtualListContent(u32 totalRowCount, f32 itemHeight, f32 scrollPos)
+void virtualListBegin(u32 totalRowCount, f32 itemHeight, f32 scrollPos)
 {
 	f32 skipRows = scrollPos / itemHeight;
 	auto pos = ctx->position;
@@ -700,9 +700,9 @@ void beginVirtualListContent(u32 totalRowCount, f32 itemHeight, f32 scrollPos)
 	ctx->virtualListStack.back().lastPosition = pos;
 }
 
-void endVirtualListContent()
+void virtualListEnd()
 {
-	hui::setPosition(
+	hui::widgetPositionSet(
 		{
 			ctx->virtualListStack.back().lastPosition.x,
 			ctx->virtualListStack.back().lastPosition.y + ctx->virtualListStack.back().totalHeight
@@ -710,7 +710,7 @@ void endVirtualListContent()
 	ctx->virtualListStack.pop_back();
 }
 
-void beginVirtualListContent(VirtualScrollInfo& info)
+void virtualListBegin(VirtualScrollInfo& info)
 {
 	// Determine current scroll view context
 	WidgetId svId = ctx->layout.id;

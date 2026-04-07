@@ -249,7 +249,7 @@ static void setThemeElement(
 	auto textColor = state.get("textColor", "white").asString();
 	auto fontName = state.get("font", "").asString();
 	auto imageFilename = themePath + imageName + ".png";
-	HImage image = hui::getThemeImage(theme, imageFilename.c_str());
+	HImage image = hui::themeGetImage(theme, imageFilename.c_str());
 
 	width = state.get("width", width).asInt();
 	height = state.get("height", height).asInt();
@@ -276,7 +276,7 @@ static void setThemeElement(
 	elemInfo.width = width;
 	elemInfo.height = height;
 
-	hui::setThemeWidgetElement(theme, elemId, widgetStateType, elemInfo, styleName);
+	hui::themeSetWidgetElement(theme, elemId, widgetStateType, elemInfo, styleName);
 }
 
 static void setUserElement(
@@ -296,7 +296,7 @@ static void setUserElement(
 	auto textColor = state.get("textColor", "white").asString();
 	auto fontName = state.get("font", "").asString();
 	auto imageFilename = themePath + imageName + ".png";
-	HImage image = hui::getThemeImage(theme, imageFilename.c_str());
+	HImage image = hui::themeGetImage(theme, imageFilename.c_str());
 	width = state.get("width", width).asInt();
 	height = state.get("height", height).asInt();
 
@@ -322,7 +322,7 @@ static void setUserElement(
 	elemInfo.width = width,
 	elemInfo.height = height;
 
-	setThemeUserWidgetElement(theme, elemName.c_str(), widgetStateType, elemInfo, styleName);
+	themeSetUserWidgetElement(theme, elemName.c_str(), widgetStateType, elemInfo, styleName);
 }
 
 static WidgetStateType widgetStateFromText(const std::string& stateName)
@@ -343,7 +343,7 @@ static WidgetStateType widgetStateFromText(const std::string& stateName)
 
 HTheme loadThemeFromJson(const char* filename, char* errorTextBuffer, size_t errorTextBufferSize)
 {
-	HTheme theme = hui::createTheme(hui::getSettings().defaultAtlasSize);
+	HTheme theme = hui::themeCreate(hui::getSettings().defaultAtlasSize);
 
 	Json::Reader reader;
 	Json::Value root;
@@ -358,7 +358,7 @@ HTheme loadThemeFromJson(const char* filename, char* errorTextBuffer, size_t err
 			strncpy(errorTextBuffer, reader.getFormatedErrorMessages().c_str(), std::min(errorTextBufferSize, reader.getFormatedErrorMessages().size()));
 		}
 
-		deleteTheme(theme);
+		themeDestroy(theme);
 		return 0;
 	}
 
@@ -387,7 +387,7 @@ HTheme loadThemeFromJson(const char* filename, char* errorTextBuffer, size_t err
 	{
 		auto& name = settingNames[i];
 		auto val = settings.get(name.c_str(), Json::Value());
-		hui::setThemeUserSetting(theme, name.c_str(), val.asCString());
+		hui::themeSetUserSetting(theme, name.c_str(), val.asCString());
 	}
 
 	Json::Value widgets = root.get("widgets", Json::Value());
@@ -423,7 +423,7 @@ HTheme loadThemeFromJson(const char* filename, char* errorTextBuffer, size_t err
 						setThemeElement(theme, themePath, styleName.c_str(), widgetType, elemType, widgetStateType, elemState, width, height);
 					else
 					{
-						hui::setThemeWidgetElementParameter(theme, elemType, styleName.c_str(), stateName.c_str(), elemState.asString().c_str());
+						hui::themeSetWidgetElementParameter(theme, elemType, styleName.c_str(), stateName.c_str(), elemState.asString().c_str());
 					}
 				}
 			}
@@ -454,7 +454,7 @@ HTheme loadThemeFromJson(const char* filename, char* errorTextBuffer, size_t err
 					}
 					else
 					{
-						hui::setThemeUserWidgetElementParameter(theme, elementName.c_str(), styleName.c_str(), stateName.c_str(), elemState.asString().c_str());
+						hui::themeSetUserWidgetElementParameter(theme, elementName.c_str(), styleName.c_str(), stateName.c_str(), elemState.asString().c_str());
 					}
 				}
 			}
@@ -499,7 +499,7 @@ HImage loadThemeImage(HTheme theme, const char* pngFilename)
 
 	if (ret && img.pixels)
 	{
-		return addThemeImage(theme, pngFilename, img);
+		return themeAddImage(theme, pngFilename, img);
 	}
 
 	return 0;

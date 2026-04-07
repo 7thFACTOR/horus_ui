@@ -20,7 +20,7 @@ struct Renderer
 {
 	Renderer();
 	virtual ~Renderer();
-	void setCurrentNativeWindow(HNativeWindow wnd);
+	void nativeWindowSetCurrent(HNativeWindow wnd);
 	void executeDrawCommands(HNativeWindow wnd);
 	Rect pushClipRect(const Rect& rect, bool clipToParent = true);
 	void popClipRect();

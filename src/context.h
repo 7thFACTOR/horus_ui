@@ -187,8 +187,8 @@ struct Context
 		return maxLayerIndex == layerIndex;
 	}
 
-	void setLabelAndId(const char* text);
-	void setSkipRenderAndInput(bool skip);
+	void labelAndIdSet(const char* text);
+	void skipRenderAndInputSet(bool skip);
 };
 
 /// the current context, used internally
