@@ -33,7 +33,7 @@ bool vecEditorInternal(f64& x, f64& y, f64& z, f64 scrollStep, bool useZ)
 		// current widget + 2 since widget is computed in endBox and we have 1 image widget
 		//TODO: not working, since widget id is not incremental
 		hui::boxBeginUserElement("axisBody", (ctx->vecEditor.draggingValue && (ctx->vecEditor.draggedId == (ctx->id + 2))) ? dragColor : normalColor, "axisBoxBody");
-		WidgetId imageWidgetId = hui::widgetIdGet();
+		WidgetId imageWidgetId = hui::widgetGetId();
 		hui::image(elem->normalState().image, 14);
 		bool imageHovered = hui::widgetIsHovered();
 		bool imagePressed = hui::widgetIsPressed();
@@ -41,22 +41,22 @@ bool vecEditorInternal(f64& x, f64& y, f64& z, f64 scrollStep, bool useZ)
 
 		if (hui::widgetIsHovered() || imageHovered || ctx->vecEditor.draggingValue)
 		{
-			hui::cursorTypeSet(hui::MouseCursorType::SizeWE);
+			hui::mouseCursorSetType(hui::MouseCursorType::SizeWE);
 
 			if (hui::widgetIsPressed() || imagePressed)
 			{
 				ctx->vecEditor.draggingValue = true;
 				ctx->vecEditor.draggedId = ctx->id;
-				ctx->vecEditor.lastMousePos = hui::inputEventGet().mouse.point;
-				hui::windowCaptureSet();
+				ctx->vecEditor.lastMousePos = hui::inputGetEvent().mouse.point;
+				hui::windowSetCapture();
 			}
 		}
 
-		if (hui::inputEventGet().type == hui::InputEvent::Type::MouseUp)
+		if (hui::inputGetEvent().type == hui::InputEvent::Type::MouseUp)
 		{
 			ctx->vecEditor.draggingValue = false;
 			ctx->vecEditor.draggedId = 0;
-			hui::windowCaptureRelease();
+			hui::windowReleaseCapture();
 			changeEnded = true;
 		}
 
@@ -64,12 +64,12 @@ bool vecEditorInternal(f64& x, f64& y, f64& z, f64 scrollStep, bool useZ)
 			&& ctx->vecEditor.draggedId == ctx->id)
 		{
 			value = atof(strAxis);
-			f32 dx = hui::inputEventGet().mouse.point.x - ctx->vecEditor.lastMousePos.x;
+			f32 dx = hui::inputGetEvent().mouse.point.x - ctx->vecEditor.lastMousePos.x;
 			f32 unitPerPixel = (f32)scrollStep;
 
 			value += (f64)dx * unitPerPixel;
-			ctx->vecEditor.lastMousePos = hui::inputEventGet().mouse.point;
-			hui::toStringF32((f32)value, strAxis, VectorEditorState::maxStrSize, 4);
+			ctx->vecEditor.lastMousePos = hui::inputGetEvent().mouse.point;
+			hui::stringFromF32((f32)value, strAxis, VectorEditorState::maxStrSize, 4);
 			modified = true;
 		}
 
@@ -164,7 +164,7 @@ bool objectRefEditor(const char* id, HImage targetImg, HImage clearImg, const ch
 	//beginColumns(3, tgtRowImgs);
 	WidgetElementInfo targetElemInfo;
 
-	hui::themeUserWidgetElementInfoGet("targetObjectBody", WidgetStateType::Normal, targetElemInfo);
+	hui::themeGetUserWidgetElementInfo("targetObjectBody", WidgetStateType::Normal, targetElemInfo);
 
 	boxBegin(
 		"targetObjectBody",
@@ -202,12 +202,12 @@ bool objectRefEditor(const char* id, HImage targetImg, HImage clearImg, const ch
 
 	boxEnd();
 
-	if (dragDropObjectTypeGet() == objectType)
+	if (dragDropGetObjectType() == objectType)
 		dragDropAllow();
 
-	if (widgetDroppedOn() && dragDropObjectTypeGet() == objectType)
+	if (dragDropDroppedOnWidget() && dragDropGetObjectType() == objectType)
 	{
-		*outObject = dragDropObjectGet();
+		*outObject = dragDropGetObject();
 		dragDropEnd();
 
 		if (objectValueWasModified)
@@ -218,11 +218,11 @@ bool objectRefEditor(const char* id, HImage targetImg, HImage clearImg, const ch
 	}
 
 	//nextColumn();
-	returnValue = buttonImage(targetImg, targetElemInfo.height, targetElemInfo.height);
+	returnValue = imageButton(targetImg, targetElemInfo.height, targetElemInfo.height);
 	//nextColumn();
 	tintPush(Color::darkRed);
 
-	if (buttonImage(clearImg, targetElemInfo.height, targetElemInfo.height))
+	if (imageButton(clearImg, targetElemInfo.height, targetElemInfo.height))
 	{
 		*outObject = nullptr;
 

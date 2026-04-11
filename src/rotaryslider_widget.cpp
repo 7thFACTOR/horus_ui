@@ -15,7 +15,7 @@ bool sliderRotary(const char* label, f32* value, f32 minVal, f32 maxVal, f32 ste
 	auto& markElem = ctx->theme->getElement(WidgetElementId::RotarySliderMark);
 	auto& valueDotElem = ctx->theme->getElement(WidgetElementId::RotarySliderValueDot);
 	bool wasModified = false;
-	auto& padding = widgetPaddingGet();
+	auto& padding = widgetGetPadding();
 
 	if (ctx->sameLine.enabled && !ctx->widget.hasNextWidth)
 	{

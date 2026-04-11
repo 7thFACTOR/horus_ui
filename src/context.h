@@ -44,7 +44,7 @@ struct Context
 	WidgetId id = 42;
 	WidgetState widget;
 	TextInputState textInput;
-	MultilineTextInputState multilineTextInput;
+	MultilineTextInputState textMultilineInput;
 	std::vector<TextLineState> textLines;
 	std::vector<WidgetId> idStack;
 	std::unordered_map<WidgetId, WidgetBoolState> widgetBools;

@@ -16,26 +16,26 @@ bool loadPngImage(const char* path, ImageData& outImage)
 	i32 height = 0;
 	i32 comp = 0;
 	stbi_uc* imgFileData = nullptr;
-	HFile file = getSettings().services.open(path, "rb");
+	HFile file = settingsGet().services.open(path, "rb");
 	u64 fsize = 0;
 
 	if (file)
 	{
-		getSettings().services.seek(file, FileSeekMode::End, 0);
-		fsize = getSettings().services.tell(file);
-		getSettings().services.seek(file, FileSeekMode::Set, 0);
+		settingsGet().services.seek(file, FileSeekMode::End, 0);
+		fsize = settingsGet().services.tell(file);
+		settingsGet().services.seek(file, FileSeekMode::Set, 0);
 		imgFileData = new stbi_uc[fsize];
-		auto readSize = getSettings().services.read(file, imgFileData, fsize);
+		auto readSize = settingsGet().services.read(file, imgFileData, fsize);
 
 		if (fsize != readSize)
 		{
-			getSettings().services.close(file);
+			settingsGet().services.close(file);
 
 			return false;
 		}
 	}
 
-	getSettings().services.close(file);
+	settingsGet().services.close(file);
 
 	stbi_uc* data = stbi_load_from_memory(imgFileData, fsize, &width, &height, &comp, 4);
 
@@ -61,13 +61,13 @@ bool savePngImage(const char* path, const ImageData& image)
 	auto write_func = [](void* context, void* data, int size)
 	{
 		const char* path = (const char*)context;
-		HFile file = getSettings().services.open(path, "wb");
+		HFile file = settingsGet().services.open(path, "wb");
 
 		if (!file)
 			return;
 
-		getSettings().services.write(file, data, size);
-		getSettings().services.close(file);
+		settingsGet().services.write(file, data, size);
+		settingsGet().services.close(file);
 	};
 
 	return 0 != stbi_write_png_to_func(write_func, (void*)path, image.width, image.height, 32 / 8, image.pixels, 0);
@@ -83,22 +83,22 @@ void deleteImageData(ImageData& image)
 
 static std::string readTextFile(const char* path)
 {
-	auto file = getSettings().services.open(path, "rb");
+	auto file = settingsGet().services.open(path, "rb");
 
 	if (!file)
 		return std::string("");
 
-	getSettings().services.seek(file, FileSeekMode::End, 0);
-	auto size = getSettings().services.tell(file);
+	settingsGet().services.seek(file, FileSeekMode::End, 0);
+	auto size = settingsGet().services.tell(file);
 	std::string text;
 
 	if (size != -1)
 	{
-		getSettings().services.seek(file, FileSeekMode::Set, 0);
+		settingsGet().services.seek(file, FileSeekMode::Set, 0);
 
 		char* buffer = new char[size + 1];
 		memset(buffer, 0, size + 1);
-		auto readBytes = getSettings().services.read(file, buffer, size);
+		auto readBytes = settingsGet().services.read(file, buffer, size);
 
 		if (readBytes == size)
 			text = buffer;
@@ -106,7 +106,7 @@ static std::string readTextFile(const char* path)
 		delete[] buffer;
 	}
 
-	getSettings().services.close(file);
+	settingsGet().services.close(file);
 
 	return text;
 }
@@ -144,7 +144,7 @@ static WidgetType getWidgetTypeFromName(std::string name)
 	if (name == "rotarySlider") return WidgetType::RotarySlider;
 	if (name == "colorPicker") return WidgetType::ColorPicker;
 	if (name == "table") return WidgetType::Table;
-	if (name == "multilineTextInput") return WidgetType::MultilineTextInput;
+	if (name == "textMultilineInput") return WidgetType::MultilineTextInput;
 
 	return WidgetType::None;
 }
@@ -259,14 +259,14 @@ static void setThemeElement(
 		image = loadThemeImage(theme, imageFilename.c_str());
 	}
 
-	auto font = hui::getThemeFont(theme, fontName.c_str());
+	auto font = hui::themeGetFont(theme, fontName.c_str());
 
 	u32 r = 0, g = 0, b = 0, a = 255;
 	Color bgColor;
 	Color txtColor;
 
-	bgColor = getColorFromText(color.c_str());
-	txtColor = getColorFromText(textColor.c_str());
+	bgColor = colorFromHex(color.c_str());
+	txtColor = colorFromHex(textColor.c_str());
 
 	elemInfo.image = image;
 	elemInfo.border = border;
@@ -305,14 +305,14 @@ static void setUserElement(
 		image = loadThemeImage(theme, imageFilename.c_str());
 	}
 
-	auto font = hui::getThemeFont(theme, fontName.c_str());
+	auto font = hui::themeGetFont(theme, fontName.c_str());
 
 	u32 r = 0, g = 0, b = 0, a = 255;
 	Color bgColor;
 	Color txtColor;
 
-	bgColor = getColorFromText(color.c_str());
-	txtColor = getColorFromText(textColor.c_str());
+	bgColor = colorFromHex(color.c_str());
+	txtColor = colorFromHex(textColor.c_str());
 
 	elemInfo.image = image;
 	elemInfo.border = border;
@@ -343,7 +343,7 @@ static WidgetStateType widgetStateFromText(const std::string& stateName)
 
 HTheme loadThemeFromJson(const char* filename, char* errorTextBuffer, size_t errorTextBufferSize)
 {
-	HTheme theme = hui::themeCreate(hui::getSettings().defaultAtlasSize);
+	HTheme theme = hui::themeCreate(hui::settingsGet().defaultAtlasSize);
 
 	Json::Reader reader;
 	Json::Value root;
@@ -377,7 +377,7 @@ HTheme loadThemeFromJson(const char* filename, char* errorTextBuffer, size_t err
 			fontFilename = themePath + fontFilename;
 		}
 
-		createThemeFont(theme, name.c_str(), fontFilename.c_str(), fnt.get("size", 0).asInt());
+		themeFontCreate(theme, name.c_str(), fontFilename.c_str(), fnt.get("size", 0).asInt());
 	}
 
 	Json::Value settings = root.get("settings", Json::Value());

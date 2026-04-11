@@ -1214,7 +1214,7 @@ void destroySwapchainForWindowVk(void* sdlWindow)
 	//printf("Vulkan: scheduled swapchain destroy for window=%p\n", sdlWindow);
 }
 
-// update/create vertex buffer for context
+// contextUpdate/create vertex buffer for context
 static bool ensureVertexBuffer(SwapchainContext& ctx, u32 frameIndex, u32 vertexCount)
 {
 	if (ctx.vertexBufferCounts[frameIndex] >= vertexCount) return true;
@@ -1539,7 +1539,7 @@ bool presentSwapchainForWindowVk(void* sdlWindow)
 	}
 
 	ctx.currentFrame = (ctx.currentFrame + 1) % HUI_VK_MAX_FRAMES_IN_FLIGHT;
-	// update the acquisition index only if we have semaphores
+	// contextUpdate the acquisition index only if we have semaphores
 	if (semCount > 0)
 	{
 		ctx.acquireSemIndex = (ctx.acquireSemIndex + 1) % static_cast<uint32_t>(semCount);

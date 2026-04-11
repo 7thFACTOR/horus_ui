@@ -22,7 +22,7 @@ bool image(HImage img, f32 height, HAlignType horizontalAlign, VAlignType vertic
 	f32 newWidth = imgPtr->width * ctx->scale;
 	f32 newHeight = height;
 
-	auto& padding = widgetPaddingGet();
+	auto& padding = widgetGetPadding();
 
 	if (!ctx->sameLine.enabled)
 	{

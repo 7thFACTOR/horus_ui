@@ -10,9 +10,9 @@ bool dropdown(const char* id, i32& selectedIndex, const char** items, u32 itemCo
 {
 	auto& bodyElem = ctx->theme->getElement(WidgetElementId::DropdownBody);
 	auto& arrowElem = ctx->theme->getElement(WidgetElementId::DropdownArrow);
-	auto& padding = getWidgetPadding();
+	auto& padding = widgetGetPadding();
 
-	ctx->id = genId(id);
+	ctx->id = idGen(id);
 
 	if (ctx->sameLine.enabled)
 	{
@@ -20,7 +20,7 @@ bool dropdown(const char* id, i32& selectedIndex, const char** items, u32 itemCo
 		ctx->widget.hasCustomWidth = true;
 	}
 
-	addWidget((bodyElem.normalState().height + padding.y * 2.0f) * ctx->scale);
+	widgetAdd((bodyElem.normalState().height + padding.y * 2.0f) * ctx->scale);
 	buttonBehavior();
 
 	auto bodyElemState = &bodyElem.normalState();
@@ -42,9 +42,9 @@ bool dropdown(const char* id, i32& selectedIndex, const char** items, u32 itemCo
 		arrowElemState = &arrowElem.getState(WidgetStateType::Hovered);
 	}
 
-	ctx->renderer.cmdSetColor(applyTint(bodyElemState->color, TintColorType::Body));
+	ctx->renderer.cmdSetColor(tintApply(bodyElemState->color, TintColorType::Body));
 	ctx->renderer.cmdDrawImageBordered(bodyElemState->image, bodyElemState->border, ctx->widget.rect, ctx->scale);
-	ctx->renderer.cmdSetColor(applyTint(arrowElemState->color, TintColorType::Body));
+	ctx->renderer.cmdSetColor(tintApply(arrowElemState->color, TintColorType::Body));
 
 	// dial down the height, since its already global scaled
 	auto arrowY = ctx->widget.rect.height / 2.0f - ((arrowElemState->image->height) / 2.0f + (ctx->widget.pressed ? 1.0f : 0.0f)) * ctx->scale;
@@ -78,7 +78,7 @@ bool dropdown(const char* id, i32& selectedIndex, const char** items, u32 itemCo
 				ctx->widget.rect.height
 		};
 
-		ctx->renderer.cmdSetColor(applyTint(bodyElemState->textColor, TintColorType::Text));
+		ctx->renderer.cmdSetColor(tintApply(bodyElemState->textColor, TintColorType::Text));
 		ctx->renderer.cmdSetFont(bodyElemState->font);
 		ctx->renderer.cmdDrawTextInBox(
 			selectedItemText,
@@ -87,7 +87,7 @@ bool dropdown(const char* id, i32& selectedIndex, const char** items, u32 itemCo
 			VAlignType::Center, true);
 	}
 
-	setFocusable();
+	focusableSet();
 
 	if (ctx->widget.clicked)
 	{
@@ -115,24 +115,24 @@ bool dropdown(const char* id, i32& selectedIndex, const char** items, u32 itemCo
 		// we need exact width, so don't scale the popup's width
 		ctx->popupUseGlobalScale = false;
 
-		beginPopup("popup", ctx->widget.rect.width - bodyElem.normalState().border * 2.0f,
+		popupBegin("popup", ctx->widget.rect.width - bodyElem.normalState().border * 2.0f,
 			PopupFlags::CustomPosition,
 			popupPos,
 			WidgetElementId::ButtonBody);
 
 		auto& selectableBodyElem = ctx->theme->getElement(WidgetElementId::SelectableBody).normalState();
 
-		pushSpacing(0);
-		pushPadding(PaddingType::ScrollView, Point());
+		spacingPush(0);
+		paddingPush(PaddingType::ScrollView, Point());
 
 		if (maxVisibleDropDownItems < itemCount)
 		{
-			pushId(ctx->id);
-			beginScrollView("dropDownScrollView", std::min(itemCount, maxVisibleDropDownItems) * selectableBodyElem.height, ctx->dropDownScrollViewPos.y);
+			idPush(ctx->id);
+			scrollViewBegin("dropDownScrollView", std::min(itemCount, maxVisibleDropDownItems) * selectableBodyElem.height, ctx->dropDownScrollViewPos.y);
 		}
 
 		// we don't want tinting for items, just the dropdown is tinted
-		pushTint(Color::white);
+		tintPush(Color::white);
 
 		for (u32 i = 0; i < itemCount; i++)
 		{
@@ -146,24 +146,24 @@ bool dropdown(const char* id, i32& selectedIndex, const char** items, u32 itemCo
 			}
 		}
 
-		popTint();
+		tintPop();
 
 		if (maxVisibleDropDownItems < itemCount)
 		{
-			ctx->dropDownScrollViewPos = endScrollView();
-			popId();
+			ctx->dropDownScrollViewPos = scrollViewEnd();
+			idPop();
 		}
 
-		popSpacing();
-		popPadding(PaddingType::ScrollView);
+		spacingPop();
+		paddingPop(PaddingType::ScrollView);
 
-		if (selectedNewItem || mustClosePopup())
+		if (selectedNewItem || popupMustClose())
 		{
-			closePopup();
+			popupClose();
 			ctx->dropdown.active = false;
 		}
 
-		endPopup();
+		popupEnd();
 		ctx->popupUseGlobalScale = true;
 	}
 

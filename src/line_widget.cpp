@@ -8,7 +8,7 @@ namespace hui
 void line()
 {
 	auto& bodyElemState = ctx->theme->getElement(WidgetElementId::LineBody).normalState();
-	auto& padding = widgetPaddingGet();
+	auto& padding = widgetGetPadding();
 
 	ctx->labelAndIdSet(nullptr);
 	widgetAdd(bodyElemState.image->height + padding.y * 2.0f);
@@ -36,7 +36,7 @@ void space(f32 customSpacing)
 	ctx->position.y += spacing * ctx->scale;
 }
 
-void widgetNextWidthSet(f32 width)
+void widgetSetNextWidth(f32 width)
 {
 	ctx->widget.nextWidth = width;
 	ctx->widget.hasNextWidth = true;

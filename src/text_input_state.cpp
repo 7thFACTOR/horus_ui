@@ -31,7 +31,7 @@ bool TextInputState::processEvent(const InputEvent& ev)
 	auto imgH = bodyTextFilterClearImageElem.normalState().image->height * ctx->scale;
 
 	// position image at same X/Y used by the widget rendering
-	clearFilterRc.x = rect.right() - (bodyTextElem.normalState().border + getWidgetPadding().x) * ctx->scale - imgW;
+	clearFilterRc.x = rect.right() - (bodyTextElem.normalState().border + widgetGetPadding().x) * ctx->scale - imgW;
 	clearFilterRc.width = imgW;
 	clearFilterRc.y = rect.y + (rect.height - imgH) / 2.0f;
 	clearFilterRc.height = imgH;
@@ -461,7 +461,7 @@ void TextInputState::processKeyEvent(const InputEvent& ev)
 			char* tmpStr = 0;
 
 			ctx->settings.services.utf32To8(str, &tmpStr);
-			clipboardCopy(tmpStr);
+			clipboardSetText(tmpStr);
 			delete[] tmpStr;
 		}
 	}
@@ -476,7 +476,7 @@ void TextInputState::processKeyEvent(const InputEvent& ev)
 		char tmpStr[maxTextSize];
 		Utf32String utf32Str;
 
-		clipboardPaste(tmpStr, maxTextSize);
+		clipboardGetText(tmpStr, maxTextSize);
 
 		if (ctx->settings.services.utf8To32(tmpStr, utf32Str))
 		{
@@ -508,7 +508,7 @@ void TextInputState::processKeyEvent(const InputEvent& ev)
 
 			if (ctx->settings.services.utf32To8(str, &str8))
 			{
-				clipboardCopy(str8);
+				clipboardSetText(str8);
 				delete[] str8;
 				textChanged = true;
 			}

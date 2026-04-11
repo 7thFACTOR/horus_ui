@@ -16,7 +16,7 @@ bool openFileDialog(const char* filterList, const char* defaultPath, char* outPa
 	auto res = NFD_OpenDialog(filterList, defaultPath, &path);
 
 	// we clear the events, some get pushed when dialog is open
-	inputEventQueueClear();
+	inputEventClearQueue();
 
 	if (res == NFD_OKAY)
 	{
@@ -36,7 +36,7 @@ bool openMultipleFileDialog(const char* filterList, const char* defaultPath, Ope
 	nfdpathset_t outPaths;
 	auto res = NFD_OpenDialogMultiple(filterList, defaultPath, &outPaths);
 
-	clearInputEventQueue();
+	inputEventClearQueue();
 
 	if (res != NFD_OKAY)
 		return false;
@@ -53,7 +53,7 @@ bool saveFileDialog(const char* filterList, const char* defaultPath, char* outPa
 	char* path = 0;
 	auto res = NFD_SaveDialog(filterList, defaultPath, &path);
 
-	clearInputEventQueue();
+	inputEventClearQueue();
 
 	if (res != NFD_OKAY)
 		return false;
@@ -69,7 +69,7 @@ bool pickFolderDialog(const char* defaultPath, char* outPath, u32 maxOutPathSize
 	char* path = 0;
 	auto res = NFD_PickFolder(defaultPath, &path);
 
-	clearInputEventQueue();
+	inputEventClearQueue();
 
 	if (res != NFD_OKAY)
 		return false;

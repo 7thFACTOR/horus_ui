@@ -172,12 +172,12 @@ void scrollViewBegin(const char* id, f32 height, Point scrollOffset, Point virtu
 	auto& scrollViewScrollThumbElemStateV = ctx->theme->getElement(WidgetElementId::ScrollViewScrollThumbV).normalState();
 	auto& scrollViewScrollBarElemStateV = ctx->theme->getElement(WidgetElementId::ScrollViewScrollBarV).normalState();
 
-	ctx->id = genId(id);
+	ctx->id = idGen(id);
 
 	if (height <= 0.0f)
 	{
 		// Use remaining height in layout
-		height = layoutRemainingHeightGet();
+		height = layoutGetRemainingHeight();
 
 		if (height <= 0)
 		{
@@ -264,7 +264,7 @@ void scrollViewBegin(const char* id, f32 height, Point scrollOffset, Point virtu
 
 	if (!draggingThisBegin)
 	{
-		// Accept caller offset when not dragging (will be clamped/finalized in endScrollView).
+		// Accept caller offset when not dragging (will be clamped/finalized in scrollViewEnd).
 		scrollViewState.scrollOffset = scrollOffset;
 	}
 	// Use authoritative per-axis offset for layout positioning in this frame.
@@ -406,7 +406,7 @@ Point scrollViewEnd()
                     scrollViewState.scrollOffset = scrollOffset;
 
                     // consume event and request repaint
-                    cancelEvent();
+                    inputEventCancel();
                     forceRepaint();
                 }
             }
@@ -473,7 +473,7 @@ Point scrollViewEnd()
 			{
 				if (rectScrollBarHandleV.contains(ctx->mousePosition))
 				{
-					windowCaptureSet();  // Capture mouse to get events outside window
+					windowSetCapture();  // Capture mouse to get events outside window
 					scrollViewState.vertical.draggingThumb = true;
 					scrollViewState.vertical.dragDelta = ctx->mousePosition - rectScrollBarHandleV.topLeft();
 					ctx->dragScrollViewHandleWidgetId = scrollViewState.id;
@@ -491,7 +491,7 @@ Point scrollViewEnd()
 				&& ctx->dragScrollViewHandleWidgetId == scrollViewState.id)
 			{
 				// kill event, only we're dragging now
-				hui::cancelEvent();
+				hui::inputEventCancel();
 				applyHandleDrag(
 					scrollViewState.vertical,
 					rectScrollBarV.y,
@@ -508,7 +508,7 @@ Point scrollViewEnd()
 				scrollViewState.vertical.draggingThumb = false;
 				ctx->dragScrollViewHandleWidgetId = 0;
 				ctx->widget.captureId = 0;
-				windowCaptureRelease();
+				windowReleaseCapture();
 
 				// snap any tiny rounding residual to the exact max so last item becomes reachable
 				auto& v = scrollViewState.vertical;
@@ -596,7 +596,7 @@ Point scrollViewEnd()
 		{
 			if (rectScrollBarHandleH.contains(ctx->mousePosition))
 			{
-				windowCaptureSet();  // Capture mouse to get events outside window
+				windowSetCapture();  // Capture mouse to get events outside window
 				scrollViewState.horizontal.draggingThumb = true;
 				scrollViewState.horizontal.dragDelta = ctx->mousePosition - rectScrollBarHandleH.topLeft();
 				ctx->dragScrollViewHandleWidgetId = scrollViewState.id;
@@ -614,7 +614,7 @@ Point scrollViewEnd()
 			&& ctx->dragScrollViewHandleWidgetId == scrollViewState.id)
 		{
 			// kill event, only we're dragging now
-			hui::cancelEvent();
+			hui::inputEventCancel();
 			applyHandleDrag(
 				scrollViewState.horizontal,
 				rectScrollBarH.x,
@@ -631,7 +631,7 @@ Point scrollViewEnd()
 			scrollViewState.horizontal.draggingThumb = false;
 			ctx->dragScrollViewHandleWidgetId = 0;
 			ctx->widget.captureId = 0;
-			windowCaptureRelease();  // Release mouse capture
+			windowReleaseCapture();  // Release mouse capture
 		}
 
 		updateScrollMax(scrollViewState.horizontal, scrollContentH, scrollAreaWidth);
@@ -683,7 +683,7 @@ Point scrollViewEnd()
 	// Persist combined authoritative offset and return it.
 	scrollViewState.scrollOffset = scrollOffset;
 	widgetPositionPop();
-	addWidget(height/ctx->scale);
+	widgetAdd(height/ctx->scale);
 	layoutPop();
 
 	return scrollOffset;
@@ -702,7 +702,7 @@ void virtualListBegin(u32 totalRowCount, f32 itemHeight, f32 scrollPos)
 
 void virtualListEnd()
 {
-	hui::widgetPositionSet(
+	hui::widgetSetPosition(
 		{
 			ctx->virtualListStack.back().lastPosition.x,
 			ctx->virtualListStack.back().lastPosition.y + ctx->virtualListStack.back().totalHeight

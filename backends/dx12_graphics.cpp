@@ -403,14 +403,14 @@ static void draw(Vertex* vertices, u32 vertexCount, struct RenderBatch* batches,
 	g_dx12CommandList->SetPipelineState(pipelineState);
 	g_dx12CommandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
-	// 2. update shared vertex buffer
+	// 2. contextUpdate shared vertex buffer
 	auto vb = g_frames[g_currentFrameIndex].getNextVertexBuffer();
 	if (vb->count < vertexCount) vb->resize(vertexCount);
 	if (!vb->handle) return;
 	vb->updateData(vertices, 0, vertexCount);
 	g_dx12CommandList->IASetVertexBuffers(0, 1, &vb->view);
 
-	// 3. update mvp
+	// 3. contextUpdate mvp
 	f32 m[16] = { 0 };
 	m[0] = 2.0f / currentViewport.width;
 	m[5] = -2.0f / currentViewport.height;

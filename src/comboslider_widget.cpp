@@ -18,14 +18,14 @@ static bool comboSliderInternal(bool isInt, f32* value, f32 minVal, f32 maxVal, 
 	bool arrowStepped = false;
 	bool arrowHoveredLeft = false;
 	bool arrowHoveredRight = false;
-	auto& padding = getWidgetPadding();
+	auto& padding = widgetGetPadding();
 
 	if (useRange)
 	{
 		ctx->widget.changeEnded = clampValue(*value, minVal, maxVal);
 	}
 
-	ctx->id = genId((void*)value);
+	ctx->id = idGen((void*)value);
 	auto comboId = ctx->id;
 
 	bool notEditingText = (ctx->comboSlider.editingText && ctx->comboSlider.id != ctx->id) || !ctx->comboSlider.editingText;
@@ -35,7 +35,7 @@ static bool comboSliderInternal(bool isInt, f32* value, f32 minVal, f32 maxVal, 
 		ctx->widget.customWidth = ctx->layout.width/ctx->scale;
 		ctx->widget.hasCustomWidth = true;
 
-		addWidget((bodyElem.normalState().height + padding.y * 2.0f) * ctx->scale);
+		widgetAdd((bodyElem.normalState().height + padding.y * 2.0f) * ctx->scale);
 		buttonBehavior();
 
 		if (ctx->comboSlider.dragging && ctx->id == ctx->comboSlider.id)
@@ -46,19 +46,19 @@ static bool comboSliderInternal(bool isInt, f32* value, f32 minVal, f32 maxVal, 
 		auto cursor = 0;
 
 		// check left arrow
-		if (isHovered() 
+		if (widgetIsHovered() 
 			&& ctx->mousePosition.x <= ctx->widget.rect.x + leftArrowElem.normalState().image->width + padding.x)
 		{
 			arrowHoveredLeft = true;
 		}
 		// check right arrow
-		else if (isHovered()
+		else if (widgetIsHovered()
 			&& ctx->mousePosition.x >= ctx->widget.rect.right() - rightArrowElem.normalState().image->width - padding.x)
 		{
 			arrowHoveredRight = true;
 		}
 
-		if (isClicked()
+		if (widgetIsClicked()
 			&& ctx->mousePosition.x <= ctx->widget.rect.x + leftArrowElem.normalState().image->width + padding.x)
 		{
 			*value -= arrowStep;
@@ -66,7 +66,7 @@ static bool comboSliderInternal(bool isInt, f32* value, f32 minVal, f32 maxVal, 
 			if (useRange) clampValue(*value, minVal, maxVal);
 			ctx->widget.changeEnded = true;
 		}
-		else if (isClicked() && ctx->mousePosition.x >= ctx->widget.rect.right() - rightArrowElem.normalState().image->width - padding.x)
+		else if (widgetIsClicked() && ctx->mousePosition.x >= ctx->widget.rect.right() - rightArrowElem.normalState().image->width - padding.x)
 		{
 			*value += arrowStep;
 			arrowStepped = true;
@@ -74,7 +74,7 @@ static bool comboSliderInternal(bool isInt, f32* value, f32 minVal, f32 maxVal, 
 			ctx->widget.changeEnded = true;
 		}
 
-		if (isHovered() || isPressed())
+		if (widgetIsHovered() || widgetIsPressed())
 		{
 			if (arrowHoveredLeft || arrowHoveredRight)
 				mouseCursorSetType(MouseCursorType::Arrow);
@@ -82,7 +82,7 @@ static bool comboSliderInternal(bool isInt, f32* value, f32 minVal, f32 maxVal, 
 				mouseCursorSetType(MouseCursorType::SizeWE);
 		}
 
-		if (isClicked() && !ctx->comboSlider.dragging && !arrowStepped)
+		if (widgetIsClicked() && !ctx->comboSlider.dragging && !arrowStepped)
 		{
 			ctx->comboSlider.editingText = true;
 			ctx->comboSlider.id = ctx->id;
@@ -90,7 +90,7 @@ static bool comboSliderInternal(bool isInt, f32* value, f32 minVal, f32 maxVal, 
 			ctx->comboSlider.dragging = false;
 			ctx->comboSlider.clickedToEditText = true;
 			memset(ctx->comboSlider.text, ctx->comboSlider.maxTextSize, 0);
-			toStringF32(*value, ctx->comboSlider.text, ComboSliderState::maxTextSize, decimalPlaces);
+			stringFromF32(*value, ctx->comboSlider.text, ComboSliderState::maxTextSize, decimalPlaces);
 			
 			ctx->textInput.editNow = true;
 			ctx->textInput.selectAllOnFocus = true;
@@ -98,7 +98,7 @@ static bool comboSliderInternal(bool isInt, f32* value, f32 minVal, f32 maxVal, 
 
 			ctx->position.y -= ctx->spacing * ctx->scale + bodyElem.normalState().height;
 
-			setNextFocused();
+			widgetSetNextFocused();
 			textInput("comboSliderEditText", ctx->comboSlider.text, ComboSliderState::maxTextSize, TextInputFlags::NumericOnly);
 			
 			ctx->widget.focusedId = ctx->id;
@@ -118,7 +118,7 @@ static bool comboSliderInternal(bool isInt, f32* value, f32 minVal, f32 maxVal, 
 
 		if (wasClickedToEdit)
 		{
-			setNextFocused();
+			widgetSetNextFocused();
 			ctx->comboSlider.clickedToEditText = false;
 		}
 
@@ -168,7 +168,7 @@ static bool comboSliderInternal(bool isInt, f32* value, f32 minVal, f32 maxVal, 
 		f32 valueWidth = ctx->widget.rect.width;
 
 		if (ctx->event.type == InputEvent::Type::MouseDown
-			&& isHovered()
+			&& widgetIsHovered()
 			&& !ctx->comboSlider.dragging
 			&& ctx->isActiveLayer())
 		{
@@ -289,12 +289,12 @@ static bool comboSliderInternal(bool isInt, f32* value, f32 minVal, f32 maxVal, 
 			rightArrowElemState = &rightArrowElem.getState(WidgetStateType::Hovered);
 		}
 
-		ctx->renderer.cmdSetColor(applyTint(bodyElemState->color, TintColorType::Body));
+		ctx->renderer.cmdSetColor(tintApply(bodyElemState->color, TintColorType::Body));
 		ctx->renderer.cmdDrawImageBordered(bodyElemState->image, bodyElemState->border, ctx->widget.rect, ctx->scale);
 		
 		if (useRange)
 		{
-			ctx->renderer.cmdSetColor(applyTint(rangeBarElemState->color, TintColorType::Body));
+			ctx->renderer.cmdSetColor(tintApply(rangeBarElemState->color, TintColorType::Body));
 			ctx->renderer.cmdDrawImageBordered(rangeBarElemState->image, rangeBarElemState->border,
 				{
 					ctx->widget.rect.x + bodyElemState->border * ctx->scale,
@@ -308,7 +308,7 @@ static bool comboSliderInternal(bool isInt, f32* value, f32 minVal, f32 maxVal, 
 
 		auto arrowY = ((ctx->widget.rect.height - leftArrowElemState->image->height * ctx->scale) / 2.0f + (ctx->widget.pressed ? 1.0f : 0.0f)) * ctx->scale;
 
-		ctx->renderer.cmdSetColor(applyTint(leftArrowElemState->color, TintColorType::Body));
+		ctx->renderer.cmdSetColor(tintApply(leftArrowElemState->color, TintColorType::Body));
 		ctx->renderer.cmdDrawImage(leftArrowElemState->image,
 			{
 				ctx->widget.rect.x + (bodyElemState->border + padding.x + (ctx->widget.pressed ? 1.0f : 0.0f)) * ctx->scale,
@@ -321,7 +321,7 @@ static bool comboSliderInternal(bool isInt, f32* value, f32 minVal, f32 maxVal, 
 		auto lineHeight = verticalLineElemState->height + padding.y * 2.0f;
 		auto lineY = ((ctx->widget.rect.height - lineHeight * ctx->scale) / 2.0f + (ctx->widget.pressed ? 1.0f : 0.0f)) * ctx->scale;
 
-		ctx->renderer.cmdSetColor(applyTint(verticalLineElemState->color, TintColorType::Body));
+		ctx->renderer.cmdSetColor(tintApply(verticalLineElemState->color, TintColorType::Body));
 
 		ctx->renderer.cmdDrawImage(verticalLineElemState->image,
 			{
@@ -333,7 +333,7 @@ static bool comboSliderInternal(bool isInt, f32* value, f32 minVal, f32 maxVal, 
 
 		arrowY = ((ctx->widget.rect.height - rightArrowElemState->image->rect.height * ctx->scale) / 2.0f + (ctx->widget.pressed ? 1.0f : 0.0f)) * ctx->scale;
 
-		ctx->renderer.cmdSetColor(applyTint(rightArrowElemState->color, TintColorType::Body));
+		ctx->renderer.cmdSetColor(tintApply(rightArrowElemState->color, TintColorType::Body));
 		ctx->renderer.cmdDrawImage(rightArrowElemState->image,
 			{
 				ctx->widget.rect.right() - (bodyElemState->border + padding.x + rightArrowElemState->image->width + (ctx->widget.pressed ? -1.0f : 0.0f)) * ctx->scale,
@@ -342,7 +342,7 @@ static bool comboSliderInternal(bool isInt, f32* value, f32 minVal, f32 maxVal, 
 				rightArrowElemState->image->height * ctx->scale
 			});
 
-		ctx->renderer.cmdSetColor(applyTint(verticalLineElemState->color, TintColorType::Body));
+		ctx->renderer.cmdSetColor(tintApply(verticalLineElemState->color, TintColorType::Body));
 
 		ctx->renderer.cmdDrawImage(verticalLineElemState->image,
 			{
@@ -356,7 +356,7 @@ static bool comboSliderInternal(bool isInt, f32* value, f32 minVal, f32 maxVal, 
 		static char outStrFormatted[ComboSliderState::maxTextSize] = { 0 };
 		char* str = nullptr;
 
-		toStringF32(*value, outStr, ComboSliderState::maxTextSize, decimalPlaces);
+		stringFromF32(*value, outStr, ComboSliderState::maxTextSize, decimalPlaces);
 
 		if (!formatStr)
 		{
@@ -368,21 +368,21 @@ static bool comboSliderInternal(bool isInt, f32* value, f32 minVal, f32 maxVal, 
 			str = outStrFormatted;
 		}
 
-		ctx->renderer.cmdSetColor(applyTint(bodyElemState->textColor, TintColorType::Body));
+		ctx->renderer.cmdSetColor(tintApply(bodyElemState->textColor, TintColorType::Body));
 		ctx->renderer.cmdDrawTextInBox(str, ctx->widget.rect, HAlignType::Center, VAlignType::Center);
-		setFocusable();
+		focusableSet();
 	}
 
 	return ctx->widget.changeEnded;
 }
 
-bool comboSliderInteger(i32* value, f32 stepsPerPixel, i32 arrowStep, const char* formatStr)
+bool comboSliderInt(i32* value, f32 stepsPerPixel, i32 arrowStep, const char* formatStr)
 {
 	f32 fVal = *value;
 
-	pushId((void*)value);
+	idPush((void*)value);
 	bool ret = comboSliderInternal(true, &fVal, 0, 0, false, stepsPerPixel, (f32)arrowStep, formatStr, 0);
-	popId();
+	idPop();
 
 	if (ret)
 		*value = (i32)fVal;
@@ -390,12 +390,12 @@ bool comboSliderInteger(i32* value, f32 stepsPerPixel, i32 arrowStep, const char
 	return ret;
 }
 
-bool comboSliderIntegerRanged(i32* value, i32 minVal, i32 maxVal, f32 stepsPerPixel, i32 arrowStep, const char* formatStr)
+bool comboSliderIntRanged(i32* value, i32 minVal, i32 maxVal, f32 stepsPerPixel, i32 arrowStep, const char* formatStr)
 {
 	f32 fVal = *value;
-	pushId((void*)value);
+	idPush((void*)value);
 	bool ret = comboSliderInternal(true, &fVal, (f32)minVal, (f32)maxVal, true, stepsPerPixel, (f32)arrowStep, formatStr, 0);
-	popId();
+	idPop();
 
 	if (ret)
 		*value = (i32)fVal;

@@ -21,22 +21,22 @@ void Context::setLabelAndId(const char* text)
 	// we have ###, forced id specified (this is safe, since it can be /0)
 	if (idStart && *(idStart + 2) == '#')
 	{
-		id = genId(idStart);
+		id = idGen(idStart);
 	}
 	else if (idStart) // we have ##, hash the whole text
 	{
-		id = genId(textPtr);
+		id = idGen(textPtr);
 	}
 	else if(text)
 	{
-		id = genId(text);
+		id = idGen(text);
 	}
 
 	widgetLabel.assign(textPtr, idStart ? idStart : textPtr + strlen(textPtr));
 
 	if (widgetLabel == "" || id == 0)
 	{
-		id = genIdFromPosition("fromPos");
+		id = idFromPositionGen("fromPos");
 	}
 }
 

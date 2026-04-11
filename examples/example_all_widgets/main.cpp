@@ -1,4 +1,4 @@
-﻿#pragma execution_character_set("utf-8")
+#pragma execution_character_set("utf-8")
 #include "horus.h"
 
 #define _USE_MATH_DEFINES
@@ -92,7 +92,7 @@ int main(int argc, char** args)
 	hui::contextSet(huiContext); // set as current context
 
 	// Create the main window (this will also create a graphics (GL/VK/D3D/etc.) context)
-	auto mainWnd = hui::getSettings().services.createWindow((std::string("Horus Example - All Widgets - ") + gfxApiName).c_str(), hui::NativeWindowFlags::Resizable, hui::NativeWindowState::Maximized, hui::Rect(0, 0, 1500, 800));
+	auto mainWnd = hui::settingsGet().services.createWindow((std::string("Horus Example - All Widgets - ") + gfxApiName).c_str(), hui::NativeWindowFlags::Resizable, hui::NativeWindowState::Maximized, hui::Rect(0, 0, 1500, 800));
 
 	// Create a main dock node for the main window, so we can dock windows in there
 	hui::DockNodeId mainDockNode = hui::dockNodeCreateRoot(mainWnd);
@@ -105,7 +105,7 @@ int main(int argc, char** args)
 		hui::dockNodeSetWindow(n2, "scene");
 		hui::dockNodeSplit(mainDockNode, hui::DockNodeSplitType::Top, 0.5f, &n1, &n2);
 		hui::dockNodeSetWindow(n2, "inspector");
-		hui::dockNodeRecalculateLayout();
+		hui::dockNodeLayoutRecalculate();
 	}
 
 	// Load a theme
@@ -124,7 +124,7 @@ int main(int argc, char** args)
 	}
 
 	// Grab a font handle from the theme to use later
-	auto largeFnt = hui::getThemeFont(theme, "title");
+	auto largeFnt = hui::themeGetFont(theme, "title");
 
 	// Set the current theme
 	hui::themeSet(theme);
@@ -167,7 +167,7 @@ int main(int argc, char** args)
 			auto theme = hui::loadThemeFromJson(themeFilePath, err, errSize);
 			hui::themeSet(theme);
 			loadImages();
-			largeFnt = hui::getThemeFont(theme, "title");
+			largeFnt = hui::themeGetFont(theme, "title");
 			hui::themeBuild(theme);
 
 			switch (sdlParams.gfxApi)
@@ -204,8 +204,8 @@ int main(int argc, char** args)
 		static auto lastModTime = std::filesystem::last_write_time(themeFilePath);
 		static f32 checkTimer = 0;
 
-		hui::getSettings().deltaTime = hui::getSdl3DeltaTime();
-		checkTimer += hui::getSettings().deltaTime;
+		hui::settingsGet().deltaTime = hui::getSdl3DeltaTime();
+		checkTimer += hui::settingsGet().deltaTime;
 
 		// check if theme file has been modified (every 1 second)
 		if (checkTimer >= 1.0f)
@@ -228,17 +228,17 @@ int main(int argc, char** args)
 		}
 
 		// get the events from SDL or whatever input provider is set, it will fill a queue of events
-		hui::update();
+		hui::contextUpdate();
 
 		// reload theme on F2 key press
-		if (hui::getInputEvent().type == hui::InputEvent::Type::Key
-			&& hui::getInputEvent().key.code == hui::KeyCode::F2
-			&& hui::getInputEvent().key.down)
+		if (hui::inputGetEvent().type == hui::InputEvent::Type::Key
+			&& hui::inputGetEvent().key.code == hui::KeyCode::F2
+			&& hui::inputGetEvent().key.down)
 		{
 			reloadTheme();
 		}
 
-		auto eventCount = hui::getInputEventCount();
+		auto eventCount = hui::inputEventGetCount();
 
 		// the main frame rendering and input handling
 		auto doFrame = [&](bool lastEventInQueue)
@@ -247,7 +247,7 @@ int main(int argc, char** args)
 
 			auto userDrawing = [](hui::HNativeWindow wnd)
 			{
-				auto nativeWndSize = hui::getSettings().services.getWindowSize(wnd);
+				auto nativeWndSize = hui::settingsGet().services.getWindowSize(wnd);
 				hui::Rect rc;
 
 				if (confineSceneToWindow)
@@ -292,7 +292,7 @@ int main(int argc, char** args)
 				//glEnd();
 
 				//x = sinf(t);
-				//t += hui::getSettings().deltaTime;
+				//t += hui::settingsGet().deltaTime;
 				//glViewport(vp[0], vp[1], vp[2], vp[3]);
 			};
 
@@ -301,7 +301,7 @@ int main(int argc, char** args)
 			// disable rendering if its not the last event in the queue
 			// no need to render while handling all the input events
 			// we only render on the last event in the queue
-			hui::setDisableRendering(!lastEventInQueue);
+			hui::skipRenderingThisFrame(!lastEventInQueue);
 
 			if (hui::windowBegin("hui2", "HUI", nullptr, tabicon1))
 			{
@@ -309,7 +309,7 @@ int main(int argc, char** args)
 				hui::Rect panelRect = { 5, 5, 300, 500 };
 				hui::WidgetElementInfo elemInfo;
 				hui::themeGetWidgetElementInfo(hui::WidgetElementId::PopupBody, hui::WidgetStateType::Normal, elemInfo);
-				hui::rendererSetColor(hui::Color::white);
+				hui::cmdSetColor(hui::Color::white);
 				// draw before the beginContainer, because it will clip our panel image (using padding)
 				//hui::drawBorderedImage(elemInfo.image, elemInfo.border, panelRect);
 
@@ -321,10 +321,10 @@ int main(int argc, char** args)
 				//hui::label((std::to_string(lastMs) + "##rer").c_str());
 
 				hui::label("Peak Frame MS: "); hui::sameLine();
-				hui::label(std::to_string(hui::getPeakFrameTimeMs()).c_str());
+				hui::label(std::to_string(hui::frameTimePeakGetMs()).c_str());
 
 				hui::label("Avg Frame MS: "); hui::sameLine();
-				hui::label(std::to_string(hui::getAvgFrameTimeMs()).c_str());
+				hui::label(std::to_string(hui::frameTimeAvgGetMs()).c_str());
 
 
 
@@ -341,7 +341,7 @@ int main(int argc, char** args)
 				hui::check("Option 2", &chk2);
 				hui::nextColumn();
 				hui::check("Option 3", &chk3);
-				hui::pushTint(hui::Color::cyan);
+				hui::tintPush(hui::Color::cyan);
 
 				if (hui::button("Browse..."))
 				{
@@ -359,23 +359,23 @@ int main(int argc, char** args)
 				hui::space();
 
 				static hui::Point scrollPos = 0;
-				hui::pushPadding(hui::PaddingType::ScrollView, hui::Point(0, 0));
-				hui::beginScrollView("scrollView1", 200, scrollPos, 0, hui::ScrollViewFlags::None);
+				hui::paddingPush(hui::PaddingType::ScrollView, hui::Point(0, 0));
+				hui::scrollViewBegin("scrollView1", 200, scrollPos, 0, hui::ScrollViewFlags::None);
 				hui::button("asdf asdf asdf asdf asdf asdf asdf asdf asdf asdf ad");
-				//hui::pushSpacing(500);
+				//hui::spacingPush(500);
 				static hui::Color col1 = hui::Color(3,0,0,1);
 				static hui::Color col2 = hui::Color::blue;
 				hui::colorPicker("cp1",  &col1, hui::ColorPickerFlags(0), &col2);
 				//hui::colorPicker("cp2", &col2);
-				//hui::popSpacing();
-				hui::beginSameLineGroup(3);
+				//hui::spacingPop();
+				hui::sameLineGroupBegin(3);
 				hui::button("COKCO1");
-				hui::nextSameLineGroupWidget();
+				hui::sameLineGroupNext();
 				hui::button("COKCO2");
-				hui::nextSameLineGroupWidget();
+				hui::sameLineGroupNext();
 				hui::button("COKCO3");
-				hui::endSameLineGroup();
-				hui::setNextWidth(1);
+				hui::sameLineGroupEnd();
+				hui::widgetSetNextWidth(1);
 				hui::button("COKCO33");
 
 				hui::label("Text here", hui::HAlignType::Right);
@@ -398,47 +398,47 @@ int main(int argc, char** args)
 					"Item 10",
 				};
 
-				hui::setNextWidth(150);
+				hui::widgetSetNextWidth(150);
 				//hui::dropdown("dd", ddIndex, items, 10,6);
 
-				//hui::setNextWidth(100);
+				//hui::widgetSetNextWidth(100);
 				hui::comboSliderFloat(&scrollPos.y);
 				hui::label("Text here", hui::HAlignType::Left);
 
-				hui::setNextWidth(0.33333f);
+				hui::widgetSetNextWidth(0.33333f);
 				hui::button("Action1");
-				hui::setNextWidth(0.33333f);
+				hui::widgetSetNextWidth(0.33333f);
 				hui::button("Action2");
-				hui::setNextWidth(0.33333f);
+				hui::widgetSetNextWidth(0.33333f);
 				hui::button("Action3");
 
-				hui::setNextWidth(0.1f);
+				hui::widgetSetNextWidth(0.1f);
 				hui::check("Check01", &chk1);
-				hui::setNextWidth(0.1f);
+				hui::widgetSetNextWidth(0.1f);
 				hui::check("Check02", &chk2);
-				hui::setNextWidth(0.5f);
+				hui::widgetSetNextWidth(0.5f);
 				hui::check("Check03", &chk3);
 
 
 				static i32 rdoVal = 0;
-				hui::setNextWidth(0.1f);
+				hui::widgetSetNextWidth(0.1f);
 				hui::radio("Check01", &rdoVal, 0);
-				hui::setNextWidth(0.1f);
+				hui::widgetSetNextWidth(0.1f);
 				hui::radio("Check02", &rdoVal, 1);
-				hui::setNextWidth(0.5f);
+				hui::widgetSetNextWidth(0.5f);
 				hui::radio("Check03", &rdoVal, 2);
 
 				static i32 ival = 0;
 
-				hui::comboSliderIntegerRanged(&ival, 0, 100, 0.01f, 1, "VAL: %.0f");
+				hui::comboSliderIntRanged(&ival, 0, 100, 0.01f, 1, "VAL: %.0f");
 
-				hui::setNextWidth(0.25f);
+				hui::widgetSetNextWidth(0.25f);
 				hui::image(img, 150, hui::HAlignType::Center);
-				hui::setNextWidth(0.25f);
+				hui::widgetSetNextWidth(0.25f);
 				hui::image(img, 50, hui::HAlignType::Center);
-				hui::setNextWidth(0.25f);
+				hui::widgetSetNextWidth(0.25f);
 				hui::image(img, 50, hui::HAlignType::Center);
-				//hui::setNextWidth(0.25f);
+				//hui::widgetSetNextWidth(0.25f);
 				hui::widgetPushStyle(hui::WidgetType::ImageButton, "important");
 				hui::imageButton(tabicon3, 50, 50); hui::sameLine();
 				static bool down = false;
@@ -456,19 +456,19 @@ int main(int argc, char** args)
 
 				if (showpop)
 				{
-					hui::beginPopup("imagebtnpop", 500);
+					hui::popupBegin("imagebtnpop", 500);
 					hui::label("Hello from popup!");
 
-					hui::setNextWidth(0.5);
+					hui::widgetSetNextWidth(0.5);
 
-					if (hui::mustClosePopup() || hui::button("Close Popup"))
+					if (hui::popupMustClose() || hui::button("Close Popup"))
 					{
-						hui::closePopup();
+						hui::popupClose();
 						showpop = false;
 					}
 
 					hui::space(5);
-					//hui::setNextWidth(0.5f);
+					//hui::widgetSetNextWidth(0.5f);
 					hui::button("Another Action");
 
 					hui::line();
@@ -477,7 +477,7 @@ int main(int argc, char** args)
 					hui::label("sdf sdf asdf adsfasd");
 					hui::label("sdf sdf asdf adsfasd");
 
-					hui::endPopup();
+					hui::popupEnd();
 				}
 
 				hui::widgetPopStyle();
@@ -486,8 +486,8 @@ int main(int argc, char** args)
 				hui::line();
 				hui::button("I AGREE Long text Label for this button to see ellipsis");
 				hui::line();
-				scrollPos = hui::endScrollView();
-				hui::popPadding(hui::PaddingType::ScrollView);
+				scrollPos = hui::scrollViewEnd();
+				hui::paddingPop(hui::PaddingType::ScrollView);
 
 				static char strMulti[300000];
 				static bool med = true;
@@ -511,7 +511,7 @@ int main(int argc, char** args)
 				};
 
 				if (med)
-					hui::multilineTextInput("mti", strMulti, 300000, 10/*, hui::MultilineTextInputFlags::LineNumbers*/,
+					hui::textMultilineInput("mti", strMulti, 300000, 10/*, hui::MultilineTextInputFlags::LineNumbers*/,
 						hui::MultilineTextInputFlags::LineNumbers
 						| hui::MultilineTextInputFlags::HighlightCurrentLine
 						|hui::MultilineTextInputFlags::WordWrap
@@ -519,13 +519,13 @@ int main(int argc, char** args)
 						, kws, 5, rh, 5);
 
 
-				hui::pushTint(hui::Color::orange);
-				hui::setNextWidth(1);
+				hui::tintPush(hui::Color::orange);
+				hui::widgetSetNextWidth(1);
 				hui::widgetPushStyle(hui::WidgetType::Button, "important");
 				if (hui::button("Exit"))
 					exitNow = true;
 				hui::widgetPopStyle();
-				hui::popTint();
+				hui::tintPop();
 				/*
 				hui::beginColumns(5);
 				hui::pushWidth(0.5);
@@ -576,7 +576,7 @@ int main(int argc, char** args)
 			{
 				static f32 scroller = 0;
 
-				//hui::beginScrollView("scrl1", 0, scroller, 0, hui::ScrollViewFlags::NoBorder);
+				//hui::scrollViewBegin("scrl1", 0, scroller, 0, hui::ScrollViewFlags::NoBorder);
 
 				static bool listSelection[5] = {false};
 				static const char* listItems[] = { "Apple", "Banana", "Cherry", "Date", "Elderberry" };
@@ -589,8 +589,8 @@ int main(int argc, char** args)
 				hui::textInput("SHEIDD", text, 400, hui::TextInputFlags::AutoSelectAll);
 
 				hui::label("Table Widget:");
-				hui::pushSpacing(0);
-				hui::pushWidgetPadding(0);
+				hui::spacingPush(0);
+				hui::widgetPaddingPush(0);
 				if (hui::beginTable("myTable", 4, 440, hui::TableFlags::Borders | hui::TableFlags::None | hui::TableFlags::AltRowBg | hui::TableFlags::Resizable | hui::TableFlags::Stretch))
 				{
 					hui::startHeader();
@@ -614,7 +614,7 @@ int main(int argc, char** args)
 					//static hui::VirtualScrollInfo vtableInfo(10000); // 10k rows
 					//// Initialize virtual list inside the table body
 					//static hui::Point scrollPos = 0;
-					//hui::beginScrollView("##tableScrollView", 440, scrollPos, 1000.0f, hui::ScrollViewFlags::NoBorder);
+					//hui::scrollViewBegin("##tableScrollView", 440, scrollPos, 1000.0f, hui::ScrollViewFlags::NoBorder);
 
 					//hui::beginVirtualListContent(vtableInfo);
 
@@ -634,8 +634,8 @@ int main(int argc, char** args)
 						hui::button(("Btn " + is).c_str());
 						hui::nextCell();
 						static char col2[100] = { 0 };
-						hui::pushId((int)k);
-						hui::setNextWidth(100);
+						hui::idPush((int)k);
+						hui::widgetSetNextWidth(100);
 						hui::textInput(("ed" + is).c_str(), col2, 100);
 						hui::sameLine();
 						hui::button(("Remove##" + is).c_str());
@@ -647,7 +647,7 @@ int main(int argc, char** args)
 						hui::sameLine();
 						hui::radio(("Rad1i##" + is).c_str(), &rad, 0);
 						hui::radio(("Rad2i##" + is).c_str(), &rad, 1);
-						hui::popId();
+						hui::idPop();
 						hui::nextCell();
 						hui::label("Col 3");
 						hui::nextCell();
@@ -658,14 +658,14 @@ int main(int argc, char** args)
 					//}
 
 					/*hui::endVirtualListContent();
-					scrollPos = hui::endScrollView();*/
+					scrollPos = hui::scrollViewEnd();*/
 					hui::endTable();
-					hui::popWidgetPadding();
-					hui::popSpacing();
+					hui::widgetPaddingPop();
+					hui::spacingPop();
 
 					hui::label("End of tableo");
 
-					//scroller = hui::endScrollView();
+					//scroller = hui::scrollViewEnd();
 				}
 
 				hui::windowEnd();
@@ -683,7 +683,7 @@ int main(int argc, char** args)
 				// begin scroll view (viewport height 300)
 				f32 viewH = 300.0f;
 				// NOTE: we no longer need to pass vertical content height here; beginVirtualListContent sets it.
-				hui::beginScrollView("##virt_list_scroll", viewH, vscroll, hui::Point(0, 0), hui::ScrollViewFlags::None);
+				hui::scrollViewBegin("##virt_list_scroll", viewH, vscroll, hui::Point(0, 0), hui::ScrollViewFlags::None);
 
 				// initialize virtual list content (this sets the scrollview virtual height)
 				hui::beginVirtualListContent(vinfo);
@@ -707,7 +707,7 @@ int main(int argc, char** args)
 				}
 
 				hui::endVirtualListContent();
-				vscroll = hui::endScrollView();
+				vscroll = hui::scrollViewEnd();
 
 				// show small status
 				char info[128];
@@ -737,9 +737,9 @@ int main(int argc, char** args)
 			{
 				hui::setInputEvent(hui::inputEventGetAt(i));
 
-				if (hui::getInputEvent().type == hui::InputEvent::Type::WindowClose)
+				if (hui::inputGetEvent().type == hui::InputEvent::Type::WindowClose)
 				{
-					if (hui::getInputEvent().window == mainWnd)
+					if (hui::inputGetEvent().window == mainWnd)
 					{
 						exitNow = true;
 					}

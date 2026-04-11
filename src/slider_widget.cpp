@@ -11,7 +11,7 @@ static bool sliderInternal(const char* id, f32 minVal, f32 maxVal, f32& value, b
 	auto& bodyFilledElem = ctx->theme->getElement(WidgetElementId::SliderBodyFilled);
 	auto& knobElem = ctx->theme->getElement(WidgetElementId::SliderKnob);
 	bool wasModified = false;
-	auto& padding = widgetPaddingGet();
+	auto& padding = widgetGetPadding();
 
 	// clamp
 	value = fmaxf(minVal, fminf(maxVal, value));
@@ -31,7 +31,7 @@ static bool sliderInternal(const char* id, f32 minVal, f32 maxVal, f32& value, b
 
 	if (widgetIsHovered())
 	{
-		cursorTypeSet(MouseCursorType::HandPointing);
+		mouseCursorSetType(MouseCursorType::HandPointing);
 	}
 
 	f32 percentFilled = 1.0f - (maxVal - value) / (maxVal - minVal);
@@ -71,7 +71,7 @@ static bool sliderInternal(const char* id, f32 minVal, f32 maxVal, f32& value, b
 	{
 		if (knobRect.contains(ctx->mousePosition))
 		{
-			windowCaptureSet();
+			windowSetCapture();
 			ctx->slider.draggingKnob = true;
 			ctx->slider.dragDelta.x = ctx->mousePosition.x - (knobRect.x + knobRect.width / 2.0f);
 		}
@@ -111,7 +111,7 @@ static bool sliderInternal(const char* id, f32 minVal, f32 maxVal, f32& value, b
 		&& ctx->isActiveLayer())
 	{
 		ctx->slider.draggingKnob = false;
-		windowCaptureRelease();
+		windowReleaseCapture();
 		ctx->widget.changeEnded = true;
 	}
 

@@ -443,7 +443,7 @@ void MultilineTextInputState::insertTextAtCaret(const Utf32String& newText)
 		}
 	}
 
-	// after insertion, if it was a single-char typing sequence, update the expected next column
+	// after insertion, if it was a single-char typing sequence, contextUpdate the expected next column
 	if (isSingleCharTyping && undoTypingActive && undoTypingLine == startLineBefore)
 	{
 		undoTypingNextColumn = caretColumn;
@@ -977,7 +977,7 @@ void MultilineTextInputState::computeScrollAmount()
 	if (scrollOffsetY < 0)
 		scrollOffsetY = 0;
 
-	// update context scroll state and force repaint if changed
+	// contextUpdate context scroll state and force repaint if changed
 	if (scrollId)
 	{
 		auto& scrollState = ctx->scrollViewState[scrollId];
@@ -986,7 +986,7 @@ void MultilineTextInputState::computeScrollAmount()
 		{
 			scrollState.scrollOffset.x = scrollOffsetX;
 			scrollState.scrollOffset.y = scrollOffsetY;
-			// also update the axis-specific state which ScrollView logic relies on
+			// also contextUpdate the axis-specific state which ScrollView logic relies on
 			scrollState.horizontal.scrollOffset = scrollOffsetX;
 			scrollState.vertical.scrollOffset = scrollOffsetY;
 			forceRepaint();
@@ -1075,7 +1075,7 @@ i32 MultilineTextInputState::getCharIndexAtPoint(const Point& pt)
 
 	// if past end of visual line's content, place at end of visual line
 	caretColumn = vl->startColumn + vl->length;
-	caretVisualLineIndex = (size_t)visualLineIdx; // update cache immediately on click
+	caretVisualLineIndex = (size_t)visualLineIdx; // contextUpdate cache immediately on click
 	
 	return caretColumn;
 }
@@ -1359,7 +1359,7 @@ void MultilineTextInputState::updateSyntaxHighlighting(const RangeHighlight* rul
 	u64 newHash = computeRulesHash(rules, count, keywords, keywordCount);
 	u64 prevHash = lastRulesHash; // save previous hash to decide incremental vs full
 
-	// update pointers/counters used for future fast-path checks (but don't use lastRulesHash yet)
+	// contextUpdate pointers/counters used for future fast-path checks (but don't use lastRulesHash yet)
 	lastRulesPtr = rules;
 	lastRuleCount = count;
 	lastKeywordsPtr = keywords;
@@ -1563,7 +1563,7 @@ void MultilineTextInputState::updateSyntaxHighlighting(const RangeHighlight* rul
 	// commit the new rules hash after processing
 	lastRulesHash = newHash;
 
-	// ensure visual layout is recomputed and repainted so multi-line ranges update immediately.
+	// ensure visual layout is recomputed and repainted so multi-line ranges contextUpdate immediately.
 	// setting firstDirtyLine = 0 forces a full recompute.
 	firstDirtyLine = 0;
 	forceLayoutUpdate = true;
@@ -2447,7 +2447,7 @@ void MultilineTextInputState::processKeyEvent(const InputEvent& ev)
 
 			if (totalRemoved > 0) totalTextLength = (totalRemoved > (i32)totalTextLength) ? 0 : totalTextLength - totalRemoved;
 
-			// update selection and caret columns: shift start/end columns on first/last lines
+			// contextUpdate selection and caret columns: shift start/end columns on first/last lines
 			if (!shiftDown)
 			{
 				// indenting increases columns on start and end lines
@@ -2550,7 +2550,7 @@ void MultilineTextInputState::processKeyEvent(const InputEvent& ev)
 					}
 					else
 					{
-						// if selection was only single-line, update selection columns
+						// if selection was only single-line, contextUpdate selection columns
 						if (selectionStartLine == selectionEndLine && selectionStartLine == currentLine)
 						{
 							selectionStartColumn = std::max<i32>(0, selectionStartColumn - removed);
@@ -2841,7 +2841,7 @@ void MultilineTextInputState::processKeyEvent(const InputEvent& ev)
 			char* tmpStr = nullptr;
 		
 			ctx->settings.services.utf32To8(str, &tmpStr);
-			clipboardCopy(tmpStr);
+			clipboardSetText(tmpStr);
 			delete[] tmpStr;
 		}
 	}
@@ -2851,7 +2851,7 @@ void MultilineTextInputState::processKeyEvent(const InputEvent& ev)
 		char tmpStr[maxTextSize];
 		Utf32String utf32Str;
 
-		clipboardPaste(tmpStr, maxTextSize);
+		clipboardGetText(tmpStr, maxTextSize);
 
 		if (ctx->settings.services.utf8To32(tmpStr, utf32Str))
 		{
@@ -2871,7 +2871,7 @@ void MultilineTextInputState::processKeyEvent(const InputEvent& ev)
 			
 			if (ctx->settings.services.utf32To8(str, &str8))
 			{
-				clipboardCopy(str8);
+				clipboardSetText(str8);
 				delete[] str8;
 				textChanged = true;
 			}

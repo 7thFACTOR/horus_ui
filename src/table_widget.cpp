@@ -317,7 +317,7 @@ bool tableBegin(const char* id, u32 columnCount, f32 height, TableFlags flags)
 	if (columnCount == 0)
 		return false;
 
-	WidgetId tableId = genId(id);
+	WidgetId tableId = idGen(id);
 	auto& persistent = ctx->tablePersistentStates[tableId];
 
 	// initialize persistent state if needed
@@ -852,7 +852,7 @@ void tableEnd()
 
 					if (ctx->event.type == InputEvent::Type::MouseUp || ctx->event.type == InputEvent::Type::WindowLostFocus)
 					{
-						windowCaptureRelease();
+						windowReleaseCapture();
 						ctx->widget.captureId = 0;
 						persistent.resizingColumn = false;
 						persistent.resizingColumnIndex = ~0;
@@ -961,7 +961,7 @@ void tableEnd()
 
 							if (ctx->event.type == InputEvent::Type::MouseDown && ctx->event.mouse.button == MouseButton::Left)
 							{
-								windowCaptureSet();
+								windowSetCapture();
 								ctx->widget.captureId = state.id;
 								persistent.resizingColumn = true;
 								persistent.resizingColumnIndex = i; // store SEPARATOR index
@@ -1148,7 +1148,7 @@ void tableCellNext()
 {
 	auto& state = currentTable();
 
-	// handle end of same-line if it was active (similar to addWidget)
+	// handle end of same-line if it was active (similar to widgetAdd)
 	if (ctx->sameLine.wasEnabled)
 	{
 		ctx->position.x = ctx->sameLine.currentPosition.x;
@@ -1295,7 +1295,7 @@ void tableColumnSetup(u32 columnIndex, f32 size, TableColumnFlags flags)
 	if (columnIndex >= persistent.columns.size())
 		return;
 
-	// always update flags
+	// always contextUpdate flags
 	persistent.columns[columnIndex].flags = flags;
 
 	// if user resized, we generally respect that, BUT we might want to re-apply flags logic?

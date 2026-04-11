@@ -130,11 +130,11 @@ bool colorPicker(const char* id, Color* inOutColor, ColorPickerFlags flags, cons
 	i32 crtIntA = (u32)(crtColor.a * 255.0f);
 	Color hsv = rgbToHsv(crtColor);
 	f32 height = ctx->layout.width * 0.5f + indicatorSize;
-	ctx->id = genId(id);
+	ctx->id = idGen(id);
 	
 	auto pickerId = ctx->id;
 	
-	addWidget(height);
+	widgetAdd(height);
 	buttonBehavior();
 
 	if (ctx->colorPickerState.currentEditingId == pickerId)
@@ -353,28 +353,28 @@ bool colorPicker(const char* id, Color* inOutColor, ColorPickerFlags flags, cons
 
 	bool hsvChanged = false;
 
-	hui::beginSameLineGroup(3);
+	hui::sameLineGroupBegin(3);
 
 	if (hui::comboSliderFloat(&hsv.r, 0.001f, 0.001f, "H: %.4f"))
 	{
 		hsvChanged = true;
 	}
 
-	hui::nextSameLineGroupWidget();
+	hui::sameLineGroupNext();
 
 	if (hui::comboSliderFloat(&hsv.g, 0.001f, 0.001f, "S: %.4f"))
 	{
 		hsvChanged = true;
 	}
 
-	hui::nextSameLineGroupWidget();
+	hui::sameLineGroupNext();
 
 	if (hui::comboSliderFloat(&hsv.b, 0.001f, 0.001f, "V: %.4f"))
 	{
 		hsvChanged = true;
 	}
 
-	hui::endSameLineGroup();
+	hui::sameLineGroupEnd();
 
 	if (hsvChanged)
 	{
@@ -417,134 +417,134 @@ bool colorPicker(const char* id, Color* inOutColor, ColorPickerFlags flags, cons
 	{
 		if (has(flags, ColorPickerFlags::Hdr))
 		{
-			hui::beginSameLineGroup(4);
+			hui::sameLineGroupBegin(4);
 
 			if (hui::comboSliderFloat(&crtColor.r, 0.001f, 0.001f, "R: %.4f"))
 			{
 				rgbaChanged = true;
 			}
 
-			hui::nextSameLineGroupWidget();
+			hui::sameLineGroupNext();
 
 			if (hui::comboSliderFloat(&crtColor.g, 0.001f, 0.001f, "G: %.4f"))
 			{
 				rgbaChanged = true;
 			}
 
-			hui::nextSameLineGroupWidget();
+			hui::sameLineGroupNext();
 
 			if (hui::comboSliderFloat(&crtColor.b, 0.001f, 0.001f, "B: %.4f"))
 			{
 				rgbaChanged = true;
 			}
 
-			hui::nextSameLineGroupWidget();
+			hui::sameLineGroupNext();
 
 			if (hui::comboSliderFloat(&crtColor.a, 0.001f, 0.001f, "A: %.4f"))
 			{
 				rgbaChanged = true;
 			}
 
-			hui::endSameLineGroup();
+			hui::sameLineGroupEnd();
 		}
 		else
 		{
-			hui::beginSameLineGroup(4);
+			hui::sameLineGroupBegin(4);
 
 			if (hui::comboSliderFloatRanged(&crtColor.r, 0, 1, 0.001f, 0.001f, "R: %.4f"))
 			{
 				rgbaChanged = true;
 			}
 
-			hui::nextSameLineGroupWidget();
+			hui::sameLineGroupNext();
 
 			if (hui::comboSliderFloatRanged(&crtColor.g, 0, 1, 0.001f, 0.001f, "G: %.4f"))
 			{
 				rgbaChanged = true;
 			}
 
-			hui::nextSameLineGroupWidget();
+			hui::sameLineGroupNext();
 
 			if (hui::comboSliderFloatRanged(&crtColor.b, 0, 1, 0.001f, 0.001f, "B: %.4f"))
 			{
 				rgbaChanged = true;
 			}
 
-			hui::nextSameLineGroupWidget();
+			hui::sameLineGroupNext();
 
 			if (hui::comboSliderFloatRanged(&crtColor.a, 0, 1, 0.001f, 0.001f, "A: %.4f"))
 			{
 				rgbaChanged = true;
 			}
 
-			hui::endSameLineGroup();
+			hui::sameLineGroupEnd();
 		}
 	}
 	else
 	{
 		if (has(flags, ColorPickerFlags::Hdr))
 		{
-			hui::beginSameLineGroup(4);
+			hui::sameLineGroupBegin(4);
 
-			if (hui::comboSliderInteger(&crtIntR, 0.1f, 1, "R: %.0f"))
+			if (hui::comboSliderInt(&crtIntR, 0.1f, 1, "R: %.0f"))
 			{
 				rgbaChanged = true;
 			}
 
-			hui::nextSameLineGroupWidget();
+			hui::sameLineGroupNext();
 
-			if (hui::comboSliderInteger(&crtIntG, 0.1f, 1, "G: %.0f"))
+			if (hui::comboSliderInt(&crtIntG, 0.1f, 1, "G: %.0f"))
 			{
 				rgbaChanged = true;
 			}
 
-			hui::nextSameLineGroupWidget();
+			hui::sameLineGroupNext();
 
-			if (hui::comboSliderInteger(&crtIntB, 0.1f, 1, "B: %.0f"))
+			if (hui::comboSliderInt(&crtIntB, 0.1f, 1, "B: %.0f"))
 			{
 				rgbaChanged = true;
 			}
 
-			hui::nextSameLineGroupWidget();
+			hui::sameLineGroupNext();
 
-			if (hui::comboSliderInteger(&crtIntA, 0.1f, 1, "A: %.0f"))
+			if (hui::comboSliderInt(&crtIntA, 0.1f, 1, "A: %.0f"))
 			{
 				rgbaChanged = true;
 			}
 
-			hui::endSameLineGroup();
+			hui::sameLineGroupEnd();
 		}
 		else
 		{
-			hui::beginSameLineGroup(4);
+			hui::sameLineGroupBegin(4);
 
-			if (hui::comboSliderIntegerRanged(&crtIntR, 0, 255, 0.1f, 1, "R: %.0f"))
+			if (hui::comboSliderIntRanged(&crtIntR, 0, 255, 0.1f, 1, "R: %.0f"))
 			{
 				rgbaChanged = true;
 			}
 
-			hui::nextSameLineGroupWidget();
+			hui::sameLineGroupNext();
 
-			if (hui::comboSliderIntegerRanged(&crtIntG, 0, 255, 0.1f, 1, "G: %.0f"))
+			if (hui::comboSliderIntRanged(&crtIntG, 0, 255, 0.1f, 1, "G: %.0f"))
 			{
 				rgbaChanged = true;
 			}
 
-			hui::nextSameLineGroupWidget();
+			hui::sameLineGroupNext();
 
-			if (hui::comboSliderIntegerRanged(&crtIntB, 0, 255, 0.1f, 1, "B: %.0f"))
+			if (hui::comboSliderIntRanged(&crtIntB, 0, 255, 0.1f, 1, "B: %.0f"))
 			{
 				rgbaChanged = true;
 			}
 
-			hui::nextSameLineGroupWidget();
+			hui::sameLineGroupNext();
 
-			if (hui::comboSliderIntegerRanged(&crtIntA, 0, 255, 0.1f, 1, "A: %.0f"))
+			if (hui::comboSliderIntRanged(&crtIntA, 0, 255, 0.1f, 1, "A: %.0f"))
 			{
 				rgbaChanged = true;
 			}
 
-			hui::endSameLineGroup();
+			hui::sameLineGroupEnd();
 		}
 	}
 

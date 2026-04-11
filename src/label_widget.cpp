@@ -70,7 +70,7 @@ bool labelMultiline(const char* label, HAlignType horizontalAlign)
 bool labelCustomFontMultiline(const char* label, HFont font, HAlignType horizontalAlign)
 {
 	auto& bodyElemState = ctx->theme->getElement(WidgetElementId::LabelBody).normalState();
-	auto& padding = widgetPaddingGet();
+	auto& padding = widgetGetPadding();
 	f32 width = ctx->layout.width - padding.x * 2.0f * ctx->scale;
 
 	ctx->labelAndIdSet(label);

@@ -23,7 +23,7 @@ bool textInput(
 	auto& bodyTextSelectionElemState = ctx->theme->getElement(WidgetElementId::TextInputSelection).normalState();
 	auto& bodyTextDefaultElemState = ctx->theme->getElement(WidgetElementId::TextInputDefaultText).normalState();
 	auto& bodyTextFilterClearImageElem = ctx->theme->getElement(WidgetElementId::TextInputFilterClearImage);
-	auto& padding = widgetPaddingGet();
+	auto& padding = widgetGetPadding();
 
 	if (!ctx->widget.hasNextWidth)
 	{
@@ -57,7 +57,7 @@ bool textInput(
 		clearFilterRc.width = clearElemState.image->width * ctx->scale;
 		clearFilterRc.height = clearElemState.image->height * ctx->scale;
 
-		// update hover flag based on global mouse position
+		// contextUpdate hover flag based on global mouse position
 		ctx->textInput.clearFilterHovered = clearFilterRc.contains(ctx->mousePosition) && ctx->hoveringThisWindow;
 	}
 	else
@@ -195,7 +195,7 @@ bool textInput(
 			ctx->textInput.mouseMoved = false;
 			ctx->textInput.selectingWithMouse = false;
 			ctx->textInput.computeScrollAmount();
-			windowCaptureSet();
+			windowSetCapture();
 		}
 
 		Rect rc;
@@ -212,11 +212,11 @@ bool textInput(
 	// if hovering the clear button prefer Arrow, otherwise show I-beam when hovering the text area.
 	if (ctx->textInput.clearFilterHovered)
 	{
-		cursorTypeSet(MouseCursorType::Arrow);
+		mouseCursorSetType(MouseCursorType::Arrow);
 	}
 	else if (ctx->widget.hovered)
 	{
-		cursorTypeSet(MouseCursorType::IBeam);
+		mouseCursorSetType(MouseCursorType::IBeam);
 	}
 
 	ctx->renderer.cmdSetColor(bodyElemState->color);

@@ -82,7 +82,7 @@ TabIndex tabGroupEnd()
 	{
 		if (ctx->tabGroupWidgetRect.contains(ctx->mousePosition) && ctx->docking.currentDockNode)
 		{
-			windowFocus(ctx->docking.currentDockNode->windows[ctx->selectedTabIndex]->id.c_str());
+			windowSetFocus(ctx->docking.currentDockNode->windows[ctx->selectedTabIndex]->id.c_str());
 		}
 	}
 
@@ -95,7 +95,7 @@ void tab(const char* label, HImage img)
 	auto& tabActiveElem = ctx->theme->getElement(WidgetElementId::TabBodyActive);
 	auto& tabInactiveElem = ctx->theme->getElement(WidgetElementId::TabBodyInactive);
 	auto tabElemState = &tabActiveElem.normalState();
-	auto& padding = widgetPaddingGet();
+	auto& padding = widgetGetPadding();
 
 	Utf32String uniStr;
 

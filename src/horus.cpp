@@ -134,12 +134,12 @@ void Context::skipRenderAndInputSet(bool skip)
 	ctx->skipRenderAndInput = skip;
 }
 
-void widgetNextDisabledSet()
+void widgetSetNextDisabled()
 {
 	ctx->widget.nextDisabled = true;
 }
 
-void widgetNextFocusedSet()
+void widgetSetNextFocused()
 {
 	ctx->widget.hovered = true;
 	ctx->widget.pressed = true;
@@ -150,7 +150,7 @@ void widgetNextFocusedSet()
 void widgetAdd(f32 height)
 {
 	ctx->widget.changeEnded = false;
-	height = round((height + widgetPaddingGet().y * 2.0f) * ctx->scale);
+	height = round((height + widgetGetPadding().y * 2.0f) * ctx->scale);
 
 	// next width has priority over custom width
 	if (ctx->widget.hasNextWidth)
@@ -302,10 +302,10 @@ void frameBegin()
 		ctx->textInput.processEvent(ctx->event);
 	}
 
-	if (ctx->multilineTextInput.id)
+	if (ctx->textMultilineInput.id)
 	{
-		ctx->multilineTextInput.textChanged = false;
-		ctx->multilineTextInput.processEvent(ctx->event);
+		ctx->textMultilineInput.textChanged = false;
+		ctx->textMultilineInput.processEvent(ctx->event);
 	}
 
 	if (ctx->event.window)
@@ -343,7 +343,7 @@ void frameBegin()
 	if (ctx->event.type == InputEvent::Type::Key
 		&& ctx->event.key.code == KeyCode::Tab
 		&& ctx->event.key.down
-		&& !ctx->multilineTextInput.id // Don't switch focus if editing multiline text
+		&& !ctx->textMultilineInput.id // Don't switch focus if editing multiline text
 		&& !ctx->lastFrameFocusableWidgets.empty())
 	{
 		bool shift = has(ctx->event.key.modifiers, KeyModifiers::Shift);
@@ -418,7 +418,7 @@ void frameBegin()
 	}
 
 	ctx->alreadyClickedOnSomething = false;
-	cursorTypeSet(MouseCursorType::Arrow);
+	mouseCursorSetType(MouseCursorType::Arrow);
 	dockingSystemUpdate();
 }
 
@@ -491,11 +491,11 @@ void frameEnd()
 	{
 		if (ctx->dragDrop.foundDropTarget)
 		{
-			cursorTypeSet(ctx->dragDrop.dropAllowedCursor);
+			mouseCursorSetType(ctx->dragDrop.dropAllowedCursor);
 		}
 		else
 		{
-			cursorTypeSet(MouseCursorType::No);
+			mouseCursorSetType(MouseCursorType::No);
 		}
 	}
 
@@ -515,11 +515,11 @@ void frameEnd()
 	std::chrono::duration<double, std::milli> frameDuration = frameEndTime - ctx->frameStartTime;
 	ctx->lastFrameTimeMs = (f32)frameDuration.count();
 
-	// update peak
+	// contextUpdate peak
 	if (ctx->lastFrameTimeMs < 5 && ctx->lastFrameTimeMs > ctx->peakFrameTimeMs)
 		ctx->peakFrameTimeMs = ctx->lastFrameTimeMs;
 
-	// update rolling average
+	// contextUpdate rolling average
 	ctx->frameTimes[ctx->frameTimeIndex] = ctx->lastFrameTimeMs;
 	ctx->frameTimeIndex = (ctx->frameTimeIndex + 1) % 60;
 
@@ -540,24 +540,24 @@ void renderEnd()
 	ctx->renderer.end();
 }
 
-HORUS_API f32 frameTimeLastGetMs()
+HORUS_API f32 frameTimeGetLastMs()
 {
 	return ctx->lastFrameTimeMs;
 }
 
-HORUS_API f32 frameTimePeakGetMs()
+HORUS_API f32 frameTimeGetPeakMs()
 {
 	return ctx->peakFrameTimeMs;
 }
 
-HORUS_API f32 frameTimeAvgGetMs()
+HORUS_API f32 frameTimeGetAvgMs()
 {
 	return ctx->avgFrameTimeMs;
 }
 
 void contextUpdate()
 {
-	eventQueueClear();
+	inputEventClearQueue();
 	ctx->settings.services.processWindowEvents();
 
 	// tooltip handling
@@ -623,63 +623,63 @@ void skipFrame()
 	ctx->skipRenderAndInputSet(true);
 }
 
-bool clipboardTextSet(const char* text)
+bool clipboardSetText(const char* text)
 {
-	return ctx->settings.services.clipboardCopy(text);
+	return ctx->settings.services.clipboardSetText(text);
 }
 
-bool clipboardTextGet(char* outText, u32 maxTextSize)
+bool clipboardGetText(char* outText, u32 maxTextSize)
 {
-	return ctx->settings.services.clipboardPaste(outText, maxTextSize);
+	return ctx->settings.services.clipboardGetText(outText, maxTextSize);
 }
 
-const InputEvent& eventGet()
+const InputEvent& inputGetEvent()
 {
 	return ctx->event;
 }
 
-void cursorTypeSet(MouseCursorType type)
+void mouseCursorSetType(MouseCursorType type)
 {
 	ctx->settings.services.setCursor(type);
 }
 
-HMouseCursor cursorCreate(Rgba32* pixels, u32 width, u32 height, u32 hotSpotX, u32 hotSpotY)
+HMouseCursor mouseCursorCreate(Rgba32* pixels, u32 width, u32 height, u32 hotSpotX, u32 hotSpotY)
 {
 	return ctx->settings.services.createCustomCursor(pixels, width, height, hotSpotX, hotSpotY);
 }
 
-void cursorDestroy(HMouseCursor cursor)
+void mouseCursorDestroy(HMouseCursor cursor)
 {
 	ctx->settings.services.deleteCustomCursor(cursor);
 }
 
-void cursorTypeSet(HMouseCursor cursor)
+void mouseCursorSetType(HMouseCursor cursor)
 {
 	ctx->settings.services.setCustomCursor(cursor);
 }
 
-void windowCaptureSet()
+void windowSetCapture()
 {
 	ctx->settings.services.setCapture();
 }
 
-void windowCaptureRelease()
+void windowReleaseCapture()
 {
 	ctx->settings.services.releaseCapture();
 }
 
-void nativeWindowCurrentSet(HNativeWindow wnd)
+void nativeWindowSetCurrent(HNativeWindow wnd)
 {
 	ctx->settings.services.setCurrentWindow(wnd);
 	auto size = ctx->settings.services.getWindowSize(wnd);
-	ctx->renderer.nativeWindowCurrentSet(wnd);
+	ctx->renderer.nativeWindowSetCurrent(wnd);
 	ctx->renderer.setWindowSize(size);
 	ctx->hoveringThisWindow = ctx->lastHoveredNativeWindow == wnd;
 }
 
 static void presentWindow(HNativeWindow wnd)
 {
-	nativeWindowCurrentSet(wnd);
+	nativeWindowSetCurrent(wnd);
 
 	auto iterWnd = ctx->docking.rootNativeWindowDockNodes.find(wnd);
 
@@ -694,7 +694,7 @@ static void presentWindow(HNativeWindow wnd)
 	ctx->settings.services.presentWindow(wnd);
 }
 
-void backbufferPresent()
+void presentBackbuffer()
 {
 	// first, delete pending objects so we dont access them
 	deferredDeleteObjects();
@@ -712,7 +712,7 @@ void backbufferPresent()
 	ctx->renderer.disableRendering = false;
 }
 
-void nativeWindowPresent(HNativeWindow nativeWnd)
+void presentNativeWindow(HNativeWindow nativeWnd)
 {
 	// first, delete pending objects so we dont access them
 	deferredDeleteObjects();
@@ -727,47 +727,47 @@ void nativeWindowPresent(HNativeWindow nativeWnd)
 	ctx->renderer.disableRendering = false;
 }
 
-void eventCancel()
+void inputEventCancel()
 {
 	ctx->event.type = InputEvent::Type::None;
 }
 
-void eventAdd(const InputEvent& event)
+void inputEventAdd(const InputEvent& event)
 {
 	ctx->events.push_back(event);
 }
 
-void eventQueueClear()
+void inputEventClearQueue()
 {
 	ctx->event = InputEvent();
 	ctx->events.clear();
 }
 
-void inputMouseMovedSet(bool moved)
+void inputSetMouseMoved(bool moved)
 {
 	ctx->mouseMoved = moved;
 }
 
-size_t eventCountGet()
+size_t inputEventGetCount()
 {
 	return ctx->events.size();
 }
 
-InputEvent eventGetAt(size_t index)
+InputEvent inputEventGetAtIndex(size_t index)
 {
 	return ctx->events[index];
 }
 
-void eventSet(const InputEvent& event)
+void inputEventSet(const InputEvent& event)
 {
 	ctx->event = event;
 }
 
-void horusShutdown()
+void shutdown()
 {
 }
 
-DockNodeId dockNodeRootCreate(HNativeWindow nativeWnd)
+DockNodeId dockNodeCreateRoot(HNativeWindow nativeWnd)
 {
 	HORUS_ASSERT(nativeWnd);
 	auto node = dockNodeRootCreateInternal(nativeWnd);
@@ -779,7 +779,7 @@ DockNodeId dockNodeRootCreate(HNativeWindow nativeWnd)
 	return node->id;
 }
 
-void dockNodeChildrenDelete(DockNodeId rootNodeId)
+void dockNodeDeleteChildren(DockNodeId rootNodeId)
 {
 	DockNode* node = (DockNode*)ctx->docking.dockNodeIdsMap[rootNodeId];
 
@@ -876,7 +876,7 @@ void dockNodeSplit(DockNodeId nodeId, DockNodeSplitType splitType, f32 firstNode
 	}
 }
 
-void dockNodeWindowSet(DockNodeId parentNodeId, const char* windowId)
+void dockNodeSetWindow(DockNodeId parentNodeId, const char* windowId)
 {
 	DockNode* node = ctx->docking.dockNodeIdsMap[parentNodeId];
 
@@ -901,12 +901,12 @@ HTheme themeCreate(u32 atlasTextureSize)
 	return theme;
 }
 
-void themeUserSettingSet(HTheme theme, const char* name, const char* value)
+void themeSetUserSetting(HTheme theme, const char* name, const char* value)
 {
 	((Theme*)theme)->userSettings[name] = value;
 }
 
-const char* themeUserSettingGet(HTheme theme, const char* name)
+const char* themeGetUserSetting(HTheme theme, const char* name)
 {
 	auto iter = ((Theme*)theme)->userSettings.find(name);
 
@@ -916,7 +916,7 @@ const char* themeUserSettingGet(HTheme theme, const char* name)
 	return iter->second.c_str();
 }
 
-HImage themeImageAdd(HTheme theme, const char* id, const ImageData& imgData)
+HImage themeAddImage(HTheme theme, const char* id, const ImageData& imgData)
 {
 	Theme* themePtr = (Theme*)theme;
 	ImageId nid = hashString(id);
@@ -939,7 +939,7 @@ HImage themeImageAdd(HTheme theme, const char* id, const ImageData& imgData)
 	return timg;
 }
 
-HImage themeImageGet(HTheme theme, const char* id)
+HImage themeGetImage(HTheme theme, const char* id)
 {
 	Theme* themePtr = (Theme*)theme;
 
@@ -951,7 +951,7 @@ HImage themeImageGet(HTheme theme, const char* id)
 	return nullptr;
 }
 
-void widgetStyleSet(WidgetType widgetType, const char* styleName)
+void widgetSetStyle(WidgetType widgetType, const char* styleName)
 {
 	//TODO: more automatic correlation between widget type and its element types, to avoid manual switch
 	// To not force using map to search for the current style for all widgets, this might be the only way
@@ -1103,7 +1103,7 @@ void widgetPushStyle(WidgetType widgetType, const char* styleName)
 
 	ctx->widgetStyleStack.push_back(std::make_pair(widgetType, ctx->widgetCurrentStyle[widgetType]));
 
-	widgetStyleSet(widgetType, styleName);
+	widgetSetStyle(widgetType, styleName);
 }
 
 void widgetPopStyle()
@@ -1114,28 +1114,28 @@ void widgetPopStyle()
 		return;
 
 	auto& top = ctx->widgetStyleStack.back();
-	widgetStyleSet(top.first, top.second.c_str());
+	widgetSetStyle(top.first, top.second.c_str());
 	ctx->widgetStyleStack.pop_back();
 }
 
-void widgetElementStyleSet(WidgetElementId widgetElementId, const char* styleName)
+void widgetSetElementStyle(WidgetElementId widgetElementId, const char* styleName)
 {
 	HORUS_ASSERT(ctx);
 	HORUS_ASSERT(ctx->theme);
 	ctx->theme->elements[(u32)widgetElementId].setStyle(styleName);
 }
 
-void widgetDefaultStyleSet(WidgetType widgetType)
+void widgetSetDefaultStyle(WidgetType widgetType)
 {
-	widgetStyleSet(widgetType, "default");
+	widgetSetStyle(widgetType, "default");
 }
 
-void widgetDefaultElementStyleSet(WidgetElementId widgetElementId)
+void widgetSetDefaultElementStyle(WidgetElementId widgetElementId)
 {
-	widgetElementStyleSet(widgetElementId, "default");
+	widgetSetElementStyle(widgetElementId, "default");
 }
 
-void widgetUserElementStyleSet(const char* elementName, const char* styleName)
+void widgetSetUserElementStyle(const char* elementName, const char* styleName)
 {
 	ctx->theme->userElements[elementName]->setStyle(styleName);
 }
@@ -1148,7 +1148,7 @@ void themeBuild(HTheme theme)
 	themePtr->build();
 }
 
-void themeWidgetElementSet(
+void themeSetWidgetElement(
 	HTheme theme,
 	WidgetElementId elementId,
 	WidgetStateType widgetStateType,
@@ -1172,7 +1172,7 @@ void themeWidgetElementSet(
 	state.image = (Image*)elementInfo.image;
 }
 
-void themeUserWidgetElementSet(
+void themeSetUserWidgetElement(
 	HTheme theme,
 	const char* userElementName,
 	WidgetStateType widgetStateType,
@@ -1209,7 +1209,7 @@ HTheme themeGet()
 	return ctx->theme;
 }
 
-ImageData themeAtlasImageDataGet()
+ImageData themeGetAtlasImageData()
 {
 	ImageData img;
 
@@ -1220,7 +1220,7 @@ ImageData themeAtlasImageDataGet()
 	return img;
 }
 
-void themeAtlasTextureSet(HTexture texture)
+void themeSetAtlasTexture(HTexture texture)
 {
 	ctx->theme->texture = texture;
 }
@@ -1237,7 +1237,7 @@ void themeDestroy(HTheme theme)
 	ctx->theme = nullptr;
 }
 
-void themeWidgetElementInfoGet(WidgetElementId elementId, WidgetStateType state, WidgetElementInfo& outInfo, const char* styleName)
+void themeGetWidgetElementInfo(WidgetElementId elementId, WidgetStateType state, WidgetElementInfo& outInfo, const char* styleName)
 {
 	auto& elemState = ctx->theme->elements[(u32)elementId].getStyleState(styleName, state);
 
@@ -1250,7 +1250,7 @@ void themeWidgetElementInfoGet(WidgetElementId elementId, WidgetStateType state,
 	outInfo.height = elemState.height;
 }
 
-void themeUserWidgetElementInfoGet(const char* userElementName, WidgetStateType state, WidgetElementInfo& outInfo, const char* styleName)
+void themeGetUserWidgetElementInfo(const char* userElementName, WidgetStateType state, WidgetElementInfo& outInfo, const char* styleName)
 {
 	outInfo = {};
 	auto iter = ctx->theme->userElements.find(userElementName);
@@ -1269,12 +1269,12 @@ void themeUserWidgetElementInfoGet(const char* userElementName, WidgetStateType 
 	outInfo.height = elemState.height;
 }
 
-void themeWidgetElementParameterSet(HTheme theme, WidgetElementId elementId, const char* styleName, const char* paramName, const char* paramValue)
+void themeSetWidgetElementParameter(HTheme theme, WidgetElementId elementId, const char* styleName, const char* paramName, const char* paramValue)
 {
 	((Theme*)theme)->elements[(int)elementId].styles[styleName].parameters[paramName] = paramValue;
 }
 
-const char* themeWidgetElementParameterStringGet(HTheme theme, WidgetElementId elementId, const char* styleName, const char* paramName, const char* defaultValue)
+const char* themeGetWidgetElementParameterString(HTheme theme, WidgetElementId elementId, const char* styleName, const char* paramName, const char* defaultValue)
 {
 	auto& style = ((Theme*)theme)->elements[(int)elementId].styles[styleName];
 
@@ -1286,21 +1286,21 @@ const char* themeWidgetElementParameterStringGet(HTheme theme, WidgetElementId e
 	return iter->second.c_str();
 }
 
-f32 themeWidgetElementParameterFloatGet(HTheme theme, WidgetElementId elementId, const char* styleName, const char* paramName, f32 defaultValue)
+f32 themeGetWidgetElementParameterFloat(HTheme theme, WidgetElementId elementId, const char* styleName, const char* paramName, f32 defaultValue)
 {
 	auto& style = ((Theme*)theme)->elements[(int)elementId].styles[styleName];
 
 	return style.getParameter(paramName, defaultValue);
 }
 
-const Color& themeWidgetElementParameterColorGet(HTheme theme, WidgetElementId elementId, const char* styleName, const char* paramName, const Color& defaultValue)
+const Color& themeGetWidgetElementParameterColor(HTheme theme, WidgetElementId elementId, const char* styleName, const char* paramName, const Color& defaultValue)
 {
 	auto& style = ((Theme*)theme)->elements[(int)elementId].styles[styleName];
 
 	return style.getColorParameter(paramName, defaultValue);
 }
 
-void themeUserWidgetElementParameterSet(HTheme theme, const char* userElementName, const char* styleName, const char* paramName, const char* paramValue)
+void themeSetUserWidgetElementParameter(HTheme theme, const char* userElementName, const char* styleName, const char* paramName, const char* paramValue)
 {
 	auto themePtr = ((Theme*)theme);
 
@@ -1312,7 +1312,7 @@ void themeUserWidgetElementParameterSet(HTheme theme, const char* userElementNam
 	themePtr->userElements[userElementName]->styles[styleName].parameters[paramName] = paramValue;
 }
 
-const char* themeUserWidgetElementParameterStringGet(HTheme theme, const char* userElementName, const char* styleName, const char* paramName, const char* defaultValue)
+const char* themeGetUserWidgetElementParameterString(HTheme theme, const char* userElementName, const char* styleName, const char* paramName, const char* defaultValue)
 {
 	auto& style = ((Theme*)theme)->userElements[userElementName]->styles[styleName];
 
@@ -1324,14 +1324,14 @@ const char* themeUserWidgetElementParameterStringGet(HTheme theme, const char* u
 	return iter->second.c_str();
 }
 
-f32 themeUserWidgetElementParameterFloatGet(HTheme theme, const char* userElementName, const char* styleName, const char* paramName, f32 defaultValue)
+f32 themeGetUserWidgetElementParameterFloat(HTheme theme, const char* userElementName, const char* styleName, const char* paramName, f32 defaultValue)
 {
 	auto& style = ((Theme*)theme)->userElements[userElementName]->styles[styleName];
 
 	return style.getParameter(paramName, defaultValue);
 }
 
-const Color& themeUserWidgetElementParameterColorGet(HTheme theme, const char* userElementName, const char* styleName, const char* paramName, const Color& defaultValue)
+const Color& themeGetUserWidgetElementParameterColor(HTheme theme, const char* userElementName, const char* styleName, const char* paramName, const Color& defaultValue)
 {
 	auto& style = ((Theme*)theme)->userElements[userElementName]->styles[styleName];
 
@@ -1360,7 +1360,7 @@ HFont themeFontGetFromTheme(HTheme theme, const char* themeFontName)
 	return themePtr->getFont(themeFontName);
 }
 
-HFont themeFontGet(const char* themeFontName)
+HFont themeGetFont(const char* themeFontName)
 {
 	return themeFontGetFromTheme(themeGet(), themeFontName);
 }
@@ -1405,7 +1405,7 @@ void idPop()
 {
 	if (ctx->idStack.empty())
 	{
-		HORUS_LOG("popId used too many times");
+		HORUS_LOG("idPop used too many times");
 		return;
 	}
 
@@ -1429,14 +1429,14 @@ void layoutPop()
 	ctx->layoutStack.pop_back();
 }
 
-f32 layoutRemainingHeightGet()
+f32 layoutGetRemainingHeight()
 {
 	f32 remainingHeight = ctx->layout.height - (ctx->position.y - ctx->layout.savedPosition.y);
 
 	return remainingHeight > 0 ? remainingHeight : 0;
 }
 
-f32 layoutRemainingWidthGet()
+f32 layoutGetRemainingWidth()
 {
 	f32 remainingWidth = ctx->layout.width - (ctx->position.x - ctx->layout.savedPosition.x);
 
@@ -1500,7 +1500,7 @@ const Point& paddingGet(PaddingType type)
 	return ctx->padding[(i32)type];
 }
 
-const Point& widgetPaddingGet()
+const Point& widgetGetPadding()
 {
 	return ctx->padding[(i32)PaddingType::Widget];
 }
@@ -1633,22 +1633,22 @@ bool widgetIsChangeEnded()
 	return ctx->widget.changeEnded;
 }
 
-WidgetId widgetIdGet()
+WidgetId widgetGetId()
 {
 	return ctx->id;
 }
 
-Point mousePositionGet()
+Point mouseGetPosition()
 {
 	return ctx->mousePosition;
 }
 
-Point widgetPositionGet()
+Point widgetGetPosition()
 {
 	return ctx->position;
 }
 
-void widgetPositionSet(const Point& position)
+void widgetSetPosition(const Point& position)
 {
 	ctx->position = position;
 }
@@ -1702,7 +1702,7 @@ bool dragDropWantsTo()
 	return false;
 }
 
-void dragDropMouseCursorSet(HMouseCursor dropAllowedCursor)
+void dragDropSetMouseCursor(HMouseCursor dropAllowedCursor)
 {
 	ctx->dragDrop.dropAllowedCursor = dropAllowedCursor;
 }
@@ -1741,7 +1741,7 @@ void dragDropDisallow()
 	ctx->dragDrop.allowDrop = false;
 }
 
-bool widgetDroppedOn()
+bool dragDropDroppedOnWidget()
 {
 	if (ctx->dragDrop.begunDragging
 		&& ctx->hoveringThisWindow
@@ -1762,12 +1762,12 @@ bool widgetDroppedOn()
 	return false;
 }
 
-void* dragDropObjectGet()
+void* dragDropGetObject()
 {
 	return ctx->dragDrop.dragObject;
 }
 
-u32 dragDropObjectTypeGet()
+u32 dragDropGetObjectType()
 {
 	return ctx->dragDrop.dragObjectType;
 }
@@ -2013,7 +2013,7 @@ void sameLineGroupBegin(u32 widgetCount)
 	ctx->sameLine.nextSpacing = ctx->sameLine.spacing;
 
 	// Set width for first widget using the proper API
-	widgetNextWidthSet(ctx->sameLineGroup.widgetWidth);
+	widgetSetNextWidth(ctx->sameLineGroup.widgetWidth);
 }
 
 void sameLineGroupNext()
@@ -2030,7 +2030,7 @@ void sameLineGroupNext()
 	sameLine();
 
 	// Set width for next widget using the proper API
-	widgetNextWidthSet(ctx->sameLineGroup.widgetWidth);
+	widgetSetNextWidth(ctx->sameLineGroup.widgetWidth);
 }
 
 void sameLineGroupEnd()

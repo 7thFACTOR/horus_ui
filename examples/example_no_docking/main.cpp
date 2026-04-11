@@ -1,4 +1,4 @@
-﻿#pragma execution_character_set("utf-8")
+#pragma execution_character_set("utf-8")
 #include "horus.h"
 
 #define _USE_MATH_DEFINES
@@ -61,11 +61,11 @@ int main(int argc, char** args)
 	}
 	
 	// Create the context
-	auto huiContext = hui::createContext(settings);
-	hui::setContext(huiContext); // set as current context
+	auto huiContext = hui::contextCreate(settings);
+	hui::contextSet(huiContext); // set as current context
 
 	// Create the main window (this will also create a graphics (GL/VK/D3D/etc.) context)
-	auto mainWnd = hui::getSettings().services.createWindow((std::string("Horus Example - No Docking - ") + gfxApiName).c_str(), hui::NativeWindowFlags::Resizable, hui::NativeWindowState::Maximized, hui::Rect(0, 0, 1000, 800));
+	auto mainWnd = hui::settingsGet().services.createWindow((std::string("Horus Example - No Docking - ") + gfxApiName).c_str(), hui::NativeWindowFlags::Resizable, hui::NativeWindowState::Maximized, hui::Rect(0, 0, 1000, 800));
 	
 	// Load a theme
 	const u32 errSize = 2048;
@@ -79,26 +79,26 @@ int main(int argc, char** args)
 	}
 
 	// Set the current theme
-	hui::setTheme(theme);
+	hui::themeSet(theme);
 
 	// Build the theme
 	// After we load the theme and more images and fonts, we need to rebuild the theme (into the image atlas)
-	hui::buildTheme(theme);
+	hui::themeBuild(theme);
 	
-	hui::VulkanTexture texAtlas(hui::getThemeAtlasImageData().width, hui::getThemeAtlasImageData().height);
-	texAtlas.updateData(hui::getThemeAtlasImageData().pixels);
-	hui::setThemeAtlasTexture(texAtlas.getHandle());
+	hui::VulkanTexture texAtlas(hui::themeGetAtlasImageData().width, hui::themeGetAtlasImageData().height);
+	texAtlas.updateData(hui::themeGetAtlasImageData().pixels);
+	hui::themeSetAtlasTexture(texAtlas.getHandle());
 
 	// Start the main loop
 	bool exitNow = false;
 
-	hui::changeScale(1.0f);
+	hui::scaleSet(1.0f);
 
 	while (!exitNow)
 	{
 		// Clear the main window as a test
-		hui::getSettings().services.setCurrentWindow(mainWnd);
-		hui::getSettings().services.clearBackbuffer(hui::Color(0.1f, 0.4f, 0.4f, 1));
+		hui::settingsGet().services.setCurrentWindow(mainWnd);
+		hui::settingsGet().services.clearBackbuffer(hui::Color(0.1f, 0.4f, 0.4f, 1));
 		
 		// Theme file path
 		static const char* themeFilePath = "../themes/default.theme.json";
@@ -111,14 +111,14 @@ int main(int argc, char** args)
 				if (newTheme)
 				{
 					// delete old theme
-					if (theme) hui::deleteTheme(theme);
+					if (theme) hui::themeDestroy(theme);
 					theme = newTheme;
-					hui::setTheme(theme);
+					hui::themeSet(theme);
 
 					// Reload resources
-					hui::buildTheme(theme);
-					texAtlas.updateData(hui::getThemeAtlasImageData().pixels);
-					hui::setThemeAtlasTexture(texAtlas.getHandle());
+					hui::themeBuild(theme);
+					texAtlas.updateData(hui::themeGetAtlasImageData().pixels);
+					hui::themeSetAtlasTexture(texAtlas.getHandle());
 					
 					printf("Theme reloaded!\n");
 				}
@@ -128,7 +128,7 @@ int main(int argc, char** args)
 		static auto lastModTime = std::filesystem::last_write_time(themeFilePath);
 		static f32 checkTimer = 0;
 
-		checkTimer += hui::getSettings().deltaTime;
+		checkTimer += hui::settingsGet().deltaTime;
 
 		// Check if theme file has been modified (every 1 second)
 		if (checkTimer >= 1.0f)
@@ -150,53 +150,53 @@ int main(int argc, char** args)
 			}
 		}
 
-		hui::getSettings().deltaTime = hui::getSdl3DeltaTime();
+		hui::settingsGet().deltaTime = hui::getSdl3DeltaTime();
 		// Get the events from SDL or whatever input provider is set, it will fill a queue of events
-		hui::update();
+		hui::contextUpdate();
 
-		if (hui::getInputEvent().type == hui::InputEvent::Type::Key
-			&& hui::getInputEvent().key.code == hui::KeyCode::F2
-			&& hui::getInputEvent().key.down)
+		if (hui::inputGetEvent().type == hui::InputEvent::Type::Key
+			&& hui::inputGetEvent().key.code == hui::KeyCode::F2
+			&& hui::inputGetEvent().key.down)
 		{
 			reloadTheme();
 		}
 
 		// Check the event count
-		auto eventCount = hui::getInputEventCount();
+		auto eventCount = hui::inputEventGetCount();
 
 		// the main frame rendering and input handling
 		auto doFrame = [&](bool lastEventInQueue)
 			{
-				hui::setCurrentNativeWindow(mainWnd);
-				hui::beginRendering();
-				hui::beginFrame();
+				hui::nativeWindowSetCurrent(mainWnd);
+				hui::renderBegin();
+				hui::frameBegin();
 				// disable rendering if its not the last event in the queue
 				// no need to render while handling all the input events
 				// we only render on the last event in the queue
-				hui::setDisableRendering(!lastEventInQueue);
+				hui::skipRenderingThisFrame(!lastEventInQueue);
 
 				const int maxPts = 32;
 				hui::Point pts[maxPts] = { 0 };
 				u32 ptCount = 0;
-				hui::Rect rc = { 30, 30, 700*hui::getScale(), 1500 * hui::getScale() };
-				hui::pushPadding(hui::PaddingType::Layout, 0);
-				hui::beginLayout(rc);
-				hui::pushPadding(hui::PaddingType::Layout, 10);
+				hui::Rect rc = { 30, 30, 700*hui::scaleGet(), 1500 * hui::scaleGet() };
+				hui::paddingPush(hui::PaddingType::Layout, 0);
+				hui::layoutBegin(rc);
+				hui::paddingPush(hui::PaddingType::Layout, 10);
 				
-				hui::beginBoxLayout("box1", hui::Color::white, hui::WidgetElementId::WindowBody);
+				hui::boxBegin("box1", hui::Color::white, hui::WidgetElementId::WindowBody);
 
-				hui::setNextWidth(1);
-				hui::label((std::string("Avg Time: ") + std::to_string(hui::getAvgFrameTimeMs())).c_str(), hui::HAlignType::Center);
+				hui::widgetSetNextWidth(1);
+				hui::label((std::string("Avg Time: ") + std::to_string(hui::frameTimeAvgGetMs())).c_str(), hui::HAlignType::Center);
 
-				hui::beginBoxLayout("box2", hui::Color::red);
+				hui::boxBegin("box2", hui::Color::red);
 				
 				//hui::button("BUTTON1");
 				
-				hui::beginBoxLayout("box3", hui::Color::blue);
+				hui::boxBegin("box3", hui::Color::blue);
 				
 				//hui::button("BUTTON2");
 				
-				hui::beginBoxLayout("box4", hui::Color::green);
+				hui::boxBegin("box4", hui::Color::green);
 				
 				hui::button("BUTTON3"); hui::sameLine();
 				hui::button("BUTTON3g"); hui::sameLine();
@@ -206,25 +206,25 @@ int main(int argc, char** args)
 				hui::button("BUTTONnnnn3");
 				hui::button("BUTTONnnnn3");
 				
-				hui::endBoxLayout();
-				hui::endBoxLayout();
-				hui::endBoxLayout();
+				hui::boxEnd();
+				hui::boxEnd();
+				hui::boxEnd();
 
-				hui::popWidgetPadding();
-				hui::pushWidgetPadding(0);
+				hui::widgetPaddingPop();
+				hui::widgetPaddingPush(0);
 				hui::space(20);
 				static hui::TabIndex selTab = 0;
 
-				hui::beginTabGroup(selTab);
+				hui::tabGroupBegin(selTab);
 				hui::tab("One", 0);
 				hui::tab("Two", 0);
 				hui::tab("Three", 0);
 				hui::tab("Four", 0);
-				selTab = hui::endTabGroup();
+				selTab = hui::tabGroupEnd();
 
 				static hui::Point scrollPos = 0;
 				hui::space();
-				hui::beginScrollView("scrl1", 200, scrollPos, 0, hui::ScrollViewFlags::NoBorder);
+				hui::scrollViewBegin("scrl1", 200, scrollPos, 0, hui::ScrollViewFlags::NoBorder);
 				
 				int counter = 0;
 				for (int i = 0; i < 100; i++)
@@ -238,7 +238,7 @@ int main(int argc, char** args)
 				hui::button("I AGREE");
 				hui::line();
 
-				scrollPos = hui::endScrollView();
+				scrollPos = hui::scrollViewEnd();
 
 				if (hui::beginMenuBar())
 				{
@@ -271,7 +271,7 @@ int main(int argc, char** args)
 					hui::endMenuBar();
 				}
 
-				hui::labelCustomFont("Once upon a time in the west", hui::getThemeFont(theme, "title"), hui::HAlignType::Center);
+				hui::labelCustomFont("Once upon a time in the west", hui::themeGetFont(theme, "title"), hui::HAlignType::Center);
 				hui::line();
 				
 				if (hui::button("Do not push this button"))
@@ -313,14 +313,14 @@ int main(int argc, char** args)
 
 				if (hui::beginCustomTooltip(160))
 				{
-					hui::pushTint(hui::Color::black, hui::TintColorType::Text);
+					hui::tintPush(hui::Color::black, hui::TintColorType::Text);
 					hui::labelCustomFont("Header", hui::getFont("medium-bold"));
-					hui::pushWidgetPadding(0);
+					hui::widgetPaddingPush(0);
 					hui::label("Brief explanation");
 					hui::line();
 					hui::labelMultiline("A longer explanation\nthat needs to explain what is to be explained because of corse its needed.", hui::HAlignType::Left);
-					hui::popWidgetPadding();
-					hui::popTint();
+					hui::widgetPaddingPop();
+					hui::tintPop();
 					hui::endCustomTooltip();
 				}
 
@@ -333,14 +333,14 @@ int main(int argc, char** args)
 
 				if (popup)
 				{
-					hui::beginPopup("_popup", 300, hui::PopupFlags::Centered|hui::PopupFlags::FadeBackground);
+					hui::popupBegin("_popup", 300, hui::PopupFlags::Centered|hui::PopupFlags::FadeBackground);
 					hui::label("A sample popup"); hui::sameLine();
 					if (hui::button("Close this"))
 					{
-						hui::closePopup();
+						hui::popupClose();
 						popup = false;
 					}
-					hui::endPopup();
+					hui::popupEnd();
 				}
 
 				static f32 sli = 0;
@@ -348,22 +348,22 @@ int main(int argc, char** args)
 				static i32 option1 = 0;
 				static i32 option2 = 0;
 				static bool showRadios = true;
-				hui::pushTint(hui::Color::orange);
+				hui::tintPush(hui::Color::orange);
 				if (hui::expandable("Radios 1##1"))
 				{
 					hui::radio("Radio value 0", &option1, 0);
 					hui::radio("Radio value 1", &option1, 1);
 					hui::radio("Radio value 2", &option1, 2);
 				}
-				hui::popTint();
+				hui::tintPop();
 
 				static f32 val;
 				static f32 val2;
 
 				static hui::Point scrollPos2 = 0;
-				hui::pushPadding(hui::PaddingType::ScrollView, { 10, 0 });
-				hui::beginScrollView("scrl2", 180, scrollPos2.y);
-				hui::popPadding(hui::PaddingType::ScrollView);
+				hui::paddingPush(hui::PaddingType::ScrollView, { 10, 0 });
+				hui::scrollViewBegin("scrl2", 180, scrollPos2.y);
+				hui::paddingPop(hui::PaddingType::ScrollView);
 				hui::rotarySliderFloat("Speed", &val, -30, 100, 1, false);
 				static char txt[1000];
 				hui::textInput("txt1", txt, 1000);
@@ -391,7 +391,7 @@ int main(int argc, char** args)
 				if (hui::expandable("Many buttons##3"))
 				for (int i = 0; i < 20; i++)
 				{
-					hui::pushId(i);
+					hui::idPush(i);
 					hui::button("Accelerate1"); hui::sameLine();
 					hui::button("Accelerate2"); hui::sameLine();
 					hui::button("Accelerate3"); hui::sameLine();
@@ -400,31 +400,31 @@ int main(int argc, char** args)
 					hui::button("Accelerate6"); hui::sameLine();
 					hui::button("Accelerate7"); hui::sameLine();
 					hui::button("Accelerate8");
-					hui::popId();
+					hui::idPop();
 				}
 
 				
-				hui::pushTint(hui::Color::red);
+				hui::tintPush(hui::Color::red);
 				hui::button("  EXIT    ");
-				hui::popTint();
-				hui::pushTint(hui::Color(1,0,0,1), hui::TintColorType::Body, hui::TintColorOpType::Replace);
+				hui::tintPop();
+				hui::tintPush(hui::Color(1,0,0,1), hui::TintColorType::Body, hui::TintColorOpType::Replace);
 				hui::sameLine();
 				hui::button("   ABORT   ");
-				hui::popTint();
-				hui::pushTint(hui::Color::sky, hui::TintColorType::Text);
+				hui::tintPop();
+				hui::tintPush(hui::Color::sky, hui::TintColorType::Text);
 				hui::sameLine();
 				hui::button("QUIT APPLICATION");
-				hui::popTint();
+				hui::tintPop();
 				
 
 				hui::space(20);
 
-				scrollPos2 = hui::endScrollView();
+				scrollPos2 = hui::scrollViewEnd();
 
-				hui::popWidgetPadding();
-				hui::endBoxLayout();
-				hui::endLayout();
-				hui::popPadding(hui::PaddingType::Layout);
+				hui::widgetPaddingPop();
+				hui::boxEnd();
+				hui::layoutEnd();
+				hui::paddingPop(hui::PaddingType::Layout);
 				hui::endFrame();
 				hui::endRendering();
 
@@ -439,9 +439,9 @@ int main(int argc, char** args)
 			{
 				hui::setInputEvent(hui::getInputEventAt(i));
 
-				if (hui::getInputEvent().type == hui::InputEvent::Type::WindowClose)
+				if (hui::inputGetEvent().type == hui::InputEvent::Type::WindowClose)
 				{
-					if (hui::getInputEvent().window == mainWnd)
+					if (hui::inputGetEvent().window == mainWnd)
 					{
 						exitNow = true;
 					}

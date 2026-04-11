@@ -60,7 +60,7 @@ bool list(const char* id, bool* selectedItems, ListSelectionMode selectionType, 
 				for (u32 i = 0; i < itemCount; i++) selectedItems[i] = false;
 				changed = true;
 				anchor = -1;
-				eventCancel();
+				inputEventCancel();
 			}
 			else if (selectionType == ListSelectionMode::Multiple
 				&& ctx->event.key.code == KeyCode::A
@@ -68,7 +68,7 @@ bool list(const char* id, bool* selectedItems, ListSelectionMode selectionType, 
 			{
 				for (u32 i = 0; i < itemCount; i++) selectedItems[i] = true;
 				changed = true;
-				eventCancel();
+				inputEventCancel();
 			}
 		}
 	}

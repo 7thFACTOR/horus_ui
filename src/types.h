@@ -362,7 +362,7 @@ struct ThemeElement
 
 				if (iter2 != parameters.end())
 				{
-					Color c = getColorFromText(iter2->second.c_str());
+					Color c = colorFromHex(iter2->second.c_str());
 					cachedColorParameters[name] = c;
 					return c;
 				}
@@ -625,7 +625,7 @@ struct ScrollViewState
 	Point scrollOffset;
 	Point lastMousePos;
 
-	// Transient layout data (reset/set every frame in beginScrollView)
+	// Transient layout data (reset/set every frame in scrollViewBegin)
 	WidgetId id = 0;
 	Rect rect;
 	f32 height = 0.0f;

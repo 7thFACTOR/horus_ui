@@ -22,7 +22,7 @@ void popupBegin(
 		width *= ctx->scale;
 
 	if (!has(flags, PopupFlags::SameLayer))
-		layerIncrement();
+		windowLayerIndexMaxIncrement();
 
 	ctx->renderer.pushWindowDrawCmdLayer(DrawCmdLayerType::Foreground);
 	ctx->popupIndex++;
@@ -235,7 +235,7 @@ void popupEnd()
 	windowLayerIndexMaxDecrement();
 
 	if (!has(popup.flags, PopupFlags::SameLayer))
-		layerDecrement();
+		windowLayerIndexMaxDecrement();
 
 	ctx->popupIndex--;
 }
@@ -324,7 +324,7 @@ bool popupPressedEscape()
 
 bool popupMustClose()
 {
-	return popupEscapePressed() || popupOutsideClicked();
+	return popupPressedEscape() || popupClickedOutside();
 }
 
 MessageBoxButtons messageBox(

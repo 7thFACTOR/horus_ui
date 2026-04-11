@@ -13,7 +13,7 @@ bool check(const char* label, bool* checkVar)
 	ctx->labelAndIdSet(label);
 
 	auto textSize = checkBodyElem.normalState().font->computeTextSize(ctx->widgetLabel.c_str());
-	auto& padding = widgetPaddingGet();
+	auto& padding = widgetGetPadding();
 	f32 bulletTextSpacingParam = checkBodyElem.currentStyle->getParameter("bulletTextSpacing", ctx->settings.defaultBulletTextSpacing);
 	f32 bulletTextSpacing = bulletTextSpacingParam * ctx->scale;
 	f32 markWidth = padding.x * 2.0f + checkBodyElem.normalState().width;

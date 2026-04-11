@@ -1559,7 +1559,7 @@ FontTextSize Renderer::computeSizeOrDrawText(
 				// finalize current line [lineStart .. breakPos-1]
 				u32 lineLen = breakPos > lineStart ? breakPos - lineStart : 0;
 
-				// compute actual width for the pushed segment to update fsize.width correctly
+				// compute actual width for the pushed segment to contextUpdate fsize.width correctly
 				f32 segmentWidth = 0.0f;
 				GlyphCode segLast = 0;
 				for (u32 k = lineStart; k < lineStart + lineLen && k < size; ++k)
@@ -2582,7 +2582,7 @@ bool Renderer::clipRectNoRot(Rect& rect, Rect& uvRect, Rgba32* colors) const
 	uvRect.width -= oldUvRect.width * tx;
 	uvRect.height -= oldUvRect.height * ty;
 
-	// If a color array is provided, treat it as in/out and update corners.
+	// If a color array is provided, treat it as in/out and contextUpdate corners.
 	// colors layout: [0]=topLeft, [1]=topRight, [2]=bottomRight, [3]=bottomLeft
 	if (colors && rect.width > 0.0f && rect.height > 0.0f)
 	{
@@ -2637,7 +2637,7 @@ bool Renderer::clipRectRot(Rect& rect, Rect& uvRect, Rgba32* colors) const
 	uvRect.width -= uvRect.width * ty;
 	uvRect.height -= uvRect.height * tx;
 
-	// If a color array is provided, treat it as in/out and update corners.
+	// If a color array is provided, treat it as in/out and contextUpdate corners.
 	// colors layout: [0]=topLeft, [1]=topRight, [2]=bottomRight, [3]=bottomLeft
 	if (colors && rect.width > 0.0f && rect.height > 0.0f)
 	{

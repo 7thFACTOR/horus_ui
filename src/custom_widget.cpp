@@ -15,7 +15,7 @@ Rect customWidgetBegin(const char* id, f32 height)
 		height = ctx->layout.height - (ctx->position.y - ctx->layout.savedPosition.y);
 	}
 
-	ctx->id = genId(id);
+	ctx->id = idGen(id);
 	widgetAdd(height);
 	buttonBehavior();
 
@@ -78,7 +78,7 @@ void rendererFillColorSet(const Color& color)
 	ctx->renderer.cmdSetFillStyle(ctx->renderer.currentFillStyle);
 }
 
-Point rendererTextSizeGet(const char* text)
+Point rendererGetTextSize(const char* text)
 {
 	if (!ctx->renderer.getFont())
 		return Point();
@@ -124,12 +124,12 @@ void rendererBorderedImageDraw(HImage image, u32 border, const Rect& rect)
 	ctx->renderer.cmdDrawImageBordered(img, border, Rect(rect.x + ctx->renderer.viewportOffset.x, rect.y + ctx->renderer.viewportOffset.y, rect.width, rect.height), ctx->scale);
 }
 
-void rendererLineStyleSet(const LineStyle& style)
+void rendererSetLineStyle(const LineStyle& style)
 {
 	ctx->renderer.cmdSetLineStyle(style);
 }
 
-void rendererFillStyleSet(const FillStyle& style)
+void rendererSetFillStyle(const FillStyle& style)
 {
 	ctx->fillStyle = style;
 	ctx->renderer.cmdSetColor(style.color);

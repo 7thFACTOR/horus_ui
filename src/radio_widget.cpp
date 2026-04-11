@@ -13,7 +13,7 @@ bool radio(const char* label, i32* currentRadioValue, i32 thisValue)
 	ctx->labelAndIdSet(label);
 	
 	auto textSize = radioBodyElem.normalState().font->computeTextSize(ctx->widgetLabel.c_str());
-	auto& padding = widgetPaddingGet();
+	auto& padding = widgetGetPadding();
 	f32 bulletTextSpacingParam = radioBodyElem.currentStyle->getParameter("bulletTextSpacing", ctx->settings.defaultBulletTextSpacing);
 	f32 bulletTextSpacing = bulletTextSpacingParam * ctx->scale;
 	f32 height = radioBodyElem.normalState().height * ctx->scale;

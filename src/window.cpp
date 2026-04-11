@@ -65,7 +65,7 @@ bool windowBegin(const char* id, const char* title, Rect* initialRect, HImage im
 	}
 	
 	ctx->currentWindow = wnd;
-	nativeWindowCurrentSet(wnd->dockNode->nativeWindow);	
+	nativeWindowSetCurrent(wnd->dockNode->nativeWindow);	
 	ctx->renderer.begin();
 	auto rc = wnd->clientRect;
 
@@ -83,22 +83,22 @@ bool windowBegin(const char* id, const char* title, Rect* initialRect, HImage im
 		style->getParameter("paddingX", 10),
 		style->getParameter("paddingY", 10) };
 
-	pushPadding(PaddingType::Layout, padding);
+	paddingPush(PaddingType::Layout, padding);
 	layoutBegin(rc);
-	pushId((void*)wnd);
+	idPush((void*)wnd);
 
 	return true;
 }
 
 void windowEnd()
 {
-	popId();
+	idPop();
 	layoutEnd();
-	popPadding(PaddingType::Layout);
+	paddingPop(PaddingType::Layout);
 	ctx->renderer.end();
 }
 
-void windowVisibleSet(const char* windowId, bool visible)
+void windowSetVisible(const char* windowId, bool visible)
 {
 	if (!visible)
 	{
@@ -121,12 +121,12 @@ void windowVisibleSet(const char* windowId, bool visible)
 	}
 }
 
-void windowNextFlagsSet(WindowFlags flags)
+void windowSetNextFlags(WindowFlags flags)
 {
 	ctx->nextWindowFlags = flags;
 }
 
-void windowFocus(const char* windowId)
+void windowSetFocus(const char* windowId)
 {
 	auto wndIter = ctx->docking.windows.find(windowId);
 
@@ -200,17 +200,17 @@ bool windowIsMouseOver()
 	return false;
 }
 
-void windowCaptureSet()
+void windowSetCapture()
 {
 	ctx->settings.services.setCapture(ctx->currentWindow ? ctx->currentWindow->dockNode->nativeWindow : 0);
 }
 
-void windowCaptureRelease()
+void windowReleaseCapture()
 {
 	ctx->settings.services.releaseCapture();
 }
 
-Rect windowClientRectGet()
+Rect windowGetClientRect()
 {
 	return ctx->currentWindow->clientRect;
 }	

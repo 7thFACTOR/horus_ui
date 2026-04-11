@@ -1,4 +1,4 @@
-﻿#include "horus.h"
+#include "horus.h"
 #include "font.h"
 #include "util.h"
 #include "theme.h"
@@ -138,7 +138,7 @@ FontGlyph* Font::cacheGlyph(GlyphCode glyphCode)
 	}
 	else
 	{
-		// if we are in resize mode, then just update the image buffer for the glyph and its size
+		// if we are in resize mode, then just contextUpdate the image buffer for the glyph and its size
 		auto img = (Image*)fontGlyph->image;
 
 		if (img)

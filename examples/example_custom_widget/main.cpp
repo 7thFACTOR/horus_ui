@@ -1,4 +1,4 @@
-﻿#pragma execution_character_set("utf-8")
+#pragma execution_character_set("utf-8")
 #include "horus.h"
 
 #define _USE_MATH_DEFINES
@@ -22,7 +22,7 @@ hui::WidgetElementInfo inf;
 void curveEditor(f32 height, u32 maxPoints, hui::Point* points, u32& pointCount, const hui::Color& lineColor)
 {
 	hui::beginCustomWidget("curveEditor", height);
-	hui::color(hui::isPressed() ? hui::Color::red : hui::Color::white);
+	hui::color(hui::widgetIsPressed() ? hui::Color::red : hui::Color::white);
 	hui::drawBorderedImage(inf.image, inf.border, hui::getWidgetRect());
 	hui::lineStyle({ hui::Color::orange, 1.5f });
 	hui::drawLine({ 10,10 }, { 10,110 });
@@ -61,8 +61,8 @@ int main(int argc, char** args)
 	settings.providers.utf = new hui::UtfCppProvider();
 
 	// Create the context
-	auto huiContext = hui::createContext(settings);
-	hui::setContext(huiContext); // set as current context
+	auto huiContext = hui::contextCreate(settings);
+	hui::contextSet(huiContext); // set as current context
 
 	// Initialize SDL input provider
 	hui::SdlInitParams sdlParams;
@@ -92,11 +92,11 @@ int main(int argc, char** args)
 	}
 
 	// Set the current theme
-	hui::setTheme(theme);
+	hui::themeSet(theme);
 
 	// Build the theme
 	// After we load the theme and more images and fonts, we need to rebuild the theme (into the image atlas)
-	hui::buildTheme(theme);
+	hui::themeBuild(theme);
 
 	hui::getThemeWidgetElementInfo(hui::WidgetElementId::BoxBody, hui::WidgetStateType::Normal, inf);
 
@@ -111,22 +111,22 @@ int main(int argc, char** args)
 		glClear(GL_COLOR_BUFFER_BIT);
 
 		// Get the events from SDL or whatever input provider is set, it will fill a queue of events
-		hui::update();
+		hui::contextUpdate();
 
 		// Check the event count
-		auto eventCount = hui::getInputEventCount();
+		auto eventCount = hui::inputEventGetCount();
 
 		// the main frame rendering and input handling
 		auto doFrame = [&](bool lastEventInQueue)
 		{
-			hui::setCurrentNativeWindow(mainWnd);
-			hui::beginRendering();
+			hui::nativeWindowSetCurrent(mainWnd);
+			hui::renderBegin();
 			// Begin an actual frame of the gui
-			hui::beginFrame();
+			hui::frameBegin();
 			// disable rendering if its not the last event in the queue
 			// no need to render while handling all the input events
 			// we only render on the last event in the queue
-			hui::setDisableRendering(!lastEventInQueue);
+			hui::skipRenderingThisFrame(!lastEventInQueue);
 
 			const int maxPts = 32;
 			hui::Point pts[maxPts] = { 0 };
@@ -134,9 +134,9 @@ int main(int argc, char** args)
 
 			hui::Rect rc = {30, 30, 500, 400};
 
-			hui::beginLayout(rc);
+			hui::layoutBegin(rc);
 			curveEditor(55, maxPts, pts, ptCount, hui::Color::red);
-			hui::endLayout();
+			hui::layoutEnd();
 
 			hui::endFrame();
 			hui::endRendering();
@@ -152,9 +152,9 @@ int main(int argc, char** args)
 			{
 				hui::setInputEvent(hui::getInputEventAt(i));
 
-				if (hui::getInputEvent().type == hui::InputEvent::Type::WindowClose)
+				if (hui::inputGetEvent().type == hui::InputEvent::Type::WindowClose)
 				{
-					if (hui::getInputEvent().window == mainWnd)
+					if (hui::inputGetEvent().window == mainWnd)
 					{
 						exitNow = true;
 					}

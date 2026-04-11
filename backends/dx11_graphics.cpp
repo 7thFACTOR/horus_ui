@@ -157,7 +157,7 @@ void Dx11Texture::updateRectData(const Rect& rect, Rgba32* pixels)
 	// in dx11, D3D11_MAP_WRITE_NO_OVERWRITE or using updatesubresource is better for regions.
 	// for dynamic textures, map discard replaces everything.
 	if (!g_dx11DeviceContext || !handle || !pixels) return;
-	printf("Dx11Texture::updateRectData not fully implemented for dynamic rect update\n");
+	printf("Dx11Texture::updateRectData not fully implemented for dynamic rect contextUpdate\n");
 }
 
 void Dx11Texture::destroy()
@@ -278,7 +278,7 @@ static void draw(Vertex* vertices, u32 vertexCount, struct RenderBatch* batches,
 {
 	if (!g_dx11DeviceContext || vertexCount == 0) return;
 
-	// 1. update the vertexbuffer with `vertices` data
+	// 1. contextUpdate the vertexbuffer with `vertices` data
 	if (sharedVb.count < vertexCount) sharedVb.resize(vertexCount);
 
 	D3D11_MAPPED_SUBRESOURCE mappedResource;
@@ -288,7 +288,7 @@ static void draw(Vertex* vertices, u32 vertexCount, struct RenderBatch* batches,
 		g_dx11DeviceContext->Unmap(sharedVb.handle, 0);
 	}
 
-	// update mvp matrix
+	// contextUpdate mvp matrix
 	f32 m[4][4] = { 0 };
 	m[0][0] = 2.0f / currentViewport.width;
 	m[1][1] = -2.0f / currentViewport.height;

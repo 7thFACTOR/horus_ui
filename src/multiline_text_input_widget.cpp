@@ -9,7 +9,7 @@
 
 namespace hui
 {
-bool textMultilineInput(
+bool textInputMultiline(
 	const char* id,
 	char* text,
 	u32 maxLength,
@@ -25,8 +25,8 @@ bool textMultilineInput(
 	auto& bodyTextCaretElemState = ctx->theme->getElement(WidgetElementId::TextInputCaret).normalState();
 	auto& bodyTextSelectionElemState = ctx->theme->getElement(WidgetElementId::TextInputSelection).normalState();
 	auto& currentLineHighlightElemState = ctx->theme->getElement(WidgetElementId::MultilineTextInputCurrentLineHighlight).normalState();
-	auto& padding = widgetPaddingGet();
-	auto& state = ctx->multilineTextInput;
+	auto& padding = widgetGetPadding();
+	auto& state = ctx->textMultilineInput;
 
 	state.visibleLineCount = visibleLines;
 
@@ -42,13 +42,13 @@ bool textMultilineInput(
 	f32 border = bodyElem->normalState().border;
 	f32 totalHeight = visibleLines * lineHeight + (padding.y + border) * 2.0f;
 
-	ctx->id = genId(id);
+	ctx->id = idGen(id);
 	widgetAdd(totalHeight);
 	buttonBehavior();
 
 	// pre-calculate scroll ID for focus checks
 	std::string scrollIdName = std::string(id) + ".scroller";
-	WidgetId scrollId = genId(scrollIdName.c_str());
+	WidgetId scrollId = idGen(scrollIdName.c_str());
 
 	if (state.id == ctx->id)
 		state.scrollId = scrollId;
@@ -170,7 +170,7 @@ bool textMultilineInput(
 			state.mouseMoved = false;
 			state.selectingWithMouse = false;
 			state.ensureCaretVisible();
-			windowCaptureSet();
+			windowSetCapture();
 		}
 
 		Rect rc;
@@ -186,7 +186,7 @@ bool textMultilineInput(
 	}
 
 	if (ctx->widget.hovered)
-		cursorTypeSet(MouseCursorType::IBeam);
+		mouseCursorSetType(MouseCursorType::IBeam);
 
 	// calculate sidebar width based on line count
 	f32 sidebarWidth = 0.0f;
@@ -211,7 +211,7 @@ bool textMultilineInput(
 		clipRect.width -= (sidebarWidth + sidebarTextGap);
 	}
 
-	// update state rects every frame so ensureCaretVisible works correctly
+	// contextUpdate state rects every frame so ensureCaretVisible works correctly
 	if (state.id == ctx->id)
 	{
 		state.rect = ctx->widget.rect;
@@ -489,15 +489,15 @@ bool textMultilineInput(
 		}
 
 		if (overScrollbar)
-			cursorTypeSet(MouseCursorType::Arrow);
+			mouseCursorSetType(MouseCursorType::Arrow);
 		else
-			cursorTypeSet(MouseCursorType::IBeam);
+			mouseCursorSetType(MouseCursorType::IBeam);
 	}
 
 	layoutPush();
 
 	// begin ScrollView (it handles layout, scrollbars, and inputs)
-	// we must reset position to inside the wrapper because addWidget() moved it to the bottom
+	// we must reset position to inside the wrapper because widgetAdd() moved it to the bottom
 	Point wrapperEndPos = ctx->position;
 	
 	ctx->position = { clipRect.x, clipRect.y };
@@ -506,7 +506,7 @@ bool textMultilineInput(
 	
 	ctx->layout.width = clipRect.width;
 
-	// scale height down because beginScrollView scales it up again (double-scaling fix)
+	// scale height down because scrollViewBegin scales it up again (double-scaling fix)
 	f32 scrollViewHeight = clipRect.height;
 	
 	if (ctx->settings.scaleScrollViewHeight)
@@ -618,9 +618,9 @@ bool textMultilineInput(
 
 	scrollViewBegin(scrollIdName.c_str(), scrollViewHeight, initialScroll, { maxLineWidth + indicatorMargin, totalContentHeight }, ScrollViewFlags::NoBorder | ScrollViewFlags::NoPadding);
 
-	ctx->layout.width = savedLayoutWidth; // restore layout width immediately (beginScrollView captured it)
+	ctx->layout.width = savedLayoutWidth; // restore layout width immediately (scrollViewBegin captured it)
 
-	// update state clip rect to the inner clip rect (excluding scrollbars)
+	// contextUpdate state clip rect to the inner clip rect (excluding scrollbars)
 	// this prevents drawing over scrollbars and ensures clicks on scrollbars aren't handled as text input
 	Rect innerClipRect = ctx->renderer.getClipRect();
 	

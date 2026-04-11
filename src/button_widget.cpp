@@ -92,7 +92,7 @@ static bool imageButtonInternal(HImage img, HImage disabledImg, f32 width, f32 h
 		auto imgWidth = image->rect.width * ctx->scale;
 		auto imgHeight = image->rect.height * ctx->scale;
 
-		viewportImageSizeFit(imgWidth, imgHeight, ctx->widget.rect.width - (widgetPaddingGet().x * 2.0f + btnBodyElemState->border * 2.0f) * ctx->scale, ctx->widget.rect.height - (widgetPaddingGet().y * 2.0f + btnBodyElemState->border * 2.0f) * ctx->scale, imgWidth, imgHeight, false, false);
+		viewportImageSizeFit(imgWidth, imgHeight, ctx->widget.rect.width - (widgetGetPadding().x * 2.0f + btnBodyElemState->border * 2.0f) * ctx->scale, ctx->widget.rect.height - (widgetGetPadding().y * 2.0f + btnBodyElemState->border * 2.0f) * ctx->scale, imgWidth, imgHeight, false, false);
 
 		ctx->renderer.cmdSetColor(tintApply(btnBodyElemState->color, TintColorType::Body));
 		ctx->renderer.cmdDrawImageBordered(btnBodyElemState->image, btnBodyElemState->border, ctx->widget.rect, ctx->scale);
@@ -116,7 +116,7 @@ static bool imageButtonInternal(HImage img, HImage disabledImg, f32 width, f32 h
 	return ctx->widget.clicked;
 }
 
-bool buttonImage(HImage img, f32 width, f32 height, HImage disabledImg, bool down)
+bool imageButton(HImage img, f32 width, f32 height, HImage disabledImg, bool down)
 {
 	auto& btnBodyElem = ctx->theme->getElement(WidgetElementId::ImageButtonBody);
 

@@ -1535,7 +1535,7 @@ bool windowDockInternal(Window* wnd, DockNode* targetNode, DockType dockType, u3
 
 		auto nativeWnd = createNativeWindow(wnd->title, NativeWindowFlags::Resizable, NativeWindowState::Normal, rcWnd);
 				
-		wnd->dockNode = createNativeWindowRootDockNode(nativeWnd);
+		wnd->dockNode = dockNodeCreateRoot(nativeWnd);
 		wnd->dockNode->createdByDockingSystem = true;
 		wnd->dockNode->windows.push_back(wnd);
 		wnd->clientRect = wnd->dockNode->rect;
@@ -1546,7 +1546,7 @@ bool windowDockInternal(Window* wnd, DockNode* targetNode, DockType dockType, u3
 		break;
 	}
 
-	windowFocus(wnd->id.c_str());
+	windowSetFocus(wnd->id.c_str());
 
 	for (auto& pair : ctx->docking.rootNativeWindowDockNodes)
 	{
@@ -1566,9 +1566,9 @@ void dockNodeTabs(DockNode* node)
 {
 	if (node->windows.size())
 	{
-		pushPadding(PaddingType::Layout, Point());
-		beginLayout(node->rect);
-		popPadding(PaddingType::Layout);
+		paddingPush(PaddingType::Layout, Point());
+		layoutBegin(node->rect);
+		paddingPop(PaddingType::Layout);
 		// pop the clip rect, we dont want clipping since draw tabs bar beyond the node rect width
 		auto oldClipRect = ctx->renderer.getClipRect();
 		ctx->renderer.popClipRect();
@@ -1592,7 +1592,7 @@ void dockNodeTabs(DockNode* node)
 		auto& rc = ctx->docking.rootNativeWindowDockNodes[node->nativeWindow]->rect;
 		ctx->renderer.pushClipRect(rc, false);
 		ctx->docking.currentDockNode = node;
-		beginTabGroup(node->selectedTabIndex);
+		tabGroupBegin(node->selectedTabIndex);
 
 		for (auto i = 0; i < node->windows.size(); i++)
 		{
@@ -1622,7 +1622,7 @@ void dockNodeTabs(DockNode* node)
 			}
 		}
 
-		selectedIndex = hui::endTabGroup();
+		selectedIndex = hui::tabGroupEnd();
 
 		ctx->renderer.popClipRect();
 		ctx->docking.drawingWindowTabs = false;
@@ -1664,7 +1664,7 @@ void dockNodeTabs(DockNode* node)
 
 		// just push the old clip rect so endContainer can pop it
 		ctx->renderer.pushClipRect(oldClipRect, false);
-		endLayout();
+		layoutEnd();
 	}
 
 	for (auto& child : node->children)
@@ -1762,7 +1762,7 @@ void handleDockingMouseDown(const InputEvent& event, DockNode* node)
 
 		if (wnd.second->clientRect.contains(mousePos) && wnd.second->dockNode->selectedTabIndex == wnd.second->dockNode->getWindowIndex(wnd.second))
 		{
-			windowFocus(wnd.second->id.c_str());
+			windowSetFocus(wnd.second->id.c_str());
 		}
 
 		// return if the widget is not visible, that is outside current clip rect
@@ -1776,7 +1776,7 @@ void handleDockingMouseDown(const InputEvent& event, DockNode* node)
 		if (clippedRect.contains(mousePos.x, mousePos.y))
 		{
 			ds.dragWindow = wnd.second;
-			windowFocus(wnd.second->id.c_str());
+			windowSetFocus(wnd.second->id.c_str());
 			ds.dragWindowMouseDelta = mousePos - ds.dragWindow->tabRect.topLeft();
 			break;
 		}
@@ -2444,7 +2444,7 @@ void handleDockingMouseMove(const InputEvent& event, DockNode* node)
 void dockNodeEventsHandle(DockNode* node)
 {
 	auto& rect = node->rect;
-	auto& event = hui::getInputEvent();
+	auto& event = hui::inputGetEvent();
 
 	//TODO: find current window index better
 	// find if the current window of the view pane had a layer index > 0
@@ -2551,25 +2551,25 @@ void drawDockPreview(Window* window, const Rect& windowRect)
 		auto tintColorStr = hui::themeGetUserSetting(ctx->theme, "dockPreviewNativeWindowsColorTint");
 
 		if (tintColorStr && strcmp(tintColorStr, ""))
-			tintColor = getColorFromText(tintColorStr);
+			tintColor = colorFromHex(tintColorStr);
 	}
 	else
 	{
 		auto tintColorStr = hui::themeGetUserSetting(ctx->theme, "dockPreviewInsideWindowsColorTint");
 
 		if (tintColorStr && strcmp(tintColorStr, ""))
-			tintColor = getColorFromText(tintColorStr);
+			tintColor = colorFromHex(tintColorStr);
 	}
 
 	ctx->renderer.cmdSetColor(windowElem.color * tintColor);
 	ctx->renderer.cmdDrawImageBordered(windowElem.image, windowElem.border, windowRect, ctx->scale);
-	pushPadding(PaddingType::Layout, Point());
-	beginLayout(windowRect);
-	popPadding(PaddingType::Layout);
-	beginTabGroup(0);
+	paddingPush(PaddingType::Layout, Point());
+	layoutBegin(windowRect);
+	paddingPop(PaddingType::Layout);
+	tabGroupBegin(0);
 	hui::tab(window->title.c_str(), window->image);
-	endTabGroup();
-	endLayout();
+	tabGroupEnd();
+	layoutEnd();
 	ctx->renderer.popClipRect();
 }
 

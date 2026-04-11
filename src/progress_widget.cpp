@@ -9,7 +9,7 @@ void progress(f32 value, f32 maxValue, bool showText, bool showRealValues, const
 {
 	auto& backElem = ctx->theme->getElement(WidgetElementId::ProgressBack);
 	auto& fillElem = ctx->theme->getElement(WidgetElementId::ProgressFill);
-	auto& padding = widgetPaddingGet();
+	auto& padding = widgetGetPadding();
 
 	if (ctx->sameLine.enabled && !ctx->widget.hasNextWidth)
 	{
