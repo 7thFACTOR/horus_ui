@@ -15,110 +15,108 @@
 ------------------------------------------------------------------------------
 */
 
-/// \file horus.h
-
-#ifdef HORUS_CUSTOM_CONFIG_FILE
-#include HORUS_CUSTOM_CONFIG_FILE
+#ifdef HUI_CUSTOM_CONFIG_FILE
+#include HUI_CUSTOM_CONFIG_FILE
 #endif
 
-#ifndef HORUS_NO_BASIC_TYPES
-#ifndef HORUS_NO_U8
+#ifndef HUI_NO_BASIC_TYPES
+#ifndef HUI_NO_U8
 typedef uint8_t u8;
 #endif
 
-#ifndef HORUS_NO_U16
+#ifndef HUI_NO_U16
 typedef uint16_t u16;
 #endif
 
-#ifndef HORUS_NO_U32
+#ifndef HUI_NO_U32
 typedef uint32_t u32;
 #endif
 
-#ifndef HORUS_NO_U64
+#ifndef HUI_NO_U64
 typedef uint64_t u64;
 #endif
 
-#ifndef HORUS_NO_U128
+#ifndef HUI_NO_U128
 typedef struct
 {
 	u64 data[2];
 } u128;
 #endif
 
-#ifndef HORUS_NO_I8
+#ifndef HUI_NO_I8
 typedef int8_t i8;
 #endif
 
-#ifndef HORUS_NO_I16
+#ifndef HUI_NO_I16
 typedef int16_t i16;
 #endif
 
-#ifndef HORUS_NO_I32
+#ifndef HUI_NO_I32
 typedef int32_t i32;
 #endif
 
-#ifndef HORUS_NO_I64
+#ifndef HUI_NO_I64
 typedef int64_t i64;
 #endif
 
-#ifndef HORUS_NO_I128
+#ifndef HUI_NO_I128
 typedef struct
 {
 	i64 data[2];
 } i128;
 #endif
 
-#ifndef HORUS_NO_F32
+#ifndef HUI_NO_F32
 typedef float f32;
 #endif
 
-#ifndef HORUS_NO_F64
+#ifndef HUI_NO_F64
 typedef double f64;
 #endif
 
 #endif
 
-#ifdef HORUS_STATIC
-	#define HORUS_API
-	#define HORUS_STRUCT_API
+#ifdef HUI_STATIC
+	#define HUI_API
+	#define HUI_STRUCT_API
 #else
 #ifdef _WINDOWS
-	#ifdef HORUS_EXPORT
-		#define HORUS_API extern "C++" __declspec(dllexport)
-		#define HORUS_STRUCT_API __declspec(dllexport)
+	#ifdef HUI_EXPORT
+		#define HUI_API extern "C++" __declspec(dllexport)
+		#define HUI_STRUCT_API __declspec(dllexport)
 	#else
-		#ifdef HORUS_IMPORT
-			#define HORUS_API extern "C++" __declspec(dllimport)
-			#define HORUS_STRUCT_API __declspec(dllimport)
+		#ifdef HUI_IMPORT
+			#define HUI_API extern "C++" __declspec(dllimport)
+			#define HUI_STRUCT_API __declspec(dllimport)
 		#else
-			#define HORUS_API
-			#define HORUS_STRUCT_API
+			#define HUI_API
+			#define HUI_STRUCT_API
 		#endif
 	#endif
 #else
-	#ifdef HORUS_EXPORT
-		#define HORUS_API __attribute__((dllexport))
-		#define HORUS_STRUCT_API __attribute__((dllexport))
+	#ifdef HUI_EXPORT
+		#define HUI_API __attribute__((dllexport))
+		#define HUI_STRUCT_API __attribute__((dllexport))
 	#else
-		#ifdef HORUS_IMPORT
-			#define HORUS_API __attribute__((dllimport))
-			#define HORUS_STRUCT_API __attribute__((dllimport))
+		#ifdef HUI_IMPORT
+			#define HUI_API __attribute__((dllimport))
+			#define HUI_STRUCT_API __attribute__((dllimport))
 		#else
-			#define HORUS_API
-			#define HORUS_STRUCT_API
+			#define HUI_API
+			#define HUI_STRUCT_API
 		#endif
 	#endif
 #endif
 #endif
 
-#define HUI_SERVICES hui::getSettings().services
+#define HUI_SERVICES hui::contextGetSettings().services
 
 namespace hui
 {
-#define HORUS_BIT(bit) (1<<bit)
-#define HORUS_ENUM_AS_FLAGS(T)\
-	HORUS_ENUM_AS_FLAGS_EX(T, u32)
-#define HORUS_ENUM_AS_FLAGS_EX(T, enumBasicType) \
+#define HUI_BIT(bit) (1<<bit)
+#define HUI_ENUM_AS_FLAGS(T)\
+	HUI_ENUM_AS_FLAGS_EX(T, u32)
+#define HUI_ENUM_AS_FLAGS_EX(T, enumBasicType) \
 inline T operator & (T x, T y) { return static_cast<T> (static_cast<enumBasicType>(x) & static_cast<enumBasicType>(y)); }; \
 inline T operator | (T x, T y) { return static_cast<T> (static_cast<enumBasicType>(x) | static_cast<enumBasicType>(y)); }; \
 inline T operator ^ (T x, T y) { return static_cast<T> (static_cast<enumBasicType>(x) ^ static_cast<enumBasicType>(y)); }; \
@@ -333,11 +331,11 @@ enum class MouseButton
 /// OS window flags
 enum class NativeWindowFlags : u32
 {
-	NoInput = HORUS_BIT(0),
-	NoDecoration = HORUS_BIT(1),
-	Resizable = HORUS_BIT(2)
+	NoInput = HUI_BIT(0),
+	NoDecoration = HUI_BIT(1),
+	Resizable = HUI_BIT(2)
 };
-HORUS_ENUM_AS_FLAGS(NativeWindowFlags);
+HUI_ENUM_AS_FLAGS(NativeWindowFlags);
 
 enum class NativeWindowState
 {
@@ -357,15 +355,15 @@ enum class FileSeekMode
 /// Window flags
 enum class WindowFlags : u32
 {
-	None = HORUS_BIT(0),
-	Transparent = HORUS_BIT(1),
-	CanClose = HORUS_BIT(2),
-	CanMove = HORUS_BIT(3),
-	CanResize = HORUS_BIT(4),
-	CanMinimize = HORUS_BIT(5),
-	Disabled = HORUS_BIT(6)
+	None = HUI_BIT(0),
+	Transparent = HUI_BIT(1),
+	CanClose = HUI_BIT(2),
+	CanMove = HUI_BIT(3),
+	CanResize = HUI_BIT(4),
+	CanMinimize = HUI_BIT(5),
+	Disabled = HUI_BIT(6)
 };
-HORUS_ENUM_AS_FLAGS(WindowFlags);
+HUI_ENUM_AS_FLAGS(WindowFlags);
 
 enum class DrawCmdLayerType : u32
 {
@@ -386,24 +384,24 @@ enum class ImageFitType
 /// Text input modes for the textInput widget
 enum class TextInputFlags : u32
 {
-	None = HORUS_BIT(0),
-	NumericOnly = HORUS_BIT(1),
-	HexOnly = HORUS_BIT(2),
-	Custom = HORUS_BIT(3),
-	AutoSelectAll = HORUS_BIT(4)
+	None = HUI_BIT(0),
+	NumericOnly = HUI_BIT(1),
+	HexOnly = HUI_BIT(2),
+	Custom = HUI_BIT(3),
+	AutoSelectAll = HUI_BIT(4)
 };
-HORUS_ENUM_AS_FLAGS(TextInputFlags);
+HUI_ENUM_AS_FLAGS(TextInputFlags);
 
 enum class MultilineTextInputFlags : u32
 {
-	None = HORUS_BIT(0),
-	SpacesOnTab = HORUS_BIT(1),
-	LineNumbers = HORUS_BIT(2),
-	AutoSelectAll = HORUS_BIT(3),
-	HighlightCurrentLine = HORUS_BIT(4),
-	WordWrap = HORUS_BIT(5)
+	None = HUI_BIT(0),
+	SpacesOnTab = HUI_BIT(1),
+	LineNumbers = HUI_BIT(2),
+	AutoSelectAll = HUI_BIT(3),
+	HighlightCurrentLine = HUI_BIT(4),
+	WordWrap = HUI_BIT(5)
 };
-HORUS_ENUM_AS_FLAGS(MultilineTextInputFlags);
+HUI_ENUM_AS_FLAGS(MultilineTextInputFlags);
 
 /// List selection mode
 enum class ListSelectionMode
@@ -415,50 +413,50 @@ enum class ListSelectionMode
 /// Various flags for the selectable widget
 enum class SelectableFlags : u32
 {
-	Normal = HORUS_BIT(0),
-	Checkable = HORUS_BIT(1),
-	Checked = HORUS_BIT(2),
-	Disabled = HORUS_BIT(3),
-	Selected = HORUS_BIT(4)
+	Normal = HUI_BIT(0),
+	Checkable = HUI_BIT(1),
+	Checked = HUI_BIT(2),
+	Disabled = HUI_BIT(3),
+	Selected = HUI_BIT(4)
 };
-HORUS_ENUM_AS_FLAGS(SelectableFlags);
+HUI_ENUM_AS_FLAGS(SelectableFlags);
 
 enum class TableFlags : u32
 {
 	None = 0,
 	// Layout / sizing
-	FixedFit = HORUS_BIT(0),
-	Stretch = HORUS_BIT(1),
-	FixedSize = HORUS_BIT(2), // New flag: Table stays at column width sum, doesn't expand to layout
-	Borders = HORUS_BIT(3),
-	BordersOuter = HORUS_BIT(4),
-	BordersInner = HORUS_BIT(5),
-	AltRowBg = HORUS_BIT(6),
-	ScrollX = HORUS_BIT(7),
-	Resizable = HORUS_BIT(8),
-	Reorderable = HORUS_BIT(9),
-	BordersV = HORUS_BIT(10),
-	BordersH = HORUS_BIT(11),
+	FixedFit = HUI_BIT(0),
+	Stretch = HUI_BIT(1),
+	FixedSize = HUI_BIT(2), // New flag: Table stays at column width sum, doesn't expand to layout
+	Borders = HUI_BIT(3),
+	BordersOuter = HUI_BIT(4),
+	BordersInner = HUI_BIT(5),
+	AltRowBg = HUI_BIT(6),
+	ScrollX = HUI_BIT(7),
+	Resizable = HUI_BIT(8),
+	Reorderable = HUI_BIT(9),
+	BordersV = HUI_BIT(10),
+	BordersH = HUI_BIT(11),
 };
-HORUS_ENUM_AS_FLAGS(TableFlags);
+HUI_ENUM_AS_FLAGS(TableFlags);
 
 enum class ScrollViewFlags : u32
 {
 	None = 0,
-	NoBorder = HORUS_BIT(0),
-	NoHorizontalScroll = HORUS_BIT(1),
-	NoPadding = HORUS_BIT(2),
+	NoBorder = HUI_BIT(0),
+	NoHorizontalScroll = HUI_BIT(1),
+	NoPadding = HUI_BIT(2),
 };
-HORUS_ENUM_AS_FLAGS(ScrollViewFlags);
+HUI_ENUM_AS_FLAGS(ScrollViewFlags);
 
 enum class TableColumnFlags : u32
 {
 	None = 0,
-	Fixed = HORUS_BIT(0), // Cannot be resized
-	FixedResize = HORUS_BIT(1), // Can be resized, but maintains fixed pixel width when other columns resize
-	Stretch = HORUS_BIT(2), // Resizes proportionally to fill available space
+	Fixed = HUI_BIT(0), // Cannot be resized
+	FixedResize = HUI_BIT(1), // Can be resized, but maintains fixed pixel width when other columns resize
+	Stretch = HUI_BIT(2), // Resizes proportionally to fill available space
 };
-HORUS_ENUM_AS_FLAGS(TableColumnFlags);
+HUI_ENUM_AS_FLAGS(TableColumnFlags);
 
 /// When pushTint is called, specifies what element is color tinted
 enum class TintColorType
@@ -604,12 +602,12 @@ enum class KeyCode
 enum class KeyModifiers : u32
 {
 	None = 0,
-	Shift = HORUS_BIT(0),
-	Control = HORUS_BIT(1),
-	Alt = HORUS_BIT(2),
-	CapsLock = HORUS_BIT(3)
+	Shift = HUI_BIT(0),
+	Control = HUI_BIT(1),
+	Alt = HUI_BIT(2),
+	CapsLock = HUI_BIT(3)
 };
-HORUS_ENUM_AS_FLAGS(KeyModifiers);
+HUI_ENUM_AS_FLAGS(KeyModifiers);
 
 enum class MouseCursorType
 {
@@ -690,46 +688,46 @@ enum class MessageBoxImage
 enum class MessageBoxButtons : u32
 {
 	None = 0,
-	Ok = HORUS_BIT(0),
-	Cancel = HORUS_BIT(1),
-	Yes = HORUS_BIT(2),
-	No = HORUS_BIT(3),
-	Retry = HORUS_BIT(4),
-	Abort = HORUS_BIT(5),
-	ClosedByEscape = HORUS_BIT(6), /// escape key closed the message box
+	Ok = HUI_BIT(0),
+	Cancel = HUI_BIT(1),
+	Yes = HUI_BIT(2),
+	No = HUI_BIT(3),
+	Retry = HUI_BIT(4),
+	Abort = HUI_BIT(5),
+	ClosedByEscape = HUI_BIT(6), /// escape key closed the message box
 	OkCancel = (u32)Ok | (u32)Cancel,
 	YesNo = (u32)Yes | (u32)No,
 	YesNoCancel = (u32)YesNo | (u32)Cancel
 };
-HORUS_ENUM_AS_FLAGS(MessageBoxButtons);
+HUI_ENUM_AS_FLAGS(MessageBoxButtons);
 
 enum class ContextMenuFlags
 {
 	None = 0
 };
-HORUS_ENUM_AS_FLAGS(ContextMenuFlags);
+HUI_ENUM_AS_FLAGS(ContextMenuFlags);
 
 enum class PopupFlags : u32
 {
 	None = 0,
-	FadeBackground = HORUS_BIT(1), /// fade the contents behind the popup when shown
-	Centered = HORUS_BIT(2), /// center the popup to the native window
-	BelowLastWidget = HORUS_BIT(3), /// position the popup below last widget
-	RightSideLastWidget = HORUS_BIT(4), /// position the popup on right side of the last widget
-	CustomPosition = HORUS_BIT(5), /// use custom popup position
-	SameLayer = HORUS_BIT(6), /// internal: don't increment layer index
-	TopMost = HORUS_BIT(7), /// set to have this popup top most
-	IsMenu = HORUS_BIT(8) /// internal, when this popup is a menu
+	FadeBackground = HUI_BIT(1), /// fade the contents behind the popup when shown
+	Centered = HUI_BIT(2), /// center the popup to the native window
+	BelowLastWidget = HUI_BIT(3), /// position the popup below last widget
+	RightSideLastWidget = HUI_BIT(4), /// position the popup on right side of the last widget
+	CustomPosition = HUI_BIT(5), /// use custom popup position
+	SameLayer = HUI_BIT(6), /// internal: don't increment layer index
+	TopMost = HUI_BIT(7), /// set to have this popup top most
+	IsMenu = HUI_BIT(8) /// internal, when this popup is a menu
 };
-HORUS_ENUM_AS_FLAGS(PopupFlags);
+HUI_ENUM_AS_FLAGS(PopupFlags);
 
 enum class ColorPickerFlags : u32
 {
-	NoAlpha = HORUS_BIT(0),
-	Hdr = HORUS_BIT(1),
-	Float = HORUS_BIT(2)
+	NoAlpha = HUI_BIT(0),
+	Hdr = HUI_BIT(1),
+	Float = HUI_BIT(2)
 };
-HORUS_ENUM_AS_FLAGS(ColorPickerFlags);
+HUI_ENUM_AS_FLAGS(ColorPickerFlags);
 
 /// A 2D point
 struct Point
@@ -1443,7 +1441,7 @@ struct InputEvent
 	HNativeWindow window = 0;
 };
 
-struct HORUS_STRUCT_API Color
+struct HUI_STRUCT_API Color
 {
 	Color() {}
 	Color(u32 color)
@@ -1748,8 +1746,8 @@ struct Services
 	// Input
 	void (*startTextInput)(HNativeWindow window, const Rect& imeRect) = nullptr;
 	void (*stopTextInput)() = nullptr;
-	bool (*clipboardCopy)(const char* text) = nullptr;
-	bool (*clipboardPaste)(char* outText, u32 maxTextSize) = nullptr;
+	bool (*clipboardSetText)(const char* text) = nullptr;
+	bool (*clipboardGetText)(char* outText, u32 maxTextSize) = nullptr;
 	void (*processWindowEvents)() = nullptr;
 	void (*setCurrentWindow)(HNativeWindow window) = nullptr;
 	HNativeWindow (*getCurrentWindow)() = nullptr;
@@ -1815,8 +1813,8 @@ struct Services
 		return
 			startTextInput != nullptr &&
 			stopTextInput != nullptr &&
-			clipboardCopy != nullptr &&
-			clipboardPaste != nullptr &&
+			clipboardSetText != nullptr &&
+			clipboardGetText != nullptr &&
 			processWindowEvents != nullptr &&
 			setCurrentWindow != nullptr &&
 			getCurrentWindow != nullptr &&
@@ -1938,100 +1936,100 @@ struct Settings
 /// Create a new context
 /// \param settings the startup context user defined settings
 /// \return the created context handle
-HORUS_API HContext contextCreate(const Settings& settings);
+HUI_API HContext contextCreate(const Settings& settings);
 
 /// Set the current context
 /// \param ctx the context
-HORUS_API void contextSet(HContext ctx);
+HUI_API void contextSet(HContext ctx);
 
 /// \return the current context
-HORUS_API HContext contextGet();
+HUI_API HContext contextGet();
 
 /// Delete a context
 /// \param ctx the context to be deleted
-HORUS_API void contextDestroy(HContext ctx);
+HUI_API void contextDestroy(HContext ctx);
 
 /// \return the context settings reference so you can read/modify them in realtime
-HORUS_API Settings& settingsGet();
+HUI_API Settings& contextGetSettings();
 
 /// Update the UI context, process input events, update animations, etc. This must be called once per frame, before frameBegin()
-HORUS_API void contextUpdate();
+HUI_API void contextUpdate();
 
 /// Begin a frame which means the rendering of UI across one or many windows. This must be called first when rendering UI
-HORUS_API void frameBegin();
+HUI_API void frameBegin();
 
 /// Ends an UI frame
-HORUS_API void frameEnd();
+HUI_API void frameEnd();
 
-HORUS_API void renderBegin();
-HORUS_API void renderEnd();
+HUI_API void renderBegin();
+HUI_API void renderEnd();
 
 /// Get the duration of the last UI frame in milliseconds
-HORUS_API f32 frameTimeGetLastMs();
+HUI_API f32 frameTimeGetLastMs();
 
 /// Get the peak (maximum) UI frame time in milliseconds since app start
-HORUS_API f32 frameTimeGetPeakMs();
+HUI_API f32 frameTimeGetPeakMs();
 
 /// Get the average UI frame time in milliseconds (rolling 60 frame window)
-HORUS_API f32 frameTimeGetAvgMs();
+HUI_API f32 frameTimeGetAvgMs();
 
 /// Add a render callback at the current UI command list position 
 /// A render callback is called when the UI is rendered, used to issue custom rendering commands
-HORUS_API void renderCallbackAdd(RenderCallback callback);
+HUI_API void renderCallbackAdd(RenderCallback callback);
 
 /// \return true if there is nothing to do in the UI (like redrawing or layout computations), used to not render continuously when its not needed, for applications that do not need realtime continuous rendering
-HORUS_API bool hasNothingToDo();
+HUI_API bool hasNothingToDo();
 
 /// This will disable rendering functions, used when only widget logic needs to be run, but no drawing, used mostly internally for layout computations
 /// \param disable if true, disable the rendering functions
-HORUS_API void skipRenderingThisFrame(bool disable);
+HUI_API void skipRenderingThisFrame(bool disable);
 
 /// Call this when you need to repaint the UI, due to data/layout changes
-HORUS_API void forceRepaint();
+HUI_API void forceRepaint();
 
 /// If called, rendering and input will be ignored until the frameEnd and the loop will redraw again, used mostly internally when layout is computed
-HORUS_API void skipFrame();
+HUI_API void skipFrame();
 
 /// Copy UTF8 text to the clipboard
 /// \param text the null ended UTF8 text
 /// \return true if text was copied to clipboard
-HORUS_API bool clipboardSetText(const char* text);
+HUI_API bool clipboardSetText(const char* text);
 
 /// Paste UTF8 from clipboard
 /// \param outText a pointer to a buffer where to store the text, provided by user
 /// \param maxTextSize the available text buffer size
 /// \return true if text was pasted
-HORUS_API bool clipboardGetText(char* outText, u32 maxTextSize);
+HUI_API bool clipboardGetText(char* outText, u32 maxTextSize);
 
 /// \return the current input event which was popped from the event queue
-HORUS_API const InputEvent& inputGetEvent();
+HUI_API const InputEvent& inputEventGet();
 
 /// Cancel the current event, after this function call the event will be null, so no widget/window will react
-HORUS_API void inputEventCancel();
+HUI_API void inputEventCancel();
 
 /// Add an input event to the queue, usually used by input providers to push events to event queue
-HORUS_API void inputEventAdd(const InputEvent& event);
+HUI_API void inputEventAdd(const InputEvent& event);
 
 /// Signal that the mouse was moved, used by input providers
-HORUS_API void inputSetMouseMoved(bool moved);
+HUI_API void inputSetMouseMoved(bool moved);
 
 /// \return the input event count in the event queue
-HORUS_API size_t inputEventGetCount();
+HUI_API size_t inputEventGetCount();
 
 /// \return the input event at the index
 /// \param index the event index (maximum is getInputEventCount())
-HORUS_API InputEvent inputEventGetAtIndex(size_t index);
+HUI_API InputEvent inputEventGetAtIndex(size_t index);
 
 /// Set the current input event, usually called by input providers
 /// \param event the event to be set
-HORUS_API void inputEventSet(const InputEvent& event);
+HUI_API void inputEventSet(const InputEvent& event);
 
 /// Clear the input event queue, usually called by input providers
-HORUS_API void inputEventClearQueue();
+HUI_API void inputEventClearQueue();
 
 /// Set the current mouse cursor type
 /// \param type the cursor type
-HORUS_API void mouseCursorSetType(MouseCursorType type);
+HUI_API void mouseCursorSetType(MouseCursorType type);
 
 /// Create a mouse cursor from a bitmap
 /// \param pixels the 32bit color bitmap, RGBA
@@ -2040,57 +2038,57 @@ HORUS_API void mouseCursorSetType(MouseCursorType type);
 /// \param hotSpotX the cursor pointer hot spot X coordinate, relative to the bitmap size
 /// \param hotSpotY the cursor pointer hot spot Y coordinate, relative to the bitmap size
 /// \return the created mouse cursor
-HORUS_API HMouseCursor mouseCursorCreate(Rgba32* pixels, u32 width, u32 height, u32 hotSpotX = 0, u32 hotSpotY = 0);
+HUI_API HMouseCursor mouseCursorCreate(Rgba32* pixels, u32 width, u32 height, u32 hotSpotX = 0, u32 hotSpotY = 0);
 
 /// Delete a custom mouse cursor
 /// \param cursor the cursor to be deleted
-HORUS_API void mouseCursorDestroy(HMouseCursor cursor);
+HUI_API void mouseCursorDestroy(HMouseCursor cursor);
 
 /// Set the current custom mouse cursor
 /// \param cursor the custom mouse cursor to be set
-HORUS_API void mouseCursorSet(HMouseCursor cursor);
+HUI_API void mouseCursorSet(HMouseCursor cursor);
 
 //////////////////////////////////////////////////////////////////////////
 // Windowing & docking functions
 //////////////////////////////////////////////////////////////////////////
 
-HORUS_API DockNodeId dockNodeCreateRoot(HNativeWindow nativeWnd);
-HORUS_API void dockNodeDeleteChildren(DockNodeId rootNodeId);
-HORUS_API void dockNodeSplit(DockNodeId nodeId, DockNodeSplitType splitType, f32 firstNodeSizeUnitPercent, DockNodeId* outNodeId1, DockNodeId* outNodeId2);
-HORUS_API void dockNodeSetWindow(DockNodeId parentNode, const char* windowId);
-HORUS_API void dockNodeLayoutRecalculate();
+HUI_API DockNodeId dockNodeCreateRoot(HNativeWindow nativeWnd);
+HUI_API void dockNodeDeleteChildren(DockNodeId rootNodeId);
+HUI_API void dockNodeSplit(DockNodeId nodeId, DockNodeSplitType splitType, f32 firstNodeSizeUnitPercent, DockNodeId* outNodeId1, DockNodeId* outNodeId2);
+HUI_API void dockNodeSetWindow(DockNodeId parentNode, const char* windowId);
+HUI_API void dockNodeLayoutRecalculate();
 
-HORUS_API bool windowBegin(const char* windowId, const char* title, Rect* initialRect, HImage img);
-HORUS_API void windowEnd();
-HORUS_API void windowSetVisible(const char* windowId, bool visible);
-HORUS_API void windowSetNextFlags(WindowFlags flags);
-HORUS_API void windowSetFocus(const char* windowId);
-HORUS_API void windowSetDockType(const char* windowId, const char* targetWindowId, DockType dockType);
-HORUS_API void windowUndock(const char* windowId, const Point& windowPos = Point());
-HORUS_API void nativeWindowSetCurrent(HNativeWindow nativeWnd);
-HORUS_API void windowDebugPrint();
-HORUS_API bool windowIsMouseOver();
-HORUS_API void windowSetCapture();
-HORUS_API void windowReleaseCapture();
+HUI_API bool windowBegin(const char* windowId, const char* title, Rect* initialRect, HImage img);
+HUI_API void windowEnd();
+HUI_API void windowSetVisible(const char* windowId, bool visible);
+HUI_API void windowSetNextFlags(WindowFlags flags);
+HUI_API void windowSetFocus(const char* windowId);
+HUI_API void windowSetDockType(const char* windowId, const char* targetWindowId, DockType dockType);
+HUI_API void windowUndock(const char* windowId, const Point& windowPos = Point());
+HUI_API void nativeWindowSetCurrent(HNativeWindow nativeWnd);
+HUI_API void windowDebugPrint();
+HUI_API bool windowIsMouseOver();
+HUI_API void windowSetCapture();
+HUI_API void windowReleaseCapture();
 /// \return the window client rect
-HORUS_API Rect windowGetClientRect();
+HUI_API Rect windowGetClientRect();
 /// \return the window client rect, used usually to render custom scenes
-HORUS_API Rect windowGetClientRectById(const char* windowId);
-HORUS_API void dockingStateSave(WindowsDockingState& dockingState);
-HORUS_API void dockingStateLoad(const WindowsDockingState& dockingState);
+HUI_API Rect windowGetClientRectById(const char* windowId);
+HUI_API void dockingStateSave(WindowsDockingState& dockingState);
+HUI_API void dockingStateLoad(const WindowsDockingState& dockingState);
 
 ///////////////////////////////////////////////////////////////////////////////
 // Application functions
 ///////////////////////////////////////////////////////////////////////////////
 
 /// Present the contents of the backbuffer for each OS native window, called after all rendering is done
-HORUS_API void presentBackbuffer();
+HUI_API void present();
 
 /// Present the contents of the backbuffer for a custom OS native window, called after all rendering is done
-HORUS_API void presentNativeWindow(HNativeWindow nativeWnd);
+HUI_API void presentNativeWindow(HNativeWindow nativeWnd);
 
 /// Shut down the library
-HORUS_API void shutdown();
+HUI_API void shutdown();
 
 //////////////////////////////////////////////////////////////////////////
 // Themes
@@ -2098,39 +2096,39 @@ HORUS_API void shutdown();
 
 /// Set the current theme
 /// \param theme the theme to be set as current
-HORUS_API void themeSet(HTheme theme);
+HUI_API void themeSet(HTheme theme);
 
 /// \return the current theme
-HORUS_API HTheme themeGet();
+HUI_API HTheme themeGet();
 
-HORUS_API ImageData themeGetAtlasImageData();
-HORUS_API void themeSetAtlasTexture(HTexture texture);
+HUI_API ImageData themeGetAtlasImageData();
+HUI_API void themeSetAtlasTexture(HTexture texture);
 
 /// Create a new theme
 /// \param atlasTextureSize the width and height of the atlas texture, where theme images are kept
 /// \return the newly created theme
-HORUS_API HTheme themeCreate(u32 atlasTextureSize);
+HUI_API HTheme themeCreate(u32 atlasTextureSize);
 /// Delete a theme
 /// \param theme the theme to be deleted, if this is the current theme it will be set to null
-HORUS_API void themeDestroy(HTheme theme);
-HORUS_API void themeSetUserSetting(HTheme theme, const char* name, const char* value);
-HORUS_API const char* themeGetUserSetting(HTheme theme, const char* name);
-HORUS_API HImage themeAddImage(HTheme theme, const char* id, const ImageData& imgData);
-HORUS_API HImage themeGetImage(HTheme theme, const char* id);
-HORUS_API void widgetSetStyle(WidgetType widgetType, const char* styleName);
-HORUS_API void widgetPushStyle(WidgetType widgetType, const char* styleName);
-HORUS_API void widgetPopStyle();
-HORUS_API void widgetSetElementStyle(WidgetElementId widgetElementId, const char* styleName);
-HORUS_API void widgetSetDefaultStyle(WidgetType widgetType);
-HORUS_API void widgetSetDefaultElementStyle(WidgetElementId widgetElementId);
-HORUS_API void widgetSetUserElementStyle(const char* elementName, const char* styleName);
+HUI_API void themeDestroy(HTheme theme);
+HUI_API void themeSetUserSetting(HTheme theme, const char* name, const char* value);
+HUI_API const char* themeGetUserSetting(HTheme theme, const char* name);
+HUI_API HImage themeAddImage(HTheme theme, const char* id, const ImageData& imgData);
+HUI_API HImage themeGetImage(HTheme theme, const char* id);
+HUI_API void widgetSetStyle(WidgetType widgetType, const char* styleName);
+HUI_API void widgetPushStyle(WidgetType widgetType, const char* styleName);
+HUI_API void widgetPopStyle();
+HUI_API void widgetSetElementStyle(WidgetElementId widgetElementId, const char* styleName);
+HUI_API void widgetSetDefaultStyle(WidgetType widgetType);
+HUI_API void widgetSetDefaultElementStyle(WidgetElementId widgetElementId);
+HUI_API void widgetSetUserElementStyle(const char* elementName, const char* styleName);
 
 /// Set a theme's widget element info
 /// \param theme the theme of the widget element
 /// \param elementId the element to be set
 /// \param widgetStateType which state to be set
 /// \param elementInfo the element info to be set
-HORUS_API void themeSetWidgetElement(
+HUI_API void themeSetWidgetElement(
 	HTheme theme,
 	WidgetElementId elementId,
 	WidgetStateType widgetStateType,
@@ -2146,7 +2144,7 @@ void themeBuild(HTheme theme);
 /// \param userElementName the element name
 /// \param widgetStateType which state to be set
 /// \param elementInfo the element info to be set
-HORUS_API void themeSetUserWidgetElement(
+HUI_API void themeSetUserWidgetElement(
 	HTheme theme,
 	const char* userElementName,
 	WidgetStateType widgetStateType,
@@ -2157,16 +2155,16 @@ HORUS_API void themeSetUserWidgetElement(
 /// \param elementId the widget element id
 /// \param state the element state
 /// \param outInfo returned element info
-HORUS_API void themeGetWidgetElementInfo(WidgetElementId elementId, WidgetStateType state, WidgetElementInfo& outInfo, const char* styleName = "default");
-HORUS_API void themeGetUserWidgetElementInfo(const char* userElementName, WidgetStateType state, WidgetElementInfo& outInfo, const char* styleName = "default");
-HORUS_API void themeSetWidgetElementParameter(HTheme theme, WidgetElementId elementId, const char* styleName, const char* paramName, const char* paramValue);
-HORUS_API const char* themeGetWidgetElementParameterString(HTheme theme, WidgetElementId elementId, const char* styleName, const char* paramName, const char* defaultValue = "");
-HORUS_API f32 themeGetWidgetElementParameterFloat(HTheme theme, WidgetElementId elementId, const char* styleName, const char* paramName, f32 defaultValue = 0.0f);
-HORUS_API const Color& themeGetWidgetElementParameterColor(HTheme theme, WidgetElementId elementId, const char* styleName, const char* paramName, const Color& defaultValue = Color());
-HORUS_API void themeSetUserWidgetElementParameter(HTheme theme, const char* userElementName, const char* styleName, const char* paramName, const char* paramValue);
-HORUS_API const char* themeGetUserWidgetElementParameterString(HTheme theme, const char* userElementName, const char* styleName, const char* paramName, const char* defaultValue = "");
-HORUS_API f32 themeGetUserWidgetElementParameterFloat(HTheme theme, const char* userElementName, const char* styleName, const char* paramName, f32 defaultValue = 0.0f);
-HORUS_API const Color& themeGetUserWidgetElementParameterColor(HTheme theme, const char* userElementName, const char* styleName, const char* paramName, const Color& defaultValue = Color());
+HUI_API void themeGetWidgetElementInfo(WidgetElementId elementId, WidgetStateType state, WidgetElementInfo& outInfo, const char* styleName = "default");
+HUI_API void themeGetUserWidgetElementInfo(const char* userElementName, WidgetStateType state, WidgetElementInfo& outInfo, const char* styleName = "default");
+HUI_API void themeSetWidgetElementParameter(HTheme theme, WidgetElementId elementId, const char* styleName, const char* paramName, const char* paramValue);
+HUI_API const char* themeGetWidgetElementParameterString(HTheme theme, WidgetElementId elementId, const char* styleName, const char* paramName, const char* defaultValue = "");
+HUI_API f32 themeGetWidgetElementParameterFloat(HTheme theme, WidgetElementId elementId, const char* styleName, const char* paramName, f32 defaultValue = 0.0f);
+HUI_API const Color& themeGetWidgetElementParameterColor(HTheme theme, WidgetElementId elementId, const char* styleName, const char* paramName, const Color& defaultValue = Color());
+HUI_API void themeSetUserWidgetElementParameter(HTheme theme, const char* userElementName, const char* styleName, const char* paramName, const char* paramValue);
+HUI_API const char* themeGetUserWidgetElementParameterString(HTheme theme, const char* userElementName, const char* styleName, const char* paramName, const char* defaultValue = "");
+HUI_API f32 themeGetUserWidgetElementParameterFloat(HTheme theme, const char* userElementName, const char* styleName, const char* paramName, f32 defaultValue = 0.0f);
+HUI_API const Color& themeGetUserWidgetElementParameterColor(HTheme theme, const char* userElementName, const char* styleName, const char* paramName, const Color& defaultValue = Color());
 
 /// Create a new font object
 /// \param theme the theme where to place the font
@@ -2174,148 +2172,148 @@ HORUS_API const Color& themeGetUserWidgetElementParameterColor(HTheme theme, con
 /// \param fontFilename the TTF/OTF font filename, relative to executable
 /// \param faceSize the font face size in font units
 /// \return the newly created font handle
-HORUS_API HFont themeFontCreate(HTheme theme, const char* name, const char* fontFilename, u32 faceSize);
+HUI_API HFont themeFontCreate(HTheme theme, const char* name, const char* fontFilename, u32 faceSize);
 
 /// Release font reference, if font usage is zero, the font is deleted
 /// \param font the font to be reference released
-HORUS_API void themeFontDestroy(HTheme theme, HFont font);
+HUI_API void themeFontDestroy(HTheme theme, HFont font);
 
 /// \return the font by name, from the current theme
 /// \param themeFontName the name of the font as it is in the theme
-HORUS_API HFont themeGetFont(const char* themeFontName);
+HUI_API HFont themeFontGet(const char* themeFontName);
 
 /// \return the font by name, from the specified theme
-HORUS_API HFont themeFontGetFromTheme(HTheme theme, const char* themeFontName);
+HUI_API HFont themeFontGetFromTheme(HTheme theme, const char* themeFontName);
 
 //////////////////////////////////////////////////////////////////////////
 // Layouts
 //////////////////////////////////////////////////////////////////////////
 
 /// Begin a layout area, an invisible rectangle on the current window area where widgets will be laid out
-HORUS_API void layoutBegin(const Rect& rect);
-HORUS_API void layoutEnd();
-HORUS_API void layoutPush();
-HORUS_API void layoutPop();
-HORUS_API void idPush(const char* id);
-HORUS_API void idPush(u32 id);
-HORUS_API void idPush(void* id);
-HORUS_API void idPop();
+HUI_API void layoutBegin(const Rect& rect);
+HUI_API void layoutEnd();
+HUI_API void layoutPush();
+HUI_API void layoutPop();
+HUI_API void idPush(const char* id);
+HUI_API void idPush(u32 id);
+HUI_API void idPush(void* id);
+HUI_API void idPop();
 
-HORUS_API bool tableBegin(const char* id, u32 columnCount, f32 height = -1, TableFlags flags = TableFlags::None);
-HORUS_API void tableEnd();
-HORUS_API void tableHeaderBegin();
-HORUS_API void tableColumnSetup(u32 columnIndex, f32 size, TableColumnFlags flags = TableColumnFlags::None);
-HORUS_API void tableRowNext();
-HORUS_API void tableCellNext();
-HORUS_API Rect tableGetCellRect();
-HORUS_API void tableRowSetColor(const Color& color);
-HORUS_API void tableCellSetColor(const Color& color);
-HORUS_API void tableCellPaddingPush(f32 paddingX, f32 paddingY);
-HORUS_API void tableCellPaddingPop();
+HUI_API bool tableBegin(const char* id, u32 columnCount, f32 height = -1, TableFlags flags = TableFlags::None);
+HUI_API void tableEnd();
+HUI_API void tableStartHeader();
+HUI_API void tableColumnSetup(u32 columnIndex, f32 size, TableColumnFlags flags = TableColumnFlags::None);
+HUI_API void tableRowNext();
+HUI_API void tableRowSetColor(const Color& color);
+HUI_API void tableCellNext();
+HUI_API Rect tableCellGetRect();
+HUI_API void tableCellSetColor(const Color& color);
+HUI_API void tableCellPaddingPush(f32 paddingX, f32 paddingY);
+HUI_API void tableCellPaddingPop();
 
 /// Get the remaining height in the current layout from current position to bottom
-HORUS_API f32 layoutGetRemainingHeight();
+HUI_API f32 layoutGetRemainingHeight();
 
 /// Get the remaining width in the current layout from current position to right edge
-HORUS_API f32 layoutGetRemainingWidth();
+HUI_API f32 layoutGetRemainingWidth();
 
 /// Begin a scroll view area widget
 /// \param height the height of the scroll area
 /// \param scrollPosition the current scroll position (given by endScrollView)
 /// \param virtualHeight the virtual inside scroll height, if its zero then its automatically calculated from the child widgets inside this area
-HORUS_API void scrollViewBegin(const char* id, f32 height, f32 scrollPosition, f32 virtualHeight, ScrollViewFlags flags);
+HUI_API void scrollViewBegin(const char* id, f32 height, f32 scrollPosition, f32 virtualHeight, ScrollViewFlags flags);
 void scrollViewBegin(const char* id, f32 size, f32 scrollPos);
 void scrollViewBegin(const char* id, f32 size, f32 scrollPos, f32 virtualHeight);
 void scrollViewBegin(const char* id, f32 height, Point scrollOffset, Point virtualSize, ScrollViewFlags flags);
 
 /// Ends a scroll view area widget
 /// \return the current scroll position (offset)
-HORUS_API Point scrollViewEnd();
+HUI_API Point scrollViewEnd();
 
 /// Begin a virtual list content area, used for many items, inside the beginScrollView/endScrollView
 /// \param totalRowCount the number of rows
 /// \param itemHeight the height of one item
 /// \param scrollPosition the current scroll offset of the scroll view widget
-HORUS_API void virtualListBegin(u32 totalRowCount, f32 itemHeight, f32 scrollPosition);
+HUI_API void virtualListContentBegin(u32 totalRowCount, f32 itemHeight, f32 scrollPosition);
 
 /// Begin a virtual list content area, used for many items, inside the beginScrollView/endScrollView
 /// \param info the virtual scroll information
-HORUS_API void virtualListBegin(VirtualScrollInfo& info);
+HUI_API void virtualListContentBegin(VirtualScrollInfo& info);
 
 /// End a virtual list content area
-HORUS_API void virtualListEnd();
+HUI_API void virtualListContentEnd();
 
 /// Push the old padding and set a new one, padding is the left and right side horizontal spacing for widgets
 /// \param newPadding the new horizontal padding value
-HORUS_API void paddingPush(PaddingType type, const Point& newPadding);
-HORUS_API void widgetPaddingPush(const Point& newPadding);
+HUI_API void paddingPush(PaddingType type, const Point& newPadding);
+HUI_API void widgetPaddingPush(const Point& newPadding);
 
 /// Pop the previous padding value from stack and set it as current
-HORUS_API void paddingPop(PaddingType type);
-HORUS_API void widgetPaddingPop();
+HUI_API void paddingPop(PaddingType type);
+HUI_API void widgetPaddingPop();
 
 /// \return the current vertical spacing value
-HORUS_API f32 spacingGet();
+HUI_API f32 spacingGet();
 
 /// \return the current horizontal left and right side padding value
-HORUS_API const Point& paddingGet(PaddingType type);
+HUI_API const Point& paddingGet(PaddingType type);
 
 /// Begin a same-line group where all widgets get equal width from available layout width
 /// \param widgetCount the number of widgets that will be in this group
-HORUS_API void sameLineGroupBegin(u32 widgetCount);
+HUI_API void sameLineGroupBegin(u32 widgetCount);
 
 /// Move to the next widget position in the same-line group
-HORUS_API void sameLineGroupNext();
+HUI_API void sameLineGroupNext();
 
 /// End the same-line group
-HORUS_API void sameLineGroupEnd();
+HUI_API void sameLineGroupEnd();
 
 // Handy version to get widget padding
-HORUS_API const Point& widgetGetPadding();
+HUI_API const Point& widgetGetPadding();
 
 /// Push the old spacing value to stack and set a new spacing value, spacing is the vertical space between widgets
 /// \param newSpacing the new vertical spacing value
-HORUS_API void spacingPush(f32 newSpacing);
+HUI_API void spacingPush(f32 newSpacing);
 
 /// Pop old spacing value from stack and set it as current
-HORUS_API void spacingPop();
+HUI_API void spacingPop();
 
 /// Set the global UI scale, this will scale all the elements from widgets to text
 /// \param scale a value, use with consideration, will regenerate font atlas, slow
-HORUS_API void scaleSet(f32 scale);
+HUI_API void scaleSet(f32 scale);
 
 /// \return the current global UI scale
-HORUS_API f32 scaleGet();
+HUI_API f32 scaleGet();
 
 /// Push and set a new tinting color on stack, to colorize the next widget on specific parts
 /// \param color the tint color
 /// \param type what elements of the widget to tint
-HORUS_API void tintPush(const Color& color, TintColorType type = TintColorType::All, TintColorOpType opType = TintColorOpType::Multiply);
+HUI_API void tintPush(const Color& color, TintColorType type = TintColorType::All, TintColorOpType opType = TintColorOpType::Multiply);
 
 /// Pop the old tint color from stack
-HORUS_API void tintPop();
+HUI_API void tintPop();
 
-HORUS_API Color tintApply(const Color& originalColor, TintColorType type);
+HUI_API Color tintApply(const Color& originalColor, TintColorType type);
 
 /// Draw a delayed tooltip widget near the previous widget
 /// \param text the label of the tooltip
 /// \return true if the tooltip is visible now
-HORUS_API bool tooltip(const char* text);
+HUI_API bool tooltip(const char* text);
 
 /// Begin drawing a custom tooltip (delayed), which contains other widgets like image and labels etc.
 /// \param width the tooltip width
 /// \return true if the tooltip is visible now
-HORUS_API bool customTooltipBegin(f32 width);
+HUI_API bool customTooltipBegin(f32 width);
 
 /// End drawing a custom tooltip
-HORUS_API void customTooltipEnd();
+HUI_API void customTooltipEnd();
 
 /// Begin draw a box, which may contain other widgets
 /// \param color the box tint color
 /// \param widgetElementId the widget element id image to use when drawing the box
 /// \param state the widget element state to draw with
 /// \param customHeight a forced custom height, otherwise auto calculated from the total height the child widgets have
-HORUS_API void boxBegin(
+HUI_API void boxBegin(
 	const char* id,
 	const Color& tintColor,
 	WidgetElementId widgetElementId = WidgetElementId::BoxBody,
@@ -2327,7 +2325,7 @@ HORUS_API void boxBegin(
 /// \param userElementName the user widget element name whose image to use when drawing the box
 /// \param state the widget element state to draw with
 /// \param customHeight a forced custom height, otherwise auto calculated from the total height the child widgets have
-HORUS_API void boxBeginUserElement(
+HUI_API void boxBeginUserElement(
 	const char* id,
 	const Color& tintColor,
 	const char* userElementName,
@@ -2335,14 +2333,14 @@ HORUS_API void boxBeginUserElement(
 	f32 customHeight = 0.0f);
 
 /// End the box layout
-HORUS_API bool boxEnd();
+HUI_API bool boxEnd();
 
 /// Begin drawing a modal popup widget on top of all other popups or widgets
 /// \param width the width of the popup
 /// \param flags the popup flags
 /// \param position when custom position, this is the window coordinates of the popup
 /// \param widgetElementId will use this element's theme to draw the popup body
-HORUS_API void popupBegin(
+HUI_API void popupBegin(
 	const char* id,
 	f32 width,
 	PopupFlags flags = PopupFlags::BelowLastWidget,
@@ -2350,22 +2348,22 @@ HORUS_API void popupBegin(
 	WidgetElementId widgetElementId = WidgetElementId::PopupBody);
 
 /// End a popup widget
-HORUS_API void popupEnd();
+HUI_API void popupEnd();
 
 /// Close the current popup, used inside begin/endPopup
-HORUS_API void popupClose();
+HUI_API void popupClose();
 
 /// \return true if the popup must be closed, due to user input, used inside begin/endPopup
-HORUS_API bool popupMustClose();
+HUI_API bool popupMustClose();
 
 /// \return true if the user clicked outside popup's rect, used inside begin/end popup
-HORUS_API bool popupClickedOutside();
+HUI_API bool popupClickedOutside();
 
 /// \return true if mouse is outside popup's rect, used inside begin/end popup
-HORUS_API bool popupMouseOutside();
+HUI_API bool popupMouseOutside();
 
 /// \return true if the user pressed escape while current popup is active, used inside begin/endPopup
-HORUS_API bool popupPressedEscape();
+HUI_API bool popupPressedEscape();
 
 /// Draw a message box popup
 /// \param title the message box title
@@ -2375,7 +2373,7 @@ HORUS_API bool popupPressedEscape();
 /// \param width the width of the message box
 /// \param customImg the custom image, if set in the image param
 /// \return the pushed button in the message box
-HORUS_API MessageBoxButtons messageBox(
+HUI_API MessageBoxButtons messageBox(
 	const char* title,
 	const char* message,
 	MessageBoxButtons buttons = MessageBoxButtons::Ok,
@@ -2384,22 +2382,22 @@ HORUS_API MessageBoxButtons messageBox(
 	HImage customImg = 0);
 
 /// Set the next widget as disabled or not
-HORUS_API void widgetSetNextDisabled();
+HUI_API void widgetSetNextDisabled();
 
 /// Set next widget as focused
-HORUS_API void widgetSetNextFocused();
+HUI_API void widgetSetNextFocused();
 
 /// Draw a button widget
 /// \param label the button text
 /// \return true if button was pressed
-HORUS_API bool button(const char* label);
+HUI_API bool button(const char* label);
 
 /// Draw a button with an image on it
 /// \param img the image
 /// \param height the button height, if zero then it takes the image's height
 /// \param down if true the button is in the pressed state
 /// \return true if the button was pressed
-HORUS_API bool imageButton(HImage img, f32 width, f32 height, HImage disabledImg = 0, bool down = false);
+HUI_API bool imageButton(HImage img, f32 width, f32 height, HImage disabledImg = 0, bool down = false);
 
 /// Draw a text input widget
 /// \param text the text to be edited, provided by user
@@ -2408,10 +2406,10 @@ HORUS_API bool imageButton(HImage img, f32 width, f32 height, HImage disabledImg
 /// \param defaultText the grayed default text when there is no text value
 /// \param img the image drawn in the widget
 /// \return true if the text was modified
-HORUS_API bool textInput(const char* id, char* text, u32 maxTextSize, TextInputFlags flags = TextInputFlags::None, const char* defaultText = nullptr, HImage img = 0, bool password = false, const char* passwordChar = "\95");
+HUI_API bool textInput(const char* id, char* text, u32 maxTextSize, TextInputFlags flags = TextInputFlags::None, const char* defaultText = nullptr, HImage img = 0, bool password = false, const char* passwordChar = "\95");
 
 /// Multi-line text input widget. Enter key creates a new line instead of submitting.
-HORUS_API bool textInputMultiline(const char* id, char* text, u32 maxTextSize, u32 visibleLines = 10, MultilineTextInputFlags flags = MultilineTextInputFlags::None, const KeywordInfo* keywords = nullptr, u32 keywordCount = 0, const RangeHighlight* rangeHighlights = nullptr, u32 rangeHighlightCount = 0);
+HUI_API bool textInputMultiline(const char* id, char* text, u32 maxTextSize, u32 visibleLines = 10, MultilineTextInputFlags flags = MultilineTextInputFlags::None, const KeywordInfo* keywords = nullptr, u32 keywordCount = 0, const RangeHighlight* rangeHighlights = nullptr, u32 rangeHighlightCount = 0);
 
 /// Draw an integer number slider widget
 /// \param minVal the minimum value
@@ -2420,7 +2418,7 @@ HORUS_API bool textInputMultiline(const char* id, char* text, u32 maxTextSize, u
 /// \param useStep use stepping when moving slider
 /// \param step if useStep is true, then this is the step size
 /// \return true if value was modified
-HORUS_API bool sliderInt(const char* id, i32 minVal, i32 maxVal, i32& value, bool useStep = false, i32 step = 0);
+HUI_API bool sliderInt(const char* id, i32 minVal, i32 maxVal, i32& value, bool useStep = false, i32 step = 0);
 
 /// Draw a float number slider widget
 /// \param minVal the minimum value
@@ -2429,13 +2427,13 @@ HORUS_API bool sliderInt(const char* id, i32 minVal, i32 maxVal, i32& value, boo
 /// \param useStep use stepping when moving slider
 /// \param step if useStep is true, then this is the step size
 /// \return true if value was modified
-HORUS_API bool sliderFloat(const char* id, f32 minVal, f32 maxVal, f32& value, bool useStep = false, f32 step = 0);
+HUI_API bool sliderFloat(const char* id, f32 minVal, f32 maxVal, f32& value, bool useStep = false, f32 step = 0);
 
-HORUS_API bool comboSliderInt(i32* value, f32 stepsPerPixel = 1.0f, i32 arrowStep = 1, const char* formatStr = nullptr);
-HORUS_API bool comboSliderIntRanged(i32* value, i32 minVal, i32 maxVal, f32 stepsPerPixel = 1, i32 arrowStep = 1.0f, const char* formatStr = nullptr);
-HORUS_API bool comboSliderFloat(f32* value, f32 stepsPerPixel = 1.0f, f32 arrowStep = 1.0f, const char* formatStr = nullptr);
-HORUS_API bool comboSliderFloatRanged(f32* value, f32 minVal, f32 maxVal, f32 stepsPerPixel = 1.0f, f32 arrowStep = 1.0f, const char* formatStr = nullptr);
-HORUS_API bool rotarySliderFloat(const char* label, f32* value, f32 minVal, f32 maxVal, f32 step, bool twoSide = false, f32 fineStepDivideFactor = 10.f);
+HUI_API bool comboSliderInt(i32* value, f32 stepsPerPixel = 1.0f, i32 arrowStep = 1, const char* formatStr = nullptr);
+HUI_API bool comboSliderIntRanged(i32* value, i32 minVal, i32 maxVal, f32 stepsPerPixel = 1, i32 arrowStep = 1.0f, const char* formatStr = nullptr);
+HUI_API bool comboSliderFloat(f32* value, f32 stepsPerPixel = 1.0f, f32 arrowStep = 1.0f, const char* formatStr = nullptr);
+HUI_API bool comboSliderFloatRanged(f32* value, f32 minVal, f32 maxVal, f32 stepsPerPixel = 1.0f, f32 arrowStep = 1.0f, const char* formatStr = nullptr);
+HUI_API bool rotarySliderFloat(const char* label, f32* value, f32 minVal, f32 maxVal, f32 step, bool twoSide = false, f32 fineStepDivideFactor = 10.f);
 
 /// Draw a image widget
 /// \param image the image to draw
@@ -2444,56 +2442,56 @@ HORUS_API bool rotarySliderFloat(const char* label, f32* value, f32 minVal, f32 
 /// \param verticalAlign the vertical image align mode
 /// \param fit how the image is fitted in the rectangle, resize mode
 /// \return true if it was clicked on
-HORUS_API bool image(HImage image, f32 height = 0, HAlignType horizontalAlign = HAlignType::Center, VAlignType verticalAlign = VAlignType::Center, ImageFitType fit = ImageFitType::KeepAspect);
+HUI_API bool image(HImage image, f32 height = 0, HAlignType horizontalAlign = HAlignType::Center, VAlignType verticalAlign = VAlignType::Center, ImageFitType fit = ImageFitType::KeepAspect);
 
 /// Draw a progress bar widget
 /// \param value the progress as a percentage
-HORUS_API void progress(f32 value, f32 maxValue = 0.0f, bool showText = false, bool showRealValues = true, const char* indeterminateText = nullptr);
+HUI_API void progress(f32 value, f32 maxValue = 0.0f, bool showText = false, bool showRealValues = true, const char* indeterminateText = nullptr);
 
 /// Draw a check box widget
 /// \param label the check's label
 /// \param checked true if it has check mark on
 /// \return true if it was changed, result put in checked
-HORUS_API bool check(const char* label, bool* checkVar);
+HUI_API bool check(const char* label, bool* checkVar);
 
 /// Draw a radio box widget
 /// \param label the radio's label
 /// \param currentRadioValue location of the current value of the radio group
 /// \param thisValue the value of this radio button
 /// \return true if it was changed, result put in checked
-HORUS_API bool radio(const char* label, i32* currentRadioValue, i32 thisValue);
+HUI_API bool radio(const char* label, i32* currentRadioValue, i32 thisValue);
 
 /// Draw a label text widget
 /// \param label the label's text
 /// \param horizontalAlign the text align mode horizontally in the current layout rectangle
 /// \return true if it was clicked on
-HORUS_API bool label(const char* label, HAlignType horizontalAlign = HAlignType::Left);
+HUI_API bool label(const char* label, HAlignType horizontalAlign = HAlignType::Left);
 
 /// Draw a label text widget with a custom font
 /// \param label the label's text
 /// \param font the label's font
 /// \param horizontalAlign the text align mode horizontally in the current layout rectangle
 /// \return true if it was clicked on
-HORUS_API bool labelCustomFont(const char* label, HFont font, HAlignType horizontalAlign = HAlignType::Left);
+HUI_API bool labelCustomFont(const char* label, HFont font, HAlignType horizontalAlign = HAlignType::Left);
 
 /// Draw a multiline label text widget (involves more logic than a single lined label)
 /// \param label the label's text
 /// \param horizontalAlign the text align mode horizontally in the current layout rectangle
 /// \return true if it was clicked on
-HORUS_API bool labelMultiline(const char* label, HAlignType horizontalAlign);
+HUI_API bool labelMultiline(const char* label, HAlignType horizontalAlign);
 
 /// Draw a multiline label text widget with a custom font (involves more logic than a single lined label)
 /// \param label the label's text
 /// \param font the label's font
 /// \param horizontalAlign the text align mode horizontally in the current layout rectangle
 /// \return true if it was clicked on
-HORUS_API bool labelCustomFontMultiline(const char* label, HFont font, HAlignType horizontalAlign = HAlignType::Left);
+HUI_API bool labelCustomFontMultiline(const char* label, HFont font, HAlignType horizontalAlign = HAlignType::Left);
 
 /// Draw a expandable panel widget
 /// \param label the text of the panel
 /// \param expandedVar keeps true if the panel is expanded
 /// \return true if the panel state changed
-HORUS_API bool expandable(const char* label, bool* expandedVar = nullptr);
+HUI_API bool expandable(const char* label, bool* expandedVar = nullptr);
 
 /// Draw a dropdown widget
 /// \param selectedIndex the current selected item index
@@ -2501,75 +2499,75 @@ HORUS_API bool expandable(const char* label, bool* expandedVar = nullptr);
 /// \param itemCount the number of items in the list
 /// \param maxVisibleDropDownItems the maximum number of visible items in the drop down list, if ~0 then its automatic
 /// \return true if it the selection changed
-HORUS_API bool dropdown(const char* id, i32& selectedIndex, const char** items, u32 itemCount, u32 maxVisibleDropDownItems = ~0);
+HUI_API bool dropdown(const char* id, i32& selectedIndex, const char** items, u32 itemCount, u32 maxVisibleDropDownItems = ~0);
 
-HORUS_API bool list(const char* id, bool* selectedItems, ListSelectionMode selectionType, const char** items, u32 itemCount, f32 height = 200.0f);
+HUI_API bool list(const char* id, bool* selectedItems, ListSelectionMode selectionType, const char** items, u32 itemCount, f32 height = 200.0f);
 
 /// Draw a selectable label
 /// \param label the selectable's text
 /// \param stateFlags the state of the selectable widget
 /// \return true if it is selected
-HORUS_API bool selectable(const char* label, SelectableFlags stateFlags = SelectableFlags::Normal);
+HUI_API bool selectable(const char* label, SelectableFlags stateFlags = SelectableFlags::Normal);
 
 /// Draw a selectable label with custom font
 /// \param label the selectable's text
 /// \param font the label's text font
 /// \param stateFlags the state of the selectable widget
 /// \return true if it is selected
-HORUS_API bool selectableCustomFont(const char* label, HFont font, SelectableFlags stateFlags = SelectableFlags::Normal);
+HUI_API bool selectableCustomFont(const char* label, HFont font, SelectableFlags stateFlags = SelectableFlags::Normal);
 
 //////////////////////////////////////////////////////////////////////////
 // Separators
 //////////////////////////////////////////////////////////////////////////
 
 /// Draw a horizontal line widget
-HORUS_API void line();
+HUI_API void line();
 
 /// Leave a normal space between previous widget and next one
-HORUS_API void space(f32 customSpacing = 0.0f);
+HUI_API void space(f32 customSpacing = 0.0f);
 
 /// Make the next widget appear on the same line as the previous widget (Dear ImGui style)
 /// Call this after a widget to position the next widget horizontally
 /// After each widget, same-line mode automatically ends, so you must call sameLine() again for each subsequent widget
 /// \param offsetX optional additional horizontal offset
 /// \param spacing optional spacing between widgets, if 0 uses default spacing
-HORUS_API void sameLine(f32 offsetX = 0.0f, f32 spacing = 0.0f);
+HUI_API void sameLine(f32 offsetX = 0.0f, f32 spacing = 0.0f);
 
-HORUS_API void widgetSetNextWidth(f32 width);
+HUI_API void widgetSetNextWidth(f32 width);
 
 /// Begin a custom user viewport area
 /// \param height the height of the viewport, if zero, it will take the entire remaining container height
 /// \return the rectangle in window coordinates of the actual viewport area, use this to draw your custom things in
-HORUS_API Rect viewportBegin(const char* id, f32 height = 0);
+HUI_API Rect viewportBegin(const char* id, f32 height = 0);
 
 /// End the current user viewport
-HORUS_API void viewportEnd();
+HUI_API void viewportEnd();
 
 //////////////////////////////////////////////////////////////////////////
 // Menus
 //////////////////////////////////////////////////////////////////////////
 
 /// Begin a menu bar widget
-HORUS_API bool menuBarBegin();
+HUI_API bool menuBarBegin();
 
 /// End the current menu bar widget
-HORUS_API void menuBarEnd();
+HUI_API void menuBarEnd();
 
 /// Begin a menu panel widget (it will show up only when clicked)
 /// \param label the menu text
 /// \param flags the menu flags
 /// \return true if the menu is visible, use it in a if() statement to show menu items
-HORUS_API bool menuBegin(const char* label, SelectableFlags flags = SelectableFlags::Normal);
+HUI_API bool menuBegin(const char* label, SelectableFlags flags = SelectableFlags::Normal);
 
 /// End the current menu
-HORUS_API void menuEnd();
+HUI_API void menuEnd();
 
 /// Begin drawing a context menu which will open on right click on the previous widget
 /// \return true if the menu is opened/visible
-HORUS_API bool contextMenuBegin(ContextMenuFlags flags = ContextMenuFlags::None);
+HUI_API bool contextMenuBegin(ContextMenuFlags flags = ContextMenuFlags::None);
 
 /// End the current context menu
-HORUS_API void contextMenuEnd();
+HUI_API void contextMenuEnd();
 
 /// Draw a menu item widget, use inside begin/end menu (or context menu)
 /// \param label the menu item text
@@ -2577,10 +2575,10 @@ HORUS_API void contextMenuEnd();
 /// \param img the menu item left side image
 /// \param flags the menu item flags
 /// \return true if the menu item was clicked on
-HORUS_API bool menuItem(const char* label, const char* shortcut = "", HImage img = 0, SelectableFlags flags = SelectableFlags::Normal);
+HUI_API bool menuItem(const char* label, const char* shortcut = "", HImage img = 0, SelectableFlags flags = SelectableFlags::Normal);
 
 /// Draw a menu item separator
-HORUS_API void menuSeparator();
+HUI_API void menuSeparator();
 
 //////////////////////////////////////////////////////////////////////////
 // Tabs
@@ -2588,77 +2586,83 @@ HORUS_API void menuSeparator();
 
 /// Start a tab group
 /// \param selectedIndex the selected tab index
-HORUS_API void tabGroupBegin(TabIndex selectedIndex);
+HUI_API void tabGroupBegin(TabIndex selectedIndex);
 
 /// Draw a tab widget
 /// \param label the text of the tab
 /// \param img the image of the tab
-HORUS_API void tab(const char* label, HImage img);
+HUI_API void tab(const char* label, HImage img);
 
 /// End the tab group
-HORUS_API TabIndex tabGroupEnd();
+HUI_API TabIndex tabGroupEnd();
 
 //////////////////////////////////////////////////////////////////////////
 // Immediate state query for the last widget
 //////////////////////////////////////////////////////////////////////////
 
 /// \return true if the previous widget is hovered
-HORUS_API bool widgetIsHovered();
+HUI_API bool widgetIsHovered();
 
 /// \return true if the previous widget is focused
-HORUS_API bool widgetIsFocused();
+HUI_API bool widgetIsFocused();
 
 /// \return true if the previous widget is pressed down
-HORUS_API bool widgetIsPressed();
+HUI_API bool widgetIsPressed();
 
 /// \return true if the previous widget is clicked
-HORUS_API bool widgetIsClicked();
+HUI_API bool widgetIsClicked();
 
 /// \return true if the previous widget is visible
-HORUS_API bool widgetIsVisible();
+HUI_API bool widgetIsVisible();
 
 /// \return true if the change for the widget's value ended, used for undo systems to add the undo action only after the drag/edit ended
-HORUS_API bool widgetIsChangeEnded();
+HUI_API bool widgetIsChangeEnded();
 
 /// \return the current widget id (the next widget's id)
-HORUS_API WidgetId widgetGetId();
+HUI_API WidgetId widgetGetId();
+
+HUI_API Point widgetGetPosition();
+HUI_API void widgetSetPosition(const Point& position);
+HUI_API void widgetPushPosition();
+HUI_API void widgetPopPosition();
+HUI_API Rect widgetGetRect();
 
 /// \return the current mouse position inside current window
-HORUS_API Point mouseGetPosition();
+HUI_API Point mouseGetPosition();
 
 //////////////////////////////////////////////////////////////////////////
 // Drag and drop logic support
 //////////////////////////////////////////////////////////////////////////
 
 /// \return true if there is a drag intent
-HORUS_API bool dragDropWantsTo();
+HUI_API bool dragDropWantsTo();
 
 /// set the mouse cursor to be used when dropping allowed
 /// \param dropAllowedCursor the mouse cursor
-HORUS_API void dragDropSetMouseCursor(HMouseCursor dropAllowedCursor);
+HUI_API void dragDropSetMouseCursor(HMouseCursor dropAllowedCursor);
 
 /// Begin dragging an object
 /// \param dragObjectUserType the user type for the object
 /// \param dragObject the user object to drag as payload
-HORUS_API void dragDropBegin(u32 dragObjectUserType, void* dragObject);
+HUI_API void dragDropBegin(u32 dragObjectUserType, void* dragObject);
 
 /// End drag and drop operation
-HORUS_API void dragDropEnd();
+HUI_API void dragDropEnd();
 
 /// Allow drag drop for the next widgets
-HORUS_API void dragDropAllow();
+HUI_API void dragDropAllow();
 
 /// Disallow drop for the next widgets
-HORUS_API void dragDropDisallow();
+HUI_API void dragDropDisallow();
 
 /// \return true if the user dropped payload on previous widget
-HORUS_API bool dragDropDroppedOnWidget();
+HUI_API bool dragDropDroppedOnWidget();
 
 /// \return the drag drop payload user object pointer
-HORUS_API void* dragDropGetObject();
+HUI_API void* dragDropGetObject();
 
 /// \return the drag drop payload user object type
-HORUS_API u32 dragDropGetObjectType();
+HUI_API u32 dragDropGetObjectType();
 
 //////////////////////////////////////////////////////////////////////////
 // Custom widgets
@@ -2667,64 +2671,72 @@ HORUS_API u32 dragDropGetObjectType();
 /// Begin drawing a custom widget
 /// \param height the widget height
 /// \return the widget rectangle in window coordinates
-HORUS_API Rect customWidgetBegin(const char* id, f32 height = 0.0f);
+HUI_API Rect customWidgetBegin(const char* id, f32 height = 0.0f);
 
 /// End custom widget drawing
-HORUS_API void customWidgetEnd();
+HUI_API void customWidgetEnd();
 
 /// Set the next widget position
-HORUS_API void widgetSetPosition(const Point& position);
+HUI_API void widgetSetPosition(const Point& position);
 
 /// \return the current widget drawing position
-HORUS_API Point widgetGetPosition();
-HORUS_API void rendererTextInBoxDraw(const char* text, const Rect& rect, HAlignType horizontalAlign, VAlignType verticalAlign);
-HORUS_API Point rendererGetTextSize(const char* text);
-HORUS_API void rendererImageDraw(HImage image, const Point& position, f32 scale);
-HORUS_API void rendererStretchedImageDraw(HImage image, const Rect& rect);
-HORUS_API void rendererBorderedImageDraw(HImage image, u32 border, const Rect& rect);
-HORUS_API void rendererSetLineStyle(const LineStyle& style);
-HORUS_API void rendererSetFillStyle(const FillStyle& style);
-HORUS_API void rendererLineDraw(const Point& a, const Point& b);
-HORUS_API void rendererPolyLineDraw(const Point* points, u32 pointCount, bool closed = false);
-HORUS_API void rendererCircleDraw(const Point& center, f32 radius, u32 segments = 32);
-HORUS_API void rendererEllipseDraw(const Point& center, f32 radiusX, f32 radiusY, u32 segments = 32);
-HORUS_API void rendererRectangleDraw(const Rect& rc);
-HORUS_API void rendererSolidRectangleDraw(const Rect& rc);
-HORUS_API void rendererSplineDraw(SplineControlPoint* points, u32 count, f32 segmentSize = 15);
-HORUS_API void rendererArrowDraw(const Point& startPoint, const Point& endPoint, f32 tipLength, f32 tipWidth, bool drawBodyLine = true);
-HORUS_API void rendererSolidTriangleDraw(const Point& p1, const Point& p2, const Point& p3);
+HUI_API Point widgetGetPosition();
+HUI_API void renderDrawTextInBox(const char* text, const Rect& rect, HAlignType horizontalAlign, VAlignType verticalAlign);
+HUI_API Point renderGetTextSize(const char* text);
+HUI_API void renderDrawImage(HImage image, const Point& position, f32 scale);
+HUI_API void renderDrawStretchedImage(HImage image, const Rect& rect);
+HUI_API void renderDrawBorderedImage(HImage image, u32 border, const Rect& rect);
+HUI_API void renderSetLineStyle(const LineStyle& style);
+HUI_API void renderSetFillStyle(const FillStyle& style);
+HUI_API void renderDrawLine(const Point& a, const Point& b);
+HUI_API void renderDrawPolyLine(const Point* points, u32 pointCount, bool closed = false);
+HUI_API void renderDrawCircle(const Point& center, f32 radius, u32 segments = 32);
+HUI_API void renderDrawEllipse(const Point& center, f32 radiusX, f32 radiusY, u32 segments = 32);
+HUI_API void renderDrawRectangle(const Rect& rc);
+HUI_API void renderDrawSolidRectangle(const Rect& rc);
+HUI_API void renderDrawSpline(SplineControlPoint* points, u32 count, f32 segmentSize = 15);
+HUI_API void renderDrawArrow(const Point& startPoint, const Point& endPoint, f32 tipLength, f32 tipWidth, bool drawBodyLine = true);
+HUI_API void renderDrawSolidTriangle(const Point& p1, const Point& p2, const Point& p3);
 
 //////////////////////////////////////////////////////////////////////////
 // Utility and complex/combined widgets
 //////////////////////////////////////////////////////////////////////////
 
 /// Draw a color picker popup widget
-HORUS_API bool colorPicker(const char* id, Color* inOutColor, ColorPickerFlags flags = (ColorPickerFlags)0, const Color* oldColor = nullptr);
+HUI_API bool colorPicker(const char* id, Color* inOutColor, ColorPickerFlags flags = (ColorPickerFlags)0, const Color* oldColor = nullptr);
 
 /// Draw a 3D double vector editor widget
-HORUS_API bool vec3Editor(const char* id, f64& x, f64& y, f64& z, f64 scrollStep = 0.03f);
+HUI_API bool vec3Editor(const char* id, f64& x, f64& y, f64& z, f64 scrollStep = 0.03f);
 
 /// Draw a 3D float vector editor widget
-HORUS_API bool vec3Editor(const char* id, f32& x, f32& y, f32& z, f32 scrollStep = 0.03f);
+HUI_API bool vec3Editor(const char* id, f32& x, f32& y, f32& z, f32 scrollStep = 0.03f);
 
 /// Draw a 2D double vector editor widget
-HORUS_API bool vec2Editor(const char* id, f64& x, f64& y, f64 scrollStep = 0.03f);
+HUI_API bool vec2Editor(const char* id, f64& x, f64& y, f64 scrollStep = 0.03f);
 
 /// Draw a 2D float vector editor widget
-HORUS_API bool vec2Editor(const char* id, f32& x, f32& y, f32 scrollStep = 0.03f);
+HUI_API bool vec2Editor(const char* id, f32& x, f32& y, f32 scrollStep = 0.03f);
 
 /// Draw an object reference editor
-HORUS_API bool objectRefEditor(const char* id, HImage targetImg, HImage clearImg, const char* objectTypeName, const char* valueAsString, u32 objectType, void** outObject, bool* objectValueWasModified);
+HUI_API bool objectRefEditor(const char* id, HImage targetImg, HImage clearImg, const char* objectTypeName, const char* valueAsString, u32 objectType, void** outObject, bool* objectValueWasModified);
 
 //////////////////////////////////////////////////////////////////////////
 // Utility functions
 //////////////////////////////////////////////////////////////////////////
 
 /// Convert an int value to string
-HORUS_API void stringFromI32(i32 value, char* outString, u32 outStringMaxSize, u32 fillerZeroesCount = 0);
+HUI_API void stringFromI32(i32 value, char* outString, u32 outStringMaxSize, u32 fillerZeroesCount = 0);
 
 /// Convert a float value to string
-HORUS_API void stringFromF32(f32 value, char* outString, u32 outStringMaxSize, i32 decimalPlaces = ~0);
+HUI_API void stringFromF32(f32 value, char* outString, u32 outStringMaxSize, i32 decimalPlaces = ~0);
+
+HUI_API Color colorFromText(const char* colorText);
+HUI_API Color colorFromHex(const char* hexText);
+HUI_API u32 colorIntFromHex(const char* hexText);
+HUI_API std::string colorToHex(const Color& color);
+HUI_API std::string colorIntToHex(const u32 color);
+HUI_API Color colorHsvToRgb(const Color& hsv);
+HUI_API Color colorRgbToHsv(const Color& rgb);
+HUI_API Color colorHueToRgb(f32 h, f32 alpha);
 
 }
-/** @}*/

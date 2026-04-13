@@ -4,12 +4,12 @@ include(../CMakeUtils.cmake)
 set(PROJECT_NAME "example_custom_widget")
 
 add_source_group(src ./ SRCS)
-add_source_group(horus ../../src HORUS_UI_SRCS)
-add_source_group(horus ../../include HORUS_UI_SRCS)
-add_source_group(backends ../../backends HORUS_UI_BACKENDS)
+add_source_group(horus ../../src HUI_SRCS)
+add_source_group(horus ../../include HUI_SRCS)
+add_source_group(backends ../../backends HUI_BACKENDS)
 
-add_definitions(-DHORUS_STATIC)
-add_executable(${PROJECT_NAME} ${SRCS} ${HORUS_UI_SRCS} ${HORUS_UI_BACKENDS} ${NFD_SRCS})
+add_definitions(-DHUI_STATIC)
+add_executable(${PROJECT_NAME} ${SRCS} ${HUI_SRCS} ${HUI_BACKENDS} ${NFD_SRCS})
 
 target_include_directories(${PROJECT_NAME} PUBLIC
 	../../include

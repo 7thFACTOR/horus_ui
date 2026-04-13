@@ -10,8 +10,8 @@ void line()
 	auto& bodyElemState = ctx->theme->getElement(WidgetElementId::LineBody).normalState();
 	auto& padding = widgetGetPadding();
 
-	ctx->labelAndIdSet(nullptr);
-	widgetAdd(bodyElemState.image->height + padding.y * 2.0f);
+	ctx->setLabelAndId(nullptr);
+	addWidget(bodyElemState.image->height + padding.y * 2.0f);
 	ctx->renderer.cmdSetColor(bodyElemState.color);
 	ctx->renderer.cmdDrawImageBordered(bodyElemState.image, bodyElemState.border,
 		{

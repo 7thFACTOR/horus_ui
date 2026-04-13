@@ -42,13 +42,13 @@ bool textInputMultiline(
 	f32 border = bodyElem->normalState().border;
 	f32 totalHeight = visibleLines * lineHeight + (padding.y + border) * 2.0f;
 
-	ctx->id = idGen(id);
-	widgetAdd(totalHeight);
+	ctx->id = genId(id);
+	addWidget(totalHeight);
 	buttonBehavior();
 
 	// pre-calculate scroll ID for focus checks
 	std::string scrollIdName = std::string(id) + ".scroller";
-	WidgetId scrollId = idGen(scrollIdName.c_str());
+	WidgetId scrollId = genId(scrollIdName.c_str());
 
 	if (state.id == ctx->id)
 		state.scrollId = scrollId;
@@ -497,7 +497,7 @@ bool textInputMultiline(
 	layoutPush();
 
 	// begin ScrollView (it handles layout, scrollbars, and inputs)
-	// we must reset position to inside the wrapper because widgetAdd() moved it to the bottom
+	// we must reset position to inside the wrapper because addWidget() moved it to the bottom
 	Point wrapperEndPos = ctx->position;
 	
 	ctx->position = { clipRect.x, clipRect.y };
@@ -938,7 +938,7 @@ bool textInputMultiline(
 	ctx->position.y += totalContentHeight;
 	scrollViewEnd();
 	ctx->position = wrapperEndPos; // restore layout position
-	focusableSet();
+	setFocusable();
 
 	if (ctx->settings.textCaretBlinkSpeed > 0 && ctx->widget.focused)
 	{

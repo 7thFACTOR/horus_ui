@@ -29,7 +29,7 @@ link_directories(${CMAKE_BINARY_DIR}/lib ${CMAKE_BINARY_DIR}/../bin)
 
 add_subdirectory(libs)
 add_subdirectory(example_all_widgets)
-add_subdirectory(example_custom_widget)
+#add_subdirectory(example_custom_widget)
 add_subdirectory(example_no_docking)
 
 set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT example_all_widgets)

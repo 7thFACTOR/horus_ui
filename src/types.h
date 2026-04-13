@@ -14,13 +14,13 @@
 #include <stdlib.h>
 #endif
 
-#ifndef HORUS_ASSERT
+#ifndef HUI_ASSERT
 #include <assert.h>
-#define HORUS_ASSERT(cond) assert(cond)
+#define HUI_ASSERT(cond) assert(cond)
 #endif
 
-#ifndef HORUS_LOG
-#define HORUS_LOG(format, ...) printf(format"\n", ##__VA_ARGS__)
+#ifndef HUI_LOG
+#define HUI_LOG(format, ...) printf(format"\n", ##__VA_ARGS__)
 #endif
 
 namespace hui
@@ -33,7 +33,6 @@ struct Image;
 struct DockNode;
 
 typedef u64 ImageId;
-
 typedef std::vector<struct DrawCommand> DrawCommandVector;
 
 /// How an image is drawn, repeated or stretched across the rectangle

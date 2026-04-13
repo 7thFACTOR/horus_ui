@@ -11,7 +11,7 @@ static bool labelInternal(const char* label, HAlignType horizontalAlign, Font* f
 	f32 height = 0;
 	auto& bodyElemState = bodyElem.normalState();
 
-	ctx->labelAndIdSet(label);
+	ctx->setLabelAndId(label);
 	auto fsize = ctx->renderer.computeSizeOrDrawText(ctx->widgetLabel.c_str(), Rect(0, 0, ctx->layout.width , FLT_MAX), HAlignType::Left, VAlignType::Top, false, font ? font : bodyElem.normalState().font, true);
 	height = (bodyElemState.height > fsize.height ? bodyElemState.height : fsize.height);
 
@@ -21,7 +21,7 @@ static bool labelInternal(const char* label, HAlignType horizontalAlign, Font* f
 		ctx->widget.hasCustomWidth = true;
 	}
 
-	widgetAdd(height);
+	addWidget(height);
 	buttonBehavior();
 
 	if (ctx->widget.hoveredId == ctx->id)
@@ -73,11 +73,11 @@ bool labelCustomFontMultiline(const char* label, HFont font, HAlignType horizont
 	auto& padding = widgetGetPadding();
 	f32 width = ctx->layout.width - padding.x * 2.0f * ctx->scale;
 
-	ctx->labelAndIdSet(label);
+	ctx->setLabelAndId(label);
 
 	auto textSize = ((Font*)font)->computeTextSize(ctx->widgetLabel.c_str(), (u32)round(width));
 
-	widgetAdd(textSize.height + padding.y * 2.0f * ctx->scale);
+	addWidget(textSize.height + padding.y * 2.0f * ctx->scale);
 
 	ctx->renderer.cmdSetColor(tintApply(bodyElemState.textColor, TintColorType::Text));
 	ctx->renderer.cmdSetFont((Font*)font);

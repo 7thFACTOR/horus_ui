@@ -15,8 +15,8 @@ Rect customWidgetBegin(const char* id, f32 height)
 		height = ctx->layout.height - (ctx->position.y - ctx->layout.savedPosition.y);
 	}
 
-	ctx->id = idGen(id);
-	widgetAdd(height);
+	ctx->id = genId(id);
+	addWidget(height);
 	buttonBehavior();
 
 	return ctx->widget.rect;
@@ -36,7 +36,7 @@ Point layoutSizeGet()
 	return pt;
 }
 
-Rect widgetRectGet()
+Rect widgetGetRect()
 {
 	return ctx->widget.rect;
 }
@@ -78,7 +78,7 @@ void rendererFillColorSet(const Color& color)
 	ctx->renderer.cmdSetFillStyle(ctx->renderer.currentFillStyle);
 }
 
-Point rendererGetTextSize(const char* text)
+Point renderGetTextSize(const char* text)
 {
 	if (!ctx->renderer.getFont())
 		return Point();
@@ -94,7 +94,7 @@ void rendererTextAtDraw(const char* text, const Point& position)
 	ctx->renderer.cmdDrawTextAt(text, position + ctx->renderer.viewportOffset);
 }
 
-void rendererTextInBoxDraw(const char* text, const Rect& rect, HAlignType horizontalAlign, VAlignType verticalAlign)
+void renderDrawTextInBox(const char* text, const Rect& rect, HAlignType horizontalAlign, VAlignType verticalAlign)
 {
 	ctx->renderer.cmdDrawTextInBox(
 		text,
@@ -105,42 +105,42 @@ void rendererTextInBoxDraw(const char* text, const Rect& rect, HAlignType horizo
 		horizontalAlign, verticalAlign);
 }
 
-void rendererImageDraw(HImage image, const Point& position, f32 scale)
+void renderDrawImage(HImage image, const Point& position, f32 scale)
 {
 	Image* img = (Image*)image;
 	ctx->renderer.cmdDrawImage(img, position + ctx->renderer.viewportOffset, scale);
 }
 
-void rendererStretchedImageDraw(HImage image, const Rect& rect)
+void renderDrawStretchedImage(HImage image, const Rect& rect)
 {
 	Image* img = (Image*)image;
 	ctx->renderer.cmdDrawImage(img, Rect(rect.x + ctx->renderer.viewportOffset.x, rect.y + ctx->renderer.viewportOffset.y, rect.width, rect.height));
 }
 
-void rendererBorderedImageDraw(HImage image, u32 border, const Rect& rect)
+void renderDrawBorderedImage(HImage image, u32 border, const Rect& rect)
 {
 	Image* img = (Image*)image;
 
 	ctx->renderer.cmdDrawImageBordered(img, border, Rect(rect.x + ctx->renderer.viewportOffset.x, rect.y + ctx->renderer.viewportOffset.y, rect.width, rect.height), ctx->scale);
 }
 
-void rendererSetLineStyle(const LineStyle& style)
+void renderSetLineStyle(const LineStyle& style)
 {
 	ctx->renderer.cmdSetLineStyle(style);
 }
 
-void rendererSetFillStyle(const FillStyle& style)
+void renderSetFillStyle(const FillStyle& style)
 {
 	ctx->fillStyle = style;
 	ctx->renderer.cmdSetColor(style.color);
 }
 
-void rendererLineDraw(const Point& a, const Point& b)
+void renderDrawLine(const Point& a, const Point& b)
 {
 	ctx->renderer.cmdDrawLine(a + ctx->renderer.viewportOffset, b + ctx->renderer.viewportOffset);
 }
 
-void rendererPolyLineDraw(const Point* points, u32 pointCount, bool closed)
+void renderDrawPolyLine(const Point* points, u32 pointCount, bool closed)
 {
 	std::vector<Point> pts;
 
@@ -154,12 +154,12 @@ void rendererPolyLineDraw(const Point* points, u32 pointCount, bool closed)
 	ctx->renderer.cmdDrawPolyLine(pts.data(), pointCount, closed);
 }
 
-void rendererCircleDraw(const Point& center, f32 radius, u32 segments)
+void renderDrawCircle(const Point& center, f32 radius, u32 segments)
 {
-	rendererEllipseDraw(center, radius, radius, segments);
+	renderDrawEllipse(center, radius, radius, segments);
 }
 
-void rendererEllipseDraw(const Point& center, f32 radiusX, f32 radiusY, u32 segments)
+void renderDrawEllipse(const Point& center, f32 radiusX, f32 radiusY, u32 segments)
 {
 	std::vector<Point> pts;
 	Point pt;
@@ -179,7 +179,7 @@ void rendererEllipseDraw(const Point& center, f32 radiusX, f32 radiusY, u32 segm
 	ctx->renderer.cmdDrawPolyLine(pts.data(), pts.size(), true);
 }
 
-void rendererRectangleDraw(const Rect& rc)
+void renderDrawRectangle(const Rect& rc)
 {
 	Point pts[4] = {
 		rc.topLeft() + ctx->renderer.viewportOffset,
@@ -191,7 +191,7 @@ void rendererRectangleDraw(const Rect& rc)
 	ctx->renderer.cmdDrawPolyLine(pts, 4, true);
 }
 
-void rendererSolidRectangleDraw(const Rect& rc)
+void renderDrawSolidRectangle(const Rect& rc)
 {
 	ctx->renderer.cmdDrawFilledRectangle(
 		{
@@ -202,13 +202,11 @@ void rendererSolidRectangleDraw(const Rect& rc)
 		});
 }
 
-#define HORUS_HERMITE_TANGENT(a, b, c, tt, cc, bb, adj)\
+#define HUI_HERMITE_TANGENT(a, b, c, tt, cc, bb, adj)\
 		(((b - a) * (1.0f + bb) * (1.0f - cc) + (c - b)\
 		* (1.0f - bb) * (1.0f + cc)) * (1.0f - tt) * adj)
-
-#define HORUS_HERMITE_ONE_TANGENT(a, b, tt) ((a - b) * (1.0f - tt))
-
-#define HORUS_HERMITE_FIRST_TANGENT(a, b, c, tt) (((a - b) * 1.5f - c * 0.5f) * (1.0f - tt))
+#define HUI_HERMITE_ONE_TANGENT(a, b, tt) ((a - b) * (1.0f - tt))
+#define HUI_HERMITE_FIRST_TANGENT(a, b, c, tt) (((a - b) * 1.5f - c * 0.5f) * (1.0f - tt))
 
 static Point hermitePoint(
 	const Point& controlPtA,
@@ -275,7 +273,7 @@ static f32 computeSplineLength(const Point& start, const Point& start_tangent,
 	return 0.5f * length;
 }
 
-void rendererSplineDraw(SplineControlPoint* points, u32 count, f32 segmentSize)
+void renderDrawSpline(SplineControlPoint* points, u32 count, f32 segmentSize)
 {
 	std::vector<Point> pts;
 
@@ -291,15 +289,15 @@ void rendererSplineDraw(SplineControlPoint* points, u32 count, f32 segmentSize)
 		}
 	}
 
-	rendererPolyLineDraw(pts.data(), pts.size(), false);
+	renderDrawPolyLine(pts.data(), pts.size(), false);
 }
 
-void rendererArrowDraw(const Point& a, const Point& b, f32 tipLength, f32 tipWidth, bool drawBodyLine)
+void renderDrawArrow(const Point& a, const Point& b, f32 tipLength, f32 tipWidth, bool drawBodyLine)
 {
 	//TODO
 }
 
-void rendererSolidTriangleDraw(
+void renderDrawSolidTriangle(
 	const Point& p1, const Point& p2, const Point& p3)
 {
 	ctx->renderer.cmdDrawSolidTriangle(

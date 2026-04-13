@@ -8,26 +8,26 @@
 
 namespace hui
 {
-WidgetId idGen(const char* text)
+WidgetId genId(const char* text)
 {
 	return hashString(text, ctx->idStack.empty() ? 0 : ctx->idStack.back());
 }
 
-WidgetId idGen(u32 id)
+WidgetId genId(u32 id)
 {
 	return hashData(&id, sizeof(id), ctx->idStack.empty() ? 0 : ctx->idStack.back());
 }
 
-WidgetId idGen(void* ptr)
+WidgetId genId(void* ptr)
 {
 	return hashData(&ptr, sizeof(ptr), ctx->idStack.empty() ? 0 : ctx->idStack.back());
 }
 
-WidgetId idFromPositionGen(const char* text)
+WidgetId genIdFromPosition(const char* text)
 {
 	auto posStr = std::to_string(ctx->position.x) + std::to_string(ctx->position.y);
 
-	return idGen((std::string(text) + posStr).c_str());
+	return genId((std::string(text) + posStr).c_str());
 }
 
 void stringFromI32(i32 value, char* outString, u32 outStringMaxSize, u32 fillerZeroesCount)

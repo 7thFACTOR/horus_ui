@@ -32,8 +32,8 @@ bool textInput(
 	}
 
 	// use ptr as id
-	ctx->id = idGen(id);
-	widgetAdd(bodyElem->normalState().height);
+	ctx->id = genId(id);
+	addWidget(bodyElem->normalState().height);
 
 	// always run button behavior so hover state is updated even when focusChanged is set
 	buttonBehavior();
@@ -379,7 +379,7 @@ bool textInput(
 
 	ctx->renderer.popClipRect();
 
-	focusableSet();
+	widgetSetFocusable();
 
 	if (ctx->settings.textCaretBlinkSpeed > 0 && ctx->widget.focused)
 	{

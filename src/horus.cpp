@@ -76,7 +76,7 @@ HContext contextCreate(const Settings& settings)
 {
 	Context* context = new Context();
 
-	HORUS_ASSERT(context);
+	HUI_ASSERT(context);
 	context->settings = settings;
 
 	if (context->settings.dockingStyle == DockingGuidesStyle::Auto)
@@ -93,7 +93,7 @@ HContext contextCreate(const Settings& settings)
 
 void contextSet(HContext context)
 {
-	HORUS_ASSERT(context);
+	HUI_ASSERT(context);
 	ctx = (Context*)context;
 }
 
@@ -104,11 +104,11 @@ HContext contextGet()
 
 void contextDestroy(HContext context)
 {
-	HORUS_ASSERT(context);
+	HUI_ASSERT(context);
 	delete (Context*)context;
 }
 
-Settings& settingsGet()
+Settings& contextGetSettings()
 {
 	return ctx->settings;
 }
@@ -123,13 +123,13 @@ void clearBackground(const Color& color)
 	ctx->renderer.cmdClearBackground(color);
 }
 
-void Context::labelAndIdSet(const char* text)
+void Context::setLabelAndId(const char* text)
 {
 	ctx->widgetLabel = text;
-	ctx->id = idGen(text);
+	ctx->id = genId(text);
 }
 
-void Context::skipRenderAndInputSet(bool skip)
+void Context::setSkipRenderAndInput(bool skip)
 {
 	ctx->skipRenderAndInput = skip;
 }
@@ -147,7 +147,7 @@ void widgetSetNextFocused()
 	ctx->focusChanged = true;
 }
 
-void widgetAdd(f32 height)
+void addWidget(f32 height)
 {
 	ctx->widget.changeEnded = false;
 	height = round((height + widgetGetPadding().y * 2.0f) * ctx->scale);
@@ -235,7 +235,7 @@ void widgetAdd(f32 height)
 	ctx->sameLine.enabled = false;
 }
 
-void focusableSet()
+void widgetSetFocusable()
 {
 	if (ctx->widget.focusedId == ctx->id)
 	{
@@ -419,7 +419,7 @@ void frameBegin()
 
 	ctx->alreadyClickedOnSomething = false;
 	mouseCursorSetType(MouseCursorType::Arrow);
-	dockingSystemUpdate();
+	updateDockingSystem();
 }
 
 void deferredDeleteObjects()
@@ -491,7 +491,7 @@ void frameEnd()
 	{
 		if (ctx->dragDrop.foundDropTarget)
 		{
-			mouseCursorSetType(ctx->dragDrop.dropAllowedCursor);
+			mouseCursorSet(ctx->dragDrop.dropAllowedCursor);
 		}
 		else
 		{
@@ -540,17 +540,17 @@ void renderEnd()
 	ctx->renderer.end();
 }
 
-HORUS_API f32 frameTimeGetLastMs()
+HUI_API f32 frameTimeGetLastMs()
 {
 	return ctx->lastFrameTimeMs;
 }
 
-HORUS_API f32 frameTimeGetPeakMs()
+HUI_API f32 frameTimeGetPeakMs()
 {
 	return ctx->peakFrameTimeMs;
 }
 
-HORUS_API f32 frameTimeGetAvgMs()
+HUI_API f32 frameTimeGetAvgMs()
 {
 	return ctx->avgFrameTimeMs;
 }
@@ -620,7 +620,7 @@ void forceRepaint()
 
 void skipFrame()
 {
-	ctx->skipRenderAndInputSet(true);
+	ctx->setSkipRenderAndInput(true);
 }
 
 bool clipboardSetText(const char* text)
@@ -633,7 +633,7 @@ bool clipboardGetText(char* outText, u32 maxTextSize)
 	return ctx->settings.services.clipboardGetText(outText, maxTextSize);
 }
 
-const InputEvent& inputGetEvent()
+const InputEvent& inputEventGet()
 {
 	return ctx->event;
 }
@@ -660,7 +660,10 @@ void mouseCursorSetType(HMouseCursor cursor)
 
 void windowSetCapture()
 {
-	ctx->settings.services.setCapture();
+	if (ctx->currentWindow && ctx->currentWindow->dockNode)
+	{
+		ctx->settings.services.setCapture(ctx->currentWindow->dockNode->nativeWindow);
+	}
 }
 
 void windowReleaseCapture()
@@ -694,7 +697,7 @@ static void presentWindow(HNativeWindow wnd)
 	ctx->settings.services.presentWindow(wnd);
 }
 
-void presentBackbuffer()
+void present()
 {
 	// first, delete pending objects so we dont access them
 	deferredDeleteObjects();
@@ -769,9 +772,9 @@ void shutdown()
 
 DockNodeId dockNodeCreateRoot(HNativeWindow nativeWnd)
 {
-	HORUS_ASSERT(nativeWnd);
+	HUI_ASSERT(nativeWnd);
 	auto node = dockNodeRootCreateInternal(nativeWnd);
-	HORUS_ASSERT(node);
+	HUI_ASSERT(node);
 
 	ctx->nativeWindows.push_back(nativeWnd);
 	ctx->docking.dockNodeIdsMap[node->id] = node;
@@ -1108,7 +1111,7 @@ void widgetPushStyle(WidgetType widgetType, const char* styleName)
 
 void widgetPopStyle()
 {
-	HORUS_ASSERT(!ctx->widgetStyleStack.empty());
+	HUI_ASSERT(!ctx->widgetStyleStack.empty());
 
 	if (ctx->widgetStyleStack.empty())
 		return;
@@ -1120,8 +1123,8 @@ void widgetPopStyle()
 
 void widgetSetElementStyle(WidgetElementId widgetElementId, const char* styleName)
 {
-	HORUS_ASSERT(ctx);
-	HORUS_ASSERT(ctx->theme);
+	HUI_ASSERT(ctx);
+	HUI_ASSERT(ctx->theme);
 	ctx->theme->elements[(u32)widgetElementId].setStyle(styleName);
 }
 
@@ -1142,7 +1145,7 @@ void widgetSetUserElementStyle(const char* elementName, const char* styleName)
 
 void themeBuild(HTheme theme)
 {
-	HORUS_ASSERT(theme);
+	HUI_ASSERT(theme);
 	Theme* themePtr = (Theme*)theme;
 
 	themePtr->build();
@@ -1155,8 +1158,8 @@ void themeSetWidgetElement(
 	const WidgetElementInfo& elementInfo,
 	const char* styleName)
 {
-	HORUS_ASSERT(theme);
-	HORUS_ASSERT(styleName);
+	HUI_ASSERT(theme);
+	HUI_ASSERT(styleName);
 
 	Theme* themePtr = (Theme*)theme;
 	u32 stateIndex = (u32)widgetStateType;
@@ -1200,7 +1203,7 @@ void themeSetUserWidgetElement(
 
 void themeSet(HTheme theme)
 {
-	HORUS_ASSERT(theme);
+	HUI_ASSERT(theme);
 	ctx->theme = (Theme*)theme;
 }
 
@@ -1360,7 +1363,7 @@ HFont themeFontGetFromTheme(HTheme theme, const char* themeFontName)
 	return themePtr->getFont(themeFontName);
 }
 
-HFont themeGetFont(const char* themeFontName)
+HFont themeFontGet(const char* themeFontName)
 {
 	return themeFontGetFromTheme(themeGet(), themeFontName);
 }
@@ -1388,24 +1391,24 @@ void layoutEnd()
 
 void idPush(const char* id)
 {
-	ctx->idStack.push_back(idGen(id));
+	ctx->idStack.push_back(genId(id));
 }
 
 void idPush(u32 id)
 {
-	ctx->idStack.push_back(idGen(id));
+	ctx->idStack.push_back(genId(id));
 }
 
 void idPush(void* id)
 {
-	ctx->idStack.push_back(idGen(id));
+	ctx->idStack.push_back(genId(id));
 }
 
 void idPop()
 {
 	if (ctx->idStack.empty())
 	{
-		HORUS_LOG("idPop used too many times");
+		HUI_LOG("idPop used too many times");
 		return;
 	}
 
@@ -1421,7 +1424,7 @@ void layoutPop()
 {
 	if (ctx->layoutStack.empty())
 	{
-		HORUS_LOG("popLayout used too many times");
+		HUI_LOG("popLayout used too many times");
 		return;
 	}
 
@@ -1460,7 +1463,7 @@ u32 layerIndexDecrement()
 	return ctx->layerIndex;
 }
 
-void windowDecrementMaxLayerIndex()
+void decrementWindowMaxLayerIndex()
 {
 	ctx->maxLayerIndex--;
 
@@ -1653,18 +1656,23 @@ void widgetSetPosition(const Point& position)
 	ctx->position = position;
 }
 
-void widgetPositionPush()
+void widgetPushPosition()
 {
 	ctx->positionStack.push_back(ctx->position);
 }
 
-void widgetPositionPop()
+void widgetPopPosition()
 {
 	if (!ctx->positionStack.empty())
 	{
 		ctx->position = ctx->positionStack.back();
 		ctx->positionStack.pop_back();
 	}
+}
+
+Rect widgetGetRect()
+{
+	return ctx->widget.rect;
 }
 
 bool dragDropWantsTo()

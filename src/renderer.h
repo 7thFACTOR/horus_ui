@@ -18,6 +18,26 @@ struct VertexBufferData
 
 struct Renderer
 {
+	struct NativeWindowRenderContext
+	{
+		u32 textBufferPosition = 0;
+		std::vector<char> textBuffer;
+		u32 pointBufferPosition = 0;
+		std::vector<Point> pointBuffer;
+		DrawCommandVector drawCmdLayers[(u32)DrawCmdLayerType::Count];
+		std::vector<RenderBatch> batches;
+		std::vector<Rect> clipRectStack;
+		std::vector<DrawCmdLayerType> drawCmdLayerTypeStack;
+		DrawCmdLayerType currentDrawCmdLayer = DrawCmdLayerType::Normal;
+	};
+
+	struct LineInfo
+	{
+		u32 start;
+		u32 len;
+		f32 width;
+	};
+
 	Renderer();
 	virtual ~Renderer();
 	void nativeWindowSetCurrent(HNativeWindow wnd);
@@ -70,27 +90,6 @@ struct Renderer
 		VAlignType vertical = VAlignType::Top,
 		bool singleLineEllipsis = false,
 		bool noWordWrap = false);
-
-public:
-	struct NativeWindowRenderContext
-	{
-		u32 textBufferPosition = 0;
-		std::vector<char> textBuffer;
-		u32 pointBufferPosition = 0;
-		std::vector<Point> pointBuffer;
-		DrawCommandVector drawCmdLayers[(u32)DrawCmdLayerType::Count];
-		std::vector<RenderBatch> batches;
-		std::vector<Rect> clipRectStack;
-		std::vector<DrawCmdLayerType> drawCmdLayerTypeStack;
-		DrawCmdLayerType currentDrawCmdLayer = DrawCmdLayerType::Normal;
-	};
-
-	struct LineInfo
-	{
-		u32 start;
-		u32 len;
-		f32 width;
-	};
 
 	void drawAtlasRegion(bool rotated, const Rect& rect, const Rect& atlasUvRect);
 	void drawTextGlyph(Image* image, const Point& pos);

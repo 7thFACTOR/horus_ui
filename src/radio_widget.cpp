@@ -10,7 +10,7 @@ bool radio(const char* label, i32* currentRadioValue, i32 thisValue)
 	auto& radioBodyElem = ctx->theme->getElement(WidgetElementId::RadioBody);
 	auto& radioMarkElem = ctx->theme->getElement(WidgetElementId::RadioMark);
 
-	ctx->labelAndIdSet(label);
+	ctx->setLabelAndId(label);
 	
 	auto textSize = radioBodyElem.normalState().font->computeTextSize(ctx->widgetLabel.c_str());
 	auto& padding = widgetGetPadding();
@@ -29,7 +29,7 @@ bool radio(const char* label, i32* currentRadioValue, i32 thisValue)
 		ctx->widget.hasCustomWidth = true;
 	}
 	
-	widgetAdd(std::max(textSize.height, markHeightScaled));
+	addWidget(std::max(textSize.height, markHeightScaled));
 	buttonBehavior();
 	ctx->widget.changeEnded = false;
 

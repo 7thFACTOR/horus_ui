@@ -128,13 +128,13 @@ bool colorPicker(const char* id, Color* inOutColor, ColorPickerFlags flags, cons
 	i32 crtIntG = (u32)(crtColor.g * 255.0f);
 	i32 crtIntB = (u32)(crtColor.b * 255.0f);
 	i32 crtIntA = (u32)(crtColor.a * 255.0f);
-	Color hsv = rgbToHsv(crtColor);
+	Color hsv = colorRgbToHsv(crtColor);
 	f32 height = ctx->layout.width * 0.5f + indicatorSize;
-	ctx->id = idGen(id);
+	ctx->id = genId(id);
 	
 	auto pickerId = ctx->id;
 	
-	widgetAdd(height);
+	addWidget(height);
 	buttonBehavior();
 
 	if (ctx->colorPickerState.currentEditingId == pickerId)
@@ -230,7 +230,7 @@ bool colorPicker(const char* id, Color* inOutColor, ColorPickerFlags flags, cons
 
 		if (hueChanged || svChanged || alphaChanged)
 		{
-			crtColor = hsvToRgb(hsv);
+			crtColor = colorHsvToRgb(hsv);
 
 			if (!has(flags, ColorPickerFlags::Float))
 			{
@@ -251,7 +251,7 @@ bool colorPicker(const char* id, Color* inOutColor, ColorPickerFlags flags, cons
 	clampedHsv.g = clampValue01(clampedHsv.g);
 	clampedHsv.b = clampValue01(clampedHsv.b);
 
-	Color hueOnlyColor = hueToRgb(clampedHsv.r, 1);
+	Color hueOnlyColor = colorHueToRgb(clampedHsv.r, 1);
 
 	ctx->renderer.cmdDrawRectangle4Colors(
 		rcSV
@@ -287,7 +287,7 @@ bool colorPicker(const char* id, Color* inOutColor, ColorPickerFlags flags, cons
 
 	auto& colorPickerCheckersElem = ctx->theme->getElement(WidgetElementId::ColorPickerCheckers);
 	auto& colorPickerCheckersImg = colorPickerCheckersElem.normalState().image;
-	Color colorForAlphaBar = hsvToRgb({ clampedHsv.r, clampedHsv.g, clampedHsv.b, 1 });
+	Color colorForAlphaBar = colorHsvToRgb({ clampedHsv.r, clampedHsv.g, clampedHsv.b, 1 });
 
 	ctx->renderer.cmdSetColor(Color::white);
 	ctx->renderer.cmdDrawImageTiled(
@@ -322,7 +322,7 @@ bool colorPicker(const char* id, Color* inOutColor, ColorPickerFlags flags, cons
 			64,
 			64
 		},
-		hsvToRgb(clampedHsv),
+		colorHsvToRgb(clampedHsv),
 		"Preview");
 
 	if (oldColor)
@@ -344,7 +344,7 @@ bool colorPicker(const char* id, Color* inOutColor, ColorPickerFlags flags, cons
 	rcCurrentSVIndicator.y = rcSV.y + (1.0f - clampedHsv.b) * rcSV.height - indicatorSize / 2.0f * ctx->scale;
 	rcCurrentSVIndicator.width = indicatorSize;
 	rcCurrentSVIndicator.height = indicatorSize;
-	ctx->renderer.cmdSetColor(hsvToRgb({ clampedHsv.r, clampedHsv.g, clampedHsv.b, 1 }));
+	ctx->renderer.cmdSetColor(colorHsvToRgb({ clampedHsv.r, clampedHsv.g, clampedHsv.b, 1 }));
 	ctx->renderer.cmdDrawFilledRectangle(rcCurrentSVIndicator);
 	ctx->renderer.cmdSetLineStyle(LineStyle(Color::black, 3));
 	ctx->renderer.cmdDrawRectangle(rcCurrentSVIndicator);
@@ -395,7 +395,7 @@ bool colorPicker(const char* id, Color* inOutColor, ColorPickerFlags flags, cons
 			hsv.b = clampValue01(hsv.b);
 		}
 
-		crtColor = hsvToRgb(hsv);
+		crtColor = colorHsvToRgb(hsv);
 
 		std::string hexColorStr;
 
@@ -564,7 +564,7 @@ bool colorPicker(const char* id, Color* inOutColor, ColorPickerFlags flags, cons
 				ctx->colorPickerState.intA);
 		}
 
-		ctx->colorPickerState.currentHsv = hsv = rgbToHsv(crtColor);
+		ctx->colorPickerState.currentHsv = hsv = colorRgbToHsv(crtColor);
 		ctx->colorPickerState.currentEditingId = pickerId;
 		std::string hexColorStr;
 
@@ -575,7 +575,7 @@ bool colorPicker(const char* id, Color* inOutColor, ColorPickerFlags flags, cons
 	if (hui::textInput("colorPicker_hexColorEdit", ctx->colorPickerState.hexColor, ColorPickerState::maxHexColorSize, TextInputFlags::HexOnly))
 	{
 		crtColor = colorFromHex(ctx->colorPickerState.hexColor);
-		ctx->colorPickerState.currentHsv = hsv = rgbToHsv(crtColor);
+		ctx->colorPickerState.currentHsv = hsv = colorRgbToHsv(crtColor);
 
 		if (!has(flags, ColorPickerFlags::Float))
 		{

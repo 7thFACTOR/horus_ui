@@ -12,7 +12,7 @@ static void beginBoxLayoutInternal(const char* id, const Color& color, ThemeElem
 
 	layoutPush();
 	ctx->layout.type = LayoutType::Generic;
-	ctx->layout.id = ctx->id = idGen(id);
+	ctx->layout.id = ctx->id = genId(id);
 	ctx->layout.savedPosition = ctx->position;
 	ctx->layout.width = parentWidth - (state.border + padding.x) * ctx->scale * 2.0f;
 	

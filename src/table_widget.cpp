@@ -317,7 +317,7 @@ bool tableBegin(const char* id, u32 columnCount, f32 height, TableFlags flags)
 	if (columnCount == 0)
 		return false;
 
-	WidgetId tableId = idGen(id);
+	WidgetId tableId = genId(id);
 	auto& persistent = ctx->tablePersistentStates[tableId];
 
 	// initialize persistent state if needed
@@ -1052,7 +1052,7 @@ void tableEnd()
 	ctx->tableStack.pop_back();
 }
 
-void tableHeaderBegin()
+void tableStartHeader()
 {
 	auto& state = currentTable();
 	state.isInHeader = true;
@@ -1148,7 +1148,7 @@ void tableCellNext()
 {
 	auto& state = currentTable();
 
-	// handle end of same-line if it was active (similar to widgetAdd)
+	// handle end of same-line if it was active (similar to addWidget)
 	if (ctx->sameLine.wasEnabled)
 	{
 		ctx->position.x = ctx->sameLine.currentPosition.x;

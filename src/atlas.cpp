@@ -42,7 +42,7 @@ bool Atlas::addImageInternal(ImageId imgId, Rgba32* imageData, u32 imageWidth, u
 	if (!imageWidth || !imageHeight)
 		return false;
 
-	HORUS_ASSERT(imageData);
+	HUI_ASSERT(imageData);
 	u32 imageSize = imageWidth * imageHeight;
 	AtlasImage image;
 

@@ -23,8 +23,8 @@ bool sliderRotary(const char* label, f32* value, f32 minVal, f32 maxVal, f32 ste
 		ctx->widget.hasCustomWidth = true;
 	}
 
-	ctx->labelAndIdSet(label);
-	widgetAdd((bodyElem.normalState().height + padding.y * 2.0f) * ctx->scale);
+	ctx->setLabelAndId(label);
+	addWidget((bodyElem.normalState().height + padding.y * 2.0f) * ctx->scale);
 	buttonBehavior();
 
 	if (widgetIsHovered() && ctx->event.type == InputEvent::Type::MouseDown)
@@ -191,7 +191,7 @@ bool sliderRotary(const char* label, f32* value, f32 minVal, f32 maxVal, f32 ste
 		ctx->renderer.popClipRect();
 	}
 
-	focusableSet();
+	setFocusable();
 
 	return wasModified;
 }

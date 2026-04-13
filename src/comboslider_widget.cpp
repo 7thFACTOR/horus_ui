@@ -25,7 +25,7 @@ static bool comboSliderInternal(bool isInt, f32* value, f32 minVal, f32 maxVal, 
 		ctx->widget.changeEnded = clampValue(*value, minVal, maxVal);
 	}
 
-	ctx->id = idGen((void*)value);
+	ctx->id = genId((void*)value);
 	auto comboId = ctx->id;
 
 	bool notEditingText = (ctx->comboSlider.editingText && ctx->comboSlider.id != ctx->id) || !ctx->comboSlider.editingText;
@@ -35,7 +35,7 @@ static bool comboSliderInternal(bool isInt, f32* value, f32 minVal, f32 maxVal, 
 		ctx->widget.customWidth = ctx->layout.width/ctx->scale;
 		ctx->widget.hasCustomWidth = true;
 
-		widgetAdd((bodyElem.normalState().height + padding.y * 2.0f) * ctx->scale);
+		addWidget((bodyElem.normalState().height + padding.y * 2.0f) * ctx->scale);
 		buttonBehavior();
 
 		if (ctx->comboSlider.dragging && ctx->id == ctx->comboSlider.id)
@@ -370,7 +370,7 @@ static bool comboSliderInternal(bool isInt, f32* value, f32 minVal, f32 maxVal, 
 
 		ctx->renderer.cmdSetColor(tintApply(bodyElemState->textColor, TintColorType::Body));
 		ctx->renderer.cmdDrawTextInBox(str, ctx->widget.rect, HAlignType::Center, VAlignType::Center);
-		focusableSet();
+		widgetSetFocusable();
 	}
 
 	return ctx->widget.changeEnded;

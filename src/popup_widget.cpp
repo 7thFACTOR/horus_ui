@@ -13,7 +13,7 @@ void popupBegin(
 	const Point& position,
 	WidgetElementId widgetElementId)
 {
-	ctx->id = idGen(id);
+	ctx->id = genId(id);
 	auto& popup = ctx->popupStack[ctx->popupIndex];
 
 	popup.flags = flags;
@@ -22,7 +22,7 @@ void popupBegin(
 		width *= ctx->scale;
 
 	if (!has(flags, PopupFlags::SameLayer))
-		windowLayerIndexMaxIncrement();
+		incrementWindowLayerMaxIndex();
 
 	ctx->renderer.pushWindowDrawCmdLayer(DrawCmdLayerType::Foreground);
 	ctx->popupIndex++;
@@ -114,7 +114,7 @@ void popupBegin(
 	Rect popupRect = { pos.x, pos.y, width, height };
 
 	layoutPush();
-	widgetPositionPush();
+	widgetPushPosition();
 
 	ctx->layout = LayoutState(LayoutType::Generic);
 	ctx->position =
@@ -227,7 +227,7 @@ void popupEnd()
 	
 	ctx->position = ctx->layout.savedPosition;
 	ctx->renderer.popClipRect();
-	widgetPositionPop();
+	widgetPopPosition();
 	layoutPop();
 	
 	// Restore the complete sameLine context state

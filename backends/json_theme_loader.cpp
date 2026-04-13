@@ -16,26 +16,26 @@ bool loadPngImage(const char* path, ImageData& outImage)
 	i32 height = 0;
 	i32 comp = 0;
 	stbi_uc* imgFileData = nullptr;
-	HFile file = settingsGet().services.open(path, "rb");
+	HFile file = contextGetSettings().services.open(path, "rb");
 	u64 fsize = 0;
 
 	if (file)
 	{
-		settingsGet().services.seek(file, FileSeekMode::End, 0);
-		fsize = settingsGet().services.tell(file);
-		settingsGet().services.seek(file, FileSeekMode::Set, 0);
+		contextGetSettings().services.seek(file, FileSeekMode::End, 0);
+		fsize = contextGetSettings().services.tell(file);
+		contextGetSettings().services.seek(file, FileSeekMode::Set, 0);
 		imgFileData = new stbi_uc[fsize];
-		auto readSize = settingsGet().services.read(file, imgFileData, fsize);
+		auto readSize = contextGetSettings().services.read(file, imgFileData, fsize);
 
 		if (fsize != readSize)
 		{
-			settingsGet().services.close(file);
+			contextGetSettings().services.close(file);
 
 			return false;
 		}
 	}
 
-	settingsGet().services.close(file);
+	contextGetSettings().services.close(file);
 
 	stbi_uc* data = stbi_load_from_memory(imgFileData, fsize, &width, &height, &comp, 4);
 
@@ -61,13 +61,13 @@ bool savePngImage(const char* path, const ImageData& image)
 	auto write_func = [](void* context, void* data, int size)
 	{
 		const char* path = (const char*)context;
-		HFile file = settingsGet().services.open(path, "wb");
+		HFile file = contextGetSettings().services.open(path, "wb");
 
 		if (!file)
 			return;
 
-		settingsGet().services.write(file, data, size);
-		settingsGet().services.close(file);
+		contextGetSettings().services.write(file, data, size);
+		contextGetSettings().services.close(file);
 	};
 
 	return 0 != stbi_write_png_to_func(write_func, (void*)path, image.width, image.height, 32 / 8, image.pixels, 0);
@@ -83,22 +83,22 @@ void deleteImageData(ImageData& image)
 
 static std::string readTextFile(const char* path)
 {
-	auto file = settingsGet().services.open(path, "rb");
+	auto file = contextGetSettings().services.open(path, "rb");
 
 	if (!file)
 		return std::string("");
 
-	settingsGet().services.seek(file, FileSeekMode::End, 0);
-	auto size = settingsGet().services.tell(file);
+	contextGetSettings().services.seek(file, FileSeekMode::End, 0);
+	auto size = contextGetSettings().services.tell(file);
 	std::string text;
 
 	if (size != -1)
 	{
-		settingsGet().services.seek(file, FileSeekMode::Set, 0);
+		contextGetSettings().services.seek(file, FileSeekMode::Set, 0);
 
 		char* buffer = new char[size + 1];
 		memset(buffer, 0, size + 1);
-		auto readBytes = settingsGet().services.read(file, buffer, size);
+		auto readBytes = contextGetSettings().services.read(file, buffer, size);
 
 		if (readBytes == size)
 			text = buffer;
@@ -106,7 +106,7 @@ static std::string readTextFile(const char* path)
 		delete[] buffer;
 	}
 
-	settingsGet().services.close(file);
+	contextGetSettings().services.close(file);
 
 	return text;
 }
@@ -259,7 +259,7 @@ static void setThemeElement(
 		image = loadThemeImage(theme, imageFilename.c_str());
 	}
 
-	auto font = hui::themeGetFont(theme, fontName.c_str());
+	auto font = hui::themeFontGetFromTheme(theme, fontName.c_str());
 
 	u32 r = 0, g = 0, b = 0, a = 255;
 	Color bgColor;
@@ -305,7 +305,7 @@ static void setUserElement(
 		image = loadThemeImage(theme, imageFilename.c_str());
 	}
 
-	auto font = hui::themeGetFont(theme, fontName.c_str());
+	auto font = hui::themeFontGetFromTheme(theme, fontName.c_str());
 
 	u32 r = 0, g = 0, b = 0, a = 255;
 	Color bgColor;
@@ -343,7 +343,7 @@ static WidgetStateType widgetStateFromText(const std::string& stateName)
 
 HTheme loadThemeFromJson(const char* filename, char* errorTextBuffer, size_t errorTextBufferSize)
 {
-	HTheme theme = hui::themeCreate(hui::settingsGet().defaultAtlasSize);
+	HTheme theme = hui::themeCreate(hui::contextGetSettings().defaultAtlasSize);
 
 	Json::Reader reader;
 	Json::Value root;

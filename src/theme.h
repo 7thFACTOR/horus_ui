@@ -17,11 +17,19 @@ struct Image
 
 struct Theme
 {
+	struct FontVariation
+	{
+		Font font;
+		std::string name;
+		std::string filename;
+		u32 size = 0;
+		u32 usageCount = 0;
+	};
+
 	Theme(u32 atlasTextureSize);
 	~Theme();
-
 	inline ThemeElement& getElement(WidgetElementId id) { return elements[(u32)id]; }
-	void widgetSetDefaultStyle();
+	void setDefaultStyle();
 	void addImagesToAtlas();
 	Font* createFont(const std::string& name, const std::string& filename, u32 size);
 	void deleteFont(Font* font);
@@ -33,15 +41,6 @@ struct Theme
 	Image* getImage(ImageId id);
 	void addWhiteImage(u32 width);
 	void build();
-
-	struct FontVariation
-	{
-		Font font;
-		std::string name;
-		std::string filename;
-		u32 size = 0;
-		u32 usageCount = 0;
-	};
 
 	Atlas atlas;
 	u32 atlasSize = 4069;

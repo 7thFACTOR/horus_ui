@@ -172,7 +172,7 @@ void scrollViewBegin(const char* id, f32 height, Point scrollOffset, Point virtu
 	auto& scrollViewScrollThumbElemStateV = ctx->theme->getElement(WidgetElementId::ScrollViewScrollThumbV).normalState();
 	auto& scrollViewScrollBarElemStateV = ctx->theme->getElement(WidgetElementId::ScrollViewScrollBarV).normalState();
 
-	ctx->id = idGen(id);
+	ctx->id = genId(id);
 
 	if (height <= 0.0f)
 	{
@@ -274,7 +274,7 @@ void scrollViewBegin(const char* id, f32 height, Point scrollOffset, Point virtu
 	ctx->maxContentWidth = 0.0f;
 
 	ctx->renderer.pushClipRect(clipRect);
-	widgetPositionPush();
+	widgetPushPosition();
 	ctx->position = { clipRect.x, clipRect.y };
 	ctx->position -= useOffset;
 
@@ -682,14 +682,14 @@ Point scrollViewEnd()
 
 	// Persist combined authoritative offset and return it.
 	scrollViewState.scrollOffset = scrollOffset;
-	widgetPositionPop();
-	widgetAdd(height/ctx->scale);
+	widgetPopPosition();
+	addWidget(height/ctx->scale);
 	layoutPop();
 
 	return scrollOffset;
 }
 
-void virtualListBegin(u32 totalRowCount, f32 itemHeight, f32 scrollPos)
+void virtualListContentBegin(u32 totalRowCount, f32 itemHeight, f32 scrollPos)
 {
 	f32 skipRows = scrollPos / itemHeight;
 	auto pos = ctx->position;
@@ -700,7 +700,7 @@ void virtualListBegin(u32 totalRowCount, f32 itemHeight, f32 scrollPos)
 	ctx->virtualListStack.back().lastPosition = pos;
 }
 
-void virtualListEnd()
+void virtualListContentEnd()
 {
 	hui::widgetSetPosition(
 		{
@@ -710,7 +710,7 @@ void virtualListEnd()
 	ctx->virtualListStack.pop_back();
 }
 
-void virtualListBegin(VirtualScrollInfo& info)
+void virtualListContentBegin(VirtualScrollInfo& info)
 {
 	// Determine current scroll view context
 	WidgetId svId = ctx->layout.id;

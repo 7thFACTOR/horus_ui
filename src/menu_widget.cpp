@@ -12,7 +12,7 @@ bool menuBarBegin()
 	auto& menuBarElem = ctx->theme->getElement(WidgetElementId::MenuBarBody);
 	f32 height = menuBarElem.normalState().height * ctx->scale;
 
-	ctx->id = idGen("__MENUBAR__");
+	ctx->id = genId("__MENUBAR__");
 
 	ctx->layoutStack.push_back(ctx->layout);
 	ctx->layout.savedPosition = ctx->position;
@@ -50,7 +50,7 @@ bool beginMenuInternal(const char* label, SelectableFlags stateFlags, bool conte
 	auto& menuBarItemElem = ctx->theme->getElement(WidgetElementId::MenuBarItem);
 	auto menuBarItemElemState = menuBarItemElem.normalState();
 	
-	ctx->labelAndIdSet(label);
+	ctx->setLabelAndId(label);
 	
 	Utf32String uniStr;
 	
@@ -180,13 +180,13 @@ bool beginMenuInternal(const char* label, SelectableFlags stateFlags, bool conte
 			ctx->menuItemChosen = false;
 			ctx->event.type = InputEvent::Type::None;
 			ctx->menuStack[ctx->menuDepth].active = true;
-			ctx->skipRenderAndInputSet(true);
+			ctx->setSkipRenderAndInput(true);
 			ctx->menuStack[ctx->menuDepth].size.x = 0;
 		}
 
 		if (ctx->menuStack[ctx->menuDepth].active)
 		{
-			auto rc = widgetRectGet();
+			auto rc = ctx->widget.rect;
 			auto& menuBodyElem = ctx->theme->getElement(WidgetElementId::MenuBody);
 			ctx->activeMenuBarItemWidgetWidth = rc.width;
 			ctx->renderer.pushClipRect(ctx->renderer.getWindowRect(), false);
@@ -325,8 +325,8 @@ bool menuItem(const char* label, const char* shortcut, HImage img, SelectableFla
 	bool hasCheck = !!(stateFlags & SelectableFlags::Checkable);
 	bool isChecked = !!(stateFlags & SelectableFlags::Checked);
 
-	ctx->labelAndIdSet(label);
-	widgetAdd(bodyElem.normalState().height * ctx->scale);
+	ctx->setLabelAndId(label);
+	addWidget(bodyElem.normalState().height * ctx->scale);
 	buttonBehavior(true);
 
 	if (

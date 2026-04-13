@@ -63,9 +63,9 @@ void windowDeleteInternal(Window* wnd);
 void windowCloseInternal(Window* wnd);
 bool windowDockInternal(Window* wnd, DockNode* targetNode, DockType dockType, u32 tabIndex = 0, const Point* undockedWindowPos = nullptr);
 void dockNodeTabs(DockNode* node);
-void dockingSystemUpdate();
-void dockNodeEventsHandle(DockNode* node);
-void dockingMouseUpHandle();
+void updateDockingSystem();
+void handleDockNodeEvents(DockNode* node);
+void handleDockingMouseUp();
 
 
 }

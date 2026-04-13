@@ -27,7 +27,7 @@ void Theme::addWhiteImage(u32 width)
 	images[whiteImage->id] = whiteImage;
 }
 
-void Theme::widgetSetDefaultStyle()
+void Theme::setDefaultStyle()
 {
 	for (u32 i = 0; i < (u32)WidgetElementId::Count; i++)
 	{
@@ -195,7 +195,7 @@ Image* Theme::getImage(ImageId id)
 void Theme::build()
 {
 	atlas.create(atlasSize, atlasSize, 5);
-	HORUS_ASSERT(whiteImage);
+	HUI_ASSERT(whiteImage);
 	addImagesToAtlas();
 	addFontGlyphsToAtlas();
 	atlas.pack();
@@ -235,7 +235,7 @@ void Theme::build()
 		}
 	}
 
-	widgetSetDefaultStyle();
+	setDefaultStyle();
 }
 
 }

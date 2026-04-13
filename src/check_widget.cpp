@@ -10,7 +10,7 @@ bool check(const char* label, bool* checkVar)
 	auto& checkBodyElem = ctx->theme->getElement(WidgetElementId::CheckBody);
 	auto& checkMarkElem = ctx->theme->getElement(WidgetElementId::CheckMark);
 
-	ctx->labelAndIdSet(label);
+	ctx->setLabelAndId(label);
 
 	auto textSize = checkBodyElem.normalState().font->computeTextSize(ctx->widgetLabel.c_str());
 	auto& padding = widgetGetPadding();
@@ -25,7 +25,7 @@ bool check(const char* label, bool* checkVar)
 	ctx->widget.customWidth = markWidthScaled + textSize.width + bulletTextSpacing;
 	ctx->widget.hasCustomWidth = true;
 
-	widgetAdd(std::max(textSize.height, markHeightScaled));
+	addWidget(std::max(textSize.height, markHeightScaled));
 
 	// set this width to just click on the bullet+text area
 	ctx->widget.rect.width = ctx->widget.customWidth;

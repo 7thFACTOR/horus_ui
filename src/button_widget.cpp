@@ -9,14 +9,14 @@ namespace hui
 {
 bool button(const char* label)
 {
-	ctx->labelAndIdSet(label);
+	ctx->setLabelAndId(label);
 
 	auto& btnBodyElem = ctx->theme->getElement(WidgetElementId::ButtonBody);
 	auto textWidth = btnBodyElem.normalState().font->computeTextSize(ctx->widgetLabel.c_str());
 
 	ctx->widget.customWidth = btnBodyElem.normalState().border * 2.0f + textWidth.width;
 	ctx->widget.hasCustomWidth = true;
-	widgetAdd(btnBodyElem.normalState().height);
+	addWidget(btnBodyElem.normalState().height);
 	buttonBehavior();
 
 	auto btnBodyElemState = &btnBodyElem.normalState();
@@ -47,7 +47,7 @@ bool button(const char* label)
 			VAlignType::Center, true);
 	}
 
-	focusableSet();
+	widgetSetFocusable();
 
 	return ctx->widget.clicked;
 }
@@ -66,8 +66,8 @@ static bool imageButtonInternal(HImage img, HImage disabledImg, f32 width, f32 h
 	ctx->widget.customWidth = width;
 	ctx->widget.hasCustomWidth = true;
 
-	ctx->labelAndIdSet(nullptr);
-	widgetAdd(height * ctx->scale);
+	ctx->setLabelAndId(nullptr);
+	addWidget(height * ctx->scale);
 	buttonBehavior();
 
 	f32 pressedIncrement = 0.0f;
@@ -108,7 +108,7 @@ static bool imageButtonInternal(HImage img, HImage disabledImg, f32 width, f32 h
 			});
 	}
 
-	focusableSet();
+	widgetSetFocusable();
 
 	if (widgetIsClicked())
 		forceRepaint();

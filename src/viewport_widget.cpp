@@ -13,7 +13,7 @@ Rect viewportBegin(const char* id, f32 height)
 	}
 
 	ctx->setLabelAndId(id);
-	widgetAdd(height);
+	addWidget(height);
 	buttonBehavior();
 
 	auto scissor = ctx->renderer.pushClipRect(ctx->widget.rect);

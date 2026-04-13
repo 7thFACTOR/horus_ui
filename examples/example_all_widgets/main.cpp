@@ -92,7 +92,7 @@ int main(int argc, char** args)
 	hui::contextSet(huiContext); // set as current context
 
 	// Create the main window (this will also create a graphics (GL/VK/D3D/etc.) context)
-	auto mainWnd = hui::settingsGet().services.createWindow((std::string("Horus Example - All Widgets - ") + gfxApiName).c_str(), hui::NativeWindowFlags::Resizable, hui::NativeWindowState::Maximized, hui::Rect(0, 0, 1500, 800));
+	auto mainWnd = hui::contextGetSettings().services.createWindow((std::string("Horus Example - All Widgets - ") + gfxApiName).c_str(), hui::NativeWindowFlags::Resizable, hui::NativeWindowState::Maximized, hui::Rect(0, 0, 1500, 800));
 
 	// Create a main dock node for the main window, so we can dock windows in there
 	hui::DockNodeId mainDockNode = hui::dockNodeCreateRoot(mainWnd);
@@ -124,7 +124,7 @@ int main(int argc, char** args)
 	}
 
 	// Grab a font handle from the theme to use later
-	auto largeFnt = hui::themeGetFont(theme, "title");
+	auto largeFnt = hui::themeFontGetFromTheme(theme, "title");
 
 	// Set the current theme
 	hui::themeSet(theme);
@@ -167,7 +167,7 @@ int main(int argc, char** args)
 			auto theme = hui::loadThemeFromJson(themeFilePath, err, errSize);
 			hui::themeSet(theme);
 			loadImages();
-			largeFnt = hui::themeGetFont(theme, "title");
+			largeFnt = hui::themeFontGetFromTheme(theme, "title");
 			hui::themeBuild(theme);
 
 			switch (sdlParams.gfxApi)
@@ -204,8 +204,8 @@ int main(int argc, char** args)
 		static auto lastModTime = std::filesystem::last_write_time(themeFilePath);
 		static f32 checkTimer = 0;
 
-		hui::settingsGet().deltaTime = hui::getSdl3DeltaTime();
-		checkTimer += hui::settingsGet().deltaTime;
+		hui::contextGetSettings().deltaTime = hui::getSdl3DeltaTime();
+		checkTimer += hui::contextGetSettings().deltaTime;
 
 		// check if theme file has been modified (every 1 second)
 		if (checkTimer >= 1.0f)
@@ -231,9 +231,9 @@ int main(int argc, char** args)
 		hui::contextUpdate();
 
 		// reload theme on F2 key press
-		if (hui::inputGetEvent().type == hui::InputEvent::Type::Key
-			&& hui::inputGetEvent().key.code == hui::KeyCode::F2
-			&& hui::inputGetEvent().key.down)
+		if (hui::inputEventGet().type == hui::InputEvent::Type::Key
+			&& hui::inputEventGet().key.code == hui::KeyCode::F2
+			&& hui::inputEventGet().key.down)
 		{
 			reloadTheme();
 		}
@@ -247,7 +247,7 @@ int main(int argc, char** args)
 
 			auto userDrawing = [](hui::HNativeWindow wnd)
 			{
-				auto nativeWndSize = hui::settingsGet().services.getWindowSize(wnd);
+				auto nativeWndSize = hui::contextGetSettings().services.getWindowSize(wnd);
 				hui::Rect rc;
 
 				if (confineSceneToWindow)
@@ -292,7 +292,7 @@ int main(int argc, char** args)
 				//glEnd();
 
 				//x = sinf(t);
-				//t += hui::settingsGet().deltaTime;
+				//t += hui::contextGetSettings().deltaTime;
 				//glViewport(vp[0], vp[1], vp[2], vp[3]);
 			};
 
@@ -309,7 +309,7 @@ int main(int argc, char** args)
 				hui::Rect panelRect = { 5, 5, 300, 500 };
 				hui::WidgetElementInfo elemInfo;
 				hui::themeGetWidgetElementInfo(hui::WidgetElementId::PopupBody, hui::WidgetStateType::Normal, elemInfo);
-				hui::cmdSetColor(hui::Color::white);
+				//hui::renderSetColor(hui::Color::white);
 				// draw before the beginContainer, because it will clip our panel image (using padding)
 				//hui::drawBorderedImage(elemInfo.image, elemInfo.border, panelRect);
 
@@ -321,10 +321,10 @@ int main(int argc, char** args)
 				//hui::label((std::to_string(lastMs) + "##rer").c_str());
 
 				hui::label("Peak Frame MS: "); hui::sameLine();
-				hui::label(std::to_string(hui::frameTimePeakGetMs()).c_str());
+				hui::label(std::to_string(hui::frameTimeGetPeakMs()).c_str());
 
 				hui::label("Avg Frame MS: "); hui::sameLine();
-				hui::label(std::to_string(hui::frameTimeAvgGetMs()).c_str());
+				hui::label(std::to_string(hui::frameTimeGetAvgMs()).c_str());
 
 
 
@@ -511,7 +511,7 @@ int main(int argc, char** args)
 				};
 
 				if (med)
-					hui::textMultilineInput("mti", strMulti, 300000, 10/*, hui::MultilineTextInputFlags::LineNumbers*/,
+					hui::textInputMultiline("mti", strMulti, 300000, 10/*, hui::MultilineTextInputFlags::LineNumbers*/,
 						hui::MultilineTextInputFlags::LineNumbers
 						| hui::MultilineTextInputFlags::HighlightCurrentLine
 						|hui::MultilineTextInputFlags::WordWrap
@@ -591,24 +591,22 @@ int main(int argc, char** args)
 				hui::label("Table Widget:");
 				hui::spacingPush(0);
 				hui::widgetPaddingPush(0);
-				if (hui::beginTable("myTable", 4, 440, hui::TableFlags::Borders | hui::TableFlags::None | hui::TableFlags::AltRowBg | hui::TableFlags::Resizable | hui::TableFlags::Stretch))
+				if (hui::tableBegin("myTable", 4, 440, hui::TableFlags::Borders | hui::TableFlags::None | hui::TableFlags::AltRowBg | hui::TableFlags::Resizable | hui::TableFlags::Stretch))
 				{
-					hui::startHeader();
-					hui::setupColumn(0, 0);
-					hui::setupColumn(1, 110, hui::TableColumnFlags::FixedResize);
-					hui::setupColumn(2, 0);
-					hui::setupColumn(3, 0);
+					hui::tableStartHeader();
+					hui::tableColumnSetup(0, 0);
+					hui::tableColumnSetup(1, 110, hui::TableColumnFlags::FixedResize);
+					hui::tableColumnSetup(2, 0);
+					hui::tableColumnSetup(3, 0);
 
 					hui::label("Column 1", hui::HAlignType::Center);
-					hui::nextCell();
+					hui::tableCellNext();
 					hui::label("Column 2", hui::HAlignType::Center);
-					hui::nextCell();
+					hui::tableCellNext();
 					hui::label("Column 3", hui::HAlignType::Center);
 
-					hui::nextCell();
+					hui::tableCellNext();
 					hui::label("Column 4", hui::HAlignType::Center);
-
-					
 
 					//// Virtualized rows: 10000 rows using VirtualScrollInfo
 					//static hui::VirtualScrollInfo vtableInfo(10000); // 10k rows
@@ -627,12 +625,12 @@ int main(int argc, char** args)
 					//		{
 					for (u32 k = 0; k < 100; ++k)
 					{
-						hui::nextRow();
+						hui::tableCellNext();
 						auto is = std::to_string(k);
 						hui::label(is.c_str());
 						hui::sameLine();
 						hui::button(("Btn " + is).c_str());
-						hui::nextCell();
+						hui::tableCellNext();
 						static char col2[100] = { 0 };
 						hui::idPush((int)k);
 						hui::widgetSetNextWidth(100);
@@ -648,9 +646,9 @@ int main(int argc, char** args)
 						hui::radio(("Rad1i##" + is).c_str(), &rad, 0);
 						hui::radio(("Rad2i##" + is).c_str(), &rad, 1);
 						hui::idPop();
-						hui::nextCell();
+						hui::tableCellNext();
 						hui::label("Col 3");
-						hui::nextCell();
+						hui::tableCellNext();
 						hui::label("Col 4");
 					}
 					//		}
@@ -659,7 +657,7 @@ int main(int argc, char** args)
 
 					/*hui::endVirtualListContent();
 					scrollPos = hui::scrollViewEnd();*/
-					hui::endTable();
+					hui::tableEnd();
 					hui::widgetPaddingPop();
 					hui::spacingPop();
 
@@ -686,7 +684,7 @@ int main(int argc, char** args)
 				hui::scrollViewBegin("##virt_list_scroll", viewH, vscroll, hui::Point(0, 0), hui::ScrollViewFlags::None);
 
 				// initialize virtual list content (this sets the scrollview virtual height)
-				hui::beginVirtualListContent(vinfo);
+				hui::virtualListContentBegin(vinfo);
 
 				// Step loop (measures first item, then issues remaining range)
 				while (vinfo.nextStep())
@@ -706,7 +704,7 @@ int main(int argc, char** args)
 					}
 				}
 
-				hui::endVirtualListContent();
+				hui::virtualListContentEnd();
 				vscroll = hui::scrollViewEnd();
 
 				// show small status
@@ -724,7 +722,7 @@ int main(int argc, char** args)
 
 			hui::frameEnd();
 
-			lastMs = hui::getLastFrameTimeMs();
+			lastMs = hui::frameTimeGetLastMs();
 
 			if (lastEventInQueue)
 				hui::present();
@@ -735,11 +733,11 @@ int main(int argc, char** args)
 		{
 			for (int i = 0; i < eventCount; i++)
 			{
-				hui::setInputEvent(hui::inputEventGetAt(i));
+				hui::inputEventSet(hui::inputEventGetAtIndex(i));
 
-				if (hui::inputGetEvent().type == hui::InputEvent::Type::WindowClose)
+				if (hui::inputEventGet().type == hui::InputEvent::Type::WindowClose)
 				{
-					if (hui::inputGetEvent().window == mainWnd)
+					if (hui::inputEventGet().window == mainWnd)
 					{
 						exitNow = true;
 					}

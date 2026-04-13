@@ -47,12 +47,12 @@ bool vecEditorInternal(f64& x, f64& y, f64& z, f64 scrollStep, bool useZ)
 			{
 				ctx->vecEditor.draggingValue = true;
 				ctx->vecEditor.draggedId = ctx->id;
-				ctx->vecEditor.lastMousePos = hui::inputGetEvent().mouse.point;
+				ctx->vecEditor.lastMousePos = hui::inputEventGet().mouse.point;
 				hui::windowSetCapture();
 			}
 		}
 
-		if (hui::inputGetEvent().type == hui::InputEvent::Type::MouseUp)
+		if (hui::inputEventGet().type == hui::InputEvent::Type::MouseUp)
 		{
 			ctx->vecEditor.draggingValue = false;
 			ctx->vecEditor.draggedId = 0;
@@ -64,11 +64,11 @@ bool vecEditorInternal(f64& x, f64& y, f64& z, f64 scrollStep, bool useZ)
 			&& ctx->vecEditor.draggedId == ctx->id)
 		{
 			value = atof(strAxis);
-			f32 dx = hui::inputGetEvent().mouse.point.x - ctx->vecEditor.lastMousePos.x;
+			f32 dx = hui::inputEventGet().mouse.point.x - ctx->vecEditor.lastMousePos.x;
 			f32 unitPerPixel = (f32)scrollStep;
 
 			value += (f64)dx * unitPerPixel;
-			ctx->vecEditor.lastMousePos = hui::inputGetEvent().mouse.point;
+			ctx->vecEditor.lastMousePos = hui::inputEventGet().mouse.point;
 			hui::stringFromF32((f32)value, strAxis, VectorEditorState::maxStrSize, 4);
 			modified = true;
 		}

@@ -172,7 +172,7 @@ void windowDock(const char* windowId, const char* targetWindowId, DockType dockT
 		}
 	}
 
-	HORUS_ASSERT(wnd1);
+	HUI_ASSERT(wnd1);
 
 	if (wnd1)
 	{

@@ -21,7 +21,7 @@ bool list(const char* id, bool* selectedItems, ListSelectionMode selectionType, 
 	f32 totalHeight = itemHeight * itemCount;
 	Point scrollOffset;
 
-	u32 listId = idGen(id);
+	u32 listId = genId(id);
 	ctx->id = listId;
 
 	auto iter = ctx->scrollViewState.find(listId);
@@ -147,8 +147,8 @@ bool selectableInternal(const char* label, HFont font, SelectableFlags stateFlag
 	auto& bodyElem = ctx->theme->getElement(WidgetElementId::SelectableBody);
 	Font* fnt = font ? (Font*)font : bodyElem.normalState().font;
 
-	ctx->labelAndIdSet(label);
-	widgetAdd(fmaxf(
+	ctx->setLabelAndId(label);
+	addWidget(fmaxf(
 		bodyElem.normalState().height,
 		fnt->getMetrics().height) * ctx->scale);
 	buttonBehavior();

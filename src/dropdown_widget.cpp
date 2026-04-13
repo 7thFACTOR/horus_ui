@@ -12,7 +12,7 @@ bool dropdown(const char* id, i32& selectedIndex, const char** items, u32 itemCo
 	auto& arrowElem = ctx->theme->getElement(WidgetElementId::DropdownArrow);
 	auto& padding = widgetGetPadding();
 
-	ctx->id = idGen(id);
+	ctx->id = genId(id);
 
 	if (ctx->sameLine.enabled)
 	{
@@ -20,7 +20,7 @@ bool dropdown(const char* id, i32& selectedIndex, const char** items, u32 itemCo
 		ctx->widget.hasCustomWidth = true;
 	}
 
-	widgetAdd((bodyElem.normalState().height + padding.y * 2.0f) * ctx->scale);
+	addWidget((bodyElem.normalState().height + padding.y * 2.0f) * ctx->scale);
 	buttonBehavior();
 
 	auto bodyElemState = &bodyElem.normalState();
@@ -87,7 +87,7 @@ bool dropdown(const char* id, i32& selectedIndex, const char** items, u32 itemCo
 			VAlignType::Center, true);
 	}
 
-	focusableSet();
+	setFocusable();
 
 	if (ctx->widget.clicked)
 	{

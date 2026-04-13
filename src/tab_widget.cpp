@@ -11,7 +11,7 @@ void tabGroupBegin(TabIndex selectedIndex)
 	auto& tabGroupElemState = ctx->theme->getElement(WidgetElementId::TabGroupBody).normalState();
 	f32 height = tabGroupElemState.height * ctx->scale;
 
-	widgetPositionPush();
+	widgetPushPosition();
 	// round position only when it gets modified, to avoid accumulation of float precision errors
 	ctx->widget.rect.set(
 		round(ctx->position.x),
@@ -72,7 +72,7 @@ TabIndex tabGroupEnd()
 	auto& tabGroupElemState = ctx->theme->getElement(WidgetElementId::TabGroupBody).normalState();
 	f32 height = tabGroupElemState.height * ctx->scale;
 
-	widgetPositionPop();
+	widgetPopPosition();
 
 	ctx->position.y += height;
 	ctx->position.y = round(ctx->position.y);
@@ -117,7 +117,7 @@ void tab(const char* label, HImage img)
 
 	f32 height = (tabElemState->height + padding.y * 2.0f) * ctx->scale;
 
-	ctx->id = idFromPositionGen(label);
+	ctx->id = genIdFromPosition(label);
 
 	ctx->widget.rect.set(
 		round(ctx->position.x),

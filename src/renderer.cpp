@@ -539,7 +539,7 @@ void DrawCmdLayerSplitter::merge()
 		layer.clear();
 	}
 
-	HORUS_ASSERT(ctx->renderer.currentDrawCmdLayer);
+	HUI_ASSERT(ctx->renderer.currentDrawCmdLayer);
 	ctx->renderer.currentDrawCmdLayer->insert(ctx->renderer.currentDrawCmdLayer->end(), layers[0].begin(), layers[0].end());
 }
 
@@ -548,7 +548,7 @@ void DrawCmdLayerSplitter::setLayer(u32 index)
 	if (index == currentLayerIndex)
 		return;
 
-	HORUS_ASSERT(ctx->renderer.currentDrawCmdLayer);
+	HUI_ASSERT(ctx->renderer.currentDrawCmdLayer);
 	layers[currentLayerIndex].swap(*ctx->renderer.currentDrawCmdLayer);
 	currentLayerIndex = index;
 	ctx->renderer.currentDrawCmdLayer->swap(layers[currentLayerIndex]);
@@ -683,9 +683,9 @@ void Renderer::executeDrawCommands(HNativeWindow wnd)
 					cmd.data.drawQuad4Colors.bottomLeft);
 				break;
 			case DrawCommand::Type::SetTexture:
-				HORUS_ASSERT(cmd.data.setTexture.texture);
-				HORUS_ASSERT(cmd.data.setTexture.width);
-				HORUS_ASSERT(cmd.data.setTexture.height);
+				HUI_ASSERT(cmd.data.setTexture.texture);
+				HUI_ASSERT(cmd.data.setTexture.width);
+				HUI_ASSERT(cmd.data.setTexture.height);
 
 				if (currentTexture != cmd.data.setTexture.texture && cmd.data.setTexture.texture)
 				{
@@ -709,7 +709,7 @@ void Renderer::executeDrawCommands(HNativeWindow wnd)
 		layerCmds.clear();
 	}
 
-	HORUS_ASSERT(currentWindowContext->batches.size());
+	HUI_ASSERT(currentWindowContext->batches.size());
 	ctx->settings.services.draw(vertexBufferData.vertices.data(), vertexBufferData.drawVertexCount, currentWindowContext->batches.data(), currentWindowContext->batches.size());
 }
 
@@ -771,7 +771,7 @@ void Renderer::setWindowSize(const Point& size)
 
 void Renderer::pushWindowDrawCmdLayer(DrawCmdLayerType type)
 {
-	HORUS_ASSERT(currentWindowContext);
+	HUI_ASSERT(currentWindowContext);
 	currentWindowContext->drawCmdLayerTypeStack.push_back(currentWindowContext->currentDrawCmdLayer);
 	currentWindowContext->currentDrawCmdLayer = type;
 	currentDrawCmdLayer = &currentWindowContext->drawCmdLayers[(u32)type];
@@ -779,7 +779,7 @@ void Renderer::pushWindowDrawCmdLayer(DrawCmdLayerType type)
 
 void Renderer::popWindowDrawCmdLayer()
 {
-	HORUS_ASSERT(currentWindowContext);
+	HUI_ASSERT(currentWindowContext);
 	currentWindowContext->currentDrawCmdLayer = currentWindowContext->drawCmdLayerTypeStack.back();
 	currentWindowContext->drawCmdLayerTypeStack.pop_back();
 	currentDrawCmdLayer = &currentWindowContext->drawCmdLayers[(u32)currentWindowContext->currentDrawCmdLayer];
@@ -2003,8 +2003,8 @@ void Renderer::drawImageBordered(Image* image, u32 border, const Rect& rect, f32
 	f32 fborder = (f32)border;
 	f32 borderU = fborder / (f32)currentTextureWidth;
 	f32 borderV = fborder / (f32)currentTextureHeight;
-	HORUS_ASSERT(currentTextureWidth);
-	HORUS_ASSERT(currentTextureHeight);
+	HUI_ASSERT(currentTextureWidth);
+	HUI_ASSERT(currentTextureHeight);
 	// this is the double size, two borders used in computations
 	f32 borderU2 = borderU * 2.0f;
 	f32 borderV2 = borderV * 2.0f;
@@ -2714,7 +2714,7 @@ void Renderer::addDrawCommand(const DrawCommand& cmd)
 	if (disableRendering || skipRender)
 		return;
 
-	HORUS_ASSERT(currentDrawCmdLayer);
+	HUI_ASSERT(currentDrawCmdLayer);
 	currentDrawCmdLayer->push_back(cmd);
 }
 

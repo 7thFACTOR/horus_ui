@@ -116,7 +116,7 @@ DockNode* DockNode::removeFromParent()
 			// we need to remove this now, it will interfere with redudancy checks
 			auto iter = std::find(ctx->nativeWindows.begin(), ctx->nativeWindows.end(), nativeWindow);
 
-			HORUS_ASSERT(iter != ctx->nativeWindows.end());
+			HUI_ASSERT(iter != ctx->nativeWindows.end());
 
 			if (iter != ctx->nativeWindows.end()) ctx->nativeWindows.erase(iter);
 
@@ -386,7 +386,7 @@ bool DockNode::checkRedundancy()
 			// find it again, remove it, leaving children in the parent node
 			iterPosThis = std::find(parent->children.begin(), parent->children.end(), this);
 
-			HORUS_ASSERT(iterPosThis != parent->children.end());
+			HUI_ASSERT(iterPosThis != parent->children.end());
 
 			if (iterPosThis != parent->children.end())
 			{
@@ -641,7 +641,7 @@ bool dockingLoadStateFromMemory(const u8* stateInfo, size_t stateInfoSize)
 	return true;
 }
 
-HNativeWindow createNativeWindow(const std::string& title, NativeWindowFlags flags, NativeWindowState state, const Rect& rect)
+HNativeWindow nativeWindowCreate(const std::string& title, NativeWindowFlags flags, NativeWindowState state, const Rect& rect)
 {
 	auto wnd = ctx->settings.services.createWindow(title.c_str(), flags, state, rect);
 
@@ -682,7 +682,7 @@ DockNode* dockNodeRootCreateInternal(HNativeWindow nativeWindow)
 
 DockNode* dockNodeRootGet(HNativeWindow nativeWindow)
 {
-	HORUS_ASSERT(nativeWindow);
+	HUI_ASSERT(nativeWindow);
 
 	if (!nativeWindow) return nullptr;
 
@@ -696,7 +696,7 @@ DockNode* dockNodeRootGet(HNativeWindow nativeWindow)
 
 void dockNodeRootDelete(HNativeWindow nativeWindow)
 {
-	HORUS_ASSERT(nativeWindow);
+	HUI_ASSERT(nativeWindow);
 
 	auto iterWnd = ctx->docking.rootNativeWindowDockNodes.find(nativeWindow);
 
@@ -1533,9 +1533,9 @@ bool windowDockInternal(Window* wnd, DockNode* targetNode, DockType dockType, u3
 			rcWnd.y = undockedWindowPos->y;
 		}
 
-		auto nativeWnd = createNativeWindow(wnd->title, NativeWindowFlags::Resizable, NativeWindowState::Normal, rcWnd);
+		auto nativeWnd = nativeWindowCreate(wnd->title, NativeWindowFlags::Resizable, NativeWindowState::Normal, rcWnd);
 				
-		wnd->dockNode = dockNodeCreateRoot(nativeWnd);
+		wnd->dockNode = dockNodeRootCreateInternal(nativeWnd);
 		wnd->dockNode->createdByDockingSystem = true;
 		wnd->dockNode->windows.push_back(wnd);
 		wnd->clientRect = wnd->dockNode->rect;
@@ -2441,10 +2441,10 @@ void handleDockingMouseMove(const InputEvent& event, DockNode* node)
 	handleDockNodeResize(node);
 }
 
-void dockNodeEventsHandle(DockNode* node)
+void handleDockNodeEvents(DockNode* node)
 {
 	auto& rect = node->rect;
-	auto& event = hui::inputGetEvent();
+	auto& event = hui::inputEventGet();
 
 	//TODO: find current window index better
 	// find if the current window of the view pane had a layer index > 0
@@ -2573,7 +2573,7 @@ void drawDockPreview(Window* window, const Rect& windowRect)
 	ctx->renderer.popClipRect();
 }
 
-void dockingSystemUpdate()
+void updateDockingSystem()
 {
 	if (ctx->docking.rootNativeWindowDockNodes.empty())
 		return;
@@ -2600,7 +2600,7 @@ void dockingSystemUpdate()
 
 	for (auto& wnd : copyOfRootNativeWindowDockNodes)
 	{
-		dockNodeEventsHandle(wnd.second);
+		handleDockNodeEvents(wnd.second);
 	}
 
 	if (ctx->event.type == InputEvent::Type::WindowResized || ctx->event.type == InputEvent::Type::WindowMoved)
@@ -2638,7 +2638,7 @@ void dockingSystemUpdate()
 
 	if (ctx->event.type == InputEvent::Type::MouseUp)
 	{
-		dockingMouseUpHandle();
+		handleDockingMouseUp();
 	}
 
 	if (ds.lastHoveredNode && ds.lastHoveredNode != ds.hoveredNode)

@@ -65,7 +65,7 @@ int main(int argc, char** args)
 	hui::contextSet(huiContext); // set as current context
 
 	// Create the main window (this will also create a graphics (GL/VK/D3D/etc.) context)
-	auto mainWnd = hui::settingsGet().services.createWindow((std::string("Horus Example - No Docking - ") + gfxApiName).c_str(), hui::NativeWindowFlags::Resizable, hui::NativeWindowState::Maximized, hui::Rect(0, 0, 1000, 800));
+	auto mainWnd = hui::contextGetSettings().services.createWindow((std::string("Horus Example - No Docking - ") + gfxApiName).c_str(), hui::NativeWindowFlags::Resizable, hui::NativeWindowState::Maximized, hui::Rect(0, 0, 1000, 800));
 	
 	// Load a theme
 	const u32 errSize = 2048;
@@ -97,8 +97,8 @@ int main(int argc, char** args)
 	while (!exitNow)
 	{
 		// Clear the main window as a test
-		hui::settingsGet().services.setCurrentWindow(mainWnd);
-		hui::settingsGet().services.clearBackbuffer(hui::Color(0.1f, 0.4f, 0.4f, 1));
+		hui::contextGetSettings().services.setCurrentWindow(mainWnd);
+		hui::contextGetSettings().services.clearBackbuffer(hui::Color(0.1f, 0.4f, 0.4f, 1));
 		
 		// Theme file path
 		static const char* themeFilePath = "../themes/default.theme.json";
@@ -128,7 +128,7 @@ int main(int argc, char** args)
 		static auto lastModTime = std::filesystem::last_write_time(themeFilePath);
 		static f32 checkTimer = 0;
 
-		checkTimer += hui::settingsGet().deltaTime;
+		checkTimer += hui::contextGetSettings().deltaTime;
 
 		// Check if theme file has been modified (every 1 second)
 		if (checkTimer >= 1.0f)
@@ -150,13 +150,13 @@ int main(int argc, char** args)
 			}
 		}
 
-		hui::settingsGet().deltaTime = hui::getSdl3DeltaTime();
+		hui::contextGetSettings().deltaTime = hui::getSdl3DeltaTime();
 		// Get the events from SDL or whatever input provider is set, it will fill a queue of events
 		hui::contextUpdate();
 
-		if (hui::inputGetEvent().type == hui::InputEvent::Type::Key
-			&& hui::inputGetEvent().key.code == hui::KeyCode::F2
-			&& hui::inputGetEvent().key.down)
+		if (hui::inputEventGet().type == hui::InputEvent::Type::Key
+			&& hui::inputEventGet().key.code == hui::KeyCode::F2
+			&& hui::inputEventGet().key.down)
 		{
 			reloadTheme();
 		}
@@ -271,7 +271,7 @@ int main(int argc, char** args)
 					hui::endMenuBar();
 				}
 
-				hui::labelCustomFont("Once upon a time in the west", hui::themeGetFont(theme, "title"), hui::HAlignType::Center);
+				hui::labelCustomFont("Once upon a time in the west", hui::themeFontGet(theme, "title"), hui::HAlignType::Center);
 				hui::line();
 				
 				if (hui::button("Do not push this button"))
@@ -439,9 +439,9 @@ int main(int argc, char** args)
 			{
 				hui::setInputEvent(hui::getInputEventAt(i));
 
-				if (hui::inputGetEvent().type == hui::InputEvent::Type::WindowClose)
+				if (hui::inputEventGet().type == hui::InputEvent::Type::WindowClose)
 				{
-					if (hui::inputGetEvent().window == mainWnd)
+					if (hui::inputEventGet().window == mainWnd)
 					{
 						exitNow = true;
 					}

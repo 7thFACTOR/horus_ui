@@ -22,8 +22,8 @@ static bool sliderInternal(const char* id, f32 minVal, f32 maxVal, f32& value, b
 		ctx->widget.hasCustomWidth = true;
 	}
 
-	ctx->id = idGen(id);
-	widgetAdd((bodyElem.normalState().height + padding.y * 2.0f) * ctx->scale);
+	ctx->id = genId(id);
+	addWidget((bodyElem.normalState().height + padding.y * 2.0f) * ctx->scale);
 	buttonBehavior();
 
 	ctx->widget.rect.x += knobElem.normalState().image->width / 2.0f * ctx->scale;
