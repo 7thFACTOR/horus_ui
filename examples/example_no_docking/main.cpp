@@ -186,7 +186,7 @@ int main(int argc, char** args)
 				hui::boxBegin("box1", hui::Color::white, hui::WidgetElementId::WindowBody);
 
 				hui::widgetSetNextWidth(1);
-				hui::label((std::string("Avg Time: ") + std::to_string(hui::frameTimeAvgGetMs())).c_str(), hui::HAlignType::Center);
+				hui::label((std::string("Avg Time: ") + std::to_string(hui::frameTimeGetAvgMs())).c_str(), hui::HAlignType::Center);
 
 				hui::boxBegin("box2", hui::Color::red);
 				
@@ -240,38 +240,38 @@ int main(int argc, char** args)
 
 				scrollPos = hui::scrollViewEnd();
 
-				if (hui::beginMenuBar())
+				if (hui::menuBarBegin())
 				{
-					if (hui::beginMenu("File##1"))
+					if (hui::menuBegin("File##1"))
 					{
 						hui::menuItem("New", "Ctrl+N");
 						hui::menuItem("Open", "Ctrl+O");
 						hui::menuItem("Print", "Ctrl+P");
 						hui::menuSeparator();
 						hui::menuItem("Exit", "Alt+F4");
-						hui::endMenu();
+						hui::menuEnd();
 					}
 
-					if (hui::beginMenu("Edit##2"))
+					if (hui::menuBegin("Edit##2"))
 					{
 						hui::menuItem("Cut", "Ctrl+X");
 						hui::menuItem("Copy", "Ctrl+C");
 						hui::menuItem("Paste", "Ctrl+V");
 						hui::menuItem("Delete", "Del");
-						hui::endMenu();
+						hui::menuEnd();
 					}
 
-					if (hui::beginMenu("View"))
+					if (hui::menuBegin("View"))
 					{
 						hui::menuItem("Close", 0);
 						hui::menuItem("Close All", 0);
-						hui::endMenu();
+						hui::menuEnd();
 					}
 
-					hui::endMenuBar();
+					hui::menuBarEnd();
 				}
 
-				hui::labelCustomFont("Once upon a time in the west", hui::themeFontGet(theme, "title"), hui::HAlignType::Center);
+				hui::labelCustomFont("Once upon a time in the west", hui::themeFontGetFromTheme(theme, "title"), hui::HAlignType::Center);
 				hui::line();
 				
 				if (hui::button("Do not push this button"))
@@ -288,13 +288,13 @@ int main(int argc, char** args)
 				hui::progress(pv2, 1700, true, false);
 				hui::progress(-1, 0, true, false, "Searching records...");
 
-				if (hui::beginContextMenu())
+				if (hui::contextMenuBegin())
 				{
 					hui::menuItem("Delete");
 					hui::menuItem("Copy");
 					hui::menuItem("Restore");
 
-					hui::endContextMenu();
+					hui::contextMenuEnd();
 				}
 
 				pv += 0.01f;
@@ -311,17 +311,17 @@ int main(int argc, char** args)
 				hui::sameLine();
 				hui::button("HOKA");
 
-				if (hui::beginCustomTooltip(160))
+				if (hui::customTooltipBegin(160))
 				{
 					hui::tintPush(hui::Color::black, hui::TintColorType::Text);
-					hui::labelCustomFont("Header", hui::getFont("medium-bold"));
+					hui::labelCustomFont("Header", hui::themeFontGet("medium-bold"));
 					hui::widgetPaddingPush(0);
 					hui::label("Brief explanation");
 					hui::line();
 					hui::labelMultiline("A longer explanation\nthat needs to explain what is to be explained because of corse its needed.", hui::HAlignType::Left);
 					hui::widgetPaddingPop();
 					hui::tintPop();
-					hui::endCustomTooltip();
+					hui::customTooltipEnd();
 				}
 
 				static bool popup = false;
@@ -425,8 +425,8 @@ int main(int argc, char** args)
 				hui::boxEnd();
 				hui::layoutEnd();
 				hui::paddingPop(hui::PaddingType::Layout);
-				hui::endFrame();
-				hui::endRendering();
+				hui::frameEnd();
+				hui::renderEnd();
 
 				if (lastEventInQueue)
 					hui::presentNativeWindow(mainWnd);
@@ -437,7 +437,7 @@ int main(int argc, char** args)
 		{
 			for (auto i = 0; i < eventCount; i++)
 			{
-				hui::setInputEvent(hui::getInputEventAt(i));
+				hui::inputEventSet(hui::inputEventGetAtIndex(i));
 
 				if (hui::inputEventGet().type == hui::InputEvent::Type::WindowClose)
 				{
@@ -457,7 +457,7 @@ int main(int argc, char** args)
 		}
 	}
 
-	hui::deleteContext(huiContext);
+	hui::contextDestroy(huiContext);
 	hui::shutdownStdioFileIO(settings.services);
 	hui::shutdownFreetype(settings.services);
 	hui::shutdownSdl3(settings.services);

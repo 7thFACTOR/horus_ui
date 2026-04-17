@@ -22,7 +22,7 @@ void popupBegin(
 		width *= ctx->scale;
 
 	if (!has(flags, PopupFlags::SameLayer))
-		incrementWindowLayerMaxIndex();
+		layerIndexIncrement();
 
 	ctx->renderer.pushWindowDrawCmdLayer(DrawCmdLayerType::Foreground);
 	ctx->popupIndex++;
@@ -229,15 +229,12 @@ void popupEnd()
 	ctx->renderer.popClipRect();
 	widgetPopPosition();
 	layoutPop();
-	
-	// Restore the complete sameLine context state
 	ctx->sameLine = popup.savedSameLine;
-	windowLayerIndexMaxDecrement();
 
 	if (!has(popup.flags, PopupFlags::SameLayer))
-		windowLayerIndexMaxDecrement();
+		layerIndexDecrement();
 
-	ctx->popupIndex--;
+	--ctx->popupIndex;
 }
 
 void popupClose()
@@ -247,7 +244,7 @@ void popupClose()
 	popup.active = false;
 
 	if (!has(popup.flags, PopupFlags::SameLayer))
-		windowLayerIndexMaxDecrement();
+		layerDecrementWindowMaxLayerIndex();
 
 	ctx->event.type = InputEvent::Type::None;
 	ctx->widget.focusedId = 0;

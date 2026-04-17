@@ -155,7 +155,7 @@ static bool sliderInternal(const char* id, f32 minVal, f32 maxVal, f32& value, b
 		knobElemState->border,
 		knobRect,
 		ctx->scale);
-	focusableSet();
+	widgetSetFocusable();
 
 	return wasModified;
 }

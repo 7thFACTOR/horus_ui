@@ -87,7 +87,7 @@ bool dropdown(const char* id, i32& selectedIndex, const char** items, u32 itemCo
 			VAlignType::Center, true);
 	}
 
-	setFocusable();
+	widgetSetFocusable();
 
 	if (ctx->widget.clicked)
 	{

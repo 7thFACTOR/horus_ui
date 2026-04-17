@@ -653,7 +653,7 @@ void mouseCursorDestroy(HMouseCursor cursor)
 	ctx->settings.services.deleteCustomCursor(cursor);
 }
 
-void mouseCursorSetType(HMouseCursor cursor)
+void mouseCursorSet(HMouseCursor cursor)
 {
 	ctx->settings.services.setCustomCursor(cursor);
 }
@@ -1463,7 +1463,7 @@ u32 layerIndexDecrement()
 	return ctx->layerIndex;
 }
 
-void decrementWindowMaxLayerIndex()
+void layerDecrementWindowMaxLayerIndex()
 {
 	ctx->maxLayerIndex--;
 

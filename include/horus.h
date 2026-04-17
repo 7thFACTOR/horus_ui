@@ -2052,6 +2052,7 @@ HUI_API void mouseCursorSet(HMouseCursor cursor);
 // Windowing & docking functions
 //////////////////////////////////////////////////////////////////////////
 
+HUI_API void nativeWindowSetCurrent(HNativeWindow nativeWnd);
 HUI_API DockNodeId dockNodeCreateRoot(HNativeWindow nativeWnd);
 HUI_API void dockNodeDeleteChildren(DockNodeId rootNodeId);
 HUI_API void dockNodeSplit(DockNodeId nodeId, DockNodeSplitType splitType, f32 firstNodeSizeUnitPercent, DockNodeId* outNodeId1, DockNodeId* outNodeId2);
@@ -2063,9 +2064,8 @@ HUI_API void windowEnd();
 HUI_API void windowSetVisible(const char* windowId, bool visible);
 HUI_API void windowSetNextFlags(WindowFlags flags);
 HUI_API void windowSetFocus(const char* windowId);
-HUI_API void windowSetDockType(const char* windowId, const char* targetWindowId, DockType dockType);
+HUI_API void windowDock(const char* windowId, const char* targetWindowId, DockType dockType);
 HUI_API void windowUndock(const char* windowId, const Point& windowPos = Point());
-HUI_API void nativeWindowSetCurrent(HNativeWindow nativeWnd);
 HUI_API void windowDebugPrint();
 HUI_API bool windowIsMouseOver();
 HUI_API void windowSetCapture();
@@ -2073,7 +2073,7 @@ HUI_API void windowReleaseCapture();
 /// \return the window client rect
 HUI_API Rect windowGetClientRect();
 /// \return the window client rect, used usually to render custom scenes
-HUI_API Rect windowGetClientRectById(const char* windowId);
+HUI_API Rect windowGetClientRectByWindowId(const char* windowId);
 HUI_API void dockingStateSave(WindowsDockingState& dockingState);
 HUI_API void dockingStateLoad(const WindowsDockingState& dockingState);
 
@@ -2675,6 +2675,10 @@ HUI_API Rect customWidgetBegin(const char* id, f32 height = 0.0f);
 
 /// End custom widget drawing
 HUI_API void customWidgetEnd();
+
+HUI_API void layerIndexIncrement();
+HUI_API u32 layerIndexDecrement();
+HUI_API void layerDecrementWindowMaxLayerIndex();
 
 /// Set the next widget position
 HUI_API void widgetSetPosition(const Point& position);

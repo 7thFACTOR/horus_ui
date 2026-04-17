@@ -178,7 +178,7 @@ bool selectableInternal(const char* label, HFont font, SelectableFlags stateFlag
 			VAlignType::Center, true);
 	}
 
-	focusableSet();
+	widgetSetFocusable();
 	ctx->menuItemTextWidth = fnt->computeTextSize(ctx->widgetLabel.c_str()).width + bodyElemState->border * 2.0f;
 
 	return ctx->widget.clicked;

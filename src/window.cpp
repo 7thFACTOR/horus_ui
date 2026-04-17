@@ -215,7 +215,7 @@ Rect windowGetClientRect()
 	return ctx->currentWindow->clientRect;
 }	
 
-Rect windowClientRectGetById(const char* windowId)
+Rect windowGetClientRectByWindowId(const char* windowId)
 {
 	auto iter = ctx->docking.windows.find(windowId);
 

@@ -938,7 +938,7 @@ bool textInputMultiline(
 	ctx->position.y += totalContentHeight;
 	scrollViewEnd();
 	ctx->position = wrapperEndPos; // restore layout position
-	setFocusable();
+	widgetSetFocusable();
 
 	if (ctx->settings.textCaretBlinkSpeed > 0 && ctx->widget.focused)
 	{

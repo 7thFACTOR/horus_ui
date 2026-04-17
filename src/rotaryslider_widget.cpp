@@ -191,7 +191,7 @@ bool sliderRotary(const char* label, f32* value, f32 minVal, f32 maxVal, f32 ste
 		ctx->renderer.popClipRect();
 	}
 
-	setFocusable();
+	widgetSetFocusable();
 
 	return wasModified;
 }

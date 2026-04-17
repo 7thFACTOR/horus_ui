@@ -246,22 +246,22 @@ int main(int argc, char** args)
 			static bool confineSceneToWindow = false;
 
 			auto userDrawing = [](hui::HNativeWindow wnd)
-			{
-				auto nativeWndSize = hui::contextGetSettings().services.getWindowSize(wnd);
-				hui::Rect rc;
-
-				if (confineSceneToWindow)
 				{
-					rc = hui::windowGetClientRectById("scene");
-				}
-				else
-				{
-					rc = {0, 0, nativeWndSize.x, nativeWndSize.y};
-				}
+					auto nativeWndSize = HUI_SERVICES.getWindowSize(wnd);
+					hui::Rect rc;
 
-				static f32 x = 1;
-				static f32 t = 1;
-				i32 vp[4];
+					if (confineSceneToWindow)
+					{
+						rc = hui::windowGetClientRectByWindowId("scene");
+					}
+					else
+					{
+						rc = { 0, 0, nativeWndSize.x, nativeWndSize.y };
+					}
+
+					static f32 x = 1;
+					static f32 t = 1;
+					i32 vp[4] = { 0 };
 
 				//glClearColor(0,.4,0,1);
 				//glClear(GL_COLOR_BUFFER_BIT);

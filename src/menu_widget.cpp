@@ -437,7 +437,7 @@ bool menuItem(const char* label, const char* shortcut, HImage img, SelectableFla
 		ctx->renderer.cmdDrawImage(image, rcImage);
 	}
 
-	focusableSet();
+	widgetSetFocusable();
 	
 	Utf32String uniStr, uniShortcutStr;
 
