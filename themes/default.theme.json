@@ -596,14 +596,6 @@
 				"normal": {"color": "70 120 130 255"}
 			}		
 		},
-		"columnsHeader":
-		{
-			"columnsHeaderBody":
-			{
-				"height":20,
-				"normal": { "image": "default/header", "border": 4, "color": "gray", "textColor": "white", "font": "normal" }
-			}
-		},
 		"colorPicker":
 		{
 			"colorPickerCheckers":

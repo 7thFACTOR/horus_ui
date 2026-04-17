@@ -123,17 +123,6 @@ void clearBackground(const Color& color)
 	ctx->renderer.cmdClearBackground(color);
 }
 
-void Context::setLabelAndId(const char* text)
-{
-	ctx->widgetLabel = text;
-	ctx->id = genId(text);
-}
-
-void Context::setSkipRenderAndInput(bool skip)
-{
-	ctx->skipRenderAndInput = skip;
-}
-
 void widgetSetNextDisabled()
 {
 	ctx->widget.nextDisabled = true;
@@ -640,7 +629,7 @@ const InputEvent& inputEventGet()
 
 void mouseCursorSetType(MouseCursorType type)
 {
-	ctx->settings.services.setCursor(type);
+	ctx->mouseCursor = type;
 }
 
 HMouseCursor mouseCursorCreate(Rgba32* pixels, u32 width, u32 height, u32 hotSpotX, u32 hotSpotY)
@@ -655,20 +644,8 @@ void mouseCursorDestroy(HMouseCursor cursor)
 
 void mouseCursorSet(HMouseCursor cursor)
 {
-	ctx->settings.services.setCustomCursor(cursor);
-}
-
-void windowSetCapture()
-{
-	if (ctx->currentWindow && ctx->currentWindow->dockNode)
-	{
-		ctx->settings.services.setCapture(ctx->currentWindow->dockNode->nativeWindow);
-	}
-}
-
-void windowReleaseCapture()
-{
-	ctx->settings.services.releaseCapture();
+	ctx->mouseCursor = MouseCursorType::Custom;
+	ctx->customMouseCursor = cursor;
 }
 
 void nativeWindowSetCurrent(HNativeWindow wnd)
@@ -1444,6 +1421,17 @@ f32 layoutGetRemainingWidth()
 	f32 remainingWidth = ctx->layout.width - (ctx->position.x - ctx->layout.savedPosition.x);
 
 	return remainingWidth > 0 ? remainingWidth : 0;
+}
+
+
+Point layoutGetSize()
+{
+	Point pt;
+
+	pt.x = ctx->layout.width;
+	pt.y = ctx->layout.height;
+
+	return pt;
 }
 
 void layerIndexIncrement()

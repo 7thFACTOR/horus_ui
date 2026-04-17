@@ -361,7 +361,7 @@ struct ThemeElement
 
 				if (iter2 != parameters.end())
 				{
-					Color c = colorFromHex(iter2->second.c_str());
+					Color c = colorFromText(iter2->second.c_str());
 					cachedColorParameters[name] = c;
 					return c;
 				}

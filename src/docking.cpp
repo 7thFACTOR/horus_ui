@@ -2551,14 +2551,14 @@ void drawDockPreview(Window* window, const Rect& windowRect)
 		auto tintColorStr = hui::themeGetUserSetting(ctx->theme, "dockPreviewNativeWindowsColorTint");
 
 		if (tintColorStr && strcmp(tintColorStr, ""))
-			tintColor = colorFromHex(tintColorStr);
+			tintColor = colorFromText(tintColorStr);
 	}
 	else
 	{
 		auto tintColorStr = hui::themeGetUserSetting(ctx->theme, "dockPreviewInsideWindowsColorTint");
 
 		if (tintColorStr && strcmp(tintColorStr, ""))
-			tintColor = colorFromHex(tintColorStr);
+			tintColor = colorFromText(tintColorStr);
 	}
 
 	ctx->renderer.cmdSetColor(windowElem.color * tintColor);

@@ -26,21 +26,6 @@ void customWidgetEnd()
 {
 }
 
-Point layoutSizeGet()
-{
-	Point pt;
-
-	pt.x = ctx->layout.width;
-	pt.y = ctx->layout.height;
-
-	return pt;
-}
-
-Rect widgetGetRect()
-{
-	return ctx->widget.rect;
-}
-
 void rendererFontSet(HFont font)
 {
 	ctx->renderer.cmdSetFont((Font*)font);

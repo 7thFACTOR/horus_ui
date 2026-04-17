@@ -144,7 +144,7 @@ static WidgetType getWidgetTypeFromName(std::string name)
 	if (name == "rotarySlider") return WidgetType::RotarySlider;
 	if (name == "colorPicker") return WidgetType::ColorPicker;
 	if (name == "table") return WidgetType::Table;
-	if (name == "textMultilineInput") return WidgetType::MultilineTextInput;
+	if (name == "multilineTextInput") return WidgetType::MultilineTextInput;
 
 	return WidgetType::None;
 }
@@ -265,8 +265,8 @@ static void setThemeElement(
 	Color bgColor;
 	Color txtColor;
 
-	bgColor = colorFromHex(color.c_str());
-	txtColor = colorFromHex(textColor.c_str());
+	bgColor = colorFromText(color.c_str());
+	txtColor = colorFromText(textColor.c_str());
 
 	elemInfo.image = image;
 	elemInfo.border = border;
@@ -311,8 +311,8 @@ static void setUserElement(
 	Color bgColor;
 	Color txtColor;
 
-	bgColor = colorFromHex(color.c_str());
-	txtColor = colorFromHex(textColor.c_str());
+	bgColor = colorFromText(color.c_str());
+	txtColor = colorFromText(textColor.c_str());
 
 	elemInfo.image = image;
 	elemInfo.border = border;

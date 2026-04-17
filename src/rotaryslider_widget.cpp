@@ -9,7 +9,7 @@
 
 namespace hui
 {
-bool sliderRotary(const char* label, f32* value, f32 minVal, f32 maxVal, f32 step, bool twoSide, f32 fineStepDivideFactor)
+bool rotarySliderFloat(const char* label, f32* value, f32 minVal, f32 maxVal, f32 step, bool twoSide, f32 fineStepDivideFactor)
 {
 	auto& bodyElem = ctx->theme->getElement(WidgetElementId::RotarySliderBody);
 	auto& markElem = ctx->theme->getElement(WidgetElementId::RotarySliderMark);

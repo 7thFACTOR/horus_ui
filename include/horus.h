@@ -2216,6 +2216,7 @@ HUI_API f32 layoutGetRemainingHeight();
 
 /// Get the remaining width in the current layout from current position to right edge
 HUI_API f32 layoutGetRemainingWidth();
+HUI_API Point layoutGetSize();
 
 /// Begin a scroll view area widget
 /// \param height the height of the scroll area

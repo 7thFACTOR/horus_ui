@@ -604,10 +604,9 @@ int main(int argc, char** args)
 					hui::label("Column 2", hui::HAlignType::Center);
 					hui::tableCellNext();
 					hui::label("Column 3", hui::HAlignType::Center);
-
 					hui::tableCellNext();
 					hui::label("Column 4", hui::HAlignType::Center);
-
+					hui::tableRowNext();
 					//// Virtualized rows: 10000 rows using VirtualScrollInfo
 					//static hui::VirtualScrollInfo vtableInfo(10000); // 10k rows
 					//// Initialize virtual list inside the table body
@@ -625,7 +624,6 @@ int main(int argc, char** args)
 					//		{
 					for (u32 k = 0; k < 100; ++k)
 					{
-						hui::tableCellNext();
 						auto is = std::to_string(k);
 						hui::label(is.c_str());
 						hui::sameLine();
@@ -650,6 +648,7 @@ int main(int argc, char** args)
 						hui::label("Col 3");
 						hui::tableCellNext();
 						hui::label("Col 4");
+						hui::tableRowNext();
 					}
 					//		}
 					//	}
