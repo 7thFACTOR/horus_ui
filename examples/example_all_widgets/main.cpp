@@ -21,10 +21,10 @@
 // Grab some image handles to use for the window icons
 hui::HImage icon1, icon2, icon3, icon4, icon5, tabicon1, tabicon2, tabicon3, img;
 //hui::HTexture tex1, tex2;
-hui::OpenGLTexture texAtlasGL;
-hui::Dx11Texture texAtlasDX11;
-hui::Dx12Texture texAtlasDX12;
-hui::VulkanTexture texAtlasVK;
+hui::OpenGLTexture texAtlasGL, texSampleGL;
+hui::Dx11Texture texAtlasDX11, texSampleDX11;
+hui::Dx12Texture texAtlasDX12, texSampleDX12;
+hui::VulkanTexture texAtlasVK, texSampleVK;
 
 void loadImages()
 {
@@ -39,8 +39,6 @@ void loadImages()
 	tabicon2 = hui::loadThemeImage(theme, "../themes/icons/icons8-settings-20.png");
 	tabicon3 = hui::loadThemeImage(theme, "../themes/icons/icons8-opened-folder-20.png");
 	img = hui::loadThemeImage(theme, "../themes/default/lena.png");
-	//tex1 = hui::loadTexture("../themes/default/lena.png");
-	//tex2 = hui::loadTexture("../themes/default/lena.png");
 }
 
 int main(int argc, char** args)
@@ -134,27 +132,44 @@ int main(int argc, char** args)
 	// After we load the theme and more images and fonts, we need to rebuild the theme (into the image atlas)
 	hui::themeBuild(theme);
 
+	hui::HTexture sampleTexHandle = 0;
+	hui::ImageData sampleImg;
+
+	hui::loadPngImage("../themes/default/lena.png", sampleImg);
+
 	switch (sdlParams.gfxApi)
 	{
 	case hui::Sdl3GfxApi::OpenGL:
 		texAtlasGL.resize(hui::themeGetAtlasImageData().width, hui::themeGetAtlasImageData().height);
 		texAtlasGL.updateData(hui::themeGetAtlasImageData().pixels);
 		hui::themeSetAtlasTexture(texAtlasGL.getHandle());
+		texSampleGL.resize(sampleImg.width, sampleImg.height);
+		texSampleGL.updateData(sampleImg.pixels);
+		sampleTexHandle = texSampleGL.getHandle();
 		break;
 	case hui::Sdl3GfxApi::DX11:
 		texAtlasDX11.resize(hui::themeGetAtlasImageData().width, hui::themeGetAtlasImageData().height);
 		texAtlasDX11.updateData(hui::themeGetAtlasImageData().pixels);
 		hui::themeSetAtlasTexture(texAtlasDX11.getHandle());
+		texSampleDX11.resize(sampleImg.width, sampleImg.height);
+		texSampleDX11.updateData(sampleImg.pixels);
+		sampleTexHandle = texSampleDX11.getHandle();
 		break;
 	case hui::Sdl3GfxApi::DX12:
 		texAtlasDX12.resize(hui::themeGetAtlasImageData().width, hui::themeGetAtlasImageData().height);
 		texAtlasDX12.updateData(hui::themeGetAtlasImageData().pixels);
 		hui::themeSetAtlasTexture(texAtlasDX12.getHandle());
+		texSampleDX12.resize(sampleImg.width, sampleImg.height);
+		texSampleDX12.updateData(sampleImg.pixels);
+		sampleTexHandle = texSampleDX12.getHandle();
 		break;
 	case hui::Sdl3GfxApi::Vulkan:
 		texAtlasVK.resize(hui::themeGetAtlasImageData().width, hui::themeGetAtlasImageData().height);
 		texAtlasVK.updateData(hui::themeGetAtlasImageData().pixels);
 		hui::themeSetAtlasTexture(texAtlasVK.getHandle());
+		texSampleVK.resize(sampleImg.width, sampleImg.height);
+		texSampleVK.updateData(sampleImg.pixels);
+		sampleTexHandle = texSampleVK.getHandle();
 		break;
 	}
 
@@ -315,6 +330,11 @@ int main(int argc, char** args)
 
 				// begin a widget container (it doesnt draw anything, a container is a layouting rectangle)
 				//hui::beginContainer(panelRect);
+				
+				hui::texture(sampleTexHandle, sampleImg.width, sampleImg.height, 100); hui::sameLine();
+				hui::texture(sampleTexHandle, sampleImg.width, sampleImg.height, 100); hui::sameLine();
+				hui::texture(sampleTexHandle, sampleImg.width, sampleImg.height, 100);
+				
 				hui::labelCustomFont("Information", largeFnt);
 				hui::label("Frame MS: "); hui::sameLine();
 				hui::label("TEST");

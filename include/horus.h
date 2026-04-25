@@ -2445,6 +2445,15 @@ HUI_API bool rotarySliderFloat(const char* label, f32* value, f32 minVal, f32 ma
 /// \return true if it was clicked on
 HUI_API bool image(HImage image, f32 height = 0, HAlignType horizontalAlign = HAlignType::Center, VAlignType verticalAlign = VAlignType::Center, ImageFitType fit = ImageFitType::KeepAspect);
 
+/// Draw a texture widget
+/// \param texture the texture to draw
+/// \param height the height of the image, if zero then the actual image height will be used
+/// \param horizontalAlign the horizontal image align mode
+/// \param verticalAlign the vertical image align mode
+/// \param fit how the image is fitted in the rectangle, resize mode
+/// \return true if it was clicked on
+HUI_API bool texture(HTexture texture, f32 textureWidth, f32 textureHeight, f32 height = 0, HAlignType horizontalAlign = HAlignType::Center, VAlignType verticalAlign = VAlignType::Center, ImageFitType fit = ImageFitType::KeepAspect);
+
 /// Draw a progress bar widget
 /// \param value the progress as a percentage
 HUI_API void progress(f32 value, f32 maxValue = 0.0f, bool showText = false, bool showRealValues = true, const char* indeterminateText = nullptr);

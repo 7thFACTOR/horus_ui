@@ -246,13 +246,16 @@ static bool comboSliderInternal(bool isInt, f32* value, f32 minVal, f32 maxVal, 
 			&& ctx->isActiveLayer()
 			&& ctx->comboSlider.id == ctx->id)
 		{
+			if (ctx->comboSlider.dragging)
+			{
+				*value = ctx->comboSlider.currentValue;
+				ctx->widget.changeEnded = true;
+			}
 			ctx->comboSlider.dragging = false;
 			ctx->comboSlider.mouseWasDown = false;
 			ctx->comboSlider.id = 0;
-			*value = ctx->comboSlider.currentValue;
 			if (isInt) *value = roundf(*value);
 			windowReleaseCapture();
-			ctx->widget.changeEnded = true;
 		}
 
 		auto bodyElemState = &bodyElem.normalState();

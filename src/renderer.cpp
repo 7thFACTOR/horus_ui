@@ -611,12 +611,6 @@ void Renderer::executeDrawCommands(HNativeWindow wnd)
 					addBatch();
 					currentTexture = cmd.data.drawRect.texture;
 				}
-				else
-				{
-					currentTexture = ctx->theme->texture;
-					currentTextureWidth = ctx->theme->atlas.width;
-					currentTextureHeight = ctx->theme->atlas.height;
-				}
 
 				if (clipRect(cmd.data.drawRect.rotated, cmd.data.drawRect.rect, cmd.data.drawRect.uvRect))
 				{
