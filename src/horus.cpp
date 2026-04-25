@@ -139,7 +139,7 @@ void widgetSetNextFocused()
 void addWidget(f32 height)
 {
 	ctx->widget.changeEnded = false;
-	height = round((height + widgetGetPadding().y * 2.0f) * ctx->scale);
+	height = (height + widgetGetPadding().y * 2.0f) * ctx->scale;
 
 	// next width has priority over custom width
 	if (ctx->widget.hasNextWidth)
@@ -188,8 +188,8 @@ void addWidget(f32 height)
 
 	ctx->widget.width = pixelWidth;
 	ctx->widget.rect.set(
-		round(ctx->position.x),
-		round(ctx->position.y),
+		ctx->position.x,
+		ctx->position.y,
 		pixelWidth,
 		height);
 

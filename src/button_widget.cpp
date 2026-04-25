@@ -101,8 +101,8 @@ static bool imageButtonInternal(HImage img, HImage disabledImg, f32 width, f32 h
 		ctx->renderer.cmdDrawImage(
 			image,
 			{
-				round(ctx->widget.rect.x + (ctx->widget.rect.width - imgWidth) / 2 + pressedIncrement * ctx->scale),
-				round(ctx->widget.rect.y + (ctx->widget.rect.height - imgHeight) / 2 + pressedIncrement * ctx->scale),
+				ctx->widget.rect.x + (ctx->widget.rect.width - imgWidth) / 2 + pressedIncrement * ctx->scale,
+				ctx->widget.rect.y + (ctx->widget.rect.height - imgHeight) / 2 + pressedIncrement * ctx->scale,
 				imgWidth,
 				imgHeight
 			});

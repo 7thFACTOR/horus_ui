@@ -107,8 +107,7 @@ void popupBegin(
 		pos.y = 0;
 	}
 
-	pos.x = round(pos.x);
-	pos.y = round(pos.y);
+
 
 	popup.position = pos;
 	Rect popupRect = { pos.x, pos.y, width, height };
@@ -227,6 +226,7 @@ void popupEnd()
 	
 	ctx->position = ctx->layout.savedPosition;
 	ctx->renderer.popClipRect();
+	ctx->renderer.popWindowDrawCmdLayer();
 	widgetPopPosition();
 	layoutPop();
 	ctx->sameLine = popup.savedSameLine;

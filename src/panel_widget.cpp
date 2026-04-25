@@ -75,8 +75,8 @@ bool expandable(const char* label, bool* expandedVar)
 	ctx->renderer.cmdDrawImage(
 		arrowElemState->image,
 		{
-			round(ctx->widget.rect.x + (padding.x + bodyElemState->border) * ctx->scale),
-			round(ctx->widget.rect.y + (ctx->widget.rect.height - arrowElemState->image->height * ctx->scale) / 2.0f),
+			ctx->widget.rect.x + (padding.x + bodyElemState->border) * ctx->scale,
+			ctx->widget.rect.y + (ctx->widget.rect.height - arrowElemState->image->height * ctx->scale) / 2.0f,
 			arrowElemState->image->width * ctx->scale,
 			arrowElemState->image->height * ctx->scale
 		});

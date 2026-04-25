@@ -449,6 +449,14 @@ enum class ScrollViewFlags : u32
 };
 HUI_ENUM_AS_FLAGS(ScrollViewFlags);
 
+enum class ScrollToItemSnapMode
+{
+	Minimal,
+	AlignStart,
+	AlignCenter,
+	AlignEnd
+};
+
 enum class TableColumnFlags : u32
 {
 	None = 0,
@@ -2230,6 +2238,10 @@ void scrollViewBegin(const char* id, f32 height, Point scrollOffset, Point virtu
 /// Ends a scroll view area widget
 /// \return the current scroll position (offset)
 HUI_API Point scrollViewEnd();
+
+/// Scroll the view to the bounds of the last submitted widget (or a specific widget if id is provided).
+/// When called inside a virtual list (between virtualListContentBegin/End), `id` is interpreted as the `virtualItemIndex`.
+HUI_API void scrollViewScrollToWidget(WidgetId id = 0, ScrollToItemSnapMode mode = ScrollToItemSnapMode::Minimal);
 
 /// Begin a virtual list content area, used for many items, inside the beginScrollView/endScrollView
 /// \param totalRowCount the number of rows

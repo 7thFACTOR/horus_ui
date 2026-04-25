@@ -465,7 +465,7 @@ int main(int argc, char** args)
 				if (hui::imageButton(tabicon3, 50, 50, 0, down))
 				{
 					down = !down;
-				}
+				}hui::scrollViewScrollToWidget();
 				hui::sameLine();
 				static bool showpop = false;
 
@@ -505,6 +505,7 @@ int main(int argc, char** args)
 				hui::labelMultiline("Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum. Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium, totam rem aperiam, eaque ipsa quae ab illo inventore veritatis et quasi architecto beatae vitae dicta sunt explicabo. Nemo enim ipsam voluptatem quia voluptas sit aspernatur aut odit aut fugit, sed quia consequuntur magni dolores eos qui ratione voluptatem sequi nesciunt. Neque porro quisquam est, qui dolorem ipsum quia dolor sit amet, consectetur, adipisci velit, sed quia non numquam eius modi tempora incidunt ut labore et dolore magnam aliquam quaerat voluptatem. Ut enim ad minima veniam, quis nostrum exercitationem ullam corporis suscipit laboriosam, nisi ut aliquid ex ea commodi consequatur? Quis autem vel eum iure reprehenderit qui in ea voluptate velit esse quam nihil molestiae consequatur, vel illum qui dolorem eum fugiat quo voluptas nulla pariatur?", hui::HAlignType::Left);
 				hui::line();
 				hui::button("I AGREE Long text Label for this button to see ellipsis");
+				
 				hui::line();
 				scrollPos = hui::scrollViewEnd();
 				hui::paddingPop(hui::PaddingType::ScrollView);
@@ -705,6 +706,7 @@ int main(int argc, char** args)
 
 				// initialize virtual list content (this sets the scrollview virtual height)
 				hui::virtualListContentBegin(vinfo);
+					hui::scrollViewScrollToWidget(5000);
 
 				// Step loop (measures first item, then issues remaining range)
 				while (vinfo.nextStep())
@@ -719,6 +721,7 @@ int main(int argc, char** args)
 							{
 								printf("clicked virtual item %u\n", i);
 							}
+
 							//hui::space(22.0f);
 						}
 					}

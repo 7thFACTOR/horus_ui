@@ -14,8 +14,8 @@ void tabGroupBegin(TabIndex selectedIndex)
 	widgetPushPosition();
 	// round position only when it gets modified, to avoid accumulation of float precision errors
 	ctx->widget.rect.set(
-		round(ctx->position.x),
-		round(ctx->position.y),
+		ctx->position.x,
+		ctx->position.y,
 		ctx->layout.width + ctx->settings.dockNodeSpacing, // extend so we can draw the dock spacing on right
 		height);
 
@@ -25,8 +25,8 @@ void tabGroupBegin(TabIndex selectedIndex)
 	ctx->renderer.cmdSetColor(tabGroupElemState.color);
 	ctx->renderer.pushClipRect(
 		{
-			round(ctx->position.x),
-			round(ctx->position.y),
+			ctx->position.x,
+			ctx->position.y,
 			ctx->layout.width + ctx->settings.dockNodeSpacing, // extend so we cover the dock spacing on right
 			ctx->layout.height + ctx->settings.dockNodeSpacing + 1 // extend so we can draw the dock spacing on bottom
 		});
@@ -75,7 +75,7 @@ TabIndex tabGroupEnd()
 	widgetPopPosition();
 
 	ctx->position.y += height;
-	ctx->position.y = round(ctx->position.y);
+	// ctx->position.y = round(ctx->position.y); (removed manual rounding)
 	ctx->renderer.popClipRect();
 
 	if (ctx->event.type == InputEvent::Type::MouseDown)
@@ -120,12 +120,12 @@ void tab(const char* label, HImage img)
 	ctx->id = genIdFromPosition(label);
 
 	ctx->widget.rect.set(
-		round(ctx->position.x),
-		round(ctx->position.y + std::max(tabGroupElemState.height * ctx->scale, height) - height),
+		ctx->position.x,
+		ctx->position.y + std::max(tabGroupElemState.height * ctx->scale, height) - height,
 		width,
 		height);
 	ctx->position.x += width;
-	ctx->position.x = round(ctx->position.x);
+	// ctx->position.x = round(ctx->position.x); (removed manual rounding)
 
 	mouseDownOnlyButtonBehavior();
 

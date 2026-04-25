@@ -206,8 +206,8 @@ void scrollViewBegin(const char* id, f32 height, Point scrollOffset, Point virtu
 
 	Rect rect =
 	{
-		round(ctx->position.x),
-		round(ctx->position.y),
+		ctx->position.x,
+		ctx->position.y,
 		ctx->layout.width,
 		height
 	};
@@ -728,6 +728,8 @@ void virtualListContentBegin(VirtualScrollInfo& info)
 	vstate.itemHeight = 0.0f;
 	vstate.totalHeight = 0.0f;
 	vstate.lastPosition = ctx->position;
+	vstate.pendingScrollToIndex = -1;
+	vstate.pendingScrollToMode = ScrollToItemSnapMode::Minimal;
 
 	// Reset internal advance state so the caller can start stepping.
 	info._started = false;
@@ -846,6 +848,19 @@ bool VirtualScrollInfo::nextStep()
 		itemHeight = measuredH;
 		_measuredItemHeight = measuredH;
 
+		if (vstate.pendingScrollToIndex >= 0)
+		{
+			f32 startY = vstate.lastPosition.y - ctx->layout.savedPosition.y;
+			ScrollToItemBounds boundsY;
+			boundsY.min = startY + (f32)vstate.pendingScrollToIndex * measuredH;
+			boundsY.max = boundsY.min + measuredH;
+			f32 viewSizeY = ctx->layout.height;
+			snapToItem(svState.vertical, boundsY, viewSizeY, vstate.pendingScrollToMode);
+			svState.scrollOffset.y = svState.vertical.scrollOffset;
+			scrollY = svState.scrollOffset.y; // update local scrollY so visible range calculation is correct
+			vstate.pendingScrollToIndex = -1;
+		}
+
 		// compute the final visible range using measured height
 		i32 firstVisible = (i32)std::floor(scrollY / measuredH) - 1; // give a small above-buffer
 		if (firstVisible < 0) firstVisible = 0;
@@ -895,6 +910,82 @@ bool VirtualScrollInfo::nextStep()
 	// any other case -> done
 	_started = true;
 	return false;
+}
+
+void scrollViewScrollToWidget(WidgetId id, ScrollToItemSnapMode mode)
+{
+	WidgetId svId = 0;
+	LayoutState* svLayout = nullptr;
+	if (ctx->layout.type == LayoutType::ScrollView)
+	{
+		svId = ctx->layout.id;
+		svLayout = &ctx->layout;
+	}
+	else
+	{
+		for (auto it = ctx->layoutStack.rbegin(); it != ctx->layoutStack.rend(); ++it)
+		{
+			if (it->type == LayoutType::ScrollView)
+			{
+				svId = it->id;
+				svLayout = &(*it);
+				break;
+			}
+		}
+	}
+
+	if (!svId)
+		return;
+
+	auto& svState = ctx->scrollViewState[svId];
+
+	if (!ctx->virtualListStack.empty())
+	{
+		auto& virtState = ctx->virtualListStack.back();
+		f32 itemHeight = virtState.itemHeight;
+
+		// If measurement hasn't completed yet, deduce it from historical sizes or queue it
+		if (itemHeight <= 0.0f)
+		{
+			if (virtState.totalRowCount > 0 && svState.virtualSize.y > 0.0f)
+            {
+				itemHeight = svState.virtualSize.y / (f32)virtState.totalRowCount;
+            }
+			else
+			{
+				virtState.pendingScrollToIndex = (i64)id;
+				virtState.pendingScrollToMode = mode;
+				return; 
+			}
+		}
+
+		f32 startY = virtState.lastPosition.y - svLayout->savedPosition.y;
+
+		ScrollToItemBounds boundsY;
+		boundsY.min = startY + (f32)id * itemHeight; // using id as index
+		boundsY.max = boundsY.min + itemHeight;
+		f32 viewSizeY = svLayout->height;
+		snapToItem(svState.vertical, boundsY, viewSizeY, mode);
+		svState.scrollOffset.y = svState.vertical.scrollOffset;
+	}
+	else
+	{
+		Rect targetRect = ctx->widget.rect;
+
+		ScrollToItemBounds boundsY;
+		boundsY.min = targetRect.y - svLayout->savedPosition.y;
+		boundsY.max = boundsY.min + targetRect.height;
+		f32 viewSizeY = svLayout->height;
+		snapToItem(svState.vertical, boundsY, viewSizeY, mode);
+		svState.scrollOffset.y = svState.vertical.scrollOffset;
+
+		ScrollToItemBounds boundsX;
+		boundsX.min = targetRect.x - svLayout->savedPosition.x;
+		boundsX.max = boundsX.min + targetRect.width;
+		f32 viewSizeX = svLayout->width;
+		snapToItem(svState.horizontal, boundsX, viewSizeX, mode);
+		svState.scrollOffset.x = svState.horizontal.scrollOffset;
+	}
 }
 
 }

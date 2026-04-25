@@ -60,8 +60,8 @@ bool check(const char* label, bool* checkVar)
 	ctx->renderer.cmdDrawImageBordered(
 		checkBodyElemState->image, checkBodyElemState->border,
 		{
-			round(ctx->widget.rect.x),
-			round(ctx->widget.rect.y),
+			ctx->widget.rect.x,
+			ctx->widget.rect.y,
 			markWidthScaled,
 			markHeightScaled
 		}, ctx->scale);

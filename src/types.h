@@ -594,14 +594,6 @@ struct TooltipState
 	f32 offsetFromCursor = 18.0f;
 };
 
-enum class ScrollToItemSnapMode
-{
-	Minimal,
-	AlignStart,
-	AlignCenter,
-	AlignEnd
-};
-
 struct ScrollToItemBounds
 {
 	f32 min; // start (top / left) in content space
@@ -756,6 +748,8 @@ struct VirtualListContentState
 	u32 totalRowCount = 0;
 	f32 itemHeight = 0;
 	f32 totalHeight = 0; // <- added: reserve total virtual height for measured/variable lists
+	i64 pendingScrollToIndex = -1; // If requested before measurement, store the index to scroll to after measurement
+	ScrollToItemSnapMode pendingScrollToMode = ScrollToItemSnapMode::Minimal;
 };
 
 struct ColorPickerState
