@@ -2111,6 +2111,7 @@ HUI_API HTheme themeGet();
 
 HUI_API ImageData themeGetAtlasImageData();
 HUI_API void themeSetAtlasTexture(HTexture texture);
+HUI_API HTexture themeGetAtlasTexture();
 
 /// Create a new theme
 /// \param atlasTextureSize the width and height of the atlas texture, where theme images are kept
@@ -2764,5 +2765,12 @@ HUI_API std::string colorIntToHex(const u32 color);
 HUI_API Color colorHsvToRgb(const Color& hsv);
 HUI_API Color colorRgbToHsv(const Color& rgb);
 HUI_API Color colorHueToRgb(f32 h, f32 alpha);
+
+//////////////////////////////////////////////////////////////////////////
+// Demo
+//////////////////////////////////////////////////////////////////////////
+
+/// Draw a demo window showcasing all widgets in all argument modes, organized in expandable sections
+HUI_API void showDemo();
 
 }

@@ -1,0 +1,759 @@
+#include "context.h"
+#include "theme.h"
+#include "font.h"
+#include "util.h"
+#include <string.h>
+#include <stdio.h>
+
+namespace hui
+{
+struct DemoState
+{
+	// Button
+	int buttonClickCount = 0;
+
+	// TextInput
+	char textBasic[256] = "Hello World";
+	char textNumeric[256] = "42";
+	char textHex[256] = "FF";
+	char textDefault[256] = "";
+	char textPassword[256] = "secret";
+	char textAutoSelect[256] = "Select me";
+
+	// TextInput Multiline
+	char multiText[4096] = "Line 1\nLine 2\nLine 3\nfloat foo = 3.14f;\nint bar = 42;";
+
+	// Slider
+	i32 sliderIntVal = 50;
+	i32 sliderIntStepped = 0;
+	f32 sliderFloatVal = 0.5f;
+	f32 sliderFloatStepped = 0.0f;
+
+	// ComboSlider
+	i32 comboSliderInt = 0;
+	i32 comboSliderIntRanged = 50;
+	f32 comboSliderFloat = 0.0f;
+	f32 comboSliderFloatCustomString = 0.0f;
+	f32 comboSliderFloatRanged = 0.5f;
+
+	// RotarySlider
+	f32 rotaryVal = 0.5f;
+	f32 rotaryTwoSide = 0.0f;
+
+	// Progress
+	f32 progressValue = 0.65f;
+
+	// Check
+	bool checkA = true;
+	bool checkB = false;
+
+	// Radio
+	i32 radioVal = 0;
+
+	// Dropdown
+	i32 dropdownSel = 0;
+
+	// List
+	bool listSelected[5] = {};
+
+	// Expandable states (managed internally by expandable())
+	bool expandButton = true;
+	bool expandTextInput = false;
+	bool expandMultiline = false;
+	bool expandSlider = false;
+	bool expandComboSlider = false;
+	bool expandRotarySlider = false;
+	bool expandProgress = false;
+	bool expandCheck = false;
+	bool expandRadio = false;
+	bool expandLabel = false;
+	bool expandExpandable = false;
+	bool expandDropdown = false;
+	bool expandList = false;
+	bool expandSelectable = false;
+	bool expandSeparators = false;
+	bool expandTabs = false;
+	bool expandBox = false;
+	bool expandColorPicker = false;
+	bool expandVecEditors = false;
+	bool expandImages = false;
+	bool expandMenus = false;
+	bool expandViewport = false;
+	bool expandCustomWidget = false;
+	bool expandObjectRef = false;
+	bool expandTable = false;
+	bool expandTooltip = false;
+	bool expandPopup = false;
+
+	// Popup demo
+	bool showPopup = false;
+
+	// Tabs
+	TabIndex selectedTab = 0;
+
+	// Color picker
+	Color pickerColor = Color(1.0f, 0.0f, 0.0f, 1.0f);
+
+	// Vec editors
+	f32 vec2x = 1.0f, vec2y = 2.0f;
+	f32 vec3x = 1.0f, vec3y = 2.0f, vec3z = 3.0f;
+	f64 dvec2x = 1.0, dvec2y = 2.0;
+	f64 dvec3x = 1.0, dvec3y = 2.0, dvec3z = 3.0;
+
+	// Image & Texture
+	HImage demoImage = nullptr;
+	HTexture demoTexture = nullptr;
+
+	// ObjectRef
+	void* objectRefValue = nullptr;
+	bool objectRefModified = false;
+
+	// Virtual List
+	bool expandVirtualList = false;
+	i32 virtualListCount = 1000;
+
+	bool initialized = false;
+
+	Point demoScrollPos = { 0, 0 };
+};
+
+static DemoState demo;
+
+void showDemo()
+{
+	if (!demo.initialized)
+	{
+		demo.initialized = true;
+	}
+
+	scrollViewBegin("##demoScroll", 0, demo.demoScrollPos, { 0, 0 }, ScrollViewFlags::None);
+
+	//------------------------------------------------------------------
+	// Button
+	//------------------------------------------------------------------
+	if (expandable("Buttons", &demo.expandButton))
+	{
+		label("Basic button:");
+		if (button("Click Me"))
+		{
+			demo.buttonClickCount++;
+		}
+		char countBuf[64];
+		snprintf(countBuf, sizeof(countBuf), "Button clicked %d time(s)", demo.buttonClickCount);
+		label(countBuf);
+
+		space();
+		label("Disabled button:");
+		widgetSetNextDisabled();
+		button("Disabled");
+
+		space();
+		label("Image button:");
+		HImage btnImg = themeGetImage(themeGet(), "ic_attach_file_white_24dp");
+		if (imageButton(btnImg, 32, 22))
+		{
+			demo.buttonClickCount++;
+		}
+	}
+
+	//------------------------------------------------------------------
+	// Text Input
+	//------------------------------------------------------------------
+	if (expandable("Text Input", &demo.expandTextInput))
+	{
+		label("Basic:");
+		textInput("##tiBasic", demo.textBasic, sizeof(demo.textBasic));
+
+		space();
+		label("Numeric only:");
+		textInput("##tiNumeric", demo.textNumeric, sizeof(demo.textNumeric), TextInputFlags::NumericOnly);
+
+		space();
+		label("Hex only:");
+		textInput("##tiHex", demo.textHex, sizeof(demo.textHex), TextInputFlags::HexOnly);
+
+		space();
+		label("With default placeholder text:");
+		textInput("##tiDefault", demo.textDefault, sizeof(demo.textDefault), TextInputFlags::None, "Type here...");
+
+		space();
+		label("Auto select all on focus:");
+		textInput("##tiAutoSel", demo.textAutoSelect, sizeof(demo.textAutoSelect), TextInputFlags::AutoSelectAll);
+
+		space();
+		label("Password:");
+		textInput("##tiPass", demo.textPassword, sizeof(demo.textPassword), TextInputFlags::None, nullptr, 0, true);
+	}
+
+	//------------------------------------------------------------------
+	// Multiline Text Input
+	//------------------------------------------------------------------
+	if (expandable("Multiline Text Input", &demo.expandMultiline))
+	{
+		label("Basic (10 visible lines):");
+		textInputMultiline("##mtiBasic", demo.multiText, sizeof(demo.multiText), 10);
+
+		space();
+		label("With line numbers:");
+		textInputMultiline("##mtiLineNums", demo.multiText, sizeof(demo.multiText), 8, MultilineTextInputFlags::LineNumbers);
+
+		space();
+		label("With word wrap:");
+		textInputMultiline("##mtiWordWrap", demo.multiText, sizeof(demo.multiText), 6, MultilineTextInputFlags::WordWrap);
+
+		space();
+		label("Line numbers + highlight current line:");
+		textInputMultiline("##mtiHighlight", demo.multiText, sizeof(demo.multiText), 8,
+			MultilineTextInputFlags::LineNumbers | MultilineTextInputFlags::HighlightCurrentLine);
+	}
+
+	//------------------------------------------------------------------
+	// Slider
+	//------------------------------------------------------------------
+	if (expandable("Sliders", &demo.expandSlider))
+	{
+		char buf[64];
+
+		label("Integer slider (0..100):");
+		sliderInt("##slInt", 0, 100, demo.sliderIntVal);
+		snprintf(buf, sizeof(buf), "Value: %d", demo.sliderIntVal);
+		label(buf);
+
+		space();
+		label("Integer slider with step=10:");
+		sliderInt("##slIntStep", 0, 100, demo.sliderIntStepped, true, 10);
+		snprintf(buf, sizeof(buf), "Value: %d", demo.sliderIntStepped);
+		label(buf);
+
+		space();
+		label("Float slider (0..1):");
+		sliderFloat("##slFloat", 0.0f, 1.0f, demo.sliderFloatVal);
+		snprintf(buf, sizeof(buf), "Value: %.3f", demo.sliderFloatVal);
+		label(buf);
+
+		space();
+		label("Float slider with step=0.1:");
+		sliderFloat("##slFloatStep", 0.0f, 1.0f, demo.sliderFloatStepped, true, 0.1f);
+		snprintf(buf, sizeof(buf), "Value: %.3f", demo.sliderFloatStepped);
+		label(buf);
+	}
+
+	//------------------------------------------------------------------
+	// ComboSlider
+	//------------------------------------------------------------------
+	if (expandable("Combo Sliders", &demo.expandComboSlider))
+	{
+		label("Integer combo slider (unbounded):");
+		comboSliderInt(&demo.comboSliderInt);
+
+		space();
+		label("Integer combo slider ranged (0..100):");
+		comboSliderIntRanged(&demo.comboSliderIntRanged, 0, 100);
+
+		space();
+		label("Float combo slider (unbounded):");
+		comboSliderFloat(&demo.comboSliderFloat);
+
+		space();
+		label("Float combo slider ranged (0..1):");
+		comboSliderFloatRanged(&demo.comboSliderFloatRanged, 0.0f, 1.0f, 0.01f, 0.05f);
+
+		space();
+		label("With custom format string:");
+		comboSliderFloat(&demo.comboSliderFloatCustomString, 1.0f, 1.0f, "%.2f units");
+	}
+
+	//------------------------------------------------------------------
+	// Rotary Slider
+	//------------------------------------------------------------------
+	if (expandable("Rotary Sliders", &demo.expandRotarySlider))
+	{
+		label("Basic rotary slider (0..1):");
+		rotarySliderFloat("Volume", &demo.rotaryVal, 0.0f, 1.0f, 0.01f);
+
+		space();
+		label("Two-side rotary slider (-1..1):");
+		rotarySliderFloat("Pan", &demo.rotaryTwoSide, -1.0f, 1.0f, 0.01f, true);
+	}
+
+	//------------------------------------------------------------------
+	// Progress
+	//------------------------------------------------------------------
+	if (expandable("Progress Bars", &demo.expandProgress))
+	{
+		label("Basic progress (65%):");
+		progress(demo.progressValue);
+
+		space();
+		label("With text overlay:");
+		progress(demo.progressValue, 0.0f, true);
+
+		space();
+		label("With real values (65/100):");
+		progress(65, 100, true, true);
+
+		space();
+		label("Indeterminate:");
+		progress(0.0f, 0.0f, false, false, "Loading...");
+	}
+
+	//------------------------------------------------------------------
+	// Check
+	//------------------------------------------------------------------
+	if (expandable("Checkboxes", &demo.expandCheck))
+	{
+		check("Option A (checked)", &demo.checkA);
+		check("Option B (unchecked)", &demo.checkB);
+
+		space();
+		label("Disabled checkbox:");
+		widgetSetNextDisabled();
+		bool disabledCheck = true;
+		check("Cannot change", &disabledCheck);
+	}
+
+	//------------------------------------------------------------------
+	// Radio
+	//------------------------------------------------------------------
+	if (expandable("Radio Buttons", &demo.expandRadio))
+	{
+		radio("Choice 1", &demo.radioVal, 0);
+		radio("Choice 2", &demo.radioVal, 1);
+		radio("Choice 3", &demo.radioVal, 2);
+
+		char buf[64];
+		snprintf(buf, sizeof(buf), "Selected: %d", demo.radioVal);
+		label(buf);
+	}
+
+	//------------------------------------------------------------------
+	// Label
+	//------------------------------------------------------------------
+	if (expandable("Labels", &demo.expandLabel))
+	{
+		label("Left aligned (default)");
+		label("Center aligned", HAlignType::Center);
+		label("Right aligned", HAlignType::Right);
+
+		space();
+		label("Multiline label:");
+		labelMultiline("This is a multiline label that can wrap across multiple lines when the text is long enough to exceed the available width.", HAlignType::Left);
+
+		space();
+		label("Custom font labels:");
+		HFont titleFont = themeFontGet("title");
+		HFont headingFont = themeFontGet("heading");
+
+		labelCustomFont("Title Font Label", titleFont);
+		labelCustomFont("Heading Font Label", headingFont);
+
+		space();
+		label("Custom font multiline label:");
+		labelCustomFontMultiline("This is a multiline label with a custom font. It should wrap properly if the text is long enough.", titleFont, HAlignType::Left);
+	}
+
+	//------------------------------------------------------------------
+	// Expandable (nested)
+	//------------------------------------------------------------------
+	if (expandable("Expandable (nested)", &demo.expandExpandable))
+	{
+		label("Expandables can be nested:");
+
+		bool nestedA = false;
+		if (expandable("Nested A"))
+		{
+			label("Content of Nested A");
+		}
+
+		if (expandable("Nested B"))
+		{
+			label("Content of Nested B");
+
+			if (expandable("Nested C (inside B)"))
+			{
+				label("Deep nested content");
+			}
+		}
+	}
+
+	//------------------------------------------------------------------
+	// Dropdown
+	//------------------------------------------------------------------
+	if (expandable("Dropdown", &demo.expandDropdown))
+	{
+		static const char* items[] = { "Apple", "Banana", "Cherry", "Date", "Elderberry" };
+
+		label("Basic dropdown:");
+		dropdown("##ddBasic", demo.dropdownSel, items, 5);
+
+		space();
+		label("With max visible items = 3:");
+		dropdown("##ddMax3", demo.dropdownSel, items, 5, 3);
+
+		char buf[64];
+		snprintf(buf, sizeof(buf), "Selected index: %d", demo.dropdownSel);
+		label(buf);
+	}
+
+	//------------------------------------------------------------------
+	// List
+	//------------------------------------------------------------------
+	if (expandable("List", &demo.expandList))
+	{
+		static const char* listItems[] = { "Item A", "Item B", "Item C", "Item D", "Item E" };
+
+		label("Single selection list:");
+		list("##listSingle", demo.listSelected, ListSelectionMode::Single, listItems, 5, 120.0f);
+
+		space();
+		label("Multiple selection list:");
+		static bool multiSel[5] = {};
+		list("##listMulti", multiSel, ListSelectionMode::Multiple, listItems, 5, 120.0f);
+	}
+
+	//------------------------------------------------------------------
+	// Selectable
+	//------------------------------------------------------------------
+	if (expandable("Selectable", &demo.expandSelectable))
+	{
+		label("Normal selectable:");
+		selectable("Selectable item 1");
+		selectable("Selectable item 2");
+
+		space();
+		label("Selected state:");
+		selectable("Selected item", SelectableFlags::Selected);
+
+		space();
+		label("Disabled state:");
+		selectable("Disabled item", SelectableFlags::Disabled);
+
+		space();
+		label("Custom font selectables:");
+		HFont headingFont = themeFontGet("heading");
+		selectableCustomFont("Selectable with Heading Font", headingFont);
+	}
+
+	//------------------------------------------------------------------
+	// Separators / Spacing
+	//------------------------------------------------------------------
+	if (expandable("Separators & Spacing", &demo.expandSeparators))
+	{
+		label("Line separator below:");
+		line();
+		label("Content after line");
+
+		space();
+		label("Default space() above this");
+
+		space(30.0f);
+		label("Custom space(30) above this");
+
+		space();
+		label("sameLine demo:");
+		button("A");
+		sameLine();
+		button("B");
+		sameLine();
+		button("C");
+	}
+
+	//------------------------------------------------------------------
+	// Tabs
+	//------------------------------------------------------------------
+	if (expandable("Tabs", &demo.expandTabs))
+	{
+		tabGroupBegin(demo.selectedTab);
+		tab("Tab 1", 0);
+		tab("Tab 2", 0);
+		tab("Tab 3", 0);
+		demo.selectedTab = tabGroupEnd();
+
+		switch (demo.selectedTab)
+		{
+		case 0:
+			label("Content of Tab 1");
+			button("Tab 1 Button");
+			break;
+		case 1:
+			label("Content of Tab 2");
+			check("Tab 2 Check", &demo.checkA);
+			break;
+		case 2:
+			label("Content of Tab 3");
+			label("Just some text in tab 3");
+			break;
+		}
+	}
+
+	//------------------------------------------------------------------
+	// Box
+	//------------------------------------------------------------------
+	if (expandable("Box", &demo.expandBox))
+	{
+		label("Box with default element:");
+		boxBegin("##boxDefault", Color::white);
+		label("Content inside the box");
+		button("Box Button");
+		boxEnd();
+
+		space();
+		label("Tinted box:");
+		boxBegin("##boxTinted", Color(0.3f, 0.8f, 0.5f, 1.0f));
+		label("Green tinted box content");
+		boxEnd();
+	}
+
+	//------------------------------------------------------------------
+	// Color Picker
+	//------------------------------------------------------------------
+	if (expandable("Color Picker", &demo.expandColorPicker))
+	{
+		label("Color picker:");
+		colorPicker("##cpDefault", &demo.pickerColor);
+
+		char buf[128];
+		snprintf(buf, sizeof(buf), "R: %.2f G: %.2f B: %.2f A: %.2f",
+			demo.pickerColor.r, demo.pickerColor.g, demo.pickerColor.b, demo.pickerColor.a);
+		label(buf);
+	}
+
+	//------------------------------------------------------------------
+	// Vec Editors
+	//------------------------------------------------------------------
+	if (expandable("Vector Editors", &demo.expandVecEditors))
+	{
+		label("vec2 (float):");
+		vec2Editor("##v2f", demo.vec2x, demo.vec2y);
+
+		space();
+		label("vec3 (float):");
+		vec3Editor("##v3f", demo.vec3x, demo.vec3y, demo.vec3z);
+
+		space();
+		label("vec2 (double):");
+		vec2Editor("##v2d", demo.dvec2x, demo.dvec2y);
+
+		space();
+		label("vec3 (double):");
+		vec3Editor("##v3d", demo.dvec3x, demo.dvec3y, demo.dvec3z);
+	}
+	//------------------------------------------------------------------
+	// Images & Textures
+	//------------------------------------------------------------------
+	if (expandable("Images & Textures", &demo.expandImages))
+	{
+		if (!demo.demoImage)
+		{
+			demo.demoImage = themeGetImage(themeGet(), "__WHITEIMAGE__");
+		}
+
+		label("Basic image (KeepAspect):");
+		image(demo.demoImage, 64);
+
+		space();
+		label("Image Stretch:");
+		image(demo.demoImage, 64, HAlignType::Center, VAlignType::Center, ImageFitType::Stretch);
+
+		space();
+		label("Image Center alignment:");
+		image(demo.demoImage, 64, HAlignType::Center);
+
+		space();
+		label("Image Left alignment:");
+		image(demo.demoImage, 64, HAlignType::Left);
+
+		space();
+		label("Image Right alignment:");
+		image(demo.demoImage, 64, HAlignType::Right);
+
+		space();
+		label("Texture widget (using color check checkers image as texture):");
+		// Just using an image as a texture for demo purposes if no real texture available
+		
+		texture(themeGetAtlasTexture(), 64, 64, 64);
+	}
+
+	//------------------------------------------------------------------
+	// Menus
+	//------------------------------------------------------------------
+	if (expandable("Menus", &demo.expandMenus))
+	{
+		label("Menu Bar (Nested below):");
+		if (menuBarBegin())
+		{
+			if (menuBegin("File"))
+			{
+				if (menuItem("New", "Ctrl+N")) {}
+				if (menuItem("Open", "Ctrl+O")) {}
+				menuSeparator();
+				if (menuItem("Exit", "Alt+F4")) {}
+				menuEnd();
+			}
+			if (menuBegin("Edit"))
+			{
+				if (menuItem("Cut", "Ctrl+X")) {}
+				if (menuItem("Copy", "Ctrl+C")) {}
+				if (menuItem("Paste", "Ctrl+V")) {}
+				menuEnd();
+			}
+			menuBarEnd();
+		}
+
+		space();
+		label("Context Menu (Right click the label below):");
+		label("Right click me!");
+		if (contextMenuBegin())
+		{
+			if (menuItem("Action 1")) {}
+			if (menuItem("Action 2")) {}
+			menuSeparator();
+			if (menuBegin("Sub Menu"))
+			{
+				if (menuItem("Sub Action 1")) {}
+				menuEnd();
+			}
+			contextMenuEnd();
+		}
+	}
+
+	//------------------------------------------------------------------
+	// Viewport
+	//------------------------------------------------------------------
+	if (expandable("Viewport", &demo.expandViewport))
+	{
+		label("A custom viewport area (100px height):");
+		Rect vprect = viewportBegin("##demoViewport", 100);
+		// In a real app, you'd use vprect to draw your 3D scene/etc.
+		renderDrawSolidRectangle(vprect);
+		renderDrawTextInBox("Custom Viewport Content", vprect, HAlignType::Center, VAlignType::Center);
+		viewportEnd();
+	}
+
+	//------------------------------------------------------------------
+	// Custom Widget
+	//------------------------------------------------------------------
+	if (expandable("Custom Widget", &demo.expandCustomWidget))
+	{
+		label("Custom widget area:");
+		Rect cwRect = customWidgetBegin("##demoCustom", 50);
+		renderDrawRectangle(cwRect);
+		renderDrawLine(cwRect.topLeft(), cwRect.bottomRight());
+		renderDrawLine(cwRect.topRight(), cwRect.bottomLeft());
+		customWidgetEnd();
+	}
+
+	//------------------------------------------------------------------
+	// Object Reference
+	//------------------------------------------------------------------
+	if (expandable("Object Reference Editor", &demo.expandObjectRef))
+	{
+		label("Object reference editor:");
+		objectRefEditor("##demoObjRef", 0, 0, "MyObjectType", "None", 0, &demo.objectRefValue, &demo.objectRefModified);
+	}
+	//------------------------------------------------------------------
+	// Virtual List
+	//------------------------------------------------------------------
+	if (expandable("Virtual List (1000 items)", &demo.expandVirtualList))
+	{
+		// persistent virtual list state: only provide item count here
+		static hui::VirtualScrollInfo vinfo(1000); 
+
+		virtualListContentBegin(vinfo);
+
+		while (vinfo.nextStep())
+		{
+			for (u32 i = vinfo.startIndex; i <= vinfo.endIndex; ++i)
+			{
+				char buf[64];
+				snprintf(buf, sizeof(buf), "Item %u", i);
+				selectable(buf);
+			}
+		}
+		virtualListContentEnd();
+	}
+
+	//------------------------------------------------------------------
+	// Table
+	//------------------------------------------------------------------
+	if (expandable("Tables", &demo.expandTable))
+	{
+		label("Basic table (3 columns):");
+		if (tableBegin("##demoTable", 3, 200, TableFlags::Borders | TableFlags::Resizable | TableFlags::Reorderable | TableFlags::AltRowBg))
+		{
+			tableColumnSetup(0, 50, TableColumnFlags::Fixed);
+			tableColumnSetup(1, 150, TableColumnFlags::Stretch);
+			tableColumnSetup(2, 100, TableColumnFlags::Stretch);
+
+			tableStartHeader();
+			tableCellNext(); label("ID");
+			tableCellNext(); label("Name");
+			tableCellNext(); label("Status");
+
+			for (int i = 0; i < 10; ++i)
+			{
+				tableRowNext();
+				char idBuf[16], nameBuf[32];
+				snprintf(idBuf, sizeof(idBuf), "%d", i + 1);
+				snprintf(nameBuf, sizeof(nameBuf), "Item %d", i + 1);
+
+				tableCellNext(); label(idBuf);
+				tableCellNext(); label(nameBuf);
+				tableCellNext(); label(i % 2 == 0 ? "Active" : "Inactive");
+			}
+			tableEnd();
+		}
+	}
+
+	//------------------------------------------------------------------
+	// Tooltip
+	//------------------------------------------------------------------
+	if (expandable("Tooltips", &demo.expandTooltip))
+	{
+		label("Hover me for a basic tooltip:");
+		button("Hover Me (Basic)");
+		tooltip("This is a basic text tooltip!");
+
+		space();
+		label("Hover me for a custom tooltip:");
+		button("Hover Me (Custom)");
+		if (customTooltipBegin(250))
+		{
+			label("This is a CUSTOM tooltip area");
+			label("You can embed any widgets here:");
+			check("Check inside tooltip", &demo.checkA);
+			button("Button inside tooltip");
+			customTooltipEnd();
+		}
+	}
+
+	//------------------------------------------------------------------
+	// Popup
+	//------------------------------------------------------------------
+	if (expandable("Popups", &demo.expandPopup))
+	{
+		label("Click the button to open a modal popup:");
+		if (button("Open Popup"))
+		{
+			demo.showPopup = true;
+		}
+
+		if (demo.showPopup)
+		{
+			popupBegin("##demoPopup", 300, PopupFlags::BelowLastWidget);
+			label("Welcome to the modal popup!");
+			label("It's positioned below the button.");
+			space();
+			if (button("Close Popup") || popupMustClose())
+			{
+				popupClose();
+				demo.showPopup = false;
+			}
+			popupEnd();
+		}
+	}
+
+	demo.demoScrollPos = scrollViewEnd();
+}
+
+}

@@ -318,6 +318,12 @@ int main(int argc, char** args)
 			// we only render on the last event in the queue
 			hui::skipRenderingThisFrame(!lastEventInQueue);
 
+			if (hui::windowBegin("demo", "Demo", nullptr, tabicon1))
+			{
+				hui::showDemo();
+				hui::windowEnd();
+			}
+
 			if (hui::windowBegin("hui2", "HUI", nullptr, tabicon1))
 			{
 				// lets first draw a rect with a theme, for the panel
@@ -706,7 +712,6 @@ int main(int argc, char** args)
 
 				// initialize virtual list content (this sets the scrollview virtual height)
 				hui::virtualListContentBegin(vinfo);
-					hui::scrollViewScrollToWidget(5000);
 
 				// Step loop (measures first item, then issues remaining range)
 				while (vinfo.nextStep())

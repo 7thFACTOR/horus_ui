@@ -1205,6 +1205,11 @@ void themeSetAtlasTexture(HTexture texture)
 	ctx->theme->texture = texture;
 }
 
+HTexture themeGetAtlasTexture()
+{
+	return ctx->theme->texture;
+}
+
 void themeDestroy(HTheme theme)
 {
 	auto iter = std::find(ctx->themes.begin(), ctx->themes.end(), (Theme*)theme);
