@@ -12,6 +12,7 @@ namespace hui
 {
 bool loadPngImage(const char* path, ImageData& outImage)
 {
+	outImage = {};
 	i32 width = 0;
 	i32 height = 0;
 	i32 comp = 0;
@@ -19,16 +20,29 @@ bool loadPngImage(const char* path, ImageData& outImage)
 	HFile file = contextGetSettings().services.open(path, "rb");
 	u64 fsize = 0;
 
+	if (!file)
+	{
+		return false;
+	}
+
 	if (file)
 	{
 		contextGetSettings().services.seek(file, FileSeekMode::End, 0);
 		fsize = contextGetSettings().services.tell(file);
+
+		if (fsize == 0)
+		{
+			contextGetSettings().services.close(file);
+			return false;
+		}
+
 		contextGetSettings().services.seek(file, FileSeekMode::Set, 0);
 		imgFileData = new stbi_uc[fsize];
 		auto readSize = contextGetSettings().services.read(file, imgFileData, fsize);
 
 		if (fsize != readSize)
 		{
+			delete[] imgFileData;
 			contextGetSettings().services.close(file);
 
 			return false;
@@ -39,12 +53,15 @@ bool loadPngImage(const char* path, ImageData& outImage)
 
 	stbi_uc* data = stbi_load_from_memory(imgFileData, fsize, &width, &height, &comp, 4);
 
-	outImage.pixels = new Rgba32[width * height];
-	memcpy(outImage.pixels, (Rgba32*)data, sizeof(Rgba32) * width * height);
-	outImage.width = width;
-	outImage.height = height;
-
 	bool result = !(!data || !width || !height || !comp);
+
+	if (result)
+	{
+		outImage.pixels = new Rgba32[width * height];
+		memcpy(outImage.pixels, (Rgba32*)data, sizeof(Rgba32) * width * height);
+		outImage.width = width;
+		outImage.height = height;
+	}
 
 	if (data)
 	{
@@ -231,97 +248,100 @@ static std::string getPath(const std::string& fname)
 	return std::filesystem::path(fname).parent_path().string();
 }
 
-static void setThemeElement(
-	HTheme theme,
-	const std::string& themePath,
-	const char* styleName,
-	WidgetType widgetType,
-	WidgetElementId elemId,
-	WidgetStateType widgetStateType,
-	Json::Value state,
-	i32 width, i32 height)
+static void setErrorText(char* errorTextBuffer, size_t errorTextBufferSize, const std::string& errorText)
 {
-	WidgetElementInfo elemInfo;
-
-	auto imageName = state.get("image", "").asString();
-	auto border = state.get("border", 0).asInt();
-	auto color = state.get("color", "white").asString();
-	auto textColor = state.get("textColor", "white").asString();
-	auto fontName = state.get("font", "").asString();
-	auto imageFilename = themePath + imageName + ".png";
-	HImage image = hui::themeGetImage(theme, imageFilename.c_str());
-
-	width = state.get("width", width).asInt();
-	height = state.get("height", height).asInt();
-
-	if (!image && !imageName.empty())
+	if (!errorTextBuffer || errorTextBufferSize == 0)
 	{
-		image = loadThemeImage(theme, imageFilename.c_str());
+		return;
 	}
 
-	auto font = hui::themeFontGetFromTheme(theme, fontName.c_str());
+	size_t size = std::min(errorTextBufferSize - 1, errorText.size());
+	memcpy(errorTextBuffer, errorText.c_str(), size);
+	errorTextBuffer[size] = 0;
+}
 
-	u32 r = 0, g = 0, b = 0, a = 255;
-	Color bgColor;
-	Color txtColor;
+static HImage getFallbackImage(HTheme theme)
+{
+	return hui::themeGetImage(theme, "__WHITEIMAGE__");
+}
 
-	bgColor = colorFromText(color.c_str());
-	txtColor = colorFromText(textColor.c_str());
+static WidgetElementInfo getElementInfoFromState(
+	HTheme theme,
+	const std::string& themePath,
+	Json::Value state,
+	const WidgetElementInfo& fallback,
+	i32 width,
+	i32 height)
+{
+	WidgetElementInfo elemInfo = fallback;
 
-	elemInfo.image = image;
-	elemInfo.border = border;
-	elemInfo.color = bgColor;
-	elemInfo.textColor = txtColor;
-	elemInfo.font = font;
-	elemInfo.width = width;
-	elemInfo.height = height;
+	if (!state.isObject())
+	{
+		if (!elemInfo.image)
+		{
+			elemInfo.image = getFallbackImage(theme);
+		}
 
+		return elemInfo;
+	}
+
+	if (state.isMember("image") && state["image"].isString())
+	{
+		auto imageName = state["image"].asString();
+		auto imageFilename = themePath + imageName + ".png";
+		HImage image = hui::themeGetImage(theme, imageFilename.c_str());
+
+		if (!image && !imageName.empty())
+		{
+			image = loadThemeImage(theme, imageFilename.c_str());
+		}
+
+		elemInfo.image = image;
+	}
+
+	if (!elemInfo.image)
+	{
+		elemInfo.image = getFallbackImage(theme);
+	}
+
+	if (state.isMember("border") && state["border"].isNumeric())
+		elemInfo.border = state["border"].asInt();
+
+	if (state.isMember("color") && state["color"].isString())
+		elemInfo.color = colorFromText(state["color"].asString().c_str());
+
+	if (state.isMember("textColor") && state["textColor"].isString())
+		elemInfo.textColor = colorFromText(state["textColor"].asString().c_str());
+
+	if (state.isMember("font") && state["font"].isString())
+		elemInfo.font = hui::themeFontGetFromTheme(theme, state["font"].asString().c_str());
+
+	if (state.isMember("width") && state["width"].isNumeric())
+		elemInfo.width = state["width"].asInt();
+
+	if (state.isMember("height") && state["height"].isNumeric())
+		elemInfo.height = state["height"].asInt();
+
+	return elemInfo;
+}
+
+static void setThemeElementInfo(
+	HTheme theme,
+	const char* styleName,
+	WidgetElementId elemId,
+	WidgetStateType widgetStateType,
+	const WidgetElementInfo& elemInfo)
+{
 	hui::themeSetWidgetElement(theme, elemId, widgetStateType, elemInfo, styleName);
 }
 
-static void setUserElement(
+static void setUserElementInfo(
 	HTheme theme,
-	const std::string& themePath,
 	const char* styleName,
-	const std::string& widgetName,
 	const std::string& elemName,
 	WidgetStateType widgetStateType,
-	Json::Value state,
-	i32 width, i32 height)
+	const WidgetElementInfo& elemInfo)
 {
-	WidgetElementInfo elemInfo;
-	auto imageName = state.get("image", "").asString();
-	auto border = state.get("border", 0).asInt();
-	auto color = state.get("color", "white").asString();
-	auto textColor = state.get("textColor", "white").asString();
-	auto fontName = state.get("font", "").asString();
-	auto imageFilename = themePath + imageName + ".png";
-	HImage image = hui::themeGetImage(theme, imageFilename.c_str());
-	width = state.get("width", width).asInt();
-	height = state.get("height", height).asInt();
-
-	if (!image && !imageName.empty())
-	{
-		image = loadThemeImage(theme, imageFilename.c_str());
-	}
-
-	auto font = hui::themeFontGetFromTheme(theme, fontName.c_str());
-
-	u32 r = 0, g = 0, b = 0, a = 255;
-	Color bgColor;
-	Color txtColor;
-
-	bgColor = colorFromText(color.c_str());
-	txtColor = colorFromText(textColor.c_str());
-
-	elemInfo.image = image;
-	elemInfo.border = border;
-	elemInfo.color = bgColor;
-	elemInfo.textColor = txtColor;
-	elemInfo.font = font;
-	elemInfo.width = width,
-	elemInfo.height = height;
-
 	themeSetUserWidgetElement(theme, elemName.c_str(), widgetStateType, elemInfo, styleName);
 }
 
@@ -353,65 +373,121 @@ HTheme loadThemeFromJson(const char* filename, char* errorTextBuffer, size_t err
 
 	if (!ok)
 	{
-		if (errorTextBuffer)
-		{
-			strncpy(errorTextBuffer, reader.getFormatedErrorMessages().c_str(), std::min(errorTextBufferSize, reader.getFormatedErrorMessages().size()));
-		}
+		setErrorText(errorTextBuffer, errorTextBufferSize, reader.getFormatedErrorMessages());
 
 		themeDestroy(theme);
 		return 0;
 	}
 
-	Json::Value fonts = root.get("fonts", Json::Value());
-	auto fontNames = fonts.getMemberNames();
-
-	for (size_t i = 0; i < fontNames.size(); i++)
+	if (!root.isObject())
 	{
-		auto& name = fontNames[i];
-		auto fnt = fonts.get(name.c_str(), Json::Value());
+		setErrorText(errorTextBuffer, errorTextBufferSize, "Theme JSON root must be an object.");
+		themeDestroy(theme);
+		return 0;
+	}
 
-		std::string fontFilename = fnt.get("file", "").asString();
+	Json::Value fonts = root.get("fonts", Json::Value());
+	if (fonts.isObject())
+	{
+		auto fontNames = fonts.getMemberNames();
 
-		if (fontFilename.find_first_of(':') == std::string::npos)
+		for (size_t i = 0; i < fontNames.size(); i++)
 		{
-			fontFilename = themePath + fontFilename;
-		}
+			auto& name = fontNames[i];
+			auto fnt = fonts.get(name.c_str(), Json::Value());
 
-		themeFontCreate(theme, name.c_str(), fontFilename.c_str(), fnt.get("size", 0).asInt());
+			if (!fnt.isObject())
+				continue;
+
+			if (!fnt.isMember("file") || !fnt["file"].isString()
+				|| !fnt.isMember("size") || !fnt["size"].isNumeric())
+				continue;
+
+			std::string fontFilename = fnt["file"].asString();
+			u32 fontSize = fnt["size"].asUInt();
+
+			if (fontFilename.empty() || fontSize == 0)
+				continue;
+
+			if (fontFilename.find_first_of(':') == std::string::npos)
+			{
+				fontFilename = themePath + fontFilename;
+			}
+
+			themeFontCreate(theme, name.c_str(), fontFilename.c_str(), fontSize);
+		}
 	}
 
 	Json::Value settings = root.get("settings", Json::Value());
-	auto settingNames = settings.getMemberNames();
-
-	for (size_t i = 0; i < settingNames.size(); i++)
+	if (settings.isObject())
 	{
-		auto& name = settingNames[i];
-		auto val = settings.get(name.c_str(), Json::Value());
-		hui::themeSetUserSetting(theme, name.c_str(), val.asCString());
+		auto settingNames = settings.getMemberNames();
+
+		for (size_t i = 0; i < settingNames.size(); i++)
+		{
+			auto& name = settingNames[i];
+			auto val = settings.get(name.c_str(), Json::Value());
+
+			if (val.isString())
+				hui::themeSetUserSetting(theme, name.c_str(), val.asCString());
+		}
 	}
 
 	Json::Value widgets = root.get("widgets", Json::Value());
+	if (!widgets.isObject())
+	{
+		setErrorText(errorTextBuffer, errorTextBufferSize, "Theme JSON must contain a widgets object.");
+		themeDestroy(theme);
+		return 0;
+	}
+
 	auto widgetNames = widgets.getMemberNames();
 
 	for (size_t i = 0; i < widgetNames.size(); i++)
 	{
 		auto& widgetName = widgetNames[i];
 		auto widget = widgets.get(widgetName.c_str(), Json::Value());
+
+		if (!widget.isObject())
+			continue;
+
 		WidgetType widgetType = getWidgetTypeFromName(widgetName);
-		auto widgetMemberNames = widget.getMemberNames();
 		auto styles = widget.get("styles", Json::Value());
 
-		auto readElements = [theme, themePath, widgetType](const std::string& styleName, Json::Value& parentElem)
+		auto readElements = [theme, themePath](const std::string& styleName, Json::Value& parentElem)
 		{
+			if (!parentElem.isObject())
+				return;
+
 			auto elementNames = parentElem.getMemberNames();
 			// read all widget elements
 			for (size_t l = 0; l < elementNames.size(); l++)
 			{
 				auto elemType = getWidgetElementFromName(elementNames[l]);
 				auto elem = parentElem.get(elementNames[l], Json::Value());
-				auto width = elem.get("width", 0).asInt();
-				auto height = elem.get("height", 0).asInt();
+
+				if (!elem.isObject())
+					continue;
+
+				auto width = elem.isMember("width") && elem["width"].isNumeric() ? elem["width"].asInt() : 0;
+				auto height = elem.isMember("height") && elem["height"].isNumeric() ? elem["height"].asInt() : 0;
 				auto elemStates = elem.getMemberNames();
+				WidgetElementInfo defaultInfo;
+				defaultInfo.color = Color::white;
+				defaultInfo.textColor = Color::white;
+				defaultInfo.width = width;
+				defaultInfo.height = height;
+				auto normalInfo = getElementInfoFromState(
+					theme,
+					themePath,
+					elem.get("normal", Json::Value()),
+					defaultInfo,
+					width,
+					height);
+				bool stateSet[(u32)WidgetStateType::Unknown] = {};
+
+				setThemeElementInfo(theme, styleName.c_str(), elemType, WidgetStateType::Normal, normalInfo);
+				stateSet[(u32)WidgetStateType::Normal] = true;
 
 				for (size_t m = 0; m < elemStates.size(); m++)
 				{
@@ -420,17 +496,39 @@ HTheme loadThemeFromJson(const char* filename, char* errorTextBuffer, size_t err
 					auto widgetStateType = widgetStateFromText(stateName);
 
 					if (widgetStateType != WidgetStateType::Unknown)
-						setThemeElement(theme, themePath, styleName.c_str(), widgetType, elemType, widgetStateType, elemState, width, height);
+					{
+						auto stateInfo = getElementInfoFromState(
+							theme,
+							themePath,
+							elemState,
+							normalInfo,
+							width,
+							height);
+						setThemeElementInfo(theme, styleName.c_str(), elemType, widgetStateType, stateInfo);
+						stateSet[(u32)widgetStateType] = true;
+					}
 					else
 					{
-						hui::themeSetWidgetElementParameter(theme, elemType, styleName.c_str(), stateName.c_str(), elemState.asString().c_str());
+						if (elemState.isString())
+							hui::themeSetWidgetElementParameter(theme, elemType, styleName.c_str(), stateName.c_str(), elemState.asString().c_str());
+					}
+				}
+
+				for (u32 stateIndex = 0; stateIndex < (u32)WidgetStateType::Unknown; stateIndex++)
+				{
+					if (!stateSet[stateIndex])
+					{
+						setThemeElementInfo(theme, styleName.c_str(), elemType, (WidgetStateType)stateIndex, normalInfo);
 					}
 				}
 			}
 		};
 
-		auto readUserElements = [theme, themePath, widgetName](const std::string& styleName, Json::Value& parentElem)
+		auto readUserElements = [theme, themePath](const std::string& styleName, Json::Value& parentElem)
 		{
+			if (!parentElem.isObject())
+				return;
+
 			auto elementNames = parentElem.getMemberNames();
 
 			// read all widget elements
@@ -438,9 +536,29 @@ HTheme loadThemeFromJson(const char* filename, char* errorTextBuffer, size_t err
 			{
 				auto& elementName = elementNames[l];
 				auto elem = parentElem.get(elementName, Json::Value());
-				auto width = elem.get("width", 0).asInt();
-				auto height = elem.get("height", 0).asInt();
+
+				if (!elem.isObject())
+					continue;
+
+				auto width = elem.isMember("width") && elem["width"].isNumeric() ? elem["width"].asInt() : 0;
+				auto height = elem.isMember("height") && elem["height"].isNumeric() ? elem["height"].asInt() : 0;
 				auto elemStates = elem.getMemberNames();
+				WidgetElementInfo defaultInfo;
+				defaultInfo.color = Color::white;
+				defaultInfo.textColor = Color::white;
+				defaultInfo.width = width;
+				defaultInfo.height = height;
+				auto normalInfo = getElementInfoFromState(
+					theme,
+					themePath,
+					elem.get("normal", Json::Value()),
+					defaultInfo,
+					width,
+					height);
+				bool stateSet[(u32)WidgetStateType::Unknown] = {};
+
+				setUserElementInfo(theme, styleName.c_str(), elementName, WidgetStateType::Normal, normalInfo);
+				stateSet[(u32)WidgetStateType::Normal] = true;
 
 				for (size_t m = 0; m < elemStates.size(); m++)
 				{
@@ -450,11 +568,28 @@ HTheme loadThemeFromJson(const char* filename, char* errorTextBuffer, size_t err
 
 					if (widgetStateType != WidgetStateType::Unknown)
 					{
-						setUserElement(theme, themePath, styleName.c_str(), widgetName, elementName, widgetStateType, elemState, width, height);
+						auto stateInfo = getElementInfoFromState(
+							theme,
+							themePath,
+							elemState,
+							normalInfo,
+							width,
+							height);
+						setUserElementInfo(theme, styleName.c_str(), elementName, widgetStateType, stateInfo);
+						stateSet[(u32)widgetStateType] = true;
 					}
 					else
 					{
-						hui::themeSetUserWidgetElementParameter(theme, elementName.c_str(), styleName.c_str(), stateName.c_str(), elemState.asString().c_str());
+						if (elemState.isString())
+							hui::themeSetUserWidgetElementParameter(theme, elementName.c_str(), styleName.c_str(), stateName.c_str(), elemState.asString().c_str());
+					}
+				}
+
+				for (u32 stateIndex = 0; stateIndex < (u32)WidgetStateType::Unknown; stateIndex++)
+				{
+					if (!stateSet[stateIndex])
+					{
+						setUserElementInfo(theme, styleName.c_str(), elementName, (WidgetStateType)stateIndex, normalInfo);
 					}
 				}
 			}
@@ -496,13 +631,15 @@ HImage loadThemeImage(HTheme theme, const char* pngFilename)
 {
 	ImageData img;
 	bool ret = loadPngImage(pngFilename, img);
+	HImage image = 0;
 
 	if (ret && img.pixels)
 	{
-		return themeAddImage(theme, pngFilename, img);
+		image = themeAddImage(theme, pngFilename, img);
+		deleteImageData(img);
 	}
 
-	return 0;
+	return image;
 }
 
 

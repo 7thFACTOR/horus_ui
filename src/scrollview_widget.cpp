@@ -171,6 +171,8 @@ void scrollViewBegin(const char* id, f32 height, Point scrollOffset, Point virtu
 	auto& scrollViewElemState = ctx->theme->getElement(WidgetElementId::ScrollViewBody).normalState();
 	auto& scrollViewScrollThumbElemStateV = ctx->theme->getElement(WidgetElementId::ScrollViewScrollThumbV).normalState();
 	auto& scrollViewScrollBarElemStateV = ctx->theme->getElement(WidgetElementId::ScrollViewScrollBarV).normalState();
+	
+	widgetPushDisabled(widgetGetDisabled());
 
 	ctx->id = genId(id);
 
@@ -374,7 +376,7 @@ Point scrollViewEnd()
             scrollAreaV, contentSizeForClamp, scrollViewState.vertical.scrollMax, scrollViewState.vertical.scrollOffset, ctx->layout.height);*/
 
         // scroll view with mouse wheel
-        if (ctx->isActiveLayer() && ctx->event.type == InputEvent::Type::MouseWheel)
+        if (ctx->isActiveLayer() && ctx->event.type == InputEvent::Type::MouseWheel && !ctx->widget.disabled)
         {
             // Only scroll if mouse is over this scroll view AND this window is the hovered window
             if (rectNoBorders.contains(ctx->mousePosition))
@@ -469,7 +471,7 @@ Point scrollViewEnd()
 				}
 			}
 
-			if (ctx->event.type == InputEvent::Type::MouseDown && ctx->isActiveLayer())
+			if (ctx->event.type == InputEvent::Type::MouseDown && ctx->isActiveLayer() && !ctx->widget.disabled)
 			{
 				if (rectScrollBarHandleV.contains(ctx->mousePosition))
 				{
@@ -592,7 +594,7 @@ Point scrollViewEnd()
 			}
 		}
 
-		if (ctx->event.type == InputEvent::Type::MouseDown && ctx->isActiveLayer())
+		if (ctx->event.type == InputEvent::Type::MouseDown && ctx->isActiveLayer() && !ctx->widget.disabled)
 		{
 			if (rectScrollBarHandleH.contains(ctx->mousePosition))
 			{
@@ -682,6 +684,7 @@ Point scrollViewEnd()
 
 	// Persist combined authoritative offset and return it.
 	scrollViewState.scrollOffset = scrollOffset;
+	widgetPopDisabled();
 	widgetPopPosition();
 	addWidget(height/ctx->scale);
 	layoutPop();

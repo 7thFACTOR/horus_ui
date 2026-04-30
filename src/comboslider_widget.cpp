@@ -170,7 +170,8 @@ static bool comboSliderInternal(bool isInt, f32* value, f32 minVal, f32 maxVal, 
 		if (ctx->event.type == InputEvent::Type::MouseDown
 			&& widgetIsHovered()
 			&& !ctx->comboSlider.dragging
-			&& ctx->isActiveLayer())
+			&& ctx->isActiveLayer()
+			&& !ctx->widget.disabled)
 		{
 			ctx->comboSlider.dragLastMousePos = ctx->mousePosition;
 
@@ -204,7 +205,8 @@ static bool comboSliderInternal(bool isInt, f32* value, f32 minVal, f32 maxVal, 
 
 		if (ctx->comboSlider.dragging
 			&& ctx->id == ctx->comboSlider.id
-			&& ctx->isActiveLayer())
+			&& ctx->isActiveLayer()
+			&& !ctx->widget.disabled)
 		{
 			Point delta = ctx->mousePosition - ctx->comboSlider.dragLastMousePos;
 			ctx->comboSlider.dragLastMousePos = ctx->mousePosition;
@@ -244,7 +246,8 @@ static bool comboSliderInternal(bool isInt, f32* value, f32 minVal, f32 maxVal, 
 		if (ctx->event.type == InputEvent::Type::MouseUp
 			&& (ctx->comboSlider.dragging || ctx->comboSlider.mouseWasDown)
 			&& ctx->isActiveLayer()
-			&& ctx->comboSlider.id == ctx->id)
+			&& ctx->comboSlider.id == ctx->id
+			&& !ctx->widget.disabled)
 		{
 			if (ctx->comboSlider.dragging)
 			{
@@ -264,7 +267,15 @@ static bool comboSliderInternal(bool isInt, f32* value, f32 minVal, f32 maxVal, 
 		auto rangeBarElemState = &rangeBarElem.normalState();
 		auto verticalLineElemState = &verticalLineElem.normalState();
 
-		if (ctx->widget.pressed)
+		if (ctx->widget.disabled)
+		{
+			bodyElemState = &bodyElem.getState(WidgetStateType::Disabled);
+			leftArrowElemState = &leftArrowElem.getState(WidgetStateType::Disabled);
+			rightArrowElemState = &rightArrowElem.getState(WidgetStateType::Disabled);
+			rangeBarElemState = &rangeBarElem.getState(WidgetStateType::Disabled);
+			verticalLineElemState = &verticalLineElem.getState(WidgetStateType::Disabled);
+		}
+		else if (ctx->widget.pressed)
 		{
 			bodyElemState = &bodyElem.getState(WidgetStateType::Pressed);
 			leftArrowElemState = &leftArrowElem.getState(WidgetStateType::Pressed);
@@ -292,13 +303,28 @@ static bool comboSliderInternal(bool isInt, f32* value, f32 minVal, f32 maxVal, 
 			rightArrowElemState = &rightArrowElem.getState(WidgetStateType::Hovered);
 		}
 
+		Image* bodyImage = bodyElemState->image;
+		Image* leftArrowImage = leftArrowElemState->image;
+		Image* rightArrowImage = rightArrowElemState->image;
+		Image* rangeBarImage = rangeBarElemState->image;
+		Image* verticalLineImage = verticalLineElemState->image;
+
+		if (ctx->widget.disabled)
+		{
+			if (!bodyImage) bodyImage = bodyElem.normalState().image;
+			if (!leftArrowImage) leftArrowImage = leftArrowElem.normalState().image;
+			if (!rightArrowImage) rightArrowImage = rightArrowElem.normalState().image;
+			if (!rangeBarImage) rangeBarImage = rangeBarElem.normalState().image;
+			if (!verticalLineImage) verticalLineImage = verticalLineElem.normalState().image;
+		}
+
 		ctx->renderer.cmdSetColor(tintApply(bodyElemState->color, TintColorType::Body));
-		ctx->renderer.cmdDrawImageBordered(bodyElemState->image, bodyElemState->border, ctx->widget.rect, ctx->scale);
+		ctx->renderer.cmdDrawImageBordered(bodyImage, bodyElemState->border, ctx->widget.rect, ctx->scale);
 		
 		if (useRange)
 		{
 			ctx->renderer.cmdSetColor(tintApply(rangeBarElemState->color, TintColorType::Body));
-			ctx->renderer.cmdDrawImageBordered(rangeBarElemState->image, rangeBarElemState->border,
+			ctx->renderer.cmdDrawImageBordered(rangeBarImage, rangeBarElemState->border,
 				{
 					ctx->widget.rect.x + bodyElemState->border * ctx->scale,
 					ctx->widget.rect.bottom() - bodyElemState->border * ctx->scale,
@@ -309,52 +335,52 @@ static bool comboSliderInternal(bool isInt, f32* value, f32 minVal, f32 maxVal, 
 		}
 
 
-		auto arrowY = ((ctx->widget.rect.height - leftArrowElemState->image->height * ctx->scale) / 2.0f + (ctx->widget.pressed ? 1.0f : 0.0f)) * ctx->scale;
+		auto arrowY = ((ctx->widget.rect.height - leftArrowImage->height * ctx->scale) / 2.0f + (ctx->widget.pressed ? 1.0f : 0.0f)) * ctx->scale;
 
 		ctx->renderer.cmdSetColor(tintApply(leftArrowElemState->color, TintColorType::Body));
-		ctx->renderer.cmdDrawImage(leftArrowElemState->image,
+		ctx->renderer.cmdDrawImage(leftArrowImage,
 			{
 				ctx->widget.rect.x + (bodyElemState->border + padding.x + (ctx->widget.pressed ? 1.0f : 0.0f)) * ctx->scale,
 				ctx->widget.rect.top() + arrowY,
-				leftArrowElemState->image->width * ctx->scale,
-				leftArrowElemState->image->height * ctx->scale
+				leftArrowImage->width * ctx->scale,
+				leftArrowImage->height * ctx->scale
 			});
 
 
-		auto lineHeight = verticalLineElemState->height + padding.y * 2.0f;
+		auto lineHeight = verticalLineImage->height + padding.y * 2.0f;
 		auto lineY = ((ctx->widget.rect.height - lineHeight * ctx->scale) / 2.0f + (ctx->widget.pressed ? 1.0f : 0.0f)) * ctx->scale;
 
 		ctx->renderer.cmdSetColor(tintApply(verticalLineElemState->color, TintColorType::Body));
 
-		ctx->renderer.cmdDrawImage(verticalLineElemState->image,
+		ctx->renderer.cmdDrawImage(verticalLineImage,
 			{
-				ctx->widget.rect.x + (bodyElemState->border + padding.x * 2.0f + leftArrowElemState->image->width + (ctx->widget.pressed ? 1.0f : 0.0f)) * ctx->scale,
+				ctx->widget.rect.x + (bodyElemState->border + padding.x * 2.0f + leftArrowImage->width + (ctx->widget.pressed ? 1.0f : 0.0f)) * ctx->scale,
 				ctx->widget.rect.top() + lineY,
-				verticalLineElemState->image->width * ctx->scale,
+				verticalLineImage->width * ctx->scale,
 				lineHeight
 			});
 
-		arrowY = ((ctx->widget.rect.height - rightArrowElemState->image->rect.height * ctx->scale) / 2.0f + (ctx->widget.pressed ? 1.0f : 0.0f)) * ctx->scale;
+		arrowY = ((ctx->widget.rect.height - rightArrowImage->rect.height * ctx->scale) / 2.0f + (ctx->widget.pressed ? 1.0f : 0.0f)) * ctx->scale;
 
 		ctx->renderer.cmdSetColor(tintApply(rightArrowElemState->color, TintColorType::Body));
-		ctx->renderer.cmdDrawImage(rightArrowElemState->image,
+		ctx->renderer.cmdDrawImage(rightArrowImage,
 			{
-				ctx->widget.rect.right() - (bodyElemState->border + padding.x + rightArrowElemState->image->width + (ctx->widget.pressed ? -1.0f : 0.0f)) * ctx->scale,
+				ctx->widget.rect.right() - (bodyElemState->border + padding.x + rightArrowImage->width + (ctx->widget.pressed ? -1.0f : 0.0f)) * ctx->scale,
 				ctx->widget.rect.top() + arrowY,
-				rightArrowElemState->image->width * ctx->scale,
-				rightArrowElemState->image->height * ctx->scale
+				rightArrowImage->width * ctx->scale,
+				rightArrowImage->height * ctx->scale
 			});
 
 		ctx->renderer.cmdSetColor(tintApply(verticalLineElemState->color, TintColorType::Body));
 
-		ctx->renderer.cmdDrawImage(verticalLineElemState->image,
+		ctx->renderer.cmdDrawImage(verticalLineImage,
 			{
-				ctx->widget.rect.right() - (bodyElemState->border + padding.x * 2.0f + rightArrowElemState->image->width + (ctx->widget.pressed ? 1.0f : 0.0f)) * ctx->scale,
+				ctx->widget.rect.right() - (bodyElemState->border + padding.x * 2.0f + rightArrowImage->width + (ctx->widget.pressed ? 1.0f : 0.0f)) * ctx->scale,
 				ctx->widget.rect.top() + lineY,
-				verticalLineElemState->image->width * ctx->scale,
+				verticalLineImage->width * ctx->scale,
 				lineHeight
 			});
-
+				
 		static char outStr[ComboSliderState::maxTextSize] = { 0 };
 		static char outStrFormatted[ComboSliderState::maxTextSize] = { 0 };
 		char* str = nullptr;

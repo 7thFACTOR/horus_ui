@@ -822,10 +822,16 @@ void Renderer::cmdSetColor(const Rgba32 newColor)
 void Renderer::cmdSetTexture(HTexture textureHandle, u32 width, u32 height)
 {
 	DrawCommand cmd(DrawCommand::Type::SetTexture);
-
+	
+	HUI_ASSERT(textureHandle);
+	HUI_ASSERT(width);
+	HUI_ASSERT(height);
 	cmd.data.setTexture.texture = textureHandle;
 	cmd.data.setTexture.width = width;
 	cmd.data.setTexture.height = height;
+	currentTexture = textureHandle;
+	currentTextureWidth = width;
+	currentTextureHeight = height;
 	addDrawCommand(cmd);
 }
 

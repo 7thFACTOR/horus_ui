@@ -496,7 +496,7 @@ void TextInputState::processKeyEvent(const InputEvent& ev)
 			}
 		}
 	}
-	else if (ev.key.code == KeyCode::X && !!(ev.key.modifiers & KeyModifiers::Control))
+	else if (!password && ev.key.code == KeyCode::X && !!(ev.key.modifiers & KeyModifiers::Control))
 	{
 		Utf32String str = getSelection();
 

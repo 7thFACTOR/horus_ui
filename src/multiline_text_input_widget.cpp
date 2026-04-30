@@ -64,7 +64,9 @@ bool textInputMultiline(
 
 	state.themeElement = bodyElem;
 
-	if (ctx->widget.focused)
+	if (ctx->widget.disabled)
+		bodyElemState = &bodyElem->getState(WidgetStateType::Disabled);
+	else if (ctx->widget.focused)
 		bodyElemState = &bodyElem->getState(WidgetStateType::Focused);
 
 	auto clipRect = Rect(
@@ -285,8 +287,15 @@ bool textInputMultiline(
 	// draw background
 	ctx->renderer.cmdSetColor(bodyElemState->color);
 
-	if (bodyElemState->image)
-		ctx->renderer.cmdDrawImageBordered(bodyElemState->image, bodyElemState->border, ctx->widget.rect, ctx->scale);
+	Image* bodyImage = bodyElemState->image;
+
+	if (ctx->widget.disabled && !bodyImage)
+	{
+		bodyImage = bodyElem->normalState().image;
+	}
+
+	if (bodyImage)
+		ctx->renderer.cmdDrawImageBordered(bodyImage, bodyElemState->border, ctx->widget.rect, ctx->scale);
 	else
 		ctx->renderer.cmdDrawFilledRectangle(ctx->widget.rect);
 

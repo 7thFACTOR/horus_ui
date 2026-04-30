@@ -3,8 +3,6 @@
 
 namespace hui
 {
-struct MemoryStream;
-
 struct DockNode
 {
 	enum class Type

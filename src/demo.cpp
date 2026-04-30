@@ -84,6 +84,37 @@ struct DemoState
 	bool expandTable = false;
 	bool expandTooltip = false;
 	bool expandPopup = false;
+	bool expandScrollView = false;
+
+	// Disabled states
+	bool disableButton = false;
+	bool disableTextInput = false;
+	bool disableMultiline = false;
+	bool disableSlider = false;
+	bool disableComboSlider = false;
+	bool disableRotarySlider = false;
+	bool disableProgress = false;
+	bool disableCheck = false;
+	bool disableRadio = false;
+	bool disableLabel = false;
+	bool disableExpandable = false;
+	bool disableDropdown = false;
+	bool disableList = false;
+	bool disableSelectable = false;
+	bool disableSeparators = false;
+	bool disableTabs = false;
+	bool disableBox = false;
+	bool disableColorPicker = false;
+	bool disableVecEditors = false;
+	bool disableImages = false;
+	bool disableMenus = false;
+	bool disableViewport = false;
+	bool disableCustomWidget = false;
+	bool disableObjectRef = false;
+	bool disableTable = false;
+	bool disableTooltip = false;
+	bool disablePopup = false;
+	bool disableScrollView = false;
 
 	// Popup demo
 	bool showPopup = false;
@@ -110,7 +141,10 @@ struct DemoState
 
 	// Virtual List
 	bool expandVirtualList = false;
+	bool disableVirtualList = false;
 	i32 virtualListCount = 1000;
+	
+	Point scrollPos = { 0, 0 };
 
 	bool initialized = false;
 
@@ -133,6 +167,9 @@ void showDemo()
 	//------------------------------------------------------------------
 	if (expandable("Buttons", &demo.expandButton))
 	{
+		check("Disable##Button", &demo.disableButton);
+		widgetPushDisabled(demo.disableButton);
+
 		label("Basic button:");
 		if (button("Click Me"))
 		{
@@ -154,6 +191,7 @@ void showDemo()
 		{
 			demo.buttonClickCount++;
 		}
+		widgetPopDisabled();
 	}
 
 	//------------------------------------------------------------------
@@ -161,6 +199,9 @@ void showDemo()
 	//------------------------------------------------------------------
 	if (expandable("Text Input", &demo.expandTextInput))
 	{
+		check("Disable##TextInput", &demo.disableTextInput);
+		widgetPushDisabled(demo.disableTextInput);
+
 		label("Basic:");
 		textInput("##tiBasic", demo.textBasic, sizeof(demo.textBasic));
 
@@ -183,6 +224,7 @@ void showDemo()
 		space();
 		label("Password:");
 		textInput("##tiPass", demo.textPassword, sizeof(demo.textPassword), TextInputFlags::None, nullptr, 0, true);
+		widgetPopDisabled();
 	}
 
 	//------------------------------------------------------------------
@@ -190,6 +232,9 @@ void showDemo()
 	//------------------------------------------------------------------
 	if (expandable("Multiline Text Input", &demo.expandMultiline))
 	{
+		check("Disable##MultilineTextInput", &demo.disableMultiline);
+		widgetPushDisabled(demo.disableMultiline);
+
 		label("Basic (10 visible lines):");
 		textInputMultiline("##mtiBasic", demo.multiText, sizeof(demo.multiText), 10);
 
@@ -205,6 +250,7 @@ void showDemo()
 		label("Line numbers + highlight current line:");
 		textInputMultiline("##mtiHighlight", demo.multiText, sizeof(demo.multiText), 8,
 			MultilineTextInputFlags::LineNumbers | MultilineTextInputFlags::HighlightCurrentLine);
+		widgetPopDisabled();
 	}
 
 	//------------------------------------------------------------------
@@ -212,6 +258,9 @@ void showDemo()
 	//------------------------------------------------------------------
 	if (expandable("Sliders", &demo.expandSlider))
 	{
+		check("Disable##Slider", &demo.disableSlider);
+		widgetPushDisabled(demo.disableSlider);
+
 		char buf[64];
 
 		label("Integer slider (0..100):");
@@ -236,6 +285,7 @@ void showDemo()
 		sliderFloat("##slFloatStep", 0.0f, 1.0f, demo.sliderFloatStepped, true, 0.1f);
 		snprintf(buf, sizeof(buf), "Value: %.3f", demo.sliderFloatStepped);
 		label(buf);
+		widgetPopDisabled();
 	}
 
 	//------------------------------------------------------------------
@@ -243,6 +293,9 @@ void showDemo()
 	//------------------------------------------------------------------
 	if (expandable("Combo Sliders", &demo.expandComboSlider))
 	{
+		check("Disable##ComboSlider", &demo.disableComboSlider);
+		widgetPushDisabled(demo.disableComboSlider);
+
 		label("Integer combo slider (unbounded):");
 		comboSliderInt(&demo.comboSliderInt);
 
@@ -261,6 +314,7 @@ void showDemo()
 		space();
 		label("With custom format string:");
 		comboSliderFloat(&demo.comboSliderFloatCustomString, 1.0f, 1.0f, "%.2f units");
+		widgetPopDisabled();
 	}
 
 	//------------------------------------------------------------------
@@ -268,12 +322,16 @@ void showDemo()
 	//------------------------------------------------------------------
 	if (expandable("Rotary Sliders", &demo.expandRotarySlider))
 	{
+		check("Disable##RotarySlider", &demo.disableRotarySlider);
+		widgetPushDisabled(demo.disableRotarySlider);
+
 		label("Basic rotary slider (0..1):");
 		rotarySliderFloat("Volume", &demo.rotaryVal, 0.0f, 1.0f, 0.01f);
 
 		space();
 		label("Two-side rotary slider (-1..1):");
 		rotarySliderFloat("Pan", &demo.rotaryTwoSide, -1.0f, 1.0f, 0.01f, true);
+		widgetPopDisabled();
 	}
 
 	//------------------------------------------------------------------
@@ -281,6 +339,9 @@ void showDemo()
 	//------------------------------------------------------------------
 	if (expandable("Progress Bars", &demo.expandProgress))
 	{
+		check("Disable##Progress", &demo.disableProgress);
+		widgetPushDisabled(demo.disableProgress);
+
 		label("Basic progress (65%):");
 		progress(demo.progressValue);
 
@@ -295,6 +356,7 @@ void showDemo()
 		space();
 		label("Indeterminate:");
 		progress(0.0f, 0.0f, false, false, "Loading...");
+		widgetPopDisabled();
 	}
 
 	//------------------------------------------------------------------
@@ -302,6 +364,9 @@ void showDemo()
 	//------------------------------------------------------------------
 	if (expandable("Checkboxes", &demo.expandCheck))
 	{
+		check("Disable##Check", &demo.disableCheck);
+		widgetPushDisabled(demo.disableCheck);
+
 		check("Option A (checked)", &demo.checkA);
 		check("Option B (unchecked)", &demo.checkB);
 
@@ -310,6 +375,7 @@ void showDemo()
 		widgetSetNextDisabled();
 		bool disabledCheck = true;
 		check("Cannot change", &disabledCheck);
+		widgetPopDisabled();
 	}
 
 	//------------------------------------------------------------------
@@ -317,6 +383,9 @@ void showDemo()
 	//------------------------------------------------------------------
 	if (expandable("Radio Buttons", &demo.expandRadio))
 	{
+		check("Disable##Radio", &demo.disableRadio);
+		widgetPushDisabled(demo.disableRadio);
+
 		radio("Choice 1", &demo.radioVal, 0);
 		radio("Choice 2", &demo.radioVal, 1);
 		radio("Choice 3", &demo.radioVal, 2);
@@ -324,6 +393,7 @@ void showDemo()
 		char buf[64];
 		snprintf(buf, sizeof(buf), "Selected: %d", demo.radioVal);
 		label(buf);
+		widgetPopDisabled();
 	}
 
 	//------------------------------------------------------------------
@@ -331,6 +401,9 @@ void showDemo()
 	//------------------------------------------------------------------
 	if (expandable("Labels", &demo.expandLabel))
 	{
+		check("Disable##Label", &demo.disableLabel);
+		widgetPushDisabled(demo.disableLabel);
+
 		label("Left aligned (default)");
 		label("Center aligned", HAlignType::Center);
 		label("Right aligned", HAlignType::Right);
@@ -350,6 +423,7 @@ void showDemo()
 		space();
 		label("Custom font multiline label:");
 		labelCustomFontMultiline("This is a multiline label with a custom font. It should wrap properly if the text is long enough.", titleFont, HAlignType::Left);
+		widgetPopDisabled();
 	}
 
 	//------------------------------------------------------------------
@@ -357,23 +431,29 @@ void showDemo()
 	//------------------------------------------------------------------
 	if (expandable("Expandable (nested)", &demo.expandExpandable))
 	{
+		check("Disable##Expandable", &demo.disableExpandable);
+		widgetPushDisabled(demo.disableExpandable);
+
 		label("Expandables can be nested:");
 
-		bool nestedA = false;
-		if (expandable("Nested A"))
+		if (expandableBegin("Nested A"))
 		{
 			label("Content of Nested A");
+			expandableEnd();
 		}
 
-		if (expandable("Nested B"))
+		if (expandableBegin("Nested B"))
 		{
 			label("Content of Nested B");
 
-			if (expandable("Nested C (inside B)"))
+			if (expandableBegin("Nested C (inside B)"))
 			{
 				label("Deep nested content");
+				expandableEnd();
 			}
+			expandableEnd();
 		}
+		widgetPopDisabled();
 	}
 
 	//------------------------------------------------------------------
@@ -381,6 +461,9 @@ void showDemo()
 	//------------------------------------------------------------------
 	if (expandable("Dropdown", &demo.expandDropdown))
 	{
+		check("Disable##Dropdown", &demo.disableDropdown);
+		widgetPushDisabled(demo.disableDropdown);
+
 		static const char* items[] = { "Apple", "Banana", "Cherry", "Date", "Elderberry" };
 
 		label("Basic dropdown:");
@@ -393,6 +476,7 @@ void showDemo()
 		char buf[64];
 		snprintf(buf, sizeof(buf), "Selected index: %d", demo.dropdownSel);
 		label(buf);
+		widgetPopDisabled();
 	}
 
 	//------------------------------------------------------------------
@@ -400,6 +484,9 @@ void showDemo()
 	//------------------------------------------------------------------
 	if (expandable("List", &demo.expandList))
 	{
+		check("Disable##List", &demo.disableList);
+		widgetPushDisabled(demo.disableList);
+
 		static const char* listItems[] = { "Item A", "Item B", "Item C", "Item D", "Item E" };
 
 		label("Single selection list:");
@@ -409,6 +496,7 @@ void showDemo()
 		label("Multiple selection list:");
 		static bool multiSel[5] = {};
 		list("##listMulti", multiSel, ListSelectionMode::Multiple, listItems, 5, 120.0f);
+		widgetPopDisabled();
 	}
 
 	//------------------------------------------------------------------
@@ -416,6 +504,9 @@ void showDemo()
 	//------------------------------------------------------------------
 	if (expandable("Selectable", &demo.expandSelectable))
 	{
+		check("Disable##Selectable", &demo.disableSelectable);
+		widgetPushDisabled(demo.disableSelectable);
+
 		label("Normal selectable:");
 		selectable("Selectable item 1");
 		selectable("Selectable item 2");
@@ -432,6 +523,7 @@ void showDemo()
 		label("Custom font selectables:");
 		HFont headingFont = themeFontGet("heading");
 		selectableCustomFont("Selectable with Heading Font", headingFont);
+		widgetPopDisabled();
 	}
 
 	//------------------------------------------------------------------
@@ -439,6 +531,9 @@ void showDemo()
 	//------------------------------------------------------------------
 	if (expandable("Separators & Spacing", &demo.expandSeparators))
 	{
+		check("Disable##Separators", &demo.disableSeparators);
+		widgetPushDisabled(demo.disableSeparators);
+
 		label("Line separator below:");
 		line();
 		label("Content after line");
@@ -456,6 +551,7 @@ void showDemo()
 		button("B");
 		sameLine();
 		button("C");
+		widgetPopDisabled();
 	}
 
 	//------------------------------------------------------------------
@@ -463,6 +559,9 @@ void showDemo()
 	//------------------------------------------------------------------
 	if (expandable("Tabs", &demo.expandTabs))
 	{
+		check("Disable##Tabs", &demo.disableTabs);
+		widgetPushDisabled(demo.disableTabs);
+
 		tabGroupBegin(demo.selectedTab);
 		tab("Tab 1", 0);
 		tab("Tab 2", 0);
@@ -484,6 +583,7 @@ void showDemo()
 			label("Just some text in tab 3");
 			break;
 		}
+		widgetPopDisabled();
 	}
 
 	//------------------------------------------------------------------
@@ -491,6 +591,9 @@ void showDemo()
 	//------------------------------------------------------------------
 	if (expandable("Box", &demo.expandBox))
 	{
+		check("Disable##Box", &demo.disableBox);
+		widgetPushDisabled(demo.disableBox);
+
 		label("Box with default element:");
 		boxBegin("##boxDefault", Color::white);
 		label("Content inside the box");
@@ -502,6 +605,7 @@ void showDemo()
 		boxBegin("##boxTinted", Color(0.3f, 0.8f, 0.5f, 1.0f));
 		label("Green tinted box content");
 		boxEnd();
+		widgetPopDisabled();
 	}
 
 	//------------------------------------------------------------------
@@ -509,6 +613,9 @@ void showDemo()
 	//------------------------------------------------------------------
 	if (expandable("Color Picker", &demo.expandColorPicker))
 	{
+		check("Disable##ColorPicker", &demo.disableColorPicker);
+		widgetPushDisabled(demo.disableColorPicker);
+
 		label("Color picker:");
 		colorPicker("##cpDefault", &demo.pickerColor);
 
@@ -516,6 +623,7 @@ void showDemo()
 		snprintf(buf, sizeof(buf), "R: %.2f G: %.2f B: %.2f A: %.2f",
 			demo.pickerColor.r, demo.pickerColor.g, demo.pickerColor.b, demo.pickerColor.a);
 		label(buf);
+		widgetPopDisabled();
 	}
 
 	//------------------------------------------------------------------
@@ -523,6 +631,9 @@ void showDemo()
 	//------------------------------------------------------------------
 	if (expandable("Vector Editors", &demo.expandVecEditors))
 	{
+		check("Disable##VecEditors", &demo.disableVecEditors);
+		widgetPushDisabled(demo.disableVecEditors);
+
 		label("vec2 (float):");
 		vec2Editor("##v2f", demo.vec2x, demo.vec2y);
 
@@ -537,12 +648,16 @@ void showDemo()
 		space();
 		label("vec3 (double):");
 		vec3Editor("##v3d", demo.dvec3x, demo.dvec3y, demo.dvec3z);
+		widgetPopDisabled();
 	}
 	//------------------------------------------------------------------
 	// Images & Textures
 	//------------------------------------------------------------------
 	if (expandable("Images & Textures", &demo.expandImages))
 	{
+		check("Disable##Images", &demo.disableImages);
+		widgetPushDisabled(demo.disableImages);
+
 		if (!demo.demoImage)
 		{
 			demo.demoImage = themeGetImage(themeGet(), "__WHITEIMAGE__");
@@ -572,6 +687,7 @@ void showDemo()
 		// Just using an image as a texture for demo purposes if no real texture available
 		
 		texture(themeGetAtlasTexture(), 64, 64, 64);
+		widgetPopDisabled();
 	}
 
 	//------------------------------------------------------------------
@@ -579,6 +695,9 @@ void showDemo()
 	//------------------------------------------------------------------
 	if (expandable("Menus", &demo.expandMenus))
 	{
+		check("Disable##Menus", &demo.disableMenus);
+		widgetPushDisabled(demo.disableMenus);
+
 		label("Menu Bar (Nested below):");
 		if (menuBarBegin())
 		{
@@ -615,6 +734,7 @@ void showDemo()
 			}
 			contextMenuEnd();
 		}
+		widgetPopDisabled();
 	}
 
 	//------------------------------------------------------------------
@@ -622,12 +742,16 @@ void showDemo()
 	//------------------------------------------------------------------
 	if (expandable("Viewport", &demo.expandViewport))
 	{
+		check("Disable##Viewport", &demo.disableViewport);
+		widgetPushDisabled(demo.disableViewport);
+
 		label("A custom viewport area (100px height):");
 		Rect vprect = viewportBegin("##demoViewport", 100);
 		// In a real app, you'd use vprect to draw your 3D scene/etc.
 		renderDrawSolidRectangle(vprect);
 		renderDrawTextInBox("Custom Viewport Content", vprect, HAlignType::Center, VAlignType::Center);
 		viewportEnd();
+		widgetPopDisabled();
 	}
 
 	//------------------------------------------------------------------
@@ -635,12 +759,16 @@ void showDemo()
 	//------------------------------------------------------------------
 	if (expandable("Custom Widget", &demo.expandCustomWidget))
 	{
+		check("Disable##CustomWidget", &demo.disableCustomWidget);
+		widgetPushDisabled(demo.disableCustomWidget);
+
 		label("Custom widget area:");
 		Rect cwRect = customWidgetBegin("##demoCustom", 50);
 		renderDrawRectangle(cwRect);
 		renderDrawLine(cwRect.topLeft(), cwRect.bottomRight());
 		renderDrawLine(cwRect.topRight(), cwRect.bottomLeft());
 		customWidgetEnd();
+		widgetPopDisabled();
 	}
 
 	//------------------------------------------------------------------
@@ -648,14 +776,21 @@ void showDemo()
 	//------------------------------------------------------------------
 	if (expandable("Object Reference Editor", &demo.expandObjectRef))
 	{
+		check("Disable##ObjectRef", &demo.disableObjectRef);
+		widgetPushDisabled(demo.disableObjectRef);
+
 		label("Object reference editor:");
 		objectRefEditor("##demoObjRef", 0, 0, "MyObjectType", "None", 0, &demo.objectRefValue, &demo.objectRefModified);
+		widgetPopDisabled();
 	}
 	//------------------------------------------------------------------
 	// Virtual List
 	//------------------------------------------------------------------
 	if (expandable("Virtual List (1000 items)", &demo.expandVirtualList))
 	{
+		check("Disable##VirtualList", &demo.disableVirtualList);
+		widgetPushDisabled(demo.disableVirtualList);
+
 		// persistent virtual list state: only provide item count here
 		static hui::VirtualScrollInfo vinfo(1000); 
 
@@ -671,6 +806,29 @@ void showDemo()
 			}
 		}
 		virtualListContentEnd();
+		widgetPopDisabled();
+	}
+
+	//------------------------------------------------------------------
+	// Scroll View
+	//------------------------------------------------------------------
+	if (expandable("Scroll View", &demo.expandScrollView))
+	{
+		check("Disable##ScrollView", &demo.disableScrollView);
+		widgetPushDisabled(demo.disableScrollView);
+
+		label("A nested scroll view (150px height):");
+		scrollViewBegin("##nestedSV", 150, demo.scrollPos.y);
+		{
+			for (int i = 0; i < 20; ++i)
+			{
+				char buf[64];
+				snprintf(buf, sizeof(buf), "Inside ScrollView %d", i);
+				button(buf);
+			}
+		}
+		scrollViewEnd();
+		widgetPopDisabled();
 	}
 
 	//------------------------------------------------------------------
@@ -678,6 +836,9 @@ void showDemo()
 	//------------------------------------------------------------------
 	if (expandable("Tables", &demo.expandTable))
 	{
+		check("Disable##Table", &demo.disableTable);
+		widgetPushDisabled(demo.disableTable);
+
 		label("Basic table (3 columns):");
 		if (tableBegin("##demoTable", 3, 200, TableFlags::Borders | TableFlags::Resizable | TableFlags::Reorderable | TableFlags::AltRowBg))
 		{
@@ -703,6 +864,7 @@ void showDemo()
 			}
 			tableEnd();
 		}
+		widgetPopDisabled();
 	}
 
 	//------------------------------------------------------------------
@@ -710,6 +872,9 @@ void showDemo()
 	//------------------------------------------------------------------
 	if (expandable("Tooltips", &demo.expandTooltip))
 	{
+		check("Disable##Tooltip", &demo.disableTooltip);
+		widgetPushDisabled(demo.disableTooltip);
+
 		label("Hover me for a basic tooltip:");
 		button("Hover Me (Basic)");
 		tooltip("This is a basic text tooltip!");
@@ -725,6 +890,7 @@ void showDemo()
 			button("Button inside tooltip");
 			customTooltipEnd();
 		}
+		widgetPopDisabled();
 	}
 
 	//------------------------------------------------------------------
@@ -732,6 +898,9 @@ void showDemo()
 	//------------------------------------------------------------------
 	if (expandable("Popups", &demo.expandPopup))
 	{
+		check("Disable##Popup", &demo.disablePopup);
+		widgetPushDisabled(demo.disablePopup);
+
 		label("Click the button to open a modal popup:");
 		if (button("Open Popup"))
 		{
@@ -751,6 +920,7 @@ void showDemo()
 			}
 			popupEnd();
 		}
+		widgetPopDisabled();
 	}
 
 	demo.demoScrollPos = scrollViewEnd();

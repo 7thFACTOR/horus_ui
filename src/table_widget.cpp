@@ -317,6 +317,9 @@ bool tableBegin(const char* id, u32 columnCount, f32 height, TableFlags flags)
 	if (columnCount == 0)
 		return false;
 
+	widgetPushDisabled(widgetGetDisabled());
+	addWidget(0);
+
 	WidgetId tableId = genId(id);
 	auto& persistent = ctx->tablePersistentStates[tableId];
 
@@ -797,7 +800,7 @@ void tableEnd()
 	}
 	
 	// handle column resizing
-	if (has(state.flags, TableFlags::Resizable))
+	if (has(state.flags, TableFlags::Resizable) && !ctx->widget.disabled)
 	{
 		// only process resize logic if mouse is within the table's visible bounds
 		// this prevents triggering when hovering over other widgets below the table
@@ -1050,6 +1053,8 @@ void tableEnd()
 	ctx->layout.width = state.savedLayoutWidth;
 	ctx->position.x = state.tableRect.x - 1.0f;
 	ctx->tableStack.pop_back();
+
+	widgetPopDisabled();
 }
 
 void tableStartHeader()

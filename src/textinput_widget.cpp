@@ -70,12 +70,14 @@ bool textInput(
 		if (text)
 		{
 			text[0] = 0;
+
 			if (ctx->textInput.id == ctx->id)
 			{
 				ctx->textInput.text.clear();
 				ctx->textInput.caretPosition = 0;
 				ctx->textInput.selectionActive = false;
 			}
+
 			ctx->textInput.textChanged = true;
 			forceRepaint();
 		}
@@ -89,7 +91,11 @@ bool textInput(
 
 	ctx->textInput.themeElement = bodyElem;
 
-	if (ctx->widget.focused)
+	if (ctx->widget.disabled)
+	{
+		bodyElemState = &bodyElem->getState(WidgetStateType::Disabled);
+	}
+	else if (ctx->widget.focused)
 	{
 		bodyElemState = &bodyElem->getState(WidgetStateType::Focused);
 	}
@@ -106,11 +112,12 @@ bool textInput(
 	char* textToDraw = (char*)text;
 	Utf32String pwdStr;
 
-	ctx->settings.services.utf8To32(passwordChar, pwdStr);
+	if (password)
+	{
+		ctx->settings.services.utf8To32(passwordChar, pwdStr);
+	}
 
 	ctx->textInput.editNow = false;
-	ctx->textInput.password = password;
-	ctx->textInput.passwordCharUnicode = pwdStr;
 
 	if (ctx->event.type == InputEvent::Type::Key
 		&& ctx->event.key.down
@@ -171,6 +178,8 @@ bool textInput(
 
 	if (ctx->textInput.editNow)
 	{
+		ctx->textInput.password = password;
+		ctx->textInput.passwordCharUnicode = pwdStr;
 		ctx->textInput.rect = ctx->widget.rect;
 		ctx->textInput.clipRect = clipRect;
 		ctx->textInput.maxTextLength = maxLength;
@@ -220,7 +229,15 @@ bool textInput(
 	}
 
 	ctx->renderer.cmdSetColor(bodyElemState->color);
-	ctx->renderer.cmdDrawImageBordered(bodyElemState->image, bodyElemState->border, ctx->widget.rect, ctx->scale);
+
+	Image* bodyImage = bodyElemState->image;
+
+	if (ctx->widget.disabled && !bodyImage)
+	{
+		bodyImage = bodyElem->normalState().image;
+	}
+
+	ctx->renderer.cmdDrawImageBordered(bodyImage, bodyElemState->border, ctx->widget.rect, ctx->scale);
 	ctx->renderer.cmdSetColor(bodyElemState->textColor);
 	ctx->renderer.cmdSetFont(bodyElemState->font);
 	ctx->renderer.pushClipRect(clipRect);

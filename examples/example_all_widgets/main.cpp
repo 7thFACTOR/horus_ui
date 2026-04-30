@@ -176,10 +176,18 @@ int main(int argc, char** args)
 	bool exitNow = false;
 	f32 lastMs = 0;
 
-	auto reloadTheme = [theme, sdlParams, &err, errSize, &largeFnt]()
+	auto reloadTheme = [&theme, sdlParams, &err, errSize, &largeFnt]()
 		{
+			auto newTheme = hui::loadThemeFromJson(themeFilePath, err, errSize);
+
+			if (!newTheme)
+			{
+				printf("Theme JSON error: %s\n", err);
+				return;
+			}
+
 			hui::themeDestroy(theme);
-			auto theme = hui::loadThemeFromJson(themeFilePath, err, errSize);
+			theme = newTheme;
 			hui::themeSet(theme);
 			loadImages();
 			largeFnt = hui::themeFontGetFromTheme(theme, "title");

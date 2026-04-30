@@ -1698,13 +1698,6 @@ struct FontGlyph
 	Rgba32* rgbaBuffer = nullptr;
 };
 
-struct FontKerningPair
-{
-	GlyphCode glyphLeft = 0;
-	GlyphCode glyphRight = 0;
-	f32 kerning = 0.0f;
-};
-
 struct FontMetrics
 {
 	f32 height = 0;
@@ -2395,8 +2388,17 @@ HUI_API MessageBoxButtons messageBox(
 	u32 width = 400,
 	HImage customImg = 0);
 
-/// Set the next widget as disabled or not
-HUI_API void widgetSetNextDisabled();
+/// Set the next widget as disabled
+HUI_API void widgetSetNextDisabled(bool disabled = true);
+
+/// Nest the disabled state, all widgets inside will be disabled
+HUI_API void widgetPushDisabled(bool disabled = true);
+
+/// Pop the disabled nesting state
+HUI_API void widgetPopDisabled();
+
+/// Returns true if the next widget will be disabled (either by parent or next-state)
+HUI_API bool widgetGetDisabled();
 
 /// Set next widget as focused
 HUI_API void widgetSetNextFocused();
@@ -2420,7 +2422,7 @@ HUI_API bool imageButton(HImage img, f32 width, f32 height, HImage disabledImg =
 /// \param defaultText the grayed default text when there is no text value
 /// \param img the image drawn in the widget
 /// \return true if the text was modified
-HUI_API bool textInput(const char* id, char* text, u32 maxTextSize, TextInputFlags flags = TextInputFlags::None, const char* defaultText = nullptr, HImage img = 0, bool password = false, const char* passwordChar = "\95");
+HUI_API bool textInput(const char* id, char* text, u32 maxTextSize, TextInputFlags flags = TextInputFlags::None, const char* defaultText = nullptr, HImage img = 0, bool password = false, const char* passwordChar = "*");
 
 /// Multi-line text input widget. Enter key creates a new line instead of submitting.
 HUI_API bool textInputMultiline(const char* id, char* text, u32 maxTextSize, u32 visibleLines = 10, MultilineTextInputFlags flags = MultilineTextInputFlags::None, const KeywordInfo* keywords = nullptr, u32 keywordCount = 0, const RangeHighlight* rangeHighlights = nullptr, u32 rangeHighlightCount = 0);
@@ -2515,6 +2517,8 @@ HUI_API bool labelCustomFontMultiline(const char* label, HFont font, HAlignType 
 /// \param expandedVar keeps true if the panel is expanded
 /// \return true if the panel state changed
 HUI_API bool expandable(const char* label, bool* expandedVar = nullptr);
+HUI_API bool expandableBegin(const char* label, bool* expandedVar = nullptr);
+HUI_API void expandableEnd();
 
 /// Draw a dropdown widget
 /// \param selectedIndex the current selected item index

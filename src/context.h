@@ -137,6 +137,7 @@ struct Context
 	// Tabbing/focusing
 	TabIndex currentTabIndex = 0;
 	TabIndex selectedTabIndex = 0;
+	u32 disabledNesting = 0;
 	DockTabGroupState tabGroup;
 
 	DropdownState dropdown;

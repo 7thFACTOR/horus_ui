@@ -9,11 +9,16 @@ static bool labelInternal(const char* label, HAlignType horizontalAlign, Font* f
 {
 	auto& bodyElem = ctx->theme->getElement(WidgetElementId::LabelBody);
 	f32 height = 0;
-	auto& bodyElemState = bodyElem.normalState();
+	auto bodyElemState = &bodyElem.normalState();
+
+	if (widgetGetDisabled())
+	{
+		bodyElemState = &bodyElem.disabledState();
+	}
 
 	ctx->setLabelAndId(label);
 	auto fsize = ctx->renderer.computeSizeOrDrawText(ctx->widgetLabel.c_str(), Rect(0, 0, ctx->layout.width , FLT_MAX), HAlignType::Left, VAlignType::Top, false, font ? font : bodyElem.normalState().font, true);
-	height = (bodyElemState.height > fsize.height ? bodyElemState.height : fsize.height);
+	height = (bodyElemState->height > fsize.height ? bodyElemState->height : fsize.height);
 
 	if (!ctx->widget.hasNextWidth)
 	{
@@ -38,8 +43,8 @@ static bool labelInternal(const char* label, HAlignType horizontalAlign, Font* f
 			ctx->widget.rect.height
 		};
 
-		ctx->renderer.cmdSetColor(tintApply(bodyElemState.textColor, TintColorType::Text));
-		ctx->renderer.cmdSetFont(font ? font : bodyElemState.font);
+		ctx->renderer.cmdSetColor(tintApply(bodyElemState->textColor, TintColorType::Text));
+		ctx->renderer.cmdSetFont(font ? font : bodyElemState->font);
 		ctx->renderer.cmdDrawTextInBox(
 			ctx->widgetLabel.c_str(),
 			textRc,

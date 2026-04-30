@@ -45,7 +45,12 @@ bool radio(const char* label, i32* currentRadioValue, i32 thisValue)
 	auto radioBodyElemState = &radioBodyElem.normalState();
 	auto radioMarkElemState = &radioMarkElem.normalState();
 
-	if (currentRadioValue && *currentRadioValue == thisValue)
+	if (ctx->widget.disabled)
+	{
+		radioBodyElemState = &radioBodyElem.getState(WidgetStateType::Disabled);
+		radioMarkElemState = &radioMarkElem.getState(WidgetStateType::Disabled);
+	}
+	else if (currentRadioValue && *currentRadioValue == thisValue)
 	{
 		radioBodyElemState = &radioBodyElem.getState(WidgetStateType::Pressed);
 		radioMarkElemState = &radioMarkElem.getState(WidgetStateType::Pressed);
@@ -57,8 +62,18 @@ bool radio(const char* label, i32* currentRadioValue, i32 thisValue)
 	}
 
 	ctx->renderer.cmdSetColor(radioBodyElemState->color);
+
+	Image* bodyImage = radioBodyElemState->image;
+	Image* markImage = radioMarkElemState->image;
+
+	if (ctx->widget.disabled)
+	{
+		if (!bodyImage) bodyImage = radioBodyElem.normalState().image;
+		if (!markImage) markImage = radioMarkElem.normalState().image;
+	}
+
 	ctx->renderer.cmdDrawImageBordered(
-		radioBodyElemState->image,
+		bodyImage,
 		radioBodyElemState->border,
 		{
 			ctx->widget.rect.x,
@@ -71,12 +86,12 @@ bool radio(const char* label, i32* currentRadioValue, i32 thisValue)
 	{
 		ctx->renderer.cmdSetColor(radioMarkElemState->color);
 		ctx->renderer.cmdDrawImageBordered(
-			radioMarkElemState->image, radioMarkElemState->border,
+			markImage, radioMarkElemState->border,
 			{
-				ctx->widget.rect.x + (markWidth - radioMarkElemState->image->width) / 2.0f * ctx->scale,
-				ctx->widget.rect.y + (markHeight - radioMarkElemState->image->height) / 2.0f * ctx->scale,
-				radioMarkElemState->image->rect.width * ctx->scale,
-				radioMarkElemState->image->rect.height * ctx->scale
+				ctx->widget.rect.x + (markWidth - markImage->width) / 2.0f * ctx->scale,
+				ctx->widget.rect.y + (markHeight - markImage->height) / 2.0f * ctx->scale,
+				markImage->rect.width * ctx->scale,
+				markImage->rect.height * ctx->scale
 			}, ctx->scale);
 	}
 

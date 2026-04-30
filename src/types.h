@@ -25,9 +25,7 @@
 
 namespace hui
 {
-struct Renderer;
 struct Theme;
-struct UnicodeTextCache;
 struct Font;
 struct Image;
 struct DockNode;

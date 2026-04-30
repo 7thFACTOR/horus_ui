@@ -102,4 +102,38 @@ bool expandable(const char* label, bool* expandedVar)
 	return expanded;
 }
 
+bool expandableBegin(const char* label, bool* expandedVar)
+{
+	if (!expandable(label, expandedVar))
+	{
+		return false;
+	}
+
+	auto& bodyState = ctx->theme->getElement(WidgetElementId::ExpandableBody).normalState();
+	auto& arrowState = ctx->theme->getElement(WidgetElementId::ExpandableCollapsedArrow).normalState();
+	const auto& padding = widgetGetPadding();
+	f32 arrowWidth = arrowState.image ? arrowState.image->width : bodyState.height;
+	f32 indent = (bodyState.border + padding.x + arrowWidth) * ctx->scale;
+
+	layoutPush();
+	ctx->layout.savedPosition.x += indent;
+	ctx->layout.width -= indent;
+	if (ctx->layout.width < 0.0f)
+	{
+		ctx->layout.width = 0.0f;
+	}
+	ctx->position.x += indent;
+	ctx->sameLine.enabled = false;
+
+	return true;
+}
+
+void expandableEnd()
+{
+	f32 y = ctx->position.y;
+	layoutPop();
+	ctx->position.y = y;
+	ctx->sameLine.enabled = false;
+}
+
 }

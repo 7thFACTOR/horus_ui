@@ -123,9 +123,26 @@ void clearBackground(const Color& color)
 	ctx->renderer.cmdClearBackground(color);
 }
 
-void widgetSetNextDisabled()
+void widgetSetNextDisabled(bool disabled)
 {
-	ctx->widget.nextDisabled = true;
+	ctx->widget.nextDisabled = disabled;
+}
+
+void widgetPushDisabled(bool disabled)
+{
+	if (disabled)
+		ctx->disabledNesting++;
+}
+
+void widgetPopDisabled()
+{
+	if (ctx->disabledNesting > 0)
+		ctx->disabledNesting--;
+}
+
+bool widgetGetDisabled()
+{
+	return ctx->widget.nextDisabled || (ctx->disabledNesting > 0);
 }
 
 void widgetSetNextFocused()
@@ -138,6 +155,8 @@ void widgetSetNextFocused()
 
 void addWidget(f32 height)
 {
+	ctx->widget.disabled = ctx->widget.nextDisabled || (ctx->disabledNesting > 0);
+	ctx->widget.nextDisabled = false;
 	ctx->widget.changeEnded = false;
 	height = (height + widgetGetPadding().y * 2.0f) * ctx->scale;
 
@@ -226,6 +245,9 @@ void addWidget(f32 height)
 
 void widgetSetFocusable()
 {
+	if (ctx->widget.disabled)
+		return;
+
 	if (ctx->widget.focusedId == ctx->id)
 	{
 		ctx->widget.focusedWidgetRect = ctx->widget.rect;
@@ -380,6 +402,8 @@ void frameBegin()
 	ctx->mustRedraw = false;
 	ctx->skipRenderAndInput = false;
 	ctx->widget.disabled = false;
+	ctx->widget.nextDisabled = false;
+	ctx->disabledNesting = 0;
 	ctx->layerIndex = 0;
 	ctx->widget.nextFocusableId = 0;
 	ctx->menuDepth = 0;

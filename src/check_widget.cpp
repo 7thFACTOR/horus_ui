@@ -45,7 +45,12 @@ bool check(const char* label, bool* checkVar)
 	auto checkBodyElemState = &checkBodyElem.normalState();
 	auto checkMarkElemState = &checkMarkElem.normalState();
 
-	if (checkVar && *checkVar)
+	if (ctx->widget.disabled)
+	{
+		checkBodyElemState = &checkBodyElem.getState(WidgetStateType::Disabled);
+		checkMarkElemState = &checkMarkElem.getState(WidgetStateType::Disabled);
+	}
+	else if (checkVar && *checkVar)
 	{
 		checkBodyElemState = &checkBodyElem.getState(WidgetStateType::Pressed);
 		checkMarkElemState = &checkMarkElem.getState(WidgetStateType::Pressed);
@@ -57,8 +62,18 @@ bool check(const char* label, bool* checkVar)
 	}
 
 	ctx->renderer.cmdSetColor(checkBodyElemState->color);
+
+	Image* bodyImage = checkBodyElemState->image;
+	Image* markImage = checkMarkElemState->image;
+
+	if (ctx->widget.disabled)
+	{
+		if (!bodyImage) bodyImage = checkBodyElem.normalState().image;
+		if (!markImage) markImage = checkMarkElem.normalState().image;
+	}
+
 	ctx->renderer.cmdDrawImageBordered(
-		checkBodyElemState->image, checkBodyElemState->border,
+		bodyImage, checkBodyElemState->border,
 		{
 			ctx->widget.rect.x,
 			ctx->widget.rect.y,
@@ -70,7 +85,7 @@ bool check(const char* label, bool* checkVar)
 	{
 		ctx->renderer.cmdSetColor(checkMarkElemState->color);
 		ctx->renderer.cmdDrawImageBordered(
-			checkMarkElemState->image,
+			markImage,
 			checkMarkElemState->border,
 			{
 				ctx->widget.rect.x + (markWidth - checkMarkElemState->image->width) / 2.0f * ctx->scale,

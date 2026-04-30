@@ -13,6 +13,9 @@ void popupBegin(
 	const Point& position,
 	WidgetElementId widgetElementId)
 {
+	widgetPushDisabled(widgetGetDisabled());
+	addWidget(0);
+
 	ctx->id = genId(id);
 	auto& popup = ctx->popupStack[ctx->popupIndex];
 
@@ -165,6 +168,7 @@ void popupEnd()
 
 	//TODO: make a better popup move
 	if (ctx->isActiveLayer()
+		&& !ctx->widget.disabled
 		&&
 		(ctx->widget.hoveredId == popup.id
 			|| popup.startedToDrag
@@ -235,6 +239,7 @@ void popupEnd()
 		layerIndexDecrement();
 
 	--ctx->popupIndex;
+	widgetPopDisabled();
 }
 
 void popupClose()

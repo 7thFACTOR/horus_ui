@@ -172,7 +172,7 @@ bool colorPicker(const char* id, Color* inOutColor, ColorPickerFlags flags, cons
 	auto clippedRcHue = rcH.clipInside(ctx->renderer.getClipRect());
 	auto clippedRcAlpha = rcAlpha.clipInside(ctx->renderer.getClipRect());
 
-	if (ctx->event.type == InputEvent::Type::MouseDown && ctx->hoveringThisWindow)
+	if (ctx->event.type == InputEvent::Type::MouseDown && !ctx->widget.disabled && ctx->hoveringThisWindow)
 	{
 		if (clippedRcSV.contains(ctx->mousePosition))
 		{

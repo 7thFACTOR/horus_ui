@@ -3,11 +3,6 @@
 
 namespace hui
 {
-struct Font;
-struct Image;
-struct Atlas;
-struct FontTextSize;
-
 /// Vertex buffer data used in rendering the UI
 struct VertexBufferData
 {

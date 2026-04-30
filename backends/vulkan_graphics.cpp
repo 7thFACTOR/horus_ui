@@ -1237,11 +1237,6 @@ struct DrawSubmission
 };
 static std::map<void*, DrawSubmission> g_drawSubmissions;
 
-static void vulkanSetCurrentWindowInternal(void* wnd)
-{
-	g_currentWindow = wnd;
-}
-
 void setCurrentWindowVk(void* sdlWindow)
 {
 	g_currentWindow = sdlWindow;

@@ -12,6 +12,9 @@ bool menuBarBegin()
 	auto& menuBarElem = ctx->theme->getElement(WidgetElementId::MenuBarBody);
 	f32 height = menuBarElem.normalState().height * ctx->scale;
 
+	widgetPushDisabled(widgetGetDisabled());
+	addWidget(0);
+
 	ctx->id = genId("__MENUBAR__");
 
 	ctx->layoutStack.push_back(ctx->layout);
@@ -43,6 +46,8 @@ void menuBarEnd()
 	ctx->layoutStack.pop_back();
 	ctx->position.y += height;
 	ctx->currentMenuBarId = 0;
+
+	widgetPopDisabled();
 }
 
 bool beginMenuInternal(const char* label, SelectableFlags stateFlags, bool contextMenu)
@@ -50,6 +55,9 @@ bool beginMenuInternal(const char* label, SelectableFlags stateFlags, bool conte
 	auto& menuBarItemElem = ctx->theme->getElement(WidgetElementId::MenuBarItem);
 	auto menuBarItemElemState = menuBarItemElem.normalState();
 	
+	widgetPushDisabled(widgetGetDisabled());
+	addWidget(menuBarItemElemState.height);
+
 	ctx->setLabelAndId(label);
 	
 	Utf32String uniStr;
@@ -121,7 +129,11 @@ bool beginMenuInternal(const char* label, SelectableFlags stateFlags, bool conte
 			ctx->menuStack[ctx->menuDepth].size.x = 0;
 		}
 
-		if (ctx->activeMenuBarItemWidgetId == thisMenuItemId)
+		if (ctx->widget.disabled)
+		{
+			menuBarItemElemState = menuBarItemElem.getState(WidgetStateType::Disabled);
+		}
+		else if (ctx->activeMenuBarItemWidgetId == thisMenuItemId)
 		{
 			menuBarItemElemState = menuBarItemElem.getState(WidgetStateType::Pressed);
 		}
@@ -240,6 +252,7 @@ void endMenuInternal(bool contextMenu)
 		spacingPop();
 		ctx->renderer.popClipRect();
 		ctx->menuDepth = 0;
+		widgetPopDisabled();
 	}
 	else if (ctx->menuDepth > 1)
 	{
@@ -268,6 +281,7 @@ void endMenuInternal(bool contextMenu)
 			popupEnd();
 			spacingPop();
 			ctx->renderer.popClipRect();
+			widgetPopDisabled();
 		}
 
 		ctx->menuDepth--;
@@ -340,7 +354,12 @@ bool menuItem(const char* label, const char* shortcut, HImage img, SelectableFla
 	auto bodyElemState = &bodyElem.normalState();
 	auto shortcutElemState = &menuItemShortcutElem.normalState();
 
-	if (ctx->widget.pressed || !!(stateFlags & SelectableFlags::Selected))
+	if (ctx->widget.disabled)
+	{
+		bodyElemState = &bodyElem.getState(WidgetStateType::Disabled);
+		shortcutElemState = &menuItemShortcutElem.getState(WidgetStateType::Disabled);
+	}
+	else if (ctx->widget.pressed || !!(stateFlags & SelectableFlags::Selected))
 	{
 		bodyElemState = &bodyElem.getState(WidgetStateType::Pressed);
 		shortcutElemState = &menuItemShortcutElem.getState(WidgetStateType::Pressed);

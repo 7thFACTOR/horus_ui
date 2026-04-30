@@ -27,20 +27,21 @@ bool rotarySliderFloat(const char* label, f32* value, f32 minVal, f32 maxVal, f3
 	addWidget((bodyElem.normalState().height + padding.y * 2.0f) * ctx->scale);
 	buttonBehavior();
 
-	if (widgetIsHovered() && ctx->event.type == InputEvent::Type::MouseDown)
+	if (!ctx->widget.disabled && widgetIsHovered() && ctx->event.type == InputEvent::Type::MouseDown)
 	{
 		ctx->rotarySlider.lastMousePos = ctx->mousePosition;
 		ctx->rotarySlider.id = ctx->id;
 	}
 
-	if (ctx->event.type == InputEvent::Type::MouseUp && ctx->rotarySlider.id == ctx->id)
+	if (ctx->event.type == InputEvent::Type::MouseUp && ctx->rotarySlider.id == ctx->id && !ctx->widget.disabled)
 	{
 		ctx->rotarySlider.id = 0;
 		ctx->widget.changeEnded = true;
 	}
 
 	if (ctx->event.type == InputEvent::Type::MouseMove
-		&& ctx->rotarySlider.id == ctx->id)
+		&& ctx->rotarySlider.id == ctx->id
+		&& !ctx->widget.disabled)
 	{
 		f32 deltaValue = 0;
 		Point delta = ctx->mousePosition - ctx->rotarySlider.lastMousePos;
@@ -75,7 +76,12 @@ bool rotarySliderFloat(const char* label, f32* value, f32 minVal, f32 maxVal, f3
 	auto bodyElemState = &bodyElem.normalState();
 	auto markElemState = &markElem.normalState();
 
-	if (ctx->widget.pressed)
+	if (ctx->widget.disabled)
+	{
+		bodyElemState = &bodyElem.getState(WidgetStateType::Disabled);
+		markElemState = &markElem.getState(WidgetStateType::Disabled);
+	}
+	else if (ctx->widget.pressed)
 	{
 		bodyElemState = &bodyElem.getState(WidgetStateType::Pressed);
 		markElemState = &markElem.getState(WidgetStateType::Pressed);

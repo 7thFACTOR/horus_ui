@@ -21,7 +21,9 @@ bool button(const char* label)
 
 	auto btnBodyElemState = &btnBodyElem.normalState();
 
-	if (ctx->widget.pressed)
+	if (ctx->widget.disabled)
+		btnBodyElemState = &btnBodyElem.getState(WidgetStateType::Disabled);
+	else if (ctx->widget.pressed)
 		btnBodyElemState = &btnBodyElem.getState(WidgetStateType::Pressed);
 	else if (ctx->widget.focused)
 		btnBodyElemState = &btnBodyElem.getState(WidgetStateType::Focused);
@@ -31,7 +33,15 @@ bool button(const char* label)
 	if (ctx->widget.visible)
 	{
 		ctx->renderer.cmdSetColor(tintApply(btnBodyElemState->color, TintColorType::Body));
-		ctx->renderer.cmdDrawImageBordered(btnBodyElemState->image, btnBodyElemState->border, ctx->widget.rect, ctx->scale);
+		
+		Image* bodyImage = btnBodyElemState->image;
+		
+		if (!bodyImage && ctx->widget.disabled)
+		{
+			bodyImage = btnBodyElem.normalState().image;
+		}
+
+		ctx->renderer.cmdDrawImageBordered(bodyImage, btnBodyElemState->border, ctx->widget.rect, ctx->scale);
 		ctx->renderer.cmdSetColor(tintApply(btnBodyElemState->textColor, TintColorType::Text));
 		ctx->renderer.cmdSetFont(btnBodyElemState->font);
 		ctx->renderer.cmdDrawTextInBox(
@@ -72,10 +82,14 @@ static bool imageButtonInternal(HImage img, HImage disabledImg, f32 width, f32 h
 
 	f32 pressedIncrement = 0.0f;
 
-	if (ctx->widget.disabled && disabledImage)
+	if (ctx->widget.disabled)
 	{
 		btnBodyElemState = &btnBodyElem->getState(WidgetStateType::Disabled);
-		image = disabledImage;
+
+		if (disabledImage)
+		{
+			image = disabledImage;
+		}
 	}
 	else if (ctx->widget.pressed || down || widgetIsClicked())
 	{
@@ -95,7 +109,15 @@ static bool imageButtonInternal(HImage img, HImage disabledImg, f32 width, f32 h
 		viewportImageSizeFit(imgWidth, imgHeight, ctx->widget.rect.width - (widgetGetPadding().x * 2.0f + btnBodyElemState->border * 2.0f) * ctx->scale, ctx->widget.rect.height - (widgetGetPadding().y * 2.0f + btnBodyElemState->border * 2.0f) * ctx->scale, imgWidth, imgHeight, false, false);
 
 		ctx->renderer.cmdSetColor(tintApply(btnBodyElemState->color, TintColorType::Body));
-		ctx->renderer.cmdDrawImageBordered(btnBodyElemState->image, btnBodyElemState->border, ctx->widget.rect, ctx->scale);
+		
+		Image* bodyImage = btnBodyElemState->image;
+
+		if (!bodyImage && ctx->widget.disabled)
+		{
+			bodyImage = btnBodyElem->normalState().image;
+		}
+
+		ctx->renderer.cmdDrawImageBordered(bodyImage, btnBodyElemState->border, ctx->widget.rect, ctx->scale);
 		ctx->renderer.cmdSetColor(tintApply(btnBodyElemState->textColor, TintColorType::Text));
 		ctx->renderer.cmdSetFont(btnBodyElemState->font);
 		ctx->renderer.cmdDrawImage(

@@ -11,6 +11,9 @@ void tabGroupBegin(TabIndex selectedIndex)
 	auto& tabGroupElemState = ctx->theme->getElement(WidgetElementId::TabGroupBody).normalState();
 	f32 height = tabGroupElemState.height * ctx->scale;
 
+	widgetPushDisabled(widgetGetDisabled());
+	addWidget(0);
+
 	widgetPushPosition();
 	// round position only when it gets modified, to avoid accumulation of float precision errors
 	ctx->widget.rect.set(
@@ -78,6 +81,8 @@ TabIndex tabGroupEnd()
 	// ctx->position.y = round(ctx->position.y); (removed manual rounding)
 	ctx->renderer.popClipRect();
 
+	widgetPopDisabled();
+
 	if (ctx->event.type == InputEvent::Type::MouseDown)
 	{
 		if (ctx->tabGroupWidgetRect.contains(ctx->mousePosition) && ctx->docking.currentDockNode)
@@ -91,10 +96,17 @@ TabIndex tabGroupEnd()
 
 void tab(const char* label, HImage img)
 {
+	ctx->setLabelAndId(label);
+	addWidget(0);
+
 	auto& tabGroupElemState = ctx->theme->getElement(WidgetElementId::TabGroupBody).normalState();
 	auto& tabActiveElem = ctx->theme->getElement(WidgetElementId::TabBodyActive);
 	auto& tabInactiveElem = ctx->theme->getElement(WidgetElementId::TabBodyInactive);
 	auto tabElemState = &tabActiveElem.normalState();
+
+	if (ctx->widget.disabled)
+		tabElemState = &tabInactiveElem.getState(WidgetStateType::Disabled);
+
 	auto& padding = widgetGetPadding();
 
 	Utf32String uniStr;

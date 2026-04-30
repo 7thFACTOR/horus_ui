@@ -42,7 +42,13 @@ static bool sliderInternal(const char* id, f32 minVal, f32 maxVal, f32& value, b
 	auto bodyFilledElemState = &bodyFilledElem.normalState();
 	auto knobElemState = &knobElem.normalState();
 
-	if (ctx->widget.focused)
+	if (ctx->widget.disabled)
+	{
+		bodyElemState = &bodyElem.getState(WidgetStateType::Disabled);
+		bodyFilledElemState = &bodyFilledElem.getState(WidgetStateType::Disabled);
+		knobElemState = &knobElem.getState(WidgetStateType::Disabled);
+	}
+	else if (ctx->widget.focused)
 	{
 		bodyElemState = &bodyElem.getState(WidgetStateType::Focused);
 		bodyFilledElemState = &bodyFilledElem.getState(WidgetStateType::Focused);
@@ -55,17 +61,21 @@ static bool sliderInternal(const char* id, f32 minVal, f32 maxVal, f32& value, b
 		knobElemState = &knobElem.getState(WidgetStateType::Hovered);
 	}
 
-	knobRect = {
-		ctx->widget.rect.x + valueWidth * percentFilled - knobElemState->image->width / 2.0f * ctx->scale,
-		ctx->widget.rect.y + (ctx->widget.rect.height - knobElemState->image->height) / 2.0f * ctx->scale,
-		knobElemState->image->width * ctx->scale,
-		knobElemState->image->height * ctx->scale
+	if (knobElemState->image)
+	{
+		knobRect = {
+			ctx->widget.rect.x + valueWidth * percentFilled - knobElemState->image->width / 2.0f * ctx->scale,
+			ctx->widget.rect.y + (ctx->widget.rect.height - knobElemState->image->height) / 2.0f * ctx->scale,
+			knobElemState->image->width * ctx->scale,
+			knobElemState->image->height * ctx->scale
+		};
 	};
 
 	bool recomputeKnobRect = false;
 
 	if (ctx->event.type == InputEvent::Type::MouseDown
 		&& !ctx->slider.draggingKnob
+		&& !ctx->widget.disabled
 		&& ctx->isActiveLayer()
 		&& ctx->hoveringThisWindow)
 	{
@@ -89,7 +99,8 @@ static bool sliderInternal(const char* id, f32 minVal, f32 maxVal, f32& value, b
 
 	if (ctx->slider.draggingKnob
 		&& ctx->id == ctx->widget.focusedId
-		&& ctx->isActiveLayer())
+		&& ctx->isActiveLayer()
+		&& !ctx->widget.disabled)
 	{
 		f32 x = ctx->mousePosition.x - ctx->slider.dragDelta.x;
 
@@ -108,7 +119,8 @@ static bool sliderInternal(const char* id, f32 minVal, f32 maxVal, f32& value, b
 
 	if (ctx->event.type == InputEvent::Type::MouseUp
 		&& ctx->slider.draggingKnob
-		&& ctx->isActiveLayer())
+		&& ctx->isActiveLayer()
+		&& !ctx->widget.disabled)
 	{
 		ctx->slider.draggingKnob = false;
 		windowReleaseCapture();
@@ -125,33 +137,50 @@ static bool sliderInternal(const char* id, f32 minVal, f32 maxVal, f32& value, b
 		};
 	}
 
+	Image* bodyImage = bodyElemState->image;
+	Image* bodyFilledImage = bodyFilledElemState->image;
+	Image* knobImage = knobElemState->image;
+
+	if (ctx->widget.disabled)
+	{
+		if (!bodyImage) bodyImage = bodyElem.normalState().image;
+		if (!bodyFilledImage) bodyFilledImage = bodyFilledElem.normalState().image;
+		if (!knobImage) knobImage = knobElem.normalState().image;
+	}
+
 	ctx->renderer.cmdSetColor(bodyElemState->color);
+
+	if (bodyImage)
 	ctx->renderer.cmdDrawImageBordered(
-		bodyElemState->image,
+		bodyImage,
 		bodyElemState->border,
 		{
 			ctx->widget.rect.x,
-			ctx->widget.rect.y + (ctx->widget.rect.height - bodyElemState->image->height) / 2.0f * ctx->scale,
+			ctx->widget.rect.y + (ctx->widget.rect.height - bodyImage->height) / 2.0f * ctx->scale,
 			ctx->widget.rect.width,
-			bodyElemState->image->height * ctx->scale
+			bodyImage->height * ctx->scale
 		},
 		ctx->scale);
 
 	ctx->renderer.cmdSetColor(bodyFilledElemState->color);
+
+	if (bodyFilledImage)
 	ctx->renderer.cmdDrawImageBordered(
-		bodyFilledElemState->image,
+		bodyFilledImage,
 		bodyFilledElemState->border,
 		{
 			ctx->widget.rect.x,
-			ctx->widget.rect.y + (ctx->widget.rect.height - bodyFilledElemState->image->height) / 2.f * ctx->scale,
+			ctx->widget.rect.y + (ctx->widget.rect.height - bodyFilledImage->height) / 2.f * ctx->scale,
 			ctx->widget.rect.width * percentFilled,
-			bodyFilledElemState->image->height * ctx->scale
+			bodyFilledImage->height * ctx->scale
 		},
 		ctx->scale);
 
 	ctx->renderer.cmdSetColor(knobElemState->color);
+
+	if (knobImage)
 	ctx->renderer.cmdDrawImageBordered(
-		knobElemState->image,
+		knobImage,
 		knobElemState->border,
 		knobRect,
 		ctx->scale);

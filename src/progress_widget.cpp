@@ -43,18 +43,33 @@ void progress(f32 value, f32 maxValue, bool showText, bool showRealValues, const
 		animPosX = fmodf(ctx->totalTime * fabsf(value) * 1500.0f + ctx->widget.rect.width + percentValueWidth, ctx->widget.rect.width + percentValueWidth) - percentValueWidth;
 	}
 
-	auto& backElemState = backElem.normalState();
-	auto& fillElemState = fillElem.normalState();
+	auto backElemState = &backElem.normalState();
+	auto fillElemState = &fillElem.normalState();
 
-	ctx->renderer.cmdSetColor(tintApply(backElemState.color, TintColorType::Body));
-	ctx->renderer.cmdDrawImageBordered(backElemState.image, backElemState.border,
+	if (ctx->widget.disabled)
+	{
+		backElemState = &backElem.getState(WidgetStateType::Disabled);
+		fillElemState = &fillElem.getState(WidgetStateType::Disabled);
+	}
+
+	Image* backImage = backElemState->image;
+	Image* fillImage = fillElemState->image;
+
+	if (ctx->widget.disabled)
+	{
+		if (!backImage) backImage = backElem.normalState().image;
+		if (!fillImage) fillImage = fillElem.normalState().image;
+	}
+
+	ctx->renderer.cmdSetColor(tintApply(backElemState->color, TintColorType::Body));
+	ctx->renderer.cmdDrawImageBordered(backImage, backElemState->border,
 		ctx->widget.rect, ctx->scale);
 
 	Rect fillRc = {
 			ctx->widget.rect.x + animPosX,
-			ctx->widget.rect.y + (ctx->widget.rect.height - (fillElemState.height * ctx->scale + padding.y * 2.0f * ctx->scale)) / 2.0f,
+			ctx->widget.rect.y + (ctx->widget.rect.height - (fillElemState->height * ctx->scale + padding.y * 2.0f * ctx->scale)) / 2.0f,
 			percentValueWidth,
-			fillElemState.height * ctx->scale + padding.y * 2.0f * ctx->scale };
+			fillElemState->height * ctx->scale + padding.y * 2.0f * ctx->scale };
 
 	if (isIndeterminate)
 	{
@@ -71,8 +86,8 @@ void progress(f32 value, f32 maxValue, bool showText, bool showRealValues, const
 		}
 	}
 
-	ctx->renderer.cmdSetColor(tintApply(fillElemState.color, TintColorType::Body));
-	ctx->renderer.cmdDrawImageBordered(fillElemState.image, fillElemState.border,
+	ctx->renderer.cmdSetColor(tintApply(fillElemState->color, TintColorType::Body));
+	ctx->renderer.cmdDrawImageBordered(fillImage, fillElemState->border,
 		fillRc, ctx->scale);
 
 	std::string text;
@@ -96,24 +111,24 @@ void progress(f32 value, f32 maxValue, bool showText, bool showRealValues, const
 
 	if (!isIndeterminate)
 	{
-		FontTextSize fsize = fillElemState.font->computeTextSize(text.c_str());
+		FontTextSize fsize = fillElemState->font->computeTextSize(text.c_str());
 		Rect textRc = fillRc;
 		f32 spacing = fillElem.currentStyle->getParameter("barTextSpacing", 4.0f);
 
 		textRc.width += fsize.width + spacing * ctx->scale;
-		const f32 rightSide = ctx->widget.rect.right() - backElemState.border * ctx->scale;
+		const f32 rightSide = ctx->widget.rect.right() - backElemState->border * ctx->scale;
 
 		if (textRc.right() >= rightSide)
 		{
 			textRc.width = rightSide - textRc.x;
 		}
 
-		ctx->renderer.cmdSetFont(fillElemState.font);
+		ctx->renderer.cmdSetFont(fillElemState->font);
 		ctx->renderer.cmdSetColor(tintApply(textShadowColor, TintColorType::Text));
 		ctx->renderer.cmdDrawTextInBox(text.c_str(),
 			textRc, HAlignType::Right, VAlignType::Center);
 
-		ctx->renderer.cmdSetColor(tintApply(fillElemState.textColor, TintColorType::Text));
+		ctx->renderer.cmdSetColor(tintApply(fillElemState->textColor, TintColorType::Text));
 		textRc -= Point(1, 1);
 		ctx->renderer.cmdDrawTextInBox(text.c_str(),
 			textRc, HAlignType::Right, VAlignType::Center);
@@ -126,7 +141,7 @@ void progress(f32 value, f32 maxValue, bool showText, bool showRealValues, const
 		ctx->renderer.cmdDrawTextInBox(text.c_str(),
 			ctx->widget.rect, HAlignType::Center, VAlignType::Center);
 
-		ctx->renderer.cmdSetColor(tintApply(fillElemState.textColor, TintColorType::Text));
+		ctx->renderer.cmdSetColor(tintApply(fillElemState->textColor, TintColorType::Text));
 		textRc -= Point(1, 1);
 		ctx->renderer.cmdDrawTextInBox(text.c_str(),
 			textRc, HAlignType::Center, VAlignType::Center);
