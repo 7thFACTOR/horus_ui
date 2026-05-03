@@ -143,6 +143,7 @@ struct MultilineTextInputState
 	bool forceLayoutUpdate = false;
 	bool lastHasScrollbarV = false;
 	size_t totalTextLength = 0;
+	size_t lastTextHash = 0;
 	void markLineDirty(i32 logicalLineIndex);
 };
 

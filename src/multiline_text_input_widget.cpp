@@ -1,5 +1,6 @@
 #include <string.h>
 #include <algorithm>
+#include <string_view>
 #include "context.h"
 #include "theme.h"
 #include "renderer.h"
@@ -26,7 +27,8 @@ bool textInputMultiline(
 	auto& bodyTextSelectionElemState = ctx->theme->getElement(WidgetElementId::TextInputSelection).normalState();
 	auto& currentLineHighlightElemState = ctx->theme->getElement(WidgetElementId::MultilineTextInputCurrentLineHighlight).normalState();
 	auto& padding = widgetGetPadding();
-	auto& state = ctx->textMultilineInput;
+	ctx->id = genId(id);
+	auto& state = ctx->textMultilineInput[ctx->id];
 
 	state.visibleLineCount = visibleLines;
 
@@ -42,7 +44,6 @@ bool textInputMultiline(
 	f32 border = bodyElem->normalState().border;
 	f32 totalHeight = visibleLines * lineHeight + (padding.y + border) * 2.0f;
 
-	ctx->id = genId(id);
 	addWidget(totalHeight);
 	buttonBehavior();
 
@@ -85,6 +86,7 @@ bool textInputMultiline(
 		if (ctx->event.key.code == KeyCode::Esc)
 		{
 			state.id = 0;
+			ctx->activeMultilineInputId = 0;
 			state.editNow = false;
 			isEditingThis = false;
 			ctx->widget.focusedId = 0;
@@ -102,27 +104,25 @@ bool textInputMultiline(
 		if (isEditingThis)
 		{
 			state.id = ctx->id;
+			ctx->activeMultilineInputId = ctx->id;
 		}
 	}
 
 	if (ctx->widget.pressed && ctx->id != state.id)
 	{
 		state.id = ctx->id;
+		ctx->activeMultilineInputId = ctx->id;
 		state.editNow = true;
 		isEditingThis = true;
 		state.selectAllOnFocus = true;
 		state.firstMouseDown = true;
 	}
 
-	if (state.editNow)
+	size_t currentTextHash = std::hash<std::string_view>{}(text);
+	if (currentTextHash != state.lastTextHash || state.lines.empty())
 	{
-		state.rect = ctx->widget.rect;
-		state.clipRect = clipRect;
-		state.maxTextLength = maxLength;
-		state.selectionActive = false;
-		state.flags = flags;
-
-		// parse existing text into lines
+		state.lastTextHash = currentTextHash;
+		
 		Utf32String fullText;
 		Utf32String currentLine;
 
@@ -154,6 +154,17 @@ bool textInputMultiline(
 
 		if (state.lines.size() > 1)
 			state.totalTextLength += state.lines.size() - 1; // newlines
+			
+		state.textChanged = true;
+	}
+
+	if (state.editNow)
+	{
+		state.rect = ctx->widget.rect;
+		state.clipRect = clipRect;
+		state.maxTextLength = maxLength;
+		state.selectionActive = false;
+		state.flags = flags;
 
 		if (state.selectAllOnFocus && has(flags, MultilineTextInputFlags::AutoSelectAll))
 		{
@@ -282,6 +293,7 @@ bool textInputMultiline(
 		}
 
 		ctx->settings.services.utf32To8NoAlloc(fullText.data(), (u32)fullText.size(), text, maxLength);
+		state.lastTextHash = std::hash<std::string_view>{}(text);
 	}
 
 	// draw background

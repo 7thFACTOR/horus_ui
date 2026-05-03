@@ -12,7 +12,30 @@ void tabGroupBegin(TabIndex selectedIndex)
 	f32 height = tabGroupElemState.height * ctx->scale;
 
 	widgetPushDisabled(widgetGetDisabled());
-	addWidget(0);
+
+	ctx->widget.disabled = widgetGetDisabled();
+	ctx->widget.nextDisabled = false;
+	ctx->widget.changeEnded = false;
+	ctx->widget.hasNextWidth = false;
+	ctx->widget.hasCustomWidth = false;
+
+	// Handle transition from sameLine back to normal layout
+	if (!ctx->sameLine.enabled && ctx->sameLine.wasEnabled)
+	{
+		ctx->position.x = ctx->sameLine.currentPosition.x;
+		ctx->position.y += ctx->sameLine.maxHeight + ctx->spacing * ctx->scale;
+		ctx->sameLine.wasEnabled = false;
+		ctx->sameLine.maxHeight = 0;
+		ctx->sameLine.lastLineWidth = 0;
+	}
+
+	if (!ctx->sameLine.enabled && !ctx->sameLine.wasEnabled)
+	{
+		ctx->sameLine.currentPosition = ctx->position;
+		ctx->sameLine.lastLineWidth = 0;
+	}
+
+	ctx->sameLine.enabled = false;
 
 	widgetPushPosition();
 	// round position only when it gets modified, to avoid accumulation of float precision errors
@@ -97,7 +120,13 @@ TabIndex tabGroupEnd()
 void tab(const char* label, HImage img)
 {
 	ctx->setLabelAndId(label);
-	addWidget(0);
+
+	ctx->widget.disabled = widgetGetDisabled();
+	ctx->widget.nextDisabled = false;
+	ctx->widget.changeEnded = false;
+	ctx->widget.hasNextWidth = false;
+	ctx->widget.hasCustomWidth = false;
+	ctx->sameLine.enabled = false;
 
 	auto& tabGroupElemState = ctx->theme->getElement(WidgetElementId::TabGroupBody).normalState();
 	auto& tabActiveElem = ctx->theme->getElement(WidgetElementId::TabBodyActive);

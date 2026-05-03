@@ -313,10 +313,10 @@ void frameBegin()
 		ctx->textInput.processEvent(ctx->event);
 	}
 
-	if (ctx->textMultilineInput.id)
+	if (ctx->activeMultilineInputId && ctx->textMultilineInput.count(ctx->activeMultilineInputId))
 	{
-		ctx->textMultilineInput.textChanged = false;
-		ctx->textMultilineInput.processEvent(ctx->event);
+		ctx->textMultilineInput[ctx->activeMultilineInputId].textChanged = false;
+		ctx->textMultilineInput[ctx->activeMultilineInputId].processEvent(ctx->event);
 	}
 
 	if (ctx->event.window)
@@ -354,7 +354,7 @@ void frameBegin()
 	if (ctx->event.type == InputEvent::Type::Key
 		&& ctx->event.key.code == KeyCode::Tab
 		&& ctx->event.key.down
-		&& !ctx->textMultilineInput.id // Don't switch focus if editing multiline text
+		&& !ctx->activeMultilineInputId // Don't switch focus if editing multiline text
 		&& !ctx->lastFrameFocusableWidgets.empty())
 	{
 		bool shift = has(ctx->event.key.modifiers, KeyModifiers::Shift);
