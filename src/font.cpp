@@ -27,10 +27,29 @@ void Font::load(const std::string& fontFilename, u32 facePointSize)
 		return;
 }
 
+void Font::loadFromMemory(const void* data, size_t size, u32 facePointSize)
+{
+	fontData = data;
+	fontDataSize = size;
+	faceSize = facePointSize;
+
+	if (fontInfo.fontFace)
+	{
+		ctx->settings.services.freeFont(fontInfo.fontFace);
+		fontInfo.fontFace = 0;
+	}
+
+	if (!ctx->settings.services.loadFontFromMemory(data, size, facePointSize, fontInfo))
+		return;
+}
+
 void Font::resetFaceSize(u32 fontFaceSize)
 {
 	faceSize = fontFaceSize;
-	load(filename, faceSize);
+	if (fontData)
+		loadFromMemory(fontData, fontDataSize, faceSize);
+	else
+		load(filename, faceSize);
 	resizeFaceMode = true;
 
 	for (auto& glyph : glyphs)

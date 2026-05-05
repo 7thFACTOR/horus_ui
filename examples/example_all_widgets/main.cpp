@@ -118,7 +118,21 @@ int main(int argc, char** args)
 	if (!theme)
 	{
 		printf("Theme JSON error: %s\n", err);
-		exit(1);
+		theme = hui::themeCreate(hui::contextGetSettings().defaultAtlasSize);
+
+		// Initialize all elements with white image
+		hui::WidgetElementInfo defInfo;
+		defInfo.image = hui::themeGetImage(theme, "__WHITEIMAGE__");
+		defInfo.color = hui::Color::white;
+		defInfo.textColor = hui::Color::white;
+
+		for (u32 i = 0; i < (u32)hui::WidgetElementId::Count; i++)
+		{
+			for (u32 j = 0; j < (u32)hui::WidgetStateType::Count; j++)
+			{
+				hui::themeSetWidgetElement(theme, (hui::WidgetElementId)i, (hui::WidgetStateType)j, defInfo);
+			}
+		}
 	}
 
 	// Grab a font handle from the theme to use later

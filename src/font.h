@@ -11,6 +11,7 @@ struct Font
 	~Font();
 
 	void load(const std::string& fontFilename, u32 fontFaceSize);
+	void loadFromMemory(const void* data, size_t size, u32 fontFaceSize);
 	void resetFaceSize(u32 fontFaceSize);
 	FontGlyph* getGlyph(GlyphCode glyphCode);
 	Image* getGlyphImage(GlyphCode glyphCode);
@@ -33,6 +34,8 @@ struct Font
 	std::string filename;
 	u32 faceSize = 12;
 	f32 ascender = 0;
+	const void* fontData = nullptr;
+	size_t fontDataSize = 0;
 	std::unordered_map<GlyphCode, FontGlyph*> glyphs;
 	std::unordered_map<u64, f32> kerningPairs;
 };

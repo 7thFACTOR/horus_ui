@@ -7,6 +7,7 @@ Theme::Theme(u32 atlasTextureSize)
 {
 	atlasSize = atlasTextureSize;
 	addWhiteImage(32); // this is ok (with 4 doesnt work for example), we need a bigger white image since it will be trimmed by inset offsets etc.
+	setDefaultStyle();
 }
 
 Theme::~Theme()
@@ -32,11 +33,29 @@ void Theme::setDefaultStyle()
 	for (u32 i = 0; i < (u32)WidgetElementId::Count; i++)
 	{
 		elements[i].setDefaultStyle();
+
+		for (auto& stylePair : elements[i].styles)
+		{
+			for (u32 j = 0; j < (u32)WidgetStateType::Count; j++)
+			{
+				if (!stylePair.second.states[j].image)
+					stylePair.second.states[j].image = whiteImage;
+			}
+		}
 	}
 
 	for (auto& elem : userElements)
 	{
 		elem.second->setDefaultStyle();
+
+		for (auto& stylePair : elem.second->styles)
+		{
+			for (u32 j = 0; j < (u32)WidgetStateType::Count; j++)
+			{
+				if (!stylePair.second.states[j].image)
+					stylePair.second.states[j].image = whiteImage;
+			}
+		}
 	}
 }
 
@@ -74,6 +93,33 @@ Font* Theme::createFont(const std::string& name, const std::string& filename, u3
 	newFont->size = size;
 	newFont->usageCount = 1;
 	newFont->filename = filename;
+	newFont->name = name;
+	fonts.push_back(newFont);
+
+	return &newFont->font;
+}
+
+Font* Theme::createFontFromMemory(const std::string& name, const void* data, u32 dataSize, u32 size)
+{
+	for (auto& fnt : fonts)
+	{
+		if (fnt->name == name
+			&& fnt->font.fontData == data
+			&& fnt->size == size)
+		{
+			fnt->usageCount++;
+
+			return &fnt->font;
+		}
+	}
+
+	FontVariation* newFont = new FontVariation();
+
+	newFont->font.loadFromMemory(data, dataSize, size);
+	newFont->font.precacheLatinAlphabetGlyphs();
+	newFont->size = size;
+	newFont->usageCount = 1;
+	newFont->filename = "";
 	newFont->name = name;
 	fonts.push_back(newFont);
 

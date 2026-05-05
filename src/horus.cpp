@@ -1147,8 +1147,10 @@ void widgetSetUserElementStyle(const char* elementName, const char* styleName)
 void themeBuild(HTheme theme)
 {
 	HUI_ASSERT(theme);
-	Theme* themePtr = (Theme*)theme;
+	if (!theme)
+		return;
 
+	Theme* themePtr = (Theme*)theme;
 	themePtr->build();
 }
 
@@ -1205,6 +1207,9 @@ void themeSetUserWidgetElement(
 void themeSet(HTheme theme)
 {
 	HUI_ASSERT(theme);
+	if (!theme)
+		return;
+
 	ctx->theme = (Theme*)theme;
 }
 

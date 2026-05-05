@@ -222,12 +222,12 @@
 			},
 			"textInputDefaultText":
 			{
-				"normal": { "image": "", "border": 0, "color": "gray", "textColor": "white", "font": "normal-unicode" }
+				"normal": { "textColor": "gray", "font": "normal-unicode" }
 			},
 			"textInputFilterClearImage":
 			{
-				"normal": { "image": "default/clear", "border": 0, "color": "gray", "textColor": "white", "font": "normal-unicode" },
-				"hovered": { "image": "default/clear", "border": 0, "color": "white", "textColor": "white", "font": "normal-unicode" }
+				"normal": { "image": "default/clear", "border": 0, "color": "gray", "textColor": "white" },
+				"hovered": { "color": "white" }
 			}
 		},
 		"multilineTextInput":

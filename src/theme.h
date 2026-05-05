@@ -32,6 +32,7 @@ struct Theme
 	void setDefaultStyle();
 	void addImagesToAtlas();
 	Font* createFont(const std::string& name, const std::string& filename, u32 size);
+	Font* createFontFromMemory(const std::string& name, const void* data, u32 dataSize, u32 size);
 	void deleteFont(Font* font);
 	void deleteFonts();
 	void deleteImages();

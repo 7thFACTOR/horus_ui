@@ -363,7 +363,32 @@ static WidgetStateType widgetStateFromText(const std::string& stateName)
 
 HTheme loadThemeFromJson(const char* filename, char* errorTextBuffer, size_t errorTextBufferSize)
 {
+	if (!filename)
+	{
+		setErrorText(errorTextBuffer, errorTextBufferSize, "Filename is null");
+		return 0;
+	}
+
 	HTheme theme = hui::themeCreate(hui::contextGetSettings().defaultAtlasSize);
+
+	// Initialize all elements with white image
+	HImage whiteImage = getFallbackImage(theme);
+	WidgetElementInfo defInfo;
+	defInfo.image = whiteImage;
+	defInfo.color = Color::white;
+	defInfo.textColor = Color::white;
+	defInfo.border = 0;
+	defInfo.width = 0;
+	defInfo.height = 0;
+	defInfo.font = 0;
+
+	for (u32 i = 0; i < (u32)WidgetElementId::Count; i++)
+	{
+		for (u32 j = 0; j < (u32)WidgetStateType::Count; j++)
+		{
+			hui::themeSetWidgetElement(theme, (WidgetElementId)i, (WidgetStateType)j, defInfo, "default");
+		}
+	}
 
 	Json::Reader reader;
 	Json::Value root;
@@ -371,12 +396,12 @@ HTheme loadThemeFromJson(const char* filename, char* errorTextBuffer, size_t err
 	bool ok = reader.parse(json, root);
 	std::string themePath = getPath(filename) + "/";
 
-	if (!ok)
+	if (!ok || json.empty())
 	{
-		setErrorText(errorTextBuffer, errorTextBufferSize, reader.getFormatedErrorMessages());
-
-		themeDestroy(theme);
-		return 0;
+		setErrorText(errorTextBuffer, errorTextBufferSize, reader.getFormattedErrorMessages().c_str());
+		// delete the empty theme created before
+		hui::themeDestroy(theme);
+		return hui::createBuiltinTheme(hui::contextGetSettings().defaultAtlasSize);
 	}
 
 	if (!root.isObject())

@@ -20,32 +20,67 @@ static FTContextInfo ftContext;
 
 static bool loadFont(const char* path, u32 faceSize, FontInfo& outFontInfo)
 {
-	auto face = new FT_Face();
+	FT_Face face;
 
 	// load the font from the file
-	if (FT_New_Face(ftContext.libHandle, path, 0, (FT_Face*)&face))
+	if (FT_New_Face(ftContext.libHandle, path, 0, &face))
 	{
-		FT_Done_Face((FT_Face)face);
 		return false;
 	}
 
-	int error = FT_Select_Charmap((FT_Face)face, FT_ENCODING_UNICODE);
+	int error = FT_Select_Charmap(face, FT_ENCODING_UNICODE);
 
 	if (error)
 	{
-		FT_Done_Face((FT_Face)face);
+		FT_Done_Face(face);
 		return false;
 	}
 
 	// freetype measures fonts in 64ths of pixels
-	//FT_Set_Char_Size((FT_Face)face, faceSize << 6, faceSize << 6, 96, 96);
-	FT_Set_Pixel_Sizes((FT_Face)face, 0, faceSize);
+	//FT_Set_Char_Size(face, faceSize << 6, faceSize << 6, 96, 96);
+	FT_Set_Pixel_Sizes(face, 0, faceSize);
 
-	outFontInfo.metrics.ascender = HUI_FT_PIXEL2(((FT_Face)face)->size->metrics.ascender);
-	outFontInfo.metrics.descender = HUI_FT_PIXEL2(((FT_Face)face)->size->metrics.descender);
-	outFontInfo.metrics.height = HUI_FT_PIXEL2(((FT_Face)face)->size->metrics.height);
-	outFontInfo.metrics.underlinePosition = HUI_FT_PIXEL2(((FT_Face)face)->underline_position);
-	outFontInfo.metrics.underlineThickness = HUI_FT_PIXEL2(((FT_Face)face)->underline_thickness);
+	outFontInfo.metrics.ascender = HUI_FT_PIXEL2(face->size->metrics.ascender);
+	outFontInfo.metrics.descender = HUI_FT_PIXEL2(face->size->metrics.descender);
+	outFontInfo.metrics.height = HUI_FT_PIXEL2(face->size->metrics.height);
+	outFontInfo.metrics.underlinePosition = HUI_FT_PIXEL2(face->underline_position);
+	outFontInfo.metrics.underlineThickness = HUI_FT_PIXEL2(face->underline_thickness);
+
+	// if its too big, clamp it
+	if (outFontInfo.metrics.underlinePosition < -2)
+		outFontInfo.metrics.underlinePosition = -2;
+
+	outFontInfo.metrics.underlinePosition = round(outFontInfo.metrics.underlinePosition);
+	outFontInfo.fontFace = face;
+
+	return true;
+}
+
+static bool loadFontFromMemory(const void* data, size_t size, u32 faceSize, FontInfo& outFontInfo)
+{
+	FT_Face face;
+
+	// load the font from memory
+	if (FT_New_Memory_Face(ftContext.libHandle, (const FT_Byte*)data, (FT_Long)size, 0, &face))
+	{
+		return false;
+	}
+
+	int error = FT_Select_Charmap(face, FT_ENCODING_UNICODE);
+
+	if (error)
+	{
+		FT_Done_Face(face);
+		return false;
+	}
+
+	FT_Set_Pixel_Sizes(face, 0, faceSize);
+
+	outFontInfo.metrics.ascender = HUI_FT_PIXEL2(face->size->metrics.ascender);
+	outFontInfo.metrics.descender = HUI_FT_PIXEL2(face->size->metrics.descender);
+	outFontInfo.metrics.height = HUI_FT_PIXEL2(face->size->metrics.height);
+	outFontInfo.metrics.underlinePosition = HUI_FT_PIXEL2(face->underline_position);
+	outFontInfo.metrics.underlineThickness = HUI_FT_PIXEL2(face->underline_thickness);
 
 	// if its too big, clamp it
 	if (outFontInfo.metrics.underlinePosition < -2)
@@ -158,6 +193,7 @@ void initFreetype(Services& services, FT_Library context)
 	}
 
 	services.loadFont = loadFont;
+	services.loadFontFromMemory = loadFontFromMemory;
 	services.freeFont = freeFont;
 	services.getFontKerning = getFontKerning;
 	services.rasterizeFontGlyph = rasterizeFontGlyph;
@@ -171,6 +207,7 @@ void shutdownFreetype(Services& services)
 	}
 
 	services.loadFont = nullptr;
+	services.loadFontFromMemory = nullptr;
 	services.freeFont = nullptr;
 	services.getFontKerning = nullptr;
 	services.rasterizeFontGlyph = nullptr;

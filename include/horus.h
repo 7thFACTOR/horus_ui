@@ -1461,7 +1461,7 @@ struct HUI_STRUCT_API Color
 		: r(R), g(G), b(B), a(A)
 	{}
 
-	static Color fromU8(u8 R, u8 G, u8 B, u8 A)
+	static Color fromU8(u8 R, u8 G, u8 B, u8 A = 255)
 	{
 		return Color(R / 255.0f, G / 255.0f, B / 255.0f, A / 255.0f);
 	}
@@ -1791,6 +1791,7 @@ struct Services
 
 	// Fonts
 	bool (*loadFont)(const char* path, u32 faceSize, FontInfo& fontInfo) = nullptr;
+	bool (*loadFontFromMemory)(const void* data, size_t size, u32 faceSize, FontInfo& fontInfo) = nullptr;
 	void (*freeFont)(HFontFace fontFace) = nullptr;
 	f32 (*getFontKerning)(HFontFace fontFace, GlyphCode leftGlyphCode, GlyphCode rightGlyphCode) = nullptr;
 	bool (*rasterizeFontGlyph)(HFontFace fontFace, GlyphCode glyphCode, FontGlyph& outGlyph) = nullptr;
@@ -2110,6 +2111,7 @@ HUI_API HTexture themeGetAtlasTexture();
 /// \param atlasTextureSize the width and height of the atlas texture, where theme images are kept
 /// \return the newly created theme
 HUI_API HTheme themeCreate(u32 atlasTextureSize);
+HUI_API HTheme createBuiltinTheme(u32 atlasTextureSize);
 /// Delete a theme
 /// \param theme the theme to be deleted, if this is the current theme it will be set to null
 HUI_API void themeDestroy(HTheme theme);

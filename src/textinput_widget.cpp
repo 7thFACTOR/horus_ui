@@ -355,11 +355,11 @@ bool textInput(
 	if (isEmptyText && defaultText)
 	{
 		textToDraw = (char*)defaultText;
-		ctx->renderer.cmdSetColor(bodyTextDefaultElemState.color);
+		ctx->renderer.cmdSetColor(bodyTextDefaultElemState.textColor);
 	}
 	else
 	{
-		ctx->renderer.cmdSetColor(bodyElemState->color);
+		ctx->renderer.cmdSetColor(bodyElemState->textColor);
 	}
 
 	auto textRect = Rect(
