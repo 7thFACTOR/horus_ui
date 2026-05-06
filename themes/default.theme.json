@@ -169,7 +169,7 @@
 			{
 				"height": 22,
 				"normal": { "image": "", "border": 0, "color": "white", "textColor": "white", "font": "normal" },
-				"disabled": { "textColor": "gray" }
+				"disabled": { "textColor": "255 255 255 128" }
 			}
 		},	
 		"expandable":
@@ -203,7 +203,7 @@
 				"width": 0,
 				"height": 22,
 				"normal": { "image": "default/text_input_normal", "border": 3, "color": "white", "textColor": "white", "font": "normal-unicode" },
-				"disabled": { "color": "red", "textColor": "white" },
+				"disabled": { "color": "255 255 255 128", "textColor": "255 255 255 200" },
 				"hovered": { "color": "white", "textColor": "white" },
 				"pressed": { "color": "white", "textColor": "white" },
 				"focused": { "image": "default/text_input_focused", "border": 3, "color": "white", "textColor": "white" }

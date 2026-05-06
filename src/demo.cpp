@@ -429,7 +429,7 @@ void showDemo()
 	//------------------------------------------------------------------
 	// Expandable (nested)
 	//------------------------------------------------------------------
-	if (expandable("Expandable (nested)", &demo.expandExpandable))
+	if (expandableBegin("Expandable (nested)", &demo.expandExpandable))
 	{
 		check("Disable##Expandable", &demo.disableExpandable);
 		widgetPushDisabled(demo.disableExpandable);
@@ -454,6 +454,7 @@ void showDemo()
 			expandableEnd();
 		}
 		widgetPopDisabled();
+		expandableEnd();
 	}
 
 	//------------------------------------------------------------------

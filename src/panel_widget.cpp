@@ -130,9 +130,10 @@ bool expandableBegin(const char* label, bool* expandedVar)
 
 void expandableEnd()
 {
-	f32 y = ctx->position.y;
+	Point pos = ctx->position;
 	layoutPop();
-	ctx->position.y = y;
+	ctx->position = pos;
+	ctx->position.x = ctx->layout.savedPosition.x + ctx->padding[(i32)PaddingType::Layout].x * ctx->scale;
 	ctx->sameLine.enabled = false;
 }
 
