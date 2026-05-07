@@ -416,8 +416,7 @@ enum class SelectableFlags : u32
 	Normal = HUI_BIT(0),
 	Checkable = HUI_BIT(1),
 	Checked = HUI_BIT(2),
-	Disabled = HUI_BIT(3),
-	Selected = HUI_BIT(4)
+	Selected = HUI_BIT(3)
 };
 HUI_ENUM_AS_FLAGS(SelectableFlags);
 

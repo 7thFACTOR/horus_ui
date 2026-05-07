@@ -155,7 +155,9 @@ bool selectableInternal(const char* label, HFont font, SelectableFlags stateFlag
 
 	auto bodyElemState = &bodyElem.normalState();
 
-	if (ctx->widget.hovered)
+	if (ctx->widget.disabled)
+		bodyElemState = &bodyElem.disabledState();
+	else if (ctx->widget.hovered)
 		bodyElemState = &bodyElem.getState(WidgetStateType::Hovered);
 	else if (ctx->widget.pressed || ((u32)stateFlags & (u32)SelectableFlags::Selected))
 		bodyElemState = &bodyElem.getState(WidgetStateType::Pressed);

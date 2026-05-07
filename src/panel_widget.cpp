@@ -118,10 +118,12 @@ bool expandableBegin(const char* label, bool* expandedVar)
 	layoutPush();
 	ctx->layout.savedPosition.x += indent;
 	ctx->layout.width -= indent;
+
 	if (ctx->layout.width < 0.0f)
 	{
 		ctx->layout.width = 0.0f;
 	}
+	
 	ctx->position.x += indent;
 	ctx->sameLine.enabled = false;
 
@@ -131,6 +133,7 @@ bool expandableBegin(const char* label, bool* expandedVar)
 void expandableEnd()
 {
 	Point pos = ctx->position;
+	
 	layoutPop();
 	ctx->position = pos;
 	ctx->position.x = ctx->layout.savedPosition.x + ctx->padding[(i32)PaddingType::Layout].x * ctx->scale;

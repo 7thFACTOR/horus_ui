@@ -355,7 +355,7 @@ void showDemo()
 
 		space();
 		label("Indeterminate:");
-		progress(0.0f, 0.0f, false, false, "Loading...");
+		progress(-1.0f, 0.0f, false, false, "Loading...");
 		widgetPopDisabled();
 	}
 
@@ -515,10 +515,6 @@ void showDemo()
 		space();
 		label("Selected state:");
 		selectable("Selected item", SelectableFlags::Selected);
-
-		space();
-		label("Disabled state:");
-		selectable("Disabled item", SelectableFlags::Disabled);
 
 		space();
 		label("Custom font selectables:");
