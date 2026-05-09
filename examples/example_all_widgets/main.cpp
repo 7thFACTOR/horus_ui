@@ -275,6 +275,39 @@ int main(int argc, char** args)
 			reloadTheme();
 		}
 
+		const auto& ev = hui::inputEventGet();
+
+		if (ev.type == hui::InputEvent::Type::MouseWheel
+			&& has(ev.mouse.modifiers, hui::KeyModifiers::Control))
+		{
+			f32 currentScale = hui::scaleGet();
+			currentScale += ev.mouse.wheel.y * 0.1f;
+			hui::scaleSet(std::clamp(currentScale, 0.5f, 4.0f));
+			hui::themeBuild(hui::themeGet());
+
+			switch (sdlParams.gfxApi)
+			{
+			case hui::Sdl3GfxApi::OpenGL:
+				texAtlasGL.updateData(hui::themeGetAtlasImageData().pixels);
+				hui::themeSetAtlasTexture(texAtlasGL.getHandle());
+				break;
+			case hui::Sdl3GfxApi::DX11:
+				texAtlasDX11.updateData(hui::themeGetAtlasImageData().pixels);
+				hui::themeSetAtlasTexture(texAtlasDX11.getHandle());
+				break;
+			case hui::Sdl3GfxApi::DX12:
+				texAtlasDX12.updateData(hui::themeGetAtlasImageData().pixels);
+				hui::themeSetAtlasTexture(texAtlasDX12.getHandle());
+				break;
+			case hui::Sdl3GfxApi::Vulkan:
+				texAtlasVK.updateData(hui::themeGetAtlasImageData().pixels);
+				hui::themeSetAtlasTexture(texAtlasVK.getHandle());
+				break;
+			default:
+				break;
+			}
+		}
+
 		auto eventCount = hui::inputEventGetCount();
 
 		// the main frame rendering and input handling

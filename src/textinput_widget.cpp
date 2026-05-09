@@ -65,7 +65,7 @@ bool textInput(
 		ctx->textInput.clearFilterHovered = false;
 	}
 
-	if (ctx->widget.pressed && ctx->textInput.clearFilterHovered)
+	if (!ctx->widget.disabled && ctx->widget.pressed && ctx->textInput.clearFilterHovered)
 	{
 		if (text)
 		{
@@ -381,7 +381,7 @@ bool textInput(
 		// use hoveredState when clearFilterHovered is true, otherwise normalState.
 		ThemeElement::State* state = nullptr;
 
-		if (ctx->textInput.clearFilterHovered)
+		if (!ctx->widget.disabled && ctx->textInput.clearFilterHovered)
 			state = &bodyTextFilterClearImageElem.hoveredState();
 		else
 			state = &bodyTextFilterClearImageElem.normalState();

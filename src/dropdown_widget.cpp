@@ -26,7 +26,12 @@ bool dropdown(const char* id, i32& selectedIndex, const char** items, u32 itemCo
 	auto bodyElemState = &bodyElem.normalState();
 	auto arrowElemState = &arrowElem.normalState();
 
-	if (ctx->widget.pressed)
+	if (ctx->widget.disabled)
+	{
+		bodyElemState = &bodyElem.getState(WidgetStateType::Disabled);
+		arrowElemState = &arrowElem.getState(WidgetStateType::Disabled);
+	}
+	else if (ctx->widget.pressed)
 	{
 		bodyElemState = &bodyElem.getState(WidgetStateType::Pressed);
 		arrowElemState = &arrowElem.getState(WidgetStateType::Pressed);

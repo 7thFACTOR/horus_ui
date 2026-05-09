@@ -4,6 +4,7 @@
 #include "util.h"
 #include <string.h>
 #include <stdio.h>
+#include <algorithm>
 
 namespace hui
 {
