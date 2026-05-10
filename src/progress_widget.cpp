@@ -109,7 +109,7 @@ void progress(f32 value, f32 maxValue, bool showText, bool showRealValues, const
 
 	Color textShadowColor = fillElem.currentStyle->getColorParameter("textShadowColor", Color::black);
 
-	if (!isIndeterminate)
+	if (!isIndeterminate && showText)
 	{
 		FontTextSize fsize = fillElemState->font->computeTextSize(text.c_str());
 		Rect textRc = fillRc;
@@ -134,6 +134,7 @@ void progress(f32 value, f32 maxValue, bool showText, bool showRealValues, const
 			textRc, HAlignType::Right, VAlignType::Center);
 	}
 	else
+	if (isIndeterminate && showText)
 	{
 		Rect textRc = ctx->widget.rect;
 

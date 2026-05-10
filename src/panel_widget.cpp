@@ -136,7 +136,7 @@ void expandableEnd()
 	
 	layoutPop();
 	ctx->position = pos;
-	ctx->position.x = ctx->layout.savedPosition.x + ctx->padding[(i32)PaddingType::Layout].x * ctx->scale;
+	ctx->position.x = ctx->layout.savedPosition.x;
 	ctx->sameLine.enabled = false;
 }
 

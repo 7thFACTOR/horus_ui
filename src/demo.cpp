@@ -42,7 +42,8 @@ struct DemoState
 	f32 rotaryTwoSide = 0.0f;
 
 	// Progress
-	f32 progressValue = 0.65f;
+	f32 progressValue = 0.0f;
+	f32 progressValueReal = 0.0f;
 
 	// Check
 	bool checkA = true;
@@ -161,12 +162,26 @@ void showDemo()
 		demo.initialized = true;
 	}
 
+	// Animate progress bars
+	f32 dt = contextGetSettings().deltaTime;
+	demo.progressValue += dt * 0.1f;
+	if (demo.progressValue > 1.0f) demo.progressValue = 0.0f;
+
+	demo.progressValueReal += dt * 20.0f;
+	if (demo.progressValueReal > 1000.0f) demo.progressValueReal = 0.0f;
+
+	// Keep repainting as long as the progress bar section is expanded
+	if (demo.expandProgress)
+	{
+		forceRepaint();
+	}
+
 	scrollViewBegin("##demoScroll", 0, demo.demoScrollPos, { 0, 0 }, ScrollViewFlags::None);
 
 	//------------------------------------------------------------------
 	// Button
 	//------------------------------------------------------------------
-	if (expandable("Buttons", &demo.expandButton))
+	if (expandableBegin("Buttons", &demo.expandButton))
 	{
 		check("Disable##Button", &demo.disableButton);
 		widgetPushDisabled(demo.disableButton);
@@ -193,12 +208,13 @@ void showDemo()
 			demo.buttonClickCount++;
 		}
 		widgetPopDisabled();
+		expandableEnd();
 	}
 
 	//------------------------------------------------------------------
 	// Text Input
 	//------------------------------------------------------------------
-	if (expandable("Text Input", &demo.expandTextInput))
+	if (expandableBegin("Text Input", &demo.expandTextInput))
 	{
 		check("Disable##TextInput", &demo.disableTextInput);
 		widgetPushDisabled(demo.disableTextInput);
@@ -226,12 +242,13 @@ void showDemo()
 		label("Password:");
 		textInput("##tiPass", demo.textPassword, sizeof(demo.textPassword), TextInputFlags::None, nullptr, 0, true);
 		widgetPopDisabled();
+		expandableEnd();
 	}
 
 	//------------------------------------------------------------------
 	// Multiline Text Input
 	//------------------------------------------------------------------
-	if (expandable("Multiline Text Input", &demo.expandMultiline))
+	if (expandableBegin("Multiline Text Input", &demo.expandMultiline))
 	{
 		check("Disable##MultilineTextInput", &demo.disableMultiline);
 		widgetPushDisabled(demo.disableMultiline);
@@ -252,12 +269,13 @@ void showDemo()
 		textInputMultiline("##mtiHighlight", demo.multiText, sizeof(demo.multiText), 8,
 			MultilineTextInputFlags::LineNumbers | MultilineTextInputFlags::HighlightCurrentLine);
 		widgetPopDisabled();
+		expandableEnd();
 	}
 
 	//------------------------------------------------------------------
 	// Slider
 	//------------------------------------------------------------------
-	if (expandable("Sliders", &demo.expandSlider))
+	if (expandableBegin("Sliders", &demo.expandSlider))
 	{
 		check("Disable##Slider", &demo.disableSlider);
 		widgetPushDisabled(demo.disableSlider);
@@ -287,12 +305,13 @@ void showDemo()
 		snprintf(buf, sizeof(buf), "Value: %.3f", demo.sliderFloatStepped);
 		label(buf);
 		widgetPopDisabled();
+		expandableEnd();
 	}
 
 	//------------------------------------------------------------------
 	// ComboSlider
 	//------------------------------------------------------------------
-	if (expandable("Combo Sliders", &demo.expandComboSlider))
+	if (expandableBegin("Combo Sliders", &demo.expandComboSlider))
 	{
 		check("Disable##ComboSlider", &demo.disableComboSlider);
 		widgetPushDisabled(demo.disableComboSlider);
@@ -316,12 +335,13 @@ void showDemo()
 		label("With custom format string:");
 		comboSliderFloat(&demo.comboSliderFloatCustomString, 1.0f, 1.0f, "%.2f units");
 		widgetPopDisabled();
+		expandableEnd();
 	}
 
 	//------------------------------------------------------------------
 	// Rotary Slider
 	//------------------------------------------------------------------
-	if (expandable("Rotary Sliders", &demo.expandRotarySlider))
+	if (expandableBegin("Rotary Sliders", &demo.expandRotarySlider))
 	{
 		check("Disable##RotarySlider", &demo.disableRotarySlider);
 		widgetPushDisabled(demo.disableRotarySlider);
@@ -333,12 +353,13 @@ void showDemo()
 		label("Two-side rotary slider (-1..1):");
 		rotarySliderFloat("Pan", &demo.rotaryTwoSide, -1.0f, 1.0f, 0.01f, true);
 		widgetPopDisabled();
+		expandableEnd();
 	}
 
 	//------------------------------------------------------------------
 	// Progress
 	//------------------------------------------------------------------
-	if (expandable("Progress Bars", &demo.expandProgress))
+	if (expandableBegin("Progress Bars", &demo.expandProgress))
 	{
 		check("Disable##Progress", &demo.disableProgress);
 		widgetPushDisabled(demo.disableProgress);
@@ -351,19 +372,25 @@ void showDemo()
 		progress(demo.progressValue, 0.0f, true);
 
 		space();
-		label("With real values (65/100):");
-		progress(65, 100, true, true);
+		label("With real values:");
+		progress(demo.progressValueReal, 1000, true, true);
 
 		space();
 		label("Indeterminate:");
-		progress(-1.0f, 0.0f, false, false, "Loading...");
+		progress(-1.0f);
+
+		space();
+		label("Indeterminate (with text):");
+		progress(-1.0f, 0.0f, true, false, "Loading, please wait...");
+
 		widgetPopDisabled();
+		expandableEnd();
 	}
 
 	//------------------------------------------------------------------
 	// Check
 	//------------------------------------------------------------------
-	if (expandable("Checkboxes", &demo.expandCheck))
+	if (expandableBegin("Checkboxes", &demo.expandCheck))
 	{
 		check("Disable##Check", &demo.disableCheck);
 		widgetPushDisabled(demo.disableCheck);
@@ -377,12 +404,13 @@ void showDemo()
 		bool disabledCheck = true;
 		check("Cannot change", &disabledCheck);
 		widgetPopDisabled();
+		expandableEnd();
 	}
 
 	//------------------------------------------------------------------
 	// Radio
 	//------------------------------------------------------------------
-	if (expandable("Radio Buttons", &demo.expandRadio))
+	if (expandableBegin("Radio Buttons", &demo.expandRadio))
 	{
 		check("Disable##Radio", &demo.disableRadio);
 		widgetPushDisabled(demo.disableRadio);
@@ -395,12 +423,13 @@ void showDemo()
 		snprintf(buf, sizeof(buf), "Selected: %d", demo.radioVal);
 		label(buf);
 		widgetPopDisabled();
+		expandableEnd();
 	}
 
 	//------------------------------------------------------------------
 	// Label
 	//------------------------------------------------------------------
-	if (expandable("Labels", &demo.expandLabel))
+	if (expandableBegin("Labels", &demo.expandLabel))
 	{
 		check("Disable##Label", &demo.disableLabel);
 		widgetPushDisabled(demo.disableLabel);
@@ -425,6 +454,7 @@ void showDemo()
 		label("Custom font multiline label:");
 		labelCustomFontMultiline("This is a multiline label with a custom font. It should wrap properly if the text is long enough.", titleFont, HAlignType::Left);
 		widgetPopDisabled();
+		expandableEnd();
 	}
 
 	//------------------------------------------------------------------
@@ -461,7 +491,7 @@ void showDemo()
 	//------------------------------------------------------------------
 	// Dropdown
 	//------------------------------------------------------------------
-	if (expandable("Dropdown", &demo.expandDropdown))
+	if (expandableBegin("Dropdown", &demo.expandDropdown))
 	{
 		check("Disable##Dropdown", &demo.disableDropdown);
 		widgetPushDisabled(demo.disableDropdown);
@@ -479,12 +509,13 @@ void showDemo()
 		snprintf(buf, sizeof(buf), "Selected index: %d", demo.dropdownSel);
 		label(buf);
 		widgetPopDisabled();
+		expandableEnd();
 	}
 
 	//------------------------------------------------------------------
 	// List
 	//------------------------------------------------------------------
-	if (expandable("List", &demo.expandList))
+	if (expandableBegin("List", &demo.expandList))
 	{
 		check("Disable##List", &demo.disableList);
 		widgetPushDisabled(demo.disableList);
@@ -499,12 +530,13 @@ void showDemo()
 		static bool multiSel[5] = {};
 		list("##listMulti", multiSel, ListSelectionMode::Multiple, listItems, 5, 120.0f);
 		widgetPopDisabled();
+		expandableEnd();
 	}
 
 	//------------------------------------------------------------------
 	// Selectable
 	//------------------------------------------------------------------
-	if (expandable("Selectable", &demo.expandSelectable))
+	if (expandableBegin("Selectable", &demo.expandSelectable))
 	{
 		check("Disable##Selectable", &demo.disableSelectable);
 		widgetPushDisabled(demo.disableSelectable);
@@ -522,12 +554,13 @@ void showDemo()
 		HFont headingFont = themeFontGet("heading");
 		selectableCustomFont("Selectable with Heading Font", headingFont);
 		widgetPopDisabled();
+		expandableEnd();
 	}
 
 	//------------------------------------------------------------------
 	// Separators / Spacing
 	//------------------------------------------------------------------
-	if (expandable("Separators & Spacing", &demo.expandSeparators))
+	if (expandableBegin("Separators & Spacing", &demo.expandSeparators))
 	{
 		check("Disable##Separators", &demo.disableSeparators);
 		widgetPushDisabled(demo.disableSeparators);
@@ -550,12 +583,13 @@ void showDemo()
 		sameLine();
 		button("C");
 		widgetPopDisabled();
+		expandableEnd();
 	}
 
 	//------------------------------------------------------------------
 	// Tabs
 	//------------------------------------------------------------------
-	if (expandable("Tabs", &demo.expandTabs))
+	if (expandableBegin("Tabs", &demo.expandTabs))
 	{
 		check("Disable##Tabs", &demo.disableTabs);
 		widgetPushDisabled(demo.disableTabs);
@@ -582,12 +616,13 @@ void showDemo()
 			break;
 		}
 		widgetPopDisabled();
+		expandableEnd();
 	}
 
 	//------------------------------------------------------------------
 	// Box
 	//------------------------------------------------------------------
-	if (expandable("Box", &demo.expandBox))
+	if (expandableBegin("Box", &demo.expandBox))
 	{
 		check("Disable##Box", &demo.disableBox);
 		widgetPushDisabled(demo.disableBox);
@@ -604,12 +639,13 @@ void showDemo()
 		label("Green tinted box content");
 		boxEnd();
 		widgetPopDisabled();
+		expandableEnd();
 	}
 
 	//------------------------------------------------------------------
 	// Color Picker
 	//------------------------------------------------------------------
-	if (expandable("Color Picker", &demo.expandColorPicker))
+	if (expandableBegin("Color Picker", &demo.expandColorPicker))
 	{
 		check("Disable##ColorPicker", &demo.disableColorPicker);
 		widgetPushDisabled(demo.disableColorPicker);
@@ -622,12 +658,13 @@ void showDemo()
 			demo.pickerColor.r, demo.pickerColor.g, demo.pickerColor.b, demo.pickerColor.a);
 		label(buf);
 		widgetPopDisabled();
+		expandableEnd();
 	}
 
 	//------------------------------------------------------------------
 	// Vec Editors
 	//------------------------------------------------------------------
-	if (expandable("Vector Editors", &demo.expandVecEditors))
+	if (expandableBegin("Vector Editors", &demo.expandVecEditors))
 	{
 		check("Disable##VecEditors", &demo.disableVecEditors);
 		widgetPushDisabled(demo.disableVecEditors);
@@ -647,11 +684,12 @@ void showDemo()
 		label("vec3 (double):");
 		vec3Editor("##v3d", demo.dvec3x, demo.dvec3y, demo.dvec3z);
 		widgetPopDisabled();
+		expandableEnd();
 	}
 	//------------------------------------------------------------------
 	// Images & Textures
 	//------------------------------------------------------------------
-	if (expandable("Images & Textures", &demo.expandImages))
+	if (expandableBegin("Images & Textures", &demo.expandImages))
 	{
 		check("Disable##Images", &demo.disableImages);
 		widgetPushDisabled(demo.disableImages);
@@ -686,12 +724,13 @@ void showDemo()
 		
 		texture(themeGetAtlasTexture(), 64, 64, 64);
 		widgetPopDisabled();
+		expandableEnd();
 	}
 
 	//------------------------------------------------------------------
 	// Menus
 	//------------------------------------------------------------------
-	if (expandable("Menus", &demo.expandMenus))
+	if (expandableBegin("Menus", &demo.expandMenus))
 	{
 		check("Disable##Menus", &demo.disableMenus);
 		widgetPushDisabled(demo.disableMenus);
@@ -733,12 +772,13 @@ void showDemo()
 			contextMenuEnd();
 		}
 		widgetPopDisabled();
+		expandableEnd();
 	}
 
 	//------------------------------------------------------------------
 	// Viewport
 	//------------------------------------------------------------------
-	if (expandable("Viewport", &demo.expandViewport))
+	if (expandableBegin("Viewport", &demo.expandViewport))
 	{
 		check("Disable##Viewport", &demo.disableViewport);
 		widgetPushDisabled(demo.disableViewport);
@@ -750,12 +790,13 @@ void showDemo()
 		renderDrawTextInBox("Custom Viewport Content", vprect, HAlignType::Center, VAlignType::Center);
 		viewportEnd();
 		widgetPopDisabled();
+		expandableEnd();
 	}
 
 	//------------------------------------------------------------------
 	// Custom Widget
 	//------------------------------------------------------------------
-	if (expandable("Custom Widget", &demo.expandCustomWidget))
+	if (expandableBegin("Custom Widget", &demo.expandCustomWidget))
 	{
 		check("Disable##CustomWidget", &demo.disableCustomWidget);
 		widgetPushDisabled(demo.disableCustomWidget);
@@ -767,12 +808,13 @@ void showDemo()
 		renderDrawLine(cwRect.topRight(), cwRect.bottomLeft());
 		customWidgetEnd();
 		widgetPopDisabled();
+		expandableEnd();
 	}
 
 	//------------------------------------------------------------------
 	// Object Reference
 	//------------------------------------------------------------------
-	if (expandable("Object Reference Editor", &demo.expandObjectRef))
+	if (expandableBegin("Object Reference Editor", &demo.expandObjectRef))
 	{
 		check("Disable##ObjectRef", &demo.disableObjectRef);
 		widgetPushDisabled(demo.disableObjectRef);
@@ -780,11 +822,12 @@ void showDemo()
 		label("Object reference editor:");
 		objectRefEditor("##demoObjRef", 0, 0, "MyObjectType", "None", 0, &demo.objectRefValue, &demo.objectRefModified);
 		widgetPopDisabled();
+		expandableEnd();
 	}
 	//------------------------------------------------------------------
 	// Virtual List
 	//------------------------------------------------------------------
-	if (expandable("Virtual List (1000 items)", &demo.expandVirtualList))
+	if (expandableBegin("Virtual List (1000 items)", &demo.expandVirtualList))
 	{
 		check("Disable##VirtualList", &demo.disableVirtualList);
 		widgetPushDisabled(demo.disableVirtualList);
@@ -805,12 +848,13 @@ void showDemo()
 		}
 		virtualListContentEnd();
 		widgetPopDisabled();
+		expandableEnd();
 	}
 
 	//------------------------------------------------------------------
 	// Scroll View
 	//------------------------------------------------------------------
-	if (expandable("Scroll View", &demo.expandScrollView))
+	if (expandableBegin("Scroll View", &demo.expandScrollView))
 	{
 		check("Disable##ScrollView", &demo.disableScrollView);
 		widgetPushDisabled(demo.disableScrollView);
@@ -827,12 +871,13 @@ void showDemo()
 		}
 		scrollViewEnd();
 		widgetPopDisabled();
+		expandableEnd();
 	}
 
 	//------------------------------------------------------------------
 	// Table
 	//------------------------------------------------------------------
-	if (expandable("Tables", &demo.expandTable))
+	if (expandableBegin("Tables", &demo.expandTable))
 	{
 		check("Disable##Table", &demo.disableTable);
 		widgetPushDisabled(demo.disableTable);
@@ -863,12 +908,13 @@ void showDemo()
 			tableEnd();
 		}
 		widgetPopDisabled();
+		expandableEnd();
 	}
 
 	//------------------------------------------------------------------
 	// Tooltip
 	//------------------------------------------------------------------
-	if (expandable("Tooltips", &demo.expandTooltip))
+	if (expandableBegin("Tooltips", &demo.expandTooltip))
 	{
 		check("Disable##Tooltip", &demo.disableTooltip);
 		widgetPushDisabled(demo.disableTooltip);
@@ -889,12 +935,13 @@ void showDemo()
 			customTooltipEnd();
 		}
 		widgetPopDisabled();
+		expandableEnd();
 	}
 
 	//------------------------------------------------------------------
 	// Popup
 	//------------------------------------------------------------------
-	if (expandable("Popups", &demo.expandPopup))
+	if (expandableBegin("Popups", &demo.expandPopup))
 	{
 		check("Disable##Popup", &demo.disablePopup);
 		widgetPushDisabled(demo.disablePopup);
@@ -919,6 +966,7 @@ void showDemo()
 			popupEnd();
 		}
 		widgetPopDisabled();
+		expandableEnd();
 	}
 
 	demo.demoScrollPos = scrollViewEnd();
