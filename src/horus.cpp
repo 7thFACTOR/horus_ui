@@ -570,8 +570,38 @@ HUI_API f32 frameTimeGetAvgMs()
 
 void contextUpdate()
 {
+	u32 timeoutMs = 0;
+
+	if (ctx->settings.fpsThrottleEnable)
+	{
+		if (hasNothingToDo())
+		{
+			ctx->idleTime += ctx->settings.deltaTime;
+		}
+		else
+		{
+			ctx->idleTime = 0;
+		}
+
+		f32 t = ctx->idleTime / ctx->settings.fpsThrottleGradualTime;
+		if (t > 1.0f) t = 1.0f;
+
+		f32 targetFps = (f32)ctx->settings.fpsThrottleMaxFps + t * ((f32)ctx->settings.fpsThrottleMinFps - (f32)ctx->settings.fpsThrottleMaxFps);
+		f32 targetFrameTimeMs = 1000.0f / targetFps;
+
+		// if we have something to do (like animations or input happened last frame), we don't want to wait
+		if (!hasNothingToDo())
+		{
+			timeoutMs = 0;
+		}
+		else
+		{
+			timeoutMs = (u32)std::max(0.0f, targetFrameTimeMs - ctx->lastFrameTimeMs);
+		}
+	}
+
 	inputEventClearQueue();
-	ctx->settings.services.processWindowEvents();
+	ctx->settings.services.processWindowEvents(timeoutMs);
 
 	// tooltip handling
 	//TODO: move to own func
@@ -1207,6 +1237,7 @@ void themeSetUserWidgetElement(
 void themeSet(HTheme theme)
 {
 	HUI_ASSERT(theme);
+
 	if (!theme)
 		return;
 
@@ -1428,7 +1459,11 @@ void idPop()
 
 void layoutPush()
 {
+	ctx->layout.savedSameLine = ctx->sameLine;
+	ctx->layout.savedSameLineGroup = ctx->sameLineGroup;
 	ctx->layoutStack.push_back(ctx->layout);
+	ctx->sameLine = SameLineState();
+	ctx->sameLineGroup = SameLineGroupState();
 }
 
 void layoutPop()
@@ -1441,6 +1476,9 @@ void layoutPop()
 
 	ctx->layout = ctx->layoutStack.back();
 	ctx->layoutStack.pop_back();
+
+	ctx->sameLine = ctx->layout.savedSameLine;
+	ctx->sameLineGroup = ctx->layout.savedSameLineGroup;
 }
 
 f32 layoutGetRemainingHeight()

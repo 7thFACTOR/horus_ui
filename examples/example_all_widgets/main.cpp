@@ -46,7 +46,7 @@ int main(int argc, char** args)
 	// Initialize SDL input provider
 	hui::Sdl3InitParams sdlParams;
 
-	sdlParams.vSync = false;
+	sdlParams.vSync = true;
 	//sdlParams.gfxApi = hui::Sdl3GfxApi::OpenGL;
 	//sdlParams.gfxApi = hui::Sdl3GfxApi::DX11;
 	//sdlParams.gfxApi = hui::Sdl3GfxApi::DX12;
@@ -57,6 +57,7 @@ int main(int argc, char** args)
 
 	settings.dockNodeSpacing = 3;
 	settings.dockNodeResizeSplitterHitSize = 8;
+	settings.fpsThrottleEnable = true;
 
 	hui::initStdioFileIO(settings.services);
 	hui::initFreetype(settings.services);

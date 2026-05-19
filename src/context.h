@@ -30,6 +30,7 @@ struct Context
 	f32 avgFrameTimeMs = 0.0f;
 	f32 frameTimes[60] = {}; // Rolling buffer for average calculation
 	u32 frameTimeIndex = 0;
+	f32 idleTime = 0.0f;
 	bool mustRedraw = false;
 	bool focusChanged = false;
 	bool skipRenderAndInput = false;

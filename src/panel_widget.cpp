@@ -125,7 +125,6 @@ bool expandableBegin(const char* label, bool* expandedVar)
 	}
 	
 	ctx->position.x += indent;
-	ctx->sameLine.enabled = false;
 
 	return true;
 }
@@ -137,7 +136,6 @@ void expandableEnd()
 	layoutPop();
 	ctx->position = pos;
 	ctx->position.x = ctx->layout.savedPosition.x;
-	ctx->sameLine.enabled = false;
 }
 
 }

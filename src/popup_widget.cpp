@@ -14,9 +14,8 @@ void popupBegin(
 	WidgetElementId widgetElementId)
 {
 	widgetPushDisabled(widgetGetDisabled());
-	addWidget(0);
-
 	ctx->id = genId(id);
+
 	auto& popup = ctx->popupStack[ctx->popupIndex];
 
 	popup.flags = flags;
@@ -127,13 +126,7 @@ void popupBegin(
 	ctx->layout.width = width - bodyElemState.border * 2 * ctx->scale;
 	ctx->layout.savedPosition = ctx->position;
 	
-	// Save the complete sameLine context state
-	popup.savedSameLine = ctx->sameLine;
-	
-	// Reset sameLine state for the popup
-	ctx->sameLine.enabled = false;
-	ctx->sameLine.wasEnabled = false;
-	ctx->sameLine.maxHeight = 0;
+	addWidget(0);
 	ctx->renderer.pushClipRect(ctx->renderer.getWindowRect(), false);
 
 	if (has(flags, PopupFlags::FadeBackground))
@@ -233,7 +226,6 @@ void popupEnd()
 	ctx->renderer.popWindowDrawCmdLayer();
 	widgetPopPosition();
 	layoutPop();
-	ctx->sameLine = popup.savedSameLine;
 
 	if (!has(popup.flags, PopupFlags::SameLayer))
 		layerIndexDecrement();

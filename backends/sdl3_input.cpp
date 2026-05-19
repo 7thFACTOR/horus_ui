@@ -586,11 +586,19 @@ static void addSdlEvent(SDL_Event& ev)
 		inputEventAdd(outEvent);
 }
 
-static void processSdlEvents()
+static void processSdlEvents(u32 timeoutMs)
 {
 	SDL_Event ev;
 
 	sdl3InputContext->addedMouseMove = false;
+
+	if (timeoutMs > 0)
+	{
+		if (SDL_WaitEventTimeout(&ev, (i32)timeoutMs))
+		{
+			addSdlEvent(ev);
+		}
+	}
 
 	while (SDL_PollEvent(&ev))
 	{
@@ -605,10 +613,10 @@ static void updateDeltaTime()
 	sdl3InputContext->lastTime = ticks;
 }
 
-static void processWindowEvents()
+static void processWindowEvents(u32 timeoutMs)
 {
 	updateDeltaTime();
-	processSdlEvents();
+	processSdlEvents(timeoutMs);
 }
 
 f32 getSdl3DeltaTime()

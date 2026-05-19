@@ -1748,7 +1748,7 @@ struct Services
 	void (*stopTextInput)() = nullptr;
 	bool (*clipboardSetText)(const char* text) = nullptr;
 	bool (*clipboardGetText)(char* outText, u32 maxTextSize) = nullptr;
-	void (*processWindowEvents)() = nullptr;
+	void (*processWindowEvents)(u32 timeoutMs) = nullptr;
 	void (*setCurrentWindow)(HNativeWindow window) = nullptr;
 	HNativeWindow (*getCurrentWindow)() = nullptr;
 	HNativeWindow (*getFocusedWindow)() = nullptr;
@@ -1928,6 +1928,10 @@ struct Settings
 	f32 movePopupMaxDistanceTrigger = 5; /// distance of dragging with mouse for when to initiate popup dragging
 	f32 defaultBulletTextSpacing = 5; /// space size between bullet/check/radio and the label, might get overriden by the theme settings
 	u32 tabSize = 4; /// tab size in spaces
+	bool fpsThrottleEnable = false; /// if true, the UI will throttle the FPS when there is no activity
+	u32 fpsThrottleMinFps = 10; /// the minimum FPS to throttle to when idle
+	u32 fpsThrottleMaxFps = 60; /// the maximum FPS to run at when there is activity
+	f32 fpsThrottleGradualTime = 1.0f; /// the time it takes to reach the minimum FPS when idle, in seconds
 };
 
 //////////////////////////////////////////////////////////////////////////

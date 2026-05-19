@@ -322,13 +322,6 @@ struct ThemeElement
 	struct Style
 	{
 		State states[(u32)WidgetStateType::Count];
-
-		inline State& normalState() { return states[(u32)WidgetStateType::Normal]; }
-		inline State& focusedState() { return states[(u32)WidgetStateType::Focused]; }
-		inline State& pressedState() { return states[(u32)WidgetStateType::Pressed]; }
-		inline State& hoveredState() { return states[(u32)WidgetStateType::Hovered]; }
-		inline State& disabledState() { return states[(u32)WidgetStateType::Disabled]; }
-
 		std::unordered_map<std::string, std::string> parameters;
 		std::unordered_map<std::string, f32> cachedFloatParameters;
 		std::unordered_map<std::string, Color> cachedColorParameters;
@@ -574,7 +567,6 @@ struct PopupState
 	Point dragDelta, lastMouseDownPoint;
 	Point lastMousePoint;
 	std::vector<u32> savedSameLineInfoIndexStack;
-	SameLineState savedSameLine;
 };
 
 struct RotarySliderState
