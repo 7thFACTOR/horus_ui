@@ -82,20 +82,20 @@ HTheme createBuiltinTheme(u32 atlasTextureSize)
 	setSize(WidgetElementId::PopupBody, 0, 0, 10);
 	setSize(WidgetElementId::WindowBody, 0, 0, 2);
 
-	HUI_DEFAULT_STYLE(WindowBody).normalState().color = colorBg;
-	HUI_DEFAULT_STYLE(PopupBody).normalState().color = colorBg;
-	HUI_DEFAULT_STYLE(TooltipBody).normalState().color = colorBg;
+	HUI_DEFAULT_STYLE(WindowBody).states[(u32)WidgetStateType::Normal].color = colorBg;
+	HUI_DEFAULT_STYLE(PopupBody).states[(u32)WidgetStateType::Normal].color = colorBg;
+	HUI_DEFAULT_STYLE(TooltipBody).states[(u32)WidgetStateType::Normal].color = colorBg;
 
-	HUI_DEFAULT_STYLE(TextInputBody).normalState().color = colorBg;
-	HUI_DEFAULT_STYLE(TextInputBody).normalState().textColor = colorWhite;
-	HUI_DEFAULT_STYLE(TextInputBody).focusedState().textColor = colorWhite;
+	HUI_DEFAULT_STYLE(TextInputBody).states[(u32)WidgetStateType::Normal].color = colorBg;
+	HUI_DEFAULT_STYLE(TextInputBody).states[(u32)WidgetStateType::Normal].textColor = colorWhite;
+	HUI_DEFAULT_STYLE(TextInputBody).states[(u32)WidgetStateType::Focused].textColor = colorWhite;
 
-	HUI_DEFAULT_STYLE(TextInputSelection).normalState().color = colorSelection;
-	HUI_DEFAULT_STYLE(TextInputCaret).normalState().color = colorWhite;
-	HUI_DEFAULT_STYLE(TextInputCaret).normalState().width = 2.0f;
+	HUI_DEFAULT_STYLE(TextInputSelection).states[(u32)WidgetStateType::Normal].color = colorSelection;
+	HUI_DEFAULT_STYLE(TextInputCaret).states[(u32)WidgetStateType::Normal].color = colorWhite;
+	HUI_DEFAULT_STYLE(TextInputCaret).states[(u32)WidgetStateType::Normal].width = 2.0f;
 	
-	HUI_DEFAULT_STYLE(CheckMark).normalState().color = colorWhite;
-	HUI_DEFAULT_STYLE(RadioMark).normalState().color = colorWhite;
+	HUI_DEFAULT_STYLE(CheckMark).states[(u32)WidgetStateType::Normal].color = colorWhite;
+	HUI_DEFAULT_STYLE(RadioMark).states[(u32)WidgetStateType::Normal].color = colorWhite;
 
 	theme->build();
 

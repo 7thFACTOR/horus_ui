@@ -106,9 +106,11 @@ TabIndex tabGroupEnd()
 
 	widgetPopDisabled();
 
-	if (ctx->event.type == InputEvent::Type::MouseDown)
+	if (ctx->event.type == InputEvent::Type::MouseDown
+		&& ctx->docking.drawingWindowTabs
+		&& ctx->docking.currentDockNode)
 	{
-		if (ctx->tabGroupWidgetRect.contains(ctx->mousePosition) && ctx->docking.currentDockNode)
+		if (ctx->tabGroupWidgetRect.contains(ctx->mousePosition))
 		{
 			windowSetFocus(ctx->docking.currentDockNode->windows[ctx->selectedTabIndex]->id.c_str());
 		}

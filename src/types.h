@@ -418,6 +418,7 @@ struct LayoutState
 	WidgetId id = 0;
 	Point savedPosition = { 0, 0 };
 	SameLineState savedSameLine;
+	SameLineGroupState savedSameLineGroup;
 	f32 width = 0;
 	f32 height = 0;
 };
