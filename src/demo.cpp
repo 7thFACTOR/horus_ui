@@ -834,6 +834,9 @@ void showDemo()
 
 		// persistent virtual list state: only provide item count here
 		static hui::VirtualScrollInfo vinfo(1000); 
+		static f32 virtualListScrollPos = 0.0f;
+
+		scrollViewBegin("##virtualListScroll", 150, virtualListScrollPos);
 
 		virtualListContentBegin(vinfo);
 
@@ -847,6 +850,8 @@ void showDemo()
 			}
 		}
 		virtualListContentEnd();
+
+		virtualListScrollPos = scrollViewEnd().y;
 		widgetPopDisabled();
 		expandableEnd();
 	}
@@ -869,7 +874,7 @@ void showDemo()
 				button(buf);
 			}
 		}
-		scrollViewEnd();
+		demo.scrollPos = scrollViewEnd();
 		widgetPopDisabled();
 		expandableEnd();
 	}
@@ -885,14 +890,14 @@ void showDemo()
 		label("Basic table (3 columns):");
 		if (tableBegin("##demoTable", 3, 200, TableFlags::Borders | TableFlags::Resizable | TableFlags::Reorderable | TableFlags::AltRowBg))
 		{
-			tableColumnSetup(0, 50, TableColumnFlags::Fixed);
+			tableColumnSetup(0, 50, TableColumnFlags::FixedResize);
 			tableColumnSetup(1, 150, TableColumnFlags::Stretch);
 			tableColumnSetup(2, 100, TableColumnFlags::Stretch);
 
 			tableStartHeader();
-			tableCellNext(); label("ID");
-			tableCellNext(); label("Name");
-			tableCellNext(); label("Status");
+			label("ID"); tableCellNext(); 
+			label("Name"); tableCellNext(); 
+			label("Status");
 
 			for (int i = 0; i < 10; ++i)
 			{
@@ -901,9 +906,9 @@ void showDemo()
 				snprintf(idBuf, sizeof(idBuf), "%d", i + 1);
 				snprintf(nameBuf, sizeof(nameBuf), "Item %d", i + 1);
 
-				tableCellNext(); label(idBuf);
-				tableCellNext(); label(nameBuf);
-				tableCellNext(); label(i % 2 == 0 ? "Active" : "Inactive");
+				label(idBuf); tableCellNext(); 
+				label(nameBuf); tableCellNext(); 
+				label(i % 2 == 0 ? "Active" : "Inactive");
 			}
 			tableEnd();
 		}

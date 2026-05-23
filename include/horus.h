@@ -196,7 +196,6 @@ enum class WidgetType
 	Radio,
 	Label,
 	Expandable,
-	Panel,
 	Popup,
 	Dropdown,
 	List,
@@ -2517,10 +2516,10 @@ HUI_API bool labelMultiline(const char* label, HAlignType horizontalAlign);
 /// \return true if it was clicked on
 HUI_API bool labelCustomFontMultiline(const char* label, HFont font, HAlignType horizontalAlign = HAlignType::Left);
 
-/// Draw a expandable panel widget
-/// \param label the text of the panel
-/// \param expandedVar keeps true if the panel is expanded
-/// \return true if the panel state changed
+/// Draw a expandable widget
+/// \param label the text of the widget
+/// \param expandedVar keeps true if its expanded
+/// \return true if the state changed
 HUI_API bool expandable(const char* label, bool* expandedVar = nullptr);
 HUI_API bool expandableBegin(const char* label, bool* expandedVar = nullptr);
 HUI_API void expandableEnd();
@@ -2585,7 +2584,7 @@ HUI_API bool menuBarBegin();
 /// End the current menu bar widget
 HUI_API void menuBarEnd();
 
-/// Begin a menu panel widget (it will show up only when clicked)
+/// Begin a menu widget (it will show up only when clicked)
 /// \param label the menu text
 /// \param flags the menu flags
 /// \return true if the menu is visible, use it in a if() statement to show menu items

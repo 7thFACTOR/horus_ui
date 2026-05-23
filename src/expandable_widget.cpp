@@ -9,9 +9,12 @@ namespace hui
 bool expandable(const char* label, bool* expandedVar)
 {
 	auto& bodyElem = ctx->theme->getElement(WidgetElementId::ExpandableBody);
-	auto& panelCollapsedArrow = ctx->theme->getElement(WidgetElementId::ExpandableCollapsedArrow);
-	auto& panelExpandedArrow = ctx->theme->getElement(WidgetElementId::ExpandableExpandedArrow);
+	auto& collapsedArrow = ctx->theme->getElement(WidgetElementId::ExpandableCollapsedArrow);
+	auto& expandedArrow = ctx->theme->getElement(WidgetElementId::ExpandableExpandedArrow);
 	auto bodyElemState = &bodyElem.normalState();
+	auto expandedArrowState = &expandedArrow.normalState();
+	auto collapsedArrowState = &collapsedArrow.normalState();
+
 	bool changed = false;
 	bool expanded = false;
 	const auto& padding = widgetGetPadding();
@@ -51,9 +54,23 @@ bool expandable(const char* label, bool* expandedVar)
 		}
 	}
 
-	if (expanded)
+	if (ctx->widget.disabled)
+	{
+		bodyElemState = &bodyElem.disabledState();
+		expandedArrowState = &expandedArrow.disabledState();
+		collapsedArrowState = &collapsedArrow.disabledState();
+	}
+	else if (expanded)
 	{
 		bodyElemState = &bodyElem.getState(WidgetStateType::Pressed);
+	}
+	else if (ctx->widget.focused)
+	{
+		bodyElemState = &bodyElem.getState(WidgetStateType::Focused);
+	}
+	else if (ctx->widget.hovered)
+	{
+		bodyElemState = &bodyElem.getState(WidgetStateType::Hovered);
 	}
 
 	ctx->renderer.cmdSetColor(tintApply(bodyElemState->color, TintColorType::Body));
@@ -63,12 +80,12 @@ bool expandable(const char* label, bool* expandedVar)
 		ctx->widget.rect,
 		ctx->scale);
 
-	auto arrowElemState = &panelCollapsedArrow.normalState();
+	auto arrowElemState = collapsedArrowState;
 
 	// draw arrow
 	if (expanded)
 	{
-		arrowElemState = &panelExpandedArrow.normalState();
+		arrowElemState = expandedArrowState;
 	}
 
 	ctx->renderer.cmdSetColor(tintApply(arrowElemState->color, TintColorType::Body));

@@ -22,8 +22,11 @@ static bool labelInternal(const char* label, HAlignType horizontalAlign, Font* f
 
 	if (!ctx->widget.hasNextWidth)
 	{
-		ctx->widget.customWidth = fsize.width;
-		ctx->widget.hasCustomWidth = true;
+		if (horizontalAlign == HAlignType::Left)
+		{
+			ctx->widget.customWidth = fsize.width;
+			ctx->widget.hasCustomWidth = true;
+		}
 	}
 
 	addWidget(height);

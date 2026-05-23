@@ -179,13 +179,15 @@
 			"expandableBody":
 			{
 				"normal": { "image": "default/expandable", "border": 4, "color": "white", "textColor": "white", "font": "normal-bold" },
-				"hovered": { "image": "default/expandable", "border": 4, "color": "white", "textColor": "white", "font": "normal" },
+				"disabled": { "color": "gray", "textColor": "gray" },
+				"hovered": { "image": "default/expandable", "border": 4, "color": "white", "textColor": "orange", "font": "normal-bold" },
 				"pressed": { "image": "default/expandable", "border": 4, "color": "white", "textColor": "white", "font": "normal-bold" },
-				"focused": { "image": "default/expandable", "border": 4, "color": "white", "textColor": "white", "font": "normal" }
+				"focused": { "image": "default/expandable", "border": 4, "color": "white", "textColor": "white", "font": "normal-bold" }
 			},
 			"expandableExpandedArrow":
 			{
 				"normal": { "image": "default/expandable_expanded_arrow", "border": 0, "color": "white", "textColor": "white", "font": "normal" },
+				"disabled": { "color": "gray", "textColor": "gray" },
 				"hovered": { "image": "default/expandable_expanded_arrow", "border": 0, "color": "white", "textColor": "white", "font": "normal" },
 				"pressed": { "image": "default/expandable_expanded_arrow", "border": 0, "color": "white", "textColor": "white", "font": "normal" },
 				"focused": { "image": "default/expandable_expanded_arrow", "border": 0, "color": "white", "textColor": "white", "font": "normal" }
@@ -193,6 +195,7 @@
 			"expandableCollapsedArrow":
 			{
 				"normal": { "image": "default/expandable_collapsed_arrow", "border": 0, "color": "white", "textColor": "white", "font": "normal" },
+				"disabled": { "color": "gray", "textColor": "gray" },
 				"hovered": { "image": "default/expandable_collapsed_arrow", "border": 0, "color": "white", "textColor": "white", "font": "normal" },
 				"pressed": { "image": "default/expandable_collapsed_arrow", "border": 0, "color": "white", "textColor": "white", "font": "normal" },
 				"focused": { "image": "default/expandable_collapsed_arrow", "border": 0, "color": "white", "textColor": "white", "font": "normal" }

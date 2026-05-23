@@ -56,7 +56,6 @@ bool beginMenuInternal(const char* label, SelectableFlags stateFlags, bool conte
 	auto menuBarItemElemState = menuBarItemElem.normalState();
 	
 	widgetPushDisabled(widgetGetDisabled());
-	addWidget(menuBarItemElemState.height);
 
 	ctx->setLabelAndId(label);
 	
@@ -75,6 +74,13 @@ bool beginMenuInternal(const char* label, SelectableFlags stateFlags, bool conte
 
 		f32 width = (leftIndent + std::fmaxf(fsize.width, menuBarItemElemState.width)) * ctx->scale;
 		f32 height = menuBarItemElemState.height * ctx->scale;
+
+		if (isMenuBarItem && !contextMenu)
+		{
+			f32 prevY = ctx->position.y;
+			addWidget(menuBarItemElemState.height);
+			ctx->position.y = prevY;
+		}
 
 		ctx->widget.rect.set(
 			ctx->position.x,

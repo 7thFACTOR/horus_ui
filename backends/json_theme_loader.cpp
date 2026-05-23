@@ -141,7 +141,6 @@ static WidgetType getWidgetTypeFromName(std::string name)
 	if (name == "check") return WidgetType::Check;
 	if (name == "radio") return WidgetType::Radio;
 	if (name == "label") return WidgetType::Label;
-	if (name == "panel") return WidgetType::Panel;
 	if (name == "expandable") return WidgetType::Expandable;
 	if (name == "popup") return WidgetType::Popup;
 	if (name == "dropdown") return WidgetType::Dropdown;
