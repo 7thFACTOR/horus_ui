@@ -88,6 +88,9 @@ struct DemoState
 	bool expandPopup = false;
 	bool expandScrollView = false;
 
+	// Added: Tree nodes demo expand flag
+	bool expandTreeNodes = false;
+
 	// Disabled states
 	bool disableButton = false;
 	bool disableTextInput = false;
@@ -117,6 +120,9 @@ struct DemoState
 	bool disableTooltip = false;
 	bool disablePopup = false;
 	bool disableScrollView = false;
+
+	// Added: Tree nodes demo disable flag
+	bool disableTreeNodes = false;
 
 	// Popup demo
 	bool showPopup = false;
@@ -151,6 +157,11 @@ struct DemoState
 	bool initialized = false;
 
 	Point demoScrollPos = { 0, 0 };
+
+	// Tree demo internal state (controlled expansion)
+	bool treeRootExpanded = true;
+	bool treeFolderAExpanded = false;
+	bool treeFolderBExpanded = false;
 };
 
 static DemoState demo;
@@ -484,6 +495,67 @@ void showDemo()
 			}
 			expandableEnd();
 		}
+		widgetPopDisabled();
+		expandableEnd();
+	}
+
+	//------------------------------------------------------------------
+	// Tree Nodes (new demo section)
+	//------------------------------------------------------------------
+	if (expandableBegin("Tree Nodes", &demo.expandTreeNodes))
+	{
+		check("Disable##TreeNodes", &demo.disableTreeNodes);
+		widgetPushDisabled(demo.disableTreeNodes);
+
+		label("Controlled tree (passes booleans to preserve expansion state):");
+
+		// Root node with controlled expansion
+		if (treeNode("Root", &demo.treeRootExpanded))
+		{
+			// Folder A
+			if (treeNodeBegin("Folder A", &demo.treeFolderAExpanded))
+			{
+				selectable("File A1");
+				selectable("File A2");
+				treeNodeEnd();
+			}
+
+			// Folder B
+			if (treeNodeBegin("Folder B", &demo.treeFolderBExpanded))
+			{
+				selectable("File B1");
+				treeNodeEnd();
+			}
+
+			// A plain item at root level
+			selectable("README.md");
+
+			treeNodeEnd(); // close Root
+		}
+
+		space();
+
+		label("Anonymous nodes (internal expansion state):");
+
+		// Use internal expansion state by passing nullptr for expansion var
+		if (treeNodeBegin("Library"))
+		{
+			if (treeNodeBegin("src"))
+			{
+				selectable("main.cpp");
+				selectable("util.cpp");
+				treeNodeEnd();
+			}
+
+			if (treeNodeBegin("include"))
+			{
+				selectable("lib.h");
+				treeNodeEnd();
+			}
+
+			treeNodeEnd();
+		}
+
 		widgetPopDisabled();
 		expandableEnd();
 	}

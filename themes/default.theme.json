@@ -200,6 +200,30 @@
 				"pressed": { "image": "default/expandable_collapsed_arrow", "border": 0, "color": "white", "textColor": "white", "font": "normal" },
 				"focused": { "image": "default/expandable_collapsed_arrow", "border": 0, "color": "white", "textColor": "white", "font": "normal" }
 			}
+		},
+		"treeNode":
+		{
+			"treeNodeBody":
+			{
+				"normal": { "image": "", "border": 0, "color": "0 0 0 0", "textColor": "white", "font": "normal" },
+				"hovered": { "image": "", "border": 0, "color": "0 0 0 0", "textColor": "orange", "font": "normal" },
+				"pressed": { "image": "", "border": 0, "color": "0 0 0 0", "textColor": "blue", "font": "normal" },
+				"focused": { "image": "", "border": 0, "color": "0 0 0 0", "textColor": "orange", "font": "normal" }
+			},
+			"treeNodeExpandedArrow":
+			{
+				"normal": { "image": "default/treenode_expanded_arrow", "border": 0, "color": "white", "textColor": "white", "font": "normal" },
+				"hovered": { "image": "default/treenode_expanded_arrow", "border": 0, "color": "white", "textColor": "white", "font": "normal" },
+				"pressed": { "image": "default/treenode_expanded_arrow", "border": 0, "color": "white", "textColor": "white", "font": "normal" },
+				"focused": { "image": "default/treenode_expanded_arrow", "border": 0, "color": "white", "textColor": "white", "font": "normal" }
+			},
+			"treeNodeCollapsedArrow":
+			{
+				"normal": { "image": "default/treenode_collapsed_arrow", "border": 0, "color": "white", "textColor": "white", "font": "normal" },
+				"hovered": { "image": "default/treenode_collapsed_arrow", "border": 0, "color": "white", "textColor": "white", "font": "normal" },
+				"pressed": { "image": "default/treenode_collapsed_arrow", "border": 0, "color": "white", "textColor": "white", "font": "normal" },
+				"focused": { "image": "default/treenode_collapsed_arrow", "border": 0, "color": "white", "textColor": "white", "font": "normal" }
+			}
 		},	
 		"textInput":
 		{

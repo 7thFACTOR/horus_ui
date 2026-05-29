@@ -196,6 +196,7 @@ enum class WidgetType
 	Radio,
 	Label,
 	Expandable,
+	TreeNode,
 	Popup,
 	Dropdown,
 	List,
@@ -235,6 +236,9 @@ enum class WidgetElementId
 	ExpandableBody,
 	ExpandableCollapsedArrow,
 	ExpandableExpandedArrow,
+	TreeNodeBody,
+	TreeNodeCollapsedArrow,
+	TreeNodeExpandedArrow,
 	TextInputBody,
 	TextInputCaret,
 	TextInputSelection,
@@ -2523,6 +2527,11 @@ HUI_API bool labelCustomFontMultiline(const char* label, HFont font, HAlignType 
 HUI_API bool expandable(const char* label, bool* expandedVar = nullptr);
 HUI_API bool expandableBegin(const char* label, bool* expandedVar = nullptr);
 HUI_API void expandableEnd();
+
+/// Draw a tree node widget
+HUI_API bool treeNode(const char* label, bool* expandedVar = nullptr, SelectableFlags stateFlags = SelectableFlags::Normal);
+HUI_API bool treeNodeBegin(const char* label, bool* expandedVar = nullptr, SelectableFlags stateFlags = SelectableFlags::Normal);
+HUI_API void treeNodeEnd();
 
 /// Draw a dropdown widget
 /// \param selectedIndex the current selected item index

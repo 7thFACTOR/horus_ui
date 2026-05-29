@@ -142,6 +142,7 @@ static WidgetType getWidgetTypeFromName(std::string name)
 	if (name == "radio") return WidgetType::Radio;
 	if (name == "label") return WidgetType::Label;
 	if (name == "expandable") return WidgetType::Expandable;
+	if (name == "treeNode") return WidgetType::TreeNode;
 	if (name == "popup") return WidgetType::Popup;
 	if (name == "dropdown") return WidgetType::Dropdown;
 	if (name == "list") return WidgetType::List;
@@ -179,6 +180,9 @@ static WidgetElementId getWidgetElementFromName(std::string name)
 	if (name == "expandableBody") return WidgetElementId::ExpandableBody;
 	if (name == "expandableCollapsedArrow") return WidgetElementId::ExpandableCollapsedArrow;
 	if (name == "expandableExpandedArrow") return WidgetElementId::ExpandableExpandedArrow;
+	if (name == "treeNodeBody") return WidgetElementId::TreeNodeBody;
+	if (name == "treeNodeCollapsedArrow") return WidgetElementId::TreeNodeCollapsedArrow;
+	if (name == "treeNodeExpandedArrow") return WidgetElementId::TreeNodeExpandedArrow;
 	if (name == "textInputBody") return WidgetElementId::TextInputBody;
 	if (name == "textInputCaret") return WidgetElementId::TextInputCaret;
 	if (name == "textInputSelection") return WidgetElementId::TextInputSelection;
