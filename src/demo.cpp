@@ -510,7 +510,7 @@ void showDemo()
 		label("Controlled tree (passes booleans to preserve expansion state):");
 
 		// Root node with controlled expansion
-		if (treeNode("Root", &demo.treeRootExpanded))
+		if (treeNodeBegin("Root", &demo.treeRootExpanded))
 		{
 			// Folder A
 			if (treeNodeBegin("Folder A", &demo.treeFolderAExpanded))

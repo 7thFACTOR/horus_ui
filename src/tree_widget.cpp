@@ -40,10 +40,36 @@ bool treeNode(const char* label, bool* expandedVar, SelectableFlags stateFlags)
 	f32 arrowWidth = arrowElemState->image ? arrowElemState->image->width : 22.0f;
 	f32 arrowHeight = arrowElemState->image ? arrowElemState->image->height : 22.0f;
 
-	addWidget(arrowHeight * ctx->scale);
+	auto& bodyElem = ctx->theme->getElement(WidgetElementId::SelectableBody);
+	Font* fnt = bodyElem.normalState().font;
+	f32 labelHeight = fmaxf(bodyElem.normalState().height, fnt->getMetrics().height);
+
+	ctx->id = genId(nodeId);
+	ctx->widget.nextWidth = arrowWidth;
+	ctx->widget.hasNextWidth = true;
+	addWidget(labelHeight * ctx->scale);
 	buttonBehavior();
 
-	if (ctx->widget.clicked)
+	bool arrowClicked = ctx->widget.clicked;
+
+	if (arrowElemState->image)
+	{
+		ctx->renderer.cmdSetColor(tintApply(arrowElemState->color, TintColorType::Body));
+		ctx->renderer.cmdDrawImage(
+			arrowElemState->image,
+			{
+				ctx->widget.rect.x,
+				ctx->widget.rect.y + (ctx->widget.rect.height - arrowHeight * ctx->scale) / 2.0f,
+				arrowWidth * ctx->scale,
+				arrowHeight * ctx->scale
+			});
+	}
+
+	sameLine();
+	bool labelClicked = selectable(label, stateFlags);
+	bool labelDoubleClicked = labelClicked && (ctx->event.mouse.clickCount == 2);
+
+	if (arrowClicked || labelDoubleClicked)
 	{
 		if (expandedVar)
 		{
@@ -60,21 +86,15 @@ bool treeNode(const char* label, bool* expandedVar, SelectableFlags stateFlags)
 		changed = true;
 	}
 
-	if (arrowElemState->image)
+	// Flush sameLine row before returning to ensure layout/indentation for children works correctly
+	if (!ctx->sameLine.enabled && ctx->sameLine.wasEnabled)
 	{
-		ctx->renderer.cmdSetColor(tintApply(arrowElemState->color, TintColorType::Body));
-		ctx->renderer.cmdDrawImage(
-			arrowElemState->image,
-			{
-				ctx->widget.rect.x,
-				ctx->widget.rect.y + (ctx->widget.rect.height - arrowHeight * ctx->scale) / 2.0f,
-				arrowWidth * ctx->scale,
-				arrowHeight * ctx->scale
-			});
+		ctx->position.x = ctx->sameLine.currentPosition.x;
+		ctx->position.y += ctx->sameLine.maxHeight + ctx->spacing * ctx->scale;
+		ctx->sameLine.wasEnabled = false;
+		ctx->sameLine.maxHeight = 0;
+		ctx->sameLine.lastLineWidth = 0;
 	}
-
-	sameLine();
-	selectable(label, stateFlags);
 
 	return expanded;
 }
@@ -87,9 +107,8 @@ bool treeNodeBegin(const char* label, bool* expandedVar, SelectableFlags stateFl
 	}
 
 	auto& arrowState = ctx->theme->getElement(WidgetElementId::TreeNodeCollapsedArrow).normalState();
-	const auto& padding = widgetGetPadding();
 	f32 arrowWidth = arrowState.image ? arrowState.image->width : 22.0f;
-	f32 indent = (padding.x + arrowWidth) * ctx->scale;
+	f32 indent = (arrowWidth + 20.0f) * ctx->scale;
 
 	layoutPush();
 	ctx->layout.savedPosition.x += indent;
