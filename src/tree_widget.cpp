@@ -106,20 +106,65 @@ bool treeNodeBegin(const char* label, bool* expandedVar, SelectableFlags stateFl
 		return false;
 	}
 
+	// Ensure any pending sameLine advancement is flushed so the label X is computed correctly.
+	// This avoids using a stale widget.rect.x that may still be on a same-line row,
+	// which can cause the next sibling (or subsequent nodes) to be indented under the wrong parent.
+	if (!ctx->sameLine.enabled && ctx->sameLine.wasEnabled)
+	{
+		ctx->position.x = ctx->sameLine.currentPosition.x;
+		ctx->position.y += ctx->sameLine.maxHeight + ctx->spacing * ctx->scale;
+		ctx->sameLine.wasEnabled = false;
+		ctx->sameLine.maxHeight = 0;
+		ctx->sameLine.lastLineWidth = 0;
+	}
+
 	auto& arrowState = ctx->theme->getElement(WidgetElementId::TreeNodeCollapsedArrow).normalState();
 	f32 arrowWidth = arrowState.image ? arrowState.image->width : 22.0f;
-	f32 indent = (arrowWidth + 20.0f) * ctx->scale;
+	f32 indent = themeGetWidgetElementParameterFloat(ctx->theme, WidgetElementId::TreeNodeBody, "default", "indent", 20.0f) * ctx->scale;
 
+	f32 labelX = ctx->widget.rect.x;
+	if (labelX == 0.0f)
+	{
+		labelX = ctx->position.x;
+	}
+
+	// Push layout, then:
+	// 1) update the layout on the stack (the one that will be restored on pop)
+	//    so siblings will align to labelX (parent label X).
+	// 2) set the active layout's savedPosition.x to labelX + indent for children.
 	layoutPush();
-	ctx->layout.savedPosition.x += indent;
-	ctx->layout.width -= indent;
+
+	// Update the parent layout stored on the stack so that when we pop back,
+	// ctx->layout.savedPosition.x == labelX (siblings align to label X).
+	if (!ctx->layoutStack.empty())
+	{
+		auto& parentLayout = ctx->layoutStack.back();
+		f32 oldSavedXStack = parentLayout.savedPosition.x;
+		f32 deltaStack = labelX - oldSavedXStack;
+		parentLayout.savedPosition.x = labelX;
+		parentLayout.width -= deltaStack;
+		if (parentLayout.width < 0.0f)
+		{
+			parentLayout.width = 0.0f;
+		}
+	}
+
+	// Now adjust the current layout (children layout) so children start at labelX + indent.
+	f32 oldSavedX = ctx->layout.savedPosition.x;
+	f32 newSavedX = labelX + indent;
+	f32 delta = newSavedX - oldSavedX;
+
+	ctx->layout.savedPosition.x = newSavedX;
+	ctx->layout.width -= delta;
 
 	if (ctx->layout.width < 0.0f)
 	{
 		ctx->layout.width = 0.0f;
 	}
 	
-	ctx->position.x += indent;
+	// Keep the drawing cursor at the parent's label X so subsequent parent nodes (siblings)
+	// start at the parent's label X.
+	ctx->position.x = labelX;
 
 	return true;
 }

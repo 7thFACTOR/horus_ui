@@ -205,6 +205,7 @@
 		{
 			"treeNodeBody":
 			{
+				"indent": "10",
 				"normal": { "image": "", "border": 0, "color": "0 0 0 0", "textColor": "white", "font": "normal" },
 				"hovered": { "image": "", "border": 0, "color": "0 0 0 0", "textColor": "orange", "font": "normal" },
 				"pressed": { "image": "", "border": 0, "color": "0 0 0 0", "textColor": "blue", "font": "normal" },

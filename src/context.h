@@ -129,6 +129,9 @@ struct Context
 	Point position = { 0, 0 };
 	std::vector<Point> positionStack;
 
+	// Tree node
+	u32 treeNodeDepthLevel = 0;
+
 	// Table
 	std::unordered_map<WidgetId, TablePersistentState> tablePersistentStates;
 	std::vector<TableState> tableStack;
