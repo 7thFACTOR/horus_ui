@@ -6,7 +6,7 @@
 
 namespace hui
 {
-bool treeNode(const char* label, bool* expandedVar, SelectableFlags stateFlags)
+bool treeNode(const char* label, bool* expandedVar, SelectableFlags stateFlags, TreeNodeFlags treeFlags)
 {
 	auto& collapsedArrow = ctx->theme->getElement(WidgetElementId::TreeNodeCollapsedArrow);
 	auto& expandedArrow = ctx->theme->getElement(WidgetElementId::TreeNodeExpandedArrow);
@@ -68,8 +68,11 @@ bool treeNode(const char* label, bool* expandedVar, SelectableFlags stateFlags)
 	sameLine();
 	bool labelClicked = selectable(label, stateFlags);
 	bool labelDoubleClicked = labelClicked && (ctx->event.mouse.clickCount == 2);
+	bool labelToggleClicked = !!(treeFlags & TreeNodeFlags::ToggleOnSelect)
+		? labelClicked && ctx->event.mouse.clickCount == 1
+		: labelDoubleClicked;
 
-	if (arrowClicked || labelDoubleClicked)
+	if (arrowClicked || labelToggleClicked)
 	{
 		if (expandedVar)
 		{
@@ -99,9 +102,9 @@ bool treeNode(const char* label, bool* expandedVar, SelectableFlags stateFlags)
 	return expanded;
 }
 
-bool treeNodeBegin(const char* label, bool* expandedVar, SelectableFlags stateFlags)
+bool treeNodeBegin(const char* label, bool* expandedVar, SelectableFlags stateFlags, TreeNodeFlags treeFlags)
 {
-	if (!treeNode(label, expandedVar, stateFlags))
+	if (!treeNode(label, expandedVar, stateFlags, treeFlags))
 	{
 		return false;
 	}
@@ -125,23 +128,27 @@ bool treeNodeBegin(const char* label, bool* expandedVar, SelectableFlags stateFl
 	f32 labelX = ctx->widget.rect.x;
 	if (labelX == 0.0f)
 	{
-		labelX = ctx->position.x;
+		labelX = ctx->position.x + arrowWidth * ctx->scale + ctx->sameLine.spacing * ctx->scale;
 	}
+
+	// The selectable label was placed by treeNode() on the same line after the arrow.
+	// Compute the arrow's X position for proper sibling alignment.
+	f32 arrowX = labelX - arrowWidth * ctx->scale - ctx->sameLine.spacing * ctx->scale;
 
 	// Push layout, then:
 	// 1) update the layout on the stack (the one that will be restored on pop)
-	//    so siblings will align to labelX (parent label X).
+	//    so siblings will align to arrowX (parent arrow X).
 	// 2) set the active layout's savedPosition.x to labelX + indent for children.
 	layoutPush();
 
 	// Update the parent layout stored on the stack so that when we pop back,
-	// ctx->layout.savedPosition.x == labelX (siblings align to label X).
+	// ctx->layout.savedPosition.x == arrowX (siblings align to arrow X).
 	if (!ctx->layoutStack.empty())
 	{
 		auto& parentLayout = ctx->layoutStack.back();
 		f32 oldSavedXStack = parentLayout.savedPosition.x;
-		f32 deltaStack = labelX - oldSavedXStack;
-		parentLayout.savedPosition.x = labelX;
+		f32 deltaStack = arrowX - oldSavedXStack;
+		parentLayout.savedPosition.x = arrowX;
 		parentLayout.width -= deltaStack;
 		if (parentLayout.width < 0.0f)
 		{
@@ -162,8 +169,8 @@ bool treeNodeBegin(const char* label, bool* expandedVar, SelectableFlags stateFl
 		ctx->layout.width = 0.0f;
 	}
 	
-	// Keep the drawing cursor at the parent's label X so subsequent parent nodes (siblings)
-	// start at the parent's label X.
+	// Keep the drawing cursor at the parent's label X so children start
+	// at the parent's label position.
 	ctx->position.x = labelX;
 
 	return true;

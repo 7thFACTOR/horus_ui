@@ -231,7 +231,8 @@ static bool comboSliderInternal(bool isInt, f32* value, f32 minVal, f32 maxVal, 
 			if (useRange)
 			{
 				ctx->comboSlider.currentValue += deltaValue * stepsPerPixel;
-				ctx->widget.changeEnded = clampValue(ctx->comboSlider.currentValue, minVal, maxVal);
+				clampValue(ctx->comboSlider.currentValue, minVal, maxVal);
+				ctx->widget.changeEnded = true;
 				percentFilled = 1.0f - (maxVal - ctx->comboSlider.currentValue) / (maxVal - minVal);
 				*value = ctx->comboSlider.currentValue;
 			}

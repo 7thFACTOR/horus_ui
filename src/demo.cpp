@@ -556,6 +556,26 @@ void showDemo()
 			treeNodeEnd();
 		}
 
+		// Tree nodes with single-click toggle on the label
+		label("ToggleOnSelect flag (single-click label toggles):");
+		if (treeNodeBegin("Quick Access", nullptr, SelectableFlags::Normal, TreeNodeFlags::ToggleOnSelect))
+		{
+			if (treeNodeBegin("Documents", nullptr, SelectableFlags::Normal, TreeNodeFlags::ToggleOnSelect))
+			{
+				selectable("report.pdf");
+				selectable("notes.txt");
+				treeNodeEnd();
+			}
+
+			if (treeNodeBegin("Pictures", nullptr, SelectableFlags::Normal, TreeNodeFlags::ToggleOnSelect))
+			{
+				selectable("photo.jpg");
+				treeNodeEnd();
+			}
+
+			treeNodeEnd();
+		}
+
 		widgetPopDisabled();
 		expandableEnd();
 	}

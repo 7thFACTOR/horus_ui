@@ -423,6 +423,14 @@ enum class SelectableFlags : u32
 };
 HUI_ENUM_AS_FLAGS(SelectableFlags);
 
+/// Various flags for the tree node widget
+enum class TreeNodeFlags : u32
+{
+	Normal = HUI_BIT(0),
+	ToggleOnSelect = HUI_BIT(1)
+};
+HUI_ENUM_AS_FLAGS(TreeNodeFlags);
+
 enum class TableFlags : u32
 {
 	None = 0,
@@ -2067,7 +2075,7 @@ HUI_API void dockNodeSplit(DockNodeId nodeId, DockNodeSplitType splitType, f32 f
 HUI_API void dockNodeSetWindow(DockNodeId parentNode, const char* windowId);
 HUI_API void dockNodeLayoutRecalculate();
 
-HUI_API bool windowBegin(const char* windowId, const char* title, Rect* initialRect, HImage img);
+HUI_API bool windowBegin(const char* windowId, const char* title, Rect* initialRect = nullptr, HImage img = 0);
 HUI_API void windowEnd();
 HUI_API void windowSetVisible(const char* windowId, bool visible);
 HUI_API void windowSetNextFlags(WindowFlags flags);
@@ -2529,8 +2537,8 @@ HUI_API bool expandableBegin(const char* label, bool* expandedVar = nullptr);
 HUI_API void expandableEnd();
 
 /// Draw a tree node widget
-HUI_API bool treeNode(const char* label, bool* expandedVar = nullptr, SelectableFlags stateFlags = SelectableFlags::Normal);
-HUI_API bool treeNodeBegin(const char* label, bool* expandedVar = nullptr, SelectableFlags stateFlags = SelectableFlags::Normal);
+HUI_API bool treeNode(const char* label, bool* expandedVar = nullptr, SelectableFlags stateFlags = SelectableFlags::Normal, TreeNodeFlags treeFlags = TreeNodeFlags::Normal);
+HUI_API bool treeNodeBegin(const char* label, bool* expandedVar = nullptr, SelectableFlags stateFlags = SelectableFlags::Normal, TreeNodeFlags treeFlags = TreeNodeFlags::Normal);
 HUI_API void treeNodeEnd();
 
 /// Draw a dropdown widget
