@@ -132,6 +132,8 @@ struct DemoState
 
 	// Color picker
 	Color pickerColor = Color(1.0f, 0.0f, 0.0f, 1.0f);
+	Color customPickerColors[16] = {};
+	u32 customPickerColorCount = 0;
 
 	// Vec editors
 	f32 vec2x = 1.0f, vec2y = 2.0f;
@@ -752,6 +754,18 @@ void showDemo()
 		space();
 		label("Color picker popup (OK/Cancel):");
 		colorPickerPopup("##cpPopupOkCancel", &demo.pickerColor, ColorPickerFlags::PopupApplyButtons);
+
+		space();
+		label("Color picker with palette + custom swatches:");
+		colorPicker("##cpPalette", &demo.pickerColor,
+			ColorPickerFlags::ShowPalette, nullptr,
+			demo.customPickerColors, &demo.customPickerColorCount, 16);
+
+		space();
+		label("Color picker popup with palette:");
+		colorPickerPopup("##cpPopupPalette", &demo.pickerColor,
+			ColorPickerFlags::ShowPalette, nullptr,
+			demo.customPickerColors, &demo.customPickerColorCount, 16);
 
 		char buf[128];
 		snprintf(buf, sizeof(buf), "R: %.2f G: %.2f B: %.2f A: %.2f",

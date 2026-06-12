@@ -744,7 +744,8 @@ enum class ColorPickerFlags : u32
 	NoAlpha = HUI_BIT(0),
 	Hdr = HUI_BIT(1),
 	Float = HUI_BIT(2),
-	PopupApplyButtons = HUI_BIT(3) /// show OK/Cancel buttons in color picker popup; changes only apply on OK
+	PopupApplyButtons = HUI_BIT(3), /// show OK/Cancel buttons in color picker popup; changes only apply on OK
+	ShowPalette = HUI_BIT(4) /// show default palette and optional custom color swatches
 };
 HUI_ENUM_AS_FLAGS(ColorPickerFlags);
 
@@ -2756,10 +2757,16 @@ HUI_API void renderDrawSolidTriangle(const Point& p1, const Point& p2, const Poi
 //////////////////////////////////////////////////////////////////////////
 
 /// Draw a color picker popup widget
-HUI_API bool colorPicker(const char* id, Color* inOutColor, ColorPickerFlags flags = (ColorPickerFlags)0, const Color* oldColor = nullptr);
+/// \param customColors optional array of custom swatch colors (requires ShowPalette flag)
+/// \param customColorCount pointer to number of custom colors (in/out)
+/// \param maxCustomColors max capacity of the customColors array
+HUI_API bool colorPicker(const char* id, Color* inOutColor, ColorPickerFlags flags = (ColorPickerFlags)0, const Color* oldColor = nullptr, Color* customColors = nullptr, u32* customColorCount = nullptr, u32 maxCustomColors = 0);
 
 /// Draw a color picker popup (a color swatch that opens a full color picker in a popup on click)
-HUI_API bool colorPickerPopup(const char* id, Color* inOutColor, ColorPickerFlags flags = (ColorPickerFlags)0, const Color* oldColor = nullptr);
+/// \param customColors optional array of custom swatch colors (requires ShowPalette flag)
+/// \param customColorCount pointer to number of custom colors (in/out)
+/// \param maxCustomColors max capacity of the customColors array
+HUI_API bool colorPickerPopup(const char* id, Color* inOutColor, ColorPickerFlags flags = (ColorPickerFlags)0, const Color* oldColor = nullptr, Color* customColors = nullptr, u32* customColorCount = nullptr, u32 maxCustomColors = 0);
 
 /// Draw a 3D double vector editor widget
 HUI_API bool vec3Editor(const char* id, f64& x, f64& y, f64& z, f64 scrollStep = 0.03f);

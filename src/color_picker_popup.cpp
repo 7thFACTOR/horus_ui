@@ -119,7 +119,7 @@ static void drawColorPreviewSwatch(const Rect& rc, const Color& color, const cha
 	ctx->renderer.cmdDrawFilledRectangle(rcSampleWithAlpha);
 }
 
-bool colorPicker(const char* id, Color* inOutColor, ColorPickerFlags flags, const Color* oldColor)
+bool colorPicker(const char* id, Color* inOutColor, ColorPickerFlags flags, const Color* oldColor, Color* customColors, u32* customColorCount, u32 maxCustomColors)
 {
 	//TODO: move constants to settings or theme
 	const f32 indicatorSize = 20.0f * ctx->scale;
@@ -130,6 +130,7 @@ bool colorPicker(const char* id, Color* inOutColor, ColorPickerFlags flags, cons
 	i32 crtIntA = (u32)(crtColor.a * 255.0f);
 	Color hsv = colorRgbToHsv(crtColor);
 	f32 height = ctx->layout.width * 0.5f + indicatorSize;
+
 	ctx->id = genId(id);
 	
 	auto pickerId = ctx->id;
@@ -589,6 +590,156 @@ bool colorPicker(const char* id, Color* inOutColor, ColorPickerFlags flags, cons
 		ctx->colorPickerState.currentEditingId = pickerId;
 	}
 
+	if (has(flags, ColorPickerFlags::ShowPalette))
+	{
+		line();
+		space();
+
+		auto& btnBodyElem = ctx->theme->getElement(WidgetElementId::ButtonBody);
+		f32 paddingY = widgetGetPadding().y;
+		f32 btnH = btnBodyElem.normalState().height;
+		f32 swatchSize = btnH + paddingY * 2.0f;
+
+		static const Color defaultPalette[] = {
+			Color::black,
+			Color::darkGray,
+			Color::gray,
+			Color::lightGray,
+			Color::white,
+			Color::fromU8(128, 64, 0),
+			Color::red,
+			Color::darkRed,
+			Color::orange,
+			Color::yellow,
+			Color::fromU8(128, 255, 0),
+			Color::green,
+			Color::cyan,
+			Color::darkCyan,
+			Color::fromU8(0, 128, 255),
+			Color::blue,
+			Color::darkBlue,
+			Color::fromU8(128, 0, 255),
+			Color::magenta,
+			Color::fromU8(255, 0, 128),
+			Color::sky,
+		};
+		static const u32 defaultPaletteCount = sizeof(defaultPalette) / sizeof(defaultPalette[0]);
+
+		label("Palette");
+
+		auto selectColor = [&](const Color& color)
+		{
+			crtColor = color;
+			hsv = colorRgbToHsv(crtColor);
+
+			if (!has(flags, ColorPickerFlags::Float))
+			{
+				ctx->colorPickerState.intR = crtIntR = crtColor.r * 255;
+				ctx->colorPickerState.intG = crtIntG = crtColor.g * 255;
+				ctx->colorPickerState.intB = crtIntB = crtColor.b * 255;
+				ctx->colorPickerState.intA = crtIntA = crtColor.a * 255;
+			}
+
+			std::string hexStr = colorToHex(crtColor);
+			std::snprintf(ctx->colorPickerState.hexColor, ColorPickerState::maxHexColorSize, hexStr.c_str());
+			ctx->colorPickerState.currentHsv = hsv;
+			ctx->colorPickerState.currentRgb = crtColor;
+			ctx->colorPickerState.currentEditingId = pickerId;
+		};
+
+		for (u32 i = 0; i < defaultPaletteCount; i++)
+		{
+			if (i % 7 != 0)
+				sameLine();
+
+			char swatchId[48];
+			std::snprintf(swatchId, sizeof(swatchId), "##dpal_%u", i);
+			ctx->setLabelAndId(swatchId);
+			ctx->widget.customWidth = swatchSize;
+			ctx->widget.hasCustomWidth = true;
+			addWidget(btnH);
+			buttonBehavior();
+
+			ctx->renderer.cmdSetColor(defaultPalette[i]);
+			ctx->renderer.cmdDrawFilledRectangle(ctx->widget.rect);
+
+			if (ctx->widget.hovered)
+			{
+				ctx->renderer.cmdSetLineStyle(LineStyle(Color::black, 3));
+				ctx->renderer.cmdDrawRectangle(ctx->widget.rect);
+				ctx->renderer.cmdSetLineStyle(LineStyle(Color::white, 1));
+				ctx->renderer.cmdDrawRectangle(ctx->widget.rect);
+			}
+
+			if (ctx->widget.clicked)
+			{
+				selectColor(defaultPalette[i]);
+			}
+		}
+
+		if (customColors && customColorCount)
+		{
+			space();
+			label("Custom");
+
+			u32 i = 0;
+			while (i < *customColorCount)
+			{
+				if (i % 7 != 0)
+					sameLine();
+
+				char swatchId[48];
+				std::snprintf(swatchId, sizeof(swatchId), "##csw_%u", i);
+				ctx->setLabelAndId(swatchId);
+				ctx->widget.customWidth = swatchSize;
+				ctx->widget.hasCustomWidth = true;
+				addWidget(btnH);
+				buttonBehavior();
+
+				ctx->renderer.cmdSetColor(customColors[i]);
+				ctx->renderer.cmdDrawFilledRectangle(ctx->widget.rect);
+
+				if (ctx->widget.hovered)
+				{
+					ctx->renderer.cmdSetLineStyle(LineStyle(Color::black, 3));
+					ctx->renderer.cmdDrawRectangle(ctx->widget.rect);
+					ctx->renderer.cmdSetLineStyle(LineStyle(Color::white, 1));
+					ctx->renderer.cmdDrawRectangle(ctx->widget.rect);
+				}
+
+				if (ctx->widget.clicked)
+				{
+					selectColor(customColors[i]);
+				}
+
+				if (contextMenuBegin())
+				{
+					if (menuItem("Remove"))
+					{
+						for (u32 j = i; j < *customColorCount - 1; j++)
+							customColors[j] = customColors[j + 1];
+						(*customColorCount)--;
+						contextMenuEnd();
+						continue;
+					}
+					contextMenuEnd();
+				}
+
+				i++;
+			}
+
+			if (*customColorCount < maxCustomColors)
+			{
+				sameLine();
+				if (button(" + ##addCustom"))
+				{
+					customColors[*customColorCount] = crtColor;
+					(*customColorCount)++;
+				}
+			}
+		}
+	}
+
 	if (ctx->colorPickerState.currentEditingId == pickerId)
 	{
 		ctx->colorPickerState.currentHsv = hsv;
@@ -604,7 +755,7 @@ bool colorPicker(const char* id, Color* inOutColor, ColorPickerFlags flags, cons
 	return true;
 }
 
-bool colorPickerPopup(const char* id, Color* inOutColor, ColorPickerFlags flags, const Color* oldColor)
+bool colorPickerPopup(const char* id, Color* inOutColor, ColorPickerFlags flags, const Color* oldColor, Color* customColors, u32* customColorCount, u32 maxCustomColors)
 {
 	ctx->setLabelAndId(id);
 	auto pickerId = ctx->id;
@@ -667,24 +818,27 @@ bool colorPickerPopup(const char* id, Color* inOutColor, ColorPickerFlags flags,
 			{
 				Color originalColor = *inOutColor;
 				Color tempColor = originalColor;
-				colorPicker("##cpInner", &tempColor, flags, &originalColor);
+				colorPicker("##cpInner", &tempColor, flags, &originalColor, customColors, customColorCount, maxCustomColors);
 
 				space();
 				line();
 				space();
 
-				if (button("OK"))
+				if (button("  OK  "))
 				{
 					*inOutColor = tempColor;
 					popupClose();
 					popupOpen = false;
 				}
+				
 				sameLine();
+				
 				if (button("Cancel"))
 				{
 					popupClose();
 					popupOpen = false;
 				}
+				
 				space();
 			}
 		}
@@ -697,7 +851,7 @@ bool colorPickerPopup(const char* id, Color* inOutColor, ColorPickerFlags flags,
 			}
 			else
 			{
-				colorPicker("##cpInner", inOutColor, flags, oldColor);
+				colorPicker("##cpInner", inOutColor, flags, oldColor, customColors, customColorCount, maxCustomColors);
 			}
 		}
 
