@@ -1,4 +1,4 @@
-#include "context.h"
+﻿#include "context.h"
 #include "theme.h"
 #include "util.h"
 #include "font.h"
@@ -384,7 +384,7 @@ bool colorPicker(const char* id, Color* inOutColor, ColorPickerFlags flags, cons
 		{
 			hsv.r = clampValue01(hsv.r);
 		}
-		
+
 		if (!(flags & ColorPickerFlags::Hdr))
 		{
 			hsv.g = clampValue01(hsv.g);
@@ -556,7 +556,7 @@ bool colorPicker(const char* id, Color* inOutColor, ColorPickerFlags flags, cons
 			ctx->colorPickerState.intG = crtIntG;
 			ctx->colorPickerState.intB = crtIntB;
 			ctx->colorPickerState.intA = crtIntA;
-			
+
 			crtColor = Color::fromU8(
 				ctx->colorPickerState.intR,
 				ctx->colorPickerState.intG,
@@ -602,6 +602,111 @@ bool colorPicker(const char* id, Color* inOutColor, ColorPickerFlags flags, cons
 	*inOutColor = crtColor;
 
 	return true;
+}
+
+bool colorPickerPopup(const char* id, Color* inOutColor, ColorPickerFlags flags, const Color* oldColor)
+{
+	ctx->setLabelAndId(id);
+	auto pickerId = ctx->id;
+
+	auto& btnBodyElem = ctx->theme->getElement(WidgetElementId::ButtonBody);
+	f32 swatchHeight = btnBodyElem.normalState().height;
+
+	ctx->widget.customWidth = swatchHeight * 3.0f;
+	ctx->widget.hasCustomWidth = true;
+	addWidget(swatchHeight);
+	buttonBehavior();
+
+	if (ctx->widget.visible)
+	{
+		auto bodyRect = ctx->widget.rect;
+		ctx->renderer.cmdSetColor(Color::white);
+		ctx->renderer.cmdDrawImageBordered(
+			btnBodyElem.normalState().image,
+			btnBodyElem.normalState().border,
+			bodyRect, ctx->scale);
+
+		Rect colorRect = bodyRect.contract(btnBodyElem.normalState().border + 2.0f * ctx->scale);
+		ctx->renderer.cmdSetColor(*inOutColor);
+		ctx->renderer.cmdDrawFilledRectangle(colorRect);
+	}
+
+	auto& wbs = ctx->widgetBools[pickerId];
+	wbs.lastUsedFrame = ctx->frameCount;
+	bool& popupOpen = wbs.value;
+
+	if (ctx->widget.clicked && !popupOpen)
+	{
+		popupOpen = true;
+		ctx->widgetBools[pickerId + 1].value = true;
+	}
+
+	if (popupOpen)
+	{
+		f32 pickerWidth = 360.0f * ctx->scale;
+		popupBegin("##cpPopup", pickerWidth, PopupFlags::BelowLastWidget);
+
+		bool hasApplyButtons = has(flags, ColorPickerFlags::PopupApplyButtons);
+		bool mustClose = popupMustClose()
+			|| ctx->event.type == InputEvent::Type::WindowResized;
+
+		if (hasApplyButtons)
+		{
+			if (ctx->widgetBools[pickerId + 1].value)
+			{
+				ctx->colorPickerState.currentEditingId = 0;
+				ctx->widgetBools[pickerId + 1].value = false;
+			}
+
+			if (mustClose)
+			{
+				popupClose();
+				popupOpen = false;
+			}
+			else
+			{
+				Color originalColor = *inOutColor;
+				Color tempColor = originalColor;
+				colorPicker("##cpInner", &tempColor, flags, &originalColor);
+
+				space();
+				line();
+				space();
+
+				if (button("OK"))
+				{
+					*inOutColor = tempColor;
+					popupClose();
+					popupOpen = false;
+				}
+				sameLine();
+				if (button("Cancel"))
+				{
+					popupClose();
+					popupOpen = false;
+				}
+				space();
+			}
+		}
+		else
+		{
+			if (mustClose)
+			{
+				popupClose();
+				popupOpen = false;
+			}
+			else
+			{
+				colorPicker("##cpInner", inOutColor, flags, oldColor);
+			}
+		}
+
+		popupEnd();
+	}
+
+	widgetSetFocusable();
+
+	return popupOpen;
 }
 
 }

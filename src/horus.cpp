@@ -405,6 +405,7 @@ void frameBegin()
 	ctx->widget.nextDisabled = false;
 	ctx->disabledNesting = 0;
 	ctx->layerIndex = 0;
+	ctx->maxLayerIndex = 0;
 	ctx->widget.nextFocusableId = 0;
 	ctx->menuDepth = 0;
 	ctx->popupIndex = 0;

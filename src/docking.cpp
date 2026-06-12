@@ -2443,6 +2443,7 @@ void handleDockingMouseMove(const InputEvent& event, DockNode* node)
 
 void handleDockNodeEvents(DockNode* node)
 {
+	HUI_ASSERT(node);
 	auto& rect = node->rect;
 	auto& event = hui::inputEventGet();
 
@@ -2600,7 +2601,8 @@ void updateDockingSystem()
 
 	for (auto& wnd : copyOfRootNativeWindowDockNodes)
 	{
-		handleDockNodeEvents(wnd.second);
+		if (wnd.second)
+			handleDockNodeEvents(wnd.second);
 	}
 
 	if (ctx->event.type == InputEvent::Type::WindowResized || ctx->event.type == InputEvent::Type::WindowMoved)
@@ -2608,7 +2610,7 @@ void updateDockingSystem()
 		for (auto& pair : ctx->docking.rootNativeWindowDockNodes)
 		{
 			// we only check dock nodes that are not scheduled for deletion (those have nativeWindow null)
-			if (pair.second->nativeWindow)
+			if (pair.second && pair.second->nativeWindow)
 				pair.second->computeRect();
 		}
 	}

@@ -745,6 +745,14 @@ void showDemo()
 		label("Color picker:");
 		colorPicker("##cpDefault", &demo.pickerColor);
 
+		space();
+		label("Color picker popup (instant):");
+		colorPickerPopup("##cpPopup", &demo.pickerColor);
+
+		space();
+		label("Color picker popup (OK/Cancel):");
+		colorPickerPopup("##cpPopupOkCancel", &demo.pickerColor, ColorPickerFlags::PopupApplyButtons);
+
 		char buf[128];
 		snprintf(buf, sizeof(buf), "R: %.2f G: %.2f B: %.2f A: %.2f",
 			demo.pickerColor.r, demo.pickerColor.g, demo.pickerColor.b, demo.pickerColor.a);

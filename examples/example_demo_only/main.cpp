@@ -48,6 +48,35 @@ static void uploadAtlasTexture(hui::Sdl3GfxApi gfxApi)
 	}
 }
 
+static const char* themeFilePath = "../themes/default.theme.json";
+static std::filesystem::file_time_type themeLastWriteTime;
+static bool themeNeedsReload = false;
+
+static void reloadTheme(hui::Sdl3GfxApi gfxApi)
+{
+	char err[2048] = { 0 };
+	auto newTheme = hui::loadThemeFromJson(themeFilePath, err, sizeof(err));
+
+	if (!newTheme)
+	{
+		printf("Theme reload error: %s\n", err);
+		return;
+	}
+
+	auto oldTheme = hui::themeGet();
+	hui::themeSet(newTheme);
+	hui::themeBuild(newTheme);
+	uploadAtlasTexture(gfxApi);
+
+	if (oldTheme)
+	{
+		hui::themeDestroy(oldTheme);
+		hui::themeSet(newTheme);
+	}
+
+	printf("Theme reloaded\n");
+}
+
 int main(int argc, char** args)
 {
 	hui::Sdl3InitParams sdlParams;
@@ -101,8 +130,6 @@ int main(int argc, char** args)
 	const u32 errSize = 2048;
 	char err[errSize] = { 0 };
 
-	static const char* themeFilePath = "../themes/default.theme.json";
-
 	auto theme = hui::loadThemeFromJson(themeFilePath, err, errSize);
 
 	if (!theme)
@@ -127,11 +154,29 @@ int main(int argc, char** args)
 	hui::themeSet(theme);
 	hui::themeBuild(theme);
 	uploadAtlasTexture(sdlParams.gfxApi);
+	try { themeLastWriteTime = std::filesystem::last_write_time(themeFilePath); } catch (...) {}
 
 	bool exitNow = false;
 
 	while (!exitNow)
 	{
+		try
+		{
+			auto currentTime = std::filesystem::last_write_time(themeFilePath);
+			if (currentTime != themeLastWriteTime)
+			{
+				themeLastWriteTime = currentTime;
+				themeNeedsReload = true;
+			}
+		}
+		catch (...) {}
+
+		if (themeNeedsReload)
+		{
+			themeNeedsReload = false;
+			reloadTheme(sdlParams.gfxApi);
+		}
+
 		HUI_SERVICES.setCurrentWindow(mainWnd);
 		HUI_SERVICES.clearBackbuffer({ 0.3f, 0.0f, 0.1f, 1 });
 
@@ -149,6 +194,13 @@ int main(int argc, char** args)
 				&& ev.window == mainWnd)
 			{
 				exitNow = true;
+			}
+
+			if (ev.type == hui::InputEvent::Type::Key
+				&& ev.key.down
+				&& ev.key.code == hui::KeyCode::F5)
+			{
+				themeNeedsReload = true;
 			}
 		}
 

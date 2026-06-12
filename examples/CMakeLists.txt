@@ -33,4 +33,4 @@ add_subdirectory(example_all_widgets)
 add_subdirectory(example_no_docking)
 add_subdirectory(example_demo_only)
 
-set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT example_all_widgets)
+set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT example_demo_only)
