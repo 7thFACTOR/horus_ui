@@ -134,6 +134,7 @@ bool colorPicker(const char* id, Color* inOutColor, ColorPickerFlags flags, cons
 	ctx->id = genId(id);
 	
 	auto pickerId = ctx->id;
+	idPush(id);
 	
 	addWidget(height);
 	buttonBehavior();
@@ -730,7 +731,8 @@ bool colorPicker(const char* id, Color* inOutColor, ColorPickerFlags flags, cons
 
 			if (*customColorCount < maxCustomColors)
 			{
-				sameLine();
+				if (*customColorCount % 7 != 0)
+					sameLine();
 				if (button(" + ##addCustom"))
 				{
 					customColors[*customColorCount] = crtColor;
@@ -751,6 +753,8 @@ bool colorPicker(const char* id, Color* inOutColor, ColorPickerFlags flags, cons
 	}
 
 	*inOutColor = crtColor;
+
+	idPop();
 
 	return true;
 }
@@ -820,26 +824,26 @@ bool colorPickerPopup(const char* id, Color* inOutColor, ColorPickerFlags flags,
 				Color tempColor = originalColor;
 				colorPicker("##cpInner", &tempColor, flags, &originalColor, customColors, customColorCount, maxCustomColors);
 
-				space();
+				space(10);
 				line();
-				space();
+				space(10);
 
-				if (button("  OK  "))
+				if (button("OK"))
 				{
 					*inOutColor = tempColor;
 					popupClose();
 					popupOpen = false;
 				}
-				
+
 				sameLine();
-				
+
 				if (button("Cancel"))
 				{
 					popupClose();
 					popupOpen = false;
 				}
-				
-				space();
+
+				space(10);
 			}
 		}
 		else
@@ -854,7 +858,7 @@ bool colorPickerPopup(const char* id, Color* inOutColor, ColorPickerFlags flags,
 				colorPicker("##cpInner", inOutColor, flags, oldColor, customColors, customColorCount, maxCustomColors);
 			}
 		}
-
+		space();
 		popupEnd();
 	}
 

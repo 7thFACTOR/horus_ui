@@ -157,6 +157,7 @@ void popupEnd()
 	{
 		ctx->position.y += ctx->sameLine.maxHeight;
 		ctx->sameLine.wasEnabled = false;
+		ctx->sameLine.maxHeight = 0;
 	}
 
 	//TODO: make a better popup move
