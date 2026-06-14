@@ -150,7 +150,7 @@ bool colorPicker(const char* id, Color* inOutColor, ColorPickerFlags flags, cons
 	}
 
 	WidgetId hexInputId = genId("colorPicker_hexColorEdit");
-	if (!ctx->textInput.id || ctx->textInput.id != hexInputId)
+	if (!ctx->textInput.id)
 	{
 		std::string hexColorStr;
 		hexColorStr = colorToHex(crtColor);
@@ -580,7 +580,7 @@ bool colorPicker(const char* id, Color* inOutColor, ColorPickerFlags flags, cons
 	if (hui::textInput("colorPicker_hexColorEdit", ctx->colorPickerState.hexColor, ColorPickerState::maxHexColorSize, TextInputFlags::HexOnly))
 	{
 		size_t hexLen = std::strlen(ctx->colorPickerState.hexColor);
-		if (hexLen == 6 || hexLen == 8)
+		if (hexLen >= 1 && hexLen <= 8)
 		{
 			crtColor = colorFromHex(ctx->colorPickerState.hexColor);
 			ctx->colorPickerState.currentHsv = hsv = colorRgbToHsv(crtColor);
@@ -790,12 +790,20 @@ bool colorPickerPopup(const char* id, Color* inOutColor, ColorPickerFlags flags,
 			bodyRect, ctx->scale);
 
 		Rect colorRect = bodyRect.contract(btnBodyElem.normalState().border + 2.0f * ctx->scale);
+		auto rcNoAlpha = colorRect;
+		auto rcWithAlpha = colorRect;
+		rcNoAlpha.width = colorRect.width / 2.0f;
+		rcWithAlpha.width = colorRect.width / 2.0f;
+		rcWithAlpha.x = rcNoAlpha.right();
+
 		ctx->renderer.cmdSetColor(Color::white);
 		ctx->renderer.cmdDrawImageTiled(
 			colorPickerCheckersState.image,
-			colorRect, Point(), ctx->scale);
+			colorRect, Point(), ctx->scale * 0.5f);
+		ctx->renderer.cmdSetColor(Color{ inOutColor->r, inOutColor->g, inOutColor->b, 1 });
+		ctx->renderer.cmdDrawFilledRectangle(rcNoAlpha);
 		ctx->renderer.cmdSetColor(*inOutColor);
-		ctx->renderer.cmdDrawFilledRectangle(colorRect);
+		ctx->renderer.cmdDrawFilledRectangle(rcWithAlpha);
 	}
 
 	auto& wbs = ctx->widgetBools[pickerId];

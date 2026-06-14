@@ -1909,15 +1909,31 @@ Color colorFromHex(const char* hexText)
 	if (hexText[0] == '#')
 		hexText++;
 
-	const size_t len = std::strlen(hexText);
+	size_t len = std::strlen(hexText);
 
-	if (len != 6 && len != 8)
+	if (len < 1 || len > 8)
 		return out;
+
+	char buf[9] = {};
+	memcpy(buf, hexText, len);
+	if (len <= 6)
+	{
+		memset(buf + len, '0', 6 - len);
+		buf[6] = 'F';
+		buf[7] = 'F';
+	}
+	else if (len == 7)
+	{
+		buf[7] = '0';
+	}
+
+	hexText = buf;
+	len = 8;
 
 	u8 r = hexByte(hexText + 0);
 	u8 g = hexByte(hexText + 2);
 	u8 b = hexByte(hexText + 4);
-	u8 a = (len == 8) ? hexByte(hexText + 6) : 255;
+	u8 a = hexByte(hexText + 6);
 
 	out.r = r / 255.0f;
 	out.g = g / 255.0f;
