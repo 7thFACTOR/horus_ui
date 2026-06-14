@@ -149,10 +149,13 @@ bool colorPicker(const char* id, Color* inOutColor, ColorPickerFlags flags, cons
 		crtIntA = ctx->colorPickerState.intA;
 	}
 
-	std::string hexColorStr;
-
-	hexColorStr = colorToHex(crtColor);
-	std::snprintf(ctx->colorPickerState.hexColor, ColorPickerState::maxHexColorSize, hexColorStr.c_str());
+	WidgetId hexInputId = genId("colorPicker_hexColorEdit");
+	if (!ctx->textInput.id || ctx->textInput.id != hexInputId)
+	{
+		std::string hexColorStr;
+		hexColorStr = colorToHex(crtColor);
+		std::snprintf(ctx->colorPickerState.hexColor, ColorPickerState::maxHexColorSize, hexColorStr.c_str());
+	}
 
 	auto rcSV = ctx->widget.rect;
 	auto clippedRc = ctx->widget.rect.clipInside(ctx->renderer.getClipRect());
@@ -174,7 +177,7 @@ bool colorPicker(const char* id, Color* inOutColor, ColorPickerFlags flags, cons
 	auto clippedRcHue = rcH.clipInside(ctx->renderer.getClipRect());
 	auto clippedRcAlpha = rcAlpha.clipInside(ctx->renderer.getClipRect());
 
-	if (ctx->event.type == InputEvent::Type::MouseDown && !ctx->widget.disabled && ctx->hoveringThisWindow)
+	if (ctx->isActiveLayer() && ctx->event.type == InputEvent::Type::MouseDown && !ctx->widget.disabled && ctx->hoveringThisWindow)
 	{
 		if (clippedRcSV.contains(ctx->mousePosition))
 		{
@@ -205,7 +208,7 @@ bool colorPicker(const char* id, Color* inOutColor, ColorPickerFlags flags, cons
 	bool svChanged = false;
 	bool alphaChanged = false;
 
-	if (ctx->widget.pressed)
+	if (ctx->isActiveLayer() && ctx->widget.pressed)
 	{
 		if (ctx->colorPickerState.draggingElementId == 0)
 		{
@@ -576,18 +579,22 @@ bool colorPicker(const char* id, Color* inOutColor, ColorPickerFlags flags, cons
 
 	if (hui::textInput("colorPicker_hexColorEdit", ctx->colorPickerState.hexColor, ColorPickerState::maxHexColorSize, TextInputFlags::HexOnly))
 	{
-		crtColor = colorFromHex(ctx->colorPickerState.hexColor);
-		ctx->colorPickerState.currentHsv = hsv = colorRgbToHsv(crtColor);
-
-		if (!has(flags, ColorPickerFlags::Float))
+		size_t hexLen = std::strlen(ctx->colorPickerState.hexColor);
+		if (hexLen == 6 || hexLen == 8)
 		{
-			ctx->colorPickerState.intR = crtIntR = crtColor.r * 255;
-			ctx->colorPickerState.intG = crtIntG = crtColor.g * 255;
-			ctx->colorPickerState.intB = crtIntB = crtColor.b * 255;
-			ctx->colorPickerState.intA = crtIntA = crtColor.a * 255;
-		}
+			crtColor = colorFromHex(ctx->colorPickerState.hexColor);
+			ctx->colorPickerState.currentHsv = hsv = colorRgbToHsv(crtColor);
 
-		ctx->colorPickerState.currentRgb = crtColor;
+			if (!has(flags, ColorPickerFlags::Float))
+			{
+				ctx->colorPickerState.intR = crtIntR = crtColor.r * 255;
+				ctx->colorPickerState.intG = crtIntG = crtColor.g * 255;
+				ctx->colorPickerState.intB = crtIntB = crtColor.b * 255;
+				ctx->colorPickerState.intA = crtIntA = crtColor.a * 255;
+			}
+
+			ctx->colorPickerState.currentRgb = crtColor;
+		}
 		ctx->colorPickerState.currentEditingId = pickerId;
 	}
 
@@ -765,6 +772,7 @@ bool colorPickerPopup(const char* id, Color* inOutColor, ColorPickerFlags flags,
 	auto pickerId = ctx->id;
 
 	auto& btnBodyElem = ctx->theme->getElement(WidgetElementId::ButtonBody);
+	auto& colorPickerCheckersState = ctx->theme->getElement(WidgetElementId::ColorPickerCheckers).normalState();
 	f32 swatchHeight = btnBodyElem.normalState().height;
 
 	ctx->widget.customWidth = swatchHeight * 3.0f;
@@ -782,6 +790,10 @@ bool colorPickerPopup(const char* id, Color* inOutColor, ColorPickerFlags flags,
 			bodyRect, ctx->scale);
 
 		Rect colorRect = bodyRect.contract(btnBodyElem.normalState().border + 2.0f * ctx->scale);
+		ctx->renderer.cmdSetColor(Color::white);
+		ctx->renderer.cmdDrawImageTiled(
+			colorPickerCheckersState.image,
+			colorRect, Point(), ctx->scale);
 		ctx->renderer.cmdSetColor(*inOutColor);
 		ctx->renderer.cmdDrawFilledRectangle(colorRect);
 	}
@@ -794,6 +806,7 @@ bool colorPickerPopup(const char* id, Color* inOutColor, ColorPickerFlags flags,
 	{
 		popupOpen = true;
 		ctx->widgetBools[pickerId + 1].value = true;
+		ctx->colorPickerState.oldColor = *inOutColor;
 	}
 
 	if (popupOpen)
@@ -855,7 +868,8 @@ bool colorPickerPopup(const char* id, Color* inOutColor, ColorPickerFlags flags,
 			}
 			else
 			{
-				colorPicker("##cpInner", inOutColor, flags, oldColor, customColors, customColorCount, maxCustomColors);
+				const Color* popupOldColor = oldColor ? oldColor : &ctx->colorPickerState.oldColor;
+				colorPicker("##cpInner", inOutColor, flags, popupOldColor, customColors, customColorCount, maxCustomColors);
 			}
 		}
 		space();

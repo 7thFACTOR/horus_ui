@@ -58,10 +58,10 @@
 						"width": 0,
 						"height": 55,
 						"normal": { "image": "default/button_normal", "border": 3, "color": "red", "textColor": "white", "font": "large" },
-						"disabled": { "image": "default/button_normal", "border": 3, "color": "darkRed", "textColor": "gray", "font": "large" },
-						"hovered": { "image": "default/button_normal", "border": 3, "color": "yellow", "textColor": "white", "font": "large-bold" },
+						"disabled": { "color": "darkRed", "textColor": "gray" },
+						"hovered": { "color": "yellow", "textColor": "white", "font": "large-bold" },
 						"pressed": { "image": "default/button_pressed", "border": 3, "color": "orange", "textColor": "white", "font": "large-italic" },
-						"focused": { "image": "default/button_normal", "border": 3, "color": "white", "textColor": "white", "font": "large-bold" }
+						"focused": { "color": "white", "font": "large-bold" }
 					}
 				}
 			}
