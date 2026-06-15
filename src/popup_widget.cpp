@@ -247,6 +247,10 @@ void popupClose()
 	if (!has(popup.flags, PopupFlags::SameLayer))
 		layerDecrementWindowMaxLayerIndex();
 
+	ctx->contextMenuActive = false;
+	ctx->contextMenuClicked = false;
+	ctx->contextMenuWidgetId = 0;
+
 	ctx->event.type = InputEvent::Type::None;
 	ctx->widget.focusedId = 0;
 	skipFrame();

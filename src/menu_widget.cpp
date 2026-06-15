@@ -260,6 +260,29 @@ void endMenuInternal(bool contextMenu)
 		ctx->menuDepth = 0;
 		widgetPopDisabled();
 	}
+	else if (contextMenu && ctx->menuDepth == 1)
+	{
+		if (ctx->menuItemChosen
+			|| popupPressedEscape()
+			|| ((popupClickedOutside()
+				&& !ctx->pressedOnMenuItem)
+				&& !ctx->clickedOnASubMenuItem))
+		{
+			ctx->contextMenuWidgetId = 0;
+			ctx->menuDepth = 0;
+			popupClose();
+			ctx->contextMenuActive = false;
+			ctx->contextMenuClicked = false;
+			ctx->pressedOnMenuItem = false;
+			ctx->clickedOnASubMenuItem = false;
+
+			popupEnd();
+			spacingPop();
+			ctx->renderer.popClipRect();
+			ctx->menuDepth = 0;
+			widgetPopDisabled();
+		}
+	}
 	else if (ctx->menuDepth > 1)
 	{
 		auto& menu = ctx->menuStack[ctx->menuDepth - 1];
