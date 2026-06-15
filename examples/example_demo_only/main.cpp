@@ -206,19 +206,26 @@ int main(int argc, char** args)
 
 		auto doFrame = [&](bool lastEventInQueue)
 		{
+			hui::nativeWindowSetCurrent(mainWnd);
+			hui::renderBegin();
 			hui::frameBegin();
 			hui::skipRenderingThisFrame(!lastEventInQueue);
 
-			if (hui::windowBegin("demo", "Horus Demo"))
-			{
-				hui::showDemo();
-				hui::windowEnd();
-			}
+			auto windowSize = HUI_SERVICES.getWindowSize(mainWnd);
+			hui::Rect mainRect = { 0, 0, windowSize.x, windowSize.y };
+			hui::paddingPush(hui::PaddingType::Layout, 0);
+			hui::layoutBegin(mainRect);
+			hui::boxBegin("mainBg", hui::Color::white, hui::WidgetElementId::WindowBody);
+			hui::showDemo();
+			hui::boxEnd();
+			hui::layoutEnd();
+			hui::paddingPop(hui::PaddingType::Layout);
 
 			hui::frameEnd();
+			hui::renderEnd();
 
 			if (lastEventInQueue)
-				hui::present();
+				hui::presentNativeWindow(mainWnd);
 		};
 
 		if (eventCount)

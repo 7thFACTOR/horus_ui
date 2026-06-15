@@ -26,7 +26,10 @@ void popupBegin(
 	if (!has(flags, PopupFlags::SameLayer))
 		layerIndexIncrement();
 
-	ctx->renderer.pushWindowDrawCmdLayer(DrawCmdLayerType::Foreground);
+	ctx->renderer.pushWindowDrawCmdLayer(
+		has(flags, PopupFlags::IsMenu)
+			? DrawCmdLayerType::Overlay
+			: DrawCmdLayerType::Foreground);
 	ctx->popupIndex++;
 
 	// not active, first show, do not render anything, next frame

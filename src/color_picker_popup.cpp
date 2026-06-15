@@ -690,6 +690,7 @@ bool colorPicker(const char* id, Color* inOutColor, ColorPickerFlags flags, cons
 			space();
 			label("Custom");
 
+			bool justRemoved = false;
 			u32 i = 0;
 			while (i < *customColorCount)
 			{
@@ -720,7 +721,7 @@ bool colorPicker(const char* id, Color* inOutColor, ColorPickerFlags flags, cons
 					selectColor(customColors[i]);
 				}
 
-				if (contextMenuBegin())
+				if (!justRemoved && contextMenuBegin())
 				{
 					if (menuItem("Remove"))
 					{
@@ -728,10 +729,13 @@ bool colorPicker(const char* id, Color* inOutColor, ColorPickerFlags flags, cons
 							customColors[j] = customColors[j + 1];
 						(*customColorCount)--;
 						contextMenuEnd();
+						ctx->event.type = InputEvent::Type::None;
+						justRemoved = true;
 						continue;
 					}
 					contextMenuEnd();
 				}
+				justRemoved = false;
 
 				i++;
 			}
