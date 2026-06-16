@@ -730,13 +730,15 @@ bool colorPicker(const char* id, Color* inOutColor, ColorPickerFlags flags, cons
 						(*customColorCount)--;
 						contextMenuEnd();
 						ctx->event.type = InputEvent::Type::None;
+						ctx->contextMenuActive = false;
+						ctx->contextMenuClicked = false;
+						ctx->contextMenuWidgetId = 0;
+						ctx->activeMenuBarItemWidgetId = 0;
 						justRemoved = true;
 						continue;
 					}
 					contextMenuEnd();
 				}
-				justRemoved = false;
-
 				i++;
 			}
 
