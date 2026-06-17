@@ -212,6 +212,7 @@ void windowReleaseCapture()
 
 Rect windowGetClientRect()
 {
+	if (!ctx->currentWindow) return {};
 	return ctx->currentWindow->clientRect;
 }	
 

@@ -1812,7 +1812,8 @@ void dragDropDisallow()
 
 bool dragDropDroppedOnWidget()
 {
-	if (ctx->dragDrop.begunDragging
+	if (ctx->currentWindow
+		&& ctx->dragDrop.begunDragging
 		&& ctx->hoveringThisWindow
 		&& ctx->settings.services.getFocusedWindow() != ctx->currentWindow->dockNode->nativeWindow)
 	{

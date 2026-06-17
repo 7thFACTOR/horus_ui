@@ -808,7 +808,8 @@ void tableEnd()
 			(state.headerRect.height + (state.innerHeight > 0 ? state.innerHeight : 200.0f)) : 
 			finalHeight;
 
-		if (state.tableRect.y + finalHeight > ctx->currentWindow->clientRect.bottom())
+		if (ctx->currentWindow
+			&& state.tableRect.y + finalHeight > ctx->currentWindow->clientRect.bottom())
 		{
 			// clip visible height to window bottom
 			visibleHeight = ctx->currentWindow->clientRect.bottom() - state.tableRect.y;
