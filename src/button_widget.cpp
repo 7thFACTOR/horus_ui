@@ -231,9 +231,8 @@ void buttonBehavior(bool menuItem)
 					ctx->widget.clicked = true;
 					ctx->widget.pressed = false;
 					ctx->widget.focused = true;
+					ctx->widget.captureId = 0;
 				}
-
-				ctx->widget.captureId = 0;
 			}
 		}
 	}

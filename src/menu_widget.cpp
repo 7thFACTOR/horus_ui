@@ -106,7 +106,7 @@ bool beginMenuInternal(const char* label, SelectableFlags stateFlags, bool conte
 			}
 		}
 
-		if (ctx->widget.pressed
+		if ((ctx->widget.pressed && !contextMenu)
 			|| (contextMenu && ctx->contextMenuClicked))
 		{
 			ctx->activeMenuBarItemWidgetId = ctx->id;
@@ -332,7 +332,8 @@ bool contextMenuBegin(ContextMenuFlags flags)
 	WidgetId id = ctx->id;
 	
 
-	if (ctx->event.type == hui::InputEvent::Type::MouseDown
+	if (ctx->isActiveLayer()
+		&& ctx->event.type == hui::InputEvent::Type::MouseUp
 		&& (ctx->event.mouse.button == MouseButton::Right)
 		&& ctx->widget.rect.contains(ctx->mousePosition)
 		&& !ctx->activeMenuBarItemWidgetId
