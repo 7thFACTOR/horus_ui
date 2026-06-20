@@ -466,6 +466,11 @@ void showDemo()
 		space();
 		label("Custom font multiline label:");
 		labelCustomFontMultiline("This is a multiline label with a custom font. It should wrap properly if the text is long enough.", titleFont, HAlignType::Left);
+
+		space();
+		label("Italic label:");
+		HFont italicFont = themeFontGet("normal-italic");
+		labelCustomFont("This label uses italic font", italicFont);
 		widgetPopDisabled();
 		expandableEnd();
 	}

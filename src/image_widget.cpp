@@ -56,7 +56,7 @@ bool image(HImage img, f32 height, HAlignType horizontalAlign, VAlignType vertic
 		height = newHeight;
 	}
 
-	ctx->widget.customWidth = newWidth;
+	ctx->widget.customWidth = newWidth / ctx->scale;
 	ctx->widget.hasCustomWidth = true;
 
 	ctx->id = genId(img);
@@ -147,7 +147,7 @@ bool texture(HTexture texture, f32 textureWidth, f32 textureHeight, f32 height, 
 		height = newHeight;
 	}
 
-	ctx->widget.customWidth = newWidth;
+	ctx->widget.customWidth = newWidth / ctx->scale;
 	ctx->widget.hasCustomWidth = true;
 
 	ctx->id = genId(texture);

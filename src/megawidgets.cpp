@@ -6,48 +6,52 @@ namespace hui
 {
 bool vecEditorInternal(f64& x, f64& y, f64& z, f64 scrollStep, bool useZ)
 {
-	sprintf(ctx->vecEditor.strX, "%.8g", x);
-	sprintf(ctx->vecEditor.strY, "%.8g", y);
-	sprintf(ctx->vecEditor.strZ, "%.8g", z);
-
-	//hui::beginColumns(useZ ? 6 : 4, ctx->vecEditor.colWidthsPRS);
-
 	bool modified = false;
 	bool changedEndedX = false;
 	bool changedEndedY = false;
 	bool changedEndedZ = false;
 
-	auto editValue = [](
-		const char* axisName,
-		const char* axisImageName,
-		char* strAxis,
-		f64& value,
-		const Color& normalColor,
-		const Color& dragColor,
-		f64 scrollStep,
-		bool& modified,
-		bool& changeEnded)
-	{
-		auto elem = ctx->theme->userElements[axisImageName];
+	f32 spacing = ctx->sameLine.spacing * ctx->scale;
+	u32 axisCount = useZ ? 3 : 2;
 
-		// current widget + 2 since widget is computed in endBox and we have 1 image widget
-		//TODO: not working, since widget id is not incremental
-		hui::boxBeginUserElement("axisBody", (ctx->vecEditor.draggingValue && (ctx->vecEditor.draggedId == (ctx->id + 2))) ? dragColor : normalColor, "axisBoxBody");
-		WidgetId imageWidgetId = hui::widgetGetId();
-		hui::image(elem->normalState().image, 14);
+	auto imgElem = ctx->theme->userElements["axisBoxXImage"];
+	f32 imgWidthPx = ((Image*)imgElem->normalState().image)->width * ctx->scale;
+
+	f32 totalWidth = (f32)axisCount * (imgWidthPx + spacing) + spacing;
+	f32 inputWidthPx = (ctx->layout.width - totalWidth) / (f32)axisCount;
+	f32 inputWidthUnscaled = inputWidthPx / ctx->scale;
+
+	for (u32 i = 0; i < axisCount; i++)
+	{
+		if (i > 0)
+			hui::sameLine();
+
+		const char* imgName = (i == 0) ? "axisBoxXImage" : (i == 1) ? "axisBoxYImage" : "axisBoxZImage";
+		const char* inputId = (i == 0) ? "axisEditX" : (i == 1) ? "axisEditY" : "axisEditZ";
+		char* strAxis = (i == 0) ? ctx->vecEditor.strX : (i == 1) ? ctx->vecEditor.strY : ctx->vecEditor.strZ;
+		f64* val = (i == 0) ? &x : (i == 1) ? &y : &z;
+		bool* changeEnded = (i == 0) ? &changedEndedX : (i == 1) ? &changedEndedY : &changedEndedZ;
+
+		sprintf(strAxis, "%.8g", *val);
+		auto elem = ctx->theme->userElements[imgName];
+		hui::image(elem->normalState().image, 22);
+		WidgetId imageWidgetId = ctx->id;
 		bool imageHovered = hui::widgetIsHovered();
 		bool imagePressed = hui::widgetIsPressed();
-		hui::boxEnd();
+		hui::sameLine();
+		hui::widgetSetNextWidth(inputWidthUnscaled);
+		modified = hui::textInput(inputId, strAxis, VectorEditorState::maxStrSize) || modified;
 
-		if (hui::widgetIsHovered() || imageHovered || ctx->vecEditor.draggingValue)
+		if (imageHovered || ctx->vecEditor.draggingValue)
 		{
 			hui::mouseCursorSetType(hui::MouseCursorType::SizeWE);
 
-			if (hui::widgetIsPressed() || imagePressed)
+			if (imagePressed && !ctx->vecEditor.draggingValue)
 			{
 				ctx->vecEditor.draggingValue = true;
-				ctx->vecEditor.draggedId = ctx->id;
+				ctx->vecEditor.draggedId = imageWidgetId;
 				ctx->vecEditor.lastMousePos = hui::inputEventGet().mouse.point;
+				ctx->widget.pressed = false;
 				hui::windowSetCapture();
 			}
 		}
@@ -57,45 +61,31 @@ bool vecEditorInternal(f64& x, f64& y, f64& z, f64 scrollStep, bool useZ)
 			ctx->vecEditor.draggingValue = false;
 			ctx->vecEditor.draggedId = 0;
 			hui::windowReleaseCapture();
-			changeEnded = true;
+			*changeEnded = true;
 		}
 
 		if (ctx->vecEditor.draggingValue
-			&& ctx->vecEditor.draggedId == ctx->id)
+			&& ctx->vecEditor.draggedId == imageWidgetId)
 		{
-			value = atof(strAxis);
+			*val = atof(strAxis);
 			f32 dx = hui::inputEventGet().mouse.point.x - ctx->vecEditor.lastMousePos.x;
 			f32 unitPerPixel = (f32)scrollStep;
 
-			value += (f64)dx * unitPerPixel;
+			*val += (f64)dx * unitPerPixel;
 			ctx->vecEditor.lastMousePos = hui::inputEventGet().mouse.point;
-			hui::stringFromF32((f32)value, strAxis, VectorEditorState::maxStrSize, 4);
+			sprintf(strAxis, "%.8g", *val);
 			modified = true;
 		}
 
-		//hui::nextColumn();
-		modified = hui::textInput("axisEdit", strAxis, VectorEditorState::maxStrSize) || modified;
-
 		if (widgetIsChangeEnded())
-			changeEnded = true;
+			*changeEnded = true;
 
 		if (modified)
 		{
-			value = atof(strAxis);
+			*val = atof(strAxis);
 		}
-	};
-
-	editValue("X", "axisBoxXImage", ctx->vecEditor.strX, x, Color::veryDarkRed, Color::red, scrollStep, modified, changedEndedX);
-	//hui::nextColumn();
-	editValue("Y", "axisBoxYImage", ctx->vecEditor.strY, y, Color::veryDarkGreen, Color::green, scrollStep, modified, changedEndedY);
-
-	if (useZ)
-	{
-		//hui::nextColumn();
-		editValue("Z", "axisBoxZImage", ctx->vecEditor.strZ, z, Color::veryDarkCyan, Color::cyan, scrollStep, modified, changedEndedZ);
 	}
 
-	//endColumns();
 	ctx->widget.changeEnded = changedEndedX || changedEndedY || changedEndedZ;
 
 	return modified;
