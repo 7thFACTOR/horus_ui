@@ -186,6 +186,7 @@ enum class WidgetType
 	Layout,
 	Tooltip,
 	Button,
+	ButtonGroup,
 	ImageButton,
 	TextInput,
 	MultilineTextInput,
@@ -226,6 +227,9 @@ enum class WidgetElementId
 	Custom,
 	WindowBody,
 	ButtonBody,
+	ButtonGroupLeftBody,
+	ButtonGroupMiddleBody,
+	ButtonGroupRightBody,
 	ImageButtonBody,
 	CheckBody,
 	CheckMark,
@@ -2425,6 +2429,7 @@ HUI_API void widgetSetNextFocused();
 /// \param label the button text
 /// \return true if button was pressed
 HUI_API bool button(const char* label);
+HUI_API bool buttonGroup(const char** labels, u32 count, u32* currentIndex);
 
 /// Draw a button with an image on it
 /// \param img the image

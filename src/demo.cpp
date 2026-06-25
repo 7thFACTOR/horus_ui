@@ -49,6 +49,9 @@ struct DemoState
 	bool checkA = true;
 	bool checkB = false;
 
+	// Button Group
+	u32 buttonGroupVal = 0;
+
 	// Radio
 	i32 radioVal = 0;
 
@@ -220,6 +223,41 @@ void showDemo()
 		{
 			demo.buttonClickCount++;
 		}
+
+		space();
+		label("Button Group (3 items):");
+		static const char* groupItems[] = { "Left", "Center", "Right" };
+		if (buttonGroup(groupItems, 3, &demo.buttonGroupVal))
+		{
+			forceRepaint();
+		}
+		char groupBuf[64];
+		snprintf(groupBuf, sizeof(groupBuf), "Selected: %u", demo.buttonGroupVal);
+		label(groupBuf);
+
+		space();
+		label("Button Group (2 items):");
+		static const char* groupItems2[] = { "On", "Off" };
+		static u32 binaryGroupVal = 0;
+		if (buttonGroup(groupItems2, 2, &binaryGroupVal))
+		{
+			forceRepaint();
+		}
+
+		space();
+		label("Button Group (4 items):");
+		static const char* groupItems4[] = { "Spring", "Summer", "Fall", "Winter" };
+		static u32 seasonVal = 0;
+		if (buttonGroup(groupItems4, 4, &seasonVal))
+		{
+			forceRepaint();
+		}
+
+		space();
+		label("Disabled button group:");
+		widgetSetNextDisabled();
+		static u32 disabledGroupVal = 1;
+		if (buttonGroup(groupItems, 3, &disabledGroupVal)) {}
 		widgetPopDisabled();
 		expandableEnd();
 	}
@@ -836,6 +874,14 @@ void showDemo()
 		space();
 		label("Image Right alignment:");
 		image(demo.demoImage, 64, HAlignType::Right);
+
+		space();
+		label("Images on the same line:");
+		image(demo.demoImage, 32);
+		sameLine();
+		image(demo.demoImage, 32);
+		sameLine();
+		image(demo.demoImage, 32);
 
 		space();
 		label("Texture widget (using color check checkers image as texture):");

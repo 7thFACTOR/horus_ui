@@ -56,8 +56,14 @@ bool image(HImage img, f32 height, HAlignType horizontalAlign, VAlignType vertic
 		height = newHeight;
 	}
 
-	ctx->widget.customWidth = newWidth / ctx->scale;
-	ctx->widget.hasCustomWidth = true;
+	// In sameLine mode, or if aligned left, constrain widget width to image size.
+	// In normal mode with Center/Right alignment, let the widget use the full layout width
+	// so horizontal alignment can position the image within it.
+	if (ctx->sameLine.enabled || horizontalAlign == HAlignType::Left)
+	{
+		ctx->widget.customWidth = newWidth / ctx->scale;
+		ctx->widget.hasCustomWidth = true;
+	}
 
 	ctx->id = genId(img);
 	addWidget(height);
@@ -147,8 +153,11 @@ bool texture(HTexture texture, f32 textureWidth, f32 textureHeight, f32 height, 
 		height = newHeight;
 	}
 
-	ctx->widget.customWidth = newWidth / ctx->scale;
-	ctx->widget.hasCustomWidth = true;
+	if (ctx->sameLine.enabled || horizontalAlign == HAlignType::Left)
+	{
+		ctx->widget.customWidth = newWidth / ctx->scale;
+		ctx->widget.hasCustomWidth = true;
+	}
 
 	ctx->id = genId(texture);
 	addWidget(height);

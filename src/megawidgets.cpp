@@ -21,6 +21,17 @@ bool vecEditorInternal(f64& x, f64& y, f64& z, f64 scrollStep, bool useZ)
 	f32 inputWidthPx = (ctx->layout.width - totalWidth) / (f32)axisCount;
 	f32 inputWidthUnscaled = inputWidthPx / ctx->scale;
 
+	// Handle MouseUp outside the per-axis loop so it only fires once
+	// and doesn't interfere with the wrong axis iteration
+	if (ctx->vecEditor.draggingValue
+		&& hui::inputEventGet().type == hui::InputEvent::Type::MouseUp)
+	{
+		ctx->vecEditor.draggingValue = false;
+		ctx->vecEditor.draggedId = 0;
+		hui::windowReleaseCapture();
+		changedEndedX = changedEndedY = changedEndedZ = true;
+	}
+
 	for (u32 i = 0; i < axisCount; i++)
 	{
 		if (i > 0)
@@ -34,7 +45,7 @@ bool vecEditorInternal(f64& x, f64& y, f64& z, f64 scrollStep, bool useZ)
 
 		sprintf(strAxis, "%.8g", *val);
 		auto elem = ctx->theme->userElements[imgName];
-		hui::image(elem->normalState().image, 22);
+		hui::image(elem->normalState().image, 22, hui::HAlignType::Left);
 		WidgetId imageWidgetId = ctx->id;
 		bool imageHovered = hui::widgetIsHovered();
 		bool imagePressed = hui::widgetIsPressed();
@@ -42,7 +53,7 @@ bool vecEditorInternal(f64& x, f64& y, f64& z, f64 scrollStep, bool useZ)
 		hui::widgetSetNextWidth(inputWidthUnscaled);
 		modified = hui::textInput(inputId, strAxis, VectorEditorState::maxStrSize) || modified;
 
-		if (imageHovered || ctx->vecEditor.draggingValue)
+		if (imageHovered || (ctx->vecEditor.draggingValue && ctx->vecEditor.draggedId == imageWidgetId))
 		{
 			hui::mouseCursorSetType(hui::MouseCursorType::SizeWE);
 
@@ -50,29 +61,21 @@ bool vecEditorInternal(f64& x, f64& y, f64& z, f64 scrollStep, bool useZ)
 			{
 				ctx->vecEditor.draggingValue = true;
 				ctx->vecEditor.draggedId = imageWidgetId;
-				ctx->vecEditor.lastMousePos = hui::inputEventGet().mouse.point;
+				ctx->vecEditor.lastMousePos = ctx->mousePosition;
 				ctx->widget.pressed = false;
 				hui::windowSetCapture();
 			}
-		}
-
-		if (hui::inputEventGet().type == hui::InputEvent::Type::MouseUp)
-		{
-			ctx->vecEditor.draggingValue = false;
-			ctx->vecEditor.draggedId = 0;
-			hui::windowReleaseCapture();
-			*changeEnded = true;
 		}
 
 		if (ctx->vecEditor.draggingValue
 			&& ctx->vecEditor.draggedId == imageWidgetId)
 		{
 			*val = atof(strAxis);
-			f32 dx = hui::inputEventGet().mouse.point.x - ctx->vecEditor.lastMousePos.x;
+			f32 dx = ctx->mousePosition.x - ctx->vecEditor.lastMousePos.x;
 			f32 unitPerPixel = (f32)scrollStep;
 
 			*val += (f64)dx * unitPerPixel;
-			ctx->vecEditor.lastMousePos = hui::inputEventGet().mouse.point;
+			ctx->vecEditor.lastMousePos = ctx->mousePosition;
 			sprintf(strAxis, "%.8g", *val);
 			modified = true;
 		}

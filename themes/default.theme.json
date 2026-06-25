@@ -66,6 +66,36 @@
 				}
 			}
 		},
+		"buttonGroup":
+		{
+			"buttonGroupLeftBody":
+			{
+				"height": 22,
+				"normal": { "image": "default/button_group_left_normal", "border": 4, "color": "120 120 120 255", "textColor": "white", "font": "normal" },
+				"disabled": { "color": "120 120 120 155", "textColor": "255 255 255 128" },
+				"hovered": { "image": "default/button_group_left_normal", "border": 4, "color": "155 200 200 255", "textColor": "white" },
+				"pressed": { "image": "default/button_group_left_pressed", "border": 4, "color": "white", "textColor": "100 100 100 255", "font": "normal-bold" },
+				"focused": { "image": "default/button_group_left_normal", "border": 4, "color": "115 115 115 255" }
+			},
+			"buttonGroupMiddleBody":
+			{
+				"height": 22,
+				"normal": { "image": "default/button_group_middle_normal", "border": 0, "color": "120 120 120 255", "textColor": "white", "font": "normal" },
+				"disabled": { "color": "120 120 120 155", "textColor": "255 255 255 128" },
+				"hovered": { "image": "default/button_group_middle_normal", "border": 0, "color": "155 200 200 255", "textColor": "white" },
+				"pressed": { "image": "default/button_group_middle_pressed", "border": 0, "color": "white", "textColor": "100 100 100 255", "font": "normal-bold" },
+				"focused": { "image": "default/button_group_middle_normal", "border": 0, "color": "115 115 115 255" }
+			},
+			"buttonGroupRightBody":
+			{
+				"height": 22,
+				"normal": { "image": "default/button_group_right_normal", "border": 4, "color": "120 120 120 255", "textColor": "white", "font": "normal" },
+				"disabled": { "color": "120 120 120 155", "textColor": "255 255 255 128" },
+				"hovered": { "image": "default/button_group_right_normal", "border": 4, "color": "155 200 200 255", "textColor": "white" },
+				"pressed": { "image": "default/button_group_right_pressed", "border": 4, "color": "white", "textColor": "100 100 100 255", "font": "normal-bold" },
+				"focused": { "image": "default/button_group_right_normal", "border": 4, "color": "115 115 115 255" }
+			}
+		},
 		"imageButton":
 		{
 			"styles":
