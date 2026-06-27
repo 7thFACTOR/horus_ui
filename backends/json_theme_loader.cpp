@@ -133,6 +133,7 @@ static WidgetType getWidgetTypeFromName(std::string name)
 	if (name == "window") return WidgetType::Window;
 	if (name == "tooltip") return WidgetType::Tooltip;
 	if (name == "button") return WidgetType::Button;
+	if (name == "buttonGroup") return WidgetType::ButtonGroup;
 	if (name == "imageButton") return WidgetType::ImageButton;
 	if (name == "textInput") return WidgetType::TextInput;
 	if (name == "slider") return WidgetType::Slider;
@@ -170,6 +171,9 @@ static WidgetElementId getWidgetElementFromName(std::string name)
 {
 	if (name == "windowBody") return WidgetElementId::WindowBody;
 	if (name == "buttonBody") return WidgetElementId::ButtonBody;
+	if (name == "buttonGroupLeftBody") return WidgetElementId::ButtonGroupLeftBody;
+	if (name == "buttonGroupMiddleBody") return WidgetElementId::ButtonGroupMiddleBody;
+	if (name == "buttonGroupRightBody") return WidgetElementId::ButtonGroupRightBody;
 	if (name == "imageButtonBody") return WidgetElementId::ImageButtonBody;
 	if (name == "checkBody") return WidgetElementId::CheckBody;
 	if (name == "checkMark") return WidgetElementId::CheckMark;

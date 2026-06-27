@@ -126,14 +126,15 @@ bool buttonGroup(const char** labels, u32 count, u32* currentIndex)
 			labels[i],
 			ctx->widget.rect,
 			HAlignType::Center,
-			VAlignType::Center);
+			VAlignType::Center,
+			true);
 
 		widgetSetFocusable();
 
 		groupWidth += segPixelWidth;
 	}
 
-	ctx->position.x = startX;
+	ctx->position.x = ctx->sameLine.currentPosition.x;
 	ctx->position.y += elemHeight + ctx->spacing * ctx->scale;
 	ctx->sameLine.lastLineWidth = groupWidth;
 
