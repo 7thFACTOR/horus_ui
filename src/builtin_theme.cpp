@@ -64,6 +64,9 @@ HTheme createBuiltinTheme(u32 atlasTextureSize)
 
 	// Specialized element tweaks
 	setSize(WidgetElementId::ButtonBody, 0, 22, 3);
+	setSize(WidgetElementId::ButtonGroupLeftBody, 0, 22, 4);
+	setSize(WidgetElementId::ButtonGroupMiddleBody, 0, 22, 0);
+	setSize(WidgetElementId::ButtonGroupRightBody, 0, 22, 4);
 	setSize(WidgetElementId::ImageButtonBody, 0, 22, 3);
 	setSize(WidgetElementId::TextInputBody, 0, 22, 3);
 	setSize(WidgetElementId::SliderBody, 0, 16, 2);

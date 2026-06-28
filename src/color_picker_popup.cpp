@@ -111,10 +111,8 @@ static void drawColorPreviewSwatch(const Rect& rc, const Color& color, const cha
 	ctx->renderer.cmdDrawImageTiled(
 		colorPickerCheckersState.image,
 		rcSample, Point(), ctx->scale);
-
 	ctx->renderer.cmdSetColor(Color{ color.r, color.g, color.b, 1 });
 	ctx->renderer.cmdDrawFilledRectangle(rcSampleNoAlpha);
-
 	ctx->renderer.cmdSetColor(color);
 	ctx->renderer.cmdDrawFilledRectangle(rcSampleWithAlpha);
 }
@@ -134,8 +132,8 @@ bool colorPicker(const char* id, Color* inOutColor, ColorPickerFlags flags, cons
 	ctx->id = genId(id);
 	
 	auto pickerId = ctx->id;
+
 	idPush(id);
-	
 	addWidget(height);
 	buttonBehavior();
 
@@ -150,6 +148,7 @@ bool colorPicker(const char* id, Color* inOutColor, ColorPickerFlags flags, cons
 	}
 
 	WidgetId hexInputId = genId("colorPicker_hexColorEdit");
+	
 	if (!ctx->textInput.id)
 	{
 		std::string hexColorStr;
@@ -159,12 +158,14 @@ bool colorPicker(const char* id, Color* inOutColor, ColorPickerFlags flags, cons
 
 	auto rcSV = ctx->widget.rect;
 	auto clippedRc = ctx->widget.rect.clipInside(ctx->renderer.getClipRect());
+	
 	rcSV.x += indicatorSize / 2.0f + 1.0f;
 	rcSV.y += indicatorSize / 2.0f;
 	rcSV.width *= 0.5f;
 	rcSV.height = rcSV.width; // make it square
 
 	auto rcH = rcSV;
+	
 	rcH.x = rcSV.right() + 10.0f * ctx->scale;
 	rcH.width = 32.0f * ctx->scale;
 
@@ -177,7 +178,10 @@ bool colorPicker(const char* id, Color* inOutColor, ColorPickerFlags flags, cons
 	auto clippedRcHue = rcH.clipInside(ctx->renderer.getClipRect());
 	auto clippedRcAlpha = rcAlpha.clipInside(ctx->renderer.getClipRect());
 
-	if (ctx->isActiveLayer() && ctx->event.type == InputEvent::Type::MouseDown && !ctx->widget.disabled && ctx->hoveringThisWindow)
+	if (ctx->isActiveLayer()
+		&& ctx->event.type == InputEvent::Type::MouseDown
+		&& !ctx->widget.disabled
+		&& ctx->hoveringThisWindow)
 	{
 		if (clippedRcSV.contains(ctx->mousePosition))
 		{

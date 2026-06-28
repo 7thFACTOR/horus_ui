@@ -17,6 +17,7 @@ bool buttonGroup(const char** labels, u32 count, u32* currentIndex)
 	auto& rightElem = ctx->theme->getElement(WidgetElementId::ButtonGroupRightBody);
 
 	auto& padding = widgetGetPadding();
+	f32 labelSideSpacing = leftElem.currentStyle->getParameter("labelSideSpacing", ctx->settings.defaultButtonGroupLabelSideSpacing);
 	f32 elemHeightUnscaled = leftElem.normalState().height;
 	f32 elemHeight = (elemHeightUnscaled + padding.y * 2.0f) * ctx->scale;
 
@@ -28,7 +29,7 @@ bool buttonGroup(const char** labels, u32 count, u32* currentIndex)
 		auto& elem = i == 0 ? leftElem : i == count - 1 ? rightElem : middleElem;
 		auto& state = elem.normalState();
 		f32 textWidth = state.font->computeTextSize(labels[i]).width;
-		f32 segWidth = textWidth + (state.border + padding.x) * 2.0f;
+		f32 segWidth = textWidth + (state.border + labelSideSpacing) * 2.0f;
 		segmentWidths[i] = segWidth;
 		totalWidth += segWidth;
 	}

@@ -71,6 +71,7 @@
 			"buttonGroupLeftBody":
 			{
 				"height": 22,
+				"labelSideSpacing": "6",
 				"normal": { "image": "default/button_group_left_normal", "border": 4, "color": "120 120 120 255", "textColor": "white", "font": "normal" },
 				"disabled": { "color": "120 120 120 155", "textColor": "255 255 255 128" },
 				"hovered": { "image": "default/button_group_left_normal", "border": 4, "color": "155 200 200 255", "textColor": "white" },

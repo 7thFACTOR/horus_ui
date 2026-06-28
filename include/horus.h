@@ -1944,6 +1944,7 @@ struct Settings
 	f32 dockTabImageTextSpacing = 4;
 	f32 movePopupMaxDistanceTrigger = 5; /// distance of dragging with mouse for when to initiate popup dragging
 	f32 defaultBulletTextSpacing = 5; /// space size between bullet/check/radio and the label, might get overriden by the theme settings
+	f32 defaultButtonGroupLabelSideSpacing = 6; /// horizontal spacing between text and segment border in button groups, might get overriden by the theme settings
 	u32 tabSize = 4; /// tab size in spaces
 	bool fpsThrottleEnable = false; /// if true, the UI will throttle the FPS when there is no activity
 	u32 fpsThrottleMinFps = 10; /// the minimum FPS to throttle to when idle
