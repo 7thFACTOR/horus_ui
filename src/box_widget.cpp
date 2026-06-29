@@ -24,6 +24,8 @@ static void beginBoxLayoutInternal(const char* id, const Color& color, ThemeElem
 	boxState.width = parentWidth;
 	ctx->position.x += (state.border + padding.x) * ctx->scale;
 
+	boxState.customHeight = customHeight;
+
 	if (customHeight <= 0.0f)
 	{
 		ctx->position.y += (state.border + padding.y) * ctx->scale;
@@ -79,9 +81,18 @@ bool boxEnd()
 		ctx->sameLine.wasEnabled = false;
 	}
 
-	auto contentHeight = ctx->position.y - ctx->layout.savedPosition.y;
-	contentHeight -= (boxElemState->border + boxState.savedPadding.y) * ctx->scale;
-	auto height = contentHeight + (boxElemState->border + boxState.savedPadding.y) * ctx->scale * 2.0f;
+	f32 height;
+
+	if (boxState.customHeight > 0.0f)
+	{
+		height = boxState.customHeight;
+	}
+	else
+	{
+		auto contentHeight = ctx->position.y - ctx->layout.savedPosition.y;
+		contentHeight -= (boxElemState->border + boxState.savedPadding.y) * ctx->scale;
+		height = contentHeight + (boxElemState->border + boxState.savedPadding.y) * ctx->scale * 2.0f;
+	}
 
 	ctx->widget.rect = {
 		ctx->layout.savedPosition.x,

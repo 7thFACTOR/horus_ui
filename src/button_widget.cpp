@@ -195,7 +195,8 @@ void buttonBehavior(bool menuItem)
 	{
 		bool anotherWidgetHasCapture =
 			ctx->widget.captureId
-			&& ctx->id != ctx->widget.captureId;
+			&& ctx->id != ctx->widget.captureId
+			&& !ctx->dragDrop.begunDragging;
 
 		if (!anotherWidgetHasCapture)
 		{

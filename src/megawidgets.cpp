@@ -196,7 +196,9 @@ bool objectRefEditor(const char* id, HImage targetImg, HImage clearImg, const ch
 	boxEnd();
 
 	if (dragDropGetObjectType() == objectType)
+	{
 		dragDropAllow();
+	}
 
 	if (dragDropDroppedOnWidget() && dragDropGetObjectType() == objectType)
 	{

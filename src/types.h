@@ -503,6 +503,7 @@ struct BoxState
 	ThemeElement::State* themeWidgetElementState = nullptr;
 	Color themeElementColorTint;
 	Point savedPadding;
+	f32 customHeight = 0.0f;
 };
 
 struct TableState

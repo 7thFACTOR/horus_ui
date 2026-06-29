@@ -654,7 +654,7 @@
 		{
 			"targetObjectBody":
 			{
-				"height":20,
+				"height":22,
 				"normal": { "image": "default/target", "border": 0, "color": "white", "textColor": "white", "font": "normal" }
 			}
 		},

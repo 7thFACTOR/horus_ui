@@ -986,6 +986,16 @@ void showDemo()
 
 		label("Object reference editor:");
 		objectRefEditor("##demoObjRef", 0, 0, "MyObjectType", "None", 0, &demo.objectRefValue, &demo.objectRefModified);
+		space();
+		label("Drag source (drag into the editor):");
+		{
+			static int dragSampleObject = 42;
+			button("MyObjectType##dragSrc");
+			if (dragDropWantsTo())
+			{
+				dragDropBegin(0, &dragSampleObject);
+			}
+		}
 		widgetPopDisabled();
 		expandableEnd();
 	}

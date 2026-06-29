@@ -1796,12 +1796,9 @@ void dragDropAllow()
 {
 	ctx->dragDrop.allowDrop = true;
 
-	if (ctx->dragDrop.begunDragging)
+	if (ctx->dragDrop.begunDragging && ctx->widget.hovered)
 	{
-		if (ctx->widget.hovered)
-		{
-			ctx->dragDrop.foundDropTarget = true;
-		}
+		ctx->dragDrop.foundDropTarget = true;
 	}
 }
 
