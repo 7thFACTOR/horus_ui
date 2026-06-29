@@ -2431,6 +2431,7 @@ HUI_API void widgetSetNextFocused();
 /// \return true if button was pressed
 HUI_API bool button(const char* label);
 HUI_API bool buttonGroup(const char** labels, u32 count, u32* currentIndex);
+HUI_API bool buttonGroup(const char** labels, u32 count, u32* currentIndex, bool fullWidth);
 
 /// Draw a button with an image on it
 /// \param img the image

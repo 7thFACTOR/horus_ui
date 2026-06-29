@@ -9,6 +9,11 @@ namespace hui
 
 bool buttonGroup(const char** labels, u32 count, u32* currentIndex)
 {
+	return buttonGroup(labels, count, currentIndex, false);
+}
+
+bool buttonGroup(const char** labels, u32 count, u32* currentIndex, bool fullWidth)
+{
 	if (count == 0 || !labels || !currentIndex)
 		return false;
 
@@ -24,19 +29,32 @@ bool buttonGroup(const char** labels, u32 count, u32* currentIndex)
 	f32 segmentWidths[256];
 	f32 totalWidth = 0;
 
-	for (u32 i = 0; i < count; i++)
+	f32 availableWidth = ctx->layout.width / ctx->scale;
+
+	if (fullWidth)
 	{
-		auto& elem = i == 0 ? leftElem : i == count - 1 ? rightElem : middleElem;
-		auto& state = elem.normalState();
-		f32 textWidth = state.font->computeTextSize(labels[i]).width;
-		f32 segWidth = textWidth + (state.border + labelSideSpacing) * 2.0f;
-		segmentWidths[i] = segWidth;
-		totalWidth += segWidth;
+		f32 segWidth = availableWidth / (f32)count;
+		for (u32 i = 0; i < count; i++)
+		{
+			segmentWidths[i] = segWidth;
+		}
+		totalWidth = availableWidth;
+	}
+	else
+	{
+		for (u32 i = 0; i < count; i++)
+		{
+			auto& elem = i == 0 ? leftElem : i == count - 1 ? rightElem : middleElem;
+			auto& state = elem.normalState();
+			f32 textWidth = state.font->computeTextSize(labels[i]).width;
+			f32 segWidth = textWidth + (state.border + labelSideSpacing) * 2.0f;
+			segmentWidths[i] = segWidth;
+			totalWidth += segWidth;
+		}
 	}
 
-	f32 availableWidth = ctx->layout.width / ctx->scale;
 	f32 centeringOffset = 0;
-	if (totalWidth < availableWidth)
+	if (!fullWidth && totalWidth < availableWidth)
 	{
 		centeringOffset = (availableWidth - totalWidth) / 2.0f;
 	}
@@ -62,6 +80,9 @@ bool buttonGroup(const char** labels, u32 count, u32* currentIndex)
 
 	bool changed = false;
 
+	bool disabled = ctx->widget.nextDisabled || (ctx->disabledNesting > 0);
+	ctx->widget.nextDisabled = false;
+
 	for (u32 i = 0; i < count; i++)
 	{
 		auto& elem = i == 0 ? leftElem : i == count - 1 ? rightElem : middleElem;
@@ -71,8 +92,7 @@ bool buttonGroup(const char** labels, u32 count, u32* currentIndex)
 		ctx->setLabelAndId(idBuf);
 		ctx->id = genIdFromPosition(labels[i]);
 
-		ctx->widget.disabled = ctx->widget.nextDisabled || (ctx->disabledNesting > 0);
-		ctx->widget.nextDisabled = false;
+		ctx->widget.disabled = disabled;
 		ctx->widget.changeEnded = false;
 		ctx->widget.hasNextWidth = false;
 		ctx->widget.hasCustomWidth = false;
