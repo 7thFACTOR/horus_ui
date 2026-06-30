@@ -2788,7 +2788,7 @@ HUI_API bool vec2Editor(const char* id, f64& x, f64& y, f64 scrollStep = 0.03f);
 HUI_API bool vec2Editor(const char* id, f32& x, f32& y, f32 scrollStep = 0.03f);
 
 /// Draw an object reference editor
-HUI_API bool objectRefEditor(const char* id, HImage targetImg, HImage clearImg, const char* objectTypeName, const char* valueAsString, u32 objectType, void** outObject, bool* objectValueWasModified);
+HUI_API bool objectRefEditor(const char* id, HImage targetImg, HImage clearImg, HImage iconImg, const char* objectTypeName, const char* valueAsString, u32 objectType, void** outObject, bool* objectValueWasModified);
 
 //////////////////////////////////////////////////////////////////////////
 // Utility functions

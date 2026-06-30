@@ -143,7 +143,7 @@ bool vec2Editor(const char* id, f32& x, f32& y, f32 scrollStep)
 	return ret;
 }
 
-bool objectRefEditor(const char* id, HImage targetImg, HImage clearImg, const char* objectTypeName, const char* valueAsString, u32 objectType, void** outObject, bool* objectValueWasModified)
+bool objectRefEditor(const char* id, HImage targetImg, HImage clearImg, HImage iconImg, const char* objectTypeName, const char* valueAsString, u32 objectType, void** outObject, bool* objectValueWasModified)
 {
 	idPush(id);
 	bool returnValue = false;
@@ -173,7 +173,7 @@ bool objectRefEditor(const char* id, HImage targetImg, HImage clearImg, const ch
 	f32 btnSize = targetElemInfo.height;
 	f32 spacingPx = ctx->sameLine.spacing * ctx->scale;
 	f32 btnSizePx = btnSize * ctx->scale;
-	f32 boxWidthPx = ctx->layout.width - btnSizePx * 2 - spacingPx * 2;
+	f32 boxWidthPx = ctx->layout.width - btnSizePx * 2;
 
 	// Editor body (left side, fills remaining width)
 	widgetSetNextWidth(boxWidthPx / ctx->scale);
@@ -196,6 +196,25 @@ bool objectRefEditor(const char* id, HImage targetImg, HImage clearImg, const ch
 	{
 		ctx->renderer.cmdSetColor(tintApply(bodyState->color, TintColorType::Body));
 		ctx->renderer.cmdDrawImageBordered(bodyState->image, bodyState->border, ctx->widget.rect, ctx->scale);
+
+		Rect textRect = ctx->widget.rect;
+		f32 paddingPx = 4 * ctx->scale;
+
+		if (iconImg && *outObject)
+		{
+			Image* iconPtr = (Image*)iconImg;
+			f32 iconSize = btnSize * ctx->scale * 0.6f;
+			Rect iconRect = {
+				textRect.x + paddingPx,
+				textRect.y + (textRect.height - iconSize) / 2.0f,
+				iconSize,
+				iconSize
+			};
+			ctx->renderer.cmdSetColor(Color::white);
+			ctx->renderer.cmdDrawImage(iconPtr, iconRect);
+			textRect.x += paddingPx + iconSize + paddingPx;
+			textRect.width -= paddingPx + iconSize + paddingPx;
+		}
 
 		Color textColor;
 		Font* textFont;
@@ -227,10 +246,26 @@ bool objectRefEditor(const char* id, HImage targetImg, HImage clearImg, const ch
 			text = valueAsString;
 		}
 
-		ctx->renderer.cmdDrawTextInBox(text.c_str(), ctx->widget.rect, HAlignType::Left, VAlignType::Center, true);
+		ctx->renderer.cmdDrawTextInBox(text.c_str(), textRect, HAlignType::Left, VAlignType::Center, true);
 	}
 
 	widgetSetFocusable();
+
+	// Clear reference on Delete key when focused
+	if (ctx->widget.focused
+		&& *outObject
+		&& ctx->event.type == InputEvent::Type::Key
+		&& ctx->event.key.code == KeyCode::Delete
+		&& ctx->event.key.down)
+	{
+		*outObject = nullptr;
+
+		if (objectValueWasModified)
+			*objectValueWasModified = true;
+
+		changeEnded = true;
+		forceRepaint();
+	}
 
 	// Drop handling (ctx->widget.hovered is still for the editor)
 	if (dragDropGetObjectType() == objectType)
@@ -251,7 +286,7 @@ bool objectRefEditor(const char* id, HImage targetImg, HImage clearImg, const ch
 	}
 
 	// Target button on the right
-	sameLine(0, ctx->sameLine.spacing);
+	sameLine(-ctx->sameLine.spacing, 0);
 
 	if (targetImg)
 	{
@@ -301,7 +336,7 @@ bool objectRefEditor(const char* id, HImage targetImg, HImage clearImg, const ch
 	}
 
 	// Clear button next to target
-	sameLine(0, ctx->sameLine.spacing);
+	sameLine(-ctx->sameLine.spacing, 0);
 
 	if (clearImg)
 	{

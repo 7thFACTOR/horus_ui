@@ -1968,6 +1968,8 @@ void Renderer::drawQuadRot90(const Rect& rect, const Rect& uvRect)
 	i++;
 
 	vertexBufferData.drawVertexCount = i;
+	HUI_ASSERT(currentBatch);
+	
 	if (currentBatch)
 		currentBatch->vertexCount += 6;
 }
@@ -1980,6 +1982,10 @@ void Renderer::drawImageBordered(Image* image, u32 border, const Rect& rect, f32
 	screenRect.y = round(screenRect.y);
 	screenRect.width = round(screenRect.width);
 	screenRect.height = round(screenRect.height);
+
+	HUI_ASSERT(image);
+	HUI_ASSERT(currentTextureWidth);
+	HUI_ASSERT(currentTextureHeight);
 
 	if (screenRect.width < 1
 		|| screenRect.height < 1

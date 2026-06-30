@@ -149,8 +149,10 @@ struct DemoState
 	HTexture demoTexture = nullptr;
 
 	// ObjectRef
-	void* objectRefValue = nullptr;
-	bool objectRefModified = false;
+	void* objectRefValue1 = nullptr;
+	bool objectRefModified1 = false;
+	void* objectRefValue2 = nullptr;
+	bool objectRefModified2 = false;
 
 	// Virtual List
 	bool expandVirtualList = false;
@@ -163,6 +165,7 @@ struct DemoState
 	int dragDropSrcB = 0;
 	void* dragDropTargetAValue = nullptr;
 	void* dragDropTargetBValue = nullptr;
+	void* dragDropTargetCValue = nullptr;
 
 	Point scrollPos = { 0, 0 };
 
@@ -991,23 +994,37 @@ void showDemo()
 		check("Disable##ObjectRef", &demo.disableObjectRef);
 		widgetPushDisabled(demo.disableObjectRef);
 
-		label("Object reference editor:");
+		label("Object reference editor (with custom button images):");
 
-		std::string v;
+		std::string v1;
+		std::string v2;
 
-		if (demo.objectRefValue)
+		if (demo.objectRefValue1)
 		{
-			v = std::to_string(*(int*)demo.objectRefValue);
+			v1 = *(std::string*)demo.objectRefValue1;
 		}
 
-		objectRefEditor("##demoObjRef", themeGetImage(themeGet(), "__WHITEIMAGE__"), themeGetImage(themeGet(), "__WHITEIMAGE__"), "MyObjectType", v.c_str(), 0, &demo.objectRefValue, &demo.objectRefModified);
+		if (demo.objectRefValue2)
+		{
+			v2 = *(std::string*)demo.objectRefValue2;
+		}
+
+		objectRefEditor("##demoObjRef", themeGetImage(themeGet(), "__WHITEIMAGE__"), themeGetImage(themeGet(), "__WHITEIMAGE__"), 0, "MyObjectType", v1.c_str(), 0, &demo.objectRefValue1, &demo.objectRefModified1);
 		space();
-		label("Without icons:");
-		objectRefEditor("##demoObjRefNoIcons", 0, 0, "MyObjectType", v.c_str(), 0, &demo.objectRefValue, &demo.objectRefModified);
+		
+		label("Without custom button images:");
+		objectRefEditor("##demoObjRefNoIcons", 0, 0, 0, "MyObjectType", v2.c_str(), 0, &demo.objectRefValue2, &demo.objectRefModified2);
+		space();
+
+		{
+			label("With icon:");
+			HImage icon = themeGetImage(themeGet(), "../themes/default/sign-info.png");
+			objectRefEditor("##demoObjRefWithIcon", themeGetImage(themeGet(), "__WHITEIMAGE__"), themeGetImage(themeGet(), "__WHITEIMAGE__"), icon ? icon : themeGetImage(themeGet(), "__WHITEIMAGE__"), "MyObjectType", v1.c_str(), 0, &demo.objectRefValue1, &demo.objectRefModified1);
+		}
 		space();
 		label("Drag source (drag into the editor):");
 		{
-			static int dragSampleObject = 42;
+			static std::string dragSampleObject = "ShinyMetalA";
 			button("MyObjectType##dragSrc");
 			if (dragDropWantsTo())
 			{
@@ -1020,12 +1037,12 @@ void showDemo()
 	//------------------------------------------------------------------
 	// Drag & Drop API Demo
 	//------------------------------------------------------------------
-	if (expandableBegin("Drag && Drop API Demo", &demo.expandDragDrop))
+	if (expandableBegin("Drag & Drop API Demo", &demo.expandDragDrop))
 	{
 		label("Drag sources:");
 
 		sameLine(0, 20);
-		if (button("Type A (int)"))
+		if (button(("Type A (int): " + std::to_string(demo.dragDropSrcA)).c_str()))
 			demo.dragDropSrcA++;
 		if (dragDropWantsTo())
 		{
@@ -1035,7 +1052,7 @@ void showDemo()
 		}
 
 		sameLine(0, 10);
-		if (button("Type B (int)"))
+		if (button(("Type B (int): " + std::to_string(demo.dragDropSrcB)).c_str()))
 			demo.dragDropSrcB++;
 		if (dragDropWantsTo())
 		{
@@ -1050,28 +1067,12 @@ void showDemo()
 
 		label("Target A (accepts type 1):");
 		{
-			ctx->setLabelAndId("ddTargetA");
-			addWidget(0);
-			buttonBehavior();
-
-			if (ctx->widget.visible)
-			{
-				auto& elem = ctx->theme->getElement(WidgetElementId::TextInputBody);
-				auto* state = &elem.normalState();
-				if (ctx->widget.hovered)
-					state = &elem.getState(WidgetStateType::Hovered);
-
-				ctx->renderer.cmdSetColor(state->color);
-				ctx->renderer.cmdDrawImageBordered(state->image, state->border, ctx->widget.rect, ctx->scale);
-
-				std::string txt = demo.dragDropTargetAValue
-					? "Dropped: " + std::to_string(*(int*)demo.dragDropTargetAValue)
-					: "Drop type 1 here";
-
-				ctx->renderer.cmdSetColor(state->textColor);
-				ctx->renderer.cmdSetFont(state->font);
-				ctx->renderer.cmdDrawTextInBox(txt.c_str(), ctx->widget.rect, HAlignType::Left, VAlignType::Center, true);
-			}
+			std::string ddTxt;
+			if (demo.dragDropTargetAValue)
+				ddTxt = "Dropped: " + std::to_string(*(int*)demo.dragDropTargetAValue);
+			else
+				ddTxt = "Drop type 1 here";
+			label((ddTxt + "##ddTargetA").c_str());
 
 			if (dragDropGetObjectType() == 1)
 				dragDropAllow();
@@ -1088,38 +1089,19 @@ void showDemo()
 
 		space();
 
-		label("Target B (accepts types 1 & 2):");
+		label("Target B (accepts type 2):");
 		{
-			ctx->setLabelAndId("ddTargetB");
-			addWidget(0);
-			buttonBehavior();
+			std::string ddTxt;
+			if (demo.dragDropTargetBValue)
+				ddTxt = "Dropped: " + std::to_string(*(int*)demo.dragDropTargetBValue);
+			else
+				ddTxt = "Drop type 2 here";
+			label((ddTxt + "##ddTargetB").c_str());
 
-			if (ctx->widget.visible)
-			{
-				auto& elem = ctx->theme->getElement(WidgetElementId::TextInputBody);
-				auto* state = &elem.normalState();
-				if (ctx->widget.hovered)
-					state = &elem.getState(WidgetStateType::Hovered);
-
-				ctx->renderer.cmdSetColor(state->color);
-				ctx->renderer.cmdDrawImageBordered(state->image, state->border, ctx->widget.rect, ctx->scale);
-
-				std::string txt;
-				if (demo.dragDropTargetBValue)
-					txt = "Dropped: " + std::to_string(*(int*)demo.dragDropTargetBValue);
-				else
-					txt = "Drop type 1 or 2 here";
-
-				ctx->renderer.cmdSetColor(state->textColor);
-				ctx->renderer.cmdSetFont(state->font);
-				ctx->renderer.cmdDrawTextInBox(txt.c_str(), ctx->widget.rect, HAlignType::Left, VAlignType::Center, true);
-			}
-
-			u32 type = dragDropGetObjectType();
-			if (type == 1 || type == 2)
+			if (dragDropGetObjectType() == 2)
 				dragDropAllow();
 
-			if (dragDropDroppedOnWidget() && (type == 1 || type == 2))
+			if (dragDropDroppedOnWidget() && dragDropGetObjectType() == 2)
 			{
 				static int val;
 				val = *(int*)dragDropGetObject();
@@ -1130,7 +1112,33 @@ void showDemo()
 		}
 
 		space();
+
+		label("Target C (accepts types 1 & 2):");
+		{
+			std::string ddTxt;
+			if (demo.dragDropTargetCValue)
+				ddTxt = "Dropped: " + std::to_string(*(int*)demo.dragDropTargetCValue);
+			else
+				ddTxt = "Drop type 1 or 2 here";
+			label((ddTxt + "##ddTargetC").c_str());
+
+			u32 type = dragDropGetObjectType();
+			if (type == 1 || type == 2)
+				dragDropAllow();
+
+			if (dragDropDroppedOnWidget() && (type == 1 || type == 2))
+			{
+				static int val;
+				val = *(int*)dragDropGetObject();
+				demo.dragDropTargetCValue = &val;
+				dragDropEnd();
+				forceRepaint();
+			}
+		}
+
+		space();
 		label("Tip: drag from Type A or Type B buttons into the drop targets above.");
+		expandableEnd();
 	}
 	//------------------------------------------------------------------
 	// Virtual List
