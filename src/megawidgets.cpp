@@ -149,52 +149,90 @@ bool objectRefEditor(const char* id, HImage targetImg, HImage clearImg, const ch
 	bool returnValue = false;
 	bool changeEnded = false;
 
-	f32 tgtRowImgs[] = { -1, 30, 20 };
-
 	if (objectValueWasModified)
 		*objectValueWasModified = false;
 
-	//beginColumns(3, tgtRowImgs);
 	WidgetElementInfo targetElemInfo;
 
-	hui::themeGetUserWidgetElementInfo("targetObjectBody", WidgetStateType::Normal, targetElemInfo);
+	hui::themeGetUserWidgetElementInfo("objectRefEditorBody", WidgetStateType::Normal, targetElemInfo);
 
-	boxBegin(
-		"targetObjectBody",
-		Color::white,
-		WidgetElementId::TextInputBody,
-		WidgetStateType::Normal,
-		targetElemInfo.height);
-
-	bool noVal = true;
-
-	if (*outObject)
+	if (!targetImg)
 	{
-		noVal = false;
+		WidgetElementInfo info;
+		themeGetUserWidgetElementInfo("objectRefEditorTargetButton", WidgetStateType::Normal, info);
+		targetImg = info.image;
 	}
 
-	if (!noVal)
-		tintPush(Color::yellow);
-
-	std::string str;
-
-	if (noVal)
+	if (!clearImg)
 	{
-		str += "None (";
-		str += objectTypeName;
-		str += ")";
-		label(str.c_str());
-	}
-	else
-	{
-		label(valueAsString);
+		WidgetElementInfo info;
+		themeGetUserWidgetElementInfo("objectRefEditorClearButton", WidgetStateType::Normal, info);
+		clearImg = info.image;
 	}
 
-	if (!noVal)
-		tintPop();
+	f32 btnSize = targetElemInfo.height;
+	f32 spacingPx = ctx->sameLine.spacing * ctx->scale;
+	f32 btnSizePx = btnSize * ctx->scale;
+	f32 boxWidthPx = ctx->layout.width - btnSizePx * 2 - spacingPx * 2;
 
-	boxEnd();
+	// Editor body (left side, fills remaining width)
+	widgetSetNextWidth(boxWidthPx / ctx->scale);
+	ctx->setLabelAndId(id);
+	addWidget(btnSize * ctx->scale);
+	buttonBehavior();
 
+	auto& bodyElem = ctx->theme->getElement(WidgetElementId::TextInputBody);
+	auto bodyState = &bodyElem.normalState();
+	if (ctx->widget.disabled)
+		bodyState = &bodyElem.getState(WidgetStateType::Disabled);
+	else if (ctx->widget.pressed)
+		bodyState = &bodyElem.getState(WidgetStateType::Pressed);
+	else if (ctx->widget.focused)
+		bodyState = &bodyElem.getState(WidgetStateType::Focused);
+	else if (ctx->widget.hovered)
+		bodyState = &bodyElem.getState(WidgetStateType::Hovered);
+
+	if (ctx->widget.visible)
+	{
+		ctx->renderer.cmdSetColor(tintApply(bodyState->color, TintColorType::Body));
+		ctx->renderer.cmdDrawImageBordered(bodyState->image, bodyState->border, ctx->widget.rect, ctx->scale);
+
+		Color textColor;
+		Font* textFont;
+		if (*outObject)
+		{
+			WidgetElementInfo info;
+			themeGetUserWidgetElementInfo("objectRefEditorBody", WidgetStateType::Pressed, info);
+			textColor = info.textColor;
+			textFont = info.font ? (Font*)info.font : bodyState->font;
+		}
+		else
+		{
+			textColor = bodyState->textColor;
+			textFont = bodyState->font;
+		}
+
+		ctx->renderer.cmdSetColor(tintApply(textColor, TintColorType::Text));
+		ctx->renderer.cmdSetFont(textFont);
+
+		std::string text;
+		if (!*outObject)
+		{
+			text += "None (";
+			text += objectTypeName;
+			text += ")";
+		}
+		else
+		{
+			text = valueAsString;
+		}
+
+		ctx->renderer.cmdDrawTextInBox(text.c_str(), ctx->widget.rect, HAlignType::Left, VAlignType::Center, true);
+	}
+
+	widgetSetFocusable();
+
+	// Drop handling (ctx->widget.hovered is still for the editor)
 	if (dragDropGetObjectType() == objectType)
 	{
 		dragDropAllow();
@@ -212,23 +250,126 @@ bool objectRefEditor(const char* id, HImage targetImg, HImage clearImg, const ch
 		forceRepaint();
 	}
 
-	//nextColumn();
-	returnValue = imageButton(targetImg, targetElemInfo.height, targetElemInfo.height);
-	//nextColumn();
-	tintPush(Color::darkRed);
+	// Target button on the right
+	sameLine(0, ctx->sameLine.spacing);
 
-	if (imageButton(clearImg, targetElemInfo.height, targetElemInfo.height))
+	if (targetImg)
 	{
-		*outObject = nullptr;
+		returnValue = imageButton(targetImg, btnSize, btnSize);
+		tooltip("Select reference");
+	}
+	else
+	{
+		// Draw "..." text button when no target image
+		ctx->widget.customWidth = btnSize;
+		ctx->widget.hasCustomWidth = true;
+		ctx->setLabelAndId("targetBtn");
+		addWidget(btnSize * ctx->scale);
+		buttonBehavior();
 
-		if (objectValueWasModified)
-			*objectValueWasModified = true;
+		auto& btnBody = ctx->theme->getElement(WidgetElementId::ImageButtonBody);
+		auto state = &btnBody.normalState();
+		if (ctx->widget.disabled)
+			state = &btnBody.getState(WidgetStateType::Disabled);
+		else if (ctx->widget.pressed)
+			state = &btnBody.getState(WidgetStateType::Pressed);
+		else if (ctx->widget.focused)
+			state = &btnBody.getState(WidgetStateType::Focused);
+		else if (ctx->widget.hovered)
+			state = &btnBody.getState(WidgetStateType::Hovered);
 
-		changeEnded = true;
+		if (ctx->widget.visible)
+		{
+			auto bodyImage = state->image;
+			if (!bodyImage && ctx->widget.disabled)
+				bodyImage = btnBody.normalState().image;
+
+			ctx->renderer.cmdSetColor(tintApply(state->color, TintColorType::Body));
+			ctx->renderer.cmdDrawImageBordered(bodyImage, state->border, ctx->widget.rect, ctx->scale);
+
+			ctx->renderer.cmdSetColor(tintApply(state->textColor, TintColorType::Text));
+			ctx->renderer.cmdSetFont(state->font);
+			ctx->renderer.cmdDrawTextInBox("...", ctx->widget.rect, HAlignType::Center, VAlignType::Center, true);
+		}
+
+		widgetSetFocusable();
+		if (widgetIsClicked())
+			forceRepaint();
+
+		returnValue = ctx->widget.clicked;
+		tooltip("Select reference");
 	}
 
-	tintPop();
-	//endColumns();
+	// Clear button next to target
+	sameLine(0, ctx->sameLine.spacing);
+
+	if (clearImg)
+	{
+		tintPush(Color::darkRed);
+
+		if (imageButton(clearImg, btnSize, btnSize))
+		{
+			*outObject = nullptr;
+
+			if (objectValueWasModified)
+				*objectValueWasModified = true;
+
+			changeEnded = true;
+		}
+
+		tintPop();
+		tooltip("Clear reference");
+	}
+	else
+	{
+		// Draw "X" text button when no clear image
+		ctx->widget.customWidth = btnSize;
+		ctx->widget.hasCustomWidth = true;
+		ctx->setLabelAndId("clearBtn");
+		addWidget(btnSize * ctx->scale);
+		buttonBehavior();
+
+		auto& btnBody = ctx->theme->getElement(WidgetElementId::ImageButtonBody);
+		auto state = &btnBody.normalState();
+		if (ctx->widget.disabled)
+			state = &btnBody.getState(WidgetStateType::Disabled);
+		else if (ctx->widget.pressed)
+			state = &btnBody.getState(WidgetStateType::Pressed);
+		else if (ctx->widget.focused)
+			state = &btnBody.getState(WidgetStateType::Focused);
+		else if (ctx->widget.hovered)
+			state = &btnBody.getState(WidgetStateType::Hovered);
+
+		if (ctx->widget.visible)
+		{
+			auto bodyImage = state->image;
+			if (!bodyImage && ctx->widget.disabled)
+				bodyImage = btnBody.normalState().image;
+
+			ctx->renderer.cmdSetColor(tintApply(Color::darkRed, TintColorType::Body));
+			ctx->renderer.cmdDrawImageBordered(bodyImage, state->border, ctx->widget.rect, ctx->scale);
+
+			ctx->renderer.cmdSetColor(tintApply(Color::darkRed, TintColorType::Text));
+			ctx->renderer.cmdSetFont(state->font);
+			ctx->renderer.cmdDrawTextInBox("X", ctx->widget.rect, HAlignType::Center, VAlignType::Center, true);
+		}
+
+		widgetSetFocusable();
+		if (widgetIsClicked())
+			forceRepaint();
+
+		if (ctx->widget.clicked)
+		{
+			*outObject = nullptr;
+
+			if (objectValueWasModified)
+				*objectValueWasModified = true;
+
+			changeEnded = true;
+		}
+
+		tooltip("Clear reference");
+	}
 
 	ctx->widget.changeEnded = changeEnded;
 

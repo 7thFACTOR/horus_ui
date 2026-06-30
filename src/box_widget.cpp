@@ -5,7 +5,7 @@
 
 namespace hui
 {
-static void beginBoxLayoutInternal(const char* id, const Color& color, ThemeElement::State& state, f32 customHeight)
+static void beginBoxLayoutInternal(const char* id, const Color& color, ThemeElement::State* state, f32 customHeight)
 {
 	const auto parentWidth = ctx->layout.width;
 	const auto& padding = paddingGet(PaddingType::Layout);
@@ -14,21 +14,21 @@ static void beginBoxLayoutInternal(const char* id, const Color& color, ThemeElem
 	ctx->layout.type = LayoutType::Generic;
 	ctx->layout.id = ctx->id = genId(id);
 	ctx->layout.savedPosition = ctx->position;
-	ctx->layout.width = parentWidth - (state.border + padding.x) * ctx->scale * 2.0f;
+	ctx->layout.width = parentWidth - (state->border + padding.x) * ctx->scale * 2.0f;
 	
 	auto& boxState = ctx->boxState[ctx->id];
 
 	boxState.savedPadding = padding;
-	boxState.themeWidgetElementState = &state;
+	boxState.themeWidgetElementState = state;
 	boxState.themeElementColorTint = color;
 	boxState.width = parentWidth;
-	ctx->position.x += (state.border + padding.x) * ctx->scale;
+	ctx->position.x += (state->border + padding.x) * ctx->scale;
 
 	boxState.customHeight = customHeight;
 
 	if (customHeight <= 0.0f)
 	{
-		ctx->position.y += (state.border + padding.y) * ctx->scale;
+		ctx->position.y += (state->border + padding.y) * ctx->scale;
 	}
 	else
 	{
@@ -49,7 +49,7 @@ void boxBegin(
 {
 	auto& boxElemState = ctx->theme->getElement(widgetElementId).getState(state);
 
-	beginBoxLayoutInternal(id, tintColor, boxElemState, customHeight);
+	beginBoxLayoutInternal(id, tintColor, &boxElemState, customHeight);
 }
 
 void boxBeginUserElement(
@@ -61,17 +61,21 @@ void boxBeginUserElement(
 {
 	auto elem = ctx->theme->userElements[userElementName];
 
-	if (elem)
-	{
-		auto& boxElemState = elem->getState(state);
-		beginBoxLayoutInternal(id, tintColor, boxElemState, customHeight);
-	}
+	if (!elem)
+		elem = &ctx->theme->getElement(WidgetElementId::TextInputBody);
+
+	auto& boxElemState = elem->getState(state);
+	beginBoxLayoutInternal(id, tintColor, &boxElemState, customHeight);
 }
 
 bool boxEnd()
 {
 	ctx->id = ctx->layout.id;
 	auto& boxState = ctx->boxState[ctx->id];
+
+	if (!boxState.themeWidgetElementState)
+		boxState.themeWidgetElementState = &ctx->theme->getElement(WidgetElementId::BoxBody).normalState();
+
 	auto& boxElemState = boxState.themeWidgetElementState;
 
 	// finish same line

@@ -505,7 +505,10 @@ void frameEnd()
 	{
 		if (ctx->dragDrop.foundDropTarget)
 		{
-			mouseCursorSet(ctx->dragDrop.dropAllowedCursor);
+			if (ctx->dragDrop.dropAllowedCursor)
+				mouseCursorSet(ctx->dragDrop.dropAllowedCursor);
+			else
+				mouseCursorSetType(MouseCursorType::HandPointing);
 		}
 		else
 		{

@@ -1905,7 +1905,9 @@ void Renderer::drawQuad(const Rect& rect, const Rect& uvRect)
 	i++;
 
 	vertexBufferData.drawVertexCount = i;
-	currentBatch->vertexCount += 6;
+	HUI_ASSERT(currentBatch);
+	
+	if (currentBatch) currentBatch->vertexCount += 6;
 }
 
 void Renderer::drawQuad4Colors(const Rect& rect, const Rect& uvRect, const Rgba32 colTopLeft, const Rgba32 colTopRight, const Rgba32 colBottomRight, const Rgba32 colBottomLeft)
@@ -1966,7 +1968,8 @@ void Renderer::drawQuadRot90(const Rect& rect, const Rect& uvRect)
 	i++;
 
 	vertexBufferData.drawVertexCount = i;
-	currentBatch->vertexCount += 6;
+	if (currentBatch)
+		currentBatch->vertexCount += 6;
 }
 
 void Renderer::drawImageBordered(Image* image, u32 border, const Rect& rect, f32 scale)
@@ -1979,7 +1982,10 @@ void Renderer::drawImageBordered(Image* image, u32 border, const Rect& rect, f32
 	screenRect.height = round(screenRect.height);
 
 	if (screenRect.width < 1
-		|| screenRect.height < 1)
+		|| screenRect.height < 1
+		|| !image
+		|| !currentTextureWidth
+		|| !currentTextureHeight)
 	{
 		return;
 	}
@@ -2003,8 +2009,6 @@ void Renderer::drawImageBordered(Image* image, u32 border, const Rect& rect, f32
 	f32 fborder = (f32)border;
 	f32 borderU = fborder / (f32)currentTextureWidth;
 	f32 borderV = fborder / (f32)currentTextureHeight;
-	HUI_ASSERT(currentTextureWidth);
-	HUI_ASSERT(currentTextureHeight);
 	// this is the double size, two borders used in computations
 	f32 borderU2 = borderU * 2.0f;
 	f32 borderV2 = borderV * 2.0f;
@@ -2551,7 +2555,8 @@ void Renderer::drawTriangle(
 		i++;
 	}
 
-	currentBatch->vertexCount += (pointCount - 2) * 3;
+	if (currentBatch)
+		currentBatch->vertexCount += (pointCount - 2) * 3;
 	vertexBufferData.drawVertexCount = i;
 }
 

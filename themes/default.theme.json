@@ -650,12 +650,21 @@
 				"normal": { "image": "default/zaxis", "border": 0, "color": "white", "textColor": "white", "font": "normal" }
 			}
 		},
-		"targetObject":
+		"objectRefEditor":
 		{
-			"targetObjectBody":
+			"objectRefEditorBody":
 			{
 				"height":22,
+				"normal": { "image": "default/box", "border": 0, "color": "white", "textColor": "white", "font": "normal" },
+				"pressed": { "image": "default/box", "border": 0, "color": "white", "textColor": "cyan", "font": "normal" }
+			},
+			"objectRefEditorTargetButton":
+			{
 				"normal": { "image": "default/target", "border": 0, "color": "white", "textColor": "white", "font": "normal" }
+			},
+			"objectRefEditorClearButton":
+			{
+				"normal": { "image": "default/clear", "border": 0, "color": "white", "textColor": "white", "font": "normal" }
 			}
 		},
 		"table":
