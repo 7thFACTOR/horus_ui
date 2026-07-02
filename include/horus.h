@@ -2430,8 +2430,8 @@ HUI_API void widgetSetNextFocused();
 /// \param label the button text
 /// \return true if button was pressed
 HUI_API bool button(const char* label);
-HUI_API bool buttonGroup(const char** labels, u32 count, u32* currentIndex);
-HUI_API bool buttonGroup(const char** labels, u32 count, u32* currentIndex, bool fullWidth);
+HUI_API bool buttonGroup(const char* id, const char** labels, u32 count, u32* currentIndex);
+HUI_API bool buttonGroup(const char* id, const char** labels, u32 count, u32* currentIndex, bool fullWidth);
 
 /// Draw a button with an image on it
 /// \param img the image
@@ -2788,7 +2788,7 @@ HUI_API bool vec2Editor(const char* id, f64& x, f64& y, f64 scrollStep = 0.03f);
 HUI_API bool vec2Editor(const char* id, f32& x, f32& y, f32 scrollStep = 0.03f);
 
 /// Draw an object reference editor
-HUI_API bool objectRefEditor(const char* id, HImage targetImg, HImage clearImg, HImage iconImg, const char* objectTypeName, const char* valueAsString, u32 objectType, void** outObject, bool* objectValueWasModified);
+HUI_API bool objectRefEditor(const char* id, HImage targetImg, HImage clearImg, HImage iconImg, const char* objectTypeName, const char* valueAsString, u32 objectType, void** outObject, bool* objectValueWasModified, u32 refCount = 0, const char** refNames = nullptr, void** refValues = nullptr);
 
 //////////////////////////////////////////////////////////////////////////
 // Utility functions

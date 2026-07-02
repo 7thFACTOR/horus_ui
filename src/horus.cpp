@@ -2091,9 +2091,9 @@ void sameLineGroupBegin(u32 widgetCount)
 	ctx->sameLineGroup.currentWidget = 0;
 
 	// Calculate equal width for each widget, accounting for spacing between them
-	f32 totalSpacing = ctx->sameLine.spacing * (f32)(widgetCount - 1);
+	f32 totalSpacingPx = ctx->sameLine.spacing * ctx->scale * (f32)(widgetCount - 1);
 
-	ctx->sameLineGroup.widgetWidth = (ctx->layout.width - totalSpacing) / (f32)widgetCount;
+	ctx->sameLineGroup.widgetWidth = (ctx->layout.width - totalSpacingPx) / (f32)widgetCount / ctx->scale;
 
 	// Set nextSpacing to control the spacing after the first widget
 	ctx->sameLine.nextSpacing = ctx->sameLine.spacing;

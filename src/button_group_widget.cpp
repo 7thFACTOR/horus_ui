@@ -7,15 +7,17 @@
 namespace hui
 {
 
-bool buttonGroup(const char** labels, u32 count, u32* currentIndex)
+bool buttonGroup(const char* id, const char** labels, u32 count, u32* currentIndex)
 {
-	return buttonGroup(labels, count, currentIndex, false);
+	return buttonGroup(id, labels, count, currentIndex, false);
 }
 
-bool buttonGroup(const char** labels, u32 count, u32* currentIndex, bool fullWidth)
+bool buttonGroup(const char* id, const char** labels, u32 count, u32* currentIndex, bool fullWidth)
 {
 	if (count == 0 || !labels || !currentIndex)
 		return false;
+
+	idPush(id);
 
 	auto& leftElem = ctx->theme->getElement(WidgetElementId::ButtonGroupLeftBody);
 	auto& middleElem = ctx->theme->getElement(WidgetElementId::ButtonGroupMiddleBody);
@@ -87,10 +89,7 @@ bool buttonGroup(const char** labels, u32 count, u32* currentIndex, bool fullWid
 	{
 		auto& elem = i == 0 ? leftElem : i == count - 1 ? rightElem : middleElem;
 
-		char idBuf[256];
-		snprintf(idBuf, sizeof(idBuf), "%s##btnGrp_%u", labels[i], i);
-		ctx->setLabelAndId(idBuf);
-		ctx->id = genIdFromPosition(labels[i]);
+		ctx->setLabelAndId(labels[i]);
 
 		ctx->widget.disabled = disabled;
 		ctx->widget.changeEnded = false;
@@ -165,6 +164,8 @@ bool buttonGroup(const char** labels, u32 count, u32* currentIndex, bool fullWid
 		if (rightEdge > ctx->maxContentWidth)
 			ctx->maxContentWidth = rightEdge;
 	}
+
+	idPop();
 
 	return changed;
 }

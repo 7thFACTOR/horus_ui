@@ -153,6 +153,8 @@ struct DemoState
 	bool objectRefModified1 = false;
 	void* objectRefValue2 = nullptr;
 	bool objectRefModified2 = false;
+	void* objectRefValue3 = nullptr;
+	bool objectRefModified3 = false;
 
 	// Virtual List
 	bool expandVirtualList = false;
@@ -204,6 +206,13 @@ void showDemo()
 
 	scrollViewBegin("##demoScroll", 0, demo.demoScrollPos, { 0, 0 }, ScrollViewFlags::None);
 
+	{
+		char buf[64];
+		snprintf(buf, sizeof(buf), "Scale: %.2f", scaleGet());
+		label(buf);
+		space();
+	}
+
 	//------------------------------------------------------------------
 	// Button
 	//------------------------------------------------------------------
@@ -237,7 +246,7 @@ void showDemo()
 		space();
 		label("Button Group (3 items):");
 		static const char* groupItems[] = { "Left", "Center", "Right" };
-		if (buttonGroup(groupItems, 3, &demo.buttonGroupVal))
+		if (buttonGroup("##btnGrp1", groupItems, 3, &demo.buttonGroupVal))
 		{
 			forceRepaint();
 		}
@@ -249,7 +258,7 @@ void showDemo()
 		label("Button Group (2 items):");
 		static const char* groupItems2[] = { "On", "Off" };
 		static u32 binaryGroupVal = 0;
-		if (buttonGroup(groupItems2, 2, &binaryGroupVal))
+		if (buttonGroup("##btnGrp2", groupItems2, 2, &binaryGroupVal))
 		{
 			forceRepaint();
 		}
@@ -258,7 +267,7 @@ void showDemo()
 		label("Button Group (4 items):");
 		static const char* groupItems4[] = { "Spring", "Summer", "Fall", "Winter" };
 		static u32 seasonVal = 0;
-		if (buttonGroup(groupItems4, 4, &seasonVal))
+		if (buttonGroup("##btnGrp3", groupItems4, 4, &seasonVal))
 		{
 			forceRepaint();
 		}
@@ -267,7 +276,7 @@ void showDemo()
 		label("Disabled button group:");
 		widgetSetNextDisabled();
 		static u32 disabledGroupVal = 1;
-		if (buttonGroup(groupItems, 3, &disabledGroupVal)) {}
+		if (buttonGroup("##btnGrp4", groupItems, 3, &disabledGroupVal)) {}
 		widgetPopDisabled();
 		expandableEnd();
 	}
@@ -991,6 +1000,13 @@ void showDemo()
 	//------------------------------------------------------------------
 	if (expandableBegin("Object Reference Editor", &demo.expandObjectRef))
 	{
+		enum MyTypeIds
+		{
+			MyTypeId1,
+			MyTypeId2,
+			MyTypeId3
+		};
+
 		check("Disable##ObjectRef", &demo.disableObjectRef);
 		widgetPushDisabled(demo.disableObjectRef);
 
@@ -998,6 +1014,7 @@ void showDemo()
 
 		std::string v1;
 		std::string v2;
+		std::string v3;
 
 		if (demo.objectRefValue1)
 		{
@@ -1009,26 +1026,50 @@ void showDemo()
 			v2 = *(std::string*)demo.objectRefValue2;
 		}
 
-		objectRefEditor("##demoObjRef", themeGetImage(themeGet(), "__WHITEIMAGE__"), themeGetImage(themeGet(), "__WHITEIMAGE__"), 0, "MyObjectType", v1.c_str(), 0, &demo.objectRefValue1, &demo.objectRefModified1);
+		if (demo.objectRefValue3)
+		{
+			v3 = *(std::string*)demo.objectRefValue3;
+		}
+
+		objectRefEditor("##demoObjRef", themeGetImage(themeGet(), "__WHITEIMAGE__"), themeGetImage(themeGet(), "__WHITEIMAGE__"), 0, "MyObjectType1", v1.c_str(), MyTypeId1, &demo.objectRefValue1, &demo.objectRefModified1);
 		space();
 		
 		label("Without custom button images:");
-		objectRefEditor("##demoObjRefNoIcons", 0, 0, 0, "MyObjectType", v2.c_str(), 0, &demo.objectRefValue2, &demo.objectRefModified2);
+		{
+			static std::string refVal2a = "Mesh01";
+			static std::string refVal2b = "Mesh02";
+			static std::string refVal2c = "ArchVizModel";
+			const char* refNames2[] = { "Mesh01", "Mesh02", "ArchVizModel" };
+			void* refVals2[] = { &refVal2a, &refVal2b, &refVal2c };
+			objectRefEditor("##demoObjRefNoIcons", 0, 0, 0, "MyObjectType2", v2.c_str(), MyTypeId2, &demo.objectRefValue2, &demo.objectRefModified2, 3, refNames2, refVals2);
+		}
 		space();
 
 		{
 			label("With icon:");
 			HImage icon = themeGetImage(themeGet(), "../themes/default/sign-info.png");
-			objectRefEditor("##demoObjRefWithIcon", themeGetImage(themeGet(), "__WHITEIMAGE__"), themeGetImage(themeGet(), "__WHITEIMAGE__"), icon ? icon : themeGetImage(themeGet(), "__WHITEIMAGE__"), "MyObjectType", v1.c_str(), 0, &demo.objectRefValue1, &demo.objectRefModified1);
+			objectRefEditor("##demoObjRefWithIcon", themeGetImage(themeGet(), "__WHITEIMAGE__"), themeGetImage(themeGet(), "__WHITEIMAGE__"), icon ? icon : themeGetImage(themeGet(), "__WHITEIMAGE__"), "MyObjectType3", v3.c_str(), MyTypeId3, &demo.objectRefValue3, &demo.objectRefModified3);
 		}
 		space();
-		label("Drag source (drag into the editor):");
+		label("Drag source (drag button into the proper editor):");
 		{
-			static std::string dragSampleObject = "ShinyMetalA";
-			button("MyObjectType##dragSrc");
+			static std::string dragSampleObject1 = "ShinyMetalA";
+			button("MyObjectType1##dragSrc");
 			if (dragDropWantsTo())
 			{
-				dragDropBegin(0, &dragSampleObject);
+				dragDropBegin(MyTypeId1, &dragSampleObject1);
+			}
+			static std::string dragSampleObject2 = "Mesh01";
+			button("MyObjectType2##dragSrc");
+			if (dragDropWantsTo())
+			{
+				dragDropBegin(MyTypeId2, &dragSampleObject2);
+			}
+			static std::string dragSampleObject3 = "SkyShader";
+			button("MyObjectType3##dragSrc");
+			if (dragDropWantsTo())
+			{
+				dragDropBegin(MyTypeId3, &dragSampleObject3);
 			}
 		}
 		widgetPopDisabled();

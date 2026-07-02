@@ -127,7 +127,7 @@ bool colorPicker(const char* id, Color* inOutColor, ColorPickerFlags flags, cons
 	i32 crtIntB = (u32)(crtColor.b * 255.0f);
 	i32 crtIntA = (u32)(crtColor.a * 255.0f);
 	Color hsv = colorRgbToHsv(crtColor);
-	f32 height = ctx->layout.width * 0.5f + indicatorSize;
+	f32 height = ctx->layout.width * 0.5f / ctx->scale + 20.0f;
 
 	ctx->id = genId(id);
 	
@@ -349,8 +349,8 @@ bool colorPicker(const char* id, Color* inOutColor, ColorPickerFlags flags, cons
 
 	Rect rcCurrentSVIndicator = rcSV;
 
-	rcCurrentSVIndicator.x = rcSV.x + clampedHsv.g * rcSV.width - indicatorSize / 2.0f * ctx->scale;
-	rcCurrentSVIndicator.y = rcSV.y + (1.0f - clampedHsv.b) * rcSV.height - indicatorSize / 2.0f * ctx->scale;
+	rcCurrentSVIndicator.x = rcSV.x + clampedHsv.g * rcSV.width - indicatorSize / 2.0f;
+	rcCurrentSVIndicator.y = rcSV.y + (1.0f - clampedHsv.b) * rcSV.height - indicatorSize / 2.0f;
 	rcCurrentSVIndicator.width = indicatorSize;
 	rcCurrentSVIndicator.height = indicatorSize;
 	ctx->renderer.cmdSetColor(colorHsvToRgb({ clampedHsv.r, clampedHsv.g, clampedHsv.b, 1 }));

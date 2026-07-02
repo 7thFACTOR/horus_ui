@@ -143,7 +143,7 @@ bool vec2Editor(const char* id, f32& x, f32& y, f32 scrollStep)
 	return ret;
 }
 
-bool objectRefEditor(const char* id, HImage targetImg, HImage clearImg, HImage iconImg, const char* objectTypeName, const char* valueAsString, u32 objectType, void** outObject, bool* objectValueWasModified)
+bool objectRefEditor(const char* id, HImage targetImg, HImage clearImg, HImage iconImg, const char* objectTypeName, const char* valueAsString, u32 objectType, void** outObject, bool* objectValueWasModified, u32 refCount, const char** refNames, void** refValues)
 {
 	idPush(id);
 	bool returnValue = false;
@@ -173,7 +173,7 @@ bool objectRefEditor(const char* id, HImage targetImg, HImage clearImg, HImage i
 	f32 btnSize = targetElemInfo.height;
 	f32 spacingPx = ctx->sameLine.spacing * ctx->scale;
 	f32 btnSizePx = btnSize * ctx->scale;
-	f32 boxWidthPx = ctx->layout.width - btnSizePx * 2;
+	f32 boxWidthPx = ctx->layout.width - btnSizePx * (*outObject ? 2 : 1);
 
 	// Editor body (left side, fills remaining width)
 	widgetSetNextWidth(boxWidthPx / ctx->scale);
@@ -335,75 +335,121 @@ bool objectRefEditor(const char* id, HImage targetImg, HImage clearImg, HImage i
 		tooltip("Select reference");
 	}
 
-	// Clear button next to target
-	sameLine(-ctx->sameLine.spacing, 0);
+	// Save target button position and id for popup
+	Rect targetBtnRect = ctx->widget.rect;
+	WidgetId targetWidgetId = ctx->id;
 
-	if (clearImg)
+	// Toggle reference selection popup when target button clicked
+	if (refCount > 0 && returnValue)
 	{
-		tintPush(Color::darkRed);
-
-		if (imageButton(clearImg, btnSize, btnSize))
-		{
-			*outObject = nullptr;
-
-			if (objectValueWasModified)
-				*objectValueWasModified = true;
-
-			changeEnded = true;
-		}
-
-		tintPop();
-		tooltip("Clear reference");
+		ctx->dropdown.active = !ctx->dropdown.active;
+		if (ctx->dropdown.active)
+			ctx->dropdown.id = targetWidgetId;
+		else
+			ctx->dropdown.id = 0;
 	}
-	else
+
+	// Clear button next to target (only shown when a ref is set)
+	if (*outObject)
 	{
-		// Draw "X" text button when no clear image
-		ctx->widget.customWidth = btnSize;
-		ctx->widget.hasCustomWidth = true;
-		ctx->setLabelAndId("clearBtn");
-		addWidget(btnSize * ctx->scale);
-		buttonBehavior();
+		sameLine(-ctx->sameLine.spacing, 0);
 
-		auto& btnBody = ctx->theme->getElement(WidgetElementId::ImageButtonBody);
-		auto state = &btnBody.normalState();
-		if (ctx->widget.disabled)
-			state = &btnBody.getState(WidgetStateType::Disabled);
-		else if (ctx->widget.pressed)
-			state = &btnBody.getState(WidgetStateType::Pressed);
-		else if (ctx->widget.focused)
-			state = &btnBody.getState(WidgetStateType::Focused);
-		else if (ctx->widget.hovered)
-			state = &btnBody.getState(WidgetStateType::Hovered);
-
-		if (ctx->widget.visible)
+		if (clearImg)
 		{
-			auto bodyImage = state->image;
-			if (!bodyImage && ctx->widget.disabled)
-				bodyImage = btnBody.normalState().image;
+			tintPush(Color::darkRed);
 
-			ctx->renderer.cmdSetColor(tintApply(Color::darkRed, TintColorType::Body));
-			ctx->renderer.cmdDrawImageBordered(bodyImage, state->border, ctx->widget.rect, ctx->scale);
+			if (imageButton(clearImg, btnSize, btnSize))
+			{
+				*outObject = nullptr;
 
-			ctx->renderer.cmdSetColor(tintApply(Color::darkRed, TintColorType::Text));
-			ctx->renderer.cmdSetFont(state->font);
-			ctx->renderer.cmdDrawTextInBox("X", ctx->widget.rect, HAlignType::Center, VAlignType::Center, true);
+				if (objectValueWasModified)
+					*objectValueWasModified = true;
+
+				changeEnded = true;
+			}
+
+			tintPop();
+			tooltip("Clear reference");
+		}
+		else
+		{
+			// Draw "X" text button when no clear image
+			ctx->widget.customWidth = btnSize;
+			ctx->widget.hasCustomWidth = true;
+			ctx->setLabelAndId("clearBtn");
+			addWidget(btnSize * ctx->scale);
+			buttonBehavior();
+
+			auto& btnBody = ctx->theme->getElement(WidgetElementId::ImageButtonBody);
+			auto state = &btnBody.normalState();
+			if (ctx->widget.disabled)
+				state = &btnBody.getState(WidgetStateType::Disabled);
+			else if (ctx->widget.pressed)
+				state = &btnBody.getState(WidgetStateType::Pressed);
+			else if (ctx->widget.focused)
+				state = &btnBody.getState(WidgetStateType::Focused);
+			else if (ctx->widget.hovered)
+				state = &btnBody.getState(WidgetStateType::Hovered);
+
+			if (ctx->widget.visible)
+			{
+				auto bodyImage = state->image;
+				if (!bodyImage && ctx->widget.disabled)
+					bodyImage = btnBody.normalState().image;
+
+				ctx->renderer.cmdSetColor(tintApply(Color::darkRed, TintColorType::Body));
+				ctx->renderer.cmdDrawImageBordered(bodyImage, state->border, ctx->widget.rect, ctx->scale);
+
+				ctx->renderer.cmdSetColor(tintApply(Color::darkRed, TintColorType::Text));
+				ctx->renderer.cmdSetFont(state->font);
+				ctx->renderer.cmdDrawTextInBox("X", ctx->widget.rect, HAlignType::Center, VAlignType::Center, true);
+			}
+
+			widgetSetFocusable();
+			if (widgetIsClicked())
+				forceRepaint();
+
+			if (ctx->widget.clicked)
+			{
+				*outObject = nullptr;
+
+				if (objectValueWasModified)
+					*objectValueWasModified = true;
+
+				changeEnded = true;
+			}
+
+			tooltip("Clear reference");
+		}
+	}
+
+	// Reference selection popup
+	if (refCount > 0 && ctx->dropdown.active && targetWidgetId == ctx->dropdown.id)
+	{
+		bool selectedNewItem = false;
+		popupBegin("##refPopup", 200, PopupFlags::CustomPosition, targetBtnRect.bottomLeft());
+
+		for (u32 i = 0; i < refCount; i++)
+		{
+			if (selectable(refNames[i], refValues && refValues[i] == *outObject ? SelectableFlags::Selected : SelectableFlags::Normal))
+			{
+				*outObject = refValues[i];
+
+				if (objectValueWasModified)
+					*objectValueWasModified = true;
+
+				changeEnded = true;
+				selectedNewItem = true;
+			}
 		}
 
-		widgetSetFocusable();
-		if (widgetIsClicked())
-			forceRepaint();
-
-		if (ctx->widget.clicked)
+		if (selectedNewItem || popupMustClose())
 		{
-			*outObject = nullptr;
-
-			if (objectValueWasModified)
-				*objectValueWasModified = true;
-
-			changeEnded = true;
+			popupClose();
+			ctx->dropdown.active = false;
 		}
 
-		tooltip("Clear reference");
+		popupEnd();
 	}
 
 	ctx->widget.changeEnded = changeEnded;
