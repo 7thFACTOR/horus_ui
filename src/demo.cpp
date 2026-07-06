@@ -5,9 +5,12 @@
 #include <string.h>
 #include <stdio.h>
 #include <algorithm>
+#include <string>
+#include <vector>
 
 namespace hui
 {
+
 struct DemoState
 {
 	// Button
@@ -40,6 +43,8 @@ struct DemoState
 	// RotarySlider
 	f32 rotaryVal = 0.5f;
 	f32 rotaryTwoSide = 0.0f;
+	f32 rotaryVal2 = 50.0f;
+	f32 rotaryVal3 = 0.7f;
 
 	// Progress
 	f32 progressValue = 0.0f;
@@ -168,6 +173,10 @@ struct DemoState
 	void* dragDropTargetAValue = nullptr;
 	void* dragDropTargetBValue = nullptr;
 	void* dragDropTargetCValue = nullptr;
+	std::vector<std::string> dragListA = { "Apple", "Banana", "Cherry", "Date" };
+	std::vector<std::string> dragListB = { "Eclair", "Fig", "Grape" };
+	std::vector<char> dragListASel;
+	std::vector<char> dragListBSel;
 
 	Point scrollPos = { 0, 0 };
 
@@ -416,12 +425,14 @@ void showDemo()
 		check("Disable##RotarySlider", &demo.disableRotarySlider);
 		widgetPushDisabled(demo.disableRotarySlider);
 
-		label("Basic rotary slider (0..1):");
 		rotarySliderFloat("Volume", &demo.rotaryVal, 0.0f, 1.0f, 0.01f);
+		sameLine();
+		rotarySliderFloat("Pan", &demo.rotaryTwoSide, -1.0f, 1.0f, 0.01f, true);
+		sameLine();
+		rotarySliderFloat("Speed", &demo.rotaryVal2, 0.0f, 100.0f, 1.0f);
 
 		space();
-		label("Two-side rotary slider (-1..1):");
-		rotarySliderFloat("Pan", &demo.rotaryTwoSide, -1.0f, 1.0f, 0.01f, true);
+		rotarySliderFloat("Test", &demo.rotaryVal3, 0.0f, 100.0f, 1.0f, false, 10.0f, RotarySliderFlags::ShowValueInCenter);
 		widgetPopDisabled();
 		expandableEnd();
 	}
@@ -509,24 +520,28 @@ void showDemo()
 		label("Right aligned", HAlignType::Right);
 
 		space();
-		label("Multiline label:");
-		labelMultiline("This is a multiline label that can wrap across multiple lines when the text is long enough to exceed the available width.", HAlignType::Left);
+		label("Custom color labels:");
+		labelCustomColor("Red left", Color::red);
+		labelCustomColor("Green center", Color::green, HAlignType::Center);
+		labelCustomColor("Blue right", Color::blue, HAlignType::Right);
+		labelCustomColor("Orange left (multiline)", Color::orange);
+		labelCustomColorMultiline("This is a cyan multiline label with custom color that wraps across lines.", Color::cyan, HAlignType::Left);
 
 		space();
-		label("Custom font labels:");
+		label("Custom font + color labels:");
 		HFont titleFont = themeFontGet("title");
 		HFont headingFont = themeFontGet("heading");
+		HFont italicFont = themeFontGet("normal-italic");
 
 		labelCustomFont("Title Font Label", titleFont);
 		labelCustomFont("Heading Font Label", headingFont);
-
-		space();
-		label("Custom font multiline label:");
-		labelCustomFontMultiline("This is a multiline label with a custom font. It should wrap properly if the text is long enough.", titleFont, HAlignType::Left);
+		labelCustom("Title + magenta center", titleFont, Color::magenta, HAlignType::Center);
+		labelCustom("Heading + yellow right", headingFont, Color::yellow, HAlignType::Right);
+		labelCustom("Italic + sky left", italicFont, Color::sky);
+		labelCustomMultiline("Italic + green multiline wrapping text with custom font and color.", italicFont, Color::green, HAlignType::Center);
 
 		space();
 		label("Italic label:");
-		HFont italicFont = themeFontGet("normal-italic");
 		labelCustomFont("This label uses italic font", italicFont);
 		widgetPopDisabled();
 		expandableEnd();
@@ -1083,8 +1098,10 @@ void showDemo()
 		label("Drag sources:");
 
 		sameLine(0, 20);
+		tintPush(Color::orange, TintColorType::Text);
 		if (button(("Type A (int): " + std::to_string(demo.dragDropSrcA)).c_str()))
 			demo.dragDropSrcA++;
+		tintPop();
 		if (dragDropWantsTo())
 		{
 			static int dragObjA = 0;
@@ -1093,8 +1110,10 @@ void showDemo()
 		}
 
 		sameLine(0, 10);
+		tintPush(Color::sky, TintColorType::Text);
 		if (button(("Type B (int): " + std::to_string(demo.dragDropSrcB)).c_str()))
 			demo.dragDropSrcB++;
+		tintPop();
 		if (dragDropWantsTo())
 		{
 			static int dragObjB = 0;
@@ -1113,7 +1132,9 @@ void showDemo()
 				ddTxt = "Dropped: " + std::to_string(*(int*)demo.dragDropTargetAValue);
 			else
 				ddTxt = "Drop type 1 here";
+			tintPush(Color::orange, TintColorType::Text);
 			label((ddTxt + "##ddTargetA").c_str());
+			tintPop();
 
 			if (dragDropGetObjectType() == 1)
 				dragDropAllow();
@@ -1137,7 +1158,9 @@ void showDemo()
 				ddTxt = "Dropped: " + std::to_string(*(int*)demo.dragDropTargetBValue);
 			else
 				ddTxt = "Drop type 2 here";
+			tintPush(Color::sky, TintColorType::Text);
 			label((ddTxt + "##ddTargetB").c_str());
+			tintPop();
 
 			if (dragDropGetObjectType() == 2)
 				dragDropAllow();
@@ -1161,7 +1184,9 @@ void showDemo()
 				ddTxt = "Dropped: " + std::to_string(*(int*)demo.dragDropTargetCValue);
 			else
 				ddTxt = "Drop type 1 or 2 here";
+			tintPush(Color::yellow, TintColorType::Text);
 			label((ddTxt + "##ddTargetC").c_str());
+			tintPop();
 
 			u32 type = dragDropGetObjectType();
 			if (type == 1 || type == 2)
@@ -1179,6 +1204,96 @@ void showDemo()
 
 		space();
 		label("Tip: drag from Type A or Type B buttons into the drop targets above.");
+
+		space();
+		label("Drag items between lists:");
+		space();
+
+		// Deferred move: avoid modifying lists during list() iteration
+		static std::string pendingMoveStr;
+		static bool pendingMoveToListA = false;
+
+		demo.dragListASel.resize(demo.dragListA.size());
+		demo.dragListBSel.resize(demo.dragListB.size());
+
+		{
+			std::vector<const char*> itemsA;
+			for (auto& s : demo.dragListA)
+				itemsA.push_back(s.c_str());
+
+			sameLine(0, 0);
+			list("##dragListA", (bool*)demo.dragListASel.data(), ListSelectionMode::Single,
+				itemsA.data(), (u32)itemsA.size(), 150, 3,
+				[](void* obj) -> bool
+				{
+					const char* droppedStr = (const char*)obj;
+					for (auto& s : demo.dragListB)
+					{
+						if (s.c_str() == droppedStr)
+						{
+							pendingMoveStr = s;
+							pendingMoveToListA = true;
+							return true;
+						}
+					}
+					return false;
+				});
+		}
+
+		sameLine(0, 10);
+		{
+			std::vector<const char*> itemsB;
+			for (auto& s : demo.dragListB)
+				itemsB.push_back(s.c_str());
+
+			list("##dragListB", (bool*)demo.dragListBSel.data(), ListSelectionMode::Single,
+				itemsB.data(), (u32)itemsB.size(), 150, 3,
+				[](void* obj) -> bool
+				{
+					const char* droppedStr = (const char*)obj;
+					for (auto& s : demo.dragListA)
+					{
+						if (s.c_str() == droppedStr)
+						{
+							pendingMoveStr = s;
+							pendingMoveToListA = false;
+							return true;
+						}
+					}
+					return false;
+				});
+		}
+
+		// Apply deferred move
+		if (!pendingMoveStr.empty())
+		{
+			if (pendingMoveToListA)
+			{
+				for (size_t i = 0; i < demo.dragListB.size(); i++)
+				{
+					if (demo.dragListB[i] == pendingMoveStr)
+					{
+						demo.dragListA.push_back(std::move(demo.dragListB[i]));
+						demo.dragListB.erase(demo.dragListB.begin() + i);
+						break;
+					}
+				}
+			}
+			else
+			{
+				for (size_t i = 0; i < demo.dragListA.size(); i++)
+				{
+					if (demo.dragListA[i] == pendingMoveStr)
+					{
+						demo.dragListB.push_back(std::move(demo.dragListA[i]));
+						demo.dragListA.erase(demo.dragListA.begin() + i);
+						break;
+					}
+				}
+			}
+			pendingMoveStr.clear();
+		}
+
 		expandableEnd();
 	}
 	//------------------------------------------------------------------

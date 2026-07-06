@@ -1710,6 +1710,11 @@ Point mouseGetPosition()
 	return ctx->mousePosition;
 }
 
+void mouseSetPosition(const Point& pos)
+{
+	ctx->settings.services.setMousePosition(pos);
+}
+
 Point widgetGetPosition()
 {
 	return ctx->position;
@@ -1784,6 +1789,7 @@ void dragDropBegin(u32 dragObjectType, void* dragObject)
 	ctx->dragDrop.dragObject = dragObject;
 	ctx->dragDrop.dragObjectType = dragObjectType;
 	ctx->dragDrop.begunDragging = true;
+	ctx->widget.captureId = 0;
 }
 
 void dragDropEnd()

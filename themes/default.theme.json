@@ -90,7 +90,7 @@
 			"buttonGroupRightBody":
 			{
 				"height": 22,
-				"normal": { "image": "default/button_group_right_normal", "border": 5, "color": "120 120 120 255", "textColor": "white", "font": "normal" },
+				"normal": { "image": "default/button_group_right_normal", "border": 5, "color": "90 90 90 255", "textColor": "white", "font": "normal" },
 				"disabled": { "color": "120 120 120 155", "textColor": "255 255 255 128" },
 				"hovered": { "image": "default/button_group_right_normal", "border": 5, "color": "sky", "textColor": "white" },
 				"pressed": { "image": "default/button_group_right_pressed", "border": 5, "color": "white", "textColor": "100 100 100 255", "font": "normal-bold" },

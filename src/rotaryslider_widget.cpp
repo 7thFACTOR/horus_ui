@@ -9,7 +9,7 @@
 
 namespace hui
 {
-bool rotarySliderFloat(const char* label, f32* value, f32 minVal, f32 maxVal, f32 step, bool twoSide, f32 fineStepDivideFactor)
+bool rotarySliderFloat(const char* label, f32* value, f32 minVal, f32 maxVal, f32 step, bool twoSide, f32 fineStepDivideFactor, RotarySliderFlags flags)
 {
 	auto& bodyElem = ctx->theme->getElement(WidgetElementId::RotarySliderBody);
 	auto& markElem = ctx->theme->getElement(WidgetElementId::RotarySliderMark);
@@ -17,9 +17,9 @@ bool rotarySliderFloat(const char* label, f32* value, f32 minVal, f32 maxVal, f3
 	bool wasModified = false;
 	auto& padding = widgetGetPadding();
 
-	if (ctx->sameLine.enabled && !ctx->widget.hasNextWidth)
+	if (!ctx->widget.hasNextWidth)
 	{
-		ctx->widget.customWidth = ((bodyElem.normalState().border + padding.x) * 2.0f) * ctx->scale;
+		ctx->widget.customWidth = bodyElem.normalState().image->width;
 		ctx->widget.hasCustomWidth = true;
 	}
 
@@ -31,12 +31,18 @@ bool rotarySliderFloat(const char* label, f32* value, f32 minVal, f32 maxVal, f3
 	{
 		ctx->rotarySlider.lastMousePos = ctx->mousePosition;
 		ctx->rotarySlider.id = ctx->id;
+		ctx->rotarySlider.hiddenCursorPos = ctx->settings.services.getAbsoluteMousePosition();
+		ctx->settings.services.hideCursor();
+		windowSetCapture();
 	}
 
 	if (ctx->event.type == InputEvent::Type::MouseUp && ctx->rotarySlider.id == ctx->id && !ctx->widget.disabled)
 	{
 		ctx->rotarySlider.id = 0;
 		ctx->widget.changeEnded = true;
+		ctx->settings.services.setMousePosition(ctx->rotarySlider.hiddenCursorPos);
+		ctx->settings.services.showCursor();
+		windowReleaseCapture();
 	}
 
 	if (ctx->event.type == InputEvent::Type::MouseMove
@@ -71,6 +77,23 @@ bool rotarySliderFloat(const char* label, f32* value, f32 minVal, f32 maxVal, f3
 
 		*value += deltaValue * step * ((bool)(ctx->event.mouse.modifiers & KeyModifiers::Control) ? 1.0f / fineStepDivideFactor : 1.0f);
 		wasModified = clampValue(*value, minVal, maxVal);
+
+		if (ctx->lastHoveredNativeWindow)
+		{
+			auto wndPos = ctx->settings.services.getWindowPosition(ctx->lastHoveredNativeWindow);
+			auto wndSize = ctx->settings.services.getWindowSize(ctx->lastHoveredNativeWindow);
+			auto absPos = ctx->settings.services.getAbsoluteMousePosition();
+			const f32 margin = 2.0f;
+
+			if (absPos.x <= wndPos.x + margin || absPos.x >= wndPos.x + wndSize.x - margin)
+			{
+				Point centerScreen(wndPos.x + wndSize.x * 0.5f, absPos.y);
+				ctx->settings.services.setMousePosition(centerScreen);
+				Point warpDelta = centerScreen - absPos;
+				ctx->rotarySlider.lastMousePos += warpDelta;
+				ctx->mousePosition += warpDelta;
+			}
+		}
 	}
 	
 	auto bodyElemState = &bodyElem.normalState();
@@ -180,6 +203,26 @@ bool rotarySliderFloat(const char* label, f32* value, f32 minVal, f32 maxVal, f3
 
 		ctx->renderer.cmdSetColor(markElemState->color);
 		ctx->renderer.cmdDrawImage(markElemState->image, pos, ctx->scale);
+
+		// draw value in center if flagged
+		if (has(flags, RotarySliderFlags::ShowValueInCenter))
+		{
+			char valStr[64];
+			snprintf(valStr, sizeof(valStr), "%.0f%%", *value);
+
+			Rect centerRect = {
+				rc.x,
+				rc.y,
+				rc.width,
+				rc.height
+			};
+
+			ctx->renderer.cmdSetColor(tintApply(bodyElemState->textColor, TintColorType::Text));
+			ctx->renderer.cmdSetFont(bodyElemState->font);
+			ctx->renderer.pushClipRect(rc);
+			ctx->renderer.cmdDrawTextInBox(valStr, centerRect, HAlignType::Center, VAlignType::Center);
+			ctx->renderer.popClipRect();
+		}
 
 		// draw the text under the knob
 		ctx->renderer.cmdSetColor(tintApply(bodyElemState->textColor, TintColorType::Text));

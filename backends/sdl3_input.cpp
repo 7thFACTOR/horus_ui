@@ -661,6 +661,16 @@ static void setCustomCursor(HMouseCursor cursor)
 	SDL_SetCursor((SDL_Cursor*)cursor);
 }
 
+static void hideCursor()
+{
+	SDL_HideCursor();
+}
+
+static void showCursor()
+{
+	SDL_ShowCursor();
+}
+
 static void setCurrentWindow(HNativeWindow window)
 {
 	auto proxy = (SdlWindowProxy*)window;
@@ -1041,6 +1051,11 @@ static Point getAbsoluteMousePosition()
 	return { (f32)x , (f32)y };
 }
 
+static void setMousePosition(const Point& pos)
+{
+	SDL_WarpMouseGlobal(pos.x, pos.y);
+}
+
 static bool isMouseButtonDownNow(MouseButton button)
 {
 	f32 x = 0, y = 0;
@@ -1135,11 +1150,14 @@ void initSdl3(Services& services, const Sdl3InitParams& params)
 	services.setCapture = setCapture;
 	services.releaseCapture = releaseCapture;
 	services.getAbsoluteMousePosition = getAbsoluteMousePosition;
+	services.setMousePosition = setMousePosition;
 	services.isMouseButtonDownNow = isMouseButtonDownNow;
 	services.setCursor = setCursor;
 	services.createCustomCursor = createCustomCursor;
 	services.deleteCustomCursor = deleteCustomCursor;
 	services.setCustomCursor = setCustomCursor;
+	services.hideCursor = hideCursor;
+	services.showCursor = showCursor;
 }
 
 void shutdownSdl3(Services& services)
@@ -1199,11 +1217,14 @@ void shutdownSdl3(Services& services)
 	services.setCapture = nullptr;
 	services.releaseCapture = nullptr;
 	services.getAbsoluteMousePosition = nullptr;
+	services.setMousePosition = nullptr;
 	services.isMouseButtonDownNow = nullptr;
 	services.setCursor = nullptr;
 	services.createCustomCursor = nullptr;
 	services.deleteCustomCursor = nullptr;
 	services.setCustomCursor = nullptr;
+	services.hideCursor = nullptr;
+	services.showCursor = nullptr;
 }
 
 }

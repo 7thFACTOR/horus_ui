@@ -278,6 +278,7 @@ struct ComboSliderState
 	bool editingText = false;
 	bool clickedToEditText = false;
 	Point dragLastMousePos;
+	Point hiddenCursorPos;
 	char text[maxTextSize] = {0};
 	WidgetId newId = 0;
 	WidgetId id = 0;
@@ -574,6 +575,7 @@ struct PopupState
 struct RotarySliderState
 {
 	Point lastMousePos;
+	Point hiddenCursorPos;
 	WidgetId id = 0;
 	bool isFine = false;
 };

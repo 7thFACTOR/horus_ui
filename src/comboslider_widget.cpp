@@ -200,6 +200,8 @@ static bool comboSliderInternal(bool isInt, f32* value, f32 minVal, f32 maxVal, 
 				ctx->comboSlider.dragLastMousePos = ctx->mousePosition;
 				ctx->comboSlider.mouseWasDown = false;
 				ctx->comboSlider.currentValue = *value;
+				ctx->comboSlider.hiddenCursorPos = ctx->settings.services.getAbsoluteMousePosition();
+				ctx->settings.services.hideCursor();
 			}
 		}
 
@@ -242,6 +244,23 @@ static bool comboSliderInternal(bool isInt, f32* value, f32 minVal, f32 maxVal, 
 				ctx->widget.changeEnded = true;
 				*value = ctx->comboSlider.currentValue;
 			}
+
+			if (ctx->lastHoveredNativeWindow)
+			{
+				auto wndPos = ctx->settings.services.getWindowPosition(ctx->lastHoveredNativeWindow);
+				auto wndSize = ctx->settings.services.getWindowSize(ctx->lastHoveredNativeWindow);
+				auto absPos = ctx->settings.services.getAbsoluteMousePosition();
+				const f32 margin = 2.0f;
+
+				if (absPos.x <= wndPos.x + margin || absPos.x >= wndPos.x + wndSize.x - margin)
+				{
+					Point centerScreen(wndPos.x + wndSize.x * 0.5f, absPos.y);
+					ctx->settings.services.setMousePosition(centerScreen);
+					Point warpDelta = centerScreen - absPos;
+					ctx->comboSlider.dragLastMousePos += warpDelta;
+					ctx->mousePosition += warpDelta;
+				}
+			}
 		}
 
 		if (ctx->event.type == InputEvent::Type::MouseUp
@@ -254,6 +273,8 @@ static bool comboSliderInternal(bool isInt, f32* value, f32 minVal, f32 maxVal, 
 			{
 				*value = ctx->comboSlider.currentValue;
 				ctx->widget.changeEnded = true;
+				ctx->settings.services.setMousePosition(ctx->comboSlider.hiddenCursorPos);
+				ctx->settings.services.showCursor();
 			}
 			ctx->comboSlider.dragging = false;
 			ctx->comboSlider.mouseWasDown = false;
