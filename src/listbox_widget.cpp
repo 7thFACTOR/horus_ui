@@ -47,12 +47,22 @@ bool list(const char* id, bool* selectedItems, ListSelectionMode selectionType, 
 
 	if (dragDropType && dragDropGetObjectType() == dragDropType)
 	{
-		if (listRect.contains(ctx->mousePosition))
+		bool isSelfDrop = false;
+		void* draggedObj = dragDropGetObject();
+		for (u32 j = 0; j < itemCount; j++)
 		{
-			ctx->widget.hoveredId = genId("listBodyArea");
-			ctx->widget.hovered = true;
+			if ((void*)items[j] == draggedObj) { isSelfDrop = true; break; }
 		}
-		dragDropAllow();
+
+		if (!isSelfDrop)
+		{
+			if (listRect.contains(ctx->mousePosition))
+			{
+				ctx->widget.hoveredId = genId("listBodyArea");
+				ctx->widget.hovered = true;
+			}
+			dragDropAllow();
+		}
 
 		if (dragDropDroppedOnWidget())
 		{
@@ -102,7 +112,16 @@ bool list(const char* id, bool* selectedItems, ListSelectionMode selectionType, 
 			dragDropBegin(dragDropType, (void*)items[i]);
 
 		if (dragDropType && dragDropGetObjectType() == dragDropType)
-			dragDropAllow();
+		{
+			bool isSelfDrop = false;
+			void* draggedObj = dragDropGetObject();
+			for (u32 j = 0; j < itemCount; j++)
+			{
+				if ((void*)items[j] == draggedObj) { isSelfDrop = true; break; }
+			}
+			if (!isSelfDrop)
+				dragDropAllow();
+		}
 
 		if (dragDropType && dragDropDroppedOnWidget() && dragDropGetObjectType() == dragDropType)
 		{
