@@ -212,6 +212,9 @@ void buttonBehavior(bool menuItem)
 				ctx->widget.pressed = true;
 				ctx->widget.focused = true;
 
+				if (ctx->event.mouse.clickCount == 2)
+					ctx->widget.doubleClicked = true;
+
 				ctx->tooltip.show = false;
 				ctx->tooltip.lastId = ctx->tooltip.id;
 

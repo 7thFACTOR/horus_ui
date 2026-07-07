@@ -158,6 +158,7 @@ void addWidget(f32 height)
 	ctx->widget.disabled = ctx->widget.nextDisabled || (ctx->disabledNesting > 0);
 	ctx->widget.nextDisabled = false;
 	ctx->widget.changeEnded = false;
+	ctx->widget.doubleClicked = false;
 	height = (height + widgetGetPadding().y * 2.0f) * ctx->scale;
 
 	// next width has priority over custom width

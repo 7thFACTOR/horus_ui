@@ -440,6 +440,7 @@ struct WidgetState
 	bool pressed = false;
 	bool visible = true;
 	bool clicked = false;
+	bool doubleClicked = false;
 	bool hovered = false;
 	bool focused = false;
 	bool changeEnded = false;

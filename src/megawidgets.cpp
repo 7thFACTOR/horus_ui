@@ -251,6 +251,10 @@ bool objectRefEditor(const char* id, HImage targetImg, HImage clearImg, HImage i
 
 	widgetSetFocusable();
 
+	// Double-click on body triggers reference selection
+	if (ctx->widget.doubleClicked)
+		returnValue = true;
+
 	// Clear reference on Delete key when focused
 	if (ctx->widget.focused
 		&& *outObject
