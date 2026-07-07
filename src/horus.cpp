@@ -1712,7 +1712,7 @@ Point mouseGetPosition()
 
 void mouseSetPosition(const Point& pos)
 {
-	ctx->settings.services.setMousePosition(pos);
+	ctx->settings.services.setAbsoluteMousePosition(pos);
 }
 
 Point widgetGetPosition()

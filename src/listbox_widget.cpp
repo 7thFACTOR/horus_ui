@@ -7,7 +7,7 @@
 
 namespace hui
 {
-bool list(const char* id, bool* selectedItems, ListSelectionMode selectionType, const char** items, u32 itemCount, f32 height, u32 dragDropType, bool (*onItemDrop)(void* draggedObj))
+bool list(const char* id, bool* selectedItems, ListSelectionMode selectionType, const char** items, u32 itemCount, f32 height)
 {
 	if (!items || itemCount == 0 || !selectedItems)
 		return false;
@@ -45,35 +45,6 @@ bool list(const char* id, bool* selectedItems, ListSelectionMode selectionType, 
 	Rect listRect = ctx->scrollViewState[ctx->id].rect;
 	bool changed = false;
 
-	if (dragDropType && dragDropGetObjectType() == dragDropType)
-	{
-		bool isSelfDrop = false;
-		void* draggedObj = dragDropGetObject();
-		for (u32 j = 0; j < itemCount; j++)
-		{
-			if ((void*)items[j] == draggedObj) { isSelfDrop = true; break; }
-		}
-
-		if (!isSelfDrop)
-		{
-			if (listRect.contains(ctx->mousePosition))
-			{
-				ctx->widget.hoveredId = genId("listBodyArea");
-				ctx->widget.hovered = true;
-			}
-			dragDropAllow();
-		}
-
-		if (dragDropDroppedOnWidget())
-		{
-			if (onItemDrop && onItemDrop(dragDropGetObject()))
-			{
-				dragDropEnd();
-				forceRepaint();
-			}
-		}
-	}
-
 	// Ensure anchor state exists
 	if (ctx->listAnchors.find(listId) == ctx->listAnchors.end())
 		ctx->listAnchors[listId] = -1;
@@ -107,30 +78,6 @@ bool list(const char* id, bool* selectedItems, ListSelectionMode selectionType, 
 		bool isSelected = selectedItems[i];
 
 		bool itemClicked = selectable(items[i], isSelected ? SelectableFlags::Selected : SelectableFlags::Normal);
-
-		if (dragDropType && dragDropWantsTo())
-			dragDropBegin(dragDropType, (void*)items[i]);
-
-		if (dragDropType && dragDropGetObjectType() == dragDropType)
-		{
-			bool isSelfDrop = false;
-			void* draggedObj = dragDropGetObject();
-			for (u32 j = 0; j < itemCount; j++)
-			{
-				if ((void*)items[j] == draggedObj) { isSelfDrop = true; break; }
-			}
-			if (!isSelfDrop)
-				dragDropAllow();
-		}
-
-		if (dragDropType && dragDropDroppedOnWidget() && dragDropGetObjectType() == dragDropType)
-		{
-			if (onItemDrop && onItemDrop(dragDropGetObject()))
-			{
-				dragDropEnd();
-				forceRepaint();
-			}
-		}
 
 		if (itemClicked)
 		{

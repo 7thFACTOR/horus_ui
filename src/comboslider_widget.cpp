@@ -201,7 +201,7 @@ static bool comboSliderInternal(bool isInt, f32* value, f32 minVal, f32 maxVal, 
 				ctx->comboSlider.mouseWasDown = false;
 				ctx->comboSlider.currentValue = *value;
 				ctx->comboSlider.hiddenCursorPos = ctx->settings.services.getAbsoluteMousePosition();
-				ctx->settings.services.hideCursor();
+				ctx->settings.services.hideMouseCursor();
 			}
 		}
 
@@ -255,7 +255,7 @@ static bool comboSliderInternal(bool isInt, f32* value, f32 minVal, f32 maxVal, 
 				if (absPos.x <= wndPos.x + margin || absPos.x >= wndPos.x + wndSize.x - margin)
 				{
 					Point centerScreen(wndPos.x + wndSize.x * 0.5f, absPos.y);
-					ctx->settings.services.setMousePosition(centerScreen);
+					ctx->settings.services.setAbsoluteMousePosition(centerScreen);
 					Point warpDelta = centerScreen - absPos;
 					ctx->comboSlider.dragLastMousePos += warpDelta;
 					ctx->mousePosition += warpDelta;
@@ -273,8 +273,8 @@ static bool comboSliderInternal(bool isInt, f32* value, f32 minVal, f32 maxVal, 
 			{
 				*value = ctx->comboSlider.currentValue;
 				ctx->widget.changeEnded = true;
-				ctx->settings.services.setMousePosition(ctx->comboSlider.hiddenCursorPos);
-				ctx->settings.services.showCursor();
+				ctx->settings.services.setAbsoluteMousePosition(ctx->comboSlider.hiddenCursorPos);
+				ctx->settings.services.showMouseCursor();
 			}
 			ctx->comboSlider.dragging = false;
 			ctx->comboSlider.mouseWasDown = false;

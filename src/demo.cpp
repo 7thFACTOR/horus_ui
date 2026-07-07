@@ -175,8 +175,10 @@ struct DemoState
 	void* dragDropTargetCValue = nullptr;
 	std::vector<std::string> dragListA = { "Apple", "Banana", "Cherry", "Date" };
 	std::vector<std::string> dragListB = { "Eclair", "Fig", "Grape" };
-	std::vector<char> dragListASel;
-	std::vector<char> dragListBSel;
+	i32 dragListIdxA = -1;
+	i32 dragListIdxB = -1;
+	Point dragScrollListA = { 0, 0 };
+	Point dragScrollListB = { 0, 0 };
 
 	Point scrollPos = { 0, 0 };
 
@@ -1209,12 +1211,9 @@ void showDemo()
 		label("Drag items between lists:");
 		space();
 
-		// Deferred move: avoid modifying lists during list() iteration
+		// Deferred move: avoid modifying lists during iteration
 		static std::string pendingMoveStr;
 		static bool pendingMoveToListA = false;
-
-		demo.dragListASel.resize(demo.dragListA.size());
-		demo.dragListBSel.resize(demo.dragListB.size());
 
 		{
 			std::vector<const char*> itemsA;
@@ -1222,22 +1221,83 @@ void showDemo()
 				itemsA.push_back(s.c_str());
 
 			sameLine(0, 0);
-			list("##dragListA", (bool*)demo.dragListASel.data(), ListSelectionMode::Single,
-				itemsA.data(), (u32)itemsA.size(), 150, 3,
-				[](void* obj) -> bool
+			paddingPush(PaddingType::Layout, Point(0, 0));
+			paddingPush(PaddingType::ScrollView, Point(0, 0));
+			idPush("dragListA");
+			scrollViewBegin("listScrollView", 150, demo.dragScrollListA.y, 0, ScrollViewFlags::NoHorizontalScroll);
+			u32 scrollViewAId = ctx->id;
+
+			spacingPush(0.0f);
+			for (u32 i = 0; i < (u32)itemsA.size(); i++)
+			{
+				bool isSelected = i == (u32)demo.dragListIdxA;
+				if (selectable(itemsA[i], isSelected ? SelectableFlags::Selected : SelectableFlags::Normal))
+					demo.dragListIdxA = i;
+
+				if (dragDropWantsTo())
+					dragDropBegin(3, (void*)itemsA[i]);
+
+				if (dragDropGetObjectType() == 3)
 				{
-					const char* droppedStr = (const char*)obj;
+					bool isSelfDrop = false;
+					void* draggedObj = dragDropGetObject();
+					for (auto& s : demo.dragListA)
+						if (s.c_str() == (const char*)draggedObj) { isSelfDrop = true; break; }
+					if (!isSelfDrop)
+						dragDropAllow();
+				}
+
+				if (dragDropDroppedOnWidget() && dragDropGetObjectType() == 3)
+				{
+					const char* droppedStr = (const char*)dragDropGetObject();
 					for (auto& s : demo.dragListB)
 					{
 						if (s.c_str() == droppedStr)
 						{
 							pendingMoveStr = s;
 							pendingMoveToListA = true;
-							return true;
+							dragDropEnd();
+							forceRepaint();
+							break;
 						}
 					}
-					return false;
-				});
+				}
+			}
+			spacingPop();
+
+			{
+				Rect bodyRect = ctx->scrollViewState[scrollViewAId].rect;
+				ctx->widget.hovered = ctx->hoveringThisWindow && bodyRect.contains(ctx->mousePosition);
+				if (dragDropGetObjectType() == 3)
+				{
+					bool isSelfDrop = false;
+					void* draggedObj = dragDropGetObject();
+					for (auto& s : demo.dragListA)
+						if (s.c_str() == (const char*)draggedObj) { isSelfDrop = true; break; }
+					if (!isSelfDrop)
+						dragDropAllow();
+				}
+				if (dragDropDroppedOnWidget() && dragDropGetObjectType() == 3)
+				{
+					const char* droppedStr = (const char*)dragDropGetObject();
+					for (auto& s : demo.dragListB)
+					{
+						if (s.c_str() == droppedStr)
+						{
+							pendingMoveStr = s;
+							pendingMoveToListA = true;
+							dragDropEnd();
+							forceRepaint();
+							break;
+						}
+					}
+				}
+			}
+
+			demo.dragScrollListA = scrollViewEnd();
+			idPop();
+			paddingPop(PaddingType::ScrollView);
+			paddingPop(PaddingType::Layout);
 		}
 
 		sameLine(0, 10);
@@ -1246,22 +1306,83 @@ void showDemo()
 			for (auto& s : demo.dragListB)
 				itemsB.push_back(s.c_str());
 
-			list("##dragListB", (bool*)demo.dragListBSel.data(), ListSelectionMode::Single,
-				itemsB.data(), (u32)itemsB.size(), 150, 3,
-				[](void* obj) -> bool
+			paddingPush(PaddingType::Layout, Point(0, 0));
+			paddingPush(PaddingType::ScrollView, Point(0, 0));
+			idPush("dragListB");
+			scrollViewBegin("listScrollView", 150, demo.dragScrollListB.y, 0, ScrollViewFlags::NoHorizontalScroll);
+			u32 scrollViewBId = ctx->id;
+
+			spacingPush(0.0f);
+			for (u32 i = 0; i < (u32)itemsB.size(); i++)
+			{
+				bool isSelected = i == (u32)demo.dragListIdxB;
+				if (selectable(itemsB[i], isSelected ? SelectableFlags::Selected : SelectableFlags::Normal))
+					demo.dragListIdxB = i;
+
+				if (dragDropWantsTo())
+					dragDropBegin(3, (void*)itemsB[i]);
+
+				if (dragDropGetObjectType() == 3)
 				{
-					const char* droppedStr = (const char*)obj;
+					bool isSelfDrop = false;
+					void* draggedObj = dragDropGetObject();
+					for (auto& s : demo.dragListB)
+						if (s.c_str() == (const char*)draggedObj) { isSelfDrop = true; break; }
+					if (!isSelfDrop)
+						dragDropAllow();
+				}
+
+				if (dragDropDroppedOnWidget() && dragDropGetObjectType() == 3)
+				{
+					const char* droppedStr = (const char*)dragDropGetObject();
 					for (auto& s : demo.dragListA)
 					{
 						if (s.c_str() == droppedStr)
 						{
 							pendingMoveStr = s;
 							pendingMoveToListA = false;
-							return true;
+							dragDropEnd();
+							forceRepaint();
+							break;
 						}
 					}
-					return false;
-				});
+				}
+			}
+			spacingPop();
+
+			{
+				Rect bodyRect = ctx->scrollViewState[scrollViewBId].rect;
+				ctx->widget.hovered = ctx->hoveringThisWindow && bodyRect.contains(ctx->mousePosition);
+				if (dragDropGetObjectType() == 3)
+				{
+					bool isSelfDrop = false;
+					void* draggedObj = dragDropGetObject();
+					for (auto& s : demo.dragListB)
+						if (s.c_str() == (const char*)draggedObj) { isSelfDrop = true; break; }
+					if (!isSelfDrop)
+						dragDropAllow();
+				}
+				if (dragDropDroppedOnWidget() && dragDropGetObjectType() == 3)
+				{
+					const char* droppedStr = (const char*)dragDropGetObject();
+					for (auto& s : demo.dragListA)
+					{
+						if (s.c_str() == droppedStr)
+						{
+							pendingMoveStr = s;
+							pendingMoveToListA = false;
+							dragDropEnd();
+							forceRepaint();
+							break;
+						}
+					}
+				}
+			}
+
+			demo.dragScrollListB = scrollViewEnd();
+			idPop();
+			paddingPop(PaddingType::ScrollView);
+			paddingPop(PaddingType::Layout);
 		}
 
 		// Apply deferred move

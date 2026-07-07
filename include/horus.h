@@ -1797,14 +1797,14 @@ struct Services
 	void (*setCapture)(HNativeWindow window) = nullptr;
 	void (*releaseCapture)() = nullptr;
 	Point (*getAbsoluteMousePosition)() = nullptr;
-	void (*setMousePosition)(const Point& pos) = nullptr;
+	void (*setAbsoluteMousePosition)(const Point& pos) = nullptr;
 	bool (*isMouseButtonDownNow)(MouseButton button) = nullptr;
 	void (*setCursor)(MouseCursorType type) = nullptr;
 	HMouseCursor (*createCustomCursor)(Rgba32* pixels, u32 width, u32 height, u32 hotX, u32 hotY) = nullptr;
 	void (*deleteCustomCursor)(HMouseCursor cursor) = nullptr;
 	void (*setCustomCursor)(HMouseCursor cursor) = nullptr;
-	void (*hideCursor)() = nullptr;
-	void (*showCursor)() = nullptr;
+	void (*hideMouseCursor)() = nullptr;
+	void (*showMouseCursor)() = nullptr;
 
 	// Graphics
 	const char* (*getGfxApiName)() = nullptr;
@@ -1868,14 +1868,14 @@ struct Services
 			setCapture != nullptr &&
 			releaseCapture != nullptr &&
 			getAbsoluteMousePosition != nullptr &&
-			setMousePosition != nullptr &&
+			setAbsoluteMousePosition != nullptr &&
 			isMouseButtonDownNow != nullptr &&
 			setCursor != nullptr &&
 			createCustomCursor != nullptr &&
 			deleteCustomCursor != nullptr &&
 			setCustomCursor != nullptr &&
-			hideCursor != nullptr &&
-			showCursor != nullptr;
+			hideMouseCursor != nullptr &&
+			showMouseCursor != nullptr;
 	}
 
 	bool allGfxFunctionsSet() const
@@ -2608,10 +2608,8 @@ HUI_API bool dropdown(const char* id, i32& selectedIndex, const char** items, u3
 /// \param items array of item label strings
 /// \param itemCount number of items
 /// \param height widget height
-/// \param dragDropType drag-drop type identifier (0 = drag-drop disabled)
-/// \param onItemDrop callback when an item is dropped on this list, returns true if the item was accepted
 /// \return true if selection changed
-HUI_API bool list(const char* id, bool* selectedItems, ListSelectionMode selectionType, const char** items, u32 itemCount, f32 height = 200.0f, u32 dragDropType = 0, bool (*onItemDrop)(void* draggedObj) = nullptr);
+HUI_API bool list(const char* id, bool* selectedItems, ListSelectionMode selectionType, const char** items, u32 itemCount, f32 height = 200.0f);
 
 /// Draw a selectable label
 /// \param label the selectable's text

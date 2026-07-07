@@ -32,7 +32,7 @@ bool rotarySliderFloat(const char* label, f32* value, f32 minVal, f32 maxVal, f3
 		ctx->rotarySlider.lastMousePos = ctx->mousePosition;
 		ctx->rotarySlider.id = ctx->id;
 		ctx->rotarySlider.hiddenCursorPos = ctx->settings.services.getAbsoluteMousePosition();
-		ctx->settings.services.hideCursor();
+		ctx->settings.services.hideMouseCursor();
 		windowSetCapture();
 	}
 
@@ -40,8 +40,8 @@ bool rotarySliderFloat(const char* label, f32* value, f32 minVal, f32 maxVal, f3
 	{
 		ctx->rotarySlider.id = 0;
 		ctx->widget.changeEnded = true;
-		ctx->settings.services.setMousePosition(ctx->rotarySlider.hiddenCursorPos);
-		ctx->settings.services.showCursor();
+		ctx->settings.services.setAbsoluteMousePosition(ctx->rotarySlider.hiddenCursorPos);
+		ctx->settings.services.showMouseCursor();
 		windowReleaseCapture();
 	}
 
@@ -88,7 +88,7 @@ bool rotarySliderFloat(const char* label, f32* value, f32 minVal, f32 maxVal, f3
 			if (absPos.x <= wndPos.x + margin || absPos.x >= wndPos.x + wndSize.x - margin)
 			{
 				Point centerScreen(wndPos.x + wndSize.x * 0.5f, absPos.y);
-				ctx->settings.services.setMousePosition(centerScreen);
+				ctx->settings.services.setAbsoluteMousePosition(centerScreen);
 				Point warpDelta = centerScreen - absPos;
 				ctx->rotarySlider.lastMousePos += warpDelta;
 				ctx->mousePosition += warpDelta;
