@@ -349,31 +349,11 @@ Point scrollViewEnd()
 
 	bool hasVerticalScrollbar = scrollContentSizeV > scrollAreaV;
 
-	// Extra diagnostic info (moved after scrollAreaV / hasVerticalScrollbar are available)
-	/*std::printf("[DBG SV] id=%llu rectNoBorders.h=%.3f layout.h=%.3f scrollAreaV=%.3f internalPadding.y=%.3f\n",
-		(unsigned long long)scrollViewState.id,
-		rectNoBorders.height,
-		ctx->layout.height,
-		scrollAreaV,
-		internalPadding.y);*/
-
-    // Extra diagnostic info to debug unreachable last item
-    //std::printf("[DBG SV] id=%llu rectNoBorders.h=%.3f layout.h=%.3f clip.h=%.3f internalPadding.y=%.3f\n",
-    //    (unsigned long long)scrollViewState.id,
-    //    rectNoBorders.height,
-    //    ctx->layout.height,
-    //    /* there is no direct clipRect variable here, output saved position delta as proxy */ (prevPenPos.y - ctx->layout.savedPosition.y),
-    //    internalPadding.y);
-
 	if (hasVerticalScrollbar)
 	{
-		 // Make sure vertical scrollMax is up-to-date before applying any wheel deltas.
+		// Make sure vertical scrollMax is up-to-date before applying any wheel deltas.
         // Use authoritative content size (measured OR virtualSize set by virtual list).
         updateScrollMax(scrollViewState.vertical, contentSizeForClamp, scrollAreaV);
-
-        // Log scroll math used for vertical scrollbar
-        /*std::printf("[DBG SCROLL] scrollAreaV=%.3f contentSizeForClamp=%.3f vertical.scrollMax=%.3f vertical.scrollOffset=%.3f viewHeight(clip)=%f\n",
-            scrollAreaV, contentSizeForClamp, scrollViewState.vertical.scrollMax, scrollViewState.vertical.scrollOffset, ctx->layout.height);*/
 
         // scroll view with mouse wheel
         if (ctx->isActiveLayer() && ctx->event.type == InputEvent::Type::MouseWheel && !ctx->widget.disabled)
@@ -394,10 +374,6 @@ Point scrollViewEnd()
                     // Apply to authoritative scrollbar state and clamp immediately using scrollMax
                     auto& v = scrollViewState.vertical;
                     v.scrollOffset = std::clamp(v.scrollOffset - delta, 0.0f, v.scrollMax);
-
-                    // DEBUG: log wheel delta and post-clamp values
-                    /*std::printf("[DBG wheel] delta=%.3f v.scrollMax=%.3f v.scrollOffset=%.3f (gap=%.3f)\n",
-                        delta, v.scrollMax, v.scrollOffset, v.scrollMax - v.scrollOffset);*/
 
                     // Snap small rounding differences to the exact max
                     if (v.scrollMax > 0.0f && (v.scrollMax - v.scrollOffset) <= SCROLL_SNAP_EPS)

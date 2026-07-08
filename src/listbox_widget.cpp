@@ -4,6 +4,7 @@
 #include "theme.h"
 #include "font.h"
 #include "util.h"
+#include "horus.h"
 
 namespace hui
 {
@@ -22,6 +23,7 @@ bool list(const char* id, bool* selectedItems, ListSelectionMode selectionType, 
 	Point scrollOffset;
 
 	u32 listId = genId(id);
+		
 	ctx->id = listId;
 
 	auto iter = ctx->scrollViewState.find(listId);
@@ -76,8 +78,22 @@ bool list(const char* id, bool* selectedItems, ListSelectionMode selectionType, 
 	for (u32 i = 0; i < itemCount; i++)
 	{
 		bool isSelected = selectedItems[i];
-
 		bool itemClicked = selectable(items[i], isSelected ? SelectableFlags::Selected : SelectableFlags::Normal);
+
+		if (dragDropType > 0)
+		{
+			if (dragDropWantsTo())
+				dragDropBegin(dragDropType, (void*)items[i]);
+
+			if (dragDropGetObjectType() == dragDropType)
+			{
+				bool isSelf = false;
+				for (u32 j = 0; j < itemCount; j++)
+					if (items[j] == (const char*)dragDropGetObject()) { isSelf = true; break; }
+				if (!isSelf)
+					dragDropAllow();
+			}
+		}
 
 		if (itemClicked)
 		{
@@ -136,10 +152,27 @@ bool list(const char* id, bool* selectedItems, ListSelectionMode selectionType, 
 	}
 
 	spacingPop();
+
+	if (dragDropType > 0)
+	{
+		Rect bodyRect = ctx->scrollViewState[ctx->id].rect;
+		ctx->widget.hovered = ctx->hoveringThisWindow && bodyRect.contains(ctx->mousePosition);
+		if (dragDropGetObjectType() == dragDropType)
+		{
+			bool isSelf = false;
+			for (u32 j = 0; j < itemCount; j++)
+				if (items[j] == (const char*)dragDropGetObject()) { isSelf = true; break; }
+			if (!isSelf)
+				dragDropAllow();
+		}
+	}
 	ctx->scrollViewState[listId].scrollOffset = scrollViewEnd();
 	idPop();
 	paddingPop(PaddingType::ScrollView);
 	paddingPop(PaddingType::Layout);
+	ctx->id = listId;
+	ctx->widget.rect = listRect;
+	ctx->widget.hovered = listRect.contains(ctx->mousePosition);
 
 	return changed;
 }

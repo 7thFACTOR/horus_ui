@@ -143,7 +143,7 @@ bool vec2Editor(const char* id, f32& x, f32& y, f32 scrollStep)
 	return ret;
 }
 
-bool objectRefEditor(const char* id, HImage targetImg, HImage clearImg, HImage iconImg, const char* objectTypeName, const char* valueAsString, u32 objectType, void** outObject, bool* objectValueWasModified, u32 refCount, const char** refNames, void** refValues)
+bool objectRefEditor(const char* id, HImage targetImg, HImage clearImg, HImage iconImg, const char* objectTypeName, const char* valueAsString, u32 objectType, void** outObject, bool* objectValueWasModified, u32 refCount, const char** refNames, void** refValues, f32 iconSize)
 {
 	idPush(id);
 	bool returnValue = false;
@@ -173,13 +173,30 @@ bool objectRefEditor(const char* id, HImage targetImg, HImage clearImg, HImage i
 	f32 btnSize = targetElemInfo.height;
 	f32 spacingPx = ctx->sameLine.spacing * ctx->scale;
 	f32 btnSizePx = btnSize * ctx->scale;
+
+	f32 contentHeightPx = btnSizePx;
+	f32 iconDisplaySizePx = 0;
+	if (iconImg)
+	{
+		if (iconSize > 0)
+		{
+			iconDisplaySizePx = iconSize * ctx->scale;
+			contentHeightPx = iconDisplaySizePx;
+		}
+		else
+		{
+			iconDisplaySizePx = contentHeightPx;
+		}
+	}
+
 	f32 boxWidthPx = ctx->layout.width - btnSizePx * (*outObject ? 2 : 1);
 
 	// Editor body (left side, fills remaining width)
 	widgetSetNextWidth(boxWidthPx / ctx->scale);
 	ctx->setLabelAndId(id);
-	addWidget(btnSize * ctx->scale);
+	addWidget(contentHeightPx);
 	buttonBehavior();
+	ctx->sameLine.maxHeight = std::max(ctx->sameLine.maxHeight, contentHeightPx);
 
 	auto& bodyElem = ctx->theme->getElement(WidgetElementId::TextInputBody);
 	auto bodyState = &bodyElem.normalState();
@@ -203,17 +220,16 @@ bool objectRefEditor(const char* id, HImage targetImg, HImage clearImg, HImage i
 		if (iconImg && *outObject)
 		{
 			Image* iconPtr = (Image*)iconImg;
-			f32 iconSize = btnSize * ctx->scale * 0.6f;
 			Rect iconRect = {
 				textRect.x + paddingPx,
-				textRect.y + (textRect.height - iconSize) / 2.0f,
-				iconSize,
-				iconSize
+				textRect.y + (textRect.height - iconDisplaySizePx) / 2.0f,
+				iconDisplaySizePx,
+				iconDisplaySizePx
 			};
 			ctx->renderer.cmdSetColor(Color::white);
 			ctx->renderer.cmdDrawImage(iconPtr, iconRect);
-			textRect.x += paddingPx + iconSize + paddingPx;
-			textRect.width -= paddingPx + iconSize + paddingPx;
+			textRect.x += paddingPx + iconDisplaySizePx + paddingPx;
+			textRect.width -= paddingPx + iconDisplaySizePx + paddingPx;
 		}
 
 		Color textColor;

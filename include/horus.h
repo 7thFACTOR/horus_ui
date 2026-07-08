@@ -2608,6 +2608,7 @@ HUI_API bool dropdown(const char* id, i32& selectedIndex, const char** items, u3
 /// \param items array of item label strings
 /// \param itemCount number of items
 /// \param height widget height
+/// \param dragDropType when non-zero enables drag-drop (items are drag sources, list accepts drops of same type)
 /// \return true if selection changed
 HUI_API bool list(const char* id, bool* selectedItems, ListSelectionMode selectionType, const char** items, u32 itemCount, f32 height = 200.0f);
 
@@ -2843,7 +2844,7 @@ HUI_API bool vec2Editor(const char* id, f64& x, f64& y, f64 scrollStep = 0.03f);
 HUI_API bool vec2Editor(const char* id, f32& x, f32& y, f32 scrollStep = 0.03f);
 
 /// Draw an object reference editor
-HUI_API bool objectRefEditor(const char* id, HImage targetImg, HImage clearImg, HImage iconImg, const char* objectTypeName, const char* valueAsString, u32 objectType, void** outObject, bool* objectValueWasModified, u32 refCount = 0, const char** refNames = nullptr, void** refValues = nullptr);
+HUI_API bool objectRefEditor(const char* id, HImage targetImg, HImage clearImg, HImage iconImg, const char* objectTypeName, const char* valueAsString, u32 objectType, void** outObject, bool* objectValueWasModified, u32 refCount = 0, const char** refNames = nullptr, void** refValues = nullptr, f32 iconSize = 0);
 
 //////////////////////////////////////////////////////////////////////////
 // Utility functions
