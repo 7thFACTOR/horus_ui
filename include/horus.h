@@ -2610,7 +2610,7 @@ HUI_API bool dropdown(const char* id, i32& selectedIndex, const char** items, u3
 /// \param height widget height
 /// \param dragDropType when non-zero enables drag-drop (items are drag sources, list accepts drops of same type)
 /// \return true if selection changed
-HUI_API bool list(const char* id, bool* selectedItems, ListSelectionMode selectionType, const char** items, u32 itemCount, f32 height = 200.0f);
+HUI_API bool list(const char* id, bool* selectedItems, ListSelectionMode selectionType, const char** items, u32 itemCount, f32 height = 200.0f, u32 dragDropUserType = 0);
 
 /// Draw a selectable label
 /// \param label the selectable's text

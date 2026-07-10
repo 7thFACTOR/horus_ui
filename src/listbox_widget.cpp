@@ -8,9 +8,9 @@
 
 namespace hui
 {
-bool list(const char* id, bool* selectedItems, ListSelectionMode selectionType, const char** items, u32 itemCount, f32 height)
+bool list(const char* id, bool* selectedItems, ListSelectionMode selectionType, const char** items, u32 itemCount, f32 height, u32 dragDropUserType)
 {
-	if (!items || itemCount == 0 || !selectedItems)
+	if ((itemCount > 0 && !items) || !selectedItems)
 		return false;
 
 	// Determine item height for scroll view calculation
@@ -75,25 +75,14 @@ bool list(const char* id, bool* selectedItems, ListSelectionMode selectionType, 
 		}
 	}
 	spacingPush(0.0f);
+	i32 hoveredItem = -1;
 	for (u32 i = 0; i < itemCount; i++)
 	{
 		bool isSelected = selectedItems[i];
 		bool itemClicked = selectable(items[i], isSelected ? SelectableFlags::Selected : SelectableFlags::Normal);
 
-		if (dragDropType > 0)
-		{
-			if (dragDropWantsTo())
-				dragDropBegin(dragDropType, (void*)items[i]);
-
-			if (dragDropGetObjectType() == dragDropType)
-			{
-				bool isSelf = false;
-				for (u32 j = 0; j < itemCount; j++)
-					if (items[j] == (const char*)dragDropGetObject()) { isSelf = true; break; }
-				if (!isSelf)
-					dragDropAllow();
-			}
-		}
+		if (ctx->widget.hovered)
+			hoveredItem = (i32)i;
 
 		if (itemClicked)
 		{
@@ -115,6 +104,7 @@ bool list(const char* id, bool* selectedItems, ListSelectionMode selectionType, 
 					selectedItems[i] = true;
 					anchor = i;
 				}
+
 				changed = true;
 			}
 			else
@@ -143,9 +133,11 @@ bool list(const char* id, bool* selectedItems, ListSelectionMode selectionType, 
 				{
 					// Normal click: Select only this
 					for (u32 j = 0; j < itemCount; j++) selectedItems[j] = false;
+
 					selectedItems[i] = true;
 					anchor = i;
 				}
+				
 				changed = true;
 			}
 		}
@@ -153,26 +145,41 @@ bool list(const char* id, bool* selectedItems, ListSelectionMode selectionType, 
 
 	spacingPop();
 
-	if (dragDropType > 0)
+	if (dragDropUserType > 0)
 	{
-		Rect bodyRect = ctx->scrollViewState[ctx->id].rect;
-		ctx->widget.hovered = ctx->hoveringThisWindow && bodyRect.contains(ctx->mousePosition);
-		if (dragDropGetObjectType() == dragDropType)
+		u32 savedId = ctx->id;
+		ctx->id = listId;
+
+		ctx->widget.hovered = ctx->hoveringThisWindow && listRect.contains(ctx->mousePosition);
+
+		if (dragDropWantsTo() && hoveredItem >= 0)
+			dragDropBegin(dragDropUserType, (void*)items[hoveredItem]);
+
+		if (dragDropGetObjectType() == dragDropUserType)
 		{
-			bool isSelf = false;
-			for (u32 j = 0; j < itemCount; j++)
-				if (items[j] == (const char*)dragDropGetObject()) { isSelf = true; break; }
-			if (!isSelf)
-				dragDropAllow();
+			bool isSourceList = ctx->dragDrop.dragging && ctx->dragDrop.id == listId;
+			if (!isSourceList)
+			{
+				bool isSelf = false;
+				for (u32 j = 0; j < itemCount; j++)
+					if (items[j] == (const char*)dragDropGetObject()) { isSelf = true; break; }
+				if (!isSelf)
+					dragDropAllow();
+			}
 		}
+
+		ctx->id = savedId;
 	}
+
 	ctx->scrollViewState[listId].scrollOffset = scrollViewEnd();
+	
+	auto listState = ctx->widget;
+	
 	idPop();
 	paddingPop(PaddingType::ScrollView);
 	paddingPop(PaddingType::Layout);
 	ctx->id = listId;
-	ctx->widget.rect = listRect;
-	ctx->widget.hovered = listRect.contains(ctx->mousePosition);
+	ctx->widget = listState;
 
 	return changed;
 }

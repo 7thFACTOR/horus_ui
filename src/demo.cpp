@@ -1234,7 +1234,6 @@ void showDemo()
 
 			sameLine(0, 0);
 
-			dragDropAllow();
 			if (list("dragListA", selectedA.get(), ListSelectionMode::Single, itemsA.data(), (u32)itemsA.size(), 150, 3))
 			{
 				for (u32 i = 0; i < (u32)itemsA.size(); i++)
@@ -1269,7 +1268,6 @@ void showDemo()
 			if (demo.dragListIdxB >= 0 && (u32)demo.dragListIdxB < itemsB.size())
 				selectedB[demo.dragListIdxB] = true;
 
-			dragDropAllow();
 			if (list("dragListB", selectedB.get(), ListSelectionMode::Single, itemsB.data(), (u32)itemsB.size(), 150, 3))
 			{
 				for (u32 i = 0; i < (u32)itemsB.size(); i++)
