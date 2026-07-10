@@ -110,7 +110,7 @@ static void drawColorPreviewSwatch(const Rect& rc, const Color& color, const cha
 	ctx->renderer.cmdSetColor(Color::white);
 	ctx->renderer.cmdDrawImageTiled(
 		colorPickerCheckersState.image,
-		rcSample, Point(), ctx->scale);
+		rcSample, Point(), ctx->scale * 0.25f);
 	ctx->renderer.cmdSetColor(Color{ color.r, color.g, color.b, 1 });
 	ctx->renderer.cmdDrawFilledRectangle(rcSampleNoAlpha);
 	ctx->renderer.cmdSetColor(color);
@@ -301,7 +301,7 @@ bool colorPicker(const char* id, Color* inOutColor, ColorPickerFlags flags, cons
 	ctx->renderer.cmdSetColor(Color::white);
 	ctx->renderer.cmdDrawImageTiled(
 		colorPickerCheckersImg,
-		rcAlpha, Point(), ctx->scale);
+		rcAlpha, Point(), ctx->scale * 0.25f);
 	ctx->renderer.cmdDrawRectangle4Colors(rcAlpha,
 		colorForAlphaBar,
 		colorForAlphaBar,
@@ -809,7 +809,7 @@ bool colorPickerPopup(const char* id, Color* inOutColor, ColorPickerFlags flags,
 		ctx->renderer.cmdSetColor(Color::white);
 		ctx->renderer.cmdDrawImageTiled(
 			colorPickerCheckersState.image,
-			colorRect, Point(), ctx->scale * 0.5f);
+			colorRect, Point(), ctx->scale * 0.25f);
 		ctx->renderer.cmdSetColor(Color{ inOutColor->r, inOutColor->g, inOutColor->b, 1 });
 		ctx->renderer.cmdDrawFilledRectangle(rcNoAlpha);
 		ctx->renderer.cmdSetColor(*inOutColor);
