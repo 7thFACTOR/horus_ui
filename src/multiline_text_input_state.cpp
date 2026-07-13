@@ -1857,6 +1857,9 @@ bool MultilineTextInputState::processEvent(const InputEvent& ev)
 			|| scrollbarRectV.contains(ev.mouse.point)
 			|| scrollbarRectH.contains(ev.mouse.point))
 		{
+			mouseDown = false;
+			selectingWithMouse = false;
+			mouseMoved = false;
 			return false;
 		}
 
@@ -1890,7 +1893,11 @@ bool MultilineTextInputState::processEvent(const InputEvent& ev)
 	}
 	else if (ev.window == ctx->settings.services.getFocusedWindow())
 	{
-		if (mouseDown || selectingWithMouse)
+		// don't update selection while mouse is over a scrollbar
+		bool overScrollbar = scrollbarRectV.contains(ev.mouse.point)
+			|| scrollbarRectH.contains(ev.mouse.point);
+
+		if ((mouseDown || selectingWithMouse) && !overScrollbar)
 		{
 			getCharIndexAtPoint(ev.mouse.point);
 

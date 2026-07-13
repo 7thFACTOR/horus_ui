@@ -179,6 +179,7 @@ struct DemoState
 	i32 dragListIdxB = -1;
 	Point dragScrollListA = { 0, 0 };
 	Point dragScrollListB = { 0, 0 };
+	bool imageSlots[3] = {};
 
 	Point scrollPos = { 0, 0 };
 
@@ -1104,221 +1105,63 @@ void showDemo()
 	//------------------------------------------------------------------
 	if (expandableBegin("Drag & Drop API Demo", &demo.expandDragDrop))
 	{
-		label("Drag sources:");
+		label("Drag the white image into a slot:");
+
+		auto* whiteImg = themeGetImage(themeGet(), "__WHITEIMAGE__");
 
 		sameLine(0, 20);
-		tintPush(Color::orange, TintColorType::Text);
-		if (button(("Type A (int): " + std::to_string(demo.dragDropSrcA)).c_str()))
-			demo.dragDropSrcA++;
-		tintPop();
+		image(whiteImg, 64, HAlignType::Left);
 		if (dragDropWantsTo())
 		{
-			static int dragObjA = 0;
-			dragObjA = demo.dragDropSrcA;
-			dragDropBegin(1, &dragObjA);
-		}
-
-		sameLine(0, 10);
-		tintPush(Color::sky, TintColorType::Text);
-		if (button(("Type B (int): " + std::to_string(demo.dragDropSrcB)).c_str()))
-			demo.dragDropSrcB++;
-		tintPop();
-		if (dragDropWantsTo())
-		{
-			static int dragObjB = 0;
-			dragObjB = demo.dragDropSrcB;
-			dragDropBegin(2, &dragObjB);
+			static int payload = 0;
+			dragDropBegin(99, &payload);
 		}
 
 		space();
-		label("Drop Targets");
-		space();
 
-		label("Target A (accepts type 1):");
+		for (int i = 0; i < 3; i++)
 		{
-			std::string ddTxt;
-			if (demo.dragDropTargetAValue)
-				ddTxt = "Dropped: " + std::to_string(*(int*)demo.dragDropTargetAValue);
+			if (i > 0) sameLine(0, 10);
+
+			widgetSetNextWidth(64);
+			Rect r = customWidgetBegin(("##slotRect" + std::to_string(i)).c_str(), 64);
+
+			if (demo.imageSlots[i])
+			{
+				renderDrawStretchedImage(whiteImg, r);
+			}
 			else
-				ddTxt = "Drop type 1 here";
-			tintPush(Color::orange, TintColorType::Text);
-			label((ddTxt + "##ddTargetA").c_str());
-			tintPop();
+			{
+				renderSetFillStyle(Color::fromU8(50, 50, 50));
+				renderDrawSolidRectangle(r);
+			}
 
-			if (dragDropGetObjectType() == 1)
+			// only accept drops when drag is active AND the mouse is over THIS slot
+			if (dragDropGetObjectType() == 99 && ctx->widget.hovered)
 				dragDropAllow();
 
-			if (dragDropDroppedOnWidget() && dragDropGetObjectType() == 1)
+			if (dragDropDroppedOnWidget() && dragDropGetObjectType() == 99)
 			{
-				static int val;
-				val = *(int*)dragDropGetObject();
-				demo.dragDropTargetAValue = &val;
+				demo.imageSlots[i] = true;
 				dragDropEnd();
 				forceRepaint();
 			}
+
+			customWidgetEnd();
 		}
 
 		space();
-
-		label("Target B (accepts type 2):");
+		if (button("Reset"))
 		{
-			std::string ddTxt;
-			if (demo.dragDropTargetBValue)
-				ddTxt = "Dropped: " + std::to_string(*(int*)demo.dragDropTargetBValue);
-			else
-				ddTxt = "Drop type 2 here";
-			tintPush(Color::sky, TintColorType::Text);
-			label((ddTxt + "##ddTargetB").c_str());
-			tintPop();
-
-			if (dragDropGetObjectType() == 2)
-				dragDropAllow();
-
-			if (dragDropDroppedOnWidget() && dragDropGetObjectType() == 2)
-			{
-				static int val;
-				val = *(int*)dragDropGetObject();
-				demo.dragDropTargetBValue = &val;
-				dragDropEnd();
-				forceRepaint();
-			}
+			for (int i = 0; i < 3; i++)
+				demo.imageSlots[i] = false;
 		}
 
-		space();
-
-		label("Target C (accepts types 1 & 2):");
+		// drag preview: show the white image at cursor while dragging
+		if (ctx->dragDrop.dragging && dragDropGetObjectType() == 99)
 		{
-			std::string ddTxt;
-			if (demo.dragDropTargetCValue)
-				ddTxt = "Dropped: " + std::to_string(*(int*)demo.dragDropTargetCValue);
-			else
-				ddTxt = "Drop type 1 or 2 here";
-			tintPush(Color::yellow, TintColorType::Text);
-			label((ddTxt + "##ddTargetC").c_str());
-			tintPop();
-
-			u32 type = dragDropGetObjectType();
-			if (type == 1 || type == 2)
-				dragDropAllow();
-
-			if (dragDropDroppedOnWidget() && (type == 1 || type == 2))
-			{
-				static int val;
-				val = *(int*)dragDropGetObject();
-				demo.dragDropTargetCValue = &val;
-				dragDropEnd();
-				forceRepaint();
-			}
-		}
-
-		space();
-		label("Tip: drag from Type A or Type B buttons into the drop targets above.");
-
-		space();
-		label("Drag items between lists:");
-		space();
-
-		// Deferred move: avoid modifying lists during iteration
-		static std::string pendingMoveStr;
-		static bool pendingMoveToListA = false;
-
-		{
-			std::vector<const char*> itemsA;
-			for (auto& s : demo.dragListA)
-				itemsA.push_back(s.c_str());
-
-			auto selectedA = std::make_unique<bool[]>(itemsA.size());
-			memset(selectedA.get(), 0, itemsA.size());
-			if (demo.dragListIdxA >= 0 && (u32)demo.dragListIdxA < itemsA.size())
-				selectedA[demo.dragListIdxA] = true;
-
-			sameLine(0, 0);
-
-			if (list("dragListA", selectedA.get(), ListSelectionMode::Single, itemsA.data(), (u32)itemsA.size(), 150, 3))
-			{
-				for (u32 i = 0; i < (u32)itemsA.size(); i++)
-					if (selectedA[i]) { demo.dragListIdxA = (i32)i; break; }
-			}
-
-			if (dragDropDroppedOnWidget() && dragDropGetObjectType() == 3)
-			{
-				const char* droppedStr = (const char*)dragDropGetObject();
-				for (auto& s : demo.dragListB)
-				{
-					if (s.c_str() == droppedStr)
-					{
-						pendingMoveStr = s;
-						pendingMoveToListA = true;
-						dragDropEnd();
-						forceRepaint();
-						break;
-					}
-				}
-			}
-		}
-
-		sameLine(0, 10);
-		{
-			std::vector<const char*> itemsB;
-			for (auto& s : demo.dragListB)
-				itemsB.push_back(s.c_str());
-
-			auto selectedB = std::make_unique<bool[]>(itemsB.size());
-			memset(selectedB.get(), 0, itemsB.size());
-			if (demo.dragListIdxB >= 0 && (u32)demo.dragListIdxB < itemsB.size())
-				selectedB[demo.dragListIdxB] = true;
-
-			if (list("dragListB", selectedB.get(), ListSelectionMode::Single, itemsB.data(), (u32)itemsB.size(), 150, 3))
-			{
-				for (u32 i = 0; i < (u32)itemsB.size(); i++)
-					if (selectedB[i]) { demo.dragListIdxB = (i32)i; break; }
-			}
-
-			if (dragDropDroppedOnWidget() && dragDropGetObjectType() == 3)
-			{
-				const char* droppedStr = (const char*)dragDropGetObject();
-				for (auto& s : demo.dragListA)
-				{
-					if (s.c_str() == droppedStr)
-					{
-						pendingMoveStr = s;
-						pendingMoveToListA = false;
-						dragDropEnd();
-						forceRepaint();
-						break;
-					}
-				}
-			}
-		}
-
-		// Apply deferred move
-		if (!pendingMoveStr.empty())
-		{
-			if (pendingMoveToListA)
-			{
-				for (size_t i = 0; i < demo.dragListB.size(); i++)
-				{
-					if (demo.dragListB[i] == pendingMoveStr)
-					{
-						demo.dragListA.push_back(std::move(demo.dragListB[i]));
-						demo.dragListB.erase(demo.dragListB.begin() + i);
-						break;
-					}
-				}
-			}
-			else
-			{
-				for (size_t i = 0; i < demo.dragListA.size(); i++)
-				{
-					if (demo.dragListA[i] == pendingMoveStr)
-					{
-						demo.dragListB.push_back(std::move(demo.dragListA[i]));
-						demo.dragListA.erase(demo.dragListA.begin() + i);
-						break;
-					}
-				}
-			}
-			pendingMoveStr.clear();
+			Point cursor = mouseGetPosition();
+			ctx->renderer.cmdDrawImage((Image*)whiteImg, Rect(cursor.x - 32, cursor.y - 32, 64, 64));
 		}
 
 		expandableEnd();

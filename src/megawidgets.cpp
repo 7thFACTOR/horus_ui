@@ -28,6 +28,8 @@ bool vecEditorInternal(f64& x, f64& y, f64& z, f64 scrollStep, bool useZ)
 	{
 		ctx->vecEditor.draggingValue = false;
 		ctx->vecEditor.draggedId = 0;
+		ctx->settings.services.setAbsoluteMousePosition(ctx->vecEditor.hiddenCursorPos);
+		ctx->settings.services.showMouseCursor();
 		hui::windowReleaseCapture();
 		changedEndedX = changedEndedY = changedEndedZ = true;
 	}
@@ -62,6 +64,8 @@ bool vecEditorInternal(f64& x, f64& y, f64& z, f64 scrollStep, bool useZ)
 				ctx->vecEditor.draggingValue = true;
 				ctx->vecEditor.draggedId = imageWidgetId;
 				ctx->vecEditor.lastMousePos = ctx->mousePosition;
+				ctx->vecEditor.hiddenCursorPos = ctx->settings.services.getAbsoluteMousePosition();
+				ctx->settings.services.hideMouseCursor();
 				ctx->widget.pressed = false;
 				hui::windowSetCapture();
 			}
@@ -76,6 +80,25 @@ bool vecEditorInternal(f64& x, f64& y, f64& z, f64 scrollStep, bool useZ)
 
 			*val += (f64)dx * unitPerPixel;
 			ctx->vecEditor.lastMousePos = ctx->mousePosition;
+
+			// infinite drag: warp cursor to center of window when hitting edges
+			if (ctx->lastHoveredNativeWindow)
+			{
+				auto wndPos = ctx->settings.services.getWindowPosition(ctx->lastHoveredNativeWindow);
+				auto wndSize = ctx->settings.services.getWindowSize(ctx->lastHoveredNativeWindow);
+				auto absPos = ctx->settings.services.getAbsoluteMousePosition();
+				const f32 margin = 2.0f;
+
+				if (absPos.x <= wndPos.x + margin || absPos.x >= wndPos.x + wndSize.x - margin)
+				{
+					Point centerScreen(wndPos.x + wndSize.x * 0.5f, absPos.y);
+					ctx->settings.services.setAbsoluteMousePosition(centerScreen);
+					Point warpDelta = centerScreen - absPos;
+					ctx->vecEditor.lastMousePos += warpDelta;
+					ctx->mousePosition += warpDelta;
+				}
+			}
+
 			sprintf(strAxis, "%.8g", *val);
 			modified = true;
 		}

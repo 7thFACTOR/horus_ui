@@ -193,6 +193,15 @@ bool beginMenuInternal(const char* label, SelectableFlags stateFlags, bool conte
 		if (ctx->widget.hovered)
 			ctx->hoveredSimpleMenuItemMenuDepth = ~0;
 
+		// if submenu is open but the parent item is no longer the intended target
+		// (e.g. user hovered past it to a sibling), deactivate before opening the popup
+		if (ctx->menuStack[ctx->menuDepth].active
+			&& !ctx->widget.hovered
+			&& ctx->hoveredSimpleMenuItemMenuDepth < ctx->menuDepth)
+		{
+			ctx->menuStack[ctx->menuDepth].active = false;
+		}
+
 		if (!ctx->menuStack[ctx->menuDepth].active && (ctx->widget.hovered))
 		{
 			ctx->menuItemChosen = false;

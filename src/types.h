@@ -289,6 +289,7 @@ struct VectorEditorState
 {
 	bool draggingValue = false;
 	Point lastMousePos;
+	Point hiddenCursorPos;
 	WidgetId draggedId = 0;
 	static const size_t maxStrSize = 50;
 	char strX[maxStrSize] = { 0 };
