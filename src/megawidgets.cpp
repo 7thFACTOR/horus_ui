@@ -4,7 +4,7 @@
 
 namespace hui
 {
-bool vecEditorInternal(f64& x, f64& y, f64& z, f64 scrollStep, bool useZ)
+static bool vecEditorInternal(f64& x, f64& y, f64& z, f64 scrollStep, bool useZ)
 {
 	bool modified = false;
 	bool changedEndedX = false;
@@ -294,11 +294,11 @@ bool objectRefEditor(const char* id, HImage targetImg, HImage clearImg, HImage i
 	if (ctx->widget.doubleClicked)
 		returnValue = true;
 
-	// Clear reference on Delete key when focused
+	// Clear reference on Delete/Backspace key when focused
 	if (ctx->widget.focused
 		&& *outObject
 		&& ctx->event.type == InputEvent::Type::Key
-		&& ctx->event.key.code == KeyCode::Delete
+		&& (ctx->event.key.code == KeyCode::Delete || ctx->event.key.code == KeyCode::Backspace)
 		&& ctx->event.key.down)
 	{
 		*outObject = nullptr;
