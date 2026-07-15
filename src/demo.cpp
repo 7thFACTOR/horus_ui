@@ -1028,7 +1028,6 @@ void showDemo()
 		check("Disable##ObjectRef", &demo.disableObjectRef);
 		widgetPushDisabled(demo.disableObjectRef);
 
-		label("Object reference editor (with custom button images):");
 
 		std::string v1;
 		std::string v2;
@@ -1049,9 +1048,6 @@ void showDemo()
 			v3 = *(std::string*)demo.objectRefValue3;
 		}
 
-		objectRefEditor("##demoObjRef", themeGetImage(themeGet(), "__WHITEIMAGE__"), themeGetImage(themeGet(), "__WHITEIMAGE__"), 0, "MyObjectType1", v1.c_str(), MyTypeId1, &demo.objectRefValue1, &demo.objectRefModified1);
-		space();
-		
 		label("Without custom button images:");
 		{
 			static std::string refVal2a = "Mesh01";
@@ -1066,16 +1062,20 @@ void showDemo()
 		{
 			label("With icon:");
 			HImage icon = themeGetImage(themeGet(), "../themes/default/sign-info.png");
-			objectRefEditor("##demoObjRefWithIcon", themeGetImage(themeGet(), "__WHITEIMAGE__"), themeGetImage(themeGet(), "__WHITEIMAGE__"), icon ? icon : themeGetImage(themeGet(), "__WHITEIMAGE__"), "MyObjectType3", v3.c_str(), MyTypeId3, &demo.objectRefValue3, &demo.objectRefModified3);
+			objectRefEditor("##demoObjRefWithIcon", 0, 0, icon ? icon : themeGetImage(themeGet(), "__WHITEIMAGE__"), "MyObjectType3", v3.c_str(), MyTypeId3, &demo.objectRefValue3, &demo.objectRefModified3);
 		}
 		space();
 
 		{
 			label("With icon (custom size 44):");
 			HImage icon = themeGetImage(themeGet(), "../themes/default/sign-info.png");
-			objectRefEditor("##demoObjRefWithIconSize", themeGetImage(themeGet(), "__WHITEIMAGE__"), themeGetImage(themeGet(), "__WHITEIMAGE__"), icon ? icon : themeGetImage(themeGet(), "__WHITEIMAGE__"), "MyObjectType3", v3.c_str(), MyTypeId3, &demo.objectRefValue3, &demo.objectRefModified3, 0, nullptr, nullptr, 44);
+			objectRefEditor("##demoObjRefWithIconSize", 0, 0, icon ? icon : themeGetImage(themeGet(), "__WHITEIMAGE__"), "MyObjectType3", v3.c_str(), MyTypeId3, &demo.objectRefValue3, &demo.objectRefModified3, 0, nullptr, nullptr, 44);
 		}
 		space();
+
+		label("Object reference editor (with custom button images):");
+		objectRefEditor("##demoObjRef", themeGetImage(themeGet(), "__WHITEIMAGE__"), themeGetImage(themeGet(), "__WHITEIMAGE__"), 0, "MyObjectType1", v1.c_str(), MyTypeId1, &demo.objectRefValue1, &demo.objectRefModified1);
+
 		label("Drag source (drag button into the proper editor):");
 		{
 			static std::string dragSampleObject1 = "ShinyMetalA";
@@ -1128,16 +1128,23 @@ void showDemo()
 
 			if (demo.imageSlots[i])
 			{
+				renderSetFillStyle(Color::fromU8(255, 255, 255));
 				renderDrawStretchedImage(whiteImg, r);
 			}
 			else
 			{
-				renderSetFillStyle(Color::fromU8(50, 50, 50));
+				renderSetFillStyle(Color::fromU8(150, 50, 50));
 				renderDrawSolidRectangle(r);
 			}
+			char buf[4];
+			snprintf(buf, sizeof(buf), "%d", i);
+			renderSetColor(Color::fromU8(255, 255, 255));
+			renderDrawTextInBox(buf, r, HAlignType::Center, VAlignType::Center);
+
+			customWidgetEnd();
 
 			// only accept drops when drag is active AND the mouse is over THIS slot
-			if (dragDropGetObjectType() == 99 && ctx->widget.hovered)
+			if (dragDropGetObjectType() == 99 && widgetIsHovered())
 				dragDropAllow();
 
 			if (dragDropDroppedOnWidget() && dragDropGetObjectType() == 99)
@@ -1146,8 +1153,6 @@ void showDemo()
 				dragDropEnd();
 				forceRepaint();
 			}
-
-			customWidgetEnd();
 		}
 
 		space();
@@ -1158,10 +1163,10 @@ void showDemo()
 		}
 
 		// drag preview: show the white image at cursor while dragging
-		if (ctx->dragDrop.dragging && dragDropGetObjectType() == 99)
+		if (dragDropGetObjectType() == 99)
 		{
 			Point cursor = mouseGetPosition();
-			ctx->renderer.cmdDrawImage((Image*)whiteImg, Rect(cursor.x - 32, cursor.y - 32, 64, 64));
+			renderDrawStretchedImage(whiteImg, Rect(cursor.x - 32, cursor.y - 32, 64, 64));
 		}
 
 		expandableEnd();

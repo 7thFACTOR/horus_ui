@@ -2805,6 +2805,7 @@ HUI_API void renderDrawStretchedImage(HImage image, const Rect& rect);
 HUI_API void renderDrawBorderedImage(HImage image, u32 border, const Rect& rect);
 HUI_API void renderSetLineStyle(const LineStyle& style);
 HUI_API void renderSetFillStyle(const FillStyle& style);
+HUI_API void renderSetColor(const Color& color);
 HUI_API void renderDrawLine(const Point& a, const Point& b);
 HUI_API void renderDrawPolyLine(const Point* points, u32 pointCount, bool closed = false);
 HUI_API void renderDrawCircle(const Point& center, f32 radius, u32 segments = 32);

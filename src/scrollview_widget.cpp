@@ -461,6 +461,8 @@ Point scrollViewEnd()
 				else if (rectScrollBarV.contains(ctx->mousePosition))
 				{
 					applyPageScroll(scrollViewState.vertical, scrollAreaV, ctx->scrollViewScrollPageSize, (ctx->mousePosition.y < rectScrollBarHandleV.y) ? -1.0f : 1.0f);
+					scrollOffset.y = scrollViewState.vertical.scrollOffset;
+					scrollViewState.scrollOffset = scrollOffset;
 				}
 			}
 			else if (ctx->mouseMoved
@@ -584,6 +586,8 @@ Point scrollViewEnd()
 			else if (rectScrollBarH.contains(ctx->mousePosition))
 			{
 				applyPageScroll(scrollViewState.horizontal, scrollAreaWidth, ctx->scrollViewScrollPageSize, (ctx->mousePosition.x < rectScrollBarHandleH.x) ? -1.0f : 1.0f);
+				scrollOffset.x = scrollViewState.horizontal.scrollOffset;
+				scrollViewState.scrollOffset = scrollOffset;
 			}
 		}
 		else if (ctx->mouseMoved

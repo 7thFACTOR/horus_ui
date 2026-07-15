@@ -106,7 +106,7 @@ struct Context
 	f32 maxContentWidth = 0;
 	std::vector<f32> maxContentWidthStack;
 	f32 scrollViewSpeed = 0.2f;
-	f32 scrollViewScrollPageSize = 0.4f;
+	f32 scrollViewScrollPageSize = 1.0f;
 	WidgetId dragScrollViewHandleWidgetId = 0;
 	Point dropDownScrollViewPos;
 	std::unordered_map<WidgetId, ScrollViewState> scrollViewState;

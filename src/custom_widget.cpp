@@ -120,6 +120,11 @@ void renderSetFillStyle(const FillStyle& style)
 	ctx->renderer.cmdSetColor(style.color);
 }
 
+void renderSetColor(const Color& color)
+{
+	ctx->renderer.cmdSetColor(color);
+}
+
 void renderDrawLine(const Point& a, const Point& b)
 {
 	ctx->renderer.cmdDrawLine(a + ctx->renderer.viewportOffset, b + ctx->renderer.viewportOffset);
