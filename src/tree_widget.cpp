@@ -42,7 +42,13 @@ bool treeNode(const char* label, bool* expandedVar, SelectableFlags stateFlags, 
 
 	auto& bodyElem = ctx->theme->getElement(WidgetElementId::SelectableBody);
 	Font* fnt = bodyElem.normalState().font;
-	f32 labelHeight = fmaxf(bodyElem.normalState().height, fnt->getMetrics().height);
+	if (!fnt)
+	{
+		fnt = (Font*)hui::themeFontGetFromTheme(ctx->theme, "normal");
+		if (!fnt && !ctx->theme->fonts.empty())
+			fnt = &ctx->theme->fonts[0]->font;
+	}
+	f32 labelHeight = fmaxf(bodyElem.normalState().height, fnt ? fnt->getMetrics().height : 16.0f);
 
 	ctx->id = genId(nodeId);
 	ctx->widget.nextWidth = arrowWidth;

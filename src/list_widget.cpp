@@ -17,7 +17,13 @@ bool list(const char* id, bool* selectedItems, ListSelectionMode selectionType, 
 	auto& bodyElem = ctx->theme->getElement(WidgetElementId::SelectableBody);
 	auto& bodyElemState = bodyElem.normalState();
 	Font* fnt = bodyElemState.font;
-	f32 itemHeight = fmaxf(bodyElemState.height, fnt->getMetrics().height) * ctx->scale;
+	if (!fnt)
+	{
+		fnt = (Font*)hui::themeFontGetFromTheme(ctx->theme, "normal");
+		if (!fnt && !ctx->theme->fonts.empty())
+			fnt = &ctx->theme->fonts[0]->font;
+	}
+	f32 itemHeight = fmaxf(bodyElemState.height, fnt ? fnt->getMetrics().height : 16.0f) * ctx->scale;
 
 	f32 totalHeight = itemHeight * itemCount;
 	Point scrollOffset;
@@ -189,10 +195,17 @@ bool selectableInternal(const char* label, HFont font, SelectableFlags stateFlag
 	auto& bodyElem = ctx->theme->getElement(WidgetElementId::SelectableBody);
 	Font* fnt = font ? (Font*)font : bodyElem.normalState().font;
 
+	if (!fnt)
+	{
+		fnt = (Font*)hui::themeFontGetFromTheme(ctx->theme, "normal");
+		if (!fnt && !ctx->theme->fonts.empty())
+			fnt = &ctx->theme->fonts[0]->font;
+	}
+
 	ctx->setLabelAndId(label);
 	addWidget(fmaxf(
 		bodyElem.normalState().height,
-		fnt->getMetrics().height) * ctx->scale);
+		fnt ? fnt->getMetrics().height : 16.0f) * ctx->scale);
 	buttonBehavior();
 
 	auto bodyElemState = &bodyElem.normalState();
@@ -209,7 +222,8 @@ bool selectableInternal(const char* label, HFont font, SelectableFlags stateFlag
 		ctx->renderer.cmdSetColor(tintApply(bodyElemState->color, TintColorType::Body));
 		ctx->renderer.cmdDrawImageBordered(bodyElemState->image, bodyElemState->border, ctx->widget.rect, ctx->scale);
 		ctx->renderer.cmdSetColor(tintApply(bodyElemState->textColor, TintColorType::Text));
-		ctx->renderer.cmdSetFont(fnt);
+		if (fnt)
+			ctx->renderer.cmdSetFont(fnt);
 		ctx->renderer.cmdDrawTextInBox(
 			ctx->widgetLabel.c_str(),
 			Rect(
@@ -223,7 +237,8 @@ bool selectableInternal(const char* label, HFont font, SelectableFlags stateFlag
 	}
 
 	widgetSetFocusable();
-	ctx->menuItemTextWidth = fnt->computeTextSize(ctx->widgetLabel.c_str()).width + bodyElemState->border * 2.0f;
+	if (fnt)
+		ctx->menuItemTextWidth = fnt->computeTextSize(ctx->widgetLabel.c_str()).width + bodyElemState->border * 2.0f;
 
 	return ctx->widget.clicked;
 }

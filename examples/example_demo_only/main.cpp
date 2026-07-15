@@ -2,6 +2,7 @@
 #include "horus.h"
 
 #include <algorithm>
+#include <cstring>
 #include <filesystem>
 
 // backends
@@ -49,9 +50,14 @@ static void uploadAtlasTexture(hui::Sdl3GfxApi gfxApi)
 	}
 }
 
-static const char* themeFilePath = "../themes/default.theme.json";
+static char themeFilePath[256] = "../themes/default.theme.json";
 static std::filesystem::file_time_type themeLastWriteTime;
 static bool themeNeedsReload = false;
+
+static const char* themeNames[] = { "Default", "Flat", "Pixel" };
+static const char* themePaths[] = { "../themes/default.theme.json", "../themes/flat.theme.json", "../themes/pixel.theme.json" };
+static i32 currentThemeIndex = 0;
+static constexpr u32 themeCount = 3;
 
 static void reloadTheme(hui::Sdl3GfxApi gfxApi)
 {
@@ -246,6 +252,20 @@ int main(int argc, char** args)
 			hui::paddingPush(hui::PaddingType::Layout, 0);
 			hui::layoutBegin(mainRect);
 			hui::boxBegin("mainBg", hui::Color::white, hui::WidgetElementId::WindowBody);
+
+			hui::label("Theme:");
+			hui::sameLine();
+			if (hui::dropdown("themeSelector", currentThemeIndex, themeNames, themeCount))
+			{
+				strcpy_s(themeFilePath, sizeof(themeFilePath), themePaths[currentThemeIndex]);
+				themeNeedsReload = true;
+			}
+			hui::sameLine();
+			hui::label("(or press F5 to reload current)");
+			hui::space();
+			hui::line();
+			hui::space();
+
 			hui::showDemo();
 			hui::boxEnd();
 			hui::layoutEnd();
