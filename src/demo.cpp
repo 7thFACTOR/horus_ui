@@ -1105,6 +1105,266 @@ void showDemo()
 	//------------------------------------------------------------------
 	if (expandableBegin("Drag & Drop API Demo", &demo.expandDragDrop))
 	{
+		label("Drag sources:");
+
+		sameLine(0, 20);
+		tintPush(Color::orange, TintColorType::Text);
+		if (button(("Type A (int): " + std::to_string(demo.dragDropSrcA)).c_str()))
+			demo.dragDropSrcA++;
+		tintPop();
+		if (dragDropWantsTo())
+		{
+			static int dragObjA = 0;
+			dragObjA = demo.dragDropSrcA;
+			dragDropBegin(1, &dragObjA);
+		}
+
+		sameLine(0, 10);
+		tintPush(Color::sky, TintColorType::Text);
+		if (button(("Type B (int): " + std::to_string(demo.dragDropSrcB)).c_str()))
+			demo.dragDropSrcB++;
+		tintPop();
+		if (dragDropWantsTo())
+		{
+			static int dragObjB = 0;
+			dragObjB = demo.dragDropSrcB;
+			dragDropBegin(2, &dragObjB);
+		}
+
+		space();
+		label("Drop Targets");
+		space();
+
+		label("Target A (accepts type 1):");
+		{
+			std::string ddTxt;
+			if (demo.dragDropTargetAValue)
+				ddTxt = "Dropped: " + std::to_string(*(int*)demo.dragDropTargetAValue);
+			else
+				ddTxt = "Drop type 1 here";
+			tintPush(Color::orange, TintColorType::Text);
+			label((ddTxt + "##ddTargetA").c_str());
+			tintPop();
+
+			if (dragDropGetObjectType() == 1)
+				dragDropAllow();
+
+			if (dragDropDroppedOnWidget() && dragDropGetObjectType() == 1)
+			{
+				static int val;
+				val = *(int*)dragDropGetObject();
+				demo.dragDropTargetAValue = &val;
+				dragDropEnd();
+				forceRepaint();
+			}
+		}
+
+		space();
+
+		label("Target B (accepts type 2):");
+		{
+			std::string ddTxt;
+			if (demo.dragDropTargetBValue)
+				ddTxt = "Dropped: " + std::to_string(*(int*)demo.dragDropTargetBValue);
+			else
+				ddTxt = "Drop type 2 here";
+			tintPush(Color::sky, TintColorType::Text);
+			label((ddTxt + "##ddTargetB").c_str());
+			tintPop();
+
+			if (dragDropGetObjectType() == 2)
+				dragDropAllow();
+
+			if (dragDropDroppedOnWidget() && dragDropGetObjectType() == 2)
+			{
+				static int val;
+				val = *(int*)dragDropGetObject();
+				demo.dragDropTargetBValue = &val;
+				dragDropEnd();
+				forceRepaint();
+			}
+		}
+
+		space();
+
+		label("Target C (accepts types 1 & 2):");
+		{
+			std::string ddTxt;
+			if (demo.dragDropTargetCValue)
+				ddTxt = "Dropped: " + std::to_string(*(int*)demo.dragDropTargetCValue);
+			else
+				ddTxt = "Drop type 1 or 2 here";
+			tintPush(Color::yellow, TintColorType::Text);
+			label((ddTxt + "##ddTargetC").c_str());
+			tintPop();
+
+			u32 type = dragDropGetObjectType();
+			if (type == 1 || type == 2)
+				dragDropAllow();
+
+			if (dragDropDroppedOnWidget() && (type == 1 || type == 2))
+			{
+				static int val;
+				val = *(int*)dragDropGetObject();
+				demo.dragDropTargetCValue = &val;
+				dragDropEnd();
+				forceRepaint();
+			}
+		}
+
+		space();
+		label("Tip: drag from Type A or Type B buttons into the drop targets above.");
+
+		space();
+		label("Drag items between lists:");
+		space();
+
+		// Deferred move: avoid modifying lists during iteration
+		static std::string pendingMoveStr;
+		static bool pendingMoveToListA = false;
+
+		{
+			std::vector<const char*> itemsA;
+			for (auto& s : demo.dragListA)
+				itemsA.push_back(s.c_str());
+
+			sameLine(0, 0);
+			paddingPush(PaddingType::Layout, Point(0, 0));
+			paddingPush(PaddingType::ScrollView, Point(0, 0));
+			idPush("dragListA");
+			scrollViewBegin("listScrollView", 150, demo.dragScrollListA.y, 0, ScrollViewFlags::NoHorizontalScroll);
+
+			spacingPush(0.0f);
+			for (u32 i = 0; i < (u32)itemsA.size(); i++)
+			{
+				bool isSelected = i == (u32)demo.dragListIdxA;
+				if (selectable(itemsA[i], isSelected ? SelectableFlags::Selected : SelectableFlags::Normal))
+					demo.dragListIdxA = i;
+
+				if (dragDropWantsTo())
+					dragDropBegin(3, (void*)itemsA[i]);
+
+				if (dragDropGetObjectType() == 3)
+				{
+					bool isSelfDrop = false;
+					void* draggedObj = dragDropGetObject();
+					for (auto& s : demo.dragListA)
+						if (s.c_str() == (const char*)draggedObj) { isSelfDrop = true; break; }
+					if (!isSelfDrop)
+						dragDropAllow();
+				}
+
+				if (dragDropDroppedOnWidget() && dragDropGetObjectType() == 3)
+				{
+					const char* droppedStr = (const char*)dragDropGetObject();
+					for (auto& s : demo.dragListB)
+					{
+						if (s.c_str() == droppedStr)
+						{
+							pendingMoveStr = s;
+							pendingMoveToListA = true;
+							dragDropEnd();
+							forceRepaint();
+							break;
+						}
+					}
+				}
+			}
+			spacingPop();
+
+			demo.dragScrollListA = scrollViewEnd();
+			idPop();
+			paddingPop(PaddingType::ScrollView);
+			paddingPop(PaddingType::Layout);
+		}
+
+		sameLine(0, 10);
+		{
+			std::vector<const char*> itemsB;
+			for (auto& s : demo.dragListB)
+				itemsB.push_back(s.c_str());
+
+			paddingPush(PaddingType::Layout, Point(0, 0));
+			paddingPush(PaddingType::ScrollView, Point(0, 0));
+			idPush("dragListB");
+			scrollViewBegin("listScrollView", 150, demo.dragScrollListB.y, 0, ScrollViewFlags::NoHorizontalScroll);
+
+			spacingPush(0.0f);
+			for (u32 i = 0; i < (u32)itemsB.size(); i++)
+			{
+				bool isSelected = i == (u32)demo.dragListIdxB;
+				if (selectable(itemsB[i], isSelected ? SelectableFlags::Selected : SelectableFlags::Normal))
+					demo.dragListIdxB = i;
+
+				if (dragDropWantsTo())
+					dragDropBegin(3, (void*)itemsB[i]);
+
+				if (dragDropGetObjectType() == 3)
+				{
+					bool isSelfDrop = false;
+					void* draggedObj = dragDropGetObject();
+					for (auto& s : demo.dragListB)
+						if (s.c_str() == (const char*)draggedObj) { isSelfDrop = true; break; }
+					if (!isSelfDrop)
+						dragDropAllow();
+				}
+
+				if (dragDropDroppedOnWidget() && dragDropGetObjectType() == 3)
+				{
+					const char* droppedStr = (const char*)dragDropGetObject();
+					for (auto& s : demo.dragListA)
+					{
+						if (s.c_str() == droppedStr)
+						{
+							pendingMoveStr = s;
+							pendingMoveToListA = false;
+							dragDropEnd();
+							forceRepaint();
+							break;
+						}
+					}
+				}
+			}
+			spacingPop();
+
+			demo.dragScrollListB = scrollViewEnd();
+			idPop();
+			paddingPop(PaddingType::ScrollView);
+			paddingPop(PaddingType::Layout);
+		}
+
+		// Apply deferred move
+		if (!pendingMoveStr.empty())
+		{
+			if (pendingMoveToListA)
+			{
+				for (size_t i = 0; i < demo.dragListB.size(); i++)
+				{
+					if (demo.dragListB[i] == pendingMoveStr)
+					{
+						demo.dragListA.push_back(std::move(demo.dragListB[i]));
+						demo.dragListB.erase(demo.dragListB.begin() + i);
+						break;
+					}
+				}
+			}
+			else
+			{
+				for (size_t i = 0; i < demo.dragListA.size(); i++)
+				{
+					if (demo.dragListA[i] == pendingMoveStr)
+					{
+						demo.dragListB.push_back(std::move(demo.dragListA[i]));
+						demo.dragListA.erase(demo.dragListA.begin() + i);
+						break;
+					}
+				}
+			}
+			pendingMoveStr.clear();
+		}
+
+		space();
+		space();
 		label("Drag the white image into a slot:");
 
 		auto* whiteImg = themeGetImage(themeGet(), "__WHITEIMAGE__");
