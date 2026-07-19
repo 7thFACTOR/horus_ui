@@ -159,7 +159,7 @@ static WidgetType getWidgetTypeFromName(std::string name)
 	if (name == "selectable") return WidgetType::Selectable;
 	if (name == "box") return WidgetType::Box;
 	if (name == "comboSlider") return WidgetType::ComboSlider;
-	if (name == "rotarySlider") return WidgetType::RotarySlider;
+	if (name == "circularSlider") return WidgetType::CircularSlider;
 	if (name == "colorPicker") return WidgetType::ColorPicker;
 	if (name == "table") return WidgetType::Table;
 	if (name == "multilineTextInput") return WidgetType::MultilineTextInput;
@@ -235,9 +235,9 @@ static WidgetElementId getWidgetElementFromName(std::string name)
 	if (name == "comboSliderRightArrow") return WidgetElementId::ComboSliderRightArrow;
 	if (name == "comboSliderRangeBar") return WidgetElementId::ComboSliderRangeBar;
 	if (name == "comboSliderVerticalLine") return WidgetElementId::ComboSliderVerticalLine;
-	if (name == "rotarySliderBody") return WidgetElementId::RotarySliderBody;
-	if (name == "rotarySliderMark") return WidgetElementId::RotarySliderMark;
-	if (name == "rotarySliderValueDot") return WidgetElementId::RotarySliderValueDot;
+	if (name == "circularSliderBody") return WidgetElementId::CircularSliderBody;
+	if (name == "circularSliderMark") return WidgetElementId::CircularSliderMark;
+	if (name == "circularSliderValueDot") return WidgetElementId::CircularSliderValueDot;
 	if (name == "colorPickerCheckers") return WidgetElementId::ColorPickerCheckers;
 	if (name == "colorPickerBody") return WidgetElementId::ColorPickerBody;
 	if (name == "tableBody") return WidgetElementId::TableBody;

@@ -148,7 +148,7 @@ struct Context
 	DropdownState dropdown;
 	ComboSliderState comboSlider;
 	VectorEditorState vecEditor;
-	RotarySliderState rotarySlider;
+	CircularSliderState circularSlider;
 	SliderState slider;
 	ColorPickerState colorPickerState;
 	Rect tabGroupWidgetRect;

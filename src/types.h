@@ -574,7 +574,7 @@ struct PopupState
 	std::vector<u32> savedSameLineInfoIndexStack;
 };
 
-struct RotarySliderState
+struct CircularSliderState
 {
 	Point lastMousePos;
 	Point hiddenCursorPos;

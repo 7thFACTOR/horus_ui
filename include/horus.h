@@ -213,7 +213,7 @@ enum class WidgetType
 	MsgBox,
 	Box,
 	ComboSlider,
-	RotarySlider,
+	CircularSlider,
 	ColorPicker,
 	Table,
 
@@ -295,9 +295,9 @@ enum class WidgetElementId
 	ComboSliderRightArrow,
 	ComboSliderRangeBar,
 	ComboSliderVerticalLine,
-	RotarySliderBody,
-	RotarySliderMark,
-	RotarySliderValueDot,
+	CircularSliderBody,
+	CircularSliderMark,
+	CircularSliderValueDot,
 	ColorPickerCheckers,
 	ColorPickerBody,
 	TableBody,
@@ -753,12 +753,12 @@ enum class ColorPickerFlags : u32
 };
 HUI_ENUM_AS_FLAGS(ColorPickerFlags);
 
-enum class RotarySliderFlags : u32
+enum class CircularSliderFlags : u32
 {
 	Normal = 0,
 	ShowValueInCenter = HUI_BIT(0)
 };
-HUI_ENUM_AS_FLAGS(RotarySliderFlags);
+HUI_ENUM_AS_FLAGS(CircularSliderFlags);
 
 /// A 2D point
 struct Point
@@ -2487,7 +2487,7 @@ HUI_API bool comboSliderInt(i32* value, f32 stepsPerPixel = 1.0f, i32 arrowStep 
 HUI_API bool comboSliderIntRanged(i32* value, i32 minVal, i32 maxVal, f32 stepsPerPixel = 1, i32 arrowStep = 1.0f, const char* formatStr = nullptr);
 HUI_API bool comboSliderFloat(f32* value, f32 stepsPerPixel = 1.0f, f32 arrowStep = 1.0f, const char* formatStr = nullptr);
 HUI_API bool comboSliderFloatRanged(f32* value, f32 minVal, f32 maxVal, f32 stepsPerPixel = 1.0f, f32 arrowStep = 1.0f, const char* formatStr = nullptr);
-HUI_API bool rotarySliderFloat(const char* label, f32* value, f32 minVal, f32 maxVal, f32 step, bool twoSide = false, f32 fineStepDivideFactor = 10.f, RotarySliderFlags flags = RotarySliderFlags::Normal);
+HUI_API bool circularSliderFloat(const char* label, f32* value, f32 minVal, f32 maxVal, f32 step, bool twoSide = false, f32 fineStepDivideFactor = 10.f, CircularSliderFlags flags = CircularSliderFlags::Normal);
 
 /// Draw a image widget
 /// \param image the image to draw

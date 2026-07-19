@@ -390,36 +390,36 @@
 				"focused": { "image": "default/comboslider_vertical_line", "border": 0, "color": "white", "textColor": "white", "font": "normal" }
 			}
 		},
-		"rotarySlider":
+		"circularSlider":
 		{
-			"rotarySliderBody":
+			"circularSliderBody":
 			{
 				"height": 90,
-				"normal": { "image": "default/rotaryslider_body", "border": 2, "color": "white", "textColor": "white", "font": "normal" },
+				"normal": { "image": "default/circularslider_body", "border": 2, "color": "white", "textColor": "white", "font": "normal" },
 				"disabled": { "color": "255 255 255 128", "textColor": "gray" },
-				"hovered": { "image": "default/rotaryslider_body", "border": 2, "color": "white", "textColor": "white", "font": "normal" },
-				"pressed": { "image": "default/rotaryslider_body", "border": 2, "color": "white", "textColor": "white", "font": "normal" },
-				"focused": { "image": "default/rotaryslider_body", "border": 2, "color": "white", "textColor": "white", "font": "normal" }
+				"hovered": { "image": "default/circularslider_body", "border": 2, "color": "white", "textColor": "white", "font": "normal" },
+				"pressed": { "image": "default/circularslider_body", "border": 2, "color": "white", "textColor": "white", "font": "normal" },
+				"focused": { "image": "default/circularslider_body", "border": 2, "color": "white", "textColor": "white", "font": "normal" }
 			},
-			"rotarySliderMark":
+			"circularSliderMark":
 			{
 				"height": 10,
 				"placementRadius": 20,
-				"normal": { "image": "default/rotaryslider_mark", "border": 0, "color": "white", "textColor": "white", "font": "normal" },
+				"normal": { "image": "default/circularslider_mark", "border": 0, "color": "white", "textColor": "white", "font": "normal" },
 				"disabled": { "color": "255 255 255 128", "textColor": "gray" },
-				"hovered": { "image": "default/rotaryslider_mark", "border": 0, "color": "white", "textColor": "white", "font": "normal" },
-				"pressed": { "image": "default/rotaryslider_mark", "border": 0, "color": "white", "textColor": "white", "font": "normal" },
-				"focused": { "image": "default/rotaryslider_mark", "border": 0, "color": "white", "textColor": "white", "font": "normal" }
+				"hovered": { "image": "default/circularslider_mark", "border": 0, "color": "white", "textColor": "white", "font": "normal" },
+				"pressed": { "image": "default/circularslider_mark", "border": 0, "color": "white", "textColor": "white", "font": "normal" },
+				"focused": { "image": "default/circularslider_mark", "border": 0, "color": "white", "textColor": "white", "font": "normal" }
 			},
-			"rotarySliderValueDot":
+			"circularSliderValueDot":
 			{
 				"count":30,
 				"placementRadius":36,
 				"negativeColor": "red",
 				"positiveColor": "sky",
-				"normal": { "image": "default/rotaryslider_value_dot", "border": 0, "color": "black", "textColor": "white", "font": "normal" },
+				"normal": { "image": "default/circularslider_value_dot", "border": 0, "color": "black", "textColor": "white", "font": "normal" },
 				"disabled": { "color": "255 255 255 128", "textColor": "gray" },
-				"pressed": { "image": "default/rotaryslider_value_dot", "border": 0, "color": "orange", "textColor": "white", "font": "normal" }
+				"pressed": { "image": "default/circularslider_value_dot", "border": 0, "color": "orange", "textColor": "white", "font": "normal" }
 			}
 		},
 		"tooltip":

@@ -40,11 +40,11 @@ struct DemoState
 	f32 comboSliderFloatCustomString = 0.0f;
 	f32 comboSliderFloatRanged = 0.5f;
 
-	// RotarySlider
-	f32 rotaryVal = 0.5f;
-	f32 rotaryTwoSide = 0.0f;
-	f32 rotaryVal2 = 50.0f;
-	f32 rotaryVal3 = 0.7f;
+	// CircularSlider
+	f32 circularVal = 0.5f;
+	f32 circularTwoSide = 0.0f;
+	f32 circularVal2 = 50.0f;
+	f32 circularVal3 = 0.7f;
 
 	// Progress
 	f32 progressValue = 0.0f;
@@ -72,7 +72,7 @@ struct DemoState
 	bool expandMultiline = false;
 	bool expandSlider = false;
 	bool expandComboSlider = false;
-	bool expandRotarySlider = false;
+	bool expandCircularSlider = false;
 	bool expandProgress = false;
 	bool expandCheck = false;
 	bool expandRadio = false;
@@ -105,7 +105,7 @@ struct DemoState
 	bool disableMultiline = false;
 	bool disableSlider = false;
 	bool disableComboSlider = false;
-	bool disableRotarySlider = false;
+	bool disableCircularSlider = false;
 	bool disableProgress = false;
 	bool disableCheck = false;
 	bool disableRadio = false;
@@ -421,21 +421,21 @@ void showDemo()
 	}
 
 	//------------------------------------------------------------------
-	// Rotary Slider
+	// Circular Slider
 	//------------------------------------------------------------------
-	if (expandableBegin("Rotary Sliders", &demo.expandRotarySlider))
+	if (expandableBegin("Circular Sliders", &demo.expandCircularSlider))
 	{
-		check("Disable##RotarySlider", &demo.disableRotarySlider);
-		widgetPushDisabled(demo.disableRotarySlider);
+		check("Disable##CircularSlider", &demo.disableCircularSlider);
+		widgetPushDisabled(demo.disableCircularSlider);
 
-		rotarySliderFloat("Volume", &demo.rotaryVal, 0.0f, 1.0f, 0.01f);
+		circularSliderFloat("Volume", &demo.circularVal, 0.0f, 1.0f, 0.01f);
 		sameLine();
-		rotarySliderFloat("Pan", &demo.rotaryTwoSide, -1.0f, 1.0f, 0.01f, true);
+		circularSliderFloat("Pan", &demo.circularTwoSide, -1.0f, 1.0f, 0.01f, true);
 		sameLine();
-		rotarySliderFloat("Speed", &demo.rotaryVal2, 0.0f, 100.0f, 1.0f);
+		circularSliderFloat("Speed", &demo.circularVal2, 0.0f, 100.0f, 1.0f);
 
 		space();
-		rotarySliderFloat("Test", &demo.rotaryVal3, 0.0f, 100.0f, 1.0f, false, 10.0f, RotarySliderFlags::ShowValueInCenter);
+		circularSliderFloat("Test", &demo.circularVal3, 0.0f, 100.0f, 1.0f, false, 10.0f, CircularSliderFlags::ShowValueInCenter);
 		widgetPopDisabled();
 		expandableEnd();
 	}

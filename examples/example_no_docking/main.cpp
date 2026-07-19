@@ -378,7 +378,7 @@ int main(int argc, char** args)
 				hui::paddingPush(hui::PaddingType::ScrollView, { 10, 0 });
 				hui::scrollViewBegin("scrl2", 180, scrollPos2.y);
 				hui::paddingPop(hui::PaddingType::ScrollView);
-				hui::rotarySliderFloat("Speed", &val, -30, 100, 1, false);
+				hui::circularSliderFloat("Speed", &val, -30, 100, 1, false);
 				static char txt[1000];
 				hui::textInput("txt1", txt, 1000);
 				hui::comboSliderFloat(&val, 1, 1, "%.4f °");

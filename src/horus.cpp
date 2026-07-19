@@ -1117,10 +1117,10 @@ void widgetSetStyle(WidgetType widgetType, const char* styleName)
 		ctx->theme->elements[(u32)WidgetElementId::ComboSliderRightArrow].setStyle(styleName);
 		ctx->theme->elements[(u32)WidgetElementId::ComboSliderVerticalLine].setStyle(styleName);
 		break;
-	case WidgetType::RotarySlider:
-		ctx->theme->elements[(u32)WidgetElementId::RotarySliderBody].setStyle(styleName);
-		ctx->theme->elements[(u32)WidgetElementId::RotarySliderMark].setStyle(styleName);
-		ctx->theme->elements[(u32)WidgetElementId::RotarySliderValueDot].setStyle(styleName);
+	case WidgetType::CircularSlider:
+		ctx->theme->elements[(u32)WidgetElementId::CircularSliderBody].setStyle(styleName);
+		ctx->theme->elements[(u32)WidgetElementId::CircularSliderMark].setStyle(styleName);
+		ctx->theme->elements[(u32)WidgetElementId::CircularSliderValueDot].setStyle(styleName);
 		break;
 	case WidgetType::ColorPicker:
 		ctx->theme->elements[(u32)WidgetElementId::ColorPickerCheckers].setStyle(styleName);

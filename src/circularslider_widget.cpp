@@ -9,11 +9,11 @@
 
 namespace hui
 {
-bool rotarySliderFloat(const char* label, f32* value, f32 minVal, f32 maxVal, f32 step, bool twoSide, f32 fineStepDivideFactor, RotarySliderFlags flags)
+bool circularSliderFloat(const char* label, f32* value, f32 minVal, f32 maxVal, f32 step, bool twoSide, f32 fineStepDivideFactor, CircularSliderFlags flags)
 {
-	auto& bodyElem = ctx->theme->getElement(WidgetElementId::RotarySliderBody);
-	auto& markElem = ctx->theme->getElement(WidgetElementId::RotarySliderMark);
-	auto& valueDotElem = ctx->theme->getElement(WidgetElementId::RotarySliderValueDot);
+	auto& bodyElem = ctx->theme->getElement(WidgetElementId::CircularSliderBody);
+	auto& markElem = ctx->theme->getElement(WidgetElementId::CircularSliderMark);
+	auto& valueDotElem = ctx->theme->getElement(WidgetElementId::CircularSliderValueDot);
 	bool wasModified = false;
 	auto& padding = widgetGetPadding();
 
@@ -29,30 +29,30 @@ bool rotarySliderFloat(const char* label, f32* value, f32 minVal, f32 maxVal, f3
 
 	if (!ctx->widget.disabled && widgetIsHovered() && ctx->event.type == InputEvent::Type::MouseDown)
 	{
-		ctx->rotarySlider.lastMousePos = ctx->mousePosition;
-		ctx->rotarySlider.id = ctx->id;
-		ctx->rotarySlider.hiddenCursorPos = ctx->settings.services.getAbsoluteMousePosition();
+		ctx->circularSlider.lastMousePos = ctx->mousePosition;
+		ctx->circularSlider.id = ctx->id;
+		ctx->circularSlider.hiddenCursorPos = ctx->settings.services.getAbsoluteMousePosition();
 		ctx->settings.services.hideMouseCursor();
 		windowSetCapture();
 	}
 
-	if (ctx->event.type == InputEvent::Type::MouseUp && ctx->rotarySlider.id == ctx->id && !ctx->widget.disabled)
+	if (ctx->event.type == InputEvent::Type::MouseUp && ctx->circularSlider.id == ctx->id && !ctx->widget.disabled)
 	{
-		ctx->rotarySlider.id = 0;
+		ctx->circularSlider.id = 0;
 		ctx->widget.changeEnded = true;
-		ctx->settings.services.setAbsoluteMousePosition(ctx->rotarySlider.hiddenCursorPos);
+		ctx->settings.services.setAbsoluteMousePosition(ctx->circularSlider.hiddenCursorPos);
 		ctx->settings.services.showMouseCursor();
 		windowReleaseCapture();
 	}
 
 	if (ctx->event.type == InputEvent::Type::MouseMove
-		&& ctx->rotarySlider.id == ctx->id
+		&& ctx->circularSlider.id == ctx->id
 		&& !ctx->widget.disabled)
 	{
 		f32 deltaValue = 0;
-		Point delta = ctx->mousePosition - ctx->rotarySlider.lastMousePos;
+		Point delta = ctx->mousePosition - ctx->circularSlider.lastMousePos;
 		
-		ctx->rotarySlider.lastMousePos = ctx->mousePosition;
+		ctx->circularSlider.lastMousePos = ctx->mousePosition;
 
 		switch (ctx->settings.sliderDragDirection)
 		{
@@ -90,7 +90,7 @@ bool rotarySliderFloat(const char* label, f32* value, f32 minVal, f32 maxVal, f3
 				Point centerScreen(wndPos.x + wndSize.x * 0.5f, absPos.y);
 				ctx->settings.services.setAbsoluteMousePosition(centerScreen);
 				Point warpDelta = centerScreen - absPos;
-				ctx->rotarySlider.lastMousePos += warpDelta;
+				ctx->circularSlider.lastMousePos += warpDelta;
 				ctx->mousePosition += warpDelta;
 			}
 		}
@@ -205,7 +205,7 @@ bool rotarySliderFloat(const char* label, f32* value, f32 minVal, f32 maxVal, f3
 		ctx->renderer.cmdDrawImage(markElemState->image, pos, ctx->scale);
 
 		// draw value in center if flagged
-		if (has(flags, RotarySliderFlags::ShowValueInCenter))
+		if (has(flags, CircularSliderFlags::ShowValueInCenter))
 		{
 			char valStr[64];
 			snprintf(valStr, sizeof(valStr), "%.0f%%", *value);
