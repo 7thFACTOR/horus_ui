@@ -54,8 +54,8 @@ static char themeFilePath[256] = "../themes/default.theme.json";
 static std::filesystem::file_time_type themeLastWriteTime;
 static bool themeNeedsReload = false;
 
-static const char* themeNames[] = { "Default", "Flat", "Pixel" };
-static const char* themePaths[] = { "../themes/default.theme.json", "../themes/flat.theme.json", "../themes/pixel.theme.json" };
+static const char* themeNames[] = { "Default", "Flat", "Win94" };
+static const char* themePaths[] = { "../themes/default.theme.json", "../themes/flat.theme.json", "../themes/win94.theme.json" };
 static i32 currentThemeIndex = 0;
 static constexpr u32 themeCount = 3;
 
@@ -263,6 +263,10 @@ int main(int argc, char** args)
 			hui::sameLine();
 			hui::label("(or press F5 to reload current)");
 			hui::space();
+			std::string crtScaleStr = std::to_string(hui::scaleGet());
+
+			hui::label((std::string("Current UI scale (Ctrl+Wheel to change): ") + crtScaleStr).c_str());
+
 			hui::line();
 			hui::space();
 

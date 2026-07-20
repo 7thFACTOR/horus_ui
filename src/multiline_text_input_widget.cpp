@@ -25,6 +25,7 @@ bool textInputMultiline(
 	auto& lineNumbersElem = ctx->theme->getElement(WidgetElementId::MultilineTextInputLineNumbers);
 	auto& bodyTextCaretElemState = ctx->theme->getElement(WidgetElementId::TextInputCaret).normalState();
 	auto& bodyTextSelectionElemState = ctx->theme->getElement(WidgetElementId::TextInputSelection).normalState();
+	auto& bodyTextSelectedTextElemState = ctx->theme->getElement(WidgetElementId::TextInputSelectedText).normalState();
 	auto& currentLineHighlightElemState = ctx->theme->getElement(WidgetElementId::MultilineTextInputCurrentLineHighlight).normalState();
 	auto& padding = widgetGetPadding();
 	ctx->id = genId(id);
@@ -651,8 +652,8 @@ bool textInputMultiline(
 		state.rect = ctx->widget.rect;
 	}
 
-	// use inner clip rect for local drawing logic
-	clipRect = innerClipRect;
+	// use inner clip rect for local drawing logic, but intersect with widget's clip rect (which accounts for outer scroll views)
+	clipRect = innerClipRect.clipInside(clipRect);
 
 	// gets current scroll state to use for culling
 	auto& scrollState = ctx->scrollViewState[state.scrollId];
@@ -951,6 +952,103 @@ bool textInputMultiline(
 			else
 			{
 				ctx->renderer.cmdDrawFilledRectangle(contRect);
+			}
+		}
+	}
+
+	// draw selected text on top with selected text color
+	if (isEditingThis && state.selectionActive)
+	{
+		i32 startLine = state.selectionStartLine;
+		i32 startCol = state.selectionStartColumn;
+		i32 endLine = state.selectionEndLine;
+		i32 endCol = state.selectionEndColumn;
+
+		if (startLine > endLine || (startLine == endLine && startCol > endCol))
+		{
+			std::swap(startLine, endLine);
+			std::swap(startCol, endCol);
+		}
+
+		ctx->renderer.cmdSetColor(bodyTextSelectedTextElemState.textColor);
+		ctx->renderer.cmdSetFont(bodyElemState->font);
+
+		for (i32 i = firstLine; i < lastLine && i < (i32)state.visualLines.size(); i++)
+		{
+			const auto vl = state.visualLines[i];
+
+			if (!vl)
+				continue;
+
+			if ((size_t)vl->logicalLineIndex >= state.lines.size())
+				continue;
+
+			f32 yPos = clipRect.y + i * lineHeight - currentScrollY;
+
+			if (yPos + lineHeight < clipRect.y || yPos > clipRect.bottom())
+				continue;
+
+			if (vl->logicalLineIndex < startLine || vl->logicalLineIndex > endLine)
+				continue;
+
+			i32 selStartOnLine = 0;
+			i32 selEndOnLine = vl->length;
+
+			if (vl->logicalLineIndex == startLine)
+			{
+				if (startCol >= vl->startColumn + vl->length)
+					continue;
+				
+				selStartOnLine = std::max(0, startCol - vl->startColumn);
+			}
+
+			if (vl->logicalLineIndex == endLine)
+			{
+				if (endCol <= vl->startColumn)
+					continue;
+				
+				selEndOnLine = std::min(vl->length, endCol - vl->startColumn);
+			}
+
+			auto& logicalLine = state.lines[vl->logicalLineIndex];
+			bool isLastSegment = (vl->startColumn + vl->length == (i32)logicalLine.size());
+			bool selectingNewline = false;
+
+			if (vl->logicalLineIndex < endLine && isLastSegment)
+			{
+				selectingNewline = true;
+			}
+			else if (vl->logicalLineIndex == endLine && (size_t)endCol == logicalLine.size() && isLastSegment)
+			{
+				selectingNewline = false;
+				
+				if (startLine != endLine) selectingNewline = true;
+			}
+
+			if (selStartOnLine >= selEndOnLine && !selectingNewline)
+				continue;
+
+			Utf32String textToStart(logicalLine.begin() + vl->startColumn, logicalLine.begin() + vl->startColumn + selStartOnLine);
+			Utf32String selectedText(logicalLine.begin() + vl->startColumn + selStartOnLine, logicalLine.begin() + vl->startColumn + selEndOnLine);
+			FontTextSize toStartSize = font->computeTextSize(textToStart.data(), (u32)textToStart.size());
+			FontTextSize selectedSize = font->computeTextSize(selectedText.data(), (u32)selectedText.size());
+
+			f32 selX = clipRect.x + toStartSize.width - currentScrollX;
+
+			// Convert selected text to UTF-8
+			state.utf8LineBuffer.resize((selectedText.size() + 1) * 4);
+			char* selTextUtf8 = state.utf8LineBuffer.data();
+			ctx->settings.services.utf32To8NoAlloc(selectedText.data(), (u32)selectedText.size(), selTextUtf8, (u32)state.utf8LineBuffer.size());
+
+			if (selTextUtf8 && selTextUtf8[0])
+			{
+				Rect selTextRect;
+				selTextRect.x = selX;
+				selTextRect.y = yPos;
+				selTextRect.width = selectedSize.width;
+				selTextRect.height = lineHeight;
+				
+				ctx->renderer.cmdDrawTextInBox(selTextUtf8, selTextRect, HAlignType::Left, VAlignType::Bottom, false, true);
 			}
 		}
 	}

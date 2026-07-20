@@ -600,7 +600,7 @@
 				"barTextSpacing": 5,
 				"textShadowColor": "black",
 				"height": 19,
-				"normal": { "image": "flat/pixel", "border": 0, "color": "55 185 100 255" },
+				"normal": { "image": "flat/pixel", "border": 0, "color": "55 185 100 255", "font": "normal", "textColor": "white" },
 				"disabled": { "color": "55 185 100 128" }
 			}
 		},

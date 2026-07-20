@@ -556,7 +556,7 @@ i32 TextInputState::getCharIndexAtX(f32 xPos)
 
 	xPos += scrollOffset;
 
-	Font* font = (Font*)themeElement->normalState().font;
+	Font* font = ctx->theme ? ctx->theme->getElement(WidgetElementId::TextInputBody).normalState().font : nullptr;
 
 	if (!font)
 	{
@@ -631,13 +631,20 @@ void TextInputState::computeScrollAmount()
 	Utf32String tmpStr = Utf32String(text.begin(), text.begin() + caretPosition);
 	FontTextSize textSizeToCaret;
 
+	Font* font = ctx->theme ? ctx->theme->getElement(WidgetElementId::TextInputBody).normalState().font : nullptr;
+
+	if (!font)
+	{
+		return;
+	}
+
 	if (!password)
 	{
-		textSizeToCaret = themeElement->normalState().font->computeTextSize(tmpStr.data(), (u32)tmpStr.size());
+		textSizeToCaret = font->computeTextSize(tmpStr.data(), (u32)tmpStr.size());
 	}
 	else
 	{
-		textSizeToCaret = themeElement->normalState().font->computeTextSize(passwordCharUnicode.data(), passwordCharUnicode.size());
+		textSizeToCaret = font->computeTextSize(passwordCharUnicode.data(), passwordCharUnicode.size());
 		textSizeToCaret.width *= tmpStr.size();
 	}
 

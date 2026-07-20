@@ -52,7 +52,7 @@ bool dropdown(const char* id, i32& selectedIndex, const char** items, u32 itemCo
 	ctx->renderer.cmdSetColor(tintApply(arrowElemState->color, TintColorType::Body));
 
 	// dial down the height, since its already global scaled
-	auto arrowY = ctx->widget.rect.height / 2.0f - ((arrowElemState->image->height) / 2.0f + (ctx->widget.pressed ? 1.0f : 0.0f)) * ctx->scale;
+	auto arrowY = ctx->widget.rect.height / 2.0f - ((arrowElemState->image->height) / 2.0f - (ctx->widget.pressed ? 1.0f : 0.0f)) * ctx->scale;
 
 	ctx->renderer.cmdDrawImage(arrowElemState->image,
 		{

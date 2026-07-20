@@ -105,26 +105,26 @@
                     "buttonBody": {
                         "height": 22,
                         "normal": {
-                            "image": "pixel/button_normal",
-                            "border": 3,
-                            "color": "192 192 208 255",
+                            "image": "win94/button_normal",
+                            "border": 4,
+                            "color": "white",
                             "textColor": "0 0 0 255",
                             "font": "normal"
                         },
                         "disabled": {
-                            "color": "128 128 144 155",
+                            "color": "white",
                             "textColor": "128 128 128 128"
                         },
                         "hovered": {
-                            "color": "200 200 220 255"
+                            "color": "white"
                         },
                         "pressed": {
-                            "image": "pixel/button_pressed",
-                            "border": 3,
-                            "color": "160 160 180 255"
+                            "image": "win94/button_pressed",
+                            "border": 4,
+                            "color": "white"
                         },
                         "focused": {
-                            "color": "160 160 180 255"
+                            "color": "white"
                         }
                     }
                 },
@@ -133,7 +133,7 @@
                         "width": 0,
                         "height": 55,
                         "normal": {
-                            "image": "pixel/button_normal",
+                            "image": "win94/button_normal",
                             "border": 3,
                             "color": "0 0 128 255",
                             "textColor": "255 255 255 255",
@@ -148,7 +148,7 @@
                             "font": "large-bold"
                         },
                         "pressed": {
-                            "image": "pixel/button_pressed",
+                            "image": "win94/button_pressed",
                             "border": 3,
                             "color": "0 0 100 255",
                             "font": "large-italic"
@@ -165,7 +165,7 @@
                 "height": 22,
                 "labelSideSpacing": "6",
                 "normal": {
-                    "image": "pixel/button_group_left_normal",
+                    "image": "win94/button_group_left_normal",
                     "border": 3,
                     "color": "192 192 208 255",
                     "textColor": "0 0 0 255",
@@ -179,7 +179,7 @@
                     "color": "200 200 220 255"
                 },
                 "pressed": {
-                    "image": "pixel/button_group_left_pressed",
+                    "image": "win94/button_group_left_pressed",
                     "border": 3,
                     "color": "160 160 180 255",
                     "font": "normal-bold"
@@ -191,7 +191,7 @@
             "buttonGroupMiddleBody": {
                 "height": 22,
                 "normal": {
-                    "image": "pixel/button_group_middle_normal",
+                    "image": "win94/button_group_middle_normal",
                     "border": 3,
                     "color": "192 192 208 255",
                     "textColor": "0 0 0 255",
@@ -205,7 +205,7 @@
                     "color": "200 200 220 255"
                 },
                 "pressed": {
-                    "image": "pixel/button_group_middle_pressed",
+                    "image": "win94/button_group_middle_pressed",
                     "border": 3,
                     "color": "160 160 180 255",
                     "font": "normal-bold"
@@ -217,7 +217,7 @@
             "buttonGroupRightBody": {
                 "height": 22,
                 "normal": {
-                    "image": "pixel/button_group_right_normal",
+                    "image": "win94/button_group_right_normal",
                     "border": 3,
                     "color": "192 192 208 255",
                     "textColor": "0 0 0 255",
@@ -231,7 +231,7 @@
                     "color": "200 200 220 255"
                 },
                 "pressed": {
-                    "image": "pixel/button_group_right_pressed",
+                    "image": "win94/button_group_right_pressed",
                     "border": 3,
                     "color": "160 160 180 255",
                     "font": "normal-bold"
@@ -248,7 +248,7 @@
                         "width": 0,
                         "height": 22,
                         "normal": {
-                            "image": "pixel/button_normal",
+                            "image": "win94/button_normal",
                             "border": 3,
                             "color": "192 192 208 255",
                             "textColor": "0 0 0 255",
@@ -258,7 +258,7 @@
                             "color": "200 200 220 255"
                         },
                         "pressed": {
-                            "image": "pixel/button_pressed",
+                            "image": "win94/button_pressed",
                             "border": 3,
                             "color": "160 160 180 255"
                         },
@@ -272,7 +272,7 @@
                         "width": 0,
                         "height": 22,
                         "normal": {
-                            "image": "pixel/button_normal",
+                            "image": "win94/button_normal",
                             "border": 3,
                             "color": "0 0 128 255",
                             "textColor": "255 255 255 255",
@@ -282,7 +282,7 @@
                             "color": "0 0 160 255"
                         },
                         "pressed": {
-                            "image": "pixel/button_pressed",
+                            "image": "win94/button_pressed",
                             "border": 3,
                             "color": "0 0 100 255"
                         },
@@ -297,82 +297,82 @@
             "dropdownBody": {
                 "height": 22,
                 "normal": {
-                    "image": "pixel/dropdown",
+                    "image": "win94/dropdown",
                     "border": 3,
-                    "color": "192 192 208 255",
+                    "color": "white",
                     "textColor": "0 0 0 255",
                     "font": "normal"
                 },
                 "disabled": {
-                    "color": "128 128 144 128",
+                    "color": "228 228 228 255",
                     "textColor": "128 128 128 255"
                 },
                 "hovered": {
-                    "color": "200 200 220 255"
+                    "color": "white"
                 },
                 "pressed": {
-                    "color": "160 160 180 255"
+                    "color": "white"
                 },
                 "focused": {
-                    "color": "160 160 180 255"
+                    "color": "white"
                 }
             },
             "dropdownArrow": {
                 "normal": {
-                    "image": "pixel/dropdown_arrow",
+                    "image": "win94/dropdown_arrow",
                     "border": 0,
-                    "color": "0 0 0 255"
+                    "color": "white"
                 },
                 "disabled": {
                     "color": "128 128 128 255"
                 },
                 "hovered": {
-                    "image": "pixel/dropdown_arrow",
+                    "image": "win94/dropdown_arrow",
                     "border": 0,
-                    "color": "0 0 128 255"
+                    "color": "white"
                 },
                 "pressed": {
-                    "image": "pixel/dropdown_arrow",
+                    "image": "win94/dropdown_arrow",
                     "border": 0,
-                    "color": "0 0 0 255"
+                    "color": "white"
                 },
                 "focused": {
-                    "image": "pixel/dropdown_arrow",
+                    "image": "win94/dropdown_arrow",
                     "border": 0,
-                    "color": "0 0 0 255"
+                    "color": "white"
                 }
             }
         },
         "check": {
             "checkBody": {
-                "width": 22,
-                "height": 22,
+                "width": 15,
+                "height": 15,
                 "normal": {
-                    "image": "pixel/check_normal",
+                    "image": "win94/check_normal",
                     "border": 3,
-                    "color": "192 192 208 255",
+                    "color": "white",
                     "textColor": "0 0 0 255",
                     "font": "normal"
                 },
                 "disabled": {
-                    "image": "pixel/check_normal",
+                    "image": "win94/check_normal",
                     "border": 3,
                     "color": "128 128 144 128",
                     "textColor": "128 128 128 255"
                 },
                 "hovered": {
-                    "color": "200 200 220 255"
+                    "color": "white"
                 },
                 "pressed": {
-                    "color": "160 160 180 255"
+                    "color": "white"
                 },
                 "focused": {
-                    "color": "200 200 220 255"
+                    "color": "white"
                 }
             },
             "checkMark": {
                 "normal": {
-                    "image": "pixel/check_mark",
+                    "image": "win94/check_mark",
                     "border": 0,
                     "color": "0 0 0 255"
                 },
@@ -380,17 +380,17 @@
                     "color": "128 128 128 255"
                 },
                 "hovered": {
-                    "image": "pixel/check_mark",
+                    "image": "win94/check_mark",
                     "border": 0,
                     "color": "0 0 0 255"
                 },
                 "pressed": {
-                    "image": "pixel/check_mark",
+                    "image": "win94/check_mark",
                     "border": 0,
                     "color": "0 0 0 255"
                 },
                 "focused": {
-                    "image": "pixel/check_mark",
+                    "image": "win94/check_mark",
                     "border": 0,
                     "color": "0 0 0 255"
                 }
@@ -398,59 +398,59 @@
         },
         "radio": {
             "radioBody": {
-                "width": 22,
-                "height": 22,
+                "width": 14,
+                "height": 16,
                 "normal": {
-                    "image": "pixel/radio_body",
-                    "border": 3,
-                    "color": "192 192 208 255",
+                    "image": "win94/radio_body",
+                    "border": 0,
+                    "color": "white",
                     "textColor": "0 0 0 255",
                     "font": "normal"
                 },
                 "disabled": {
-                    "color": "128 128 144 128",
+                    "color": "white",
                     "textColor": "128 128 128 255"
                 },
                 "hovered": {
-                    "color": "200 200 220 255"
+                    "color": "white"
                 },
                 "pressed": {
-                    "color": "160 160 180 255"
+                    "color": "white"
                 },
                 "focused": {
-                    "color": "200 200 220 255"
+                    "color": "white"
                 }
             },
             "radioMark": {
                 "normal": {
-                    "image": "pixel/radio_mark",
+                    "image": "win94/radio_mark",
                     "border": 0,
-                    "color": "0 0 128 255"
+                    "color": "white"
                 },
                 "disabled": {
                     "color": "128 128 128 255"
                 },
                 "hovered": {
-                    "image": "pixel/radio_mark",
+                    "image": "win94/radio_mark",
                     "border": 0,
-                    "color": "0 0 128 255"
+                    "color": "white"
                 },
                 "pressed": {
-                    "image": "pixel/radio_mark",
+                    "image": "win94/radio_mark",
                     "border": 0,
-                    "color": "0 0 128 255"
+                    "color": "white"
                 },
                 "focused": {
-                    "image": "pixel/radio_mark",
+                    "image": "win94/radio_mark",
                     "border": 0,
-                    "color": "0 0 128 255"
+                    "color": "white"
                 }
             }
         },
         "line": {
             "lineBody": {
                 "normal": {
-                    "image": "pixel/line",
+                    "image": "win94/line",
                     "border": 2,
                     "color": "128 128 144 255"
                 }
@@ -473,32 +473,37 @@
         },
         "expandable": {
             "expandableBody": {
+                "height": 22,
                 "normal": {
-                    "image": "pixel/expandable",
+                    "image": "win94/expandable",
                     "border": 3,
                     "color": "192 192 208 255",
                     "font": "normal-bold",
                     "textColor": "0 0 0 255"
                 },
                 "disabled": {
+                    "height": 22,
                     "color": "128 128 144 128",
                     "textColor": "128 128 128 255"
                 },
                 "hovered": {
-                    "image": "pixel/expandable",
+                    "height": 22,
+                    "image": "win94/expandable",
                     "border": 3,
                     "color": "200 200 220 255",
                     "textColor": "0 0 128 255",
                     "font": "normal-bold"
                 },
                 "pressed": {
-                    "image": "pixel/expandable",
+                    "height": 22,
+                    "image": "win94/expandable",
                     "border": 3,
                     "color": "192 192 208 255",
                     "font": "normal-bold"
                 },
                 "focused": {
-                    "image": "pixel/expandable",
+                    "height": 22,
+                    "image": "win94/expandable",
                     "border": 3,
                     "color": "192 192 208 255",
                     "font": "normal-bold"
@@ -506,7 +511,7 @@
             },
             "expandableExpandedArrow": {
                 "normal": {
-                    "image": "pixel/expandable_expanded_arrow",
+                    "image": "win94/expandable_expanded_arrow",
                     "border": 0,
                     "color": "0 0 0 255"
                 },
@@ -514,24 +519,24 @@
                     "color": "128 128 128 255"
                 },
                 "hovered": {
-                    "image": "pixel/expandable_expanded_arrow",
+                    "image": "win94/expandable_expanded_arrow",
                     "border": 0,
                     "color": "0 0 128 255"
                 },
                 "pressed": {
-                    "image": "pixel/expandable_expanded_arrow",
+                    "image": "win94/expandable_expanded_arrow",
                     "border": 0,
                     "color": "0 0 0 255"
                 },
                 "focused": {
-                    "image": "pixel/expandable_expanded_arrow",
+                    "image": "win94/expandable_expanded_arrow",
                     "border": 0,
                     "color": "0 0 0 255"
                 }
             },
             "expandableCollapsedArrow": {
                 "normal": {
-                    "image": "pixel/expandable_collapsed_arrow",
+                    "image": "win94/expandable_collapsed_arrow",
                     "border": 0,
                     "color": "0 0 0 255"
                 },
@@ -539,17 +544,17 @@
                     "color": "128 128 128 255"
                 },
                 "hovered": {
-                    "image": "pixel/expandable_collapsed_arrow",
+                    "image": "win94/expandable_collapsed_arrow",
                     "border": 0,
                     "color": "0 0 128 255"
                 },
                 "pressed": {
-                    "image": "pixel/expandable_collapsed_arrow",
+                    "image": "win94/expandable_collapsed_arrow",
                     "border": 0,
                     "color": "0 0 0 255"
                 },
                 "focused": {
-                    "image": "pixel/expandable_collapsed_arrow",
+                    "image": "win94/expandable_collapsed_arrow",
                     "border": 0,
                     "color": "0 0 0 255"
                 }
@@ -583,44 +588,44 @@
             },
             "treeNodeExpandedArrow": {
                 "normal": {
-                    "image": "pixel/treenode_expanded_arrow",
+                    "image": "win94/treenode_expanded_arrow",
                     "border": 0,
                     "color": "0 0 0 255"
                 },
                 "hovered": {
-                    "image": "pixel/treenode_expanded_arrow",
+                    "image": "win94/treenode_expanded_arrow",
                     "border": 0,
                     "color": "255 255 255 255"
                 },
                 "pressed": {
-                    "image": "pixel/treenode_expanded_arrow",
+                    "image": "win94/treenode_expanded_arrow",
                     "border": 0,
                     "color": "255 255 255 255"
                 },
                 "focused": {
-                    "image": "pixel/treenode_expanded_arrow",
+                    "image": "win94/treenode_expanded_arrow",
                     "border": 0,
                     "color": "0 0 0 255"
                 }
             },
             "treeNodeCollapsedArrow": {
                 "normal": {
-                    "image": "pixel/treenode_collapsed_arrow",
+                    "image": "win94/treenode_collapsed_arrow",
                     "border": 0,
                     "color": "0 0 0 255"
                 },
                 "hovered": {
-                    "image": "pixel/treenode_collapsed_arrow",
+                    "image": "win94/treenode_collapsed_arrow",
                     "border": 0,
                     "color": "255 255 255 255"
                 },
                 "pressed": {
-                    "image": "pixel/treenode_collapsed_arrow",
+                    "image": "win94/treenode_collapsed_arrow",
                     "border": 0,
                     "color": "255 255 255 255"
                 },
                 "focused": {
-                    "image": "pixel/treenode_collapsed_arrow",
+                    "image": "win94/treenode_collapsed_arrow",
                     "border": 0,
                     "color": "0 0 0 255"
                 }
@@ -631,14 +636,14 @@
                 "width": 0,
                 "height": 22,
                 "normal": {
-                    "image": "pixel/text_input_normal",
+                    "image": "win94/text_input_normal",
                     "border": 3,
                     "color": "255 255 255 255",
                     "textColor": "0 0 0 255",
                     "font": "normal-unicode"
                 },
                 "disabled": {
-                    "color": "192 192 208 255",
+                    "color": "192 192 192 255",
                     "textColor": "128 128 128 255"
                 },
                 "hovered": {
@@ -648,7 +653,7 @@
                     "color": "255 255 255 255"
                 },
                 "focused": {
-                    "image": "pixel/text_input_focused",
+                    "image": "win94/text_input_focused",
                     "border": 3,
                     "color": "255 255 255 255"
                 }
@@ -668,7 +673,8 @@
                 "normal": {
                     "image": "",
                     "border": 0,
-                    "color": "0 0 128 128"
+                    "color": "0 0 123 255",
+                    "textColor": "white"
                 }
             },
             "textInputDefaultText": {
@@ -679,7 +685,7 @@
             },
             "textInputFilterClearImage": {
                 "normal": {
-                    "image": "pixel/clear",
+                    "image": "win94/clear",
                     "border": 0,
                     "color": "128 128 128 255"
                 },
@@ -691,18 +697,18 @@
         "multilineTextInput": {
             "multilineTextInputBody": {
                 "normal": {
-                    "image": "pixel/text_input_normal",
+                    "image": "win94/text_input_normal",
                     "border": 3,
                     "color": "255 255 255 255",
                     "textColor": "0 0 0 255",
                     "font": "code-normal"
                 },
                 "disabled": {
-                    "color": "192 192 208 255",
+                    "color": "192 192 192 255",
                     "textColor": "128 128 128 255"
                 },
                 "focused": {
-                    "image": "pixel/text_input_focused",
+                    "image": "win94/text_input_focused",
                     "border": 3,
                     "color": "255 255 255 255"
                 }
@@ -710,13 +716,13 @@
             "multilineTextInputLineNumbers": {
                 "width": 30,
                 "normal": {
-                    "image": "pixel/multiline_text_input_linenumbg",
+                    "image": "win94/multiline_text_input_linenumbg",
                     "border": 3,
-                    "color": "192 192 208 255",
+                    "color": "192 192 192 255",
                     "font": "code-normal"
                 },
                 "disabled": {
-                    "color": "192 192 208 128",
+                    "color": "192 192 192 128",
                     "textColor": "128 128 128 255"
                 }
             },
@@ -734,7 +740,7 @@
                 "width": 16,
                 "height": 11,
                 "normal": {
-                    "image": "pixel/multiline_text_input_wordwrap",
+                    "image": "win94/multiline_text_input_wordwrap",
                     "border": 0,
                     "color": "128 128 128 100"
                 }
@@ -744,7 +750,7 @@
             "sliderBody": {
                 "height": 16,
                 "normal": {
-                    "image": "pixel/slider",
+                    "image": "win94/slider",
                     "border": 2,
                     "color": "192 192 208 255"
                 },
@@ -753,24 +759,24 @@
                     "textColor": "128 128 128 255"
                 },
                 "hovered": {
-                    "image": "pixel/slider",
+                    "image": "win94/slider",
                     "border": 2,
                     "color": "200 200 220 255"
                 },
                 "pressed": {
-                    "image": "pixel/slider",
+                    "image": "win94/slider",
                     "border": 2,
                     "color": "200 200 220 255"
                 },
                 "focused": {
-                    "image": "pixel/slider",
+                    "image": "win94/slider",
                     "border": 2,
                     "color": "192 192 208 255"
                 }
             },
             "sliderBodyFilled": {
                 "normal": {
-                    "image": "pixel/slider_filled",
+                    "image": "win94/slider_filled",
                     "border": 2,
                     "color": "0 0 128 255"
                 },
@@ -779,24 +785,24 @@
                     "textColor": "128 128 128 255"
                 },
                 "hovered": {
-                    "image": "pixel/slider_filled",
+                    "image": "win94/slider_filled",
                     "border": 2,
                     "color": "0 0 160 255"
                 },
                 "pressed": {
-                    "image": "pixel/slider_filled",
+                    "image": "win94/slider_filled",
                     "border": 2,
                     "color": "0 0 160 255"
                 },
                 "focused": {
-                    "image": "pixel/slider_filled",
+                    "image": "win94/slider_filled",
                     "border": 2,
                     "color": "0 0 128 255"
                 }
             },
             "sliderKnob": {
                 "normal": {
-                    "image": "pixel/slider_knob",
+                    "image": "win94/slider_knob",
                     "border": 0,
                     "color": "192 192 208 255"
                 },
@@ -805,17 +811,17 @@
                     "textColor": "128 128 128 255"
                 },
                 "hovered": {
-                    "image": "pixel/slider_knob",
+                    "image": "win94/slider_knob",
                     "border": 0,
                     "color": "0 0 128 255"
                 },
                 "pressed": {
-                    "image": "pixel/slider_knob",
+                    "image": "win94/slider_knob",
                     "border": 0,
                     "color": "192 192 208 255"
                 },
                 "focused": {
-                    "image": "pixel/slider_knob",
+                    "image": "win94/slider_knob",
                     "border": 0,
                     "color": "0 0 128 255"
                 }
@@ -825,27 +831,27 @@
             "comboSliderBody": {
                 "height": 20,
                 "normal": {
-                    "image": "pixel/dropdown",
+                    "image": "win94/dropdown",
                     "border": 2,
-                    "color": "192 192 208 255"
+                    "color": "white"
                 },
                 "disabled": {
                     "color": "192 192 208 128",
                     "textColor": "128 128 128 255"
                 },
                 "hovered": {
-                    "color": "200 200 220 255"
+                    "color": "white"
                 },
                 "pressed": {
-                    "color": "160 160 180 255"
+                    "color": "white"
                 },
                 "focused": {
-                    "color": "192 192 208 255"
+                    "color": "white"
                 }
             },
             "comboSliderLeftArrow": {
                 "normal": {
-                    "image": "pixel/comboslider_left_arrow",
+                    "image": "win94/comboslider_left_arrow",
                     "border": 0,
                     "color": "0 0 0 255"
                 },
@@ -853,24 +859,24 @@
                     "color": "128 128 128 255"
                 },
                 "hovered": {
-                    "image": "pixel/comboslider_left_arrow",
+                    "image": "win94/comboslider_left_arrow",
                     "border": 0,
                     "color": "0 0 128 255"
                 },
                 "pressed": {
-                    "image": "pixel/comboslider_left_arrow",
+                    "image": "win94/comboslider_left_arrow",
                     "border": 0,
                     "color": "0 0 0 255"
                 },
                 "focused": {
-                    "image": "pixel/comboslider_left_arrow",
+                    "image": "win94/comboslider_left_arrow",
                     "border": 0,
                     "color": "0 0 0 255"
                 }
             },
             "comboSliderRightArrow": {
                 "normal": {
-                    "image": "pixel/comboslider_right_arrow",
+                    "image": "win94/comboslider_right_arrow",
                     "border": 0,
                     "color": "0 0 0 255"
                 },
@@ -878,17 +884,17 @@
                     "color": "128 128 128 255"
                 },
                 "hovered": {
-                    "image": "pixel/comboslider_right_arrow",
+                    "image": "win94/comboslider_right_arrow",
                     "border": 0,
                     "color": "0 0 128 255"
                 },
                 "pressed": {
-                    "image": "pixel/comboslider_right_arrow",
+                    "image": "win94/comboslider_right_arrow",
                     "border": 0,
                     "color": "0 0 0 255"
                 },
                 "focused": {
-                    "image": "pixel/comboslider_right_arrow",
+                    "image": "win94/comboslider_right_arrow",
                     "border": 0,
                     "color": "0 0 0 255"
                 }
@@ -896,7 +902,7 @@
             "comboSliderRangeBar": {
                 "height": 2,
                 "normal": {
-                    "image": "pixel/pixel",
+                    "image": "win94/pixel",
                     "border": 0,
                     "color": "0 0 128 255"
                 },
@@ -916,7 +922,7 @@
             "comboSliderVerticalLine": {
                 "height": 16,
                 "normal": {
-                    "image": "pixel/pixel",
+                    "image": "win94/pixel",
                     "border": 0,
                     "color": "128 128 128 255"
                 },
@@ -935,56 +941,56 @@
             "circularSliderBody": {
                 "height": 90,
                 "normal": {
-                    "image": "pixel/circularslider_body",
+                    "image": "win94/circularslider_body",
                     "border": 2,
-                    "color": "192 192 208 255"
+                    "color": "white"
                 },
                 "disabled": {
-                    "color": "192 192 208 128",
+                    "color": "white",
                     "textColor": "128 128 128 255"
                 },
                 "hovered": {
-                    "image": "pixel/circularslider_body",
+                    "image": "win94/circularslider_body",
                     "border": 2,
-                    "color": "200 200 220 255"
+                    "color": "white"
                 },
                 "pressed": {
-                    "image": "pixel/circularslider_body",
+                    "image": "win94/circularslider_body",
                     "border": 2,
-                    "color": "200 200 220 255"
+                    "color": "white"
                 },
                 "focused": {
-                    "image": "pixel/circularslider_body",
+                    "image": "win94/circularslider_body",
                     "border": 2,
-                    "color": "192 192 208 255"
+                    "color": "white"
                 }
             },
             "circularSliderMark": {
                 "height": 10,
                 "placementRadius": 20,
                 "normal": {
-                    "image": "pixel/circularslider_mark",
+                    "image": "win94/circularslider_mark",
                     "border": 0,
-                    "color": "0 0 0 255"
+                    "color": "white"
                 },
                 "disabled": {
-                    "color": "192 192 208 128",
+                    "color": "white",
                     "textColor": "128 128 128 255"
                 },
                 "hovered": {
-                    "image": "pixel/circularslider_mark",
+                    "image": "win94/circularslider_mark",
                     "border": 0,
-                    "color": "0 0 128 255"
+                    "color": "white"
                 },
                 "pressed": {
-                    "image": "pixel/circularslider_mark",
+                    "image": "win94/circularslider_mark",
                     "border": 0,
-                    "color": "0 0 0 255"
+                    "color": "white"
                 },
                 "focused": {
-                    "image": "pixel/circularslider_mark",
+                    "image": "win94/circularslider_mark",
                     "border": 0,
-                    "color": "0 0 0 255"
+                    "color": "white"
                 }
             },
             "circularSliderValueDot": {
@@ -993,25 +999,25 @@
                 "negativeColor": "128 0 0 255",
                 "positiveColor": "0 128 0 255",
                 "normal": {
-                    "image": "pixel/circularslider_value_dot",
+                    "image": "win94/circularslider_value_dot",
                     "border": 0,
-                    "color": "0 0 0 255"
+                    "color": "white"
                 },
                 "disabled": {
-                    "color": "192 192 208 128",
+                    "color": "192 192 192 128",
                     "textColor": "128 128 128 255"
                 },
                 "pressed": {
-                    "image": "pixel/circularslider_value_dot",
+                    "image": "win94/circularslider_value_dot",
                     "border": 0,
-                    "color": "128 128 0 255"
+                    "color": "128 128 128 255"
                 }
             }
         },
         "tooltip": {
             "tooltipBody": {
                 "normal": {
-                    "image": "pixel/tooltip",
+                    "image": "win94/tooltip",
                     "border": 4,
                     "color": "192 192 208 255",
                     "textColor": "0 0 0 255",
@@ -1022,14 +1028,14 @@
         "popup": {
             "popupBody": {
                 "normal": {
-                    "image": "pixel/popup",
+                    "image": "win94/popup",
                     "border": 6,
                     "color": "192 192 208 255"
                 }
             },
             "popupBehind": {
                 "normal": {
-                    "image": "pixel/pixel",
+                    "image": "win94/pixel",
                     "border": 0,
                     "color": "0 0 0 180"
                 }
@@ -1039,7 +1045,7 @@
             "tabGroupBody": {
                 "height": 37,
                 "normal": {
-                    "image": "pixel/tabgroup",
+                    "image": "win94/tabgroup",
                     "border": 3,
                     "color": "192 192 208 255"
                 }
@@ -1050,26 +1056,26 @@
                 "width": 100,
                 "height": 30,
                 "normal": {
-                    "image": "pixel/tab_active",
+                    "image": "win94/tab_active",
                     "border": 3,
                     "color": "255 255 255 255",
                     "textColor": "0 0 0 255",
                     "font": "window-tab"
                 },
                 "hovered": {
-                    "image": "pixel/tab_active",
+                    "image": "win94/tab_active",
                     "border": 3,
                     "color": "255 255 255 255",
                     "font": "window-tab"
                 },
                 "pressed": {
-                    "image": "pixel/tab_active",
+                    "image": "win94/tab_active",
                     "border": 3,
                     "color": "255 255 255 255",
                     "font": "window-tab"
                 },
                 "focused": {
-                    "image": "pixel/tab_active_focused",
+                    "image": "win94/tab_active_focused",
                     "border": 3,
                     "color": "255 255 255 255",
                     "font": "window-tab"
@@ -1079,26 +1085,26 @@
                 "width": 100,
                 "height": 30,
                 "normal": {
-                    "image": "pixel/tab_inactive",
+                    "image": "win94/tab_inactive",
                     "border": 3,
                     "color": "192 192 208 255",
                     "textColor": "0 0 0 255",
                     "font": "window-tab"
                 },
                 "hovered": {
-                    "image": "pixel/tab_inactive",
+                    "image": "win94/tab_inactive",
                     "border": 3,
                     "color": "200 200 220 255",
                     "font": "window-tab"
                 },
                 "pressed": {
-                    "image": "pixel/tab_inactive",
+                    "image": "win94/tab_inactive",
                     "border": 3,
                     "color": "200 200 220 255",
                     "font": "window-tab"
                 },
                 "focused": {
-                    "image": "pixel/tab_inactive",
+                    "image": "win94/tab_inactive",
                     "border": 3,
                     "color": "192 192 208 255",
                     "font": "window-tab"
@@ -1110,28 +1116,28 @@
                 "paddingX": 10,
                 "paddingY": 10,
                 "normal": {
-                    "image": "pixel/window_body",
+                    "image": "win94/window_body",
                     "border": 2,
-                    "color": "192 192 208 255"
+                    "color": "white"
                 }
             },
             "windowHorizontalSplitter": {
                 "normal": {
-                    "image": "pixel/pixel",
+                    "image": "win94/pixel",
                     "border": 0,
                     "color": "128 128 144 255"
                 }
             },
             "windowVerticalSplitter": {
                 "normal": {
-                    "image": "pixel/pixel",
+                    "image": "win94/pixel",
                     "border": 0,
                     "color": "128 128 144 255"
                 }
             },
             "windowDockGuideVerticalSplit": {
                 "normal": {
-                    "image": "pixel/window_dock_guide_vertical_split",
+                    "image": "win94/window_dock_guide_vertical_split",
                     "border": 6,
                     "color": "0 0 128 128"
                 },
@@ -1141,7 +1147,7 @@
             },
             "windowDockGuideHorizontalSplit": {
                 "normal": {
-                    "image": "pixel/window_dock_guide_horizontal_split",
+                    "image": "win94/window_dock_guide_horizontal_split",
                     "border": 6,
                     "color": "0 0 128 128"
                 },
@@ -1151,7 +1157,7 @@
             },
             "windowDockGuideAsTab": {
                 "normal": {
-                    "image": "pixel/window_dock_guide_as_tab",
+                    "image": "win94/window_dock_guide_as_tab",
                     "border": 6,
                     "color": "0 0 128 128"
                 },
@@ -1163,15 +1169,15 @@
         "scrollView": {
             "scrollViewBody": {
                 "normal": {
-                    "image": "pixel/scrollview",
-                    "border": 3,
+                    "image": "win94/scrollview",
+                    "border": 2,
                     "color": "255 255 255 255"
                 }
             },
             "scrollViewScrollBarV": {
                 "width": 18,
                 "normal": {
-                    "image": "pixel/scrollview_scrollbar",
+                    "image": "win94/scrollview_scrollbar",
                     "border": 3,
                     "color": "192 192 208 255"
                 }
@@ -1179,7 +1185,7 @@
             "scrollViewScrollThumbV": {
                 "width": 11,
                 "normal": {
-                    "image": "pixel/scrollview_scrollthumb",
+                    "image": "win94/scrollview_scrollthumb",
                     "border": 2,
                     "color": "192 192 208 255"
                 },
@@ -1190,7 +1196,7 @@
             "scrollViewScrollBarH": {
                 "height": 18,
                 "normal": {
-                    "image": "pixel/scrollview_scrollbar_h",
+                    "image": "win94/scrollview_scrollbar_h",
                     "border": 3,
                     "color": "192 192 208 255"
                 }
@@ -1198,7 +1204,7 @@
             "scrollViewScrollThumbH": {
                 "height": 11,
                 "normal": {
-                    "image": "pixel/scrollview_scrollthumb_h",
+                    "image": "win94/scrollview_scrollthumb_h",
                     "border": 2,
                     "color": "192 192 208 255"
                 },
@@ -1211,7 +1217,7 @@
             "menuBarBody": {
                 "height": 20,
                 "normal": {
-                    "image": "pixel/menu_bar",
+                    "image": "win94/menu_bar",
                     "border": 2,
                     "color": "192 192 208 255",
                     "font": "menu"
@@ -1220,7 +1226,7 @@
             "menuBarItem": {
                 "height": 20,
                 "normal": {
-                    "image": "pixel/pixel",
+                    "image": "win94/pixel",
                     "border": 0,
                     "color": "192 192 208 255",
                     "font": "menu",
@@ -1239,7 +1245,7 @@
         "menu": {
             "menuBody": {
                 "normal": {
-                    "image": "pixel/menu_body",
+                    "image": "win94/menu_body",
                     "border": 3,
                     "color": "192 192 208 255",
                     "font": "menu"
@@ -1248,25 +1254,25 @@
             "menuItemBody": {
                 "height": 20,
                 "normal": {
-                    "image": "pixel/pixel",
+                    "image": "win94/pixel",
                     "border": 0,
                     "color": "192 192 208 255",
                     "textColor": "0 0 0 255"
                 },
                 "hovered": {
-                    "image": "pixel/menu_item_body",
+                    "image": "win94/menu_item_body",
                     "border": 2,
                     "color": "0 0 128 255",
                     "textColor": "255 255 255 255"
                 },
                 "pressed": {
-                    "image": "pixel/menu_item_body",
+                    "image": "win94/menu_item_body",
                     "border": 2,
                     "color": "0 0 128 255",
                     "textColor": "255 255 255 255"
                 },
                 "focused": {
-                    "image": "pixel/menu_item_body",
+                    "image": "win94/menu_item_body",
                     "border": 2,
                     "color": "0 0 128 255",
                     "textColor": "255 255 255 255"
@@ -1292,43 +1298,43 @@
             },
             "menuItemSeparator": {
                 "normal": {
-                    "image": "pixel/menu_item_separator",
+                    "image": "win94/menu_item_separator",
                     "border": 2,
                     "color": "128 128 144 255"
                 }
             },
             "subMenuItemArrow": {
                 "normal": {
-                    "image": "pixel/submenu_item_arrow",
+                    "image": "win94/submenu_item_arrow",
                     "border": 0,
                     "color": "0 0 0 255"
                 },
                 "hovered": {
-                    "image": "pixel/submenu_item_arrow",
+                    "image": "win94/submenu_item_arrow",
                     "border": 0,
                     "color": "255 255 255 255"
                 }
             },
             "menuItemCheckMark": {
                 "normal": {
-                    "image": "pixel/menu_item_checkmark",
+                    "image": "win94/menu_item_checkmark",
                     "border": 0,
                     "color": "0 0 0 255"
                 },
                 "hovered": {
-                    "image": "pixel/menu_item_checkmark",
+                    "image": "win94/menu_item_checkmark",
                     "border": 0,
                     "color": "255 255 255 255"
                 }
             },
             "menuItemNoCheckMark": {
                 "normal": {
-                    "image": "pixel/pixel",
+                    "image": "win94/pixel",
                     "border": 0,
                     "color": "192 192 208 255"
                 },
                 "hovered": {
-                    "image": "pixel/pixel",
+                    "image": "win94/pixel",
                     "border": 0,
                     "color": "255 255 255 255"
                 }
@@ -1338,23 +1344,25 @@
             "progressBack": {
                 "height": 20,
                 "normal": {
-                    "image": "pixel/progress_back",
+                    "image": "win94/progress_back",
                     "border": 4,
-                    "color": "192 192 208 255"
+                    "color": "white",
+                    "textColor": "black"
                 },
                 "disabled": {
-                    "color": "192 192 208 128",
+                    "color": "192 192 192 128",
                     "textColor": "128 128 128 255"
                 }
             },
             "progressFill": {
                 "barTextSpacing": 5,
-                "textShadowColor": "black",
+                "textShadowColor": "white",
                 "height": 19,
                 "normal": {
-                    "image": "pixel/progress_fill",
+                    "image": "win94/progress_fill",
                     "border": 4,
-                    "color": "0 0 128 255"
+                    "textColor": "0 0 0 255",
+                    "font": "normal"
                 },
                 "disabled": {
                     "color": "0 0 128 128"
@@ -1364,28 +1372,28 @@
         "messageBox": {
             "errorImage": {
                 "normal": {
-                    "image": "pixel/sign_error",
+                    "image": "win94/sign_error",
                     "border": 0,
                     "color": "128 0 0 255"
                 }
             },
             "infoImage": {
                 "normal": {
-                    "image": "pixel/sign_info",
+                    "image": "win94/sign_info",
                     "border": 0,
                     "color": "0 0 128 255"
                 }
             },
             "questionImage": {
                 "normal": {
-                    "image": "pixel/sign_question",
+                    "image": "win94/sign_question",
                     "border": 0,
                     "color": "128 128 0 255"
                 }
             },
             "warningImage": {
                 "normal": {
-                    "image": "pixel/sign_warning",
+                    "image": "win94/sign_warning",
                     "border": 0,
                     "color": "128 64 0 255"
                 }
@@ -1396,7 +1404,7 @@
                 "width": 0,
                 "height": 20,
                 "normal": {
-                    "image": "pixel/selectable",
+                    "image": "win94/selectable",
                     "border": 2,
                     "color": "192 192 208 255",
                     "font": "normal",
@@ -1408,21 +1416,21 @@
                     "font": "normal"
                 },
                 "hovered": {
-                    "image": "pixel/selectable_hovered",
+                    "image": "win94/selectable_hovered",
                     "border": 2,
                     "color": "0 0 128 255",
                     "textColor": "255 255 255 255",
                     "font": "normal"
                 },
                 "pressed": {
-                    "image": "pixel/selectable_hovered",
+                    "image": "win94/selectable_hovered",
                     "border": 2,
                     "color": "128 128 144 255",
                     "font": "normal",
                     "textColor": "0 0 0 255"
                 },
                 "focused": {
-                    "image": "pixel/selectable",
+                    "image": "win94/selectable",
                     "border": 2,
                     "color": "192 192 208 255",
                     "font": "normal",
@@ -1433,7 +1441,7 @@
         "box": {
             "boxBody": {
                 "normal": {
-                    "image": "pixel/box",
+                    "image": "win94/box",
                     "border": 2,
                     "color": "192 192 208 255"
                 }
@@ -1443,28 +1451,28 @@
             "axisBoxBody": {
                 "height": 20,
                 "normal": {
-                    "image": "pixel/axis_box",
+                    "image": "win94/axis_box",
                     "border": 2,
                     "color": "192 192 208 255"
                 }
             },
             "axisBoxXImage": {
                 "normal": {
-                    "image": "pixel/xaxis",
+                    "image": "win94/xaxis",
                     "border": 0,
                     "color": "128 0 0 255"
                 }
             },
             "axisBoxYImage": {
                 "normal": {
-                    "image": "pixel/yaxis",
+                    "image": "win94/yaxis",
                     "border": 0,
                     "color": "0 128 0 255"
                 }
             },
             "axisBoxZImage": {
                 "normal": {
-                    "image": "pixel/zaxis",
+                    "image": "win94/zaxis",
                     "border": 0,
                     "color": "0 0 128 255"
                 }
@@ -1474,7 +1482,7 @@
             "objectRefEditorBody": {
                 "height": 22,
                 "normal": {
-                    "image": "pixel/box",
+                    "image": "win94/box",
                     "border": 0,
                     "color": "192 192 208 255"
                 },
@@ -1484,14 +1492,14 @@
             },
             "objectRefEditorTargetButton": {
                 "normal": {
-                    "image": "pixel/target",
+                    "image": "win94/target",
                     "border": 0,
                     "color": "0 0 0 255"
                 }
             },
             "objectRefEditorClearButton": {
                 "normal": {
-                    "image": "pixel/clear",
+                    "image": "win94/clear",
                     "border": 0,
                     "color": "0 0 0 255"
                 }
@@ -1520,7 +1528,7 @@
         "colorPicker": {
             "colorPickerCheckers": {
                 "normal": {
-                    "image": "pixel/checkers",
+                    "image": "win94/checkers",
                     "border": 0,
                     "color": "192 192 208 255"
                 }

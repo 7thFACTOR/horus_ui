@@ -246,6 +246,7 @@ enum class WidgetElementId
 	TextInputBody,
 	TextInputCaret,
 	TextInputSelection,
+	TextInputSelectedText,
 	TextInputDefaultText,
 	TextInputFilterClearImage,
 	MultilineTextInputBody,

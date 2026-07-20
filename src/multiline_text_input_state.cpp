@@ -464,8 +464,8 @@ void MultilineTextInputState::insertTextAtCaret(const Utf32String& newText)
 
 Point MultilineTextInputState::getCaretScreenPosition()
 {
-	auto& elemState = themeElement->normalState();
-	Font* font = elemState.font;
+	auto* elemState = ctx->theme ? &ctx->theme->getElement(WidgetElementId::MultilineTextInputBody).normalState() : nullptr;
+	Font* font = elemState ? elemState->font : nullptr;
 
 	if (!font || lines.empty())
 		return Point(clipRect.x, clipRect.y);
@@ -955,8 +955,8 @@ void MultilineTextInputState::computeScrollAmount()
 	}
 
 	Point caretPos = getCaretScreenPosition();
-	auto& elemState = themeElement->normalState();
-	Font* font = elemState.font;
+	auto* elemState = ctx->theme ? &ctx->theme->getElement(WidgetElementId::MultilineTextInputBody).normalState() : nullptr;
+	Font* font = elemState ? elemState->font : nullptr;
 	f32 lineHeight = font ? font->getMetrics().height : 20.0f;
 
 	// horizontal scrolling
@@ -996,9 +996,9 @@ void MultilineTextInputState::computeScrollAmount()
 
 void MultilineTextInputState::ensureCaretVisible()
 {
-	if (textChanged && lastLayoutWidth > 0 && themeElement)
+	if (textChanged && lastLayoutWidth > 0 && ctx->theme)
 	{
-		Font* font = themeElement->normalState().font;
+		Font* font = ctx->theme->getElement(WidgetElementId::MultilineTextInputBody).normalState().font;
 		
 		if (font)
 		{
@@ -1019,7 +1019,7 @@ i32 MultilineTextInputState::getCharIndexAtPoint(const Point& pt)
 		scrollOffsetY = scrollState.scrollOffset.y;
 	}
 
-	Font* font = themeElement ? themeElement->normalState().font : nullptr;
+	Font* font = ctx->theme ? ctx->theme->getElement(WidgetElementId::MultilineTextInputBody).normalState().font : nullptr;
 	
 	if (!font || visualLines.empty())
 		return 0;
@@ -1589,7 +1589,7 @@ void MultilineTextInputState::calculateSegments(const Utf32String& line, i32 ini
 
 	i32 currentState = initialState;
 	i32 lastSwitchPos = 0;
-	Color defaultColor = themeElement->normalState().textColor;
+	Color defaultColor = ctx->theme ? ctx->theme->getElement(WidgetElementId::MultilineTextInputBody).normalState().textColor : Color::white;
 
 	// helper to add segment
 	auto appendSegment = [&](i32 end, Color color)
@@ -2102,7 +2102,7 @@ void MultilineTextInputState::processKeyEvent(const InputEvent& ev)
 
 	caretBlinkTimer = 0;
 
-	Font* font = themeElement ? themeElement->normalState().font : nullptr;
+	Font* font = ctx->theme ? ctx->theme->getElement(WidgetElementId::MultilineTextInputBody).normalState().font : nullptr;
 	bool hasSelection = selectionActive;
 
 	if (ev.key.code == KeyCode::ArrowLeft)

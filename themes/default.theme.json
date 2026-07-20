@@ -281,6 +281,10 @@
 				"height": 24,
 				"normal": { "image": "", "border": 0, "color": "veryDarkCyan", "textColor": "white", "font": "normal" }
 			},
+			"textInputSelectedText":
+			{
+				"normal": { "textColor": "white", "font": "normal-unicode" }
+			},
 			"textInputDefaultText":
 			{
 				"normal": { "textColor": "gray", "font": "normal-unicode" }

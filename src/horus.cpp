@@ -1247,6 +1247,13 @@ void themeSet(HTheme theme)
 		return;
 
 	ctx->theme = (Theme*)theme;
+
+	// Clear theme element pointers in text input states since theme elements may have been reallocated
+	ctx->textInput.themeElement = nullptr;
+	for (auto& [id, state] : ctx->textMultilineInput)
+	{
+		state.themeElement = nullptr;
+	}
 }
 
 HTheme themeGet()

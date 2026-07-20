@@ -21,6 +21,7 @@ bool textInput(
 	auto bodyElem = &ctx->theme->getElement(WidgetElementId::TextInputBody);
 	auto& bodyTextCaretElemState = ctx->theme->getElement(WidgetElementId::TextInputCaret).normalState();
 	auto& bodyTextSelectionElemState = ctx->theme->getElement(WidgetElementId::TextInputSelection).normalState();
+	auto& bodyTextSelectedTextElemState = ctx->theme->getElement(WidgetElementId::TextInputSelectedText).normalState();
 	auto& bodyTextDefaultElemState = ctx->theme->getElement(WidgetElementId::TextInputDefaultText).normalState();
 	auto& bodyTextFilterClearImageElem = ctx->theme->getElement(WidgetElementId::TextInputFilterClearImage);
 	auto& padding = widgetGetPadding();
@@ -369,11 +370,64 @@ bool textInput(
 		clipRect.height);
 
 	// draw the actual text
-	ctx->renderer.cmdDrawTextInBox(
-		textToDraw,
-		textRect,
-		HAlignType::Left,
-		VAlignType::Bottom, false, true);
+	if (isEditingThis && ctx->textInput.selectionActive && !password && !isEmptyText && defaultText != textToDraw)
+	{
+		// Draw text in segments: before selection, selected, after selection
+		i32 startSel = ctx->textInput.selectionBegin;
+		i32 endSel = ctx->textInput.selectionEnd;
+		if (startSel > endSel)
+		{
+			std::swap(startSel, endSel);
+		}
+		startSel = std::clamp(startSel, 0, (i32)ctx->textInput.text.size());
+		endSel = std::clamp(endSel, 0, (i32)ctx->textInput.text.size());
+
+		if (startSel < endSel)
+		{
+			Utf32String textBeforeSel(ctx->textInput.text.begin(), ctx->textInput.text.begin() + startSel);
+			Utf32String selectedText(ctx->textInput.text.begin() + startSel, ctx->textInput.text.begin() + endSel);
+			Utf32String textAfterSel(ctx->textInput.text.begin() + endSel, ctx->textInput.text.end());
+
+			char beforeSelUtf8[1024] = "";
+			char selectedUtf8[1024] = "";
+			char afterSelUtf8[1024] = "";
+			ctx->settings.services.utf32To8NoAlloc(textBeforeSel.data(), textBeforeSel.size(), beforeSelUtf8, 1024);
+			ctx->settings.services.utf32To8NoAlloc(selectedText.data(), selectedText.size(), selectedUtf8, 1024);
+			ctx->settings.services.utf32To8NoAlloc(textAfterSel.data(), textAfterSel.size(), afterSelUtf8, 1024);
+
+			FontTextSize beforeSize = bodyElemState->font->computeTextSize(beforeSelUtf8);
+			FontTextSize selSize = bodyElemState->font->computeTextSize(selectedUtf8);
+
+			f32 startX = textRect.x;
+
+			// Draw text before selection
+			if (beforeSelUtf8[0] != 0)
+			{
+				ctx->renderer.cmdSetColor(bodyElemState->textColor);
+				ctx->renderer.cmdDrawTextInBox(beforeSelUtf8, Rect(startX, textRect.y, beforeSize.width, textRect.height), HAlignType::Left, VAlignType::Bottom, false, true);
+			}
+
+			// Draw selected text
+			ctx->renderer.cmdSetColor(bodyTextSelectedTextElemState.textColor);
+			ctx->renderer.cmdDrawTextInBox(selectedUtf8, Rect(startX + beforeSize.width, textRect.y, selSize.width, textRect.height), HAlignType::Left, VAlignType::Bottom, false, true);
+
+			// Draw text after selection
+			if (afterSelUtf8[0] != 0)
+			{
+				ctx->renderer.cmdSetColor(bodyElemState->textColor);
+				ctx->renderer.cmdDrawTextInBox(afterSelUtf8, Rect(startX + beforeSize.width + selSize.width, textRect.y, textRect.width, textRect.height), HAlignType::Left, VAlignType::Bottom, false, true);
+			}
+		}
+		else
+		{
+			// No actual selection, draw normally
+			ctx->renderer.cmdDrawTextInBox(textToDraw, textRect, HAlignType::Left, VAlignType::Bottom, false, true);
+		}
+	}
+	else
+	{
+		ctx->renderer.cmdDrawTextInBox(textToDraw, textRect, HAlignType::Left, VAlignType::Bottom, false, true);
+	}
 
 	// draw clear image only when visible
 	if (showClearImage)
