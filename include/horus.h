@@ -216,6 +216,7 @@ enum class WidgetType
 	CircularSlider,
 	ColorPicker,
 	Table,
+	Link,
 
 	Count
 };
@@ -262,6 +263,7 @@ enum class WidgetElementId
 	PopupBody,
 	PopupBehind,
 	DropdownBody,
+	DropdownArrowBox,
 	DropdownArrow,
 	ScrollViewBody,
 	ScrollViewScrollBarV,
@@ -303,6 +305,7 @@ enum class WidgetElementId
 	ColorPickerBody,
 	TableBody,
 	TableHeaderBody,
+	LinkBody,
 
 	Count
 };
@@ -2625,6 +2628,12 @@ HUI_API bool selectable(const char* label, SelectableFlags stateFlags = Selectab
 /// \param stateFlags the state of the selectable widget
 /// \return true if it is selected
 HUI_API bool selectableCustomFont(const char* label, HFont font, SelectableFlags stateFlags = SelectableFlags::Normal);
+
+/// Draw a hyperlink text widget
+/// \param label the link text
+/// \param horizontalAlign the text align mode horizontally in the current layout rectangle
+/// \return true if the link was clicked
+HUI_API bool link(const char* label, HAlignType horizontalAlign = HAlignType::Left);
 
 //////////////////////////////////////////////////////////////////////////
 // Separators

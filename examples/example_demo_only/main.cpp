@@ -186,9 +186,7 @@ int main(int argc, char** args)
 
 		HUI_SERVICES.setCurrentWindow(mainWnd);
 		HUI_SERVICES.clearBackbuffer({ 0.3f, 0.0f, 0.1f, 1 });
-
 		hui::contextGetSettings().deltaTime = hui::getSdl3DeltaTime();
-
 		hui::contextUpdate();
 
 		auto eventCount = hui::inputEventGetCount();

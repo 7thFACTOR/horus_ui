@@ -82,6 +82,7 @@ struct DemoState
 	bool expandList = false;
 	bool expandSelectable = false;
 	bool expandSeparators = false;
+	bool expandLink = false;
 	bool expandTabs = false;
 	bool expandBox = false;
 	bool expandColorPicker = false;
@@ -115,6 +116,7 @@ struct DemoState
 	bool disableList = false;
 	bool disableSelectable = false;
 	bool disableSeparators = false;
+	bool disableLink = false;
 	bool disableTabs = false;
 	bool disableBox = false;
 	bool disableColorPicker = false;
@@ -134,6 +136,9 @@ struct DemoState
 
 	// Popup demo
 	bool showPopup = false;
+
+	// Link demo
+	int linkClickCount = 0;
 
 	// Tabs
 	TabIndex selectedTab = 0;
@@ -756,6 +761,39 @@ void showDemo()
 		button("B");
 		sameLine();
 		button("C");
+		widgetPopDisabled();
+		expandableEnd();
+	}
+
+	//------------------------------------------------------------------
+	// Link
+	//------------------------------------------------------------------
+	if (expandableBegin("Links", &demo.expandLink))
+	{
+		check("Disable##Link", &demo.disableLink);
+		widgetPushDisabled(demo.disableLink);
+
+		label("Basic links:");
+		if (link("Click me - Open URL"))
+		{
+			demo.linkClickCount++;
+		}
+
+		space();
+		if (link("Another link"))
+		{
+			demo.linkClickCount++;
+		}
+
+		space();
+		char countBuf[64];
+		snprintf(countBuf, sizeof(countBuf), "Link clicked %d time(s)", demo.linkClickCount);
+		label(countBuf);
+
+		space();
+		label("Disabled link:");
+		widgetSetNextDisabled();
+		link("Cannot click this");
 		widgetPopDisabled();
 		expandableEnd();
 	}

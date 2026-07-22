@@ -215,8 +215,11 @@ void buttonBehavior(bool menuItem)
 				if (ctx->event.mouse.clickCount == 2)
 					ctx->widget.doubleClicked = true;
 
-				ctx->tooltip.show = false;
-				ctx->tooltip.lastId = ctx->tooltip.id;
+				if (!ctx->tooltip.ctrlDown)
+				{
+					ctx->tooltip.show = false;
+					ctx->tooltip.lastId = ctx->tooltip.id;
+				}
 
 				if (ctx->popupIndex)
 				{
@@ -309,8 +312,11 @@ void mouseDownOnlyButtonBehavior()
 			ctx->widget.clicked = true;
 			ctx->widget.focused = true;
 
-			ctx->tooltip.show = false;
-			ctx->tooltip.lastId = ctx->tooltip.id;
+			if (!ctx->tooltip.ctrlDown)
+			{
+				ctx->tooltip.show = false;
+				ctx->tooltip.lastId = ctx->tooltip.id;
+			}
 
 			if (ctx->layerIndex)
 			{

@@ -138,11 +138,21 @@
 				"pressed": { "image": "default/dropdown", "border": 3, "color": "white", "textColor": "white", "font": "normal" },
 				"focused": { "image": "default/dropdown", "border": 3, "color": "white", "textColor": "white", "font": "normal" }
 			},
+			"dropdownArrowBox":
+			{
+				"width": 20,
+				"height": 22,
+				"normal": { "image": "default/button_normal", "border": 3, "color": "90 90 90 255" },
+				"disabled": { "color": "gray" },
+				"hovered": { "image": "default/button_normal", "border": 3, "color": "115 115 115 255" },
+				"pressed": { "image": "default/button_pressed", "border": 3, "color": "black" },
+				"focused": { "image": "default/button_normal", "border": 3, "color": "115 115 115 255" }
+			},
 			"dropdownArrow":
 			{
 				"normal": { "image": "default/dropdown_arrow", "border": 0, "color": "white", "textColor": "white", "font": "normal" },
 				"disabled": { "color": "gray", "textColor": "lightGray" },
-				"hovered": { "image": "default/dropdown_arrow", "border": 0, "color": "orange", "textColor": "white", "font": "normal" },
+				"hovered": { "image": "default/dropdown_arrow", "border": 0, "color": "white", "textColor": "white", "font": "normal" },
 				"pressed": { "image": "default/dropdown_arrow", "border": 0, "color": "white", "textColor": "white", "font": "normal" },
 				"focused": { "image": "default/dropdown_arrow", "border": 0, "color": "white", "textColor": "white", "font": "normal" }
 			}
@@ -701,6 +711,16 @@
 			"colorPickerBody":
 			{
 				"normal": { "textColor": "white", "font": "normal" }
+			}
+		},
+		"link":
+		{
+			"linkBody":
+			{
+				"height": 20,
+				"normal": { "textColor": "100 160 255 255", "font": "normal" },
+				"hovered": { "textColor": "140 190 255 255" },
+				"disabled": { "textColor": "128 128 128 255" }
 			}
 		}
 	}

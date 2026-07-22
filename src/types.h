@@ -594,6 +594,7 @@ struct TooltipState
 	bool show = false;
 	bool wasShown = false;
 	bool closeTooltipPopup = false;
+	bool ctrlDown = false;
 	f32 offsetFromCursor = 18.0f;
 };
 

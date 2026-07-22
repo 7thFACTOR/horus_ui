@@ -16,8 +16,8 @@ bool tooltip(const char* text)
 		ctx->tooltip.timer = 0;
 	}
 
-	if (ctx->id == ctx->widget.hoveredId && ctx->tooltip.id
-		&& ctx->tooltip.show)
+	if ((ctx->id == ctx->widget.hoveredId && ctx->tooltip.id
+		&& ctx->tooltip.show) || (ctx->tooltip.ctrlDown && ctx->tooltip.show && ctx->tooltip.id == ctx->id))
 	{
 		ctx->tooltip.wasShown = true;
 		auto& bodyElemState = ctx->theme->getElement(WidgetElementId::TooltipBody).normalState();
@@ -85,7 +85,8 @@ bool customTooltipBegin(f32 width)
 	}
 
 	if ((ctx->id == ctx->widget.hoveredId && ctx->tooltip.id
-		&& ctx->tooltip.show) || ctx->tooltip.closeTooltipPopup)
+		&& ctx->tooltip.show) || ctx->tooltip.closeTooltipPopup
+		|| (ctx->tooltip.ctrlDown && ctx->tooltip.show && ctx->tooltip.id == ctx->id))
 	{
 		ctx->tooltip.wasShown = true;
 		auto& bodyElemState = ctx->theme->getElement(WidgetElementId::TooltipBody).normalState();

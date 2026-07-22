@@ -163,6 +163,7 @@ static WidgetType getWidgetTypeFromName(std::string name)
 	if (name == "colorPicker") return WidgetType::ColorPicker;
 	if (name == "table") return WidgetType::Table;
 	if (name == "multilineTextInput") return WidgetType::MultilineTextInput;
+	if (name == "link") return WidgetType::Link;
 
 	return WidgetType::None;
 }
@@ -201,6 +202,7 @@ static WidgetElementId getWidgetElementFromName(std::string name)
 	if (name == "popupBody") return WidgetElementId::PopupBody;
 	if (name == "popupBehind") return WidgetElementId::PopupBehind;
 	if (name == "dropdownBody") return WidgetElementId::DropdownBody;
+	if (name == "dropdownArrowBox") return WidgetElementId::DropdownArrowBox;
 	if (name == "dropdownArrow") return WidgetElementId::DropdownArrow;
 	if (name == "scrollViewBody") return WidgetElementId::ScrollViewBody;
 	if (name == "scrollViewScrollBarV") return WidgetElementId::ScrollViewScrollBarV;
@@ -246,6 +248,7 @@ static WidgetElementId getWidgetElementFromName(std::string name)
 	if (name == "multilineTextInputLineNumbers") return WidgetElementId::MultilineTextInputLineNumbers;
 	if (name == "multilineTextInputCurrentLineHighlight") return WidgetElementId::MultilineTextInputCurrentLineHighlight;
 	if (name == "multilineTextInputWordWrap") return WidgetElementId::MultilineTextInputWordWrap;
+	if (name == "linkBody") return WidgetElementId::LinkBody;
 
 	return WidgetElementId::Custom;
 }

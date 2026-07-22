@@ -371,21 +371,28 @@ Point scrollViewEnd()
                     f32 wheelFactor = (scrollAreaV * ctx->scrollViewSpeed) * ctx->scale;
                     f32 delta = ctx->event.mouse.wheel.y * wheelFactor; // positive/negative per input source
 
-                    // Apply to authoritative scrollbar state and clamp immediately using scrollMax
+                    // Check if we're at a limit before applying scroll
                     auto& v = scrollViewState.vertical;
-                    v.scrollOffset = std::clamp(v.scrollOffset - delta, 0.0f, v.scrollMax);
+                    bool atTop = (v.scrollOffset <= 0.0f) && (delta > 0.0f);
+                    bool atBottom = (v.scrollOffset >= v.scrollMax) && (v.scrollMax > 0.0f) && (delta < 0.0f);
+                    
+                    // Only scroll if not at a limit - this allows wheel to bubble to parent scroll view
+                    if (!atTop && !atBottom)
+                    {
+                        // Apply to authoritative scrollbar state and clamp immediately using scrollMax
+                        v.scrollOffset = std::clamp(v.scrollOffset - delta, 0.0f, v.scrollMax);
 
-                    // Snap small rounding differences to the exact max
-                    if (v.scrollMax > 0.0f && (v.scrollMax - v.scrollOffset) <= SCROLL_SNAP_EPS)
-                        v.scrollOffset = v.scrollMax;
+                        // Snap small rounding differences to the exact max
+                        if (v.scrollMax > 0.0f && (v.scrollMax - v.scrollOffset) <= SCROLL_SNAP_EPS)
+                            v.scrollOffset = v.scrollMax;
 
-                    // Mirror authoritative value back into the Point and the overall scrollViewState
-                    scrollOffset.y = v.scrollOffset;
-                    scrollViewState.scrollOffset = scrollOffset;
+                        // Mirror authoritative value back into the Point and the overall scrollViewState
+                        scrollOffset.y = v.scrollOffset;
+                        scrollViewState.scrollOffset = scrollOffset;
 
-                    // consume event and request repaint
-                    inputEventCancel();
-                    forceRepaint();
+                        inputEventCancel();
+                        forceRepaint();
+                    }
                 }
             }
         }

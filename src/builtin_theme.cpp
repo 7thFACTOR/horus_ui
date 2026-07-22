@@ -74,6 +74,7 @@ HTheme createBuiltinTheme(u32 atlasTextureSize)
 	setSize(WidgetElementId::CheckBody, 22, 22, 4);
 	setSize(WidgetElementId::RadioBody, 22, 22, 7);
 	setSize(WidgetElementId::DropdownBody, 0, 22, 3);
+	setSize(WidgetElementId::DropdownArrowBox, 20, 22, 3);
 	setSize(WidgetElementId::MenuBarBody, 0, 20, 2);
 	setSize(WidgetElementId::MenuBarItem, 0, 20, 1);
 	setSize(WidgetElementId::ProgressBack, 0, 20, 6);
@@ -99,6 +100,10 @@ HTheme createBuiltinTheme(u32 atlasTextureSize)
 	
 	HUI_DEFAULT_STYLE(CheckMark).states[(u32)WidgetStateType::Normal].color = colorWhite;
 	HUI_DEFAULT_STYLE(RadioMark).states[(u32)WidgetStateType::Normal].color = colorWhite;
+
+	HUI_DEFAULT_STYLE(LinkBody).states[(u32)WidgetStateType::Normal].textColor = Color::fromU8(100, 160, 255);
+	HUI_DEFAULT_STYLE(LinkBody).states[(u32)WidgetStateType::Hovered].textColor = Color::fromU8(140, 190, 255);
+	HUI_DEFAULT_STYLE(LinkBody).states[(u32)WidgetStateType::Disabled].textColor = colorDisabledText;
 
 	theme->build();
 

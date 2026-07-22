@@ -608,6 +608,27 @@ void contextUpdate()
 	inputEventClearQueue();
 	ctx->settings.services.processWindowEvents(timeoutMs);
 
+	// track Ctrl key state from queued events
+	for (auto& ev : ctx->events)
+	{
+		if (ev.type == InputEvent::Type::Key
+			&& (ev.key.code == KeyCode::LControl || ev.key.code == KeyCode::RControl))
+		{
+			ctx->tooltip.ctrlDown = ev.key.down;
+		}
+		else if (ev.type == InputEvent::Type::MouseMove
+			|| ev.type == InputEvent::Type::MouseDown
+			|| ev.type == InputEvent::Type::MouseUp
+			|| ev.type == InputEvent::Type::MouseWheel)
+		{
+			ctx->tooltip.ctrlDown = has(ev.mouse.modifiers, KeyModifiers::Control);
+		}
+		else if (ev.type == InputEvent::Type::Key)
+		{
+			ctx->tooltip.ctrlDown = has(ev.key.modifiers, KeyModifiers::Control);
+		}
+	}
+
 	// tooltip handling
 	//TODO: move to own func
 	if (ctx->tooltip.id && ctx->tooltip.id != ctx->tooltip.lastId && !ctx->tooltip.show)
@@ -630,7 +651,7 @@ void contextUpdate()
 		ctx->tooltip.lastId = 0;
 		ctx->tooltip.closeTooltipPopup = false;
 	}
-	else if (ctx->tooltip.show && !ctx->tooltip.wasShown)
+	else if (ctx->tooltip.show && !ctx->tooltip.wasShown && !ctx->tooltip.ctrlDown)
 	{
 		ctx->tooltip.timer = 0;
 		ctx->tooltip.resetTimer = 0;
@@ -639,9 +660,8 @@ void contextUpdate()
 		ctx->tooltip.closeTooltipPopup = true;
 	}
 
-	if (ctx->tooltip.show)
+	if (ctx->tooltip.show && !ctx->tooltip.ctrlDown)
 	{
-		// track mouse pos
 		ctx->tooltip.position = ctx->mousePosition;
 	}
 
@@ -1129,6 +1149,9 @@ void widgetSetStyle(WidgetType widgetType, const char* styleName)
 	case WidgetType::Table:
 		ctx->theme->elements[(u32)WidgetElementId::TableBody].setStyle(styleName);
 		ctx->theme->elements[(u32)WidgetElementId::TableHeaderBody].setStyle(styleName);
+		break;
+	case WidgetType::Link:
+		ctx->theme->elements[(u32)WidgetElementId::LinkBody].setStyle(styleName);
 		break;
 	}
 }

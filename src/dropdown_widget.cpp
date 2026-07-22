@@ -9,6 +9,7 @@ namespace hui
 bool dropdown(const char* id, i32& selectedIndex, const char** items, u32 itemCount, u32 maxVisibleDropDownItems)
 {
 	auto& bodyElem = ctx->theme->getElement(WidgetElementId::DropdownBody);
+	auto& arrowBoxElem = ctx->theme->getElement(WidgetElementId::DropdownArrowBox);
 	auto& arrowElem = ctx->theme->getElement(WidgetElementId::DropdownArrow);
 	auto& padding = widgetGetPadding();
 
@@ -24,40 +25,68 @@ bool dropdown(const char* id, i32& selectedIndex, const char** items, u32 itemCo
 	buttonBehavior();
 
 	auto bodyElemState = &bodyElem.normalState();
+	auto arrowBoxElemState = &arrowBoxElem.normalState();
 	auto arrowElemState = &arrowElem.normalState();
 
 	if (ctx->widget.disabled)
 	{
 		bodyElemState = &bodyElem.getState(WidgetStateType::Disabled);
+		arrowBoxElemState = &arrowBoxElem.getState(WidgetStateType::Disabled);
 		arrowElemState = &arrowElem.getState(WidgetStateType::Disabled);
 	}
 	else if (ctx->widget.pressed)
 	{
 		bodyElemState = &bodyElem.getState(WidgetStateType::Pressed);
+		arrowBoxElemState = &arrowBoxElem.getState(WidgetStateType::Pressed);
 		arrowElemState = &arrowElem.getState(WidgetStateType::Pressed);
 	}
 	else if (ctx->widget.focused)
 	{
 		bodyElemState = &bodyElem.getState(WidgetStateType::Focused);
+		arrowBoxElemState = &arrowBoxElem.getState(WidgetStateType::Focused);
 		arrowElemState = &arrowElem.getState(WidgetStateType::Focused);
 	}
 	else if (ctx->widget.hovered)
 	{
 		bodyElemState = &bodyElem.getState(WidgetStateType::Hovered);
+		arrowBoxElemState = &arrowBoxElem.getState(WidgetStateType::Hovered);
 		arrowElemState = &arrowElem.getState(WidgetStateType::Hovered);
 	}
 
-	ctx->renderer.cmdSetColor(tintApply(bodyElemState->color, TintColorType::Body));
-	ctx->renderer.cmdDrawImageBordered(bodyElemState->image, bodyElemState->border, ctx->widget.rect, ctx->scale);
-	ctx->renderer.cmdSetColor(tintApply(arrowElemState->color, TintColorType::Body));
+	// Calculate arrow box rect (right side of dropdown)
+	f32 arrowBoxWidth = arrowBoxElemState->width * ctx->scale;
+	Rect arrowBoxRect = {
+		ctx->widget.rect.right() - arrowBoxWidth,
+		ctx->widget.rect.y,
+		arrowBoxWidth,
+		ctx->widget.rect.height
+	};
 
-	// dial down the height, since its already global scaled
-	auto arrowY = ctx->widget.rect.height / 2.0f - ((arrowElemState->image->height) / 2.0f - (ctx->widget.pressed ? 1.0f : 0.0f)) * ctx->scale;
+	// Calculate body rect (left portion, excluding arrow box)
+	Rect bodyRect = {
+		ctx->widget.rect.x,
+		ctx->widget.rect.y,
+		ctx->widget.rect.width - arrowBoxWidth,
+		ctx->widget.rect.height
+	};
+
+	// Draw body background
+	ctx->renderer.cmdSetColor(tintApply(bodyElemState->color, TintColorType::Body));
+	ctx->renderer.cmdDrawImageBordered(bodyElemState->image, bodyElemState->border, bodyRect, ctx->scale);
+
+	// Draw arrow box background
+	ctx->renderer.cmdSetColor(tintApply(arrowBoxElemState->color, TintColorType::Body));
+	ctx->renderer.cmdDrawImageBordered(arrowBoxElemState->image, arrowBoxElemState->border, arrowBoxRect, ctx->scale);
+
+	// Draw arrow image centered in arrow box
+	ctx->renderer.cmdSetColor(tintApply(arrowElemState->color, TintColorType::Body));
+	auto arrowY = arrowBoxRect.y + arrowBoxRect.height / 2.0f - (arrowElemState->image->height / 2.0f) * ctx->scale;
+	auto arrowX = arrowBoxRect.x + arrowBoxRect.width / 2.0f - (arrowElemState->image->width / 2.0f) * ctx->scale;
 
 	ctx->renderer.cmdDrawImage(arrowElemState->image,
 		{
-			ctx->widget.rect.right() - (padding.y + arrowElemState->image->width - (ctx->widget.pressed ? 1.0f : 0.0f)) * ctx->scale,
-			ctx->widget.rect.top() + arrowY,
+			arrowX,
+			arrowY,
 			arrowElemState->image->width * ctx->scale,
 			arrowElemState->image->height * ctx->scale
 		});
@@ -70,24 +99,22 @@ bool dropdown(const char* id, i32& selectedIndex, const char** items, u32 itemCo
 	}
 
 	// add the border of the body element
-	ctx->widget.rect.x += bodyElemState->border * ctx->scale;
+	Rect textRect = {
+		bodyRect.x + bodyElemState->border * ctx->scale + padding.x * ctx->scale,
+		bodyRect.y,
+		bodyRect.width - (bodyElemState->border * 2.0f + padding.x) * ctx->scale,
+		bodyRect.height
+	};
 
 	const auto& popupPos = ctx->widget.rect.bottomLeft();
 
 	if (selectedItemText)
 	{
-		auto textRc = Rect {
-				ctx->widget.rect.x + padding.x * ctx->scale,
-				ctx->widget.rect.y,
-				ctx->widget.rect.width - ((padding.x + bodyElemState->border) * 2.0f + arrowElemState->image->width) * ctx->scale,
-				ctx->widget.rect.height
-		};
-
 		ctx->renderer.cmdSetColor(tintApply(bodyElemState->textColor, TintColorType::Text));
 		ctx->renderer.cmdSetFont(bodyElemState->font);
 		ctx->renderer.cmdDrawTextInBox(
 			selectedItemText,
-			textRc,
+			textRect,
 			HAlignType::Left,
 			VAlignType::Center, true);
 	}
