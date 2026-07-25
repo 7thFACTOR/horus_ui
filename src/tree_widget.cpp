@@ -95,7 +95,7 @@ bool treeNode(const char* label, bool* expandedVar, SelectableFlags stateFlags, 
 		changed = true;
 	}
 
-	// Flush sameLine row before returning to ensure layout/indentation for children works correctly
+	// flush sameLine row before returning to ensure layout/indentation for children works correctly
 	if (!ctx->sameLine.enabled && ctx->sameLine.wasEnabled)
 	{
 		ctx->position.x = ctx->sameLine.currentPosition.x;

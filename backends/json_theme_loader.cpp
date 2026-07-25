@@ -332,6 +332,22 @@ static WidgetElementInfo getElementInfoFromState(
 	if (state.isMember("height") && state["height"].isNumeric())
 		elemInfo.height = state["height"].asInt();
 
+	// Parse textShadow object if present
+	if (state.isMember("textShadow") && state["textShadow"].isObject())
+	{
+		auto& ts = state["textShadow"];
+		elemInfo.textShadow.enabled = true;
+		
+		if (ts.isMember("color") && ts["color"].isString())
+			elemInfo.textShadow.color = colorFromText(ts["color"].asString().c_str());
+		
+		if (ts.isMember("offsetX") && ts["offsetX"].isNumeric())
+			elemInfo.textShadow.offsetX = ts["offsetX"].asFloat();
+		
+		if (ts.isMember("offsetY") && ts["offsetY"].isNumeric())
+			elemInfo.textShadow.offsetY = ts["offsetY"].asFloat();
+	}
+
 	return elemInfo;
 }
 

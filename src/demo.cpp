@@ -649,6 +649,17 @@ void showDemo()
 		{
 			if (treeNodeBegin("Documents", nullptr, SelectableFlags::Normal, TreeNodeFlags::ToggleOnSelect))
 			{
+				HImage icon = themeGetImage(themeGet(), "__WHITEIMAGE__");
+				if (icon)
+				{
+					auto& btnBodyElem = ctx->theme->getElement(WidgetElementId::ButtonBody);
+					image(icon, btnBodyElem.normalState().height, HAlignType::Left);
+					sameLine();
+				}
+				if (button("Open##report"))
+				{
+				}
+				sameLine();
 				selectable("report.pdf");
 				selectable("notes.txt");
 				treeNodeEnd();
@@ -656,6 +667,17 @@ void showDemo()
 
 			if (treeNodeBegin("Pictures", nullptr, SelectableFlags::Normal, TreeNodeFlags::ToggleOnSelect))
 			{
+				HImage icon = themeGetImage(themeGet(), "__WHITEIMAGE__");
+				if (icon)
+				{
+					auto& btnBodyElem = ctx->theme->getElement(WidgetElementId::ButtonBody);
+					image(icon, btnBodyElem.normalState().height, HAlignType::Left);
+					sameLine();
+				}
+				if (button("View##photo"))
+				{
+				}
+				sameLine();
 				selectable("photo.jpg");
 				treeNodeEnd();
 			}

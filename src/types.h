@@ -319,6 +319,7 @@ struct ThemeElement
 		Image* image = nullptr;
 		f32 width = 0;
 		f32 height = 0;
+		TextShadow textShadow;
 	};
 
 	struct Style

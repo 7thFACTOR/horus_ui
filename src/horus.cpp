@@ -204,6 +204,13 @@ void addWidget(f32 height)
 		{
 			ctx->position.x += ctx->sameLine.lastLineWidth + ctx->sameLine.nextSpacing * ctx->scale;
 		}
+
+		// If no custom width was defined, use remaining available width
+		if (!ctx->widget.hasNextWidth && !ctx->widget.hasCustomWidth)
+		{
+			f32 consumedX = ctx->position.x - ctx->sameLine.currentPosition.x;
+			pixelWidth = std::max(ctx->layout.width - consumedX, 0.0f);
+		}
 	}
 
 	ctx->widget.width = pixelWidth;
@@ -1234,6 +1241,7 @@ void themeSetWidgetElement(
 	state.width = elementInfo.width;
 	state.height = elementInfo.height;
 	state.image = (Image*)elementInfo.image;
+	state.textShadow = elementInfo.textShadow;
 }
 
 void themeSetUserWidgetElement(
@@ -1260,6 +1268,7 @@ void themeSetUserWidgetElement(
 	state.width = elementInfo.width;
 	state.height = elementInfo.height;
 	state.image = (Image*)elementInfo.image;
+	state.textShadow = elementInfo.textShadow;
 }
 
 void themeSet(HTheme theme)

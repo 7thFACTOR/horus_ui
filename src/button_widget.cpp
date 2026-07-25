@@ -42,17 +42,39 @@ bool button(const char* label)
 		}
 
 		ctx->renderer.cmdDrawImageBordered(bodyImage, btnBodyElemState->border, ctx->widget.rect, ctx->scale);
+
+		Rect textRect = ctx->widget.pressed
+			? Rect(
+				ctx->widget.rect.x + ctx->scale,
+				ctx->widget.rect.y + ctx->scale,
+				ctx->widget.rect.width,
+				ctx->widget.rect.height)
+			: ctx->widget.rect;
+
+		// draw text shadow first
+		if (btnBodyElemState->textShadow.enabled)
+		{
+			Rect shadowRect = {
+				textRect.x + btnBodyElemState->textShadow.offsetX * ctx->scale,
+				textRect.y + btnBodyElemState->textShadow.offsetY * ctx->scale,
+				textRect.width,
+				textRect.height
+			};
+			ctx->renderer.cmdSetColor(tintApply(btnBodyElemState->textShadow.color, TintColorType::Text));
+			ctx->renderer.cmdSetFont(btnBodyElemState->font);
+			ctx->renderer.cmdDrawTextInBox(
+				ctx->widgetLabel.c_str(),
+				shadowRect,
+				HAlignType::Center,
+				VAlignType::Center, true);
+		}
+
+		// draw main text
 		ctx->renderer.cmdSetColor(tintApply(btnBodyElemState->textColor, TintColorType::Text));
 		ctx->renderer.cmdSetFont(btnBodyElemState->font);
 		ctx->renderer.cmdDrawTextInBox(
 			ctx->widgetLabel.c_str(),
-			ctx->widget.pressed
-			? Rect(
-				ctx->widget.rect.x + ctx->scale, //TODO: press depth from theme ?
-				ctx->widget.rect.y + ctx->scale,
-				ctx->widget.rect.width,
-				ctx->widget.rect.height)
-			: ctx->widget.rect,
+			textRect,
 			HAlignType::Center,
 			VAlignType::Center, true);
 	}

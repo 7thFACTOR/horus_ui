@@ -140,6 +140,25 @@ bool buttonGroup(const char* id, const char** labels, u32 count, u32* currentInd
 
 		ctx->renderer.cmdDrawImageBordered(image, elemState->border, ctx->widget.rect, ctx->scale);
 
+		// Draw text shadow first (for embossed/Win95 disabled button look)
+		if (elemState->textShadow.enabled)
+		{
+			Rect shadowRect = {
+				ctx->widget.rect.x + elemState->textShadow.offsetX * ctx->scale,
+				ctx->widget.rect.y + elemState->textShadow.offsetY * ctx->scale,
+				ctx->widget.rect.width,
+				ctx->widget.rect.height
+			};
+			ctx->renderer.cmdSetColor(tintApply(elemState->textShadow.color, TintColorType::Text));
+			ctx->renderer.cmdSetFont(elemState->font);
+			ctx->renderer.cmdDrawTextInBox(
+				labels[i],
+				shadowRect,
+				HAlignType::Center,
+				VAlignType::Center,
+				true);
+		}
+
 		ctx->renderer.cmdSetColor(tintApply(elemState->textColor, TintColorType::Text));
 		ctx->renderer.cmdSetFont(elemState->font);
 		ctx->renderer.cmdDrawTextInBox(

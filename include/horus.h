@@ -1622,6 +1622,15 @@ struct ImageData
 	u32 height = 0;
 };
 
+/// Text shadow settings for embossed/outline text effects
+struct TextShadow
+{
+	Color color;
+	f32 offsetX = 1.0f;
+	f32 offsetY = 1.0f;
+	bool enabled = false;
+};
+
 /// Info about a widget element
 struct WidgetElementInfo
 {
@@ -1639,6 +1648,8 @@ struct WidgetElementInfo
 	f32 width = 0;
 	/// the pixel height of the element (not its image)
 	f32 height = 0;
+	/// text shadow settings for embossed/outline text effects
+	TextShadow textShadow;
 };
 
 struct VirtualScrollInfo
