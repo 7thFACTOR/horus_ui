@@ -92,9 +92,9 @@ struct DrawCommand
 	{
 		Rect rect;
 		Rect uvRect;
-		bool rotated;
+		bool rotated = false;
 		HTexture texture = 0;
-		u32 textureIndex;
+		u32 textureIndex = 0;
 		bool wire = false;
 	};
 
@@ -119,27 +119,27 @@ struct DrawCommand
 
 	struct CmdDrawPolyLine
 	{
-		Point* points;
-		u32 count;
-		bool closed;
+		Point* points = nullptr;
+		u32 count = 0;
+		bool closed = false;
 	};
 
 	struct CmdDrawText
 	{
 		Rect rect;
-		HAlignType horizAlign;
-		VAlignType vertAlign;
-		char* text;
-		bool singleLineEllipsis;
-		bool noWordWrap;
+		HAlignType horizAlign = HAlignType::Left;
+		VAlignType vertAlign = VAlignType::Top;
+		char* text = nullptr;
+		bool singleLineEllipsis = false;
+		bool noWordWrap = true;
 	};
 
 	struct CmdDrawImageBordered
 	{
 		Rect rect;
-		Image* image;
-		f32 border;
-		f32 scale;
+		Image* image = nullptr;
+		f32 border = 0;
+		f32 scale = 1;
 	};
 
 	struct CmdDrawQuad4Colors
@@ -160,9 +160,9 @@ struct DrawCommand
 
 	struct CmdSetTexture
 	{
-		HTexture texture;
-		u32 width;
-		u32 height;
+		HTexture texture = 0;
+		u32 width = 0;
+		u32 height = 0;
 	};
 
 	DrawCommand() {}
@@ -378,6 +378,7 @@ struct ThemeElement
 	Style* currentStyle = nullptr;
 
 	inline void setDefaultStyle() { currentStyle = &styles["default"]; }
+	inline void validateCurrentStyle() { setDefaultStyle(); }
 	inline void setStyle(const char* styleName)
 	{
 		auto iter = styles.find(styleName);
@@ -386,17 +387,16 @@ struct ThemeElement
 			currentStyle = &iter->second;
 		else
 		{
-			// just set the first one if there is a style in the list
 			if (!currentStyle)
 				if (!styles.empty()) currentStyle = &styles.begin()->second;
 		}
 	}
-	inline State& getState(WidgetStateType stateType) { return currentStyle->states[(u32)stateType]; }
-	inline State& normalState() const { return currentStyle->states[(u32)WidgetStateType::Normal]; }
-	inline State& focusedState() const { return currentStyle->states[(u32)WidgetStateType::Focused]; }
-	inline State& pressedState() const { return currentStyle->states[(u32)WidgetStateType::Pressed]; }
-	inline State& hoveredState() const { return currentStyle->states[(u32)WidgetStateType::Hovered]; }
-	inline State& disabledState() const { return currentStyle->states[(u32)WidgetStateType::Disabled]; }
+	inline State& getState(WidgetStateType stateType) { validateCurrentStyle(); return currentStyle->states[(u32)stateType]; }
+	inline State& normalState() const { const_cast<ThemeElement*>(this)->validateCurrentStyle(); return currentStyle->states[(u32)WidgetStateType::Normal]; }
+	inline State& focusedState() const { const_cast<ThemeElement*>(this)->validateCurrentStyle(); return currentStyle->states[(u32)WidgetStateType::Focused]; }
+	inline State& pressedState() const { const_cast<ThemeElement*>(this)->validateCurrentStyle(); return currentStyle->states[(u32)WidgetStateType::Pressed]; }
+	inline State& hoveredState() const { const_cast<ThemeElement*>(this)->validateCurrentStyle(); return currentStyle->states[(u32)WidgetStateType::Hovered]; }
+	inline State& disabledState() const { const_cast<ThemeElement*>(this)->validateCurrentStyle(); return currentStyle->states[(u32)WidgetStateType::Disabled]; }
 	inline State& getStyleState(const char* styleName, WidgetStateType stateType) { return styles[styleName].states[(u32)stateType]; }
 	inline State& styleNormalState(const char* styleName) { return styles[styleName].states[(u32)WidgetStateType::Normal]; }
 };

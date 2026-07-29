@@ -168,7 +168,6 @@ void tab(const char* label, HImage img)
 		width,
 		height);
 	ctx->position.x += width;
-	// ctx->position.x = round(ctx->position.x); (removed manual rounding)
 
 	mouseDownOnlyButtonBehavior();
 

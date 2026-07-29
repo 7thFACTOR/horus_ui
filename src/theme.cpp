@@ -7,6 +7,8 @@ Theme::Theme(u32 atlasTextureSize)
 {
 	atlasSize = atlasTextureSize;
 	addWhiteImage(32); // this is ok (with 4 doesnt work for example), we need a bigger white image since it will be trimmed by inset offsets etc.
+	for (u32 i = 0; i < (u32)WidgetElementId::Count; i++)
+		elements[i].styles.reserve((u32)WidgetStateType::Count);
 	setDefaultStyle();
 }
 

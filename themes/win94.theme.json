@@ -1097,6 +1097,16 @@
                     "image": "win94/tabgroup",
                     "border": 3,
                     "color": "white"
+                },
+                "focused": {
+                    "image": "win94/tabgroup",
+                    "border": 3,
+                    "color": "white"
+                },
+                "hovered": {
+                    "image": "win94/tabgroup",
+                    "border": 3,
+                    "color": "white"
                 }
             }
         },
