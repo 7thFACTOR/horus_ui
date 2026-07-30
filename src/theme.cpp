@@ -6,9 +6,11 @@ namespace hui
 Theme::Theme(u32 atlasTextureSize)
 {
 	atlasSize = atlasTextureSize;
-	addWhiteImage(32); // this is ok (with 4 doesnt work for example), we need a bigger white image since it will be trimmed by inset offsets etc.
+	addWhiteImage(32);
+
 	for (u32 i = 0; i < (u32)WidgetElementId::Count; i++)
 		elements[i].styles.reserve((u32)WidgetStateType::Count);
+
 	setDefaultStyle();
 }
 
@@ -21,6 +23,7 @@ Theme::~Theme()
 void Theme::addWhiteImage(u32 width)
 {
 	u32 whiteImageSize = width * width;
+
 	whiteImage = new Image();
 	whiteImage->pixels.resize(whiteImageSize);
 	whiteImage->width = width;

@@ -227,6 +227,11 @@ void showDemo()
 		char buf[64];
 		snprintf(buf, sizeof(buf), "Scale: %.2f", scaleGet());
 		label(buf);
+		sameLine();
+		if (button("Reset Zoom"))
+		{
+			scaleSet(1.0f);
+		}
 		space();
 	}
 
@@ -1004,6 +1009,9 @@ void showDemo()
 			{
 				if (menuItem("New", "Ctrl+N")) {}
 				if (menuItem("Open", "Ctrl+O")) {}
+				widgetPushDisabled(true);
+				if (menuItem("Save", "Ctrl+S")) {}
+				widgetPopDisabled();
 				menuSeparator();
 				if (menuItem("Exit", "Alt+F4")) {}
 				menuEnd();
@@ -1288,7 +1296,6 @@ void showDemo()
 			for (auto& s : demo.dragListA)
 				itemsA.push_back(s.c_str());
 
-			sameLine(0, 0);
 			paddingPush(PaddingType::Layout, Point(0, 0));
 			paddingPush(PaddingType::ScrollView, Point(0, 0));
 			idPush("dragListA");
@@ -1338,7 +1345,6 @@ void showDemo()
 			paddingPop(PaddingType::Layout);
 		}
 
-		sameLine(0, 10);
 		{
 			std::vector<const char*> itemsB;
 			for (auto& s : demo.dragListB)

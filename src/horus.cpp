@@ -507,6 +507,8 @@ void frameEnd()
 		&& ctx->event.type == InputEvent::Type::MouseUp)
 	{
 		ctx->dragDrop.begunDragging = false;
+		ctx->dragDrop.dragObject = nullptr;
+		ctx->dragDrop.dragObjectType = 0;
 	}
 
 	if (ctx->dragDrop.begunDragging)

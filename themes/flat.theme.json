@@ -45,20 +45,20 @@
 				{
 					"height": 22,
 					"normal": { "image": "flat/rect", "border": 3, "color": "55 95 135 255", "textColor": "white", "font": "normal" },
-					"disabled": { "color": "55 95 135 128", "textColor": "255 255 255 128" },
-					"hovered": { "color": "70 120 165 255" },
-					"pressed": { "image": "flat/rect", "border": 3, "color": "40 75 110 255" },
-					"focused": { "color": "60 100 145 255" }
-				}
-				},
-				"important":
+				"disabled": { "color": "55 95 135 128", "textColor": "128 128 128 255", "textShadow": { "color": "255 255 255 255", "offsetX": 1, "offsetY": 1 } },
+				"hovered": { "color": "70 120 165 255" },
+				"pressed": { "image": "flat/rect", "border": 3, "color": "40 75 110 255" },
+				"focused": { "color": "60 100 145 255" }
+			}
+			},
+			"important":
+			{
+				"buttonBody":
 				{
-					"buttonBody":
-					{
-						"width": 0,
-						"height": 55,
-						"normal": { "image": "flat/pixel", "border": 0, "color": "200 50 50 255", "textColor": "white", "font": "large" },
-						"disabled": { "color": "200 50 50 128", "textColor": "gray" },
+					"width": 0,
+					"height": 55,
+					"normal": { "image": "flat/pixel", "border": 0, "color": "200 50 50 255", "textColor": "white", "font": "large" },
+					"disabled": { "color": "200 50 50 128", "textColor": "128 128 128 255", "textShadow": { "color": "255 255 255 255", "offsetX": 1, "offsetY": 1 } },
 						"hovered": { "color": "220 80 80 255", "font": "large-bold" },
 						"pressed": { "color": "180 40 40 255", "font": "large-italic" },
 						"focused": { "font": "large-bold" }
@@ -551,7 +551,7 @@
 			"menuBarItem":
 			{
 				"height": 20,
-				"normal": { "image": "flat/pixel", "border": 0, "color": "0 0 0 0", "font": "menu" },
+				"normal": { "image": "flat/pixel", "border": 0, "color": "0 0 0 0", "textColor": "white", "font": "menu" },
 				"hovered": { "color": "55 95 135 255" },
 				"pressed": { "color": "40 75 110 255" }
 			}
@@ -565,8 +565,8 @@
 			"menuItemBody":
 			{
 				"height": 20,
-				"normal": { "image": "flat/pixel", "border": 0, "color": "0 0 0 0" },
-				"hovered": { "image": "flat/pixel", "border": 0, "color": "55 185 255 255", "textColor": "white" },
+				"normal": { "image": "flat/pixel", "border": 0, "color": "0 0 0 255", "textColor": "white", "font": "menu" },
+				"hovered": { "image": "flat/pixel", "border": 0, "color": "55 185 255 255", "textColor": "white", "font": "menu" },
 				"pressed": { "image": "flat/pixel", "border": 0, "color": "55 185 255 255" },
 				"focused": { "image": "flat/pixel", "border": 0, "color": "55 185 255 255" }
 			},
@@ -650,15 +650,15 @@
 			},
 			"axisBoxXImage":
 			{
-				"normal": { "image": "flat/xaxis", "border": 0, "color": "220 60 60 255" }
+				"normal": { "image": "default/xaxis", "border": 0, "color": "220 60 60 255" }
 			},
 			"axisBoxYImage":
 			{
-				"normal": { "image": "flat/yaxis", "border": 0, "color": "55 185 100 255" }
+				"normal": { "image": "default/yaxis", "border": 0, "color": "55 185 100 255" }
 			},
 			"axisBoxZImage":
 			{
-				"normal": { "image": "flat/zaxis", "border": 0, "color": "55 125 255 255" }
+				"normal": { "image": "default/zaxis", "border": 0, "color": "55 125 255 255" }
 			}
 		},
 		"objectRefEditor":

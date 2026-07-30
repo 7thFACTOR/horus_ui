@@ -1315,14 +1315,15 @@
                 "normal": {
                     "image": "win94/pixel",
                     "border": 0,
-                    "color": "white",
-                    "textColor": "0 0 0 255"
+                    "color": "transparent",
+                    "textColor": "0 0 0 255",
+                    "font": "menu"
                 },
                 "hovered": {
                     "image": "win94/menu_item_body",
                     "border": 2,
-                    "color": "white",
-                    "textColor": "0 0 0 255"
+                    "color": "0 0 128 255",
+                    "textColor": "white"
                 },
                 "pressed": {
                     "image": "win94/menu_item_body",
@@ -1339,14 +1340,11 @@
             },
             "menuItemShortcut": {
                 "normal": {
-                    "image": "",
-                    "border": 0,
-                    "color": "white",
-                    "textColor": "0 0 0 255",
+                    "textColor": "darkGray",
                     "font": "medium"
                 },
                 "hovered": {
-                    "textColor": "0 0 0 255"
+                    "textColor": "white"
                 },
                 "pressed": {
                     "textColor": "0 0 0 255"

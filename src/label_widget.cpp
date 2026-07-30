@@ -46,9 +46,28 @@ static bool labelInternal(const char* label, HAlignType horizontalAlign, Font* f
 			ctx->widget.rect.height
 		};
 
+		auto useFont = font ? font : bodyElemState->font;
+
+		if (bodyElemState->textShadow.enabled)
+		{
+			Rect shadowRect = {
+				textRc.x + bodyElemState->textShadow.offsetX * ctx->scale,
+				textRc.y + bodyElemState->textShadow.offsetY * ctx->scale,
+				textRc.width,
+				textRc.height
+			};
+			ctx->renderer.cmdSetColor(tintApply(bodyElemState->textShadow.color, TintColorType::Text));
+			ctx->renderer.cmdSetFont(useFont);
+			ctx->renderer.cmdDrawTextInBox(
+				ctx->widgetLabel.c_str(),
+				shadowRect,
+				horizontalAlign,
+				VAlignType::Center, true);
+		}
+
 		Color finalColor = textColor ? tintApply(*textColor, TintColorType::Text) : tintApply(bodyElemState->textColor, TintColorType::Text);
 		ctx->renderer.cmdSetColor(finalColor);
-		ctx->renderer.cmdSetFont(font ? font : bodyElemState->font);
+		ctx->renderer.cmdSetFont(useFont);
 		ctx->renderer.cmdDrawTextInBox(
 			ctx->widgetLabel.c_str(),
 			textRc,
@@ -71,9 +90,28 @@ static bool labelMultilineInternal(const char* label, HFont font, const Color* t
 
 	addWidget(textSize.height + padding.y * 2.0f * ctx->scale);
 
+	auto useFont = (Font*)font;
+
+	if (bodyElemState.textShadow.enabled)
+	{
+		Rect shadowRect = {
+			ctx->widget.rect.x + (padding.x + bodyElemState.textShadow.offsetX) * ctx->scale,
+			ctx->widget.rect.y + (padding.y + bodyElemState.textShadow.offsetY) * ctx->scale,
+			width,
+			0,
+		};
+		ctx->renderer.cmdSetColor(tintApply(bodyElemState.textShadow.color, TintColorType::Text));
+		ctx->renderer.cmdSetFont(useFont);
+		ctx->renderer.cmdDrawTextInBox(
+			ctx->widgetLabel.c_str(),
+			shadowRect,
+			horizontalAlign,
+			VAlignType::Top);
+	}
+
 	Color finalColor = textColor ? tintApply(*textColor, TintColorType::Text) : tintApply(bodyElemState.textColor, TintColorType::Text);
 	ctx->renderer.cmdSetColor(finalColor);
-	ctx->renderer.cmdSetFont((Font*)font);
+	ctx->renderer.cmdSetFont(useFont);
 	ctx->renderer.cmdDrawTextInBox(
 		ctx->widgetLabel.c_str(),
 		{
@@ -123,8 +161,27 @@ bool labelCustomFontMultiline(const char* label, HFont font, HAlignType horizont
 
 	addWidget(textSize.height + padding.y * 2.0f * ctx->scale);
 
+	auto useFont = (Font*)font;
+
+	if (bodyElemState.textShadow.enabled)
+	{
+		Rect shadowRect = {
+			ctx->widget.rect.x + (padding.x + bodyElemState.textShadow.offsetX) * ctx->scale,
+			ctx->widget.rect.y + (padding.y + bodyElemState.textShadow.offsetY) * ctx->scale,
+			width,
+			0,
+		};
+		ctx->renderer.cmdSetColor(tintApply(bodyElemState.textShadow.color, TintColorType::Text));
+		ctx->renderer.cmdSetFont(useFont);
+		ctx->renderer.cmdDrawTextInBox(
+			ctx->widgetLabel.c_str(),
+			shadowRect,
+			horizontalAlign,
+			VAlignType::Top);
+	}
+
 	ctx->renderer.cmdSetColor(tintApply(bodyElemState.textColor, TintColorType::Text));
-	ctx->renderer.cmdSetFont((Font*)font);
+	ctx->renderer.cmdSetFont(useFont);
 	ctx->renderer.cmdDrawTextInBox(
 		ctx->widgetLabel.c_str(),
 		{
