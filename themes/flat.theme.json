@@ -73,25 +73,25 @@
 				"height": 22,
 				"labelSideSpacing": "6",
 				"normal": { "image": "flat/pixel", "border": 0, "color": "55 95 135 255", "textColor": "white", "font": "normal" },
-				"disabled": { "color": "55 95 135 128", "textColor": "255 255 255 128" },
-				"hovered": { "color": "70 120 165 255" },
-				"pressed": { "color": "0 0 0 255", "font": "normal-bold" },
-				"focused": { "color": "60 100 145 255" }
-			},
-			"buttonGroupMiddleBody":
-			{
-				"height": 22,
-				"normal": { "image": "flat/pixel", "border": 0, "color": "55 95 135 255", "textColor": "white", "font": "normal" },
-				"disabled": { "color": "55 95 135 128", "textColor": "255 255 255 128" },
-				"hovered": { "color": "70 120 165 255" },
-				"pressed": { "color": "0 0 0 255", "font": "normal-bold" },
-				"focused": { "color": "60 100 145 255" }
-			},
-			"buttonGroupRightBody":
-			{
-				"height": 22,
-				"normal": { "image": "flat/pixel", "border": 0, "color": "55 95 135 255", "textColor": "white", "font": "normal" },
-				"disabled": { "color": "55 95 135 128", "textColor": "255 255 255 128" },
+			"disabled": { "color": "55 95 135 128", "textColor": "128 128 128 255", "textShadow": { "color": "255 255 255 255", "offsetX": 1, "offsetY": 1 } },
+			"hovered": { "color": "70 120 165 255" },
+			"pressed": { "color": "0 0 0 255", "font": "normal-bold" },
+			"focused": { "color": "60 100 145 255" }
+		},
+		"buttonGroupMiddleBody":
+		{
+			"height": 22,
+			"normal": { "image": "flat/pixel", "border": 0, "color": "55 95 135 255", "textColor": "white", "font": "normal" },
+			"disabled": { "color": "55 95 135 128", "textColor": "128 128 128 255", "textShadow": { "color": "255 255 255 255", "offsetX": 1, "offsetY": 1 } },
+			"hovered": { "color": "70 120 165 255" },
+			"pressed": { "color": "0 0 0 255", "font": "normal-bold" },
+			"focused": { "color": "60 100 145 255" }
+		},
+		"buttonGroupRightBody":
+		{
+			"height": 22,
+			"normal": { "image": "flat/pixel", "border": 0, "color": "55 95 135 255", "textColor": "white", "font": "normal" },
+			"disabled": { "color": "55 95 135 128", "textColor": "128 128 128 255", "textShadow": { "color": "255 255 255 255", "offsetX": 1, "offsetY": 1 } },
 				"hovered": { "color": "70 120 165 255" },
 				"pressed": { "color": "0 0 0 255", "font": "normal-bold" },
 				"focused": { "color": "60 100 145 255" }
@@ -133,7 +133,7 @@
 			{
 				"height": 22,
 				"normal": { "image": "flat/pixel", "border": 0, "color": "45 45 55 255", "textColor": "white", "font": "normal" },
-				"disabled": { "color": "45 45 55 128", "textColor": "gray" },
+				"disabled": { "color": "45 45 55 128", "textColor": "128 128 128 255", "textShadow": { "color": "255 255 255 255", "offsetX": 1, "offsetY": 1 } },
 				"hovered": { "color": "60 60 75 255" },
 				"pressed": { "color": "75 75 95 255" },
 				"focused": { "color": "75 75 95 255" }
@@ -155,6 +155,10 @@
 				"hovered": { "image": "flat/dropdown_arrow", "border": 0, "color": "255 255 255 255" },
 				"pressed": { "image": "flat/dropdown_arrow", "border": 0, "color": "255 255 255 255" },
 				"focused": { "image": "flat/dropdown_arrow", "border": 0, "color": "255 255 255 255" }
+			},
+			"dropdownListBody":
+			{
+				"normal": { "image": "flat/rect", "border": 3, "color": "55 95 135 255" }
 			}
 		},
 		"check":
@@ -164,7 +168,7 @@
 				"width": 22,
 				"height": 22,
 				"normal": { "image": "flat/pixel", "border": 0, "color": "45 45 55 255", "textColor": "white", "font": "normal" },
-				"disabled": { "color": "45 45 55 128", "textColor": "gray" },
+				"disabled": { "color": "45 45 55 128", "textColor": "128 128 128 255", "textShadow": { "color": "255 255 255 255", "offsetX": 1, "offsetY": 1 } },
 				"hovered": { "color": "60 60 75 255" },
 				"pressed": { "color": "75 75 95 255" },
 				"focused": { "color": "60 60 75 255" }
@@ -185,7 +189,7 @@
 				"width": 22,
 				"height": 22,
 				"normal": { "image": "flat/radio_body", "border": 0, "color": "45 45 55 255", "textColor": "white", "font": "normal" },
-				"disabled": { "color": "45 45 55 128", "textColor": "gray" },
+				"disabled": { "color": "45 45 55 128", "textColor": "128 128 128 255", "textShadow": { "color": "255 255 255 255", "offsetX": 1, "offsetY": 1 } },
 				"hovered": { "image": "flat/radio_body", "border": 0, "color": "60 60 75 255" },
 				"pressed": { "image": "flat/radio_body", "border": 0, "color": "75 75 95 255" },
 				"focused": { "image": "flat/radio_body", "border": 0, "color": "60 60 75 255" }
@@ -212,7 +216,7 @@
 			{
 				"height": 22,
 				"normal": { "image": "", "border": 0, "color": "0 0 0 0", "textColor": "white", "font": "normal" },
-				"disabled": { "textColor": "120 120 130 255" }
+				"disabled": { "textColor": "128 128 128 255", "textShadow": { "color": "255 255 255 255", "offsetX": 1, "offsetY": 1 } }
 			}
 		},
 		"expandable":
@@ -221,7 +225,7 @@
 		{
 			"height": 22,
 			"normal": { "image": "flat/pixel", "border": 0, "color": "45 45 55 255", "textColor": "white", "font": "normal-bold" },
-				"disabled": { "color": "45 45 55 128", "textColor": "gray" },
+				"disabled": { "color": "45 45 55 128", "textColor": "128 128 128 255", "textShadow": { "color": "255 255 255 255", "offsetX": 1, "offsetY": 1 } },
 				"hovered": { "color": "60 60 75 255", "textColor": "white", "font": "normal-bold" },
 				"pressed": { "color": "55 95 135 255", "textColor": "white", "font": "normal-bold" },
 				"focused": { "color": "60 60 75 255", "textColor": "white", "font": "normal-bold" }
@@ -628,7 +632,7 @@
 				"width": 0,
 				"height": 20,
 				"normal": { "image": "flat/pixel", "border": 0, "color": "0 0 0 0", "font": "normal" },
-				"disabled": { "color": "255 255 255 128", "textColor": "gray", "font": "normal" },
+				"disabled": { "color": "255 255 255 128", "textColor": "128 128 128 255", "font": "normal", "textShadow": { "color": "255 255 255 255", "offsetX": 1, "offsetY": 1 } },
 				"hovered": { "image": "flat/pixel", "border": 0, "color": "55 185 255 255", "textColor": "white", "font": "normal" },
 				"pressed": { "image": "flat/pixel", "border": 0, "color": "55 185 255 255", "textColor": "white", "font": "normal" },
 				"focused": { "image": "flat/pixel", "border": 0, "color": "0 0 0 0", "font": "normal" }
@@ -717,7 +721,7 @@
 				"height": 20,
 				"normal": { "textColor": "100 160 255 255", "font": "normal" },
 				"hovered": { "textColor": "140 190 255 255" },
-				"disabled": { "textColor": "128 128 128 255" }
+				"disabled": { "textColor": "128 128 128 255", "textShadow": { "color": "255 255 255 255", "offsetX": 1, "offsetY": 1 } }
 			}
 		}
 	}

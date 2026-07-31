@@ -144,10 +144,15 @@
                             "textColor": "255 255 255 255",
                             "font": "large"
                         },
-                        "disabled": {
-                            "color": "100 100 140 255",
-                            "textColor": "150 150 150 255"
-                        },
+                "disabled": {
+                    "color": "100 100 140 255",
+                    "textColor": "128 128 128 255",
+                    "textShadow": {
+                        "color": "255 255 255 255",
+                        "offsetX": 1,
+                        "offsetY": 1
+                    }
+                },
                         "hovered": {
                             "color": "0 0 160 255",
                             "font": "large-bold"
@@ -325,7 +330,12 @@
                 },
                 "disabled": {
                     "color": "228 228 228 255",
-                    "textColor": "128 128 128 255"
+                    "textColor": "128 128 128 255",
+                    "textShadow": {
+                        "color": "255 255 255 255",
+                        "offsetX": 1,
+                        "offsetY": 1
+                    }
                 },
                 "hovered": {
                     "color": "white"
@@ -384,6 +394,13 @@
                     "border": 0,
                     "color": "0 0 0 255"
                 }
+            },
+            "dropdownListBody": {
+                "normal": {
+                    "image": "win94/dropdown_list_body",
+                    "border": 2,
+                    "color": "white"
+                }
             }
         },
         "check": {
@@ -401,7 +418,12 @@
                     "image": "win94/check_normal",
                     "border": 3,
                     "color": "128 128 144 128",
-                    "textColor": "128 128 128 255"
+                    "textColor": "128 128 128 255",
+                    "textShadow": {
+                        "color": "255 255 255 255",
+                        "offsetX": 1,
+                        "offsetY": 1
+                    }
                 },
                 "hovered": {
                     "color": "white"
@@ -452,7 +474,12 @@
                 },
                 "disabled": {
                     "color": "white",
-                    "textColor": "128 128 128 255"
+                    "textColor": "128 128 128 255",
+                    "textShadow": {
+                        "color": "255 255 255 255",
+                        "offsetX": 1,
+                        "offsetY": 1
+                    }
                 },
                 "hovered": {
                     "color": "white"
@@ -510,7 +537,12 @@
                     "font": "normal"
                 },
                 "disabled": {
-                    "textColor": "128 128 128 255"
+                    "textColor": "128 128 128 255",
+                    "textShadow": {
+                        "color": "255 255 255 255",
+                        "offsetX": 1,
+                        "offsetY": 1
+                    }
                 }
             }
         },
@@ -527,7 +559,12 @@
                 "disabled": {
                     "height": 22,
                     "color": "128 128 144 128",
-                    "textColor": "128 128 128 255"
+                    "textColor": "128 128 128 255",
+                    "textShadow": {
+                        "color": "255 255 255 255",
+                        "offsetX": 1,
+                        "offsetY": 1
+                    }
                 },
                 "hovered": {
                     "height": 22,
@@ -686,8 +723,13 @@
                     "font": "normal-unicode"
                 },
                 "disabled": {
-                    "color": "192 192 192 255",
-                    "textColor": "128 128 128 255"
+                    "color": "white",
+                    "textColor": "128 128 128 255",
+                    "textShadow": {
+                        "color": "255 255 255 255",
+                        "offsetX": 1,
+                        "offsetY": 1
+                    }
                 },
                 "hovered": {
                     "color": "255 255 255 255"
@@ -748,7 +790,12 @@
                 },
                 "disabled": {
                     "color": "192 192 192 255",
-                    "textColor": "128 128 128 255"
+                    "textColor": "128 128 128 255",
+                    "textShadow": {
+                        "color": "255 255 255 255",
+                        "offsetX": 1,
+                        "offsetY": 1
+                    }
                 },
                 "focused": {
                     "image": "win94/text_input_focused",
@@ -766,7 +813,12 @@
                 },
                 "disabled": {
                     "color": "192 192 192 128",
-                    "textColor": "128 128 128 255"
+                    "textColor": "128 128 128 255",
+                    "textShadow": {
+                        "color": "255 255 255 255",
+                        "offsetX": 1,
+                        "offsetY": 1
+                    }
                 }
             },
             "multilineTextInputCurrentLineHighlight": {
@@ -799,7 +851,12 @@
                 },
                 "disabled": {
                     "color": "192 192 208 255",
-                    "textColor": "128 128 128 255"
+                    "textColor": "128 128 128 255",
+                    "textShadow": {
+                        "color": "255 255 255 255",
+                        "offsetX": 1,
+                        "offsetY": 1
+                    }
                 },
                 "hovered": {
                     "image": "win94/slider",
@@ -825,7 +882,12 @@
                 },
                 "disabled": {
                     "color": "0 0 128 128",
-                    "textColor": "128 128 128 255"
+                    "textColor": "128 128 128 255",
+                    "textShadow": {
+                        "color": "255 255 255 255",
+                        "offsetX": 1,
+                        "offsetY": 1
+                    }
                 },
                 "hovered": {
                     "image": "win94/slider_filled",
@@ -851,7 +913,12 @@
                 },
                 "disabled": {
                     "color": "192 192 208 255",
-                    "textColor": "128 128 128 255"
+                    "textColor": "128 128 128 255",
+                    "textShadow": {
+                        "color": "255 255 255 255",
+                        "offsetX": 1,
+                        "offsetY": 1
+                    }
                 },
                 "hovered": {
                     "image": "win94/slider_knob",
@@ -882,7 +949,12 @@
                 },
                 "disabled": {
                     "color": "192 192 208 128",
-                    "textColor": "128 128 128 255"
+                    "textColor": "128 128 128 255",
+                    "textShadow": {
+                        "color": "255 255 255 255",
+                        "offsetX": 1,
+                        "offsetY": 1
+                    }
                 },
                 "hovered": {
                     "color": "white",
@@ -996,7 +1068,12 @@
                 },
                 "disabled": {
                     "color": "white",
-                    "textColor": "128 128 128 255"
+                    "textColor": "128 128 128 255",
+                    "textShadow": {
+                        "color": "255 255 255 255",
+                        "offsetX": 1,
+                        "offsetY": 1
+                    }
                 },
                 "hovered": {
                     "image": "win94/circularslider_body",
@@ -1024,7 +1101,12 @@
                 },
                 "disabled": {
                     "color": "white",
-                    "textColor": "128 128 128 255"
+                    "textColor": "128 128 128 255",
+                    "textShadow": {
+                        "color": "255 255 255 255",
+                        "offsetX": 1,
+                        "offsetY": 1
+                    }
                 },
                 "hovered": {
                     "image": "win94/circularslider_mark",
@@ -1054,12 +1136,17 @@
                 },
                 "disabled": {
                     "color": "192 192 192 128",
-                    "textColor": "128 128 128 255"
+                    "textColor": "128 128 128 255",
+                    "textShadow": {
+                        "color": "255 255 255 255",
+                        "offsetX": 1,
+                        "offsetY": 1
+                    }
                 },
                 "pressed": {
                     "image": "win94/circularslider_value_dot",
                     "border": 0,
-                    "color": "128 128 128 255"
+                    "color": "0 128 0 255"
                 }
             }
         },
@@ -1278,7 +1365,7 @@
                 "normal": {
                     "image": "win94/menu_bar",
                     "border": 2,
-                    "color": "white",
+                    "color": "192 192 192 255",
                     "font": "menu"
                 }
             },
@@ -1408,7 +1495,12 @@
                 },
                 "disabled": {
                     "color": "192 192 192 128",
-                    "textColor": "128 128 128 255"
+                    "textColor": "128 128 128 255",
+                    "textShadow": {
+                        "color": "255 255 255 255",
+                        "offsetX": 1,
+                        "offsetY": 1
+                    }
                 }
             },
             "progressFill": {
@@ -1470,7 +1562,12 @@
                 "disabled": {
                     "color": "255 255 255 255",
                     "textColor": "128 128 128 255",
-                    "font": "normal"
+                    "font": "normal",
+                    "textShadow": {
+                        "color": "255 255 255 255",
+                        "offsetX": 1,
+                        "offsetY": 1
+                    }
                 },
                 "hovered": {
                     "image": "",
@@ -1608,7 +1705,12 @@
                     "textColor": "0 0 255 255"
                 },
                 "disabled": {
-                    "textColor": "128 128 128 255"
+                    "textColor": "128 128 128 255",
+                    "textShadow": {
+                        "color": "255 255 255 255",
+                        "offsetX": 1,
+                        "offsetY": 1
+                    }
                 }
             }
         }

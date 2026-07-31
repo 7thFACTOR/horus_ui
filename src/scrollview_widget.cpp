@@ -307,7 +307,9 @@ Point scrollViewEnd()
 	auto internalPadding = padding + border;
 
 	// make the rect for the scrollbars, without the UI element border
-	auto rectNoBorders = fullRect.contract(scrollViewElemState.border);
+	auto rectNoBorders = has(scrollViewState.flags, ScrollViewFlags::NoBorder)
+		? fullRect
+		: fullRect.contract(scrollViewElemState.border);
 	auto scrollViewScrollBarElemStateH = ctx->theme->getElement(WidgetElementId::ScrollViewScrollBarH).normalState();
 	auto& scrollViewScrollBarElemStateV = ctx->theme->getElement(WidgetElementId::ScrollViewScrollBarV).normalState();
 

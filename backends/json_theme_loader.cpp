@@ -204,6 +204,7 @@ static WidgetElementId getWidgetElementFromName(std::string name)
 	if (name == "dropdownBody") return WidgetElementId::DropdownBody;
 	if (name == "dropdownArrowBox") return WidgetElementId::DropdownArrowBox;
 	if (name == "dropdownArrow") return WidgetElementId::DropdownArrow;
+	if (name == "dropdownListBody") return WidgetElementId::DropdownListBody;
 	if (name == "scrollViewBody") return WidgetElementId::ScrollViewBody;
 	if (name == "scrollViewScrollBarV") return WidgetElementId::ScrollViewScrollBarV;
 	if (name == "scrollViewScrollThumbV") return WidgetElementId::ScrollViewScrollThumbV;

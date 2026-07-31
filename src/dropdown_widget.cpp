@@ -24,6 +24,14 @@ bool dropdown(const char* id, i32& selectedIndex, const char** items, u32 itemCo
 	addWidget((bodyElem.normalState().height + padding.y * 2.0f) * ctx->scale);
 	buttonBehavior();
 
+	if (ctx->dropdown.active)
+	{
+		// the open popup closes itself as an outside click, so don't let the
+		// body capture the press, otherwise the mouse release would re-open it
+		ctx->widget.captureId = 0;
+		ctx->widget.pressed = false;
+	}
+
 	auto bodyElemState = &bodyElem.normalState();
 	auto arrowBoxElemState = &arrowBoxElem.normalState();
 	auto arrowElemState = &arrowElem.normalState();
@@ -142,15 +150,13 @@ bool dropdown(const char* id, i32& selectedIndex, const char** items, u32 itemCo
 
 	if (ctx->dropdown.active && ctx->id == ctx->dropdown.id)
 	{
-		auto& bodyElem = ctx->theme->getElement(WidgetElementId::DropdownBody);
-
 		// we need exact width, so don't scale the popup's width
 		ctx->popupUseGlobalScale = false;
 
-		popupBegin("popup", ctx->widget.rect.width - bodyElem.normalState().border * 2.0f,
+		popupBegin("popup", ctx->widget.rect.width,
 			PopupFlags::CustomPosition,
 			popupPos,
-			WidgetElementId::ButtonBody);
+			WidgetElementId::DropdownListBody);
 
 		auto& selectableBodyElem = ctx->theme->getElement(WidgetElementId::SelectableBody).normalState();
 
@@ -160,7 +166,7 @@ bool dropdown(const char* id, i32& selectedIndex, const char** items, u32 itemCo
 		if (maxVisibleDropDownItems < itemCount)
 		{
 			idPush(ctx->id);
-			scrollViewBegin("dropDownScrollView", std::min(itemCount, maxVisibleDropDownItems) * selectableBodyElem.height, ctx->dropDownScrollViewPos.y);
+			scrollViewBegin("dropDownScrollView", std::min(itemCount, maxVisibleDropDownItems) * selectableBodyElem.height, ctx->dropDownScrollViewPos.y, 0.0f, ScrollViewFlags::NoBorder);
 		}
 
 		// we don't want tinting for items, just the dropdown is tinted
