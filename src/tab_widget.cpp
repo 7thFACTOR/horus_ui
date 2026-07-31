@@ -139,6 +139,8 @@ void tab(const char* label, HImage img)
 		tabElemState = &tabInactiveElem.getState(WidgetStateType::Disabled);
 
 	auto& padding = widgetGetPadding();
+	f32 tabPaddingX = tabActiveElem.currentStyle->getParameter("paddingX", padding.x);
+	f32 tabPaddingY = tabActiveElem.currentStyle->getParameter("paddingY", padding.y);
 
 	Utf32String uniStr;
 
@@ -156,9 +158,9 @@ void tab(const char* label, HImage img)
 
 	f32 textAndImageWidth = (fsize.width + imageWidth * 2.0f /* some space after text as image width */ + ctx->settings.dockTabImageTextSpacing) * ctx->scale;
 	
-	width = textAndImageWidth + (tabElemState->border + padding.x) * 2.0f * ctx->scale;
+	width = textAndImageWidth + (tabElemState->border + tabPaddingX) * 2.0f * ctx->scale;
 
-	f32 height = (tabElemState->height + padding.y * 2.0f) * ctx->scale;
+	f32 height = (tabElemState->height + tabPaddingY * 2.0f) * ctx->scale;
 
 	ctx->id = genIdFromPosition(label);
 
@@ -200,7 +202,7 @@ void tab(const char* label, HImage img)
 	ctx->renderer.cmdDrawImageBordered(tabElemState->image, tabElemState->border, ctx->widget.rect, ctx->scale);
 
 	Rect rcTextAndImage = {
-		ctx->widget.rect.x + (tabElemState->border + padding.x) * ctx->scale,
+		ctx->widget.rect.x + (tabElemState->border + tabPaddingX) * ctx->scale,
 		ctx->widget.rect.y,
 		textAndImageWidth,
 		ctx->widget.rect.height };
@@ -216,7 +218,7 @@ void tab(const char* label, HImage img)
 	ctx->renderer.cmdSetColor(tabElemState->textColor);
 
 	Rect textRc = {
-			ctx->widget.rect.x + (padding.x + tabElemState->border + imageWidth + ctx->settings.dockTabImageTextSpacing) * ctx->scale,
+			ctx->widget.rect.x + (tabPaddingX + tabElemState->border + imageWidth + ctx->settings.dockTabImageTextSpacing) * ctx->scale,
 			ctx->widget.rect.y,
 			width,
 			ctx->widget.rect.height,

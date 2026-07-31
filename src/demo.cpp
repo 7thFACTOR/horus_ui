@@ -223,17 +223,7 @@ void showDemo()
 
 	scrollViewBegin("##demoScroll", 0, demo.demoScrollPos, { 0, 0 }, ScrollViewFlags::None);
 
-	{
-		char buf[64];
-		snprintf(buf, sizeof(buf), "Scale: %.2f", scaleGet());
-		label(buf);
-		sameLine();
-		if (button("Reset Zoom"))
-		{
-			scaleSet(1.0f);
-		}
-		space();
-	}
+	space();
 
 	//------------------------------------------------------------------
 	// Button

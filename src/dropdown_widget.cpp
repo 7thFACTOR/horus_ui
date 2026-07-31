@@ -24,12 +24,11 @@ bool dropdown(const char* id, i32& selectedIndex, const char** items, u32 itemCo
 	addWidget((bodyElem.normalState().height + padding.y * 2.0f) * ctx->scale);
 	buttonBehavior();
 
-	if (ctx->dropdown.active)
+	if (ctx->dropdown.active && ctx->widget.captureId == ctx->id)
 	{
 		// the open popup closes itself as an outside click, so don't let the
 		// body capture the press, otherwise the mouse release would re-open it
 		ctx->widget.captureId = 0;
-		ctx->widget.pressed = false;
 	}
 
 	auto bodyElemState = &bodyElem.normalState();

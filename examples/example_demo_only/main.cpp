@@ -50,6 +50,13 @@ static void uploadAtlasTexture(hui::Sdl3GfxApi gfxApi)
 	}
 }
 
+static void setScale(f32 scale, hui::Sdl3GfxApi gfxApi)
+{
+	hui::scaleSet(scale);
+	hui::themeBuild(hui::themeGet());
+	uploadAtlasTexture(gfxApi);
+}
+
 static char themeFilePath[256] = "../themes/default.theme.json";
 static std::filesystem::file_time_type themeLastWriteTime;
 static bool themeNeedsReload = false;
@@ -212,29 +219,7 @@ int main(int argc, char** args)
 				&& has(ev.mouse.modifiers, hui::KeyModifiers::Control))
 			{
 				f32 currentScale = hui::scaleGet();
-				currentScale += ev.mouse.wheel.y * 0.1f;
-				hui::scaleSet(std::clamp(currentScale, 0.5f, 4.0f));
-				hui::themeBuild(hui::themeGet());
-
-				switch (sdlParams.gfxApi)
-				{
-				case hui::Sdl3GfxApi::OpenGL:
-					texAtlasGL.updateData(hui::themeGetAtlasImageData().pixels);
-					hui::themeSetAtlasTexture(texAtlasGL.getHandle());
-					break;
-				case hui::Sdl3GfxApi::DX11:
-					texAtlasDX11.updateData(hui::themeGetAtlasImageData().pixels);
-					hui::themeSetAtlasTexture(texAtlasDX11.getHandle());
-					break;
-				case hui::Sdl3GfxApi::DX12:
-					texAtlasDX12.updateData(hui::themeGetAtlasImageData().pixels);
-					hui::themeSetAtlasTexture(texAtlasDX12.getHandle());
-					break;
-				case hui::Sdl3GfxApi::Vulkan:
-					texAtlasVK.updateData(hui::themeGetAtlasImageData().pixels);
-					hui::themeSetAtlasTexture(texAtlasVK.getHandle());
-					break;
-				}
+				setScale(std::clamp(currentScale + ev.mouse.wheel.y * 0.1f, 0.5f, 4.0f), sdlParams.gfxApi);
 			}
 		}
 
@@ -264,6 +249,11 @@ int main(int argc, char** args)
 			std::string crtScaleStr = std::to_string(hui::scaleGet());
 
 			hui::label((std::string("Current UI scale (Ctrl+Wheel to change): ") + crtScaleStr).c_str());
+			hui::sameLine();
+			if (hui::button("Reset Scale"))
+			{
+				setScale(1.0f, sdlParams.gfxApi);
+			}
 
 			hui::line();
 			hui::space();
