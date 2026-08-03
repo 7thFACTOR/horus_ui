@@ -413,6 +413,7 @@
 			"circularSliderBody":
 			{
 				"height": 90,
+				"labelSpacing": "4",
 				"normal": { "image": "default/circularslider_body", "border": 2, "color": "white", "textColor": "white", "font": "normal" },
 				"disabled": { "color": "255 255 255 128", "textColor": "gray" },
 				"hovered": { "image": "default/circularslider_body", "border": 2, "color": "white", "textColor": "white", "font": "normal" },

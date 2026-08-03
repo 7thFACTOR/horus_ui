@@ -1060,6 +1060,7 @@
         "circularSlider": {
             "circularSliderBody": {
                 "height": 90,
+                "labelSpacing": "6",
                 "normal": {
                     "image": "win94/circularslider_body",
                     "border": 2,

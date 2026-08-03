@@ -24,7 +24,19 @@ bool circularSliderFloat(const char* label, f32* value, f32 minVal, f32 maxVal, 
 	}
 
 	ctx->setLabelAndId(label);
-	addWidget((bodyElem.normalState().height + padding.y * 2.0f) * ctx->scale);
+
+	f32 labelSpacing = bodyElem.currentStyle->getParameter("labelSpacing", ctx->settings.defaultCircularSliderLabelSpacing);
+	f32 labelSpace = 0;
+
+	if (ctx->widgetLabel[0])
+	{
+		labelSpace = labelSpacing;
+
+		if (bodyElem.normalState().font)
+			labelSpace += bodyElem.normalState().font->getMetrics().height;
+	}
+
+	addWidget((bodyElem.normalState().height + padding.y * 2.0f + labelSpace) * ctx->scale);
 	buttonBehavior();
 
 	if (!ctx->widget.disabled && widgetIsHovered() && ctx->event.type == InputEvent::Type::MouseDown)
@@ -225,19 +237,20 @@ bool circularSliderFloat(const char* label, f32* value, f32 minVal, f32 maxVal, 
 		}
 
 		// draw the text under the knob
-		ctx->renderer.cmdSetColor(tintApply(bodyElemState->textColor, TintColorType::Text));
-		ctx->renderer.cmdSetFont(bodyElemState->font);
-		ctx->renderer.pushClipRect(ctx->widget.rect);
-		ctx->renderer.cmdDrawTextInBox(
-			ctx->widgetLabel.c_str(),
-			Rect(
+		if (ctx->widgetLabel[0])
+		{
+			Rect labelRect(
 				ctx->widget.rect.x,
-				ctx->widget.rect.top(),
+				rc.bottom() + labelSpacing * ctx->scale,
 				ctx->widget.rect.width,
-				ctx->widget.rect.height),
-			HAlignType::Center,
-			VAlignType::Bottom);
-		ctx->renderer.popClipRect();
+				ctx->widget.rect.bottom() - (rc.bottom() + labelSpacing * ctx->scale));
+
+			ctx->renderer.cmdSetColor(tintApply(bodyElemState->textColor, TintColorType::Text));
+			ctx->renderer.cmdSetFont(bodyElemState->font);
+			ctx->renderer.pushClipRect(ctx->widget.rect);
+			ctx->renderer.cmdDrawTextInBox(ctx->widgetLabel.c_str(), labelRect, HAlignType::Center, VAlignType::Bottom);
+			ctx->renderer.popClipRect();
+		}
 	}
 
 	widgetSetFocusable();

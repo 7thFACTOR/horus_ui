@@ -410,11 +410,12 @@
 			"circularSliderBody":
 			{
 				"height": 90,
-				"normal": { "image": "flat/circularslider_body", "border": 0, "color": "45 45 55 255" },
+				"labelSpacing": "8",
+				"normal": { "image": "flat/circularslider_body", "border": 0, "color": "45 45 55 255", "textColor": "white", "font": "normal" },
 				"disabled": { "color": "45 45 55 128", "textColor": "gray" },
-				"hovered": { "image": "flat/circularslider_body", "border": 0, "color": "45 45 55 255" },
-				"pressed": { "image": "flat/circularslider_body", "border": 0, "color": "45 45 55 255" },
-				"focused": { "image": "flat/circularslider_body", "border": 0, "color": "45 45 55 255" }
+				"hovered": { "image": "flat/circularslider_body", "border": 0, "color": "45 45 55 255", "textColor": "white", "font": "normal" },
+				"pressed": { "image": "flat/circularslider_body", "border": 0, "color": "45 45 55 255", "textColor": "white", "font": "normal" },
+				"focused": { "image": "flat/circularslider_body", "border": 0, "color": "45 45 55 255", "textColor": "white", "font": "normal" }
 			},
 			"circularSliderMark":
 			{
