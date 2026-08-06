@@ -10,7 +10,7 @@ HTheme createBuiltinTheme(u32 atlasTextureSize)
 {
 	Theme* theme = new Theme(atlasTextureSize);
 
-	// Load the embedded font
+	// load the embedded font
 	Font* font = theme->createFontFromMemory("default", roboto_regular_data, roboto_regular_data_size, 14);
 
 	Color colorBg = Color::fromU8(45, 45, 45);
@@ -62,7 +62,7 @@ HTheme createBuiltinTheme(u32 atlasTextureSize)
 		}
 	};
 
-	// Specialized element tweaks
+	// specialized element tweaks
 	setSize(WidgetElementId::ButtonBody, 0, 22, 3);
 	setSize(WidgetElementId::ButtonGroupLeftBody, 0, 22, 4);
 	setSize(WidgetElementId::ButtonGroupMiddleBody, 0, 22, 0);

@@ -20,7 +20,7 @@
 
 int main(int argc, char** args)
 {
-	// Initialize SDL input provider
+	// initialize SDL input provider
 	hui::Sdl3InitParams sdlParams;
 
 	sdlParams.vSync = false;
@@ -29,7 +29,7 @@ int main(int argc, char** args)
 	//sdlParams.gfxApi = hui::Sdl3GfxApi::DX12;
 	sdlParams.gfxApi = hui::Sdl3GfxApi::Vulkan;
 
-	// Setup a Horus UI context, with given service providers
+	// setup a Horus UI context, with given service providers
 	hui::Settings settings;
 
 	hui::initStdioFileIO(settings.services);
@@ -60,14 +60,14 @@ int main(int argc, char** args)
 		break;
 	}
 	
-	// Create the context
+	// create the context
 	auto huiContext = hui::contextCreate(settings);
 	hui::contextSet(huiContext); // set as current context
 
-	// Create the main window (this will also create a graphics (GL/VK/D3D/etc.) context)
+	// create the main window (this will also create a graphics (GL/VK/D3D/etc.) context)
 	auto mainWnd = hui::contextGetSettings().services.createWindow((std::string("Horus Example - No Docking - ") + gfxApiName).c_str(), hui::NativeWindowFlags::Resizable, hui::NativeWindowState::Maximized, hui::Rect(0, 0, 1000, 800));
 	
-	// Load a theme
+	// load a theme
 	const u32 errSize = 2048;
 	char err[errSize] = { 0 };
 	auto theme = hui::loadThemeFromJson("../themes/default.theme.json", err, errSize);
@@ -77,7 +77,7 @@ int main(int argc, char** args)
 		printf("Theme JSON error: %s\n", err);
 		theme = hui::themeCreate(hui::contextGetSettings().defaultAtlasSize);
 
-		// Initialize all elements with white image
+		// initialize all elements with white image
 		hui::WidgetElementInfo defInfo;
 		defInfo.image = hui::themeGetImage(theme, "__WHITEIMAGE__");
 		defInfo.color = hui::Color::white;
@@ -92,32 +92,32 @@ int main(int argc, char** args)
 		}
 	}
 
-	// Set the current theme
+	// set the current theme
 	hui::themeSet(theme);
 
-	// Build the theme
-	// After we load the theme and more images and fonts, we need to rebuild the theme (into the image atlas)
+	// build the theme
+	// after we load the theme and more images and fonts, we need to rebuild the theme (into the image atlas)
 	hui::themeBuild(theme);
 	
 	hui::VulkanTexture texAtlas(hui::themeGetAtlasImageData().width, hui::themeGetAtlasImageData().height);
 	texAtlas.updateData(hui::themeGetAtlasImageData().pixels);
 	hui::themeSetAtlasTexture(texAtlas.getHandle());
 
-	// Start the main loop
+	// start the main loop
 	bool exitNow = false;
 
 	hui::scaleSet(1.0f);
 
 	while (!exitNow)
 	{
-		// Clear the main window as a test
+		// clear the main window as a test
 		hui::contextGetSettings().services.setCurrentWindow(mainWnd);
 		hui::contextGetSettings().services.clearBackbuffer(hui::Color(0.1f, 0.4f, 0.4f, 1));
 		
-		// Theme file path
+		// theme file path
 		static const char* themeFilePath = "../themes/default.theme.json";
 
-		// Theme reload function (used by F2 key and auto-reload)
+		// theme reload function (used by F2 key and auto-reload)
 		auto reloadTheme = [&]()
 			{
 				auto newTheme = hui::loadThemeFromJson(themeFilePath, err, errSize);
@@ -129,7 +129,7 @@ int main(int argc, char** args)
 					theme = newTheme;
 					hui::themeSet(theme);
 
-					// Reload resources
+					// reload resources
 					hui::themeBuild(theme);
 					texAtlas.updateData(hui::themeGetAtlasImageData().pixels);
 					hui::themeSetAtlasTexture(texAtlas.getHandle());
@@ -138,13 +138,13 @@ int main(int argc, char** args)
 				}
 			};
 
-		// Track theme file modification time for auto-reload
+		// track theme file modification time for auto-reload
 		static auto lastModTime = std::filesystem::last_write_time(themeFilePath);
 		static f32 checkTimer = 0;
 
 		checkTimer += hui::contextGetSettings().deltaTime;
 
-		// Check if theme file has been modified (every 1 second)
+		// check if theme file has been modified (every 1 second)
 		if (checkTimer >= 1.0f)
 		{
 			checkTimer = 0;
@@ -160,12 +160,12 @@ int main(int argc, char** args)
 			}
 			catch (...)
 			{
-				// Ignore filesystem errors
+				// ignore filesystem errors
 			}
 		}
 
 		hui::contextGetSettings().deltaTime = hui::getSdl3DeltaTime();
-		// Get the events from SDL or whatever input provider is set, it will fill a queue of events
+		// get the events from SDL or whatever input provider is set, it will fill a queue of events
 		hui::contextUpdate();
 
 		if (hui::inputEventGet().type == hui::InputEvent::Type::Key
@@ -175,7 +175,7 @@ int main(int argc, char** args)
 			reloadTheme();
 		}
 
-		// Check the event count
+		// check the event count
 		auto eventCount = hui::inputEventGetCount();
 
 		// the main frame rendering and input handling

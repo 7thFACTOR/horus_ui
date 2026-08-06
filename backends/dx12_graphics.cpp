@@ -61,7 +61,7 @@ static HANDLE fenceEvent = nullptr;
 static UINT64 pendingUploadFenceValue = 0; // tracks last submitted (but not waited) upload
 
 // -------------------------------------------------------------------------
-// Dx12Texture implementation
+// dx12Texture implementation
 // -------------------------------------------------------------------------
 
 Dx12Texture::Dx12Texture(u32 newWidth, u32 newHeight, Rgba32* pixels)
@@ -167,14 +167,14 @@ void Dx12Texture::updateData(Rgba32* pixels)
 {
 	if (!g_dx12Device || !handle || !uploadBuffer || !pixels) return;
 
-	// Ensure the fence + event exist (created lazily)
+	// ensure the fence + event exist (created lazily)
 	if (!globalFence) {
 		g_dx12Device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&globalFence));
 		fenceEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
 	}
 
-	// Wait for the PREVIOUS upload to finish before resetting the upload allocator.
-	// We do NOT wait for the current upload — it is submitted asynchronously and
+	// wait for the PREVIOUS upload to finish before resetting the upload allocator.
+	// we do NOT wait for the current upload — it is submitted asynchronously and
 	// will complete on the GPU before any draw commands issued after this point
 	// (queue ordering guarantees this).
 	if (pendingUploadFenceValue > 0 && globalFence->GetCompletedValue() < pendingUploadFenceValue) {
@@ -202,7 +202,7 @@ void Dx12Texture::updateData(Rgba32* pixels)
 	uploadAllocator->Reset();
 	uploadCmdList->Reset(uploadAllocator, nullptr);
 
-	// If already uploaded the texture is in PIXEL_SHADER_RESOURCE state;
+	// if already uploaded the texture is in PIXEL_SHADER_RESOURCE state;
 	// transition it back to COPY_DEST before copying.
 	if (isUploaded) {
 		D3D12_RESOURCE_BARRIER toCopyDest{};
@@ -227,7 +227,7 @@ void Dx12Texture::updateData(Rgba32* pixels)
 	g_dx12Device->GetCopyableFootprints(&desc, 0, 1, 0, &src.PlacedFootprint, nullptr, nullptr, nullptr);
 	uploadCmdList->CopyTextureRegion(&dst, 0, 0, 0, &src, nullptr);
 
-	// Transition to PIXEL_SHADER_RESOURCE so it is ready for drawing.
+	// transition to PIXEL_SHADER_RESOURCE so it is ready for drawing.
 	D3D12_RESOURCE_BARRIER toSRV{};
 	toSRV.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
 	toSRV.Transition.pResource = handle;
@@ -240,7 +240,7 @@ void Dx12Texture::updateData(Rgba32* pixels)
 	ID3D12CommandList* ppCmds[] = { uploadCmdList };
 	g_dx12CommandQueue->ExecuteCommandLists(1, ppCmds);
 
-	// Signal the fence async — do NOT wait here. Any draw commands submitted
+	// signal the fence async — do NOT wait here. Any draw commands submitted
 	// after this on the same queue are guaranteed to execute after this upload.
 	fenceValue++;
 	pendingUploadFenceValue = fenceValue;
@@ -270,7 +270,7 @@ void Dx12Texture::destroy()
 }
 
 // -------------------------------------------------------------------------
-// Dx12VertexBuffer implementation
+// dx12VertexBuffer implementation
 // -------------------------------------------------------------------------
 
 Dx12VertexBuffer::Dx12VertexBuffer() {}
@@ -708,7 +708,7 @@ bool initDx12(Services& services)
 		return false;
 	}
 
-	// 1. Root Signature
+	// 1. root Signature
 	D3D12_DESCRIPTOR_HEAP_DESC srvHeapDesc{};
 	srvHeapDesc.NumDescriptors = 10000;
 	srvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
@@ -745,7 +745,7 @@ bool initDx12(Services& services)
 		g_dx12Device->CreateShaderResourceView(whiteTex->handle, &whiteSrvDesc,
 			srvHeap->GetCPUDescriptorHandleForHeapStart());
 			
-		// Upload 1x1 white pixel
+		// upload 1x1 white pixel
 		Rgba32 white = 0xFFFFFFFF;
 		whiteTex->resize(1,1);
 		whiteTex->updateData(&white);
@@ -806,7 +806,7 @@ bool initDx12(Services& services)
 	g_dx12Device->CreateRootSignature(0, signature->GetBufferPointer(), signature->GetBufferSize(), IID_PPV_ARGS(&rootSignature));
 	signature->Release();
 
-	// 2. Shaders
+	// 2. shaders
 	const char* shaderSource = R"(
 cbuffer constants : register(b0) {
     matrix mvp;
@@ -842,7 +842,7 @@ float4 PSMain(PS_INPUT input) : SV_TARGET {
 	D3DCompile(shaderSource, strlen(shaderSource), nullptr, nullptr, nullptr, "PSMain", "ps_5_0", 0, 0, &psBlob, &error);
 	if (error) { printf("PS Compile Error: %s\n", (char*)error->GetBufferPointer()); error->Release(); }
 
-	// 3. Pipeline State
+	// 3. pipeline State
 	D3D12_INPUT_ELEMENT_DESC inputLayout[] = {
 		{ "POSITION", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
 		{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 8, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },

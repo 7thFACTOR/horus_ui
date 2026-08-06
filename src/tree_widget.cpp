@@ -115,8 +115,8 @@ bool treeNodeBegin(const char* label, bool* expandedVar, SelectableFlags stateFl
 		return false;
 	}
 
-	// Ensure any pending sameLine advancement is flushed so the label X is computed correctly.
-	// This avoids using a stale widget.rect.x that may still be on a same-line row,
+	// ensure any pending sameLine advancement is flushed so the label X is computed correctly.
+	// this avoids using a stale widget.rect.x that may still be on a same-line row,
 	// which can cause the next sibling (or subsequent nodes) to be indented under the wrong parent.
 	if (!ctx->sameLine.enabled && ctx->sameLine.wasEnabled)
 	{
@@ -137,17 +137,17 @@ bool treeNodeBegin(const char* label, bool* expandedVar, SelectableFlags stateFl
 		labelX = ctx->position.x + arrowWidth * ctx->scale + ctx->sameLine.spacing * ctx->scale;
 	}
 
-	// The selectable label was placed by treeNode() on the same line after the arrow.
-	// Compute the arrow's X position for proper sibling alignment.
+	// the selectable label was placed by treeNode() on the same line after the arrow.
+	// compute the arrow's X position for proper sibling alignment.
 	f32 arrowX = labelX - arrowWidth * ctx->scale - ctx->sameLine.spacing * ctx->scale;
 
-	// Push layout, then:
+	// push layout, then:
 	// 1) update the layout on the stack (the one that will be restored on pop)
-	//    so siblings will align to arrowX (parent arrow X).
+	// so siblings will align to arrowX (parent arrow X).
 	// 2) set the active layout's savedPosition.x to labelX + indent for children.
 	layoutPush();
 
-	// Update the parent layout stored on the stack so that when we pop back,
+	// update the parent layout stored on the stack so that when we pop back,
 	// ctx->layout.savedPosition.x == arrowX (siblings align to arrow X).
 	if (!ctx->layoutStack.empty())
 	{
@@ -162,7 +162,7 @@ bool treeNodeBegin(const char* label, bool* expandedVar, SelectableFlags stateFl
 		}
 	}
 
-	// Now adjust the current layout (children layout) so children start at labelX + indent.
+	// now adjust the current layout (children layout) so children start at labelX + indent.
 	f32 oldSavedX = ctx->layout.savedPosition.x;
 	f32 newSavedX = labelX + indent;
 	f32 delta = newSavedX - oldSavedX;
@@ -175,7 +175,7 @@ bool treeNodeBegin(const char* label, bool* expandedVar, SelectableFlags stateFl
 		ctx->layout.width = 0.0f;
 	}
 	
-	// Keep the drawing cursor at the parent's label X so children start
+	// keep the drawing cursor at the parent's label X so children start
 	// at the parent's label position.
 	ctx->position.x = labelX;
 
@@ -184,7 +184,7 @@ bool treeNodeBegin(const char* label, bool* expandedVar, SelectableFlags stateFl
 
 void treeNodeEnd()
 {
-	// Flush any pending sameLine advancement before capturing position,
+	// flush any pending sameLine advancement before capturing position,
 	// otherwise the Y stays at the top of the sameLine row
 	if (!ctx->sameLine.enabled && ctx->sameLine.wasEnabled)
 	{

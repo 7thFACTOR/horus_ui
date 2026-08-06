@@ -275,7 +275,7 @@ bool textInputMultiline(
 		{
 			state.computeVisualLines(bodyElemState->font, actualWidth, rangeHighlights, rangeHighlightCount, keywords, keywordCount);
 			state.lastLayoutWidth = actualWidth;
-			// Height might change after re-wrap
+			// height might change after re-wrap
 			totalContentHeight = state.visualLines.size() * lineHeight;
 		}
 	}
@@ -1035,7 +1035,7 @@ bool textInputMultiline(
 
 			f32 selX = clipRect.x + toStartSize.width - currentScrollX;
 
-			// Convert selected text to UTF-8
+			// convert selected text to UTF-8
 			state.utf8LineBuffer.resize((selectedText.size() + 1) * 4);
 			char* selTextUtf8 = state.utf8LineBuffer.data();
 			ctx->settings.services.utf32To8NoAlloc(selectedText.data(), (u32)selectedText.size(), selTextUtf8, (u32)state.utf8LineBuffer.size());

@@ -85,8 +85,8 @@ FontGlyph* Font::getGlyph(GlyphCode glyphCode)
 
 f32 Font::getKerning(GlyphCode leftGlyphCode, GlyphCode rightGlyphCode)
 {
-	// Compose a 64-bit key: left in high 32 bits, right in low 32 bits.
-	// Parentheses are required because << has lower precedence than +.
+	// compose a 64-bit key: left in high 32 bits, right in low 32 bits.
+	// parentheses are required because << has lower precedence than +.
 	u64 hash = (((u64)leftGlyphCode) << 32) | (u64)rightGlyphCode;
 	auto iter = kerningPairs.find(hash);
 

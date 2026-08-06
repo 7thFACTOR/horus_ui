@@ -74,7 +74,7 @@ float4 PSMain(PS_INPUT input) : SV_TARGET {
 )";
 
 // -------------------------------------------------------------------------
-// Dx11Texture implementation
+// dx11Texture implementation
 // -------------------------------------------------------------------------
 
 Dx11Texture::Dx11Texture(u32 newWidth, u32 newHeight, Rgba32* pixels)
@@ -175,7 +175,7 @@ void Dx11Texture::destroy()
 }
 
 // -------------------------------------------------------------------------
-// Dx11VertexBuffer implementation
+// dx11VertexBuffer implementation
 // -------------------------------------------------------------------------
 
 Dx11VertexBuffer::Dx11VertexBuffer() {}
@@ -448,7 +448,7 @@ bool initDx11(Services& services)
     if (vsBlob) vsBlob->Release();
     if (psBlob) psBlob->Release();
 
-    // Constant buffer
+    // constant buffer
     D3D11_BUFFER_DESC cbDesc{};
     cbDesc.ByteWidth = sizeof(f32) * 16;
     cbDesc.Usage = D3D11_USAGE_DYNAMIC;
@@ -456,7 +456,7 @@ bool initDx11(Services& services)
     cbDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
 	g_dx11Device->CreateBuffer(&cbDesc, nullptr, &constantBuffer);
 
-    // Sampler state
+    // sampler state
     D3D11_SAMPLER_DESC sampDesc{};
     sampDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
     sampDesc.AddressU = D3D11_TEXTURE_ADDRESS_CLAMP;
@@ -464,7 +464,7 @@ bool initDx11(Services& services)
     sampDesc.AddressW = D3D11_TEXTURE_ADDRESS_CLAMP;
 	g_dx11Device->CreateSamplerState(&sampDesc, &samplerState);
 
-    // Blend state
+    // blend state
     D3D11_BLEND_DESC blendDesc{};
     blendDesc.RenderTarget[0].BlendEnable = TRUE;
     blendDesc.RenderTarget[0].SrcBlend = D3D11_BLEND_SRC_ALPHA;
@@ -476,7 +476,7 @@ bool initDx11(Services& services)
     blendDesc.RenderTarget[0].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
 	g_dx11Device->CreateBlendState(&blendDesc, &blendState);
 
-    // Rasterizer state
+    // rasterizer state
     D3D11_RASTERIZER_DESC rsDesc{};
     rsDesc.FillMode = D3D11_FILL_SOLID;
     rsDesc.CullMode = D3D11_CULL_NONE;
@@ -484,7 +484,7 @@ bool initDx11(Services& services)
     rsDesc.DepthClipEnable = FALSE;
 	g_dx11Device->CreateRasterizerState(&rsDesc, &rasterizerState);
 
-    // Depth Stencil State
+    // depth Stencil State
     D3D11_DEPTH_STENCIL_DESC dsDesc{};
     dsDesc.DepthEnable = FALSE;
     dsDesc.StencilEnable = FALSE;

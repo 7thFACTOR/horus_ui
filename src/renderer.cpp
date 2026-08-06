@@ -18,7 +18,7 @@ enum LineClipBit
 	Top = 8
 };
 
-// Function to compute region code for a point(x, y)
+// function to compute region code for a point(x, y)
 static i32 computeLineClipCode(const Point& p, const Rect& rect)
 {
 	// initialized as being inside
@@ -43,11 +43,11 @@ static bool clipLineToRect(
 	Point& newP1, Point& newP2,
 	Point& newUv1, Point& newUv2)
 {
-	// Compute region codes for P1, P2
+	// compute region codes for P1, P2
 	i32 code1 = computeLineClipCode(p1, rect);
 	i32 code2 = computeLineClipCode(p2, rect);
 
-	// Initialize line as outside the rectangular window
+	// initialize line as outside the rectangular window
 	bool accept = false;
 
 	newUv1 = uv1;
@@ -57,7 +57,7 @@ static bool clipLineToRect(
 	{
 		if ((code1 == 0) && (code2 == 0))
 		{
-			// If both endpoints lie within rectangle
+			// if both endpoints lie within rectangle
 			accept = true;
 			newP1 = p1;
 			newP2 = p2;
@@ -67,26 +67,26 @@ static bool clipLineToRect(
 		}
 		else if (code1 & code2)
 		{
-			// If both endpoints are outside rectangle,
+			// if both endpoints are outside rectangle,
 			// in same region
 			break;
 		}
 		else
 		{
-			// Some segment of line lies within the
+			// some segment of line lies within the
 			// rectangle
 			i32 code_out = 0;
 			f32 x = 0, y = 0;
 			Point uv = uv1;
 
-			// At least one endpoint is outside the
+			// at least one endpoint is outside the
 			// rectangle, pick it.
 			if (code1 != 0)
 				code_out = code1;
 			else
 				code_out = code2;
 
-			// Find intersection point;
+			// find intersection point;
 			// using formulas y = y1 + slope * (x - x1),
 			// x = x1 + (1 / slope) * (y - y1)
 			if (code_out & LineClipBit::Top)
@@ -122,8 +122,8 @@ static bool clipLineToRect(
 				uv = uv1 + (uv2 - uv1) * t;
 			}
 
-			// Now intersection point x,y is found
-			// We replace point outside rectangle
+			// now intersection point x,y is found
+			// we replace point outside rectangle
 			// by intersection point
 			if (code_out == code1)
 			{
@@ -988,13 +988,13 @@ void Renderer::cmdDrawImageTiled(Image* image, const Rect& destRect, const Point
     if (imageWidth <= 0.0f || imageHeight <= 0.0f)
         return;
 
-    // Normalize offset into [0, imageWidth) / [0, imageHeight)
+    // normalize offset into [0, imageWidth) / [0, imageHeight)
     f32 ox = fmodf(offset.x, imageWidth);
     f32 oy = fmodf(offset.y, imageHeight);
     if (ox < 0) ox += imageWidth;
     if (oy < 0) oy += imageHeight;
 
-    // Start tiling so pattern is shifted by offset
+    // start tiling so pattern is shifted by offset
     f32 startX = destRect.x - ox;
     f32 startY = destRect.y - oy;
 
@@ -1011,7 +1011,7 @@ void Renderer::cmdDrawImageTiled(Image* image, const Rect& destRect, const Point
             if (visibleRect.width <= 0.0f || visibleRect.height <= 0.0f)
                 continue;
 
-            // Compute UV mapping for visibleRect.
+            // compute UV mapping for visibleRect.
             // tileRect maps to the whole image UV; visibleRect is an offset sub-rect of tileRect.
             // compute fraction of tile that is visible on each axis
             f32 visOffsetX = visibleRect.x - tileRect.x; // pixels into the tile
@@ -1032,7 +1032,7 @@ void Renderer::cmdDrawImageTiled(Image* image, const Rect& destRect, const Point
                 visH * vScale
             };
 
-            // Issue clipped tile using computed UVs
+            // issue clipped tile using computed UVs
             cmdDrawImage(image, visibleRect, tileUvRect);
         }
     }
@@ -1158,7 +1158,7 @@ FontTextSize Renderer::computeSizeOrDrawText(
 	if (gSpace) spaceWidth = gSpace->advanceX;
 	f32 tabWidth = spaceWidth * (f32)ctx->settings.tabSize;
 
-	// Helper: compute ellipsis width (prefer single U+2026 glyph, fall back to three dots)
+	// helper: compute ellipsis width (prefer single U+2026 glyph, fall back to three dots)
 	auto computeEllipsisWidth = [&](Font* ff) -> f32 {
 		const GlyphCode uniEll = 0x2026;
 		auto gEll = ff->getGlyph(uniEll);
@@ -1175,7 +1175,7 @@ FontTextSize Renderer::computeSizeOrDrawText(
 		return gDot->advanceX * 3.0f;
 	};
 
-	// If singleLineEllipsis is requested, produce measurement/draw for exactly one line
+	// if singleLineEllipsis is requested, produce measurement/draw for exactly one line
 	if (singleLineEllipsis)
 	{
 		// find end of first logical line (stop at \n or end)
@@ -1200,7 +1200,7 @@ FontTextSize Renderer::computeSizeOrDrawText(
 		u32 fitCount = 0;
 		bool forceTruncationLogic = false;
 
-		// 1. Check if the entire line fits without truncation.
+		// 1. check if the entire line fits without truncation.
 		{
 			f32 w = 0.0f;
 			u32 lChr = 0;
@@ -1230,7 +1230,7 @@ FontTextSize Renderer::computeSizeOrDrawText(
 				cnt++;
 			}
 
-			// Tolerance for floating point precision issues
+			// tolerance for floating point precision issues
 			if (w <= rect.width + 0.001f)
 			{
 				currWidth = w;
@@ -1248,7 +1248,7 @@ FontTextSize Renderer::computeSizeOrDrawText(
 			fitCount = 0;
 			lastChr = 0;
 
-			// Determine how many glyphs can be drawn while leaving room for ellipsis if needed
+			// determine how many glyphs can be drawn while leaving room for ellipsis if needed
 			for (u32 i = 0; i < lineEnd; ++i)
 			{
 				auto chr = text[i];
@@ -1269,8 +1269,8 @@ FontTextSize Renderer::computeSizeOrDrawText(
 					adv = glyph->advanceX + kern;
 				}
 
-				// If entire text fits without ellipsis, accept it.
-				// If not, ensure we leave space for ellipsis.
+				// if entire text fits without ellipsis, accept it.
+				// if not, ensure we leave space for ellipsis.
 				bool wouldExceed = (currWidth > rect.width);
 				bool needsEllipsis = (lineEnd > 0 && (lineEnd - 0) > (i + 1)); // more glyphs after this one
 
@@ -1280,7 +1280,7 @@ FontTextSize Renderer::computeSizeOrDrawText(
 					break;
 				}
 
-				// If there are remaining glyphs after this and adding them would later overflow,
+				// if there are remaining glyphs after this and adding them would later overflow,
 				// ensure we have room for ellipsis now. Conservative check: if next glyph would push us
 				// over and we don't have ellipsis room, stop before adding current glyph.
 				if (i + 1 < lineEnd)
@@ -1310,7 +1310,7 @@ FontTextSize Renderer::computeSizeOrDrawText(
 			}
 		}
 
-		// Decide final displayed width:
+		// decide final displayed width:
 		bool didTruncate = fitCount < lineEnd;
 		f32 displayedWidth = currWidth;
 
@@ -1338,7 +1338,7 @@ FontTextSize Renderer::computeSizeOrDrawText(
 		fsize.height = fnt->getMetrics().height;
 		fsize.maxLength = fitCount;
 
-		// DRAW pass: draw the single aligned line with optional ellipsis
+		// draw pass: draw the single aligned line with optional ellipsis
 		if (doDraw)
 		{
 			Point pos;
@@ -1455,7 +1455,7 @@ FontTextSize Renderer::computeSizeOrDrawText(
 		auto chr = text[i];
 
 		// explicit newline -> finish current line and start new one
-		// Skip newline handling if noWordWrap is enabled - treat as space instead
+		// skip newline handling if noWordWrap is enabled - treat as space instead
 		if (!noWordWrap && chr == '\n')
 		{
 			// finalize this line
@@ -1480,7 +1480,7 @@ FontTextSize Renderer::computeSizeOrDrawText(
 		}
 		else if (noWordWrap && chr == '\n')
 		{
-			// When noWordWrap is enabled, treat newlines as spaces
+			// when noWordWrap is enabled, treat newlines as spaces
 			chr = ' ';
 		}
 
@@ -1512,10 +1512,10 @@ FontTextSize Renderer::computeSizeOrDrawText(
 		f32 projectedWordWidth = crtWordWidth + glyphAdvance;
 
 		// wrapping when maxWidth specified (rect.width used as constraint)
-		// Skip wrapping if noWordWrap is enabled - render as single line
+		// skip wrapping if noWordWrap is enabled - render as single line
 		if (!noWordWrap && projectedLineWidth > rect.width)
 		{
-			// If we are at start of line we must break inside word (force at least one glyph)
+			// if we are at start of line we must break inside word (force at least one glyph)
 			if (currentLineChars == 0 || projectedWordWidth >= rect.width)
 			{
 				// find break position inside the word (from lastWordIndex to i)
@@ -1611,8 +1611,8 @@ FontTextSize Renderer::computeSizeOrDrawText(
 			{
 				// move whole word to next line (only valid when there's already content on current line)
 				// avoid pushing zero-length lines
-				// Previously we pushed `currentLineChars` which could include a partial word.
-				// Instead push only up to the last word boundary (lastWordIndex).
+				// previously we pushed `currentLineChars` which could include a partial word.
+				// instead push only up to the last word boundary (lastWordIndex).
 				u32 pushLen = 0;
 				if (lastWordIndex > lineStart)
 					pushLen = lastWordIndex - lineStart;
@@ -1687,7 +1687,7 @@ FontTextSize Renderer::computeSizeOrDrawText(
 	if (fsize.width < crtLineWidth) fsize.width = crtLineWidth;
 	lines.push_back({ lineStart, currentLineChars, crtLineWidth });
 
-	// If text ends with a trailing newline, remove the artificially pushed empty line
+	// if text ends with a trailing newline, remove the artificially pushed empty line
 	if (size > 0 && text[size - 1] == '\n')
 	{
 		if (lineCount > 0) --lineCount;
@@ -1700,7 +1700,7 @@ FontTextSize Renderer::computeSizeOrDrawText(
 	fsize.height = (f32)lineCount * fnt->getMetrics().height;
 	fsize.maxLength = longestLineChars;
 
-	// DRAW pass (if requested) - iterate lines and draw glyphs per-line
+	// draw pass (if requested) - iterate lines and draw glyphs per-line
 	if (doDraw)
 	{
 		Point pos;
@@ -1931,8 +1931,8 @@ void Renderer::drawQuadRot90(const Rect& rect, const Rect& uvRect)
 	Point t3(uvRect.bottomLeft());
 
 	// t3-------t0
-	//  |     /  |
-	//  |  /     |
+	// |     /  |
+	// |  /     |
 	// t2-------t1
 
 	vertexBufferData.vertices[i].position = rect.topLeft();
@@ -2307,9 +2307,9 @@ void Renderer::drawPolyLine(const Point* points, u32 pointCount, bool closed)
 	const auto uv21 = rcUv.bottomLeft();
 	const f32 half = currentLineStyle.width  / 2.0f;
 
-	// P11----------P21
-	//  |            |
-	// P12----------P22
+	// p11----------P21
+	// |            |
+	// p12----------P22
 	f32 extrudeScale1 = 1;
 	f32 extrudeScale2 = 1;
 	f32 lastExtrudeScale1 = 1;
@@ -2593,7 +2593,7 @@ bool Renderer::clipRectNoRot(Rect& rect, Rect& uvRect, Rgba32* colors) const
 	uvRect.width -= oldUvRect.width * tx;
 	uvRect.height -= oldUvRect.height * ty;
 
-	// If a color array is provided, treat it as in/out and contextUpdate corners.
+	// if a color array is provided, treat it as in/out and contextUpdate corners.
 	// colors layout: [0]=topLeft, [1]=topRight, [2]=bottomRight, [3]=bottomLeft
 	if (colors && rect.width > 0.0f && rect.height > 0.0f)
 	{
@@ -2648,7 +2648,7 @@ bool Renderer::clipRectRot(Rect& rect, Rect& uvRect, Rgba32* colors) const
 	uvRect.width -= uvRect.width * ty;
 	uvRect.height -= uvRect.height * tx;
 
-	// If a color array is provided, treat it as in/out and contextUpdate corners.
+	// if a color array is provided, treat it as in/out and contextUpdate corners.
 	// colors layout: [0]=topLeft, [1]=topRight, [2]=bottomRight, [3]=bottomLeft
 	if (colors && rect.width > 0.0f && rect.height > 0.0f)
 	{

@@ -42,7 +42,7 @@ struct Sdl3InputContext
 static Sdl3InputContext* sdl3InputContext = nullptr;
 
 #ifdef _WINDOWS
-// Make the window click-through on Windows
+// make the window click-through on Windows
 static void makeWindowClickThrough_Windows(SDL_Window* window) {
 	HWND hwnd = (HWND)SDL_GetPointerProperty(SDL_GetWindowProperties(window), SDL_PROP_WINDOW_WIN32_HWND_POINTER, NULL);
 	if (!hwnd) {
@@ -72,26 +72,26 @@ namespace hui
 		}
 
 		int opcode, eventBase, errorBase;
-		// Set the window to be non-blocking by making it pass through input
+		// set the window to be non-blocking by making it pass through input
 		Atom opacityAtom = XInternAtom(display, "_NET_WM_WINDOW_OPACITY", False);
-		unsigned long opacity = 0; // Fully transparent (not for input, just visual)
+		unsigned long opacity = 0; // fully transparent (not for input, just visual)
 		XChangeProperty(display, window, opacityAtom, XA_CARDINAL, 32, PropModeReplace, (unsigned char*)&opacity, 1);
 
-		// Set the input shape to None (completely transparent to input)
+		// set the input shape to None (completely transparent to input)
 		XShapeCombineMask(display, window, ShapeInput, 0, 0, None, ShapeSet);
 
-		// Use XShape to set the input to be passed through to other windows
+		// use XShape to set the input to be passed through to other windows
 		if (XShapeQueryExtension(display, &eventBase, &errorBase)) {
 			XShapeCombineMask(display, window, ShapeInput, 0, 0, None, ShapeSet);
 		}
 
-		// Map the window (make it visible)
+		// map the window (make it visible)
 		XMapWindow(display, window);
 		// // Grab the pointer to prevent the window from receiving mouse events
-		// XGrabPointer(hdisplay, hwnd, False, ButtonPressMask | ButtonReleaseMask | PointerMotionMask,
-		//              GrabModeAsync, GrabModeAsync, hwnd, None, CurrentTime);
+		//XGrabPointer(hdisplay, hwnd, False, ButtonPressMask | ButtonReleaseMask | PointerMotionMask,
+		//GrabModeAsync, GrabModeAsync, hwnd, None, CurrentTime);
 
-		// 	XSelectInput(hdisplay, hwnd, 0);
+		//XSelectInput(hdisplay, hwnd, 0);
 	}
 
 }
@@ -713,9 +713,9 @@ static HNativeWindow getHoveredWindow()
 	return sdl3InputContext->hoveredWindow;
 }
 
-// Hit-test callback that makes the window transparent to mouse events
+// hit-test callback that makes the window transparent to mouse events
 static SDL_HitTestResult hitTestCallback(SDL_Window* win, const SDL_Point* area, void* data) {
-	return SDL_HITTEST_NORMAL; // Ignore input, pass through to windows underneath
+	return SDL_HITTEST_NORMAL; // ignore input, pass through to windows underneath
 }
 
 static HNativeWindow createWindow(
@@ -789,8 +789,8 @@ static HNativeWindow createWindow(
 			printf("GLAD cannot init GL func ptrs\n");
 		}
 
-		const GLubyte* renderer = glGetString(GL_RENDERER);  // Get renderer string
-		const GLubyte* version = glGetString(GL_VERSION);    // Get version string
+		const GLubyte* renderer = glGetString(GL_RENDERER);  // get renderer string
+		const GLubyte* version = glGetString(GL_VERSION);    // get version string
 		printf("GL Renderer: %s\n", renderer);
 		printf("GL Version: %s\n", version);
 	}
@@ -815,7 +815,7 @@ static HNativeWindow createWindow(
 	SDL_SyncWindow(wnd);
 	SDL_RaiseWindow(wnd);
 
-	// If using Vulkan, and the Vulkan backend is initialized, create a VkSurface for this SDL window
+	// if using Vulkan, and the Vulkan backend is initialized, create a VkSurface for this SDL window
 	if (sdl3InputContext->initParams.gfxApi == Sdl3GfxApi::Vulkan)
 	{
 		// create the surface via the Vulkan backend helper (if it's initialized)
@@ -826,7 +826,7 @@ static HNativeWindow createWindow(
 			{
 				newWnd->surface = surf;
 
-				// Create swapchain for this window (use rect for initial size and sdl init vSync setting)
+				// create swapchain for this window (use rect for initial size and sdl init vSync setting)
 				if (!hui::createSwapchainForWindowVk(wnd, surf, rect.width, rect.height, sdl3InputContext->initParams.vSync))
 				{
 					printf("Warning: failed to create Vulkan swapchain for SDL window\n");
@@ -839,8 +839,8 @@ static HNativeWindow createWindow(
 		}
 		else
 		{
-			// Vulkan not initialized yet - the Vulkan backend should create swapchain later when initVulkan runs.
-			// We keep sdlWindow pointer and allow the backend to create swapchain after init.
+			// vulkan not initialized yet - the Vulkan backend should create swapchain later when initVulkan runs.
+			// we keep sdlWindow pointer and allow the backend to create swapchain after init.
 		}
 	}
 
@@ -947,13 +947,13 @@ static void presentWindow(HNativeWindow window)
 	}
 	else if (sdl3InputContext->initParams.gfxApi == Sdl3GfxApi::Vulkan)
 	{
-		// Present via Vulkan backend
+		// present via Vulkan backend
 		if (proxy->surface != VK_NULL_HANDLE)
 		{
 			if (!hui::presentSwapchainForWindowVk(proxy->sdlWindow))
 			{
-				// If presentation failed, fallback to no-op (swapchain may need recreation)
-				// The backend will log errors / handle recreation if implemented.
+				// if presentation failed, fallback to no-op (swapchain may need recreation)
+				// the backend will log errors / handle recreation if implemented.
 			}
 		}
 	}
@@ -967,7 +967,7 @@ static void destroyWindow(HNativeWindow window)
 		auto proxy = (SdlWindowProxy*)window;
 		if (proxy->surface != VK_NULL_HANDLE)
 		{
-			// Destroy any backend swapchain/resources associated with this SDL window first
+			// destroy any backend swapchain/resources associated with this SDL window first
 			hui::destroySwapchainForWindowVk(((SdlWindowProxy*)window)->sdlWindow);
 
 			hui::destroySurfaceVk(proxy->surface);
@@ -1109,11 +1109,11 @@ void initSdl3(Services& services, const Sdl3InitParams& params)
 	}
 	else if (sdl3InputContext->initParams.gfxApi == Sdl3GfxApi::DX11)
 	{
-		// TODO: Init any DX11 specific SDL hints
+		//TODO: Init any DX11 specific SDL hints
 	}
 	else if (sdl3InputContext->initParams.gfxApi == Sdl3GfxApi::DX12)
 	{
-		// TODO: Init any DX12 specific SDL hints
+		//TODO: Init any DX12 specific SDL hints
 	}
 
 	createSystemCursors();
@@ -1169,11 +1169,11 @@ void shutdownSdl3(Services& services)
 	}
 	else if (sdl3InputContext->initParams.gfxApi == Sdl3GfxApi::DX11)
 	{
-		// TODO: Clean up DX11 specific context
+		//TODO: Clean up DX11 specific context
 	}
 	else if (sdl3InputContext->initParams.gfxApi == Sdl3GfxApi::DX12)
 	{
-		// TODO: Clean up DX12 specific context
+		//TODO: Clean up DX12 specific context
 	}
 
 	if (sdl3InputContext->ownsSdlInit)

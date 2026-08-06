@@ -21,7 +21,7 @@ static bool vecEditorInternal(f64& x, f64& y, f64& z, f64 scrollStep, bool useZ)
 	f32 inputWidthPx = (ctx->layout.width - totalWidth) / (f32)axisCount;
 	f32 inputWidthUnscaled = inputWidthPx / ctx->scale;
 
-	// Handle MouseUp outside the per-axis loop so it only fires once
+	// handle MouseUp outside the per-axis loop so it only fires once
 	// and doesn't interfere with the wrong axis iteration
 	if (ctx->vecEditor.draggingValue
 		&& hui::inputEventGet().type == hui::InputEvent::Type::MouseUp)
@@ -214,7 +214,7 @@ bool objectRefEditor(const char* id, HImage targetImg, HImage clearImg, HImage i
 
 	f32 boxWidthPx = ctx->layout.width - btnSizePx * (*outObject ? 2 : 1);
 
-	// Editor body (left side, fills remaining width)
+	// editor body (left side, fills remaining width)
 	widgetSetNextWidth(boxWidthPx / ctx->scale);
 	ctx->setLabelAndId(id);
 	addWidget(contentHeightPx);
@@ -290,11 +290,11 @@ bool objectRefEditor(const char* id, HImage targetImg, HImage clearImg, HImage i
 
 	widgetSetFocusable();
 
-	// Double-click on body triggers reference selection
+	// double-click on body triggers reference selection
 	if (ctx->widget.doubleClicked)
 		returnValue = true;
 
-	// Clear reference on Delete/Backspace key when focused
+	// clear reference on Delete/Backspace key when focused
 	if (ctx->widget.focused
 		&& *outObject
 		&& ctx->event.type == InputEvent::Type::Key
@@ -310,7 +310,7 @@ bool objectRefEditor(const char* id, HImage targetImg, HImage clearImg, HImage i
 		forceRepaint();
 	}
 
-	// Drop handling (ctx->widget.hovered is still for the editor)
+	// drop handling (ctx->widget.hovered is still for the editor)
 	if (dragDropGetObjectType() == objectType)
 	{
 		dragDropAllow();
@@ -328,7 +328,7 @@ bool objectRefEditor(const char* id, HImage targetImg, HImage clearImg, HImage i
 		forceRepaint();
 	}
 
-	// Target button on the right
+	// target button on the right
 	sameLine(-ctx->sameLine.spacing, 0);
 
 	if (targetImg)
@@ -338,7 +338,7 @@ bool objectRefEditor(const char* id, HImage targetImg, HImage clearImg, HImage i
 	}
 	else
 	{
-		// Draw "..." text button when no target image
+		// draw "..." text button when no target image
 		ctx->widget.customWidth = btnSize;
 		ctx->widget.hasCustomWidth = true;
 		ctx->setLabelAndId("targetBtn");
@@ -378,11 +378,11 @@ bool objectRefEditor(const char* id, HImage targetImg, HImage clearImg, HImage i
 		tooltip("Select reference");
 	}
 
-	// Save target button position and id for popup
+	// save target button position and id for popup
 	Rect targetBtnRect = ctx->widget.rect;
 	WidgetId targetWidgetId = ctx->id;
 
-	// Toggle reference selection popup when target button clicked
+	// toggle reference selection popup when target button clicked
 	if (refCount > 0 && returnValue)
 	{
 		ctx->dropdown.active = !ctx->dropdown.active;
@@ -392,7 +392,7 @@ bool objectRefEditor(const char* id, HImage targetImg, HImage clearImg, HImage i
 			ctx->dropdown.id = 0;
 	}
 
-	// Clear button next to target (only shown when a ref is set)
+	// clear button next to target (only shown when a ref is set)
 	if (*outObject)
 	{
 		sameLine(-ctx->sameLine.spacing, 0);
@@ -416,7 +416,7 @@ bool objectRefEditor(const char* id, HImage targetImg, HImage clearImg, HImage i
 		}
 		else
 		{
-			// Draw "X" text button when no clear image
+			// draw "X" text button when no clear image
 			ctx->widget.customWidth = btnSize;
 			ctx->widget.hasCustomWidth = true;
 			ctx->setLabelAndId("clearBtn");
@@ -466,7 +466,7 @@ bool objectRefEditor(const char* id, HImage targetImg, HImage clearImg, HImage i
 		}
 	}
 
-	// Reference selection popup
+	// reference selection popup
 	if (refCount > 0 && ctx->dropdown.active && targetWidgetId == ctx->dropdown.id)
 	{
 		bool selectedNewItem = false;

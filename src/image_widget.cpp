@@ -56,8 +56,8 @@ bool image(HImage img, f32 height, HAlignType horizontalAlign, VAlignType vertic
 		height = newHeight;
 	}
 
-	// In sameLine mode, or if aligned left, constrain widget width to image size.
-	// In normal mode with Center/Right alignment, let the widget use the full layout width
+	// in sameLine mode, or if aligned left, constrain widget width to image size.
+	// in normal mode with Center/Right alignment, let the widget use the full layout width
 	// so horizontal alignment can position the image within it.
 	if (ctx->sameLine.enabled || horizontalAlign == HAlignType::Left)
 	{

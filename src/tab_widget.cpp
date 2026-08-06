@@ -19,7 +19,7 @@ void tabGroupBegin(TabIndex selectedIndex)
 	ctx->widget.hasNextWidth = false;
 	ctx->widget.hasCustomWidth = false;
 
-	// Handle transition from sameLine back to normal layout
+	// handle transition from sameLine back to normal layout
 	if (!ctx->sameLine.enabled && ctx->sameLine.wasEnabled)
 	{
 		ctx->position.x = ctx->sameLine.currentPosition.x;

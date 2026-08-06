@@ -27,7 +27,7 @@ bool menuBarBegin()
 
 	//TODO: check if menu bar is visible
 	//if (!ctx->widget.visible)
-	//	return false;
+	//return false;
 
 	ctx->renderer.cmdSetColor(menuBarElem.normalState().color);
 	ctx->renderer.cmdDrawImageBordered(menuBarElem.normalState().image, menuBarElem.normalState().border, ctx->widget.rect, ctx->scale);

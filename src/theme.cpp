@@ -211,7 +211,7 @@ void Theme::addFontGlyphsToAtlas()
 					fontGlyph->image = glyphImage;
 				}
 				
-				// Add to atlas for packing
+				// add to atlas for packing
 				atlas.addImage(
 					imgId,
 					fontGlyph->rgbaBuffer,

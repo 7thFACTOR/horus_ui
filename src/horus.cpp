@@ -177,21 +177,21 @@ void addWidget(f32 height)
 	auto pixelWidth = ctx->widget.width > 1 ? ctx->widget.width : ctx->widget.width * ctx->layout.width;
 	f32 spacing = ctx->spacing * ctx->scale;
 
-	// Handle transition from sameLine back to normal layout
+	// handle transition from sameLine back to normal layout
 	if (!ctx->sameLine.enabled && ctx->sameLine.wasEnabled)
 	{
-		// End of same-line group - move to next line
+		// end of same-line group - move to next line
 		ctx->position.x = ctx->sameLine.currentPosition.x;
 		ctx->position.y += ctx->sameLine.maxHeight + spacing;
 		ctx->sameLine.wasEnabled = false;
 		ctx->sameLine.maxHeight = 0;
-		ctx->sameLine.lastLineWidth = 0; // Reset to prevent stale values
+		ctx->sameLine.lastLineWidth = 0; // reset to prevent stale values
 	}
 
 	if (!ctx->sameLine.enabled && !ctx->sameLine.wasEnabled)
 	{
 		ctx->sameLine.currentPosition = ctx->position;
-		ctx->sameLine.lastLineWidth = 0; // Reset for new line
+		ctx->sameLine.lastLineWidth = 0; // reset for new line
 	}
 
 	// if in sameLine mode, align Y to the same line and advance X from previous widget
@@ -205,7 +205,7 @@ void addWidget(f32 height)
 			ctx->position.x += ctx->sameLine.lastLineWidth + ctx->sameLine.nextSpacing * ctx->scale;
 		}
 
-		// If no custom width was defined, use remaining available width
+		// if no custom width was defined, use remaining available width
 		if (!ctx->widget.hasNextWidth && !ctx->widget.hasCustomWidth)
 		{
 			f32 consumedX = ctx->position.x - ctx->sameLine.currentPosition.x;
@@ -362,7 +362,7 @@ void frameBegin()
 	if (ctx->event.type == InputEvent::Type::Key
 		&& ctx->event.key.code == KeyCode::Tab
 		&& ctx->event.key.down
-		&& !ctx->activeMultilineInputId // Don't switch focus if editing multiline text
+		&& !ctx->activeMultilineInputId // don't switch focus if editing multiline text
 		&& !ctx->lastFrameFocusableWidgets.empty())
 	{
 		bool shift = has(ctx->event.key.modifiers, KeyModifiers::Shift);
@@ -1022,7 +1022,7 @@ HImage themeGetImage(HTheme theme, const char* id)
 void widgetSetStyle(WidgetType widgetType, const char* styleName)
 {
 	//TODO: more automatic correlation between widget type and its element types, to avoid manual switch
-	// To not force using map to search for the current style for all widgets, this might be the only way
+	// to not force using map to search for the current style for all widgets, this might be the only way
 	// switch might be faster than map tho
 	switch (widgetType)
 	{
@@ -1051,8 +1051,8 @@ void widgetSetStyle(WidgetType widgetType, const char* styleName)
 		break;
 	case WidgetType::MultilineTextInput:
 		ctx->theme->elements[(u32)WidgetElementId::MultilineTextInputBody].setStyle(styleName);
-		ctx->theme->elements[(u32)WidgetElementId::TextInputCaret].setStyle(styleName); // Reuse caret
-		ctx->theme->elements[(u32)WidgetElementId::TextInputSelection].setStyle(styleName); // Reuse selection
+		ctx->theme->elements[(u32)WidgetElementId::TextInputCaret].setStyle(styleName); // reuse caret
+		ctx->theme->elements[(u32)WidgetElementId::TextInputSelection].setStyle(styleName); // reuse selection
 		ctx->theme->elements[(u32)WidgetElementId::MultilineTextInputLineNumbers].setStyle(styleName);
 		ctx->theme->elements[(u32)WidgetElementId::MultilineTextInputCurrentLineHighlight].setStyle(styleName);
 		break;
@@ -1282,7 +1282,7 @@ void themeSet(HTheme theme)
 
 	ctx->theme = (Theme*)theme;
 
-	// Clear theme element pointers in text input states since theme elements may have been reallocated
+	// clear theme element pointers in text input states since theme elements may have been reallocated
 	ctx->textInput.themeElement = nullptr;
 	for (auto& [id, state] : ctx->textMultilineInput)
 	{
@@ -1954,7 +1954,7 @@ Color colorFromHex(const char* hexText)
 	if (!hexText)
 		return out;
 
-	// Skip optional '#'
+	// skip optional '#'
 	if (hexText[0] == '#')
 		hexText++;
 
@@ -2033,7 +2033,7 @@ Color colorHsvToRgb(const Color& hsv)
 
 	if (s <= 0.0f)
 	{
-		// Gray
+		// gray
 		r = g = b = v;
 		return Color(r, g, b, hsv.a);
 	}
@@ -2072,7 +2072,7 @@ Color colorRgbToHsv(const Color& rgb)
 
 	if (max <= 0.0f)
 	{
-		// Black
+		// black
 		s = 0.0f;
 		h = 0.0f;
 
@@ -2083,7 +2083,7 @@ Color colorRgbToHsv(const Color& rgb)
 
 	if (delta <= 0.0f)
 	{
-		// Gray
+		// gray
 		h = 0.0f;
 		return Color(h, s, v, rgb.a);
 	}
@@ -2138,15 +2138,15 @@ void sameLineGroupBegin(u32 widgetCount)
 	ctx->sameLineGroup.widgetCount = widgetCount;
 	ctx->sameLineGroup.currentWidget = 0;
 
-	// Calculate equal width for each widget, accounting for spacing between them
+	// calculate equal width for each widget, accounting for spacing between them
 	f32 totalSpacingPx = ctx->sameLine.spacing * ctx->scale * (f32)(widgetCount - 1);
 
 	ctx->sameLineGroup.widgetWidth = (ctx->layout.width - totalSpacingPx) / (f32)widgetCount / ctx->scale;
 
-	// Set nextSpacing to control the spacing after the first widget
+	// set nextSpacing to control the spacing after the first widget
 	ctx->sameLine.nextSpacing = ctx->sameLine.spacing;
 
-	// Set width for first widget using the proper API
+	// set width for first widget using the proper API
 	widgetSetNextWidth(ctx->sameLineGroup.widgetWidth);
 }
 
@@ -2163,7 +2163,7 @@ void sameLineGroupNext()
 	// sameLine() will set nextSpacing automatically
 	sameLine();
 
-	// Set width for next widget using the proper API
+	// set width for next widget using the proper API
 	widgetSetNextWidth(ctx->sameLineGroup.widgetWidth);
 }
 
@@ -2172,10 +2172,10 @@ void sameLineGroupEnd()
 	if (!ctx->sameLineGroup.active)
 		return;
 
-	// Disable sameLine
+	// disable sameLine
 	ctx->sameLine.enabled = false;
 
-	// Reset state
+	// reset state
 	ctx->sameLineGroup.active = false;
 	ctx->sameLineGroup.widgetCount = 0;
 	ctx->sameLineGroup.currentWidget = 0;

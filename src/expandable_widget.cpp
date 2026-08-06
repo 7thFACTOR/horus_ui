@@ -149,7 +149,7 @@ bool expandableBegin(const char* label, bool* expandedVar)
 
 void expandableEnd()
 {
-	// Flush any pending sameLine advancement before capturing position,
+	// flush any pending sameLine advancement before capturing position,
 	// otherwise the Y stays at the top of the sameLine row
 	if (!ctx->sameLine.enabled && ctx->sameLine.wasEnabled)
 	{

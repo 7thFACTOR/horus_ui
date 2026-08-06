@@ -222,12 +222,12 @@ static Point hermitePoint(
 	return v;
 }
 
-// Compute a length of a spline segment by using 5-point Legendre-Gauss quadrature
+// compute a length of a spline segment by using 5-point Legendre-Gauss quadrature
 // https://en.wikipedia.org/wiki/Gaussian_quadrature
 static f32 computeSplineLength(const Point& start, const Point& start_tangent,
 	const Point& end, Point const& end_tangent)
 {
-	// Cubic Hermite spline derivative coefficients
+	// cubic Hermite spline derivative coefficients
 	Point const c0 = start_tangent;
 	Point const c1 = (end - start) * 6.0f - start_tangent * 4.0f - end_tangent * 2.0f;
 	Point const c2 = (start - end) * 6.0f + (start_tangent + end_tangent) * 3.0f;

@@ -1310,7 +1310,7 @@ void MultilineTextInputState::computeVisualLines(Font* font, f32 availableWidth,
 		// flatten results
 		visualLines.clear();
 		maxLineWidth = 0.0f;
-		// DO NOT reset caretVisualLineIndex to -1 here if we are returning early or not re-calculating!
+		// do not reset caretVisualLineIndex to -1 here if we are returning early or not re-calculating!
 		// it should persist if the layout is stable.
 		caretVisualLineIndex = (size_t)-1;
 
@@ -1326,7 +1326,7 @@ void MultilineTextInputState::computeVisualLines(Font* font, f32 availableWidth,
 		{
 			for (const auto& vl : lineVisuals[i])
 			{
-				visualLines.push_back(&vl); // Store pointers to avoid O(N) vector copies!
+				visualLines.push_back(&vl); // store pointers to avoid O(N) vector copies!
 		
 				if (vl.width > maxLineWidth)
 					maxLineWidth = vl.width;
@@ -1346,7 +1346,7 @@ void MultilineTextInputState::computeVisualLines(Font* font, f32 availableWidth,
 
 void MultilineTextInputState::updateSyntaxHighlighting(const RangeHighlight* rules, u32 count, const KeywordInfo* keywords, u32 keywordCount)
 {
-	// O(1) fast-path check: if pointers and counts match and text is clean and nothing is dirty, skip everything
+	// o(1) fast-path check: if pointers and counts match and text is clean and nothing is dirty, skip everything
 	if (!textChanged
 		&& rules == lastRulesPtr
 		&& count == lastRuleCount
@@ -1419,7 +1419,7 @@ void MultilineTextInputState::updateSyntaxHighlighting(const RangeHighlight* rul
 
 	// decide incremental vs full rescan using previous hash (prevHash).
 	// we only allow incremental seed when rules didn't change and there is a dirty region
-	// AND we don't have multi-line ranges (they make incremental seeding fragile).
+	// and we don't have multi-line ranges (they make incremental seeding fragile).
 	if (!hasMultilineRanges && prevHash == newHash && !lineStates.empty() && firstDirtyLine != -1)
 	{
 		// incremental: start one line earlier to preserve multi-line rule state
@@ -1789,8 +1789,8 @@ void MultilineTextInputState::calculateSegments(const Utf32String& line, i32 ini
 // computeRulesHash: stable hash of rules + keywords for incremental checks
 static u64 computeRulesHash(const RangeHighlight* rules, u32 count, const KeywordInfo* keywords, u32 keywordCount)
 {
-	// FNV-1a 64-bit
-	u64 h = 0xCBF29CE484222325ULL; // FNV offset basis (64-bit)
+	// fnv-1a 64-bit
+	u64 h = 0xCBF29CE484222325ULL; // fnv offset basis (64-bit)
 	auto hashStr = [&](const char* s)
 		{
 			if (!s)
@@ -1801,7 +1801,7 @@ static u64 computeRulesHash(const RangeHighlight* rules, u32 count, const Keywor
 			while (*p)
 			{
 				h ^= (u64)*p++;
-				h *= 0x100000001b3ULL; // FNV prime
+				h *= 0x100000001b3ULL; // fnv prime
 			}
 		};
 
@@ -2081,7 +2081,7 @@ bool MultilineTextInputState::processEvent(const InputEvent& ev)
 		for (u32 ch : txt)
 		{
 			if (ch == '\n' || ch == '\r')
-				return true; // Ignore this event completely
+				return true; // ignore this event completely
 		}
 
 		insertTextAtCaret(txt);
@@ -2364,7 +2364,7 @@ void MultilineTextInputState::processKeyEvent(const InputEvent& ev)
 	else if (ev.key.code == KeyCode::Tab)
 	{
 		// if multiple lines are selected, indent/unindent all selected lines at once.
-		// Shift+Tab -> unindent, Tab -> indent.
+		// shift+Tab -> unindent, Tab -> indent.
 		bool shiftDown = has(ev.key.modifiers, KeyModifiers::Shift);
 
 		// normalize selection range
@@ -2514,7 +2514,7 @@ void MultilineTextInputState::processKeyEvent(const InputEvent& ev)
 			}
 			else
 			{
-				// Shift+Tab single-line unindent: remove up to indentLen chars from start of current line
+				// shift+Tab single-line unindent: remove up to indentLen chars from start of current line
 				undoTypingActive = false;
 				pushUndoSnapshot();
 

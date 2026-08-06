@@ -308,8 +308,8 @@ bool colorPicker(const char* id, Color* inOutColor, ColorPickerFlags flags, cons
 		Color::transparent,
 		Color::transparent);
 
-	// Draw white triangles for hue (rcH) and alpha (rcAlpha).
-	// Triangles are slightly larger; parameters tuned and scaled by ctx->scale.
+	// draw white triangles for hue (rcH) and alpha (rcAlpha).
+	// triangles are slightly larger; parameters tuned and scaled by ctx->scale.
 	{
 		f32 triW = 8.0f * ctx->scale;
 		f32 triH = 15.0f * ctx->scale;

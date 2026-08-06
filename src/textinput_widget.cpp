@@ -372,7 +372,7 @@ bool textInput(
 	// draw the actual text
 	if (isEditingThis && ctx->textInput.selectionActive && !password && !isEmptyText && defaultText != textToDraw)
 	{
-		// Draw text in segments: before selection, selected, after selection
+		// draw text in segments: before selection, selected, after selection
 		i32 startSel = ctx->textInput.selectionBegin;
 		i32 endSel = ctx->textInput.selectionEnd;
 		if (startSel > endSel)
@@ -400,18 +400,18 @@ bool textInput(
 
 			f32 startX = textRect.x;
 
-			// Draw text before selection
+			// draw text before selection
 			if (beforeSelUtf8[0] != 0)
 			{
 				ctx->renderer.cmdSetColor(bodyElemState->textColor);
 				ctx->renderer.cmdDrawTextInBox(beforeSelUtf8, Rect(startX, textRect.y, beforeSize.width, textRect.height), HAlignType::Left, VAlignType::Bottom, false, true);
 			}
 
-			// Draw selected text
+			// draw selected text
 			ctx->renderer.cmdSetColor(bodyTextSelectedTextElemState.textColor);
 			ctx->renderer.cmdDrawTextInBox(selectedUtf8, Rect(startX + beforeSize.width, textRect.y, selSize.width, textRect.height), HAlignType::Left, VAlignType::Bottom, false, true);
 
-			// Draw text after selection
+			// draw text after selection
 			if (afterSelUtf8[0] != 0)
 			{
 				ctx->renderer.cmdSetColor(bodyElemState->textColor);
@@ -420,7 +420,7 @@ bool textInput(
 		}
 		else
 		{
-			// No actual selection, draw normally
+			// no actual selection, draw normally
 			ctx->renderer.cmdDrawTextInBox(textToDraw, textRect, HAlignType::Left, VAlignType::Bottom, false, true);
 		}
 	}

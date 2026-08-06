@@ -61,7 +61,7 @@ bool buttonGroup(const char* id, const char** labels, u32 count, u32* currentInd
 		centeringOffset = (availableWidth - totalWidth) / 2.0f;
 	}
 
-	// Handle transition from sameLine back to normal layout
+	// handle transition from sameLine back to normal layout
 	if (!ctx->sameLine.enabled && ctx->sameLine.wasEnabled)
 	{
 		ctx->position.x = ctx->sameLine.currentPosition.x;
@@ -140,7 +140,7 @@ bool buttonGroup(const char* id, const char** labels, u32 count, u32* currentInd
 
 		ctx->renderer.cmdDrawImageBordered(image, elemState->border, ctx->widget.rect, ctx->scale);
 
-		// Draw text shadow first (for embossed/Win95 disabled button look)
+		// draw text shadow first (for embossed/Win95 disabled button look)
 		if (elemState->textShadow.enabled)
 		{
 			Rect shadowRect = {

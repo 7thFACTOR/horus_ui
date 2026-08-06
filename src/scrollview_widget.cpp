@@ -165,7 +165,7 @@ void scrollViewBegin(const char* id, f32 size, f32 scrollPos, f32 virtualHeight,
 	scrollViewBegin(id, size, { 0, scrollPos }, { 0, virtualHeight }, flags);
 }
 
-// Main implementation with all parameters
+// main implementation with all parameters
 void scrollViewBegin(const char* id, f32 height, Point scrollOffset, Point virtualSize, ScrollViewFlags flags)
 {
 	auto& scrollViewElemState = ctx->theme->getElement(WidgetElementId::ScrollViewBody).normalState();
@@ -178,12 +178,12 @@ void scrollViewBegin(const char* id, f32 height, Point scrollOffset, Point virtu
 
 	if (height <= 0.0f)
 	{
-		// Use remaining height in layout
+		// use remaining height in layout
 		height = layoutGetRemainingHeight();
 
 		if (height <= 0)
 		{
-			// Fallback to a reasonable default if no space available
+			// fallback to a reasonable default if no space available
 			height = 10.0f;
 		}
 	}
@@ -194,9 +194,9 @@ void scrollViewBegin(const char* id, f32 height, Point scrollOffset, Point virtu
 	auto& scrollViewState = ctx->scrollViewState[ctx->id];
 	scrollViewState.height = height;
 
-	// Do NOT override the vertical virtual size here.
-	// Let beginVirtualListContent(...) set the total virtual height when used.
-	// Preserve any provided horizontal virtual size, but leave virtualSize.y as-is (0 = auto).
+	// do NOT override the vertical virtual size here.
+	// let beginVirtualListContent(...) set the total virtual height when used.
+	// preserve any provided horizontal virtual size, but leave virtualSize.y as-is (0 = auto).
 	scrollViewState.virtualSize.x = virtualSize.x;
 
 	scrollViewState.id = ctx->id;
@@ -257,7 +257,7 @@ void scrollViewBegin(const char* id, f32 height, Point scrollOffset, Point virtu
 		ctx->renderer.cmdDrawImageBordered(scrollViewElemState.image, scrollViewElemState.border, rect, ctx->scale);
 	}
 
-	// Do not blindly overwrite the authoritative scrollbar state with the caller-provided
+	// do not blindly overwrite the authoritative scrollbar state with the caller-provided
 	// scrollOffset while this scrollview may be actively dragged. Use the authoritative
 	// per-axis state when dragging; otherwise accept the incoming offset.
 	bool draggingThisBegin = (ctx->dragScrollViewHandleWidgetId == scrollViewState.id)
@@ -266,10 +266,10 @@ void scrollViewBegin(const char* id, f32 height, Point scrollOffset, Point virtu
 
 	if (!draggingThisBegin)
 	{
-		// Accept caller offset when not dragging (will be clamped/finalized in scrollViewEnd).
+		// accept caller offset when not dragging (will be clamped/finalized in scrollViewEnd).
 		scrollViewState.scrollOffset = scrollOffset;
 	}
-	// Use authoritative per-axis offset for layout positioning in this frame.
+	// use authoritative per-axis offset for layout positioning in this frame.
 	Point useOffset = scrollViewState.scrollOffset;
 
 	ctx->maxContentWidthStack.push_back(ctx->maxContentWidth);
@@ -318,7 +318,7 @@ Point scrollViewEnd()
 	if (scrollViewState.virtualSize.x > scrollContentH)
 		scrollContentH = scrollViewState.virtualSize.x;
 
-	// Restore previous max content X
+	// restore previous max content X
 	ctx->maxContentWidth = ctx->maxContentWidthStack.back();
 	ctx->maxContentWidthStack.pop_back();
 
@@ -327,7 +327,7 @@ Point scrollViewEnd()
 	// authoritative clamp size: use the larger of measured and virtualSize (virtual list may set this)
 	f32 contentSizeForClamp = std::max(scrollContentSizeV, scrollViewState.virtualSize.y);
 
-	// DEBUG: log measured vs authoritative content size
+	// debug: log measured vs authoritative content size
 	/*std::printf("[DBG] scrollContentSizeV=%.3f virtualSize.y=%.3f contentSizeForClamp=%.3f\n",
 		scrollContentSizeV, scrollViewState.virtualSize.y, contentSizeForClamp);*/
 
@@ -353,14 +353,14 @@ Point scrollViewEnd()
 
 	if (hasVerticalScrollbar)
 	{
-		// Make sure vertical scrollMax is up-to-date before applying any wheel deltas.
-        // Use authoritative content size (measured OR virtualSize set by virtual list).
+		// make sure vertical scrollMax is up-to-date before applying any wheel deltas.
+        // use authoritative content size (measured OR virtualSize set by virtual list).
         updateScrollMax(scrollViewState.vertical, contentSizeForClamp, scrollAreaV);
 
         // scroll view with mouse wheel
         if (ctx->isActiveLayer() && ctx->event.type == InputEvent::Type::MouseWheel && !ctx->widget.disabled)
         {
-            // Only scroll if mouse is over this scroll view AND this window is the hovered window
+            // only scroll if mouse is over this scroll view AND this window is the hovered window
             if (rectNoBorders.contains(ctx->mousePosition))
             {
                 bool isWindowHovered = true;
@@ -369,26 +369,26 @@ Point scrollViewEnd()
 
                 if (isWindowHovered)
                 {
-                    // Compute wheel delta (same convention as before)
+                    // compute wheel delta (same convention as before)
                     f32 wheelFactor = (scrollAreaV * ctx->scrollViewSpeed) * ctx->scale;
                     f32 delta = ctx->event.mouse.wheel.y * wheelFactor; // positive/negative per input source
 
-                    // Check if we're at a limit before applying scroll
+                    // check if we're at a limit before applying scroll
                     auto& v = scrollViewState.vertical;
                     bool atTop = (v.scrollOffset <= 0.0f) && (delta > 0.0f);
                     bool atBottom = (v.scrollOffset >= v.scrollMax) && (v.scrollMax > 0.0f) && (delta < 0.0f);
                     
-                    // Only scroll if not at a limit - this allows wheel to bubble to parent scroll view
+                    // only scroll if not at a limit - this allows wheel to bubble to parent scroll view
                     if (!atTop && !atBottom)
                     {
-                        // Apply to authoritative scrollbar state and clamp immediately using scrollMax
+                        // apply to authoritative scrollbar state and clamp immediately using scrollMax
                         v.scrollOffset = std::clamp(v.scrollOffset - delta, 0.0f, v.scrollMax);
 
-                        // Snap small rounding differences to the exact max
+                        // snap small rounding differences to the exact max
                         if (v.scrollMax > 0.0f && (v.scrollMax - v.scrollOffset) <= SCROLL_SNAP_EPS)
                             v.scrollOffset = v.scrollMax;
 
-                        // Mirror authoritative value back into the Point and the overall scrollViewState
+                        // mirror authoritative value back into the Point and the overall scrollViewState
                         scrollOffset.y = v.scrollOffset;
                         scrollViewState.scrollOffset = scrollOffset;
 
@@ -399,7 +399,7 @@ Point scrollViewEnd()
             }
         }
 
-		scrollViewState.horizontal.wasVisible = hasHorizontalScrollbar; // Persist visibility for next frame reservation
+		scrollViewState.horizontal.wasVisible = hasHorizontalScrollbar; // persist visibility for next frame reservation
 
 		// auto scroll to the focused widget if curent widget changed
 		if (ctx->focusChanged && ctx->widget.focusedId == ctx->id)
@@ -434,7 +434,7 @@ Point scrollViewEnd()
 				scrollBarHeightFull
 			};
 
-			 // Use authoritative clamp (contentSizeForClamp) for handle math
+			 // use authoritative clamp (contentSizeForClamp) for handle math
             updateScrollMax(scrollViewState.vertical, contentSizeForClamp, scrollAreaV);
             f32 handleSize = computeHandleSize(scrollBarHeight, contentSizeForClamp, scrollAreaV, ctx->settings.minScrollViewHandleSize);
             f32 handleOffset = computeHandleOffset(scrollViewState.vertical, scrollBarHeight, handleSize);
@@ -460,7 +460,7 @@ Point scrollViewEnd()
 			{
 				if (rectScrollBarHandleV.contains(ctx->mousePosition))
 				{
-					windowSetCapture();  // Capture mouse to get events outside window
+					windowSetCapture();  // capture mouse to get events outside window
 					scrollViewState.vertical.draggingThumb = true;
 					scrollViewState.vertical.dragDelta = ctx->mousePosition - rectScrollBarHandleV.topLeft();
 					ctx->dragScrollViewHandleWidgetId = scrollViewState.id;
@@ -585,7 +585,7 @@ Point scrollViewEnd()
 		{
 			if (rectScrollBarHandleH.contains(ctx->mousePosition))
 			{
-				windowSetCapture();  // Capture mouse to get events outside window
+				windowSetCapture();  // capture mouse to get events outside window
 				scrollViewState.horizontal.draggingThumb = true;
 				scrollViewState.horizontal.dragDelta = ctx->mousePosition - rectScrollBarHandleH.topLeft();
 				ctx->dragScrollViewHandleWidgetId = scrollViewState.id;
@@ -622,7 +622,7 @@ Point scrollViewEnd()
 			scrollViewState.horizontal.draggingThumb = false;
 			ctx->dragScrollViewHandleWidgetId = 0;
 			ctx->widget.captureId = 0;
-			windowReleaseCapture();  // Release mouse capture
+			windowReleaseCapture();  // release mouse capture
 		}
 
 		updateScrollMax(scrollViewState.horizontal, scrollContentH, scrollAreaWidth);
@@ -646,8 +646,8 @@ Point scrollViewEnd()
 		ctx->renderer.cmdDrawImageBordered(scrollViewScrollThumbElemStateH.image, scrollViewScrollThumbElemStateH.border, rectScrollBarHandleH, ctx->scale);
 	}
 
-	// Final synchronization of authoritative scrollbar offsets.
-	// Recompute horizontal/vertical scrollMax before clamping.
+	// final synchronization of authoritative scrollbar offsets.
+	// recompute horizontal/vertical scrollMax before clamping.
 	updateScrollMax(scrollViewState.horizontal, scrollContentH, scrollAreaWidth);
 	updateScrollMax(scrollViewState.vertical, contentSizeForClamp, scrollAreaV);
 
@@ -657,21 +657,21 @@ Point scrollViewEnd()
 
 	if (!draggingThis)
 	{
-		// Accept external caller-provided scrollOffset only when not dragging.
-		// Mirror the caller values into the authoritative per-axis scrollbar states,
+		// accept external caller-provided scrollOffset only when not dragging.
+		// mirror the caller values into the authoritative per-axis scrollbar states,
 		// clamping to the recomputed scrollMax above.
 		scrollViewState.horizontal.scrollOffset = std::clamp(scrollOffset.x, 0.0f, scrollViewState.horizontal.scrollMax);
 		scrollViewState.vertical.scrollOffset = std::clamp(scrollOffset.y, 0.0f, scrollViewState.vertical.scrollMax);
 	}
 	else
 	{
-		// While dragging, the per-axis scrollbar states are authoritative.
-		// Use them as the scrollOffset to return to the caller.
+		// while dragging, the per-axis scrollbar states are authoritative.
+		// use them as the scrollOffset to return to the caller.
 		scrollOffset.x = scrollViewState.horizontal.scrollOffset;
 		scrollOffset.y = scrollViewState.vertical.scrollOffset;
 	}
 
-	// Persist combined authoritative offset and return it.
+	// persist combined authoritative offset and return it.
 	scrollViewState.scrollOffset = scrollOffset;
 	widgetPopDisabled();
 	widgetPopPosition();
@@ -704,16 +704,16 @@ void virtualListContentEnd()
 
 void virtualListContentBegin(VirtualScrollInfo& info)
 {
-	// Determine current scroll view context
+	// determine current scroll view context
 	WidgetId svId = ctx->layout.id;
 	auto& svState = ctx->scrollViewState[svId];
 
-	// We will always measure the item height on the first nextStep() call.
-	// Do not set a provisional virtualSize.y based on an estimated height.
-	// Let the measured content size (or measured total after measurement) be authoritative.
+	// we will always measure the item height on the first nextStep() call.
+	// do not set a provisional virtualSize.y based on an estimated height.
+	// let the measured content size (or measured total after measurement) be authoritative.
 	svState.virtualSize.y = 0.0f;
 
-	// Keep info.itemHeight as-is (0 = auto). Initialize internal virtual-list state.
+	// keep info.itemHeight as-is (0 = auto). Initialize internal virtual-list state.
 	ctx->virtualListStack.push_back(VirtualListContentState());
 	auto& vstate = ctx->virtualListStack.back();
 	vstate.totalRowCount = info.totalItemCount;
@@ -723,7 +723,7 @@ void virtualListContentBegin(VirtualScrollInfo& info)
 	vstate.pendingScrollToIndex = -1;
 	vstate.pendingScrollToMode = ScrollToItemSnapMode::Minimal;
 
-	// Reset internal advance state so the caller can start stepping.
+	// reset internal advance state so the caller can start stepping.
 	info._started = false;
 	info._step = 0;
 	info._measureStartY = 0.0f;
@@ -735,11 +735,11 @@ void virtualListContentBegin(VirtualScrollInfo& info)
 
 bool VirtualScrollInfo::nextStep()
 {
-	// If we've finished all steps, no further ranges.
+	// if we've finished all steps, no further ranges.
 	if (_started)
 		return false;
 
-	// Acquire current scroll view info
+	// acquire current scroll view info
 	WidgetId svId = ctx->layout.id;
 	auto& svState = ctx->scrollViewState[svId];
 	f32 scrollY = svState.scrollOffset.y;
@@ -748,7 +748,7 @@ bool VirtualScrollInfo::nextStep()
 	// baseline position where the virtual list starts (saved in beginVirtualListContent)
 	if (ctx->virtualListStack.empty())
 	{
-		// Defensive: nothing to do if stack missing
+		// defensive: nothing to do if stack missing
 		_started = true;
 		return false;
 	}
@@ -758,12 +758,12 @@ bool VirtualScrollInfo::nextStep()
 
 	const i32 buffer = 0;
 
-	// Step 0: issue first-visible single item so caller can render it and we can measure.
+	// step 0: issue first-visible single item so caller can render it and we can measure.
 	if (_step == 0)
 	{
-		// Compute a robust guess of the first visible index:
-		// Prefer a known itemHeight (info.itemHeight), then previously measured height (vstate.itemHeight).
-		// Fall back to an estimate based on the view height (avoid dividing by zero).
+		// compute a robust guess of the first visible index:
+		// prefer a known itemHeight (info.itemHeight), then previously measured height (vstate.itemHeight).
+		// fall back to an estimate based on the view height (avoid dividing by zero).
 		f32 estimateH = 0.0f;
 		if (itemHeight > 0.0f)
 			estimateH = itemHeight;
@@ -793,12 +793,12 @@ bool VirtualScrollInfo::nextStep()
 		_step = 1;
 
 		//std::printf("[VIRT] step0 startIndex=%u scrollY=%.3f estimateH=%.3f _measureStartY=%.3f basePos.y=%.3f\n",
-		//	startIndex, scrollY, estimateH, _measureStartY, basePos.y);
+		//startIndex, scrollY, estimateH, _measureStartY, basePos.y);
 
 		return true;
 	}
 
-	// Step 1: measure height based on how much ctx->position advanced while the caller drew the first item,
+	// step 1: measure height based on how much ctx->position advanced while the caller drew the first item,
 	// then issue the remaining visible range (excluding the first measured item).
 	if (_step == 1)
 	{
@@ -809,8 +809,8 @@ bool VirtualScrollInfo::nextStep()
 		/*std::printf("[VIRT] pre-measure _measureStartY=%.3f afterY=%.3f rawMeasuredH=%.3f viewH=%.3f\n",
 			_measureStartY, afterY, measuredH, viewHeight);*/
 
-		// Guard against zero or NaN measured heights to avoid division by zero or crazy indices.
-		// Also guard against implausibly large measurements (likely caused by header finishing or other layout moves).
+		// guard against zero or NaN measured heights to avoid division by zero or crazy indices.
+		// also guard against implausibly large measurements (likely caused by header finishing or other layout moves).
 		bool measuredInvalid = false;
 		if (!(measuredH > 0.0f) || !std::isfinite(measuredH))
 			measuredInvalid = true;
@@ -826,7 +826,7 @@ bool VirtualScrollInfo::nextStep()
 
 		if (measuredInvalid)
 		{
-			// Prefer declared itemHeight if available, otherwise use a conservative default.
+			// prefer declared itemHeight if available, otherwise use a conservative default.
 			if (itemHeight > 0.0f)
 				measuredH = itemHeight;
 			else
@@ -872,7 +872,7 @@ bool VirtualScrollInfo::nextStep()
 		if (lastVisible < firstVisible) lastVisible = firstVisible;
 		if ((u32)lastVisible >= totalItemCount) lastVisible = (i32)std::max(0u, totalItemCount - 1);
 
-		// We already drew one item (the one returned in step 0). Start remaining from firstVisible+1 if that same index was drawn,
+		// we already drew one item (the one returned in step 0). Start remaining from firstVisible+1 if that same index was drawn,
 		// otherwise start at firstVisible (covers the case where our initial guess was off but measurement corrected it).
 		i32 remainingStart = firstVisible;
 		// if the caller drew exactly firstVisible earlier, skip it
@@ -936,7 +936,7 @@ void scrollViewScrollToWidget(WidgetId id, ScrollToItemSnapMode mode)
 		auto& virtState = ctx->virtualListStack.back();
 		f32 itemHeight = virtState.itemHeight;
 
-		// If measurement hasn't completed yet, deduce it from historical sizes or queue it
+		// if measurement hasn't completed yet, deduce it from historical sizes or queue it
 		if (itemHeight <= 0.0f)
 		{
 			if (virtState.totalRowCount > 0 && svState.virtualSize.y > 0.0f)

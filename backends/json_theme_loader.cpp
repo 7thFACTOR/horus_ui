@@ -333,7 +333,7 @@ static WidgetElementInfo getElementInfoFromState(
 	if (state.isMember("height") && state["height"].isNumeric())
 		elemInfo.height = state["height"].asInt();
 
-	// Parse textShadow object if present
+	// parse textShadow object if present
 	if (state.isMember("textShadow") && state["textShadow"].isObject())
 	{
 		auto& ts = state["textShadow"];
@@ -398,7 +398,7 @@ HTheme loadThemeFromJson(const char* filename, char* errorTextBuffer, size_t err
 
 	HTheme theme = hui::themeCreate(hui::contextGetSettings().defaultAtlasSize);
 
-	// Initialize all elements with white image
+	// initialize all elements with white image
 	HImage whiteImage = getFallbackImage(theme);
 	WidgetElementInfo defInfo;
 	defInfo.image = whiteImage;

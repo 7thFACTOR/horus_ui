@@ -13,7 +13,7 @@ bool list(const char* id, bool* selectedItems, ListSelectionMode selectionType, 
 	if ((itemCount > 0 && !items) || !selectedItems)
 		return false;
 
-	// Determine item height for scroll view calculation
+	// determine item height for scroll view calculation
 	auto& bodyElem = ctx->theme->getElement(WidgetElementId::SelectableBody);
 	auto& bodyElemState = bodyElem.normalState();
 	Font* fnt = bodyElemState.font;
@@ -37,12 +37,12 @@ bool list(const char* id, bool* selectedItems, ListSelectionMode selectionType, 
 	if (iter != ctx->scrollViewState.end())
 		scrollOffset = iter->second.scrollOffset;
 
-	// Use specific height if set, otherwise fill available space or use default
+	// use specific height if set, otherwise fill available space or use default
 	f32 widgetHeight = height;
 
 	if (height <= 0)
 	{
-		widgetHeight = 200; // Default fallback
+		widgetHeight = 200; // default fallback
 	}
 
 	paddingPush(PaddingType::Layout, Point(0, 0));
@@ -53,7 +53,7 @@ bool list(const char* id, bool* selectedItems, ListSelectionMode selectionType, 
 	Rect listRect = ctx->scrollViewState[ctx->id].rect;
 	bool changed = false;
 
-	// Ensure anchor state exists
+	// ensure anchor state exists
 	if (ctx->listAnchors.find(listId) == ctx->listAnchors.end())
 		ctx->listAnchors[listId] = -1;
 
@@ -103,7 +103,7 @@ bool list(const char* id, bool* selectedItems, ListSelectionMode selectionType, 
 				}
 				else
 				{
-					// Unselect all others
+					// unselect all others
 					for (u32 j = 0; j < itemCount; j++)
 						selectedItems[j] = false;
 
@@ -117,8 +117,8 @@ bool list(const char* id, bool* selectedItems, ListSelectionMode selectionType, 
 			{
 				if (has(mods, KeyModifiers::Shift) && anchor != -1)
 				{
-					// Range selection
-					// If Ctrl is NOT pressed, clear selection first
+					// range selection
+					// if Ctrl is NOT pressed, clear selection first
 					if (!(mods & KeyModifiers::Control))
 					{
 						for (u32 j = 0; j < itemCount; j++) selectedItems[j] = false;
@@ -131,13 +131,13 @@ bool list(const char* id, bool* selectedItems, ListSelectionMode selectionType, 
 				}
 				else if (has(mods, KeyModifiers::Control))
 				{
-					// Toggle selection for multiple
+					// toggle selection for multiple
 					selectedItems[i] = !selectedItems[i];
 					anchor = i;
 				}
 				else
 				{
-					// Normal click: Select only this
+					// normal click: Select only this
 					for (u32 j = 0; j < itemCount; j++) selectedItems[j] = false;
 
 					selectedItems[i] = true;

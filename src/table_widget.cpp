@@ -148,7 +148,7 @@ static void finishRow(TableState& state)
 		// advance Y position ONLY if we actually finished a row (not header)
 		state.currentRowY += state.currentMaxRowHeight;
 
-		// Respect external advances (virtual list). If ctx->position.y already moved past our computed row end,
+		// respect external advances (virtual list). If ctx->position.y already moved past our computed row end,
 		// adopt the external position instead of forcing ctx->position.y backwards.
 		/*std::printf("[TABLE] finishRow row=%u rowStartY=%.3f maxRowH=%.3f computedRowY=%.3f ctx.pos.y=%.3f rowSeparators.back()=%.3f\n",
 			(unsigned)state.currentRow, state.rowStartY, state.currentMaxRowHeight, state.currentRowY, ctx->position.y,
@@ -233,8 +233,8 @@ static void finishRow(TableState& state)
 				{
 					// draw left line for this column
 					// skip the first column's left line only if:
-					// - We already drew it as the leftmost outer border (hasOuter and i==0)
-					// - OR we're in inner-only mode and it's the first column
+					// - we already drew it as the leftmost outer border (hasOuter and i==0)
+					// - or we're in inner-only mode and it's the first column
 					bool drawLeftLine = true;
 					
 					if (i == 0 && (hasOuter || innerOnly))
@@ -279,7 +279,7 @@ static void finishRow(TableState& state)
 		state.currentRowY += headerHeight;
 		state.bodyStartY = state.currentRowY;
 
-		// Respect external advances (virtual list) for header as well
+		// respect external advances (virtual list) for header as well
 		if (ctx->position.y < state.currentRowY)
 			ctx->position.y = state.currentRowY;
 		else
@@ -406,8 +406,8 @@ bool tableBegin(const char* id, u32 columnCount, f32 height, TableFlags flags)
 		widgetWidth -= 2.0f;
 	
 	// apply column size specifications (percentage, pixels, or fill)
-	f32 specifiedWidth = 0; // Total width of columns with specific sizes
-	u32 fillCount = 0; // Number of columns that fill remaining space
+	f32 specifiedWidth = 0; // total width of columns with specific sizes
+	u32 fillCount = 0; // number of columns that fill remaining space
 
 	for (u32 i = 0; i < columnCount; i++)
 	{
@@ -866,7 +866,7 @@ void tableEnd()
 						// draw Resize Guide Line - width already applied in beginTable
 						f32 guideLineX = currentX;
 						// clip line to scroll view bounds if inside scroll view
-						// Use headerRect.height to be safe (or calculate it)
+						// use headerRect.height to be safe (or calculate it)
 						f32 svHeight = (state.innerHeight > 0 ? state.innerHeight : 200.0f);
 						f32 lineBottomY = state.needsScrollViewStart ? 
 							(state.tableRect.y + state.headerRect.height + svHeight) :
@@ -1099,9 +1099,9 @@ void tableRowNext()
 	// finish previous row
 	finishRow(state);
 
-	// If an external system (e.g. VirtualScrollInfo) moved ctx->position.y forward to skip items,
+	// if an external system (e.g. VirtualScrollInfo) moved ctx->position.y forward to skip items,
 	// synchronize the table's internal currentRowY so subsequent rows start at the correct Y.
-	// Also record a separator for the skipped region so borders/vertical lines and clipping are correct.
+	// also record a separator for the skipped region so borders/vertical lines and clipping are correct.
 	if (ctx->position.y > state.currentRowY)
 	{
 		// only push a separator if it increases the list (avoid duplicates)
@@ -1122,7 +1122,7 @@ void tableRowNext()
 	state.currentColumn = 0;
 	state.isInHeader = false;
 	state.rowStartY = state.currentRowY;
-	state.currentMaxRowHeight = state.rowHeight; // Use theme default height as min
+	state.currentMaxRowHeight = state.rowHeight; // use theme default height as min
 	state.cellStartY = state.rowStartY;
 
 	// row background drawing REMOVED, deferred to finishRow
@@ -1205,7 +1205,7 @@ void tableCellNext()
 			state.cellStartY = state.rowStartY; // new cell starts at row top
 
 			// push Clip rect to prevent cell content from overflowing
-			// Add 1px to width to include the border line on the right
+			// add 1px to width to include the border line on the right
 			f32 clipHeight = 99999.0f;
 			Rect clipRect(cellX, state.rowStartY, state.persistent->columns[state.currentColumn].width + 1.0f, clipHeight);
 

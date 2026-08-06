@@ -60,7 +60,7 @@ bool dropdown(const char* id, i32& selectedIndex, const char** items, u32 itemCo
 		arrowElemState = &arrowElem.getState(WidgetStateType::Hovered);
 	}
 
-	// Calculate arrow box rect (right side of dropdown)
+	// calculate arrow box rect (right side of dropdown)
 	f32 arrowBoxWidth = arrowBoxElemState->width * ctx->scale;
 	Rect arrowBoxRect = {
 		ctx->widget.rect.right() - arrowBoxWidth,
@@ -69,7 +69,7 @@ bool dropdown(const char* id, i32& selectedIndex, const char** items, u32 itemCo
 		ctx->widget.rect.height
 	};
 
-	// Calculate body rect (left portion, excluding arrow box)
+	// calculate body rect (left portion, excluding arrow box)
 	Rect bodyRect = {
 		ctx->widget.rect.x,
 		ctx->widget.rect.y,
@@ -77,15 +77,15 @@ bool dropdown(const char* id, i32& selectedIndex, const char** items, u32 itemCo
 		ctx->widget.rect.height
 	};
 
-	// Draw body background
+	// draw body background
 	ctx->renderer.cmdSetColor(tintApply(bodyElemState->color, TintColorType::Body));
 	ctx->renderer.cmdDrawImageBordered(bodyElemState->image, bodyElemState->border, bodyRect, ctx->scale);
 
-	// Draw arrow box background
+	// draw arrow box background
 	ctx->renderer.cmdSetColor(tintApply(arrowBoxElemState->color, TintColorType::Body));
 	ctx->renderer.cmdDrawImageBordered(arrowBoxElemState->image, arrowBoxElemState->border, arrowBoxRect, ctx->scale);
 
-	// Draw arrow image centered in arrow box
+	// draw arrow image centered in arrow box
 	ctx->renderer.cmdSetColor(tintApply(arrowElemState->color, TintColorType::Body));
 	auto arrowY = arrowBoxRect.y + arrowBoxRect.height / 2.0f - (arrowElemState->image->height / 2.0f) * ctx->scale;
 	auto arrowX = arrowBoxRect.x + arrowBoxRect.width / 2.0f - (arrowElemState->image->width / 2.0f) * ctx->scale;

@@ -13,10 +13,10 @@ namespace hui
 
 struct DemoState
 {
-	// Button
+	// button
 	int buttonClickCount = 0;
 
-	// TextInput
+	// textInput
 	char textBasic[256] = "Hello World";
 	char textNumeric[256] = "42";
 	char textHex[256] = "FF";
@@ -24,49 +24,49 @@ struct DemoState
 	char textPassword[256] = "secret";
 	char textAutoSelect[256] = "Select me";
 
-	// TextInput Multiline
+	// textInput Multiline
 	char multiText[4096] = "Line 1\nLine 2\nLine 3\nfloat foo = 3.14f;\nint bar = 42;";
 
-	// Slider
+	// slider
 	i32 sliderIntVal = 50;
 	i32 sliderIntStepped = 0;
 	f32 sliderFloatVal = 0.5f;
 	f32 sliderFloatStepped = 0.0f;
 
-	// ComboSlider
+	// comboSlider
 	i32 comboSliderInt = 0;
 	i32 comboSliderIntRanged = 50;
 	f32 comboSliderFloat = 0.0f;
 	f32 comboSliderFloatCustomString = 0.0f;
 	f32 comboSliderFloatRanged = 0.5f;
 
-	// CircularSlider
+	// circularSlider
 	f32 circularVal = 0.5f;
 	f32 circularTwoSide = 0.0f;
 	f32 circularVal2 = 50.0f;
 	f32 circularVal3 = 0.7f;
 
-	// Progress
+	// progress
 	f32 progressValue = 0.0f;
 	f32 progressValueReal = 0.0f;
 
-	// Check
+	// check
 	bool checkA = true;
 	bool checkB = false;
 
-	// Button Group
+	// button Group
 	u32 buttonGroupVal = 0;
 
-	// Radio
+	// radio
 	i32 radioVal = 0;
 
-	// Dropdown
+	// dropdown
 	i32 dropdownSel = 0;
 
-	// List
+	// list
 	bool listSelected[5] = {};
 
-	// Expandable states (managed internally by expandable())
+	// expandable states (managed internally by expandable())
 	bool expandButton = true;
 	bool expandTextInput = false;
 	bool expandMultiline = false;
@@ -97,10 +97,10 @@ struct DemoState
 	bool expandPopup = false;
 	bool expandScrollView = false;
 
-	// Added: Tree nodes demo expand flag
+	// added: Tree nodes demo expand flag
 	bool expandTreeNodes = false;
 
-	// Disabled states
+	// disabled states
 	bool disableButton = false;
 	bool disableTextInput = false;
 	bool disableMultiline = false;
@@ -131,34 +131,34 @@ struct DemoState
 	bool disablePopup = false;
 	bool disableScrollView = false;
 
-	// Added: Tree nodes demo disable flag
+	// added: Tree nodes demo disable flag
 	bool disableTreeNodes = false;
 
-	// Popup demo
+	// popup demo
 	bool showPopup = false;
 
-	// Link demo
+	// link demo
 	int linkClickCount = 0;
 
-	// Tabs
+	// tabs
 	TabIndex selectedTab = 0;
 
-	// Color picker
+	// color picker
 	Color pickerColor = Color(1.0f, 0.0f, 0.0f, 1.0f);
 	Color customPickerColors[16] = {};
 	u32 customPickerColorCount = 0;
 
-	// Vec editors
+	// vec editors
 	f32 vec2x = 1.0f, vec2y = 2.0f;
 	f32 vec3x = 1.0f, vec3y = 2.0f, vec3z = 3.0f;
 	f64 dvec2x = 1.0, dvec2y = 2.0;
 	f64 dvec3x = 1.0, dvec3y = 2.0, dvec3z = 3.0;
 
-	// Image & Texture
+	// image & Texture
 	HImage demoImage = nullptr;
 	HTexture demoTexture = nullptr;
 
-	// ObjectRef
+	// objectRef
 	void* objectRefValue1 = nullptr;
 	bool objectRefModified1 = false;
 	void* objectRefValue2 = nullptr;
@@ -166,12 +166,12 @@ struct DemoState
 	void* objectRefValue3 = nullptr;
 	bool objectRefModified3 = false;
 
-	// Virtual List
+	// virtual List
 	bool expandVirtualList = false;
 	bool disableVirtualList = false;
 	i32 virtualListCount = 1000;
 	
-	// Drag & Drop Demo
+	// drag & Drop Demo
 	bool expandDragDrop = false;
 	int dragDropSrcA = 0;
 	int dragDropSrcB = 0;
@@ -192,7 +192,7 @@ struct DemoState
 
 	Point demoScrollPos = { 0, 0 };
 
-	// Tree demo internal state (controlled expansion)
+	// tree demo internal state (controlled expansion)
 	bool treeRootExpanded = true;
 	bool treeFolderAExpanded = false;
 	bool treeFolderBExpanded = false;
@@ -207,7 +207,7 @@ void showDemo()
 		demo.initialized = true;
 	}
 
-	// Animate progress bars
+	// animate progress bars
 	f32 dt = contextGetSettings().deltaTime;
 	demo.progressValue += dt * 0.1f;
 	if (demo.progressValue > 1.0f) demo.progressValue = 0.0f;
@@ -215,7 +215,7 @@ void showDemo()
 	demo.progressValueReal += dt * 20.0f;
 	if (demo.progressValueReal > 1000.0f) demo.progressValueReal = 0.0f;
 
-	// Keep repainting as long as the progress bar section is expanded
+	// keep repainting as long as the progress bar section is expanded
 	if (demo.expandProgress)
 	{
 		forceRepaint();
@@ -225,9 +225,9 @@ void showDemo()
 
 	space();
 
-	//------------------------------------------------------------------
-	// Button
-	//------------------------------------------------------------------
+	// ------------------------------------------------------------------
+	// button
+	// ------------------------------------------------------------------
 	if (expandableBegin("Buttons", &demo.expandButton))
 	{
 		check("Disable##Button", &demo.disableButton);
@@ -293,9 +293,9 @@ void showDemo()
 		expandableEnd();
 	}
 
-	//------------------------------------------------------------------
-	// Text Input
-	//------------------------------------------------------------------
+	// ------------------------------------------------------------------
+	// text Input
+	// ------------------------------------------------------------------
 	if (expandableBegin("Text Input", &demo.expandTextInput))
 	{
 		check("Disable##TextInput", &demo.disableTextInput);
@@ -327,9 +327,9 @@ void showDemo()
 		expandableEnd();
 	}
 
-	//------------------------------------------------------------------
-	// Multiline Text Input
-	//------------------------------------------------------------------
+	// ------------------------------------------------------------------
+	// multiline Text Input
+	// ------------------------------------------------------------------
 	if (expandableBegin("Multiline Text Input", &demo.expandMultiline))
 	{
 		check("Disable##MultilineTextInput", &demo.disableMultiline);
@@ -354,9 +354,9 @@ void showDemo()
 		expandableEnd();
 	}
 
-	//------------------------------------------------------------------
-	// Slider
-	//------------------------------------------------------------------
+	// ------------------------------------------------------------------
+	// slider
+	// ------------------------------------------------------------------
 	if (expandableBegin("Sliders", &demo.expandSlider))
 	{
 		check("Disable##Slider", &demo.disableSlider);
@@ -390,9 +390,9 @@ void showDemo()
 		expandableEnd();
 	}
 
-	//------------------------------------------------------------------
-	// ComboSlider
-	//------------------------------------------------------------------
+	// ------------------------------------------------------------------
+	// comboSlider
+	// ------------------------------------------------------------------
 	if (expandableBegin("Combo Sliders", &demo.expandComboSlider))
 	{
 		check("Disable##ComboSlider", &demo.disableComboSlider);
@@ -420,9 +420,9 @@ void showDemo()
 		expandableEnd();
 	}
 
-	//------------------------------------------------------------------
-	// Circular Slider
-	//------------------------------------------------------------------
+	// ------------------------------------------------------------------
+	// circular Slider
+	// ------------------------------------------------------------------
 	if (expandableBegin("Circular Sliders", &demo.expandCircularSlider))
 	{
 		check("Disable##CircularSlider", &demo.disableCircularSlider);
@@ -440,9 +440,9 @@ void showDemo()
 		expandableEnd();
 	}
 
-	//------------------------------------------------------------------
-	// Progress
-	//------------------------------------------------------------------
+	// ------------------------------------------------------------------
+	// progress
+	// ------------------------------------------------------------------
 	if (expandableBegin("Progress Bars", &demo.expandProgress))
 	{
 		check("Disable##Progress", &demo.disableProgress);
@@ -471,9 +471,9 @@ void showDemo()
 		expandableEnd();
 	}
 
-	//------------------------------------------------------------------
-	// Check
-	//------------------------------------------------------------------
+	// ------------------------------------------------------------------
+	// check
+	// ------------------------------------------------------------------
 	if (expandableBegin("Checkboxes", &demo.expandCheck))
 	{
 		check("Disable##Check", &demo.disableCheck);
@@ -491,9 +491,9 @@ void showDemo()
 		expandableEnd();
 	}
 
-	//------------------------------------------------------------------
-	// Radio
-	//------------------------------------------------------------------
+	// ------------------------------------------------------------------
+	// radio
+	// ------------------------------------------------------------------
 	if (expandableBegin("Radio Buttons", &demo.expandRadio))
 	{
 		check("Disable##Radio", &demo.disableRadio);
@@ -510,9 +510,9 @@ void showDemo()
 		expandableEnd();
 	}
 
-	//------------------------------------------------------------------
-	// Label
-	//------------------------------------------------------------------
+	// ------------------------------------------------------------------
+	// label
+	// ------------------------------------------------------------------
 	if (expandableBegin("Labels", &demo.expandLabel))
 	{
 		check("Disable##Label", &demo.disableLabel);
@@ -550,9 +550,9 @@ void showDemo()
 		expandableEnd();
 	}
 
-	//------------------------------------------------------------------
-	// Expandable (nested)
-	//------------------------------------------------------------------
+	// ------------------------------------------------------------------
+	// expandable (nested)
+	// ------------------------------------------------------------------
 	if (expandableBegin("Expandable (nested)", &demo.expandExpandable))
 	{
 		check("Disable##Expandable", &demo.disableExpandable);
@@ -581,9 +581,9 @@ void showDemo()
 		expandableEnd();
 	}
 
-	//------------------------------------------------------------------
-	// Tree Nodes (new demo section)
-	//------------------------------------------------------------------
+	// ------------------------------------------------------------------
+	// tree Nodes (new demo section)
+	// ------------------------------------------------------------------
 	if (expandableBegin("Tree Nodes", &demo.expandTreeNodes))
 	{
 		check("Disable##TreeNodes", &demo.disableTreeNodes);
@@ -591,10 +591,10 @@ void showDemo()
 
 		label("Controlled tree (passes booleans to preserve expansion state):");
 
-		// Root node with controlled expansion
+		// root node with controlled expansion
 		if (treeNodeBegin("Root", &demo.treeRootExpanded))
 		{
-			// Folder A
+			// folder A
 			if (treeNodeBegin("Folder A", &demo.treeFolderAExpanded))
 			{
 				selectable("File A1");
@@ -602,14 +602,14 @@ void showDemo()
 				treeNodeEnd();
 			}
 
-			// Folder B
+			// folder B
 			if (treeNodeBegin("Folder B", &demo.treeFolderBExpanded))
 			{
 				selectable("File B1");
 				treeNodeEnd();
 			}
 
-			// A plain item at root level
+			// a plain item at root level
 			selectable("README.md");
 
 			treeNodeEnd(); // close Root
@@ -619,7 +619,7 @@ void showDemo()
 
 		label("Anonymous nodes (internal expansion state):");
 
-		// Use internal expansion state by passing nullptr for expansion var
+		// use internal expansion state by passing nullptr for expansion var
 		if (treeNodeBegin("Library"))
 		{
 			if (treeNodeBegin("src"))
@@ -638,7 +638,7 @@ void showDemo()
 			treeNodeEnd();
 		}
 
-		// Tree nodes with single-click toggle on the label
+		// tree nodes with single-click toggle on the label
 		label("ToggleOnSelect flag (single-click label toggles):");
 		if (treeNodeBegin("Quick Access", nullptr, SelectableFlags::Normal, TreeNodeFlags::ToggleOnSelect))
 		{
@@ -684,9 +684,9 @@ void showDemo()
 		expandableEnd();
 	}
 
-	//------------------------------------------------------------------
-	// Dropdown
-	//------------------------------------------------------------------
+	// ------------------------------------------------------------------
+	// dropdown
+	// ------------------------------------------------------------------
 	if (expandableBegin("Dropdown", &demo.expandDropdown))
 	{
 		check("Disable##Dropdown", &demo.disableDropdown);
@@ -708,9 +708,9 @@ void showDemo()
 		expandableEnd();
 	}
 
-	//------------------------------------------------------------------
-	// List
-	//------------------------------------------------------------------
+	// ------------------------------------------------------------------
+	// list
+	// ------------------------------------------------------------------
 	if (expandableBegin("List", &demo.expandList))
 	{
 		check("Disable##List", &demo.disableList);
@@ -729,9 +729,9 @@ void showDemo()
 		expandableEnd();
 	}
 
-	//------------------------------------------------------------------
-	// Selectable
-	//------------------------------------------------------------------
+	// ------------------------------------------------------------------
+	// selectable
+	// ------------------------------------------------------------------
 	if (expandableBegin("Selectable", &demo.expandSelectable))
 	{
 		check("Disable##Selectable", &demo.disableSelectable);
@@ -753,9 +753,9 @@ void showDemo()
 		expandableEnd();
 	}
 
-	//------------------------------------------------------------------
-	// Separators / Spacing
-	//------------------------------------------------------------------
+	// ------------------------------------------------------------------
+	// separators / Spacing
+	// ------------------------------------------------------------------
 	if (expandableBegin("Separators & Spacing", &demo.expandSeparators))
 	{
 		check("Disable##Separators", &demo.disableSeparators);
@@ -782,9 +782,9 @@ void showDemo()
 		expandableEnd();
 	}
 
-	//------------------------------------------------------------------
-	// Link
-	//------------------------------------------------------------------
+	// ------------------------------------------------------------------
+	// link
+	// ------------------------------------------------------------------
 	if (expandableBegin("Links", &demo.expandLink))
 	{
 		check("Disable##Link", &demo.disableLink);
@@ -815,9 +815,9 @@ void showDemo()
 		expandableEnd();
 	}
 
-	//------------------------------------------------------------------
-	// Tabs
-	//------------------------------------------------------------------
+	// ------------------------------------------------------------------
+	// tabs
+	// ------------------------------------------------------------------
 	if (expandableBegin("Tabs", &demo.expandTabs))
 	{
 		check("Disable##Tabs", &demo.disableTabs);
@@ -848,9 +848,9 @@ void showDemo()
 		expandableEnd();
 	}
 
-	//------------------------------------------------------------------
-	// Box
-	//------------------------------------------------------------------
+	// ------------------------------------------------------------------
+	// box
+	// ------------------------------------------------------------------
 	if (expandableBegin("Box", &demo.expandBox))
 	{
 		check("Disable##Box", &demo.disableBox);
@@ -871,9 +871,9 @@ void showDemo()
 		expandableEnd();
 	}
 
-	//------------------------------------------------------------------
-	// Color Picker
-	//------------------------------------------------------------------
+	// ------------------------------------------------------------------
+	// color Picker
+	// ------------------------------------------------------------------
 	if (expandableBegin("Color Picker", &demo.expandColorPicker))
 	{
 		check("Disable##ColorPicker", &demo.disableColorPicker);
@@ -910,9 +910,9 @@ void showDemo()
 		expandableEnd();
 	}
 
-	//------------------------------------------------------------------
-	// Vec Editors
-	//------------------------------------------------------------------
+	// ------------------------------------------------------------------
+	// vec Editors
+	// ------------------------------------------------------------------
 	if (expandableBegin("Vector Editors", &demo.expandVecEditors))
 	{
 		check("Disable##VecEditors", &demo.disableVecEditors);
@@ -935,9 +935,9 @@ void showDemo()
 		widgetPopDisabled();
 		expandableEnd();
 	}
-	//------------------------------------------------------------------
-	// Images & Textures
-	//------------------------------------------------------------------
+	// ------------------------------------------------------------------
+	// images & Textures
+	// ------------------------------------------------------------------
 	if (expandableBegin("Images & Textures", &demo.expandImages))
 	{
 		check("Disable##Images", &demo.disableImages);
@@ -977,16 +977,16 @@ void showDemo()
 
 		space();
 		label("Texture widget (using color check checkers image as texture):");
-		// Just using an image as a texture for demo purposes if no real texture available
+		// just using an image as a texture for demo purposes if no real texture available
 		
 		texture(themeGetAtlasTexture(), 64, 64, 64);
 		widgetPopDisabled();
 		expandableEnd();
 	}
 
-	//------------------------------------------------------------------
-	// Menus
-	//------------------------------------------------------------------
+	// ------------------------------------------------------------------
+	// menus
+	// ------------------------------------------------------------------
 	if (expandableBegin("Menus", &demo.expandMenus))
 	{
 		check("Disable##Menus", &demo.disableMenus);
@@ -1035,9 +1035,9 @@ void showDemo()
 		expandableEnd();
 	}
 
-	//------------------------------------------------------------------
-	// Viewport
-	//------------------------------------------------------------------
+	// ------------------------------------------------------------------
+	// viewport
+	// ------------------------------------------------------------------
 	if (expandableBegin("Viewport", &demo.expandViewport))
 	{
 		check("Disable##Viewport", &demo.disableViewport);
@@ -1045,7 +1045,7 @@ void showDemo()
 
 		label("A custom viewport area (100px height):");
 		Rect vprect = viewportBegin("##demoViewport", 100);
-		// In a real app, you'd use vprect to draw your 3D scene/etc.
+		// in a real app, you'd use vprect to draw your 3D scene/etc.
 		renderDrawSolidRectangle(vprect);
 		renderDrawTextInBox("Custom Viewport Content", vprect, HAlignType::Center, VAlignType::Center);
 		viewportEnd();
@@ -1053,9 +1053,9 @@ void showDemo()
 		expandableEnd();
 	}
 
-	//------------------------------------------------------------------
-	// Custom Widget
-	//------------------------------------------------------------------
+	// ------------------------------------------------------------------
+	// custom Widget
+	// ------------------------------------------------------------------
 	if (expandableBegin("Custom Widget", &demo.expandCustomWidget))
 	{
 		check("Disable##CustomWidget", &demo.disableCustomWidget);
@@ -1071,9 +1071,9 @@ void showDemo()
 		expandableEnd();
 	}
 
-	//------------------------------------------------------------------
-	// Object Reference
-	//------------------------------------------------------------------
+	// ------------------------------------------------------------------
+	// object Reference
+	// ------------------------------------------------------------------
 	if (expandableBegin("Object Reference Editor", &demo.expandObjectRef))
 	{
 		enum MyTypeIds
@@ -1158,9 +1158,9 @@ void showDemo()
 		widgetPopDisabled();
 		expandableEnd();
 	}
-	//------------------------------------------------------------------
-	// Drag & Drop API Demo
-	//------------------------------------------------------------------
+	// ------------------------------------------------------------------
+	// drag & Drop API Demo
+	// ------------------------------------------------------------------
 	if (expandableBegin("Drag & Drop API Demo", &demo.expandDragDrop))
 	{
 		label("Drag sources:");
@@ -1277,7 +1277,7 @@ void showDemo()
 		label("Drag items between lists:");
 		space();
 
-		// Deferred move: avoid modifying lists during iteration
+		// deferred move: avoid modifying lists during iteration
 		static std::string pendingMoveStr;
 		static bool pendingMoveToListA = false;
 
@@ -1389,7 +1389,7 @@ void showDemo()
 			paddingPop(PaddingType::Layout);
 		}
 
-		// Apply deferred move
+		// apply deferred move
 		if (!pendingMoveStr.empty())
 		{
 			if (pendingMoveToListA)
@@ -1487,9 +1487,9 @@ void showDemo()
 
 		expandableEnd();
 	}
-	//------------------------------------------------------------------
-	// Virtual List
-	//------------------------------------------------------------------
+	// ------------------------------------------------------------------
+	// virtual List
+	// ------------------------------------------------------------------
 	if (expandableBegin("Virtual List (1000 items)", &demo.expandVirtualList))
 	{
 		check("Disable##VirtualList", &demo.disableVirtualList);
@@ -1519,9 +1519,9 @@ void showDemo()
 		expandableEnd();
 	}
 
-	//------------------------------------------------------------------
-	// Scroll View
-	//------------------------------------------------------------------
+	// ------------------------------------------------------------------
+	// scroll View
+	// ------------------------------------------------------------------
 	if (expandableBegin("Scroll View", &demo.expandScrollView))
 	{
 		check("Disable##ScrollView", &demo.disableScrollView);
@@ -1542,9 +1542,9 @@ void showDemo()
 		expandableEnd();
 	}
 
-	//------------------------------------------------------------------
-	// Table
-	//------------------------------------------------------------------
+	// ------------------------------------------------------------------
+	// table
+	// ------------------------------------------------------------------
 	if (expandableBegin("Tables", &demo.expandTable))
 	{
 		check("Disable##Table", &demo.disableTable);
@@ -1579,9 +1579,9 @@ void showDemo()
 		expandableEnd();
 	}
 
-	//------------------------------------------------------------------
-	// Tooltip
-	//------------------------------------------------------------------
+	// ------------------------------------------------------------------
+	// tooltip
+	// ------------------------------------------------------------------
 	if (expandableBegin("Tooltips", &demo.expandTooltip))
 	{
 		check("Disable##Tooltip", &demo.disableTooltip);
@@ -1606,9 +1606,9 @@ void showDemo()
 		expandableEnd();
 	}
 
-	//------------------------------------------------------------------
-	// Popup
-	//------------------------------------------------------------------
+	// ------------------------------------------------------------------
+	// popup
+	// ------------------------------------------------------------------
 	if (expandableBegin("Popups", &demo.expandPopup))
 	{
 		check("Disable##Popup", &demo.disablePopup);

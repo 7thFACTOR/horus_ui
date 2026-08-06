@@ -48,7 +48,7 @@ void curveEditor(f32 height, u32 maxPoints, hui::Point* points, u32& pointCount,
 
 int main(int argc, char** args)
 {
-	// Setup a Horus UI context, with given service providers
+	// setup a Horus UI context, with given service providers
 	hui::Settings settings;
 
 	settings.providers.file = new hui::StdioFileProvider();
@@ -60,27 +60,27 @@ int main(int argc, char** args)
 	settings.providers.rectPack = new hui::StbRectPackProvider();
 	settings.providers.utf = new hui::UtfCppProvider();
 
-	// Create the context
+	// create the context
 	auto huiContext = hui::contextCreate(settings);
 	hui::contextSet(huiContext); // set as current context
 
-	// Initialize SDL input provider
+	// initialize SDL input provider
 	hui::SdlInitParams sdlParams;
 
 	sdlParams.vSync = false;
 	hui::initializeSdl(sdlParams);
 
-	// Create the main window (this will also create a graphics (GL/VK/D3D/etc.) context)
+	// create the main window (this will also create a graphics (GL/VK/D3D/etc.) context)
 	auto mainWnd = HORUS_INPUT->createWindow("Horus Example - Custom Widget", hui::NativeWindowFlags::Resizable, hui::NativeWindowState::Maximized, hui::Rect(0, 0, 1000, 800));
 
-	// Initialize the graphics API, since now we have a first window created
+	// initialize the graphics API, since now we have a first window created
 	// (we cant initialize the graphics api without a window)
 	HORUS_GFX->initialize();
 
-	// Initialize the UI renderer for the current context
+	// initialize the UI renderer for the current context
 	hui::initializeRenderer();
 
-	// Load a theme
+	// load a theme
 	const u32 errSize = 2048;
 	char err[errSize] = { 0 };
 	auto theme = hui::loadThemeFromJson("../themes/default.theme.json", err, errSize);
@@ -90,7 +90,7 @@ int main(int argc, char** args)
 		printf("Theme JSON error: %s\n", err);
 		theme = hui::themeCreate(hui::contextGetSettings().defaultAtlasSize);
 
-		// Initialize all elements with white image
+		// initialize all elements with white image
 		hui::WidgetElementInfo defInfo;
 		defInfo.image = hui::themeGetImage(theme, "__WHITEIMAGE__");
 		defInfo.color = hui::Color::white;
@@ -105,29 +105,29 @@ int main(int argc, char** args)
 		}
 	}
 
-	// Set the current theme
+	// set the current theme
 	hui::themeSet(theme);
 
-	// Build the theme
-	// After we load the theme and more images and fonts, we need to rebuild the theme (into the image atlas)
+	// build the theme
+	// after we load the theme and more images and fonts, we need to rebuild the theme (into the image atlas)
 	hui::themeBuild(theme);
 
 	hui::getThemeWidgetElementInfo(hui::WidgetElementId::BoxBody, hui::WidgetStateType::Normal, inf);
 
-	// Start the main loop
+	// start the main loop
 	bool exitNow = false;
 
 	while (!exitNow)
 	{
-		// Clear the main window as a test
+		// clear the main window as a test
 		HORUS_INPUT->setCurrentWindow(mainWnd);
 		glClearColor(0.4f, 0.4f, 0.4f, 1);
 		glClear(GL_COLOR_BUFFER_BIT);
 
-		// Get the events from SDL or whatever input provider is set, it will fill a queue of events
+		// get the events from SDL or whatever input provider is set, it will fill a queue of events
 		hui::contextUpdate();
 
-		// Check the event count
+		// check the event count
 		auto eventCount = hui::inputEventGetCount();
 
 		// the main frame rendering and input handling
@@ -135,7 +135,7 @@ int main(int argc, char** args)
 		{
 			hui::nativeWindowSetCurrent(mainWnd);
 			hui::renderBegin();
-			// Begin an actual frame of the gui
+			// begin an actual frame of the gui
 			hui::frameBegin();
 			// disable rendering if its not the last event in the queue
 			// no need to render while handling all the input events

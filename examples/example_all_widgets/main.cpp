@@ -18,7 +18,7 @@
 #include "stdio_fileio.h"
 #include "utfcpp.h"
 
-// Grab some image handles to use for the window icons
+// grab some image handles to use for the window icons
 hui::HImage icon1, icon2, icon3, icon4, icon5, tabicon1, tabicon2, tabicon3, img;
 //hui::HTexture tex1, tex2;
 hui::OpenGLTexture texAtlasGL, texSampleGL;
@@ -29,7 +29,7 @@ hui::VulkanTexture texAtlasVK, texSampleVK;
 void loadImages()
 {
 	auto theme = hui::themeGet();
-	// Grab some image handles to use for the window icons
+	// grab some image handles to use for the window icons
 	icon1 = hui::loadThemeImage(theme, "../themes/icons/ic_attach_file_white_24dp.png");
 	icon2 = hui::loadThemeImage(theme, "../themes/icons/ic_attach_money_white_24dp.png");
 	icon3 = hui::loadThemeImage(theme, "../themes/icons/ic_border_all_white_24dp.png");
@@ -43,7 +43,7 @@ void loadImages()
 
 int main(int argc, char** args)
 {
-	// Initialize SDL input provider
+	// initialize SDL input provider
 	hui::Sdl3InitParams sdlParams;
 
 	sdlParams.vSync = true;
@@ -52,7 +52,7 @@ int main(int argc, char** args)
 	//sdlParams.gfxApi = hui::Sdl3GfxApi::DX12;
 	sdlParams.gfxApi = hui::Sdl3GfxApi::Vulkan;
 
-	// Setup a Horus UI context, with given service providers
+	// setup a Horus UI context, with given service providers
 	hui::Settings settings;
 
 	settings.dockNodeSpacing = 3;
@@ -90,13 +90,13 @@ int main(int argc, char** args)
 	auto huiContext = hui::contextCreate(settings);
 	hui::contextSet(huiContext); // set as current context
 
-	// Create the main window (this will also create a graphics (GL/VK/D3D/etc.) context)
+	// create the main window (this will also create a graphics (GL/VK/D3D/etc.) context)
 	auto mainWnd = hui::contextGetSettings().services.createWindow((std::string("Horus Example - All Widgets - ") + gfxApiName).c_str(), hui::NativeWindowFlags::Resizable, hui::NativeWindowState::Maximized, hui::Rect(0, 0, 1500, 800));
 
-	// Create a main dock node for the main window, so we can dock windows in there
+	// create a main dock node for the main window, so we can dock windows in there
 	hui::DockNodeId mainDockNode = hui::dockNodeCreateRoot(mainWnd);
 
-	// Create the docking layout by splitting dock nodes around
+	// create the docking layout by splitting dock nodes around
 	{
 		hui::DockNodeId n1, n2;
 		hui::dockNodeSplit(mainDockNode, hui::DockNodeSplitType::Left, 0.5f, &n1, &n2 );
@@ -107,11 +107,11 @@ int main(int argc, char** args)
 		hui::dockNodeLayoutRecalculate();
 	}
 
-	// Load a theme
+	// load a theme
 	const u32 errSize = 2048;
 	char err[errSize] = { 0 };
 
-	// Theme file path
+	// theme file path
 	static const char* themeFilePath = "../themes/default.theme.json";
 
 	auto theme = hui::loadThemeFromJson(themeFilePath, err, errSize);
@@ -121,7 +121,7 @@ int main(int argc, char** args)
 		printf("Theme JSON error: %s\n", err);
 		theme = hui::themeCreate(hui::contextGetSettings().defaultAtlasSize);
 
-		// Initialize all elements with white image
+		// initialize all elements with white image
 		hui::WidgetElementInfo defInfo;
 		defInfo.image = hui::themeGetImage(theme, "__WHITEIMAGE__");
 		defInfo.color = hui::Color::white;
@@ -136,15 +136,15 @@ int main(int argc, char** args)
 		}
 	}
 
-	// Grab a font handle from the theme to use later
+	// grab a font handle from the theme to use later
 	auto largeFnt = hui::themeFontGetFromTheme(theme, "title");
 
-	// Set the current theme
+	// set the current theme
 	hui::themeSet(theme);
 
 	loadImages();
-	// Build the theme
-	// After we load the theme and more images and fonts, we need to rebuild the theme (into the image atlas)
+	// build the theme
+	// after we load the theme and more images and fonts, we need to rebuild the theme (into the image atlas)
 	hui::themeBuild(theme);
 
 	hui::HTexture sampleTexHandle = 0;
@@ -234,7 +234,7 @@ int main(int argc, char** args)
 
 	while (!exitNow)
 	{
-		// Clear the main window as a test
+		// clear the main window as a test
 		HUI_SERVICES.setCurrentWindow(mainWnd);
 		HUI_SERVICES.clearBackbuffer({ 0.3f, 0.0f, 0.1f, 1 });
 
@@ -355,12 +355,12 @@ int main(int argc, char** args)
 
 				//for (f32 u = 0; u < 2 * M_PI; u += step)
 				//{
-				//	glColor3f(.1, 0.1, 0.1);
-				//	glVertex2f(0.5f + radius1 * sinf(u + t), 0.5f + radius1 * cosf(u + t));
-				//	glColor3f(.8, .8, 0);
-				//	glVertex2f(0.5f + radius2 * sinf(u + t), 0.5f + radius2 * cosf(u + t));
-				//	glColor3f(.1, 0.1, .1);
-				//	glVertex2f(0.5f + radius2 * sinf(u + step + t), 0.5f + radius2 * cosf(u + step + t));
+				//glColor3f(.1, 0.1, 0.1);
+				//glVertex2f(0.5f + radius1 * sinf(u + t), 0.5f + radius1 * cosf(u + t));
+				//glColor3f(.8, .8, 0);
+				//glVertex2f(0.5f + radius2 * sinf(u + t), 0.5f + radius2 * cosf(u + t));
+				//glColor3f(.1, 0.1, .1);
+				//glVertex2f(0.5f + radius2 * sinf(u + step + t), 0.5f + radius2 * cosf(u + step + t));
 				//}
 
 				//glEnd();
@@ -370,7 +370,7 @@ int main(int argc, char** args)
 				//glViewport(vp[0], vp[1], vp[2], vp[3]);
 			};
 
-			// Begin an actual frame of the gui
+			// begin an actual frame of the gui
 			hui::frameBegin();
 			// disable rendering if its not the last event in the queue
 			// no need to render while handling all the input events
@@ -705,10 +705,10 @@ int main(int argc, char** args)
 					//// render the visible slice
 					//while (vtableInfo.nextStep())
 					//{
-					//	if (vtableInfo.startIndex <= vtableInfo.endIndex)
-					//	{
-					//		for (u32 k = vtableInfo.startIndex; k <= vtableInfo.endIndex; ++k)
-					//		{
+					//if (vtableInfo.startIndex <= vtableInfo.endIndex)
+					//{
+					//for (u32 k = vtableInfo.startIndex; k <= vtableInfo.endIndex; ++k)
+					//{
 					for (u32 k = 0; k < 100; ++k)
 					{
 						auto is = std::to_string(k);
@@ -737,8 +737,8 @@ int main(int argc, char** args)
 						hui::label("Col 4");
 						hui::tableRowNext();
 					}
-					//		}
-					//	}
+					//}
+					//}
 					//}
 
 					/*hui::endVirtualListContent();
@@ -766,13 +766,13 @@ int main(int argc, char** args)
 
 				// begin scroll view (viewport height 300)
 				f32 viewH = 300.0f;
-				// NOTE: we no longer need to pass vertical content height here; beginVirtualListContent sets it.
+				// note: we no longer need to pass vertical content height here; beginVirtualListContent sets it.
 				hui::scrollViewBegin("##virt_list_scroll", viewH, vscroll, hui::Point(0, 0), hui::ScrollViewFlags::None);
 
 				// initialize virtual list content (this sets the scrollview virtual height)
 				hui::virtualListContentBegin(vinfo);
 
-				// Step loop (measures first item, then issues remaining range)
+				// step loop (measures first item, then issues remaining range)
 				while (vinfo.nextStep())
 				{
 					if (vinfo.startIndex <= vinfo.endIndex)
