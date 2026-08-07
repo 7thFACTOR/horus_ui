@@ -644,16 +644,29 @@ bool textInputMultiline(
 
 	// contextUpdate state clip rect to the inner clip rect (excluding scrollbars)
 	// this prevents drawing over scrollbars and ensures clicks on scrollbars aren't handled as text input
-	Rect innerClipRect = ctx->renderer.getClipRect();
-	
+	Rect contentClipRect = clipRect;
+
+	// exclude the scrollbar gutters from the content area
+	if (hasVerticalScrollbar)
+	{
+		contentClipRect.width -= sbV.width * ctx->scale;
+	}
+
+	if (hasHorizontalScrollbar)
+	{
+		contentClipRect.height -= sbH.height * ctx->scale;
+	}
+
 	if (state.id == ctx->id)
 	{
-		state.clipRect = innerClipRect;
+		state.clipRect = contentClipRect;
 		state.rect = ctx->widget.rect;
 	}
 
-	// use inner clip rect for local drawing logic, but intersect with widget's clip rect (which accounts for outer scroll views)
-	clipRect = innerClipRect.clipInside(clipRect);
+	// keep the widget's own rect as the drawing baseline: the renderer clip rect is already
+	// clamped to the visible area by outer scroll views, so intersecting with it would anchor
+	// the content to the viewport top instead of scrolling together with the widget
+	clipRect = contentClipRect;
 
 	// gets current scroll state to use for culling
 	auto& scrollState = ctx->scrollViewState[state.scrollId];
