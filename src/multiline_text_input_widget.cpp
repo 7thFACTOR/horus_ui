@@ -52,8 +52,9 @@ bool textInputMultiline(
 	std::string scrollIdName = std::string(id) + ".scroller";
 	WidgetId scrollId = genId(scrollIdName.c_str());
 
-	if (state.id == ctx->id)
-		state.scrollId = scrollId;
+	// always keep the scroll ID so wheel scrolling works even before the widget
+	// is focused/clicked (otherwise the persisted offset is never read back)
+	state.scrollId = scrollId;
 
 	if (ctx->focusChanged && ctx->id != ctx->widget.focusedId && ctx->widget.focusedId != state.scrollId)
 		ctx->widget.changeEnded = true;
@@ -524,8 +525,9 @@ bool textInputMultiline(
 	
 	ctx->position = { clipRect.x, clipRect.y };
 
-	f32 savedLayoutWidth = ctx->layout.width;
-	
+	// keep the editor's own width for the inner ScrollView so its end-of-layout
+	// addWidget() reports a rect that stays inside the wrapper (otherwise it would
+	// use the full parent width and trigger a horizontal scrollbar on the parent)
 	ctx->layout.width = clipRect.width;
 
 	// scale height down because scrollViewBegin scales it up again (double-scaling fix)
@@ -534,14 +536,8 @@ bool textInputMultiline(
 	if (ctx->settings.scaleScrollViewHeight)
 		scrollViewHeight /= ctx->scale;
 
-	// use existing scroll offset if available to persist scrolling
-	Point initialScroll = {0, 0};
-	
-	if (state.scrollId != 0)
-	{
-		auto it = ctx->scrollViewState.find(state.scrollId);
-			initialScroll = it->second.scrollOffset;
-	}
+	// use existing scroll offset to persist scrolling
+	Point initialScroll = ctx->scrollViewState[state.scrollId].scrollOffset;
 
 	// sync state scroll offset immediately so subsequent calculations (like getCaretScreenPosition) are correct for this frame
 	state.scrollOffsetX = initialScroll.x;
@@ -639,8 +635,6 @@ bool textInputMultiline(
 	}
 
 	scrollViewBegin(scrollIdName.c_str(), scrollViewHeight, initialScroll, { maxLineWidth + indicatorMargin, totalContentHeight }, ScrollViewFlags::NoBorder | ScrollViewFlags::NoPadding);
-
-	ctx->layout.width = savedLayoutWidth; // restore layout width immediately (scrollViewBegin captured it)
 
 	// contextUpdate state clip rect to the inner clip rect (excluding scrollbars)
 	// this prevents drawing over scrollbars and ensures clicks on scrollbars aren't handled as text input

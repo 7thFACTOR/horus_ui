@@ -17,7 +17,9 @@ static bool vecEditorInternal(f64& x, f64& y, f64& z, f64 scrollStep, bool useZ)
 	auto imgElem = ctx->theme->userElements["axisBoxXImage"];
 	f32 imgWidthPx = ((Image*)imgElem->normalState().image)->width * ctx->scale;
 
-	f32 totalWidth = (f32)axisCount * (imgWidthPx + spacing) + spacing;
+	// each axis inserts two sameLine spacings (image->input, input->next image),
+	// the last axis only one, so a 3-axis editor uses 5 spacings in total.
+	f32 totalWidth = (f32)axisCount * imgWidthPx + ((f32)axisCount * 2.0f - 1.0f) * spacing;
 	f32 inputWidthPx = (ctx->layout.width - totalWidth) / (f32)axisCount;
 	f32 inputWidthUnscaled = inputWidthPx / ctx->scale;
 

@@ -30,6 +30,17 @@ TablePersistentState::~TablePersistentState()
 
 static void finishRow(TableState& state)
 {
+	// resolve any pending sameLine state so position.y reflects the true bottom of content.
+	// this happens when the last widget in the cell used sameLine() (e.g. vec3Editor).
+	if (ctx->sameLine.wasEnabled)
+	{
+		ctx->position.x = ctx->sameLine.currentPosition.x;
+		ctx->sameLine.wasEnabled = false;
+		ctx->position.y += ctx->sameLine.maxHeight;
+		ctx->sameLine.maxHeight = 0;
+		ctx->sameLine.currentPosition.y = ctx->position.y;
+	}
+
 	// calculate height of the last cell in the row
 	// note: ctx->position.y points to where the next widget would go, so it represents the bottom of content
 	f32 lastCellHeight = ctx->position.y - state.cellStartY + ctx->cellPadding.y;
@@ -292,15 +303,13 @@ static void finishRow(TableState& state)
 		
 		if (state.innerHeight > 0)
 		{
-			// calculate scroll view padding to compensate
-			const auto& padding = paddingGet(PaddingType::ScrollView);
+			// use NoPadding so the body content starts exactly at the table edge
+			// and spans the full table width (clipped only by the vertical scrollbar)
+			ctx->position.x = state.tableRect.x;
+			ctx->layout.width = state.innerWidth;
 			
-			// adjust position left by padding, and increase width by padding to compensate
-			// this makes the content area align with table edge while scrollbar stays at right edge
-			ctx->position.x = state.tableRect.x - padding.x;
-			ctx->layout.width = state.innerWidth + padding.x;
-			
-			scrollViewBegin("##tableScrollView", scrollViewHeight, state.persistent->scrollViewScrollPos.y, 0.0f, ScrollViewFlags::NoBorder);
+			scrollViewBegin("##tableScrollView", scrollViewHeight, state.persistent->scrollViewScrollPos.y, 0.0f,
+				ScrollViewFlags::NoBorder | ScrollViewFlags::NoHorizontalScroll | ScrollViewFlags::NoPadding);
 			state.needsScrollViewStart = true;
 			
 			// after scroll view starts, ctx->position.x should now align with table edge
@@ -404,7 +413,18 @@ bool tableBegin(const char* id, u32 columnCount, f32 height, TableFlags flags)
 
 	if (hasBorders)
 		widgetWidth -= 2.0f;
-	
+
+	// when the body starts a scroll view (height > 0), it always reserves space for the
+	// vertical scrollbar on the right, so columns must be sized within the remaining width
+	// to keep cell widgets from sliding under the scrollbar.
+	f32 columnWidth = widgetWidth;
+
+	if (height > 0)
+	{
+		auto& scrollBarElemV = ctx->theme->getElement(WidgetElementId::ScrollViewScrollBarV).normalState();
+		columnWidth -= scrollBarElemV.width * ctx->scale;
+	}
+
 	// apply column size specifications (percentage, pixels, or fill)
 	f32 specifiedWidth = 0; // total width of columns with specific sizes
 	u32 fillCount = 0; // number of columns that fill remaining space
@@ -427,7 +447,7 @@ bool tableBegin(const char* id, u32 columnCount, f32 height, TableFlags flags)
 			if (col.isPercentage && !isFixed)
 			{
 				// percentage of table width (0..1)
-				col.width = widgetWidth * col.specifiedSize;
+				col.width = columnWidth * col.specifiedSize;
 			}
 			else
 			{
@@ -472,7 +492,7 @@ bool tableBegin(const char* id, u32 columnCount, f32 height, TableFlags flags)
 	// distribute remaining space to fill columns
 	if (fillCount > 0)
 	{
-		f32 remainingWidth = widgetWidth - specifiedWidth;
+		f32 remainingWidth = columnWidth - specifiedWidth;
 		
 		if (remainingWidth > 0)
 		{
@@ -528,7 +548,7 @@ bool tableBegin(const char* id, u32 columnCount, f32 height, TableFlags flags)
 	}
 
 	// collapse logic: if content exceeds widget width, scale down proportionally (respecting min width)
-	if (!has(flags, TableFlags::FixedSize) && totalColumnsWidth > widgetWidth && widgetWidth > 0)
+	if (!has(flags, TableFlags::FixedSize) && totalColumnsWidth > columnWidth && columnWidth > 0)
 	{
 		f32 totalFixed = 0;
 		f32 totalFlexible = 0;
@@ -546,13 +566,13 @@ bool tableBegin(const char* id, u32 columnCount, f32 height, TableFlags flags)
 				totalFlexible += persistent.columns[i].width;
 		}
 
-		if (totalFixed < widgetWidth)
+		if (totalFixed < columnWidth)
 		{
 			// we have room for fixed columns, shrink flexible ones
 			f32 scale = 0.0f;
 
 			if (totalFlexible > 0)
-				scale = (widgetWidth - totalFixed) / totalFlexible;
+				scale = (columnWidth - totalFixed) / totalFlexible;
 
 			for (u32 i = 0; i < columnCount; i++)
 			{
@@ -598,7 +618,7 @@ bool tableBegin(const char* id, u32 columnCount, f32 height, TableFlags flags)
 	}
 
 	// stretch logic: distribute space proportionally based on column widths
-	if (has(flags, TableFlags::Stretch) && widgetWidth != totalColumnsWidth)
+	if (has(flags, TableFlags::Stretch) && columnWidth != totalColumnsWidth)
 	{
 		// calculate total width of stretchable columns
 		f32 stretchableWidth = 0;
@@ -616,7 +636,7 @@ bool tableBegin(const char* id, u32 columnCount, f32 height, TableFlags flags)
 				if (!col.isStretchable && !col.isHidden)
 					nonStretchableWidth += col.width;
 
-			f32 availableWidth = widgetWidth - nonStretchableWidth;
+			f32 availableWidth = columnWidth - nonStretchableWidth;
 
 			// scale each stretchable column proportionally
 			for (auto& col : persistent.columns)
@@ -627,9 +647,9 @@ bool tableBegin(const char* id, u32 columnCount, f32 height, TableFlags flags)
 					col.width = availableWidth * proportion;
 				}
 			}
-
-			totalColumnsWidth = widgetWidth;
 		}
+
+		totalColumnsWidth = columnWidth;
 	}
 
 	// final Table Width Logic

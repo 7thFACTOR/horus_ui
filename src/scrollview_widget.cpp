@@ -342,6 +342,20 @@ Point scrollViewEnd()
 		!has(scrollViewState.flags, ScrollViewFlags::NoHorizontalScroll)
 		&& ((scrollViewState.virtualSize.x > 0 && scrollViewState.virtualSize.x > availableWidth) || scrollContentH > availableWidth);
 
+	if (has(scrollViewState.flags, ScrollViewFlags::NoPadding))
+	{
+		static int dbgOnce = 0;
+		if (dbgOnce++ < 5)
+		{
+			auto dbgClip = ctx->renderer.getClipRect();
+			std::printf("[TBL] rect=[%.1f,%.1f %.1fx%.1f] clip=[%.1f,%.1f %.1fx%.1f] contentH=%.1f availW=%.1f vbarW=%.1f hbar=%d\n",
+				rectNoBorders.x, rectNoBorders.y, rectNoBorders.width, rectNoBorders.height,
+				dbgClip.x, dbgClip.y, dbgClip.width, dbgClip.height,
+				scrollContentH, availableWidth, scrollViewScrollBarElemStateV.width * ctx->scale,
+				hasHorizontalScrollbar);
+		}
+	}
+
 	f32 scrollAreaV = rectNoBorders.height;
 
 	if (hasHorizontalScrollbar)

@@ -110,11 +110,13 @@ bool circularSliderFloat(const char* label, f32* value, f32 minVal, f32 maxVal, 
 	
 	auto bodyElemState = &bodyElem.normalState();
 	auto markElemState = &markElem.normalState();
+	auto valueDotElemState = &valueDotElem.normalState();
 
 	if (ctx->widget.disabled)
 	{
 		bodyElemState = &bodyElem.getState(WidgetStateType::Disabled);
 		markElemState = &markElem.getState(WidgetStateType::Disabled);
+		valueDotElemState = &valueDotElem.getState(WidgetStateType::Disabled);
 	}
 	else if (ctx->widget.pressed)
 	{
@@ -169,6 +171,7 @@ bool circularSliderFloat(const char* label, f32* value, f32 minVal, f32 maxVal, 
 		f32 angle = lowLimitRadians;
 		i32 activeDots = dotCount * percent;
 		Point pos;
+		Color dotColor;
 
 		if (twoSide)
 		{
@@ -178,35 +181,38 @@ bool circularSliderFloat(const char* label, f32* value, f32 minVal, f32 maxVal, 
 			angle = 1.5f * M_PI;
 			step = (highLimitRadians - lowLimitRadians) / dotCount;
 			activeDots = fabs(dotCount * (percent - 0.5f));
-			ctx->renderer.cmdSetColor(*value < 0 ? negativeColor : positiveColor);
+			dotColor = ctx->widget.disabled ? valueDotElemState->color : (*value < 0 ? negativeColor : positiveColor);
+			ctx->renderer.cmdSetColor(dotColor);
 
 			for (i32 i = 0; i <= activeDots; i++)
 			{
-				pos.x = cosf(angle) * dotPlacementRadius * ctx->scale + center.x - valueDotElem.normalState().image->width * ctx->scale / 2;
-				pos.y = sinf(angle) * dotPlacementRadius * ctx->scale + center.y - valueDotElem.normalState().image->height * ctx->scale / 2;
-				ctx->renderer.cmdDrawImage(valueDotElem.normalState().image, pos, ctx->scale);
+				pos.x = cosf(angle) * dotPlacementRadius * ctx->scale + center.x - valueDotElemState->image->width * ctx->scale / 2;
+				pos.y = sinf(angle) * dotPlacementRadius * ctx->scale + center.y - valueDotElemState->image->height * ctx->scale / 2;
+				ctx->renderer.cmdDrawImage(valueDotElemState->image, pos, ctx->scale);
 				angle += step * (value ? sgn(*value) : 1.0f);
 			}
 
-			pos.x = cosf(radians) * dotPlacementRadius * ctx->scale + center.x - valueDotElem.normalState().image->width * ctx->scale / 2;
-			pos.y = sinf(radians) * dotPlacementRadius * ctx->scale + center.y - valueDotElem.normalState().image->height * ctx->scale / 2;
-			ctx->renderer.cmdDrawImage(valueDotElem.normalState().image, pos, ctx->scale);
+			pos.x = cosf(radians) * dotPlacementRadius * ctx->scale + center.x - valueDotElemState->image->width * ctx->scale / 2;
+			pos.y = sinf(radians) * dotPlacementRadius * ctx->scale + center.y - valueDotElemState->image->height * ctx->scale / 2;
+			ctx->renderer.cmdDrawImage(valueDotElemState->image, pos, ctx->scale);
 		}
 		else
 		{
+			dotColor = ctx->widget.disabled ? valueDotElemState->color : valueDotElem.getState(WidgetStateType::Pressed).color;
+
 			for (i32 i = 0; i <= activeDots; i++)
 			{
-				pos.x = cosf(angle) * dotPlacementRadius * ctx->scale + center.x - valueDotElem.normalState().image->width * ctx->scale / 2;
-				pos.y = sinf(angle) * dotPlacementRadius * ctx->scale + center.y - valueDotElem.normalState().image->height * ctx->scale / 2;
-				ctx->renderer.cmdSetColor(valueDotElem.getState(WidgetStateType::Pressed).color);
-				ctx->renderer.cmdDrawImage(valueDotElem.normalState().image, pos, ctx->scale);
+				pos.x = cosf(angle) * dotPlacementRadius * ctx->scale + center.x - valueDotElemState->image->width * ctx->scale / 2;
+				pos.y = sinf(angle) * dotPlacementRadius * ctx->scale + center.y - valueDotElemState->image->height * ctx->scale / 2;
+				ctx->renderer.cmdSetColor(dotColor);
+				ctx->renderer.cmdDrawImage(valueDotElemState->image, pos, ctx->scale);
 				angle += step;
 			}
 
-			pos.x = cosf(radians) * dotPlacementRadius * ctx->scale + center.x - valueDotElem.normalState().image->width * ctx->scale / 2;
-			pos.y = sinf(radians) * dotPlacementRadius * ctx->scale + center.y - valueDotElem.normalState().image->height * ctx->scale / 2;
-			ctx->renderer.cmdSetColor(valueDotElem.getState(WidgetStateType::Pressed).color);
-			ctx->renderer.cmdDrawImage(valueDotElem.normalState().image, pos, ctx->scale);
+			pos.x = cosf(radians) * dotPlacementRadius * ctx->scale + center.x - valueDotElemState->image->width * ctx->scale / 2;
+			pos.y = sinf(radians) * dotPlacementRadius * ctx->scale + center.y - valueDotElemState->image->height * ctx->scale / 2;
+			ctx->renderer.cmdSetColor(dotColor);
+			ctx->renderer.cmdDrawImage(valueDotElemState->image, pos, ctx->scale);
 		}
 
 		// draw the knob cursor

@@ -414,6 +414,19 @@ void frameBegin()
 	ctx->disabledNesting = 0;
 	ctx->layerIndex = 0;
 	ctx->maxLayerIndex = 0;
+
+	// pre-set the max layer to the popups that are still open from the previous
+	// frame, so window content (layer 0) is not hovered/clicked under a popup
+	// that sits on top of it
+	for (const auto& popup : ctx->popupStack)
+	{
+		if (!popup.active)
+			continue;
+
+		if (!has(popup.flags, PopupFlags::SameLayer))
+			ctx->maxLayerIndex++;
+	}
+
 	ctx->widget.nextFocusableId = 0;
 	ctx->menuDepth = 0;
 	ctx->popupIndex = 0;

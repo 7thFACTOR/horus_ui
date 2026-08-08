@@ -2,6 +2,7 @@
 #include "theme.h"
 #include "font.h"
 #include "util.h"
+#include "native_file_dialogs.h"
 #include <string.h>
 #include <stdio.h>
 #include <algorithm>
@@ -25,7 +26,19 @@ struct DemoState
 	char textAutoSelect[256] = "Select me";
 
 	// textInput Multiline
-	char multiText[4096] = "Line 1\nLine 2\nLine 3\nfloat foo = 3.14f;\nint bar = 42;";
+	char multiText[4096] =
+		"-- demo.lua\n"
+		"local function greet(name)\n"
+		"\tlocal message = \"Hello, \" .. name\n"
+		"\tprint(message)\n"
+		"\treturn #message\n"
+		"end\n"
+		"\n"
+		"for i = 1, 10 do\n"
+		"\tif i % 2 == 0 then\n"
+		"\t\tgreet('user' .. i)\n"
+		"\tend\n"
+		"end\n";
 
 	// slider
 	i32 sliderIntVal = 50;
@@ -186,6 +199,41 @@ struct DemoState
 	Point dragScrollListB = { 0, 0 };
 	bool imageSlots[3] = {};
 
+	// property grid (mesh inspector)
+	bool expandPropertyGrid = false;
+	bool disablePropertyGrid = false;
+	char pgMeshName[128] = "MonkeyMesh.obj";
+	char pgTag[64] = "enemy_medium";
+	i32 pgLayer = 3;
+	i32 pgVertexCount = 25464;
+	i32 pgTriangleCount = 50972;
+	i32 pgLodLevel = 0;
+	f32 pgPosX = 0.0f, pgPosY = 0.0f, pgPosZ = 0.0f;
+	f32 pgRotX = 0.0f, pgRotY = 0.0f, pgRotZ = 0.0f;
+	f32 pgScaleX = 1.0f, pgScaleY = 1.0f, pgScaleZ = 1.0f;
+	f32 pgBoundsMinX = -1.5f, pgBoundsMinY = -0.8f, pgBoundsMinZ = -0.7f;
+	f32 pgBoundsMaxX = 1.5f, pgBoundsMaxY = 0.8f, pgBoundsMaxZ = 0.7f;
+	Color pgAlbedoColor = Color(0.8f, 0.6f, 0.3f, 1.0f);
+	Color pgEmissionColor = Color(0.0f, 0.0f, 0.0f, 1.0f);
+	f32 pgRoughness = 0.65f;
+	f32 pgMetalness = 0.1f;
+	f32 pgOpacity = 1.0f;
+	i32 pgShadingMode = 3;
+	char pgTexturePath[256] = "textures/marble_diffuse.png";
+	bool pgCastShadows = true;
+	bool pgReceiveShadows = true;
+	bool pgDoubleSided = false;
+	bool pgSmoothNormals = true;
+	bool pgWireframe = false;
+	bool pgFrustumCulling = true;
+	u32 pgCullMode = 1;
+	i32 pgDrawPriority = 100;
+	bool pgGroupIdentity = true;
+	bool pgGroupGeometry = true;
+	bool pgGroupTransform = true;
+	bool pgGroupMaterial = true;
+	bool pgGroupRender = true;
+
 	Point scrollPos = { 0, 0 };
 
 	bool initialized = false;
@@ -199,6 +247,15 @@ struct DemoState
 };
 
 static DemoState demo;
+
+template <typename EditorFn>
+static void propGridRow(const char* name, EditorFn&& editorFn)
+{
+	tableRowNext();
+	label(name, HAlignType::Right);
+	tableCellNext();
+	editorFn();
+}
 
 void showDemo()
 {
@@ -335,21 +392,61 @@ void showDemo()
 		check("Disable##MultilineTextInput", &demo.disableMultiline);
 		widgetPushDisabled(demo.disableMultiline);
 
+		// Lua syntax highlighting
+		static const Color luaKeywordColor = Color::fromU8(86, 156, 214);
+		static const Color luaStringColor = Color::fromU8(206, 145, 120);
+		static const Color luaCommentColor = Color::fromU8(106, 153, 85);
+
+		static const KeywordInfo luaKeywords[] = {
+			{ "and", luaKeywordColor },
+			{ "break", luaKeywordColor },
+			{ "do", luaKeywordColor },
+			{ "else", luaKeywordColor },
+			{ "elseif", luaKeywordColor },
+			{ "end", luaKeywordColor },
+			{ "false", luaKeywordColor },
+			{ "for", luaKeywordColor },
+			{ "function", luaKeywordColor },
+			{ "goto", luaKeywordColor },
+			{ "if", luaKeywordColor },
+			{ "in", luaKeywordColor },
+			{ "local", luaKeywordColor },
+			{ "nil", luaKeywordColor },
+			{ "not", luaKeywordColor },
+			{ "or", luaKeywordColor },
+			{ "repeat", luaKeywordColor },
+			{ "return", luaKeywordColor },
+			{ "then", luaKeywordColor },
+			{ "true", luaKeywordColor },
+			{ "until", luaKeywordColor },
+			{ "while", luaKeywordColor },
+		};
+
+		static const RangeHighlight luaRangeHighlights[] = {
+			{ "\"", "\"", luaStringColor, "\\" },
+			{ "'", "'", luaStringColor, "\\" },
+			{ "--", "", luaCommentColor },
+		};
+
+		static const u32 luaKeywordCount = sizeof(luaKeywords) / sizeof(luaKeywords[0]);
+		static const u32 luaRangeHighlightCount = sizeof(luaRangeHighlights) / sizeof(luaRangeHighlights[0]);
+
 		label("Basic (10 visible lines):");
-		textInputMultiline("##mtiBasic", demo.multiText, sizeof(demo.multiText), 10);
+		textInputMultiline("##mtiBasic", demo.multiText, sizeof(demo.multiText), 10, MultilineTextInputFlags::None, luaKeywords, luaKeywordCount, luaRangeHighlights, luaRangeHighlightCount);
 
 		space();
 		label("With line numbers:");
-		textInputMultiline("##mtiLineNums", demo.multiText, sizeof(demo.multiText), 8, MultilineTextInputFlags::LineNumbers);
+		textInputMultiline("##mtiLineNums", demo.multiText, sizeof(demo.multiText), 8, MultilineTextInputFlags::LineNumbers, luaKeywords, luaKeywordCount, luaRangeHighlights, luaRangeHighlightCount);
 
 		space();
 		label("With word wrap:");
-		textInputMultiline("##mtiWordWrap", demo.multiText, sizeof(demo.multiText), 6, MultilineTextInputFlags::WordWrap);
+		textInputMultiline("##mtiWordWrap", demo.multiText, sizeof(demo.multiText), 6, MultilineTextInputFlags::WordWrap, luaKeywords, luaKeywordCount, luaRangeHighlights, luaRangeHighlightCount);
 
 		space();
-		label("Line numbers + highlight current line:");
+		label("Lua syntax + line numbers + highlight current line:");
 		textInputMultiline("##mtiHighlight", demo.multiText, sizeof(demo.multiText), 8,
-			MultilineTextInputFlags::LineNumbers | MultilineTextInputFlags::HighlightCurrentLine);
+			MultilineTextInputFlags::LineNumbers | MultilineTextInputFlags::HighlightCurrentLine,
+			luaKeywords, luaKeywordCount, luaRangeHighlights, luaRangeHighlightCount);
 		widgetPopDisabled();
 		expandableEnd();
 	}
@@ -1573,6 +1670,155 @@ void showDemo()
 				label(nameBuf); tableCellNext(); 
 				label(i % 2 == 0 ? "Active" : "Inactive");
 			}
+			tableEnd();
+		}
+		widgetPopDisabled();
+		expandableEnd();
+	}
+
+	// ------------------------------------------------------------------
+	// property grid (mesh inspector)
+	// ------------------------------------------------------------------
+	if (expandableBegin("Property Grid (Mesh Inspector)", &demo.expandPropertyGrid))
+	{
+		check("Disable##PropertyGrid", &demo.disablePropertyGrid);
+		widgetPushDisabled(demo.disablePropertyGrid);
+
+		static const char* layers[] = { "Default", "Environment", "Player", "Enemy", "UI" };
+		static const char* lodLevels[] = { "LOD 0", "LOD 1", "LOD 2", "LOD 3" };
+		static const char* shadingModes[] = { "Unlit", "Lambert", "Blinn-Phong", "PBR" };
+		static const char* cullModes[] = { "None", "Back", "Front" };
+
+		label("A two-column property table with expandable groups:");
+		space();
+
+		if (tableBegin("##propGrid", 2, 0, TableFlags::Borders | TableFlags::Resizable | TableFlags::AltRowBg))
+		{
+			tableColumnSetup(0, 150, TableColumnFlags::FixedResize);
+			tableColumnSetup(1, 0, TableColumnFlags::Stretch);
+			tableCellPaddingPush(10.0f, 6.0f);
+
+			tableStartHeader();
+			label("Property"); tableCellNext();
+			label("Value");
+
+			// ---- identity ----
+			tableRowNext();
+			bool identityOpen = expandable("Identity", &demo.pgGroupIdentity);
+			tableCellNext();
+
+			if (identityOpen)
+			{
+				propGridRow("Name", [&]() { textInput("##pgName", demo.pgMeshName, sizeof(demo.pgMeshName)); });
+				propGridRow("Tag", [&]() { textInput("##pgTag", demo.pgTag, sizeof(demo.pgTag)); });
+				propGridRow("Layer", [&]() { dropdown("##pgLayer", demo.pgLayer, layers, 5); });
+				propGridRow("Mesh Asset", [&]() { label("assets/models/monkey.obj"); });
+			}
+
+			// ---- geometry ----
+			tableRowNext();
+			bool geometryOpen = expandable("Geometry", &demo.pgGroupGeometry);
+			tableCellNext();
+
+			if (geometryOpen)
+			{
+				propGridRow("Vertices", [&]() {
+					char buf[64];
+					snprintf(buf, sizeof(buf), "%d", demo.pgVertexCount);
+					label(buf);
+				});
+				propGridRow("Triangles", [&]() {
+					char buf[64];
+					snprintf(buf, sizeof(buf), "%d", demo.pgTriangleCount);
+					label(buf);
+				});
+				propGridRow("LOD Level", [&]() { dropdown("##pgLod", demo.pgLodLevel, lodLevels, 4); });
+			}
+
+			// ---- transform ----
+			tableRowNext();
+			bool transformOpen = expandable("Transform", &demo.pgGroupTransform);
+			tableCellNext();
+
+			if (transformOpen)
+			{
+				propGridRow("Position", [&]() { vec3Editor("##pgPos", demo.pgPosX, demo.pgPosY, demo.pgPosZ); });
+				propGridRow("Rotation", [&]() { vec3Editor("##pgRot", demo.pgRotX, demo.pgRotY, demo.pgRotZ); });
+				propGridRow("Scale", [&]() { vec3Editor("##pgScale", demo.pgScaleX, demo.pgScaleY, demo.pgScaleZ); });
+				propGridRow("Bounds Min", [&]() { vec3Editor("##pgBMin", demo.pgBoundsMinX, demo.pgBoundsMinY, demo.pgBoundsMinZ); });
+				propGridRow("Bounds Max", [&]() { vec3Editor("##pgBMax", demo.pgBoundsMaxX, demo.pgBoundsMaxY, demo.pgBoundsMaxZ); });
+			}
+
+			// ---- material ----
+			tableRowNext();
+			bool materialOpen = expandable("Material", &demo.pgGroupMaterial);
+			tableCellNext();
+
+			if (materialOpen)
+			{
+				propGridRow("Albedo", [&]() { colorPickerPopup("##pgAlbedo", &demo.pgAlbedoColor); });
+				propGridRow("Emission", [&]() { colorPickerPopup("##pgEmission", &demo.pgEmissionColor); });
+				propGridRow("Roughness", [&]() { sliderFloat("##pgRough", 0.0f, 1.0f, demo.pgRoughness); });
+				propGridRow("Metalness", [&]() { sliderFloat("##pgMetal", 0.0f, 1.0f, demo.pgMetalness); });
+				propGridRow("Opacity", [&]() { sliderFloat("##pgOpacity", 0.0f, 1.0f, demo.pgOpacity); });
+				propGridRow("Shading Mode", [&]() { dropdown("##pgShading", demo.pgShadingMode, shadingModes, 4); });
+				propGridRow("Texture Map", [&]() {
+					auto& btnBodyElem = ctx->theme->getElement(WidgetElementId::ButtonBody);
+					f32 btnWidth = (btnBodyElem.normalState().border * 2.0f + btnBodyElem.normalState().font->computeTextSize("Browse").width) * ctx->scale;
+					widgetSetNextWidth((ctx->layout.width - btnWidth - ctx->sameLine.spacing * ctx->scale) / ctx->scale);
+					textInput("##pgTexture", demo.pgTexturePath, sizeof(demo.pgTexturePath));
+					sameLine();
+					if (button("Browse"))
+					{
+						char path[512];
+						if (openFileDialog("*.*;*.png;*.jpg;*.jpeg;*.bmp;*.tga", "", path, sizeof(path)))
+							snprintf(demo.pgTexturePath, sizeof(demo.pgTexturePath), "%s", path);
+					}
+				});
+			}
+
+			// ---- render ----
+			tableRowNext();
+			bool renderOpen = expandable("Render", &demo.pgGroupRender);
+			tableCellNext();
+
+			if (renderOpen)
+			{
+				propGridRow("Cast Shadows", [&]() {
+					idPush("pgCastShadows");
+					check("", &demo.pgCastShadows);
+					idPop();
+				});
+				propGridRow("Receive Shadows", [&]() {
+					idPush("pgReceiveShadows");
+					check("", &demo.pgReceiveShadows);
+					idPop();
+				});
+				propGridRow("Double-Sided", [&]() {
+					idPush("pgDoubleSided");
+					check("", &demo.pgDoubleSided);
+					idPop();
+				});
+				propGridRow("Smooth Normals", [&]() {
+					idPush("pgSmoothNormals");
+					check("", &demo.pgSmoothNormals);
+					idPop();
+				});
+				propGridRow("Wireframe Overlay", [&]() {
+					idPush("pgWireframe");
+					check("", &demo.pgWireframe);
+					idPop();
+				});
+				propGridRow("Frustum Culling", [&]() {
+					idPush("pgFrustumCulling");
+					check("", &demo.pgFrustumCulling);
+					idPop();
+				});
+				propGridRow("Cull Mode", [&]() { buttonGroup("##pgCull", cullModes, 3, &demo.pgCullMode); });
+				propGridRow("Draw Priority", [&]() { comboSliderIntRanged(&demo.pgDrawPriority, 0, 1000, 1.0f, 10, "Priority %.0f"); });
+			}
+
+			tableCellPaddingPop();
 			tableEnd();
 		}
 		widgetPopDisabled();
