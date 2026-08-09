@@ -744,8 +744,9 @@ void showDemo()
 				HImage icon = themeGetImage(themeGet(), "__WHITEIMAGE__");
 				if (icon)
 				{
-					auto& btnBodyElem = ctx->theme->getElement(WidgetElementId::ButtonBody);
-					image(icon, btnBodyElem.normalState().height, HAlignType::Left);
+					WidgetElementInfo btnBody;
+					themeGetWidgetElementInfo(WidgetElementId::ButtonBody, WidgetStateType::Normal, btnBody);
+					image(icon, btnBody.height, HAlignType::Left);
 					sameLine();
 				}
 				if (button("Open##report"))
@@ -762,8 +763,9 @@ void showDemo()
 				HImage icon = themeGetImage(themeGet(), "__WHITEIMAGE__");
 				if (icon)
 				{
-					auto& btnBodyElem = ctx->theme->getElement(WidgetElementId::ButtonBody);
-					image(icon, btnBodyElem.normalState().height, HAlignType::Left);
+					WidgetElementInfo btnBody;
+					themeGetWidgetElementInfo(WidgetElementId::ButtonBody, WidgetStateType::Normal, btnBody);
+					image(icon, btnBody.height, HAlignType::Left);
 					sameLine();
 				}
 				if (button("View##photo"))
@@ -1704,8 +1706,8 @@ void showDemo()
 
 			// ---- identity ----
 			tableRowNext();
+			tableCellNext(2);
 			bool identityOpen = expandable("Identity", &demo.pgGroupIdentity);
-			tableCellNext();
 
 			if (identityOpen)
 			{
@@ -1717,8 +1719,8 @@ void showDemo()
 
 			// ---- geometry ----
 			tableRowNext();
+			tableCellNext(2);
 			bool geometryOpen = expandable("Geometry", &demo.pgGroupGeometry);
-			tableCellNext();
 
 			if (geometryOpen)
 			{
@@ -1737,8 +1739,8 @@ void showDemo()
 
 			// ---- transform ----
 			tableRowNext();
+			tableCellNext(2);
 			bool transformOpen = expandable("Transform", &demo.pgGroupTransform);
-			tableCellNext();
 
 			if (transformOpen)
 			{
@@ -1751,8 +1753,8 @@ void showDemo()
 
 			// ---- material ----
 			tableRowNext();
+			tableCellNext(2);
 			bool materialOpen = expandable("Material", &demo.pgGroupMaterial);
-			tableCellNext();
 
 			if (materialOpen)
 			{
@@ -1763,9 +1765,11 @@ void showDemo()
 				propGridRow("Opacity", [&]() { sliderFloat("##pgOpacity", 0.0f, 1.0f, demo.pgOpacity); });
 				propGridRow("Shading Mode", [&]() { dropdown("##pgShading", demo.pgShadingMode, shadingModes, 4); });
 				propGridRow("Texture Map", [&]() {
-					auto& btnBodyElem = ctx->theme->getElement(WidgetElementId::ButtonBody);
-					f32 btnWidth = (btnBodyElem.normalState().border * 2.0f + btnBodyElem.normalState().font->computeTextSize("Browse").width) * ctx->scale;
-					widgetSetNextWidth((ctx->layout.width - btnWidth - ctx->sameLine.spacing * ctx->scale) / ctx->scale);
+					WidgetElementInfo btnBody;
+					themeGetWidgetElementInfo(WidgetElementId::ButtonBody, WidgetStateType::Normal, btnBody);
+					f32 btnWidth = (btnBody.border * 2.0f + renderGetTextSize("Browse").x) * scaleGet();
+					f32 spacingPx = 5.0f * scaleGet();
+					widgetSetNextWidth((layoutGetSize().x - btnWidth - spacingPx) / scaleGet());
 					textInput("##pgTexture", demo.pgTexturePath, sizeof(demo.pgTexturePath));
 					sameLine();
 					if (button("Browse"))
@@ -1779,8 +1783,8 @@ void showDemo()
 
 			// ---- render ----
 			tableRowNext();
+			tableCellNext(2);
 			bool renderOpen = expandable("Render", &demo.pgGroupRender);
-			tableCellNext();
 
 			if (renderOpen)
 			{

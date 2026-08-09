@@ -607,7 +607,7 @@ bool colorPicker(const char* id, Color* inOutColor, ColorPickerFlags flags, cons
 		line();
 		space();
 
-		auto& btnBodyElem = ctx->theme->getElement(WidgetElementId::ButtonBody);
+		auto& btnBodyElem = ctx->theme->getElement(WidgetElementId::ColorPickerButtonBody);
 		f32 paddingY = widgetGetPadding().y;
 		f32 btnH = btnBodyElem.normalState().height;
 		f32 swatchSize = btnH + paddingY * 2.0f;
@@ -781,7 +781,7 @@ bool colorPickerPopup(const char* id, Color* inOutColor, ColorPickerFlags flags,
 	ctx->setLabelAndId(id);
 	auto pickerId = ctx->id;
 
-	auto& btnBodyElem = ctx->theme->getElement(WidgetElementId::ButtonBody);
+	auto& btnBodyElem = ctx->theme->getElement(WidgetElementId::ColorPickerButtonBody);
 	auto& colorPickerCheckersState = ctx->theme->getElement(WidgetElementId::ColorPickerCheckers).normalState();
 	f32 swatchHeight = btnBodyElem.normalState().height;
 

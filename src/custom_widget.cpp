@@ -69,7 +69,7 @@ Point renderGetTextSize(const char* text)
 		return Point();
 
 	FontTextSize fntInfo = 
-	ctx->renderer.computeSizeOrDrawText(text, Rect(), HAlignType::Left, VAlignType::Top, false, ctx->renderer.getFont());
+	ctx->renderer.computeSizeOrDrawText(text, Rect(0, 0, FLT_MAX, FLT_MAX), HAlignType::Left, VAlignType::Top, false, ctx->renderer.getFont());
 
 	return { fntInfo.width, fntInfo.height };
 }

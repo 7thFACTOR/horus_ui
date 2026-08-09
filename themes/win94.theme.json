@@ -1681,7 +1681,31 @@
                 "borderColorV": "0 0 128 255",
                 "borderColorH": "0 0 0 255",
                 "normal": {
-                    "color": "white"
+                    "image": "win94/table_header_middle_normal",
+                    "border": 4,
+                    "color": "white",
+                    "textColor": "0 0 0 255",
+                    "font": "normal"
+                }
+            },
+            "tableHeaderBodyLeft": {
+                "height": 25,
+                "normal": {
+                    "image": "win94/table_header_left_normal",
+                    "border": 4,
+                    "color": "white",
+                    "textColor": "0 0 0 255",
+                    "font": "normal"
+                }
+            },
+            "tableHeaderBodyRight": {
+                "height": 25,
+                "normal": {
+                    "image": "win94/table_header_right_normal",
+                    "border": 4,
+                    "color": "white",
+                    "textColor": "0 0 0 255",
+                    "font": "normal"
                 }
             }
         },
@@ -1697,6 +1721,36 @@
                 "normal": {
                     "textColor": "0 0 0 255",
                     "font": "normal"
+                }
+            },
+            "colorPickerButtonBody": {
+                "height": 22,
+                "normal": {
+                    "image": "win94/button_normal",
+                    "border": 4,
+                    "color": "white",
+                    "textColor": "0 0 0 255",
+                    "font": "normal"
+                },
+                "disabled": {
+                    "color": "white",
+                    "textColor": "128 128 128 255",
+                    "textShadow": {
+                        "color": "255 255 255 255",
+                        "offsetX": 1,
+                        "offsetY": 1
+                    }
+                },
+                "hovered": {
+                    "color": "white"
+                },
+                "pressed": {
+                    "image": "win94/button_pressed",
+                    "border": 4,
+                    "color": "white"
+                },
+                "focused": {
+                    "color": "white"
                 }
             }
         },

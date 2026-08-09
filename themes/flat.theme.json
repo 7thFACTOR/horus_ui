@@ -705,7 +705,17 @@
 				"height": 25,
 				"borderColorV": "55 125 185 255",
 				"borderColorH": "40 45 55 255",
-				"normal": {"color": "55 95 135 255"}
+				"normal": { "image": "flat/table_header_middle_normal", "border": 0, "color": "55 95 135 255" }
+			},
+			"tableHeaderBodyLeft":
+			{
+				"height": 25,
+				"normal": { "image": "flat/table_header_left_normal", "border": 0, "color": "55 95 135 255" }
+			},
+			"tableHeaderBodyRight":
+			{
+				"height": 25,
+				"normal": { "image": "flat/table_header_right_normal", "border": 0, "color": "55 95 135 255" }
 			}
 		},
 		"colorPicker":
@@ -717,6 +727,15 @@
 			"colorPickerBody":
 			{
 				"normal": { "textColor": "white", "font": "normal" }
+			},
+			"colorPickerButtonBody":
+			{
+				"height": 22,
+				"normal": { "image": "flat/rect", "border": 0, "color": "55 95 135 255", "textColor": "white", "font": "normal" },
+				"disabled": { "color": "55 95 135 128", "textColor": "128 128 128 255", "textShadow": { "color": "255 255 255 255", "offsetX": 1, "offsetY": 1 } },
+				"hovered": { "color": "70 120 165 255" },
+				"pressed": { "image": "flat/rect", "border": 0, "color": "40 75 110 255" },
+				"focused": { "color": "60 100 145 255" }
 			}
 		},
 		"link":

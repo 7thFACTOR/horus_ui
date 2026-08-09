@@ -304,8 +304,11 @@ enum class WidgetElementId
 	CircularSliderValueDot,
 	ColorPickerCheckers,
 	ColorPickerBody,
+	ColorPickerButtonBody,
 	TableBody,
 	TableHeaderBody,
+	TableHeaderBodyLeft,
+	TableHeaderBodyRight,
 	LinkBody,
 
 	Count
@@ -2260,7 +2263,7 @@ HUI_API void tableStartHeader();
 HUI_API void tableColumnSetup(u32 columnIndex, f32 size, TableColumnFlags flags = TableColumnFlags::None);
 HUI_API void tableRowNext();
 HUI_API void tableRowSetColor(const Color& color);
-HUI_API void tableCellNext();
+HUI_API void tableCellNext(u32 columnSpan = 1);
 HUI_API Rect tableCellGetRect();
 HUI_API void tableCellSetColor(const Color& color);
 HUI_API void tableCellPaddingPush(f32 paddingX, f32 paddingY);

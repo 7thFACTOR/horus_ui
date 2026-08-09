@@ -184,11 +184,49 @@ static void finishRow(TableState& state)
 
 		auto& bodyElem = ctx->theme->getElement(WidgetElementId::TableHeaderBody);
 		auto& bodyElemState = bodyElem.normalState();
+		auto& headerLeftElem = ctx->theme->getElement(WidgetElementId::TableHeaderBodyLeft);
+		auto& headerRightElem = ctx->theme->getElement(WidgetElementId::TableHeaderBodyRight);
+		auto& headerLeftState = headerLeftElem.normalState();
+		auto& headerRightState = headerRightElem.normalState();
 
-		// draw header background
+		// draw header background per column: first, middle and last columns use left, middle and right elements
 		state.persistent->splitter->setLayer(0);
-		ctx->renderer.cmdSetColor(bodyElemState.color);
-		ctx->renderer.cmdDrawFilledRectangle(state.headerRect);
+		{
+			u32 visibleCount = 0;
+
+			for (const auto& col : state.persistent->columns)
+				if (!col.isHidden) visibleCount++;
+
+			f32 x = state.tableRect.x;
+			u32 visibleIndex = 0;
+
+			for (u32 i = 0; i < state.persistent->columns.size(); i++)
+			{
+				if (state.persistent->columns[i].isHidden)
+					continue;
+
+				const auto& elemState = visibleIndex == 0 ? headerLeftState
+					: visibleIndex == visibleCount - 1 ? headerRightState
+					: bodyElemState;
+				f32 columnWidth = state.persistent->columns[i].width;
+				Rect cellRect(x, state.tableRect.y, columnWidth, headerHeight);
+
+				ctx->renderer.cmdSetColor(tintApply(elemState.color, TintColorType::Body));
+				ctx->renderer.cmdDrawImageBordered(elemState.image, elemState.border, cellRect, ctx->scale);
+
+				x += columnWidth;
+				visibleIndex++;
+			}
+
+			// fill remaining width after the last column with the right element
+			if (x < state.headerRect.right())
+			{
+				Rect cellRect(x, state.tableRect.y, state.headerRect.right() - x, headerHeight);
+
+				ctx->renderer.cmdSetColor(tintApply(headerRightState.color, TintColorType::Body));
+				ctx->renderer.cmdDrawImageBordered(headerRightState.image, headerRightState.border, cellRect, ctx->scale);
+			}
+		}
 
 		// header pending cell backgrounds? Usually not used, but supported just in case
 		if (!state.cellColorRequests.empty())
@@ -1170,7 +1208,7 @@ void tableRowNext()
 	}
 }
 
-void tableCellNext()
+void tableCellNext(u32 columnSpan)
 {
 	auto& state = currentTable();
 
@@ -1192,47 +1230,59 @@ void tableCellNext()
 		state.isClipping = false;
 	}
 
-	if (state.currentColumn < state.persistent->columns.size())
+	if (state.currentColumn >= state.persistent->columns.size())
+		return;
+
+	// calculate height of the cell we just finished
+	// note: ctx->position.y points to where the next widget would go, so it represents the bottom of content
+	// position.y already includes the top padding we added at start of cell, so we only need to add bottom padding
+	f32 finishedCellHeight = ctx->position.y - state.cellStartY + ctx->cellPadding.y;
+
+	state.currentMaxRowHeight = std::max(state.currentMaxRowHeight, finishedCellHeight);
+
+	// reset cell color flag for previous cell
+	state.currentCellColorSet = false;
+
+	f32 baseX = state.needsScrollViewStart ? state.scrollViewBaseX : state.tableRect.x;
+
+	// advance to the cell that gets set up for the next widget.
+	// a normal cell (span 1) starts right after the cell we just finished,
+	// a spanning cell (columnSpan > 1) starts at the finished column and covers the next columns.
+	u32 spanStart = state.currentColumn;
+	u32 cellStart = columnSpan > 1 ? spanStart : spanStart + 1;
+	u32 cellEnd = std::min(cellStart + (columnSpan > 1 ? columnSpan : 1), (u32)state.persistent->columns.size());
+	state.currentColumn = cellStart;
+
+	// compute the X and width of the cell being set up
+	f32 cellX = baseX;
+	f32 cellWidth = 0;
+
+	for (u32 i = 0; i < cellEnd; i++)
 	{
-		// calculate height of the cell we just finished
-		// note: ctx->position.y points to where the next widget would go, so it represents the bottom of content
-		// position.y already includes the top padding we added at start of cell, so we only need to add bottom padding
-		f32 finishedCellHeight = ctx->position.y - state.cellStartY + ctx->cellPadding.y;
+		if (state.persistent->columns[i].isHidden)
+			continue;
 
-		state.currentMaxRowHeight = std::max(state.currentMaxRowHeight, finishedCellHeight);
-
-		// reset cell color flag for previous cell
-		state.currentCellColorSet = false;
-
-		// advance to next column (no spanning)
-		state.currentColumn++;
-
-		// move to next column
-		f32 baseX = state.needsScrollViewStart ? state.scrollViewBaseX : state.tableRect.x;
-		f32 cellX = baseX;
-
-		for (u32 i = 0; i < state.currentColumn && i < state.persistent->columns.size(); i++)
-		{
-			if (!state.persistent->columns[i].isHidden)
-				cellX += state.persistent->columns[i].width;
-		}
-
-		if (state.currentColumn < state.persistent->columns.size())
-		{
-			ctx->layout.width = state.persistent->columns[state.currentColumn].width - (ctx->cellPadding.x * 2.0f);
-			ctx->position.x = cellX + ctx->cellPadding.x;
-			ctx->position.y = state.rowStartY + ctx->cellPadding.y; // reset Y to top of row
-			state.cellStartY = state.rowStartY; // new cell starts at row top
-
-			// push Clip rect to prevent cell content from overflowing
-			// add 1px to width to include the border line on the right
-			f32 clipHeight = 99999.0f;
-			Rect clipRect(cellX, state.rowStartY, state.persistent->columns[state.currentColumn].width + 1.0f, clipHeight);
-
-			ctx->renderer.pushClipRect(clipRect);
-			state.isClipping = true;
-		}
+		if (i < cellStart)
+			cellX += state.persistent->columns[i].width;
+		else
+			cellWidth += state.persistent->columns[i].width;
 	}
+
+	if (cellWidth <= 0)
+		return;
+
+	ctx->layout.width = cellWidth - (ctx->cellPadding.x * 2.0f);
+	ctx->position.x = cellX + ctx->cellPadding.x;
+	ctx->position.y = state.rowStartY + ctx->cellPadding.y; // reset Y to top of row
+	state.cellStartY = state.rowStartY; // new cell starts at row top
+
+	// push Clip rect to prevent cell content from overflowing
+	// add 1px to width to include the border line on the right
+	f32 clipHeight = 99999.0f;
+	Rect clipRect(cellX, state.rowStartY, cellWidth + 1.0f, clipHeight);
+
+	ctx->renderer.pushClipRect(clipRect);
+	state.isClipping = true;
 }
 
 

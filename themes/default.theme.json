@@ -694,18 +694,28 @@
 				"rowAltBgColor1" : "0 0 0 20",
 				"innerBorderColorV": "black",
 				"innerBorderColorH": "black",
-				"outerBorderColorV": "darkCyan",
-				"outerBorderColorH": "darkCyan",
+				"outerBorderColorV": "gray",
+				"outerBorderColorH": "gray",
 				"columnResizeLineColor": "cyan",
 				"rowHeight": 0.0
 			},
 			"tableHeaderBody":
 			{
 				"height": 25,
-				"borderColorV": "darkCyan",
-				"borderColorH": "black",
-				"normal": {"color": "70 120 130 255"}
-			}		
+				"borderColorV": "transparent",
+				"borderColorH": "transparent",
+				"normal": { "image": "default/table_header_middle_normal", "border": 1, "color": "70 120 130 255"}
+			},
+			"tableHeaderBodyLeft":
+			{
+				"height": 25,
+				"normal": { "image": "default/table_header_left_normal", "border": 5, "color": "70 120 130 255" }
+			},
+			"tableHeaderBodyRight":
+			{
+				"height": 25,
+				"normal": { "image": "default/table_header_right_normal", "border": 5, "color": "70 120 130 255" }
+			}
 		},
 		"colorPicker":
 		{
@@ -716,6 +726,15 @@
 			"colorPickerBody":
 			{
 				"normal": { "textColor": "white", "font": "normal" }
+			},
+			"colorPickerButtonBody":
+			{
+				"height": 22,
+				"normal": { "image": "default/button_normal", "border": 2, "color": "120 120 120 255", "textColor": "white", "font": "normal" },
+				"disabled": { "color": "120 120 120 155", "textColor": "128 128 128 255", "textShadow": { "color": "255 255 255 255", "offsetX": 1, "offsetY": 1 } },
+				"hovered": { "color": "155 200 200 255" },
+				"pressed": { "image": "default/button_pressed", "border": 3, "color": "white", "textColor": "white", "font": "normal" },
+				"focused": { "color": "115 115 115 255" }
 			}
 		},
 		"link":

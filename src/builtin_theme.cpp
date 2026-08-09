@@ -68,6 +68,7 @@ HTheme createBuiltinTheme(u32 atlasTextureSize)
 	setSize(WidgetElementId::ButtonGroupMiddleBody, 0, 22, 0);
 	setSize(WidgetElementId::ButtonGroupRightBody, 0, 22, 4);
 	setSize(WidgetElementId::ImageButtonBody, 0, 22, 3);
+	setSize(WidgetElementId::ColorPickerButtonBody, 0, 22, 3);
 	setSize(WidgetElementId::TextInputBody, 0, 22, 3);
 	setSize(WidgetElementId::SliderBody, 0, 16, 2);
 	setSize(WidgetElementId::ComboSliderBody, 0, 20, 2);
@@ -80,6 +81,8 @@ HTheme createBuiltinTheme(u32 atlasTextureSize)
 	setSize(WidgetElementId::ProgressBack, 0, 20, 6);
 	setSize(WidgetElementId::ProgressFill, 0, 19, 6);
 	setSize(WidgetElementId::SelectableBody, 0, 20, 3);
+	setSize(WidgetElementId::TableHeaderBodyLeft, 0, 22, 4);
+	setSize(WidgetElementId::TableHeaderBodyRight, 0, 22, 4);
 	setSize(WidgetElementId::TabBodyActive, 100, 30, 5);
 	setSize(WidgetElementId::TabBodyInactive, 100, 30, 5);
 	setSize(WidgetElementId::TooltipBody, 0, 0, 4);

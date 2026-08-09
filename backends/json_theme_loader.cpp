@@ -243,8 +243,11 @@ static WidgetElementId getWidgetElementFromName(std::string name)
 	if (name == "circularSliderValueDot") return WidgetElementId::CircularSliderValueDot;
 	if (name == "colorPickerCheckers") return WidgetElementId::ColorPickerCheckers;
 	if (name == "colorPickerBody") return WidgetElementId::ColorPickerBody;
+	if (name == "colorPickerButtonBody") return WidgetElementId::ColorPickerButtonBody;
 	if (name == "tableBody") return WidgetElementId::TableBody;
 	if (name == "tableHeaderBody") return WidgetElementId::TableHeaderBody;
+	if (name == "tableHeaderBodyLeft") return WidgetElementId::TableHeaderBodyLeft;
+	if (name == "tableHeaderBodyRight") return WidgetElementId::TableHeaderBodyRight;
 	if (name == "multilineTextInputBody") return WidgetElementId::MultilineTextInputBody;
 	if (name == "multilineTextInputLineNumbers") return WidgetElementId::MultilineTextInputLineNumbers;
 	if (name == "multilineTextInputCurrentLineHighlight") return WidgetElementId::MultilineTextInputCurrentLineHighlight;

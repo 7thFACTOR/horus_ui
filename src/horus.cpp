@@ -1167,10 +1167,13 @@ void widgetSetStyle(WidgetType widgetType, const char* styleName)
 	case WidgetType::ColorPicker:
 		ctx->theme->elements[(u32)WidgetElementId::ColorPickerCheckers].setStyle(styleName);
 		ctx->theme->elements[(u32)WidgetElementId::ColorPickerBody].setStyle(styleName);
+		ctx->theme->elements[(u32)WidgetElementId::ColorPickerButtonBody].setStyle(styleName);
 		break;
 	case WidgetType::Table:
 		ctx->theme->elements[(u32)WidgetElementId::TableBody].setStyle(styleName);
 		ctx->theme->elements[(u32)WidgetElementId::TableHeaderBody].setStyle(styleName);
+		ctx->theme->elements[(u32)WidgetElementId::TableHeaderBodyLeft].setStyle(styleName);
+		ctx->theme->elements[(u32)WidgetElementId::TableHeaderBodyRight].setStyle(styleName);
 		break;
 	case WidgetType::Link:
 		ctx->theme->elements[(u32)WidgetElementId::LinkBody].setStyle(styleName);
