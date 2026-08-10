@@ -233,11 +233,12 @@ static WidgetElementId getWidgetElementFromName(std::string name)
 	if (name == "warningImage") return WidgetElementId::MessageBoxImageWarning;
 	if (name == "selectableBody") return WidgetElementId::SelectableBody;
 	if (name == "boxBody") return WidgetElementId::BoxBody;
-	if (name == "comboSliderBody") return WidgetElementId::ComboSliderBody;
+	if (name == "comboSliderLeftButton") return WidgetElementId::ComboSliderLeftButton;
+	if (name == "comboSliderMiddleButton") return WidgetElementId::ComboSliderMiddleButton;
+	if (name == "comboSliderRightButton") return WidgetElementId::ComboSliderRightButton;
 	if (name == "comboSliderLeftArrow") return WidgetElementId::ComboSliderLeftArrow;
 	if (name == "comboSliderRightArrow") return WidgetElementId::ComboSliderRightArrow;
 	if (name == "comboSliderRangeBar") return WidgetElementId::ComboSliderRangeBar;
-	if (name == "comboSliderVerticalLine") return WidgetElementId::ComboSliderVerticalLine;
 	if (name == "circularSliderBody") return WidgetElementId::CircularSliderBody;
 	if (name == "circularSliderMark") return WidgetElementId::CircularSliderMark;
 	if (name == "circularSliderValueDot") return WidgetElementId::CircularSliderValueDot;

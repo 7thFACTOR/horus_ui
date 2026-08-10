@@ -938,7 +938,28 @@
             }
         },
         "comboSlider": {
-            "comboSliderBody": {
+            "comboSliderLeftButton": {
+                "width": 22,
+                "height": 20,
+                "normal": {
+                    "image": "win94/dropdown",
+                    "border": 2,
+                    "color": "white"
+                },
+                "disabled": {
+                    "color": "192 192 208 128"
+                },
+                "hovered": {
+                    "color": "white"
+                },
+                "pressed": {
+                    "color": "white"
+                },
+                "focused": {
+                    "color": "white"
+                }
+            },
+            "comboSliderMiddleButton": {
                 "height": 20,
                 "normal": {
                     "image": "win94/dropdown",
@@ -967,6 +988,27 @@
                 "focused": {
                     "color": "white",
                     "textColor": "0 0 0 255"
+                }
+            },
+            "comboSliderRightButton": {
+                "width": 22,
+                "height": 20,
+                "normal": {
+                    "image": "win94/dropdown",
+                    "border": 2,
+                    "color": "white"
+                },
+                "disabled": {
+                    "color": "192 192 208 128"
+                },
+                "hovered": {
+                    "color": "white"
+                },
+                "pressed": {
+                    "color": "white"
+                },
+                "focused": {
+                    "color": "white"
                 }
             },
             "comboSliderLeftArrow": {
@@ -1037,23 +1079,6 @@
                 },
                 "focused": {
                     "color": "0 0 128 255"
-                }
-            },
-            "comboSliderVerticalLine": {
-                "height": 16,
-                "normal": {
-                    "image": "win94/pixel",
-                    "border": 0,
-                    "color": "white"
-                },
-                "hovered": {
-                    "color": "white"
-                },
-                "pressed": {
-                    "color": "white"
-                },
-                "focused": {
-                    "color": "white"
                 }
             }
         },

@@ -9,15 +9,17 @@ namespace hui
 {
 static bool comboSliderInternal(bool isInt, f32* value, f32 minVal, f32 maxVal, bool useRange, f32 stepsPerPixel, f32 arrowStep, const char* formatStr, u32 decimalPlaces = 4)
 {
-	auto& bodyElem = ctx->theme->getElement(WidgetElementId::ComboSliderBody);
+	auto& leftButtonElem = ctx->theme->getElement(WidgetElementId::ComboSliderLeftButton);
+	auto& middleButtonElem = ctx->theme->getElement(WidgetElementId::ComboSliderMiddleButton);
+	auto& rightButtonElem = ctx->theme->getElement(WidgetElementId::ComboSliderRightButton);
 	auto& leftArrowElem = ctx->theme->getElement(WidgetElementId::ComboSliderLeftArrow);
 	auto& rightArrowElem = ctx->theme->getElement(WidgetElementId::ComboSliderRightArrow);
 	auto& rangeBarElem = ctx->theme->getElement(WidgetElementId::ComboSliderRangeBar);
-	auto& verticalLineElem = ctx->theme->getElement(WidgetElementId::ComboSliderVerticalLine);
 	ctx->widget.changeEnded = false;
 	bool arrowStepped = false;
 	bool arrowHoveredLeft = false;
 	bool arrowHoveredRight = false;
+	f32 arrowZoneWidth = 0;
 	auto& padding = widgetGetPadding();
 
 	if (useRange)
@@ -35,7 +37,7 @@ static bool comboSliderInternal(bool isInt, f32* value, f32 minVal, f32 maxVal, 
 		ctx->widget.customWidth = ctx->layout.width/ctx->scale;
 		ctx->widget.hasCustomWidth = true;
 
-		addWidget((bodyElem.normalState().height + padding.y * 2.0f) * ctx->scale);
+		addWidget((leftButtonElem.normalState().height + padding.y * 2.0f) * ctx->scale);
 		buttonBehavior();
 
 		if (ctx->comboSlider.dragging && ctx->id == ctx->comboSlider.id)
@@ -43,30 +45,38 @@ static bool comboSliderInternal(bool isInt, f32* value, f32 minVal, f32 maxVal, 
 			ctx->widget.pressed = true;
 		}
 
+		auto leftButtonNormalState = &leftButtonElem.normalState();
+		f32 arrowZoneWidth = leftButtonNormalState->width;
+		if (arrowZoneWidth <= 0)
+		{
+			arrowZoneWidth = leftArrowElem.normalState().image->width + padding.x * 2.0f;
+		}
+		arrowZoneWidth *= ctx->scale;
+
 		auto cursor = 0;
 
 		// check left arrow
-		if (widgetIsHovered() 
-			&& ctx->mousePosition.x <= ctx->widget.rect.x + leftArrowElem.normalState().image->width + padding.x)
+		if (widgetIsHovered()
+			&& ctx->mousePosition.x <= ctx->widget.rect.x + arrowZoneWidth)
 		{
 			arrowHoveredLeft = true;
 		}
 		// check right arrow
 		else if (widgetIsHovered()
-			&& ctx->mousePosition.x >= ctx->widget.rect.right() - rightArrowElem.normalState().image->width - padding.x)
+			&& ctx->mousePosition.x >= ctx->widget.rect.right() - arrowZoneWidth)
 		{
 			arrowHoveredRight = true;
 		}
 
 		if (widgetIsClicked()
-			&& ctx->mousePosition.x <= ctx->widget.rect.x + leftArrowElem.normalState().image->width + padding.x)
+			&& ctx->mousePosition.x <= ctx->widget.rect.x + arrowZoneWidth)
 		{
 			*value -= arrowStep;
 			arrowStepped = true;
 			if (useRange) clampValue(*value, minVal, maxVal);
 			ctx->widget.changeEnded = true;
 		}
-		else if (widgetIsClicked() && ctx->mousePosition.x >= ctx->widget.rect.right() - rightArrowElem.normalState().image->width - padding.x)
+		else if (widgetIsClicked() && ctx->mousePosition.x >= ctx->widget.rect.right() - arrowZoneWidth)
 		{
 			*value += arrowStep;
 			arrowStepped = true;
@@ -96,7 +106,7 @@ static bool comboSliderInternal(bool isInt, f32* value, f32 minVal, f32 maxVal, 
 			ctx->textInput.selectAllOnFocus = true;
 			ctx->textInput.firstMouseDown = true;
 
-			ctx->position.y -= ctx->spacing * ctx->scale + bodyElem.normalState().height;
+			ctx->position.y -= ctx->spacing * ctx->scale + leftButtonElem.normalState().height;
 
 			widgetSetNextFocused();
 			textInput("comboSliderEditText", ctx->comboSlider.text, ComboSliderState::maxTextSize, TextInputFlags::NumericOnly);
@@ -165,7 +175,6 @@ static bool comboSliderInternal(bool isInt, f32* value, f32 minVal, f32 maxVal, 
 	if (notEditingText)
 	{
 		f32 percentFilled = 1.0f - (maxVal - *value) / (maxVal - minVal);
-		f32 valueWidth = ctx->widget.rect.width;
 
 		if (ctx->event.type == InputEvent::Type::MouseDown
 			&& widgetIsHovered()
@@ -283,126 +292,157 @@ static bool comboSliderInternal(bool isInt, f32* value, f32 minVal, f32 maxVal, 
 			windowReleaseCapture();
 		}
 
-		auto bodyElemState = &bodyElem.normalState();
-		auto leftArrowElemState = &leftArrowElem.normalState();
-		auto rightArrowElemState = &rightArrowElem.normalState();
-		auto rangeBarElemState = &rangeBarElem.normalState();
-		auto verticalLineElemState = &verticalLineElem.normalState();
+		auto leftButtonState = &leftButtonElem.normalState();
+		auto middleButtonState = &middleButtonElem.normalState();
+		auto rightButtonState = &rightButtonElem.normalState();
+		auto leftArrowState = &leftArrowElem.normalState();
+		auto rightArrowState = &rightArrowElem.normalState();
+		auto rangeBarState = &rangeBarElem.normalState();
 
 		if (ctx->widget.disabled)
 		{
-			bodyElemState = &bodyElem.getState(WidgetStateType::Disabled);
-			leftArrowElemState = &leftArrowElem.getState(WidgetStateType::Disabled);
-			rightArrowElemState = &rightArrowElem.getState(WidgetStateType::Disabled);
-			rangeBarElemState = &rangeBarElem.getState(WidgetStateType::Disabled);
-			verticalLineElemState = &verticalLineElem.getState(WidgetStateType::Disabled);
+			leftButtonState = &leftButtonElem.getState(WidgetStateType::Disabled);
+			middleButtonState = &middleButtonElem.getState(WidgetStateType::Disabled);
+			rightButtonState = &rightButtonElem.getState(WidgetStateType::Disabled);
+			leftArrowState = &leftArrowElem.getState(WidgetStateType::Disabled);
+			rightArrowState = &rightArrowElem.getState(WidgetStateType::Disabled);
+			rangeBarState = &rangeBarElem.getState(WidgetStateType::Disabled);
 		}
 		else if (ctx->widget.pressed)
 		{
-			bodyElemState = &bodyElem.getState(WidgetStateType::Pressed);
-			leftArrowElemState = &leftArrowElem.getState(WidgetStateType::Pressed);
-			rightArrowElemState = &rightArrowElem.getState(WidgetStateType::Pressed);
-			rangeBarElemState = &rangeBarElem.getState(WidgetStateType::Pressed);
+			leftButtonState = &leftButtonElem.getState(WidgetStateType::Pressed);
+			middleButtonState = &middleButtonElem.getState(WidgetStateType::Pressed);
+			rightButtonState = &rightButtonElem.getState(WidgetStateType::Pressed);
+			leftArrowState = &leftArrowElem.getState(WidgetStateType::Pressed);
+			rightArrowState = &rightArrowElem.getState(WidgetStateType::Pressed);
+			rangeBarState = &rangeBarElem.getState(WidgetStateType::Pressed);
 		}
 		else if (ctx->widget.focused)
 		{
-			bodyElemState = &bodyElem.getState(WidgetStateType::Focused);
-			rangeBarElemState = &rangeBarElem.getState(WidgetStateType::Focused);
+			leftButtonState = &leftButtonElem.getState(WidgetStateType::Focused);
+			middleButtonState = &middleButtonElem.getState(WidgetStateType::Focused);
+			rightButtonState = &rightButtonElem.getState(WidgetStateType::Focused);
+			rangeBarState = &rangeBarElem.getState(WidgetStateType::Focused);
 		}
 		else if (ctx->widget.hovered)
 		{
-			bodyElemState = &bodyElem.getState(WidgetStateType::Hovered);
-			rangeBarElemState = &rangeBarElem.getState(WidgetStateType::Hovered);
+			if (arrowHoveredLeft)
+			{
+				leftButtonState = &leftButtonElem.getState(WidgetStateType::Hovered);
+			}
+			else if (arrowHoveredRight)
+			{
+				rightButtonState = &rightButtonElem.getState(WidgetStateType::Hovered);
+			}
+			else
+			{
+				middleButtonState = &middleButtonElem.getState(WidgetStateType::Hovered);
+				rangeBarState = &rangeBarElem.getState(WidgetStateType::Hovered);
+			}
 		}
 
 		if (arrowHoveredLeft)
 		{
-			leftArrowElemState = &leftArrowElem.getState(WidgetStateType::Hovered);
+			leftArrowState = &leftArrowElem.getState(WidgetStateType::Hovered);
 		}
 
 		if (arrowHoveredRight)
 		{
-			rightArrowElemState = &rightArrowElem.getState(WidgetStateType::Hovered);
+			rightArrowState = &rightArrowElem.getState(WidgetStateType::Hovered);
 		}
 
-		Image* bodyImage = bodyElemState->image;
-		Image* leftArrowImage = leftArrowElemState->image;
-		Image* rightArrowImage = rightArrowElemState->image;
-		Image* rangeBarImage = rangeBarElemState->image;
-		Image* verticalLineImage = verticalLineElemState->image;
+		Image* leftButtonImage = leftButtonState->image;
+		Image* middleButtonImage = middleButtonState->image;
+		Image* rightButtonImage = rightButtonState->image;
+		Image* leftArrowImage = leftArrowState->image;
+		Image* rightArrowImage = rightArrowState->image;
+		Image* rangeBarImage = rangeBarState->image;
 
 		if (ctx->widget.disabled)
 		{
-			if (!bodyImage) bodyImage = bodyElem.normalState().image;
+			if (!leftButtonImage) leftButtonImage = leftButtonElem.normalState().image;
+			if (!middleButtonImage) middleButtonImage = middleButtonElem.normalState().image;
+			if (!rightButtonImage) rightButtonImage = rightButtonElem.normalState().image;
 			if (!leftArrowImage) leftArrowImage = leftArrowElem.normalState().image;
 			if (!rightArrowImage) rightArrowImage = rightArrowElem.normalState().image;
 			if (!rangeBarImage) rangeBarImage = rangeBarElem.normalState().image;
-			if (!verticalLineImage) verticalLineImage = verticalLineElem.normalState().image;
 		}
 
-		ctx->renderer.cmdSetColor(tintApply(bodyElemState->color, TintColorType::Body));
-		ctx->renderer.cmdDrawImageBordered(bodyImage, bodyElemState->border, ctx->widget.rect, ctx->scale);
-		
+		Rect leftBgRect = {
+			ctx->widget.rect.x,
+			ctx->widget.rect.y,
+			arrowZoneWidth,
+			ctx->widget.rect.height
+		};
+		Rect rightBgRect = {
+			ctx->widget.rect.right() - arrowZoneWidth,
+			ctx->widget.rect.y,
+			arrowZoneWidth,
+			ctx->widget.rect.height
+		};
+		Rect middleBgRect = {
+			ctx->widget.rect.x + arrowZoneWidth,
+			ctx->widget.rect.y,
+			ctx->widget.rect.width - arrowZoneWidth * 2.0f,
+			ctx->widget.rect.height
+		};
+		if (middleBgRect.width < 0)
+		{
+			middleBgRect.width = 0;
+		}
+
+		ctx->renderer.cmdSetColor(tintApply(leftButtonState->color, TintColorType::Body));
+		ctx->renderer.cmdDrawImageBordered(leftButtonImage, leftButtonState->border, leftBgRect, ctx->scale);
+
+		ctx->renderer.cmdSetColor(tintApply(middleButtonState->color, TintColorType::Body));
+		ctx->renderer.cmdDrawImageBordered(middleButtonImage, middleButtonState->border, middleBgRect, ctx->scale);
+
+		ctx->renderer.cmdSetColor(tintApply(rightButtonState->color, TintColorType::Body));
+		ctx->renderer.cmdDrawImageBordered(rightButtonImage, rightButtonState->border, rightBgRect, ctx->scale);
+
 		if (useRange)
 		{
-			ctx->renderer.cmdSetColor(tintApply(rangeBarElemState->color, TintColorType::Body));
-			ctx->renderer.cmdDrawImageBordered(rangeBarImage, rangeBarElemState->border,
+			ctx->renderer.cmdSetColor(tintApply(rangeBarState->color, TintColorType::Body));
+			ctx->renderer.cmdDrawImageBordered(rangeBarImage, rangeBarState->border,
 				{
-					ctx->widget.rect.x + bodyElemState->border * ctx->scale,
-					ctx->widget.rect.bottom() - bodyElemState->border * ctx->scale,
-					(valueWidth - bodyElemState->border * 2.0f * ctx->scale) * percentFilled,
-					rangeBarElemState->height * ctx->scale,
+					middleBgRect.x + middleButtonState->border * ctx->scale,
+					middleBgRect.bottom() - middleButtonState->border * ctx->scale,
+					(middleBgRect.width - middleButtonState->border * 2.0f * ctx->scale) * percentFilled,
+					rangeBarState->height * ctx->scale,
 				},
 				ctx->scale);
 		}
 
+		// draw left arrow centered on its button
+		{
+			auto arrowX = leftBgRect.x + leftBgRect.width / 2.0f - (leftArrowImage->width * ctx->scale) / 2.0f;
+			auto arrowY = leftBgRect.y + leftBgRect.height / 2.0f - (leftArrowImage->height * ctx->scale) / 2.0f;
 
-		auto arrowY = ((ctx->widget.rect.height - leftArrowImage->height * ctx->scale) / 2.0f + (ctx->widget.pressed ? 1.0f : 0.0f)) * ctx->scale;
+			ctx->renderer.cmdSetColor(tintApply(leftArrowState->color, TintColorType::Body));
+			ctx->renderer.cmdDrawImage(leftArrowImage,
+				{
+					arrowX,
+					arrowY,
+					leftArrowImage->width * ctx->scale,
+					leftArrowImage->height * ctx->scale
+				});
+		}
 
-		ctx->renderer.cmdSetColor(tintApply(leftArrowElemState->color, TintColorType::Body));
-		ctx->renderer.cmdDrawImage(leftArrowImage,
-			{
-				ctx->widget.rect.x + (bodyElemState->border + padding.x + (ctx->widget.pressed ? 1.0f : 0.0f)) * ctx->scale,
-				ctx->widget.rect.top() + arrowY,
-				leftArrowImage->width * ctx->scale,
-				leftArrowImage->height * ctx->scale
-			});
+		// draw right arrow centered on its button
+		{
+			auto arrowX = rightBgRect.x + rightBgRect.width / 2.0f - (rightArrowImage->width * ctx->scale) / 2.0f;
+			auto arrowY = rightBgRect.y + rightBgRect.height / 2.0f - (rightArrowImage->height * ctx->scale) / 2.0f;
 
+			ctx->renderer.cmdSetColor(tintApply(rightArrowState->color, TintColorType::Body));
+			ctx->renderer.cmdDrawImage(rightArrowImage,
+				{
+					arrowX,
+					arrowY,
+					rightArrowImage->width * ctx->scale,
+					rightArrowImage->height * ctx->scale
+				});
+		}
 
-		auto lineHeight = verticalLineImage->height + padding.y * 2.0f;
-		auto lineY = ((ctx->widget.rect.height - lineHeight * ctx->scale) / 2.0f + (ctx->widget.pressed ? 1.0f : 0.0f)) * ctx->scale;
-
-		ctx->renderer.cmdSetColor(tintApply(verticalLineElemState->color, TintColorType::Body));
-
-		ctx->renderer.cmdDrawImage(verticalLineImage,
-			{
-				ctx->widget.rect.x + (bodyElemState->border + padding.x * 2.0f + leftArrowImage->width + (ctx->widget.pressed ? 1.0f : 0.0f)) * ctx->scale,
-				ctx->widget.rect.top() + lineY,
-				verticalLineImage->width * ctx->scale,
-				lineHeight
-			});
-
-		arrowY = ((ctx->widget.rect.height - rightArrowImage->rect.height * ctx->scale) / 2.0f + (ctx->widget.pressed ? 1.0f : 0.0f)) * ctx->scale;
-
-		ctx->renderer.cmdSetColor(tintApply(rightArrowElemState->color, TintColorType::Body));
-		ctx->renderer.cmdDrawImage(rightArrowImage,
-			{
-				ctx->widget.rect.right() - (bodyElemState->border + padding.x + rightArrowImage->width + (ctx->widget.pressed ? -1.0f : 0.0f)) * ctx->scale,
-				ctx->widget.rect.top() + arrowY,
-				rightArrowImage->width * ctx->scale,
-				rightArrowImage->height * ctx->scale
-			});
-
-		ctx->renderer.cmdSetColor(tintApply(verticalLineElemState->color, TintColorType::Body));
-
-		ctx->renderer.cmdDrawImage(verticalLineImage,
-			{
-				ctx->widget.rect.right() - (bodyElemState->border + padding.x * 2.0f + rightArrowImage->width + (ctx->widget.pressed ? 1.0f : 0.0f)) * ctx->scale,
-				ctx->widget.rect.top() + lineY,
-				verticalLineImage->width * ctx->scale,
-				lineHeight
-			});
-				
 		static char outStr[ComboSliderState::maxTextSize] = { 0 };
 		static char outStrFormatted[ComboSliderState::maxTextSize] = { 0 };
 		char* str = nullptr;
@@ -419,8 +459,8 @@ static bool comboSliderInternal(bool isInt, f32* value, f32 minVal, f32 maxVal, 
 			str = outStrFormatted;
 		}
 
-		ctx->renderer.cmdSetColor(tintApply(bodyElemState->textColor, TintColorType::Body));
-		ctx->renderer.cmdDrawTextInBox(str, ctx->widget.rect, HAlignType::Center, VAlignType::Center);
+		ctx->renderer.cmdSetColor(tintApply(middleButtonState->textColor, TintColorType::Body));
+		ctx->renderer.cmdDrawTextInBox(str, middleBgRect, HAlignType::Center, VAlignType::Center);
 		widgetSetFocusable();
 	}
 

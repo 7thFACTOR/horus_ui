@@ -71,7 +71,9 @@ HTheme createBuiltinTheme(u32 atlasTextureSize)
 	setSize(WidgetElementId::ColorPickerButtonBody, 0, 22, 3);
 	setSize(WidgetElementId::TextInputBody, 0, 22, 3);
 	setSize(WidgetElementId::SliderBody, 0, 16, 2);
-	setSize(WidgetElementId::ComboSliderBody, 0, 20, 2);
+	setSize(WidgetElementId::ComboSliderLeftButton, 22, 20, 2);
+	setSize(WidgetElementId::ComboSliderMiddleButton, 0, 20, 0);
+	setSize(WidgetElementId::ComboSliderRightButton, 22, 20, 2);
 	setSize(WidgetElementId::CheckBody, 22, 22, 4);
 	setSize(WidgetElementId::RadioBody, 22, 22, 7);
 	setSize(WidgetElementId::DropdownBody, 0, 22, 3);

@@ -1153,11 +1153,12 @@ void widgetSetStyle(WidgetType widgetType, const char* styleName)
 		ctx->theme->elements[(u32)WidgetElementId::BoxBody].setStyle(styleName);
 		break;
 	case WidgetType::ComboSlider:
-		ctx->theme->elements[(u32)WidgetElementId::ComboSliderBody].setStyle(styleName);
+		ctx->theme->elements[(u32)WidgetElementId::ComboSliderLeftButton].setStyle(styleName);
+		ctx->theme->elements[(u32)WidgetElementId::ComboSliderMiddleButton].setStyle(styleName);
+		ctx->theme->elements[(u32)WidgetElementId::ComboSliderRightButton].setStyle(styleName);
 		ctx->theme->elements[(u32)WidgetElementId::ComboSliderLeftArrow].setStyle(styleName);
-		ctx->theme->elements[(u32)WidgetElementId::ComboSliderRangeBar].setStyle(styleName);
 		ctx->theme->elements[(u32)WidgetElementId::ComboSliderRightArrow].setStyle(styleName);
-		ctx->theme->elements[(u32)WidgetElementId::ComboSliderVerticalLine].setStyle(styleName);
+		ctx->theme->elements[(u32)WidgetElementId::ComboSliderRangeBar].setStyle(styleName);
 		break;
 	case WidgetType::CircularSlider:
 		ctx->theme->elements[(u32)WidgetElementId::CircularSliderBody].setStyle(styleName);

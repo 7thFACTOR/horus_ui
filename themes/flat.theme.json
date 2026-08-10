@@ -362,11 +362,31 @@
 		},
 		"comboSlider":
 		{
-			"comboSliderBody":
+			"comboSliderLeftButton":
 			{
+				"width": 22,
 				"height": 20,
 				"normal": { "image": "flat/pixel", "border": 0, "color": "45 45 55 255" },
+				"disabled": { "color": "45 45 55 128" },
+				"hovered": { "color": "60 60 75 255" },
+				"pressed": { "color": "75 75 95 255" },
+				"focused": { "color": "60 60 75 255" }
+			},
+			"comboSliderMiddleButton":
+			{
+				"height": 20,
+				"normal": { "image": "flat/pixel", "border": 0, "color": "45 45 55 255", "textColor": "white" },
 				"disabled": { "color": "45 45 55 128", "textColor": "gray" },
+				"hovered": { "color": "60 60 75 255" },
+				"pressed": { "color": "75 75 95 255" },
+				"focused": { "color": "60 60 75 255" }
+			},
+			"comboSliderRightButton":
+			{
+				"width": 22,
+				"height": 20,
+				"normal": { "image": "flat/pixel", "border": 0, "color": "45 45 55 255" },
+				"disabled": { "color": "45 45 55 128" },
 				"hovered": { "color": "60 60 75 255" },
 				"pressed": { "color": "75 75 95 255" },
 				"focused": { "color": "60 60 75 255" }
@@ -395,14 +415,6 @@
 				"hovered": { "color": "55 185 255 255" },
 				"pressed": { "color": "55 185 255 255" },
 				"focused": { "color": "55 185 255 255" }
-			},
-			"comboSliderVerticalLine":
-			{
-				"height": 16,
-				"normal": { "image": "flat/pixel", "border": 0, "color": "60 60 70 255" },
-				"hovered": { "color": "80 80 95 255" },
-				"pressed": { "color": "80 80 95 255" },
-				"focused": { "color": "80 80 95 255" }
 			}
 		},
 		"circularSlider":
