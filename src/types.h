@@ -268,6 +268,13 @@ struct WidgetBoolState
 	bool value = false;
 };
 
+struct ComboSliderElementState
+{
+	bool hovered = false;
+	bool pressed = false;
+	bool clicked = false;
+};
+
 struct ComboSliderState
 {
 	static const size_t maxTextSize = 1024;
@@ -283,6 +290,8 @@ struct ComboSliderState
 	WidgetId newId = 0;
 	WidgetId id = 0;
 	bool requestChangeToOtherComboSlider = false;
+	std::unordered_map<WidgetId, ComboSliderElementState> elementStates;
+	WidgetId pressedElementId = 0;
 };
 
 struct VectorEditorState

@@ -7,6 +7,58 @@
 
 namespace hui
 {
+static void comboSliderElementBehavior(WidgetId elementId, const Rect& rect, ComboSliderElementState& state)
+{
+	state.hovered = rect.contains(ctx->mousePosition)
+		&& widgetIsHovered()
+		&& !ctx->comboSlider.dragging
+		&& ctx->comboSlider.pressedElementId == 0;
+	state.clicked = false;
+
+	if (ctx->widget.disabled)
+	{
+		state.hovered = false;
+		state.pressed = false;
+		return;
+	}
+
+	if (ctx->event.type == InputEvent::Type::MouseDown
+		&& ctx->event.mouse.button == MouseButton::Left
+		&& state.hovered
+		&& ctx->isActiveLayer())
+	{
+		ctx->comboSlider.pressedElementId = elementId;
+		state.pressed = true;
+	}
+
+	if (ctx->comboSlider.pressedElementId == elementId
+		&& ctx->event.type == InputEvent::Type::MouseUp
+		&& ctx->event.mouse.button == MouseButton::Left
+		&& ctx->isActiveLayer())
+	{
+		state.clicked = rect.contains(ctx->mousePosition);
+		state.pressed = false;
+		ctx->comboSlider.pressedElementId = 0;
+	}
+
+	if (ctx->comboSlider.pressedElementId != elementId)
+	{
+		state.pressed = false;
+	}
+}
+
+static ThemeElement::State* comboSliderElementState(ThemeElement& element, bool pressed, bool hovered, bool widgetFocused)
+{
+	if (pressed)
+		return &element.getState(WidgetStateType::Pressed);
+	if (widgetFocused)
+		return &element.getState(WidgetStateType::Focused);
+	if (hovered)
+		return &element.getState(WidgetStateType::Hovered);
+
+	return &element.normalState();
+}
+
 static bool comboSliderInternal(bool isInt, f32* value, f32 minVal, f32 maxVal, bool useRange, f32 stepsPerPixel, f32 arrowStep, const char* formatStr, u32 decimalPlaces = 4)
 {
 	auto& leftButtonElem = ctx->theme->getElement(WidgetElementId::ComboSliderLeftButton);
@@ -16,9 +68,6 @@ static bool comboSliderInternal(bool isInt, f32* value, f32 minVal, f32 maxVal, 
 	auto& rightArrowElem = ctx->theme->getElement(WidgetElementId::ComboSliderRightArrow);
 	auto& rangeBarElem = ctx->theme->getElement(WidgetElementId::ComboSliderRangeBar);
 	ctx->widget.changeEnded = false;
-	bool arrowStepped = false;
-	bool arrowHoveredLeft = false;
-	bool arrowHoveredRight = false;
 	f32 arrowZoneWidth = 0;
 	auto& padding = widgetGetPadding();
 
@@ -29,6 +78,29 @@ static bool comboSliderInternal(bool isInt, f32* value, f32 minVal, f32 maxVal, 
 
 	ctx->id = genId((void*)value);
 	auto comboId = ctx->id;
+
+	// every element gets its own id and state under the parent combo id,
+	// so hovering or pressing one element doesn't affect the others
+	idPush(comboId);
+	auto leftButtonId = genId("comboSliderLeftButton");
+	auto middleButtonId = genId("comboSliderMiddleButton");
+	auto rightButtonId = genId("comboSliderRightButton");
+	auto leftArrowId = genId("comboSliderLeftArrow");
+	auto rightArrowId = genId("comboSliderRightArrow");
+	auto rangeBarId = genId("comboSliderRangeBar");
+	idPop();
+
+	auto& elementStates = ctx->comboSlider.elementStates;
+	auto& leftButton = elementStates[leftButtonId];
+	auto& middleButton = elementStates[middleButtonId];
+	auto& rightButton = elementStates[rightButtonId];
+	auto& leftArrow = elementStates[leftArrowId];
+	auto& rightArrow = elementStates[rightArrowId];
+	auto& rangeBar = elementStates[rangeBarId];
+
+	Rect leftBgRect;
+	Rect rightBgRect;
+	Rect middleBgRect;
 
 	bool notEditingText = (ctx->comboSlider.editingText && ctx->comboSlider.id != ctx->id) || !ctx->comboSlider.editingText;
 
@@ -46,53 +118,56 @@ static bool comboSliderInternal(bool isInt, f32* value, f32 minVal, f32 maxVal, 
 		}
 
 		auto leftButtonNormalState = &leftButtonElem.normalState();
-		f32 arrowZoneWidth = leftButtonNormalState->width;
+		arrowZoneWidth = leftButtonNormalState->width;
 		if (arrowZoneWidth <= 0)
 		{
 			arrowZoneWidth = leftArrowElem.normalState().image->width + padding.x * 2.0f;
 		}
 		arrowZoneWidth *= ctx->scale;
 
-		auto cursor = 0;
-
-		// check left arrow
-		if (widgetIsHovered()
-			&& ctx->mousePosition.x <= ctx->widget.rect.x + arrowZoneWidth)
+		leftBgRect.set(ctx->widget.rect.x, ctx->widget.rect.y, arrowZoneWidth, ctx->widget.rect.height);
+		rightBgRect.set(ctx->widget.rect.right() - arrowZoneWidth, ctx->widget.rect.y, arrowZoneWidth, ctx->widget.rect.height);
+		middleBgRect.set(ctx->widget.rect.x + arrowZoneWidth, ctx->widget.rect.y, ctx->widget.rect.width - arrowZoneWidth * 2.0f, ctx->widget.rect.height);
+		if (middleBgRect.width < 0)
 		{
-			arrowHoveredLeft = true;
-		}
-		// check right arrow
-		else if (widgetIsHovered()
-			&& ctx->mousePosition.x >= ctx->widget.rect.right() - arrowZoneWidth)
-		{
-			arrowHoveredRight = true;
+			middleBgRect.width = 0;
 		}
 
-		if (widgetIsClicked()
-			&& ctx->mousePosition.x <= ctx->widget.rect.x + arrowZoneWidth)
+		// update each element's hover and press state
+		comboSliderElementBehavior(leftButtonId, leftBgRect, leftButton);
+		comboSliderElementBehavior(middleButtonId, middleBgRect, middleButton);
+		comboSliderElementBehavior(rightButtonId, rightBgRect, rightButton);
+
+		leftArrow.hovered = leftButton.hovered;
+		leftArrow.pressed = leftButton.pressed;
+		rightArrow.hovered = rightButton.hovered;
+		rightArrow.pressed = rightButton.pressed;
+		rangeBar.hovered = middleButton.hovered;
+		rangeBar.pressed = middleButton.pressed;
+
+		if (leftButton.clicked)
 		{
 			*value -= arrowStep;
-			arrowStepped = true;
 			if (useRange) clampValue(*value, minVal, maxVal);
 			ctx->widget.changeEnded = true;
 		}
-		else if (widgetIsClicked() && ctx->mousePosition.x >= ctx->widget.rect.right() - arrowZoneWidth)
+		else if (rightButton.clicked)
 		{
 			*value += arrowStep;
-			arrowStepped = true;
 			if (useRange) clampValue(*value, minVal, maxVal);
 			ctx->widget.changeEnded = true;
 		}
 
 		if (widgetIsHovered() || widgetIsPressed())
 		{
-			if (arrowHoveredLeft || arrowHoveredRight)
+			if (leftButton.hovered || rightButton.hovered
+				|| leftButton.pressed || rightButton.pressed)
 				mouseCursorSetType(MouseCursorType::Arrow);
 			else
 				mouseCursorSetType(MouseCursorType::SizeWE);
 		}
 
-		if (widgetIsClicked() && !ctx->comboSlider.dragging && !arrowStepped)
+		if (middleButton.clicked && !ctx->comboSlider.dragging)
 		{
 			ctx->comboSlider.editingText = true;
 			ctx->comboSlider.id = ctx->id;
@@ -308,47 +383,14 @@ static bool comboSliderInternal(bool isInt, f32* value, f32 minVal, f32 maxVal, 
 			rightArrowState = &rightArrowElem.getState(WidgetStateType::Disabled);
 			rangeBarState = &rangeBarElem.getState(WidgetStateType::Disabled);
 		}
-		else if (ctx->widget.pressed)
+		else
 		{
-			leftButtonState = &leftButtonElem.getState(WidgetStateType::Pressed);
-			middleButtonState = &middleButtonElem.getState(WidgetStateType::Pressed);
-			rightButtonState = &rightButtonElem.getState(WidgetStateType::Pressed);
-			leftArrowState = &leftArrowElem.getState(WidgetStateType::Pressed);
-			rightArrowState = &rightArrowElem.getState(WidgetStateType::Pressed);
-			rangeBarState = &rangeBarElem.getState(WidgetStateType::Pressed);
-		}
-		else if (ctx->widget.focused)
-		{
-			leftButtonState = &leftButtonElem.getState(WidgetStateType::Focused);
-			middleButtonState = &middleButtonElem.getState(WidgetStateType::Focused);
-			rightButtonState = &rightButtonElem.getState(WidgetStateType::Focused);
-			rangeBarState = &rangeBarElem.getState(WidgetStateType::Focused);
-		}
-		else if (ctx->widget.hovered)
-		{
-			if (arrowHoveredLeft)
-			{
-				leftButtonState = &leftButtonElem.getState(WidgetStateType::Hovered);
-			}
-			else if (arrowHoveredRight)
-			{
-				rightButtonState = &rightButtonElem.getState(WidgetStateType::Hovered);
-			}
-			else
-			{
-				middleButtonState = &middleButtonElem.getState(WidgetStateType::Hovered);
-				rangeBarState = &rangeBarElem.getState(WidgetStateType::Hovered);
-			}
-		}
-
-		if (arrowHoveredLeft)
-		{
-			leftArrowState = &leftArrowElem.getState(WidgetStateType::Hovered);
-		}
-
-		if (arrowHoveredRight)
-		{
-			rightArrowState = &rightArrowElem.getState(WidgetStateType::Hovered);
+			leftButtonState = comboSliderElementState(leftButtonElem, leftButton.pressed, leftButton.hovered, ctx->widget.focused);
+			middleButtonState = comboSliderElementState(middleButtonElem, middleButton.pressed, middleButton.hovered, ctx->widget.focused);
+			rightButtonState = comboSliderElementState(rightButtonElem, rightButton.pressed, rightButton.hovered, ctx->widget.focused);
+			leftArrowState = comboSliderElementState(leftArrowElem, leftArrow.pressed, leftArrow.hovered, false);
+			rightArrowState = comboSliderElementState(rightArrowElem, rightArrow.pressed, rightArrow.hovered, false);
+			rangeBarState = comboSliderElementState(rangeBarElem, rangeBar.pressed, rangeBar.hovered, ctx->widget.focused);
 		}
 
 		Image* leftButtonImage = leftButtonState->image;
@@ -366,29 +408,6 @@ static bool comboSliderInternal(bool isInt, f32* value, f32 minVal, f32 maxVal, 
 			if (!leftArrowImage) leftArrowImage = leftArrowElem.normalState().image;
 			if (!rightArrowImage) rightArrowImage = rightArrowElem.normalState().image;
 			if (!rangeBarImage) rangeBarImage = rangeBarElem.normalState().image;
-		}
-
-		Rect leftBgRect = {
-			ctx->widget.rect.x,
-			ctx->widget.rect.y,
-			arrowZoneWidth,
-			ctx->widget.rect.height
-		};
-		Rect rightBgRect = {
-			ctx->widget.rect.right() - arrowZoneWidth,
-			ctx->widget.rect.y,
-			arrowZoneWidth,
-			ctx->widget.rect.height
-		};
-		Rect middleBgRect = {
-			ctx->widget.rect.x + arrowZoneWidth,
-			ctx->widget.rect.y,
-			ctx->widget.rect.width - arrowZoneWidth * 2.0f,
-			ctx->widget.rect.height
-		};
-		if (middleBgRect.width < 0)
-		{
-			middleBgRect.width = 0;
 		}
 
 		ctx->renderer.cmdSetColor(tintApply(leftButtonState->color, TintColorType::Body));
