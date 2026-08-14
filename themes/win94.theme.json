@@ -942,7 +942,7 @@
                 "width": 22,
                 "height": 20,
                 "normal": {
-                    "image": "win94/dropdown",
+                    "image": "win94/comboslider_arrow_box",
                     "border": 2,
                     "color": "white"
                 },
@@ -953,6 +953,8 @@
                     "color": "white"
                 },
                 "pressed": {
+                    "image": "win94/comboslider_arrow_box_pressed",
+                    "border": 2,
                     "color": "white"
                 },
                 "focused": {
@@ -962,7 +964,7 @@
             "comboSliderMiddleButton": {
                 "height": 20,
                 "normal": {
-                    "image": "win94/dropdown",
+                    "image": "win94/comboslider_middle",
                     "border": 2,
                     "color": "white",
                     "textColor": "0 0 0 255",
@@ -982,6 +984,8 @@
                     "textColor": "0 0 0 255"
                 },
                 "pressed": {
+                    "image": "win94/comboslider_middle_pressed",
+                    "border": 2,
                     "color": "white",
                     "textColor": "0 0 0 255"
                 },
@@ -994,7 +998,7 @@
                 "width": 22,
                 "height": 20,
                 "normal": {
-                    "image": "win94/dropdown",
+                    "image": "win94/comboslider_arrow_box",
                     "border": 2,
                     "color": "white"
                 },
@@ -1005,6 +1009,8 @@
                     "color": "white"
                 },
                 "pressed": {
+                    "image": "win94/comboslider_arrow_box_pressed",
+                    "border": 2, 
                     "color": "white"
                 },
                 "focused": {
@@ -1015,7 +1021,7 @@
                 "normal": {
                     "image": "win94/comboslider_left_arrow",
                     "border": 0,
-                    "color": "white"
+                    "color": "black"
                 },
                 "disabled": {
                     "color": "128 128 128 255"
@@ -1023,24 +1029,24 @@
                 "hovered": {
                     "image": "win94/comboslider_left_arrow",
                     "border": 0,
-                    "color": "white"
+                    "color": "black"
                 },
                 "pressed": {
                     "image": "win94/comboslider_left_arrow",
                     "border": 0,
-                    "color": "white"
+                    "color": "black"
                 },
                 "focused": {
                     "image": "win94/comboslider_left_arrow",
                     "border": 0,
-                    "color": "white"
+                    "color": "black"
                 }
             },
             "comboSliderRightArrow": {
                 "normal": {
                     "image": "win94/comboslider_right_arrow",
                     "border": 0,
-                    "color": "white"
+                    "color": "black"
                 },
                 "disabled": {
                     "color": "128 128 128 255"
@@ -1591,7 +1597,7 @@
                     "textColor": "0 0 0 255"
                 },
                 "disabled": {
-                    "color": "255 255 255 255",
+                    "color": "transparent",
                     "textColor": "128 128 128 255",
                     "font": "normal",
                     "textShadow": {

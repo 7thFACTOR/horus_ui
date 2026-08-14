@@ -370,7 +370,7 @@ bool textInput(
 		clipRect.height);
 
 	// draw the actual text
-	if (isEditingThis && ctx->textInput.selectionActive && !password && !isEmptyText && defaultText != textToDraw)
+	if (isEditingThis && ctx->textInput.selectionActive && !isEmptyText && defaultText != textToDraw)
 	{
 		// draw text in segments: before selection, selected, after selection
 		i32 startSel = ctx->textInput.selectionBegin;
@@ -391,9 +391,26 @@ bool textInput(
 			char beforeSelUtf8[1024] = "";
 			char selectedUtf8[1024] = "";
 			char afterSelUtf8[1024] = "";
-			ctx->settings.services.utf32To8NoAlloc(textBeforeSel.data(), textBeforeSel.size(), beforeSelUtf8, 1024);
-			ctx->settings.services.utf32To8NoAlloc(selectedText.data(), selectedText.size(), selectedUtf8, 1024);
-			ctx->settings.services.utf32To8NoAlloc(textAfterSel.data(), textAfterSel.size(), afterSelUtf8, 1024);
+
+			if (!password)
+			{
+				ctx->settings.services.utf32To8NoAlloc(textBeforeSel.data(), textBeforeSel.size(), beforeSelUtf8, 1024);
+				ctx->settings.services.utf32To8NoAlloc(selectedText.data(), selectedText.size(), selectedUtf8, 1024);
+				ctx->settings.services.utf32To8NoAlloc(textAfterSel.data(), textAfterSel.size(), afterSelUtf8, 1024);
+			}
+			else
+			{
+				// build password-masked strings for each segment
+				beforeSelUtf8[0] = 0;
+				for (size_t i = 0; i < textBeforeSel.size(); i++)
+					strcat(beforeSelUtf8, passwordChar);
+				selectedUtf8[0] = 0;
+				for (size_t i = 0; i < selectedText.size(); i++)
+					strcat(selectedUtf8, passwordChar);
+				afterSelUtf8[0] = 0;
+				for (size_t i = 0; i < textAfterSel.size(); i++)
+					strcat(afterSelUtf8, passwordChar);
+			}
 
 			FontTextSize beforeSize = bodyElemState->font->computeTextSize(beforeSelUtf8);
 			FontTextSize selSize = bodyElemState->font->computeTextSize(selectedUtf8);

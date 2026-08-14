@@ -161,7 +161,10 @@ static bool comboSliderInternal(bool isInt, f32* value, f32 minVal, f32 maxVal, 
 		if (widgetIsHovered() || widgetIsPressed())
 		{
 			if (leftButton.hovered || rightButton.hovered
-				|| leftButton.pressed || rightButton.pressed)
+				|| leftButton.pressed || rightButton.pressed
+				|| leftButton.clicked || rightButton.clicked
+				|| ctx->comboSlider.pressedElementId == leftButtonId
+				|| ctx->comboSlider.pressedElementId == rightButtonId)
 				mouseCursorSetType(MouseCursorType::Arrow);
 			else
 				mouseCursorSetType(MouseCursorType::SizeWE);
@@ -255,7 +258,9 @@ static bool comboSliderInternal(bool isInt, f32* value, f32 minVal, f32 maxVal, 
 			&& widgetIsHovered()
 			&& !ctx->comboSlider.dragging
 			&& ctx->isActiveLayer()
-			&& !ctx->widget.disabled)
+			&& !ctx->widget.disabled
+			&& !leftButton.hovered
+			&& !rightButton.hovered)
 		{
 			ctx->comboSlider.dragLastMousePos = ctx->mousePosition;
 
