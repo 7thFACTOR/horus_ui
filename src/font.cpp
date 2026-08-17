@@ -52,6 +52,8 @@ void Font::resetFaceSize(u32 fontFaceSize)
 		load(filename, faceSize);
 	resizeFaceMode = true;
 
+	kerningPairs.clear();
+
 	for (auto& glyph : glyphs)
 	{
 		cacheGlyph(glyph.first);

@@ -1449,7 +1449,7 @@ const Color& themeGetUserWidgetElementParameterColor(HTheme theme, const char* u
 HFont themeFontCreate(HTheme theme, const char* name, const char* fontFilename, u32 faceSize)
 {
 	Theme* themePtr = (Theme*)theme;
-	auto fnt = (HFont)themePtr->createFont(name, fontFilename, faceSize * ctx->scale);
+	auto fnt = (HFont)themePtr->createFont(name, fontFilename, faceSize);
 
 	return fnt;
 }

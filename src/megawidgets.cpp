@@ -219,7 +219,8 @@ bool objectRefEditor(const char* id, HImage targetImg, HImage clearImg, HImage i
 	// editor body (left side, fills remaining width)
 	widgetSetNextWidth(boxWidthPx / ctx->scale);
 	ctx->setLabelAndId(id);
-	addWidget(contentHeightPx);
+	// contentHeightPx is already scaled, so normalize it here
+	addWidget(contentHeightPx / ctx->scale);
 	buttonBehavior();
 	ctx->sameLine.maxHeight = std::max(ctx->sameLine.maxHeight, contentHeightPx);
 
@@ -344,7 +345,7 @@ bool objectRefEditor(const char* id, HImage targetImg, HImage clearImg, HImage i
 		ctx->widget.customWidth = btnSize;
 		ctx->widget.hasCustomWidth = true;
 		ctx->setLabelAndId("targetBtn");
-		addWidget(btnSize * ctx->scale);
+		addWidget(btnSize);
 		buttonBehavior();
 
 		auto& btnBody = ctx->theme->getElement(WidgetElementId::ImageButtonBody);
@@ -422,7 +423,7 @@ bool objectRefEditor(const char* id, HImage targetImg, HImage clearImg, HImage i
 			ctx->widget.customWidth = btnSize;
 			ctx->widget.hasCustomWidth = true;
 			ctx->setLabelAndId("clearBtn");
-			addWidget(btnSize * ctx->scale);
+			addWidget(btnSize);
 			buttonBehavior();
 
 			auto& btnBody = ctx->theme->getElement(WidgetElementId::ImageButtonBody);

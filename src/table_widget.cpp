@@ -338,7 +338,11 @@ static void finishRow(TableState& state)
 		// enable scroll view if height > 0 or ScrollY flag is set
 		// height == 0 means auto-grow without scroll view
 		f32 scrollViewHeight = state.innerHeight > 0 ? state.innerHeight : 200.0f;
-		
+
+		// scroll view doesn't scale height by default, so keep it single scaled
+		if (ctx->settings.scaleScrollViewHeight)
+			scrollViewHeight /= ctx->scale;
+
 		if (state.innerHeight > 0)
 		{
 			// use NoPadding so the body content starts exactly at the table edge
@@ -700,7 +704,8 @@ bool tableBegin(const char* id, u32 columnCount, f32 height, TableFlags flags)
 	}
 
 	state.innerWidth = totalColumnsWidth;
-	state.innerHeight = height; // if 0, auto height
+	// scale height so the scroll body, borders and resize guides match scaled rows
+	state.innerHeight = height * ctx->scale; // if 0, auto height
 
 	// store table rectangle start
 	// start 1px to the right to leave room for the left border
@@ -708,7 +713,7 @@ bool tableBegin(const char* id, u32 columnCount, f32 height, TableFlags flags)
 		ctx->position.x + 1.0f,
 		ctx->position.y,
 		totalColumnsWidth,
-		height
+		state.innerHeight
 	);
 
 	state.rowStartY = state.tableRect.y;

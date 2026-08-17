@@ -33,10 +33,11 @@ bool circularSliderFloat(const char* label, f32* value, f32 minVal, f32 maxVal, 
 		labelSpace = labelSpacing;
 
 		if (bodyElem.normalState().font)
-			labelSpace += bodyElem.normalState().font->getMetrics().height;
+			labelSpace += bodyElem.normalState().font->getMetrics().height / ctx->scale;
 	}
 
-	addWidget((bodyElem.normalState().height + padding.y * 2.0f + labelSpace) * ctx->scale);
+	// getMetrics().height is already scaled with the theme, so normalize it here
+	addWidget(bodyElem.normalState().height + padding.y * 2.0f + labelSpace);
 	buttonBehavior();
 
 	if (!ctx->widget.disabled && widgetIsHovered() && ctx->event.type == InputEvent::Type::MouseDown)

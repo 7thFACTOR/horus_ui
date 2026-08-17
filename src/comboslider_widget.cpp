@@ -109,7 +109,7 @@ static bool comboSliderInternal(bool isInt, f32* value, f32 minVal, f32 maxVal, 
 		ctx->widget.customWidth = ctx->layout.width/ctx->scale;
 		ctx->widget.hasCustomWidth = true;
 
-		addWidget((leftButtonElem.normalState().height + padding.y * 2.0f) * ctx->scale);
+		addWidget(leftButtonElem.normalState().height + padding.y * 2.0f);
 		buttonBehavior();
 
 		if (ctx->comboSlider.dragging && ctx->id == ctx->comboSlider.id)

@@ -21,7 +21,7 @@ bool dropdown(const char* id, i32& selectedIndex, const char** items, u32 itemCo
 		ctx->widget.hasCustomWidth = true;
 	}
 
-	addWidget((bodyElem.normalState().height + padding.y * 2.0f) * ctx->scale);
+	addWidget(bodyElem.normalState().height + padding.y * 2.0f);
 	buttonBehavior();
 
 	if (ctx->dropdown.active && ctx->widget.captureId == ctx->id)
@@ -164,8 +164,14 @@ bool dropdown(const char* id, i32& selectedIndex, const char** items, u32 itemCo
 
 		if (maxVisibleDropDownItems < itemCount)
 		{
+			// scroll view doesn't scale height by default, so scale it to match the selectable rows
+			f32 scrollViewHeight = std::min(itemCount, maxVisibleDropDownItems) * selectableBodyElem.height * ctx->scale;
+
+			if (ctx->settings.scaleScrollViewHeight)
+				scrollViewHeight /= ctx->scale;
+
 			idPush(ctx->id);
-			scrollViewBegin("dropDownScrollView", std::min(itemCount, maxVisibleDropDownItems) * selectableBodyElem.height, ctx->dropDownScrollViewPos.y, 0.0f, ScrollViewFlags::NoBorder);
+			scrollViewBegin("dropDownScrollView", scrollViewHeight, ctx->dropDownScrollViewPos.y, 0.0f, ScrollViewFlags::NoBorder);
 		}
 
 		// we don't want tinting for items, just the dropdown is tinted

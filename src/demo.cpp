@@ -153,6 +153,10 @@ struct DemoState
 	// link demo
 	int linkClickCount = 0;
 
+	// paragraph demo
+	int paragraphLinkClicks = 0;
+	int paragraphButtonClicks = 0;
+
 	// tabs
 	TabIndex selectedTab = 0;
 
@@ -255,6 +259,130 @@ static void propGridRow(const char* name, EditorFn&& editorFn)
 	label(name, HAlignType::Right);
 	tableCellNext();
 	editorFn();
+}
+
+// ------------------------------------------------------------------
+// paragraph demo helpers (rich text style help text)
+// ------------------------------------------------------------------
+enum class ParagraphItemType
+{
+	Text,
+	Link,
+	Button,
+	Image
+};
+
+struct ParagraphItem
+{
+	ParagraphItemType type = ParagraphItemType::Text;
+	std::string text;
+	HImage image = 0;
+};
+
+static f32 paragraphItemWidth(const ParagraphItem& item, f32 imageHeight)
+{
+	auto& labelBody = ctx->theme->getElement(WidgetElementId::LabelBody).normalState();
+	auto& linkBody = ctx->theme->getElement(WidgetElementId::LinkBody).normalState();
+	auto& btnBody = ctx->theme->getElement(WidgetElementId::ButtonBody).normalState();
+
+	switch (item.type)
+	{
+	case ParagraphItemType::Text:
+		return labelBody.font->computeTextSize(item.text.c_str()).width;
+
+	case ParagraphItemType::Link:
+		return linkBody.font->computeTextSize(item.text.c_str()).width;
+
+	case ParagraphItemType::Button:
+		return (btnBody.border * 2.0f + btnBody.font->computeTextSize(item.text.c_str()).width) * ctx->scale;
+
+	case ParagraphItemType::Image:
+	{
+		Image* img = (Image*)item.image;
+
+		if (!img)
+		{
+			return 0.0f;
+		}
+
+		f32 imgWidth = img->width * ctx->scale;
+		f32 imgHeight = img->height * ctx->scale;
+		f32 targetHeight = imageHeight * ctx->scale;
+
+		if (imgHeight >= targetHeight && targetHeight > 0)
+		{
+			imgWidth *= targetHeight / imgHeight;
+		}
+
+		return imgWidth;
+	}
+	}
+
+	return 0.0f;
+}
+
+static void paragraphItemEmit(const ParagraphItem& item, u32 index, f32 imageHeight, int& linkClicks, int& buttonClicks)
+{
+	switch (item.type)
+	{
+	case ParagraphItemType::Text:
+		label((item.text + "##paraText" + std::to_string(index)).c_str());
+		break;
+
+	case ParagraphItemType::Link:
+		if (link((item.text + "##paraLink" + std::to_string(index)).c_str()))
+		{
+			linkClicks++;
+		}
+		break;
+
+	case ParagraphItemType::Button:
+		if (button((item.text + "##paraButton" + std::to_string(index)).c_str()))
+		{
+			buttonClicks++;
+		}
+		break;
+
+	case ParagraphItemType::Image:
+		if (item.image)
+		{
+			image(item.image, imageHeight, HAlignType::Left);
+		}
+		break;
+	}
+}
+
+// draws the given items as a flowing paragraph, wrapping inside the current layout width
+static void paragraphDraw(const ParagraphItem* items, u32 count, f32 imageHeight, int& linkClicks, int& buttonClicks)
+{
+	auto& padding = widgetGetPadding();
+	f32 availableWidth = ctx->layout.width - padding.x * 2.0f * ctx->scale;
+	f32 itemSpacing = ctx->sameLine.spacing * ctx->scale;
+	f32 lineWidth = 0.0f;
+	bool firstOnLine = true;
+
+	for (u32 i = 0; i < count; i++)
+	{
+		f32 itemWidth = paragraphItemWidth(items[i], imageHeight);
+		f32 gap = firstOnLine ? 0.0f : itemSpacing;
+
+		if (!firstOnLine && lineWidth + gap + itemWidth > availableWidth)
+		{
+			// item does not fit on the current line, move it to the next one
+			firstOnLine = true;
+			lineWidth = 0.0f;
+			gap = 0.0f;
+		}
+
+		if (!firstOnLine)
+		{
+			sameLine();
+		}
+
+		paragraphItemEmit(items[i], i, imageHeight, linkClicks, buttonClicks);
+		lineWidth += gap + itemWidth;
+		firstOnLine = false;
+	}
 }
 
 void showDemo()
@@ -911,6 +1039,35 @@ void showDemo()
 		widgetSetNextDisabled();
 		link("Cannot click this");
 		widgetPopDisabled();
+
+		space();
+		label("Paragraph (rich text help style):");
+
+		auto& labelBody = ctx->theme->getElement(WidgetElementId::LabelBody).normalState();
+		// getMetrics().height is already scaled with the theme, so normalize it here
+		f32 imageHeight = labelBody.height > labelBody.font->getMetrics().height / ctx->scale
+			? labelBody.height
+			: labelBody.font->getMetrics().height / ctx->scale;
+
+		ParagraphItem helpParagraph[] = {
+			{ ParagraphItemType::Text, "Welcome to the Horus UI demo. " },
+			{ ParagraphItemType::Link, "Visit the homepage" },
+			{ ParagraphItemType::Text, " for more info or " },
+			{ ParagraphItemType::Link, "read the documentation" },
+			{ ParagraphItemType::Text, " to learn about every widget. You can " },
+			{ ParagraphItemType::Button, "Apply" },
+			{ ParagraphItemType::Text, " or " },
+			{ ParagraphItemType::Button, "Reset" },
+			{ ParagraphItemType::Text, " the settings at any time. " },
+			{ ParagraphItemType::Image, "", ctx->theme->getElement(WidgetElementId::MessageBoxImageInfo).normalState().image },
+			{ ParagraphItemType::Text, " This icon highlights the helpful tips in this guide." },
+		};
+
+		paragraphDraw(helpParagraph, (u32)(sizeof(helpParagraph) / sizeof(helpParagraph[0])), imageHeight, demo.paragraphLinkClicks, demo.paragraphButtonClicks);
+
+		char paraCountBuf[128];
+		snprintf(paraCountBuf, sizeof(paraCountBuf), "Paragraph links clicked: %d, buttons clicked: %d", demo.paragraphLinkClicks, demo.paragraphButtonClicks);
+		label(paraCountBuf);
 		expandableEnd();
 	}
 

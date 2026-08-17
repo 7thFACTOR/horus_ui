@@ -18,13 +18,14 @@ static bool labelInternal(const char* label, HAlignType horizontalAlign, Font* f
 
 	ctx->setLabelAndId(label);
 	auto fsize = ctx->renderer.computeSizeOrDrawText(ctx->widgetLabel.c_str(), Rect(0, 0, ctx->layout.width , FLT_MAX), HAlignType::Left, VAlignType::Top, false, font ? font : bodyElem.normalState().font, true);
-	height = (bodyElemState->height > fsize.height ? bodyElemState->height : fsize.height);
+	// fsize values are already scaled with the theme, so normalize them here
+	height = (bodyElemState->height > fsize.height / ctx->scale ? bodyElemState->height : fsize.height / ctx->scale);
 
 	if (!ctx->widget.hasNextWidth)
 	{
 		if (horizontalAlign == HAlignType::Left)
 		{
-			ctx->widget.customWidth = fsize.width;
+			ctx->widget.customWidth = fsize.width / ctx->scale;
 			ctx->widget.hasCustomWidth = true;
 		}
 	}
@@ -88,7 +89,8 @@ static bool labelMultilineInternal(const char* label, HFont font, const Color* t
 
 	auto textSize = ((Font*)font)->computeTextSize(ctx->widgetLabel.c_str(), (u32)round(width));
 
-	addWidget(textSize.height + padding.y * 2.0f * ctx->scale);
+	// textSize.height is already scaled with the theme, so normalize it here
+	addWidget(textSize.height / ctx->scale + padding.y * 2.0f);
 
 	auto useFont = (Font*)font;
 
@@ -159,7 +161,8 @@ bool labelCustomFontMultiline(const char* label, HFont font, HAlignType horizont
 
 	auto textSize = ((Font*)font)->computeTextSize(ctx->widgetLabel.c_str(), (u32)round(width));
 
-	addWidget(textSize.height + padding.y * 2.0f * ctx->scale);
+	// textSize.height is already scaled with the theme, so normalize it here
+	addWidget(textSize.height / ctx->scale + padding.y * 2.0f);
 
 	auto useFont = (Font*)font;
 

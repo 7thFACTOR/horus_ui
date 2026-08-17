@@ -13,12 +13,12 @@ void progress(f32 value, f32 maxValue, bool showText, bool showRealValues, const
 
 	if (ctx->sameLine.enabled && !ctx->widget.hasNextWidth)
 	{
-		ctx->widget.customWidth = ((backElem.normalState().border + padding.x) * 2.0f) * ctx->scale;
+		ctx->widget.customWidth = (backElem.normalState().border + padding.x) * 2.0f;
 		ctx->widget.hasCustomWidth = true;
 	}
 
 	ctx->setLabelAndId(nullptr);
-	addWidget((backElem.normalState().height + padding.y * 2.0) * ctx->scale);
+	addWidget(backElem.normalState().height + padding.y * 2.0f);
 	buttonBehavior();
 
 	const bool isSubUnit = value <= 1.0f && maxValue == 0.0f;

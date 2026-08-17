@@ -18,13 +18,14 @@ bool link(const char* label, HAlignType horizontalAlign)
 
 	ctx->setLabelAndId(label);
 	auto fsize = ctx->renderer.computeSizeOrDrawText(ctx->widgetLabel.c_str(), Rect(0, 0, ctx->layout.width, FLT_MAX), HAlignType::Left, VAlignType::Top, false, bodyElemState->font, true);
-	height = (bodyElemState->height > fsize.height ? bodyElemState->height : fsize.height);
+	// fsize values are already scaled with the theme, so normalize them here
+	height = (bodyElemState->height > fsize.height / ctx->scale ? bodyElemState->height : fsize.height / ctx->scale);
 
 	if (!ctx->widget.hasNextWidth)
 	{
 		if (horizontalAlign == HAlignType::Left)
 		{
-			ctx->widget.customWidth = fsize.width;
+			ctx->widget.customWidth = fsize.width / ctx->scale;
 			ctx->widget.hasCustomWidth = true;
 		}
 	}

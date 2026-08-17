@@ -66,7 +66,8 @@ bool image(HImage img, f32 height, HAlignType horizontalAlign, VAlignType vertic
 	}
 
 	ctx->id = genId(img);
-	addWidget(height);
+	// height is already scaled, so keep the row single scaled
+	addWidget(height / ctx->scale);
 
 	Point pos = ctx->widget.rect.topLeft();
 
@@ -160,7 +161,8 @@ bool texture(HTexture texture, f32 textureWidth, f32 textureHeight, f32 height, 
 	}
 
 	ctx->id = genId(texture);
-	addWidget(height);
+	// height is already scaled, so keep the row single scaled
+	addWidget(height / ctx->scale);
 
 	Point pos = ctx->widget.rect.topLeft();
 

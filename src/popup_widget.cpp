@@ -129,7 +129,9 @@ void popupBegin(
 	ctx->layout.width = width - bodyElemState.border * 2 * ctx->scale;
 	ctx->layout.savedPosition = ctx->position;
 	
+	auto posBeforeHitWidget = ctx->position;
 	addWidget(0);
+	ctx->position = posBeforeHitWidget;
 	ctx->renderer.pushClipRect(ctx->renderer.getWindowRect(), false);
 
 	if (has(flags, PopupFlags::FadeBackground))

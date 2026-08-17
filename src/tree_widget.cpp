@@ -48,12 +48,12 @@ bool treeNode(const char* label, bool* expandedVar, SelectableFlags stateFlags, 
 		if (!fnt && !ctx->theme->fonts.empty())
 			fnt = &ctx->theme->fonts[0]->font;
 	}
-	f32 labelHeight = fmaxf(bodyElem.normalState().height, fnt ? fnt->getMetrics().height : 16.0f);
+	f32 labelHeight = fmaxf(bodyElem.normalState().height, fnt ? fnt->getMetrics().height / ctx->scale : 16.0f);
 
 	ctx->id = genId(nodeId);
 	ctx->widget.nextWidth = arrowWidth;
 	ctx->widget.hasNextWidth = true;
-	addWidget(labelHeight * ctx->scale);
+	addWidget(labelHeight);
 	buttonBehavior();
 
 	bool arrowClicked = ctx->widget.clicked;

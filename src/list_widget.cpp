@@ -23,7 +23,7 @@ bool list(const char* id, bool* selectedItems, ListSelectionMode selectionType, 
 		if (!fnt && !ctx->theme->fonts.empty())
 			fnt = &ctx->theme->fonts[0]->font;
 	}
-	f32 itemHeight = fmaxf(bodyElemState.height, fnt ? fnt->getMetrics().height : 16.0f) * ctx->scale;
+	f32 itemHeight = fmaxf(bodyElemState.height, fnt ? fnt->getMetrics().height / ctx->scale : 16.0f) * ctx->scale;
 
 	f32 totalHeight = itemHeight * itemCount;
 	Point scrollOffset;
@@ -44,6 +44,12 @@ bool list(const char* id, bool* selectedItems, ListSelectionMode selectionType, 
 	{
 		widgetHeight = 200; // default fallback
 	}
+
+	// scroll view doesn't scale height by default, so scale it to match the item rows
+	widgetHeight *= ctx->scale;
+
+	if (ctx->settings.scaleScrollViewHeight)
+		widgetHeight /= ctx->scale;
 
 	paddingPush(PaddingType::Layout, Point(0, 0));
 	paddingPush(PaddingType::ScrollView, Point(0, 0));
@@ -203,9 +209,10 @@ bool selectableInternal(const char* label, HFont font, SelectableFlags stateFlag
 	}
 
 	ctx->setLabelAndId(label);
+	// getMetrics().height is already scaled with the theme, so keep the row single scaled
 	addWidget(fmaxf(
 		bodyElem.normalState().height,
-		fnt ? fnt->getMetrics().height : 16.0f) * ctx->scale);
+		fnt ? fnt->getMetrics().height / ctx->scale : 16.0f));
 	buttonBehavior();
 
 	auto bodyElemState = &bodyElem.normalState();

@@ -22,13 +22,14 @@ bool check(const char* label, bool* checkVar)
 	f32 markHeightScaled = markHeight * ctx->scale;
 
 	// height is the same as bullet width, since its square, so we use height
-	ctx->widget.customWidth = markWidthScaled + textSize.width + bulletTextSpacing;
+	// customWidth and the height passed to addWidget() are scaled internally, so avoid double scaling here
+	ctx->widget.customWidth = (markWidthScaled + textSize.width + bulletTextSpacing) / ctx->scale;
 	ctx->widget.hasCustomWidth = true;
 
-	addWidget(std::max(textSize.height, markHeightScaled));
+	addWidget(std::max(textSize.height, markHeightScaled) / ctx->scale);
 
 	// set this width to just click on the bullet+text area
-	ctx->widget.rect.width = ctx->widget.customWidth;
+	ctx->widget.rect.width = ctx->widget.customWidth * ctx->scale;
 
 	buttonBehavior();
 	ctx->widget.changeEnded = false;
@@ -72,11 +73,14 @@ bool check(const char* label, bool* checkVar)
 		if (!markImage) markImage = checkMarkElem.normalState().image;
 	}
 
+	// keep the box vertically centered on the label
+	f32 boxY = ctx->widget.rect.y + (ctx->widget.rect.height - markHeightScaled) * 0.5f;
+
 	ctx->renderer.cmdDrawImageBordered(
 		bodyImage, checkBodyElemState->border,
 		{
 			ctx->widget.rect.x,
-			ctx->widget.rect.y,
+			boxY,
 			markWidthScaled,
 			markHeightScaled
 		}, ctx->scale);
@@ -89,7 +93,7 @@ bool check(const char* label, bool* checkVar)
 			checkMarkElemState->border,
 			{
 				ctx->widget.rect.x + (markWidth - checkMarkElemState->image->width) / 2.0f * ctx->scale,
-				ctx->widget.rect.y + (markHeight - checkMarkElemState->image->height) / 2.0f * ctx->scale,
+				boxY + (markHeight - checkMarkElemState->image->height) / 2.0f * ctx->scale,
 				checkMarkElemState->image->width * ctx->scale,
 				checkMarkElemState->image->height * ctx->scale
 			}, ctx->scale);

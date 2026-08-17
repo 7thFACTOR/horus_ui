@@ -23,13 +23,14 @@ bool radio(const char* label, i32* currentRadioValue, i32 thisValue)
 	f32 markHeightScaled = markHeight * ctx->scale;
 
 	// height is the same as bullet width, since its square, so we use height
+	// customWidth and the height passed to addWidget() are scaled internally, so avoid double scaling here
 	if (!ctx->widget.hasNextWidth)
 	{
-		ctx->widget.customWidth = markWidthScaled + textSize.width + bulletTextSpacing;
+		ctx->widget.customWidth = (markWidthScaled + textSize.width + bulletTextSpacing) / ctx->scale;
 		ctx->widget.hasCustomWidth = true;
 	}
 	
-	addWidget(std::max(textSize.height, markHeightScaled));
+	addWidget(std::max(textSize.height, markHeightScaled) / ctx->scale);
 	buttonBehavior();
 	ctx->widget.changeEnded = false;
 
@@ -72,12 +73,15 @@ bool radio(const char* label, i32* currentRadioValue, i32 thisValue)
 		if (!markImage) markImage = radioMarkElem.normalState().image;
 	}
 
+	// keep the box vertically centered on the label
+	f32 boxY = ctx->widget.rect.y + (ctx->widget.rect.height - markHeightScaled) * 0.5f;
+
 	ctx->renderer.cmdDrawImageBordered(
 		bodyImage,
 		radioBodyElemState->border,
 		{
 			ctx->widget.rect.x,
-			ctx->widget.rect.y,
+			boxY,
 			markWidthScaled,
 			markHeightScaled
 		}, ctx->scale);
@@ -89,7 +93,7 @@ bool radio(const char* label, i32* currentRadioValue, i32 thisValue)
 			markImage, radioMarkElemState->border,
 			{
 				ctx->widget.rect.x + (markWidth - markImage->width) / 2.0f * ctx->scale,
-				ctx->widget.rect.y + (markHeight - markImage->height) / 2.0f * ctx->scale,
+				boxY + (markHeight - markImage->height) / 2.0f * ctx->scale,
 				markImage->rect.width * ctx->scale,
 				markImage->rect.height * ctx->scale
 			}, ctx->scale);

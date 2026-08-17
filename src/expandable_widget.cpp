@@ -21,7 +21,7 @@ bool expandable(const char* label, bool* expandedVar)
 
 	ctx->setLabelAndId(label);
 	f32 widgetHeight = bodyElemState->height > 0 ? bodyElemState->height : bodyElemState->image->rect.height;
-	addWidget((widgetHeight + padding.y * 2.0f) * ctx->scale);
+	addWidget(widgetHeight + padding.y * 2.0f);
 	buttonBehavior();
 
 	if (ctx->widget.clicked)

@@ -1,5 +1,6 @@
 #include "theme.h"
 #include "util.h"
+#include "context.h"
 
 namespace hui
 {
@@ -93,7 +94,7 @@ Font* Theme::createFont(const std::string& name, const std::string& filename, u3
 
 	FontVariation* newFont = new FontVariation();
 
-	newFont->font.load(filename, size);
+	newFont->font.load(filename, size * ctx->scale);
 	newFont->font.precacheLatinAlphabetGlyphs();
 	newFont->size = size;
 	newFont->usageCount = 1;
@@ -120,7 +121,7 @@ Font* Theme::createFontFromMemory(const std::string& name, const void* data, u32
 
 	FontVariation* newFont = new FontVariation();
 
-	newFont->font.loadFromMemory(data, dataSize, size);
+	newFont->font.loadFromMemory(data, dataSize, size * ctx->scale);
 	newFont->font.precacheLatinAlphabetGlyphs();
 	newFont->size = size;
 	newFont->usageCount = 1;
