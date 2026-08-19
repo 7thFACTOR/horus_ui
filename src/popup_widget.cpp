@@ -225,7 +225,7 @@ void popupEnd()
 	}
 
 	auto& bodyElemState = ctx->theme->getElement(popup.widgetElementId).normalState();
-	popup.height = (ctx->position.y - ctx->layout.savedPosition.y) + bodyElemState.border * 2.0f * ctx->scale - ctx->spacing * ctx->scale;
+	popup.height = (ctx->position.y - ctx->layout.savedPosition.y) + bodyElemState.border * 2.0f * ctx->scale;
 	
 	ctx->position = ctx->layout.savedPosition;
 	ctx->renderer.popClipRect();
