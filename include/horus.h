@@ -2859,17 +2859,24 @@ HUI_API bool colorPicker(const char* id, Color* inOutColor, ColorPickerFlags fla
 /// \param maxCustomColors max capacity of the customColors array
 HUI_API bool colorPickerPopup(const char* id, Color* inOutColor, ColorPickerFlags flags = (ColorPickerFlags)0, const Color* oldColor = nullptr, Color* customColors = nullptr, u32* customColorCount = nullptr, u32 maxCustomColors = 0);
 
+enum class VectorEditorFlags : u32
+{
+	None = HUI_BIT(0),
+	AutoSelectAll = HUI_BIT(1)
+};
+HUI_ENUM_AS_FLAGS(VectorEditorFlags);
+
 /// Draw a 3D double vector editor widget
-HUI_API bool vec3Editor(const char* id, f64& x, f64& y, f64& z, f64 scrollStep = 0.03f);
+HUI_API bool vec3Editor(const char* id, f64& x, f64& y, f64& z, f64 scrollStep = 0.03f, VectorEditorFlags flags = VectorEditorFlags::None, u32 precision = 6);
 
 /// Draw a 3D float vector editor widget
-HUI_API bool vec3Editor(const char* id, f32& x, f32& y, f32& z, f32 scrollStep = 0.03f);
+HUI_API bool vec3Editor(const char* id, f32& x, f32& y, f32& z, f32 scrollStep = 0.03f, VectorEditorFlags flags = VectorEditorFlags::None, u32 precision = 6);
 
 /// Draw a 2D double vector editor widget
-HUI_API bool vec2Editor(const char* id, f64& x, f64& y, f64 scrollStep = 0.03f);
+HUI_API bool vec2Editor(const char* id, f64& x, f64& y, f64 scrollStep = 0.03f, VectorEditorFlags flags = VectorEditorFlags::None, u32 precision = 6);
 
 /// Draw a 2D float vector editor widget
-HUI_API bool vec2Editor(const char* id, f32& x, f32& y, f32 scrollStep = 0.03f);
+HUI_API bool vec2Editor(const char* id, f32& x, f32& y, f32 scrollStep = 0.03f, VectorEditorFlags flags = VectorEditorFlags::None, u32 precision = 6);
 
 /// Draw an object reference editor
 HUI_API bool objectRefEditor(const char* id, HImage targetImg, HImage clearImg, HImage iconImg, const char* objectTypeName, const char* valueAsString, u32 objectType, void** outObject, bool* objectValueWasModified, u32 refCount = 0, const char** refNames = nullptr, void** refValues = nullptr, f32 iconSize = 0);

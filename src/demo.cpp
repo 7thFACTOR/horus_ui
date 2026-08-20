@@ -248,6 +248,17 @@ struct DemoState
 	bool treeRootExpanded = true;
 	bool treeFolderAExpanded = false;
 	bool treeFolderBExpanded = false;
+
+	// invisible table with 3 lists
+	std::vector<std::string> tableListA = { "Apple", "Banana", "Cherry", "Date", "Elderberry" };
+	std::vector<std::string> tableListB = { "Fig", "Grape", "Honeydew", "Kiwi" };
+	std::vector<std::string> tableListC = { "Lemon", "Mango", "Nectarine", "Orange", "Papaya", "Quince" };
+	i32 tableListIdxA = -1;
+	i32 tableListIdxB = -1;
+	i32 tableListIdxC = -1;
+	Point tableScrollA = { 0, 0 };
+	Point tableScrollB = { 0, 0 };
+	Point tableScrollC = { 0, 0 };
 };
 
 static DemoState demo;
@@ -475,6 +486,17 @@ void showDemo()
 		static u32 disabledGroupVal = 1;
 		if (buttonGroup("##btnGrp4", groupItems, 3, &disabledGroupVal)) {}
 		widgetPopDisabled();
+
+		space();
+		label("SameLineGroup (3 equal-width buttons):");
+		sameLineGroupBegin(3);
+		if (button("Left")) {}
+		sameLineGroupNext();
+		if (button("Center")) {}
+		sameLineGroupNext();
+		if (button("Right")) {}
+		sameLineGroupEnd();
+
 		expandableEnd();
 	}
 
@@ -1175,7 +1197,9 @@ void showDemo()
 		widgetPushDisabled(demo.disableVecEditors);
 
 		label("vec2 (float):");
-		vec2Editor("##v2f", demo.vec2x, demo.vec2y);
+		vec2Editor("##v2f", demo.vec2x, demo.vec2y, 0.03f, VectorEditorFlags::AutoSelectAll);
+		sameLine();
+		label("(auto select all)");
 
 		space();
 		label("vec3 (float):");
@@ -1556,32 +1580,6 @@ void showDemo()
 
 				if (dragDropWantsTo())
 					dragDropBegin(3, (void*)itemsA[i]);
-
-				if (dragDropGetObjectType() == 3)
-				{
-					bool isSelfDrop = false;
-					void* draggedObj = dragDropGetObject();
-					for (auto& s : demo.dragListA)
-						if (s.c_str() == (const char*)draggedObj) { isSelfDrop = true; break; }
-					if (!isSelfDrop)
-						dragDropAllow();
-				}
-
-				if (dragDropDroppedOnWidget() && dragDropGetObjectType() == 3)
-				{
-					const char* droppedStr = (const char*)dragDropGetObject();
-					for (auto& s : demo.dragListB)
-					{
-						if (s.c_str() == droppedStr)
-						{
-							pendingMoveStr = s;
-							pendingMoveToListA = true;
-							dragDropEnd();
-							forceRepaint();
-							break;
-						}
-					}
-				}
 			}
 			spacingPop();
 
@@ -1589,6 +1587,32 @@ void showDemo()
 			idPop();
 			paddingPop(PaddingType::ScrollView);
 			paddingPop(PaddingType::Layout);
+
+			if (dragDropGetObjectType() == 3)
+			{
+				bool isSelfDrop = false;
+				void* draggedObj = dragDropGetObject();
+				for (auto& s : demo.dragListA)
+					if (s.c_str() == (const char*)draggedObj) { isSelfDrop = true; break; }
+				if (!isSelfDrop)
+					dragDropAllow();
+			}
+
+			if (dragDropDroppedOnWidget() && dragDropGetObjectType() == 3)
+			{
+				const char* droppedStr = (const char*)dragDropGetObject();
+				for (auto& s : demo.dragListB)
+				{
+					if (s.c_str() == droppedStr)
+					{
+						pendingMoveStr = s;
+						pendingMoveToListA = true;
+						dragDropEnd();
+						forceRepaint();
+						break;
+					}
+				}
+			}
 		}
 
 		{
@@ -1610,32 +1634,6 @@ void showDemo()
 
 				if (dragDropWantsTo())
 					dragDropBegin(3, (void*)itemsB[i]);
-
-				if (dragDropGetObjectType() == 3)
-				{
-					bool isSelfDrop = false;
-					void* draggedObj = dragDropGetObject();
-					for (auto& s : demo.dragListB)
-						if (s.c_str() == (const char*)draggedObj) { isSelfDrop = true; break; }
-					if (!isSelfDrop)
-						dragDropAllow();
-				}
-
-				if (dragDropDroppedOnWidget() && dragDropGetObjectType() == 3)
-				{
-					const char* droppedStr = (const char*)dragDropGetObject();
-					for (auto& s : demo.dragListA)
-					{
-						if (s.c_str() == droppedStr)
-						{
-							pendingMoveStr = s;
-							pendingMoveToListA = false;
-							dragDropEnd();
-							forceRepaint();
-							break;
-						}
-					}
-				}
 			}
 			spacingPop();
 
@@ -1643,6 +1641,32 @@ void showDemo()
 			idPop();
 			paddingPop(PaddingType::ScrollView);
 			paddingPop(PaddingType::Layout);
+
+			if (dragDropGetObjectType() == 3)
+			{
+				bool isSelfDrop = false;
+				void* draggedObj = dragDropGetObject();
+				for (auto& s : demo.dragListB)
+					if (s.c_str() == (const char*)draggedObj) { isSelfDrop = true; break; }
+				if (!isSelfDrop)
+					dragDropAllow();
+			}
+
+			if (dragDropDroppedOnWidget() && dragDropGetObjectType() == 3)
+			{
+				const char* droppedStr = (const char*)dragDropGetObject();
+				for (auto& s : demo.dragListA)
+				{
+					if (s.c_str() == droppedStr)
+					{
+						pendingMoveStr = s;
+						pendingMoveToListA = false;
+						dragDropEnd();
+						forceRepaint();
+						break;
+					}
+				}
+			}
 		}
 
 		// apply deferred move
@@ -1831,6 +1855,67 @@ void showDemo()
 			}
 			tableEnd();
 		}
+
+		label("Invisible table as 3-column list layout:");
+		if (tableBegin("##invisibleTable", 3, 0, TableFlags::Stretch | TableFlags::Borders))
+		{
+			tableColumnSetup(0, 0, TableColumnFlags::Stretch);
+			tableColumnSetup(1, 0, TableColumnFlags::Stretch);
+			tableColumnSetup(2, 0, TableColumnFlags::Stretch);
+
+			tableRowNext();
+
+			// col A
+			{
+				std::vector<const char*> items;
+				for (auto& s : demo.tableListA) items.push_back(s.c_str());
+				spacingPush(0.0f);
+				for (u32 i = 0; i < (u32)items.size(); i++)
+				{
+					bool sel = i == (u32)demo.tableListIdxA;
+					if (selectable(items[i], sel ? SelectableFlags::Selected : SelectableFlags::Normal))
+						demo.tableListIdxA = i;
+				}
+				spacingPop();
+			}
+
+			tableCellNext();
+
+			// col B
+			{
+				std::vector<const char*> items;
+				for (auto& s : demo.tableListB) items.push_back(s.c_str());
+				spacingPush(0.0f);
+				for (u32 i = 0; i < (u32)items.size(); i++)
+				{
+					bool sel = i == (u32)demo.tableListIdxB;
+					if (selectable(items[i], sel ? SelectableFlags::Selected : SelectableFlags::Normal))
+						demo.tableListIdxB = i;
+				}
+				spacingPop();
+			}
+
+			tableCellNext();
+
+			// col C
+			{
+				std::vector<const char*> items;
+				for (auto& s : demo.tableListC) items.push_back(s.c_str());
+				spacingPush(0.0f);
+				for (u32 i = 0; i < (u32)items.size(); i++)
+				{
+					bool sel = i == (u32)demo.tableListIdxC;
+					if (selectable(items[i], sel ? SelectableFlags::Selected : SelectableFlags::Normal))
+						demo.tableListIdxC = i;
+				}
+				spacingPop();
+			}
+
+			tableEnd();
+		}
+
+		space();
+
 		widgetPopDisabled();
 		expandableEnd();
 	}

@@ -291,6 +291,7 @@ static bool comboSliderInternal(bool isInt, f32* value, f32 minVal, f32 maxVal, 
 				ctx->comboSlider.currentValue = *value;
 				ctx->comboSlider.hiddenCursorPos = ctx->settings.services.getAbsoluteMousePosition();
 				ctx->settings.services.hideMouseCursor();
+				ctx->widget.captureId = ctx->id;
 			}
 		}
 
@@ -358,18 +359,19 @@ static bool comboSliderInternal(bool isInt, f32* value, f32 minVal, f32 maxVal, 
 			&& ctx->comboSlider.id == ctx->id
 			&& !ctx->widget.disabled)
 		{
-			if (ctx->comboSlider.dragging)
-			{
-				*value = ctx->comboSlider.currentValue;
-				ctx->widget.changeEnded = true;
-				ctx->settings.services.setAbsoluteMousePosition(ctx->comboSlider.hiddenCursorPos);
-				ctx->settings.services.showMouseCursor();
-			}
-			ctx->comboSlider.dragging = false;
-			ctx->comboSlider.mouseWasDown = false;
-			ctx->comboSlider.id = 0;
-			if (isInt) *value = roundf(*value);
-			windowReleaseCapture();
+		if (ctx->comboSlider.dragging)
+		{
+			*value = ctx->comboSlider.currentValue;
+			ctx->widget.changeEnded = true;
+			ctx->settings.services.setAbsoluteMousePosition(ctx->comboSlider.hiddenCursorPos);
+			ctx->settings.services.showMouseCursor();
+		}
+		ctx->comboSlider.dragging = false;
+		ctx->comboSlider.mouseWasDown = false;
+		ctx->comboSlider.id = 0;
+		ctx->widget.captureId = 0;
+		if (isInt) *value = roundf(*value);
+		windowReleaseCapture();
 		}
 
 		auto leftButtonState = &leftButtonElem.normalState();

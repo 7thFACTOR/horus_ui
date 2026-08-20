@@ -692,6 +692,10 @@ Point scrollViewEnd()
 	addWidget(height/ctx->scale);
 	layoutPop();
 
+	// set hover when mouse is over the scroll view and no child widget claimed hover
+	if (!ctx->widget.hovered && ctx->hoveringThisWindow && rectNoBorders.contains(ctx->mousePosition))
+		ctx->widget.hovered = true;
+
 	return scrollOffset;
 }
 

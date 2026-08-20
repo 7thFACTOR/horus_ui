@@ -4,12 +4,15 @@
 
 namespace hui
 {
-static bool vecEditorInternal(f64& x, f64& y, f64& z, f64 scrollStep, bool useZ)
+static bool vecEditorInternal(f64& x, f64& y, f64& z, f64 scrollStep, bool useZ, VectorEditorFlags flags, u32 precision)
 {
 	bool modified = false;
 	bool changedEndedX = false;
 	bool changedEndedY = false;
 	bool changedEndedZ = false;
+
+	char fmt[16];
+	snprintf(fmt, sizeof(fmt), "%%.%ug", precision);
 
 	f32 spacing = ctx->sameLine.spacing * ctx->scale;
 	u32 axisCount = useZ ? 3 : 2;
@@ -47,7 +50,7 @@ static bool vecEditorInternal(f64& x, f64& y, f64& z, f64 scrollStep, bool useZ)
 		f64* val = (i == 0) ? &x : (i == 1) ? &y : &z;
 		bool* changeEnded = (i == 0) ? &changedEndedX : (i == 1) ? &changedEndedY : &changedEndedZ;
 
-		sprintf(strAxis, "%.8g", *val);
+		sprintf(strAxis, fmt, *val);
 		auto elem = ctx->theme->userElements[imgName];
 		hui::image(elem->normalState().image, 22, hui::HAlignType::Left);
 		WidgetId imageWidgetId = ctx->id;
@@ -55,7 +58,8 @@ static bool vecEditorInternal(f64& x, f64& y, f64& z, f64 scrollStep, bool useZ)
 		bool imagePressed = hui::widgetIsPressed();
 		hui::sameLine();
 		hui::widgetSetNextWidth(inputWidthUnscaled);
-		modified = hui::textInput(inputId, strAxis, VectorEditorState::maxStrSize) || modified;
+		auto tiFlags = has(flags, VectorEditorFlags::AutoSelectAll) ? TextInputFlags::AutoSelectAll : TextInputFlags::None;
+		modified = hui::textInput(inputId, strAxis, VectorEditorState::maxStrSize, tiFlags) || modified;
 
 		if (imageHovered || (ctx->vecEditor.draggingValue && ctx->vecEditor.draggedId == imageWidgetId))
 		{
@@ -101,7 +105,7 @@ static bool vecEditorInternal(f64& x, f64& y, f64& z, f64 scrollStep, bool useZ)
 				}
 			}
 
-			sprintf(strAxis, "%.8g", *val);
+			sprintf(strAxis, fmt, *val);
 			modified = true;
 		}
 
@@ -119,21 +123,21 @@ static bool vecEditorInternal(f64& x, f64& y, f64& z, f64 scrollStep, bool useZ)
 	return modified;
 }
 
-bool vec3Editor(const char* id, f64& x, f64& y, f64& z, f64 scrollStep)
+bool vec3Editor(const char* id, f64& x, f64& y, f64& z, f64 scrollStep, VectorEditorFlags flags, u32 precision)
 {
 	idPush(id);
-	bool ret = vecEditorInternal(x, y, z, scrollStep, true);
+	bool ret = vecEditorInternal(x, y, z, scrollStep, true, flags, precision);
 	idPop();
 
 	return ret;
 }
 
-bool vec3Editor(const char* id, f32& x, f32& y, f32& z, f32 scrollStep)
+bool vec3Editor(const char* id, f32& x, f32& y, f32& z, f32 scrollStep, VectorEditorFlags flags, u32 precision)
 {
 	idPush(id);
 	f64 xx = x, yy = y, zz = z;
 
-	auto ret = vecEditorInternal(xx, yy, zz, scrollStep, true);
+	auto ret = vecEditorInternal(xx, yy, zz, scrollStep, true, flags, precision);
 
 	x = (f32)xx;
 	y = (f32)yy;
@@ -144,22 +148,22 @@ bool vec3Editor(const char* id, f32& x, f32& y, f32& z, f32 scrollStep)
 	return ret;
 }
 
-bool vec2Editor(const char* id, f64& x, f64& y, f64 scrollStep)
+bool vec2Editor(const char* id, f64& x, f64& y, f64 scrollStep, VectorEditorFlags flags, u32 precision)
 {
 	idPush(id);
 	
 	f64 zz = 0;
-	bool ret = vecEditorInternal(x, y, zz, scrollStep, false);
+	bool ret = vecEditorInternal(x, y, zz, scrollStep, false, flags, precision);
 	idPop();
 
 	return ret;
 }
 
-bool vec2Editor(const char* id, f32& x, f32& y, f32 scrollStep)
+bool vec2Editor(const char* id, f32& x, f32& y, f32 scrollStep, VectorEditorFlags flags, u32 precision)
 {
 	idPush(id);
 	f64 xx = x, yy = y, zz = 0;
-	auto ret = vecEditorInternal(xx, yy, zz, scrollStep, false);
+	auto ret = vecEditorInternal(xx, yy, zz, scrollStep, false, flags, precision);
 
 	x = (f32)xx;
 	y = (f32)yy;
