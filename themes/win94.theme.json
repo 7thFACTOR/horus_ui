@@ -1409,19 +1409,25 @@
             "menuBarItem": {
                 "height": 20,
                 "normal": {
-                    "image": "win94/pixel",
+                    "image": "",
                     "border": 0,
-                    "color": "white",
+                    "color": "transparent",
                     "font": "menu",
                     "textColor": "0 0 0 255"
                 },
                 "hovered": {
-                    "color": "white",
-                    "textColor": "0 0 0 255"
+                    "image": "win94/menu_item_body",
+                    "border": 2,
+                    "color": "0 0 128 255",
+                    "font": "menu",
+                    "textColor": "white"
                 },
                 "pressed": {
-                    "color": "white",
-                    "textColor": "0 0 0 255"
+                    "image": "win94/menu_item_body",
+                    "border": 2,
+                    "color": "0 0 128 255",
+                    "font": "menu",
+                    "textColor": "white"
                 }
             }
         },

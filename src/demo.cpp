@@ -1196,10 +1196,8 @@ void showDemo()
 		check("Disable##VecEditors", &demo.disableVecEditors);
 		widgetPushDisabled(demo.disableVecEditors);
 
-		label("vec2 (float):");
+		label("vec2 (float, auto select all):");
 		vec2Editor("##v2f", demo.vec2x, demo.vec2y, 0.03f, VectorEditorFlags::AutoSelectAll);
-		sameLine();
-		label("(auto select all)");
 
 		space();
 		label("vec3 (float):");
@@ -1249,7 +1247,7 @@ void showDemo()
 
 		space();
 		label("Images on the same line:");
-		image(demo.demoImage, 32);
+		image(demo.demoImage, 32, HAlignType::Left);
 		sameLine();
 		image(demo.demoImage, 32);
 		sameLine();
