@@ -778,6 +778,23 @@ struct ColorPickerState
 	WidgetId currentEditingId = 0;
 };
 
+struct CustomFileDialogState
+{
+	static const u32 maxPathSize = 512;
+	static const u32 maxFileNameSize = 256;
+
+	std::string currentPath;               /// the path currently navigated in the dialog
+	std::vector<CustomFileDialogEntry> entries;  /// the entries of the current path, listed by the callback
+	i32 selectedIndex = -1;                /// the currently selected entry index
+	char pathInput[maxPathSize] = { 0 };   /// the path edit text
+	char fileName[maxFileNameSize] = { 0 };/// the file name edit text (Save mode)
+	Point scrollPos = { 0, 0 };            /// the entries list scroll offset
+	std::string result;                    /// the last confirmed path
+	u32 lastUsedFrame = 0;
+	bool open = false;                     /// true if the dialog popup is open
+	bool needsListing = true;              /// true if entries must be relisted on next frame
+};
+
 struct MemoryStream
 {
 	enum class Mode

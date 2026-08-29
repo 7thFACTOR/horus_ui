@@ -1,7 +1,4 @@
-#include "context.h"
-#include "theme.h"
-#include "font.h"
-#include "util.h"
+#include <horus.h>
 #include "native_file_dialogs.h"
 #include <string.h>
 #include <stdio.h>
@@ -109,6 +106,7 @@ struct DemoState
 	bool expandTooltip = false;
 	bool expandPopup = false;
 	bool expandScrollView = false;
+	bool expandCustomFileDialog = false;
 
 	// added: Tree nodes demo expand flag
 	bool expandTreeNodes = false;
@@ -143,12 +141,17 @@ struct DemoState
 	bool disableTooltip = false;
 	bool disablePopup = false;
 	bool disableScrollView = false;
+	bool disableCustomFileDialog = false;
 
 	// added: Tree nodes demo disable flag
 	bool disableTreeNodes = false;
 
 	// popup demo
 	bool showPopup = false;
+
+	// custom file dialog demo
+	char customFileDialogResult[256] = "";
+	u32 customFileDialogMode = 0;
 
 	// link demo
 	int linkClickCount = 0;
@@ -292,33 +295,36 @@ struct ParagraphItem
 
 static f32 paragraphItemWidth(const ParagraphItem& item, f32 imageHeight)
 {
-	auto& labelBody = ctx->theme->getElement(WidgetElementId::LabelBody).normalState();
-	auto& linkBody = ctx->theme->getElement(WidgetElementId::LinkBody).normalState();
-	auto& btnBody = ctx->theme->getElement(WidgetElementId::ButtonBody).normalState();
+	WidgetElementInfo labelBody;
+	themeGetWidgetElementInfo(WidgetElementId::LabelBody, WidgetStateType::Normal, labelBody);
+	WidgetElementInfo linkBody;
+	themeGetWidgetElementInfo(WidgetElementId::LinkBody, WidgetStateType::Normal, linkBody);
+	WidgetElementInfo btnBody;
+	themeGetWidgetElementInfo(WidgetElementId::ButtonBody, WidgetStateType::Normal, btnBody);
 
 	switch (item.type)
 	{
 	case ParagraphItemType::Text:
-		return labelBody.font->computeTextSize(item.text.c_str()).width;
+		return fontGetTextSize(labelBody.font, item.text.c_str()).x;
 
 	case ParagraphItemType::Link:
-		return linkBody.font->computeTextSize(item.text.c_str()).width;
+		return fontGetTextSize(linkBody.font, item.text.c_str()).x;
 
 	case ParagraphItemType::Button:
-		return (btnBody.border * 2.0f + btnBody.font->computeTextSize(item.text.c_str()).width) * ctx->scale;
+		return (btnBody.border * 2.0f + fontGetTextSize(btnBody.font, item.text.c_str()).x) * scaleGet();
 
 	case ParagraphItemType::Image:
 	{
-		Image* img = (Image*)item.image;
+		Point imgSize = imageGetDimensions(item.image);
 
-		if (!img)
+		if (imgSize.x <= 0.0f || imgSize.y <= 0.0f)
 		{
 			return 0.0f;
 		}
 
-		f32 imgWidth = img->width * ctx->scale;
-		f32 imgHeight = img->height * ctx->scale;
-		f32 targetHeight = imageHeight * ctx->scale;
+		f32 imgWidth = imgSize.x * scaleGet();
+		f32 imgHeight = imgSize.y * scaleGet();
+		f32 targetHeight = imageHeight * scaleGet();
 
 		if (imgHeight >= targetHeight && targetHeight > 0)
 		{
@@ -367,8 +373,8 @@ static void paragraphItemEmit(const ParagraphItem& item, u32 index, f32 imageHei
 static void paragraphDraw(const ParagraphItem* items, u32 count, f32 imageHeight, int& linkClicks, int& buttonClicks)
 {
 	auto& padding = widgetGetPadding();
-	f32 availableWidth = ctx->layout.width - padding.x * 2.0f * ctx->scale;
-	f32 itemSpacing = ctx->sameLine.spacing * ctx->scale;
+	f32 availableWidth = layoutGetSize().x - padding.x * 2.0f * scaleGet();
+	f32 itemSpacing = sameLineSpacingGet() * scaleGet();
 	f32 lineWidth = 0.0f;
 	bool firstOnLine = true;
 
@@ -395,6 +401,93 @@ static void paragraphDraw(const ParagraphItem* items, u32 count, f32 imageHeight
 		firstOnLine = false;
 	}
 }
+
+// ------------------------------------------------------------------
+// custom file dialog demo: a tiny hardcoded virtual file system
+// ------------------------------------------------------------------
+namespace
+{
+struct DemoVfsEntry
+{
+	const char* name;
+	bool isDirectory;
+};
+
+const DemoVfsEntry demoVfsRoot[] = {
+	{ "Assets", true },
+	{ "Scenes", true },
+	{ "Shaders", true },
+	{ "game.lua", false },
+	{ "readme.txt", false },
+	{ "splash.png", false },
+};
+
+const DemoVfsEntry demoVfsAssets[] = {
+	{ "Audio", true },
+	{ "Meshes", true },
+	{ "Textures", true },
+	{ "car.fbx", false },
+	{ "house.fbx", false },
+};
+
+const DemoVfsEntry demoVfsAssetsAudio[] = {
+	{ "shoot.wav", false },
+	{ "theme.ogg", false },
+};
+
+const DemoVfsEntry demoVfsScenes[] = {
+	{ "level1.lua", false },
+	{ "level2.lua", false },
+};
+
+const DemoVfsEntry demoVfsShaders[] = {
+	{ "default.frag", false },
+	{ "default.vert", false },
+};
+
+void demoCustomFileDialogList(const char* path, std::vector<CustomFileDialogEntry>& outEntries, void* userData)
+{
+	const DemoVfsEntry* src = nullptr;
+	size_t count = 0;
+
+	if (strcmp(path, "/") == 0)
+	{
+		src = demoVfsRoot;
+		count = sizeof(demoVfsRoot) / sizeof(demoVfsRoot[0]);
+	}
+	else if (strcmp(path, "/Assets") == 0)
+	{
+		src = demoVfsAssets;
+		count = sizeof(demoVfsAssets) / sizeof(demoVfsAssets[0]);
+	}
+	else if (strcmp(path, "/Assets/Audio") == 0)
+	{
+		src = demoVfsAssetsAudio;
+		count = sizeof(demoVfsAssetsAudio) / sizeof(demoVfsAssetsAudio[0]);
+	}
+	else if (strcmp(path, "/Scenes") == 0)
+	{
+		src = demoVfsScenes;
+		count = sizeof(demoVfsScenes) / sizeof(demoVfsScenes[0]);
+	}
+	else if (strcmp(path, "/Shaders") == 0)
+	{
+		src = demoVfsShaders;
+		count = sizeof(demoVfsShaders) / sizeof(demoVfsShaders[0]);
+	}
+
+	if (src)
+	{
+		for (size_t i = 0; i < count; i++)
+		{
+			CustomFileDialogEntry entry;
+			entry.name = src[i].name;
+			entry.isDirectory = src[i].isDirectory;
+			outEntries.push_back(entry);
+		}
+	}
+}
+} // namespace
 
 void showDemo()
 {
@@ -1065,12 +1158,15 @@ void showDemo()
 		space();
 		label("Paragraph (rich text help style):");
 
-		auto& labelBody = ctx->theme->getElement(WidgetElementId::LabelBody).normalState();
-		// getMetrics().height is already scaled with the theme, so normalize it here
-		f32 imageHeight = labelBody.height > labelBody.font->getMetrics().height / ctx->scale
+		WidgetElementInfo labelBody;
+		themeGetWidgetElementInfo(WidgetElementId::LabelBody, WidgetStateType::Normal, labelBody);
+		// fontGetMetrics().height is already scaled with the theme, so normalize it here
+		f32 imageHeight = labelBody.height > fontGetMetrics(labelBody.font).height / scaleGet()
 			? labelBody.height
-			: labelBody.font->getMetrics().height / ctx->scale;
+			: fontGetMetrics(labelBody.font).height / scaleGet();
 
+		WidgetElementInfo msgBoxImg;
+		themeGetWidgetElementInfo(WidgetElementId::MessageBoxImageInfo, WidgetStateType::Normal, msgBoxImg);
 		ParagraphItem helpParagraph[] = {
 			{ ParagraphItemType::Text, "Welcome to the Horus UI demo. " },
 			{ ParagraphItemType::Link, "Visit the homepage" },
@@ -1081,7 +1177,7 @@ void showDemo()
 			{ ParagraphItemType::Text, " or " },
 			{ ParagraphItemType::Button, "Reset" },
 			{ ParagraphItemType::Text, " the settings at any time. " },
-			{ ParagraphItemType::Image, "", ctx->theme->getElement(WidgetElementId::MessageBoxImageInfo).normalState().image },
+			{ ParagraphItemType::Image, "", msgBoxImg.image },
 			{ ParagraphItemType::Text, " This icon highlights the helpful tips in this guide." },
 		};
 
@@ -2086,10 +2182,40 @@ void showDemo()
 		button("Hover Me (Custom)");
 		if (customTooltipBegin(250))
 		{
+			auto setTextColor = [](WidgetElementId elementId, const Color& color)
+			{
+				WidgetElementInfo info;
+				themeGetWidgetElementInfo(elementId, WidgetStateType::Normal, info);
+				info.textColor = color;
+				themeSetWidgetElement(themeGet(), elementId, WidgetStateType::Normal, info, "default");
+			};
+
+			auto getTextColor = [](WidgetElementId elementId)
+			{
+				WidgetElementInfo info;
+				themeGetWidgetElementInfo(elementId, WidgetStateType::Normal, info);
+				return info.textColor;
+			};
+
+			WidgetElementId tooltipElements[] = { WidgetElementId::LabelBody, WidgetElementId::CheckBody, WidgetElementId::ButtonBody };
+			const u32 tooltipElementCount = sizeof(tooltipElements) / sizeof(tooltipElements[0]);
+			Color originalTextColors[tooltipElementCount];
+
+			for (u32 i = 0; i < tooltipElementCount; i++)
+			{
+				originalTextColors[i] = getTextColor(tooltipElements[i]);
+				setTextColor(tooltipElements[i], Color::black);
+			}
+
 			label("This is a CUSTOM tooltip area");
 			label("You can embed any widgets here:");
 			check("Check inside tooltip", &demo.checkA);
 			button("Button inside tooltip");
+
+			for (u32 i = 0; i < tooltipElementCount; i++)
+			{
+				setTextColor(tooltipElements[i], originalTextColors[i]);
+			}
 			customTooltipEnd();
 		}
 		widgetPopDisabled();
@@ -2123,6 +2249,35 @@ void showDemo()
 			}
 			popupEnd();
 		}
+		widgetPopDisabled();
+		expandableEnd();
+	}
+
+	// ------------------------------------------------------------------
+	// custom file dialog
+	// ------------------------------------------------------------------
+	if (expandableBegin("Custom File Dialog", &demo.expandCustomFileDialog))
+	{
+		check("Disable##CustomFileDialog", &demo.disableCustomFileDialog);
+		widgetPushDisabled(demo.disableCustomFileDialog);
+
+		label("A popup that browses a virtual file system:");
+		static const char* cfdModeLabels[3] = { "Open File", "Save File", "Pick Folder" };
+		buttonGroup("##cfdMode", cfdModeLabels, 3, &demo.customFileDialogMode);
+
+		CustomFileDialogFlags cfdFlags = CustomFileDialogFlags::None;
+
+		if (demo.customFileDialogMode == 1)
+			cfdFlags = CustomFileDialogFlags::SaveFile;
+		else if (demo.customFileDialogMode == 2)
+			cfdFlags = CustomFileDialogFlags::PickFolder;
+
+		space();
+
+		customFileDialog("##demoCustomFileDialog", demoCustomFileDialogList, nullptr, demo.customFileDialogResult, sizeof demo.customFileDialogResult, cfdFlags);
+
+		std::string cfdResultLabel = "Chosen path: " + std::string(demo.customFileDialogResult);
+		label(cfdResultLabel.c_str());
 		widgetPopDisabled();
 		expandableEnd();
 	}

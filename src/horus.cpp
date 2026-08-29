@@ -1032,6 +1032,18 @@ HImage themeGetImage(HTheme theme, const char* id)
 	return nullptr;
 }
 
+Point imageGetDimensions(HImage image)
+{
+	Image* img = (Image*)image;
+
+	if (!img)
+	{
+		return Point();
+	}
+
+	return { (f32)img->width, (f32)img->height };
+}
+
 void widgetSetStyle(WidgetType widgetType, const char* styleName)
 {
 	//TODO: more automatic correlation between widget type and its element types, to avoid manual switch
@@ -1473,6 +1485,28 @@ HFont themeFontGet(const char* themeFontName)
 	return themeFontGetFromTheme(themeGet(), themeFontName);
 }
 
+Point fontGetTextSize(HFont font, const char* text)
+{
+	if (!font || !text)
+	{
+		return Point();
+	}
+
+	auto fntInfo = ((Font*)font)->computeTextSize(text);
+
+	return { fntInfo.width, fntInfo.height };
+}
+
+FontMetrics fontGetMetrics(HFont font)
+{
+	if (!font)
+	{
+		return FontMetrics();
+	}
+
+	return ((Font*)font)->getMetrics();
+}
+
 void layoutBegin(const Rect& rect)
 {
 	layoutPush();
@@ -1649,6 +1683,11 @@ void spacingPop()
 f32 spacingGet()
 {
 	return ctx->spacing;
+}
+
+f32 sameLineSpacingGet()
+{
+	return ctx->sameLine.spacing;
 }
 
 void scaleSet(f32 scale)

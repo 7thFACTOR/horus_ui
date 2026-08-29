@@ -153,6 +153,9 @@ struct Context
 	ColorPickerState colorPickerState;
 	Rect tabGroupWidgetRect;
 
+	// Custom file dialog
+	std::unordered_map<WidgetId, CustomFileDialogState> customFileDialogs;
+
 	// Input
 	InputEvent event;
 	std::vector<InputEvent> events;

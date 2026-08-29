@@ -769,6 +769,38 @@ enum class CircularSliderFlags : u32
 };
 HUI_ENUM_AS_FLAGS(CircularSliderFlags);
 
+/// A single entry of a custom file dialog listing, a file or a folder
+struct HUI_STRUCT_API CustomFileDialogEntry
+{
+	std::string name;			/// the entry name (file or folder name)
+	bool isDirectory = false;	/// true if the entry is a folder
+};
+
+/// Custom file dialog flags
+enum class CustomFileDialogFlags : u32
+{
+	None = HUI_BIT(0),
+	SaveFile = HUI_BIT(1),	/// show a file name edit box and the confirm button reads "Save"
+	PickFolder = HUI_BIT(2)	/// pick a folder instead of a file
+};
+HUI_ENUM_AS_FLAGS(CustomFileDialogFlags);
+
+/// Vector editor widget flags
+enum class VectorEditorFlags : u32
+{
+	None = HUI_BIT(0),
+	AutoSelectAll = HUI_BIT(1)
+};
+HUI_ENUM_AS_FLAGS(VectorEditorFlags);
+
+/// Callback used by the custom file dialog to list the contents of a path (a virtual file system).
+/// The dialog calls this every time it needs the entries of the current path (when opened or navigated),
+/// and the callback fills outEntries with the files and folders found in path
+/// \param path the absolute path to list
+/// \param outEntries the entries to fill with the path contents
+/// \param userData the user data passed to customFileDialog
+typedef void (*CustomFileDialogListCallback)(const char* path, std::vector<CustomFileDialogEntry>& outEntries, void* userData);
+
 /// A 2D point
 struct Point
 {
@@ -1976,6 +2008,8 @@ struct Settings
 	f32 dockNodeDockingHitSizeRatio = 0.5f; /// unit percent from the size of a window used for the docking hit box
 	f32 dockTabImageTextSpacing = 4;
 	f32 movePopupMaxDistanceTrigger = 5; /// distance of dragging with mouse for when to initiate popup dragging
+	f32 customFileDialogWidth = 460; /// the popup width of the custom file dialog
+	f32 customFileDialogEntriesHeight = 220; /// the height of the entries list of the custom file dialog
 	f32 defaultBulletTextSpacing = 5; /// space size between bullet/check/radio and the label, might get overriden by the theme settings
 	f32 defaultButtonGroupLabelSideSpacing = 6; /// horizontal spacing between text and segment border in button groups, might get overriden by the theme settings
 	f32 defaultCircularSliderLabelSpacing = 4; /// space between the circular slider circle and the label under it, might get overriden by the theme settings
@@ -2243,6 +2277,18 @@ HUI_API HFont themeFontGet(const char* themeFontName);
 
 /// \return the font by name, from the specified theme
 HUI_API HFont themeFontGetFromTheme(HTheme theme, const char* themeFontName);
+
+/// \return the pixel size of the given text when rendered with the given font
+HUI_API Point fontGetTextSize(HFont font, const char* text);
+
+/// \return the line metrics (height, ascender, descender) of the given font
+HUI_API FontMetrics fontGetMetrics(HFont font);
+
+/// \return the pixel width and height of the given image, {0, 0} if the image is null
+HUI_API Point imageGetDimensions(HImage image);
+
+/// \return the horizontal spacing (unscaled) used between widgets on the same line
+HUI_API f32 sameLineSpacingGet();
 
 //////////////////////////////////////////////////////////////////////////
 // Layouts
@@ -2859,12 +2905,16 @@ HUI_API bool colorPicker(const char* id, Color* inOutColor, ColorPickerFlags fla
 /// \param maxCustomColors max capacity of the customColors array
 HUI_API bool colorPickerPopup(const char* id, Color* inOutColor, ColorPickerFlags flags = (ColorPickerFlags)0, const Color* oldColor = nullptr, Color* customColors = nullptr, u32* customColorCount = nullptr, u32 maxCustomColors = 0);
 
-enum class VectorEditorFlags : u32
-{
-	None = HUI_BIT(0),
-	AutoSelectAll = HUI_BIT(1)
-};
-HUI_ENUM_AS_FLAGS(VectorEditorFlags);
+/// Draw a custom file dialog widget, a popup like the OS file dialogs, that navigates
+/// a virtual file system provided by the listCallback
+/// \param id unique widget id
+/// \param listCallback the callback that lists the contents of a path, called every time the dialog needs the entries of a path
+/// \param userData user data passed to the listCallback
+/// \param outResult buffer where the chosen path is written when the dialog is confirmed.
+/// \param resultBufferSize the size of the outResult buffer in bytes
+/// \param flags the dialog flags
+/// \return true when a path was chosen, in this case outResult is filled with the chosen path
+HUI_API bool customFileDialog(const char* id, CustomFileDialogListCallback listCallback, void* userData, char* outResult, u32 resultBufferSize, CustomFileDialogFlags flags = CustomFileDialogFlags::None);
 
 /// Draw a 3D double vector editor widget
 HUI_API bool vec3Editor(const char* id, f64& x, f64& y, f64& z, f64 scrollStep = 0.03f, VectorEditorFlags flags = VectorEditorFlags::None, u32 precision = 6);
