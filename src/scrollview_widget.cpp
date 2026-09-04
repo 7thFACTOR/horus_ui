@@ -206,11 +206,20 @@ void scrollViewBegin(const char* id, f32 height, Point scrollOffset, Point virtu
 	const auto border = (has(flags, ScrollViewFlags::NoBorder) ? 0 : (f32)scrollViewElemState.border * ctx->scale);
 	auto internalPadding = border + (has(flags, ScrollViewFlags::NoPadding) ? 0 : padding.x);
 
+	// respect widgetSetNextWidth / widgetSetNextCustomWidth like addWidget does
+	f32 scrollViewWidth;
+	if (ctx->widget.hasNextWidth)
+		scrollViewWidth = ctx->widget.nextWidth * ctx->scale;
+	else if (ctx->widget.hasCustomWidth)
+		scrollViewWidth = ctx->widget.customWidth * ctx->scale;
+	else
+		scrollViewWidth = ctx->layout.width;
+
 	Rect rect =
 	{
 		ctx->position.x,
 		ctx->position.y,
-		ctx->layout.width,
+		scrollViewWidth,
 		height
 	};
 

@@ -487,6 +487,15 @@ void demoCustomFileDialogList(const char* path, std::vector<CustomFileDialogEntr
 		}
 	}
 }
+
+static void demoCustomFileDialogPreview(const char* path, const Rect& previewRect, void* userData)
+{
+	renderSetFillStyle(Color::fromU8(42, 42, 42, 255));
+	renderDrawSolidRectangle(previewRect);
+	
+	renderSetColor(Color::white);
+	renderDrawTextInBox(path, previewRect, HAlignType::Center, VAlignType::Center);
+}
 } // namespace
 
 void showDemo()
@@ -2272,9 +2281,12 @@ void showDemo()
 		else if (demo.customFileDialogMode == 2)
 			cfdFlags = CustomFileDialogFlags::PickFolder;
 
+		static bool usePreview = true;
+		check("Show Preview Panel", &usePreview);
+
 		space();
 
-		customFileDialog("##demoCustomFileDialog", demoCustomFileDialogList, nullptr, demo.customFileDialogResult, sizeof demo.customFileDialogResult, cfdFlags);
+		customFileDialog("##demoCustomFileDialog", demoCustomFileDialogList, nullptr, demo.customFileDialogResult, sizeof demo.customFileDialogResult, cfdFlags, usePreview ? demoCustomFileDialogPreview : nullptr, nullptr);
 
 		std::string cfdResultLabel = "Chosen path: " + std::string(demo.customFileDialogResult);
 		label(cfdResultLabel.c_str());

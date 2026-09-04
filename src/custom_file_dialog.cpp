@@ -199,7 +199,9 @@ bool customFileDialog(
 	void* userData,
 	char* outResult,
 	u32 resultBufferSize,
-	CustomFileDialogFlags flags)
+	CustomFileDialogFlags flags,
+	CustomFileDialogPreviewCallback previewCallback,
+	void* previewUserData)
 {
 	ctx->setLabelAndId(id);
 	WidgetId dialogId = ctx->id;
@@ -229,7 +231,14 @@ bool customFileDialog(
 	if (state.open)
 	{
 		std::string popupId = "##cfd" + std::to_string(dialogId);
-		popupBegin(popupId.c_str(), ctx->settings.customFileDialogWidth, PopupFlags::FadeBackground | PopupFlags::Centered);
+		f32 popupWidth = ctx->settings.customFileDialogWidth;
+		
+		if (previewCallback)
+		{
+			popupWidth += ctx->settings.customFileDialogPreviewWidth + ctx->sameLine.spacing;
+		}
+		
+		popupBegin(popupId.c_str(), popupWidth, PopupFlags::FadeBackground | PopupFlags::Centered);
 
 		idPush((void*)dialogId);
 
@@ -256,7 +265,7 @@ bool customFileDialog(
 				customFileDialogRelist(state, listCallback, userData, has(flags, CustomFileDialogFlags::PickFolder));
 
 			// navigation header
-			if (hui::button(".."))
+			if (hui::button("< Back##backBtn"))
 			{
 				std::string parent = customFileDialogParentPath(state.currentPath);
 
@@ -325,6 +334,12 @@ bool customFileDialog(
 			if (ctx->settings.scaleScrollViewHeight)
 				listHeight /= ctx->scale;
 
+			if (previewCallback)
+			{
+				f32 listWidth = ctx->settings.customFileDialogWidth;
+				widgetSetNextWidth(listWidth);
+			}
+
 			spacingPush(0.0f);
 			paddingPush(PaddingType::ScrollView, Point());
 			scrollViewBegin(
@@ -381,6 +396,23 @@ bool customFileDialog(
 			state.scrollPos = scrollViewEnd();
 			paddingPop(PaddingType::ScrollView);
 			spacingPop();
+
+			if (previewCallback)
+			{
+				sameLine();
+				widgetSetNextWidth(ctx->settings.customFileDialogPreviewWidth);
+				Rect previewRect = customWidgetBegin("##cfdpPreview", listHeight);
+				
+				std::string previewPath = state.currentPath;
+				if (state.selectedIndex >= 0 && state.selectedIndex < (i32)state.entries.size())
+				{
+					auto& selectedEntry = state.entries[state.selectedIndex];
+					previewPath = customFileDialogJoinPath(state.currentPath, selectedEntry.name);
+				}
+
+				previewCallback(previewPath.c_str(), previewRect, previewUserData);
+				customWidgetEnd();
+			}
 
 			if (has(flags, CustomFileDialogFlags::SaveFile))
 			{
