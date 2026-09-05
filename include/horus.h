@@ -1420,6 +1420,13 @@ struct Rect
 	}
 };
 
+/// Callback used by the custom file dialog to draw a preview of the currently selected entry.
+/// When provided, the dialog shows a preview panel on the right side of the entries list.
+/// \param path the full absolute path of the currently selected entry
+/// \param previewRect the rectangle where the preview should be drawn (in window coordinates)
+/// \param userData the user data passed to customFileDialog
+typedef void (*CustomFileDialogPreviewCallback)(const char* path, const Rect& previewRect, void* userData);
+
 struct InputEvent
 {
 	enum class Type
@@ -2010,6 +2017,7 @@ struct Settings
 	f32 movePopupMaxDistanceTrigger = 5; /// distance of dragging with mouse for when to initiate popup dragging
 	f32 customFileDialogWidth = 460; /// the popup width of the custom file dialog
 	f32 customFileDialogEntriesHeight = 220; /// the height of the entries list of the custom file dialog
+	f32 customFileDialogPreviewWidth = 250; /// the width of the preview panel in the custom file dialog (when a preview callback is provided)
 	f32 defaultBulletTextSpacing = 5; /// space size between bullet/check/radio and the label, might get overriden by the theme settings
 	f32 defaultButtonGroupLabelSideSpacing = 6; /// horizontal spacing between text and segment border in button groups, might get overriden by the theme settings
 	f32 defaultCircularSliderLabelSpacing = 4; /// space between the circular slider circle and the label under it, might get overriden by the theme settings
@@ -2913,8 +2921,10 @@ HUI_API bool colorPickerPopup(const char* id, Color* inOutColor, ColorPickerFlag
 /// \param outResult buffer where the chosen path is written when the dialog is confirmed.
 /// \param resultBufferSize the size of the outResult buffer in bytes
 /// \param flags the dialog flags
+/// \param previewCallback optional callback to draw a preview of the selected entry; when non-null a preview panel is shown on the right side of the entries list
+/// \param previewUserData user data passed to previewCallback
 /// \return true when a path was chosen, in this case outResult is filled with the chosen path
-HUI_API bool customFileDialog(const char* id, CustomFileDialogListCallback listCallback, void* userData, char* outResult, u32 resultBufferSize, CustomFileDialogFlags flags = CustomFileDialogFlags::None);
+HUI_API bool customFileDialog(const char* id, CustomFileDialogListCallback listCallback, void* userData, char* outResult, u32 resultBufferSize, CustomFileDialogFlags flags = CustomFileDialogFlags::None, CustomFileDialogPreviewCallback previewCallback = nullptr, void* previewUserData = nullptr);
 
 /// Draw a 3D double vector editor widget
 HUI_API bool vec3Editor(const char* id, f64& x, f64& y, f64& z, f64 scrollStep = 0.03f, VectorEditorFlags flags = VectorEditorFlags::None, u32 precision = 6);

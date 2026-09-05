@@ -232,12 +232,15 @@ bool customFileDialog(
 	{
 		std::string popupId = "##cfd" + std::to_string(dialogId);
 		f32 popupWidth = ctx->settings.customFileDialogWidth;
-		
+
 		if (previewCallback)
 		{
-			popupWidth += ctx->settings.customFileDialogPreviewWidth + ctx->sameLine.spacing;
+			// the popup content area is inset by the popup body border on both sides,
+			// so add it back, otherwise the list + preview stick out on the right
+			f32 popupBorder = (f32)ctx->theme->getElement(WidgetElementId::PopupBody).normalState().border;
+			popupWidth += ctx->settings.customFileDialogPreviewWidth + ctx->sameLine.spacing + popupBorder * 2.0f;
 		}
-		
+
 		popupBegin(popupId.c_str(), popupWidth, PopupFlags::FadeBackground | PopupFlags::Centered);
 
 		idPush((void*)dialogId);
@@ -340,6 +343,10 @@ bool customFileDialog(
 				widgetSetNextWidth(listWidth);
 			}
 
+			// top-left of the entries list; scrollViewEnd() advances ctx->position past
+			// the list bottom, so capture it here for the preview placement
+			Point entriesListPosition = ctx->position;
+
 			spacingPush(0.0f);
 			paddingPush(PaddingType::ScrollView, Point());
 			scrollViewBegin(
@@ -400,8 +407,16 @@ bool customFileDialog(
 			if (previewCallback)
 			{
 				sameLine();
+				// scrollViewEnd()'s layoutPop() restores the sameLine state captured at
+				// scrollViewBegin() (the pre-entry-row one), so re-anchor the current
+				// position to the entries list top; otherwise the preview lands on the
+				// path input row above the list
+				ctx->sameLine.currentPosition = entriesListPosition;
+				// advance past the full entries list width; the scroll view reports a
+				// narrower width when it reserves a vertical scroll bar
+				ctx->sameLine.lastLineWidth = ctx->settings.customFileDialogWidth * ctx->scale;
 				widgetSetNextWidth(ctx->settings.customFileDialogPreviewWidth);
-				Rect previewRect = customWidgetBegin("##cfdpPreview", listHeight);
+				Rect previewRect = customWidgetBegin("##cfdpPreview", ctx->settings.customFileDialogEntriesHeight);
 				
 				std::string previewPath = state.currentPath;
 				if (state.selectedIndex >= 0 && state.selectedIndex < (i32)state.entries.size())
