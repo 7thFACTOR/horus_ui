@@ -5,11 +5,8 @@
 
 namespace hui
 {
-static bool vecEditorInternal(f64& x, f64& y, f64& z, f64 scrollStep, bool useZ, VectorEditorFlags flags, u32 precision, const char* indeterminate)
+static bool vecEditorInternal(f64& x, f64& y, f64& z, f64 scrollStep, bool useZ, VectorEditorFlags flags, u32 precision, const char* indeterminateStr)
 {
-	if (!indeterminate)
-		indeterminate = "Indeterminate";
-
 	// the editing state is shared for all vec editors, so tie it to the
 	// editor instance that started it
 	WidgetId editorId = ctx->idStack.back();
@@ -66,7 +63,7 @@ static bool vecEditorInternal(f64& x, f64& y, f64& z, f64 scrollStep, bool useZ,
 			: (i == 1) ? has(flags, VectorEditorFlags::IndeterminateY)
 			: has(flags, VectorEditorFlags::IndeterminateZ);
 		bool editingIndeterminate = (editIndeterminate.editingIndeterminateEditor == editorId) && editIndeterminate.editingIndeterminate[i];
-		const char* hint = (indeterminateAxis && !editingIndeterminate) ? indeterminate : nullptr;
+		const char* hint = (indeterminateAxis && !editingIndeterminate) ? (indeterminateStr ? indeterminateStr : "Indeterminate") : nullptr;
 
 		if (indeterminateAxis && !editingIndeterminate)
 			strAxis[0] = 0;
@@ -182,21 +179,21 @@ static bool vecEditorInternal(f64& x, f64& y, f64& z, f64 scrollStep, bool useZ,
 	return modified;
 }
 
-bool vec3Editor(const char* id, f64& x, f64& y, f64& z, f64 scrollStep, VectorEditorFlags flags, u32 precision, const char* indeterminate)
+bool vec3Editor(const char* id, f64& x, f64& y, f64& z, f64 scrollStep, VectorEditorFlags flags, u32 precision, const char* indeterminateStr)
 {
 	idPush(id);
-	bool ret = vecEditorInternal(x, y, z, scrollStep, true, flags, precision, indeterminate);
+	bool ret = vecEditorInternal(x, y, z, scrollStep, true, flags, precision, indeterminateStr);
 	idPop();
 
 	return ret;
 }
 
-bool vec3Editor(const char* id, f32& x, f32& y, f32& z, f32 scrollStep, VectorEditorFlags flags, u32 precision, const char* indeterminate)
+bool vec3Editor(const char* id, f32& x, f32& y, f32& z, f32 scrollStep, VectorEditorFlags flags, u32 precision, const char* indeterminateStr)
 {
 	idPush(id);
 	f64 xx = x, yy = y, zz = z;
 
-	auto ret = vecEditorInternal(xx, yy, zz, scrollStep, true, flags, precision, indeterminate);
+	auto ret = vecEditorInternal(xx, yy, zz, scrollStep, true, flags, precision, indeterminateStr);
 
 	x = (f32)xx;
 	y = (f32)yy;
@@ -207,22 +204,22 @@ bool vec3Editor(const char* id, f32& x, f32& y, f32& z, f32 scrollStep, VectorEd
 	return ret;
 }
 
-bool vec2Editor(const char* id, f64& x, f64& y, f64 scrollStep, VectorEditorFlags flags, u32 precision, const char* indeterminate)
+bool vec2Editor(const char* id, f64& x, f64& y, f64 scrollStep, VectorEditorFlags flags, u32 precision, const char* indeterminateStr)
 {
 	idPush(id);
 	
 	f64 zz = 0;
-	bool ret = vecEditorInternal(x, y, zz, scrollStep, false, flags, precision, indeterminate);
+	bool ret = vecEditorInternal(x, y, zz, scrollStep, false, flags, precision, indeterminateStr);
 	idPop();
 
 	return ret;
 }
 
-bool vec2Editor(const char* id, f32& x, f32& y, f32 scrollStep, VectorEditorFlags flags, u32 precision, const char* indeterminate)
+bool vec2Editor(const char* id, f32& x, f32& y, f32 scrollStep, VectorEditorFlags flags, u32 precision, const char* indeterminateStr)
 {
 	idPush(id);
 	f64 xx = x, yy = y, zz = 0;
-	auto ret = vecEditorInternal(xx, yy, zz, scrollStep, false, flags, precision, indeterminate);
+	auto ret = vecEditorInternal(xx, yy, zz, scrollStep, false, flags, precision, indeterminateStr);
 
 	x = (f32)xx;
 	y = (f32)yy;
@@ -231,7 +228,7 @@ bool vec2Editor(const char* id, f32& x, f32& y, f32 scrollStep, VectorEditorFlag
 	return ret;
 }
 
-bool objectRefEditor(const char* id, HImage targetImg, HImage clearImg, HImage iconImg, const char* objectTypeName, const char* valueAsString, u32 objectType, void** outObject, bool* objectValueWasModified, u32 refCount, const char** refNames, void** refValues, f32 iconSize, const char* indeterminate)
+bool objectRefEditor(const char* id, HImage targetImg, HImage clearImg, HImage iconImg, const char* objectTypeName, const char* valueAsString, u32 objectType, void** outObject, bool* objectValueWasModified, u32 refCount, const char** refNames, void** refValues, f32 iconSize, const char* indeterminateStr)
 {
 	idPush(id);
 	bool returnValue = false;
@@ -349,9 +346,9 @@ bool objectRefEditor(const char* id, HImage targetImg, HImage clearImg, HImage i
 		std::string text;
 		if (!*outObject)
 		{
-			if (indeterminate)
+			if (indeterminateStr)
 			{
-				text = indeterminate;
+				text = indeterminateStr;
 
 				// use the text input's default/hint text style so the indeterminate
 				// text reads as a hint rather than a real object name

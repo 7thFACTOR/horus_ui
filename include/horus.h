@@ -2565,23 +2565,23 @@ HUI_API bool sliderFloat(const char* id, f32 minVal, f32 maxVal, f32& value, boo
 
 /// Draw an integer combo slider widget
 /// \param value pointer to the value, pass nullptr to show an indeterminate state that starts from 0 and is fully editable until the caller provides a value pointer
-/// \param indeterminate optional text shown in the middle while the slider still has no edited value
-HUI_API bool comboSliderInt(i32* value, f32 stepsPerPixel = 1.0f, i32 arrowStep = 1, const char* formatStr = nullptr, const char* indeterminate = nullptr);
+/// \param indeterminateStr optional text shown in the middle while the slider still has no edited value
+HUI_API bool comboSliderInt(i32* value, f32 stepsPerPixel = 1.0f, i32 arrowStep = 1, const char* formatStr = nullptr, const char* indeterminateStr = nullptr);
 
 /// Draw an integer combo slider widget with a min/max range
 /// \param value pointer to the value, pass nullptr to show an indeterminate state that starts from 0 and is fully editable until the caller provides a value pointer
-/// \param indeterminate optional text shown in the middle while the slider still has no edited value
-HUI_API bool comboSliderIntRanged(i32* value, i32 minVal, i32 maxVal, f32 stepsPerPixel = 1, i32 arrowStep = 1.0f, const char* formatStr = nullptr, const char* indeterminate = nullptr);
+/// \param indeterminateStr optional text shown in the middle while the slider still has no edited value
+HUI_API bool comboSliderIntRanged(i32* value, i32 minVal, i32 maxVal, f32 stepsPerPixel = 1, i32 arrowStep = 1.0f, const char* formatStr = nullptr, const char* indeterminateStr = nullptr);
 
 /// Draw a float combo slider widget
 /// \param value pointer to the value, pass nullptr to show an indeterminate state that starts from 0 and is fully editable until the caller provides a value pointer
-/// \param indeterminate optional text shown in the middle while the slider still has no edited value
-HUI_API bool comboSliderFloat(f32* value, f32 stepsPerPixel = 1.0f, f32 arrowStep = 1.0f, const char* formatStr = nullptr, const char* indeterminate = nullptr);
+/// \param indeterminateStr optional text shown in the middle while the slider still has no edited value
+HUI_API bool comboSliderFloat(f32* value, f32 stepsPerPixel = 1.0f, f32 arrowStep = 1.0f, const char* formatStr = nullptr, const char* indeterminateStr = nullptr);
 
 /// Draw a float combo slider widget with a min/max range
 /// \param value pointer to the value, pass nullptr to show an indeterminate state that starts from 0 and is fully editable until the caller provides a value pointer
-/// \param indeterminate optional text shown in the middle while the slider still has no edited value
-HUI_API bool comboSliderFloatRanged(f32* value, f32 minVal, f32 maxVal, f32 stepsPerPixel = 1.0f, f32 arrowStep = 1.0f, const char* formatStr = nullptr, const char* indeterminate = nullptr);
+/// \param indeterminateStr optional text shown in the middle while the slider still has no edited value
+HUI_API bool comboSliderFloatRanged(f32* value, f32 minVal, f32 maxVal, f32 stepsPerPixel = 1.0f, f32 arrowStep = 1.0f, const char* formatStr = nullptr, const char* indeterminateStr = nullptr);
 HUI_API bool circularSliderFloat(const char* label, f32* value, f32 minVal, f32 maxVal, f32 step, bool twoSide = false, f32 fineStepDivideFactor = 10.f, CircularSliderFlags flags = CircularSliderFlags::Normal);
 
 /// Draw a image widget
@@ -2695,9 +2695,9 @@ HUI_API void treeNodeEnd();
 /// \param items an array of strings for the items
 /// \param itemCount the number of items in the list
 /// \param maxVisibleDropDownItems the maximum number of visible items in the drop down list, if ~0 then its automatic
-/// \param indeterminate optional text shown when no item is selected (selectedIndex is -1)
+/// \param indeterminateStr optional text shown when no item is selected (selectedIndex is -1)
 /// \return true if it the selection changed
-HUI_API bool dropdown(const char* id, i32& selectedIndex, const char** items, u32 itemCount, u32 maxVisibleDropDownItems = ~0, const char* indeterminate = nullptr);
+HUI_API bool dropdown(const char* id, i32& selectedIndex, const char** items, u32 itemCount, u32 maxVisibleDropDownItems = ~0, const char* indeterminateStr = nullptr);
 
 /// Draw a list box widget
 /// \param id unique widget id
@@ -2950,24 +2950,24 @@ HUI_API bool colorPickerPopup(const char* id, Color* inOutColor, ColorPickerFlag
 HUI_API bool customFileDialog(const char* id, CustomFileDialogListCallback listCallback, void* userData, char* outResult, u32 resultBufferSize, CustomFileDialogFlags flags = CustomFileDialogFlags::None, CustomFileDialogPreviewCallback previewCallback = nullptr, void* previewUserData = nullptr);
 
 /// Draw a 3D double vector editor widget
-/// \param indeterminate text shown for components flagged with the Indeterminate* flags
-HUI_API bool vec3Editor(const char* id, f64& x, f64& y, f64& z, f64 scrollStep = 0.03f, VectorEditorFlags flags = VectorEditorFlags::None, u32 precision = 6, const char* indeterminate = "Indeterminate");
+/// \param indeterminateStr text shown for components flagged with the Indeterminate* flags
+HUI_API bool vec3Editor(const char* id, f64& x, f64& y, f64& z, f64 scrollStep = 0.03f, VectorEditorFlags flags = VectorEditorFlags::None, u32 precision = 6, const char* indeterminateStr = "Indeterminate");
 
 /// Draw a 3D float vector editor widget
-/// \param indeterminate text shown for components flagged with the Indeterminate* flags
-HUI_API bool vec3Editor(const char* id, f32& x, f32& y, f32& z, f32 scrollStep = 0.03f, VectorEditorFlags flags = VectorEditorFlags::None, u32 precision = 6, const char* indeterminate = "Indeterminate");
+/// \param indeterminateStr text shown for components flagged with the Indeterminate* flags
+HUI_API bool vec3Editor(const char* id, f32& x, f32& y, f32& z, f32 scrollStep = 0.03f, VectorEditorFlags flags = VectorEditorFlags::None, u32 precision = 6, const char* indeterminateStr = "Indeterminate");
 
 /// Draw a 2D double vector editor widget
-/// \param indeterminate text shown for components flagged with the Indeterminate* flags
-HUI_API bool vec2Editor(const char* id, f64& x, f64& y, f64 scrollStep = 0.03f, VectorEditorFlags flags = VectorEditorFlags::None, u32 precision = 6, const char* indeterminate = "Indeterminate");
+/// \param indeterminateStr text shown for components flagged with the Indeterminate* flags
+HUI_API bool vec2Editor(const char* id, f64& x, f64& y, f64 scrollStep = 0.03f, VectorEditorFlags flags = VectorEditorFlags::None, u32 precision = 6, const char* indeterminateStr = "Indeterminate");
 
 /// Draw a 2D float vector editor widget
-/// \param indeterminate text shown for components flagged with the Indeterminate* flags
-HUI_API bool vec2Editor(const char* id, f32& x, f32& y, f32 scrollStep = 0.03f, VectorEditorFlags flags = VectorEditorFlags::None, u32 precision = 6, const char* indeterminate = "Indeterminate");
+/// \param indeterminateStr text shown for components flagged with the Indeterminate* flags
+HUI_API bool vec2Editor(const char* id, f32& x, f32& y, f32 scrollStep = 0.03f, VectorEditorFlags flags = VectorEditorFlags::None, u32 precision = 6, const char* indeterminateStr = "Indeterminate");
 
 /// Draw an object reference editor
-/// \param indeterminate optional text shown when no object is assigned (instead of "None (TypeName)")
-HUI_API bool objectRefEditor(const char* id, HImage targetImg, HImage clearImg, HImage iconImg, const char* objectTypeName, const char* valueAsString, u32 objectType, void** outObject, bool* objectValueWasModified, u32 refCount = 0, const char** refNames = nullptr, void** refValues = nullptr, f32 iconSize = 0, const char* indeterminate = nullptr);
+/// \param indeterminateStr optional text shown when no object is assigned (instead of "None (TypeName)")
+HUI_API bool objectRefEditor(const char* id, HImage targetImg, HImage clearImg, HImage iconImg, const char* objectTypeName, const char* valueAsString, u32 objectType, void** outObject, bool* objectValueWasModified, u32 refCount = 0, const char** refNames = nullptr, void** refValues = nullptr, f32 iconSize = 0, const char* indeterminateStr = nullptr);
 
 //////////////////////////////////////////////////////////////////////////
 // Utility functions

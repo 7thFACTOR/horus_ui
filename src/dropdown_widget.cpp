@@ -6,7 +6,7 @@
 
 namespace hui
 {
-bool dropdown(const char* id, i32& selectedIndex, const char** items, u32 itemCount, u32 maxVisibleDropDownItems, const char* indeterminate)
+bool dropdown(const char* id, i32& selectedIndex, const char** items, u32 itemCount, u32 maxVisibleDropDownItems, const char* indeterminateStr)
 {
 	auto& bodyElem = ctx->theme->getElement(WidgetElementId::DropdownBody);
 	auto& arrowBoxElem = ctx->theme->getElement(WidgetElementId::DropdownArrowBox);
@@ -125,7 +125,7 @@ bool dropdown(const char* id, i32& selectedIndex, const char** items, u32 itemCo
 			HAlignType::Left,
 			VAlignType::Center, true);
 	}
-	else if (indeterminate)
+	else if (indeterminateStr)
 	{
 		// use the text input's default/hint text style so the indeterminate
 		// text reads as a hint rather than a real selection
@@ -137,7 +137,7 @@ bool dropdown(const char* id, i32& selectedIndex, const char** items, u32 itemCo
 		ctx->renderer.cmdSetColor(tintApply(indeterminateState.textColor, TintColorType::Text));
 		ctx->renderer.cmdSetFont(bodyElemState->font);
 		ctx->renderer.cmdDrawTextInBox(
-			indeterminate,
+			indeterminateStr,
 			textRect,
 			HAlignType::Left,
 			VAlignType::Center, true);

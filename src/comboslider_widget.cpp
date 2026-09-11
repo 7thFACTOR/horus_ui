@@ -59,7 +59,7 @@ static ThemeElement::State* comboSliderElementState(ThemeElement& element, bool 
 	return &element.normalState();
 }
 
-static bool comboSliderInternal(bool isInt, f32* value, f32 minVal, f32 maxVal, bool useRange, f32 stepsPerPixel, f32 arrowStep, const char* formatStr, const char* indeterminate, u32 decimalPlaces = 4)
+static bool comboSliderInternal(bool isInt, f32* value, f32 minVal, f32 maxVal, bool useRange, f32 stepsPerPixel, f32 arrowStep, const char* formatStr, const char* indeterminateStr, u32 decimalPlaces = 4)
 {
 	auto& leftButtonElem = ctx->theme->getElement(WidgetElementId::ComboSliderLeftButton);
 	auto& middleButtonElem = ctx->theme->getElement(WidgetElementId::ComboSliderMiddleButton);
@@ -80,7 +80,7 @@ static bool comboSliderInternal(bool isInt, f32* value, f32 minVal, f32 maxVal, 
 
 	if (!hasExternalValue)
 	{
-		ctx->id = genId(indeterminate ? (void*)indeterminate : (void*)"comboSliderEmpty");
+		ctx->id = genId(indeterminateStr ? (void*)indeterminateStr : (void*)"comboSliderEmpty");
 
 		fallback = &ctx->comboSlider.fallbacks[ctx->id];
 		value = &fallback->value;
@@ -490,7 +490,7 @@ static bool comboSliderInternal(bool isInt, f32* value, f32 minVal, f32 maxVal, 
 		static char outStrFormatted[ComboSliderState::maxTextSize] = { 0 };
 		char* str = nullptr;
 
-		bool showIndeterminate = !hasExternalValue && indeterminate && fallback && !fallback->touched;
+		bool showIndeterminate = !hasExternalValue && indeterminateStr && fallback && !fallback->touched;
 
 		if (showIndeterminate)
 		{
@@ -502,7 +502,7 @@ static bool comboSliderInternal(bool isInt, f32* value, f32 minVal, f32 maxVal, 
 				: indeterminateTextElem.normalState();
 
 			ctx->renderer.cmdSetColor(tintApply(indeterminateState.textColor, TintColorType::Text));
-			ctx->renderer.cmdDrawTextInBox(indeterminate, middleBgRect, HAlignType::Center, VAlignType::Center);
+			ctx->renderer.cmdDrawTextInBox(indeterminateStr, middleBgRect, HAlignType::Center, VAlignType::Center);
 		}
 		else
 		{
@@ -527,13 +527,13 @@ static bool comboSliderInternal(bool isInt, f32* value, f32 minVal, f32 maxVal, 
 	return ctx->widget.changeEnded;
 }
 
-bool comboSliderInt(i32* value, f32 stepsPerPixel, i32 arrowStep, const char* formatStr, const char* indeterminate)
+bool comboSliderInt(i32* value, f32 stepsPerPixel, i32 arrowStep, const char* formatStr, const char* indeterminateStr)
 {
 	f32 fVal = 0;
 	if (value) fVal = *value;
 
 	idPush((void*)value);
-	bool ret = comboSliderInternal(true, value ? &fVal : nullptr, 0, 0, false, stepsPerPixel, (f32)arrowStep, formatStr, indeterminate, 0);
+	bool ret = comboSliderInternal(true, value ? &fVal : nullptr, 0, 0, false, stepsPerPixel, (f32)arrowStep, formatStr, indeterminateStr, 0);
 	idPop();
 
 	if (ret && value)
@@ -542,12 +542,12 @@ bool comboSliderInt(i32* value, f32 stepsPerPixel, i32 arrowStep, const char* fo
 	return ret;
 }
 
-bool comboSliderIntRanged(i32* value, i32 minVal, i32 maxVal, f32 stepsPerPixel, i32 arrowStep, const char* formatStr, const char* indeterminate)
+bool comboSliderIntRanged(i32* value, i32 minVal, i32 maxVal, f32 stepsPerPixel, i32 arrowStep, const char* formatStr, const char* indeterminateStr)
 {
 	f32 fVal = 0;
 	if (value) fVal = *value;
 	idPush((void*)value);
-	bool ret = comboSliderInternal(true, value ? &fVal : nullptr, (f32)minVal, (f32)maxVal, true, stepsPerPixel, (f32)arrowStep, formatStr, indeterminate, 0);
+	bool ret = comboSliderInternal(true, value ? &fVal : nullptr, (f32)minVal, (f32)maxVal, true, stepsPerPixel, (f32)arrowStep, formatStr, indeterminateStr, 0);
 	idPop();
 
 	if (ret && value)
@@ -556,14 +556,14 @@ bool comboSliderIntRanged(i32* value, i32 minVal, i32 maxVal, f32 stepsPerPixel,
 	return ret;
 }
 
-bool comboSliderFloat(f32* value, f32 stepsPerPixel, f32 arrowStep, const char* formatStr, const char* indeterminate)
+bool comboSliderFloat(f32* value, f32 stepsPerPixel, f32 arrowStep, const char* formatStr, const char* indeterminateStr)
 {
-	return comboSliderInternal(false, value, 0, 0, false, stepsPerPixel, arrowStep, formatStr, indeterminate);
+	return comboSliderInternal(false, value, 0, 0, false, stepsPerPixel, arrowStep, formatStr, indeterminateStr);
 }
 
-bool comboSliderFloatRanged(f32* value, f32 minVal, f32 maxVal, f32 stepsPerPixel, f32 arrowStep, const char* formatStr, const char* indeterminate)
+bool comboSliderFloatRanged(f32* value, f32 minVal, f32 maxVal, f32 stepsPerPixel, f32 arrowStep, const char* formatStr, const char* indeterminateStr)
 {
-	return comboSliderInternal(false, value, minVal, maxVal, true, stepsPerPixel, arrowStep, formatStr, indeterminate);
+	return comboSliderInternal(false, value, minVal, maxVal, true, stepsPerPixel, arrowStep, formatStr, indeterminateStr);
 }
 
 }
