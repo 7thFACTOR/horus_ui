@@ -5,10 +5,11 @@
 
 namespace hui
 {
-bool check(const char* label, bool* checkVar)
+bool check(const char* label, bool* checkVar, bool* indeterminate)
 {
 	auto& checkBodyElem = ctx->theme->getElement(WidgetElementId::CheckBody);
 	auto& checkMarkElem = ctx->theme->getElement(WidgetElementId::CheckMark);
+	auto& checkMarkIndeterminateElem = ctx->theme->getElement(WidgetElementId::CheckMarkIndeterminate);
 
 	ctx->setLabelAndId(label);
 
@@ -34,44 +35,61 @@ bool check(const char* label, bool* checkVar)
 	buttonBehavior();
 	ctx->widget.changeEnded = false;
 
+	bool isChecked = checkVar != nullptr && *checkVar;
+	bool isIndeterminate = indeterminate != nullptr && *indeterminate;
+
 	if (ctx->widget.clicked)
 	{
-		if (checkVar)
-			*checkVar = !*checkVar;
-		
+		// clicking an indeterminate check marks it as checked, clicking a
+		// checked or unchecked one clears the indeterminate state
+		if (isIndeterminate)
+		{
+			if (checkVar)
+				*checkVar = true;
+			if (indeterminate)
+				*indeterminate = false;
+		}
+		else
+		{
+			if (checkVar)
+				*checkVar = !*checkVar;
+			if (indeterminate)
+				*indeterminate = false;
+		}
+
 		forceRepaint();
 		ctx->widget.changeEnded = true;
 	}
 
 	auto checkBodyElemState = &checkBodyElem.normalState();
 	auto checkMarkElemState = &checkMarkElem.normalState();
+	auto checkMarkIndeterminateElemState = &checkMarkIndeterminateElem.normalState();
 
 	if (ctx->widget.disabled)
 	{
 		checkBodyElemState = &checkBodyElem.getState(WidgetStateType::Disabled);
 		checkMarkElemState = &checkMarkElem.getState(WidgetStateType::Disabled);
+		checkMarkIndeterminateElemState = &checkMarkIndeterminateElem.getState(WidgetStateType::Disabled);
 	}
-	else if (checkVar && *checkVar)
+	else if (isChecked || isIndeterminate)
 	{
 		checkBodyElemState = &checkBodyElem.getState(WidgetStateType::Pressed);
 		checkMarkElemState = &checkMarkElem.getState(WidgetStateType::Pressed);
+		checkMarkIndeterminateElemState = &checkMarkIndeterminateElem.getState(WidgetStateType::Pressed);
 	}
 	else if (ctx->widget.hovered)
 	{
 		checkBodyElemState = &checkBodyElem.getState(WidgetStateType::Hovered);
 		checkMarkElemState = &checkMarkElem.getState(WidgetStateType::Hovered);
+		checkMarkIndeterminateElemState = &checkMarkIndeterminateElem.getState(WidgetStateType::Hovered);
 	}
 
 	ctx->renderer.cmdSetColor(checkBodyElemState->color);
 
 	Image* bodyImage = checkBodyElemState->image;
-	Image* markImage = checkMarkElemState->image;
 
-	if (ctx->widget.disabled)
-	{
-		if (!bodyImage) bodyImage = checkBodyElem.normalState().image;
-		if (!markImage) markImage = checkMarkElem.normalState().image;
-	}
+	if (ctx->widget.disabled && !bodyImage)
+		bodyImage = checkBodyElem.normalState().image;
 
 	// keep the box vertically centered on the label
 	f32 boxY = ctx->widget.rect.y + (ctx->widget.rect.height - markHeightScaled) * 0.5f;
@@ -85,18 +103,24 @@ bool check(const char* label, bool* checkVar)
 			markHeightScaled
 		}, ctx->scale);
 
-	if (checkVar && *checkVar)
+	if (isChecked || isIndeterminate)
 	{
-		ctx->renderer.cmdSetColor(checkMarkElemState->color);
-		ctx->renderer.cmdDrawImageBordered(
-			markImage,
-			checkMarkElemState->border,
-			{
-				ctx->widget.rect.x + (markWidth - checkMarkElemState->image->width) / 2.0f * ctx->scale,
-				boxY + (markHeight - checkMarkElemState->image->height) / 2.0f * ctx->scale,
-				checkMarkElemState->image->width * ctx->scale,
-				checkMarkElemState->image->height * ctx->scale
-			}, ctx->scale);
+		auto* markElemState = isIndeterminate ? checkMarkIndeterminateElemState : checkMarkElemState;
+
+		if (markElemState->image)
+		{
+			auto markImage = markElemState->image;
+			ctx->renderer.cmdSetColor(markElemState->color);
+			ctx->renderer.cmdDrawImageBordered(
+				markImage,
+				markElemState->border,
+				{
+					ctx->widget.rect.x + (markWidth - markImage->width) / 2.0f * ctx->scale,
+					boxY + (markHeight - markImage->height) / 2.0f * ctx->scale,
+					markImage->width * ctx->scale,
+					markImage->height * ctx->scale
+				}, ctx->scale);
+		}
 	}
 
 	ctx->renderer.cmdSetColor(checkBodyElemState->textColor);

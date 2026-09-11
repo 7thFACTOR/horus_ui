@@ -275,6 +275,12 @@ struct ComboSliderElementState
 	bool clicked = false;
 };
 
+struct ComboSliderFallback
+{
+	f32 value = 0;
+	bool touched = false;
+};
+
 struct ComboSliderState
 {
 	static const size_t maxTextSize = 1024;
@@ -291,6 +297,7 @@ struct ComboSliderState
 	WidgetId id = 0;
 	bool requestChangeToOtherComboSlider = false;
 	std::unordered_map<WidgetId, ComboSliderElementState> elementStates;
+	std::unordered_map<WidgetId, ComboSliderFallback> fallbacks;
 	WidgetId pressedElementId = 0;
 };
 
@@ -304,6 +311,9 @@ struct VectorEditorState
 	char strX[maxStrSize] = { 0 };
 	char strY[maxStrSize] = { 0 };
 	char strZ[maxStrSize] = { 0 };
+	WidgetId editingIndeterminateEditor = 0;
+	bool editingIndeterminate[3] = { false, false, false };
+	char indeterminateText[3][maxStrSize] = {};
 	f32 colWidthsPRS[6];
 
 	VectorEditorState()
@@ -504,7 +514,6 @@ struct TablePersistentState
 	u32 resizingColumnIndex = ~0;
 	f32 resizeStartX = 0;
 	f32 resizeStartWidth = 0;
-	f32 resizeStartWidthRight = 0;
 	Point lastMousePos;
 	struct DrawCmdLayerSplitter* splitter = nullptr;
 	Point scrollViewScrollPos;
@@ -549,6 +558,12 @@ struct TableState
 	f32 rowHeight = 0;
 	u32 rowDrawCmdIndex = 0;
 	std::vector<f32> rowSeparators;
+	// column boundaries covered by a colspan cell, one entry per body row band
+	// (indexed like rowSeparators); each entry holds the column indices whose
+	// left vertical line is suppressed for that row
+	std::vector<std::vector<u32>> rowColspanBoundaries;
+	// same as rowColspanBoundaries but for the single header band
+	std::vector<u32> headerColspanBoundaries;
 	struct CellColorRequest
 	{
 		u32 columnIndex;
@@ -582,6 +597,7 @@ struct PopupState
 	Point dragDelta, lastMouseDownPoint;
 	Point lastMousePoint;
 	std::vector<u32> savedSameLineInfoIndexStack;
+	bool layerIncremented = false;
 };
 
 struct CircularSliderState

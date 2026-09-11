@@ -234,6 +234,7 @@ enum class WidgetElementId
 	ImageButtonBody,
 	CheckBody,
 	CheckMark,
+	CheckMarkIndeterminate,
 	RadioBody,
 	RadioMark,
 	LineBody,
@@ -748,7 +749,8 @@ enum class PopupFlags : u32
 	CustomPosition = HUI_BIT(5), /// use custom popup position
 	SameLayer = HUI_BIT(6), /// internal: don't increment layer index
 	TopMost = HUI_BIT(7), /// set to have this popup top most
-	IsMenu = HUI_BIT(8) /// internal, when this popup is a menu
+	IsMenu = HUI_BIT(8), /// internal, when this popup is a menu
+	LayerOnMouseInside = HUI_BIT(9) /// internal: acts as an upper input layer while the mouse is inside the popup bounds
 };
 HUI_ENUM_AS_FLAGS(PopupFlags);
 
@@ -789,7 +791,10 @@ HUI_ENUM_AS_FLAGS(CustomFileDialogFlags);
 enum class VectorEditorFlags : u32
 {
 	None = HUI_BIT(0),
-	AutoSelectAll = HUI_BIT(1)
+	AutoSelectAll = HUI_BIT(1),
+	IndeterminateX = HUI_BIT(2), /// the X component is indeterminate and shows the indeterminate text
+	IndeterminateY = HUI_BIT(3), /// the Y component is indeterminate and shows the indeterminate text
+	IndeterminateZ = HUI_BIT(4) /// the Z component is indeterminate and shows the indeterminate text
 };
 HUI_ENUM_AS_FLAGS(VectorEditorFlags);
 
@@ -2558,10 +2563,25 @@ HUI_API bool sliderInt(const char* id, i32 minVal, i32 maxVal, i32& value, bool 
 /// \return true if value was modified
 HUI_API bool sliderFloat(const char* id, f32 minVal, f32 maxVal, f32& value, bool useStep = false, f32 step = 0);
 
-HUI_API bool comboSliderInt(i32* value, f32 stepsPerPixel = 1.0f, i32 arrowStep = 1, const char* formatStr = nullptr);
-HUI_API bool comboSliderIntRanged(i32* value, i32 minVal, i32 maxVal, f32 stepsPerPixel = 1, i32 arrowStep = 1.0f, const char* formatStr = nullptr);
-HUI_API bool comboSliderFloat(f32* value, f32 stepsPerPixel = 1.0f, f32 arrowStep = 1.0f, const char* formatStr = nullptr);
-HUI_API bool comboSliderFloatRanged(f32* value, f32 minVal, f32 maxVal, f32 stepsPerPixel = 1.0f, f32 arrowStep = 1.0f, const char* formatStr = nullptr);
+/// Draw an integer combo slider widget
+/// \param value pointer to the value, pass nullptr to show an indeterminate state that starts from 0 and is fully editable until the caller provides a value pointer
+/// \param indeterminate optional text shown in the middle while the slider still has no edited value
+HUI_API bool comboSliderInt(i32* value, f32 stepsPerPixel = 1.0f, i32 arrowStep = 1, const char* formatStr = nullptr, const char* indeterminate = nullptr);
+
+/// Draw an integer combo slider widget with a min/max range
+/// \param value pointer to the value, pass nullptr to show an indeterminate state that starts from 0 and is fully editable until the caller provides a value pointer
+/// \param indeterminate optional text shown in the middle while the slider still has no edited value
+HUI_API bool comboSliderIntRanged(i32* value, i32 minVal, i32 maxVal, f32 stepsPerPixel = 1, i32 arrowStep = 1.0f, const char* formatStr = nullptr, const char* indeterminate = nullptr);
+
+/// Draw a float combo slider widget
+/// \param value pointer to the value, pass nullptr to show an indeterminate state that starts from 0 and is fully editable until the caller provides a value pointer
+/// \param indeterminate optional text shown in the middle while the slider still has no edited value
+HUI_API bool comboSliderFloat(f32* value, f32 stepsPerPixel = 1.0f, f32 arrowStep = 1.0f, const char* formatStr = nullptr, const char* indeterminate = nullptr);
+
+/// Draw a float combo slider widget with a min/max range
+/// \param value pointer to the value, pass nullptr to show an indeterminate state that starts from 0 and is fully editable until the caller provides a value pointer
+/// \param indeterminate optional text shown in the middle while the slider still has no edited value
+HUI_API bool comboSliderFloatRanged(f32* value, f32 minVal, f32 maxVal, f32 stepsPerPixel = 1.0f, f32 arrowStep = 1.0f, const char* formatStr = nullptr, const char* indeterminate = nullptr);
 HUI_API bool circularSliderFloat(const char* label, f32* value, f32 minVal, f32 maxVal, f32 step, bool twoSide = false, f32 fineStepDivideFactor = 10.f, CircularSliderFlags flags = CircularSliderFlags::Normal);
 
 /// Draw a image widget
@@ -2589,8 +2609,10 @@ HUI_API void progress(f32 value, f32 maxValue = 0.0f, bool showText = false, boo
 /// Draw a check box widget
 /// \param label the check's label
 /// \param checked true if it has check mark on
+/// \param indeterminate optional tri-state flag, when true the check shows the
+/// indeterminate mark (minus sign) and clicking it checks the box
 /// \return true if it was changed, result put in checked
-HUI_API bool check(const char* label, bool* checkVar);
+HUI_API bool check(const char* label, bool* checkVar, bool* indeterminate = nullptr);
 
 /// Draw a radio box widget
 /// \param label the radio's label
@@ -2673,8 +2695,9 @@ HUI_API void treeNodeEnd();
 /// \param items an array of strings for the items
 /// \param itemCount the number of items in the list
 /// \param maxVisibleDropDownItems the maximum number of visible items in the drop down list, if ~0 then its automatic
+/// \param indeterminate optional text shown when no item is selected (selectedIndex is -1)
 /// \return true if it the selection changed
-HUI_API bool dropdown(const char* id, i32& selectedIndex, const char** items, u32 itemCount, u32 maxVisibleDropDownItems = ~0);
+HUI_API bool dropdown(const char* id, i32& selectedIndex, const char** items, u32 itemCount, u32 maxVisibleDropDownItems = ~0, const char* indeterminate = nullptr);
 
 /// Draw a list box widget
 /// \param id unique widget id
@@ -2927,19 +2950,24 @@ HUI_API bool colorPickerPopup(const char* id, Color* inOutColor, ColorPickerFlag
 HUI_API bool customFileDialog(const char* id, CustomFileDialogListCallback listCallback, void* userData, char* outResult, u32 resultBufferSize, CustomFileDialogFlags flags = CustomFileDialogFlags::None, CustomFileDialogPreviewCallback previewCallback = nullptr, void* previewUserData = nullptr);
 
 /// Draw a 3D double vector editor widget
-HUI_API bool vec3Editor(const char* id, f64& x, f64& y, f64& z, f64 scrollStep = 0.03f, VectorEditorFlags flags = VectorEditorFlags::None, u32 precision = 6);
+/// \param indeterminate text shown for components flagged with the Indeterminate* flags
+HUI_API bool vec3Editor(const char* id, f64& x, f64& y, f64& z, f64 scrollStep = 0.03f, VectorEditorFlags flags = VectorEditorFlags::None, u32 precision = 6, const char* indeterminate = "Indeterminate");
 
 /// Draw a 3D float vector editor widget
-HUI_API bool vec3Editor(const char* id, f32& x, f32& y, f32& z, f32 scrollStep = 0.03f, VectorEditorFlags flags = VectorEditorFlags::None, u32 precision = 6);
+/// \param indeterminate text shown for components flagged with the Indeterminate* flags
+HUI_API bool vec3Editor(const char* id, f32& x, f32& y, f32& z, f32 scrollStep = 0.03f, VectorEditorFlags flags = VectorEditorFlags::None, u32 precision = 6, const char* indeterminate = "Indeterminate");
 
 /// Draw a 2D double vector editor widget
-HUI_API bool vec2Editor(const char* id, f64& x, f64& y, f64 scrollStep = 0.03f, VectorEditorFlags flags = VectorEditorFlags::None, u32 precision = 6);
+/// \param indeterminate text shown for components flagged with the Indeterminate* flags
+HUI_API bool vec2Editor(const char* id, f64& x, f64& y, f64 scrollStep = 0.03f, VectorEditorFlags flags = VectorEditorFlags::None, u32 precision = 6, const char* indeterminate = "Indeterminate");
 
 /// Draw a 2D float vector editor widget
-HUI_API bool vec2Editor(const char* id, f32& x, f32& y, f32 scrollStep = 0.03f, VectorEditorFlags flags = VectorEditorFlags::None, u32 precision = 6);
+/// \param indeterminate text shown for components flagged with the Indeterminate* flags
+HUI_API bool vec2Editor(const char* id, f32& x, f32& y, f32 scrollStep = 0.03f, VectorEditorFlags flags = VectorEditorFlags::None, u32 precision = 6, const char* indeterminate = "Indeterminate");
 
 /// Draw an object reference editor
-HUI_API bool objectRefEditor(const char* id, HImage targetImg, HImage clearImg, HImage iconImg, const char* objectTypeName, const char* valueAsString, u32 objectType, void** outObject, bool* objectValueWasModified, u32 refCount = 0, const char** refNames = nullptr, void** refValues = nullptr, f32 iconSize = 0);
+/// \param indeterminate optional text shown when no object is assigned (instead of "None (TypeName)")
+HUI_API bool objectRefEditor(const char* id, HImage targetImg, HImage clearImg, HImage iconImg, const char* objectTypeName, const char* valueAsString, u32 objectType, void** outObject, bool* objectValueWasModified, u32 refCount = 0, const char** refNames = nullptr, void** refValues = nullptr, f32 iconSize = 0, const char* indeterminate = nullptr);
 
 //////////////////////////////////////////////////////////////////////////
 // Utility functions

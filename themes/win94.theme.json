@@ -459,6 +459,31 @@
                     "border": 0,
                     "color": "0 0 0 255"
                 }
+            },
+            "checkMarkIndeterminate": {
+                "normal": {
+                    "image": "win94/check_mark_indeterminate",
+                    "border": 0,
+                    "color": "0 0 0 255"
+                },
+                "disabled": {
+                    "color": "128 128 128 255"
+                },
+                "hovered": {
+                    "image": "win94/check_mark_indeterminate",
+                    "border": 0,
+                    "color": "0 0 0 255"
+                },
+                "pressed": {
+                    "image": "win94/check_mark_indeterminate",
+                    "border": 0,
+                    "color": "0 0 0 255"
+                },
+                "focused": {
+                    "image": "win94/check_mark_indeterminate",
+                    "border": 0,
+                    "color": "0 0 0 255"
+                }
             }
         },
         "radio": {
@@ -1458,14 +1483,14 @@
                 "pressed": {
                     "image": "win94/menu_item_body",
                     "border": 2,
-                    "color": "white",
-                    "textColor": "0 0 0 255"
+                    "color": "0 0 128 255",
+                    "textColor": "white"
                 },
                 "focused": {
                     "image": "win94/menu_item_body",
                     "border": 2,
-                    "color": "white",
-                    "textColor": "0 0 0 255"
+                    "color": "0 0 128 255",
+                    "textColor": "white"
                 }
             },
             "menuItemShortcut": {
@@ -1477,10 +1502,10 @@
                     "textColor": "white"
                 },
                 "pressed": {
-                    "textColor": "0 0 0 255"
+                    "textColor": "white"
                 },
                 "focused": {
-                    "textColor": "0 0 0 255"
+                    "textColor": "white"
                 }
             },
             "menuItemSeparator": {
@@ -1494,12 +1519,16 @@
                 "normal": {
                     "image": "win94/submenu_item_arrow",
                     "border": 0,
-                    "color": "0 0 0 255"
+                    "color": "0 0 0 255",
+                    "textColor": "white",
+                    "font": "normal"
                 },
                 "hovered": {
                     "image": "win94/submenu_item_arrow",
                     "border": 0,
-                    "color": "255 255 255 255"
+                    "color": "0 0 0 255",
+                    "textColor": "white",
+                    "font": "normal"
                 }
             },
             "menuItemCheckMark": {
@@ -1681,24 +1710,28 @@
                 "normal": {
                     "image": "win94/box",
                     "border": 0,
-                    "color": "white"
+                    "color": "white",
+                    "textColor": "black",
+                    "font": "normal"
                 },
                 "pressed": {
-                    "color": "white"
+                    "color": "white",
+                    "textColor": "black",
+                    "font": "normal"
                 }
             },
             "objectRefEditorTargetButton": {
                 "normal": {
                     "image": "win94/target",
                     "border": 0,
-                    "color": "0 0 0 255"
+                    "color": "white"
                 }
             },
             "objectRefEditorClearButton": {
                 "normal": {
                     "image": "win94/clear",
                     "border": 0,
-                    "color": "0 0 0 255"
+                    "color": "white"
                 }
             }
         },

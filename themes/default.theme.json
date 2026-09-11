@@ -180,6 +180,14 @@
 				"hovered": { "image": "default/check_mark_normal", "border": 3, "color": "cyan", "textColor": "white", "font": "normal" },
 				"pressed": { "image": "default/check_mark_normal", "border": 3, "color": "cyan", "textColor": "white", "font": "normal" },
 				"focused": { "image": "default/check_mark_normal", "border": 3, "color": "cyan", "textColor": "white", "font": "normal" }
+			},
+			"checkMarkIndeterminate":
+			{
+				"normal": { "image": "default/check_mark_indeterminate", "border": 3, "color": "cyan", "textColor": "white", "font": "normal" },
+				"disabled": { "image": "default/check_mark_indeterminate", "border": 3, "color": "darkCyan", "textColor": "white", "font": "normal" },
+				"hovered": { "image": "default/check_mark_indeterminate", "border": 3, "color": "cyan", "textColor": "white", "font": "normal" },
+				"pressed": { "image": "default/check_mark_indeterminate", "border": 3, "color": "cyan", "textColor": "white", "font": "normal" },
+				"focused": { "image": "default/check_mark_indeterminate", "border": 3, "color": "cyan", "textColor": "white", "font": "normal" }
 			}
 		},
 		"radio":

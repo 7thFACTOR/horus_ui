@@ -178,6 +178,7 @@ static WidgetElementId getWidgetElementFromName(std::string name)
 	if (name == "imageButtonBody") return WidgetElementId::ImageButtonBody;
 	if (name == "checkBody") return WidgetElementId::CheckBody;
 	if (name == "checkMark") return WidgetElementId::CheckMark;
+	if (name == "checkMarkIndeterminate") return WidgetElementId::CheckMarkIndeterminate;
 	if (name == "radioBody") return WidgetElementId::RadioBody;
 	if (name == "radioMark") return WidgetElementId::RadioMark;
 	if (name == "lineBody") return WidgetElementId::LineBody;

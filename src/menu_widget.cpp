@@ -534,7 +534,7 @@ bool menuItem(const char* label, const char* shortcut, HImage img, SelectableFla
 		// draw arrow
 		auto submenuArrowState = &ctx->theme->getElement(WidgetElementId::SubMenuItemArrow).normalState();
 
-		if (ctx->widget.hovered)
+		if (ctx->widget.hovered || !!(stateFlags & SelectableFlags::Selected))
 		{
 			submenuArrowState = &ctx->theme->getElement(WidgetElementId::SubMenuItemArrow).getState(WidgetStateType::Hovered);
 		}

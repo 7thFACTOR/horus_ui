@@ -180,6 +180,14 @@
 				"hovered": { "image": "flat/check_mark", "border": 0, "color": "70 220 120 255" },
 				"pressed": { "image": "flat/check_mark", "border": 0, "color": "55 185 100 255" },
 				"focused": { "image": "flat/check_mark", "border": 0, "color": "55 185 100 255" }
+			},
+			"checkMarkIndeterminate":
+			{
+				"normal": { "image": "flat/check_mark_indeterminate", "border": 0, "color": "55 185 100 255" },
+				"disabled": { "color": "55 185 100 128" },
+				"hovered": { "image": "flat/check_mark_indeterminate", "border": 0, "color": "70 220 120 255" },
+				"pressed": { "image": "flat/check_mark_indeterminate", "border": 0, "color": "55 185 100 255" },
+				"focused": { "image": "flat/check_mark_indeterminate", "border": 0, "color": "55 185 100 255" }
 			}
 		},
 		"radio":

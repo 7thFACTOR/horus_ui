@@ -3,6 +3,7 @@
 #include "renderer.h"
 #include "theme.h"
 #include "util.h"
+#include <algorithm>
 #include <map>
 
 namespace hui
@@ -289,6 +290,12 @@ static void finishRow(TableState& state)
 					if (i == 0 && (hasOuter || innerOnly))
 						drawLeftLine = false;
 
+					// skip boundaries covered by a colspan cell in the header
+					if (drawLeftLine
+						&& std::find(state.headerColspanBoundaries.begin(), state.headerColspanBoundaries.end(), i)
+							!= state.headerColspanBoundaries.end())
+						drawLeftLine = false;
+
 					if (drawLeftLine)
 					{
 						ctx->renderer.cmdDrawLine(
@@ -393,34 +400,16 @@ bool tableBegin(const char* id, u32 columnCount, f32 height, TableFlags flags)
 	if (persistent.resizingColumn && persistent.resizingColumnIndex < columnCount)
 	{
 		u32 i = persistent.resizingColumnIndex;
-		// find target right column (same logic as endTable)
-		u32 targetRightIndex = i + 1;
-		
-		while (targetRightIndex < columnCount &&
-			   (static_cast<bool>(persistent.columns[targetRightIndex].flags & TableColumnFlags::Fixed) ||
-				static_cast<bool>(persistent.columns[targetRightIndex].flags & TableColumnFlags::FixedResize)))
-		{
-			targetRightIndex++;
-		}
+		f32 idealDelta = ctx->mousePosition.x - persistent.resizeStartX;
+		f32 leftStart = persistent.resizeStartWidth;
 
-		if (targetRightIndex < columnCount)
-		{
-			// calculate delta
-			f32 idealDelta = ctx->mousePosition.x - persistent.resizeStartX;
-			f32 leftStart = persistent.resizeStartWidth;
-			f32 rightStart = persistent.resizeStartWidthRight;
+		// clamp delta against min width (10px); growing is unconstrained,
+		// only the dragged column's width changes
+		f32 maxNegativeDelta = -(leftStart - 10.0f);
 
-			// clamp delta against min widths (10px)
-			f32 maxNegativeDelta = -(leftStart - 10.0f);
-			f32 maxPositiveDelta = (rightStart - 10.0f);
+		if (idealDelta < maxNegativeDelta) idealDelta = maxNegativeDelta;
 
-			if (idealDelta < maxNegativeDelta) idealDelta = maxNegativeDelta;
-			if (idealDelta > maxPositiveDelta) idealDelta = maxPositiveDelta;
-
-			// apply
-			persistent.columns[i].specifiedSize = leftStart + idealDelta;
-			persistent.columns[targetRightIndex].specifiedSize = rightStart - idealDelta;
-		}
+		persistent.columns[i].specifiedSize = leftStart + idealDelta;
 	}
 
 	// create new transient table state
@@ -834,8 +823,14 @@ void tableEnd()
 
 							if (i == 0 && (hasOuter || innerOnly))
 								drawLeftLine = false;
+
+							// skip boundaries covered by a colspan cell in this row
+							if (drawLeftLine && rowIdx < state.rowColspanBoundaries.size()
+								&& std::find(state.rowColspanBoundaries[rowIdx].begin(), state.rowColspanBoundaries[rowIdx].end(), i)
+									!= state.rowColspanBoundaries[rowIdx].end())
+								drawLeftLine = false;
 							
-							if (drawLeftLine)
+if (drawLeftLine)
 							{
 								ctx->renderer.cmdDrawLine(Point(currentX, lineStartY), Point(currentX, lineEndY));
 							}
@@ -843,7 +838,26 @@ void tableEnd()
 							currentX += state.persistent->columns[i].width;
 						}
 					}
-					
+
+					// DEBUG (temporary): dump colspan band data, remove after diagnosis
+					if (!state.rowColspanBoundaries.empty())
+					{
+						static u32 debugFrame = 0;
+						if ((debugFrame++ % 120) == 0)
+						{
+							std::printf("[TBL] seps=%zu covers=%zu bodyStartY=%.0f\n",
+								state.rowSeparators.size(), state.rowColspanBoundaries.size(), state.bodyStartY);
+							for (u32 b = 0; b < state.rowSeparators.size(); b++)
+							{
+								std::printf("  band%u y=%.0f..%.0f cover={",
+									b, b == 0 ? state.bodyStartY : state.rowSeparators[b - 1], state.rowSeparators[b]);
+								for (u32 c : state.rowColspanBoundaries[b])
+									std::printf("%u ", c);
+								std::printf("}\n");
+							}
+						}
+					}
+
 					// draw Rightmost line after all columns (skip if only inner borders or if handled by outer box)
 					if (!innerOnly && !hasOuter)
 					{
@@ -896,22 +910,6 @@ void tableEnd()
 
 				currentX += persistent.columns[i].width;
 
-				u32 nextColIndex = i + 1;
-			
-				while (nextColIndex < persistent.columns.size() && persistent.columns[nextColIndex].isHidden)
-					nextColIndex++;
-
-				u32 targetRightIndex = nextColIndex;
-
-				// find the first column to the right that CAN be resized (absorb the delta)
-				// pass-through Fixed and FixedResize columns
-				while (targetRightIndex < persistent.columns.size() &&
-					   (static_cast<bool>(persistent.columns[targetRightIndex].flags & TableColumnFlags::Fixed) ||
-						static_cast<bool>(persistent.columns[targetRightIndex].flags & TableColumnFlags::FixedResize)))
-				{
-					targetRightIndex++;
-				}
-
 				if (persistent.resizingColumn && persistent.resizingColumnIndex == i)
 				{
 					ctx->mouseCursor = MouseCursorType::SizeWE;
@@ -939,32 +937,25 @@ void tableEnd()
 						ctx->renderer.cmdDrawLine(Point(guideLineX, state.tableRect.y),
 												   Point(guideLineX, lineBottomY));
 
-						// only apply resize if validity checks pass (though we started, so they should)
-						if (targetRightIndex < persistent.columns.size() && !(static_cast<bool>(persistent.columns[i].flags & TableColumnFlags::Fixed)))
+						// only the dragged column changes; others keep their widths
+						if (!(static_cast<bool>(persistent.columns[i].flags & TableColumnFlags::Fixed)))
 						{
-							// reciprocal Resize: Change Left and Right columns
 							f32 idealDelta = ctx->mousePosition.x - persistent.resizeStartX;
 							f32 leftStart = persistent.resizeStartWidth;
-							f32 rightStart = persistent.resizeStartWidthRight;
-							// clamp delta against min widths (10px)
-							f32 maxNegativeDelta = -(leftStart - 10.0f); // limit shrinking Left
-							f32 maxPositiveDelta = (rightStart - 10.0f); // limit shrinking Right (by growing Left)
+
+							// clamp delta against min width (10px); growing is unconstrained
+							f32 maxNegativeDelta = -(leftStart - 10.0f);
 
 							if (idealDelta < maxNegativeDelta) idealDelta = maxNegativeDelta;
 
-							if (idealDelta > maxPositiveDelta) idealDelta = maxPositiveDelta;
-
-							// apply
 							persistent.columns[i].specifiedSize = leftStart + idealDelta;
-							persistent.columns[targetRightIndex].specifiedSize = rightStart - idealDelta;
 						}
 					}
 				}
 				else if (!persistent.resizingColumn)
 				{
 					// only allow NEW interaction if guards pass
-					if (targetRightIndex < persistent.columns.size() &&
-						!(static_cast<bool>(persistent.columns[i].flags & TableColumnFlags::Fixed)) &&
+					if (!(static_cast<bool>(persistent.columns[i].flags & TableColumnFlags::Fixed)) &&
 						ctx->widget.captureId == 0)
 					{
 						// limit separator height to visible table area
@@ -1033,31 +1024,20 @@ void tableEnd()
 								persistent.resizingColumn = true;
 								persistent.resizingColumnIndex = i; // store SEPARATOR index
 								persistent.resizeStartX = ctx->mousePosition.x; // store Absolute Start X
-
-								// reciprocal Resize Setup: Capture BOTH Left and Right attributes
 								persistent.resizeStartWidth = persistent.columns[i].width;
-								persistent.resizeStartWidthRight = persistent.columns[targetRightIndex].width;
 
-								// synchronize ALL columns to their current visual width to prevent jumps
+								// synchronize ALL columns to their current visual width to prevent jumps,
+								// and lock them to fixed pixel sizes so only the dragged column changes
 								for (u32 k = 0; k < persistent.columns.size(); k++)
 								{
 									if (!persistent.columns[k].isHidden)
 									{
 										persistent.columns[k].specifiedSize = persistent.columns[k].width;
+										persistent.columns[k].isPercentage = false;
+										persistent.columns[k].isFillRemaining = false;
+										persistent.columns[k].userResized = true;
 									}
 								}
-
-								// lock Left Column
-								persistent.columns[i].specifiedSize = persistent.columns[i].width;
-								persistent.columns[i].isPercentage = false;
-								persistent.columns[i].isFillRemaining = false;
-								persistent.columns[i].userResized = true;
-
-								// lock Right Column
-								persistent.columns[targetRightIndex].specifiedSize = persistent.columns[targetRightIndex].width;
-								persistent.columns[targetRightIndex].isPercentage = false;
-								persistent.columns[targetRightIndex].isFillRemaining = false;
-								persistent.columns[targetRightIndex].userResized = true;
 							}
 						}
 					}
@@ -1117,6 +1097,7 @@ void tableStartHeader()
 	auto& state = currentTable();
 	state.isInHeader = true;
 	state.currentColumn = 0;
+	state.headerColspanBoundaries.clear();
 	// reset row parameters
 	state.rowStartY = state.currentRowY;
 	state.currentMaxRowHeight = state.rowHeight; // use theme default height as min
@@ -1164,6 +1145,8 @@ void tableRowNext()
 		{
 			// record the virtual-skip boundary so drawing code knows there was a gap
 			state.rowSeparators.push_back(ctx->position.y);
+			// the skipped region has no rows, so no colspan covers it
+			state.rowColspanBoundaries.emplace_back();
 		}
 
 		/*std::printf("[TABLE] nextRow detected virtual skip ctx.pos.y=%.3f oldCurrentRowY=%.3f newCurrentRowY=%.3f lastSeparator=%.3f\n",
@@ -1179,6 +1162,8 @@ void tableRowNext()
 	state.rowStartY = state.currentRowY;
 	state.currentMaxRowHeight = state.rowHeight; // use theme default height as min
 	state.cellStartY = state.rowStartY;
+	// one colspan boundary set per row band, aligned with rowSeparators
+	state.rowColspanBoundaries.emplace_back();
 
 	// row background drawing REMOVED, deferred to finishRow
 	// custom row color and alt row color are handled in finishRow
@@ -1249,6 +1234,22 @@ void tableCellNext(u32 columnSpan)
 	u32 cellStart = columnSpan > 1 ? spanStart : spanStart + 1;
 	u32 cellEnd = std::min(cellStart + (columnSpan > 1 ? columnSpan : 1), (u32)state.persistent->columns.size());
 	state.currentColumn = cellStart;
+
+	// remember the column boundaries a spanning cell covers, so vertical separator
+	// lines do not cut through the merged cell when borders are drawn
+	if (columnSpan > 1)
+	{
+		if (state.isInHeader)
+		{
+			for (u32 b = spanStart + 1; b < cellEnd; b++)
+				state.headerColspanBoundaries.push_back(b);
+		}
+		else if (!state.rowColspanBoundaries.empty())
+		{
+			for (u32 b = spanStart + 1; b < cellEnd; b++)
+				state.rowColspanBoundaries.back().push_back(b);
+		}
+	}
 
 	// compute the X and width of the cell being set up
 	f32 cellX = baseX;

@@ -93,7 +93,7 @@ bool customTooltipBegin(f32 width)
 		popupBegin(
 			"##customTooltip",
 			width,
-			PopupFlags::CustomPosition | PopupFlags::TopMost | PopupFlags::SameLayer,
+			PopupFlags::CustomPosition | PopupFlags::TopMost | PopupFlags::SameLayer | PopupFlags::LayerOnMouseInside,
 			{ ctx->tooltip.position.x + ctx->tooltip.offsetFromCursor, ctx->tooltip.position.y + ctx->tooltip.offsetFromCursor },
 			WidgetElementId::TooltipBody);
 

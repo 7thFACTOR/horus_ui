@@ -40,6 +40,8 @@ struct Context
 	HNativeWindow lastHoveredNativeWindow = nullptr;
 	f32 scale = 1.0f;
 	Point mousePosition;
+	bool mouseInTrappedPopup = false;
+	Rect trappedPopupRect;
 
 	// Widgets
 	WidgetId id = 42;

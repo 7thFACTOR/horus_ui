@@ -1,11 +1,20 @@
+#include <float.h>
 #include "context.h"
 #include "theme.h"
 #include "util.h"
 
 namespace hui
 {
-static bool vecEditorInternal(f64& x, f64& y, f64& z, f64 scrollStep, bool useZ, VectorEditorFlags flags, u32 precision)
+static bool vecEditorInternal(f64& x, f64& y, f64& z, f64 scrollStep, bool useZ, VectorEditorFlags flags, u32 precision, const char* indeterminate)
 {
+	if (!indeterminate)
+		indeterminate = "Indeterminate";
+
+	// the editing state is shared for all vec editors, so tie it to the
+	// editor instance that started it
+	WidgetId editorId = ctx->idStack.back();
+	auto& editIndeterminate = ctx->vecEditor;
+
 	bool modified = false;
 	bool changedEndedX = false;
 	bool changedEndedY = false;
@@ -28,12 +37,12 @@ static bool vecEditorInternal(f64& x, f64& y, f64& z, f64 scrollStep, bool useZ,
 
 	// handle MouseUp outside the per-axis loop so it only fires once
 	// and doesn't interfere with the wrong axis iteration
-	if (ctx->vecEditor.draggingValue
+	if (editIndeterminate.draggingValue
 		&& hui::inputEventGet().type == hui::InputEvent::Type::MouseUp)
 	{
-		ctx->vecEditor.draggingValue = false;
-		ctx->vecEditor.draggedId = 0;
-		ctx->settings.services.setAbsoluteMousePosition(ctx->vecEditor.hiddenCursorPos);
+		editIndeterminate.draggingValue = false;
+		editIndeterminate.draggedId = 0;
+		ctx->settings.services.setAbsoluteMousePosition(editIndeterminate.hiddenCursorPos);
 		ctx->settings.services.showMouseCursor();
 		hui::windowReleaseCapture();
 		changedEndedX = changedEndedY = changedEndedZ = true;
@@ -46,11 +55,24 @@ static bool vecEditorInternal(f64& x, f64& y, f64& z, f64 scrollStep, bool useZ,
 
 		const char* imgName = (i == 0) ? "axisBoxXImage" : (i == 1) ? "axisBoxYImage" : "axisBoxZImage";
 		const char* inputId = (i == 0) ? "axisEditX" : (i == 1) ? "axisEditY" : "axisEditZ";
-		char* strAxis = (i == 0) ? ctx->vecEditor.strX : (i == 1) ? ctx->vecEditor.strY : ctx->vecEditor.strZ;
+		char* strAxis = (i == 0) ? editIndeterminate.strX : (i == 1) ? editIndeterminate.strY : editIndeterminate.strZ;
 		f64* val = (i == 0) ? &x : (i == 1) ? &y : &z;
 		bool* changeEnded = (i == 0) ? &changedEndedX : (i == 1) ? &changedEndedY : &changedEndedZ;
 
-		sprintf(strAxis, fmt, *val);
+		// indeterminate component: the indeterminate text is
+		// shown as the input's hint (defaultText), the text stays empty until
+		// the user types; dragging is disabled and an empty commit returns FLT_MAX
+		bool indeterminateAxis = (i == 0) ? has(flags, VectorEditorFlags::IndeterminateX)
+			: (i == 1) ? has(flags, VectorEditorFlags::IndeterminateY)
+			: has(flags, VectorEditorFlags::IndeterminateZ);
+		bool editingIndeterminate = (editIndeterminate.editingIndeterminateEditor == editorId) && editIndeterminate.editingIndeterminate[i];
+		const char* hint = (indeterminateAxis && !editingIndeterminate) ? indeterminate : nullptr;
+
+		if (indeterminateAxis && !editingIndeterminate)
+			strAxis[0] = 0;
+		else if (!editingIndeterminate)
+			snprintf(strAxis, VectorEditorState::maxStrSize, fmt, *val);
+
 		auto elem = ctx->theme->userElements[imgName];
 		hui::image(elem->normalState().image, 22, hui::HAlignType::Left);
 		WidgetId imageWidgetId = ctx->id;
@@ -59,33 +81,45 @@ static bool vecEditorInternal(f64& x, f64& y, f64& z, f64 scrollStep, bool useZ,
 		hui::sameLine();
 		hui::widgetSetNextWidth(inputWidthUnscaled);
 		auto tiFlags = has(flags, VectorEditorFlags::AutoSelectAll) ? TextInputFlags::AutoSelectAll : TextInputFlags::None;
-		modified = hui::textInput(inputId, strAxis, VectorEditorState::maxStrSize, tiFlags) || modified;
+		modified = hui::textInput(inputId, strAxis, VectorEditorState::maxStrSize, tiFlags, hint) || modified;
 
-		if (imageHovered || (ctx->vecEditor.draggingValue && ctx->vecEditor.draggedId == imageWidgetId))
+		// clicking into an indeterminate field starts editing; the indeterminate text is a
+		// hint, so the field is already empty and ready for input
+		if (indeterminateAxis && !editingIndeterminate && ctx->widget.focused)
+		{
+			editIndeterminate.editingIndeterminateEditor = editorId;
+			editIndeterminate.editingIndeterminate[i] = true;
+			editIndeterminate.indeterminateText[i][0] = 0;
+		}
+
+		// dragging is disabled for indeterminate components
+		if (!indeterminateAxis
+			&& (imageHovered || (editIndeterminate.draggingValue && editIndeterminate.draggedId == imageWidgetId)))
 		{
 			hui::mouseCursorSetType(hui::MouseCursorType::SizeWE);
 
-			if (imagePressed && !ctx->vecEditor.draggingValue)
+			if (imagePressed && !editIndeterminate.draggingValue)
 			{
-				ctx->vecEditor.draggingValue = true;
-				ctx->vecEditor.draggedId = imageWidgetId;
-				ctx->vecEditor.lastMousePos = ctx->mousePosition;
-				ctx->vecEditor.hiddenCursorPos = ctx->settings.services.getAbsoluteMousePosition();
+				editIndeterminate.draggingValue = true;
+				editIndeterminate.draggedId = imageWidgetId;
+				editIndeterminate.lastMousePos = ctx->mousePosition;
+				editIndeterminate.hiddenCursorPos = ctx->settings.services.getAbsoluteMousePosition();
 				ctx->settings.services.hideMouseCursor();
 				ctx->widget.pressed = false;
 				hui::windowSetCapture();
 			}
 		}
 
-		if (ctx->vecEditor.draggingValue
-			&& ctx->vecEditor.draggedId == imageWidgetId)
+		if (!indeterminateAxis
+			&& editIndeterminate.draggingValue
+			&& editIndeterminate.draggedId == imageWidgetId)
 		{
 			*val = atof(strAxis);
-			f32 dx = ctx->mousePosition.x - ctx->vecEditor.lastMousePos.x;
+			f32 dx = ctx->mousePosition.x - editIndeterminate.lastMousePos.x;
 			f32 unitPerPixel = (f32)scrollStep;
 
 			*val += (f64)dx * unitPerPixel;
-			ctx->vecEditor.lastMousePos = ctx->mousePosition;
+			editIndeterminate.lastMousePos = ctx->mousePosition;
 
 			// infinite drag: warp cursor to center of window when hitting edges
 			if (ctx->lastHoveredNativeWindow)
@@ -100,19 +134,44 @@ static bool vecEditorInternal(f64& x, f64& y, f64& z, f64 scrollStep, bool useZ,
 					Point centerScreen(wndPos.x + wndSize.x * 0.5f, absPos.y);
 					ctx->settings.services.setAbsoluteMousePosition(centerScreen);
 					Point warpDelta = centerScreen - absPos;
-					ctx->vecEditor.lastMousePos += warpDelta;
+					editIndeterminate.lastMousePos += warpDelta;
 					ctx->mousePosition += warpDelta;
 				}
 			}
 
-			sprintf(strAxis, fmt, *val);
+			snprintf(strAxis, VectorEditorState::maxStrSize, fmt, *val);
 			modified = true;
 		}
 
 		if (widgetIsChangeEnded())
 			*changeEnded = true;
 
-		if (modified)
+		// an indeterminate field finalizes its value when it loses focus: text that was
+		// typed into the session becomes a value, anything else is indeterminate
+		// (FLT_MAX). typed text is tracked in indeterminateText because strAxis is one
+		// of the shared strX/strY/strZ buffers that other editors overwrite
+		if (indeterminateAxis && editingIndeterminate)
+		{
+			if (ctx->widget.focused && ctx->id == ctx->textInput.id && strcmp(strAxis, editIndeterminate.indeterminateText[i]) != 0)
+			{
+				strncpy(editIndeterminate.indeterminateText[i], strAxis, VectorEditorState::maxStrSize - 1);
+				editIndeterminate.indeterminateText[i][VectorEditorState::maxStrSize - 1] = 0;
+			}
+
+			if (!ctx->widget.focused)
+			{
+				editIndeterminate.editingIndeterminate[i] = false;
+				editIndeterminate.editingIndeterminateEditor = 0;
+
+				if (editIndeterminate.indeterminateText[i][0] == 0)
+					*val = FLT_MAX;
+				else
+					*val = atof(editIndeterminate.indeterminateText[i]);
+
+				modified = true;
+			}
+		}
+		else if (modified && !indeterminateAxis)
 		{
 			*val = atof(strAxis);
 		}
@@ -123,21 +182,21 @@ static bool vecEditorInternal(f64& x, f64& y, f64& z, f64 scrollStep, bool useZ,
 	return modified;
 }
 
-bool vec3Editor(const char* id, f64& x, f64& y, f64& z, f64 scrollStep, VectorEditorFlags flags, u32 precision)
+bool vec3Editor(const char* id, f64& x, f64& y, f64& z, f64 scrollStep, VectorEditorFlags flags, u32 precision, const char* indeterminate)
 {
 	idPush(id);
-	bool ret = vecEditorInternal(x, y, z, scrollStep, true, flags, precision);
+	bool ret = vecEditorInternal(x, y, z, scrollStep, true, flags, precision, indeterminate);
 	idPop();
 
 	return ret;
 }
 
-bool vec3Editor(const char* id, f32& x, f32& y, f32& z, f32 scrollStep, VectorEditorFlags flags, u32 precision)
+bool vec3Editor(const char* id, f32& x, f32& y, f32& z, f32 scrollStep, VectorEditorFlags flags, u32 precision, const char* indeterminate)
 {
 	idPush(id);
 	f64 xx = x, yy = y, zz = z;
 
-	auto ret = vecEditorInternal(xx, yy, zz, scrollStep, true, flags, precision);
+	auto ret = vecEditorInternal(xx, yy, zz, scrollStep, true, flags, precision, indeterminate);
 
 	x = (f32)xx;
 	y = (f32)yy;
@@ -148,22 +207,22 @@ bool vec3Editor(const char* id, f32& x, f32& y, f32& z, f32 scrollStep, VectorEd
 	return ret;
 }
 
-bool vec2Editor(const char* id, f64& x, f64& y, f64 scrollStep, VectorEditorFlags flags, u32 precision)
+bool vec2Editor(const char* id, f64& x, f64& y, f64 scrollStep, VectorEditorFlags flags, u32 precision, const char* indeterminate)
 {
 	idPush(id);
 	
 	f64 zz = 0;
-	bool ret = vecEditorInternal(x, y, zz, scrollStep, false, flags, precision);
+	bool ret = vecEditorInternal(x, y, zz, scrollStep, false, flags, precision, indeterminate);
 	idPop();
 
 	return ret;
 }
 
-bool vec2Editor(const char* id, f32& x, f32& y, f32 scrollStep, VectorEditorFlags flags, u32 precision)
+bool vec2Editor(const char* id, f32& x, f32& y, f32 scrollStep, VectorEditorFlags flags, u32 precision, const char* indeterminate)
 {
 	idPush(id);
 	f64 xx = x, yy = y, zz = 0;
-	auto ret = vecEditorInternal(xx, yy, zz, scrollStep, false, flags, precision);
+	auto ret = vecEditorInternal(xx, yy, zz, scrollStep, false, flags, precision, indeterminate);
 
 	x = (f32)xx;
 	y = (f32)yy;
@@ -172,7 +231,7 @@ bool vec2Editor(const char* id, f32& x, f32& y, f32 scrollStep, VectorEditorFlag
 	return ret;
 }
 
-bool objectRefEditor(const char* id, HImage targetImg, HImage clearImg, HImage iconImg, const char* objectTypeName, const char* valueAsString, u32 objectType, void** outObject, bool* objectValueWasModified, u32 refCount, const char** refNames, void** refValues, f32 iconSize)
+bool objectRefEditor(const char* id, HImage targetImg, HImage clearImg, HImage iconImg, const char* objectTypeName, const char* valueAsString, u32 objectType, void** outObject, bool* objectValueWasModified, u32 refCount, const char** refNames, void** refValues, f32 iconSize, const char* indeterminate)
 {
 	idPush(id);
 	bool returnValue = false;
@@ -245,21 +304,31 @@ bool objectRefEditor(const char* id, HImage targetImg, HImage clearImg, HImage i
 		ctx->renderer.cmdDrawImageBordered(bodyState->image, bodyState->border, ctx->widget.rect, ctx->scale);
 
 		Rect textRect = ctx->widget.rect;
+		f32 borderPx = bodyState->border * ctx->scale;
 		f32 paddingPx = 4 * ctx->scale;
+
+		// keep the content inside the body's border so the icon and text don't
+		// overlap the beveled edge
+		textRect.x += borderPx;
+		textRect.y += borderPx;
+		textRect.width -= borderPx * 2.0f;
+		textRect.height -= borderPx * 2.0f;
 
 		if (iconImg && *outObject)
 		{
+			f32 iconDrawSizePx = std::min(iconDisplaySizePx, textRect.height);
+
 			Image* iconPtr = (Image*)iconImg;
 			Rect iconRect = {
 				textRect.x + paddingPx,
-				textRect.y + (textRect.height - iconDisplaySizePx) / 2.0f,
-				iconDisplaySizePx,
-				iconDisplaySizePx
+				textRect.y + (textRect.height - iconDrawSizePx) / 2.0f,
+				iconDrawSizePx,
+				iconDrawSizePx
 			};
 			ctx->renderer.cmdSetColor(Color::white);
 			ctx->renderer.cmdDrawImage(iconPtr, iconRect);
-			textRect.x += paddingPx + iconDisplaySizePx + paddingPx;
-			textRect.width -= paddingPx + iconDisplaySizePx + paddingPx;
+			textRect.x += paddingPx + iconDrawSizePx + paddingPx;
+			textRect.width -= paddingPx + iconDrawSizePx + paddingPx;
 		}
 
 		Color textColor;
@@ -277,21 +346,36 @@ bool objectRefEditor(const char* id, HImage targetImg, HImage clearImg, HImage i
 			textFont = bodyState->font;
 		}
 
-		ctx->renderer.cmdSetColor(tintApply(textColor, TintColorType::Text));
-		ctx->renderer.cmdSetFont(textFont);
-
 		std::string text;
 		if (!*outObject)
 		{
-			text += "None (";
-			text += objectTypeName;
-			text += ")";
+			if (indeterminate)
+			{
+				text = indeterminate;
+
+				// use the text input's default/hint text style so the indeterminate
+				// text reads as a hint rather than a real object name
+				auto& indeterminateTextElem = ctx->theme->getElement(WidgetElementId::TextInputDefaultText);
+				auto& indeterminateState = ctx->widget.disabled
+					? indeterminateTextElem.getState(WidgetStateType::Disabled)
+					: indeterminateTextElem.normalState();
+
+				textColor = indeterminateState.textColor;
+			}
+			else
+			{
+				text += "None (";
+				text += objectTypeName;
+				text += ")";
+			}
 		}
 		else
 		{
 			text = valueAsString;
 		}
 
+		ctx->renderer.cmdSetColor(tintApply(textColor, TintColorType::Text));
+		ctx->renderer.cmdSetFont(textFont);
 		ctx->renderer.cmdDrawTextInBox(text.c_str(), textRect, HAlignType::Left, VAlignType::Center, true);
 	}
 

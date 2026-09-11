@@ -142,6 +142,9 @@ HTheme createBuiltinTheme(u32 atlasTextureSize)
 	Image* imgCheckMark = createProceduralImage(theme, "flat/check_mark", 22, 22);
 	drawAALine(imgCheckMark, 5, 12, 10, 16, 2.5f, Color::white);
 	drawAALine(imgCheckMark, 10, 16, 17, 6, 2.5f, Color::white);
+
+	Image* imgCheckMarkIndeterminate = createProceduralImage(theme, "flat/check_mark_indeterminate", 22, 22);
+	drawAALine(imgCheckMarkIndeterminate, 6, 11, 16, 11, 3.0f, Color::white);
 	
 	Image* imgDropdownArrow = createProceduralImage(theme, "flat/dropdown_arrow", 20, 22);
 	drawAALine(imgDropdownArrow, 5, 8, 10, 14, 2.0f, Color::white);
@@ -298,6 +301,10 @@ HTheme createBuiltinTheme(u32 atlasTextureSize)
 	setSize(WidgetElementId::CheckMark, 22, 22, 0);
 	setElementImage(WidgetElementId::CheckMark, imgCheckMark);
 	setElementColors(WidgetElementId::CheckMark, cGreen, cGreenHovered, cGreen, cGreen, Color::fromU8(55, 185, 100, 128));
+
+	setSize(WidgetElementId::CheckMarkIndeterminate, 22, 22, 0);
+	setElementImage(WidgetElementId::CheckMarkIndeterminate, imgCheckMarkIndeterminate);
+	setElementColors(WidgetElementId::CheckMarkIndeterminate, cGreen, cGreenHovered, cGreen, cGreen, Color::fromU8(55, 185, 100, 128));
 
 	setSize(WidgetElementId::RadioBody, 22, 22, 0);
 	setElementImage(WidgetElementId::RadioBody, imgRadioBody);

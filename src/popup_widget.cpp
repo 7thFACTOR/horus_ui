@@ -23,7 +23,11 @@ void popupBegin(
 	if (ctx->popupUseGlobalScale)
 		width *= ctx->scale;
 
-	if (!has(flags, PopupFlags::SameLayer))
+	popup.layerIncremented = !has(flags, PopupFlags::SameLayer)
+		|| (has(flags, PopupFlags::LayerOnMouseInside)
+			&& Rect(popup.position.x, popup.position.y, popup.width, popup.height).contains(ctx->mousePosition));
+
+	if (popup.layerIncremented)
 		layerIndexIncrement();
 
 	ctx->renderer.pushWindowDrawCmdLayer(
@@ -233,7 +237,7 @@ void popupEnd()
 	widgetPopPosition();
 	layoutPop();
 
-	if (!has(popup.flags, PopupFlags::SameLayer))
+	if (popup.layerIncremented)
 		layerIndexDecrement();
 
 	--ctx->popupIndex;

@@ -1,5 +1,6 @@
 #include <horus.h>
 #include "native_file_dialogs.h"
+#include <float.h>
 #include <string.h>
 #include <stdio.h>
 #include <algorithm>
@@ -49,6 +50,8 @@ struct DemoState
 	f32 comboSliderFloat = 0.0f;
 	f32 comboSliderFloatCustomString = 0.0f;
 	f32 comboSliderFloatRanged = 0.5f;
+	f32 comboSliderNullFloat = 0.75f;
+	bool comboSliderNullAssigned = false;
 
 	// circularSlider
 	f32 circularVal = 0.5f;
@@ -63,6 +66,10 @@ struct DemoState
 	// check
 	bool checkA = true;
 	bool checkB = false;
+	bool triStateSelectAll = false;
+	bool triStateIndeterminate = false;
+	bool triState1 = true;
+	bool triState2 = false;
 
 	// button Group
 	u32 buttonGroupVal = 0;
@@ -72,6 +79,7 @@ struct DemoState
 
 	// dropdown
 	i32 dropdownSel = 0;
+	i32 dropdownNoSel = -1;
 
 	// list
 	bool listSelected[5] = {};
@@ -173,6 +181,8 @@ struct DemoState
 	f32 vec3x = 1.0f, vec3y = 2.0f, vec3z = 3.0f;
 	f64 dvec2x = 1.0, dvec2y = 2.0;
 	f64 dvec3x = 1.0, dvec3y = 2.0, dvec3z = 3.0;
+	f32 multiBaseX = 1.0f, multiBaseY = 2.0f, multiBaseZ = 3.0f;
+	bool multiDiffX = true, multiDiffY = false, multiDiffZ = true;
 
 	// image & Texture
 	HImage demoImage = nullptr;
@@ -185,6 +195,8 @@ struct DemoState
 	bool objectRefModified2 = false;
 	void* objectRefValue3 = nullptr;
 	bool objectRefModified3 = false;
+	void* objectRefEmpty = nullptr;
+	bool objectRefEmptyModified = false;
 
 	// virtual List
 	bool expandVirtualList = false;
@@ -209,6 +221,7 @@ struct DemoState
 	// property grid (mesh inspector)
 	bool expandPropertyGrid = false;
 	bool disablePropertyGrid = false;
+	bool pgAltRowBg = false;
 	char pgMeshName[128] = "MonkeyMesh.obj";
 	char pgTag[64] = "enemy_medium";
 	i32 pgLayer = 3;
@@ -765,6 +778,18 @@ void showDemo()
 		space();
 		label("With custom format string:");
 		comboSliderFloat(&demo.comboSliderFloatCustomString, 1.0f, 1.0f, "%.2f units");
+
+		space();
+		label("No value assigned (indeterminate, editable, starts at 0):");
+		check("Assign value##ComboSliderNull", &demo.comboSliderNullAssigned);
+		if (demo.comboSliderNullAssigned)
+		{
+			comboSliderFloat(&demo.comboSliderNullFloat, 1.0f, 1.0f, "%.2f units");
+		}
+		else
+		{
+			comboSliderFloat(nullptr, 1.0f, 1.0f, "%.2f units", "Indeterminate");
+		}
 		widgetPopDisabled();
 		expandableEnd();
 	}
@@ -830,6 +855,23 @@ void showDemo()
 
 		check("Option A (checked)", &demo.checkA);
 		check("Option B (unchecked)", &demo.checkB);
+
+		space();
+		label("Tri-state checkbox (indeterminate when only some options are on):");
+
+		// recompute the parent state from its children, the parent shows the
+		// indeterminate minus (default) or check (all on)
+		demo.triStateIndeterminate = demo.triState1 != demo.triState2;
+		demo.triStateSelectAll = demo.triState1 && demo.triState2;
+
+		if (check("Select all", &demo.triStateSelectAll, &demo.triStateIndeterminate))
+		{
+			demo.triState1 = demo.triStateSelectAll;
+			demo.triState2 = demo.triStateSelectAll;
+		}
+
+		check("Option 1", &demo.triState1);
+		check("Option 2", &demo.triState2);
 
 		space();
 		label("Disabled checkbox:");
@@ -1051,6 +1093,16 @@ void showDemo()
 		space();
 		label("With max visible items = 3:");
 		dropdown("##ddMax3", demo.dropdownSel, items, 5, 3);
+
+		space();
+		label("No selection at start, with indeterminate text:");
+		dropdown("##ddNoSel", demo.dropdownNoSel, items, 5, ~0, "Indeterminate");
+
+		space();
+		label("Indeterminate with disabled dropdown:");
+		widgetPushDisabled(true);
+		dropdown("##ddNoSelDisabled", demo.dropdownNoSel, items, 5, ~0, "Indeterminate");
+		widgetPopDisabled();
 
 		char buf[64];
 		snprintf(buf, sizeof(buf), "Selected index: %d", demo.dropdownSel);
@@ -1315,6 +1367,55 @@ void showDemo()
 		space();
 		label("vec3 (double):");
 		vec3Editor("##v3d", demo.dvec3x, demo.dvec3y, demo.dvec3z);
+
+		space();
+		label("vec3 multiple selection (indeterminate components show 'Indeterminate' as input hint, drag is disabled, empty edit returns FLT_MAX):");
+
+		// simulate two selected objects: a component that differs between them
+		// is flagged indeterminate and shows the indeterminate text
+		check("X differs", &demo.multiDiffX);
+		sameLine();
+		check("Y differs", &demo.multiDiffY);
+		sameLine();
+		check("Z differs", &demo.multiDiffZ);
+
+		VectorEditorFlags multiFlags = VectorEditorFlags::None;
+
+		if (demo.multiDiffX)
+			multiFlags |= VectorEditorFlags::IndeterminateX;
+		if (demo.multiDiffY)
+			multiFlags |= VectorEditorFlags::IndeterminateY;
+		if (demo.multiDiffZ)
+			multiFlags |= VectorEditorFlags::IndeterminateZ;
+
+		f32 multiX = demo.multiDiffX ? FLT_MAX : demo.multiBaseX;
+		f32 multiY = demo.multiDiffY ? FLT_MAX : demo.multiBaseY;
+		f32 multiZ = demo.multiDiffZ ? FLT_MAX : demo.multiBaseZ;
+
+		if (vec3Editor("##multiPos", multiX, multiY, multiZ, 0.03f, multiFlags, 6, "Indeterminate"))
+		{
+			// a committed edit applies to all selected objects and clears the
+			// indeterminate state for that component
+			if (multiX != FLT_MAX)
+			{
+				demo.multiBaseX = multiX;
+				demo.multiDiffX = false;
+			}
+			if (multiY != FLT_MAX)
+			{
+				demo.multiBaseY = multiY;
+				demo.multiDiffY = false;
+			}
+			if (multiZ != FLT_MAX)
+			{
+				demo.multiBaseZ = multiZ;
+				demo.multiDiffZ = false;
+			}
+		}
+
+		char multiResult[96];
+		snprintf(multiResult, sizeof(multiResult), "Shared value: (%.2f, %.2f, %.2f)", demo.multiBaseX, demo.multiBaseY, demo.multiBaseZ);
+		label(multiResult);
 		widgetPopDisabled();
 		expandableEnd();
 	}
@@ -1473,6 +1574,7 @@ void showDemo()
 		std::string v1;
 		std::string v2;
 		std::string v3;
+		std::string vEmpty;
 
 		if (demo.objectRefValue1)
 		{
@@ -1489,6 +1591,11 @@ void showDemo()
 			v3 = *(std::string*)demo.objectRefValue3;
 		}
 
+		if (demo.objectRefEmpty)
+		{
+			vEmpty = *(std::string*)demo.objectRefEmpty;
+		}
+
 		label("Without custom button images:");
 		{
 			static std::string refVal2a = "Mesh01";
@@ -1497,6 +1604,17 @@ void showDemo()
 			const char* refNames2[] = { "Mesh01", "Mesh02", "ArchVizModel" };
 			void* refVals2[] = { &refVal2a, &refVal2b, &refVal2c };
 			objectRefEditor("##demoObjRefNoIcons", 0, 0, 0, "MyObjectType2", v2.c_str(), MyTypeId2, &demo.objectRefValue2, &demo.objectRefModified2, 3, refNames2, refVals2);
+		}
+		space();
+
+		{
+			label("With indeterminate text (no object assigned yet):");
+			static std::string refValP1 = "Mesh01";
+			static std::string refValP2 = "Mesh02";
+			static std::string refValP3 = "ArchVizModel";
+			const char* refNamesP[] = { "Mesh01", "Mesh02", "ArchVizModel" };
+			void* refValsP[] = { &refValP1, &refValP2, &refValP3 };
+			objectRefEditor("##demoObjRefPlaceholder", 0, 0, 0, "MyObjectType2", vEmpty.c_str(), MyTypeId2, &demo.objectRefEmpty, &demo.objectRefEmptyModified, 3, refNamesP, refValsP, 0, "Indeterminate");
 		}
 		space();
 
@@ -1934,7 +2052,7 @@ void showDemo()
 		widgetPushDisabled(demo.disableTable);
 
 		label("Basic table (3 columns):");
-		if (tableBegin("##demoTable", 3, 200, TableFlags::Borders | TableFlags::Resizable | TableFlags::Reorderable | TableFlags::AltRowBg))
+		if (tableBegin("##demoTable", 3, 200, TableFlags::Borders | TableFlags::Resizable | TableFlags::Reorderable | TableFlags::AltRowBg | TableFlags::FixedSize))
 		{
 			tableColumnSetup(0, 50, TableColumnFlags::FixedResize);
 			tableColumnSetup(1, 150, TableColumnFlags::Stretch);
@@ -2029,6 +2147,7 @@ void showDemo()
 	if (expandableBegin("Property Grid (Mesh Inspector)", &demo.expandPropertyGrid))
 	{
 		check("Disable##PropertyGrid", &demo.disablePropertyGrid);
+		check("Alternate Row Background##PropertyGrid", &demo.pgAltRowBg);
 		widgetPushDisabled(demo.disablePropertyGrid);
 
 		static const char* layers[] = { "Default", "Environment", "Player", "Enemy", "UI" };
@@ -2039,15 +2158,11 @@ void showDemo()
 		label("A two-column property table with expandable groups:");
 		space();
 
-		if (tableBegin("##propGrid", 2, 0, TableFlags::Borders | TableFlags::Resizable | TableFlags::AltRowBg))
+		if (tableBegin("##propGrid", 2, 0, TableFlags::Borders | TableFlags::Resizable | TableFlags::FixedSize | (demo.pgAltRowBg ? TableFlags::AltRowBg : TableFlags::None)))
 		{
 			tableColumnSetup(0, 150, TableColumnFlags::FixedResize);
 			tableColumnSetup(1, 0, TableColumnFlags::Stretch);
 			tableCellPaddingPush(10.0f, 6.0f);
-
-			tableStartHeader();
-			label("Property"); tableCellNext();
-			label("Value");
 
 			// ---- identity ----
 			tableRowNext();
@@ -2191,29 +2306,27 @@ void showDemo()
 		button("Hover Me (Custom)");
 		if (customTooltipBegin(250))
 		{
-			auto setTextColor = [](WidgetElementId elementId, const Color& color)
-			{
-				WidgetElementInfo info;
-				themeGetWidgetElementInfo(elementId, WidgetStateType::Normal, info);
-				info.textColor = color;
-				themeSetWidgetElement(themeGet(), elementId, WidgetStateType::Normal, info, "default");
-			};
-
-			auto getTextColor = [](WidgetElementId elementId)
-			{
-				WidgetElementInfo info;
-				themeGetWidgetElementInfo(elementId, WidgetStateType::Normal, info);
-				return info.textColor;
-			};
-
-			WidgetElementId tooltipElements[] = { WidgetElementId::LabelBody, WidgetElementId::CheckBody, WidgetElementId::ButtonBody };
+			// the tooltip body is white so labels and checks need dark text here,
+			// the button keeps its theme default text color.
+			// checks draw text with the state text color (hovered/checked/...),
+			// so all their states are overridden and then restored
+			WidgetElementId tooltipElements[] = { WidgetElementId::LabelBody, WidgetElementId::CheckBody };
+			const WidgetStateType tooltipStates[] = { WidgetStateType::Normal, WidgetStateType::Focused, WidgetStateType::Pressed, WidgetStateType::Hovered, WidgetStateType::Disabled };
 			const u32 tooltipElementCount = sizeof(tooltipElements) / sizeof(tooltipElements[0]);
-			Color originalTextColors[tooltipElementCount];
+			const u32 tooltipStateCount = sizeof(tooltipStates) / sizeof(tooltipStates[0]);
+
+			WidgetElementInfo originalTextColors[tooltipElementCount][tooltipStateCount];
 
 			for (u32 i = 0; i < tooltipElementCount; i++)
 			{
-				originalTextColors[i] = getTextColor(tooltipElements[i]);
-				setTextColor(tooltipElements[i], Color::black);
+				for (u32 s = 0; s < tooltipStateCount; s++)
+				{
+					WidgetElementInfo info;
+					themeGetWidgetElementInfo(tooltipElements[i], tooltipStates[s], info);
+					originalTextColors[i][s] = info;
+					info.textColor = Color::black;
+					themeSetWidgetElement(themeGet(), tooltipElements[i], tooltipStates[s], info, "default");
+				}
 			}
 
 			label("This is a CUSTOM tooltip area");
@@ -2223,10 +2336,14 @@ void showDemo()
 
 			for (u32 i = 0; i < tooltipElementCount; i++)
 			{
-				setTextColor(tooltipElements[i], originalTextColors[i]);
+				for (u32 s = 0; s < tooltipStateCount; s++)
+				{
+					themeSetWidgetElement(themeGet(), tooltipElements[i], tooltipStates[s], originalTextColors[i][s], "default");
+				}
 			}
 			customTooltipEnd();
 		}
+		label("Tip: hold Ctrl to keep the custom tooltip open (freeze it) so you can interact with its widgets.");
 		widgetPopDisabled();
 		expandableEnd();
 	}

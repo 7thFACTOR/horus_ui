@@ -315,13 +315,34 @@ void frameBegin()
 	if (ctx->focusableWidgets.capacity() < ctx->lastFrameFocusableWidgets.size())
 		ctx->focusableWidgets.reserve(ctx->lastFrameFocusableWidgets.size());
 
-	if (ctx->textInput.id)
+	ctx->mouseInTrappedPopup = false;
+
+	for (const auto& popup : ctx->popupStack)
+	{
+		if (!popup.active || !has(popup.flags, PopupFlags::LayerOnMouseInside))
+			continue;
+
+		Rect popupRect = { popup.position.x, popup.position.y, popup.width, popup.height };
+
+		if (popupRect.contains(ctx->mousePosition))
+		{
+			ctx->mouseInTrappedPopup = true;
+			ctx->trappedPopupRect = popupRect;
+			break;
+		}
+	}
+
+	if (ctx->textInput.id
+		&& (!ctx->mouseInTrappedPopup
+			|| ctx->trappedPopupRect.contains(ctx->textInput.rect)))
 	{
 		ctx->textInput.textChanged = false;
 		ctx->textInput.processEvent(ctx->event);
 	}
 
-	if (ctx->activeMultilineInputId && ctx->textMultilineInput.count(ctx->activeMultilineInputId))
+	if (ctx->activeMultilineInputId && ctx->textMultilineInput.count(ctx->activeMultilineInputId)
+		&& (!ctx->mouseInTrappedPopup
+			|| ctx->trappedPopupRect.contains(ctx->textMultilineInput[ctx->activeMultilineInputId].rect)))
 	{
 		ctx->textMultilineInput[ctx->activeMultilineInputId].textChanged = false;
 		ctx->textMultilineInput[ctx->activeMultilineInputId].processEvent(ctx->event);
@@ -423,7 +444,10 @@ void frameBegin()
 		if (!popup.active)
 			continue;
 
-		if (!has(popup.flags, PopupFlags::SameLayer))
+		const bool layerOnMouseInside = has(popup.flags, PopupFlags::LayerOnMouseInside)
+			&& Rect(popup.position.x, popup.position.y, popup.width, popup.height).contains(ctx->mousePosition);
+
+		if (!has(popup.flags, PopupFlags::SameLayer) || layerOnMouseInside)
 			ctx->maxLayerIndex++;
 	}
 
@@ -1095,6 +1119,7 @@ void widgetSetStyle(WidgetType widgetType, const char* styleName)
 	case WidgetType::Check:
 		ctx->theme->elements[(u32)WidgetElementId::CheckBody].setStyle(styleName);
 		ctx->theme->elements[(u32)WidgetElementId::CheckMark].setStyle(styleName);
+		ctx->theme->elements[(u32)WidgetElementId::CheckMarkIndeterminate].setStyle(styleName);
 		break;
 	case WidgetType::Radio:
 		ctx->theme->elements[(u32)WidgetElementId::RadioBody].setStyle(styleName);
