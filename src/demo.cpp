@@ -2077,6 +2077,34 @@ void showDemo()
 			tableEnd();
 		}
 
+		label("Table with merged (colspan) cells:");
+		if (tableBegin("##mergedTable", 3, 0, TableFlags::Borders | TableFlags::AltRowBg | TableFlags::FixedSize))
+		{
+			tableColumnSetup(0, 100, TableColumnFlags::FixedResize);
+			tableColumnSetup(1, 120, TableColumnFlags::Stretch);
+			tableColumnSetup(2, 120, TableColumnFlags::Stretch);
+
+			tableStartHeader();
+			label("Col A"); tableCellNext(); 
+			label("Col B"); tableCellNext(); 
+			label("Col C");
+
+			tableRowNext();
+			tableCellNext(2);
+			label("Merged row spanning columns A+B", HAlignType::Center);
+
+			tableRowNext();
+			label("A"); tableCellNext();
+			label("B"); tableCellNext();
+			label("C");
+
+			tableRowNext();
+			tableCellNext(3);
+			label("Row spanning all three columns", HAlignType::Center);
+
+			tableEnd();
+		}
+
 		label("Invisible table as 3-column list layout:");
 		if (tableBegin("##invisibleTable", 3, 0, TableFlags::Stretch | TableFlags::Borders))
 		{

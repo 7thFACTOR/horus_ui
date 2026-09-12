@@ -162,9 +162,6 @@ static void finishRow(TableState& state)
 
 		// respect external advances (virtual list). If ctx->position.y already moved past our computed row end,
 		// adopt the external position instead of forcing ctx->position.y backwards.
-		/*std::printf("[TABLE] finishRow row=%u rowStartY=%.3f maxRowH=%.3f computedRowY=%.3f ctx.pos.y=%.3f rowSeparators.back()=%.3f\n",
-			(unsigned)state.currentRow, state.rowStartY, state.currentMaxRowHeight, state.currentRowY, ctx->position.y,
-			(!state.rowSeparators.empty() ? state.rowSeparators.back() : -1.0f));*/
 
 		if (ctx->position.y < state.currentRowY)
 			ctx->position.y = state.currentRowY;
@@ -809,7 +806,10 @@ void tableEnd()
 				// draw vertical lines for each row
 				for (u32 rowIdx = 0; rowIdx < state.rowSeparators.size() + 1; rowIdx++)
 				{
-					f32 lineStartY = rowIdx < state.rowSeparators.size() && rowIdx > 0 ? state.rowSeparators[rowIdx - 1] : state.bodyStartY;
+					// start the band at the previous row's separator so the
+					// extra final band stays zero-height (otherwise it would
+					// re-draw skipped colspan lines over the whole body)
+					f32 lineStartY = rowIdx > 0 ? state.rowSeparators[rowIdx - 1] : state.bodyStartY;
 					f32 lineEndY = rowIdx < state.rowSeparators.size() ? state.rowSeparators[rowIdx] : state.currentRowY;
 					f32 currentX = baseX;
 					
@@ -829,32 +829,13 @@ void tableEnd()
 								&& std::find(state.rowColspanBoundaries[rowIdx].begin(), state.rowColspanBoundaries[rowIdx].end(), i)
 									!= state.rowColspanBoundaries[rowIdx].end())
 								drawLeftLine = false;
-							
-if (drawLeftLine)
+
+							if (drawLeftLine)
 							{
 								ctx->renderer.cmdDrawLine(Point(currentX, lineStartY), Point(currentX, lineEndY));
 							}
 
 							currentX += state.persistent->columns[i].width;
-						}
-					}
-
-					// DEBUG (temporary): dump colspan band data, remove after diagnosis
-					if (!state.rowColspanBoundaries.empty())
-					{
-						static u32 debugFrame = 0;
-						if ((debugFrame++ % 120) == 0)
-						{
-							std::printf("[TBL] seps=%zu covers=%zu bodyStartY=%.0f\n",
-								state.rowSeparators.size(), state.rowColspanBoundaries.size(), state.bodyStartY);
-							for (u32 b = 0; b < state.rowSeparators.size(); b++)
-							{
-								std::printf("  band%u y=%.0f..%.0f cover={",
-									b, b == 0 ? state.bodyStartY : state.rowSeparators[b - 1], state.rowSeparators[b]);
-								for (u32 c : state.rowColspanBoundaries[b])
-									std::printf("%u ", c);
-								std::printf("}\n");
-							}
 						}
 					}
 
@@ -868,7 +849,7 @@ if (drawLeftLine)
 			}
 		}
 	}
-	
+
 	// end scroll view if it was started
 	if (state.needsScrollViewStart)
 	{
@@ -1131,8 +1112,9 @@ void tableRowNext()
 		state.isClipping = false;
 	}
 
-	// finish previous row (skip for the first row — there is no previous row to finish)
-	if (state.currentRow > 0)
+	// finish the header when leaving it, and finish the previous body row
+	// (skip only when there is no previous row nor an open header to finish)
+	if (state.isInHeader || state.currentRow > 0)
 		finishRow(state);
 
 	// if an external system (e.g. VirtualScrollInfo) moved ctx->position.y forward to skip items,
@@ -1148,9 +1130,6 @@ void tableRowNext()
 			// the skipped region has no rows, so no colspan covers it
 			state.rowColspanBoundaries.emplace_back();
 		}
-
-		/*std::printf("[TABLE] nextRow detected virtual skip ctx.pos.y=%.3f oldCurrentRowY=%.3f newCurrentRowY=%.3f lastSeparator=%.3f\n",
-			ctx->position.y, state.currentRowY, ctx->position.y, state.rowSeparators.back());*/
 
 		state.currentRowY = ctx->position.y;
 	}
@@ -1244,8 +1223,13 @@ void tableCellNext(u32 columnSpan)
 			for (u32 b = spanStart + 1; b < cellEnd; b++)
 				state.headerColspanBoundaries.push_back(b);
 		}
-		else if (!state.rowColspanBoundaries.empty())
+		else
 		{
+			// ensure the row has a boundary list even if it was started with a
+			// merged cell before the first tableRowNext (e.g. headerless table)
+			if (state.rowColspanBoundaries.empty())
+				state.rowColspanBoundaries.emplace_back();
+
 			for (u32 b = spanStart + 1; b < cellEnd; b++)
 				state.rowColspanBoundaries.back().push_back(b);
 		}
