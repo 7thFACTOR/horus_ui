@@ -138,4 +138,16 @@ bool check(const char* label, bool* checkVar, bool* indeterminate)
 	return ctx->widget.changeEnded;
 }
 
+bool checkFlag(const char* label, u32* flags, u32 mask)
+{
+	bool isChecked = flags != nullptr && (*flags & mask) != 0;
+
+	bool changed = check(label, &isChecked);
+
+	if (changed && flags)
+		*flags ^= mask;
+
+	return changed;
+}
+
 }

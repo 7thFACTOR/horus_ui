@@ -514,6 +514,9 @@ struct TablePersistentState
 	u32 resizingColumnIndex = ~0;
 	f32 resizeStartX = 0;
 	f32 resizeStartWidth = 0;
+	// width of the column right of the handle at drag start, so it can
+	// absorb the delta and keep later column boundaries fixed
+	f32 resizeNextStartWidth = 0;
 	Point lastMousePos;
 	struct DrawCmdLayerSplitter* splitter = nullptr;
 	Point scrollViewScrollPos;

@@ -71,6 +71,9 @@ struct DemoState
 	bool triState1 = true;
 	bool triState2 = false;
 
+	// checkFlag
+	u32 checkFlags = 0;
+
 	// button Group
 	u32 buttonGroupVal = 0;
 
@@ -872,6 +875,21 @@ void showDemo()
 
 		check("Option 1", &demo.triState1);
 		check("Option 2", &demo.triState2);
+
+		space();
+		label("Bit flags in a single u32 (checkFlag):");
+
+		const u32 flagRead = 1u << 0;
+		const u32 flagWrite = 1u << 1;
+		const u32 flagExecute = 1u << 2;
+
+		checkFlag("Read", &demo.checkFlags, flagRead);
+		checkFlag("Write", &demo.checkFlags, flagWrite);
+		checkFlag("Execute", &demo.checkFlags, flagExecute);
+
+		char flagsValue[32];
+		snprintf(flagsValue, sizeof(flagsValue), "flags = 0x%X", demo.checkFlags);
+		label(flagsValue);
 
 		space();
 		label("Disabled checkbox:");

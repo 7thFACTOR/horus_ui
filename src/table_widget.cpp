@@ -393,7 +393,8 @@ bool tableBegin(const char* id, u32 columnCount, f32 height, TableFlags flags)
 		persistent.initialized = true;
 	}
 
-	// apply active resize BEFORE calculating widths
+	// apply active resize BEFORE calculating widths so the columns are current
+	// this frame (no one-frame lag, which caused jitter while dragging)
 	if (persistent.resizingColumn && persistent.resizingColumnIndex < columnCount)
 	{
 		u32 i = persistent.resizingColumnIndex;
@@ -401,10 +402,27 @@ bool tableBegin(const char* id, u32 columnCount, f32 height, TableFlags flags)
 		f32 leftStart = persistent.resizeStartWidth;
 
 		// clamp delta against min width (10px); growing is unconstrained,
-		// only the dragged column's width changes
 		f32 maxNegativeDelta = -(leftStart - 10.0f);
 
 		if (idealDelta < maxNegativeDelta) idealDelta = maxNegativeDelta;
+
+		// the next visible (non-fixed) column absorbs the delta so the
+		// boundaries further right stay put
+		u32 nextIdx = i + 1;
+		while (nextIdx < columnCount && persistent.columns[nextIdx].isHidden)
+			nextIdx++;
+
+		bool nextIsResizable = nextIdx < columnCount
+			&& !(static_cast<bool>(persistent.columns[nextIdx].flags & TableColumnFlags::Fixed));
+
+		if (nextIsResizable)
+		{
+			f32 nextMin = persistent.columns[nextIdx].minWidth;
+			f32 maxPositiveDelta = persistent.resizeNextStartWidth - nextMin;
+			if (idealDelta > maxPositiveDelta) idealDelta = maxPositiveDelta;
+
+			persistent.columns[nextIdx].specifiedSize = persistent.resizeNextStartWidth - idealDelta;
+		}
 
 		persistent.columns[i].specifiedSize = leftStart + idealDelta;
 	}
@@ -917,20 +935,6 @@ void tableEnd()
 						ctx->renderer.cmdSetLineStyle(LineStyle(tableBodyElem.currentStyle->getColorParameter("columnResizeLineColor", Color(0.0f, 1.0f, 1.0f, 1.0f)), 2.0f));
 						ctx->renderer.cmdDrawLine(Point(guideLineX, state.tableRect.y),
 												   Point(guideLineX, lineBottomY));
-
-						// only the dragged column changes; others keep their widths
-						if (!(static_cast<bool>(persistent.columns[i].flags & TableColumnFlags::Fixed)))
-						{
-							f32 idealDelta = ctx->mousePosition.x - persistent.resizeStartX;
-							f32 leftStart = persistent.resizeStartWidth;
-
-							// clamp delta against min width (10px); growing is unconstrained
-							f32 maxNegativeDelta = -(leftStart - 10.0f);
-
-							if (idealDelta < maxNegativeDelta) idealDelta = maxNegativeDelta;
-
-							persistent.columns[i].specifiedSize = leftStart + idealDelta;
-						}
 					}
 				}
 				else if (!persistent.resizingColumn)
@@ -1006,6 +1010,16 @@ void tableEnd()
 								persistent.resizingColumnIndex = i; // store SEPARATOR index
 								persistent.resizeStartX = ctx->mousePosition.x; // store Absolute Start X
 								persistent.resizeStartWidth = persistent.columns[i].width;
+
+								// capture the width of the column right of the handle, so it
+								// can absorb the delta and keep later boundaries fixed
+								persistent.resizeNextStartWidth = 0;
+								u32 nextResizeIdx = i + 1;
+								while (nextResizeIdx < persistent.columns.size() && persistent.columns[nextResizeIdx].isHidden)
+									nextResizeIdx++;
+
+								if (nextResizeIdx < persistent.columns.size())
+									persistent.resizeNextStartWidth = persistent.columns[nextResizeIdx].width;
 
 								// synchronize ALL columns to their current visual width to prevent jumps,
 								// and lock them to fixed pixel sizes so only the dragged column changes
@@ -1385,20 +1399,25 @@ void tableColumnSetup(u32 columnIndex, f32 size, TableColumnFlags flags)
 	}
 
 	// apply overrides from flags (precedence over auto-detect)
-	if (static_cast<bool>(flags & TableColumnFlags::Fixed))
+	// note: skip while the column is user-resized so a resize freeze (locking
+	// stretch columns to pixel sizes) is not undone every frame during a drag
+	if (!persistent.columns[columnIndex].userResized)
 	{
-		persistent.columns[columnIndex].isStretchable = false;
-		persistent.columns[columnIndex].isFillRemaining = false;
-	}
-	else if (static_cast<bool>(flags & TableColumnFlags::FixedResize))
-	{
-		persistent.columns[columnIndex].isStretchable = false;
-		persistent.columns[columnIndex].isFillRemaining = false;
-	}
-	else if (static_cast<bool>(flags & TableColumnFlags::Stretch))
-	{
-		persistent.columns[columnIndex].isStretchable = true;
-		persistent.columns[columnIndex].isFillRemaining = true;
+		if (static_cast<bool>(flags & TableColumnFlags::Fixed))
+		{
+			persistent.columns[columnIndex].isStretchable = false;
+			persistent.columns[columnIndex].isFillRemaining = false;
+		}
+		else if (static_cast<bool>(flags & TableColumnFlags::FixedResize))
+		{
+			persistent.columns[columnIndex].isStretchable = false;
+			persistent.columns[columnIndex].isFillRemaining = false;
+		}
+		else if (static_cast<bool>(flags & TableColumnFlags::Stretch))
+		{
+			persistent.columns[columnIndex].isStretchable = true;
+			persistent.columns[columnIndex].isFillRemaining = true;
+		}
 	}
 }
 

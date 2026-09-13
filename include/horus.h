@@ -2614,6 +2614,13 @@ HUI_API void progress(f32 value, f32 maxValue = 0.0f, bool showText = false, boo
 /// \return true if it was changed, result put in checked
 HUI_API bool check(const char* label, bool* checkVar, bool* indeterminate = nullptr);
 
+/// Draw a check box that toggles a single bit in a u32 flag value
+/// \param label the check's label
+/// \param flags the bit flag value to modify
+/// \param mask the bit mask this check represents
+/// \return true if it was changed, the flag bit is toggled in place
+HUI_API bool checkFlag(const char* label, u32* flags, u32 mask);
+
 /// Draw a radio box widget
 /// \param label the radio's label
 /// \param currentRadioValue location of the current value of the radio group
