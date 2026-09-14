@@ -11,8 +11,8 @@
 
 namespace hui
 {
-static ID3D11Device* g_dx11Device = nullptr;
-static ID3D11DeviceContext* g_dx11DeviceContext = nullptr;
+static ID3D11Device* dx11Device = nullptr;
+static ID3D11DeviceContext* dx11DeviceContext = nullptr;
 static Rect currentViewport;
 static ID3D11VertexShader* vertexShader = nullptr;
 static ID3D11PixelShader* pixelShader = nullptr;
@@ -29,7 +29,7 @@ struct Dx11SharedVertexBuffer
     u32 count = 0;
     
     void resize(u32 newCount) {
-        if (!g_dx11Device) return;
+        if (!dx11Device) return;
         if (handle) { handle->Release(); handle = nullptr; }
         count = newCount;
         D3D11_BUFFER_DESC desc{};
@@ -37,7 +37,7 @@ struct Dx11SharedVertexBuffer
         desc.ByteWidth = sizeof(Vertex) * count;
         desc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
         desc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
-		g_dx11Device->CreateBuffer(&desc, nullptr, &handle);
+		dx11Device->CreateBuffer(&desc, nullptr, &handle);
     }
 };
 static Dx11SharedVertexBuffer sharedVb;
@@ -73,10 +73,6 @@ float4 PSMain(PS_INPUT input) : SV_TARGET {
 }
 )";
 
-// -------------------------------------------------------------------------
-// dx11Texture implementation
-// -------------------------------------------------------------------------
-
 Dx11Texture::Dx11Texture(u32 newWidth, u32 newHeight, Rgba32* pixels)
 {
 	resize(newWidth, newHeight);
@@ -95,7 +91,7 @@ Dx11Texture::~Dx11Texture()
 
 void Dx11Texture::resize(u32 newWidth, u32 newHeight)
 {
-	if (!g_dx11Device) return;
+	if (!dx11Device) return;
 
 	destroy();
 
@@ -114,7 +110,7 @@ void Dx11Texture::resize(u32 newWidth, u32 newHeight)
 	desc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
 	desc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
 
-	if (FAILED(g_dx11Device->CreateTexture2D(&desc, nullptr, &handle)))
+	if (FAILED(dx11Device->CreateTexture2D(&desc, nullptr, &handle)))
 	{
 		printf("Dx11Texture::resize failed to create texture\n");
 		return;
@@ -126,7 +122,7 @@ void Dx11Texture::resize(u32 newWidth, u32 newHeight)
 	srvDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
 	srvDesc.Texture2D.MipLevels = 1;
 
-	if (FAILED(g_dx11Device->CreateShaderResourceView(handle, &srvDesc, &view)))
+	if (FAILED(dx11Device->CreateShaderResourceView(handle, &srvDesc, &view)))
 	{
 		printf("Dx11Texture::resize failed to create shader resource view\n");
 	}
@@ -134,10 +130,10 @@ void Dx11Texture::resize(u32 newWidth, u32 newHeight)
 
 void Dx11Texture::updateData(Rgba32* pixels)
 {
-	if (!g_dx11DeviceContext || !handle || !pixels) return;
+	if (!dx11DeviceContext || !handle || !pixels) return;
 
 	D3D11_MAPPED_SUBRESOURCE mappedResource;
-	if (SUCCEEDED(g_dx11DeviceContext->Map(handle, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource)))
+	if (SUCCEEDED(dx11DeviceContext->Map(handle, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource)))
 	{
 		u8* dest = (u8*)mappedResource.pData;
 		u8* src = (u8*)pixels;
@@ -147,17 +143,36 @@ void Dx11Texture::updateData(Rgba32* pixels)
 			dest += mappedResource.RowPitch;
 			src += width * sizeof(Rgba32);
 		}
-		g_dx11DeviceContext->Unmap(handle, 0);
+		dx11DeviceContext->Unmap(handle, 0);
 	}
 }
 
 void Dx11Texture::updateRectData(const Rect& rect, Rgba32* pixels)
 {
-	// updating a rect normally requires a staging texture or map write discard limitation handling
-	// in dx11, D3D11_MAP_WRITE_NO_OVERWRITE or using updatesubresource is better for regions.
-	// for dynamic textures, map discard replaces everything.
-	if (!g_dx11DeviceContext || !handle || !pixels) return;
-	printf("Dx11Texture::updateRectData not fully implemented for dynamic rect contextUpdate\n");
+	if (!dx11DeviceContext || !handle || !pixels) return;
+
+	u32 x = (u32)rect.x;
+	u32 y = (u32)rect.y;
+	u32 w = (u32)rect.width;
+	u32 h = (u32)rect.height;
+
+	if (x >= width || y >= height) return;
+	if (x + w > width) w = width - x;
+	if (y + h > height) h = height - y;
+
+	D3D11_MAPPED_SUBRESOURCE mappedResource;
+	if (SUCCEEDED(dx11DeviceContext->Map(handle, 0, D3D11_MAP_WRITE_NO_OVERLAP, 0, &mappedResource)))
+	{
+		u8* dest = (u8*)mappedResource.pData + (size_t)y * mappedResource.RowPitch + (size_t)x * sizeof(Rgba32);
+		u8* src = (u8*)pixels;
+		for (u32 row = 0; row < h; ++row)
+		{
+			memcpy(dest, src, w * sizeof(Rgba32));
+			dest += mappedResource.RowPitch;
+			src += w * sizeof(Rgba32);
+		}
+		dx11DeviceContext->Unmap(handle, 0);
+	}
 }
 
 void Dx11Texture::destroy()
@@ -173,10 +188,6 @@ void Dx11Texture::destroy()
 		handle = nullptr;
 	}
 }
-
-// -------------------------------------------------------------------------
-// dx11VertexBuffer implementation
-// -------------------------------------------------------------------------
 
 Dx11VertexBuffer::Dx11VertexBuffer() {}
 
@@ -199,7 +210,7 @@ void Dx11VertexBuffer::create(u32 count)
 
 void Dx11VertexBuffer::resize(u32 count)
 {
-	if (!g_dx11Device) return;
+	if (!dx11Device) return;
 	if (count == 0) return;
 
 	destroy();
@@ -211,7 +222,7 @@ void Dx11VertexBuffer::resize(u32 count)
 	desc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
 	desc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
 
-	if (FAILED(g_dx11Device->CreateBuffer(&desc, nullptr, &handle)))
+	if (FAILED(dx11Device->CreateBuffer(&desc, nullptr, &handle)))
 	{
 		printf("Dx11VertexBuffer::resize failed to create vertex buffer\n");
 	}
@@ -219,14 +230,14 @@ void Dx11VertexBuffer::resize(u32 count)
 
 void Dx11VertexBuffer::updateData(Vertex* vertices, u32 startVertexIndex, u32 count)
 {
-	if (!g_dx11DeviceContext || !handle || !vertices || count == 0) return;
+	if (!dx11DeviceContext || !handle || !vertices || count == 0) return;
 
 	D3D11_MAPPED_SUBRESOURCE mappedResource;
-	if (SUCCEEDED(g_dx11DeviceContext->Map(handle, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource)))
+	if (SUCCEEDED(dx11DeviceContext->Map(handle, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource)))
 	{
 		Vertex* dest = (Vertex*)mappedResource.pData;
 		memcpy(dest + startVertexIndex, vertices + startVertexIndex, sizeof(Vertex) * count);
-		g_dx11DeviceContext->Unmap(handle, 0);
+		dx11DeviceContext->Unmap(handle, 0);
 	}
 }
 
@@ -240,14 +251,10 @@ void Dx11VertexBuffer::destroy()
 	count = 0;
 }
 
-// -------------------------------------------------------------------------
-// ui rendering services callbacks
-// -------------------------------------------------------------------------
-
 static void setViewport(const Point& windowSize, const Rect& viewport)
 {
 	currentViewport = viewport;
-	if (g_dx11DeviceContext)
+	if (dx11DeviceContext)
 	{
 		D3D11_VIEWPORT vp{};
 		vp.TopLeftX = viewport.x;
@@ -256,39 +263,37 @@ static void setViewport(const Point& windowSize, const Rect& viewport)
 		vp.Height = viewport.height;
 		vp.MinDepth = 0.0f;
 		vp.MaxDepth = 1.0f;
-		g_dx11DeviceContext->RSSetViewports(1, &vp);
+		dx11DeviceContext->RSSetViewports(1, &vp);
 	}
 }
 
 static void clearBackbuffer(const Color& color)
 {
-	if (!g_dx11DeviceContext) return;
+	if (!dx11DeviceContext) return;
 	
 	ID3D11RenderTargetView* rtv = nullptr;
-	g_dx11DeviceContext->OMGetRenderTargets(1, &rtv, nullptr);
+	dx11DeviceContext->OMGetRenderTargets(1, &rtv, nullptr);
 	if (rtv)
 	{
 		float clearColor[4] = { color.r, color.g, color.b, color.a };
-		g_dx11DeviceContext->ClearRenderTargetView(rtv, clearColor);
+		dx11DeviceContext->ClearRenderTargetView(rtv, clearColor);
 		rtv->Release();
 	}
 }
 
 static void draw(Vertex* vertices, u32 vertexCount, struct RenderBatch* batches, u32 count)
 {
-	if (!g_dx11DeviceContext || vertexCount == 0) return;
+	if (!dx11DeviceContext || vertexCount == 0) return;
 
-	// 1. contextUpdate the vertexbuffer with `vertices` data
 	if (sharedVb.count < vertexCount) sharedVb.resize(vertexCount);
 
 	D3D11_MAPPED_SUBRESOURCE mappedResource;
-	if (SUCCEEDED(g_dx11DeviceContext->Map(sharedVb.handle, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource)))
+	if (SUCCEEDED(dx11DeviceContext->Map(sharedVb.handle, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource)))
 	{
 		memcpy(mappedResource.pData, vertices, sizeof(Vertex) * vertexCount);
-		g_dx11DeviceContext->Unmap(sharedVb.handle, 0);
+		dx11DeviceContext->Unmap(sharedVb.handle, 0);
 	}
 
-	// contextUpdate mvp matrix
 	f32 m[4][4] = { 0 };
 	m[0][0] = 2.0f / currentViewport.width;
 	m[1][1] = -2.0f / currentViewport.height;
@@ -297,25 +302,25 @@ static void draw(Vertex* vertices, u32 vertexCount, struct RenderBatch* batches,
 	m[3][1] = 1.0f;
 	m[3][3] = 1.0f;
 
-	if (SUCCEEDED(g_dx11DeviceContext->Map(constantBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource)))
+	if (SUCCEEDED(dx11DeviceContext->Map(constantBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource)))
 	{
 		memcpy(mappedResource.pData, m, sizeof(m));
-		g_dx11DeviceContext->Unmap(constantBuffer, 0);
+		dx11DeviceContext->Unmap(constantBuffer, 0);
 	}
 
-	g_dx11DeviceContext->IASetInputLayout(inputLayout);
+	dx11DeviceContext->IASetInputLayout(inputLayout);
 	UINT stride = sizeof(Vertex);
 	UINT offset = 0;
-	g_dx11DeviceContext->IASetVertexBuffers(0, 1, &sharedVb.handle, &stride, &offset);
+	dx11DeviceContext->IASetVertexBuffers(0, 1, &sharedVb.handle, &stride, &offset);
 
-	g_dx11DeviceContext->VSSetShader(vertexShader, nullptr, 0);
-	g_dx11DeviceContext->VSSetConstantBuffers(0, 1, &constantBuffer);
-	g_dx11DeviceContext->PSSetShader(pixelShader, nullptr, 0);
-	g_dx11DeviceContext->PSSetSamplers(0, 1, &samplerState);
+	dx11DeviceContext->VSSetShader(vertexShader, nullptr, 0);
+	dx11DeviceContext->VSSetConstantBuffers(0, 1, &constantBuffer);
+	dx11DeviceContext->PSSetShader(pixelShader, nullptr, 0);
+	dx11DeviceContext->PSSetSamplers(0, 1, &samplerState);
 
-	g_dx11DeviceContext->OMSetBlendState(blendState, nullptr, 0xffffffff);
-	g_dx11DeviceContext->OMSetDepthStencilState(depthStencilState, 0);
-	g_dx11DeviceContext->RSSetState(rasterizerState);
+	dx11DeviceContext->OMSetBlendState(blendState, nullptr, 0xffffffff);
+	dx11DeviceContext->OMSetDepthStencilState(depthStencilState, 0);
+	dx11DeviceContext->RSSetState(rasterizerState);
 
 	for (u32 i = 0; i < count; i++)
 	{
@@ -323,21 +328,21 @@ static void draw(Vertex* vertices, u32 vertexCount, struct RenderBatch* batches,
 		D3D11_PRIMITIVE_TOPOLOGY top = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 		if (batch.primitiveType == RenderBatch::PrimitiveType::TriangleStrip) top = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP;
 
-		g_dx11DeviceContext->IASetPrimitiveTopology(top);
+		dx11DeviceContext->IASetPrimitiveTopology(top);
 
 		auto srv = (ID3D11ShaderResourceView*)batch.texture;
 		if (srv)
 		{
-			g_dx11DeviceContext->PSSetShaderResources(0, 1, &srv);
+			dx11DeviceContext->PSSetShaderResources(0, 1, &srv);
 		}
 
-		g_dx11DeviceContext->Draw(batch.vertexCount, batch.startVertexIndex);
+		dx11DeviceContext->Draw(batch.vertexCount, batch.startVertexIndex);
 	}
 }
 
 void resizeSwapchainForSdlWindowDx11(SdlWindowProxy* proxy)
 {
-	g_dx11DeviceContext->OMSetRenderTargets(0, nullptr, nullptr);
+	dx11DeviceContext->OMSetRenderTargets(0, nullptr, nullptr);
 	
 	if (proxy->dx11RTV) {
 		((ID3D11RenderTargetView*)proxy->dx11RTV)->Release();
@@ -350,7 +355,7 @@ void resizeSwapchainForSdlWindowDx11(SdlWindowProxy* proxy)
 	ID3D11Texture2D* backBuffer = nullptr;
 	sc->GetBuffer(0, __uuidof(ID3D11Texture2D), (void**)&backBuffer);
 	ID3D11RenderTargetView* rtv = nullptr;
-	g_dx11Device->CreateRenderTargetView(backBuffer, nullptr, &rtv);
+	dx11Device->CreateRenderTargetView(backBuffer, nullptr, &rtv);
 	proxy->dx11RTV = rtv;
 	backBuffer->Release();
 }
@@ -372,20 +377,20 @@ void createWindowDx11(HWND hwnd, SdlWindowProxy* proxy, const Rect& rect)
 	sd.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
 
 	IDXGIDevice* dxgiDevice = nullptr;
-	g_dx11Device->QueryInterface(__uuidof(IDXGIDevice), (void**)&dxgiDevice);
+	dx11Device->QueryInterface(__uuidof(IDXGIDevice), (void**)&dxgiDevice);
 	IDXGIAdapter* dxgiAdapter = nullptr;
 	dxgiDevice->GetParent(__uuidof(IDXGIAdapter), (void**)&dxgiAdapter);
 	IDXGIFactory* dxgiFactory = nullptr;
 	dxgiAdapter->GetParent(__uuidof(IDXGIFactory), (void**)&dxgiFactory);
 
 	IDXGISwapChain* swapchain = nullptr;
-	dxgiFactory->CreateSwapChain(g_dx11Device, &sd, &swapchain);
+	dxgiFactory->CreateSwapChain(dx11Device, &sd, &swapchain);
 	proxy->dx11SwapChain = swapchain;
 
 	ID3D11Texture2D* backBuffer = nullptr;
 	swapchain->GetBuffer(0, __uuidof(ID3D11Texture2D), (void**)&backBuffer);
 	ID3D11RenderTargetView* rtv = nullptr;
-	g_dx11Device->CreateRenderTargetView(backBuffer, nullptr, &rtv);
+	dx11Device->CreateRenderTargetView(backBuffer, nullptr, &rtv);
 	proxy->dx11RTV = rtv;
 	backBuffer->Release();
 
@@ -398,29 +403,25 @@ void setCurrentWindowDx11(SdlWindowProxy* proxy)
 {
 	if (proxy->dx11RTV) {
 		ID3D11RenderTargetView* rtv[] = { (ID3D11RenderTargetView*)proxy->dx11RTV };
-		g_dx11DeviceContext->OMSetRenderTargets(1, rtv, nullptr);
+		dx11DeviceContext->OMSetRenderTargets(1, rtv, nullptr);
 	}
 }
-
-// -------------------------------------------------------------------------
-// initialization & shutdown
-// -------------------------------------------------------------------------
 
 bool initDx11(Services& services)
 {
 	printf("Initializing HorusUI Direct3D 11 provider...\n");
 
-	if (!g_dx11Device)
+	if (!dx11Device)
 	{
 		UINT createDeviceFlags = 0;
 #ifdef _DEBUG
 		createDeviceFlags |= D3D11_CREATE_DEVICE_DEBUG;
 #endif
 		D3D_FEATURE_LEVEL featureLevel = D3D_FEATURE_LEVEL_11_0;
-		D3D11CreateDevice(nullptr, D3D_DRIVER_TYPE_HARDWARE, nullptr, createDeviceFlags, &featureLevel, 1, D3D11_SDK_VERSION, &g_dx11Device, nullptr, &g_dx11DeviceContext);
+		D3D11CreateDevice(nullptr, D3D_DRIVER_TYPE_HARDWARE, nullptr, createDeviceFlags, &featureLevel, 1, D3D11_SDK_VERSION, &dx11Device, nullptr, &dx11DeviceContext);
 	}
 
-	if (!g_dx11Device)
+	if (!dx11Device)
 	{
 		printf("Direct3D 11 device creation failed!\n");
 		return false;
@@ -431,40 +432,37 @@ bool initDx11(Services& services)
 	ID3DBlob* errBlob = nullptr;
 	D3DCompile(uiShaderSource, strlen(uiShaderSource), nullptr, nullptr, nullptr, "VSMain", "vs_5_0", 0, 0, &vsBlob, &errBlob);
 	if (errBlob) { printf("DX11 VS Error: %s\n", (char*)errBlob->GetBufferPointer()); errBlob->Release(); }
-	if (vsBlob) g_dx11Device->CreateVertexShader(vsBlob->GetBufferPointer(), vsBlob->GetBufferSize(), nullptr, &vertexShader);
+	if (vsBlob) dx11Device->CreateVertexShader(vsBlob->GetBufferPointer(), vsBlob->GetBufferSize(), nullptr, &vertexShader);
 
 	ID3DBlob* psBlob = nullptr;
 	D3DCompile(uiShaderSource, strlen(uiShaderSource), nullptr, nullptr, nullptr, "PSMain", "ps_5_0", 0, 0, &psBlob, &errBlob);
 	if (errBlob) { printf("DX11 PS Error: %s\n", (char*)errBlob->GetBufferPointer()); errBlob->Release(); }
-	if (psBlob) g_dx11Device->CreatePixelShader(psBlob->GetBufferPointer(), psBlob->GetBufferSize(), nullptr, &pixelShader);
+	if (psBlob) dx11Device->CreatePixelShader(psBlob->GetBufferPointer(), psBlob->GetBufferSize(), nullptr, &pixelShader);
 
 	D3D11_INPUT_ELEMENT_DESC layout[] = {
         { "POSITION", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
         { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 8, D3D11_INPUT_PER_VERTEX_DATA, 0 },
         { "COLOR", 0, DXGI_FORMAT_R8G8B8A8_UNORM, 0, 16, D3D11_INPUT_PER_VERTEX_DATA, 0 },
     };
-	if (vsBlob) g_dx11Device->CreateInputLayout(layout, 3, vsBlob->GetBufferPointer(), vsBlob->GetBufferSize(), &inputLayout);
+	if (vsBlob) dx11Device->CreateInputLayout(layout, 3, vsBlob->GetBufferPointer(), vsBlob->GetBufferSize(), &inputLayout);
 
     if (vsBlob) vsBlob->Release();
     if (psBlob) psBlob->Release();
 
-    // constant buffer
     D3D11_BUFFER_DESC cbDesc{};
     cbDesc.ByteWidth = sizeof(f32) * 16;
     cbDesc.Usage = D3D11_USAGE_DYNAMIC;
     cbDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
     cbDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
-	g_dx11Device->CreateBuffer(&cbDesc, nullptr, &constantBuffer);
+	dx11Device->CreateBuffer(&cbDesc, nullptr, &constantBuffer);
 
-    // sampler state
     D3D11_SAMPLER_DESC sampDesc{};
     sampDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
     sampDesc.AddressU = D3D11_TEXTURE_ADDRESS_CLAMP;
     sampDesc.AddressV = D3D11_TEXTURE_ADDRESS_CLAMP;
     sampDesc.AddressW = D3D11_TEXTURE_ADDRESS_CLAMP;
-	g_dx11Device->CreateSamplerState(&sampDesc, &samplerState);
+	dx11Device->CreateSamplerState(&sampDesc, &samplerState);
 
-    // blend state
     D3D11_BLEND_DESC blendDesc{};
     blendDesc.RenderTarget[0].BlendEnable = TRUE;
     blendDesc.RenderTarget[0].SrcBlend = D3D11_BLEND_SRC_ALPHA;
@@ -474,23 +472,20 @@ bool initDx11(Services& services)
     blendDesc.RenderTarget[0].DestBlendAlpha = D3D11_BLEND_INV_SRC_ALPHA;
     blendDesc.RenderTarget[0].BlendOpAlpha = D3D11_BLEND_OP_ADD;
     blendDesc.RenderTarget[0].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
-	g_dx11Device->CreateBlendState(&blendDesc, &blendState);
+	dx11Device->CreateBlendState(&blendDesc, &blendState);
 
-    // rasterizer state
     D3D11_RASTERIZER_DESC rsDesc{};
     rsDesc.FillMode = D3D11_FILL_SOLID;
     rsDesc.CullMode = D3D11_CULL_NONE;
     rsDesc.ScissorEnable = FALSE;
     rsDesc.DepthClipEnable = FALSE;
-	g_dx11Device->CreateRasterizerState(&rsDesc, &rasterizerState);
+	dx11Device->CreateRasterizerState(&rsDesc, &rasterizerState);
 
-    // depth Stencil State
     D3D11_DEPTH_STENCIL_DESC dsDesc{};
     dsDesc.DepthEnable = FALSE;
     dsDesc.StencilEnable = FALSE;
-	g_dx11Device->CreateDepthStencilState(&dsDesc, &depthStencilState);
+	dx11Device->CreateDepthStencilState(&dsDesc, &depthStencilState);
 
-	// hook into Horus UI Services
 	services.setViewport = setViewport;
 	services.clearBackbuffer = clearBackbuffer;
 	services.draw = draw;
@@ -512,17 +507,17 @@ void shutdownDx11(Services& services)
 	if (rasterizerState) { rasterizerState->Release(); rasterizerState = nullptr; }
 	if (depthStencilState) { depthStencilState->Release(); depthStencilState = nullptr; }
 
-	if (g_dx11DeviceContext)
+	if (dx11DeviceContext)
 	{
-		g_dx11DeviceContext->ClearState();
-		g_dx11DeviceContext->Release();
-		g_dx11DeviceContext = nullptr;
+		dx11DeviceContext->ClearState();
+		dx11DeviceContext->Release();
+		dx11DeviceContext = nullptr;
 	}
 
-	if (g_dx11Device)
+	if (dx11Device)
 	{
-		g_dx11Device->Release();
-		g_dx11Device = nullptr;
+		dx11Device->Release();
+		dx11Device = nullptr;
 	}
 
 	services.setViewport = nullptr;

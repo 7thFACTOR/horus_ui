@@ -14,10 +14,10 @@
 
 namespace hui
 {
-static ID3D12Device* g_dx12Device = nullptr;
-static ID3D12CommandQueue* g_dx12CommandQueue = nullptr;
-static ID3D12CommandAllocator* g_dx12CommandAllocator = nullptr;
-static ID3D12GraphicsCommandList* g_dx12CommandList = nullptr;
+static ID3D12Device* dx12Device = nullptr;
+static ID3D12CommandQueue* dx12CommandQueue = nullptr;
+static ID3D12CommandAllocator* dx12CommandAllocator = nullptr;
+static ID3D12GraphicsCommandList* dx12CommandList = nullptr;
 static Rect currentViewport;
 static ID3D12RootSignature* rootSignature = nullptr;
 static ID3D12PipelineState* pipelineState = nullptr;
@@ -47,8 +47,8 @@ struct FrameData
     }
 };
 
-static FrameData g_frames[HUI_DX12_NUM_FRAMES_IN_FLIGHT];
-static u32 g_currentFrameIndex = 0;
+static FrameData frames[HUI_DX12_NUM_FRAMES_IN_FLIGHT];
+static u32 currentFrameIndex = 0;
 static ID3D12DescriptorHeap* srvHeap = nullptr;
 static u32 srvHeapIndexCount = 1;
 static ID3D12CommandAllocator* uploadAllocator = nullptr;
@@ -59,10 +59,6 @@ static ID3D12Fence* globalFence = nullptr;
 static UINT64 fenceValue = 0;
 static HANDLE fenceEvent = nullptr;
 static UINT64 pendingUploadFenceValue = 0; // tracks last submitted (but not waited) upload
-
-// -------------------------------------------------------------------------
-// dx12Texture implementation
-// -------------------------------------------------------------------------
 
 Dx12Texture::Dx12Texture(u32 newWidth, u32 newHeight, Rgba32* pixels)
 {
@@ -82,7 +78,7 @@ Dx12Texture::~Dx12Texture()
 
 void Dx12Texture::resize(u32 newWidth, u32 newHeight)
 {
-	if (!g_dx12Device) return;
+	if (!dx12Device) return;
 
 	destroy();
 
@@ -106,7 +102,7 @@ void Dx12Texture::resize(u32 newWidth, u32 newHeight)
 	D3D12_HEAP_PROPERTIES heapProps{};
 	heapProps.Type = D3D12_HEAP_TYPE_DEFAULT;
 
-	if (FAILED(g_dx12Device->CreateCommittedResource(
+	if (FAILED(dx12Device->CreateCommittedResource(
 		&heapProps,
 		D3D12_HEAP_FLAG_NONE,
 		&desc,
@@ -138,7 +134,7 @@ void Dx12Texture::resize(u32 newWidth, u32 newHeight)
 	uploadDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
 	uploadDesc.Flags = D3D12_RESOURCE_FLAG_NONE;
 
-	if (FAILED(g_dx12Device->CreateCommittedResource(
+	if (FAILED(dx12Device->CreateCommittedResource(
 		&uploadHeapProps,
 		D3D12_HEAP_FLAG_NONE,
 		&uploadDesc,
@@ -158,18 +154,18 @@ void Dx12Texture::resize(u32 newWidth, u32 newHeight)
 	srvViewDesc.Texture2D.MipLevels = 1;
 	
 	D3D12_CPU_DESCRIPTOR_HANDLE handleCpu = srvHeap->GetCPUDescriptorHandleForHeapStart();
-	handleCpu.ptr += this->srvHeapIndex * g_dx12Device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+	handleCpu.ptr += this->srvHeapIndex * dx12Device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 	
-	g_dx12Device->CreateShaderResourceView(handle, &srvViewDesc, handleCpu);
+	dx12Device->CreateShaderResourceView(handle, &srvViewDesc, handleCpu);
 }
 
 void Dx12Texture::updateData(Rgba32* pixels)
 {
-	if (!g_dx12Device || !handle || !uploadBuffer || !pixels) return;
+	if (!dx12Device || !handle || !uploadBuffer || !pixels) return;
 
 	// ensure the fence + event exist (created lazily)
 	if (!globalFence) {
-		g_dx12Device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&globalFence));
+		dx12Device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&globalFence));
 		fenceEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
 	}
 
@@ -224,7 +220,7 @@ void Dx12Texture::updateData(Rgba32* pixels)
 	src.Type = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT;
 
 	D3D12_RESOURCE_DESC desc = handle->GetDesc();
-	g_dx12Device->GetCopyableFootprints(&desc, 0, 1, 0, &src.PlacedFootprint, nullptr, nullptr, nullptr);
+	dx12Device->GetCopyableFootprints(&desc, 0, 1, 0, &src.PlacedFootprint, nullptr, nullptr, nullptr);
 	uploadCmdList->CopyTextureRegion(&dst, 0, 0, 0, &src, nullptr);
 
 	// transition to PIXEL_SHADER_RESOURCE so it is ready for drawing.
@@ -238,21 +234,115 @@ void Dx12Texture::updateData(Rgba32* pixels)
 	uploadCmdList->Close();
 
 	ID3D12CommandList* ppCmds[] = { uploadCmdList };
-	g_dx12CommandQueue->ExecuteCommandLists(1, ppCmds);
+	dx12CommandQueue->ExecuteCommandLists(1, ppCmds);
 
 	// signal the fence async — do NOT wait here. Any draw commands submitted
 	// after this on the same queue are guaranteed to execute after this upload.
 	fenceValue++;
 	pendingUploadFenceValue = fenceValue;
-	g_dx12CommandQueue->Signal(globalFence, fenceValue);
+	dx12CommandQueue->Signal(globalFence, fenceValue);
 
 	isUploaded = true;
 }
 
 void Dx12Texture::updateRectData(const Rect& rect, Rgba32* pixels)
 {
-	if (!g_dx12Device || !handle || !pixels) return;
-	// similar to updateData but updating a specific region copy footprint
+	if (!dx12Device || !handle || !uploadBuffer || !pixels) return;
+
+	u32 x = (u32)rect.x;
+	u32 y = (u32)rect.y;
+	u32 w = (u32)rect.width;
+	u32 h = (u32)rect.height;
+
+	if (x >= width || y >= height) return;
+	if (x + w > width) w = width - x;
+	if (y + h > height) h = height - y;
+	if (w == 0 || h == 0) return;
+
+	// ensure the fence + event exist (created lazily)
+	if (!globalFence) {
+		dx12Device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&globalFence));
+		fenceEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
+	}
+
+	// wait for the PREVIOUS upload to finish before resetting the upload allocator.
+	// we do NOT wait for the current upload — it is submitted asynchronously and
+	// will complete on the GPU before any draw commands issued after this point
+	// (queue ordering guarantees this).
+	if (pendingUploadFenceValue > 0 && globalFence->GetCompletedValue() < pendingUploadFenceValue) {
+		globalFence->SetEventOnCompletion(pendingUploadFenceValue, fenceEvent);
+		WaitForSingleObject(fenceEvent, INFINITE);
+	}
+
+	UINT rowPitch = w * sizeof(Rgba32);
+	UINT alignedPitch = (rowPitch + 255) & ~255;
+
+	void* mappedData = nullptr;
+	D3D12_RANGE readRange{ 0, 0 };
+	if (SUCCEEDED(uploadBuffer->Map(0, &readRange, &mappedData)))
+	{
+		u8* dst = (u8*)mappedData;
+		u8* src = (u8*)pixels;
+		for (u32 row = 0; row < h; ++row) {
+			memcpy(dst, src, rowPitch);
+			dst += alignedPitch;
+			src += rowPitch;
+		}
+		uploadBuffer->Unmap(0, nullptr);
+	}
+
+	uploadAllocator->Reset();
+	uploadCmdList->Reset(uploadAllocator, nullptr);
+
+	// if already uploaded the texture is in PIXEL_SHADER_RESOURCE state;
+	// transition it back to COPY_DEST before copying.
+	if (isUploaded) {
+		D3D12_RESOURCE_BARRIER toCopyDest{};
+		toCopyDest.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+		toCopyDest.Transition.pResource = handle;
+		toCopyDest.Transition.StateBefore = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
+		toCopyDest.Transition.StateAfter = D3D12_RESOURCE_STATE_COPY_DEST;
+		toCopyDest.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+		uploadCmdList->ResourceBarrier(1, &toCopyDest);
+	}
+
+	D3D12_TEXTURE_COPY_LOCATION dst{};
+	dst.pResource = handle;
+	dst.Type = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
+	dst.SubresourceIndex = 0;
+
+	D3D12_TEXTURE_COPY_LOCATION src{};
+	src.pResource = uploadBuffer;
+	src.Type = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT;
+	src.PlacedFootprint.Offset = 0;
+	src.PlacedFootprint.Footprint.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+	src.PlacedFootprint.Footprint.Width = w;
+	src.PlacedFootprint.Footprint.Height = h;
+	src.PlacedFootprint.Footprint.Depth = 1;
+	src.PlacedFootprint.Footprint.RowPitch = alignedPitch;
+
+	uploadCmdList->CopyTextureRegion(&dst, x, y, 0, &src, nullptr);
+
+	// transition to PIXEL_SHADER_RESOURCE so it is ready for drawing.
+	D3D12_RESOURCE_BARRIER toSRV{};
+	toSRV.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+	toSRV.Transition.pResource = handle;
+	toSRV.Transition.StateBefore = D3D12_RESOURCE_STATE_COPY_DEST;
+	toSRV.Transition.StateAfter = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
+	toSRV.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+	uploadCmdList->ResourceBarrier(1, &toSRV);
+	uploadCmdList->Close();
+
+	ID3D12CommandList* ppCmds[] = { uploadCmdList };
+	dx12CommandQueue->ExecuteCommandLists(1, ppCmds);
+
+	// signal the fence async — do NOT wait here. Any draw commands submitted
+	// after this on the same queue are guaranteed to execute after this upload.
+	fenceValue++;
+	pendingUploadFenceValue = fenceValue;
+	dx12CommandQueue->Signal(globalFence, fenceValue);
+
+	isUploaded = true;
 }
 
 void Dx12Texture::destroy()
@@ -268,10 +358,6 @@ void Dx12Texture::destroy()
 		handle = nullptr;
 	}
 }
-
-// -------------------------------------------------------------------------
-// dx12VertexBuffer implementation
-// -------------------------------------------------------------------------
 
 Dx12VertexBuffer::Dx12VertexBuffer() {}
 
@@ -294,7 +380,7 @@ void Dx12VertexBuffer::create(u32 count)
 
 void Dx12VertexBuffer::resize(u32 count)
 {
-	if (!g_dx12Device) return;
+	if (!dx12Device) return;
 	if (count == 0) return;
 
 	destroy();
@@ -318,7 +404,7 @@ void Dx12VertexBuffer::resize(u32 count)
 	desc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
 	desc.Flags = D3D12_RESOURCE_FLAG_NONE;
 
-	if (FAILED(g_dx12Device->CreateCommittedResource(
+	if (FAILED(dx12Device->CreateCommittedResource(
 		&heapProps,
 		D3D12_HEAP_FLAG_NONE,
 		&desc,
@@ -337,7 +423,7 @@ void Dx12VertexBuffer::resize(u32 count)
 
 void Dx12VertexBuffer::updateData(Vertex* vertices, u32 startVertexIndex, u32 count)
 {
-	if (!g_dx12Device || !handle || !vertices || count == 0) return;
+	if (!dx12Device || !handle || !vertices || count == 0) return;
 
 	void* mappedData = nullptr;
 	D3D12_RANGE readRange{0, 0};
@@ -359,14 +445,10 @@ void Dx12VertexBuffer::destroy()
 	count = 0;
 }
 
-// -------------------------------------------------------------------------
-// ui rendering services callbacks
-// -------------------------------------------------------------------------
-
 static void setViewport(const Point& windowSize, const Rect& viewport)
 {
 	currentViewport = viewport;
-	if (g_dx12CommandList)
+	if (dx12CommandList)
 	{
 		D3D12_VIEWPORT vp{};
 		vp.TopLeftX = viewport.x;
@@ -375,42 +457,39 @@ static void setViewport(const Point& windowSize, const Rect& viewport)
 		vp.Height = viewport.height;
 		vp.MinDepth = 0.0f;
 		vp.MaxDepth = 1.0f;
-		g_dx12CommandList->RSSetViewports(1, &vp);
+		dx12CommandList->RSSetViewports(1, &vp);
 
         D3D12_RECT scissor{};
         scissor.left = (LONG)viewport.x;
         scissor.top = (LONG)viewport.y;
         scissor.right = (LONG)(viewport.x + viewport.width);
         scissor.bottom = (LONG)(viewport.y + viewport.height);
-		g_dx12CommandList->RSSetScissorRects(1, &scissor);
+		dx12CommandList->RSSetScissorRects(1, &scissor);
 	}
 }
 
 static void clearBackbuffer(const Color& color)
 {
-	if (!g_dx12CommandList) return;
+	if (!dx12CommandList) return;
 	float clearColor[4] = { color.r, color.g, color.b, color.a };
-	g_dx12CommandList->ClearRenderTargetView(currentRtvHandle, clearColor, 0, nullptr);
+	dx12CommandList->ClearRenderTargetView(currentRtvHandle, clearColor, 0, nullptr);
 }
 
 static void draw(Vertex* vertices, u32 vertexCount, struct RenderBatch* batches, u32 count)
 {
-	if (!g_dx12CommandList || !commandListRecording) return;
+	if (!dx12CommandList || !commandListRecording) return;
 	if (!vertices || vertexCount == 0 || !batches || count == 0) return;
 
-	// 1. set root signature and pipeline state
-	g_dx12CommandList->SetGraphicsRootSignature(rootSignature);
-	g_dx12CommandList->SetPipelineState(pipelineState);
-	g_dx12CommandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+	dx12CommandList->SetGraphicsRootSignature(rootSignature);
+	dx12CommandList->SetPipelineState(pipelineState);
+	dx12CommandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
-	// 2. contextUpdate shared vertex buffer
-	auto vb = g_frames[g_currentFrameIndex].getNextVertexBuffer();
+	auto vb = frames[currentFrameIndex].getNextVertexBuffer();
 	if (vb->count < vertexCount) vb->resize(vertexCount);
 	if (!vb->handle) return;
 	vb->updateData(vertices, 0, vertexCount);
-	g_dx12CommandList->IASetVertexBuffers(0, 1, &vb->view);
+	dx12CommandList->IASetVertexBuffers(0, 1, &vb->view);
 
-	// 3. contextUpdate mvp
 	f32 m[16] = { 0 };
 	m[0] = 2.0f / currentViewport.width;
 	m[5] = -2.0f / currentViewport.height;
@@ -418,12 +497,12 @@ static void draw(Vertex* vertices, u32 vertexCount, struct RenderBatch* batches,
 	m[12] = -1.0f;
 	m[13] = 1.0f;
 	m[15] = 1.0f;
-	g_dx12CommandList->SetGraphicsRoot32BitConstants(0, 16, m, 0);
+	dx12CommandList->SetGraphicsRoot32BitConstants(0, 16, m, 0);
 
 	ID3D12DescriptorHeap* heaps[] = { srvHeap };
-	g_dx12CommandList->SetDescriptorHeaps(1, heaps);
+	dx12CommandList->SetDescriptorHeaps(1, heaps);
 
-	// 4. iterate batches and draw
+	// iterate batches and draw
     for (u32 i = 0; i < count; i++) {
         auto& batch = batches[i];
         if (batch.vertexCount == 0) continue;
@@ -435,22 +514,22 @@ static void draw(Vertex* vertices, u32 vertexCount, struct RenderBatch* batches,
         }
         
         D3D12_GPU_DESCRIPTOR_HANDLE gpuHandle = srvHeap->GetGPUDescriptorHandleForHeapStart();
-        gpuHandle.ptr += texIndex * g_dx12Device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-		g_dx12CommandList->SetGraphicsRootDescriptorTable(1, gpuHandle);
-		g_dx12CommandList->DrawInstanced(batch.vertexCount, 1, batch.startVertexIndex, 0);
+        gpuHandle.ptr += texIndex * dx12Device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+		dx12CommandList->SetGraphicsRootDescriptorTable(1, gpuHandle);
+		dx12CommandList->DrawInstanced(batch.vertexCount, 1, batch.startVertexIndex, 0);
     }
 }
 
 static void flushDX12Queue() {
-    if (!g_dx12Device || !g_dx12CommandQueue) return;
+    if (!dx12Device || !dx12CommandQueue) return;
 
     if (!globalFence) {
-		g_dx12Device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&globalFence));
+		dx12Device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&globalFence));
         fenceEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
     }
     
     fenceValue++;
-	g_dx12CommandQueue->Signal(globalFence, fenceValue);
+	dx12CommandQueue->Signal(globalFence, fenceValue);
     
     if (globalFence->GetCompletedValue() < fenceValue) {
         globalFence->SetEventOnCompletion(fenceValue, fenceEvent);
@@ -460,20 +539,20 @@ static void flushDX12Queue() {
 
 static void submitAndAdvance() {
     if (!commandListRecording) return;
-	g_dx12CommandList->Close();
-    ID3D12CommandList* ppCommandLists[] = { g_dx12CommandList };
-	g_dx12CommandQueue->ExecuteCommandLists(1, ppCommandLists);
+	dx12CommandList->Close();
+    ID3D12CommandList* ppCommandLists[] = { dx12CommandList };
+	dx12CommandQueue->ExecuteCommandLists(1, ppCommandLists);
     
     if (!globalFence) {
-		g_dx12Device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&globalFence));
+		dx12Device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&globalFence));
         fenceEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
     }
 
     fenceValue++;
-    g_frames[g_currentFrameIndex].fenceValue = fenceValue;
-	g_dx12CommandQueue->Signal(globalFence, fenceValue);
+    frames[currentFrameIndex].fenceValue = fenceValue;
+	dx12CommandQueue->Signal(globalFence, fenceValue);
     
-    g_currentFrameIndex = (g_currentFrameIndex + 1) % HUI_DX12_NUM_FRAMES_IN_FLIGHT;
+    currentFrameIndex = (currentFrameIndex + 1) % HUI_DX12_NUM_FRAMES_IN_FLIGHT;
     commandListRecording = false;
 }
 
@@ -481,18 +560,18 @@ static void beginRecordingIfNeeded() {
     if (commandListRecording) return;
     
     if (!globalFence) {
-		g_dx12Device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&globalFence));
+		dx12Device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&globalFence));
         fenceEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
     }
 
-    if (globalFence->GetCompletedValue() < g_frames[g_currentFrameIndex].fenceValue) {
-        globalFence->SetEventOnCompletion(g_frames[g_currentFrameIndex].fenceValue, fenceEvent);
+    if (globalFence->GetCompletedValue() < frames[currentFrameIndex].fenceValue) {
+        globalFence->SetEventOnCompletion(frames[currentFrameIndex].fenceValue, fenceEvent);
         WaitForSingleObject(fenceEvent, INFINITE);
     }
     
-    g_frames[g_currentFrameIndex].commandAllocator->Reset();
-	g_dx12CommandList->Reset(g_frames[g_currentFrameIndex].commandAllocator, pipelineState);
-    g_frames[g_currentFrameIndex].currentVbIndex = 0;
+    frames[currentFrameIndex].commandAllocator->Reset();
+	dx12CommandList->Reset(frames[currentFrameIndex].commandAllocator, pipelineState);
+    frames[currentFrameIndex].currentVbIndex = 0;
     commandListRecording = true;
 }
 
@@ -527,13 +606,13 @@ void dx12SetCurrentRenderTarget(SIZE_T rtvPtr, ID3D12Resource* backBuffer)
             barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_PRESENT;
             barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET;
             barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
-			g_dx12CommandList->ResourceBarrier(1, &barrier);
+			dx12CommandList->ResourceBarrier(1, &barrier);
             rtStateResources.insert(backBuffer);
         }
     }
     
     if (rtvPtr != 0) {
-		g_dx12CommandList->OMSetRenderTargets(1, &currentRtvHandle, FALSE, nullptr);
+		dx12CommandList->OMSetRenderTargets(1, &currentRtvHandle, FALSE, nullptr);
     }
 }
 
@@ -548,7 +627,7 @@ void dx12PreparePresent(ID3D12Resource* backBuffer)
                 barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
                 barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_PRESENT;
                 barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
-				g_dx12CommandList->ResourceBarrier(1, &barrier);
+				dx12CommandList->ResourceBarrier(1, &barrier);
                 rtStateResources.erase(backBuffer);
             }
         }
@@ -558,7 +637,7 @@ void dx12PreparePresent(ID3D12Resource* backBuffer)
 
 void createWindowDx12(HWND hwnd, SdlWindowProxy* proxy, const Rect& rect)
 {
-	if (g_dx12CommandQueue) {
+	if (dx12CommandQueue) {
 		DXGI_SWAP_CHAIN_DESC1 sd{};
 		sd.BufferCount = 2;
 		sd.Width = rect.width;
@@ -573,7 +652,7 @@ void createWindowDx12(HWND hwnd, SdlWindowProxy* proxy, const Rect& rect)
 		IDXGISwapChain3* swapchain = nullptr;
 
 		CreateDXGIFactory1(IID_PPV_ARGS(&factory));
-		factory->CreateSwapChainForHwnd(g_dx12CommandQueue, hwnd, &sd, nullptr, nullptr, &swapChain1);
+		factory->CreateSwapChainForHwnd(dx12CommandQueue, hwnd, &sd, nullptr, nullptr, &swapChain1);
 		swapChain1->QueryInterface(IID_PPV_ARGS(&swapchain));
 		proxy->dx12SwapChain = swapchain;
 		swapChain1->Release();
@@ -584,16 +663,16 @@ void createWindowDx12(HWND hwnd, SdlWindowProxy* proxy, const Rect& rect)
 		rtvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
 		rtvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
 		ID3D12DescriptorHeap* rtvHeap = nullptr;
-		g_dx12Device->CreateDescriptorHeap(&rtvHeapDesc, IID_PPV_ARGS(&rtvHeap));
+		dx12Device->CreateDescriptorHeap(&rtvHeapDesc, IID_PPV_ARGS(&rtvHeap));
 		proxy->dx12RTVHeap = rtvHeap;
 
-		SIZE_T rtvDescriptorSize = g_dx12Device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
+		SIZE_T rtvDescriptorSize = dx12Device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
 		D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle = rtvHeap->GetCPUDescriptorHandleForHeapStart();
 		
 		for (UINT n = 0; n < 2; n++) {
 			ID3D12Resource* backBuffer = nullptr;
 			swapchain->GetBuffer(n, IID_PPV_ARGS(&backBuffer));
-			g_dx12Device->CreateRenderTargetView(backBuffer, nullptr, rtvHandle);
+			dx12Device->CreateRenderTargetView(backBuffer, nullptr, rtvHandle);
 			backBuffer->Release();
 			rtvHandle.ptr += rtvDescriptorSize;
 		}
@@ -610,7 +689,7 @@ void setCurrentWindowDx12(SdlWindowProxy* proxy)
 		proxy->dx12CurrentBackBuffer = sc->GetCurrentBackBufferIndex();
 
 		auto heap = (ID3D12DescriptorHeap*)proxy->dx12RTVHeap;
-		SIZE_T size = g_dx12Device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
+		SIZE_T size = dx12Device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
 		D3D12_CPU_DESCRIPTOR_HANDLE handle = heap->GetCPUDescriptorHandleForHeapStart();
 	
 		handle.ptr += size * proxy->dx12CurrentBackBuffer;
@@ -643,12 +722,12 @@ void resizeSwapchainForSdlWindowDx12(SdlWindowProxy* proxy)
 	sc->ResizeBuffers(0, 0, 0, DXGI_FORMAT_UNKNOWN, 0);
 
 	auto rtvHeap = (ID3D12DescriptorHeap*)proxy->dx12RTVHeap;
-	SIZE_T rtvDescriptorSize = g_dx12Device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
+	SIZE_T rtvDescriptorSize = dx12Device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
 	D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle = rtvHeap->GetCPUDescriptorHandleForHeapStart();
 	for (UINT n = 0; n < 2; n++) {
 		ID3D12Resource* backBuffer = nullptr;
 		sc->GetBuffer(n, IID_PPV_ARGS(&backBuffer));
-		g_dx12Device->CreateRenderTargetView(backBuffer, nullptr, rtvHandle);
+		dx12Device->CreateRenderTargetView(backBuffer, nullptr, rtvHandle);
 		backBuffer->Release();
 		rtvHandle.ptr += rtvDescriptorSize;
 	}
@@ -656,15 +735,11 @@ void resizeSwapchainForSdlWindowDx12(SdlWindowProxy* proxy)
 	proxy->dx12CurrentBackBuffer = sc->GetCurrentBackBufferIndex();
 }
 
-// -------------------------------------------------------------------------
-// initialization & shutdown
-// -------------------------------------------------------------------------
-
 bool initDx12(Services& services)
 {
 	printf("Initializing HorusUI Direct3D 12 provider...\n");
 
-	if (!g_dx12Device)
+	if (!dx12Device)
 	{
 #if defined(_DEBUG)
 		ID3D12Debug* debugController;
@@ -680,43 +755,42 @@ bool initDx12(Services& services)
 			DXGI_ADAPTER_DESC1 desc;
 			adapter->GetDesc1(&desc);
 			if (desc.Flags & DXGI_ADAPTER_FLAG_SOFTWARE) continue;
-			if (SUCCEEDED(D3D12CreateDevice(adapter, D3D_FEATURE_LEVEL_11_0, IID_PPV_ARGS(&g_dx12Device)))) break;
+			if (SUCCEEDED(D3D12CreateDevice(adapter, D3D_FEATURE_LEVEL_11_0, IID_PPV_ARGS(&dx12Device)))) break;
 			adapter->Release(); adapter = nullptr;
 		}
-		if (g_dx12Device) {
+		if (dx12Device) {
 			D3D12_COMMAND_QUEUE_DESC queueDesc{};
 			queueDesc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
 			queueDesc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
-			g_dx12Device->CreateCommandQueue(&queueDesc, IID_PPV_ARGS(&g_dx12CommandQueue));
-			g_dx12Device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&g_dx12CommandAllocator));
-			g_dx12Device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, g_dx12CommandAllocator, nullptr, IID_PPV_ARGS(&g_dx12CommandList));
-			g_dx12CommandList->Close();
+			dx12Device->CreateCommandQueue(&queueDesc, IID_PPV_ARGS(&dx12CommandQueue));
+			dx12Device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&dx12CommandAllocator));
+			dx12Device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, dx12CommandAllocator, nullptr, IID_PPV_ARGS(&dx12CommandList));
+			dx12CommandList->Close();
             
             for (int i = 0; i < HUI_DX12_NUM_FRAMES_IN_FLIGHT; ++i) {
-                g_dx12Device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&g_frames[i].commandAllocator));
-                g_frames[i].fenceValue = 0;
+                dx12Device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&frames[i].commandAllocator));
+                frames[i].fenceValue = 0;
             }
-            g_currentFrameIndex = 0;
+            currentFrameIndex = 0;
 		}
 		if (adapter) adapter->Release();
 		if (factory) factory->Release();
 	}
 
-	if (!g_dx12Device)
+	if (!dx12Device)
 	{
 		printf("Direct3D 12 device creation failed!\n");
 		return false;
 	}
 
-	// 1. root Signature
 	D3D12_DESCRIPTOR_HEAP_DESC srvHeapDesc{};
 	srvHeapDesc.NumDescriptors = 10000;
 	srvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
 	srvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
-	g_dx12Device->CreateDescriptorHeap(&srvHeapDesc, IID_PPV_ARGS(&srvHeap));
+	dx12Device->CreateDescriptorHeap(&srvHeapDesc, IID_PPV_ARGS(&srvHeap));
 
-	g_dx12Device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&uploadAllocator));
-	g_dx12Device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, uploadAllocator, nullptr, IID_PPV_ARGS(&uploadCmdList));
+	dx12Device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&uploadAllocator));
+	dx12Device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, uploadAllocator, nullptr, IID_PPV_ARGS(&uploadCmdList));
 	uploadCmdList->Close();
 
 	// create a 1x1 white default texture for index 0 (used when no texture is bound during draw)
@@ -734,7 +808,7 @@ bool initDx12(Services& services)
 		whiteDesc.Flags = D3D12_RESOURCE_FLAG_NONE;
 		
 		D3D12_HEAP_PROPERTIES whiteHeap{}; whiteHeap.Type = D3D12_HEAP_TYPE_DEFAULT;
-		g_dx12Device->CreateCommittedResource(&whiteHeap, D3D12_HEAP_FLAG_NONE, &whiteDesc,
+		dx12Device->CreateCommittedResource(&whiteHeap, D3D12_HEAP_FLAG_NONE, &whiteDesc,
 			D3D12_RESOURCE_STATE_COPY_DEST, nullptr, IID_PPV_ARGS(&whiteTex->handle));
 		
 		D3D12_SHADER_RESOURCE_VIEW_DESC whiteSrvDesc{};
@@ -742,7 +816,7 @@ bool initDx12(Services& services)
 		whiteSrvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
 		whiteSrvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
 		whiteSrvDesc.Texture2D.MipLevels = 1;
-		g_dx12Device->CreateShaderResourceView(whiteTex->handle, &whiteSrvDesc,
+		dx12Device->CreateShaderResourceView(whiteTex->handle, &whiteSrvDesc,
 			srvHeap->GetCPUDescriptorHandleForHeapStart());
 			
 		// upload 1x1 white pixel
@@ -774,7 +848,6 @@ bool initDx12(Services& services)
 	rootParameters[1].DescriptorTable.pDescriptorRanges = &range;
 	rootParameters[1].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
 
-	// static sampler
 	D3D12_STATIC_SAMPLER_DESC sampler{};
 	sampler.Filter = D3D12_FILTER_MIN_MAG_MIP_LINEAR;
 	sampler.AddressU = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
@@ -803,10 +876,9 @@ bool initDx12(Services& services)
 		if (error) { printf("Root Signature Error: %s\n", (char*)error->GetBufferPointer()); error->Release(); }
 		return false;
 	}
-	g_dx12Device->CreateRootSignature(0, signature->GetBufferPointer(), signature->GetBufferSize(), IID_PPV_ARGS(&rootSignature));
+	dx12Device->CreateRootSignature(0, signature->GetBufferPointer(), signature->GetBufferSize(), IID_PPV_ARGS(&rootSignature));
 	signature->Release();
 
-	// 2. shaders
 	const char* shaderSource = R"(
 cbuffer constants : register(b0) {
     matrix mvp;
@@ -842,7 +914,6 @@ float4 PSMain(PS_INPUT input) : SV_TARGET {
 	D3DCompile(shaderSource, strlen(shaderSource), nullptr, nullptr, nullptr, "PSMain", "ps_5_0", 0, 0, &psBlob, &error);
 	if (error) { printf("PS Compile Error: %s\n", (char*)error->GetBufferPointer()); error->Release(); }
 
-	// 3. pipeline State
 	D3D12_INPUT_ELEMENT_DESC inputLayout[] = {
 		{ "POSITION", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
 		{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 8, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
@@ -898,11 +969,10 @@ float4 PSMain(PS_INPUT input) : SV_TARGET {
 	psoDesc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
 	psoDesc.SampleDesc.Count = 1;
 
-	g_dx12Device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&pipelineState));
+	dx12Device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&pipelineState));
 	vsBlob->Release();
 	psBlob->Release();
 
-	// hook into Horus UI Services
 	services.setViewport = setViewport;
 	services.clearBackbuffer = clearBackbuffer;
 	services.draw = draw;
@@ -917,8 +987,8 @@ void shutdownDx12(Services& services)
     flushDX12Queue();
 
     for (int i = 0; i < HUI_DX12_NUM_FRAMES_IN_FLIGHT; ++i) {
-        g_frames[i].destroy();
-        g_frames[i].fenceValue = 0;
+        frames[i].destroy();
+        frames[i].fenceValue = 0;
     }
 
 	if (rootSignature) { rootSignature->Release(); rootSignature = nullptr; }
@@ -931,28 +1001,28 @@ void shutdownDx12(Services& services)
 	if (uploadCmdList) { uploadCmdList->Release(); uploadCmdList = nullptr; }
 	if (uploadAllocator) { uploadAllocator->Release(); uploadAllocator = nullptr; }
 
-	if (g_dx12CommandList)
+	if (dx12CommandList)
 	{
-		g_dx12CommandList->Release();
-		g_dx12CommandList = nullptr;
+		dx12CommandList->Release();
+		dx12CommandList = nullptr;
 	}
 
-	if (g_dx12CommandAllocator)
+	if (dx12CommandAllocator)
 	{
-		g_dx12CommandAllocator->Release();
-		g_dx12CommandAllocator = nullptr;
+		dx12CommandAllocator->Release();
+		dx12CommandAllocator = nullptr;
 	}
 
-	if (g_dx12CommandQueue)
+	if (dx12CommandQueue)
 	{
-		g_dx12CommandQueue->Release();
-		g_dx12CommandQueue = nullptr;
+		dx12CommandQueue->Release();
+		dx12CommandQueue = nullptr;
 	}
 
-	if (g_dx12Device)
+	if (dx12Device)
 	{
-		g_dx12Device->Release();
-		g_dx12Device = nullptr;
+		dx12Device->Release();
+		dx12Device = nullptr;
 	}
 
 	services.setViewport = nullptr;
