@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <string>
 #include <vector>
+#include <map>
 
 namespace hui
 {
@@ -425,11 +426,11 @@ namespace
 {
 struct DemoVfsEntry
 {
-	const char* name;
+	std::string name;
 	bool isDirectory;
 };
 
-const DemoVfsEntry demoVfsRoot[] = {
+std::vector<DemoVfsEntry> demoVfsRoot = {
 	{ "Assets", true },
 	{ "Scenes", true },
 	{ "Shaders", true },
@@ -438,7 +439,7 @@ const DemoVfsEntry demoVfsRoot[] = {
 	{ "splash.png", false },
 };
 
-const DemoVfsEntry demoVfsAssets[] = {
+std::vector<DemoVfsEntry> demoVfsAssets = {
 	{ "Audio", true },
 	{ "Meshes", true },
 	{ "Textures", true },
@@ -446,62 +447,79 @@ const DemoVfsEntry demoVfsAssets[] = {
 	{ "house.fbx", false },
 };
 
-const DemoVfsEntry demoVfsAssetsAudio[] = {
+std::vector<DemoVfsEntry> demoVfsAssetsAudio = {
 	{ "shoot.wav", false },
 	{ "theme.ogg", false },
 };
 
-const DemoVfsEntry demoVfsScenes[] = {
+std::vector<DemoVfsEntry> demoVfsScenes = {
 	{ "level1.lua", false },
 	{ "level2.lua", false },
 };
 
-const DemoVfsEntry demoVfsShaders[] = {
+std::vector<DemoVfsEntry> demoVfsShaders = {
 	{ "default.frag", false },
 	{ "default.vert", false },
 };
 
+// folders created while the demo dialog is open, keyed by the path they live in
+std::map<std::string, std::vector<DemoVfsEntry>> demoVfsExtras;
+
+const std::vector<DemoVfsEntry>* demoVfsLookup(const char* path)
+{
+	if (strcmp(path, "/") == 0) return &demoVfsRoot;
+	if (strcmp(path, "/Assets") == 0) return &demoVfsAssets;
+	if (strcmp(path, "/Assets/Audio") == 0) return &demoVfsAssetsAudio;
+	if (strcmp(path, "/Scenes") == 0) return &demoVfsScenes;
+	if (strcmp(path, "/Shaders") == 0) return &demoVfsShaders;
+	return nullptr;
+}
+
 void demoCustomFileDialogList(const char* path, std::vector<CustomFileDialogEntry>& outEntries, void* userData)
 {
-	const DemoVfsEntry* src = nullptr;
-	size_t count = 0;
-
-	if (strcmp(path, "/") == 0)
-	{
-		src = demoVfsRoot;
-		count = sizeof(demoVfsRoot) / sizeof(demoVfsRoot[0]);
-	}
-	else if (strcmp(path, "/Assets") == 0)
-	{
-		src = demoVfsAssets;
-		count = sizeof(demoVfsAssets) / sizeof(demoVfsAssets[0]);
-	}
-	else if (strcmp(path, "/Assets/Audio") == 0)
-	{
-		src = demoVfsAssetsAudio;
-		count = sizeof(demoVfsAssetsAudio) / sizeof(demoVfsAssetsAudio[0]);
-	}
-	else if (strcmp(path, "/Scenes") == 0)
-	{
-		src = demoVfsScenes;
-		count = sizeof(demoVfsScenes) / sizeof(demoVfsScenes[0]);
-	}
-	else if (strcmp(path, "/Shaders") == 0)
-	{
-		src = demoVfsShaders;
-		count = sizeof(demoVfsShaders) / sizeof(demoVfsShaders[0]);
-	}
+	const std::vector<DemoVfsEntry>* src = demoVfsLookup(path);
 
 	if (src)
 	{
-		for (size_t i = 0; i < count; i++)
+		for (const auto& entry : *src)
 		{
-			CustomFileDialogEntry entry;
-			entry.name = src[i].name;
-			entry.isDirectory = src[i].isDirectory;
-			outEntries.push_back(entry);
+			CustomFileDialogEntry outEntry;
+			outEntry.name = entry.name;
+			outEntry.isDirectory = entry.isDirectory;
+			outEntries.push_back(outEntry);
 		}
 	}
+
+	auto extrasIt = demoVfsExtras.find(path);
+
+	if (extrasIt != demoVfsExtras.end())
+	{
+		for (const auto& entry : extrasIt->second)
+		{
+			CustomFileDialogEntry outEntry;
+			outEntry.name = entry.name;
+			outEntry.isDirectory = entry.isDirectory;
+			outEntries.push_back(outEntry);
+		}
+	}
+}
+
+static bool demoCustomFileDialogCreateFolder(const char* path, const char* folderName, void* userData)
+{
+	std::vector<CustomFileDialogEntry> entries;
+	demoCustomFileDialogList(path, entries, nullptr);
+
+	for (const auto& entry : entries)
+	{
+		if (entry.name == folderName)
+			return false;
+	}
+
+	DemoVfsEntry newEntry;
+	newEntry.name = folderName;
+	newEntry.isDirectory = true;
+	demoVfsExtras[path].push_back(newEntry);
+	return true;
 }
 
 static void demoCustomFileDialogPreview(const char* path, const Rect& previewRect, void* userData)
@@ -2449,7 +2467,7 @@ void showDemo()
 
 		space();
 
-		customFileDialog("##demoCustomFileDialog", demoCustomFileDialogList, nullptr, demo.customFileDialogResult, sizeof demo.customFileDialogResult, cfdFlags, usePreview ? demoCustomFileDialogPreview : nullptr, nullptr);
+		customFileDialog("##demoCustomFileDialog", demoCustomFileDialogList, nullptr, demo.customFileDialogResult, sizeof demo.customFileDialogResult, cfdFlags, usePreview ? demoCustomFileDialogPreview : nullptr, nullptr, demoCustomFileDialogCreateFolder, nullptr);
 
 		std::string cfdResultLabel = "Chosen path: " + std::string(demo.customFileDialogResult);
 		label(cfdResultLabel.c_str());

@@ -806,6 +806,14 @@ HUI_ENUM_AS_FLAGS(VectorEditorFlags);
 /// \param userData the user data passed to customFileDialog
 typedef void (*CustomFileDialogListCallback)(const char* path, std::vector<CustomFileDialogEntry>& outEntries, void* userData);
 
+/// Callback used by the custom file dialog to create a folder inside the current path.
+/// Return true when the folder was created; the dialog then navigates into the new folder.
+/// When null, the dialog does not show the "New folder" button.
+/// \param path the absolute current path of the dialog
+/// \param folderName the name of the folder to create
+/// \param userData the user data passed to customFileDialog
+typedef bool (*CustomFileDialogCreateFolderCallback)(const char* path, const char* folderName, void* userData);
+
 /// A 2D point
 struct Point
 {
@@ -2953,8 +2961,10 @@ HUI_API bool colorPickerPopup(const char* id, Color* inOutColor, ColorPickerFlag
 /// \param flags the dialog flags
 /// \param previewCallback optional callback to draw a preview of the selected entry; when non-null a preview panel is shown on the right side of the entries list
 /// \param previewUserData user data passed to previewCallback
+/// \param createFolderCallback optional callback that creates a folder in the current path; when non-null a "New folder" button is shown
+/// \param createFolderUserData user data passed to createFolderCallback
 /// \return true when a path was chosen, in this case outResult is filled with the chosen path
-HUI_API bool customFileDialog(const char* id, CustomFileDialogListCallback listCallback, void* userData, char* outResult, u32 resultBufferSize, CustomFileDialogFlags flags = CustomFileDialogFlags::None, CustomFileDialogPreviewCallback previewCallback = nullptr, void* previewUserData = nullptr);
+HUI_API bool customFileDialog(const char* id, CustomFileDialogListCallback listCallback, void* userData, char* outResult, u32 resultBufferSize, CustomFileDialogFlags flags = CustomFileDialogFlags::None, CustomFileDialogPreviewCallback previewCallback = nullptr, void* previewUserData = nullptr, CustomFileDialogCreateFolderCallback createFolderCallback = nullptr, void* createFolderUserData = nullptr);
 
 /// Draw a 3D double vector editor widget
 /// \param indeterminateStr text shown for components flagged with the Indeterminate* flags

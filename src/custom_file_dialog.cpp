@@ -149,11 +149,26 @@ static void customFileDialogBreadcrumbs(CustomFileDialogState& state)
 		return clicked;
 	};
 
-	if (crumbLink("/"))
+	auto& linkElem = ctx->theme->getElement(WidgetElementId::LinkBody).normalState();
+	auto& labelElem = ctx->theme->getElement(WidgetElementId::LabelBody).normalState();
+	Font* linkFont = linkElem.font;
+	Font* labelFont = labelElem.font;
+
+	auto measure = [&](Font* font, const char* text) -> f32
 	{
-		if (state.currentPath != "/")
-			customFileDialogNavigate(state, "/");
-	}
+		return font ? font->computeTextSize(text).width : 0.0f;
+	};
+
+	// build the crumb list: the root plus one crumb per path segment
+	struct Crumb
+	{
+		std::string name;
+		std::string target;
+		f32 width;
+	};
+
+	std::vector<Crumb> crumbs;
+	crumbs.push_back({ "/", "/", measure(linkFont, "/") });
 
 	std::string remainder = state.currentPath;
 
@@ -169,27 +184,145 @@ static void customFileDialogBreadcrumbs(CustomFileDialogState& state)
 		std::string segment = (slash == std::string::npos)
 			? remainder.substr(start)
 			: remainder.substr(start, slash - start);
-
 		std::string target = (slash == std::string::npos)
 			? state.currentPath
 			: customFileDialogJoinPath(accumulated, segment);
 
-		sameLine();
-		hui::label(">");
-
-		sameLine();
-
-		if (crumbLink(segment.c_str()))
-		{
-			if (target != state.currentPath)
-				customFileDialogNavigate(state, target);
-		}
+		Crumb crumb;
+		crumb.name = segment;
+		crumb.target = target;
+		crumb.width = measure(linkFont, segment.c_str());
+		crumbs.push_back(crumb);
 
 		if (slash == std::string::npos)
 			break;
 
 		accumulated = target;
 		start = slash + 1;
+	}
+
+	f32 separatorWidth = measure(labelFont, ">");
+	f32 ellipsisWidth = measure(labelFont, "...");
+	f32 spacing = ctx->sameLine.spacing * ctx->scale;
+
+	// width already consumed on this row by the Back/New folder buttons: the same-line
+	// cursor advanced past them, but a trailing normal-mode widget only leaves lastLineWidth
+	f32 consumedRow = ctx->position.x - ctx->layout.savedPosition.x;
+
+	if (!ctx->sameLine.wasEnabled)
+		consumedRow = ctx->sameLine.lastLineWidth + ctx->sameLine.nextSpacing * ctx->scale;
+
+	f32 available = ctx->layout.width - consumedRow;
+	size_t lastIndex = crumbs.size() - 1;
+
+	// an item drawn after another on the same line consumes leading and trailing gaps
+	auto itemCost = [&](f32 width) -> f32
+	{
+		return separatorWidth + width + 2.0f * spacing;
+	};
+
+	// indices of crumbs that fit on the line, and whether the tail is elided
+	std::vector<size_t> visible;
+	visible.push_back(0);
+	bool showEllipsis = false;
+	bool showLast = false;
+	f32 used = crumbs[0].width;
+	f32 totalWidth = used;
+
+	for (size_t i = 1; i < crumbs.size(); i++)
+		totalWidth += itemCost(crumbs[i].width);
+
+	if (totalWidth <= available)
+	{
+		for (size_t i = 1; i < crumbs.size(); i++)
+			visible.push_back(i);
+	}
+	else if (lastIndex >= 1)
+	{
+		// keep as many leading crumbs as fit while reserving room for "..." + the last crumb
+		for (size_t i = 1; i < lastIndex; i++)
+		{
+			f32 need = itemCost(crumbs[i].width);
+			f32 reserve = itemCost(ellipsisWidth) + itemCost(crumbs[lastIndex].width);
+
+			if (used + need + reserve <= available)
+			{
+				used += need;
+				visible.push_back(i);
+			}
+			else
+			{
+				break;
+			}
+		}
+
+		f32 ellipsisCost = itemCost(ellipsisWidth);
+		f32 lastCost = itemCost(crumbs[lastIndex].width);
+
+		if (visible.back() != lastIndex && used + ellipsisCost + lastCost <= available)
+		{
+			showEllipsis = true;
+			used += ellipsisCost + lastCost;
+		}
+		else if (visible.back() != lastIndex && used + lastCost <= available)
+		{
+			showLast = true;
+		}
+	}
+
+	if (crumbLink("/"))
+	{
+		if (state.currentPath != "/")
+			customFileDialogNavigate(state, "/");
+	}
+
+	for (size_t i = 1; i < visible.size(); i++)
+	{
+		size_t idx = visible[i];
+
+		sameLine();
+		hui::label(">");
+
+		sameLine();
+
+		if (crumbLink(crumbs[idx].name.c_str()))
+		{
+			if (crumbs[idx].target != state.currentPath)
+				customFileDialogNavigate(state, crumbs[idx].target);
+		}
+	}
+
+	if (showEllipsis)
+	{
+		sameLine();
+		hui::label(">");
+
+		sameLine();
+		hui::label("...");
+
+		sameLine();
+		hui::label(">");
+
+		sameLine();
+
+		if (crumbLink(crumbs[lastIndex].name.c_str()))
+		{
+			if (crumbs[lastIndex].target != state.currentPath)
+				customFileDialogNavigate(state, crumbs[lastIndex].target);
+		}
+	}
+	else if (showLast)
+	{
+		sameLine();
+		hui::label(">");
+
+		sameLine();
+
+		if (crumbLink(crumbs[lastIndex].name.c_str()))
+		{
+			if (crumbs[lastIndex].target != state.currentPath)
+				customFileDialogNavigate(state, crumbs[lastIndex].target);
+		}
 	}
 }
 
@@ -201,7 +334,9 @@ bool customFileDialog(
 	u32 resultBufferSize,
 	CustomFileDialogFlags flags,
 	CustomFileDialogPreviewCallback previewCallback,
-	void* previewUserData)
+	void* previewUserData,
+	CustomFileDialogCreateFolderCallback createFolderCallback,
+	void* createFolderUserData)
 {
 	ctx->setLabelAndId(id);
 	WidgetId dialogId = ctx->id;
@@ -276,14 +411,108 @@ bool customFileDialog(
 					customFileDialogNavigate(state, parent);
 			}
 
+			bool focusNewFolderInput = false;
+
+			if (createFolderCallback)
+			{
+				sameLine();
+				if (hui::button("New folder"))
+				{
+					state.creatingFolder = !state.creatingFolder;
+
+					if (state.creatingFolder)
+						focusNewFolderInput = true;
+					else
+						memset(state.newFolderName, 0, sizeof(state.newFolderName));
+				}
+			}
+
 			sameLine();
 
 			customFileDialogBreadcrumbs(state);
 
 			space();
 
-			// keep Go inside the popup: size the path input to the row minus the button
 			auto& goBtnElem = ctx->theme->getElement(WidgetElementId::ButtonBody).normalState();
+
+			// "New folder" editor: a name input + Create/Cancel that calls the create callback
+			if (state.creatingFolder && createFolderCallback)
+			{
+				f32 createButtonWidthPx = (goBtnElem.border * 2.0f + goBtnElem.font->computeTextSize("Create").width) * ctx->scale;
+				f32 cancelButtonWidthPx = (goBtnElem.border * 2.0f + goBtnElem.font->computeTextSize("Cancel").width) * ctx->scale;
+				f32 folderInputWidthPx = ctx->layout.width - createButtonWidthPx - cancelButtonWidthPx - ctx->sameLine.spacing * 2.0f * ctx->scale;
+				widgetSetNextWidth(std::max(folderInputWidthPx, 1.0f) / ctx->scale);
+				WidgetId newFolderInputId = genId("##cfdpNewFolder");
+
+				bool enterOnNewFolder = ctx->event.type == InputEvent::Type::Key
+					&& ctx->event.key.down
+					&& ctx->event.key.code == KeyCode::Enter
+					&& ctx->textInput.id == newFolderInputId;
+				hui::textInput("##cfdpNewFolder", state.newFolderName, sizeof(state.newFolderName));
+
+				// make the field the active editor as soon as the editor appears
+				if (focusNewFolderInput)
+				{
+					focusNewFolderInput = false;
+					ctx->widget.focusedId = newFolderInputId;
+					ctx->textInput.id = newFolderInputId;
+					ctx->textInput.editNow = true;
+					ctx->textInput.selectAllOnFocus = true;
+					ctx->textInput.selectionActive = false;
+					ctx->textInput.selectingWithMouse = false;
+					ctx->textInput.mouseDown = false;
+					// the editor was forced after the input was drawn, so initialize its
+					// buffer and caret state the way textInput would have on focus
+					ctx->textInput.scrollOffset = 0;
+					ctx->textInput.caretPosition = 0;
+					ctx->textInput.selectionBegin = 0;
+					ctx->textInput.selectionEnd = 0;
+					ctx->settings.services.utf8To32(state.newFolderName, ctx->textInput.text);
+					forceRepaint();
+				}
+
+				sameLine();
+
+				bool createRequested = hui::button("Create");
+
+				sameLine();
+
+				bool cancelNewFolder = hui::button("Cancel##cfdpNewFolder");
+
+				if (cancelNewFolder)
+				{
+					state.creatingFolder = false;
+					memset(state.newFolderName, 0, sizeof(state.newFolderName));
+				}
+				else if (createRequested || enterOnNewFolder)
+				{
+					std::string input = state.newFolderName;
+					size_t trimStart = input.find_first_not_of(" \t\r\n");
+					size_t trimEnd = input.find_last_not_of(" \t\r\n");
+					std::string folderName = (trimStart == std::string::npos)
+						? std::string()
+						: input.substr(trimStart, trimEnd - trimStart + 1);
+
+					if (!folderName.empty()
+						&& createFolderCallback(state.currentPath.c_str(), folderName.c_str(), createFolderUserData))
+					{
+						customFileDialogNavigate(state, customFileDialogJoinPath(state.currentPath, folderName));
+						state.creatingFolder = false;
+						memset(state.newFolderName, 0, sizeof(state.newFolderName));
+					}
+				}
+
+				// end the same-line row the way addWidget would: the next row starts below
+				ctx->sameLine.enabled = false;
+				ctx->sameLine.wasEnabled = false;
+				ctx->position.y += ctx->sameLine.maxHeight + ctx->spacing * ctx->scale;
+				ctx->sameLine.maxHeight = 0;
+				ctx->position.x = ctx->layout.savedPosition.x;
+
+				space();
+			}
+
+			// keep Go inside the popup: size the path input to the row minus the button
 			f32 goButtonWidthPx = (goBtnElem.border * 2.0f + goBtnElem.font->computeTextSize("Go").width) * ctx->scale;
 			f32 pathInputWidthPx = ctx->layout.width - goButtonWidthPx - ctx->sameLine.spacing * ctx->scale;
 			widgetSetNextWidth(std::max(pathInputWidthPx, 1.0f) / ctx->scale);

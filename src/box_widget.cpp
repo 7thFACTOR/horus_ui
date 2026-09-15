@@ -23,7 +23,6 @@ static void beginBoxLayoutInternal(const char* id, const Color& color, ThemeElem
 	boxState.themeElementColorTint = color;
 	boxState.width = parentWidth;
 	ctx->position.x += (state->border + padding.x) * ctx->scale;
-
 	boxState.customHeight = customHeight;
 
 	if (customHeight <= 0.0f)

@@ -161,7 +161,7 @@ void Dx11Texture::updateRectData(const Rect& rect, Rgba32* pixels)
 	if (y + h > height) h = height - y;
 
 	D3D11_MAPPED_SUBRESOURCE mappedResource;
-	if (SUCCEEDED(dx11DeviceContext->Map(handle, 0, D3D11_MAP_WRITE_NO_OVERLAP, 0, &mappedResource)))
+	if (SUCCEEDED(dx11DeviceContext->Map(handle, 0, D3D11_MAP_WRITE, 0, &mappedResource)))
 	{
 		u8* dest = (u8*)mappedResource.pData + (size_t)y * mappedResource.RowPitch + (size_t)x * sizeof(Rgba32);
 		u8* src = (u8*)pixels;
