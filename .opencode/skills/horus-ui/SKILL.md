@@ -5,6 +5,7 @@ description: Use when working on the horus_ui C++ immediate mode GUI library. Co
 
 # Code Style
 
+- always use CRLF for EOL, convert when you see otherwise in the file you edit
 - empty line between variable declarations and if/for/while/switch etc. conditionals
 - empty line between closing curly brace of a function/scope and the next declaration
 - .cpp comments start lowercase, a space after //, header functions desc start with uppercase letter
@@ -13,5 +14,5 @@ description: Use when working on the horus_ui C++ immediate mode GUI library. Co
 
 
 # General
-- never build, user will
+- never build, regardless of any condition, user will
 
