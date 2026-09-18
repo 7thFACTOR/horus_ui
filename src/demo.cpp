@@ -1,4 +1,5 @@
 #include <horus.h>
+#include "context.h"
 #include "native_file_dialogs.h"
 #include <float.h>
 #include <string.h>
@@ -165,6 +166,19 @@ struct DemoState
 	char customFileDialogResult[256] = "";
 	u32 customFileDialogMode = 0;
 
+	// overlay toolbars demo
+	bool showMainToolbar = true;
+	bool showToolsToolbar = true;
+	bool showFloatingToolbar = true;
+	bool collapseMainToolbar = false;
+	bool toolbarTogglePlay = false;
+	bool toolbarToggleLoop = false;
+	bool toolbarToggleGrid = true;
+	bool toolbarToggleSnap = true;
+	bool toolbarToggleMode = false;
+	int toolbarClickCount = 0;
+	bool expandOverlayToolbar = false;
+
 	// link demo
 	int linkClickCount = 0;
 
@@ -282,6 +296,30 @@ struct DemoState
 };
 
 static DemoState demo;
+
+static OverlayToolbar* g_demoMainToolbar = nullptr;
+static OverlayToolbar* g_demoToolsToolbar = nullptr;
+static OverlayToolbar* g_demoFloatingToolbar = nullptr;
+
+static void demoOnToolbarNew()
+{
+	demo.toolbarClickCount++;
+}
+
+static void demoOnToolbarOpen()
+{
+	demo.toolbarClickCount++;
+}
+
+static void demoOnToolbarSave()
+{
+	demo.toolbarClickCount++;
+}
+
+static void demoOnToolbarResetView()
+{
+	demo.toolbarClickCount++;
+}
 
 template <typename EditorFn>
 static void propGridRow(const char* name, EditorFn&& editorFn)
@@ -537,6 +575,33 @@ void showDemo()
 	if (!demo.initialized)
 	{
 		demo.initialized = true;
+
+		// overlay toolbars
+		g_demoMainToolbar = overlayToolbarCreate("demoMainToolbar", "Main", OverlayDockZone::TopToolbar);
+		overlayToolbarSetLayout(g_demoMainToolbar, OverlayToolbarLayout::Horizontal);
+		overlayToolbarAddButton(g_demoMainToolbar, "new", "New", 0, demoOnToolbarNew, "Create a new scene");
+		overlayToolbarAddButton(g_demoMainToolbar, "open", "Open", 0, demoOnToolbarOpen, "Open an existing scene");
+		overlayToolbarAddButton(g_demoMainToolbar, "save", "Save", 0, demoOnToolbarSave, "Save the current scene");
+		overlayToolbarAddSeparator(g_demoMainToolbar);
+		overlayToolbarAddToggle(g_demoMainToolbar, "play", "Play", 0, 0, &demo.toolbarTogglePlay, "Play / stop the scene");
+		overlayToolbarAddToggle(g_demoMainToolbar, "loop", "Loop", 0, 0, &demo.toolbarToggleLoop, "Loop the animation");
+		overlayToolbarAddSpace(g_demoMainToolbar);
+		overlayToolbarAddButton(g_demoMainToolbar, "icon", "", themeGetImage(themeGet(), "flat/dropdown_arrow"), demoOnToolbarOpen, "An icon-only button");
+
+		g_demoToolsToolbar = overlayToolbarCreate("demoToolsToolbar", "Tools", OverlayDockZone::LeftToolbar);
+		overlayToolbarSetLayout(g_demoToolsToolbar, OverlayToolbarLayout::Vertical);
+		overlayToolbarAddToggle(g_demoToolsToolbar, "grid", "Grid", 0, 0, &demo.toolbarToggleGrid, "Show the grid");
+		overlayToolbarAddToggle(g_demoToolsToolbar, "snap", "Snap", 0, 0, &demo.toolbarToggleSnap, "Snap to the grid");
+		overlayToolbarAddSeparator(g_demoToolsToolbar);
+		overlayToolbarAddButton(g_demoToolsToolbar, "reset", "Reset", 0, demoOnToolbarResetView, "Reset the view");
+
+		g_demoFloatingToolbar = overlayToolbarCreate("demoFloatingToolbar", "Floating", OverlayDockZone::Floating);
+		overlayToolbarSetLayout(g_demoFloatingToolbar, OverlayToolbarLayout::Panel);
+		overlayToolbarSetFloatingPosition(g_demoFloatingToolbar, { 320, 120 });
+		overlayToolbarAddButton(g_demoFloatingToolbar, "a", "Alpha", 0, demoOnToolbarNew, "Alpha command");
+		overlayToolbarAddButton(g_demoFloatingToolbar, "b", "Beta", 0, demoOnToolbarOpen, "Beta command");
+		overlayToolbarAddButton(g_demoFloatingToolbar, "c", "Gamma", 0, demoOnToolbarSave, "Gamma command");
+		overlayToolbarAddToggle(g_demoFloatingToolbar, "mode", "Mode", 0, 0, &demo.toolbarToggleMode, "Toggle a mode");
 	}
 
 	// animate progress bars
@@ -551,6 +616,47 @@ void showDemo()
 	if (demo.expandProgress)
 	{
 		forceRepaint();
+	}
+
+	// ------------------------------------------------------------------
+	// overlay toolbars are drawn over everything in the window; they are
+	// rendered before the scroll view so toolbar clicks are claimed first.
+	// For the demo they overlay a custom rect: the content area below the
+	// surrounding UI (theme selector header), from the current layout
+	// position down to the bottom of the window.
+	// ------------------------------------------------------------------
+	{
+		f32 viewportLeft = ctx->position.x;
+		f32 viewportTop = ctx->position.y;
+		f32 viewportBottom = ctx->renderer.getWindowRect().bottom();
+		Rect viewport = {
+			viewportLeft,
+			viewportTop,
+			ctx->layout.width,
+			std::max(viewportBottom - viewportTop, 1.0f)
+		};
+
+		overlayToolbarBegin(viewport);
+
+		auto& toolbarManager = overlayToolbarManagerGet();
+		auto renderDemoToolbar = [&](OverlayToolbar* toolbar)
+		{
+			if (toolbar && toolbar->visible && !toolbar->dragging)
+				overlayToolbarRender(toolbar);
+		};
+
+		renderDemoToolbar(g_demoFloatingToolbar);
+		renderDemoToolbar(g_demoToolsToolbar);
+		renderDemoToolbar(g_demoMainToolbar);
+
+		// draw any dragged toolbar on top of the others
+		for (auto& tb : toolbarManager.toolbars)
+		{
+			if (tb.visible && tb.dragging)
+				overlayToolbarRender(&tb);
+		}
+
+		overlayToolbarEnd();
 	}
 
 	scrollViewBegin("##demoScroll", 0, demo.demoScrollPos, { 0, 0 }, ScrollViewFlags::None);
@@ -2472,6 +2578,55 @@ void showDemo()
 		std::string cfdResultLabel = "Chosen path: " + std::string(demo.customFileDialogResult);
 		label(cfdResultLabel.c_str());
 		widgetPopDisabled();
+		expandableEnd();
+	}
+
+	// ------------------------------------------------------------------
+	// overlay toolbars
+	// ------------------------------------------------------------------
+	if (expandableBegin("Overlay Toolbars", &demo.expandOverlayToolbar))
+	{
+		label("Dockable toolbars drawn over the whole window. Drag a toolbar by its empty area to move or dock it.");
+		check("Show Main Toolbar", &demo.showMainToolbar);
+		check("Show Tools Toolbar", &demo.showToolsToolbar);
+		check("Show Floating Toolbar", &demo.showFloatingToolbar);
+		check("Collapse Main Toolbar", &demo.collapseMainToolbar);
+
+		overlayToolbarSetVisible(g_demoMainToolbar, demo.showMainToolbar);
+		overlayToolbarSetVisible(g_demoToolsToolbar, demo.showToolsToolbar);
+		overlayToolbarSetVisible(g_demoFloatingToolbar, demo.showFloatingToolbar);
+		overlayToolbarSetCollapsed(g_demoMainToolbar, demo.collapseMainToolbar);
+
+		space();
+		label("Dock the main toolbar:");
+		if (button("Top")) overlayToolbarSetDockZone(g_demoMainToolbar, OverlayDockZone::TopToolbar);
+		sameLine();
+		if (button("Bottom")) overlayToolbarSetDockZone(g_demoMainToolbar, OverlayDockZone::BottomToolbar);
+		sameLine();
+		if (button("Left")) overlayToolbarSetDockZone(g_demoMainToolbar, OverlayDockZone::LeftToolbar);
+		sameLine();
+		if (button("Right")) overlayToolbarSetDockZone(g_demoMainToolbar, OverlayDockZone::RightToolbar);
+		sameLine();
+		if (button("Float")) overlayToolbarSetDockZone(g_demoMainToolbar, OverlayDockZone::Floating);
+
+		space();
+		if (button("Reset Toolbars"))
+		{
+			overlayToolbarSetDockZone(g_demoMainToolbar, OverlayDockZone::TopToolbar);
+			overlayToolbarSetDockZone(g_demoToolsToolbar, OverlayDockZone::LeftToolbar);
+			overlayToolbarSetDockZone(g_demoFloatingToolbar, OverlayDockZone::Floating);
+			overlayToolbarSetFloatingPosition(g_demoFloatingToolbar, { 320, 120 });
+			demo.showMainToolbar = true;
+			demo.showToolsToolbar = true;
+			demo.showFloatingToolbar = true;
+			demo.collapseMainToolbar = false;
+		}
+
+		space();
+		char toolbarCountBuf[64];
+		snprintf(toolbarCountBuf, sizeof(toolbarCountBuf), "Toolbar buttons clicked %d time(s)", demo.toolbarClickCount);
+		label(toolbarCountBuf);
+
 		expandableEnd();
 	}
 

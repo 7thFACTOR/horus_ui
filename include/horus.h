@@ -1837,6 +1837,90 @@ struct WindowsDockingState
 	std::vector<DockNodeInfo> dockNodes; // all the dock nodes in the docking layout
 };
 
+/// Dock zone for overlay toolbars
+enum class OverlayDockZone
+{
+	None,
+	TopToolbar,
+	BottomToolbar,
+	LeftToolbar,
+	RightToolbar,
+	Floating,
+};
+
+/// Overlay toolbar element type
+enum class OverlayToolbarElementType
+{
+	Button,
+	Toggle,
+	Separator,
+	Space,
+};
+
+/// Overlay toolbar layout mode
+enum class OverlayToolbarLayout
+{
+	Horizontal,
+	Vertical,
+	Panel,
+};
+
+/// A single toolbar element (button, toggle, etc.)
+struct OverlayToolbarElement
+{
+	OverlayToolbarElementType type = OverlayToolbarElementType::Button;
+	std::string id;
+	std::string label;
+	HImage icon = 0;
+	HImage iconOn = 0; // for toggle
+	std::string tooltip;
+	bool* toggleValue = nullptr; // for toggle type
+	void (*onClick)() = nullptr; // for button type
+	bool enabled = true;
+	bool visible = true;
+
+	// Computed layout
+	Rect rect;
+	OverlayToolbarLayout layout = OverlayToolbarLayout::Horizontal;
+};
+
+/// Overlay toolbar state
+struct OverlayToolbar
+{
+	std::string id;
+	std::string title;
+	OverlayDockZone dockZone = OverlayDockZone::Floating;
+	Point floatingPosition = { 0, 0 };
+	OverlayToolbarLayout layout = OverlayToolbarLayout::Horizontal;
+	bool collapsed = false;
+	bool visible = true;
+	bool dragging = false;
+	Point dragStartMousePos;
+	Point dragStartToolbarPos;
+
+	// Elements in this toolbar
+	std::vector<OverlayToolbarElement> elements;
+
+	// Computed rect
+	Rect rect;
+
+	// For docking preview
+	bool showDockPreview = false;
+	OverlayDockZone previewDockZone = OverlayDockZone::None;
+};
+
+/// Global overlay toolbar manager state
+struct OverlayToolbarManager
+{
+	std::vector<OverlayToolbar> toolbars;
+	OverlayToolbar* draggedToolbar = nullptr;
+	OverlayToolbar* hoveredToolbar = nullptr;
+	OverlayToolbarElement* hoveredElement = nullptr;
+	bool showGlobalDockPreview = false;
+	OverlayDockZone globalPreviewZone = OverlayDockZone::None;
+	Rect globalPreviewRect;
+};
+
 struct Services
 {
 	// Input
@@ -1992,6 +2076,17 @@ struct Services
 	}
 };
 
+/// Settings for overlay toolbars
+struct OverlayToolbarSettings
+{
+	f32 defaultThickness = 32; /// the thickness of a docked toolbar in pixels
+	f32 elementPadding = 2; /// the padding around each toolbar element
+	f32 elementSpacing = 2; /// the spacing between toolbar elements
+	f32 iconButtonSize = 26; /// the size of an icon-only toolbar button
+	f32 dragStartDistance = 5; /// the mouse distance after which a toolbar drag starts
+	Color dockPreviewColor = Color::fromU8(70, 130, 220, 110); /// the color of the dock zone preview
+};
+
 /// Various HorusUI per-context global settings
 struct Settings
 {
@@ -2000,6 +2095,7 @@ struct Settings
 	bool textCaretBlinkEnable = true;
 	f32 textScrollStepAmount = 30; /// scroll pixel amount when moving inside text input
 	u32 defaultAtlasSize = 4096; /// default atlas textures size in pixels
+	OverlayToolbarSettings overlayToolbars; /// settings for overlay toolbars
 	Point defaultLayoutPadding = {10, 10};
 	Point defaultScrollViewPadding = { 10, 10 };
 	Point defaultWidgetPadding = { 0, 0 };
@@ -2188,6 +2284,29 @@ HUI_API Rect windowGetClientRect();
 HUI_API Rect windowGetClientRectByWindowId(const char* windowId);
 HUI_API void dockingStateSave(WindowsDockingState& dockingState);
 HUI_API void dockingStateLoad(const WindowsDockingState& dockingState);
+
+///////////////////////////////////////////////////////////////////////////
+// Overlay toolbar functions (dockable toolbars over a client rect)
+///////////////////////////////////////////////////////////////////////////
+
+HUI_API OverlayToolbarManager& overlayToolbarManagerGet();
+HUI_API OverlayToolbar* overlayToolbarCreate(const char* id, const char* title, OverlayDockZone initialDockZone = OverlayDockZone::Floating);
+HUI_API OverlayToolbar* overlayToolbarFind(const char* id);
+HUI_API OverlayToolbarElement* overlayToolbarAddButton(OverlayToolbar* toolbar, const char* elementId, const char* label, HImage icon = 0, void (*onClick)() = nullptr, const char* tooltip = nullptr);
+HUI_API OverlayToolbarElement* overlayToolbarAddToggle(OverlayToolbar* toolbar, const char* elementId, const char* label, HImage iconOff, HImage iconOn, bool* toggleValue, const char* tooltip = nullptr);
+HUI_API OverlayToolbarElement* overlayToolbarAddSeparator(OverlayToolbar* toolbar);
+HUI_API OverlayToolbarElement* overlayToolbarAddSpace(OverlayToolbar* toolbar);
+HUI_API void overlayToolbarRemoveElement(OverlayToolbar* toolbar, const char* elementId);
+HUI_API void overlayToolbarBegin(const Rect& viewportRect);
+HUI_API void overlayToolbarRender(OverlayToolbar* toolbar);
+HUI_API void overlayToolbarEnd();
+HUI_API void overlayToolbarSetDockZone(OverlayToolbar* toolbar, OverlayDockZone zone);
+HUI_API void overlayToolbarSetFloatingPosition(OverlayToolbar* toolbar, const Point& pos);
+HUI_API void overlayToolbarSetLayout(OverlayToolbar* toolbar, OverlayToolbarLayout layout);
+HUI_API void overlayToolbarSetCollapsed(OverlayToolbar* toolbar, bool collapsed);
+HUI_API void overlayToolbarSetVisible(OverlayToolbar* toolbar, bool visible);
+HUI_API Rect overlayToolbarGetDockZoneRect(const Rect& viewportRect, OverlayDockZone zone, f32 toolbarThickness = 32.0f);
+HUI_API bool overlayToolbarPointInDockZone(const Rect& viewportRect, const Point& pt, OverlayDockZone zone, f32 toolbarThickness = 32.0f);
 
 ///////////////////////////////////////////////////////////////////////////////
 // Application functions
