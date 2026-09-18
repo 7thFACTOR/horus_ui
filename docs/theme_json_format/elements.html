@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Element names - Horus UI Theme JSON</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<aside class="sidebar">
+	<div class="brand">
+		<div class="logo">H</div>
+		<div class="title">Horus UI</div>
+	</div>
+	<nav>
+		<div class="nav-label">Docs</div>
+		<a href="index.html">Overview</a>
+		<a href="format.html">Format reference</a>
+		<a href="elements.html" class="active">Element names</a>
+		<a href="parameters.html">Parameters &amp; settings</a>
+		<div class="nav-label">Schema</div>
+		<a href="schema.json" target="_blank">schema.json</a>
+	</nav>
+</aside>
+
+<main class="main">
+
+	<h1>Element names</h1>
+	<p class="lead">Widget names map a &quot;widgets&quot; entry to a built-in <code>WidgetType</code>, and element names inside a style map
+	to a built-in <code>WidgetElementId</code>. The tables below are the exact strings recognized by the loader
+	(<code>getWidgetTypeFromName()</code> / <code>getWidgetElementFromName()</code>), with the JSON key on the left and the internal enum
+	on the right.</p>
+
+	<div class="callout info">
+		<strong>User widgets and user elements</strong>
+		A widget name not in the first table, or an element name not in the second table, is stored as a <em>user</em> element and
+		addressable by string name through the user-element API (<code>themeSetUserWidgetElement()</code> and friends).
+	</div>
+
+	<h2 id="widget-names">Widget names</h2>
+
+	<div class="table-wrap">
+	<table>
+		<thead>
+			<tr><th>JSON key</th><th>WidgetType</th><th>JSON key</th><th>WidgetType</th></tr>
+		</thead>
+		<tbody>
+			<tr><td><code>window</code></td><td>Window</td><td><code>menuBar</code></td><td>MenuBar</td></tr>
+			<tr><td><code>tooltip</code></td><td>Tooltip</td><td><code>menu</code></td><td>Menu</td></tr>
+			<tr><td><code>button</code></td><td>Button</td><td><code>selectable</code></td><td>Selectable</td></tr>
+			<tr><td><code>buttonGroup</code></td><td>ButtonGroup</td><td><code>box</code></td><td>Box</td></tr>
+			<tr><td><code>imageButton</code></td><td>ImageButton</td><td><code>comboSlider</code></td><td>ComboSlider</td></tr>
+			<tr><td><code>textInput</code></td><td>TextInput</td><td><code>circularSlider</code></td><td>CircularSlider</td></tr>
+			<tr><td><code>multilineTextInput</code></td><td>MultilineTextInput</td><td><code>colorPicker</code></td><td>ColorPicker</td></tr>
+			<tr><td><code>slider</code></td><td>Slider</td><td><code>table</code></td><td>Table</td></tr>
+			<tr><td><code>progress</code></td><td>Progress</td><td><code>link</code></td><td>Link</td></tr>
+			<tr><td><code>image</code></td><td>Image</td><td><code>tabGroup</code></td><td>TabGroup</td></tr>
+			<tr><td><code>check</code></td><td>Check</td><td><code>tab</code></td><td>Tab</td></tr>
+			<tr><td><code>radio</code></td><td>Radio</td><td><code>viewport</code></td><td>Viewport</td></tr>
+			<tr><td><code>label</code></td><td>Label</td><td><code>messageBox</code></td><td>MsgBox</td></tr>
+			<tr><td><code>expandable</code></td><td>Expandable</td><td><code>list</code></td><td>List</td></tr>
+			<tr><td><code>treeNode</code></td><td>TreeNode</td><td><code>line</code></td><td>Line</td></tr>
+			<tr><td><code>popup</code></td><td>Popup</td><td><code>space</code></td><td>Space</td></tr>
+			<tr><td><code>dropdown</code></td><td>Dropdown</td><td><code>scrollView</code></td><td>ScrollView</td></tr>
+		</tbody>
+	</table>
+	</div>
+
+	<h2 id="element-names">Element names</h2>
+	<p>Grouped by the widget that uses them. The tables also exist as a machine-readable list in
+	<a href="schema.json" target="_blank">schema.json</a>.</p>
+
+	<div class="table-wrap">
+	<table>
+		<thead>
+			<tr><th>Widget</th><th>JSON key</th><th>WidgetElementId</th></tr>
+		</thead>
+		<tbody>
+			<tr><td rowspan="5">window</td><td><code>windowBody</code></td><td>WindowBody</td></tr>
+			<tr><td><code>windowHorizontalSplitter</code></td><td>WindowHorizontalSplitter</td></tr>
+			<tr><td><code>windowVerticalSplitter</code></td><td>WindowVerticalSplitter</td></tr>
+			<tr><td><code>windowDockGuideAsTab</code></td><td>WindowDockGuideAsTab</td></tr>
+			<tr><td><code>windowDockGuideVerticalSplit</code></td><td>WindowDockGuideVerticalSplit</td></tr>
+			<tr><td>&nbsp;</td><td><code>windowDockGuideHorizontalSplit</code></td><td>WindowDockGuideHorizontalSplit</td></tr>
+
+			<tr><td>button</td><td><code>buttonBody</code></td><td>ButtonBody</td></tr>
+			<tr><td>imageButton</td><td><code>imageButtonBody</code></td><td>ImageButtonBody</td></tr>
+
+			<tr><td rowspan="3">buttonGroup</td><td><code>buttonGroupLeftBody</code></td><td>ButtonGroupLeftBody</td></tr>
+			<tr><td><code>buttonGroupMiddleBody</code></td><td>ButtonGroupMiddleBody</td></tr>
+			<tr><td><code>buttonGroupRightBody</code></td><td>ButtonGroupRightBody</td></tr>
+
+			<tr><td rowspan="3">check</td><td><code>checkBody</code></td><td>CheckBody</td></tr>
+			<tr><td><code>checkMark</code></td><td>CheckMark</td></tr>
+			<tr><td><code>checkMarkIndeterminate</code></td><td>CheckMarkIndeterminate</td></tr>
+
+			<tr><td rowspan="2">radio</td><td><code>radioBody</code></td><td>RadioBody</td></tr>
+			<tr><td><code>radioMark</code></td><td>RadioMark</td></tr>
+
+			<tr><td>line</td><td><code>lineBody</code></td><td>LineBody</td></tr>
+			<tr><td>label</td><td><code>labelBody</code></td><td>LabelBody</td></tr>
+			<tr><td>box</td><td><code>boxBody</code></td><td>BoxBody</td></tr>
+
+			<tr><td rowspan="3">expandable</td><td><code>expandableBody</code></td><td>ExpandableBody</td></tr>
+			<tr><td><code>expandableCollapsedArrow</code></td><td>ExpandableCollapsedArrow</td></tr>
+			<tr><td><code>expandableExpandedArrow</code></td><td>ExpandableExpandedArrow</td></tr>
+
+			<tr><td rowspan="3">treeNode</td><td><code>treeNodeBody</code></td><td>TreeNodeBody</td></tr>
+			<tr><td><code>treeNodeCollapsedArrow</code></td><td>TreeNodeCollapsedArrow</td></tr>
+			<tr><td><code>treeNodeExpandedArrow</code></td><td>TreeNodeExpandedArrow</td></tr>
+
+			<tr><td rowspan="6">textInput</td><td><code>textInputBody</code></td><td>TextInputBody</td></tr>
+			<tr><td><code>textInputCaret</code></td><td>TextInputCaret</td></tr>
+			<tr><td><code>textInputSelection</code></td><td>TextInputSelection</td></tr>
+			<tr><td><code>textInputDefaultText</code></td><td>TextInputDefaultText</td></tr>
+			<tr><td><code>textInputFilterClearImage</code></td><td>TextInputFilterClearImage</td></tr>
+			<tr><td><code>textInputSelectedText</code></td><td>not mapped (see note)</td></tr>
+
+			<tr><td rowspan="4">multilineTextInput</td><td><code>multilineTextInputBody</code></td><td>MultilineTextInputBody</td></tr>
+			<tr><td><code>multilineTextInputLineNumbers</code></td><td>MultilineTextInputLineNumbers</td></tr>
+			<tr><td><code>multilineTextInputCurrentLineHighlight</code></td><td>MultilineTextInputCurrentLineHighlight</td></tr>
+			<tr><td><code>multilineTextInputWordWrap</code></td><td>MultilineTextInputWordWrap</td></tr>
+			<tr><td>&nbsp;</td><td><code>textInputCaret</code>, <code>textInputSelection</code></td><td>reused (TextInputCaret / TextInputSelection)</td></tr>
+
+			<tr><td rowspan="3">slider</td><td><code>sliderBody</code></td><td>SliderBody</td></tr>
+			<tr><td><code>sliderBodyFilled</code></td><td>SliderBodyFilled</td></tr>
+			<tr><td><code>sliderKnob</code></td><td>SliderKnob</td></tr>
+
+			<tr><td rowspan="2">progress</td><td><code>progressBack</code></td><td>ProgressBack</td></tr>
+			<tr><td><code>progressFill</code></td><td>ProgressFill</td></tr>
+
+			<tr><td>tooltip</td><td><code>tooltipBody</code></td><td>TooltipBody</td></tr>
+
+			<tr><td rowspan="2">popup</td><td><code>popupBody</code></td><td>PopupBody</td></tr>
+			<tr><td><code>popupBehind</code></td><td>PopupBehind</td></tr>
+
+			<tr><td rowspan="4">dropdown</td><td><code>dropdownBody</code></td><td>DropdownBody</td></tr>
+			<tr><td><code>dropdownArrowBox</code></td><td>DropdownArrowBox</td></tr>
+			<tr><td><code>dropdownArrow</code></td><td>DropdownArrow</td></tr>
+			<tr><td><code>dropdownListBody</code></td><td>DropdownListBody</td></tr>
+
+			<tr><td rowspan="5">scrollView</td><td><code>scrollViewBody</code></td><td>ScrollViewBody</td></tr>
+			<tr><td><code>scrollViewScrollBarV</code></td><td>ScrollViewScrollBarV</td></tr>
+			<tr><td><code>scrollViewScrollThumbV</code></td><td>ScrollViewScrollThumbV</td></tr>
+			<tr><td><code>scrollViewScrollBarH</code></td><td>ScrollViewScrollBarH</td></tr>
+			<tr><td><code>scrollViewScrollThumbH</code></td><td>ScrollViewScrollThumbH</td></tr>
+
+			<tr><td>tabGroup</td><td><code>tabGroupBody</code></td><td>TabGroupBody</td></tr>
+			<tr><td rowspan="2">tab</td><td><code>tabBodyActive</code></td><td>TabBodyActive</td></tr>
+			<tr><td><code>tabBodyInactive</code></td><td>TabBodyInactive</td></tr>
+
+			<tr><td rowspan="2">menuBar</td><td><code>menuBarBody</code></td><td>MenuBarBody</td></tr>
+			<tr><td><code>menuBarItem</code></td><td>MenuBarItem</td></tr>
+
+			<tr><td rowspan="7">menu</td><td><code>menuBody</code></td><td>MenuBody</td></tr>
+			<tr><td><code>menuItemSeparator</code></td><td>MenuItemSeparator</td></tr>
+			<tr><td><code>menuItemBody</code></td><td>MenuItemBody</td></tr>
+			<tr><td><code>menuItemShortcut</code></td><td>MenuItemShortcut</td></tr>
+			<tr><td><code>menuItemCheckMark</code></td><td>MenuItemCheckMark</td></tr>
+			<tr><td><code>menuItemNoCheckMark</code></td><td>MenuItemNoCheckMark</td></tr>
+			<tr><td><code>subMenuItemArrow</code></td><td>SubMenuItemArrow</td></tr>
+
+			<tr><td rowspan="4">messageBox</td><td><code>errorImage</code></td><td>MessageBoxImageError</td></tr>
+			<tr><td><code>infoImage</code></td><td>MessageBoxImageInfo</td></tr>
+			<tr><td><code>questionImage</code></td><td>MessageBoxImageQuestion</td></tr>
+			<tr><td><code>warningImage</code></td><td>MessageBoxImageWarning</td></tr>
+
+			<tr><td>selectable</td><td><code>selectableBody</code></td><td>SelectableBody</td></tr>
+
+			<tr><td rowspan="6">comboSlider</td><td><code>comboSliderLeftButton</code></td><td>ComboSliderLeftButton</td></tr>
+			<tr><td><code>comboSliderMiddleButton</code></td><td>ComboSliderMiddleButton</td></tr>
+			<tr><td><code>comboSliderRightButton</code></td><td>ComboSliderRightButton</td></tr>
+			<tr><td><code>comboSliderLeftArrow</code></td><td>ComboSliderLeftArrow</td></tr>
+			<tr><td><code>comboSliderRightArrow</code></td><td>ComboSliderRightArrow</td></tr>
+			<tr><td><code>comboSliderRangeBar</code></td><td>ComboSliderRangeBar</td></tr>
+
+			<tr><td rowspan="3">circularSlider</td><td><code>circularSliderBody</code></td><td>CircularSliderBody</td></tr>
+			<tr><td><code>circularSliderMark</code></td><td>CircularSliderMark</td></tr>
+			<tr><td><code>circularSliderValueDot</code></td><td>CircularSliderValueDot</td></tr>
+
+			<tr><td rowspan="3">colorPicker</td><td><code>colorPickerCheckers</code></td><td>ColorPickerCheckers</td></tr>
+			<tr><td><code>colorPickerBody</code></td><td>ColorPickerBody</td></tr>
+			<tr><td><code>colorPickerButtonBody</code></td><td>ColorPickerButtonBody</td></tr>
+
+			<tr><td rowspan="4">table</td><td><code>tableBody</code></td><td>TableBody</td></tr>
+			<tr><td><code>tableHeaderBody</code></td><td>TableHeaderBody</td></tr>
+			<tr><td><code>tableHeaderBodyLeft</code></td><td>TableHeaderBodyLeft</td></tr>
+			<tr><td><code>tableHeaderBodyRight</code></td><td>TableHeaderBodyRight</td></tr>
+
+			<tr><td>link</td><td><code>linkBody</code></td><td>LinkBody</td></tr>
+		</tbody>
+	</table>
+	</div>
+
+	<div class="callout gotcha">
+		<strong><code>textInputSelectedText</code> is not mapped by the loader</strong>
+		The internal element <code>WidgetElementId::TextInputSelectedText</code> exists and is used at runtime
+		(<code>textinput_widget.cpp</code>), but the JSON loader does not currently recognize the key
+		<code>"textInputSelectedText"</code> &mdash; it would fall back to <code>WidgetElementId::Custom</code>. The shipped themes
+		still include it; styling the selection text color currently requires setting the element through the API.
+	</div>
+
+	<div class="footer">
+		Generated from the Horus UI codebase &mdash; <code>backends/json_theme_loader.cpp</code>, <code>include/horus.h</code>.
+	</div>
+
+</main>
+
+</body>
+</html>

@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Parameters &amp; settings - Horus UI Theme JSON</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<aside class="sidebar">
+	<div class="brand">
+		<div class="logo">H</div>
+		<div class="title">Horus UI</div>
+	</div>
+	<nav>
+		<div class="nav-label">Docs</div>
+		<a href="index.html">Overview</a>
+		<a href="format.html">Format reference</a>
+		<a href="elements.html">Element names</a>
+		<a href="parameters.html" class="active">Parameters &amp; settings</a>
+		<div class="nav-label">Schema</div>
+		<a href="schema.json" target="_blank">schema.json</a>
+	</nav>
+</aside>
+
+<main class="main">
+
+	<h1>Parameters &amp; settings</h1>
+	<p class="lead">Finish the look without extra images: a handful of numeric and color knobs live as string values inside element
+	descriptions, plus a few theme-level settings.</p>
+
+	<div class="callout warn">
+		<strong>Remember: parameters must be JSON strings</strong>
+		The loader (<code>backends/json_theme_loader.cpp</code>) only stores an element member as a parameter when its value is a string.
+		Numeric values are ignored by the loader (the widgets then use their code default). Write
+		<code>"indent": "10"</code>, not <code>"indent": 10</code>.
+	</div>
+
+	<h2>Style parameters</h2>
+	<p>Style parameters are element-level members (siblings of <code>normal</code>/<code>hovered</code>/&hellip;) and are read by the
+	widget code with <code>themeGetWidgetElementParameterFloat()</code> and <code>themeGetWidgetElementParameterColor()</code>.
+	The table lists every parameter currently consumed by the library.</p>
+
+	<div class="table-wrap">
+	<table>
+		<thead>
+			<tr><th>Parameter</th><th>Element</th><th>Kind</th><th>Default</th><th>Description</th></tr>
+		</thead>
+		<tbody>
+			<tr>
+				<td><code>indent</code></td>
+				<td><code>treeNodeBody</code></td>
+				<td>float</td>
+				<td><code>20</code></td>
+				<td>Per-level horizontal indent of child rows.</td>
+			</tr>
+			<tr>
+				<td><code>labelSideSpacing</code></td>
+				<td><code>buttonGroupLeftBody</code>, <code>buttonGroupMiddleBody</code>, <code>buttonGroupRightBody</code></td>
+				<td>float</td>
+				<td><code>settings.defaultButtonGroupLabelSideSpacing</code></td>
+				<td>Horizontal space between the group&rsquo;s label and its edge (win94 uses <code>"6"</code>).</td>
+			</tr>
+			<tr>
+				<td><code>bulletTextSpacing</code></td>
+				<td><code>checkBody</code>, <code>radioBody</code></td>
+				<td>float</td>
+				<td><code>settings.defaultBulletTextSpacing</code></td>
+				<td>Gap between the bullet/box and the label text.</td>
+			</tr>
+			<tr>
+				<td><code>paddingX</code>, <code>paddingY</code></td>
+				<td><code>windowBody</code>, <code>tabBodyActive</code>, <code>tabBodyInactive</code></td>
+				<td>float</td>
+				<td><code>10</code> / <code>10</code></td>
+				<td>Inner padding between the 9-slice border and content.</td>
+			</tr>
+			<tr>
+				<td><code>barTextSpacing</code></td>
+				<td><code>progressFill</code></td>
+				<td>float</td>
+				<td><code>4</code></td>
+				<td>Space between the fill edge and the percentage text.</td>
+			</tr>
+			<tr>
+				<td><code>textShadowColor</code></td>
+				<td><code>progressFill</code></td>
+				<td>color</td>
+				<td><code>black</code></td>
+				<td>Shadow color of the percentage text.</td>
+			</tr>
+			<tr>
+				<td><code>labelSpacing</code></td>
+				<td><code>circularSliderBody</code></td>
+				<td>float</td>
+				<td><code>settings.defaultCircularSliderLabelSpacing</code></td>
+				<td>Space between the slider ring and the value label.</td>
+			</tr>
+			<tr>
+				<td><code>count</code></td>
+				<td><code>circularSliderValueDot</code></td>
+				<td>float</td>
+				<td><code>20</code></td>
+				<td>Number of value dots shown in the selected range.</td>
+			</tr>
+			<tr>
+				<td><code>placementRadius</code></td>
+				<td><code>circularSliderValueDot</code></td>
+				<td>float</td>
+				<td><code>35</code></td>
+				<td>Radius where dots are placed around the center.</td>
+			</tr>
+			<tr>
+				<td><code>placementRadius</code></td>
+				<td><code>circularSliderMark</code></td>
+				<td>float</td>
+				<td><code>25</code></td>
+				<td>Radius where the tick marks are placed.</td>
+			</tr>
+			<tr>
+				<td><code>limitOffset</code></td>
+				<td><code>circularSliderValueDot</code></td>
+				<td>float</td>
+				<td><code>0.3</code></td>
+				<td>Angular offset at the start/end of the dot range.</td>
+			</tr>
+			<tr>
+				<td><code>negativeColor</code></td>
+				<td><code>circularSliderValueDot</code></td>
+				<td>color</td>
+				<td><code>white</code></td>
+				<td>Color of dots in the &quot;negative&quot; part of the range.</td>
+			</tr>
+			<tr>
+				<td><code>positiveColor</code></td>
+				<td><code>circularSliderValueDot</code></td>
+				<td>color</td>
+				<td><code>white</code></td>
+				<td>Color of dots in the &quot;positive&quot; part of the range.</td>
+			</tr>
+			<tr>
+				<td><code>rowHeight</code></td>
+				<td><code>tableBody</code></td>
+				<td>float</td>
+				<td><code>25</code></td>
+				<td>Default table row height when a column does not impose its own.</td>
+			</tr>
+			<tr>
+				<td><code>rowAltBgColor0</code>, <code>rowAltBgColor1</code></td>
+				<td><code>tableBody</code></td>
+				<td>color</td>
+				<td><code>transparent</code></td>
+				<td>Alternate row background colors (zebra striping).</td>
+			</tr>
+			<tr>
+				<td><code>innerBorderColorH</code>, <code>innerBorderColorV</code></td>
+				<td><code>tableBody</code></td>
+				<td>color</td>
+				<td><code>white</code></td>
+				<td>Color of the horizontal/vertical grid lines inside the table.</td>
+			</tr>
+			<tr>
+				<td><code>outerBorderColorH</code>, <code>outerBorderColorV</code></td>
+				<td><code>tableBody</code></td>
+				<td>color</td>
+				<td><code>white</code></td>
+				<td>Color of the table&rsquo;s outer border lines.</td>
+			</tr>
+			<tr>
+				<td><code>columnResizeLineColor</code></td>
+				<td><code>tableBody</code></td>
+				<td>color</td>
+				<td><code>cyan</code></td>
+				<td>Color of the drag line while resizing a column.</td>
+			</tr>
+			<tr>
+				<td><code>borderColorV</code>, <code>borderColorH</code></td>
+				<td><code>tableHeaderBody</code></td>
+				<td>color</td>
+				<td><code>white</code></td>
+				<td>Color of the vertical/horizontal separators in the header row.</td>
+			</tr>
+		</tbody>
+	</table>
+	</div>
+
+	<p>
+		Parameters are <em>per style</em>: two button styles in the same theme can disagree on <code>labelSideSpacing</code> or any
+		other knob. They are free-form key/value pairs, so custom widgets can define and read their own parameter names.
+	</p>
+
+	<h2 id="settings">Theme settings</h2>
+	<p>
+		The top-level <code>settings</code> object is a generic string store managed by <code>themeSetUserSetting()</code> /
+		<code>themeGetUserSetting()</code>. The library and the host application decide what the names mean. Names currently
+		referenced by the shipped themes:
+	</p>
+
+	<div class="table-wrap">
+	<table>
+		<thead>
+			<tr><th>Setting</th><th>Consumed by</th><th>Meaning</th></tr>
+		</thead>
+		<tbody>
+			<tr>
+				<td><code>sameLineHeight</code></td>
+				<td>Host application</td>
+				<td>Reference line height, in pixels, used to vertically center widgets placed on the same line
+				(<code>"22"</code> in all shipped themes).</td>
+			</tr>
+			<tr>
+				<td><code>dockPreviewNativeWindowsColorTint</code></td>
+				<td><code>docking.cpp</code></td>
+				<td>Color string tinting the dock preview previewed as a native OS window overlay.</td>
+			</tr>
+			<tr>
+				<td><code>dockPreviewInsideWindowsColorTint</code></td>
+				<td><code>docking.cpp</code></td>
+				<td>Color string tinting the in-window dock preview guides.</td>
+			</tr>
+		</tbody>
+	</table>
+	</div>
+
+	<p>Any setting can be read at runtime, in C++:</p>
+
+<pre><code><span class="k">const char</span>* h = <span class="k">hui</span>::themeGetUserSetting(<span class="k">hui</span>::themeGet(), <span class="s">"sameLineHeight"</span>);  <span class="c">// "22"</span></code></pre>
+
+	<div class="footer">
+		Generated from the Horus UI codebase &mdash; <code>src/*_widget.cpp</code>, <code>src/table_widget.cpp</code>,
+		<code>src/tree_widget.cpp</code>, <code>src/docking.cpp</code>.
+	</div>
+
+</main>
+
+</body>
+</html>

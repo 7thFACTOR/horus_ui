@@ -1,0 +1,152 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://horus.dev/schemas/theme.schema.json",
+  "title": "Horus UI theme description",
+  "description": "JSON format consumed by hui::loadThemeFromJson(). A theme describes fonts, user settings and per-state visual data (9-slice PNG images, tints, borders, text colors and shadow) for every widget element of the UI.",
+  "type": "object",
+  "required": ["widgets"],
+  "properties": {
+    "fonts": {
+      "type": "object",
+      "description": "Named fonts. Each entry maps a name that state definitions can reference via the 'font' field. File paths without a ':' are resolved relative to the theme JSON file directory.",
+      "additionalProperties": { "$ref": "#/definitions/font" }
+    },
+    "settings": {
+      "type": "object",
+      "description": "Arbitrary string key/value store read at runtime with themeGetUserSetting(). Only string values are stored, non-string values are ignored.",
+      "additionalProperties": { "type": "string" }
+    },
+    "widgets": {
+      "type": "object",
+      "description": "Required. Maps a widget name to its style definitions. Names recognized by the loader (button, slider, table, ...) describe built-in widgets; any other name is treated as a user (custom) widget whose elements are addressed by name in code.",
+      "additionalProperties": { "$ref": "#/definitions/widget" }
+    }
+  },
+  "additionalProperties": false,
+  "definitions": {
+    "font": {
+      "type": "object",
+      "required": ["file", "size"],
+      "description": "A font reference: a TTF/OTF file and a face size in pixels.",
+      "properties": {
+        "file": {
+          "type": "string",
+          "description": "Path to the TTF/OTF file. A path without ':' is resolved relative to the theme JSON file; a path containing ':' (e.g. a drive letter or URL scheme) is used as-is."
+        },
+        "size": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "description": "Font face size in pixels."
+        }
+      },
+      "additionalProperties": false
+    },
+    "widget": {
+      "description": "A widget either declares an explicit 'styles' object, or, when no 'styles' key is present, the widget object itself is the description of the 'default' style.",
+      "oneOf": [
+        { "$ref": "#/definitions/widgetWithStyles" },
+        { "$ref": "#/definitions/widgetImplicitStyle" }
+      ]
+    },
+    "widgetWithStyles": {
+      "type": "object",
+      "required": ["styles"],
+      "properties": {
+        "styles": {
+          "type": "object",
+          "description": "One named style per key (the conventional default is 'default'). The active style is chosen at runtime with widgetSetStyle().",
+          "additionalProperties": { "$ref": "#/definitions/style" }
+        }
+      },
+      "additionalProperties": false
+    },
+    "widgetImplicitStyle": {
+      "type": "object",
+      "description": "A widget written without the 'styles' key: the object members are elements and form the widget's 'default' style.",
+      "allOf": [
+        { "not": { "required": ["styles"] } },
+        { "$ref": "#/definitions/style" }
+      ]
+    },
+    "style": {
+      "type": "object",
+      "description": "A named style: maps an element name to its element description. Element names recognized by the loader address built-in elements (see getWidgetElementFromName()); any other name is stored as a user element.",
+      "additionalProperties": { "$ref": "#/definitions/element" }
+    },
+    "element": {
+      "type": "object",
+      "description": "An element description: default dimensions plus per-state visuals and style parameters. States are keyed normal, focused, pressed, hovered, disabled; any other key is treated as a style parameter (string values are stored, numeric values are ignored, 'width'/'height' are element dimensions).",
+      "properties": {
+        "width": {
+          "type": "number",
+          "description": "Default element width in pixels. Used for every state that does not override it."
+        },
+        "height": {
+          "type": "number",
+          "description": "Default element height in pixels. Used for every state that does not override it."
+        }
+      },
+      "additionalProperties": { "$ref": "#/definitions/elementMember" }
+    },
+    "elementMember": {
+      "description": "Any non width/height member of an element: either a widget state (an object) or a style parameter (a string). Numeric values are allowed in the shipped themes but are ignored by the loader.",
+      "oneOf": [
+        { "$ref": "#/definitions/state" },
+        { "type": "string", "description": "Style parameter value, converted to a number or color by the widget code (themeGetWidgetElementParameterFloat/Color)." },
+        { "type": "number", "description": "Accepted for compatibility with the shipped themes but ignored by the loader." }
+      ]
+    },
+    "state": {
+      "type": "object",
+      "description": "Visual description of an element in one widget state. A state member like 'normal' overrides the previous state for the members it sets; unset members inherit from 'normal' (or from the loader defaults when no 'normal' is present).",
+      "properties": {
+        "image": {
+          "type": "string",
+          "description": "PNG image base name without extension, resolved relative to the theme JSON directory: 'default/button_normal' loads '<themeDir>/default/button_normal.png'. An empty string leaves the element with the fallback white image tinted by 'color'."
+        },
+        "border": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "9-slice border thickness in pixels. The border defines the unscaled corners of the image."
+        },
+        "color": {
+          "$ref": "#/definitions/color",
+          "description": "Tint/multiply color applied to the element image. With the fallback white image this becomes the flat fill color."
+        },
+        "textColor": {
+          "$ref": "#/definitions/color",
+          "description": "Color of the text rendered over the element."
+        },
+        "font": {
+          "type": "string",
+          "description": "Name of a font declared in the 'fonts' section."
+        },
+        "width": {
+          "type": "number",
+          "description": "Element width in pixels for this state."
+        },
+        "height": {
+          "type": "number",
+          "description": "Element height in pixels for this state."
+        },
+        "textShadow": { "$ref": "#/definitions/textShadow" }
+      },
+      "additionalProperties": false
+    },
+    "textShadow": {
+      "type": "object",
+      "description": "When present, enables a text shadow drawn behind the element text.",
+      "properties": {
+        "color": { "$ref": "#/definitions/color", "description": "Shadow color." },
+        "offsetX": { "type": "number", "description": "Horizontal shadow offset in pixels." },
+        "offsetY": { "type": "number", "description": "Vertical shadow offset in pixels." }
+      },
+      "additionalProperties": false
+    },
+    "color": {
+      "type": "string",
+      "description": "A named color (white, black, red, darkRed, veryDarkRed, green, darkGreen, veryDarkGreen, blue, darkBlue, veryDarkBlue, yellow, darkYellow, veryDarkYellow, magenta, cyan, darkCyan, veryDarkCyan, orange, darkOrange, lightGray, gray, darkGray, sky, transparent) or a 'R G B A' string of four integers in the 0..255 range, e.g. '155 200 200 255'.",
+      "examples": ["white", "darkRed", "155 200 200 255"]
+    }
+  }
+}

@@ -5,8 +5,7 @@
 #include FT_STROKER_H
 #include FT_LCD_FILTER_H
 
-#define HUI_FT_PIXEL(x) ((((x)+63) & -64)>>6)
-#define HUI_FT_PIXEL2(x) ((x) >> 6)
+#define HUI_FT_PIXEL(x) ((x) >> 6)
 
 namespace hui
 {
@@ -40,11 +39,11 @@ static bool loadFont(const char* path, u32 faceSize, FontInfo& outFontInfo)
 	//FT_Set_Char_Size(face, faceSize << 6, faceSize << 6, 96, 96);
 	FT_Set_Pixel_Sizes(face, 0, faceSize);
 
-	outFontInfo.metrics.ascender = HUI_FT_PIXEL2(face->size->metrics.ascender);
-	outFontInfo.metrics.descender = HUI_FT_PIXEL2(face->size->metrics.descender);
-	outFontInfo.metrics.height = HUI_FT_PIXEL2(face->size->metrics.height);
-	outFontInfo.metrics.underlinePosition = HUI_FT_PIXEL2(face->underline_position);
-	outFontInfo.metrics.underlineThickness = HUI_FT_PIXEL2(face->underline_thickness);
+	outFontInfo.metrics.ascender = HUI_FT_PIXEL(face->size->metrics.ascender);
+	outFontInfo.metrics.descender = HUI_FT_PIXEL(face->size->metrics.descender);
+	outFontInfo.metrics.height = HUI_FT_PIXEL(face->size->metrics.height);
+	outFontInfo.metrics.underlinePosition = HUI_FT_PIXEL(face->underline_position);
+	outFontInfo.metrics.underlineThickness = HUI_FT_PIXEL(face->underline_thickness);
 
 	// if its too big, clamp it
 	if (outFontInfo.metrics.underlinePosition < -2)
@@ -76,11 +75,11 @@ static bool loadFontFromMemory(const void* data, size_t size, u32 faceSize, Font
 
 	FT_Set_Pixel_Sizes(face, 0, faceSize);
 
-	outFontInfo.metrics.ascender = HUI_FT_PIXEL2(face->size->metrics.ascender);
-	outFontInfo.metrics.descender = HUI_FT_PIXEL2(face->size->metrics.descender);
-	outFontInfo.metrics.height = HUI_FT_PIXEL2(face->size->metrics.height);
-	outFontInfo.metrics.underlinePosition = HUI_FT_PIXEL2(face->underline_position);
-	outFontInfo.metrics.underlineThickness = HUI_FT_PIXEL2(face->underline_thickness);
+	outFontInfo.metrics.ascender = HUI_FT_PIXEL(face->size->metrics.ascender);
+	outFontInfo.metrics.descender = HUI_FT_PIXEL(face->size->metrics.descender);
+	outFontInfo.metrics.height = HUI_FT_PIXEL(face->size->metrics.height);
+	outFontInfo.metrics.underlinePosition = HUI_FT_PIXEL(face->underline_position);
+	outFontInfo.metrics.underlineThickness = HUI_FT_PIXEL(face->underline_thickness);
 
 	// if its too big, clamp it
 	if (outFontInfo.metrics.underlinePosition < -2)

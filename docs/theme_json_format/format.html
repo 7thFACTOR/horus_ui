@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Format reference - Horus UI Theme JSON</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<aside class="sidebar">
+	<div class="brand">
+		<div class="logo">H</div>
+		<div class="title">Horus UI</div>
+	</div>
+	<nav>
+		<div class="nav-label">Docs</div>
+		<a href="index.html">Overview</a>
+		<a href="format.html" class="active">Format reference</a>
+		<a href="elements.html">Element names</a>
+		<a href="parameters.html">Parameters &amp; settings</a>
+		<div class="nav-label">Schema</div>
+		<a href="schema.json" target="_blank">schema.json</a>
+	</nav>
+</aside>
+
+<main class="main">
+
+	<h1>Format reference</h1>
+	<p class="lead">The complete JSON grammar used by <code>hui::loadThemeFromJson()</code>, in the order the loader processes it.</p>
+
+	<h2>Top level</h2>
+
+	<div class="table-wrap">
+	<table>
+		<thead>
+			<tr><th>Key</th><th>Type</th><th>Required</th><th>Description</th></tr>
+		</thead>
+		<tbody>
+			<tr>
+				<td><code>fonts</code></td>
+				<td>object</td>
+				<td><span class="badge opt">optional</span></td>
+				<td>Named fonts referenced from state definitions. See <a href="#fonts">fonts</a>.</td>
+			</tr>
+			<tr>
+				<td><code>settings</code></td>
+				<td>object</td>
+				<td><span class="badge opt">optional</span></td>
+				<td>Arbitrary string key/value settings. See <a href="#settings">settings</a>.</td>
+			</tr>
+			<tr>
+				<td><code>widgets</code></td>
+				<td>object</td>
+				<td><span class="badge def">required</span></td>
+				<td>Every widget style in the theme. See <a href="#widgets">widgets</a>.</td>
+			</tr>
+		</tbody>
+	</table>
+	</div>
+
+	<p>
+		The root must be a JSON object. Unknown top-level members are ignored by the loader. If parsing fails or
+		<code>widgets</code> is missing, the loader returns <code>null</code> (or the built-in procedural theme on a JSON syntax error)
+		and writes the error into the optional error buffer.
+	</p>
+
+	<h2 id="fonts">fonts</h2>
+	<p>Each key is a font name that state definitions can reference with the <code>"font"</code> field.</p>
+
+	<div class="table-wrap">
+	<table>
+		<thead>
+			<tr><th>Key</th><th>Type</th><th>Required</th><th>Description</th></tr>
+		</thead>
+		<tbody>
+			<tr>
+				<td><code>&lt;name&gt;</code></td>
+				<td>object</td>
+				<td>yes</td>
+				<td>Any name, e.g. <code>normal</code>, <code>large-bold</code>. Referenced as <code>"font": "normal"</code>.</td>
+			</tr>
+		</tbody>
+	</table>
+	</div>
+
+	<p>A font entry object:</p>
+
+	<div class="table-wrap">
+	<table>
+		<thead>
+			<tr><th>Key</th><th>Type</th><th>Required</th><th>Description</th></tr>
+		</thead>
+		<tbody>
+			<tr>
+				<td><code>file</code></td>
+				<td>string</td>
+				<td>yes</td>
+				<td>
+					Path to a <code>.ttf</code>/<code>.otf</code> file. Relative paths (no <code>:</code>) are resolved against the
+					theme file&rsquo;s directory, so <code>"fonts/Inter-Regular.ttf"</code> loads
+					<code>themes/fonts/Inter-Regular.ttf</code>. Paths containing <code>:</code> are used as-is.
+				</td>
+			</tr>
+			<tr>
+				<td><code>size</code></td>
+				<td>number</td>
+				<td>yes</td>
+				<td>Font face size in pixels. Entries with size <code>0</code> are skipped.</td>
+			</tr>
+		</tbody>
+	</table>
+	</div>
+
+<pre><code><span class="s">"normal"</span>:      { <span class="s">"file"</span>: <span class="s">"fonts/Inter-Regular.ttf"</span>, <span class="s">"size"</span>: <span class="n">12</span> },
+<span class="s">"normal-bold"</span>: { <span class="s">"file"</span>: <span class="s">"fonts/Inter-Bold.ttf"</span>,   <span class="s">"size"</span>: <span class="n">12</span> }</code></pre>
+
+	<h2 id="settings">settings</h2>
+	<p>An arbitrary <em>string</em> key/value store read at runtime with <code>themeGetUserSetting()</code>. Only string values are
+	stored &mdash; non-string values are silently ignored by the loader.</p>
+
+	<div class="table-wrap">
+	<table>
+		<thead>
+			<tr><th>Key</th><th>Type</th><th>Description</th></tr>
+		</thead>
+		<tbody>
+			<tr>
+				<td><code>&lt;name&gt;</code></td>
+				<td>string</td>
+				<td>Any setting name with a string value.</td>
+			</tr>
+		</tbody>
+	</table>
+	</div>
+
+<pre><code><span class="s">"sameLineHeight"</span>: <span class="s">"22"</span>,
+<span class="s">"dockPreviewNativeWindowsColorTint"</span>: <span class="s">"200 200 200 255"</span></code></pre>
+
+	<p>The names used by the shipped themes (and their consumers) are listed on the <a href="parameters.html#settings">settings</a> page.</p>
+
+	<h2 id="widgets">widgets</h2>
+	<p>
+		The <code>widgets</code> object maps a widget name to its definition. Widget names are case- and spelling-sensitive: see the
+		<a href="elements.html#widget-names">widget name table</a> for the recognized names.
+	</p>
+
+	<div class="table-wrap">
+	<table>
+		<thead>
+			<tr><th>Key</th><th>Type</th><th>Description</th></tr>
+		</thead>
+		<tbody>
+			<tr>
+				<td><code>&lt;widgetName&gt;</code></td>
+				<td>object</td>
+				<td>
+					A recognized name describes a built-in widget; any other name is stored as a <em>user widget</em> whose elements are
+					addressed by string name in code.
+				</td>
+			</tr>
+		</tbody>
+	</table>
+	</div>
+
+	<h3 id="styles">Styles</h3>
+	<p>
+		A widget can define several <strong>styles</strong>, for example a normal <code>default</code> and an emphasized
+		<code>important</code> button. The active style is chosen at runtime with <code>widgetSetStyle()</code>. Each style is a map of
+		element name to element description.
+	</p>
+
+<pre><code><span class="s">"button"</span>: {
+	<span class="s">"styles"</span>: {
+		<span class="s">"default"</span>:    { <span class="s">"buttonBody"</span>: { <span class="c">...</span> } },
+		<span class="s">"important"</span>: { <span class="s">"buttonBody"</span>: { <span class="c">...</span> } }
+	}
+}</code></pre>
+
+	<p>
+		If the widget object has no <code>styles</code> key, the loader uses the widget object itself as a single style named
+		<code>"default"</code>:
+	</p>
+
+<pre><code><span class="s">"buttonGroup"</span>: {
+	<span class="s">"buttonGroupLeftBody"</span>: { <span class="c">...</span> },   <span class="c">// elements directly under the widget == "default" style</span>
+	<span class="s">"buttonGroupMiddleBody"</span>: { <span class="c">...</span> }
+}</code></pre>
+
+	<h3 id="elements">Elements</h3>
+	<p>Within a style, each key is an element name (see <a href="elements.html">Element names</a>). Unknown names become user
+	elements. An element object holds <strong>element-level members</strong> plus <strong>per-state objects</strong>:</p>
+
+	<div class="table-wrap">
+	<table>
+		<thead>
+			<tr><th>Key</th><th>Type</th><th>Description</th></tr>
+		</thead>
+		<tbody>
+			<tr>
+				<td><code>width</code>, <code>height</code></td>
+				<td>number</td>
+				<td>
+					Element dimensions in pixels, inherited by every state that does not override them. Used for icons, carets, knobs,
+					arrows and other fixed-size elements.
+				</td>
+			</tr>
+			<tr>
+				<td><code>normal</code>, <code>focused</code>, <code>pressed</code>, <code>hovered</code>, <code>disabled</code></td>
+				<td>object</td>
+				<td>Per-state visual description. See <a href="#states">states</a>.</td>
+			</tr>
+			<tr>
+				<td><code>&lt;paramName&gt;</code></td>
+				<td>string</td>
+				<td>
+					Style parameter, e.g. <code>"indent": "10"</code>. Only <em>string</em> values are stored. See
+					<a href="parameters.html">Parameters</a>.
+				</td>
+			</tr>
+		</tbody>
+	</table>
+	</div>
+
+	<div class="callout gotcha">
+		<strong>Parameters must be strings</strong>
+		The loader only stores a parameter when its JSON value is a string. Numbers such as <code>"count": 30</code> or
+		<code>"rowHeight": 0.0</code> are <em>ignored</em> (some shipped themes still use numbers; the reader then falls back to the
+		code default). Write them as strings &mdash; <code>"count": "30"</code>, <code>"rowHeight": "0"</code> &mdash; to take effect.
+	</div>
+
+	<h2 id="states">States</h2>
+	<p>
+		Each state is an object describing how the element looks in that interaction stage. The recognized state keys are
+		<code>normal</code>, <code>focused</code>, <code>pressed</code>, <code>hovered</code> and <code>disabled</code>.
+	</p>
+
+	<div class="table-wrap">
+	<table>
+		<thead>
+			<tr><th>Key</th><th>Type</th><th>Description</th></tr>
+		</thead>
+		<tbody>
+			<tr>
+				<td><code>image</code></td>
+				<td>string</td>
+				<td>
+					Base name of a <code>PNG</code> image without the extension, resolved against the theme directory:
+					<code>"default/button_normal"</code> loads <code>&lt;themeDir&gt;/default/button_normal.png</code>. An empty string
+					keeps the fallback <code>__WHITEIMAGE__</code> (flat color fill tinted by <code>color</code>).
+				</td>
+			</tr>
+			<tr>
+				<td><code>border</code></td>
+				<td>integer</td>
+				<td>9-slice border thickness in pixels (<code>0</code> = stretch the whole image).</td>
+			</tr>
+			<tr>
+				<td><code>color</code></td>
+				<td>color string</td>
+				<td>Tint/multiply color applied to the image; with the white fallback this is the fill color.</td>
+			</tr>
+			<tr>
+				<td><code>textColor</code></td>
+				<td>color string</td>
+				<td>Color of text drawn over the element.</td>
+			</tr>
+			<tr>
+				<td><code>font</code></td>
+				<td>string</td>
+				<td>Name of a font from the top-level <code>fonts</code> section, e.g. <code>"normal"</code>.</td>
+			</tr>
+			<tr>
+				<td><code>width</code>, <code>height</code></td>
+				<td>number</td>
+				<td>Overrides the element-level dimensions for this state.</td>
+			</tr>
+			<tr>
+				<td><code>textShadow</code></td>
+				<td>object</td>
+				<td>Presence enables a text shadow. See below.</td>
+			</tr>
+		</tbody>
+	</table>
+	</div>
+
+	<h3>textShadow</h3>
+
+	<div class="table-wrap">
+	<table>
+		<thead>
+			<tr><th>Key</th><th>Type</th><th>Required</th><th>Description</th></tr>
+		</thead>
+		<tbody>
+			<tr>
+				<td><code>color</code></td>
+				<td>color string</td>
+				<td>no</td>
+				<td>Shadow color.</td>
+			</tr>
+			<tr>
+				<td><code>offsetX</code></td>
+				<td>number</td>
+				<td>no</td>
+				<td>Horizontal offset in pixels.</td>
+			</tr>
+			<tr>
+				<td><code>offsetY</code></td>
+				<td>number</td>
+				<td>no</td>
+				<td>Vertical offset in pixels.</td>
+			</tr>
+		</tbody>
+	</table>
+	</div>
+
+	<h2>Inheritance and defaults</h2>
+	<p>The loader fills every element/state combination before reading JSON (all states default to the white image, white colors, no
+	border, size 0). A JSON entry then overrides it with these rules:</p>
+
+	<ul>
+		<li><code>normal</code> is the base state. States that set a member but omit others inherit that member from <code>normal</code>.</li>
+		<li>A state key that is absent entirely copies the full <code>normal</code> state.</li>
+		<li>
+			When an element has no <code>normal</code> state, all states keep the loader defaults, except that the element-level
+			<code>width</code>/<code>height</code> still apply.
+		</li>
+		<li>Missing <code>image</code> falls back to the white <code>__WHITEIMAGE__</code>, so a state can only change <code>color</code>.</li>
+	</ul>
+
+<pre><code><span class="s">"buttonBody"</span>: {
+	<span class="s">"height"</span>: <span class="n">22</span>,                          <span class="c">// element-level default, inherited by all states</span>
+	<span class="s">"normal"</span>:  { <span class="s">"image"</span>: <span class="s">"default/button_normal"</span>, <span class="s">"border"</span>: <span class="n">3</span>,
+	           <span class="s">"color"</span>: <span class="s">"120 120 120 255"</span>, <span class="s">"font"</span>: <span class="s">"normal"</span> },
+	<span class="s">"hovered"</span>: { <span class="s">"color"</span>: <span class="s">"155 200 200 255"</span> },   <span class="c">// keeps image, border and font from "normal"</span>
+	<span class="s">"pressed"</span>: { <span class="s">"image"</span>: <span class="s">"default/button_pressed"</span>, <span class="s">"border"</span>: <span class="n">3</span>,
+	           <span class="s">"color"</span>: <span class="s">"white"</span>, <span class="s">"font"</span>: <span class="s">"normal"</span> }
+}</code></pre>
+
+	<h2>Resolution of relative paths</h2>
+	<p>All file references are relative to the directory containing the theme JSON file:
+	<code>"fonts/Inter-Regular.ttf"</code> &rarr; <code>&lt;themeDir&gt;/fonts/Inter-Regular.ttf</code>,
+	<code>"default/button_normal"</code> &rarr; <code>&lt;themeDir&gt;/default/button_normal.png</code>. A path containing a colon
+	(<code>:</code>), such as <code>C:/path/to.ttf</code>, is used verbatim.</p>
+
+	<div class="footer">
+		Generated from the Horus UI codebase &mdash; <code>backends/json_theme_loader.cpp</code>.
+	</div>
+
+</main>
+
+</body>
+</html>
