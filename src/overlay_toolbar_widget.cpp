@@ -584,10 +584,11 @@ static void drawToolbarElement(OverlayToolbar* toolbar, OverlayToolbarElement* e
 
 	ThemeElement::State* state = &btnBody.normalState();
 	bool toggleOn = e->toggleValue && *e->toggleValue;
+	bool pressed = toggleOn || ctx->widget.pressed;
 
 	if (!e->enabled)
 		state = &btnBody.getState(WidgetStateType::Disabled);
-	else if (toggleOn || ctx->widget.pressed)
+	else if (pressed)
 		state = &btnBody.getState(WidgetStateType::Pressed);
 	else if (ctx->widget.hovered)
 		state = &btnBody.getState(WidgetStateType::Hovered);
@@ -597,7 +598,12 @@ static void drawToolbarElement(OverlayToolbar* toolbar, OverlayToolbarElement* e
 	f32 padding = st.elementPadding * ctx->scale;
 	f32 spacing = st.elementSpacing * ctx->scale;
 
-	ctx->renderer.cmdSetColor(state->color);
+	Color bgColor = state->color;
+
+	if (pressed && e->enabled)
+		bgColor = st.buttonPressedColor;
+
+	ctx->renderer.cmdSetColor(bgColor);
 	ctx->renderer.cmdDrawImageBordered(toolbarRoundRectImage(), st.roundRectBorder, e->rect, ctx->scale);
 
 	bool hasIcon = e->icon || (e->type == OverlayToolbarElementType::Toggle && e->iconOn);

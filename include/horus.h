@@ -2076,6 +2076,7 @@ struct OverlayToolbarSettings
 	f32 insertionHintThickness = 2.5f; /// the thickness of the strip insertion hint bar
 	Color insertionHintColor = Color::fromU8(70, 130, 220, 200); /// the color of the strip insertion hint bar
 	Color toolbarBackgroundColor = Color::fromU8(120, 125, 135, 80); /// the translucent gray tint of the toolbar background
+	Color buttonPressedColor = Color::fromU8(180, 95, 20); /// the color of a toolbar button while pressed or toggled on
 	f32 dragStartDistance = 5; /// the mouse distance after which a toolbar drag starts
 	Color dockPreviewColor = Color::fromU8(70, 130, 220, 110); /// the color of the dock zone preview
 };

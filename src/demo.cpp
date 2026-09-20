@@ -176,6 +176,11 @@ struct DemoState
 	bool toolbarToggleSnap = true;
 	bool toolbarToggleMode = false;
 	int toolbarClickCount = 0;
+	Point toolbarGridPan;
+	f32 toolbarGridZoom = 1.0f;
+	bool toolbarGridPanning = false;
+	Point toolbarGridPanStartMouse;
+	Point toolbarGridPanStartValue;
 	bool expandOverlayToolbar = false;
 
 	// link demo
@@ -2595,6 +2600,58 @@ void showDemo()
 
 		renderSetFillStyle(Color::fromU8(42, 42, 42, 255));
 		renderDrawSolidRectangle({ 0, 0, toolbarViewport.width, toolbarViewport.height });
+
+		// faint gray grid so the toolbar placement over the viewport can be
+		// seen; pan it with the left mouse button and zoom with the wheel
+		Point gridMouse = mouseGetPosition() - toolbarViewport.topLeft();
+
+		auto& gridService = contextGetSettings().services;
+		if (gridService.isMouseButtonDownNow && gridService.isMouseButtonDownNow(MouseButton::Left))
+		{
+			if (!demo.toolbarGridPanning)
+			{
+				if (toolbarViewport.contains(mouseGetPosition()))
+				{
+					demo.toolbarGridPanning = true;
+					demo.toolbarGridPanStartMouse = gridMouse;
+					demo.toolbarGridPanStartValue = demo.toolbarGridPan;
+				}
+			}
+			else
+			{
+				demo.toolbarGridPan = demo.toolbarGridPanStartValue + (gridMouse - demo.toolbarGridPanStartMouse);
+				forceRepaint();
+			}
+		}
+		else
+		{
+			demo.toolbarGridPanning = false;
+		}
+
+		if (inputEventGet().type == InputEvent::Type::MouseWheel && toolbarViewport.contains(mouseGetPosition()))
+		{
+			float zoomStep = 0.1f * inputEventGet().mouse.wheel.y;
+			float newZoom = demo.toolbarGridZoom * (1.0f + zoomStep);
+			if (newZoom < 0.125f) newZoom = 0.125f;
+			if (newZoom > 8.0f) newZoom = 8.0f;
+
+			// keep the grid point under the cursor fixed while zooming
+			Point world = (gridMouse - demo.toolbarGridPan) / demo.toolbarGridZoom;
+			demo.toolbarGridPan = gridMouse - world * newZoom;
+			demo.toolbarGridZoom = newZoom;
+
+			forceRepaint();
+			inputEventCancel();
+		}
+
+		f32 gridSpacing = 64.0f * demo.toolbarGridZoom;
+		renderSetLineStyle(LineStyle(Color::fromU8(150, 155, 165, 24), 1.0f));
+
+		for (f32 gx = fmodf(demo.toolbarGridPan.x, gridSpacing); gx <= toolbarViewport.width; gx += gridSpacing)
+			if (gx >= 0) renderDrawLine({ gx, 0 }, { gx, toolbarViewport.height });
+
+		for (f32 gy = fmodf(demo.toolbarGridPan.y, gridSpacing); gy <= toolbarViewport.height; gy += gridSpacing)
+			if (gy >= 0) renderDrawLine({ 0, gy }, { toolbarViewport.width, gy });
 
 		overlayToolbarBegin(toolbarViewport);
 
