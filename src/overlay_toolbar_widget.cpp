@@ -663,37 +663,35 @@ static bool processToolbarElement(OverlayToolbar* toolbar, OverlayToolbarElement
 	return ctx->widget.clicked;
 }
 
-static Rect dockedToolbarRect(OverlayToolbar* toolbar, f32 thickness)
+// returns the used main-axis size of a toolbar laid out on a thickness-sized strip,
+// without modifying the toolbar element rects
+static f32 measureToolbarMainSize(OverlayToolbar* toolbar, OverlayToolbarLayout layout, f32 thickness)
 {
-	const Rect& vp = s_viewportRect;
-	u32 stackIndex = 0;
+	const auto& st = ctx->settings.overlayToolbars;
+	f32 padding = st.elementPadding * ctx->scale;
+	f32 spacing = st.elementSpacing * ctx->scale;
 
-	for (auto& other : s_manager.toolbars)
+	bool vertical = (layout == OverlayToolbarLayout::Vertical);
+	f32 cursor = padding;
+
+	bool wrap = (layout == OverlayToolbarLayout::Panel);
+	f32 wrapWidth = wrap ? std::max(s_viewportRect.width, 1.0f) : 0.0f;
+
+	for (auto& e : toolbar->elements)
 	{
-		if (&other == toolbar)
-			break;
+		if (!e.visible)
+			continue;
 
-		if (other.visible && !other.dragging && other.dockZone == toolbar->dockZone)
-			stackIndex++;
+		Point span = elementContentSize(&e, vertical);
+		f32 mainSpan = vertical ? span.y : span.x;
+
+		if (wrap && cursor + mainSpan > wrapWidth - padding && cursor > padding + 0.5f)
+			cursor = padding;
+
+		cursor += mainSpan + spacing;
 	}
 
-	switch (toolbar->dockZone)
-	{
-	case OverlayDockZone::TopToolbar:
-		return { vp.x, vp.y + (f32)stackIndex * thickness, vp.width, thickness };
-
-	case OverlayDockZone::BottomToolbar:
-		return { vp.x, vp.bottom() - (f32)(stackIndex + 1) * thickness, vp.width, thickness };
-
-	case OverlayDockZone::LeftToolbar:
-		return { vp.x + (f32)stackIndex * thickness, vp.y, thickness, vp.height };
-
-	case OverlayDockZone::RightToolbar:
-		return { vp.right() - (f32)(stackIndex + 1) * thickness, vp.y, thickness, vp.height };
-
-	default:
-		return Rect();
-	}
+	return std::max(cursor - spacing + padding, padding * 2.0f);
 }
 
 void overlayToolbarRender(HOverlayToolbar toolbar)
@@ -708,6 +706,7 @@ void overlayToolbarRender(HOverlayToolbar toolbar)
 
 	const auto& st = ctx->settings.overlayToolbars;
 	f32 thickness = st.defaultThickness * ctx->scale;
+	f32 padding = st.elementPadding * ctx->scale;
 	auto& mgr = s_manager;
 
 	// dragged toolbars follow the mouse and highlight the dock zone under the cursor
@@ -762,7 +761,51 @@ void overlayToolbarRender(HOverlayToolbar toolbar)
 	}
 	else if (tbar->dockZone != OverlayDockZone::Floating)
 	{
-		tbar->rect = dockedToolbarRect(tbar, thickness);
+		// toolbars docked on the same edge share a single strip and are laid out
+		// inline: side by side on top/bottom edges, stacked in a column on left/right edges
+		OverlayToolbarLayout layout = toolbarEffectiveLayout(tbar);
+		bool vertical = (layout == OverlayToolbarLayout::Vertical);
+		Rect strip = overlayToolbarGetDockZoneRect(s_viewportRect, tbar->dockZone, thickness);
+		f32 main = std::max(thickness, 1.0f);
+
+		if (tbar->collapsed)
+		{
+			auto& state = ctx->theme->getElement(WidgetElementId::MenuBarBody).normalState();
+			f32 titleW = (state.font ? state.font->computeTextSize(tbar->title.c_str()).width : 0.0f) + padding * 4.0f;
+			main = std::max(titleW, thickness);
+		}
+		else
+		{
+			main = std::max(measureToolbarMainSize(tbar, layout, thickness), thickness);
+		}
+
+		f32 stripOffset = 0;
+
+		// accumulate the sizes of the toolbars docked before this one on the same strip
+		for (auto& other : s_manager.toolbars)
+		{
+			if (&other == tbar)
+				break;
+
+			if (!other.visible || other.dragging || other.dockZone != tbar->dockZone)
+				continue;
+
+			if (other.collapsed)
+			{
+				auto& state = ctx->theme->getElement(WidgetElementId::MenuBarBody).normalState();
+				f32 titleW = (state.font ? state.font->computeTextSize(other.title.c_str()).width : 0.0f) + padding * 4.0f;
+				stripOffset += std::max(titleW, thickness);
+			}
+			else
+			{
+				stripOffset += std::max(measureToolbarMainSize(&other, toolbarEffectiveLayout(&other), thickness), thickness);
+			}
+		}
+
+		if (vertical)
+			tbar->rect = { strip.x, strip.y + stripOffset, thickness, main };
+		else
+			tbar->rect = { strip.x + stripOffset, strip.y, main, thickness };
 	}
 	else
 	{
@@ -770,7 +813,6 @@ void overlayToolbarRender(HOverlayToolbar toolbar)
 	}
 
 	OverlayToolbarLayout layout = toolbarEffectiveLayout(tbar);
-	f32 padding = st.elementPadding * ctx->scale;
 
 	if (tbar->collapsed)
 	{
