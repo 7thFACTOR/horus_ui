@@ -835,7 +835,7 @@ void overlayToolbarRender(HOverlayToolbar toolbar)
 		pos.x = std::max(s_viewportRect.x, std::min(pos.x, s_viewportRect.right() - dragW));
 		pos.y = std::max(s_viewportRect.y, std::min(pos.y, s_viewportRect.bottom() - dragH));
 
-		tbar->floatingPosition = pos;
+		tbar->floatingPosition = { pos.x - s_viewportRect.x, pos.y - s_viewportRect.y };
 		tbar->rect = { pos.x, pos.y, dragW, dragH };
 
 		OverlayDockZone zone = OverlayDockZone::Floating;
@@ -982,7 +982,7 @@ void overlayToolbarRender(HOverlayToolbar toolbar)
 	}
 	else
 	{
-		tbar->rect = { tbar->floatingPosition.x, tbar->floatingPosition.y, thickness, thickness };
+		tbar->rect = { s_viewportRect.x + tbar->floatingPosition.x, s_viewportRect.y + tbar->floatingPosition.y, thickness, thickness };
 	}
 
 	OverlayToolbarLayout layout = toolbarEffectiveLayout(tbar);

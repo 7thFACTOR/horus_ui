@@ -16,11 +16,13 @@ Rect viewportBegin(const char* id, f32 height)
 	addWidget(height);
 	buttonBehavior();
 
-	auto scissor = ctx->renderer.pushClipRect(ctx->widget.rect);
+	ctx->renderer.pushClipRect(ctx->widget.rect);
 
+	// return the real (unclipped) viewport rect; the pushed clip rect only
+	// restricts drawing of content inside the viewport.
 	ctx->renderer.viewportOffset = ctx->widget.rect.topLeft();
 
-	return scissor;
+	return ctx->widget.rect;
 }
 
 void viewportEnd()
