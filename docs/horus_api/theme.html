@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Horus UI - Themes &amp; fonts</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<aside class="sidebar">
+	<div class="brand">
+		<div class="logo">H</div>
+		<div class="title">Horus UI</div>
+	</div>
+	<nav>
+		<div class="nav-label">API Reference</div>
+		<a href="index.html">Overview</a>
+		<a href="types.html">Types</a>
+		<a href="core.html">Core</a>
+		<a href="windows.html">Windowing &amp; toolbars</a>
+		<a href="theme.html" class="active">Themes &amp; fonts</a>
+		<a href="layout.html">Layout &amp; tables</a>
+		<a href="widgets.html">Widgets</a>
+		<a href="rendering.html">Rendering &amp; utility</a>
+	</nav>
+</aside>
+
+<main class="main">
+
+	<h1>Themes &amp; fonts</h1>
+	<p class="lead">
+		Themes, element styles (hiding, styling and info), user-defined element data, plus font and image loading.
+		The full theme <code>json</code> format is documented in
+		<a href="../theme_json_format/index.html">Theme JSON Format</a>.
+	</p>
+
+	<h2>Themes</h2>
+	<div class="member">
+		<div class="prototype"><code><span class="ret">size_t</span> <span class="fn">themesGetCount</span>()</code></div>
+		<p class="brief">Return the number of loaded themes.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="ret">ThemeHandle</span> <span class="fn">themeCreate</span>(<span class="prm">const u8*</span> data, <span class="prm">size_t</span> dataSize)</code></div>
+		<p class="brief">Load a theme from raw bytes (the file content of a theme <code>json</code>).</p>
+		<ul class="params">
+			<li><span class="pname">data</span> the theme file data</li>
+			<li><span class="pname">dataSize</span> the size of the data</li>
+		</ul>
+		<p class="returns">Returns the theme handle, or null if loading failed.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="ret">ThemeHandle</span> <span class="fn">themeCreateFromFile</span>(<span class="prm">const char*</span> path)</code></div>
+		<p class="brief">Load a theme from a file.</p>
+		<ul class="params"><li><span class="pname">path</span> the theme file path</li></ul>
+		<p class="returns">Returns the theme handle, or null if loading failed.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">themeSetFontFace</span>(<span class="prm">ThemeHandle</span> theme, <span class="prm">HFontFace</span> fontFace)</code></div>
+		<p class="brief">Set the default font face of a theme, resolved from the theme json name or overridden at runtime.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">themeSet</span>(<span class="prm">const char*</span> themeName)</code></div>
+		<p class="brief">Set the current theme by name (as a user element: name = <code>theme@&lt;name&gt;</code>).</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">themeDelete</span>(<span class="prm">ThemeHandle</span> theme)</code></div>
+		<p class="brief">Delete a theme and its font face.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="ret">HFontFace</span> <span class="fn">themeGetFontFace</span>(<span class="prm">ThemeHandle</span> theme)</code></div>
+		<p class="brief">Return the font face of a theme, or null.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="ret">HFontFace</span> <span class="fn">themeGetFontFaceByName</span>(<span class="prm">const char*</span> themeName)</code></div>
+		<p class="brief">Return the font face of a theme by name, or null.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="ret">bool</span> <span class="fn">uiThemeBegin</span>(<span class="prm">const char*</span> themeName = nullptr)</code></div>
+		<p class="brief">Begin the theme set by <code>themeSet</code>, or the given theme name. Call once per frame before drawing the UI.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">uiThemeEnd</span>()</code></div>
+		<p class="brief">End the UI theme pass.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="ret">HImage</span> <span class="fn">uiThemeGetImage</span>(<span class="prm">const char*</span> name)</code></div>
+		<p class="brief">Return an image loaded by the current theme, or null.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="ret">bool</span> <span class="fn">uiThemeGetBoolParam</span>(<span class="prm">const char*</span> name, <span class="prm">bool*</span> outParampParam)</code></div>
+		<p class="brief">Look up a boolean theme parameter (a <code>Params</code> entry of the current theme json).</p>
+	</div>
+
+	<h2>Element styles</h2>
+	<p>Elements (both <a href="types.html">user elements</a> and prebuilt widget styles) can be hidden, styled and queried at runtime.</p>
+
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">elementSetEnabled</span>(<span class="prm">const char*</span> elementName)</code></div>
+		<p class="brief">Enable all element styles matching the name (see <a href="../theme_json_format/format.html">Theme JSON</a>).</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">elementSetDisabled</span>(<span class="prm">const char*</span> elementName)</code></div>
+		<p class="brief">Disable all element styles matching the name; their elements still exist but are not drawn.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">elementGetEnabledInfos</span>(<span class="prm">std::vector&lt;ElementInfo&gt;&amp;</span> outElementInfos, <span class="prm">const char*</span> elementName = nullptr)</code></div>
+		<p class="brief">Return the current enabled element styles, optionally filtered by name.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">elementSetStyleParam</span>(<span class="prm">const char*</span> elementName, <span class="prm">ElementStyleType</span> paramType, <span class="prm">f32</span> value)</code></div>
+		<p class="brief">Set a scalar style parameter on all matching star-style elements.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">elementSetStyleParamAp</span>(<span class="prm">const char*</span> elementName, <span class="prm">ElementStyleType</span> paramType, <span class="prm">Rgba32</span> value)</code></div>
+		<p class="brief">Set a color (RGBA) style parameter on all matching star-style elements.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="ret">u8</span> <span class="fn">elementGetEnabledCount</span>()</code></div>
+		<p class="brief">Return the number of enabled element styles.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="ret">const ElementInfo*</span> <span class="fn">elementGetEnabledAt</span>(<span class="prm">u16</span> index)</code></div>
+		<p class="brief">Return the enabled element style info at the given index, or null.</p>
+	</div>
+
+	<h2>User elements &amp; custom data</h2>
+	<p>
+		User elements are elements defined in a theme under names like <code>user.customName</code>. They are drawn by
+		your code with <code>customWidget</code> (see <a href="rendering.html">Rendering</a>).
+	</p>
+
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">elementSetStateParams</span>(<span class="prm">ElementState</span> state, <span class="prm">const Scale9*</span> scale9 = nullptr, <span class="prm">const Rgba32*</span> color = nullptr)</code></div>
+		<p class="brief">Set the current state parameters for the next element style built (used by the theme builder and tests).</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">elementAddStateParams</span>(<span class="prm">ElementInfo*</span> info, <span class="prm">ElementState</span> state)</code></div>
+		<p class="brief">Add a state and its parameters to an element info (theme builder + tests).</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">elementSetBuilderUsed</span>()</code></div>
+		<p class="brief">Mark that the user is using the element builder API, bypassing the json loader.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="ret">std::vector&lt;std::string&gt;</span> <span class="fn">elementBuilderGetElementNames</span>()</code></div>
+		<p class="brief">Return the names of all elements set through the builder API.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">elementSequenceAppendFromJson</span>(<span class="prm">const char*</span> name, <span class="prm">const u8*</span> data, <span class="prm">size_t</span> dataSize)</code></div>
+		<p class="brief">Append one element style to the current state of the async loading sequence.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="ret">bool</span> <span class="fn">elementGetStyleParams</span>(<span class="prm">const char*</span> elementName, <span class="prm">ElementState</span> state, <span class="prm">const Scale9**</span> outScale9, <span class="prm">const Rgba32**</span> outColor)</code></div>
+		<p class="brief">Return the scale9 and color params of a named element style at a given state, if it exists.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="ret">bool</span> <span class="fn">elementGetStyleParamFloat</span>(<span class="prm">const char*</span> elementName, <span class="prm">ElementState</span> state, <span class="prm">ElementStyleParamsType</span> styleType)</code></div>
+		<p class="brief">Return a float style param of a named element style at a given state.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="ret">bool</span> <span class="fn">elementHasStyleParamsOfType</span>(<span class="prm">const char*</span> elementName, <span class="prm">ElementState</span> state, <span class="prm">ElementStyleParamsType</span> styleParamsType)</code></div>
+		<p class="brief">Return true if a named element style defines a specific param type at a given state.</p>
+	</div>
+
+	<h2>Fonts &amp; images</h2>
+	<div class="member">
+		<div class="prototype"><code><span class="ret">HFontFace</span> <span class="fn">fontFaceCreate</span>(<span class="prm">const char*</span> path = nullptr)</code></div>
+		<p class="brief">Create a font face from a TTF file, or load the default embedded font if no path is given.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="ret">HFont</span> <span class="fn">fontGet</span>(<span class="prm">HFontFace</span> fontFace, <span class="prm">f32</span> pixHeight = 32.0f)</code></div>
+		<p class="brief">Get or create a font at the given pixel height.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="ret">FontInfo</span> <span class="fn">fontGetInfo</span>(<span class="prm">u32</span> fontIndex)</code></div>
+		<p class="brief">Return metrics about a font: ascent, descent, unitsPerEm, lineGap.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="ret">HImage</span> <span class="fn">imageCreateFromFile</span>(<span class="prm">const char*</span> path)</code></div>
+		<p class="brief">Load an image from a file (PNG, JPG, BMP, QOI), PNG format is recommended.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">imageDelete</span>(<span class="prm">HImage</span> img)</code></div>
+		<p class="brief">Delete an image and free its GPU resource.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="ret">u32</span> <span class="fn">imageGetWidth</span>(<span class="prm">HImage</span> img)</code></div>
+		<p class="brief">Return the width of an image in pixels.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="ret">u32</span> <span class="fn">imageGetHeight</span>(<span class="prm">HImage</span> img)</code></div>
+		<p class="brief">Return the height of an image in pixels.</p>
+	</div>
+
+	<h2>Theme build &amp; validation</h2>
+	<div class="member">
+		<div class="prototype"><code><span class="ret">bool</span> <span class="fn">themeBuildElements</span>(<span class="prm">const u8*</span> data, <span class="prm">size_t</span> dataSize)</code></div>
+		<p class="brief">Build all element styles from theme data into the global context style array. Used by the theme build/load pipeline; typically not called from user code.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="ret">bool</span> <span class="fn">validateJsTheme</span>(<span class="prm">const u8*</span> data, <span class="prm">size_t</span> dataSize, <span class="prm">char*</span> outErrors)</code></div>
+		<p class="brief">Validate theme json data; report errors in the caller-provided buffer.</p>
+	</div>
+
+	<div class="callout">
+		The theme <code>json</code> structure, element names and style params are covered in detail by
+		<a href="../theme_json_format/index.html">Theme JSON Format</a>.
+	</div>
+
+	<div class="footer">
+		Horus UI &mdash; (C) All rights reserved 2016-2026 7thFACTOR Software - Nicusor Nedelcu (nekitu)
+	</div>
+</main>
+
+</body>
+</html>

@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Horus UI - Types</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<aside class="sidebar">
+	<div class="brand">
+		<div class="logo">H</div>
+		<div class="title">Horus UI</div>
+	</div>
+	<nav>
+		<div class="nav-label">API Reference</div>
+		<a href="index.html">Overview</a>
+		<a href="types.html" class="active">Types</a>
+		<a href="core.html">Core</a>
+		<a href="windows.html">Windowing &amp; toolbars</a>
+		<a href="theme.html">Themes &amp; fonts</a>
+		<a href="layout.html">Layout &amp; tables</a>
+		<a href="widgets.html">Widgets</a>
+		<a href="rendering.html">Rendering &amp; utility</a>
+	</nav>
+</aside>
+
+<main class="main">
+
+	<h1>Types</h1>
+	<p class="lead">Handles, scalar aliases, math structs, flag enums, input data, render and display info.</p>
+
+	<h2>Opaque handles</h2>
+	<div class="table-wrap">
+		<table>
+			<thead>
+				<tr><th>Type</th><th>Description</th></tr>
+			</thead>
+			<tbody>
+				<tr><td><code>HImage</code></td><td>An image, shared by the theme atlas or created at runtime.</td></tr>
+				<tr><td><code>HTheme</code></td><td>A theme holding widget element infos, styles, fonts and the image atlas.</td></tr>
+				<tr><td><code>HFont</code></td><td>A font object created from a theme.</td></tr>
+				<tr><td><code>HThemeWidgetElement</code></td><td>A widget element info handle in a theme.</td></tr>
+				<tr><td><code>HNativeWindow</code></td><td>A native OS window created through the services.</td></tr>
+				<tr><td><code>HDockNode</code></td><td>A node in the window docking tree.</td></tr>
+				<tr><td><code>HMouseCursor</code></td><td>A custom OS mouse cursor.</td></tr>
+				<tr><td><code>HTexture</code></td><td>A GPU texture handle.</td></tr>
+				<tr><td><code>HContext</code></td><td>A Horus UI context (created by <code>contextCreate</code>).</td></tr>
+				<tr><td><code>HFile</code></td><td>An open file, used by the file I/O services.</td></tr>
+				<tr><td><code>HFontFace</code></td><td>A loaded font face (rasterizable, kerning).</td></tr>
+				<tr><td><code>HOverlayToolbar</code></td><td>An overlay toolbar.</td></tr>
+				<tr><td><code>HOverlayToolbarWidget</code></td><td>A widget element in an overlay toolbar.</td></tr>
+			</tbody>
+		</table>
+	</div>
+
+	<h2>Scalar aliases</h2>
+	<div class="table-wrap">
+		<table>
+			<thead>
+				<tr><th>Type</th><th>Description</th></tr>
+			</thead>
+			<tbody>
+				<tr><td><code>u8, u16, u32, u64, u128</code></td><td>Unsigned integer types (<code>uint8_t</code>&hellip;, 128-bit is a struct of two <code>u64</code>).</td></tr>
+				<tr><td><code>i8, i16, i32, i64, i128</code></td><td>Signed integer types.</td></tr>
+				<tr><td><code>f32, f64</code></td><td>Float and double types.</td></tr>
+				<tr><td><code>Rgba32</code></td><td>A packed RGBA color (<code>u32</code>).</td></tr>
+				<tr><td><code>TabIndex</code></td><td>An index of a tab in a tab group (<code>u32</code>).</td></tr>
+				<tr><td><code>GlyphCode</code></td><td>A glyph code / character code (<code>u32</code>).</td></tr>
+				<tr><td><code>DockNodeId</code></td><td>A unique id of a dock node (<code>u64</code>).</td></tr>
+				<tr><td><code>WidgetId</code></td><td>A unique id of a widget in the id scope (<code>u64</code>).</td></tr>
+				<tr><td><code>Utf32String</code></td><td>A string of glyph codes: <code>std::vector&lt;GlyphCode&gt;</code>.</td></tr>
+			</tbody>
+		</table>
+	</div>
+
+	<h2>Callbacks</h2>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">typedef</span> <span class="kw">void</span> (*<span class="fn">RenderCallback</span>)(<span class="kw">HNativeWindow</span> wnd);</code></div>
+		<p class="brief">Renders custom content when the UI command list is submitted.</p>
+		<ul class="params"><li><span class="pname">wnd</span> the native window being rendered to</li></ul>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">typedef</span> <span class="kw">void</span> (*<span class="fn">CustomFileDialogListCallback</span>)(const char* path, <span class="kw">std::vector&lt;CustomFileDialogEntry&gt;</span>&amp; outEntries, <span class="kw">void</span>* userData);</code></div>
+		<p class="brief">Lists the contents of a path for the <a href="rendering.html#customfiledialog">custom file dialog</a>.</p>
+		<ul class="params">
+			<li><span class="pname">path</span> the absolute path to list</li>
+			<li><span class="pname">outEntries</span> filled with the entries found in <code>path</code></li>
+			<li><span class="pname">userData</span> the user data passed to <code>customFileDialog</code></li>
+		</ul>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">typedef</span> <span class="kw">bool</span> (*<span class="fn">CustomFileDialogCreateFolderCallback</span>)(const char* path, const char* folderName, <span class="kw">void</span>* userData);</code></div>
+		<p class="brief">Creates a folder in the current path for the custom file dialog. Return <code>true</code> when created; when <code>nullptr</code> the dialog hides the "New folder" button.</p>
+		<ul class="params">
+			<li><span class="pname">path</span> the absolute current path of the dialog</li>
+			<li><span class="pname">folderName</span> the name of the folder to create</li>
+			<li><span class="pname">userData</span> the user data passed to <code>customFileDialog</code></li>
+		</ul>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">typedef</span> <span class="kw">void</span> (*<span class="fn">CustomFileDialogPreviewCallback</span>)(const char* path, <span class="kw">const Rect&amp;</span> previewRect, <span class="kw">void</span>* userData);</code></div>
+		<p class="brief">Draws a preview of the currently selected entry in the custom file dialog. When non-null a preview panel is shown on the right.</p>
+		<ul class="params">
+			<li><span class="pname">path</span> the full absolute path of the selected entry</li>
+			<li><span class="pname">previewRect</span> the rectangle where the preview should be drawn (window coordinates)</li>
+			<li><span class="pname">userData</span> the user data passed to <code>customFileDialog</code></li>
+		</ul>
+	</div>
+
+	<h2>2D math structs</h2>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">struct</span> <span class="fn">Point</span> { <span class="kw">f32</span> x, y; };</code></div>
+		<p class="brief">A 2D point with a full set of arithmetic operators, <code>dot</code>, <code>normalize</code>, <code>getLength</code>, <code>isOnLine</code>, etc.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">struct</span> <span class="fn">SplineControlPoint</span> { <span class="kw">Point</span> leftTangent, center, rightTangent; <span class="kw">bool</span> isLine; <span class="kw">NodeType</span> type; };</code></div>
+		<p class="brief">A spline control point with optional tangents, used by <code>renderDrawSpline</code>.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">struct</span> <span class="fn">Rect</span> { <span class="kw">f32</span> x, y, width, height; };</code></div>
+		<p class="brief">An axis-aligned rectangle with helpers: <code>contains</code>, <code>expand</code>/<code>contract</code>, <code>clipInside</code>, edges and corners.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">struct</span> <span class="fn">Color</span> { <span class="kw">f32</span> r, g, b, a; };</code></div>
+		<p class="brief">A color with float RGBA channels (0..1). Converts to/from packed <code>Rgba32</code>, has arithmetic operators and a set of named constants (<code>Color::red</code>, <code>Color::darkBlue</code>, <code>Color::white</code>&hellip;).</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">struct</span> <span class="fn">LineStyle</span> { <span class="kw">Color</span> color; <span class="kw">f32</span> width; <span class="kw">bool</span> useStipple; <span class="kw">f32</span> stipplePattern[8]; <span class="kw">u32</span> stipplePatternCount; <span class="kw">f32</span> stipplePhase; };</code></div>
+		<p class="brief">Line drawing style. The stipple pattern alternates dash and empty sizes (e.g. <code>{5, 5}</code>).</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">struct</span> <span class="fn">FillStyle</span> { <span class="kw">Color</span> color; <span class="kw">HImage</span> image; <span class="kw">Point</span> scale; };</code></div>
+		<p class="brief">Filled primitive style with an optional image and scale.</p>
+	</div>
+
+	<h2>Input types</h2>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">struct</span> <span class="fn">InputEvent</span></code></div>
+		<p class="brief">An input event pushed to the input queue by an input provider and read with <code>inputEventGet</code>.</p>
+		<p class="note"><code>InputEvent::Type</code>: <code>None, MouseMove, MouseDown, MouseUp, MouseWheel, Key, Text, WindowMoved, WindowResized, WindowGotFocus, WindowLostFocus, WindowMouseEnter, WindowMouseLeave, WindowClose, OsDragDrop</code>.</p>
+		<p class="note">Union payload fields <code>mouse</code> (<code>MouseData</code>), <code>key</code> (<code>KeyData</code>), <code>text</code> (<code>TextData</code>), <code>drop</code> (<code>OsDragDropData</code>) are valid per the type. The affected <code>window</code> (HNativeWindow) is also stored.</p>
+	</div>
+
+	<h2>Render types</h2>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">struct</span> <span class="fn">Vertex</span> { <span class="kw">Point</span> position; <span class="kw">Point</span> uv; <span class="kw">u32</span> color; };</code></div>
+		<p class="brief">A vertex used by the <code>Services::draw</code> graphics callback.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">struct</span> <span class="fn">RenderBatch</span></code></div>
+		<p class="brief">A single draw call over a vertex range; the renderer splits the UI into batches per texture and state.</p>
+		<p class="note"><code>RenderBatch::PrimitiveType</code>: <code>TriangleList, TriangleStrip, TriangleFan</code>. Fields: <code>texture</code>, <code>startVertexIndex</code>, <code>vertexCount</code>.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">struct</span> <span class="fn">ImageData</span> { <span class="kw">Rgba32</span>* pixels; <span class="kw">u32</span> width; <span class="kw">u32</span> height; };</code></div>
+		<p class="brief">Raw RGBA pixel data of an image.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">struct</span> <span class="fn">PackedRect</span> { <span class="kw">u64</span> id; <span class="kw">Rect</span> rect; <span class="kw">bool</span> packedOk; };</code></div>
+		<p class="brief">A rectangle packed in the atlas by the <code>Services::packRects</code> callback.</p>
+	</div>
+
+	<h2>Font types</h2>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">struct</span> <span class="fn">FontGlyph</span></code></div>
+		<p class="brief">A rasterized glyph filled by the <code>Services::rasterizeFontGlyph</code> callback: image, code, bearings, advance, bitmap metrics and RGBA buffer.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">struct</span> <span class="fn">FontMetrics</span> { <span class="kw">f32</span> height, ascender, descender, underlinePosition, underlineThickness; };</code></div>
+		<p class="brief">Line metrics of a font face.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">struct</span> <span class="fn">FontTextSize</span></code></div>
+		<p class="brief">The measured size of a text: <code>width</code>, <code>height</code>, <code>maxBearingY</code>, <code>maxGlyphHeight</code>, <code>maxLength</code>.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">struct</span> <span class="fn">FontInfo</span> { <span class="kw">HFontFace</span> fontFace; <span class="kw">FontMetrics</span> metrics; };</code></div>
+		<p class="brief">A loaded font face and its metrics, filled by <code>Services::loadFont</code>.</p>
+	</div>
+
+	<h2>Display &amp; docking structs</h2>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">struct</span> <span class="fn">DisplayInfo</span></code></div>
+		<p class="brief">Info about a monitor: <code>name</code>, <code>index</code>, <code>bounds</code>, <code>usableBounds</code>, <code>scale</code>.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">struct</span> <span class="fn">WindowsDockingState</span></code></div>
+		<p class="brief">The saved window docking layout, filled by <code>dockingStateSave</code> and restored by <code>dockingStateLoad</code>. Lists every dock node and its docked windows.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">struct</span> <span class="fn">VirtualScrollInfo</span></code></div>
+		<p class="brief">Virtual list state for <code>virtualListContentBegin</code>: <code>totalItemCount</code>, <code>itemHeight</code>, <code>startIndex</code>, <code>endIndex</code>, <code>scrollOffsetY</code>, plus a <code>nextStep()</code> helper.</p>
+	</div>
+
+	<h2>Theme helpers</h2>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">struct</span> <span class="fn">WidgetElementInfo</span></code></div>
+		<p class="brief">The visual description of a widget element: <code>image</code>, <code>border</code> (9-cell), <code>color</code>, <code>textColor</code>, <code>font</code>, <code>width</code>, <code>height</code>, <code>textShadow</code>.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">struct</span> <span class="fn">TextShadow</span></code></div>
+		<p class="brief">Embossed/outline text shadow settings: <code>color</code>, <code>offsetX</code>, <code>offsetY</code>, <code>enabled</code>.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">struct</span> <span class="fn">KeywordInfo</span></code></div>
+		<p class="brief">A syntax-highlight keyword and its color for the multiline text input: <code>keyword</code>, <code>color</code>, <code>type</code> (<code>Keyword</code>/<code>Delimiter</code>).</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">struct</span> <span class="fn">RangeHighlight</span></code></div>
+		<p class="brief">Colors the text between <code>beginKeyword</code> and <code>endKeyword</code> (with optional <code>escapeKeyword</code>) in the multiline text input.</p>
+	</div>
+
+	<h2>Enums</h2>
+	<div class="table-wrap">
+		<table>
+			<thead>
+				<tr><th>Enum</th><th>Values</th><th>Description</th></tr>
+			</thead>
+			<tbody>
+				<tr><td><code>HAlignType</code></td><td><code>Left, Right, Center</code></td><td>Horizontal alignment for text/images.</td></tr>
+				<tr><td><code>VAlignType</code></td><td><code>Top, Bottom, Center</code></td><td>Vertical alignment for text/images.</td></tr>
+				<tr><td><code>PaddingType</code></td><td><code>Layout, ScrollView, Widget</code></td><td>Which padding stack is used by <code>paddingPush</code>/<code>paddingPop</code>.</td></tr>
+				<tr><td><code>WidgetType</code></td><td><code>None, Custom, Window, Layout, Tooltip, Button, ButtonGroup, ImageButton, TextInput, MultilineTextInput, Slider, Progress, Image, Check, Radio, Label, Expandable, TreeNode, Popup, Dropdown, List, Selectable, Line, Space, ScrollView, MenuBar, Menu, TabGroup, Tab, Viewport, MsgBox, Box, ComboSlider, CircularSlider, ColorPicker, Table, Link</code></td><td>Built-in widget types, used to address theme styles.</td></tr>
+				<tr><td><code>WidgetElementId</code></td><td><code>None, Custom, WindowBody, ButtonBody, ButtonGroupLeftBody, ButtonGroupMiddleBody, ButtonGroupRightBody, ImageButtonBody, CheckBody, CheckMark, CheckMarkIndeterminate, RadioBody, RadioMark, LineBody, LabelBody, ExpandableBody, ExpandableCollapsedArrow, ExpandableExpandedArrow, TreeNodeBody, TreeNodeCollapsedArrow, TreeNodeExpandedArrow, TextInputBody, TextInputCaret, TextInputSelection, TextInputSelectedText, TextInputDefaultText, TextInputFilterClearImage, MultilineTextInputBody, MultilineTextInputLineNumbers, MultilineTextInputCurrentLineHighlight, MultilineTextInputWordWrap, SliderBody, SliderBodyFilled, SliderKnob, ProgressBack, ProgressFill, TooltipBody, PopupBody, PopupBehind, DropdownBody, DropdownArrowBox, DropdownArrow, DropdownListBody, ScrollViewBody, ScrollViewScrollBarV, ScrollViewScrollThumbV, ScrollViewScrollBarH, ScrollViewScrollThumbH, TabGroupBody, TabBodyActive, TabBodyInactive, WindowHorizontalSplitter, WindowVerticalSplitter, WindowDockGuideAsTab, WindowDockGuideVerticalSplit, WindowDockGuideHorizontalSplit, MenuBarBody, MenuBarItem, MenuBody, MenuItemSeparator, MenuItemBody, MenuItemShortcut, MenuItemCheckMark, MenuItemNoCheckMark, SubMenuItemArrow, MessageBoxImageError, MessageBoxImageInfo, MessageBoxImageQuestion, MessageBoxImageWarning, SelectableBody, BoxBody, ComboSliderLeftButton, ComboSliderMiddleButton, ComboSliderRightButton, ComboSliderLeftArrow, ComboSliderRightArrow, ComboSliderRangeBar, CircularSliderBody, CircularSliderMark, CircularSliderValueDot, ColorPickerCheckers, ColorPickerBody, ColorPickerButtonBody, TableBody, TableHeaderBody, TableHeaderBodyLeft, TableHeaderBodyRight, LinkBody</code></td><td>Built-in widget elements, used to theme every piece of every widget.</td></tr>
+				<tr><td><code>WidgetStateType</code></td><td><code>Normal, Focused, Pressed, Hovered, Disabled, Unknown</code></td><td>The visual state of a widget element.</td></tr>
+				<tr><td><code>MouseButton</code></td><td><code>Left, Middle, Right, AuxButton1..5, None</code></td><td>Mouse buttons.</td></tr>
+				<tr><td><code>NativeWindowFlags</code></td><td><code>NoInput, NoDecoration, Resizable</code></td><td>OS window flags (<code>HUI_ENUM_AS_FLAGS</code>).</td></tr>
+				<tr><td><code>NativeWindowState</code></td><td><code>Normal, Minimized, Maximized, Hidden</code></td><td>OS window state.</td></tr>
+				<tr><td><code>FileSeekMode</code></td><td><code>Set, Current, End</code></td><td>File seek origin for the file I/O services.</td></tr>
+				<tr><td><code>WindowFlags</code></td><td><code>None, Transparent, CanClose, CanMove, CanResize, CanMinimize, Disabled</code></td><td>Horus window flags (<code>windowSetNextFlags</code>).</td></tr>
+				<tr><td><code>DrawCmdLayerType</code></td><td><code>Normal, Foreground, Overlay</code></td><td>Draw command layer.</td></tr>
+				<tr><td><code>ImageFitType</code></td><td><code>None, KeepAspect, Stretch</code></td><td>How an image is fitted in the image widget.</td></tr>
+				<tr><td><code>TextInputFlags</code></td><td><code>None, NumericOnly, HexOnly, Custom, AutoSelectAll</code></td><td>Text input modes.</td></tr>
+				<tr><td><code>MultilineTextInputFlags</code></td><td><code>None, SpacesOnTab, LineNumbers, AutoSelectAll, HighlightCurrentLine, WordWrap</code></td><td>Multiline text input modes.</td></tr>
+				<tr><td><code>ListSelectionMode</code></td><td><code>Single, Multiple</code></td><td>List selection mode.</td></tr>
+				<tr><td><code>SelectableFlags</code></td><td><code>Normal, Checkable, Checked, Selected</code></td><td>Selectable/menu-item state flags.</td></tr>
+				<tr><td><code>TreeNodeFlags</code></td><td><code>Normal, ToggleOnSelect</code></td><td>Tree node flags.</td></tr>
+				<tr><td><code>TableFlags</code></td><td><code>None, FixedFit, Stretch, FixedSize, Borders, BordersOuter, BordersInner, AltRowBg, ScrollX, Resizable, Reorderable, BordersV, BordersH</code></td><td>Table flags.</td></tr>
+				<tr><td><code>ScrollViewFlags</code></td><td><code>None, NoBorder, NoHorizontalScroll, NoPadding</code></td><td>Scroll view flags.</td></tr>
+				<tr><td><code>ScrollToItemSnapMode</code></td><td><code>Minimal, AlignStart, AlignCenter, AlignEnd</code></td><td>How the scroll view aligns when scrolling to a widget.</td></tr>
+				<tr><td><code>TableColumnFlags</code></td><td><code>None, Fixed, FixedResize, Stretch</code></td><td>Table column sizing behavior.</td></tr>
+				<tr><td><code>KeyCode</code></td><td><code>None, F1..F12, Num1..Num0, A..Z, NumLock, Scroll, numpad&hellip;, Control/Shift/Alt, Tab, Space, Enter, Esc, Backspace, &hellip;</code></td><td>Key codes.</td></tr>
+				<tr><td><code>KeyModifiers</code></td><td><code>None, Shift, Control, Alt, CapsLock</code></td><td>Key modifier flags.</td></tr>
+				<tr><td><code>MouseCursorType</code></td><td><code>Arrow, IBeam, Wait, CrossHair, ArrowWait, SizeNWSE, SizeNESW, SizeWE, SizeNS, SizeAll, No, HandPointing, Custom</code></td><td>Named mouse cursors.</td></tr>
+				<tr><td><code>SliderDragDirection</code></td><td><code>Any, HorizontalOnly, VerticalOnly</code></td><td>Slider drag direction mode (see <code>Settings</code>).</td></tr>
+				<tr><td><code>DockType</code></td><td><code>None, Left, Right, Top, Bottom, AsTab, Floating</code></td><td>Docking modes for windows.</td></tr>
+				<tr><td><code>DockNodeSplitType</code></td><td><code>Top, Bottom, Left, Right</code></td><td>Dock node split direction.</td></tr>
+				<tr><td><code>DockingGuidesStyle</code></td><td><code>NativeWindows, InsideNativeWindows, MouseCursorOnly, Auto</code></td><td>How docking guides are drawn. <code>NativeWindows</code> is Windows-only and smoothest.</td></tr>
+				<tr><td><code>MessageBoxImage</code></td><td><code>Error, Info, Question, Warning, Custom</code></td><td>Message box image.</td></tr>
+				<tr><td><code>MessageBoxButtons</code></td><td><code>None, Ok, Cancel, Yes, No, Retry, Abort, ClosedByEscape, OkCancel, YesNo, YesNoCancel</code></td><td>Message box buttons and result.</td></tr>
+				<tr><td><code>PopupFlags</code></td><td><code>None, FadeBackground, Centered, BelowLastWidget, RightSideLastWidget, CustomPosition, SameLayer, TopMost, IsMenu, LayerOnMouseInside</code></td><td>Popup widget placement flags.</td></tr>
+				<tr><td><code>ContextMenuFlags</code></td><td><code>None</code></td><td>Context menu flags (reserved for future use).</td></tr>
+				<tr><td><code>ColorPickerFlags</code></td><td><code>NoAlpha, Hdr, Float, PopupApplyButtons, ShowPalette</code></td><td>Color picker flags.</td></tr>
+				<tr><td><code>CircularSliderFlags</code></td><td><code>Normal, ShowValueInCenter</code></td><td>Circular slider flags.</td></tr>
+				<tr><td><code>CustomFileDialogFlags</code></td><td><code>None, SaveFile, PickFolder</code></td><td>Custom file dialog flags.</td></tr>
+				<tr><td><code>VectorEditorFlags</code></td><td><code>None, AutoSelectAll, IndeterminateX, IndeterminateY, IndeterminateZ</code></td><td>Vector editor flags.</td></tr>
+				<tr><td><code>TintColorType</code></td><td><code>Body, Text, All</code></td><td>What a tint color affects.</td></tr>
+				<tr><td><code>TintColorOpType</code></td><td><code>None, Multiply, Add, Subtract, Replace</code></td><td>How the tint color is combined.</td></tr>
+				<tr><td><code>OverlayDockZone</code></td><td><code>None, TopToolbar, BottomToolbar, LeftToolbar, RightToolbar, Floating</code></td><td>Dock zones for overlay toolbars.</td></tr>
+				<tr><td><code>OverlayToolbarLayout</code></td><td><code>Horizontal, Vertical, Panel</code></td><td>Overlay toolbar layouts.</td></tr>
+			</tbody>
+		</table>
+	</div>
+
+	<div class="footer">
+		Horus UI &mdash; (C) All rights reserved 2016-2026 7thFACTOR Software - Nicusor Nedelcu (nekitu)
+	</div>
+</main>
+
+</body>
+</html>

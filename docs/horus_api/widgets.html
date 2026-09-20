@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Horus UI - Widgets</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<aside class="sidebar">
+	<div class="brand">
+		<div class="logo">H</div>
+		<div class="title">Horus UI</div>
+	</div>
+	<nav>
+		<div class="nav-label">API Reference</div>
+		<a href="index.html">Overview</a>
+		<a href="types.html">Types</a>
+		<a href="core.html">Core</a>
+		<a href="windows.html">Windowing & toolbars</a>
+		<a href="theme.html">Themes & fonts</a>
+		<a href="layout.html">Layout & tables</a>
+		<a href="widgets.html" class="active">Widgets</a>
+		<a href="rendering.html">Rendering & utility</a>
+	</nav>
+</aside>
+
+<main class="main">
+
+	<h1>Widgets</h1>
+	<p class="lead">All built-in widgets: boxes, popups, message boxes, buttons, inputs, sliders, images, progress, checks, radio, labels, expandable, tree, dropdown, list, selectable, link, separators, viewport, menus, tabs, and immediate state queries.</p>
+
+	<h2>Boxes</h2>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">boxBegin</span>(<span class="prm">const char*</span> id, <span class="prm">const Color&</span> tintColor, <span class="prm">WidgetElementId</span> widgetElementId = WidgetElementId::BoxBody, <span class="prm">WidgetStateType</span> state = WidgetStateType::Normal, <span class="prm">f32</span> customHeight = 0.0f)</code></div>
+		<p class="brief">Begin drawing a box, which may contain other widgets.</p>
+		<ul class="params">
+			<li><span class="pname">id</span> the box id</li>
+			<li><span class="pname">tintColor</span> the box tint color</li>
+			<li><span class="pname">widgetElementId</span> the widget element id image to use when drawing the box</li>
+			<li><span class="pname">state</span> the widget element state to draw with</li>
+			<li><span class="pname">customHeight</span> a forced custom height, otherwise auto calculated from child widgets</li>
+		</ul>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">boxBeginUserElement</span>(<span class="prm">const char*</span> id, <span class="prm">const Color&</span> tintColor, <span class="prm">const char*</span> userElementName, <span class="prm">WidgetStateType</span> state = WidgetStateType::Normal, <span class="prm">f32</span> customHeight = 0.0f)</code></div>
+		<p class="brief">Begin drawing a box using a user element from the theme.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="ret">bool</span> <span class="fn">boxEnd</span>()</code></div>
+		<p class="brief">End the box layout.</p>
+		<p class="returns">Returns true if the box was drawn.</p>
+	</div>
+
+	<h2>Popups & message boxes</h2>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">popupBegin</span>(<span class="prm">const char*</span> id, <span class="prm">f32</span> width, <span class="prm">PopupFlags</span> flags = PopupFlags::BelowLastWidget, <span class="prm">const Point&</span> position = Point(), <span class="prm">WidgetElementId</span> widgetElementId = WidgetElementId::PopupBody)</code></div>
+		<p class="brief">Begin drawing a modal popup widget on top of all other popups or widgets.</p>
+		<ul class="params">
+			<li><span class="pname">id</span> the popup id</li>
+			<li><span class="pname">width</span> the width of the popup</li>
+			<li><span class="pname">flags</span> the popup flags (<a href="types.html">PopupFlags</a>)</li>
+			<li><span class="pname">position</span> custom window coordinates of the popup</li>
+			<li><span class="pname">widgetElementId</span> element theme to draw the popup body</li>
+		</ul>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">popupEnd</span>()</code></div>
+		<p class="brief">End a popup widget.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">popupClose</span>()</code></div>
+		<p class="brief">Close the current popup, used inside begin/endPopup.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="ret">bool</span> <span class="fn">popupMustClose</span>()</code></div>
+		<p class="brief">Return true if the popup must be closed due to user input.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="ret">bool</span> <span class="fn">popupClickedOutside</span>()</code></div>
+		<p class="brief">Return true if the user clicked outside popup's rect.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="ret">bool</span> <span class="fn">popupMouseOutside</span>()</code></div>
+		<p class="brief">Return true if mouse is outside popup's rect.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="ret">bool</span> <span class="fn">popupPressedEscape</span>()</code></div>
+		<p class="brief">Return true if the user pressed escape while current popup is active.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="ret">MessageBoxButtons</span> <span class="fn">messageBox</span>(<span class="prm">const char*</span> title, <span class="prm">const char*</span> message, <span class="prm">MessageBoxButtons</span> buttons = MessageBoxButtons::Ok, <span class="prm">MessageBoxImage</span> img = MessageBoxImage::Info, <span class="prm">u32</span> width = 400, <span class="prm">HImage</span> customImg = 0)</code></div>
+		<p class="brief">Draw a message box popup.</p>
+		<ul class="params">
+			<li><span class="pname">title</span> the message box title</li>
+			<li><span class="pname">message</span> the message</li>
+			<li><span class="pname">buttons</span> the visible buttons flags</li>
+			<li><span class="pname">img</span> the image of the message box</li>
+			<li><span class="pname">width</span> the width of the message box</li>
+			<li><span class="pname">customImg</span> the custom image if set in img param</li>
+		</ul>
+		<p class="returns">Returns the pushed button in the message box.</p>
+	</div>
+
+	<h2>Widget state control</h2>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">widgetSetNextDisabled</span>(<span class="prm">bool</span> disabled = true)</code></div>
+		<p class="brief">Set the next widget as disabled.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">widgetPushDisabled</span>(<span class="prm">bool</span> disabled = true)</code></div>
+		<p class="brief">Nest the disabled state; all widgets inside will be disabled.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">widgetPopDisabled</span>()</code></div>
+		<p class="brief">Pop the disabled nesting state.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="ret">bool</span> <span class="fn">widgetGetDisabled</span>()</code></div>
+		<p class="brief">Return true if the next widget will be disabled (either by parent or next-state).</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">widgetSetNextFocused</span>()</code></div>
+		<p class="brief">Set next widget as focused.</p>
+	</div>
+
+	<h2>Buttons</h2>
+	<div class="member">
+		<div class="prototype"><code><span class="ret">bool</span> <span class="fn">button</span>(<span class="prm">const char*</span> label)</code></div>
+		<p class="brief">Draw a button widget.</p>
+		<ul class="params"><li><span class="pname">label</span> the button text</li></ul>
+		<p class="returns">Returns true if button was pressed.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="ret">bool</span> <span class="fn">buttonGroup</span>(<span class="prm">const char*</span> id, <span class="prm">const char**</span> labels, <span class="prm">u32</span> count, <span class="prm">u32*</span> currentIndex)</code></div>
+		<p class="brief">Draw a group of segment buttons, only one is selected at a time.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="ret">bool</span> <span class="fn">buttonGroup</span>(<span class="prm">const char*</span> id, <span class="prm">const char**</span> labels, <span class="prm">u32</span> count, <span class="prm">u32*</span> currentIndex, <span class="prm">bool</span> fullWidth)</code></div>
+		<p class="brief">Draw a group of segment buttons with full width option.</p>
+		<ul class="params"><li><span class="pname">fullWidth</span> if true buttons share full available layout width equally</li></ul>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="ret">bool</span> <span class="fn">imageButton</span>(<span class="prm">HImage</span> img, <span class="prm">f32</span> width, <span class="prm">f32</span> height, <span class="prm">HImage</span> disabledImg = 0, <span class="prm">bool</span> down = false)</code></div>
+		<p class="brief">Draw a button with an image on it.</p>
+		<ul class="params">
+			<li><span class="pname">img</span> the image</li>
+			<li><span class="pname">width</span> the button width</li>
+			<li><span class="pname">height</span> the button height, if zero takes image height</li>
+			<li><span class="pname">disabledImg</span> image for disabled state</li>
+			<li><span class="pname">down</span> if true button is in pressed state</li>
+		</ul>
+		<p class="returns">Returns true if the button was pressed.</p>
+	</div>
+
+	<h2>Text inputs</h2>
+	<div class="member">
+		<div class="prototype"><code><span class="ret">bool</span> <span class="fn">textInput</span>(<span class="prm">const char*</span> id, <span class="prm">char*</span> text, <span class="prm">u32</span> maxTextSize, <span class="prm">TextInputFlags</span> flags = TextInputFlags::None, <span class="prm">const char*</span> defaultText = nullptr, <span class="prm">HImage</span> img = 0, <span class="prm">bool</span> password = false, <span class="prm">const char*</span> passwordChar = "*")</code></div>
+		<p class="brief">Draw a text input widget.</p>
+		<ul class="params">
+			<li><span class="pname">id</span> the widget id</li>
+			<li><span class="pname">text</span> the text to be edited, provided by user</li>
+			<li><span class="pname">maxTextSize</span> the max size of the text buffer</li>
+			<li><span class="pname">flags</span> various flags for text input (<a href="types.html">TextInputFlags</a>)</li>
+			<li><span class="pname">defaultText</span> the grayed default text when there is no text value</li>
+			<li><span class="pname">img</span> the image drawn in the widget</li>
+			<li><span class="pname">password</span> true for password mode</li>
+			<li><span class="pname">passwordChar</span> the password mask character</li>
+		</ul>
+		<p class="returns">Returns true if the text was modified.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="ret">bool</span> <span class="fn">textInputMultiline</span>(<span class="prm">const char*</span> id, <span class="prm">char*</span> text, <span class="prm">u32</span> maxTextSize, <span class="prm">u32</span> visibleLines = 10, <span class="prm">MultilineTextInputFlags</span> flags = MultilineTextInputFlags::None, <span class="prm">const KeywordInfo*</span> keywords = nullptr, <span class="prm">u32</span> keywordCount = 0, <span class="prm">const RangeHighlight*</span> rangeHighlights = nullptr, <span class="prm">u32</span> rangeHighlightCount = 0)</code></div>
+		<p class="brief">Multi-line text input widget. Enter key creates a new line instead of submitting.</p>
+	</div>
+
+	<h2>Sliders</h2>
+	<div class="member">
+		<div class="prototype"><code><span class="ret">bool</span> <span class="fn">sliderInt</span>(<span class="prm">const char*</span> id, <span class="prm">i32</span> minVal, <span class="prm">i32</span> maxVal, <span class="prm">i32&</span> value, <span class="prm">bool</span> useStep = false, <span class="prm">i32</span> step = 0)</code></div>
+		<p class="brief">Draw an integer number slider widget.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="ret">bool</span> <span class="fn">sliderFloat</span>(<span class="prm">const char*</span> id, <span class="prm">f32</span> minVal, <span class="prm">f32</span> maxVal, <span class="prm">f32&</span> value, <span class="prm">bool</span> useStep = false, <span class="prm">f32</span> step = 0)</code></div>
+		<p class="brief">Draw a float number slider widget.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="ret">bool</span> <span class="fn">comboSliderInt</span>(<span class="prm">i32*</span> value, <span class="prm">f32</span> stepsPerPixel = 1.0f, <span class="prm">i32</span> arrowStep = 1, <span class="prm">const char*</span> formatStr = nullptr, <span class="prm">const char*</span> indeterminateStr = nullptr)</code></div>
+		<p class="brief">Draw an integer combo slider widget. Pass nullptr for indeterminate state.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="ret">bool</span> <span class="fn">comboSliderIntRanged</span>(<span class="prm">i32*</span> value, <span class="prm">i32</span> minVal, <span class="prm">i32</span> maxVal, <span class="prm">f32</span> stepsPerPixel = 1, <span class="prm">i32</span> arrowStep = 1.0f, <span class="prm">const char*</span> formatStr = nullptr, <span class="prm">const char*</span> indeterminateStr = nullptr)</code></div>
+		<p class="brief">Draw an integer combo slider widget with a min/max range.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="ret">bool</span> <span class="fn">comboSliderFloat</span>(<span class="prm">f32*</span> value, <span class="prm">f32</span> stepsPerPixel = 1.0f, <span class="prm">f32</span> arrowStep = 1.0f, <span class="prm">const char*</span> formatStr = nullptr, <span class="prm">const char*</span> indeterminateStr = nullptr)</code></div>
+		<p class="brief">Draw a float combo slider widget.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="ret">bool</span> <span class="fn">comboSliderFloatRanged</span>(<span class="prm">f32*</span> value, <span class="prm">f32</span> minVal, <span class="prm">f32</span> maxVal, <span class="prm">f32</span> stepsPerPixel = 1.0f, <span class="prm">f32</span> arrowStep = 1.0f, <span class="prm">const char*</span> formatStr = nullptr, <span class="prm">const char*</span> indeterminateStr = nullptr)</code></div>
+		<p class="brief">Draw a float combo slider widget with a min/max range.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="ret">bool</span> <span class="fn">circularSliderFloat</span>(<span class="prm">const char*</span> label, <span class="prm">f32*</span> value, <span class="prm">f32</span> minVal, <span class="prm">f32</span> maxVal, <span class="prm">f32</span> step, <span class="prm">bool</span> twoSide = false, <span class="prm">f32</span> fineStepDivideFactor = 10.f, <span class="prm">CircularSliderFlags</span> flags = CircularSliderFlags::Normal)</code></div>
+		<p class="brief">Draw a circular slider widget, the value is changed by rotating the mouse around the slider.</p>
+		<ul class="params">
+			<li><span class="pname">label</span> the widget label</li>
+			<li><span class="pname">value</span> the value pointer</li>
+			<li><span class="pname">minVal</span> the minimum value</li>
+			<li><span class="pname">maxVal</span> the maximum value</li>
+			<li><span class="pname">step</span> the step per mouse rotation amount</li>
+			<li><span class="pname">twoSide</span> if true the slider is two sided (angle 180 degrees)</li>
+			<li><span class="pname">fineStepDivideFactor</span> divides the step for fine control when a modifier key is held</li>
+			<li><span class="pname">flags</span> the circular slider flags (<a href="types.html">CircularSliderFlags</a>)</li>
+		</ul>
+		<p class="returns">Returns true if the value was modified.</p>
+	</div>
+
+	<h2>Images</h2>
+	<div class="member">
+		<div class="prototype"><code><span class="ret">bool</span> <span class="fn">image</span>(<span class="prm">HImage</span> image, <span class="prm">f32</span> height = 0, <span class="prm">HAlignType</span> horizontalAlign = HAlignType::Center, <span class="prm">VAlignType</span> verticalAlign = VAlignType::Center, <span class="prm">ImageFitType</span> fit = ImageFitType::KeepAspect)</code></div>
+		<p class="brief">Draw an image widget.</p>
+		<ul class="params">
+			<li><span class="pname">image</span> the image to draw</li>
+			<li><span class="pname">height</span> the height of the image, if zero uses actual image height</li>
+			<li><span class="pname">horizontalAlign</span> the horizontal image align mode</li>
+			<li><span class="pname">verticalAlign</span> the vertical image align mode</li>
+			<li><span class="pname">fit</span> how the image is fitted in the rectangle</li>
+		</ul>
+		<p class="returns">Returns true if it was clicked on.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="ret">bool</span> <span class="fn">texture</span>(<span class="prm">HTexture</span> texture, <span class="prm">f32</span> textureWidth, <span class="prm">f32</span> textureHeight, <span class="prm">f32</span> height = 0, <span class="prm">HAlignType</span> horizontalAlign = HAlignType::Center, <span class="prm">VAlignType</span> verticalAlign = VAlignType::Center, <span class="prm">ImageFitType</span> fit = ImageFitType::KeepAspect)</code></div>
+		<p class="brief">Draw a texture widget.</p>
+	</div>
+
+	<h2>Progress & selections</h2>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">progress</span>(<span class="prm">f32</span> value, <span class="prm">f32</span> maxValue = 0.0f, <span class="prm">bool</span> showText = false, <span class="prm">bool</span> showRealValues = true, <span class="prm">const char*</span> indeterminateText = nullptr)</code></div>
+		<p class="brief">Draw a progress bar widget.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="ret">bool</span> <span class="fn">check</span>(<span class="prm">const char*</span> label, <span class="prm">bool*</span> checkVar, <span class="prm">bool*</span> indeterminate = nullptr)</code></div>
+		<p class="brief">Draw a check box widget.</p>
+		<ul class="params">
+			<li><span class="pname">label</span> the check's label</li>
+			<li><span class="pname">checkVar</span> true if it has check mark on</li>
+			<li><span class="pname">indeterminate</span> optional tri-state flag, shows minus sign when true</li>
+		</ul>
+		<p class="returns">Returns true if it was changed, result put in checkVar.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="ret">bool</span> <span class="fn">checkFlag</span>(<span class="prm">const char*</span> label, <span class="prm">u32*</span> flags, <span class="prm">u32</span> mask)</code></div>
+		<p class="brief">Draw a check box that toggles a single bit in a u32 flag value.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="ret">bool</span> <span class="fn">radio</span>(<span class="prm">const char*</span> label, <span class="prm">i32*</span> currentRadioValue, <span class="prm">i32</span> thisValue)</code></div>
+		<p class="brief">Draw a radio box widget.</p>
+	</div>
+
+	<h2>Labels</h2>
+	<div class="member">
+		<div class="prototype"><code><span class="ret">bool</span> <span class="fn">label</span>(<span class="prm">const char*</span> label, <span class="prm">HAlignType</span> horizontalAlign = HAlignType::Left)</code></div>
+		<p class="brief">Draw a label text widget.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="ret">bool</span> <span class="fn">labelCustomFont</span>(<span class="prm">const char*</span> label, <span class="prm">HFont</span> font, <span class="prm">HAlignType</span> horizontalAlign = HAlignType::Left)</code></div>
+		<p class="brief">Draw a label text widget with a custom font.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="ret">bool</span> <span class="fn">labelMultiline</span>(<span class="prm">const char*</span> label, <span class="prm">HAlignType</span> horizontalAlign)</code></div>
+		<p class="brief">Draw a multiline label text widget.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="ret">bool</span> <span class="fn">labelCustomFontMultiline</span>(<span class="prm">const char*</span> label, <span class="prm">HFont</span> font, <span class="prm">HAlignType</span> horizontalAlign = HAlignType::Left)</code></div>
+		<p class="brief">Draw a multiline label text widget with a custom font.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="ret">bool</span> <span class="fn">labelCustomColor</span>(<span class="prm">const char*</span> label, <span class="prm">const Color&</span> color, <span class="prm">HAlignType</span> horizontalAlign = HAlignType::Left)</code></div>
+		<p class="brief">Draw a label text widget with a custom color.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="ret">bool</span> <span class="fn">labelCustomColorMultiline</span>(<span class="prm">const char*</span> label, <span class="prm">const Color&</span> color, <span class="prm">HAlignType</span> horizontalAlign = HAlignType::Left)</code></div>
+		<p class="brief">Draw a multiline label text widget with a custom color.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="ret">bool</span> <span class="fn">labelCustom</span>(<span class="prm">const char*</span> label, <span class="prm">HFont</span> font, <span class="prm">const Color&</span> color, <span class="prm">HAlignType</span> horizontalAlign = HAlignType::Left)</code></div>
+		<p class="brief">Draw a label text widget with a custom font and color.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="ret">bool</span> <span class="fn">labelCustomMultiline</span>(<span class="prm">const char*</span> label, <span class="prm">HFont</span> font, <span class="prm">const Color&</span> color, <span class="prm">HAlignType</span> horizontalAlign = HAlignType::Left)</code></div>
+		<p class="brief">Draw a multiline label text widget with a custom font and color.</p>
+	</div>
+
+	<h2>Expandable & tree nodes</h2>
+	<div class="member">
+		<div class="prototype"><code><span class="ret">bool</span> <span class="fn">expandable</span>(<span class="prm">const char*</span> label, <span class="prm">bool*</span> expandedVar = nullptr)</code></div>
+		<p class="brief">Draw an expandable widget.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="ret">bool</span> <span class="fn">expandableBegin</span>(<span class="prm">const char*</span> label, <span class="prm">bool*</span> expandedVar = nullptr)</code></div>
+		<p class="brief">Begin an expandable section; call expandableEnd after drawing the content.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">expandableEnd</span>()</code></div>
+		<p class="brief">End the currently open expandable section.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="ret">bool</span> <span class="fn">treeNode</span>(<span class="prm">const char*</span> label, <span class="prm">bool*</span> expandedVar = nullptr, <span class="prm">SelectableFlags</span> stateFlags = SelectableFlags::Normal, <span class="prm">TreeNodeFlags</span> treeFlags = TreeNodeFlags::Normal)</code></div>
+		<p class="brief">Draw a tree node widget.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="ret">bool</span> <span class="fn">treeNodeBegin</span>(<span class="prm">const char*</span> label, <span class="prm">bool*</span> expandedVar = nullptr, <span class="prm">SelectableFlags</span> stateFlags = SelectableFlags::Normal, <span class="prm">TreeNodeFlags</span> treeFlags = TreeNodeFlags::Normal)</code></div>
+		<p class="brief">Begin a tree node section; call treeNodeEnd after drawing the content.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">treeNodeEnd</span>()</code></div>
+		<p class="brief">End the currently open tree node section.</p>
+	</div>
+
+	<h2>Dropdown, list & selectable</h2>
+	<div class="member">
+		<div class="prototype"><code><span class="ret">bool</span> <span class="fn">dropdown</span>(<span class="prm">const char*</span> id, <span class="prm">i32&</span> selectedIndex, <span class="prm">const char**</span> items, <span class="prm">u32</span> itemCount, <span class="prm">u32</span> maxVisibleDropDownItems = ~0, <span class="prm">const char*</span> indeterminateStr = nullptr)</code></div>
+		<p class="brief">Draw a dropdown widget.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="ret">bool</span> <span class="fn">list</span>(<span class="prm">const char*</span> id, <span class="prm">bool*</span> selectedItems, <span class="prm">ListSelectionMode</span> selectionType, <span class="prm">const char**</span> items, <span class="prm">u32</span> itemCount, <span class="prm">f32</span> height = 200.0f, <span class="prm">u32</span> dragDropUserType = 0)</code></div>
+		<p class="brief">Draw a list box widget.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="ret">bool</span> <span class="fn">selectable</span>(<span class="prm">const char*</span> label, <span class="prm">SelectableFlags</span> stateFlags = SelectableFlags::Normal)</code></div>
+		<p class="brief">Draw a selectable label.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="ret">bool</span> <span class="fn">selectableCustomFont</span>(<span class="prm">const char*</span> label, <span class="prm">HFont</span> font, <span class="prm">SelectableFlags</span> stateFlags = SelectableFlags::Normal)</code></div>
+		<p class="brief">Draw a selectable label with custom font.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="ret">bool</span> <span class="fn">link</span>(<span class="prm">const char*</span> label, <span class="prm">HAlignType</span> horizontalAlign = HAlignType::Left)</code></div>
+		<p class="brief">Draw a hyperlink text widget.</p>
+	</div>
+
+	<h2>Separators & spacing</h2>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">line</span>()</code></div>
+		<p class="brief">Draw a horizontal line widget.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">space</span>(<span class="prm">f32</span> customSpacing = 0.0f)</code></div>
+		<p class="brief">Leave a normal space between previous widget and next one.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">sameLine</span>(<span class="prm">f32</span> offsetX = 0.0f, <span class="prm">f32</span> spacing = 0.0f)</code></div>
+		<p class="brief">Make the next widget appear on the same line as the previous widget. After each widget, same-line mode automatically ends.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">widgetSetNextWidth</span>(<span class="prm">f32</span> width)</code></div>
+		<p class="brief">Set the width of the next widget drawn, overriding the default widget width.</p>
+	</div>
+
+	<h2>Viewport</h2>
+	<div class="member">
+		<div class="prototype"><code><span class="ret">Rect</span> <span class="fn">viewportBegin</span>(<span class="prm">const char*</span> id, <span class="prm">f32</span> height = 0)</code></div>
+		<p class="brief">Begin a custom user viewport area.</p>
+		<ul class="params"><li><span class="pname">height</span> the height of the viewport, if zero takes entire remaining container height</li></ul>
+		<p class="returns">Returns the rectangle in window coordinates of the actual viewport area.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">viewportEnd</span>()</code></div>
+		<p class="brief">End the current user viewport.</p>
+	</div>
+
+	<h2>Menus</h2>
+	<div class="member">
+		<div class="prototype"><code><span class="ret">bool</span> <span class="fn">menuBarBegin</span>()</code></div>
+		<p class="brief">Begin a menu bar widget.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">menuBarEnd</span>()</code></div>
+		<p class="brief">End the current menu bar widget.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="ret">bool</span> <span class="fn">menuBegin</span>(<span class="prm">const char*</span> label, <span class="prm">SelectableFlags</span> flags = SelectableFlags::Normal)</code></div>
+		<p class="brief">Begin a menu widget (it will show up only when clicked).</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">menuEnd</span>()</code></div>
+		<p class="brief">End the current menu.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="ret">bool</span> <span class="fn">contextMenuBegin</span>(<span class="prm">ContextMenuFlags</span> flags = ContextMenuFlags::None)</code></div>
+		<p class="brief">Begin drawing a context menu which will open on right click on the previous widget.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">contextMenuEnd</span>()</code></div>
+		<p class="brief">End the current context menu.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="ret">bool</span> <span class="fn">menuItem</span>(<span class="prm">const char*</span> label, <span class="prm">const char*</span> shortcut = "", <span class="prm">HImage</span> img = 0, <span class="prm">SelectableFlags</span> flags = SelectableFlags::Normal)</code></div>
+		<p class="brief">Draw a menu item widget, use inside begin/end menu (or context menu).</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">menuSeparator</span>()</code></div>
+		<p class="brief">Draw a menu item separator.</p>
+	</div>
+
+	<h2>Tabs</h2>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">tabGroupBegin</span>(<span class="prm">TabIndex</span> selectedIndex)</code></div>
+		<p class="brief">Start a tab group.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">tab</span>(<span class="prm">const char*</span> label, <span class="prm">HImage</span> img)</code></div>
+		<p class="brief">Draw a tab widget.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="ret">TabIndex</span> <span class="fn">tabGroupEnd</span>()</code></div>
+		<p class="brief">End the tab group.</p>
+	</div>
+
+	<h2>Immediate state queries</h2>
+	<div class="member">
+		<div class="prototype"><code><span class="ret">bool</span> <span class="fn">widgetIsHovered</span>()</code></div>
+		<p class="brief">Return true if the previous widget is hovered.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="ret">bool</span> <span class="fn">widgetIsFocused</span>()</code></div>
+		<p class="brief">Return true if the previous widget is focused.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="ret">bool</span> <span class="fn">widgetIsPressed</span>()</code></div>
+		<p class="brief">Return true if the previous widget is pressed down.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="ret">bool</span> <span class="fn">widgetIsClicked</span>()</code></div>
+		<p class="brief">Return true if the previous widget is clicked.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="ret">bool</span> <span class="fn">widgetIsVisible</span>()</code></div>
+		<p class="brief">Return true if the previous widget is visible.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="ret">bool</span> <span class="fn">widgetIsChangeEnded</span>()</code></div>
+		<p class="brief">Return true if the change for the widget's value ended; used for undo systems to add the undo action only after the drag/edit ended.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="ret">WidgetId</span> <span class="fn">widgetGetId</span>()</code></div>
+		<p class="brief">Return the current widget id (the next widget's id).</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="ret">Point</span> <span class="fn">widgetGetPosition</span>()</code></div>
+		<p class="brief">Return the current drawing position of widgets in the current layout, in unscaled pixels.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">widgetSetPosition</span>(<span class="prm">const Point&</span> position)</code></div>
+		<p class="brief">Set the drawing position of the next widget.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">widgetPushPosition</span>()</code></div>
+		<p class="brief">Push the current widget drawing position; after this you can move the widget position and restore it later.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">widgetPopPosition</span>()</code></div>
+		<p class="brief">Pop the previously pushed widget drawing position.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="ret">Rect</span> <span class="fn">widgetGetRect</span>()</code></div>
+		<p class="brief">Return the rectangle of the previous widget, in window coordinates.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="ret">Point</span> <span class="fn">mouseGetPosition</span>()</code></div>
+		<p class="brief">Return the current mouse position inside current window.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">mouseSetPosition</span>(<span class="prm">const Point&</span> pos)</code></div>
+		<p class="brief">Set the mouse position in screen coordinates.</p>
+	</div>
+
+	<div class="footer">
+		Horus UI &mdash; (C) All rights reserved 2016-2026 7thFACTOR Software - Nicusor Nedelcu (nekitu)
+	</div>
+</main>
+
+</body>
+</html>

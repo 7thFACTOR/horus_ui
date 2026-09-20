@@ -2610,7 +2610,8 @@ void showDemo()
 		{
 			if (!demo.toolbarGridPanning)
 			{
-				if (toolbarViewport.contains(mouseGetPosition()))
+				// do not steal the press from a toolbar element, only pan from empty viewport space
+				if (toolbarViewport.contains(mouseGetPosition()) && !overlayToolbarContainsPoint(gridMouse))
 				{
 					demo.toolbarGridPanning = true;
 					demo.toolbarGridPanStartMouse = gridMouse;

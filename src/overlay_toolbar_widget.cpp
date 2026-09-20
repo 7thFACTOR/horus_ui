@@ -339,6 +339,32 @@ bool overlayToolbarPointInDockZone(const Rect& viewportRect, const Point& pt, Ov
 	return overlayToolbarGetDockZoneRect(viewportRect, zone, toolbarThickness).contains(pt);
 }
 
+bool overlayToolbarContainsPoint(const Point& viewportPoint)
+{
+	if (!ctx)
+		return false;
+
+	// a dragged toolbar follows the pointer with a fixed grab offset, but on fast
+	// movements the pointer can leave the previous frame's rect before the drag code
+	// advances it, so treat an active or pending toolbar drag as holding the pointer
+	// even when it is momentarily outside the toolbar rect
+	for (auto& toolbar : s_manager.toolbars)
+	{
+		if (toolbar.visible && (toolbar.dragging || s_pendingDragPressed))
+			return true;
+	}
+
+	Point screenPos = { s_viewportRect.x + viewportPoint.x, s_viewportRect.y + viewportPoint.y };
+
+	for (auto& toolbar : s_manager.toolbars)
+	{
+		if (toolbar.visible && toolbar.rect.contains(screenPos))
+			return true;
+	}
+
+	return false;
+}
+
 static OverlayToolbarLayout toolbarEffectiveLayout(OverlayToolbar* toolbar)
 {
 	switch (toolbar->dockZone)
@@ -1025,6 +1051,8 @@ void overlayToolbarRender(HOverlayToolbar toolbar)
 
 	drawToolbarBackground(tbar);
 
+	ctx->renderer.pushClipRect(tbar->rect, false);
+
 	if (tbar->dragging)
 	{
 		// keep the drag while it lasts, so later widgets cannot steal it
@@ -1034,6 +1062,7 @@ void overlayToolbarRender(HOverlayToolbar toolbar)
 		if (tbar->collapsed)
 			drawToolbarTitle(tbar);
 
+		ctx->renderer.popClipRect();
 		return;
 	}
 
@@ -1137,6 +1166,8 @@ void overlayToolbarRender(HOverlayToolbar toolbar)
 			ctx->widget.captureId = 0;
 		}
 	}
+
+	ctx->renderer.popClipRect();
 }
 
 void overlayToolbarBegin(const Rect& viewportRect)

@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Horus UI - Layout & Tables</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<aside class="sidebar">
+	<div class="brand">
+		<div class="logo">H</div>
+		<div class="title">Horus UI</div>
+	</div>
+	<nav>
+		<div class="nav-label">API Reference</div>
+		<a href="index.html">Overview</a>
+		<a href="types.html">Types</a>
+		<a href="core.html">Core</a>
+		<a href="windows.html">Windowing & toolbars</a>
+		<a href="theme.html">Themes & fonts</a>
+		<a href="layout.html" class="active">Layout & tables</a>
+		<a href="widgets.html">Widgets</a>
+		<a href="rendering.html">Rendering & utility</a>
+	</nav>
+</aside>
+
+<main class="main">
+
+	<h1>Layout & Tables</h1>
+	<p class="lead">Layout areas, the id stack, tables, scroll views, virtual lists, padding, spacing, scale, tint, same-line groups and delayed tooltips.</p>
+
+	<h2>Layout areas</h2>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">layoutBegin</span>(<span class="prm">const Rect&</span> rect)</code></div>
+		<p class="brief">Begin a layout area, an invisible rectangle on the current window area where widgets will be laid out.</p>
+		<ul class="params"><li><span class="pname">rect</span> the layout rectangle</li></ul>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">layoutEnd</span>()</code></div>
+		<p class="brief">End the current layout area.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">layoutPush</span>()</code></div>
+		<p class="brief">Push the current layout state (position, size, spacing and same-line state) and start a new one, helper for nested layouts.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">layoutPop</span>()</code></div>
+		<p class="brief">Pop the previously pushed layout state, restoring the outer layout.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="ret">f32</span> <span class="fn">layoutGetRemainingHeight</span>()</code></div>
+		<p class="brief">Get the remaining height in the current layout from current position to bottom.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="ret">f32</span> <span class="fn">layoutGetRemainingWidth</span>()</code></div>
+		<p class="brief">Get the remaining width in the current layout from current position to right edge.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="ret">Point</span> <span class="fn">layoutGetSize</span>()</code></div>
+		<p class="brief">Return the size of the current layout in unscaled pixels.</p>
+	</div>
+
+	<h2>ID stack</h2>
+	<p>The id stack scopes widget ids. Push before a group of widgets, pop after.</p>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">idPush</span>(<span class="prm">const char*</span> id)</code></div>
+		<p class="brief">Push a string id on the id stack.</p>
+		<ul class="params"><li><span class="pname">id</span> the id to push</li></ul>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">idPush</span>(<span class="prm">u32</span> id)</code></div>
+		<p class="brief">Push a numeric id on the id stack.</p>
+		<ul class="params"><li><span class="pname">id</span> the id to push</li></ul>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">idPush</span>(<span class="prm">void*</span> id)</code></div>
+		<p class="brief">Push a pointer id on the id stack.</p>
+		<ul class="params"><li><span class="pname">id</span> the pointer id to push</li></ul>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">idPop</span>()</code></div>
+		<p class="brief">Pop the previously pushed id from the id stack.</p>
+	</div>
+
+	<h2>Tables</h2>
+	<div class="member">
+		<div class="prototype"><code><span class="ret">bool</span> <span class="fn">tableBegin</span>(<span class="prm">const char*</span> id, <span class="prm">u32</span> columnCount, <span class="prm">f32</span> height = -1, <span class="prm">TableFlags</span> flags = TableFlags::None)</code></div>
+		<p class="brief">Begin a table widget.</p>
+		<ul class="params">
+			<li><span class="pname">id</span> the unique widget id</li>
+			<li><span class="pname">columnCount</span> the number of columns</li>
+			<li><span class="pname">height</span> the table height, if zero or negative it uses the remaining layout height</li>
+			<li><span class="pname">flags</span> the table flags (<a href="types.html">TableFlags</a>)</li>
+		</ul>
+		<p class="returns">Returns true if there is space to draw the table and its layout was begun.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">tableEnd</span>()</code></div>
+		<p class="brief">End the current table widget.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">tableStartHeader</span>()</code></div>
+		<p class="brief">Start the table header row; all cells drawn after this until the first <code>tableRowNext</code> make the header row.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">tableColumnSetup</span>(<span class="prm">u32</span> columnIndex, <span class="prm">f32</span> size, <span class="prm">TableColumnFlags</span> flags = TableColumnFlags::None)</code></div>
+		<p class="brief">Configure a table column.</p>
+		<ul class="params">
+			<li><span class="pname">columnIndex</span> the column index to configure</li>
+			<li><span class="pname">size</span> the column size in pixels</li>
+			<li><span class="pname">flags</span> the column flags (<a href="types.html">TableColumnFlags</a>)</li>
+		</ul>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">tableRowNext</span>()</code></div>
+		<p class="brief">End the current table row and move to the next one.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">tableRowSetColor</span>(<span class="prm">const Color&</span> color)</code></div>
+		<p class="brief">Set the background color of the current table row.</p>
+		<ul class="params"><li><span class="pname">color</span> the row color</li></ul>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">tableCellNext</span>(<span class="prm">u32</span> columnSpan = 1)</code></div>
+		<p class="brief">Move to the next cell in the current table row.</p>
+		<ul class="params"><li><span class="pname">columnSpan</span> the number of columns this cell spans</li></ul>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="ret">Rect</span> <span class="fn">tableCellGetRect</span>()</code></div>
+		<p class="brief">Return the rect of the current table cell, in window coordinates.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">tableCellSetColor</span>(<span class="prm">const Color&</span> color)</code></div>
+		<p class="brief">Set the background color of the current table cell.</p>
+		<ul class="params"><li><span class="pname">color</span> the cell color</li></ul>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">tableCellPaddingPush</span>(<span class="prm">f32</span> paddingX, <span class="prm">f32</span> paddingY)</code></div>
+		<p class="brief">Push the current cell padding and set a new one.</p>
+		<ul class="params">
+			<li><span class="pname">paddingX</span> the new horizontal cell padding</li>
+			<li><span class="pname">paddingY</span> the new vertical cell padding</li>
+		</ul>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">tableCellPaddingPop</span>()</code></div>
+		<p class="brief">Pop the previous cell padding.</p>
+	</div>
+
+	<h2>Scroll views</h2>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">scrollViewBegin</span>(<span class="prm">const char*</span> id, <span class="prm">f32</span> height, <span class="prm">f32</span> scrollPosition, <span class="prm">f32</span> virtualHeight, <span class="prm">ScrollViewFlags</span> flags)</code></div>
+		<p class="brief">Begin a scroll view area widget.</p>
+		<ul class="params">
+			<li><span class="pname">id</span> the unique widget id</li>
+			<li><span class="pname">height</span> the height of the scroll area</li>
+			<li><span class="pname">scrollPosition</span> the current scroll position (given by <code>scrollViewEnd</code>)</li>
+			<li><span class="pname">virtualHeight</span> the virtual inside scroll height; if zero, automatically calculated from child widgets</li>
+			<li><span class="pname">flags</span> the scroll view flags (<a href="types.html">ScrollViewFlags</a>)</li>
+		</ul>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">scrollViewBegin</span>(<span class="prm">const char*</span> id, <span class="prm">f32</span> size, <span class="prm">f32</span> scrollPos)</code></div>
+		<p class="brief">Convenience overload with a single <code>f32</code> scroll position and no flags.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">scrollViewBegin</span>(<span class="prm">const char*</span> id, <span class="prm">f32</span> size, <span class="prm">f32</span> scrollPos, <span class="prm">f32</span> virtualHeight)</code></div>
+		<p class="brief">Convenience overload with a virtual height and no flags.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">scrollViewBegin</span>(<span class="prm">const char*</span> id, <span class="prm">f32</span> height, <span class="prm">Point</span> scrollOffset, <span class="prm">Point</span> virtualSize, <span class="prm">ScrollViewFlags</span> flags)</code></div>
+		<p class="brief">Convenience overload with flags and a virtual size (both horizontal and vertical).</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="ret">Point</span> <span class="fn">scrollViewEnd</span>()</code></div>
+		<p class="brief">End a scroll view area widget.</p>
+		<p class="returns">Returns the current scroll position (offset).</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">scrollViewScrollToWidget</span>(<span class="prm">WidgetId</span> id = 0, <span class="prm">ScrollToItemSnapMode</span> mode = ScrollToItemSnapMode::Minimal)</code></div>
+		<p class="brief">Scroll the view to the bounds of the last submitted widget (or a specific widget if id is provided). When called inside a virtual list, <code>id</code> is interpreted as the <code>virtualItemIndex</code>.</p>
+	</div>
+
+	<h2>Virtual lists</h2>
+	<p>For lists with many items. Use inside <code>scrollViewBegin</code>/<code>End</code>.</p>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">virtualListContentBegin</span>(<span class="prm">u32</span> totalRowCount, <span class="prm">f32</span> itemHeight, <span class="prm">f32</span> scrollPosition)</code></div>
+		<p class="brief">Begin a virtual list content area.</p>
+		<ul class="params">
+			<li><span class="pname">totalRowCount</span> the number of rows</li>
+			<li><span class="pname">itemHeight</span> the height of one item</li>
+			<li><span class="pname">scrollPosition</span> the current scroll offset of the scroll view widget</li>
+		</ul>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">virtualListContentBegin</span>(<span class="prm">VirtualScrollInfo&</span> info)</code></div>
+		<p class="brief">Begin a virtual list content area using a <code>VirtualScrollInfo</code> struct.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">virtualListContentEnd</span>()</code></div>
+		<p class="brief">End a virtual list content area.</p>
+	</div>
+
+	<h2>Padding, spacing, scale & tint</h2>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">paddingPush</span>(<span class="prm">PaddingType</span> type, <span class="prm">const Point&</span> newPadding)</code></div>
+		<p class="brief">Push the old padding and set a new one; padding is the left/right horizontal spacing for widgets.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">widgetPaddingPush</span>(<span class="prm">const Point&</span> newPadding)</code></div>
+		<p class="brief">Push the old widget padding and set a new one, only affects subsequent widgets.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">paddingPop</span>(<span class="prm">PaddingType</span> type)</code></div>
+		<p class="brief">Pop the previous padding value from stack and set it as current.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">widgetPaddingPop</span>()</code></div>
+		<p class="brief">Pop the previous widget padding.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="ret">f32</span> <span class="fn">spacingGet</span>()</code></div>
+		<p class="brief">Return the current vertical spacing value.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="ret">const Point&</span> <span class="fn">paddingGet</span>(<span class="prm">PaddingType</span> type)</code></div>
+		<p class="brief">Return the current horizontal left and right side padding value.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="ret">const Point&</span> <span class="fn">widgetGetPadding</span>()</code></div>
+		<p class="brief">Return the current widget padding, shorthand for <code>paddingGet(PaddingType::Widget)</code>.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">spacingPush</span>(<span class="prm">f32</span> newSpacing)</code></div>
+		<p class="brief">Push and set a new spacing value; spacing is the vertical space between widgets.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">spacingPop</span>()</code></div>
+		<p class="brief">Pop old spacing value from stack and set it as current.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">scaleSet</span>(<span class="prm">f32</span> scale)</code></div>
+		<p class="brief">Set the global UI scale; this will scale all elements from widgets to text. Use with consideration, regenerates font atlas, slow.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="ret">f32</span> <span class="fn">scaleGet</span>()</code></div>
+		<p class="brief">Return the current global UI scale.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">tintPush</span>(<span class="prm">const Color&</span> color, <span class="prm">TintColorType</span> type = TintColorType::All, <span class="prm">TintColorOpType</span> opType = TintColorOpType::Multiply)</code></div>
+		<p class="brief">Push and set a new tinting color on stack, to colorize the next widget on specific parts.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">tintPop</span>()</code></div>
+		<p class="brief">Pop the old tint color from stack.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="ret">Color</span> <span class="fn">tintApply</span>(<span class="prm">const Color&</span> originalColor, <span class="prm">TintColorType</span> type)</code></div>
+		<p class="brief">Apply the current tint color to a color.</p>
+	</div>
+
+	<h2>Same-line groups</h2>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">sameLineGroupBegin</span>(<span class="prm">u32</span> widgetCount)</code></div>
+		<p class="brief">Begin a same-line group where all widgets get equal width from available layout width.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">sameLineGroupNext</span>()</code></div>
+		<p class="brief">Move to the next widget position in the same-line group.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">sameLineGroupEnd</span>()</code></div>
+		<p class="brief">End the same-line group.</p>
+	</div>
+
+	<h2>Delayed tooltips</h2>
+	<div class="member">
+		<div class="prototype"><code><span class="ret">bool</span> <span class="fn">tooltip</span>(<span class="prm">const char*</span> text)</code></div>
+		<p class="brief">Draw a delayed tooltip widget near the previous widget.</p>
+		<ul class="params"><li><span class="pname">text</span> the label of the tooltip</li></ul>
+		<p class="returns">Returns true if the tooltip is visible now.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="ret">bool</span> <span class="fn">customTooltipBegin</span>(<span class="prm">f32</span> width)</code></div>
+		<p class="brief">Begin drawing a custom tooltip (delayed), which contains other widgets like image and labels etc.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">customTooltipEnd</span>()</code></div>
+		<p class="brief">End drawing a custom tooltip.</p>
+	</div>
+
+	<div class="footer">
+		Horus UI &mdash; (C) All rights reserved 2016-2026 7thFACTOR Software - Nicusor Nedelcu (nekitu)
+	</div>
+</main>
+
+</body>
+</html>

@@ -2417,6 +2417,9 @@ HUI_API Rect overlayToolbarGetDockZoneRect(const Rect& viewportRect, OverlayDock
 /// \param zone the dock zone
 /// \param toolbarThickness the thickness of the toolbar in the dock zone
 HUI_API bool overlayToolbarPointInDockZone(const Rect& viewportRect, const Point& pt, OverlayDockZone zone, f32 toolbarThickness = 32.0f);
+/// \return true if a point relative to the overlayToolbarBegin viewport rect is inside any visible toolbar
+/// \param viewportPoint the point relative to the overlayToolbarBegin viewport rect
+HUI_API bool overlayToolbarContainsPoint(const Point& viewportPoint);
 
 ///////////////////////////////////////////////////////////////////////////////
 // Application functions

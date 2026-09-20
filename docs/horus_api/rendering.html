@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Horus UI - Rendering & Utility</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<aside class="sidebar">
+	<div class="brand">
+		<div class="logo">H</div>
+		<div class="title">Horus UI</div>
+	</div>
+	<nav>
+		<div class="nav-label">API Reference</div>
+		<a href="index.html">Overview</a>
+		<a href="types.html">Types</a>
+		<a href="core.html">Core</a>
+		<a href="windows.html">Windowing & toolbars</a>
+		<a href="theme.html">Themes & fonts</a>
+		<a href="layout.html">Layout & tables</a>
+		<a href="widgets.html">Widgets</a>
+		<a href="rendering.html" class="active">Rendering & utility</a>
+	</nav>
+</aside>
+
+<main class="main">
+
+	<h1>Rendering & Utility</h1>
+	<p class="lead">Custom widgets, layer indices, immediate-mode drawing primitives, drag & drop, complex combined widgets (color picker, file dialog, vector editors, object ref editor), color/string utilities, and demo window.</p>
+
+	<h2>Custom widgets & layers</h2>
+	<div class="member">
+		<div class="prototype"><code><span class="ret">Rect</span> <span class="fn">customWidgetBegin</span>(<span class="prm">const char*</span> id, <span class="prm">f32</span> height = 0.0f)</code></div>
+		<p class="brief">Begin drawing a custom widget.</p>
+		<ul class="params">
+			<li><span class="pname">id</span> the widget id</li>
+			<li><span class="pname">height</span> the widget height</li>
+		</ul>
+		<p class="returns">Returns the widget rectangle in window coordinates.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">customWidgetEnd</span>()</code></div>
+		<p class="brief">End custom widget drawing.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">layerIndexIncrement</span>()</code></div>
+		<p class="brief">Increment the current UI layer index, used to draw widgets in higher layers (drawn on top).</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="ret">u32</span> <span class="fn">layerIndexDecrement</span>()</code></div>
+		<p class="brief">Decrement the current UI layer index.</p>
+		<p class="returns">Returns the layer index after decrementing.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">layerDecrementWindowMaxLayerIndex</span>()</code></div>
+		<p class="brief">Decrement the maximum layer index of the current window, used internally when a window's layer stack ends.</p>
+	</div>
+
+	<h2>Immediate-mode drawing primitives</h2>
+	<p>These functions draw directly into the current render command list. They use the current line style, fill style and render color (set via <code>renderSetLineStyle</code>, <code>renderSetFillStyle</code>, <code>renderSetColor</code>).</p>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">renderSetLineStyle</span>(<span class="prm">const LineStyle&</span> style)</code></div>
+		<p class="brief">Set the current line drawing style.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">renderSetFillStyle</span>(<span class="prm">const FillStyle&</span> style)</code></div>
+		<p class="brief">Set the current fill drawing style.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">renderSetColor</span>(<span class="prm">const Color&</span> color)</code></div>
+		<p class="brief">Set the current render color.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">renderDrawTextInBox</span>(<span class="prm">const char*</span> text, <span class="prm">const Rect&</span> rect, <span class="prm">HAlignType</span> horizontalAlign, <span class="prm">VAlignType</span> verticalAlign)</code></div>
+		<p class="brief">Draw text inside a rectangle, aligned within it.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="ret">Point</span> <span class="fn">renderGetTextSize</span>(<span class="prm">const char*</span> text)</code></div>
+		<p class="brief">Return the pixel size (width, height) of the given text with the current font.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">renderDrawImage</span>(<span class="prm">HImage</span> image, <span class="prm">const Point&</span> position, <span class="prm">f32</span> scale)</code></div>
+		<p class="brief">Draw an image at a position with a given scale.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">renderDrawStretchedImage</span>(<span class="prm">HImage</span> image, <span class="prm">const Rect&</span> rect)</code></div>
+		<p class="brief">Draw an image stretched to fill a rectangle.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">renderDrawBorderedImage</span>(<span class="prm">HImage</span> image, <span class="prm">u32</span> border, <span class="prm">const Rect&</span> rect)</code></div>
+		<p class="brief">Draw a 9-cell border image to fill a rectangle.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">renderDrawLine</span>(<span class="prm">const Point&</span> a, <span class="prm">const Point&</span> b)</code></div>
+		<p class="brief">Draw a line between two points.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">renderDrawPolyLine</span>(<span class="prm">const Point*</span> points, <span class="prm">u32</span> pointCount, <span class="prm">bool</span> closed = false)</code></div>
+		<p class="brief">Draw a connected line through the given points.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">renderDrawCircle</span>(<span class="prm">const Point&</span> center, <span class="prm">f32</span> radius, <span class="prm">u32</span> segments = 32)</code></div>
+		<p class="brief">Draw a circle outline.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">renderDrawEllipse</span>(<span class="prm">const Point&</span> center, <span class="prm">f32</span> radiusX, <span class="prm">f32</span> radiusY, <span class="prm">u32</span> segments = 32)</code></div>
+		<p class="brief">Draw an ellipse outline.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">renderDrawRectangle</span>(<span class="prm">const Rect&</span> rc)</code></div>
+		<p class="brief">Draw a rectangle outline.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">renderDrawSolidRectangle</span>(<span class="prm">const Rect&</span> rc)</code></div>
+		<p class="brief">Draw a solid (filled) rectangle.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">renderDrawSpline</span>(<span class="prm">SplineControlPoint*</span> points, <span class="prm">u32</span> count, <span class="prm">f32</span> segmentSize = 15)</code></div>
+		<p class="brief">Draw a spline through the given control points.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">renderDrawArrow</span>(<span class="prm">const Point&</span> startPoint, <span class="prm">const Point&</span> endPoint, <span class="prm">f32</span> tipLength, <span class="prm">f32</span> tipWidth, <span class="prm">bool</span> drawBodyLine = true)</code></div>
+		<p class="brief">Draw an arrow from a start point to an end point.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">renderDrawSolidTriangle</span>(<span class="prm">const Point&</span> p1, <span class="prm">const Point&</span> p2, <span class="prm">const Point&</span> p3)</code></div>
+		<p class="brief">Draw a solid (filled) triangle.</p>
+	</div>
+
+	<h2>Drag and drop</h2>
+	<div class="member">
+		<div class="prototype"><code><span class="ret">bool</span> <span class="fn">dragDropWantsTo</span>()</code></div>
+		<p class="brief">Return true if there is a drag intent.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">dragDropSetMouseCursor</span>(<span class="prm">HMouseCursor</span> dropAllowedCursor)</code></div>
+		<p class="brief">Set the mouse cursor to be used when dropping is allowed.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">dragDropBegin</span>(<span class="prm">u32</span> dragObjectUserType, <span class="prm">void*</span> dragObject)</code></div>
+		<p class="brief">Begin dragging an object.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">dragDropEnd</span>()</code></div>
+		<p class="brief">End drag and drop operation.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">dragDropAllow</span>()</code></div>
+		<p class="brief">Allow drag drop for the next widgets.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">dragDropDisallow</span>()</code></div>
+		<p class="brief">Disallow drop for the next widgets.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="ret">bool</span> <span class="fn">dragDropDroppedOnWidget</span>()</code></div>
+		<p class="brief">Return true if the user dropped payload on previous widget.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="ret">void*</span> <span class="fn">dragDropGetObject</span>()</code></div>
+		<p class="brief">Return the drag drop payload user object pointer.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="ret">u32</span> <span class="fn">dragDropGetObjectType</span>()</code></div>
+		<p class="brief">Return the drag drop payload user object type.</p>
+	</div>
+
+	<h2 id="customfiledialog">Complex / combined widgets</h2>
+	<div class="member">
+		<div class="prototype"><code><span class="ret">bool</span> <span class="fn">colorPicker</span>(<span class="prm">const char*</span> id, <span class="prm">Color*</span> inOutColor, <span class="prm">ColorPickerFlags</span> flags = 0, <span class="prm">const Color*</span> oldColor = nullptr, <span class="prm">Color*</span> customColors = nullptr, <span class="prm">u32*</span> customColorCount = nullptr, <span class="prm">u32</span> maxCustomColors = 0)</code></div>
+		<p class="brief">Draw a color picker popup widget.</p>
+		<ul class="params">
+			<li><span class="pname">id</span> unique widget id</li>
+			<li><span class="pname">inOutColor</span> the color to edit (in/out)</li>
+			<li><span class="pname">flags</span> the color picker flags (<a href="types.html">ColorPickerFlags</a>)</li>
+			<li><span class="pname">oldColor</span> optional previous color for comparison</li>
+			<li><span class="pname">customColors</span> optional array of custom swatch colors (requires ShowPalette flag)</li>
+			<li><span class="pname">customColorCount</span> pointer to number of custom colors (in/out)</li>
+			<li><span class="pname">maxCustomColors</span> max capacity of the customColors array</li>
+		</ul>
+		<p class="returns">Returns true if the color was changed.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="ret">bool</span> <span class="fn">colorPickerPopup</span>(<span class="prm">const char*</span> id, <span class="prm">Color*</span> inOutColor, <span class="prm">ColorPickerFlags</span> flags = 0, <span class="prm">const Color*</span> oldColor = nullptr, <span class="prm">Color*</span> customColors = nullptr, <span class="prm">u32*</span> customColorCount = nullptr, <span class="prm">u32</span> maxCustomColors = 0)</code></div>
+		<p class="brief">Draw a color picker popup (a color swatch that opens a full color picker in a popup on click).</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="ret">bool</span> <span class="fn">customFileDialog</span>(<span class="prm">const char*</span> id, <span class="prm">CustomFileDialogListCallback</span> listCallback, <span class="prm">void*</span> userData, <span class="prm">char*</span> outResult, <span class="prm">u32</span> resultBufferSize, <span class="prm">CustomFileDialogFlags</span> flags = CustomFileDialogFlags::None, <span class="prm">CustomFileDialogPreviewCallback</span> previewCallback = nullptr, <span class="prm">void*</span> previewUserData = nullptr, <span class="prm">CustomFileDialogCreateFolderCallback</span> createFolderCallback = nullptr, <span class="prm">void*</span> createFolderUserData = nullptr)</code></div>
+		<p class="brief">Draw a custom file dialog widget, a popup like the OS file dialogs, that navigates a virtual file system provided by the listCallback.</p>
+		<ul class="params">
+			<li><span class="pname">id</span> unique widget id</li>
+			<li><span class="pname">listCallback</span> the callback that lists the contents of a path</li>
+			<li><span class="pname">userData</span> user data passed to the listCallback</li>
+			<li><span class="pname">outResult</span> buffer where the chosen path is written when the dialog is confirmed</li>
+			<li><span class="pname">resultBufferSize</span> the size of the outResult buffer in bytes</li>
+			<li><span class="pname">flags</span> the dialog flags (<a href="types.html">CustomFileDialogFlags</a>)</li>
+			<li><span class="pname">previewCallback</span> optional callback to draw a preview of the selected entry</li>
+			<li><span class="pname">previewUserData</span> user data passed to previewCallback</li>
+			<li><span class="pname">createFolderCallback</span> optional callback that creates a folder in the current path</li>
+			<li><span class="pname">createFolderUserData</span> user data passed to createFolderCallback</li>
+		</ul>
+		<p class="returns">Returns true when a path was chosen, in this case outResult is filled with the chosen path.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="ret">bool</span> <span class="fn">vec3Editor</span>(<span class="prm">const char*</span> id, <span class="prm">f64&</span> x, <span class="prm">f64&</span> y, <span class="prm">f64&</span> z, <span class="prm">f64</span> scrollStep = 0.03f, <span class="prm">VectorEditorFlags</span> flags = VectorEditorFlags::None, <span class="prm">u32</span> precision = 6, <span class="prm">const char*</span> indeterminateStr = "Indeterminate")</code></div>
+		<p class="brief">Draw a 3D double vector editor widget.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="ret">bool</span> <span class="fn">vec3Editor</span>(<span class="prm">const char*</span> id, <span class="prm">f32&</span> x, <span class="prm">f32&</span> y, <span class="prm">f32&</span> z, <span class="prm">f32</span> scrollStep = 0.03f, <span class="prm">VectorEditorFlags</span> flags = VectorEditorFlags::None, <span class="prm">u32</span> precision = 6, <span class="prm">const char*</span> indeterminateStr = "Indeterminate")</code></div>
+		<p class="brief">Draw a 3D float vector editor widget.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="ret">bool</span> <span class="fn">vec2Editor</span>(<span class="prm">const char*</span> id, <span class="prm">f64&</span> x, <span class="prm">f64&</span> y, <span class="prm">f64</span> scrollStep = 0.03f, <span class="prm">VectorEditorFlags</span> flags = VectorEditorFlags::None, <span class="prm">u32</span> precision = 6, <span class="prm">const char*</span> indeterminateStr = "Indeterminate")</code></div>
+		<p class="brief">Draw a 2D double vector editor widget.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="ret">bool</span> <span class="fn">vec2Editor</span>(<span class="prm">const char*</span> id, <span class="prm">f32&</span> x, <span class="prm">f32&</span> y, <span class="prm">f32</span> scrollStep = 0.03f, <span class="prm">VectorEditorFlags</span> flags = VectorEditorFlags::None, <span class="prm">u32</span> precision = 6, <span class="prm">const char*</span> indeterminateStr = "Indeterminate")</code></div>
+		<p class="brief">Draw a 2D float vector editor widget.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="ret">bool</span> <span class="fn">objectRefEditor</span>(<span class="prm">const char*</span> id, <span class="prm">HImage</span> targetImg, <span class="prm">HImage</span> clearImg, <span class="prm">HImage</span> iconImg, <span class="prm">const char*</span> objectTypeName, <span class="prm">const char*</span> valueAsString, <span class="prm">u32</span> objectType, <span class="prm">void**</span> outObject, <span class="prm">bool*</span> objectValueWasModified, <span class="prm">u32</span> refCount = 0, <span class="prm">const char**</span> refNames = nullptr, <span class="prm">void**</span> refValues = nullptr, <span class="prm">f32</span> iconSize = 0, <span class="prm">const char*</span> indeterminateStr = nullptr)</code></div>
+		<p class="brief">Draw an object reference editor.</p>
+	</div>
+
+	<h2>Color utilities</h2>
+	<div class="member">
+		<div class="prototype"><code><span class="ret">Color</span> <span class="fn">colorFromText</span>(<span class="prm">const char*</span> colorText)</code></div>
+		<p class="brief">Create a color from a text string, supports named colors (like "red", "darkBlue") and "r g b a" components (0-255).</p>
+		<p class="returns">Returns the parsed color, white if the text can't be parsed.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="ret">Color</span> <span class="fn">colorFromHex</span>(<span class="prm">const char*</span> hexText)</code></div>
+		<p class="brief">Create a color from a hex string like "#RRGGBB" or "RRGGBBAA".</p>
+		<p class="returns">Returns the parsed color, white if the text can't be parsed.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="ret">u32</span> <span class="fn">colorIntFromHex</span>(<span class="prm">const char*</span> hexText)</code></div>
+		<p class="brief">Create an RGBA color value from a hex string like "#RRGGBB" or "RRGGBBAA".</p>
+		<p class="returns">Returns the RGBA color value.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="ret">std::string</span> <span class="fn">colorToHex</span>(<span class="prm">const Color&</span> color)</code></div>
+		<p class="brief">Convert a color to a hex string like "#RRGGBB" (or with alpha "#RRGGBBAA" when not fully opaque).</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="ret">std::string</span> <span class="fn">colorIntToHex</span>(<span class="prm">u32</span> color)</code></div>
+		<p class="brief">Convert an RGBA color value to a hex string like "#RRGGBB" (or with alpha "#RRGGBBAA" when not fully opaque).</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="ret">Color</span> <span class="fn">colorHsvToRgb</span>(<span class="prm">const Color&</span> hsv)</code></div>
+		<p class="brief">Convert a color from HSV to RGB.</p>
+		<ul class="params"><li><span class="pname">hsv</span> the HSV color with channels in the 0..1 range</li></ul>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="ret">Color</span> <span class="fn">colorRgbToHsv</span>(<span class="prm">const Color&</span> rgb)</code></div>
+		<p class="brief">Convert a color from RGB to HSV.</p>
+		<ul class="params"><li><span class="pname">rgb</span> the RGB color with channels in the 0..1 range</li></ul>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="ret">Color</span> <span class="fn">colorHueToRgb</span>(<span class="prm">f32</span> h, <span class="prm">f32</span> alpha)</code></div>
+		<p class="brief">Create a color from a hue.</p>
+		<ul class="params">
+			<li><span class="pname">h</span> the hue value in the 0..1 range</li>
+			<li><span class="pname">alpha</span> the alpha channel value</li>
+		</ul>
+	</div>
+
+	<h2>String utilities</h2>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">stringFromI32</span>(<span class="prm">i32</span> value, <span class="prm">char*</span> outString, <span class="prm">u32</span> outStringMaxSize, <span class="prm">u32</span> fillerZeroesCount = 0)</code></div>
+		<p class="brief">Convert an int value to string.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">stringFromF32</span>(<span class="prm">f32</span> value, <span class="prm">char*</span> outString, <span class="prm">u32</span> outStringMaxSize, <span class="prm">i32</span> decimalPlaces = ~0)</code></div>
+		<p class="brief">Convert a float value to string.</p>
+	</div>
+
+	<h2>Demo</h2>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">showDemo</span>()</code></div>
+		<p class="brief">Draw a demo window showcasing all widgets in all argument modes, organized in expandable sections.</p>
+	</div>
+
+	<div class="footer">
+		Horus UI &mdash; (C) All rights reserved 2016-2026 7thFACTOR Software - Nicusor Nedelcu (nekitu)
+	</div>
+</main>
+
+</body>
+</html>

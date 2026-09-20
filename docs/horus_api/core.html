@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Horus UI - Core</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<aside class="sidebar">
+	<div class="brand">
+		<div class="logo">H</div>
+		<div class="title">Horus UI</div>
+	</div>
+	<nav>
+		<div class="nav-label">API Reference</div>
+		<a href="index.html">Overview</a>
+		<a href="types.html">Types</a>
+		<a href="core.html" class="active">Core</a>
+		<a href="windows.html">Windowing &amp; toolbars</a>
+		<a href="theme.html">Themes &amp; fonts</a>
+		<a href="layout.html">Layout &amp; tables</a>
+		<a href="widgets.html">Widgets</a>
+		<a href="rendering.html">Rendering &amp; utility</a>
+	</nav>
+</aside>
+
+<main class="main">
+
+	<h1>Core</h1>
+	<p class="lead">Contexts, the per-frame update/draw loop, input event handling, mouse cursors, clipboard and global settings.</p>
+
+	<h2>Contexts</h2>
+	<p>
+		A context owns all the state of the UI. You usually create one per application (or per thread) with
+		<code>contextCreate</code>, pass it user settings (including the <code>Services</code> callbacks) and make it current with
+		<code>contextSet</code>.
+	</p>
+
+	<div class="member">
+		<div class="prototype"><code><span class="ret">HContext</span> <span class="fn">contextCreate</span>(<span class="prm">const Settings&amp;</span> settings)</code></div>
+		<p class="brief">Create a new context.</p>
+		<ul class="params">
+			<li><span class="pname">settings</span> the startup context user defined settings (including services)</li>
+		</ul>
+		<p class="returns">Returns the created context handle.</p>
+	</div>
+
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">contextSet</span>(<span class="prm">HContext</span> ctx)</code></div>
+		<p class="brief">Set the current context.</p>
+		<ul class="params"><li><span class="pname">ctx</span> the context to make current</li></ul>
+	</div>
+
+	<div class="member">
+		<div class="prototype"><code><span class="ret">HContext</span> <span class="fn">contextGet</span>()</code></div>
+		<p class="brief">Return the current context.</p>
+		<p class="returns">Returns the current context handle.</p>
+	</div>
+
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">contextDestroy</span>(<span class="prm">HContext</span> ctx)</code></div>
+		<p class="brief">Delete a context and all its resources.</p>
+		<ul class="params"><li><span class="pname">ctx</span> the context to be deleted</li></ul>
+	</div>
+
+	<div class="member">
+		<div class="prototype"><code><span class="ret">Settings&amp;</span> <span class="fn">contextGetSettings</span>()</code></div>
+		<p class="brief">Return the context settings reference so you can read/modify them in real-time.</p>
+	</div>
+
+	<h2>Frame and render cycle</h2>
+	<p>The typical per-frame flow is <code>contextUpdate</code> &rarr; <code>frameBegin</code> &rarr; <code>renderBegin</code> &rarr; widget calls &rarr; <code>renderEnd</code> &rarr; <code>frameEnd</code> &rarr; <code>present</code>.</p>
+
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">contextUpdate</span>()</code></div>
+		<p class="brief">Update the UI context: process input events, update animations, etc. Must be called once per frame, before <code>frameBegin</code>.</p>
+	</div>
+
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">frameBegin</span>()</code></div>
+		<p class="brief">Begin a frame, i.e. the rendering of UI across one or many windows. Must be called first when rendering UI.</p>
+	</div>
+
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">frameEnd</span>()</code></div>
+		<p class="brief">End a UI frame.</p>
+	</div>
+
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">renderBegin</span>()</code></div>
+		<p class="brief">Begin the UI render command list. Called between <code>frameBegin</code>/<code>frameEnd</code>.</p>
+	</div>
+
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">renderEnd</span>()</code></div>
+		<p class="brief">End and submit the UI render command list.</p>
+	</div>
+
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">renderCallbackAdd</span>(<span class="prm">RenderCallback</span> callback)</code></div>
+		<p class="brief">Add a render callback at the current UI command list position. The callback is invoked when the UI is rendered and lets you issue custom rendering commands.</p>
+		<ul class="params"><li><span class="pname">callback</span> the callback, called with the native window being rendered</li></ul>
+	</div>
+
+	<div class="member">
+		<div class="prototype"><code><span class="ret">bool</span> <span class="fn">hasNothingToDo</span>()</code></div>
+		<p class="brief">Return true when there is nothing to do in the UI (no redraw or layout work). Useful to stop rendering continuously in apps that don't need real-time redraw.</p>
+	</div>
+
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">skipRenderingThisFrame</span>(<span class="prm">bool</span> disable)</code></div>
+		<p class="brief">Disable the rendering functions for this frame; used when only widget logic needs to run (mostly internal layout computation).</p>
+		<ul class="params"><li><span class="pname">disable</span> true to disable rendering</li></ul>
+	</div>
+
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">forceRepaint</span>()</code></div>
+		<p class="brief">Request the UI to be repainted due to data/layout changes.</p>
+	</div>
+
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">skipFrame</span>()</code></div>
+		<p class="brief">If called, rendering and input are ignored until <code>frameEnd</code> and the loop will redraw again (mostly internal when layout is computed).</p>
+	</div>
+
+	<h2>Frame time</h2>
+	<div class="member">
+		<div class="prototype"><code><span class="ret">f32</span> <span class="fn">frameTimeGetLastMs</span>()</code></div>
+		<p class="brief">Get the duration of the last UI frame in milliseconds.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="ret">f32</span> <span class="fn">frameTimeGetPeakMs</span>()</code></div>
+		<p class="brief">Get the peak (maximum) UI frame time in milliseconds since app start.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="ret">f32</span> <span class="fn">frameTimeGetAvgMs</span>()</code></div>
+		<p class="brief">Get the average UI frame time in milliseconds (rolling 60 frame window).</p>
+	</div>
+
+	<h2>Clipboard</h2>
+	<div class="member">
+		<div class="prototype"><code><span class="ret">bool</span> <span class="fn">clipboardSetText</span>(<span class="prm">const char*</span> text)</code></div>
+		<p class="brief">Copy UTF8 text to the clipboard.</p>
+		<ul class="params"><li><span class="pname">text</span> the null-terminated UTF8 text</li></ul>
+		<p class="returns">Returns true if the text was copied.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="ret">bool</span> <span class="fn">clipboardGetText</span>(<span class="prm">char*</span> outText, <span class="prm">u32</span> maxTextSize)</code></div>
+		<p class="brief">Read UTF8 text from the clipboard.</p>
+		<ul class="params">
+			<li><span class="pname">outText</span> caller-provided buffer for the text</li>
+			<li><span class="pname">maxTextSize</span> the size of the buffer</li>
+		</ul>
+		<p class="returns">Returns true if text was read.</p>
+	</div>
+
+	<h2>Input events</h2>
+	<p>
+		Input providers push <a href="types.html">InputEvent</a>s into the queue and set the current one. The UI consumes the current
+		event so every widget/window can react to it.
+	</p>
+
+	<div class="member">
+		<div class="prototype"><code><span class="ret">const InputEvent&amp;</span> <span class="fn">inputEventGet</span>()</code></div>
+		<p class="brief">Return the current input event popped from the event queue.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">inputEventCancel</span>()</code></div>
+		<p class="brief">Cancel the current event; afterwards the event is null so no widget/window reacts to it.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">inputEventAdd</span>(<span class="prm">const InputEvent&amp;</span> event)</code></div>
+		<p class="brief">Add an input event to the queue. Used by input providers.</p>
+		<ul class="params"><li><span class="pname">event</span> the event to add</li></ul>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">inputSetMouseMoved</span>(<span class="prm">bool</span> moved)</code></div>
+		<p class="brief">Signal that the mouse was moved. Used by input providers.</p>
+		<ul class="params"><li><span class="pname">moved</span> true if the mouse moved</li></ul>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="ret">size_t</span> <span class="fn">inputEventGetCount</span>()</code></div>
+		<p class="brief">Return the number of events in the queue.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="ret">InputEvent</span> <span class="fn">inputEventGetAtIndex</span>(<span class="prm">size_t</span> index)</code></div>
+		<p class="brief">Return a copy of the event at the given queue index.</p>
+		<ul class="params"><li><span class="pname">index</span> the event index</li></ul>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">inputEventSet</span>(<span class="prm">const InputEvent&amp;</span> event)</code></div>
+		<p class="brief">Set the current input event. Usually called by input providers.</p>
+		<ul class="params"><li><span class="pname">event</span> the event to set as current</li></ul>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">inputEventClearQueue</span>()</code></div>
+		<p class="brief">Clear the input event queue. Usually called by input providers.</p>
+	</div>
+
+	<h2>Mouse cursors</h2>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">mouseCursorSetType</span>(<span class="prm">MouseCursorType</span> type)</code></div>
+		<p class="brief">Set the current mouse cursor type (a named OS cursor).</p>
+		<ul class="params"><li><span class="pname">type</span> the cursor type</li></ul>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="ret">HMouseCursor</span> <span class="fn">mouseCursorCreate</span>(<span class="prm">Rgba32*</span> pixels, <span class="prm">u32</span> width, <span class="prm">u32</span> height, <span class="prm">u32</span> hotSpotX = 0, <span class="prm">u32</span> hotSpotY = 0)</code></div>
+		<p class="brief">Create a custom mouse cursor from a bitmap.</p>
+		<ul class="params">
+			<li><span class="pname">pixels</span> 32-bit RGBA bitmap</li>
+			<li><span class="pname">width</span> cursor width</li>
+			<li><span class="pname">height</span> cursor height</li>
+			<li><span class="pname">hotSpotX</span> hot spot X from the top-left</li>
+			<li><span class="pname">hotSpotY</span> hot spot Y from the top-left</li>
+		</ul>
+		<p class="returns">Returns the created cursor handle.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">mouseCursorDestroy</span>(<span class="prm">HMouseCursor</span> cursor)</code></div>
+		<p class="brief">Delete a custom mouse cursor.</p>
+		<ul class="params"><li><span class="pname">cursor</span> the cursor to delete</li></ul>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">mouseCursorSet</span>(<span class="prm">HMouseCursor</span> cursor)</code></div>
+		<p class="brief">Set a custom mouse cursor as current.</p>
+		<ul class="params"><li><span class="pname">cursor</span> the cursor to set</li></ul>
+	</div>
+
+	<div class="footer">
+		Horus UI &mdash; (C) All rights reserved 2016-2026 7thFACTOR Software - Nicusor Nedelcu (nekitu)
+	</div>
+</main>
+
+</body>
+</html>

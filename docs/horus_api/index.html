@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Horus UI - API Reference</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<aside class="sidebar">
+	<div class="brand">
+		<div class="logo">H</div>
+		<div class="title">Horus UI</div>
+	</div>
+	<nav>
+		<div class="nav-label">API Reference</div>
+		<a href="index.html" class="active">Overview</a>
+		<a href="types.html">Types</a>
+		<a href="core.html">Core</a>
+		<a href="windows.html">Windowing &amp; toolbars</a>
+		<a href="theme.html">Themes &amp; fonts</a>
+		<a href="layout.html">Layout &amp; tables</a>
+		<a href="widgets.html">Widgets</a>
+		<a href="rendering.html">Rendering &amp; utility</a>
+	</nav>
+</aside>
+
+<main class="main">
+
+	<h1>Horus UI API reference</h1>
+	<p class="lead">An immediate-mode graphical user interface library for C++. This page is the index of the whole public API in <code>include/horus.h</code>.</p>
+
+	<h2>What is Horus UI?</h2>
+	<p>
+		Horus UI is an <strong>immediate mode</strong> GUI library: the UI is rebuilt every frame by calling widget functions,
+		so the UI state is derived from the code that draws it. Widgets are drawn into a window docking layout, themed through
+		per-element images, colors, fonts and states, and rendered in a batched vertex command list.
+	</p>
+
+	<h2>How the API is organized</h2>
+	<div class="cards">
+		<a class="card" href="types.html">
+			<h4>Types</h4>
+			<p>Handles, aliases, 2D math structs, flags enums, input, render and display info structs.</p>
+		</a>
+		<a class="card" href="core.html">
+			<h4>Core</h4>
+			<p>Contexts, the per-frame loop (<code>contextUpdate</code>, <code>frameBegin/End</code>), input events, mouse cursors, clipboard.</p>
+		</a>
+		<a class="card" href="windows.html">
+			<h4>Windowing &amp; toolbars</h4>
+			<p>Native windows, dock nodes, dockable windows, saving/loading dock layouts, overlay toolbars.</p>
+		</a>
+		<a class="card" href="theme.html">
+			<h4>Themes &amp; fonts</h4>
+			<p>Creating and using themes, styles, widget/element infos, font creation and text measurement.</p>
+		</a>
+		<a class="card" href="layout.html">
+			<h4>Layout &amp; tables</h4>
+			<p>Layout areas, id stacks, tables, scroll views, virtual lists, padding, spacing, scale and tint.</p>
+		</a>
+		<a class="card" href="widgets.html">
+			<h4>Widgets</h4>
+			<p>Boxes, popups, buttons, inputs, sliders, labels, trees, menus, tabs and the rest of the widget set.</p>
+		</a>
+		<a class="card" href="rendering.html">
+			<h4>Rendering &amp; utility</h4>
+			<p>Custom widgets, render drawing primitives, drag &amp; drop, color/vector/file dialog combined widgets, color utils.</p>
+		</a>
+	</div>
+
+	<h2>The frame loop</h2>
+	<p>A minimal frame that updates one window looks like this:</p>
+<pre><code><span class="k">bool</span> running = <span class="k">true</span>;
+<span class="k">while</span> (running)
+{
+	<span class="k">hui</span>::<span class="k">contextUpdate</span>();       <span class="c">// process input events, animations, throttling</span>
+	<span class="k">hui</span>::<span class="k">frameBegin</span>();          <span class="c">// start a new UI frame</span>
+	<span class="k">hui</span>::renderBegin();           <span class="c">// begin the batched rendering</span>
+
+	<span class="k">hui</span>::windowBegin(<span class="s">"main"</span>, <span class="s">"Main window"</span>);
+	<span class="k">if</span> (<span class="k">hui</span>::button(<span class="s">"Click me"</span>)) { <span class="c">// act on the press</span> }
+	<span class="k">hui</span>::windowEnd();
+
+	<span class="k">hui</span>::renderEnd();
+	<span class="k">hui</span>::frameEnd();
+	<span class="k">hui</span>::present();               <span class="c">// present each native window backbuffer</span>
+}</code></pre>
+
+	<h2>Setup</h2>
+	<p>
+		The library only talks to the OS through a set of function pointers in <code>hui::Services</code>. You either fill
+		<code>Settings::services</code> yourself or pick one of the built-in backends, then create a context:
+	</p>
+<pre><code><span class="k">auto</span> settings = <span class="k">hui</span>::Settings{};
+<span class="k">hui</span>::<span class="k">initBackend</span>(settings.services);              <span class="c">// from a backend, e.g. Win32/GL</span>
+
+HContext ctx = <span class="k">hui</span>::<span class="k">contextCreate</span>(settings);
+<span class="k">hui</span>::<span class="k">contextSet</span>(ctx);
+
+HTheme theme = <span class="k">hui</span>::<span class="k">loadThemeFromJson</span>(<span class="s">"themes/default.theme.json"</span>);
+<span class="k">if</span> (!theme) theme = <span class="k">hui</span>::<span class="k">createBuiltinTheme</span>(settings.defaultAtlasSize);
+<span class="k">hui</span>::<span class="k">themeSet</span>(theme);
+<span class="k">hui</span>::<span class="k">themeBuild</span>(theme);</code></pre>
+
+	<h2>Conventions</h2>
+	<ul>
+		<li>All public functions are in the <code>hui</code> namespace, in <code class="file">include/horus.h</code>.</li>
+		<li>Opaque handles (<code>HTheme</code>, <code>HImage</code>, <code>HFont</code>&hellip;) are pointers kept by the library.</li>
+		<li>Widgets take a <code>const char* id</code> or generate ids from <code>setLabelAndId</code>; ids keep per-widget persistent state.</li>
+		<li>Widget functions that can change a value return <code>true</code> when the change happened.</li>
+		<li>Most widget names have <code>Begin/End</code> pairs so content can be drawn between them.</li>
+		<li>Colors are <code>Color</code> floats (0..1) convertible to packed <code>Rgba32</code>.</li>
+		<li>Layout works in <em>unscaled</em> pixels; the global <code>scaleSet</code> scales rendering.</li>
+	</ul>
+
+	<h2>More documentation</h2>
+	<p>
+		See the <a href="../theme_json_format/index.html">theme JSON format reference</a> for authoring themes as files,
+		and <code>examples/</code> for runnable sample code.
+	</p>
+
+	<div class="footer">
+		Horus UI &mdash; (C) All rights reserved 2016-2026 7thFACTOR Software - Nicusor Nedelcu (nekitu)
+	</div>
+</main>
+
+</body>
+</html>
