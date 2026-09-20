@@ -465,12 +465,25 @@ static Point layoutToolbarElements(OverlayToolbar* toolbar, OverlayToolbarLayout
 	return vertical ? Point(bar.width, usedMain) : Point(usedMain, usedCross);
 }
 
+// the white 9-cell rounded rectangle the toolbar buttons draw with, tinted by the state color
+static Image* toolbarRoundRectImage()
+{
+	Image* img = ctx->theme->getImage(hashString("flat/round_rect"));
+	return img ? img : ctx->theme->whiteImage;
+}
+
+static Image* toolbarGripImage()
+{
+	Image* img = ctx->theme->getImage(hashString("flat/grip"));
+	return img ? img : ctx->theme->whiteImage;
+}
+
 static void drawToolbarBackground(OverlayToolbar* toolbar)
 {
-	auto& state = ctx->theme->getElement(WidgetElementId::MenuBarBody).normalState();
+	const auto& st = ctx->settings.overlayToolbars;
 
-	ctx->renderer.cmdSetColor(state.color);
-	ctx->renderer.cmdDrawFilledRectangle(toolbar->rect);
+	ctx->renderer.cmdSetColor(st.toolbarBackgroundColor);
+	ctx->renderer.cmdDrawImageBordered(toolbarRoundRectImage(), st.roundRectBorder, toolbar->rect, ctx->scale);
 
 	if (toolbar->dragging)
 	{
@@ -523,46 +536,18 @@ static void drawToolbarGrip(OverlayToolbarElement* e)
 	{
 		ThemeElement::State* state = &btnBody.getState(WidgetStateType::Hovered);
 		ctx->renderer.cmdSetColor(state->color);
-		ctx->renderer.cmdDrawFilledRectangle(e->rect);
+		ctx->renderer.cmdDrawImageBordered(toolbarRoundRectImage(), st.roundRectBorder, e->rect, ctx->scale);
 
 		ctx->mouseCursor = MouseCursorType::SizeAll;
 	}
 
-	f32 dot = std::max(2.0f * ctx->scale, 1.5f);
-	f32 gap = 4.0f * ctx->scale;
-	bool horizontal = e->rect.width >= e->rect.height;
-	u32 rows = horizontal ? 2 : 3;
-	u32 columns = horizontal ? 3 : 2;
-
-	Color dotColor = ctx->theme->getElement(WidgetElementId::MenuBarBody).normalState().textColor;
+	ThemeElement::State* gripState = &ctx->theme->getElement(WidgetElementId::MenuBarBody).normalState();
 
 	if (hovered)
-		dotColor = btnBody.getState(WidgetStateType::Hovered).textColor;
+		gripState = &btnBody.getState(WidgetStateType::Hovered);
 
 	Rect inner = e->rect.contract(st.elementPadding * ctx->scale);
-	f32 totalW = columns * dot + (columns - 1) * gap;
-	f32 totalH = rows * dot + (rows - 1) * gap;
-
-	Point origin = {
-		inner.x + (inner.width - totalW) / 2,
-		inner.y + (inner.height - totalH) / 2,
-	};
-
-	for (u32 r = 0; r < rows; r++)
-	{
-		for (u32 c = 0; c < columns; c++)
-		{
-			Rect dotRect = {
-				origin.x + c * (dot + gap),
-				origin.y + r * (dot + gap),
-				dot,
-				dot,
-			};
-
-			ctx->renderer.cmdSetColor(dotColor);
-			ctx->renderer.cmdDrawFilledRectangle(dotRect);
-		}
-	}
+	drawToolbarIcon(gripState, toolbarGripImage(), inner);
 }
 
 static void drawToolbarElement(OverlayToolbar* toolbar, OverlayToolbarElement* e)
@@ -613,7 +598,7 @@ static void drawToolbarElement(OverlayToolbar* toolbar, OverlayToolbarElement* e
 	f32 spacing = st.elementSpacing * ctx->scale;
 
 	ctx->renderer.cmdSetColor(state->color);
-	ctx->renderer.cmdDrawFilledRectangle(e->rect);
+	ctx->renderer.cmdDrawImageBordered(toolbarRoundRectImage(), st.roundRectBorder, e->rect, ctx->scale);
 
 	bool hasIcon = e->icon || (e->type == OverlayToolbarElementType::Toggle && e->iconOn);
 	Image* icon = nullptr;

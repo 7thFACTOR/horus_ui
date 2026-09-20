@@ -112,6 +112,35 @@ static void drawAACircle(Image* img, f32 cx, f32 cy, f32 r, f32 thickness, bool 
 	}
 }
 
+static void drawAARoundRect(Image* img, f32 radius, Color color)
+{
+	// signed distance of a rounded box (Inigo Quilez), anti-aliased fill
+	f32 hx = img->width * 0.5f;
+	f32 hy = img->height * 0.5f;
+
+	for (int y = 0; y < (int)img->height; y++)
+	{
+		for (int x = 0; x < (int)img->width; x++)
+		{
+			f32 px = std::abs(x + 0.5f - hx);
+			f32 py = std::abs(y + 0.5f - hy);
+			f32 qx = px - (hx - radius);
+			f32 qy = py - (hy - radius);
+			f32 ox = std::max(qx, 0.0f);
+			f32 oy = std::max(qy, 0.0f);
+			f32 d = std::sqrt(ox * ox + oy * oy) + std::min(std::max(qx, qy), 0.0f) - radius;
+			f32 alpha = 1.0f - std::max(0.0f, std::min(1.0f, d + 0.5f));
+
+			if (alpha > 0)
+			{
+				Color c = color;
+				c.a *= alpha;
+				blendPixel(img, x, y, c);
+			}
+		}
+	}
+}
+
 static Image* createProceduralImage(Theme* theme, const char* name, u32 width, u32 height)
 {
 	Image* img = new Image();
@@ -183,6 +212,19 @@ HTheme createBuiltinTheme(u32 atlasTextureSize)
 	for (int y = 0; y < 16; y++)
 		for (int x = 0; x < 16; x++)
 			drawPixel(imgCheckers, x, y, (((x / 8) + (y / 8)) % 2 == 0) ? Color::fromU8(200, 200, 200).getRgba() : Color::white.getRgba());
+
+	// white rounded rectangle, tinted by the widget color, stretched as a 9-cell image
+	Image* imgRoundRect = createProceduralImage(theme, "flat/round_rect", 16, 16);
+	drawAARoundRect(imgRoundRect, 4.0f, Color::white);
+
+	// the white grip dots of the overlay toolbar handle, tinted by the element color
+	Image* imgGrip = createProceduralImage(theme, "flat/grip", 16, 16);
+	drawAACircle(imgGrip, 4, 5, 2, 0, true, Color::white);
+	drawAACircle(imgGrip, 8, 5, 2, 0, true, Color::white);
+	drawAACircle(imgGrip, 12, 5, 2, 0, true, Color::white);
+	drawAACircle(imgGrip, 4, 11, 2, 0, true, Color::white);
+	drawAACircle(imgGrip, 8, 11, 2, 0, true, Color::white);
+	drawAACircle(imgGrip, 12, 11, 2, 0, true, Color::white);
 	
 	// Default color scheme map from flat.theme.json
 	Color cBodyNormal = Color::fromU8(45, 45, 55);

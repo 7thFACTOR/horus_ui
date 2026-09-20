@@ -2072,8 +2072,10 @@ struct OverlayToolbarSettings
 	f32 elementSpacing = 2; /// the spacing between toolbar elements
 	f32 iconButtonSize = 26; /// the size of an icon-only toolbar button
 	f32 gripSize = 16; /// the size of the toolbar grip handle
+	u32 roundRectBorder = 4; /// the 9-cell corner size of the round-rect toolbar button background
 	f32 insertionHintThickness = 2.5f; /// the thickness of the strip insertion hint bar
 	Color insertionHintColor = Color::fromU8(70, 130, 220, 200); /// the color of the strip insertion hint bar
+	Color toolbarBackgroundColor = Color::fromU8(120, 125, 135, 80); /// the translucent gray tint of the toolbar background
 	f32 dragStartDistance = 5; /// the mouse distance after which a toolbar drag starts
 	Color dockPreviewColor = Color::fromU8(70, 130, 220, 110); /// the color of the dock zone preview
 };

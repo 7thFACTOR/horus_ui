@@ -681,6 +681,32 @@ HTheme loadThemeFromJson(const char* filename, char* errorTextBuffer, size_t err
 		}
 	}
 
+	// register the overlay toolbar helper images (9-cell rounded background and
+	// grip handle) under the ids the toolbar queries, like the builtin theme does
+	auto themeImagesFolder = std::filesystem::path(filename).stem().stem().string() + "/";
+
+	struct ToolbarImage
+	{
+		const char* id;
+		const char* filename;
+	};
+
+	ToolbarImage toolbarImages[] = {
+		{ "flat/round_rect", "round_rect.png" },
+		{ "flat/grip", "grip.png" },
+	};
+
+	for (auto& toolbarImage : toolbarImages)
+	{
+		ImageData imageData;
+
+		if (loadPngImage((themePath + themeImagesFolder + toolbarImage.filename).c_str(), imageData) && imageData.pixels)
+		{
+			themeAddImage(theme, toolbarImage.id, imageData);
+			deleteImageData(imageData);
+		}
+	}
+
 	return theme;
 }
 
