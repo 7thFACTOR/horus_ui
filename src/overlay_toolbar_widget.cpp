@@ -49,6 +49,7 @@ struct OverlayToolbar
 	bool dragging = false;
 	std::vector<OverlayToolbarElement> elements;
 	u32 stripOrder = 0; // position of the toolbar within its dock zone strip
+	bool snapToEnd = false; // dock anchored to the strip end corner instead of the start corner
 	Rect rect;
 	Point floatingPosition;
 	Point dragStartToolbarPos;
@@ -71,7 +72,8 @@ struct OverlayToolbarManager
 	OverlayDockZone globalPreviewZone = OverlayDockZone::Floating;
 	bool showInsertionHint = false;
 	Rect insertionHintRect;
-	u32 insertionStripIndex = 0;
+	bool dropSnapToEnd = false;
+	u32 dropInsertionIndex = 0;
 };
 
 static OverlayToolbarManager s_manager;
@@ -754,6 +756,75 @@ static f32 dockedToolbarMainSize(OverlayToolbar* toolbar, f32 thickness, f32 pad
 	return std::max(measureToolbarMainSize(toolbar, toolbarEffectiveLayout(toolbar), thickness), thickness);
 }
 
+struct ToolbarDockResult
+{
+	bool showHint = false;
+	Rect hintRect;
+	bool snapToEnd = false;
+	u32 insertionIndex = 0;
+};
+
+// computes where a dragged toolbar sinks on the hovered strip: the side (anchored to the
+// strip start corner or the strip end corner) is picked from the half of the strip the
+// cursor is in, and the insertion index is resolved within that side cluster of toolbars
+static ToolbarDockResult computeToolbarDock(OverlayToolbar* toolbar, OverlayDockZone zone, f32 thickness, f32 padding)
+{
+	ToolbarDockResult result;
+	Rect strip = overlayToolbarGetDockZoneRect(s_viewportRect, zone, thickness);
+
+	bool vertical = (zone == OverlayDockZone::LeftToolbar || zone == OverlayDockZone::RightToolbar);
+	f32 stripMain = vertical ? strip.height : strip.width;
+	f32 mouseMain = vertical ? (ctx->mousePosition.y - strip.y) : (ctx->mousePosition.x - strip.x);
+
+	result.snapToEnd = (mouseMain >= stripMain * 0.5f);
+
+	std::vector<OverlayToolbar*> cluster;
+
+	for (OverlayToolbar* other : overlayToolbarsInZone(zone, toolbar))
+	{
+		if (other->snapToEnd == result.snapToEnd)
+			cluster.push_back(other);
+	}
+
+	f32 total = 0;
+	f32 passed = 0;
+	u32 index = 0;
+
+	for (OverlayToolbar* other : cluster)
+		total += dockedToolbarMainSize(other, thickness, padding);
+
+	for (u32 r = 0; r < cluster.size(); r++)
+	{
+		f32 size = dockedToolbarMainSize(cluster[r], thickness, padding);
+		f32 start = result.snapToEnd ? (stripMain - (total - passed)) : passed;
+		f32 mid = start + size * 0.5f;
+
+		if (mouseMain > mid)
+		{
+			index = r + 1;
+			passed += size;
+		}
+		else
+		{
+			break;
+		}
+	}
+
+	f32 mySize = dockedToolbarMainSize(toolbar, thickness, padding);
+	f32 newStart = result.snapToEnd ? (stripMain - (total - passed) - mySize) : passed;
+	f32 hintThickness = ctx->settings.overlayToolbars.insertionHintThickness * ctx->scale;
+	f32 barPos = std::max(newStart - hintThickness / 2.0f, 0.0f);
+
+	if (vertical)
+		result.hintRect = { strip.x, strip.y + barPos, thickness, hintThickness };
+	else
+		result.hintRect = { strip.x + barPos, strip.y, hintThickness, thickness };
+
+	result.showHint = true;
+	result.insertionIndex = index;
+	return result;
+}
+
 void overlayToolbarRender(HOverlayToolbar toolbar)
 {
 	OverlayToolbar* tbar = (OverlayToolbar*)toolbar;
@@ -796,45 +867,14 @@ void overlayToolbarRender(HOverlayToolbar toolbar)
 		tbar->showDockPreview = (zone != OverlayDockZone::Floating);
 		tbar->previewDockZone = zone;
 
-		// compute the insertion point on the hovered strip: before a toolbar, after it,
-		// or in between two toolbars, and where the insertion hint bar should be shown
-		u32 insertionIndex = 0;
-		Rect insertionHint;
-
 		if (tbar->showDockPreview)
 		{
-			auto stripToolbars = overlayToolbarsInZone(zone, tbar);
-			Rect strip = overlayToolbarGetDockZoneRect(s_viewportRect, zone, thickness);
-			bool verticalStrip = (zone == OverlayDockZone::LeftToolbar || zone == OverlayDockZone::RightToolbar);
-			f32 mainMouse = verticalStrip ? (ctx->mousePosition.y - strip.y) : (ctx->mousePosition.x - strip.x);
-			f32 gapPos = 0;
+			ToolbarDockResult dock = computeToolbarDock(tbar, zone, thickness, padding);
 
-			for (OverlayToolbar* other : stripToolbars)
-			{
-				f32 size = dockedToolbarMainSize(other, thickness, padding);
-
-				if (mainMouse > gapPos + size * 0.5f)
-				{
-					gapPos += size;
-					insertionIndex++;
-				}
-				else
-				{
-					break;
-				}
-			}
-
-			f32 hintThickness = st.insertionHintThickness * ctx->scale;
-			f32 barPos = std::max(gapPos - hintThickness / 2.0f, 0.0f);
-
-			if (verticalStrip)
-				insertionHint = { strip.x, strip.y + barPos, thickness, hintThickness };
-			else
-				insertionHint = { strip.x + barPos, strip.y, hintThickness, thickness };
-
-			mgr.showInsertionHint = !stripToolbars.empty();
-			mgr.insertionHintRect = insertionHint;
-			mgr.insertionStripIndex = insertionIndex;
+			mgr.showInsertionHint = dock.showHint;
+			mgr.insertionHintRect = dock.hintRect;
+			mgr.dropSnapToEnd = dock.snapToEnd;
+			mgr.dropInsertionIndex = dock.insertionIndex;
 		}
 		else
 		{
@@ -853,15 +893,24 @@ void overlayToolbarRender(HOverlayToolbar toolbar)
 		{
 			if (tbar->showDockPreview)
 			{
-				// insert the toolbar into the strip at the hovered insertion point
+				// dock into the side cluster the cursor was on, at the resolved insertion
+				// point; the toolbar keeps side anchoring once docked
 				tbar->dockZone = zone;
+				tbar->snapToEnd = mgr.dropSnapToEnd;
 
-				auto stripToolbars = overlayToolbarsInZone(zone, tbar);
-				u32 index = std::min((u32)stripToolbars.size(), mgr.insertionStripIndex);
-				stripToolbars.insert(stripToolbars.begin() + index, tbar);
+				std::vector<OverlayToolbar*> cluster;
 
-				for (u32 i = 0; i < stripToolbars.size(); i++)
-					stripToolbars[i]->stripOrder = i;
+				for (OverlayToolbar* other : overlayToolbarsInZone(zone, tbar))
+				{
+					if (other->snapToEnd == tbar->snapToEnd)
+						cluster.push_back(other);
+				}
+
+				u32 index = std::min((u32)cluster.size(), mgr.dropInsertionIndex);
+				cluster.insert(cluster.begin() + index, tbar);
+
+				for (u32 i = 0; i < cluster.size(); i++)
+					cluster[i]->stripOrder = i;
 			}
 			else
 			{
@@ -884,26 +933,67 @@ void overlayToolbarRender(HOverlayToolbar toolbar)
 	else if (tbar->dockZone != OverlayDockZone::Floating)
 	{
 		// toolbars docked on the same edge share a single strip and are laid out
-		// inline: side by side on top/bottom edges, stacked in a column on left/right edges
+		// inline: side by side on top/bottom edges, stacked in a column on left/right edges.
+		// Start-anchored toolbars grow from the strip start corner and end-anchored ones
+		// from the strip end corner, so a toolbar keeps its corner when the strip resizes
 		OverlayToolbarLayout layout = toolbarEffectiveLayout(tbar);
 		bool vertical = (layout == OverlayToolbarLayout::Vertical);
 		Rect strip = overlayToolbarGetDockZoneRect(s_viewportRect, tbar->dockZone, thickness);
 		f32 main = dockedToolbarMainSize(tbar, thickness, padding);
 		f32 stripOffset = 0;
 
-		// order the toolbars docked on the same strip and find this one's inline position
+		// split the other docked toolbars into their start and end anchored clusters
+		std::vector<OverlayToolbar*> startCluster;
+		std::vector<OverlayToolbar*> endCluster;
+
 		for (OverlayToolbar* other : overlayToolbarsInZone(tbar->dockZone, tbar))
 		{
-			if (other->stripOrder >= tbar->stripOrder)
-				break;
-
-			stripOffset += dockedToolbarMainSize(other, thickness, padding);
+			if (other->snapToEnd)
+				endCluster.push_back(other);
+			else
+				startCluster.push_back(other);
 		}
 
-		if (vertical)
-			tbar->rect = { strip.x, strip.y + stripOffset, thickness, main };
+		if (tbar->snapToEnd)
+		{
+			f32 endTotal = main;
+
+			for (OverlayToolbar* other : endCluster)
+				endTotal += dockedToolbarMainSize(other, thickness, padding);
+
+			// toolbars before this one in the end cluster push it toward the strip start
+			for (OverlayToolbar* other : endCluster)
+			{
+				if (other->stripOrder >= tbar->stripOrder)
+					break;
+
+				stripOffset += dockedToolbarMainSize(other, thickness, padding);
+			}
+
+			f32 stripMain = vertical ? strip.height : strip.width;
+			f32 startPos = std::max(stripMain - endTotal + stripOffset, 0.0f);
+
+			if (vertical)
+				tbar->rect = { strip.x, strip.y + startPos, thickness, main };
+			else
+				tbar->rect = { strip.x + startPos, strip.y, main, thickness };
+		}
 		else
-			tbar->rect = { strip.x + stripOffset, strip.y, main, thickness };
+		{
+			// toolbars before this one in the start cluster push it toward the strip end
+			for (OverlayToolbar* other : startCluster)
+			{
+				if (other->stripOrder >= tbar->stripOrder)
+					break;
+
+				stripOffset += dockedToolbarMainSize(other, thickness, padding);
+			}
+
+			if (vertical)
+				tbar->rect = { strip.x, strip.y + stripOffset, thickness, main };
+			else
+				tbar->rect = { strip.x + stripOffset, strip.y, main, thickness };
+		}
 	}
 	else
 	{

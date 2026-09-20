@@ -132,26 +132,46 @@ inline enumBasicType fromFlags(T x) { return (enumBasicType)x; };
 
 template <typename T> inline T toFlags(int x) { return (T)x; };
 
+/// Opaque handle to an image, loaded from a file or added to a theme
 typedef void* HImage;
+/// Opaque handle to a theme
 typedef void* HTheme;
+/// Opaque handle to a font created from a theme
 typedef void* HFont;
+/// Opaque handle to a widget element info in a theme
 typedef void* HThemeWidgetElement;
+/// Opaque handle to a native OS window
 typedef void* HNativeWindow;
+/// Opaque handle to a dock node in the window docking tree
 typedef void* HDockNode;
+/// Opaque handle to a custom OS mouse cursor
 typedef void* HMouseCursor;
+/// Opaque handle to a texture
 typedef void* HTexture;
+/// Opaque handle to a HorusUI context
 typedef void* HContext;
+/// Opaque handle to a file, opened with the file I/O services
 typedef void* HFile;
+/// Opaque handle to a font face
 typedef void* HFontFace;
+/// Opaque handle to an overlay toolbar
 typedef void* HOverlayToolbar;
+/// Opaque handle to a widget element in an overlay toolbar
 typedef void* HOverlayToolbarWidget;
 
+/// A 32bit RGBA color
 typedef u32 Rgba32;
+/// An index of a tab in a tab group
 typedef u32 TabIndex;
+/// A glyph code of a character in a font
 typedef u32 GlyphCode;
+/// A unique id of a dock node in the window docking tree
 typedef u64 DockNodeId;
+/// A unique id of a widget, use it to identify widgets in the same window and in the same id scope
 typedef u64 WidgetId;
+/// A string of font glyph codes
 typedef std::vector<GlyphCode> Utf32String;
+/// Callback used by renderCallbackAdd, called when the UI is rendered
 typedef void (*RenderCallback)(HNativeWindow wnd);
 
 /// Horizontal align type, for text and images
@@ -170,6 +190,7 @@ enum class VAlignType
 	Center
 };
 
+/// The padding stack type, used with the padding functions
 enum class PaddingType
 {
 	Layout,
@@ -356,6 +377,7 @@ enum class NativeWindowFlags : u32
 };
 HUI_ENUM_AS_FLAGS(NativeWindowFlags);
 
+/// OS window state
 enum class NativeWindowState
 {
 	Normal = 0,
@@ -364,6 +386,7 @@ enum class NativeWindowState
 	Hidden
 };
 
+/// File seek mode, used with the file I/O services
 enum class FileSeekMode
 {
 	Set = 0,
@@ -384,6 +407,7 @@ enum class WindowFlags : u32
 };
 HUI_ENUM_AS_FLAGS(WindowFlags);
 
+/// Render layer type for a draw command
 enum class DrawCmdLayerType : u32
 {
 	Normal = 0,
@@ -411,6 +435,7 @@ enum class TextInputFlags : u32
 };
 HUI_ENUM_AS_FLAGS(TextInputFlags);
 
+/// Text input modes for the multiline textInput widget
 enum class MultilineTextInputFlags : u32
 {
 	None = HUI_BIT(0),
@@ -447,6 +472,7 @@ enum class TreeNodeFlags : u32
 };
 HUI_ENUM_AS_FLAGS(TreeNodeFlags);
 
+/// Various flags for the table widget
 enum class TableFlags : u32
 {
 	None = 0,
@@ -466,6 +492,7 @@ enum class TableFlags : u32
 };
 HUI_ENUM_AS_FLAGS(TableFlags);
 
+/// Various flags for the scroll view widget
 enum class ScrollViewFlags : u32
 {
 	None = 0,
@@ -475,6 +502,7 @@ enum class ScrollViewFlags : u32
 };
 HUI_ENUM_AS_FLAGS(ScrollViewFlags);
 
+/// How the scroll view aligns the target widget when it's scrolled to
 enum class ScrollToItemSnapMode
 {
 	Minimal,
@@ -483,6 +511,7 @@ enum class ScrollToItemSnapMode
 	AlignEnd
 };
 
+/// Various flags for a table column
 enum class TableColumnFlags : u32
 {
 	None = 0,
@@ -633,6 +662,7 @@ enum class KeyCode
 	Count
 };
 
+/// Key modifiers flags
 enum class KeyModifiers : u32
 {
 	None = 0,
@@ -643,6 +673,7 @@ enum class KeyModifiers : u32
 };
 HUI_ENUM_AS_FLAGS(KeyModifiers);
 
+/// Mouse cursor type
 enum class MouseCursorType
 {
 	Arrow,
@@ -682,6 +713,7 @@ enum class DockType
 	Floating /// will undock window to a floating native window
 };
 
+/// Dock node split direction
 enum class DockNodeSplitType
 {
 	Top,
@@ -690,6 +722,7 @@ enum class DockNodeSplitType
 	Right
 };
 
+/// The way the docking guides and preview are drawn when docking
 enum class DockingGuidesStyle
 {
 	/// Draw the docking preview as actual native windows that shape to the sides of dock nodes, wont draw the docking guides
@@ -735,12 +768,14 @@ enum class MessageBoxButtons : u32
 };
 HUI_ENUM_AS_FLAGS(MessageBoxButtons);
 
+/// Various flags for the context menu widget
 enum class ContextMenuFlags
 {
 	None = 0
 };
 HUI_ENUM_AS_FLAGS(ContextMenuFlags);
 
+/// Various flags for the popup widget
 enum class PopupFlags : u32
 {
 	None = 0,
@@ -756,6 +791,7 @@ enum class PopupFlags : u32
 };
 HUI_ENUM_AS_FLAGS(PopupFlags);
 
+/// Various flags for the color picker widget
 enum class ColorPickerFlags : u32
 {
 	NoAlpha = HUI_BIT(0),
@@ -766,6 +802,7 @@ enum class ColorPickerFlags : u32
 };
 HUI_ENUM_AS_FLAGS(ColorPickerFlags);
 
+/// Various flags for the circular slider widget
 enum class CircularSliderFlags : u32
 {
 	Normal = 0,
@@ -1442,6 +1479,7 @@ struct Rect
 /// \param userData the user data passed to customFileDialog
 typedef void (*CustomFileDialogPreviewCallback)(const char* path, const Rect& previewRect, void* userData);
 
+/// An input event, pushed to the input event queue by input providers and read with inputEventGet
 struct InputEvent
 {
 	enum class Type
@@ -1535,6 +1573,7 @@ struct InputEvent
 	HNativeWindow window = 0;
 };
 
+/// A color with the RGBA channels in the 0..1 float range
 struct HUI_STRUCT_API Color
 {
 	Color() {}
@@ -1652,6 +1691,7 @@ struct FillStyle
 	Point scale;
 };
 
+/// A syntax highlighting keyword info, used with the multiline text input widget
 struct KeywordInfo
 {
 	enum class Type
@@ -1665,6 +1705,7 @@ struct KeywordInfo
 	Type type = Type::Keyword;
 };
 
+/// A range highlight for the syntax highlighting, colors a range of text between two keywords
 struct RangeHighlight
 {
 	const char* beginKeyword = nullptr;
@@ -1711,6 +1752,7 @@ struct WidgetElementInfo
 	TextShadow textShadow;
 };
 
+/// Holds the state and computed visible window of a virtual list, use with virtualListContentBegin
 struct VirtualScrollInfo
 {
 	VirtualScrollInfo(u32 itemCount = 0)
@@ -1734,6 +1776,7 @@ struct VirtualScrollInfo
 	bool nextStep();
 };
 
+/// Info about a monitor/display
 struct DisplayInfo
 {
 	std::string name;
@@ -1771,6 +1814,7 @@ struct RenderBatch
 	u32 vertexCount = 0; /// how many vertices to use for rendering the primitives
 };
 
+/// A rectangle desiring a spot in a texture atlas, used with the packRects service
 struct PackedRect
 {
 	u64 id = 0; // used to identify the rect, because the rect pack might reorder them in the rect array
@@ -1778,6 +1822,7 @@ struct PackedRect
 	bool packedOk = false;
 };
 
+/// Info about a rasterized font glyph, filled by the rasterizeFontGlyph service
 struct FontGlyph
 {
 	HImage image = 0; // will be created by atlas
@@ -1795,6 +1840,7 @@ struct FontGlyph
 	Rgba32* rgbaBuffer = nullptr;
 };
 
+/// The metrics of a font face
 struct FontMetrics
 {
 	f32 height = 0;
@@ -1804,6 +1850,7 @@ struct FontMetrics
 	f32 underlineThickness = 0;
 };
 
+/// The resulting size of a text, from computing the text size with a font
 struct FontTextSize
 {
 	f32 width = 0;
@@ -1813,12 +1860,14 @@ struct FontTextSize
 	u32 maxLength = 0; // valid with maxWidth argument of computeTextSize is valid (!= -1)
 };
 
+/// Info about a loaded font face
 struct FontInfo
 {
 	HFontFace fontFace = 0;
 	FontMetrics metrics;
 };
 
+/// The saved state of the window docking layout, used with dockingStateSave and dockingStateLoad
 struct WindowsDockingState
 {
 	struct WindowInfo
@@ -1858,6 +1907,8 @@ enum class OverlayToolbarLayout
 	Panel,
 };
 
+/// The function pointer services that HorusUI uses to connect to the OS, graphics, fonts, etc.
+/// Hook your implementation here in the Settings, you can use the built-in backends
 struct Services
 {
 	// Input
@@ -2109,7 +2160,9 @@ HUI_API void frameBegin();
 /// Ends an UI frame
 HUI_API void frameEnd();
 
+/// Begin the UI render commands, called between frameBegin/frameEnd to render the UI
 HUI_API void renderBegin();
+/// End the UI render commands
 HUI_API void renderEnd();
 
 /// Get the duration of the last UI frame in milliseconds
@@ -2200,56 +2253,166 @@ HUI_API void mouseCursorSet(HMouseCursor cursor);
 // Windowing & docking functions
 //////////////////////////////////////////////////////////////////////////
 
+/// Set the current native OS window, used before drawing its docking layout
+/// \param nativeWnd the native window handle
 HUI_API void nativeWindowSetCurrent(HNativeWindow nativeWnd);
+/// Create the root dock node of a native window, all windows must be docked in a node tree under this root
+/// \param nativeWnd the native window handle
+/// \return the id of the root dock node
 HUI_API DockNodeId dockNodeCreateRoot(HNativeWindow nativeWnd);
+/// Delete all the children nodes of a root dock node, removing the windows docked in them
+/// \param rootNodeId the root dock node id
 HUI_API void dockNodeDeleteChildren(DockNodeId rootNodeId);
+/// Split a dock node into two sibling nodes
+/// \param nodeId the dock node id to split
+/// \param splitType the split direction
+/// \param firstNodeSizeUnitPercent the size of the first node in unit percent (0..1)
+/// \param outNodeId1 receives the id of the first resulting node
+/// \param outNodeId2 receives the id of the second resulting node
 HUI_API void dockNodeSplit(DockNodeId nodeId, DockNodeSplitType splitType, f32 firstNodeSizeUnitPercent, DockNodeId* outNodeId1, DockNodeId* outNodeId2);
+/// Assign a window to a dock node, must be called before windowBegin for the window
+/// \param parentNode the dock node id where the window will be docked
+/// \param windowId the window id
 HUI_API void dockNodeSetWindow(DockNodeId parentNode, const char* windowId);
+/// Recalculate the dock node layout sizes based on the native window sizes
 HUI_API void dockNodeLayoutRecalculate();
 
+/// Begin a dockable window widget, must be called inside a layout
+/// \param windowId the unique window id
+/// \param title the window title
+/// \param initialRect optional initial window rect, in window coordinates
+/// \param img optional window icon image
+/// \return true if the window is visible and its layout was begun
 HUI_API bool windowBegin(const char* windowId, const char* title, Rect* initialRect = nullptr, HImage img = 0);
+/// End the window widget
 HUI_API void windowEnd();
+/// Set a window visible or hidden
+/// \param windowId the window id
+/// \param visible true to show, false to hide the window
 HUI_API void windowSetVisible(const char* windowId, bool visible);
+/// Set the flags for the next window drawn
+/// \param flags the window flags
 HUI_API void windowSetNextFlags(WindowFlags flags);
+/// Give keyboard focus to a window
+/// \param windowId the window id
 HUI_API void windowSetFocus(const char* windowId);
+/// Dock a window into another window
+/// \param windowId the window id to dock
+/// \param targetWindowId the target window id where to dock into
+/// \param dockType the docking mode
 HUI_API void windowDock(const char* windowId, const char* targetWindowId, DockType dockType);
+/// Undock a window, making it floating
+/// \param windowId the window id
+/// \param windowPos optional position of the undocked window, in window coordinates
 HUI_API void windowUndock(const char* windowId, const Point& windowPos = Point());
+/// Debug print the docking layout to stdout
 HUI_API void windowDebugPrint();
+/// \return true if the mouse is over the current window
 HUI_API bool windowIsMouseOver();
+/// Capture the mouse input to the current window
 HUI_API void windowSetCapture();
+/// Release the mouse capture from the current window
 HUI_API void windowReleaseCapture();
 /// \return the window client rect
 HUI_API Rect windowGetClientRect();
 /// \return the window client rect, used usually to render custom scenes
 HUI_API Rect windowGetClientRectByWindowId(const char* windowId);
+/// Save the current docking layout to a state object
+/// \param dockingState the state object to save into
 HUI_API void dockingStateSave(WindowsDockingState& dockingState);
+/// Load a saved docking layout state
+/// \param dockingState the state object to load
 HUI_API void dockingStateLoad(const WindowsDockingState& dockingState);
 
 ///////////////////////////////////////////////////////////////////////////
 // Overlay toolbar functions (dockable toolbars over a client rect)
 ///////////////////////////////////////////////////////////////////////////
 
+/// Create an overlay toolbar
+/// \param id the unique toolbar id
+/// \param title the toolbar title
+/// \param initialDockZone the dock zone the toolbar starts in
+/// \return the created toolbar handle
 HUI_API HOverlayToolbar overlayToolbarCreate(const char* id, const char* title, OverlayDockZone initialDockZone = OverlayDockZone::Floating);
+/// Find a previously created overlay toolbar by id
+/// \param id the toolbar id
+/// \return the toolbar handle or null
 HUI_API HOverlayToolbar overlayToolbarFind(const char* id);
+/// Add a button element to an overlay toolbar
+/// \param toolbar the toolbar handle
+/// \param elementId the unique element id inside the toolbar
+/// \param label the button label
+/// \param icon the button icon image
+/// \param onClick the function called when clicked
+/// \param tooltip the button tooltip text
+/// \return the toolbar widget handle
 HUI_API HOverlayToolbarWidget overlayToolbarAddButton(HOverlayToolbar toolbar, const char* elementId, const char* label, HImage icon = 0, void (*onClick)() = nullptr, const char* tooltip = nullptr);
+/// Add a toggle button element to an overlay toolbar
+/// \param toolbar the toolbar handle
+/// \param elementId the unique element id inside the toolbar
+/// \param label the toggle label
+/// \param iconOff the image shown when the toggle is off
+/// \param iconOn the image shown when the toggle is on
+/// \param toggleValue the bool value of the toggle
+/// \param tooltip the toggle tooltip text
+/// \return the toolbar widget handle
 HUI_API HOverlayToolbarWidget overlayToolbarAddToggle(HOverlayToolbar toolbar, const char* elementId, const char* label, HImage iconOff, HImage iconOn, bool* toggleValue, const char* tooltip = nullptr);
+/// Add a separator element to an overlay toolbar
+/// \param toolbar the toolbar handle
+/// \return the toolbar widget handle
 HUI_API HOverlayToolbarWidget overlayToolbarAddSeparator(HOverlayToolbar toolbar);
+/// Add a space element to an overlay toolbar
+/// \param toolbar the toolbar handle
+/// \return the toolbar widget handle
 HUI_API HOverlayToolbarWidget overlayToolbarAddSpace(HOverlayToolbar toolbar);
 /// a grip to grab and drag the toolbar, inserted as the first element
 HUI_API HOverlayToolbarWidget overlayToolbarAddGrip(HOverlayToolbar toolbar);
+/// Remove an element from an overlay toolbar
+/// \param toolbar the toolbar handle
+/// \param elementId the element id to remove
 HUI_API void overlayToolbarRemoveElement(HOverlayToolbar toolbar, const char* elementId);
+/// Begin the overlay toolbar drawing for a viewport rect, all toolbars are drawn between overlayToolbarRender calls inside overlayToolbarBegin/End
+/// \param viewportRect the viewport rect in window coordinates
 HUI_API void overlayToolbarBegin(const Rect& viewportRect);
+/// Render a toolbar between overlayToolbarBegin and overlayToolbarEnd
+/// \param toolbar the toolbar handle
 HUI_API void overlayToolbarRender(HOverlayToolbar toolbar);
+/// End the overlay toolbar drawing
 HUI_API void overlayToolbarEnd();
+/// Set the dock zone of a toolbar
+/// \param toolbar the toolbar handle
+/// \param zone the dock zone
 HUI_API void overlayToolbarSetDockZone(HOverlayToolbar toolbar, OverlayDockZone zone);
 /// position of a floating toolbar relative to the overlayToolbarBegin viewport rect
 HUI_API void overlayToolbarSetFloatingPosition(HOverlayToolbar toolbar, const Point& pos);
+/// Set the layout of a toolbar
+/// \param toolbar the toolbar handle
+/// \param layout the toolbar layout
 HUI_API void overlayToolbarSetLayout(HOverlayToolbar toolbar, OverlayToolbarLayout layout);
+/// Collapse or expand a toolbar
+/// \param toolbar the toolbar handle
+/// \param collapsed true to collapse the toolbar
 HUI_API void overlayToolbarSetCollapsed(HOverlayToolbar toolbar, bool collapsed);
+/// Set a toolbar visible or hidden
+/// \param toolbar the toolbar handle
+/// \param visible true to show the toolbar
 HUI_API void overlayToolbarSetVisible(HOverlayToolbar toolbar, bool visible);
+/// \return true if the toolbar is visible
+/// \param toolbar the toolbar handle
 HUI_API bool overlayToolbarIsVisible(HOverlayToolbar toolbar);
+/// \return true if the toolbar is being dragged
+/// \param toolbar the toolbar handle
 HUI_API bool overlayToolbarIsDragging(HOverlayToolbar toolbar);
+/// \return the rect of a dock zone inside a viewport rect
+/// \param viewportRect the viewport rect
+/// \param zone the dock zone
+/// \param toolbarThickness the thickness of the toolbar in the dock zone
 HUI_API Rect overlayToolbarGetDockZoneRect(const Rect& viewportRect, OverlayDockZone zone, f32 toolbarThickness = 32.0f);
+/// \return true if the point is inside a dock zone rect
+/// \param viewportRect the viewport rect
+/// \param pt the point to test
+/// \param zone the dock zone
+/// \param toolbarThickness the thickness of the toolbar in the dock zone
 HUI_API bool overlayToolbarPointInDockZone(const Rect& viewportRect, const Point& pt, OverlayDockZone zone, f32 toolbarThickness = 32.0f);
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -2276,28 +2439,69 @@ HUI_API void themeSet(HTheme theme);
 /// \return the current theme
 HUI_API HTheme themeGet();
 
+/// \return the image data (pixels, width, height) of the current theme's atlas texture
 HUI_API ImageData themeGetAtlasImageData();
+/// Set the current theme's atlas texture to a custom texture, usually used when the theme was built once and the atlas texture was moved to video memory
+/// \param texture the texture handle
 HUI_API void themeSetAtlasTexture(HTexture texture);
+/// \return the atlas texture of the current theme
 HUI_API HTexture themeGetAtlasTexture();
 
 /// Create a new theme
 /// \param atlasTextureSize the width and height of the atlas texture, where theme images are kept
 /// \return the newly created theme
 HUI_API HTheme themeCreate(u32 atlasTextureSize);
+/// Create a new builtin theme
+/// \param atlasTextureSize the width and height of the atlas texture, where theme images are kept
+/// \return the newly created theme
 HUI_API HTheme createBuiltinTheme(u32 atlasTextureSize);
 /// Delete a theme
 /// \param theme the theme to be deleted, if this is the current theme it will be set to null
 HUI_API void themeDestroy(HTheme theme);
+/// Set a user setting on a theme
+/// \param theme the theme handle
+/// \param name the setting name
+/// \param value the setting value
 HUI_API void themeSetUserSetting(HTheme theme, const char* name, const char* value);
+/// Get a user setting from a theme
+/// \param theme the theme handle
+/// \param name the setting name
+/// \return the setting value or null if it doesn't exist
 HUI_API const char* themeGetUserSetting(HTheme theme, const char* name);
+/// Add an image to a theme, must be called before the theme is built
+/// \param theme the theme handle
+/// \param id the unique image id
+/// \param imgData the image data to add
+/// \return the image handle added
 HUI_API HImage themeAddImage(HTheme theme, const char* id, const ImageData& imgData);
+/// Get an image from a theme by id
+/// \param theme the theme handle
+/// \param id the image id
+/// \return the image handle or null
 HUI_API HImage themeGetImage(HTheme theme, const char* id);
+/// Set the current style of a widget type, used by subsequent widgets
+/// \param widgetType the widget type
+/// \param styleName the style name
 HUI_API void widgetSetStyle(WidgetType widgetType, const char* styleName);
+/// Push the current style of a widget type and sets a new one
+/// \param widgetType the widget type
+/// \param styleName the style name
 HUI_API void widgetPushStyle(WidgetType widgetType, const char* styleName);
+/// Pop the previously pushed style of a widget type
 HUI_API void widgetPopStyle();
+/// Set the current style of a widget element
+/// \param widgetElementId the widget element
+/// \param styleName the style name
 HUI_API void widgetSetElementStyle(WidgetElementId widgetElementId, const char* styleName);
+/// Set a widget type to its default style
+/// \param widgetType the widget type
 HUI_API void widgetSetDefaultStyle(WidgetType widgetType);
+/// Set a widget element to its default style
+/// \param widgetElementId the widget element
 HUI_API void widgetSetDefaultElementStyle(WidgetElementId widgetElementId);
+/// Set the style of a user (custom) widget element
+/// \param elementName the user element name
+/// \param styleName the style name
 HUI_API void widgetSetUserElementStyle(const char* elementName, const char* styleName);
 
 /// Set a theme's widget element info
@@ -2332,15 +2536,79 @@ HUI_API void themeSetUserWidgetElement(
 /// \param elementId the widget element id
 /// \param state the element state
 /// \param outInfo returned element info
+/// Return current theme widget element's info
+/// \param elementId the widget element id
+/// \param state the element state
+/// \param outInfo returned element info
+/// \param styleName the style name
 HUI_API void themeGetWidgetElementInfo(WidgetElementId elementId, WidgetStateType state, WidgetElementInfo& outInfo, const char* styleName = "default");
+/// Return current theme user widget element's info
+/// \param userElementName the user element name
+/// \param state the element state
+/// \param outInfo returned element info
+/// \param styleName the style name
 HUI_API void themeGetUserWidgetElementInfo(const char* userElementName, WidgetStateType state, WidgetElementInfo& outInfo, const char* styleName = "default");
+/// Set a parameter of a theme widget element style
+/// \param theme the theme handle
+/// \param elementId the widget element
+/// \param styleName the style name
+/// \param paramName the parameter name
+/// \param paramValue the parameter value
 HUI_API void themeSetWidgetElementParameter(HTheme theme, WidgetElementId elementId, const char* styleName, const char* paramName, const char* paramValue);
+/// Get a string parameter of a theme widget element style
+/// \param theme the theme handle
+/// \param elementId the widget element
+/// \param styleName the style name
+/// \param paramName the parameter name
+/// \param defaultValue the default value if the parameter doesn't exist
+/// \return the parameter value
 HUI_API const char* themeGetWidgetElementParameterString(HTheme theme, WidgetElementId elementId, const char* styleName, const char* paramName, const char* defaultValue = "");
+/// Get a float parameter of a theme widget element style
+/// \param theme the theme handle
+/// \param elementId the widget element
+/// \param styleName the style name
+/// \param paramName the parameter name
+/// \param defaultValue the default value if the parameter doesn't exist
+/// \return the parameter value
 HUI_API f32 themeGetWidgetElementParameterFloat(HTheme theme, WidgetElementId elementId, const char* styleName, const char* paramName, f32 defaultValue = 0.0f);
+/// Get a color parameter of a theme widget element style, the parameter value must be a color string
+/// \param theme the theme handle
+/// \param elementId the widget element
+/// \param styleName the style name
+/// \param paramName the parameter name
+/// \param defaultValue the default value if the parameter doesn't exist
+/// \return the parameter value
 HUI_API const Color& themeGetWidgetElementParameterColor(HTheme theme, WidgetElementId elementId, const char* styleName, const char* paramName, const Color& defaultValue = Color());
+/// Set a parameter of a user widget element style
+/// \param theme the theme handle
+/// \param userElementName the user element name
+/// \param styleName the style name
+/// \param paramName the parameter name
+/// \param paramValue the parameter value
 HUI_API void themeSetUserWidgetElementParameter(HTheme theme, const char* userElementName, const char* styleName, const char* paramName, const char* paramValue);
+/// Get a string parameter of a user widget element style
+/// \param theme the theme handle
+/// \param userElementName the user element name
+/// \param styleName the style name
+/// \param paramName the parameter name
+/// \param defaultValue the default value if the parameter doesn't exist
+/// \return the parameter value
 HUI_API const char* themeGetUserWidgetElementParameterString(HTheme theme, const char* userElementName, const char* styleName, const char* paramName, const char* defaultValue = "");
+/// Get a float parameter of a user widget element style
+/// \param theme the theme handle
+/// \param userElementName the user element name
+/// \param styleName the style name
+/// \param paramName the parameter name
+/// \param defaultValue the default value if the parameter doesn't exist
+/// \return the parameter value
 HUI_API f32 themeGetUserWidgetElementParameterFloat(HTheme theme, const char* userElementName, const char* styleName, const char* paramName, f32 defaultValue = 0.0f);
+/// Get a color parameter of a user widget element style, the parameter value must be a color string
+/// \param theme the theme handle
+/// \param userElementName the user element name
+/// \param styleName the style name
+/// \param paramName the parameter name
+/// \param defaultValue the default value if the parameter doesn't exist
+/// \return the parameter value
 HUI_API const Color& themeGetUserWidgetElementParameterColor(HTheme theme, const char* userElementName, const char* styleName, const char* paramName, const Color& defaultValue = Color());
 
 /// Create a new font object
@@ -2380,24 +2648,58 @@ HUI_API f32 sameLineSpacingGet();
 
 /// Begin a layout area, an invisible rectangle on the current window area where widgets will be laid out
 HUI_API void layoutBegin(const Rect& rect);
+/// End the current layout area
 HUI_API void layoutEnd();
+/// Push the current layout state (position, size, spacing and same-line state) and start a new one, helper for nested layouts
 HUI_API void layoutPush();
+/// Pop the previously pushed layout state, restoring the outer layout
 HUI_API void layoutPop();
+/// Push an id on the id stack, all widgets after this will have ids generated under this scope
+/// \param id the id to push
 HUI_API void idPush(const char* id);
+/// Push an id on the id stack, all widgets after this will have ids generated under this scope
+/// \param id the id to push
 HUI_API void idPush(u32 id);
+/// Push a pointer id on the id stack, all widgets after this will have ids generated under this scope
+/// \param id the pointer id to push
 HUI_API void idPush(void* id);
+/// Pop the previously pushed id from the id stack
 HUI_API void idPop();
 
+/// Begin a table widget
+/// \param id the unique widget id
+/// \param columnCount the number of columns
+/// \param height the table height, if zero or negative it uses the remaining layout height
+/// \param flags the table flags
+/// \return true if there is space to draw the table and its layout was begun
 HUI_API bool tableBegin(const char* id, u32 columnCount, f32 height = -1, TableFlags flags = TableFlags::None);
+/// End the current table widget
 HUI_API void tableEnd();
+/// Start the table header row, all cells drawn after this until the first tableRowNext make the header row
 HUI_API void tableStartHeader();
+/// Configure a table column
+/// \param columnIndex the column index to configure
+/// \param size the column size in pixels
+/// \param flags the column flags
 HUI_API void tableColumnSetup(u32 columnIndex, f32 size, TableColumnFlags flags = TableColumnFlags::None);
+/// End the current table row and move to the next one
 HUI_API void tableRowNext();
+/// Set the background color of the current table row
+/// \param color the row color
 HUI_API void tableRowSetColor(const Color& color);
+/// Move to the next cell in the current table row
+/// \param columnSpan the number of columns this cell spans
 HUI_API void tableCellNext(u32 columnSpan = 1);
+/// \return the rect of the current table cell, in window coordinates
 HUI_API Rect tableCellGetRect();
+/// Set the background color of the current table cell
+/// \param color the cell color
 HUI_API void tableCellSetColor(const Color& color);
+/// Push the current cell padding and set a new one
+/// \param paddingX the new horizontal cell padding
+/// \param paddingY the new vertical cell padding
 HUI_API void tableCellPaddingPush(f32 paddingX, f32 paddingY);
+/// Pop the previous cell padding
 HUI_API void tableCellPaddingPop();
 
 /// Get the remaining height in the current layout from current position to bottom
@@ -2405,6 +2707,7 @@ HUI_API f32 layoutGetRemainingHeight();
 
 /// Get the remaining width in the current layout from current position to right edge
 HUI_API f32 layoutGetRemainingWidth();
+/// \return the size of the current layout in unscaled pixels
 HUI_API Point layoutGetSize();
 
 /// Begin a scroll view area widget
@@ -2412,8 +2715,23 @@ HUI_API Point layoutGetSize();
 /// \param scrollPosition the current scroll position (given by endScrollView)
 /// \param virtualHeight the virtual inside scroll height, if its zero then its automatically calculated from the child widgets inside this area
 HUI_API void scrollViewBegin(const char* id, f32 height, f32 scrollPosition, f32 virtualHeight, ScrollViewFlags flags);
+/// Convenience overload of scrollViewBegin with a single f32 scroll position and no flags
+/// \param id the unique widget id
+/// \param size the scroll view size (height)
+/// \param scrollPos the current scroll position
 void scrollViewBegin(const char* id, f32 size, f32 scrollPos);
+/// Convenience overload of scrollViewBegin with a virtual height and no flags
+/// \param id the unique widget id
+/// \param size the scroll view size (height)
+/// \param scrollPos the current scroll position
+/// \param virtualHeight the virtual inside scroll height
 void scrollViewBegin(const char* id, f32 size, f32 scrollPos, f32 virtualHeight);
+/// Convenience overload of scrollViewBegin with flags and a virtual height
+/// \param id the unique widget id
+/// \param height the scroll view size (height)
+/// \param scrollOffset the current scroll offset
+/// \param virtualSize the virtual inside size of the scroll contents
+/// \param flags the scroll view flags
 void scrollViewBegin(const char* id, f32 height, Point scrollOffset, Point virtualSize, ScrollViewFlags flags);
 
 /// Ends a scroll view area widget
@@ -2440,10 +2758,13 @@ HUI_API void virtualListContentEnd();
 /// Push the old padding and set a new one, padding is the left and right side horizontal spacing for widgets
 /// \param newPadding the new horizontal padding value
 HUI_API void paddingPush(PaddingType type, const Point& newPadding);
+/// Push the old widget padding and set a new one, only affects subsequent widgets
+/// \param newPadding the new widget padding
 HUI_API void widgetPaddingPush(const Point& newPadding);
 
 /// Pop the previous padding value from stack and set it as current
 HUI_API void paddingPop(PaddingType type);
+/// Pop the previous widget padding
 HUI_API void widgetPaddingPop();
 
 /// \return the current vertical spacing value
@@ -2462,7 +2783,7 @@ HUI_API void sameLineGroupNext();
 /// End the same-line group
 HUI_API void sameLineGroupEnd();
 
-// Handy version to get widget padding
+/// \return the current widget padding, shorthand for paddingGet(PaddingType::Widget)
 HUI_API const Point& widgetGetPadding();
 
 /// Push the old spacing value to stack and set a new spacing value, spacing is the vertical space between widgets
@@ -2487,6 +2808,10 @@ HUI_API void tintPush(const Color& color, TintColorType type = TintColorType::Al
 /// Pop the old tint color from stack
 HUI_API void tintPop();
 
+/// Apply the current tint color to a color
+/// \param originalColor the color to apply the tint to
+/// \param type the tint color type
+/// \return the tinted color
 HUI_API Color tintApply(const Color& originalColor, TintColorType type);
 
 /// Draw a delayed tooltip widget near the previous widget
@@ -2594,7 +2919,20 @@ HUI_API void widgetSetNextFocused();
 /// \param label the button text
 /// \return true if button was pressed
 HUI_API bool button(const char* label);
+/// Draw a group of segment buttons, only one is selected at a time
+/// \param id the unique widget id
+/// \param labels the array of button labels
+/// \param count the number of buttons
+/// \param currentIndex the current selected button index, in/out
+/// \return true if the selected index changed
 HUI_API bool buttonGroup(const char* id, const char** labels, u32 count, u32* currentIndex);
+/// Draw a group of segment buttons, only one is selected at a time
+/// \param id the unique widget id
+/// \param labels the array of button labels
+/// \param count the number of buttons
+/// \param currentIndex the current selected button index, in/out
+/// \param fullWidth if true the buttons share the full available layout width equally, otherwise they take their text width
+/// \return true if the selected index changed
 HUI_API bool buttonGroup(const char* id, const char** labels, u32 count, u32* currentIndex, bool fullWidth);
 
 /// Draw a button with an image on it
@@ -2653,6 +2991,16 @@ HUI_API bool comboSliderFloat(f32* value, f32 stepsPerPixel = 1.0f, f32 arrowSte
 /// \param value pointer to the value, pass nullptr to show an indeterminate state that starts from 0 and is fully editable until the caller provides a value pointer
 /// \param indeterminateStr optional text shown in the middle while the slider still has no edited value
 HUI_API bool comboSliderFloatRanged(f32* value, f32 minVal, f32 maxVal, f32 stepsPerPixel = 1.0f, f32 arrowStep = 1.0f, const char* formatStr = nullptr, const char* indeterminateStr = nullptr);
+/// Draw a circular slider widget, the value is changed by rotating the mouse around the slider
+/// \param label the widget label
+/// \param value the value pointer
+/// \param minVal the minimum value
+/// \param maxVal the maximum value
+/// \param step the step per mouse rotation amount
+/// \param twoSide if true the slider is two sided (angle 180 degrees)
+/// \param fineStepDivideFactor divides the step for fine control when a modifier key is held
+/// \param flags the circular slider flags
+/// \return true if the value was modified
 HUI_API bool circularSliderFloat(const char* label, f32* value, f32 minVal, f32 maxVal, f32 step, bool twoSide = false, f32 fineStepDivideFactor = 10.f, CircularSliderFlags flags = CircularSliderFlags::Normal);
 
 /// Draw a image widget
@@ -2760,12 +3108,30 @@ HUI_API bool labelCustomMultiline(const char* label, HFont font, const Color& co
 /// \param expandedVar keeps true if its expanded
 /// \return true if the state changed
 HUI_API bool expandable(const char* label, bool* expandedVar = nullptr);
+/// Begin an expandable section, call expandableEnd after drawing the content inside it
+/// \param label the text of the widget
+/// \param expandedVar keeps true if its expanded
+/// \return true if the section is expanded, use it in an if() to draw the content
 HUI_API bool expandableBegin(const char* label, bool* expandedVar = nullptr);
+/// End the currently open expandable section
 HUI_API void expandableEnd();
 
 /// Draw a tree node widget
+/// Draw a tree node widget
+/// \param label the text of the widget
+/// \param expandedVar keeps true if its expanded
+/// \param stateFlags the selection state flags of the node
+/// \param treeFlags the tree node flags
+/// \return true if the node is expanded/clicked
 HUI_API bool treeNode(const char* label, bool* expandedVar = nullptr, SelectableFlags stateFlags = SelectableFlags::Normal, TreeNodeFlags treeFlags = TreeNodeFlags::Normal);
+/// Begin a tree node section, call treeNodeEnd after drawing the content inside it
+/// \param label the text of the widget
+/// \param expandedVar keeps true if its expanded
+/// \param stateFlags the selection state flags of the node
+/// \param treeFlags the tree node flags
+/// \return true if the node is expanded, use it in an if() to draw the content
 HUI_API bool treeNodeBegin(const char* label, bool* expandedVar = nullptr, SelectableFlags stateFlags = SelectableFlags::Normal, TreeNodeFlags treeFlags = TreeNodeFlags::Normal);
+/// End the currently open tree node section
 HUI_API void treeNodeEnd();
 
 /// Draw a dropdown widget
@@ -2824,6 +3190,8 @@ HUI_API void space(f32 customSpacing = 0.0f);
 /// \param spacing optional spacing between widgets, if 0 uses default spacing
 HUI_API void sameLine(f32 offsetX = 0.0f, f32 spacing = 0.0f);
 
+/// Set the width of the next widget drawn, overriding the default widget width
+/// \param width the next widget width
 HUI_API void widgetSetNextWidth(f32 width);
 
 /// Begin a custom user viewport area
@@ -2912,10 +3280,16 @@ HUI_API bool widgetIsChangeEnded();
 /// \return the current widget id (the next widget's id)
 HUI_API WidgetId widgetGetId();
 
+/// \return the current drawing position of widgets in the current layout, in unscaled pixels
 HUI_API Point widgetGetPosition();
+/// Set the drawing position of the next widget
+/// \param position the new widget position
 HUI_API void widgetSetPosition(const Point& position);
+/// Push the current widget drawing position, after this you can move the widget position and restore it later
 HUI_API void widgetPushPosition();
+/// Pop the previously pushed widget drawing position
 HUI_API void widgetPopPosition();
+/// \return the rectangle of the previous widget, in window coordinates
 HUI_API Rect widgetGetRect();
 
 /// \return the current mouse position inside current window
@@ -2971,8 +3345,12 @@ HUI_API Rect customWidgetBegin(const char* id, f32 height = 0.0f);
 /// End custom widget drawing
 HUI_API void customWidgetEnd();
 
+/// Increment the current UI layer index, used to draw widgets in higher layers (drawn on top)
 HUI_API void layerIndexIncrement();
+/// Decrement the current UI layer index
+/// \return the layer index after decrementing
 HUI_API u32 layerIndexDecrement();
+/// Decrement the maximum layer index of the current window, used internally when a window's layer stack ends
 HUI_API void layerDecrementWindowMaxLayerIndex();
 
 /// Set the next widget position
@@ -2980,22 +3358,80 @@ HUI_API void widgetSetPosition(const Point& position);
 
 /// \return the current widget drawing position
 HUI_API Point widgetGetPosition();
+/// Draw text inside a rectangle, aligned within it
+/// \param text the text to draw
+/// \param rect the rectangle to draw the text in
+/// \param horizontalAlign the horizontal text alignment
+/// \param verticalAlign the vertical text alignment
 HUI_API void renderDrawTextInBox(const char* text, const Rect& rect, HAlignType horizontalAlign, VAlignType verticalAlign);
+/// \return the pixel size (width, height) of the given text with the current font
+/// \param text the text to measure
 HUI_API Point renderGetTextSize(const char* text);
+/// Draw an image at a position with a given scale
+/// \param image the image to draw
+/// \param position the draw position
+/// \param scale the draw scale
 HUI_API void renderDrawImage(HImage image, const Point& position, f32 scale);
+/// Draw an image stretched to fill a rectangle
+/// \param image the image to draw
+/// \param rect the rectangle to fill
 HUI_API void renderDrawStretchedImage(HImage image, const Rect& rect);
+/// Draw a 9-cell border image to fill a rectangle
+/// \param image the image to draw
+/// \param border the border size of the 9-cell image, in pixels
+/// \param rect the rectangle to fill
 HUI_API void renderDrawBorderedImage(HImage image, u32 border, const Rect& rect);
+/// Set the current line drawing style, used by the render drawing functions
+/// \param style the line style
 HUI_API void renderSetLineStyle(const LineStyle& style);
+/// Set the current fill drawing style, used by the render drawing functions
+/// \param style the fill style
 HUI_API void renderSetFillStyle(const FillStyle& style);
+/// Set the current render color, used by the render drawing functions
+/// \param color the render color
 HUI_API void renderSetColor(const Color& color);
+/// Draw a line between two points
+/// \param a the first point
+/// \param b the second point
 HUI_API void renderDrawLine(const Point& a, const Point& b);
+/// Draw a connected line through the given points
+/// \param points the array of points
+/// \param pointCount the number of points
+/// \param closed if true the polyline is closed (connects the last point to the first)
 HUI_API void renderDrawPolyLine(const Point* points, u32 pointCount, bool closed = false);
+/// Draw a circle outline
+/// \param center the circle center
+/// \param radius the circle radius
+/// \param segments the number of segments to approximate the circle
 HUI_API void renderDrawCircle(const Point& center, f32 radius, u32 segments = 32);
+/// Draw an ellipse outline
+/// \param center the ellipse center
+/// \param radiusX the horizontal radius
+/// \param radiusY the vertical radius
+/// \param segments the number of segments to approximate the ellipse
 HUI_API void renderDrawEllipse(const Point& center, f32 radiusX, f32 radiusY, u32 segments = 32);
+/// Draw a rectangle outline
+/// \param rc the rectangle
 HUI_API void renderDrawRectangle(const Rect& rc);
+/// Draw a solid (filled) rectangle
+/// \param rc the rectangle
 HUI_API void renderDrawSolidRectangle(const Rect& rc);
+/// Draw a spline through the given control points
+/// \param points the array of spline control points
+/// \param count the number of control points
+/// \param segmentSize the length in pixels of each spline segment
 HUI_API void renderDrawSpline(SplineControlPoint* points, u32 count, f32 segmentSize = 15);
+/// Draw an arrow from a start point to an end point
+/// \param startPoint the arrow start point
+/// \param endPoint the arrow tip point
+/// \param tipLength the length of the arrow head
+/// \param tipWidth the width of the arrow head
+/// \param drawBodyLine if true the arrow body line is drawn
 HUI_API void renderDrawArrow(const Point& startPoint, const Point& endPoint, f32 tipLength, f32 tipWidth, bool drawBodyLine = true);
+/// Draw a solid (filled) triangle
+/// \param p1 the first triangle point
+/// \param p2 the second triangle point
+/// \param p3 the third triangle point
 HUI_API void renderDrawSolidTriangle(const Point& p1, const Point& p2, const Point& p3);
 
 //////////////////////////////////////////////////////////////////////////
@@ -3059,13 +3495,38 @@ HUI_API void stringFromI32(i32 value, char* outString, u32 outStringMaxSize, u32
 /// Convert a float value to string
 HUI_API void stringFromF32(f32 value, char* outString, u32 outStringMaxSize, i32 decimalPlaces = ~0);
 
+/// Create a color from a text string, supports named colors (like "red", "darkBlue") and "r g b a" components (0-255)
+/// \param colorText the color text
+/// \return the parsed color, white if the text can't be parsed
 HUI_API Color colorFromText(const char* colorText);
+/// Create a color from a hex string like "#RRGGBB" or "RRGGBBAA"
+/// \param hexText the hex color string
+/// \return the parsed color, white if the text can't be parsed
 HUI_API Color colorFromHex(const char* hexText);
+/// Create an RGBA color value from a hex string like "#RRGGBB" or "RRGGBBAA"
+/// \param hexText the hex color string
+/// \return the RGBA color value
 HUI_API u32 colorIntFromHex(const char* hexText);
+/// Convert a color to a hex string like "#RRGGBB" (or with alpha "#RRGGBBAA" when not fully opaque)
+/// \param color the color to convert
+/// \return the hex color string
 HUI_API std::string colorToHex(const Color& color);
+/// Convert an RGBA color value to a hex string like "#RRGGBB" (or with alpha "#RRGGBBAA" when not fully opaque)
+/// \param color the RGBA color value to convert
+/// \return the hex color string
 HUI_API std::string colorIntToHex(const u32 color);
+/// Convert a color from HSV to RGB, the hue in the H channel, the saturation in the S channel and the value in the V channel
+/// \param hsv the HSV color with channels in the 0..1 range
+/// \return the RGB color
 HUI_API Color colorHsvToRgb(const Color& hsv);
+/// Convert a color from RGB to HSV, the hue in the H channel, the saturation in the S channel and the value in the V channel
+/// \param rgb the RGB color with channels in the 0..1 range
+/// \return the HSV color
 HUI_API Color colorRgbToHsv(const Color& rgb);
+/// Create a color from a hue
+/// \param h the hue value in the 0..1 range
+/// \param alpha the alpha channel value
+/// \return the RGB color
 HUI_API Color colorHueToRgb(f32 h, f32 alpha);
 
 //////////////////////////////////////////////////////////////////////////

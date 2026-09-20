@@ -2547,7 +2547,7 @@ void showDemo()
 	// ------------------------------------------------------------------
 	if (expandableBegin("Overlay Toolbars", &demo.expandOverlayToolbar))
 	{
-		label("Dockable toolbars nested in the custom viewport below. Drag a toolbar by its grip or empty area to move or dock it. Toolbars docked on the same edge share the strip, laid out inline. A bar hint appears where you can drop it: before, in between, or after the docked toolbars.");
+		label("Dockable toolbars nested in the custom viewport below. Drag a toolbar by its grip or empty area to move or dock it. Toolbars docked on the same edge share the strip, laid out inline. A bar hint shows where you can drop it: toolbars dropped on the near side of a strip anchor to its start corner, toolbars dropped on the far side anchor to its end corner, and the insertion point is resolved within that side cluster.");
 		check("Show Main Toolbar", &demo.showMainToolbar);
 		check("Show Tools Toolbar", &demo.showToolsToolbar);
 		check("Show Floating Toolbar", &demo.showFloatingToolbar);
