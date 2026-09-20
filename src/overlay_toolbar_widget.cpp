@@ -346,6 +346,12 @@ static Point elementContentSize(OverlayToolbarElement* e, bool vertical)
 	case OverlayToolbarElementType::Space:
 		return vertical ? Point(0, st.elementSpacing * 4.0f * ctx->scale) : Point(st.elementSpacing * 4.0f * ctx->scale, 0);
 
+	case OverlayToolbarElementType::Grip:
+	{
+		f32 grip = st.gripSize * ctx->scale;
+		return vertical ? Point(0, grip) : Point(grip, 0);
+	}
+
 	case OverlayToolbarElementType::Toggle:
 	case OverlayToolbarElementType::Button:
 	default:
@@ -481,6 +487,58 @@ static void drawToolbarLabel(ThemeElement::State* state, OverlayToolbarElement* 
 	ctx->renderer.cmdDrawTextInBox(e->label.c_str(), rect, HAlignType::Center, VAlignType::Center);
 }
 
+static void drawToolbarGrip(OverlayToolbarElement* e)
+{
+	const auto& st = ctx->settings.overlayToolbars;
+	auto& btnBody = ctx->theme->getElement(WidgetElementId::ButtonBody);
+	bool hovered = e->rect.contains(ctx->mousePosition) && ctx->hoveringThisWindow;
+
+	if (hovered)
+	{
+		ThemeElement::State* state = &btnBody.getState(WidgetStateType::Hovered);
+		ctx->renderer.cmdSetColor(state->color);
+		ctx->renderer.cmdDrawFilledRectangle(e->rect);
+
+		ctx->mouseCursor = MouseCursorType::SizeAll;
+	}
+
+	f32 dot = std::max(2.0f * ctx->scale, 1.5f);
+	f32 gap = 4.0f * ctx->scale;
+	bool horizontal = e->rect.width >= e->rect.height;
+	u32 rows = horizontal ? 2 : 3;
+	u32 columns = horizontal ? 3 : 2;
+
+	Color dotColor = ctx->theme->getElement(WidgetElementId::MenuBarBody).normalState().textColor;
+
+	if (hovered)
+		dotColor = btnBody.getState(WidgetStateType::Hovered).textColor;
+
+	Rect inner = e->rect.contract(st.elementPadding * ctx->scale);
+	f32 totalW = columns * dot + (columns - 1) * gap;
+	f32 totalH = rows * dot + (rows - 1) * gap;
+
+	Point origin = {
+		inner.x + (inner.width - totalW) / 2,
+		inner.y + (inner.height - totalH) / 2,
+	};
+
+	for (u32 r = 0; r < rows; r++)
+	{
+		for (u32 c = 0; c < columns; c++)
+		{
+			Rect dotRect = {
+				origin.x + c * (dot + gap),
+				origin.y + r * (dot + gap),
+				dot,
+				dot,
+			};
+
+			ctx->renderer.cmdSetColor(dotColor);
+			ctx->renderer.cmdDrawFilledRectangle(dotRect);
+		}
+	}
+}
+
 static void drawToolbarElement(OverlayToolbar* toolbar, OverlayToolbarElement* e)
 {
 	const auto& st = ctx->settings.overlayToolbars;
@@ -506,6 +564,12 @@ static void drawToolbarElement(OverlayToolbar* toolbar, OverlayToolbarElement* e
 
 	if (e->type == OverlayToolbarElementType::Space)
 		return;
+
+	if (e->type == OverlayToolbarElementType::Grip)
+	{
+		drawToolbarGrip(e);
+		return;
+	}
 
 	ThemeElement::State* state = &btnBody.normalState();
 	bool toggleOn = e->toggleValue && *e->toggleValue;
