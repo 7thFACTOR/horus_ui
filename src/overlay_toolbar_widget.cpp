@@ -1051,7 +1051,7 @@ void overlayToolbarRender(HOverlayToolbar toolbar)
 
 	drawToolbarBackground(tbar);
 
-	ctx->renderer.pushClipRect(tbar->rect, false);
+	ctx->renderer.pushClipRect(tbar->rect, true);
 
 	if (tbar->dragging)
 	{
@@ -1201,7 +1201,7 @@ void overlayToolbarBegin(const Rect& viewportRect)
 	}
 
 	ctx->renderer.pushWindowDrawCmdLayer(DrawCmdLayerType::Overlay);
-	ctx->renderer.pushClipRect(s_viewportRect, false);
+	ctx->renderer.pushClipRect(s_viewportRect, true);
 }
 
 void overlayToolbarEnd()
