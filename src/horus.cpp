@@ -983,9 +983,13 @@ void dockNodeSplit(DockNodeId nodeId, DockNodeSplitType splitType, f32 firstNode
 
 void dockNodeSetWindow(DockNodeId parentNodeId, const char* windowId)
 {
-	DockNode* node = ctx->docking.dockNodeIdsMap[parentNodeId];
+	auto iter = ctx->docking.dockNodeIdsMap.find(parentNodeId);
 
-	ctx->docking.windowsDockNodeAssignments[windowId] = node->id;
+	// validate the node id and the window id before touching the maps
+	if (iter == ctx->docking.dockNodeIdsMap.end() || !windowId)
+		return;
+
+	ctx->docking.windowsDockNodeAssignments[windowId] = iter->second->id;
 }
 
 void dockNodeLayoutRecalculate()
