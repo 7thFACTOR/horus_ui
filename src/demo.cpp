@@ -1473,6 +1473,11 @@ void showDemo()
 		vec2Editor("##v2d", demo.dvec2x, demo.dvec2y);
 
 		space();
+		label("vec3 after a label (fits the space left on the line):");
+		sameLine();
+		vec3Editor("##v3sameLine", demo.vec3x, demo.vec3y, demo.vec3z);
+
+		space();
 		label("vec3 (double):");
 		vec3Editor("##v3d", demo.dvec3x, demo.dvec3y, demo.dvec3z);
 

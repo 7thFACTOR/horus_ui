@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <float.h>
 #include "context.h"
 #include "theme.h"
@@ -5,6 +6,9 @@
 
 namespace hui
 {
+static const char* vecEditorAxisImages[3] = { "axisBoxXImage", "axisBoxYImage", "axisBoxZImage" };
+static const f32 vecEditorAxisIconHeight = 22;
+
 static bool vecEditorInternal(f64& x, f64& y, f64& z, f64 scrollStep, bool useZ, VectorEditorFlags flags, u32 precision, const char* indeterminateStr)
 {
 	// the editing state is shared for all vec editors, so tie it to the
@@ -23,13 +27,31 @@ static bool vecEditorInternal(f64& x, f64& y, f64& z, f64 scrollStep, bool useZ,
 	f32 spacing = ctx->sameLine.spacing * ctx->scale;
 	u32 axisCount = useZ ? 3 : 2;
 
-	auto imgElem = ctx->theme->userElements["axisBoxXImage"];
-	f32 imgWidthPx = ((Image*)imgElem->normalState().image)->width * ctx->scale;
+	// the editor can start in the middle of a line (when the caller used sameLine),
+	// so the space left for the row is measured from where the row actually starts
+	// instead of from the full layout width
+	f32 consumedX = 0.0f;
+
+	if (ctx->sameLine.enabled)
+		consumedX = ctx->sameLine.wasEnabled
+			? ctx->position.x - ctx->sameLine.currentPosition.x
+			: ctx->sameLine.lastLineWidth + ctx->sameLine.nextSpacing * ctx->scale;
+
+	f32 rowWidthPx = ctx->layout.width - std::max(consumedX, 0.0f);
+
+	// a theme can use a different icon size per axis, so measure them all
+	f32 iconsWidthPx = 0.0f;
+	for (u32 i = 0; i < axisCount; i++)
+		iconsWidthPx += ((Image*)ctx->theme->userElements[vecEditorAxisImages[i]]->normalState().image)->width * ctx->scale;
 
 	// each axis inserts two sameLine spacings (image->input, input->next image),
 	// the last axis only one, so a 3-axis editor uses 5 spacings in total.
-	f32 totalWidth = (f32)axisCount * imgWidthPx + ((f32)axisCount * 2.0f - 1.0f) * spacing;
-	f32 inputWidthPx = (ctx->layout.width - totalWidth) / (f32)axisCount;
+	f32 spacingsWidth = ((f32)axisCount * 2.0f - 1.0f) * spacing;
+
+	// addWidget reads a width of 1 or less as a percentage of the layout width,
+	// which would blow the input up (or invert it) and tear it off its icon,
+	// so keep a small fixed floor when the row is too narrow to be divided
+	f32 inputWidthPx = std::max((rowWidthPx - iconsWidthPx - spacingsWidth) / (f32)axisCount, 2.0f);
 	f32 inputWidthUnscaled = inputWidthPx / ctx->scale;
 
 	// handle MouseUp outside the per-axis loop so it only fires once
@@ -50,7 +72,7 @@ static bool vecEditorInternal(f64& x, f64& y, f64& z, f64 scrollStep, bool useZ,
 		if (i > 0)
 			hui::sameLine();
 
-		const char* imgName = (i == 0) ? "axisBoxXImage" : (i == 1) ? "axisBoxYImage" : "axisBoxZImage";
+		const char* imgName = vecEditorAxisImages[i];
 		const char* inputId = (i == 0) ? "axisEditX" : (i == 1) ? "axisEditY" : "axisEditZ";
 		char* strAxis = (i == 0) ? editIndeterminate.strX : (i == 1) ? editIndeterminate.strY : editIndeterminate.strZ;
 		f64* val = (i == 0) ? &x : (i == 1) ? &y : &z;
@@ -71,7 +93,11 @@ static bool vecEditorInternal(f64& x, f64& y, f64& z, f64 scrollStep, bool useZ,
 			snprintf(strAxis, VectorEditorState::maxStrSize, fmt, *val);
 
 		auto elem = ctx->theme->userElements[imgName];
-		hui::image(elem->normalState().image, 22, hui::HAlignType::Left);
+
+		// the axis icons are fixed size markers, so don't let image() rescale them,
+		// a resized icon would no longer line up with the width reserved for it above
+		hui::image(elem->normalState().image, vecEditorAxisIconHeight, hui::HAlignType::Left,
+			hui::VAlignType::Center, hui::ImageFitType::None);
 		WidgetId imageWidgetId = ctx->id;
 		bool imageHovered = hui::widgetIsHovered();
 		bool imagePressed = hui::widgetIsPressed();
