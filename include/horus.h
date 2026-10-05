@@ -113,9 +113,17 @@ typedef double f64;
 
 namespace hui
 {
+/// Bit flag helper macro: creates a bitmask with the given bit set (1 << bit)
 #define HUI_BIT(bit) (1<<bit)
+
+/// Macro to enable bitwise flag operations for an enum type (uses u32 as underlying type)
+/// Usage: HUI_ENUM_AS_FLAGS(MyEnum);
 #define HUI_ENUM_AS_FLAGS(T)\
 	HUI_ENUM_AS_FLAGS_EX(T, u32)
+
+/// Macro to enable bitwise flag operations for an enum type with custom underlying type
+/// Usage: HUI_ENUM_AS_FLAGS_EX(MyEnum, u32);
+/// Provides: operator&, |, ^, ~, &=, |=, ^=, !, checkFlags, any, has, fromFlags
 #define HUI_ENUM_AS_FLAGS_EX(T, enumBasicType) \
 inline T operator & (T x, T y) { return static_cast<T> (static_cast<enumBasicType>(x) & static_cast<enumBasicType>(y)); }; \
 inline T operator | (T x, T y) { return static_cast<T> (static_cast<enumBasicType>(x) | static_cast<enumBasicType>(y)); }; \
@@ -130,6 +138,7 @@ inline bool any(T x) { return (enumBasicType)x != 0; }; \
 inline bool has(T x, T y) { return ((enumBasicType)x & (enumBasicType)y) != 0; }; \
 inline enumBasicType fromFlags(T x) { return (enumBasicType)x; };
 
+/// Helper to convert an integer to a flags enum type
 template <typename T> inline T toFlags(int x) { return (T)x; };
 
 /// Opaque handle to an image, loaded from a file or added to a theme
@@ -2079,6 +2088,7 @@ struct OverlayToolbarSettings
 	Color buttonPressedColor = Color::fromU8(180, 95, 20); /// the color of a toolbar button while pressed or toggled on
 	f32 dragStartDistance = 5; /// the mouse distance after which a toolbar drag starts
 	Color dockPreviewColor = Color::fromU8(70, 130, 220, 110); /// the color of the dock zone preview
+	f32 floatingGridSize = 0; /// grid size for snapping floating toolbars (0 = disabled)
 };
 
 /// Various HorusUI per-context global settings
@@ -2421,6 +2431,18 @@ HUI_API bool overlayToolbarPointInDockZone(const Rect& viewportRect, const Point
 /// \param viewportPoint the point relative to the overlayToolbarBegin viewport rect
 HUI_API bool overlayToolbarContainsPoint(const Point& viewportPoint);
 
+/// Enable or disable grid snapping for a floating toolbar
+/// \param toolbar the toolbar handle
+/// \param enable true to enable grid snapping
+/// \param gridSize the grid size in pixels (0 to use the global setting)
+HUI_API void overlayToolbarSetGridAlignment(HOverlayToolbar toolbar, bool enable, f32 gridSize = 0);
+
+/// Set a custom size for a floating toolbar (overrides content-based sizing)
+/// \param toolbar the toolbar handle
+/// \param size the custom size (width, height)
+/// \param useCustomSize true to use custom size, false to use content-based size
+HUI_API void overlayToolbarSetCustomSize(HOverlayToolbar toolbar, const Point& size, bool useCustomSize = true);
+
 ///////////////////////////////////////////////////////////////////////////////
 // Application functions
 ///////////////////////////////////////////////////////////////////////////////
@@ -2524,7 +2546,12 @@ HUI_API void themeSetWidgetElement(
 
 /// Build a theme after images were added to its atlas, respectively packing the theme's image atlas
 /// \param theme the theme to be built
-void themeBuild(HTheme theme);
+HUI_API void themeBuild(HTheme theme);
+
+/// Rebuild the theme's image atlas if it was marked dirty (e.g. after adding images dynamically)
+/// \param theme the theme to be rebuilt
+/// \return true if the atlas was rebuilt, false if it was already up to date
+HUI_API bool themeRebuildAtlas(HTheme theme);
 
 /// Set a theme's user widget element info
 /// \param theme the theme of the widget element
@@ -2686,7 +2713,7 @@ HUI_API void tableStartHeader();
 /// Configure a table column
 /// \param columnIndex the column index to configure
 /// \param size the column size in pixels
-/// \param flags the column flags
+/// \param flags the column flags (default TableColumnFlags::None)
 HUI_API void tableColumnSetup(u32 columnIndex, f32 size, TableColumnFlags flags = TableColumnFlags::None);
 /// End the current table row and move to the next one
 HUI_API void tableRowNext();
@@ -2694,7 +2721,7 @@ HUI_API void tableRowNext();
 /// \param color the row color
 HUI_API void tableRowSetColor(const Color& color);
 /// Move to the next cell in the current table row
-/// \param columnSpan the number of columns this cell spans
+/// \param columnSpan the number of columns this cell spans (default 1)
 HUI_API void tableCellNext(u32 columnSpan = 1);
 /// \return the rect of the current table cell, in window coordinates
 HUI_API Rect tableCellGetRect();
@@ -2725,20 +2752,20 @@ HUI_API void scrollViewBegin(const char* id, f32 height, f32 scrollPosition, f32
 /// \param id the unique widget id
 /// \param size the scroll view size (height)
 /// \param scrollPos the current scroll position
-void scrollViewBegin(const char* id, f32 size, f32 scrollPos);
+HUI_API void scrollViewBegin(const char* id, f32 size, f32 scrollPos);
 /// Convenience overload of scrollViewBegin with a virtual height and no flags
 /// \param id the unique widget id
 /// \param size the scroll view size (height)
 /// \param scrollPos the current scroll position
 /// \param virtualHeight the virtual inside scroll height
-void scrollViewBegin(const char* id, f32 size, f32 scrollPos, f32 virtualHeight);
+HUI_API void scrollViewBegin(const char* id, f32 size, f32 scrollPos, f32 virtualHeight);
 /// Convenience overload of scrollViewBegin with flags and a virtual height
 /// \param id the unique widget id
 /// \param height the scroll view size (height)
 /// \param scrollOffset the current scroll offset
 /// \param virtualSize the virtual inside size of the scroll contents
 /// \param flags the scroll view flags
-void scrollViewBegin(const char* id, f32 height, Point scrollOffset, Point virtualSize, ScrollViewFlags flags);
+HUI_API void scrollViewBegin(const char* id, f32 height, Point scrollOffset, Point virtualSize, ScrollViewFlags flags);
 
 /// Ends a scroll view area widget
 /// \return the current scroll position (offset)
@@ -2754,8 +2781,8 @@ HUI_API void scrollViewScrollToWidget(WidgetId id = 0, ScrollToItemSnapMode mode
 /// \param scrollPosition the current scroll offset of the scroll view widget
 HUI_API void virtualListContentBegin(u32 totalRowCount, f32 itemHeight, f32 scrollPosition);
 
-/// Begin a virtual list content area, used for many items, inside the beginScrollView/endScrollView
-/// \param info the virtual scroll information
+/// Begin a virtual list content area using VirtualScrollInfo, used for many items, inside the beginScrollView/endScrollView
+/// \param info the virtual scroll information (computed by VirtualScrollInfo::nextStep)
 HUI_API void virtualListContentBegin(VirtualScrollInfo& info);
 
 /// End a virtual list content area
@@ -3123,7 +3150,6 @@ HUI_API bool expandableBegin(const char* label, bool* expandedVar = nullptr);
 HUI_API void expandableEnd();
 
 /// Draw a tree node widget
-/// Draw a tree node widget
 /// \param label the text of the widget
 /// \param expandedVar keeps true if its expanded
 /// \param stateFlags the selection state flags of the node
@@ -3359,14 +3385,11 @@ HUI_API u32 layerIndexDecrement();
 /// Decrement the maximum layer index of the current window, used internally when a window's layer stack ends
 HUI_API void layerDecrementWindowMaxLayerIndex();
 
-/// Set the next widget position
-HUI_API void widgetSetPosition(const Point& position);
-
 /// \return the current widget drawing position
 HUI_API Point widgetGetPosition();
 /// Draw text inside a rectangle, aligned within it
-/// \param text the text to draw
-/// \param rect the rectangle to draw the text in
+/// \param text the text to draw (UTF-8)
+/// \param rect the rectangle to draw the text in (window coordinates)
 /// \param horizontalAlign the horizontal text alignment
 /// \param verticalAlign the vertical text alignment
 HUI_API void renderDrawTextInBox(const char* text, const Rect& rect, HAlignType horizontalAlign, VAlignType verticalAlign);

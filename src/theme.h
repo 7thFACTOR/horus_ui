@@ -52,6 +52,7 @@ struct Theme
 	ThemeElement elements[(u32)WidgetElementId::Count];
 	std::unordered_map<std::string, ThemeElement*> userElements;
 	std::unordered_map<std::string, std::string> userSettings;
+	bool atlasDirty = false;
 };
 
 }

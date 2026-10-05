@@ -56,6 +56,10 @@ struct OverlayToolbar
 	Point dragStartMousePos;
 	bool showDockPreview = false;
 	OverlayDockZone previewDockZone = OverlayDockZone::Floating;
+	bool snapToGrid = false; // enable grid snapping for floating toolbar
+	f32 gridSize = 0; // custom grid size (0 = use global setting)
+	bool useCustomSize = false; // use custom size instead of content-based size
+	Point customSize; // custom size for floating toolbar
 };
 
 struct OverlayToolbarManager
@@ -241,6 +245,28 @@ void overlayToolbarSetFloatingPosition(HOverlayToolbar toolbar, const Point& pos
 		return;
 
 	tbar->floatingPosition = pos;
+}
+
+void overlayToolbarSetGridAlignment(HOverlayToolbar toolbar, bool enable, f32 gridSize)
+{
+	OverlayToolbar* tbar = (OverlayToolbar*)toolbar;
+
+	if (!tbar)
+		return;
+
+	tbar->snapToGrid = enable;
+	tbar->gridSize = gridSize;
+}
+
+void overlayToolbarSetCustomSize(HOverlayToolbar toolbar, const Point& size, bool useCustomSize)
+{
+	OverlayToolbar* tbar = (OverlayToolbar*)toolbar;
+
+	if (!tbar)
+		return;
+
+	tbar->useCustomSize = useCustomSize;
+	tbar->customSize = size;
 }
 
 void overlayToolbarSetLayout(HOverlayToolbar toolbar, OverlayToolbarLayout layout)
@@ -864,6 +890,17 @@ void overlayToolbarRender(HOverlayToolbar toolbar)
 		f32 dragW = std::max(tbar->rect.width, 1.0f);
 		f32 dragH = std::max(tbar->rect.height, 1.0f);
 
+		// Apply grid snapping during drag if enabled
+		if (tbar->snapToGrid)
+		{
+			f32 grid = tbar->gridSize > 0 ? tbar->gridSize : ctx->settings.overlayToolbars.floatingGridSize;
+			if (grid > 0)
+			{
+				pos.x = std::round(pos.x / grid) * grid;
+				pos.y = std::round(pos.y / grid) * grid;
+			}
+		}
+
 		pos.x = std::max(s_viewportRect.x, std::min(pos.x, s_viewportRect.right() - dragW));
 		pos.y = std::max(s_viewportRect.y, std::min(pos.y, s_viewportRect.bottom() - dragH));
 
@@ -1014,7 +1051,20 @@ void overlayToolbarRender(HOverlayToolbar toolbar)
 	}
 	else
 	{
-		tbar->rect = { s_viewportRect.x + tbar->floatingPosition.x, s_viewportRect.y + tbar->floatingPosition.y, thickness, thickness };
+		Point pos = { s_viewportRect.x + tbar->floatingPosition.x, s_viewportRect.y + tbar->floatingPosition.y };
+		
+		// Apply grid snapping if enabled
+		if (tbar->snapToGrid)
+		{
+			f32 grid = tbar->gridSize > 0 ? tbar->gridSize : ctx->settings.overlayToolbars.floatingGridSize;
+			if (grid > 0)
+			{
+				pos.x = std::round(pos.x / grid) * grid;
+				pos.y = std::round(pos.y / grid) * grid;
+			}
+		}
+
+		tbar->rect = { pos.x, pos.y, thickness, thickness };
 	}
 
 	OverlayToolbarLayout layout = toolbarEffectiveLayout(tbar);
@@ -1026,15 +1076,23 @@ void overlayToolbarRender(HOverlayToolbar toolbar)
 
 		if (tbar->dockZone == OverlayDockZone::Floating)
 		{
-			if (layout == OverlayToolbarLayout::Vertical)
+			if (tbar->useCustomSize)
 			{
-				tbar->rect.width = thickness + padding * 2.0f;
-				tbar->rect.height = std::max(titleW, thickness);
+				tbar->rect.width = tbar->customSize.x;
+				tbar->rect.height = tbar->customSize.y;
 			}
 			else
 			{
-				tbar->rect.width = std::max(titleW, thickness);
-				tbar->rect.height = thickness;
+				if (layout == OverlayToolbarLayout::Vertical)
+				{
+					tbar->rect.width = thickness + padding * 2.0f;
+					tbar->rect.height = std::max(titleW, thickness);
+				}
+				else
+				{
+					tbar->rect.width = std::max(titleW, thickness);
+					tbar->rect.height = thickness;
+				}
 			}
 		}
 	}
@@ -1044,8 +1102,16 @@ void overlayToolbarRender(HOverlayToolbar toolbar)
 
 		if (tbar->dockZone == OverlayDockZone::Floating)
 		{
-			tbar->rect.width = std::max(content.x, thickness);
-			tbar->rect.height = std::max(content.y, thickness);
+			if (tbar->useCustomSize)
+			{
+				tbar->rect.width = tbar->customSize.x;
+				tbar->rect.height = tbar->customSize.y;
+			}
+			else
+			{
+				tbar->rect.width = std::max(content.x, thickness);
+				tbar->rect.height = std::max(content.y, thickness);
+			}
 		}
 	}
 

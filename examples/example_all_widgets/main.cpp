@@ -268,6 +268,30 @@ int main(int argc, char** args)
 		// get the events from SDL or whatever input provider is set, it will fill a queue of events
 		hui::contextUpdate();
 
+		// Check if theme atlas needs rebuilding (e.g. after dynamically adding images)
+		if (hui::themeRebuildAtlas(theme))
+		{
+			switch (sdlParams.gfxApi)
+			{
+			case hui::Sdl3GfxApi::OpenGL:
+				texAtlasGL.updateData(hui::themeGetAtlasImageData().pixels);
+				hui::themeSetAtlasTexture(texAtlasGL.getHandle());
+				break;
+			case hui::Sdl3GfxApi::DX11:
+				texAtlasDX11.updateData(hui::themeGetAtlasImageData().pixels);
+				hui::themeSetAtlasTexture(texAtlasDX11.getHandle());
+				break;
+			case hui::Sdl3GfxApi::DX12:
+				texAtlasDX12.updateData(hui::themeGetAtlasImageData().pixels);
+				hui::themeSetAtlasTexture(texAtlasDX12.getHandle());
+				break;
+			case hui::Sdl3GfxApi::Vulkan:
+				texAtlasVK.updateData(hui::themeGetAtlasImageData().pixels);
+				hui::themeSetAtlasTexture(texAtlasVK.getHandle());
+				break;
+			}
+		}
+
 		auto eventCount = hui::inputEventGetCount();
 
 		for (int i = 0; i < eventCount; i++)

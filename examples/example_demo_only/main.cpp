@@ -1,4 +1,4 @@
-#pragma execution_character_set("utf-8")
+﻿#pragma execution_character_set("utf-8")
 #include "horus.h"
 
 #include <algorithm>
@@ -65,6 +65,7 @@ static const char* themeNames[] = { "Default", "Flat", "Win94" };
 static const char* themePaths[] = { "../themes/default.theme.json", "../themes/flat.theme.json", "../themes/win94.theme.json" };
 static i32 currentThemeIndex = 0;
 static constexpr u32 themeCount = 3;
+static hui::HTheme currentTheme = nullptr;
 
 static void reloadTheme(hui::Sdl3GfxApi gfxApi)
 {
@@ -87,6 +88,9 @@ static void reloadTheme(hui::Sdl3GfxApi gfxApi)
 		hui::themeDestroy(oldTheme);
 		hui::themeSet(newTheme);
 	}
+
+	// Update the global theme variable to point to the new theme
+	currentTheme = newTheme;
 
 	printf("Theme reloaded\n");
 }
@@ -144,15 +148,15 @@ int main(int argc, char** args)
 	const u32 errSize = 2048;
 	char err[errSize] = { 0 };
 
-	auto theme = hui::loadThemeFromJson(themeFilePath, err, errSize);
+	currentTheme = hui::loadThemeFromJson(themeFilePath, err, errSize);
 
-	if (!theme)
+	if (!currentTheme)
 	{
 		printf("Theme JSON error: %s\n", err);
-		theme = hui::themeCreate(hui::contextGetSettings().defaultAtlasSize);
+		currentTheme = hui::themeCreate(hui::contextGetSettings().defaultAtlasSize);
 
 		hui::WidgetElementInfo defInfo;
-		defInfo.image = hui::themeGetImage(theme, "__WHITEIMAGE__");
+		defInfo.image = hui::themeGetImage(currentTheme, "__WHITEIMAGE__");
 		defInfo.color = hui::Color::white;
 		defInfo.textColor = hui::Color::white;
 
@@ -160,13 +164,13 @@ int main(int argc, char** args)
 		{
 			for (u32 j = 0; j < (u32)hui::WidgetStateType::Count; j++)
 			{
-				hui::themeSetWidgetElement(theme, (hui::WidgetElementId)i, (hui::WidgetStateType)j, defInfo);
+				hui::themeSetWidgetElement(currentTheme, (hui::WidgetElementId)i, (hui::WidgetStateType)j, defInfo);
 			}
 		}
 	}
 
-	hui::themeSet(theme);
-	hui::themeBuild(theme);
+	hui::themeSet(currentTheme);
+	hui::themeBuild(currentTheme);
 	uploadAtlasTexture(sdlParams.gfxApi);
 	try { themeLastWriteTime = std::filesystem::last_write_time(themeFilePath); } catch (...) {}
 
@@ -195,6 +199,30 @@ int main(int argc, char** args)
 		HUI_SERVICES.clearBackbuffer({ 0.3f, 0.0f, 0.1f, 1 });
 		hui::contextGetSettings().deltaTime = hui::getSdl3DeltaTime();
 		hui::contextUpdate();
+
+		// Check if theme atlas needs rebuilding (e.g. after dynamically adding images)
+		if (hui::themeRebuildAtlas(currentTheme))
+		{
+			switch (sdlParams.gfxApi)
+			{
+			case hui::Sdl3GfxApi::OpenGL:
+				texAtlasGL.updateData(hui::themeGetAtlasImageData().pixels);
+				hui::themeSetAtlasTexture(texAtlasGL.getHandle());
+				break;
+			case hui::Sdl3GfxApi::DX11:
+				texAtlasDX11.updateData(hui::themeGetAtlasImageData().pixels);
+				hui::themeSetAtlasTexture(texAtlasDX11.getHandle());
+				break;
+			case hui::Sdl3GfxApi::DX12:
+				texAtlasDX12.updateData(hui::themeGetAtlasImageData().pixels);
+				hui::themeSetAtlasTexture(texAtlasDX12.getHandle());
+				break;
+			case hui::Sdl3GfxApi::Vulkan:
+				texAtlasVK.updateData(hui::themeGetAtlasImageData().pixels);
+				hui::themeSetAtlasTexture(texAtlasVK.getHandle());
+				break;
+			}
+		}
 
 		auto eventCount = hui::inputEventGetCount();
 
@@ -319,3 +347,4 @@ int main(int argc, char** args)
 
 	return 0;
 }
+

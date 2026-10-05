@@ -1045,6 +1045,9 @@ HImage themeAddImage(HTheme theme, const char* id, const ImageData& imgData)
 	memcpy(timg->pixels.data(), imgData.pixels, sizeof(Rgba32) * imgData.width * imgData.height);
 	themePtr->images[nid] = timg;
 
+	// Mark atlas as dirty so it can be rebuilt
+	themePtr->atlasDirty = true;
+
 	return timg;
 }
 
@@ -1277,6 +1280,63 @@ void themeBuild(HTheme theme)
 
 	Theme* themePtr = (Theme*)theme;
 	themePtr->build();
+	themePtr->atlasDirty = false;
+}
+
+bool themeRebuildAtlas(HTheme theme)
+{
+	HUI_ASSERT(theme);
+	if (!theme)
+		return false;
+
+	Theme* themePtr = (Theme*)theme;
+
+	if (!themePtr->atlasDirty)
+		return false;
+
+	// Rebuild the atlas
+	themePtr->atlas.create(themePtr->atlasSize, themePtr->atlasSize, 5);
+	themePtr->addImagesToAtlas();
+	themePtr->addFontGlyphsToAtlas();
+	themePtr->atlas.pack();
+
+	// Update image rects and uvRects from packed atlas
+	for (auto& packedImage : themePtr->atlas.images)
+	{
+		auto& img = packedImage.second;
+		auto iterImages = themePtr->images.find(img.id);
+
+		if (iterImages != themePtr->images.end())
+		{
+			iterImages->second->rect = img.rect;
+			iterImages->second->uvRect = img.uvRect;
+			iterImages->second->rotated = img.rotated;
+		}
+		else
+		{
+			for (auto& fontVar : themePtr->fonts)
+			{
+				for (auto& glyphPair : fontVar->font.glyphs)
+				{
+					auto fontGlyph = glyphPair.second;
+					auto fntImage = (Image*)fontGlyph->image;
+
+					if (fntImage)
+					{
+						if (fntImage->id == img.id)
+						{
+							fntImage->rect = img.rect;
+							fntImage->uvRect = img.uvRect;
+							fntImage->rotated = img.rotated;
+						}
+					}
+				}
+			}
+		}
+	}
+
+	themePtr->atlasDirty = false;
+	return true;
 }
 
 void themeSetWidgetElement(

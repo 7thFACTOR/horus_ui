@@ -168,6 +168,13 @@ int main(int argc, char** args)
 		// get the events from SDL or whatever input provider is set, it will fill a queue of events
 		hui::contextUpdate();
 
+		// Check if theme atlas needs rebuilding (e.g. after dynamically adding images)
+		if (hui::themeRebuildAtlas(theme))
+		{
+			texAtlas.updateData(hui::themeGetAtlasImageData().pixels);
+			hui::themeSetAtlasTexture(texAtlas.getHandle());
+		}
+
 		if (hui::inputEventGet().type == hui::InputEvent::Type::Key
 			&& hui::inputEventGet().key.code == hui::KeyCode::F2
 			&& hui::inputEventGet().key.down)

@@ -1,4 +1,4 @@
-/*
+﻿/*
  * rapidhash - Very fast, high quality, platform independant hashing algorithm.
  * Copyright (C) 2024 Nicolas De Carli
  *
@@ -300,3 +300,4 @@ static inline uint64_t rapidhash_withSeed_unrolled(const void *key, size_t len, 
 static inline uint64_t rapidhash(const void *key, size_t len) {
   return rapidhash_withSeed_unrolled(key, len, RAPID_SEED);
 }
+

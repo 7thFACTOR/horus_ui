@@ -1,5 +1,7 @@
 #include <horus.h>
 #include "native_file_dialogs.h"
+#include "theme.h"
+#include "util.h"
 #include <float.h>
 #include <string.h>
 #include <stdio.h>
@@ -7,9 +9,101 @@
 #include <string>
 #include <vector>
 #include <map>
+#include <functional>
+#include <cmath>
+#include <cstdint>
+
+#ifndef M_PI
+#define M_PI 3.14159265358979323846f
+#endif
 
 namespace hui
 {
+
+// Generate a simple icon programmatically
+typedef void (*IconDrawFn)(Rgba32*, u32, u32);
+
+static HImage createIcon(const char* id, u32 size, IconDrawFn drawFn)
+{
+	Theme* theme = (Theme*)themeGet();
+	if (!theme)
+		return 0;
+
+	// Check if already created
+	ImageId nid = hashString(id);
+	auto iter = theme->images.find(nid);
+	if (iter != theme->images.end())
+		return iter->second;
+
+	ImageData imgData;
+	imgData.width = size;
+	imgData.height = size;
+	imgData.pixels = new Rgba32[size * size];
+	memset(imgData.pixels, 0, sizeof(Rgba32) * size * size);
+
+	// Call the draw function
+	drawFn(imgData.pixels, size, size);
+
+	HImage result = themeAddImage(themeGet(), id, imgData);
+
+	delete[] imgData.pixels;
+	return result;
+}
+
+// Draw a smiley face icon
+static void drawSmileyIcon(Rgba32* pixels, u32 w, u32 h)
+{
+	const u32 cx = w / 2;
+	const u32 cy = h / 2;
+	const u32 radius = std::min(w, h) / 3;
+	const u32 eyeOffset = radius / 2;
+	const u32 eyeRadius = std::max(1u, radius / 5);
+	const u32 mouthRadius = radius / 2;
+	const u32 thickness = std::max(1u, radius / 8);
+
+	for (u32 y = 0; y < h; y++)
+	{
+		for (u32 x = 0; x < w; x++)
+		{
+			bool draw = false;
+			int dx = (int)x - (int)cx;
+			int dy = (int)y - (int)cy;
+			int dist2 = dx * dx + dy * dy;
+			int r2 = (int)radius * (int)radius;
+			int innerR2 = ((int)radius - (int)thickness) * ((int)radius - (int)thickness);
+
+			// Face circle outline
+			if (dist2 <= r2 && dist2 >= innerR2)
+				draw = true;
+
+			// Left eye
+			int lex = dx + (int)eyeOffset;
+			int ley = dy - (int)eyeOffset;
+			int leyeDist2 = lex * lex + ley * ley;
+			if (leyeDist2 <= (int)eyeRadius * (int)eyeRadius)
+				draw = true;
+
+			// Right eye
+			int rex = dx - (int)eyeOffset;
+			int rey = dy - (int)eyeOffset;
+			int reyeDist2 = rex * rex + rey * rey;
+			if (reyeDist2 <= (int)eyeRadius * (int)eyeRadius)
+				draw = true;
+
+			// Mouth (smile - bottom half of smaller circle)
+			int mx = dx;
+			int my = dy + (int)(mouthRadius / 2);
+			int mouthDist2 = mx * mx + my * my;
+			int mouthR2 = (int)mouthRadius * (int)mouthRadius;
+			int mouthInnerR2 = ((int)mouthRadius - (int)thickness) * ((int)mouthRadius - (int)thickness);
+			if (my > 0 && mouthDist2 <= mouthR2 && mouthDist2 >= mouthInnerR2)
+				draw = true;
+
+			if (draw)
+				pixels[y * w + x] = 0xFFFFFFFF;
+		}
+	}
+}
 
 struct DemoState
 {
@@ -183,6 +277,9 @@ struct DemoState
 	Point toolbarGridPanStartValue;
 	bool expandOverlayToolbar = false;
 
+	// icons
+	HImage iconSmiley = 0;
+
 	// link demo
 	int linkClickCount = 0;
 
@@ -321,6 +418,21 @@ static void demoOnToolbarSave()
 }
 
 static void demoOnToolbarResetView()
+{
+	demo.toolbarClickCount++;
+}
+
+static void demoOnToolbarMove()
+{
+	demo.toolbarClickCount++;
+}
+
+static void demoOnToolbarRotate()
+{
+	demo.toolbarClickCount++;
+}
+
+static void demoOnToolbarScale()
 {
 	demo.toolbarClickCount++;
 }
@@ -580,6 +692,9 @@ void showDemo()
 	{
 		demo.initialized = true;
 
+		// Create a single smiley icon
+		demo.iconSmiley = createIcon("demo/icon_smiley", 24, drawSmileyIcon);
+
 		// overlay toolbars
 		g_demoMainToolbar = overlayToolbarCreate("demoMainToolbar", "Main", OverlayDockZone::TopToolbar);
 		overlayToolbarAddGrip(g_demoMainToolbar);
@@ -601,14 +716,26 @@ void showDemo()
 		overlayToolbarAddSeparator(g_demoToolsToolbar);
 		overlayToolbarAddButton(g_demoToolsToolbar, "reset", "Reset", 0, demoOnToolbarResetView, "Reset the view");
 
+		// Transform tool buttons in tools toolbar
+		overlayToolbarAddSeparator(g_demoToolsToolbar);
+		overlayToolbarAddButton(g_demoToolsToolbar, "smiley1", "Smiley", demo.iconSmiley, demoOnToolbarMove, "Smiley tool");
+
 		g_demoFloatingToolbar = overlayToolbarCreate("demoFloatingToolbar", "Floating", OverlayDockZone::Floating);
 		overlayToolbarAddGrip(g_demoFloatingToolbar);
 		overlayToolbarSetLayout(g_demoFloatingToolbar, OverlayToolbarLayout::Panel);
 		overlayToolbarSetFloatingPosition(g_demoFloatingToolbar, { 320, 120 });
+		// Enable grid snapping with 20px grid
+		overlayToolbarSetGridAlignment(g_demoFloatingToolbar, true, 20.0f);
+		// Optionally set custom size (commented out - uncomment to test)
+		// overlayToolbarSetCustomSize(g_demoFloatingToolbar, { 250, 180 }, true);
 		overlayToolbarAddButton(g_demoFloatingToolbar, "a", "Alpha", 0, demoOnToolbarNew, "Alpha command");
 		overlayToolbarAddButton(g_demoFloatingToolbar, "b", "Beta", 0, demoOnToolbarOpen, "Beta command");
 		overlayToolbarAddButton(g_demoFloatingToolbar, "c", "Gamma", 0, demoOnToolbarSave, "Gamma command");
 		overlayToolbarAddToggle(g_demoFloatingToolbar, "mode", "Mode", 0, 0, &demo.toolbarToggleMode, "Toggle a mode");
+
+		// Smiley tool in floating toolbar too
+		overlayToolbarAddSeparator(g_demoFloatingToolbar);
+		overlayToolbarAddButton(g_demoFloatingToolbar, "smiley2", "Smiley", demo.iconSmiley, demoOnToolbarMove, "Smiley tool");
 	}
 
 	// animate progress bars
@@ -2553,23 +2680,53 @@ void showDemo()
 	}
 
 	// ------------------------------------------------------------------
-	// overlay toolbars
-	// ------------------------------------------------------------------
-	if (expandableBegin("Overlay Toolbars", &demo.expandOverlayToolbar))
+// overlay toolbars
+// ------------------------------------------------------------------
+if (expandableBegin("Overlay Toolbars", &demo.expandOverlayToolbar))
+{
+	label("Dockable toolbars nested in the custom viewport below. Drag a toolbar by its grip or empty area to move or dock it. Toolbars docked on the same edge share the strip, laid out inline. A bar hint shows where you can drop it: toolbars dropped on the near side of a strip anchor to its start corner, toolbars dropped on the far side anchor to its end corner, and the insertion point is resolved within that side cluster.");
+	check("Show Main Toolbar", &demo.showMainToolbar);
+	check("Show Tools Toolbar", &demo.showToolsToolbar);
+	check("Show Floating Toolbar", &demo.showFloatingToolbar);
+	check("Collapse Main Toolbar", &demo.collapseMainToolbar);
+
+	overlayToolbarSetVisible(g_demoMainToolbar, demo.showMainToolbar);
+	overlayToolbarSetVisible(g_demoToolsToolbar, demo.showToolsToolbar);
+	overlayToolbarSetVisible(g_demoFloatingToolbar, demo.showFloatingToolbar);
+	overlayToolbarSetCollapsed(g_demoMainToolbar, demo.collapseMainToolbar);
+
+	space();
+	label("Floating toolbar options:");
+	static bool floatingGridEnabled = true;
+	static f32 floatingGridSize = 20.0f;
+	static bool floatingCustomSizeEnabled = false;
+	static Point floatingCustomSize = { 250, 180 };
+	static bool snapAllToolbars = false;
+
+	check("Grid Alignment", &floatingGridEnabled);
+	if (floatingGridEnabled)
 	{
-		label("Dockable toolbars nested in the custom viewport below. Drag a toolbar by its grip or empty area to move or dock it. Toolbars docked on the same edge share the strip, laid out inline. A bar hint shows where you can drop it: toolbars dropped on the near side of a strip anchor to its start corner, toolbars dropped on the far side anchor to its end corner, and the insertion point is resolved within that side cluster.");
-		check("Show Main Toolbar", &demo.showMainToolbar);
-		check("Show Tools Toolbar", &demo.showToolsToolbar);
-		check("Show Floating Toolbar", &demo.showFloatingToolbar);
-		check("Collapse Main Toolbar", &demo.collapseMainToolbar);
+		sliderFloat("Grid Size", 5.0f, 100.0f, floatingGridSize, false, 1.0f);
+	}
+	check("Custom Size", &floatingCustomSizeEnabled);
+	if (floatingCustomSizeEnabled)
+	{
+		sliderFloat("Custom Width", 100.0f, 500.0f, floatingCustomSize.x, false, 1.0f);
+		sameLine();
+		sliderFloat("Custom Height", 100.0f, 500.0f, floatingCustomSize.y, false, 1.0f);
+	}
+	check("Snap All Toolbars", &snapAllToolbars);
 
-		overlayToolbarSetVisible(g_demoMainToolbar, demo.showMainToolbar);
-		overlayToolbarSetVisible(g_demoToolsToolbar, demo.showToolsToolbar);
-		overlayToolbarSetVisible(g_demoFloatingToolbar, demo.showFloatingToolbar);
-		overlayToolbarSetCollapsed(g_demoMainToolbar, demo.collapseMainToolbar);
+	overlayToolbarSetGridAlignment(g_demoFloatingToolbar, floatingGridEnabled || snapAllToolbars, floatingGridSize);
+	if (snapAllToolbars)
+	{
+		overlayToolbarSetGridAlignment(g_demoMainToolbar, true, floatingGridSize);
+		overlayToolbarSetGridAlignment(g_demoToolsToolbar, true, floatingGridSize);
+	}
+	overlayToolbarSetCustomSize(g_demoFloatingToolbar, floatingCustomSize, floatingCustomSizeEnabled);
 
-		space();
-		label("Dock the main toolbar:");
+	space();
+	label("Dock the main toolbar:");
 		if (button("Top")) overlayToolbarSetDockZone(g_demoMainToolbar, OverlayDockZone::TopToolbar);
 		sameLine();
 		if (button("Bottom")) overlayToolbarSetDockZone(g_demoMainToolbar, OverlayDockZone::BottomToolbar);
