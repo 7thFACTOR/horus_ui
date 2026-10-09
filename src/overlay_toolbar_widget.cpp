@@ -76,6 +76,7 @@ struct OverlayToolbarManager
 	OverlayDockZone globalPreviewZone = OverlayDockZone::Floating;
 	bool showInsertionHint = false;
 	Rect insertionHintRect;
+	Rect insertionToolbarRect; // full toolbar rect at insertion point
 	bool dropSnapToEnd = false;
 	u32 dropInsertionIndex = 0;
 };
@@ -802,7 +803,8 @@ static f32 dockedToolbarMainSize(OverlayToolbar* toolbar, f32 thickness, f32 pad
 struct ToolbarDockResult
 {
 	bool showHint = false;
-	Rect hintRect;
+	Rect hintRect;          // thin insertion line (for backward compat)
+	Rect toolbarRect;       // full toolbar rect as it would appear when docked
 	bool snapToEnd = false;
 	u32 insertionIndex = 0;
 };
@@ -859,9 +861,15 @@ static ToolbarDockResult computeToolbarDock(OverlayToolbar* toolbar, OverlayDock
 	f32 barPos = std::max(newStart - hintThickness / 2.0f, 0.0f);
 
 	if (vertical)
+	{
 		result.hintRect = { strip.x, strip.y + barPos, thickness, hintThickness };
+		result.toolbarRect = { strip.x, strip.y + newStart, thickness, mySize };
+	}
 	else
+	{
 		result.hintRect = { strip.x + barPos, strip.y, hintThickness, thickness };
+		result.toolbarRect = { strip.x + newStart, strip.y, mySize, thickness };
+	}
 
 	result.showHint = true;
 	result.insertionIndex = index;
@@ -927,6 +935,7 @@ void overlayToolbarRender(HOverlayToolbar toolbar)
 
 			mgr.showInsertionHint = dock.showHint;
 			mgr.insertionHintRect = dock.hintRect;
+			mgr.insertionToolbarRect = dock.toolbarRect;
 			mgr.dropSnapToEnd = dock.snapToEnd;
 			mgr.dropInsertionIndex = dock.insertionIndex;
 		}
@@ -1281,10 +1290,16 @@ void overlayToolbarEnd()
 		ctx->renderer.cmdDrawFilledRectangle(s_manager.globalPreviewRect);
 	}
 
-	if (s_manager.showInsertionHint && !s_manager.insertionHintRect.isZero())
+	if (s_manager.showInsertionHint && !s_manager.insertionToolbarRect.isZero())
 	{
+		Color hintColor = ctx->settings.overlayToolbars.insertionHintColor;
+		hintColor.a *= 0.3f; // semi-transparent for the toolbar preview
+		ctx->renderer.cmdSetColor(hintColor);
+		ctx->renderer.cmdDrawFilledRectangle(s_manager.insertionToolbarRect);
+
+		// draw border outline
 		ctx->renderer.cmdSetColor(ctx->settings.overlayToolbars.insertionHintColor);
-		ctx->renderer.cmdDrawFilledRectangle(s_manager.insertionHintRect);
+		ctx->renderer.cmdDrawRectangle(s_manager.insertionToolbarRect);
 	}
 
 	ctx->renderer.popClipRect();
