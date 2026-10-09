@@ -752,6 +752,11 @@ const InputEvent& inputEventGet()
 	return ctx->event;
 }
 
+bool inputWasConsumed()
+{
+	return ctx->alreadyClickedOnSomething;
+}
+
 void mouseCursorSetType(MouseCursorType type)
 {
 	ctx->mouseCursor = type;

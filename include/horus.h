@@ -2389,6 +2389,7 @@ HUI_API void overlayToolbarRemoveElement(HOverlayToolbar toolbar, const char* el
 HUI_API void overlayToolbarBegin(const Rect& viewportRect);
 /// Render a toolbar between overlayToolbarBegin and overlayToolbarEnd
 /// \param toolbar the toolbar handle
+/// \param processInput if false, only renders without processing input (useful for overlapped toolbars)
 HUI_API void overlayToolbarRender(HOverlayToolbar toolbar);
 /// End the overlay toolbar drawing
 HUI_API void overlayToolbarEnd();
@@ -2430,6 +2431,31 @@ HUI_API bool overlayToolbarPointInDockZone(const Rect& viewportRect, const Point
 /// \return true if a point relative to the overlayToolbarBegin viewport rect is inside any visible toolbar
 /// \param viewportPoint the point relative to the overlayToolbarBegin viewport rect
 HUI_API bool overlayToolbarContainsPoint(const Point& viewportPoint);
+
+/// Get all visible docked toolbars (not floating)
+/// \return vector of toolbar handles
+HUI_API std::vector<HOverlayToolbar> overlayToolbarsGetDocked();
+
+/// Get all visible floating toolbars sorted by z-order (back to front)
+/// \return vector of toolbar handles in render order
+HUI_API std::vector<HOverlayToolbar> overlayToolbarsGetSortedByZOrder();
+
+/// Get the dock zone of a toolbar
+/// \param toolbar the toolbar handle
+/// \return the dock zone
+HUI_API OverlayDockZone overlayToolbarGetDockZone(HOverlayToolbar toolbar);
+
+/// Get the screen rect of a toolbar
+/// \param toolbar the toolbar handle
+/// \return the toolbar rect in window coordinates
+HUI_API Rect overlayToolbarGetRect(HOverlayToolbar toolbar);
+
+/// Bring a floating toolbar to the front (highest z-order)
+/// \param toolbar the toolbar handle
+HUI_API void overlayToolbarBringToFront(HOverlayToolbar toolbar);
+
+/// \return true if a widget has already consumed the current click (prevents other handlers from processing it)
+HUI_API bool inputWasConsumed();
 
 /// Enable or disable grid snapping for a floating toolbar
 /// \param toolbar the toolbar handle

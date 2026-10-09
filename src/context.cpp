@@ -9,7 +9,15 @@ namespace hui
 Context* ctx = nullptr;
 
 Context::~Context()
-{}
+{
+	// Flush deferred deletions to prevent leaks on context destruction
+	if (ctx->docking.windowsToDelete.size() > 0)
+		ctx->docking.windowsToDelete.clear();
+	if (ctx->docking.dockNodesToDelete.size() > 0)
+		ctx->docking.dockNodesToDelete.clear();
+	if (ctx->docking.nativeWindowsToDelete.size() > 0)
+		ctx->docking.nativeWindowsToDelete.clear();
+}
 
 void Context::setLabelAndId(const char* text)
 {

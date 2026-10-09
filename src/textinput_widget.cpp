@@ -108,7 +108,7 @@ bool textInput(
 		ctx->widget.rect.height - (bodyElemState->border + padding.y) * 2.0f * ctx->scale);
 
 	const size_t maxHiddenCharLen = 1024;
-	static char hiddenPwdText[maxHiddenCharLen] = "";
+	char hiddenPwdText[maxHiddenCharLen] = "";
 	bool isEmptyText = false;
 	char* textToDraw = (char*)text;
 	Utf32String pwdStr;
