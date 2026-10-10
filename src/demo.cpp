@@ -2862,17 +2862,41 @@ if (expandableBegin("Overlay Toolbars", &demo.expandOverlayToolbar))
 
 		overlayToolbarBegin(toolbarViewport);
 
-		auto renderDemoToolbar = [&](HOverlayToolbar toolbar)
+		// collect all toolbars in render order (back to front)
+		std::vector<HOverlayToolbar> allToolbars;
+		for (auto toolbar : overlayToolbarsGetDocked())
 		{
-			if (toolbar && overlayToolbarIsVisible(toolbar) && !overlayToolbarIsDragging(toolbar))
-				overlayToolbarRender(toolbar);
-		};
+			if (!overlayToolbarIsDragging(toolbar))
+				allToolbars.push_back(toolbar);
+		}
+		auto floatingToolbars = overlayToolbarsGetSortedByZOrder();
+		for (auto toolbar : floatingToolbars)
+		{
+			if (!overlayToolbarIsDragging(toolbar))
+				allToolbars.push_back(toolbar);
+		}
 
-		renderDemoToolbar(g_demoFloatingToolbar);
-		renderDemoToolbar(g_demoToolsToolbar);
-		renderDemoToolbar(g_demoMainToolbar);
+		// find topmost toolbar under mouse (front to back)
+		HOverlayToolbar topmostToolbar = nullptr;
+		if (toolbarViewport.contains(mouseGetPosition()))
+		{
+			for (auto it = allToolbars.rbegin(); it != allToolbars.rend(); ++it)
+			{
+				if (overlayToolbarIsVisible(*it) && overlayToolbarGetRect(*it).contains(mouseGetPosition()))
+				{
+					topmostToolbar = *it;
+					break;
+				}
+			}
+		}
 
-		// draw any dragged toolbar on top of the others
+		// render all toolbars, only process input for topmost
+		for (auto toolbar : allToolbars)
+		{
+			overlayToolbarRender(toolbar);
+		}
+
+		// draw any dragged toolbar on top of everything (always process input for dragged)
 		auto renderDemoDraggedToolbar = [&](HOverlayToolbar toolbar)
 		{
 			if (toolbar && overlayToolbarIsVisible(toolbar) && overlayToolbarIsDragging(toolbar))
@@ -2882,6 +2906,29 @@ if (expandableBegin("Overlay Toolbars", &demo.expandOverlayToolbar))
 		renderDemoDraggedToolbar(g_demoMainToolbar);
 		renderDemoDraggedToolbar(g_demoToolsToolbar);
 		renderDemoDraggedToolbar(g_demoFloatingToolbar);
+
+		// bring clicked floating toolbar to front
+		const InputEvent& evt = inputEventGet();
+		if (evt.type == InputEvent::Type::MouseDown
+			&& evt.mouse.button == MouseButton::Left
+			&& toolbarViewport.contains(mouseGetPosition()))
+		{
+			for (auto it = floatingToolbars.rbegin(); it != floatingToolbars.rend(); ++it)
+			{
+				if (overlayToolbarIsVisible(*it) && overlayToolbarGetRect(*it).contains(mouseGetPosition()))
+				{
+					overlayToolbarBringToFront(*it);
+					forceRepaint();
+					break;
+				}
+			}
+		}
+
+		// if a toolbar consumed the click, cancel panning
+		if (inputWasConsumed() && demo.toolbarGridPanning)
+		{
+			demo.toolbarGridPanning = false;
+		}
 
 		overlayToolbarEnd();
 		viewportEnd();

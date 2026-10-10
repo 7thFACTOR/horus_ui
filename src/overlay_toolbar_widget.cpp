@@ -14,6 +14,8 @@ namespace hui
 // exposes them only as opaque handles (HOverlayToolbar / HOverlayToolbarWidget), so
 // the concrete structs below are file-local.
 
+static u32 s_nextToolbarZOrder = 1;
+
 enum class OverlayToolbarElementType
 {
 	Button,
@@ -50,6 +52,7 @@ struct OverlayToolbar
 	std::vector<OverlayToolbarElement> elements;
 	u32 stripOrder = 0; // position of the toolbar within its dock zone strip
 	bool snapToEnd = false; // dock anchored to the strip end corner instead of the start corner
+	u32 zOrder = 0; // z-order for floating toolbars (higher = on top)
 	Rect rect;
 	Point floatingPosition;
 	Point dragStartToolbarPos;
@@ -115,6 +118,7 @@ HOverlayToolbar overlayToolbarCreate(const char* id, const char* title, OverlayD
 	toolbar.title = title ? title : "";
 	toolbar.dockZone = initialDockZone;
 	toolbar.stripOrder = (u32)s_manager.toolbars.size() - 1;
+	toolbar.zOrder = s_nextToolbarZOrder++;
 
 	return &toolbar;
 }
@@ -316,6 +320,67 @@ bool overlayToolbarIsDragging(HOverlayToolbar toolbar)
 		return false;
 
 	return tbar->dragging;
+}
+
+std::vector<HOverlayToolbar> overlayToolbarsGetDocked()
+{
+	std::vector<HOverlayToolbar> result;
+
+	for (auto& toolbar : s_manager.toolbars)
+	{
+		if (toolbar.visible && toolbar.dockZone != OverlayDockZone::Floating)
+			result.push_back(&toolbar);
+	}
+
+	return result;
+}
+
+std::vector<HOverlayToolbar> overlayToolbarsGetSortedByZOrder()
+{
+	std::vector<HOverlayToolbar> result;
+
+	for (auto& toolbar : s_manager.toolbars)
+	{
+		if (toolbar.visible && toolbar.dockZone == OverlayDockZone::Floating)
+			result.push_back(&toolbar);
+	}
+
+	std::stable_sort(result.begin(), result.end(), [](HOverlayToolbar a, HOverlayToolbar b)
+	{
+		return ((OverlayToolbar*)a)->zOrder < ((OverlayToolbar*)b)->zOrder;
+	});
+
+	return result;
+}
+
+OverlayDockZone overlayToolbarGetDockZone(HOverlayToolbar toolbar)
+{
+	OverlayToolbar* tbar = (OverlayToolbar*)toolbar;
+
+	if (!tbar)
+		return OverlayDockZone::Floating;
+
+	return tbar->dockZone;
+}
+
+Rect overlayToolbarGetRect(HOverlayToolbar toolbar)
+{
+	OverlayToolbar* tbar = (OverlayToolbar*)toolbar;
+
+	if (!tbar)
+		return Rect();
+
+	return tbar->rect;
+}
+
+void overlayToolbarBringToFront(HOverlayToolbar toolbar)
+{
+	OverlayToolbar* tbar = (OverlayToolbar*)toolbar;
+
+	if (!tbar)
+		return;
+
+	tbar->zOrder = s_nextToolbarZOrder++;
 }
 
 Rect overlayToolbarGetDockZoneRect(const Rect& viewportRect, OverlayDockZone zone, f32 toolbarThickness)
