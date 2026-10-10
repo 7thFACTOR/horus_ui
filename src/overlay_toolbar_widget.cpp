@@ -795,6 +795,9 @@ static bool processToolbarElement(OverlayToolbar* toolbar, OverlayToolbarElement
 		forceRepaint();
 	}
 
+	if (ctx->widget.clicked)
+		toolbar->zOrder = s_nextToolbarZOrder++;
+
 	return ctx->widget.clicked;
 }
 
