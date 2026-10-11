@@ -437,6 +437,12 @@ static void demoOnToolbarScale()
 	demo.toolbarClickCount++;
 }
 
+static void demoOnToolbarSnap(bool enabled)
+{
+	demo.toolbarToggleSnap = enabled;
+	overlayToolbarSetGridAlignment(g_demoFloatingToolbar, demo.toolbarToggleSnap, 20.0f);
+}
+
 template <typename EditorFn>
 static void propGridRow(const char* name, EditorFn&& editorFn)
 {
@@ -703,16 +709,16 @@ void showDemo()
 		overlayToolbarAddButton(g_demoMainToolbar, "open", "Open", 0, demoOnToolbarOpen, "Open an existing scene");
 		overlayToolbarAddButton(g_demoMainToolbar, "save", "Save", 0, demoOnToolbarSave, "Save the current scene");
 		overlayToolbarAddSeparator(g_demoMainToolbar);
-		overlayToolbarAddToggle(g_demoMainToolbar, "play", "Play", 0, 0, &demo.toolbarTogglePlay, "Play / stop the scene");
-		overlayToolbarAddToggle(g_demoMainToolbar, "loop", "Loop", 0, 0, &demo.toolbarToggleLoop, "Loop the animation");
+		overlayToolbarAddToggle(g_demoMainToolbar, "play", "Play", 0, 0, &demo.toolbarTogglePlay, nullptr, "Play / stop the scene");
+		overlayToolbarAddToggle(g_demoMainToolbar, "loop", "Loop", 0, 0, &demo.toolbarToggleLoop, nullptr, "Loop the animation");
 		overlayToolbarAddSpace(g_demoMainToolbar);
 		overlayToolbarAddButton(g_demoMainToolbar, "icon", "", themeGetImage(themeGet(), "flat/dropdown_arrow"), demoOnToolbarOpen, "An icon-only button");
 
 		g_demoToolsToolbar = overlayToolbarCreate("demoToolsToolbar", "Tools", OverlayDockZone::LeftToolbar);
 		overlayToolbarAddGrip(g_demoToolsToolbar);
 		overlayToolbarSetLayout(g_demoToolsToolbar, OverlayToolbarLayout::Vertical);
-		overlayToolbarAddToggle(g_demoToolsToolbar, "grid", "Grid", 0, 0, &demo.toolbarToggleGrid, "Show the grid");
-		overlayToolbarAddToggle(g_demoToolsToolbar, "snap", "Snap", 0, 0, &demo.toolbarToggleSnap, "Snap to the grid");
+		overlayToolbarAddToggle(g_demoToolsToolbar, "grid", "Grid", 0, 0, &demo.toolbarToggleGrid, nullptr, "Show the grid");
+		overlayToolbarAddToggle(g_demoToolsToolbar, "snap", "Snap", 0, 0, &demo.toolbarToggleSnap, demoOnToolbarSnap, "Snap to the grid");
 		overlayToolbarAddSeparator(g_demoToolsToolbar);
 		overlayToolbarAddButton(g_demoToolsToolbar, "reset", "Reset", 0, demoOnToolbarResetView, "Reset the view");
 
@@ -731,7 +737,7 @@ void showDemo()
 		overlayToolbarAddButton(g_demoFloatingToolbar, "a", "Alpha", 0, demoOnToolbarNew, "Alpha command");
 		overlayToolbarAddButton(g_demoFloatingToolbar, "b", "Beta", 0, demoOnToolbarOpen, "Beta command");
 		overlayToolbarAddButton(g_demoFloatingToolbar, "c", "Gamma", 0, demoOnToolbarSave, "Gamma command");
-		overlayToolbarAddToggle(g_demoFloatingToolbar, "mode", "Mode", 0, 0, &demo.toolbarToggleMode, "Toggle a mode");
+		overlayToolbarAddToggle(g_demoFloatingToolbar, "mode", "Mode", 0, 0, &demo.toolbarToggleMode, nullptr, "Toggle a mode");
 
 		// Smiley tool in floating toolbar too
 		overlayToolbarAddSeparator(g_demoFloatingToolbar);
@@ -2717,12 +2723,9 @@ if (expandableBegin("Overlay Toolbars", &demo.expandOverlayToolbar))
 	}
 	check("Snap All Toolbars", &snapAllToolbars);
 
-	overlayToolbarSetGridAlignment(g_demoFloatingToolbar, floatingGridEnabled || snapAllToolbars, floatingGridSize);
-	if (snapAllToolbars)
-	{
-		overlayToolbarSetGridAlignment(g_demoMainToolbar, true, floatingGridSize);
-		overlayToolbarSetGridAlignment(g_demoToolsToolbar, true, floatingGridSize);
-	}
+	overlayToolbarSetGridAlignment(g_demoFloatingToolbar, snapAllToolbars, floatingGridSize);
+	overlayToolbarSetGridAlignment(g_demoMainToolbar, snapAllToolbars, floatingGridSize);
+	overlayToolbarSetGridAlignment(g_demoToolsToolbar, snapAllToolbars, floatingGridSize);
 	overlayToolbarSetCustomSize(g_demoFloatingToolbar, floatingCustomSize, floatingCustomSizeEnabled);
 
 	space();

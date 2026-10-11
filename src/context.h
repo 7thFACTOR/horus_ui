@@ -184,6 +184,8 @@ struct Context
 	DragDropState dragDrop;
 	DockingState docking;
 
+	OverlayToolbarState overlayToolbars;
+
 	Context()
 	{
 		popupStack.resize(maxPopupIndex);

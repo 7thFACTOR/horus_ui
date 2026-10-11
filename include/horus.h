@@ -2367,9 +2367,10 @@ HUI_API HOverlayToolbarWidget overlayToolbarAddButton(HOverlayToolbar toolbar, c
 /// \param iconOff the image shown when the toggle is off
 /// \param iconOn the image shown when the toggle is on
 /// \param toggleValue the bool value of the toggle
+/// \param onToggle callback when the toggle value changes (receives the new value)
 /// \param tooltip the toggle tooltip text
 /// \return the toolbar widget handle
-HUI_API HOverlayToolbarWidget overlayToolbarAddToggle(HOverlayToolbar toolbar, const char* elementId, const char* label, HImage iconOff, HImage iconOn, bool* toggleValue, const char* tooltip = nullptr);
+HUI_API HOverlayToolbarWidget overlayToolbarAddToggle(HOverlayToolbar toolbar, const char* elementId, const char* label, HImage iconOff, HImage iconOn, bool* toggleValue, void (*onToggle)(bool), const char* tooltip = nullptr);
 /// Add a separator element to an overlay toolbar
 /// \param toolbar the toolbar handle
 /// \return the toolbar widget handle
