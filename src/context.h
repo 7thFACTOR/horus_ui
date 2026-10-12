@@ -184,6 +184,17 @@ struct Context
 	DragDropState dragDrop;
 	DockingState docking;
 
+	struct OverlayToolbarState
+	{
+		u32 nextToolbarZOrder = 1;
+		Rect viewportRect;
+		bool overlayActive = false;
+		WidgetId dragCaptureId = 0;
+		bool pendingDrag = false;
+		Point pendingDragStartMouse;
+		WidgetId activeToolbarId = 0;
+	};
+
 	OverlayToolbarState overlayToolbars;
 
 	Context()

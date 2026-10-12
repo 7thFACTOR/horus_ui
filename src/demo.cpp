@@ -277,6 +277,11 @@ struct DemoState
 	Point toolbarGridPanStartValue;
 	bool expandOverlayToolbar = false;
 
+	OverlayDockZone mainToolbarDockZone = OverlayDockZone::TopToolbar;
+	OverlayDockZone toolsToolbarDockZone = OverlayDockZone::LeftToolbar;
+	OverlayDockZone floatingToolbarDockZone = OverlayDockZone::Floating;
+	Point floatingToolbarPos = { 320, 120 };
+
 	// icons
 	HImage iconSmiley = 0;
 
@@ -398,10 +403,6 @@ struct DemoState
 
 static DemoState demo;
 
-static HOverlayToolbar g_demoMainToolbar = nullptr;
-static HOverlayToolbar g_demoToolsToolbar = nullptr;
-static HOverlayToolbar g_demoFloatingToolbar = nullptr;
-
 static void demoOnToolbarNew()
 {
 	demo.toolbarClickCount++;
@@ -440,7 +441,6 @@ static void demoOnToolbarScale()
 static void demoOnToolbarSnap(bool enabled)
 {
 	demo.toolbarToggleSnap = enabled;
-	overlayToolbarSetGridAlignment(g_demoFloatingToolbar, demo.toolbarToggleSnap, 20.0f);
 }
 
 template <typename EditorFn>
@@ -700,48 +700,6 @@ void showDemo()
 
 		// Create a single smiley icon
 		demo.iconSmiley = createIcon("demo/icon_smiley", 24, drawSmileyIcon);
-
-		// overlay toolbars
-		g_demoMainToolbar = overlayToolbarCreate("demoMainToolbar", "Main", OverlayDockZone::TopToolbar);
-		overlayToolbarAddGrip(g_demoMainToolbar);
-		overlayToolbarSetLayout(g_demoMainToolbar, OverlayToolbarLayout::Horizontal);
-		overlayToolbarAddButton(g_demoMainToolbar, "new", "New", 0, demoOnToolbarNew, "Create a new scene");
-		overlayToolbarAddButton(g_demoMainToolbar, "open", "Open", 0, demoOnToolbarOpen, "Open an existing scene");
-		overlayToolbarAddButton(g_demoMainToolbar, "save", "Save", 0, demoOnToolbarSave, "Save the current scene");
-		overlayToolbarAddSeparator(g_demoMainToolbar);
-		overlayToolbarAddToggle(g_demoMainToolbar, "play", "Play", 0, 0, &demo.toolbarTogglePlay, nullptr, "Play / stop the scene");
-		overlayToolbarAddToggle(g_demoMainToolbar, "loop", "Loop", 0, 0, &demo.toolbarToggleLoop, nullptr, "Loop the animation");
-		overlayToolbarAddSpace(g_demoMainToolbar);
-		overlayToolbarAddButton(g_demoMainToolbar, "icon", "", themeGetImage(themeGet(), "flat/dropdown_arrow"), demoOnToolbarOpen, "An icon-only button");
-
-		g_demoToolsToolbar = overlayToolbarCreate("demoToolsToolbar", "Tools", OverlayDockZone::LeftToolbar);
-		overlayToolbarAddGrip(g_demoToolsToolbar);
-		overlayToolbarSetLayout(g_demoToolsToolbar, OverlayToolbarLayout::Vertical);
-		overlayToolbarAddToggle(g_demoToolsToolbar, "grid", "Grid", 0, 0, &demo.toolbarToggleGrid, nullptr, "Show the grid");
-		overlayToolbarAddToggle(g_demoToolsToolbar, "snap", "Snap", 0, 0, &demo.toolbarToggleSnap, demoOnToolbarSnap, "Snap to the grid");
-		overlayToolbarAddSeparator(g_demoToolsToolbar);
-		overlayToolbarAddButton(g_demoToolsToolbar, "reset", "Reset", 0, demoOnToolbarResetView, "Reset the view");
-
-		// Transform tool buttons in tools toolbar
-		overlayToolbarAddSeparator(g_demoToolsToolbar);
-		overlayToolbarAddButton(g_demoToolsToolbar, "smiley1", "Smiley", demo.iconSmiley, demoOnToolbarMove, "Smiley tool");
-
-		g_demoFloatingToolbar = overlayToolbarCreate("demoFloatingToolbar", "Floating", OverlayDockZone::Floating);
-		overlayToolbarAddGrip(g_demoFloatingToolbar);
-		overlayToolbarSetLayout(g_demoFloatingToolbar, OverlayToolbarLayout::Panel);
-		overlayToolbarSetFloatingPosition(g_demoFloatingToolbar, { 320, 120 });
-		// Enable grid snapping with 20px grid
-		overlayToolbarSetGridAlignment(g_demoFloatingToolbar, true, 20.0f);
-		// Optionally set custom size (commented out - uncomment to test)
-		// overlayToolbarSetCustomSize(g_demoFloatingToolbar, { 250, 180 }, true);
-		overlayToolbarAddButton(g_demoFloatingToolbar, "a", "Alpha", 0, demoOnToolbarNew, "Alpha command");
-		overlayToolbarAddButton(g_demoFloatingToolbar, "b", "Beta", 0, demoOnToolbarOpen, "Beta command");
-		overlayToolbarAddButton(g_demoFloatingToolbar, "c", "Gamma", 0, demoOnToolbarSave, "Gamma command");
-		overlayToolbarAddToggle(g_demoFloatingToolbar, "mode", "Mode", 0, 0, &demo.toolbarToggleMode, nullptr, "Toggle a mode");
-
-		// Smiley tool in floating toolbar too
-		overlayToolbarAddSeparator(g_demoFloatingToolbar);
-		overlayToolbarAddButton(g_demoFloatingToolbar, "smiley2", "Smiley", demo.iconSmiley, demoOnToolbarMove, "Smiley tool");
 	}
 
 	// animate progress bars
@@ -2695,11 +2653,10 @@ if (expandableBegin("Overlay Toolbars", &demo.expandOverlayToolbar))
 	check("Show Tools Toolbar", &demo.showToolsToolbar);
 	check("Show Floating Toolbar", &demo.showFloatingToolbar);
 	check("Collapse Main Toolbar", &demo.collapseMainToolbar);
-
-	overlayToolbarSetVisible(g_demoMainToolbar, demo.showMainToolbar);
-	overlayToolbarSetVisible(g_demoToolsToolbar, demo.showToolsToolbar);
-	overlayToolbarSetVisible(g_demoFloatingToolbar, demo.showFloatingToolbar);
-	overlayToolbarSetCollapsed(g_demoMainToolbar, demo.collapseMainToolbar);
+check("Show Main Toolbar", &demo.showMainToolbar);
+	check("Show Tools Toolbar", &demo.showToolsToolbar);
+	check("Show Floating Toolbar", &demo.showFloatingToolbar);
+	check("Collapse Main Toolbar", &demo.collapseMainToolbar);
 
 	space();
 	label("Floating toolbar options:");
@@ -2723,30 +2680,25 @@ if (expandableBegin("Overlay Toolbars", &demo.expandOverlayToolbar))
 	}
 	check("Snap All Toolbars", &snapAllToolbars);
 
-	overlayToolbarSetGridAlignment(g_demoFloatingToolbar, snapAllToolbars, floatingGridSize);
-	overlayToolbarSetGridAlignment(g_demoMainToolbar, snapAllToolbars, floatingGridSize);
-	overlayToolbarSetGridAlignment(g_demoToolsToolbar, snapAllToolbars, floatingGridSize);
-	overlayToolbarSetCustomSize(g_demoFloatingToolbar, floatingCustomSize, floatingCustomSizeEnabled);
-
 	space();
 	label("Dock the main toolbar:");
-		if (button("Top")) overlayToolbarSetDockZone(g_demoMainToolbar, OverlayDockZone::TopToolbar);
+		if (button("Top")) demo.mainToolbarDockZone = OverlayDockZone::TopToolbar;
 		sameLine();
-		if (button("Bottom")) overlayToolbarSetDockZone(g_demoMainToolbar, OverlayDockZone::BottomToolbar);
+		if (button("Bottom")) demo.mainToolbarDockZone = OverlayDockZone::BottomToolbar;
 		sameLine();
-		if (button("Left")) overlayToolbarSetDockZone(g_demoMainToolbar, OverlayDockZone::LeftToolbar);
+		if (button("Left")) demo.mainToolbarDockZone = OverlayDockZone::LeftToolbar;
 		sameLine();
-		if (button("Right")) overlayToolbarSetDockZone(g_demoMainToolbar, OverlayDockZone::RightToolbar);
+		if (button("Right")) demo.mainToolbarDockZone = OverlayDockZone::RightToolbar;
 		sameLine();
-		if (button("Float")) overlayToolbarSetDockZone(g_demoMainToolbar, OverlayDockZone::Floating);
+		if (button("Float")) demo.mainToolbarDockZone = OverlayDockZone::Floating;
 
 		space();
 		if (button("Reset Toolbars"))
 		{
-			overlayToolbarSetDockZone(g_demoMainToolbar, OverlayDockZone::TopToolbar);
-			overlayToolbarSetDockZone(g_demoToolsToolbar, OverlayDockZone::LeftToolbar);
-			overlayToolbarSetDockZone(g_demoFloatingToolbar, OverlayDockZone::Floating);
-			overlayToolbarSetFloatingPosition(g_demoFloatingToolbar, { 320, 120 });
+			demo.mainToolbarDockZone = OverlayDockZone::TopToolbar;
+			demo.toolsToolbarDockZone = OverlayDockZone::LeftToolbar;
+			demo.floatingToolbarDockZone = OverlayDockZone::Floating;
+			demo.floatingToolbarPos = { 320, 120 };
 			demo.showMainToolbar = true;
 			demo.showToolsToolbar = true;
 			demo.showFloatingToolbar = true;
@@ -2827,6 +2779,7 @@ if (expandableBegin("Overlay Toolbars", &demo.expandOverlayToolbar))
 			Point p1 = worldToScreen({ r.x, r.y });
 			Point p2 = worldToScreen({ r.x + r.width, r.y + r.height });
 			Rect sr = { p1.x, p1.y, p2.x - p1.x, p2.y - p1.y };
+
 			renderSetLineStyle(LineStyle(color, lineWidth * demo.toolbarGridZoom));
 			renderDrawRectangle(sr);
 		};
@@ -2863,69 +2816,65 @@ if (expandableBegin("Overlay Toolbars", &demo.expandOverlayToolbar))
 		renderDrawLine({ origin.x - 10, origin.y }, { origin.x + 10, origin.y });
 		renderDrawLine({ origin.x, origin.y - 10 }, { origin.x, origin.y + 10 });
 
-		overlayToolbarBegin(toolbarViewport);
+		overlayToolbarsBegin(toolbarViewport);
 
-		// collect all toolbars in render order (back to front)
-		std::vector<HOverlayToolbar> allToolbars;
-		for (auto toolbar : overlayToolbarsGetDocked())
+		// Main toolbar
+		if (demo.showMainToolbar)
 		{
-			if (!overlayToolbarIsDragging(toolbar))
-				allToolbars.push_back(toolbar);
-		}
-		auto floatingToolbars = overlayToolbarsGetSortedByZOrder();
-		for (auto toolbar : floatingToolbars)
-		{
-			if (!overlayToolbarIsDragging(toolbar))
-				allToolbars.push_back(toolbar);
-		}
-
-		// find topmost toolbar under mouse (front to back)
-		HOverlayToolbar topmostToolbar = nullptr;
-		if (toolbarViewport.contains(mouseGetPosition()))
-		{
-			for (auto it = allToolbars.rbegin(); it != allToolbars.rend(); ++it)
+			if (overlayToolbarBegin("demoMainToolbar", "Main", demo.mainToolbarDockZone, OverlayToolbarLayout::Horizontal))
 			{
-				if (overlayToolbarIsVisible(*it) && overlayToolbarGetRect(*it).contains(mouseGetPosition()))
-				{
-					topmostToolbar = *it;
-					break;
-				}
+				overlayToolbarSetCollapsed(demo.collapseMainToolbar);
+				overlayToolbarGrip();
+				overlayToolbarButton("new", "New", 0, demoOnToolbarNew, "Create a new scene");
+				overlayToolbarButton("open", "Open", 0, demoOnToolbarOpen, "Open an existing scene");
+				overlayToolbarButton("save", "Save", 0, demoOnToolbarSave, "Save the current scene");
+				overlayToolbarSeparator();
+				overlayToolbarToggle("play", "Play", 0, 0, &demo.toolbarTogglePlay, nullptr, "Play / stop the scene");
+				overlayToolbarToggle("loop", "Loop", 0, 0, &demo.toolbarToggleLoop, nullptr, "Loop the animation");
+				overlayToolbarSpace();
+				overlayToolbarButton("icon", "", themeGetImage(themeGet(), "flat/dropdown_arrow"), demoOnToolbarOpen, "An icon-only button");
+				overlayToolbarEnd();
 			}
 		}
 
-		// render all toolbars, only process input for topmost
-		for (auto toolbar : allToolbars)
+		// Tools toolbar
+		if (demo.showToolsToolbar)
 		{
-			overlayToolbarRender(toolbar);
-		}
-
-		// draw any dragged toolbar on top of everything (always process input for dragged)
-		auto renderDemoDraggedToolbar = [&](HOverlayToolbar toolbar)
-		{
-			if (toolbar && overlayToolbarIsVisible(toolbar) && overlayToolbarIsDragging(toolbar))
-				overlayToolbarRender(toolbar);
-		};
-
-		renderDemoDraggedToolbar(g_demoMainToolbar);
-		renderDemoDraggedToolbar(g_demoToolsToolbar);
-		renderDemoDraggedToolbar(g_demoFloatingToolbar);
-
-		// bring clicked floating toolbar to front
-		const InputEvent& evt = inputEventGet();
-		if (evt.type == InputEvent::Type::MouseDown
-			&& evt.mouse.button == MouseButton::Left
-			&& toolbarViewport.contains(mouseGetPosition()))
-		{
-			for (auto it = floatingToolbars.rbegin(); it != floatingToolbars.rend(); ++it)
+			if (overlayToolbarBegin("demoToolsToolbar", "Tools", demo.toolsToolbarDockZone, OverlayToolbarLayout::Vertical))
 			{
-				if (overlayToolbarIsVisible(*it) && overlayToolbarGetRect(*it).contains(mouseGetPosition()))
-				{
-					overlayToolbarBringToFront(*it);
-					forceRepaint();
-					break;
-				}
+				overlayToolbarGrip();
+				overlayToolbarToggle("grid", "Grid", 0, 0, &demo.toolbarToggleGrid, nullptr, "Show the grid");
+				overlayToolbarToggle("snap", "Snap", 0, 0, &demo.toolbarToggleSnap, demoOnToolbarSnap, "Snap to the grid");
+				overlayToolbarSeparator();
+				overlayToolbarButton("reset", "Reset", 0, demoOnToolbarResetView, "Reset the view");
+				overlayToolbarSeparator();
+				overlayToolbarButton("smiley1", "Smiley", demo.iconSmiley, demoOnToolbarMove, "Smiley tool");
+				overlayToolbarEnd();
 			}
 		}
+
+		// Floating toolbar
+		if (demo.showFloatingToolbar)
+		{
+			if (overlayToolbarBegin("demoFloatingToolbar", "Floating", demo.floatingToolbarDockZone, OverlayToolbarLayout::Panel))
+			{
+				overlayToolbarGrip();
+				if (snapAllToolbars)
+					overlayToolbarSetGridAlignment(true, floatingGridSize);
+				if (floatingCustomSizeEnabled)
+					overlayToolbarSetCustomSize(floatingCustomSize, true);
+				overlayToolbarSetFloatingPosition(demo.floatingToolbarPos);
+				overlayToolbarButton("a", "Alpha", 0, demoOnToolbarNew, "Alpha command");
+				overlayToolbarButton("b", "Beta", 0, demoOnToolbarOpen, "Beta command");
+				overlayToolbarButton("c", "Gamma", 0, demoOnToolbarSave, "Gamma command");
+				overlayToolbarToggle("mode", "Mode", 0, 0, &demo.toolbarToggleMode, nullptr, "Toggle a mode");
+				overlayToolbarSeparator();
+				overlayToolbarButton("smiley2", "Smiley", demo.iconSmiley, demoOnToolbarMove, "Smiley tool");
+				overlayToolbarEnd();
+			}
+		}
+
+		overlayToolbarsEnd();
 
 		// if a toolbar consumed the click, cancel panning
 		if (inputWasConsumed() && demo.toolbarGridPanning)
@@ -2933,7 +2882,6 @@ if (expandableBegin("Overlay Toolbars", &demo.expandOverlayToolbar))
 			demo.toolbarGridPanning = false;
 		}
 
-		overlayToolbarEnd();
 		viewportEnd();
 
 		expandableEnd();

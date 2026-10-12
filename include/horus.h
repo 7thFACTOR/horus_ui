@@ -2338,30 +2338,37 @@ HUI_API void dockingStateSave(WindowsDockingState& dockingState);
 HUI_API void dockingStateLoad(const WindowsDockingState& dockingState);
 
 ///////////////////////////////////////////////////////////////////////////
-// Overlay toolbar functions (dockable toolbars over a client rect)
+// Overlay toolbar functions (immediate mode dockable toolbars over a client rect)
 ///////////////////////////////////////////////////////////////////////////
 
-/// Create an overlay toolbar
+/// Begin the overlay toolbar system for a viewport rect
+/// \param viewportRect the viewport rect in window coordinates
+HUI_API void overlayToolbarsBegin(const Rect& viewportRect);
+
+/// End the overlay toolbar system
+HUI_API void overlayToolbarsEnd();
+
+/// Begin an overlay toolbar. Returns true if the toolbar is open/visible.
 /// \param id the unique toolbar id
-/// \param title the toolbar title
-/// \param initialDockZone the dock zone the toolbar starts in
-/// \return the created toolbar handle
-HUI_API HOverlayToolbar overlayToolbarCreate(const char* id, const char* title, OverlayDockZone initialDockZone = OverlayDockZone::Floating);
-/// Find a previously created overlay toolbar by id
-/// \param id the toolbar id
-/// \return the toolbar handle or null
-HUI_API HOverlayToolbar overlayToolbarFind(const char* id);
-/// Add a button element to an overlay toolbar
-/// \param toolbar the toolbar handle
+/// \param title the toolbar title (shown when collapsed)
+/// \param dockZone the dock zone (default Floating)
+/// \param layout the toolbar layout (default Horizontal)
+/// \return true if toolbar is open, false if collapsed/hidden
+HUI_API bool overlayToolbarBegin(const char* id, const char* title, OverlayDockZone dockZone = OverlayDockZone::Floating, OverlayToolbarLayout layout = OverlayToolbarLayout::Horizontal);
+
+/// End the current overlay toolbar
+HUI_API void overlayToolbarEnd();
+
+/// Add a button to the current toolbar
 /// \param elementId the unique element id inside the toolbar
 /// \param label the button label
 /// \param icon the button icon image
 /// \param onClick the function called when clicked
 /// \param tooltip the button tooltip text
-/// \return the toolbar widget handle
-HUI_API HOverlayToolbarWidget overlayToolbarAddButton(HOverlayToolbar toolbar, const char* elementId, const char* label, HImage icon = 0, void (*onClick)() = nullptr, const char* tooltip = nullptr);
-/// Add a toggle button element to an overlay toolbar
-/// \param toolbar the toolbar handle
+/// \return true if clicked
+HUI_API bool overlayToolbarButton(const char* elementId, const char* label, HImage icon = 0, void (*onClick)() = nullptr, const char* tooltip = nullptr);
+
+/// Add a toggle button to the current toolbar
 /// \param elementId the unique element id inside the toolbar
 /// \param label the toggle label
 /// \param iconOff the image shown when the toggle is off
@@ -2369,106 +2376,55 @@ HUI_API HOverlayToolbarWidget overlayToolbarAddButton(HOverlayToolbar toolbar, c
 /// \param toggleValue the bool value of the toggle
 /// \param onToggle callback when the toggle value changes (receives the new value)
 /// \param tooltip the toggle tooltip text
-/// \return the toolbar widget handle
-HUI_API HOverlayToolbarWidget overlayToolbarAddToggle(HOverlayToolbar toolbar, const char* elementId, const char* label, HImage iconOff, HImage iconOn, bool* toggleValue, void (*onToggle)(bool), const char* tooltip = nullptr);
-/// Add a separator element to an overlay toolbar
-/// \param toolbar the toolbar handle
-/// \return the toolbar widget handle
-HUI_API HOverlayToolbarWidget overlayToolbarAddSeparator(HOverlayToolbar toolbar);
-/// Add a space element to an overlay toolbar
-/// \param toolbar the toolbar handle
-/// \return the toolbar widget handle
-HUI_API HOverlayToolbarWidget overlayToolbarAddSpace(HOverlayToolbar toolbar);
-/// a grip to grab and drag the toolbar, inserted as the first element
-HUI_API HOverlayToolbarWidget overlayToolbarAddGrip(HOverlayToolbar toolbar);
-/// Remove an element from an overlay toolbar
-/// \param toolbar the toolbar handle
-/// \param elementId the element id to remove
-HUI_API void overlayToolbarRemoveElement(HOverlayToolbar toolbar, const char* elementId);
-/// Begin the overlay toolbar drawing for a viewport rect, all toolbars are drawn between overlayToolbarRender calls inside overlayToolbarBegin/End
-/// \param viewportRect the viewport rect in window coordinates
-HUI_API void overlayToolbarBegin(const Rect& viewportRect);
-/// Render a toolbar between overlayToolbarBegin and overlayToolbarEnd
-/// \param toolbar the toolbar handle
-/// \param processInput if false, only renders without processing input (useful for overlapped toolbars)
-HUI_API void overlayToolbarRender(HOverlayToolbar toolbar);
-/// End the overlay toolbar drawing
-HUI_API void overlayToolbarEnd();
-/// Set the dock zone of a toolbar
-/// \param toolbar the toolbar handle
-/// \param zone the dock zone
-HUI_API void overlayToolbarSetDockZone(HOverlayToolbar toolbar, OverlayDockZone zone);
-/// position of a floating toolbar relative to the overlayToolbarBegin viewport rect
-HUI_API void overlayToolbarSetFloatingPosition(HOverlayToolbar toolbar, const Point& pos);
-/// Set the layout of a toolbar
-/// \param toolbar the toolbar handle
-/// \param layout the toolbar layout
-HUI_API void overlayToolbarSetLayout(HOverlayToolbar toolbar, OverlayToolbarLayout layout);
-/// Collapse or expand a toolbar
-/// \param toolbar the toolbar handle
+/// \return true if toggled
+HUI_API bool overlayToolbarToggle(const char* elementId, const char* label, HImage iconOff, HImage iconOn, bool* toggleValue, void (*onToggle)(bool) = nullptr, const char* tooltip = nullptr);
+
+/// Add a separator to the current toolbar
+HUI_API void overlayToolbarSeparator();
+
+/// Add a space to the current toolbar
+HUI_API void overlayToolbarSpace();
+
+/// Add a grip to the current toolbar (for dragging)
+HUI_API void overlayToolbarGrip();
+
+/// Set grid snapping for floating toolbars
+/// \param enable true to enable grid snapping
+/// \param gridSize the grid size in pixels (0 to use the global setting)
+HUI_API void overlayToolbarSetGridAlignment(bool enable, f32 gridSize = 0);
+
+/// Set a custom size for the current floating toolbar
+/// \param size the custom size (width, height)
+/// \param useCustomSize true to use custom size, false to use content-based size
+HUI_API void overlayToolbarSetCustomSize(const Point& size, bool useCustomSize = true);
+
+/// Set the floating position for the current floating toolbar
+/// \param pos the position relative to the viewport
+HUI_API void overlayToolbarSetFloatingPosition(const Point& pos);
+
+/// Set collapsed state for the current toolbar
 /// \param collapsed true to collapse the toolbar
-HUI_API void overlayToolbarSetCollapsed(HOverlayToolbar toolbar, bool collapsed);
-/// Set a toolbar visible or hidden
-/// \param toolbar the toolbar handle
-/// \param visible true to show the toolbar
-HUI_API void overlayToolbarSetVisible(HOverlayToolbar toolbar, bool visible);
-/// \return true if the toolbar is visible
-/// \param toolbar the toolbar handle
-HUI_API bool overlayToolbarIsVisible(HOverlayToolbar toolbar);
-/// \return true if the toolbar is being dragged
-/// \param toolbar the toolbar handle
-HUI_API bool overlayToolbarIsDragging(HOverlayToolbar toolbar);
+HUI_API void overlayToolbarSetCollapsed(bool collapsed);
+
+/// \return true if a widget has already consumed the current click (prevents other handlers from processing it)
+HUI_API bool inputWasConsumed();
+
 /// \return the rect of a dock zone inside a viewport rect
 /// \param viewportRect the viewport rect
 /// \param zone the dock zone
 /// \param toolbarThickness the thickness of the toolbar in the dock zone
 HUI_API Rect overlayToolbarGetDockZoneRect(const Rect& viewportRect, OverlayDockZone zone, f32 toolbarThickness = 32.0f);
+
 /// \return true if the point is inside a dock zone rect
 /// \param viewportRect the viewport rect
 /// \param pt the point to test
 /// \param zone the dock zone
 /// \param toolbarThickness the thickness of the toolbar in the dock zone
 HUI_API bool overlayToolbarPointInDockZone(const Rect& viewportRect, const Point& pt, OverlayDockZone zone, f32 toolbarThickness = 32.0f);
+
 /// \return true if a point relative to the overlayToolbarBegin viewport rect is inside any visible toolbar
 /// \param viewportPoint the point relative to the overlayToolbarBegin viewport rect
 HUI_API bool overlayToolbarContainsPoint(const Point& viewportPoint);
-
-/// Get all visible docked toolbars (not floating)
-/// \return vector of toolbar handles
-HUI_API std::vector<HOverlayToolbar> overlayToolbarsGetDocked();
-
-/// Get all visible floating toolbars sorted by z-order (back to front)
-/// \return vector of toolbar handles in render order
-HUI_API std::vector<HOverlayToolbar> overlayToolbarsGetSortedByZOrder();
-
-/// Get the dock zone of a toolbar
-/// \param toolbar the toolbar handle
-/// \return the dock zone
-HUI_API OverlayDockZone overlayToolbarGetDockZone(HOverlayToolbar toolbar);
-
-/// Get the screen rect of a toolbar
-/// \param toolbar the toolbar handle
-/// \return the toolbar rect in window coordinates
-HUI_API Rect overlayToolbarGetRect(HOverlayToolbar toolbar);
-
-/// Bring a floating toolbar to the front (highest z-order)
-/// \param toolbar the toolbar handle
-HUI_API void overlayToolbarBringToFront(HOverlayToolbar toolbar);
-
-/// \return true if a widget has already consumed the current click (prevents other handlers from processing it)
-HUI_API bool inputWasConsumed();
-
-/// Enable or disable grid snapping for a floating toolbar
-/// \param toolbar the toolbar handle
-/// \param enable true to enable grid snapping
-/// \param gridSize the grid size in pixels (0 to use the global setting)
-HUI_API void overlayToolbarSetGridAlignment(HOverlayToolbar toolbar, bool enable, f32 gridSize = 0);
-
-/// Set a custom size for a floating toolbar (overrides content-based sizing)
-/// \param toolbar the toolbar handle
-/// \param size the custom size (width, height)
-/// \param useCustomSize true to use custom size, false to use content-based size
-HUI_API void overlayToolbarSetCustomSize(HOverlayToolbar toolbar, const Point& size, bool useCustomSize = true);
 
 ///////////////////////////////////////////////////////////////////////////////
 // Application functions

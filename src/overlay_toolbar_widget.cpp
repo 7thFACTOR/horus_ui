@@ -10,374 +10,100 @@
 
 namespace hui
 {
-// Overlay toolbars are private implementation details; the public C API in horus.h
-// exposes them only as opaque handles (HOverlayToolbar / HOverlayToolbarWidget), so
-// the concrete structs below are file-local.
 
-HOverlayToolbar overlayToolbarFind(const char* id)
+enum class OverlayToolbarElementType
 {
-	if (!ctx || !id)
+	Button,
+	Toggle,
+	Separator,
+	Space,
+	Grip,
+};
+
+struct OverlayToolbarElement
+{
+	OverlayToolbarElementType type = OverlayToolbarElementType::Button;
+	std::string id;
+	std::string label;
+	std::string tooltip;
+	HImage icon = nullptr;
+	HImage iconOn = nullptr;
+	void (*onClick)() = nullptr;
+	bool* toggleValue = nullptr;
+	void (*onToggle)(bool) = nullptr;
+	bool visible = true;
+	bool enabled = true;
+	Rect rect;
+};
+
+struct OverlayToolbar
+{
+	std::string id;
+	std::string title;
+	OverlayDockZone dockZone = OverlayDockZone::Floating;
+	OverlayToolbarLayout layout = OverlayToolbarLayout::Horizontal;
+	bool collapsed = false;
+	bool visible = true;
+	bool dragging = false;
+	std::vector<OverlayToolbarElement> elements;
+	u32 stripOrder = 0;
+	bool snapToEnd = false;
+	u32 zOrder = 0;
+	Rect rect;
+	Point floatingPosition;
+	Point dragStartToolbarPos;
+	Point dragStartMousePos;
+	bool showDockPreview = false;
+	OverlayDockZone previewDockZone = OverlayDockZone::Floating;
+	bool snapToGrid = false;
+	f32 gridSize = 0;
+	bool useCustomSize = false;
+	Point customSize;
+	OverlayDockZone lastRequestedDockZone = OverlayDockZone::None;
+};
+
+static OverlayToolbar* s_currentToolbar = nullptr;
+static std::deque<OverlayToolbar> s_toolbars;
+static u32 s_nextToolbarZOrder = 1;
+
+OverlayToolbar* findToolbar(const char* id)
+{
+	if (!id)
 		return nullptr;
 
-	for (auto& toolbar : ctx->overlayToolbars.toolbars)
+	for (auto& toolbar : s_toolbars)
 	{
 		if (toolbar.id == id)
 			return &toolbar;
 	}
-
 	return nullptr;
 }
 
-HOverlayToolbar overlayToolbarCreate(const char* id, const char* title, OverlayDockZone initialDockZone)
+OverlayToolbar* getOrCreateToolbar(const char* id, const char* title, OverlayDockZone dockZone, OverlayToolbarLayout layout)
 {
-	if (!ctx)
-		return nullptr;
-
-	ctx->overlayToolbars.toolbars.push_back({});
-	auto& toolbar = ctx->overlayToolbars.toolbars.back();
-
-	toolbar.id = id ? id : "";
-	toolbar.title = title ? title : "";
-	toolbar.dockZone = initialDockZone;
-	toolbar.stripOrder = (u32)ctx->overlayToolbars.toolbars.size() - 1;
-	toolbar.zOrder = ctx->overlayToolbars.nextToolbarZOrder++;
-
-	return &toolbar;
-}
-
-HOverlayToolbarWidget overlayToolbarAddButton(HOverlayToolbar toolbar, const char* elementId, const char* label, HImage icon, void (*onClick)(), const char* tooltip)
-{
-	OverlayToolbar* tbar = (OverlayToolbar*)toolbar;
-	if (!tbar)
-		return nullptr;
-
-	tbar->elements.push_back({});
-	auto& e = tbar->elements.back();
-
-	e.type = OverlayToolbarElementType::Button;
-	e.id = elementId ? elementId : "";
-	e.label = label ? label : "";
-	e.icon = icon;
-	e.onClick = onClick;
-
-	if (tooltip)
-		e.tooltip = tooltip;
-
-	return &e;
-}
-
-HOverlayToolbarWidget overlayToolbarAddToggle(HOverlayToolbar toolbar, const char* elementId, const char* label, HImage iconOff, HImage iconOn, bool* toggleValue, void (*onToggle)(bool), const char* tooltip)
-{
-	OverlayToolbar* tbar = (OverlayToolbar*)toolbar;
-	
-	if (!tbar)
-		return nullptr;
-
-	tbar->elements.push_back({});
-	auto& e = tbar->elements.back();
-
-	e.type = OverlayToolbarElementType::Toggle;
-	e.id = elementId ? elementId : "";
-	e.label = label ? label : "";
-	e.icon = iconOff;
-	e.iconOn = iconOn;
-	e.toggleValue = toggleValue;
-	e.onToggle = onToggle;
-
-	if (tooltip)
-		e.tooltip = tooltip;
-
-	return &e;
-}
-
-HOverlayToolbarWidget overlayToolbarAddSeparator(HOverlayToolbar toolbar)
-{
-	OverlayToolbar* tbar = (OverlayToolbar*)toolbar;
-	
-	if (!tbar)
-		return nullptr;
-
-	tbar->elements.push_back({});
-	auto& e = tbar->elements.back();
-
-	e.type = OverlayToolbarElementType::Separator;
-	e.id = "separator";
-
-	return &e;
-}
-
-HOverlayToolbarWidget overlayToolbarAddSpace(HOverlayToolbar toolbar)
-{
-	OverlayToolbar* tbar = (OverlayToolbar*)toolbar;
-
-	if (!tbar)
-		return nullptr;
-
-	tbar->elements.push_back({});
-	auto& e = tbar->elements.back();
-
-	e.type = OverlayToolbarElementType::Space;
-	e.id = "space";
-
-	return &e;
-}
-
-HOverlayToolbarWidget overlayToolbarAddGrip(HOverlayToolbar toolbar)
-{
-	OverlayToolbar* tbar = (OverlayToolbar*)toolbar;
-
-	if (!tbar)
-		return nullptr;
-
-	tbar->elements.push_back({});
-	auto& e = tbar->elements.back();
-
-	e.type = OverlayToolbarElementType::Grip;
-	e.id = "grip";
-
-	return &e;
-}
-
-void overlayToolbarRemoveElement(HOverlayToolbar toolbar, const char* elementId)
-{
-	OverlayToolbar* tbar = (OverlayToolbar*)toolbar;
-	
-	if (!tbar || !elementId)
-		return;
-
-	for (auto iter = tbar->elements.begin(); iter != tbar->elements.end(); ++iter)
+	OverlayToolbar* toolbar = findToolbar(id);
+	if (toolbar)
 	{
-		if (iter->id == elementId)
+		if (toolbar->lastRequestedDockZone != dockZone && !toolbar->dragging)
 		{
-			tbar->elements.erase(iter);
-			break;
+			toolbar->dockZone = dockZone;
+			toolbar->lastRequestedDockZone = dockZone;
 		}
-	}
-}
-
-void overlayToolbarSetDockZone(HOverlayToolbar toolbar, OverlayDockZone zone)
-{
-	OverlayToolbar* tbar = (OverlayToolbar*)toolbar;
-
-	if (!tbar)
-		return;
-
-	tbar->dockZone = zone;
-}
-
-void overlayToolbarSetFloatingPosition(HOverlayToolbar toolbar, const Point& pos)
-{
-	OverlayToolbar* tbar = (OverlayToolbar*)toolbar;
-
-	if (!tbar)
-		return;
-
-	tbar->floatingPosition = pos;
-}
-
-void overlayToolbarSetGridAlignment(HOverlayToolbar toolbar, bool enable, f32 gridSize)
-{
-	OverlayToolbar* tbar = (OverlayToolbar*)toolbar;
-
-	if (!tbar)
-		return;
-
-	tbar->snapToGrid = enable;
-	tbar->gridSize = gridSize;
-}
-
-void overlayToolbarSetCustomSize(HOverlayToolbar toolbar, const Point& size, bool useCustomSize)
-{
-	OverlayToolbar* tbar = (OverlayToolbar*)toolbar;
-
-	if (!tbar)
-		return;
-
-	tbar->useCustomSize = useCustomSize;
-	tbar->customSize = size;
-}
-
-void overlayToolbarSetLayout(HOverlayToolbar toolbar, OverlayToolbarLayout layout)
-{
-	OverlayToolbar* tbar = (OverlayToolbar*)toolbar;
-
-	if (!tbar)
-		return;
-
-	tbar->layout = layout;
-}
-
-void overlayToolbarSetCollapsed(HOverlayToolbar toolbar, bool collapsed)
-{
-	OverlayToolbar* tbar = (OverlayToolbar*)toolbar;
-
-	if (!tbar)
-		return;
-
-	tbar->collapsed = collapsed;
-}
-
-void overlayToolbarSetVisible(HOverlayToolbar toolbar, bool visible)
-{
-	OverlayToolbar* tbar = (OverlayToolbar*)toolbar;
-
-	if (tbar)
-		tbar->visible = visible;
-}
-
-bool overlayToolbarIsVisible(HOverlayToolbar toolbar)
-{
-	OverlayToolbar* tbar = (OverlayToolbar*)toolbar;
-
-	if (!tbar)
-		return false;
-
-	return tbar->visible;
-}
-
-bool overlayToolbarIsDragging(HOverlayToolbar toolbar)
-{
-	OverlayToolbar* tbar = (OverlayToolbar*)toolbar;
-
-	if (!tbar)
-		return false;
-
-	return tbar->dragging;
-}
-
-std::vector<HOverlayToolbar> overlayToolbarsGetDocked()
-{
-	std::vector<HOverlayToolbar> result;
-
-	for (auto& toolbar : ctx->overlayToolbars.toolbars)
-	{
-		if (toolbar.visible && toolbar.dockZone != OverlayDockZone::Floating)
-			result.push_back(&toolbar);
+		toolbar->title = title ? title : "";
+		toolbar->layout = layout;
+		return toolbar;
 	}
 
-	return result;
-}
-
-std::vector<HOverlayToolbar> overlayToolbarsGetSortedByZOrder()
-{
-	std::vector<HOverlayToolbar> result;
-
-	for (auto& toolbar : ctx->overlayToolbars.toolbars)
-	{
-		if (toolbar.visible && toolbar.dockZone == OverlayDockZone::Floating)
-			result.push_back(&toolbar);
-	}
-
-	std::stable_sort(result.begin(), result.end(), [](HOverlayToolbar a, HOverlayToolbar b)
-	{
-		return ((OverlayToolbar*)a)->zOrder < ((OverlayToolbar*)b)->zOrder;
-	});
-
-	return result;
-}
-
-OverlayDockZone overlayToolbarGetDockZone(HOverlayToolbar toolbar)
-{
-	OverlayToolbar* tbar = (OverlayToolbar*)toolbar;
-
-	if (!tbar)
-		return OverlayDockZone::Floating;
-
-	return tbar->dockZone;
-}
-
-Rect overlayToolbarGetRect(HOverlayToolbar toolbar)
-{
-	OverlayToolbar* tbar = (OverlayToolbar*)toolbar;
-
-	if (!tbar)
-		return Rect();
-
-	return tbar->rect;
-}
-
-void overlayToolbarBringToFront(HOverlayToolbar toolbar)
-{
-	OverlayToolbar* tbar = (OverlayToolbar*)toolbar;
-
-	if (!tbar)
-		return;
-
-	tbar->zOrder = ctx->overlayToolbars.nextToolbarZOrder++;
-}
-
-Rect overlayToolbarGetDockZoneRect(const Rect& viewportRect, OverlayDockZone zone, f32 toolbarThickness)
-{
-	// left/right strips are inset by the occupied top/bottom strips, so toolbars
-	// docked on different edges do not overlap each other at the viewport corners
-	f32 topInset = 0;
-	f32 bottomInset = 0;
-
-	if (zone == OverlayDockZone::LeftToolbar || zone == OverlayDockZone::RightToolbar)
-	{
-		for (auto& toolbar : ctx->overlayToolbars.toolbars)
-		{
-			if (!toolbar.visible || toolbar.dragging)
-				continue;
-
-			if (toolbar.dockZone == OverlayDockZone::TopToolbar)
-				topInset = toolbarThickness;
-			else if (toolbar.dockZone == OverlayDockZone::BottomToolbar)
-				bottomInset = toolbarThickness;
-		}
-	}
-
-	switch (zone)
-	{
-	case OverlayDockZone::TopToolbar:
-		return { viewportRect.x, viewportRect.y, viewportRect.width, toolbarThickness };
-
-	case OverlayDockZone::BottomToolbar:
-		return { viewportRect.x, viewportRect.bottom() - toolbarThickness, viewportRect.width, toolbarThickness };
-
-	case OverlayDockZone::LeftToolbar:
-		return { viewportRect.x, viewportRect.y + topInset, toolbarThickness, std::max(viewportRect.height - topInset - bottomInset, 0.0f) };
-
-	case OverlayDockZone::RightToolbar:
-		return { viewportRect.right() - toolbarThickness, viewportRect.y + topInset, toolbarThickness, std::max(viewportRect.height - topInset - bottomInset, 0.0f) };
-
-	default:
-		return Rect();
-	}
-}
-
-bool overlayToolbarPointInDockZone(const Rect& viewportRect, const Point& pt, OverlayDockZone zone, f32 toolbarThickness)
-{
-	if (zone == OverlayDockZone::Floating)
-		return viewportRect.contains(pt);
-
-	return overlayToolbarGetDockZoneRect(viewportRect, zone, toolbarThickness).contains(pt);
-}
-
-bool overlayToolbarContainsPoint(const Point& viewportPoint)
-{
-	if (!ctx)
-		return false;
-
-	// a dragged toolbar follows the pointer with a fixed grab offset, but on fast
-	// movements the pointer can leave the previous frame's rect before the drag code
-	// advances it, so treat an active or pending toolbar drag as holding the pointer
-	// even when it is momentarily outside the toolbar rect
-	for (auto& toolbar : ctx->overlayToolbars.toolbars)
-	{
-		if (toolbar.visible && (toolbar.dragging || ctx->overlayToolbars.pendingDragPressed))
-			return true;
-	}
-
-	Point screenPos = { ctx->overlayToolbars.viewportRect.x + viewportPoint.x, ctx->overlayToolbars.viewportRect.y + viewportPoint.y };
-
-	for (auto& toolbar : ctx->overlayToolbars.toolbars)
-	{
-		if (toolbar.visible && toolbar.rect.contains(screenPos))
-			return true;
-	}
-
-	return false;
+	s_toolbars.push_back({});
+	auto& t = s_toolbars.back();
+	t.id = id ? id : "";
+	t.title = title ? title : "";
+	t.dockZone = dockZone;
+	t.lastRequestedDockZone = dockZone;
+	t.layout = layout;
+	t.stripOrder = (u32)s_toolbars.size() - 1;
+	t.zOrder = s_nextToolbarZOrder++;
+	return &t;
 }
 
 static OverlayToolbarLayout toolbarEffectiveLayout(OverlayToolbar* toolbar)
@@ -387,17 +113,14 @@ static OverlayToolbarLayout toolbarEffectiveLayout(OverlayToolbar* toolbar)
 	case OverlayDockZone::LeftToolbar:
 	case OverlayDockZone::RightToolbar:
 		return OverlayToolbarLayout::Vertical;
-
 	case OverlayDockZone::TopToolbar:
 	case OverlayDockZone::BottomToolbar:
 		return OverlayToolbarLayout::Horizontal;
-
 	default:
 		return toolbar->layout;
 	}
 }
 
-// returns the main axis span and the cross axis span of a toolbar element content
 static Point elementContentSize(OverlayToolbarElement* e, bool vertical)
 {
 	const auto& st = ctx->settings.overlayToolbars;
@@ -409,16 +132,13 @@ static Point elementContentSize(OverlayToolbarElement* e, bool vertical)
 	{
 	case OverlayToolbarElementType::Separator:
 		return vertical ? Point(0, 3.0f * ctx->scale) : Point(3.0f * ctx->scale, 0);
-
 	case OverlayToolbarElementType::Space:
 		return vertical ? Point(0, st.elementSpacing * 4.0f * ctx->scale) : Point(st.elementSpacing * 4.0f * ctx->scale, 0);
-
 	case OverlayToolbarElementType::Grip:
 	{
 		f32 grip = st.gripSize * ctx->scale;
 		return vertical ? Point(0, grip) : Point(grip, 0);
 	}
-
 	case OverlayToolbarElementType::Toggle:
 	case OverlayToolbarElementType::Button:
 	default:
@@ -426,15 +146,14 @@ static Point elementContentSize(OverlayToolbarElement* e, bool vertical)
 		bool hasIcon = e->icon || (e->type == OverlayToolbarElementType::Toggle && e->iconOn);
 		bool hasLabel = !e->label.empty();
 		bool hasIconOnly = hasIcon && !hasLabel;
-
-		f32 textW = 0;
-		f32 textH = 0;
+		f32 textW = 0, textH = 0;
 
 		if (hasLabel && state.font)
-			{
-				FontTextSize tsize = state.font->computeTextSize(e->label.c_str());
-				textW = tsize.width;
-			}
+		{
+			FontTextSize tsize = state.font->computeTextSize(e->label.c_str());
+			textW = tsize.width;
+			textH = tsize.height;
+		}
 
 		if (vertical)
 			return Point(0, hasIconOnly ? iconSize : std::max(iconSize, textH + padding * 2.0f));
@@ -465,11 +184,12 @@ static Point layoutToolbarElements(OverlayToolbar* toolbar, OverlayToolbarLayout
 	f32 crossSize = std::max((vertical ? bar.width : bar.height) - padding * 2.0f, 1.0f);
 
 	bool wrap = (layout == OverlayToolbarLayout::Panel);
-	f32 wrapWidth = wrap ? std::max(ctx->overlayToolbars.viewportRect.width, 1.0f) : 0.0f;
+	f32 wrapWidth = wrap ? (toolbar->useCustomSize ? toolbar->customSize.x : std::max(ctx->overlayToolbars.viewportRect.width, 1.0f)) : 0.0f;
 
 	f32 cursor = padding;
 	f32 lineStart = 0;
 	f32 lineSize = crossSize;
+	f32 maxLineWidth = padding * 2.0f;
 
 	for (auto& e : toolbar->elements)
 	{
@@ -481,6 +201,7 @@ static Point layoutToolbarElements(OverlayToolbar* toolbar, OverlayToolbarLayout
 
 		if (wrap && cursor + mainSpan > wrapWidth - padding && cursor > padding + 0.5f)
 		{
+			maxLineWidth = std::max(maxLineWidth, cursor - spacing + padding);
 			cursor = padding;
 			lineStart += lineSize + spacing;
 			lineSize = crossSize;
@@ -500,13 +221,13 @@ static Point layoutToolbarElements(OverlayToolbar* toolbar, OverlayToolbarLayout
 		lineSize = std::max(lineSize, crossSize);
 	}
 
-	f32 usedMain = std::max(cursor - spacing + padding, padding * 2.0f);
+	maxLineWidth = std::max(maxLineWidth, cursor - spacing + padding);
+	f32 usedMain = std::max(maxLineWidth, padding * 2.0f);
 	f32 usedCross = std::max(lineStart + lineSize + padding, padding * 2.0f);
 
 	return vertical ? Point(bar.width, usedMain) : Point(usedMain, usedCross);
 }
 
-// the white 9-cell rounded rectangle the toolbar buttons draw with, tinted by the state color
 static Image* toolbarRoundRectImage()
 {
 	Image* img = ctx->theme->getImage(hashString("flat/round_rect"));
@@ -522,7 +243,6 @@ static Image* toolbarGripImage()
 static void drawToolbarBackground(OverlayToolbar* toolbar)
 {
 	const auto& st = ctx->settings.overlayToolbars;
-
 	ctx->renderer.cmdSetColor(st.toolbarBackgroundColor);
 	ctx->renderer.cmdDrawImageBordered(toolbarRoundRectImage(), st.roundRectBorder, toolbar->rect, ctx->scale);
 
@@ -536,7 +256,6 @@ static void drawToolbarBackground(OverlayToolbar* toolbar)
 static void drawToolbarTitle(OverlayToolbar* toolbar)
 {
 	auto& state = ctx->theme->getElement(WidgetElementId::MenuBarBody).normalState();
-
 	ctx->renderer.cmdSetFont(state.font);
 	ctx->renderer.cmdSetColor(state.textColor);
 	ctx->renderer.cmdDrawTextInBox(toolbar->title.c_str(), toolbar->rect, HAlignType::Center, VAlignType::Center, true);
@@ -546,7 +265,6 @@ static void drawToolbarIcon(ThemeElement::State* state, Image* icon, const Rect&
 {
 	f32 imgW = icon->rect.width * ctx->scale;
 	f32 imgH = icon->rect.height * ctx->scale;
-
 	viewportImageSizeFit(imgW, imgH, std::max(rect.width, 1.0f), std::max(rect.height, 1.0f), imgW, imgH, false, false);
 
 	Rect imgRect = {
@@ -578,12 +296,10 @@ static void drawToolbarGrip(OverlayToolbarElement* e)
 		ThemeElement::State* state = &btnBody.getState(WidgetStateType::Hovered);
 		ctx->renderer.cmdSetColor(state->color);
 		ctx->renderer.cmdDrawImageBordered(toolbarRoundRectImage(), st.roundRectBorder, e->rect, ctx->scale);
-
 		ctx->mouseCursor = MouseCursorType::SizeAll;
 	}
 
 	ThemeElement::State* gripState = &ctx->theme->getElement(WidgetElementId::MenuBarBody).normalState();
-
 	if (hovered)
 		gripState = &btnBody.getState(WidgetStateType::Hovered);
 
@@ -603,7 +319,6 @@ static void drawToolbarElement(OverlayToolbar* toolbar, OverlayToolbarElement* e
 		sepColor.a = 0.5f;
 
 		Rect rc = e->rect;
-
 		if (rc.width >= rc.height)
 			rc = { rc.x, rc.y + rc.height / 2 - 1, rc.width, 2 };
 		else
@@ -640,7 +355,6 @@ static void drawToolbarElement(OverlayToolbar* toolbar, OverlayToolbarElement* e
 	f32 spacing = st.elementSpacing * ctx->scale;
 
 	Color bgColor = state->color;
-
 	if (pressed && e->enabled)
 		bgColor = st.buttonPressedColor;
 
@@ -686,14 +400,10 @@ static bool toolbarMouseOverInteractiveElement(OverlayToolbar* toolbar)
 {
 	for (auto& e : toolbar->elements)
 	{
-		if (e.visible
-			&& e.rect.contains(ctx->mousePosition)
+		if (e.visible && e.rect.contains(ctx->mousePosition)
 			&& (e.type == OverlayToolbarElementType::Button || e.type == OverlayToolbarElementType::Toggle))
-		{
 			return true;
-		}
 	}
-
 	return false;
 }
 
@@ -721,45 +431,32 @@ static bool processToolbarElement(OverlayToolbar* toolbar, OverlayToolbarElement
 	}
 
 	if (ctx->widget.clicked)
-		toolbar->zOrder = ctx->overlayToolbars.nextToolbarZOrder++;
+		toolbar->zOrder = s_nextToolbarZOrder++;
 
 	return ctx->widget.clicked;
 }
 
-// returns the visible, non-dragging toolbars docked in the zone, ordered by their strip
-// position; 'exclude' is skipped (used for the toolbar being dragged)
 static std::vector<OverlayToolbar*> overlayToolbarsInZone(OverlayDockZone zone, OverlayToolbar* exclude)
 {
 	std::vector<OverlayToolbar*> result;
-
-	for (auto& toolbar : ctx->overlayToolbars.toolbars)
+	for (auto& toolbar : s_toolbars)
 	{
 		if (&toolbar == exclude)
 			continue;
-
 		if (toolbar.visible && !toolbar.dragging && toolbar.dockZone == zone)
 			result.push_back(&toolbar);
 	}
-
-	std::stable_sort(result.begin(), result.end(), [](OverlayToolbar* a, OverlayToolbar* b)
-	{
-		return a->stripOrder < b->stripOrder;
-	});
-
+	std::stable_sort(result.begin(), result.end(), [](OverlayToolbar* a, OverlayToolbar* b) { return a->stripOrder < b->stripOrder; });
 	return result;
 }
 
-// returns the used main-axis size of a toolbar laid out on a thickness-sized strip,
-// without modifying the toolbar element rects
 static f32 measureToolbarMainSize(OverlayToolbar* toolbar, OverlayToolbarLayout layout, f32 thickness)
 {
 	const auto& st = ctx->settings.overlayToolbars;
 	f32 padding = st.elementPadding * ctx->scale;
 	f32 spacing = st.elementSpacing * ctx->scale;
-
 	bool vertical = (layout == OverlayToolbarLayout::Vertical);
 	f32 cursor = padding;
-
 	bool wrap = (layout == OverlayToolbarLayout::Panel);
 	f32 wrapWidth = wrap ? std::max(ctx->overlayToolbars.viewportRect.width, 1.0f) : 0.0f;
 
@@ -767,20 +464,15 @@ static f32 measureToolbarMainSize(OverlayToolbar* toolbar, OverlayToolbarLayout 
 	{
 		if (!e.visible)
 			continue;
-
 		Point span = elementContentSize(&e, vertical);
 		f32 mainSpan = vertical ? span.y : span.x;
-
 		if (wrap && cursor + mainSpan > wrapWidth - padding && cursor > padding + 0.5f)
 			cursor = padding;
-
 		cursor += mainSpan + spacing;
 	}
-
 	return std::max(cursor - spacing + padding, padding * 2.0f);
 }
 
-// returns the main-axis size a toolbar would occupy on a thickness-sized strip
 static f32 dockedToolbarMainSize(OverlayToolbar* toolbar, f32 thickness, f32 padding)
 {
 	if (toolbar->collapsed)
@@ -789,22 +481,18 @@ static f32 dockedToolbarMainSize(OverlayToolbar* toolbar, f32 thickness, f32 pad
 		f32 titleW = (state.font ? state.font->computeTextSize(toolbar->title.c_str()).width : 0.0f) + padding * 4.0f;
 		return std::max(titleW, thickness);
 	}
-
 	return std::max(measureToolbarMainSize(toolbar, toolbarEffectiveLayout(toolbar), thickness), thickness);
 }
 
 struct ToolbarDockResult
 {
 	bool showHint = false;
-	Rect hintRect;          // thin insertion line (for backward compat)
-	Rect toolbarRect;       // full toolbar rect as it would appear when docked
+	Rect hintRect;
+	Rect toolbarRect;
 	bool snapToEnd = false;
 	u32 insertionIndex = 0;
 };
 
-// computes where a dragged toolbar sinks on the hovered strip: the side (anchored to the
-// strip start corner or the strip end corner) is picked from the half of the strip the
-// cursor is in, and the insertion index is resolved within that side cluster of toolbars
 static ToolbarDockResult computeToolbarDock(OverlayToolbar* toolbar, OverlayDockZone zone, f32 thickness, f32 padding)
 {
 	ToolbarDockResult result;
@@ -813,21 +501,17 @@ static ToolbarDockResult computeToolbarDock(OverlayToolbar* toolbar, OverlayDock
 	bool vertical = (zone == OverlayDockZone::LeftToolbar || zone == OverlayDockZone::RightToolbar);
 	f32 stripMain = vertical ? strip.height : strip.width;
 	f32 mouseMain = vertical ? (ctx->mousePosition.y - strip.y) : (ctx->mousePosition.x - strip.x);
-
 	result.snapToEnd = (mouseMain >= stripMain * 0.5f);
 
 	std::vector<OverlayToolbar*> cluster;
-
 	for (OverlayToolbar* other : overlayToolbarsInZone(zone, toolbar))
 	{
 		if (other->snapToEnd == result.snapToEnd)
 			cluster.push_back(other);
 	}
 
-	f32 total = 0;
-	f32 passed = 0;
+	f32 total = 0, passed = 0;
 	u32 index = 0;
-
 	for (OverlayToolbar* other : cluster)
 		total += dockedToolbarMainSize(other, thickness, padding);
 
@@ -836,16 +520,12 @@ static ToolbarDockResult computeToolbarDock(OverlayToolbar* toolbar, OverlayDock
 		f32 size = dockedToolbarMainSize(cluster[r], thickness, padding);
 		f32 start = result.snapToEnd ? (stripMain - (total - passed)) : passed;
 		f32 mid = start + size * 0.5f;
-
 		if (mouseMain > mid)
 		{
 			index = r + 1;
 			passed += size;
 		}
-		else
-		{
-			break;
-		}
+		else break;
 	}
 
 	f32 mySize = dockedToolbarMainSize(toolbar, thickness, padding);
@@ -863,38 +543,74 @@ static ToolbarDockResult computeToolbarDock(OverlayToolbar* toolbar, OverlayDock
 		result.hintRect = { strip.x + barPos, strip.y, hintThickness, thickness };
 		result.toolbarRect = { strip.x + newStart, strip.y, mySize, thickness };
 	}
-
 	result.showHint = true;
 	result.insertionIndex = index;
 	return result;
 }
 
-void overlayToolbarRender(HOverlayToolbar toolbar)
+void overlayToolbarsBegin(const Rect& viewportRect)
 {
-	OverlayToolbar* tbar = (OverlayToolbar*)toolbar;
+	if (!ctx)
+		return;
 
+	ctx->overlayToolbars.viewportRect = viewportRect;
+	ctx->overlayToolbars.overlayActive = true;
+	ctx->overlayToolbars.dragCaptureId = genId("##overlayToolbarDrag");
+}
+
+void overlayToolbarsEnd()
+{
 	if (!ctx || !ctx->overlayToolbars.overlayActive)
 		return;
 
-	if (!tbar || !tbar->visible)
-		return;
+	if (ctx->overlayToolbars.activeToolbarId)
+	{
+		OverlayToolbar* active = nullptr;
+		for (auto& t : s_toolbars)
+		{
+			if ((WidgetId)&t == ctx->overlayToolbars.activeToolbarId)
+			{
+				active = &t;
+				break;
+			}
+		}
+		if (active && active->showDockPreview && !active->rect.isZero())
+		{
+			ctx->renderer.cmdSetColor(ctx->settings.overlayToolbars.dockPreviewColor);
+			ctx->renderer.cmdDrawFilledRectangle(active->rect);
+		}
+	}
+
+	ctx->overlayToolbars.overlayActive = false;
+}
+
+bool overlayToolbarBegin(const char* id, const char* title, OverlayDockZone dockZone, OverlayToolbarLayout layout)
+{
+	if (!ctx || !ctx->overlayToolbars.overlayActive || !id)
+		return false;
+
+	OverlayToolbar* toolbar = getOrCreateToolbar(id, title, dockZone, layout);
+	s_currentToolbar = toolbar;
+
+	if (!toolbar->visible)
+		return false;
+
+	// Clear elements for immediate mode - rebuild every frame
+	toolbar->elements.clear();
 
 	const auto& st = ctx->settings.overlayToolbars;
 	f32 thickness = st.defaultThickness * ctx->scale;
 	f32 padding = st.elementPadding * ctx->scale;
-	auto& mgr = ctx->overlayToolbars;
 
-	// dragged toolbars follow the mouse and highlight the dock zone under the cursor
-	if (tbar->dragging)
+	if (toolbar->dragging)
 	{
-		Point pos = tbar->dragStartToolbarPos + (ctx->mousePosition - tbar->dragStartMousePos);
-		f32 dragW = std::max(tbar->rect.width, 1.0f);
-		f32 dragH = std::max(tbar->rect.height, 1.0f);
+		Point pos = toolbar->dragStartToolbarPos + (ctx->mousePosition - toolbar->dragStartMousePos);
+		f32 dragW = std::max(toolbar->rect.width, 1.0f);
+		f32 dragH = std::max(toolbar->rect.height, 1.0f);
 
-		// Apply grid snapping during drag if enabled
-		if (tbar->snapToGrid)
+		if (toolbar->snapToGrid)
 		{
-			f32 grid = tbar->gridSize > 0 ? tbar->gridSize : ctx->settings.overlayToolbars.floatingGridSize;
+			f32 grid = toolbar->gridSize > 0 ? toolbar->gridSize : ctx->settings.overlayToolbars.floatingGridSize;
 			if (grid > 0)
 			{
 				pos.x = std::round(pos.x / grid) * grid;
@@ -905,11 +621,10 @@ void overlayToolbarRender(HOverlayToolbar toolbar)
 		pos.x = std::max(ctx->overlayToolbars.viewportRect.x, std::min(pos.x, ctx->overlayToolbars.viewportRect.right() - dragW));
 		pos.y = std::max(ctx->overlayToolbars.viewportRect.y, std::min(pos.y, ctx->overlayToolbars.viewportRect.bottom() - dragH));
 
-		tbar->floatingPosition = { pos.x - ctx->overlayToolbars.viewportRect.x, pos.y - ctx->overlayToolbars.viewportRect.y };
-		tbar->rect = { pos.x, pos.y, dragW, dragH };
+		toolbar->floatingPosition = { pos.x - ctx->overlayToolbars.viewportRect.x, pos.y - ctx->overlayToolbars.viewportRect.y };
+		toolbar->rect = { pos.x, pos.y, dragW, dragH };
 
 		OverlayDockZone zone = OverlayDockZone::Floating;
-
 		if (overlayToolbarPointInDockZone(ctx->overlayToolbars.viewportRect, ctx->mousePosition, OverlayDockZone::RightToolbar, thickness))
 			zone = OverlayDockZone::RightToolbar;
 		else if (overlayToolbarPointInDockZone(ctx->overlayToolbars.viewportRect, ctx->mousePosition, OverlayDockZone::LeftToolbar, thickness))
@@ -919,386 +634,485 @@ void overlayToolbarRender(HOverlayToolbar toolbar)
 		else if (overlayToolbarPointInDockZone(ctx->overlayToolbars.viewportRect, ctx->mousePosition, OverlayDockZone::TopToolbar, thickness))
 			zone = OverlayDockZone::TopToolbar;
 
-		tbar->showDockPreview = (zone != OverlayDockZone::Floating);
-		tbar->previewDockZone = zone;
+		toolbar->showDockPreview = (zone != OverlayDockZone::Floating);
+		toolbar->previewDockZone = zone;
 
-		if (tbar->showDockPreview)
+		ToolbarDockResult dock;
+		if (toolbar->showDockPreview)
 		{
-			ToolbarDockResult dock = computeToolbarDock(tbar, zone, thickness, padding);
-
-			mgr.showInsertionHint = dock.showHint;
-			mgr.insertionHintRect = dock.hintRect;
-			mgr.insertionToolbarRect = dock.toolbarRect;
-			mgr.dropSnapToEnd = dock.snapToEnd;
-			mgr.dropInsertionIndex = dock.insertionIndex;
+			dock = computeToolbarDock(toolbar, zone, thickness, padding);
+			ctx->overlayToolbars.activeToolbarId = (WidgetId)toolbar;
 		}
 		else
 		{
-			mgr.showInsertionHint = false;
+			ctx->overlayToolbars.activeToolbarId = 0;
 		}
 
-		mgr.draggedToolbar = tbar;
-		mgr.showGlobalDockPreview = tbar->showDockPreview;
-		mgr.globalPreviewZone = zone;
-		mgr.globalPreviewRect = tbar->showDockPreview
-			? overlayToolbarGetDockZoneRect(ctx->overlayToolbars.viewportRect, zone, thickness)
-			: Rect();
-
-		if (ctx->event.type == InputEvent::Type::MouseUp
-			&& ctx->event.mouse.button == MouseButton::Left)
+		if (ctx->event.type == InputEvent::Type::MouseUp && ctx->event.mouse.button == MouseButton::Left)
 		{
-			if (tbar->showDockPreview)
+			if (toolbar->showDockPreview)
 			{
-				// dock into the side cluster the cursor was on, at the resolved insertion
-				// point; the toolbar keeps side anchoring once docked
-				tbar->dockZone = zone;
-				tbar->snapToEnd = mgr.dropSnapToEnd;
-
+				toolbar->dockZone = zone;
+				toolbar->snapToEnd = dock.snapToEnd;
 				std::vector<OverlayToolbar*> cluster;
-
-				for (OverlayToolbar* other : overlayToolbarsInZone(zone, tbar))
+				for (OverlayToolbar* other : overlayToolbarsInZone(zone, toolbar))
 				{
-					if (other->snapToEnd == tbar->snapToEnd)
+					if (other->snapToEnd == toolbar->snapToEnd)
 						cluster.push_back(other);
 				}
-
-				u32 index = std::min<u32>(cluster.size(), mgr.dropInsertionIndex);
-				cluster.insert(cluster.begin() + index, tbar);
-
+				u32 index = std::min<u32>(cluster.size(), dock.insertionIndex);
+				cluster.insert(cluster.begin() + index, toolbar);
 				for (u32 i = 0; i < cluster.size(); i++)
 					cluster[i]->stripOrder = i;
 			}
 			else
 			{
-				tbar->dockZone = OverlayDockZone::Floating;
+				toolbar->dockZone = OverlayDockZone::Floating;
 			}
-
-			tbar->dragging = false;
-			tbar->showDockPreview = false;
-
-			mgr.draggedToolbar = nullptr;
-			mgr.showGlobalDockPreview = false;
-			mgr.showInsertionHint = false;
-
+			toolbar->dragging = false;
+			toolbar->showDockPreview = false;
 			ctx->widget.captureId = 0;
 			ctx->widget.hoveredId = 0;
 			ctx->event = InputEvent();
 			forceRepaint();
 		}
 	}
-	else if (tbar->dockZone != OverlayDockZone::Floating)
+
+	// For non-dragging toolbars, rect computation is deferred to overlayToolbarEnd
+	// where elements have been populated and measurements are correct.
+	// For dragging toolbars, the rect was computed above using the previous frame's dimensions.
+	return true;
+}
+
+void overlayToolbarEnd()
+{
+	if (!ctx || !s_currentToolbar)
+		return;
+
+	OverlayToolbar* toolbar = s_currentToolbar;
+	const auto& st = ctx->settings.overlayToolbars;
+	f32 thickness = st.defaultThickness * ctx->scale;
+	f32 padding = st.elementPadding * ctx->scale;
+	OverlayToolbarLayout effLayout = toolbarEffectiveLayout(toolbar);
+
+	if (toolbar->dragging)
 	{
-		// toolbars docked on the same edge share a single strip and are laid out
-		// inline: side by side on top/bottom edges, stacked in a column on left/right edges.
-		// Start-anchored toolbars grow from the strip start corner and end-anchored ones
-		// from the strip end corner, so a toolbar keeps its corner when the strip resizes
-		OverlayToolbarLayout layout = toolbarEffectiveLayout(tbar);
-		bool vertical = (layout == OverlayToolbarLayout::Vertical);
-		Rect strip = overlayToolbarGetDockZoneRect(ctx->overlayToolbars.viewportRect, tbar->dockZone, thickness);
-		f32 main = dockedToolbarMainSize(tbar, thickness, padding);
-		f32 stripOffset = 0;
-
-		// split the other docked toolbars into their start and end anchored clusters
-		std::vector<OverlayToolbar*> startCluster;
-		std::vector<OverlayToolbar*> endCluster;
-
-		for (OverlayToolbar* other : overlayToolbarsInZone(tbar->dockZone, tbar))
+		// Dragging toolbar: position was already set in overlayToolbarBegin.
+		// Layout elements and compute size with populated elements.
+		if (toolbar->collapsed)
 		{
-			if (other->snapToEnd)
-				endCluster.push_back(other);
-			else
-				startCluster.push_back(other);
-		}
-
-		if (tbar->snapToEnd)
-		{
-			f32 endTotal = main;
-
-			for (OverlayToolbar* other : endCluster)
-				endTotal += dockedToolbarMainSize(other, thickness, padding);
-
-			// toolbars before this one in the end cluster push it toward the strip start
-			for (OverlayToolbar* other : endCluster)
+			auto& state = ctx->theme->getElement(WidgetElementId::MenuBarBody).normalState();
+			f32 titleW = (state.font ? state.font->computeTextSize(toolbar->title.c_str()).width : 0.0f) + padding * 4.0f;
+			if (effLayout == OverlayToolbarLayout::Vertical)
 			{
-				if (other->stripOrder >= tbar->stripOrder)
-					break;
-
-				stripOffset += dockedToolbarMainSize(other, thickness, padding);
+				toolbar->rect.width = thickness + padding * 2.0f;
+				toolbar->rect.height = std::max(titleW, thickness);
 			}
-
-			f32 stripMain = vertical ? strip.height : strip.width;
-			f32 startPos = std::max(stripMain - endTotal + stripOffset, 0.0f);
-
-			if (vertical)
-				tbar->rect = { strip.x, strip.y + startPos, thickness, main };
 			else
-				tbar->rect = { strip.x + startPos, strip.y, main, thickness };
+			{
+				toolbar->rect.width = std::max(titleW, thickness);
+				toolbar->rect.height = thickness;
+			}
 		}
 		else
 		{
-			// toolbars before this one in the start cluster push it toward the strip end
-			for (OverlayToolbar* other : startCluster)
+			Point content = layoutToolbarElements(toolbar, effLayout);
+			if (toolbar->useCustomSize)
 			{
-				if (other->stripOrder >= tbar->stripOrder)
-					break;
-
-				stripOffset += dockedToolbarMainSize(other, thickness, padding);
+				toolbar->rect.width = toolbar->customSize.x;
+				toolbar->rect.height = toolbar->customSize.y;
 			}
-
-			if (vertical)
-				tbar->rect = { strip.x, strip.y + stripOffset, thickness, main };
 			else
-				tbar->rect = { strip.x + stripOffset, strip.y, main, thickness };
+			{
+				toolbar->rect.width = std::max(content.x, thickness);
+				toolbar->rect.height = std::max(content.y, thickness);
+			}
 		}
 	}
 	else
 	{
-		Point pos = { ctx->overlayToolbars.viewportRect.x + tbar->floatingPosition.x, ctx->overlayToolbars.viewportRect.y + tbar->floatingPosition.y };
-		
-		// Apply grid snapping if enabled
-		if (tbar->snapToGrid)
+		// Non-dragging toolbar: compute position & size now that elements are populated.
+		if (toolbar->dockZone != OverlayDockZone::Floating)
 		{
-			f32 grid = tbar->gridSize > 0 ? tbar->gridSize : ctx->settings.overlayToolbars.floatingGridSize;
-			if (grid > 0)
+			bool vertical = (effLayout == OverlayToolbarLayout::Vertical);
+			Rect strip = overlayToolbarGetDockZoneRect(ctx->overlayToolbars.viewportRect, toolbar->dockZone, thickness);
+			f32 main = dockedToolbarMainSize(toolbar, thickness, padding);
+			f32 stripOffset = 0;
+
+			std::vector<OverlayToolbar*> startCluster, endCluster;
+			for (OverlayToolbar* other : overlayToolbarsInZone(toolbar->dockZone, toolbar))
 			{
-				pos.x = std::round(pos.x / grid) * grid;
-				pos.y = std::round(pos.y / grid) * grid;
+				if (other->snapToEnd)
+					endCluster.push_back(other);
+				else
+					startCluster.push_back(other);
 			}
-		}
 
-		tbar->rect = { pos.x, pos.y, thickness, thickness };
-	}
-
-	OverlayToolbarLayout layout = toolbarEffectiveLayout(tbar);
-
-	if (tbar->collapsed)
-	{
-		auto& state = ctx->theme->getElement(WidgetElementId::MenuBarBody).normalState();
-		f32 titleW = (state.font ? state.font->computeTextSize(tbar->title.c_str()).width : 0.0f) + padding * 4.0f;
-
-		if (tbar->dockZone == OverlayDockZone::Floating)
-		{
-			if (tbar->useCustomSize)
+			if (toolbar->snapToEnd)
 			{
-				tbar->rect.width = tbar->customSize.x;
-				tbar->rect.height = tbar->customSize.y;
+				f32 endTotal = main;
+				for (OverlayToolbar* other : endCluster)
+					endTotal += dockedToolbarMainSize(other, thickness, padding);
+				for (OverlayToolbar* other : endCluster)
+				{
+					if (other->stripOrder >= toolbar->stripOrder)
+						break;
+					stripOffset += dockedToolbarMainSize(other, thickness, padding);
+				}
+				f32 stripMain = vertical ? strip.height : strip.width;
+				f32 startPos = std::max(stripMain - endTotal + stripOffset, 0.0f);
+				if (vertical)
+					toolbar->rect = { strip.x, strip.y + startPos, thickness, main };
+				else
+					toolbar->rect = { strip.x + startPos, strip.y, main, thickness };
 			}
 			else
 			{
-				if (layout == OverlayToolbarLayout::Vertical)
+				for (OverlayToolbar* other : startCluster)
 				{
-					tbar->rect.width = thickness + padding * 2.0f;
-					tbar->rect.height = std::max(titleW, thickness);
+					if (other->stripOrder >= toolbar->stripOrder)
+						break;
+					stripOffset += dockedToolbarMainSize(other, thickness, padding);
+				}
+				if (vertical)
+					toolbar->rect = { strip.x, strip.y + stripOffset, thickness, main };
+				else
+					toolbar->rect = { strip.x + stripOffset, strip.y, main, thickness };
+			}
+		}
+		else
+		{
+			Point pos = { ctx->overlayToolbars.viewportRect.x + toolbar->floatingPosition.x, ctx->overlayToolbars.viewportRect.y + toolbar->floatingPosition.y };
+			if (toolbar->snapToGrid)
+			{
+				f32 grid = toolbar->gridSize > 0 ? toolbar->gridSize : ctx->settings.overlayToolbars.floatingGridSize;
+				if (grid > 0)
+				{
+					pos.x = std::round(pos.x / grid) * grid;
+					pos.y = std::round(pos.y / grid) * grid;
+				}
+			}
+			f32 initW = toolbar->useCustomSize ? toolbar->customSize.x : thickness;
+			f32 initH = toolbar->useCustomSize ? toolbar->customSize.y : thickness;
+			toolbar->rect = { pos.x, pos.y, initW, initH };
+		}
+
+		if (toolbar->collapsed)
+		{
+			auto& state = ctx->theme->getElement(WidgetElementId::MenuBarBody).normalState();
+			f32 titleW = (state.font ? state.font->computeTextSize(toolbar->title.c_str()).width : 0.0f) + padding * 4.0f;
+			if (toolbar->dockZone == OverlayDockZone::Floating)
+			{
+				if (toolbar->useCustomSize)
+				{
+					toolbar->rect.width = toolbar->customSize.x;
+					toolbar->rect.height = toolbar->customSize.y;
 				}
 				else
 				{
-					tbar->rect.width = std::max(titleW, thickness);
-					tbar->rect.height = thickness;
+					if (effLayout == OverlayToolbarLayout::Vertical)
+					{
+						toolbar->rect.width = thickness + padding * 2.0f;
+						toolbar->rect.height = std::max(titleW, thickness);
+					}
+					else
+					{
+						toolbar->rect.width = std::max(titleW, thickness);
+						toolbar->rect.height = thickness;
+					}
+				}
+			}
+		}
+		else
+		{
+			Point content = layoutToolbarElements(toolbar, effLayout);
+			if (toolbar->dockZone == OverlayDockZone::Floating)
+			{
+				if (toolbar->useCustomSize)
+				{
+					toolbar->rect.width = toolbar->customSize.x;
+					toolbar->rect.height = toolbar->customSize.y;
+				}
+				else
+				{
+					toolbar->rect.width = std::max(content.x, thickness);
+					toolbar->rect.height = std::max(content.y, thickness);
 				}
 			}
 		}
 	}
-	else
+
+	drawToolbarBackground(toolbar);
+	ctx->renderer.pushClipRect(toolbar->rect, true);
+
+	if (toolbar->collapsed)
 	{
-		Point content = layoutToolbarElements(tbar, layout);
-
-		if (tbar->dockZone == OverlayDockZone::Floating)
-		{
-			if (tbar->useCustomSize)
-			{
-				tbar->rect.width = tbar->customSize.x;
-				tbar->rect.height = tbar->customSize.y;
-			}
-			else
-			{
-				tbar->rect.width = std::max(content.x, thickness);
-				tbar->rect.height = std::max(content.y, thickness);
-			}
-		}
-	}
-
-	drawToolbarBackground(tbar);
-
-	ctx->renderer.pushClipRect(tbar->rect, true);
-
-	if (tbar->dragging)
-	{
-		// keep the drag while it lasts, so later widgets cannot steal it
-		ctx->widget.captureId = ctx->overlayToolbars.dragCaptureId;
-		ctx->widget.hoveredId = ctx->overlayToolbars.dragCaptureId;
-
-		if (tbar->collapsed)
-			drawToolbarTitle(tbar);
-
-		ctx->renderer.popClipRect();
-		return;
-	}
-
-	if (tbar->collapsed)
-	{
-		drawToolbarTitle(tbar);
+		drawToolbarTitle(toolbar);
 	}
 	else
 	{
-		mgr.hoveredElement = nullptr;
-
-		for (auto& e : tbar->elements)
+		for (auto& e : toolbar->elements)
 		{
 			if (!e.visible)
 				continue;
 
 			bool clicked = false;
+			if (!toolbar->dragging && (e.type == OverlayToolbarElementType::Button || e.type == OverlayToolbarElementType::Toggle))
+				clicked = processToolbarElement(toolbar, &e);
 
-			if (e.type == OverlayToolbarElementType::Button || e.type == OverlayToolbarElementType::Toggle)
-				clicked = processToolbarElement(tbar, &e);
-
-			drawToolbarElement(tbar, &e);
+			drawToolbarElement(toolbar, &e);
 
 			if (clicked && e.onClick)
 				e.onClick();
-
-			if (ctx->widget.hovered)
-				mgr.hoveredElement = &e;
-
-			if (!e.tooltip.empty())
+			if (!toolbar->dragging && !e.tooltip.empty())
 				tooltip(e.tooltip.c_str());
 		}
 	}
 
-	if (toolbarMouseOverToolbar(tbar))
-		mgr.hoveredToolbar = tbar;
-
-	// start dragging from the empty toolbar area, separators and spaces act as grab handles;
-	// the drag only begins after the mouse moves past dragStartDistance
-	if (ctx->event.type == InputEvent::Type::MouseDown
-		&& ctx->event.mouse.button == MouseButton::Left
-		&& toolbarMouseOverToolbar(tbar)
-		&& (tbar->collapsed || !toolbarMouseOverInteractiveElement(tbar)))
+	if (toolbar->dragging)
 	{
-		ctx->overlayToolbars.pendingDragToolbar = tbar;
-		ctx->overlayToolbars.pendingDragStartMouse = ctx->mousePosition;
-		ctx->overlayToolbars.pendingDragPressed = true;
-
 		ctx->widget.captureId = ctx->overlayToolbars.dragCaptureId;
 		ctx->widget.hoveredId = ctx->overlayToolbars.dragCaptureId;
-		ctx->alreadyClickedOnSomething = true;
-		ctx->event = InputEvent();
-		forceRepaint();
 	}
-	else if (ctx->overlayToolbars.pendingDragToolbar == toolbar && ctx->overlayToolbars.pendingDragPressed && !tbar->dragging)
+	else
 	{
-		if (ctx->overlayToolbars.pendingDragStartMouse.getDistance(ctx->mousePosition) >= st.dragStartDistance * ctx->scale)
+		if (toolbarMouseOverToolbar(toolbar))
+			ctx->overlayToolbars.activeToolbarId = (WidgetId)toolbar;
+
+		if (ctx->event.type == InputEvent::Type::MouseDown
+			&& ctx->event.mouse.button == MouseButton::Left
+			&& toolbarMouseOverToolbar(toolbar)
+			&& (toolbar->collapsed || !toolbarMouseOverInteractiveElement(toolbar)))
 		{
-			tbar->dragging = true;
-			tbar->dockZone = OverlayDockZone::Floating;
-			tbar->dragStartMousePos = ctx->overlayToolbars.pendingDragStartMouse;
-
-			// convert the docked extents into a floating content-sized rect
-			OverlayToolbarLayout dragLayout = toolbarEffectiveLayout(tbar);
-			tbar->rect = { tbar->rect.x, tbar->rect.y, thickness, thickness };
-
-			if (tbar->collapsed)
-			{
-				auto& state = ctx->theme->getElement(WidgetElementId::MenuBarBody).normalState();
-				f32 titleW = (state.font ? state.font->computeTextSize(tbar->title.c_str()).width : 0.0f) + padding * 4.0f;
-
-				if (dragLayout == OverlayToolbarLayout::Vertical)
-				{
-					tbar->rect.width = thickness + padding * 2.0f;
-					tbar->rect.height = std::max(titleW, thickness);
-				}
-				else
-				{
-					tbar->rect.width = std::max(titleW, thickness);
-					tbar->rect.height = thickness;
-				}
-			}
-			else
-			{
-				Point content = layoutToolbarElements(tbar, dragLayout);
-				tbar->rect.width = std::max(content.x, thickness);
-				tbar->rect.height = std::max(content.y, thickness);
-			}
-
-			tbar->dragStartToolbarPos = { tbar->rect.x, tbar->rect.y };
+			ctx->overlayToolbars.pendingDrag = true;
+			ctx->overlayToolbars.pendingDragStartMouse = ctx->mousePosition;
+			ctx->overlayToolbars.activeToolbarId = (WidgetId)toolbar;
 
 			ctx->widget.captureId = ctx->overlayToolbars.dragCaptureId;
 			ctx->widget.hoveredId = ctx->overlayToolbars.dragCaptureId;
-			ctx->overlayToolbars.pendingDragPressed = false;
+			ctx->alreadyClickedOnSomething = true;
+			ctx->event = InputEvent();
 			forceRepaint();
 		}
-		else if (ctx->event.type == InputEvent::Type::MouseUp)
+		else if (ctx->overlayToolbars.pendingDrag && ctx->overlayToolbars.activeToolbarId == (WidgetId)toolbar && !toolbar->dragging)
 		{
-			ctx->overlayToolbars.pendingDragToolbar = nullptr;
-			ctx->overlayToolbars.pendingDragPressed = false;
-			ctx->widget.captureId = 0;
-		}
-	}
-
-	ctx->renderer.popClipRect();
-}
-
-void overlayToolbarBegin(const Rect& viewportRect)
-{
-	if (!ctx)
-		return;
-
-	ctx->overlayToolbars.viewportRect = viewportRect;
-	ctx->overlayToolbars.overlayActive = true;
-	ctx->overlayToolbars.dragCaptureId = genId("##overlayToolbarDrag");
-
-	ctx->overlayToolbars.draggedToolbar = nullptr;
-	ctx->overlayToolbars.hoveredToolbar = nullptr;
-	ctx->overlayToolbars.hoveredElement = nullptr;
-	ctx->overlayToolbars.showGlobalDockPreview = false;
-	ctx->overlayToolbars.showInsertionHint = false;
-
-	if (ctx->event.type == InputEvent::Type::WindowLostFocus)
-	{
-		for (auto& toolbar : ctx->overlayToolbars.toolbars)
-		{
-			if (toolbar.dragging)
+			if (ctx->overlayToolbars.pendingDragStartMouse.getDistance(ctx->mousePosition) >= st.dragStartDistance * ctx->scale)
 			{
-				toolbar.dragging = false;
-				toolbar.showDockPreview = false;
+				toolbar->dragging = true;
+				toolbar->dockZone = OverlayDockZone::Floating;
+				toolbar->dragStartMousePos = ctx->overlayToolbars.pendingDragStartMouse;
+
+				OverlayToolbarLayout dragLayout = toolbarEffectiveLayout(toolbar);
+				f32 dragInitW = toolbar->useCustomSize ? toolbar->customSize.x : thickness;
+				f32 dragInitH = toolbar->useCustomSize ? toolbar->customSize.y : thickness;
+				toolbar->rect = { toolbar->rect.x, toolbar->rect.y, dragInitW, dragInitH };
+
+				if (toolbar->collapsed)
+				{
+					auto& state = ctx->theme->getElement(WidgetElementId::MenuBarBody).normalState();
+					f32 titleW = (state.font ? state.font->computeTextSize(toolbar->title.c_str()).width : 0.0f) + padding * 4.0f;
+					if (dragLayout == OverlayToolbarLayout::Vertical)
+					{
+						toolbar->rect.width = thickness + padding * 2.0f;
+						toolbar->rect.height = std::max(titleW, thickness);
+					}
+					else
+					{
+						toolbar->rect.width = std::max(titleW, thickness);
+						toolbar->rect.height = thickness;
+					}
+				}
+				else
+				{
+					Point content = layoutToolbarElements(toolbar, dragLayout);
+					if (toolbar->useCustomSize)
+					{
+						toolbar->rect.width = toolbar->customSize.x;
+						toolbar->rect.height = toolbar->customSize.y;
+					}
+					else
+					{
+						toolbar->rect.width = std::max(content.x, thickness);
+						toolbar->rect.height = std::max(content.y, thickness);
+					}
+				}
+
+				toolbar->dragStartToolbarPos = { toolbar->rect.x, toolbar->rect.y };
+				ctx->widget.captureId = ctx->overlayToolbars.dragCaptureId;
+				ctx->widget.hoveredId = ctx->overlayToolbars.dragCaptureId;
+				ctx->overlayToolbars.pendingDrag = false;
+				forceRepaint();
+			}
+			else if (ctx->event.type == InputEvent::Type::MouseUp)
+			{
+				ctx->overlayToolbars.pendingDrag = false;
+				ctx->overlayToolbars.activeToolbarId = 0;
+				ctx->widget.captureId = 0;
 			}
 		}
-
-		ctx->overlayToolbars.pendingDragToolbar = nullptr;
-		ctx->overlayToolbars.pendingDragPressed = false;
-	}
-
-	ctx->renderer.pushWindowDrawCmdLayer(DrawCmdLayerType::Overlay);
-	ctx->renderer.pushClipRect(ctx->overlayToolbars.viewportRect, true);
-}
-
-void overlayToolbarEnd()
-{
-	if (!ctx || !ctx->overlayToolbars.overlayActive)
-		return;
-
-	if (ctx->overlayToolbars.showGlobalDockPreview && !ctx->overlayToolbars.globalPreviewRect.isZero())
-	{
-		ctx->renderer.cmdSetColor(ctx->settings.overlayToolbars.dockPreviewColor);
-		ctx->renderer.cmdDrawFilledRectangle(ctx->overlayToolbars.globalPreviewRect);
-	}
-
-	if (ctx->overlayToolbars.showInsertionHint && !ctx->overlayToolbars.insertionToolbarRect.isZero())
-	{
-		Color hintColor = ctx->settings.overlayToolbars.insertionHintColor;
-		hintColor.a *= 0.3f; // semi-transparent for the toolbar preview
-		ctx->renderer.cmdSetColor(hintColor);
-		ctx->renderer.cmdDrawFilledRectangle(ctx->overlayToolbars.insertionToolbarRect);
-
-		// draw border outline
-		ctx->renderer.cmdSetColor(ctx->settings.overlayToolbars.insertionHintColor);
-		ctx->renderer.cmdDrawRectangle(ctx->overlayToolbars.insertionToolbarRect);
 	}
 
 	ctx->renderer.popClipRect();
-	ctx->renderer.popWindowDrawCmdLayer();
+	s_currentToolbar = nullptr;
+}
 
-	ctx->overlayToolbars.overlayActive = false;
+bool overlayToolbarButton(const char* elementId, const char* label, HImage icon, void (*onClick)(), const char* tooltip)
+{
+	if (!s_currentToolbar)
+		return false;
+
+	s_currentToolbar->elements.push_back({});
+	auto& e = s_currentToolbar->elements.back();
+	e.type = OverlayToolbarElementType::Button;
+	e.id = elementId ? elementId : "";
+	e.label = label ? label : "";
+	e.icon = icon;
+	e.onClick = onClick;
+	if (tooltip)
+		e.tooltip = tooltip;
+
+	return false;
+}
+
+bool overlayToolbarToggle(const char* elementId, const char* label, HImage iconOff, HImage iconOn, bool* toggleValue, void (*onToggle)(bool), const char* tooltip)
+{
+	if (!s_currentToolbar)
+		return false;
+
+	s_currentToolbar->elements.push_back({});
+	auto& e = s_currentToolbar->elements.back();
+	e.type = OverlayToolbarElementType::Toggle;
+	e.id = elementId ? elementId : "";
+	e.label = label ? label : "";
+	e.icon = iconOff;
+	e.iconOn = iconOn;
+	e.toggleValue = toggleValue;
+	e.onToggle = onToggle;
+	if (tooltip)
+		e.tooltip = tooltip;
+
+	return false;
+}
+
+void overlayToolbarSeparator()
+{
+	if (!s_currentToolbar)
+		return;
+
+	s_currentToolbar->elements.push_back({});
+	auto& e = s_currentToolbar->elements.back();
+	e.type = OverlayToolbarElementType::Separator;
+	e.id = "separator";
+}
+
+void overlayToolbarSpace()
+{
+	if (!s_currentToolbar)
+		return;
+
+	s_currentToolbar->elements.push_back({});
+	auto& e = s_currentToolbar->elements.back();
+	e.type = OverlayToolbarElementType::Space;
+	e.id = "space";
+}
+
+void overlayToolbarGrip()
+{
+	if (!s_currentToolbar)
+		return;
+
+	s_currentToolbar->elements.push_back({});
+	auto& e = s_currentToolbar->elements.back();
+	e.type = OverlayToolbarElementType::Grip;
+	e.id = "grip";
+}
+
+void overlayToolbarSetGridAlignment(bool enable, f32 gridSize)
+{
+	if (!s_currentToolbar)
+		return;
+	s_currentToolbar->snapToGrid = enable;
+	s_currentToolbar->gridSize = gridSize;
+}
+
+void overlayToolbarSetCustomSize(const Point& size, bool useCustomSize)
+{
+	if (!s_currentToolbar)
+		return;
+	s_currentToolbar->useCustomSize = useCustomSize;
+	s_currentToolbar->customSize = size;
+}
+
+Rect overlayToolbarGetDockZoneRect(const Rect& viewportRect, OverlayDockZone zone, f32 toolbarThickness)
+{
+	f32 topInset = 0, bottomInset = 0;
+	if (zone == OverlayDockZone::LeftToolbar || zone == OverlayDockZone::RightToolbar)
+	{
+		for (auto& toolbar : s_toolbars)
+		{
+			if (!toolbar.visible || toolbar.dragging)
+				continue;
+			if (toolbar.dockZone == OverlayDockZone::TopToolbar)
+				topInset = toolbarThickness;
+			else if (toolbar.dockZone == OverlayDockZone::BottomToolbar)
+				bottomInset = toolbarThickness;
+		}
+	}
+
+	switch (zone)
+	{
+	case OverlayDockZone::TopToolbar:
+		return { viewportRect.x, viewportRect.y, viewportRect.width, toolbarThickness };
+	case OverlayDockZone::BottomToolbar:
+		return { viewportRect.x, viewportRect.bottom() - toolbarThickness, viewportRect.width, toolbarThickness };
+	case OverlayDockZone::LeftToolbar:
+		return { viewportRect.x, viewportRect.y + topInset, toolbarThickness, std::max(viewportRect.height - topInset - bottomInset, 0.0f) };
+	case OverlayDockZone::RightToolbar:
+		return { viewportRect.right() - toolbarThickness, viewportRect.y + topInset, toolbarThickness, std::max(viewportRect.height - topInset - bottomInset, 0.0f) };
+	default:
+		return Rect();
+	}
+}
+
+bool overlayToolbarPointInDockZone(const Rect& viewportRect, const Point& pt, OverlayDockZone zone, f32 toolbarThickness)
+{
+	if (zone == OverlayDockZone::Floating)
+		return viewportRect.contains(pt);
+	return overlayToolbarGetDockZoneRect(viewportRect, zone, toolbarThickness).contains(pt);
+}
+
+bool overlayToolbarContainsPoint(const Point& viewportPoint)
+{
+	if (!ctx)
+		return false;
+
+	for (auto& toolbar : s_toolbars)
+	{
+		if (toolbar.visible && (toolbar.dragging || ctx->overlayToolbars.pendingDrag))
+			return true;
+	}
+
+	Point screenPos = { ctx->overlayToolbars.viewportRect.x + viewportPoint.x, ctx->overlayToolbars.viewportRect.y + viewportPoint.y };
+	for (auto& toolbar : s_toolbars)
+	{
+		if (toolbar.visible && toolbar.rect.contains(screenPos))
+			return true;
+	}
+	return false;
+}
+
+void overlayToolbarSetFloatingPosition(const Point& pos)
+{
+	if (!s_currentToolbar)
+		return;
+	s_currentToolbar->floatingPosition = pos;
+}
+
+void overlayToolbarSetCollapsed(bool collapsed)
+{
+	if (!s_currentToolbar)
+		return;
+	s_currentToolbar->collapsed = collapsed;
 }
 
 }
