@@ -2110,6 +2110,8 @@ struct Settings
 	bool sliderInvertVerticalDragAmount = false; /// if true and vertical sliding allowed, it will invert the drag amount
 	f32 dragStartDistance = 3; /// the max distance after which a dragging operation starts to occur when mouse down and moved, in pixels
 	f32 whiteImageUvBorder = 0.001f; /// this value is subtracted from the white image used to draw lines, to avoid black border artifacts
+	bool lineAntiAliasing = false; /// if true, lines will have anti-aliasing applied to their edges
+	f32 lineAntiAliasingSkirtWidthPixels = 1.0f; /// width of the anti-aliasing skirt in pixels
 	f32 sameLineHeight = 20.0f; /// the height of a line when sameLine() is used to position widgets on a single row/line. Used to center various widget heights vertically. This must be non-zero, otherwise the widgets will align wrongly.
 	f32 minScrollViewHandleSize = 20.0f; /// the minimum allowed scroll handle size (height)
 	f32 deltaTime = 0; /// you need to set this if you want to use the built in animations, otherwise they will not animate because they rely on this value to compute animation progress. This is the time elapsed between the current frame and the previous frame, in seconds

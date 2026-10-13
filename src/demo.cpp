@@ -1760,6 +1760,108 @@ void showDemo()
 	}
 
 	// ------------------------------------------------------------------
+	// Lines & Primitives
+	// ------------------------------------------------------------------
+	{
+		static bool expandLinesPrims = true;
+		if (expandableBegin("Lines & Primitives", &expandLinesPrims))
+		{
+			// enable AA for demo
+			contextGetSettings().lineAntiAliasing = true;
+			contextGetSettings().lineAntiAliasingSkirtWidthPixels = 1.0f;
+
+			label("Primitives in viewport:");
+			Rect lpViewport = viewportBegin("##linesPrimsViewport", 300);
+			Point vo = lpViewport.topLeft();
+
+			// 1px lines
+			renderSetLineStyle(LineStyle(Color::white, 1.0f));
+			renderDrawLine(vo + Point{ 10, 20 }, vo + Point{ 150, 20 });
+			renderDrawLine(vo + Point{ 10, 30 }, vo + Point{ 150, 40 });
+
+			// 5px lines
+			renderSetLineStyle(LineStyle(Color::white, 5.0f));
+			renderDrawLine(vo + Point{ 10, 60 }, vo + Point{ 150, 60 });
+			renderDrawLine(vo + Point{ 10, 80 }, vo + Point{ 150, 70 });
+
+			// 1px lines again
+			renderSetLineStyle(LineStyle(Color::white, 1.0f));
+			renderDrawLine(vo + Point{ 10, 110 }, vo + Point{ 150, 110 });
+			renderDrawLine(vo + Point{ 10, 120 }, vo + Point{ 150, 130 });
+
+			space();
+
+			// Primitives with widths 1, 5, 1
+			renderSetLineStyle(LineStyle(Color::cyan, 1.0f));
+			renderDrawRectangle({ vo.x + 10, vo.y + 150, 60, 40 });
+			renderSetLineStyle(LineStyle(Color::cyan, 5.0f));
+			renderDrawRectangle({ vo.x + 80, vo.y + 150, 60, 40 });
+			renderSetLineStyle(LineStyle(Color::cyan, 1.0f));
+			renderDrawRectangle({ vo.x + 150, vo.y + 150, 60, 40 });
+
+			renderSetLineStyle(LineStyle(Color::yellow, 1.0f));
+			renderDrawCircle(vo + Point{ 40, 230 }, 20, 32);
+			renderSetLineStyle(LineStyle(Color::yellow, 5.0f));
+			renderDrawCircle(vo + Point{ 110, 230 }, 20, 32);
+			renderSetLineStyle(LineStyle(Color::yellow, 1.0f));
+			renderDrawCircle(vo + Point{ 180, 230 }, 20, 32);
+
+			{
+				Point pts[] = { vo + Point{10,280}, vo + Point{40,260}, vo + Point{70,290}, vo + Point{100,250} };
+				renderSetLineStyle(LineStyle(Color::green, 1.0f));
+				renderDrawPolyLine(pts, 4, false);
+				Point pts2[] = { vo + Point{120,280}, vo + Point{150,260}, vo + Point{180,290}, vo + Point{210,250} };
+				renderSetLineStyle(LineStyle(Color::green, 5.0f));
+				renderDrawPolyLine(pts2, 4, false);
+				Point pts3[] = { vo + Point{230,280}, vo + Point{260,260}, vo + Point{290,290}, vo + Point{320,250} };
+				renderSetLineStyle(LineStyle(Color::green, 1.0f));
+				renderDrawPolyLine(pts3, 4, false);
+			}
+
+			{
+				Point pts[] = { vo + Point{10,320}, vo + Point{40,300}, vo + Point{70,340} };
+				renderSetLineStyle(LineStyle(Color::orange, 1.0f));
+				renderDrawPolyLine(pts, 3, true);
+				Point pts2[] = { vo + Point{90,320}, vo + Point{120,300}, vo + Point{150,340} };
+				renderSetLineStyle(LineStyle(Color::orange, 5.0f));
+				renderDrawPolyLine(pts2, 3, true);
+				Point pts3[] = { vo + Point{170,320}, vo + Point{200,300}, vo + Point{230,340} };
+				renderSetLineStyle(LineStyle(Color::orange, 1.0f));
+				renderDrawPolyLine(pts3, 3, true);
+			}
+
+			{
+				SplineControlPoint sp[3] = {
+					{ vo + Point{10, 380}, {0,0}, {20, -20} },
+					{ vo + Point{60, 360}, {-20, 20}, {20, -20} },
+					{ vo + Point{110, 390}, {-20, 20}, {0,0} }
+				};
+				renderSetLineStyle(LineStyle(Color::magenta, 1.0f));
+				renderDrawSpline(sp, 3, 5.0f);
+
+				SplineControlPoint sp2[3] = {
+					{ vo + Point{130, 380}, {0,0}, {20,-20} },
+					{ vo + Point{180, 360}, {-20,20}, {20,-20} },
+					{ vo + Point{230, 390}, {-20,20}, {0,0} }
+				};
+				renderSetLineStyle(LineStyle(Color::magenta, 5.0f));
+				renderDrawSpline(sp2, 3, 5.0f);
+
+				SplineControlPoint sp3[3] = {
+					{ vo + Point{250, 380}, {0,0}, {20,-20} },
+					{ vo + Point{300, 360}, {-20,20}, {20,-20} },
+					{ vo + Point{350, 390}, {-20,20}, {0,0} }
+				};
+				renderSetLineStyle(LineStyle(Color::magenta, 1.0f));
+				renderDrawSpline(sp3, 3, 5.0f);
+			}
+			viewportEnd();
+
+			expandableEnd();
+		}
+	}
+
+	// ------------------------------------------------------------------
 	// object Reference
 	// ------------------------------------------------------------------
 	if (expandableBegin("Object Reference Editor", &demo.expandObjectRef))

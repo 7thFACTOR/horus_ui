@@ -2467,6 +2467,7 @@ void Renderer::drawPolyLine(const Point* points, u32 pointCount, bool closed)
 			lastN2 = n2;
 		}
 
+		Point ux1 = n1, ux2 = n2;
 		n1 *= half * extrudeScale1;
 		n2 *= half * extrudeScale2;
 		lastExtrudeScale1 = extrudeScale1;
@@ -2508,6 +2509,25 @@ void Renderer::drawPolyLine(const Point* points, u32 pointCount, bool closed)
 		{
 			drawTriangle(p11, p21, p22, uv11, uv21, uv22, currentColor, currentColor, currentColor, lineImage);
 			drawTriangle(p11, p22, p12, uv11, uv22, uv12, currentColor, currentColor, currentColor, lineImage);
+
+			if (ctx->settings.lineAntiAliasing && ctx->settings.lineAntiAliasingSkirtWidthPixels > 0.0f)
+			{
+				const f32 skirtWidth = ctx->settings.lineAntiAliasingSkirtWidthPixels;
+				u32 cFull = currentColor;
+				u32 cFade = cFull & 0x00FFFFFFu;
+
+				// top skirt
+				Point p11s = Point(pts[p].x + n1.x + ux1.x * skirtWidth, pts[p].y + n1.y + ux1.y * skirtWidth);
+				Point p21s = Point(pts[p + 1].x + n2.x + ux2.x * skirtWidth, pts[p + 1].y + n2.y + ux2.y * skirtWidth);
+				drawTriangle(p11s, p21s, p21, uv11, uv21, uv22, cFade, cFade, cFull, lineImage);
+				drawTriangle(p11s, p21, p11, uv11, uv22, uv12, cFade, cFull, cFull, lineImage);
+
+				// bottom skirt
+				Point p12s = Point(pts[p].x - n1.x - ux1.x * skirtWidth, pts[p].y - n1.y - ux1.y * skirtWidth);
+				Point p22s = Point(pts[p + 1].x - n2.x - ux2.x * skirtWidth, pts[p + 1].y - n2.y - ux2.y * skirtWidth);
+				drawTriangle(p12, p22, p22s, uv11, uv21, uv22, cFull, cFull, cFade, lineImage);
+				drawTriangle(p12, p22s, p12s, uv11, uv22, uv12, cFull, cFade, cFade, lineImage);
+			}
 		}
 	}
 }
