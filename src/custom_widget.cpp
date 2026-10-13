@@ -76,37 +76,31 @@ Point renderGetTextSize(const char* text)
 
 void rendererTextAtDraw(const char* text, const Point& position)
 {
-	ctx->renderer.cmdDrawTextAt(text, position + ctx->renderer.viewportOffset);
+	ctx->renderer.cmdDrawTextAt(text, position);
 }
 
 void renderDrawTextInBox(const char* text, const Rect& rect, HAlignType horizontalAlign, VAlignType verticalAlign)
 {
-	ctx->renderer.cmdDrawTextInBox(
-		text,
-		Rect(
-			rect.x + ctx->renderer.viewportOffset.x,
-			rect.y + ctx->renderer.viewportOffset.y,
-			rect.width, rect.height),
-		horizontalAlign, verticalAlign);
+	ctx->renderer.cmdDrawTextInBox(text, rect, horizontalAlign, verticalAlign);
 }
 
 void renderDrawImage(HImage image, const Point& position, f32 scale)
 {
 	Image* img = (Image*)image;
-	ctx->renderer.cmdDrawImage(img, position + ctx->renderer.viewportOffset, scale);
+	ctx->renderer.cmdDrawImage(img, position, scale);
 }
 
 void renderDrawStretchedImage(HImage image, const Rect& rect)
 {
 	Image* img = (Image*)image;
-	ctx->renderer.cmdDrawImage(img, Rect(rect.x + ctx->renderer.viewportOffset.x, rect.y + ctx->renderer.viewportOffset.y, rect.width, rect.height));
+	ctx->renderer.cmdDrawImage(img, rect);
 }
 
 void renderDrawBorderedImage(HImage image, u32 border, const Rect& rect)
 {
 	Image* img = (Image*)image;
 
-	ctx->renderer.cmdDrawImageBordered(img, border, Rect(rect.x + ctx->renderer.viewportOffset.x, rect.y + ctx->renderer.viewportOffset.y, rect.width, rect.height), ctx->scale);
+	ctx->renderer.cmdDrawImageBordered(img, border, rect, ctx->scale);
 }
 
 void renderSetLineStyle(const LineStyle& style)
@@ -127,21 +121,12 @@ void renderSetColor(const Color& color)
 
 void renderDrawLine(const Point& a, const Point& b)
 {
-	ctx->renderer.cmdDrawLine(a + ctx->renderer.viewportOffset, b + ctx->renderer.viewportOffset);
+	ctx->renderer.cmdDrawLine(a, b);
 }
 
 void renderDrawPolyLine(const Point* points, u32 pointCount, bool closed)
 {
-	std::vector<Point> pts;
-
-	pts.resize(pointCount);
-
-	for (u32 i = 0; i < pointCount; i++)
-	{
-		pts[i] = points[i] + ctx->renderer.viewportOffset;
-	}
-
-	ctx->renderer.cmdDrawPolyLine(pts.data(), pointCount, closed);
+	ctx->renderer.cmdDrawPolyLine(points, pointCount, closed);
 }
 
 void renderDrawCircle(const Point& center, f32 radius, u32 segments)
@@ -162,7 +147,7 @@ void renderDrawEllipse(const Point& center, f32 radiusX, f32 radiusY, u32 segmen
 	{
 		pt.x = center.x + radiusX * sinf(crtAngle);
 		pt.y = center.y + radiusY * cosf(crtAngle);
-		pts.push_back(pt + ctx->renderer.viewportOffset);
+		pts.push_back(pt);
 		crtAngle += step;
 	}
 
@@ -172,10 +157,10 @@ void renderDrawEllipse(const Point& center, f32 radiusX, f32 radiusY, u32 segmen
 void renderDrawRectangle(const Rect& rc)
 {
 	Point pts[4] = {
-		rc.topLeft() + ctx->renderer.viewportOffset,
-		rc.topRight() + ctx->renderer.viewportOffset,
-		rc.bottomRight() + ctx->renderer.viewportOffset,
-		rc.bottomLeft() + ctx->renderer.viewportOffset
+		rc.topLeft(),
+		rc.topRight(),
+		rc.bottomRight(),
+		rc.bottomLeft()
 	};
 
 	ctx->renderer.cmdDrawPolyLine(pts, 4, true);
@@ -183,13 +168,7 @@ void renderDrawRectangle(const Rect& rc)
 
 void renderDrawSolidRectangle(const Rect& rc)
 {
-	ctx->renderer.cmdDrawFilledRectangle(
-		{
-			ctx->renderer.viewportOffset.x + rc.x,
-			ctx->renderer.viewportOffset.y + rc.y,
-			rc.width,
-			rc.height
-		});
+	ctx->renderer.cmdDrawFilledRectangle(rc);
 }
 
 #define HUI_HERMITE_TANGENT(a, b, c, tt, cc, bb, adj)\
@@ -291,9 +270,7 @@ void renderDrawSolidTriangle(
 	const Point& p1, const Point& p2, const Point& p3)
 {
 	ctx->renderer.cmdDrawSolidTriangle(
-		p1 + ctx->renderer.viewportOffset,
-		p2 + ctx->renderer.viewportOffset,
-		p3 + ctx->renderer.viewportOffset, ctx->renderer.currentColor, ctx->renderer.currentColor, ctx->renderer.currentColor);
+		p1, p2, p3, ctx->renderer.currentColor, ctx->renderer.currentColor, ctx->renderer.currentColor);
 }
 
 }

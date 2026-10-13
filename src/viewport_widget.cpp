@@ -18,17 +18,14 @@ Rect viewportBegin(const char* id, f32 height)
 
 	ctx->renderer.pushClipRect(ctx->widget.rect);
 
-	// return the real (unclipped) viewport rect; the pushed clip rect only
-	// restricts drawing of content inside the viewport.
-	ctx->renderer.viewportOffset = ctx->widget.rect.topLeft();
-
+	// the returned rect is in window coordinates; draw content using it directly,
+	// the pushed clip rect only restricts drawing of content inside the viewport.
 	return ctx->widget.rect;
 }
 
 void viewportEnd()
 {
 	ctx->renderer.popClipRect();
-	ctx->renderer.viewportOffset = Point();
 }
 
 }

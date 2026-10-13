@@ -2158,7 +2158,9 @@ void Renderer::drawImageBordered(Image* image, u32 border, const Rect& rect, f32
 
 void Renderer::drawLine(const Point& a, const Point& b)
 {
-	Point pts[] = { a, b };
+	// shift endpoints by half a pixel so the line center lands on a pixel center,
+	// which keeps horizontal and vertical lines crisp without special casing them
+	Point pts[] = { Point(a.x + 0.5f, a.y + 0.5f), Point(b.x + 0.5f, b.y + 0.5f) };
 	drawPolyLine(pts, 2, false);
 }
 
@@ -2305,7 +2307,12 @@ void Renderer::drawPolyLine(const Point* points, u32 pointCount, bool closed)
 	const auto uv12 = rcUv.topRight();
 	const auto uv22 = rcUv.bottomRight();
 	const auto uv21 = rcUv.bottomLeft();
-	const f32 half = currentLineStyle.width  / 2.0f;
+	// keep the solid core at the full line width and add an anti-aliasing fringe of one
+	// skirt width to each side, so thin (1px) and low-vertex shapes stay solid while the
+	// edges still fade smoothly
+	const bool lineAA = ctx->settings.lineAntiAliasing && ctx->settings.lineAntiAliasingSkirtWidthPixels > 0.0f;
+	const f32 skirtWidth = lineAA ? ctx->settings.lineAntiAliasingSkirtWidthPixels : 0.0f;
+	const f32 half = currentLineStyle.width * 0.5f;
 
 	// p11----------P21
 	// |            |
@@ -2467,7 +2474,11 @@ void Renderer::drawPolyLine(const Point* points, u32 pointCount, bool closed)
 			lastN2 = n2;
 		}
 
-		Point ux1 = n1, ux2 = n2;
+		// skirt directions must follow the extruded edge; a negative extrude scale
+		// (concave joint) flips the edge to the other side, so flip ux as well
+		Point ux1 = extrudeScale1 < 0.0f ? n1 * -1.0f : n1;
+		Point ux2 = extrudeScale2 < 0.0f ? n2 * -1.0f : n2;
+
 		n1 *= half * extrudeScale1;
 		n2 *= half * extrudeScale2;
 		lastExtrudeScale1 = extrudeScale1;
@@ -2510,21 +2521,20 @@ void Renderer::drawPolyLine(const Point* points, u32 pointCount, bool closed)
 			drawTriangle(p11, p21, p22, uv11, uv21, uv22, currentColor, currentColor, currentColor, lineImage);
 			drawTriangle(p11, p22, p12, uv11, uv22, uv12, currentColor, currentColor, currentColor, lineImage);
 
-			if (ctx->settings.lineAntiAliasing && ctx->settings.lineAntiAliasingSkirtWidthPixels > 0.0f)
+			if (lineAA)
 			{
-				const f32 skirtWidth = ctx->settings.lineAntiAliasingSkirtWidthPixels;
 				u32 cFull = currentColor;
 				u32 cFade = cFull & 0x00FFFFFFu;
 
 				// top skirt
-				Point p11s = Point(pts[p].x + n1.x + ux1.x * skirtWidth, pts[p].y + n1.y + ux1.y * skirtWidth);
-				Point p21s = Point(pts[p + 1].x + n2.x + ux2.x * skirtWidth, pts[p + 1].y + n2.y + ux2.y * skirtWidth);
+				Point p11s = p11 + ux1 * skirtWidth;
+				Point p21s = p21 + ux2 * skirtWidth;
 				drawTriangle(p11s, p21s, p21, uv11, uv21, uv22, cFade, cFade, cFull, lineImage);
 				drawTriangle(p11s, p21, p11, uv11, uv22, uv12, cFade, cFull, cFull, lineImage);
 
 				// bottom skirt
-				Point p12s = Point(pts[p].x - n1.x - ux1.x * skirtWidth, pts[p].y - n1.y - ux1.y * skirtWidth);
-				Point p22s = Point(pts[p + 1].x - n2.x - ux2.x * skirtWidth, pts[p + 1].y - n2.y - ux2.y * skirtWidth);
+				Point p12s = p12 - ux1 * skirtWidth;
+				Point p22s = p22 - ux2 * skirtWidth;
 				drawTriangle(p12, p22, p22s, uv11, uv21, uv22, cFull, cFull, cFade, lineImage);
 				drawTriangle(p12, p22s, p12s, uv11, uv22, uv12, cFull, cFade, cFade, lineImage);
 			}

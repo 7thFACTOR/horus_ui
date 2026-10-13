@@ -158,6 +158,9 @@ struct DemoState
 	f32 progressValue = 0.0f;
 	f32 progressValueReal = 0.0f;
 
+	// lines & primitives
+	f32 lineTiltAnim = 0.0f;
+
 	// check
 	bool checkA = true;
 	bool checkB = false;
@@ -1733,7 +1736,7 @@ void showDemo()
 
 		label("A custom viewport area (100px height):");
 		Rect vprect = viewportBegin("##demoViewport", 100);
-		// in a real app, you'd use vprect to draw your 3D scene/etc.
+		// in a real app, you'd use vprect to draw your 3D scene/etc. (window coordinates)
 		renderDrawSolidRectangle(vprect);
 		renderDrawTextInBox("Custom Viewport Content", vprect, HAlignType::Center, VAlignType::Center);
 		viewportEnd();
@@ -1770,40 +1773,56 @@ void showDemo()
 			contextGetSettings().lineAntiAliasing = true;
 			contextGetSettings().lineAntiAliasingSkirtWidthPixels = 1.0f;
 
+			// animate the second 1px line: hold it horizontal, then sweep to oblique and back
+			demo.lineTiltAnim += dt * 0.5f;
+			if (demo.lineTiltAnim >= 1.0f) demo.lineTiltAnim -= 1.0f;
+			forceRepaint();
+
 			label("Primitives in viewport:");
-			Rect lpViewport = viewportBegin("##linesPrimsViewport", 300);
+			Rect lpViewport = viewportBegin("##linesPrimsViewport", 420);
 			Point vo = lpViewport.topLeft();
 
 			// 1px lines
 			renderSetLineStyle(LineStyle(Color::white, 1.0f));
 			renderDrawLine(vo + Point{ 10, 20 }, vo + Point{ 150, 20 });
-			renderDrawLine(vo + Point{ 10, 30 }, vo + Point{ 150, 40 });
+			// phase < 0.6 stays exactly horizontal, the rest sweeps 0 -> oblique -> 0
+			f32 lineEndY = 30.0f;
+
+			if (demo.lineTiltAnim > 0.6f)
+			{
+				lineEndY += 25.0f * sinf(M_PI * (demo.lineTiltAnim - 0.6f) / 0.4f);
+			}
+
+			renderDrawLine(vo + Point{ 10, 30 }, vo + Point{ 150, lineEndY });
+			renderDrawLine(vo + Point{ 170, 20 }, vo + Point{ 170, 140 });
 
 			// 5px lines
 			renderSetLineStyle(LineStyle(Color::white, 5.0f));
 			renderDrawLine(vo + Point{ 10, 60 }, vo + Point{ 150, 60 });
 			renderDrawLine(vo + Point{ 10, 80 }, vo + Point{ 150, 70 });
+			renderDrawLine(vo + Point{ 200, 20 }, vo + Point{ 200, 140 });
 
-			// 1px lines again
-			renderSetLineStyle(LineStyle(Color::white, 1.0f));
+			// 10px lines again
+			renderSetLineStyle(LineStyle(Color::white, 10.0f));
 			renderDrawLine(vo + Point{ 10, 110 }, vo + Point{ 150, 110 });
 			renderDrawLine(vo + Point{ 10, 120 }, vo + Point{ 150, 130 });
+			renderDrawLine(vo + Point{ 230, 20 }, vo + Point{ 230, 140 });
 
 			space();
 
-			// Primitives with widths 1, 5, 1
+			// Primitives with widths 1, 5, 10
 			renderSetLineStyle(LineStyle(Color::cyan, 1.0f));
 			renderDrawRectangle({ vo.x + 10, vo.y + 150, 60, 40 });
 			renderSetLineStyle(LineStyle(Color::cyan, 5.0f));
 			renderDrawRectangle({ vo.x + 80, vo.y + 150, 60, 40 });
-			renderSetLineStyle(LineStyle(Color::cyan, 1.0f));
+			renderSetLineStyle(LineStyle(Color::cyan, 10.0f));
 			renderDrawRectangle({ vo.x + 150, vo.y + 150, 60, 40 });
 
 			renderSetLineStyle(LineStyle(Color::yellow, 1.0f));
 			renderDrawCircle(vo + Point{ 40, 230 }, 20, 32);
 			renderSetLineStyle(LineStyle(Color::yellow, 5.0f));
 			renderDrawCircle(vo + Point{ 110, 230 }, 20, 32);
-			renderSetLineStyle(LineStyle(Color::yellow, 1.0f));
+			renderSetLineStyle(LineStyle(Color::yellow, 10.0f));
 			renderDrawCircle(vo + Point{ 180, 230 }, 20, 32);
 
 			{
@@ -1814,7 +1833,7 @@ void showDemo()
 				renderSetLineStyle(LineStyle(Color::green, 5.0f));
 				renderDrawPolyLine(pts2, 4, false);
 				Point pts3[] = { vo + Point{230,280}, vo + Point{260,260}, vo + Point{290,290}, vo + Point{320,250} };
-				renderSetLineStyle(LineStyle(Color::green, 1.0f));
+				renderSetLineStyle(LineStyle(Color::green, 10.0f));
 				renderDrawPolyLine(pts3, 4, false);
 			}
 
@@ -1826,34 +1845,69 @@ void showDemo()
 				renderSetLineStyle(LineStyle(Color::orange, 5.0f));
 				renderDrawPolyLine(pts2, 3, true);
 				Point pts3[] = { vo + Point{170,320}, vo + Point{200,300}, vo + Point{230,340} };
-				renderSetLineStyle(LineStyle(Color::orange, 1.0f));
+				renderSetLineStyle(LineStyle(Color::orange, 10.0f));
 				renderDrawPolyLine(pts3, 3, true);
 			}
 
 			{
-				SplineControlPoint sp[3] = {
-					{ vo + Point{10, 380}, {0,0}, {20, -20} },
-					{ vo + Point{60, 360}, {-20, 20}, {20, -20} },
-					{ vo + Point{110, 390}, {-20, 20}, {0,0} }
-				};
-				renderSetLineStyle(LineStyle(Color::magenta, 1.0f));
-				renderDrawSpline(sp, 3, 5.0f);
+				// 1px arrow: line shaft + solid head, used to show the spline tangents
+				auto drawArrow = [&](const Point& from, const Point& to, const Color& color)
+				{
+					const f32 headLength = 6.0f;
+					const f32 headWidth = 3.0f;
+					Point dir = (to - from).getNormalized();
+					Point perp = { -dir.y, dir.x };
+					Point base = to - dir * headLength;
 
-				SplineControlPoint sp2[3] = {
-					{ vo + Point{130, 380}, {0,0}, {20,-20} },
-					{ vo + Point{180, 360}, {-20,20}, {20,-20} },
-					{ vo + Point{230, 390}, {-20,20}, {0,0} }
-				};
-				renderSetLineStyle(LineStyle(Color::magenta, 5.0f));
-				renderDrawSpline(sp2, 3, 5.0f);
+					renderSetLineStyle(LineStyle(color, 1.0f));
+					renderDrawLine(from, to);
 
-				SplineControlPoint sp3[3] = {
-					{ vo + Point{250, 380}, {0,0}, {20,-20} },
-					{ vo + Point{300, 360}, {-20,20}, {20,-20} },
-					{ vo + Point{350, 390}, {-20,20}, {0,0} }
+					renderSetColor(color);
+					renderDrawSolidTriangle(to, base + perp * headWidth, base - perp * headWidth);
 				};
-				renderSetLineStyle(LineStyle(Color::magenta, 1.0f));
-				renderDrawSpline(sp3, 3, 5.0f);
+
+				// wavy spline: control points alternate up/down, tangents lean outward so the humps bulge
+				auto drawWaveSpline = [&](f32 startX, f32 lineWidth)
+				{
+					const int pointCount = 5;
+					const f32 spacing = 25.0f;
+					const f32 tangent = spacing * 2.5f;
+					const f32 tangentY = spacing;
+					SplineControlPoint wave[pointCount];
+
+					for (int i = 0; i < pointCount; i++)
+					{
+						bool isTop = (i % 2) != 0;
+						f32 vSign = isTop ? -1.0f : 1.0f;
+						wave[i].center = vo + Point{ startX + i * spacing, isTop ? 350.0f : 385.0f };
+
+						if (i > 0) wave[i].leftTangent = { -tangent, -vSign * tangentY };
+						if (i < pointCount - 1) wave[i].rightTangent = { tangent, vSign * tangentY };
+					}
+
+					renderSetLineStyle(LineStyle(Color::magenta, lineWidth));
+					renderDrawSpline(wave, pointCount, 5.0f);
+
+					// show the tangents as arrows (left/right in different colors)
+					for (int i = 0; i < pointCount; i++)
+					{
+						if (i > 0) drawArrow(wave[i].center, wave[i].center + wave[i].leftTangent, Color::cyan);
+						if (i < pointCount - 1) drawArrow(wave[i].center, wave[i].center + wave[i].rightTangent, Color::yellow);
+					}
+
+					// mark the control points
+					renderSetColor(Color::white);
+
+					for (int i = 0; i < pointCount; i++)
+					{
+						const f32 pointRadius = 2.0f;
+						renderDrawSolidRectangle(Rect{ wave[i].center.x - pointRadius, wave[i].center.y - pointRadius, pointRadius * 2.0f, pointRadius * 2.0f });
+					}
+				};
+
+				drawWaveSpline(10.0f, 1.0f);
+				drawWaveSpline(130.0f, 5.0f);
+				drawWaveSpline(250.0f, 10.0f);
 			}
 			viewportEnd();
 
@@ -2816,13 +2870,14 @@ check("Show Main Toolbar", &demo.showMainToolbar);
 		// viewport is disabled so it does not steal the toolbar clicks
 		widgetSetNextDisabled();
 		Rect toolbarViewport = viewportBegin("##demoOverlayToolbarViewport", 800);
+		Point vpOrigin = toolbarViewport.topLeft();
 
 		renderSetFillStyle(Color::fromU8(42, 42, 42, 255));
-		renderDrawSolidRectangle({ 0, 0, toolbarViewport.width, toolbarViewport.height });
+		renderDrawSolidRectangle(toolbarViewport);
 
 		// faint gray grid so the toolbar placement over the viewport can be
 		// seen; pan it with the left mouse button and zoom with the wheel
-		Point gridMouse = mouseGetPosition() - toolbarViewport.topLeft();
+		Point gridMouse = mouseGetPosition() - vpOrigin;
 
 		auto& gridService = contextGetSettings().services;
 		if (gridService.isMouseButtonDownNow && gridService.isMouseButtonDownNow(MouseButton::Left))
@@ -2868,14 +2923,14 @@ check("Show Main Toolbar", &demo.showMainToolbar);
 		renderSetLineStyle(LineStyle(Color::fromU8(150, 155, 165, 24), 1.0f));
 
 		for (f32 gx = fmodf(demo.toolbarGridPan.x, gridSpacing); gx <= toolbarViewport.width; gx += gridSpacing)
-			if (gx >= 0) renderDrawLine({ gx, 0 }, { gx, toolbarViewport.height });
+			if (gx >= 0) renderDrawLine(vpOrigin + Point{ gx, 0 }, vpOrigin + Point{ gx, toolbarViewport.height });
 
 		for (f32 gy = fmodf(demo.toolbarGridPan.y, gridSpacing); gy <= toolbarViewport.height; gy += gridSpacing)
-			if (gy >= 0) renderDrawLine({ 0, gy }, { toolbarViewport.width, gy });
+			if (gy >= 0) renderDrawLine(vpOrigin + Point{ 0, gy }, vpOrigin + Point{ toolbarViewport.width, gy });
 
 		// mockup 2D scene - shapes that transform with pan/zoom
 		auto worldToScreen = [&](const Point& world) -> Point {
-			return world * demo.toolbarGridZoom + demo.toolbarGridPan;
+			return world * demo.toolbarGridZoom + demo.toolbarGridPan + vpOrigin;
 		};
 		auto drawRectWorld = [&](const Rect& r, const Color& color, f32 lineWidth = 2.0f) {
 			Point p1 = worldToScreen({ r.x, r.y });

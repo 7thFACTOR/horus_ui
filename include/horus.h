@@ -1297,8 +1297,8 @@ struct SplineControlPoint
 		Symmetrical
 	};
 
-	Point leftTangent;
 	Point center;
+	Point leftTangent;
 	Point rightTangent;
 	bool isLine = true;
 	NodeType type = NodeType::Symmetrical;

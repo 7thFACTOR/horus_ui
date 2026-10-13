@@ -76,7 +76,6 @@ struct DrawCommand
 		DrawText,
 		DrawSolidTriangle,
 		ClipRect,
-		SetViewportOffset,
 		SetTexture,
 		SetColor,
 		SetFont,
@@ -154,11 +153,6 @@ struct DrawCommand
 		Rgba32 bottomRight;
 	};
 
-	struct CmdSetViewportOffset
-	{
-		Point offset;
-	};
-
 	struct CmdSetTexture
 	{
 		HTexture texture = 0;
@@ -184,7 +178,6 @@ struct DrawCommand
 		CmdDrawImageBordered drawImageBordered;
 		CmdDrawQuad4Colors drawQuad4Colors;
 		CmdDrawTriangle drawTriangle;
-		CmdSetViewportOffset viewportOffset;
 		CmdSetTexture setTexture;
 		RenderCallback callback;
 		Rect clipRect;
@@ -213,7 +206,6 @@ struct DrawCommand
 		data.drawImageBordered = other.data.drawImageBordered;
 		data.drawQuad4Colors = other.data.drawQuad4Colors;
 		data.drawTriangle = other.data.drawTriangle;
-		data.viewportOffset = other.data.viewportOffset;
 		data.clipRect = other.data.clipRect;
 		data.clipToParent = other.data.clipToParent;
 		data.popClipRect = other.data.popClipRect;

@@ -129,7 +129,6 @@ struct Renderer
 
 	bool skipRender = false;
 	bool disableRendering = false;
-	Point viewportOffset;
 	TextStyle currentTextStyle;
 	LineStyle currentLineStyle;
 	FillStyle currentFillStyle;
