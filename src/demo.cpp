@@ -2824,6 +2824,7 @@ check("Show Main Toolbar", &demo.showMainToolbar);
 			if (overlayToolbarBegin("demoMainToolbar", "Main", demo.mainToolbarDockZone, OverlayToolbarLayout::Horizontal))
 			{
 				overlayToolbarSetCollapsed(demo.collapseMainToolbar);
+				overlayToolbarSetGridAlignment(snapAllToolbars, floatingGridSize);
 				overlayToolbarGrip();
 				overlayToolbarButton("new", "New", 0, demoOnToolbarNew, "Create a new scene");
 				overlayToolbarButton("open", "Open", 0, demoOnToolbarOpen, "Open an existing scene");
@@ -2842,6 +2843,7 @@ check("Show Main Toolbar", &demo.showMainToolbar);
 		{
 			if (overlayToolbarBegin("demoToolsToolbar", "Tools", demo.toolsToolbarDockZone, OverlayToolbarLayout::Vertical))
 			{
+				overlayToolbarSetGridAlignment(snapAllToolbars, floatingGridSize);
 				overlayToolbarGrip();
 				overlayToolbarToggle("grid", "Grid", 0, 0, &demo.toolbarToggleGrid, nullptr, "Show the grid");
 				overlayToolbarToggle("snap", "Snap", 0, 0, &demo.toolbarToggleSnap, demoOnToolbarSnap, "Snap to the grid");
@@ -2859,8 +2861,7 @@ check("Show Main Toolbar", &demo.showMainToolbar);
 			if (overlayToolbarBegin("demoFloatingToolbar", "Floating", demo.floatingToolbarDockZone, OverlayToolbarLayout::Panel))
 			{
 				overlayToolbarGrip();
-				if (snapAllToolbars)
-					overlayToolbarSetGridAlignment(true, floatingGridSize);
+				overlayToolbarSetGridAlignment(snapAllToolbars, floatingGridSize);
 				if (floatingCustomSizeEnabled)
 					overlayToolbarSetCustomSize(floatingCustomSize, true);
 				overlayToolbarSetFloatingPosition(demo.floatingToolbarPos);
@@ -2870,6 +2871,7 @@ check("Show Main Toolbar", &demo.showMainToolbar);
 				overlayToolbarToggle("mode", "Mode", 0, 0, &demo.toolbarToggleMode, nullptr, "Toggle a mode");
 				overlayToolbarSeparator();
 				overlayToolbarButton("smiley2", "Smiley", demo.iconSmiley, demoOnToolbarMove, "Smiley tool");
+				demo.floatingToolbarPos = overlayToolbarGetFloatingPosition();
 				overlayToolbarEnd();
 			}
 		}

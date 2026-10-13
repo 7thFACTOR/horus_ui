@@ -776,6 +776,57 @@ struct DragDropState
 	u32 dragObjectType = 0;
 };
 
+enum class OverlayToolbarElementType
+{
+	Button,
+	Toggle,
+	Separator,
+	Space,
+	Grip,
+};
+
+struct OverlayToolbarElement
+{
+	OverlayToolbarElementType type = OverlayToolbarElementType::Button;
+	std::string id;
+	std::string label;
+	std::string tooltip;
+	HImage icon = nullptr;
+	HImage iconOn = nullptr;
+	void (*onClick)() = nullptr;
+	bool* toggleValue = nullptr;
+	void (*onToggle)(bool) = nullptr;
+	bool visible = true;
+	bool enabled = true;
+	Rect rect;
+};
+
+struct OverlayToolbar
+{
+	std::string id;
+	std::string title;
+	OverlayDockZone dockZone = OverlayDockZone::Floating;
+	OverlayToolbarLayout layout = OverlayToolbarLayout::Horizontal;
+	bool collapsed = false;
+	bool visible = true;
+	bool dragging = false;
+	std::vector<OverlayToolbarElement> elements;
+	u32 stripOrder = 0;
+	bool snapToEnd = false;
+	Rect rect;
+	Point floatingPosition;
+	Point dragStartToolbarPos;
+	Point dragStartMousePos;
+	bool showDockPreview = false;
+	OverlayDockZone previewDockZone = OverlayDockZone::Floating;
+	bool dragPositionUpdated = false;
+	bool snapToGrid = false;
+	f32 gridSize = 0;
+	bool useCustomSize = false;
+	Point customSize;
+	OverlayDockZone lastRequestedDockZone = OverlayDockZone::None;
+};
+
 struct VirtualListContentState
 {
 	Point lastPosition;

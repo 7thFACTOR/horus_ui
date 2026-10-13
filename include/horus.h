@@ -2402,6 +2402,9 @@ HUI_API void overlayToolbarSetCustomSize(const Point& size, bool useCustomSize =
 /// \param pos the position relative to the viewport
 HUI_API void overlayToolbarSetFloatingPosition(const Point& pos);
 
+/// \return the floating position of the current floating toolbar relative to the viewport (updated after a drag)
+HUI_API Point overlayToolbarGetFloatingPosition();
+
 /// Set collapsed state for the current toolbar
 /// \param collapsed true to collapse the toolbar
 HUI_API void overlayToolbarSetCollapsed(bool collapsed);

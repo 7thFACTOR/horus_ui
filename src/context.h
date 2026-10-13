@@ -186,7 +186,8 @@ struct Context
 
 	struct OverlayToolbarState
 	{
-		u32 nextToolbarZOrder = 1;
+		std::deque<OverlayToolbar> toolbars;
+		OverlayToolbar* currentToolbar = nullptr;
 		Rect viewportRect;
 		bool overlayActive = false;
 		WidgetId dragCaptureId = 0;
