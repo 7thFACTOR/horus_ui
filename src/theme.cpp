@@ -8,6 +8,7 @@ Theme::Theme(u32 atlasTextureSize)
 {
 	atlasSize = atlasTextureSize;
 	addWhiteImage(32);
+	addLineImage();
 
 	for (u32 i = 0; i < (u32)WidgetElementId::Count; i++)
 		elements[i].styles.reserve((u32)WidgetStateType::Count);
@@ -32,6 +33,54 @@ void Theme::addWhiteImage(u32 width)
 	memset(whiteImage->pixels.data(), 0xFF, (size_t)whiteImageSize * sizeof(Rgba32));
 	whiteImage->id = hashString("__WHITEIMAGE__");
 	images[whiteImage->id] = whiteImage;
+}
+
+void Theme::addLineImage()
+{
+	// each width gets a row holding a baked coverage profile: solid core surrounded by a
+	// super sampled anti-aliasing fringe, with a zero alpha guard texel at both ends so
+	// the outer edge of the line fades cleanly to nothing under bilinear filtering
+	lineImage = new Image();
+	lineImage->id = hashString("__LINEIMAGE__");
+	lineImage->width = lineTexPad * 2 + lineTexFringeTexels * 2 + lineTexMaxWidth * lineTexSupersample;
+	lineImage->height = lineTexMaxWidth + 1;
+	lineImage->pixels.resize((size_t)lineImage->width * lineImage->height);
+	memset(lineImage->pixels.data(), 0, lineImage->pixels.size() * sizeof(Rgba32));
+
+	for (u32 w = 1; w <= lineTexMaxWidth; w++)
+	{
+		u32 x = 0;
+		const u32 coreTexels = w * lineTexSupersample;
+
+		auto writeTexel = [&](u8 alpha)
+		{
+			lineImage->pixels[(size_t)w * lineImage->width + x] = (Rgba32)(0x00FFFFFFu | ((u32)alpha << 24));
+			x++;
+		};
+
+		writeTexel(0);
+
+		for (u32 i = 0; i < lineTexFringeTexels; i++)
+		{
+			f32 t = (f32)(i + 1) / (f32)(lineTexFringeTexels + 1);
+			writeTexel((u8)(t * 255.0f + 0.5f));
+		}
+
+		for (u32 i = 0; i < coreTexels; i++)
+		{
+			writeTexel(255);
+		}
+
+		for (u32 i = lineTexFringeTexels; i > 0; i--)
+		{
+			f32 t = (f32)i / (f32)(lineTexFringeTexels + 1);
+			writeTexel((u8)(t * 255.0f + 0.5f));
+		}
+
+		writeTexel(0);
+	}
+
+	images[lineImage->id] = lineImage;
 }
 
 void Theme::setDefaultStyle()

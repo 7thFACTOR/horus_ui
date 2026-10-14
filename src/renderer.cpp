@@ -2294,9 +2294,9 @@ void Renderer::drawPolyLine(const Point* points, u32 pointCount, bool closed)
 	Point p12;
 	Point p21;
 	Point p22;
-	auto lineImage = ctx->theme->whiteImage;
+	auto whiteImage = ctx->theme->whiteImage;
 	const auto color = currentLineStyle.color;
-	auto rcUv = lineImage->uvRect;
+	auto rcUv = whiteImage->uvRect;
 
 	rcUv.x += ctx->settings.whiteImageUvBorder;
 	rcUv.y += ctx->settings.whiteImageUvBorder;
@@ -2307,12 +2307,36 @@ void Renderer::drawPolyLine(const Point* points, u32 pointCount, bool closed)
 	const auto uv12 = rcUv.topRight();
 	const auto uv22 = rcUv.bottomRight();
 	const auto uv21 = rcUv.bottomLeft();
-	// keep the solid core at the full line width and add an anti-aliasing fringe of one
-	// skirt width to each side, so thin (1px) and low-vertex shapes stay solid while the
-	// edges still fade smoothly
-	const bool lineAA = ctx->settings.lineAntiAliasing && ctx->settings.lineAntiAliasingSkirtWidthPixels > 0.0f;
-	const f32 skirtWidth = lineAA ? ctx->settings.lineAntiAliasingSkirtWidthPixels : 0.0f;
+	const bool lineAA = ctx->settings.lineAntiAliasing;
+	const f32 fringeWidth = lineAA ? ctx->settings.lineAntiAliasingSkirtWidthPixels : 0.0f;
 	const f32 half = currentLineStyle.width * 0.5f;
+
+	// lines up to lineTexMaxWidth sample a baked coverage texture that already contains the
+	// solid core plus an anti-aliasing fringe of half a pixel per side, so the geometry only
+	// needs to be one pixel wider than the line width
+	Image* lineTex = nullptr;
+	Point lineUv0;
+	Point lineUv1;
+
+	if (lineAA
+		&& currentLineStyle.width >= 1.0f
+		&& currentLineStyle.width <= (f32)lineTexMaxWidth
+		&& ctx->theme->lineImage
+		&& ctx->theme->lineImage->rect.width > 0.0f)
+	{
+		lineTex = ctx->theme->lineImage;
+
+		const u32 row = (u32)(currentLineStyle.width + 0.5f);
+		const f32 texWidth = (f32)ctx->theme->atlas.width;
+		const f32 texHeight = (f32)ctx->theme->atlas.height;
+		const f32 profileStart = lineTex->rect.x + (f32)lineTexPad;
+		const f32 profileLength = (f32)(lineTexFringeTexels * 2 + row * lineTexSupersample);
+
+		lineUv0 = Point(profileStart / texWidth, (lineTex->rect.y + (f32)row + 0.5f) / texHeight);
+		lineUv1 = Point((profileStart + profileLength) / texWidth, lineUv0.y);
+	}
+
+	const f32 bodyHalf = lineTex ? half + 0.5f : half;
 
 	// p11----------P21
 	// |            |
@@ -2479,8 +2503,8 @@ void Renderer::drawPolyLine(const Point* points, u32 pointCount, bool closed)
 		Point ux1 = extrudeScale1 < 0.0f ? n1 * -1.0f : n1;
 		Point ux2 = extrudeScale2 < 0.0f ? n2 * -1.0f : n2;
 
-		n1 *= half * extrudeScale1;
-		n2 *= half * extrudeScale2;
+		n1 *= bodyHalf * extrudeScale1;
+		n2 *= bodyHalf * extrudeScale2;
 		lastExtrudeScale1 = extrudeScale1;
 		lastExtrudeScale2 = extrudeScale2;
 
@@ -2518,25 +2542,35 @@ void Renderer::drawPolyLine(const Point* points, u32 pointCount, bool closed)
 
 		if (drawIt)
 		{
-			drawTriangle(p11, p21, p22, uv11, uv21, uv22, currentColor, currentColor, currentColor, lineImage);
-			drawTriangle(p11, p22, p12, uv11, uv22, uv12, currentColor, currentColor, currentColor, lineImage);
-
-			if (lineAA)
+			if (lineTex)
 			{
-				u32 cFull = currentColor;
-				u32 cFade = cFull & 0x00FFFFFFu;
+				// sample across the baked coverage profile of the selected line width: the two
+				// edges of each point span the profile, the length does not
+				drawTriangle(p11, p21, p22, lineUv0, lineUv0, lineUv1, currentColor, currentColor, currentColor, lineTex);
+				drawTriangle(p11, p22, p12, lineUv0, lineUv1, lineUv1, currentColor, currentColor, currentColor, lineTex);
+			}
+			else
+			{
+				drawTriangle(p11, p21, p22, uv11, uv21, uv22, currentColor, currentColor, currentColor, whiteImage);
+				drawTriangle(p11, p22, p12, uv11, uv22, uv12, currentColor, currentColor, currentColor, whiteImage);
 
-				// top skirt
-				Point p11s = p11 + ux1 * skirtWidth;
-				Point p21s = p21 + ux2 * skirtWidth;
-				drawTriangle(p11s, p21s, p21, uv11, uv21, uv22, cFade, cFade, cFull, lineImage);
-				drawTriangle(p11s, p21, p11, uv11, uv22, uv12, cFade, cFull, cFull, lineImage);
+				if (lineAA)
+				{
+					u32 cFull = currentColor;
+					u32 cFade = cFull & 0x00FFFFFFu;
 
-				// bottom skirt
-				Point p12s = p12 - ux1 * skirtWidth;
-				Point p22s = p22 - ux2 * skirtWidth;
-				drawTriangle(p12, p22, p22s, uv11, uv21, uv22, cFull, cFull, cFade, lineImage);
-				drawTriangle(p12, p22s, p12s, uv11, uv22, uv12, cFull, cFade, cFade, lineImage);
+					// top skirt
+					Point p11s = p11 + ux1 * fringeWidth;
+					Point p21s = p21 + ux2 * fringeWidth;
+					drawTriangle(p11s, p21s, p21, uv11, uv21, uv22, cFade, cFade, cFull, whiteImage);
+					drawTriangle(p11s, p21, p11, uv11, uv22, uv12, cFade, cFull, cFull, whiteImage);
+
+					// bottom skirt
+					Point p12s = p12 - ux1 * fringeWidth;
+					Point p22s = p22 - ux2 * fringeWidth;
+					drawTriangle(p12, p22, p22s, uv11, uv21, uv22, cFull, cFull, cFade, whiteImage);
+					drawTriangle(p12, p22s, p12s, uv11, uv22, uv12, cFull, cFade, cFade, whiteImage);
+				}
 			}
 		}
 	}

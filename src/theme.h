@@ -5,6 +5,12 @@
 
 namespace hui
 {
+// baked line coverage texture layout, shared between theme generation and the renderer
+constexpr u32 lineTexMaxWidth = 16;
+constexpr u32 lineTexSupersample = 4;
+constexpr u32 lineTexFringeTexels = 2;
+constexpr u32 lineTexPad = 1;
+
 struct Image
 {
 	ImageId id = 0;
@@ -41,12 +47,14 @@ struct Theme
 	Font* getFont(const char* name);
 	Image* getImage(ImageId id);
 	void addWhiteImage(u32 width);
+	void addLineImage();
 	void build();
 
 	Atlas atlas;
 	u32 atlasSize = 4069;
 	HTexture texture = 0;
 	Image* whiteImage = nullptr;
+	Image* lineImage = nullptr;
 	std::vector<FontVariation*> fonts;
 	std::unordered_map<ImageId, Image*> images;
 	ThemeElement elements[(u32)WidgetElementId::Count];
