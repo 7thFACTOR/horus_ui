@@ -826,7 +826,20 @@ void overlayToolbarEnd()
 		if (toolbarMouseOverToolbar(toolbar))
 			ctx->overlayToolbars.activeToolbarId = (WidgetId)toolbar;
 
-		if (ctx->event.type == InputEvent::Type::MouseDown
+		if (toolbar->collapsed
+			&& ctx->event.type == InputEvent::Type::MouseDown
+			&& ctx->event.mouse.button == MouseButton::Left
+			&& ctx->event.mouse.clickCount >= 2
+			&& toolbarMouseOverToolbar(toolbar))
+		{
+			// double clicking a collapsed toolbar expands it again
+			toolbar->collapsed = false;
+			ctx->overlayToolbars.pendingDrag = false;
+			ctx->widget.captureId = 0;
+			ctx->event = InputEvent();
+			forceRepaint();
+		}
+		else if (ctx->event.type == InputEvent::Type::MouseDown
 			&& ctx->event.mouse.button == MouseButton::Left
 			&& toolbarMouseOverToolbar(toolbar)
 			&& (toolbar->collapsed || !toolbarMouseOverInteractiveElement(toolbar)))
@@ -1070,6 +1083,13 @@ void overlayToolbarSetCollapsed(bool collapsed)
 	if (!ctx || !ctx->overlayToolbars.currentToolbar)
 		return;
 	ctx->overlayToolbars.currentToolbar->collapsed = collapsed;
+}
+
+bool overlayToolbarIsCollapsed()
+{
+	if (!ctx || !ctx->overlayToolbars.currentToolbar)
+		return false;
+	return ctx->overlayToolbars.currentToolbar->collapsed;
 }
 
 }

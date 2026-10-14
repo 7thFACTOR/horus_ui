@@ -50,57 +50,74 @@ static HImage createIcon(const char* id, u32 size, IconDrawFn drawFn)
 	return result;
 }
 
-// Draw a smiley face icon
+// Draw an anti-aliased smiley face icon
 static void drawSmileyIcon(Rgba32* pixels, u32 w, u32 h)
 {
-	const u32 cx = w / 2;
-	const u32 cy = h / 2;
-	const u32 radius = std::min(w, h) / 3;
-	const u32 eyeOffset = radius / 2;
-	const u32 eyeRadius = std::max(1u, radius / 5);
-	const u32 mouthRadius = radius / 2;
-	const u32 thickness = std::max(1u, radius / 8);
+	const f32 size = (f32)std::min(w, h);
+	const f32 cx = (f32)w * 0.5f - 0.5f;
+	const f32 cy = (f32)h * 0.5f - 0.5f;
+	const f32 faceR = size * 0.5f - size * 0.0625f;
+	const f32 ringHalf = size * 0.0375f;
+	const f32 eyeX = size * 0.19f;
+	const f32 eyeY = size * 0.16f;
+	const f32 eyeR = size * 0.095f;
+	const f32 mouthCY = cy - size * 0.04f;
+	const f32 mouthR = size * 0.17f;
+
+	// signed distance to the union of the face ring, eyes and smile, negative is inside
+	auto distanceAt = [&](f32 px, f32 py) -> f32
+	{
+		f32 dx = px - cx;
+		f32 dy = py - cy;
+		f32 dist = std::sqrt(dx * dx + dy * dy);
+
+		f32 d = std::fabs(dist - faceR) - ringHalf;
+
+		f32 lex = px - (cx - eyeX);
+		f32 ley = py - (cy - eyeY);
+		f32 eyeL = std::sqrt(lex * lex + ley * ley) - eyeR;
+		if (eyeL < d)
+			d = eyeL;
+
+		f32 rex = px - (cx + eyeX);
+		f32 rey = py - (cy - eyeY);
+		f32 eyeRt = std::sqrt(rex * rex + rey * rey) - eyeR;
+		if (eyeRt < d)
+			d = eyeRt;
+
+		f32 mdx = px - cx;
+		f32 mdy = py - mouthCY;
+		if (mdy > 0.0f)
+		{
+			// only the lower arc of the mouth circle forms the smile
+			f32 mdist = std::sqrt(mdx * mdx + mdy * mdy);
+			f32 mouth = std::fabs(mdist - mouthR) - ringHalf;
+			if (mouth < d)
+				d = mouth;
+		}
+
+		return d;
+	};
 
 	for (u32 y = 0; y < h; y++)
 	{
 		for (u32 x = 0; x < w; x++)
 		{
-			bool draw = false;
-			int dx = (int)x - (int)cx;
-			int dy = (int)y - (int)cy;
-			int dist2 = dx * dx + dy * dy;
-			int r2 = (int)radius * (int)radius;
-			int innerR2 = ((int)radius - (int)thickness) * ((int)radius - (int)thickness);
+			// 2x2 supersampling for smoother edges
+			f32 cov = 0.5f - distanceAt((f32)x + 0.25f, (f32)y + 0.25f);
+			cov += 0.5f - distanceAt((f32)x + 0.75f, (f32)y + 0.25f);
+			cov += 0.5f - distanceAt((f32)x + 0.25f, (f32)y + 0.75f);
+			cov += 0.5f - distanceAt((f32)x + 0.75f, (f32)y + 0.75f);
+			cov *= 0.25f;
 
-			// Face circle outline
-			if (dist2 <= r2 && dist2 >= innerR2)
-				draw = true;
+			if (cov <= 0.0f)
+				continue;
 
-			// Left eye
-			int lex = dx + (int)eyeOffset;
-			int ley = dy - (int)eyeOffset;
-			int leyeDist2 = lex * lex + ley * ley;
-			if (leyeDist2 <= (int)eyeRadius * (int)eyeRadius)
-				draw = true;
+			if (cov > 1.0f)
+				cov = 1.0f;
 
-			// Right eye
-			int rex = dx - (int)eyeOffset;
-			int rey = dy - (int)eyeOffset;
-			int reyeDist2 = rex * rex + rey * rey;
-			if (reyeDist2 <= (int)eyeRadius * (int)eyeRadius)
-				draw = true;
-
-			// Mouth (smile - bottom half of smaller circle)
-			int mx = dx;
-			int my = dy + (int)(mouthRadius / 2);
-			int mouthDist2 = mx * mx + my * my;
-			int mouthR2 = (int)mouthRadius * (int)mouthRadius;
-			int mouthInnerR2 = ((int)mouthRadius - (int)thickness) * ((int)mouthRadius - (int)thickness);
-			if (my > 0 && mouthDist2 <= mouthR2 && mouthDist2 >= mouthInnerR2)
-				draw = true;
-
-			if (draw)
-				pixels[y * w + x] = 0xFFFFFFFF;
+			u32 alpha = (u32)(cov * 255.0f + 0.5f);
+			pixels[y * w + x] = 0x00FFFFFFu | (alpha << 24);
 		}
 	}
 }
@@ -267,6 +284,7 @@ struct DemoState
 	bool showToolsToolbar = true;
 	bool showFloatingToolbar = true;
 	bool collapseMainToolbar = false;
+	bool collapseMainToolbarDirty = false;
 	bool toolbarTogglePlay = false;
 	bool toolbarToggleLoop = false;
 	bool toolbarToggleGrid = true;
@@ -702,7 +720,7 @@ void showDemo()
 		demo.initialized = true;
 
 		// Create a single smiley icon
-		demo.iconSmiley = createIcon("demo/icon_smiley", 24, drawSmileyIcon);
+		demo.iconSmiley = createIcon("demo/icon_smiley", 32, drawSmileyIcon);
 	}
 
 	// animate progress bars
@@ -2804,15 +2822,12 @@ void showDemo()
 // ------------------------------------------------------------------
 if (expandableBegin("Overlay Toolbars", &demo.expandOverlayToolbar))
 {
-	label("Dockable toolbars nested in the custom viewport below. Drag a toolbar by its grip or empty area to move or dock it. Toolbars docked on the same edge share the strip, laid out inline. A bar hint shows where you can drop it: toolbars dropped on the near side of a strip anchor to its start corner, toolbars dropped on the far side anchor to its end corner, and the insertion point is resolved within that side cluster.");
+	labelMultiline("Dockable toolbars nested in the custom viewport below. Drag a toolbar by its grip or empty area to move or dock it. Toolbars docked on the same edge share the strip, laid out inline. A bar hint shows where you can drop it: toolbars dropped on the near side of a strip anchor to its start corner, toolbars dropped on the far side anchor to its end corner, and the insertion point is resolved within that side cluster.", HAlignType::Left);
 	check("Show Main Toolbar", &demo.showMainToolbar);
 	check("Show Tools Toolbar", &demo.showToolsToolbar);
 	check("Show Floating Toolbar", &demo.showFloatingToolbar);
-	check("Collapse Main Toolbar", &demo.collapseMainToolbar);
-check("Show Main Toolbar", &demo.showMainToolbar);
-	check("Show Tools Toolbar", &demo.showToolsToolbar);
-	check("Show Floating Toolbar", &demo.showFloatingToolbar);
-	check("Collapse Main Toolbar", &demo.collapseMainToolbar);
+	if (check("Collapse Main Toolbar", &demo.collapseMainToolbar))
+		demo.collapseMainToolbarDirty = true;
 
 	space();
 	label("Floating toolbar options:");
@@ -2859,6 +2874,7 @@ check("Show Main Toolbar", &demo.showMainToolbar);
 			demo.showToolsToolbar = true;
 			demo.showFloatingToolbar = true;
 			demo.collapseMainToolbar = false;
+			demo.collapseMainToolbarDirty = true;
 		}
 
 		space();
@@ -2980,7 +2996,16 @@ check("Show Main Toolbar", &demo.showMainToolbar);
 		{
 			if (overlayToolbarBegin("demoMainToolbar", "Main", demo.mainToolbarDockZone, OverlayToolbarLayout::Horizontal))
 			{
-				overlayToolbarSetCollapsed(demo.collapseMainToolbar);
+				// only push the checkbox when the user changed it, so a double click
+				// on a collapsed toolbar can expand it and update the checkbox
+				if (demo.collapseMainToolbarDirty)
+				{
+					overlayToolbarSetCollapsed(demo.collapseMainToolbar);
+					demo.collapseMainToolbarDirty = false;
+				}
+				else
+					demo.collapseMainToolbar = overlayToolbarIsCollapsed();
+
 				overlayToolbarSetGridAlignment(snapAllToolbars, floatingGridSize);
 				overlayToolbarGrip();
 				overlayToolbarButton("new", "New", 0, demoOnToolbarNew, "Create a new scene");

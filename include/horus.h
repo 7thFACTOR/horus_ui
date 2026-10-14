@@ -2411,6 +2411,9 @@ HUI_API Point overlayToolbarGetFloatingPosition();
 /// \param collapsed true to collapse the toolbar
 HUI_API void overlayToolbarSetCollapsed(bool collapsed);
 
+/// \return true if the current toolbar is collapsed
+HUI_API bool overlayToolbarIsCollapsed();
+
 /// \return true if a widget has already consumed the current click (prevents other handlers from processing it)
 HUI_API bool inputWasConsumed();
 
