@@ -294,6 +294,7 @@ struct DemoState
 	Point toolbarGridPan;
 	f32 toolbarGridZoom = 1.0f;
 	bool toolbarGridPanning = false;
+	bool toolbarGridAltDown = false;
 	Point toolbarGridPanStartMouse;
 	Point toolbarGridPanStartValue;
 	bool expandOverlayToolbar = false;
@@ -308,6 +309,29 @@ struct DemoState
 
 	// link demo
 	int linkClickCount = 0;
+
+	// spline editor demo (overlay toolbars canvas)
+	struct SplineEditState
+	{
+		enum class DragType
+		{
+			None,
+			Center,
+			LeftTangent,
+			RightTangent
+		};
+
+		std::vector<SplineControlPoint> points;
+		int selected = -1;
+		int hover = -1;
+		DragType dragType = DragType::None;
+		DragType hoverType = DragType::None;
+		Point dragStartMouse;
+		Point dragStartCenter;
+		Point dragStartLeft;
+		Point dragStartRight;
+	};
+	SplineEditState splineEditor;
 
 	// paragraph demo
 	int paragraphLinkClicks = 0;
@@ -1797,7 +1821,7 @@ void showDemo()
 			forceRepaint();
 
 			label("Primitives in viewport:");
-			Rect lpViewport = viewportBegin("##linesPrimsViewport", 420);
+			Rect lpViewport = viewportBegin("##linesPrimsViewport", 460);
 			Point vo = lpViewport.topLeft();
 
 			// 1px lines
@@ -1897,7 +1921,7 @@ void showDemo()
 					{
 						bool isTop = (i % 2) != 0;
 						f32 vSign = isTop ? -1.0f : 1.0f;
-						wave[i].center = vo + Point{ startX + i * spacing, isTop ? 350.0f : 385.0f };
+						wave[i].center = vo + Point{ startX + i * spacing, isTop ? 385.0f : 420.0f };
 
 						if (i > 0) wave[i].leftTangent = { -tangent, -vSign * tangentY };
 						if (i < pointCount - 1) wave[i].rightTangent = { tangent, vSign * tangentY };
@@ -2875,6 +2899,19 @@ if (expandableBegin("Overlay Toolbars", &demo.expandOverlayToolbar))
 			demo.showFloatingToolbar = true;
 			demo.collapseMainToolbar = false;
 			demo.collapseMainToolbarDirty = true;
+			demo.splineEditor.points.clear();
+			demo.splineEditor.selected = -1;
+			demo.splineEditor.hover = -1;
+			demo.splineEditor.dragType = demo.SplineEditState::DragType::None;
+			demo.toolbarGridPan = Point{};
+			demo.toolbarGridZoom = 1.0f;
+		}
+		if (button("Reset Spline"))
+		{
+			demo.splineEditor.points.clear();
+			demo.splineEditor.selected = -1;
+			demo.splineEditor.hover = -1;
+			demo.splineEditor.dragType = demo.SplineEditState::DragType::None;
 		}
 
 		space();
@@ -2892,11 +2929,26 @@ if (expandableBegin("Overlay Toolbars", &demo.expandOverlayToolbar))
 		renderDrawSolidRectangle(toolbarViewport);
 
 		// faint gray grid so the toolbar placement over the viewport can be
-		// seen; pan it with the left mouse button and zoom with the wheel
+		// seen; pan it with Alt + mouse drag, and zoom with Alt + wheel
 		Point gridMouse = mouseGetPosition() - vpOrigin;
 
+		// track the Alt state so panning keeps working across frames with no events
+		if (inputEventGet().type == InputEvent::Type::Key
+			&& (inputEventGet().key.code == KeyCode::LAlt || inputEventGet().key.code == KeyCode::RAlt))
+		{
+			demo.toolbarGridAltDown = inputEventGet().key.down;
+		}
+		else if (inputEventGet().type == InputEvent::Type::MouseMove
+			|| inputEventGet().type == InputEvent::Type::MouseDown
+			|| inputEventGet().type == InputEvent::Type::MouseUp
+			|| inputEventGet().type == InputEvent::Type::MouseWheel)
+		{
+			demo.toolbarGridAltDown = has(inputEventGet().mouse.modifiers, KeyModifiers::Alt);
+		}
+
 		auto& gridService = contextGetSettings().services;
-		if (gridService.isMouseButtonDownNow && gridService.isMouseButtonDownNow(MouseButton::Left))
+		if (gridService.isMouseButtonDownNow && gridService.isMouseButtonDownNow(MouseButton::Left)
+			&& demo.toolbarGridAltDown)
 		{
 			if (!demo.toolbarGridPanning)
 			{
@@ -2906,12 +2958,14 @@ if (expandableBegin("Overlay Toolbars", &demo.expandOverlayToolbar))
 					demo.toolbarGridPanning = true;
 					demo.toolbarGridPanStartMouse = gridMouse;
 					demo.toolbarGridPanStartValue = demo.toolbarGridPan;
+					inputEventCancel();
 				}
 			}
 			else
 			{
 				demo.toolbarGridPan = demo.toolbarGridPanStartValue + (gridMouse - demo.toolbarGridPanStartMouse);
 				forceRepaint();
+				inputEventCancel();
 			}
 		}
 		else
@@ -2919,7 +2973,8 @@ if (expandableBegin("Overlay Toolbars", &demo.expandOverlayToolbar))
 			demo.toolbarGridPanning = false;
 		}
 
-		if (inputEventGet().type == InputEvent::Type::MouseWheel && toolbarViewport.contains(mouseGetPosition()))
+		if (inputEventGet().type == InputEvent::Type::MouseWheel && toolbarViewport.contains(mouseGetPosition())
+			&& demo.toolbarGridAltDown)
 		{
 			float zoomStep = 0.1f * inputEventGet().mouse.wheel.y;
 			float newZoom = demo.toolbarGridZoom * (1.0f + zoomStep);
@@ -2947,6 +3002,9 @@ if (expandableBegin("Overlay Toolbars", &demo.expandOverlayToolbar))
 		// mockup 2D scene - shapes that transform with pan/zoom
 		auto worldToScreen = [&](const Point& world) -> Point {
 			return world * demo.toolbarGridZoom + demo.toolbarGridPan + vpOrigin;
+		};
+		auto screenToWorld = [&](const Point& screen) -> Point {
+			return (screen - vpOrigin - demo.toolbarGridPan) / demo.toolbarGridZoom;
 		};
 		auto drawRectWorld = [&](const Rect& r, const Color& color, f32 lineWidth = 2.0f) {
 			Point p1 = worldToScreen({ r.x, r.y });
@@ -2988,6 +3046,265 @@ if (expandableBegin("Overlay Toolbars", &demo.expandOverlayToolbar))
 		renderSetLineStyle(LineStyle(Color::fromU8(255, 255, 255, 200), 1.0f));
 		renderDrawLine({ origin.x - 10, origin.y }, { origin.x + 10, origin.y });
 		renderDrawLine({ origin.x, origin.y - 10 }, { origin.x, origin.y + 10 });
+
+		// spline editor
+		{
+			auto& se = demo.splineEditor;
+			const f32 grabRadius = 8.0f / demo.toolbarGridZoom;
+			const f32 tangentGrabRadius = 6.0f / demo.toolbarGridZoom;
+			Point mouseWorld = screenToWorld(mouseGetPosition());
+
+			// draw helper arrow function
+			auto drawArrow = [&](const Point& from, const Point& to, const Color& color)
+			{
+				const f32 headLength = 6.0f / demo.toolbarGridZoom;
+				const f32 headWidth = 3.0f / demo.toolbarGridZoom;
+				Point dir = (to - from).getNormalized();
+				Point perp = { -dir.y, dir.x };
+				Point base = to - dir * headLength;
+
+				renderSetLineStyle(LineStyle(color, 1.0f));
+				renderDrawLine(worldToScreen(from), worldToScreen(to));
+
+				renderSetColor(color);
+				Point ts = worldToScreen(to);
+				Point bs = worldToScreen(base);
+				Point ps1 = worldToScreen(base + perp * headWidth);
+				Point ps2 = worldToScreen(base - perp * headWidth);
+				renderDrawSolidTriangle(ts, ps1, ps2);
+			};
+
+			// hover detection, tangents first to match the click grab priority
+			se.hover = -1;
+			se.hoverType = demo.SplineEditState::DragType::None;
+			for (size_t i = 0; i < se.points.size(); i++)
+			{
+				if ((se.points[i].center + se.points[i].rightTangent - mouseWorld).getLength() < tangentGrabRadius * 2.0f)
+				{
+					se.hover = (int)i;
+					se.hoverType = demo.SplineEditState::DragType::RightTangent;
+				}
+				else if ((se.points[i].center + se.points[i].leftTangent - mouseWorld).getLength() < tangentGrabRadius * 2.0f)
+				{
+					se.hover = (int)i;
+					se.hoverType = demo.SplineEditState::DragType::LeftTangent;
+				}
+				else if ((se.points[i].center - mouseWorld).getLength() < grabRadius * 1.5f)
+				{
+					se.hover = (int)i;
+					se.hoverType = demo.SplineEditState::DragType::Center;
+				}
+			}
+
+			// input handling
+			if (toolbarViewport.contains(mouseGetPosition()) && !overlayToolbarContainsPoint(gridMouse))
+			{
+				if (inputEventGet().type == InputEvent::Type::MouseDown && inputEventGet().mouse.button == MouseButton::Left)
+				{
+					// if Alt is held the canvas is panning, so do not edit the spline
+					if (demo.toolbarGridAltDown)
+					{
+						// fall through - canvas pan will take care
+					}
+					else if (se.dragType == demo.SplineEditState::DragType::None)
+					{
+						bool handled = false;
+						// check tangents first (easier to grab)
+						for (size_t i = 0; i < se.points.size() && !handled; i++)
+						{
+							if ((se.points[i].center + se.points[i].rightTangent - mouseWorld).getLength() < tangentGrabRadius * 2.0f)
+							{
+								se.selected = (int)i;
+								se.dragType = demo.SplineEditState::DragType::RightTangent;
+								se.dragStartMouse = mouseWorld;
+								se.dragStartCenter = se.points[i].center;
+								se.dragStartLeft = se.points[i].leftTangent;
+								se.dragStartRight = se.points[i].rightTangent;
+								handled = true;
+								inputEventCancel();
+							}
+							else if ((se.points[i].center + se.points[i].leftTangent - mouseWorld).getLength() < tangentGrabRadius * 2.0f)
+							{
+								se.selected = (int)i;
+								se.dragType = demo.SplineEditState::DragType::LeftTangent;
+								se.dragStartMouse = mouseWorld;
+								se.dragStartCenter = se.points[i].center;
+								se.dragStartLeft = se.points[i].leftTangent;
+								se.dragStartRight = se.points[i].rightTangent;
+								handled = true;
+								inputEventCancel();
+							}
+						}
+						if (!handled)
+						{
+							for (size_t i = 0; i < se.points.size() && !handled; i++)
+							{
+								if ((se.points[i].center - mouseWorld).getLength() < grabRadius * 1.5f)
+								{
+									se.selected = (int)i;
+									se.dragType = demo.SplineEditState::DragType::Center;
+									se.dragStartMouse = mouseWorld;
+									se.dragStartCenter = se.points[i].center;
+									se.dragStartLeft = se.points[i].leftTangent;
+									se.dragStartRight = se.points[i].rightTangent;
+									handled = true;
+									inputEventCancel();
+								}
+							}
+						}
+						if (!handled)
+						{
+							if (inputEventGet().mouse.clickCount >= 2)
+							{
+								// double-click on empty space creates a new point
+								SplineControlPoint np;
+								np.center = mouseWorld;
+								np.leftTangent = Point{ -40.0f, 0.0f };
+								np.rightTangent = Point{ 40.0f, 0.0f };
+								np.isLine = false;
+								np.type = SplineControlPoint::NodeType::Symmetrical;
+								se.points.push_back(np);
+								se.selected = (int)se.points.size() - 1;
+								se.dragType = demo.SplineEditState::DragType::Center;
+								se.dragStartMouse = mouseWorld;
+								se.dragStartCenter = np.center;
+								se.dragStartLeft = np.leftTangent;
+								se.dragStartRight = np.rightTangent;
+								handled = true;
+								inputEventCancel();
+							}
+							else
+							{
+								// single click on empty space deselects
+								se.selected = -1;
+							}
+						}
+					}
+				}
+			}
+
+			if (inputEventGet().type == InputEvent::Type::MouseUp && inputEventGet().mouse.button == MouseButton::Left)
+			{
+				if (se.dragType != demo.SplineEditState::DragType::None)
+				{
+					se.dragType = demo.SplineEditState::DragType::None;
+					inputEventCancel();
+				}
+			}
+
+			if (se.dragType != demo.SplineEditState::DragType::None && se.selected >= 0 && (size_t)se.selected < se.points.size())
+			{
+				Point delta = mouseWorld - se.dragStartMouse;
+				if (se.dragType == demo.SplineEditState::DragType::Center)
+				{
+					se.points[se.selected].center = se.dragStartCenter + delta;
+					// keep tangents in place relative to point? they stay as vectors
+				}
+				else 				if (se.dragType == demo.SplineEditState::DragType::RightTangent)
+				{
+					se.points[se.selected].rightTangent = se.dragStartRight + delta;
+					if (se.points[se.selected].type == SplineControlPoint::NodeType::Symmetrical
+						&& !has(inputEventGet().mouse.modifiers, KeyModifiers::Control))
+					{
+						se.points[se.selected].leftTangent = -se.points[se.selected].rightTangent;
+					}
+				}
+				else if (se.dragType == demo.SplineEditState::DragType::LeftTangent)
+				{
+					se.points[se.selected].leftTangent = se.dragStartLeft + delta;
+					if (se.points[se.selected].type == SplineControlPoint::NodeType::Symmetrical
+						&& !has(inputEventGet().mouse.modifiers, KeyModifiers::Control))
+					{
+						se.points[se.selected].rightTangent = -se.points[se.selected].leftTangent;
+					}
+				}
+				inputEventCancel();
+				forceRepaint();
+			}
+
+			// delete with delete key
+			if (inputEventGet().type == InputEvent::Type::Key && inputEventGet().key.down && inputEventGet().key.code == KeyCode::Delete)
+			{
+				if (se.selected >= 0 && (size_t)se.selected < se.points.size())
+				{
+					se.points.erase(se.points.begin() + se.selected);
+					se.selected = -1;
+					inputEventCancel();
+				}
+			}
+
+			// draw spline, transformed to screen space so it follows pan/zoom
+			if (se.points.size() >= 2)
+			{
+				std::vector<SplineControlPoint> screenPoints(se.points.size());
+
+				for (size_t i = 0; i < se.points.size(); i++)
+				{
+					screenPoints[i].center = worldToScreen(se.points[i].center);
+					screenPoints[i].leftTangent = se.points[i].leftTangent * demo.toolbarGridZoom;
+					screenPoints[i].rightTangent = se.points[i].rightTangent * demo.toolbarGridZoom;
+				}
+
+				renderSetLineStyle(LineStyle(Color::fromU8(100, 180, 255, 255), 2.0f));
+				renderDrawSpline(screenPoints.data(), (u32)screenPoints.size(), 10.0f);
+			}
+			else if (se.points.size() == 1)
+			{
+				renderSetLineStyle(LineStyle(Color::fromU8(100, 180, 255, 180), 1.0f));
+				renderDrawCircle(worldToScreen(se.points[0].center), 2.0f, 12);
+			}
+
+			// draw points and tangents
+			for (size_t i = 0; i < se.points.size(); i++)
+			{
+				bool isSelected = (int)i == se.selected;
+				bool isHoveredNode = (int)i == se.hover;
+				Point c = worldToScreen(se.points[i].center);
+				f32 ptSize = 6.0f;
+				if (isSelected)
+					ptSize += 2.0f;
+				if (isHoveredNode && se.hoverType == demo.SplineEditState::DragType::Center)
+					ptSize += 1.0f;
+
+				Color centerColor = isSelected ? Color::yellow : Color::white;
+				if (isHoveredNode && se.hoverType == demo.SplineEditState::DragType::Center && !isSelected)
+					centerColor = Color::orange;
+				renderSetColor(centerColor);
+				renderDrawSolidRectangle(Rect{ c.x - ptSize, c.y - ptSize, ptSize * 2.0f, ptSize * 2.0f });
+
+				Point rt = se.points[i].center + se.points[i].rightTangent;
+				Color arrowRtColor = isSelected ? Color::yellow : Color::cyan;
+				if (isHoveredNode && se.hoverType == demo.SplineEditState::DragType::RightTangent)
+					arrowRtColor = Color::orange;
+				drawArrow(se.points[i].center, rt, arrowRtColor);
+				Point rts = worldToScreen(rt);
+				f32 tsize = 4.0f;
+				if (isSelected)
+					tsize += 1.0f;
+				if (isHoveredNode && se.hoverType == demo.SplineEditState::DragType::RightTangent)
+					tsize += 1.0f;
+				renderSetColor(arrowRtColor);
+				renderDrawSolidRectangle(Rect{ rts.x - tsize, rts.y - tsize, tsize * 2.0f, tsize * 2.0f });
+
+				Point lt = se.points[i].center + se.points[i].leftTangent;
+				Color arrowLtColor = isSelected ? Color::yellow : Color::magenta;
+				if (isHoveredNode && se.hoverType == demo.SplineEditState::DragType::LeftTangent)
+					arrowLtColor = Color::orange;
+				drawArrow(se.points[i].center, lt, arrowLtColor);
+				Point lts = worldToScreen(lt);
+				f32 ltsize = 4.0f;
+				if (isSelected)
+					ltsize += 1.0f;
+				if (isHoveredNode && se.hoverType == demo.SplineEditState::DragType::LeftTangent)
+					ltsize += 1.0f;
+				renderSetColor(arrowLtColor);
+				renderDrawSolidRectangle(Rect{ lts.x - ltsize, lts.y - ltsize, ltsize * 2.0f, ltsize * 2.0f });
+			}
+
+			// instructions hint
+			renderSetColor(Color::fromU8(200, 200, 200, 180));
+			// draw small label at top-left if needed (optional)
+		}
 
 		overlayToolbarsBegin(toolbarViewport);
 
@@ -3064,6 +3381,10 @@ if (expandableBegin("Overlay Toolbars", &demo.expandOverlayToolbar))
 		if (inputWasConsumed() && demo.toolbarGridPanning)
 		{
 			demo.toolbarGridPanning = false;
+		}
+		if (inputWasConsumed() && demo.splineEditor.dragType != demo.SplineEditState::DragType::None)
+		{
+			// drag handled
 		}
 
 		viewportEnd();

@@ -796,25 +796,39 @@ void overlayToolbarEnd()
 	{
 		drawToolbarTitle(toolbar);
 	}
-	else
-	{
-		for (auto& e : toolbar->elements)
+else
 		{
-			if (!e.visible)
-				continue;
+			for (auto& e : toolbar->elements)
+			{
+				if (!e.visible)
+					continue;
 
-			bool clicked = false;
-			if (!toolbar->dragging && (e.type == OverlayToolbarElementType::Button || e.type == OverlayToolbarElementType::Toggle))
-				clicked = processToolbarElement(toolbar, &e);
+				bool clicked = false;
+				if (!toolbar->dragging && (e.type == OverlayToolbarElementType::Button || e.type == OverlayToolbarElementType::Toggle))
+					clicked = processToolbarElement(toolbar, &e);
 
-			drawToolbarElement(toolbar, &e);
+				drawToolbarElement(toolbar, &e);
 
-			if (clicked && e.onClick)
-				e.onClick();
-			if (!toolbar->dragging && !e.tooltip.empty())
-				tooltip(e.tooltip.c_str());
+				if (e.type == OverlayToolbarElementType::Grip
+					&& ctx->event.type == InputEvent::Type::MouseDown
+					&& ctx->event.mouse.button == MouseButton::Left
+					&& ctx->event.mouse.clickCount >= 2
+					&& e.rect.contains(ctx->mousePosition))
+				{
+					// double click on grip collapses the toolbar
+					toolbar->collapsed = true;
+					ctx->overlayToolbars.pendingDrag = false;
+					ctx->widget.captureId = 0;
+					ctx->event = InputEvent();
+					forceRepaint();
+				}
+
+				if (clicked && e.onClick)
+					e.onClick();
+				if (!toolbar->dragging && !e.tooltip.empty())
+					tooltip(e.tooltip.c_str());
+			}
 		}
-	}
 
 	if (toolbar->dragging)
 	{

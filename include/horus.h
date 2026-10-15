@@ -1210,6 +1210,16 @@ struct Point
 		return result;
 	}
 
+	inline Point operator - () const
+	{
+		Point result;
+
+		result.x = -x;
+		result.y = -y;
+
+		return result;
+	}
+
 	inline Point operator / (const f32 value) const
 	{
 		Point result;
