@@ -1845,7 +1845,7 @@ void showDemo()
 			forceRepaint();
 
 			label("Primitives in viewport:");
-			Rect lpViewport = viewportBegin("##linesPrimsViewport", 600);
+			Rect lpViewport = viewportBegin("##linesPrimsViewport", 650);
 			Point vo = lpViewport.topLeft();
 
 			// 1px lines
@@ -1914,6 +1914,53 @@ void showDemo()
 				renderSetLineStyle(LineStyle(Color::orange, 10.0f));
 				renderDrawPolyLine(pts3, 3, true);
 			}
+
+			space();
+			label("Stippled lines (dashed, dotted, dash-dot, dash-dot-dot):");
+
+			f32 stippleX = 360.0f;
+
+			// Dashed lines (right column)
+			renderSetLineStyle(LineStyle::dashed(Color::white, 1.0f, 10.0f, 5.0f));
+			renderDrawLine(vo + Point{ stippleX, 20 }, vo + Point{ stippleX + 140, 20 });
+			renderSetLineStyle(LineStyle::dashed(Color::white, 2.0f, 12.0f, 6.0f));
+			renderDrawLine(vo + Point{ stippleX, 40 }, vo + Point{ stippleX + 140, 40 });
+			renderSetLineStyle(LineStyle::dashed(Color::white, 3.0f, 15.0f, 7.0f));
+			renderDrawLine(vo + Point{ stippleX, 60 }, vo + Point{ stippleX + 140, 60 });
+
+			// Dotted lines
+			renderSetLineStyle(LineStyle::dotted(Color::cyan, 1.0f, 3.0f, 3.0f));
+			renderDrawLine(vo + Point{ stippleX, 90 }, vo + Point{ stippleX + 140, 90 });
+			renderSetLineStyle(LineStyle::dotted(Color::cyan, 2.0f, 4.0f, 4.0f));
+			renderDrawLine(vo + Point{ stippleX, 110 }, vo + Point{ stippleX + 140, 110 });
+			renderSetLineStyle(LineStyle::dotted(Color::cyan, 3.0f, 5.0f, 5.0f));
+			renderDrawLine(vo + Point{ stippleX, 130 }, vo + Point{ stippleX + 140, 130 });
+
+			// Dash-dot lines
+			renderSetLineStyle(LineStyle::dashDot(Color::yellow, 1.0f, 10.0f, 5.0f, 3.0f));
+			renderDrawLine(vo + Point{ stippleX, 160 }, vo + Point{ stippleX + 140, 160 });
+			renderSetLineStyle(LineStyle::dashDot(Color::yellow, 2.0f, 12.0f, 6.0f, 4.0f));
+			renderDrawLine(vo + Point{ stippleX, 180 }, vo + Point{ stippleX + 140, 180 });
+			renderSetLineStyle(LineStyle::dashDot(Color::yellow, 3.0f, 15.0f, 7.0f, 5.0f));
+			renderDrawLine(vo + Point{ stippleX, 200 }, vo + Point{ stippleX + 140, 200 });
+
+			// Dash-dot-dot lines
+			renderSetLineStyle(LineStyle::dashDotDot(Color::orange, 1.0f, 10.0f, 5.0f, 3.0f));
+			renderDrawLine(vo + Point{ stippleX, 230 }, vo + Point{ stippleX + 140, 230 });
+			renderSetLineStyle(LineStyle::dashDotDot(Color::orange, 2.0f, 12.0f, 6.0f, 4.0f));
+			renderDrawLine(vo + Point{ stippleX, 250 }, vo + Point{ stippleX + 140, 250 });
+			renderSetLineStyle(LineStyle::dashDotDot(Color::orange, 3.0f, 15.0f, 7.0f, 5.0f));
+			renderDrawLine(vo + Point{ stippleX, 270 }, vo + Point{ stippleX + 140, 270 });
+
+			// Stippled rectangle and circle
+			renderSetLineStyle(LineStyle::dashed(Color::green, 2.0f, 10.0f, 5.0f));
+			renderDrawRectangle({ vo.x + stippleX, vo.y + 300, 120, 50 });
+			renderSetLineStyle(LineStyle::dotted(Color::green, 2.0f, 4.0f, 4.0f));
+			renderDrawRectangle({ vo.x + stippleX + 140, vo.y + 300, 120, 50 });
+			renderSetLineStyle(LineStyle::dashDot(Color::green, 2.0f, 10.0f, 5.0f, 3.0f));
+			renderDrawCircle(vo + Point{ stippleX + 60, 380 }, 30, 32);
+			renderSetLineStyle(LineStyle::dashDotDot(Color::green, 2.0f, 10.0f, 5.0f, 3.0f));
+			renderDrawCircle(vo + Point{ stippleX + 200, 380 }, 30, 32);
 
 			{
 				// 1px arrow: line shaft + solid head, used to show the spline tangents
@@ -2890,7 +2937,7 @@ void showDemo()
 		expandableEnd();
 	}
 
-	// ------------------------------------------------------------------
+// ------------------------------------------------------------------
 // overlay toolbars
 // ------------------------------------------------------------------
 if (expandableBegin("Overlay Toolbars", &demo.expandOverlayToolbar))

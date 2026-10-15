@@ -30,6 +30,10 @@ u64 hashData(const void* ptr, size_t size, u64 seed = 0);
 /// i (between control points i and i+1), or -1 if there is no segment.
 i32 splineClosestSegment(const SplineControlPoint* points, u32 count, SplineType type, const Point& query, Point* outClosestPoint, bool closed = false);
 
+/// Sample a spline into an output buffer of 2d points. Returns number of points written.
+/// If outPoints is null, returns how many points would be generated with given params.
+u32 splineSample(const SplineControlPoint* points, u32 count, SplineType type, f32 segmentSize, bool closed, Point* outPoints, u32 maxPoints);
+
 /// Compute the single control point of a quadratic bezier segment from the
 /// outgoing tangent at its start and the incoming tangent at its end. The two
 /// tangents are used as rays and their intersection is the control point; when

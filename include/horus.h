@@ -1714,6 +1714,52 @@ struct LineStyle
 	f32 stipplePattern[stipplePatternMaxCount] = {5, 5}; /// first value is the dash size, second is empty space size and so on, toggle
 	u32 stipplePatternCount = 2;
 	f32 stipplePhase = 0.0f;
+
+	/// Create a dashed line style (dash-gap-dash-gap...)
+	static LineStyle dashed(const Color& newColor, f32 newWidth, f32 dashSize = 10.0f, f32 gapSize = 5.0f)
+	{
+		LineStyle ls(newColor, newWidth, true);
+		ls.stipplePattern[0] = dashSize;
+		ls.stipplePattern[1] = gapSize;
+		ls.stipplePatternCount = 2;
+		return ls;
+	}
+
+	/// Create a dotted line style (dot-gap-dot-gap...)
+	static LineStyle dotted(const Color& newColor, f32 newWidth, f32 dotSize = 3.0f, f32 gapSize = 3.0f)
+	{
+		LineStyle ls(newColor, newWidth, true);
+		ls.stipplePattern[0] = dotSize;
+		ls.stipplePattern[1] = gapSize;
+		ls.stipplePatternCount = 2;
+		return ls;
+	}
+
+	/// Create a dash-dot line style (dash-gap-dot-gap...)
+	static LineStyle dashDot(const Color& newColor, f32 newWidth, f32 dashSize = 10.0f, f32 gapSize = 5.0f, f32 dotSize = 3.0f)
+	{
+		LineStyle ls(newColor, newWidth, true);
+		ls.stipplePattern[0] = dashSize;
+		ls.stipplePattern[1] = gapSize;
+		ls.stipplePattern[2] = dotSize;
+		ls.stipplePattern[3] = gapSize;
+		ls.stipplePatternCount = 4;
+		return ls;
+	}
+
+	/// Create a dash-dot-dot line style (dash-gap-dot-gap-dot-gap...)
+	static LineStyle dashDotDot(const Color& newColor, f32 newWidth, f32 dashSize = 10.0f, f32 gapSize = 5.0f, f32 dotSize = 3.0f)
+	{
+		LineStyle ls(newColor, newWidth, true);
+		ls.stipplePattern[0] = dashSize;
+		ls.stipplePattern[1] = gapSize;
+		ls.stipplePattern[2] = dotSize;
+		ls.stipplePattern[3] = gapSize;
+		ls.stipplePattern[4] = dotSize;
+		ls.stipplePattern[5] = gapSize;
+		ls.stipplePatternCount = 6;
+		return ls;
+	}
 };
 
 /// Filled primitives style
@@ -3502,6 +3548,9 @@ HUI_API void renderDrawSolidRectangle(const Rect& rc);
 /// \param segmentSize the length in pixels of each spline segment
 /// \param closed whether the curve loops back from the last control point to the first
 HUI_API void renderDrawSpline(SplineControlPoint* points, u32 count, SplineType type = SplineType::Hermite, f32 segmentSize = 15, bool closed = false);
+/// Sample a spline into an output buffer of 2d points. Returns number of points written.
+/// If outPoints is null, returns how many points would be generated with given params.
+HUI_API u32 splineSample(const SplineControlPoint* points, u32 count, SplineType type = SplineType::Hermite, f32 segmentSize = 15, bool closed = false, Point* outPoints = nullptr, u32 maxPoints = 0);
 /// Draw an arrow from a start point to an end point
 /// \param startPoint the arrow start point
 /// \param endPoint the arrow tip point

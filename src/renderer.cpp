@@ -2184,7 +2184,10 @@ void Renderer::drawPolyLine(const Point* points, u32 pointCount, bool closed)
 			totalsize += currentLineStyle.stipplePattern[j];
 		}
 
-		f32 offs = (int)currentLineStyle.stipplePhase % (int)totalsize;
+		f32 offs = fmodf(currentLineStyle.stipplePhase, totalsize);
+
+		if (offs < 0.0f)
+			offs += totalsize;
 		f32 tot = 0;
 
 		if (offs > 0.0f)
@@ -2229,6 +2232,15 @@ void Renderer::drawPolyLine(const Point* points, u32 pointCount, bool closed)
 
 			line = points[idx] - points[i];
 			totalLineLength = line.getLength();
+
+			// advance pattern state past any fully-consumed pattern elements
+			while (remainder >= currentLineStyle.stipplePattern[oldJ] - 1e-4f)
+			{
+				remainder -= currentLineStyle.stipplePattern[oldJ];
+				oldJ = (oldJ + 1) % currentLineStyle.stipplePatternCount;
+				skip = !skip;
+			}
+
 			currentLength = remainder;
 			bail = false;
 
@@ -2264,7 +2276,7 @@ void Renderer::drawPolyLine(const Point* points, u32 pointCount, bool closed)
 						|| (stippleLines.size() && pt != stippleLines.back()))
 					{
 						stippleLines.push_back(pt);
-						// toggle pattern skip
+						// toggle pattern skip for next segment
 						skip = !skip;
 						stippleLinesSkip.push_back(skip);
 					}
@@ -2278,6 +2290,14 @@ void Renderer::drawPolyLine(const Point* points, u32 pointCount, bool closed)
 			{
 				break;
 			}
+		}
+
+		// always add the final endpoint for open lines to ensure line reaches its destination
+		// use current skip state (state for the last segment)
+		if (!closed)
+		{
+			stippleLines.push_back(points[pointCount - 1]);
+			stippleLinesSkip.push_back(skip);
 		}
 
 		pts = stippleLines.data();
