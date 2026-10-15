@@ -772,6 +772,7 @@ enum class OverlayToolbarElementType
 {
 	Button,
 	Toggle,
+	Dropdown,
 	Separator,
 	Space,
 	Grip,
@@ -788,6 +789,10 @@ struct OverlayToolbarElement
 	void (*onClick)() = nullptr;
 	bool* toggleValue = nullptr;
 	void (*onToggle)(bool) = nullptr;
+	const char** items = nullptr;
+	u32 itemCount = 0;
+	i32* selectedIndex = nullptr;
+	void (*onSelect)(i32) = nullptr;
 	bool visible = true;
 	bool enabled = true;
 	Rect rect;
@@ -817,6 +822,7 @@ struct OverlayToolbar
 	bool useCustomSize = false;
 	Point customSize;
 	OverlayDockZone lastRequestedDockZone = OverlayDockZone::None;
+	std::string openDropdownId;
 };
 
 struct VirtualListContentState

@@ -83,6 +83,35 @@ static Point elementContentSize(OverlayToolbarElement* e, bool vertical)
 		f32 grip = st.gripSize * ctx->scale;
 		return vertical ? Point(0, grip) : Point(grip, 0);
 	}
+	case OverlayToolbarElementType::Dropdown:
+	{
+		f32 textW = 0, textH = 0;
+
+		if (state.font)
+		{
+			for (u32 i = 0; i < e->itemCount; i++)
+			{
+				if (!e->items || !e->items[i])
+					continue;
+
+				FontTextSize tsize = state.font->computeTextSize(e->items[i]);
+				textW = std::max(textW, tsize.width);
+				textH = std::max(textH, tsize.height);
+			}
+		}
+
+		f32 arrowSize = st.iconButtonSize * 0.5f * ctx->scale;
+
+		if (vertical)
+			return Point(0, std::max(iconSize, textH + padding * 2.0f));
+
+		f32 w = textW + arrowSize + padding * 2.0f + st.elementSpacing * ctx->scale;
+
+		if (e->icon)
+			w += iconSize + st.elementSpacing * ctx->scale;
+
+		return Point(w, 0);
+	}
 	case OverlayToolbarElementType::Toggle:
 	case OverlayToolbarElementType::Button:
 	default:
@@ -305,6 +334,42 @@ static void drawToolbarElement(OverlayToolbar* toolbar, OverlayToolbarElement* e
 	ctx->renderer.cmdSetColor(bgColor);
 	ctx->renderer.cmdDrawImageBordered(toolbarRoundRectImage(), st.roundRectBorder, e->rect, ctx->scale);
 
+	if (e->type == OverlayToolbarElementType::Dropdown)
+	{
+		const char* selectedText = nullptr;
+
+		if (e->items && e->selectedIndex && *e->selectedIndex >= 0 && (u32)*e->selectedIndex < e->itemCount)
+			selectedText = e->items[*e->selectedIndex];
+
+		if (!selectedText)
+			selectedText = e->label.empty() ? "" : e->label.c_str();
+
+		f32 iconSide = st.iconButtonSize * ctx->scale;
+		f32 arrowSize = iconSide * 0.5f;
+		f32 iconOffset = e->icon ? (iconSide + spacing) : 0.0f;
+		Rect inner = e->rect.contract(padding);
+		Rect textRect = { inner.x + iconOffset, inner.y, std::max(inner.width - iconOffset - arrowSize - spacing, 0.0f), inner.height };
+		Rect arrowRect = { inner.right() - arrowSize, inner.y, arrowSize, inner.height };
+
+		if (e->icon)
+		{
+			f32 side = std::min(inner.height, iconSide);
+			Rect iconBox = { inner.x, inner.y + (inner.height - side) / 2, side, side };
+			drawToolbarIcon(state, (Image*)e->icon, iconBox);
+		}
+
+		ctx->renderer.cmdSetFont(state->font);
+		ctx->renderer.cmdSetColor(state->textColor);
+		ctx->renderer.cmdDrawTextInBox(selectedText, textRect, HAlignType::Left, VAlignType::Center, true);
+
+		Image* arrowImg = ctx->theme->getImage(hashString("flat/dropdown_arrow"));
+
+		if (arrowImg)
+			drawToolbarIcon(state, arrowImg, arrowRect);
+
+		return;
+	}
+
 	bool hasIcon = e->icon || (e->type == OverlayToolbarElementType::Toggle && e->iconOn);
 	Image* icon = nullptr;
 
@@ -335,6 +400,74 @@ static void drawToolbarElement(OverlayToolbar* toolbar, OverlayToolbarElement* e
 	}
 }
 
+static void drawToolbarDropdownPopup(OverlayToolbar* toolbar, OverlayToolbarElement* e)
+{
+	if (!e->items || e->itemCount == 0)
+		return;
+
+	const auto& st = ctx->settings.overlayToolbars;
+	f32 padding = st.elementPadding * ctx->scale;
+	auto& bodyState = ctx->theme->getElement(WidgetElementId::DropdownBody).normalState();
+	f32 textW = 0;
+
+	if (bodyState.font)
+	{
+		for (u32 i = 0; i < e->itemCount; i++)
+		{
+			if (e->items[i])
+				textW = std::max(textW, bodyState.font->computeTextSize(e->items[i]).width);
+		}
+	}
+
+	f32 popupWidth = std::max(e->rect.width, textW + padding * 4.0f);
+	Point popupPos = (toolbarEffectiveLayout(toolbar) == OverlayToolbarLayout::Vertical)
+		? e->rect.topRight()
+		: e->rect.bottomLeft();
+
+	// we need the exact width, so the popup's width won't be scaled by the global scale
+	ctx->popupUseGlobalScale = false;
+
+	std::string popupId = "toolbarDropdown##" + e->id;
+
+	popupBegin(popupId.c_str(), popupWidth, PopupFlags::CustomPosition, popupPos, WidgetElementId::DropdownListBody);
+
+	spacingPush(0);
+	paddingPush(PaddingType::ScrollView, Point());
+	tintPush(Color::white);
+
+	bool selectedNewItem = false;
+	i32 selected = e->selectedIndex ? *e->selectedIndex : -1;
+
+	for (u32 i = 0; i < e->itemCount; i++)
+	{
+		auto selectedFlag = ((i32)i == selected) ? SelectableFlags::Selected : SelectableFlags::Normal;
+
+		if (selectable(e->items[i] ? e->items[i] : "", selectedFlag))
+		{
+			if (e->selectedIndex)
+				*e->selectedIndex = (i32)i;
+
+			if (e->onSelect)
+				e->onSelect((i32)i);
+
+			selectedNewItem = true;
+		}
+	}
+
+	tintPop();
+	spacingPop();
+	paddingPop(PaddingType::ScrollView);
+
+	if (selectedNewItem || popupMustClose())
+	{
+		popupClose();
+		toolbar->openDropdownId.clear();
+	}
+
+	popupEnd();
+	ctx->popupUseGlobalScale = true;
+}
+
 static bool toolbarMouseOverToolbar(OverlayToolbar* toolbar)
 {
 	return toolbar->rect.contains(ctx->mousePosition) && ctx->hoveringThisWindow;
@@ -345,7 +478,7 @@ static bool toolbarMouseOverInteractiveElement(OverlayToolbar* toolbar)
 	for (auto& e : toolbar->elements)
 	{
 		if (e.visible && e.rect.contains(ctx->mousePosition)
-			&& (e.type == OverlayToolbarElementType::Button || e.type == OverlayToolbarElementType::Toggle))
+			&& (e.type == OverlayToolbarElementType::Button || e.type == OverlayToolbarElementType::Toggle || e.type == OverlayToolbarElementType::Dropdown))
 			return true;
 	}
 	return false;
@@ -366,11 +499,36 @@ static bool processToolbarElement(OverlayToolbar* toolbar, OverlayToolbarElement
 	widgetSetFocusable();
 	buttonBehavior();
 
+	// when the dropdown popup is open, an outside press closes it, so release the
+	// capture here to avoid the mouse release re-toggling the dropdown
+	if (e->type == OverlayToolbarElementType::Dropdown && toolbar->openDropdownId == e->id && ctx->widget.captureId == ctx->id)
+		ctx->widget.captureId = 0;
+
 	if (e->type == OverlayToolbarElementType::Toggle && ctx->widget.clicked && e->toggleValue)
 	{
 		*e->toggleValue = !*e->toggleValue;
 		if (e->onToggle)
 			e->onToggle(*e->toggleValue);
+		forceRepaint();
+	}
+
+	if (e->type == OverlayToolbarElementType::Dropdown && ctx->widget.clicked)
+	{
+		if (toolbar->openDropdownId == e->id)
+		{
+			toolbar->openDropdownId.clear();
+		}
+		else
+		{
+			for (auto& other : ctx->overlayToolbars.toolbars)
+			{
+				if (&other != toolbar)
+					other.openDropdownId.clear();
+			}
+
+			toolbar->openDropdownId = e->id;
+		}
+
 		forceRepaint();
 	}
 
@@ -792,43 +950,51 @@ void overlayToolbarEnd()
 	drawToolbarBackground(toolbar);
 	ctx->renderer.pushClipRect(toolbar->rect, true);
 
+	OverlayToolbarElement* openDropdownElement = nullptr;
+
 	if (toolbar->collapsed)
 	{
 		drawToolbarTitle(toolbar);
 	}
-else
+	else
+	{
+		for (auto& e : toolbar->elements)
 		{
-			for (auto& e : toolbar->elements)
+			if (!e.visible)
+				continue;
+
+			bool clicked = false;
+			if (!toolbar->dragging && (e.type == OverlayToolbarElementType::Button || e.type == OverlayToolbarElementType::Toggle || e.type == OverlayToolbarElementType::Dropdown))
+				clicked = processToolbarElement(toolbar, &e);
+
+			if (!toolbar->dragging && e.type == OverlayToolbarElementType::Dropdown && toolbar->openDropdownId == e.id)
+				openDropdownElement = &e;
+
+			drawToolbarElement(toolbar, &e);
+
+			if (e.type == OverlayToolbarElementType::Grip
+				&& ctx->event.type == InputEvent::Type::MouseDown
+				&& ctx->event.mouse.button == MouseButton::Left
+				&& ctx->event.mouse.clickCount >= 2
+				&& e.rect.contains(ctx->mousePosition))
 			{
-				if (!e.visible)
-					continue;
-
-				bool clicked = false;
-				if (!toolbar->dragging && (e.type == OverlayToolbarElementType::Button || e.type == OverlayToolbarElementType::Toggle))
-					clicked = processToolbarElement(toolbar, &e);
-
-				drawToolbarElement(toolbar, &e);
-
-				if (e.type == OverlayToolbarElementType::Grip
-					&& ctx->event.type == InputEvent::Type::MouseDown
-					&& ctx->event.mouse.button == MouseButton::Left
-					&& ctx->event.mouse.clickCount >= 2
-					&& e.rect.contains(ctx->mousePosition))
-				{
-					// double click on grip collapses the toolbar
-					toolbar->collapsed = true;
-					ctx->overlayToolbars.pendingDrag = false;
-					ctx->widget.captureId = 0;
-					ctx->event = InputEvent();
-					forceRepaint();
-				}
-
-				if (clicked && e.onClick)
-					e.onClick();
-				if (!toolbar->dragging && !e.tooltip.empty())
-					tooltip(e.tooltip.c_str());
+				// double click on grip collapses the toolbar
+				toolbar->collapsed = true;
+				ctx->overlayToolbars.pendingDrag = false;
+				ctx->widget.captureId = 0;
+				ctx->event = InputEvent();
+				forceRepaint();
 			}
+
+			if (clicked && e.onClick)
+				e.onClick();
+			if (!toolbar->dragging && !e.tooltip.empty())
+				tooltip(e.tooltip.c_str());
 		}
+	}
+
+	if (!openDropdownElement)
+		toolbar->openDropdownId.clear();
 
 	if (toolbar->dragging)
 	{
@@ -927,6 +1093,11 @@ else
 	}
 
 	ctx->renderer.popClipRect();
+
+	// the dropdown popup must be drawn after the toolbar clip is popped
+	if (openDropdownElement)
+		drawToolbarDropdownPopup(toolbar, openDropdownElement);
+
 	ctx->overlayToolbars.currentToolbar = nullptr;
 }
 
@@ -966,6 +1137,24 @@ bool overlayToolbarToggle(const char* elementId, const char* label, HImage iconO
 		e.tooltip = tooltip;
 
 	return false;
+}
+
+void overlayToolbarDropdown(const char* elementId, const char** items, u32 itemCount, i32* selectedIndex, void (*onSelect)(i32), HImage icon, const char* tooltip)
+{
+	if (!ctx || !ctx->overlayToolbars.currentToolbar)
+		return;
+
+	ctx->overlayToolbars.currentToolbar->elements.push_back({});
+	auto& e = ctx->overlayToolbars.currentToolbar->elements.back();
+	e.type = OverlayToolbarElementType::Dropdown;
+	e.id = elementId ? elementId : "";
+	e.items = items;
+	e.itemCount = itemCount;
+	e.selectedIndex = selectedIndex;
+	e.onSelect = onSelect;
+	e.icon = icon;
+	if (tooltip)
+		e.tooltip = tooltip;
 }
 
 void overlayToolbarSeparator()

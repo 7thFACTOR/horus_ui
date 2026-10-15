@@ -42,7 +42,7 @@ void curveEditor(f32 height, u32 maxPoints, hui::Point* points, u32& pointCount,
 	p[3].isLine = false;
 	p[3].leftTangent = { -10,20 };
 	p[3].rightTangent = { 10,20 };
-	hui::drawSpline(p, 4, 100);
+	hui::renderDrawSpline(p, 4, hui::SplineType::Hermite, 100);
 	hui::endCustomWidget();
 }
 

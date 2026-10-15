@@ -1314,6 +1314,25 @@ struct SplineControlPoint
 	NodeType type = NodeType::Symmetrical;
 };
 
+/// The interpolation algorithm used when drawing a spline
+enum class SplineType
+{
+	/// Cubic hermite spline, uses the tangents stored on each control point
+	Hermite,
+	/// Cubic bezier, the control point tangents are used as the bezier handles
+	CubicBezier,
+	/// Quadratic bezier, a single handle per segment is derived from the tangents
+	QuadraticBezier,
+	/// Centripetal Catmull-Rom spline, tangents are derived from the neighbouring control points
+	CatmullRom,
+	/// Natural cubic spline interpolating all control points
+	Natural,
+	/// Straight line segments between consecutive control points
+	Linear,
+	/// Uniform cubic B-spline, a smooth approximating curve that does not pass through the control points
+	Basis
+};
+
 /// A 2D rectangle
 struct Rect
 {
@@ -2391,6 +2410,17 @@ HUI_API bool overlayToolbarButton(const char* elementId, const char* label, HIma
 /// \return true if toggled
 HUI_API bool overlayToolbarToggle(const char* elementId, const char* label, HImage iconOff, HImage iconOn, bool* toggleValue, void (*onToggle)(bool) = nullptr, const char* tooltip = nullptr);
 
+/// Add a dropdown list button to the current toolbar, showing the selected item.
+/// The chosen item is reported through the onSelect callback
+/// \param elementId the unique element id inside the toolbar
+/// \param items the array of item labels
+/// \param itemCount the number of items
+/// \param selectedIndex the currently selected item index (in/out)
+/// \param onSelect callback when an item is selected (receives the new index)
+/// \param icon optional icon shown before the text
+/// \param tooltip the dropdown tooltip text
+HUI_API void overlayToolbarDropdown(const char* elementId, const char** items, u32 itemCount, i32* selectedIndex, void (*onSelect)(i32) = nullptr, HImage icon = 0, const char* tooltip = nullptr);
+
 /// Add a separator to the current toolbar
 HUI_API void overlayToolbarSeparator();
 
@@ -3440,6 +3470,25 @@ HUI_API void renderDrawCircle(const Point& center, f32 radius, u32 segments = 32
 /// \param radiusY the vertical radius
 /// \param segments the number of segments to approximate the ellipse
 HUI_API void renderDrawEllipse(const Point& center, f32 radiusX, f32 radiusY, u32 segments = 32);
+/// Draw a solid (filled) circle
+/// \param center the circle center
+/// \param radius the circle radius
+/// \param segments the number of segments to approximate the circle
+HUI_API void renderDrawSolidCircle(const Point& center, f32 radius, u32 segments = 32);
+/// Draw a solid (filled) pie, a circle sector from startAngle to endAngle
+/// \param center the pie center
+/// \param radius the pie radius
+/// \param startAngle the sector start angle in radians (0 points right, increases clockwise)
+/// \param endAngle the sector end angle in radians (must be greater than startAngle)
+/// \param segments the number of segments to approximate the arc
+HUI_API void renderDrawSolidPie(const Point& center, f32 radius, f32 startAngle, f32 endAngle, u32 segments = 32);
+/// Draw a pie outline, an arc from startAngle to endAngle with two lines to the center
+/// \param center the pie center
+/// \param radius the pie radius
+/// \param startAngle the arc start angle in radians (0 points right, increases clockwise)
+/// \param endAngle the arc end angle in radians (must be greater than startAngle)
+/// \param segments the number of segments to approximate the arc
+HUI_API void renderDrawPie(const Point& center, f32 radius, f32 startAngle, f32 endAngle, u32 segments = 32);
 /// Draw a rectangle outline
 /// \param rc the rectangle
 HUI_API void renderDrawRectangle(const Rect& rc);
@@ -3449,8 +3498,10 @@ HUI_API void renderDrawSolidRectangle(const Rect& rc);
 /// Draw a spline through the given control points
 /// \param points the array of spline control points
 /// \param count the number of control points
+/// \param type the interpolation algorithm used to build the curve
 /// \param segmentSize the length in pixels of each spline segment
-HUI_API void renderDrawSpline(SplineControlPoint* points, u32 count, f32 segmentSize = 15);
+/// \param closed whether the curve loops back from the last control point to the first
+HUI_API void renderDrawSpline(SplineControlPoint* points, u32 count, SplineType type = SplineType::Hermite, f32 segmentSize = 15, bool closed = false);
 /// Draw an arrow from a start point to an end point
 /// \param startPoint the arrow start point
 /// \param endPoint the arrow tip point

@@ -110,6 +110,18 @@
 		<p class="brief">Draw an ellipse outline.</p>
 	</div>
 	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">renderDrawSolidCircle</span>(<span class="prm">const Point&</span> center, <span class="prm">f32</span> radius, <span class="prm">u32</span> segments = 32)</code></div>
+		<p class="brief">Draw a solid (filled) circle. The boundary is anti-aliased when <code>Settings.lineAntiAliasing</code> is enabled.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">renderDrawSolidPie</span>(<span class="prm">const Point&</span> center, <span class="prm">f32</span> radius, <span class="prm">f32</span> startAngle, <span class="prm">f32</span> endAngle, <span class="prm">u32</span> segments = 32)</code></div>
+		<p class="brief">Draw a solid (filled) pie, a circle sector from startAngle to endAngle (radians, 0 points right and increases clockwise). The arc and the two straight edges are anti-aliased when <code>Settings.lineAntiAliasing</code> is enabled.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">renderDrawPie</span>(<span class="prm">const Point&</span> center, <span class="prm">f32</span> radius, <span class="prm">f32</span> startAngle, <span class="prm">f32</span> endAngle, <span class="prm">u32</span> segments = 32)</code></div>
+		<p class="brief">Draw a pie outline: an arc from startAngle to endAngle with two lines to the center (radians, 0 points right and increases clockwise).</p>
+	</div>
+	<div class="member">
 		<div class="prototype"><code><span class="kw">void</span> <span class="fn">renderDrawRectangle</span>(<span class="prm">const Rect&</span> rc)</code></div>
 		<p class="brief">Draw a rectangle outline.</p>
 	</div>
@@ -118,8 +130,8 @@
 		<p class="brief">Draw a solid (filled) rectangle.</p>
 	</div>
 	<div class="member">
-		<div class="prototype"><code><span class="kw">void</span> <span class="fn">renderDrawSpline</span>(<span class="prm">SplineControlPoint*</span> points, <span class="prm">u32</span> count, <span class="prm">f32</span> segmentSize = 15)</code></div>
-		<p class="brief">Draw a spline through the given control points.</p>
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">renderDrawSpline</span>(<span class="prm">SplineControlPoint*</span> points, <span class="prm">u32</span> count, <span class="prm">SplineType</span> type = SplineType::Hermite, <span class="prm">f32</span> segmentSize = 15, <span class="prm">bool</span> closed = false)</code></div>
+		<p class="brief">Draw a spline through the given control points, using the given interpolation (Hermite, cubic/quadratic bezier, centripetal Catmull-Rom, natural cubic, linear or uniform cubic B-spline). When closed is true the curve loops back from the last control point to the first, taking the wrapped neighbours into account.</p>
 	</div>
 	<div class="member">
 		<div class="prototype"><code><span class="kw">void</span> <span class="fn">renderDrawArrow</span>(<span class="prm">const Point&</span> startPoint, <span class="prm">const Point&</span> endPoint, <span class="prm">f32</span> tipLength, <span class="prm">f32</span> tipWidth, <span class="prm">bool</span> drawBodyLine = true)</code></div>
