@@ -3555,16 +3555,14 @@ if (expandableBegin("Overlay Toolbars", &demo.expandOverlayToolbar))
 
 						if (cSum > 1e-12f)
 						{
-							Point push0 = err * (c1 / cSum);
-							Point push1 = err * (c2 / cSum);
-							f32 const maxPush = (p1 - p0).getLength();
-							f32 const push0Len = push0.getLength();
-							f32 const push1Len = push1.getLength();
-
-							if (push0Len > maxPush)
-								push0 = push0 * (maxPush / push0Len);
-							if (push1Len > maxPush)
-								push1 = push1 * (maxPush / push1Len);
+							// cap how far a handle may travel per unit of mouse travel so
+							// grabbing close to an end point cannot blow the handle up,
+							// while still tracking the mouse and never hitting a hard stop
+							f32 const maxAmp = 2.0f;
+							f32 const amp0 = c1 / cSum;
+							f32 const amp1 = c2 / cSum;
+							Point const push0 = err * (amp0 < maxAmp ? amp0 : maxAmp);
+							Point const push1 = err * (amp1 < maxAmp ? amp1 : maxAmp);
 
 							se.points[s].rightTangent = se.dragStartRight + push0;
 							se.points[next].leftTangent = se.dragStartCenter + push1;
