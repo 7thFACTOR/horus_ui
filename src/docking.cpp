@@ -1552,7 +1552,7 @@ bool windowDockInternal(Window* wnd, DockNode* targetNode, DockType dockType, u3
 	{
 		auto node = pair.second;
 
-		if (node->nativeWindow)
+		if (node && node->nativeWindow)
 		{
 			node->checkRedundancy();
 			node->computeRect();
@@ -1589,7 +1589,8 @@ void dockNodeTabs(DockNode* node)
 		ctx->docking.drawingWindowTabs = true;
 
 		// set clip rect for whole native window
-		auto& rc = ctx->docking.rootNativeWindowDockNodes[node->nativeWindow]->rect;
+		auto rcIt = ctx->docking.rootNativeWindowDockNodes.find(node->nativeWindow);
+		Rect rc = rcIt != ctx->docking.rootNativeWindowDockNodes.end() && rcIt->second ? rcIt->second->rect : node->rect;
 		ctx->renderer.pushClipRect(rc, false);
 		ctx->docking.currentDockNode = node;
 		tabGroupBegin(node->selectedTabIndex);
@@ -1757,6 +1758,9 @@ void handleDockingMouseDown(const InputEvent& event, DockNode* node)
 	//TODO: we could check just the tabs of the current os window clicked on
 	for (auto& wnd : ds.windows)
 	{
+		if (!wnd.second || !wnd.second->dockNode)
+			continue;
+
 		if (wnd.second->dockNode->nativeWindow != event.window)
 			continue;
 
@@ -2711,29 +2715,34 @@ void updateDockingSystem()
 		{
 			if (ds.hoveredNode)
 			{
-				auto& rc = ds.rootNativeWindowDockNodes[ds.hoveredNode->nativeWindow]->rect;
+				auto rcIt = ds.rootNativeWindowDockNodes.find(ds.hoveredNode->nativeWindow);
 
-				ctx->settings.services.setCurrentWindow(ds.hoveredNode->nativeWindow);
-				ctx->renderer.disableRendering = false;
-				ctx->renderer.nativeWindowSetCurrent(ds.hoveredNode->nativeWindow);
-				ctx->renderer.setWindowSize(rc.getSize());
-				ctx->renderer.begin();
-				ctx->renderer.pushWindowDrawCmdLayer(DrawCmdLayerType::Overlay);
-				drawDockPreview(ds.dragWindow, ds.dragRect);
-				drawDockGuides();
-				ctx->renderer.popWindowDrawCmdLayer();
-				ctx->renderer.executeDrawCommands(ds.hoveredNode->nativeWindow);
+				if (rcIt != ds.rootNativeWindowDockNodes.end() && rcIt->second)
+				{
+					auto& rc = rcIt->second->rect;
+
+					ctx->settings.services.setCurrentWindow(ds.hoveredNode->nativeWindow);
+					ctx->renderer.disableRendering = false;
+					ctx->renderer.nativeWindowSetCurrent(ds.hoveredNode->nativeWindow);
+					ctx->renderer.setWindowSize(rc.getSize());
+					ctx->renderer.begin();
+					ctx->renderer.pushWindowDrawCmdLayer(DrawCmdLayerType::Overlay);
+					drawDockPreview(ds.dragWindow, ds.dragRect);
+					drawDockGuides();
+					ctx->renderer.popWindowDrawCmdLayer();
+					ctx->renderer.executeDrawCommands(ds.hoveredNode->nativeWindow);
+				}
 			}
 		}
 	}
 
 	if (ctx->event.type == InputEvent::Type::WindowClose)
 	{
-		auto node = ctx->docking.rootNativeWindowDockNodes[ctx->event.window];
+		auto nodeIt = ctx->docking.rootNativeWindowDockNodes.find(ctx->event.window);
 
-		if (node)
+		if (nodeIt != ctx->docking.rootNativeWindowDockNodes.end() && nodeIt->second)
 		{
-			node->removeWindowsAndDeleteChildrenRecursive();
+			nodeIt->second->removeWindowsAndDeleteChildrenRecursive();
 		}
 
 		ctx->docking.nativeWindowsToDelete.insert(ctx->event.window);

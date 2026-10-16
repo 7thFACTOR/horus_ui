@@ -7,13 +7,46 @@ namespace hui
 {
 constexpr size_t writeGrowSize = 1024;
 
+// recursively gathers a dock node, its tab windows and all child nodes so each
+// object can be released exactly once during teardown
+static void collectDockNodeObjects(DockNode* node, std::unordered_set<DockNode*>& nodes, std::unordered_set<Window*>& windows)
+{
+	if (!node)
+		return;
+
+	nodes.insert(node);
+
+	for (auto& wnd : node->windows)
+		windows.insert(wnd);
+
+	for (auto& child : node->children)
+		collectDockNodeObjects(child, nodes, windows);
+}
+
 DockingState::~DockingState()
 {
+	// collect every reachable window and dock node, including the ones already
+	// scheduled for deferred deletion, then free each one once
+	std::unordered_set<Window*> windowsToDestroy = windowsToDelete;
+	std::unordered_set<DockNode*> dockNodesToDestroy = dockNodesToDelete;
+
+	for (auto& wnd : windows)
+		windowsToDestroy.insert(wnd.second);
+
 	for (auto& pair : rootNativeWindowDockNodes)
+		collectDockNodeObjects(pair.second, dockNodesToDestroy, windowsToDestroy);
+
+	for (auto& wnd : windowsToDestroy)
+		delete wnd;
+
+	for (auto& node : dockNodesToDestroy)
+		delete node;
+
+	// the native windows themselves are owned by the platform services
+	if (ctx)
 	{
-		pair.second->removeWindowsAndDeleteChildrenRecursive();
-		delete pair.second;
-		ctx->settings.services.destroyWindow(pair.first);
+		for (auto& pair : rootNativeWindowDockNodes)
+			ctx->settings.services.destroyWindow(pair.first);
 	}
 }
 

@@ -105,7 +105,18 @@ HContext contextGet()
 void contextDestroy(HContext context)
 {
 	HUI_ASSERT(context);
-	delete (Context*)context;
+
+	Context* contextPtr = (Context*)context;
+	Context* previousCtx = ctx;
+
+	// teardown helpers reach services through the global context, so point it at
+	// the context being destroyed for the duration of the deletion
+	ctx = contextPtr;
+
+	delete contextPtr;
+
+	// never leave the global context pointing at freed memory
+	ctx = previousCtx == contextPtr ? nullptr : previousCtx;
 }
 
 Settings& contextGetSettings()

@@ -147,7 +147,7 @@ bool circularSliderFloat(const char* label, f32* value, f32 minVal, f32 maxVal, 
 		ctx->renderer.cmdDrawImage(bodyElemState->image, rc);
 
 		Point center = rc.center();
-		f32 percent = 1.0f - (maxVal - *value) / (maxVal - minVal);
+		f32 percent = maxVal != minVal ? 1.0f - (maxVal - *value) / (maxVal - minVal) : 0.0f;
 		
 		f32 limitOffset = valueDotElem.currentStyle->getParameter("limitOffset", 0.3f);
 		f32 dotCount = valueDotElem.currentStyle->getParameter("count", 20);

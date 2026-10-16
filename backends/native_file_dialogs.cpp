@@ -1,13 +1,30 @@
 #include "native_file_dialogs.h"
 #include <nfd.h>
+#include <stdlib.h>
 #include <string.h>
 
 namespace hui
 {
+// nfd allocates with malloc, so it must be released with free
 OpenMultipleFileSet::~OpenMultipleFileSet()
 {
-	delete[] filenameBuffer;
-	delete[] bufferIndices;
+	free(filenameBuffer);
+	free(bufferIndices);
+}
+
+// copies an nfd path, always null terminating the destination
+static void copyPath(char* outPath, u32 maxOutPathSize, const char* path)
+{
+	if (!maxOutPathSize)
+		return;
+
+	size_t len = strlen(path);
+
+	if (len >= maxOutPathSize)
+		len = maxOutPathSize - 1;
+
+	memcpy(outPath, path, len);
+	outPath[len] = 0;
 }
 
 bool openFileDialog(const char* filterList, const char* defaultPath, char* outPath, u32 maxOutPathSize)
@@ -20,10 +37,10 @@ bool openFileDialog(const char* filterList, const char* defaultPath, char* outPa
 
 	if (res == NFD_OKAY)
 	{
-		memcpy(outPath, path, std::min((int)maxOutPathSize, (int)strlen(path) + 1));
+		copyPath(outPath, maxOutPathSize, path);
 	}
 
-	delete[] path;
+	free(path);
 
 	if (res == NFD_ERROR || res == NFD_CANCEL)
 		return false;
@@ -40,6 +57,10 @@ bool openMultipleFileDialog(const char* filterList, const char* defaultPath, Ope
 
 	if (res != NFD_OKAY)
 		return false;
+
+	// release paths from a previous call, they would be leaked otherwise
+	free(outPathSet.filenameBuffer);
+	free(outPathSet.bufferIndices);
 
 	outPathSet.filenameBuffer = outPaths.buf;
 	outPathSet.count = outPaths.count;
@@ -58,8 +79,8 @@ bool saveFileDialog(const char* filterList, const char* defaultPath, char* outPa
 	if (res != NFD_OKAY)
 		return false;
 
-	memcpy(outPath, path, std::min((int)maxOutPathSize, (int)strlen(path) + 1));
-	delete[] path;
+	copyPath(outPath, maxOutPathSize, path);
+	free(path);
 
 	return true;
 }
@@ -74,8 +95,8 @@ bool pickFolderDialog(const char* defaultPath, char* outPath, u32 maxOutPathSize
 	if (res != NFD_OKAY)
 		return false;
 
-	memcpy(outPath, path, std::min((int)maxOutPathSize, (int)strlen(path) + 1));
-	delete[] path;
+	copyPath(outPath, maxOutPathSize, path);
+	free(path);
 
 	return true;
 }

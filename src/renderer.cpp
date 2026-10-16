@@ -1083,13 +1083,25 @@ void Renderer::cmdDrawLine(const Point& a, const Point& b)
 
 void Renderer::cmdDrawPolyLine(const Point* points, u32 pointCount, bool closed)
 {
+	if (!points || pointCount < 2)
+		return;
+
+	auto& pointBuffer = currentWindowContext->pointBuffer;
+	u32 position = currentWindowContext->pointBufferPosition;
+
+	// the buffer cannot be grown, stored command pointers would dangle
+	if (position >= (u32)pointBuffer.size())
+		return;
+
+	u32 count = std::min(pointCount, (u32)pointBuffer.size() - position);
+
 	DrawCommand cmd(DrawCommand::Type::DrawPolyLine);
 
-	cmd.data.drawPolyLine.count = pointCount;
+	cmd.data.drawPolyLine.count = count;
 	cmd.data.drawPolyLine.closed = closed;
-	cmd.data.drawPolyLine.points = &currentWindowContext->pointBuffer[currentWindowContext->pointBufferPosition];
-	memcpy(currentWindowContext->pointBuffer.data() + currentWindowContext->pointBufferPosition, points, pointCount * sizeof(Point));
-	currentWindowContext->pointBufferPosition += pointCount;
+	cmd.data.drawPolyLine.points = pointBuffer.data() + position;
+	memcpy(pointBuffer.data() + position, points, count * sizeof(Point));
+	currentWindowContext->pointBufferPosition += count;
 	addDrawCommand(cmd);
 }
 
@@ -2164,13 +2176,30 @@ void Renderer::drawLine(const Point& a, const Point& b)
 	drawPolyLine(pts, 2, false);
 }
 
+// true when the line style has a stipple pattern with a usable total size
+static bool hasValidStipplePattern(const LineStyle& style)
+{
+	if (style.stipplePatternCount == 0)
+		return false;
+
+	f32 totalSize = 0;
+
+	for (u32 j = 0; j < style.stipplePatternCount; j++)
+		totalSize += style.stipplePattern[j];
+
+	return totalSize > 0.0f;
+}
+
 void Renderer::drawPolyLine(const Point* points, u32 pointCount, bool closed)
 {
+	if (!points || pointCount < 2)
+		return;
+
 	std::vector<Point> stippleLines;
 	std::vector<bool> stippleLinesSkip;
 	Point* pts = (Point*)points;
 
-	if (currentLineStyle.useStipple)
+	if (currentLineStyle.useStipple && hasValidStipplePattern(currentLineStyle))
 	{
 		stippleLines.clear();
 		stippleLinesSkip.clear();
@@ -2414,31 +2443,35 @@ void Renderer::drawPolyLine(const Point* points, u32 pointCount, bool closed)
 				n1.normalize();
 			}
 
-			seg1 = Point(pts[p].x - pts[p + 1].x, pts[p].y - pts[p + 1].y);
-			seg2 = Point(pts[p + 2].x - pts[p + 1].x, pts[p + 2].y - pts[p + 1].y);
-			seg1.normalize();
-			seg2.normalize();
-			d1 = seg1 + seg2;
-			d1.normalize();
-			sinAngle = (d1.x * seg2.y - d1.y * seg2.x);
-			auto a = seg1.dot(seg2);
-			extrudeScale2 = 1.0f / sinAngle;
-			n2 = d1;
-			lastN2 = n2;
-
-			if (a < -0.9f)
-			{
-				d1 = Point(pts[1].x - pts[0].x, pts[1].y - pts[0].y);
-				n2 = Point(d1.y, -d1.x);
-				n2.normalize();
-				lastN2 = n2;
-				extrudeScale2 = 1;
-			}
-
+			// a 2 point path has no interior vertex to derive the second normal from
 			if (pointCount == 2)
 			{
 				n2 = n1;
+				lastN2 = n2;
 				extrudeScale2 = extrudeScale1;
+			}
+			else
+			{
+				seg1 = Point(pts[p].x - pts[p + 1].x, pts[p].y - pts[p + 1].y);
+				seg2 = Point(pts[p + 2].x - pts[p + 1].x, pts[p + 2].y - pts[p + 1].y);
+				seg1.normalize();
+				seg2.normalize();
+				d1 = seg1 + seg2;
+				d1.normalize();
+				sinAngle = (d1.x * seg2.y - d1.y * seg2.x);
+				auto a = seg1.dot(seg2);
+				extrudeScale2 = 1.0f / sinAngle;
+				n2 = d1;
+				lastN2 = n2;
+
+				if (a < -0.9f)
+				{
+					d1 = Point(pts[1].x - pts[0].x, pts[1].y - pts[0].y);
+					n2 = Point(d1.y, -d1.x);
+					n2.normalize();
+					lastN2 = n2;
+					extrudeScale2 = 1;
+				}
 			}
 		}
 		// if last point and its closed

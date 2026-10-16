@@ -68,12 +68,15 @@ static VulkanTexture* g_defaultWhiteTexture = nullptr;
 static std::vector<void*> g_pendingSwapchainDestroys;
 
 // small utility
-static void checkErrorVK(VkResult result, const char* where)
+static bool checkErrorVK(VkResult result, const char* where)
 {
 	if (result != VK_SUCCESS)
 	{
 		printf("[%s] Vulkan Error: %d\n", where, result);
+		return false;
 	}
+
+	return true;
 }
 
 // forward-declare debug utils helper
@@ -174,9 +177,13 @@ static void createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPr
 	bufferInfo.usage = usage;
 	bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
-	checkErrorVK(vkCreateBuffer(device, &bufferInfo, nullptr, &buffer), "createBuffer vkCreateBuffer");
+	if (!checkErrorVK(vkCreateBuffer(device, &bufferInfo, nullptr, &buffer), "createBuffer vkCreateBuffer"))
+	{
+		buffer = VK_NULL_HANDLE;
+		return;
+	}
 
-	VkMemoryRequirements memRequirements;
+	VkMemoryRequirements memRequirements{};
 	vkGetBufferMemoryRequirements(device, buffer, &memRequirements);
 
 	VkMemoryAllocateInfo allocInfo{};
@@ -184,7 +191,14 @@ static void createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPr
 	allocInfo.allocationSize = memRequirements.size;
 	allocInfo.memoryTypeIndex = findMemoryType(memRequirements.memoryTypeBits, properties);
 
-	checkErrorVK(vkAllocateMemory(device, &allocInfo, nullptr, &bufferMemory), "createBuffer vkAllocateMemory");
+	if (!checkErrorVK(vkAllocateMemory(device, &allocInfo, nullptr, &bufferMemory), "createBuffer vkAllocateMemory"))
+	{
+		bufferMemory = VK_NULL_HANDLE;
+		vkDestroyBuffer(device, buffer, nullptr);
+		buffer = VK_NULL_HANDLE;
+		return;
+	}
+
 	vkBindBufferMemory(device, buffer, bufferMemory, 0);
 }
 
@@ -303,14 +317,27 @@ void VulkanTexture::resize(u32 newWidth, u32 newHeight)
 	imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 	imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
 
-	checkErrorVK(vkCreateImage(device, &imageInfo, nullptr, &handle), "VulkanTexture::resize vkCreateImage");
-	VkMemoryRequirements memRequirements;
+	if (!checkErrorVK(vkCreateImage(device, &imageInfo, nullptr, &handle), "VulkanTexture::resize vkCreateImage"))
+	{
+		handle = VK_NULL_HANDLE;
+		return;
+	}
+
+	VkMemoryRequirements memRequirements{};
 	vkGetImageMemoryRequirements(device, handle, &memRequirements);
 	VkMemoryAllocateInfo allocInfo{};
 	allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
 	allocInfo.allocationSize = memRequirements.size;
 	allocInfo.memoryTypeIndex = findMemoryType(memRequirements.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-	checkErrorVK(vkAllocateMemory(device, &allocInfo, nullptr, &memory), "VulkanTexture::resize vkAllocateMemory");
+
+	if (!checkErrorVK(vkAllocateMemory(device, &allocInfo, nullptr, &memory), "VulkanTexture::resize vkAllocateMemory"))
+	{
+		memory = VK_NULL_HANDLE;
+		vkDestroyImage(device, handle, nullptr);
+		handle = VK_NULL_HANDLE;
+		return;
+	}
+
 	vkBindImageMemory(device, handle, memory, 0);
 
 	VkImageViewCreateInfo viewInfo{};
@@ -426,14 +453,27 @@ void VulkanVertexBuffer::resize(u32 count)
 	bufferInfo.size = bufferSize;
 	bufferInfo.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
 	bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-	checkErrorVK(vkCreateBuffer(device, &bufferInfo, nullptr, &handle), "VulkanVertexBuffer::resize vkCreateBuffer");
-	VkMemoryRequirements memRequirements;
+	if (!checkErrorVK(vkCreateBuffer(device, &bufferInfo, nullptr, &handle), "VulkanVertexBuffer::resize vkCreateBuffer"))
+	{
+		handle = VK_NULL_HANDLE;
+		return;
+	}
+
+	VkMemoryRequirements memRequirements{};
 	vkGetBufferMemoryRequirements(device, handle, &memRequirements);
 	VkMemoryAllocateInfo allocInfo{};
 	allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
 	allocInfo.allocationSize = memRequirements.size;
 	allocInfo.memoryTypeIndex = findMemoryType(memRequirements.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-	checkErrorVK(vkAllocateMemory(device, &allocInfo, nullptr, &memory), "VulkanVertexBuffer::resize vkAllocateMemory");
+
+	if (!checkErrorVK(vkAllocateMemory(device, &allocInfo, nullptr, &memory), "VulkanVertexBuffer::resize vkAllocateMemory"))
+	{
+		memory = VK_NULL_HANDLE;
+		vkDestroyBuffer(device, handle, nullptr);
+		handle = VK_NULL_HANDLE;
+		return;
+	}
+
 	vkBindBufferMemory(device, handle, memory, 0);
 }
 void VulkanVertexBuffer::updateData(Vertex* vertices, u32 startVertexIndex, u32 count)
@@ -803,7 +843,12 @@ static bool createPipelineForSwapchain(SwapchainContext& ctx)
 		sci.unnormalizedCoordinates = VK_FALSE;
 		sci.compareEnable = VK_FALSE;
 		sci.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
-		checkErrorVK(vkCreateSampler(device, &sci, nullptr, &ctx.sampler), "create sampler");
+
+		if (!checkErrorVK(vkCreateSampler(device, &sci, nullptr, &ctx.sampler), "create sampler"))
+		{
+			ctx.sampler = VK_NULL_HANDLE;
+			return false;
+		}
 	}
 
 	return true;
@@ -1767,6 +1812,9 @@ void shutdownVulkan(Services& services)
 	// flush scheduled destroys now (will perform waits and actual vkDestroySwapchainKHR)
 	flushPendingSwapchainDestroys();
 
+	// per-window draw data must not outlive the swapchains / device
+	g_drawSubmissions.clear();
+
 	if (device != VK_NULL_HANDLE)
 	{
 		vkDeviceWaitIdle(device);
@@ -1864,6 +1912,33 @@ void destroySurfaceVk(VkSurfaceKHR surface)
 
 	// now safe to destroy the surface
 	SDL_Vulkan_DestroySurface(instance, surface, nullptr);
+}
+
+// Destroys everything created for a window: its swapchain, any surface the backend
+// created internally, and the caller owned surface (which may be null). Each surface
+// is destroyed at most once, and it always happens after its swapchain.
+void destroyWindowResourcesVk(void* sdlWindow, VkSurfaceKHR ownedSurface)
+{
+	// we destroy synchronously now, so drop any scheduled deferred destroy for this window
+	g_pendingSwapchainDestroys.erase(std::remove(g_pendingSwapchainDestroys.begin(), g_pendingSwapchainDestroys.end(), sdlWindow), g_pendingSwapchainDestroys.end());
+
+	VkSurfaceKHR internalSurface = VK_NULL_HANDLE;
+	auto it = g_swapchains.find(sdlWindow);
+
+	if (it != g_swapchains.end())
+	{
+		internalSurface = it->second.surface;
+		destroySwapchainForWindowImmediate(sdlWindow);
+	}
+
+	g_drawSubmissions.erase(sdlWindow);
+
+	// surface created internally by presentSwapchainForWindowVk, not owned by the caller
+	if (internalSurface != VK_NULL_HANDLE && internalSurface != ownedSurface)
+		destroySurfaceVk(internalSurface);
+
+	if (ownedSurface != VK_NULL_HANDLE)
+		destroySurfaceVk(ownedSurface);
 }
 
 }

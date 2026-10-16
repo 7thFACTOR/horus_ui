@@ -399,6 +399,28 @@ void createWindowDx11(HWND hwnd, SdlWindowProxy* proxy, const Rect& rect)
 	dxgiDevice->Release();
 }
 
+void destroyWindowDx11(SdlWindowProxy* proxy)
+{
+	// unbind the view so no reference to it survives the release
+	if (dx11DeviceContext)
+		dx11DeviceContext->OMSetRenderTargets(0, nullptr, nullptr);
+
+	if (proxy->dx11RTV)
+	{
+		((ID3D11RenderTargetView*)proxy->dx11RTV)->Release();
+		proxy->dx11RTV = nullptr;
+	}
+
+	if (proxy->dx11SwapChain)
+	{
+		if (dx11DeviceContext)
+			dx11DeviceContext->Flush();
+
+		((IDXGISwapChain*)proxy->dx11SwapChain)->Release();
+		proxy->dx11SwapChain = nullptr;
+	}
+}
+
 void setCurrentWindowDx11(SdlWindowProxy* proxy)
 {
 	if (proxy->dx11RTV) {

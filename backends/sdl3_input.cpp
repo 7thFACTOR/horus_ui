@@ -19,6 +19,8 @@ namespace hui
 extern void resizeSwapchainForSdlWindowDx11(struct SdlWindowProxy* proxy);
 extern void resizeSwapchainForSdlWindowDx12(struct SdlWindowProxy* proxy);
 extern void resizeSwapchainForSdlWindowVk(void* sdlWindow);
+extern void destroyWindowDx11(struct SdlWindowProxy* proxy);
+extern void destroyWindowDx12(struct SdlWindowProxy* proxy);
 
 struct Sdl3InputContext
 {
@@ -391,6 +393,34 @@ static SdlWindowProxy* findSdlWindow(SDL_Window* wnd)
 	return nullptr;
 }
 
+// copies a utf-8 string into a fixed buffer, never splitting a codepoint
+static void copyTextInput(char* dst, size_t dstSize, const char* src)
+{
+	if (!dstSize)
+		return;
+
+	size_t capacity = dstSize - 1;
+	size_t i = 0;
+
+	while (src[i] && i < capacity)
+	{
+		u8 c = (u8)src[i];
+		size_t seqLen = 1;
+
+		if ((c & 0xE0) == 0xC0) seqLen = 2;
+		else if ((c & 0xF0) == 0xE0) seqLen = 3;
+		else if ((c & 0xF8) == 0xF0) seqLen = 4;
+
+		if (i + seqLen > capacity)
+			break;
+
+		memcpy(dst + i, src + i, seqLen);
+		i += seqLen;
+	}
+
+	dst[i] = 0;
+}
+
 static void addSdlEvent(SDL_Event& ev)
 {
 	InputEvent outEvent = InputEvent();
@@ -490,7 +520,7 @@ static void addSdlEvent(SDL_Event& ev)
 		break;
 	case SDL_EVENT_TEXT_INPUT:
 		outEvent.type = InputEvent::Type::Text;
-		strcpy(outEvent.text.text, ev.text.text);
+		copyTextInput(outEvent.text.text, sizeof(outEvent.text.text), ev.text.text);
 		outEvent.window = findSdlWindow(SDL_GetWindowFromID(ev.text.windowID));
 		outEvent.key.modifiers = KeyModifiers::None;
 		break;
@@ -961,26 +991,41 @@ static void presentWindow(HNativeWindow window)
 
 static void destroyWindow(HNativeWindow window)
 {
-	// if Vulkan surface was created, destroy swapchain then surface
-	if (sdl3InputContext->initParams.gfxApi == Sdl3GfxApi::Vulkan)
-	{
-		auto proxy = (SdlWindowProxy*)window;
-		if (proxy->surface != VK_NULL_HANDLE)
-		{
-			// destroy any backend swapchain/resources associated with this SDL window first
-			hui::destroySwapchainForWindowVk(((SdlWindowProxy*)window)->sdlWindow);
+	auto proxy = (SdlWindowProxy*)window;
 
-			hui::destroySurfaceVk(proxy->surface);
-			proxy->surface = VK_NULL_HANDLE;
-		}
+	// release the graphics resources owned by this window before the native window goes away
+	if (sdl3InputContext->initParams.gfxApi == Sdl3GfxApi::DX11)
+	{
+#ifdef _WINDOWS
+		destroyWindowDx11(proxy);
+#endif
+	}
+	else if (sdl3InputContext->initParams.gfxApi == Sdl3GfxApi::DX12)
+	{
+#ifdef _WINDOWS
+		destroyWindowDx12(proxy);
+#endif
+	}
+	else if (sdl3InputContext->initParams.gfxApi == Sdl3GfxApi::Vulkan)
+	{
+		// destroys the swapchain, any internally created surface and the window surface
+		hui::destroyWindowResourcesVk(proxy->sdlWindow, proxy->surface);
+		proxy->surface = VK_NULL_HANDLE;
 	}
 
-	SDL_DestroyWindow(((SdlWindowProxy*)window)->sdlWindow);
+	SDL_DestroyWindow(proxy->sdlWindow);
+
+	// drop references to the window so nothing dispatches events into the freed proxy
+	if (sdl3InputContext->focusedWindow == proxy) sdl3InputContext->focusedWindow = nullptr;
+	if (sdl3InputContext->hoveredWindow == proxy) sdl3InputContext->hoveredWindow = nullptr;
+	if (sdl3InputContext->currentWindow == proxy) sdl3InputContext->currentWindow = nullptr;
+	if (sdl3InputContext->textInputWindow == proxy->sdlWindow) sdl3InputContext->textInputWindow = nullptr;
+
 	auto iter = std::find(sdl3InputContext->windows.begin(), sdl3InputContext->windows.end(), window);
 
 	if (iter != sdl3InputContext->windows.end())
 	{
-		delete ((SdlWindowProxy*)window);
+		delete proxy;
 		sdl3InputContext->windows.erase(iter);
 	}
 }

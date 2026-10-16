@@ -2,6 +2,7 @@
 #include "context.h"
 #include "font.h"
 #include "renderer.h"
+#include "theme.h"
 #include "util.h"
 
 namespace hui
@@ -10,13 +11,13 @@ Context* ctx = nullptr;
 
 Context::~Context()
 {
-	// Flush deferred deletions to prevent leaks on context destruction
-	if (ctx->docking.windowsToDelete.size() > 0)
-		ctx->docking.windowsToDelete.clear();
-	if (ctx->docking.dockNodesToDelete.size() > 0)
-		ctx->docking.dockNodesToDelete.clear();
-	if (ctx->docking.nativeWindowsToDelete.size() > 0)
-		ctx->docking.nativeWindowsToDelete.clear();
+	// docking teardown is handled by ~DockingState; release any remaining
+	// themes that were not explicitly destroyed by the user
+	for (auto& theme : themes)
+		delete theme;
+
+	themes.clear();
+	theme = nullptr;
 }
 
 void Context::setLabelAndId(const char* text)

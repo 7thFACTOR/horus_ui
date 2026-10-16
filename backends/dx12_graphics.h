@@ -45,6 +45,7 @@ struct Dx12VertexBuffer
 };
 
 void createWindowDx12(HWND hwnd, struct SdlWindowProxy* proxy, const Rect& rect);
+void destroyWindowDx12(struct SdlWindowProxy* proxy);
 void setCurrentWindowDx12(struct SdlWindowProxy* proxy);
 void resizeSwapchainForSdlWindowDx12(struct SdlWindowProxy* proxy);
 bool initDx12(Services& services);

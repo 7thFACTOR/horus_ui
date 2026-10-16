@@ -5,6 +5,26 @@
 
 namespace hui
 {
+static f32 sliderPercentFilled(f32 value, f32 minVal, f32 maxVal)
+{
+	f32 range = maxVal - minVal;
+
+	if (range == 0.0f)
+		return 0.0f;
+
+	return 1.0f - (maxVal - value) / range;
+}
+
+static f32 sliderSnapValue(f32 value, f32 minVal, f32 maxVal, bool useStep, f32 step, bool isFloatValue)
+{
+	if (useStep && step > 0.0f)
+		value = minVal + roundf((value - minVal) / step) * step;
+	else if (!isFloatValue)
+		value = roundf(value);
+
+	return fmaxf(minVal, fminf(maxVal, value));
+}
+
 static bool sliderInternal(const char* id, f32 minVal, f32 maxVal, f32& value, bool useStep, f32 step, bool isFloatValue)
 {
 	auto& bodyElem = ctx->theme->getElement(WidgetElementId::SliderBody);
@@ -34,7 +54,7 @@ static bool sliderInternal(const char* id, f32 minVal, f32 maxVal, f32& value, b
 		mouseCursorSetType(MouseCursorType::HandPointing);
 	}
 
-	f32 percentFilled = 1.0f - (maxVal - value) / (maxVal - minVal);
+	f32 percentFilled = sliderPercentFilled(value, minVal, maxVal);
 	Rect knobRect;
 	f32 valueWidth = ctx->widget.rect.width;
 
@@ -89,9 +109,9 @@ static bool sliderInternal(const char* id, f32 minVal, f32 maxVal, f32& value, b
 		{
 			ctx->slider.draggingKnob = true;
 			ctx->slider.dragDelta.x = 0;
-			f32 t = (ctx->mousePosition.x - ctx->widget.rect.x) / valueWidth;
-			value = minVal + (maxVal - minVal) * t;
-			percentFilled = 1.0f - (maxVal - value) / (maxVal - minVal);
+			f32 t = valueWidth > 0.0f ? (ctx->mousePosition.x - ctx->widget.rect.x) / valueWidth : 0.0f;
+			value = sliderSnapValue(minVal + (maxVal - minVal) * t, minVal, maxVal, useStep, step, isFloatValue);
+			percentFilled = sliderPercentFilled(value, minVal, maxVal);
 			recomputeKnobRect = true;
 			wasModified = true;
 		}
@@ -110,9 +130,9 @@ static bool sliderInternal(const char* id, f32 minVal, f32 maxVal, f32& value, b
 		if (x > ctx->widget.rect.right())
 			x = ctx->widget.rect.right();
 
-		f32 t = (x - ctx->widget.rect.x) / valueWidth;
-		value = minVal + (maxVal - minVal) * t;
-		percentFilled = 1.0f - (maxVal - value) / (maxVal - minVal);
+		f32 t = valueWidth > 0.0f ? (x - ctx->widget.rect.x) / valueWidth : 0.0f;
+		value = sliderSnapValue(minVal + (maxVal - minVal) * t, minVal, maxVal, useStep, step, isFloatValue);
+		percentFilled = sliderPercentFilled(value, minVal, maxVal);
 		recomputeKnobRect = true;
 		wasModified = true;
 	}

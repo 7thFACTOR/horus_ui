@@ -8,6 +8,24 @@
 
 namespace hui
 {
+// fills out with count copies of the mask string, never overflowing outSize
+static void buildMaskedString(char* out, size_t outSize, const char* passwordChar, size_t count)
+{
+	if (outSize == 0)
+		return;
+
+	size_t charLen = strlen(passwordChar);
+	size_t pos = 0;
+
+	for (size_t i = 0; i < count && pos + charLen < outSize; i++)
+	{
+		memcpy(out + pos, passwordChar, charLen);
+		pos += charLen;
+	}
+
+	out[pos] = 0;
+}
+
 bool textInput(
 	const char* id,
 	char* text,
@@ -337,14 +355,8 @@ bool textInput(
 
 	if (password && defaultText != textToDraw)
 	{
-		u32 len = std::min(ctx->settings.services.utf8Length(textToDraw), maxHiddenCharLen);
-		hiddenPwdText[0] = 0;
-
-		for (i32 i = 0; i < len; i++)
-		{
-			strcat(hiddenPwdText, passwordChar);
-		}
-
+		u32 len = ctx->settings.services.utf8Length(textToDraw);
+		buildMaskedString(hiddenPwdText, maxHiddenCharLen, passwordChar, len);
 		textToDraw = hiddenPwdText;
 	}
 
@@ -401,15 +413,9 @@ bool textInput(
 			else
 			{
 				// build password-masked strings for each segment
-				beforeSelUtf8[0] = 0;
-				for (size_t i = 0; i < textBeforeSel.size(); i++)
-					strcat(beforeSelUtf8, passwordChar);
-				selectedUtf8[0] = 0;
-				for (size_t i = 0; i < selectedText.size(); i++)
-					strcat(selectedUtf8, passwordChar);
-				afterSelUtf8[0] = 0;
-				for (size_t i = 0; i < textAfterSel.size(); i++)
-					strcat(afterSelUtf8, passwordChar);
+				buildMaskedString(beforeSelUtf8, sizeof(beforeSelUtf8), passwordChar, textBeforeSel.size());
+				buildMaskedString(selectedUtf8, sizeof(selectedUtf8), passwordChar, selectedText.size());
+				buildMaskedString(afterSelUtf8, sizeof(afterSelUtf8), passwordChar, textAfterSel.size());
 			}
 
 			FontTextSize beforeSize = bodyElemState->font->computeTextSize(beforeSelUtf8);

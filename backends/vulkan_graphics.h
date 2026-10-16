@@ -62,6 +62,10 @@ void destroySurfaceVk(VkSurfaceKHR surface);
 bool createSwapchainForWindowVk(void* sdlWindow, VkSurfaceKHR surface, u32 width, u32 height, bool vSync = true);
 void destroySwapchainForWindowVk(void* sdlWindow);
 
+// destroy a window's swapchain and all surfaces associated with it (ownedSurface
+// is the value the caller stored, it may be VK_NULL_HANDLE)
+void destroyWindowResourcesVk(void* sdlWindow, VkSurfaceKHR ownedSurface);
+
 // Present the window swapchain (acquire, draw recorded content, present)
 bool presentSwapchainForWindowVk(void* sdlWindow);
 

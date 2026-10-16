@@ -268,7 +268,7 @@ static bool comboSliderInternal(bool isInt, f32* value, f32 minVal, f32 maxVal, 
 		
 	if (notEditingText)
 	{
-		f32 percentFilled = 1.0f - (maxVal - *value) / (maxVal - minVal);
+		f32 percentFilled = maxVal != minVal ? 1.0f - (maxVal - *value) / (maxVal - minVal) : 0.0f;
 
 		if (ctx->event.type == InputEvent::Type::MouseDown
 			&& widgetIsHovered()
@@ -342,7 +342,7 @@ static bool comboSliderInternal(bool isInt, f32* value, f32 minVal, f32 maxVal, 
 				ctx->comboSlider.currentValue += deltaValue * stepsPerPixel;
 				clampValue(ctx->comboSlider.currentValue, minVal, maxVal);
 				ctx->widget.changeEnded = true;
-				percentFilled = 1.0f - (maxVal - ctx->comboSlider.currentValue) / (maxVal - minVal);
+				percentFilled = maxVal != minVal ? 1.0f - (maxVal - ctx->comboSlider.currentValue) / (maxVal - minVal) : 0.0f;
 				*value = ctx->comboSlider.currentValue;
 			}
 			else

@@ -3,6 +3,7 @@
 #include "font.h"
 #include "util.h"
 #include <stdio.h>
+#include <vector>
 
 namespace hui
 {
@@ -28,7 +29,7 @@ bool buttonGroup(const char* id, const char** labels, u32 count, u32* currentInd
 	f32 elemHeightUnscaled = leftElem.normalState().height;
 	f32 elemHeight = (elemHeightUnscaled + padding.y * 2.0f) * ctx->scale;
 
-	f32 segmentWidths[256];
+	std::vector<f32> segmentWidths(count);
 	f32 totalWidth = 0;
 
 	f32 availableWidth = ctx->layout.width / ctx->scale;

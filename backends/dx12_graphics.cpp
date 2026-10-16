@@ -51,6 +51,8 @@ static FrameData frames[HUI_DX12_NUM_FRAMES_IN_FLIGHT];
 static u32 currentFrameIndex = 0;
 static ID3D12DescriptorHeap* srvHeap = nullptr;
 static u32 srvHeapIndexCount = 1;
+static Dx12Texture* dx12WhiteTexture = nullptr;
+static const u32 maxSrvDescriptors = 10000;
 static ID3D12CommandAllocator* uploadAllocator = nullptr;
 static ID3D12GraphicsCommandList* uploadCmdList = nullptr;
 static bool commandListRecording = false;
@@ -82,8 +84,18 @@ void Dx12Texture::resize(u32 newWidth, u32 newHeight)
 
 	destroy();
 
+	// on any failure below the texture falls back to slot 0 (white),
+	// so it never references a released resource through a stale descriptor
+	srvHeapIndex = 0;
+
 	width = newWidth;
 	height = newHeight;
+
+	if (srvHeapIndexCount >= maxSrvDescriptors)
+	{
+		printf("Dx12Texture::resize: descriptor heap exhausted\n");
+		return;
+	}
 
 	// create texture resource
 	D3D12_RESOURCE_DESC desc{};
@@ -681,6 +693,39 @@ void createWindowDx12(HWND hwnd, SdlWindowProxy* proxy, const Rect& rect)
 	}
 }
 
+void destroyWindowDx12(SdlWindowProxy* proxy)
+{
+	auto sc = (IDXGISwapChain3*)proxy->dx12SwapChain;
+
+	if (sc)
+	{
+		// submit/flush pending work and forget the cached barrier state of the backbuffers
+		// before the swapchain releases them
+		ID3D12Resource* buffers[2] = { nullptr, nullptr };
+		sc->GetBuffer(0, IID_PPV_ARGS(&buffers[0]));
+		sc->GetBuffer(1, IID_PPV_ARGS(&buffers[1]));
+		dx12PreResize(buffers, 2);
+
+		if (buffers[0]) buffers[0]->Release();
+		if (buffers[1]) buffers[1]->Release();
+
+		sc->Release();
+		proxy->dx12SwapChain = nullptr;
+	}
+
+	if (proxy->dx12RTVHeap)
+	{
+		((ID3D12DescriptorHeap*)proxy->dx12RTVHeap)->Release();
+		proxy->dx12RTVHeap = nullptr;
+	}
+
+	proxy->dx12RTV = nullptr;
+	proxy->dx12CurrentBackBuffer = 0;
+
+	// if this window was bound, nothing may keep pointing at its freed heap
+	currentRtvHandle = {};
+}
+
 void setCurrentWindowDx12(SdlWindowProxy* proxy)
 {
 	if (proxy->dx12RTVHeap && proxy->dx12SwapChain)
@@ -784,7 +829,7 @@ bool initDx12(Services& services)
 	}
 
 	D3D12_DESCRIPTOR_HEAP_DESC srvHeapDesc{};
-	srvHeapDesc.NumDescriptors = 10000;
+	srvHeapDesc.NumDescriptors = maxSrvDescriptors;
 	srvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
 	srvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
 	dx12Device->CreateDescriptorHeap(&srvHeapDesc, IID_PPV_ARGS(&srvHeap));
@@ -793,38 +838,13 @@ bool initDx12(Services& services)
 	dx12Device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, uploadAllocator, nullptr, IID_PPV_ARGS(&uploadCmdList));
 	uploadCmdList->Close();
 
-	// create a 1x1 white default texture for index 0 (used when no texture is bound during draw)
-	{
-		Dx12Texture* whiteTex = new Dx12Texture();
-		whiteTex->srvHeapIndex = 0;
-		
-		D3D12_RESOURCE_DESC whiteDesc{};
-		whiteDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
-		whiteDesc.Width = 1; whiteDesc.Height = 1;
-		whiteDesc.DepthOrArraySize = 1; whiteDesc.MipLevels = 1;
-		whiteDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-		whiteDesc.SampleDesc.Count = 1;
-		whiteDesc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
-		whiteDesc.Flags = D3D12_RESOURCE_FLAG_NONE;
-		
-		D3D12_HEAP_PROPERTIES whiteHeap{}; whiteHeap.Type = D3D12_HEAP_TYPE_DEFAULT;
-		dx12Device->CreateCommittedResource(&whiteHeap, D3D12_HEAP_FLAG_NONE, &whiteDesc,
-			D3D12_RESOURCE_STATE_COPY_DEST, nullptr, IID_PPV_ARGS(&whiteTex->handle));
-		
-		D3D12_SHADER_RESOURCE_VIEW_DESC whiteSrvDesc{};
-		whiteSrvDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-		whiteSrvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
-		whiteSrvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-		whiteSrvDesc.Texture2D.MipLevels = 1;
-		dx12Device->CreateShaderResourceView(whiteTex->handle, &whiteSrvDesc,
-			srvHeap->GetCPUDescriptorHandleForHeapStart());
-			
-		// upload 1x1 white pixel
-		Rgba32 white = 0xFFFFFFFF;
-		whiteTex->resize(1,1);
-		whiteTex->updateData(&white);
-		delete whiteTex;
-	}
+	// create a 1x1 white default texture, it always owns SRV slot 0
+	// (used when no texture is bound during draw) and must stay alive until shutdown
+	srvHeapIndexCount = 0;
+	dx12WhiteTexture = new Dx12Texture(1, 1);
+
+	Rgba32 white = 0xFFFFFFFF;
+	dx12WhiteTexture->updateData(&white);
 
 
 	D3D12_DESCRIPTOR_RANGE range{};
@@ -985,6 +1005,8 @@ float4 PSMain(PS_INPUT input) : SV_TARGET {
 void shutdownDx12(Services& services)
 {
     flushDX12Queue();
+
+	if (dx12WhiteTexture) { delete dx12WhiteTexture; dx12WhiteTexture = nullptr; }
 
     for (int i = 0; i < HUI_DX12_NUM_FRAMES_IN_FLIGHT; ++i) {
         frames[i].destroy();
