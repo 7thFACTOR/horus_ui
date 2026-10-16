@@ -221,7 +221,7 @@ static void drawToolbarBackground(OverlayToolbar* toolbar)
 
 	if (toolbar->dragging)
 	{
-		ctx->renderer.cmdSetColor(ctx->settings.overlayToolbars.dockPreviewColor);
+		ctx->renderer.cmdSetColor(st.toolbarBorderColor);
 		ctx->renderer.cmdDrawRectangle(toolbar->rect);
 	}
 }
@@ -403,7 +403,10 @@ static void drawToolbarElement(OverlayToolbar* toolbar, OverlayToolbarElement* e
 static void drawToolbarDropdownPopup(OverlayToolbar* toolbar, OverlayToolbarElement* e)
 {
 	if (!e->items || e->itemCount == 0)
+	{
+		toolbar->openDropdownRect = Rect();
 		return;
+	}
 
 	const auto& st = ctx->settings.overlayToolbars;
 	f32 padding = st.elementPadding * ctx->scale;
@@ -458,7 +461,9 @@ static void drawToolbarDropdownPopup(OverlayToolbar* toolbar, OverlayToolbarElem
 	spacingPop();
 	paddingPop(PaddingType::ScrollView);
 
-	if (selectedNewItem || popupMustClose())
+	bool closed = selectedNewItem || popupMustClose();
+
+	if (closed)
 	{
 		popupClose();
 		toolbar->openDropdownId.clear();
@@ -466,6 +471,15 @@ static void drawToolbarDropdownPopup(OverlayToolbar* toolbar, OverlayToolbarElem
 
 	popupEnd();
 	ctx->popupUseGlobalScale = true;
+
+	// remember the popup rect so the viewport underneath can ignore input over it
+	if (!closed && ctx->popupStack[ctx->popupIndex].active)
+	{
+		auto& popup = ctx->popupStack[ctx->popupIndex];
+		toolbar->openDropdownRect = { popup.position.x, popup.position.y, popup.width, popup.height };
+	}
+	else
+		toolbar->openDropdownRect = Rect();
 }
 
 static bool toolbarMouseOverToolbar(OverlayToolbar* toolbar)
@@ -994,7 +1008,10 @@ void overlayToolbarEnd()
 	}
 
 	if (!openDropdownElement)
+	{
 		toolbar->openDropdownId.clear();
+		toolbar->openDropdownRect = Rect();
+	}
 
 	if (toolbar->dragging)
 	{
@@ -1261,7 +1278,13 @@ bool overlayToolbarContainsPoint(const Point& viewportPoint)
 	Point screenPos = { ctx->overlayToolbars.viewportRect.x + viewportPoint.x, ctx->overlayToolbars.viewportRect.y + viewportPoint.y };
 	for (auto& toolbar : ctx->overlayToolbars.toolbars)
 	{
-		if (toolbar.visible && toolbar.rect.contains(screenPos))
+		if (!toolbar.visible)
+			continue;
+
+		if (toolbar.rect.contains(screenPos))
+			return true;
+
+		if (toolbar.openDropdownRect.contains(screenPos))
 			return true;
 	}
 	return false;

@@ -824,6 +824,7 @@ struct OverlayToolbar
 	Point customSize;
 	OverlayDockZone lastRequestedDockZone = OverlayDockZone::None;
 	std::string openDropdownId;
+	Rect openDropdownRect;
 };
 
 struct VirtualListContentState
