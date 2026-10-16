@@ -322,7 +322,8 @@ struct DemoState
 			Center,
 			LeftTangent,
 			RightTangent,
-			ControlPoint
+			ControlPoint,
+			Segment
 		};
 
 		std::vector<SplineControlPoint> points;
@@ -341,6 +342,8 @@ struct DemoState
 		Point dragStartLeft;
 		Point dragStartRight;
 		Point dragStartControl;
+		int dragSegment = -1;
+		f32 dragSegmentT = 0.5f;
 	};
 	SplineEditState splineEditor;
 
@@ -3231,6 +3234,23 @@ if (expandableBegin("Overlay Toolbars", &demo.expandOverlayToolbar))
 				}
 			}
 
+			// hover curve segment
+			if (se.hoverType == demo.SplineEditState::DragType::None && pointCount >= 2)
+			{
+				Point closestPoint;
+				i32 nearestSegment = splineClosestSegment(se.points.data(), (u32)se.points.size(), (SplineType)se.curveType, mouseWorld, &closestPoint, se.closed);
+				f32 curveGrabDist = grabRadius * 2.0f;
+				if (nearestSegment >= 0 && (mouseWorld - closestPoint).getLength() < curveGrabDist)
+				{
+					se.hover = nearestSegment;
+					// quadratic segments bulge through their control point, so
+					// hovering the curve highlights that handle instead
+					se.hoverType = quadMode
+						? demo.SplineEditState::DragType::ControlPoint
+						: demo.SplineEditState::DragType::Segment;
+				}
+			}
+
 			// input handling
 			if (toolbarViewport.contains(mouseGetPosition()) && !overlayToolbarContainsPoint(gridMouse))
 			{
@@ -3404,6 +3424,54 @@ if (expandableBegin("Overlay Toolbars", &demo.expandOverlayToolbar))
 								}
 							}
 						}
+						if (!handled && pointCount >= 2)
+						{
+							// check if clicking on a curve segment (between control points),
+							// grabbing it bulges the curve instead of moving the nodes
+							Point closestPoint;
+							f32 closestT = 0.0f;
+							i32 nearestSegment = splineClosestSegment(se.points.data(), (u32)se.points.size(), (SplineType)se.curveType, mouseWorld, &closestPoint, se.closed, &closestT);
+							f32 curveGrabDist = grabRadius * 2.0f;
+							if (nearestSegment >= 0 && (mouseWorld - closestPoint).getLength() < curveGrabDist)
+							{
+								i32 const next = (nearestSegment + 1) % pointCount;
+
+								if (quadMode)
+								{
+									// the shared control point alone shapes the segment,
+									// dragging it 1:1 bulges the curve under the cursor
+									se.selected = nearestSegment;
+									se.controlSegment = nearestSegment;
+									se.dragType = demo.SplineEditState::DragType::ControlPoint;
+									se.dragStartMouse = mouseWorld;
+									se.dragStartControl = quadControl(nearestSegment);
+								}
+								else
+								{
+									se.dragType = demo.SplineEditState::DragType::Segment;
+									se.dragSegment = nearestSegment;
+									se.dragSegmentT = closestT;
+									se.dragStartMouse = mouseWorld;
+
+									if (tangentsUsed)
+									{
+										// remember the original handles of both segment ends
+										se.dragStartRight = se.points[nearestSegment].rightTangent;
+										se.dragStartCenter = se.points[next].leftTangent;
+									}
+									else
+									{
+										// handle-less types have no handles to bend, they
+										// can only be shaped by moving the two end points
+										se.dragStartCenter = se.points[nearestSegment].center;
+										se.dragStartControl = se.points[next].center;
+									}
+								}
+
+								handled = true;
+								inputEventCancel();
+							}
+						}
 						if (!handled)
 						{
 							// single click on empty space deselects
@@ -3419,11 +3487,13 @@ if (expandableBegin("Overlay Toolbars", &demo.expandOverlayToolbar))
 				{
 					se.dragType = demo.SplineEditState::DragType::None;
 					se.controlSegment = -1;
+					se.dragSegment = -1;
 					inputEventCancel();
 				}
 			}
 
-			if (se.dragType != demo.SplineEditState::DragType::None && se.selected >= 0 && (size_t)se.selected < se.points.size())
+			if (se.dragType != demo.SplineEditState::DragType::None &&
+				(se.dragType == demo.SplineEditState::DragType::Segment || (se.selected >= 0 && (size_t)se.selected < se.points.size())))
 			{
 				Point delta = mouseWorld - se.dragStartMouse;
 				if (se.dragType == demo.SplineEditState::DragType::Center)
@@ -3459,6 +3529,55 @@ if (expandableBegin("Overlay Toolbars", &demo.expandOverlayToolbar))
 					Point const c = se.dragStartControl + delta;
 					se.points[s].rightTangent = c - se.points[s].center;
 					se.points[next].leftTangent = se.points[next].center - c;
+				}
+				else if (se.dragType == demo.SplineEditState::DragType::Segment
+					&& se.dragSegment >= 0 && se.dragSegment < pointCount)
+				{
+					i32 const s = se.dragSegment;
+					i32 const next = (s + 1) % pointCount;
+
+					if (tangentsUsed)
+					{
+						// keep both segment ends fixed and bend the two handles so the
+						// curve point grabbed at dragSegmentT lands on the mouse. the
+						// segment point is base + c1 * right + c2 * left, so the
+						// smallest handle change that closes the error splits it by c1/c2
+						Point const p0 = se.points[s].center;
+						Point const p1 = se.points[next].center;
+						f32 const t = se.dragSegmentT;
+						f32 const u = 1.0f - t;
+						f32 const weight = curveType == SplineType::CubicBezier ? 3.0f : 1.0f;
+						f32 const c1 = weight * u * u * t;
+						f32 const c2 = weight * u * t * t;
+						f32 const cSum = c1 * c1 + c2 * c2;
+						Point const base = p0 * (u * u * (1.0f + 2.0f * t)) + p1 * (t * t * (3.0f - 2.0f * t));
+						Point const err = mouseWorld - (base + se.dragStartRight * c1 + se.dragStartCenter * c2);
+
+						if (cSum > 1e-12f)
+						{
+							Point push0 = err * (c1 / cSum);
+							Point push1 = err * (c2 / cSum);
+							f32 const maxPush = (p1 - p0).getLength();
+							f32 const push0Len = push0.getLength();
+							f32 const push1Len = push1.getLength();
+
+							if (push0Len > maxPush)
+								push0 = push0 * (maxPush / push0Len);
+							if (push1Len > maxPush)
+								push1 = push1 * (maxPush / push1Len);
+
+							se.points[s].rightTangent = se.dragStartRight + push0;
+							se.points[next].leftTangent = se.dragStartCenter + push1;
+						}
+					}
+					else
+					{
+						// handle-less types (Catmull-Rom, Natural, Linear, Basis) derive
+						// their shape from the point positions only, so move the two
+						// segment endpoints from their original positions
+						se.points[s].center = se.dragStartCenter + delta;
+						se.points[next].center = se.dragStartControl + delta;
+					}
 				}
 				inputEventCancel();
 				forceRepaint();

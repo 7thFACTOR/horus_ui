@@ -26,9 +26,10 @@ u64 hashData(const void* ptr, size_t size, u64 seed = 0);
 
 /// Find the spline segment closest to a point, sampling the actual curve so
 /// bulging segments (e.g. Catmull-Rom, Natural) are hit correctly. Writes the
-/// closest point on the curve to outClosestPoint and returns the segment index
-/// i (between control points i and i+1), or -1 if there is no segment.
-i32 splineClosestSegment(const SplineControlPoint* points, u32 count, SplineType type, const Point& query, Point* outClosestPoint, bool closed = false);
+/// closest point on the curve to outClosestPoint, its parameter along the
+/// segment to outT and returns the segment index i (between control points i
+/// and i+1), or -1 if there is no segment.
+i32 splineClosestSegment(const SplineControlPoint* points, u32 count, SplineType type, const Point& query, Point* outClosestPoint, bool closed = false, f32* outT = nullptr);
 
 /// Sample a spline into an output buffer of 2d points. Returns number of points written.
 /// If outPoints is null, returns how many points would be generated with given params.

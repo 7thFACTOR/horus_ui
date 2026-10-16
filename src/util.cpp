@@ -334,7 +334,7 @@ u32 splineSample(const SplineControlPoint* points, u32 count, SplineType type, f
 	return n;
 }
 
-i32 splineClosestSegment(const SplineControlPoint* points, u32 count, SplineType type, const Point& query, Point* outClosestPoint, bool closed)
+i32 splineClosestSegment(const SplineControlPoint* points, u32 count, SplineType type, const Point& query, Point* outClosestPoint, bool closed, f32* outT)
 {
 	if (!points || count < 2)
 		return -1;
@@ -349,6 +349,7 @@ i32 splineClosestSegment(const SplineControlPoint* points, u32 count, SplineType
 	i32 bestSegment = -1;
 	f32 bestDist = FLT_MAX;
 	Point bestPoint = query;
+	f32 bestT = 0.0f;
 
 	u32 const segmentCount = closed ? count : count - 1;
 
@@ -374,6 +375,7 @@ i32 splineClosestSegment(const SplineControlPoint* points, u32 count, SplineType
 				bestDist = dist;
 				bestSegment = (i32)i;
 				bestPoint = proj;
+				bestT = ((f32)(k - 1) + t) / (f32)steps;
 			}
 
 			prev = cur;
@@ -382,6 +384,9 @@ i32 splineClosestSegment(const SplineControlPoint* points, u32 count, SplineType
 
 	if (outClosestPoint)
 		*outClosestPoint = bestPoint;
+
+	if (outT)
+		*outT = bestT;
 
 	return bestSegment;
 }
