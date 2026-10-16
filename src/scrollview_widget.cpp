@@ -193,6 +193,7 @@ void scrollViewBegin(const char* id, f32 height, Point scrollOffset, Point virtu
 
 	auto& scrollViewState = ctx->scrollViewState[ctx->id];
 	scrollViewState.height = height;
+	scrollViewState.disabled = widgetGetDisabled();
 
 	// do NOT override the vertical virtual size here.
 	// let beginVirtualListContent(...) set the total virtual height when used.
@@ -381,7 +382,7 @@ Point scrollViewEnd()
         updateScrollMax(scrollViewState.vertical, contentSizeForClamp, scrollAreaV);
 
         // scroll view with mouse wheel
-        if (ctx->isActiveLayer() && ctx->event.type == InputEvent::Type::MouseWheel && !ctx->widget.disabled)
+        if (ctx->isActiveLayer() && ctx->event.type == InputEvent::Type::MouseWheel && !scrollViewState.disabled)
         {
             // only scroll if mouse is over this scroll view AND this window is the hovered window
             if (rectNoBorders.contains(ctx->mousePosition))
@@ -479,7 +480,7 @@ Point scrollViewEnd()
 				}
 			}
 
-			if (ctx->event.type == InputEvent::Type::MouseDown && ctx->isActiveLayer() && !ctx->widget.disabled)
+			if (ctx->event.type == InputEvent::Type::MouseDown && ctx->isActiveLayer() && !scrollViewState.disabled)
 			{
 				if (rectScrollBarHandleV.contains(ctx->mousePosition))
 				{
@@ -604,7 +605,7 @@ Point scrollViewEnd()
 			}
 		}
 
-		if (ctx->event.type == InputEvent::Type::MouseDown && ctx->isActiveLayer() && !ctx->widget.disabled)
+		if (ctx->event.type == InputEvent::Type::MouseDown && ctx->isActiveLayer() && !scrollViewState.disabled)
 		{
 			if (rectScrollBarHandleH.contains(ctx->mousePosition))
 			{

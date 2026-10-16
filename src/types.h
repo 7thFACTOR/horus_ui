@@ -648,6 +648,7 @@ struct ScrollViewState
 	f32 height = 0.0f;
 	Point virtualSize;
 	ScrollViewFlags flags = ScrollViewFlags::None;
+	bool disabled = false;
 };
 
 struct TextMarker
