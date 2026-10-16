@@ -3026,6 +3026,12 @@ if (expandableBegin("Overlay Toolbars", &demo.expandOverlayToolbar))
 		snprintf(toolbarCountBuf, sizeof(toolbarCountBuf), "Toolbar buttons clicked %d time(s)", demo.toolbarClickCount);
 		label(toolbarCountBuf);
 
+		// spline editor help
+		label("Spline editor: drag a node to move it, drag a handle to bend the curve, Alt breaks handle symmetry");
+		label("Drag a curve segment to bulge it (it highlights orange), double-click the curve or empty space to create a node");
+		label("Double-click a node to remove it, right-click a node for its menu, Delete removes the selection");
+		label("Pan with Alt + drag, zoom with Alt + wheel");
+
 		// the toolbars are nested inside a fixed 800px custom viewport, the
 		// viewport is disabled so it does not steal the toolbar clicks
 		widgetSetNextDisabled();
@@ -3036,7 +3042,7 @@ if (expandableBegin("Overlay Toolbars", &demo.expandOverlayToolbar))
 		renderDrawSolidRectangle(toolbarViewport);
 
 		// faint gray grid so the toolbar placement over the viewport can be
-		// seen; pan it by dragging with the mouse, and zoom with Alt + wheel
+		// seen; pan it with Alt + drag, and zoom with Alt + wheel
 		Point gridMouse = mouseGetPosition() - vpOrigin;
 
 		// track the Alt state (used for zooming and the spline tangent symmetry break)
@@ -3056,7 +3062,8 @@ if (expandableBegin("Overlay Toolbars", &demo.expandOverlayToolbar))
 		auto& gridService = contextGetSettings().services;
 		bool const panLeftDown = gridService.isMouseButtonDownNow && gridService.isMouseButtonDownNow(MouseButton::Left);
 
-		if (!panLeftDown || demo.splineEditor.dragType != demo.SplineEditState::DragType::None
+		if (!panLeftDown || !demo.toolbarGridAltDown
+			|| demo.splineEditor.dragType != demo.SplineEditState::DragType::None
 			|| demo.splineEditor.contextMenuPoint >= 0)
 		{
 			demo.toolbarGridPanning = false;
@@ -3067,7 +3074,7 @@ if (expandableBegin("Overlay Toolbars", &demo.expandOverlayToolbar))
 			forceRepaint();
 			inputEventCancel();
 		}
-		else if (inputEventGet().type == InputEvent::Type::MouseMove
+		else if (inputEventGet().type == InputEvent::Type::MouseMove && demo.toolbarGridAltDown
 			&& toolbarViewport.contains(mouseGetPosition()) && !overlayToolbarContainsPoint(gridMouse))
 		{
 			// start panning only once the mouse actually moves, so a plain click
@@ -3606,6 +3613,29 @@ if (expandableBegin("Overlay Toolbars", &demo.expandOverlayToolbar))
 
 				renderSetLineStyle(LineStyle(Color::fromU8(100, 180, 255, 255), 2.0f));
 				renderDrawSpline(screenPoints.data(), (u32)screenPoints.size(), (SplineType)se.curveType, 10.0f, se.closed);
+
+				// highlight the segment under the cursor, or the one being dragged
+				i32 highlight = -1;
+
+				if (se.dragType == demo.SplineEditState::DragType::Segment && se.dragSegment >= 0)
+					highlight = se.dragSegment;
+				else if (se.hoverType == demo.SplineEditState::DragType::Segment && se.hover >= 0)
+					highlight = se.hover;
+
+				if (highlight >= 0 && highlight < segCount)
+				{
+					SplineType segType = (SplineType)se.curveType;
+					u32 const segmentPointsCount = splineSampleSegment(screenPoints.data(), (u32)screenPoints.size(), segType, highlight, 10.0f, se.closed, nullptr, 0);
+
+					if (segmentPointsCount > 0)
+					{
+						std::vector<Point> segmentPoints(segmentPointsCount);
+						splineSampleSegment(screenPoints.data(), (u32)screenPoints.size(), segType, highlight, 10.0f, se.closed, segmentPoints.data(), segmentPointsCount);
+
+						renderSetLineStyle(LineStyle(Color::orange, 3.0f));
+						renderDrawPolyLine(segmentPoints.data(), segmentPointsCount, false);
+					}
+				}
 			}
 			else if (se.points.size() == 1)
 			{

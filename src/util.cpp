@@ -277,6 +277,31 @@ static Point evaluateSplineSegment(const SplineControlPoint* points, u32 count, 
 	}
 }
 
+// append the samples of one spline segment to out, the end point of the
+// segment itself is left out so consecutive segments join without duplicates
+static void sampleSplineSegment(const SplineControlPoint* points, u32 count, SplineType type,
+	const Point* secondDerivs, u32 i, f32 segmentSize, bool closed, std::vector<Point>& out)
+{
+	u32 const coarseSteps = 16;
+	f32 length = 0.0f;
+	Point prev = evaluateSplineSegment(points, count, type, secondDerivs, i, 0.0f, closed);
+
+	for (u32 k = 1; k <= coarseSteps; k++)
+	{
+		Point cur = evaluateSplineSegment(points, count, type, secondDerivs, i, (f32)k / (f32)coarseSteps, closed);
+		length += (cur - prev).getLength();
+		prev = cur;
+	}
+
+	u32 steps = (u32)ceilf(length / segmentSize);
+
+	if (steps < 2)
+		steps = 2;
+
+	for (u32 k = 0; k < steps; k++)
+		out.push_back(evaluateSplineSegment(points, count, type, secondDerivs, i, (f32)k / (f32)steps, closed));
+}
+
 u32 splineSample(const SplineControlPoint* points, u32 count, SplineType type, f32 segmentSize, bool closed, Point* outPoints, u32 maxPoints)
 {
 	if (!points || count < 2)
@@ -297,29 +322,50 @@ u32 splineSample(const SplineControlPoint* points, u32 count, SplineType type, f
 	u32 const segmentCount = closed ? count : count - 1;
 
 	for (u32 i = 0; i < segmentCount; i++)
-	{
-		u32 const coarseSteps = 16;
-		f32 length = 0.0f;
-		Point prev = evaluateSplineSegment(points, count, type, secondDerivsPtr, i, 0.0f, closed);
-
-		for (u32 k = 1; k <= coarseSteps; k++)
-		{
-			Point cur = evaluateSplineSegment(points, count, type, secondDerivsPtr, i, (f32)k / (f32)coarseSteps, closed);
-			length += (cur - prev).getLength();
-			prev = cur;
-		}
-
-		u32 steps = (u32)ceilf(length / segmentSize);
-
-		if (steps < 2)
-			steps = 2;
-
-		for (u32 k = 0; k < steps; k++)
-			tmp.push_back(evaluateSplineSegment(points, count, type, secondDerivsPtr, i, (f32)k / (f32)steps, closed));
-	}
+		sampleSplineSegment(points, count, type, secondDerivsPtr, i, segmentSize, closed, tmp);
 
 	if (!closed)
 		tmp.push_back(points[count - 1].center);
+
+	if (!outPoints)
+		return (u32)tmp.size();
+
+	u32 n = (u32)tmp.size();
+
+	if (n > maxPoints)
+		n = maxPoints;
+
+	memcpy(outPoints, tmp.data(), n * sizeof(Point));
+
+	return n;
+}
+
+u32 splineSampleSegment(const SplineControlPoint* points, u32 count, SplineType type, i32 segment, f32 segmentSize, bool closed, Point* outPoints, u32 maxPoints)
+{
+	if (!points || count < 2 || segment < 0)
+		return 0;
+
+	u32 const segmentCount = closed ? count : count - 1;
+
+	if ((u32)segment >= segmentCount)
+		return 0;
+
+	std::vector<Point> secondDerivs;
+
+	if (type == SplineType::Natural)
+		secondDerivs = computeNaturalSecondDerivatives(points, count, closed);
+
+	Point const* secondDerivsPtr = secondDerivs.empty() ? nullptr : secondDerivs.data();
+
+	std::vector<Point> tmp;
+
+	if (type == SplineType::Basis && !closed && segment == 0)
+		tmp.push_back(points[0].center);
+
+	sampleSplineSegment(points, count, type, secondDerivsPtr, (u32)segment, segmentSize, closed, tmp);
+
+	// finish the segment with its end point
+	tmp.push_back(evaluateSplineSegment(points, count, type, secondDerivsPtr, (u32)segment, 1.0f, closed));
 
 	if (!outPoints)
 		return (u32)tmp.size();

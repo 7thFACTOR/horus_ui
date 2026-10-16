@@ -35,6 +35,10 @@ i32 splineClosestSegment(const SplineControlPoint* points, u32 count, SplineType
 /// If outPoints is null, returns how many points would be generated with given params.
 u32 splineSample(const SplineControlPoint* points, u32 count, SplineType type, f32 segmentSize, bool closed, Point* outPoints, u32 maxPoints);
 
+/// Sample a single spline segment (between control points segment and segment+1)
+/// into outPoints, including both of its end points.
+u32 splineSampleSegment(const SplineControlPoint* points, u32 count, SplineType type, i32 segment, f32 segmentSize, bool closed, Point* outPoints, u32 maxPoints);
+
 /// Compute the single control point of a quadratic bezier segment from the
 /// outgoing tangent at its start and the incoming tangent at its end. The two
 /// tangents are used as rays and their intersection is the control point; when
