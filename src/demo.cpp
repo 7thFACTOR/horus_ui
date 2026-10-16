@@ -3111,47 +3111,13 @@ if (expandableBegin("Overlay Toolbars", &demo.expandOverlayToolbar))
 		for (f32 gy = fmodf(demo.toolbarGridPan.y, gridSpacing); gy <= toolbarViewport.height; gy += gridSpacing)
 			if (gy >= 0) renderDrawLine(vpOrigin + Point{ 0, gy }, vpOrigin + Point{ toolbarViewport.width, gy });
 
-		// mockup 2D scene - shapes that transform with pan/zoom
+		// world/screen coordinate helpers for the canvas
 		auto worldToScreen = [&](const Point& world) -> Point {
 			return world * demo.toolbarGridZoom + demo.toolbarGridPan + vpOrigin;
 		};
 		auto screenToWorld = [&](const Point& screen) -> Point {
 			return (screen - vpOrigin - demo.toolbarGridPan) / demo.toolbarGridZoom;
 		};
-		auto drawRectWorld = [&](const Rect& r, const Color& color, f32 lineWidth = 2.0f) {
-			Point p1 = worldToScreen({ r.x, r.y });
-			Point p2 = worldToScreen({ r.x + r.width, r.y + r.height });
-			Rect sr = { p1.x, p1.y, p2.x - p1.x, p2.y - p1.y };
-
-			renderSetLineStyle(LineStyle(color, lineWidth * demo.toolbarGridZoom));
-			renderDrawRectangle(sr);
-		};
-		auto drawCircleWorld = [&](const Point& center, f32 radius, const Color& color, f32 lineWidth = 2.0f) {
-			Point p = worldToScreen(center);
-			f32 r = radius * demo.toolbarGridZoom;
-			renderSetLineStyle(LineStyle(color, lineWidth * demo.toolbarGridZoom));
-			renderDrawCircle(p, r, 32);
-		};
-		auto drawFilledRectWorld = [&](const Rect& r, const Color& color) {
-			Point p1 = worldToScreen({ r.x, r.y });
-			Point p2 = worldToScreen({ r.x + r.width, r.y + r.height });
-			Rect sr = { p1.x, p1.y, p2.x - p1.x, p2.y - p1.y };
-			renderSetFillStyle(color);
-			renderDrawSolidRectangle(sr);
-		};
-
-		// some mock objects in the scene
-		drawFilledRectWorld({ 100, 100, 200, 150 }, Color::fromU8(80, 120, 200, 180));
-		drawRectWorld({ 100, 100, 200, 150 }, Color::fromU8(40, 80, 160, 255), 3);
-
-		drawFilledRectWorld({ 400, 200, 120, 120 }, Color::fromU8(200, 100, 60, 180));
-		drawRectWorld({ 400, 200, 120, 120 }, Color::fromU8(160, 60, 30, 255), 3);
-
-		drawCircleWorld({ 600, 180 }, 60, Color::fromU8(80, 180, 80, 255), 3);
-		drawFilledRectWorld({ 540, 120, 120, 120 }, Color::fromU8(80, 180, 80, 100));
-
-		drawCircleWorld({ 200, 400 }, 40, Color::fromU8(200, 180, 60, 255), 2);
-		drawRectWorld({ 300, 350, 180, 100 }, Color::fromU8(120, 100, 180, 255), 2);
 
 		// origin marker
 		Point origin = worldToScreen({ 0, 0 });
