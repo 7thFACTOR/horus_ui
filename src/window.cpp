@@ -12,8 +12,10 @@ bool windowBegin(const char* id, const char* title, Rect* initialRect, HImage im
 	auto iterClosed = ctx->docking.closedWindowsRects.find(id);
 	bool wasClosed = iterClosed != ctx->docking.closedWindowsRects.end();
 	auto flags = ctx->nextWindowFlags;
+	auto fixedSize = ctx->nextWindowSize;
 
 	ctx->nextWindowFlags = WindowFlags::None;
+	ctx->nextWindowSize = { 0, 0 };
 
 	// if there is no window created, create one
 	if (iterWnd == ctx->docking.windows.end() && !wasClosed)
@@ -24,7 +26,11 @@ bool windowBegin(const char* id, const char* title, Rect* initialRect, HImage im
 
 		if (iter != ctx->docking.windowsDockNodeAssignments.end())
 		{
-			parentNode = ctx->docking.dockNodeIdsMap[iter->second];
+			auto mapIter = ctx->docking.dockNodeIdsMap.find(iter->second);
+			if (mapIter != ctx->docking.dockNodeIdsMap.end())
+				parentNode = mapIter->second;
+		} else {
+			parentNode = nullptr;
 		}
 
 		wnd = windowCreateInternal(id, parentNode, parentNode ? DockType::AsTab : DockType::None, title, initialRect, 0, img);
@@ -39,6 +45,19 @@ bool windowBegin(const char* id, const char* title, Rect* initialRect, HImage im
 
 		wnd = ctx->docking.windows[id];
 		wnd->image = img;
+	}
+
+	auto oldFlags = wnd->flags;
+	auto oldFixedSize = wnd->fixedSize;
+	wnd->flags = flags;
+	wnd->fixedSize = fixedSize;
+
+	// when tab visibility or the fixed size changes, recompute the layout so the client rect and dock node sizes update
+	if (!!(flags & WindowFlags::NoTab) != !!(oldFlags & WindowFlags::NoTab)
+		|| fixedSize.x != oldFixedSize.x
+		|| fixedSize.y != oldFixedSize.y)
+	{
+		dockNodeLayoutRecalculate();
 	}
 
 	if (ctx->event.type == InputEvent::Type::WindowClose)
@@ -83,6 +102,11 @@ bool windowBegin(const char* id, const char* title, Rect* initialRect, HImage im
 		style->getParameter("paddingX", 10),
 		style->getParameter("paddingY", 10) };
 
+	if (!!(flags & WindowFlags::NoPadding))
+	{
+		padding = { 0, 0 };
+	}
+
 	paddingPush(PaddingType::Layout, padding);
 	layoutBegin(rc);
 	idPush((void*)wnd);
@@ -107,8 +131,41 @@ void windowSetVisible(const char* windowId, bool visible)
 		if (iter == ctx->docking.windows.end())
 			return;
 
-		ctx->docking.windowsToDelete.insert(iter->second);
-		ctx->docking.closedWindowsRects[windowId] = iter->second->dockNode->rect;
+		Window* wnd = iter->second;
+		DockNode* node = wnd->dockNode;
+
+		if (node)
+		{
+			ctx->docking.closedWindowsRects[windowId] = node->rect;
+
+			// remember the dock node this window was in so we can restore it on show
+			ctx->docking.windowsDockNodeAssignments[windowId] = node->id;
+
+			// detach the window from the docking tree before it is deleted, otherwise
+			// dockNodeTabs would later dereference a freed window
+			node->removeWindow(wnd);
+
+			if (node->windows.empty())
+			{
+				if (!node->parent && node->createdByDockingSystem)
+				{
+					ctx->docking.dockNodesToDelete.insert(node);
+					ctx->docking.nativeWindowsToDelete.insert(node->nativeWindow);
+				}
+				else
+				{
+					DockNode* removedNode = node->removeFromParent();
+					ctx->docking.dockNodesToDelete.insert(removedNode);
+				}
+			}
+
+			if (ctx->docking.focusedWindow == wnd)
+				ctx->docking.focusedWindow = nullptr;
+
+			dockNodeLayoutRecalculate();
+		}
+
+		ctx->docking.windowsToDelete.insert(wnd);
 	}
 	else
 	{
@@ -124,6 +181,11 @@ void windowSetVisible(const char* windowId, bool visible)
 void windowSetNextFlags(WindowFlags flags)
 {
 	ctx->nextWindowFlags = flags;
+}
+
+void windowSetNextSize(f32 width, f32 height)
+{
+	ctx->nextWindowSize = { width, height };
 }
 
 void windowSetFocus(const char* windowId)

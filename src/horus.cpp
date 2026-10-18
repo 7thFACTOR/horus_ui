@@ -208,7 +208,8 @@ void addWidget(f32 height)
 	// if in sameLine mode, align Y to the same line and advance X from previous widget
 	if (ctx->sameLine.enabled)
 	{
-		ctx->position.y = ctx->sameLine.currentPosition.y;
+		// keep shorter widgets vertically centered against the tallest one so far in the line
+		ctx->position.y = ctx->sameLine.currentPosition.y + std::max((ctx->sameLine.maxHeight - height) * 0.5f, 0.0f);
 
 		// if first widget in sameLine, advance X by the previous normal widget's width
 		if (!ctx->sameLine.wasEnabled)
@@ -503,7 +504,10 @@ void deferredDeleteObjects()
 			ctx->docking.windows.erase(iter);
 		}
 
-		ctx->docking.closedWindowsRects[wnd->id] = wnd->dockNode->rect;
+		// a window hidden through windowSetVisible has already been detached from its
+		// dock node, so its rect was recorded at that point
+		if (wnd->dockNode)
+			ctx->docking.closedWindowsRects[wnd->id] = wnd->dockNode->rect;
 
 		auto iterWnd = ctx->docking.windowsDockNodeAssignments.find(wnd->id);
 
@@ -517,6 +521,9 @@ void deferredDeleteObjects()
 
 	for (auto& dn : ctx->docking.dockNodesToDelete)
 	{
+		auto iterMap = ctx->docking.dockNodeIdsMap.find(dn->id);
+		if (iterMap != ctx->docking.dockNodeIdsMap.end())
+			ctx->docking.dockNodeIdsMap.erase(iterMap);
 		delete dn;
 	}
 
@@ -1012,8 +1019,7 @@ void dockNodeLayoutRecalculate()
 {
 	for (auto& pair : ctx->docking.rootNativeWindowDockNodes)
 	{
-		pair.second->checkRedundancy();
-		pair.second->computeRect();
+		dockNodeRecalculateLayout(pair.second);
 	}
 }
 

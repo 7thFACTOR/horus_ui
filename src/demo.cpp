@@ -2687,7 +2687,7 @@ void showDemo()
 		label("A two-column property table with expandable groups:");
 		space();
 
-		if (tableBegin("##propGrid", 2, 0, TableFlags::Borders | TableFlags::Resizable | TableFlags::FixedSize | (demo.pgAltRowBg ? TableFlags::AltRowBg : TableFlags::None)))
+		if (tableBegin("##propGrid", 2, 0, TableFlags::Resizable | TableFlags::FixedSize | (demo.pgAltRowBg ? TableFlags::AltRowBg : TableFlags::None)))
 		{
 			tableColumnSetup(0, 150, TableColumnFlags::FixedResize);
 			tableColumnSetup(1, 0, TableColumnFlags::Stretch);

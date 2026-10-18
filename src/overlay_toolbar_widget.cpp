@@ -221,7 +221,7 @@ static void drawToolbarBackground(OverlayToolbar* toolbar)
 
 	if (toolbar->dragging)
 	{
-		ctx->renderer.cmdSetColor(st.toolbarBorderColor);
+		ctx->renderer.cmdSetLineStyle(LineStyle(st.toolbarBorderColor, st.toolbarBorderThickness * ctx->scale));
 		ctx->renderer.cmdDrawRectangle(toolbar->rect);
 	}
 }
@@ -311,18 +311,20 @@ static void drawToolbarElement(OverlayToolbar* toolbar, OverlayToolbarElement* e
 		return;
 	}
 
-	ThemeElement::State* state = &btnBody.normalState();
 	bool toggleOn = e->toggleValue && *e->toggleValue;
 	bool pressed = toggleOn || ctx->widget.pressed;
 
+	WidgetStateType stateType = WidgetStateType::Normal;
 	if (!e->enabled)
-		state = &btnBody.getState(WidgetStateType::Disabled);
+		stateType = WidgetStateType::Disabled;
 	else if (pressed)
-		state = &btnBody.getState(WidgetStateType::Pressed);
+		stateType = WidgetStateType::Pressed;
 	else if (ctx->widget.hovered)
-		state = &btnBody.getState(WidgetStateType::Hovered);
+		stateType = WidgetStateType::Hovered;
 	else if (ctx->widget.focused)
-		state = &btnBody.getState(WidgetStateType::Focused);
+		stateType = WidgetStateType::Focused;
+
+	ThemeElement::State* state = &btnBody.getState(stateType);
 
 	f32 padding = st.elementPadding * ctx->scale;
 	f32 spacing = st.elementSpacing * ctx->scale;
@@ -344,12 +346,16 @@ static void drawToolbarElement(OverlayToolbar* toolbar, OverlayToolbarElement* e
 		if (!selectedText)
 			selectedText = e->label.empty() ? "" : e->label.c_str();
 
+		auto& arrowElem = ctx->theme->getElement(WidgetElementId::DropdownArrow);
+		ThemeElement::State* arrowState = &arrowElem.getState(stateType);
+		Image* arrowImg = arrowState->image ? arrowState->image : ctx->theme->whiteImage;
+
 		f32 iconSide = st.iconButtonSize * ctx->scale;
-		f32 arrowSize = iconSide * 0.5f;
+		f32 arrowW = (arrowState->width > 0.0f ? arrowState->width : arrowImg->rect.width) * ctx->scale;
+		f32 arrowH = (arrowState->height > 0.0f ? arrowState->height : arrowImg->rect.height) * ctx->scale;
 		f32 iconOffset = e->icon ? (iconSide + spacing) : 0.0f;
 		Rect inner = e->rect.contract(padding);
-		Rect textRect = { inner.x + iconOffset, inner.y, std::max(inner.width - iconOffset - arrowSize - spacing, 0.0f), inner.height };
-		Rect arrowRect = { inner.right() - arrowSize, inner.y, arrowSize, inner.height };
+		Rect textRect = { inner.x + iconOffset, inner.y, std::max(inner.width - iconOffset - arrowW - spacing, 0.0f), inner.height };
 
 		if (e->icon)
 		{
@@ -362,10 +368,19 @@ static void drawToolbarElement(OverlayToolbar* toolbar, OverlayToolbarElement* e
 		ctx->renderer.cmdSetColor(state->textColor);
 		ctx->renderer.cmdDrawTextInBox(selectedText, textRect, HAlignType::Left, VAlignType::Center, true);
 
-		Image* arrowImg = ctx->theme->getImage(hashString("flat/dropdown_arrow"));
+		f32 imgW = arrowImg->rect.width * ctx->scale;
+		f32 imgH = arrowImg->rect.height * ctx->scale;
+		viewportImageSizeFit(imgW, imgH, std::max(arrowW, 1.0f), std::max(arrowH, 1.0f), imgW, imgH, false, false);
 
-		if (arrowImg)
-			drawToolbarIcon(state, arrowImg, arrowRect);
+		Rect arrowRect = {
+			inner.right() - arrowW + (arrowW - imgW) / 2,
+			inner.y + (inner.height - imgH) / 2,
+			imgW,
+			imgH
+		};
+
+		ctx->renderer.cmdSetColor(tintApply(arrowState->color, TintColorType::Body));
+		ctx->renderer.cmdDrawImage(arrowImg, arrowRect);
 
 		return;
 	}

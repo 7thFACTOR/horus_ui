@@ -700,6 +700,8 @@ struct Window
 	std::string id, title;
 	HImage image = 0;
 	Rect tabRect, clientRect;
+	WindowFlags flags = WindowFlags::None;
+	Point fixedSize = { 0, 0 };
 	bool dockingNow = false;
 };
 

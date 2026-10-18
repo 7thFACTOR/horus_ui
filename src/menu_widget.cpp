@@ -13,7 +13,11 @@ bool menuBarBegin()
 	f32 height = menuBarElem.normalState().height * ctx->scale;
 
 	widgetPushDisabled(widgetGetDisabled());
+
+	// the bar starts at the current layout position, the placeholder widget must not advance the cursor
+	auto barPos = ctx->position;
 	addWidget(0);
+	ctx->position = barPos;
 
 	ctx->id = genId("__MENUBAR__");
 

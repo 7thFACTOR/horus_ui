@@ -186,6 +186,117 @@ void DockNode::gatherWindowTabsNodes(std::vector<DockNode*>& outNodes)
 	}
 }
 
+bool dockNodeShowsTabBar(DockNode* node)
+{
+	return !(node->windows.size() == 1 && !!(node->windows[0]->flags & WindowFlags::NoTab));
+}
+
+bool dockNodeHasNoResize(DockNode* node)
+{
+	for (auto& wnd : node->windows)
+	{
+		if (!!(wnd->flags & WindowFlags::NoResize))
+			return true;
+	}
+
+	return false;
+}
+
+f32 dockNodeFixedWidth(DockNode* node)
+{
+	for (auto& wnd : node->windows)
+	{
+		if (wnd->fixedSize.x > 0.0f)
+			return wnd->fixedSize.x * ctx->scale;
+	}
+
+	return 0.0f;
+}
+
+f32 dockNodeFixedHeight(DockNode* node)
+{
+	for (auto& wnd : node->windows)
+	{
+		if (wnd->fixedSize.y > 0.0f)
+			return wnd->fixedSize.y * ctx->scale;
+	}
+
+	return 0.0f;
+}
+
+void dockNodeUpdateDockSites(DockNode* node)
+{
+	if (node->type == DockNode::Type::Vertical || node->type == DockNode::Type::Horizontal)
+	{
+		// drop the previous empty dock sites, they are added back below only if still needed
+		for (auto it = node->children.begin(); it != node->children.end(); )
+		{
+			auto child = *it;
+
+			if (child->emptyDockSite && child->windows.empty() && child->children.empty())
+			{
+				ctx->docking.dockNodesToDelete.insert(child);
+				it = node->children.erase(it);
+			}
+			else
+			{
+				++it;
+			}
+		}
+
+		bool allFixed = !node->children.empty();
+
+		for (auto& child : node->children)
+		{
+			f32 fixed = node->type == DockNode::Type::Vertical
+				? dockNodeFixedHeight(child)
+				: dockNodeFixedWidth(child);
+
+			if (fixed <= 0.0f)
+			{
+				allFixed = false;
+				break;
+			}
+		}
+
+		// when all children have a fixed size and they leave empty space behind, add an empty dock site
+		// so that windows can still be docked back into that empty area
+		if (allFixed)
+		{
+			auto lastChild = node->children.back();
+			f32 leftover = node->type == DockNode::Type::Vertical
+				? node->rect.bottom() - lastChild->rect.bottom()
+				: node->rect.right() - lastChild->rect.right();
+
+			if (leftover > ctx->settings.dockNodeSpacing)
+			{
+				auto dockSite = new DockNode();
+
+				dockSite->parent = node;
+				dockSite->nativeWindow = node->nativeWindow;
+				dockSite->type = DockNode::Type::None;
+				dockSite->emptyDockSite = true;
+				node->children.push_back(dockSite);
+			}
+		}
+	}
+
+	for (auto& child : node->children)
+		dockNodeUpdateDockSites(child);
+}
+
+void dockNodeRecalculateLayout(DockNode* root)
+{
+	if (!root)
+		return;
+
+	root->checkRedundancy();
+	root->computeRect();
+	dockNodeUpdateDockSites(root);
+	root->checkRedundancy();
+	root->computeRect();
+}
+
 void DockNode::computeRect()
 {
 	if (!parent)
@@ -201,11 +312,12 @@ void DockNode::computeRect()
 	case DockNode::Type::Tabs:
 	{
 		auto tabGroupHeight = ctx->theme ? ctx->theme->getElement(WidgetElementId::TabGroupBody).normalState().height * ctx->scale : 0;
+		auto topOffset = dockNodeShowsTabBar(this) ? tabGroupHeight : 0.0f;
 
 		for (auto& wnd : windows)
 		{
 			wnd->clientRect = {
-				rect.x, rect.y + tabGroupHeight, rect.width, rect.height - tabGroupHeight
+				rect.x, rect.y + topOffset, rect.width, rect.height - topOffset
 			};
 		}
 		break;
@@ -216,9 +328,18 @@ void DockNode::computeRect()
 		f32 availableSpace = rect.height - ctx->settings.dockNodeSpacing * (f32)(childCount - 1);
 		f32 averageSpace = availableSpace / (f32)childCount;
 		f32 totalSpace = 0;
+		f32 fixedSpace = 0;
 
 		for (auto& child : children)
 		{
+			f32 fixed = dockNodeFixedHeight(child);
+
+			if (fixed > 0.0f)
+			{
+				fixedSpace += fixed;
+				continue;
+			}
+
 			if (child->rect.height <= 0.0f)
 			{
 				child->rect.height = averageSpace;
@@ -227,11 +348,16 @@ void DockNode::computeRect()
 			totalSpace += child->rect.height;
 		}
 
+		f32 autoSpace = fmaxf(availableSpace - fixedSpace, 0.0f);
+
 		f32 currentY = rect.y;
 
 		for (auto& child : children)
 		{
-			f32 height = child->rect.height / totalSpace * availableSpace;
+			f32 fixed = dockNodeFixedHeight(child);
+			f32 height = fixed > 0.0f
+				? fixed
+				: (totalSpace > 0.0f ? child->rect.height / totalSpace * autoSpace : autoSpace);
 
 			child->rect.y = currentY;
 			child->rect.x = rect.x;
@@ -253,11 +379,20 @@ void DockNode::computeRect()
 		availableSpace = (i32)availableSpace;
 		f32 averageSpace = availableSpace / (f32)childCount;
 		f32 totalSpace = 0;
+		f32 fixedSpace = 0;
 
 		averageSpace = (i32)averageSpace;
 
 		for (auto& child : children)
 		{
+			f32 fixed = dockNodeFixedWidth(child);
+
+			if (fixed > 0.0f)
+			{
+				fixedSpace += fixed;
+				continue;
+			}
+
 			if (child->rect.width <= 0.0f)
 			{
 				child->rect.width = averageSpace;
@@ -266,13 +401,16 @@ void DockNode::computeRect()
 			totalSpace += child->rect.width;
 		}
 
-		f32 currentX = rect.x;
+		f32 autoSpace = fmaxf(availableSpace - fixedSpace, 0.0f);
 
-		totalSpace = totalSpace;
+		f32 currentX = rect.x;
 
 		for (auto& child : children)
 		{
-			f32 width = child->rect.width / totalSpace * availableSpace;
+			f32 fixed = dockNodeFixedWidth(child);
+			f32 width = fixed > 0.0f
+				? fixed
+				: (totalSpace > 0.0f ? child->rect.width / totalSpace * autoSpace : autoSpace);
 
 			currentX = (i32)currentX;
 			width = (i32)width;
@@ -451,6 +589,11 @@ DockNode* DockNode::findResizeDockNode(const Point& pt)
 			{
 				if (child != children.back())
 				{
+					auto next = findNextSiblingOf(child);
+
+					if (dockNodeHasNoResize(child) || (next != children.end() && dockNodeHasNoResize(*next)))
+						continue;
+
 					if (pt.x >= child->rect.right() + ctx->settings.dockNodeSpacing/2 - ctx->settings.dockNodeResizeSplitterHitSize/2
 						&& pt.x <= child->rect.right() + ctx->settings.dockNodeSpacing / 2 + ctx->settings.dockNodeResizeSplitterHitSize/2)
 					{
@@ -464,6 +607,11 @@ DockNode* DockNode::findResizeDockNode(const Point& pt)
 			{
 				if (child != children.back())
 				{
+					auto next = findNextSiblingOf(child);
+
+					if (dockNodeHasNoResize(child) || (next != children.end() && dockNodeHasNoResize(*next)))
+						continue;
+
 					if (pt.y >= child->rect.bottom() + ctx->settings.dockNodeSpacing / 2 - ctx->settings.dockNodeResizeSplitterHitSize / 2
 						&& pt.y <= child->rect.bottom() + ctx->settings.dockNodeSpacing / 2 + ctx->settings.dockNodeResizeSplitterHitSize / 2)
 					{
@@ -1553,10 +1701,7 @@ bool windowDockInternal(Window* wnd, DockNode* targetNode, DockType dockType, u3
 		auto node = pair.second;
 
 		if (node && node->nativeWindow)
-		{
-			node->checkRedundancy();
-			node->computeRect();
-		}
+			dockNodeRecalculateLayout(node);
 	}
 
 	return true;
@@ -1564,7 +1709,7 @@ bool windowDockInternal(Window* wnd, DockNode* targetNode, DockType dockType, u3
 
 void dockNodeTabs(DockNode* node)
 {
-	if (node->windows.size())
+	if (node->windows.size() && dockNodeShowsTabBar(node))
 	{
 		paddingPush(PaddingType::Layout, Point());
 		layoutBegin(node->rect);
@@ -2338,6 +2483,13 @@ void handleDockingMouseMove(const InputEvent& event, DockNode* node)
 			ds.isHitBoxBottomHovered = ds.hitBoxBottom.contains(mousePos);
 			ds.isHitBoxTabsHovered = ds.hitBoxTabs.contains(mousePos);
 			ds.isHitBoxTabsBarHovered = ds.hitBoxTabsBar.contains(mousePos);
+
+			// a node without a tab bar cannot accept a window docked as a tab
+			if (!dockNodeShowsTabBar(ds.hoveredNode))
+			{
+				ds.isHitBoxTabsHovered = false;
+				ds.isHitBoxTabsBarHovered = false;
+			}
 
 			ds.isHitBoxRootLeftHovered = ds.hitBoxRootLeft.contains(mousePos);
 			ds.isHitBoxRootRightHovered = ds.hitBoxRootRight.contains(mousePos);

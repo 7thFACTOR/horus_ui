@@ -50,6 +50,17 @@ struct SwapchainContext
 	bool vSync = true;
 };
 
+// format-dependent objects shared by every swapchain using the same format.
+// recreating these (especially the graphics pipeline) on every resize is very expensive
+struct SharedSwapchainResources
+{
+	VkRenderPass renderPass = VK_NULL_HANDLE;
+	VkDescriptorSetLayout descriptorSetLayout = VK_NULL_HANDLE;
+	VkPipelineLayout pipelineLayout = VK_NULL_HANDLE;
+	VkPipeline pipeline = VK_NULL_HANDLE;
+	VkSampler sampler = VK_NULL_HANDLE;
+};
+
 // --- global Vulkan State ---
 static VkInstance instance = VK_NULL_HANDLE;
 static VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
@@ -63,6 +74,7 @@ static Rect currentViewport;
 static Color clearColor = Color::black;
 static void* g_currentWindow = nullptr;
 static std::map<void*, SwapchainContext> g_swapchains; // keyed by SDL_Window*
+static std::map<VkFormat, SharedSwapchainResources> g_sharedResources;
 static VulkanTexture* g_defaultWhiteTexture = nullptr;
 // pending deferred destroys to avoid racing the OS/driver
 static std::vector<void*> g_pendingSwapchainDestroys;
@@ -917,61 +929,81 @@ static bool createFramebuffersForSwapchain(SwapchainContext& ctx)
 	return true;
 }
 
-// immediate destroy implementation (internal)
-static void destroySwapchainForWindowImmediate(void* sdlWindow)
+// build (or reuse) the format-dependent objects once per format so resizing a
+// swapchain does not recreate the render pass, layouts, sampler and pipeline
+static SharedSwapchainResources& getOrCreateSharedResources(VkFormat format, VkExtent2D extent)
 {
-	auto it = g_swapchains.find(sdlWindow);
-	if (it == g_swapchains.end()) return;
-	SwapchainContext& ctx = it->second;
+	auto it = g_sharedResources.find(format);
 
-	// debug: print context state to help find races
-	/*printf("Vulkan: destroySwapchainForWindowImmediate window=%p swapchain=%p images=%zu imageViews=%zu framebuffers=%zu availSem=%zu finishSem=%zu fences=%d\n",
-		sdlWindow,
-		(void*)ctx.swapchain,
-		ctx.images.size(),
-		ctx.imageViews.size(),
-		ctx.framebuffers.size(),
-		ctx.imageAvailableSemaphores.size(),
-		ctx.renderFinishedSemaphores.size(),
-		HUI_VK_MAX_FRAMES_IN_FLIGHT);
-		*/
-	// defensive waits: ensure GPU/queue and any fences referencing swapchain images are finished.
-	if (graphicsQueue != VK_NULL_HANDLE) {
-		vkQueueWaitIdle(graphicsQueue);
-	}
-	if (device != VK_NULL_HANDLE) {
-		// wait per-frame fences
-		for (int i = 0; i < HUI_VK_MAX_FRAMES_IN_FLIGHT; ++i) {
-			if (ctx.inFlightFences[i] != VK_NULL_HANDLE) {
-				vkWaitForFences(device, 1, &ctx.inFlightFences[i], VK_TRUE, UINT64_MAX);
-			}
-		}
-		// wait per-image fences that track images in-flight
-		for (size_t i = 0; i < ctx.imagesInFlight.size(); ++i) {
-			if (ctx.imagesInFlight[i] != VK_NULL_HANDLE) {
-				vkWaitForFences(device, 1, &ctx.imagesInFlight[i], VK_TRUE, UINT64_MAX);
-			}
-		}
-		// final device idle to be extra-safe
-		vkDeviceWaitIdle(device);
+	if (it == g_sharedResources.end())
+		it = g_sharedResources.emplace(format, SharedSwapchainResources{}).first;
+
+	SharedSwapchainResources& res = it->second;
+
+	if (res.renderPass == VK_NULL_HANDLE)
+	{
+		SwapchainContext tmp{};
+		tmp.format = format;
+		createRenderPassForSwapchain(tmp);
+		res.renderPass = tmp.renderPass;
 	}
 
-	// now perform cleanup (same order as creation, swapchain last)
+	// retry pipeline creation if it failed earlier (for example, shaders not yet available)
+	if (res.pipeline == VK_NULL_HANDLE)
+	{
+		SwapchainContext tmp{};
+		tmp.format = format;
+		tmp.extent = extent;
+		tmp.renderPass = res.renderPass;
+		tmp.descriptorSetLayout = res.descriptorSetLayout;
+		tmp.pipelineLayout = res.pipelineLayout;
+		tmp.sampler = res.sampler;
+		createPipelineForSwapchain(tmp);
+		res.descriptorSetLayout = tmp.descriptorSetLayout;
+		res.pipelineLayout = tmp.pipelineLayout;
+		res.pipeline = tmp.pipeline;
+		res.sampler = tmp.sampler;
+	}
+
+	return res;
+}
+
+// destroy all shared resources (must run after every swapchain is gone)
+static void destroySharedResources()
+{
+	for (auto& pair : g_sharedResources)
+	{
+		SharedSwapchainResources& res = pair.second;
+		if (res.pipeline != VK_NULL_HANDLE) vkDestroyPipeline(device, res.pipeline, nullptr);
+		if (res.pipelineLayout != VK_NULL_HANDLE) vkDestroyPipelineLayout(device, res.pipelineLayout, nullptr);
+		if (res.descriptorSetLayout != VK_NULL_HANDLE) vkDestroyDescriptorSetLayout(device, res.descriptorSetLayout, nullptr);
+		if (res.renderPass != VK_NULL_HANDLE) vkDestroyRenderPass(device, res.renderPass, nullptr);
+		if (res.sampler != VK_NULL_HANDLE) vkDestroySampler(device, res.sampler, nullptr);
+		res = SharedSwapchainResources{};
+	}
+
+	g_sharedResources.clear();
+}
+
+// forward declarations
+static bool createSwapchainResources(SwapchainContext& ctx, VkSurfaceKHR surface, u32 width, u32 height, bool vSync, VkSwapchainKHR oldSwapchain);
+static void cancelPendingSwapchainDestroy(void* sdlWindow);
+
+// release the per-window resources of a swapchain context. the format-shared
+// objects (render pass, pipeline, layouts, sampler) are left alone. the caller
+// must have synchronized the queue first
+static void destroySwapchainResources(SwapchainContext& ctx)
+{
 	for (int i = 0; i < HUI_VK_MAX_FRAMES_IN_FLIGHT; i++)
 	{
 		if (ctx.vertexBuffers[i] != VK_NULL_HANDLE) { vkDestroyBuffer(device, ctx.vertexBuffers[i], nullptr); ctx.vertexBuffers[i] = VK_NULL_HANDLE; }
 		if (ctx.vertexBufferMemories[i] != VK_NULL_HANDLE) { vkFreeMemory(device, ctx.vertexBufferMemories[i], nullptr); ctx.vertexBufferMemories[i] = VK_NULL_HANDLE; }
 	}
 
-	if (ctx.pipeline != VK_NULL_HANDLE) { vkDestroyPipeline(device, ctx.pipeline, nullptr); ctx.pipeline = VK_NULL_HANDLE; }
-	if (ctx.pipelineLayout != VK_NULL_HANDLE) { vkDestroyPipelineLayout(device, ctx.pipelineLayout, nullptr); ctx.pipelineLayout = VK_NULL_HANDLE; }
-
 	for (int i = 0; i < HUI_VK_MAX_FRAMES_IN_FLIGHT; i++)
 	{
 		if (ctx.descriptorPools[i] != VK_NULL_HANDLE) { vkDestroyDescriptorPool(device, ctx.descriptorPools[i], nullptr); ctx.descriptorPools[i] = VK_NULL_HANDLE; }
 	}
-	if (ctx.descriptorSetLayout != VK_NULL_HANDLE) { vkDestroyDescriptorSetLayout(device, ctx.descriptorSetLayout, nullptr); ctx.descriptorSetLayout = VK_NULL_HANDLE; }
-	if (ctx.sampler != VK_NULL_HANDLE) { vkDestroySampler(device, ctx.sampler, nullptr); ctx.sampler = VK_NULL_HANDLE; }
 
 	if (commandPool != VK_NULL_HANDLE) {
 		vkFreeCommandBuffers(device, commandPool, HUI_VK_MAX_FRAMES_IN_FLIGHT, ctx.commandBuffers);
@@ -990,16 +1022,29 @@ static void destroySwapchainForWindowImmediate(void* sdlWindow)
 	for (auto fb : ctx.framebuffers) if (fb != VK_NULL_HANDLE) vkDestroyFramebuffer(device, fb, nullptr);
 	ctx.framebuffers.clear();
 
-	if (ctx.renderPass != VK_NULL_HANDLE) { vkDestroyRenderPass(device, ctx.renderPass, nullptr); ctx.renderPass = VK_NULL_HANDLE; }
 	for (auto iv : ctx.imageViews) if (iv != VK_NULL_HANDLE) vkDestroyImageView(device, iv, nullptr);
 	ctx.imageViews.clear();
 
 	// swapchain last
 	if (ctx.swapchain != VK_NULL_HANDLE) {
-		//printf("Vulkan: vkDestroySwapchainKHR(%p)\n", (void*)ctx.swapchain);
 		vkDestroySwapchainKHR(device, ctx.swapchain, nullptr);
 		ctx.swapchain = VK_NULL_HANDLE;
 	}
+}
+
+static void destroySwapchainForWindowImmediate(void* sdlWindow)
+{
+	auto it = g_swapchains.find(sdlWindow);
+	if (it == g_swapchains.end()) return;
+	SwapchainContext& ctx = it->second;
+
+	// the graphics/present queue is the only queue, so a single queue idle releases
+	// every swapchain image and synchronization object; a device-wide wait is unnecessary
+	if (graphicsQueue != VK_NULL_HANDLE) {
+		vkQueueWaitIdle(graphicsQueue);
+	}
+
+	destroySwapchainResources(ctx);
 
 	g_swapchains.erase(it);
 
@@ -1010,15 +1055,50 @@ void resizeSwapchainForSdlWindowVk(void* sdlWindow)
 {
 	auto it = g_swapchains.find(sdlWindow);
 	if (it == g_swapchains.end()) return;
+	if (!isVulkanInitialized()) return;
 
-	VkSurfaceKHR surface = it->second.surface;
-	bool vSync = it->second.vSync;
+	SwapchainContext& old = it->second;
+	if (old.swapchain == VK_NULL_HANDLE) return;
+
+	VkSurfaceKHR surface = old.surface;
+	bool vSync = old.vSync;
+	VkExtent2D currentExtent = old.extent;
 
 	int w, h;
 	SDL_GetWindowSizeInPixels((SDL_Window*)sdlWindow, &w, &h);
+	if (w <= 0 || h <= 0) return;
 
-	destroySwapchainForWindowImmediate(sdlWindow);
-	createSwapchainForWindowVk(sdlWindow, surface, (u32)w, (u32)h, vSync);
+	// skip redundant recreations (duplicate SDL resize events, position-only changes)
+	if ((u32)w == currentExtent.width && (u32)h == currentExtent.height) return;
+
+	cancelPendingSwapchainDestroy(sdlWindow);
+
+	// the old swapchain is handed to the driver as oldSwapchain; a single queue idle
+	// releases its images without the device-wide stall of a full teardown
+	if (graphicsQueue != VK_NULL_HANDLE) vkQueueWaitIdle(graphicsQueue);
+
+	VkSwapchainKHR oldSwapchain = old.swapchain;
+	SwapchainContext ctx{};
+	if (!createSwapchainResources(ctx, surface, (u32)w, (u32)h, vSync, oldSwapchain))
+	{
+		// the driver may already have retired the old swapchain, so discard it and
+		// let the next present recreate a fresh one
+		destroySwapchainResources(old);
+		g_swapchains.erase(it);
+		return;
+	}
+
+	// release the old swapchain resources, then adopt the new context
+	it = g_swapchains.find(sdlWindow);
+	if (it != g_swapchains.end())
+	{
+		destroySwapchainResources(it->second);
+		it->second = ctx;
+	}
+	else
+	{
+		g_swapchains[sdlWindow] = ctx;
+	}
 }
 
 // flush pending scheduled swapchain destroys
@@ -1033,11 +1113,11 @@ static void flushPendingSwapchainDestroys()
 	}
 }
 
-bool createSwapchainForWindowVk(void* sdlWindow, VkSurfaceKHR surface, u32 width, u32 height, bool vSync)
+// fill a swapchain context with a swapchain, images, views, framebuffers, sync
+// objects and pools. oldSwapchain (if any) is handed to the driver so it can
+// reuse resources; the caller owns it and must destroy it afterwards
+static bool createSwapchainResources(SwapchainContext& ctx, VkSurfaceKHR surface, u32 width, u32 height, bool vSync, VkSwapchainKHR oldSwapchain)
 {
-	if (!isVulkanInitialized()) return false;
-
-	SwapchainContext ctx{};
 	ctx.surface = surface;
 	ctx.vSync = vSync;
 
@@ -1137,7 +1217,7 @@ bool createSwapchainForWindowVk(void* sdlWindow, VkSurfaceKHR surface, u32 width
 	sci.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
 	sci.presentMode = chosenPresent;
 	sci.clipped = VK_TRUE;
-	sci.oldSwapchain = VK_NULL_HANDLE;
+	sci.oldSwapchain = oldSwapchain;
 
 	r = vkCreateSwapchainKHR(device, &sci, nullptr, &ctx.swapchain);
 	if (r != VK_SUCCESS)
@@ -1183,19 +1263,18 @@ bool createSwapchainForWindowVk(void* sdlWindow, VkSurfaceKHR surface, u32 width
 		}
 	}
 
-	// create render pass
-	if (!createRenderPassForSwapchain(ctx)) {
-		// cleanup views & swapchain
-		for (auto iv : ctx.imageViews) vkDestroyImageView(device, iv, nullptr);
-		vkDestroySwapchainKHR(device, ctx.swapchain, nullptr);
-		return false;
-	}
+	// fetch (build once per format) the shared render pass and pipeline objects
+	SharedSwapchainResources& shared = getOrCreateSharedResources(ctx.format, ctx.extent);
+	ctx.renderPass = shared.renderPass;
+	ctx.descriptorSetLayout = shared.descriptorSetLayout;
+	ctx.pipelineLayout = shared.pipelineLayout;
+	ctx.pipeline = shared.pipeline;
+	ctx.sampler = shared.sampler;
 
 	// create framebuffers
 	if (!createFramebuffersForSwapchain(ctx))
 	{
 		for (auto iv : ctx.imageViews) vkDestroyImageView(device, iv, nullptr);
-		if (ctx.renderPass != VK_NULL_HANDLE) vkDestroyRenderPass(device, ctx.renderPass, nullptr);
 		vkDestroySwapchainKHR(device, ctx.swapchain, nullptr);
 		return false;
 	}
@@ -1232,10 +1311,11 @@ bool createSwapchainForWindowVk(void* sdlWindow, VkSurfaceKHR surface, u32 width
 	poolInfo.maxSets = 1000;
 	for (int i = 0; i < HUI_VK_MAX_FRAMES_IN_FLIGHT; i++) vkCreateDescriptorPool(device, &poolInfo, nullptr, &ctx.descriptorPools[i]);
 
-	// pipeline (attempt; if fails we keep swapchain but disable rendering)
-	if (!createPipelineForSwapchain(ctx))
+	// render pass / pipeline are shared per format (see getOrCreateSharedResources);
+	// if the pipeline is missing rendering stays disabled until shaders become available
+	if (ctx.pipeline == VK_NULL_HANDLE)
 	{
-		printf("Pipeline creation failed for swapchain; rendering will be disabled until shaders are available.\n");
+		printf("Pipeline unavailable for format; rendering will be disabled until shaders are available.\n");
 	}
 
 	for (int i = 0; i < HUI_VK_MAX_FRAMES_IN_FLIGHT; i++)
@@ -1245,7 +1325,37 @@ bool createSwapchainForWindowVk(void* sdlWindow, VkSurfaceKHR surface, u32 width
 		ctx.vertexBufferCounts[i] = 0;
 	}
 
-	ctx.vSync = vSync;
+	return true;
+}
+
+// cancel any pending scheduled destroy for a window so it cannot later destroy
+// a swapchain we just (re)created
+static void cancelPendingSwapchainDestroy(void* sdlWindow)
+{
+	for (size_t i = 0; i < g_pendingSwapchainDestroys.size(); )
+	{
+		if (g_pendingSwapchainDestroys[i] == sdlWindow)
+			g_pendingSwapchainDestroys.erase(g_pendingSwapchainDestroys.begin() + i);
+		else
+			++i;
+	}
+}
+
+bool createSwapchainForWindowVk(void* sdlWindow, VkSurfaceKHR surface, u32 width, u32 height, bool vSync)
+{
+	if (!isVulkanInitialized()) return false;
+
+	cancelPendingSwapchainDestroy(sdlWindow);
+
+	// if a swapchain already exists for this window tear it down first so the old
+	// one is not leaked
+	if (g_swapchains.find(sdlWindow) != g_swapchains.end())
+		destroySwapchainForWindowImmediate(sdlWindow);
+
+	SwapchainContext ctx{};
+	if (!createSwapchainResources(ctx, surface, width, height, vSync, VK_NULL_HANDLE))
+		return false;
+
 	g_swapchains[sdlWindow] = ctx;
 	return true;
 }
@@ -1359,7 +1469,7 @@ bool presentSwapchainForWindowVk(void* sdlWindow)
 		SDL_GetWindowSizeInPixels((SDL_Window*)sdlWindow, &w, &h);
 		if (w > 0 && h > 0)
 		{
-			destroySwapchainForWindowVk(sdlWindow);
+			// createSwapchainForWindowVk tears down the old swapchain itself
 			createSwapchainForWindowVk(sdlWindow, surface, (u32)w, (u32)h, vSync);
 		}
 		return false;
@@ -1568,8 +1678,10 @@ bool presentSwapchainForWindowVk(void* sdlWindow)
 		SDL_GetWindowSizeInPixels((SDL_Window*)sdlWindow, &w, &h);
 		if (w > 0 && h > 0)
 		{
-			destroySwapchainForWindowVk(sdlWindow);
+			// createSwapchainForWindowVk tears down the old swapchain (which
+			// invalidates this local context reference) so end the frame here
 			createSwapchainForWindowVk(sdlWindow, surface, (u32)w, (u32)h, vSync);
+			return true;
 		}
 	}
 	else if (pres != VK_SUCCESS)
@@ -1818,6 +1930,9 @@ void shutdownVulkan(Services& services)
 	if (device != VK_NULL_HANDLE)
 	{
 		vkDeviceWaitIdle(device);
+
+		// free format-shared objects only after every swapchain is gone
+		destroySharedResources();
 
 		if (g_defaultWhiteTexture)
 		{

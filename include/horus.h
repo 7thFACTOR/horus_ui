@@ -412,7 +412,10 @@ enum class WindowFlags : u32
 	CanMove = HUI_BIT(3),
 	CanResize = HUI_BIT(4),
 	CanMinimize = HUI_BIT(5),
-	Disabled = HUI_BIT(6)
+	Disabled = HUI_BIT(6),
+	NoTab = HUI_BIT(7), /// window fills its dock node without a tab bar, useful for menus and toolbars
+	NoResize = HUI_BIT(8), /// the dock node containing this window cannot be resized by the user
+	NoPadding = HUI_BIT(9) /// window contents are laid out without the WindowBody padding, useful for menus and toolbars
 };
 HUI_ENUM_AS_FLAGS(WindowFlags);
 
@@ -2160,6 +2163,7 @@ struct OverlayToolbarSettings
 	f32 insertionHintThickness = 2.5f; /// the thickness of the strip insertion hint bar
 	Color insertionHintColor = Color::fromU8(70, 130, 220, 200); /// the color of the strip insertion hint bar
 	Color toolbarBackgroundColor = Color::fromU8(120, 125, 135, 80); /// the translucent gray tint of the toolbar background
+	f32 toolbarBorderThickness = 1.0f; /// the thickness of the border drawn around the toolbar while dragging, in pixels (scaled by the ui scale)
 	Color toolbarBorderColor = Color::fromU8(120, 125, 135, 170); /// the color of the border drawn around the toolbar while dragging
 	Color buttonPressedColor = Color::fromU8(180, 95, 20); /// the color of a toolbar button while pressed or toggled on
 	f32 dragStartDistance = 5; /// the mouse distance after which a toolbar drag starts
@@ -2384,6 +2388,10 @@ HUI_API void windowSetVisible(const char* windowId, bool visible);
 /// Set the flags for the next window drawn
 /// \param flags the window flags
 HUI_API void windowSetNextFlags(WindowFlags flags);
+/// Set a fixed size for the next window drawn, the dock node will keep this size instead of scaling with the native window, 0 means auto for that axis
+/// \param width the fixed width, 0 for auto
+/// \param height the fixed height, 0 for auto
+HUI_API void windowSetNextSize(f32 width, f32 height);
 /// Give keyboard focus to a window
 /// \param windowId the window id
 HUI_API void windowSetFocus(const char* windowId);
@@ -3464,8 +3472,6 @@ HUI_API u32 layerIndexDecrement();
 /// Decrement the maximum layer index of the current window, used internally when a window's layer stack ends
 HUI_API void layerDecrementWindowMaxLayerIndex();
 
-/// \return the current widget drawing position
-HUI_API Point widgetGetPosition();
 /// Draw text inside a rectangle, aligned within it
 /// \param text the text to draw (UTF-8)
 /// \param rect the rectangle to draw the text in (window coordinates)

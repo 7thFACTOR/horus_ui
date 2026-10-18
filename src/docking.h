@@ -15,6 +15,7 @@ struct DockNode
 
 	u64 id = 0;
 	bool createdByDockingSystem = false; /// only dock nodes created by the docking system can be deleted automatically, user ones cannot
+	bool emptyDockSite = false; /// empty node added to fill the empty space left by fixed size nodes, it acts as a dock target
 	DockNode* parent = nullptr;
 	std::vector<DockNode*> children;
 	std::vector<Window*> windows;
@@ -56,6 +57,7 @@ void nativeWindowDestroy(HNativeWindow wnd);
 DockNode* dockNodeRootCreateInternal(HNativeWindow nativeWindow);
 void dockNodeRootDelete(HNativeWindow window);
 DockNode* dockNodeRootGet(HNativeWindow window);
+void dockNodeRecalculateLayout(DockNode* root);
 Window* windowCreateInternal(const std::string& id, DockNode* targetNode, DockType dockType, const std::string& title, Rect* initialRect, HNativeWindow nativeWnd, HImage img);
 void windowDeleteInternal(Window* wnd);
 void windowCloseInternal(Window* wnd);

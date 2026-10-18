@@ -37,6 +37,7 @@ struct Context
 	bool hoveringThisWindow = false;
 	Window* currentWindow = nullptr;
 	WindowFlags nextWindowFlags = WindowFlags::None;
+	Point nextWindowSize = { 0, 0 };
 	HNativeWindow lastHoveredNativeWindow = nullptr;
 	f32 scale = 1.0f;
 	Point mousePosition;
