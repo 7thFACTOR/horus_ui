@@ -279,8 +279,19 @@ void scrollViewBegin(const char* id, f32 height, Point scrollOffset, Point virtu
 		// accept caller offset when not dragging (will be clamped/finalized in scrollViewEnd).
 		scrollViewState.scrollOffset = scrollOffset;
 	}
+
 	// use authoritative per-axis offset for layout positioning in this frame.
 	Point useOffset = scrollViewState.scrollOffset;
+
+	if (!draggingThisBegin)
+	{
+		// clamp only the offset used for drawing to the last known max so content is never drawn
+		// off-screen (e.g. when the caller passes a large "scroll to end" sentinel, which would also
+		// lose f32 precision once added to the pen position). the raw requested offset is kept in
+		// scrollViewState.scrollOffset and clamped against the freshly measured size in scrollViewEnd.
+		useOffset.x = std::min(useOffset.x, scrollViewState.horizontal.scrollMax);
+		useOffset.y = std::min(useOffset.y, scrollViewState.vertical.scrollMax);
+	}
 
 	ctx->maxContentWidthStack.push_back(ctx->maxContentWidth);
 	ctx->maxContentWidth = 0.0f;
@@ -686,6 +697,10 @@ Point scrollViewEnd()
 		// clamping to the recomputed scrollMax above.
 		scrollViewState.horizontal.scrollOffset = std::clamp(scrollOffset.x, 0.0f, scrollViewState.horizontal.scrollMax);
 		scrollViewState.vertical.scrollOffset = std::clamp(scrollOffset.y, 0.0f, scrollViewState.vertical.scrollMax);
+
+		// sync local offset with the clamped authoritative values so the returned/persisted offset is valid
+		scrollOffset.x = scrollViewState.horizontal.scrollOffset;
+		scrollOffset.y = scrollViewState.vertical.scrollOffset;
 	}
 	else
 	{
