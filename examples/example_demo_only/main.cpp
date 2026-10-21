@@ -61,21 +61,30 @@ static char themeFilePath[256] = "../themes/default.theme.json";
 static std::filesystem::file_time_type themeLastWriteTime;
 static bool themeNeedsReload = false;
 
-static const char* themeNames[] = { "Default", "Flat", "Win94" };
-static const char* themePaths[] = { "../themes/default.theme.json", "../themes/flat.theme.json", "../themes/win94.theme.json" };
-static i32 currentThemeIndex = 0;
-static constexpr u32 themeCount = 3;
+static const char* themeNames[] = { "Builtin", "Default", "Flat", "Win94" };
+static const char* themePaths[] = { nullptr, "../themes/default.theme.json", "../themes/flat.theme.json", "../themes/win94.theme.json" };
+static i32 currentThemeIndex = 1;
+static constexpr u32 themeCount = 4;
 static hui::HTheme currentTheme = nullptr;
 
 static void reloadTheme(hui::Sdl3GfxApi gfxApi)
 {
-	char err[2048] = { 0 };
-	auto newTheme = hui::loadThemeFromJson(themeFilePath, err, sizeof(err));
+	hui::HTheme newTheme = nullptr;
 
-	if (!newTheme)
+	if (themeFilePath[0])
 	{
-		printf("Theme reload error: %s\n", err);
-		return;
+		char err[2048] = { 0 };
+		newTheme = hui::loadThemeFromJson(themeFilePath, err, sizeof(err));
+
+		if (!newTheme)
+		{
+			printf("Theme reload error: %s\n", err);
+			return;
+		}
+	}
+	else
+	{
+		newTheme = hui::createBuiltinTheme(hui::contextGetSettings().defaultAtlasSize);
 	}
 
 	auto oldTheme = hui::themeGet();
@@ -266,11 +275,15 @@ int main(int argc, char** args)
 
 			hui::label("Theme:");
 			hui::sameLine();
-			if (hui::dropdown("themeSelector", currentThemeIndex, themeNames, themeCount))
-			{
+		if (hui::dropdown("themeSelector", currentThemeIndex, themeNames, themeCount))
+		{
+			if (themePaths[currentThemeIndex])
 				strcpy_s(themeFilePath, sizeof(themeFilePath), themePaths[currentThemeIndex]);
-				themeNeedsReload = true;
-			}
+			else
+				themeFilePath[0] = 0;
+
+			themeNeedsReload = true;
+		}
 			hui::sameLine();
 			hui::label("(or press F5 to reload current)");
 			hui::space();
