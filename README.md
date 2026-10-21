@@ -94,7 +94,7 @@ Donations on PayPal:
 
 ## PREREQUISITES
 **Windows:**
-	Microsoft Visual Studio 2017
+	Microsoft Visual Studio 2019
 
 **Linux:**
 g++
@@ -107,11 +107,13 @@ GLU/GLUT dev, needed by GLEW, use:
 	
 ## BUILDING
 **Windows:**
-- Execute: ```generate.bat```
-- Open and compile: ```build_vs2017/horus.sln```
+- After cloning, run ```setup.cmd``` to initialize the submodules.
+- Run ```generate.cmd``` to generate the Visual Studio 2019 solution.
+- Open and compile: ```build_vs2019/horus.sln```, or run ```build.cmd```.
 - Run generated files from ```./bin``` folder
 
 **Linux:**
+- After cloning, run ```sh ./setup.sh``` to initialize the submodules.
 - Execute: ```sh ./generate.sh``` to generate makefiles
 - Execute: ```sh ./build.sh``` to compile and generate the lib and executables for the examples
 - Run generated files from the ```./bin``` folder
