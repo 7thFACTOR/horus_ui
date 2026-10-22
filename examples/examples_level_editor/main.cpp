@@ -602,6 +602,15 @@ void drawSceneTree(LevelEditorState& state)
 	state.treeScroll = hui::scrollViewEnd();
 }
 
+template <typename EditorFn>
+static void propGridRow(const char* name, EditorFn&& editorFn)
+{
+	hui::tableRowNext();
+	hui::label(name, hui::HAlignType::Right);
+	hui::tableCellNext();
+	editorFn();
+}
+
 void drawInspector(LevelEditorState& state)
 {
 	SceneObject* obj = state.selectedObject;
@@ -616,59 +625,76 @@ void drawInspector(LevelEditorState& state)
 
 	static const char* meshItems[] = { "None", "Cube", "Sphere", "Cylinder", "Plane", "Custom" };
 
-	hui::line();
-
-	hui::labelCustomColor("Name", hui::Color::gray);
-	hui::widgetSetNextWidth(1);
-	hui::textInput("##objectName", obj->name, sizeof(obj->name));
-
-	hui::labelCustomColor("Type", hui::Color::gray);
-	hui::sameLine();
-	hui::labelCustomColor(obj->type, hui::Color::yellow);
-
-	hui::space();
-
-	if (hui::expandableBegin("Transform", &obj->transformExpanded))
+	// borderless property grid, label and value share one row
+	if (hui::tableBegin("##inspectorProps", 2, 0, hui::TableFlags::Stretch | hui::TableFlags::Resizable | hui::TableFlags::FixedSize))
 	{
-		hui::label("Position");
-		hui::vec3Editor("##position", obj->position[0], obj->position[1], obj->position[2], 0.05f);
+		hui::tableColumnSetup(0, 110, hui::TableColumnFlags::FixedResize);
+		hui::tableColumnSetup(1, 0, hui::TableColumnFlags::Stretch);
+		hui::tableCellPaddingPush(8.0f, 4.0f);
 
-		hui::label("Rotation");
-		hui::vec3Editor("##rotation", obj->rotation[0], obj->rotation[1], obj->rotation[2], 0.5f);
+		propGridRow("Name", [&]() { hui::textInput("##objectName", obj->name, sizeof(obj->name)); });
+		propGridRow("Type", [&]() { hui::labelCustomColor(obj->type, hui::Color::yellow); });
 
-		hui::label("Scale");
-		hui::vec3Editor("##scale", obj->scale[0], obj->scale[1], obj->scale[2], 0.02f);
+		hui::tableRowNext();
+		hui::tableCellNext(2);
+		bool transformOpen = hui::expandable("Transform", &obj->transformExpanded);
 
-		hui::expandableEnd();
-	}
+		if (transformOpen)
+		{
+			propGridRow("Position", [&]() { hui::vec3Editor("##position", obj->position[0], obj->position[1], obj->position[2], 0.05f); });
+			propGridRow("Rotation", [&]() { hui::vec3Editor("##rotation", obj->rotation[0], obj->rotation[1], obj->rotation[2], 0.5f); });
+			propGridRow("Scale", [&]() { hui::vec3Editor("##scale", obj->scale[0], obj->scale[1], obj->scale[2], 0.02f); });
+		}
 
-	if (hui::expandableBegin("Rendering", &obj->renderingExpanded))
-	{
-hui::label("Mesh");
-	hui::sameLine();
-	hui::dropdown("##meshSelect", obj->meshIndex, meshItems, 6);
+		hui::tableRowNext();
+		hui::tableCellNext(2);
+		bool renderingOpen = hui::expandable("Rendering", &obj->renderingExpanded);
 
-		hui::label("Material");
-		hui::objectRefEditor("##materialRef", state.iconInspector, state.iconAssets, state.iconInspector, "Material", "M_Default", 1, &state.materialRef, &state.materialModified);
+		if (renderingOpen)
+		{
+			propGridRow("Mesh", [&]() { hui::dropdown("##meshSelect", obj->meshIndex, meshItems, 6); });
+			propGridRow("Material", [&]() { hui::objectRefEditor("##materialRef", state.iconInspector, state.iconAssets, state.iconInspector, "Material", "M_Default", 1, &state.materialRef, &state.materialModified); });
+			propGridRow("Tint Color", [&]() { hui::colorPickerPopup("##tintColor", &obj->color, hui::ColorPickerFlags::ShowPalette); });
 
-		hui::label("Tint Color");
-		hui::colorPickerPopup("##tintColor", &obj->color, hui::ColorPickerFlags::ShowPalette);
+			propGridRow("Visible", [&]() {
+				hui::idPush("visible");
+				hui::check("", &obj->visible);
+				hui::idPop();
+			});
+			propGridRow("Static", [&]() {
+				hui::idPush("static");
+				hui::check("", &obj->isStatic);
+				hui::idPop();
+			});
+		}
 
-		hui::check("Visible", &obj->visible);
-		hui::check("Static", &obj->isStatic);
+		hui::tableRowNext();
+		hui::tableCellNext(2);
+		bool physicsOpen = hui::expandable("Physics", &obj->physicsExpanded);
 
-		hui::expandableEnd();
-	}
+		if (physicsOpen)
+		{
+			propGridRow("Generate Collision", [&]() {
+				hui::idPush("collision");
+				hui::check("", &obj->collision);
+				hui::idPop();
+			});
+			propGridRow("Is Trigger", [&]() {
+				hui::idPush("trigger");
+				hui::check("", &obj->trigger);
+				hui::idPop();
+			});
 
-	if (hui::expandableBegin("Physics", &obj->physicsExpanded))
-	{
-		hui::check("Generate Collision", &obj->collision);
-		hui::check("Is Trigger", &obj->trigger);
+			if (obj->collision && obj->trigger)
+			{
+				hui::tableRowNext();
+				hui::tableCellNext(2);
+				hui::labelCustomColor("Triggers are not solid, overlap events only.", hui::Color::gray);
+			}
+		}
 
-		if (obj->collision && obj->trigger)
-			hui::labelCustomColor("Triggers are not solid, overlap events only.", hui::Color::gray);
-
-		hui::expandableEnd();
+		hui::tableCellPaddingPop();
+		hui::tableEnd();
 	}
 }
 
@@ -840,34 +866,38 @@ void drawAssetBrowser(LevelEditorState& state)
 
 	hui::scrollViewBegin("##assetScroll", paneHeight, state.assetScroll, hui::Point(0, 0), hui::ScrollViewFlags::None);
 
-	u32 column = 0;
+		u32 column = 0;
 
-	for (u32 i = 0; i < state.assets.size(); i++)
-	{
-		const AssetItem& asset = state.assets[i];
+		for (u32 i = 0; i < state.assets.size(); i++)
+		{
+			const AssetItem& asset = state.assets[i];
 
-		if (asset.folder != state.selectedFolder)
-			continue;
+			if (asset.folder != state.selectedFolder)
+				continue;
 
-		if (!containsInsensitive(asset.name, state.assetFilter))
-			continue;
+			if (!containsInsensitive(asset.name, state.assetFilter))
+				continue;
 
-		if (column > 0)
-hui::sameLine();
+			if (column > 0)
+				hui::sameLine();
 
-		hui::idPush((u32)i);
+			hui::idPush((u32)i);
 
-		bool selected = (state.selectedAsset == (i32)i);
+			bool selected = (state.selectedAsset == (i32)i);
 
-		if (hui::imageButton(asset.thumb, 72, 72, 0, selected))
-			state.selectedAsset = (i32)i;
+			if (hui::imageButton(asset.thumb, 72, 72, 0, selected))
+				state.selectedAsset = (i32)i;
 
-		hui::tooltip(asset.name.c_str());
+			hui::tooltip(asset.name.c_str());
 
-		hui::idPop();
+			hui::Rect btnRect = hui::widgetGetRect();
+			hui::idPop();
 
-		column = (column + 1) % 4;
-	}
+			hui::renderSetColor(hui::Color::lightGray);
+			hui::renderDrawTextInBox(asset.name.c_str(), { btnRect.x, btnRect.bottom() + 2.0f, btnRect.width, 16.0f }, hui::HAlignType::Center, hui::VAlignType::Top);
+
+			column = (column + 1) % 4;
+		}
 
 	state.assetScroll = hui::scrollViewEnd();
 
@@ -893,38 +923,65 @@ void drawLogWindow(LevelEditorState& state)
 
 	hui::line();
 
+	// sticky header table, drawn outside the scroll view so it freezes in place
+	if (hui::tableBegin("##logTableHeader", 2, 0, hui::TableFlags::Borders | hui::TableFlags::Stretch))
+	{
+		hui::tableColumnSetup(0, 80.0f, hui::TableColumnFlags::Fixed);
+		hui::tableColumnSetup(1, 0.0f, hui::TableColumnFlags::Stretch);
+
+		hui::tableStartHeader();
+		hui::label("Type");
+		hui::tableCellNext();
+		hui::label("Message");
+
+		hui::tableEnd();
+	}
+
 	f32 viewHeight = hui::layoutGetRemainingHeight();
 	if (viewHeight <= 0) viewHeight = 200.0f;
-	hui::scrollViewBegin("##logScroll", viewHeight, state.logScroll, hui::Point(0, 0), hui::ScrollViewFlags::None);
+	hui::scrollViewBegin("##logScroll", viewHeight, state.logScroll, hui::Point(0, 0), hui::ScrollViewFlags::NoBorder | hui::ScrollViewFlags::NoPadding);
 
 	hui::Point contentStart = hui::widgetGetPosition();
 
-	for (const LogEntry& entry : state.log)
+	// rows table, same column setup as the header so the dividers line up
+	if (hui::tableBegin("##logTableBody", 2, 0, hui::TableFlags::Borders | hui::TableFlags::Stretch | hui::TableFlags::AltRowBg))
 	{
-		if (entry.level == LogEntry::Level::Info && !state.logShowInfo)
-			continue;
+		hui::tableColumnSetup(0, 80.0f, hui::TableColumnFlags::Fixed);
+		hui::tableColumnSetup(1, 0.0f, hui::TableColumnFlags::Stretch);
 
-		if (entry.level == LogEntry::Level::Warning && !state.logShowWarning)
-			continue;
-
-		if (entry.level == LogEntry::Level::Error && !state.logShowError)
-			continue;
-
-		const char* prefix = "INFO:     ";
-		hui::Color color = hui::Color::lightGray;
-
-		if (entry.level == LogEntry::Level::Warning)
+		for (const LogEntry& entry : state.log)
 		{
-			prefix = "WARNING:  ";
-			color = hui::Color::yellow;
-		}
-		else if (entry.level == LogEntry::Level::Error)
-		{
-			prefix = "ERROR:    ";
-			color = hui::Color::red;
+			if (entry.level == LogEntry::Level::Info && !state.logShowInfo)
+				continue;
+
+			if (entry.level == LogEntry::Level::Warning && !state.logShowWarning)
+				continue;
+
+			if (entry.level == LogEntry::Level::Error && !state.logShowError)
+				continue;
+
+			hui::tableRowNext();
+
+			const char* typeName = "Info";
+			hui::Color color = hui::Color::lightGray;
+
+			if (entry.level == LogEntry::Level::Warning)
+			{
+				typeName = "Warning";
+				color = hui::Color::yellow;
+			}
+			else if (entry.level == LogEntry::Level::Error)
+			{
+				typeName = "Error";
+				color = hui::Color::red;
+			}
+
+			hui::labelCustomColor(typeName, color);
+			hui::tableCellNext();
+			hui::label(entry.text.c_str());
 		}
 
-		hui::labelCustomColor((std::string(prefix) + entry.text).c_str(), color);
+		hui::tableEnd();
 	}
 
 	hui::Point contentEnd = hui::widgetGetPosition();
@@ -1147,8 +1204,6 @@ int main(int argc, char** args)
 				drawMainToolbar(state);
 				hui::windowEnd();
 			}
-
-			hui::windowSetNextSize(0, 200);
 
 			if (hui::windowBegin("log", "Log", nullptr, state.iconLog))
 			{

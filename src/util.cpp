@@ -1,4 +1,4 @@
-#include <algorithm>
+﻿#include <algorithm>
 #include <string.h>
 #include <string>
 #include <vector>
@@ -21,6 +21,72 @@ static Point cubicHermite(const Point& p0, const Point& m0, const Point& m1, con
 	f32 const h11 = t3 - t2;
 
 	return p0 * h00 + m0 * h10 + p1 * h01 + m1 * h11;
+}
+
+// clamp two tangents to prevent cubic hermite/bezier segments from developing
+// loops or cusps. three-stage approach:
+//   1. strip any backward (anti-chord) component - always causes a cusp
+//   2. clamp each tangent magnitude to chord length - a large perpendicular
+//      remainder after step 1 produces a huge sideways bow
+//   3. clamp combined forward reach to chord length - prevents along-chord
+//      components from overshooting and looping back
+static void clampTangentsToChord(const Point& p0, const Point& p1, Point& m0, Point& m1)
+{
+	f32 const chordLen = (p1 - p0).getLength();
+
+	if (chordLen < 1e-6f)
+	{
+		m0 = Point{ 0.0f, 0.0f };
+		m1 = Point{ 0.0f, 0.0f };
+		return;
+	}
+
+	Point const chordDir = (p1 - p0) / chordLen;
+
+	// stage 1: remove any backward component
+	f32 along0 = m0.dot(chordDir);
+	f32 along1 = m1.dot(chordDir);
+
+	if (along0 < 0.0f)
+	{
+		m0 = m0 - chordDir * along0;
+		along0 = 0.0f;
+	}
+
+	if (along1 < 0.0f)
+	{
+		m1 = m1 - chordDir * along1;
+		along1 = 0.0f;
+	}
+
+	// stage 2: per-tangent magnitude clamp to chord length so a large
+	// perpendicular component cannot produce an extreme sideways bow
+	f32 const len0 = m0.getLength();
+	f32 const len1 = m1.getLength();
+
+	if (len0 > chordLen)
+	{
+		f32 const s = chordLen / len0;
+		m0 = m0 * s;
+		along0 *= s;
+	}
+
+	if (len1 > chordLen)
+	{
+		f32 const s = chordLen / len1;
+		m1 = m1 * s;
+		along1 *= s;
+	}
+
+	// stage 3: clamp combined forward reach to chord length
+	f32 const total = along0 + along1;
+
+	if (total > chordLen)
+	{
+		f32 const scale = chordLen / total;
+		m0 = m0 * scale;
+		m1 = m1 * scale;
+	}
 }
 
 // centripetal Catmull-Rom tangents (alpha = 0.5), avoids cusps and loops
@@ -208,9 +274,16 @@ static Point evaluateSplineSegment(const SplineControlPoint* points, u32 count, 
 	{
 		case SplineType::CubicBezier:
 		{
+			// bezier tangents are handle offsets; clamp so b1/b2 can't cross
+			// past each other and cause a loop
+			Point m0 = points[i0].rightTangent;
+			Point m1 = -points[i1].leftTangent;
+
+			clampTangentsToChord(p0, p1, m0, m1);
+
 			Point const b0 = p0;
-			Point const b1 = p0 + points[i0].rightTangent;
-			Point const b2 = p1 + points[i1].leftTangent;
+			Point const b1 = p0 + m0;
+			Point const b2 = p1 - m1;
 			Point const b3 = p1;
 			f32 const u = 1.0f - t;
 
@@ -269,8 +342,10 @@ static Point evaluateSplineSegment(const SplineControlPoint* points, u32 count, 
 		case SplineType::Hermite:
 		default:
 		{
-			Point const m0 = points[i0].rightTangent;
-			Point const m1 = -points[i1].leftTangent;
+			Point m0 = points[i0].rightTangent;
+			Point m1 = -points[i1].leftTangent;
+
+			clampTangentsToChord(p0, p1, m0, m1);
 
 			return cubicHermite(p0, m0, m1, p1, t);
 		}
