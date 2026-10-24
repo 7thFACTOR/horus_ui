@@ -111,7 +111,8 @@
 	</div>
 	<div class="member">
 		<div class="prototype"><code><span class="kw">void</span> <span class="fn">windowSetNextSize</span>(<span class="prm">f32</span> width, <span class="prm">f32</span> height)</code></div>
-		<p class="brief">Set a fixed size for the next window created, the dock node keeps this size instead of scaling with the native window.</p>
+		<p class="brief">Set a fixed size for the next window drawn, the dock node keeps this size instead of scaling with the native window.</p>
+		<p>Call this every frame only for windows that must stay fixed, such as menu/toolbar chrome. Setting it every frame for a resizable panel forces it back to this size on each dock layout recalculation, overriding the user's splitter position.</p>
 		<ul class="params">
 			<li><span class="pname">width</span> the fixed width, 0 for auto</li>
 			<li><span class="pname">height</span> the fixed height, 0 for auto</li>

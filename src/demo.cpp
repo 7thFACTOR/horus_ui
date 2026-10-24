@@ -2122,14 +2122,14 @@ void showDemo()
 		{
 			label("With icon:");
 			HImage icon = themeGetImage(themeGet(), "../themes/default/sign-info.png");
-			objectRefEditor("##demoObjRefWithIcon", 0, 0, icon ? icon : themeGetImage(themeGet(), "__WHITEIMAGE__"), "MyObjectType3", v3.c_str(), MyTypeId3, &demo.objectRefValue3, &demo.objectRefModified3);
+			objectRefEditor("##demoObjRefWithIcon", 0, 0, icon ? icon : themeGetImage(themeGet(), "flat/target"), "MyObjectType3", v3.c_str(), MyTypeId3, &demo.objectRefValue3, &demo.objectRefModified3);
 		}
 		space();
 
 		{
 			label("With icon (custom size 44):");
 			HImage icon = themeGetImage(themeGet(), "../themes/default/sign-info.png");
-			objectRefEditor("##demoObjRefWithIconSize", 0, 0, icon ? icon : themeGetImage(themeGet(), "__WHITEIMAGE__"), "MyObjectType3", v3.c_str(), MyTypeId3, &demo.objectRefValue3, &demo.objectRefModified3, 0, nullptr, nullptr, 44);
+			objectRefEditor("##demoObjRefWithIconSize", 0, 0, icon ? icon : themeGetImage(themeGet(), "flat/target"), "MyObjectType3", v3.c_str(), MyTypeId3, &demo.objectRefValue3, &demo.objectRefModified3, 0, nullptr, nullptr, 44);
 		}
 		space();
 

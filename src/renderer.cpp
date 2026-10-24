@@ -703,8 +703,37 @@ void Renderer::executeDrawCommands(HNativeWindow wnd)
 		layerCmds.clear();
 	}
 
-	HUI_ASSERT(currentWindowContext->batches.size());
-	ctx->settings.services.draw(vertexBufferData.vertices.data(), vertexBufferData.drawVertexCount, currentWindowContext->batches.data(), currentWindowContext->batches.size());
+	auto& batches = currentWindowContext->batches;
+
+	// terminate the vertex stream with a degenerate transparent triangle, so that the
+	// real geometry is never the last primitive of the frame (some drivers/backends
+	// drop the final triangle, which clipped the last glyph of the last drawn text)
+	if (vertexBufferData.drawVertexCount > 0 && !batches.empty())
+	{
+		needToAddVertexCount(3);
+		u32 firstDummyVertex = vertexBufferData.drawVertexCount;
+
+		for (u32 i = 0; i < 3; i++)
+		{
+			vertexBufferData.vertices[firstDummyVertex + i].position = Point(0.0f, 0.0f);
+			vertexBufferData.vertices[firstDummyVertex + i].uv = Point(0.0f, 0.0f);
+			vertexBufferData.vertices[firstDummyVertex + i].color = 0;
+		}
+
+		vertexBufferData.drawVertexCount = firstDummyVertex + 3;
+	}
+
+	// recompute every batch range from its start index, a stale or short vertex count
+	// would silently drop the tail of a batch
+	for (u32 i = 0; i < batches.size(); i++)
+	{
+		u32 batchEnd = i + 1 < batches.size() ? batches[i + 1].startVertexIndex : vertexBufferData.drawVertexCount;
+
+		batches[i].vertexCount = batchEnd > batches[i].startVertexIndex ? batchEnd - batches[i].startVertexIndex : 0;
+	}
+
+	HUI_ASSERT(batches.size());
+	ctx->settings.services.draw(vertexBufferData.vertices.data(), vertexBufferData.drawVertexCount, batches.data(), batches.size());
 }
 
 void Renderer::cmdCallback(RenderCallback callback)

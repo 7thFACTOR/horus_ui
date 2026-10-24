@@ -61,7 +61,10 @@ void popupBegin(
 	popup.width = width;
 
 	f32 height = popup.height;
-	auto& bodyElemState = ctx->theme->getElement(widgetElementId).normalState();
+	auto& popupElem = ctx->theme->getElement(widgetElementId);
+	auto& bodyElemState = popupElem.normalState();
+	f32 bodyPaddingX = popupElem.currentStyle->getParameter("paddingX", 0.0f) * ctx->scale;
+	f32 bodyPaddingY = popupElem.currentStyle->getParameter("paddingY", 0.0f) * ctx->scale;
 	Point pos;
 
 	if (has(flags, PopupFlags::Centered))
@@ -127,10 +130,10 @@ void popupBegin(
 	ctx->layout = LayoutState(LayoutType::Generic);
 	ctx->position =
 	{
-		pos.x + bodyElemState.border * ctx->scale,
-		pos.y + bodyElemState.border * ctx->scale
+		pos.x + bodyElemState.border * ctx->scale + bodyPaddingX,
+		pos.y + bodyElemState.border * ctx->scale + bodyPaddingY
 	};
-	ctx->layout.width = width - bodyElemState.border * 2 * ctx->scale;
+	ctx->layout.width = width - bodyElemState.border * 2 * ctx->scale - bodyPaddingX * 2.0f;
 	ctx->layout.savedPosition = ctx->position;
 	
 	auto posBeforeHitWidget = ctx->position;
@@ -228,8 +231,10 @@ void popupEnd()
 		forceRepaint();
 	}
 
-	auto& bodyElemState = ctx->theme->getElement(popup.widgetElementId).normalState();
-	popup.height = (ctx->position.y - ctx->layout.savedPosition.y) + bodyElemState.border * 2.0f * ctx->scale;
+	auto& popupElem = ctx->theme->getElement(popup.widgetElementId);
+	auto& bodyElemState = popupElem.normalState();
+	f32 bodyPaddingY = popupElem.currentStyle->getParameter("paddingY", 0.0f) * ctx->scale;
+	popup.height = (ctx->position.y - ctx->layout.savedPosition.y) + bodyElemState.border * 2.0f * ctx->scale + bodyPaddingY * 2.0f;
 	
 	ctx->position = ctx->layout.savedPosition;
 	ctx->renderer.popClipRect();

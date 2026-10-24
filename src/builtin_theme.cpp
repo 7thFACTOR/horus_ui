@@ -1,6 +1,7 @@
 #include "horus.h"
 #include "theme.h"
 #include "builtin_font_data.h"
+#include "builtin_image_data.h"
 #include "util.h"
 #include <math.h>
 
@@ -152,6 +153,33 @@ static Image* createProceduralImage(Theme* theme, const char* name, u32 width, u
 	return img;
 }
 
+static Image* createImageFromPixels(Theme* theme, const char* name, const u32* pixels, u32 width, u32 height)
+{
+	Image* img = new Image();
+	img->id = hashString(name);
+	img->width = width;
+	img->height = height;
+	img->pixels.assign(pixels, pixels + width * height);
+	theme->images[img->id] = img;
+	return img;
+}
+
+static void addUserElementImage(Theme* theme, const char* name, Image* img, f32 width = 0, f32 height = 0)
+{
+	ThemeElement* elem = new ThemeElement();
+	auto& style = elem->styles["default"];
+
+	for (u32 j = 0; j < (u32)WidgetStateType::Count; j++)
+	{
+		style.states[j].image = img;
+		style.states[j].width = width;
+		style.states[j].height = height;
+	}
+
+	elem->setDefaultStyle();
+	theme->userElements[name] = elem;
+}
+
 HTheme createBuiltinTheme(u32 atlasTextureSize)
 {
 	Theme* theme = new Theme(atlasTextureSize);
@@ -175,25 +203,16 @@ HTheme createBuiltinTheme(u32 atlasTextureSize)
 	Image* imgCheckMarkIndeterminate = createProceduralImage(theme, "flat/check_mark_indeterminate", 22, 22);
 	drawAALine(imgCheckMarkIndeterminate, 6, 11, 16, 11, 3.0f, Color::white);
 	
-	Image* imgDropdownArrow = createProceduralImage(theme, "flat/dropdown_arrow", 20, 22);
-	drawAALine(imgDropdownArrow, 5, 8, 10, 14, 2.0f, Color::white);
-	drawAALine(imgDropdownArrow, 10, 14, 15, 8, 2.0f, Color::white);
+	// the filled dropdown arrow is an embedded image, white tinted by the element color
+	Image* imgDropdownArrow = createImageFromPixels(theme, "flat/dropdown_arrow", dropdownArrowPixels, 20, 22);
 	
-	Image* imgExpandableCollapsed = createProceduralImage(theme, "flat/expandable_collapsed_arrow", 22, 22);
-	drawAALine(imgExpandableCollapsed, 8, 6, 14, 11, 2.0f, Color::white);
-	drawAALine(imgExpandableCollapsed, 14, 11, 8, 16, 2.0f, Color::white);
-
-	Image* imgExpandableExpanded = createProceduralImage(theme, "flat/expandable_expanded_arrow", 22, 22);
-	drawAALine(imgExpandableExpanded, 6, 8, 11, 14, 2.0f, Color::white);
-	drawAALine(imgExpandableExpanded, 11, 14, 16, 8, 2.0f, Color::white);
+	// the collapsed/expanded arrows are embedded images, white tinted by the element color
+	Image* imgExpandableCollapsed = createImageFromPixels(theme, "flat/expandable_collapsed_arrow", expandableCollapsedArrowPixels, 9, 9);
+	Image* imgExpandableExpanded = createImageFromPixels(theme, "flat/expandable_expanded_arrow", expandableExpandedArrowPixels, 9, 9);
 	
-	Image* imgComboSliderLeftArrow = createProceduralImage(theme, "flat/comboslider_left_arrow", 22, 20);
-	drawAALine(imgComboSliderLeftArrow, 14, 6, 8, 10, 2.0f, Color::white);
-	drawAALine(imgComboSliderLeftArrow, 8, 10, 14, 14, 2.0f, Color::white);
-
-	Image* imgComboSliderRightArrow = createProceduralImage(theme, "flat/comboslider_right_arrow", 22, 20);
-	drawAALine(imgComboSliderRightArrow, 8, 6, 14, 10, 2.0f, Color::white);
-	drawAALine(imgComboSliderRightArrow, 14, 10, 8, 14, 2.0f, Color::white);
+	// the filled combo slider arrows are embedded images, white tinted by the element color
+	Image* imgComboSliderLeftArrow = createImageFromPixels(theme, "flat/comboslider_left_arrow", combosliderLeftArrowPixels, 22, 20);
+	Image* imgComboSliderRightArrow = createImageFromPixels(theme, "flat/comboslider_right_arrow", combosliderRightArrowPixels, 22, 20);
 
 	Image* imgCircularSliderBody = createProceduralImage(theme, "flat/circularslider_body", 90, 90);
 	drawAACircle(imgCircularSliderBody, 45, 45, 30, 4.0f, false, Color::white);
@@ -204,18 +223,26 @@ HTheme createBuiltinTheme(u32 atlasTextureSize)
 	Image* imgCircularSliderMark = createProceduralImage(theme, "flat/circularslider_mark", 20, 20);
 	drawAALine(imgCircularSliderMark, 10, 2, 10, 8, 2.0f, Color::white);
 
+	// the thin rail of the slider, tinted by the element color, kept 16px tall so the widget height stays unchanged
+	Image* imgSliderRail = createProceduralImage(theme, "flat/slider", 3, 16);
+	drawAALine(imgSliderRail, 0, 8, 3, 8, 4.0f, Color::white);
+
 	Image* imgSliderKnob = createProceduralImage(theme, "flat/slider_knob", 16, 16);
 	drawAACircle(imgSliderKnob, 8, 8, 5, 0, true, Color::white);
 
-	// The checkers pattern for color picker
-	Image* imgCheckers = createProceduralImage(theme, "flat/checkers", 16, 16);
-	for (int y = 0; y < 16; y++)
-		for (int x = 0; x < 16; x++)
-			drawPixel(imgCheckers, x, y, (((x / 8) + (y / 8)) % 2 == 0) ? Color::fromU8(200, 200, 200).getRgba() : Color::white.getRgba());
+	// The checkers pattern for color picker, same 32px tile as the json themes
+	Image* imgCheckers = createProceduralImage(theme, "flat/checkers", 32, 32);
+	for (int y = 0; y < 32; y++)
+		for (int x = 0; x < 32; x++)
+			drawPixel(imgCheckers, x, y, (((x / 16) + (y / 16)) % 2 == 0) ? Color::fromU8(200, 200, 200).getRgba() : Color::white.getRgba());
 
 	// white rounded rectangle, tinted by the widget color, stretched as a 9-cell image
 	Image* imgRoundRect = createProceduralImage(theme, "flat/round_rect", 16, 16);
 	drawAARoundRect(imgRoundRect, 4.0f, Color::white);
+
+	// 1px white image used for lines and separators
+	Image* imgPixel = createProceduralImage(theme, "flat/pixel", 1, 1);
+	drawPixel(imgPixel, 0, 0, Color::white.getRgba());
 
 	// the white grip dots of the overlay toolbar handle, tinted by the element color
 	Image* imgGrip = createProceduralImage(theme, "flat/grip", 16, 16);
@@ -225,6 +252,24 @@ HTheme createBuiltinTheme(u32 atlasTextureSize)
 	drawAACircle(imgGrip, 4, 11, 2, 0, true, Color::white);
 	drawAACircle(imgGrip, 8, 11, 2, 0, true, Color::white);
 	drawAACircle(imgGrip, 12, 11, 2, 0, true, Color::white);
+
+	// the axis icons of the vector editor, embedded so the builtin theme matches the json themes
+	Image* imgXAxis = createImageFromPixels(theme, "flat/xaxis", xaxisPixels, 22, 22);
+	Image* imgYAxis = createImageFromPixels(theme, "flat/yaxis", yaxisPixels, 22, 22);
+	Image* imgZAxis = createImageFromPixels(theme, "flat/zaxis", zaxisPixels, 22, 22);
+
+	addUserElementImage(theme, "axisBoxXImage", imgXAxis);
+	addUserElementImage(theme, "axisBoxYImage", imgYAxis);
+	addUserElementImage(theme, "axisBoxZImage", imgZAxis);
+
+	// the select/clear reference icons and the row height of the object reference editor
+	Image* imgTarget = createImageFromPixels(theme, "flat/target", targetPixels, 14, 14);
+	Image* imgClear = createImageFromPixels(theme, "flat/clear", clearPixels, 14, 14);
+
+	addUserElementImage(theme, "objectRefEditorBody", theme->whiteImage, 0, 22);
+	addUserElementImage(theme, "objectRefEditorTargetButton", imgTarget);
+	addUserElementImage(theme, "objectRefEditorClearButton", imgClear);
+	theme->userElements["objectRefEditorBody"]->styles["default"].states[(u32)WidgetStateType::Pressed].textColor = Color::cyan;
 	
 	// Default color scheme map from flat.theme.json
 	Color cBodyNormal = Color::fromU8(45, 45, 55);
@@ -298,6 +343,13 @@ HTheme createBuiltinTheme(u32 atlasTextureSize)
 			style.states[j].image = img;
 	};
 
+	auto setElementFont = [&](WidgetElementId id, Font* f)
+	{
+		auto& style = theme->getElement(id).styles["default"];
+		for (u32 j = 0; j < (u32)WidgetStateType::Count; j++)
+			style.states[j].font = f;
+	};
+
 	// --- Buttons ---
 	setSize(WidgetElementId::ButtonBody, 0, 22, 3);
 	setElementColors(WidgetElementId::ButtonBody, cButtonNormal, cButtonHovered, cButtonPressed, cButtonFocused, Color::fromU8(55, 95, 135, 128));
@@ -329,9 +381,11 @@ HTheme createBuiltinTheme(u32 atlasTextureSize)
 
 	// --- Sliders ---
 	setSize(WidgetElementId::SliderBody, 0, 16, 0);
+	setElementImage(WidgetElementId::SliderBody, imgSliderRail);
 	setElementColors(WidgetElementId::SliderBody, Color::fromU8(60, 60, 70), Color::fromU8(60, 60, 70), Color::fromU8(60, 60, 70), Color::fromU8(60, 60, 70), Color::fromU8(60, 60, 70, 128));
 	
 	setSize(WidgetElementId::SliderBodyFilled, 0, 16, 0);
+	setElementImage(WidgetElementId::SliderBodyFilled, imgSliderRail);
 	setElementColors(WidgetElementId::SliderBodyFilled, Color::fromU8(55, 125, 185), Color::fromU8(55, 125, 185), Color::fromU8(55, 125, 185), Color::fromU8(55, 125, 185), Color::fromU8(55, 125, 185, 128));
 
 	setSize(WidgetElementId::SliderKnob, 16, 16, 0);
@@ -457,28 +511,47 @@ HTheme createBuiltinTheme(u32 atlasTextureSize)
 	setSize(WidgetElementId::TableHeaderBody, 0, 25, 0);
 	setElementColors(WidgetElementId::TableHeaderBody, cButtonNormal, cButtonNormal, cButtonNormal, cButtonNormal, cButtonNormal);
 
+	setSize(WidgetElementId::TabGroupBody, 0, 37, 0);
+	setElementColors(WidgetElementId::TabGroupBody, Color::fromU8(25, 30, 35), Color::fromU8(25, 30, 35), Color::fromU8(25, 30, 35), Color::fromU8(25, 30, 35), Color::fromU8(25, 30, 35));
+
 	setSize(WidgetElementId::TabBodyActive, 100, 30, 0);
 	setElementColors(WidgetElementId::TabBodyActive, cButtonNormal, cButtonHovered, cButtonPressed, cButtonNormal, cButtonNormal);
-	HUI_DEFAULT_STYLE(TabBodyActive).states[(u32)WidgetStateType::Normal].font = fontTab;
+	setElementFont(WidgetElementId::TabBodyActive, fontTab);
+	HUI_DEFAULT_STYLE(TabBodyActive).cachedFloatParameters["paddingX"] = 16;
+	HUI_DEFAULT_STYLE(TabBodyActive).cachedFloatParameters["paddingY"] = 3;
 	
 	setSize(WidgetElementId::TabBodyInactive, 100, 30, 0);
 	setElementColors(WidgetElementId::TabBodyInactive, Color::fromU8(35, 40, 50), Color::fromU8(50, 55, 70), Color::fromU8(55, 60, 80), Color::fromU8(55, 60, 80), Color::fromU8(35, 40, 50));
-	HUI_DEFAULT_STYLE(TabBodyInactive).states[(u32)WidgetStateType::Normal].font = fontTab;
+	setElementFont(WidgetElementId::TabBodyInactive, fontTab);
 
 	setSize(WidgetElementId::TooltipBody, 0, 0, 0);
 	setElementColors(WidgetElementId::TooltipBody, Color::fromU8(30, 35, 40), Color::fromU8(30, 35, 40), Color::fromU8(30, 35, 40), Color::fromU8(30, 35, 40), Color::fromU8(30, 35, 40));
 
 	setSize(WidgetElementId::PopupBody, 0, 0, 0);
 	setElementColors(WidgetElementId::PopupBody, Color::fromU8(35, 40, 50), Color::fromU8(35, 40, 50), Color::fromU8(35, 40, 50), Color::fromU8(35, 40, 50), Color::fromU8(35, 40, 50));
+	HUI_DEFAULT_STYLE(PopupBody).cachedFloatParameters["paddingX"] = 6;
+	HUI_DEFAULT_STYLE(PopupBody).cachedFloatParameters["paddingY"] = 6;
 
 	setSize(WidgetElementId::WindowBody, 0, 0, 0);
 	setElementColors(WidgetElementId::WindowBody, Color::fromU8(25, 30, 35), Color::fromU8(25, 30, 35), Color::fromU8(25, 30, 35), Color::fromU8(25, 30, 35), Color::fromU8(25, 30, 35));
 
+	// lists sit slightly darker than the window body
+	setElementColors(WidgetElementId::ScrollViewBody, Color::fromU8(20, 24, 28), Color::fromU8(20, 24, 28), Color::fromU8(20, 24, 28), Color::fromU8(20, 24, 28), Color::fromU8(20, 24, 28));
+
+	setElementColors(WidgetElementId::DropdownListBody, Color::fromU8(20, 24, 28), Color::fromU8(20, 24, 28), Color::fromU8(20, 24, 28), Color::fromU8(20, 24, 28), Color::fromU8(20, 24, 28));
+
 	setSize(WidgetElementId::BoxBody, 0, 0, 0);
 	setElementColors(WidgetElementId::BoxBody, Color::fromU8(35, 40, 50), Color::fromU8(35, 40, 50), Color::fromU8(35, 40, 50), Color::fromU8(35, 40, 50), Color::fromU8(35, 40, 50));
+
+	setSize(WidgetElementId::LineBody, 0, 1, 0);
+	setElementImage(WidgetElementId::LineBody, imgPixel);
+	setElementColors(WidgetElementId::LineBody, Color::fromU8(60, 60, 70), Color::fromU8(60, 60, 70), Color::fromU8(60, 60, 70), Color::fromU8(60, 60, 70), Color::fromU8(60, 60, 70, 128));
 	
 	setSize(WidgetElementId::ColorPickerCheckers, 16, 16, 0);
 	setElementImage(WidgetElementId::ColorPickerCheckers, imgCheckers);
+	
+	setSize(WidgetElementId::ColorPickerButtonBody, 0, 22, 0);
+	setElementColors(WidgetElementId::ColorPickerButtonBody, cButtonNormal, cButtonHovered, cButtonPressed, cButtonFocused, Color::fromU8(55, 95, 135, 128));
 	
 	HUI_DEFAULT_STYLE(LinkBody).states[(u32)WidgetStateType::Normal].textColor = Color::fromU8(100, 160, 255);
 	HUI_DEFAULT_STYLE(LinkBody).states[(u32)WidgetStateType::Hovered].textColor = Color::fromU8(140, 190, 255);

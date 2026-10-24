@@ -2389,6 +2389,7 @@ HUI_API void windowSetVisible(const char* windowId, bool visible);
 /// \param flags the window flags
 HUI_API void windowSetNextFlags(WindowFlags flags);
 /// Set a fixed size for the next window drawn, the dock node will keep this size instead of scaling with the native window, 0 means auto for that axis
+/// Call this every frame only for windows that must stay fixed, such as menu/toolbar chrome. Setting it every frame for a resizable panel forces it back to this size on each dock layout recalculation, overriding the user's splitter position.
 /// \param width the fixed width, 0 for auto
 /// \param height the fixed height, 0 for auto
 HUI_API void windowSetNextSize(f32 width, f32 height);

@@ -49,7 +49,7 @@ bool buttonGroup(const char* id, const char** labels, u32 count, u32* currentInd
 		{
 			auto& elem = i == 0 ? leftElem : i == count - 1 ? rightElem : middleElem;
 			auto& state = elem.normalState();
-			f32 textWidth = state.font->computeTextSize(labels[i]).width;
+			f32 textWidth = state.font->computeTextSize(labels[i]).width / ctx->scale;
 			f32 segWidth = textWidth + (state.border + labelSideSpacing) * 2.0f;
 			segmentWidths[i] = segWidth;
 			totalWidth += segWidth;

@@ -12,11 +12,13 @@ bool button(const char* label)
 	ctx->setLabelAndId(label);
 
 	auto& btnBodyElem = ctx->theme->getElement(WidgetElementId::ButtonBody);
-	auto textWidth = btnBodyElem.normalState().font->computeTextSize(ctx->widgetLabel.c_str());
+	auto& btnBodyNormalState = btnBodyElem.normalState();
+	auto textWidth = btnBodyNormalState.font->computeTextSize(ctx->widgetLabel.c_str());
 
-	ctx->widget.customWidth = btnBodyElem.normalState().border * 2.0f + textWidth.width;
+	// customWidth and the height passed to addWidget() are scaled internally, so avoid double scaling here
+	ctx->widget.customWidth = btnBodyNormalState.border * 2.0f + textWidth.width / ctx->scale;
 	ctx->widget.hasCustomWidth = true;
-	addWidget(btnBodyElem.normalState().height);
+	addWidget(btnBodyNormalState.height);
 	buttonBehavior();
 
 	auto btnBodyElemState = &btnBodyElem.normalState();
