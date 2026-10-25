@@ -868,6 +868,7 @@ struct CustomFileDialogState
 	u32 lastUsedFrame = 0;
 	bool open = false;                     /// true if the dialog popup is open
 	bool needsListing = true;              /// true if entries must be relisted on next frame
+	bool listedFoldersOnly = false;        /// true if the current entries were listed in folders-only mode
 	bool creatingFolder = false;           /// true while the "New folder" editor is open
 };
 

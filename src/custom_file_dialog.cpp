@@ -125,6 +125,7 @@ static void customFileDialogRelist(CustomFileDialogState& state, CustomFileDialo
 		});
 
 	state.needsListing = false;
+	state.listedFoldersOnly = foldersOnly;
 }
 
 static void customFileDialogNavigate(CustomFileDialogState& state, const std::string& path)
@@ -370,10 +371,13 @@ bool customFileDialog(
 
 		if (previewCallback)
 		{
-			// the popup content area is inset by the popup body border on both sides,
-			// so add it back, otherwise the list + preview stick out on the right
-			f32 popupBorder = (f32)ctx->theme->getElement(WidgetElementId::PopupBody).normalState().border;
-			popupWidth += ctx->settings.customFileDialogPreviewWidth + ctx->sameLine.spacing + popupBorder * 2.0f;
+			// the popup content area is inset by the popup body border and padding on both
+			// sides, so add them back, otherwise the list + preview stick out on the right
+			auto& popupElem = ctx->theme->getElement(WidgetElementId::PopupBody);
+			auto& popupBodyState = popupElem.normalState();
+			f32 popupBorder = (f32)popupBodyState.border;
+			f32 popupPadding = popupElem.currentStyle->getParameter("paddingX", 0.0f);
+			popupWidth += ctx->settings.customFileDialogPreviewWidth + ctx->sameLine.spacing + (popupBorder + popupPadding) * 2.0f;
 		}
 
 		popupBegin(popupId.c_str(), popupWidth, PopupFlags::FadeBackground | PopupFlags::Centered);
@@ -399,8 +403,12 @@ bool customFileDialog(
 				state.open = false;
 			};
 
-			if (state.needsListing)
-				customFileDialogRelist(state, listCallback, userData, has(flags, CustomFileDialogFlags::PickFolder));
+			// relist also when the mode changes (e.g. switching to folder picking
+			// must drop the files listed for the previous open/save mode)
+			bool foldersOnly = has(flags, CustomFileDialogFlags::PickFolder);
+
+			if (state.needsListing || state.listedFoldersOnly != foldersOnly)
+				customFileDialogRelist(state, listCallback, userData, foldersOnly);
 
 			// navigation header
 			if (hui::button("< Back##backBtn"))
