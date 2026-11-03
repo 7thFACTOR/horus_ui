@@ -42,6 +42,12 @@ void widgetSetNextWidth(f32 width)
 	ctx->widget.hasNextWidth = true;
 }
 
+void widgetSetNextHeight(f32 height)
+{
+	ctx->widget.nextHeight = height;
+	ctx->widget.hasNextHeight = true;
+}
+
 void sameLine(f32 offsetX, f32 spacing)
 {
 	f32 actualSpacing = spacing > 0 ? spacing : ctx->sameLine.spacing;

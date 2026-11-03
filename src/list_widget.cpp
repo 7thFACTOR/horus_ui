@@ -57,6 +57,14 @@ bool list(const char* id, bool* selectedItems, ListSelectionMode selectionType, 
 	scrollViewBegin("listScrollView", widgetHeight, scrollOffset.y, totalHeight, ScrollViewFlags::NoHorizontalScroll);
 
 	Rect listRect = ctx->scrollViewState[ctx->id].rect;
+
+	// lists get their own body, distinct from the scroll view/window background
+	auto& listBodyElem = ctx->theme->getElement(WidgetElementId::DropdownListBody);
+	auto& listBodyState = ctx->widget.disabled ? listBodyElem.disabledState() : listBodyElem.normalState();
+
+	ctx->renderer.cmdSetColor(tintApply(listBodyState.color, TintColorType::Body));
+	ctx->renderer.cmdDrawImageBordered(listBodyState.image, listBodyState.border, listRect, ctx->scale);
+
 	bool changed = false;
 
 	// ensure anchor state exists

@@ -495,6 +495,8 @@ HTheme createBuiltinTheme(u32 atlasTextureSize)
 	
 	setSize(WidgetElementId::SelectableBody, 0, 20, 0);
 	setElementColors(WidgetElementId::SelectableBody, Color::transparent, cAccent, cAccent, Color::transparent, Color::fromU8(255, 255, 255, 128));
+	HUI_DEFAULT_STYLE(SelectableBody).states[(u32)WidgetStateType::Hovered].textColor = Color::black;
+	HUI_DEFAULT_STYLE(SelectableBody).states[(u32)WidgetStateType::Pressed].textColor = Color::black;
 
 	setSize(WidgetElementId::ProgressBack, 0, 20, 0);
 	setElementColors(WidgetElementId::ProgressBack, Color::fromU8(35, 40, 50), Color::fromU8(35, 40, 50), Color::fromU8(35, 40, 50), Color::fromU8(35, 40, 50), Color::fromU8(35, 40, 50, 128));
@@ -510,6 +512,14 @@ HTheme createBuiltinTheme(u32 atlasTextureSize)
 
 	setSize(WidgetElementId::TableHeaderBody, 0, 25, 0);
 	setElementColors(WidgetElementId::TableHeaderBody, cButtonNormal, cButtonNormal, cButtonNormal, cButtonNormal, cButtonNormal);
+	HUI_DEFAULT_STYLE(TableHeaderBody).cachedColorParameters["borderColorV"] = Color::fromU8(55, 125, 185);
+	HUI_DEFAULT_STYLE(TableHeaderBody).cachedColorParameters["borderColorH"] = Color::fromU8(40, 45, 55);
+
+	HUI_DEFAULT_STYLE(TableBody).cachedColorParameters["innerBorderColorV"] = Color::fromU8(40, 45, 55);
+	HUI_DEFAULT_STYLE(TableBody).cachedColorParameters["innerBorderColorH"] = Color::fromU8(40, 45, 55);
+	HUI_DEFAULT_STYLE(TableBody).cachedColorParameters["outerBorderColorV"] = Color::fromU8(55, 125, 185);
+	HUI_DEFAULT_STYLE(TableBody).cachedColorParameters["outerBorderColorH"] = Color::fromU8(55, 125, 185);
+	HUI_DEFAULT_STYLE(TableBody).cachedColorParameters["columnResizeLineColor"] = Color::fromU8(55, 185, 255);
 
 	setSize(WidgetElementId::TabGroupBody, 0, 37, 0);
 	setElementColors(WidgetElementId::TabGroupBody, Color::fromU8(25, 30, 35), Color::fromU8(25, 30, 35), Color::fromU8(25, 30, 35), Color::fromU8(25, 30, 35), Color::fromU8(25, 30, 35));
@@ -532,13 +542,27 @@ HTheme createBuiltinTheme(u32 atlasTextureSize)
 	HUI_DEFAULT_STYLE(PopupBody).cachedFloatParameters["paddingX"] = 6;
 	HUI_DEFAULT_STYLE(PopupBody).cachedFloatParameters["paddingY"] = 6;
 
+	// fade layer drawn behind a popup, translucent so the view underneath stays visible
+	setSize(WidgetElementId::PopupBehind, 0, 0, 0);
+	setElementColors(WidgetElementId::PopupBehind, Color::fromU8(0, 0, 0, 180), Color::fromU8(0, 0, 0, 180), Color::fromU8(0, 0, 0, 180), Color::fromU8(0, 0, 0, 180), Color::fromU8(0, 0, 0, 180));
+
 	setSize(WidgetElementId::WindowBody, 0, 0, 0);
 	setElementColors(WidgetElementId::WindowBody, Color::fromU8(25, 30, 35), Color::fromU8(25, 30, 35), Color::fromU8(25, 30, 35), Color::fromU8(25, 30, 35), Color::fromU8(25, 30, 35));
 
-	// lists sit slightly darker than the window body
-	setElementColors(WidgetElementId::ScrollViewBody, Color::fromU8(20, 24, 28), Color::fromU8(20, 24, 28), Color::fromU8(20, 24, 28), Color::fromU8(20, 24, 28), Color::fromU8(20, 24, 28));
+	// lists sit darker than the window body so they read as an inset
+	setElementColors(WidgetElementId::ScrollViewBody, Color::fromU8(15, 18, 22), Color::fromU8(15, 18, 22), Color::fromU8(15, 18, 22), Color::fromU8(15, 18, 22), Color::fromU8(15, 18, 22));
 
-	setElementColors(WidgetElementId::DropdownListBody, Color::fromU8(20, 24, 28), Color::fromU8(20, 24, 28), Color::fromU8(20, 24, 28), Color::fromU8(20, 24, 28), Color::fromU8(20, 24, 28));
+	setSize(WidgetElementId::ScrollViewScrollBarV, 18, 0, 0);
+	setElementColors(WidgetElementId::ScrollViewScrollBarV, Color::fromU8(35, 40, 50), Color::fromU8(35, 40, 50), Color::fromU8(35, 40, 50), Color::fromU8(35, 40, 50), Color::fromU8(35, 40, 50));
+	setSize(WidgetElementId::ScrollViewScrollThumbV, 11, 0, 0);
+	setElementColors(WidgetElementId::ScrollViewScrollThumbV, Color::fromU8(70, 75, 85), Color::fromU8(100, 105, 120), Color::fromU8(55, 125, 185), Color::fromU8(100, 105, 120), Color::fromU8(70, 75, 85, 128));
+
+	setSize(WidgetElementId::ScrollViewScrollBarH, 0, 18, 0);
+	setElementColors(WidgetElementId::ScrollViewScrollBarH, Color::fromU8(35, 40, 50), Color::fromU8(35, 40, 50), Color::fromU8(35, 40, 50), Color::fromU8(35, 40, 50), Color::fromU8(35, 40, 50));
+	setSize(WidgetElementId::ScrollViewScrollThumbH, 0, 11, 0);
+	setElementColors(WidgetElementId::ScrollViewScrollThumbH, Color::fromU8(70, 75, 85), Color::fromU8(100, 105, 120), Color::fromU8(55, 125, 185), Color::fromU8(100, 105, 120), Color::fromU8(70, 75, 85, 128));
+
+	setElementColors(WidgetElementId::DropdownListBody, Color::fromU8(10, 12, 15), Color::fromU8(10, 12, 15), Color::fromU8(10, 12, 15), Color::fromU8(10, 12, 15), Color::fromU8(10, 12, 15));
 
 	setSize(WidgetElementId::BoxBody, 0, 0, 0);
 	setElementColors(WidgetElementId::BoxBody, Color::fromU8(35, 40, 50), Color::fromU8(35, 40, 50), Color::fromU8(35, 40, 50), Color::fromU8(35, 40, 50), Color::fromU8(35, 40, 50));

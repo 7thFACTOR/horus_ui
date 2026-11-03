@@ -7,6 +7,8 @@
 
 namespace hui
 {
+static const char* comboSliderEditInputId = "comboSliderEditText";
+
 static void comboSliderElementBehavior(WidgetId elementId, const Rect& rect, ComboSliderElementState& state)
 {
 	state.hovered = rect.contains(ctx->mousePosition)
@@ -195,22 +197,23 @@ static bool comboSliderInternal(bool isInt, f32* value, f32 minVal, f32 maxVal, 
 			memset(ctx->comboSlider.text, ctx->comboSlider.maxTextSize, 0);
 			stringFromF32(*value, ctx->comboSlider.text, ComboSliderState::maxTextSize, decimalPlaces);
 			
+			// keep the editing field the same height as the combo slider, otherwise the row grows
+			ctx->comboSlider.editHeight = ctx->widget.rect.height / ctx->scale;
+
+			// start editing on the next frame so the text input is laid out in its own slot;
+			// drawing it in the same frame adds a second widget after the combo slider
+			WidgetId editId = genId(comboSliderEditInputId);
+			ctx->textInput.id = editId;
+			ctx->textInput.rect = ctx->widget.rect;
 			ctx->textInput.editNow = true;
 			ctx->textInput.selectAllOnFocus = true;
 			ctx->textInput.firstMouseDown = true;
-
-			ctx->position.y -= ctx->spacing * ctx->scale + leftButtonElem.normalState().height;
-
-			widgetSetNextFocused();
-			textInput("comboSliderEditText", ctx->comboSlider.text, ComboSliderState::maxTextSize, TextInputFlags::NumericOnly);
-			
-			ctx->widget.focusedId = ctx->id;
-			ctx->textInput.id = ctx->id;
-			ctx->textInput.editNow = true;
-			ctx->textInput.selectAllOnFocus = true;
-			ctx->textInput.selectionActive = false;
-			ctx->textInput.selectingWithMouse = false;
+			ctx->settings.services.utf8To32(ctx->comboSlider.text, ctx->textInput.text);
 			ctx->textInput.mouseDown = false;
+			ctx->textInput.selectingWithMouse = false;
+			ctx->textInput.mouseMoved = false;
+			ctx->textInput.selectAll();
+			ctx->widget.focusedId = editId;
 			forceRepaint();
 		}
 	}
@@ -225,10 +228,12 @@ static bool comboSliderInternal(bool isInt, f32* value, f32 minVal, f32 maxVal, 
 			ctx->comboSlider.clickedToEditText = false;
 		}
 
-		textInput("comboSliderEditText", ctx->comboSlider.text, ComboSliderState::maxTextSize, TextInputFlags::NumericOnly);
+		widgetSetNextHeight(ctx->comboSlider.editHeight);
+		textInput(comboSliderEditInputId, ctx->comboSlider.text, ComboSliderState::maxTextSize, TextInputFlags::NumericOnly | TextInputFlags::AutoSelectAll);
 
 		if (wasClickedToEdit)
 		{
+			ctx->widget.focusedId = ctx->id;
 			ctx->textInput.selectingWithMouse = false;
 			ctx->textInput.mouseDownSelectionBegin = false;
 			ctx->textInput.selectionActive = true;

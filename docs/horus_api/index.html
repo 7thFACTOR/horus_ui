@@ -94,12 +94,17 @@
 		<code>Settings::services</code> yourself or pick one of the built-in backends, then create a context:
 	</p>
 <pre><code><span class="k">auto</span> settings = <span class="k">hui</span>::Settings{};
-<span class="k">hui</span>::<span class="k">initBackend</span>(settings.services);              <span class="c">// from a backend, e.g. Win32/GL</span>
+<span class="k">hui</span>::<span class="k">initStdioFileIO</span>(settings.services);                <span class="c">// file I/O</span>
+<span class="k">hui</span>::<span class="k">initFreetype</span>(settings.services);                   <span class="c">// font rasterization</span>
+<span class="k">hui</span>::<span class="k">initSdl3</span>(settings.services, sdlParams);             <span class="c">// native windows + input</span>
+<span class="k">hui</span>::<span class="k">initStbRectPack</span>(settings.services);                <span class="c">// image atlas packing</span>
+<span class="k">hui</span>::<span class="k">initUtf</span>(settings.services);                        <span class="c">// text encoding</span>
+<span class="k">hui</span>::<span class="k">initOpenGL</span>(settings.services);                     <span class="c">// pick one graphics backend (GL/DX11/DX12/Vulkan)</span>
 
 HContext ctx = <span class="k">hui</span>::<span class="k">contextCreate</span>(settings);
 <span class="k">hui</span>::<span class="k">contextSet</span>(ctx);
 
-HTheme theme = <span class="k">hui</span>::<span class="k">loadThemeFromJson</span>(<span class="s">"themes/default.theme.json"</span>);
+HTheme theme = <span class="k">hui</span>::<span class="k">loadThemeFromJson</span>(<span class="s">"themes/default.theme.json"</span>); <span class="c">// backends/json_theme_loader.h</span>
 <span class="k">if</span> (!theme) theme = <span class="k">hui</span>::<span class="k">createBuiltinTheme</span>(settings.defaultAtlasSize);
 <span class="k">hui</span>::<span class="k">themeSet</span>(theme);
 <span class="k">hui</span>::<span class="k">themeBuild</span>(theme);</code></pre>

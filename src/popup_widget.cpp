@@ -18,6 +18,7 @@ void popupBegin(
 
 	auto& popup = ctx->popupStack[ctx->popupIndex];
 
+	popup.lastUsedFrame = ctx->frameCount;
 	popup.flags = flags;
 
 	if (ctx->popupUseGlobalScale)

@@ -1,0 +1,680 @@
+﻿<h1 id="horus-ui-library-issues-audit">Horus UI Library - Issues Audit</h1>
+<p><em>Date: October 7, 2026</em>
+<em>Audited by: Opencode</em></p>
+<p>This document provides a comprehensive audit of issues, potential bugs, design problems, and dangling concerns found in the horus_ui library codebase, including all graphics backends, input, and utility backends. For each issue, severity, exact locations, root cause, and suggested fixes are provided.</p>
+<hr />
+<h2 id="table-of-contents">Table of Contents</h2>
+<ul>
+<li><a href="#1-core-library-issues-src">1. Core Library Issues (<code>src/</code>)</a></li>
+<li><a href="#2-public-api-issues-include-horus-h">2. Public API Issues (<code>include/horus.h</code>)</a></li>
+<li><a href="#3-renderer-issues-srcrenderer">3. Renderer Issues (<code>src/renderer.*</code>)</a></li>
+<li><a href="#4-docking-window-issues-src-docking-src-window-cpp">4. Docking &amp; Window Issues (<code>src/docking.*</code>, <code>src/window.cpp</code>)</a></li>
+<li><a href="#5-theme--atlas-issues-srctheme-srcatlas">5. Theme &amp; Atlas Issues (<code>src/theme.*</code>, <code>src/atlas.*</code>)</a></li>
+<li><a href="#6-graphics-backend-issues">6. Graphics Backend Issues</a></li>
+<li><a href="#61-opengl-backend-backendsopengl_graphics">6.1 OpenGL Backend (<code>backends/opengl_graphics.*</code>)</a></li>
+<li><a href="#62-directx-11-backend-backendsdx11_graphics">6.2 DirectX 11 Backend (<code>backends/dx11_graphics.*</code>)</a></li>
+<li><a href="#63-directx-12-backend-backendsdx12_graphics">6.3 DirectX 12 Backend (<code>backends/dx12_graphics.*</code>)</a></li>
+<li><a href="#64-vulkan-backend-backendsvulkan_graphics">6.4 Vulkan Backend (<code>backends/vulkan_graphics.*</code>)</a></li>
+<li><a href="#7-inputplatform-issues-backendssdl3_input">7. Input/Platform Issues (<code>backends/sdl3_input.*</code>)</a></li>
+<li><a href="#8-font-issues-backendsfreetype_fonts">8. Font Issues (<code>backends/freetype_fonts.*</code>)</a></li>
+<li><a href="#9-utility-backends-third-party-integration">9. Utility Backends &amp; Third-Party Integration</a></li>
+<li><a href="#10-widget-specific-issues">10. Widget-Specific Issues</a></li>
+<li><a href="#11-general-code-quality-safety">11. General Code Quality &amp; Safety</a></li>
+</ul>
+<hr />
+<h2 id="1-core-library-issues-src">1. Core Library Issues (<code>src/</code>)</h2>
+<h3 id="1-1-global-context-singleton-state">1.1 Global Context Singleton State</h3>
+<p><strong>Category:</strong> Design / Multi-context Safety<br />
+<strong>Severity:</strong> High<br />
+<strong>Location(s):</strong>
+- <code>src/context.cpp:9</code> - <code>Context* ctx = nullptr;</code> (global singleton)
+- <code>src/context.h</code> - Context struct definition</p>
+<p><strong>Description:</strong> The library maintains a single global <code>Context* ctx</code> accessible across the entire API. This design prevents having multiple independent Horus UI contexts simultaneously in the same process.</p>
+<p><strong>Root Cause:</strong> Legacy singleton design pattern used throughout the codebase. All widget functions, renderer, docking, etc. implicitly reference <code>ctx</code>.</p>
+<p><strong>Suggested Fix:</strong> 
+- Add support for context handles (e.g., <code>HUI_Context</code> opaque type) that can be passed around.
+- Alternatively, store current context in thread-local storage (TLS) if single-threaded per context.
+- Short-term: Document this limitation clearly. For long-term: Refactor API to take context parameter.</p>
+<p><strong>Verification:</strong> Test creating two independent UI contexts - currently impossible.</p>
+<hr />
+<h3 id="1-2-undecided-todos-in-core">1.2 Undecided TODOs in Core</h3>
+<p><strong>Category:</strong> Maintenance<br />
+<strong>Severity:</strong> Medium<br />
+<strong>Location(s):</strong>
+- <code>src/context.h:307</code> - <code>u64 pruneUnusedTextTime = 0; //TODO: maybe make it frames</code></p>
+<p><strong>Description:</strong> Unresolved design decision about whether to measure pruning intervals in time or frames.</p>
+<p><strong>Root Cause:</strong> Unfinished design consideration.</p>
+<p><strong>Suggested Fix:</strong> 
+- Make the decision explicit. Since this is a frame-based immediate mode UI, measuring in frames is likely more deterministic and frame-rate independent.
+- Replace with <code>u32 pruneUnusedTextFrames = 60;</code> or similar, or keep as time with clear units.
+- Remove TODO after deciding.</p>
+<hr />
+<h3 id="1-3-text-pruning-implementation-details">1.3 Text Pruning Implementation Details</h3>
+<p><strong>Category:</strong> Memory / Performance<br />
+<strong>Severity:</strong> Low<br />
+<strong>Location(s):</strong>
+- <code>src/context.h:307-308</code> - <code>pruneUnusedTextTime</code> and related fields
+- <code>src/context.cpp</code> - text pruning logic</p>
+<p><strong>Description:</strong> Text cache pruning uses time-based heuristic. Behavior may be unclear across different frame rates.</p>
+<p><strong>Suggested Fix:</strong> Document units and expected behavior; consider frame-based counter for determinism.</p>
+<hr />
+<h3 id="1-4-global-state-in-text-input-multiline-states">1.4 Global State in Text Input/Multiline States</h3>
+<p><strong>Category:</strong> State Management<br />
+<strong>Severity:</strong> Medium<br />
+<strong>Location(s):</strong>
+- <code>src/text_input_state.h</code>, <code>src/text_input_state.cpp</code>
+- <code>src/multiline_text_input_state.h</code>, <code>src/multiline_text_input_state.cpp</code></p>
+<p><strong>Description:</strong> Text input state is stored in <code>Context</code> (per-context). However, there's coupling with global context access patterns. Also see the static buffer in textinput widget (see section 10.1).</p>
+<p><strong>Suggested Fix:</strong> Ensure all state is properly scoped to Context. No globals outside Context.</p>
+<hr />
+<h2 id="2-public-api-issues-include-horus-h">2. Public API Issues (<code>include/horus.h</code>)</h2>
+<h3 id="2-1-platform-macro-definitions-could-be-cleaner">2.1 Platform Macro Definitions Could Be Cleaner</h3>
+<p><strong>Category:</strong> Portability<br />
+<strong>Severity:</strong> Low<br />
+<strong>Location(s):</strong>
+- <code>include-horus-h:34-52</code> - Platform detection macros
+- <code>include-horus-h:70-92</code> - Calling convention and export macros</p>
+<p><strong>Description:</strong> Platform detection uses preprocessor checks. While functional, some edge cases (e.g., MinGW vs MSVC, Clang on Windows) might need refinement. Also <code>HUI_STRUCT_API</code> defaults behavior varies.</p>
+<p><strong>Root Cause:</strong> Standard cross-platform macro patterns.</p>
+<p><strong>Suggested Fix:</strong> 
+- Add explicit Clang detection on Windows (<code>__MINGW32__</code>, <code>__MINGW64__</code>, <code>_MSC_VER</code> with ClangCL).
+- Document all configuration macros in comments.
+- Consider adding <code>#error</code> for unsupported platforms if truly needed.</p>
+<p><strong>Notes:</strong> Current approach is reasonable for the supported backends (SDL3 covers most platforms).</p>
+<hr />
+<h3 id="2-2-configuration-macros-flexibility">2.2 Configuration Macros Flexibility</h3>
+<p><strong>Category:</strong> API Design<br />
+<strong>Severity:</strong> Low<br />
+<strong>Location(s):</strong>
+- <code>include-horus-h:98-108</code> - Custom config, static/shared build macros</p>
+<p><strong>Description:</strong> The API allows <code>HUI_CUSTOM_CONFIG_FILE</code> override and <code>HUI_STATIC</code>/shared linking. This is good. No obvious issues.</p>
+<p><strong>Suggested Fix:</strong> None critical. Add documentation examples.</p>
+<hr />
+<h3 id="2-3-integer-type-definitions">2.3 Integer Type Definitions</h3>
+<p><strong>Category:</strong> Portability<br />
+<strong>Severity:</strong> Low<br />
+<strong>Location(s):</strong>
+- <code>include-horus-h:110-118</code> - Basic integer types</p>
+<p><strong>Description:</strong> Fixed-width types (<code>u8,u32,i32,f32,f64,bool</code>) are redefined. Conflicts possible if including before standard headers in some cases? Also <code>bool</code> redefinition risk if mixing C/C++ with different bool types.</p>
+<p><strong>Root Cause:</strong> Project-local type aliases.</p>
+<p><strong>Suggested Fix:</strong> Use <code>stdint.h</code> types (<code>uint32_t</code>, etc.) or ensure no conflicts. In C++, <code>bool</code> is fine. Also guard against redefinition.</p>
+<p><strong>Notes:</strong> Acceptable for a self-contained library.</p>
+<hr />
+<h2 id="3-renderer-issues-srcrenderer">3. Renderer Issues (<code>src/renderer.*</code>)</h2>
+<h3 id="3-1-renderer-state-management">3.1 Renderer State Management</h3>
+<p><strong>Category:</strong> Correctness<br />
+<strong>Severity:</strong> Medium<br />
+<strong>Location(s):</strong>
+- <code>src/renderer.h</code>, <code>src/renderer.cpp</code></p>
+<p><strong>Description:</strong> The renderer maintains draw command lists and state. The code appears well-structured. However, there's implicit dependency on current context and graphics backend being set.</p>
+<p><strong>Root Cause:</strong> Tight coupling with Context and backend via services.</p>
+<p><strong>Suggested Fix:</strong> 
+- Validate backend is initialized before rendering operations.
+- Add defensive checks if backend services are null.</p>
+<hr />
+<h3 id="3-2-draw-command-growth">3.2 Draw Command Growth</h3>
+<p><strong>Category:</strong> Memory<br />
+<strong>Severity:</strong> Low<br />
+<strong>Location(s):</strong>
+- <code>src/renderer.cpp</code> - command buffers/lists</p>
+<p><strong>Description:</strong> Draw commands accumulate per frame. The renderer should clear them each frame - this is typical immediate mode behavior. Need to verify proper reset.</p>
+<p><strong>Suggested Fix:</strong> Ensure all transient draw data is cleared at frame end/start. Review frame lifecycle.</p>
+<hr />
+<h3 id="3-3-font-rendering-integration">3.3 Font Rendering Integration</h3>
+<p><strong>Category:</strong> Correctness<br />
+<strong>Severity:</strong> Medium<br />
+<strong>Location(s):</strong>
+- <code>src/renderer.cpp</code> - text rendering paths</p>
+<p><strong>Description:</strong> Text rendering depends on font backend and atlas. If font atlas is stale or not uploaded, rendering artifacts could occur.</p>
+<p><strong>Suggested Fix:</strong> Add validation/assertions when rendering with invalid font handles.</p>
+<hr />
+<h2 id="4-docking--window-issues-src-docking-src-window-cpp">4. Docking &amp; Window Issues (<code>src/docking.*</code>, <code>src/window.cpp</code>)</h2>
+<h3 id="4-1-delayed-deletion-of-docking-structures">4.1 Delayed Deletion of Docking Structures</h3>
+<p><strong>Category:</strong> Memory Lifetime<br />
+<strong>Severity:</strong> Medium<br />
+<strong>Location(s):</strong>
+- <code>src/docking.cpp</code> - <code>windowsToDelete</code>, <code>nativeWindowsToDelete</code>, <code>dockNodesToDelete</code> sets/lists
+- <code>src/window.cpp</code> - window close handling
+- <code>src/context.h</code> - related tracking structures</p>
+<p><strong>Description:</strong> The code defers deletion of windows, native windows, and dock nodes (see <code>dockingUpdate()</code> and related). This is done to avoid iterator invalidation during traversal. While correct in principle, the deletion happens later - if there's an error path or if the context is destroyed before update runs, leaks could occur.</p>
+<p><strong>Root Cause:</strong> Two-phase deletion pattern to handle reentrancy/iteration.</p>
+<p><strong>Suggested Fix:</strong> 
+- Ensure all deferred deletions are flushed in <code>contextDestroy()</code> or context shutdown.
+- Add explicit cleanup pass before context destruction.
+- Document the lifecycle clearly.</p>
+<p><strong>Verification:</strong> Check what happens if a window is closed and then context is immediately destroyed without a frame update.</p>
+<hr />
+<h3 id="4-2-dock-node-tree-integrity">4.2 Dock Node Tree Integrity</h3>
+<p><strong>Category:</strong> Correctness<br />
+<strong>Severity:</strong> Medium<br />
+<strong>Location(s):</strong>
+- <code>src/docking.cpp</code> - dock node manipulation (split, merge, move)</p>
+<p><strong>Description:</strong> Docking is complex with many edge cases (node splits, removing windows, floating windows). Look for potential dangling pointers if nodes are deleted while references exist.</p>
+<p><strong>Root Cause:</strong> Manual tree management.</p>
+<p><strong>Suggested Fix:</strong> 
+- Add invariant checks (assertions) for tree consistency.
+- Consider stronger ownership model (unique_ptr/shared_ptr) where feasible.
+- Extensive testing of docking operations.</p>
+<hr />
+<h3 id="4-3-closed-windows-rect-tracking">4.3 Closed Windows Rect Tracking</h3>
+<p><strong>Category:</strong> State Management<br />
+<strong>Severity:</strong> Low<br />
+<strong>Location(s):</strong>
+- <code>src/docking.cpp</code> - <code>closedWindowsRects</code> map</p>
+<p><strong>Description:</strong> Stores rects of closed windows for restoration. This grows over time if not pruned? Check if entries are ever removed after use.</p>
+<p><strong>Suggested Fix:</strong> Review lifecycle - entries should be consumed when reopening or pruned after timeout.</p>
+<hr />
+<h3 id="4-4-window-focus-activation-state">4.4 Window Focus/Activation State</h3>
+<p><strong>Category:</strong> Platform Integration<br />
+<strong>Severity:</strong> Medium<br />
+<strong>Location(s):</strong>
+- <code>src/window.cpp</code>
+- Interaction with <code>backends/sdl3_input.cpp</code></p>
+<p><strong>Description:</strong> Window focus, activation, and modality involve coordination between UI layer and platform layer. Race conditions possible if events arrive out of order.</p>
+<p><strong>Suggested Fix:</strong> Ensure consistent state updates; prefer platform events as source of truth.</p>
+<hr />
+<h2 id="5-theme--atlas-issues-srctheme-srcatlas">5. Theme &amp; Atlas Issues (<code>src/theme.*</code>, <code>src/atlas.*</code>)</h2>
+<h3 id="5-1-image-ownership-and-deletion">5.1 Image Ownership and Deletion</h3>
+<p><strong>Category:</strong> Memory Management<br />
+<strong>Severity:</strong> Medium<br />
+<strong>Location(s):</strong>
+- <code>src/theme.h</code>, <code>src/theme.cpp</code> - Theme, images, elements
+- <code>src/atlas.h</code>, <code>src/atlas.cpp</code> - Atlas texture management</p>
+<p><strong>Description:</strong> Theme holds images (HImage). Atlas packs images. Need to verify proper cleanup in destructors (<code>Theme::~Theme()</code>, <code>Atlas::~Atlas()</code>). Also white image creation/deletion paths.</p>
+<p><strong>Root Cause:</strong> Manual resource management.</p>
+<p><strong>Suggested Fix:</strong> 
+- Review <code>Theme::~Theme()</code> - ensure all allocated images/textures are freed via backend services.
+- Review <code>Atlas::~Atlas()</code> - verify texture deletion.
+- Check for double-free if same image is referenced multiple times.</p>
+<hr />
+<h3 id="5-2-atlas-packing-service-dependency">5.2 Atlas Packing Service Dependency</h3>
+<p><strong>Category:</strong> Backend Coupling<br />
+<strong>Severity:</strong> Medium<br />
+<strong>Location(s):</strong>
+- <code>src/atlas.cpp</code> - uses <code>contextGetSettings().services.packRects</code>
+- <code>backends/stb_rectpack.cpp</code> - implementation</p>
+<p><strong>Description:</strong> Atlas relies on external packing service. If service is not properly initialized or fails, atlas generation will fail silently or produce bad results.</p>
+<p><strong>Suggested Fix:</strong> 
+- Add error handling and validation of pack results.
+- Assert on failure or return error codes.</p>
+<hr />
+<h3 id="5-3-theme-element-state-defaults">5.3 Theme Element State Defaults</h3>
+<p><strong>Category:</strong> Correctness<br />
+<strong>Severity:</strong> Low<br />
+<strong>Location(s):</strong>
+- <code>src/theme.cpp</code></p>
+<p><strong>Description:</strong> Theme loading/creation sets default states. Edge cases with missing elements could cause issues.</p>
+<p><strong>Suggested Fix:</strong> Add defensive checks; return sensible defaults.</p>
+<hr />
+<h2 id="6-graphics-backend-issues">6. Graphics Backend Issues</h2>
+<h3 id="6-1-opengl-backend-backends-opengl_graphics">6.1 OpenGL Backend (<code>backends/opengl_graphics.*</code>)</h3>
+<p><strong>Severity:</strong> High (Multi-context safety, global state)</p>
+<h4 id="6-1-1-global-static-state-prevents-multiple-contexts">6.1.1 Global/Static State Prevents Multiple Contexts</h4>
+<p><strong>Location(s):</strong>
+- <code>backends/opengl_graphics.cpp</code> - multiple static globals:
+  - Line ~? <code>static Rect currentViewport;</code> (viewport tracking)
+  - <code>static GLuint vertexShader;</code> (global)
+  - <code>static GLuint pixelShader;</code> (global) 
+  - <code>static GLuint program;</code> (global shader program)
+  - <code>static OpenGLVertexBuffer vertexBuffer;</code> (global VBO)
+  - <code>static char errStr[1024];</code> (global error buffer)
+  - <code>static bool shadersInitialized;</code> (global flag)</p>
+<p><strong>Description:</strong> The comment at line in codebase (from exploration): <code>"TODO: so this statics might not work with multiple hui contexts"</code>. All rendering state is global - if multiple Horus UI contexts render to different windows/contexts, they will interfere (shared shaders, shared VBO, shared state).</p>
+<p><strong>Root Cause:</strong> Backend written as singleton/global state.</p>
+<p><strong>Suggested Fix:</strong>
+- Move all per-context state into a backend context struct (e.g., <code>OpenGLBackendState</code>).
+- Store this struct in the backend context associated with each Horus context.
+- Initialize per context on <code>graphicsInit()</code>.
+- Clean up properly on <code>graphicsDestroy()</code>.</p>
+<p><strong>Impact:</strong> Critical for multi-window applications.</p>
+<hr />
+<h4 id="6-1-2-shader-management-and-lifetime">6.1.2 Shader Management and Lifetime</h4>
+<p><strong>Location(s):</strong>
+- <code>backends/opengl_graphics.cpp</code> - shader compilation, linking, caching</p>
+<p><strong>Description:</strong> Shaders compiled once globally (<code>shadersInitialized</code>). If GL context is lost/recreated (e.g., context loss on some platforms), shaders become invalid but flag isn't reset properly.</p>
+<p><strong>Root Cause:</strong> No GL context loss handling.</p>
+<p><strong>Suggested Fix:</strong>
+- Detect context loss and recompile shaders.
+- Track which GL context the resources belong to (or just reinitialize on new context).
+- Add error checking and logging on shader compile/link failures.</p>
+<hr />
+<h4 id="6-1-3-vertex-buffer-growth-strategy">6.1.3 Vertex Buffer Growth Strategy</h4>
+<p><strong>Location(s):</strong>
+- <code>backends/opengl_graphics.cpp</code> - <code>OpenGLVertexBuffer</code> implementation</p>
+<p><strong>Description:</strong> Dynamic VBO for immediate mode drawing. Should handle buffer resizing when exceeding capacity. Need to verify proper mapping/unmapping with <code>glMapBuffer</code>/<code>glUnmapBuffer</code> (or DSA equivalents).</p>
+<p><strong>Root Cause:</strong> Standard immediate mode streaming.</p>
+<p><strong>Suggested Fix:</strong> 
+- Ensure buffer is orphaned or resized appropriately when full (to avoid stalling).
+- Check for GL errors after operations.
+- Use <code>glBufferData</code> with <code>GL_DYNAMIC_DRAW</code>.</p>
+<hr />
+<h4 id="6-1-4-error-handling">6.1.4 Error Handling</h4>
+<p><strong>Location(s):</strong>
+- <code>backends/opengl_graphics.cpp</code> - error string buffer <code>errStr[1024]</code></p>
+<p><strong>Description:</strong> Errors stored in static buffer but may not be propagated clearly to caller. GL error checking might be sparse in release builds.</p>
+<p><strong>Suggested Fix:</strong> 
+- Use <code>HUI_ASSERT</code>/<code>HUI_LOG</code> consistently.
+- Check <code>glGetError()</code> after critical operations, especially in debug.
+- Return error info via callback/logging service.</p>
+<hr />
+<h3 id="6-2-directx-11-backend-backends-dx11_graphics">6.2 DirectX 11 Backend (<code>backends/dx11_graphics.*</code>)</h3>
+<p><strong>Severity:</strong> High</p>
+<h4 id="6-2-1-global-device-context-and-shared-resources">6.2.1 Global Device/Context and Shared Resources</h4>
+<p><strong>Location(s):</strong>
+- <code>backends/dx11_graphics.cpp</code> - global state:
+  - <code>static ID3D11Device* device = nullptr;</code>
+  - <code>static ID3D11DeviceContext* context = nullptr;</code>
+  - <code>static Dx11SharedVertexBuffer sharedVb;</code> (static/shared)
+  - Pipeline state objects (static)
+  - Shader blobs, input layout (static)
+  - Samplers, rasterizer/blend/depth states (static)</p>
+<p><strong>Description:</strong> All D3D11 device resources are global statics. Cannot support multiple D3D11 devices/contexts or multiple Horus contexts. Also resources not tied to device lifetime properly in all cases.</p>
+<p><strong>Root Cause:</strong> Singleton design.</p>
+<p><strong>Suggested Fix:</strong> 
+- Encapsulate all DX11 backend state in a struct per Horus context.
+- Store references to device/context (or create internally). Clarify ownership.
+- On <code>graphicsDestroy()</code>, properly release all COM objects with <code>SAFE_RELEASE</code>/<code>Release()</code>.
+- Handle device lost scenarios if needed.</p>
+<hr />
+<h4 id="6-2-2-com-object-reference-counting">6.2.2 COM Object Reference Counting</h4>
+<p><strong>Location(s):</strong>
+- <code>backends/dx11_graphics.cpp</code> - throughout (Create*, QueryInterface, Release)</p>
+<p><strong>Description:</strong> COM objects created but need careful ref counting. Shared resources (shaders, states) created once - correct if same device, but problematic if device changes.</p>
+<p><strong>Root Cause:</strong> Manual COM management.</p>
+<p><strong>Suggested Fix:</strong> 
+- Use smart COM pointers (<code>Microsoft::WRL::ComPtr&lt;T&gt;</code>) to avoid leaks.
+- Track device validity.
+- Ensure proper cleanup order.</p>
+<hr />
+<h4 id="6-2-3-input-layout-and-shader-compatibility">6.2.3 Input Layout and Shader Compatibility</h4>
+<p><strong>Location(s):</strong>
+- <code>backends/dx11_graphics.cpp</code> - vertex format, input layout creation</p>
+<p><strong>Description:</strong> Input layout tied to vertex shader signature. If shaders change/recompile, layout must be updated.</p>
+<p><strong>Suggested Fix:</strong> Regenerate input layout when shaders are (re)compiled.</p>
+<hr />
+<h4 id="6-2-4-vertex-buffer-streaming">6.2.4 Vertex Buffer Streaming</h4>
+<p><strong>Location(s):</strong>
+- <code>backends/dx11_graphics.cpp</code> - <code>Dx11SharedVertexBuffer</code></p>
+<p><strong>Description:</strong> Dynamic buffer updated via <code>Map(D3D11_MAP_WRITE_DISCARD)</code>. Correct for immediate mode. Buffer resizing when capacity exceeded needs to be safe.</p>
+<p><strong>Suggested Fix:</strong> When resizing, release old buffer and create new with larger size; update any bound views.</p>
+<hr />
+<h3 id="6-3-directx-12-backend-backends-dx12_graphics">6.3 DirectX 12 Backend (<code>backends/dx12_graphics.*</code>)</h3>
+<p><strong>Severity:</strong> High (Most complex, global state, frame synchronization)</p>
+<h4 id="6-3-1-global-state-and-frame-synchronization">6.3.1 Global State and Frame Synchronization</h4>
+<p><strong>Location(s):</strong>
+- <code>backends/dx12_graphics.cpp</code> - extensive statics:
+  - <code>static FrameData frames[HUI_DX12_NUM_FRAMES_IN_FLIGHT];</code> (per-frame resources)
+  - <code>static u32 currentFrameIndex = 0;</code>
+  - <code>static ID3D12Device* device = nullptr;</code>
+  - <code>static ID3D12CommandQueue* commandQueue = nullptr;</code>
+  - <code>static ID3D12GraphicsCommandList* commandList = nullptr;</code>
+  - <code>static ID3D12CommandAllocator* commandAllocator = nullptr;</code>
+  - <code>static ID3D12Fence* fence = nullptr;</code>
+  - <code>static HANDLE fenceEvent = nullptr;</code>
+  - <code>static UINT64 fenceValue = 0;</code>
+  - <code>static ID3D12RootSignature* rootSignature = nullptr;</code>
+  - <code>static ID3D12PipelineState* pipelineState = nullptr;</code>
+  - <code>static ID3D12DescriptorHeap* srvHeap = nullptr;</code> (SRV descriptor heap)
+  - <code>static ID3D12Resource* uploadBuffer = nullptr;</code> (shared upload)
+  - <code>static D3D12MA::Allocator* allocator = nullptr;</code> (D3D12 memory allocator)
+  - Plus many other heaps, resources</p>
+<p><strong>Description:</strong> Massive global state. Multi-context impossible. Frame pacing tied to global <code>currentFrameIndex</code>. Resource lifetime management is complex with D3D12MA.</p>
+<p><strong>Root Cause:</strong> Designed for single context/single window.</p>
+<p><strong>Suggested Fix:</strong>
+- Create <code>Dx12BackendContext</code> struct containing all this state per Horus context.
+- Properly initialize per context in <code>graphicsInit()</code>.
+- Clean up all resources in <code>graphicsDestroy()</code> including waiting for GPU to finish (fence wait).
+- Handle multi-window with care (separate command queues/lists or shared?).</p>
+<hr />
+<h4 id="6-3-2-frame-data-lifecycle">6.3.2 Frame Data Lifecycle</h4>
+<p><strong>Location(s):</strong>
+- <code>backends/dx12_graphics.cpp</code> - <code>FrameData</code> struct and arrays</p>
+<p><strong>Description:</strong> Each frame has its own vertex buffer, upload buffer, fence value, etc. Need to ensure GPU has finished using frame resources before reusing them (CPU-GPU synchronization). The fence logic must be correct.</p>
+<p><strong>Root Cause:</strong> Manual frame in-flight management.</p>
+<p><strong>Suggested Fix:</strong>
+- Verify fence wait happens before resetting command allocators for that frame.
+- Check for potential fence value overflow (use UINT64).
+- Add debug markers if available (PIX).</p>
+<hr />
+<h4 id="6-3-3-d3d12-memory-allocator-d3d12ma-integration">6.3.3 D3D12 Memory Allocator (D3D12MA) Integration</h4>
+<p><strong>Location(s):</strong>
+- <code>backends/dx12_graphics.cpp</code> - includes D3D12MA, creates allocator</p>
+<p><strong>Description:</strong> Uses D3D12MA. Proper cleanup: <code>allocator-&gt;Release()</code> and then destroy D3D12MA objects. Also need to ensure all allocations freed.</p>
+<p><strong>Suggested Fix:</strong>
+- Review cleanup order in destroy path.
+- Check for leaks with debug allocator.</p>
+<hr />
+<h4 id="6-3-4-descriptor-heap-management">6.3.4 Descriptor Heap Management</h4>
+<p><strong>Location(s):</strong>
+- <code>backends/dx12_graphics.cpp</code> - SRV heap, possibly RTV/DSV</p>
+<p><strong>Description:</strong> Descriptor heaps have limited size. Dynamic allocation of descriptors (for textures) needs to be tracked. If many textures created without reuse, heap could be exhausted.</p>
+<p><strong>Suggested Fix:</strong>
+- Implement descriptor allocation strategy (ring buffer or freelist).
+- Grow heap if needed, or pre-size appropriately.
+- Track used descriptors per frame.</p>
+<hr />
+<h4 id="6-3-5-command-list-allocator-reset">6.3.5 Command List/Allocator Reset</h4>
+<p><strong>Location(s):</strong>
+- <code>backends/dx12_graphics.cpp</code> - begin/end frame</p>
+<p><strong>Description:</strong> Command allocators must be reset only after GPU is done. Command lists reset after allocator reset.</p>
+<p><strong>Suggested Fix:</strong> Double-check the order in frame lifecycle. Add validation.</p>
+<hr />
+<h3 id="6-4-vulkan-backend-backends-vulkan_graphics">6.4 Vulkan Backend (<code>backends/vulkan_graphics.*</code>)</h3>
+<p><strong>Severity:</strong> High (Very complex, large global state, many object types)</p>
+<h4 id="6-4-1-extensive-global-state">6.4.1 Extensive Global State</h4>
+<p><strong>Location(s):</strong>
+- <code>backends/vulkan_graphics.cpp</code> - hundreds of static variables including:
+  - Instance, physical device, device, queues (graphics/present)
+  - Surface, swapchain, swapchain images, image views, framebuffers
+  - Render pass, pipeline layout, graphics pipeline
+  - Command pools, command buffers (per frame)
+  - Sync objects: semaphores, fences (per frame)
+  - Descriptor pools, descriptor set layouts, descriptor sets
+  - Vertex buffers, staging buffers
+  - Memory allocations, samplers
+  - MSAA, depth buffer resources
+  - Debug messenger</p>
+<p><strong>Description:</strong> This is the most state-heavy backend. All Vulkan objects are global statics. Cannot support multiple Vulkan contexts/devices/windows. Lifecycle management is extremely complex.</p>
+<p><strong>Root Cause:</strong> Monolithic singleton design for Vulkan backend.</p>
+<p><strong>Suggested Fix:</strong>
+- Create <code>VkBackendContext</code> to encapsulate all state per Horus context.
+- This is a large refactoring but necessary for multi-context support.
+- Ensure proper cleanup in reverse creation order on destroy.
+- Add thorough validation layers usage in debug.</p>
+<hr />
+<h4 id="6-4-2-swapchain-management">6.4.2 Swapchain Management</h4>
+<p><strong>Location(s):</strong>
+- <code>backends/vulkan_graphics.cpp</code> - swapchain creation, recreation, present</p>
+<p><strong>Description:</strong> Swapchain can become invalid (resize, surface changes, lost). Code needs to handle swapchain recreation. Need to check if this is implemented robustly (VK_SUBOPTIMAL_KHR, VK_ERROR_OUT_OF_DATE_KHR).</p>
+<p><strong>Root Cause:</strong> Window resizing/surface changes.</p>
+<p><strong>Suggested Fix:</strong>
+- Implement full swapchain recreation path (destroy framebuffers, image views, swapchain; recreate).
+- Handle acquire/present errors gracefully.</p>
+<hr />
+<h4 id="6-4-3-memory-management">6.4.3 Memory Management</h4>
+<p><strong>Location(s):</strong>
+- <code>backends/vulkan_graphics.cpp</code> - buffer allocations, images</p>
+<p><strong>Description:</strong> Uses Vulkan memory allocation (possibly VMA if available? Check includes - not obvious from filename alone, but standard pattern). Manual memory type selection and binding.</p>
+<p><strong>Suggested Fix:</strong> Consider using Vulkan Memory Allocator (VMA) for easier memory management. If not using, ensure correct memory type selection.</p>
+<hr />
+<h4 id="6-4-4-descriptor-set-management">6.4.4 Descriptor Set Management</h4>
+<p><strong>Location(s):</strong>
+- <code>backends/vulkan_graphics.cpp</code> - descriptor pools and sets</p>
+<p><strong>Description:</strong> Descriptor sets allocated from pools. If many different descriptor layouts or many sets, pools can run out. Need to track and potentially grow pools.</p>
+<p><strong>Suggested Fix:</strong> 
+- Implement proper descriptor pool sizing.
+- Reset pools per frame or use ring allocation.
+- Free sets appropriately.</p>
+<hr />
+<h4 id="6-4-5-synchronization-fences-semaphores">6.4.5 Synchronization (Fences/Semaphores)</h4>
+<p><strong>Location(s):</strong>
+- <code>backends/vulkan_graphics.cpp</code> - per-frame sync objects</p>
+<p><strong>Description:</strong> Correct synchronization is critical to avoid GPU/CPU hazards. In-flight frames limited by <code>MAX_FRAMES_IN_FLIGHT</code> (or similar constant). Fence waits must happen before reusing command buffers.</p>
+<p><strong>Suggested Fix:</strong> Verify sync logic matches Vulkan best practices. Use validation layers to catch issues.</p>
+<hr />
+<h4 id="6-4-6-debugging-and-validation">6.4.6 Debugging and Validation</h4>
+<p><strong>Location(s):</strong>
+- <code>backends/vulkan_graphics.cpp</code> - debug messenger, validation layers</p>
+<p><strong>Description:</strong> Debug reporting setup. Should be conditional on build type.</p>
+<p><strong>Suggested Fix:</strong> Only enable validation layers in debug builds to avoid performance overhead.</p>
+<hr />
+<h2 id="7-input-platform-issues-backends-sdl3_input">7. Input/Platform Issues (<code>backends/sdl3_input.*</code>)</h2>
+<h3 id="7-1-global-input-context">7.1 Global Input Context</h3>
+<p><strong>Severity:</strong> High</p>
+<h4 id="7-1-1-singleton-input-state">7.1.1 Singleton Input State</h4>
+<p><strong>Location(s):</strong>
+- <code>backends/sdl3_input.cpp:17</code> - <code>static Sdl3InputContext* sdl3InputContext = nullptr;</code></p>
+<p><strong>Description:</strong> Global input context. Cannot support multiple Horus contexts with separate windows/input handling cleanly. All input state shared globally.</p>
+<p><strong>Root Cause:</strong> Singleton design.</p>
+<p><strong>Suggested Fix:</strong> 
+- Move to context-associated state or allow passing context.
+- Store per-Horus-context input state.
+- For multi-window, need to track which window events belong to which context.</p>
+<hr />
+<h4 id="7-2-platform-specific-code-paths">7.2 Platform-Specific Code Paths</h4>
+<p><strong>Location(s):</strong>
+- <code>backends/sdl3_input.cpp</code> - platform defines for Windows, X11, etc.</p>
+<p><strong>Description:</strong> Uses platform-specific APIs (e.g., Windows API calls, X11). SDL3 abstracts much, but there may be platform-specific code. Need to ensure proper conditional compilation.</p>
+<p><strong>Root Cause:</strong> Platform-specific cursor/clipboard/native window handling.</p>
+<p><strong>Suggested Fix:</strong> 
+- Guard platform-specific code with proper <code>#ifdef</code>s.
+- Test on each supported platform.
+- Prefer SDL3 APIs where possible.</p>
+<hr />
+<h4 id="7-3-cursor-management">7.3 Cursor Management</h4>
+<p><strong>Location(s):</strong>
+- <code>backends/sdl3_input.cpp</code> - cursor creation, setting, destruction</p>
+<p><strong>Description:</strong> Creates SDL cursors for custom cursor shapes. Must destroy them properly on shutdown to avoid leaks.</p>
+<p><strong>Suggested Fix:</strong> Track all created cursors and free in destroy/uninit.</p>
+<hr />
+<h4 id="7-4-text-input-ime-handling">7.4 Text Input (IME) Handling</h4>
+<p><strong>Location(s):</strong>
+- <code>backends/sdl3_input.cpp</code> - SDL_StartTextInput, text editing events
+- Interaction with <code>textInput()</code> widget</p>
+<p><strong>Description:</strong> IME composition events (SDL_EVENT_TEXT_EDITING) need to be passed through correctly. Composition range, cursor position must sync with widget state.</p>
+<p><strong>Suggested Fix:</strong> 
+- Verify IME works on Windows, macOS, Linux.
+- Ensure composition text is handled before final text input.
+- Coordinate with <code>startTextInput()</code>/<code>stopTextInput()</code> calls from widgets.</p>
+<hr />
+<h4 id="7-5-delta-time-calculation">7.5 Delta Time Calculation</h4>
+<p><strong>Location(s):</strong>
+- <code>backends/sdl3_input.cpp</code> - timing</p>
+<p><strong>Description:</strong> Delta time computation - should be robust against large frame skips or timer issues.</p>
+<p><strong>Suggested Fix:</strong> Clamp delta time to reasonable range (e.g., max 0.5s) to avoid physics/jump issues.</p>
+<hr />
+<h4 id="7-6-window-event-handling">7.6 Window Event Handling</h4>
+<p><strong>Location(s):</strong>
+- <code>backends/sdl3_input.cpp</code> - SDL event loop processing</p>
+<p><strong>Description:</strong> Events mapped to Horus input events. Need to ensure all relevant SDL events are handled (resize, close, focus, mouse, keyboard, touch, gamepad).</p>
+<p><strong>Suggested Fix:</strong> Review event mapping completeness.</p>
+<hr />
+<h2 id="8-font-issues-backends-freetype_fonts">8. Font Issues (<code>backends/freetype_fonts.*</code>)</h2>
+<h3 id="8-1-freetype-context-lifecycle">8.1 FreeType Context Lifecycle</h3>
+<p><strong>Severity:</strong> Medium</p>
+<h4 id="8-1-1-static-freetype-context">8.1.1 Static FreeType Context</h4>
+<p><strong>Location(s):</strong>
+- <code>backends/freetype_fonts.cpp</code> - <code>struct FTContextInfo</code> and static instances</p>
+<p><strong>Description:</strong> FreeType library initialized once globally. Font faces loaded and managed. Need to ensure proper FT_Done_FreeType() on shutdown.</p>
+<p><strong>Root Cause:</strong> Global FT library handle.</p>
+<p><strong>Suggested Fix:</strong> 
+- Track initialization count if needed, but single init is fine.
+- Ensure cleanup in font backend destroy/uninit.
+- Check for FT errors on all operations.</p>
+<hr />
+<h4 id="8-2-font-face-loading-and-caching">8.2 Font Face Loading and Caching</h4>
+<p><strong>Location(s):</strong>
+- <code>backends/freetype_fonts.cpp</code> - font loading</p>
+<p><strong>Description:</strong> Fonts loaded from files/bytes. Caching strategy - are font faces cached? If same font loaded multiple times, could duplicate memory.</p>
+<p><strong>Suggested Fix:</strong> Implement font cache by (path/hash) to avoid duplicates.</p>
+<hr />
+<h4 id="8-3-glyph-atlas-integration">8.3 Glyph Atlas Integration</h4>
+<p><strong>Location(s):</strong>
+- <code>backends/freetype_fonts.cpp</code> - glyph rendering to atlas
+- Interaction with <code>Atlas</code> and <code>Renderer</code></p>
+<p><strong>Description:</strong> Glyphs rendered and uploaded to texture atlas. If atlas is full or needs resize, need to handle gracefully.</p>
+<p><strong>Suggested Fix:</strong> 
+- Handle atlas overflow - expand atlas or use fallback.
+- Ensure proper packing alignment for SDF/bitmap fonts.</p>
+<hr />
+<h4 id="8-4-unicode-utf-handling">8.4 Unicode/UTF Handling</h4>
+<p><strong>Location(s):</strong>
+- <code>backends/freetype_fonts.cpp</code>
+- <code>backends/utfcpp.*</code> - UTF utilities</p>
+<p><strong>Description:</strong> Relies on utfcpp for UTF-8/32 conversions. Font shaping not mentioned - just glyph rendering. For complex scripts, missing shaping could be an issue.</p>
+<p><strong>Root Cause:</strong> Basic glyph-by-codepoint rendering.</p>
+<p><strong>Suggested Fix:</strong> Document limitation (no advanced text shaping). This is fine for simple UI text.</p>
+<hr />
+<h2 id="9-utility-backends-amp-third-party-integration">9. Utility Backends &amp; Third-Party Integration</h2>
+<h3 id="9-1-stb_image-implementation-in-json_theme_loader">9.1 stb_image Implementation in json_theme_loader</h3>
+<p><strong>Severity:</strong> High (ODR Violation Risk)</p>
+<h4 id="9-1-1-multiple-stb-implementation-defines">9.1.1 Multiple STB Implementation Defines</h4>
+<p><strong>Location(s):</strong>
+- <code>backends/json_theme_loader.cpp:6-9</code>:
+  <code>cpp
+  #define STB_IMAGE_IMPLEMENTATION
+  #define STB_IMAGE_WRITE_IMPLEMENTATION
+  #include "stb_image.h"
+  #include "stb_image_write.h"</code></p>
+<p><strong>Description:</strong> Defining STB implementation macros in a <code>.cpp</code> file means the implementation is compiled here. If any other translation unit in the build also includes <code>stb_image.h</code> with implementation defines, this causes One Definition Rule (ODR) violations and link errors.</p>
+<p><strong>Root Cause:</strong> STB libraries use header-only implementation pattern requiring exactly one TU with defines.</p>
+<p><strong>Suggested Fix:</strong>
+- Move STB implementation defines to a dedicated <code>.cpp</code> file (e.g., <code>backends/stb_image_impl.cpp</code>) that only includes stb headers with defines.
+- In other files, just include headers without defines.
+- Or ensure json_theme_loader.cpp is the only place - but verify no other includes with defines exist.</p>
+<p><strong>Verification:</strong> Search for other STB_IMAGE_IMPLEMENTATION defines in codebase. Also stb_rectpack has its own define in <code>backends/stb_rectpack.cpp:2</code>.</p>
+<p><strong>Note:</strong> stb_rectpack correctly has its own implementation in its own cpp file. Same pattern needed for stb_image/stb_image_write if used elsewhere.</p>
+<hr />
+<h3 id="9-2-stb_rectpack-implementation">9.2 stb_rectpack Implementation</h3>
+<p><strong>Location(s):</strong>
+- <code>backends/stb_rectpack.cpp:2</code> - <code>#define STB_RECT_PACK_IMPLEMENTATION</code>
+- <code>backends/stb_rectpack.h</code> - header
+- <code>backends/stb_rectpack.cpp</code> - implementation</p>
+<p><strong>Description:</strong> Correctly isolated implementation. Uses service <code>services.packRects</code> to wire into Context.</p>
+<p><strong>Suggested Fix:</strong> None. This is correct.</p>
+<hr />
+<h3 id="9-3-json-theme-loader-dependencies">9.3 JSON Theme Loader Dependencies</h3>
+<p><strong>Location(s):</strong>
+- <code>backends/json_theme_loader.cpp</code></p>
+<p><strong>Description:</strong> Loads themes from JSON files. Uses <code>nlohmann/json</code> (from includes in full context). Also depends on image loading via stb_image and file I/O via services (<code>contextGetSettings().services.open/read/seek/tell/close</code>).</p>
+<p><strong>Dependencies look correct.</strong> The service-based I/O is good for flexibility.</p>
+<p><strong>Suggested Fix:</strong> Add error handling for malformed JSON, missing files, image load failures.</p>
+<hr />
+<h3 id="9-4-native-file-dialogs-backend">9.4 Native File Dialogs Backend</h3>
+<p><strong>Location(s):</strong>
+- <code>backends/native_file_dialogs.h</code>, <code>backends/native_file_dialogs.cpp</code> (if exists)</p>
+<p><strong>Description:</strong> Platform-specific file dialogs. Need to ensure cross-platform support and proper cleanup.</p>
+<p><strong>Suggested Fix:</strong> Check for null returns, handle cancellation.</p>
+<hr />
+<h3 id="9-5-stdio-file-io-backend">9.5 stdio File IO Backend</h3>
+<p><strong>Location(s):</strong>
+- <code>backends/stdio_fileio.h</code>, <code>backends/stdio_fileio.cpp</code></p>
+<p><strong>Description:</strong> Standard C file I/O implementation of services. Should handle errors properly (fopen failures, etc.).</p>
+<p><strong>Suggested Fix:</strong> Return error codes/flags consistently.</p>
+<hr />
+<h3 id="9-6-utfcpp-backend">9.6 utfcpp Backend</h3>
+<p><strong>Location(s):</strong>
+- <code>backends/utfcpp.*</code></p>
+<p><strong>Description:</strong> Third-party UTF-8/UTF-32 conversion utilities. Appears to be included as source. No obvious issues if kept up to date.</p>
+<p><strong>Suggested Fix:</strong> None critical.</p>
+<hr />
+<h2 id="10-widget-specific-issues">10. Widget-Specific Issues</h2>
+<h3 id="10-1-text-input-widget-static-buffer">10.1 Text Input Widget - Static Buffer</h3>
+<p><strong>Severity:</strong> Medium</p>
+<h4 id="10-1-1-global-static-password-buffer">10.1.1 Global Static Password Buffer</h4>
+<p><strong>Location(s):</strong>
+- <code>src/textinput_widget.cpp:111</code> - <code>static char hiddenPwdText[maxHiddenCharLen] = "";</code></p>
+<p><strong>Description:</strong> Static buffer for hidden password text. Shared globally across all text inputs in all contexts. Not thread-safe, not context-isolated. Also buffer size fixed at 1024 chars.</p>
+<p><strong>Root Cause:</strong> Convenience static.</p>
+<p><strong>Suggested Fix:</strong>
+- Move to per-widget state in <code>TextInputState</code> (already has state in Context).
+- Or allocate dynamically based on actual password length.
+- Remove global static.</p>
+<p><strong>Impact:</strong> If multiple text inputs show passwords simultaneously or in different contexts, they share the same buffer.</p>
+<hr />
+<h3 id="10-2-multiline-text-input-state-growth">10.2 Multiline Text Input State Growth</h3>
+<p><strong>Location(s):</strong>
+- <code>src/multiline_text_input_widget.cpp</code>
+- <code>src/multiline_text_input_state.*</code></p>
+<p><strong>Description:</strong> Stores lines as vector of Utf32String. For very large files (many lines), memory grows. Also hash-based change detection (<code>currentTextHash != state.lastTextHash</code>).</p>
+<p><strong>Suggested Fix:</strong> Consider incremental updates, but for typical UI text sizes this is fine.</p>
+<hr />
+<h3 id="10-3-widget-id-generation">10.3 Widget ID Generation</h3>
+<p><strong>Location(s):</strong>
+- <code>src/util.h/cpp</code> - <code>genId()</code> function</p>
+<p><strong>Description:</strong> Widget IDs generated from strings/hashes. Collisions possible with hash? Unlikely but theoretically possible.</p>
+<p><strong>Suggested Fix:</strong> Consider using 64-bit hashes with lower collision probability, or detect collisions in debug.</p>
+<hr />
+<h3 id="10-4-focus-activation-logic">10.4 Focus/Activation Logic</h3>
+<p><strong>Location(s):</strong>
+- Various widget files - focusChanged checks</p>
+<p><strong>Description:</strong> Focus management involves multiple flags (<code>ctx-&gt;focusChanged</code>, <code>ctx-&gt;widget.focusedId</code>, <code>ctx-&gt;widget.focused</code>, layer checks). Complex interactions could lead to focus loss/gain glitches.</p>
+<p><strong>Suggested Fix:</strong> Add assertions and test focus edge cases thoroughly.</p>
+<hr />
+<h2 id="11-general-code-quality-amp-safety">11. General Code Quality &amp; Safety</h2>
+<h3 id="11-1-error-handling-consistency">11.1 Error Handling Consistency</h3>
+<p><strong>Severity:</strong> Medium</p>
+<p><strong>Description:</strong> Mix of assertions (<code>HUI_ASSERT</code>), logging (<code>HUI_LOG</code>), and silent failures. Some code paths don't check return values from service calls.</p>
+<p><strong>Suggested Fix:</strong>
+- Establish error handling policy (assert in debug for programmer errors, return codes/log for runtime errors).
+- Check all service call results.</p>
+<hr />
+<h3 id="11-2-memory-leaks-potential">11.2 Memory Leaks Potential</h3>
+<p><strong>Severity:</strong> Medium</p>
+<p><strong>Description:</strong> 
+- Deferred deletions in docking may not be flushed on shutdown (see 4.1).
+- Backend resources - global statics cleaned up? Need to verify destroy paths are called.
+- COM objects in DX11/DX12 need proper Release.</p>
+<p><strong>Suggested Fix:</strong> 
+- Audit all <code>new</code>/allocations have corresponding <code>delete</code>/free in shutdown.
+- Use RAII/smart pointers where appropriate.
+- Add leak detection in debug builds.</p>
+<hr />
+<h3 id="11-3-thread-safety">11.3 Thread Safety</h3>
+<p><strong>Severity:</strong> Medium</p>
+<p><strong>Description:</strong> Codebase appears single-threaded (UI in main thread). Global statics have no synchronization. If used from multiple threads, data races will occur.</p>
+<p><strong>Suggested Fix:</strong> Document that library is not thread-safe; all calls must be from same thread as context.</p>
+<hr />
+<h3 id="11-4-crlf-eol-amp-style-conventions">11.4 CRLF EOL &amp; Style Conventions</h3>
+<p><strong>Severity:</strong> Low (Style)</p>
+<p><strong>Description:</strong> The skill mentions: "CRLF EOL, empty lines around declarations/blocks, comment style conventions, minimalistic code". A quick scan shows mixed styles in places.</p>
+<p><strong>Suggested Fix:</strong> Run formatter/clang-format with project style if available, or enforce consistency.</p>
+<hr />
+<h3 id="11-5-todo-comments">11.5 TODO Comments</h3>
+<p><strong>Severity:</strong> Low</p>
+<p><strong>Description:</strong> Several TODOs found:
+- <code>src/context.h:307</code> - pruneUnusedTextTime (see 1.2)
+- OpenGL backend TODO about multiple contexts (see 6.1.1)
+- Possibly others in files not fully shown</p>
+<p><strong>Suggested Fix:</strong> Track and resolve TODOs, or convert to GitHub issues.</p>
+<hr />
+<h3 id="11-6-unused-dead-code">11.6 Unused/Dead Code</h3>
+<p><strong>Severity:</strong> Low</p>
+<p><strong>Description:</strong> <code>docs/old docking code.txt</code> exists - reference/legacy. Not compiled.</p>
+<p><strong>Suggested Fix:</strong> Keep for reference or remove if obsolete.</p>
+<hr />
+<h3 id="11-7-build-system-amp-dependencies">11.7 Build System &amp; Dependencies</h3>
+<p><strong>Severity:</strong> Info</p>
+<p><strong>Description:</strong> Codebase uses CMake (inferred from typical structure). Third-party deps: SDL3, FreeType, Vulkan SDK, DirectX SDKs (Windows), nlohmann/json, stb libraries, utfcpp, D3D12MA (DX12).</p>
+<p><strong>No obvious issues</strong> from source inspection.</p>
+<hr />
+<h2 id="summary-amp-priority-recommendations">Summary &amp; Priority Recommendations</h2>
+<h3 id="critical-high-severity-must-fix">Critical (High Severity - Must Fix)</h3>
+<ol>
+<li><strong>Global static state in all backends</strong> (OpenGL, DX11, DX12, Vulkan, SDL3 input, FreeType context) - Prevents multi-context use and is poor design. Refactor to per-context state structures.</li>
+<li><strong>stb_image implementation defines</strong> in <code>json_theme_loader.cpp</code> - ODR violation risk if stb_image used elsewhere with defines. Move to separate impl file.</li>
+<li><strong>Text input static buffer</strong> (<code>hiddenPwdText</code> in textinput_widget.cpp) - Cross-contamination between inputs/contexts.</li>
+</ol>
+<h3 id="high-priority-should-fix">High Priority (Should Fix)</h3>
+<ol>
+<li><strong>Deferred deletion cleanup on shutdown</strong> (docking) - Potential leaks if context destroyed without update.</li>
+<li><strong>DX12/Vulkan synchronization correctness</strong> - GPU resource lifetime bugs are hard to debug.</li>
+<li><strong>Swapchain recreation in Vulkan</strong> - Handle resize/surface changes robustly.</li>
+</ol>
+<h3 id="medium-priority-recommended">Medium Priority (Recommended)</h3>
+<ol>
+<li><strong>COM/smart pointer usage in D3D backends</strong> - Prevent leaks, easier lifecycle.</li>
+<li><strong>Error handling consistency</strong> - Better diagnostics and robustness.</li>
+<li><strong>Descriptor heap/atlas overflow handling</strong> - Prevent runtime failures.</li>
+</ol>
+<h3 id="low-priority-nice-to-have">Low Priority (Nice to Have)</h3>
+<ol>
+<li><strong>Resolve TODOs</strong> - Design decisions.</li>
+<li><strong>Style consistency</strong> - Codebase polish.</li>
+<li><strong>Thread-safety documentation</strong> - Clear API contract.</li>
+</ol>
+<hr />
+<p><em>End of Audit Report</em></p>
+
+
+
+
+
+
+
+
+
+
+
+
+

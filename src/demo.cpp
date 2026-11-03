@@ -384,7 +384,7 @@ struct DemoState
 	// virtual List
 	bool expandVirtualList = false;
 	bool disableVirtualList = false;
-	i32 virtualListCount = 1000;
+	i32 virtualListCount = 100000;
 	
 	// drag & Drop Demo
 	bool expandDragDrop = false;
@@ -793,6 +793,29 @@ void showDemo()
 	space();
 
 	// ------------------------------------------------------------------
+	// box
+	// ------------------------------------------------------------------
+	if (expandableBegin("Box", &demo.expandBox))
+	{
+		check("Disable##Box", &demo.disableBox);
+		widgetPushDisabled(demo.disableBox);
+
+		label("Box with default element:");
+		boxBegin("##boxDefault", Color::white);
+		label("Content inside the box");
+		button("Box Button");
+		boxEnd();
+
+		space();
+		label("Tinted box:");
+		boxBegin("##boxTinted", Color(0.3f, 0.8f, 0.5f, 1.0f));
+		label("Green tinted box content");
+		boxEnd();
+		widgetPopDisabled();
+		expandableEnd();
+	}
+
+	// ------------------------------------------------------------------
 	// button
 	// ------------------------------------------------------------------
 	if (expandableBegin("Buttons", &demo.expandButton))
@@ -872,236 +895,6 @@ void showDemo()
 	}
 
 	// ------------------------------------------------------------------
-	// text Input
-	// ------------------------------------------------------------------
-	if (expandableBegin("Text Input", &demo.expandTextInput))
-	{
-		check("Disable##TextInput", &demo.disableTextInput);
-		widgetPushDisabled(demo.disableTextInput);
-
-		label("Basic:");
-		textInput("##tiBasic", demo.textBasic, sizeof(demo.textBasic));
-
-		space();
-		label("Numeric only:");
-		textInput("##tiNumeric", demo.textNumeric, sizeof(demo.textNumeric), TextInputFlags::NumericOnly);
-
-		space();
-		label("Hex only:");
-		textInput("##tiHex", demo.textHex, sizeof(demo.textHex), TextInputFlags::HexOnly);
-
-		space();
-		label("With default placeholder text:");
-		textInput("##tiDefault", demo.textDefault, sizeof(demo.textDefault), TextInputFlags::None, "Type here...");
-
-		space();
-		label("Auto select all on focus:");
-		textInput("##tiAutoSel", demo.textAutoSelect, sizeof(demo.textAutoSelect), TextInputFlags::AutoSelectAll);
-
-		space();
-		label("Password:");
-		textInput("##tiPass", demo.textPassword, sizeof(demo.textPassword), TextInputFlags::None, nullptr, 0, true);
-		widgetPopDisabled();
-		expandableEnd();
-	}
-
-	// ------------------------------------------------------------------
-	// multiline Text Input
-	// ------------------------------------------------------------------
-	if (expandableBegin("Multiline Text Input", &demo.expandMultiline))
-	{
-		check("Disable##MultilineTextInput", &demo.disableMultiline);
-		widgetPushDisabled(demo.disableMultiline);
-
-		// Lua syntax highlighting
-		static const Color luaKeywordColor = Color::fromU8(86, 156, 214);
-		static const Color luaStringColor = Color::fromU8(206, 145, 120);
-		static const Color luaCommentColor = Color::fromU8(106, 153, 85);
-
-		static const KeywordInfo luaKeywords[] = {
-			{ "and", luaKeywordColor },
-			{ "break", luaKeywordColor },
-			{ "do", luaKeywordColor },
-			{ "else", luaKeywordColor },
-			{ "elseif", luaKeywordColor },
-			{ "end", luaKeywordColor },
-			{ "false", luaKeywordColor },
-			{ "for", luaKeywordColor },
-			{ "function", luaKeywordColor },
-			{ "goto", luaKeywordColor },
-			{ "if", luaKeywordColor },
-			{ "in", luaKeywordColor },
-			{ "local", luaKeywordColor },
-			{ "nil", luaKeywordColor },
-			{ "not", luaKeywordColor },
-			{ "or", luaKeywordColor },
-			{ "repeat", luaKeywordColor },
-			{ "return", luaKeywordColor },
-			{ "then", luaKeywordColor },
-			{ "true", luaKeywordColor },
-			{ "until", luaKeywordColor },
-			{ "while", luaKeywordColor },
-		};
-
-		static const RangeHighlight luaRangeHighlights[] = {
-			{ "\"", "\"", luaStringColor, "\\" },
-			{ "'", "'", luaStringColor, "\\" },
-			{ "--", "", luaCommentColor },
-		};
-
-		static const u32 luaKeywordCount = sizeof(luaKeywords) / sizeof(luaKeywords[0]);
-		static const u32 luaRangeHighlightCount = sizeof(luaRangeHighlights) / sizeof(luaRangeHighlights[0]);
-
-		label("Basic (10 visible lines):");
-		textInputMultiline("##mtiBasic", demo.multiText, sizeof(demo.multiText), 10, MultilineTextInputFlags::None, luaKeywords, luaKeywordCount, luaRangeHighlights, luaRangeHighlightCount);
-
-		space();
-		label("With line numbers:");
-		textInputMultiline("##mtiLineNums", demo.multiText, sizeof(demo.multiText), 8, MultilineTextInputFlags::LineNumbers, luaKeywords, luaKeywordCount, luaRangeHighlights, luaRangeHighlightCount);
-
-		space();
-		label("With word wrap:");
-		textInputMultiline("##mtiWordWrap", demo.multiText, sizeof(demo.multiText), 6, MultilineTextInputFlags::WordWrap, luaKeywords, luaKeywordCount, luaRangeHighlights, luaRangeHighlightCount);
-
-		space();
-		label("Lua syntax + line numbers + highlight current line:");
-		textInputMultiline("##mtiHighlight", demo.multiText, sizeof(demo.multiText), 8,
-			MultilineTextInputFlags::LineNumbers | MultilineTextInputFlags::HighlightCurrentLine,
-			luaKeywords, luaKeywordCount, luaRangeHighlights, luaRangeHighlightCount);
-		widgetPopDisabled();
-		expandableEnd();
-	}
-
-	// ------------------------------------------------------------------
-	// slider
-	// ------------------------------------------------------------------
-	if (expandableBegin("Sliders", &demo.expandSlider))
-	{
-		check("Disable##Slider", &demo.disableSlider);
-		widgetPushDisabled(demo.disableSlider);
-
-		char buf[64];
-
-		label("Integer slider (0..100):");
-		sliderInt("##slInt", 0, 100, demo.sliderIntVal);
-		snprintf(buf, sizeof(buf), "Value: %d", demo.sliderIntVal);
-		label(buf);
-
-		space();
-		label("Integer slider with step=10:");
-		sliderInt("##slIntStep", 0, 100, demo.sliderIntStepped, true, 10);
-		snprintf(buf, sizeof(buf), "Value: %d", demo.sliderIntStepped);
-		label(buf);
-
-		space();
-		label("Float slider (0..1):");
-		sliderFloat("##slFloat", 0.0f, 1.0f, demo.sliderFloatVal);
-		snprintf(buf, sizeof(buf), "Value: %.3f", demo.sliderFloatVal);
-		label(buf);
-
-		space();
-		label("Float slider with step=0.1:");
-		sliderFloat("##slFloatStep", 0.0f, 1.0f, demo.sliderFloatStepped, true, 0.1f);
-		snprintf(buf, sizeof(buf), "Value: %.3f", demo.sliderFloatStepped);
-		label(buf);
-		widgetPopDisabled();
-		expandableEnd();
-	}
-
-	// ------------------------------------------------------------------
-	// comboSlider
-	// ------------------------------------------------------------------
-	if (expandableBegin("Combo Sliders", &demo.expandComboSlider))
-	{
-		check("Disable##ComboSlider", &demo.disableComboSlider);
-		widgetPushDisabled(demo.disableComboSlider);
-
-		label("Integer combo slider (unbounded):");
-		comboSliderInt(&demo.comboSliderInt);
-
-		space();
-		label("Integer combo slider ranged (0..100):");
-		comboSliderIntRanged(&demo.comboSliderIntRanged, 0, 100);
-
-		space();
-		label("Float combo slider (unbounded):");
-		comboSliderFloat(&demo.comboSliderFloat);
-
-		space();
-		label("Float combo slider ranged (0..1):");
-		comboSliderFloatRanged(&demo.comboSliderFloatRanged, 0.0f, 1.0f, 0.01f, 0.05f);
-
-		space();
-		label("With custom format string:");
-		comboSliderFloat(&demo.comboSliderFloatCustomString, 1.0f, 1.0f, "%.2f units");
-
-		space();
-		label("No value assigned (indeterminate, editable, starts at 0):");
-		check("Assign value##ComboSliderNull", &demo.comboSliderNullAssigned);
-		if (demo.comboSliderNullAssigned)
-		{
-			comboSliderFloat(&demo.comboSliderNullFloat, 1.0f, 1.0f, "%.2f units");
-		}
-		else
-		{
-			comboSliderFloat(nullptr, 1.0f, 1.0f, "%.2f units", "Indeterminate");
-		}
-		widgetPopDisabled();
-		expandableEnd();
-	}
-
-	// ------------------------------------------------------------------
-	// circular Slider
-	// ------------------------------------------------------------------
-	if (expandableBegin("Circular Sliders", &demo.expandCircularSlider))
-	{
-		check("Disable##CircularSlider", &demo.disableCircularSlider);
-		widgetPushDisabled(demo.disableCircularSlider);
-
-		circularSliderFloat("Volume", &demo.circularVal, 0.0f, 1.0f, 0.01f);
-		sameLine();
-		circularSliderFloat("Pan", &demo.circularTwoSide, -1.0f, 1.0f, 0.01f, true);
-		sameLine();
-		circularSliderFloat("Speed", &demo.circularVal2, 0.0f, 100.0f, 1.0f);
-
-		space();
-		circularSliderFloat("Test", &demo.circularVal3, 0.0f, 100.0f, 1.0f, false, 10.0f, CircularSliderFlags::ShowValueInCenter);
-		widgetPopDisabled();
-		expandableEnd();
-	}
-
-	// ------------------------------------------------------------------
-	// progress
-	// ------------------------------------------------------------------
-	if (expandableBegin("Progress Bars", &demo.expandProgress))
-	{
-		check("Disable##Progress", &demo.disableProgress);
-		widgetPushDisabled(demo.disableProgress);
-
-		label("Basic progress (65%):");
-		progress(demo.progressValue);
-
-		space();
-		label("With text overlay:");
-		progress(demo.progressValue, 0.0f, true);
-
-		space();
-		label("With real values:");
-		progress(demo.progressValueReal, 1000, true, true);
-
-		space();
-		label("Indeterminate:");
-		progress(-1.0f);
-
-		space();
-		label("Indeterminate (with text):");
-		progress(-1.0f, 0.0f, true, false, "Loading, please wait...");
-
-		widgetPopDisabled();
-		expandableEnd();
-	}
-
-	// ------------------------------------------------------------------
 	// check
 	// ------------------------------------------------------------------
 	if (expandableBegin("Checkboxes", &demo.expandCheck))
@@ -1154,425 +947,21 @@ void showDemo()
 	}
 
 	// ------------------------------------------------------------------
-	// radio
+	// circular Slider
 	// ------------------------------------------------------------------
-	if (expandableBegin("Radio Buttons", &demo.expandRadio))
+	if (expandableBegin("Circular Sliders", &demo.expandCircularSlider))
 	{
-		check("Disable##Radio", &demo.disableRadio);
-		widgetPushDisabled(demo.disableRadio);
+		check("Disable##CircularSlider", &demo.disableCircularSlider);
+		widgetPushDisabled(demo.disableCircularSlider);
 
-		radio("Choice 1", &demo.radioVal, 0);
-		radio("Choice 2", &demo.radioVal, 1);
-		radio("Choice 3", &demo.radioVal, 2);
-
-		char buf[64];
-		snprintf(buf, sizeof(buf), "Selected: %d", demo.radioVal);
-		label(buf);
-		widgetPopDisabled();
-		expandableEnd();
-	}
-
-	// ------------------------------------------------------------------
-	// label
-	// ------------------------------------------------------------------
-	if (expandableBegin("Labels", &demo.expandLabel))
-	{
-		check("Disable##Label", &demo.disableLabel);
-		widgetPushDisabled(demo.disableLabel);
-
-		label("Left aligned (default)");
-		label("Center aligned", HAlignType::Center);
-		label("Right aligned", HAlignType::Right);
-
-		space();
-		label("Custom color labels:");
-		labelCustomColor("Red left", Color::red);
-		labelCustomColor("Green center", Color::green, HAlignType::Center);
-		labelCustomColor("Blue right", Color::blue, HAlignType::Right);
-		labelCustomColor("Orange left (multiline)", Color::orange);
-		labelCustomColorMultiline("This is a cyan multiline label with custom color that wraps across lines.", Color::cyan, HAlignType::Left);
-
-		space();
-		label("Custom font + color labels:");
-		HFont titleFont = themeFontGet("title");
-		HFont headingFont = themeFontGet("heading");
-		HFont italicFont = themeFontGet("normal-italic");
-
-		labelCustomFont("Title Font Label", titleFont);
-		labelCustomFont("Heading Font Label", headingFont);
-		labelCustom("Title + magenta center", titleFont, Color::magenta, HAlignType::Center);
-		labelCustom("Heading + yellow right", headingFont, Color::yellow, HAlignType::Right);
-		labelCustom("Italic + sky left", italicFont, Color::sky);
-		labelCustomMultiline("Italic + green multiline wrapping text with custom font and color.", italicFont, Color::green, HAlignType::Center);
-
-		space();
-		label("Italic label:");
-		labelCustomFont("This label uses italic font", italicFont);
-		widgetPopDisabled();
-		expandableEnd();
-	}
-
-	// ------------------------------------------------------------------
-	// expandable (nested)
-	// ------------------------------------------------------------------
-	if (expandableBegin("Expandable (nested)", &demo.expandExpandable))
-	{
-		check("Disable##Expandable", &demo.disableExpandable);
-		widgetPushDisabled(demo.disableExpandable);
-
-		label("Expandables can be nested:");
-
-		if (expandableBegin("Nested A"))
-		{
-			label("Content of Nested A");
-			expandableEnd();
-		}
-
-		if (expandableBegin("Nested B"))
-		{
-			label("Content of Nested B");
-
-			if (expandableBegin("Nested C (inside B)"))
-			{
-				label("Deep nested content");
-				expandableEnd();
-			}
-			expandableEnd();
-		}
-		widgetPopDisabled();
-		expandableEnd();
-	}
-
-	// ------------------------------------------------------------------
-	// tree Nodes (new demo section)
-	// ------------------------------------------------------------------
-	if (expandableBegin("Tree Nodes", &demo.expandTreeNodes))
-	{
-		check("Disable##TreeNodes", &demo.disableTreeNodes);
-		widgetPushDisabled(demo.disableTreeNodes);
-
-		label("Controlled tree (passes booleans to preserve expansion state):");
-
-		// root node with controlled expansion
-		if (treeNodeBegin("Root", &demo.treeRootExpanded))
-		{
-			// folder A
-			if (treeNodeBegin("Folder A", &demo.treeFolderAExpanded))
-			{
-				selectable("File A1");
-				selectable("File A2");
-				treeNodeEnd();
-			}
-
-			// folder B
-			if (treeNodeBegin("Folder B", &demo.treeFolderBExpanded))
-			{
-				selectable("File B1");
-				treeNodeEnd();
-			}
-
-			// a plain item at root level
-			selectable("README.md");
-
-			treeNodeEnd(); // close Root
-		}
-
-		space();
-
-		label("Anonymous nodes (internal expansion state):");
-
-		// use internal expansion state by passing nullptr for expansion var
-		if (treeNodeBegin("Library"))
-		{
-			if (treeNodeBegin("src"))
-			{
-				selectable("main.cpp");
-				selectable("util.cpp");
-				treeNodeEnd();
-			}
-
-			if (treeNodeBegin("include"))
-			{
-				selectable("lib.h");
-				treeNodeEnd();
-			}
-
-			treeNodeEnd();
-		}
-
-		// tree nodes with single-click toggle on the label
-		label("ToggleOnSelect flag (single-click label toggles):");
-		if (treeNodeBegin("Quick Access", nullptr, SelectableFlags::Normal, TreeNodeFlags::ToggleOnSelect))
-		{
-			if (treeNodeBegin("Documents", nullptr, SelectableFlags::Normal, TreeNodeFlags::ToggleOnSelect))
-			{
-				HImage icon = themeGetImage(themeGet(), "__WHITEIMAGE__");
-				if (icon)
-				{
-					WidgetElementInfo btnBody;
-					themeGetWidgetElementInfo(WidgetElementId::ButtonBody, WidgetStateType::Normal, btnBody);
-					image(icon, btnBody.height, HAlignType::Left);
-					sameLine();
-				}
-				if (button("Open##report"))
-				{
-				}
-				sameLine();
-				selectable("report.pdf");
-				selectable("notes.txt");
-				treeNodeEnd();
-			}
-
-			if (treeNodeBegin("Pictures", nullptr, SelectableFlags::Normal, TreeNodeFlags::ToggleOnSelect))
-			{
-				HImage icon = themeGetImage(themeGet(), "__WHITEIMAGE__");
-				if (icon)
-				{
-					WidgetElementInfo btnBody;
-					themeGetWidgetElementInfo(WidgetElementId::ButtonBody, WidgetStateType::Normal, btnBody);
-					image(icon, btnBody.height, HAlignType::Left);
-					sameLine();
-				}
-				if (button("View##photo"))
-				{
-				}
-				sameLine();
-				selectable("photo.jpg");
-				treeNodeEnd();
-			}
-
-			treeNodeEnd();
-		}
-
-		widgetPopDisabled();
-		expandableEnd();
-	}
-
-	// ------------------------------------------------------------------
-	// dropdown
-	// ------------------------------------------------------------------
-	if (expandableBegin("Dropdown", &demo.expandDropdown))
-	{
-		check("Disable##Dropdown", &demo.disableDropdown);
-		widgetPushDisabled(demo.disableDropdown);
-
-		static const char* items[] = { "Apple", "Banana", "Cherry", "Date", "Elderberry" };
-
-		label("Basic dropdown:");
-		dropdown("##ddBasic", demo.dropdownSel, items, 5);
-
-		space();
-		label("With max visible items = 3:");
-		dropdown("##ddMax3", demo.dropdownSel, items, 5, 3);
-
-		space();
-		label("No selection at start, with indeterminate text:");
-		dropdown("##ddNoSel", demo.dropdownNoSel, items, 5, ~0, "Indeterminate");
-
-		space();
-		label("Indeterminate with disabled dropdown:");
-		widgetPushDisabled(true);
-		dropdown("##ddNoSelDisabled", demo.dropdownNoSel, items, 5, ~0, "Indeterminate");
-		widgetPopDisabled();
-
-		char buf[64];
-		snprintf(buf, sizeof(buf), "Selected index: %d", demo.dropdownSel);
-		label(buf);
-		widgetPopDisabled();
-		expandableEnd();
-	}
-
-	// ------------------------------------------------------------------
-	// list
-	// ------------------------------------------------------------------
-	if (expandableBegin("List", &demo.expandList))
-	{
-		check("Disable##List", &demo.disableList);
-		widgetPushDisabled(demo.disableList);
-
-		static const char* listItems[] = { "Item A", "Item B", "Item C", "Item D", "Item E" };
-
-		label("Single selection list:");
-		list("##listSingle", demo.listSelected, ListSelectionMode::Single, listItems, 5, 120.0f);
-
-		space();
-		label("Multiple selection list:");
-		static bool multiSel[5] = {};
-		list("##listMulti", multiSel, ListSelectionMode::Multiple, listItems, 5, 120.0f);
-		widgetPopDisabled();
-		expandableEnd();
-	}
-
-	// ------------------------------------------------------------------
-	// selectable
-	// ------------------------------------------------------------------
-	if (expandableBegin("Selectable", &demo.expandSelectable))
-	{
-		check("Disable##Selectable", &demo.disableSelectable);
-		widgetPushDisabled(demo.disableSelectable);
-
-		label("Normal selectable:");
-		selectable("Selectable item 1");
-		selectable("Selectable item 2");
-
-		space();
-		label("Selected state:");
-		selectable("Selected item", SelectableFlags::Selected);
-
-		space();
-		label("Custom font selectables:");
-		HFont headingFont = themeFontGet("heading");
-		selectableCustomFont("Selectable with Heading Font", headingFont);
-		widgetPopDisabled();
-		expandableEnd();
-	}
-
-	// ------------------------------------------------------------------
-	// separators / Spacing
-	// ------------------------------------------------------------------
-	if (expandableBegin("Separators & Spacing", &demo.expandSeparators))
-	{
-		check("Disable##Separators", &demo.disableSeparators);
-		widgetPushDisabled(demo.disableSeparators);
-
-		label("Line separator below:");
-		line();
-		label("Content after line");
-
-		space();
-		label("Default space() above this");
-
-		space(30.0f);
-		label("Custom space(30) above this");
-
-		space();
-		label("sameLine demo:");
-		button("A");
+		circularSliderFloat("Volume", &demo.circularVal, 0.0f, 1.0f, 0.01f);
 		sameLine();
-		button("B");
+		circularSliderFloat("Pan", &demo.circularTwoSide, -1.0f, 1.0f, 0.01f, true);
 		sameLine();
-		button("C");
-		widgetPopDisabled();
-		expandableEnd();
-	}
-
-	// ------------------------------------------------------------------
-	// link
-	// ------------------------------------------------------------------
-	if (expandableBegin("Links", &demo.expandLink))
-	{
-		check("Disable##Link", &demo.disableLink);
-		widgetPushDisabled(demo.disableLink);
-
-		label("Basic links:");
-		if (link("Click me - Open URL"))
-		{
-			demo.linkClickCount++;
-		}
+		circularSliderFloat("Speed", &demo.circularVal2, 0.0f, 100.0f, 1.0f);
 
 		space();
-		if (link("Another link"))
-		{
-			demo.linkClickCount++;
-		}
-
-		space();
-		char countBuf[64];
-		snprintf(countBuf, sizeof(countBuf), "Link clicked %d time(s)", demo.linkClickCount);
-		label(countBuf);
-
-		space();
-		label("Disabled link:");
-		widgetSetNextDisabled();
-		link("Cannot click this");
-		widgetPopDisabled();
-
-		space();
-		label("Paragraph (rich text help style):");
-
-		WidgetElementInfo labelBody;
-		themeGetWidgetElementInfo(WidgetElementId::LabelBody, WidgetStateType::Normal, labelBody);
-		// fontGetMetrics().height is already scaled with the theme, so normalize it here
-		f32 imageHeight = labelBody.height > fontGetMetrics(labelBody.font).height / scaleGet()
-			? labelBody.height
-			: fontGetMetrics(labelBody.font).height / scaleGet();
-
-		WidgetElementInfo msgBoxImg;
-		themeGetWidgetElementInfo(WidgetElementId::MessageBoxImageInfo, WidgetStateType::Normal, msgBoxImg);
-		ParagraphItem helpParagraph[] = {
-			{ ParagraphItemType::Text, "Welcome to the Horus UI demo. " },
-			{ ParagraphItemType::Link, "Visit the homepage" },
-			{ ParagraphItemType::Text, " for more info or " },
-			{ ParagraphItemType::Link, "read the documentation" },
-			{ ParagraphItemType::Text, " to learn about every widget. You can " },
-			{ ParagraphItemType::Button, "Apply" },
-			{ ParagraphItemType::Text, " or " },
-			{ ParagraphItemType::Button, "Reset" },
-			{ ParagraphItemType::Text, " the settings at any time. " },
-			{ ParagraphItemType::Image, "", msgBoxImg.image },
-			{ ParagraphItemType::Text, " This icon highlights the helpful tips in this guide." },
-		};
-
-		paragraphDraw(helpParagraph, (u32)(sizeof(helpParagraph) / sizeof(helpParagraph[0])), imageHeight, demo.paragraphLinkClicks, demo.paragraphButtonClicks);
-
-		char paraCountBuf[128];
-		snprintf(paraCountBuf, sizeof(paraCountBuf), "Paragraph links clicked: %d, buttons clicked: %d", demo.paragraphLinkClicks, demo.paragraphButtonClicks);
-		label(paraCountBuf);
-		expandableEnd();
-	}
-
-	// ------------------------------------------------------------------
-	// tabs
-	// ------------------------------------------------------------------
-	if (expandableBegin("Tabs", &demo.expandTabs))
-	{
-		check("Disable##Tabs", &demo.disableTabs);
-		widgetPushDisabled(demo.disableTabs);
-
-		tabGroupBegin(demo.selectedTab);
-		tab("Tab 1", 0);
-		tab("Tab 2", 0);
-		tab("Tab 3", 0);
-		demo.selectedTab = tabGroupEnd();
-
-		switch (demo.selectedTab)
-		{
-		case 0:
-			label("Content of Tab 1");
-			button("Tab 1 Button");
-			break;
-		case 1:
-			label("Content of Tab 2");
-			check("Tab 2 Check", &demo.checkA);
-			break;
-		case 2:
-			label("Content of Tab 3");
-			label("Just some text in tab 3");
-			break;
-		}
-		widgetPopDisabled();
-		expandableEnd();
-	}
-
-	// ------------------------------------------------------------------
-	// box
-	// ------------------------------------------------------------------
-	if (expandableBegin("Box", &demo.expandBox))
-	{
-		check("Disable##Box", &demo.disableBox);
-		widgetPushDisabled(demo.disableBox);
-
-		label("Box with default element:");
-		boxBegin("##boxDefault", Color::white);
-		label("Content inside the box");
-		button("Box Button");
-		boxEnd();
-
-		space();
-		label("Tinted box:");
-		boxBegin("##boxTinted", Color(0.3f, 0.8f, 0.5f, 1.0f));
-		label("Green tinted box content");
-		boxEnd();
+		circularSliderFloat("Test", &demo.circularVal3, 0.0f, 100.0f, 1.0f, false, 10.0f, CircularSliderFlags::ShowValueInCenter);
 		widgetPopDisabled();
 		expandableEnd();
 	}
@@ -1617,198 +1006,75 @@ void showDemo()
 	}
 
 	// ------------------------------------------------------------------
-	// vec Editors
+	// comboSlider
 	// ------------------------------------------------------------------
-	if (expandableBegin("Vector Editors", &demo.expandVecEditors))
+	if (expandableBegin("Combo Sliders", &demo.expandComboSlider))
 	{
-		check("Disable##VecEditors", &demo.disableVecEditors);
-		widgetPushDisabled(demo.disableVecEditors);
+		check("Disable##ComboSlider", &demo.disableComboSlider);
+		widgetPushDisabled(demo.disableComboSlider);
 
-		label("vec2 (float, auto select all):");
-		vec2Editor("##v2f", demo.vec2x, demo.vec2y, 0.03f, VectorEditorFlags::AutoSelectAll);
-
-		space();
-		label("vec3 (float):");
-		vec3Editor("##v3f", demo.vec3x, demo.vec3y, demo.vec3z);
+		label("Integer combo slider (unbounded):");
+		comboSliderInt(&demo.comboSliderInt);
 
 		space();
-		label("vec2 (double):");
-		vec2Editor("##v2d", demo.dvec2x, demo.dvec2y);
+		label("Integer combo slider ranged (0..100):");
+		comboSliderIntRanged(&demo.comboSliderIntRanged, 0, 100);
 
 		space();
-		label("vec3 after a label (fits the space left on the line):");
-		sameLine();
-		vec3Editor("##v3sameLine", demo.vec3x, demo.vec3y, demo.vec3z);
+		label("Float combo slider (unbounded):");
+		comboSliderFloat(&demo.comboSliderFloat);
 
 		space();
-		label("vec3 (double):");
-		vec3Editor("##v3d", demo.dvec3x, demo.dvec3y, demo.dvec3z);
+		label("Float combo slider ranged (0..1):");
+		comboSliderFloatRanged(&demo.comboSliderFloatRanged, 0.0f, 1.0f, 0.01f, 0.05f);
 
 		space();
-		label("vec3 multiple selection (indeterminate components show 'Indeterminate' as input hint, drag is disabled, empty edit returns FLT_MAX):");
+		label("With custom format string:");
+		comboSliderFloat(&demo.comboSliderFloatCustomString, 1.0f, 1.0f, "%.2f units");
 
-		// simulate two selected objects: a component that differs between them
-		// is flagged indeterminate and shows the indeterminate text
-		check("X differs", &demo.multiDiffX);
-		sameLine();
-		check("Y differs", &demo.multiDiffY);
-		sameLine();
-		check("Z differs", &demo.multiDiffZ);
-
-		VectorEditorFlags multiFlags = VectorEditorFlags::None;
-
-		if (demo.multiDiffX)
-			multiFlags |= VectorEditorFlags::IndeterminateX;
-		if (demo.multiDiffY)
-			multiFlags |= VectorEditorFlags::IndeterminateY;
-		if (demo.multiDiffZ)
-			multiFlags |= VectorEditorFlags::IndeterminateZ;
-
-		f32 multiX = demo.multiDiffX ? FLT_MAX : demo.multiBaseX;
-		f32 multiY = demo.multiDiffY ? FLT_MAX : demo.multiBaseY;
-		f32 multiZ = demo.multiDiffZ ? FLT_MAX : demo.multiBaseZ;
-
-		if (vec3Editor("##multiPos", multiX, multiY, multiZ, 0.03f, multiFlags, 6, "Indeterminate"))
+		space();
+		label("No value assigned (indeterminate, editable, starts at 0):");
+		check("Assign value##ComboSliderNull", &demo.comboSliderNullAssigned);
+		if (demo.comboSliderNullAssigned)
 		{
-			// a committed edit applies to all selected objects and clears the
-			// indeterminate state for that component
-			if (multiX != FLT_MAX)
-			{
-				demo.multiBaseX = multiX;
-				demo.multiDiffX = false;
-			}
-			if (multiY != FLT_MAX)
-			{
-				demo.multiBaseY = multiY;
-				demo.multiDiffY = false;
-			}
-			if (multiZ != FLT_MAX)
-			{
-				demo.multiBaseZ = multiZ;
-				demo.multiDiffZ = false;
-			}
+			comboSliderFloat(&demo.comboSliderNullFloat, 1.0f, 1.0f, "%.2f units");
 		}
-
-		char multiResult[96];
-		snprintf(multiResult, sizeof(multiResult), "Shared value: (%.2f, %.2f, %.2f)", demo.multiBaseX, demo.multiBaseY, demo.multiBaseZ);
-		label(multiResult);
-		widgetPopDisabled();
-		expandableEnd();
-	}
-	// ------------------------------------------------------------------
-	// images & Textures
-	// ------------------------------------------------------------------
-	if (expandableBegin("Images & Textures", &demo.expandImages))
-	{
-		check("Disable##Images", &demo.disableImages);
-		widgetPushDisabled(demo.disableImages);
-
-		if (!demo.demoImage)
+		else
 		{
-			demo.demoImage = themeGetImage(themeGet(), "__WHITEIMAGE__");
-		}
-
-		label("Basic image (KeepAspect):");
-		image(demo.demoImage, 64);
-
-		space();
-		label("Image Stretch:");
-		image(demo.demoImage, 64, HAlignType::Center, VAlignType::Center, ImageFitType::Stretch);
-
-		space();
-		label("Image Center alignment:");
-		image(demo.demoImage, 64, HAlignType::Center);
-
-		space();
-		label("Image Left alignment:");
-		image(demo.demoImage, 64, HAlignType::Left);
-
-		space();
-		label("Image Right alignment:");
-		image(demo.demoImage, 64, HAlignType::Right);
-
-		space();
-		label("Images on the same line:");
-		image(demo.demoImage, 32, HAlignType::Left);
-		sameLine();
-		image(demo.demoImage, 32);
-		sameLine();
-		image(demo.demoImage, 32);
-
-		space();
-		label("Texture widget (using color check checkers image as texture):");
-		// just using an image as a texture for demo purposes if no real texture available
-		
-		texture(themeGetAtlasTexture(), 64, 64, 64);
-		widgetPopDisabled();
-		expandableEnd();
-	}
-
-	// ------------------------------------------------------------------
-	// menus
-	// ------------------------------------------------------------------
-	if (expandableBegin("Menus", &demo.expandMenus))
-	{
-		check("Disable##Menus", &demo.disableMenus);
-		widgetPushDisabled(demo.disableMenus);
-
-		label("Menu Bar (Nested below):");
-		if (menuBarBegin())
-		{
-			if (menuBegin("File"))
-			{
-				if (menuItem("New", "Ctrl+N")) {}
-				if (menuItem("Open", "Ctrl+O")) {}
-				widgetPushDisabled(true);
-				if (menuItem("Save", "Ctrl+S")) {}
-				widgetPopDisabled();
-				menuSeparator();
-				if (menuItem("Exit", "Alt+F4")) {}
-				menuEnd();
-			}
-			if (menuBegin("Edit"))
-			{
-				if (menuItem("Cut", "Ctrl+X")) {}
-				if (menuItem("Copy", "Ctrl+C")) {}
-				if (menuItem("Paste", "Ctrl+V")) {}
-				menuEnd();
-			}
-			menuBarEnd();
-		}
-
-		space();
-		label("Context Menu (Right click the label below):");
-		label("Right click me!");
-		if (contextMenuBegin())
-		{
-			if (menuItem("Action 1")) {}
-			if (menuItem("Action 2")) {}
-			menuSeparator();
-			if (menuBegin("Sub Menu"))
-			{
-				if (menuItem("Sub Action 1")) {}
-				menuEnd();
-			}
-			contextMenuEnd();
+			comboSliderFloat(nullptr, 1.0f, 1.0f, "%.2f units", "Indeterminate");
 		}
 		widgetPopDisabled();
 		expandableEnd();
 	}
 
 	// ------------------------------------------------------------------
-	// viewport
+	// custom file dialog
 	// ------------------------------------------------------------------
-	if (expandableBegin("Viewport", &demo.expandViewport))
+	if (expandableBegin("Custom File Dialog", &demo.expandCustomFileDialog))
 	{
-		check("Disable##Viewport", &demo.disableViewport);
-		widgetPushDisabled(demo.disableViewport);
+		check("Disable##CustomFileDialog", &demo.disableCustomFileDialog);
+		widgetPushDisabled(demo.disableCustomFileDialog);
 
-		label("A custom viewport area (100px height):");
-		Rect vprect = viewportBegin("##demoViewport", 100);
-		// in a real app, you'd use vprect to draw your 3D scene/etc. (window coordinates)
-		renderDrawSolidRectangle(vprect);
-		renderDrawTextInBox("Custom Viewport Content", vprect, HAlignType::Center, VAlignType::Center);
-		viewportEnd();
+		label("A popup that browses a virtual file system:");
+		static const char* cfdModeLabels[3] = { "Open File", "Save File", "Pick Folder" };
+		buttonGroup("##cfdMode", cfdModeLabels, 3, &demo.customFileDialogMode);
+
+		CustomFileDialogFlags cfdFlags = CustomFileDialogFlags::None;
+
+		if (demo.customFileDialogMode == 1)
+			cfdFlags = CustomFileDialogFlags::SaveFile;
+		else if (demo.customFileDialogMode == 2)
+			cfdFlags = CustomFileDialogFlags::PickFolder;
+
+		static bool usePreview = true;
+		check("Show Preview Panel", &usePreview);
+
+		space();
+
+		customFileDialog("##demoCustomFileDialog", demoCustomFileDialogList, nullptr, demo.customFileDialogResult, sizeof demo.customFileDialogResult, cfdFlags, usePreview ? demoCustomFileDialogPreview : nullptr, nullptr, demoCustomFileDialogCreateFolder, nullptr);
+
+		std::string cfdResultLabel = "Chosen path: " + std::string(demo.customFileDialogResult);
+		label(cfdResultLabel.c_str());
 		widgetPopDisabled();
 		expandableEnd();
 	}
@@ -1831,335 +1097,6 @@ void showDemo()
 		expandableEnd();
 	}
 
-	// ------------------------------------------------------------------
-	// Lines & Primitives
-	// ------------------------------------------------------------------
-	{
-		static bool expandLinesPrims = true;
-		if (expandableBegin("Lines & Primitives", &expandLinesPrims))
-		{
-			// enable AA for demo
-			contextGetSettings().lineAntiAliasing = true;
-			contextGetSettings().lineAntiAliasingSkirtWidthPixels = 1.0f;
-
-			// animate the second 1px line: hold it horizontal, then sweep to oblique and back
-			demo.lineTiltAnim += dt * 0.5f;
-			if (demo.lineTiltAnim >= 1.0f) demo.lineTiltAnim -= 1.0f;
-			forceRepaint();
-
-			label("Primitives in viewport:");
-			Rect lpViewport = viewportBegin("##linesPrimsViewport", 650);
-			Point vo = lpViewport.topLeft();
-
-			// 1px lines
-			renderSetLineStyle(LineStyle(Color::white, 1.0f));
-			renderDrawLine(vo + Point{ 10, 20 }, vo + Point{ 150, 20 });
-			// phase < 0.6 stays exactly horizontal, the rest sweeps 0 -> oblique -> 0
-			f32 lineEndY = 30.0f;
-
-			if (demo.lineTiltAnim > 0.6f)
-			{
-				lineEndY += 25.0f * sinf(M_PI * (demo.lineTiltAnim - 0.6f) / 0.4f);
-			}
-
-			renderDrawLine(vo + Point{ 10, 30 }, vo + Point{ 150, lineEndY });
-			renderDrawLine(vo + Point{ 170, 20 }, vo + Point{ 170, 140 });
-
-			// 5px lines
-			renderSetLineStyle(LineStyle(Color::white, 5.0f));
-			renderDrawLine(vo + Point{ 10, 60 }, vo + Point{ 150, 60 });
-			renderDrawLine(vo + Point{ 10, 80 }, vo + Point{ 150, 70 });
-			renderDrawLine(vo + Point{ 200, 20 }, vo + Point{ 200, 140 });
-
-			// 10px lines again
-			renderSetLineStyle(LineStyle(Color::white, 10.0f));
-			renderDrawLine(vo + Point{ 10, 110 }, vo + Point{ 150, 110 });
-			renderDrawLine(vo + Point{ 10, 120 }, vo + Point{ 150, 130 });
-			renderDrawLine(vo + Point{ 230, 20 }, vo + Point{ 230, 140 });
-
-			space();
-
-			// Primitives with widths 1, 5, 10
-			renderSetLineStyle(LineStyle(Color::cyan, 1.0f));
-			renderDrawRectangle({ vo.x + 10, vo.y + 150, 60, 40 });
-			renderSetLineStyle(LineStyle(Color::cyan, 5.0f));
-			renderDrawRectangle({ vo.x + 80, vo.y + 150, 60, 40 });
-			renderSetLineStyle(LineStyle(Color::cyan, 10.0f));
-			renderDrawRectangle({ vo.x + 150, vo.y + 150, 60, 40 });
-
-			renderSetLineStyle(LineStyle(Color::yellow, 1.0f));
-			renderDrawCircle(vo + Point{ 40, 230 }, 20, 32);
-			renderSetLineStyle(LineStyle(Color::yellow, 5.0f));
-			renderDrawCircle(vo + Point{ 110, 230 }, 20, 32);
-			renderSetLineStyle(LineStyle(Color::yellow, 10.0f));
-			renderDrawCircle(vo + Point{ 180, 230 }, 20, 32);
-
-			{
-				Point pts[] = { vo + Point{10,280}, vo + Point{40,260}, vo + Point{70,290}, vo + Point{100,250} };
-				renderSetLineStyle(LineStyle(Color::green, 1.0f));
-				renderDrawPolyLine(pts, 4, false);
-				Point pts2[] = { vo + Point{120,280}, vo + Point{150,260}, vo + Point{180,290}, vo + Point{210,250} };
-				renderSetLineStyle(LineStyle(Color::green, 5.0f));
-				renderDrawPolyLine(pts2, 4, false);
-				Point pts3[] = { vo + Point{230,280}, vo + Point{260,260}, vo + Point{290,290}, vo + Point{320,250} };
-				renderSetLineStyle(LineStyle(Color::green, 10.0f));
-				renderDrawPolyLine(pts3, 4, false);
-			}
-
-			{
-				Point pts[] = { vo + Point{10,320}, vo + Point{40,300}, vo + Point{70,340} };
-				renderSetLineStyle(LineStyle(Color::orange, 1.0f));
-				renderDrawPolyLine(pts, 3, true);
-				Point pts2[] = { vo + Point{90,320}, vo + Point{120,300}, vo + Point{150,340} };
-				renderSetLineStyle(LineStyle(Color::orange, 5.0f));
-				renderDrawPolyLine(pts2, 3, true);
-				Point pts3[] = { vo + Point{170,320}, vo + Point{200,300}, vo + Point{230,340} };
-				renderSetLineStyle(LineStyle(Color::orange, 10.0f));
-				renderDrawPolyLine(pts3, 3, true);
-			}
-
-			space();
-			label("Stippled lines (dashed, dotted, dash-dot, dash-dot-dot):");
-
-			f32 stippleX = 360.0f;
-
-			// Dashed lines (right column)
-			renderSetLineStyle(LineStyle::dashed(Color::white, 1.0f, 10.0f, 5.0f));
-			renderDrawLine(vo + Point{ stippleX, 20 }, vo + Point{ stippleX + 140, 20 });
-			renderSetLineStyle(LineStyle::dashed(Color::white, 2.0f, 12.0f, 6.0f));
-			renderDrawLine(vo + Point{ stippleX, 40 }, vo + Point{ stippleX + 140, 40 });
-			renderSetLineStyle(LineStyle::dashed(Color::white, 3.0f, 15.0f, 7.0f));
-			renderDrawLine(vo + Point{ stippleX, 60 }, vo + Point{ stippleX + 140, 60 });
-
-			// Dotted lines
-			renderSetLineStyle(LineStyle::dotted(Color::cyan, 1.0f, 3.0f, 3.0f));
-			renderDrawLine(vo + Point{ stippleX, 90 }, vo + Point{ stippleX + 140, 90 });
-			renderSetLineStyle(LineStyle::dotted(Color::cyan, 2.0f, 4.0f, 4.0f));
-			renderDrawLine(vo + Point{ stippleX, 110 }, vo + Point{ stippleX + 140, 110 });
-			renderSetLineStyle(LineStyle::dotted(Color::cyan, 3.0f, 5.0f, 5.0f));
-			renderDrawLine(vo + Point{ stippleX, 130 }, vo + Point{ stippleX + 140, 130 });
-
-			// Dash-dot lines
-			renderSetLineStyle(LineStyle::dashDot(Color::yellow, 1.0f, 10.0f, 5.0f, 3.0f));
-			renderDrawLine(vo + Point{ stippleX, 160 }, vo + Point{ stippleX + 140, 160 });
-			renderSetLineStyle(LineStyle::dashDot(Color::yellow, 2.0f, 12.0f, 6.0f, 4.0f));
-			renderDrawLine(vo + Point{ stippleX, 180 }, vo + Point{ stippleX + 140, 180 });
-			renderSetLineStyle(LineStyle::dashDot(Color::yellow, 3.0f, 15.0f, 7.0f, 5.0f));
-			renderDrawLine(vo + Point{ stippleX, 200 }, vo + Point{ stippleX + 140, 200 });
-
-			// Dash-dot-dot lines
-			renderSetLineStyle(LineStyle::dashDotDot(Color::orange, 1.0f, 10.0f, 5.0f, 3.0f));
-			renderDrawLine(vo + Point{ stippleX, 230 }, vo + Point{ stippleX + 140, 230 });
-			renderSetLineStyle(LineStyle::dashDotDot(Color::orange, 2.0f, 12.0f, 6.0f, 4.0f));
-			renderDrawLine(vo + Point{ stippleX, 250 }, vo + Point{ stippleX + 140, 250 });
-			renderSetLineStyle(LineStyle::dashDotDot(Color::orange, 3.0f, 15.0f, 7.0f, 5.0f));
-			renderDrawLine(vo + Point{ stippleX, 270 }, vo + Point{ stippleX + 140, 270 });
-
-			// Stippled rectangle and circle
-			renderSetLineStyle(LineStyle::dashed(Color::green, 2.0f, 10.0f, 5.0f));
-			renderDrawRectangle({ vo.x + stippleX, vo.y + 300, 120, 50 });
-			renderSetLineStyle(LineStyle::dotted(Color::green, 2.0f, 4.0f, 4.0f));
-			renderDrawRectangle({ vo.x + stippleX + 140, vo.y + 300, 120, 50 });
-			renderSetLineStyle(LineStyle::dashDot(Color::green, 2.0f, 10.0f, 5.0f, 3.0f));
-			renderDrawCircle(vo + Point{ stippleX + 60, 380 }, 30, 32);
-			renderSetLineStyle(LineStyle::dashDotDot(Color::green, 2.0f, 10.0f, 5.0f, 3.0f));
-			renderDrawCircle(vo + Point{ stippleX + 200, 380 }, 30, 32);
-
-			{
-				// 1px arrow: line shaft + solid head, used to show the spline tangents
-				auto drawArrow = [&](const Point& from, const Point& to, const Color& color)
-				{
-					const f32 headLength = 6.0f;
-					const f32 headWidth = 3.0f;
-					Point dir = (to - from).getNormalized();
-					Point perp = { -dir.y, dir.x };
-					Point base = to - dir * headLength;
-
-					renderSetLineStyle(LineStyle(color, 1.0f));
-					renderDrawLine(from, to);
-
-					renderSetColor(color);
-					renderDrawSolidTriangle(to, base + perp * headWidth, base - perp * headWidth);
-				};
-
-				// wavy spline: control points alternate up/down, tangents lean outward so the humps bulge
-				auto drawWaveSpline = [&](f32 startX, f32 lineWidth)
-				{
-					const int pointCount = 5;
-					const f32 spacing = 25.0f;
-					const f32 tangent = spacing * 2.5f;
-					const f32 tangentY = spacing;
-					SplineControlPoint wave[pointCount];
-
-					for (int i = 0; i < pointCount; i++)
-					{
-						bool isTop = (i % 2) != 0;
-						f32 vSign = isTop ? -1.0f : 1.0f;
-						wave[i].center = vo + Point{ startX + i * spacing, isTop ? 385.0f : 420.0f };
-
-						if (i > 0) wave[i].leftTangent = { -tangent, -vSign * tangentY };
-						if (i < pointCount - 1) wave[i].rightTangent = { tangent, vSign * tangentY };
-					}
-
-					renderSetLineStyle(LineStyle(Color::magenta, lineWidth));
-					renderDrawSpline(wave, pointCount, SplineType::Hermite, 5.0f);
-
-					// show the tangents as arrows (left/right in different colors)
-					for (int i = 0; i < pointCount; i++)
-					{
-						if (i > 0) drawArrow(wave[i].center, wave[i].center + wave[i].leftTangent, Color::cyan);
-						if (i < pointCount - 1) drawArrow(wave[i].center, wave[i].center + wave[i].rightTangent, Color::yellow);
-					}
-
-					// mark the control points
-					renderSetColor(Color::white);
-
-					for (int i = 0; i < pointCount; i++)
-					{
-						const f32 pointRadius = 2.0f;
-						renderDrawSolidRectangle(Rect{ wave[i].center.x - pointRadius, wave[i].center.y - pointRadius, pointRadius * 2.0f, pointRadius * 2.0f });
-					}
-				};
-
-				drawWaveSpline(10.0f, 1.0f);
-				drawWaveSpline(130.0f, 5.0f);
-				drawWaveSpline(250.0f, 10.0f);
-			}
-
-			// solid circle and solid pies (sweep the angles over time)
-			{
-				demo.pieSweepAnim += dt * 1.5f;
-				if (demo.pieSweepAnim > 2.0f * M_PI) demo.pieSweepAnim -= 2.0f * M_PI;
-				forceRepaint();
-
-				renderSetColor(Color::white);
-				renderDrawSolidCircle(vo + Point{ 40, 490 }, 22.0f, 32);
-
-				renderSetColor(Color::orange);
-				renderDrawSolidPie(vo + Point{ 120, 490 }, 22.0f, 0.0f, 3.0f * M_PI / 4.0f, 32);
-
-				renderSetColor(Color::cyan);
-				renderDrawSolidPie(vo + Point{ 200, 490 }, 22.0f, -M_PI / 4.0f, demo.pieSweepAnim, 32);
-			}
-
-			// wire pies with widths 1, 5, 10
-			renderSetLineStyle(LineStyle(Color::yellow, 1.0f));
-			renderDrawPie(vo + Point{ 40, 560 }, 22.0f, 0.0f, 3.0f * M_PI / 2.0f, 32);
-			renderSetLineStyle(LineStyle(Color::yellow, 5.0f));
-			renderDrawPie(vo + Point{ 120, 560 }, 22.0f, -M_PI / 4.0f, 3.0f * M_PI / 4.0f, 32);
-			renderSetLineStyle(LineStyle(Color::yellow, 10.0f));
-			renderDrawPie(vo + Point{ 200, 560 }, 22.0f, M_PI / 6.0f, M_PI, 32);
-
-			viewportEnd();
-
-			expandableEnd();
-		}
-	}
-
-	// ------------------------------------------------------------------
-	// object Reference
-	// ------------------------------------------------------------------
-	if (expandableBegin("Object Reference Editor", &demo.expandObjectRef))
-	{
-		enum MyTypeIds
-		{
-			MyTypeId1,
-			MyTypeId2,
-			MyTypeId3
-		};
-
-		check("Disable##ObjectRef", &demo.disableObjectRef);
-		widgetPushDisabled(demo.disableObjectRef);
-
-
-		std::string v1;
-		std::string v2;
-		std::string v3;
-		std::string vEmpty;
-
-		if (demo.objectRefValue1)
-		{
-			v1 = *(std::string*)demo.objectRefValue1;
-		}
-
-		if (demo.objectRefValue2)
-		{
-			v2 = *(std::string*)demo.objectRefValue2;
-		}
-
-		if (demo.objectRefValue3)
-		{
-			v3 = *(std::string*)demo.objectRefValue3;
-		}
-
-		if (demo.objectRefEmpty)
-		{
-			vEmpty = *(std::string*)demo.objectRefEmpty;
-		}
-
-		label("Without custom button images:");
-		{
-			static std::string refVal2a = "Mesh01";
-			static std::string refVal2b = "Mesh02";
-			static std::string refVal2c = "ArchVizModel";
-			const char* refNames2[] = { "Mesh01", "Mesh02", "ArchVizModel" };
-			void* refVals2[] = { &refVal2a, &refVal2b, &refVal2c };
-			objectRefEditor("##demoObjRefNoIcons", 0, 0, 0, "MyObjectType2", v2.c_str(), MyTypeId2, &demo.objectRefValue2, &demo.objectRefModified2, 3, refNames2, refVals2);
-		}
-		space();
-
-		{
-			label("With indeterminate text (no object assigned yet):");
-			static std::string refValP1 = "Mesh01";
-			static std::string refValP2 = "Mesh02";
-			static std::string refValP3 = "ArchVizModel";
-			const char* refNamesP[] = { "Mesh01", "Mesh02", "ArchVizModel" };
-			void* refValsP[] = { &refValP1, &refValP2, &refValP3 };
-			objectRefEditor("##demoObjRefPlaceholder", 0, 0, 0, "MyObjectType2", vEmpty.c_str(), MyTypeId2, &demo.objectRefEmpty, &demo.objectRefEmptyModified, 3, refNamesP, refValsP, 0, "Indeterminate");
-		}
-		space();
-
-		{
-			label("With icon:");
-			HImage icon = themeGetImage(themeGet(), "../themes/default/sign-info.png");
-			objectRefEditor("##demoObjRefWithIcon", 0, 0, icon ? icon : themeGetImage(themeGet(), "flat/target"), "MyObjectType3", v3.c_str(), MyTypeId3, &demo.objectRefValue3, &demo.objectRefModified3);
-		}
-		space();
-
-		{
-			label("With icon (custom size 44):");
-			HImage icon = themeGetImage(themeGet(), "../themes/default/sign-info.png");
-			objectRefEditor("##demoObjRefWithIconSize", 0, 0, icon ? icon : themeGetImage(themeGet(), "flat/target"), "MyObjectType3", v3.c_str(), MyTypeId3, &demo.objectRefValue3, &demo.objectRefModified3, 0, nullptr, nullptr, 44);
-		}
-		space();
-
-		label("Object reference editor (with custom button images):");
-		objectRefEditor("##demoObjRef", themeGetImage(themeGet(), "__WHITEIMAGE__"), themeGetImage(themeGet(), "__WHITEIMAGE__"), 0, "MyObjectType1", v1.c_str(), MyTypeId1, &demo.objectRefValue1, &demo.objectRefModified1);
-
-		label("Drag source (drag button into the proper editor):");
-		{
-			static std::string dragSampleObject1 = "ShinyMetalA";
-			button("MyObjectType1##dragSrc");
-			if (dragDropWantsTo())
-			{
-				dragDropBegin(MyTypeId1, &dragSampleObject1);
-			}
-			static std::string dragSampleObject2 = "Mesh01";
-			button("MyObjectType2##dragSrc");
-			if (dragDropWantsTo())
-			{
-				dragDropBegin(MyTypeId2, &dragSampleObject2);
-			}
-			static std::string dragSampleObject3 = "SkyShader";
-			button("MyObjectType3##dragSrc");
-			if (dragDropWantsTo())
-			{
-				dragDropBegin(MyTypeId3, &dragSampleObject3);
-			}
-		}
-		widgetPopDisabled();
-		expandableEnd();
-	}
 	// ------------------------------------------------------------------
 	// drag & Drop API Demo
 	// ------------------------------------------------------------------
@@ -2489,453 +1426,691 @@ void showDemo()
 
 		expandableEnd();
 	}
+
 	// ------------------------------------------------------------------
-	// virtual List
+	// dropdown
 	// ------------------------------------------------------------------
-	if (expandableBegin("Virtual List (1000 items)", &demo.expandVirtualList))
+	if (expandableBegin("Dropdown", &demo.expandDropdown))
 	{
-		check("Disable##VirtualList", &demo.disableVirtualList);
-		widgetPushDisabled(demo.disableVirtualList);
+		check("Disable##Dropdown", &demo.disableDropdown);
+		widgetPushDisabled(demo.disableDropdown);
 
-		// persistent virtual list state: only provide item count here
-		static hui::VirtualScrollInfo vinfo(1000); 
-		static f32 virtualListScrollPos = 0.0f;
+		static const char* items[] = { "Apple", "Banana", "Cherry", "Date", "Elderberry" };
 
-		scrollViewBegin("##virtualListScroll", 150, virtualListScrollPos);
-
-		virtualListContentBegin(vinfo);
-
-		while (vinfo.nextStep())
-		{
-			for (u32 i = vinfo.startIndex; i <= vinfo.endIndex; ++i)
-			{
-				char buf[64];
-				snprintf(buf, sizeof(buf), "Item %u", i);
-				selectable(buf);
-			}
-		}
-		virtualListContentEnd();
-
-		virtualListScrollPos = scrollViewEnd().y;
-		widgetPopDisabled();
-		expandableEnd();
-	}
-
-	// ------------------------------------------------------------------
-	// scroll View
-	// ------------------------------------------------------------------
-	if (expandableBegin("Scroll View", &demo.expandScrollView))
-	{
-		check("Disable##ScrollView", &demo.disableScrollView);
-		widgetPushDisabled(demo.disableScrollView);
-
-		label("A nested scroll view (150px height):");
-		scrollViewBegin("##nestedSV", 150, demo.scrollPos.y);
-		{
-			for (int i = 0; i < 20; ++i)
-			{
-				char buf[64];
-				snprintf(buf, sizeof(buf), "Inside ScrollView %d", i);
-				button(buf);
-			}
-		}
-		demo.scrollPos = scrollViewEnd();
-		widgetPopDisabled();
-		expandableEnd();
-	}
-
-	// ------------------------------------------------------------------
-	// table
-	// ------------------------------------------------------------------
-	if (expandableBegin("Tables", &demo.expandTable))
-	{
-		check("Disable##Table", &demo.disableTable);
-		widgetPushDisabled(demo.disableTable);
-
-		label("Basic table (3 columns):");
-		if (tableBegin("##demoTable", 3, 200, TableFlags::Borders | TableFlags::Resizable | TableFlags::Reorderable | TableFlags::AltRowBg | TableFlags::FixedSize))
-		{
-			tableColumnSetup(0, 50, TableColumnFlags::FixedResize);
-			tableColumnSetup(1, 150, TableColumnFlags::Stretch);
-			tableColumnSetup(2, 100, TableColumnFlags::Stretch);
-
-			tableStartHeader();
-			label("ID"); tableCellNext(); 
-			label("Name"); tableCellNext(); 
-			label("Status");
-
-			for (int i = 0; i < 10; ++i)
-			{
-				tableRowNext();
-				char idBuf[16], nameBuf[32];
-				snprintf(idBuf, sizeof(idBuf), "%d", i + 1);
-				snprintf(nameBuf, sizeof(nameBuf), "Item %d", i + 1);
-
-				label(idBuf); tableCellNext(); 
-				label(nameBuf); tableCellNext(); 
-				label(i % 2 == 0 ? "Active" : "Inactive");
-			}
-			tableEnd();
-		}
-
-		label("Table with merged (colspan) cells:");
-		if (tableBegin("##mergedTable", 3, 0, TableFlags::Borders | TableFlags::AltRowBg | TableFlags::FixedSize))
-		{
-			tableColumnSetup(0, 100, TableColumnFlags::FixedResize);
-			tableColumnSetup(1, 120, TableColumnFlags::Stretch);
-			tableColumnSetup(2, 120, TableColumnFlags::Stretch);
-
-			tableStartHeader();
-			label("Col A"); tableCellNext(); 
-			label("Col B"); tableCellNext(); 
-			label("Col C");
-
-			tableRowNext();
-			tableCellNext(2);
-			label("Merged row spanning columns A+B", HAlignType::Center);
-
-			tableRowNext();
-			label("A"); tableCellNext();
-			label("B"); tableCellNext();
-			label("C");
-
-			tableRowNext();
-			tableCellNext(3);
-			label("Row spanning all three columns", HAlignType::Center);
-
-			tableEnd();
-		}
-
-		label("Invisible table as 3-column list layout:");
-		if (tableBegin("##invisibleTable", 3, 0, TableFlags::Stretch | TableFlags::Borders))
-		{
-			tableColumnSetup(0, 0, TableColumnFlags::Stretch);
-			tableColumnSetup(1, 0, TableColumnFlags::Stretch);
-			tableColumnSetup(2, 0, TableColumnFlags::Stretch);
-
-			tableRowNext();
-
-			// col A
-			{
-				std::vector<const char*> items;
-				for (auto& s : demo.tableListA) items.push_back(s.c_str());
-				spacingPush(0.0f);
-				for (u32 i = 0; i < (u32)items.size(); i++)
-				{
-					bool sel = i == (u32)demo.tableListIdxA;
-					if (selectable(items[i], sel ? SelectableFlags::Selected : SelectableFlags::Normal))
-						demo.tableListIdxA = i;
-				}
-				spacingPop();
-			}
-
-			tableCellNext();
-
-			// col B
-			{
-				std::vector<const char*> items;
-				for (auto& s : demo.tableListB) items.push_back(s.c_str());
-				spacingPush(0.0f);
-				for (u32 i = 0; i < (u32)items.size(); i++)
-				{
-					bool sel = i == (u32)demo.tableListIdxB;
-					if (selectable(items[i], sel ? SelectableFlags::Selected : SelectableFlags::Normal))
-						demo.tableListIdxB = i;
-				}
-				spacingPop();
-			}
-
-			tableCellNext();
-
-			// col C
-			{
-				std::vector<const char*> items;
-				for (auto& s : demo.tableListC) items.push_back(s.c_str());
-				spacingPush(0.0f);
-				for (u32 i = 0; i < (u32)items.size(); i++)
-				{
-					bool sel = i == (u32)demo.tableListIdxC;
-					if (selectable(items[i], sel ? SelectableFlags::Selected : SelectableFlags::Normal))
-						demo.tableListIdxC = i;
-				}
-				spacingPop();
-			}
-
-			tableEnd();
-		}
+		label("Basic dropdown:");
+		dropdown("##ddBasic", demo.dropdownSel, items, 5);
 
 		space();
-
-		widgetPopDisabled();
-		expandableEnd();
-	}
-
-	// ------------------------------------------------------------------
-	// property grid (mesh inspector)
-	// ------------------------------------------------------------------
-	if (expandableBegin("Property Grid (Mesh Inspector)", &demo.expandPropertyGrid))
-	{
-		check("Disable##PropertyGrid", &demo.disablePropertyGrid);
-		check("Alternate Row Background##PropertyGrid", &demo.pgAltRowBg);
-		widgetPushDisabled(demo.disablePropertyGrid);
-
-		static const char* layers[] = { "Default", "Environment", "Player", "Enemy", "UI" };
-		static const char* lodLevels[] = { "LOD 0", "LOD 1", "LOD 2", "LOD 3" };
-		static const char* shadingModes[] = { "Unlit", "Lambert", "Blinn-Phong", "PBR" };
-		static const char* cullModes[] = { "None", "Back", "Front" };
-
-		label("A two-column property table with expandable groups:");
-		space();
-
-		if (tableBegin("##propGrid", 2, 0, TableFlags::Resizable | TableFlags::FixedSize | (demo.pgAltRowBg ? TableFlags::AltRowBg : TableFlags::None)))
-		{
-			tableColumnSetup(0, 150, TableColumnFlags::FixedResize);
-			tableColumnSetup(1, 0, TableColumnFlags::Stretch);
-			tableCellPaddingPush(10.0f, 6.0f);
-
-			// ---- identity ----
-			tableRowNext();
-			tableCellNext(2);
-			bool identityOpen = expandable("Identity", &demo.pgGroupIdentity);
-
-			if (identityOpen)
-			{
-				propGridRow("Name", [&]() { textInput("##pgName", demo.pgMeshName, sizeof(demo.pgMeshName)); });
-				propGridRow("Tag", [&]() { textInput("##pgTag", demo.pgTag, sizeof(demo.pgTag)); });
-				propGridRow("Layer", [&]() { dropdown("##pgLayer", demo.pgLayer, layers, 5); });
-				propGridRow("Mesh Asset", [&]() { label("assets/models/monkey.obj"); });
-			}
-
-			// ---- geometry ----
-			tableRowNext();
-			tableCellNext(2);
-			bool geometryOpen = expandable("Geometry", &demo.pgGroupGeometry);
-
-			if (geometryOpen)
-			{
-				propGridRow("Vertices", [&]() {
-					char buf[64];
-					snprintf(buf, sizeof(buf), "%d", demo.pgVertexCount);
-					label(buf);
-				});
-				propGridRow("Triangles", [&]() {
-					char buf[64];
-					snprintf(buf, sizeof(buf), "%d", demo.pgTriangleCount);
-					label(buf);
-				});
-				propGridRow("LOD Level", [&]() { dropdown("##pgLod", demo.pgLodLevel, lodLevels, 4); });
-			}
-
-			// ---- transform ----
-			tableRowNext();
-			tableCellNext(2);
-			bool transformOpen = expandable("Transform", &demo.pgGroupTransform);
-
-			if (transformOpen)
-			{
-				propGridRow("Position", [&]() { vec3Editor("##pgPos", demo.pgPosX, demo.pgPosY, demo.pgPosZ); });
-				propGridRow("Rotation", [&]() { vec3Editor("##pgRot", demo.pgRotX, demo.pgRotY, demo.pgRotZ); });
-				propGridRow("Scale", [&]() { vec3Editor("##pgScale", demo.pgScaleX, demo.pgScaleY, demo.pgScaleZ); });
-				propGridRow("Bounds Min", [&]() { vec3Editor("##pgBMin", demo.pgBoundsMinX, demo.pgBoundsMinY, demo.pgBoundsMinZ); });
-				propGridRow("Bounds Max", [&]() { vec3Editor("##pgBMax", demo.pgBoundsMaxX, demo.pgBoundsMaxY, demo.pgBoundsMaxZ); });
-			}
-
-			// ---- material ----
-			tableRowNext();
-			tableCellNext(2);
-			bool materialOpen = expandable("Material", &demo.pgGroupMaterial);
-
-			if (materialOpen)
-			{
-				propGridRow("Albedo", [&]() { colorPickerPopup("##pgAlbedo", &demo.pgAlbedoColor); });
-				propGridRow("Emission", [&]() { colorPickerPopup("##pgEmission", &demo.pgEmissionColor); });
-				propGridRow("Roughness", [&]() { sliderFloat("##pgRough", 0.0f, 1.0f, demo.pgRoughness); });
-				propGridRow("Metalness", [&]() { sliderFloat("##pgMetal", 0.0f, 1.0f, demo.pgMetalness); });
-				propGridRow("Opacity", [&]() { sliderFloat("##pgOpacity", 0.0f, 1.0f, demo.pgOpacity); });
-				propGridRow("Shading Mode", [&]() { dropdown("##pgShading", demo.pgShadingMode, shadingModes, 4); });
-				propGridRow("Texture Map", [&]() {
-					WidgetElementInfo btnBody;
-					themeGetWidgetElementInfo(WidgetElementId::ButtonBody, WidgetStateType::Normal, btnBody);
-					f32 btnWidth = (btnBody.border * 2.0f + renderGetTextSize("Browse").x) * scaleGet();
-					f32 spacingPx = 5.0f * scaleGet();
-					widgetSetNextWidth((layoutGetSize().x - btnWidth - spacingPx) / scaleGet());
-					textInput("##pgTexture", demo.pgTexturePath, sizeof(demo.pgTexturePath));
-					sameLine();
-					if (button("Browse"))
-					{
-						char path[512];
-						if (openFileDialog("*.*;*.png;*.jpg;*.jpeg;*.bmp;*.tga", "", path, sizeof(path)))
-							snprintf(demo.pgTexturePath, sizeof(demo.pgTexturePath), "%s", path);
-					}
-				});
-			}
-
-			// ---- render ----
-			tableRowNext();
-			tableCellNext(2);
-			bool renderOpen = expandable("Render", &demo.pgGroupRender);
-
-			if (renderOpen)
-			{
-				propGridRow("Cast Shadows", [&]() {
-					idPush("pgCastShadows");
-					check("", &demo.pgCastShadows);
-					idPop();
-				});
-				propGridRow("Receive Shadows", [&]() {
-					idPush("pgReceiveShadows");
-					check("", &demo.pgReceiveShadows);
-					idPop();
-				});
-				propGridRow("Double-Sided", [&]() {
-					idPush("pgDoubleSided");
-					check("", &demo.pgDoubleSided);
-					idPop();
-				});
-				propGridRow("Smooth Normals", [&]() {
-					idPush("pgSmoothNormals");
-					check("", &demo.pgSmoothNormals);
-					idPop();
-				});
-				propGridRow("Wireframe Overlay", [&]() {
-					idPush("pgWireframe");
-					check("", &demo.pgWireframe);
-					idPop();
-				});
-				propGridRow("Frustum Culling", [&]() {
-					idPush("pgFrustumCulling");
-					check("", &demo.pgFrustumCulling);
-					idPop();
-				});
-				propGridRow("Cull Mode", [&]() { buttonGroup("##pgCull", cullModes, 3, &demo.pgCullMode); });
-				propGridRow("Draw Priority", [&]() { comboSliderIntRanged(&demo.pgDrawPriority, 0, 1000, 1.0f, 10, "Priority %.0f"); });
-			}
-
-			tableCellPaddingPop();
-			tableEnd();
-		}
-		widgetPopDisabled();
-		expandableEnd();
-	}
-
-	// ------------------------------------------------------------------
-	// tooltip
-	// ------------------------------------------------------------------
-	if (expandableBegin("Tooltips", &demo.expandTooltip))
-	{
-		check("Disable##Tooltip", &demo.disableTooltip);
-		widgetPushDisabled(demo.disableTooltip);
-
-		label("Hover me for a basic tooltip:");
-		button("Hover Me (Basic)");
-		tooltip("This is a basic text tooltip!");
+		label("With max visible items = 3:");
+		dropdown("##ddMax3", demo.dropdownSel, items, 5, 3);
 
 		space();
-		label("Hover me for a custom tooltip:");
-		button("Hover Me (Custom)");
-		if (customTooltipBegin(250))
-		{
-			// the tooltip body is white so labels and checks need dark text here,
-			// the button keeps its theme default text color.
-			// checks draw text with the state text color (hovered/checked/...),
-			// so all their states are overridden and then restored
-			WidgetElementId tooltipElements[] = { WidgetElementId::LabelBody, WidgetElementId::CheckBody };
-			const WidgetStateType tooltipStates[] = { WidgetStateType::Normal, WidgetStateType::Focused, WidgetStateType::Pressed, WidgetStateType::Hovered, WidgetStateType::Disabled };
-			const u32 tooltipElementCount = sizeof(tooltipElements) / sizeof(tooltipElements[0]);
-			const u32 tooltipStateCount = sizeof(tooltipStates) / sizeof(tooltipStates[0]);
+		label("No selection at start, with indeterminate text:");
+		dropdown("##ddNoSel", demo.dropdownNoSel, items, 5, ~0, "Indeterminate");
 
-			WidgetElementInfo originalTextColors[tooltipElementCount][tooltipStateCount];
+		space();
+		label("Indeterminate with disabled dropdown:");
+		widgetPushDisabled(true);
+		dropdown("##ddNoSelDisabled", demo.dropdownNoSel, items, 5, ~0, "Indeterminate");
+		widgetPopDisabled();
 
-			for (u32 i = 0; i < tooltipElementCount; i++)
-			{
-				for (u32 s = 0; s < tooltipStateCount; s++)
-				{
-					WidgetElementInfo info;
-					themeGetWidgetElementInfo(tooltipElements[i], tooltipStates[s], info);
-					originalTextColors[i][s] = info;
-					info.textColor = Color::black;
-					themeSetWidgetElement(themeGet(), tooltipElements[i], tooltipStates[s], info, "default");
-				}
-			}
-
-			label("This is a CUSTOM tooltip area");
-			label("You can embed any widgets here:");
-			check("Check inside tooltip", &demo.checkA);
-			button("Button inside tooltip");
-
-			for (u32 i = 0; i < tooltipElementCount; i++)
-			{
-				for (u32 s = 0; s < tooltipStateCount; s++)
-				{
-					themeSetWidgetElement(themeGet(), tooltipElements[i], tooltipStates[s], originalTextColors[i][s], "default");
-				}
-			}
-			customTooltipEnd();
-		}
-		label("Tip: hold Ctrl to keep the custom tooltip open (freeze it) so you can interact with its widgets.");
+		char buf[64];
+		snprintf(buf, sizeof(buf), "Selected index: %d", demo.dropdownSel);
+		label(buf);
 		widgetPopDisabled();
 		expandableEnd();
 	}
 
 	// ------------------------------------------------------------------
-	// popup
+	// expandable (nested)
 	// ------------------------------------------------------------------
-	if (expandableBegin("Popups", &demo.expandPopup))
+	if (expandableBegin("Expandable (nested)", &demo.expandExpandable))
 	{
-		check("Disable##Popup", &demo.disablePopup);
-		widgetPushDisabled(demo.disablePopup);
+		check("Disable##Expandable", &demo.disableExpandable);
+		widgetPushDisabled(demo.disableExpandable);
 
-		label("Click the button to open a modal popup:");
-		if (button("Open Popup"))
+		label("Expandables can be nested:");
+
+		if (expandableBegin("Nested A"))
 		{
-			demo.showPopup = true;
+			label("Content of Nested A");
+			expandableEnd();
 		}
 
-		if (demo.showPopup)
+		if (expandableBegin("Nested B"))
 		{
-			popupBegin("##demoPopup", 300, PopupFlags::BelowLastWidget);
-			label("Welcome to the modal popup!");
-			label("It's positioned below the button.");
+			label("Content of Nested B");
+
+			if (expandableBegin("Nested C (inside B)"))
+			{
+				label("Deep nested content");
+				expandableEnd();
+			}
+			expandableEnd();
+		}
+		widgetPopDisabled();
+		expandableEnd();
+	}
+
+	// ------------------------------------------------------------------
+	// images & Textures
+	// ------------------------------------------------------------------
+	if (expandableBegin("Images & Textures", &demo.expandImages))
+	{
+		check("Disable##Images", &demo.disableImages);
+		widgetPushDisabled(demo.disableImages);
+
+		if (!demo.demoImage)
+		{
+			demo.demoImage = themeGetImage(themeGet(), "__WHITEIMAGE__");
+		}
+
+		label("Basic image (KeepAspect):");
+		image(demo.demoImage, 64);
+
+		space();
+		label("Image Stretch:");
+		image(demo.demoImage, 64, HAlignType::Center, VAlignType::Center, ImageFitType::Stretch);
+
+		space();
+		label("Image Center alignment:");
+		image(demo.demoImage, 64, HAlignType::Center);
+
+		space();
+		label("Image Left alignment:");
+		image(demo.demoImage, 64, HAlignType::Left);
+
+		space();
+		label("Image Right alignment:");
+		image(demo.demoImage, 64, HAlignType::Right);
+
+		space();
+		label("Images on the same line:");
+		image(demo.demoImage, 32, HAlignType::Left);
+		sameLine();
+		image(demo.demoImage, 32);
+		sameLine();
+		image(demo.demoImage, 32);
+
+		space();
+		label("Texture widget (using color check checkers image as texture):");
+		// just using an image as a texture for demo purposes if no real texture available
+		
+		texture(themeGetAtlasTexture(), 64, 64, 64);
+		widgetPopDisabled();
+		expandableEnd();
+	}
+
+	// ------------------------------------------------------------------
+	// label
+	// ------------------------------------------------------------------
+	if (expandableBegin("Labels", &demo.expandLabel))
+	{
+		check("Disable##Label", &demo.disableLabel);
+		widgetPushDisabled(demo.disableLabel);
+
+		label("Left aligned (default)");
+		label("Center aligned", HAlignType::Center);
+		label("Right aligned", HAlignType::Right);
+
+		space();
+		label("Custom color labels:");
+		labelCustomColor("Red left", Color::red);
+		labelCustomColor("Green center", Color::green, HAlignType::Center);
+		labelCustomColor("Blue right", Color::blue, HAlignType::Right);
+		labelCustomColor("Orange left (multiline)", Color::orange);
+		labelCustomColorMultiline("This is a cyan multiline label with custom color that wraps across lines.", Color::cyan, HAlignType::Left);
+
+		space();
+		label("Custom font + color labels:");
+		HFont titleFont = themeFontGet("title");
+		HFont headingFont = themeFontGet("heading");
+		HFont italicFont = themeFontGet("normal-italic");
+
+		labelCustomFont("Title Font Label", titleFont);
+		labelCustomFont("Heading Font Label", headingFont);
+		labelCustom("Title + magenta center", titleFont, Color::magenta, HAlignType::Center);
+		labelCustom("Heading + yellow right", headingFont, Color::yellow, HAlignType::Right);
+		labelCustom("Italic + sky left", italicFont, Color::sky);
+		labelCustomMultiline("Italic + green multiline wrapping text with custom font and color.", italicFont, Color::green, HAlignType::Center);
+
+		space();
+		label("Italic label:");
+		labelCustomFont("This label uses italic font", italicFont);
+		widgetPopDisabled();
+		expandableEnd();
+	}
+
+	// ------------------------------------------------------------------
+	// Lines & Primitives
+	// ------------------------------------------------------------------
+	{
+		static bool expandLinesPrims = true;
+		if (expandableBegin("Lines & Primitives", &expandLinesPrims))
+		{
+			// enable AA for demo
+			contextGetSettings().lineAntiAliasing = true;
+			contextGetSettings().lineAntiAliasingSkirtWidthPixels = 1.0f;
+
+			// animate the second 1px line: hold it horizontal, then sweep to oblique and back
+			demo.lineTiltAnim += dt * 0.5f;
+			if (demo.lineTiltAnim >= 1.0f) demo.lineTiltAnim -= 1.0f;
+			forceRepaint();
+
+			label("Primitives in viewport:");
+			Rect lpViewport = viewportBegin("##linesPrimsViewport", 650);
+			Point vo = lpViewport.topLeft();
+
+			// 1px lines
+			renderSetLineStyle(LineStyle(Color::white, 1.0f));
+			renderDrawLine(vo + Point{ 10, 20 }, vo + Point{ 150, 20 });
+			// phase < 0.6 stays exactly horizontal, the rest sweeps 0 -> oblique -> 0
+			f32 lineEndY = 30.0f;
+
+			if (demo.lineTiltAnim > 0.6f)
+			{
+				lineEndY += 25.0f * sinf(M_PI * (demo.lineTiltAnim - 0.6f) / 0.4f);
+			}
+
+			renderDrawLine(vo + Point{ 10, 30 }, vo + Point{ 150, lineEndY });
+			renderDrawLine(vo + Point{ 170, 20 }, vo + Point{ 170, 140 });
+
+			// 5px lines
+			renderSetLineStyle(LineStyle(Color::white, 5.0f));
+			renderDrawLine(vo + Point{ 10, 60 }, vo + Point{ 150, 60 });
+			renderDrawLine(vo + Point{ 10, 80 }, vo + Point{ 150, 70 });
+			renderDrawLine(vo + Point{ 200, 20 }, vo + Point{ 200, 140 });
+
+			// 10px lines again
+			renderSetLineStyle(LineStyle(Color::white, 10.0f));
+			renderDrawLine(vo + Point{ 10, 110 }, vo + Point{ 150, 110 });
+			renderDrawLine(vo + Point{ 10, 120 }, vo + Point{ 150, 130 });
+			renderDrawLine(vo + Point{ 230, 20 }, vo + Point{ 230, 140 });
+
 			space();
-			if (button("Close Popup") || popupMustClose())
+
+			// Primitives with widths 1, 5, 10
+			renderSetLineStyle(LineStyle(Color::cyan, 1.0f));
+			renderDrawRectangle({ vo.x + 10, vo.y + 150, 60, 40 });
+			renderSetLineStyle(LineStyle(Color::cyan, 5.0f));
+			renderDrawRectangle({ vo.x + 80, vo.y + 150, 60, 40 });
+			renderSetLineStyle(LineStyle(Color::cyan, 10.0f));
+			renderDrawRectangle({ vo.x + 150, vo.y + 150, 60, 40 });
+
+			renderSetLineStyle(LineStyle(Color::yellow, 1.0f));
+			renderDrawCircle(vo + Point{ 40, 230 }, 20, 32);
+			renderSetLineStyle(LineStyle(Color::yellow, 5.0f));
+			renderDrawCircle(vo + Point{ 110, 230 }, 20, 32);
+			renderSetLineStyle(LineStyle(Color::yellow, 10.0f));
+			renderDrawCircle(vo + Point{ 180, 230 }, 20, 32);
+
 			{
-				popupClose();
-				demo.showPopup = false;
+				Point pts[] = { vo + Point{10,280}, vo + Point{40,260}, vo + Point{70,290}, vo + Point{100,250} };
+				renderSetLineStyle(LineStyle(Color::green, 1.0f));
+				renderDrawPolyLine(pts, 4, false);
+				Point pts2[] = { vo + Point{120,280}, vo + Point{150,260}, vo + Point{180,290}, vo + Point{210,250} };
+				renderSetLineStyle(LineStyle(Color::green, 5.0f));
+				renderDrawPolyLine(pts2, 4, false);
+				Point pts3[] = { vo + Point{230,280}, vo + Point{260,260}, vo + Point{290,290}, vo + Point{320,250} };
+				renderSetLineStyle(LineStyle(Color::green, 10.0f));
+				renderDrawPolyLine(pts3, 4, false);
 			}
-			popupEnd();
+
+			{
+				Point pts[] = { vo + Point{10,320}, vo + Point{40,300}, vo + Point{70,340} };
+				renderSetLineStyle(LineStyle(Color::orange, 1.0f));
+				renderDrawPolyLine(pts, 3, true);
+				Point pts2[] = { vo + Point{90,320}, vo + Point{120,300}, vo + Point{150,340} };
+				renderSetLineStyle(LineStyle(Color::orange, 5.0f));
+				renderDrawPolyLine(pts2, 3, true);
+				Point pts3[] = { vo + Point{170,320}, vo + Point{200,300}, vo + Point{230,340} };
+				renderSetLineStyle(LineStyle(Color::orange, 10.0f));
+				renderDrawPolyLine(pts3, 3, true);
+			}
+
+			space();
+			label("Stippled lines (dashed, dotted, dash-dot, dash-dot-dot):");
+
+			f32 stippleX = 360.0f;
+
+			// Dashed lines (right column)
+			renderSetLineStyle(LineStyle::dashed(Color::white, 1.0f, 10.0f, 5.0f));
+			renderDrawLine(vo + Point{ stippleX, 20 }, vo + Point{ stippleX + 140, 20 });
+			renderSetLineStyle(LineStyle::dashed(Color::white, 2.0f, 12.0f, 6.0f));
+			renderDrawLine(vo + Point{ stippleX, 40 }, vo + Point{ stippleX + 140, 40 });
+			renderSetLineStyle(LineStyle::dashed(Color::white, 3.0f, 15.0f, 7.0f));
+			renderDrawLine(vo + Point{ stippleX, 60 }, vo + Point{ stippleX + 140, 60 });
+
+			// Dotted lines
+			renderSetLineStyle(LineStyle::dotted(Color::cyan, 1.0f, 3.0f, 3.0f));
+			renderDrawLine(vo + Point{ stippleX, 90 }, vo + Point{ stippleX + 140, 90 });
+			renderSetLineStyle(LineStyle::dotted(Color::cyan, 2.0f, 4.0f, 4.0f));
+			renderDrawLine(vo + Point{ stippleX, 110 }, vo + Point{ stippleX + 140, 110 });
+			renderSetLineStyle(LineStyle::dotted(Color::cyan, 3.0f, 5.0f, 5.0f));
+			renderDrawLine(vo + Point{ stippleX, 130 }, vo + Point{ stippleX + 140, 130 });
+
+			// Dash-dot lines
+			renderSetLineStyle(LineStyle::dashDot(Color::yellow, 1.0f, 10.0f, 5.0f, 3.0f));
+			renderDrawLine(vo + Point{ stippleX, 160 }, vo + Point{ stippleX + 140, 160 });
+			renderSetLineStyle(LineStyle::dashDot(Color::yellow, 2.0f, 12.0f, 6.0f, 4.0f));
+			renderDrawLine(vo + Point{ stippleX, 180 }, vo + Point{ stippleX + 140, 180 });
+			renderSetLineStyle(LineStyle::dashDot(Color::yellow, 3.0f, 15.0f, 7.0f, 5.0f));
+			renderDrawLine(vo + Point{ stippleX, 200 }, vo + Point{ stippleX + 140, 200 });
+
+			// Dash-dot-dot lines
+			renderSetLineStyle(LineStyle::dashDotDot(Color::orange, 1.0f, 10.0f, 5.0f, 3.0f));
+			renderDrawLine(vo + Point{ stippleX, 230 }, vo + Point{ stippleX + 140, 230 });
+			renderSetLineStyle(LineStyle::dashDotDot(Color::orange, 2.0f, 12.0f, 6.0f, 4.0f));
+			renderDrawLine(vo + Point{ stippleX, 250 }, vo + Point{ stippleX + 140, 250 });
+			renderSetLineStyle(LineStyle::dashDotDot(Color::orange, 3.0f, 15.0f, 7.0f, 5.0f));
+			renderDrawLine(vo + Point{ stippleX, 270 }, vo + Point{ stippleX + 140, 270 });
+
+			// Stippled rectangle and circle
+			renderSetLineStyle(LineStyle::dashed(Color::green, 2.0f, 10.0f, 5.0f));
+			renderDrawRectangle({ vo.x + stippleX, vo.y + 300, 120, 50 });
+			renderSetLineStyle(LineStyle::dotted(Color::green, 2.0f, 4.0f, 4.0f));
+			renderDrawRectangle({ vo.x + stippleX + 140, vo.y + 300, 120, 50 });
+			renderSetLineStyle(LineStyle::dashDot(Color::green, 2.0f, 10.0f, 5.0f, 3.0f));
+			renderDrawCircle(vo + Point{ stippleX + 60, 380 }, 30, 32);
+			renderSetLineStyle(LineStyle::dashDotDot(Color::green, 2.0f, 10.0f, 5.0f, 3.0f));
+			renderDrawCircle(vo + Point{ stippleX + 200, 380 }, 30, 32);
+
+			{
+				// 1px arrow: line shaft + solid head, used to show the spline tangents
+				auto drawArrow = [&](const Point& from, const Point& to, const Color& color)
+				{
+					const f32 headLength = 6.0f;
+					const f32 headWidth = 3.0f;
+					Point dir = (to - from).getNormalized();
+					Point perp = { -dir.y, dir.x };
+					Point base = to - dir * headLength;
+
+					renderSetLineStyle(LineStyle(color, 1.0f));
+					renderDrawLine(from, to);
+
+					renderSetColor(color);
+					renderDrawSolidTriangle(to, base + perp * headWidth, base - perp * headWidth);
+				};
+
+				// wavy spline: control points alternate up/down, tangents lean outward so the humps bulge
+				auto drawWaveSpline = [&](f32 startX, f32 lineWidth)
+				{
+					const int pointCount = 5;
+					const f32 spacing = 25.0f;
+					const f32 tangent = spacing * 2.5f;
+					const f32 tangentY = spacing;
+					SplineControlPoint wave[pointCount];
+
+					for (int i = 0; i < pointCount; i++)
+					{
+						bool isTop = (i % 2) != 0;
+						f32 vSign = isTop ? -1.0f : 1.0f;
+						wave[i].center = vo + Point{ startX + i * spacing, isTop ? 385.0f : 420.0f };
+
+						if (i > 0) wave[i].leftTangent = { -tangent, -vSign * tangentY };
+						if (i < pointCount - 1) wave[i].rightTangent = { tangent, vSign * tangentY };
+					}
+
+					renderSetLineStyle(LineStyle(Color::magenta, lineWidth));
+					renderDrawSpline(wave, pointCount, SplineType::Hermite, 5.0f);
+
+					// show the tangents as arrows (left/right in different colors)
+					for (int i = 0; i < pointCount; i++)
+					{
+						if (i > 0) drawArrow(wave[i].center, wave[i].center + wave[i].leftTangent, Color::cyan);
+						if (i < pointCount - 1) drawArrow(wave[i].center, wave[i].center + wave[i].rightTangent, Color::yellow);
+					}
+
+					// mark the control points
+					renderSetColor(Color::white);
+
+					for (int i = 0; i < pointCount; i++)
+					{
+						const f32 pointRadius = 2.0f;
+						renderDrawSolidRectangle(Rect{ wave[i].center.x - pointRadius, wave[i].center.y - pointRadius, pointRadius * 2.0f, pointRadius * 2.0f });
+					}
+				};
+
+				drawWaveSpline(10.0f, 1.0f);
+				drawWaveSpline(130.0f, 5.0f);
+				drawWaveSpline(250.0f, 10.0f);
+			}
+
+			// solid circle and solid pies (sweep the angles over time)
+			{
+				demo.pieSweepAnim += dt * 1.5f;
+				if (demo.pieSweepAnim > 2.0f * M_PI) demo.pieSweepAnim -= 2.0f * M_PI;
+				forceRepaint();
+
+				renderSetColor(Color::white);
+				renderDrawSolidCircle(vo + Point{ 40, 490 }, 22.0f, 32);
+
+				renderSetColor(Color::orange);
+				renderDrawSolidPie(vo + Point{ 120, 490 }, 22.0f, 0.0f, 3.0f * M_PI / 4.0f, 32);
+
+				renderSetColor(Color::cyan);
+				renderDrawSolidPie(vo + Point{ 200, 490 }, 22.0f, -M_PI / 4.0f, demo.pieSweepAnim, 32);
+			}
+
+			// wire pies with widths 1, 5, 10
+			renderSetLineStyle(LineStyle(Color::yellow, 1.0f));
+			renderDrawPie(vo + Point{ 40, 560 }, 22.0f, 0.0f, 3.0f * M_PI / 2.0f, 32);
+			renderSetLineStyle(LineStyle(Color::yellow, 5.0f));
+			renderDrawPie(vo + Point{ 120, 560 }, 22.0f, -M_PI / 4.0f, 3.0f * M_PI / 4.0f, 32);
+			renderSetLineStyle(LineStyle(Color::yellow, 10.0f));
+			renderDrawPie(vo + Point{ 200, 560 }, 22.0f, M_PI / 6.0f, M_PI, 32);
+
+			viewportEnd();
+
+			expandableEnd();
+		}
+	}
+
+	// ------------------------------------------------------------------
+	// link
+	// ------------------------------------------------------------------
+	if (expandableBegin("Links", &demo.expandLink))
+	{
+		check("Disable##Link", &demo.disableLink);
+		widgetPushDisabled(demo.disableLink);
+
+		label("Basic links:");
+		if (link("Click me - Open URL"))
+		{
+			demo.linkClickCount++;
+		}
+
+		space();
+		if (link("Another link"))
+		{
+			demo.linkClickCount++;
+		}
+
+		space();
+		char countBuf[64];
+		snprintf(countBuf, sizeof(countBuf), "Link clicked %d time(s)", demo.linkClickCount);
+		label(countBuf);
+
+		space();
+		label("Disabled link:");
+		widgetSetNextDisabled();
+		link("Cannot click this");
+		widgetPopDisabled();
+
+		space();
+		label("Paragraph (rich text help style):");
+
+		WidgetElementInfo labelBody;
+		themeGetWidgetElementInfo(WidgetElementId::LabelBody, WidgetStateType::Normal, labelBody);
+		// fontGetMetrics().height is already scaled with the theme, so normalize it here
+		f32 imageHeight = labelBody.height > fontGetMetrics(labelBody.font).height / scaleGet()
+			? labelBody.height
+			: fontGetMetrics(labelBody.font).height / scaleGet();
+
+		WidgetElementInfo msgBoxImg;
+		themeGetWidgetElementInfo(WidgetElementId::MessageBoxImageInfo, WidgetStateType::Normal, msgBoxImg);
+		ParagraphItem helpParagraph[] = {
+			{ ParagraphItemType::Text, "Welcome to the Horus UI demo. " },
+			{ ParagraphItemType::Link, "Visit the homepage" },
+			{ ParagraphItemType::Text, " for more info or " },
+			{ ParagraphItemType::Link, "read the documentation" },
+			{ ParagraphItemType::Text, " to learn about every widget. You can " },
+			{ ParagraphItemType::Button, "Apply" },
+			{ ParagraphItemType::Text, " or " },
+			{ ParagraphItemType::Button, "Reset" },
+			{ ParagraphItemType::Text, " the settings at any time. " },
+			{ ParagraphItemType::Image, "", msgBoxImg.image },
+			{ ParagraphItemType::Text, " This icon highlights the helpful tips in this guide." },
+		};
+
+		paragraphDraw(helpParagraph, (u32)(sizeof(helpParagraph) / sizeof(helpParagraph[0])), imageHeight, demo.paragraphLinkClicks, demo.paragraphButtonClicks);
+
+		char paraCountBuf[128];
+		snprintf(paraCountBuf, sizeof(paraCountBuf), "Paragraph links clicked: %d, buttons clicked: %d", demo.paragraphLinkClicks, demo.paragraphButtonClicks);
+		label(paraCountBuf);
+		expandableEnd();
+	}
+
+	// ------------------------------------------------------------------
+	// list
+	// ------------------------------------------------------------------
+	if (expandableBegin("List", &demo.expandList))
+	{
+		check("Disable##List", &demo.disableList);
+		widgetPushDisabled(demo.disableList);
+
+		static const char* listItems[] = { "Item A", "Item B", "Item C", "Item D", "Item E" };
+
+		label("Single selection list:");
+		list("##listSingle", demo.listSelected, ListSelectionMode::Single, listItems, 5, 120.0f);
+
+		space();
+		label("Multiple selection list:");
+		static bool multiSel[5] = {};
+		list("##listMulti", multiSel, ListSelectionMode::Multiple, listItems, 5, 120.0f);
+		widgetPopDisabled();
+		expandableEnd();
+	}
+
+	// ------------------------------------------------------------------
+	// menus
+	// ------------------------------------------------------------------
+	if (expandableBegin("Menus", &demo.expandMenus))
+	{
+		check("Disable##Menus", &demo.disableMenus);
+		widgetPushDisabled(demo.disableMenus);
+
+		label("Menu Bar (Nested below):");
+		if (menuBarBegin())
+		{
+			if (menuBegin("File"))
+			{
+				if (menuItem("New", "Ctrl+N")) {}
+				if (menuItem("Open", "Ctrl+O")) {}
+				widgetPushDisabled(true);
+				if (menuItem("Save", "Ctrl+S")) {}
+				widgetPopDisabled();
+				menuSeparator();
+				if (menuItem("Exit", "Alt+F4")) {}
+				menuEnd();
+			}
+			if (menuBegin("Edit"))
+			{
+				if (menuItem("Cut", "Ctrl+X")) {}
+				if (menuItem("Copy", "Ctrl+C")) {}
+				if (menuItem("Paste", "Ctrl+V")) {}
+				menuEnd();
+			}
+			menuBarEnd();
+		}
+
+		space();
+		label("Context Menu (Right click the label below):");
+		label("Right click me!");
+		if (contextMenuBegin())
+		{
+			if (menuItem("Action 1")) {}
+			if (menuItem("Action 2")) {}
+			menuSeparator();
+			if (menuBegin("Sub Menu"))
+			{
+				if (menuItem("Sub Action 1")) {}
+				menuEnd();
+			}
+			contextMenuEnd();
 		}
 		widgetPopDisabled();
 		expandableEnd();
 	}
 
 	// ------------------------------------------------------------------
-	// custom file dialog
+	// multiline Text Input
 	// ------------------------------------------------------------------
-	if (expandableBegin("Custom File Dialog", &demo.expandCustomFileDialog))
+	if (expandableBegin("Multiline Text Input", &demo.expandMultiline))
 	{
-		check("Disable##CustomFileDialog", &demo.disableCustomFileDialog);
-		widgetPushDisabled(demo.disableCustomFileDialog);
+		check("Disable##MultilineTextInput", &demo.disableMultiline);
+		widgetPushDisabled(demo.disableMultiline);
 
-		label("A popup that browses a virtual file system:");
-		static const char* cfdModeLabels[3] = { "Open File", "Save File", "Pick Folder" };
-		buttonGroup("##cfdMode", cfdModeLabels, 3, &demo.customFileDialogMode);
+		// Lua syntax highlighting
+		static const Color luaKeywordColor = Color::fromU8(86, 156, 214);
+		static const Color luaStringColor = Color::fromU8(206, 145, 120);
+		static const Color luaCommentColor = Color::fromU8(106, 153, 85);
 
-		CustomFileDialogFlags cfdFlags = CustomFileDialogFlags::None;
+		static const KeywordInfo luaKeywords[] = {
+			{ "and", luaKeywordColor },
+			{ "break", luaKeywordColor },
+			{ "do", luaKeywordColor },
+			{ "else", luaKeywordColor },
+			{ "elseif", luaKeywordColor },
+			{ "end", luaKeywordColor },
+			{ "false", luaKeywordColor },
+			{ "for", luaKeywordColor },
+			{ "function", luaKeywordColor },
+			{ "goto", luaKeywordColor },
+			{ "if", luaKeywordColor },
+			{ "in", luaKeywordColor },
+			{ "local", luaKeywordColor },
+			{ "nil", luaKeywordColor },
+			{ "not", luaKeywordColor },
+			{ "or", luaKeywordColor },
+			{ "repeat", luaKeywordColor },
+			{ "return", luaKeywordColor },
+			{ "then", luaKeywordColor },
+			{ "true", luaKeywordColor },
+			{ "until", luaKeywordColor },
+			{ "while", luaKeywordColor },
+		};
 
-		if (demo.customFileDialogMode == 1)
-			cfdFlags = CustomFileDialogFlags::SaveFile;
-		else if (demo.customFileDialogMode == 2)
-			cfdFlags = CustomFileDialogFlags::PickFolder;
+		static const RangeHighlight luaRangeHighlights[] = {
+			{ "\"", "\"", luaStringColor, "\\" },
+			{ "'", "'", luaStringColor, "\\" },
+			{ "--", "", luaCommentColor },
+		};
 
-		static bool usePreview = true;
-		check("Show Preview Panel", &usePreview);
+		static const u32 luaKeywordCount = sizeof(luaKeywords) / sizeof(luaKeywords[0]);
+		static const u32 luaRangeHighlightCount = sizeof(luaRangeHighlights) / sizeof(luaRangeHighlights[0]);
+
+		label("Basic (10 visible lines):");
+		textInputMultiline("##mtiBasic", demo.multiText, sizeof(demo.multiText), 10, MultilineTextInputFlags::None, luaKeywords, luaKeywordCount, luaRangeHighlights, luaRangeHighlightCount);
 
 		space();
+		label("With line numbers:");
+		textInputMultiline("##mtiLineNums", demo.multiText, sizeof(demo.multiText), 8, MultilineTextInputFlags::LineNumbers, luaKeywords, luaKeywordCount, luaRangeHighlights, luaRangeHighlightCount);
 
-		customFileDialog("##demoCustomFileDialog", demoCustomFileDialogList, nullptr, demo.customFileDialogResult, sizeof demo.customFileDialogResult, cfdFlags, usePreview ? demoCustomFileDialogPreview : nullptr, nullptr, demoCustomFileDialogCreateFolder, nullptr);
+		space();
+		label("With word wrap:");
+		textInputMultiline("##mtiWordWrap", demo.multiText, sizeof(demo.multiText), 6, MultilineTextInputFlags::WordWrap, luaKeywords, luaKeywordCount, luaRangeHighlights, luaRangeHighlightCount);
 
-		std::string cfdResultLabel = "Chosen path: " + std::string(demo.customFileDialogResult);
-		label(cfdResultLabel.c_str());
+		space();
+		label("Lua syntax + line numbers + highlight current line:");
+		textInputMultiline("##mtiHighlight", demo.multiText, sizeof(demo.multiText), 8,
+			MultilineTextInputFlags::LineNumbers | MultilineTextInputFlags::HighlightCurrentLine,
+			luaKeywords, luaKeywordCount, luaRangeHighlights, luaRangeHighlightCount);
+		widgetPopDisabled();
+		expandableEnd();
+	}
+
+	// ------------------------------------------------------------------
+	// object Reference
+	// ------------------------------------------------------------------
+	if (expandableBegin("Object Reference Editor", &demo.expandObjectRef))
+	{
+		enum MyTypeIds
+		{
+			MyTypeId1,
+			MyTypeId2,
+			MyTypeId3
+		};
+
+		check("Disable##ObjectRef", &demo.disableObjectRef);
+		widgetPushDisabled(demo.disableObjectRef);
+
+
+		std::string v1;
+		std::string v2;
+		std::string v3;
+		std::string vEmpty;
+
+		if (demo.objectRefValue1)
+		{
+			v1 = *(std::string*)demo.objectRefValue1;
+		}
+
+		if (demo.objectRefValue2)
+		{
+			v2 = *(std::string*)demo.objectRefValue2;
+		}
+
+		if (demo.objectRefValue3)
+		{
+			v3 = *(std::string*)demo.objectRefValue3;
+		}
+
+		if (demo.objectRefEmpty)
+		{
+			vEmpty = *(std::string*)demo.objectRefEmpty;
+		}
+
+		label("Without custom button images:");
+		{
+			static std::string refVal2a = "Mesh01";
+			static std::string refVal2b = "Mesh02";
+			static std::string refVal2c = "ArchVizModel";
+			const char* refNames2[] = { "Mesh01", "Mesh02", "ArchVizModel" };
+			void* refVals2[] = { &refVal2a, &refVal2b, &refVal2c };
+			objectRefEditor("##demoObjRefNoIcons", 0, 0, 0, "MyObjectType2", v2.c_str(), MyTypeId2, &demo.objectRefValue2, &demo.objectRefModified2, 3, refNames2, refVals2);
+		}
+		space();
+
+		{
+			label("With indeterminate text (no object assigned yet):");
+			static std::string refValP1 = "Mesh01";
+			static std::string refValP2 = "Mesh02";
+			static std::string refValP3 = "ArchVizModel";
+			const char* refNamesP[] = { "Mesh01", "Mesh02", "ArchVizModel" };
+			void* refValsP[] = { &refValP1, &refValP2, &refValP3 };
+			objectRefEditor("##demoObjRefPlaceholder", 0, 0, 0, "MyObjectType2", vEmpty.c_str(), MyTypeId2, &demo.objectRefEmpty, &demo.objectRefEmptyModified, 3, refNamesP, refValsP, 0, "Indeterminate");
+		}
+		space();
+
+		{
+			label("With icon:");
+			HImage icon = themeGetImage(themeGet(), "../themes/default/sign-info.png");
+			objectRefEditor("##demoObjRefWithIcon", 0, 0, icon ? icon : themeGetImage(themeGet(), "flat/target"), "MyObjectType3", v3.c_str(), MyTypeId3, &demo.objectRefValue3, &demo.objectRefModified3);
+		}
+		space();
+
+		{
+			label("With icon (custom size 44):");
+			HImage icon = themeGetImage(themeGet(), "../themes/default/sign-info.png");
+			objectRefEditor("##demoObjRefWithIconSize", 0, 0, icon ? icon : themeGetImage(themeGet(), "flat/target"), "MyObjectType3", v3.c_str(), MyTypeId3, &demo.objectRefValue3, &demo.objectRefModified3, 0, nullptr, nullptr, 44);
+		}
+		space();
+
+		label("Object reference editor (with custom button images):");
+		objectRefEditor("##demoObjRef", themeGetImage(themeGet(), "__WHITEIMAGE__"), themeGetImage(themeGet(), "__WHITEIMAGE__"), 0, "MyObjectType1", v1.c_str(), MyTypeId1, &demo.objectRefValue1, &demo.objectRefModified1);
+
+		label("Drag source (drag button into the proper editor):");
+		{
+			static std::string dragSampleObject1 = "ShinyMetalA";
+			button("MyObjectType1##dragSrc");
+			if (dragDropWantsTo())
+			{
+				dragDropBegin(MyTypeId1, &dragSampleObject1);
+			}
+			static std::string dragSampleObject2 = "Mesh01";
+			button("MyObjectType2##dragSrc");
+			if (dragDropWantsTo())
+			{
+				dragDropBegin(MyTypeId2, &dragSampleObject2);
+			}
+			static std::string dragSampleObject3 = "SkyShader";
+			button("MyObjectType3##dragSrc");
+			if (dragDropWantsTo())
+			{
+				dragDropBegin(MyTypeId3, &dragSampleObject3);
+			}
+		}
 		widgetPopDisabled();
 		expandableEnd();
 	}
@@ -3802,6 +2977,837 @@ if (expandableBegin("Overlay Toolbars", &demo.expandOverlayToolbar))
 
 		viewportEnd();
 
+		expandableEnd();
+	}
+
+	// ------------------------------------------------------------------
+	// popup
+	// ------------------------------------------------------------------
+	if (expandableBegin("Popups", &demo.expandPopup))
+	{
+		check("Disable##Popup", &demo.disablePopup);
+		widgetPushDisabled(demo.disablePopup);
+
+		label("Click the button to open a modal popup:");
+		if (button("Open Popup"))
+		{
+			demo.showPopup = true;
+		}
+
+		if (demo.showPopup)
+		{
+			popupBegin("##demoPopup", 300, PopupFlags::BelowLastWidget);
+			label("Welcome to the modal popup!");
+			label("It's positioned below the button.");
+			space();
+			if (button("Close Popup") || popupMustClose())
+			{
+				popupClose();
+				demo.showPopup = false;
+			}
+			popupEnd();
+		}
+		widgetPopDisabled();
+		expandableEnd();
+	}
+
+	// ------------------------------------------------------------------
+	// progress
+	// ------------------------------------------------------------------
+	if (expandableBegin("Progress Bars", &demo.expandProgress))
+	{
+		check("Disable##Progress", &demo.disableProgress);
+		widgetPushDisabled(demo.disableProgress);
+
+		label("Basic progress (65%):");
+		progress(demo.progressValue);
+
+		space();
+		label("With text overlay:");
+		progress(demo.progressValue, 0.0f, true);
+
+		space();
+		label("With real values:");
+		progress(demo.progressValueReal, 1000, true, true);
+
+		space();
+		label("Indeterminate:");
+		progress(-1.0f);
+
+		space();
+		label("Indeterminate (with text):");
+		progress(-1.0f, 0.0f, true, false, "Loading, please wait...");
+
+		widgetPopDisabled();
+		expandableEnd();
+	}
+
+	// ------------------------------------------------------------------
+	// property grid (mesh inspector)
+	// ------------------------------------------------------------------
+	if (expandableBegin("Property Grid (Mesh Inspector)", &demo.expandPropertyGrid))
+	{
+		check("Disable##PropertyGrid", &demo.disablePropertyGrid);
+		check("Alternate Row Background##PropertyGrid", &demo.pgAltRowBg);
+		widgetPushDisabled(demo.disablePropertyGrid);
+
+		static const char* layers[] = { "Default", "Environment", "Player", "Enemy", "UI" };
+		static const char* lodLevels[] = { "LOD 0", "LOD 1", "LOD 2", "LOD 3" };
+		static const char* shadingModes[] = { "Unlit", "Lambert", "Blinn-Phong", "PBR" };
+		static const char* cullModes[] = { "None", "Back", "Front" };
+
+		label("A two-column property table with expandable groups:");
+		space();
+
+		if (tableBegin("##propGrid", 2, 0, TableFlags::Resizable | TableFlags::FixedSize | (demo.pgAltRowBg ? TableFlags::AltRowBg : TableFlags::None)))
+		{
+			tableColumnSetup(0, 150, TableColumnFlags::FixedResize);
+			tableColumnSetup(1, 0, TableColumnFlags::Stretch);
+			tableCellPaddingPush(10.0f, 6.0f);
+
+			// ---- identity ----
+			tableRowNext();
+			tableCellNext(2);
+			bool identityOpen = expandable("Identity", &demo.pgGroupIdentity);
+
+			if (identityOpen)
+			{
+				propGridRow("Name", [&]() { textInput("##pgName", demo.pgMeshName, sizeof(demo.pgMeshName)); });
+				propGridRow("Tag", [&]() { textInput("##pgTag", demo.pgTag, sizeof(demo.pgTag)); });
+				propGridRow("Layer", [&]() { dropdown("##pgLayer", demo.pgLayer, layers, 5); });
+				propGridRow("Mesh Asset", [&]() { label("assets/models/monkey.obj"); });
+			}
+
+			// ---- geometry ----
+			tableRowNext();
+			tableCellNext(2);
+			bool geometryOpen = expandable("Geometry", &demo.pgGroupGeometry);
+
+			if (geometryOpen)
+			{
+				propGridRow("Vertices", [&]() {
+					char buf[64];
+					snprintf(buf, sizeof(buf), "%d", demo.pgVertexCount);
+					label(buf);
+				});
+				propGridRow("Triangles", [&]() {
+					char buf[64];
+					snprintf(buf, sizeof(buf), "%d", demo.pgTriangleCount);
+					label(buf);
+				});
+				propGridRow("LOD Level", [&]() { dropdown("##pgLod", demo.pgLodLevel, lodLevels, 4); });
+			}
+
+			// ---- transform ----
+			tableRowNext();
+			tableCellNext(2);
+			bool transformOpen = expandable("Transform", &demo.pgGroupTransform);
+
+			if (transformOpen)
+			{
+				propGridRow("Position", [&]() { vec3Editor("##pgPos", demo.pgPosX, demo.pgPosY, demo.pgPosZ); });
+				propGridRow("Rotation", [&]() { vec3Editor("##pgRot", demo.pgRotX, demo.pgRotY, demo.pgRotZ); });
+				propGridRow("Scale", [&]() { vec3Editor("##pgScale", demo.pgScaleX, demo.pgScaleY, demo.pgScaleZ); });
+				propGridRow("Bounds Min", [&]() { vec3Editor("##pgBMin", demo.pgBoundsMinX, demo.pgBoundsMinY, demo.pgBoundsMinZ); });
+				propGridRow("Bounds Max", [&]() { vec3Editor("##pgBMax", demo.pgBoundsMaxX, demo.pgBoundsMaxY, demo.pgBoundsMaxZ); });
+			}
+
+			// ---- material ----
+			tableRowNext();
+			tableCellNext(2);
+			bool materialOpen = expandable("Material", &demo.pgGroupMaterial);
+
+			if (materialOpen)
+			{
+				propGridRow("Albedo", [&]() { colorPickerPopup("##pgAlbedo", &demo.pgAlbedoColor); });
+				propGridRow("Emission", [&]() { colorPickerPopup("##pgEmission", &demo.pgEmissionColor); });
+				propGridRow("Roughness", [&]() { sliderFloat("##pgRough", 0.0f, 1.0f, demo.pgRoughness); });
+				propGridRow("Metalness", [&]() { sliderFloat("##pgMetal", 0.0f, 1.0f, demo.pgMetalness); });
+				propGridRow("Opacity", [&]() { sliderFloat("##pgOpacity", 0.0f, 1.0f, demo.pgOpacity); });
+				propGridRow("Shading Mode", [&]() { dropdown("##pgShading", demo.pgShadingMode, shadingModes, 4); });
+				propGridRow("Texture Map", [&]() {
+					WidgetElementInfo btnBody;
+					themeGetWidgetElementInfo(WidgetElementId::ButtonBody, WidgetStateType::Normal, btnBody);
+					f32 btnWidth = (btnBody.border * 2.0f + renderGetTextSize("Browse").x) * scaleGet();
+					f32 spacingPx = 5.0f * scaleGet();
+					widgetSetNextWidth((layoutGetSize().x - btnWidth - spacingPx) / scaleGet());
+					textInput("##pgTexture", demo.pgTexturePath, sizeof(demo.pgTexturePath));
+					sameLine();
+					if (button("Browse"))
+					{
+						char path[512];
+						if (openFileDialog("*.*;*.png;*.jpg;*.jpeg;*.bmp;*.tga", "", path, sizeof(path)))
+							snprintf(demo.pgTexturePath, sizeof(demo.pgTexturePath), "%s", path);
+					}
+				});
+			}
+
+			// ---- render ----
+			tableRowNext();
+			tableCellNext(2);
+			bool renderOpen = expandable("Render", &demo.pgGroupRender);
+
+			if (renderOpen)
+			{
+				propGridRow("Cast Shadows", [&]() {
+					idPush("pgCastShadows");
+					check("", &demo.pgCastShadows);
+					idPop();
+				});
+				propGridRow("Receive Shadows", [&]() {
+					idPush("pgReceiveShadows");
+					check("", &demo.pgReceiveShadows);
+					idPop();
+				});
+				propGridRow("Double-Sided", [&]() {
+					idPush("pgDoubleSided");
+					check("", &demo.pgDoubleSided);
+					idPop();
+				});
+				propGridRow("Smooth Normals", [&]() {
+					idPush("pgSmoothNormals");
+					check("", &demo.pgSmoothNormals);
+					idPop();
+				});
+				propGridRow("Wireframe Overlay", [&]() {
+					idPush("pgWireframe");
+					check("", &demo.pgWireframe);
+					idPop();
+				});
+				propGridRow("Frustum Culling", [&]() {
+					idPush("pgFrustumCulling");
+					check("", &demo.pgFrustumCulling);
+					idPop();
+				});
+				propGridRow("Cull Mode", [&]() { buttonGroup("##pgCull", cullModes, 3, &demo.pgCullMode); });
+				propGridRow("Draw Priority", [&]() { comboSliderIntRanged(&demo.pgDrawPriority, 0, 1000, 1.0f, 10, "Priority %.0f"); });
+			}
+
+			tableCellPaddingPop();
+			tableEnd();
+		}
+		widgetPopDisabled();
+		expandableEnd();
+	}
+
+	// ------------------------------------------------------------------
+	// radio
+	// ------------------------------------------------------------------
+	if (expandableBegin("Radio Buttons", &demo.expandRadio))
+	{
+		check("Disable##Radio", &demo.disableRadio);
+		widgetPushDisabled(demo.disableRadio);
+
+		radio("Choice 1", &demo.radioVal, 0);
+		radio("Choice 2", &demo.radioVal, 1);
+		radio("Choice 3", &demo.radioVal, 2);
+
+		char buf[64];
+		snprintf(buf, sizeof(buf), "Selected: %d", demo.radioVal);
+		label(buf);
+		widgetPopDisabled();
+		expandableEnd();
+	}
+
+	// ------------------------------------------------------------------
+	// scroll View
+	// ------------------------------------------------------------------
+	if (expandableBegin("Scroll View", &demo.expandScrollView))
+	{
+		check("Disable##ScrollView", &demo.disableScrollView);
+		widgetPushDisabled(demo.disableScrollView);
+
+		label("A nested scroll view (150px height):");
+		scrollViewBegin("##nestedSV", 150, demo.scrollPos.y);
+		{
+			for (int i = 0; i < 20; ++i)
+			{
+				char buf[64];
+				snprintf(buf, sizeof(buf), "Inside ScrollView %d", i);
+				button(buf);
+			}
+		}
+		demo.scrollPos = scrollViewEnd();
+		widgetPopDisabled();
+		expandableEnd();
+	}
+
+	// ------------------------------------------------------------------
+	// selectable
+	// ------------------------------------------------------------------
+	if (expandableBegin("Selectable", &demo.expandSelectable))
+	{
+		check("Disable##Selectable", &demo.disableSelectable);
+		widgetPushDisabled(demo.disableSelectable);
+
+		label("Normal selectable:");
+		selectable("Selectable item 1");
+		selectable("Selectable item 2");
+
+		space();
+		label("Selected state:");
+		selectable("Selected item", SelectableFlags::Selected);
+
+		space();
+		label("Custom font selectables:");
+		HFont headingFont = themeFontGet("heading");
+		selectableCustomFont("Selectable with Heading Font", headingFont);
+		widgetPopDisabled();
+		expandableEnd();
+	}
+
+	// ------------------------------------------------------------------
+	// separators / Spacing
+	// ------------------------------------------------------------------
+	if (expandableBegin("Separators & Spacing", &demo.expandSeparators))
+	{
+		check("Disable##Separators", &demo.disableSeparators);
+		widgetPushDisabled(demo.disableSeparators);
+
+		label("Line separator below:");
+		line();
+		label("Content after line");
+
+		space();
+		label("Default space() above this");
+
+		space(30.0f);
+		label("Custom space(30) above this");
+
+		space();
+		label("sameLine demo:");
+		button("A");
+		sameLine();
+		button("B");
+		sameLine();
+		button("C");
+		widgetPopDisabled();
+		expandableEnd();
+	}
+
+	// ------------------------------------------------------------------
+	// slider
+	// ------------------------------------------------------------------
+	if (expandableBegin("Sliders", &demo.expandSlider))
+	{
+		check("Disable##Slider", &demo.disableSlider);
+		widgetPushDisabled(demo.disableSlider);
+
+		char buf[64];
+
+		label("Integer slider (0..100):");
+		sliderInt("##slInt", 0, 100, demo.sliderIntVal);
+		snprintf(buf, sizeof(buf), "Value: %d", demo.sliderIntVal);
+		label(buf);
+
+		space();
+		label("Integer slider with step=10:");
+		sliderInt("##slIntStep", 0, 100, demo.sliderIntStepped, true, 10);
+		snprintf(buf, sizeof(buf), "Value: %d", demo.sliderIntStepped);
+		label(buf);
+
+		space();
+		label("Float slider (0..1):");
+		sliderFloat("##slFloat", 0.0f, 1.0f, demo.sliderFloatVal);
+		snprintf(buf, sizeof(buf), "Value: %.3f", demo.sliderFloatVal);
+		label(buf);
+
+		space();
+		label("Float slider with step=0.1:");
+		sliderFloat("##slFloatStep", 0.0f, 1.0f, demo.sliderFloatStepped, true, 0.1f);
+		snprintf(buf, sizeof(buf), "Value: %.3f", demo.sliderFloatStepped);
+		label(buf);
+		widgetPopDisabled();
+		expandableEnd();
+	}
+
+	// ------------------------------------------------------------------
+	// table
+	// ------------------------------------------------------------------
+	if (expandableBegin("Tables", &demo.expandTable))
+	{
+		check("Disable##Table", &demo.disableTable);
+		widgetPushDisabled(demo.disableTable);
+
+		label("Basic table (3 columns):");
+		if (tableBegin("##demoTable", 3, 200, TableFlags::Borders | TableFlags::Resizable | TableFlags::Reorderable | TableFlags::AltRowBg | TableFlags::FixedSize))
+		{
+			tableColumnSetup(0, 50, TableColumnFlags::FixedResize);
+			tableColumnSetup(1, 150, TableColumnFlags::Stretch);
+			tableColumnSetup(2, 100, TableColumnFlags::Stretch);
+
+			tableStartHeader();
+			label("ID"); tableCellNext(); 
+			label("Name"); tableCellNext(); 
+			label("Status");
+
+			for (int i = 0; i < 10; ++i)
+			{
+				tableRowNext();
+				char idBuf[16], nameBuf[32];
+				snprintf(idBuf, sizeof(idBuf), "%d", i + 1);
+				snprintf(nameBuf, sizeof(nameBuf), "Item %d", i + 1);
+
+				label(idBuf); tableCellNext(); 
+				label(nameBuf); tableCellNext(); 
+				label(i % 2 == 0 ? "Active" : "Inactive");
+			}
+			tableEnd();
+		}
+
+		label("Table with merged (colspan) cells:");
+		if (tableBegin("##mergedTable", 3, 0, TableFlags::Borders | TableFlags::AltRowBg | TableFlags::FixedSize))
+		{
+			tableColumnSetup(0, 100, TableColumnFlags::FixedResize);
+			tableColumnSetup(1, 120, TableColumnFlags::Stretch);
+			tableColumnSetup(2, 120, TableColumnFlags::Stretch);
+
+			tableStartHeader();
+			label("Col A"); tableCellNext(); 
+			label("Col B"); tableCellNext(); 
+			label("Col C");
+
+			tableRowNext();
+			tableCellNext(2);
+			label("Merged row spanning columns A+B", HAlignType::Center);
+
+			tableRowNext();
+			label("A"); tableCellNext();
+			label("B"); tableCellNext();
+			label("C");
+
+			tableRowNext();
+			tableCellNext(3);
+			label("Row spanning all three columns", HAlignType::Center);
+
+			tableEnd();
+		}
+
+		label("Invisible table as 3-column list layout:");
+		if (tableBegin("##invisibleTable", 3, 0, TableFlags::Stretch | TableFlags::Borders))
+		{
+			tableColumnSetup(0, 0, TableColumnFlags::Stretch);
+			tableColumnSetup(1, 0, TableColumnFlags::Stretch);
+			tableColumnSetup(2, 0, TableColumnFlags::Stretch);
+
+			tableRowNext();
+
+			// col A
+			{
+				std::vector<const char*> items;
+				for (auto& s : demo.tableListA) items.push_back(s.c_str());
+				spacingPush(0.0f);
+				for (u32 i = 0; i < (u32)items.size(); i++)
+				{
+					bool sel = i == (u32)demo.tableListIdxA;
+					if (selectable(items[i], sel ? SelectableFlags::Selected : SelectableFlags::Normal))
+						demo.tableListIdxA = i;
+				}
+				spacingPop();
+			}
+
+			tableCellNext();
+
+			// col B
+			{
+				std::vector<const char*> items;
+				for (auto& s : demo.tableListB) items.push_back(s.c_str());
+				spacingPush(0.0f);
+				for (u32 i = 0; i < (u32)items.size(); i++)
+				{
+					bool sel = i == (u32)demo.tableListIdxB;
+					if (selectable(items[i], sel ? SelectableFlags::Selected : SelectableFlags::Normal))
+						demo.tableListIdxB = i;
+				}
+				spacingPop();
+			}
+
+			tableCellNext();
+
+			// col C
+			{
+				std::vector<const char*> items;
+				for (auto& s : demo.tableListC) items.push_back(s.c_str());
+				spacingPush(0.0f);
+				for (u32 i = 0; i < (u32)items.size(); i++)
+				{
+					bool sel = i == (u32)demo.tableListIdxC;
+					if (selectable(items[i], sel ? SelectableFlags::Selected : SelectableFlags::Normal))
+						demo.tableListIdxC = i;
+				}
+				spacingPop();
+			}
+
+			tableEnd();
+		}
+
+		space();
+
+		widgetPopDisabled();
+		expandableEnd();
+	}
+
+	// ------------------------------------------------------------------
+	// tabs
+	// ------------------------------------------------------------------
+	if (expandableBegin("Tabs", &demo.expandTabs))
+	{
+		check("Disable##Tabs", &demo.disableTabs);
+		widgetPushDisabled(demo.disableTabs);
+
+		tabGroupBegin(demo.selectedTab);
+		tab("Tab 1", 0);
+		tab("Tab 2", 0);
+		tab("Tab 3", 0);
+		demo.selectedTab = tabGroupEnd();
+
+		switch (demo.selectedTab)
+		{
+		case 0:
+			label("Content of Tab 1");
+			button("Tab 1 Button");
+			break;
+		case 1:
+			label("Content of Tab 2");
+			check("Tab 2 Check", &demo.checkA);
+			break;
+		case 2:
+			label("Content of Tab 3");
+			label("Just some text in tab 3");
+			break;
+		}
+		widgetPopDisabled();
+		expandableEnd();
+	}
+
+	// ------------------------------------------------------------------
+	// text Input
+	// ------------------------------------------------------------------
+	if (expandableBegin("Text Input", &demo.expandTextInput))
+	{
+		check("Disable##TextInput", &demo.disableTextInput);
+		widgetPushDisabled(demo.disableTextInput);
+
+		label("Basic:");
+		textInput("##tiBasic", demo.textBasic, sizeof(demo.textBasic));
+
+		space();
+		label("Numeric only:");
+		textInput("##tiNumeric", demo.textNumeric, sizeof(demo.textNumeric), TextInputFlags::NumericOnly);
+
+		space();
+		label("Hex only:");
+		textInput("##tiHex", demo.textHex, sizeof(demo.textHex), TextInputFlags::HexOnly);
+
+		space();
+		label("With default placeholder text:");
+		textInput("##tiDefault", demo.textDefault, sizeof(demo.textDefault), TextInputFlags::None, "Type here...");
+
+		space();
+		label("Auto select all on focus:");
+		textInput("##tiAutoSel", demo.textAutoSelect, sizeof(demo.textAutoSelect), TextInputFlags::AutoSelectAll);
+
+		space();
+		label("Password:");
+		textInput("##tiPass", demo.textPassword, sizeof(demo.textPassword), TextInputFlags::None, nullptr, 0, true);
+		widgetPopDisabled();
+		expandableEnd();
+	}
+
+	// ------------------------------------------------------------------
+	// tooltip
+	// ------------------------------------------------------------------
+	if (expandableBegin("Tooltips", &demo.expandTooltip))
+	{
+		check("Disable##Tooltip", &demo.disableTooltip);
+		widgetPushDisabled(demo.disableTooltip);
+
+		label("Hover me for a basic tooltip:");
+		button("Hover Me (Basic)");
+		tooltip("This is a basic text tooltip!");
+
+		space();
+		label("Hover me for a custom tooltip:");
+		button("Hover Me (Custom)");
+		if (customTooltipBegin(250))
+		{
+			// labels and checks use the tooltip body text color, so they stay readable
+			// on both light and dark themes, the button keeps its theme default text color.
+			// checks draw text with the state text color (hovered/checked/...),
+			// so all their states are overridden and then restored
+			WidgetElementInfo tooltipBodyInfo;
+			themeGetWidgetElementInfo(WidgetElementId::TooltipBody, WidgetStateType::Normal, tooltipBodyInfo);
+
+			WidgetElementId tooltipElements[] = { WidgetElementId::LabelBody, WidgetElementId::CheckBody };
+			const WidgetStateType tooltipStates[] = { WidgetStateType::Normal, WidgetStateType::Focused, WidgetStateType::Pressed, WidgetStateType::Hovered, WidgetStateType::Disabled };
+			const u32 tooltipElementCount = sizeof(tooltipElements) / sizeof(tooltipElements[0]);
+			const u32 tooltipStateCount = sizeof(tooltipStates) / sizeof(tooltipStates[0]);
+
+			WidgetElementInfo originalTextColors[tooltipElementCount][tooltipStateCount];
+
+			for (u32 i = 0; i < tooltipElementCount; i++)
+			{
+				for (u32 s = 0; s < tooltipStateCount; s++)
+				{
+					WidgetElementInfo info;
+					themeGetWidgetElementInfo(tooltipElements[i], tooltipStates[s], info);
+					originalTextColors[i][s] = info;
+					info.textColor = tooltipBodyInfo.textColor;
+					themeSetWidgetElement(themeGet(), tooltipElements[i], tooltipStates[s], info, "default");
+				}
+			}
+
+			label("This is a CUSTOM tooltip area");
+			label("You can embed any widgets here:");
+			check("Check inside tooltip", &demo.checkA);
+			button("Button inside tooltip");
+
+			for (u32 i = 0; i < tooltipElementCount; i++)
+			{
+				for (u32 s = 0; s < tooltipStateCount; s++)
+				{
+					themeSetWidgetElement(themeGet(), tooltipElements[i], tooltipStates[s], originalTextColors[i][s], "default");
+				}
+			}
+			customTooltipEnd();
+		}
+		label("Tip: hold Ctrl to keep the custom tooltip open (freeze it) so you can interact with its widgets.");
+		widgetPopDisabled();
+		expandableEnd();
+	}
+
+	// ------------------------------------------------------------------
+	// tree Nodes (new demo section)
+	// ------------------------------------------------------------------
+	if (expandableBegin("Tree Nodes", &demo.expandTreeNodes))
+	{
+		check("Disable##TreeNodes", &demo.disableTreeNodes);
+		widgetPushDisabled(demo.disableTreeNodes);
+
+		label("Controlled tree (passes booleans to preserve expansion state):");
+
+		// root node with controlled expansion
+		if (treeNodeBegin("Root", &demo.treeRootExpanded))
+		{
+			// folder A
+			if (treeNodeBegin("Folder A", &demo.treeFolderAExpanded))
+			{
+				selectable("File A1");
+				selectable("File A2");
+				treeNodeEnd();
+			}
+
+			// folder B
+			if (treeNodeBegin("Folder B", &demo.treeFolderBExpanded))
+			{
+				selectable("File B1");
+				treeNodeEnd();
+			}
+
+			// a plain item at root level
+			selectable("README.md");
+
+			treeNodeEnd(); // close Root
+		}
+
+		space();
+
+		label("Anonymous nodes (internal expansion state):");
+
+		// use internal expansion state by passing nullptr for expansion var
+		if (treeNodeBegin("Library"))
+		{
+			if (treeNodeBegin("src"))
+			{
+				selectable("main.cpp");
+				selectable("util.cpp");
+				treeNodeEnd();
+			}
+
+			if (treeNodeBegin("include"))
+			{
+				selectable("lib.h");
+				treeNodeEnd();
+			}
+
+			treeNodeEnd();
+		}
+
+		// tree nodes with single-click toggle on the label
+		label("ToggleOnSelect flag (single-click label toggles):");
+		if (treeNodeBegin("Quick Access", nullptr, SelectableFlags::Normal, TreeNodeFlags::ToggleOnSelect))
+		{
+			if (treeNodeBegin("Documents", nullptr, SelectableFlags::Normal, TreeNodeFlags::ToggleOnSelect))
+			{
+				HImage icon = themeGetImage(themeGet(), "__WHITEIMAGE__");
+				if (icon)
+				{
+					WidgetElementInfo btnBody;
+					themeGetWidgetElementInfo(WidgetElementId::ButtonBody, WidgetStateType::Normal, btnBody);
+					image(icon, btnBody.height, HAlignType::Left);
+					sameLine();
+				}
+				if (button("Open##report"))
+				{
+				}
+				sameLine();
+				selectable("report.pdf");
+				selectable("notes.txt");
+				treeNodeEnd();
+			}
+
+			if (treeNodeBegin("Pictures", nullptr, SelectableFlags::Normal, TreeNodeFlags::ToggleOnSelect))
+			{
+				HImage icon = themeGetImage(themeGet(), "__WHITEIMAGE__");
+				if (icon)
+				{
+					WidgetElementInfo btnBody;
+					themeGetWidgetElementInfo(WidgetElementId::ButtonBody, WidgetStateType::Normal, btnBody);
+					image(icon, btnBody.height, HAlignType::Left);
+					sameLine();
+				}
+				if (button("View##photo"))
+				{
+				}
+				sameLine();
+				selectable("photo.jpg");
+				treeNodeEnd();
+			}
+
+			treeNodeEnd();
+		}
+
+		widgetPopDisabled();
+		expandableEnd();
+	}
+
+	// ------------------------------------------------------------------
+	// vec Editors
+	// ------------------------------------------------------------------
+	if (expandableBegin("Vector Editors", &demo.expandVecEditors))
+	{
+		check("Disable##VecEditors", &demo.disableVecEditors);
+		widgetPushDisabled(demo.disableVecEditors);
+
+		label("vec2 (float, auto select all):");
+		vec2Editor("##v2f", demo.vec2x, demo.vec2y, 0.03f, VectorEditorFlags::AutoSelectAll);
+
+		space();
+		label("vec3 (float):");
+		vec3Editor("##v3f", demo.vec3x, demo.vec3y, demo.vec3z);
+
+		space();
+		label("vec2 (double):");
+		vec2Editor("##v2d", demo.dvec2x, demo.dvec2y);
+
+		space();
+		label("vec3 after a label (fits the space left on the line):");
+		sameLine();
+		vec3Editor("##v3sameLine", demo.vec3x, demo.vec3y, demo.vec3z);
+
+		space();
+		label("vec3 (double):");
+		vec3Editor("##v3d", demo.dvec3x, demo.dvec3y, demo.dvec3z);
+
+		space();
+		label("vec3 multiple selection (indeterminate components show 'Indeterminate' as input hint, drag is disabled, empty edit returns FLT_MAX):");
+
+		// simulate two selected objects: a component that differs between them
+		// is flagged indeterminate and shows the indeterminate text
+		check("X differs", &demo.multiDiffX);
+		sameLine();
+		check("Y differs", &demo.multiDiffY);
+		sameLine();
+		check("Z differs", &demo.multiDiffZ);
+
+		VectorEditorFlags multiFlags = VectorEditorFlags::None;
+
+		if (demo.multiDiffX)
+			multiFlags |= VectorEditorFlags::IndeterminateX;
+		if (demo.multiDiffY)
+			multiFlags |= VectorEditorFlags::IndeterminateY;
+		if (demo.multiDiffZ)
+			multiFlags |= VectorEditorFlags::IndeterminateZ;
+
+		f32 multiX = demo.multiDiffX ? FLT_MAX : demo.multiBaseX;
+		f32 multiY = demo.multiDiffY ? FLT_MAX : demo.multiBaseY;
+		f32 multiZ = demo.multiDiffZ ? FLT_MAX : demo.multiBaseZ;
+
+		if (vec3Editor("##multiPos", multiX, multiY, multiZ, 0.03f, multiFlags, 6, "Indeterminate"))
+		{
+			// a committed edit applies to all selected objects and clears the
+			// indeterminate state for that component
+			if (multiX != FLT_MAX)
+			{
+				demo.multiBaseX = multiX;
+				demo.multiDiffX = false;
+			}
+			if (multiY != FLT_MAX)
+			{
+				demo.multiBaseY = multiY;
+				demo.multiDiffY = false;
+			}
+			if (multiZ != FLT_MAX)
+			{
+				demo.multiBaseZ = multiZ;
+				demo.multiDiffZ = false;
+			}
+		}
+
+		char multiResult[96];
+		snprintf(multiResult, sizeof(multiResult), "Shared value: (%.2f, %.2f, %.2f)", demo.multiBaseX, demo.multiBaseY, demo.multiBaseZ);
+		label(multiResult);
+		widgetPopDisabled();
+		expandableEnd();
+	}
+
+	// ------------------------------------------------------------------
+	// viewport
+	// ------------------------------------------------------------------
+	if (expandableBegin("Viewport", &demo.expandViewport))
+	{
+		check("Disable##Viewport", &demo.disableViewport);
+		widgetPushDisabled(demo.disableViewport);
+
+		label("A custom viewport area (100px height):");
+		Rect vprect = viewportBegin("##demoViewport", 100);
+		// in a real app, you'd use vprect to draw your 3D scene/etc. (window coordinates)
+		renderDrawSolidRectangle(vprect);
+		renderDrawTextInBox("Custom Viewport Content", vprect, HAlignType::Center, VAlignType::Center);
+		viewportEnd();
+		widgetPopDisabled();
+		expandableEnd();
+	}
+
+	// ------------------------------------------------------------------
+	// virtual List
+	// ------------------------------------------------------------------
+	if (expandableBegin("Virtual List (100000 items)", &demo.expandVirtualList))
+	{
+		check("Disable##VirtualList", &demo.disableVirtualList);
+		widgetPushDisabled(demo.disableVirtualList);
+
+		// persistent virtual list state: only provide item count here
+		static hui::VirtualScrollInfo vinfo(100000); 
+		static f32 virtualListScrollPos = 0.0f;
+
+		scrollViewBegin("##virtualListScroll", 150, virtualListScrollPos);
+
+		virtualListContentBegin(vinfo);
+
+		while (vinfo.nextStep())
+		{
+			for (u32 i = vinfo.startIndex; i <= vinfo.endIndex; ++i)
+			{
+				char buf[64];
+				snprintf(buf, sizeof(buf), "Item %u", i);
+				selectable(buf);
+			}
+		}
+		virtualListContentEnd();
+
+		virtualListScrollPos = scrollViewEnd().y;
+		widgetPopDisabled();
 		expandableEnd();
 	}
 

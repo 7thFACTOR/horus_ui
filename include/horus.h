@@ -3314,6 +3314,10 @@ HUI_API void sameLine(f32 offsetX = 0.0f, f32 spacing = 0.0f);
 /// \param width the next widget width
 HUI_API void widgetSetNextWidth(f32 width);
 
+/// Set the height of the next widget drawn, overriding the default widget height, the value is the total widget height including padding
+/// \param height the next widget height
+HUI_API void widgetSetNextHeight(f32 height);
+
 /// Begin a custom user viewport area
 /// \param height the height of the viewport, if zero, it will take the entire remaining container height
 /// \return the rectangle in window coordinates of the actual viewport area, use this to draw your custom things in

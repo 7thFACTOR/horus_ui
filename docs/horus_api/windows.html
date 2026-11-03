@@ -180,123 +180,144 @@
 
 	<h2>Overlay toolbars</h2>
 	<p>
-		Overlay toolbars are dockable strips that float over the client rect of a viewport. Build them once with
-		<code>overlayToolbarCreate</code> and the <code>overlayToolbarAdd*</code> helpers, then draw all of them between
-		<code>overlayToolbarBegin</code>/<code>overlayToolbarEnd</code> during a frame.
+		Overlay toolbars are dockable strips that float over a viewport. Wrap the whole toolbar pass in
+		<code>overlayToolbarsBegin</code>/<code>overlayToolbarsEnd</code>, then call
+		<code>overlayToolbarBegin</code>/<code>overlayToolbarEnd</code> for each toolbar and add its widgets in between.
+		Toolbars can be docked to an edge of the viewport or left floating, and are identified by a string id.
 	</p>
 
 	<div class="member">
-		<div class="prototype"><code><span class="ret">HOverlayToolbar</span> <span class="fn">overlayToolbarCreate</span>(<span class="prm">const char*</span> id, <span class="prm">const char*</span> title, <span class="prm">OverlayDockZone</span> initialDockZone = OverlayDockZone::Floating)</code></div>
-		<p class="brief">Create an overlay toolbar.</p>
-		<ul class="params">
-			<li><span class="pname">id</span> the unique toolbar id</li>
-			<li><span class="pname">title</span> the toolbar title</li>
-			<li><span class="pname">initialDockZone</span> the initial dock zone (<code>Floating</code> by default)</li>
-		</ul>
-		<p class="returns">Returns the toolbar handle.</p>
-	</div>
-	<div class="member">
-		<div class="prototype"><code><span class="ret">HOverlayToolbar</span> <span class="fn">overlayToolbarFind</span>(<span class="prm">const char*</span> id)</code></div>
-		<p class="brief">Find a previously created overlay toolbar by id.</p>
-		<ul class="params"><li><span class="pname">id</span> the toolbar id</li></ul>
-		<p class="returns">Returns the toolbar handle or null.</p>
-	</div>
-	<div class="member">
-		<div class="prototype"><code><span class="ret">HOverlayToolbarWidget</span> <span class="fn">overlayToolbarAddButton</span>(<span class="prm">HOverlayToolbar</span> toolbar, <span class="prm">const char*</span> elementId, <span class="prm">const char*</span> label, <span class="prm">HImage</span> icon = 0, <span class="prm">void (*onClick)()</span> = nullptr, <span class="prm">const char*</span> tooltip = nullptr)</code></div>
-		<p class="brief">Add a button element to a toolbar.</p>
-		<ul class="params">
-			<li><span class="pname">toolbar</span> the toolbar</li>
-			<li><span class="pname">elementId</span> the element id (unique inside the toolbar)</li>
-			<li><span class="pname">label</span> the button label</li>
-			<li><span class="pname">icon</span> the button icon image</li>
-			<li><span class="pname">onClick</span> function called on click</li>
-			<li><span class="pname">tooltip</span> optional tooltip text</li>
-		</ul>
-		<p class="returns">Returns the toolbar widget handle.</p>
-	</div>
-	<div class="member">
-		<div class="prototype"><code><span class="ret">HOverlayToolbarWidget</span> <span class="fn">overlayToolbarAddToggle</span>(<span class="prm">HOverlayToolbar</span> toolbar, <span class="prm">const char*</span> elementId, <span class="prm">const char*</span> label, <span class="prm">HImage</span> iconOff, <span class="prm">HImage</span> iconOn, <span class="prm">bool*</span> toggleValue, <span class="prm">const char*</span> tooltip = nullptr)</code></div>
-		<p class="brief">Add a toggle (checkable) button element to a toolbar.</p>
-		<ul class="params">
-			<li><span class="pname">toolbar</span> the toolbar</li>
-			<li><span class="pname">elementId</span> the element id (unique inside the toolbar)</li>
-			<li><span class="pname">label</span> the toggle label</li>
-			<li><span class="pname">iconOff</span> the image when off</li>
-			<li><span class="pname">iconOn</span> the image when on</li>
-			<li><span class="pname">toggleValue</span> points to the toggle value (in/out)</li>
-			<li><span class="pname">tooltip</span> optional tooltip text</li>
-		</ul>
-		<p class="returns">Returns the toolbar widget handle.</p>
-	</div>
-	<div class="member">
-		<div class="prototype"><code><span class="ret">HOverlayToolbarWidget</span> <span class="fn">overlayToolbarAddSeparator</span>(<span class="prm">HOverlayToolbar</span> toolbar)</code></div>
-		<p class="brief">Add a separator element to a toolbar.</p>
-	</div>
-	<div class="member">
-		<div class="prototype"><code><span class="ret">HOverlayToolbarWidget</span> <span class="fn">overlayToolbarAddSpace</span>(<span class="prm">HOverlayToolbar</span> toolbar)</code></div>
-		<p class="brief">Add a flexible space element to a toolbar.</p>
-	</div>
-	<div class="member">
-		<div class="prototype"><code><span class="ret">HOverlayToolbarWidget</span> <span class="fn">overlayToolbarAddGrip</span>(<span class="prm">HOverlayToolbar</span> toolbar)</code></div>
-		<p class="brief">Add a grip to grab and drag the toolbar, inserted as the first element.</p>
-	</div>
-	<div class="member">
-		<div class="prototype"><code><span class="kw">void</span> <span class="fn">overlayToolbarRemoveElement</span>(<span class="prm">HOverlayToolbar</span> toolbar, <span class="prm">const char*</span> elementId)</code></div>
-		<p class="brief">Remove an element from a toolbar.</p>
-		<ul class="params">
-			<li><span class="pname">toolbar</span> the toolbar</li>
-			<li><span class="pname">elementId</span> the element id to remove</li>
-		</ul>
-	</div>
-	<div class="member">
-		<div class="prototype"><code><span class="kw">void</span> <span class="fn">overlayToolbarBegin</span>(<span class="prm">const Rect&amp;</span> viewportRect)</code></div>
-		<p class="brief">Begin the overlay toolbar pass for the given viewport. Toolbars are drawn between this call and <code>overlayToolbarEnd</code>.</p>
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">overlayToolbarsBegin</span>(<span class="prm">const Rect&amp;</span> viewportRect)</code></div>
+		<p class="brief">Begin the overlay toolbar system for a viewport rect.</p>
 		<ul class="params"><li><span class="pname">viewportRect</span> the viewport rect in window coordinates</li></ul>
 	</div>
 	<div class="member">
-		<div class="prototype"><code><span class="kw">void</span> <span class="fn">overlayToolbarRender</span>(<span class="prm">HOverlayToolbar</span> toolbar)</code></div>
-		<p class="brief">Draw one toolbar (must be inside <code>overlayToolbarBegin</code>/<code>End</code>).</p>
-		<ul class="params"><li><span class="pname">toolbar</span> the toolbar to draw</li></ul>
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">overlayToolbarsEnd</span>()</code></div>
+		<p class="brief">End the overlay toolbar system.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="ret">bool</span> <span class="fn">overlayToolbarBegin</span>(<span class="prm">const char*</span> id, <span class="prm">const char*</span> title, <span class="prm">OverlayDockZone</span> dockZone = OverlayDockZone::Floating, <span class="prm">OverlayToolbarLayout</span> layout = OverlayToolbarLayout::Horizontal)</code></div>
+		<p class="brief">Begin an overlay toolbar.</p>
+		<ul class="params">
+			<li><span class="pname">id</span> the unique toolbar id</li>
+			<li><span class="pname">title</span> the toolbar title (shown when collapsed)</li>
+			<li><span class="pname">dockZone</span> the dock zone (<code>Floating</code> by default)</li>
+			<li><span class="pname">layout</span> the toolbar layout (<code>Horizontal</code> by default)</li>
+		</ul>
+		<p class="returns">Returns true if the toolbar is open, false if collapsed/hidden.</p>
 	</div>
 	<div class="member">
 		<div class="prototype"><code><span class="kw">void</span> <span class="fn">overlayToolbarEnd</span>()</code></div>
-		<p class="brief">End the overlay toolbar pass.</p>
+		<p class="brief">End the current overlay toolbar.</p>
 	</div>
 	<div class="member">
-		<div class="prototype"><code><span class="kw">void</span> <span class="fn">overlayToolbarSetDockZone</span>(<span class="prm">HOverlayToolbar</span> toolbar, <span class="prm">OverlayDockZone</span> zone)</code></div>
-		<p class="brief">Set the dock zone of a toolbar (or <code>Floating</code>).</p>
+		<div class="prototype"><code><span class="ret">bool</span> <span class="fn">overlayToolbarButton</span>(<span class="prm">const char*</span> elementId, <span class="prm">const char*</span> label, <span class="prm">HImage</span> icon = 0, <span class="prm">void (*onClick)()</span> = nullptr, <span class="prm">const char*</span> tooltip = nullptr)</code></div>
+		<p class="brief">Add a button to the current toolbar.</p>
+		<ul class="params">
+			<li><span class="pname">elementId</span> the unique element id inside the toolbar</li>
+			<li><span class="pname">label</span> the button label</li>
+			<li><span class="pname">icon</span> the button icon image</li>
+			<li><span class="pname">onClick</span> function called when clicked</li>
+			<li><span class="pname">tooltip</span> the button tooltip text</li>
+		</ul>
+		<p class="returns">Returns true if clicked.</p>
 	</div>
 	<div class="member">
-		<div class="prototype"><code><span class="kw">void</span> <span class="fn">overlayToolbarSetFloatingPosition</span>(<span class="prm">HOverlayToolbar</span> toolbar, <span class="prm">const Point&amp;</span> pos)</code></div>
-		<p class="brief">Set the position of a floating toolbar, relative to the viewport rect given to <code>overlayToolbarBegin</code>.</p>
+		<div class="prototype"><code><span class="ret">bool</span> <span class="fn">overlayToolbarToggle</span>(<span class="prm">const char*</span> elementId, <span class="prm">const char*</span> label, <span class="prm">HImage</span> iconOff, <span class="prm">HImage</span> iconOn, <span class="prm">bool*</span> toggleValue, <span class="prm">void (*onToggle)(bool)</span> = nullptr, <span class="prm">const char*</span> tooltip = nullptr)</code></div>
+		<p class="brief">Add a toggle button to the current toolbar.</p>
+		<ul class="params">
+			<li><span class="pname">elementId</span> the unique element id inside the toolbar</li>
+			<li><span class="pname">label</span> the toggle label</li>
+			<li><span class="pname">iconOff</span> the image shown when the toggle is off</li>
+			<li><span class="pname">iconOn</span> the image shown when the toggle is on</li>
+			<li><span class="pname">toggleValue</span> points to the bool value of the toggle</li>
+			<li><span class="pname">onToggle</span> callback when the toggle value changes (receives the new value)</li>
+			<li><span class="pname">tooltip</span> the toggle tooltip text</li>
+		</ul>
+		<p class="returns">Returns true if toggled.</p>
 	</div>
 	<div class="member">
-		<div class="prototype"><code><span class="kw">void</span> <span class="fn">overlayToolbarSetLayout</span>(<span class="prm">HOverlayToolbar</span> toolbar, <span class="prm">OverlayToolbarLayout</span> layout)</code></div>
-		<p class="brief">Set the toolbar layout: <code>Horizontal</code>, <code>Vertical</code> or <code>Panel</code>.</p>
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">overlayToolbarDropdown</span>(<span class="prm">const char*</span> elementId, <span class="prm">const char**</span> items, <span class="prm">u32</span> itemCount, <span class="prm">i32*</span> selectedIndex, <span class="prm">void (*onSelect)(i32)</span> = nullptr, <span class="prm">HImage</span> icon = 0, <span class="prm">const char*</span> tooltip = nullptr)</code></div>
+		<p class="brief">Add a dropdown list button to the current toolbar, showing the selected item. The chosen item is reported through the <code>onSelect</code> callback.</p>
+		<ul class="params">
+			<li><span class="pname">elementId</span> the unique element id inside the toolbar</li>
+			<li><span class="pname">items</span> the array of item labels</li>
+			<li><span class="pname">itemCount</span> the number of items</li>
+			<li><span class="pname">selectedIndex</span> the currently selected item index (in/out)</li>
+			<li><span class="pname">onSelect</span> callback when an item is selected (receives the new index)</li>
+			<li><span class="pname">icon</span> optional icon shown before the text</li>
+			<li><span class="pname">tooltip</span> the dropdown tooltip text</li>
+		</ul>
 	</div>
 	<div class="member">
-		<div class="prototype"><code><span class="kw">void</span> <span class="fn">overlayToolbarSetCollapsed</span>(<span class="prm">HOverlayToolbar</span> toolbar, <span class="prm">bool</span> collapsed)</code></div>
-		<p class="brief">Collapse or expand a toolbar.</p>
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">overlayToolbarSeparator</span>()</code></div>
+		<p class="brief">Add a separator to the current toolbar.</p>
 	</div>
 	<div class="member">
-		<div class="prototype"><code><span class="kw">void</span> <span class="fn">overlayToolbarSetVisible</span>(<span class="prm">HOverlayToolbar</span> toolbar, <span class="prm">bool</span> visible)</code></div>
-		<p class="brief">Show or hide a toolbar.</p>
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">overlayToolbarSpace</span>()</code></div>
+		<p class="brief">Add a space to the current toolbar.</p>
 	</div>
 	<div class="member">
-		<div class="prototype"><code><span class="ret">bool</span> <span class="fn">overlayToolbarIsVisible</span>(<span class="prm">HOverlayToolbar</span> toolbar)</code></div>
-		<p class="brief">Return true if the toolbar is visible.</p>
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">overlayToolbarGrip</span>()</code></div>
+		<p class="brief">Add a grip to the current toolbar, used for dragging.</p>
 	</div>
 	<div class="member">
-		<div class="prototype"><code><span class="ret">bool</span> <span class="fn">overlayToolbarIsDragging</span>(<span class="prm">HOverlayToolbar</span> toolbar)</code></div>
-		<p class="brief">Return true if the toolbar is currently being dragged.</p>
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">overlayToolbarSetGridAlignment</span>(<span class="prm">bool</span> enable, <span class="prm">f32</span> gridSize = 0)</code></div>
+		<p class="brief">Set grid snapping for floating toolbars.</p>
+		<ul class="params">
+			<li><span class="pname">enable</span> true to enable grid snapping</li>
+			<li><span class="pname">gridSize</span> the grid size in pixels (0 to use the global setting)</li>
+		</ul>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">overlayToolbarSetCustomSize</span>(<span class="prm">const Point&amp;</span> size, <span class="prm">bool</span> useCustomSize = true)</code></div>
+		<p class="brief">Set a custom size for the current floating toolbar.</p>
+		<ul class="params">
+			<li><span class="pname">size</span> the custom size (width, height)</li>
+			<li><span class="pname">useCustomSize</span> true to use the custom size, false to size from content</li>
+		</ul>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">overlayToolbarSetFloatingPosition</span>(<span class="prm">const Point&amp;</span> pos)</code></div>
+		<p class="brief">Set the floating position for the current floating toolbar, relative to the viewport.</p>
+		<ul class="params"><li><span class="pname">pos</span> the position relative to the viewport</li></ul>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="ret">Point</span> <span class="fn">overlayToolbarGetFloatingPosition</span>()</code></div>
+		<p class="brief">Return the floating position of the current floating toolbar relative to the viewport (updated after a drag).</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">overlayToolbarSetCollapsed</span>(<span class="prm">bool</span> collapsed)</code></div>
+		<p class="brief">Set the collapsed state for the current toolbar.</p>
+		<ul class="params"><li><span class="pname">collapsed</span> true to collapse the toolbar</li></ul>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="ret">bool</span> <span class="fn">overlayToolbarIsCollapsed</span>()</code></div>
+		<p class="brief">Return true if the current toolbar is collapsed.</p>
 	</div>
 	<div class="member">
 		<div class="prototype"><code><span class="ret">Rect</span> <span class="fn">overlayToolbarGetDockZoneRect</span>(<span class="prm">const Rect&amp;</span> viewportRect, <span class="prm">OverlayDockZone</span> zone, <span class="prm">f32</span> toolbarThickness = 32.0f)</code></div>
-		<p class="brief">Return the rectangle of a dock zone relative to the viewport rect.</p>
+		<p class="brief">Return the rect of a dock zone inside a viewport rect.</p>
+		<ul class="params">
+			<li><span class="pname">viewportRect</span> the viewport rect</li>
+			<li><span class="pname">zone</span> the dock zone</li>
+			<li><span class="pname">toolbarThickness</span> the thickness of the toolbar in the dock zone</li>
+		</ul>
 	</div>
 	<div class="member">
 		<div class="prototype"><code><span class="ret">bool</span> <span class="fn">overlayToolbarPointInDockZone</span>(<span class="prm">const Rect&amp;</span> viewportRect, <span class="prm">const Point&amp;</span> pt, <span class="prm">OverlayDockZone</span> zone, <span class="prm">f32</span> toolbarThickness = 32.0f)</code></div>
 		<p class="brief">Return true if a point is inside a dock zone rect.</p>
+		<ul class="params">
+			<li><span class="pname">viewportRect</span> the viewport rect</li>
+			<li><span class="pname">pt</span> the point to test</li>
+			<li><span class="pname">zone</span> the dock zone</li>
+			<li><span class="pname">toolbarThickness</span> the thickness of the toolbar in the dock zone</li>
+		</ul>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="ret">bool</span> <span class="fn">overlayToolbarContainsPoint</span>(<span class="prm">const Point&amp;</span> viewportPoint)</code></div>
+		<p class="brief">Return true if a point relative to the <code>overlayToolbarsBegin</code> viewport rect is inside any visible toolbar or an open dropdown popup of a toolbar.</p>
+		<ul class="params"><li><span class="pname">viewportPoint</span> the point relative to the <code>overlayToolbarsBegin</code> viewport rect</li></ul>
 	</div>
 
 	<h2>Application</h2>

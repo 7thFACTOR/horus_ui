@@ -128,7 +128,7 @@
 	</div>
 	<div class="member">
 		<div class="prototype"><code><span class="kw">struct</span> <span class="fn">LineStyle</span> { <span class="kw">Color</span> color; <span class="kw">f32</span> width; <span class="kw">bool</span> useStipple; <span class="kw">f32</span> stipplePattern[8]; <span class="kw">u32</span> stipplePatternCount; <span class="kw">f32</span> stipplePhase; };</code></div>
-		<p class="brief">Line drawing style. The stipple pattern alternates dash and empty sizes (e.g. <code>{5, 5}</code>).</p>
+		<p class="brief">Line drawing style. The stipple pattern alternates dash and empty sizes (e.g. <code>{5, 5}</code>). Use the static helpers <code>LineStyle::dashed</code>, <code>LineStyle::dotted</code>, <code>LineStyle::dashDot</code> and <code>LineStyle::dashDotDot</code> to build common patterns.</p>
 	</div>
 	<div class="member">
 		<div class="prototype"><code><span class="kw">struct</span> <span class="fn">FillStyle</span> { <span class="kw">Color</span> color; <span class="kw">HImage</span> image; <span class="kw">Point</span> scale; };</code></div>

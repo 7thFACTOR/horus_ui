@@ -279,6 +279,7 @@ struct ComboSliderState
 	static const size_t maxTextSize = 1024;
 
 	f32 currentValue = 0;
+	f32 editHeight = 0; // total widget height to keep while editing the value as text
 	bool mouseWasDown = false;
 	bool dragging = false;
 	bool editingText = false;
@@ -448,8 +449,10 @@ struct WidgetState
 	f32 width = 0; // if 0 then it will be automatically computed, usually the parent container width
 	f32 nextWidth = 0; // if set, will be applied to the next widget
 	f32 customWidth = 0;
+	f32 nextHeight = 0; // if set, will be applied to the next widget
 	bool hasNextWidth = false; // whether nextWidth is set
 	bool hasCustomWidth = false;
+	bool hasNextHeight = false; // whether nextHeight is set
 	bool disabled = false;
 	bool pressed = false;
 	bool visible = true;
@@ -585,6 +588,7 @@ struct PopupState
 	bool alreadyClickedOnSomething = false;
 	bool alreadyClosedWithEscape = false;
 	bool active = false;
+	u32 lastUsedFrame = 0; // the last frame this popup was begun, used to drop popups that stop being drawn
 	i32 oldZOrder = 0;
 	bool startedToDrag = false;
 	bool draggingPopup = false;
@@ -845,6 +849,7 @@ struct ColorPickerState
 	Color currentHsv;
 	Color currentRgb;
 	Color oldColor;
+	Color popupColor; // temporary color edited by a popup with apply buttons
 	i32 intR, intG, intB, intA;
 	static const u32 maxHexColorSize = 9;
 	char hexColor[maxHexColorSize] = {0};

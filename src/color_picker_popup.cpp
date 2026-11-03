@@ -825,6 +825,7 @@ bool colorPickerPopup(const char* id, Color* inOutColor, ColorPickerFlags flags,
 		popupOpen = true;
 		ctx->widgetBools[pickerId + 1].value = true;
 		ctx->colorPickerState.oldColor = *inOutColor;
+		ctx->colorPickerState.popupColor = *inOutColor;
 		ctx->colorPickerState.currentEditingId = 0;
 	}
 
@@ -853,7 +854,7 @@ bool colorPickerPopup(const char* id, Color* inOutColor, ColorPickerFlags flags,
 			else
 			{
 				Color originalColor = *inOutColor;
-				Color tempColor = originalColor;
+				Color& tempColor = ctx->colorPickerState.popupColor;
 				colorPicker("##cpInner", &tempColor, flags, &originalColor, customColors, customColorCount, maxCustomColors);
 
 				space(10);

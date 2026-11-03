@@ -170,7 +170,11 @@ void addWidget(f32 height)
 	ctx->widget.nextDisabled = false;
 	ctx->widget.changeEnded = false;
 	ctx->widget.doubleClicked = false;
-	height = (height + widgetGetPadding().y * 2.0f) * ctx->scale;
+
+	if (ctx->widget.hasNextHeight)
+		height = ctx->widget.nextHeight * ctx->scale;
+	else
+		height = (height + widgetGetPadding().y * 2.0f) * ctx->scale;
 
 	// next width has priority over custom width
 	if (ctx->widget.hasNextWidth)
@@ -259,6 +263,7 @@ void addWidget(f32 height)
 	}
 
 	ctx->widget.hasNextWidth = false;
+	ctx->widget.hasNextHeight = false;
 	ctx->widget.hasCustomWidth = false;
 	ctx->sameLine.enabled = false;
 }
@@ -557,6 +562,27 @@ void frameEnd()
 	// the stacks should be empty, otherwise push/pop count not matching
 	ctx->focusChanged = false;
 	ctx->mouseMoved = false;
+
+	// popups are immediate mode: any popup that was not begun this frame was dropped
+	// by its owner without calling popupClose, so release it and its layer
+	for (auto& popup : ctx->popupStack)
+	{
+		if (!popup.active || popup.lastUsedFrame == ctx->frameCount)
+			continue;
+
+		popup.active = false;
+		popup.startedToDrag = false;
+		popup.draggingPopup = false;
+		popup.opened = false;
+		popup.layerIncremented = false;
+
+		if (!has(popup.flags, PopupFlags::SameLayer))
+		{
+			ctx->contextMenuActive = false;
+			ctx->contextMenuClicked = false;
+			ctx->contextMenuWidgetId = 0;
+		}
+	}
 
 	if (ctx->dragDrop.begunDragging
 		&& ctx->event.type == InputEvent::Type::MouseUp)
