@@ -159,6 +159,9 @@ struct Context
 	// Custom file dialog
 	std::unordered_map<WidgetId, CustomFileDialogState> customFileDialogs;
 
+	// Timeline
+	std::unordered_map<WidgetId, TimelineWidgetState> timelineStates;
+
 	// Input
 	InputEvent event;
 	std::vector<InputEvent> events;

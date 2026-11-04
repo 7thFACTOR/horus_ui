@@ -212,6 +212,24 @@
 		<p class="brief">Colors the text between <code>beginKeyword</code> and <code>endKeyword</code> (with optional <code>escapeKeyword</code>) in the multiline text input.</p>
 	</div>
 
+	<h2>Timeline types</h2>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">struct</span> <span class="fn">TimelineKey</span> { <span class="kw">f32</span> time; <span class="kw">f32</span> value[4]; <span class="kw">f32</span> inTangent[4]; <span class="kw">f32</span> outTangent[4]; <span class="kw">bool</span> tangentAuto; <span class="kw">bool</span> selected; };</code></div>
+		<p class="brief">A key of a timeline channel: its time in seconds, up to four component values, per-component in/out tangents (value units per second) and the selection flag. While <code>tangentAuto</code> is true the tangents are computed automatically from the neighbouring keys; editing a tangent handle in curves mode stores manual values.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">struct</span> <span class="fn">TimelineChannel</span> { <span class="kw">std::string</span> name; <span class="kw">TimelineKeyType</span> type; <span class="kw">bool</span> enabled; <span class="kw">std::vector&lt;TimelineKey&gt;</span> keys; };</code></div>
+		<p class="brief">A timeline channel with a name, data type, enabled flag and keys kept sorted by time.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">struct</span> <span class="fn">TimelineState</span></code></div>
+		<p class="brief">The full state of a timeline: <code>channels</code>, <code>viewMode</code>, time range, cursor, zoom/scroll, value range, selected channel, frame snapping and playback settings (<code>playing</code>, <code>loopPlayback</code>). Owned by the caller and passed to <code>timeline</code>.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">struct</span> <span class="fn">TimelineSettings</span></code></div>
+		<p class="brief">Timeline geometry, color and interaction settings, available as <code>Settings::timeline</code>. When <code>useThemeColors</code> is true (the default), the timeline palette is derived from the active theme.</p>
+	</div>
+
 	<h2>Enums</h2>
 	<div class="table-wrap">
 		<table>
@@ -261,6 +279,8 @@
 				<tr><td><code>TintColorOpType</code></td><td><code>None, Multiply, Add, Subtract, Replace</code></td><td>How the tint color is combined.</td></tr>
 				<tr><td><code>OverlayDockZone</code></td><td><code>None, TopToolbar, BottomToolbar, LeftToolbar, RightToolbar, Floating</code></td><td>Dock zones for overlay toolbars.</td></tr>
 				<tr><td><code>OverlayToolbarLayout</code></td><td><code>Horizontal, Vertical, Panel</code></td><td>Overlay toolbar layouts.</td></tr>
+				<tr><td><code>TimelineKeyType</code></td><td><code>Float, Int, Vec2, Vec3, Vec4, Bool</code></td><td>The data type of a timeline channel.</td></tr>
+				<tr><td><code>TimelineViewMode</code></td><td><code>Keyframes, Curves</code></td><td>Timeline view modes.</td></tr>
 			</tbody>
 		</table>
 	</div>

@@ -206,6 +206,7 @@ struct DemoState
 	// expandable states (managed internally by expandable())
 	bool expandButton = true;
 	bool expandTextInput = false;
+	bool expandTimeline = false;
 	bool expandMultiline = false;
 	bool expandSlider = false;
 	bool expandComboSlider = false;
@@ -241,6 +242,7 @@ struct DemoState
 	// disabled states
 	bool disableButton = false;
 	bool disableTextInput = false;
+	bool disableTimeline = false;
 	bool disableMultiline = false;
 	bool disableSlider = false;
 	bool disableComboSlider = false;
@@ -358,6 +360,10 @@ struct DemoState
 	Color pickerColor = Color(1.0f, 0.0f, 0.0f, 1.0f);
 	Color customPickerColors[16] = {};
 	u32 customPickerColorCount = 0;
+
+	// timeline
+	TimelineState timelineState;
+	bool timelineInitialized = false;
 
 	// vec editors
 	f32 vec2x = 1.0f, vec2y = 2.0f;
@@ -762,6 +768,87 @@ static void demoCustomFileDialogPreview(const char* path, const Rect& previewRec
 	renderSetColor(Color::white);
 	renderDrawTextInBox(path, previewRect, HAlignType::Center, VAlignType::Center);
 }
+
+static void demoInitTimeline(TimelineState& state)
+{
+	state.channels.clear();
+	state.viewMode = TimelineViewMode::Keyframes;
+	state.startTime = 0.0f;
+	state.endTime = 5.0f;
+	state.cursorTime = 2.0f;
+	state.pixelsPerSecond = 150.0f;
+	state.scrollTime = 0.0f;
+	state.channelScroll = 0.0f;
+	state.valueMin = 0.0f;
+	state.valueMax = 1.0f;
+	state.autoValueRange = true;
+	state.selectedChannel = 0;
+	state.frameRate = 30.0f;
+	state.snapToFrames = true;
+
+	auto addChannel = [&](const char* name, TimelineKeyType type)
+	{
+		TimelineChannel channel;
+
+		channel.name = name;
+		channel.type = type;
+		channel.enabled = true;
+		state.channels.push_back(channel);
+
+		return &state.channels.back();
+	};
+
+	auto addKey = [](TimelineChannel* channel, f32 time, f32 x, f32 y = 0.0f, f32 z = 0.0f, f32 w = 0.0f)
+	{
+		TimelineKey key;
+
+		key.time = time;
+		key.value[0] = x;
+		key.value[1] = y;
+		key.value[2] = z;
+		key.value[3] = w;
+		channel->keys.push_back(key);
+	};
+
+	TimelineChannel* channel = addChannel("Position", TimelineKeyType::Vec3);
+
+	addKey(channel, 0.0f, 0.0f, 0.0f, 0.0f);
+	addKey(channel, 1.0f, 0.0f, 2.0f, 0.0f);
+	addKey(channel, 2.5f, 3.0f, 2.0f, 0.0f);
+	addKey(channel, 4.0f, 0.0f, 0.0f, 0.0f);
+
+	channel = addChannel("Rotation", TimelineKeyType::Vec3);
+
+	addKey(channel, 0.0f, 0.0f, 0.0f, 0.0f);
+	addKey(channel, 2.0f, 0.0f, 180.0f, 0.0f);
+	addKey(channel, 4.0f, 0.0f, 360.0f, 0.0f);
+
+	channel = addChannel("Scale", TimelineKeyType::Vec2);
+
+	addKey(channel, 0.0f, 1.0f, 1.0f);
+	addKey(channel, 2.0f, 1.5f, 1.5f);
+	addKey(channel, 4.0f, 1.0f, 1.0f);
+
+	channel = addChannel("Opacity", TimelineKeyType::Float);
+
+	addKey(channel, 0.0f, 1.0f);
+	addKey(channel, 1.0f, 0.6f);
+	addKey(channel, 3.0f, 1.0f);
+	addKey(channel, 5.0f, 1.0f);
+
+	channel = addChannel("Visible", TimelineKeyType::Bool);
+
+	addKey(channel, 0.0f, 1.0f);
+	addKey(channel, 2.0f, 0.0f);
+	addKey(channel, 3.0f, 1.0f);
+
+	channel = addChannel("Frame", TimelineKeyType::Int);
+
+	addKey(channel, 0.0f, 0.0f);
+	addKey(channel, 1.0f, 3.0f);
+	addKey(channel, 2.0f, 7.0f);
+	addKey(channel, 4.0f, 12.0f);
+}
 } // namespace
 
 void showDemo()
@@ -772,6 +859,12 @@ void showDemo()
 
 		// Create a single smiley icon
 		demo.iconSmiley = createIcon("demo/icon_smiley", 32, drawSmileyIcon);
+	}
+
+	if (!demo.timelineInitialized)
+	{
+		demo.timelineInitialized = true;
+		demoInitTimeline(demo.timelineState);
 	}
 
 	// animate progress bars
@@ -3510,6 +3603,32 @@ if (expandableBegin("Overlay Toolbars", &demo.expandOverlayToolbar))
 		space();
 		label("Password:");
 		textInput("##tiPass", demo.textPassword, sizeof(demo.textPassword), TextInputFlags::None, nullptr, 0, true);
+		widgetPopDisabled();
+		expandableEnd();
+	}
+
+	// ------------------------------------------------------------------
+	// timeline
+	// ------------------------------------------------------------------
+	if (expandableBegin("Timeline", &demo.expandTimeline))
+	{
+		check("Disable##Timeline", &demo.disableTimeline);
+		widgetPushDisabled(demo.disableTimeline);
+
+		label("Animation timeline:");
+		labelMultiline("Drag keys to retime, drag values in Curves mode, wheel to scroll, Ctrl+wheel to zoom, middle-drag to pan, double-click the canvas to add a key and Delete to remove selected keys. In Curves mode the curves are Hermite; select a key to show its tangent handles and drag them to bend the curve.", HAlignType::Left);
+		timeline("##demoTimeline", &demo.timelineState, 340.0f);
+
+		space();
+		check("Snap to frames", &demo.timelineState.snapToFrames);
+		sameLine();
+		widgetSetNextWidth(220.0f);
+		sliderFloat("Frame Rate", 1.0f, 120.0f, demo.timelineState.frameRate, true, 1.0f);
+		check("Auto value range", &demo.timelineState.autoValueRange);
+		sameLine();
+		if (button("Reset Timeline"))
+			demoInitTimeline(demo.timelineState);
+
 		widgetPopDisabled();
 		expandableEnd();
 	}

@@ -2171,6 +2171,105 @@ struct OverlayToolbarSettings
 	f32 floatingGridSize = 0; /// grid size for snapping floating toolbars (0 = disabled)
 };
 
+/// The data type of a timeline channel
+enum class TimelineKeyType
+{
+	Float, /// one float component
+	Int, /// one int component
+	Vec2, /// two float components
+	Vec3, /// three float components
+	Vec4, /// four float components
+	Bool, /// one boolean component
+};
+
+/// The view mode of a timeline widget
+enum class TimelineViewMode
+{
+	Keyframes, /// dope sheet view, keys are edited on the time axis
+	Curves, /// curve view, keys are edited on the time and value axes
+};
+
+/// A key of a timeline channel
+struct TimelineKey
+{
+	f32 time = 0.0f; /// the key time in seconds
+	f32 value[4] = { 0, 0, 0, 0 }; /// the key value, one entry per channel component
+	f32 inTangent[4] = { 0, 0, 0, 0 }; /// the tangent entering the key, in value units per second, used when tangentAuto is false
+	f32 outTangent[4] = { 0, 0, 0, 0 }; /// the tangent leaving the key, in value units per second, used when tangentAuto is false
+	bool tangentAuto = true; /// true if the tangents are computed automatically from the neighbouring keys
+	bool selected = false; /// true if the key is selected
+};
+
+/// A channel of a timeline widget
+struct TimelineChannel
+{
+	std::string name; /// the channel name shown in the channels list
+	TimelineKeyType type = TimelineKeyType::Float; /// the channel data type
+	bool enabled = true; /// false if the channel is disabled
+	std::vector<TimelineKey> keys; /// the channel keys, kept sorted by time
+};
+
+/// The state of a timeline widget, owned by the caller and passed to the timeline() function
+struct TimelineState
+{
+	std::vector<TimelineChannel> channels; /// the timeline channels
+	TimelineViewMode viewMode = TimelineViewMode::Keyframes; /// the current view mode
+	f32 startTime = 0.0f; /// the start of the timeline time range
+	f32 endTime = 5.0f; /// the end of the timeline time range
+	f32 cursorTime = 0.0f; /// the current time cursor
+	f32 pixelsPerSecond = 160.0f; /// horizontal zoom in pixels per second at 100% UI scale
+	f32 scrollTime = 0.0f; /// the time at the left edge of the timeline view
+	f32 channelScroll = 0.0f; /// the vertical channel list scroll offset in pixels at 100% UI scale
+	f32 valueMin = 0.0f; /// the minimum value shown in curves mode when autoValueRange is false
+	f32 valueMax = 1.0f; /// the maximum value shown in curves mode when autoValueRange is false
+	bool autoValueRange = true; /// if true the curves mode value range is computed from the channel keys
+	i32 selectedChannel = -1; /// the selected channel index, -1 if none
+	f32 frameRate = 30.0f; /// the frame rate used for snapping
+	bool snapToFrames = false; /// if true key times and the cursor snap to frames
+	bool playing = false; /// true while the timeline is playing back
+	bool loopPlayback = true; /// true if playback wraps back to startTime when reaching endTime
+};
+
+/// Settings for the timeline widget
+struct TimelineSettings
+{
+	bool useThemeColors = true; /// if true, the timeline colors are derived from the current theme
+	f32 defaultHeight = 320; /// the default widget height when no height is provided
+	f32 channelListWidth = 240; /// the width of the channels list panel
+	f32 toolbarHeight = 30; /// the height of the toolbar
+	f32 rulerHeight = 24; /// the height of the time ruler
+	f32 rowHeight = 22; /// the height of a channel row
+	f32 keySize = 6; /// the radius of a key marker
+	f32 keyHitRadius = 8; /// the mouse hit radius of a key marker
+	f32 playheadWidth = 1.5f; /// the width of the time cursor line
+	f32 endTimeLineWidth = 2.0f; /// the width of the line drawn at the end of the time range
+	Color endTimeLineColor = Color::fromU8(160, 165, 175, 110); /// the color of the line drawn at the end of the time range
+	f32 curveLineWidth = 1.5f; /// the width of a curve line
+	f32 tangentHandleLength = 40; /// the horizontal length of a tangent handle in pixels
+	f32 tangentHandleRadius = 4; /// the radius of a tangent handle marker in pixels
+	f32 toolbarValueFieldWidth = 120; /// the width of a selected key combo slider in the toolbar
+	f32 toolbarTimeFieldWidth = 140; /// the width of the selected key time combo slider in the toolbar
+	f32 valueAxisWidth = 54; /// the width of the value axis shown in curves mode
+	f32 minPixelsPerSecond = 10; /// the minimum horizontal zoom
+	f32 maxPixelsPerSecond = 4000; /// the maximum horizontal zoom
+	f32 defaultPixelsPerSecond = 160; /// the horizontal zoom used when the state has no valid zoom
+	f32 zoomStep = 1.25f; /// the zoom multiplier for a single zoom step
+	Color backgroundColor = Color::fromU8(16, 18, 22); /// the timeline background color
+	Color channelListColor = Color::fromU8(22, 25, 30); /// the channels list background color
+	Color headerColor = Color::fromU8(30, 34, 40); /// the toolbar and header background color
+	Color rowAlternateColor = Color::fromU8(20, 23, 28); /// the alternate channel row background color
+	Color rowSelectedColor = Color::fromU8(55, 125, 185, 90); /// the selected channel row background color
+	Color gridColor = Color::fromU8(44, 48, 56); /// the minor grid color
+	Color gridStrongColor = Color::fromU8(62, 68, 78); /// the major grid color
+	Color textColor = Color::fromU8(220, 224, 230); /// the primary text color
+	Color dimTextColor = Color::fromU8(140, 146, 156); /// the secondary text color
+	Color keySelectedColor = Color::fromU8(55, 185, 255); /// the selected key color
+	Color playheadColor = Color::fromU8(235, 80, 80); /// the time cursor color
+	Color selectionFillColor = Color::fromU8(55, 185, 255, 35); /// the box selection fill color
+	Color selectionBorderColor = Color::fromU8(55, 185, 255, 180); /// the box selection border color
+	Color disabledOverlayColor = Color::fromU8(0, 0, 0, 90); /// the overlay drawn over a disabled timeline
+};
+
 /// Various HorusUI per-context global settings
 struct Settings
 {
@@ -2180,6 +2279,7 @@ struct Settings
 	f32 textScrollStepAmount = 30; /// scroll pixel amount when moving inside text input
 	u32 defaultAtlasSize = 4096; /// default atlas textures size in pixels
 	OverlayToolbarSettings overlayToolbars; /// settings for overlay toolbars
+	TimelineSettings timeline; /// settings for the timeline widget
 	Point defaultLayoutPadding = {10, 10};
 	Point defaultScrollViewPadding = { 10, 10 };
 	Point defaultWidgetPadding = { 0, 0 };
@@ -3273,6 +3373,13 @@ HUI_API bool dropdown(const char* id, i32& selectedIndex, const char** items, u3
 /// \param dragDropType when non-zero enables drag-drop (items are drag sources, list accepts drops of same type)
 /// \return true if selection changed
 HUI_API bool list(const char* id, bool* selectedItems, ListSelectionMode selectionType, const char** items, u32 itemCount, f32 height = 200.0f, u32 dragDropUserType = 0);
+
+/// Draw an animation timeline widget with a channels list, time ruler, keyframe and curve editing
+/// \param id unique widget id
+/// \param state the timeline state, owned by the caller and passed to the widget every frame
+/// \param height the widget height, if zero it takes the remaining layout height or the settings default
+/// \return true if the timeline state changed (keys moved/added/removed, cursor moved, view changed, etc.)
+HUI_API bool timeline(const char* id, TimelineState* state, f32 height = 0.0f);
 
 /// Draw a selectable label
 /// \param label the selectable's text

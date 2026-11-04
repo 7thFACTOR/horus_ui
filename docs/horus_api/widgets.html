@@ -340,6 +340,12 @@
 		<p class="brief">Draw a hyperlink text widget.</p>
 	</div>
 
+	<h2>Timeline</h2>
+	<div class="member">
+		<div class="prototype"><code><span class="ret">bool</span> <span class="fn">timeline</span>(<span class="prm">const char*</span> id, <span class="prm">TimelineState*</span> state, <span class="prm">f32</span> height = 0.0f)</code></div>
+		<p class="brief">Draw an animation timeline with a channels list, time ruler, keyframe/curve editing, key selection, channel enable toggles, playhead scrubbing, zooming, panning and frame snapping. Curves mode uses Hermite interpolation with automatic tangents; selected keys show editable in/out tangent handles. Selecting a single key shows its time and component values as combo sliders in the toolbar; the time slider is clamped to the timeline range, while the component value sliders are unbounded. A Play/Pause toolbar button starts and stops playback, and Space toggles it while the timeline is focused or hovered. The caller owns the <code>TimelineState</code> and passes it in every frame.</p>
+	</div>
+
 	<h2>Separators & spacing</h2>
 	<div class="member">
 		<div class="prototype"><code><span class="kw">void</span> <span class="fn">line</span>()</code></div>

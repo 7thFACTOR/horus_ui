@@ -856,6 +856,43 @@ struct ColorPickerState
 	WidgetId currentEditingId = 0;
 };
 
+struct TimelineKeyDragItem
+{
+	i32 channel = -1;
+	i32 key = -1;
+	f32 time = 0;
+	f32 value[4] = { 0, 0, 0, 0 };
+};
+
+struct TimelineWidgetState
+{
+	enum class DragType
+	{
+		None,
+		Playhead,
+		Keys,
+		BoxSelect,
+		Pan,
+		TangentIn,
+		TangentOut,
+	};
+
+	DragType dragType = DragType::None;
+	i32 dragChannel = -1;
+	i32 dragKey = -1;
+	i32 dragComponent = -1;
+	Point dragStartMouse;
+	f32 dragStartTime = 0;
+	f32 dragStartValue = 0;
+	f32 dragValueMin = 0;
+	f32 dragValueMax = 1;
+	f32 panStartScrollTime = 0;
+	Point boxStart;
+	Point boxEnd;
+	i32 pressedToolbarButton = -1;
+	std::vector<TimelineKeyDragItem> dragItems;
+};
+
 struct CustomFileDialogState
 {
 	static const u32 maxPathSize = 512;
