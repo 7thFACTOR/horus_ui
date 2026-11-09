@@ -1,30 +1,17 @@
-#include "horus.h"
 #include <stdlib.h>
-#include <assert.h>
-#include "types.h"
-#include "libs/utfcpp/source/utf8.h"
-#define STB_IMAGE_IMPLEMENTATION
-#include "libs/stb/stb_image.h"
-#include "ui_theme.h"
-#include "ui_atlas.h"
-#include "ui_context.h"
+#include <algorithm>
+#include "context.h"
+#include "theme.h"
+#include "atlas.h"
 #include "util.h"
 #include "renderer.h"
-#include "unicode_text_cache.h"
-#include "font_cache.h"
-#include "libs/jsoncpp/include/json/json.h"
-#include "libs/jsoncpp/include/json/reader.h"
-#include <algorithm>
-
-#ifdef _WIN32
-#include <windows.h>
-#endif
+#include "docking.h"
 
 namespace hui
 {
 u32 Color::getRgba() const
 {
-	u32 col;
+	u32 col = 0;
 	u8 *color = (u8*)&col;
 
 	color[0] = (r > 1.0f ? 1.0f : r) * 255;
@@ -37,7 +24,7 @@ u32 Color::getRgba() const
 
 u32 Color::getArgb() const
 {
-	u32 col;
+	u32 col = 0;
 	u8 *color = (u8*)&col;
 
 	color[1] = (r > 1.0f ? 1.0f : r) * 255;
@@ -50,7 +37,13 @@ u32 Color::getArgb() const
 
 Color Color::random()
 {
-	return { (f32)rand() / (f32)RAND_MAX, (f32)rand() / (f32)RAND_MAX, (f32)rand() / (f32)RAND_MAX, 1 };
+	return
+	{
+		(f32)rand() / (f32)RAND_MAX,
+		(f32)rand() / (f32)RAND_MAX,
+		(f32)rand() / (f32)RAND_MAX,
+		1
+	};
 }
 
 const Color Color::transparent(0, 0, 0, 0);
@@ -79,138 +72,225 @@ const Color Color::gray(0.5f, 0.5f, 0.5f, 1);
 const Color Color::lightGray(0.7f, 0.7f, 0.7f, 1);
 const Color Color::sky(0.f, 0.682f, 0.937f, 1);
 
-Context createContext(InputProvider* customInputProvider, GraphicsProvider* customGfxProvider)
+HContext contextCreate(const Settings& settings)
 {
-	UiContext* context = new UiContext();
+	Context* context = new Context();
 
-	setContext((Context)context);
+	HUI_ASSERT(context);
+	context->settings = settings;
 
-	if (customInputProvider)
-		setInputProvider(customInputProvider);
-
-	if (customGfxProvider)
-		setGraphicsProvider(customGfxProvider);
-
-#ifdef _WIN32
-	SetProcessDPIAware();
+	if (context->settings.dockingStyle == DockingGuidesStyle::Auto)
+	{
+#ifdef _WINDOWS
+		context->settings.dockingStyle = DockingGuidesStyle::NativeWindows;
+#elif _LINUX
+		context->settings.dockingStyle = DockingGuidesStyle::InsideNativeWindows;
 #endif
+	}
 
 	return context;
 }
 
-void initializeContext(Context context)
+void contextSet(HContext context)
 {
-	UiContext* ctxPtr = (UiContext*)context;
-	ctxPtr->initializeGraphics();
+	HUI_ASSERT(context);
+	ctx = (Context*)context;
 }
 
-void setContext(Context context)
-{
-	ctx = (UiContext*)context;
-}
-
-Context getContext()
+HContext contextGet()
 {
 	return ctx;
 }
 
-void deleteContext(Context context)
+void contextDestroy(HContext context)
 {
-	delete (Context*)context;
+	HUI_ASSERT(context);
+
+	Context* contextPtr = (Context*)context;
+	Context* previousCtx = ctx;
+
+	// teardown helpers reach services through the global context, so point it at
+	// the context being destroyed for the duration of the deletion
+	ctx = contextPtr;
+
+	delete contextPtr;
+
+	// never leave the global context pointing at freed memory
+	ctx = previousCtx == contextPtr ? nullptr : previousCtx;
 }
 
-ContextSettings& getContextSettings()
+Settings& contextGetSettings()
 {
 	return ctx->settings;
 }
 
-void clearBackground()
+void renderCallbackAdd(RenderCallback callback)
 {
-	auto windowElemState = ctx->theme->getElement(WidgetElementId::WindowBody).normalState();
-
-	ctx->renderer->clear(windowElemState.color);
+	ctx->renderer.cmdCallback(callback);
 }
 
-void setEnabled(bool enabled)
+void clearBackground(const Color& color)
 {
-	ctx->widget.enabled = enabled;
+	ctx->renderer.cmdClearBackground(color);
 }
 
-void setFocused()
+void widgetSetNextDisabled(bool disabled)
 {
-	ctx->widget.focusedWidgetPressed = true;
-	ctx->widget.hoveredWidgetId = ctx->currentWidgetId;
-	ctx->widget.focusedWidgetId = ctx->currentWidgetId;
+	ctx->widget.nextDisabled = disabled;
+}
+
+void widgetPushDisabled(bool disabled)
+{
+	if (disabled)
+		ctx->disabledNesting++;
+}
+
+void widgetPopDisabled()
+{
+	if (ctx->disabledNesting > 0)
+		ctx->disabledNesting--;
+}
+
+bool widgetGetDisabled()
+{
+	return ctx->widget.nextDisabled || (ctx->disabledNesting > 0);
+}
+
+void widgetSetNextFocused()
+{
 	ctx->widget.hovered = true;
 	ctx->widget.pressed = true;
 	ctx->widget.focused = true;
 	ctx->focusChanged = true;
 }
 
-void addWidgetItem(f32 height)
+void addWidget(f32 height)
 {
+	ctx->widget.disabled = ctx->widget.nextDisabled || (ctx->disabledNesting > 0);
+	ctx->widget.nextDisabled = false;
 	ctx->widget.changeEnded = false;
-	height = round(height);
+	ctx->widget.doubleClicked = false;
 
-	f32 width = (ctx->widget.sameLine ? ctx->widget.width : (ctx->widget.width != 0 ? ctx->widget.width : ctx->layoutStack.back().width)) - ctx->padding * 2.0f * ctx->globalScale;
-	f32 verticalOffset = 0;
-	const f32 totalHeight = ctx->spacing * ctx->globalScale + height;
+	if (ctx->widget.hasNextHeight)
+		height = ctx->widget.nextHeight * ctx->scale;
+	else
+		height = (height + widgetGetPadding().y * 2.0f) * ctx->scale;
 
-	if (!ctx->widget.sameLine)
+	// next width has priority over custom width
+	if (ctx->widget.hasNextWidth)
 	{
-		ctx->penPosition.x = ctx->layoutStack.back().position.x;
+		// nextWidth specifies the TOTAL widget width (including padding)
+		ctx->widget.width = ctx->widget.nextWidth * ctx->scale;
 	}
 	else
 	{
-		if (ctx->sameLineInfo[ctx->sameLineInfoIndex].computeHeight)
+		ctx->widget.width = ctx->widget.hasCustomWidth ? ctx->widget.customWidth * ctx->scale : ctx->layout.width;
+	}
+
+	// if width is under 1, then it's a percentage of the layout width
+	// otherwise it's a fixed pixel width
+	auto pixelWidth = ctx->widget.width > 1 ? ctx->widget.width : ctx->widget.width * ctx->layout.width;
+	f32 spacing = ctx->spacing * ctx->scale;
+
+	// handle transition from sameLine back to normal layout
+	if (!ctx->sameLine.enabled && ctx->sameLine.wasEnabled)
+	{
+		// end of same-line group - move to next line
+		ctx->position.x = ctx->sameLine.currentPosition.x;
+		ctx->position.y += ctx->sameLine.maxHeight + spacing;
+		ctx->sameLine.wasEnabled = false;
+		ctx->sameLine.maxHeight = 0;
+		ctx->sameLine.lastLineWidth = 0; // reset to prevent stale values
+	}
+
+	if (!ctx->sameLine.enabled && !ctx->sameLine.wasEnabled)
+	{
+		ctx->sameLine.currentPosition = ctx->position;
+		ctx->sameLine.lastLineWidth = 0; // reset for new line
+	}
+
+	// if in sameLine mode, align Y to the same line and advance X from previous widget
+	if (ctx->sameLine.enabled)
+	{
+		// keep shorter widgets vertically centered against the tallest one so far in the line
+		ctx->position.y = ctx->sameLine.currentPosition.y + std::max((ctx->sameLine.maxHeight - height) * 0.5f, 0.0f);
+
+		// if first widget in sameLine, advance X by the previous normal widget's width
+		if (!ctx->sameLine.wasEnabled)
 		{
-			ctx->sameLineInfo[ctx->sameLineInfoIndex].lineHeight = round(fmax(totalHeight, ctx->sameLineInfo[ctx->sameLineInfoIndex].lineHeight));
+			ctx->position.x += ctx->sameLine.lastLineWidth + ctx->sameLine.nextSpacing * ctx->scale;
 		}
 
-		verticalOffset = (ctx->sameLineInfo[ctx->sameLineInfoIndex].lineHeight - totalHeight) / 2.0f;
+		// if no custom width was defined, use remaining available width
+		if (!ctx->widget.hasNextWidth && !ctx->widget.hasCustomWidth)
+		{
+			f32 consumedX = ctx->position.x - ctx->sameLine.currentPosition.x;
+			pixelWidth = std::max(ctx->layout.width - consumedX, 0.0f);
+		}
 	}
 
+	ctx->widget.width = pixelWidth;
 	ctx->widget.rect.set(
-		round(ctx->penPosition.x + ctx->padding * ctx->globalScale),
-		round(ctx->penPosition.y + verticalOffset),
-		width,
+		ctx->position.x,
+		ctx->position.y,
+		pixelWidth,
 		height);
 
-	if (!ctx->widget.sameLine)
+	// advance cursor after placing widget
+	if (!ctx->sameLine.enabled)
 	{
-		ctx->penPosition.y += totalHeight;
-		ctx->penPosition.y = round(ctx->penPosition.y);
+		// normal mode: advance Y (vertical)
+		ctx->position.y += height + spacing;
+		ctx->sameLine.lastLineWidth = pixelWidth; // track for sameLine transition
 	}
 	else
 	{
-		ctx->penPosition.x += width + ctx->padding * ctx->globalScale;
+		// sameLine mode: advance X (horizontal)
+		ctx->position.x += pixelWidth + ctx->sameLine.nextSpacing * ctx->scale;
+		ctx->sameLine.wasEnabled = true;
+		ctx->sameLine.maxHeight = std::max(ctx->sameLine.maxHeight, height);
 	}
+
+	// track maximum X position for horizontal scrolling content width
+	if (ctx->layout.type == LayoutType::ScrollView)
+	{
+		f32 widgetRightEdge = ctx->widget.rect.right();
+
+		if (widgetRightEdge > ctx->maxContentWidth)
+		{
+			ctx->maxContentWidth = widgetRightEdge;
+		}
+	}
+
+	ctx->widget.hasNextWidth = false;
+	ctx->widget.hasNextHeight = false;
+	ctx->widget.hasCustomWidth = false;
+	ctx->sameLine.enabled = false;
 }
 
-void setAsFocusable()
+void widgetSetFocusable()
 {
-	if (ctx->widget.focusedWidgetId == ctx->currentWidgetId)
+	if (ctx->widget.disabled)
+		return;
+
+	if (ctx->widget.focusedId == ctx->id)
 	{
 		ctx->widget.focusedWidgetRect = ctx->widget.rect;
 	}
 
-	if (!ctx->widget.nextFocusableWidgetId
-		&& ctx->currentWidgetId > ctx->widget.focusedWidgetId)
-	{
-		ctx->widget.nextFocusableWidgetId = ctx->currentWidgetId;
-	}
+	ctx->focusableWidgets.push_back(ctx->id);
 }
 
-bool viewportImageFitSize(
+bool viewportImageSizeFit(
 	f32 imageWidth, f32 imageHeight,
 	f32 viewWidth, f32 viewHeight,
-	f32& newWidth, f32& newHeight,
+	f32& outNewWidth, f32& outNewHeight,
 	bool ignoreHeight, bool ignoreWidth)
 {
 	f32 aspectRatio = 1.0f;
 
-	newWidth = imageWidth;
-	newHeight = imageHeight;
+	outNewWidth = imageWidth;
+	outNewHeight = imageHeight;
 
 	if (imageWidth <= viewWidth
 		&& imageHeight <= viewHeight)
@@ -218,159 +298,464 @@ bool viewportImageFitSize(
 		return false;
 	}
 
-	if (newWidth >= viewWidth && !ignoreWidth)
+	if (outNewWidth >= viewWidth && !ignoreWidth)
 	{
-		if (newWidth < 0.0001f)
-			newWidth = 0.0001f;
+		if (outNewWidth < 0.0001f)
+			outNewWidth = 0.0001f;
 
-		aspectRatio = (f32)viewWidth / newWidth;
-		newWidth = viewWidth;
-		newHeight *= aspectRatio;
+		aspectRatio = (f32)viewWidth / outNewWidth;
+		outNewWidth = viewWidth;
+		outNewHeight *= aspectRatio;
 	}
 
-	if (newHeight >= viewHeight && !ignoreHeight)
+	if (outNewHeight >= viewHeight && !ignoreHeight)
 	{
-		if (newHeight < 0.0001f)
-			newHeight = 0.0001f;
+		if (outNewHeight < 0.0001f)
+			outNewHeight = 0.0001f;
 
-		aspectRatio = (f32)viewHeight / newHeight;
-		newHeight = viewHeight;
-		newWidth *= aspectRatio;
+		aspectRatio = (f32)viewHeight / outNewHeight;
+		outNewHeight = viewHeight;
+		outNewWidth *= aspectRatio;
 	}
 
 	return true;
 }
 
-void beginFrame()
+void frameBegin()
 {
-	if (ctx->textInput.widgetId)
+	ctx->frameStartTime = std::chrono::high_resolution_clock::now();
+
+	// swap focusable widgets lists
+	std::swap(ctx->focusableWidgets, ctx->lastFrameFocusableWidgets);
+	ctx->focusableWidgets.clear();
+	// reserve some space to avoid allocations
+	if (ctx->focusableWidgets.capacity() < ctx->lastFrameFocusableWidgets.size())
+		ctx->focusableWidgets.reserve(ctx->lastFrameFocusableWidgets.size());
+
+	ctx->mouseInTrappedPopup = false;
+
+	for (const auto& popup : ctx->popupStack)
 	{
+		if (!popup.active || !has(popup.flags, PopupFlags::LayerOnMouseInside))
+			continue;
+
+		Rect popupRect = { popup.position.x, popup.position.y, popup.width, popup.height };
+
+		if (popupRect.contains(ctx->mousePosition))
+		{
+			ctx->mouseInTrappedPopup = true;
+			ctx->trappedPopupRect = popupRect;
+			break;
+		}
+	}
+
+	if (ctx->textInput.id
+		&& (!ctx->mouseInTrappedPopup
+			|| ctx->trappedPopupRect.contains(ctx->textInput.rect)))
+	{
+		ctx->textInput.textChanged = false;
 		ctx->textInput.processEvent(ctx->event);
+	}
+
+	if (ctx->activeMultilineInputId && ctx->textMultilineInput.count(ctx->activeMultilineInputId)
+		&& (!ctx->mouseInTrappedPopup
+			|| ctx->trappedPopupRect.contains(ctx->textMultilineInput[ctx->activeMultilineInputId].rect)))
+	{
+		ctx->textMultilineInput[ctx->activeMultilineInputId].textChanged = false;
+		ctx->textMultilineInput[ctx->activeMultilineInputId].processEvent(ctx->event);
+	}
+
+	if (ctx->event.window)
+	{
+		if (ctx->event.type == InputEvent::Type::WindowMouseEnter && ctx->event.window != ctx->docking.dragIndicatorNativeWindow)
+			ctx->lastHoveredNativeWindow = ctx->event.window;
+
+		if (ctx->event.type == InputEvent::Type::WindowMouseLeave && ctx->event.window != ctx->docking.dragIndicatorNativeWindow)
+			ctx->lastHoveredNativeWindow = 0;
+
+		if (ctx->event.type == InputEvent::Type::MouseDown
+			|| ctx->event.type == InputEvent::Type::MouseUp
+			|| ctx->event.type == InputEvent::Type::MouseMove
+			|| ctx->event.type == InputEvent::Type::MouseWheel)
+		{
+			if (ctx->event.window && ctx->event.window != ctx->docking.dragIndicatorNativeWindow)
+			{
+				ctx->lastHoveredNativeWindow = ctx->event.window;
+				ctx->mousePosition = ctx->event.mouse.point;
+			}
+		}
+	}
+	else
+	{
+		// we need mouse position updated even if we're out of the window
+		// use last hovered window as reference for the global position to subtract from
+		if (ctx->lastHoveredNativeWindow)
+		{
+			auto wndPos = ctx->settings.services.getWindowPosition(ctx->lastHoveredNativeWindow);
+			auto absMousePos = ctx->settings.services.getAbsoluteMousePosition();
+			ctx->mousePosition = absMousePos - wndPos;
+		}
 	}
 
 	if (ctx->event.type == InputEvent::Type::Key
 		&& ctx->event.key.code == KeyCode::Tab
-		&& !!(ctx->event.key.modifiers, KeyModifiers::Shift)
-		&& ctx->event.key.down)
+		&& ctx->event.key.down
+		&& !ctx->activeMultilineInputId // don't switch focus if editing multiline text
+		&& !ctx->lastFrameFocusableWidgets.empty())
 	{
-		ctx->widget.focusedWidgetId--;
-		ctx->focusChanged = true;
+		bool shift = has(ctx->event.key.modifiers, KeyModifiers::Shift);
+		size_t currentIndex = ~0;
 
-		if (ctx->widget.focusedWidgetId < 0)
+		// find current focused widget index
+		for (size_t i = 0; i < ctx->lastFrameFocusableWidgets.size(); i++)
 		{
-			ctx->widget.focusedWidgetId = 0;
+			if (ctx->lastFrameFocusableWidgets[i] == ctx->widget.focusedId)
+			{
+				currentIndex = i;
+				break;
+			}
 		}
-	}
-	else if (ctx->event.type == InputEvent::Type::Key
-		&& ctx->event.key.code == KeyCode::Tab
-		&& ctx->event.key.down)
-	{
-		ctx->widget.focusedWidgetId = ctx->widget.nextFocusableWidgetId;
-		ctx->focusChanged = true;
 
-		if (ctx->widget.focusedWidgetId > ctx->maxWidgetId)
+		if (currentIndex == ~0)
 		{
-			ctx->widget.focusedWidgetId = 1;
+			// if nothing focused, start from beginning (or end if shift)
+			if (shift)
+				ctx->widget.focusedId = ctx->lastFrameFocusableWidgets.back();
+			else
+				ctx->widget.focusedId = ctx->lastFrameFocusableWidgets.front();
 		}
+		else
+		{
+			if (shift)
+			{
+				if (currentIndex > 0)
+					ctx->widget.focusedId = ctx->lastFrameFocusableWidgets[currentIndex - 1];
+				else
+					ctx->widget.focusedId = ctx->lastFrameFocusableWidgets.back(); // wrap to end
+			}
+			else
+			{
+				if (currentIndex < ctx->lastFrameFocusableWidgets.size() - 1)
+					ctx->widget.focusedId = ctx->lastFrameFocusableWidgets[currentIndex + 1];
+				else
+					ctx->widget.focusedId = ctx->lastFrameFocusableWidgets.front(); // wrap to start
+			}
+		}
+
+		ctx->focusChanged = true;
 	}
 
 	ctx->mustRedraw = false;
 	ctx->skipRenderAndInput = false;
-	ctx->currentWidgetId = 1;
-	ctx->widget.enabled = true;
-	ctx->currentWindowIndex = 0;
+	ctx->widget.disabled = false;
+	ctx->widget.nextDisabled = false;
+	ctx->disabledNesting = 0;
 	ctx->layerIndex = 0;
-	ctx->widget.nextFocusableWidgetId = 0;
-	ctx->mouseCursor = MouseCursorType::Arrow;
+	ctx->maxLayerIndex = 0;
+
+	// pre-set the max layer to the popups that are still open from the previous
+	// frame, so window content (layer 0) is not hovered/clicked under a popup
+	// that sits on top of it
+	for (const auto& popup : ctx->popupStack)
+	{
+		if (!popup.active)
+			continue;
+
+		const bool layerOnMouseInside = has(popup.flags, PopupFlags::LayerOnMouseInside)
+			&& Rect(popup.position.x, popup.position.y, popup.width, popup.height).contains(ctx->mousePosition);
+
+		if (!has(popup.flags, PopupFlags::SameLayer) || layerOnMouseInside)
+			ctx->maxLayerIndex++;
+	}
+
+	ctx->widget.nextFocusableId = 0;
 	ctx->menuDepth = 0;
 	ctx->popupIndex = 0;
 	ctx->menuItemChosen = false;
-	ctx->dragDropState.foundDropTarget = false;
-	ctx->widget.hoveredWidgetId = 0;
-	ctx->widget.hoveredWidgetType = WidgetType::None;
+	ctx->dragDrop.foundDropTarget = false;
+	ctx->widget.hoveredId = 0;
+	ctx->widget.hoveredType = WidgetType::None;
+	ctx->widget.changeEnded = false;
 	ctx->frameCount++;
-	ctx->totalTime += ctx->deltaTime;
-	ctx->pruneUnusedTextTime += ctx->deltaTime;
-	ctx->sameLineInfoIndex = 0;
-	ctx->sameLineInfoCount = 0;
+	ctx->totalTime += ctx->settings.deltaTime;
+	ctx->pruneUnusedTextTime += ctx->settings.deltaTime;
+	ctx->sameLine.wasEnabled = false;
+	ctx->fontStack.clear();
 
-	if (ctx->pruneUnusedTextTime >= ctx->settings.textCachePruneIntervalSec)
+	ctx->padding[(i32)PaddingType::Layout] = ctx->settings.defaultLayoutPadding;
+	ctx->padding[(i32)PaddingType::ScrollView] = ctx->settings.defaultScrollViewPadding;
+	ctx->padding[(i32)PaddingType::Widget] = ctx->settings.defaultWidgetPadding;
+	ctx->savedEventType = ctx->event.type;
+
+	for (auto& popup : ctx->popupStack)
 	{
-		ctx->textCache->pruneUnusedTexts();
-		ctx->pruneUnusedTextTime = 0;
+		popup.alreadyClosedWithEscape = false;
+		popup.alreadyClickedOnSomething = false;
 	}
+
+	ctx->alreadyClickedOnSomething = false;
+	mouseCursorSetType(MouseCursorType::Arrow);
+	updateDockingSystem();
 }
 
-void endFrame()
+void deferredDeleteObjects()
 {
-	ctx->maxWidgetId = ctx->currentWidgetId;
-	ctx->focusChanged = false;
-	ctx->mouseMoved = false;
-	
-	if (ctx->dragDropState.begunDragging
-		&& ctx->event.type == InputEvent::Type::MouseUp)
+	for (auto& wnd : ctx->docking.windowsToDelete)
 	{
-		ctx->dragDropState.begunDragging = false;
+		auto iter = ctx->docking.windows.find(wnd->id);
+
+		if (iter != ctx->docking.windows.end())
+		{
+			ctx->docking.windows.erase(iter);
+		}
+
+		// a window hidden through windowSetVisible has already been detached from its
+		// dock node, so its rect was recorded at that point
+		if (wnd->dockNode)
+			ctx->docking.closedWindowsRects[wnd->id] = wnd->dockNode->rect;
+
+		auto iterWnd = ctx->docking.windowsDockNodeAssignments.find(wnd->id);
+
+		if (iterWnd != ctx->docking.windowsDockNodeAssignments.end())
+		{
+			ctx->docking.windowsDockNodeAssignments.erase(iterWnd);
+		}
+
+		delete wnd;
 	}
 
-	if (ctx->dragDropState.begunDragging)
+	for (auto& dn : ctx->docking.dockNodesToDelete)
 	{
-		if (ctx->dragDropState.foundDropTarget)
+		auto iterMap = ctx->docking.dockNodeIdsMap.find(dn->id);
+		if (iterMap != ctx->docking.dockNodeIdsMap.end())
+			ctx->docking.dockNodeIdsMap.erase(iterMap);
+		delete dn;
+	}
+
+	for (auto& wnd : ctx->docking.nativeWindowsToDelete)
+	{
+		auto iter = ctx->docking.rootNativeWindowDockNodes.find(wnd);
+
+		if (iter != ctx->docking.rootNativeWindowDockNodes.end())
 		{
-			setMouseCursor(ctx->dragDropState.dropAllowedCursor);
+			ctx->docking.rootNativeWindowDockNodes.erase(iter);
+		}
+
+		auto iter2 = std::find(ctx->nativeWindows.begin(), ctx->nativeWindows.end(), wnd);
+
+		if (iter2 != ctx->nativeWindows.end())
+		{
+			ctx->nativeWindows.erase(iter2);
+		}
+
+		ctx->settings.services.destroyWindow(wnd);
+	}
+
+	ctx->docking.dockNodesToDelete.clear();
+	ctx->docking.windowsToDelete.clear();
+	ctx->docking.nativeWindowsToDelete.clear();
+}
+
+void frameEnd()
+{
+	//TODO: check stacks to see if there is are items on them
+	// the stacks should be empty, otherwise push/pop count not matching
+	ctx->focusChanged = false;
+	ctx->mouseMoved = false;
+
+	// popups are immediate mode: any popup that was not begun this frame was dropped
+	// by its owner without calling popupClose, so release it and its layer
+	for (auto& popup : ctx->popupStack)
+	{
+		if (!popup.active || popup.lastUsedFrame == ctx->frameCount)
+			continue;
+
+		popup.active = false;
+		popup.startedToDrag = false;
+		popup.draggingPopup = false;
+		popup.opened = false;
+		popup.layerIncremented = false;
+
+		if (!has(popup.flags, PopupFlags::SameLayer))
+		{
+			ctx->contextMenuActive = false;
+			ctx->contextMenuClicked = false;
+			ctx->contextMenuWidgetId = 0;
+		}
+	}
+
+	if (ctx->dragDrop.begunDragging
+		&& ctx->event.type == InputEvent::Type::MouseUp)
+	{
+		ctx->dragDrop.begunDragging = false;
+		ctx->dragDrop.dragObject = nullptr;
+		ctx->dragDrop.dragObjectType = 0;
+	}
+
+	if (ctx->dragDrop.begunDragging)
+	{
+		if (ctx->dragDrop.foundDropTarget)
+		{
+			if (ctx->dragDrop.dropAllowedCursor)
+				mouseCursorSet(ctx->dragDrop.dropAllowedCursor);
+			else
+				mouseCursorSetType(MouseCursorType::HandPointing);
 		}
 		else
 		{
-			setMouseCursor(MouseCursorType::No);
+			mouseCursorSetType(MouseCursorType::No);
 		}
 	}
 
 	if (ctx->mouseCursor != MouseCursorType::Custom)
 	{
-		ctx->inputProvider->setCursor(ctx->mouseCursor);
+		ctx->settings.services.setCursor(ctx->mouseCursor);
 	}
 	else if (ctx->customMouseCursor)
 	{
-		ctx->inputProvider->setCustomCursor(ctx->customMouseCursor);
+		ctx->settings.services.setCustomCursor(ctx->customMouseCursor);
 	}
 
-	for (u32 i = 0; i < ctx->sameLineInfoCount; i++)
-	{
-		ctx->sameLineInfo[i].computeHeight = false;
-	}
+	ctx->event.type = ctx->savedEventType;
+	ctx->positionStack.clear();
+
+	auto frameEndTime = std::chrono::high_resolution_clock::now();
+	std::chrono::duration<double, std::milli> frameDuration = frameEndTime - ctx->frameStartTime;
+	ctx->lastFrameTimeMs = (f32)frameDuration.count();
+
+	// contextUpdate peak
+	if (ctx->lastFrameTimeMs < 5 && ctx->lastFrameTimeMs > ctx->peakFrameTimeMs)
+		ctx->peakFrameTimeMs = ctx->lastFrameTimeMs;
+
+	// contextUpdate rolling average
+	ctx->frameTimes[ctx->frameTimeIndex] = ctx->lastFrameTimeMs;
+	ctx->frameTimeIndex = (ctx->frameTimeIndex + 1) % 60;
+
+	f32 sum = 0.0f;
+	u32 count = ctx->frameCount < 60 ? ctx->frameCount : 60;
+	for (u32 i = 0; i < count; i++)
+		sum += ctx->frameTimes[i];
+	ctx->avgFrameTimeMs = count > 0 ? sum / (f32)count : 0.0f;
 }
 
-void update(f32 deltaTime)
+void renderBegin()
 {
-	if (ctx->widget.hoveredWidgetId && !ctx->tooltip.show)
+	ctx->renderer.begin();
+}
+
+void renderEnd()
+{
+	ctx->renderer.end();
+}
+
+HUI_API f32 frameTimeGetLastMs()
+{
+	return ctx->lastFrameTimeMs;
+}
+
+HUI_API f32 frameTimeGetPeakMs()
+{
+	return ctx->peakFrameTimeMs;
+}
+
+HUI_API f32 frameTimeGetAvgMs()
+{
+	return ctx->avgFrameTimeMs;
+}
+
+void contextUpdate()
+{
+	u32 timeoutMs = 0;
+
+	if (ctx->settings.fpsThrottleEnable)
 	{
-		ctx->tooltip.timer += deltaTime;
+		if (hasNothingToDo())
+		{
+			ctx->idleTime += ctx->settings.deltaTime;
+		}
+		else
+		{
+			ctx->idleTime = 0;
+		}
+
+		f32 t = ctx->idleTime / ctx->settings.fpsThrottleGradualTime;
+		if (t > 1.0f) t = 1.0f;
+
+		f32 targetFps = (f32)ctx->settings.fpsThrottleMaxFps + t * ((f32)ctx->settings.fpsThrottleMinFps - (f32)ctx->settings.fpsThrottleMaxFps);
+		f32 targetFrameTimeMs = 1000.0f / targetFps;
+
+		// if we have something to do (like animations or input happened last frame), we don't want to wait
+		if (!hasNothingToDo())
+		{
+			timeoutMs = 0;
+		}
+		else
+		{
+			timeoutMs = (u32)std::max(0.0f, targetFrameTimeMs - ctx->lastFrameTimeMs);
+		}
+	}
+
+	inputEventClearQueue();
+	ctx->settings.services.processWindowEvents(timeoutMs);
+
+	// track Ctrl key state from queued events
+	for (auto& ev : ctx->events)
+	{
+		if (ev.type == InputEvent::Type::Key
+			&& (ev.key.code == KeyCode::LControl || ev.key.code == KeyCode::RControl))
+		{
+			ctx->tooltip.ctrlDown = ev.key.down;
+		}
+		else if (ev.type == InputEvent::Type::MouseMove
+			|| ev.type == InputEvent::Type::MouseDown
+			|| ev.type == InputEvent::Type::MouseUp
+			|| ev.type == InputEvent::Type::MouseWheel)
+		{
+			ctx->tooltip.ctrlDown = has(ev.mouse.modifiers, KeyModifiers::Control);
+		}
+		else if (ev.type == InputEvent::Type::Key)
+		{
+			ctx->tooltip.ctrlDown = has(ev.key.modifiers, KeyModifiers::Control);
+		}
 	}
 
 	// tooltip handling
-	if (ctx->widget.hoveredWidgetId
-		&& ctx->widget.hoveredWidgetId != ctx->tooltip.widgetId
-		&& ctx->tooltip.timer >= ctx->tooltip.delayToShow)
+	//TODO: move to own func
+	if (ctx->tooltip.id && ctx->tooltip.id != ctx->tooltip.lastId && !ctx->tooltip.show)
 	{
-		ctx->tooltip.widgetId = ctx->widget.hoveredWidgetId;
+		ctx->tooltip.timer += ctx->settings.deltaTime;
+	}
+
+	if (!ctx->tooltip.wasShown)
+	{
+		ctx->tooltip.resetTimer += ctx->settings.deltaTime;
+	}
+
+	if (!ctx->tooltip.show && ctx->tooltip.id
+		&& (ctx->tooltip.timer >= ctx->tooltip.delayToShow
+			|| ctx->tooltip.resetTimer < ctx->tooltip.delayToShowConsecutive))
+	{
 		ctx->tooltip.show = true;
 		ctx->mustRedraw = true;
 		ctx->tooltip.timer = 0;
+		ctx->tooltip.lastId = 0;
 		ctx->tooltip.closeTooltipPopup = false;
 	}
-	else if (!ctx->widget.hoveredWidgetId && ctx->tooltip.show && ctx->tooltip.widgetId)
+	else if (ctx->tooltip.show && !ctx->tooltip.wasShown && !ctx->tooltip.ctrlDown)
 	{
-		printf("SOME %d %d %d\n", ctx->widget.hoveredWidgetId, ctx->tooltip.show, ctx->tooltip.widgetId);
+		ctx->tooltip.timer = 0;
+		ctx->tooltip.resetTimer = 0;
 		ctx->tooltip.show = false;
-		ctx->tooltip.widgetId = 0;
+		ctx->tooltip.id = 0;
 		ctx->tooltip.closeTooltipPopup = true;
 	}
 
-	if (ctx->tooltip.show)
+	if (ctx->tooltip.show && !ctx->tooltip.ctrlDown)
 	{
-		// track mouse pos
-		ctx->tooltip.position = ctx->inputProvider->getMousePosition();
+		ctx->tooltip.position = ctx->mousePosition;
 	}
+
+	ctx->tooltip.wasShown = false;
 }
 
 bool hasNothingToDo()
@@ -378,12 +763,12 @@ bool hasNothingToDo()
 	return !ctx->mustRedraw
 		&& !ctx->mouseMoved
 		&& !ctx->events.size()
-		&& !ctx->dockingTabPane;
+		&& !ctx->docking.dragStarted;
 }
 
-void setDisableRendering(bool disable)
+void skipRenderingThisFrame(bool disable)
 {
-	ctx->renderer->disableRendering = disable;
+	ctx->renderer.disableRendering = disable;
 }
 
 void forceRepaint()
@@ -391,399 +776,366 @@ void forceRepaint()
 	ctx->mustRedraw = true;
 }
 
-void skipThisFrame()
+void skipFrame()
 {
 	ctx->setSkipRenderAndInput(true);
 }
 
-bool copyToClipboard(const char* text)
+bool clipboardSetText(const char* text)
 {
-	return ctx->inputProvider->copyToClipboard(text);
+	return ctx->settings.services.clipboardSetText(text);
 }
 
-bool pasteFromClipboard(char* outText, u32 maxTextSize)
+bool clipboardGetText(char* outText, u32 maxTextSize)
 {
-	return ctx->inputProvider->pasteFromClipboard(outText, maxTextSize);
+	return ctx->settings.services.clipboardGetText(outText, maxTextSize);
 }
 
-const InputEvent& getInputEvent()
+const InputEvent& inputEventGet()
 {
 	return ctx->event;
 }
 
-void setMouseCursor(MouseCursorType type)
+bool inputWasConsumed()
+{
+	return ctx->alreadyClickedOnSomething;
+}
+
+void mouseCursorSetType(MouseCursorType type)
 {
 	ctx->mouseCursor = type;
 }
 
-MouseCursor createMouseCursor(Rgba32* pixels, u32 width, u32 height, u32 hotSpotX, u32 hotSpotY)
+HMouseCursor mouseCursorCreate(Rgba32* pixels, u32 width, u32 height, u32 hotSpotX, u32 hotSpotY)
 {
-	return ctx->inputProvider->createCustomCursor(pixels, width, height, hotSpotX, hotSpotY);
+	return ctx->settings.services.createCustomCursor(pixels, width, height, hotSpotX, hotSpotY);
 }
 
-MouseCursor createMouseCursor(const char* imageFilename, u32 hotSpotX, u32 hotSpotY)
+void mouseCursorDestroy(HMouseCursor cursor)
 {
-	auto img = hui::loadRawImage(imageFilename);
-	auto cur = hui::createMouseCursor((Rgba32*)img.pixels, img.width, img.height, hotSpotX, hotSpotY);
-	deleteRawImage(img);
-
-	return cur;
+	ctx->settings.services.deleteCustomCursor(cursor);
 }
 
-void deleteMouseCursor(MouseCursor cursor)
-{
-	ctx->inputProvider->deleteCustomCursor(cursor);
-}
-
-void setMouseCursor(MouseCursor cursor)
+void mouseCursorSet(HMouseCursor cursor)
 {
 	ctx->mouseCursor = MouseCursorType::Custom;
 	ctx->customMouseCursor = cursor;
 }
 
-void setWindow(Window window)
+void nativeWindowSetCurrent(HNativeWindow wnd)
 {
-	ctx->inputProvider->setCurrentWindow(window);
-
-	auto rect = getWindowRect(window);
-
-	ctx->renderer->setWindowSize({ rect.width, rect.height });
-	ctx->gfx->setViewport(
-		{ rect.width, rect.height },
-		{ 0, 0, rect.width, rect.height });
+	ctx->settings.services.setCurrentWindow(wnd);
+	auto size = ctx->settings.services.getWindowSize(wnd);
+	ctx->renderer.nativeWindowSetCurrent(wnd);
+	ctx->renderer.setWindowSize(size);
+	ctx->hoveringThisWindow = ctx->lastHoveredNativeWindow == wnd;
 }
 
-Window getWindow()
+static void presentWindow(HNativeWindow wnd)
 {
-	return ctx->inputProvider->getCurrentWindow();
-}
+	nativeWindowSetCurrent(wnd);
 
-Window getFocusedWindow()
-{
-	return ctx->inputProvider->getFocusedWindow();
-}
+	auto iterWnd = ctx->docking.rootNativeWindowDockNodes.find(wnd);
 
-Window getHoveredWindow()
-{
-	return ctx->inputProvider->getHoveredWindow();
-}
-
-Window getMainWindow()
-{
-	return ctx->inputProvider->getMainWindow();
-}
-
-Window createWindow(
-	const char* title, u32 width, u32 height,
-	WindowFlags flags,
-	Point customPosition)
-{
-	auto wnd = ctx->inputProvider->createWindow(title, width, height, flags, customPosition);
-
-	if (!ctx->renderer)
+	if (iterWnd != ctx->docking.rootNativeWindowDockNodes.end())
 	{
-		ctx->initializeGraphics();
+		ctx->renderer.begin();
+		dockNodeTabs(iterWnd->second);
+		ctx->renderer.end();
 	}
 
-	return wnd;
+	ctx->renderer.executeDrawCommands(wnd);
+	ctx->settings.services.presentWindow(wnd);
 }
 
-void setWindowTitle(Window window, const char* title)
+void present()
 {
-	ctx->inputProvider->setWindowTitle(window, title);
+	// first, delete pending objects so we dont access them
+	deferredDeleteObjects();
+
+	if (ctx->renderer.allowRendering())
+	{
+		for (auto& wnd : ctx->nativeWindows)
+		{
+			presentWindow(wnd);
+		}
+	}
+
+	ctx->renderer.resetWindowContexts();
+	ctx->renderer.skipRender = false;
+	ctx->renderer.disableRendering = false;
 }
 
-void setWindowRect(Window window, const Rect& rect)
+void presentNativeWindow(HNativeWindow nativeWnd)
 {
-	ctx->inputProvider->setWindowRect(window, rect);
+	// first, delete pending objects so we dont access them
+	deferredDeleteObjects();
+
+	if (ctx->renderer.allowRendering())
+	{
+		presentWindow(nativeWnd);
+	}
+
+	ctx->renderer.resetWindowContexts();
+	ctx->renderer.skipRender = false;
+	ctx->renderer.disableRendering = false;
 }
 
-Rect getWindowRect(Window window)
-{
-	return ctx->inputProvider->getWindowRect(window);
-}
-
-Rect getWindowClientRect(Window window)
-{
-	auto rect = ctx->inputProvider->getWindowRect(window);
-
-	rect.x = 0;
-	rect.y = 0;
-
-	return rect;
-}
-
-void presentWindow(Window window)
-{
-	ctx->inputProvider->presentWindow(window);
-}
-
-void destroyWindow(Window window)
-{
-	ctx->inputProvider->destroyWindow(window);
-}
-
-void showWindow(Window window)
-{
-	ctx->inputProvider->showWindow(window);
-}
-
-void hideWindow(Window window)
-{
-	ctx->inputProvider->hideWindow(window);
-}
-
-void riseWindow(Window window)
-{
-	ctx->inputProvider->raiseWindow(window);
-}
-
-void maximizeWindow(Window window)
-{
-	ctx->inputProvider->maximizeWindow(window);
-}
-
-void minimizeWindow(Window window)
-{
-	ctx->inputProvider->minimizeWindow(window);
-}
-
-WindowState getWindowState(Window window)
-{
-	return ctx->inputProvider->getWindowState(window);
-}
-
-void setCapture(Window window)
-{
-	ctx->inputProvider->setCapture(window);
-}
-
-void releaseCapture()
-{
-	ctx->inputProvider->releaseCapture();
-}
-
-void cancelEvent()
+void inputEventCancel()
 {
 	ctx->event.type = InputEvent::Type::None;
 }
 
-void addInputEvent(const InputEvent& event)
+void inputEventAdd(const InputEvent& event)
 {
 	ctx->events.push_back(event);
 }
 
-void clearInputEventQueue()
+void inputEventClearQueue()
 {
-	ctx->event.type = InputEvent::Type::None;
+	ctx->event = InputEvent();
 	ctx->events.clear();
 }
 
-void setMouseMoved(bool moved)
+void inputSetMouseMoved(bool moved)
 {
 	ctx->mouseMoved = moved;
 }
 
-u32 getInputEventCount()
+size_t inputEventGetCount()
 {
 	return ctx->events.size();
 }
 
-InputEvent getInputEventAt(u32 index)
+InputEvent inputEventGetAtIndex(size_t index)
 {
 	return ctx->events[index];
 }
 
-void setInputEvent(const InputEvent& event)
+void inputEventSet(const InputEvent& event)
 {
 	ctx->event = event;
 }
 
-bool mustQuit()
-{
-	return ctx->inputProvider->mustQuit();
-}
-
-bool wantsToQuit()
-{
-	return ctx->inputProvider->wantsToQuit();
-}
-
-void cancelQuitApplication()
-{
-	ctx->inputProvider->cancelQuitApplication();
-}
-
-void quitApplication()
-{
-	ctx->inputProvider->quitApplication();
-}
-
 void shutdown()
 {
-	assert(ctx);
-
-	if (ctx->inputProvider)
-		ctx->inputProvider->shutdown();
 }
 
-Image loadImage(const char* filename)
+DockNodeId dockNodeCreateRoot(HNativeWindow nativeWnd)
 {
-	int width = 0;
-	int height = 0;
-	int comp;
-	stbi_uc* data = stbi_load(filename, &width, &height, &comp, 4);
+	HUI_ASSERT(nativeWnd);
+	auto node = dockNodeRootCreateInternal(nativeWnd);
+	HUI_ASSERT(node);
 
-	if (!data)
-		return nullptr;
+	ctx->nativeWindows.push_back(nativeWnd);
+	ctx->docking.dockNodeIdsMap[node->id] = node;
 
-	Image img = createImage((Rgba32*)data, width, height);
-
-	delete[] data;
-
-	return img;
+	return node->id;
 }
 
-Image createImage(Rgba32* pixels, u32 width, u32 height)
+void dockNodeDeleteChildren(DockNodeId rootNodeId)
 {
-	auto img = ctx->theme->addImage(pixels, width, height);
-	ctx->theme->packAtlas();
-	return img;
+	DockNode* node = (DockNode*)ctx->docking.dockNodeIdsMap[rootNodeId];
+
+	if (node)
+	{
+		node->removeWindowsAndDeleteChildrenRecursive();
+	}
 }
 
-Point getImageSize(Image image)
+void dockNodeSplit(DockNodeId nodeId, DockNodeSplitType splitType, f32 firstNodeSizeUnitPercent, DockNodeId* outNodeId1, DockNodeId* outNodeId2)
 {
-	UiImage* img = (UiImage*)image;
+	DockNode* nodeToSplit = ctx->docking.dockNodeIdsMap[nodeId];
+	DockNode* newNode1 = new DockNode();
+	DockNode* newNode2 = new DockNode();
 
-	return { img->rect.width, img->rect.height };
+	ctx->docking.dockNodeIdsMap[newNode1->id] = newNode1;
+	ctx->docking.dockNodeIdsMap[newNode2->id] = newNode2;
+
+	// find if there is a window assigned to the node to be split, if so, reassign to the new node that has the parent's content
+	auto iterWindow = ctx->docking.windowsDockNodeAssignments.begin();
+
+	while (iterWindow != ctx->docking.windowsDockNodeAssignments.end())
+	{
+		if (iterWindow->second == nodeToSplit->id)
+		{
+			iterWindow->second = newNode1->id;
+			break;
+		}
+
+		++iterWindow;
+	}
+
+	auto node1Id = newNode1->id;
+	*newNode1 = *nodeToSplit;
+	newNode1->id = node1Id;
+	newNode1->parent = nodeToSplit;
+
+	newNode2->nativeWindow = nodeToSplit->nativeWindow;
+	newNode2->parent = nodeToSplit;
+
+	for (auto& child : newNode1->children) child->parent = newNode1;
+
+	nodeToSplit->children.clear();
+
+	switch (splitType)
+	{
+	case DockNodeSplitType::Top:
+	case DockNodeSplitType::Left:
+		if (splitType == DockNodeSplitType::Top)
+		{
+			newNode1->rect.height = firstNodeSizeUnitPercent;
+			newNode2->rect.height = 1.0f - firstNodeSizeUnitPercent;
+		}
+		else
+		{
+			newNode1->rect.width = firstNodeSizeUnitPercent;
+			newNode2->rect.width = 1.0f - firstNodeSizeUnitPercent;
+		}
+		nodeToSplit->children.push_back(newNode1);
+		nodeToSplit->children.push_back(newNode2);
+		if (outNodeId1) *outNodeId1 = newNode1->id;
+		if (outNodeId2) *outNodeId2 = newNode2->id;
+		break;
+	case DockNodeSplitType::Bottom:
+	case DockNodeSplitType::Right:
+		if (splitType == DockNodeSplitType::Bottom)
+		{
+			newNode2->rect.height = firstNodeSizeUnitPercent;
+			newNode1->rect.height = 1.0f - firstNodeSizeUnitPercent;
+		}
+		else
+		{
+			newNode2->rect.width = firstNodeSizeUnitPercent;
+			newNode1->rect.width = 1.0f - firstNodeSizeUnitPercent;
+		}
+
+		nodeToSplit->children.push_back(newNode2);
+		nodeToSplit->children.push_back(newNode1);
+		if (outNodeId1) *outNodeId1 = newNode2->id;
+		if (outNodeId2) *outNodeId2 = newNode1->id;
+		break;
+	}
+
+	switch (splitType)
+	{
+	case DockNodeSplitType::Top:
+	case DockNodeSplitType::Bottom:
+		nodeToSplit->type = DockNode::Type::Vertical;
+		break;
+	case DockNodeSplitType::Left:
+	case DockNodeSplitType::Right:
+		nodeToSplit->type = DockNode::Type::Horizontal;
+		break;
+	}
 }
 
-void updateImagePixels(Image image, Rgba32* pixels)
+void dockNodeSetWindow(DockNodeId parentNodeId, const char* windowId)
 {
-	UiImage* img = (UiImage*)image;
+	auto iter = ctx->docking.dockNodeIdsMap.find(parentNodeId);
 
-	//TODO: check if image is rotated
-	img->atlasTexture->textureArray->updateRectData(img->atlasTexture->textureIndex, img->rect, pixels);
+	// validate the node id and the window id before touching the maps
+	if (iter == ctx->docking.dockNodeIdsMap.end() || !windowId)
+		return;
+
+	ctx->docking.windowsDockNodeAssignments[windowId] = iter->second->id;
 }
 
-RawImage loadRawImage(const char* filename)
+void dockNodeLayoutRecalculate()
 {
-	int width = 0;
-	int height = 0;
-	int comp;
-	stbi_uc* data = stbi_load(filename, &width, &height, &comp, 4);
-
-	if (!data)
-		return RawImage();
-
-	RawImage imgdata;
-
-	imgdata.width = width;
-	imgdata.height = height;
-	imgdata.pixels = data;
-	imgdata.bpp = 32;
-	//TODO: load 8bbp or other formats?
-
-	return imgdata;
+	for (auto& pair : ctx->docking.rootNativeWindowDockNodes)
+	{
+		dockNodeRecalculateLayout(pair.second);
+	}
 }
 
-void deleteImage(Image image)
+HTheme themeCreate(u32 atlasTextureSize)
 {
-	UiImage* img = (UiImage*)image;
-	img->atlas->deleteImage(img);
-}
-
-void deleteRawImage(RawImage& image)
-{
-	delete[] image.pixels;
-	image.pixels = nullptr;
-	image.width = 0;
-	image.height = 0;
-	image.bpp = 0;
-}
-
-Atlas createAtlas(u32 width, u32 height)
-{
-	return new UiAtlas(width, height);
-}
-
-void deleteAtlas(Atlas atlas)
-{
-	delete (UiAtlas*)atlas;
-}
-
-Image addAtlasImage(Atlas atlas, const RawImage& img)
-{
-	UiAtlas* atlasPtr = (UiAtlas*)atlas;
-
-	return atlasPtr->addImage((const Rgba32*)img.pixels, img.width, img.height);
-}
-
-bool packAtlas(Atlas atlas)
-{
-	UiAtlas* atlasPtr = (UiAtlas*)atlas;
-
-	constexpr u32 border = 2;
-
-	return atlasPtr->pack(border);
-}
-
-void setInputProvider(InputProvider* provider)
-{
-	ctx->inputProvider = provider;
-}
-
-void setGraphicsProvider(GraphicsProvider* provider)
-{
-	ctx->gfx = provider;
-}
-
-void processInputEvents()
-{
-	ctx->event.type = InputEvent::Type::None;
-	clearInputEventQueue();
-	ctx->inputProvider->processEvents();
-	hui::update(getFrameDeltaTime());
-}
-
-void setFrameDeltaTime(f32 dt)
-{
-	ctx->deltaTime = dt;
-}
-
-f32 getFrameDeltaTime()
-{
-	return ctx->deltaTime;
-}
-
-Theme createTheme(u32 atlasTextureSize)
-{
-	UiTheme* theme = new UiTheme(atlasTextureSize);
+	Theme* theme = new Theme(atlasTextureSize);
 
 	ctx->themes.push_back(theme);
 
 	return theme;
 }
 
-Image addThemeImage(Theme theme, const RawImage& img)
+void themeSetUserSetting(HTheme theme, const char* name, const char* value)
 {
-	UiTheme* themePtr = (UiTheme*)theme;
-
-	return themePtr->addImage((const Rgba32*)img.pixels, img.width, img.height);
+	((Theme*)theme)->userSettings[name] = value;
 }
 
-void setWidgetStyle(WidgetType widgetType, const char* styleName)
+const char* themeGetUserSetting(HTheme theme, const char* name)
+{
+	auto iter = ((Theme*)theme)->userSettings.find(name);
+
+	if (iter == ((Theme*)theme)->userSettings.end())
+		return "";
+
+	return iter->second.c_str();
+}
+
+HImage themeAddImage(HTheme theme, const char* id, const ImageData& imgData)
+{
+	Theme* themePtr = (Theme*)theme;
+	ImageId nid = hashString(id);
+
+	auto iter = themePtr->images.find(nid);
+
+	if (iter != themePtr->images.end())
+	{
+		return iter->second;
+	}
+
+	Image* timg = new Image();
+
+	timg->width = imgData.width;
+	timg->height = imgData.height;
+	timg->pixels.resize(imgData.width * imgData.height);
+	memcpy(timg->pixels.data(), imgData.pixels, sizeof(Rgba32) * imgData.width * imgData.height);
+	themePtr->images[nid] = timg;
+
+	// Mark atlas as dirty so it can be rebuilt
+	themePtr->atlasDirty = true;
+
+	return timg;
+}
+
+HImage themeGetImage(HTheme theme, const char* id)
+{
+	Theme* themePtr = (Theme*)theme;
+
+	auto iter = themePtr->images.find(hashString(id));
+
+	if (iter != themePtr->images.end())
+		return iter->second;
+
+	return nullptr;
+}
+
+Point imageGetDimensions(HImage image)
+{
+	Image* img = (Image*)image;
+
+	if (!img)
+	{
+		return Point();
+	}
+
+	return { (f32)img->width, (f32)img->height };
+}
+
+void widgetSetStyle(WidgetType widgetType, const char* styleName)
 {
 	//TODO: more automatic correlation between widget type and its element types, to avoid manual switch
-	// To not force using map to search for the current style for all widgets, this might be the only way
+	// to not force using map to search for the current style for all widgets, this might be the only way
+	// switch might be faster than map tho
 	switch (widgetType)
 	{
 	case WidgetType::Window:
 		ctx->theme->elements[(u32)WidgetElementId::WindowBody].setStyle(styleName);
+		ctx->theme->elements[(u32)WidgetElementId::WindowHorizontalSplitter].setStyle(styleName);
+		ctx->theme->elements[(u32)WidgetElementId::WindowVerticalSplitter].setStyle(styleName);
 		break;
 	case WidgetType::Layout:
-		break;
-	case WidgetType::Compound:
 		break;
 	case WidgetType::Tooltip:
 		ctx->theme->elements[(u32)WidgetElementId::TooltipBody].setStyle(styleName);
@@ -791,13 +1143,22 @@ void setWidgetStyle(WidgetType widgetType, const char* styleName)
 	case WidgetType::Button:
 		ctx->theme->elements[(u32)WidgetElementId::ButtonBody].setStyle(styleName);
 		break;
-	case WidgetType::IconButton:
+	case WidgetType::ImageButton:
+		ctx->theme->elements[(u32)WidgetElementId::ImageButtonBody].setStyle(styleName);
 		break;
 	case WidgetType::TextInput:
 		ctx->theme->elements[(u32)WidgetElementId::TextInputBody].setStyle(styleName);
 		ctx->theme->elements[(u32)WidgetElementId::TextInputCaret].setStyle(styleName);
 		ctx->theme->elements[(u32)WidgetElementId::TextInputSelection].setStyle(styleName);
 		ctx->theme->elements[(u32)WidgetElementId::TextInputDefaultText].setStyle(styleName);
+		ctx->theme->elements[(u32)WidgetElementId::TextInputFilterClearImage].setStyle(styleName);
+		break;
+	case WidgetType::MultilineTextInput:
+		ctx->theme->elements[(u32)WidgetElementId::MultilineTextInputBody].setStyle(styleName);
+		ctx->theme->elements[(u32)WidgetElementId::TextInputCaret].setStyle(styleName); // reuse caret
+		ctx->theme->elements[(u32)WidgetElementId::TextInputSelection].setStyle(styleName); // reuse selection
+		ctx->theme->elements[(u32)WidgetElementId::MultilineTextInputLineNumbers].setStyle(styleName);
+		ctx->theme->elements[(u32)WidgetElementId::MultilineTextInputCurrentLineHighlight].setStyle(styleName);
 		break;
 	case WidgetType::Slider:
 		ctx->theme->elements[(u32)WidgetElementId::SliderBody].setStyle(styleName);
@@ -813,6 +1174,7 @@ void setWidgetStyle(WidgetType widgetType, const char* styleName)
 	case WidgetType::Check:
 		ctx->theme->elements[(u32)WidgetElementId::CheckBody].setStyle(styleName);
 		ctx->theme->elements[(u32)WidgetElementId::CheckMark].setStyle(styleName);
+		ctx->theme->elements[(u32)WidgetElementId::CheckMarkIndeterminate].setStyle(styleName);
 		break;
 	case WidgetType::Radio:
 		ctx->theme->elements[(u32)WidgetElementId::RadioBody].setStyle(styleName);
@@ -821,10 +1183,10 @@ void setWidgetStyle(WidgetType widgetType, const char* styleName)
 	case WidgetType::Label:
 		ctx->theme->elements[(u32)WidgetElementId::LabelBody].setStyle(styleName);
 		break;
-	case WidgetType::Panel:
-		ctx->theme->elements[(u32)WidgetElementId::PanelBody].setStyle(styleName);
-		ctx->theme->elements[(u32)WidgetElementId::PanelCollapsedArrow].setStyle(styleName);
-		ctx->theme->elements[(u32)WidgetElementId::PanelExpandedArrow].setStyle(styleName);
+	case WidgetType::Expandable:
+		ctx->theme->elements[(u32)WidgetElementId::ExpandableBody].setStyle(styleName);
+		ctx->theme->elements[(u32)WidgetElementId::ExpandableCollapsedArrow].setStyle(styleName);
+		ctx->theme->elements[(u32)WidgetElementId::ExpandableExpandedArrow].setStyle(styleName);
 		break;
 	case WidgetType::Popup:
 		ctx->theme->elements[(u32)WidgetElementId::PopupBody].setStyle(styleName);
@@ -839,8 +1201,6 @@ void setWidgetStyle(WidgetType widgetType, const char* styleName)
 	case WidgetType::Selectable:
 		ctx->theme->elements[(u32)WidgetElementId::SelectableBody].setStyle(styleName);
 		break;
-	case WidgetType::ResizeGrip:
-		break;
 	case WidgetType::Line:
 		ctx->theme->elements[(u32)WidgetElementId::LineBody].setStyle(styleName);
 		break;
@@ -848,8 +1208,10 @@ void setWidgetStyle(WidgetType widgetType, const char* styleName)
 		break;
 	case WidgetType::ScrollView:
 		ctx->theme->elements[(u32)WidgetElementId::ScrollViewBody].setStyle(styleName);
-		ctx->theme->elements[(u32)WidgetElementId::ScrollViewScrollBar].setStyle(styleName);
-		ctx->theme->elements[(u32)WidgetElementId::ScrollViewScrollThumb].setStyle(styleName);
+		ctx->theme->elements[(u32)WidgetElementId::ScrollViewScrollBarV].setStyle(styleName);
+		ctx->theme->elements[(u32)WidgetElementId::ScrollViewScrollThumbV].setStyle(styleName);
+		ctx->theme->elements[(u32)WidgetElementId::ScrollViewScrollBarH].setStyle(styleName);
+		ctx->theme->elements[(u32)WidgetElementId::ScrollViewScrollThumbH].setStyle(styleName);
 		break;
 	case WidgetType::MenuBar:
 		ctx->theme->elements[(u32)WidgetElementId::MenuBarBody].setStyle(styleName);
@@ -873,75 +1235,169 @@ void setWidgetStyle(WidgetType widgetType, const char* styleName)
 		break;
 	case WidgetType::Viewport:
 		break;
-	case WidgetType::ViewPane:
-		ctx->theme->elements[(u32)WidgetElementId::ViewPaneDockRect].setStyle(styleName);
-		ctx->theme->elements[(u32)WidgetElementId::ViewPaneDockDialRect].setStyle(styleName);
-		break;
 	case WidgetType::MsgBox:
-		ctx->theme->elements[(u32)WidgetElementId::MessageBoxIconError].setStyle(styleName);
-		ctx->theme->elements[(u32)WidgetElementId::MessageBoxIconWarning].setStyle(styleName);
-		ctx->theme->elements[(u32)WidgetElementId::MessageBoxIconInfo].setStyle(styleName);
-		ctx->theme->elements[(u32)WidgetElementId::MessageBoxIconQuestion].setStyle(styleName);
+		ctx->theme->elements[(u32)WidgetElementId::MessageBoxImageError].setStyle(styleName);
+		ctx->theme->elements[(u32)WidgetElementId::MessageBoxImageWarning].setStyle(styleName);
+		ctx->theme->elements[(u32)WidgetElementId::MessageBoxImageInfo].setStyle(styleName);
+		ctx->theme->elements[(u32)WidgetElementId::MessageBoxImageQuestion].setStyle(styleName);
 		break;
 	case WidgetType::Box:
 		ctx->theme->elements[(u32)WidgetElementId::BoxBody].setStyle(styleName);
 		break;
-	case WidgetType::Toolbar:
-		ctx->theme->elements[(u32)WidgetElementId::ToolbarBody].setStyle(styleName);
-		break;
-	case WidgetType::ToolbarButton:
-		ctx->theme->elements[(u32)WidgetElementId::ToolbarButtonBody].setStyle(styleName);
-		break;
-	case WidgetType::ToolbarDropdown:
-		ctx->theme->elements[(u32)WidgetElementId::ToolbarDropdownBody].setStyle(styleName);
-		break;
-	case WidgetType::ToolbarSeparator:
-		ctx->theme->elements[(u32)WidgetElementId::ToolbarSeparatorVerticalBody].setStyle(styleName);
-		ctx->theme->elements[(u32)WidgetElementId::ToolbarSeparatorHorizontalBody].setStyle(styleName);
-		break;
-	case WidgetType::ColumnsHeader:
-		ctx->theme->elements[(u32)WidgetElementId::ColumnsHeaderBody].setStyle(styleName);
-		break;
 	case WidgetType::ComboSlider:
-		ctx->theme->elements[(u32)WidgetElementId::ComboSliderBody].setStyle(styleName);
+		ctx->theme->elements[(u32)WidgetElementId::ComboSliderLeftButton].setStyle(styleName);
+		ctx->theme->elements[(u32)WidgetElementId::ComboSliderMiddleButton].setStyle(styleName);
+		ctx->theme->elements[(u32)WidgetElementId::ComboSliderRightButton].setStyle(styleName);
 		ctx->theme->elements[(u32)WidgetElementId::ComboSliderLeftArrow].setStyle(styleName);
-		ctx->theme->elements[(u32)WidgetElementId::ComboSliderRangeBar].setStyle(styleName);
 		ctx->theme->elements[(u32)WidgetElementId::ComboSliderRightArrow].setStyle(styleName);
+		ctx->theme->elements[(u32)WidgetElementId::ComboSliderRangeBar].setStyle(styleName);
 		break;
-	case WidgetType::RotarySlider:
-		ctx->theme->elements[(u32)WidgetElementId::RotarySliderBody].setStyle(styleName);
-		ctx->theme->elements[(u32)WidgetElementId::RotarySliderMark].setStyle(styleName);
-		ctx->theme->elements[(u32)WidgetElementId::RotarySliderValueDot].setStyle(styleName);
+	case WidgetType::CircularSlider:
+		ctx->theme->elements[(u32)WidgetElementId::CircularSliderBody].setStyle(styleName);
+		ctx->theme->elements[(u32)WidgetElementId::CircularSliderMark].setStyle(styleName);
+		ctx->theme->elements[(u32)WidgetElementId::CircularSliderValueDot].setStyle(styleName);
+		break;
+	case WidgetType::ColorPicker:
+		ctx->theme->elements[(u32)WidgetElementId::ColorPickerCheckers].setStyle(styleName);
+		ctx->theme->elements[(u32)WidgetElementId::ColorPickerBody].setStyle(styleName);
+		ctx->theme->elements[(u32)WidgetElementId::ColorPickerButtonBody].setStyle(styleName);
+		break;
+	case WidgetType::Table:
+		ctx->theme->elements[(u32)WidgetElementId::TableBody].setStyle(styleName);
+		ctx->theme->elements[(u32)WidgetElementId::TableHeaderBody].setStyle(styleName);
+		ctx->theme->elements[(u32)WidgetElementId::TableHeaderBodyLeft].setStyle(styleName);
+		ctx->theme->elements[(u32)WidgetElementId::TableHeaderBodyRight].setStyle(styleName);
+		break;
+	case WidgetType::Link:
+		ctx->theme->elements[(u32)WidgetElementId::LinkBody].setStyle(styleName);
 		break;
 	}
 }
 
-void setWidgetDefaultStyle(WidgetType widgetType)
+void widgetPushStyle(WidgetType widgetType, const char* styleName)
 {
-	setWidgetStyle(widgetType, "default");
+	if (ctx->widgetCurrentStyle.find(widgetType) == ctx->widgetCurrentStyle.end())
+	{
+		ctx->widgetCurrentStyle.insert(std::make_pair(widgetType, "default"));
+	}
+
+	ctx->widgetStyleStack.push_back(std::make_pair(widgetType, ctx->widgetCurrentStyle[widgetType]));
+
+	widgetSetStyle(widgetType, styleName);
 }
 
-void setUserWidgetElementStyle(const char* elementName, const char* styleName)
+void widgetPopStyle()
+{
+	HUI_ASSERT(!ctx->widgetStyleStack.empty());
+
+	if (ctx->widgetStyleStack.empty())
+		return;
+
+	auto& top = ctx->widgetStyleStack.back();
+	widgetSetStyle(top.first, top.second.c_str());
+	ctx->widgetStyleStack.pop_back();
+}
+
+void widgetSetElementStyle(WidgetElementId widgetElementId, const char* styleName)
+{
+	HUI_ASSERT(ctx);
+	HUI_ASSERT(ctx->theme);
+	ctx->theme->elements[(u32)widgetElementId].setStyle(styleName);
+}
+
+void widgetSetDefaultStyle(WidgetType widgetType)
+{
+	widgetSetStyle(widgetType, "default");
+}
+
+void widgetSetDefaultElementStyle(WidgetElementId widgetElementId)
+{
+	widgetSetElementStyle(widgetElementId, "default");
+}
+
+void widgetSetUserElementStyle(const char* elementName, const char* styleName)
 {
 	ctx->theme->userElements[elementName]->setStyle(styleName);
 }
 
-void buildTheme(Theme theme)
+void themeBuild(HTheme theme)
 {
-	UiTheme* themePtr = (UiTheme*)theme;
+	HUI_ASSERT(theme);
+	if (!theme)
+		return;
 
-	themePtr->packAtlas();
-	themePtr->setDefaultWidgetStyle();
+	Theme* themePtr = (Theme*)theme;
+	themePtr->build();
+	themePtr->atlasDirty = false;
 }
 
-void setThemeWidgetElement(
-	Theme theme,
+bool themeRebuildAtlas(HTheme theme)
+{
+	HUI_ASSERT(theme);
+	if (!theme)
+		return false;
+
+	Theme* themePtr = (Theme*)theme;
+
+	if (!themePtr->atlasDirty)
+		return false;
+
+	// Rebuild the atlas
+	themePtr->atlas.create(themePtr->atlasSize, themePtr->atlasSize, 5);
+	themePtr->addImagesToAtlas();
+	themePtr->addFontGlyphsToAtlas();
+	themePtr->atlas.pack();
+
+	// Update image rects and uvRects from packed atlas
+	for (auto& packedImage : themePtr->atlas.images)
+	{
+		auto& img = packedImage.second;
+		auto iterImages = themePtr->images.find(img.id);
+
+		if (iterImages != themePtr->images.end())
+		{
+			iterImages->second->rect = img.rect;
+			iterImages->second->uvRect = img.uvRect;
+			iterImages->second->rotated = img.rotated;
+		}
+		else
+		{
+			for (auto& fontVar : themePtr->fonts)
+			{
+				for (auto& glyphPair : fontVar->font.glyphs)
+				{
+					auto fontGlyph = glyphPair.second;
+					auto fntImage = (Image*)fontGlyph->image;
+
+					if (fntImage)
+					{
+						if (fntImage->id == img.id)
+						{
+							fntImage->rect = img.rect;
+							fntImage->uvRect = img.uvRect;
+							fntImage->rotated = img.rotated;
+						}
+					}
+				}
+			}
+		}
+	}
+
+	themePtr->atlasDirty = false;
+	return true;
+}
+
+void themeSetWidgetElement(
+	HTheme theme,
 	WidgetElementId elementId,
 	WidgetStateType widgetStateType,
 	const WidgetElementInfo& elementInfo,
 	const char* styleName)
 {
-	UiTheme* themePtr = (UiTheme*)theme;
+	HUI_ASSERT(theme);
+	HUI_ASSERT(styleName);
+
+	Theme* themePtr = (Theme*)theme;
 	u32 stateIndex = (u32)widgetStateType;
 
 	auto& state = themePtr->elements[(u32)elementId].styles[styleName].states[stateIndex];
@@ -949,25 +1405,26 @@ void setThemeWidgetElement(
 	state.border = elementInfo.border;
 	state.color = elementInfo.color;
 	state.textColor = elementInfo.textColor;
-	state.font = (UiFont*)elementInfo.font;
+	state.font = (Font*)elementInfo.font;
 	state.width = elementInfo.width;
 	state.height = elementInfo.height;
-	state.image = (UiImage*)elementInfo.image;
+	state.image = (Image*)elementInfo.image;
+	state.textShadow = elementInfo.textShadow;
 }
 
-void setThemeUserWidgetElement(
-	Theme theme,
+void themeSetUserWidgetElement(
+	HTheme theme,
 	const char* userElementName,
 	WidgetStateType widgetStateType,
 	const WidgetElementInfo& elementInfo,
 	const char* styleName)
 {
-	UiTheme* themePtr = (UiTheme*)theme;
+	Theme* themePtr = (Theme*)theme;
 	u32 stateIndex = (u32)widgetStateType;
 
 	if (themePtr->userElements.find(userElementName) == themePtr->userElements.end())
 	{
-		themePtr->userElements.insert(std::make_pair(userElementName, new UiThemeElement()));
+		themePtr->userElements.insert(std::make_pair(userElementName, new ThemeElement()));
 	}
 
 	auto& state = themePtr->userElements[userElementName]->styles[styleName].states[stateIndex];
@@ -975,25 +1432,59 @@ void setThemeUserWidgetElement(
 	state.border = elementInfo.border;
 	state.color = elementInfo.color;
 	state.textColor = elementInfo.textColor;
-	state.font = (UiFont*)elementInfo.font;
+	state.font = (Font*)elementInfo.font;
 	state.width = elementInfo.width;
 	state.height = elementInfo.height;
-	state.image = (UiImage*)elementInfo.image;
+	state.image = (Image*)elementInfo.image;
+	state.textShadow = elementInfo.textShadow;
 }
 
-void setTheme(Theme theme)
+void themeSet(HTheme theme)
 {
-	ctx->theme = (UiTheme*)theme;
+	HUI_ASSERT(theme);
+
+	if (!theme)
+		return;
+
+	ctx->theme = (Theme*)theme;
+
+	// clear theme element pointers in text input states since theme elements may have been reallocated
+	ctx->textInput.themeElement = nullptr;
+	for (auto& [id, state] : ctx->textMultilineInput)
+	{
+		state.themeElement = nullptr;
+	}
 }
 
-Theme getTheme()
+HTheme themeGet()
 {
 	return ctx->theme;
 }
 
-void deleteTheme(Theme theme)
+ImageData themeGetAtlasImageData()
 {
-	auto iter = std::find(ctx->themes.begin(), ctx->themes.end(), (UiTheme*)theme);
+	ImageData img;
+
+	img.width = ctx->theme->atlas.width;
+	img.height = ctx->theme->atlas.height;
+	img.pixels = ctx->theme->atlas.atlasImageData.data();
+
+	return img;
+}
+
+void themeSetAtlasTexture(HTexture texture)
+{
+	ctx->theme->texture = texture;
+}
+
+HTexture themeGetAtlasTexture()
+{
+	return ctx->theme->texture;
+}
+
+void themeDestroy(HTheme theme)
+{
+	auto iter = std::find(ctx->themes.begin(), ctx->themes.end(), (Theme*)theme);
 
 	if (iter == ctx->themes.end())
 		return;
@@ -1003,8 +1494,7 @@ void deleteTheme(Theme theme)
 	ctx->theme = nullptr;
 }
 
-void getThemeWidgetElementInfo(WidgetElementId elementId, WidgetStateType state, WidgetElementInfo& outInfo,
-	const char* styleName)
+void themeGetWidgetElementInfo(WidgetElementId elementId, WidgetStateType state, WidgetElementInfo& outInfo, const char* styleName)
 {
 	auto& elemState = ctx->theme->elements[(u32)elementId].getStyleState(styleName, state);
 
@@ -1017,7 +1507,7 @@ void getThemeWidgetElementInfo(WidgetElementId elementId, WidgetStateType state,
 	outInfo.height = elemState.height;
 }
 
-void getThemeUserWidgetElementInfo(const char* userElementName, WidgetStateType state, WidgetElementInfo& outInfo, const char* styleName)
+void themeGetUserWidgetElementInfo(const char* userElementName, WidgetStateType state, WidgetElementInfo& outInfo, const char* styleName)
 {
 	outInfo = {};
 	auto iter = ctx->theme->userElements.find(userElementName);
@@ -1025,7 +1515,7 @@ void getThemeUserWidgetElementInfo(const char* userElementName, WidgetStateType 
 	if (iter == ctx->theme->userElements.end())
 		return;
 
-	auto elemState = iter->second->getStyleState(styleName, state);
+	auto& elemState = iter->second->getStyleState(styleName, state);
 
 	outInfo.border = elemState.border;
 	outInfo.color = elemState.color;
@@ -1036,595 +1526,223 @@ void getThemeUserWidgetElementInfo(const char* userElementName, WidgetStateType 
 	outInfo.height = elemState.height;
 }
 
-Font createFont(Theme theme, const char* name, const char* fontFilename, u32 faceSize)
+void themeSetWidgetElementParameter(HTheme theme, WidgetElementId elementId, const char* styleName, const char* paramName, const char* paramValue)
 {
-	return (Font)((UiTheme*)theme)->fontCache->createFont(name, fontFilename, faceSize * ctx->globalScale, false);
+	((Theme*)theme)->elements[(int)elementId].styles[styleName].parameters[paramName] = paramValue;
 }
 
-void releaseFont(Font font)
+const char* themeGetWidgetElementParameterString(HTheme theme, WidgetElementId elementId, const char* styleName, const char* paramName, const char* defaultValue)
 {
-	ctx->theme->fontCache->releaseFont((UiFont*)font);
+	auto& style = ((Theme*)theme)->elements[(int)elementId].styles[styleName];
+
+	auto iter = style.parameters.find(paramName);
+
+	if (iter == style.parameters.end())
+		return defaultValue;
+
+	return iter->second.c_str();
 }
 
-Font getFont(Theme theme, const char* themeFontName)
+f32 themeGetWidgetElementParameterFloat(HTheme theme, WidgetElementId elementId, const char* styleName, const char* paramName, f32 defaultValue)
 {
-	UiTheme* themeObj = (UiTheme*)theme;
+	auto& style = ((Theme*)theme)->elements[(int)elementId].styles[styleName];
 
-	return themeObj->fonts[themeFontName];
+	return style.getParameter(paramName, defaultValue);
 }
 
-Font getFont(const char* themeFontName)
+const Color& themeGetWidgetElementParameterColor(HTheme theme, WidgetElementId elementId, const char* styleName, const char* paramName, const Color& defaultValue)
 {
-	return getFont(getTheme(), themeFontName);
+	auto& style = ((Theme*)theme)->elements[(int)elementId].styles[styleName];
+
+	return style.getColorParameter(paramName, defaultValue);
 }
 
-static std::string readTextFile(const char* path)
+void themeSetUserWidgetElementParameter(HTheme theme, const char* userElementName, const char* styleName, const char* paramName, const char* paramValue)
 {
-	FILE* file = fopen(path, "rb");
+	auto themePtr = ((Theme*)theme);
 
-	if (!file)
-		return std::string("");
-
-	fseek(file, 0, SEEK_END);
-	long size = ftell(file);
-	std::string text;
-
-	if (size != -1)
+	if (themePtr->userElements.find(userElementName) == themePtr->userElements.end())
 	{
-		fseek(file, 0, SEEK_SET);
-
-		char* buffer = new char[size + 1];
-		buffer[size] = 0;
-
-		if (fread(buffer, 1, size, file) == (unsigned long)size)
-			text = buffer;
-
-		delete[] buffer;
+		themePtr->userElements.insert(std::make_pair(userElementName, new ThemeElement()));
 	}
 
-	fclose(file);
-
-	return text;
+	themePtr->userElements[userElementName]->styles[styleName].parameters[paramName] = paramValue;
 }
 
-WidgetType getWidgetTypeFromName(std::string name)
+const char* themeGetUserWidgetElementParameterString(HTheme theme, const char* userElementName, const char* styleName, const char* paramName, const char* defaultValue)
 {
-	if (name == "window") return WidgetType::Window;
-	if (name == "tooltip") return WidgetType::Tooltip;
-	if (name == "button") return WidgetType::Button;
-	if (name == "iconButton") return WidgetType::IconButton;
-	if (name == "textInput") return WidgetType::TextInput;
-	if (name == "slider") return WidgetType::Slider;
-	if (name == "progress") return WidgetType::Progress;
-	if (name == "image") return WidgetType::Image;
-	if (name == "check") return WidgetType::Check;
-	if (name == "radio") return WidgetType::Radio;
-	if (name == "label") return WidgetType::Label;
-	if (name == "panel") return WidgetType::Panel;
-	if (name == "popup") return WidgetType::Popup;
-	if (name == "dropdown") return WidgetType::Dropdown;
-	if (name == "list") return WidgetType::List;
-	if (name == "resizeGrip") return WidgetType::ResizeGrip;
-	if (name == "line") return WidgetType::Line;
-	if (name == "space") return WidgetType::Space;
-	if (name == "scrollView") return WidgetType::ScrollView;
-	if (name == "menuBar") return WidgetType::MenuBar;
-	if (name == "menu") return WidgetType::Menu;
-	if (name == "tabGroup") return WidgetType::TabGroup;
-	if (name == "tab") return WidgetType::Tab;
-	if (name == "viewport") return WidgetType::Viewport;
-	if (name == "viewPane") return WidgetType::ViewPane;
-	if (name == "messageBox") return WidgetType::MsgBox;
-	if (name == "selectable") return WidgetType::Selectable;
-	if (name == "box") return WidgetType::Box;
-	if (name == "toolbar") return WidgetType::Toolbar;
-	if (name == "toolbarButton") return WidgetType::ToolbarButton;
-	if (name == "toolbarSeparator") return WidgetType::ToolbarSeparator;
-	if (name == "columnsHeader") return WidgetType::ColumnsHeader;
-	if (name == "comboSlider") return WidgetType::ComboSlider;
-	if (name == "rotarySlider") return WidgetType::RotarySlider;
+	auto& style = ((Theme*)theme)->userElements[userElementName]->styles[styleName];
 
-	return WidgetType::None;
+	auto iter = style.parameters.find(paramName);
+
+	if (iter == style.parameters.end())
+		return defaultValue;
+
+	return iter->second.c_str();
 }
 
-WidgetElementId getWidgetElementFromName(std::string name)
+f32 themeGetUserWidgetElementParameterFloat(HTheme theme, const char* userElementName, const char* styleName, const char* paramName, f32 defaultValue)
 {
-	if (name == "windowBody") return WidgetElementId::WindowBody;
-	if (name == "buttonBody") return WidgetElementId::ButtonBody;
-	if (name == "checkBody") return WidgetElementId::CheckBody;
-	if (name == "checkMark") return WidgetElementId::CheckMark;
-	if (name == "radioBody") return WidgetElementId::RadioBody;
-	if (name == "radioMark") return WidgetElementId::RadioMark;
-	if (name == "lineBody") return WidgetElementId::LineBody;
-	if (name == "labelBody") return WidgetElementId::LabelBody;
-	if (name == "panelBody") return WidgetElementId::PanelBody;
-	if (name == "panelCollapsedArrow") return WidgetElementId::PanelCollapsedArrow;
-	if (name == "panelExpandedArrow") return WidgetElementId::PanelExpandedArrow;
-	if (name == "textInputBody") return WidgetElementId::TextInputBody;
-	if (name == "textInputCaret") return WidgetElementId::TextInputCaret;
-	if (name == "textInputSelection") return WidgetElementId::TextInputSelection;
-	if (name == "textInputDefaultText") return WidgetElementId::TextInputDefaultText;
-	if (name == "sliderBody") return WidgetElementId::SliderBody;
-	if (name == "sliderBodyFilled") return WidgetElementId::SliderBodyFilled;
-	if (name == "sliderKnob") return WidgetElementId::SliderKnob;
-	if (name == "progressBack") return WidgetElementId::ProgressBack;
-	if (name == "progressFill") return WidgetElementId::ProgressFill;
-	if (name == "tooltipBody") return WidgetElementId::TooltipBody;
-	if (name == "popupBody") return WidgetElementId::PopupBody;
-	if (name == "popupBehind") return WidgetElementId::PopupBehind;
-	if (name == "dropdownBody") return WidgetElementId::DropdownBody;
-	if (name == "dropdownArrow") return WidgetElementId::DropdownArrow;
-	if (name == "scrollViewBody") return WidgetElementId::ScrollViewBody;
-	if (name == "scrollViewScrollBar") return WidgetElementId::ScrollViewScrollBar;
-	if (name == "scrollViewScrollThumb") return WidgetElementId::ScrollViewScrollThumb;
-	if (name == "tabGroupBody") return WidgetElementId::TabGroupBody;
-	if (name == "tabBodyActive") return WidgetElementId::TabBodyActive;
-	if (name == "tabBodyInactive") return WidgetElementId::TabBodyInactive;
-	if (name == "viewPaneDockRect") return WidgetElementId::ViewPaneDockRect;
-	if (name == "viewPaneDockDialRect") return WidgetElementId::ViewPaneDockDialRect;
-	if (name == "menuBarBody") return WidgetElementId::MenuBarBody;
-	if (name == "menuBarItem") return WidgetElementId::MenuBarItem;
-	if (name == "menuBody") return WidgetElementId::MenuBody;
-	if (name == "menuItemSeparator") return WidgetElementId::MenuItemSeparator;
-	if (name == "menuItemBody") return WidgetElementId::MenuItemBody;
-	if (name == "menuItemShortcut") return WidgetElementId::MenuItemShortcut;
-	if (name == "menuItemCheckMark") return WidgetElementId::MenuItemCheckMark;
-	if (name == "menuItemNoCheckMark") return WidgetElementId::MenuItemNoCheckMark;
-	if (name == "subMenuItemArrow") return WidgetElementId::SubMenuItemArrow;
-	if (name == "errorIcon") return WidgetElementId::MessageBoxIconError;
-	if (name == "infoIcon") return WidgetElementId::MessageBoxIconInfo;
-	if (name == "questionIcon") return WidgetElementId::MessageBoxIconQuestion;
-	if (name == "warningIcon") return WidgetElementId::MessageBoxIconWarning;
-	if (name == "selectableBody") return WidgetElementId::SelectableBody;
-	if (name == "boxBody") return WidgetElementId::BoxBody;
-	if (name == "toolbarBody") return WidgetElementId::ToolbarBody;
-	if (name == "toolbarButtonBody") return WidgetElementId::ToolbarButtonBody;
-	if (name == "toolbarSeparatorVerticalBody") return WidgetElementId::ToolbarSeparatorVerticalBody;
-	if (name == "toolbarSeparatorHorizontalBody") return WidgetElementId::ToolbarSeparatorHorizontalBody;
-	if (name == "columnsHeaderBody") return WidgetElementId::ColumnsHeaderBody;
-	if (name == "comboSliderBody") return WidgetElementId::ComboSliderBody;
-	if (name == "comboSliderLeftArrow") return WidgetElementId::ComboSliderLeftArrow;
-	if (name == "comboSliderRightArrow") return WidgetElementId::ComboSliderRightArrow;
-	if (name == "comboSliderRangeBar") return WidgetElementId::ComboSliderRangeBar;
-	if (name == "rotarySliderBody") return WidgetElementId::RotarySliderBody;
-	if (name == "rotarySliderMark") return WidgetElementId::RotarySliderMark;
-	if (name == "rotarySliderValueDot") return WidgetElementId::RotarySliderValueDot;
+	auto& style = ((Theme*)theme)->userElements[userElementName]->styles[styleName];
 
-	return WidgetElementId::Custom;
+	return style.getParameter(paramName, defaultValue);
 }
 
-std::string getPath(const std::string& fname)
+const Color& themeGetUserWidgetElementParameterColor(HTheme theme, const char* userElementName, const char* styleName, const char* paramName, const Color& defaultValue)
 {
-	size_t pos = fname.find_last_of("\\/");
-	return (std::string::npos == pos) ? "" : fname.substr(0, pos);
+	auto& style = ((Theme*)theme)->userElements[userElementName]->styles[styleName];
+
+	return style.getColorParameter(paramName, defaultValue);
 }
 
-bool getColorFromText(std::string colorText, Color& color)
+HFont themeFontCreate(HTheme theme, const char* name, const char* fontFilename, u32 faceSize)
 {
-	if (colorText == "white") { color = Color::white; return true; }
-	if (colorText == "black") { color = Color::black; return true; }
-	if (colorText == "red") { color = Color::red; return true; }
-	if (colorText == "darkRed") { color = Color::darkRed; return true; }
-	if (colorText == "veryDarkRed") { color = Color::veryDarkRed; return true; }
-	if (colorText == "green") { color = Color::green; return true; }
-	if (colorText == "darkGreen") { color = Color::darkGreen; return true; }
-	if (colorText == "veryDarkGreen") { color = Color::veryDarkGreen; return true; }
-	if (colorText == "blue") { color = Color::blue; return true; }
-	if (colorText == "yellow") { color = Color::yellow; return true; }
-	if (colorText == "magenta") { color = Color::magenta; return true; }
-	if (colorText == "cyan") { color = Color::cyan; return true; }
-	if (colorText == "darkCyan") { color = Color::darkCyan; return true; }
-	if (colorText == "veryDarkCyan") { color = Color::veryDarkCyan; return true; }
-	if (colorText == "orange") { color = Color::orange; return true; }
-	if (colorText == "darkOrange") { color = Color::darkOrange; return true; }
-	if (colorText == "lightGray") { color = Color::lightGray; return true; }
-	if (colorText == "gray") { color = Color::gray; return true; }
-	if (colorText == "darkGray") { color = Color::darkGray; return true; }
-	if (colorText == "sky") { color = Color::sky; return true; }
+	Theme* themePtr = (Theme*)theme;
+	auto fnt = (HFont)themePtr->createFont(name, fontFilename, faceSize);
 
-	return false;
+	return fnt;
 }
 
-bool getColorFromText(const char* colorText, Color& color)
+void themeFontDestroy(HTheme theme, HFont font)
 {
-	return getColorFromText(std::string(colorText), color);
+	Theme* themePtr = (Theme*)theme;
+
+	themePtr->deleteFont((Font*)font);
 }
 
-void setThemeElement(
-	UiTheme* theme,
-	const std::string& themePath,
-	const char* styleName,
-	WidgetType widgetType,
-	WidgetElementId elemId,
-	WidgetStateType widgetStateType,
-	Json::Value state,
-	i32 width, i32 height)
+HFont themeFontGetFromTheme(HTheme theme, const char* themeFontName)
 {
-	auto imageName = state.get("image", "").asString();
-	auto border = state.get("border", 0).asInt();
-	auto color = state.get("color", "white").asString();
-	auto textColor = state.get("textColor", "white").asString();
-	auto fontName = state.get("font", "").asString();
-	auto imageFilename = themePath + imageName + ".png";
-	auto iter = theme->images.find(imageFilename);
-	Image image = 0;
-	width = state.get("width", width).asInt();
-	height = state.get("height", height).asInt();
+	Theme* themePtr = (Theme*)theme;
 
-	if (iter == theme->images.end())
-	{
-		auto rawImage = loadRawImage(imageFilename.c_str());
-		image = addThemeImage(theme, rawImage);
-		deleteRawImage(rawImage);
-		theme->images[imageFilename] = (UiImage*)image;
-	}
-	else
-	{
-		image = (Image)iter->second;
-	}
-
-	auto iterFnt = theme->fonts.find(fontName);
-	Font font = 0;
-
-	if (iterFnt != theme->fonts.end())
-	{
-		font = iterFnt->second;
-	}
-
-	u32 r = 0, g = 0, b = 0, a = 255;
-	Color bgColor;
-	Color txtColor;
-
-	if (!getColorFromText(color, bgColor))
-	{
-		sscanf(color.c_str(), "%d,%d,%d,%d", &r, &g, &b, &a);
-		bgColor = Color((f32)r / 255.0f, (f32)g / 255.0f, (f32)b / 255.0f, (f32)a / 255.0f);
-	}
-
-	if (!getColorFromText(textColor, txtColor))
-	{
-		sscanf(textColor.c_str(), "%d,%d,%d,%d", &r, &g, &b, &a);
-		txtColor = Color((f32)r / 255.0f, (f32)g / 255.0f, (f32)b / 255.0f, (f32)a / 255.0f);
-	}
-
-	auto& elemState = theme->elements[(u32)elemId].styles[styleName].states[(u32)widgetStateType];
-	elemState.image = (UiImage*)image;
-	elemState.border = border;
-	elemState.color = bgColor;
-	elemState.textColor = txtColor;
-	elemState.font = (UiFont*)font;
-	elemState.width = width;
-	elemState.height = height;
+	return themePtr->getFont(themeFontName);
 }
 
-void setUserElement(
-	UiTheme* theme,
-	const std::string& themePath,
-	const char* styleName,
-	const std::string& widgetName,
-	const std::string& elemName,
-	WidgetStateType widgetStateType,
-	Json::Value state,
-	i32 width, i32 height)
+HFont themeFontGet(const char* themeFontName)
 {
-	auto imageName = state.get("image", "").asString();
-	auto border = state.get("border", 0).asInt();
-	auto color = state.get("color", "white").asString();
-	auto textColor = state.get("textColor", "white").asString();
-	auto fontName = state.get("font", "").asString();
-	auto imageFilename = themePath + imageName + ".png";
-	auto iter = theme->images.find(imageFilename);
-	Image image = 0;
-	width = state.get("width", width).asInt();
-	height = state.get("height", height).asInt();
-
-	if (iter == theme->images.end())
-	{
-		auto rawImage = loadRawImage(imageFilename.c_str());
-		image = addThemeImage(theme, rawImage);
-		deleteRawImage(rawImage);
-		theme->images[imageFilename] = (UiImage*)image;
-	}
-	else
-	{
-		image = (Image)iter->second;
-	}
-
-	auto iterFnt = theme->fonts.find(fontName);
-	Font font = 0;
-
-	if (iterFnt != theme->fonts.end())
-	{
-		font = iterFnt->second;
-	}
-
-	u32 r = 0, g = 0, b = 0, a = 255;
-	Color bgColor;
-	Color txtColor;
-
-	if (!getColorFromText(color, bgColor))
-	{
-		sscanf(color.c_str(), "%d,%d,%d,%d", &r, &g, &b, &a);
-		bgColor = Color((f32)r / 255.0f, (f32)g / 255.0f, (f32)b / 255.0f, (f32)a / 255.0f);
-	}
-
-	if (!getColorFromText(textColor, txtColor))
-	{
-		sscanf(textColor.c_str(), "%d,%d,%d,%d", &r, &g, &b, &a);
-		txtColor = Color((f32)r / 255.0f, (f32)g / 255.0f, (f32)b / 255.0f, (f32)a / 255.0f);
-	}
-
-	WidgetElementInfo inf;
-	
-	inf.image = image;
-	inf.border = border;
-	inf.color = bgColor;
-	inf.textColor = txtColor;
-	inf.font = font;
-	inf.width = width,
-	inf.height = height;
-
-	setThemeUserWidgetElement(
-		theme,
-		elemName.c_str(),
-		widgetStateType,
-		inf,
-		styleName);
+	return themeFontGetFromTheme(themeGet(), themeFontName);
 }
 
-Theme loadTheme(const char* filename)
+Point fontGetTextSize(HFont font, const char* text)
 {
-	assert(ctx);
-
-	UiTheme* theme = new UiTheme(ctx->settings.defaultAtlasSize);
-
-	ctx->themes.push_back(theme);
-
-	Json::Reader reader;
-	Json::Value root;
-	auto json = readTextFile(filename);
-	bool ok = reader.parse(json, root);
-	std::string themePath = getPath(filename) + "/";
-
-	if (!ok)
+	if (!font || !text)
 	{
-		printf(reader.getFormatedErrorMessages().c_str());
-		deleteTheme(theme);
-		return 0;
+		return Point();
 	}
 
-	Json::Value fonts = root.get("fonts", Json::Value());
-	auto fontNames = fonts.getMemberNames();
-	
-	for (size_t i = 0; i < fontNames.size(); i++)
-	{
-		auto name = fontNames[i];
-		auto fnt = fonts.get(name.c_str(), Json::Value());
+	auto fntInfo = ((Font*)font)->computeTextSize(text);
 
-		std::string fontFilename = fnt.get("file", "").asString();
-
-		if (fontFilename.find_first_of(':') == std::string::npos)
-		{
-			fontFilename = themePath + fontFilename;
-		}
-
-		auto newFont = createFont(theme, name.c_str(), fontFilename.c_str(), fnt.get("size", 0).asInt());
-		theme->fonts[name] = (UiFont*)newFont;
-	}
-
-	Json::Value settings = root.get("settings", Json::Value());
-	auto settingNames = settings.getMemberNames();
-
-	for (size_t i = 0; i < settingNames.size(); i++)
-	{
-		auto name = settingNames[i];
-		auto val = settings.get(name.c_str(), Json::Value());
-		theme->userSettings[name] = val.asString();
-	}
-
-	Json::Value widgets = root.get("widgets", Json::Value());
-	auto widgetNames = widgets.getMemberNames();
-
-	for (size_t i = 0; i < widgetNames.size(); i++)
-	{
-		auto widgetName = widgetNames[i];
-		auto widget = widgets.get(widgetName.c_str(), Json::Value());
-		WidgetType widgetType = getWidgetTypeFromName(widgetName);
-		auto widgetMemberNames = widget.getMemberNames();
-		auto styles = widget.get("styles", Json::Value());
-
-		auto readElements = [theme, themePath, widgetType](const std::string& styleName, Json::Value& parentElem)
-		{
-			auto elementNames = parentElem.getMemberNames();
-			// read all widget elements
-			for (size_t l = 0; l < elementNames.size(); l++)
-			{
-				auto elemType = getWidgetElementFromName(elementNames[l]);
-				auto elem = parentElem.get(elementNames[l], Json::Value());
-				auto width = elem.get("width", 0).asInt();
-				auto height = elem.get("height", 0).asInt();
-				auto elemStates = elem.getMemberNames();
-
-				for (size_t m = 0; m < elemStates.size(); m++)
-				{
-					auto& stateName = elemStates[m];
-					auto elemState = elem.get(stateName, Json::Value());
-					auto widgetStateType = WidgetStateType::None;
-
-					if (stateName == "normal")
-						widgetStateType = WidgetStateType::Normal;
-					else if (stateName == "focused")
-						widgetStateType = WidgetStateType::Focused;
-					else if (stateName == "pressed")
-						widgetStateType = WidgetStateType::Pressed;
-					else if (stateName == "hovered")
-						widgetStateType = WidgetStateType::Hovered;
-					else if (stateName == "disabled")
-						widgetStateType = WidgetStateType::Disabled;
-
-					if (widgetStateType != WidgetStateType::None)
-						setThemeElement(theme, themePath, styleName.c_str(), widgetType, elemType, widgetStateType, elemState, width, height);
-					else
-						theme->elements[(u32)elemType].styles[styleName].parameters[stateName] = elemState.asString();
-				}
-			}
-		};
-
-		auto readUserElements = [theme, themePath, widgetName](const std::string& styleName, Json::Value& parentElem)
-		{
-			auto elementNames = parentElem.getMemberNames();
-
-			// read all widget elements
-			for (size_t l = 0; l < elementNames.size(); l++)
-			{
-				auto& elementName = elementNames[l];
-				auto elem = parentElem.get(elementName, Json::Value());
-				auto width = elem.get("width", 0).asInt();
-				auto height = elem.get("height", 0).asInt();
-				auto elemStates = elem.getMemberNames();
-
-				for (size_t m = 0; m < elemStates.size(); m++)
-				{
-					auto& stateName = elemStates[m];
-					auto elemState = elem.get(stateName, Json::Value());
-					auto widgetStateType = WidgetStateType::None;
-
-					if (stateName == "normal")
-						widgetStateType = WidgetStateType::Normal;
-					else if (stateName == "focused")
-						widgetStateType = WidgetStateType::Focused;
-					else if (stateName == "pressed")
-						widgetStateType = WidgetStateType::Pressed;
-					else if (stateName == "hovered")
-						widgetStateType = WidgetStateType::Hovered;
-					else if (stateName == "disabled")
-						widgetStateType = WidgetStateType::Disabled;
-
-					if (!theme->userElements[elementName])
-						theme->userElements[elementName] = new UiThemeElement();
-
-					if (widgetStateType != WidgetStateType::None)
-						setUserElement(theme, themePath, styleName.c_str(), widgetName, elementName, widgetStateType, elemState, width, height);
-					else if (elemState.isDouble())
-						theme->userElements[elementName]->styles[styleName].parameters[stateName] = elemState.asFloat();
-					else if (elemState.isInt())
-						theme->userElements[elementName]->styles[styleName].parameters[stateName] = elemState.asInt();
-				}
-			}
-		};
-
-		if (styles.isObject())
-		{
-			auto styleNames = styles.getMemberNames();
-
-			// read all styles
-			for (size_t k = 0; k < styleNames.size(); k++)
-			{
-				auto styleName = styleNames[k];
-				auto styleElem = styles.get(styleName, Json::Value());
-
-				if (widgetType != WidgetType::None)
-					readElements(styleName, styleElem);
-				else
-					readUserElements(styleName, styleElem);
-			}
-		}
-		else
-		{
-			if (widgetType != WidgetType::None)
-				readElements("default", widget);
-			else
-				readUserElements("default", widget);
-		}
-	}
-
-	buildTheme(theme);
-
-	return theme;
+	return { fntInfo.width, fntInfo.height };
 }
 
-void beginWindow(Window window)
+FontMetrics fontGetMetrics(HFont font)
 {
-	ctx->savedEventType = ctx->event.type;
-	ctx->renderer->setZOrder(0);
-
-	for (auto& popup : ctx->popupStack)
+	if (!font)
 	{
-		popup.alreadyClosedWithEscape = false;
-		popup.alreadyClickedOnSomething = false;
+		return FontMetrics();
 	}
 
-	ctx->hoveringThisWindow = getHoveredWindow() == getWindow();
-	ctx->renderer->beginFrame();
+	return ((Font*)font)->getMetrics();
 }
 
-void endWindow()
+void layoutBegin(const Rect& rect)
 {
-	ctx->renderer->endFrame();
-	ctx->currentWindowIndex++;
-	ctx->event.type = ctx->savedEventType;
-	ctx->penStack.clear();
-	//TODO: make scroll struct stack
+	layoutPush();
+	auto paddedRect = rect.contract(paddingGet(PaddingType::Layout));
+	ctx->layout.type = LayoutType::Generic;
+	ctx->layout.savedPosition = paddedRect.topLeft();
+	ctx->layout.width = paddedRect.width;
+	ctx->layout.height = paddedRect.height;
+	ctx->renderer.pushClipRect(paddedRect);
+	ctx->position = { paddedRect.x, paddedRect.y};
+	ctx->sameLine.enabled = false;
 }
 
-void beginContainer(const Rect& rect)
+void layoutEnd()
 {
-	ctx->layoutStack.push_back(LayoutState(LayoutType::Container));
-	ctx->layoutStack.back().position = rect.topLeft();
-	ctx->layoutStack.back().width = rect.width;
-	ctx->layoutStack.back().height = rect.height;
-
-	ctx->renderer->pushClipRect(rect);
-	ctx->penPosition = { rect.x, rect.y };
-	ctx->containerRect = rect;
-	ctx->widget.sameLine = false;
-}
-
-void endContainer()
-{
-	ctx->renderer->popClipRect();
-	ctx->layoutStack.pop_back();
+	ctx->renderer.popClipRect();
+	layoutPop();
 	ctx->currentTabIndex = 0;
 	ctx->selectedTabIndex = 0;
+}
 
-	if (!ctx->layoutStack.empty())
+void idPush(const char* id)
+{
+	ctx->idStack.push_back(genId(id));
+}
+
+void idPush(u32 id)
+{
+	ctx->idStack.push_back(genId(id));
+}
+
+void idPush(void* id)
+{
+	ctx->idStack.push_back(genId(id));
+}
+
+void idPop()
+{
+	if (ctx->idStack.empty())
 	{
-		Rect rect = {
-			ctx->layoutStack.back().position.x,
-			ctx->layoutStack.back().position.y,
-			ctx->layoutStack.back().width,
-			ctx->layoutStack.back().height };
-		ctx->penPosition = { rect.x, rect.y };
-		ctx->containerRect = rect;
+		HUI_LOG("idPop used too many times");
+		return;
 	}
 
-	ctx->scrollViewDepth = 0;
+	ctx->idStack.pop_back();
 }
 
-void pushWidgetLoop(u32 loopMaxCount)
+void layoutPush()
 {
-	UiContext::WidgetLoopInfo li;
-
-	li.previousId = ctx->currentWidgetId;
-	li.startId = ctx->widgetLoopStack.size() ? ctx->widgetLoopStack.back().startId + ctx->widgetLoopStack.back().maxCount : ctx->settings.widgetLoopStartId;
-	li.maxCount = loopMaxCount == ~0 ? ctx->settings.widgetLoopMaxCount : loopMaxCount;
-	ctx->currentWidgetId = li.startId;
-	ctx->widgetLoopStack.push_back(li);
+	ctx->layout.savedSameLine = ctx->sameLine;
+	ctx->layout.savedSameLineGroup = ctx->sameLineGroup;
+	ctx->layoutStack.push_back(ctx->layout);
+	ctx->sameLine = SameLineState();
+	ctx->sameLineGroup = SameLineGroupState();
 }
 
-void popWidgetLoop()
+void layoutPop()
 {
-	if (ctx->widgetLoopStack.size())
+	if (ctx->layoutStack.empty())
 	{
-		ctx->currentWidgetId = ctx->widgetLoopStack.back().previousId;
-		ctx->widgetLoopStack.pop_back();
+		HUI_LOG("popLayout used too many times");
+		return;
 	}
+
+	ctx->layout = ctx->layoutStack.back();
+	ctx->layoutStack.pop_back();
+
+	ctx->sameLine = ctx->layout.savedSameLine;
+	ctx->sameLineGroup = ctx->layout.savedSameLineGroup;
 }
 
-void incrementLayerIndex()
+f32 layoutGetRemainingHeight()
+{
+	f32 remainingHeight = ctx->layout.height - (ctx->position.y - ctx->layout.savedPosition.y);
+
+	return remainingHeight > 0 ? remainingHeight : 0;
+}
+
+f32 layoutGetRemainingWidth()
+{
+	f32 remainingWidth = ctx->layout.width - (ctx->position.x - ctx->layout.savedPosition.x);
+
+	return remainingWidth > 0 ? remainingWidth : 0;
+}
+
+
+Point layoutGetSize()
+{
+	Point pt;
+
+	pt.x = ctx->layout.width;
+	pt.y = ctx->layout.height;
+
+	return pt;
+}
+
+void layerIndexIncrement()
 {
 	ctx->layerIndex++;
-	ctx->renderer->incrementZOrder();
 
 	if (ctx->maxLayerIndex < ctx->layerIndex)
 	{
@@ -1632,15 +1750,14 @@ void incrementLayerIndex()
 	}
 }
 
-u32 decrementLayerIndex()
+u32 layerIndexDecrement()
 {
 	ctx->layerIndex--;
-	ctx->renderer->decrementZOrder();
 
 	return ctx->layerIndex;
 }
 
-void decrementWindowMaxLayerIndex()
+void layerDecrementWindowMaxLayerIndex()
 {
 	ctx->maxLayerIndex--;
 
@@ -1650,309 +1767,48 @@ void decrementWindowMaxLayerIndex()
 	}
 }
 
-static void computeColumnsPixelSize(LayoutState& parentLayout, LayoutState& layout)
+void paddingPush(PaddingType type, const Point& newPadding)
 {
-	f32 availableWidth = parentLayout.width;
-	u32 fullFillerCount = 0;
+	ctx->paddingStack[(i32)type].push_back(ctx->padding[(i32)type]);
+	ctx->padding[(i32)type] = newPadding;
+}
 
-	// alloc fixed pixel size columns
-	for (size_t i = 0; i < layout.columnSizes.size(); i++)
+void widgetPaddingPush(const Point& newPadding)
+{
+	paddingPush(PaddingType::Widget, newPadding);
+}
+
+void paddingPop(PaddingType type)
+{
+	if (!ctx->paddingStack[(i32)type].empty())
 	{
-		// if its pixels units
-		if (layout.columnSizes[i] > 1.0f)
-		{
-			availableWidth -= layout.columnPixelSizes[i];
-		}
-
-		// if its a column that wants to get equal part of remaining space
-		if (layout.columnSizes[i] <= 0.0f)
-		{
-			fullFillerCount++;
-		}
-	}
-
-	f32 decrementAvailableWidth = 0;
-	// alloc percentage size columns
-	for (size_t i = 0; i < layout.columnSizes.size(); i++)
-	{
-		// if the column width is a percentage (0-1 range)
-		if (layout.columnSizes[i] > 0.0f && layout.columnSizes[i] <= 1.0f)
-		{
-			f32 pixelSize = layout.columnSizes[i] * availableWidth;
-
-			if (!layout.columnMinSizes.empty())
-			{
-				if (pixelSize < layout.columnMinSizes[i] * ctx->globalScale)
-				{
-					pixelSize = layout.columnMinSizes[i] * ctx->globalScale;
-				}
-			}
-
-			layout.columnPixelSizes[i] = round(pixelSize);
-			decrementAvailableWidth += round(pixelSize);
-		}
-	}
-
-	availableWidth -= decrementAvailableWidth;
-
-	// alloc what's left for the fill up size columns
-	f32 partitionForFillers = round(availableWidth / (f32)fullFillerCount);
-
-	for (size_t i = 0; i < layout.columnSizes.size(); i++)
-	{
-		if (layout.columnSizes[i] <= 0.0f)
-		{
-			layout.columnPixelSizes[i] = partitionForFillers;
-		}
+		ctx->padding[(i32)type] = ctx->paddingStack[(i32)type].back();
+		ctx->paddingStack[(i32)type].pop_back();
 	}
 }
 
-void beginColumns(u32 columnCount, const f32 widths[], const f32 minWidths[], const f32 maxWidths[])
+void widgetPaddingPop()
 {
-	if (columnCount == 0)
-	{
-		return;
-	}
-
-	LayoutState columns;
-
-	columns.currentColumn = 0;
-	columns.type = LayoutType::Columns;
-
-	for (u32 i = 0; i < columnCount; i++)
-	{
-		if (widths)
-		{
-			columns.columnSizes.push_back(widths[i]);
-			columns.columnPixelSizes.push_back(round(widths[i] * ctx->globalScale));
-		}
-		else
-		{
-			columns.columnSizes.push_back(-1);
-			columns.columnPixelSizes.push_back(-1);
-		}
-
-		if (minWidths)
-		{
-			columns.columnMinSizes.push_back(round(minWidths[i] * ctx->globalScale));
-		}
-
-		if (maxWidths)
-		{
-			columns.columnMaxSizes.push_back(round(maxWidths[i] * ctx->globalScale));
-		}
-	}
-
-	ctx->penStack.push_back(ctx->penPosition);
-	columns.position = ctx->penPosition;
-	computeColumnsPixelSize(ctx->layoutStack.back(), columns);
-	ctx->layoutStack.push_back(columns);
-	nextColumn();
+	paddingPop(PaddingType::Widget);
 }
 
-void beginEqualColumns(u32 columnCount, const f32 minWidths[], bool addPadding)
+const Point& paddingGet(PaddingType type)
 {
-	if (columnCount == 0)
-	{
-		return;
-	}
-
-	ctx->penStack.push_back(ctx->penPosition);
-
-	if (addPadding)
-		ctx->penPosition.x += ctx->padding * ctx->globalScale;
-
-	LayoutState columns;
-
-	columns.currentColumn = 0;
-	columns.type = LayoutType::Columns;
-	columns.position = ctx->penPosition;
-	columns.width = ctx->layoutStack.back().width;
-
-	if (addPadding)
-		columns.width -= ctx->padding * 2.0f * ctx->globalScale;
-
-	f32 columnPercentSize = round(columns.width / (f32)columnCount);
-
-	for (u32 i = 0; i < columnCount; i++)
-	{
-		columns.columnSizes.push_back(columnPercentSize);
-		columns.columnPixelSizes.push_back(columnPercentSize);
-
-		if (minWidths)
-		{
-			columns.columnMinSizes.push_back(minWidths[i]);
-			columns.columnMaxSizes.push_back(columnPercentSize);
-		}
-	}
-
-	computeColumnsPixelSize(ctx->layoutStack.back(), columns);
-	ctx->layoutStack.push_back(columns);
-	nextColumn();
+	return ctx->padding[(i32)type];
 }
 
-void beginPaddedColumn()
+const Point& widgetGetPadding()
 {
-	beginEqualColumns(1, nullptr, true);
+	return ctx->padding[(i32)PaddingType::Widget];
 }
 
-void endPaddedColumn()
-{
-	endColumns();
-}
-
-void beginTwoColumns()
-{
-	beginEqualColumns(2);
-}
-
-void beginThreeColumns()
-{
-	beginEqualColumns(3);
-}
-
-void beginFourColumns()
-{
-	beginEqualColumns(4);
-}
-
-void beginFiveColumns()
-{
-	beginEqualColumns(5);
-}
-
-void beginSixColumns()
-{
-	beginEqualColumns(6);
-}
-
-void nextColumn()
-{
-	auto& layout = ctx->layoutStack.back();
-	LayoutState newColumn;
-
-	// if we're adding the first column, called from beginColumns()
-	if (layout.type == LayoutType::Columns)
-	{
-		// lets just add the first column
-		newColumn.type = LayoutType::Column;
-		newColumn.position = ctx->penPosition;
-		newColumn.width = layout.columnPixelSizes[layout.currentColumn];
-		ctx->layoutStack.push_back(newColumn);
-		return;
-	}
-	else if (layout.type == LayoutType::Column)
-	{
-		// take out the last column
-		ctx->layoutStack.pop_back();
-		auto& columnsLayout = ctx->layoutStack.back();
-
-		// wrong placement, here must be a Columns
-		if (columnsLayout.type != LayoutType::Columns)
-			return;
-
-		// now we're in the Columns layout
-		columnsLayout.currentColumn++;
-
-		// set max column Y in columns
-		if (columnsLayout.maxPenPositionY < ctx->penPosition.y)
-			columnsLayout.maxPenPositionY = ctx->penPosition.y;
-
-		ctx->lastColumnRect.set(ctx->penPosition.x, ctx->penPosition.y, layout.width, ctx->penPosition.y - layout.position.y);
-
-		// if we're done with the columns, move to the parent layout
-		if (columnsLayout.currentColumn >= columnsLayout.columnSizes.size())
-		{
-			f32 maxY = columnsLayout.maxPenPositionY;
-			// pop out the columns layout
-			ctx->layoutStack.pop_back();
-			auto& parentLayout = ctx->layoutStack.back();
-
-			// set max column Y in parent
-			if (parentLayout.maxPenPositionY < maxY)
-				parentLayout.maxPenPositionY = maxY;
-
-			ctx->penPosition = {
-				parentLayout.position.x,
-				maxY };
-
-			ctx->penPosition.x = ctx->penStack.back().x;
-			ctx->penStack.pop_back();
-			return;
-		}
-		else
-		{
-			// increment the columns' current column X
-			ctx->penPosition = {
-				columnsLayout.position.x += columnsLayout.columnPixelSizes[columnsLayout.currentColumn - 1],
-				columnsLayout.position.y };
-
-			// lets add a new column
-			newColumn.type = LayoutType::Column;
-			newColumn.position = ctx->penPosition;
-			newColumn.width = columnsLayout.columnPixelSizes[columnsLayout.currentColumn];
-			ctx->layoutStack.push_back(newColumn);
-		}
-	}
-}
-
-Rect getColumnRect()
-{
-	return Rect(ctx->lastColumnRect.x, ctx->lastColumnRect.y, ctx->lastColumnRect.width, ctx->lastColumnRect.height);
-}
-
-void endColumns()
-{
-	nextColumn();
-}
-
-void columnHeader(const char* label, f32 width, f32 preferredWidth, f32 minWidth, f32 maxWidth)
-{
-	auto headerElemState = ctx->theme->getElement(WidgetElementId::ColumnsHeaderBody).normalState();
-
-	ctx->widget.rect = {
-		ctx->layoutStack.back().position.x + ctx->padding,
-		ctx->layoutStack.back().position.y,
-		ctx->layoutStack.back().width - ctx->padding * 2.0f * ctx->globalScale,
-		headerElemState.height
-	};
-
-	Rect rcText = ctx->widget.rect;
-
-	rcText.x += 5.0f * ctx->globalScale;
-
-	ctx->renderer->cmdSetColor(headerElemState.color);
-	ctx->renderer->cmdDrawImageBordered(headerElemState.image, headerElemState.border, ctx->widget.rect, ctx->globalScale);
-	ctx->renderer->cmdSetColor(headerElemState.textColor);
-	ctx->renderer->cmdSetFont(headerElemState.font);
-	ctx->renderer->cmdDrawTextInBox(label, rcText, HAlignType::Left, VAlignType::Center);
-
-	addWidgetItem(ctx->widget.rect.height);
-	ctx->currentWidgetId++;
-}
-
-void pushPadding(f32 newPadding)
-{
-	ctx->paddingStack.push_back(ctx->padding);
-	ctx->padding = newPadding;
-}
-
-void popPadding()
-{
-	if (!ctx->paddingStack.empty())
-	{
-		ctx->padding = ctx->paddingStack.back();
-		ctx->paddingStack.pop_back();
-	}
-}
-
-void pushSpacing(f32 newSpacing)
+void spacingPush(f32 newSpacing)
 {
 	ctx->spacingStack.push_back(ctx->spacing);
 	ctx->spacing = newSpacing;
 }
 
-void popSpacing()
+void spacingPop()
 {
 	if (!ctx->spacingStack.empty())
 	{
@@ -1961,46 +1817,47 @@ void popSpacing()
 	}
 }
 
-f32 getSpacing()
+f32 spacingGet()
 {
 	return ctx->spacing;
 }
 
-f32 getPadding()
+f32 sameLineSpacingGet()
 {
-	return ctx->padding;
+	return ctx->sameLine.spacing;
 }
 
-void setGlobalScale(f32 scale)
+void scaleSet(f32 scale)
 {
-	ctx->globalScale = scale;
+	ctx->scale = scale;
 
 	if (ctx->theme)
 	{
-		ctx->theme->fontCache->rescaleFonts(scale);
-		ctx->theme->atlas->repackImages();
+		ctx->theme->rescaleFonts(scale);
 	}
 }
 
-f32 getGlobalScale()
+f32 scaleGet()
 {
-	return ctx->globalScale;
+	return ctx->scale;
 }
 
-void pushTint(const Color& color, TintColorType type)
+void tintPush(const Color& color, TintColorType type, TintColorOpType opType)
 {
+	ctx->tintStack.push_back(ctx->tint);
+
 	switch (type)
 	{
 	case hui::TintColorType::Body:
 	case hui::TintColorType::Text:
-		ctx->tintStack[(u32)type].push_back(color);
-		ctx->tint[(u32)type] = color;
+		ctx->tint.color[(i32)type] = color;
+		ctx->tint.op[(i32)type] = opType;
 		break;
 	case hui::TintColorType::All:
-		for (int i = 0; i < (int)TintColorType::Count; i++)
+		for (i32 i = 0; i < (i32)TintColorType::Count; i++)
 		{
-			ctx->tintStack[i].push_back(color);
-			ctx->tint[i] = color;
+			ctx->tint.color[i] = color;
+			ctx->tint.op[i] = opType;
 		}
 		break;
 	default:
@@ -2008,184 +1865,207 @@ void pushTint(const Color& color, TintColorType type)
 	}
 }
 
-void popTint(TintColorType type)
+void tintPop()
 {
-	switch (type)
+	if (!ctx->tintStack.empty())
 	{
-	case hui::TintColorType::Body:
-	case hui::TintColorType::Text:
-		if (ctx->tintStack[(u32)type].empty())
-			return;
-
-		ctx->tintStack[(u32)type].pop_back();
-
-		if (!ctx->tintStack[(u32)type].empty())
-			ctx->tint[(u32)type] = ctx->tintStack[(u32)type].back();
-		else
-			ctx->tint[(u32)type] = Color::white;
-		break;
-	case hui::TintColorType::All:
-		for (int i = 0; i < (int)TintColorType::Count; i++)
-		{
-			if (ctx->tintStack[i].empty())
-			{
-				ctx->tint[i] = Color::white;
-				continue;
-			}
-
-			ctx->tintStack[i].pop_back();
-
-			if (!ctx->tintStack[i].empty())
-				ctx->tint[i] = ctx->tintStack[i].back();
-			else
-				ctx->tint[i] = Color::white;
-		}
-		break;
-	default:
-		break;
+		ctx->tint = ctx->tintStack.back();
+		ctx->tintStack.pop_back();
 	}
 }
 
-bool isHovered()
+Color tintApply(const Color& originalColor, TintColorType type)
+{
+	Color tintedColor;
+
+	if (ctx->tint.op[(i32)type] == TintColorOpType::Multiply)
+	{
+		tintedColor = originalColor * ctx->tint.color[(i32)type];
+	}
+	else
+	if (ctx->tint.op[(i32)type] == TintColorOpType::Add)
+	{
+		tintedColor = originalColor + ctx->tint.color[(i32)type];
+	}
+	else
+	if (ctx->tint.op[(i32)type] == TintColorOpType::Subtract)
+	{
+		tintedColor = originalColor - ctx->tint.color[(i32)type];
+	}
+	else
+	if (ctx->tint.op[(i32)type] == TintColorOpType::Replace)
+	{
+		tintedColor = ctx->tint.color[(i32)type];
+	}
+	else
+	{
+		tintedColor = originalColor;
+	}
+
+	return tintedColor;
+}
+
+bool widgetIsHovered()
 {
 	return ctx->widget.hovered;
 }
 
-bool isFocused()
+bool widgetIsFocused()
 {
 	return ctx->widget.focused;
 }
 
-bool isPressed()
+bool widgetIsPressed()
 {
 	return ctx->widget.pressed;
 }
 
-bool isClicked()
+bool widgetIsClicked()
 {
 	return ctx->widget.clicked;
 }
 
-bool isVisible()
+bool widgetIsVisible()
 {
 	return ctx->widget.visible;
 }
 
-bool isChangeEnded()
+bool widgetIsChangeEnded()
 {
 	return ctx->widget.changeEnded;
 }
 
-u32 getWidgetId()
+WidgetId widgetGetId()
 {
-	return ctx->currentWidgetId;
+	return ctx->id;
 }
 
-Point getMousePosition()
+Point mouseGetPosition()
 {
-	return ctx->event.mouse.point;
+	return ctx->mousePosition;
 }
 
-Point getPenPosition()
+void mouseSetPosition(const Point& pos)
 {
-	return ctx->penPosition;
+	ctx->settings.services.setAbsoluteMousePosition(pos);
 }
 
-void setPenPosition(const Point& penPosition)
+Point widgetGetPosition()
 {
-	ctx->penPosition = penPosition;
+	return ctx->position;
 }
 
-bool wantsToDragDrop()
+void widgetSetPosition(const Point& position)
+{
+	ctx->position = position;
+}
+
+void widgetPushPosition()
+{
+	ctx->positionStack.push_back(ctx->position);
+}
+
+void widgetPopPosition()
+{
+	if (!ctx->positionStack.empty())
+	{
+		ctx->position = ctx->positionStack.back();
+		ctx->positionStack.pop_back();
+	}
+}
+
+Rect widgetGetRect()
+{
+	return ctx->widget.rect;
+}
+
+bool dragDropWantsTo()
 {
 	if (ctx->event.type == InputEvent::Type::MouseDown
-		&& !ctx->dragDropState.draggingIntent
-		&& !ctx->dragDropState.dragging
+		&& !ctx->dragDrop.draggingIntent
+		&& !ctx->dragDrop.dragging
 		&& ctx->widget.hovered)
 	{
-		ctx->dragDropState.draggingIntent = true;
-		ctx->dragDropState.lastMousePos = ctx->event.mouse.point;
-		ctx->dragDropState.widgetId = ctx->currentWidgetId;
+		ctx->dragDrop.draggingIntent = true;
+		ctx->dragDrop.lastMousePos = ctx->mousePosition;
+		ctx->dragDrop.id = ctx->id;
 	}
 
-	const int dragStartPixelDistance = 4;
+	const u32 dragStartPixelDistance = 4;
 
-	if (ctx->dragDropState.draggingIntent
-		&& !ctx->dragDropState.dragging
-		&& ctx->currentWidgetId == ctx->dragDropState.widgetId
-		&& ctx->dragDropState.lastMousePos.getDistance(ctx->event.mouse.point) >= dragStartPixelDistance)
+	if (ctx->dragDrop.draggingIntent
+		&& !ctx->dragDrop.dragging
+		&& ctx->id == ctx->dragDrop.id
+		&& ctx->dragDrop.lastMousePos.getDistance(ctx->mousePosition) >= dragStartPixelDistance)
 	{
-		ctx->dragDropState.dragging = true;
+		ctx->dragDrop.dragging = true;
 		return true;
 	}
 
 	if (ctx->event.type == InputEvent::Type::MouseUp
-		&& (ctx->dragDropState.draggingIntent ||
-			ctx->dragDropState.dragging))
+		&& (ctx->dragDrop.draggingIntent ||
+			ctx->dragDrop.dragging))
 	{
-		ctx->dragDropState.draggingIntent = false;
-		ctx->dragDropState.dragging = false;
-		setMouseCursor(MouseCursorType::Arrow);
+		ctx->dragDrop.draggingIntent = false;
+		ctx->dragDrop.dragging = false;
+		mouseCursorSetType(MouseCursorType::Arrow);
 	}
 
 	return false;
 }
 
-void setDragDropMouseCursor(MouseCursor dropAllowedCursor)
+void dragDropSetMouseCursor(HMouseCursor dropAllowedCursor)
 {
-	ctx->dragDropState.dropAllowedCursor = dropAllowedCursor;
+	ctx->dragDrop.dropAllowedCursor = dropAllowedCursor;
 }
 
-void beginDragDrop(u32 dragObjectType, void* dragObject)
+void dragDropBegin(u32 dragObjectType, void* dragObject)
 {
-	ctx->dragDropState.dragObject = dragObject;
-	ctx->dragDropState.dragObjectType = dragObjectType;
-	ctx->dragDropState.begunDragging = true;
-
-	// we want other widgets to get hovered, so kill current one
-	ctx->widget.focusedWidgetPressed = false;
+	ctx->dragDrop.dragObject = dragObject;
+	ctx->dragDrop.dragObjectType = dragObjectType;
+	ctx->dragDrop.begunDragging = true;
+	ctx->widget.captureId = 0;
 }
 
-void endDragDrop()
+void dragDropEnd()
 {
-	ctx->dragDropState.dragging = false;
-	ctx->dragDropState.begunDragging = false;
-	ctx->dragDropState.draggingIntent = false;
-	ctx->dragDropState.dragObject = nullptr;
-	ctx->dragDropState.dragObjectType = 0;
+	ctx->dragDrop.dragging = false;
+	ctx->dragDrop.begunDragging = false;
+	ctx->dragDrop.draggingIntent = false;
+	ctx->dragDrop.dragObject = nullptr;
+	ctx->dragDrop.dragObjectType = 0;
 }
 
-void allowDragDrop()
+void dragDropAllow()
 {
-	ctx->dragDropState.allowDrop = true;
+	ctx->dragDrop.allowDrop = true;
 
-	if (ctx->dragDropState.begunDragging)
+	if (ctx->dragDrop.begunDragging && ctx->widget.hovered)
 	{
-		if (ctx->widget.hovered)
-		{
-			ctx->dragDropState.foundDropTarget = true;
-		}
+		ctx->dragDrop.foundDropTarget = true;
 	}
 }
 
-void disallowDragDrop()
+void dragDropDisallow()
 {
-	ctx->dragDropState.allowDrop = false;
+	ctx->dragDrop.allowDrop = false;
 }
 
-bool droppedOnWidget()
+bool dragDropDroppedOnWidget()
 {
-	if (ctx->dragDropState.begunDragging
+	if (ctx->currentWindow
+		&& ctx->dragDrop.begunDragging
 		&& ctx->hoveringThisWindow
-		&& getFocusedWindow() != getWindow())
+		&& ctx->settings.services.getFocusedWindow() != ctx->currentWindow->dockNode->nativeWindow)
 	{
-		ctx->inputProvider->raiseWindow(getWindow());
+		//TODO: should it raise it or not ?
+		ctx->settings.services.raiseWindow(ctx->currentWindow->dockNode->nativeWindow);
 	}
 
-	if (ctx->dragDropState.begunDragging
+	if (ctx->dragDrop.begunDragging
 		&& ctx->widget.hovered
 		&& ctx->event.type == InputEvent::Type::MouseUp
-		&& ctx->dragDropState.allowDrop)
+		&& ctx->dragDrop.allowDrop)
 	{
 		return true;
 	}
@@ -2193,14 +2073,305 @@ bool droppedOnWidget()
 	return false;
 }
 
-void* getDragDropObject()
+void* dragDropGetObject()
 {
-	return ctx->dragDropState.dragObject;
+	return ctx->dragDrop.dragObject;
 }
 
-u32 getDragDropObjectType()
+u32 dragDropGetObjectType()
 {
-	return ctx->dragDropState.dragObjectType;
+	return ctx->dragDrop.dragObjectType;
+}
+
+static Color colorFromText(std::string colorText)
+{
+	if (colorText == "white") { return Color::white; }
+	if (colorText == "black") { return Color::black; }
+	if (colorText == "red") { return Color::red; }
+	if (colorText == "darkRed") { return Color::darkRed; }
+	if (colorText == "veryDarkRed") { return Color::veryDarkRed; }
+	if (colorText == "green") { return Color::green; }
+	if (colorText == "darkGreen") { return Color::darkGreen; }
+	if (colorText == "veryDarkGreen") { return Color::veryDarkGreen; }
+	if (colorText == "blue") { return Color::blue; }
+	if (colorText == "darkBlue") { return Color::darkBlue; }
+	if (colorText == "veryDarkBlue") { return Color::veryDarkBlue; }
+	if (colorText == "yellow") { return Color::yellow; }
+	if (colorText == "darkYellow") { return Color::darkYellow; }
+	if (colorText == "veryDarkYellow") { return Color::veryDarkYellow; }
+	if (colorText == "magenta") { return Color::magenta; }
+	if (colorText == "cyan") { return Color::cyan; }
+	if (colorText == "darkCyan") { return Color::darkCyan; }
+	if (colorText == "veryDarkCyan") { return Color::veryDarkCyan; }
+	if (colorText == "orange") { return Color::orange; }
+	if (colorText == "darkOrange") { return Color::darkOrange; }
+	if (colorText == "lightGray") { return Color::lightGray; }
+	if (colorText == "gray") { return Color::gray; }
+	if (colorText == "darkGray") { return Color::darkGray; }
+	if (colorText == "sky") { return Color::sky; }
+	if (colorText == "transparent") { return Color::transparent; }
+
+	u32 r, g, b, a;
+
+#ifdef _WINDOWS
+	sscanf_s(colorText.c_str(), "%d %d %d %d", &r, &g, &b, &a);
+#else
+	sscanf(colorText.c_str(), "%d %d %d %d", &r, &g, &b, &a);
+#endif
+
+	return Color((f32)r / 255.0f, (f32)g / 255.0f, (f32)b / 255.0f, (f32)a / 255.0f);
+}
+
+Color colorFromText(const char* colorText)
+{
+	return colorFromText(std::string(colorText));
+}
+
+static u8 hexByte(const char* p)
+{
+	auto hex = [](char c) -> u8
+		{
+			if (c >= '0' && c <= '9') return c - '0';
+			if (c >= 'a' && c <= 'f') return c - 'a' + 10;
+			if (c >= 'A' && c <= 'F') return c - 'A' + 10;
+			return 0;
+		};
+
+	return (hex(p[0]) << 4) | hex(p[1]);
+}
+
+Color colorFromHex(const char* hexText)
+{
+	Color out{ 1.f, 1.f, 1.f, 1.f };
+
+	if (!hexText)
+		return out;
+
+	// skip optional '#'
+	if (hexText[0] == '#')
+		hexText++;
+
+	size_t len = std::strlen(hexText);
+
+	if (len < 1 || len > 8)
+		return out;
+
+	char buf[9] = {};
+	memcpy(buf, hexText, len);
+	if (len <= 6)
+	{
+		memset(buf + len, '0', 6 - len);
+		buf[6] = 'F';
+		buf[7] = 'F';
+	}
+	else if (len == 7)
+	{
+		buf[7] = '0';
+	}
+
+	hexText = buf;
+	len = 8;
+
+	u8 r = hexByte(hexText + 0);
+	u8 g = hexByte(hexText + 2);
+	u8 b = hexByte(hexText + 4);
+	u8 a = hexByte(hexText + 6);
+
+	out.r = r / 255.0f;
+	out.g = g / 255.0f;
+	out.b = b / 255.0f;
+	out.a = a / 255.0f;
+
+	return out;
+}
+
+u32 colorIntFromHex(const char* hexText)
+{
+	return colorFromHex(hexText).getRgba();
+}
+
+std::string colorToHex(const Color& color)
+{
+	auto clampToByte = [](float v) -> u8
+		{
+			v = std::clamp(v, 0.0f, 1.0f);
+			return static_cast<u8>(v * 255.0f + 0.5f);
+		};
+
+	u8 r = clampToByte(color.r);
+	u8 g = clampToByte(color.g);
+	u8 b = clampToByte(color.b);
+	u8 a = clampToByte(color.a);
+
+	char buf[9];
+
+	std::snprintf(buf, sizeof(buf), "%02X%02X%02X%02X", r, g, b, a);
+
+	return std::string(buf);
+}
+
+std::string colorIntToHex(const u32 color)
+{
+	return colorToHex(Color(color));
+}
+
+Color colorHsvToRgb(const Color& hsv)
+{
+	f32 h = hsv.r;
+	f32 s = hsv.g;
+	f32 v = hsv.b;
+	f32 r = 0;
+	f32 g = 0;
+	f32 b = 0;
+
+	if (s <= 0.0f)
+	{
+		// gray
+		r = g = b = v;
+		return Color(r, g, b, hsv.a);
+	}
+
+	h = std::fmod(h, 1.0f) * 6.0f;
+	i32 i = (int)std::floor(h);
+	f32 f = h - i;
+
+	f32 p = v * (1.0f - s);
+	f32 q = v * (1.0f - s * f);
+	f32 t = v * (1.0f - s * (1.0f - f));
+
+	switch (i)
+	{
+	case 0: r = v; g = t; b = p; break;
+	case 1: r = q; g = v; b = p; break;
+	case 2: r = p; g = v; b = t; break;
+	case 3: r = p; g = q; b = v; break;
+	case 4: r = t; g = p; b = v; break;
+	default: r = v; g = p; b = q; break;
+	}
+
+	return Color(r, g, b, hsv.a);
+}
+
+Color colorRgbToHsv(const Color& rgb)
+{
+	f32 r = rgb.r, g = rgb.g, b = rgb.b;
+	f32 h = 0, s = 0, v = 0;
+
+	f32 max = std::max(r, std::max(g, b));
+	f32 min = std::min(r, std::min(g, b));
+	f32 delta = max - min;
+
+	v = max;
+
+	if (max <= 0.0f)
+	{
+		// black
+		s = 0.0f;
+		h = 0.0f;
+
+		return Color(h, s, v, rgb.a);
+	}
+
+	s = delta / max;
+
+	if (delta <= 0.0f)
+	{
+		// gray
+		h = 0.0f;
+		return Color(h, s, v, rgb.a);
+	}
+
+	if (max == r)
+		h = (g - b) / delta;
+	else if (max == g)
+		h = 2.0f + (b - r) / delta;
+	else
+		h = 4.0f + (r - g) / delta;
+
+	h /= 6.0f;
+
+	if (h < 0.0f)
+		h += 1.0f;
+
+	return Color(h, s, v, rgb.a);
+}
+
+Color colorHueToRgb(f32 h, f32 alpha)
+{
+	h = std::fmod(h, 1.0f);
+	if (h < 0.0f) h += 1.0f;
+
+	f32 r, g, b;
+
+	f32 i = std::floor(h * 6.0f);
+	f32 f = h * 6.0f - i;
+
+	f32 q = 1.0f - f;
+	f32 t = f;
+
+	switch (i32(i) % 6)
+	{
+	case 0: r = 1; g = t; b = 0; break;
+	case 1: r = q; g = 1; b = 0; break;
+	case 2: r = 0; g = 1; b = t; break;
+	case 3: r = 0; g = q; b = 1; break;
+	case 4: r = t; g = 0; b = 1; break;
+	default:r = 1; g = 0; b = q; break;
+	}
+
+	return { r, g, b, alpha };
+}
+
+void sameLineGroupBegin(u32 widgetCount)
+{
+	if (widgetCount == 0)
+		return;
+
+	ctx->sameLineGroup.active = true;
+	ctx->sameLineGroup.widgetCount = widgetCount;
+	ctx->sameLineGroup.currentWidget = 0;
+
+	// calculate equal width for each widget, accounting for spacing between them
+	f32 totalSpacingPx = ctx->sameLine.spacing * ctx->scale * (f32)(widgetCount - 1);
+
+	ctx->sameLineGroup.widgetWidth = (ctx->layout.width - totalSpacingPx) / (f32)widgetCount / ctx->scale;
+
+	// set nextSpacing to control the spacing after the first widget
+	ctx->sameLine.nextSpacing = ctx->sameLine.spacing;
+
+	// set width for first widget using the proper API
+	widgetSetNextWidth(ctx->sameLineGroup.widgetWidth);
+}
+
+void sameLineGroupNext()
+{
+	if (!ctx->sameLineGroup.active)
+		return;
+
+	ctx->sameLineGroup.currentWidget++;
+
+	if (ctx->sameLineGroup.currentWidget >= ctx->sameLineGroup.widgetCount)
+		return;
+
+	// sameLine() will set nextSpacing automatically
+	sameLine();
+
+	// set width for next widget using the proper API
+	widgetSetNextWidth(ctx->sameLineGroup.widgetWidth);
+}
+
+void sameLineGroupEnd()
+{
+	if (!ctx->sameLineGroup.active)
+		return;
+
+	// disable sameLine
+	ctx->sameLine.enabled = false;
+
+	// reset state
+	ctx->sameLineGroup.active = false;
+	ctx->sameLineGroup.widgetCount = 0;
+	ctx->sameLineGroup.currentWidget = 0;
 }
 
 }

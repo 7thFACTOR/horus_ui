@@ -1,0 +1,43 @@
+#pragma once
+#include "types.h"
+#include "atlas.h"
+
+namespace hui
+{
+struct Font
+{
+	Font() {}
+	Font(const std::string& fontFilename, u32 fontFaceSize);
+	~Font();
+
+	void load(const std::string& fontFilename, u32 fontFaceSize);
+	void loadFromMemory(const void* data, size_t size, u32 fontFaceSize);
+	void resetFaceSize(u32 fontFaceSize);
+	FontGlyph* getGlyph(GlyphCode glyphCode);
+	Image* getGlyphImage(GlyphCode glyphCode);
+	f32 getKerning(GlyphCode leftGlyphCode, GlyphCode rightGlyphCode);
+	const FontMetrics& getMetrics() const { return fontInfo.metrics; }
+	void precacheGlyphs(const Utf32String& glyphCodes);
+	void precacheGlyphs(u32* glyphs, u32 glyphCount);
+	void precacheLatinAlphabetGlyphs();
+	void deleteGlyphs();
+
+	// Restored computeTextSize overloads: forward to renderer's combined routine.
+	FontTextSize computeTextSize(const GlyphCode* const text, u32 size, u32 maxWidth = ~0);
+	FontTextSize computeTextSize(const Utf32String& text);
+	FontTextSize computeTextSize(const char* text, u32 maxWidth = ~0);
+	FontGlyph* cacheGlyph(GlyphCode glyphCode);
+
+	FontInfo fontInfo;
+	FontTextSize ellipsisSize;
+	bool resizeFaceMode = false;
+	std::string filename;
+	u32 faceSize = 12;
+	f32 ascender = 0;
+	const void* fontData = nullptr;
+	size_t fontDataSize = 0;
+	std::unordered_map<GlyphCode, FontGlyph*> glyphs;
+	std::unordered_map<u64, f32> kerningPairs;
+};
+
+}

@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Horus UI - Themes &amp; fonts</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<aside class="sidebar">
+	<div class="brand">
+		<div class="logo">H</div>
+		<div class="title">Horus UI</div>
+	</div>
+	<nav>
+		<div class="nav-label">API Reference</div>
+		<a href="index.html">Overview</a>
+		<a href="types.html">Types</a>
+		<a href="core.html">Core</a>
+		<a href="windows.html">Windowing &amp; toolbars</a>
+		<a href="theme.html" class="active">Themes &amp; fonts</a>
+		<a href="layout.html">Layout &amp; tables</a>
+		<a href="widgets.html">Widgets</a>
+		<a href="rendering.html">Rendering &amp; utility</a>
+	</nav>
+</aside>
+
+<main class="main">
+
+	<h1>Themes &amp; fonts</h1>
+	<p class="lead">
+		Creating and managing themes, widget element styles and parameters, plus fonts and image queries.
+		The full theme <code>json</code> format is documented in
+		<a href="../theme_json_format/index.html">Theme JSON Format</a>.
+	</p>
+
+	<h2>Themes</h2>
+	<p>
+		A theme owns an image atlas, widget element styles and fonts. Create one, register its images with
+		<code>themeAddImage</code>, then build its atlas with <code>themeBuild</code> before making it current with
+		<code>themeSet</code>.
+	</p>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">themeSet</span>(<span class="prm">HTheme</span> theme)</code></div>
+		<p class="brief">Set the current theme.</p>
+		<ul class="params"><li><span class="pname">theme</span> the theme to be set as current</li></ul>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="ret">HTheme</span> <span class="fn">themeGet</span>()</code></div>
+		<p class="brief">Return the current theme.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="ret">HTheme</span> <span class="fn">themeCreate</span>(<span class="prm">u32</span> atlasTextureSize)</code></div>
+		<p class="brief">Create a new theme.</p>
+		<ul class="params"><li><span class="pname">atlasTextureSize</span> the width and height of the atlas texture where theme images are kept</li></ul>
+		<p class="returns">Returns the newly created theme.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="ret">HTheme</span> <span class="fn">createBuiltinTheme</span>(<span class="prm">u32</span> atlasTextureSize)</code></div>
+		<p class="brief">Create a new theme filled with the built-in element styles and images.</p>
+		<ul class="params"><li><span class="pname">atlasTextureSize</span> the width and height of the atlas texture where theme images are kept</li></ul>
+		<p class="returns">Returns the newly created theme.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">themeDestroy</span>(<span class="prm">HTheme</span> theme)</code></div>
+		<p class="brief">Delete a theme. If it is the current theme, the current theme is reset to null.</p>
+		<ul class="params"><li><span class="pname">theme</span> the theme to be deleted</li></ul>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="ret">ImageData</span> <span class="fn">themeGetAtlasImageData</span>()</code></div>
+		<p class="brief">Return the pixel data (pixels, width, height) of the current theme's atlas texture.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">themeSetAtlasTexture</span>(<span class="prm">HTexture</span> texture)</code></div>
+		<p class="brief">Set the current theme's atlas texture to a custom texture, usually after the theme was built once and its atlas was moved to video memory.</p>
+		<ul class="params"><li><span class="pname">texture</span> the texture handle</li></ul>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="ret">HTexture</span> <span class="fn">themeGetAtlasTexture</span>()</code></div>
+		<p class="brief">Return the atlas texture of the current theme.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">themeSetUserSetting</span>(<span class="prm">HTheme</span> theme, <span class="prm">const char*</span> name, <span class="prm">const char*</span> value)</code></div>
+		<p class="brief">Set a user setting on a theme.</p>
+		<ul class="params">
+			<li><span class="pname">theme</span> the theme handle</li>
+			<li><span class="pname">name</span> the setting name</li>
+			<li><span class="pname">value</span> the setting value</li>
+		</ul>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="ret">const char*</span> <span class="fn">themeGetUserSetting</span>(<span class="prm">HTheme</span> theme, <span class="prm">const char*</span> name)</code></div>
+		<p class="brief">Get a user setting from a theme.</p>
+		<ul class="params">
+			<li><span class="pname">theme</span> the theme handle</li>
+			<li><span class="pname">name</span> the setting name</li>
+		</ul>
+		<p class="returns">Returns the setting value, or null if it doesn't exist.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="ret">HImage</span> <span class="fn">themeAddImage</span>(<span class="prm">HTheme</span> theme, <span class="prm">const char*</span> id, <span class="prm">const ImageData&amp;</span> imgData)</code></div>
+		<p class="brief">Add an image to a theme. Must be called before the theme is built.</p>
+		<ul class="params">
+			<li><span class="pname">theme</span> the theme handle</li>
+			<li><span class="pname">id</span> the unique image id</li>
+			<li><span class="pname">imgData</span> the image data to add</li>
+		</ul>
+		<p class="returns">Returns the added image handle.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="ret">HImage</span> <span class="fn">themeGetImage</span>(<span class="prm">HTheme</span> theme, <span class="prm">const char*</span> id)</code></div>
+		<p class="brief">Get an image from a theme by id.</p>
+		<ul class="params">
+			<li><span class="pname">theme</span> the theme handle</li>
+			<li><span class="pname">id</span> the image id</li>
+		</ul>
+		<p class="returns">Returns the image handle, or null.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">themeBuild</span>(<span class="prm">HTheme</span> theme)</code></div>
+		<p class="brief">Build a theme after its images were added, packing the theme's image atlas.</p>
+		<ul class="params"><li><span class="pname">theme</span> the theme to be built</li></ul>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="ret">bool</span> <span class="fn">themeRebuildAtlas</span>(<span class="prm">HTheme</span> theme)</code></div>
+		<p class="brief">Rebuild the theme's image atlas if it was marked dirty (e.g. after adding images dynamically).</p>
+		<ul class="params"><li><span class="pname">theme</span> the theme to be rebuilt</li></ul>
+		<p class="returns">Returns true if the atlas was rebuilt, false if it was already up to date.</p>
+	</div>
+
+	<h2>Widget element styles</h2>
+	<p>Widgets look up their theme style by widget type and element id. These functions select which style is used.</p>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">widgetSetStyle</span>(<span class="prm">WidgetType</span> widgetType, <span class="prm">const char*</span> styleName)</code></div>
+		<p class="brief">Set the current style of a widget type, used by subsequent widgets.</p>
+		<ul class="params">
+			<li><span class="pname">widgetType</span> the widget type</li>
+			<li><span class="pname">styleName</span> the style name</li>
+		</ul>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">widgetPushStyle</span>(<span class="prm">WidgetType</span> widgetType, <span class="prm">const char*</span> styleName)</code></div>
+		<p class="brief">Push the current style of a widget type and set a new one.</p>
+		<ul class="params">
+			<li><span class="pname">widgetType</span> the widget type</li>
+			<li><span class="pname">styleName</span> the style name</li>
+		</ul>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">widgetPopStyle</span>()</code></div>
+		<p class="brief">Pop the previously pushed style of a widget type.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">widgetSetElementStyle</span>(<span class="prm">WidgetElementId</span> widgetElementId, <span class="prm">const char*</span> styleName)</code></div>
+		<p class="brief">Set the current style of a widget element.</p>
+		<ul class="params">
+			<li><span class="pname">widgetElementId</span> the widget element</li>
+			<li><span class="pname">styleName</span> the style name</li>
+		</ul>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">widgetSetDefaultStyle</span>(<span class="prm">WidgetType</span> widgetType)</code></div>
+		<p class="brief">Set a widget type to its default style.</p>
+		<ul class="params"><li><span class="pname">widgetType</span> the widget type</li></ul>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">widgetSetDefaultElementStyle</span>(<span class="prm">WidgetElementId</span> widgetElementId)</code></div>
+		<p class="brief">Set a widget element to its default style.</p>
+		<ul class="params"><li><span class="pname">widgetElementId</span> the widget element</li></ul>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">widgetSetUserElementStyle</span>(<span class="prm">const char*</span> elementName, <span class="prm">const char*</span> styleName)</code></div>
+		<p class="brief">Set the style of a user (custom) widget element.</p>
+		<ul class="params">
+			<li><span class="pname">elementName</span> the user element name</li>
+			<li><span class="pname">styleName</span> the style name</li>
+		</ul>
+	</div>
+
+	<h2>Element infos &amp; parameters</h2>
+	<p>
+		Element infos describe the image, border and per-state data used to draw a widget element.
+		User elements are defined in a theme under names like <code>user.customName</code> and drawn with
+		<code>customWidget</code> (see <a href="rendering.html">Rendering</a>).
+	</p>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">themeSetWidgetElement</span>(<span class="prm">HTheme</span> theme, <span class="prm">WidgetElementId</span> elementId, <span class="prm">WidgetStateType</span> widgetStateType, <span class="prm">const WidgetElementInfo&amp;</span> elementInfo, <span class="prm">const char*</span> styleName = "default")</code></div>
+		<p class="brief">Set a theme's widget element info for a given state and style.</p>
+		<ul class="params">
+			<li><span class="pname">theme</span> the theme of the widget element</li>
+			<li><span class="pname">elementId</span> the element to be set</li>
+			<li><span class="pname">widgetStateType</span> which state to be set</li>
+			<li><span class="pname">elementInfo</span> the element info to be set</li>
+			<li><span class="pname">styleName</span> the style name</li>
+		</ul>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">themeSetUserWidgetElement</span>(<span class="prm">HTheme</span> theme, <span class="prm">const char*</span> userElementName, <span class="prm">WidgetStateType</span> widgetStateType, <span class="prm">const WidgetElementInfo&amp;</span> elementInfo, <span class="prm">const char*</span> styleName = "default")</code></div>
+		<p class="brief">Set a theme's user widget element info for a given state and style.</p>
+		<ul class="params">
+			<li><span class="pname">theme</span> the theme of the widget element</li>
+			<li><span class="pname">userElementName</span> the element name</li>
+			<li><span class="pname">widgetStateType</span> which state to be set</li>
+			<li><span class="pname">elementInfo</span> the element info to be set</li>
+			<li><span class="pname">styleName</span> the style name</li>
+		</ul>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">themeGetWidgetElementInfo</span>(<span class="prm">WidgetElementId</span> elementId, <span class="prm">WidgetStateType</span> state, <span class="prm">WidgetElementInfo&amp;</span> outInfo, <span class="prm">const char*</span> styleName = "default")</code></div>
+		<p class="brief">Return the current theme's widget element info.</p>
+		<ul class="params">
+			<li><span class="pname">elementId</span> the widget element id</li>
+			<li><span class="pname">state</span> the element state</li>
+			<li><span class="pname">outInfo</span> receives the element info</li>
+			<li><span class="pname">styleName</span> the style name</li>
+		</ul>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">themeGetUserWidgetElementInfo</span>(<span class="prm">const char*</span> userElementName, <span class="prm">WidgetStateType</span> state, <span class="prm">WidgetElementInfo&amp;</span> outInfo, <span class="prm">const char*</span> styleName = "default")</code></div>
+		<p class="brief">Return the current theme's user widget element info.</p>
+		<ul class="params">
+			<li><span class="pname">userElementName</span> the user element name</li>
+			<li><span class="pname">state</span> the element state</li>
+			<li><span class="pname">outInfo</span> receives the element info</li>
+			<li><span class="pname">styleName</span> the style name</li>
+		</ul>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">themeSetWidgetElementParameter</span>(<span class="prm">HTheme</span> theme, <span class="prm">WidgetElementId</span> elementId, <span class="prm">const char*</span> styleName, <span class="prm">const char*</span> paramName, <span class="prm">const char*</span> paramValue)</code></div>
+		<p class="brief">Set a parameter of a theme widget element style.</p>
+		<ul class="params">
+			<li><span class="pname">theme</span> the theme handle</li>
+			<li><span class="pname">elementId</span> the widget element</li>
+			<li><span class="pname">styleName</span> the style name</li>
+			<li><span class="pname">paramName</span> the parameter name</li>
+			<li><span class="pname">paramValue</span> the parameter value</li>
+		</ul>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="ret">const char*</span> <span class="fn">themeGetWidgetElementParameterString</span>(<span class="prm">HTheme</span> theme, <span class="prm">WidgetElementId</span> elementId, <span class="prm">const char*</span> styleName, <span class="prm">const char*</span> paramName, <span class="prm">const char*</span> defaultValue = "")</code></div>
+		<p class="brief">Get a string parameter of a theme widget element style.</p>
+		<ul class="params">
+			<li><span class="pname">theme</span> the theme handle</li>
+			<li><span class="pname">elementId</span> the widget element</li>
+			<li><span class="pname">styleName</span> the style name</li>
+			<li><span class="pname">paramName</span> the parameter name</li>
+			<li><span class="pname">defaultValue</span> the value returned if the parameter doesn't exist</li>
+		</ul>
+		<p class="returns">Returns the parameter value.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="ret">f32</span> <span class="fn">themeGetWidgetElementParameterFloat</span>(<span class="prm">HTheme</span> theme, <span class="prm">WidgetElementId</span> elementId, <span class="prm">const char*</span> styleName, <span class="prm">const char*</span> paramName, <span class="prm">f32</span> defaultValue = 0.0f)</code></div>
+		<p class="brief">Get a float parameter of a theme widget element style.</p>
+		<ul class="params">
+			<li><span class="pname">theme</span> the theme handle</li>
+			<li><span class="pname">elementId</span> the widget element</li>
+			<li><span class="pname">styleName</span> the style name</li>
+			<li><span class="pname">paramName</span> the parameter name</li>
+			<li><span class="pname">defaultValue</span> the value returned if the parameter doesn't exist</li>
+		</ul>
+		<p class="returns">Returns the parameter value.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="ret">const Color&amp;</span> <span class="fn">themeGetWidgetElementParameterColor</span>(<span class="prm">HTheme</span> theme, <span class="prm">WidgetElementId</span> elementId, <span class="prm">const char*</span> styleName, <span class="prm">const char*</span> paramName, <span class="prm">const Color&amp;</span> defaultValue = Color())</code></div>
+		<p class="brief">Get a color parameter of a theme widget element style. The parameter value must be a color string.</p>
+		<ul class="params">
+			<li><span class="pname">theme</span> the theme handle</li>
+			<li><span class="pname">elementId</span> the widget element</li>
+			<li><span class="pname">styleName</span> the style name</li>
+			<li><span class="pname">paramName</span> the parameter name</li>
+			<li><span class="pname">defaultValue</span> the value returned if the parameter doesn't exist</li>
+		</ul>
+		<p class="returns">Returns the parameter value.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">themeSetUserWidgetElementParameter</span>(<span class="prm">HTheme</span> theme, <span class="prm">const char*</span> userElementName, <span class="prm">const char*</span> styleName, <span class="prm">const char*</span> paramName, <span class="prm">const char*</span> paramValue)</code></div>
+		<p class="brief">Set a parameter of a user widget element style.</p>
+		<ul class="params">
+			<li><span class="pname">theme</span> the theme handle</li>
+			<li><span class="pname">userElementName</span> the user element name</li>
+			<li><span class="pname">styleName</span> the style name</li>
+			<li><span class="pname">paramName</span> the parameter name</li>
+			<li><span class="pname">paramValue</span> the parameter value</li>
+		</ul>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="ret">const char*</span> <span class="fn">themeGetUserWidgetElementParameterString</span>(<span class="prm">HTheme</span> theme, <span class="prm">const char*</span> userElementName, <span class="prm">const char*</span> styleName, <span class="prm">const char*</span> paramName, <span class="prm">const char*</span> defaultValue = "")</code></div>
+		<p class="brief">Get a string parameter of a user widget element style.</p>
+		<ul class="params">
+			<li><span class="pname">theme</span> the theme handle</li>
+			<li><span class="pname">userElementName</span> the user element name</li>
+			<li><span class="pname">styleName</span> the style name</li>
+			<li><span class="pname">paramName</span> the parameter name</li>
+			<li><span class="pname">defaultValue</span> the value returned if the parameter doesn't exist</li>
+		</ul>
+		<p class="returns">Returns the parameter value.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="ret">f32</span> <span class="fn">themeGetUserWidgetElementParameterFloat</span>(<span class="prm">HTheme</span> theme, <span class="prm">const char*</span> userElementName, <span class="prm">const char*</span> styleName, <span class="prm">const char*</span> paramName, <span class="prm">f32</span> defaultValue = 0.0f)</code></div>
+		<p class="brief">Get a float parameter of a user widget element style.</p>
+		<ul class="params">
+			<li><span class="pname">theme</span> the theme handle</li>
+			<li><span class="pname">userElementName</span> the user element name</li>
+			<li><span class="pname">styleName</span> the style name</li>
+			<li><span class="pname">paramName</span> the parameter name</li>
+			<li><span class="pname">defaultValue</span> the value returned if the parameter doesn't exist</li>
+		</ul>
+		<p class="returns">Returns the parameter value.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="ret">const Color&amp;</span> <span class="fn">themeGetUserWidgetElementParameterColor</span>(<span class="prm">HTheme</span> theme, <span class="prm">const char*</span> userElementName, <span class="prm">const char*</span> styleName, <span class="prm">const char*</span> paramName, <span class="prm">const Color&amp;</span> defaultValue = Color())</code></div>
+		<p class="brief">Get a color parameter of a user widget element style. The parameter value must be a color string.</p>
+		<ul class="params">
+			<li><span class="pname">theme</span> the theme handle</li>
+			<li><span class="pname">userElementName</span> the user element name</li>
+			<li><span class="pname">styleName</span> the style name</li>
+			<li><span class="pname">paramName</span> the parameter name</li>
+			<li><span class="pname">defaultValue</span> the value returned if the parameter doesn't exist</li>
+		</ul>
+		<p class="returns">Returns the parameter value.</p>
+	</div>
+
+	<h2>Fonts</h2>
+	<div class="member">
+		<div class="prototype"><code><span class="ret">HFont</span> <span class="fn">themeFontCreate</span>(<span class="prm">HTheme</span> theme, <span class="prm">const char*</span> name, <span class="prm">const char*</span> fontFilename, <span class="prm">u32</span> faceSize)</code></div>
+		<p class="brief">Create a new font object in a theme.</p>
+		<ul class="params">
+			<li><span class="pname">theme</span> the theme where to place the font</li>
+			<li><span class="pname">name</span> the name of the font (e.g. <code>smallItalic</code>)</li>
+			<li><span class="pname">fontFilename</span> the TTF/OTF filename, relative to the executable</li>
+			<li><span class="pname">faceSize</span> the font face size in font units</li>
+		</ul>
+		<p class="returns">Returns the newly created font handle.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">themeFontDestroy</span>(<span class="prm">HTheme</span> theme, <span class="prm">HFont</span> font)</code></div>
+		<p class="brief">Release a font reference. If its usage count reaches zero the font is deleted.</p>
+		<ul class="params">
+			<li><span class="pname">theme</span> the theme owning the font</li>
+			<li><span class="pname">font</span> the font to release</li>
+		</ul>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="ret">HFont</span> <span class="fn">themeFontGet</span>(<span class="prm">const char*</span> themeFontName)</code></div>
+		<p class="brief">Return a font by name from the current theme.</p>
+		<ul class="params"><li><span class="pname">themeFontName</span> the name of the font as it is in the theme</li></ul>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="ret">HFont</span> <span class="fn">themeFontGetFromTheme</span>(<span class="prm">HTheme</span> theme, <span class="prm">const char*</span> themeFontName)</code></div>
+		<p class="brief">Return a font by name from the specified theme.</p>
+		<ul class="params">
+			<li><span class="pname">theme</span> the theme to search</li>
+			<li><span class="pname">themeFontName</span> the name of the font as it is in the theme</li>
+		</ul>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="ret">Point</span> <span class="fn">fontGetTextSize</span>(<span class="prm">HFont</span> font, <span class="prm">const char*</span> text)</code></div>
+		<p class="brief">Return the pixel size of the given text when rendered with the given font.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="ret">FontMetrics</span> <span class="fn">fontGetMetrics</span>(<span class="prm">HFont</span> font)</code></div>
+		<p class="brief">Return the line metrics (height, ascender, descender) of the given font.</p>
+	</div>
+
+	<h2>Images</h2>
+	<div class="member">
+		<div class="prototype"><code><span class="ret">Point</span> <span class="fn">imageGetDimensions</span>(<span class="prm">HImage</span> image)</code></div>
+		<p class="brief">Return the pixel width and height of the given image, <code>{0, 0}</code> if the image is null.</p>
+	</div>
+
+	<div class="callout">
+		The theme <code>json</code> structure, element names and style params are covered in detail by
+		<a href="../theme_json_format/index.html">Theme JSON Format</a>.
+	</div>
+
+	<div class="footer">
+		Horus UI &mdash; (C) All rights reserved 2016-2026 7thFACTOR Software - Nicusor Nedelcu (nekitu)
+	</div>
+</main>
+
+</body>
+</html>

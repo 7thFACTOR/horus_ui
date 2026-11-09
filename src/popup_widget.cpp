@@ -1,46 +1,46 @@
-#include "horus.h"
-#include "types.h"
-#include "ui_theme.h"
-#include "ui_font.h"
+#include "context.h"
+#include "theme.h"
+#include "font.h"
 #include "util.h"
-#include "ui_context.h"
 #include <limits.h>
 
 namespace hui
 {
-//TODO: place into public settings
-static f32 movePopupMaxDistanceTrigger = 5;
-
-void beginPopup(
+void popupBegin(
+	const char* id,
 	f32 width,
 	PopupFlags flags,
 	const Point& position,
 	WidgetElementId widgetElementId)
 {
+	widgetPushDisabled(widgetGetDisabled());
+	ctx->id = genId(id);
+
 	auto& popup = ctx->popupStack[ctx->popupIndex];
 
+	popup.lastUsedFrame = ctx->frameCount;
 	popup.flags = flags;
 
 	if (ctx->popupUseGlobalScale)
-		width *= ctx->globalScale;
+		width *= ctx->scale;
 
-	//ctx->popupUseGlobalScale = true;
+	popup.layerIncremented = !has(flags, PopupFlags::SameLayer)
+		|| (has(flags, PopupFlags::LayerOnMouseInside)
+			&& Rect(popup.position.x, popup.position.y, popup.width, popup.height).contains(ctx->mousePosition));
 
-	if (!has(flags, PopupFlags::SameLayer))
-		incrementLayerIndex();
+	if (popup.layerIncremented)
+		layerIndexIncrement();
 
-	if (has(flags, PopupFlags::TopMost))
-	{
-		popup.oldZOrder = ctx->renderer->getZOrder();
-		ctx->renderer->setZOrder(INT_MAX - 1);
-	}
-
+	ctx->renderer.pushWindowDrawCmdLayer(
+		has(flags, PopupFlags::IsMenu)
+			? DrawCmdLayerType::Overlay
+			: DrawCmdLayerType::Foreground);
 	ctx->popupIndex++;
 
 	// not active, first show, do not render anything, next frame
 	if (!popup.active)
 	{
-		skipThisFrame();
+		skipFrame();
 		popup.active = true;
 		popup.height = 0;
 		popup.widgetElementId = widgetElementId;
@@ -62,14 +62,17 @@ void beginPopup(
 	popup.width = width;
 
 	f32 height = popup.height;
-	auto bodyElemState = ctx->theme->getElement(widgetElementId).normalState();
-	Point pos = { ctx->containerRect.x, ctx->containerRect.y };
+	auto& popupElem = ctx->theme->getElement(widgetElementId);
+	auto& bodyElemState = popupElem.normalState();
+	f32 bodyPaddingX = popupElem.currentStyle->getParameter("paddingX", 0.0f) * ctx->scale;
+	f32 bodyPaddingY = popupElem.currentStyle->getParameter("paddingY", 0.0f) * ctx->scale;
+	Point pos;
 
-	if (has(flags, PopupFlags::WindowCenter))
+	if (has(flags, PopupFlags::Centered))
 	{
 		pos = {
-			(ctx->renderer->getWindowSize().x - width) / 2.0f,
-			(ctx->renderer->getWindowSize().y - height) / 2.0f 
+			(ctx->renderer.getWindowSize().x - width) / 2.0f,
+			(ctx->renderer.getWindowSize().y - height) / 2.0f 
 		};
 		pos += popup.moveOffset;
 	}
@@ -86,7 +89,7 @@ void beginPopup(
 	}
 
 	// limit to right side
-	if (pos.x + width > ctx->renderer->getWindowSize().x)
+	if (pos.x + width > ctx->renderer.getWindowSize().x)
 	{
 		if (has(flags, PopupFlags::IsMenu))
 		{
@@ -95,14 +98,14 @@ void beginPopup(
 		}
 		else
 		{
-			pos.x = ctx->renderer->getWindowSize().x - width;
+			pos.x = ctx->renderer.getWindowSize().x - width;
 		}
 	}
 
 	// limit to top
-	if (pos.y + height > ctx->renderer->getWindowSize().y)
+	if (pos.y + height > ctx->renderer.getWindowSize().y)
 	{
-		pos.y = ctx->renderer->getWindowSize().y - height;
+		pos.y = ctx->renderer.getWindowSize().y - height;
 	}
 
 	// limit to left
@@ -117,80 +120,87 @@ void beginPopup(
 		pos.y = 0;
 	}
 
-	pos.x = round(pos.x);
-	pos.y = round(pos.y);
+
 
 	popup.position = pos;
 	Rect popupRect = { pos.x, pos.y, width, height };
 
-	ctx->layoutStack.push_back(LayoutState(LayoutType::Container));
-	ctx->layoutStack.back().position =
+	layoutPush();
+	widgetPushPosition();
+
+	ctx->layout = LayoutState(LayoutType::Generic);
+	ctx->position =
 	{
-		pos.x + bodyElemState.border * ctx->globalScale,
-		pos.y + bodyElemState.border * ctx->globalScale
+		pos.x + bodyElemState.border * ctx->scale + bodyPaddingX,
+		pos.y + bodyElemState.border * ctx->scale + bodyPaddingY
 	};
-	ctx->layoutStack.back().width = width - bodyElemState.border * 2 * ctx->globalScale;
-	ctx->layoutStack.back().savedPenPosition = ctx->penPosition;
-	ctx->penPosition = ctx->layoutStack.back().position;
-	ctx->sameLineStack.push_back(ctx->widget.sameLine);
-	ctx->widget.sameLine = false; // reset the same line, we don't need that at the popup start
-	popup.prevContainerRect = ctx->containerRect;
-	ctx->containerRect = ctx->renderer->getWindowRect();
+	ctx->layout.width = width - bodyElemState.border * 2 * ctx->scale - bodyPaddingX * 2.0f;
+	ctx->layout.savedPosition = ctx->position;
+	
+	auto posBeforeHitWidget = ctx->position;
+	addWidget(0);
+	ctx->position = posBeforeHitWidget;
+	ctx->renderer.pushClipRect(ctx->renderer.getWindowRect(), false);
 
-	ctx->renderer->pushClipRect(ctx->renderer->getWindowRect(), false);
-
-	if (has(flags, PopupFlags::FadeWindowContents))
+	if (has(flags, PopupFlags::FadeBackground))
 	{
 		auto& behindElemState = ctx->theme->getElement(WidgetElementId::PopupBehind).normalState();
 
-		ctx->renderer->cmdSetColor(behindElemState.color);
-		ctx->renderer->cmdDrawImageBordered(
+		ctx->renderer.cmdSetColor(behindElemState.color);
+		ctx->renderer.cmdDrawImageBordered(
 			behindElemState.image,
 			behindElemState.border,
-			ctx->containerRect, ctx->globalScale);
+			ctx->renderer.getWindowRect(), ctx->scale);
 	}
 
-	ctx->renderer->cmdSetColor(bodyElemState.color);
-	ctx->renderer->cmdDrawImageBordered(
+	ctx->renderer.cmdSetColor(bodyElemState.color);
+	ctx->renderer.cmdDrawImageBordered(
 		bodyElemState.image,
 		bodyElemState.border,
-		popupRect, ctx->globalScale);
+		popupRect, ctx->scale);
 
-	popup.widgetId = ctx->currentWidgetId;
-	ctx->currentWidgetId++;
+	popup.id = ctx->id;
 }
 
-void endPopup()
+void popupEnd()
 {
 	auto& popup = ctx->popupStack[ctx->popupIndex - 1];
 
+	if (ctx->sameLine.wasEnabled)
+	{
+		ctx->position.y += ctx->sameLine.maxHeight;
+		ctx->sameLine.wasEnabled = false;
+		ctx->sameLine.maxHeight = 0;
+	}
+
 	//TODO: make a better popup move
 	if (ctx->isActiveLayer()
+		&& !ctx->widget.disabled
 		&&
-		(ctx->widget.hoveredWidgetId == popup.widgetId
+		(ctx->widget.hoveredId == popup.id
 			|| popup.startedToDrag
-			|| ctx->widget.hoveredWidgetType == WidgetType::Label))
+			|| ctx->widget.hoveredType == WidgetType::Label))
 	{
 		auto rect = Rect(popup.position.x, popup.position.y, popup.width, popup.height);
 
 		if (ctx->event.type == InputEvent::Type::MouseDown
-			&& rect.contains(ctx->event.mouse.point)
+			&& rect.contains(ctx->mousePosition)
 			&& !popup.startedToDrag)
 		{
 			popup.startedToDrag = true;
-			popup.lastMouseDownPoint = ctx->event.mouse.point;
-			popup.lastMousePoint = ctx->event.mouse.point;
+			popup.lastMouseDownPoint = ctx->mousePosition;
+			popup.lastMousePoint = ctx->mousePosition;
 		}
 
 		// popup drag by mouse
 		if (popup.startedToDrag || popup.draggingPopup)
 		{
-			auto mousePos = ctx->inputProvider->getMousePosition();
+			auto mousePos = ctx->settings.services.getAbsoluteMousePosition();
 
 			if (popup.startedToDrag
-				&& popup.lastMouseDownPoint.getDistance(mousePos) >= movePopupMaxDistanceTrigger
+				&& popup.lastMouseDownPoint.getDistance(mousePos) >= ctx->settings.movePopupMaxDistanceTrigger
 				&& !popup.draggingPopup
-				&& ctx->widget.hoveredWidgetId == popup.widgetId)
+				&& ctx->widget.hoveredId == popup.id)
 			{
 				popup.dragDelta = popup.position - mousePos;
 				// clear the event so other widgets will not use it
@@ -211,8 +221,8 @@ void endPopup()
 	{
 		if (popup.draggingPopup)
 		{
-			popup.moveOffset += ctx->event.mouse.point - popup.lastMousePoint;
-			popup.lastMousePoint = ctx->event.mouse.point;
+			popup.moveOffset += ctx->mousePosition - popup.lastMousePoint;
+			popup.lastMousePoint = ctx->mousePosition;
 			// clear the event so other widgets will not use it
 			ctx->event = InputEvent();
 		}
@@ -222,46 +232,52 @@ void endPopup()
 		forceRepaint();
 	}
 
-	auto bodyElemState = ctx->theme->getElement(popup.widgetElementId).normalState();
-	popup.height = (ctx->penPosition.y - ctx->layoutStack.back().position.y) + bodyElemState.border * 2.0f * ctx->globalScale - ctx->spacing * ctx->globalScale;
+	auto& popupElem = ctx->theme->getElement(popup.widgetElementId);
+	auto& bodyElemState = popupElem.normalState();
+	f32 bodyPaddingY = popupElem.currentStyle->getParameter("paddingY", 0.0f) * ctx->scale;
+	popup.height = (ctx->position.y - ctx->layout.savedPosition.y) + bodyElemState.border * 2.0f * ctx->scale + bodyPaddingY * 2.0f;
 	
-	ctx->penPosition = ctx->layoutStack.back().savedPenPosition;
-	ctx->containerRect = popup.prevContainerRect;
-	ctx->renderer->popClipRect();
-	ctx->layoutStack.pop_back();
-	ctx->widget.sameLine = ctx->sameLineStack.back();
-	ctx->sameLineStack.pop_back();
+	ctx->position = ctx->layout.savedPosition;
+	ctx->renderer.popClipRect();
+	ctx->renderer.popWindowDrawCmdLayer();
+	widgetPopPosition();
+	layoutPop();
 
-	if (!has(popup.flags, PopupFlags::SameLayer))
-		decrementLayerIndex();
+	if (popup.layerIncremented)
+		layerIndexDecrement();
 
-	if (has(popup.flags, PopupFlags::TopMost))
-		ctx->renderer->setZOrder(popup.oldZOrder);
-
-	ctx->popupIndex--;
+	--ctx->popupIndex;
+	widgetPopDisabled();
 }
 
-void closePopup()
+void popupClose()
 {
-	auto& popup = ctx->popupStack[ctx->popupIndex - 1];
+	auto& popup = ctx->popupStack[(size_t)ctx->popupIndex - 1];
 
 	popup.active = false;
 
 	if (!has(popup.flags, PopupFlags::SameLayer))
-		decrementWindowMaxLayerIndex();
+		layerDecrementWindowMaxLayerIndex();
+
+	if (!has(popup.flags, PopupFlags::SameLayer))
+	{
+		ctx->contextMenuActive = false;
+		ctx->contextMenuClicked = false;
+		ctx->contextMenuWidgetId = 0;
+	}
 
 	ctx->event.type = InputEvent::Type::None;
-	ctx->widget.focusedWidgetId = 0;
-	skipThisFrame();
+	ctx->widget.focusedId = 0;
+	skipFrame();
 	forceRepaint();
 }
 
-bool clickedOutsidePopup()
+bool popupClickedOutside()
 {
 	if (ctx->event.type != InputEvent::Type::MouseDown)
 		return false;
 
-	if (ctx->layoutStack.back().type == LayoutType::Container
+	if (ctx->layout.type == LayoutType::Generic
 		&& ctx->isActiveLayer())
 	{
 		auto& popup = ctx->popupStack[ctx->popupIndex - 1];
@@ -272,7 +288,7 @@ bool clickedOutsidePopup()
 			popup.width,
 			popup.height };
 
-		if (!rc.contains(ctx->event.mouse.point))
+		if (!rc.contains(ctx->mousePosition))
 		{
 			return true;
 		}
@@ -281,9 +297,9 @@ bool clickedOutsidePopup()
 	return false;
 }
 
-bool mouseOutsidePopup()
+bool popupMouseOutside()
 {
-	if (ctx->layoutStack.back().type == LayoutType::Container
+	if (ctx->layout.type == LayoutType::Generic
 		&& ctx->isActiveLayer())
 	{
 		auto& popup = ctx->popupStack[ctx->popupIndex - 1];
@@ -294,7 +310,7 @@ bool mouseOutsidePopup()
 			popup.width,
 			popup.height };
 
-		if (!rc.contains(ctx->event.mouse.point))
+		if (!rc.contains(ctx->mousePosition))
 		{
 			return true;
 		}
@@ -303,14 +319,14 @@ bool mouseOutsidePopup()
 	return false;
 }
 
-bool pressedEscapeOnPopup()
+bool popupPressedEscape()
 {
 	auto& popup = ctx->popupStack[ctx->popupIndex - 1];
 
 	if (popup.alreadyClosedWithEscape)
 		return false;
 
-	if (ctx->layoutStack.back().type == LayoutType::Container
+	if (ctx->layout.type == LayoutType::Generic
 		&& ctx->event.type == InputEvent::Type::Key
 		&& ctx->event.key.down
 		&& ctx->event.key.code == KeyCode::Esc
@@ -323,64 +339,64 @@ bool pressedEscapeOnPopup()
 	return false;
 }
 
-bool mustClosePopup()
+bool popupMustClose()
 {
-	return pressedEscapeOnPopup() || clickedOutsidePopup();
+	return popupPressedEscape() || popupClickedOutside();
 }
 
 MessageBoxButtons messageBox(
 	const char* title,
 	const char* message,
 	MessageBoxButtons buttons,
-	MessageBoxIcon icon,
+	MessageBoxImage img,
 	u32 width,
-	Image customIcon)
+	HImage customImg)
 {
-	UiThemeElement* iconElem = nullptr;
+	ThemeElement* imageElem = nullptr;
 
-	switch (icon)
+	switch (img)
 	{
-	case hui::MessageBoxIcon::Error:
-		iconElem = &ctx->theme->getElement(WidgetElementId::MessageBoxIconError);
+	case hui::MessageBoxImage::Error:
+		imageElem = &ctx->theme->getElement(WidgetElementId::MessageBoxImageError);
 		break;
-	case hui::MessageBoxIcon::Info:
-		iconElem = &ctx->theme->getElement(WidgetElementId::MessageBoxIconInfo);
+	case hui::MessageBoxImage::Info:
+		imageElem = &ctx->theme->getElement(WidgetElementId::MessageBoxImageInfo);
 		break;
-	case hui::MessageBoxIcon::Question:
-		iconElem = &ctx->theme->getElement(WidgetElementId::MessageBoxIconQuestion);
+	case hui::MessageBoxImage::Question:
+		imageElem = &ctx->theme->getElement(WidgetElementId::MessageBoxImageQuestion);
 		break;
-	case hui::MessageBoxIcon::Warning:
-		iconElem = &ctx->theme->getElement(WidgetElementId::MessageBoxIconWarning);
+	case hui::MessageBoxImage::Warning:
+		imageElem = &ctx->theme->getElement(WidgetElementId::MessageBoxImageWarning);
 		break;
 	default:
 		break;
 	}
 
-	hui::beginPopup(500, PopupFlags::FadeWindowContents | PopupFlags::WindowCenter);
-	auto iterFnt = ctx->theme->fonts.find("title");
-	hui::pushTint(Color::cyan);
+	hui::popupBegin(title, (f32)500, PopupFlags::FadeBackground | PopupFlags::Centered);
+	auto fnt = ctx->theme->getFont("title");
+	hui::tintPush(Color::cyan);
 
-	if (iterFnt != ctx->theme->fonts.end())
+	if (fnt)
 	{
-		hui::labelCustomFont(title, (Image)iterFnt->second);
+		hui::labelCustomFont(title, fnt);
 	}
 	else
 	{
 		hui::label(title);
 	}
 
-	hui::popTint();
+	hui::tintPop();
 	hui::line();
 
-	// body and icon
-	f32 titleColWidths[2] = { 0.8, 0.2 };
-	beginColumns(2, titleColWidths);
-	hui::multilineLabel(message, HAlignType::Left);
-	nextColumn();
-	hui::image((Image)iconElem->normalState().image, 0, hui::HAlignType::Right);
-	endColumns();
+	// body and image
+	f32 titleColWidths[2] = { 0.8f, 0.2f };
+	//beginColumns(2, titleColWidths);
+	hui::labelMultiline(message, HAlignType::Left);
+	//nextColumn();
+	hui::image((HImage)imageElem->normalState().image, 0, hui::HAlignType::Right);
+	//endColumns();
 
-	hui::gap(10);
+	hui::space(10);
 
 	MessageBoxButtons returnBtns = MessageBoxButtons::None;
 
@@ -394,7 +410,7 @@ MessageBoxButtons messageBox(
 	if (!!(buttons & MessageBoxButtons::Retry)) colCount++;
 	if (!!(buttons & MessageBoxButtons::Abort)) colCount++;
 
-	hui::beginColumns(colCount, colWidths);
+	//hui::beginColumns(colCount, colWidths);
 
 	if (!!(buttons & MessageBoxButtons::Ok))
 	{
@@ -403,7 +419,7 @@ MessageBoxButtons messageBox(
 			returnBtns |= MessageBoxButtons::Ok;
 		}
 
-		hui::nextColumn();
+		//hui::nextColumn();
 	}
 
 	if (!!(buttons & MessageBoxButtons::Cancel))
@@ -413,7 +429,7 @@ MessageBoxButtons messageBox(
 			returnBtns |= MessageBoxButtons::Cancel;
 		}
 
-		hui::nextColumn();
+		//hui::nextColumn();
 	}
 
 	if (!!(buttons & MessageBoxButtons::Yes))
@@ -423,7 +439,7 @@ MessageBoxButtons messageBox(
 			returnBtns |= buttons & MessageBoxButtons::Yes;
 		}
 
-		hui::nextColumn();
+		//hui::nextColumn();
 	}
 
 	if (!!(buttons & MessageBoxButtons::No))
@@ -433,7 +449,7 @@ MessageBoxButtons messageBox(
 			returnBtns |= MessageBoxButtons::No;
 		}
 
-		hui::nextColumn();
+		//hui::nextColumn();
 	}
 
 	if (!!(buttons & MessageBoxButtons::Retry))
@@ -443,7 +459,7 @@ MessageBoxButtons messageBox(
 			returnBtns |= MessageBoxButtons::Retry;
 		}
 
-		hui::nextColumn();
+		//hui::nextColumn();
 	}
 
 	if (!!(buttons & MessageBoxButtons::Abort))
@@ -453,25 +469,25 @@ MessageBoxButtons messageBox(
 			returnBtns |= MessageBoxButtons::Abort;
 		}
 
-		hui::nextColumn();
+		//hui::nextColumn();
 	}
 
-	hui::endColumns();
+	//hui::endColumns();
 
-	if (mustClosePopup())
+	if (popupMustClose())
 	{
 		returnBtns = MessageBoxButtons::Abort
 			| MessageBoxButtons::Cancel
 			| MessageBoxButtons::ClosedByEscape
 			| MessageBoxButtons::No;
-		closePopup();
+		popupClose();
 	}
 	else if (!!returnBtns)
 	{
-		closePopup();
+		popupClose();
 	}
 
-	hui::endPopup();
+	hui::popupEnd();
 
 	return returnBtns;
 }

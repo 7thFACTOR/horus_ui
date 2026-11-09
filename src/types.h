@@ -1,7 +1,10 @@
 #pragma once
-#include "horus.h"
 #include <vector>
+#include <string>
 #include <unordered_map>
+#include <unordered_set>
+#include <deque>
+#include "horus.h"
 
 #ifdef _LINUX
 #include <sys/types.h>
@@ -12,74 +15,368 @@
 #include <stdlib.h>
 #endif
 
+#ifndef HUI_ASSERT
+#include <assert.h>
+#define HUI_ASSERT(cond) assert(cond)
+#endif
+
+#ifndef HUI_LOG
+#define HUI_LOG(format, ...) printf(format"\n", ##__VA_ARGS__)
+#endif
+
 namespace hui
 {
-class Renderer;
-struct TextureArray;
-class UiTheme;
-class UnicodeTextCache;
-class FontCache;
-class UiFont;
-struct UiImage;
+struct Theme;
+struct Font;
+struct Image;
+struct DockNode;
 
-typedef u32 UiImageId;
-typedef u32 GlyphCode;
-typedef std::vector<GlyphCode> UnicodeString;
+typedef u64 ImageId;
+typedef std::vector<struct DrawCommand> DrawCommandVector;
 
-struct UiThemeElement
+/// How an image is drawn, repeated or stretched across the rectangle
+enum class ImageSizingPolicy
+{
+	Stretch,
+	Repeat
+};
+
+/// Text styling info
+struct TextStyle
+{
+	Rgba32 backFillColor; /// the text color
+	bool underline = false; /// true if underline
+	bool backFill = false; /// true if back is filled color
+};
+
+struct DrawCmdLayerSplitter
+{
+	std::vector<DrawCommandVector> layers;
+	size_t currentLayerIndex = 0;
+
+	DrawCmdLayerSplitter();
+	~DrawCmdLayerSplitter() {}
+	void clear();
+	void split(u32 layerCount);
+	void merge();
+	void setLayer(u32 index);
+};
+
+struct DrawCommand
+{
+	enum class Type
+	{
+		None,
+		DrawRect,
+		DrawQuad,
+		DrawQuad4Colors,
+		DrawImageBordered,
+		DrawLine,
+		DrawPolyLine,
+		DrawText,
+		DrawSolidTriangle,
+		ClipRect,
+		SetTexture,
+		SetColor,
+		SetFont,
+		SetTextStyle,
+		SetLineStyle,
+		SetFillStyle,
+		ClearBackground,
+		Callback,
+
+		Count
+	};
+
+	struct CmdDrawRect
+	{
+		Rect rect;
+		Rect uvRect;
+		bool rotated = false;
+		HTexture texture = 0;
+		u32 textureIndex = 0;
+		bool wire = false;
+	};
+
+	struct CmdDrawQuad
+	{
+		Point corners[4];
+		Image* image = nullptr;
+	};
+
+	struct CmdDrawTriangle
+	{
+		Point p1, p2, p3;
+		Point uv1, uv2, uv3;
+		Rgba32 c1, c2, c3;
+		Image* image = nullptr;
+	};
+
+	struct CmdDrawLine
+	{
+		Point a, b;
+	};
+
+	struct CmdDrawPolyLine
+	{
+		Point* points = nullptr;
+		u32 count = 0;
+		bool closed = false;
+	};
+
+	struct CmdDrawText
+	{
+		Rect rect;
+		HAlignType horizAlign = HAlignType::Left;
+		VAlignType vertAlign = VAlignType::Top;
+		char* text = nullptr;
+		bool singleLineEllipsis = false;
+		bool noWordWrap = true;
+	};
+
+	struct CmdDrawImageBordered
+	{
+		Rect rect;
+		Image* image = nullptr;
+		f32 border = 0;
+		f32 scale = 1;
+	};
+
+	struct CmdDrawQuad4Colors
+	{
+		Rect rect;
+		Rect uvRect;
+		Image* image = nullptr;
+		Rgba32 topLeft;
+		Rgba32 topRight;
+		Rgba32 bottomLeft;
+		Rgba32 bottomRight;
+	};
+
+	struct CmdSetTexture
+	{
+		HTexture texture = 0;
+		u32 width = 0;
+		u32 height = 0;
+	};
+
+	DrawCommand() {}
+	DrawCommand(Type newType)
+		: type(newType)
+	{
+	}
+
+	Type type = Type::None;
+
+	union CmdData
+	{
+		CmdDrawRect drawRect;
+		CmdDrawQuad drawQuad;
+		CmdDrawLine drawLine;
+		CmdDrawPolyLine drawPolyLine;
+		CmdDrawText drawText;
+		CmdDrawImageBordered drawImageBordered;
+		CmdDrawQuad4Colors drawQuad4Colors;
+		CmdDrawTriangle drawTriangle;
+		CmdSetTexture setTexture;
+		RenderCallback callback;
+		Rect clipRect;
+		bool clipToParent;
+		bool popClipRect = false;
+		Rgba32 color;
+		struct Font* font;
+		TextStyle textStyle;
+		LineStyle lineStyle;
+		FillStyle fillStyle;
+	} data;
+
+	DrawCommand(const DrawCommand& other)
+	{
+		*this = other;
+	}
+
+	DrawCommand& operator = (const DrawCommand& other)
+	{
+		type = other.type;
+		data.drawRect = other.data.drawRect;
+		data.drawQuad = other.data.drawQuad;
+		data.drawLine = other.data.drawLine;
+		data.drawPolyLine = other.data.drawPolyLine;
+		data.drawText = other.data.drawText;
+		data.drawImageBordered = other.data.drawImageBordered;
+		data.drawQuad4Colors = other.data.drawQuad4Colors;
+		data.drawTriangle = other.data.drawTriangle;
+		data.clipRect = other.data.clipRect;
+		data.clipToParent = other.data.clipToParent;
+		data.popClipRect = other.data.popClipRect;
+		data.setTexture = other.data.setTexture;
+		data.color = other.data.color;
+		data.font = other.data.font;
+		data.textStyle = other.data.textStyle;
+		data.lineStyle = other.data.lineStyle;
+		data.fillStyle = other.data.fillStyle;
+		data.callback = other.data.callback;
+
+		return *this;
+	}
+};
+
+struct TextLineState
+{
+	u32 start = 0;
+	u32 length = 0;
+};
+
+struct SameLineState
+{
+	bool enabled = false;
+	bool wasEnabled = false;
+	f32 spacing = 5;
+	f32 nextSpacing = 0;
+	f32 maxHeight = 0;
+	Point currentPosition;
+	f32 lastLineWidth = 0;
+};
+
+struct SameLineGroupState
+{
+	bool active = false;
+	u32 widgetCount = 0;
+	u32 currentWidget = 0;
+	f32 widgetWidth = 0;
+	f32 savedLayoutWidth = 0;
+	f32 startX = 0;
+	f32 startY = 0;
+};
+
+struct TintState
+{
+	Color color[(i32)TintColorType::Count];
+	TintColorOpType op[(i32)TintColorType::Count] = { TintColorOpType::None };
+};
+
+struct WidgetBoolState
+{
+	u32 lastUsedFrame = 0;
+	bool value = false;
+};
+
+struct ComboSliderElementState
+{
+	bool hovered = false;
+	bool pressed = false;
+	bool clicked = false;
+};
+
+struct ComboSliderFallback
+{
+	f32 value = 0;
+	bool touched = false;
+};
+
+struct ComboSliderState
+{
+	static const size_t maxTextSize = 1024;
+
+	f32 currentValue = 0;
+	f32 editHeight = 0; // total widget height to keep while editing the value as text
+	bool mouseWasDown = false;
+	bool dragging = false;
+	bool editingText = false;
+	bool clickedToEditText = false;
+	Point dragLastMousePos;
+	Point hiddenCursorPos;
+	char text[maxTextSize] = {0};
+	WidgetId newId = 0;
+	WidgetId id = 0;
+	bool requestChangeToOtherComboSlider = false;
+	std::unordered_map<WidgetId, ComboSliderElementState> elementStates;
+	std::unordered_map<WidgetId, ComboSliderFallback> fallbacks;
+	WidgetId pressedElementId = 0;
+};
+
+struct VectorEditorState
+{
+	bool draggingValue = false;
+	Point lastMousePos;
+	Point hiddenCursorPos;
+	WidgetId draggedId = 0;
+	static const size_t maxStrSize = 50;
+	char strX[maxStrSize] = { 0 };
+	char strY[maxStrSize] = { 0 };
+	char strZ[maxStrSize] = { 0 };
+	WidgetId editingIndeterminateEditor = 0;
+	bool editingIndeterminate[3] = { false, false, false };
+	char indeterminateText[3][maxStrSize] = {};
+	f32 colWidthsPRS[6];
+
+	VectorEditorState()
+	{
+		colWidthsPRS[0] = 14;
+		colWidthsPRS[1] = -1;
+		colWidthsPRS[2] = 14;
+		colWidthsPRS[3] = -1;
+		colWidthsPRS[4] = 14;
+		colWidthsPRS[5] = -1;
+	};
+};
+
+struct ThemeElement
 {
 	struct State
 	{
-		UiFont* font = nullptr;
+		Font* font = nullptr;
 		Color color = Color::white;
 		Color textColor = Color::white;
 		u32 border = 0;
-		UiImage* image = nullptr;
+		Image* image = nullptr;
 		f32 width = 0;
 		f32 height = 0;
+		TextShadow textShadow;
 	};
 
 	struct Style
 	{
 		State states[(u32)WidgetStateType::Count];
 		std::unordered_map<std::string, std::string> parameters;
-		std::unordered_map<std::string, f32> floatParameters;
-		std::unordered_map<std::string, Color> colorParameters;
+		std::unordered_map<std::string, f32> cachedFloatParameters;
+		std::unordered_map<std::string, Color> cachedColorParameters;
 
-		f32 getParameterValue(const std::string& name, f32 defaultValue)
+		f32 getParameter(const std::string& name, f32 defaultValue)
 		{
-			auto iter = floatParameters.find(name);
+			auto iter = cachedFloatParameters.find(name);
 
-			if (iter == floatParameters.end())
+			// if not found, search it in the parameters and cache the value
+			if (iter == cachedFloatParameters.end())
 			{
 				auto iter2 = parameters.find(name);
 
 				if (iter2 != parameters.end())
 				{
 					f32 val = atof(iter2->second.c_str());
-					floatParameters[name] = val;
+					cachedFloatParameters[name] = val;
 					return val;
 				}
 
 				return defaultValue;
 			}
-			
+
 			return iter->second;
 		}
 
-		Color getParameterValue(const std::string& name, const Color& defaultValue = Color::white)
+		Color getColorParameter(const std::string& name, const Color& defaultValue = Color::white)
 		{
-			auto iter = colorParameters.find(name);
+			auto iter = cachedColorParameters.find(name);
 
-			if (iter == colorParameters.end())
+			// if not found, search it in the parameters and cache the value
+			if (iter == cachedColorParameters.end())
 			{
 				auto iter2 = parameters.find(name);
 
 				if (iter2 != parameters.end())
 				{
-					Color c;
-					getColorFromText(iter2->second.c_str(), c);
-					colorParameters[name] = c;
+					Color c = colorFromText(iter2->second.c_str());
+					cachedColorParameters[name] = c;
 					return c;
 				}
 
@@ -94,20 +391,32 @@ struct UiThemeElement
 	Style* currentStyle = nullptr;
 
 	inline void setDefaultStyle() { currentStyle = &styles["default"]; }
-	inline void setStyle(const char* styleName) { currentStyle = &styles[styleName]; }
-	inline State& getState(WidgetStateType stateType) { return currentStyle->states[(u32)stateType]; }
-	inline State& normalState() { return currentStyle->states[(u32)WidgetStateType::Normal]; }
-	inline State& focusedState() { return currentStyle->states[(u32)WidgetStateType::Focused]; }
-	inline State& pressedState() { return currentStyle->states[(u32)WidgetStateType::Pressed]; }
-	inline State& hoveredState() { return currentStyle->states[(u32)WidgetStateType::Hovered]; }
-	inline State& disabledState() { return currentStyle->states[(u32)WidgetStateType::Disabled]; }
+	inline void validateCurrentStyle() { setDefaultStyle(); }
+	inline void setStyle(const char* styleName)
+	{
+		auto iter = styles.find(styleName);
+
+		if (iter != styles.end())
+			currentStyle = &iter->second;
+		else
+		{
+			if (!currentStyle)
+				if (!styles.empty()) currentStyle = &styles.begin()->second;
+		}
+	}
+	inline State& getState(WidgetStateType stateType) { validateCurrentStyle(); return currentStyle->states[(u32)stateType]; }
+	inline State& normalState() const { const_cast<ThemeElement*>(this)->validateCurrentStyle(); return currentStyle->states[(u32)WidgetStateType::Normal]; }
+	inline State& focusedState() const { const_cast<ThemeElement*>(this)->validateCurrentStyle(); return currentStyle->states[(u32)WidgetStateType::Focused]; }
+	inline State& pressedState() const { const_cast<ThemeElement*>(this)->validateCurrentStyle(); return currentStyle->states[(u32)WidgetStateType::Pressed]; }
+	inline State& hoveredState() const { const_cast<ThemeElement*>(this)->validateCurrentStyle(); return currentStyle->states[(u32)WidgetStateType::Hovered]; }
+	inline State& disabledState() const { const_cast<ThemeElement*>(this)->validateCurrentStyle(); return currentStyle->states[(u32)WidgetStateType::Disabled]; }
 	inline State& getStyleState(const char* styleName, WidgetStateType stateType) { return styles[styleName].states[(u32)stateType]; }
 	inline State& styleNormalState(const char* styleName) { return styles[styleName].states[(u32)WidgetStateType::Normal]; }
 };
 
 enum class LayoutType
 {
-	Container,
+	Generic,
 	Vertical,
 	Columns,
 	Column,
@@ -117,51 +426,46 @@ enum class LayoutType
 struct LayoutState
 {
 	LayoutState() {}
-
 	LayoutState(LayoutType newType)
 		: type(newType)
 	{}
 
 	LayoutType type = LayoutType::Vertical;
-	i32 currentColumn = 0;
-	std::vector<f32> columnSizes;
-	std::vector<f32> columnMinSizes;
-	std::vector<f32> columnMaxSizes;
-	std::vector<f32> columnPixelSizes;
-	Point position = { 0, 0 };
-	Point savedPenPosition = { 0, 0 };
-	bool savedSameLine = false;
-	f32 savedHighestSameLineY;
-	f32 savedPreviousSameLineY;
+	WidgetId id = 0;
+	Point savedPosition = { 0, 0 };
+	SameLineState savedSameLine;
+	SameLineGroupState savedSameLineGroup;
 	f32 width = 0;
 	f32 height = 0;
-	f32 maxPenPositionY = -10000000000;
-	UiThemeElement::State* themeWidgetElementState = nullptr;
-	Color themeElementColorTint;
 };
 
 struct WidgetState
 {
-	u32 focusedWidgetId = 0;
-	u32 prevFocusableWidgetId = 0;
-	u32 nextFocusableWidgetId = 0;
-	u32 hoveredWidgetId = 0;
-	f32 sameLineSpacing = 0;
-	f32 sameLineHeight = 0;
-	bool sameLine = false;
+	WidgetId focusedId = 0;
+	WidgetId prevFocusableId = 0;
+	WidgetId nextFocusableId = 0;
+	WidgetId hoveredId = 0;
+	WidgetId captureId = 0;
 	f32 width = 0; // if 0 then it will be automatically computed, usually the parent container width
-	bool enabled = true;
+	f32 nextWidth = 0; // if set, will be applied to the next widget
+	f32 customWidth = 0;
+	f32 nextHeight = 0; // if set, will be applied to the next widget
+	bool hasNextWidth = false; // whether nextWidth is set
+	bool hasCustomWidth = false;
+	bool hasNextHeight = false; // whether nextHeight is set
+	bool disabled = false;
 	bool pressed = false;
 	bool visible = true;
-	bool focusedWidgetPressed = false;
 	bool clicked = false;
+	bool doubleClicked = false;
 	bool hovered = false;
 	bool focused = false;
 	bool changeEnded = false;
+	bool nextDisabled = false; // whether the next widget will be disabled
 	Rect rect;
 	Rect hoveredWidgetRect;
 	Rect focusedWidgetRect;
-	WidgetType hoveredWidgetType = WidgetType::None;
+	WidgetType hoveredType = WidgetType::None;
 };
 
 struct MenuWidgetState
@@ -171,18 +475,112 @@ struct MenuWidgetState
 	Rect lastItemRect;
 	bool active = false;
 	bool activatedNow = false;
-	u32 widgetId = 0;
+	WidgetId id = 0;
 	size_t hoveredItemIndex = ~0;
 	size_t selectedItemIndex = ~0;
 	size_t itemCount = 0;
 	Point size;
 };
 
+struct TableColumnState
+{
+	f32 width = 100.0f;
+	f32 specifiedSize = 0.0f; // User-specified size (percentage or pixels)
+	f32 minWidth = 10.0f;
+	f32 maxWidth = 10000.0f;
+	bool isResizable = false; // Derived from flags usually, but can be explicit
+	bool isPercentage = false; // If true, specifiedSize is 0..1 percentage
+	bool isFillRemaining = false; // If true, this column fills remaining space
+	bool isHidden = false;
+	bool isStretchable = true; // Track if this column should participate in auto-stretch
+	bool userResized = false; // Track if this column was manually resized by user
+	TableColumnFlags flags = TableColumnFlags::None;
+};
+
+struct TablePersistentState
+{
+	TablePersistentState();
+	~TablePersistentState();
+
+	std::vector<TableColumnState> columns;
+	bool initialized = false;
+
+	// Resizing state
+	bool resizingColumn = false;
+	u32 resizingColumnIndex = ~0;
+	f32 resizeStartX = 0;
+	f32 resizeStartWidth = 0;
+	// width of the column right of the handle at drag start, so it can
+	// absorb the delta and keep later column boundaries fixed
+	f32 resizeNextStartWidth = 0;
+	Point lastMousePos;
+	struct DrawCmdLayerSplitter* splitter = nullptr;
+	Point scrollViewScrollPos;
+};
+
+struct BoxState
+{
+	f32 width = 0.0f;
+	ThemeElement::State* themeWidgetElementState = nullptr;
+	Color themeElementColorTint;
+	Point savedPadding;
+	f32 customHeight = 0.0f;
+};
+
+struct TableState
+{
+	TablePersistentState* persistent = nullptr;
+	u32 currentColumn = 0;
+	WidgetId id = 0;
+	Rect headerRect;
+	Rect tableRect;
+	f32 innerWidth = 0;
+	f32 innerHeight = 0;
+	// Resizing state is now in persistent state only
+	// bool resizingColumn = false; // REMOVED
+	// u32 resizingColumnIndex = ~0; // REMOVED
+	// Point lastMousePos; // REMOVED (using persistent.lastMousePos)
+	bool hasTableClip = false;
+
+	// New fields for dynamic layout
+	bool isInHeader = false;
+	u32 currentRow = 0;
+	f32 currentRowY = 0;
+	Color currentRowColor;
+	bool currentRowColorSet = false;
+	Color currentCellColor;
+	bool currentCellColorSet = false;
+	TableFlags flags = TableFlags::None;
+	f32 currentMaxRowHeight = 0;
+	f32 rowStartY = 0;
+	f32 cellStartY = 0;
+	f32 rowHeight = 0;
+	u32 rowDrawCmdIndex = 0;
+	std::vector<f32> rowSeparators;
+	// column boundaries covered by a colspan cell, one entry per body row band
+	// (indexed like rowSeparators); each entry holds the column indices whose
+	// left vertical line is suppressed for that row
+	std::vector<std::vector<u32>> rowColspanBoundaries;
+	// same as rowColspanBoundaries but for the single header band
+	std::vector<u32> headerColspanBoundaries;
+	struct CellColorRequest
+	{
+		u32 columnIndex;
+		Color color;
+	};
+	std::vector<CellColorRequest> cellColorRequests;
+	f32 bodyStartY = 0.0f;
+	bool isClipping = false;
+	f32 savedLayoutWidth = 0.0f;
+	bool needsScrollViewStart = false;
+	f32 scrollViewBaseX = 0.0f;
+};
+
 struct PopupState
 {
 	f32 width = 0;
 	f32 height = 0;
-	u32 widgetId = 0;
+	WidgetId id = 0;
 	PopupFlags flags = PopupFlags::None;
 	Point position;
 	Point moveOffset;
@@ -190,35 +588,71 @@ struct PopupState
 	bool alreadyClickedOnSomething = false;
 	bool alreadyClosedWithEscape = false;
 	bool active = false;
+	u32 lastUsedFrame = 0; // the last frame this popup was begun, used to drop popups that stop being drawn
 	i32 oldZOrder = 0;
 	bool startedToDrag = false;
 	bool draggingPopup = false;
 	bool opened = false;
-	Window ownerWindow = 0;
+	HNativeWindow ownerWindow = 0;
 	Point dragDelta, lastMouseDownPoint;
 	Point lastMousePoint;
-	Rect prevContainerRect;
+	std::vector<u32> savedSameLineInfoIndexStack;
+	bool layerIncremented = false;
+};
+
+struct CircularSliderState
+{
+	Point lastMousePos;
+	Point hiddenCursorPos;
+	WidgetId id = 0;
+	bool isFine = false;
 };
 
 struct TooltipState
 {
 	Point position;
 	f32 timer = 0;
+	f32 resetTimer = 10;
 	f32 delayToShow = 1.0f;
-	u32 widgetId = 0;
+	f32 delayToShowConsecutive = 0.5f;
+	WidgetId id = 0;
+	WidgetId lastId = 0;
 	bool show = false;
+	bool wasShown = false;
 	bool closeTooltipPopup = false;
+	bool ctrlDown = false;
 	f32 offsetFromCursor = 18.0f;
+};
+
+struct ScrollToItemBounds
+{
+	f32 min; // start (top / left) in content space
+	f32 max; // end   (bottom / right) in content space
+};
+
+struct ScrollbarState
+{
+	f32 scrollOffset; // authoritative
+	f32 scrollMax;    // max(0, contentSize - viewSize)
+	bool draggingThumb = false;
+	Point dragDelta;
+	bool wasVisible = false;
 };
 
 struct ScrollViewState
 {
-	bool draggingThumb = false;
-	Point dragDelta;
-	u32 widgetId = 0;
-	f32 size = 0.0f;
-	f32 virtualHeight = 0.0f;
-	f32 scrollPosition = 0.0f;
+	ScrollbarState vertical;
+	ScrollbarState horizontal;
+	Point scrollOffset;
+	Point lastMousePos;
+
+	// Transient layout data (reset/set every frame in scrollViewBegin)
+	WidgetId id = 0;
+	Rect rect;
+	f32 height = 0.0f;
+	Point virtualSize;
+	ScrollViewFlags flags = ScrollViewFlags::None;
+	bool disabled = false;
 };
 
 struct TextMarker
@@ -244,7 +678,7 @@ struct TextMarker
 	u32 line = 0;
 };
 
-struct DockPaneTabGroupState
+struct DockTabGroupState
 {
 	f32 tabWidth = 90;//TODO: externalize
 	bool forceSqueezeTabs = false;
@@ -255,14 +689,75 @@ struct DockPaneTabGroupState
 struct DropdownState
 {
 	bool active = false;
-	u32 widgetId = 0;
+	WidgetId id = 0;
 };
 
-struct DockingSystemData
+struct SliderState
 {
-	std::vector<struct UiViewContainer*> viewContainers;
-	struct UiViewContainer* currentViewContainer = nullptr;
+	bool draggingKnob = false;
+	Point dragDelta;
+};
+
+struct Window
+{
+	struct DockNode* dockNode = nullptr;
+	std::string id, title;
+	HImage image = 0;
+	Rect tabRect, clientRect;
+	WindowFlags flags = WindowFlags::None;
+	Point fixedSize = { 0, 0 };
+	bool dockingNow = false;
+};
+
+struct DockingState
+{
+	~DockingState();
+	std::unordered_map<HNativeWindow, struct DockNode*> rootNativeWindowDockNodes;
+	std::unordered_map<std::string, Window*> windows;
+	std::unordered_set<Window*> windowsToDelete;
+	std::unordered_set<DockNode*> dockNodesToDelete;
+	std::unordered_set<HNativeWindow> nativeWindowsToDelete;
+	std::unordered_map<std::string /*window name*/, Rect> closedWindowsRects;
+	std::unordered_map<std::string /*window name*/, DockNodeId> windowsDockNodeAssignments;
+	std::unordered_map<DockNodeId, DockNode*> dockNodeIdsMap;
+	DockNode* currentDockNode = nullptr;
+	Window* focusedWindow = nullptr;
 	bool closeWindow = false;
+	bool dragStarted = false;
+	HNativeWindow dragIndicatorNativeWindow = nullptr;
+	DockNode* resizingNode = nullptr;
+	DockNode* lastHoveredNode = nullptr;
+	DockNode* hoveredNode = nullptr;
+	DockType dockType = DockType::None;
+	DockNode* dockToNode = nullptr;
+	Point lastMousePosSinceMouseDown;
+	Point lastMousePos;
+	Point mouseDragDelta;
+	Rect dragRect;
+	bool drawingWindowTabs = false;
+	Window* dragWindow = nullptr;
+	Point dragWindowMouseDelta;
+	DockNodeId nextDockNodeId = 1;
+	Rect hitBoxLeft;
+	Rect hitBoxRight;
+	Rect hitBoxTop;
+	Rect hitBoxBottom;
+	Rect hitBoxTabs;
+	Rect hitBoxTabsBar;
+	Rect hitBoxRootLeft;
+	Rect hitBoxRootRight;
+	Rect hitBoxRootTop;
+	Rect hitBoxRootBottom;
+	bool isHitBoxLeftHovered = false;
+	bool isHitBoxRightHovered = false;
+	bool isHitBoxTopHovered = false;
+	bool isHitBoxBottomHovered = false;
+	bool isHitBoxTabsHovered = false;
+	bool isHitBoxTabsBarHovered = false;
+	bool isHitBoxRootLeftHovered = false;
+	bool isHitBoxRootRightHovered = false;
+	bool isHitBoxRootTopHovered = false;
+	bool isHitBoxRootBottomHovered = false;
 };
 
 struct DragDropState
@@ -273,20 +768,184 @@ struct DragDropState
 	bool dropped = false;
 	bool allowDrop = false;
 	bool foundDropTarget = false;
-	u32 widgetId = 0;
+	WidgetId id = 0;
 	Point lastMousePos;
-	MouseCursor dropAllowedCursor = 0;
+	HMouseCursor dropAllowedCursor = 0;
 	void* dragObject = nullptr;
 	u32 dragObjectType = 0;
 };
 
-struct VirtualListContentState
+enum class OverlayToolbarElementType
 {
-	Point lastPenPosition;
-	u32 totalRowCount;
-	f32 itemHeight;
+	Button,
+	Toggle,
+	Dropdown,
+	Separator,
+	Space,
+	Grip,
 };
 
-extern DockingSystemData dockingData;
+struct OverlayToolbarElement
+{
+	OverlayToolbarElementType type = OverlayToolbarElementType::Button;
+	std::string id;
+	std::string label;
+	std::string tooltip;
+	HImage icon = nullptr;
+	HImage iconOn = nullptr;
+	void (*onClick)() = nullptr;
+	bool* toggleValue = nullptr;
+	void (*onToggle)(bool) = nullptr;
+	const char** items = nullptr;
+	u32 itemCount = 0;
+	i32* selectedIndex = nullptr;
+	void (*onSelect)(i32) = nullptr;
+	bool visible = true;
+	bool enabled = true;
+	Rect rect;
+};
+
+struct OverlayToolbar
+{
+	std::string id;
+	std::string title;
+	OverlayDockZone dockZone = OverlayDockZone::Floating;
+	OverlayToolbarLayout layout = OverlayToolbarLayout::Horizontal;
+	bool collapsed = false;
+	bool visible = true;
+	bool dragging = false;
+	std::vector<OverlayToolbarElement> elements;
+	u32 stripOrder = 0;
+	bool snapToEnd = false;
+	Rect rect;
+	Point floatingPosition;
+	Point dragStartToolbarPos;
+	Point dragStartMousePos;
+	bool showDockPreview = false;
+	OverlayDockZone previewDockZone = OverlayDockZone::Floating;
+	bool dragPositionUpdated = false;
+	bool snapToGrid = false;
+	f32 gridSize = 0;
+	bool useCustomSize = false;
+	Point customSize;
+	OverlayDockZone lastRequestedDockZone = OverlayDockZone::None;
+	std::string openDropdownId;
+	Rect openDropdownRect;
+};
+
+struct VirtualListContentState
+{
+	Point lastPosition;
+	u32 totalRowCount = 0;
+	f32 itemHeight = 0;
+	f32 totalHeight = 0; // <- added: reserve total virtual height for measured/variable lists
+	i64 pendingScrollToIndex = -1; // If requested before measurement, store the index to scroll to after measurement
+	ScrollToItemSnapMode pendingScrollToMode = ScrollToItemSnapMode::Minimal;
+};
+
+struct ColorPickerState
+{
+	u32 draggingElementId = ~0;
+	Color currentHsv;
+	Color currentRgb;
+	Color oldColor;
+	Color popupColor; // temporary color edited by a popup with apply buttons
+	i32 intR, intG, intB, intA;
+	static const u32 maxHexColorSize = 9;
+	char hexColor[maxHexColorSize] = {0};
+	WidgetId currentEditingId = 0;
+};
+
+struct TimelineKeyDragItem
+{
+	i32 channel = -1;
+	i32 key = -1;
+	f32 time = 0;
+	f32 value[4] = { 0, 0, 0, 0 };
+	bool leftSide = false;
+};
+
+struct TimelineWidgetState
+{
+	enum class DragType
+	{
+		None,
+		Playhead,
+		Keys,
+		BoxSelect,
+		Pan,
+		TangentIn,
+		TangentOut,
+		ChannelResize,
+		ChannelScroll,
+	};
+
+	DragType dragType = DragType::None;
+	i32 dragChannel = -1;
+	i32 dragKey = -1;
+	i32 dragComponent = -1;
+	Point dragStartMouse;
+	f32 dragStartTime = 0;
+	f32 dragStartValue = 0;
+	f32 dragValueMin = 0;
+	f32 dragValueMax = 1;
+	f32 panStartScrollTime = 0;
+	f32 panStartValueMin = 0;
+	f32 panStartValueMax = 1;
+	f32 dragStartEndTime = 0;
+	f32 channelListWidth = 0;
+	f32 dragStartChannelScroll = 0;
+	bool wasAutoValueRange = true;
+	bool valueRangeModeInitialized = false;
+	Point boxStart;
+	Point boxEnd;
+	i32 pressedToolbarButton = -1;
+	std::vector<TimelineKeyDragItem> dragItems;
+	std::vector<TimelineKeyDragItem> rippleItems;
+};
+
+struct CustomFileDialogState
+{
+	static const u32 maxPathSize = 512;
+	static const u32 maxFileNameSize = 256;
+	static const u32 maxNewFolderNameSize = 256;
+
+	std::string currentPath;               /// the path currently navigated in the dialog
+	std::vector<CustomFileDialogEntry> entries;  /// the entries of the current path, listed by the callback
+	i32 selectedIndex = -1;                /// the currently selected entry index
+	char pathInput[maxPathSize] = { 0 };   /// the path edit text
+	char fileName[maxFileNameSize] = { 0 };/// the file name edit text (Save mode)
+	char newFolderName[maxNewFolderNameSize] = { 0 }; /// the new folder name edit text (New folder editor)
+	Point scrollPos = { 0, 0 };            /// the entries list scroll offset
+	std::string result;                    /// the last confirmed path
+	u32 lastUsedFrame = 0;
+	bool open = false;                     /// true if the dialog popup is open
+	bool needsListing = true;              /// true if entries must be relisted on next frame
+	bool listedFoldersOnly = false;        /// true if the current entries were listed in folders-only mode
+	bool creatingFolder = false;           /// true while the "New folder" editor is open
+};
+
+struct MemoryStream
+{
+	enum class Mode
+	{
+		None,
+		Read,
+		Write
+	};
+
+	Mode currentMode = Mode::None;
+	std::vector<u8> data;
+	size_t currentOffset = 0;
+
+	bool beginWrite();
+	bool beginRead(const u8* data, size_t dataSize);
+	void writeData(const u8* data, size_t dataSize);
+	bool readData(u8* outData, size_t dataSize);
+	template <typename Type> void write(const Type* data, size_t dataSize)
+	{ writeData((u8*)data, dataSize); }
+	template <typename Type> bool read(Type* data, size_t dataSize)
+	{ return readData((u8*)data, dataSize); }
+};
 
 }

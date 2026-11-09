@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Horus UI - Theme JSON Format</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<aside class="sidebar">
+	<div class="brand">
+		<div class="logo">H</div>
+		<div class="title">Horus UI</div>
+	</div>
+	<nav>
+		<div class="nav-label">Docs</div>
+		<a href="index.html" class="active">Overview</a>
+		<a href="format.html">Format reference</a>
+		<a href="elements.html">Element names</a>
+		<a href="parameters.html">Parameters &amp; settings</a>
+		<div class="nav-label">Schema</div>
+		<a href="schema.json" target="_blank">schema.json</a>
+	</nav>
+</aside>
+
+<main class="main">
+
+	<h1>Theme JSON format</h1>
+	<p class="lead">How to describe a full Horus UI theme in a single <code>.json</code> file &mdash; fonts, colors, 9-slice images and per-state visuals for every widget.</p>
+
+	<h2>What is a theme?</h2>
+	<p>
+		A theme is a set of <em>visual descriptions</em> for the widgets of the library. Every widget is built from one or more
+		<strong>elements</strong> (bodies, arrows, marks, knobs, carets&hellip;), and every element can look different in each
+		<strong>state</strong>: <code>normal</code>, <code>focused</code>, <code>pressed</code>, <code>hovered</code> and <code>disabled</code>.
+		An element renders a <code>PNG</code> image that is scaled with a 9-slice border and tinted with a color, and text drawn over it uses a
+		theme font and a text color.
+	</p>
+
+	<p>
+		Themes are stored as JSON and loaded with <code>hui::loadThemeFromJson()</code>. Three themes ship with the library:
+		<code class="file">themes/default.theme.json</code>, <code class="file">themes/flat.theme.json</code> and
+		<code class="file">themes/win94.theme.json</code>. A theme directory also contains the referenced <code>PNG</code> images
+		(in sibling folders like <code>themes/default/</code>) and fonts (in <code>themes/fonts/</code>).
+	</p>
+
+	<div class="callout info">
+		<strong>Where the code lives</strong>
+		The loader is <code>backends/json_theme_loader.cpp</code> (<code>hui::loadThemeFromJson</code>). Fonts, images and user
+		settings are turned into library handles in <code>src/horus.cpp</code>, and the fallback procedural theme is built in
+		<code>src/builtin_theme.cpp</code>.
+	</div>
+
+	<h2>Loading a theme</h2>
+<pre><code><span class="k">char</span> err[<span class="n">2048</span>] = {};                 <span class="c">// optional error buffer</span>
+HTheme <span class="k">theme</span> = <span class="k">hui</span>::<span class="k">loadThemeFromJson</span>(<span class="s">"themes/default.theme.json"</span>, err, <span class="n">2048</span>);
+
+<span class="k">if</span> (!theme) { <span class="c">// parse error: err holds the JsonCpp message</span>
+	theme = <span class="k">hui</span>::<span class="k">createBuiltinTheme</span>(<span class="k">hui</span>::contextGetSettings().defaultAtlasSize);
+}
+
+<span class="k">hui</span>::themeSet(theme);
+<span class="k">hui</span>::themeBuild(theme);   <span class="c">// pack all images into the atlas texture</span></code></pre>
+
+	<h2>The document at a glance</h2>
+	<p>A theme file is an object with three optional sections. Only <code>widgets</code> is required.</p>
+
+<pre><code>{
+  <span class="s">"fonts"</span>:    <span class="c">{ "normal": { "file": "fonts/Inter-Regular.ttf", "size": 12 }, ... }</span>
+  <span class="s">"settings"</span>: <span class="c">{ "sameLineHeight": "22", ... }                       &larr; arbitrary string key/value store</span>
+  <span class="s">"widgets"</span>:  <span class="c">{ &larr; required</span>
+    <span class="s">"button"</span>: {
+      <span class="c">// either an explicit styles map ...</span>
+      <span class="s">"styles"</span>: {
+        <span class="s">"default"</span>:    { <span class="c">"buttonBody": { ...elements + states... } }</span>
+        <span class="s">"important"</span>: { <span class="c">"buttonBody": { ... } }</span>
+      }
+      <span class="c">// ... or no "styles" key: the widget object itself is the "default" style</span>
+    }
+  }
+}</code></pre>
+
+	<div class="cards">
+		<a class="card" href="format.html">
+			<h4>Format reference</h4>
+			<p>Every key of the format: fonts, settings, widgets, styles, elements, states and the properties of a state.</p>
+		</a>
+		<a class="card" href="elements.html">
+			<h4>Element names</h4>
+			<p>The exact JSON name of every built-in widget and element, mapped to the internal enums.</p>
+		</a>
+		<a class="card" href="parameters.html">
+			<h4>Parameters &amp; settings</h4>
+			<p>Widget-style parameters (<code>indent</code>, <code>paddingX</code>, <code>rowHeight</code>&hellip;) and theme settings.</p>
+		</a>
+		<a class="card" href="schema.json" target="_blank">
+			<h4>schema.json</h4>
+			<p>A JSON Schema for editors and validators that describes this document.</p>
+		</a>
+	</div>
+
+	<h2>Key concepts</h2>
+
+	<h3>9-slice images</h3>
+	<p>
+		Images are <strong>9-slice</strong>: the <code>border</code> value of a state defines the thickness (in pixels) of the unscaled
+		corner and edge strips. Stretching only the middle keeps corners crisp and rounded edges intact. Draw a generous, uniform border
+		(for example <code>3</code> to <code>6</code> pixels) and keep decorations inside it.
+	</p>
+
+	<h3>The fallback white image</h3>
+	<p>
+		Every theme gets a built-in white image named <code>__WHITEIMAGE__</code>. When a state has no image (or an empty
+		<code>"image"</code> string), the element renders this white image tinted with <code>"color"</code> &mdash; the easiest way to
+		produce flat colored rectangles without any <code>PNG</code>.
+	</p>
+
+	<h3>States inherit from <code>normal</code></h3>
+	<p>
+		The <code>normal</code> state is the base. Every other state falls back to it member-by-member, so a style override can be as
+		short as <code>"hovered": { "color": "sky" }</code>. If a state is missing entirely it copies <code>normal</code>. If an element
+		has no <code>normal</code> state at all, all states use defaults (white image, white color, element-level width/height).
+	</p>
+
+	<h2>Colors</h2>
+	<p>
+		Color values are either a named constant or a <code>"R G B A"</code> string of four integers in the <code>0..255</code> range
+		(space separated). Parsing is done by <code>colorFromText()</code> in <code>src/horus.cpp</code>.
+	</p>
+
+	<div class="swatches">
+		<div class="s"><span class="swatch" style="background:#ffffff"></span>white</div>
+		<div class="s"><span class="swatch" style="background:#000000"></span>black</div>
+		<div class="s"><span class="swatch" style="background:#ff0000"></span>red</div>
+		<div class="s"><span class="swatch" style="background:#b30000"></span>darkRed</div>
+		<div class="s"><span class="swatch" style="background:#800000"></span>veryDarkRed</div>
+		<div class="s"><span class="swatch" style="background:#00ff00"></span>green</div>
+		<div class="s"><span class="swatch" style="background:#00b300"></span>darkGreen</div>
+		<div class="s"><span class="swatch" style="background:#008000"></span>veryDarkGreen</div>
+		<div class="s"><span class="swatch" style="background:#0000ff"></span>blue</div>
+		<div class="s"><span class="swatch" style="background:#0000b3"></span>darkBlue</div>
+		<div class="s"><span class="swatch" style="background:#000080"></span>veryDarkBlue</div>
+		<div class="s"><span class="swatch" style="background:#ffff00"></span>yellow</div>
+		<div class="s"><span class="swatch" style="background:#b3b300"></span>darkYellow</div>
+		<div class="s"><span class="swatch" style="background:#808000"></span>veryDarkYellow</div>
+		<div class="s"><span class="swatch" style="background:#ff00ff"></span>magenta</div>
+		<div class="s"><span class="swatch" style="background:#00ffff"></span>cyan</div>
+		<div class="s"><span class="swatch" style="background:#00b3b3"></span>darkCyan</div>
+		<div class="s"><span class="swatch" style="background:#008080"></span>veryDarkCyan</div>
+		<div class="s"><span class="swatch" style="background:#ff8000"></span>orange</div>
+		<div class="s"><span class="swatch" style="background:#803300"></span>darkOrange</div>
+		<div class="s"><span class="swatch" style="background:#b3b3b3"></span>lightGray</div>
+		<div class="s"><span class="swatch" style="background:#808080"></span>gray</div>
+		<div class="s"><span class="swatch" style="background:#4d4d4d"></span>darkGray</div>
+		<div class="s"><span class="swatch" style="background:#00aeef"></span>sky</div>
+		<div class="s"><span class="swatch" style="background:transparent"></span>transparent</div>
+	</div>
+
+	<div class="footer">
+		Generated from the Horus UI codebase &mdash; <code>backends/json_theme_loader.cpp</code>,
+		<code>src/horus.cpp</code>, <code>src/types.h</code>, <code>include/horus.h</code>.
+	</div>
+
+</main>
+
+</body>
+</html>

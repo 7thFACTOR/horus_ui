@@ -1,0 +1,215 @@
+#include "freetype_fonts.h"
+#include <freetype/ftglyph.h>
+#include <freetype/ftoutln.h>
+#include <freetype/fttrigon.h>
+#include FT_STROKER_H
+#include FT_LCD_FILTER_H
+
+#define HUI_FT_PIXEL(x) ((x) >> 6)
+
+namespace hui
+{
+struct FTContextInfo
+{
+	FT_Library libHandle = nullptr;
+	bool hasUserLibHandle = false;
+};
+
+static FTContextInfo ftContext;
+
+static bool loadFont(const char* path, u32 faceSize, FontInfo& outFontInfo)
+{
+	FT_Face face;
+
+	// load the font from the file
+	if (FT_New_Face(ftContext.libHandle, path, 0, &face))
+	{
+		return false;
+	}
+
+	int error = FT_Select_Charmap(face, FT_ENCODING_UNICODE);
+
+	if (error)
+	{
+		FT_Done_Face(face);
+		return false;
+	}
+
+	// freetype measures fonts in 64ths of pixels
+	//FT_Set_Char_Size(face, faceSize << 6, faceSize << 6, 96, 96);
+	FT_Set_Pixel_Sizes(face, 0, faceSize);
+
+	outFontInfo.metrics.ascender = HUI_FT_PIXEL(face->size->metrics.ascender);
+	outFontInfo.metrics.descender = HUI_FT_PIXEL(face->size->metrics.descender);
+	outFontInfo.metrics.height = HUI_FT_PIXEL(face->size->metrics.height);
+	outFontInfo.metrics.underlinePosition = HUI_FT_PIXEL(face->underline_position);
+	outFontInfo.metrics.underlineThickness = HUI_FT_PIXEL(face->underline_thickness);
+
+	// if its too big, clamp it
+	if (outFontInfo.metrics.underlinePosition < -2)
+		outFontInfo.metrics.underlinePosition = -2;
+
+	outFontInfo.metrics.underlinePosition = round(outFontInfo.metrics.underlinePosition);
+	outFontInfo.fontFace = face;
+
+	return true;
+}
+
+static bool loadFontFromMemory(const void* data, size_t size, u32 faceSize, FontInfo& outFontInfo)
+{
+	FT_Face face;
+
+	// load the font from memory
+	if (FT_New_Memory_Face(ftContext.libHandle, (const FT_Byte*)data, (FT_Long)size, 0, &face))
+	{
+		return false;
+	}
+
+	int error = FT_Select_Charmap(face, FT_ENCODING_UNICODE);
+
+	if (error)
+	{
+		FT_Done_Face(face);
+		return false;
+	}
+
+	FT_Set_Pixel_Sizes(face, 0, faceSize);
+
+	outFontInfo.metrics.ascender = HUI_FT_PIXEL(face->size->metrics.ascender);
+	outFontInfo.metrics.descender = HUI_FT_PIXEL(face->size->metrics.descender);
+	outFontInfo.metrics.height = HUI_FT_PIXEL(face->size->metrics.height);
+	outFontInfo.metrics.underlinePosition = HUI_FT_PIXEL(face->underline_position);
+	outFontInfo.metrics.underlineThickness = HUI_FT_PIXEL(face->underline_thickness);
+
+	// if its too big, clamp it
+	if (outFontInfo.metrics.underlinePosition < -2)
+		outFontInfo.metrics.underlinePosition = -2;
+
+	outFontInfo.metrics.underlinePosition = round(outFontInfo.metrics.underlinePosition);
+	outFontInfo.fontFace = face;
+
+	return true;
+}
+
+static void freeFont(HFontFace font)
+{
+	if (font)
+	{
+		FT_Done_Face((FT_Face)font);
+	}
+}
+
+static f32 getFontKerning(HFontFace font, GlyphCode leftGlyphCode, GlyphCode rightGlyphCode)
+{
+	FT_Vector kerning;
+
+	FT_Get_Kerning(
+		(FT_Face)font,
+		FT_Get_Char_Index((FT_Face)font, leftGlyphCode),
+		FT_Get_Char_Index((FT_Face)font, rightGlyphCode),
+		FT_KERNING_DEFAULT,
+		&kerning);
+
+	return kerning.x >> 6;
+}
+
+static bool rasterizeFontGlyph(HFontFace font, GlyphCode glyphCode, FontGlyph& outGlyph)
+{
+	FT_GlyphSlot slot = ((FT_Face)font)->glyph;
+
+	// FT_LCD_FILTER_LIGHT   is (0x00, 0x55, 0x56, 0x55, 0x00)
+	// FT_LCD_FILTER_DEFAULT is (0x10, 0x40, 0x70, 0x40, 0x10)
+	u8 lcd_weights[10];
+
+	lcd_weights[0] = 0x10;
+	lcd_weights[1] = 0x40;
+	lcd_weights[2] = 0x70;
+	lcd_weights[3] = 0x40;
+	lcd_weights[4] = 0x10;
+
+	int flags = FT_LOAD_FORCE_AUTOHINT;
+	FT_Library_SetLcdFilter(ftContext.libHandle, FT_LCD_FILTER_LIGHT);
+	flags |= FT_LOAD_TARGET_LCD;
+	FT_Library_SetLcdFilterWeights(ftContext.libHandle, lcd_weights);
+
+	if (FT_Load_Glyph(
+		(FT_Face)font,
+		FT_Get_Char_Index((FT_Face)font, glyphCode),
+		flags))
+	{
+		return false;
+	}
+
+	if (FT_Render_Glyph(slot, FT_RENDER_MODE_NORMAL))
+	{
+		return false;
+	}
+
+	FT_Bitmap bitmap = slot->bitmap;
+	u32 width = bitmap.width;
+	u32 height = bitmap.rows;
+
+	Rgba32* rgbaBuffer = nullptr;
+
+	if (width && height)
+	{
+		rgbaBuffer = new Rgba32[(size_t)width * height];
+
+		for (int j = 0; j < height; ++j)
+		{
+			for (int i = 0; i < width; ++i)
+			{
+				u8 lum = bitmap.buffer[i + width * j];
+				u32 index = (i + j * width);
+				rgbaBuffer[index] = ~0;
+				*((u8*)&(rgbaBuffer[index]) + 3) = lum;
+			}
+		}
+	}
+
+	outGlyph.pixelWidth = width;
+	outGlyph.pixelHeight = height;
+	outGlyph.rgbaBuffer = rgbaBuffer;
+	outGlyph.code = glyphCode;
+	outGlyph.advanceX = slot->advance.x >> 6;
+	outGlyph.advanceY = slot->advance.y >> 6;
+	outGlyph.bearingX = slot->metrics.horiBearingX >> 6;
+	outGlyph.bearingY = slot->metrics.horiBearingY >> 6;
+	outGlyph.bitmapLeft = slot->bitmap_left;
+	outGlyph.bitmapTop = slot->bitmap_top;
+
+	return true;
+}
+
+void initFreetype(Services& services, FT_Library context)
+{
+	ftContext.libHandle = context;
+	ftContext.hasUserLibHandle = context != 0;
+
+	if (!context)
+	{
+		FT_Init_FreeType(&ftContext.libHandle);
+	}
+
+	services.loadFont = loadFont;
+	services.loadFontFromMemory = loadFontFromMemory;
+	services.freeFont = freeFont;
+	services.getFontKerning = getFontKerning;
+	services.rasterizeFontGlyph = rasterizeFontGlyph;
+}
+
+void shutdownFreetype(Services& services)
+{
+	if (!ftContext.hasUserLibHandle)
+	{
+		FT_Done_FreeType(ftContext.libHandle);
+	}
+
+	services.loadFont = nullptr;
+	services.loadFontFromMemory = nullptr;
+	services.freeFont = nullptr;
+	services.getFontKerning = nullptr;
+	services.rasterizeFontGlyph = nullptr;
+}
+
+}

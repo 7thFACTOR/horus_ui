@@ -1,173 +1,329 @@
-#include "horus.h"
-#include "types.h"
-#include "ui_theme.h"
-#include "unicode_text_cache.h"
-#include "ui_font.h"
-#include "ui_context.h"
-#include "util.h"
 #include <algorithm>
-#include <string.h> // memset
+#include <string.h>
+#include "context.h"
+#include "theme.h"
+#include "font.h"
+#include "util.h"
 
 namespace hui
 {
-bool comboSliderInternal(f32& value, f32 minVal, f32 maxVal, bool useRange, f32 stepsPerPixel, f32 arrowStep)
+static const char* comboSliderEditInputId = "comboSliderEditText";
+
+static void comboSliderElementBehavior(WidgetId elementId, const Rect& rect, ComboSliderElementState& state)
 {
-	static bool mouseWasDown = false;
-	static bool dragging = false;
-	static bool editingText = false;
-	static Point dragLastMousePos;
-	static char text[64] = "";
-	static u32 comboSliderWidgetId = 0;
-	static bool requestChangeToOtherComboSlider = false;
-	static u32 newComboSliderId = 0;
-	auto bodyElem = ctx->theme->getElement(WidgetElementId::ComboSliderBody);
-	auto leftArrowElem = ctx->theme->getElement(WidgetElementId::ComboSliderLeftArrow);
-	auto rightArrowElem = ctx->theme->getElement(WidgetElementId::ComboSliderRightArrow);
-	auto rangeBarElem = ctx->theme->getElement(WidgetElementId::ComboSliderRangeBar);
-	bool wasModified = false;
+	state.hovered = rect.contains(ctx->mousePosition)
+		&& widgetIsHovered()
+		&& !ctx->comboSlider.dragging
+		&& ctx->comboSlider.pressedElementId == 0;
+	state.clicked = false;
 
-	if (useRange)
+	if (ctx->widget.disabled)
 	{
-		wasModified = clampValue(value, minVal, maxVal);
+		state.hovered = false;
+		state.pressed = false;
+		return;
 	}
 
-	// if we're not editing any text of this particular widget id
-	if (!editingText || comboSliderWidgetId != ctx->currentWidgetId)
+	if (ctx->event.type == InputEvent::Type::MouseDown
+		&& ctx->event.mouse.button == MouseButton::Left
+		&& state.hovered
+		&& ctx->isActiveLayer())
 	{
-		addWidgetItem(bodyElem.normalState().height * ctx->globalScale);
-		buttonBehavior();
+		ctx->comboSlider.pressedElementId = elementId;
+		state.pressed = true;
 	}
 
-	if (dragging && comboSliderWidgetId == ctx->currentWidgetId)
+	if (ctx->comboSlider.pressedElementId == elementId
+		&& ctx->event.type == InputEvent::Type::MouseUp
+		&& ctx->event.mouse.button == MouseButton::Left
+		&& ctx->isActiveLayer())
 	{
-		ctx->widget.pressed = true;
+		state.clicked = rect.contains(ctx->mousePosition);
+		state.pressed = false;
+		ctx->comboSlider.pressedElementId = 0;
 	}
 
-	if (isHovered() || isPressed())
+	if (ctx->comboSlider.pressedElementId != elementId)
 	{
-		setMouseCursor(MouseCursorType::Hand);
+		state.pressed = false;
 	}
+}
 
-	bool arrowStepped = false;
-	bool arrowHoveredLeft = false;
-	bool arrowHoveredRight = false;
+static ThemeElement::State* comboSliderElementState(ThemeElement& element, bool pressed, bool hovered, bool widgetFocused)
+{
+	if (pressed)
+		return &element.getState(WidgetStateType::Pressed);
+	if (widgetFocused)
+		return &element.getState(WidgetStateType::Focused);
+	if (hovered)
+		return &element.getState(WidgetStateType::Hovered);
 
-	if (isHovered() && ctx->event.mouse.point.x <= ctx->widget.rect.x + leftArrowElem.normalState().image->width)
-	{
-		arrowHoveredLeft = true;
-	}
-	else if (isHovered() && ctx->event.mouse.point.x >= ctx->widget.rect.right() - rightArrowElem.normalState().image->width)
-	{
-		arrowHoveredRight = true;
-	}
+	return &element.normalState();
+}
 
-	if (isClicked()
-		&& ctx->event.mouse.point.x <= ctx->widget.rect.x + leftArrowElem.normalState().image->width)
-	{
-		value -= arrowStep;
-		arrowStepped = true;
-		if (useRange) wasModified = clampValue(value, minVal, maxVal);
-		ctx->widget.changeEnded = true;
-	}
-	else if (isClicked() && ctx->event.mouse.point.x >= ctx->widget.rect.right() - rightArrowElem.normalState().image->width)
-	{
-		value += arrowStep;
-		arrowStepped = true;
-		if (useRange) wasModified = clampValue(value, minVal, maxVal);
-		ctx->widget.changeEnded = true;
-	}
+static bool comboSliderInternal(bool isInt, f32* value, f32 minVal, f32 maxVal, bool useRange, f32 stepsPerPixel, f32 arrowStep, const char* formatStr, const char* indeterminateStr, u32 decimalPlaces = 4)
+{
+	auto& leftButtonElem = ctx->theme->getElement(WidgetElementId::ComboSliderLeftButton);
+	auto& middleButtonElem = ctx->theme->getElement(WidgetElementId::ComboSliderMiddleButton);
+	auto& rightButtonElem = ctx->theme->getElement(WidgetElementId::ComboSliderRightButton);
+	auto& leftArrowElem = ctx->theme->getElement(WidgetElementId::ComboSliderLeftArrow);
+	auto& rightArrowElem = ctx->theme->getElement(WidgetElementId::ComboSliderRightArrow);
+	auto& rangeBarElem = ctx->theme->getElement(WidgetElementId::ComboSliderRangeBar);
+	ctx->widget.changeEnded = false;
+	f32 arrowZoneWidth = 0;
+	auto& padding = widgetGetPadding();
 
-	if (isClicked() && !dragging && !arrowStepped)
+	// the combo slider edits the value passed in; if the caller has no backing
+	// value yet (nullptr) use per-widget storage that starts at 0 and persists
+	// while the caller keeps passing nullptr. the indeterminate text is shown
+	// only until the user edits the value.
+	bool hasExternalValue = value != nullptr;
+	ComboSliderFallback* fallback = nullptr;
+
+	if (!hasExternalValue)
 	{
-		editingText = true;
-		comboSliderWidgetId = ctx->currentWidgetId;
-		mouseWasDown = false;
-		dragging = false;
-		ctx->widget.focusedWidgetId = ctx->currentWidgetId;
-		ctx->widget.focused = true;
-		ctx->focusChanged = true;
-		ctx->textInput.widgetId = ctx->currentWidgetId;
-		memset(text, 64, 0);
-		toString(value, text, 64);
-		ctx->textInput.editNow = true;
-		ctx->textInput.selectAllOnFocus = true;
-		ctx->textInput.firstMouseDown = true;
-		forceRepaint();
-		ctx->penPosition.y -= ctx->spacing * ctx->globalScale + bodyElem.normalState().height;
-		textInput(text, 64, TextInputValueMode::NumericOnly);
+		ctx->id = genId(indeterminateStr ? (void*)indeterminateStr : (void*)"comboSliderEmpty");
+
+		fallback = &ctx->comboSlider.fallbacks[ctx->id];
+		value = &fallback->value;
 	}
 	else
-	if (editingText && comboSliderWidgetId == ctx->currentWidgetId)
 	{
-		textInput(text, 64, TextInputValueMode::NumericOnly);
+		ctx->id = genId((void*)value);
+	}
 
-		if (!ctx->widget.focused
-			|| !ctx->textInput.widgetId
-			|| requestChangeToOtherComboSlider
-			|| (ctx->event.type == InputEvent::Type::Key
-				&& ctx->event.key.down
-				&& ctx->event.key.code == KeyCode::Esc
-				&& ctx->isActiveLayer()))
+	auto comboId = ctx->id;
+
+	// every element gets its own id and state under the parent combo id,
+	// so hovering or pressing one element doesn't affect the others
+	idPush(comboId);
+	auto leftButtonId = genId("comboSliderLeftButton");
+	auto middleButtonId = genId("comboSliderMiddleButton");
+	auto rightButtonId = genId("comboSliderRightButton");
+	auto leftArrowId = genId("comboSliderLeftArrow");
+	auto rightArrowId = genId("comboSliderRightArrow");
+	auto rangeBarId = genId("comboSliderRangeBar");
+	idPop();
+
+	auto& elementStates = ctx->comboSlider.elementStates;
+	auto& leftButton = elementStates[leftButtonId];
+	auto& middleButton = elementStates[middleButtonId];
+	auto& rightButton = elementStates[rightButtonId];
+	auto& leftArrow = elementStates[leftArrowId];
+	auto& rightArrow = elementStates[rightArrowId];
+	auto& rangeBar = elementStates[rangeBarId];
+
+	Rect leftBgRect;
+	Rect rightBgRect;
+	Rect middleBgRect;
+
+	bool notEditingText = (ctx->comboSlider.editingText && ctx->comboSlider.id != ctx->id) || !ctx->comboSlider.editingText;
+
+	if (notEditingText)
+	{
+		ctx->widget.customWidth = ctx->layout.width/ctx->scale;
+		ctx->widget.hasCustomWidth = true;
+
+		addWidget(leftButtonElem.normalState().height + padding.y * 2.0f);
+		buttonBehavior();
+
+		if (ctx->comboSlider.dragging && ctx->id == ctx->comboSlider.id)
 		{
-			editingText = false;
-			comboSliderWidgetId = 0;
-			value = atof(text);
-			if (useRange) wasModified = clampValue(value, minVal, maxVal);
-			ctx->widget.changeEnded = true;
+			ctx->widget.pressed = true;
+		}
 
-			if (requestChangeToOtherComboSlider)
-			{
-				comboSliderWidgetId = newComboSliderId;
-				newComboSliderId = 0;
-				requestChangeToOtherComboSlider = false;
-			}
+		auto leftButtonNormalState = &leftButtonElem.normalState();
+		arrowZoneWidth = leftButtonNormalState->width;
+		if (arrowZoneWidth <= 0)
+		{
+			arrowZoneWidth = leftArrowElem.normalState().image->width + padding.x * 2.0f;
+		}
+		arrowZoneWidth *= ctx->scale;
+
+		leftBgRect.set(ctx->widget.rect.x, ctx->widget.rect.y, arrowZoneWidth, ctx->widget.rect.height);
+		rightBgRect.set(ctx->widget.rect.right() - arrowZoneWidth, ctx->widget.rect.y, arrowZoneWidth, ctx->widget.rect.height);
+		middleBgRect.set(ctx->widget.rect.x + arrowZoneWidth, ctx->widget.rect.y, ctx->widget.rect.width - arrowZoneWidth * 2.0f, ctx->widget.rect.height);
+		if (middleBgRect.width < 0)
+		{
+			middleBgRect.width = 0;
+		}
+
+		// update each element's hover and press state
+		comboSliderElementBehavior(leftButtonId, leftBgRect, leftButton);
+		comboSliderElementBehavior(middleButtonId, middleBgRect, middleButton);
+		comboSliderElementBehavior(rightButtonId, rightBgRect, rightButton);
+
+		leftArrow.hovered = leftButton.hovered;
+		leftArrow.pressed = leftButton.pressed;
+		rightArrow.hovered = rightButton.hovered;
+		rightArrow.pressed = rightButton.pressed;
+		rangeBar.hovered = middleButton.hovered;
+		rangeBar.pressed = middleButton.pressed;
+
+		if (leftButton.clicked)
+		{
+			*value -= arrowStep;
+			if (useRange) clampValue(*value, minVal, maxVal);
+			ctx->widget.changeEnded = true;
+			if (fallback) fallback->touched = true;
+		}
+		else if (rightButton.clicked)
+		{
+			*value += arrowStep;
+			if (useRange) clampValue(*value, minVal, maxVal);
+			ctx->widget.changeEnded = true;
+			if (fallback) fallback->touched = true;
+		}
+
+		if (widgetIsHovered() || widgetIsPressed())
+		{
+			if (leftButton.hovered || rightButton.hovered
+				|| leftButton.pressed || rightButton.pressed
+				|| leftButton.clicked || rightButton.clicked
+				|| ctx->comboSlider.pressedElementId == leftButtonId
+				|| ctx->comboSlider.pressedElementId == rightButtonId)
+				mouseCursorSetType(MouseCursorType::Arrow);
+			else
+				mouseCursorSetType(MouseCursorType::SizeWE);
+		}
+
+		if (middleButton.clicked && !ctx->comboSlider.dragging)
+		{
+			ctx->comboSlider.editingText = true;
+			ctx->comboSlider.id = ctx->id;
+			ctx->comboSlider.mouseWasDown = false;
+			ctx->comboSlider.dragging = false;
+			ctx->comboSlider.clickedToEditText = true;
+			memset(ctx->comboSlider.text, ctx->comboSlider.maxTextSize, 0);
+			stringFromF32(*value, ctx->comboSlider.text, ComboSliderState::maxTextSize, decimalPlaces);
+			
+			// keep the editing field the same height as the combo slider, otherwise the row grows
+			ctx->comboSlider.editHeight = ctx->widget.rect.height / ctx->scale;
+
+			// start editing on the next frame so the text input is laid out in its own slot;
+			// drawing it in the same frame adds a second widget after the combo slider
+			WidgetId editId = genId(comboSliderEditInputId);
+			ctx->textInput.id = editId;
+			ctx->textInput.rect = ctx->widget.rect;
+			ctx->textInput.editNow = true;
+			ctx->textInput.selectAllOnFocus = true;
+			ctx->textInput.firstMouseDown = true;
+			ctx->settings.services.utf8To32(ctx->comboSlider.text, ctx->textInput.text);
+			ctx->textInput.mouseDown = false;
+			ctx->textInput.selectingWithMouse = false;
+			ctx->textInput.mouseMoved = false;
+			ctx->textInput.selectAll();
+			ctx->widget.focusedId = editId;
+			forceRepaint();
 		}
 	}
 	else
+	if (ctx->comboSlider.editingText && ctx->comboSlider.id == comboId)
 	{
-		f32 percentFilled = 1.0f - (maxVal - value) / (maxVal - minVal);
-		f32 valueWidth = ctx->widget.rect.width;
+		bool wasClickedToEdit = ctx->comboSlider.clickedToEditText;
 
-		if (ctx->event.type == InputEvent::Type::MouseDown
-			&& isHovered()
-			&& !dragging
+		if (wasClickedToEdit)
+		{
+			widgetSetNextFocused();
+			ctx->comboSlider.clickedToEditText = false;
+		}
+
+		widgetSetNextHeight(ctx->comboSlider.editHeight);
+		textInput(comboSliderEditInputId, ctx->comboSlider.text, ComboSliderState::maxTextSize, TextInputFlags::NumericOnly | TextInputFlags::AutoSelectAll);
+
+		if (wasClickedToEdit)
+		{
+			ctx->widget.focusedId = ctx->id;
+			ctx->textInput.selectingWithMouse = false;
+			ctx->textInput.mouseDownSelectionBegin = false;
+			ctx->textInput.selectionActive = true;
+			ctx->textInput.selectAll();
+			ctx->textInput.mouseDown = false;
+		}
+
+		bool isKeyEvent = ctx->event.key.down && ctx->event.type == InputEvent::Type::Key;
+		bool isEscPressed = isKeyEvent && ctx->event.key.code == KeyCode::Esc;
+		bool isEnterPressed = isKeyEvent && ctx->event.key.code == KeyCode::Enter;
+
+		if ((!ctx->textInput.id
+			|| ctx->comboSlider.requestChangeToOtherComboSlider)
+			&& (isEnterPressed || isEscPressed || ctx->widget.focusedId != ctx->id)
 			&& ctx->isActiveLayer())
 		{
-			setCapture(getWindow());
-			dragLastMousePos = ctx->event.mouse.point;
+			ctx->comboSlider.editingText = false;
+			ctx->comboSlider.id = 0;
+			ctx->widget.changeEnded = true;
+			windowReleaseCapture();
 
-			if (!editingText)
+			if (!isEscPressed)
 			{
-				comboSliderWidgetId = ctx->currentWidgetId;
+				*value = atof(ctx->comboSlider.text);
+				if (useRange) clampValue(*value, minVal, maxVal);
+				if (fallback) fallback->touched = true;
+			}
+
+			if (ctx->comboSlider.requestChangeToOtherComboSlider)
+			{
+				ctx->comboSlider.id = ctx->comboSlider.newId;
+				ctx->comboSlider.newId = 0;
+				ctx->comboSlider.requestChangeToOtherComboSlider = false;
+			}
+		}
+	}
+		
+	if (notEditingText)
+	{
+		f32 percentFilled = maxVal != minVal ? 1.0f - (maxVal - *value) / (maxVal - minVal) : 0.0f;
+
+		if (ctx->event.type == InputEvent::Type::MouseDown
+			&& widgetIsHovered()
+			&& !ctx->comboSlider.dragging
+			&& ctx->isActiveLayer()
+			&& !ctx->widget.disabled
+			&& !leftButton.hovered
+			&& !rightButton.hovered)
+		{
+			ctx->comboSlider.dragLastMousePos = ctx->mousePosition;
+
+			if (!ctx->comboSlider.editingText)
+			{
+				ctx->comboSlider.id = ctx->id;
 			}
 			else
 			{
-				requestChangeToOtherComboSlider = true;
-				newComboSliderId = ctx->currentWidgetId;
+				ctx->comboSlider.requestChangeToOtherComboSlider = true;
+				ctx->comboSlider.newId = ctx->id;
 				forceRepaint();
 			}
 
-			mouseWasDown = true;
+			ctx->comboSlider.mouseWasDown = true;
+			windowSetCapture();
 		}
 
-		if (mouseWasDown
+		if (ctx->comboSlider.mouseWasDown
 			&& ctx->event.type == InputEvent::Type::MouseMove
-			&& comboSliderWidgetId == ctx->currentWidgetId)
+			&& ctx->comboSlider.id == ctx->id)
 		{
-			if (dragLastMousePos.getDistance(ctx->event.mouse.point) > ctx->settings.dragStartDistance)
+			if (ctx->comboSlider.dragLastMousePos.getDistance(ctx->mousePosition) > ctx->settings.dragStartDistance)
 			{
-				dragging = true;
-				dragLastMousePos = ctx->event.mouse.point;
-				mouseWasDown = false;
+				ctx->comboSlider.dragging = true;
+				ctx->comboSlider.dragLastMousePos = ctx->mousePosition;
+				ctx->comboSlider.mouseWasDown = false;
+				ctx->comboSlider.currentValue = *value;
+				ctx->comboSlider.hiddenCursorPos = ctx->settings.services.getAbsoluteMousePosition();
+				ctx->settings.services.hideMouseCursor();
+				ctx->widget.captureId = ctx->id;
+				if (fallback) fallback->touched = true;
 			}
 		}
 
-		if (dragging
-			&& ctx->currentWidgetId == comboSliderWidgetId
-			&& ctx->isActiveLayer())
+		if (ctx->comboSlider.dragging
+			&& ctx->id == ctx->comboSlider.id
+			&& ctx->isActiveLayer()
+			&& !ctx->widget.disabled)
 		{
-			Point delta = ctx->event.mouse.point - dragLastMousePos;
-			dragLastMousePos = ctx->event.mouse.point;
+			Point delta = ctx->mousePosition - ctx->comboSlider.dragLastMousePos;
+			ctx->comboSlider.dragLastMousePos = ctx->mousePosition;
 			f32 deltaValue = 0;
 
 			switch (ctx->settings.sliderDragDirection)
@@ -188,123 +344,231 @@ bool comboSliderInternal(f32& value, f32 minVal, f32 maxVal, bool useRange, f32 
 
 			if (useRange)
 			{
-				value += deltaValue * stepsPerPixel;
-				wasModified = clampValue(value, minVal, maxVal);
-				percentFilled = 1.0f - (maxVal - value) / (maxVal - minVal);
+				ctx->comboSlider.currentValue += deltaValue * stepsPerPixel;
+				clampValue(ctx->comboSlider.currentValue, minVal, maxVal);
+				ctx->widget.changeEnded = true;
+				percentFilled = maxVal != minVal ? 1.0f - (maxVal - ctx->comboSlider.currentValue) / (maxVal - minVal) : 0.0f;
+				*value = ctx->comboSlider.currentValue;
 			}
 			else
 			{
-				value += deltaValue * stepsPerPixel;
-				wasModified = true;
+				ctx->comboSlider.currentValue += deltaValue * stepsPerPixel;
+				ctx->widget.changeEnded = true;
+				*value = ctx->comboSlider.currentValue;
+			}
+
+			if (ctx->lastHoveredNativeWindow)
+			{
+				auto wndPos = ctx->settings.services.getWindowPosition(ctx->lastHoveredNativeWindow);
+				auto wndSize = ctx->settings.services.getWindowSize(ctx->lastHoveredNativeWindow);
+				auto absPos = ctx->settings.services.getAbsoluteMousePosition();
+				const f32 margin = 2.0f;
+
+				if (absPos.x <= wndPos.x + margin || absPos.x >= wndPos.x + wndSize.x - margin)
+				{
+					Point centerScreen(wndPos.x + wndSize.x * 0.5f, absPos.y);
+					ctx->settings.services.setAbsoluteMousePosition(centerScreen);
+					Point warpDelta = centerScreen - absPos;
+					ctx->comboSlider.dragLastMousePos += warpDelta;
+					ctx->mousePosition += warpDelta;
+				}
 			}
 		}
 
 		if (ctx->event.type == InputEvent::Type::MouseUp
-			&& (dragging || mouseWasDown)
+			&& (ctx->comboSlider.dragging || ctx->comboSlider.mouseWasDown)
 			&& ctx->isActiveLayer()
-			&& comboSliderWidgetId == ctx->currentWidgetId)
+			&& ctx->comboSlider.id == ctx->id
+			&& !ctx->widget.disabled)
 		{
-			dragging = false;
-			mouseWasDown = false;
-			comboSliderWidgetId = 0;
-			releaseCapture();
+		if (ctx->comboSlider.dragging)
+		{
+			*value = ctx->comboSlider.currentValue;
 			ctx->widget.changeEnded = true;
+			ctx->settings.services.setAbsoluteMousePosition(ctx->comboSlider.hiddenCursorPos);
+			ctx->settings.services.showMouseCursor();
+		}
+		ctx->comboSlider.dragging = false;
+		ctx->comboSlider.mouseWasDown = false;
+		ctx->comboSlider.id = 0;
+		ctx->widget.captureId = 0;
+		if (isInt) *value = roundf(*value);
+		windowReleaseCapture();
 		}
 
-		auto bodyElemState = &bodyElem.normalState();
-		auto leftArrowElemState = &leftArrowElem.normalState();
-		auto rightArrowElemState = &rightArrowElem.normalState();
-		auto rangeBarElemState = &rangeBarElem.normalState();
+		auto leftButtonState = &leftButtonElem.normalState();
+		auto middleButtonState = &middleButtonElem.normalState();
+		auto rightButtonState = &rightButtonElem.normalState();
+		auto leftArrowState = &leftArrowElem.normalState();
+		auto rightArrowState = &rightArrowElem.normalState();
+		auto rangeBarState = &rangeBarElem.normalState();
 
-		if (ctx->widget.pressed)
+		if (ctx->widget.disabled)
 		{
-			bodyElemState = &bodyElem.getState(WidgetStateType::Pressed);
-			leftArrowElemState = &leftArrowElem.getState(WidgetStateType::Pressed);
-			rightArrowElemState = &rightArrowElem.getState(WidgetStateType::Pressed);
-			rangeBarElemState = &rangeBarElem.getState(WidgetStateType::Pressed);
+			leftButtonState = &leftButtonElem.getState(WidgetStateType::Disabled);
+			middleButtonState = &middleButtonElem.getState(WidgetStateType::Disabled);
+			rightButtonState = &rightButtonElem.getState(WidgetStateType::Disabled);
+			leftArrowState = &leftArrowElem.getState(WidgetStateType::Disabled);
+			rightArrowState = &rightArrowElem.getState(WidgetStateType::Disabled);
+			rangeBarState = &rangeBarElem.getState(WidgetStateType::Disabled);
 		}
-		else if (ctx->widget.focused)
+		else
 		{
-			bodyElemState = &bodyElem.getState(WidgetStateType::Focused);
-			rangeBarElemState = &rangeBarElem.getState(WidgetStateType::Focused);
-		}
-		else if (ctx->widget.hovered)
-		{
-			bodyElemState = &bodyElem.getState(WidgetStateType::Hovered);
-			rangeBarElemState = &rangeBarElem.getState(WidgetStateType::Hovered);
-		}
-
-		if (arrowHoveredLeft)
-		{
-			leftArrowElemState = &leftArrowElem.getState(WidgetStateType::Hovered);
+			leftButtonState = comboSliderElementState(leftButtonElem, leftButton.pressed, leftButton.hovered, ctx->widget.focused);
+			middleButtonState = comboSliderElementState(middleButtonElem, middleButton.pressed, middleButton.hovered, ctx->widget.focused);
+			rightButtonState = comboSliderElementState(rightButtonElem, rightButton.pressed, rightButton.hovered, ctx->widget.focused);
+			leftArrowState = comboSliderElementState(leftArrowElem, leftArrow.pressed, leftArrow.hovered, false);
+			rightArrowState = comboSliderElementState(rightArrowElem, rightArrow.pressed, rightArrow.hovered, false);
+			rangeBarState = comboSliderElementState(rangeBarElem, rangeBar.pressed, rangeBar.hovered, ctx->widget.focused);
 		}
 
-		if (arrowHoveredRight)
+		Image* leftButtonImage = leftButtonState->image;
+		Image* middleButtonImage = middleButtonState->image;
+		Image* rightButtonImage = rightButtonState->image;
+		Image* leftArrowImage = leftArrowState->image;
+		Image* rightArrowImage = rightArrowState->image;
+		Image* rangeBarImage = rangeBarState->image;
+
+		if (ctx->widget.disabled)
 		{
-			rightArrowElemState = &rightArrowElem.getState(WidgetStateType::Hovered);
+			if (!leftButtonImage) leftButtonImage = leftButtonElem.normalState().image;
+			if (!middleButtonImage) middleButtonImage = middleButtonElem.normalState().image;
+			if (!rightButtonImage) rightButtonImage = rightButtonElem.normalState().image;
+			if (!leftArrowImage) leftArrowImage = leftArrowElem.normalState().image;
+			if (!rightArrowImage) rightArrowImage = rightArrowElem.normalState().image;
+			if (!rangeBarImage) rangeBarImage = rangeBarElem.normalState().image;
 		}
 
-		ctx->renderer->cmdSetColor(bodyElemState->color * ctx->tint[(int)TintColorType::Body]);
-		ctx->renderer->cmdDrawImageBordered(bodyElemState->image, bodyElemState->border, ctx->widget.rect, ctx->globalScale);
-		
+		ctx->renderer.cmdSetColor(tintApply(leftButtonState->color, TintColorType::Body));
+		ctx->renderer.cmdDrawImageBordered(leftButtonImage, leftButtonState->border, leftBgRect, ctx->scale);
+
+		ctx->renderer.cmdSetColor(tintApply(middleButtonState->color, TintColorType::Body));
+		ctx->renderer.cmdDrawImageBordered(middleButtonImage, middleButtonState->border, middleBgRect, ctx->scale);
+
+		ctx->renderer.cmdSetColor(tintApply(rightButtonState->color, TintColorType::Body));
+		ctx->renderer.cmdDrawImageBordered(rightButtonImage, rightButtonState->border, rightBgRect, ctx->scale);
+
 		if (useRange)
 		{
-			ctx->renderer->cmdSetColor(rangeBarElemState->color * ctx->tint[(int)TintColorType::Body]);
-			ctx->renderer->cmdDrawImageBordered(rangeBarElemState->image, rangeBarElemState->border,
+			ctx->renderer.cmdSetColor(tintApply(rangeBarState->color, TintColorType::Body));
+			ctx->renderer.cmdDrawImageBordered(rangeBarImage, rangeBarState->border,
 				{
-					ctx->widget.rect.x + bodyElemState->border * ctx->globalScale,
-					ctx->widget.rect.bottom() - bodyElemState->border * ctx->globalScale,
-					(valueWidth - bodyElemState->border * 2.0f * ctx->globalScale) * percentFilled,
-					rangeBarElemState->height * ctx->globalScale,
+					middleBgRect.x + middleButtonState->border * ctx->scale,
+					middleBgRect.bottom() - middleButtonState->border * ctx->scale,
+					(middleBgRect.width - middleButtonState->border * 2.0f * ctx->scale) * percentFilled,
+					rangeBarState->height * ctx->scale,
 				},
-				ctx->globalScale);
+				ctx->scale);
 		}
 
-		ctx->renderer->cmdSetColor(leftArrowElemState->color * ctx->tint[(int)TintColorType::Body]);
+		// draw left arrow centered on its button
+		{
+			auto arrowX = leftBgRect.x + leftBgRect.width / 2.0f - (leftArrowImage->width * ctx->scale) / 2.0f;
+			auto arrowY = leftBgRect.y + leftBgRect.height / 2.0f - (leftArrowImage->height * ctx->scale) / 2.0f;
 
-		// dial down the height, since its already global scaled
-		auto arrowY = ((ctx->widget.rect.height / ctx->globalScale - leftArrowElemState->image->rect.height) / 2.0f + (ctx->widget.pressed ? 1.0f : 0.0f)) * ctx->globalScale;
+			ctx->renderer.cmdSetColor(tintApply(leftArrowState->color, TintColorType::Body));
+			ctx->renderer.cmdDrawImage(leftArrowImage,
+				{
+					arrowX,
+					arrowY,
+					leftArrowImage->width * ctx->scale,
+					leftArrowImage->height * ctx->scale
+				});
+		}
 
-		ctx->renderer->cmdDrawImage(leftArrowElemState->image,
+		// draw right arrow centered on its button
+		{
+			auto arrowX = rightBgRect.x + rightBgRect.width / 2.0f - (rightArrowImage->width * ctx->scale) / 2.0f;
+			auto arrowY = rightBgRect.y + rightBgRect.height / 2.0f - (rightArrowImage->height * ctx->scale) / 2.0f;
+
+			ctx->renderer.cmdSetColor(tintApply(rightArrowState->color, TintColorType::Body));
+			ctx->renderer.cmdDrawImage(rightArrowImage,
+				{
+					arrowX,
+					arrowY,
+					rightArrowImage->width * ctx->scale,
+					rightArrowImage->height * ctx->scale
+				});
+		}
+
+		static char outStr[ComboSliderState::maxTextSize] = { 0 };
+		static char outStrFormatted[ComboSliderState::maxTextSize] = { 0 };
+		char* str = nullptr;
+
+		bool showIndeterminate = !hasExternalValue && indeterminateStr && fallback && !fallback->touched;
+
+		if (showIndeterminate)
+		{
+			// use the text input's default/hint text style so the indeterminate
+			// text reads as a hint rather than a real value
+			auto& indeterminateTextElem = ctx->theme->getElement(WidgetElementId::TextInputDefaultText);
+			auto& indeterminateState = ctx->widget.disabled
+				? indeterminateTextElem.getState(WidgetStateType::Disabled)
+				: indeterminateTextElem.normalState();
+
+			ctx->renderer.cmdSetColor(tintApply(indeterminateState.textColor, TintColorType::Text));
+			ctx->renderer.cmdDrawTextInBox(indeterminateStr, middleBgRect, HAlignType::Center, VAlignType::Center);
+		}
+		else
+		{
+			stringFromF32(*value, outStr, ComboSliderState::maxTextSize, decimalPlaces);
+
+			if (!formatStr)
 			{
-				ctx->widget.rect.x + bodyElemState->border + (ctx->widget.pressed ? 1.0f : 0.0f) * ctx->globalScale,
-				ctx->widget.rect.top() + arrowY,
-				leftArrowElemState->image->rect.width * ctx->globalScale,
-				leftArrowElemState->image->rect.height * ctx->globalScale
-			});
-
-		ctx->renderer->cmdSetColor(rightArrowElemState->color * ctx->tint[(int)TintColorType::Body]);
-
-		// dial down the height, since its already global scaled
-		arrowY = ((ctx->widget.rect.height / ctx->globalScale - rightArrowElemState->image->rect.height) / 2.0f + (ctx->widget.pressed ? 1.0f : 0.0f)) * ctx->globalScale;
-
-		ctx->renderer->cmdDrawImage(rightArrowElemState->image,
+				str = outStr;
+			}
+			else
 			{
-				ctx->widget.rect.right() - bodyElemState->border - (rightArrowElemState->image->rect.width - (ctx->widget.pressed ? 1.0f : 0.0f)) * ctx->globalScale,
-				ctx->widget.rect.top() + arrowY,
-				rightArrowElemState->image->rect.width * ctx->globalScale,
-				rightArrowElemState->image->rect.height * ctx->globalScale
-			});
+				sprintf(outStrFormatted, formatStr, *value);
+				str = outStrFormatted;
+			}
 
-		char outStr[64];
-		toString(value, outStr, 64);
-		ctx->renderer->cmdSetColor(bodyElemState->textColor * ctx->tint[(int)TintColorType::Body]);
-		ctx->renderer->cmdDrawTextInBox(outStr, ctx->widget.rect, HAlignType::Center, VAlignType::Center);
-		setAsFocusable();
-		ctx->currentWidgetId++;
+			ctx->renderer.cmdSetColor(tintApply(middleButtonState->textColor, TintColorType::Body));
+			ctx->renderer.cmdDrawTextInBox(str, middleBgRect, HAlignType::Center, VAlignType::Center);
+		}
+		widgetSetFocusable();
 	}
 
-	return wasModified;
+	return ctx->widget.changeEnded;
 }
 
-bool comboSliderFloat(f32& value, f32 stepsPerPixel, f32 arrowStep)
+bool comboSliderInt(i32* value, f32 stepsPerPixel, i32 arrowStep, const char* formatStr, const char* indeterminateStr)
 {
-	return comboSliderInternal(value, 0, 0, false, stepsPerPixel, arrowStep);
+	f32 fVal = 0;
+	if (value) fVal = *value;
+
+	idPush((void*)value);
+	bool ret = comboSliderInternal(true, value ? &fVal : nullptr, 0, 0, false, stepsPerPixel, (f32)arrowStep, formatStr, indeterminateStr, 0);
+	idPop();
+
+	if (ret && value)
+		*value = (i32)fVal;
+
+	return ret;
 }
 
-bool comboSliderFloatRanged(f32& value, f32 minVal, f32 maxVal, f32 stepsPerPixel, f32 arrowStep)
+bool comboSliderIntRanged(i32* value, i32 minVal, i32 maxVal, f32 stepsPerPixel, i32 arrowStep, const char* formatStr, const char* indeterminateStr)
 {
-	return comboSliderInternal(value, minVal, maxVal, true, stepsPerPixel, arrowStep);
+	f32 fVal = 0;
+	if (value) fVal = *value;
+	idPush((void*)value);
+	bool ret = comboSliderInternal(true, value ? &fVal : nullptr, (f32)minVal, (f32)maxVal, true, stepsPerPixel, (f32)arrowStep, formatStr, indeterminateStr, 0);
+	idPop();
+
+	if (ret && value)
+		*value = (i32)fVal;
+	
+	return ret;
+}
+
+bool comboSliderFloat(f32* value, f32 stepsPerPixel, f32 arrowStep, const char* formatStr, const char* indeterminateStr)
+{
+	return comboSliderInternal(false, value, 0, 0, false, stepsPerPixel, arrowStep, formatStr, indeterminateStr);
+}
+
+bool comboSliderFloatRanged(f32* value, f32 minVal, f32 maxVal, f32 stepsPerPixel, f32 arrowStep, const char* formatStr, const char* indeterminateStr)
+{
+	return comboSliderInternal(false, value, minVal, maxVal, true, stepsPerPixel, arrowStep, formatStr, indeterminateStr);
 }
 
 }

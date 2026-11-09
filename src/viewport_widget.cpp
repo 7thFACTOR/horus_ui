@@ -1,34 +1,31 @@
-#include "horus.h"
-#include "types.h"
-#include "ui_theme.h"
-#include "ui_context.h"
+#include "context.h"
+#include "theme.h"
 #include "util.h"
 #include "renderer.h"
 
 namespace hui
 {
-Rect beginViewport(f32 height)
+Rect viewportBegin(const char* id, f32 height)
 {
 	if (height <= 0)
 	{
-		height = ctx->layoutStack.back().height - (ctx->penPosition.y - ctx->layoutStack.back().position.y);
+		height = ctx->layout.height - (ctx->position.y - ctx->layout.savedPosition.y);
 	}
 
-	addWidgetItem(height);
+	ctx->setLabelAndId(id);
+	addWidget(height);
 	buttonBehavior();
 
-	auto scissor = ctx->renderer->pushClipRect(ctx->widget.rect);
+	ctx->renderer.pushClipRect(ctx->widget.rect);
 
-	ctx->currentWidgetId++;
-	ctx->renderer->viewportOffset = ctx->widget.rect.topLeft();
-
-	return scissor;
+	// the returned rect is in window coordinates; draw content using it directly,
+	// the pushed clip rect only restricts drawing of content inside the viewport.
+	return ctx->widget.rect;
 }
 
-void endViewport()
+void viewportEnd()
 {
-	ctx->renderer->popClipRect();
-	ctx->renderer->viewportOffset = Point();
+	ctx->renderer.popClipRect();
 }
 
 }

@@ -1,37 +1,60 @@
-#include "horus.h"
-#include "types.h"
-#include "ui_theme.h"
-#include "ui_context.h"
+#include "context.h"
+#include "theme.h"
 #include "util.h"
 #include <math.h>
 
 namespace hui
 {
-bool sliderInternal(f32 minVal, f32 maxVal, f32& value, bool useStep, f32 step, bool isFloatValue)
+static f32 sliderPercentFilled(f32 value, f32 minVal, f32 maxVal)
 {
-	static bool draggingKnob = false;
-	static Point dragDelta;
-	auto bodyElem = ctx->theme->getElement(WidgetElementId::SliderBody);
-	auto bodyFilledElem = ctx->theme->getElement(WidgetElementId::SliderBodyFilled);
-	auto knobElem = ctx->theme->getElement(WidgetElementId::SliderKnob);
+	f32 range = maxVal - minVal;
+
+	if (range == 0.0f)
+		return 0.0f;
+
+	return 1.0f - (maxVal - value) / range;
+}
+
+static f32 sliderSnapValue(f32 value, f32 minVal, f32 maxVal, bool useStep, f32 step, bool isFloatValue)
+{
+	if (useStep && step > 0.0f)
+		value = minVal + roundf((value - minVal) / step) * step;
+	else if (!isFloatValue)
+		value = roundf(value);
+
+	return fmaxf(minVal, fminf(maxVal, value));
+}
+
+static bool sliderInternal(const char* id, f32 minVal, f32 maxVal, f32& value, bool useStep, f32 step, bool isFloatValue)
+{
+	auto& bodyElem = ctx->theme->getElement(WidgetElementId::SliderBody);
+	auto& bodyFilledElem = ctx->theme->getElement(WidgetElementId::SliderBodyFilled);
+	auto& knobElem = ctx->theme->getElement(WidgetElementId::SliderKnob);
 	bool wasModified = false;
+	auto& padding = widgetGetPadding();
 
 	// clamp
 	value = fmaxf(minVal, fminf(maxVal, value));
 
-	addWidgetItem(bodyElem.normalState().height * ctx->globalScale);
-	buttonBehavior();
-
-	ctx->widget.rect.x += knobElem.normalState().image->rect.width / 2.f * ctx->globalScale;
-	ctx->widget.rect.width -= knobElem.normalState().image->rect.width * ctx->globalScale;
-
-	if (isHovered())
+	if (ctx->sameLine.enabled && !ctx->widget.hasNextWidth)
 	{
-		setMouseCursor(MouseCursorType::Hand);
+		ctx->widget.customWidth = (bodyElem.normalState().border + padding.x) * 2.0f + knobElem.normalState().image->width;
+		ctx->widget.hasCustomWidth = true;
 	}
 
-	f32 percentFilled = 1.0f - (maxVal - value) / (maxVal - minVal);
+	ctx->id = genId(id);
+	addWidget(bodyElem.normalState().height + padding.y * 2.0f);
+	buttonBehavior();
 
+	ctx->widget.rect.x += knobElem.normalState().image->width / 2.0f * ctx->scale;
+	ctx->widget.rect.width -= knobElem.normalState().image->width * ctx->scale;
+
+	if (widgetIsHovered())
+	{
+		mouseCursorSetType(MouseCursorType::HandPointing);
+	}
+
+	f32 percentFilled = sliderPercentFilled(value, minVal, maxVal);
 	Rect knobRect;
 	f32 valueWidth = ctx->widget.rect.width;
 
@@ -39,7 +62,13 @@ bool sliderInternal(f32 minVal, f32 maxVal, f32& value, bool useStep, f32 step, 
 	auto bodyFilledElemState = &bodyFilledElem.normalState();
 	auto knobElemState = &knobElem.normalState();
 
-	if (ctx->widget.focused)
+	if (ctx->widget.disabled)
+	{
+		bodyElemState = &bodyElem.getState(WidgetStateType::Disabled);
+		bodyFilledElemState = &bodyFilledElem.getState(WidgetStateType::Disabled);
+		knobElemState = &knobElem.getState(WidgetStateType::Disabled);
+	}
+	else if (ctx->widget.focused)
 	{
 		bodyElemState = &bodyElem.getState(WidgetStateType::Focused);
 		bodyFilledElemState = &bodyFilledElem.getState(WidgetStateType::Focused);
@@ -52,42 +81,48 @@ bool sliderInternal(f32 minVal, f32 maxVal, f32& value, bool useStep, f32 step, 
 		knobElemState = &knobElem.getState(WidgetStateType::Hovered);
 	}
 
-	knobRect = {
-		ctx->widget.rect.x + valueWidth * percentFilled - knobElemState->image->rect.width / 2.0f * ctx->globalScale,
-		ctx->widget.rect.y + (bodyElemState->height - knobElemState->image->rect.height) / 2.0f * ctx->globalScale,
-		knobElemState->image->rect.width * ctx->globalScale,
-		knobElemState->image->rect.height * ctx->globalScale
+	if (knobElemState->image)
+	{
+		knobRect = {
+			ctx->widget.rect.x + valueWidth * percentFilled - knobElemState->image->width / 2.0f * ctx->scale,
+			ctx->widget.rect.y + (ctx->widget.rect.height - knobElemState->image->height) / 2.0f * ctx->scale,
+			knobElemState->image->width * ctx->scale,
+			knobElemState->image->height * ctx->scale
+		};
 	};
 
 	bool recomputeKnobRect = false;
 
 	if (ctx->event.type == InputEvent::Type::MouseDown
-		&& !draggingKnob
-		&& ctx->isActiveLayer())
+		&& !ctx->slider.draggingKnob
+		&& !ctx->widget.disabled
+		&& ctx->isActiveLayer()
+		&& ctx->hoveringThisWindow)
 	{
-		if (knobRect.contains(ctx->event.mouse.point))
+		if (knobRect.contains(ctx->mousePosition))
 		{
-			setCapture(getWindow());
-			draggingKnob = true;
-			dragDelta.x = ctx->event.mouse.point.x - (knobRect.x + knobRect.width / 2.0f);
+			windowSetCapture();
+			ctx->slider.draggingKnob = true;
+			ctx->slider.dragDelta.x = ctx->mousePosition.x - (knobRect.x + knobRect.width / 2.0f);
 		}
-		else if (ctx->widget.rect.contains(ctx->event.mouse.point))
+		else if (ctx->widget.rect.contains(ctx->mousePosition))
 		{
-			draggingKnob = true;
-			dragDelta.x = 0;
-			f32 t = (ctx->event.mouse.point.x - ctx->widget.rect.x) / valueWidth;
-			value = minVal + (maxVal - minVal) * t;
-			percentFilled = 1.0f - (maxVal - value) / (maxVal - minVal);
+			ctx->slider.draggingKnob = true;
+			ctx->slider.dragDelta.x = 0;
+			f32 t = valueWidth > 0.0f ? (ctx->mousePosition.x - ctx->widget.rect.x) / valueWidth : 0.0f;
+			value = sliderSnapValue(minVal + (maxVal - minVal) * t, minVal, maxVal, useStep, step, isFloatValue);
+			percentFilled = sliderPercentFilled(value, minVal, maxVal);
 			recomputeKnobRect = true;
 			wasModified = true;
 		}
 	}
 
-	if (draggingKnob
-		&& ctx->currentWidgetId == ctx->widget.focusedWidgetId
-		&& ctx->isActiveLayer())
+	if (ctx->slider.draggingKnob
+		&& ctx->id == ctx->widget.focusedId
+		&& ctx->isActiveLayer()
+		&& !ctx->widget.disabled)
 	{
-		f32 x = ctx->event.mouse.point.x - dragDelta.x;
+		f32 x = ctx->mousePosition.x - ctx->slider.dragDelta.x;
 
 		if (x < ctx->widget.rect.x)
 			x = ctx->widget.rect.x;
@@ -95,79 +130,97 @@ bool sliderInternal(f32 minVal, f32 maxVal, f32& value, bool useStep, f32 step, 
 		if (x > ctx->widget.rect.right())
 			x = ctx->widget.rect.right();
 
-		f32 t = (x - ctx->widget.rect.x) / valueWidth;
-		value = minVal + (maxVal - minVal) * t;
-		percentFilled = 1.0f - (maxVal - value) / (maxVal - minVal);
+		f32 t = valueWidth > 0.0f ? (x - ctx->widget.rect.x) / valueWidth : 0.0f;
+		value = sliderSnapValue(minVal + (maxVal - minVal) * t, minVal, maxVal, useStep, step, isFloatValue);
+		percentFilled = sliderPercentFilled(value, minVal, maxVal);
 		recomputeKnobRect = true;
 		wasModified = true;
 	}
 
 	if (ctx->event.type == InputEvent::Type::MouseUp
-		&& draggingKnob
-		&& ctx->isActiveLayer())
+		&& ctx->slider.draggingKnob
+		&& ctx->isActiveLayer()
+		&& !ctx->widget.disabled)
 	{
-		draggingKnob = false;
-		releaseCapture();
+		ctx->slider.draggingKnob = false;
+		windowReleaseCapture();
 		ctx->widget.changeEnded = true;
 	}
 
 	if (recomputeKnobRect)
 	{
 		knobRect = {
-			ctx->widget.rect.x + valueWidth * percentFilled - knobElemState->image->rect.width / 2.0f * ctx->globalScale,
-			ctx->widget.rect.y + (bodyElemState->height - knobElemState->image->rect.height) / 2.0f * ctx->globalScale,
-			knobElemState->image->rect.width * ctx->globalScale,
-			knobElemState->image->rect.height * ctx->globalScale
+			ctx->widget.rect.x + valueWidth * percentFilled - knobElemState->image->rect.width / 2.0f * ctx->scale,
+			ctx->widget.rect.y + (ctx->widget.rect.height - knobElemState->image->rect.height) / 2.0f * ctx->scale,
+			knobElemState->image->rect.width * ctx->scale,
+			knobElemState->image->rect.height * ctx->scale
 		};
 	}
 
-	ctx->renderer->cmdSetColor(bodyElemState->color);
-	ctx->renderer->cmdDrawImageBordered(
-		bodyElemState->image,
+	Image* bodyImage = bodyElemState->image;
+	Image* bodyFilledImage = bodyFilledElemState->image;
+	Image* knobImage = knobElemState->image;
+
+	if (ctx->widget.disabled)
+	{
+		if (!bodyImage) bodyImage = bodyElem.normalState().image;
+		if (!bodyFilledImage) bodyFilledImage = bodyFilledElem.normalState().image;
+		if (!knobImage) knobImage = knobElem.normalState().image;
+	}
+
+	ctx->renderer.cmdSetColor(bodyElemState->color);
+
+	if (bodyImage)
+	ctx->renderer.cmdDrawImageBordered(
+		bodyImage,
 		bodyElemState->border,
 		{
 			ctx->widget.rect.x,
-			ctx->widget.rect.y + (bodyElemState->height - bodyElemState->image->rect.height) / 2.0f * ctx->globalScale,
+			ctx->widget.rect.y + (ctx->widget.rect.height - bodyImage->height) / 2.0f * ctx->scale,
 			ctx->widget.rect.width,
-			bodyElemState->image->rect.height * ctx->globalScale
+			bodyImage->height * ctx->scale
 		},
-		ctx->globalScale);
+		ctx->scale);
 
-	ctx->renderer->cmdSetColor(bodyFilledElemState->color);
-	ctx->renderer->cmdDrawImageBordered(
-		bodyFilledElemState->image,
+	ctx->renderer.cmdSetColor(bodyFilledElemState->color);
+
+	if (bodyFilledImage)
+	ctx->renderer.cmdDrawImageBordered(
+		bodyFilledImage,
 		bodyFilledElemState->border,
 		{
 			ctx->widget.rect.x,
-			ctx->widget.rect.y + (bodyElemState->height - bodyFilledElemState->image->rect.height) / 2.f * ctx->globalScale,
+			ctx->widget.rect.y + (ctx->widget.rect.height - bodyFilledImage->height) / 2.f * ctx->scale,
 			ctx->widget.rect.width * percentFilled,
-			bodyFilledElemState->image->rect.height * ctx->globalScale
+			bodyFilledImage->height * ctx->scale
 		},
-		ctx->globalScale);
+		ctx->scale);
 
-	ctx->renderer->cmdSetColor(knobElemState->color);
-	ctx->renderer->cmdDrawImageBordered(
-		knobElemState->image,
+	ctx->renderer.cmdSetColor(knobElemState->color);
+
+	if (knobImage)
+	ctx->renderer.cmdDrawImageBordered(
+		knobImage,
 		knobElemState->border,
 		knobRect,
-		ctx->globalScale);
-	setAsFocusable();
-	ctx->currentWidgetId++;
+		ctx->scale);
+	widgetSetFocusable();
 
 	return wasModified;
 }
 
-bool sliderInteger(i32 minVal, i32 maxVal, i32& value, bool useStep, i32 step)
+bool sliderInt(const char* id, i32 minVal, i32 maxVal, i32& value, bool useStep, i32 step)
 {
 	f32 val = value;
-	bool ret = sliderInternal(minVal, maxVal, val, useStep, step, false);
+	bool ret = sliderInternal(id, minVal, maxVal, val, useStep, step, false);
 	value = val;
+
 	return ret;
 }
 
-bool sliderFloat(f32 minVal, f32 maxVal, f32& value, bool useStep, f32 step)
+bool sliderFloat(const char* id, f32 minVal, f32 maxVal, f32& value, bool useStep, f32 step)
 {
-	return sliderInternal(minVal, maxVal, value, useStep, step, true);
+	return sliderInternal(id, minVal, maxVal, value, useStep, step, true);
 }
 
 }

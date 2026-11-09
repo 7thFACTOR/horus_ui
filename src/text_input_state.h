@@ -5,7 +5,7 @@ namespace hui
 {
 struct TextInputState
 {
-	u32 widgetId = 0;
+	WidgetId id = 0;
 	bool editNow = false;
 
 	struct EditKeyShiftInfo
@@ -21,24 +21,24 @@ struct TextInputState
 
 	TextInputState();
 
-	void selectAll() { selectionBegin = 0; selectionEnd = text.size(); selectionActive = true; caretPosition = text.size(); }
+	void selectAll() { selectionBegin = 0; selectionEnd = text.size(); selectionActive = true; caretPosition = text.size(); selectAllOnFocus = false; }
 	void deselect() { selectionBegin = 0; selectionEnd = 0; selectionActive = false; }
 	void deleteSelection();
-	UnicodeString getSelection();
+	Utf32String getSelection();
 	void clearText();
-	void insertTextAtCaret(const UnicodeString& newText);
+	void insertTextAtCaret(const Utf32String& newText);
 	bool processEvent(const InputEvent& ev);
 	void processKeyEvent(const InputEvent& ev);
 	i32 getCharIndexAtX(f32 aX);
 	void computeScrollAmount();
-	void formatValue(UnicodeString& value);
+	void formatValue(Utf32String& value);
 
-	struct UiThemeElement* themeElement;
+	struct ThemeElement* themeElement = nullptr;
 	Rect rect;
 	Rect clipRect;
-	UnicodeString text;
-	UnicodeString defaultText;
-	TextInputValueMode valueType = TextInputValueMode::Any;
+	Utf32String text;
+	Utf32String defaultText;
+	TextInputFlags flags = TextInputFlags::None;
 	u32 decimalPlaces = 2;
 	i32 selectionBegin = 0;
 	i32 mouseDownSelectionBegin = 0;
@@ -52,9 +52,11 @@ struct TextInputState
 	bool selectingWithMouse = false;
 	bool selectAllOnFocus = true;
 	bool textChanged = false;
+	bool clearFilterHovered = false;
 	u32 maxTextLength = 0;
 	bool password = false;
-	UnicodeString passwordCharUnicode;
+	Utf32String passwordCharUnicode;
+	f32 caretBlinkTimer = 0;
 };
 
 }

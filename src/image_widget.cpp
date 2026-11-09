@@ -1,40 +1,54 @@
-#include "horus.h"
-#include "types.h"
-#include "ui_theme.h"
-#include "ui_context.h"
+#include "context.h"
+#include "theme.h"
 #include "util.h"
 
 namespace hui
 {
-bool image(Image img, f32 height, HAlignType horizontalAlign, VAlignType verticalAlign, ImageFitType fit)
+bool image(HImage img, f32 height, HAlignType horizontalAlign, VAlignType verticalAlign, ImageFitType fit)
 {
-	UiImage* imgPtr = (UiImage*)img;
+	Image* imgPtr = (Image*)img;
 	bool autoHeight = false;
 
 	if (height <= 0)
 	{
-		height = imgPtr->rect.height * ctx->globalScale;
+		height = imgPtr->height * ctx->scale;
 		autoHeight = true;
 	}
 	else
 	{
-		height *= ctx->globalScale;
+		height *= ctx->scale;
 	}
 
-	f32 newWidth = imgPtr->rect.width * ctx->globalScale;
+	f32 newWidth = imgPtr->width * ctx->scale;
 	f32 newHeight = height;
 
-	if (fit == ImageFitType::KeepAspect)
+	auto& padding = widgetGetPadding();
+
+	if (!ctx->sameLine.enabled)
 	{
-		viewportImageFitSize(
-			imgPtr->rect.width * ctx->globalScale,
-			imgPtr->rect.height * ctx->globalScale,
-			ctx->layoutStack.back().width - ctx->padding * 2 * ctx->globalScale,
-			height, newWidth, newHeight, false, false);
+		if (fit == ImageFitType::KeepAspect)
+		{
+			viewportImageSizeFit(
+				imgPtr->width * ctx->scale,
+				imgPtr->height * ctx->scale,
+				ctx->layout.width - padding.x * 2.0f * ctx->scale,
+				height, newWidth, newHeight, false, false);
+		}
+		else if (fit == ImageFitType::Stretch)
+		{
+			newWidth = ctx->layout.width - padding.x * 2.0f * ctx->scale;
+		}
 	}
-	else if (fit == ImageFitType::Stretch)
+	else
 	{
-		newWidth = ctx->layoutStack.back().width - ctx->padding * 2 * ctx->globalScale;
+		if (fit == ImageFitType::KeepAspect)
+		{
+			viewportImageSizeFit(
+				imgPtr->width * ctx->scale,
+				imgPtr->height * ctx->scale,
+				0.0f,
+				height, newWidth, newHeight, false, true);
+		}
 	}
 
 	if (autoHeight)
@@ -42,7 +56,18 @@ bool image(Image img, f32 height, HAlignType horizontalAlign, VAlignType vertica
 		height = newHeight;
 	}
 
-	addWidgetItem(height);
+	// in sameLine mode, or if aligned left, constrain widget width to image size.
+	// in normal mode with Center/Right alignment, let the widget use the full layout width
+	// so horizontal alignment can position the image within it.
+	if (ctx->sameLine.enabled || horizontalAlign == HAlignType::Left)
+	{
+		ctx->widget.customWidth = newWidth / ctx->scale;
+		ctx->widget.hasCustomWidth = true;
+	}
+
+	ctx->id = genId(img);
+	// height is already scaled, so keep the row single scaled
+	addWidget(height / ctx->scale);
 
 	Point pos = ctx->widget.rect.topLeft();
 
@@ -71,13 +96,114 @@ bool image(Image img, f32 height, HAlignType horizontalAlign, VAlignType vertica
 
 	if (ctx->widget.visible)
 	{
-		ctx->renderer->cmdSetColor(Color::white);
-		ctx->renderer->cmdDrawImage(imgPtr, ctx->widget.rect);
+		ctx->renderer.cmdSetColor(Color::white);
+		ctx->renderer.cmdDrawImage(imgPtr, ctx->widget.rect);
 	}
 
-	ctx->currentWidgetId++;
+	return ctx->widget.clicked;
+}
 
-	return false;
+bool texture(HTexture texture, f32 textureWidth, f32 textureHeight, f32 height, HAlignType horizontalAlign, VAlignType verticalAlign, ImageFitType fit)
+{
+	bool autoHeight = false;
+
+	if (height <= 0)
+	{
+		height = textureHeight * ctx->scale;
+		autoHeight = true;
+	}
+	else
+	{
+		height *= ctx->scale;
+	}
+
+	f32 newWidth = textureWidth * ctx->scale;
+	f32 newHeight = height;
+
+	auto& padding = widgetGetPadding();
+
+	if (!ctx->sameLine.enabled)
+	{
+		if (fit == ImageFitType::KeepAspect)
+		{
+			viewportImageSizeFit(
+				textureWidth * ctx->scale,
+				textureHeight * ctx->scale,
+				ctx->layout.width - padding.x * 2.0f * ctx->scale,
+				height, newWidth, newHeight, false, false);
+		}
+		else if (fit == ImageFitType::Stretch)
+		{
+			newWidth = ctx->layout.width - padding.x * 2.0f * ctx->scale;
+		}
+	}
+	else
+	{
+		if (fit == ImageFitType::KeepAspect)
+		{
+			viewportImageSizeFit(
+				textureWidth * ctx->scale,
+				textureHeight * ctx->scale,
+				0.0f,
+				height, newWidth, newHeight, false, true);
+		}
+	}
+
+	if (autoHeight)
+	{
+		height = newHeight;
+	}
+
+	if (ctx->sameLine.enabled || horizontalAlign == HAlignType::Left)
+	{
+		ctx->widget.customWidth = newWidth / ctx->scale;
+		ctx->widget.hasCustomWidth = true;
+	}
+
+	ctx->id = genId(texture);
+	// height is already scaled, so keep the row single scaled
+	addWidget(height / ctx->scale);
+
+	Point pos = ctx->widget.rect.topLeft();
+
+	switch (horizontalAlign)
+	{
+	case hui::HAlignType::Right:
+		pos.x = ctx->widget.rect.right() - newWidth;
+		break;
+	case hui::HAlignType::Center:
+		pos.x += (ctx->widget.rect.width - newWidth) / 2.0f;
+		break;
+	}
+
+	switch (verticalAlign)
+	{
+	case hui::VAlignType::Bottom:
+		pos.y = ctx->widget.rect.bottom() - newHeight;
+		break;
+	case hui::VAlignType::Center:
+		pos.y += (ctx->widget.rect.height - newHeight) / 2.0f;
+		break;
+	}
+
+	ctx->widget.rect = { pos.x, pos.y, newWidth, newHeight };
+	buttonBehavior();
+
+	if (ctx->widget.visible)
+	{
+		ctx->renderer.cmdSetColor(Color::white);
+
+		HTexture crtTex = ctx->renderer.currentTexture;
+		u32 crtTexWidth = ctx->renderer.currentTextureWidth;
+		u32 crtTexHeight = ctx->renderer.currentTextureHeight;
+		ctx->renderer.cmdSetTexture(texture, textureWidth, textureHeight);
+		Image img;
+		img.uvRect.set(0, 0, 1, 1);
+		ctx->renderer.cmdDrawImage(&img, ctx->widget.rect);
+		ctx->renderer.cmdSetTexture(crtTex, crtTexWidth, crtTexHeight);
+	}
+
+	return ctx->widget.clicked;
 }
 
 }

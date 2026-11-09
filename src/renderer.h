@@ -1,32 +1,8 @@
 #pragma once
 #include "types.h"
-#include "horus.h"
-#include "horus_interfaces.h"
-#include <unordered_map>
 
 namespace hui
 {
-class UiFont;
-struct UiImage;
-class UiAtlas;
-struct FontTextSize;
-
-/// How an image is drawn, repeated or stretched across the rectangle
-enum class ImageSizingPolicy
-{
-	Stretch,
-	Repeat
-};
-
-/// Text styling info
-struct TextStyle
-{
-	FontStyle style = FontStyle::Normal; /// the font face style
-	Color backFillColor; /// the text color
-	bool underline = false; /// true if underline
-	bool backFill = false; /// true if back is filled color
-};
-
 /// Vertex buffer data used in rendering the UI
 struct VertexBufferData
 {
@@ -35,247 +11,140 @@ struct VertexBufferData
 	f32 vertexCountGrowFactor = 1.5f;
 };
 
-struct DrawCommand
+struct Renderer
 {
-	enum class Type
+	struct NativeWindowRenderContext
 	{
-		None,
-		DrawRect,
-		DrawQuad,
-		DrawImageBordered,
-		DrawLine,
-		DrawPolyLine,
-		DrawText,
-		DrawInterpolatedColors,
-		DrawSolidTriangle,
-		ClipRect,
-		SetViewportOffset,
-		SetAtlas,
-		SetColor,
-		SetFont,
-		SetTextStyle,
-		SetLineStyle,
-		SetFillStyle,
-		Callback,
-
-		Count
+		u32 textBufferPosition = 0;
+		std::vector<char> textBuffer;
+		u32 pointBufferPosition = 0;
+		std::vector<Point> pointBuffer;
+		DrawCommandVector drawCmdLayers[(u32)DrawCmdLayerType::Count];
+		std::vector<RenderBatch> batches;
+		std::vector<Rect> clipRectStack;
+		std::vector<DrawCmdLayerType> drawCmdLayerTypeStack;
+		DrawCmdLayerType currentDrawCmdLayer = DrawCmdLayerType::Normal;
 	};
 
-	struct CmdDrawRect
+	struct LineInfo
 	{
-		Rect rect;
-		Rect uvRect;
-		bool rotated;
-		u32 textureIndex;
-	};
-
-	struct CmdDrawQuad
-	{
-		Point corners[4];
-		UiImage* image = nullptr;
-	};
-
-	struct CmdDrawTriangle
-	{
-		Point p1, p2, p3;
-		Point uv1, uv2, uv3;
-		UiImage* image = nullptr;
-	};
-
-	struct CmdDrawLine
-	{
-		Point a, b;
-	};
-
-	struct CmdDrawPolyLine
-	{
-		Point* points;
-		u32 count;
-		bool closed;
-	};
-
-	struct CmdDrawText
-	{
-		Point position;
-		char* text;
-	};
-
-	struct CmdDrawImageBordered
-	{
-		Rect rect;
-		UiImage* image;
-		f32 border;
-		f32 scale;
-	};
-
-	struct CmdDrawInterpolatedColors
-	{
-		Rect rect;
-		Rect uvRect;
-		Color topLeft;
-		Color bottomLeft;
-		Color topRight;
-		Color bottomRight;
-	};
-
-	struct CmdSetViewportOffset
-	{
-		Point offset;
-	};
-
-	DrawCommand() {}
-	DrawCommand(Type newType)
-		: type(newType)
-	{}
-
-	Type type = Type::None;
-	i32 zOrder = 0;
-	CmdDrawRect drawRect;
-	CmdDrawQuad drawQuad;
-	CmdDrawLine drawLine;
-	CmdDrawPolyLine drawPolyLine;
-	CmdDrawText drawText;
-	CmdDrawImageBordered drawImageBordered;
-	CmdDrawInterpolatedColors drawInterpolatedColors;
-	CmdDrawTriangle drawTriangle;
-	CmdSetViewportOffset setViewportOffset;
-	Rect clipRect;
-	bool clipToParent;
-	bool popClipRect = false;
-	UiAtlas* setAtlas;
-	Color setColor;
-	UiFont* setFont;
-	Color setTextColor;
-	TextStyle setTextStyle;
-	LineStyle setLineStyle;
-	FillStyle setFillStyle;
-};
-
-class Renderer
-{
-public:
-	enum class DrawSpectrumBrightness
-	{
-		On,
-		Off
-	};
-
-	enum class DrawSpectrumDirection
-	{
-		Horizontal,
-		Vertical
+		u32 start;
+		u32 len;
+		f32 width;
 	};
 
 	Renderer();
 	virtual ~Renderer();
-	void clear(const Color& color);
+	void nativeWindowSetCurrent(HNativeWindow wnd);
+	void executeDrawCommands(HNativeWindow wnd);
 	Rect pushClipRect(const Rect& rect, bool clipToParent = true);
 	void popClipRect();
 	const Rect& getClipRect() const { return currentClipRect; }
 	void setWindowSize(const Point& size);
 	const Point& getWindowSize() const { return windowSize; }
 	Rect getWindowRect() const { return { 0, 0, windowSize.x, windowSize.y }; }
-	void setZOrder(u32 zorder) { zOrder = zorder; }
-	void incrementZOrder() { zOrder++; }
-	void decrementZOrder() { zOrder--; }
-	u32 getZOrder() const { return zOrder; }
-	void beginFrame();
-	void endFrame();
-	UiFont* getFont() const { return currentFont; }
-	u32 getDrawCommandCount() const { return drawCommands.size(); }
-	void beginDrawCmdInsertion(u32 index) { drawCmdNextInsertIndex = index; }
-	void endDrawCmdInsertion() { drawCmdNextInsertIndex = ~0; }
+	void begin();
+	void end();
+	Font* getFont() const { return currentFont; }	
+	void pushWindowDrawCmdLayer(DrawCmdLayerType type);
+	void popWindowDrawCmdLayer();
+	void resetWindowContexts();
+	inline bool allowRendering() const { return !disableRendering && !skipRender; }
 
 	// Commands
-	void cmdSetColor(const Color& color);
-	void cmdSetAtlas(UiAtlas* atlas);
-	void cmdSetFont(UiFont* font);
+	void cmdCallback(RenderCallback callback);
+	void cmdClearBackground(const Rgba32 color);
+	void cmdSetColor(const Rgba32 color);
+	void cmdSetTexture(HTexture textureHandle, u32 width, u32 height);
+	void cmdSetFont(Font* font);
 	void cmdSetTextUnderline(bool underline);
 	void cmdSetTextBackfill(bool backfill);
-	void cmdSetTextBackfillColor(const Color& color);
+	void cmdSetTextBackfillColor(const Rgba32 color);
 	void cmdSetLineStyle(const LineStyle& style);
 	void cmdSetFillStyle(const FillStyle& style);
-	void cmdDrawQuad(UiImage* image, const Point& p1, const Point& p2, const Point& p3, const Point& p4);
-	void cmdDrawImage(UiImage* image, const Point& position, f32 scale);
-	void cmdDrawImage(UiImage* image, const Rect& rect);
-	void cmdDrawImage(UiImage* image, const Rect& rect, const Rect& uvRect);
-	void cmdDrawImageBordered(UiImage* image, u32 border, const Rect& rect, f32 scale);
-	void cmdDrawImageScaledAligned(UiImage* image, const Rect& rect, HAlignType halign, VAlignType valign, f32 scale);
-	void cmdDrawSolidRectangle(const Rect& rect);
-	void cmdDrawInterpolatedColors(const Rect& rect, const Color& topLeft, const Color& bottomLeft, const Color& topRight, const Color& bottomRight);
-	void cmdDrawSpectrumColors(const Rect& rect, DrawSpectrumBrightness brightness, DrawSpectrumDirection dir);
-	void cmdDrawInterpolatedColorsTopBottom(const Rect& rect, const Color& top, const Color& bottom);
-	void cmdDrawInterpolatedColorsLeftRight(const Rect& rect, const Color& left, const Color& right);
+	void cmdDrawQuad(Image* image, const Point& p1, const Point& p2, const Point& p3, const Point& p4);
+	void cmdDrawImage(Image* image, const Point& position, f32 scale);
+	void cmdDrawImage(Image* image, const Rect& rect);
+	void cmdDrawImage(Image* image, const Rect& rect, const Rect& uvRect);
+	void cmdDrawImageBordered(Image* image, u32 border, const Rect& rect, f32 scale);
+	void cmdDrawImageScaledAligned(Image* image, const Rect& rect, HAlignType halign, VAlignType valign, f32 scale);
+	void cmdDrawImageTiled(Image* image, const Rect& rect, const Point& offset = {}, const Point& scale = {1, 1});
+	void cmdDrawRectangle(const Rect& rect);
+	void cmdDrawFilledRectangle(const Rect& rect);
+	void cmdDrawRectangle4Colors(const Rect& rect, const Rgba32 topLeft, const Rgba32 topRight, const Rgba32 bottomRight, const Rgba32 bottomLeft);
 	void cmdDrawLine(const Point& a, const Point& b);
 	void cmdDrawPolyLine(const Point* points, u32 pointCount, bool closed);
-	void cmdDrawSolidTriangle(const Point& p1, const Point& p2, const Point& p3);
-	FontTextSize cmdDrawTextAt(
+	void cmdDrawSolidTriangle(const Point& p1, const Point& p2, const Point& p3, const Rgba32 c1, const Rgba32 c2, const Rgba32 c3);
+	void cmdDrawTextAt(
 		const char* text,
 		const Point& position);
-	FontTextSize cmdDrawTextInBox(
+	void cmdDrawTextInBox(
 		const char* text,
 		const Rect& rect,
 		HAlignType horizontal = HAlignType::Left,
-		VAlignType vertical = VAlignType::Top);
+		VAlignType vertical = VAlignType::Top,
+		bool singleLineEllipsis = false,
+		bool noWordWrap = false);
 
-public:
-	bool skipRender = false;
-	bool disableRendering = false;
-	Point viewportOffset;
-	TextStyle currentTextStyle;
-	LineStyle currentLineStyle;
-	FillStyle currentFillStyle;
-
-protected:
-	void drawAtlasRegion(bool rotatedUv, const Rect& rect, const Rect& atlasUvRect);
-	void drawTextGlyph(UiImage* image, const Point& pos);
-	void drawQuad(UiImage* image, const Point& p1, const Point& p2, const Point& p3, const Point& p4);
+	void drawAtlasRegion(bool rotated, const Rect& rect, const Rect& atlasUvRect);
+	void drawTextGlyph(Image* image, const Point& pos);
+	void drawQuad(Image* image, const Point& p1, const Point& p2, const Point& p3, const Point& p4);
 	void drawQuad(const Rect& rect, const Rect& uvRect);
+	void drawQuad4Colors(const Rect& rect, const Rect& uvRect, const Rgba32 colTopLeft, const Rgba32 colTopRight, const Rgba32 colBottomRight, const Rgba32 colBottomLeft);
 	void drawQuadRot90(const Rect& rect, const Rect& uvRect);
-	void drawTextInternal(
+	FontTextSize computeSizeOrDrawText(
 		const char* text,
-		const Point& rect);
-	void drawInterpolatedColors(
 		const Rect& rect,
-		const Rect& uvRect,
-		const Color& topLeft,
-		const Color& bottomLeft,
-		const Color& topRight,
-		const Color& bottomRight);
-	void drawSpectrumColors(const Rect& rect, DrawSpectrumBrightness brightness, DrawSpectrumDirection dir);
-	void drawInterpolatedColorsTopBottom(const Rect& rect, const Rect& uvRect, const Color& top, const Color& bottom);
-	void drawInterpolatedColorsLeftRight(const Rect& rect, const Rect& uvRect, const Color& left, const Color& right);
-	void drawImageBordered(UiImage* image, u32 border, const Rect& rect, f32 scale);
+		HAlignType horizAlign,
+		VAlignType vertAlign,
+		bool doDraw = false,
+		Font* font = nullptr,
+		bool singleLineEllipsis = false,
+		bool noWordWrap = false);
+
+	FontTextSize computeSizeOrDrawText(
+		const GlyphCode* const text,
+		u32 size,
+		const Rect& rect,
+		HAlignType horizAlign,
+		VAlignType vertAlign,
+		bool doDraw = false,
+		Font* font = nullptr,
+		bool singleLineEllipsis = false,
+		bool noWordWrap = false);
+
+	void drawImageBordered(Image* image, u32 border, const Rect& rect, f32 scale);
 	void drawLine(const Point& a, const Point& b);
 	void drawPolyLine(const Point* points, u32 pointCount, bool closed);
-	void drawTriangle(const Point& p1, const Point& p2, const Point& p3, const Point& uv1, const Point& uv2, const Point& uv3, UiImage* image);
+	void drawTriangle(const Point& p1, const Point& p2, const Point& p3, const Point& uv1, const Point& uv2, const Point& uv3, const Rgba32 c1, const Rgba32 c2, const Rgba32 c3,
+		Image* image);
 
-	bool clipRectNoRot(Rect& rect, Rect& uvRect);
-	bool clipRectRot(Rect& rect, Rect& uvRect);
-	bool clipRect(bool rotated, Rect& rect, Rect& uvRect);
+	bool clipRectNoRot(Rect& rect, Rect& uvRect, Rgba32* colors = nullptr) const;
+	bool clipRectRot(Rect& rect, Rect& uvRect, Rgba32* colors = nullptr) const;
+	bool clipRect(bool rotated, Rect& rect, Rect& uvRect, Rgba32* colors = nullptr) const;
 	void needToAddVertexCount(u32 count);
 	char* addUtf8TextToBuffer(const char* text, u32 sizeBytes);
 	void addBatch();
 	void addDrawCommand(const DrawCommand& cmd);
 
-	u32 textBufferPosition = 0;
-	std::vector<char> textBuffer;
-	u32 pointBufferPosition = 0;
-	std::vector<Point> pointBuffer;
-	std::vector<DrawCommand> drawCommands;
-	std::vector<RenderBatch> batches;
-	std::vector<Rect> clipRectStack;
-	VertexBufferData vertexBufferData;
-	VertexBuffer* vertexBuffer = nullptr;
+	bool skipRender = false;
+	bool disableRendering = false;
+	TextStyle currentTextStyle;
+	LineStyle currentLineStyle;
+	FillStyle currentFillStyle;
+	HNativeWindow currentWindow = 0;
+	NativeWindowRenderContext* currentWindowContext = nullptr;
+	DrawCommandVector* currentDrawCmdLayer = nullptr;
 	RenderBatch* currentBatch = nullptr;
 	Rect currentClipRect;
-	UiFont* currentFont = nullptr;
-	UiAtlas* currentAtlas = nullptr;
+	Font* currentFont = nullptr;
+	Rgba32 currentColor = 0xffffffff;
+	HTexture currentTexture = 0;
+	u32 currentTextureWidth = 0, currentTextureHeight = 0;
 	Point windowSize;
-	u32 currentColor;
-	i32 zOrder = 0;
-	u32 atlasTextureIndex = 0;
-	u32 drawCmdNextInsertIndex = ~0;
+	VertexBufferData vertexBufferData;
+	std::vector<LineInfo> lines;
+	std::unordered_map<HNativeWindow, NativeWindowRenderContext> windowContexts;
 };
 
 }

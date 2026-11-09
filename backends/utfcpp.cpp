@@ -1,0 +1,150 @@
+#include "utfcpp.h"
+#include <utf8.h>
+#include <algorithm>
+#include <string.h>
+
+namespace hui
+{
+static bool utf8To32(const char* utf8Str, Utf32String& outUtf32Str)
+{
+	if (!utf8Str)
+		return false;
+
+	outUtf32Str.clear();
+
+	try
+	{
+		utf8::utf8to32(
+			(char*)utf8Str,
+			(char*)(utf8Str + strlen(utf8Str)),
+			std::back_inserter(outUtf32Str));
+	}
+
+	catch (utf8::invalid_utf8 ex)
+	{
+		return false;
+	}
+
+	return true;
+}
+
+static bool utf32To8(const Utf32String& utf32Str, char** outUtf8Str)
+{
+	std::vector<char> chars;
+
+	try
+	{
+		utf8::utf32to8(
+			utf32Str.begin(),
+			utf32Str.end(),
+			std::back_inserter(chars));
+	}
+
+	catch (utf8::invalid_utf8 ex)
+	{
+		return false;
+	}
+
+	*outUtf8Str = new char[chars.size() + 1];
+	memset((char*)*outUtf8Str, 0, chars.size() + 1);
+
+	auto str = (char*)*outUtf8Str;
+
+	for (int i = 0; i < chars.size(); i++)
+	{
+		str[i] = chars[i];
+	}
+
+	return true;
+}
+
+static bool utf32To8NoAlloc(const Utf32String& utf32Str, const char* outUtf8Str, size_t maxUtf8StrLen)
+{
+	std::vector<char> chars;
+
+	try
+	{
+		utf8::utf32to8(
+			utf32Str.begin(),
+			utf32Str.end(),
+			std::back_inserter(chars));
+	}
+
+	catch (utf8::invalid_utf8 ex)
+	{
+		return false;
+	}
+
+	if (chars.empty())
+	{
+		return false;
+	}
+
+	int i = 0;
+
+	for (i = 0; i < std::min(maxUtf8StrLen, chars.size()); i++)
+	{
+		((char*)outUtf8Str)[i] = chars[i];
+	}
+
+	((char*)outUtf8Str)[i] = 0;
+
+	return true;
+}
+
+static size_t utf8Length(const char* utf8Str)
+{
+	return utf8::distance(utf8Str, utf8Str + strlen(utf8Str));
+}
+
+static bool utf32To8NoAlloc(const u32* utf32Str, size_t utf32StrSize, const char* outUtf8Str, size_t maxOutUtf8StrSize)
+{
+	std::vector<char> chars;
+
+	try
+	{
+		utf8::utf32to8(
+			utf32Str,
+			utf32Str + utf32StrSize,
+			std::back_inserter(chars));
+	}
+
+	catch (utf8::invalid_utf8 ex)
+	{
+		return false;
+	}
+
+	if (chars.empty())
+	{
+		return false;
+	}
+
+	int i = 0;
+
+	for (i = 0; i < std::min(maxOutUtf8StrSize, chars.size()); i++)
+	{
+		((char*)outUtf8Str)[i] = chars[i];
+	}
+
+	((char*)outUtf8Str)[i] = 0;
+
+	return true;
+}
+
+void initUtf(Services& services)
+{
+	services.utf32To8NoAlloc = utf32To8NoAlloc;
+	services.utf8To32 = utf8To32;
+	services.utf32To8 = utf32To8;
+	services.utf8Length = utf8Length;
+}
+
+void shutdownUtf(Services& services)
+{
+	services.utf32To8NoAlloc = nullptr;
+	services.utf8To32 = nullptr;
+	services.utf32To8 = nullptr;
+	services.utf8Length = nullptr;
+}
+
+}

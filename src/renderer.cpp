@@ -1,23 +1,14 @@
-#ifdef _WINDOWS
-#include <windows.h>
-#endif
-
 #include <string.h>
 #include <algorithm>
+#include "context.h"
 #include "renderer.h"
-#include "ui_atlas.h"
-#include "ui_font.h"
-#include "ui_theme.h"
-#include "ui_context.h"
+#include "atlas.h"
+#include "font.h"
+#include "theme.h"
 #include "util.h"
-#include "unicode_text_cache.h"
 
 namespace hui
 {
-//TODO: make them grow dynamically like the vertex buffer
-const u32 textBufferMaxSize = 1024 * 1024 * 5;/// 5MB of text on screen at once its more than enough for now
-const u32 pointBufferMaxSize = 500000; /// more than enough for a full screen of lines, around 5MB
-
 enum LineClipBit
 {
 	Inside = 0,
@@ -27,36 +18,36 @@ enum LineClipBit
 	Top = 8
 };
 
-// Function to compute region code for a point(x, y) 
-int computeLineClipCode(const Point& p, const Rect& rect)
+// function to compute region code for a point(x, y)
+static i32 computeLineClipCode(const Point& p, const Rect& rect)
 {
-	// initialized as being inside  
-	int code = LineClipBit::Inside;
+	// initialized as being inside
+	i32 code = LineClipBit::Inside;
 
-	if (p.x < rect.left())       // to the left of rectangle 
+	if (p.x < rect.left())       // to the left of rectangle
 		code |= LineClipBit::Left;
-	else if (p.x > rect.right())  // to the right of rectangle 
+	else if (p.x > rect.right())  // to the right of rectangle
 		code |= LineClipBit::Right;
-	if (p.y < rect.top())       // below the rectangle 
+	if (p.y < rect.top())       // below the rectangle
 		code |= LineClipBit::Bottom;
-	else if (p.y > rect.bottom())  // above the rectangle 
+	else if (p.y > rect.bottom())  // above the rectangle
 		code |= LineClipBit::Top;
 
 	return code;
 }
 
-bool clipLineToRect(
+static bool clipLineToRect(
 	const Point& p1, const Point& p2,
 	const Point& uv1, const Point& uv2,
 	const Rect& rect,
 	Point& newP1, Point& newP2,
 	Point& newUv1, Point& newUv2)
 {
-	// Compute region codes for P1, P2 
-	int code1 = computeLineClipCode(p1, rect);
-	int code2 = computeLineClipCode(p2, rect);
+	// compute region codes for P1, P2
+	i32 code1 = computeLineClipCode(p1, rect);
+	i32 code2 = computeLineClipCode(p2, rect);
 
-	// Initialize line as outside the rectangular window 
+	// initialize line as outside the rectangular window
 	bool accept = false;
 
 	newUv1 = uv1;
@@ -66,7 +57,7 @@ bool clipLineToRect(
 	{
 		if ((code1 == 0) && (code2 == 0))
 		{
-			// If both endpoints lie within rectangle 
+			// if both endpoints lie within rectangle
 			accept = true;
 			newP1 = p1;
 			newP2 = p2;
@@ -76,28 +67,28 @@ bool clipLineToRect(
 		}
 		else if (code1 & code2)
 		{
-			// If both endpoints are outside rectangle, 
-			// in same region 
+			// if both endpoints are outside rectangle,
+			// in same region
 			break;
 		}
 		else
 		{
-			// Some segment of line lies within the 
-			// rectangle 
-			int code_out;
-			f32 x, y;
+			// some segment of line lies within the
+			// rectangle
+			i32 code_out = 0;
+			f32 x = 0, y = 0;
 			Point uv = uv1;
 
-			// At least one endpoint is outside the  
-			// rectangle, pick it. 
+			// at least one endpoint is outside the
+			// rectangle, pick it.
 			if (code1 != 0)
 				code_out = code1;
 			else
 				code_out = code2;
 
-			// Find intersection point; 
-			// using formulas y = y1 + slope * (x - x1), 
-			// x = x1 + (1 / slope) * (y - y1) 
+			// find intersection point;
+			// using formulas y = y1 + slope * (x - x1),
+			// x = x1 + (1 / slope) * (y - y1)
 			if (code_out & LineClipBit::Top)
 			{
 				// point is above the clip rectangle
@@ -131,9 +122,9 @@ bool clipLineToRect(
 				uv = uv1 + (uv2 - uv1) * t;
 			}
 
-			// Now intersection point x,y is found 
-			// We replace point outside rectangle 
-			// by intersection point 
+			// now intersection point x,y is found
+			// we replace point outside rectangle
+			// by intersection point
 			if (code_out == code1)
 			{
 				newP1.x = x;
@@ -154,12 +145,14 @@ bool clipLineToRect(
 	return accept;
 }
 
-void clipLeft(const Rect& rect, Point* inPoints, Point* inUvPoints, u32 inCount, Point* outPoints, Point* outUvPoints, u32& outCount)
+static void clipLeft(const Rect& rect, Point* inPoints, Point* inUvPoints, Rgba32* inColors, u32 inCount, Point* outPoints, Point* outUvPoints, Rgba32* outColors, u32& outCount)
 {
 	Point* pp1;
 	Point* pp2;
 	Point* uvpp1;
 	Point* uvpp2;
+	Rgba32* cpp1;
+	Rgba32* cpp2;
 
 	for (u32 i = 0; i < inCount; i++)
 	{
@@ -169,6 +162,8 @@ void clipLeft(const Rect& rect, Point* inPoints, Point* inUvPoints, u32 inCount,
 			pp2 = &inPoints[0];
 			uvpp1 = &inUvPoints[i];
 			uvpp2 = &inUvPoints[0];
+			cpp1 = &inColors[i];
+			cpp2 = &inColors[0];
 		}
 		else
 		{
@@ -176,52 +171,62 @@ void clipLeft(const Rect& rect, Point* inPoints, Point* inUvPoints, u32 inCount,
 			pp2 = &inPoints[i + 1];
 			uvpp1 = &inUvPoints[i];
 			uvpp2 = &inUvPoints[i + 1];
+			cpp1 = &inColors[i];
+			cpp2 = &inColors[i + 1];
 		}
 
 		const Point& p1 = *pp1;
 		const Point& p2 = *pp2;
 		const Point& uvp1 = *uvpp1;
 		const Point& uvp2 = *uvpp2;
+		const Color cp1 = *cpp1;
+		const Color cp2 = *cpp2;
 
 		// inside
 		if (p1.x >= rect.x && p2.x >= rect.x)
 		{
 			outUvPoints[outCount] = uvp2;
+			outColors[outCount] = cp2;
 			outPoints[outCount++] = p2;
 		}
 
 		// exit
 		if (p1.x >= rect.x && p2.x < rect.x)
 		{
-			// point is to the left of rectangle 
+			// point is to the left of rectangle
 			auto t = (rect.x - p1.x) / (p2.x - p1.x);
 			auto y = p1.y + (p2.y - p1.y) * t;
 			auto x = rect.x;
 			outUvPoints[outCount] = uvp1 + (uvp2 - uvp1) * t;
+			outColors[outCount] = cp1 + (cp2 - cp1) * t;
 			outPoints[outCount++] = { x, y };
 		}
 
 		// enter
 		if (p1.x < rect.x && p2.x >= rect.x)
 		{
-			// point is to the left of rectangle 
+			// point is to the left of rectangle
 			auto t = (rect.x - p1.x) / (p2.x - p1.x);
 			auto y = p1.y + (p2.y - p1.y) * t;
 			auto x = rect.x;
 			outUvPoints[outCount] = uvp1 + (uvp2 - uvp1) * t;
 			outUvPoints[outCount + 1] = uvp2;
+			outColors[outCount] = cp1 + (cp2 - cp1) * t;
+			outColors[outCount + 1] = cp2;
 			outPoints[outCount++] = { x, y };
 			outPoints[outCount++] = p2;
 		}
 	}
 }
 
-void clipRight(const Rect& rect, Point* inPoints, Point* inUvPoints, u32 inCount, Point* outPoints, Point* outUvPoints, u32& outCount)
+static void clipRight(const Rect& rect, Point* inPoints, Point* inUvPoints, Rgba32* inColors, u32 inCount, Point* outPoints, Point* outUvPoints, Rgba32* outColors, u32& outCount)
 {
 	Point* pp1;
 	Point* pp2;
 	Point* uvpp1;
 	Point* uvpp2;
+	Rgba32* cpp1;
+	Rgba32* cpp2;
 
 	for (u32 i = 0; i < inCount; i++)
 	{
@@ -231,6 +236,8 @@ void clipRight(const Rect& rect, Point* inPoints, Point* inUvPoints, u32 inCount
 			pp2 = &inPoints[0];
 			uvpp1 = &inUvPoints[i];
 			uvpp2 = &inUvPoints[0];
+			cpp1 = &inColors[i];
+			cpp2 = &inColors[0];
 		}
 		else
 		{
@@ -238,28 +245,34 @@ void clipRight(const Rect& rect, Point* inPoints, Point* inUvPoints, u32 inCount
 			pp2 = &inPoints[i + 1];
 			uvpp1 = &inUvPoints[i];
 			uvpp2 = &inUvPoints[i + 1];
+			cpp1 = &inColors[i];
+			cpp2 = &inColors[i + 1];
 		}
 
 		const Point& p1 = *pp1;
 		const Point& p2 = *pp2;
 		const Point& uvp1 = *uvpp1;
 		const Point& uvp2 = *uvpp2;
+		const Color cp1 = *cpp1;
+		const Color cp2 = *cpp2;
 
 		// inside
 		if (p1.x <= rect.right() && p2.x <= rect.right())
 		{
 			outUvPoints[outCount] = uvp2;
+			outColors[outCount] = cp2;
 			outPoints[outCount++] = p2;
 		}
 
 		// exit
 		if (p1.x <= rect.right() && p2.x > rect.right())
 		{
-			// point is to the right of rectangle 
+			// point is to the right of rectangle
 			auto t = (rect.right() - p1.x) / (p2.x - p1.x);
 			auto y = p1.y + (p2.y - p1.y) * t;
 			auto x = rect.right();
 			outUvPoints[outCount] = uvp1 + (uvp2 - uvp1) * t;
+			outColors[outCount] = cp1 + (cp2 - cp1) * t;
 			outPoints[outCount++] = { x, y };
 		}
 
@@ -272,18 +285,22 @@ void clipRight(const Rect& rect, Point* inPoints, Point* inUvPoints, u32 inCount
 			auto x = rect.right();
 			outUvPoints[outCount] = uvp1 + (uvp2 - uvp1) * t;
 			outUvPoints[outCount + 1] = uvp2;
+			outColors[outCount] = cp1 + (cp2 - cp1) * t;
+			outColors[outCount + 1] = cp2;
 			outPoints[outCount++] = { x, y };
 			outPoints[outCount++] = p2;
 		}
 	}
 }
 
-void clipTop(const Rect& rect, Point* inPoints, Point* inUvPoints, u32 inCount, Point* outPoints, Point* outUvPoints, u32& outCount)
+static void clipTop(const Rect& rect, Point* inPoints, Point* inUvPoints, Rgba32* inColors, u32 inCount, Point* outPoints, Point* outUvPoints, Rgba32* outColors, u32& outCount)
 {
 	Point* pp1;
 	Point* pp2;
 	Point* uvpp1;
 	Point* uvpp2;
+	Rgba32* cpp1;
+	Rgba32* cpp2;
 
 	for (u32 i = 0; i < inCount; i++)
 	{
@@ -293,6 +310,8 @@ void clipTop(const Rect& rect, Point* inPoints, Point* inUvPoints, u32 inCount, 
 			pp2 = &inPoints[0];
 			uvpp1 = &inUvPoints[i];
 			uvpp2 = &inUvPoints[0];
+			cpp1 = &inColors[i];
+			cpp2 = &inColors[0];
 		}
 		else
 		{
@@ -300,17 +319,22 @@ void clipTop(const Rect& rect, Point* inPoints, Point* inUvPoints, u32 inCount, 
 			pp2 = &inPoints[i + 1];
 			uvpp1 = &inUvPoints[i];
 			uvpp2 = &inUvPoints[i + 1];
+			cpp1 = &inColors[i];
+			cpp2 = &inColors[i + 1];
 		}
 
 		const Point& p1 = *pp1;
 		const Point& p2 = *pp2;
 		const Point& uvp1 = *uvpp1;
 		const Point& uvp2 = *uvpp2;
+		const Color cp1 = *cpp1;
+		const Color cp2 = *cpp2;
 
 		// inside
 		if (p1.y >= rect.top() && p2.y >= rect.top())
 		{
 			outUvPoints[outCount] = uvp2;
+			outColors[outCount] = cp2;
 			outPoints[outCount++] = p2;
 		}
 
@@ -322,6 +346,7 @@ void clipTop(const Rect& rect, Point* inPoints, Point* inUvPoints, u32 inCount, 
 			auto x = p1.x + (p2.x - p1.x) * t;
 			auto y = rect.top();
 			outUvPoints[outCount] = uvp1 + (uvp2 - uvp1) * t;
+			outColors[outCount] = cp1 + (cp2 - cp1) * t;
 			outPoints[outCount++] = { x, y };
 		}
 
@@ -334,18 +359,22 @@ void clipTop(const Rect& rect, Point* inPoints, Point* inUvPoints, u32 inCount, 
 			auto y = rect.top();
 			outUvPoints[outCount] = uvp1 + (uvp2 - uvp1) * t;
 			outUvPoints[outCount + 1] = uvp2;
+			outColors[outCount] = cp1 + (cp2 - cp1) * t;
+			outColors[outCount + 1] = cp2;
 			outPoints[outCount++] = { x, y };
 			outPoints[outCount++] = p2;
 		}
 	}
 }
 
-void clipBottom(const Rect& rect, Point* inPoints, Point* inUvPoints, u32 inCount, Point* outPoints, Point* outUvPoints, u32& outCount)
+static void clipBottom(const Rect& rect, Point* inPoints, Point* inUvPoints, Rgba32* inColors, u32 inCount, Point* outPoints, Point* outUvPoints, Rgba32* outColors, u32& outCount)
 {
 	Point* pp1;
 	Point* pp2;
 	Point* uvpp1;
 	Point* uvpp2;
+	Rgba32* cpp1;
+	Rgba32* cpp2;
 
 	for (u32 i = 0; i < inCount; i++)
 	{
@@ -355,6 +384,8 @@ void clipBottom(const Rect& rect, Point* inPoints, Point* inUvPoints, u32 inCoun
 			pp2 = &inPoints[0];
 			uvpp1 = &inUvPoints[i];
 			uvpp2 = &inUvPoints[0];
+			cpp1 = &inColors[i];
+			cpp2 = &inColors[0];
 		}
 		else
 		{
@@ -362,17 +393,22 @@ void clipBottom(const Rect& rect, Point* inPoints, Point* inUvPoints, u32 inCoun
 			pp2 = &inPoints[i + 1];
 			uvpp1 = &inUvPoints[i];
 			uvpp2 = &inUvPoints[i + 1];
+			cpp1 = &inColors[i];
+			cpp2 = &inColors[i + 1];
 		}
 
 		const Point& p1 = *pp1;
 		const Point& p2 = *pp2;
 		const Point& uvp1 = *uvpp1;
 		const Point& uvp2 = *uvpp2;
+		const Color cp1 = *cpp1;
+		const Color cp2 = *cpp2;
 
 		// inside
 		if (p1.y <= rect.bottom() && p2.y <= rect.bottom())
 		{
 			outUvPoints[outCount] = uvp2;
+			outColors[outCount] = cp2;
 			outPoints[outCount++] = p2;
 		}
 
@@ -384,29 +420,33 @@ void clipBottom(const Rect& rect, Point* inPoints, Point* inUvPoints, u32 inCoun
 			auto x = p1.x + (p2.x - p1.x) * t;
 			auto y = rect.bottom();
 			outUvPoints[outCount] = uvp1 + (uvp2 - uvp1) * t;
+			outColors[outCount] = cp1 + (cp2 - cp1) * t;
 			outPoints[outCount++] = { x, y };
 		}
 
 		// enter
 		if (p1.y > rect.bottom() && p2.y <= rect.bottom())
 		{
-			// point is below the rectangle 
+			// point is below the rectangle
 			auto t = (rect.bottom() - p1.y) / (p2.y - p1.y);
 			auto x = p1.x + (p2.x - p1.x) * t;
 			auto y = rect.bottom();
 			outUvPoints[outCount] = uvp1 + (uvp2 - uvp1) * t;
 			outUvPoints[outCount + 1] = uvp2;
+			outColors[outCount] = cp1 + (cp2 - cp1) * t;
+			outColors[outCount + 1] = cp2;
 			outPoints[outCount++] = { x, y };
 			outPoints[outCount++] = p2;
 		}
 	}
 }
 
-bool clipTriangleToRect(
+static bool clipTriangleToRect(
 	const Point& p1, const Point& p2, const Point& p3,
 	const Point& uv1, const Point& uv2, const Point& uv3,
+	const Rgba32 c1, const Rgba32 c2, const Rgba32 c3,
 	const Rect& rect,
-	Point* outPoints, Point* outUvPoints, u32& outCount)
+	Point* outPoints, Point* outUvPoints, Rgba32* outColors, u32& outCount)
 {
 	outCount = 0;
 	auto clip1 = computeLineClipCode(p1, rect);
@@ -423,27 +463,33 @@ bool clipTriangleToRect(
 		outUvPoints[0] = uv1;
 		outUvPoints[1] = uv2;
 		outUvPoints[2] = uv3;
+		outColors[0] = c1;
+		outColors[1] = c2;
+		outColors[2] = c3;
 		outCount = 3;
+
 		return true;
 	}
 
 	Point inPoints[] = {p1, p2, p3, Point(), Point(), Point(), Point(), Point(), Point(), Point(), Point(), Point() };
 	Point inUvPoints[] = { uv1, uv2, uv3, Point(), Point(), Point(), Point(), Point(), Point(), Point(), Point(), Point() };
+	Rgba32 inColors[] = { c1, c2, c3, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 	u32 inCount = 3;
 
 	outCount = 0;
-	clipLeft(rect, inPoints, inUvPoints, inCount, outPoints, outUvPoints, outCount);
+	clipLeft(rect, inPoints, inUvPoints, inColors, inCount, outPoints, outUvPoints, outColors, outCount);
 	inCount = 0;
-	clipTop(rect, outPoints, outUvPoints, outCount, inPoints, inUvPoints, inCount);
+	clipTop(rect, outPoints, outUvPoints, outColors, outCount, inPoints, inUvPoints, inColors, inCount);
 	outCount = 0;
-	clipRight(rect, inPoints, inUvPoints, inCount, outPoints, outUvPoints, outCount);
+	clipRight(rect, inPoints, inUvPoints, inColors, inCount, outPoints, outUvPoints, outColors, outCount);
 	inCount = 0;
-	clipBottom(rect, outPoints, outUvPoints, outCount, inPoints, inUvPoints, inCount);
-	
+	clipBottom(rect, outPoints, outUvPoints, outColors, outCount, inPoints, inUvPoints, inColors, inCount);
+
 	for (u32 i = 0; i < inCount; i++)
 	{
 		outPoints[i] = inPoints[i];
 		outUvPoints[i] = inUvPoints[i];
+		outColors[i] = inColors[i];
 	}
 
 	outCount = inCount;
@@ -451,35 +497,272 @@ bool clipTriangleToRect(
 	return true;
 }
 
-Renderer::Renderer()
+DrawCmdLayerSplitter::DrawCmdLayerSplitter()
+{}
+
+void DrawCmdLayerSplitter::clear()
 {
-	textBuffer.resize(textBufferMaxSize);
-	pointBuffer.resize(pointBufferMaxSize);
-	vertexBuffer = ctx->gfx->createVertexBuffer();
+	for (auto& layer : layers)
+	{
+		layer.clear();
+	}
+
+	currentLayerIndex = 0;
 }
+
+void DrawCmdLayerSplitter::split(u32 layerCount)
+{
+	auto prevCount = layers.size();
+
+	if (layers.size() != layerCount)
+	{
+		layers.resize(layerCount);
+	}
+
+	for (size_t i = 0; i < layers.size(); i++)
+	{
+		layers[i].clear();
+	}
+}
+
+void DrawCmdLayerSplitter::merge()
+{
+	if (layers.empty())
+		return;
+
+	setLayer(0);
+
+	for (u32 i = 1; i < layers.size(); i++)
+	{
+		auto& layer = layers[i];
+		layers[0].insert(layers[0].end(), layer.begin(), layer.end());
+		layer.clear();
+	}
+
+	HUI_ASSERT(ctx->renderer.currentDrawCmdLayer);
+	ctx->renderer.currentDrawCmdLayer->insert(ctx->renderer.currentDrawCmdLayer->end(), layers[0].begin(), layers[0].end());
+}
+
+void DrawCmdLayerSplitter::setLayer(u32 index)
+{
+	if (index == currentLayerIndex)
+		return;
+
+	HUI_ASSERT(ctx->renderer.currentDrawCmdLayer);
+	layers[currentLayerIndex].swap(*ctx->renderer.currentDrawCmdLayer);
+	currentLayerIndex = index;
+	ctx->renderer.currentDrawCmdLayer->swap(layers[currentLayerIndex]);
+}
+
+Renderer::Renderer()
+{}
 
 Renderer::~Renderer()
+{}
+
+void Renderer::nativeWindowSetCurrent(HNativeWindow wnd)
 {
-	delete vertexBuffer;
+	currentWindow = wnd;
+	auto iter = windowContexts.find(wnd);
+
+	if (iter == windowContexts.end())
+	{
+		windowContexts.insert({ wnd, NativeWindowRenderContext() });
+		auto& wndCtx = windowContexts[wnd];
+		wndCtx.textBuffer.resize(ctx->settings.textBufferMaxSize);
+		wndCtx.pointBuffer.resize(ctx->settings.pointBufferMaxSize);
+	}
+
+	currentWindowContext = &windowContexts[wnd];
+	currentDrawCmdLayer = &currentWindowContext->drawCmdLayers[(u32)currentWindowContext->currentDrawCmdLayer];
 }
 
-void Renderer::clear(const Color& color)
+void Renderer::executeDrawCommands(HNativeWindow wnd)
 {
-	ctx->gfx->clear(color);
+	//TODO: should these be per window ?
+	if (disableRendering || skipRender)
+		return;
+
+	currentWindowContext = &windowContexts[wnd];
+	currentTexture = nullptr;
+	currentTextureWidth = 0;
+	currentTextureHeight = 0;
+	currentBatch = nullptr;
+	currentWindowContext->batches.clear();
+	vertexBufferData.drawVertexCount = 0;
+	currentWindow = wnd;
+
+	for (auto& layerCmds : currentWindowContext->drawCmdLayers)
+	{
+		for (auto& cmd : layerCmds)
+		{
+			switch (cmd.type)
+			{
+			case DrawCommand::Type::DrawImageBordered:
+				drawImageBordered(cmd.data.drawImageBordered.image, cmd.data.drawImageBordered.border, cmd.data.drawImageBordered.rect, cmd.data.drawImageBordered.scale);
+				break;
+			case DrawCommand::Type::DrawQuad:
+				drawQuad(cmd.data.drawQuad.image, cmd.data.drawQuad.corners[0], cmd.data.drawQuad.corners[1], cmd.data.drawQuad.corners[2], cmd.data.drawQuad.corners[3]);
+				break;
+			case DrawCommand::Type::DrawRect:
+			{
+				if (cmd.data.drawRect.texture && cmd.data.drawRect.texture != currentTexture)
+				{
+					addBatch();
+					currentTexture = cmd.data.drawRect.texture;
+				}
+
+				if (clipRect(cmd.data.drawRect.rotated, cmd.data.drawRect.rect, cmd.data.drawRect.uvRect))
+				{
+					if (cmd.data.drawRect.rotated)
+					{
+						drawQuadRot90(cmd.data.drawRect.rect, cmd.data.drawRect.uvRect);
+					}
+					else
+					{
+						drawQuad(cmd.data.drawRect.rect, cmd.data.drawRect.uvRect);
+					}
+				}
+				break;
+			}
+			case DrawCommand::Type::DrawText:
+				computeSizeOrDrawText(cmd.data.drawText.text, cmd.data.drawText.rect, cmd.data.drawText.horizAlign, cmd.data.drawText.vertAlign, true, currentFont, cmd.data.drawText.singleLineEllipsis, cmd.data.drawText.noWordWrap);
+				break;
+			case DrawCommand::Type::SetColor:
+				currentColor = cmd.data.color;
+				break;
+			case DrawCommand::Type::SetFont:
+				currentFont = cmd.data.font;
+				break;
+			case DrawCommand::Type::ClipRect:
+				currentClipRect = cmd.data.clipRect;
+				break;
+			case DrawCommand::Type::SetTextStyle:
+				currentTextStyle = cmd.data.textStyle;
+				break;
+			case DrawCommand::Type::SetLineStyle:
+				currentLineStyle = cmd.data.lineStyle;
+				break;
+			case DrawCommand::Type::SetFillStyle:
+				currentFillStyle = cmd.data.fillStyle;
+				break;
+			case DrawCommand::Type::DrawLine:
+				currentColor = currentLineStyle.color;
+				drawLine(cmd.data.drawLine.a, cmd.data.drawLine.b);
+				break;
+			case DrawCommand::Type::DrawPolyLine:
+				currentColor = currentLineStyle.color;
+				drawPolyLine(cmd.data.drawPolyLine.points, cmd.data.drawPolyLine.count, cmd.data.drawPolyLine.closed);
+				break;
+			case DrawCommand::Type::DrawSolidTriangle:
+				drawTriangle(
+					cmd.data.drawTriangle.p1,
+					cmd.data.drawTriangle.p2,
+					cmd.data.drawTriangle.p3,
+					cmd.data.drawTriangle.uv1,
+					cmd.data.drawTriangle.uv2,
+					cmd.data.drawTriangle.uv3,
+					cmd.data.drawTriangle.c1,
+					cmd.data.drawTriangle.c2,
+					cmd.data.drawTriangle.c3,
+					cmd.data.drawTriangle.image);
+				break;
+			case DrawCommand::Type::DrawQuad4Colors:
+				drawQuad4Colors(
+					cmd.data.drawQuad4Colors.rect,
+					cmd.data.drawQuad4Colors.uvRect.contract({ ctx->settings.whiteImageUvBorder, ctx->settings.whiteImageUvBorder }),
+					cmd.data.drawQuad4Colors.topLeft,
+					cmd.data.drawQuad4Colors.topRight,
+					cmd.data.drawQuad4Colors.bottomRight,
+					cmd.data.drawQuad4Colors.bottomLeft);
+				break;
+			case DrawCommand::Type::SetTexture:
+				HUI_ASSERT(cmd.data.setTexture.texture);
+				HUI_ASSERT(cmd.data.setTexture.width);
+				HUI_ASSERT(cmd.data.setTexture.height);
+
+				if (currentTexture != cmd.data.setTexture.texture && cmd.data.setTexture.texture)
+				{
+					currentTexture = cmd.data.setTexture.texture;
+					currentTextureWidth = cmd.data.setTexture.width;
+					currentTextureHeight = cmd.data.setTexture.height;
+					addBatch();
+				}
+				break;
+			case DrawCommand::Type::ClearBackground:
+				ctx->settings.services.clearBackbuffer(cmd.data.color);
+				break;
+			case DrawCommand::Type::Callback:
+				cmd.data.callback(currentWindow);
+				break;
+			default:
+				break;
+			}
+		}
+
+		layerCmds.clear();
+	}
+
+	auto& batches = currentWindowContext->batches;
+
+	// terminate the vertex stream with a degenerate transparent triangle, so that the
+	// real geometry is never the last primitive of the frame (some drivers/backends
+	// drop the final triangle, which clipped the last glyph of the last drawn text)
+	if (vertexBufferData.drawVertexCount > 0 && !batches.empty())
+	{
+		needToAddVertexCount(3);
+		u32 firstDummyVertex = vertexBufferData.drawVertexCount;
+
+		for (u32 i = 0; i < 3; i++)
+		{
+			vertexBufferData.vertices[firstDummyVertex + i].position = Point(0.0f, 0.0f);
+			vertexBufferData.vertices[firstDummyVertex + i].uv = Point(0.0f, 0.0f);
+			vertexBufferData.vertices[firstDummyVertex + i].color = 0;
+		}
+
+		vertexBufferData.drawVertexCount = firstDummyVertex + 3;
+	}
+
+	// recompute every batch range from its start index, a stale or short vertex count
+	// would silently drop the tail of a batch
+	for (u32 i = 0; i < batches.size(); i++)
+	{
+		u32 batchEnd = i + 1 < batches.size() ? batches[i + 1].startVertexIndex : vertexBufferData.drawVertexCount;
+
+		batches[i].vertexCount = batchEnd > batches[i].startVertexIndex ? batchEnd - batches[i].startVertexIndex : 0;
+	}
+
+	HUI_ASSERT(batches.size());
+	ctx->settings.services.draw(vertexBufferData.vertices.data(), vertexBufferData.drawVertexCount, batches.data(), batches.size());
+}
+
+void Renderer::cmdCallback(RenderCallback callback)
+{
+	DrawCommand cmd(DrawCommand::Type::Callback);
+
+	cmd.data.callback = callback;
+	addDrawCommand(cmd);
+}
+
+void Renderer::cmdClearBackground(const Rgba32 color)
+{
+	DrawCommand cmd(DrawCommand::Type::ClearBackground);
+
+	cmd.data.color = color;
+	addDrawCommand(cmd);
 }
 
 Rect Renderer::pushClipRect(const Rect& rect, bool clipToParent)
 {
 	auto oldRect = currentClipRect;
-	clipRectStack.push_back(currentClipRect);
+	currentWindowContext->clipRectStack.push_back(currentClipRect);
 	auto newRect = clipToParent ? rect.clipInside(oldRect) : rect;
 	currentClipRect = newRect;
 
 	DrawCommand cmd(DrawCommand::Type::ClipRect);
 
-	cmd.zOrder = zOrder;
-	cmd.clipRect = currentClipRect;
-	cmd.clipToParent = clipToParent;
+	cmd.data.clipRect = currentClipRect;
+	cmd.data.clipToParent = clipToParent;
 	addDrawCommand(cmd);
 
 	return newRect;
@@ -487,19 +770,18 @@ Rect Renderer::pushClipRect(const Rect& rect, bool clipToParent)
 
 void Renderer::popClipRect()
 {
-	if (clipRectStack.empty())
+	if (currentWindowContext->clipRectStack.empty())
 	{
 		return;
 	}
 
-	currentClipRect = clipRectStack.back();
-	clipRectStack.pop_back();
+	currentClipRect = currentWindowContext->clipRectStack.back();
+	currentWindowContext->clipRectStack.pop_back();
 
 	DrawCommand cmd(DrawCommand::Type::ClipRect);
 
-	cmd.clipRect = currentClipRect;
-	cmd.zOrder = zOrder;
-	cmd.popClipRect = true;
+	cmd.data.clipRect = currentClipRect;
+	cmd.data.popClipRect = true;
 	addDrawCommand(cmd);
 }
 
@@ -507,146 +789,86 @@ void Renderer::setWindowSize(const Point& size)
 {
 	windowSize = size;
 	currentClipRect = { 0, 0, windowSize.x, windowSize.y };
-	ctx->gfx->setViewport(windowSize, currentClipRect);
+	ctx->settings.services.setViewport(windowSize, currentClipRect);
 }
 
-void Renderer::beginFrame()
+void Renderer::pushWindowDrawCmdLayer(DrawCmdLayerType type)
 {
-	zOrder = 0;
-	skipRender = false;
-	disableRendering = false;
-	drawCommands.clear();
-	batches.clear();
-	vertexBufferData.drawVertexCount = 0;
-	textBufferPosition = 0;
-	pointBufferPosition = 0;
-	currentAtlas = nullptr;
-	currentBatch = nullptr;
-	cmdSetAtlas(ctx->theme->atlas);
+	HUI_ASSERT(currentWindowContext);
+	currentWindowContext->drawCmdLayerTypeStack.push_back(currentWindowContext->currentDrawCmdLayer);
+	currentWindowContext->currentDrawCmdLayer = type;
+	currentDrawCmdLayer = &currentWindowContext->drawCmdLayers[(u32)type];
 }
 
-void Renderer::endFrame()
+void Renderer::popWindowDrawCmdLayer()
 {
-	if (disableRendering || skipRender)
-		return;
+	HUI_ASSERT(currentWindowContext);
+	currentWindowContext->currentDrawCmdLayer = currentWindowContext->drawCmdLayerTypeStack.back();
+	currentWindowContext->drawCmdLayerTypeStack.pop_back();
+	currentDrawCmdLayer = &currentWindowContext->drawCmdLayers[(u32)currentWindowContext->currentDrawCmdLayer];
+}
 
-	auto sortDrawCommands = [](const DrawCommand& a, const DrawCommand& b) -> bool
+void Renderer::resetWindowContexts()
+{
+	for (auto& wc : windowContexts)
 	{
-		if (a.zOrder < b.zOrder)
-			return true;
+		wc.second.batches.clear();
+		wc.second.clipRectStack.clear();
+		wc.second.currentDrawCmdLayer = DrawCmdLayerType::Normal;
+		wc.second.pointBufferPosition = 0;
+		wc.second.textBufferPosition = 0;
+		wc.second.textBuffer.resize(ctx->settings.textBufferMaxSize);
+		wc.second.pointBuffer.resize(ctx->settings.pointBufferMaxSize);
 
-		return false;
-	};
-
-	std::stable_sort(drawCommands.begin(), drawCommands.end(), sortDrawCommands);
-	currentAtlas = nullptr;
-	currentBatch = nullptr;
-
-	// generate the batches
-	for (auto& cmd : drawCommands)
-	{
-		switch (cmd.type)
+		for (auto& layer : wc.second.drawCmdLayers)
 		{
-		case DrawCommand::Type::DrawImageBordered:
-			drawImageBordered(cmd.drawImageBordered.image, cmd.drawImageBordered.border, cmd.drawImageBordered.rect, cmd.drawImageBordered.scale);
-			break;
-		case DrawCommand::Type::DrawQuad:
-			drawQuad(cmd.drawQuad.image, cmd.drawQuad.corners[0], cmd.drawQuad.corners[1], cmd.drawQuad.corners[2], cmd.drawQuad.corners[3]);
-			break;
-		case DrawCommand::Type::DrawRect:
-		{
-			atlasTextureIndex = cmd.drawRect.textureIndex;
-
-			if (clipRect(cmd.drawRect.rotated, cmd.drawRect.rect, cmd.drawRect.uvRect))
-			{
-				if (cmd.drawRect.rotated)
-				{
-					drawQuadRot90(cmd.drawRect.rect, cmd.drawRect.uvRect);
-				}
-				else
-				{
-					drawQuad(cmd.drawRect.rect, cmd.drawRect.uvRect);
-				}
-			}
-			break;
-		}
-		case DrawCommand::Type::DrawText:
-			drawTextInternal(cmd.drawText.text, cmd.drawText.position);
-			break;
-		case DrawCommand::Type::SetColor:
-			currentColor = cmd.setColor.getRgba();
-			break;
-		case DrawCommand::Type::SetFont:
-			currentFont = cmd.setFont;
-			break;
-		case DrawCommand::Type::ClipRect:
-			currentClipRect = cmd.clipRect;
-			break;
-		case DrawCommand::Type::SetTextStyle:
-			currentTextStyle = cmd.setTextStyle;
-			break;
-		case DrawCommand::Type::SetLineStyle:
-			currentLineStyle = cmd.setLineStyle;
-			break;
-		case DrawCommand::Type::SetFillStyle:
-			currentFillStyle = cmd.setFillStyle;
-			break;
-		case DrawCommand::Type::DrawLine:
-			currentColor = currentLineStyle.color.getRgba();
-			drawLine(cmd.drawLine.a, cmd.drawLine.b);
-			break;
-		case DrawCommand::Type::DrawPolyLine:
-			currentColor = currentLineStyle.color.getRgba();
-			drawPolyLine(cmd.drawPolyLine.points, cmd.drawPolyLine.count, cmd.drawPolyLine.closed);
-			break;
-		case DrawCommand::Type::DrawSolidTriangle:
-			currentColor = currentFillStyle.color.getRgba();
-			drawTriangle(
-				cmd.drawTriangle.p1,
-				cmd.drawTriangle.p2,
-				cmd.drawTriangle.p3,
-				cmd.drawTriangle.uv1,
-				cmd.drawTriangle.uv2,
-				cmd.drawTriangle.uv3,
-				cmd.drawTriangle.image);
-			break;
-		case DrawCommand::Type::SetAtlas:
-			if (currentAtlas != cmd.setAtlas)
-			{
-				currentAtlas = cmd.setAtlas;
-				addBatch();
-			}
-			break;
+			layer.clear();
 		}
 	}
-
-	vertexBuffer->updateData(vertexBufferData.vertices.data(), 0, vertexBufferData.drawVertexCount);
-	// render the batches
-	ctx->gfx->draw(batches.data(), batches.size());
 }
 
-void Renderer::cmdSetColor(const Color& newColor)
+void Renderer::begin()
+{
+	cmdSetTexture(
+		ctx->theme->texture,
+		ctx->theme->atlas.width,
+		ctx->theme->atlas.height);
+}
+
+void Renderer::end()
+{
+}
+
+void Renderer::cmdSetColor(const Rgba32 newColor)
 {
 	DrawCommand cmd(DrawCommand::Type::SetColor);
-	cmd.zOrder = zOrder;
-	cmd.setColor = newColor;
+
+	currentColor = newColor;
+	cmd.data.color = newColor;
 	addDrawCommand(cmd);
 }
 
-void Renderer::cmdSetAtlas(UiAtlas* newAtlas)
+void Renderer::cmdSetTexture(HTexture textureHandle, u32 width, u32 height)
 {
-	DrawCommand cmd(DrawCommand::Type::SetAtlas);
-	cmd.zOrder = zOrder;
-	cmd.setAtlas = newAtlas;
-	currentAtlas = newAtlas;
+	DrawCommand cmd(DrawCommand::Type::SetTexture);
+	
+	HUI_ASSERT(textureHandle);
+	HUI_ASSERT(width);
+	HUI_ASSERT(height);
+	cmd.data.setTexture.texture = textureHandle;
+	cmd.data.setTexture.width = width;
+	cmd.data.setTexture.height = height;
+	currentTexture = textureHandle;
+	currentTextureWidth = width;
+	currentTextureHeight = height;
 	addDrawCommand(cmd);
 }
 
-void Renderer::cmdSetFont(UiFont* font)
+void Renderer::cmdSetFont(Font* font)
 {
 	DrawCommand cmd(DrawCommand::Type::SetFont);
-	cmd.zOrder = zOrder;
-	cmd.setFont = font;
+
+	cmd.data.font = font;
 	currentFont = font;
 	addDrawCommand(cmd);
 }
@@ -654,104 +876,103 @@ void Renderer::cmdSetFont(UiFont* font)
 void Renderer::cmdSetTextUnderline(bool underline)
 {
 	DrawCommand cmd(DrawCommand::Type::SetTextStyle);
+
 	currentTextStyle.underline = underline;
-	cmd.zOrder = zOrder;
-	cmd.setTextStyle = currentTextStyle;
+	cmd.data.textStyle = currentTextStyle;
 	addDrawCommand(cmd);
 }
 
 void Renderer::cmdSetTextBackfill(bool backfill)
 {
 	DrawCommand cmd(DrawCommand::Type::SetTextStyle);
+
 	currentTextStyle.backFill = backfill;
-	cmd.zOrder = zOrder;
-	cmd.setTextStyle = currentTextStyle;
+	cmd.data.textStyle = currentTextStyle;
 	addDrawCommand(cmd);
 }
 
-void Renderer::cmdSetTextBackfillColor(const Color& color)
+void Renderer::cmdSetTextBackfillColor(const Rgba32 color)
 {
 	DrawCommand cmd(DrawCommand::Type::SetTextStyle);
+
 	currentTextStyle.backFillColor = color;
-	cmd.zOrder = zOrder;
-	cmd.setTextStyle = currentTextStyle;
+	cmd.data.textStyle = currentTextStyle;
 	addDrawCommand(cmd);
 }
 
 void Renderer::cmdSetLineStyle(const LineStyle& style)
 {
 	DrawCommand cmd(DrawCommand::Type::SetLineStyle);
-	cmd.zOrder = zOrder;
-	currentLineStyle = cmd.setLineStyle = style;
+
+	currentLineStyle = cmd.data.lineStyle = style;
 	addDrawCommand(cmd);
 }
 
 void Renderer::cmdSetFillStyle(const FillStyle& style)
 {
 	DrawCommand cmd(DrawCommand::Type::SetFillStyle);
-	cmd.zOrder = zOrder;
-	currentFillStyle = cmd.setFillStyle = style;
+
+	currentFillStyle = cmd.data.fillStyle = style;
 	addDrawCommand(cmd);
 }
 
-void Renderer::cmdDrawImage(UiImage* image, const Point& position, f32 scale)
+void Renderer::cmdDrawImage(Image* image, const Point& position, f32 scale)
 {
 	DrawCommand cmd(DrawCommand::Type::DrawRect);
-	cmd.zOrder = zOrder;
-	cmd.drawRect.rect = Rect(position.x, position.y, image->rect.width * scale, image->rect.height * scale);
-	cmd.drawRect.uvRect = image->uvRect;
-	cmd.drawRect.rotated = image->rotated;
-	cmd.drawRect.textureIndex = image->atlasTexture->textureIndex;
+
+	cmd.data.drawRect.rect = Rect(position.x, position.y, image->rect.width * scale, image->rect.height * scale);
+	cmd.data.drawRect.uvRect = image->uvRect;
+	cmd.data.drawRect.rotated = image->rotated;
+	cmd.data.drawRect.texture = 0;
 	addDrawCommand(cmd);
 }
 
-void Renderer::cmdDrawImage(UiImage* image, const Rect& rect)
+void Renderer::cmdDrawImage(Image* image, const Rect& rect)
 {
 	DrawCommand cmd(DrawCommand::Type::DrawRect);
-	cmd.zOrder = zOrder;
-	cmd.drawRect.rect = rect;
-	cmd.drawRect.uvRect = image->uvRect;
-	cmd.drawRect.rotated = image->rotated;
-	cmd.drawRect.textureIndex = image->atlasTexture->textureIndex;
+
+	cmd.data.drawRect.rect = rect;
+	cmd.data.drawRect.uvRect = image->uvRect;
+	cmd.data.drawRect.rotated = image->rotated;
+	cmd.data.drawRect.texture = 0;
 	addDrawCommand(cmd);
 }
 
-void Renderer::cmdDrawImage(UiImage* image, const Rect& rect, const Rect& uvRect)
+void Renderer::cmdDrawImage(Image* image, const Rect& rect, const Rect& uvRect)
 {
 	DrawCommand cmd(DrawCommand::Type::DrawRect);
-	cmd.zOrder = zOrder;
-	cmd.drawRect.rect = rect;
-	cmd.drawRect.uvRect = uvRect;
-	cmd.drawRect.rotated = image->rotated;
-	cmd.drawRect.textureIndex = image->atlasTexture->textureIndex;
+
+	cmd.data.drawRect.rect = rect;
+	cmd.data.drawRect.uvRect = uvRect;
+	cmd.data.drawRect.rotated = image->rotated;
+	cmd.data.drawRect.texture = 0;
 	addDrawCommand(cmd);
 }
 
-void Renderer::cmdDrawQuad(UiImage* image, const Point& p1, const Point& p2, const Point& p3, const Point& p4)
+void Renderer::cmdDrawQuad(Image* image, const Point& p1, const Point& p2, const Point& p3, const Point& p4)
 {
 	DrawCommand cmd(DrawCommand::Type::DrawQuad);
-	cmd.zOrder = zOrder;
-	cmd.drawQuad.corners[0] = p1;
-	cmd.drawQuad.corners[1] = p2;
-	cmd.drawQuad.corners[2] = p3;
-	cmd.drawQuad.corners[3] = p4;
-	cmd.drawQuad.image = image;
 
+	cmd.data.drawQuad.corners[0] = p1;
+	cmd.data.drawQuad.corners[1] = p2;
+	cmd.data.drawQuad.corners[2] = p3;
+	cmd.data.drawQuad.corners[3] = p4;
+	cmd.data.drawQuad.image = image;
 	addDrawCommand(cmd);
 }
 
-void Renderer::cmdDrawImageBordered(UiImage* image, u32 border, const Rect& rect, f32 scale)
+void Renderer::cmdDrawImageBordered(Image* image, u32 border, const Rect& rect, f32 scale)
 {
 	DrawCommand cmd(DrawCommand::Type::DrawImageBordered);
-	cmd.zOrder = zOrder;
-	cmd.drawImageBordered.rect = rect;
-	cmd.drawImageBordered.image = image;
-	cmd.drawImageBordered.border = border;
-	cmd.drawImageBordered.scale = scale;
+
+	cmd.data.drawImageBordered.rect = rect;
+	cmd.data.drawImageBordered.image = image;
+	cmd.data.drawImageBordered.border = border;
+	cmd.data.drawImageBordered.scale = scale;
 	addDrawCommand(cmd);
 }
 
-void Renderer::cmdDrawImageScaledAligned(UiImage* image, const Rect& rect, HAlignType halign, VAlignType valign, f32 scale)
+void Renderer::cmdDrawImageScaledAligned(Image* image, const Rect& rect, HAlignType halign, VAlignType valign, f32 scale)
 {
 	f32 newWidth = image->rect.width * scale;
 	f32 newHeight = image->rect.height * scale;
@@ -765,7 +986,7 @@ void Renderer::cmdDrawImageScaledAligned(UiImage* image, const Rect& rect, HAlig
 		newRect.x = rect.right() - newWidth;
 		break;
 	case hui::HAlignType::Center:
-		newRect.x = newRect.x + (rect.width - newWidth) / 2.f;
+		newRect.x = newRect.x + (rect.width - newWidth) / 2.0f;
 		break;
 	default:
 		break;
@@ -779,7 +1000,7 @@ void Renderer::cmdDrawImageScaledAligned(UiImage* image, const Rect& rect, HAlig
 		newRect.y = rect.bottom() - newHeight;
 		break;
 	case hui::VAlignType::Center:
-		newRect.y = newRect.y + (rect.height - newHeight) / 2.f;
+		newRect.y = newRect.y + (rect.height - newHeight) / 2.0f;
 		break;
 	default:
 		break;
@@ -788,137 +1009,863 @@ void Renderer::cmdDrawImageScaledAligned(UiImage* image, const Rect& rect, HAlig
 	cmdDrawImage(image, newRect);
 }
 
-void Renderer::cmdDrawSolidRectangle(const Rect& rect)
+void Renderer::cmdDrawImageTiled(Image* image, const Rect& destRect, const Point& offset, const Point& scale)
 {
-	auto image = currentAtlas->whiteImage;
+    f32 imageWidth = image->rect.width * scale.x;
+    f32 imageHeight = image->rect.height * scale.y;
+
+    if (imageWidth <= 0.0f || imageHeight <= 0.0f)
+        return;
+
+    // normalize offset into [0, imageWidth) / [0, imageHeight)
+    f32 ox = fmodf(offset.x, imageWidth);
+    f32 oy = fmodf(offset.y, imageHeight);
+    if (ox < 0) ox += imageWidth;
+    if (oy < 0) oy += imageHeight;
+
+    // start tiling so pattern is shifted by offset
+    f32 startX = destRect.x - ox;
+    f32 startY = destRect.y - oy;
+
+    for (f32 y = startY; y < destRect.bottom(); y += imageHeight)
+    {
+        for (f32 x = startX; x < destRect.right(); x += imageWidth)
+        {
+            // full tile rect (may extend outside destRect)
+            Rect tileRect = { x, y, imageWidth, imageHeight };
+
+            // compute intersection with destRect -> this is the visible portion we need to draw
+            Rect visibleRect = tileRect.clipInside(destRect);
+
+            if (visibleRect.width <= 0.0f || visibleRect.height <= 0.0f)
+                continue;
+
+            // compute UV mapping for visibleRect.
+            // tileRect maps to the whole image UV; visibleRect is an offset sub-rect of tileRect.
+            // compute fraction of tile that is visible on each axis
+            f32 visOffsetX = visibleRect.x - tileRect.x; // pixels into the tile
+            f32 visOffsetY = visibleRect.y - tileRect.y;
+            f32 visW = visibleRect.width;
+            f32 visH = visibleRect.height;
+
+            // base UV for the tile (full tile)
+            f32 u0 = image->uvRect.x;
+            f32 v0 = image->uvRect.y;
+            f32 uScale = image->uvRect.width / imageWidth;
+            f32 vScale = image->uvRect.height / imageHeight;
+
+            Rect tileUvRect = {
+                u0 + visOffsetX * uScale,
+                v0 + visOffsetY * vScale,
+                visW * uScale,
+                visH * vScale
+            };
+
+            // issue clipped tile using computed UVs
+            cmdDrawImage(image, visibleRect, tileUvRect);
+        }
+    }
+}
+
+void Renderer::cmdDrawRectangle(const Rect& rect)
+{
+	Point pts[4] = {
+		rect.topLeft(),
+		rect.topRight(),
+		rect.bottomRight(),
+		rect.bottomLeft()
+	};
+
+	cmdDrawPolyLine(pts, 4, true);
+}
+
+void Renderer::cmdDrawFilledRectangle(const Rect& rect)
+{
+	auto image = ctx->theme->whiteImage;
 	auto uvRect = image->uvRect;
 	uvRect = uvRect.contract(ctx->settings.whiteImageUvBorder);
 	cmdDrawImage(image, rect, uvRect);
 }
 
-void Renderer::cmdDrawInterpolatedColors(const Rect& rect, const Color& topLeft, const Color& bottomLeft, const Color& topRight, const Color& bottomRight)
+void Renderer::cmdDrawRectangle4Colors(const Rect& rect, const Rgba32 topLeft, const Rgba32 topRight, const Rgba32 bottomRight, const Rgba32 bottomLeft)
 {
-	DrawCommand cmd(DrawCommand::Type::DrawInterpolatedColors);
-	cmd.zOrder = zOrder;
-	cmd.drawInterpolatedColors.rect = rect;
-	cmd.drawInterpolatedColors.bottomLeft = bottomLeft;
-	cmd.drawInterpolatedColors.bottomRight = bottomRight;
-	cmd.drawInterpolatedColors.topLeft = topLeft;
-	cmd.drawInterpolatedColors.topRight = topRight;
+	DrawCommand cmd(DrawCommand::Type::DrawQuad4Colors);
+
+	cmd.data.drawQuad4Colors.rect = rect;
+	cmd.data.drawQuad4Colors.uvRect = ctx->theme->whiteImage->uvRect.contract({ ctx->settings.whiteImageUvBorder, ctx->settings.whiteImageUvBorder });
+	cmd.data.drawQuad4Colors.image = ctx->theme->whiteImage;
+	cmd.data.drawQuad4Colors.bottomLeft = bottomLeft;
+	cmd.data.drawQuad4Colors.bottomRight = bottomRight;
+	cmd.data.drawQuad4Colors.topLeft = topLeft;
+	cmd.data.drawQuad4Colors.topRight = topRight;
 	addDrawCommand(cmd);
-}
-
-void Renderer::cmdDrawSpectrumColors(const Rect& rect, DrawSpectrumBrightness brightness, DrawSpectrumDirection dir)
-{
-	//TODO
-}
-
-void Renderer::cmdDrawInterpolatedColorsTopBottom(const Rect& rect, const Color& top, const Color& bottom)
-{
-	cmdDrawInterpolatedColors(rect, top, bottom, top, bottom);
-}
-
-void Renderer::cmdDrawInterpolatedColorsLeftRight(const Rect& rect, const Color& left, const Color& right)
-{
-	cmdDrawInterpolatedColors(rect, left, left, right, right);
 }
 
 void Renderer::cmdDrawLine(const Point& a, const Point& b)
 {
 	DrawCommand cmd(DrawCommand::Type::DrawLine);
-	cmd.zOrder = zOrder;
-	cmd.drawLine.a = a;
-	cmd.drawLine.b = b;
+
+	cmd.data.drawLine.a = a;
+	cmd.data.drawLine.b = b;
 	addDrawCommand(cmd);
 }
 
 void Renderer::cmdDrawPolyLine(const Point* points, u32 pointCount, bool closed)
 {
+	if (!points || pointCount < 2)
+		return;
+
+	auto& pointBuffer = currentWindowContext->pointBuffer;
+	u32 position = currentWindowContext->pointBufferPosition;
+
+	// the buffer cannot be grown, stored command pointers would dangle
+	if (position >= (u32)pointBuffer.size())
+		return;
+
+	u32 count = std::min(pointCount, (u32)pointBuffer.size() - position);
+
 	DrawCommand cmd(DrawCommand::Type::DrawPolyLine);
-	cmd.zOrder = zOrder;
-	cmd.drawPolyLine.count = pointCount;
-	cmd.drawPolyLine.closed = closed;
-	cmd.drawPolyLine.points = &pointBuffer[pointBufferPosition];
-	memcpy(pointBuffer.data() + pointBufferPosition, points, pointCount * sizeof(Point));
-	pointBufferPosition += pointCount;
+
+	cmd.data.drawPolyLine.count = count;
+	cmd.data.drawPolyLine.closed = closed;
+	cmd.data.drawPolyLine.points = pointBuffer.data() + position;
+	memcpy(pointBuffer.data() + position, points, count * sizeof(Point));
+	currentWindowContext->pointBufferPosition += count;
 	addDrawCommand(cmd);
 }
 
-void Renderer::cmdDrawSolidTriangle(const Point& p1, const Point& p2, const Point& p3)
+void Renderer::cmdDrawSolidTriangle(const Point& p1, const Point& p2, const Point& p3, const Rgba32 c1, const Rgba32 c2, const Rgba32 c3)
 {
 	DrawCommand cmd(DrawCommand::Type::DrawSolidTriangle);
-	cmd.zOrder = zOrder;
-	cmd.drawTriangle.p1 = p1;
-	cmd.drawTriangle.p2 = p2;
-	cmd.drawTriangle.p3 = p3;
-	auto uvRc =  ctx->theme->atlas->whiteImage->uvRect;
+
+	cmd.data.drawTriangle.p1 = p1;
+	cmd.data.drawTriangle.p2 = p2;
+	cmd.data.drawTriangle.p3 = p3;
+	auto uvRc = ctx->theme->whiteImage->uvRect;
 	uvRc = uvRc.contract(ctx->settings.whiteImageUvBorder);
-	cmd.drawTriangle.uv1 = uvRc.topLeft();
-	cmd.drawTriangle.uv2 = uvRc.topRight();
-	cmd.drawTriangle.uv3 = uvRc.bottomRight();
-	cmd.drawTriangle.image = ctx->theme->atlas->whiteImage;
+	cmd.data.drawTriangle.uv1 = uvRc.topLeft();
+	cmd.data.drawTriangle.uv2 = uvRc.topRight();
+	cmd.data.drawTriangle.uv3 = uvRc.bottomRight();
+	cmd.data.drawTriangle.c1 = c1;
+	cmd.data.drawTriangle.c2 = c2;
+	cmd.data.drawTriangle.c3 = c3;
+	cmd.data.drawTriangle.image = ctx->theme->whiteImage;
 	addDrawCommand(cmd);
 }
 
-FontTextSize Renderer::cmdDrawTextAt(
-	const char* text,
-	const Point& position)
-{
-	FontTextSize fsize = currentFont->computeTextSize(text);
-	DrawCommand cmd(DrawCommand::Type::DrawText);
-	cmd.zOrder = zOrder;
-	cmd.drawText.position = position;
-	cmd.drawText.text = addUtf8TextToBuffer(text, strlen(text));
-	addDrawCommand(cmd);
-	return fsize;
-}
-
-FontTextSize Renderer::cmdDrawTextInBox(
+FontTextSize Renderer::computeSizeOrDrawText(
 	const char* text,
 	const Rect& rect,
-	HAlignType horizontal,
-	VAlignType vertical)
+	HAlignType horizAlign,
+	VAlignType vertAlign,
+	bool doDraw,
+	Font* font,
+	bool singleLineEllipsis,
+	bool noWordWrap)
 {
-	FontTextSize fsize = currentFont->computeTextSize(text);
-	DrawCommand cmd(DrawCommand::Type::DrawText);
-	Point pos;
-
-	switch (vertical)
+	if (!text || !strcmp(text, ""))
 	{
-	case hui::VAlignType::Top:
-		pos.y = rect.y + currentFont->getMetrics().ascender;
-		break;
-	case hui::VAlignType::Bottom:
-		pos.y = rect.bottom() + currentFont->getMetrics().descender;
-		break;
-	case hui::VAlignType::Center:
-		pos.y = rect.y + (rect.height - fsize.maxGlyphHeight) / 2.0f + fsize.maxBearingY;
-		break;
-	default:
-		pos.y = rect.y;
-		break;
+		return FontTextSize();
 	}
 
-	switch (horizontal)
+	Utf32String uniText;
+
+	ctx->settings.services.utf8To32(text, uniText);
+
+	return computeSizeOrDrawText(uniText.data(), (u32)uniText.size(), rect, horizAlign, vertAlign, doDraw, font, singleLineEllipsis, noWordWrap);
+}
+
+FontTextSize Renderer::computeSizeOrDrawText(
+	const GlyphCode* const text,
+	u32 size,
+	const Rect& rect,
+	HAlignType horizAlign,
+	VAlignType vertAlign,
+	bool doDraw,
+	Font* font,
+	bool singleLineEllipsis,
+	bool noWordWrap)
+{
+	FontTextSize fsize;
+	Font* fnt = font ? font : currentFont;
+
+	if (!fnt || size == 0)
 	{
-	case hui::HAlignType::Left:
-		pos.x = rect.x;
-		break;
-	case hui::HAlignType::Right:
-		pos.x = rect.right() - fsize.width;
-		break;
-	case hui::HAlignType::Center:
-		pos.x = rect.x + (rect.width - fsize.width) / 2.0f;
-		break;
-	default:
-		pos.x = rect.x;
-		break;
+		return fsize;
 	}
 
-	cmd.zOrder = zOrder;
-	cmd.drawText.position = pos;
-	cmd.drawText.text = addUtf8TextToBuffer(text, strlen(text));
-	addDrawCommand(cmd);
+	f32 spaceWidth = 0.0f;
+	auto gSpace = fnt->getGlyph(' ');
+	if (gSpace) spaceWidth = gSpace->advanceX;
+	f32 tabWidth = spaceWidth * (f32)ctx->settings.tabSize;
+
+	// helper: compute ellipsis width (prefer single U+2026 glyph, fall back to three dots)
+	auto computeEllipsisWidth = [&](Font* ff) -> f32 {
+		const GlyphCode uniEll = 0x2026;
+		auto gEll = ff->getGlyph(uniEll);
+
+		if (gEll)
+			return gEll->advanceX;
+
+		// fallback to three ASCII dots, include basic kerning conservatively
+		auto gDot = ff->getGlyph((GlyphCode)'.');
+
+		if (!gDot) return 0.0f;
+
+		// approximate three dots advance (simple approximation)
+		return gDot->advanceX * 3.0f;
+	};
+
+	// if singleLineEllipsis is requested, produce measurement/draw for exactly one line
+	if (singleLineEllipsis)
+	{
+		// find end of first logical line (stop at \n or end)
+		u32 lineEnd = 0;
+
+		while (lineEnd < size && text[lineEnd] != '\n') ++lineEnd;
+
+		// defensive: zero width rect -> nothing to draw
+		if (rect.width <= 0.0f)
+		{
+			// still provide height for one line
+			fsize.height = fnt->getMetrics().height;
+			fsize.width = 0.0f;
+
+			return fsize;
+		}
+
+		// measure how many glyphs fit when appending an ellipsis if truncated
+		f32 ellWidth = computeEllipsisWidth(fnt);
+		u32 lastChr = 0;
+		f32 currWidth = 0.0f;
+		u32 fitCount = 0;
+		bool forceTruncationLogic = false;
+
+		// 1. check if the entire line fits without truncation.
+		{
+			f32 w = 0.0f;
+			u32 lChr = 0;
+			u32 cnt = 0;
+
+			for (u32 i = 0; i < lineEnd; ++i)
+			{
+				auto chr = text[i];
+				auto glyph = fnt->getGlyph(chr);
+
+				if (!glyph && chr != '\t') continue;
+
+				auto kern = fnt->getKerning(lChr, chr);
+				f32 adv = 0;
+
+				if (chr == '\t')
+				{
+					adv = tabWidth;
+				}
+				else
+				{
+					adv = glyph->advanceX + kern;
+				}
+
+				w += adv;
+				lChr = chr;
+				cnt++;
+			}
+
+			// tolerance for floating point precision issues
+			if (w <= rect.width + 0.001f)
+			{
+				currWidth = w;
+				fitCount = cnt;
+			}
+			else
+			{
+				forceTruncationLogic = true;
+			}
+		}
+
+		if (forceTruncationLogic)
+		{
+			currWidth = 0.0f;
+			fitCount = 0;
+			lastChr = 0;
+
+			// determine how many glyphs can be drawn while leaving room for ellipsis if needed
+			for (u32 i = 0; i < lineEnd; ++i)
+			{
+				auto chr = text[i];
+				auto glyph = fnt->getGlyph(chr);
+
+				if (!glyph && chr != '\t')
+					continue;
+
+				auto kern = fnt->getKerning(lastChr, chr);
+				f32 adv = 0;
+
+				if (chr == '\t')
+				{
+					adv = tabWidth;
+				}
+				else
+				{
+					adv = glyph->advanceX + kern;
+				}
+
+				// if entire text fits without ellipsis, accept it.
+				// if not, ensure we leave space for ellipsis.
+				bool wouldExceed = (currWidth > rect.width);
+				bool needsEllipsis = (lineEnd > 0 && (lineEnd - 0) > (i + 1)); // more glyphs after this one
+
+				if (wouldExceed)
+				{
+					// can't accept this glyph; stop
+					break;
+				}
+
+				// if there are remaining glyphs after this and adding them would later overflow,
+				// ensure we have room for ellipsis now. Conservative check: if next glyph would push us
+				// over and we don't have ellipsis room, stop before adding current glyph.
+				if (i + 1 < lineEnd)
+				{
+					// estimate minimal remaining (we don't know exactly next widths) - ensure ellipsis fits after adding this glyph
+					if (currWidth + adv + ellWidth > rect.width)
+					{
+						// if even zero glyphs fit but ellipsis itself fits, show only ellipsis
+						if (fitCount == 0)
+						{
+							// if ellipsis itself doesn't fit, we'll clamp width to rect.width and return
+							if (ellWidth > rect.width)
+							{
+								currWidth = rect.width;
+								fitCount = 0;
+								break;
+							}
+						}
+						// stop before adding this glyph so we can append ellipsis
+						break;
+					}
+				}
+
+				currWidth += adv;
+				lastChr = chr;
+				++fitCount;
+			}
+		}
+
+		// decide final displayed width:
+		bool didTruncate = fitCount < lineEnd;
+		f32 displayedWidth = currWidth;
+
+		if (didTruncate)
+		{
+			// if nothing fits but ellipsis fits, display only ellipsis
+			if (fitCount == 0)
+			{
+				displayedWidth = std::min(ellWidth, rect.width);
+			}
+			else
+			{
+				displayedWidth = currWidth + ellWidth;
+				if (displayedWidth > rect.width) displayedWidth = rect.width;
+			}
+		}
+		else
+		{
+			// no truncation, displayedWidth is full measured width (currWidth) but ensure not exceeding rect
+			if (displayedWidth > rect.width) displayedWidth = rect.width;
+		}
+
+		// fill FontTextSize results
+		fsize.width = displayedWidth;
+		fsize.height = fnt->getMetrics().height;
+		fsize.maxLength = fitCount;
+
+		// draw pass: draw the single aligned line with optional ellipsis
+		if (doDraw)
+		{
+			Point pos;
+
+			// vertical align: place baseline based on requested vertAlign (single line)
+			switch (vertAlign)
+			{
+			case hui::VAlignType::Top:
+				pos.y = rect.y + fnt->getMetrics().ascender;
+				break;
+			case hui::VAlignType::Bottom:
+				pos.y = rect.bottom() + fnt->getMetrics().descender;
+				break;
+			case hui::VAlignType::Center:
+				pos.y = rect.y + (rect.height - (fnt->getMetrics().ascender - fnt->getMetrics().descender)) * .5f + fnt->getMetrics().ascender;
+				break;
+			default:
+				pos.y = rect.y + fnt->getMetrics().ascender;
+				break;
+			}
+
+			// horizontal align based on displayedWidth (includes ellipsis if truncated)
+			switch (horizAlign)
+			{
+			case hui::HAlignType::Left:
+				pos.x = rect.x;
+				break;
+			case hui::HAlignType::Right:
+				pos.x = rect.right() - displayedWidth;
+				break;
+			case hui::HAlignType::Center:
+				pos.x = rect.x + (rect.width - displayedWidth) / 2.0f;
+				break;
+			default:
+				pos.x = rect.x;
+				break;
+			}
+
+			pos.x = round(pos.x);
+			pos.y = round(pos.y);
+
+			// draw the fitted glyphs
+			GlyphCode lastDrawChr = 0;
+			for (u32 j = 0; j < fitCount; ++j)
+			{
+				auto chr = text[j];
+				auto glyph = fnt->getGlyph(chr);
+				auto img = fnt->getGlyphImage(chr);
+
+				if (!glyph && chr != '\t') continue;
+				auto kern = fnt->getKerning(lastDrawChr, chr);
+				pos.x += kern;
+
+				if (chr == '\t')
+				{
+					pos.x += tabWidth;
+				}
+				else
+				{
+					if (img) drawTextGlyph(img, { pos.x + glyph->bitmapLeft, pos.y - glyph->bitmapTop });
+					pos.x += glyph->advanceX;
+				}
+
+				lastDrawChr = chr;
+			}
+
+			// draw ellipsis if truncated
+			if (didTruncate)
+			{
+				const GlyphCode uniEll = 0x2026;
+				auto gEll = fnt->getGlyph(uniEll);
+				if (gEll && fnt->getGlyphImage(uniEll))
+				{
+					auto kern = fnt->getKerning(lastDrawChr, uniEll);
+					pos.x += kern;
+					drawTextGlyph(fnt->getGlyphImage(uniEll), { pos.x + gEll->bitmapLeft, pos.y - gEll->bitmapTop });
+					// advance x not needed further
+				}
+				else
+				{
+					// fallback: draw up to three '.' glyphs as ellipsis
+					auto gDot = fnt->getGlyph((GlyphCode)'.');
+					auto imgDot = fnt->getGlyphImage((GlyphCode)'.');
+					for (int d = 0; d < 3; ++d)
+					{
+						if (!gDot) break;
+						auto kern = fnt->getKerning(lastDrawChr, (GlyphCode)'.');
+						pos.x += kern;
+						if (imgDot) drawTextGlyph(imgDot, { pos.x + gDot->bitmapLeft, pos.y - gDot->bitmapTop });
+						pos.x += gDot->advanceX;
+						lastDrawChr = (GlyphCode)'.';
+					}
+				}
+			}
+		}
+
+		return fsize;
+	}
+
+	// measurement with wrapping (port of original Font::computeTextSize)
+	u32 lastChr = 0;
+	u32 lineCount = 1;
+	f32 crtLineWidth = 0.0f;
+	f32 crtWordWidth = 0.0f;
+	u32 currentLineChars = 0;
+	u32 longestLineChars = 0;
+	u32 lastWordIndex = 0;
+	u32 lineStart = 0;
+
+	lines.clear();
+
+	for (u32 i = 0; i < size; ++i)
+	{
+		auto chr = text[i];
+
+		// explicit newline -> finish current line and start new one
+		// skip newline handling if noWordWrap is enabled - treat as space instead
+		if (!noWordWrap && chr == '\n')
+		{
+			// finalize this line
+			f32 segmentWidth = crtLineWidth;
+			lines.push_back({ lineStart, currentLineChars, segmentWidth });
+
+			if (fsize.width < segmentWidth)
+				fsize.width = segmentWidth;
+
+			if (longestLineChars < currentLineChars)
+				longestLineChars = currentLineChars;
+
+			// reset for next line
+			crtLineWidth = 0.0f;
+			crtWordWidth = 0.0f;
+			currentLineChars = 0;
+			lastChr = 0;
+			lastWordIndex = i + 1;
+			lineStart = i + 1;
+			++lineCount;
+			continue;
+		}
+		else if (noWordWrap && chr == '\n')
+		{
+			// when noWordWrap is enabled, treat newlines as spaces
+			chr = ' ';
+		}
+
+		auto glyph = fnt->getGlyph(chr);
+		if (!glyph && chr != '\t')
+			continue;
+
+		// track word boundaries
+		if (chr == ' ' || chr == '\t')
+		{
+			lastWordIndex = i + 1;
+			crtWordWidth = 0.0f;
+		}
+
+		// compute advance including kerning with previous glyph on same line
+		auto kern = fnt->getKerning(lastChr, chr);
+		f32 glyphAdvance = 0;
+
+		if (chr == '\t')
+		{
+			glyphAdvance = tabWidth;
+		}
+		else
+		{
+			glyphAdvance = glyph->advanceX + kern;
+		}
+
+		f32 projectedLineWidth = crtLineWidth + glyphAdvance;
+		f32 projectedWordWidth = crtWordWidth + glyphAdvance;
+
+		// wrapping when maxWidth specified (rect.width used as constraint)
+		// skip wrapping if noWordWrap is enabled - render as single line
+		if (!noWordWrap && projectedLineWidth > rect.width)
+		{
+			// if we are at start of line we must break inside word (force at least one glyph)
+			if (currentLineChars == 0 || projectedWordWidth >= rect.width)
+			{
+				// find break position inside the word (from lastWordIndex to i)
+				f32 wordSize = 0.0f;
+				u32 breakPos = lastWordIndex;
+				GlyphCode localLast = 0;
+
+				for (u32 k = lastWordIndex; k <= i; ++k)
+				{
+					auto g2 = fnt->getGlyph(text[k]);
+					if (!g2 && text[k] != '\t') continue;
+
+					auto kern2 = fnt->getKerning(localLast, text[k]);
+					f32 cw = 0;
+
+					if (text[k] == '\t')
+					{
+						cw = tabWidth;
+					}
+					else
+					{
+						cw = g2->advanceX + kern2;
+					}
+
+					wordSize += cw;
+
+					if (wordSize >= (f32)rect.width)
+					{
+						// break AFTER k so that we place glyphs up to k in this line
+						breakPos = k + 1;
+						break;
+					}
+
+					localLast = text[k];
+				}
+
+				// ensure we advance at least one glyph if breakPos didn't move
+				if (breakPos <= lineStart)
+					breakPos = lineStart + 1;
+
+				// finalize current line [lineStart .. breakPos-1]
+				u32 lineLen = breakPos > lineStart ? breakPos - lineStart : 0;
+
+				// compute actual width for the pushed segment to contextUpdate fsize.width correctly
+				f32 segmentWidth = 0.0f;
+				GlyphCode segLast = 0;
+				for (u32 k = lineStart; k < lineStart + lineLen && k < size; ++k)
+				{
+					auto g2 = fnt->getGlyph(text[k]);
+					if (!g2 && text[k] != '\t') continue;
+					auto kern2 = fnt->getKerning(segLast, text[k]);
+
+					if (text[k] == '\t')
+					{
+						segmentWidth += tabWidth;
+					}
+					else
+					{
+						segmentWidth += g2->advanceX + kern2;
+					}
+
+					segLast = text[k];
+				}
+
+				lines.push_back({ lineStart, lineLen, segmentWidth });
+
+				if (fsize.width < segmentWidth) fsize.width = segmentWidth;
+
+				if (longestLineChars < currentLineChars) longestLineChars = currentLineChars;
+				++lineCount;
+
+				// start new line at breakPos
+				crtLineWidth = 0.0f;
+				crtWordWidth = 0.0f;
+				currentLineChars = 0;
+				lastChr = 0;
+				lineStart = breakPos;
+				lastWordIndex = breakPos;
+
+				// advance lineStart to first non-space to avoid leading spaces
+				while (lineStart < size && text[lineStart] == ' ')
+					++lineStart;
+
+				lastWordIndex = lineStart;
+
+				// set iterator so loop will process lineStart next
+				if (lineStart > 0) i = lineStart - 1;
+				else i = lineStart;
+
+				continue;
+			}
+			else
+			{
+				// move whole word to next line (only valid when there's already content on current line)
+				// avoid pushing zero-length lines
+				// previously we pushed `currentLineChars` which could include a partial word.
+				// instead push only up to the last word boundary (lastWordIndex).
+				u32 pushLen = 0;
+				if (lastWordIndex > lineStart)
+					pushLen = lastWordIndex - lineStart;
+
+				if (pushLen > 0)
+				{
+					// compute actual width for the pushed segment (lineStart .. lineStart+pushLen-1)
+					f32 segmentWidth = 0.0f;
+					GlyphCode segLast = 0;
+					for (u32 k = lineStart; k < lineStart + pushLen && k < size; ++k)
+					{
+						auto g2 = fnt->getGlyph(text[k]);
+						if (!g2 && text[k] != '\t') continue;
+						auto kern2 = fnt->getKerning(segLast, text[k]);
+
+						if (text[k] == '\t')
+						{
+							segmentWidth += tabWidth;
+						}
+						else
+						{
+							segmentWidth += g2->advanceX + kern2;
+						}
+
+						segLast = text[k];
+					}
+
+					lines.push_back({ lineStart, pushLen, segmentWidth });
+
+					if (fsize.width < segmentWidth) fsize.width = segmentWidth;
+
+					if (longestLineChars < pushLen) longestLineChars = pushLen;
+					++lineCount;
+				}
+
+				// start new line at lastWordIndex (skip leading spaces)
+				crtLineWidth = 0.0f;
+				crtWordWidth = 0.0f;
+				currentLineChars = 0;
+				lastChr = 0;
+
+				u32 newStart = lastWordIndex;
+				while (newStart < size && text[newStart] == ' ')
+					++newStart;
+
+				lineStart = newStart;
+				lastWordIndex = newStart;
+
+				if (lineStart > 0) i = lineStart - 1;
+				else i = lineStart;
+
+				continue;
+			}
+		}
+
+		// accept glyph into current line
+		crtLineWidth = projectedLineWidth;
+		crtWordWidth = projectedWordWidth;
+		++currentLineChars;
+		lastChr = chr;
+
+		// keep vertical metrics for centering
+		f32 top = glyph->bearingY;
+		f32 bottom = -(glyph->pixelHeight - glyph->bearingY);
+		f32 glyphHeight = fabs(top - bottom);
+
+		if (fsize.maxGlyphHeight < glyphHeight) fsize.maxGlyphHeight = glyphHeight;
+		if (fsize.maxBearingY < glyph->bearingY) fsize.maxBearingY = glyph->bearingY;
+	}
+
+	// finalize last line
+	if (fsize.width < crtLineWidth) fsize.width = crtLineWidth;
+	lines.push_back({ lineStart, currentLineChars, crtLineWidth });
+
+	// if text ends with a trailing newline, remove the artificially pushed empty line
+	if (size > 0 && text[size - 1] == '\n')
+	{
+		if (lineCount > 0) --lineCount;
+	}
+
+	// finalize longest line char count with the last line
+	if (longestLineChars < currentLineChars) longestLineChars = currentLineChars;
+
+	// total height = number of lines * metrics.height
+	fsize.height = (f32)lineCount * fnt->getMetrics().height;
+	fsize.maxLength = longestLineChars;
+
+	// draw pass (if requested) - iterate lines and draw glyphs per-line
+	if (doDraw)
+	{
+		Point pos;
+
+		switch (vertAlign)
+		{
+		case hui::VAlignType::Top:
+			pos.y = rect.y + fnt->getMetrics().ascender;
+			break;
+		case hui::VAlignType::Bottom:
+			pos.y = rect.bottom() + fnt->getMetrics().descender;
+			break;
+		case hui::VAlignType::Center:
+			pos.y = rect.y + (rect.height - (fnt->getMetrics().ascender - fnt->getMetrics().descender) * (f32)lineCount) * .5f + fnt->getMetrics().ascender;
+			break;
+		default:
+			pos.y = rect.y;
+			break;
+		}
+
+		pos.y = round(pos.y);
+
+		const f32 lineHeight = fnt->getMetrics().height;
+
+		for (size_t li = 0; li < lines.size(); ++li)
+		{
+			auto start = lines[li].start;
+			auto len = lines[li].len;
+			auto lineWidth = lines[li].width;
+
+			switch (horizAlign)
+			{
+			case hui::HAlignType::Left:
+				pos.x = rect.x;
+				break;
+			case hui::HAlignType::Right:
+				pos.x = rect.right() - lineWidth;
+				break;
+			case hui::HAlignType::Center:
+				pos.x = rect.x + (rect.width - lineWidth) / 2.0f;
+				break;
+			default:
+				pos.x = rect.x;
+				break;
+			}
+
+			pos.x = round(pos.x);
+			const f32 startX = pos.x;
+
+			// if the last line can be an empty line created by trailing newline, skip drawing glyphs for zero len
+			if (len == 0)
+			{
+				pos.x = startX;
+				pos.y += lineHeight;
+				continue;
+			}
+
+			GlyphCode lastDrawChr = 0;
+
+			// draw glyphs in the line
+			for (u32 j = 0; j < len; ++j)
+			{
+				u32 idx = start + j;
+				if (idx >= size) break;
+				auto chr = text[idx];
+
+				auto glyph = fnt->getGlyph(chr);
+				auto img = fnt->getGlyphImage(chr);
+
+				if (!glyph && chr != '\t')
+				{
+					continue;
+				}
+
+				auto kern = fnt->getKerning(lastDrawChr, chr);
+				pos.x += kern;
+
+				if (chr == '\t')
+				{
+					pos.x += tabWidth;
+				}
+				else
+				{
+					if (img) drawTextGlyph(img, { pos.x + glyph->bitmapLeft, pos.y - glyph->bitmapTop });
+					pos.x += glyph->advanceX;
+				}
+
+				lastDrawChr = chr;
+			}
+
+			// move to next line baseline
+			pos.y += lineHeight;
+		}
+
+		// render underline (single continuous underline across computed width)
+		if (currentTextStyle.underline)
+		{
+			auto image = ctx->theme->whiteImage;
+
+			// underline spans the whole measured width (max line width)
+			Rect underlineRect(
+				rect.x,
+				rect.y - fnt->getMetrics().underlinePosition,
+				fsize.width,
+				fnt->getMetrics().underlineThickness);
+
+			if (!image->rotated)
+			{
+				drawQuad(underlineRect, image->uvRect);
+			}
+			else
+			{
+				drawQuadRot90(
+					{
+						rect.x,
+						rect.y - fnt->getMetrics().underlinePosition,
+						fsize.width,
+						fnt->getMetrics().underlineThickness
+					},
+					image->uvRect);
+			}
+		}
+	}
+
 	return fsize;
 }
 
@@ -937,9 +1884,8 @@ void Renderer::drawAtlasRegion(bool rotated, const Rect& rect, const Rect& uvRec
 		drawQuad(newRect, newUvRect);
 }
 
-void Renderer::drawTextGlyph(UiImage* image, const Point& position)
+void Renderer::drawTextGlyph(Image* image, const Point& position)
 {
-	atlasTextureIndex = image->atlasTexture->textureIndex;
 	Rect rect = Rect(
 		position.x,
 		position.y,
@@ -956,10 +1902,10 @@ void Renderer::drawTextGlyph(UiImage* image, const Point& position)
 		drawQuad(rect, uvRect);
 }
 
-void Renderer::drawQuad(UiImage* image, const Point& p1, const Point& p2, const Point& p3, const Point& p4)
+void Renderer::drawQuad(Image* image, const Point& p1, const Point& p2, const Point& p3, const Point& p4)
 {
-	drawTriangle(p1, p2, p3, image->uvRect.topLeft(), image->uvRect.topRight(), image->uvRect.bottomRight(), image);
-	drawTriangle(p1, p3, p4, image->uvRect.topLeft(), image->uvRect.bottomRight(), image->uvRect.bottomLeft(), image);
+	drawTriangle(p1, p2, p3, image->uvRect.topLeft(), image->uvRect.topRight(), image->uvRect.bottomRight(), currentColor, currentColor, currentColor, image);
+	drawTriangle(p1, p3, p4, image->uvRect.topLeft(), image->uvRect.bottomRight(), image->uvRect.bottomLeft(), currentColor, currentColor, currentColor, image);
 }
 
 void Renderer::drawQuad(const Rect& rect, const Rect& uvRect)
@@ -971,42 +1917,48 @@ void Renderer::drawQuad(const Rect& rect, const Rect& uvRect)
 	vertexBufferData.vertices[i].position = rect.topLeft();
 	vertexBufferData.vertices[i].uv = uvRect.topLeft();
 	vertexBufferData.vertices[i].color = currentColor;
-	vertexBufferData.vertices[i].textureIndex = atlasTextureIndex;
 	i++;
 
 	vertexBufferData.vertices[i].position = rect.topRight();
 	vertexBufferData.vertices[i].uv = uvRect.topRight();
 	vertexBufferData.vertices[i].color = currentColor;
-	vertexBufferData.vertices[i].textureIndex = atlasTextureIndex;
 	i++;
 
 	vertexBufferData.vertices[i].position = rect.bottomLeft();
 	vertexBufferData.vertices[i].uv = uvRect.bottomLeft();
 	vertexBufferData.vertices[i].color = currentColor;
-	vertexBufferData.vertices[i].textureIndex = atlasTextureIndex;
 	i++;
 
 	// 2nd triangle
 	vertexBufferData.vertices[i].position = rect.topRight();
 	vertexBufferData.vertices[i].uv = uvRect.topRight();
 	vertexBufferData.vertices[i].color = currentColor;
-	vertexBufferData.vertices[i].textureIndex = atlasTextureIndex;
 	i++;
 
 	vertexBufferData.vertices[i].position = rect.bottomRight();
 	vertexBufferData.vertices[i].uv = uvRect.bottomRight();
 	vertexBufferData.vertices[i].color = currentColor;
-	vertexBufferData.vertices[i].textureIndex = atlasTextureIndex;
 	i++;
 
 	vertexBufferData.vertices[i].position = rect.bottomLeft();
 	vertexBufferData.vertices[i].uv = uvRect.bottomLeft();
 	vertexBufferData.vertices[i].color = currentColor;
-	vertexBufferData.vertices[i].textureIndex = atlasTextureIndex;
 	i++;
 
 	vertexBufferData.drawVertexCount = i;
-	currentBatch->vertexCount += 6;
+	HUI_ASSERT(currentBatch);
+	
+	if (currentBatch) currentBatch->vertexCount += 6;
+}
+
+void Renderer::drawQuad4Colors(const Rect& rect, const Rect& uvRect, const Rgba32 colTopLeft, const Rgba32 colTopRight, const Rgba32 colBottomRight, const Rgba32 colBottomLeft)
+{
+	drawTriangle(rect.topLeft(), rect.topRight(), rect.bottomRight(),
+		uvRect.topLeft(), uvRect.topRight(), uvRect.bottomRight(),
+		colTopLeft, colTopRight, colBottomRight, ctx->theme->whiteImage);
+	drawTriangle(rect.topLeft(), rect.bottomRight(), rect.bottomLeft(),
+		uvRect.topLeft(), uvRect.bottomRight(), uvRect.bottomLeft(),
+		colTopLeft, colBottomRight, colBottomLeft, ctx->theme->whiteImage);
 }
 
 void Renderer::drawQuadRot90(const Rect& rect, const Rect& uvRect)
@@ -1016,30 +1968,27 @@ void Renderer::drawQuadRot90(const Rect& rect, const Rect& uvRect)
 	u32 i = vertexBufferData.drawVertexCount;
 	Point t0(uvRect.topLeft());
 	Point t1(uvRect.topRight());
-	Point t2(uvRect.right(), uvRect.bottom());
+	Point t2(uvRect.bottomRight());
 	Point t3(uvRect.bottomLeft());
 
 	// t3-------t0
-	//  |     /  |
-	//  |  /     |
+	// |     /  |
+	// |  /     |
 	// t2-------t1
 
 	vertexBufferData.vertices[i].position = rect.topLeft();
 	vertexBufferData.vertices[i].uv = t3;
 	vertexBufferData.vertices[i].color = currentColor;
-	vertexBufferData.vertices[i].textureIndex = atlasTextureIndex;
 	i++;
 
 	vertexBufferData.vertices[i].position = rect.topRight();
 	vertexBufferData.vertices[i].uv = t0;
 	vertexBufferData.vertices[i].color = currentColor;
-	vertexBufferData.vertices[i].textureIndex = atlasTextureIndex;
 	i++;
 
 	vertexBufferData.vertices[i].position = rect.bottomLeft();
 	vertexBufferData.vertices[i].uv = t2;
 	vertexBufferData.vertices[i].color = currentColor;
-	vertexBufferData.vertices[i].textureIndex = atlasTextureIndex;
 	i++;
 
 	// 2nd triangle
@@ -1047,282 +1996,26 @@ void Renderer::drawQuadRot90(const Rect& rect, const Rect& uvRect)
 	vertexBufferData.vertices[i].position = rect.topRight();
 	vertexBufferData.vertices[i].uv = t0;
 	vertexBufferData.vertices[i].color = currentColor;
-	vertexBufferData.vertices[i].textureIndex = atlasTextureIndex;
 	i++;
 
 	vertexBufferData.vertices[i].position = rect.bottomRight();
 	vertexBufferData.vertices[i].uv = t1;
 	vertexBufferData.vertices[i].color = currentColor;
-	vertexBufferData.vertices[i].textureIndex = atlasTextureIndex;
 	i++;
 
 	vertexBufferData.vertices[i].position = rect.bottomLeft();
 	vertexBufferData.vertices[i].uv = t2;
 	vertexBufferData.vertices[i].color = currentColor;
-	vertexBufferData.vertices[i].textureIndex = atlasTextureIndex;
 	i++;
 
 	vertexBufferData.drawVertexCount = i;
-	currentBatch->vertexCount += 6;
+	HUI_ASSERT(currentBatch);
+	
+	if (currentBatch)
+		currentBatch->vertexCount += 6;
 }
 
-void Renderer::drawInterpolatedColors(
-	const Rect& rect,
-	const Rect& uvRect,
-	const Color& topLeft,
-	const Color& bottomLeft,
-	const Color& topRight,
-	const Color& bottomRight)
-{
-	//TODO: optimize for speed and multiple textures
-	u32 width = rect.width;
-	u32 height = rect.height;
-
-	std::vector<u32> pixels;
-	auto t = 0.0f;
-	Color xcTop;
-	Color xcBottom;
-	Color c;
-
-	pixels.resize(width * height);
-
-	for (size_t x = 0; x < width; x++)
-	{
-		t = (f32)x / width;
-		xcTop = topLeft + (topRight - topLeft) * t;
-		xcBottom = bottomLeft + (bottomRight - bottomLeft) * t;
-
-		for (size_t y = 0; y < height; y++)
-		{
-			c = xcTop + (xcBottom - xcTop) * ((f32)y / height);
-			pixels[x + y * width] = c.getRgba();
-		}
-	}
-
-	//if (pixels.data())
-	//{
-	//	currentBatch->textureArray->updateRectData( pixels.data());
-	//}
-
-	//beginBatch(coloredQuadAtlas);
-	//atlasTextureIndex = 0;
-	//drawQuad(clippedUvRect, clippedRect);
-	//endBatch();
-}
-
-void Renderer::drawSpectrumColors(
-	const Rect& rect,
-	DrawSpectrumBrightness brightness,
-	DrawSpectrumDirection dir)
-{
-	//TODO: optimize for speed and multiple textures
-	u32 width = rect.width;
-	u32 height = rect.height;
-
-	//spectrumQuadAtlas->textureArray->resize(1, width, height);
-
-	std::vector<u32> pixels;
-	auto t = 0.0f;
-	Color xcTop;
-	Color xcBottom;
-	Color c;
-	Color spectrum[] = { Color::red, Color::yellow, Color::green, Color::cyan, Color::blue, Color::magenta };
-	const int spectrumCount = 6;
-	Color top = Color::white;
-	Color bottom = Color::black;
-
-	pixels.resize(width * height);
-
-	if (dir == DrawSpectrumDirection::Horizontal)
-	{
-		for (size_t x = 0; x < width; x++)
-		{
-			t = (f32)x / width;
-			size_t index = t * spectrumCount;
-			size_t indexNext = index + 1;
-			f32 indexF = t * (f32)spectrumCount;
-			f32 fraction = indexF - (f32)index;
-
-			if (indexNext == spectrumCount)
-				indexNext = 0;
-
-			c = spectrum[index] + (spectrum[indexNext] - spectrum[index]) * fraction;
-			c.a = 1;
-			Color cf = c;
-
-			for (size_t y = 0; y < height; y++)
-			{
-				if (brightness == DrawSpectrumBrightness::On)
-				{
-					f32 b = (f32)y / height;
-
-					if (b <= 0.5f)
-						cf = Color::white + (c - Color::white) * (b / 0.5f);
-					else
-						cf = c + (Color::black - c) * ((b - 0.5f) / 0.5f);
-
-					cf.a = 1;
-				}
-
-				pixels[x + y * width] = cf.getRgba();
-			}
-		}
-	}
-	else
-	{
-		for (size_t y = 0; y < height; y++)
-		{
-			t = (f32)y / height;
-			size_t index = t * spectrumCount;
-			size_t indexNext = index + 1;
-			f32 indexF = t * (f32)spectrumCount;
-			f32 fraction = indexF - (f32)index;
-
-			if (indexNext == spectrumCount)
-				indexNext = 0;
-
-			c = spectrum[index] + (spectrum[indexNext] - spectrum[index]) * fraction;
-			c.a = 1;
-			u32 color = c.getRgba();
-			auto offs = y * width;
-
-			for (size_t x = 0; x < width; x++)
-			{
-				pixels[x + offs] = color;
-			}
-		}
-	}
-
-	//if (pixels.data())
-	//{
-	//	spectrumQuadAtlas->textureArray->updateData(pixels.data());
-	//}
-
-	//beginBatch(spectrumQuadAtlas);
-	//atlasTextureIndex = 0;
-	//drawQuad(clippedUvRect, clippedRect);
-	//endBatch();
-}
-
-void Renderer::drawInterpolatedColorsTopBottom(
-	const Rect& rect,
-	const Rect& uvRect,
-	const Color& top,
-	const Color& bottom)
-{
-	auto whiteImg = currentAtlas->whiteImage;
-	atlasTextureIndex = whiteImg->atlasTexture->textureIndex;
-
-	Color clippedTopColor = top;
-	Color clippedBottomColor = bottom;
-
-	if (uvRect.y > 0.0f)
-		clippedTopColor = top + (bottom - top) * uvRect.y;
-
-	if (uvRect.height < 1.0f && uvRect.y == 0.0f)
-		clippedBottomColor = top + (bottom - top) * uvRect.height;
-
-	needToAddVertexCount(6);
-
-	u32 i = vertexBufferData.drawVertexCount;
-
-	vertexBufferData.vertices[i].position = rect.topLeft();
-	vertexBufferData.vertices[i].color = clippedTopColor.getRgba();
-	vertexBufferData.vertices[i].uv = whiteImg->uvRect.topLeft();
-	vertexBufferData.vertices[i].textureIndex = atlasTextureIndex;
-	i++;
-
-	vertexBufferData.vertices[i].position = rect.topRight();
-	vertexBufferData.vertices[i].color = clippedTopColor.getRgba();
-	vertexBufferData.vertices[i].uv = whiteImg->uvRect.topRight();
-	vertexBufferData.vertices[i].textureIndex = atlasTextureIndex;
-	i++;
-
-	vertexBufferData.vertices[i].position = rect.bottomLeft();
-	vertexBufferData.vertices[i].color = clippedBottomColor.getRgba();
-	vertexBufferData.vertices[i].uv = whiteImg->uvRect.bottomLeft();
-	vertexBufferData.vertices[i].textureIndex = atlasTextureIndex;
-	i++;
-
-	// 2nd tri
-	vertexBufferData.vertices[i].position = rect.topRight();
-	vertexBufferData.vertices[i].color = clippedTopColor.getRgba();
-	vertexBufferData.vertices[i].uv = whiteImg->uvRect.topRight();
-	vertexBufferData.vertices[i].textureIndex = atlasTextureIndex;
-	i++;
-
-	vertexBufferData.vertices[i].position = rect.bottomRight();
-	vertexBufferData.vertices[i].color = clippedBottomColor.getRgba();
-	vertexBufferData.vertices[i].uv = whiteImg->uvRect.bottomRight();
-	vertexBufferData.vertices[i].textureIndex = atlasTextureIndex;
-	i++;
-
-	vertexBufferData.vertices[i].position = rect.bottomLeft();
-	vertexBufferData.vertices[i].color = clippedBottomColor.getRgba();
-	vertexBufferData.vertices[i].uv = whiteImg->uvRect.bottomLeft();
-	vertexBufferData.vertices[i].textureIndex = atlasTextureIndex;
-	i++;
-
-	vertexBufferData.drawVertexCount = i;
-	currentBatch->vertexCount += 6;
-}
-
-void Renderer::drawInterpolatedColorsLeftRight(
-	const Rect& rect,
-	const Rect& uvRect,
-	const Color& left,
-	const Color& right)
-{
-	auto whiteImg = currentAtlas->whiteImage;
-
-	atlasTextureIndex = whiteImg->atlasTexture->textureIndex;
-	needToAddVertexCount(6);
-
-	u32 i = vertexBufferData.drawVertexCount;
-
-	vertexBufferData.vertices[i].position = rect.topLeft();
-	vertexBufferData.vertices[i].color = left.getRgba();
-	vertexBufferData.vertices[i].uv = whiteImg->uvRect.topLeft();
-	vertexBufferData.vertices[i].textureIndex = atlasTextureIndex;
-	i++;
-
-	vertexBufferData.vertices[i].position = rect.topRight();
-	vertexBufferData.vertices[i].color = right.getRgba();
-	vertexBufferData.vertices[i].uv = whiteImg->uvRect.topRight();
-	vertexBufferData.vertices[i].textureIndex = atlasTextureIndex;
-	i++;
-
-	vertexBufferData.vertices[i].position = rect.bottomLeft();
-	vertexBufferData.vertices[i].color = left.getRgba();
-	vertexBufferData.vertices[i].uv = whiteImg->uvRect.bottomLeft();
-	vertexBufferData.vertices[i].textureIndex = atlasTextureIndex;
-	i++;
-
-	// 2nd tri
-
-	vertexBufferData.vertices[i].position = rect.topRight();
-	vertexBufferData.vertices[i].color = right.getRgba();
-	vertexBufferData.vertices[i].uv = whiteImg->uvRect.topRight();
-	vertexBufferData.vertices[i].textureIndex = atlasTextureIndex;
-	i++;
-
-	vertexBufferData.vertices[i].position = rect.bottomRight();
-	vertexBufferData.vertices[i].color = right.getRgba();
-	vertexBufferData.vertices[i].uv = whiteImg->uvRect.bottomRight();
-	vertexBufferData.vertices[i].textureIndex = atlasTextureIndex;
-	i++;
-
-	vertexBufferData.vertices[i].position = rect.bottomLeft();
-	vertexBufferData.vertices[i].color = left.getRgba();
-	vertexBufferData.vertices[i].uv = whiteImg->uvRect.bottomLeft();
-	vertexBufferData.vertices[i].textureIndex = atlasTextureIndex;
-	i++;
-
-	vertexBufferData.drawVertexCount = i;
-	currentBatch->vertexCount += 6;
-}
-
-void Renderer::drawImageBordered(UiImage* image, u32 border, const Rect& rect, f32 scale)
+void Renderer::drawImageBordered(Image* image, u32 border, const Rect& rect, f32 scale)
 {
 	Rect screenRect = rect;
 
@@ -1331,10 +2024,15 @@ void Renderer::drawImageBordered(UiImage* image, u32 border, const Rect& rect, f
 	screenRect.width = round(screenRect.width);
 	screenRect.height = round(screenRect.height);
 
-	atlasTextureIndex = image->atlasTexture->textureIndex;
+	HUI_ASSERT(image);
+	HUI_ASSERT(currentTextureWidth);
+	HUI_ASSERT(currentTextureHeight);
 
 	if (screenRect.width < 1
-		|| screenRect.height < 1)
+		|| screenRect.height < 1
+		|| !image
+		|| !currentTextureWidth
+		|| !currentTextureHeight)
 	{
 		return;
 	}
@@ -1356,9 +2054,8 @@ void Renderer::drawImageBordered(UiImage* image, u32 border, const Rect& rect, f
 	//TODO: optimize this, maybe special shader for 9 cell?
 	// compute the UV sizes for the border corners
 	f32 fborder = (f32)border;
-	f32 borderU = fborder / (f32)currentBatch->textureArray->getWidth();
-	f32 borderV = fborder / (f32)currentBatch->textureArray->getHeight();
-
+	f32 borderU = fborder / (f32)currentTextureWidth;
+	f32 borderV = fborder / (f32)currentTextureHeight;
 	// this is the double size, two borders used in computations
 	f32 borderU2 = borderU * 2.0f;
 	f32 borderV2 = borderV * 2.0f;
@@ -1502,17 +2199,36 @@ void Renderer::drawImageBordered(UiImage* image, u32 border, const Rect& rect, f
 
 void Renderer::drawLine(const Point& a, const Point& b)
 {
-	Point pts[] = { a, b };
+	// shift endpoints by half a pixel so the line center lands on a pixel center,
+	// which keeps horizontal and vertical lines crisp without special casing them
+	Point pts[] = { Point(a.x + 0.5f, a.y + 0.5f), Point(b.x + 0.5f, b.y + 0.5f) };
 	drawPolyLine(pts, 2, false);
+}
+
+// true when the line style has a stipple pattern with a usable total size
+static bool hasValidStipplePattern(const LineStyle& style)
+{
+	if (style.stipplePatternCount == 0)
+		return false;
+
+	f32 totalSize = 0;
+
+	for (u32 j = 0; j < style.stipplePatternCount; j++)
+		totalSize += style.stipplePattern[j];
+
+	return totalSize > 0.0f;
 }
 
 void Renderer::drawPolyLine(const Point* points, u32 pointCount, bool closed)
 {
+	if (!points || pointCount < 2)
+		return;
+
 	std::vector<Point> stippleLines;
 	std::vector<bool> stippleLinesSkip;
 	Point* pts = (Point*)points;
 
-	if (currentLineStyle.useStipple)
+	if (currentLineStyle.useStipple && hasValidStipplePattern(currentLineStyle))
 	{
 		stippleLines.clear();
 		stippleLinesSkip.clear();
@@ -1526,7 +2242,10 @@ void Renderer::drawPolyLine(const Point* points, u32 pointCount, bool closed)
 			totalsize += currentLineStyle.stipplePattern[j];
 		}
 
-		f32 offs = (int)currentLineStyle.stipplePhase % (int)totalsize;
+		f32 offs = fmodf(currentLineStyle.stipplePhase, totalsize);
+
+		if (offs < 0.0f)
+			offs += totalsize;
 		f32 tot = 0;
 
 		if (offs > 0.0f)
@@ -1571,6 +2290,15 @@ void Renderer::drawPolyLine(const Point* points, u32 pointCount, bool closed)
 
 			line = points[idx] - points[i];
 			totalLineLength = line.getLength();
+
+			// advance pattern state past any fully-consumed pattern elements
+			while (remainder >= currentLineStyle.stipplePattern[oldJ] - 1e-4f)
+			{
+				remainder -= currentLineStyle.stipplePattern[oldJ];
+				oldJ = (oldJ + 1) % currentLineStyle.stipplePatternCount;
+				skip = !skip;
+			}
+
 			currentLength = remainder;
 			bail = false;
 
@@ -1578,14 +2306,14 @@ void Renderer::drawPolyLine(const Point* points, u32 pointCount, bool closed)
 			{
 				for (u32 j = oldJ; j < currentLineStyle.stipplePatternCount; j++)
 				{
-					f32 sttipleSize = currentLineStyle.stipplePattern[j];
+					f32 stippleSize = currentLineStyle.stipplePattern[j];
 
 					// if we're outside the line
-					if (currentLength + sttipleSize > totalLineLength)
+					if (currentLength + stippleSize > totalLineLength)
 					{
 						// remember the stipple index, we'll use it on the next segment
 						oldJ = j;
-						remainder = (currentLength + sttipleSize) - totalLineLength;
+						remainder = (currentLength + stippleSize) - totalLineLength;
 						bail = true;
 						break;
 					}
@@ -1596,17 +2324,17 @@ void Renderer::drawPolyLine(const Point* points, u32 pointCount, bool closed)
 					}
 					else
 					{
-						currentLength += sttipleSize;
+						currentLength += stippleSize;
 					}
 
 					f32 t = currentLength / totalLineLength;
 					Point pt = points[i] + line * t;
 
-					if (stippleLines.empty() 
+					if (stippleLines.empty()
 						|| (stippleLines.size() && pt != stippleLines.back()))
 					{
 						stippleLines.push_back(pt);
-						// toggle pattern skip
+						// toggle pattern skip for next segment
 						skip = !skip;
 						stippleLinesSkip.push_back(skip);
 					}
@@ -1620,6 +2348,14 @@ void Renderer::drawPolyLine(const Point* points, u32 pointCount, bool closed)
 			{
 				break;
 			}
+		}
+
+		// always add the final endpoint for open lines to ensure line reaches its destination
+		// use current skip state (state for the last segment)
+		if (!closed)
+		{
+			stippleLines.push_back(points[pointCount - 1]);
+			stippleLinesSkip.push_back(skip);
 		}
 
 		pts = stippleLines.data();
@@ -1636,10 +2372,9 @@ void Renderer::drawPolyLine(const Point* points, u32 pointCount, bool closed)
 	Point p12;
 	Point p21;
 	Point p22;
-	auto atlas = (UiAtlas*)currentBatch->atlas;
-	auto lineImage = atlas->whiteImage;
-	const auto color = currentLineStyle.color.getRgba();
-	auto rcUv = lineImage->uvRect;
+	auto whiteImage = ctx->theme->whiteImage;
+	const auto color = currentLineStyle.color;
+	auto rcUv = whiteImage->uvRect;
 
 	rcUv.x += ctx->settings.whiteImageUvBorder;
 	rcUv.y += ctx->settings.whiteImageUvBorder;
@@ -1650,11 +2385,40 @@ void Renderer::drawPolyLine(const Point* points, u32 pointCount, bool closed)
 	const auto uv12 = rcUv.topRight();
 	const auto uv22 = rcUv.bottomRight();
 	const auto uv21 = rcUv.bottomLeft();
-	const f32 half = currentLineStyle.width  / 2.0f;
+	const bool lineAA = ctx->settings.lineAntiAliasing;
+	const f32 fringeWidth = lineAA ? ctx->settings.lineAntiAliasingSkirtWidthPixels : 0.0f;
+	const f32 half = currentLineStyle.width * 0.5f;
 
-	// P11----------P21
-	//  |            |
-	// P12----------P22
+	// lines up to lineTexMaxWidth sample a baked coverage texture that already contains the
+	// solid core plus an anti-aliasing fringe of half a pixel per side, so the geometry only
+	// needs to be one pixel wider than the line width
+	Image* lineTex = nullptr;
+	Point lineUv0;
+	Point lineUv1;
+
+	if (lineAA
+		&& currentLineStyle.width >= 1.0f
+		&& currentLineStyle.width <= (f32)lineTexMaxWidth
+		&& ctx->theme->lineImage
+		&& ctx->theme->lineImage->rect.width > 0.0f)
+	{
+		lineTex = ctx->theme->lineImage;
+
+		const u32 row = (u32)(currentLineStyle.width + 0.5f);
+		const f32 texWidth = (f32)ctx->theme->atlas.width;
+		const f32 texHeight = (f32)ctx->theme->atlas.height;
+		const f32 profileStart = lineTex->rect.x + (f32)lineTexPad;
+		const f32 profileLength = (f32)(lineTexFringeTexels * 2 + row * lineTexSupersample);
+
+		lineUv0 = Point(profileStart / texWidth, (lineTex->rect.y + (f32)row + 0.5f) / texHeight);
+		lineUv1 = Point((profileStart + profileLength) / texWidth, lineUv0.y);
+	}
+
+	const f32 bodyHalf = lineTex ? half + 0.5f : half;
+
+	// p11----------P21
+	// |            |
+	// p12----------P22
 	f32 extrudeScale1 = 1;
 	f32 extrudeScale2 = 1;
 	f32 lastExtrudeScale1 = 1;
@@ -1665,7 +2429,7 @@ void Renderer::drawPolyLine(const Point* points, u32 pointCount, bool closed)
 	Point seg1, seg2;
 	bool stippleToggle = true;
 
-	for (int p = 0; p < pointCount; p++)
+	for (auto p = 0; p < pointCount; p++)
 	{
 		extrudeScale1 = 1;
 		extrudeScale2 = 1;
@@ -1708,31 +2472,35 @@ void Renderer::drawPolyLine(const Point* points, u32 pointCount, bool closed)
 				n1.normalize();
 			}
 
-			seg1 = Point(pts[p].x - pts[p + 1].x, pts[p].y - pts[p + 1].y);
-			seg2 = Point(pts[p + 2].x - pts[p + 1].x, pts[p + 2].y - pts[p + 1].y);
-			seg1.normalize();
-			seg2.normalize();
-			d1 = seg1 + seg2;
-			d1.normalize();
-			sinAngle = (d1.x * seg2.y - d1.y * seg2.x);
-			auto a = seg1.dot(seg2);
-			extrudeScale2 = 1.0f / sinAngle;
-			n2 = d1;
-			lastN2 = n2;
-
-			if (a < -0.9f)
-			{
-				d1 = Point(pts[1].x - pts[0].x, pts[1].y - pts[0].y);
-				n2 = Point(d1.y, -d1.x);
-				n2.normalize();
-				lastN2 = n2;
-				extrudeScale2 = 1;
-			}
-
+			// a 2 point path has no interior vertex to derive the second normal from
 			if (pointCount == 2)
 			{
 				n2 = n1;
+				lastN2 = n2;
 				extrudeScale2 = extrudeScale1;
+			}
+			else
+			{
+				seg1 = Point(pts[p].x - pts[p + 1].x, pts[p].y - pts[p + 1].y);
+				seg2 = Point(pts[p + 2].x - pts[p + 1].x, pts[p + 2].y - pts[p + 1].y);
+				seg1.normalize();
+				seg2.normalize();
+				d1 = seg1 + seg2;
+				d1.normalize();
+				sinAngle = (d1.x * seg2.y - d1.y * seg2.x);
+				auto a = seg1.dot(seg2);
+				extrudeScale2 = 1.0f / sinAngle;
+				n2 = d1;
+				lastN2 = n2;
+
+				if (a < -0.9f)
+				{
+					d1 = Point(pts[1].x - pts[0].x, pts[1].y - pts[0].y);
+					n2 = Point(d1.y, -d1.x);
+					n2.normalize();
+					lastN2 = n2;
+					extrudeScale2 = 1;
+				}
 			}
 		}
 		// if last point and its closed
@@ -1749,7 +2517,7 @@ void Renderer::drawPolyLine(const Point* points, u32 pointCount, bool closed)
 		{
 			n1 = lastN2;
 			extrudeScale1 = lastExtrudeScale2;
-		
+
 			if (closed)
 			{
 				seg1 = Point(pts[p].x - pts[p + 1].x, pts[p].y - pts[p + 1].y);
@@ -1769,7 +2537,9 @@ void Renderer::drawPolyLine(const Point* points, u32 pointCount, bool closed)
 					extrudeScale2 = 1;
 				}
 				else
+				{
 					n2 = d1;
+				}
 
 				lastN2 = n2;
 			}
@@ -1778,13 +2548,14 @@ void Renderer::drawPolyLine(const Point* points, u32 pointCount, bool closed)
 				d1 = Point(pts[p + 1].x - pts[p].x, pts[p + 1].y - pts[p].y);
 				n2 = Point(d1.y, -d1.x).getNormalized();
 				lastN2 = n2;
+				extrudeScale2 = 1;
 			}
 		}
 		else if (p < pointCount - 2)
 		{
 			n1 = lastN2;
 			extrudeScale1 = lastExtrudeScale2;
-			
+
 			seg1 = Point(pts[p].x - pts[p + 1].x, pts[p].y - pts[p + 1].y);
 			seg2 = Point(pts[p + 2].x - pts[p + 1].x, pts[p + 2].y - pts[p + 1].y);
 			seg1.normalize();
@@ -1808,9 +2579,14 @@ void Renderer::drawPolyLine(const Point* points, u32 pointCount, bool closed)
 
 			lastN2 = n2;
 		}
-		
-		n1 *= half * extrudeScale1;
-		n2 *= half * extrudeScale2;
+
+		// skirt directions must follow the extruded edge; a negative extrude scale
+		// (concave joint) flips the edge to the other side, so flip ux as well
+		Point ux1 = extrudeScale1 < 0.0f ? n1 * -1.0f : n1;
+		Point ux2 = extrudeScale2 < 0.0f ? n2 * -1.0f : n2;
+
+		n1 *= bodyHalf * extrudeScale1;
+		n2 *= bodyHalf * extrudeScale2;
 		lastExtrudeScale1 = extrudeScale1;
 		lastExtrudeScale2 = extrudeScale2;
 
@@ -1848,8 +2624,36 @@ void Renderer::drawPolyLine(const Point* points, u32 pointCount, bool closed)
 
 		if (drawIt)
 		{
-			drawTriangle(p11, p21, p22, uv11, uv21, uv22, lineImage);
-			drawTriangle(p11, p22, p12, uv11, uv22, uv12, lineImage);
+			if (lineTex)
+			{
+				// sample across the baked coverage profile of the selected line width: the two
+				// edges of each point span the profile, the length does not
+				drawTriangle(p11, p21, p22, lineUv0, lineUv0, lineUv1, currentColor, currentColor, currentColor, lineTex);
+				drawTriangle(p11, p22, p12, lineUv0, lineUv1, lineUv1, currentColor, currentColor, currentColor, lineTex);
+			}
+			else
+			{
+				drawTriangle(p11, p21, p22, uv11, uv21, uv22, currentColor, currentColor, currentColor, whiteImage);
+				drawTriangle(p11, p22, p12, uv11, uv22, uv12, currentColor, currentColor, currentColor, whiteImage);
+
+				if (lineAA)
+				{
+					u32 cFull = currentColor;
+					u32 cFade = cFull & 0x00FFFFFFu;
+
+					// top skirt
+					Point p11s = p11 + ux1 * fringeWidth;
+					Point p21s = p21 + ux2 * fringeWidth;
+					drawTriangle(p11s, p21s, p21, uv11, uv21, uv22, cFade, cFade, cFull, whiteImage);
+					drawTriangle(p11s, p21, p11, uv11, uv22, uv12, cFade, cFull, cFull, whiteImage);
+
+					// bottom skirt
+					Point p12s = p12 - ux1 * fringeWidth;
+					Point p22s = p22 - ux2 * fringeWidth;
+					drawTriangle(p12, p22, p22s, uv11, uv21, uv22, cFull, cFull, cFade, whiteImage);
+					drawTriangle(p12, p22s, p12s, uv11, uv22, uv12, cFull, cFade, cFade, whiteImage);
+				}
+			}
 		}
 	}
 }
@@ -1857,152 +2661,58 @@ void Renderer::drawPolyLine(const Point* points, u32 pointCount, bool closed)
 void Renderer::drawTriangle(
 	const Point& p1, const Point& p2, const Point& p3,
 	const Point& uv1, const Point& uv2, const Point& uv3,
-	UiImage* image)
+	const Rgba32 c1, const Rgba32 c2, const Rgba32 c3,
+	Image* image)
 {
-	// not thread safe
+	//TODO: not thread safe, but we dont support MT anyway, so should be fine for now, just avoid recursive calls to drawTriangle
 	static Point pts[12];
 	static Point uvPts[12];
+	static Rgba32 colors[12];
 	static u32 pointCount;
 	static Point newUv1, newUv2, newUv3;
-	auto img = image ? image : currentAtlas->whiteImage;
 
-	if (image)
-	{
-		newUv1 = uv1;
-		newUv2 = uv2;
-		newUv3 = uv3;
-	}
-	else
-	{
-		newUv1 = img->uvRect.topLeft();
-		newUv1.x += ctx->settings.whiteImageUvBorder;
-		newUv1.y += ctx->settings.whiteImageUvBorder;
-		newUv2 = img->uvRect.topRight();
-		newUv2.x -= ctx->settings.whiteImageUvBorder;
-		newUv2.y += ctx->settings.whiteImageUvBorder;
-		newUv3 = img->uvRect.bottomRight();
-		newUv3.x -= ctx->settings.whiteImageUvBorder;
-		newUv3.y -= ctx->settings.whiteImageUvBorder;
-	}
+	newUv1 = uv1;
+	newUv2 = uv2;
+	newUv3 = uv3;
 
 	clipTriangleToRect(
-		p1, p2, p3, newUv1, newUv2, newUv3,
-		currentClipRect, pts, uvPts, pointCount);
+		p1, p2, p3, newUv1, newUv2, newUv3, c1, c2, c3,
+		currentClipRect, pts, uvPts, colors, pointCount);
 
 	if (!pointCount)
 		return;
 
-	Point& fp = pts[0];
-	Point& uvFp = uvPts[0];
-
-	atlasTextureIndex = img->atlasTexture->textureIndex;
+	Point& firstPoint = pts[0];
+	Point& firstUv = uvPts[0];
+	Rgba32 firstColor = colors[0];
 
 	needToAddVertexCount((pointCount - 2) * 3);
 	u32 i = vertexBufferData.drawVertexCount;
 
 	for (int k = 1; k < pointCount - 1; k++)
 	{
-		vertexBufferData.vertices[i].position = fp;
-		vertexBufferData.vertices[i].color = currentColor;
-		vertexBufferData.vertices[i].uv = uvFp;
-		vertexBufferData.vertices[i].textureIndex = atlasTextureIndex;
+		vertexBufferData.vertices[i].position = firstPoint;
+		vertexBufferData.vertices[i].color = firstColor;
+		vertexBufferData.vertices[i].uv = firstUv;
 		i++;
 
 		vertexBufferData.vertices[i].position = pts[k];
-		vertexBufferData.vertices[i].color = currentColor;
+		vertexBufferData.vertices[i].color = colors[k];
 		vertexBufferData.vertices[i].uv = uvPts[k];
-		vertexBufferData.vertices[i].textureIndex = atlasTextureIndex;
 		i++;
 
 		vertexBufferData.vertices[i].position = pts[k+1];
-		vertexBufferData.vertices[i].color = currentColor;
+		vertexBufferData.vertices[i].color = colors[k+1];
 		vertexBufferData.vertices[i].uv = uvPts[k+1];
-		vertexBufferData.vertices[i].textureIndex = atlasTextureIndex;
 		i++;
 	}
 
-	currentBatch->vertexCount += (pointCount - 2) * 3;
+	if (currentBatch)
+		currentBatch->vertexCount += (pointCount - 2) * 3;
 	vertexBufferData.drawVertexCount = i;
 }
 
-void Renderer::drawTextInternal(
-	const char* text,
-	const Point& position)
-{
-	if (!strcmp(text, ""))
-	{
-		return;
-	}
-
-	Point pos = position;
-
-	pos.x = round(pos.x);
-	pos.y = round(pos.y);
-
-	GlyphCode lastChr = 0;
-	Point underlineStartPos = pos;
-
-	/////////////////////////////
-	// DRAW CHARS
-	/////////////////////////////
-	const UnicodeString& utext = *ctx->textCache->getText(text);
-
-	for (int i = 0; i < utext.size(); i++)
-	{
-		auto chr = utext[i];
-
-		if (chr == '\n')
-		{
-			continue;
-		}
-
-		auto glyph = currentFont->getGlyph(chr);
-		auto img = currentFont->getGlyphImage(chr);
-
-		if (!glyph || !img)
-		{
-			continue;
-		}
-
-		auto kern = currentFont->getKerning(lastChr, chr);
-		pos.x += kern;
-		drawTextGlyph(img, { pos.x + glyph->bitmapLeft, pos.y - glyph->bitmapTop });
-		pos.x += glyph->advanceX;
-		lastChr = chr;
-	}
-
-	// render underline
-	if (currentTextStyle.underline)
-	{
-		auto fsize = currentFont->computeTextSize(utext);
-		auto image = currentAtlas->whiteImage;
-
-		if (!image->rotated)
-		{
-			drawQuad(
-				{
-					underlineStartPos.x,
-					underlineStartPos.y - currentFont->getMetrics().underlinePosition,
-					fsize.width,
-					currentFont->getMetrics().underlineThickness
-				},
-				image->uvRect);
-		}
-		else
-		{
-			drawQuadRot90(
-				{
-					underlineStartPos.x,
-					underlineStartPos.y - currentFont->getMetrics().underlinePosition,
-					fsize.width,
-					currentFont->getMetrics().underlineThickness
-				},
-				image->uvRect);
-		}
-	}
-}
-
-bool Renderer::clipRectNoRot(Rect& rect, Rect& uvRect)
+bool Renderer::clipRectNoRot(Rect& rect, Rect& uvRect, Rgba32* colors) const
 {
 	if (rect.outside(currentClipRect))
 		return false;
@@ -2013,7 +2723,7 @@ bool Renderer::clipRectNoRot(Rect& rect, Rect& uvRect)
 	// clip left and top UVs
 	auto tx = (newRect.x - rect.x) / rect.width;
 	auto ty = (newRect.y - rect.y) / rect.height;
-	
+
 	// left clip
 	uvRect.x += uvRect.width * tx;
 	uvRect.width -= uvRect.width * tx;
@@ -2025,23 +2735,52 @@ bool Renderer::clipRectNoRot(Rect& rect, Rect& uvRect)
 	// clip right and bottom UVs
 	tx = (rect.right() - newRect.right()) / rect.width;
 	ty = (rect.bottom() - newRect.bottom()) / rect.height;
-	
+
 	uvRect.width -= oldUvRect.width * tx;
 	uvRect.height -= oldUvRect.height * ty;
-	
+
+	// if a color array is provided, treat it as in/out and contextUpdate corners.
+	// colors layout: [0]=topLeft, [1]=topRight, [2]=bottomRight, [3]=bottomLeft
+	if (colors && rect.width > 0.0f && rect.height > 0.0f)
+	{
+		// normalized X positions of new left/right within original rect
+		f32 leftT = (newRect.x - rect.x) / rect.width;
+		f32 rightT = (newRect.right() - rect.x) / rect.width;
+
+		// read input colors into Color for interpolation
+		Color tl = colors[0];
+		Color tr = colors[1];
+		Color br = colors[2];
+		Color bl = colors[3];
+
+		// interpolate top edge colors at new left/right
+		Color newTL = tl + (tr - tl) * leftT;
+		Color newTR = tl + (tr - tl) * rightT;
+
+		// interpolate bottom edge colors at new left/right
+		Color newBL = bl + (br - bl) * leftT;
+		Color newBR = bl + (br - bl) * rightT;
+
+		// write back (Rgba32 supports assignment from Color)
+		colors[0] = newTL;
+		colors[1] = newTR;
+		colors[2] = newBR;
+		colors[3] = newBL;
+	}
+
 	rect = newRect;
 
 	return true;
 }
 
-bool Renderer::clipRectRot(Rect& rect, Rect& uvRect)
+bool Renderer::clipRectRot(Rect& rect, Rect& uvRect, Rgba32* colors) const
 {
 	if (rect.outside(currentClipRect))
 		return false;
 
 	auto newRect = rect.clipInside(currentClipRect);
 
-	// clip left and top UVs
+	// clip left and top UVs (rotated handling)
 	auto tx = (newRect.x - rect.x) / rect.width;
 	auto ty = (newRect.y - rect.y) / rect.height;
 	uvRect.x += uvRect.width * ty;
@@ -2054,65 +2793,124 @@ bool Renderer::clipRectRot(Rect& rect, Rect& uvRect)
 	uvRect.y += uvRect.height * tx;
 	uvRect.width -= uvRect.width * ty;
 	uvRect.height -= uvRect.height * tx;
+
+	// if a color array is provided, treat it as in/out and contextUpdate corners.
+	// colors layout: [0]=topLeft, [1]=topRight, [2]=bottomRight, [3]=bottomLeft
+	if (colors && rect.width > 0.0f && rect.height > 0.0f)
+	{
+		// normalized X positions of new left/right within original rect
+		f32 leftT = (newRect.x - rect.x) / rect.width;
+		f32 rightT = (newRect.right() - rect.x) / rect.width;
+
+		Color tl = colors[0];
+		Color tr = colors[1];
+		Color br = colors[2];
+		Color bl = colors[3];
+
+		// interpolate across X for top and bottom edges
+		Color newTL = tl + (tr - tl) * leftT;
+		Color newTR = tl + (tr - tl) * rightT;
+		Color newBL = bl + (br - bl) * leftT;
+		Color newBR = bl + (br - bl) * rightT;
+
+		colors[0] = newTL;
+		colors[1] = newTR;
+		colors[2] = newBR;
+		colors[3] = newBL;
+	}
+
 	rect = newRect;
 
 	return true;
 }
 
-bool Renderer::clipRect(bool rotated, Rect& rect, Rect& uvRect)
+bool Renderer::clipRect(bool rotated, Rect& rect, Rect& uvRect, Rgba32* colors) const
 {
 	if (!rotated)
 	{
-		return clipRectNoRot(rect, uvRect);
+		return clipRectNoRot(rect, uvRect, colors);
 	}
 
-	return clipRectRot(rect, uvRect);
+	return clipRectRot(rect, uvRect, colors);
 }
 
 void Renderer::needToAddVertexCount(u32 count)
 {
-	if (vertexBufferData.drawVertexCount + count < vertexBufferData.vertices.size())
+	if (vertexBufferData.drawVertexCount + count < (u32)vertexBufferData.vertices.size())
 	{
 		// already have space available
 		return;
 	}
 
-	std::vector<Vertex> verts = vertexBufferData.vertices;
-
 	vertexBufferData.vertices.resize(vertexBufferData.vertices.size() * vertexBufferData.vertexCountGrowFactor + count);
-	vertexBufferData.vertices.insert(vertexBufferData.vertices.begin(), verts.begin(), verts.end());
-	vertexBuffer->resize(vertexBufferData.vertices.size());
 }
 
 char* Renderer::addUtf8TextToBuffer(const char* text, u32 sizeBytes)
 {
-	auto pos = textBuffer.data() + textBufferPosition;
-	memcpy(pos, text, sizeBytes + 1); // and zero
-	textBufferPosition += sizeBytes + 1;
-	return pos;
+	if (currentWindowContext->textBufferPosition + sizeBytes + 1 >= (u32)currentWindowContext->textBuffer.size()) return nullptr;
+
+	auto textAddr = currentWindowContext->textBuffer.data() + currentWindowContext->textBufferPosition;
+
+	memcpy(textAddr, text, sizeBytes + 1); // and zero
+	currentWindowContext->textBufferPosition += sizeBytes + 1;
+
+	return textAddr;
 }
 
 void Renderer::addBatch()
 {
-	batches.push_back(RenderBatch());
-	currentBatch = &batches.back();
-	currentBatch->atlas = currentAtlas;
+	currentWindowContext->batches.push_back(RenderBatch());
+	currentBatch = &currentWindowContext->batches.back();
 	currentBatch->primitiveType = RenderBatch::PrimitiveType::TriangleList;
 	currentBatch->startVertexIndex = vertexBufferData.drawVertexCount;
-	currentBatch->vertexBuffer = vertexBuffer;
-	currentBatch->textureArray = currentAtlas->textureArray;
+	currentBatch->texture = currentTexture;
 }
 
 void Renderer::addDrawCommand(const DrawCommand& cmd)
 {
-	if (drawCmdNextInsertIndex == ~0)
+	if (disableRendering || skipRender)
+		return;
+
+	HUI_ASSERT(currentDrawCmdLayer);
+	currentDrawCmdLayer->push_back(cmd);
+}
+
+void Renderer::cmdDrawTextAt(
+	const char* text,
+	const Point& position)
+{
+	DrawCommand cmd(DrawCommand::Type::DrawText);
+	cmd.data.drawText.rect = Rect(position.x, position.y, 0, 0);
+	cmd.data.drawText.horizAlign = HAlignType::Left;
+	cmd.data.drawText.vertAlign = VAlignType::Top;
+	cmd.data.drawText.text = addUtf8TextToBuffer(text, (u32)strlen(text));
+
+	if (cmd.data.drawText.text)
 	{
-		drawCommands.push_back(cmd);
+		addDrawCommand(cmd);
 	}
-	else
+}
+
+void Renderer::cmdDrawTextInBox(
+	const char* text,
+	const Rect& rect,
+	HAlignType horizAlign,
+	VAlignType vertAlign,
+	bool singleLineEllipsis,
+	bool noWordWrap)
+{
+	DrawCommand cmd(DrawCommand::Type::DrawText);
+
+	cmd.data.drawText.rect = rect;
+	cmd.data.drawText.horizAlign = horizAlign;
+	cmd.data.drawText.vertAlign = vertAlign;
+	cmd.data.drawText.text = addUtf8TextToBuffer(text, (u32)strlen(text));
+	cmd.data.drawText.singleLineEllipsis = singleLineEllipsis;
+	cmd.data.drawText.noWordWrap = noWordWrap;
+
+	if (cmd.data.drawText.text)
 	{
-		drawCommands.insert(drawCommands.begin() + drawCmdNextInsertIndex, cmd);
-		drawCmdNextInsertIndex++;
+		addDrawCommand(cmd);
 	}
 }
 

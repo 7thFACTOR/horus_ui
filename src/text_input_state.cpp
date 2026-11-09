@@ -1,6 +1,8 @@
 #include "text_input_state.h"
 #include "util.h"
-#include "ui_font.h"
+#include "font.h"
+#include "context.h"
+#include "theme.h"
 
 namespace hui
 {
@@ -10,18 +12,38 @@ TextInputState::TextInputState()
 bool TextInputState::processEvent(const InputEvent& ev)
 {
 	textChanged = false;
+	clearFilterHovered = false;
 
-	if (!widgetId)
+	if (!id)
 	{
 		return false;
 	}
+
+	const Point& mousePos = ctx->mousePosition;
+
+	// compute clear-filter hit rect (match how the widget draws the image)
+	Rect clearFilterRc = rect;
+	auto& bodyTextFilterClearImageElem = ctx->theme->getElement(WidgetElementId::TextInputFilterClearImage);
+	auto& bodyTextElem = ctx->theme->getElement(WidgetElementId::TextInputBody);
+
+	// image size in screen pixels
+	auto imgW = bodyTextFilterClearImageElem.normalState().image->width * ctx->scale;
+	auto imgH = bodyTextFilterClearImageElem.normalState().image->height * ctx->scale;
+
+	// position image at same X/Y used by the widget rendering
+	clearFilterRc.x = rect.right() - (bodyTextElem.normalState().border + widgetGetPadding().x) * ctx->scale - imgW;
+	clearFilterRc.width = imgW;
+	clearFilterRc.y = rect.y + (rect.height - imgH) / 2.0f;
+	clearFilterRc.height = imgH;
+
+	clearFilterHovered = clearFilterRc.contains(mousePos);
 
 	if (ev.type == InputEvent::Type::MouseDown)
 	{
 		// we're out, no more text editing
 		if (!rect.contains(ev.mouse.point))
 		{
-			widgetId = 0;
+			id = 0;
 			return false;
 		}
 
@@ -32,22 +54,30 @@ bool TextInputState::processEvent(const InputEvent& ev)
 		selectionBegin = selectionEnd = caretPosition;
 		selectingWithMouse = false;
 		computeScrollAmount();
-		setCapture(0);
+		windowSetCapture();
 	}
 	else if (ev.type == InputEvent::Type::MouseUp)
 	{
-		mouseDown = false;
-		selectingWithMouse = false;
 		computeScrollAmount();
-		releaseCapture();
+		windowReleaseCapture();
 
-		if (!mouseMoved && firstMouseDown)
+		if (!mouseMoved && firstMouseDown && !selectingWithMouse)
 		{
-			selectAll();
+			if (has(flags, TextInputFlags::AutoSelectAll) && selectAllOnFocus)
+				selectAll();
 			firstMouseDown = false;
 		}
+
+		if (mouseDown && clearFilterHovered)
+		{
+			clearText();
+			textChanged = true;
+		}
+
+		mouseDown = false;
+		selectingWithMouse = false;
 	}
-	else if (ev.window == getFocusedWindow())
+	else if (ev.window == ctx->settings.services.getFocusedWindow())
 	{
 		auto chrPos = getCharIndexAtX(ev.mouse.point.x);
 
@@ -125,17 +155,28 @@ bool TextInputState::processEvent(const InputEvent& ev)
 		}
 	}
 
+	if (ev.type == InputEvent::Type::MouseDown
+		&& ev.mouse.clickCount == 3)
+	{
+		if (ev.mouse.button == MouseButton::Left)
+		{
+			selectAll();
+		}
+	}
+
 	if (ev.type == InputEvent::Type::Text)
 	{
-		UnicodeString txt;
+		caretBlinkTimer = 0;
+		Utf32String txt;
 
-		utf8ToUtf32(ev.text.text, txt);
+		ctx->settings.services.utf8To32(ev.text.text, txt);
 		formatValue(txt);
 		insertTextAtCaret(txt);
 		textChanged = true;
 	}
 	else if (ev.type == InputEvent::Type::Key)
 	{
+		caretBlinkTimer = 0;
 		if (ev.key.down)
 		{
 			if (ev.key.code == KeyCode::Enter)
@@ -153,8 +194,8 @@ bool TextInputState::processEvent(const InputEvent& ev)
 
 void TextInputState::deleteSelection()
 {
-	UnicodeString str1, str2;
-	int startSel = selectionBegin, endSel = selectionEnd, tmpSel;
+	Utf32String str1, str2;
+	i32 startSel = selectionBegin, endSel = selectionEnd, tmpSel;
 
 	if (startSel > endSel)
 	{
@@ -175,7 +216,7 @@ void TextInputState::deleteSelection()
 	textChanged = true;
 }
 
-UnicodeString TextInputState::getSelection()
+Utf32String TextInputState::getSelection()
 {
 	if (selectionActive)
 	{
@@ -190,12 +231,12 @@ UnicodeString TextInputState::getSelection()
 
 		if (!text.empty() && abs(endSel - startSel))
 		{
-			UnicodeString str(text.begin() + startSel, text.begin() + endSel);
+			Utf32String str(text.begin() + startSel, text.begin() + endSel);
 			return str;
 		}
 	}
 
-	return UnicodeString();
+	return Utf32String();
 }
 
 void TextInputState::clearText()
@@ -219,9 +260,28 @@ void TextInputState::processKeyEvent(const InputEvent& ev)
 	if (!ev.key.down)
 		return;
 
-	if (ev.key.code == KeyCode::ArrowLeft)
+	else if (ev.key.code == KeyCode::ArrowLeft)
 	{
-		caretPosition--;
+		i32 oldCaretPos = caretPosition;
+
+		if (has(ev.key.modifiers, KeyModifiers::Control))
+		{
+			// word jump left
+			// 1. skip preceding whitespace
+			while (caretPosition > 0 && caretPosition <= text.size() && isspace(text[caretPosition - 1]))
+			{
+				caretPosition--;
+			}
+			// 2. skip preceding non-whitespace
+			while (caretPosition > 0 && caretPosition <= text.size() && !isspace(text[caretPosition - 1]))
+			{
+				caretPosition--;
+			}
+		}
+		else
+		{
+			caretPosition--;
+		}
 
 		if (caretPosition < 0)
 			caretPosition = 0;
@@ -232,7 +292,7 @@ void TextInputState::processKeyEvent(const InputEvent& ev)
 			if (!selectionActive)
 			{
 				selectionActive = true;
-				selectionBegin = caretPosition + 1;
+				selectionBegin = oldCaretPos; // start from where we were
 				selectionEnd = caretPosition;
 			}
 			else
@@ -247,7 +307,26 @@ void TextInputState::processKeyEvent(const InputEvent& ev)
 	}
 	else if (ev.key.code == KeyCode::ArrowRight)
 	{
-		caretPosition++;
+		i32 oldCaretPos = caretPosition;
+
+		if (has(ev.key.modifiers, KeyModifiers::Control))
+		{
+			// word jump right
+			// 1. skip succeeding non-whitespace
+			while (caretPosition < text.size() && !isspace(text[caretPosition]))
+			{
+				caretPosition++;
+			}
+			// 2. skip succeeding whitespace
+			while (caretPosition < text.size() && isspace(text[caretPosition]))
+			{
+				caretPosition++;
+			}
+		}
+		else
+		{
+			caretPosition++;
+		}
 
 		if (caretPosition > text.size())
 			caretPosition = text.size();
@@ -258,7 +337,7 @@ void TextInputState::processKeyEvent(const InputEvent& ev)
 			if (!selectionActive)
 			{
 				selectionActive = true;
-				selectionBegin = caretPosition - 1;
+				selectionBegin = oldCaretPos; // start from where we were
 				selectionEnd = caretPosition;
 			}
 			else
@@ -298,14 +377,14 @@ void TextInputState::processKeyEvent(const InputEvent& ev)
 			{
 				if (caretPosition > 0)
 				{
-					int cart = caretPosition;
+					i32 newCaretPos = caretPosition;
 
-					cart--;
+					newCaretPos--;
 
 					if (caretPosition >= text.size())
-						cart = text.size() - 1;
+						newCaretPos = text.size() - 1;
 
-					text.erase(text.begin() + cart);
+					text.erase(text.begin() + newCaretPos);
 					--caretPosition;
 					textChanged = true;
 				}
@@ -323,7 +402,7 @@ void TextInputState::processKeyEvent(const InputEvent& ev)
 	else if (ev.key.code == KeyCode::End || ev.key.code == KeyCode::ArrowDown)
 	{
 		// do we select ?
-		if (!!(ev.key.modifiers & KeyModifiers::Shift))
+		if (has(ev.key.modifiers, KeyModifiers::Shift))
 		{
 			if (!selectionActive)
 			{
@@ -346,7 +425,7 @@ void TextInputState::processKeyEvent(const InputEvent& ev)
 	else if (ev.key.code == KeyCode::Home || ev.key.code == KeyCode::ArrowUp)
 	{
 		// do we select ?
-		if (!!(ev.key.modifiers & KeyModifiers::Shift))
+		if (has(ev.key.modifiers, KeyModifiers::Shift))
 		{
 			if (!selectionActive)
 			{
@@ -375,14 +454,14 @@ void TextInputState::processKeyEvent(const InputEvent& ev)
 	}
 	else if (!password && ev.key.code == KeyCode::C && !!(ev.key.modifiers & KeyModifiers::Control))
 	{
-		UnicodeString str = getSelection();
+		Utf32String str = getSelection();
 
 		if (!str.empty())
 		{
 			char* tmpStr = 0;
 
-			utf32ToUtf8(str, &tmpStr);
-			copyToClipboard(tmpStr);
+			ctx->settings.services.utf32To8(str, &tmpStr);
+			clipboardSetText(tmpStr);
 			delete[] tmpStr;
 		}
 	}
@@ -395,11 +474,11 @@ void TextInputState::processKeyEvent(const InputEvent& ev)
 
 		static const u32 maxTextSize = 2048;
 		char tmpStr[maxTextSize];
-		UnicodeString utf32Str;
+		Utf32String utf32Str;
 
-		pasteFromClipboard(tmpStr, maxTextSize);
+		clipboardGetText(tmpStr, maxTextSize);
 
-		if (utf8ToUtf32(tmpStr, utf32Str))
+		if (ctx->settings.services.utf8To32(tmpStr, utf32Str))
 		{
 			if (utf32Str.size() + text.size() < maxTextLength)
 			{
@@ -417,9 +496,9 @@ void TextInputState::processKeyEvent(const InputEvent& ev)
 			}
 		}
 	}
-	else if (ev.key.code == KeyCode::X && !!(ev.key.modifiers & KeyModifiers::Control))
+	else if (!password && ev.key.code == KeyCode::X && !!(ev.key.modifiers & KeyModifiers::Control))
 	{
-		UnicodeString str = getSelection();
+		Utf32String str = getSelection();
 
 		if (selectionActive && !str.empty())
 		{
@@ -427,9 +506,9 @@ void TextInputState::processKeyEvent(const InputEvent& ev)
 
 			char* str8 = 0;
 
-			if (utf32ToUtf8(str, &str8))
+			if (ctx->settings.services.utf32To8(str, &str8))
 			{
-				copyToClipboard(str8);
+				clipboardSetText(str8);
 				delete[] str8;
 				textChanged = true;
 			}
@@ -444,41 +523,40 @@ void TextInputState::processKeyEvent(const InputEvent& ev)
 	computeScrollAmount();
 }
 
-void TextInputState::insertTextAtCaret(const UnicodeString& newText)
+void TextInputState::insertTextAtCaret(const Utf32String& newText)
 {
 	if (selectionActive)
 		deleteSelection();
-	printf("insert %d chars\n", newText.size());
+
 	if (newText.empty())
 	{
 		return;
 	}
 
-	int offs = caretPosition;
+	i32 offs = caretPosition;
 
 	if (caretPosition > text.size() && !text.empty())
 		offs = text.size() - 1;
-	printf("maxTextLen %d\n", maxTextLength);
 
 	if (text.size() + newText.size() < maxTextLength)
 	{
 		text.insert(text.begin() + offs, newText.begin(), newText.end());
 		caretPosition += newText.size();
 		textChanged = true;
-		printf("inserted...\n");
 	}
+
 	selectionActive = false;
 }
 
 i32 TextInputState::getCharIndexAtX(f32 xPos)
 {
 	FontTextSize rcCurrentRange, rcLastChar;
-	UnicodeString subStr, lastChar;
+	Utf32String subStr, lastChar;
 	i32 pos = 0;
 
 	xPos += scrollOffset;
 
-	UiFont* font = (UiFont*)themeElement->normalState().font;
+	Font* font = ctx->theme ? ctx->theme->getElement(WidgetElementId::TextInputBody).normalState().font : nullptr;
 
 	if (!font)
 	{
@@ -488,11 +566,11 @@ i32 TextInputState::getCharIndexAtX(f32 xPos)
 	//TODO: optimize, slow on long text
 	for (size_t i = 0; i < text.size(); ++i)
 	{
-		subStr = UnicodeString(text.begin(), text.begin() + i);
+		subStr = Utf32String(text.begin(), text.begin() + i);
 
 		if (subStr.size() >= 1)
 		{
-			lastChar = UnicodeString(subStr.begin() + (subStr.size() - 1), subStr.end());
+			lastChar = Utf32String(subStr.begin() + (subStr.size() - 1), subStr.end());
 
 			if (!password)
 			{
@@ -500,7 +578,7 @@ i32 TextInputState::getCharIndexAtX(f32 xPos)
 			}
 			else
 			{
-				rcLastChar = font->computeTextSize(passwordCharUnicode);
+				rcLastChar = font->computeTextSize(passwordCharUnicode.data(), (u32)passwordCharUnicode.size());
 			}
 		}
 		else
@@ -510,11 +588,11 @@ i32 TextInputState::getCharIndexAtX(f32 xPos)
 
 		if (!password)
 		{
-			rcCurrentRange = font->computeTextSize(subStr.data(), subStr.size());
+			rcCurrentRange = font->computeTextSize(subStr.data(), (u32)subStr.size());
 		}
 		else
 		{
-			rcCurrentRange = font->computeTextSize(passwordCharUnicode);
+			rcCurrentRange = font->computeTextSize(passwordCharUnicode.data(), passwordCharUnicode.size());
 			rcCurrentRange.width *= subStr.size();
 		}
 
@@ -550,29 +628,35 @@ i32 TextInputState::getCharIndexAtX(f32 xPos)
 
 void TextInputState::computeScrollAmount()
 {
-	UnicodeString tmpStr = UnicodeString(text.begin(), text.begin() + caretPosition);
+	Utf32String tmpStr = Utf32String(text.begin(), text.begin() + caretPosition);
 	FontTextSize textSizeToCaret;
-	
+
+	Font* font = ctx->theme ? ctx->theme->getElement(WidgetElementId::TextInputBody).normalState().font : nullptr;
+
+	if (!font)
+	{
+		return;
+	}
+
 	if (!password)
 	{
-		textSizeToCaret = themeElement->normalState().font->computeTextSize(tmpStr.data(), tmpStr.size());
+		textSizeToCaret = font->computeTextSize(tmpStr.data(), (u32)tmpStr.size());
 	}
 	else
 	{
-		textSizeToCaret = themeElement->normalState().font->computeTextSize(passwordCharUnicode);
+		textSizeToCaret = font->computeTextSize(passwordCharUnicode.data(), passwordCharUnicode.size());
 		textSizeToCaret.width *= tmpStr.size();
 	}
 
 	f32 absCursorPosX = clipRect.x + textSizeToCaret.width - scrollOffset;
-	const f32 stepAmount = 30; //TODO: make public
 
 	if (absCursorPosX < clipRect.x)
 	{
-		scrollOffset -= (clipRect.x - absCursorPosX) + stepAmount;
+		scrollOffset -= (clipRect.x - absCursorPosX) + ctx->settings.textScrollStepAmount;
 	}
 	else if (absCursorPosX > clipRect.right())
 	{
-		scrollOffset += absCursorPosX - clipRect.right() + stepAmount;
+		scrollOffset += absCursorPosX - clipRect.right() + ctx->settings.textScrollStepAmount;
 	}
 
 	if (scrollOffset < 0)
@@ -581,18 +665,16 @@ void TextInputState::computeScrollAmount()
 	}
 }
 
-void TextInputState::formatValue(UnicodeString& value)
+void TextInputState::formatValue(Utf32String& value)
 {
-	switch (valueType)
-	{
-	case TextInputValueMode::NumericOnly:
+	if (has(flags, TextInputFlags::NumericOnly))
 	{
 		std::vector<u32>::iterator iter = value.begin();
 
 		while (iter != value.end())
 		{
 			if (!isdigit(*iter)
-				&& *iter != '.' && *iter != ',' 
+				&& *iter != '.' && *iter != ','
 				&& *iter != '-' && *iter != 'e'
 				&& *iter != 'E' && *iter != '+')
 			{
@@ -602,11 +684,27 @@ void TextInputState::formatValue(UnicodeString& value)
 
 			iter++;
 		}
-
-		break;
 	}
-	default:
-		break;
+	else if (has(flags, TextInputFlags::HexOnly))
+	{
+		std::vector<u32>::iterator iter = value.begin();
+
+		while (iter != value.end())
+		{
+			if (!isxdigit(*iter))
+			{
+				iter = value.erase(iter);
+				continue;
+			}
+
+			if (islower(*iter))
+			{
+				*iter = toupper(*iter);
+				continue;
+			}
+
+			iter++;
+		}
 	}
 }
 

@@ -1,47 +1,72 @@
-#include "horus.h"
-#include "types.h"
-#include "ui_theme.h"
-#include "renderer.h"
-#include "unicode_text_cache.h"
-#include "ui_font.h"
-#include "ui_context.h"
-#include "util.h"
 #include <algorithm>
+#include "context.h"
+#include "theme.h"
+#include "renderer.h"
+#include "font.h"
+#include "util.h"
 
 namespace hui
 {
-void beginMenuBar()
+bool menuBarBegin()
 {
-	auto menuBarElem = ctx->theme->getElement(WidgetElementId::MenuBarBody);
-	f32 height = menuBarElem.normalState().height * ctx->globalScale;
+	auto& menuBarElem = ctx->theme->getElement(WidgetElementId::MenuBarBody);
+	f32 height = menuBarElem.normalState().height * ctx->scale;
 
+	widgetPushDisabled(widgetGetDisabled());
+
+	// the bar starts at the current layout position, the placeholder widget must not advance the cursor
+	auto barPos = ctx->position;
+	addWidget(0);
+	ctx->position = barPos;
+
+	ctx->id = genId("__MENUBAR__");
+
+	ctx->layoutStack.push_back(ctx->layout);
+	ctx->layout.savedPosition = ctx->position;
 	ctx->widget.rect.set(
-		round(ctx->penPosition.x),
-		round(ctx->penPosition.y),
-		ctx->layoutStack.back().width,
+		ctx->position.x,
+		ctx->position.y,
+		ctx->layout.width,
 		height);
-	ctx->renderer->cmdSetColor(menuBarElem.normalState().color);
-	ctx->renderer->cmdDrawImageBordered(menuBarElem.normalState().image, menuBarElem.normalState().border, ctx->widget.rect, ctx->globalScale);
-	ctx->currentMenuBarId = ctx->currentWidgetId;
-	ctx->currentWidgetId++;
+
+	//TODO: check if menu bar is visible
+	//if (!ctx->widget.visible)
+	//return false;
+
+	ctx->renderer.cmdSetColor(menuBarElem.normalState().color);
+	ctx->renderer.cmdDrawImageBordered(menuBarElem.normalState().image, menuBarElem.normalState().border, ctx->widget.rect, ctx->scale);
+	ctx->currentMenuBarId = ctx->id;
+
+	return true;
 }
 
-void endMenuBar()
+void menuBarEnd()
 {
-	auto menuBarElemState = ctx->theme->getElement(WidgetElementId::MenuBarBody).normalState();
-	f32 height = menuBarElemState.height * ctx->globalScale;
+	auto& menuBarElemState = ctx->theme->getElement(WidgetElementId::MenuBarBody).normalState();
+	f32 height = menuBarElemState.height * ctx->scale;
 
-	ctx->penPosition.x = ctx->layoutStack.back().position.x;
-	ctx->penPosition.y += height;
+	ctx->position = ctx->layout.savedPosition;
+	ctx->layout = ctx->layoutStack.back();
+	ctx->layoutStack.pop_back();
+	ctx->position.y += height;
 	ctx->currentMenuBarId = 0;
+
+	widgetPopDisabled();
 }
 
-bool beginMenuInternal(const char* labelText, SelectableFlags stateFlags, bool contextMenu)
+bool beginMenuInternal(const char* label, SelectableFlags stateFlags, bool contextMenu)
 {
-	auto menuBarItemElem = ctx->theme->getElement(WidgetElementId::MenuBarItem);
+	auto& menuBarItemElem = ctx->theme->getElement(WidgetElementId::MenuBarItem);
 	auto menuBarItemElemState = menuBarItemElem.normalState();
-	UnicodeString* uniStr = ctx->textCache->getText(labelText);
-	FontTextSize fsize = menuBarItemElemState.font->computeTextSize(*uniStr);
+	
+	widgetPushDisabled(widgetGetDisabled());
+
+	ctx->setLabelAndId(label);
+	
+	Utf32String uniStr;
+	
+	ctx->settings.services.utf8To32(ctx->widgetLabel.c_str(), uniStr);
+	FontTextSize fsize = menuBarItemElemState.font->computeTextSize(uniStr);
 	auto isMenuBarItem = ctx->menuDepth == 0;
 
 	if (isMenuBarItem || contextMenu)
@@ -51,26 +76,33 @@ bool beginMenuInternal(const char* labelText, SelectableFlags stateFlags, bool c
 		//TODO: externalize this
 		const f32 leftIndent = 20;
 
-		f32 width = (leftIndent + std::fmaxf(fsize.width, menuBarItemElemState.width)) * ctx->globalScale;
-		f32 height = menuBarItemElemState.height * ctx->globalScale;
+		f32 width = (leftIndent + std::fmaxf(fsize.width, menuBarItemElemState.width)) * ctx->scale;
+		f32 height = menuBarItemElemState.height * ctx->scale;
+
+		if (isMenuBarItem && !contextMenu)
+		{
+			f32 prevY = ctx->position.y;
+			addWidget(menuBarItemElemState.height);
+			ctx->position.y = prevY;
+		}
 
 		ctx->widget.rect.set(
-			round(ctx->penPosition.x),
-			round(ctx->penPosition.y + menuBarItemElemState.height * ctx->globalScale - height),
+			ctx->position.x,
+			ctx->position.y + menuBarItemElemState.height * ctx->scale - height,
 			width,
 			height);
 		ctx->hoveredSimpleMenuItemMenuDepth = ~0;
 		// check if clicked
 		mouseDownOnlyButtonBehavior();
-		auto thisMenuItemId = ctx->currentWidgetId;
+		auto thisMenuItemId = ctx->id;
 
 		if (ctx->activeMenuBarItemWidgetId
 			&& ctx->activeMenuBarItemWidgetId != thisMenuItemId
 			&& ctx->activeMenuBarId == ctx->currentMenuBarId)
 		{
-			Rect clippedRect = ctx->widget.rect.clipInside(ctx->renderer->getClipRect());
+			Rect clippedRect = ctx->widget.rect.clipInside(ctx->renderer.getClipRect());
 
-			if (clippedRect.contains(ctx->event.mouse.point))
+			if (clippedRect.contains(ctx->mousePosition))
 			{
 				ctx->widget.pressed = true;
 				ctx->menuItemChosen = true;
@@ -78,10 +110,10 @@ bool beginMenuInternal(const char* labelText, SelectableFlags stateFlags, bool c
 			}
 		}
 
-		if (ctx->widget.pressed
+		if ((ctx->widget.pressed && !contextMenu)
 			|| (contextMenu && ctx->contextMenuClicked))
 		{
-			ctx->activeMenuBarItemWidgetId = ctx->currentWidgetId;
+			ctx->activeMenuBarItemWidgetId = ctx->id;
 			ctx->contextMenuClicked = false;
 
 			if (!contextMenu)
@@ -95,52 +127,53 @@ bool beginMenuInternal(const char* labelText, SelectableFlags stateFlags, bool c
 			{
 				ctx->contextMenuActive = true;
 				ctx->activeMenuBarItemWidgetPos = {
-					ctx->event.mouse.point.x,
-					ctx->event.mouse.point.y };
+					ctx->mousePosition.x,
+					ctx->mousePosition.y };
 			}
 
 			ctx->event.type = InputEvent::Type::None;
 			ctx->menuDepth = 0;
 			ctx->activeMenuBarId = ctx->currentMenuBarId;
-			skipThisFrame();
+			skipFrame();
 			forceRepaint();
 			ctx->menuStack[ctx->menuDepth].size.x = 0;
 		}
 
-		if (ctx->activeMenuBarItemWidgetId == thisMenuItemId)
+		if (ctx->widget.disabled)
+		{
+			menuBarItemElemState = menuBarItemElem.getState(WidgetStateType::Disabled);
+		}
+		else if (ctx->activeMenuBarItemWidgetId == thisMenuItemId)
 		{
 			menuBarItemElemState = menuBarItemElem.getState(WidgetStateType::Pressed);
 		}
 		else if (ctx->widget.hovered
-			&& ctx->widget.hoveredWidgetId == thisMenuItemId)
+			&& ctx->widget.hoveredId == thisMenuItemId)
 		{
 			menuBarItemElemState = menuBarItemElem.getState(WidgetStateType::Hovered);
 		}
 
 		if (!contextMenu)
 		{
-			ctx->renderer->cmdSetColor(menuBarItemElemState.color);
-			ctx->renderer->cmdDrawImageBordered(menuBarItemElemState.image, menuBarItemElemState.border, ctx->widget.rect, ctx->globalScale);
-			ctx->renderer->cmdSetFont(menuBarItemElemState.font);
-			ctx->renderer->cmdSetColor(menuBarItemElemState.textColor);
-			ctx->renderer->cmdDrawTextInBox(labelText, ctx->widget.rect, HAlignType::Center, VAlignType::Center);
-			ctx->penPosition.x += width;
-			ctx->penPosition.x = round(ctx->penPosition.x);
-		}
+			ctx->renderer.cmdSetColor(menuBarItemElemState.color);
+			ctx->renderer.cmdDrawImageBordered(menuBarItemElemState.image, menuBarItemElemState.border, ctx->widget.rect, ctx->scale);
+			ctx->renderer.cmdSetFont(menuBarItemElemState.font);
+			ctx->renderer.cmdSetColor(menuBarItemElemState.textColor);
+			ctx->renderer.cmdDrawTextInBox(ctx->widgetLabel.c_str(), ctx->widget.rect, HAlignType::Center, VAlignType::Center);
+			ctx->position.x += width;
 
-		ctx->currentWidgetId++;
+		}
 
 		if (ctx->activeMenuBarItemWidgetId == thisMenuItemId
 			|| (contextMenu && ctx->contextMenuActive))
 		{
-			auto menuBodyElem = ctx->theme->getElement(WidgetElementId::MenuBody);
+			auto& menuBodyElem = ctx->theme->getElement(WidgetElementId::MenuBody);
 
-			ctx->renderer->pushClipRect(ctx->renderer->getWindowRect(), false);
-			pushPadding(0);
-			pushSpacing(0);
-			beginPopup(
-				ctx->menuStack[ctx->menuDepth].size.x + menuBodyElem.normalState().border * 2.0f + ctx->menuFillerWidth + ctx->menuIconSpace,
-				(contextMenu ? PopupFlags::CustomPosition : PopupFlags::BelowLastWidget) 
+			ctx->renderer.pushClipRect(ctx->renderer.getWindowRect(), false);
+			spacingPush(0);
+			popupBegin("menuPopup",
+				ctx->menuStack[ctx->menuDepth].size.x + menuBodyElem.normalState().border * 2.0f + ctx->menuFillerWidth + ctx->menuImageSpace,
+				(contextMenu ? PopupFlags::CustomPosition : PopupFlags::BelowLastWidget)
 				 | PopupFlags::IsMenu,
 				ctx->activeMenuBarItemWidgetPos, WidgetElementId::MenuBody);
 
@@ -157,11 +190,21 @@ bool beginMenuInternal(const char* labelText, SelectableFlags stateFlags, bool c
 			flags = flags | SelectableFlags::Selected;
 
 		ctx->isSubMenu = true;
-		menuItem(labelText, "", 0, flags);
+		//TODO: this needs a proper unique id too
+		menuItem(ctx->widgetLabel.c_str(), "", 0, flags);
 		ctx->isSubMenu = false;
 
 		if (ctx->widget.hovered)
 			ctx->hoveredSimpleMenuItemMenuDepth = ~0;
+
+		// if submenu is open but the parent item is no longer the intended target
+		// (e.g. user hovered past it to a sibling), deactivate before opening the popup
+		if (ctx->menuStack[ctx->menuDepth].active
+			&& !ctx->widget.hovered
+			&& ctx->hoveredSimpleMenuItemMenuDepth < ctx->menuDepth)
+		{
+			ctx->menuStack[ctx->menuDepth].active = false;
+		}
 
 		if (!ctx->menuStack[ctx->menuDepth].active && (ctx->widget.hovered))
 		{
@@ -174,15 +217,13 @@ bool beginMenuInternal(const char* labelText, SelectableFlags stateFlags, bool c
 
 		if (ctx->menuStack[ctx->menuDepth].active)
 		{
-			auto rc = getWidgetRect();
-
-			auto menuBodyElem = ctx->theme->getElement(WidgetElementId::MenuBody);
+			auto rc = ctx->widget.rect;
+			auto& menuBodyElem = ctx->theme->getElement(WidgetElementId::MenuBody);
 			ctx->activeMenuBarItemWidgetWidth = rc.width;
-			ctx->renderer->pushClipRect(ctx->renderer->getWindowRect(), false);
-			pushPadding(0);
-			pushSpacing(0);
-			beginPopup(
-				ctx->menuStack[ctx->menuDepth].size.x + menuBodyElem.normalState().border * 2.0f + ctx->menuFillerWidth + ctx->menuIconSpace,
+			ctx->renderer.pushClipRect(ctx->renderer.getWindowRect(), false);
+			spacingPush(0);
+			popupBegin("menuPopup",
+				ctx->menuStack[ctx->menuDepth].size.x + menuBodyElem.normalState().border * 2.0f + ctx->menuFillerWidth + ctx->menuImageSpace,
 				PopupFlags::CustomPosition | PopupFlags::IsMenu | PopupFlags::SameLayer,
 				Point(rc.right(), rc.top()),
 				WidgetElementId::MenuBody);
@@ -200,8 +241,8 @@ void endMenuInternal(bool contextMenu)
 	if (ctx->activeMenuBarItemWidgetId && ctx->menuDepth == 1)
 	{
 		if (ctx->menuItemChosen
-			|| pressedEscapeOnPopup()
-			|| ((clickedOutsidePopup()
+			|| popupPressedEscape()
+			|| ((popupClickedOutside()
 				&& !ctx->pressedOnMenuItem)
 				&& !ctx->clickedOnASubMenuItem))
 		{
@@ -210,7 +251,7 @@ void endMenuInternal(bool contextMenu)
 				ctx->activeMenuBarItemWidgetId = 0;
 				ctx->activeMenuBarId = 0;
 
-				for (int i = 0; i < ctx->maxMenuDepth; i++)
+				for (i32 i = 0; i < ctx->maxMenuDepth; i++)
 				{
 					ctx->menuStack[i].active = false;
 				}
@@ -218,20 +259,42 @@ void endMenuInternal(bool contextMenu)
 
 			ctx->contextMenuWidgetId = 0;
 			ctx->menuDepth = 0;
-			closePopup();
+			popupClose();
 			ctx->contextMenuActive = false;
-			ctx->widget.focusedWidgetPressed = false;
 			ctx->pressedOnMenuItem = false;
 			ctx->clickedOnASubMenuItem = false;
 			ctx->switchedToAnotherMainMenu = false;
 			ctx->isSubMenu = false;
 		}
 
-		endPopup();
-		popPadding();
-		popSpacing();
-		ctx->renderer->popClipRect();
+		popupEnd();
+		spacingPop();
+		ctx->renderer.popClipRect();
 		ctx->menuDepth = 0;
+		widgetPopDisabled();
+	}
+	else if (contextMenu && ctx->menuDepth == 1)
+	{
+		if (ctx->menuItemChosen
+			|| popupPressedEscape()
+			|| ((popupClickedOutside()
+				&& !ctx->pressedOnMenuItem)
+				&& !ctx->clickedOnASubMenuItem))
+		{
+			ctx->contextMenuWidgetId = 0;
+			ctx->menuDepth = 0;
+			popupClose();
+			ctx->contextMenuActive = false;
+			ctx->contextMenuClicked = false;
+			ctx->pressedOnMenuItem = false;
+			ctx->clickedOnASubMenuItem = false;
+
+			popupEnd();
+			spacingPop();
+			ctx->renderer.popClipRect();
+			ctx->menuDepth = 0;
+			widgetPopDisabled();
+		}
 	}
 	else if (ctx->menuDepth > 1)
 	{
@@ -239,7 +302,7 @@ void endMenuInternal(bool contextMenu)
 
 		if (menu.active)
 		{
-			if (clickedOutsidePopup()
+			if (popupClickedOutside()
 				&& !ctx->pressedOnMenuItem
 				&& !ctx->clickedOnASubMenuItem)
 			{
@@ -248,57 +311,56 @@ void endMenuInternal(bool contextMenu)
 			}
 
 			if (ctx->menuItemChosen
-				|| pressedEscapeOnPopup()
+				|| popupPressedEscape()
 				|| ctx->hoveredSimpleMenuItemMenuDepth < ctx->menuDepth - 1)
 			{
 				menu.active = false;
-				closePopup();
-				ctx->widget.focusedWidgetPressed = false;
+				popupClose();
 				ctx->pressedOnMenuItem = false;
 				ctx->clickedOnASubMenuItem = false;
 			}
 
-			endPopup();
-			popPadding();
-			popSpacing();
-			ctx->renderer->popClipRect();
+			popupEnd();
+			spacingPop();
+			ctx->renderer.popClipRect();
+			widgetPopDisabled();
 		}
 
 		ctx->menuDepth--;
 	}
 }
 
-bool beginMenu(const char* labelText, SelectableFlags stateFlags)
+bool menuBegin(const char* label, SelectableFlags stateFlags)
 {
-	return beginMenuInternal(labelText, stateFlags, false);
+	return beginMenuInternal(label, stateFlags, false);
 }
 
-void endMenu()
+void menuEnd()
 {
 	endMenuInternal(false);
 }
 
-bool beginContextMenu(ContextMenuFlags flags)
+bool contextMenuBegin(ContextMenuFlags flags)
 {
-	u32 widgetId = ctx->currentWidgetId;
-	bool leftButton = has(flags, ContextMenuFlags::AllowLeftClickOpen) ? ctx->event.mouse.button == MouseButton::Left : false;
+	WidgetId id = ctx->id;
+	
 
-	if (ctx->event.type == hui::InputEvent::Type::MouseDown
-		&& (ctx->event.mouse.button == MouseButton::Right || leftButton) 
-		&& ctx->widget.rect.contains(ctx->event.mouse.point)
+	if (ctx->isActiveLayer()
+		&& ctx->event.type == hui::InputEvent::Type::MouseUp
+		&& (ctx->event.mouse.button == MouseButton::Right)
+		&& ctx->widget.rect.contains(ctx->mousePosition)
 		&& !ctx->activeMenuBarItemWidgetId
 		&& !ctx->contextMenuClicked
 		&& !ctx->contextMenuWidgetId)
 	{
 		ctx->contextMenuClicked = true;
-		ctx->contextMenuWidgetId = widgetId;
-		ctx->widget.focusedWidgetPressed = false;
+		ctx->contextMenuWidgetId = id;
 	}
 
 	bool opened = false;
 
 	if ((ctx->contextMenuActive || ctx->contextMenuClicked)
-		&& ctx->contextMenuWidgetId == widgetId)
+		&& ctx->contextMenuWidgetId == id)
 	{
 		opened = true;
 		beginMenuInternal("", SelectableFlags::Selected, true);
@@ -307,20 +369,21 @@ bool beginContextMenu(ContextMenuFlags flags)
 	return opened;
 }
 
-void endContextMenu()
+void contextMenuEnd()
 {
 	endMenuInternal(true);
 }
 
-bool menuItem(const char* labelText, const char* shortcut, Image icon, SelectableFlags stateFlags)
+bool menuItem(const char* label, const char* shortcut, HImage img, SelectableFlags stateFlags)
 {
-	auto menuItemShortcutElem = ctx->theme->getElement(WidgetElementId::MenuItemShortcut);
-	auto bodyElem = ctx->theme->getElement(WidgetElementId::MenuItemBody);
-	bool hasIcon = icon != nullptr;
+	auto& menuItemShortcutElem = ctx->theme->getElement(WidgetElementId::MenuItemShortcut);
+	auto& bodyElem = ctx->theme->getElement(WidgetElementId::MenuItemBody);
+	bool hasImage = img != nullptr;
 	bool hasCheck = !!(stateFlags & SelectableFlags::Checkable);
 	bool isChecked = !!(stateFlags & SelectableFlags::Checked);
 
-	addWidgetItem(bodyElem.normalState().height * ctx->globalScale);
+	ctx->setLabelAndId(label);
+	addWidget(bodyElem.normalState().height);
 	buttonBehavior(true);
 
 	if (
@@ -334,7 +397,12 @@ bool menuItem(const char* labelText, const char* shortcut, Image icon, Selectabl
 	auto bodyElemState = &bodyElem.normalState();
 	auto shortcutElemState = &menuItemShortcutElem.normalState();
 
-	if (ctx->widget.pressed || !!(stateFlags & SelectableFlags::Selected))
+	if (ctx->widget.disabled)
+	{
+		bodyElemState = &bodyElem.getState(WidgetStateType::Disabled);
+		shortcutElemState = &menuItemShortcutElem.getState(WidgetStateType::Disabled);
+	}
+	else if (ctx->widget.pressed || !!(stateFlags & SelectableFlags::Selected))
 	{
 		bodyElemState = &bodyElem.getState(WidgetStateType::Pressed);
 		shortcutElemState = &menuItemShortcutElem.getState(WidgetStateType::Pressed);
@@ -351,86 +419,94 @@ bool menuItem(const char* labelText, const char* shortcut, Image icon, Selectabl
 	}
 
 	// render menu item bg
-	ctx->renderer->cmdSetColor(bodyElemState->color * ctx->tint[(u32)TintColorType::Body]);
-	ctx->renderer->cmdDrawImageBordered(bodyElemState->image, bodyElemState->border, ctx->widget.rect, ctx->globalScale);
-	ctx->renderer->cmdSetColor(bodyElemState->textColor * ctx->tint[(u32)TintColorType::Text]);
+	ctx->renderer.cmdSetColor(tintApply(bodyElemState->color, TintColorType::Body));
+	ctx->renderer.cmdDrawImageBordered(bodyElemState->image, bodyElemState->border, ctx->widget.rect, ctx->scale);
+	ctx->renderer.cmdSetColor(tintApply(bodyElemState->textColor, TintColorType::Text));
 
 	// render menu item text
-	ctx->renderer->cmdSetFont(bodyElemState->font);
-	ctx->renderer->pushClipRect(ctx->widget.rect);
-	ctx->renderer->cmdDrawTextInBox(
-		labelText,
+	ctx->renderer.cmdSetFont(bodyElemState->font);
+	ctx->renderer.pushClipRect(ctx->widget.rect);
+	ctx->renderer.cmdDrawTextInBox(
+		ctx->widgetLabel.c_str(),
 		Rect(
-			ctx->widget.rect.x + (ctx->menuItemTextSideSpacing + ctx->menuIconSpace) * ctx->globalScale,
+			ctx->widget.rect.x + (ctx->menuItemTextSideSpacing + ctx->menuImageSpace) * ctx->scale,
 			ctx->widget.rect.y,
 			ctx->widget.rect.width,
 			ctx->widget.rect.height)
 		,
 		HAlignType::Left,
 		VAlignType::Center);
-	ctx->renderer->popClipRect();
+	ctx->renderer.popClipRect();
 
 	// render the shortcut text
-	ctx->renderer->cmdSetColor(shortcutElemState->textColor * ctx->tint[(u32)TintColorType::Text]);
-	ctx->renderer->cmdSetFont(shortcutElemState->font);
-	ctx->renderer->pushClipRect(ctx->widget.rect);
-	ctx->renderer->cmdDrawTextInBox(
-		shortcut,
-		Rect(
-			ctx->widget.rect.x,
-			ctx->widget.rect.y,
-			ctx->widget.rect.width - (ctx->menuItemTextSideSpacing) * ctx->globalScale,
-			ctx->widget.rect.height)
-		,
-		HAlignType::Right,
-		VAlignType::Center);
-	ctx->renderer->popClipRect();
+	if (shortcut)
+	{
+		ctx->renderer.cmdSetColor(tintApply(shortcutElemState->textColor, TintColorType::Text));
+		ctx->renderer.cmdSetFont(shortcutElemState->font);
+		ctx->renderer.cmdDrawTextInBox(
+			shortcut,
+			Rect(
+				ctx->widget.rect.x,
+				ctx->widget.rect.y,
+				ctx->widget.rect.width - (ctx->menuItemTextSideSpacing) * ctx->scale,
+				ctx->widget.rect.height)
+			,
+			HAlignType::Right,
+			VAlignType::Center, true);
+	}
 
 	if (hasCheck)
 	{
-		auto checkMarkElem = ctx->theme->getElement(WidgetElementId::MenuItemCheckMark);
-		auto noCheckMarkElem = ctx->theme->getElement(WidgetElementId::MenuItemNoCheckMark);
+		auto& checkMarkElem = ctx->theme->getElement(WidgetElementId::MenuItemCheckMark);
+		auto& noCheckMarkElem = ctx->theme->getElement(WidgetElementId::MenuItemNoCheckMark);
 
-		// draw icon or check mark
+		// draw image or check mark
 		auto& rc = ctx->widget.rect;
 
-		auto rcIcon = Rect(
-			rc.x + (ctx->menuIconSpace - noCheckMarkElem.normalState().width) / 2.0f * ctx->globalScale,
-			rc.y + (rc.height - noCheckMarkElem.normalState().image->rect.height * ctx->globalScale) / 2.0f,
-			noCheckMarkElem.normalState().image->rect.width * ctx->globalScale,
-			noCheckMarkElem.normalState().image->rect.height * ctx->globalScale
+		auto rcImage = Rect(
+			rc.x + (ctx->menuImageSpace - noCheckMarkElem.normalState().width) / 2.0f * ctx->scale,
+			rc.y + (rc.height - noCheckMarkElem.normalState().image->rect.height * ctx->scale) / 2.0f,
+			noCheckMarkElem.normalState().image->rect.width * ctx->scale,
+			noCheckMarkElem.normalState().image->rect.height * ctx->scale
 		);
 
-		ctx->renderer->cmdSetColor(noCheckMarkElem.normalState().color);
-		ctx->renderer->cmdDrawImage(noCheckMarkElem.normalState().image, rcIcon);
+		ctx->renderer.cmdSetColor(noCheckMarkElem.normalState().color);
+		ctx->renderer.cmdDrawImage(noCheckMarkElem.normalState().image, rcImage);
 
 		if (isChecked)
 		{
-			ctx->renderer->cmdSetColor(checkMarkElem.normalState().color);
-			ctx->renderer->cmdDrawImage(checkMarkElem.normalState().image, rcIcon);
+			ctx->renderer.cmdSetColor(checkMarkElem.normalState().color);
+			ctx->renderer.cmdDrawImage(checkMarkElem.normalState().image, rcImage);
 		}
 	}
-	else if (hasIcon)
+	else if (hasImage)
 	{
-		// draw icon
 		auto& rc = ctx->widget.rect;
-		UiImage* iconImg = (UiImage*)icon;
+		Image* image = (Image*)img;
+		float imgWidth = (float)image->rect.width;
+		float imgHeight = (float)image->rect.height;
 
-		auto rcIcon = Rect(
-			rc.x + (ctx->menuIconSpace - iconImg->rect.width) / 2.0f * ctx->globalScale,
-			rc.y + (rc.height - iconImg->rect.height * ctx->globalScale) / 2.0f,
-			iconImg->rect.width * ctx->globalScale,
-			iconImg->rect.height * ctx->globalScale
+		viewportImageSizeFit(imgWidth, imgHeight, ctx->menuImageSpace * ctx->scale, rc.height, imgWidth, imgHeight, false, false);
+
+		auto rcImage = Rect(
+			rc.x + (ctx->menuImageSpace * ctx->scale - imgWidth) / 2.0f,
+			rc.y + (rc.height - imgHeight) / 2.0f,
+			imgWidth,
+			imgHeight
 		);
 
-		ctx->renderer->cmdSetColor(Color::white);
-		ctx->renderer->cmdDrawImage(iconImg, rcIcon);
+		ctx->renderer.cmdSetColor(Color::white);
+		ctx->renderer.cmdDrawImage(image, rcImage);
 	}
 
-	setAsFocusable();
-	ctx->currentWidgetId++;
-	auto menuItemTextWidth = bodyElemState->font->computeTextSize(
-		*ctx->textCache->getText(labelText)).width + menuItemShortcutElem.normalState().font->computeTextSize(*ctx->textCache->getText(shortcut)).width;
+	widgetSetFocusable();
+	
+	Utf32String uniStr, uniShortcutStr;
+
+	ctx->settings.services.utf8To32(ctx->widgetLabel.c_str(), uniStr);
+	ctx->settings.services.utf8To32(shortcut ? shortcut : "", uniShortcutStr);
+
+	auto menuItemTextWidth = bodyElemState->font->computeTextSize(uniStr).width + menuItemShortcutElem.normalState().font->computeTextSize(uniShortcutStr).width;
 
 	ctx->menuStack[ctx->menuDepth - 1].size.x = std::max(
 		menuItemTextWidth,
@@ -462,7 +538,7 @@ bool menuItem(const char* labelText, const char* shortcut, Image icon, Selectabl
 		// draw arrow
 		auto submenuArrowState = &ctx->theme->getElement(WidgetElementId::SubMenuItemArrow).normalState();
 
-		if (ctx->widget.hovered)
+		if (ctx->widget.hovered || !!(stateFlags & SelectableFlags::Selected))
 		{
 			submenuArrowState = &ctx->theme->getElement(WidgetElementId::SubMenuItemArrow).getState(WidgetStateType::Hovered);
 		}
@@ -470,14 +546,14 @@ bool menuItem(const char* labelText, const char* shortcut, Image icon, Selectabl
 		auto& rc = ctx->widget.rect;
 
 		auto rcArrow = Rect(
-			rc.right() - submenuArrowState->image->rect.width * ctx->globalScale,
-			rc.y + (rc.height - submenuArrowState->image->rect.height * ctx->globalScale) / 2.0f,
-			submenuArrowState->image->rect.width * ctx->globalScale,
-			submenuArrowState->image->rect.height * ctx->globalScale
+			rc.right() - submenuArrowState->image->rect.width * ctx->scale,
+			rc.y + (rc.height - submenuArrowState->image->rect.height * ctx->scale) / 2.0f,
+			submenuArrowState->image->rect.width * ctx->scale,
+			submenuArrowState->image->rect.height * ctx->scale
 		);
 
-		ctx->renderer->cmdSetColor(submenuArrowState->color);
-		ctx->renderer->cmdDrawImage(submenuArrowState->image, rcArrow);
+		ctx->renderer.cmdSetColor(submenuArrowState->color);
+		ctx->renderer.cmdDrawImage(submenuArrowState->image, rcArrow);
 	}
 
 	return ctx->widget.clicked;

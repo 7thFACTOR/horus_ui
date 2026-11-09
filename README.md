@@ -10,7 +10,7 @@ HorusUI was specifically designed to create game editor tools or similar types o
 
 ```NOTE: The library is still work in progress, changes will occur until stabilization```
 
-For direct support: nekitu@gmail.com
+For direct support: support@tachyonengine.com
 
 If you want to help with the development, donations are welcomed:
 
@@ -138,7 +138,7 @@ GLU/GLUT dev, needed by GLEW, use:
 - Currently using OpenGL and SDL as backends for rendering and window/input
 - Customizable render/input backends
 - Custom user widgets API
-- 2D primitive drawing, lines, polylines, hermite splines, elipses, rectangles, with thickness
+- 2D primitive drawing, lines, polylines, splines (hermite, bezier, centripetal catmull-rom, natural cubic, linear, basis), elipses, rectangles, with thickness
 - User viewport widget (rendering your scene/document view with the current rendering API)
 - Custom mouse cursor API
 - Clipboard API

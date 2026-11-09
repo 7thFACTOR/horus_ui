@@ -1,103 +1,129 @@
-#include "horus.h"
-#include "ui_context.h"
-#include "ui_theme.h"
+#include "context.h"
+#include "theme.h"
 #include "util.h"
 #include "renderer.h"
 
 namespace hui
 {
-void beginBoxInternal(const Color& color, UiThemeElement::State& state, f32 customHeight)
+static void beginBoxLayoutInternal(const char* id, const Color& color, ThemeElement::State* state, f32 customHeight)
 {
-	auto width = ctx->layoutStack.back().width;
+	const auto parentWidth = ctx->layout.width;
+	const auto& padding = paddingGet(PaddingType::Layout);
 
-	ctx->layoutStack.push_back(LayoutState(LayoutType::Container));
-	ctx->layoutStack.back().savedPenPosition = ctx->penPosition;
-	ctx->penStack.push_back(ctx->penPosition);
-	// move with padding
-	ctx->penPosition.x += ctx->padding * ctx->globalScale;
-	ctx->layoutStack.back().position = ctx->penPosition;
-	// take some padding and border from width
-	ctx->layoutStack.back().width = width - (state.border * 2.0f + ctx->padding * 2.0f) * ctx->globalScale;
-	ctx->layoutStack.back().height = customHeight * ctx->globalScale;
-	ctx->layoutStack.back().themeWidgetElementState = &state;
-	ctx->layoutStack.back().themeElementColorTint = color;
+	layoutPush();
+	ctx->layout.type = LayoutType::Generic;
+	ctx->layout.id = ctx->id = genId(id);
+	ctx->layout.savedPosition = ctx->position;
+	ctx->layout.width = parentWidth - (state->border + padding.x) * ctx->scale * 2.0f;
+	
+	auto& boxState = ctx->boxState[ctx->id];
 
-	ctx->penPosition.x += state.border * ctx->globalScale;
+	boxState.savedPadding = padding;
+	boxState.themeWidgetElementState = state;
+	boxState.themeElementColorTint = color;
+	boxState.width = parentWidth;
+	ctx->position.x += (state->border + padding.x) * ctx->scale;
+	boxState.customHeight = customHeight;
 
 	if (customHeight <= 0.0f)
-		ctx->penPosition.y += state.border * ctx->globalScale;
+	{
+		ctx->position.y += (state->border + padding.y) * ctx->scale;
+	}
+	else
+	{
+		ctx->layout.height = customHeight;
+	}
 
-	pushDrawCommandIndex();
+	ctx->boxDrawCmdSplitter[ctx->id].clear();
+	ctx->boxDrawCmdSplitter[ctx->id].split(2);
+	ctx->boxDrawCmdSplitter[ctx->id].setLayer(1);
 }
 
-void beginBox(
-	const Color& color,
+void boxBegin(
+	const char* id,
+	const Color& tintColor,
 	WidgetElementId widgetElementId,
 	WidgetStateType state,
 	f32 customHeight)
 {
-	auto boxElemState = &ctx->theme->getElement(widgetElementId).getState(state);
+	auto& boxElemState = ctx->theme->getElement(widgetElementId).getState(state);
 
-	beginBoxInternal(color, *boxElemState, customHeight);
+	beginBoxLayoutInternal(id, tintColor, &boxElemState, customHeight);
 }
 
-void beginBox(
-	const Color& color,
+void boxBeginUserElement(
+	const char* id,
+	const Color& tintColor,
 	const char* userElementName,
 	WidgetStateType state,
 	f32 customHeight)
 {
 	auto elem = ctx->theme->userElements[userElementName];
 
-	if (elem)
-	{
-		auto boxElemState = &elem->getState(state);
-		beginBoxInternal(color, *boxElemState, customHeight);
-	}
+	if (!elem)
+		elem = &ctx->theme->getElement(WidgetElementId::TextInputBody);
+
+	auto& boxElemState = elem->getState(state);
+	beginBoxLayoutInternal(id, tintColor, &boxElemState, customHeight);
 }
 
-bool endBox()
+bool boxEnd()
 {
-	auto boxElemState = ctx->layoutStack.back().themeWidgetElementState;
-	auto contentHeight = ctx->penPosition.y - ctx->layoutStack.back().position.y;
-	contentHeight -= ctx->spacing * ctx->globalScale;
-	contentHeight -= boxElemState->border * ctx->globalScale;
-	auto height = contentHeight + boxElemState->border * 2.0f * ctx->globalScale;
+	ctx->id = ctx->layout.id;
+	auto& boxState = ctx->boxState[ctx->id];
 
-	if (ctx->layoutStack.back().height > 0.0f)
+	if (!boxState.themeWidgetElementState)
+		boxState.themeWidgetElementState = &ctx->theme->getElement(WidgetElementId::BoxBody).normalState();
+
+	auto& boxElemState = boxState.themeWidgetElementState;
+
+	// finish same line
+	if (ctx->sameLine.wasEnabled)
 	{
-		height = ctx->layoutStack.back().height * ctx->globalScale;
+		ctx->position.y += ctx->sameLine.maxHeight;
+		ctx->sameLine.wasEnabled = false;
+	}
+
+	f32 height;
+
+	if (boxState.customHeight > 0.0f)
+	{
+		height = boxState.customHeight;
+	}
+	else
+	{
+		auto contentHeight = ctx->position.y - ctx->layout.savedPosition.y;
+		contentHeight -= (boxElemState->border + boxState.savedPadding.y) * ctx->scale;
+		height = contentHeight + (boxElemState->border + boxState.savedPadding.y) * ctx->scale * 2.0f;
 	}
 
 	ctx->widget.rect = {
-		ctx->layoutStack.back().position.x,
-			ctx->layoutStack.back().position.y,
-			ctx->layoutStack.back().width + boxElemState->border * 2.0f * ctx->globalScale,
-			height
+		ctx->layout.savedPosition.x,
+		ctx->layout.savedPosition.y,
+		boxState.width,
+		height
 	};
 
 	buttonBehavior();
-	auto cmdIndex = popDrawCommandIndex();
-	beginInsertDrawCommands(cmdIndex);
-	ctx->renderer->cmdSetColor(boxElemState->color * ctx->layoutStack.back().themeElementColorTint);
-	ctx->renderer->cmdSetAtlas(ctx->theme->atlas);
-	ctx->renderer->cmdDrawImageBordered(
+	ctx->boxDrawCmdSplitter[ctx->id].setLayer(0);
+	ctx->renderer.cmdSetColor(boxElemState->color * boxState.themeElementColorTint);
+	ctx->renderer.cmdDrawImageBordered(
 		boxElemState->image,
 		boxElemState->border,
 		ctx->widget.rect,
-		ctx->globalScale);
-	endInsertDrawCommands();
+		ctx->scale);
 
-	ctx->penPosition.x = ctx->penStack.back().x;
+	ctx->position.x = ctx->layout.savedPosition.x;
+	ctx->position.y = ctx->layout.savedPosition.y;
 
-	if (ctx->layoutStack.back().height <= 0.0f)
+	if (ctx->layout.height <= 0.0f)
 	{
-		ctx->penPosition.y += boxElemState->border * ctx->globalScale;
+		ctx->position.y += (boxElemState->border + boxState.savedPadding.y ) * ctx->scale;
 	}
-
-	ctx->layoutStack.pop_back();
-	ctx->penStack.pop_back();
-	ctx->currentWidgetId++;
+	
+	ctx->position.y += height;
+	ctx->boxDrawCmdSplitter[ctx->id].merge();
+	layoutPop();
 
 	return ctx->widget.pressed;
 }

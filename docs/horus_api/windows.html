@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Horus UI - Windowing &amp; toolbars</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<aside class="sidebar">
+	<div class="brand">
+		<div class="logo">H</div>
+		<div class="title">Horus UI</div>
+	</div>
+	<nav>
+		<div class="nav-label">API Reference</div>
+		<a href="index.html">Overview</a>
+		<a href="types.html">Types</a>
+		<a href="core.html">Core</a>
+		<a href="windows.html" class="active">Windowing &amp; toolbars</a>
+		<a href="theme.html">Themes &amp; fonts</a>
+		<a href="layout.html">Layout &amp; tables</a>
+		<a href="widgets.html">Widgets</a>
+		<a href="rendering.html">Rendering &amp; utility</a>
+	</nav>
+</aside>
+
+<main class="main">
+
+	<h1>Windowing &amp; toolbars</h1>
+	<p class="lead">Native windows, the dock node layout, dockable windows, docking layout persistence and overlay toolbars.</p>
+
+	<h2>How windows and docking work</h2>
+	<p>
+		Horus windows live inside a <strong>dock tree</strong>. Each native window gets a root dock node (
+		<code>dockNodeCreateRoot</code>); dock nodes split into child nodes (<code>dockNodeSplit</code>) and windows are assigned to
+		nodes (<code>dockNodeSetWindow</code>). A window is drawn between <code>windowBegin</code>/<code>windowEnd</code> from inside
+		any layout, and the user can drag/drop tabs to re-dock them at runtime.
+	</p>
+
+	<h2>Native windows &amp; the dock tree</h2>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">nativeWindowSetCurrent</span>(<span class="prm">HNativeWindow</span> nativeWnd)</code></div>
+		<p class="brief">Set the current native OS window; subsequent window drawing happens inside it.</p>
+		<ul class="params"><li><span class="pname">nativeWnd</span> the native window handle</li></ul>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="ret">DockNodeId</span> <span class="fn">dockNodeCreateRoot</span>(<span class="prm">HNativeWindow</span> nativeWnd)</code></div>
+		<p class="brief">Create the root dock node of a native window. All of that window's docked content lives under this root.</p>
+		<ul class="params"><li><span class="pname">nativeWnd</span> the native window handle</li></ul>
+		<p class="returns">Returns the new root dock node id.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">dockNodeDeleteChildren</span>(<span class="prm">DockNodeId</span> rootNodeId)</code></div>
+		<p class="brief">Delete the children of a dock node, removing the windows docked in them.</p>
+		<ul class="params"><li><span class="pname">rootNodeId</span> the dock node whose children are deleted</li></ul>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">dockNodeSplit</span>(<span class="prm">DockNodeId</span> nodeId, <span class="prm">DockNodeSplitType</span> splitType, <span class="prm">f32</span> firstNodeSizeUnitPercent, <span class="prm">DockNodeId*</span> outNodeId1, <span class="prm">DockNodeId*</span> outNodeId2)</code></div>
+		<p class="brief">Split a dock node into two sibling nodes, replacing it in the tree.</p>
+		<ul class="params">
+			<li><span class="pname">nodeId</span> the node to split</li>
+			<li><span class="pname">splitType</span> the split direction</li>
+			<li><span class="pname">firstNodeSizeUnitPercent</span> size of the first child as unit percent (0..1)</li>
+			<li><span class="pname">outNodeId1</span> receives the first child node id</li>
+			<li><span class="pname">outNodeId2</span> receives the second child node id</li>
+		</ul>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">dockNodeSetWindow</span>(<span class="prm">DockNodeId</span> parentNode, <span class="prm">const char*</span> windowId)</code></div>
+		<p class="brief">Assign a window to a dock node. Call before the window is first drawn so it knows where to dock.</p>
+		<ul class="params">
+			<li><span class="pname">parentNode</span> the dock node to host the window</li>
+			<li><span class="pname">windowId</span> the window id</li>
+		</ul>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">dockNodeLayoutRecalculate</span>()</code></div>
+		<p class="brief">Recalculate the dock node layout sizes from the native window sizes.</p>
+	</div>
+
+	<h2>Dockable windows</h2>
+	<div class="member">
+		<div class="prototype"><code><span class="ret">bool</span> <span class="fn">windowBegin</span>(<span class="prm">const char*</span> windowId, <span class="prm">const char*</span> title, <span class="prm">Rect*</span> initialRect = nullptr, <span class="prm">HImage</span> img = 0)</code></div>
+		<p class="brief">Begin a dockable window. The window is created on first call and remembers its dock position across frames.</p>
+		<ul class="params">
+			<li><span class="pname">windowId</span> the unique window id</li>
+			<li><span class="pname">title</span> the window title</li>
+			<li><span class="pname">initialRect</span> optional initial window rect in window coordinates</li>
+			<li><span class="pname">img</span> optional window image (icon) in the tab/title</li>
+		</ul>
+		<p class="returns">Returns true if the window is open/visible and its layout was started; draw its contents inside <code>if (windowBegin(...))</code>.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">windowEnd</span>()</code></div>
+		<p class="brief">End the current dockable window.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">windowSetVisible</span>(<span class="prm">const char*</span> windowId, <span class="prm">bool</span> visible)</code></div>
+		<p class="brief">Show or hide a window.</p>
+		<ul class="params">
+			<li><span class="pname">windowId</span> the window id</li>
+			<li><span class="pname">visible</span> true to show, false to hide</li>
+		</ul>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">windowSetNextFlags</span>(<span class="prm">WindowFlags</span> flags)</code></div>
+		<p class="brief">Set the flags applied to the next window created.</p>
+		<ul class="params"><li><span class="pname">flags</span> the window flags</li></ul>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">windowSetNextSize</span>(<span class="prm">f32</span> width, <span class="prm">f32</span> height)</code></div>
+		<p class="brief">Set a fixed size for the next window drawn, the dock node keeps this size instead of scaling with the native window.</p>
+		<p>Call this every frame only for windows that must stay fixed, such as menu/toolbar chrome. Setting it every frame for a resizable panel forces it back to this size on each dock layout recalculation, overriding the user's splitter position.</p>
+		<ul class="params">
+			<li><span class="pname">width</span> the fixed width, 0 for auto</li>
+			<li><span class="pname">height</span> the fixed height, 0 for auto</li>
+		</ul>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">windowSetFocus</span>(<span class="prm">const char*</span> windowId)</code></div>
+		<p class="brief">Give keyboard focus to a window.</p>
+		<ul class="params"><li><span class="pname">windowId</span> the window id</li></ul>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">windowDock</span>(<span class="prm">const char*</span> windowId, <span class="prm">const char*</span> targetWindowId, <span class="prm">DockType</span> dockType)</code></div>
+		<p class="brief">Programmatically dock a window into another window.</p>
+		<ul class="params">
+			<li><span class="pname">windowId</span> the window to dock</li>
+			<li><span class="pname">targetWindowId</span> the target window to dock into</li>
+			<li><span class="pname">dockType</span> the docking mode (<code>Left/Right/Top/Bottom/AsTab/Floating</code>)</li>
+		</ul>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">windowUndock</span>(<span class="prm">const char*</span> windowId, <span class="prm">const Point&amp;</span> windowPos = Point())</code></div>
+		<p class="brief">Undock a window, making it a floating window.</p>
+		<ul class="params">
+			<li><span class="pname">windowId</span> the window to undock</li>
+			<li><span class="pname">windowPos</span> the window position in screen coordinates</li>
+		</ul>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">windowDebugPrint</span>()</code></div>
+		<p class="brief">Debug-print the docking layout tree to stdout.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="ret">bool</span> <span class="fn">windowIsMouseOver</span>()</code></div>
+		<p class="brief">Return true if the mouse is over the current window.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">windowSetCapture</span>()</code></div>
+		<p class="brief">Capture mouse input to the current window.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">windowReleaseCapture</span>()</code></div>
+		<p class="brief">Release the mouse capture from the current window.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="ret">Rect</span> <span class="fn">windowGetClientRect</span>()</code></div>
+		<p class="brief">Return the current window's client rect (in window coordinates).</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="ret">Rect</span> <span class="fn">windowGetClientRectByWindowId</span>(<span class="prm">const char*</span> windowId)</code></div>
+		<p class="brief">Return the client rect of the given window, usually used to render custom scenes.</p>
+		<ul class="params"><li><span class="pname">windowId</span> the window id</li></ul>
+	</div>
+
+	<h2>Docking layout persistence</h2>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">dockingStateSave</span>(<span class="prm">WindowsDockingState&amp;</span> dockingState)</code></div>
+		<p class="brief">Save the current docking layout into a state object (to store on disk or in a project file).</p>
+		<ul class="params"><li><span class="pname">dockingState</span> the state to fill</li></ul>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">dockingStateLoad</span>(<span class="prm">const WindowsDockingState&amp;</span> dockingState)</code></div>
+		<p class="brief">Restore a previously saved docking layout.</p>
+		<ul class="params"><li><span class="pname">dockingState</span> the state to load</li></ul>
+	</div>
+
+	<h2>Overlay toolbars</h2>
+	<p>
+		Overlay toolbars are dockable strips that float over a viewport. Wrap the whole toolbar pass in
+		<code>overlayToolbarsBegin</code>/<code>overlayToolbarsEnd</code>, then call
+		<code>overlayToolbarBegin</code>/<code>overlayToolbarEnd</code> for each toolbar and add its widgets in between.
+		Toolbars can be docked to an edge of the viewport or left floating, and are identified by a string id.
+	</p>
+
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">overlayToolbarsBegin</span>(<span class="prm">const Rect&amp;</span> viewportRect)</code></div>
+		<p class="brief">Begin the overlay toolbar system for a viewport rect.</p>
+		<ul class="params"><li><span class="pname">viewportRect</span> the viewport rect in window coordinates</li></ul>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">overlayToolbarsEnd</span>()</code></div>
+		<p class="brief">End the overlay toolbar system.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="ret">bool</span> <span class="fn">overlayToolbarBegin</span>(<span class="prm">const char*</span> id, <span class="prm">const char*</span> title, <span class="prm">OverlayDockZone</span> dockZone = OverlayDockZone::Floating, <span class="prm">OverlayToolbarLayout</span> layout = OverlayToolbarLayout::Horizontal)</code></div>
+		<p class="brief">Begin an overlay toolbar.</p>
+		<ul class="params">
+			<li><span class="pname">id</span> the unique toolbar id</li>
+			<li><span class="pname">title</span> the toolbar title (shown when collapsed)</li>
+			<li><span class="pname">dockZone</span> the dock zone (<code>Floating</code> by default)</li>
+			<li><span class="pname">layout</span> the toolbar layout (<code>Horizontal</code> by default)</li>
+		</ul>
+		<p class="returns">Returns true if the toolbar is open, false if collapsed/hidden.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">overlayToolbarEnd</span>()</code></div>
+		<p class="brief">End the current overlay toolbar.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="ret">bool</span> <span class="fn">overlayToolbarButton</span>(<span class="prm">const char*</span> elementId, <span class="prm">const char*</span> label, <span class="prm">HImage</span> icon = 0, <span class="prm">void (*onClick)()</span> = nullptr, <span class="prm">const char*</span> tooltip = nullptr)</code></div>
+		<p class="brief">Add a button to the current toolbar.</p>
+		<ul class="params">
+			<li><span class="pname">elementId</span> the unique element id inside the toolbar</li>
+			<li><span class="pname">label</span> the button label</li>
+			<li><span class="pname">icon</span> the button icon image</li>
+			<li><span class="pname">onClick</span> function called when clicked</li>
+			<li><span class="pname">tooltip</span> the button tooltip text</li>
+		</ul>
+		<p class="returns">Returns true if clicked.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="ret">bool</span> <span class="fn">overlayToolbarToggle</span>(<span class="prm">const char*</span> elementId, <span class="prm">const char*</span> label, <span class="prm">HImage</span> iconOff, <span class="prm">HImage</span> iconOn, <span class="prm">bool*</span> toggleValue, <span class="prm">void (*onToggle)(bool)</span> = nullptr, <span class="prm">const char*</span> tooltip = nullptr)</code></div>
+		<p class="brief">Add a toggle button to the current toolbar.</p>
+		<ul class="params">
+			<li><span class="pname">elementId</span> the unique element id inside the toolbar</li>
+			<li><span class="pname">label</span> the toggle label</li>
+			<li><span class="pname">iconOff</span> the image shown when the toggle is off</li>
+			<li><span class="pname">iconOn</span> the image shown when the toggle is on</li>
+			<li><span class="pname">toggleValue</span> points to the bool value of the toggle</li>
+			<li><span class="pname">onToggle</span> callback when the toggle value changes (receives the new value)</li>
+			<li><span class="pname">tooltip</span> the toggle tooltip text</li>
+		</ul>
+		<p class="returns">Returns true if toggled.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">overlayToolbarDropdown</span>(<span class="prm">const char*</span> elementId, <span class="prm">const char**</span> items, <span class="prm">u32</span> itemCount, <span class="prm">i32*</span> selectedIndex, <span class="prm">void (*onSelect)(i32)</span> = nullptr, <span class="prm">HImage</span> icon = 0, <span class="prm">const char*</span> tooltip = nullptr)</code></div>
+		<p class="brief">Add a dropdown list button to the current toolbar, showing the selected item. The chosen item is reported through the <code>onSelect</code> callback.</p>
+		<ul class="params">
+			<li><span class="pname">elementId</span> the unique element id inside the toolbar</li>
+			<li><span class="pname">items</span> the array of item labels</li>
+			<li><span class="pname">itemCount</span> the number of items</li>
+			<li><span class="pname">selectedIndex</span> the currently selected item index (in/out)</li>
+			<li><span class="pname">onSelect</span> callback when an item is selected (receives the new index)</li>
+			<li><span class="pname">icon</span> optional icon shown before the text</li>
+			<li><span class="pname">tooltip</span> the dropdown tooltip text</li>
+		</ul>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">overlayToolbarSeparator</span>()</code></div>
+		<p class="brief">Add a separator to the current toolbar.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">overlayToolbarSpace</span>()</code></div>
+		<p class="brief">Add a space to the current toolbar.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">overlayToolbarGrip</span>()</code></div>
+		<p class="brief">Add a grip to the current toolbar, used for dragging.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">overlayToolbarSetGridAlignment</span>(<span class="prm">bool</span> enable, <span class="prm">f32</span> gridSize = 0)</code></div>
+		<p class="brief">Set grid snapping for floating toolbars.</p>
+		<ul class="params">
+			<li><span class="pname">enable</span> true to enable grid snapping</li>
+			<li><span class="pname">gridSize</span> the grid size in pixels (0 to use the global setting)</li>
+		</ul>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">overlayToolbarSetCustomSize</span>(<span class="prm">const Point&amp;</span> size, <span class="prm">bool</span> useCustomSize = true)</code></div>
+		<p class="brief">Set a custom size for the current floating toolbar.</p>
+		<ul class="params">
+			<li><span class="pname">size</span> the custom size (width, height)</li>
+			<li><span class="pname">useCustomSize</span> true to use the custom size, false to size from content</li>
+		</ul>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">overlayToolbarSetFloatingPosition</span>(<span class="prm">const Point&amp;</span> pos)</code></div>
+		<p class="brief">Set the floating position for the current floating toolbar, relative to the viewport.</p>
+		<ul class="params"><li><span class="pname">pos</span> the position relative to the viewport</li></ul>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="ret">Point</span> <span class="fn">overlayToolbarGetFloatingPosition</span>()</code></div>
+		<p class="brief">Return the floating position of the current floating toolbar relative to the viewport (updated after a drag).</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">overlayToolbarSetCollapsed</span>(<span class="prm">bool</span> collapsed)</code></div>
+		<p class="brief">Set the collapsed state for the current toolbar.</p>
+		<ul class="params"><li><span class="pname">collapsed</span> true to collapse the toolbar</li></ul>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="ret">bool</span> <span class="fn">overlayToolbarIsCollapsed</span>()</code></div>
+		<p class="brief">Return true if the current toolbar is collapsed.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="ret">Rect</span> <span class="fn">overlayToolbarGetDockZoneRect</span>(<span class="prm">const Rect&amp;</span> viewportRect, <span class="prm">OverlayDockZone</span> zone, <span class="prm">f32</span> toolbarThickness = 32.0f)</code></div>
+		<p class="brief">Return the rect of a dock zone inside a viewport rect.</p>
+		<ul class="params">
+			<li><span class="pname">viewportRect</span> the viewport rect</li>
+			<li><span class="pname">zone</span> the dock zone</li>
+			<li><span class="pname">toolbarThickness</span> the thickness of the toolbar in the dock zone</li>
+		</ul>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="ret">bool</span> <span class="fn">overlayToolbarPointInDockZone</span>(<span class="prm">const Rect&amp;</span> viewportRect, <span class="prm">const Point&amp;</span> pt, <span class="prm">OverlayDockZone</span> zone, <span class="prm">f32</span> toolbarThickness = 32.0f)</code></div>
+		<p class="brief">Return true if a point is inside a dock zone rect.</p>
+		<ul class="params">
+			<li><span class="pname">viewportRect</span> the viewport rect</li>
+			<li><span class="pname">pt</span> the point to test</li>
+			<li><span class="pname">zone</span> the dock zone</li>
+			<li><span class="pname">toolbarThickness</span> the thickness of the toolbar in the dock zone</li>
+		</ul>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="ret">bool</span> <span class="fn">overlayToolbarContainsPoint</span>(<span class="prm">const Point&amp;</span> viewportPoint)</code></div>
+		<p class="brief">Return true if a point relative to the <code>overlayToolbarsBegin</code> viewport rect is inside any visible toolbar or an open dropdown popup of a toolbar.</p>
+		<ul class="params"><li><span class="pname">viewportPoint</span> the point relative to the <code>overlayToolbarsBegin</code> viewport rect</li></ul>
+	</div>
+
+	<h2>Application</h2>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">present</span>()</code></div>
+		<p class="brief">Present the contents of the backbuffer for each OS native window. Call after all rendering is done.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">presentNativeWindow</span>(<span class="prm">HNativeWindow</span> nativeWnd)</code></div>
+		<p class="brief">Present the backbuffer of a single custom OS native window.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">shutdown</span>()</code></div>
+		<p class="brief">Shut down the library and release global resources.</p>
+	</div>
+
+	<div class="footer">
+		Horus UI &mdash; (C) All rights reserved 2016-2026 7thFACTOR Software - Nicusor Nedelcu (nekitu)
+	</div>
+</main>
+
+</body>
+</html>

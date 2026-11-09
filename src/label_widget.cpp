@@ -1,98 +1,230 @@
-#include "horus.h"
-#include "types.h"
-#include "ui_theme.h"
-#include "ui_font.h"
-#include "ui_context.h"
-#include "unicode_text_cache.h"
+#include "context.h"
+#include "theme.h"
+#include "font.h"
 #include "util.h"
 
 namespace hui
 {
-bool labelInternal(const char* labelText, HAlignType horizontalAlign, UiFont* font)
+static bool labelInternal(const char* label, HAlignType horizontalAlign, Font* font, const Color* textColor = nullptr)
 {
-	auto bodyElem = ctx->theme->getElement(WidgetElementId::LabelBody);
-	f32 width = ctx->layoutStack.back().width - ctx->padding * 2.0f;
+	auto& bodyElem = ctx->theme->getElement(WidgetElementId::LabelBody);
 	f32 height = 0;
-	auto bodyElemState = bodyElem.normalState();
+	auto bodyElemState = &bodyElem.normalState();
 
-	height = bodyElemState.height;
+	if (widgetGetDisabled())
+	{
+		bodyElemState = &bodyElem.disabledState();
+	}
 
-	Rect rect = {
-		ctx->penPosition.x + ctx->padding,
-		ctx->penPosition.y,
-		width, height };
+	ctx->setLabelAndId(label);
+	auto fsize = ctx->renderer.computeSizeOrDrawText(ctx->widgetLabel.c_str(), Rect(0, 0, ctx->layout.width , FLT_MAX), HAlignType::Left, VAlignType::Top, false, font ? font : bodyElem.normalState().font, true);
+	// fsize values are already scaled with the theme, so normalize them here
+	height = (bodyElemState->height > fsize.height / ctx->scale ? bodyElemState->height : fsize.height / ctx->scale);
 
-	addWidgetItem(rect.height * ctx->globalScale);
+	if (!ctx->widget.hasNextWidth)
+	{
+		if (horizontalAlign == HAlignType::Left)
+		{
+			ctx->widget.customWidth = fsize.width / ctx->scale;
+			ctx->widget.hasCustomWidth = true;
+		}
+	}
+
+	addWidget(height);
 	buttonBehavior();
 
-	if (ctx->widget.hoveredWidgetId == ctx->currentWidgetId)
+	if (ctx->widget.hoveredId == ctx->id)
 	{
-		ctx->widget.hoveredWidgetType = WidgetType::Label;
+		ctx->widget.hoveredType = WidgetType::Label;
 	}
 
 	if (ctx->widget.visible)
 	{
-		ctx->renderer->cmdSetColor(bodyElemState.textColor * ctx->tint[(int)TintColorType::Text]);
-		ctx->renderer->cmdSetFont(font ? font : bodyElemState.font);
-		ctx->renderer->cmdDrawTextInBox(
-			labelText,
-			ctx->widget.rect,
-			horizontalAlign,
-			VAlignType::Center);
-	}
+		Rect textRc = {
+			ctx->widget.rect.x,
+			ctx->widget.rect.y,
+			ctx->widget.rect.width,
+			ctx->widget.rect.height
+		};
 
-	ctx->currentWidgetId++;
+		auto useFont = font ? font : bodyElemState->font;
+
+		if (bodyElemState->textShadow.enabled)
+		{
+			Rect shadowRect = {
+				textRc.x + bodyElemState->textShadow.offsetX * ctx->scale,
+				textRc.y + bodyElemState->textShadow.offsetY * ctx->scale,
+				textRc.width,
+				textRc.height
+			};
+			ctx->renderer.cmdSetColor(tintApply(bodyElemState->textShadow.color, TintColorType::Text));
+			ctx->renderer.cmdSetFont(useFont);
+			ctx->renderer.cmdDrawTextInBox(
+				ctx->widgetLabel.c_str(),
+				shadowRect,
+				horizontalAlign,
+				VAlignType::Center, true);
+		}
+
+		Color finalColor = textColor ? tintApply(*textColor, TintColorType::Text) : tintApply(bodyElemState->textColor, TintColorType::Text);
+		ctx->renderer.cmdSetColor(finalColor);
+		ctx->renderer.cmdSetFont(useFont);
+		ctx->renderer.cmdDrawTextInBox(
+			ctx->widgetLabel.c_str(),
+			textRc,
+			horizontalAlign,
+			VAlignType::Center, true);
+	}
 
 	return ctx->widget.clicked;
 }
 
-bool label(const char* labelText, HAlignType horizontalAlign)
+static bool labelMultilineInternal(const char* label, HFont font, const Color* textColor, HAlignType horizontalAlign)
 {
-	return labelInternal(labelText, horizontalAlign, nullptr);
-}
+	auto& bodyElemState = ctx->theme->getElement(WidgetElementId::LabelBody).normalState();
+	auto& padding = widgetGetPadding();
+	f32 width = ctx->layout.width - padding.x * 2.0f * ctx->scale;
 
-bool labelCustomFont(const char* labelText, Font font, HAlignType horizontalAlign)
-{
-	return labelInternal(labelText, horizontalAlign, (UiFont*)font);
-}
+	ctx->setLabelAndId(label);
 
-bool multilineLabel(const char* labelText, HAlignType horizontalAlign)
-{
-	auto bodyElemState = ctx->theme->getElement(WidgetElementId::LabelBody).normalState();
+	auto textSize = ((Font*)font)->computeTextSize(ctx->widgetLabel.c_str(), (u32)round(width));
 
-	return multilineLabelCustomFont(labelText, bodyElemState.font, horizontalAlign);
-}
+	// textSize.height is already scaled with the theme, so normalize it here
+	addWidget(textSize.height / ctx->scale + padding.y * 2.0f);
 
-bool multilineLabelCustomFont(const char* labelText, Font font, HAlignType horizontalAlign)
-{
-	auto bodyElemState = ctx->theme->getElement(WidgetElementId::LabelBody).normalState();
+	auto useFont = (Font*)font;
 
-	ctx->renderer->cmdSetColor(bodyElemState.textColor * ctx->tint[(int)TintColorType::Text]);
-	ctx->renderer->cmdSetFont((UiFont*)font);
-
-	f32 width = ctx->layoutStack.back().width - ctx->padding * 2.0f * ctx->globalScale;
-
-	auto rect = ctx->drawMultilineText(
-		labelText,
-		{
-			ctx->penPosition.x + ctx->padding * ctx->globalScale,
-			ctx->penPosition.y,
-			width,
-			0 },
-			horizontalAlign,
-			VAlignType::Center);
-
-	addWidgetItem(rect.height);
-	buttonBehavior();
-
-	if (ctx->widget.hoveredWidgetId == ctx->currentWidgetId)
+	if (bodyElemState.textShadow.enabled)
 	{
-		ctx->widget.hoveredWidgetType = WidgetType::Label;
+		Rect shadowRect = {
+			ctx->widget.rect.x + (padding.x + bodyElemState.textShadow.offsetX) * ctx->scale,
+			ctx->widget.rect.y + (padding.y + bodyElemState.textShadow.offsetY) * ctx->scale,
+			width,
+			0,
+		};
+		ctx->renderer.cmdSetColor(tintApply(bodyElemState.textShadow.color, TintColorType::Text));
+		ctx->renderer.cmdSetFont(useFont);
+		ctx->renderer.cmdDrawTextInBox(
+			ctx->widgetLabel.c_str(),
+			shadowRect,
+			horizontalAlign,
+			VAlignType::Top);
 	}
 
-	ctx->currentWidgetId++;
+	Color finalColor = textColor ? tintApply(*textColor, TintColorType::Text) : tintApply(bodyElemState.textColor, TintColorType::Text);
+	ctx->renderer.cmdSetColor(finalColor);
+	ctx->renderer.cmdSetFont(useFont);
+	ctx->renderer.cmdDrawTextInBox(
+		ctx->widgetLabel.c_str(),
+		{
+			ctx->widget.rect.x + padding.x * ctx->scale,
+			ctx->widget.rect.y + padding.y * ctx->scale,
+			width,
+			0,
+		},
+		horizontalAlign,
+		VAlignType::Top);
+
+	buttonBehavior();
+
+	if (ctx->widget.hoveredId == ctx->id)
+	{
+		ctx->widget.hoveredType = WidgetType::Label;
+	}
 
 	return ctx->widget.pressed;
+}
+
+bool label(const char* label, HAlignType horizontalAlign)
+{
+	return labelInternal(label, horizontalAlign, nullptr);
+}
+
+bool labelCustomFont(const char* label, HFont font, HAlignType horizontalAlign)
+{
+	return labelInternal(label, horizontalAlign, (Font*)font);
+}
+
+bool labelMultiline(const char* label, HAlignType horizontalAlign)
+{
+	auto& bodyElemState = ctx->theme->getElement(WidgetElementId::LabelBody).normalState();
+	return labelCustomFontMultiline(label, bodyElemState.font, horizontalAlign);
+}
+
+bool labelCustomFontMultiline(const char* label, HFont font, HAlignType horizontalAlign)
+{
+	auto& bodyElemState = ctx->theme->getElement(WidgetElementId::LabelBody).normalState();
+	auto& padding = widgetGetPadding();
+	f32 width = ctx->layout.width - padding.x * 2.0f * ctx->scale;
+
+	ctx->setLabelAndId(label);
+
+	auto textSize = ((Font*)font)->computeTextSize(ctx->widgetLabel.c_str(), (u32)round(width));
+
+	// textSize.height is already scaled with the theme, so normalize it here
+	addWidget(textSize.height / ctx->scale + padding.y * 2.0f);
+
+	auto useFont = (Font*)font;
+
+	if (bodyElemState.textShadow.enabled)
+	{
+		Rect shadowRect = {
+			ctx->widget.rect.x + (padding.x + bodyElemState.textShadow.offsetX) * ctx->scale,
+			ctx->widget.rect.y + (padding.y + bodyElemState.textShadow.offsetY) * ctx->scale,
+			width,
+			0,
+		};
+		ctx->renderer.cmdSetColor(tintApply(bodyElemState.textShadow.color, TintColorType::Text));
+		ctx->renderer.cmdSetFont(useFont);
+		ctx->renderer.cmdDrawTextInBox(
+			ctx->widgetLabel.c_str(),
+			shadowRect,
+			horizontalAlign,
+			VAlignType::Top);
+	}
+
+	ctx->renderer.cmdSetColor(tintApply(bodyElemState.textColor, TintColorType::Text));
+	ctx->renderer.cmdSetFont(useFont);
+	ctx->renderer.cmdDrawTextInBox(
+		ctx->widgetLabel.c_str(),
+		{
+			ctx->widget.rect.x + padding.x * ctx->scale,
+			ctx->widget.rect.y + padding.y * ctx->scale,
+			width,
+			0,
+		},
+		horizontalAlign,
+		VAlignType::Top);
+
+	buttonBehavior();
+
+	if (ctx->widget.hoveredId == ctx->id)
+	{
+		ctx->widget.hoveredType = WidgetType::Label;
+	}
+
+	return ctx->widget.pressed;
+}
+
+bool labelCustomColor(const char* label, const Color& color, HAlignType horizontalAlign)
+{
+	return labelInternal(label, horizontalAlign, nullptr, &color);
+}
+
+bool labelCustomColorMultiline(const char* label, const Color& color, HAlignType horizontalAlign)
+{
+	auto& bodyElemState = ctx->theme->getElement(WidgetElementId::LabelBody).normalState();
+	return labelMultilineInternal(label, bodyElemState.font, &color, horizontalAlign);
+}
+
+bool labelCustom(const char* label, HFont font, const Color& color, HAlignType horizontalAlign)
+{
+	return labelInternal(label, horizontalAlign, (Font*)font, &color);
+}
+
+bool labelCustomMultiline(const char* label, HFont font, const Color& color, HAlignType horizontalAlign)
+{
+	return labelMultilineInternal(label, font, &color, horizontalAlign);
 }
 
 }

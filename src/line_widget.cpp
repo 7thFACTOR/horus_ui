@@ -1,118 +1,60 @@
-#include "horus.h"
-#include "types.h"
+#include "context.h"
 #include "renderer.h"
-#include "ui_theme.h"
-#include "ui_context.h"
+#include "theme.h"
 #include "util.h"
 
 namespace hui
 {
 void line()
 {
-	auto bodyElemState = ctx->theme->getElement(WidgetElementId::LineBody).normalState();
+	auto& bodyElemState = ctx->theme->getElement(WidgetElementId::LineBody).normalState();
+	auto& padding = widgetGetPadding();
 
-	addWidgetItem(bodyElemState.image->rect.height * ctx->globalScale);
-	ctx->renderer->cmdSetColor(bodyElemState.color);
-	ctx->renderer->cmdDrawImageBordered(bodyElemState.image, bodyElemState.border,
+	ctx->setLabelAndId(nullptr);
+	addWidget(bodyElemState.image->height + padding.y * 2.0f);
+	ctx->renderer.cmdSetColor(bodyElemState.color);
+	ctx->renderer.cmdDrawImageBordered(bodyElemState.image, bodyElemState.border,
 		{
 			ctx->widget.rect.x,
 			ctx->widget.rect.y,
 			ctx->widget.rect.width,
-			ctx->widget.rect.height }, ctx->globalScale);
-	ctx->currentWidgetId++;
+			ctx->widget.rect.height }, ctx->scale);
 }
 
-void gap(f32 size)
+void space(f32 customSpacing)
 {
-	ctx->penPosition.y += size * ctx->globalScale;
-}
-
-void space()
-{
-	ctx->penPosition.y += ctx->spacing * ctx->globalScale;
-}
-
-void beginSameLine()
-{
-	ctx->sameLineInfoIndex = ctx->sameLineInfoCount;
-
-	if (ctx->sameLineInfo[ctx->sameLineInfoIndex].lineHeight == 0)
+	if (ctx->sameLine.enabled)
 	{
-		ctx->sameLineInfo[ctx->sameLineInfoIndex].computeHeight = true;
-		skipThisFrame();
-		forceRepaint();
-	}
-	else
-	{
-		ctx->sameLineInfo[ctx->sameLineInfoIndex].computeHeight = false;
+		f32 spacing = customSpacing > 0 ? customSpacing : ctx->sameLine.spacing;
+
+		ctx->position.x += spacing * ctx->scale;
+
+		return;
 	}
 
-	//// only a root same line can start a new line, the others will just follow
-	//if (ctx->sameLineInfoIndexStack.size() <= 1)
-	//	ctx->penPosition.x = ctx->layoutStack.back().position.x;
-
-	// push current line index to stack, so we recover it
-	ctx->sameLineInfoIndexStack.push_back(ctx->sameLineInfoIndex);
-	ctx->widget.sameLine = true;
-	ctx->sameLineInfoCount++;
+	f32 spacing = customSpacing > 0 ? customSpacing : ctx->spacing;
+	ctx->position.y += spacing * ctx->scale;
 }
 
-void endSameLine()
+void widgetSetNextWidth(f32 width)
 {
-	ctx->sameLineInfoIndex = ctx->sameLineInfoIndexStack.back();
-	ctx->sameLineInfoIndexStack.pop_back();
-
-	// we stop same line if this is a root same line
-	if (!ctx->sameLineInfoIndexStack.size())
-		ctx->widget.sameLine = false;
-
-	if (!ctx->sameLineInfoIndexStack.size())
-		ctx->penPosition.y += ctx->sameLineInfo[ctx->sameLineInfoIndex].lineHeight;
-	else
-	{
-		//TODO: not working here, needs a proper stack
-		ctx->sameLineInfo[ctx->sameLineInfoIndex-1].lineHeight = fmaxf(
-			ctx->sameLineInfo[ctx->sameLineInfoIndex - 1].lineHeight,
-			ctx->sameLineInfo[ctx->sameLineInfoIndex].lineHeight
-		);
-	}
+	ctx->widget.nextWidth = width;
+	ctx->widget.hasNextWidth = true;
 }
 
-void pushSameLineSpacing(f32 horizontalSpace)
+void widgetSetNextHeight(f32 height)
 {
-	ctx->sameLineSpacingStack.push_back(ctx->widget.sameLineSpacing);
-	ctx->widget.sameLineSpacing = horizontalSpace;
+	ctx->widget.nextHeight = height;
+	ctx->widget.hasNextHeight = true;
 }
 
-f32 popSameLineSpacing()
+void sameLine(f32 offsetX, f32 spacing)
 {
-	if (ctx->sameLineSpacingStack.size())
-	{
-		ctx->widget.sameLineSpacing = ctx->sameLineSpacingStack.back();
-		ctx->sameLineSpacingStack.pop_back();
-		return ctx->widget.sameLineSpacing;
-	}
-
-	return 0;
-}
-
-
-void pushWidth(f32 width)
-{
-	ctx->sameLineWidthStack.push_back(ctx->widget.width);
-	ctx->widget.width = width;
-}
-
-f32 popWidth()
-{
-	if (ctx->sameLineWidthStack.size())
-	{
-		ctx->widget.width = ctx->sameLineWidthStack.back();
-		ctx->sameLineWidthStack.pop_back();
-		return ctx->widget.width;
-	}
-
-	return 0;
+	f32 actualSpacing = spacing > 0 ? spacing : ctx->sameLine.spacing;
+	actualSpacing += offsetX;
+	
+	ctx->sameLine.nextSpacing = actualSpacing;
+	ctx->sameLine.enabled = true;
 }
 
 }

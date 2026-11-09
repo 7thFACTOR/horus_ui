@@ -1,24 +1,44 @@
-#include "horus.h"
-#include "types.h"
-#include "ui_theme.h"
-#include "unicode_text_cache.h"
-#include "ui_font.h"
-#include "ui_context.h"
+#include "context.h"
+#include "theme.h"
+#include "font.h"
 #include "util.h"
 
 namespace hui
 {
-bool radio(const char* labelText, bool checked)
+bool radio(const char* label, i32* currentRadioValue, i32 thisValue)
 {
-	auto radioBodyElem = ctx->theme->getElement(WidgetElementId::RadioBody);
-	auto radioMarkElem = ctx->theme->getElement(WidgetElementId::RadioMark);
+	auto& radioBodyElem = ctx->theme->getElement(WidgetElementId::RadioBody);
+	auto& radioMarkElem = ctx->theme->getElement(WidgetElementId::RadioMark);
 
-	addWidgetItem(radioBodyElem.normalState().height * ctx->globalScale);
+	ctx->setLabelAndId(label);
+	
+	auto textSize = radioBodyElem.normalState().font->computeTextSize(ctx->widgetLabel.c_str());
+	auto& padding = widgetGetPadding();
+	f32 bulletTextSpacingParam = radioBodyElem.currentStyle->getParameter("bulletTextSpacing", ctx->settings.defaultBulletTextSpacing);
+	f32 bulletTextSpacing = bulletTextSpacingParam * ctx->scale;
+	f32 height = radioBodyElem.normalState().height * ctx->scale;
+	f32 markWidth = padding.x * 2.0f + radioBodyElem.normalState().width;
+	f32 markHeight = padding.y * 2.0f + radioBodyElem.normalState().height;
+	f32 markWidthScaled = markWidth * ctx->scale;
+	f32 markHeightScaled = markHeight * ctx->scale;
+
+	// height is the same as bullet width, since its square, so we use height
+	// customWidth and the height passed to addWidget() are scaled internally, so avoid double scaling here
+	if (!ctx->widget.hasNextWidth)
+	{
+		ctx->widget.customWidth = (markWidthScaled + textSize.width + bulletTextSpacing) / ctx->scale;
+		ctx->widget.hasCustomWidth = true;
+	}
+	
+	addWidget(std::max(textSize.height, markHeightScaled) / ctx->scale);
 	buttonBehavior();
+	ctx->widget.changeEnded = false;
 
 	if (ctx->widget.clicked)
 	{
-		checked = !checked;
+		if (currentRadioValue)
+			*currentRadioValue = thisValue;
+		
 		ctx->widget.changeEnded = true;
 		forceRepaint();
 	}
@@ -26,7 +46,12 @@ bool radio(const char* labelText, bool checked)
 	auto radioBodyElemState = &radioBodyElem.normalState();
 	auto radioMarkElemState = &radioMarkElem.normalState();
 
-	if (checked)
+	if (ctx->widget.disabled)
+	{
+		radioBodyElemState = &radioBodyElem.getState(WidgetStateType::Disabled);
+		radioMarkElemState = &radioMarkElem.getState(WidgetStateType::Disabled);
+	}
+	else if (currentRadioValue && *currentRadioValue == thisValue)
 	{
 		radioBodyElemState = &radioBodyElem.getState(WidgetStateType::Pressed);
 		radioMarkElemState = &radioMarkElem.getState(WidgetStateType::Pressed);
@@ -37,48 +62,58 @@ bool radio(const char* labelText, bool checked)
 		radioMarkElemState = &radioMarkElem.getState(WidgetStateType::Hovered);
 	}
 
-	ctx->renderer->cmdSetColor(radioBodyElemState->color);
-	ctx->renderer->cmdDrawImageBordered(
-		radioBodyElemState->image,
+	ctx->renderer.cmdSetColor(radioBodyElemState->color);
+
+	Image* bodyImage = radioBodyElemState->image;
+	Image* markImage = radioMarkElemState->image;
+
+	if (ctx->widget.disabled)
+	{
+		if (!bodyImage) bodyImage = radioBodyElem.normalState().image;
+		if (!markImage) markImage = radioMarkElem.normalState().image;
+	}
+
+	// keep the box vertically centered on the label
+	f32 boxY = ctx->widget.rect.y + (ctx->widget.rect.height - markHeightScaled) * 0.5f;
+
+	ctx->renderer.cmdDrawImageBordered(
+		bodyImage,
 		radioBodyElemState->border,
 		{
 			ctx->widget.rect.x,
-			ctx->widget.rect.y,
-			radioBodyElemState->width * ctx->globalScale,
-			ctx->widget.rect.height
-		}, ctx->globalScale);
+			boxY,
+			markWidthScaled,
+			markHeightScaled
+		}, ctx->scale);
 
-	if (checked)
+	if (currentRadioValue && *currentRadioValue == thisValue)
 	{
-		ctx->renderer->cmdSetColor(radioMarkElemState->color);
-		ctx->renderer->cmdDrawImageBordered(
-			radioMarkElemState->image, radioMarkElemState->border,
+		ctx->renderer.cmdSetColor(radioMarkElemState->color);
+		ctx->renderer.cmdDrawImageBordered(
+			markImage, radioMarkElemState->border,
 			{
-				ctx->widget.rect.x + (radioBodyElemState->width - radioMarkElemState->image->rect.width) / 2.0f * ctx->globalScale,
-				ctx->widget.rect.y + (radioBodyElemState->height - radioMarkElemState->image->rect.height) / 2.0f * ctx->globalScale,
-				radioMarkElemState->image->rect.width * ctx->globalScale,
-				radioMarkElemState->image->rect.height * ctx->globalScale
-			}, ctx->globalScale);
+				ctx->widget.rect.x + (markWidth - markImage->width) / 2.0f * ctx->scale,
+				boxY + (markHeight - markImage->height) / 2.0f * ctx->scale,
+				markImage->rect.width * ctx->scale,
+				markImage->rect.height * ctx->scale
+			}, ctx->scale);
 	}
 
-	const f32 bulletTextSpacingParam = radioBodyElem.currentStyle->getParameterValue("bulletTextSpacing", 5);
-	const f32 bulletTextSpacing = bulletTextSpacingParam * ctx->globalScale;
-
-	ctx->renderer->cmdSetColor(radioBodyElemState->textColor);
-	ctx->renderer->cmdSetFont(radioBodyElemState->font);
-	ctx->renderer->cmdDrawTextInBox(
-		labelText,
+	ctx->renderer.cmdSetColor(radioBodyElemState->textColor);
+	ctx->renderer.cmdSetFont(radioBodyElemState->font);
+	ctx->renderer.cmdDrawTextInBox(
+		ctx->widgetLabel.c_str(),
 		Rect(
-			ctx->widget.rect.x + ctx->widget.rect.height + bulletTextSpacing,
+			ctx->widget.rect.x + markWidthScaled + bulletTextSpacing,
 			ctx->widget.rect.y,
 			ctx->widget.rect.width,
 			ctx->widget.rect.height),
 		HAlignType::Left,
 		VAlignType::Center);
 
-	ctx->currentWidgetId++;
+	ctx->widget.width = 0;
 
-	return checked;
+	return ctx->widget.changeEnded;
 }
 
 }
