@@ -28,9 +28,6 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELWITHDEBINFO ${CMAKE_BINARY_DIR}/../bin)
 link_directories(${CMAKE_BINARY_DIR}/lib ${CMAKE_BINARY_DIR}/../bin)
 
 add_subdirectory(libs)
-add_subdirectory(example_all_widgets)
-#add_subdirectory(example_custom_widget)
-add_subdirectory(example_no_docking)
 add_subdirectory(example_demo_only)
 add_subdirectory(examples_level_editor)
 

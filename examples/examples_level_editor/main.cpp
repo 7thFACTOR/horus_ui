@@ -121,6 +121,7 @@ struct LevelEditorState
 	hui::HImage iconUndo = 0;
 	hui::HImage iconRedo = 0;
 	f32 iconButtonSize = 48;
+	f32 toolbarGroupSpacing = 8;
 	hui::HImage thumbLena = 0;
 	hui::HImage thumbFolder = 0;
 	hui::HImage thumbSettings = 0;
@@ -505,6 +506,7 @@ void drawMainToolbar(LevelEditorState& state)
 	hui::tooltip("Redo");
 
 	hui::sameLine();
+	hui::space(state.toolbarGroupSpacing);
 
 	hui::dropdown("##toolSelect", state.toolIndex, toolItems, 4);
 

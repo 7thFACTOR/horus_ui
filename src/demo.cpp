@@ -204,7 +204,7 @@ struct DemoState
 	bool listSelected[5] = {};
 
 	// expandable states (managed internally by expandable())
-	bool expandButton = true;
+	bool expandButton = false;
 	bool expandTextInput = false;
 	bool expandTimeline = false;
 	bool expandMultiline = false;
@@ -437,11 +437,11 @@ struct DemoState
 	bool pgFrustumCulling = true;
 	u32 pgCullMode = 1;
 	i32 pgDrawPriority = 100;
-	bool pgGroupIdentity = true;
-	bool pgGroupGeometry = true;
-	bool pgGroupTransform = true;
-	bool pgGroupMaterial = true;
-	bool pgGroupRender = true;
+	bool pgGroupIdentity = false;
+	bool pgGroupGeometry = false;
+	bool pgGroupTransform = false;
+	bool pgGroupMaterial = false;
+	bool pgGroupRender = false;
 
 	Point scrollPos = { 0, 0 };
 
@@ -914,7 +914,7 @@ void showDemo()
 
 		label("Box with default element:");
 		boxBegin("##boxDefault", Color::white);
-		label("Content inside the box");
+		labelCustomColor("Content inside the box", Color::fromU8(30, 30, 30));
 		button("Box Button");
 		boxEnd();
 
@@ -1697,7 +1697,7 @@ void showDemo()
 	// Lines & Primitives
 	// ------------------------------------------------------------------
 	{
-		static bool expandLinesPrims = true;
+		static bool expandLinesPrims = false;
 		if (expandableBegin("Lines & Primitives", &expandLinesPrims))
 		{
 			// enable AA for demo
