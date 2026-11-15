@@ -337,27 +337,30 @@ static KeyCode fromSdlKey(int code)
 	return key;
 }
 
-static void startTextInput(HNativeWindow window, const Rect& imeRect)
+static void startTextInput(HNativeWindow window, const Rect& imeRect, i32 cursorOffset)
 {
-	//TODO
 	SDL_Rect rc = {0};
 
 	rc.x = imeRect.x;
 	rc.y = imeRect.y;
 	rc.w = imeRect.width;
 	rc.h = imeRect.height;	
-	
+
 	if (window)
 	{
 		sdl3InputContext->textInputWindow = ((SdlWindowProxy*)window)->sdlWindow;
-		SDL_SetTextInputArea(sdl3InputContext->textInputWindow, &rc, 0);
+		SDL_SetTextInputArea(sdl3InputContext->textInputWindow, &rc, cursorOffset);
 		SDL_StartTextInput(sdl3InputContext->textInputWindow);
 	}
 }
 
 static void stopTextInput()
 {
+	if (!sdl3InputContext->textInputWindow)
+		return;
+
 	SDL_StopTextInput(sdl3InputContext->textInputWindow);
+	sdl3InputContext->textInputWindow = nullptr;
 }
 
 static bool clipboardSetText(const char* text)
@@ -523,6 +526,13 @@ static void addSdlEvent(SDL_Event& ev)
 		copyTextInput(outEvent.text.text, sizeof(outEvent.text.text), ev.text.text);
 		outEvent.window = findSdlWindow(SDL_GetWindowFromID(ev.text.windowID));
 		outEvent.key.modifiers = KeyModifiers::None;
+		break;
+	case SDL_EVENT_TEXT_EDITING:
+		outEvent.type = InputEvent::Type::TextEditing;
+		copyTextInput(outEvent.text.text, sizeof(outEvent.text.text), ev.edit.text);
+		outEvent.text.start = ev.edit.start;
+		outEvent.text.length = ev.edit.length;
+		outEvent.window = findSdlWindow(SDL_GetWindowFromID(ev.edit.windowID));
 		break;
 	case SDL_EVENT_DROP_FILE:
 		outEvent.type = InputEvent::Type::OsDragDrop;

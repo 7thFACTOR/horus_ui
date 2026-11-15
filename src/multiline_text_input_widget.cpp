@@ -58,7 +58,19 @@ bool textInputMultiline(
 	state.scrollId = scrollId;
 
 	if (ctx->focusChanged && ctx->id != ctx->widget.focusedId && ctx->widget.focusedId != state.scrollId)
+	{
 		ctx->widget.changeEnded = true;
+
+		// focus moved away from this editor, stop the OS text input
+		if (state.id == ctx->id)
+		{
+			state.id = 0;
+			ctx->activeMultilineInputId = 0;
+			state.composing = false;
+			state.compositionText.clear();
+			ctx->settings.services.stopTextInput();
+		}
+	}
 
 	auto bodyElemState = &bodyElem->normalState();
 	bool isEditingThis =
@@ -91,6 +103,9 @@ bool textInputMultiline(
 			state.id = 0;
 			ctx->activeMultilineInputId = 0;
 			state.editNow = false;
+			state.composing = false;
+			state.compositionText.clear();
+			ctx->settings.services.stopTextInput();
 			isEditingThis = false;
 			ctx->widget.focusedId = 0;
 			ctx->widget.changeEnded = true;
@@ -189,13 +204,19 @@ bool textInputMultiline(
 			windowSetCapture();
 		}
 
+		// anchor the OS IME composition/candidate window at the caret position
+		i32 caretOffset = (i32)std::clamp(
+			state.getCaretScreenPosition().x - ctx->widget.rect.x,
+			0.0f,
+			ctx->widget.rect.width);
+
 		Rect rc;
 
 		rc.x = ctx->widget.rect.x;
 		rc.y = ctx->widget.rect.y;
 		rc.width = ctx->widget.rect.width;
 		rc.height = ctx->widget.rect.height;
-		ctx->settings.services.startTextInput(ctx->lastHoveredNativeWindow, rc);
+		ctx->settings.services.startTextInput(ctx->lastHoveredNativeWindow, rc, caretOffset);
 		bodyElemState = &bodyElem->getState(WidgetStateType::Focused);
 		forceRepaint();
 		state.editNow = false;
@@ -787,7 +808,8 @@ bool textInputMultiline(
 	}
 
 	// draw caret
-	if (isEditingThis && (!ctx->settings.textCaretBlinkEnable || (state.caretBlinkTimer >= 0 && state.caretBlinkTimer <= 1)))
+	if (isEditingThis && !state.composing
+		&& (!ctx->settings.textCaretBlinkEnable || (state.caretBlinkTimer >= 0 && state.caretBlinkTimer <= 1)))
 	{
 		Point caretPos = state.getCaretScreenPosition();
 		const f32 cursorWidth = bodyTextCaretElemState.width;
@@ -961,6 +983,52 @@ bool textInputMultiline(
 			{
 				ctx->renderer.cmdDrawFilledRectangle(contRect);
 			}
+		}
+	}
+
+	// draw IME composition preview (underlined) at the caret, the caret follows
+	// the OS composition cursor offset
+	if (isEditingThis && state.composing && !state.compositionText.empty())
+	{
+		Point caretPos = state.getCaretScreenPosition();
+
+		i32 compCursor = std::clamp(state.compositionCursorChars, 0, (i32)state.compositionText.size());
+		Utf32String compBeforeCursor(state.compositionText.begin(), state.compositionText.begin() + compCursor);
+
+		char compUtf8[1024] = "";
+		char compBeforeCursorUtf8[1024] = "";
+
+		ctx->settings.services.utf32To8NoAlloc(state.compositionText.data(), state.compositionText.size(), compUtf8, sizeof(compUtf8));
+		ctx->settings.services.utf32To8NoAlloc(compBeforeCursor.data(), compBeforeCursor.size(), compBeforeCursorUtf8, sizeof(compBeforeCursorUtf8));
+
+		FontTextSize compSize = bodyElemState->font->computeTextSize(compUtf8);
+		FontTextSize compBeforeCursorSize = bodyElemState->font->computeTextSize(compBeforeCursorUtf8);
+
+		const f32 cursorWidth = bodyTextCaretElemState.width;
+		const f32 cursorBorder = bodyTextCaretElemState.border;
+
+		Rect compRect(
+			caretPos.x,
+			caretPos.y,
+			compSize.width,
+			lineHeight);
+
+		ctx->renderer.cmdSetColor(bodyElemState->textColor);
+		ctx->renderer.cmdSetTextUnderline(true);
+		ctx->renderer.cmdDrawTextInBox(compUtf8, compRect, HAlignType::Left, VAlignType::Top, false, true);
+		ctx->renderer.cmdSetTextUnderline(false);
+
+		Rect cursorRect(
+			caretPos.x + compBeforeCursorSize.width,
+			caretPos.y + cursorBorder,
+			cursorWidth,
+			lineHeight - cursorBorder * 2);
+
+		if ((!ctx->settings.textCaretBlinkEnable || (state.caretBlinkTimer >= 0 && state.caretBlinkTimer <= 1))
+			&& cursorRect.y + cursorRect.height > clipRect.y && cursorRect.y < clipRect.bottom())
+		{
+			ctx->renderer.cmdSetColor(bodyTextCaretElemState.color);
+			ctx->renderer.cmdDrawFilledRectangle(cursorRect);
 		}
 	}
 

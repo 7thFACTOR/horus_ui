@@ -1819,13 +1819,6 @@ void dockNodeTabs(DockNode* node)
 	}
 }
 
-f32 getRemainingDockNodeClientHeight(HDockNode node)
-{
-	DockNode* nodeObj = (DockNode*)node;
-
-	return (f32)nodeObj->rect.height - (ctx->position.y - nodeObj->rect.y);
-}
-
 Rect windowGetClientRect(Window* window)
 {
 	auto rc = window->dockNode->rect;

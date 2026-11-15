@@ -61,6 +61,16 @@ bool textInput(
 		&& ctx->id != ctx->widget.focusedId)
 	{
 		ctx->widget.changeEnded = true;
+
+		// focus moved away from this editor, stop the OS text input
+		if (ctx->textInput.id == ctx->id)
+		{
+			ctx->textInput.id = 0;
+			ctx->textInput.editNow = false;
+			ctx->textInput.composing = false;
+			ctx->textInput.compositionText.clear();
+			ctx->settings.services.stopTextInput();
+		}
 	}
 
 	// show clear image only when defaultText is provided and the current text is not empty.
@@ -155,6 +165,9 @@ bool textInput(
 			{
 				ctx->textInput.id = 0;
 				ctx->textInput.editNow = false;
+				ctx->textInput.composing = false;
+				ctx->textInput.compositionText.clear();
+				ctx->settings.services.stopTextInput();
 				isEditingThis = false;
 				ctx->widget.focusedId = 0;
 				ctx->widget.changeEnded = true;
@@ -165,6 +178,9 @@ bool textInput(
 		{
 			ctx->textInput.id = 0;
 			ctx->textInput.editNow = false;
+			ctx->textInput.composing = false;
+			ctx->textInput.compositionText.clear();
+			ctx->settings.services.stopTextInput();
 			isEditingThis = false;
 			ctx->widget.focusedId = 0;
 			ctx->widget.changeEnded = true;
@@ -226,13 +242,32 @@ bool textInput(
 			windowSetCapture();
 		}
 
+		// anchor the OS IME composition/candidate window at the caret position
+		i32 caretIndex = std::min(ctx->textInput.caretPosition, (i32)ctx->textInput.text.size());
+		Utf32String textToCaret(ctx->textInput.text.begin(), ctx->textInput.text.begin() + caretIndex);
+		FontTextSize textToCaretSize;
+
+		if (!password)
+		{
+			textToCaretSize = bodyElemState->font->computeTextSize(textToCaret);
+		}
+		else
+		{
+			textToCaretSize = bodyElemState->font->computeTextSize(pwdStr);
+			textToCaretSize.width *= textToCaret.size();
+		}
+
+		i32 caretOffset = (i32)std::min(
+			clipRect.x - ctx->widget.rect.x + textToCaretSize.width - ctx->textInput.scrollOffset,
+			ctx->widget.rect.width);
+
 		Rect rc;
 
 		rc.x = ctx->widget.rect.x;
 		rc.y = ctx->widget.rect.y;
 		rc.width = ctx->widget.rect.width;
 		rc.height = ctx->widget.rect.height;
-		ctx->settings.services.startTextInput(ctx->lastHoveredNativeWindow, rc);
+		ctx->settings.services.startTextInput(ctx->lastHoveredNativeWindow, rc, caretOffset);
 		bodyElemState = &bodyElem->getState(WidgetStateType::Focused);
 		forceRepaint();
 	}
@@ -339,8 +374,9 @@ bool textInput(
 			ctx->renderer.cmdDrawFilledRectangle(selRect);
 		}
 
-		// draw cursor/caret
-		if (!ctx->settings.textCaretBlinkEnable || (ctx->textInput.caretBlinkTimer >= 0 && ctx->textInput.caretBlinkTimer <= 1))
+		// draw cursor/caret (during IME composition the caret is drawn at the OS cursor offset)
+		if (!ctx->textInput.composing
+			&& (!ctx->settings.textCaretBlinkEnable || (ctx->textInput.caretBlinkTimer >= 0 && ctx->textInput.caretBlinkTimer <= 1)))
 		{
 			ctx->renderer.cmdSetColor(bodyTextCaretElemState.color);
 			ctx->renderer.cmdDrawFilledRectangle(cursorRect);
@@ -382,7 +418,77 @@ bool textInput(
 		clipRect.height);
 
 	// draw the actual text
-	if (isEditingThis && ctx->textInput.selectionActive && !isEmptyText && defaultText != textToDraw)
+	if (isEditingThis && ctx->textInput.composing && !ctx->textInput.compositionText.empty())
+	{
+		// draw the text in three segments: before caret, IME composition (underlined), after caret
+		i32 caret = std::clamp(ctx->textInput.caretPosition, 0, (i32)ctx->textInput.text.size());
+		i32 compCursor = std::clamp(ctx->textInput.compositionCursorChars, 0, (i32)ctx->textInput.compositionText.size());
+
+		Utf32String textBefore(ctx->textInput.text.begin(), ctx->textInput.text.begin() + caret);
+		Utf32String textAfter(ctx->textInput.text.begin() + caret, ctx->textInput.text.end());
+		Utf32String compBeforeCursor(ctx->textInput.compositionText.begin(), ctx->textInput.compositionText.begin() + compCursor);
+
+		char beforeUtf8[1024] = "";
+		char compUtf8[1024] = "";
+		char afterUtf8[1024] = "";
+		char compBeforeCursorUtf8[1024] = "";
+
+		if (!password)
+		{
+			ctx->settings.services.utf32To8NoAlloc(textBefore.data(), textBefore.size(), beforeUtf8, sizeof(beforeUtf8));
+			ctx->settings.services.utf32To8NoAlloc(ctx->textInput.compositionText.data(), ctx->textInput.compositionText.size(), compUtf8, sizeof(compUtf8));
+			ctx->settings.services.utf32To8NoAlloc(textAfter.data(), textAfter.size(), afterUtf8, sizeof(afterUtf8));
+			ctx->settings.services.utf32To8NoAlloc(compBeforeCursor.data(), compBeforeCursor.size(), compBeforeCursorUtf8, sizeof(compBeforeCursorUtf8));
+		}
+		else
+		{
+			buildMaskedString(beforeUtf8, sizeof(beforeUtf8), passwordChar, textBefore.size());
+			buildMaskedString(compUtf8, sizeof(compUtf8), passwordChar, ctx->textInput.compositionText.size());
+			buildMaskedString(afterUtf8, sizeof(afterUtf8), passwordChar, textAfter.size());
+			buildMaskedString(compBeforeCursorUtf8, sizeof(compBeforeCursorUtf8), passwordChar, compBeforeCursor.size());
+		}
+
+		FontTextSize beforeSize = bodyElemState->font->computeTextSize(beforeUtf8);
+		FontTextSize compSize = bodyElemState->font->computeTextSize(compUtf8);
+		FontTextSize compBeforeCursorSize = bodyElemState->font->computeTextSize(compBeforeCursorUtf8);
+
+		const f32 compCursorWidth = bodyTextCaretElemState.width;
+		const f32 compCursorBorder = bodyTextCaretElemState.border;
+
+		f32 startX = textRect.x;
+
+		if (beforeUtf8[0] != 0)
+		{
+			ctx->renderer.cmdSetColor(bodyElemState->textColor);
+			ctx->renderer.cmdDrawTextInBox(beforeUtf8, Rect(startX, textRect.y, beforeSize.width, textRect.height), HAlignType::Left, VAlignType::Bottom, false, true);
+		}
+
+		// composition preview, underlined
+		ctx->renderer.cmdSetColor(bodyElemState->textColor);
+		ctx->renderer.cmdSetTextUnderline(true);
+		ctx->renderer.cmdDrawTextInBox(compUtf8, Rect(startX + beforeSize.width, textRect.y, compSize.width, textRect.height), HAlignType::Left, VAlignType::Bottom, false, true);
+		ctx->renderer.cmdSetTextUnderline(false);
+
+		// caret follows the OS composition cursor offset
+		Rect compCursorRect(
+			clipRect.x + beforeSize.width + compBeforeCursorSize.width - ctx->textInput.scrollOffset,
+			clipRect.y + compCursorBorder,
+			compCursorWidth,
+			clipRect.height - compCursorBorder * 2);
+
+		if (!ctx->settings.textCaretBlinkEnable || (ctx->textInput.caretBlinkTimer >= 0 && ctx->textInput.caretBlinkTimer <= 1))
+		{
+			ctx->renderer.cmdSetColor(bodyTextCaretElemState.color);
+			ctx->renderer.cmdDrawFilledRectangle(compCursorRect);
+		}
+
+		if (afterUtf8[0] != 0)
+		{
+			ctx->renderer.cmdSetColor(bodyElemState->textColor);
+			ctx->renderer.cmdDrawTextInBox(afterUtf8, Rect(startX + beforeSize.width + compSize.width, textRect.y, textRect.width, textRect.height), HAlignType::Left, VAlignType::Bottom, false, true);
+		}
+	}
+	else if (isEditingThis && ctx->textInput.selectionActive && !isEmptyText && defaultText != textToDraw)
 	{
 		// draw text in segments: before selection, selected, after selection
 		i32 startSel = ctx->textInput.selectionBegin;

@@ -856,7 +856,7 @@ struct ColorPickerState
 	WidgetId currentEditingId = 0;
 };
 
-struct TimelineKeyDragItem
+struct AnimationEditorKeyDragItem
 {
 	i32 channel = -1;
 	i32 key = -1;
@@ -865,7 +865,7 @@ struct TimelineKeyDragItem
 	bool leftSide = false;
 };
 
-struct TimelineWidgetState
+struct AnimationEditorWidgetState
 {
 	enum class DragType
 	{
@@ -900,8 +900,45 @@ struct TimelineWidgetState
 	Point boxStart;
 	Point boxEnd;
 	i32 pressedToolbarButton = -1;
-	std::vector<TimelineKeyDragItem> dragItems;
-	std::vector<TimelineKeyDragItem> rippleItems;
+	std::vector<AnimationEditorKeyDragItem> dragItems;
+	std::vector<AnimationEditorKeyDragItem> rippleItems;
+};
+
+struct SequencerSegmentDragItem
+{
+	i32 track = -1;
+	i32 segment = -1;
+	f32 start = 0;
+	f32 end = 0;
+};
+
+struct SequencerWidgetState
+{
+	enum class DragType
+	{
+		None,
+		Playhead,
+		Segments,
+		SegmentResizeLeft,
+		SegmentResizeRight,
+		BoxSelect,
+		Pan,
+		TrackResize,
+		TrackScroll,
+	};
+
+	DragType dragType = DragType::None;
+	i32 dragTrack = -1;
+	i32 dragSegment = -1;
+	Point dragStartMouse;
+	f32 dragStartTime = 0;
+	f32 panStartScrollTime = 0;
+	f32 trackListWidth = 0;
+	f32 dragStartTrackScroll = 0;
+	Point boxStart;
+	Point boxEnd;
+	i32 pressedToolbarButton = -1;
+	std::vector<SequencerSegmentDragItem> dragItems;
 };
 
 struct CustomFileDialogState

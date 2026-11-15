@@ -587,6 +587,34 @@ bool clampValue(f32& value, f32 minVal, f32 maxVal)
 	return false;
 }
 
+i32 utf8ByteOffsetToCharIndex(const char* text, i32 byteOffset)
+{
+	i32 charIndex = 0;
+	i32 bytePos = 0;
+
+	if (!text || byteOffset <= 0)
+		return 0;
+
+	while (text[bytePos] && bytePos < byteOffset)
+	{
+		u8 c = (u8)text[bytePos];
+		i32 seqLen = 1;
+
+		if ((c & 0xE0) == 0xC0) seqLen = 2;
+		else if ((c & 0xF0) == 0xE0) seqLen = 3;
+		else if ((c & 0xF8) == 0xF0) seqLen = 4;
+
+		// never split a codepoint, clamp at the offset boundary
+		if (bytePos + seqLen > byteOffset)
+			break;
+
+		bytePos += seqLen;
+		charIndex++;
+	}
+
+	return charIndex;
+}
+
 u64 hashString(const char* str, u64 seed)
 {
 	return rapidhash_withSeed_unrolled(str, strlen(str), seed ? seed : RAPID_SEED);

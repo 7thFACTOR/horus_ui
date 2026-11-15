@@ -23,7 +23,6 @@ struct Context
 	// Global general state
 	f32 totalTime = 0;
 	u32 frameCount = 0;
-	f32 pruneUnusedTextTime = 0; //TODO: maybe make it frames
 	std::chrono::high_resolution_clock::time_point frameStartTime;
 	f32 lastFrameTimeMs = 0.0f;
 	f32 peakFrameTimeMs = 0.0f;
@@ -159,8 +158,11 @@ struct Context
 	// Custom file dialog
 	std::unordered_map<WidgetId, CustomFileDialogState> customFileDialogs;
 
-	// Timeline
-	std::unordered_map<WidgetId, TimelineWidgetState> timelineStates;
+	// Animation editor
+	std::unordered_map<WidgetId, AnimationEditorWidgetState> animationEditorStates;
+
+	// Sequencer
+	std::unordered_map<WidgetId, SequencerWidgetState> sequencerStates;
 
 	// Input
 	InputEvent event;

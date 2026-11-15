@@ -478,7 +478,6 @@ void frameBegin()
 	ctx->widget.changeEnded = false;
 	ctx->frameCount++;
 	ctx->totalTime += ctx->settings.deltaTime;
-	ctx->pruneUnusedTextTime += ctx->settings.deltaTime;
 	ctx->sameLine.wasEnabled = false;
 	ctx->fontStack.clear();
 

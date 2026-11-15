@@ -18,6 +18,10 @@ bool viewportImageSizeFit(
 	bool ignoreHeight, bool ignoreWidth);
 bool imageButtonInternal(HImage img, HImage disabledImg, f32 width, f32 height, bool down, ThemeElement* btnBodyElem);
 bool clampValue(f32& value, f32 minVal, f32 maxVal);
+
+/// Convert a utf-8 byte offset into a utf-32 character index, without ever
+/// splitting a codepoint. The offset is clamped to the end of the string.
+i32 utf8ByteOffsetToCharIndex(const char* text, i32 byteOffset);
 inline f32 clampValue01(f32 value) { return fmax(0.0f, fmin(1.0f, value)); }
 
 template <typename T> T sgn(T val) { return (T(0) < val) - (val < T(0)); }

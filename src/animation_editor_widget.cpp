@@ -1,4 +1,4 @@
-﻿#include <float.h>
+#include <float.h>
 #include <math.h>
 #include <stdio.h>
 #include <algorithm>
@@ -10,52 +10,52 @@
 
 namespace hui
 {
-enum TimelineToolbarAction
+enum AnimationEditorToolbarAction
 {
-	TimelineTbPlay,
-	TimelineTbKeys,
-	TimelineTbCurves,
-	TimelineTbAddKey,
-	TimelineTbDeleteKey,
-	TimelineTbSnap,
-	TimelineTbZoomOut,
-	TimelineTbZoomIn,
-	TimelineTbFit,
-	TimelineTbCount
+	AnimationEditorTbPlay,
+	AnimationEditorTbKeys,
+	AnimationEditorTbCurves,
+	AnimationEditorTbAddKey,
+	AnimationEditorTbDeleteKey,
+	AnimationEditorTbSnap,
+	AnimationEditorTbZoomOut,
+	AnimationEditorTbZoomIn,
+	AnimationEditorTbFit,
+	AnimationEditorTbCount
 };
 
-struct TimelineToolbarButton
+struct AnimationEditorToolbarButton
 {
-	TimelineToolbarAction action;
+	AnimationEditorToolbarAction action;
 	Rect rect;
 	const char* label;
 	bool active;
 };
 
-struct TimelineKeyHit
+struct AnimationEditorKeyHit
 {
 	i32 channel = -1;
 	i32 key = -1;
 	i32 component = -1;
 };
 
-static f32 timelineClamp(f32 value, f32 minValue, f32 maxValue)
+static f32 animationEditorClamp(f32 value, f32 minValue, f32 maxValue)
 {
 	return std::max(minValue, std::min(maxValue, value));
 }
 
-static i32 timelineComponentCount(TimelineKeyType type)
+static i32 animationEditorComponentCount(AnimationEditorKeyType type)
 {
 	switch (type)
 	{
-	case TimelineKeyType::Vec2: return 2;
-	case TimelineKeyType::Vec3: return 3;
-	case TimelineKeyType::Vec4: return 4;
+	case AnimationEditorKeyType::Vec2: return 2;
+	case AnimationEditorKeyType::Vec3: return 3;
+	case AnimationEditorKeyType::Vec4: return 4;
 	default: return 1;
 	}
 }
 
-static bool timelineComponentVisible(const TimelineChannel& channel, i32 component)
+static bool animationEditorComponentVisible(const AnimationEditorChannel& channel, i32 component)
 {
 	if (!channel.enabled)
 		return false;
@@ -69,7 +69,7 @@ static bool timelineComponentVisible(const TimelineChannel& channel, i32 compone
 	return (channel.selectedComponents & (1u << component)) != 0;
 }
 
-static bool timelineChannelHasVisibleComponent(const TimelineChannel& channel)
+static bool animationEditorChannelHasVisibleComponent(const AnimationEditorChannel& channel)
 {
 	if (!channel.enabled)
 		return false;
@@ -80,30 +80,30 @@ static bool timelineChannelHasVisibleComponent(const TimelineChannel& channel)
 	return channel.selectedComponents != 0;
 }
 
-static const char* timelineTypeBadge(TimelineKeyType type)
+static const char* animationEditorTypeBadge(AnimationEditorKeyType type)
 {
 	switch (type)
 	{
-	case TimelineKeyType::Int: return "I";
-	case TimelineKeyType::Vec2: return "V2";
-	case TimelineKeyType::Vec3: return "V3";
-	case TimelineKeyType::Vec4: return "V4";
-	case TimelineKeyType::Bool: return "B";
+	case AnimationEditorKeyType::Int: return "I";
+	case AnimationEditorKeyType::Vec2: return "V2";
+	case AnimationEditorKeyType::Vec3: return "V3";
+	case AnimationEditorKeyType::Vec4: return "V4";
+	case AnimationEditorKeyType::Bool: return "B";
 	default: return "F";
 	}
 }
 
-static f32 timelineSnapTime(const TimelineState& state, f32 time)
+static f32 animationEditorSnapTime(const AnimationEditorState& state, f32 time)
 {
 	if (state.snapToFrames && state.frameRate > 0.0f)
 	{
 		time = roundf(time * state.frameRate) / state.frameRate;
 	}
 
-	return timelineClamp(time, state.startTime, state.endTime);
+	return animationEditorClamp(time, state.startTime, state.endTime);
 }
 
-static f32 timelineSnapTimeNoMax(const TimelineState& state, f32 time)
+static f32 animationEditorSnapTimeNoMax(const AnimationEditorState& state, f32 time)
 {
 	if (state.snapToFrames && state.frameRate > 0.0f)
 	{
@@ -113,20 +113,20 @@ static f32 timelineSnapTimeNoMax(const TimelineState& state, f32 time)
 	return std::max(time, state.startTime);
 }
 
-static f32 timelineQuantizeComponent(TimelineKeyType type, f32 value, i32 component)
+static f32 animationEditorQuantizeComponent(AnimationEditorKeyType type, f32 value, i32 component)
 {
 	if (component != 0)
 		return value;
 
 	switch (type)
 	{
-	case TimelineKeyType::Int: return roundf(value);
-	case TimelineKeyType::Bool: return value >= 0.5f ? 1.0f : 0.0f;
+	case AnimationEditorKeyType::Int: return roundf(value);
+	case AnimationEditorKeyType::Bool: return value >= 0.5f ? 1.0f : 0.0f;
 	default: return value;
 	}
 }
 
-static f32 timelineAutoTangent(const TimelineChannel& channel, i32 keyIndex, i32 component)
+static f32 animationEditorAutoTangent(const AnimationEditorChannel& channel, i32 keyIndex, i32 component)
 {
 	i32 keyCount = (i32)channel.keys.size();
 
@@ -149,26 +149,26 @@ static f32 timelineAutoTangent(const TimelineChannel& channel, i32 keyIndex, i32
 	return duration > 0.00001f ? (channel.keys[keyIndex + 1].value[component] - channel.keys[keyIndex - 1].value[component]) / duration : 0.0f;
 }
 
-static f32 timelineKeyTangent(const TimelineChannel& channel, i32 keyIndex, i32 component, bool outgoing)
+static f32 animationEditorKeyTangent(const AnimationEditorChannel& channel, i32 keyIndex, i32 component, bool outgoing)
 {
-	const TimelineKey& key = channel.keys[keyIndex];
+	const AnimationEditorKey& key = channel.keys[keyIndex];
 
 	if (key.tangentAuto)
-		return timelineAutoTangent(channel, keyIndex, component);
+		return animationEditorAutoTangent(channel, keyIndex, component);
 
 	return outgoing ? key.outTangent[component] : key.inTangent[component];
 }
 
-static void timelineMakeKeyTangentsManual(TimelineChannel& channel, i32 keyIndex)
+static void animationEditorMakeKeyTangentsManual(AnimationEditorChannel& channel, i32 keyIndex)
 {
-	TimelineKey& key = channel.keys[keyIndex];
+	AnimationEditorKey& key = channel.keys[keyIndex];
 
 	if (!key.tangentAuto)
 		return;
 
 	for (i32 i = 0; i < 4; i++)
 	{
-		f32 tangent = timelineAutoTangent(channel, keyIndex, i);
+		f32 tangent = animationEditorAutoTangent(channel, keyIndex, i);
 
 		key.inTangent[i] = tangent;
 		key.outTangent[i] = tangent;
@@ -177,7 +177,7 @@ static void timelineMakeKeyTangentsManual(TimelineChannel& channel, i32 keyIndex
 	key.tangentAuto = false;
 }
 
-static f32 timelineEvaluateComponent(const TimelineChannel& channel, i32 component, f32 time)
+static f32 animationEditorEvaluateComponent(const AnimationEditorChannel& channel, i32 component, f32 time)
 {
 	if (channel.keys.empty() || component < 0 || component >= 4)
 		return 0.0f;
@@ -201,10 +201,10 @@ static f32 timelineEvaluateComponent(const TimelineChannel& channel, i32 compone
 			hi = mid;
 	}
 
-	const TimelineKey& first = channel.keys[lo - 1];
-	const TimelineKey& second = channel.keys[lo];
+	const AnimationEditorKey& first = channel.keys[lo - 1];
+	const AnimationEditorKey& second = channel.keys[lo];
 
-	if (channel.type == TimelineKeyType::Bool || channel.type == TimelineKeyType::Int)
+	if (channel.type == AnimationEditorKeyType::Bool || channel.type == AnimationEditorKeyType::Int)
 		return first.value[component];
 
 	f32 duration = second.time - first.time;
@@ -215,8 +215,8 @@ static f32 timelineEvaluateComponent(const TimelineChannel& channel, i32 compone
 	f32 t = (time - first.time) / duration;
 	f32 t2 = t * t;
 	f32 t3 = t2 * t;
-	f32 tangentIn = timelineKeyTangent(channel, (i32)lo - 1, component, true);
-	f32 tangentOut = timelineKeyTangent(channel, (i32)lo, component, false);
+	f32 tangentIn = animationEditorKeyTangent(channel, (i32)lo - 1, component, true);
+	f32 tangentOut = animationEditorKeyTangent(channel, (i32)lo, component, false);
 	f32 h00 = 2.0f * t3 - 3.0f * t2 + 1.0f;
 	f32 h10 = t3 - 2.0f * t2 + t;
 	f32 h01 = -2.0f * t3 + 3.0f * t2;
@@ -228,23 +228,23 @@ static f32 timelineEvaluateComponent(const TimelineChannel& channel, i32 compone
 		+ h11 * duration * tangentOut;
 }
 
-static void timelineEvaluateChannel(const TimelineChannel& channel, f32 time, f32* outValues)
+static void animationEditorEvaluateChannel(const AnimationEditorChannel& channel, f32 time, f32* outValues)
 {
-	i32 components = timelineComponentCount(channel.type);
+	i32 components = animationEditorComponentCount(channel.type);
 
 	for (i32 i = 0; i < 4; i++)
-		outValues[i] = i < components ? timelineEvaluateComponent(channel, i, time) : 0.0f;
+		outValues[i] = i < components ? animationEditorEvaluateComponent(channel, i, time) : 0.0f;
 }
 
-static void timelineSortKeys(TimelineChannel& channel)
+static void animationEditorSortKeys(AnimationEditorChannel& channel)
 {
-	std::sort(channel.keys.begin(), channel.keys.end(), [](const TimelineKey& a, const TimelineKey& b)
+	std::sort(channel.keys.begin(), channel.keys.end(), [](const AnimationEditorKey& a, const AnimationEditorKey& b)
 	{
 		return a.time < b.time;
 	});
 }
 
-static bool timelineHasDraggedKey(const TimelineWidgetState& runtime, i32 channelIndex)
+static bool animationEditorHasDraggedKey(const AnimationEditorWidgetState& runtime, i32 channelIndex)
 {
 	for (auto& item : runtime.dragItems)
 	{
@@ -261,7 +261,7 @@ static bool timelineHasDraggedKey(const TimelineWidgetState& runtime, i32 channe
 	return false;
 }
 
-static void timelineRemapDraggedKeys(TimelineWidgetState& runtime, i32 channelIndex, i32 fromIndex, i32 toIndex)
+static void animationEditorRemapDraggedKeys(AnimationEditorWidgetState& runtime, i32 channelIndex, i32 fromIndex, i32 toIndex)
 {
 	for (auto& item : runtime.dragItems)
 	{
@@ -286,11 +286,11 @@ static void timelineRemapDraggedKeys(TimelineWidgetState& runtime, i32 channelIn
 	}
 }
 
-static void timelineReorderDraggedKeys(TimelineWidgetState& runtime, std::vector<TimelineChannel>& channels)
+static void animationEditorReorderDraggedKeys(AnimationEditorWidgetState& runtime, std::vector<AnimationEditorChannel>& channels)
 {
 	for (i32 channelIndex = 0; channelIndex < (i32)channels.size(); channelIndex++)
 	{
-		if (!timelineHasDraggedKey(runtime, channelIndex))
+		if (!animationEditorHasDraggedKey(runtime, channelIndex))
 			continue;
 
 		auto& keys = channels[channelIndex].keys;
@@ -302,14 +302,14 @@ static void timelineReorderDraggedKeys(TimelineWidgetState& runtime, std::vector
 			while (j > 0 && keys[j - 1].time > keys[j].time)
 			{
 				std::swap(keys[j - 1], keys[j]);
-				timelineRemapDraggedKeys(runtime, channelIndex, j - 1, j);
+				animationEditorRemapDraggedKeys(runtime, channelIndex, j - 1, j);
 				j--;
 			}
 		}
 	}
 }
 
-static f32 timelineNiceStep(f32 rawStep)
+static f32 animationEditorNiceStep(f32 rawStep)
 {
 	if (rawStep <= 0.0f)
 		return 1.0f;
@@ -322,7 +322,7 @@ static f32 timelineNiceStep(f32 rawStep)
 	return nice * base;
 }
 
-static Color timelineChannelColor(i32 channelIndex, i32 component = -1)
+static Color animationEditorChannelColor(i32 channelIndex, i32 component = -1)
 {
 	f32 hue = fmodf((f32)channelIndex * 0.61803398875f, 1.0f);
 
@@ -332,7 +332,7 @@ static Color timelineChannelColor(i32 channelIndex, i32 component = -1)
 	return colorHueToRgb(hue, 1.0f);
 }
 
-static void timelineComputeAutoValueRange(const TimelineState& state, f32& valueMin, f32& valueMax)
+static void animationEditorComputeAutoValueRange(const AnimationEditorState& state, f32& valueMin, f32& valueMax)
 {
 	bool hasValues = false;
 	f32 computedMin = FLT_MAX;
@@ -343,7 +343,7 @@ static void timelineComputeAutoValueRange(const TimelineState& state, f32& value
 		if (!channel.enabled)
 			continue;
 
-		i32 components = timelineComponentCount(channel.type);
+		i32 components = animationEditorComponentCount(channel.type);
 
 		for (auto& key : channel.keys)
 		{
@@ -386,11 +386,11 @@ static void timelineComputeAutoValueRange(const TimelineState& state, f32& value
 		valueMax = valueMin + 1.0f;
 }
 
-static void timelineComputeValueRange(const TimelineState& state, f32& valueMin, f32& valueMax)
+static void animationEditorComputeValueRange(const AnimationEditorState& state, f32& valueMin, f32& valueMax)
 {
-	if (state.viewMode == TimelineViewMode::Curves && state.autoValueRange)
+	if (state.viewMode == AnimationEditorViewMode::Curves && state.autoValueRange)
 	{
-		timelineComputeAutoValueRange(state, valueMin, valueMax);
+		animationEditorComputeAutoValueRange(state, valueMin, valueMax);
 		return;
 	}
 
@@ -401,12 +401,12 @@ static void timelineComputeValueRange(const TimelineState& state, f32& valueMin,
 		valueMax = valueMin + 1.0f;
 }
 
-static f32 timelineTimeToX(const TimelineState& state, const Rect& plotRect, f32 time)
+static f32 animationEditorTimeToX(const AnimationEditorState& state, const Rect& plotRect, f32 time)
 {
 	return plotRect.x + (time - state.scrollTime) * state.pixelsPerSecond * ctx->scale;
 }
 
-static f32 timelineXToTime(const TimelineState& state, const Rect& plotRect, f32 x)
+static f32 animationEditorXToTime(const AnimationEditorState& state, const Rect& plotRect, f32 x)
 {
 	f32 pixelsPerSecond = state.pixelsPerSecond * ctx->scale;
 
@@ -416,7 +416,7 @@ static f32 timelineXToTime(const TimelineState& state, const Rect& plotRect, f32
 	return state.scrollTime + (x - plotRect.x) / pixelsPerSecond;
 }
 
-static f32 timelineValueToY(const Rect& plotRect, f32 value, f32 valueMin, f32 valueMax)
+static f32 animationEditorValueToY(const Rect& plotRect, f32 value, f32 valueMin, f32 valueMax)
 {
 	f32 range = valueMax - valueMin;
 
@@ -426,7 +426,7 @@ static f32 timelineValueToY(const Rect& plotRect, f32 value, f32 valueMin, f32 v
 	return plotRect.bottom() - (value - valueMin) / range * plotRect.height;
 }
 
-static f32 timelineYToValue(const Rect& plotRect, f32 y, f32 valueMin, f32 valueMax)
+static f32 animationEditorYToValue(const Rect& plotRect, f32 y, f32 valueMin, f32 valueMax)
 {
 	f32 range = valueMax - valueMin;
 
@@ -436,7 +436,7 @@ static f32 timelineYToValue(const Rect& plotRect, f32 y, f32 valueMin, f32 value
 	return valueMin + (plotRect.bottom() - y) / std::max(plotRect.height, 1.0f) * range;
 }
 
-static Color timelineSampleElementColor(WidgetElementId id, WidgetStateType stateType, bool useTextColor)
+static Color animationEditorSampleElementColor(WidgetElementId id, WidgetStateType stateType, bool useTextColor)
 {
 	auto& element = ctx->theme->getElement(id);
 	auto& elementState = element.getState(stateType);
@@ -480,46 +480,46 @@ static Color timelineSampleElementColor(WidgetElementId id, WidgetStateType stat
 	return result;
 }
 
-static Color timelineShadeColor(const Color& color, f32 amount)
+static Color animationEditorShadeColor(const Color& color, f32 amount)
 {
 	return {
-		timelineClamp(color.r + amount, 0.0f, 1.0f),
-		timelineClamp(color.g + amount, 0.0f, 1.0f),
-		timelineClamp(color.b + amount, 0.0f, 1.0f),
+		animationEditorClamp(color.r + amount, 0.0f, 1.0f),
+		animationEditorClamp(color.g + amount, 0.0f, 1.0f),
+		animationEditorClamp(color.b + amount, 0.0f, 1.0f),
 		color.a };
 }
 
-static void timelineApplyThemeColors(TimelineSettings& timelineSettings)
+static void animationEditorApplyThemeColors(AnimationEditorSettings& animationEditorSettings)
 {
 	if (!ctx->theme)
 		return;
 
-	Color windowColor = timelineSampleElementColor(WidgetElementId::WindowBody, WidgetStateType::Normal, false);
-	Color textColor = timelineSampleElementColor(WidgetElementId::LabelBody, WidgetStateType::Normal, true);
-	Color accentColor = timelineSampleElementColor(WidgetElementId::LinkBody, WidgetStateType::Normal, true);
+	Color windowColor = animationEditorSampleElementColor(WidgetElementId::WindowBody, WidgetStateType::Normal, false);
+	Color textColor = animationEditorSampleElementColor(WidgetElementId::LabelBody, WidgetStateType::Normal, true);
+	Color accentColor = animationEditorSampleElementColor(WidgetElementId::LinkBody, WidgetStateType::Normal, true);
 	f32 luminance = windowColor.r * 0.299f + windowColor.g * 0.587f + windowColor.b * 0.114f;
 	f32 rowShade = luminance < 0.5f ? 0.025f : -0.025f;
 
-	timelineSettings.backgroundColor = windowColor;
-	timelineSettings.channelListColor = timelineShadeColor(windowColor, rowShade * 1.4f);
-	timelineSettings.headerColor = timelineShadeColor(windowColor, rowShade * 2.0f);
-	timelineSettings.rowAlternateColor = timelineShadeColor(windowColor, rowShade);
-	timelineSettings.rowSelectedColor = { accentColor.r, accentColor.g, accentColor.b, 0.5f };
-	timelineSettings.gridColor = { textColor.r, textColor.g, textColor.b, 0.12f };
-	timelineSettings.gridStrongColor = { textColor.r, textColor.g, textColor.b, 0.22f };
-	timelineSettings.textColor = textColor;
-	timelineSettings.dimTextColor = { textColor.r, textColor.g, textColor.b, 0.55f };
-	timelineSettings.keySelectedColor = accentColor;
-	timelineSettings.playheadColor = Color::white;
-	timelineSettings.toolbarToggleColor = timelineShadeColor(
-		timelineSettings.toolbarToggleColor,
+	animationEditorSettings.backgroundColor = windowColor;
+	animationEditorSettings.channelListColor = animationEditorShadeColor(windowColor, rowShade * 1.4f);
+	animationEditorSettings.headerColor = animationEditorShadeColor(windowColor, rowShade * 2.0f);
+	animationEditorSettings.rowAlternateColor = animationEditorShadeColor(windowColor, rowShade);
+	animationEditorSettings.rowSelectedColor = { accentColor.r, accentColor.g, accentColor.b, 0.5f };
+	animationEditorSettings.gridColor = { textColor.r, textColor.g, textColor.b, 0.12f };
+	animationEditorSettings.gridStrongColor = { textColor.r, textColor.g, textColor.b, 0.22f };
+	animationEditorSettings.textColor = textColor;
+	animationEditorSettings.dimTextColor = { textColor.r, textColor.g, textColor.b, 0.55f };
+	animationEditorSettings.keySelectedColor = accentColor;
+	animationEditorSettings.playheadColor = Color::white;
+	animationEditorSettings.toolbarToggleColor = animationEditorShadeColor(
+		animationEditorSettings.toolbarToggleColor,
 		luminance < 0.3f ? 0.08f : (luminance > 0.55f ? -0.1f : 0.0f));
-	timelineSettings.selectionFillColor = { accentColor.r, accentColor.g, accentColor.b, 0.14f };
-	timelineSettings.selectionBorderColor = { accentColor.r, accentColor.g, accentColor.b, 0.7f };
-	timelineSettings.endTimeLineColor = { textColor.r, textColor.g, textColor.b, 0.35f };
+	animationEditorSettings.selectionFillColor = { accentColor.r, accentColor.g, accentColor.b, 0.14f };
+	animationEditorSettings.selectionBorderColor = { accentColor.r, accentColor.g, accentColor.b, 0.7f };
+	animationEditorSettings.endTimeLineColor = { textColor.r, textColor.g, textColor.b, 0.35f };
 }
 
-struct TimelineTangentHit
+struct AnimationEditorTangentHit
 {
 	i32 channel = -1;
 	i32 key = -1;
@@ -527,9 +527,9 @@ struct TimelineTangentHit
 	bool outgoing = false;
 };
 
-static Point timelineTangentHandlePosition(
-	const TimelineState& state,
-	const TimelineChannel& channel,
+static Point animationEditorTangentHandlePosition(
+	const AnimationEditorState& state,
+	const AnimationEditorChannel& channel,
 	i32 keyIndex,
 	i32 component,
 	bool outgoing,
@@ -538,36 +538,36 @@ static Point timelineTangentHandlePosition(
 	f32 valueMax,
 	f32 handlePixels)
 {
-	const TimelineKey& key = channel.keys[keyIndex];
+	const AnimationEditorKey& key = channel.keys[keyIndex];
 	f32 pixelsPerSecond = state.pixelsPerSecond * ctx->scale;
 	f32 handleTime = pixelsPerSecond > 0.00001f ? handlePixels / pixelsPerSecond : 0.0f;
-	f32 tangent = timelineKeyTangent(channel, keyIndex, component, outgoing);
+	f32 tangent = animationEditorKeyTangent(channel, keyIndex, component, outgoing);
 	f32 time = outgoing ? key.time + handleTime : key.time - handleTime;
 	f32 value = outgoing ? key.value[component] + tangent * handleTime : key.value[component] - tangent * handleTime;
 
-	return { timelineTimeToX(state, plotRect, time), timelineValueToY(plotRect, value, valueMin, valueMax) };
+	return { animationEditorTimeToX(state, plotRect, time), animationEditorValueToY(plotRect, value, valueMin, valueMax) };
 }
 
-static TimelineTangentHit timelineFindTangentHandle(
-	const TimelineState& state,
-	const TimelineSettings& settings,
+static AnimationEditorTangentHit animationEditorFindTangentHandle(
+	const AnimationEditorState& state,
+	const AnimationEditorSettings& settings,
 	const Rect& plotRect,
 	f32 valueMin,
 	f32 valueMax,
 	const Point& mouse)
 {
-	TimelineTangentHit result;
+	AnimationEditorTangentHit result;
 	f32 hitRadius = settings.keyHitRadius * ctx->scale;
 	f32 handlePixels = settings.tangentHandleLength * ctx->scale;
 
 	for (i32 channelIndex = 0; channelIndex < (i32)state.channels.size(); channelIndex++)
 	{
-		const TimelineChannel& channel = state.channels[channelIndex];
+		const AnimationEditorChannel& channel = state.channels[channelIndex];
 
-		if (!channel.enabled || channel.type == TimelineKeyType::Bool || channel.type == TimelineKeyType::Int)
+		if (!channel.enabled || channel.type == AnimationEditorKeyType::Bool || channel.type == AnimationEditorKeyType::Int)
 			continue;
 
-		i32 components = timelineComponentCount(channel.type);
+		i32 components = animationEditorComponentCount(channel.type);
 
 		for (i32 keyIndex = 0; keyIndex < (i32)channel.keys.size(); keyIndex++)
 		{
@@ -576,13 +576,13 @@ static TimelineTangentHit timelineFindTangentHandle(
 
 			for (i32 component = 0; component < components; component++)
 			{
-				if (!timelineComponentVisible(channel, component))
+				if (!animationEditorComponentVisible(channel, component))
 					continue;
 
 				for (i32 side = 0; side < 2; side++)
 				{
 					bool outgoing = side == 0;
-					Point handle = timelineTangentHandlePosition(state, channel, keyIndex, component, outgoing, plotRect, valueMin, valueMax, handlePixels);
+					Point handle = animationEditorTangentHandlePosition(state, channel, keyIndex, component, outgoing, plotRect, valueMin, valueMax, handlePixels);
 
 					if ((handle - mouse).getLength() < hitRadius)
 					{
@@ -600,7 +600,7 @@ static TimelineTangentHit timelineFindTangentHandle(
 	return result;
 }
 
-struct TimelineToolbarField
+struct AnimationEditorToolbarField
 {
 	Rect rect;
 	i32 channel = -1;
@@ -608,13 +608,13 @@ struct TimelineToolbarField
 	i32 component = -1; // -1 is the key time, -2 is the key tag
 };
 
-static u32 timelineBuildToolbarFields(
+static u32 animationEditorBuildToolbarFields(
 	const Rect& toolbarRect,
-	const TimelineToolbarButton* buttons,
+	const AnimationEditorToolbarButton* buttons,
 	u32 buttonCount,
-	const TimelineSettings& settings,
-	const TimelineState& state,
-	TimelineToolbarField* fields,
+	const AnimationEditorSettings& settings,
+	const AnimationEditorState& state,
+	AnimationEditorToolbarField* fields,
 	u32 maxFields)
 {
 	if (buttonCount == 0 || maxFields == 0)
@@ -644,7 +644,7 @@ static u32 timelineBuildToolbarFields(
 	if (selectedCount != 1)
 		return 0;
 
-	const TimelineChannel& channel = state.channels[selectedChannel];
+	const AnimationEditorChannel& channel = state.channels[selectedChannel];
 	f32 scale = ctx->scale;
 	f32 x = buttons[buttonCount - 1].rect.right() + 10.0f * scale;
 	f32 y = toolbarRect.y + 3.0f * scale;
@@ -667,9 +667,9 @@ static u32 timelineBuildToolbarFields(
 
 	addField(-1, settings.toolbarTimeFieldWidth * scale);
 
-	if (channel.type != TimelineKeyType::Bool)
+	if (channel.type != AnimationEditorKeyType::Bool)
 	{
-		i32 components = timelineComponentCount(channel.type);
+		i32 components = animationEditorComponentCount(channel.type);
 
 		for (i32 component = 0; component < components; component++)
 			addField(component, settings.toolbarValueFieldWidth * scale);
@@ -680,25 +680,25 @@ static u32 timelineBuildToolbarFields(
 	return count;
 }
 
-static const char* timelineComponentLabel(TimelineKeyType type, i32 component)
+static const char* animationEditorComponentLabel(AnimationEditorKeyType type, i32 component)
 {
 	switch (type)
 	{
-	case TimelineKeyType::Vec2:
-	case TimelineKeyType::Vec3:
-	case TimelineKeyType::Vec4:
+	case AnimationEditorKeyType::Vec2:
+	case AnimationEditorKeyType::Vec3:
+	case AnimationEditorKeyType::Vec4:
 	{
 		static const char* axisLabels[4] = { "X", "Y", "Z", "W" };
 		return component >= 0 && component < 4 ? axisLabels[component] : "V";
 	}
-	case TimelineKeyType::Int:
+	case AnimationEditorKeyType::Int:
 		return "I";
 	default:
 		return "V";
 	}
 }
 
-static Point timelineTextSize(Font* font, const char* text)
+static Point animationEditorTextSize(Font* font, const char* text)
 {
 	FontTextSize size = ctx->renderer.computeSizeOrDrawText(
 		text ? text : "",
@@ -711,7 +711,7 @@ static Point timelineTextSize(Font* font, const char* text)
 	return { size.width, size.height };
 }
 
-static void timelineDrawText(Font* font, const char* text, const Rect& rect, const Color& color, HAlignType align, bool ellipsis = true)
+static void animationEditorDrawText(Font* font, const char* text, const Rect& rect, const Color& color, HAlignType align, bool ellipsis = true)
 {
 	if (!text || !text[0])
 		return;
@@ -721,9 +721,9 @@ static void timelineDrawText(Font* font, const char* text, const Rect& rect, con
 	ctx->renderer.cmdDrawTextInBox(text, rect, align, VAlignType::Center, ellipsis, true);
 }
 
-static void timelineDrawKeyTag(Font* font, const char* tag, f32 x, f32 centerY, const TimelineSettings& settings, f32 scale)
+static void animationEditorDrawKeyTag(Font* font, const char* tag, f32 x, f32 centerY, const AnimationEditorSettings& settings, f32 scale)
 {
-	Point textSize = timelineTextSize(font, tag);
+	Point textSize = animationEditorTextSize(font, tag);
 	f32 padX = 3.0f * scale;
 	f32 padY = 1.5f * scale;
 	Color backgroundColor = settings.headerColor;
@@ -736,10 +736,10 @@ static void timelineDrawKeyTag(Font* font, const char* tag, f32 x, f32 centerY, 
 	backgroundColor.a = 0.85f;
 	ctx->renderer.cmdSetColor(backgroundColor);
 	ctx->renderer.cmdDrawFilledRectangle(backgroundRect);
-	timelineDrawText(font, tag, { x + padX, centerY - textSize.y * 0.5f, textSize.x, textSize.y }, settings.textColor, HAlignType::Left);
+	animationEditorDrawText(font, tag, { x + padX, centerY - textSize.y * 0.5f, textSize.x, textSize.y }, settings.textColor, HAlignType::Left);
 }
 
-static void timelineDrawDiamond(const Point& center, f32 radius, const Color& color)
+static void animationEditorDrawDiamond(const Point& center, f32 radius, const Color& color)
 {
 	Point top = { center.x, center.y - radius };
 	Point right = { center.x + radius, center.y };
@@ -751,7 +751,7 @@ static void timelineDrawDiamond(const Point& center, f32 radius, const Color& co
 	ctx->renderer.cmdDrawSolidTriangle(top, bottom, left, color, color, color);
 }
 
-static void timelineDrawButton(Font* font, const Rect& rect, const char* label, bool active, bool hovered, bool pressed, const Color& activeColor)
+static void animationEditorDrawButton(Font* font, const Rect& rect, const char* label, bool active, bool hovered, bool pressed, const Color& activeColor)
 {
 	auto& buttonElem = ctx->theme->getElement(WidgetElementId::ButtonBody);
 	ThemeElement::State* state = &buttonElem.normalState();
@@ -762,13 +762,13 @@ static void timelineDrawButton(Font* font, const Rect& rect, const char* label, 
 		Color backgroundColor = activeColor;
 
 		if (pressed)
-			backgroundColor = timelineShadeColor(backgroundColor, -0.08f);
+			backgroundColor = animationEditorShadeColor(backgroundColor, -0.08f);
 		else if (hovered)
-			backgroundColor = timelineShadeColor(backgroundColor, 0.06f);
+			backgroundColor = animationEditorShadeColor(backgroundColor, 0.06f);
 
 		ctx->renderer.cmdSetColor(backgroundColor);
 		ctx->renderer.cmdDrawImageBordered(pressedState.image, pressedState.border, rect, ctx->scale);
-		timelineDrawText(font, label, rect, Color::white, HAlignType::Center);
+		animationEditorDrawText(font, label, rect, Color::white, HAlignType::Center);
 		return;
 	}
 
@@ -777,10 +777,10 @@ static void timelineDrawButton(Font* font, const Rect& rect, const char* label, 
 
 	ctx->renderer.cmdSetColor(state->color);
 	ctx->renderer.cmdDrawImageBordered(state->image, state->border, rect, ctx->scale);
-	timelineDrawText(font, label, rect, state->textColor, HAlignType::Center);
+	animationEditorDrawText(font, label, rect, state->textColor, HAlignType::Center);
 }
 
-static void timelineDrawCheckbox(const Rect& rect, bool checked, bool disabled)
+static void animationEditorDrawCheckbox(const Rect& rect, bool checked, bool disabled)
 {
 	auto& checkBodyElem = ctx->theme->getElement(WidgetElementId::CheckBody);
 	auto& checkMarkElem = ctx->theme->getElement(WidgetElementId::CheckMark);
@@ -799,48 +799,48 @@ static void timelineDrawCheckbox(const Rect& rect, bool checked, bool disabled)
 	}
 }
 
-static Rect timelineChannelCheckboxRect(const Rect& rowRect, f32 scale)
+static Rect animationEditorChannelCheckboxRect(const Rect& rowRect, f32 scale)
 {
 	f32 size = 14.0f * scale;
 
 	return { rowRect.x + 8.0f * scale, rowRect.y + (rowRect.height - size) * 0.5f, size, size };
 }
 
-static Rect timelineChannelExpandRect(const Rect& rowRect, f32 scale)
+static Rect animationEditorChannelExpandRect(const Rect& rowRect, f32 scale)
 {
 	f32 size = 10.0f * scale;
 
 	return { rowRect.x + 27.0f * scale, rowRect.y + (rowRect.height - size) * 0.5f, size, size };
 }
 
-static Rect timelineChannelBadgeRect(const Rect& rowRect, f32 scale)
+static Rect animationEditorChannelBadgeRect(const Rect& rowRect, f32 scale)
 {
 	f32 height = 14.0f * scale;
 
 	return { rowRect.x + 42.0f * scale, rowRect.y + (rowRect.height - height) * 0.5f, 24.0f * scale, height };
 }
 
-struct TimelineChannelRow
+struct AnimationEditorChannelRow
 {
 	i32 channel = -1;
 	i32 component = -1;
 };
 
-static void timelineBuildChannelRows(const TimelineState& state, std::vector<TimelineChannelRow>& rows)
+static void animationEditorBuildChannelRows(const AnimationEditorState& state, std::vector<AnimationEditorChannelRow>& rows)
 {
 	rows.clear();
 
-	bool showSubChannels = state.viewMode == TimelineViewMode::Curves;
+	bool showSubChannels = state.viewMode == AnimationEditorViewMode::Curves;
 
 	for (i32 channelIndex = 0; channelIndex < (i32)state.channels.size(); channelIndex++)
 	{
-		const TimelineChannel& channel = state.channels[channelIndex];
+		const AnimationEditorChannel& channel = state.channels[channelIndex];
 
 		rows.push_back({ channelIndex, -1 });
 
 		if (showSubChannels && channel.expanded)
 		{
-			i32 components = timelineComponentCount(channel.type);
+			i32 components = animationEditorComponentCount(channel.type);
 
 			if (components > 1)
 			{
@@ -851,10 +851,10 @@ static void timelineBuildChannelRows(const TimelineState& state, std::vector<Tim
 	}
 }
 
-static i32 timelineTotalChannelRows(const TimelineState& state)
+static i32 animationEditorTotalChannelRows(const AnimationEditorState& state)
 {
 	i32 count = 0;
-	bool showSubChannels = state.viewMode == TimelineViewMode::Curves;
+	bool showSubChannels = state.viewMode == AnimationEditorViewMode::Curves;
 
 	for (auto& channel : state.channels)
 	{
@@ -862,7 +862,7 @@ static i32 timelineTotalChannelRows(const TimelineState& state)
 
 		if (showSubChannels && channel.expanded)
 		{
-			i32 components = timelineComponentCount(channel.type);
+			i32 components = animationEditorComponentCount(channel.type);
 
 			if (components > 1)
 				count += components;
@@ -872,30 +872,30 @@ static i32 timelineTotalChannelRows(const TimelineState& state)
 	return count;
 }
 
-static void timelineClampChannelScroll(TimelineState& state, const Rect& listRect, const TimelineSettings& settings)
+static void animationEditorClampChannelScroll(AnimationEditorState& state, const Rect& listRect, const AnimationEditorSettings& settings)
 {
 	f32 visibleHeight = listRect.height / ctx->scale;
-	f32 totalHeight = (f32)timelineTotalChannelRows(state) * settings.rowHeight;
+	f32 totalHeight = (f32)animationEditorTotalChannelRows(state) * settings.rowHeight;
 	f32 maxScroll = std::max(0.0f, totalHeight - visibleHeight);
 
-	state.channelScroll = timelineClamp(state.channelScroll, 0.0f, maxScroll);
+	state.channelScroll = animationEditorClamp(state.channelScroll, 0.0f, maxScroll);
 }
 
-struct TimelineChannelScrollbar
+struct AnimationEditorChannelScrollbar
 {
 	Rect track;
 	Rect thumb;
 	f32 maxScroll = 0.0f;
 };
 
-static TimelineChannelScrollbar timelineGetChannelScrollbar(
-	const TimelineState& state,
-	const TimelineSettings& settings,
+static AnimationEditorChannelScrollbar animationEditorGetChannelScrollbar(
+	const AnimationEditorState& state,
+	const AnimationEditorSettings& settings,
 	const Rect& listRect,
 	f32 rowHeight)
 {
-	TimelineChannelScrollbar scrollbar;
-	f32 contentHeight = (f32)timelineTotalChannelRows(state) * rowHeight;
+	AnimationEditorChannelScrollbar scrollbar;
+	f32 contentHeight = (f32)animationEditorTotalChannelRows(state) * rowHeight;
 
 	if (contentHeight <= listRect.height + 0.5f || listRect.height <= 0.0f)
 		return scrollbar;
@@ -915,25 +915,25 @@ static TimelineChannelScrollbar timelineGetChannelScrollbar(
 	scrollbar.maxScroll = maxScroll;
 
 	f32 travel = std::max(listRect.height - thumbHeight, 1.0f);
-	f32 ratio = maxScroll > 0.0f ? timelineClamp(state.channelScroll / maxScroll, 0.0f, 1.0f) : 0.0f;
+	f32 ratio = maxScroll > 0.0f ? animationEditorClamp(state.channelScroll / maxScroll, 0.0f, 1.0f) : 0.0f;
 	scrollbar.thumb = { scrollbar.track.x, listRect.y + travel * ratio, trackWidth, thumbHeight };
 
 	return scrollbar;
 }
 
-static void timelineClampView(TimelineState& state, const Rect& plotRect, const TimelineSettings& settings)
+static void animationEditorClampView(AnimationEditorState& state, const Rect& plotRect, const AnimationEditorSettings& settings)
 {
-	state.pixelsPerSecond = timelineClamp(state.pixelsPerSecond, settings.minPixelsPerSecond, settings.maxPixelsPerSecond);
+	state.pixelsPerSecond = animationEditorClamp(state.pixelsPerSecond, settings.minPixelsPerSecond, settings.maxPixelsPerSecond);
 
 	f32 pixelsPerSecond = std::max(state.pixelsPerSecond * ctx->scale, 0.0001f);
 	f32 visibleTime = plotRect.width / pixelsPerSecond;
 	f32 maxScrollTime = std::max(state.startTime, state.endTime - visibleTime);
 
-	state.scrollTime = timelineClamp(state.scrollTime, state.startTime, maxScrollTime);
-	state.cursorTime = timelineClamp(state.cursorTime, state.startTime, state.endTime);
+	state.scrollTime = animationEditorClamp(state.scrollTime, state.startTime, maxScrollTime);
+	state.cursorTime = animationEditorClamp(state.cursorTime, state.startTime, state.endTime);
 }
 
-static i32 timelineTargetChannel(const TimelineState& state)
+static i32 animationEditorTargetChannel(const AnimationEditorState& state)
 {
 	if (state.selectedChannel >= 0
 		&& state.selectedChannel < (i32)state.channels.size()
@@ -947,24 +947,24 @@ static i32 timelineTargetChannel(const TimelineState& state)
 	return -1;
 }
 
-static void timelineClearSelection(TimelineState& state)
+static void animationEditorClearSelection(AnimationEditorState& state)
 {
 	for (auto& channel : state.channels)
 		for (auto& key : channel.keys)
 			key.selected = false;
 }
 
-static bool timelineAddKey(TimelineState& state, i32 channelIndex, f32 time, const f32* values, bool select)
+static bool animationEditorAddKey(AnimationEditorState& state, i32 channelIndex, f32 time, const f32* values, bool select)
 {
 	if (channelIndex < 0 || channelIndex >= (i32)state.channels.size())
 		return false;
 
-	TimelineChannel& channel = state.channels[channelIndex];
+	AnimationEditorChannel& channel = state.channels[channelIndex];
 
 	if (!channel.enabled)
 		return false;
 
-	time = timelineSnapTime(state, time);
+	time = animationEditorSnapTime(state, time);
 
 	f32 newValues[4] = { 0, 0, 0, 0 };
 
@@ -975,13 +975,13 @@ static bool timelineAddKey(TimelineState& state, i32 channelIndex, f32 time, con
 	}
 	else
 	{
-		timelineEvaluateChannel(channel, time, newValues);
+		animationEditorEvaluateChannel(channel, time, newValues);
 	}
 
-	i32 components = timelineComponentCount(channel.type);
+	i32 components = animationEditorComponentCount(channel.type);
 
 	for (i32 i = 0; i < 4; i++)
-		newValues[i] = i < components ? timelineQuantizeComponent(channel.type, newValues[i], i) : 0.0f;
+		newValues[i] = i < components ? animationEditorQuantizeComponent(channel.type, newValues[i], i) : 0.0f;
 
 	for (auto& key : channel.keys)
 	{
@@ -995,7 +995,7 @@ static bool timelineAddKey(TimelineState& state, i32 channelIndex, f32 time, con
 
 			if (select)
 			{
-				timelineClearSelection(state);
+				animationEditorClearSelection(state);
 				key.selected = true;
 			}
 
@@ -1005,16 +1005,16 @@ static bool timelineAddKey(TimelineState& state, i32 channelIndex, f32 time, con
 	}
 
 	if (select)
-		timelineClearSelection(state);
+		animationEditorClearSelection(state);
 
-	TimelineKey key;
+	AnimationEditorKey key;
 	key.time = time;
 	key.selected = select;
 
 	for (i32 i = 0; i < 4; i++)
 		key.value[i] = newValues[i];
 
-	auto insertPos = std::lower_bound(channel.keys.begin(), channel.keys.end(), time, [](const TimelineKey& a, f32 value)
+	auto insertPos = std::lower_bound(channel.keys.begin(), channel.keys.end(), time, [](const AnimationEditorKey& a, f32 value)
 	{
 		return a.time < value;
 	});
@@ -1025,7 +1025,7 @@ static bool timelineAddKey(TimelineState& state, i32 channelIndex, f32 time, con
 	return true;
 }
 
-static i32 timelineDeleteSelectedKeys(TimelineState& state)
+static i32 animationEditorDeleteSelectedKeys(AnimationEditorState& state)
 {
 	i32 deleted = 0;
 
@@ -1053,7 +1053,7 @@ static i32 timelineDeleteSelectedKeys(TimelineState& state)
 	return deleted;
 }
 
-static void timelineSelectAll(TimelineState& state)
+static void animationEditorSelectAll(AnimationEditorState& state)
 {
 	for (auto& channel : state.channels)
 	{
@@ -1065,7 +1065,7 @@ static void timelineSelectAll(TimelineState& state)
 	}
 }
 
-static void timelineNudgeSelectedKeys(TimelineState& state, f32 delta)
+static void animationEditorNudgeSelectedKeys(AnimationEditorState& state, f32 delta)
 {
 	for (auto& channel : state.channels)
 	{
@@ -1079,38 +1079,38 @@ static void timelineNudgeSelectedKeys(TimelineState& state, f32 delta)
 			if (!key.selected)
 				continue;
 
-			key.time = timelineClamp(key.time + delta, state.startTime, state.endTime);
+			key.time = animationEditorClamp(key.time + delta, state.startTime, state.endTime);
 			changed = true;
 		}
 
 		if (changed)
-			timelineSortKeys(channel);
+			animationEditorSortKeys(channel);
 	}
 }
 
-static void timelineZoom(TimelineState& state, const TimelineSettings& settings, const Rect& plotRect, f32 factor, f32 anchorX)
+static void animationEditorZoom(AnimationEditorState& state, const AnimationEditorSettings& settings, const Rect& plotRect, f32 factor, f32 anchorX)
 {
 	f32 oldPixelsPerSecond = std::max(state.pixelsPerSecond, 0.0001f);
 	f32 anchorTime = state.scrollTime + (anchorX - plotRect.x) / (oldPixelsPerSecond * ctx->scale);
-	f32 newPixelsPerSecond = timelineClamp(state.pixelsPerSecond * factor, settings.minPixelsPerSecond, settings.maxPixelsPerSecond);
+	f32 newPixelsPerSecond = animationEditorClamp(state.pixelsPerSecond * factor, settings.minPixelsPerSecond, settings.maxPixelsPerSecond);
 
 	state.pixelsPerSecond = newPixelsPerSecond;
 	state.scrollTime = anchorTime - (anchorX - plotRect.x) / (newPixelsPerSecond * ctx->scale);
 }
 
-static void timelineFitView(TimelineState& state, const TimelineSettings& settings, const Rect& plotRect)
+static void animationEditorFitView(AnimationEditorState& state, const AnimationEditorSettings& settings, const Rect& plotRect)
 {
 	f32 timeRange = std::max(state.endTime - state.startTime, 0.001f);
 
 	state.scrollTime = state.startTime;
-	state.pixelsPerSecond = timelineClamp(plotRect.width / (timeRange * ctx->scale), settings.minPixelsPerSecond, settings.maxPixelsPerSecond);
+	state.pixelsPerSecond = animationEditorClamp(plotRect.width / (timeRange * ctx->scale), settings.minPixelsPerSecond, settings.maxPixelsPerSecond);
 }
 
-static u32 timelineBuildToolbar(
+static u32 animationEditorBuildToolbar(
 	Font* font,
 	const Rect& toolbarRect,
-	const TimelineState& state,
-	TimelineToolbarButton* buttons)
+	const AnimationEditorState& state,
+	AnimationEditorToolbarButton* buttons)
 {
 	f32 scale = ctx->scale;
 	f32 x = toolbarRect.x + 4.0f * scale;
@@ -1118,10 +1118,10 @@ static u32 timelineBuildToolbar(
 	f32 height = std::max(toolbarRect.height - 6.0f * scale, 1.0f);
 	u32 count = 0;
 
-	auto addButton = [&](TimelineToolbarAction action, const char* label, bool active, f32 gap)
+	auto addButton = [&](AnimationEditorToolbarAction action, const char* label, bool active, f32 gap)
 	{
 		x += gap * scale;
-		Point textSize = timelineTextSize(font, label);
+		Point textSize = animationEditorTextSize(font, label);
 		f32 width = textSize.x + 16.0f * scale;
 
 		buttons[count].action = action;
@@ -1132,35 +1132,35 @@ static u32 timelineBuildToolbar(
 		x += width + 2.0f * scale;
 	};
 
-	addButton(TimelineTbPlay, state.playing ? "Pause" : "Play", state.playing, 0.0f);
-	addButton(TimelineTbKeys, "Keys", state.viewMode == TimelineViewMode::Keyframes, 6.0f);
-	addButton(TimelineTbCurves, "Curves", state.viewMode == TimelineViewMode::Curves, 6.0f);
-	addButton(TimelineTbAddKey, "+ Key", false, 10.0f);
-	addButton(TimelineTbDeleteKey, "Del", false, 3.0f);
-	addButton(TimelineTbSnap, "Snap", state.snapToFrames, 10.0f);
-	addButton(TimelineTbZoomOut, "-", false, 10.0f);
-	addButton(TimelineTbZoomIn, "+", false, 2.0f);
-	addButton(TimelineTbFit, "Fit", false, 6.0f);
+	addButton(AnimationEditorTbPlay, state.playing ? "Pause" : "Play", state.playing, 0.0f);
+	addButton(AnimationEditorTbKeys, "Keys", state.viewMode == AnimationEditorViewMode::Keyframes, 6.0f);
+	addButton(AnimationEditorTbCurves, "Curves", state.viewMode == AnimationEditorViewMode::Curves, 6.0f);
+	addButton(AnimationEditorTbAddKey, "+ Key", false, 10.0f);
+	addButton(AnimationEditorTbDeleteKey, "Del", false, 3.0f);
+	addButton(AnimationEditorTbSnap, "Snap", state.snapToFrames, 10.0f);
+	addButton(AnimationEditorTbZoomOut, "-", false, 10.0f);
+	addButton(AnimationEditorTbZoomIn, "+", false, 2.0f);
+	addButton(AnimationEditorTbFit, "Fit", false, 6.0f);
 
 	return count;
 }
 
-static TimelineKeyHit timelineFindKeyUnderMouse(
-	TimelineState& state,
-	const TimelineSettings& settings,
+static AnimationEditorKeyHit animationEditorFindKeyUnderMouse(
+	AnimationEditorState& state,
+	const AnimationEditorSettings& settings,
 	const Rect& plotRect,
 	f32 rowsTop,
 	f32 rowHeight,
 	f32 valueMin,
 	f32 valueMax)
 {
-	TimelineKeyHit result;
+	AnimationEditorKeyHit result;
 	f32 hitRadius = std::max(settings.keyHitRadius * ctx->scale, settings.keySize * ctx->scale + 2.0f * ctx->scale);
 	f32 bestDistanceSquared = hitRadius * hitRadius;
 	f32 scale = ctx->scale;
 	Point mouse = ctx->mousePosition;
 
-	if (state.viewMode == TimelineViewMode::Keyframes)
+	if (state.viewMode == AnimationEditorViewMode::Keyframes)
 	{
 		i32 row = (i32)floorf((mouse.y - rowsTop) / std::max(rowHeight, 1.0f));
 
@@ -1172,7 +1172,7 @@ static TimelineKeyHit timelineFindKeyUnderMouse(
 
 		for (i32 i = 0; i < (i32)state.channels[row].keys.size(); i++)
 		{
-			f32 x = timelineTimeToX(state, plotRect, state.channels[row].keys[i].time);
+			f32 x = animationEditorTimeToX(state, plotRect, state.channels[row].keys[i].time);
 			f32 dx = mouse.x - x;
 			f32 distanceSquared = dx * dx + dy * dy;
 
@@ -1193,28 +1193,28 @@ static TimelineKeyHit timelineFindKeyUnderMouse(
 
 		for (i32 channelIndex = 0; channelIndex < (i32)state.channels.size(); channelIndex++)
 		{
-			TimelineChannel& channel = state.channels[channelIndex];
+			AnimationEditorChannel& channel = state.channels[channelIndex];
 
 			if (!channel.enabled)
 				continue;
 
-			i32 components = timelineComponentCount(channel.type);
+			i32 components = animationEditorComponentCount(channel.type);
 
 			for (i32 keyIndex = 0; keyIndex < (i32)channel.keys.size(); keyIndex++)
 			{
-				TimelineKey& key = channel.keys[keyIndex];
+				AnimationEditorKey& key = channel.keys[keyIndex];
 
 				if (key.time < timeLeft - 0.001f || key.time > timeRight + 0.001f)
 					continue;
 
-				f32 x = timelineTimeToX(state, plotRect, key.time);
+				f32 x = animationEditorTimeToX(state, plotRect, key.time);
 
 				for (i32 component = 0; component < components; component++)
 				{
-					if (!timelineComponentVisible(channel, component))
+					if (!animationEditorComponentVisible(channel, component))
 						continue;
 
-					f32 y = timelineValueToY(plotRect, key.value[component], valueMin, valueMax);
+					f32 y = animationEditorValueToY(plotRect, key.value[component], valueMin, valueMax);
 					f32 dx = mouse.x - x;
 					f32 dy = mouse.y - y;
 					f32 distanceSquared = dx * dx + dy * dy;
@@ -1234,8 +1234,8 @@ static TimelineKeyHit timelineFindKeyUnderMouse(
 	return result;
 }
 
-static bool timelineKeyInsideRect(
-	const TimelineState& state,
+static bool animationEditorKeyInsideRect(
+	const AnimationEditorState& state,
 	const Rect& plotRect,
 	const Rect& selectionRect,
 	f32 rowsTop,
@@ -1245,26 +1245,26 @@ static bool timelineKeyInsideRect(
 	i32 channelIndex,
 	i32 keyIndex)
 {
-	const TimelineChannel& channel = state.channels[channelIndex];
-	const TimelineKey& key = channel.keys[keyIndex];
+	const AnimationEditorChannel& channel = state.channels[channelIndex];
+	const AnimationEditorKey& key = channel.keys[keyIndex];
 
-	if (state.viewMode == TimelineViewMode::Keyframes)
+	if (state.viewMode == AnimationEditorViewMode::Keyframes)
 	{
-		f32 x = timelineTimeToX(state, plotRect, key.time);
+		f32 x = animationEditorTimeToX(state, plotRect, key.time);
 		f32 y = rowsTop + (f32)channelIndex * rowHeight + rowHeight * 0.5f;
 
 		return selectionRect.contains({ x, y });
 	}
 
-	i32 components = timelineComponentCount(channel.type);
-	f32 x = timelineTimeToX(state, plotRect, key.time);
+	i32 components = animationEditorComponentCount(channel.type);
+	f32 x = animationEditorTimeToX(state, plotRect, key.time);
 
 	for (i32 component = 0; component < components; component++)
 	{
-		if (!timelineComponentVisible(channel, component))
+		if (!animationEditorComponentVisible(channel, component))
 			continue;
 
-		f32 y = timelineValueToY(plotRect, key.value[component], valueMin, valueMax);
+		f32 y = animationEditorValueToY(plotRect, key.value[component], valueMin, valueMax);
 
 		if (selectionRect.contains({ x, y }))
 			return true;
@@ -1273,18 +1273,18 @@ static bool timelineKeyInsideRect(
 	return false;
 }
 
-bool timeline(const char* id, TimelineState* state, f32 height)
+bool animationEditor(const char* id, AnimationEditorState* state, f32 height)
 {
 	if (!state)
 		return false;
 
 	Settings& settings = ctx->settings;
-	TimelineSettings activeTimelineSettings = settings.timeline;
+	AnimationEditorSettings activeAnimationEditorSettings = settings.animationEditor;
 
-	if (activeTimelineSettings.useThemeColors)
-		timelineApplyThemeColors(activeTimelineSettings);
+	if (activeAnimationEditorSettings.useThemeColors)
+		animationEditorApplyThemeColors(activeAnimationEditorSettings);
 
-	const TimelineSettings& timelineSettings = activeTimelineSettings;
+	const AnimationEditorSettings& animationEditorSettings = activeAnimationEditorSettings;
 	f32 scale = ctx->scale;
 
 	if (height <= 0.0f)
@@ -1292,11 +1292,11 @@ bool timeline(const char* id, TimelineState* state, f32 height)
 		height = (ctx->layout.height - (ctx->position.y - ctx->layout.savedPosition.y)) / scale;
 
 		if (height <= 0.0f)
-			height = timelineSettings.defaultHeight;
+			height = animationEditorSettings.defaultHeight;
 	}
 
 	ctx->id = genId(id);
-	WidgetId timelineId = ctx->id;
+	WidgetId animationEditorId = ctx->id;
 
 	addWidget(height);
 	widgetSetFocusable();
@@ -1311,9 +1311,9 @@ bool timeline(const char* id, TimelineState* state, f32 height)
 		state->endTime = state->startTime + 1.0f;
 
 	if (state->pixelsPerSecond <= 0.0f)
-		state->pixelsPerSecond = timelineSettings.defaultPixelsPerSecond;
+		state->pixelsPerSecond = animationEditorSettings.defaultPixelsPerSecond;
 
-	state->pixelsPerSecond = timelineClamp(state->pixelsPerSecond, timelineSettings.minPixelsPerSecond, timelineSettings.maxPixelsPerSecond);
+	state->pixelsPerSecond = animationEditorClamp(state->pixelsPerSecond, animationEditorSettings.minPixelsPerSecond, animationEditorSettings.maxPixelsPerSecond);
 
 	if (state->frameRate <= 0.0f)
 		state->frameRate = 30.0f;
@@ -1321,7 +1321,7 @@ bool timeline(const char* id, TimelineState* state, f32 height)
 	if (state->selectedChannel < -1 || state->selectedChannel >= (i32)state->channels.size())
 		state->selectedChannel = -1;
 
-	state->cursorTime = timelineClamp(state->cursorTime, state->startTime, state->endTime);
+	state->cursorTime = animationEditorClamp(state->cursorTime, state->startTime, state->endTime);
 
 	if (!disabled && state->playing)
 	{
@@ -1345,17 +1345,17 @@ bool timeline(const char* id, TimelineState* state, f32 height)
 		forceRepaint();
 	}
 
-	auto& runtime = ctx->timelineStates[timelineId];
-	f32 toolbarHeight = timelineSettings.toolbarHeight * scale;
-	f32 rulerHeight = timelineSettings.rulerHeight * scale;
-	f32 rowHeight = timelineSettings.rowHeight * scale;
+	auto& runtime = ctx->animationEditorStates[animationEditorId];
+	f32 toolbarHeight = animationEditorSettings.toolbarHeight * scale;
+	f32 rulerHeight = animationEditorSettings.rulerHeight * scale;
+	f32 rowHeight = animationEditorSettings.rowHeight * scale;
 
 	if (runtime.channelListWidth <= 0.0f)
-		runtime.channelListWidth = timelineSettings.channelListWidth;
+		runtime.channelListWidth = animationEditorSettings.channelListWidth;
 
 	f32 minChannelWidth = std::min(80.0f * scale, outerRect.width * 0.5f);
 	f32 maxChannelWidth = std::max(minChannelWidth, outerRect.width - std::min(120.0f * scale, outerRect.width * 0.5f));
-	f32 channelWidth = timelineClamp(runtime.channelListWidth * scale, minChannelWidth, maxChannelWidth);
+	f32 channelWidth = animationEditorClamp(runtime.channelListWidth * scale, minChannelWidth, maxChannelWidth);
 
 	channelWidth = std::max(channelWidth, std::min(40.0f * scale, outerRect.width));
 
@@ -1376,7 +1376,7 @@ bool timeline(const char* id, TimelineState* state, f32 height)
 		6.0f * scale,
 		outerRect.bottom() - toolbarRect.bottom() };
 
-	f32 axisWidth = state->viewMode == TimelineViewMode::Curves ? timelineSettings.valueAxisWidth * scale : 0.0f;
+	f32 axisWidth = state->viewMode == AnimationEditorViewMode::Curves ? animationEditorSettings.valueAxisWidth * scale : 0.0f;
 
 	axisWidth = std::min(axisWidth, canvasRect.width * 0.6f);
 
@@ -1387,43 +1387,43 @@ bool timeline(const char* id, TimelineState* state, f32 height)
 	f32 valueMin, valueMax;
 
 	if (runtime.valueRangeModeInitialized && !state->autoValueRange && runtime.wasAutoValueRange)
-		timelineComputeAutoValueRange(*state, state->valueMin, state->valueMax);
+		animationEditorComputeAutoValueRange(*state, state->valueMin, state->valueMax);
 
 	runtime.wasAutoValueRange = state->autoValueRange;
 	runtime.valueRangeModeInitialized = true;
-	timelineComputeValueRange(*state, valueMin, valueMax);
+	animationEditorComputeValueRange(*state, valueMin, valueMax);
 
-	timelineClampChannelScroll(*state, listRect, timelineSettings);
-	timelineClampView(*state, plotRect, timelineSettings);
+	animationEditorClampChannelScroll(*state, listRect, animationEditorSettings);
+	animationEditorClampView(*state, plotRect, animationEditorSettings);
 
-	std::vector<TimelineChannelRow> channelRows;
-	timelineBuildChannelRows(*state, channelRows);
+	std::vector<AnimationEditorChannelRow> channelRows;
+	animationEditorBuildChannelRows(*state, channelRows);
 
-	TimelineChannelScrollbar channelScrollbar = timelineGetChannelScrollbar(*state, timelineSettings, listRect, rowHeight);
+	AnimationEditorChannelScrollbar channelScrollbar = animationEditorGetChannelScrollbar(*state, animationEditorSettings, listRect, rowHeight);
 
 	Font* font = ctx->theme->getFont("normal");
 
 	if (!font && !ctx->theme->fonts.empty())
 		font = &ctx->theme->fonts[0]->font;
 
-	TimelineToolbarButton toolbarButtons[TimelineTbCount];
-	u32 toolbarButtonCount = timelineBuildToolbar(font, toolbarRect, *state, toolbarButtons);
+	AnimationEditorToolbarButton toolbarButtons[AnimationEditorTbCount];
+	u32 toolbarButtonCount = animationEditorBuildToolbar(font, toolbarRect, *state, toolbarButtons);
 
 	Point mouse = ctx->mousePosition;
-	bool mouseInTimeline = outerRect.contains(mouse) && ctx->hoveringThisWindow && ctx->isActiveLayer();
+	bool mouseInAnimationEditor = outerRect.contains(mouse) && ctx->hoveringThisWindow && ctx->isActiveLayer();
 	InputEvent event = ctx->event;
 	bool consumed = false;
 
-	if (mouseInTimeline && !ctx->widget.captureId)
+	if (mouseInAnimationEditor && !ctx->widget.captureId)
 	{
-		ctx->widget.hoveredId = timelineId;
+		ctx->widget.hoveredId = animationEditorId;
 		ctx->widget.hovered = true;
 		ctx->widget.hoveredWidgetRect = outerRect;
 	}
 
 	i32 hoveredToolbarButton = -1;
 
-	if (mouseInTimeline && (!ctx->widget.captureId || runtime.pressedToolbarButton >= 0))
+	if (mouseInAnimationEditor && (!ctx->widget.captureId || runtime.pressedToolbarButton >= 0))
 	{
 		for (u32 i = 0; i < toolbarButtonCount; i++)
 		{
@@ -1435,20 +1435,20 @@ bool timeline(const char* id, TimelineState* state, f32 height)
 		}
 	}
 
-	TimelineToolbarField toolbarFields[8];
+	AnimationEditorToolbarField toolbarFields[8];
 	u32 toolbarFieldCount = 0;
 
-	auto focusTimeline = [&]()
+	auto focusAnimationEditor = [&]()
 	{
-		ctx->widget.focusedId = timelineId;
+		ctx->widget.focusedId = animationEditorId;
 		ctx->widget.focused = true;
 		ctx->focusChanged = true;
 	};
 
 	auto beginCapture = [&]()
 	{
-		focusTimeline();
-		ctx->widget.captureId = timelineId;
+		focusAnimationEditor();
+		ctx->widget.captureId = animationEditorId;
 		windowSetCapture();
 	};
 
@@ -1458,11 +1458,11 @@ bool timeline(const char* id, TimelineState* state, f32 height)
 		windowReleaseCapture();
 	};
 
-	auto applyToolbarAction = [&](TimelineToolbarAction action)
+	auto applyToolbarAction = [&](AnimationEditorToolbarAction action)
 	{
 		switch (action)
 		{
-		case TimelineTbPlay:
+		case AnimationEditorTbPlay:
 			state->playing = !state->playing;
 
 			if (state->playing && state->cursorTime >= state->endTime)
@@ -1471,63 +1471,63 @@ bool timeline(const char* id, TimelineState* state, f32 height)
 			changed = true;
 			break;
 
-		case TimelineTbKeys:
-			if (state->viewMode != TimelineViewMode::Keyframes)
+		case AnimationEditorTbKeys:
+			if (state->viewMode != AnimationEditorViewMode::Keyframes)
 			{
-				state->viewMode = TimelineViewMode::Keyframes;
+				state->viewMode = AnimationEditorViewMode::Keyframes;
 				changed = true;
 			}
 			break;
 
-		case TimelineTbCurves:
-			if (state->viewMode != TimelineViewMode::Curves)
+		case AnimationEditorTbCurves:
+			if (state->viewMode != AnimationEditorViewMode::Curves)
 			{
-				state->viewMode = TimelineViewMode::Curves;
+				state->viewMode = AnimationEditorViewMode::Curves;
 				changed = true;
 			}
 			break;
 
-		case TimelineTbAddKey:
+		case AnimationEditorTbAddKey:
 		{
-			i32 channelIndex = timelineTargetChannel(*state);
+			i32 channelIndex = animationEditorTargetChannel(*state);
 
 			if (channelIndex >= 0)
 			{
 				f32 values[4];
-				f32 addTime = timelineSnapTime(*state, state->cursorTime);
+				f32 addTime = animationEditorSnapTime(*state, state->cursorTime);
 
-				timelineEvaluateChannel(state->channels[channelIndex], addTime, values);
-				timelineAddKey(*state, channelIndex, addTime, values, true);
+				animationEditorEvaluateChannel(state->channels[channelIndex], addTime, values);
+				animationEditorAddKey(*state, channelIndex, addTime, values, true);
 				changed = true;
 			}
 			break;
 		}
 
-		case TimelineTbDeleteKey:
-			if (timelineDeleteSelectedKeys(*state) > 0)
+		case AnimationEditorTbDeleteKey:
+			if (animationEditorDeleteSelectedKeys(*state) > 0)
 				changed = true;
 			break;
 
-		case TimelineTbSnap:
+		case AnimationEditorTbSnap:
 			state->snapToFrames = !state->snapToFrames;
 			changed = true;
 			break;
 
-		case TimelineTbZoomOut:
-			timelineZoom(*state, timelineSettings, plotRect, 1.0f / timelineSettings.zoomStep, plotRect.x + plotRect.width * 0.5f);
-			timelineClampView(*state, plotRect, timelineSettings);
+		case AnimationEditorTbZoomOut:
+			animationEditorZoom(*state, animationEditorSettings, plotRect, 1.0f / animationEditorSettings.zoomStep, plotRect.x + plotRect.width * 0.5f);
+			animationEditorClampView(*state, plotRect, animationEditorSettings);
 			changed = true;
 			break;
 
-		case TimelineTbZoomIn:
-			timelineZoom(*state, timelineSettings, plotRect, timelineSettings.zoomStep, plotRect.x + plotRect.width * 0.5f);
-			timelineClampView(*state, plotRect, timelineSettings);
+		case AnimationEditorTbZoomIn:
+			animationEditorZoom(*state, animationEditorSettings, plotRect, animationEditorSettings.zoomStep, plotRect.x + plotRect.width * 0.5f);
+			animationEditorClampView(*state, plotRect, animationEditorSettings);
 			changed = true;
 			break;
 
-		case TimelineTbFit:
-			timelineFitView(*state, timelineSettings, plotRect);
-			timelineClampView(*state, plotRect, timelineSettings);
+		case AnimationEditorTbFit:
+			animationEditorFitView(*state, animationEditorSettings, plotRect);
+			animationEditorClampView(*state, plotRect, animationEditorSettings);
 			changed = true;
 			break;
 
@@ -1561,42 +1561,42 @@ bool timeline(const char* id, TimelineState* state, f32 height)
 			consumed = true;
 		}
 
-		if (!consumed && mouseInTimeline && event.type == InputEvent::Type::MouseWheel)
+		if (!consumed && mouseInAnimationEditor && event.type == InputEvent::Type::MouseWheel)
 		{
 			if (canvasRect.contains(mouse) || rulerRect.contains(mouse))
 			{
-				f32 factor = event.mouse.wheel.y > 0.0f ? timelineSettings.zoomStep : 1.0f / timelineSettings.zoomStep;
+				f32 factor = event.mouse.wheel.y > 0.0f ? animationEditorSettings.zoomStep : 1.0f / animationEditorSettings.zoomStep;
 
-				timelineZoom(*state, timelineSettings, plotRect, factor, mouse.x);
+				animationEditorZoom(*state, animationEditorSettings, plotRect, factor, mouse.x);
 
-				if (!state->autoValueRange && state->viewMode == TimelineViewMode::Curves && plotRect.height > 0.0f)
+				if (!state->autoValueRange && state->viewMode == AnimationEditorViewMode::Curves && plotRect.height > 0.0f)
 				{
 					f32 range = std::max(valueMax - valueMin, 0.0001f) / factor;
-					f32 ratio = timelineClamp((plotRect.bottom() - mouse.y) / plotRect.height, 0.0f, 1.0f);
-					f32 valueAtMouse = timelineYToValue(plotRect, mouse.y, valueMin, valueMax);
+					f32 ratio = animationEditorClamp((plotRect.bottom() - mouse.y) / plotRect.height, 0.0f, 1.0f);
+					f32 valueAtMouse = animationEditorYToValue(plotRect, mouse.y, valueMin, valueMax);
 
 					range = std::max(range, 0.0001f);
 					state->valueMin = valueAtMouse - ratio * range;
 					state->valueMax = state->valueMin + range;
 				}
 
-				timelineClampView(*state, plotRect, timelineSettings);
+				animationEditorClampView(*state, plotRect, animationEditorSettings);
 			}
 			else if (listRect.contains(mouse))
 			{
-				state->channelScroll -= event.mouse.wheel.y * timelineSettings.rowHeight * 0.75f;
-				timelineClampChannelScroll(*state, listRect, timelineSettings);
+				state->channelScroll -= event.mouse.wheel.y * animationEditorSettings.rowHeight * 0.75f;
+				animationEditorClampChannelScroll(*state, listRect, animationEditorSettings);
 			}
 
 			consumed = true;
 		}
 
-		if (!consumed && mouseInTimeline && event.type == InputEvent::Type::MouseDown)
+		if (!consumed && mouseInAnimationEditor && event.type == InputEvent::Type::MouseDown)
 		{
 			if (event.mouse.button == MouseButton::Middle
 				&& (canvasRect.contains(mouse) || rulerRect.contains(mouse)))
 			{
-				runtime.dragType = TimelineWidgetState::DragType::Pan;
+				runtime.dragType = AnimationEditorWidgetState::DragType::Pan;
 				runtime.dragStartMouse = mouse;
 				runtime.panStartScrollTime = state->scrollTime;
 				runtime.panStartValueMin = valueMin;
@@ -1606,19 +1606,19 @@ bool timeline(const char* id, TimelineState* state, f32 height)
 			}
 			else if (event.mouse.button == MouseButton::Left)
 			{
-				TimelineTangentHit tangentHit;
+				AnimationEditorTangentHit tangentHit;
 
-				if (state->viewMode == TimelineViewMode::Curves && canvasRect.contains(mouse))
-					tangentHit = timelineFindTangentHandle(*state, timelineSettings, plotRect, valueMin, valueMax, mouse);
+				if (state->viewMode == AnimationEditorViewMode::Curves && canvasRect.contains(mouse))
+					tangentHit = animationEditorFindTangentHandle(*state, animationEditorSettings, plotRect, valueMin, valueMax, mouse);
 
 				if (tangentHit.channel >= 0)
 				{
-					TimelineChannel& channel = state->channels[tangentHit.channel];
+					AnimationEditorChannel& channel = state->channels[tangentHit.channel];
 
-					timelineMakeKeyTangentsManual(channel, tangentHit.key);
+					animationEditorMakeKeyTangentsManual(channel, tangentHit.key);
 					runtime.dragType = tangentHit.outgoing
-						? TimelineWidgetState::DragType::TangentOut
-						: TimelineWidgetState::DragType::TangentIn;
+						? AnimationEditorWidgetState::DragType::TangentOut
+						: AnimationEditorWidgetState::DragType::TangentIn;
 					runtime.dragChannel = tangentHit.channel;
 					runtime.dragKey = tangentHit.key;
 					runtime.dragComponent = tangentHit.component;
@@ -1630,7 +1630,7 @@ bool timeline(const char* id, TimelineState* state, f32 height)
 				}
 				else if (channelSplitterRect.contains(mouse))
 				{
-					runtime.dragType = TimelineWidgetState::DragType::ChannelResize;
+					runtime.dragType = AnimationEditorWidgetState::DragType::ChannelResize;
 					beginCapture();
 					consumed = true;
 				}
@@ -1641,7 +1641,7 @@ bool timeline(const char* id, TimelineState* state, f32 height)
 						if (!channelScrollbar.thumb.contains(mouse))
 						{
 							f32 travel = std::max(channelScrollbar.track.height - channelScrollbar.thumb.height, 1.0f);
-							f32 ratio = timelineClamp(
+							f32 ratio = animationEditorClamp(
 								(mouse.y - channelScrollbar.track.y - channelScrollbar.thumb.height * 0.5f) / travel,
 								0.0f,
 								1.0f);
@@ -1649,7 +1649,7 @@ bool timeline(const char* id, TimelineState* state, f32 height)
 							state->channelScroll = ratio * channelScrollbar.maxScroll;
 						}
 
-						runtime.dragType = TimelineWidgetState::DragType::ChannelScroll;
+						runtime.dragType = AnimationEditorWidgetState::DragType::ChannelScroll;
 						runtime.dragStartMouse = mouse;
 						runtime.dragStartChannelScroll = state->channelScroll;
 						beginCapture();
@@ -1668,19 +1668,19 @@ bool timeline(const char* id, TimelineState* state, f32 height)
 
 						if (rowRect.contains(mouse))
 						{
-							const TimelineChannelRow& rowInfo = channelRows[rowIndex];
-							TimelineChannel& channel = state->channels[rowInfo.channel];
+							const AnimationEditorChannelRow& rowInfo = channelRows[rowIndex];
+							AnimationEditorChannel& channel = state->channels[rowInfo.channel];
 							bool controlDown = has(event.mouse.modifiers, KeyModifiers::Control);
 
-							if (rowInfo.component < 0 && timelineChannelCheckboxRect(rowRect, scale).contains(mouse))
+							if (rowInfo.component < 0 && animationEditorChannelCheckboxRect(rowRect, scale).contains(mouse))
 							{
 								channel.enabled = !channel.enabled;
 								changed = true;
 							}
 							else if (rowInfo.component < 0
-								&& state->viewMode == TimelineViewMode::Curves
-								&& timelineComponentCount(channel.type) > 1
-								&& timelineChannelExpandRect(rowRect, scale).contains(mouse))
+								&& state->viewMode == AnimationEditorViewMode::Curves
+								&& animationEditorComponentCount(channel.type) > 1
+								&& animationEditorChannelExpandRect(rowRect, scale).contains(mouse))
 							{
 								channel.expanded = !channel.expanded;
 								changed = true;
@@ -1704,7 +1704,7 @@ bool timeline(const char* id, TimelineState* state, f32 height)
 									}
 
 									channel.selected = true;
-									timelineClearSelection(*state);
+									animationEditorClearSelection(*state);
 								}
 							}
 							else
@@ -1727,19 +1727,19 @@ bool timeline(const char* id, TimelineState* state, f32 height)
 
 									channel.selected = false;
 									channel.selectedComponents = (1u << rowInfo.component);
-									timelineClearSelection(*state);
+									animationEditorClearSelection(*state);
 								}
 							}
 
-							focusTimeline();
+							focusAnimationEditor();
 							consumed = true;
 						}
 					}
 				}
 				else if (rulerRect.contains(mouse))
 				{
-					state->cursorTime = timelineSnapTime(*state, timelineXToTime(*state, plotRect, mouse.x));
-					runtime.dragType = TimelineWidgetState::DragType::Playhead;
+					state->cursorTime = animationEditorSnapTime(*state, animationEditorXToTime(*state, plotRect, mouse.x));
+					runtime.dragType = AnimationEditorWidgetState::DragType::Playhead;
 					beginCapture();
 					changed = true;
 					consumed = true;
@@ -1747,11 +1747,11 @@ bool timeline(const char* id, TimelineState* state, f32 height)
 				else if (canvasRect.contains(mouse))
 				{
 					f32 rowsTop = canvasRect.y - state->channelScroll * scale;
-					TimelineKeyHit hit = timelineFindKeyUnderMouse(*state, timelineSettings, plotRect, rowsTop, rowHeight, valueMin, valueMax);
+					AnimationEditorKeyHit hit = animationEditorFindKeyUnderMouse(*state, animationEditorSettings, plotRect, rowsTop, rowHeight, valueMin, valueMax);
 
 					if (hit.channel >= 0)
 					{
-						TimelineChannel& channel = state->channels[hit.channel];
+						AnimationEditorChannel& channel = state->channels[hit.channel];
 						bool controlDown = has(event.mouse.modifiers, KeyModifiers::Control);
 
 						if (controlDown)
@@ -1762,7 +1762,7 @@ bool timeline(const char* id, TimelineState* state, f32 height)
 						}
 						else if (!channel.keys[hit.key].selected)
 						{
-							timelineClearSelection(*state);
+							animationEditorClearSelection(*state);
 							channel.keys[hit.key].selected = true;
 							state->selectedChannel = hit.channel;
 							changed = true;
@@ -1774,32 +1774,32 @@ bool timeline(const char* id, TimelineState* state, f32 height)
 
 						if (channel.keys[hit.key].selected)
 						{
-							runtime.dragType = TimelineWidgetState::DragType::Keys;
+							runtime.dragType = AnimationEditorWidgetState::DragType::Keys;
 							runtime.dragChannel = hit.channel;
 							runtime.dragComponent = hit.component;
 							runtime.dragStartMouse = mouse;
-							runtime.dragStartTime = timelineXToTime(*state, plotRect, mouse.x);
+							runtime.dragStartTime = animationEditorXToTime(*state, plotRect, mouse.x);
 							runtime.dragValueMin = valueMin;
 							runtime.dragValueMax = valueMax;
-							runtime.dragStartValue = timelineYToValue(plotRect, mouse.y, valueMin, valueMax);
+							runtime.dragStartValue = animationEditorYToValue(plotRect, mouse.y, valueMin, valueMax);
 							runtime.dragStartEndTime = state->endTime;
 							runtime.dragItems.clear();
 
 							for (i32 channelIndex = 0; channelIndex < (i32)state->channels.size(); channelIndex++)
 							{
-								TimelineChannel& selectedChannel = state->channels[channelIndex];
+								AnimationEditorChannel& selectedChannel = state->channels[channelIndex];
 
 								if (!selectedChannel.enabled)
 									continue;
 
 								for (i32 keyIndex = 0; keyIndex < (i32)selectedChannel.keys.size(); keyIndex++)
 								{
-									TimelineKey& key = selectedChannel.keys[keyIndex];
+									AnimationEditorKey& key = selectedChannel.keys[keyIndex];
 
 									if (!key.selected)
 										continue;
 
-									TimelineKeyDragItem item;
+									AnimationEditorKeyDragItem item;
 
 									item.channel = channelIndex;
 									item.key = keyIndex;
@@ -1818,7 +1818,7 @@ bool timeline(const char* id, TimelineState* state, f32 height)
 							{
 								for (i32 channelIndex = 0; channelIndex < (i32)state->channels.size(); channelIndex++)
 								{
-									TimelineChannel& rippleChannel = state->channels[channelIndex];
+									AnimationEditorChannel& rippleChannel = state->channels[channelIndex];
 									f32 minSelectedTime = FLT_MAX;
 									f32 maxSelectedTime = -FLT_MAX;
 									bool hasSelectedKey = false;
@@ -1841,7 +1841,7 @@ bool timeline(const char* id, TimelineState* state, f32 height)
 
 									for (i32 keyIndex = 0; keyIndex < (i32)rippleChannel.keys.size(); keyIndex++)
 									{
-										TimelineKey& key = rippleChannel.keys[keyIndex];
+										AnimationEditorKey& key = rippleChannel.keys[keyIndex];
 
 										if (key.selected)
 											continue;
@@ -1852,7 +1852,7 @@ bool timeline(const char* id, TimelineState* state, f32 height)
 										if (!leftSide && !rightSide)
 											continue;
 
-										TimelineKeyDragItem item;
+										AnimationEditorKeyDragItem item;
 
 										item.channel = channelIndex;
 										item.key = keyIndex;
@@ -1873,7 +1873,7 @@ bool timeline(const char* id, TimelineState* state, f32 height)
 						i32 channelIndex = -1;
 						i32 component = 0;
 
-						if (state->viewMode == TimelineViewMode::Keyframes)
+						if (state->viewMode == AnimationEditorViewMode::Keyframes)
 						{
 							i32 row = (i32)floorf((mouse.y - rowsTop) / std::max(rowHeight, 1.0f));
 
@@ -1882,18 +1882,18 @@ bool timeline(const char* id, TimelineState* state, f32 height)
 						}
 						else
 						{
-							channelIndex = timelineTargetChannel(*state);
+							channelIndex = animationEditorTargetChannel(*state);
 
 							if (channelIndex >= 0)
 							{
-								TimelineChannel& channel = state->channels[channelIndex];
-								i32 components = timelineComponentCount(channel.type);
+								AnimationEditorChannel& channel = state->channels[channelIndex];
+								i32 components = animationEditorComponentCount(channel.type);
 								f32 bestDistance = FLT_MAX;
 
 								for (i32 i = 0; i < components; i++)
 								{
-									f32 value = timelineEvaluateComponent(channel, i, timelineXToTime(*state, plotRect, mouse.x));
-									f32 y = timelineValueToY(plotRect, value, valueMin, valueMax);
+									f32 value = animationEditorEvaluateComponent(channel, i, animationEditorXToTime(*state, plotRect, mouse.x));
+									f32 y = animationEditorValueToY(plotRect, value, valueMin, valueMax);
 									f32 distance = fabsf(mouse.y - y);
 
 									if (distance < bestDistance)
@@ -1908,14 +1908,14 @@ bool timeline(const char* id, TimelineState* state, f32 height)
 						if (channelIndex >= 0)
 						{
 							f32 values[4];
-							f32 addTime = timelineSnapTime(*state, timelineXToTime(*state, plotRect, mouse.x));
+							f32 addTime = animationEditorSnapTime(*state, animationEditorXToTime(*state, plotRect, mouse.x));
 
-							timelineEvaluateChannel(state->channels[channelIndex], addTime, values);
+							animationEditorEvaluateChannel(state->channels[channelIndex], addTime, values);
 
-							if (state->viewMode == TimelineViewMode::Curves)
-								values[component] = timelineYToValue(plotRect, mouse.y, valueMin, valueMax);
+							if (state->viewMode == AnimationEditorViewMode::Curves)
+								values[component] = animationEditorYToValue(plotRect, mouse.y, valueMin, valueMax);
 
-							timelineAddKey(*state, channelIndex, addTime, values, true);
+							animationEditorAddKey(*state, channelIndex, addTime, values, true);
 							changed = true;
 						}
 
@@ -1923,11 +1923,11 @@ bool timeline(const char* id, TimelineState* state, f32 height)
 					}
 					else
 					{
-						f32 playheadX = timelineTimeToX(*state, plotRect, state->cursorTime);
+						f32 playheadX = animationEditorTimeToX(*state, plotRect, state->cursorTime);
 
 						if (fabsf(mouse.x - playheadX) <= 5.0f * scale)
 						{
-							runtime.dragType = TimelineWidgetState::DragType::Playhead;
+							runtime.dragType = AnimationEditorWidgetState::DragType::Playhead;
 							beginCapture();
 							changed = true;
 						}
@@ -1937,11 +1937,11 @@ bool timeline(const char* id, TimelineState* state, f32 height)
 
 							if (!controlDown)
 							{
-								timelineClearSelection(*state);
+								animationEditorClearSelection(*state);
 								changed = true;
 							}
 
-							runtime.dragType = TimelineWidgetState::DragType::BoxSelect;
+							runtime.dragType = AnimationEditorWidgetState::DragType::BoxSelect;
 							runtime.boxStart = mouse;
 							runtime.boxEnd = mouse;
 							beginCapture();
@@ -1953,20 +1953,20 @@ bool timeline(const char* id, TimelineState* state, f32 height)
 			}
 		}
 
-		if (event.type == InputEvent::Type::MouseMove && runtime.dragType != TimelineWidgetState::DragType::None)
+		if (event.type == InputEvent::Type::MouseMove && runtime.dragType != AnimationEditorWidgetState::DragType::None)
 		{
 			switch (runtime.dragType)
 			{
-			case TimelineWidgetState::DragType::Playhead:
-				state->cursorTime = timelineSnapTime(*state, timelineXToTime(*state, plotRect, mouse.x));
+			case AnimationEditorWidgetState::DragType::Playhead:
+				state->cursorTime = animationEditorSnapTime(*state, animationEditorXToTime(*state, plotRect, mouse.x));
 				changed = true;
 				consumed = true;
 				break;
 
-			case TimelineWidgetState::DragType::Pan:
+			case AnimationEditorWidgetState::DragType::Pan:
 				state->scrollTime = runtime.panStartScrollTime - (mouse.x - runtime.dragStartMouse.x) / (state->pixelsPerSecond * scale);
 
-				if (!state->autoValueRange && state->viewMode == TimelineViewMode::Curves && plotRect.height > 0.0f)
+				if (!state->autoValueRange && state->viewMode == AnimationEditorViewMode::Curves && plotRect.height > 0.0f)
 				{
 					f32 range = runtime.panStartValueMax - runtime.panStartValueMin;
 					f32 valueDelta = (mouse.y - runtime.dragStartMouse.y) / plotRect.height * range;
@@ -1975,28 +1975,28 @@ bool timeline(const char* id, TimelineState* state, f32 height)
 					state->valueMax = runtime.panStartValueMax + valueDelta;
 				}
 
-				timelineClampView(*state, plotRect, timelineSettings);
+				animationEditorClampView(*state, plotRect, animationEditorSettings);
 				changed = true;
 				consumed = true;
 				break;
 
-			case TimelineWidgetState::DragType::ChannelResize:
+			case AnimationEditorWidgetState::DragType::ChannelResize:
 			{
 				f32 minWidth = 80.0f;
 				f32 maxWidth = std::max(minWidth, outerRect.width / scale - std::min(120.0f, outerRect.width / scale * 0.5f));
 
-				runtime.channelListWidth = timelineClamp((mouse.x - outerRect.x) / scale, minWidth, maxWidth);
+				runtime.channelListWidth = animationEditorClamp((mouse.x - outerRect.x) / scale, minWidth, maxWidth);
 				consumed = true;
 				break;
 			}
 
-			case TimelineWidgetState::DragType::ChannelScroll:
+			case AnimationEditorWidgetState::DragType::ChannelScroll:
 			{
-				TimelineChannelScrollbar scrollbar = timelineGetChannelScrollbar(*state, timelineSettings, listRect, rowHeight);
+				AnimationEditorChannelScrollbar scrollbar = animationEditorGetChannelScrollbar(*state, animationEditorSettings, listRect, rowHeight);
 				f32 travel = std::max(scrollbar.track.height - scrollbar.thumb.height, 1.0f);
 
 				if (scrollbar.maxScroll > 0.0f)
-					state->channelScroll = timelineClamp(
+					state->channelScroll = animationEditorClamp(
 						runtime.dragStartChannelScroll + (mouse.y - runtime.dragStartMouse.y) / travel * scrollbar.maxScroll,
 						0.0f,
 						scrollbar.maxScroll);
@@ -2005,22 +2005,22 @@ bool timeline(const char* id, TimelineState* state, f32 height)
 				break;
 			}
 
-			case TimelineWidgetState::DragType::TangentIn:
-			case TimelineWidgetState::DragType::TangentOut:
+			case AnimationEditorWidgetState::DragType::TangentIn:
+			case AnimationEditorWidgetState::DragType::TangentOut:
 			{
 				if (runtime.dragChannel < 0 || runtime.dragChannel >= (i32)state->channels.size())
 					break;
 
-				TimelineChannel& channel = state->channels[runtime.dragChannel];
+				AnimationEditorChannel& channel = state->channels[runtime.dragChannel];
 
 				if (runtime.dragKey < 0 || runtime.dragKey >= (i32)channel.keys.size()
 					|| runtime.dragComponent < 0 || runtime.dragComponent >= 4)
 					break;
 
-				TimelineKey& key = channel.keys[runtime.dragKey];
-				f32 mouseTime = timelineXToTime(*state, plotRect, mouse.x);
-				f32 mouseValue = timelineYToValue(plotRect, mouse.y, runtime.dragValueMin, runtime.dragValueMax);
-				bool outgoing = runtime.dragType == TimelineWidgetState::DragType::TangentOut;
+				AnimationEditorKey& key = channel.keys[runtime.dragKey];
+				f32 mouseTime = animationEditorXToTime(*state, plotRect, mouse.x);
+				f32 mouseValue = animationEditorYToValue(plotRect, mouse.y, runtime.dragValueMin, runtime.dragValueMax);
+				bool outgoing = runtime.dragType == AnimationEditorWidgetState::DragType::TangentOut;
 				f32 duration = outgoing ? mouseTime - key.time : key.time - mouseTime;
 				f32 valueDelta = outgoing ? mouseValue - key.value[runtime.dragComponent] : key.value[runtime.dragComponent] - mouseValue;
 
@@ -2041,14 +2041,14 @@ bool timeline(const char* id, TimelineState* state, f32 height)
 				break;
 			}
 
-			case TimelineWidgetState::DragType::Keys:
+			case AnimationEditorWidgetState::DragType::Keys:
 			{
-				f32 newTime = timelineXToTime(*state, plotRect, mouse.x);
+				f32 newTime = animationEditorXToTime(*state, plotRect, mouse.x);
 				f32 timeDelta = newTime - runtime.dragStartTime;
 				f32 valueDelta = 0.0f;
 
-				if (state->viewMode == TimelineViewMode::Curves && runtime.dragComponent >= 0)
-					valueDelta = timelineYToValue(plotRect, mouse.y, runtime.dragValueMin, runtime.dragValueMax) - runtime.dragStartValue;
+				if (state->viewMode == AnimationEditorViewMode::Curves && runtime.dragComponent >= 0)
+					valueDelta = animationEditorYToValue(plotRect, mouse.y, runtime.dragValueMin, runtime.dragValueMax) - runtime.dragStartValue;
 
 				bool moved = false;
 				f32 newEndTime = runtime.dragStartEndTime;
@@ -2058,15 +2058,15 @@ bool timeline(const char* id, TimelineState* state, f32 height)
 					if (item.channel < 0 || item.channel >= (i32)state->channels.size())
 						continue;
 
-					TimelineChannel& channel = state->channels[item.channel];
+					AnimationEditorChannel& channel = state->channels[item.channel];
 
 					if (!channel.enabled || item.key < 0 || item.key >= (i32)channel.keys.size())
 						continue;
 
-					TimelineKey& key = channel.keys[item.key];
+					AnimationEditorKey& key = channel.keys[item.key];
 					f32 time = state->extendEndTime
-						? timelineSnapTimeNoMax(*state, item.time + timeDelta)
-						: timelineSnapTime(*state, item.time + timeDelta);
+						? animationEditorSnapTimeNoMax(*state, item.time + timeDelta)
+						: animationEditorSnapTime(*state, item.time + timeDelta);
 
 					if (state->extendEndTime)
 						newEndTime = std::max(newEndTime, time);
@@ -2080,9 +2080,9 @@ bool timeline(const char* id, TimelineState* state, f32 height)
 					if (valueDelta != 0.0f
 						&& item.channel == runtime.dragChannel
 						&& runtime.dragComponent >= 0
-						&& runtime.dragComponent < timelineComponentCount(channel.type))
+						&& runtime.dragComponent < animationEditorComponentCount(channel.type))
 					{
-						f32 value = timelineQuantizeComponent(channel.type, item.value[runtime.dragComponent] + valueDelta, runtime.dragComponent);
+						f32 value = animationEditorQuantizeComponent(channel.type, item.value[runtime.dragComponent] + valueDelta, runtime.dragComponent);
 
 						if (value != key.value[runtime.dragComponent])
 						{
@@ -2097,16 +2097,16 @@ bool timeline(const char* id, TimelineState* state, f32 height)
 					if (item.channel < 0 || item.channel >= (i32)state->channels.size())
 						continue;
 
-					TimelineChannel& channel = state->channels[item.channel];
+					AnimationEditorChannel& channel = state->channels[item.channel];
 
 					if (item.key < 0 || item.key >= (i32)channel.keys.size())
 						continue;
 
-					TimelineKey& key = channel.keys[item.key];
+					AnimationEditorKey& key = channel.keys[item.key];
 					f32 itemDelta = item.leftSide ? std::min(timeDelta, 0.0f) : std::max(timeDelta, 0.0f);
 					f32 time = state->extendEndTime
-						? timelineSnapTimeNoMax(*state, item.time + itemDelta)
-						: timelineSnapTime(*state, item.time + itemDelta);
+						? animationEditorSnapTimeNoMax(*state, item.time + itemDelta)
+						: animationEditorSnapTime(*state, item.time + itemDelta);
 
 					if (state->extendEndTime)
 						newEndTime = std::max(newEndTime, time);
@@ -2126,7 +2126,7 @@ bool timeline(const char* id, TimelineState* state, f32 height)
 
 				if (moved)
 				{
-					timelineReorderDraggedKeys(runtime, state->channels);
+					animationEditorReorderDraggedKeys(runtime, state->channels);
 					changed = true;
 					ctx->widget.changeEnded = true;
 				}
@@ -2135,7 +2135,7 @@ bool timeline(const char* id, TimelineState* state, f32 height)
 				break;
 			}
 
-			case TimelineWidgetState::DragType::BoxSelect:
+			case AnimationEditorWidgetState::DragType::BoxSelect:
 				runtime.boxEnd = mouse;
 				consumed = true;
 				break;
@@ -2145,14 +2145,14 @@ bool timeline(const char* id, TimelineState* state, f32 height)
 			}
 		}
 
-		if (event.type == InputEvent::Type::MouseUp && runtime.dragType != TimelineWidgetState::DragType::None)
+		if (event.type == InputEvent::Type::MouseUp && runtime.dragType != AnimationEditorWidgetState::DragType::None)
 		{
-			if (runtime.dragType == TimelineWidgetState::DragType::Keys)
+			if (runtime.dragType == AnimationEditorWidgetState::DragType::Keys)
 			{
 				for (auto& channel : state->channels)
-					timelineSortKeys(channel);
+					animationEditorSortKeys(channel);
 			}
-			else if (runtime.dragType == TimelineWidgetState::DragType::BoxSelect)
+			else if (runtime.dragType == AnimationEditorWidgetState::DragType::BoxSelect)
 			{
 				Rect selectionRect = {
 					std::min(runtime.boxStart.x, runtime.boxEnd.x),
@@ -2171,14 +2171,14 @@ bool timeline(const char* id, TimelineState* state, f32 height)
 
 					for (i32 channelIndex = 0; channelIndex < (i32)state->channels.size(); channelIndex++)
 					{
-						TimelineChannel& channel = state->channels[channelIndex];
+						AnimationEditorChannel& channel = state->channels[channelIndex];
 
 						if (!channel.enabled)
 							continue;
 
 						for (i32 keyIndex = 0; keyIndex < (i32)channel.keys.size(); keyIndex++)
 						{
-							if (timelineKeyInsideRect(*state, plotRect, selectionRect, rowsTop, rowHeight, valueMin, valueMax, channelIndex, keyIndex))
+							if (animationEditorKeyInsideRect(*state, plotRect, selectionRect, rowsTop, rowHeight, valueMin, valueMax, channelIndex, keyIndex))
 							{
 								channel.keys[keyIndex].selected = true;
 								state->selectedChannel = channelIndex;
@@ -2190,7 +2190,7 @@ bool timeline(const char* id, TimelineState* state, f32 height)
 				}
 			}
 
-			runtime.dragType = TimelineWidgetState::DragType::None;
+			runtime.dragType = AnimationEditorWidgetState::DragType::None;
 			runtime.dragChannel = -1;
 			runtime.dragKey = -1;
 			runtime.dragComponent = -1;
@@ -2204,8 +2204,8 @@ bool timeline(const char* id, TimelineState* state, f32 height)
 			&& event.type == InputEvent::Type::Key
 			&& event.key.down
 			&& !ctx->textInput.id
-			&& (ctx->widget.focusedId == timelineId
-				|| (event.key.code == KeyCode::Space && mouseInTimeline)))
+			&& (ctx->widget.focusedId == animationEditorId
+				|| (event.key.code == KeyCode::Space && mouseInAnimationEditor)))
 		{
 			bool controlDown = has(event.key.modifiers, KeyModifiers::Control);
 			bool shiftDown = has(event.key.modifiers, KeyModifiers::Shift);
@@ -2214,7 +2214,7 @@ bool timeline(const char* id, TimelineState* state, f32 height)
 			{
 			case KeyCode::Delete:
 			case KeyCode::Backspace:
-				if (timelineDeleteSelectedKeys(*state) > 0)
+				if (animationEditorDeleteSelectedKeys(*state) > 0)
 					changed = true;
 
 				consumed = true;
@@ -2223,7 +2223,7 @@ bool timeline(const char* id, TimelineState* state, f32 height)
 			case KeyCode::A:
 				if (controlDown)
 				{
-					timelineSelectAll(*state);
+					animationEditorSelectAll(*state);
 					changed = true;
 					consumed = true;
 				}
@@ -2238,7 +2238,7 @@ bool timeline(const char* id, TimelineState* state, f32 height)
 				if (shiftDown)
 					delta *= 10.0f;
 
-				timelineNudgeSelectedKeys(*state, delta);
+				animationEditorNudgeSelectedKeys(*state, delta);
 				changed = true;
 				consumed = true;
 				break;
@@ -2267,8 +2267,8 @@ bool timeline(const char* id, TimelineState* state, f32 height)
 				break;
 
 			case KeyCode::Esc:
-				timelineClearSelection(*state);
-				runtime.dragType = TimelineWidgetState::DragType::None;
+				animationEditorClearSelection(*state);
+				runtime.dragType = AnimationEditorWidgetState::DragType::None;
 				runtime.dragItems.clear();
 				runtime.rippleItems.clear();
 				endCapture();
@@ -2277,8 +2277,8 @@ bool timeline(const char* id, TimelineState* state, f32 height)
 				break;
 
 			case KeyCode::F:
-				timelineFitView(*state, timelineSettings, plotRect);
-				timelineClampView(*state, plotRect, timelineSettings);
+				animationEditorFitView(*state, animationEditorSettings, plotRect);
+				animationEditorClampView(*state, plotRect, animationEditorSettings);
 				changed = true;
 				consumed = true;
 				break;
@@ -2303,34 +2303,34 @@ bool timeline(const char* id, TimelineState* state, f32 height)
 	}
 
 	// update the geometry for a mode change, the toolbar active states and the curves value range after input
-	axisWidth = state->viewMode == TimelineViewMode::Curves ? timelineSettings.valueAxisWidth * scale : 0.0f;
+	axisWidth = state->viewMode == AnimationEditorViewMode::Curves ? animationEditorSettings.valueAxisWidth * scale : 0.0f;
 	axisWidth = std::min(axisWidth, canvasRect.width * 0.6f);
 	plotRect = { canvasRect.x + axisWidth, canvasRect.y, canvasRect.width - axisWidth, canvasRect.height };
 	plotRect.width = std::max(plotRect.width, 1.0f);
 
-	timelineClampView(*state, plotRect, timelineSettings);
+	animationEditorClampView(*state, plotRect, animationEditorSettings);
 
-	toolbarButtonCount = timelineBuildToolbar(font, toolbarRect, *state, toolbarButtons);
-	toolbarFieldCount = timelineBuildToolbarFields(toolbarRect, toolbarButtons, toolbarButtonCount, timelineSettings, *state, toolbarFields, 8);
+	toolbarButtonCount = animationEditorBuildToolbar(font, toolbarRect, *state, toolbarButtons);
+	toolbarFieldCount = animationEditorBuildToolbarFields(toolbarRect, toolbarButtons, toolbarButtonCount, animationEditorSettings, *state, toolbarFields, 8);
 
-	if (runtime.dragType == TimelineWidgetState::DragType::Keys && state->viewMode == TimelineViewMode::Curves)
+	if (runtime.dragType == AnimationEditorWidgetState::DragType::Keys && state->viewMode == AnimationEditorViewMode::Curves)
 	{
 		valueMin = runtime.dragValueMin;
 		valueMax = runtime.dragValueMax;
 	}
 	else
 	{
-		timelineComputeValueRange(*state, valueMin, valueMax);
+		animationEditorComputeValueRange(*state, valueMin, valueMax);
 	}
 
 	// drawing
 	ctx->renderer.pushClipRect(outerRect);
 
-	Color backgroundColor = timelineSettings.backgroundColor;
-	Color headerColor = timelineSettings.headerColor;
-	Color channelListColor = timelineSettings.channelListColor;
-	Color textColor = timelineSettings.textColor;
-	Color dimTextColor = timelineSettings.dimTextColor;
+	Color backgroundColor = animationEditorSettings.backgroundColor;
+	Color headerColor = animationEditorSettings.headerColor;
+	Color channelListColor = animationEditorSettings.channelListColor;
+	Color textColor = animationEditorSettings.textColor;
+	Color dimTextColor = animationEditorSettings.dimTextColor;
 
 	if (disabled)
 	{
@@ -2355,7 +2355,7 @@ bool timeline(const char* id, TimelineState* state, f32 height)
 	ctx->renderer.cmdSetColor(backgroundColor);
 	ctx->renderer.cmdDrawFilledRectangle(canvasRect);
 
-	if (state->viewMode == TimelineViewMode::Curves && axisWidth > 0.0f)
+	if (state->viewMode == AnimationEditorViewMode::Curves && axisWidth > 0.0f)
 	{
 		ctx->renderer.cmdSetColor(channelListColor);
 		ctx->renderer.cmdDrawFilledRectangle({ canvasRect.x, canvasRect.y, axisWidth, canvasRect.height });
@@ -2368,7 +2368,7 @@ bool timeline(const char* id, TimelineState* state, f32 height)
 		bool hovered = (i32)i == hoveredToolbarButton;
 		bool pressed = (i32)i == runtime.pressedToolbarButton;
 
-		timelineDrawButton(font, toolbarButtons[i].rect, toolbarButtons[i].label, toolbarButtons[i].active, hovered, pressed, timelineSettings.toolbarToggleColor);
+		animationEditorDrawButton(font, toolbarButtons[i].rect, toolbarButtons[i].label, toolbarButtons[i].active, hovered, pressed, animationEditorSettings.toolbarToggleColor);
 	}
 
 	if (toolbarFieldCount == 0 && toolbarRect.width > 520.0f * scale)
@@ -2380,22 +2380,22 @@ bool timeline(const char* id, TimelineState* state, f32 height)
 
 		char status[160];
 
-		snprintf(status, sizeof(status), "t %.3fs   keys %d   zoom %.0f%%", state->cursorTime, totalKeys, state->pixelsPerSecond / timelineSettings.defaultPixelsPerSecond * 100.0f);
+		snprintf(status, sizeof(status), "t %.3fs   keys %d   zoom %.0f%%", state->cursorTime, totalKeys, state->pixelsPerSecond / animationEditorSettings.defaultPixelsPerSecond * 100.0f);
 
 		Rect statusRect = { toolbarRect.right() - 330.0f * scale, toolbarRect.y, 320.0f * scale, toolbarRect.height };
 
-		timelineDrawText(font, status, statusRect, dimTextColor, HAlignType::Right);
+		animationEditorDrawText(font, status, statusRect, dimTextColor, HAlignType::Right);
 	}
 
 	ctx->renderer.popClipRect();
 
-	timelineDrawText(font, "Channels", { listHeaderRect.x + 8.0f * scale, listHeaderRect.y, std::max(listHeaderRect.width - 64.0f * scale, 0.0f), listHeaderRect.height }, textColor, HAlignType::Left);
+	animationEditorDrawText(font, "Channels", { listHeaderRect.x + 8.0f * scale, listHeaderRect.y, std::max(listHeaderRect.width - 64.0f * scale, 0.0f), listHeaderRect.height }, textColor, HAlignType::Left);
 
 	{
 		char countText[32];
 
 		snprintf(countText, sizeof(countText), "%u", (u32)state->channels.size());
-		timelineDrawText(font, countText, { listHeaderRect.right() - 56.0f * scale, listHeaderRect.y, 48.0f * scale, listHeaderRect.height }, dimTextColor, HAlignType::Right);
+		animationEditorDrawText(font, countText, { listHeaderRect.right() - 56.0f * scale, listHeaderRect.y, 48.0f * scale, listHeaderRect.height }, dimTextColor, HAlignType::Right);
 	}
 
 	f32 listScrollOffset = state->channelScroll * scale;
@@ -2405,43 +2405,43 @@ bool timeline(const char* id, TimelineState* state, f32 height)
 
 	for (u32 rowIndex = 0; rowIndex < channelRows.size(); rowIndex++)
 	{
-		const TimelineChannelRow& rowInfo = channelRows[rowIndex];
-		TimelineChannel& channel = state->channels[rowInfo.channel];
+		const AnimationEditorChannelRow& rowInfo = channelRows[rowIndex];
+		AnimationEditorChannel& channel = state->channels[rowInfo.channel];
 		Rect rowRect = { listRect.x, rowsTop + (f32)rowIndex * rowHeight, listRect.width, rowHeight };
 
 		if (rowRect.bottom() < listRect.y || rowRect.y > listRect.bottom())
 			continue;
 
 		bool isParent = rowInfo.component < 0;
-		bool visible = isParent ? timelineChannelHasVisibleComponent(channel) : timelineComponentVisible(channel, rowInfo.component);
+		bool visible = isParent ? animationEditorChannelHasVisibleComponent(channel) : animationEditorComponentVisible(channel, rowInfo.component);
 
 		if (visible)
 		{
-			ctx->renderer.cmdSetColor(timelineSettings.rowSelectedColor);
+			ctx->renderer.cmdSetColor(animationEditorSettings.rowSelectedColor);
 			ctx->renderer.cmdDrawFilledRectangle(rowRect);
 		}
 		else if (rowIndex % 2 != 0)
 		{
-			ctx->renderer.cmdSetColor(timelineSettings.rowAlternateColor);
+			ctx->renderer.cmdSetColor(animationEditorSettings.rowAlternateColor);
 			ctx->renderer.cmdDrawFilledRectangle(rowRect);
 		}
 
 		if (!channel.enabled)
 		{
-			Color overlay = timelineSettings.disabledOverlayColor;
+			Color overlay = animationEditorSettings.disabledOverlayColor;
 
 			overlay.a *= 0.5f;
 			ctx->renderer.cmdSetColor(overlay);
 			ctx->renderer.cmdDrawFilledRectangle(rowRect);
 		}
 
-		Color channelColor = timelineChannelColor(rowInfo.channel);
+		Color channelColor = animationEditorChannelColor(rowInfo.channel);
 		Color nameColor = channel.enabled ? textColor : dimTextColor;
 
 		if (isParent)
 		{
-			Rect checkboxRect = timelineChannelCheckboxRect(rowRect, scale);
-			Rect badgeRect = timelineChannelBadgeRect(rowRect, scale);
+			Rect checkboxRect = animationEditorChannelCheckboxRect(rowRect, scale);
+			Rect badgeRect = animationEditorChannelBadgeRect(rowRect, scale);
 			Rect nameRect = { badgeRect.right() + 6.0f * scale, rowRect.y, rowRect.width - (badgeRect.right() - rowRect.x) - 56.0f * scale, rowRect.height };
 
 			nameRect.width = std::max(nameRect.width, 0.0f);
@@ -2449,11 +2449,11 @@ bool timeline(const char* id, TimelineState* state, f32 height)
 			if (!channel.enabled)
 				channelColor.a *= 0.45f;
 
-			timelineDrawCheckbox(checkboxRect, channel.enabled, disabled);
+			animationEditorDrawCheckbox(checkboxRect, channel.enabled, disabled);
 
-			if (state->viewMode == TimelineViewMode::Curves && timelineComponentCount(channel.type) > 1)
+			if (state->viewMode == AnimationEditorViewMode::Curves && animationEditorComponentCount(channel.type) > 1)
 			{
-				Rect expandRect = timelineChannelExpandRect(rowRect, scale);
+				Rect expandRect = animationEditorChannelExpandRect(rowRect, scale);
 				Point center = { expandRect.x + expandRect.width * 0.5f, expandRect.y + expandRect.height * 0.5f };
 				f32 s = 3.0f * scale;
 				Point p1, p2, p3;
@@ -2477,59 +2477,59 @@ bool timeline(const char* id, TimelineState* state, f32 height)
 			Color badgeBackground = { channelColor.r * 0.22f, channelColor.g * 0.22f, channelColor.b * 0.22f, channel.enabled ? 0.9f : 0.4f };
 			ctx->renderer.cmdSetColor(badgeBackground);
 			ctx->renderer.cmdDrawFilledRectangle(badgeRect);
-			timelineDrawText(font, timelineTypeBadge(channel.type), badgeRect, channelColor, HAlignType::Center, false);
+			animationEditorDrawText(font, animationEditorTypeBadge(channel.type), badgeRect, channelColor, HAlignType::Center, false);
 
 			const char* channelName = channel.name.empty() ? "Unnamed" : channel.name.c_str();
 
-			timelineDrawText(font, channelName, nameRect, nameColor, HAlignType::Left);
+			animationEditorDrawText(font, channelName, nameRect, nameColor, HAlignType::Left);
 
 			char keyCount[32];
 
 			snprintf(keyCount, sizeof(keyCount), "%u", (u32)channel.keys.size());
-			timelineDrawText(font, keyCount, { rowRect.right() - 46.0f * scale, rowRect.y, 28.0f * scale, rowRect.height }, dimTextColor, HAlignType::Right);
+			animationEditorDrawText(font, keyCount, { rowRect.right() - 46.0f * scale, rowRect.y, 28.0f * scale, rowRect.height }, dimTextColor, HAlignType::Right);
 		}
 		else
 		{
 			i32 component = rowInfo.component;
-			const char* axis = timelineComponentLabel(channel.type, component);
+			const char* axis = animationEditorComponentLabel(channel.type, component);
 			char label[128];
 
 			snprintf(label, sizeof(label), "%s.%s", channel.name.empty() ? "Unnamed" : channel.name.c_str(), axis);
 
-			Color componentColor = timelineChannelColor(rowInfo.channel, component);
+			Color componentColor = animationEditorChannelColor(rowInfo.channel, component);
 			Point dot = { rowRect.x + 64.0f * scale, rowRect.y + rowRect.height * 0.5f };
 
-			timelineDrawDiamond(dot, 3.5f * scale, componentColor);
-			timelineDrawText(font, label, { rowRect.x + 74.0f * scale, rowRect.y, rowRect.width - 74.0f * scale - 110.0f * scale, rowRect.height }, nameColor, HAlignType::Left);
+			animationEditorDrawDiamond(dot, 3.5f * scale, componentColor);
+			animationEditorDrawText(font, label, { rowRect.x + 74.0f * scale, rowRect.y, rowRect.width - 74.0f * scale - 110.0f * scale, rowRect.height }, nameColor, HAlignType::Left);
 
 			char valueText[32];
-			f32 value = timelineEvaluateComponent(channel, component, state->cursorTime);
+			f32 value = animationEditorEvaluateComponent(channel, component, state->cursorTime);
 
-			if (channel.type == TimelineKeyType::Int)
+			if (channel.type == AnimationEditorKeyType::Int)
 				snprintf(valueText, sizeof(valueText), "%.0f", value);
 			else
 				snprintf(valueText, sizeof(valueText), "%.3f", value);
 
-			timelineDrawText(font, valueText, { rowRect.right() - 104.0f * scale, rowRect.y, 56.0f * scale, rowRect.height }, dimTextColor, HAlignType::Right);
+			animationEditorDrawText(font, valueText, { rowRect.right() - 104.0f * scale, rowRect.y, 56.0f * scale, rowRect.height }, dimTextColor, HAlignType::Right);
 		}
 
 		{
 			Point dot = { rowRect.right() - 14.0f * scale, rowRect.y + rowRect.height * 0.5f };
-			Color dotColor = timelineChannelColor(rowInfo.channel, rowInfo.component);
+			Color dotColor = animationEditorChannelColor(rowInfo.channel, rowInfo.component);
 			bool selected = isParent
-				? timelineChannelHasVisibleComponent(channel)
-				: timelineComponentVisible(channel, rowInfo.component);
+				? animationEditorChannelHasVisibleComponent(channel)
+				: animationEditorComponentVisible(channel, rowInfo.component);
 
 			if (!selected)
 			{
-				dotColor = timelineSettings.dimTextColor;
+				dotColor = animationEditorSettings.dimTextColor;
 				dotColor.a = 0.35f;
 			}
 
-			timelineDrawDiamond(dot, 4.0f * scale, dotColor);
+			animationEditorDrawDiamond(dot, 4.0f * scale, dotColor);
 		}
 
-		ctx->renderer.cmdSetLineStyle(LineStyle(timelineSettings.gridColor, scale));
+		ctx->renderer.cmdSetLineStyle(LineStyle(animationEditorSettings.gridColor, scale));
 		ctx->renderer.cmdDrawLine({ rowRect.x, rowRect.bottom() }, { rowRect.right(), rowRect.bottom() });
 	}
 
@@ -2537,19 +2537,19 @@ bool timeline(const char* id, TimelineState* state, f32 height)
 
 	// channel list scrollbar
 	{
-		TimelineChannelScrollbar scrollbar = timelineGetChannelScrollbar(*state, timelineSettings, listRect, rowHeight);
+		AnimationEditorChannelScrollbar scrollbar = animationEditorGetChannelScrollbar(*state, animationEditorSettings, listRect, rowHeight);
 
 		if (scrollbar.maxScroll > 0.0f)
 		{
-			ctx->renderer.cmdSetColor(Color{ timelineSettings.textColor.r, timelineSettings.textColor.g, timelineSettings.textColor.b, 0.1f });
+			ctx->renderer.cmdSetColor(Color{ animationEditorSettings.textColor.r, animationEditorSettings.textColor.g, animationEditorSettings.textColor.b, 0.1f });
 			ctx->renderer.cmdDrawFilledRectangle(scrollbar.track);
-			ctx->renderer.cmdSetColor(Color{ timelineSettings.textColor.r, timelineSettings.textColor.g, timelineSettings.textColor.b, 0.4f });
+			ctx->renderer.cmdSetColor(Color{ animationEditorSettings.textColor.r, animationEditorSettings.textColor.g, animationEditorSettings.textColor.b, 0.4f });
 			ctx->renderer.cmdDrawFilledRectangle(scrollbar.thumb);
 		}
 	}
 
 	// keyframe row backgrounds
-	if (state->viewMode == TimelineViewMode::Keyframes)
+	if (state->viewMode == AnimationEditorViewMode::Keyframes)
 	{
 		ctx->renderer.pushClipRect(canvasRect);
 
@@ -2562,16 +2562,16 @@ bool timeline(const char* id, TimelineState* state, f32 height)
 
 			if (i == state->selectedChannel)
 			{
-				ctx->renderer.cmdSetColor(timelineSettings.rowSelectedColor);
+				ctx->renderer.cmdSetColor(animationEditorSettings.rowSelectedColor);
 				ctx->renderer.cmdDrawFilledRectangle(rowRect);
 			}
 			else if (i % 2 != 0)
 			{
-				ctx->renderer.cmdSetColor(timelineSettings.rowAlternateColor);
+				ctx->renderer.cmdSetColor(animationEditorSettings.rowAlternateColor);
 				ctx->renderer.cmdDrawFilledRectangle(rowRect);
 			}
 
-			ctx->renderer.cmdSetLineStyle(LineStyle(timelineSettings.gridColor, scale));
+			ctx->renderer.cmdSetLineStyle(LineStyle(animationEditorSettings.gridColor, scale));
 			ctx->renderer.cmdDrawLine({ rowRect.x, rowRect.bottom() }, { rowRect.right(), rowRect.bottom() });
 		}
 
@@ -2582,11 +2582,11 @@ bool timeline(const char* id, TimelineState* state, f32 height)
 	f32 pixelsPerSecond = state->pixelsPerSecond * scale;
 	f32 timeLeft = state->scrollTime;
 	f32 timeRight = timeLeft + plotRect.width / std::max(pixelsPerSecond, 0.0001f);
-	f32 majorStep = timelineNiceStep(80.0f * scale / std::max(pixelsPerSecond, 0.0001f));
+	f32 majorStep = animationEditorNiceStep(80.0f * scale / std::max(pixelsPerSecond, 0.0001f));
 	f32 minorStep = majorStep / 5.0f;
 	i32 decimals = (i32)ceilf(-log10f(majorStep));
 
-	decimals = (i32)timelineClamp((f32)decimals, 0.0f, 4.0f);
+	decimals = (i32)animationEditorClamp((f32)decimals, 0.0f, 4.0f);
 
 	ctx->renderer.pushClipRect(canvasRect);
 
@@ -2596,29 +2596,29 @@ bool timeline(const char* id, TimelineState* state, f32 height)
 	for (i32 i = minorStart; i <= minorEnd; i++)
 	{
 		f32 time = (f32)i * minorStep;
-		f32 x = timelineTimeToX(*state, plotRect, time);
+		f32 x = animationEditorTimeToX(*state, plotRect, time);
 
 		if (x < plotRect.x - 1.0f || x > plotRect.right() + 1.0f)
 			continue;
 
 		bool major = (i % 5) == 0;
 
-		ctx->renderer.cmdSetLineStyle(LineStyle(major ? timelineSettings.gridStrongColor : timelineSettings.gridColor, scale));
+		ctx->renderer.cmdSetLineStyle(LineStyle(major ? animationEditorSettings.gridStrongColor : animationEditorSettings.gridColor, scale));
 		ctx->renderer.cmdDrawLine({ x, canvasRect.y }, { x, canvasRect.bottom() });
 	}
 
 	ctx->renderer.popClipRect();
 
 	// value grid in curves mode
-	if (state->viewMode == TimelineViewMode::Curves)
+	if (state->viewMode == AnimationEditorViewMode::Curves)
 	{
 		ctx->renderer.pushClipRect(canvasRect);
 
 		f32 valueRange = valueMax - valueMin;
-		f32 valueStep = timelineNiceStep(valueRange / std::max(2.0f, floorf(plotRect.height / (34.0f * scale))));
+		f32 valueStep = animationEditorNiceStep(valueRange / std::max(2.0f, floorf(plotRect.height / (34.0f * scale))));
 		i32 valueDecimals = (i32)ceilf(-log10f(valueStep));
 
-		valueDecimals = (i32)timelineClamp((f32)valueDecimals, 0.0f, 4.0f);
+		valueDecimals = (i32)animationEditorClamp((f32)valueDecimals, 0.0f, 4.0f);
 
 		i32 valueStart = (i32)floorf(valueMin / valueStep);
 		i32 valueEnd = (i32)ceilf(valueMax / valueStep);
@@ -2626,12 +2626,12 @@ bool timeline(const char* id, TimelineState* state, f32 height)
 		for (i32 i = valueStart; i <= valueEnd; i++)
 		{
 			f32 value = (f32)i * valueStep;
-			f32 y = timelineValueToY(plotRect, value, valueMin, valueMax);
+			f32 y = animationEditorValueToY(plotRect, value, valueMin, valueMax);
 
 			if (y < plotRect.y - 1.0f || y > plotRect.bottom() + 1.0f)
 				continue;
 
-			Color gridColor = fabsf(value) < valueStep * 0.01f ? timelineSettings.gridStrongColor : timelineSettings.gridColor;
+			Color gridColor = fabsf(value) < valueStep * 0.01f ? animationEditorSettings.gridStrongColor : animationEditorSettings.gridColor;
 
 			ctx->renderer.cmdSetLineStyle(LineStyle(gridColor, scale));
 			ctx->renderer.cmdDrawLine({ plotRect.x, y }, { plotRect.right(), y });
@@ -2639,10 +2639,10 @@ bool timeline(const char* id, TimelineState* state, f32 height)
 			char valueText[32];
 
 			snprintf(valueText, sizeof(valueText), "%.*f", valueDecimals, value);
-			timelineDrawText(font, valueText, { canvasRect.x + 2.0f * scale, y - 8.0f * scale, axisWidth - 8.0f * scale, 16.0f * scale }, dimTextColor, HAlignType::Right);
+			animationEditorDrawText(font, valueText, { canvasRect.x + 2.0f * scale, y - 8.0f * scale, axisWidth - 8.0f * scale, 16.0f * scale }, dimTextColor, HAlignType::Right);
 		}
 
-		ctx->renderer.cmdSetLineStyle(LineStyle(timelineSettings.gridStrongColor, scale));
+		ctx->renderer.cmdSetLineStyle(LineStyle(animationEditorSettings.gridStrongColor, scale));
 		ctx->renderer.cmdDrawLine({ plotRect.x, canvasRect.y }, { plotRect.x, canvasRect.bottom() });
 
 		ctx->renderer.popClipRect();
@@ -2655,14 +2655,14 @@ bool timeline(const char* id, TimelineState* state, f32 height)
 	{
 		bool major = (i % 5) == 0;
 		f32 time = (f32)i * minorStep;
-		f32 x = timelineTimeToX(*state, plotRect, time);
+		f32 x = animationEditorTimeToX(*state, plotRect, time);
 
 		if (x < plotRect.x - 1.0f || x > plotRect.right() + 1.0f)
 			continue;
 
 		f32 tickLength = (major ? 6.0f : 3.0f) * scale;
 
-		ctx->renderer.cmdSetLineStyle(LineStyle(major ? timelineSettings.gridStrongColor : timelineSettings.gridColor, scale));
+		ctx->renderer.cmdSetLineStyle(LineStyle(major ? animationEditorSettings.gridStrongColor : animationEditorSettings.gridColor, scale));
 		ctx->renderer.cmdDrawLine({ x, rulerRect.bottom() - tickLength }, { x, rulerRect.bottom() });
 
 		if (major)
@@ -2670,65 +2670,65 @@ bool timeline(const char* id, TimelineState* state, f32 height)
 			char timeText[32];
 
 			snprintf(timeText, sizeof(timeText), "%.*f", decimals, time);
-			timelineDrawText(font, timeText, { x + 3.0f * scale, rulerRect.y, 70.0f * scale, rulerRect.height - 4.0f * scale }, dimTextColor, HAlignType::Left);
+			animationEditorDrawText(font, timeText, { x + 3.0f * scale, rulerRect.y, 70.0f * scale, rulerRect.height - 4.0f * scale }, dimTextColor, HAlignType::Left);
 		}
 	}
 
 	ctx->renderer.popClipRect();
 
-	TimelineTangentHit hoveredTangent;
+	AnimationEditorTangentHit hoveredTangent;
 
-	if (!disabled && state->viewMode == TimelineViewMode::Curves && mouseInTimeline)
-		hoveredTangent = timelineFindTangentHandle(*state, timelineSettings, plotRect, valueMin, valueMax, mouse);
+	if (!disabled && state->viewMode == AnimationEditorViewMode::Curves && mouseInAnimationEditor)
+		hoveredTangent = animationEditorFindTangentHandle(*state, animationEditorSettings, plotRect, valueMin, valueMax, mouse);
 
 	// curves and keys
-	if (state->viewMode == TimelineViewMode::Curves)
+	if (state->viewMode == AnimationEditorViewMode::Curves)
 	{
 		ctx->renderer.pushClipRect(plotRect);
 
 		for (i32 channelIndex = 0; channelIndex < (i32)state->channels.size(); channelIndex++)
 		{
-			TimelineChannel& channel = state->channels[channelIndex];
+			AnimationEditorChannel& channel = state->channels[channelIndex];
 
 			if (!channel.enabled || channel.keys.empty())
 				continue;
 
-			i32 components = timelineComponentCount(channel.type);
+			i32 components = animationEditorComponentCount(channel.type);
 
 			for (i32 component = 0; component < components; component++)
 			{
-				if (!timelineComponentVisible(channel, component))
+				if (!animationEditorComponentVisible(channel, component))
 					continue;
 
 				std::vector<Point> points;
 
 				points.reserve(channel.keys.size() + 2);
 
-				if (channel.type == TimelineKeyType::Bool || channel.type == TimelineKeyType::Int)
+				if (channel.type == AnimationEditorKeyType::Bool || channel.type == AnimationEditorKeyType::Int)
 				{
-					f32 previousValue = timelineQuantizeComponent(channel.type, timelineEvaluateComponent(channel, component, timeLeft), component);
+					f32 previousValue = animationEditorQuantizeComponent(channel.type, animationEditorEvaluateComponent(channel, component, timeLeft), component);
 
-					points.push_back({ plotRect.x, timelineValueToY(plotRect, previousValue, valueMin, valueMax) });
+					points.push_back({ plotRect.x, animationEditorValueToY(plotRect, previousValue, valueMin, valueMax) });
 
 					for (auto& key : channel.keys)
 					{
 						if (key.time < timeLeft || key.time > timeRight)
 							continue;
 
-						f32 value = timelineQuantizeComponent(channel.type, key.value[component], component);
+						f32 value = animationEditorQuantizeComponent(channel.type, key.value[component], component);
 
 						// a key with the same value as the previous one adds no step
 						if (value == previousValue)
 							continue;
 
-						f32 x = timelineTimeToX(*state, plotRect, key.time);
+						f32 x = animationEditorTimeToX(*state, plotRect, key.time);
 
-						points.push_back({ x, timelineValueToY(plotRect, previousValue, valueMin, valueMax) });
+						points.push_back({ x, animationEditorValueToY(plotRect, previousValue, valueMin, valueMax) });
 						previousValue = value;
-						points.push_back({ x, timelineValueToY(plotRect, previousValue, valueMin, valueMax) });
+						points.push_back({ x, animationEditorValueToY(plotRect, previousValue, valueMin, valueMax) });
 					}
 
-					points.push_back({ plotRect.right(), timelineValueToY(plotRect, previousValue, valueMin, valueMax) });
+					points.push_back({ plotRect.right(), animationEditorValueToY(plotRect, previousValue, valueMin, valueMax) });
 				}
 				else
 				{
@@ -2739,23 +2739,23 @@ bool timeline(const char* id, TimelineState* state, f32 height)
 					{
 						f32 ratio = (f32)sample / (f32)sampleCount;
 						f32 sampleTime = timeLeft + (timeRight - timeLeft) * ratio;
-						f32 value = timelineEvaluateComponent(channel, component, sampleTime);
+						f32 value = animationEditorEvaluateComponent(channel, component, sampleTime);
 
-						points.push_back({ plotRect.x + plotRect.width * ratio, timelineValueToY(plotRect, value, valueMin, valueMax) });
+						points.push_back({ plotRect.x + plotRect.width * ratio, animationEditorValueToY(plotRect, value, valueMin, valueMax) });
 					}
 				}
 
 				if (points.size() < 2)
 					continue;
 
-				Color color = timelineChannelColor(channelIndex, component);
+				Color color = animationEditorChannelColor(channelIndex, component);
 
 				if (channelIndex == state->selectedChannel)
 					color.a = 1.0f;
 				else
 					color.a = 0.85f;
 
-				f32 lineWidth = timelineSettings.curveLineWidth * scale;
+				f32 lineWidth = animationEditorSettings.curveLineWidth * scale;
 
 				ctx->renderer.cmdSetLineStyle(LineStyle(color, lineWidth));
 				ctx->renderer.cmdDrawPolyLine(points.data(), (u32)points.size(), false);
@@ -2763,45 +2763,45 @@ bool timeline(const char* id, TimelineState* state, f32 height)
 		}
 
 		// tangent handles of the selected keys
-		f32 handlePixels = timelineSettings.tangentHandleLength * scale;
+		f32 handlePixels = animationEditorSettings.tangentHandleLength * scale;
 
 		for (i32 channelIndex = 0; channelIndex < (i32)state->channels.size(); channelIndex++)
 		{
-			TimelineChannel& channel = state->channels[channelIndex];
+			AnimationEditorChannel& channel = state->channels[channelIndex];
 
 			if (!channel.enabled || channel.keys.empty()
-				|| channel.type == TimelineKeyType::Bool || channel.type == TimelineKeyType::Int)
+				|| channel.type == AnimationEditorKeyType::Bool || channel.type == AnimationEditorKeyType::Int)
 				continue;
 
-			i32 components = timelineComponentCount(channel.type);
+			i32 components = animationEditorComponentCount(channel.type);
 
 			for (i32 keyIndex = 0; keyIndex < (i32)channel.keys.size(); keyIndex++)
 			{
-				TimelineKey& key = channel.keys[keyIndex];
+				AnimationEditorKey& key = channel.keys[keyIndex];
 
 				if (!key.selected)
 					continue;
 
 				Point keyPoint = {
-					timelineTimeToX(*state, plotRect, key.time),
-					timelineValueToY(plotRect, key.value[0], valueMin, valueMax) };
+					animationEditorTimeToX(*state, plotRect, key.time),
+					animationEditorValueToY(plotRect, key.value[0], valueMin, valueMax) };
 
 				for (i32 component = 0; component < components; component++)
 				{
-					if (!timelineComponentVisible(channel, component))
+					if (!animationEditorComponentVisible(channel, component))
 						continue;
 
-					Color color = timelineChannelColor(channelIndex, component);
+					Color color = animationEditorChannelColor(channelIndex, component);
 					Color lineColor = color;
 					lineColor.a = 0.55f;
 					Point componentPoint = {
 						keyPoint.x,
-						timelineValueToY(plotRect, key.value[component], valueMin, valueMax) };
+						animationEditorValueToY(plotRect, key.value[component], valueMin, valueMax) };
 
 					for (i32 side = 0; side < 2; side++)
 					{
 						bool outgoing = side == 0;
-						Point handle = timelineTangentHandlePosition(*state, channel, keyIndex, component, outgoing, plotRect, valueMin, valueMax, handlePixels);
+						Point handle = animationEditorTangentHandlePosition(*state, channel, keyIndex, component, outgoing, plotRect, valueMin, valueMax, handlePixels);
 						bool hovered = hoveredTangent.channel == channelIndex
 							&& hoveredTangent.key == keyIndex
 							&& hoveredTangent.component == component
@@ -2811,9 +2811,9 @@ bool timeline(const char* id, TimelineState* state, f32 height)
 						ctx->renderer.cmdDrawLine(componentPoint, handle);
 
 						if (hovered)
-							timelineDrawDiamond(handle, (timelineSettings.tangentHandleRadius + 3.0f) * scale, { 1, 1, 1, 0.45f });
+							animationEditorDrawDiamond(handle, (animationEditorSettings.tangentHandleRadius + 3.0f) * scale, { 1, 1, 1, 0.45f });
 
-						timelineDrawDiamond(handle, timelineSettings.tangentHandleRadius * scale * (hovered ? 1.25f : 1.0f), color);
+						animationEditorDrawDiamond(handle, animationEditorSettings.tangentHandleRadius * scale * (hovered ? 1.25f : 1.0f), color);
 					}
 				}
 			}
@@ -2824,61 +2824,61 @@ bool timeline(const char* id, TimelineState* state, f32 height)
 
 	// hovered key
 	f32 rowsTopForHitTest = canvasRect.y - state->channelScroll * scale;
-	TimelineKeyHit hoveredKey = mouseInTimeline && canvasRect.contains(mouse)
-		? timelineFindKeyUnderMouse(*state, timelineSettings, plotRect, rowsTopForHitTest, rowHeight, valueMin, valueMax)
-		: TimelineKeyHit();
+	AnimationEditorKeyHit hoveredKey = mouseInAnimationEditor && canvasRect.contains(mouse)
+		? animationEditorFindKeyUnderMouse(*state, animationEditorSettings, plotRect, rowsTopForHitTest, rowHeight, valueMin, valueMax)
+		: AnimationEditorKeyHit();
 
 	// keys
 	ctx->renderer.pushClipRect(canvasRect);
 
-	if (state->viewMode == TimelineViewMode::Keyframes)
+	if (state->viewMode == AnimationEditorViewMode::Keyframes)
 	{
 		for (i32 channelIndex = 0; channelIndex < (i32)state->channels.size(); channelIndex++)
 		{
-			TimelineChannel& channel = state->channels[channelIndex];
+			AnimationEditorChannel& channel = state->channels[channelIndex];
 
 			if (!channel.enabled)
 				continue;
 
 			f32 centerY = rowsTop + (f32)channelIndex * rowHeight + rowHeight * 0.5f;
-			Color channelColor = timelineChannelColor(channelIndex);
+			Color channelColor = animationEditorChannelColor(channelIndex);
 
 			if (channel.keys.size() > 1)
 			{
 				Color lineColor = channelColor;
 
-				ctx->renderer.cmdSetLineStyle(LineStyle(lineColor, timelineSettings.keyframeLineWidth * scale));
+				ctx->renderer.cmdSetLineStyle(LineStyle(lineColor, animationEditorSettings.keyframeLineWidth * scale));
 				ctx->renderer.cmdDrawLine(
-					{ timelineTimeToX(*state, plotRect, channel.keys.front().time), centerY },
-					{ timelineTimeToX(*state, plotRect, channel.keys.back().time), centerY });
+					{ animationEditorTimeToX(*state, plotRect, channel.keys.front().time), centerY },
+					{ animationEditorTimeToX(*state, plotRect, channel.keys.back().time), centerY });
 			}
 
 			for (i32 keyIndex = 0; keyIndex < (i32)channel.keys.size(); keyIndex++)
 			{
-				TimelineKey& key = channel.keys[keyIndex];
-				f32 x = timelineTimeToX(*state, plotRect, key.time);
+				AnimationEditorKey& key = channel.keys[keyIndex];
+				f32 x = animationEditorTimeToX(*state, plotRect, key.time);
 
-				if (x < plotRect.x - timelineSettings.keySize * scale || x > plotRect.right() + timelineSettings.keySize * scale)
+				if (x < plotRect.x - animationEditorSettings.keySize * scale || x > plotRect.right() + animationEditorSettings.keySize * scale)
 					continue;
 
 				bool hovered = hoveredKey.channel == channelIndex && hoveredKey.key == keyIndex;
-				f32 radius = timelineSettings.keySize * scale;
+				f32 radius = animationEditorSettings.keySize * scale;
 
 				if (hovered)
-					timelineDrawDiamond({ x, centerY }, radius * 1.9f, { 1, 1, 1, 0.35f });
+					animationEditorDrawDiamond({ x, centerY }, radius * 1.9f, { 1, 1, 1, 0.35f });
 
 				if (key.selected)
 				{
-					timelineDrawDiamond({ x, centerY }, radius * 1.55f, timelineSettings.keySelectedColor);
-					timelineDrawDiamond({ x, centerY }, radius, channelColor);
+					animationEditorDrawDiamond({ x, centerY }, radius * 1.55f, animationEditorSettings.keySelectedColor);
+					animationEditorDrawDiamond({ x, centerY }, radius, channelColor);
 				}
 				else
 				{
-					timelineDrawDiamond({ x, centerY }, radius, channelColor);
+					animationEditorDrawDiamond({ x, centerY }, radius, channelColor);
 				}
 
 				if (key.tag[0])
-					timelineDrawKeyTag(font, key.tag, x + radius + 4.0f * scale, centerY, timelineSettings, scale);
+					animationEditorDrawKeyTag(font, key.tag, x + radius + 4.0f * scale, centerY, animationEditorSettings, scale);
 			}
 		}
 	}
@@ -2886,51 +2886,51 @@ bool timeline(const char* id, TimelineState* state, f32 height)
 	{
 		for (i32 channelIndex = 0; channelIndex < (i32)state->channels.size(); channelIndex++)
 		{
-			TimelineChannel& channel = state->channels[channelIndex];
+			AnimationEditorChannel& channel = state->channels[channelIndex];
 
 			if (!channel.enabled)
 				continue;
 
-			i32 components = timelineComponentCount(channel.type);
+			i32 components = animationEditorComponentCount(channel.type);
 
 			for (i32 component = 0; component < components; component++)
 			{
-				if (!timelineComponentVisible(channel, component))
+				if (!animationEditorComponentVisible(channel, component))
 					continue;
 
-				Color componentColor = timelineChannelColor(channelIndex, component);
+				Color componentColor = animationEditorChannelColor(channelIndex, component);
 
 				for (i32 keyIndex = 0; keyIndex < (i32)channel.keys.size(); keyIndex++)
 				{
-					TimelineKey& key = channel.keys[keyIndex];
-					f32 x = timelineTimeToX(*state, plotRect, key.time);
+					AnimationEditorKey& key = channel.keys[keyIndex];
+					f32 x = animationEditorTimeToX(*state, plotRect, key.time);
 
-					if (x < plotRect.x - timelineSettings.keySize * scale || x > plotRect.right() + timelineSettings.keySize * scale)
+					if (x < plotRect.x - animationEditorSettings.keySize * scale || x > plotRect.right() + animationEditorSettings.keySize * scale)
 						continue;
 
-					f32 y = timelineValueToY(plotRect, key.value[component], valueMin, valueMax);
+					f32 y = animationEditorValueToY(plotRect, key.value[component], valueMin, valueMax);
 
-					if (y < plotRect.y - timelineSettings.keySize * scale || y > plotRect.bottom() + timelineSettings.keySize * scale)
+					if (y < plotRect.y - animationEditorSettings.keySize * scale || y > plotRect.bottom() + animationEditorSettings.keySize * scale)
 						continue;
 
 					bool hovered = hoveredKey.channel == channelIndex && hoveredKey.key == keyIndex && hoveredKey.component == component;
-					f32 radius = timelineSettings.keySize * scale * 0.8f;
+					f32 radius = animationEditorSettings.keySize * scale * 0.8f;
 
 					if (hovered)
-						timelineDrawDiamond({ x, y }, radius * 2.2f, { 1, 1, 1, 0.35f });
+						animationEditorDrawDiamond({ x, y }, radius * 2.2f, { 1, 1, 1, 0.35f });
 
 					if (key.selected)
 					{
-						timelineDrawDiamond({ x, y }, radius * 1.7f, timelineSettings.keySelectedColor);
-						timelineDrawDiamond({ x, y }, radius, componentColor);
+						animationEditorDrawDiamond({ x, y }, radius * 1.7f, animationEditorSettings.keySelectedColor);
+						animationEditorDrawDiamond({ x, y }, radius, componentColor);
 					}
 					else
 					{
-						timelineDrawDiamond({ x, y }, radius, componentColor);
+						animationEditorDrawDiamond({ x, y }, radius, componentColor);
 					}
 
 					if (key.tag[0])
-						timelineDrawKeyTag(font, key.tag, x + radius + 4.0f * scale, y, timelineSettings, scale);
+						animationEditorDrawKeyTag(font, key.tag, x + radius + 4.0f * scale, y, animationEditorSettings, scale);
 				}
 			}
 		}
@@ -2940,7 +2940,7 @@ bool timeline(const char* id, TimelineState* state, f32 height)
 
 	// nothing is drawn past the end of the time range, except the repeated curves
 	{
-		f32 endTimeX = timelineTimeToX(*state, plotRect, state->endTime);
+		f32 endTimeX = animationEditorTimeToX(*state, plotRect, state->endTime);
 
 		if (endTimeX < canvasRect.right())
 		{
@@ -2949,7 +2949,7 @@ bool timeline(const char* id, TimelineState* state, f32 height)
 			ctx->renderer.cmdSetColor(backgroundColor);
 			ctx->renderer.cmdDrawFilledRectangle({ maskX, canvasRect.y, canvasRect.right() - maskX, canvasRect.height });
 
-			if (state->viewMode == TimelineViewMode::Curves
+			if (state->viewMode == AnimationEditorViewMode::Curves
 				&& state->repeat
 				&& state->endTime > state->startTime)
 			{
@@ -2961,25 +2961,25 @@ bool timeline(const char* id, TimelineState* state, f32 height)
 				{
 					ctx->renderer.pushClipRect({ repeatStartX, plotRect.y, repeatEndX - repeatStartX, plotRect.height });
 
-					Color ghostColor = timelineSettings.dimTextColor;
+					Color ghostColor = animationEditorSettings.dimTextColor;
 
 					ghostColor.a = 0.25f;
-					ctx->renderer.cmdSetLineStyle(LineStyle(ghostColor, timelineSettings.curveLineWidth * scale));
+					ctx->renderer.cmdSetLineStyle(LineStyle(ghostColor, animationEditorSettings.curveLineWidth * scale));
 
 					i32 sampleCount = std::max(2, (i32)ceilf((repeatEndX - repeatStartX) / (2.0f * scale)));
 
 					for (i32 channelIndex = 0; channelIndex < (i32)state->channels.size(); channelIndex++)
 					{
-						TimelineChannel& channel = state->channels[channelIndex];
+						AnimationEditorChannel& channel = state->channels[channelIndex];
 
 						if (!channel.enabled || channel.keys.empty())
 							continue;
 
-						i32 components = timelineComponentCount(channel.type);
+						i32 components = animationEditorComponentCount(channel.type);
 
 						for (i32 component = 0; component < components; component++)
 						{
-							if (!timelineComponentVisible(channel, component))
+							if (!animationEditorComponentVisible(channel, component))
 								continue;
 
 							std::vector<Point> points;
@@ -2989,11 +2989,11 @@ bool timeline(const char* id, TimelineState* state, f32 height)
 							for (i32 sample = 0; sample <= sampleCount; sample++)
 							{
 								f32 x = repeatStartX + (repeatEndX - repeatStartX) * (f32)sample / (f32)sampleCount;
-								f32 sampleTime = timelineXToTime(*state, plotRect, x);
+								f32 sampleTime = animationEditorXToTime(*state, plotRect, x);
 								f32 localTime = state->startTime + fmodf(sampleTime - state->startTime, cycle);
-								f32 value = timelineEvaluateComponent(channel, component, localTime);
+								f32 value = animationEditorEvaluateComponent(channel, component, localTime);
 
-								points.push_back({ x, timelineValueToY(plotRect, value, valueMin, valueMax) });
+								points.push_back({ x, animationEditorValueToY(plotRect, value, valueMin, valueMax) });
 							}
 
 							ctx->renderer.cmdDrawPolyLine(points.data(), (u32)points.size(), false);
@@ -3011,10 +3011,10 @@ bool timeline(const char* id, TimelineState* state, f32 height)
 		&& hoveredKey.channel < (i32)state->channels.size()
 		&& hoveredKey.key < (i32)state->channels[hoveredKey.channel].keys.size()
 		&& state->channels[hoveredKey.channel].keys[hoveredKey.key].time <= state->endTime
-		&& runtime.dragType != TimelineWidgetState::DragType::Keys)
+		&& runtime.dragType != AnimationEditorWidgetState::DragType::Keys)
 	{
-		TimelineChannel& channel = state->channels[hoveredKey.channel];
-		TimelineKey& key = channel.keys[hoveredKey.key];
+		AnimationEditorChannel& channel = state->channels[hoveredKey.channel];
+		AnimationEditorKey& key = channel.keys[hoveredKey.key];
 		char keyInfo[128];
 
 		if (hoveredKey.component >= 0)
@@ -3022,7 +3022,7 @@ bool timeline(const char* id, TimelineState* state, f32 height)
 		else
 			snprintf(keyInfo, sizeof(keyInfo), "t %.3fs", key.time);
 
-		Point infoSize = timelineTextSize(font, keyInfo);
+		Point infoSize = animationEditorTextSize(font, keyInfo);
 		Rect infoRect = { mouse.x + 14.0f * scale, mouse.y - 24.0f * scale, infoSize.x + 10.0f * scale, 18.0f * scale };
 
 		if (infoRect.right() > outerRect.right())
@@ -3033,14 +3033,14 @@ bool timeline(const char* id, TimelineState* state, f32 height)
 
 		ctx->renderer.cmdSetColor(headerColor);
 		ctx->renderer.cmdDrawFilledRectangle(infoRect);
-		ctx->renderer.cmdSetLineStyle(LineStyle(timelineSettings.gridStrongColor, scale));
+		ctx->renderer.cmdSetLineStyle(LineStyle(animationEditorSettings.gridStrongColor, scale));
 		ctx->renderer.cmdDrawRectangle(infoRect);
-		timelineDrawText(font, keyInfo, infoRect, textColor, HAlignType::Center, false);
+		animationEditorDrawText(font, keyInfo, infoRect, textColor, HAlignType::Center, false);
 	}
 
 	// playhead
 	{
-		f32 playheadX = timelineTimeToX(*state, plotRect, state->cursorTime);
+		f32 playheadX = animationEditorTimeToX(*state, plotRect, state->cursorTime);
 
 		if (playheadX >= plotRect.x - 1.0f && playheadX <= plotRect.right() + 1.0f)
 		{
@@ -3054,15 +3054,15 @@ bool timeline(const char* id, TimelineState* state, f32 height)
 			f32 lineTop = flagBottom + flagPoint;
 			Color flagColor = Color::white;
 			Color outlineColor = { 0.0f, 0.0f, 0.0f, 0.45f };
-			Color glowColor = timelineSettings.playheadColor;
+			Color glowColor = animationEditorSettings.playheadColor;
 
 			glowColor.a = 0.18f;
 
-			ctx->renderer.cmdSetLineStyle(LineStyle(glowColor, timelineSettings.playheadWidth * 5.0f * scale));
+			ctx->renderer.cmdSetLineStyle(LineStyle(glowColor, animationEditorSettings.playheadWidth * 5.0f * scale));
 			ctx->renderer.cmdDrawLine({ playheadX, lineTop }, { playheadX, canvasRect.bottom() });
-			ctx->renderer.cmdSetLineStyle(LineStyle(Color::black, (timelineSettings.playheadWidth + 2.0f) * scale));
+			ctx->renderer.cmdSetLineStyle(LineStyle(Color::black, (animationEditorSettings.playheadWidth + 2.0f) * scale));
 			ctx->renderer.cmdDrawLine({ playheadX, lineTop }, { playheadX, canvasRect.bottom() });
-			ctx->renderer.cmdSetLineStyle(LineStyle(timelineSettings.playheadColor, timelineSettings.playheadWidth * scale));
+			ctx->renderer.cmdSetLineStyle(LineStyle(animationEditorSettings.playheadColor, animationEditorSettings.playheadWidth * scale));
 			ctx->renderer.cmdDrawLine({ playheadX, lineTop }, { playheadX, canvasRect.bottom() });
 
 			ctx->renderer.cmdSetColor(flagColor);
@@ -3086,17 +3086,17 @@ bool timeline(const char* id, TimelineState* state, f32 height)
 
 	// end of the time range
 	{
-		f32 endTimeX = timelineTimeToX(*state, plotRect, state->endTime);
+		f32 endTimeX = animationEditorTimeToX(*state, plotRect, state->endTime);
 
 		if (endTimeX >= plotRect.x - 1.0f && endTimeX <= plotRect.right() + 1.0f)
 		{
-			ctx->renderer.cmdSetLineStyle(LineStyle(timelineSettings.endTimeLineColor, timelineSettings.endTimeLineWidth * scale));
+			ctx->renderer.cmdSetLineStyle(LineStyle(animationEditorSettings.endTimeLineColor, animationEditorSettings.endTimeLineWidth * scale));
 			ctx->renderer.cmdDrawLine({ endTimeX, rulerRect.y }, { endTimeX, canvasRect.bottom() });
 		}
 	}
 
 	// box selection
-	if (runtime.dragType == TimelineWidgetState::DragType::BoxSelect)
+	if (runtime.dragType == AnimationEditorWidgetState::DragType::BoxSelect)
 	{
 		Rect selectionRect = {
 			std::min(runtime.boxStart.x, runtime.boxEnd.x),
@@ -3107,14 +3107,14 @@ bool timeline(const char* id, TimelineState* state, f32 height)
 
 		selectionRect = selectionRect.clipInside(canvasRect);
 
-		ctx->renderer.cmdSetColor(timelineSettings.selectionFillColor);
+		ctx->renderer.cmdSetColor(animationEditorSettings.selectionFillColor);
 		ctx->renderer.cmdDrawFilledRectangle(selectionRect);
-		ctx->renderer.cmdSetLineStyle(LineStyle(timelineSettings.selectionBorderColor, scale));
+		ctx->renderer.cmdSetLineStyle(LineStyle(animationEditorSettings.selectionBorderColor, scale));
 		ctx->renderer.cmdDrawRectangle(selectionRect);
 	}
 
 	// separators
-	ctx->renderer.cmdSetLineStyle(LineStyle(timelineSettings.gridStrongColor, scale));
+	ctx->renderer.cmdSetLineStyle(LineStyle(animationEditorSettings.gridStrongColor, scale));
 	ctx->renderer.cmdDrawLine({ outerRect.x, toolbarRect.bottom() }, { outerRect.right(), toolbarRect.bottom() });
 	ctx->renderer.cmdDrawLine({ outerRect.x, listHeaderRect.bottom() }, { outerRect.right(), listHeaderRect.bottom() });
 	ctx->renderer.cmdDrawLine({ listHeaderRect.right(), toolbarRect.bottom() }, { listHeaderRect.right(), outerRect.bottom() });
@@ -3122,7 +3122,7 @@ bool timeline(const char* id, TimelineState* state, f32 height)
 
 	if (disabled)
 	{
-		ctx->renderer.cmdSetColor(timelineSettings.disabledOverlayColor);
+		ctx->renderer.cmdSetColor(animationEditorSettings.disabledOverlayColor);
 		ctx->renderer.cmdDrawFilledRectangle(outerRect);
 	}
 
@@ -3145,17 +3145,17 @@ bool timeline(const char* id, TimelineState* state, f32 height)
 
 		for (u32 i = 0; i < toolbarFieldCount; i++)
 		{
-			const TimelineToolbarField& field = toolbarFields[i];
+			const AnimationEditorToolbarField& field = toolbarFields[i];
 
 			if (field.channel < 0 || field.channel >= (i32)state->channels.size())
 				continue;
 
-			TimelineChannel& channel = state->channels[field.channel];
+			AnimationEditorChannel& channel = state->channels[field.channel];
 
 			if (field.key < 0 || field.key >= (i32)channel.keys.size())
 				continue;
 
-			TimelineKey& key = channel.keys[field.key];
+			AnimationEditorKey& key = channel.keys[field.key];
 			Rect fieldRect = field.rect;
 			bool fieldChanged = false;
 
@@ -3195,27 +3195,27 @@ bool timeline(const char* id, TimelineState* state, f32 height)
 			else if (field.component == -2)
 			{
 				idPush((void*)&runtime);
-				fieldChanged = textInput("timelineKeyTag", key.tag, TimelineKey::maxTagSize, TextInputFlags::None, "Tag");
+				fieldChanged = textInput("animationEditorKeyTag", key.tag, AnimationEditorKey::maxTagSize, TextInputFlags::None, "Tag");
 				idPop();
 			}
-			else if (field.component >= 0 && field.component < timelineComponentCount(channel.type))
+			else if (field.component >= 0 && field.component < animationEditorComponentCount(channel.type))
 			{
-				const char* label = timelineComponentLabel(channel.type, field.component);
+				const char* label = animationEditorComponentLabel(channel.type, field.component);
 				char format[32];
 				f32 stepsPerPixel = valueStepsPerPixel;
 				f32 arrowStep = valueArrowStep;
 
-				if (channel.type == TimelineKeyType::Int)
+				if (channel.type == AnimationEditorKeyType::Int)
 				{
 					stepsPerPixel = 1.0f;
 					arrowStep = 1.0f;
 				}
 
-				snprintf(format, sizeof(format), "%s %s", label, channel.type == TimelineKeyType::Int ? "%.0f" : "%.3f");
+				snprintf(format, sizeof(format), "%s %s", label, channel.type == AnimationEditorKeyType::Int ? "%.0f" : "%.3f");
 				fieldChanged = comboSliderFloat(&key.value[field.component], stepsPerPixel, arrowStep, format);
 
 				if (fieldChanged)
-					key.value[field.component] = timelineQuantizeComponent(channel.type, key.value[field.component], field.component);
+					key.value[field.component] = animationEditorQuantizeComponent(channel.type, key.value[field.component], field.component);
 			}
 
 			layoutEnd();
@@ -3240,14 +3240,14 @@ bool timeline(const char* id, TimelineState* state, f32 height)
 
 		for (u32 rowIndex = 0; rowIndex < channelRows.size(); rowIndex++)
 		{
-			const TimelineChannelRow& rowInfo = channelRows[rowIndex];
+			const AnimationEditorChannelRow& rowInfo = channelRows[rowIndex];
 
 			if (rowInfo.component >= 0)
 				continue;
 
 			i32 channelIndex = rowInfo.channel;
 			Rect rowRect = { listRect.x, listRect.y - scrollOffset + (f32)rowIndex * rowHeight, listRect.width, rowHeight };
-			Rect checkboxRect = timelineChannelCheckboxRect(rowRect, scale);
+			Rect checkboxRect = animationEditorChannelCheckboxRect(rowRect, scale);
 
 			if (checkboxRect.bottom() < listRect.y || checkboxRect.y > listRect.bottom())
 				continue;
@@ -3285,26 +3285,26 @@ bool timeline(const char* id, TimelineState* state, f32 height)
 
 	// cursor feedback
 	if (!disabled
-		&& (mouseInTimeline
-			|| runtime.dragType == TimelineWidgetState::DragType::TangentIn
-			|| runtime.dragType == TimelineWidgetState::DragType::TangentOut))
+		&& (mouseInAnimationEditor
+			|| runtime.dragType == AnimationEditorWidgetState::DragType::TangentIn
+			|| runtime.dragType == AnimationEditorWidgetState::DragType::TangentOut))
 	{
-		if (runtime.dragType == TimelineWidgetState::DragType::Pan)
+		if (runtime.dragType == AnimationEditorWidgetState::DragType::Pan)
 			mouseCursorSetType(MouseCursorType::SizeAll);
-		else if (runtime.dragType == TimelineWidgetState::DragType::Playhead)
+		else if (runtime.dragType == AnimationEditorWidgetState::DragType::Playhead)
 			mouseCursorSetType(MouseCursorType::SizeWE);
-		else if (runtime.dragType == TimelineWidgetState::DragType::TangentIn
-			|| runtime.dragType == TimelineWidgetState::DragType::TangentOut)
+		else if (runtime.dragType == AnimationEditorWidgetState::DragType::TangentIn
+			|| runtime.dragType == AnimationEditorWidgetState::DragType::TangentOut)
 			mouseCursorSetType(MouseCursorType::HandPointing);
-		else if (runtime.dragType == TimelineWidgetState::DragType::Keys)
-			mouseCursorSetType(state->viewMode == TimelineViewMode::Curves ? MouseCursorType::SizeAll : MouseCursorType::SizeWE);
-		else if (runtime.dragType == TimelineWidgetState::DragType::ChannelResize || channelSplitterRect.contains(mouse))
+		else if (runtime.dragType == AnimationEditorWidgetState::DragType::Keys)
+			mouseCursorSetType(state->viewMode == AnimationEditorViewMode::Curves ? MouseCursorType::SizeAll : MouseCursorType::SizeWE);
+		else if (runtime.dragType == AnimationEditorWidgetState::DragType::ChannelResize || channelSplitterRect.contains(mouse))
 			mouseCursorSetType(MouseCursorType::SizeWE);
-		else if (runtime.dragType == TimelineWidgetState::DragType::ChannelScroll || channelScrollbar.track.contains(mouse))
+		else if (runtime.dragType == AnimationEditorWidgetState::DragType::ChannelScroll || channelScrollbar.track.contains(mouse))
 			mouseCursorSetType(MouseCursorType::HandPointing);
 		else if (hoveredToolbarButton >= 0 || listRect.contains(mouse))
 			mouseCursorSetType(MouseCursorType::HandPointing);
-		else if (rulerRect.contains(mouse) || fabsf(mouse.x - timelineTimeToX(*state, plotRect, state->cursorTime)) <= 5.0f * scale)
+		else if (rulerRect.contains(mouse) || fabsf(mouse.x - animationEditorTimeToX(*state, plotRect, state->cursorTime)) <= 5.0f * scale)
 			mouseCursorSetType(MouseCursorType::SizeWE);
 		else if (hoveredTangent.channel >= 0 || hoveredKey.channel >= 0)
 			mouseCursorSetType(MouseCursorType::HandPointing);

@@ -57,6 +57,12 @@ struct TextInputState
 	bool password = false;
 	Utf32String passwordCharUnicode;
 	f32 caretBlinkTimer = 0;
+
+	// IME composition (in-progress text reported by the OS input method)
+	Utf32String compositionText;
+	i32 compositionCursorChars = 0;
+	i32 compositionSelectChars = 0;
+	bool composing = false;
 };
 
 }

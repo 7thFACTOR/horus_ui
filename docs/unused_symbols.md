@@ -9,7 +9,6 @@ Third-party `examples/libs` excluded. "Dead" = only its own declaration/definiti
 - `u16`, `i8`, `i16` typedefs
 - `HThemeWidgetElement`, `HOverlayToolbar`, `HOverlayToolbarWidget` opaque handles
 - `WindowsDockingState` struct + nested `WindowInfo`, `DockNodeInfo`
-- Macros `HUI_STRUCT_API`, `HUI_BIT`, `HUI_ENUM_AS_FLAGS`, `HUI_ENUM_AS_FLAGS_EX`
 
 ### Unused enum values
 - `WidgetType::Custom`, `WidgetType::Count`
@@ -35,6 +34,7 @@ Third-party `examples/libs` excluded. "Dead" = only its own declaration/definiti
 - `Services`: `allInputFunctionsSet`, `allGfxFunctionsSet`, `allFontFunctionsSet`, `allTextEncodingFunctionsSet`, `allFileIoFunctionsSet`, `allFunctionsSet`
 - `OverlayToolbarSettings::insertionHintColor`
 - `Settings`: `defaultWidgetWidth`, `sameLineHeight`, `scaleLayouts`
+- `DisplayInfo::usableBounds` (write-only; filled by backends, never read by the lib)
 
 ### Unused free functions (defined, never called)
 `contextGet`, `renderCallbackAdd`, `mouseCursorCreate`, `mouseCursorDestroy`,
@@ -58,12 +58,13 @@ Third-party `examples/libs` excluded. "Dead" = only its own declaration/definiti
 - Members: `DrawCommand::CmdDrawRect::textureIndex/wire`, `SameLineGroupState::startX/startY`,
   `WidgetState::prevFocusableId`, `MenuWidgetState::startPosition/lastItemRect/activatedNow/hoveredItemIndex/selectedItemIndex`,
   `TableColumnState::maxWidth/isResizable`, `TableState::rowDrawCmdIndex`,
-  `PopupState::oldZOrder/opened/ownerWindow/savedSameLineInfoIndexStack`, `CircularSliderState::isFine`,
+  `PopupState::oldZOrder/ownerWindow/savedSameLineInfoIndexStack`, `CircularSliderState::isFine`,
   `TextLineState::start/length`, `DockingState::closeWindow`, `DragDropState::dropped`,
   all `TextMarker` / `MemoryStream` members
 - Methods: `ThemeElement::pressedState`, `ThemeElement::styleNormalState`,
   `MemoryStream::beginWrite/beginRead/writeData/readData/write/read`
-- Gray area (write-only): `VectorEditorState::colWidthsPRS`
+- Gray area (write-only): `VectorEditorState::colWidthsPRS`, `WidgetState::nextFocusableId`,
+  `DockTabGroupState::forceTabWidth`, `PopupState::opened`, `DrawCommand::wire`
 
 ## C. `src/context.h`
 - Static consts: `maxLayerCount`, `maxNestingIndex`, `maxBoxDepth`, `maxSameLineInfoIndex`
@@ -90,6 +91,8 @@ Third-party `examples/libs` excluded. "Dead" = only its own declaration/definiti
 `closeMenu` (menu_widget.cpp), `getRemainingDockNodeClientHeight`, `saveDockingState`,
 `dockingSaveStateToMemory`, `loadDockingState`, `dockingLoadStateFromMemory` (docking.cpp),
 `demoOnToolbarRotate`, `demoOnToolbarScale` (demo.cpp)
+
+- demo.cpp `DemoState` members: `demoTexture`, `virtualListCount`
 
 ## G. Backends
 - **dx11**: whole `Dx11VertexBuffer` struct (all ctors/methods/members);

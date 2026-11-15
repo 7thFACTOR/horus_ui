@@ -135,6 +135,12 @@ struct DemoState
 	char textPassword[256] = "secret";
 	char textAutoSelect[256] = "Select me";
 
+	// IME composition observer, updated from the raw TextEditing event stream
+	char imeComposition[64] = "";
+	i32 imeCompositionCursor = 0;
+	i32 imeCompositionLength = 0;
+	bool imeComposing = false;
+
 	// textInput Multiline
 	char multiText[4096] =
 		"-- demo.lua\n"
@@ -206,7 +212,7 @@ struct DemoState
 	// expandable states (managed internally by expandable())
 	bool expandButton = false;
 	bool expandTextInput = false;
-	bool expandTimeline = false;
+	bool expandAnimationEditor = false;
 	bool expandMultiline = false;
 	bool expandSlider = false;
 	bool expandComboSlider = false;
@@ -242,7 +248,7 @@ struct DemoState
 	// disabled states
 	bool disableButton = false;
 	bool disableTextInput = false;
-	bool disableTimeline = false;
+	bool disableAnimationEditor = false;
 	bool disableMultiline = false;
 	bool disableSlider = false;
 	bool disableComboSlider = false;
@@ -361,9 +367,15 @@ struct DemoState
 	Color customPickerColors[16] = {};
 	u32 customPickerColorCount = 0;
 
-	// timeline
-	TimelineState timelineState;
-	bool timelineInitialized = false;
+	// Animation editor
+	AnimationEditorState animationEditorState;
+	bool animationEditorInitialized = false;
+
+	// Sequencer
+	SequencerState sequencerState;
+	bool sequencerInitialized = false;
+	bool expandSequencer = false;
+	bool disableSequencer = false;
 
 	// vec editors
 	f32 vec2x = 1.0f, vec2y = 2.0f;
@@ -769,10 +781,10 @@ static void demoCustomFileDialogPreview(const char* path, const Rect& previewRec
 	renderDrawTextInBox(path, previewRect, HAlignType::Center, VAlignType::Center);
 }
 
-static void demoInitTimeline(TimelineState& state)
+static void demoInitAnimationEditor(AnimationEditorState& state)
 {
 	state.channels.clear();
-	state.viewMode = TimelineViewMode::Keyframes;
+	state.viewMode = AnimationEditorViewMode::Keyframes;
 	state.startTime = 0.0f;
 	state.endTime = 5.0f;
 	state.cursorTime = 2.0f;
@@ -789,9 +801,9 @@ static void demoInitTimeline(TimelineState& state)
 	state.ripple = false;
 	state.extendEndTime = false;
 
-	auto addChannel = [&](const char* name, TimelineKeyType type)
+	auto addChannel = [&](const char* name, AnimationEditorKeyType type)
 	{
-		TimelineChannel channel;
+		AnimationEditorChannel channel;
 
 		channel.name = name;
 		channel.type = type;
@@ -801,9 +813,9 @@ static void demoInitTimeline(TimelineState& state)
 		return &state.channels.back();
 	};
 
-	auto addKey = [](TimelineChannel* channel, f32 time, f32 x, f32 y = 0.0f, f32 z = 0.0f, f32 w = 0.0f, const char* tag = nullptr)
+	auto addKey = [](AnimationEditorChannel* channel, f32 time, f32 x, f32 y = 0.0f, f32 z = 0.0f, f32 w = 0.0f, const char* tag = nullptr)
 	{
-		TimelineKey key;
+		AnimationEditorKey key;
 
 		key.time = time;
 		key.value[0] = x;
@@ -812,44 +824,44 @@ static void demoInitTimeline(TimelineState& state)
 		key.value[3] = w;
 
 		if (tag)
-			snprintf(key.tag, TimelineKey::maxTagSize, "%s", tag);
+			snprintf(key.tag, AnimationEditorKey::maxTagSize, "%s", tag);
 
 		channel->keys.push_back(key);
 	};
 
-	TimelineChannel* channel = addChannel("Position", TimelineKeyType::Vec3);
+	AnimationEditorChannel* channel = addChannel("Position", AnimationEditorKeyType::Vec3);
 
 	addKey(channel, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, "start");
 	addKey(channel, 1.0f, 0.0f, 2.0f, 0.0f, 0.0f, "lift");
 	addKey(channel, 2.5f, 3.0f, 2.0f, 0.0f, 0.0f, "peak");
 	addKey(channel, 4.0f, 0.0f, 0.0f, 0.0f, 0.0f, "end");
 
-	channel = addChannel("Rotation", TimelineKeyType::Vec3);
+	channel = addChannel("Rotation", AnimationEditorKeyType::Vec3);
 
 	addKey(channel, 0.0f, 0.0f, 0.0f, 0.0f);
 	addKey(channel, 2.0f, 0.0f, 180.0f, 0.0f);
 	addKey(channel, 4.0f, 0.0f, 360.0f, 0.0f);
 
-	channel = addChannel("Scale", TimelineKeyType::Vec2);
+	channel = addChannel("Scale", AnimationEditorKeyType::Vec2);
 
 	addKey(channel, 0.0f, 1.0f, 1.0f);
 	addKey(channel, 2.0f, 1.5f, 1.5f);
 	addKey(channel, 4.0f, 1.0f, 1.0f);
 
-	channel = addChannel("Opacity", TimelineKeyType::Float);
+	channel = addChannel("Opacity", AnimationEditorKeyType::Float);
 
 	addKey(channel, 0.0f, 1.0f);
 	addKey(channel, 1.0f, 0.6f);
 	addKey(channel, 3.0f, 1.0f);
 	addKey(channel, 5.0f, 1.0f);
 
-	channel = addChannel("Visible", TimelineKeyType::Bool);
+	channel = addChannel("Visible", AnimationEditorKeyType::Bool);
 
 	addKey(channel, 0.0f, 1.0f);
 	addKey(channel, 2.0f, 0.0f);
 	addKey(channel, 3.0f, 1.0f);
 
-	channel = addChannel("Frame", TimelineKeyType::Int);
+	channel = addChannel("Frame", AnimationEditorKeyType::Int);
 
 	addKey(channel, 0.0f, 0.0f);
 	addKey(channel, 1.0f, 3.0f);
@@ -862,11 +874,61 @@ static void demoInitTimeline(TimelineState& state)
 		char name[32];
 
 		snprintf(name, sizeof(name), "Extra %d", i + 1);
-		channel = addChannel(name, TimelineKeyType::Float);
+		channel = addChannel(name, AnimationEditorKeyType::Float);
 		addKey(channel, 0.0f, (f32)i * 0.1f);
 		addKey(channel, 2.5f, (f32)(i % 3) * 0.5f);
 		addKey(channel, 5.0f, (f32)i * 0.1f);
 	}
+}
+
+static void demoInitSequencer(SequencerState& state)
+{
+	state.tracks.clear();
+	state.startTime = 0.0f;
+	state.endTime = 8.0f;
+	state.cursorTime = 0.0f;
+	state.scrollTime = 0.0f;
+	state.trackScroll = 0.0f;
+	state.pixelsPerSecond = 160.0f;
+	state.selectedTrack = -1;
+	state.frameRate = 30.0f;
+	state.snapToFrames = false;
+	state.playing = false;
+	state.loopPlayback = true;
+
+	auto addTrack = [&](const char* name, Color color)
+	{
+		SequencerTrack track;
+
+		track.name = name;
+		track.color = color;
+		state.tracks.push_back(track);
+	};
+
+	auto addSegment = [](SequencerTrack& track, f32 start, f32 end, const char* tag, Color color = { 0, 0, 0, 0 })
+	{
+		SequencerSegment segment;
+
+		segment.start = start;
+		segment.end = end;
+		segment.color = color;
+		snprintf(segment.tag, SequencerSegment::maxTagSize, "%s", tag);
+		track.segments.push_back(segment);
+	};
+
+	addTrack("Animation", Color::fromU8(70, 160, 255));
+	addSegment(state.tracks.back(), 0.0f, 2.0f, "Idle");
+	addSegment(state.tracks.back(), 2.0f, 3.5f, "Run");
+	addSegment(state.tracks.back(), 3.5f, 5.5f, "Jump", Color::fromU8(240, 180, 60));
+	addSegment(state.tracks.back(), 5.5f, 8.0f, "Idle");
+
+	addTrack("Audio", Color::fromU8(120, 200, 120));
+	addSegment(state.tracks.back(), 0.5f, 3.0f, "footsteps.wav");
+	addSegment(state.tracks.back(), 4.0f, 6.0f, "whoosh.wav");
+
+	addTrack("VFX", Color::fromU8(220, 120, 180));
+	addSegment(state.tracks.back(), 1.0f, 2.5f, "sparks");
+	addSegment(state.tracks.back(), 5.0f, 7.0f, "smoke");
 }
 } // namespace
 
@@ -880,10 +942,16 @@ void showDemo()
 		demo.iconSmiley = createIcon("demo/icon_smiley", 32, drawSmileyIcon);
 	}
 
-	if (!demo.timelineInitialized)
+	if (!demo.animationEditorInitialized)
 	{
-		demo.timelineInitialized = true;
-		demoInitTimeline(demo.timelineState);
+		demo.animationEditorInitialized = true;
+		demoInitAnimationEditor(demo.animationEditorState);
+	}
+
+	if (!demo.sequencerInitialized)
+	{
+		demo.sequencerInitialized = true;
+		demoInitSequencer(demo.sequencerState);
 	}
 
 	// animate progress bars
@@ -893,6 +961,20 @@ void showDemo()
 
 	demo.progressValueReal += dt * 20.0f;
 	if (demo.progressValueReal > 1000.0f) demo.progressValueReal = 0.0f;
+
+	// track the raw IME composition event stream so it can be observed in the demo
+	if (inputEventGet().type == InputEvent::Type::TextEditing)
+	{
+		strcpy(demo.imeComposition, inputEventGet().text.text);
+		demo.imeCompositionCursor = inputEventGet().text.start;
+		demo.imeCompositionLength = inputEventGet().text.length;
+		demo.imeComposing = demo.imeComposition[0] != 0;
+	}
+	else if (inputEventGet().type == InputEvent::Type::Text)
+	{
+		demo.imeComposition[0] = 0;
+		demo.imeComposing = false;
+	}
 
 	// keep repainting as long as the progress bar section is expanded
 	if (demo.expandProgress)
@@ -996,11 +1078,11 @@ void showDemo()
 		space();
 		label("SameLineGroup (3 equal-width buttons):");
 		sameLineGroupBegin(3);
-		if (button("Left")) {}
+		if (button("Left##SameLineGroup")) {}
 		sameLineGroupNext();
 		if (button("Center")) {}
 		sameLineGroupNext();
-		if (button("Right")) {}
+		if (button("Right##SameLineGroup")) {}
 		sameLineGroupEnd();
 
 		expandableEnd();
@@ -2267,9 +2349,9 @@ if (expandableBegin("Overlay Toolbars", &demo.expandOverlayToolbar))
 		sameLine();
 		if (button("Bottom")) demo.mainToolbarDockZone = OverlayDockZone::BottomToolbar;
 		sameLine();
-		if (button("Left")) demo.mainToolbarDockZone = OverlayDockZone::LeftToolbar;
+		if (button("Left##MainToolbar")) demo.mainToolbarDockZone = OverlayDockZone::LeftToolbar;
 		sameLine();
-		if (button("Right")) demo.mainToolbarDockZone = OverlayDockZone::RightToolbar;
+		if (button("Right##MainToolbar")) demo.mainToolbarDockZone = OverlayDockZone::RightToolbar;
 		sameLine();
 		if (button("Float")) demo.mainToolbarDockZone = OverlayDockZone::Floating;
 
@@ -3622,37 +3704,81 @@ if (expandableBegin("Overlay Toolbars", &demo.expandOverlayToolbar))
 		space();
 		label("Password:");
 		textInput("##tiPass", demo.textPassword, sizeof(demo.textPassword), TextInputFlags::None, nullptr, 0, true);
+
+		space();
+		label("IME test:");
+		labelMultiline("Enable an OS input method (Microsoft Pinyin/Japanese on Windows, a Chinese or Japanese input source on macOS, ibus/fcitx on Linux), click one of the fields above and compose a word. The composition preview appears inline in the field, underlined, with the caret following the OS cursor. Below is the raw composition event stream.", HAlignType::Left);
+
+		if (demo.imeComposing)
+		{
+			char imeInfo[256];
+
+			snprintf(imeInfo, sizeof(imeInfo), "composing: \"%s\" (cursor byte %d, selection %d bytes)", demo.imeComposition, demo.imeCompositionCursor, demo.imeCompositionLength);
+			label(imeInfo);
+		}
+		else
+		{
+			label("no active composition");
+		}
+
 		widgetPopDisabled();
 		expandableEnd();
 	}
 
 	// ------------------------------------------------------------------
-	// timeline
+	// Animation editor
 	// ------------------------------------------------------------------
-	if (expandableBegin("Timeline", &demo.expandTimeline))
+	if (expandableBegin("Animation Editor", &demo.expandAnimationEditor))
 	{
-		check("Disable##Timeline", &demo.disableTimeline);
-		widgetPushDisabled(demo.disableTimeline);
+		check("Disable##Animation Editor", &demo.disableAnimationEditor);
+		widgetPushDisabled(demo.disableAnimationEditor);
 
-		label("Animation timeline:");
+		label("Animation editor:");
 		labelMultiline("Drag keys to retime, drag values in Curves mode, wheel to zoom around the mouse, middle-drag to pan, double-click the canvas to add a key and Delete to remove selected keys. With Auto value range off, the wheel zooms both axes freely. In Curves mode the curves are Hermite; select a key to show its tangent handles and drag them to bend the curve.", HAlignType::Left);
-		timeline("##demoTimeline", &demo.timelineState, 220.0f);
+		animationEditor("##demoAnimationEditor", &demo.animationEditorState, 220.0f);
 
 		space();
-		check("Snap to frames", &demo.timelineState.snapToFrames);
+		check("Snap to frames##Animation Editor", &demo.animationEditorState.snapToFrames);
 		sameLine();
 		widgetSetNextWidth(220.0f);
-		sliderFloat("Frame Rate", 1.0f, 120.0f, demo.timelineState.frameRate, true, 1.0f);
-		check("Auto value range", &demo.timelineState.autoValueRange);
+		sliderFloat("Frame Rate##Animation Editor", 1.0f, 120.0f, demo.animationEditorState.frameRate, true, 1.0f);
+		check("Auto value range", &demo.animationEditorState.autoValueRange);
 		sameLine();
-		check("Repeat", &demo.timelineState.repeat);
+		check("Repeat", &demo.animationEditorState.repeat);
 		sameLine();
-		check("Ripple", &demo.timelineState.ripple);
+		check("Ripple", &demo.animationEditorState.ripple);
 		sameLine();
-		check("Extend End", &demo.timelineState.extendEndTime);
+		check("Extend End", &demo.animationEditorState.extendEndTime);
 		sameLine();
-		if (button("Reset Timeline"))
-			demoInitTimeline(demo.timelineState);
+		if (button("Reset Animation Editor"))
+			demoInitAnimationEditor(demo.animationEditorState);
+
+		widgetPopDisabled();
+		expandableEnd();
+	}
+
+	// ------------------------------------------------------------------
+	// Sequencer
+	// ------------------------------------------------------------------
+	if (expandableBegin("Sequencer", &demo.expandSequencer))
+	{
+		check("Disable##Sequencer", &demo.disableSequencer);
+		widgetPushDisabled(demo.disableSequencer);
+
+		label("Sequencer:");
+		labelMultiline("Tracks with start/end segments, like an engine sequencer. Drag segment bodies to move them, drag the edges to resize, double-click an empty lane to add a segment at the clicked position, box select on empty space, Delete removes selected segments, wheel zooms around the mouse and middle-drag pans.", HAlignType::Left);
+		sequencer("##demoSequencer", &demo.sequencerState, 200.0f);
+
+		space();
+		check("Snap to frames##Sequencer", &demo.sequencerState.snapToFrames);
+		sameLine();
+		widgetSetNextWidth(220.0f);
+		sliderFloat("Frame Rate##Sequencer", 1.0f, 120.0f, demo.sequencerState.frameRate, true, 1.0f);
+		sameLine();
+		check("Loop playback", &demo.sequencerState.loopPlayback);
+		sameLine();
+		if (button("Reset Sequencer"))
+			demoInitSequencer(demo.sequencerState);
 
 		widgetPopDisabled();
 		expandableEnd();

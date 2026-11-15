@@ -866,6 +866,8 @@ void Renderer::cmdSetTexture(HTexture textureHandle, u32 width, u32 height)
 
 void Renderer::cmdSetFont(Font* font)
 {
+	HUI_ASSERT(font);
+
 	DrawCommand cmd(DrawCommand::Type::SetFont);
 
 	cmd.data.font = font;

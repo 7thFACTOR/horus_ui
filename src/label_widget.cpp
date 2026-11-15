@@ -81,6 +81,8 @@ static bool labelInternal(const char* label, HAlignType horizontalAlign, Font* f
 
 static bool labelMultilineInternal(const char* label, HFont font, const Color* textColor, HAlignType horizontalAlign)
 {
+	HUI_ASSERT(font);
+
 	auto& bodyElemState = ctx->theme->getElement(WidgetElementId::LabelBody).normalState();
 	auto& padding = widgetGetPadding();
 	f32 width = ctx->layout.width - padding.x * 2.0f * ctx->scale;
@@ -153,6 +155,8 @@ bool labelMultiline(const char* label, HAlignType horizontalAlign)
 
 bool labelCustomFontMultiline(const char* label, HFont font, HAlignType horizontalAlign)
 {
+	HUI_ASSERT(font);
+
 	auto& bodyElemState = ctx->theme->getElement(WidgetElementId::LabelBody).normalState();
 	auto& padding = widgetGetPadding();
 	f32 width = ctx->layout.width - padding.x * 2.0f * ctx->scale;

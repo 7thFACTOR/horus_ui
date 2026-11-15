@@ -28,6 +28,8 @@ void customWidgetEnd()
 
 void rendererFontSet(HFont font)
 {
+	HUI_ASSERT(font);
+
 	ctx->renderer.cmdSetFont((Font*)font);
 }
 

@@ -1848,6 +1848,9 @@ bool MultilineTextInputState::processEvent(const InputEvent& ev)
 		if (!rect.contains(ev.mouse.point))
 		{
 			id = 0;
+			composing = false;
+			compositionText.clear();
+			ctx->settings.services.stopTextInput();
 			return false;
 		}
 
@@ -2074,6 +2077,10 @@ bool MultilineTextInputState::processEvent(const InputEvent& ev)
 		Utf32String txt;
 
 		caretBlinkTimer = 0;
+
+		// the OS commits the composition, clear the preview before inserting the final text
+		composing = false;
+		compositionText.clear();
 		ctx->settings.services.utf8To32(ev.text.text, txt);
 
 		// strictly filter out newlines - if any newline char is present,
@@ -2086,6 +2093,19 @@ bool MultilineTextInputState::processEvent(const InputEvent& ev)
 
 		insertTextAtCaret(txt);
 		textChanged = true;
+	}
+	else if (ev.type == InputEvent::Type::TextEditing)
+	{
+		caretBlinkTimer = 0;
+
+		ctx->settings.services.utf8To32(ev.text.text, compositionText);
+		compositionCursorChars = utf8ByteOffsetToCharIndex(ev.text.text, ev.text.start);
+		compositionSelectChars = utf8ByteOffsetToCharIndex(ev.text.text, ev.text.start + ev.text.length) - compositionCursorChars;
+		composing = !compositionText.empty();
+
+		// an empty editing event means the composition was canceled or committed
+		if (composing)
+			selectionActive = false;
 	}
 	else if (ev.type == InputEvent::Type::Key)
 	{

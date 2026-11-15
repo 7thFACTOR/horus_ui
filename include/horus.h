@@ -111,8 +111,6 @@ typedef double f64;
 
 #define HUI_SERVICES hui::contextGetSettings().services
 
-namespace hui
-{
 /// Bit flag helper macro: creates a bitmask with the given bit set (1 << bit)
 #define HUI_BIT(bit) (1<<bit)
 
@@ -125,19 +123,21 @@ namespace hui
 /// Usage: HUI_ENUM_AS_FLAGS_EX(MyEnum, u32);
 /// Provides: operator&, |, ^, ~, &=, |=, ^=, !, checkFlags, any, has, fromFlags
 #define HUI_ENUM_AS_FLAGS_EX(T, enumBasicType) \
-inline T operator & (T x, T y) { return static_cast<T> (static_cast<enumBasicType>(x) & static_cast<enumBasicType>(y)); }; \
-inline T operator | (T x, T y) { return static_cast<T> (static_cast<enumBasicType>(x) | static_cast<enumBasicType>(y)); }; \
-inline T operator ^ (T x, T y) { return static_cast<T> (static_cast<enumBasicType>(x) ^ static_cast<enumBasicType>(y)); }; \
-inline T operator ~ (T x) { return static_cast<T> (~static_cast<enumBasicType>(x)); }; \
-inline T& operator &= (T& x, T y) { x = x & y; return x; }; \
-inline T& operator |= (T& x, T y) { x = x | y; return x; }; \
-inline T& operator ^= (T& x, T y) { x = x ^ y; return x; }; \
-inline bool operator !(T x) { return !(enumBasicType)(x); }; \
-inline bool checkFlags(T x) { return (enumBasicType)x != 0; }; \
-inline bool any(T x) { return (enumBasicType)x != 0; }; \
-inline bool has(T x, T y) { return ((enumBasicType)x & (enumBasicType)y) != 0; }; \
-inline enumBasicType fromFlags(T x) { return (enumBasicType)x; };
+	inline T operator & (T x, T y) { return static_cast<T> (static_cast<enumBasicType>(x) & static_cast<enumBasicType>(y)); }; \
+	inline T operator | (T x, T y) { return static_cast<T> (static_cast<enumBasicType>(x) | static_cast<enumBasicType>(y)); }; \
+	inline T operator ^ (T x, T y) { return static_cast<T> (static_cast<enumBasicType>(x) ^ static_cast<enumBasicType>(y)); }; \
+	inline T operator ~ (T x) { return static_cast<T> (~static_cast<enumBasicType>(x)); }; \
+	inline T& operator &= (T& x, T y) { x = x & y; return x; }; \
+	inline T& operator |= (T& x, T y) { x = x | y; return x; }; \
+	inline T& operator ^= (T& x, T y) { x = x ^ y; return x; }; \
+	inline bool operator !(T x) { return !(enumBasicType)(x); }; \
+	inline bool checkFlags(T x) { return (enumBasicType)x != 0; }; \
+	inline bool any(T x) { return (enumBasicType)x != 0; }; \
+	inline bool has(T x, T y) { return ((enumBasicType)x & (enumBasicType)y) != 0; }; \
+	inline enumBasicType fromFlags(T x) { return (enumBasicType)x; };
 
+namespace hui
+{
 /// Helper to convert an integer to a flags enum type
 template <typename T> inline T toFlags(int x) { return (T)x; };
 
@@ -1532,6 +1532,7 @@ struct InputEvent
 		MouseWheel,
 		Key,
 		Text,
+		TextEditing,
 		WindowMoved,
 		WindowResized,
 		WindowGotFocus,
@@ -1563,6 +1564,8 @@ struct InputEvent
 	{
 		static const u32 maxTextBufferSize = 64;
 		char text[maxTextBufferSize] = { 0 };
+		i32 start = 0; /// cursor byte offset within the text, only for IME composition (TextEditing) events
+		i32 length = 0; /// selection length in bytes, only for IME composition (TextEditing) events
 	};
 
 	struct OsDragDropData
@@ -1999,7 +2002,7 @@ enum class OverlayToolbarLayout
 struct Services
 {
 	// Input
-	void (*startTextInput)(HNativeWindow window, const Rect& imeRect) = nullptr;
+	void (*startTextInput)(HNativeWindow window, const Rect& imeRect, i32 cursorOffset) = nullptr;
 	void (*stopTextInput)() = nullptr;
 	bool (*clipboardSetText)(const char* text) = nullptr;
 	bool (*clipboardGetText)(char* outText, u32 maxTextSize) = nullptr;
@@ -2171,8 +2174,8 @@ struct OverlayToolbarSettings
 	f32 floatingGridSize = 0; /// grid size for snapping floating toolbars (0 = disabled)
 };
 
-/// The data type of a timeline channel
-enum class TimelineKeyType
+/// The data type of an Animation editor channel
+enum class AnimationEditorKeyType
 {
 	Float, /// one float component
 	Int, /// one int component
@@ -2182,15 +2185,15 @@ enum class TimelineKeyType
 	Bool, /// one boolean component
 };
 
-/// The view mode of a timeline widget
-enum class TimelineViewMode
+/// The view mode of an Animation editor widget
+enum class AnimationEditorViewMode
 {
 	Keyframes, /// dope sheet view, keys are edited on the time axis
 	Curves, /// curve view, keys are edited on the time and value axes
 };
 
-/// A key of a timeline channel
-struct TimelineKey
+/// A key of an Animation editor channel
+struct AnimationEditorKey
 {
 	static const u32 maxTagSize = 64;
 
@@ -2203,28 +2206,28 @@ struct TimelineKey
 	char tag[maxTagSize] = { 0 }; /// optional text label drawn next to the key
 };
 
-/// A channel of a timeline widget
-struct TimelineChannel
+/// A channel of an Animation editor widget
+struct AnimationEditorChannel
 {
 	std::string name; /// the channel name shown in the channels list
-	TimelineKeyType type = TimelineKeyType::Float; /// the channel data type
+	AnimationEditorKeyType type = AnimationEditorKeyType::Float; /// the channel data type
 	bool enabled = true; /// false if the channel is disabled (not evaluated)
 	bool selected = true; /// true if the whole channel is selected (all its components are visible)
 	bool expanded = true; /// true if the component sub-channels are shown in the list
 	u32 selectedComponents = 0; /// bit mask of individually selected components, used when the whole channel is not selected
-	std::vector<TimelineKey> keys; /// the channel keys, kept sorted by time
+	std::vector<AnimationEditorKey> keys; /// the channel keys, kept sorted by time
 };
 
-/// The state of a timeline widget, owned by the caller and passed to the timeline() function
-struct TimelineState
+/// The state of an Animation editor widget, owned by the caller and passed to the animationEditor() function
+struct AnimationEditorState
 {
-	std::vector<TimelineChannel> channels; /// the timeline channels
-	TimelineViewMode viewMode = TimelineViewMode::Keyframes; /// the current view mode
-	f32 startTime = 0.0f; /// the start of the timeline time range
-	f32 endTime = 5.0f; /// the end of the timeline time range
+	std::vector<AnimationEditorChannel> channels; /// the Animation editor channels
+	AnimationEditorViewMode viewMode = AnimationEditorViewMode::Keyframes; /// the current view mode
+	f32 startTime = 0.0f; /// the start of the Animation editor time range
+	f32 endTime = 5.0f; /// the end of the Animation editor time range
 	f32 cursorTime = 0.0f; /// the current time cursor
 	f32 pixelsPerSecond = 160.0f; /// horizontal zoom in pixels per second at 100% UI scale
-	f32 scrollTime = 0.0f; /// the time at the left edge of the timeline view
+	f32 scrollTime = 0.0f; /// the time at the left edge of the Animation editor view
 	f32 channelScroll = 0.0f; /// the vertical channel list scroll offset in pixels at 100% UI scale
 	f32 valueMin = 0.0f; /// the minimum value shown in curves mode when autoValueRange is false
 	f32 valueMax = 1.0f; /// the maximum value shown in curves mode when autoValueRange is false
@@ -2232,17 +2235,17 @@ struct TimelineState
 	i32 selectedChannel = -1; /// the selected channel index, -1 if none
 	f32 frameRate = 30.0f; /// the frame rate used for snapping
 	bool snapToFrames = false; /// if true key times and the cursor snap to frames
-	bool playing = false; /// true while the timeline is playing back
+	bool playing = false; /// true while the Animation editor is playing back
 	bool loopPlayback = true; /// true if playback wraps back to startTime when reaching endTime
 	bool repeat = false; /// true if the curves are drawn as repeating after endTime
 	bool ripple = false; /// true if moving keys shifts the keys after them in time
 	bool extendEndTime = false; /// true if moving keys past endTime grows endTime
 };
 
-/// Settings for the timeline widget
-struct TimelineSettings
+/// Settings for the Animation editor widget
+struct AnimationEditorSettings
 {
-	bool useThemeColors = true; /// if true, the timeline colors are derived from the current theme
+	bool useThemeColors = true; /// if true, the Animation editor colors are derived from the current theme
 	f32 defaultHeight = 320; /// the default widget height when no height is provided
 	f32 channelListWidth = 240; /// the width of the channels list panel
 	f32 toolbarHeight = 30; /// the height of the toolbar
@@ -2267,7 +2270,7 @@ struct TimelineSettings
 	f32 maxPixelsPerSecond = 4000; /// the maximum horizontal zoom
 	f32 defaultPixelsPerSecond = 160; /// the horizontal zoom used when the state has no valid zoom
 	f32 zoomStep = 1.25f; /// the zoom multiplier for a single zoom step
-	Color backgroundColor = Color::fromU8(16, 18, 22); /// the timeline background color
+	Color backgroundColor = Color::fromU8(16, 18, 22); /// the Animation editor background color
 	Color channelListColor = Color::fromU8(22, 25, 30); /// the channels list background color
 	Color headerColor = Color::fromU8(30, 34, 40); /// the toolbar and header background color
 	Color rowAlternateColor = Color::fromU8(20, 23, 28); /// the alternate channel row background color
@@ -2277,11 +2280,91 @@ struct TimelineSettings
 	Color textColor = Color::fromU8(220, 224, 230); /// the primary text color
 	Color dimTextColor = Color::fromU8(140, 146, 156); /// the secondary text color
 	Color keySelectedColor = Color::fromU8(55, 185, 255); /// the selected key color
-	Color toolbarToggleColor = Color::fromU8(150, 75, 20); /// the background of a toggled-on timeline toolbar button
+	Color toolbarToggleColor = Color::fromU8(150, 75, 20); /// the background of a toggled-on Animation editor toolbar button
 	Color playheadColor = Color::white; /// the time cursor color
 	Color selectionFillColor = Color::fromU8(55, 185, 255, 35); /// the box selection fill color
 	Color selectionBorderColor = Color::fromU8(55, 185, 255, 180); /// the box selection border color
-	Color disabledOverlayColor = Color::fromU8(0, 0, 0, 90); /// the overlay drawn over a disabled timeline
+	Color disabledOverlayColor = Color::fromU8(0, 0, 0, 90); /// the overlay drawn over a disabled Animation editor
+};
+
+/// A segment (clip) of a sequencer track
+struct SequencerSegment
+{
+	static const u32 maxTagSize = 64;
+
+	f32 start = 0.0f; /// the segment start time in seconds
+	f32 end = 1.0f; /// the segment end time in seconds, always greater than start
+	Color color = Color::fromU8(0, 0, 0, 0); /// the segment fill color, when alpha is zero the track color is used
+	bool selected = false; /// true if the segment is selected
+	char tag[maxTagSize] = { 0 }; /// optional text label drawn on the segment
+};
+
+/// A track of the sequencer widget
+struct SequencerTrack
+{
+	std::string name; /// the track name shown in the tracks list
+	bool enabled = true; /// false if the track is disabled (its segments are dimmed and not editable)
+	bool locked = false; /// true if the track segments cannot be selected or edited
+	Color color = Color::fromU8(70, 160, 255); /// the default segment color
+	std::vector<SequencerSegment> segments; /// the track segments, kept sorted by start time
+};
+
+/// The state of a sequencer widget, owned by the caller and passed to the sequencer() function
+struct SequencerState
+{
+	std::vector<SequencerTrack> tracks; /// the sequencer tracks
+	f32 startTime = 0.0f; /// the start of the sequencer time range
+	f32 endTime = 5.0f; /// the end of the sequencer time range
+	f32 cursorTime = 0.0f; /// the current time cursor
+	f32 pixelsPerSecond = 160.0f; /// horizontal zoom in pixels per second at 100% UI scale
+	f32 scrollTime = 0.0f; /// the time at the left edge of the sequencer view
+	f32 trackScroll = 0.0f; /// the vertical track list scroll offset in pixels at 100% UI scale
+	i32 selectedTrack = -1; /// the selected track index, -1 if none
+	f32 frameRate = 30.0f; /// the frame rate used for snapping
+	bool snapToFrames = false; /// if true segment edges and the cursor snap to frames
+	bool playing = false; /// true while the sequencer is playing back
+	bool loopPlayback = true; /// true if playback wraps back to startTime when reaching endTime
+};
+
+/// Settings for the sequencer widget
+struct SequencerSettings
+{
+	bool useThemeColors = true; /// if true, the sequencer colors are derived from the current theme
+	f32 defaultHeight = 320; /// the default widget height when no height is provided
+	f32 trackListWidth = 240; /// the width of the tracks list panel
+	f32 toolbarHeight = 30; /// the height of the toolbar
+	f32 rulerHeight = 24; /// the height of the time ruler
+	f32 rowHeight = 26; /// the height of a track row
+	f32 trackScrollbarWidth = 8; /// the width of the track list scrollbar
+	f32 trackScrollbarMinThumbSize = 24; /// the minimum height of the track list scrollbar thumb
+	f32 segmentHeight = 18; /// the height of a segment inside its track row
+	f32 segmentGap = 2; /// the horizontal gap between adjacent segments on the same track, in pixels, scaled by the ui scale
+	f32 minSegmentDuration = 0.05f; /// the minimum segment duration in seconds
+	f32 segmentEdgeHitWidth = 6; /// the mouse hit width of the segment resize edges
+	f32 playheadWidth = 2.0f; /// the width of the time cursor line
+	f32 endTimeLineWidth = 2.0f; /// the width of the line drawn at the end of the time range
+	Color endTimeLineColor = Color::fromU8(160, 165, 175, 110); /// the color of the line drawn at the end of the time range
+	f32 minPixelsPerSecond = 10; /// the minimum horizontal zoom
+	f32 maxPixelsPerSecond = 4000; /// the maximum horizontal zoom
+	f32 defaultPixelsPerSecond = 160; /// the horizontal zoom used when the state has no valid zoom
+	f32 zoomStep = 1.25f; /// the zoom multiplier for a single zoom step
+	Color backgroundColor = Color::fromU8(16, 18, 22); /// the sequencer background color
+	Color trackListColor = Color::fromU8(22, 25, 30); /// the tracks list background color
+	Color headerColor = Color::fromU8(30, 34, 40); /// the toolbar and header background color
+	Color rowAlternateColor = Color::fromU8(20, 23, 28); /// the alternate track row background color
+	Color rowSelectedColor = Color::fromU8(55, 125, 185, 150); /// the selected track row background color
+	Color gridColor = Color::fromU8(44, 48, 56); /// the minor grid color
+	Color gridStrongColor = Color::fromU8(62, 68, 78); /// the major grid color
+	Color textColor = Color::fromU8(220, 224, 230); /// the primary text color
+	Color dimTextColor = Color::fromU8(140, 146, 156); /// the secondary text color
+	Color segmentOutlineColor = Color::fromU8(0, 0, 0, 120); /// the segment outline color
+	Color segmentTextShadowColor = Color::fromU8(0, 0, 0, 140); /// the shadow color drawn behind the segment labels
+	f32 segmentTextShadowOffset = 1; /// the shadow offset of the segment labels in pixels, scaled by the ui scale
+	Color toolbarToggleColor = Color::fromU8(150, 75, 20); /// the background of a toggled-on sequencer toolbar button
+	Color playheadColor = Color::white; /// the time cursor color
+	Color selectionFillColor = Color::fromU8(55, 185, 255, 35); /// the box selection fill color
+	Color selectionBorderColor = Color::fromU8(55, 185, 255, 180); /// the box selection border color
+	Color disabledOverlayColor = Color::fromU8(0, 0, 0, 90); /// the overlay drawn over a disabled sequencer
 };
 
 /// Various HorusUI per-context global settings
@@ -2293,7 +2376,8 @@ struct Settings
 	f32 textScrollStepAmount = 30; /// scroll pixel amount when moving inside text input
 	u32 defaultAtlasSize = 4096; /// default atlas textures size in pixels
 	OverlayToolbarSettings overlayToolbars; /// settings for overlay toolbars
-	TimelineSettings timeline; /// settings for the timeline widget
+	AnimationEditorSettings animationEditor; /// settings for the Animation editor widget
+	SequencerSettings sequencer; /// settings for the sequencer widget
 	Point defaultLayoutPadding = {10, 10};
 	Point defaultScrollViewPadding = { 10, 10 };
 	Point defaultWidgetPadding = { 0, 0 };
@@ -3388,12 +3472,28 @@ HUI_API bool dropdown(const char* id, i32& selectedIndex, const char** items, u3
 /// \return true if selection changed
 HUI_API bool list(const char* id, bool* selectedItems, ListSelectionMode selectionType, const char** items, u32 itemCount, f32 height = 200.0f, u32 dragDropUserType = 0);
 
-/// Draw an animation timeline widget with a channels list, time ruler, keyframe and curve editing
+/// Draw an animation editor widget with a channels list, time ruler, keyframe and curve editing
 /// \param id unique widget id
-/// \param state the timeline state, owned by the caller and passed to the widget every frame
+/// \param state the Animation editor state, owned by the caller and passed to the widget every frame
 /// \param height the widget height, if zero it takes the remaining layout height or the settings default
-/// \return true if the timeline state changed (keys moved/added/removed, cursor moved, view changed, etc.)
-HUI_API bool timeline(const char* id, TimelineState* state, f32 height = 0.0f);
+/// \return true if the Animation editor state changed (keys moved/added/removed, cursor moved, view changed, etc.)
+HUI_API bool animationEditor(const char* id, AnimationEditorState* state, f32 height = 0.0f);
+
+/// Draw a sequencer widget with a tracks list, time ruler, and start/end segments on each track.
+/// Segments can be selected, moved and resized by dragging, box selected on empty lanes, and
+/// deleted with the Delete key or the toolbar button. The + Seg toolbar button adds a one second
+/// segment at the playhead, and double clicking an empty lane adds one at the clicked position;
+/// the segment is placed in the nearest free gap, on the first track with room. Segments cannot
+/// overlap each other: moves and resizes stop at the neighbouring segments, but a dragged segment
+/// crosses to the other side of a neighbour when there is free space for it there, swapping the
+/// order. The mouse wheel zooms around the cursor, dragging the ruler scrubs the playhead, and
+/// middle dragging pans the view. Playback advances the cursor with deltaTime and wraps when
+/// loopPlayback is set.
+/// \param id unique widget id
+/// \param state the sequencer state, owned by the caller and passed to the widget every frame
+/// \param height the widget height, if zero it takes the remaining layout height or the settings default
+/// \return true if the sequencer state changed (segments moved/added/removed, cursor moved, view changed, etc.)
+HUI_API bool sequencer(const char* id, SequencerState* state, f32 height = 0.0f);
 
 /// Draw a selectable label
 /// \param label the selectable's text

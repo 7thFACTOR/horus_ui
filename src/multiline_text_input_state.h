@@ -67,6 +67,12 @@ struct MultilineTextInputState
 	f32 caretBlinkTimer = 0;
 	u32 visibleLineCount = 10; // How many lines to display
 
+	// IME composition (in-progress text reported by the OS input method)
+	Utf32String compositionText;
+	i32 compositionCursorChars = 0;
+	i32 compositionSelectChars = 0;
+	bool composing = false;
+
 	// undo/redo support (per-widget)
 	UndoStack undoStack;
 
