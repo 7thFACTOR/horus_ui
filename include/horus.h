@@ -2203,6 +2203,7 @@ struct AnimationEditorKey
 	f32 outTangent[4] = { 0, 0, 0, 0 }; /// the tangent leaving the key, in value units per second, used when tangentAuto is false
 	bool tangentAuto = true; /// true if the tangents are computed automatically from the neighbouring keys
 	bool selected = false; /// true if the key is selected
+	u32 components = 0; /// bit mask of the components this key belongs to, zero means all components
 	char tag[maxTagSize] = { 0 }; /// optional text label drawn next to the key
 };
 
@@ -2360,6 +2361,7 @@ struct SequencerSettings
 	Color segmentOutlineColor = Color::fromU8(0, 0, 0, 120); /// the segment outline color
 	Color segmentTextShadowColor = Color::fromU8(0, 0, 0, 140); /// the shadow color drawn behind the segment labels
 	f32 segmentTextShadowOffset = 1; /// the shadow offset of the segment labels in pixels, scaled by the ui scale
+	f32 segmentColorDarkness = 0.35; /// how much the segment fill colors are darkened, 0..1, so the labels stay readable
 	Color toolbarToggleColor = Color::fromU8(150, 75, 20); /// the background of a toggled-on sequencer toolbar button
 	Color playheadColor = Color::white; /// the time cursor color
 	Color selectionFillColor = Color::fromU8(55, 185, 255, 35); /// the box selection fill color
@@ -3472,7 +3474,10 @@ HUI_API bool dropdown(const char* id, i32& selectedIndex, const char** items, u3
 /// \return true if selection changed
 HUI_API bool list(const char* id, bool* selectedItems, ListSelectionMode selectionType, const char** items, u32 itemCount, f32 height = 200.0f, u32 dragDropUserType = 0);
 
-/// Draw an animation editor widget with a channels list, time ruler, keyframe and curve editing
+/// Draw an animation editor widget with a channels list, time ruler, keyframe and curve editing.
+/// The + Key toolbar button and the double click add a key at the playhead or the clicked
+/// position; when specific sub-channels are selected in Curves mode, the new key belongs only
+/// to them (the key's components mask), otherwise it covers all the channel components.
 /// \param id unique widget id
 /// \param state the Animation editor state, owned by the caller and passed to the widget every frame
 /// \param height the widget height, if zero it takes the remaining layout height or the settings default

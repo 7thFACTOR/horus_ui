@@ -126,6 +126,11 @@ static f32 animationEditorQuantizeComponent(AnimationEditorKeyType type, f32 val
 	}
 }
 
+static bool animationEditorKeyHasComponent(const AnimationEditorKey& key, i32 component)
+{
+	return key.components == 0 || (key.components & (1u << component));
+}
+
 static f32 animationEditorAutoTangent(const AnimationEditorChannel& channel, i32 keyIndex, i32 component)
 {
 	i32 keyCount = (i32)channel.keys.size();
@@ -133,20 +138,34 @@ static f32 animationEditorAutoTangent(const AnimationEditorChannel& channel, i32
 	if (keyIndex < 0 || keyIndex >= keyCount || component < 0 || component >= 4 || keyCount < 2)
 		return 0.0f;
 
-	if (keyIndex == 0)
+	// the tangents are computed from the nearest keys that belong to this component
+	i32 prevIndex = keyIndex - 1;
+
+	while (prevIndex >= 0 && !animationEditorKeyHasComponent(channel.keys[prevIndex], component))
+		prevIndex--;
+
+	i32 nextIndex = keyIndex + 1;
+
+	while (nextIndex < keyCount && !animationEditorKeyHasComponent(channel.keys[nextIndex], component))
+		nextIndex++;
+
+	if (prevIndex < 0 && nextIndex < 0)
+		return 0.0f;
+
+	if (prevIndex < 0)
 	{
-		f32 duration = channel.keys[1].time - channel.keys[0].time;
-		return duration > 0.00001f ? (channel.keys[1].value[component] - channel.keys[0].value[component]) / duration : 0.0f;
+		f32 duration = channel.keys[nextIndex].time - channel.keys[keyIndex].time;
+		return duration > 0.00001f ? (channel.keys[nextIndex].value[component] - channel.keys[keyIndex].value[component]) / duration : 0.0f;
 	}
 
-	if (keyIndex == keyCount - 1)
+	if (nextIndex < 0)
 	{
-		f32 duration = channel.keys[keyCount - 1].time - channel.keys[keyCount - 2].time;
-		return duration > 0.00001f ? (channel.keys[keyCount - 1].value[component] - channel.keys[keyCount - 2].value[component]) / duration : 0.0f;
+		f32 duration = channel.keys[keyIndex].time - channel.keys[prevIndex].time;
+		return duration > 0.00001f ? (channel.keys[keyIndex].value[component] - channel.keys[prevIndex].value[component]) / duration : 0.0f;
 	}
 
-	f32 duration = channel.keys[keyIndex + 1].time - channel.keys[keyIndex - 1].time;
-	return duration > 0.00001f ? (channel.keys[keyIndex + 1].value[component] - channel.keys[keyIndex - 1].value[component]) / duration : 0.0f;
+	f32 duration = channel.keys[nextIndex].time - channel.keys[prevIndex].time;
+	return duration > 0.00001f ? (channel.keys[nextIndex].value[component] - channel.keys[prevIndex].value[component]) / duration : 0.0f;
 }
 
 static f32 animationEditorKeyTangent(const AnimationEditorChannel& channel, i32 keyIndex, i32 component, bool outgoing)
@@ -182,12 +201,6 @@ static f32 animationEditorEvaluateComponent(const AnimationEditorChannel& channe
 	if (channel.keys.empty() || component < 0 || component >= 4)
 		return 0.0f;
 
-	if (time <= channel.keys.front().time)
-		return channel.keys.front().value[component];
-
-	if (time >= channel.keys.back().time)
-		return channel.keys.back().value[component];
-
 	u32 lo = 0;
 	u32 hi = (u32)channel.keys.size() - 1;
 
@@ -201,8 +214,27 @@ static f32 animationEditorEvaluateComponent(const AnimationEditorChannel& channe
 			hi = mid;
 	}
 
-	const AnimationEditorKey& first = channel.keys[lo - 1];
-	const AnimationEditorKey& second = channel.keys[lo];
+	// find the closest keys on both sides that belong to this component
+	i32 firstIndex = (i32)lo - 1;
+	i32 secondIndex = (i32)lo;
+
+	while (firstIndex >= 0 && !animationEditorKeyHasComponent(channel.keys[firstIndex], component))
+		firstIndex--;
+
+	while (secondIndex < (i32)channel.keys.size() && !animationEditorKeyHasComponent(channel.keys[secondIndex], component))
+		secondIndex++;
+
+	if (firstIndex < 0 && secondIndex >= (i32)channel.keys.size())
+		return 0.0f;
+
+	if (firstIndex < 0)
+		return channel.keys[secondIndex].value[component];
+
+	if (secondIndex >= (i32)channel.keys.size())
+		return channel.keys[firstIndex].value[component];
+
+	const AnimationEditorKey& first = channel.keys[firstIndex];
+	const AnimationEditorKey& second = channel.keys[secondIndex];
 
 	if (channel.type == AnimationEditorKeyType::Bool || channel.type == AnimationEditorKeyType::Int)
 		return first.value[component];
@@ -215,8 +247,8 @@ static f32 animationEditorEvaluateComponent(const AnimationEditorChannel& channe
 	f32 t = (time - first.time) / duration;
 	f32 t2 = t * t;
 	f32 t3 = t2 * t;
-	f32 tangentIn = animationEditorKeyTangent(channel, (i32)lo - 1, component, true);
-	f32 tangentOut = animationEditorKeyTangent(channel, (i32)lo, component, false);
+	f32 tangentIn = animationEditorKeyTangent(channel, firstIndex, component, true);
+	f32 tangentOut = animationEditorKeyTangent(channel, secondIndex, component, false);
 	f32 h00 = 2.0f * t3 - 3.0f * t2 + 1.0f;
 	f32 h10 = t3 - 2.0f * t2 + t;
 	f32 h01 = -2.0f * t3 + 3.0f * t2;
@@ -576,7 +608,8 @@ static AnimationEditorTangentHit animationEditorFindTangentHandle(
 
 			for (i32 component = 0; component < components; component++)
 			{
-				if (!animationEditorComponentVisible(channel, component))
+				if (!animationEditorComponentVisible(channel, component)
+					|| !animationEditorKeyHasComponent(channel.keys[keyIndex], component))
 					continue;
 
 				for (i32 side = 0; side < 2; side++)
@@ -669,10 +702,16 @@ static u32 animationEditorBuildToolbarFields(
 
 	if (channel.type != AnimationEditorKeyType::Bool)
 	{
+		const AnimationEditorKey& key = channel.keys[selectedKey];
 		i32 components = animationEditorComponentCount(channel.type);
 
 		for (i32 component = 0; component < components; component++)
+		{
+			if (!animationEditorKeyHasComponent(key, component))
+				continue;
+
 			addField(component, settings.toolbarValueFieldWidth * scale);
+		}
 	}
 
 	addField(-2, settings.toolbarTagFieldWidth * scale);
@@ -954,7 +993,7 @@ static void animationEditorClearSelection(AnimationEditorState& state)
 			key.selected = false;
 }
 
-static bool animationEditorAddKey(AnimationEditorState& state, i32 channelIndex, f32 time, const f32* values, bool select)
+static bool animationEditorAddKey(AnimationEditorState& state, i32 channelIndex, f32 time, const f32* values, u32 componentMask, bool select)
 {
 	if (channelIndex < 0 || channelIndex >= (i32)state.channels.size())
 		return false;
@@ -987,9 +1026,13 @@ static bool animationEditorAddKey(AnimationEditorState& state, i32 channelIndex,
 	{
 		if (fabsf(key.time - time) <= 0.0001f)
 		{
-			if (values)
+			// merge the masks, zero on either side means the key covers all components
+			if (key.components != 0 && componentMask != 0)
+				key.components |= componentMask;
+
+			for (i32 i = 0; i < 4; i++)
 			{
-				for (i32 i = 0; i < 4; i++)
+				if (componentMask == 0 || (componentMask & (1u << i)))
 					key.value[i] = newValues[i];
 			}
 
@@ -1010,6 +1053,7 @@ static bool animationEditorAddKey(AnimationEditorState& state, i32 channelIndex,
 	AnimationEditorKey key;
 	key.time = time;
 	key.selected = select;
+	key.components = componentMask;
 
 	for (i32 i = 0; i < 4; i++)
 		key.value[i] = newValues[i];
@@ -1211,7 +1255,8 @@ static AnimationEditorKeyHit animationEditorFindKeyUnderMouse(
 
 				for (i32 component = 0; component < components; component++)
 				{
-					if (!animationEditorComponentVisible(channel, component))
+					if (!animationEditorComponentVisible(channel, component)
+						|| !animationEditorKeyHasComponent(key, component))
 						continue;
 
 					f32 y = animationEditorValueToY(plotRect, key.value[component], valueMin, valueMax);
@@ -1261,7 +1306,8 @@ static bool animationEditorKeyInsideRect(
 
 	for (i32 component = 0; component < components; component++)
 	{
-		if (!animationEditorComponentVisible(channel, component))
+		if (!animationEditorComponentVisible(channel, component)
+			|| !animationEditorKeyHasComponent(key, component))
 			continue;
 
 		f32 y = animationEditorValueToY(plotRect, key.value[component], valueMin, valueMax);
@@ -1495,9 +1541,14 @@ bool animationEditor(const char* id, AnimationEditorState* state, f32 height)
 			{
 				f32 values[4];
 				f32 addTime = animationEditorSnapTime(*state, state->cursorTime);
+				const AnimationEditorChannel& channel = state->channels[channelIndex];
 
-				animationEditorEvaluateChannel(state->channels[channelIndex], addTime, values);
-				animationEditorAddKey(*state, channelIndex, addTime, values, true);
+				// when specific sub-channels are selected, the new key belongs
+				// only to them, otherwise it covers all the components
+				u32 componentMask = channel.selected ? 0 : channel.selectedComponents;
+
+				animationEditorEvaluateChannel(channel, addTime, values);
+				animationEditorAddKey(*state, channelIndex, addTime, values, componentMask, true);
 				changed = true;
 			}
 			break;
@@ -1909,13 +1960,17 @@ bool animationEditor(const char* id, AnimationEditorState* state, f32 height)
 						{
 							f32 values[4];
 							f32 addTime = animationEditorSnapTime(*state, animationEditorXToTime(*state, plotRect, mouse.x));
+							u32 componentMask = 0;
 
 							animationEditorEvaluateChannel(state->channels[channelIndex], addTime, values);
 
 							if (state->viewMode == AnimationEditorViewMode::Curves)
+							{
 								values[component] = animationEditorYToValue(plotRect, mouse.y, valueMin, valueMax);
+								componentMask = (1u << component);
+							}
 
-							animationEditorAddKey(*state, channelIndex, addTime, values, true);
+							animationEditorAddKey(*state, channelIndex, addTime, values, componentMask, true);
 							changed = true;
 						}
 
@@ -2715,6 +2770,9 @@ bool animationEditor(const char* id, AnimationEditorState* state, f32 height)
 						if (key.time < timeLeft || key.time > timeRight)
 							continue;
 
+						if (!animationEditorKeyHasComponent(key, component))
+							continue;
+
 						f32 value = animationEditorQuantizeComponent(channel.type, key.value[component], component);
 
 						// a key with the same value as the previous one adds no step
@@ -2788,7 +2846,8 @@ bool animationEditor(const char* id, AnimationEditorState* state, f32 height)
 
 				for (i32 component = 0; component < components; component++)
 				{
-					if (!animationEditorComponentVisible(channel, component))
+					if (!animationEditorComponentVisible(channel, component)
+						|| !animationEditorKeyHasComponent(key, component))
 						continue;
 
 					Color color = animationEditorChannelColor(channelIndex, component);
@@ -2903,6 +2962,10 @@ bool animationEditor(const char* id, AnimationEditorState* state, f32 height)
 				for (i32 keyIndex = 0; keyIndex < (i32)channel.keys.size(); keyIndex++)
 				{
 					AnimationEditorKey& key = channel.keys[keyIndex];
+
+					if (!animationEditorKeyHasComponent(key, component))
+						continue;
+
 					f32 x = animationEditorTimeToX(*state, plotRect, key.time);
 
 					if (x < plotRect.x - animationEditorSettings.keySize * scale || x > plotRect.right() + animationEditorSettings.keySize * scale)

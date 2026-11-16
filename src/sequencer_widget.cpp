@@ -1809,6 +1809,11 @@ bool sequencer(const char* id, SequencerState* state, f32 height)
 					segmentHeight };
 				Color fillColor = sequencerSegmentColor(track, segment);
 
+				// darken the fill so the white label stays readable
+				f32 darkness = 1.0f - sequencerClamp(sequencerSettings.segmentColorDarkness, 0.0f, 1.0f);
+
+				fillColor = { fillColor.r * darkness, fillColor.g * darkness, fillColor.b * darkness, fillColor.a };
+
 				if (segment.selected)
 					fillColor = sequencerShadeColor(fillColor, 0.12f);
 				else if (!track.enabled)
