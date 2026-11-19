@@ -187,7 +187,11 @@
 	</div>
 	<div class="member">
 		<div class="prototype"><code><span class="kw">struct</span> <span class="fn">WindowsDockingState</span></code></div>
-		<p class="brief">The saved window docking layout, filled by <code>dockingStateSave</code> and restored by <code>dockingStateLoad</code>. Lists every dock node and its docked windows.</p>
+		<p class="brief">The saved window docking layout, filled by <code>dockingStateSaveInMemory</code> and restored by <code>dockingStateLoadFromMemory</code>. Holds the native windows (<code>NativeWindowInfo</code>: <code>rect</code>, <code>floating</code>), all the dock nodes (<code>DockNodeInfo</code>: <code>parentIndex</code>, <code>nativeWindowIndex</code>, <code>type</code>, <code>rect</code>, <code>selectedTabIndex</code>, <code>windows</code>) with the windows as <code>WindowInfo</code> (<code>id</code>, <code>title</code>, <code>flags</code>) entries, and the closed windows (<code>ClosedWindowInfo</code>: <code>id</code>, <code>rect</code>, <code>parentIndex</code> plus the dock slot <code>slotParentIndex</code>, <code>slotIndex</code>, <code>slotVertical</code>, <code>slotFraction</code>) which stay hidden and reopen docked back in their slot, or floating at their remembered rect when the slot is gone. <code>dockAreaNodeIndex</code> keeps the dock area restriction, -1 when docking is not restricted.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">struct</span> <span class="fn">OverlayToolbarSettings</span></code></div>
+		<p class="brief">Overlay toolbar geometry and color settings, available as <code>Settings::overlayToolbars</code>: default thickness, element padding and spacing, icon button size, grip size, drag start distance, dock preview color and floating grid size.</p>
 	</div>
 	<div class="member">
 		<div class="prototype"><code><span class="kw">struct</span> <span class="fn">VirtualScrollInfo</span></code></div>
@@ -214,8 +218,8 @@
 
 	<h2>Animation editor types</h2>
 	<div class="member">
-		<div class="prototype"><code><span class="kw">struct</span> <span class="fn">AnimationEditorKey</span> { <span class="kw">f32</span> time; <span class="kw">f32</span> value[4]; <span class="kw">f32</span> inTangent[4]; <span class="kw">f32</span> outTangent[4]; <span class="kw">bool</span> tangentAuto; <span class="kw">bool</span> selected; <span class="kw">char</span> tag[64]; };</code></div>
-		<p class="brief">A key of an animation editor channel: its time in seconds, up to four component values, per-component in/out tangents (value units per second), the selection flag and an optional text <code>tag</code> drawn next to the key. While <code>tangentAuto</code> is true the tangents are computed automatically from the neighbouring keys; editing a tangent handle in curves mode stores manual values.</p>
+		<div class="prototype"><code><span class="kw">struct</span> <span class="fn">AnimationEditorKey</span> { <span class="kw">f32</span> time; <span class="kw">f32</span> value[4]; <span class="kw">f32</span> inTangent[4]; <span class="kw">f32</span> outTangent[4]; <span class="kw">bool</span> tangentAuto; <span class="kw">bool</span> selected; <span class="kw">u32</span> components; <span class="kw">u32</span> selectedComponents; <span class="kw">char</span> tag[64]; };</code></div>
+		<p class="brief">A key of an animation editor channel: its time in seconds, up to four component values, per-component in/out tangents (value units per second), the selection flag, the <code>components</code> mask of the channel components the key belongs to (zero means all of them), the <code>selectedComponents</code> mask when individual sub-channels are selected, and an optional text <code>tag</code> drawn next to the key. While <code>tangentAuto</code> is true the tangents are computed automatically from the neighbouring keys; editing a tangent handle in curves mode stores manual values.</p>
 	</div>
 	<div class="member">
 		<div class="prototype"><code><span class="kw">struct</span> <span class="fn">AnimationEditorChannel</span> { <span class="kw">std::string</span> name; <span class="kw">AnimationEditorKeyType</span> type; <span class="kw">bool</span> enabled; <span class="kw">bool</span> selected; <span class="kw">bool</span> expanded; <span class="kw">u32</span> selectedComponents; <span class="kw">std::vector&lt;AnimationEditorKey&gt;</span> keys; };</code></div>
@@ -223,11 +227,35 @@
 	</div>
 	<div class="member">
 		<div class="prototype"><code><span class="kw">struct</span> <span class="fn">AnimationEditorState</span></code></div>
-		<p class="brief">The full state of an animation editor: <code>channels</code>, <code>viewMode</code>, time range, cursor, zoom/scroll, value range, selected channel, frame snapping and playback settings (<code>playing</code>, <code>loopPlayback</code>), plus <code>repeat</code> for drawing repeated curves after <code>endTime</code> , <code>ripple</code> for shifting later keys in time when keys are moved, and <code>extendEndTime</code> to grow the time range when keys are pushed past <code>endTime</code>. Owned by the caller and passed to <code>animationEditor</code>.</p>
+		<p class="brief">The full state of an animation editor: <code>channels</code>, <code>viewMode</code>, time range, cursor, zoom/scroll, value range, selected channel, frame snapping and playback settings (<code>playing</code>, <code>loopPlayback</code>), plus <code>repeat</code> for drawing repeated curves after <code>endTime</code>, <code>ripple</code> for shifting later keys in time when keys are moved, <code>push</code> for dragging a selection into the neighbouring keys and pushing them along, and <code>extendEndTime</code> to grow the time range when keys are pushed past <code>endTime</code>. Owned by the caller and passed to <code>animationEditor</code>.</p>
 	</div>
 	<div class="member">
 		<div class="prototype"><code><span class="kw">struct</span> <span class="fn">AnimationEditorSettings</span></code></div>
-		<p class="brief">Animation editor geometry, color and interaction settings, available as <code>Settings::animationEditor</code>. When <code>useThemeColors</code> is true (the default), the animation editor palette is derived from the active theme.</p>
+		<p class="brief">Animation editor geometry, color and interaction settings, available as <code>Settings::animationEditor</code>. When <code>useThemeColors</code> is true (the default), the animation editor palette is derived from the active theme. Set <code>showToolbar</code> to false to hide the built in toolbar and build a custom one from <code>animationEditorAction</code>.</p>
+	</div>
+
+	<h2>Sequencer types</h2>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">struct</span> <span class="fn">SequencerSegment</span> { <span class="kw">f32</span> start; <span class="kw">f32</span> end; <span class="kw">Color</span> color; <span class="kw">bool</span> selected; <span class="kw">char</span> tag[64]; };</code></div>
+		<p class="brief">A segment (clip) of a sequencer track: its <code>start</code> and <code>end</code> time in seconds (<code>end</code> is always greater than <code>start</code>), the fill <code>color</code> (when its alpha is zero the track color is used), the selection flag and an optional text <code>tag</code> drawn on the segment.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">struct</span> <span class="fn">SequencerTrack</span> { <span class="kw">std::string</span> name; <span class="kw">bool</span> enabled; <span class="kw">bool</span> locked; <span class="kw">Color</span> color; <span class="kw">std::vector&lt;SequencerSegment&gt;</span> segments; };</code></div>
+		<p class="brief">A sequencer track: its name shown in the tracks list, <code>enabled</code> and <code>locked</code> flags (a locked track cannot be selected or edited), the default segment <code>color</code> and the segments, kept sorted by start time.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">struct</span> <span class="fn">SequencerState</span></code></div>
+		<p class="brief">The full state of a sequencer: <code>tracks</code>, time range, cursor, zoom/scroll, selected track, frame snapping and playback settings (<code>playing</code>, <code>loopPlayback</code>), plus <code>snapToFrames</code> for snapping edges and the cursor to frames, <code>snapToSegments</code> for snapping dragged and resized edges to other segment edges, <code>ripple</code> for pushing the segments on the drag side when a segment is moved, <code>push</code> for letting dragged and resized segments push the segments blocking them, and <code>extendEndTime</code> to grow the time range instead of clamping the segments at <code>endTime</code>. Owned by the caller and passed to <code>sequencer</code>.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">struct</span> <span class="fn">SequencerSettings</span></code></div>
+		<p class="brief">Sequencer geometry, color and interaction settings, available as <code>Settings::sequencer</code>. When <code>useThemeColors</code> is true (the default), the sequencer palette is derived from the active theme. Set <code>showToolbar</code> to false to hide the built in toolbar and build a custom one from <code>sequencerAction</code>. Also holds <code>minSegmentDuration</code>, the segment edge hit width and the snap distance.</p>
+	</div>
+
+	<h2>Settings</h2>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">struct</span> <span class="fn">Settings</span></code></div>
+		<p class="brief">The per-context global settings, passed to <code>contextCreate</code> and available through <code>contextGetSettings</code>: the <code>services</code> platform callbacks, <code>deltaTime</code> for the built in animations, default layout, widget and scroll view padding and sizes, text caret and buffer limits, <code>sliderDragDirection</code> and drag start distances, line anti-aliasing, docking (<code>dockingStyle</code>, node spacing, sizes and indicators), custom file dialog sizes, FPS throttling and the per-widget groups <code>overlayToolbars</code>, <code>animationEditor</code> and <code>sequencer</code>.</p>
 	</div>
 
 	<h2>Enums</h2>
@@ -266,6 +294,7 @@
 				<tr><td><code>SliderDragDirection</code></td><td><code>Any, HorizontalOnly, VerticalOnly</code></td><td>Slider drag direction mode (see <code>Settings</code>).</td></tr>
 				<tr><td><code>DockType</code></td><td><code>None, Left, Right, Top, Bottom, AsTab, Floating</code></td><td>Docking modes for windows.</td></tr>
 				<tr><td><code>DockNodeSplitType</code></td><td><code>Top, Bottom, Left, Right</code></td><td>Dock node split direction.</td></tr>
+				<tr><td><code>DockNodeType</code></td><td><code>None, Tabs, Vertical, Horizontal</code></td><td>The type of a saved dock node, a leaf with windows as tabs or a vertical/horizontal split.</td></tr>
 				<tr><td><code>DockingGuidesStyle</code></td><td><code>NativeWindows, InsideNativeWindows, MouseCursorOnly, Auto</code></td><td>How docking guides are drawn. <code>NativeWindows</code> is Windows-only and smoothest.</td></tr>
 				<tr><td><code>MessageBoxImage</code></td><td><code>Error, Info, Question, Warning, Custom</code></td><td>Message box image.</td></tr>
 				<tr><td><code>MessageBoxButtons</code></td><td><code>None, Ok, Cancel, Yes, No, Retry, Abort, ClosedByEscape, OkCancel, YesNo, YesNoCancel</code></td><td>Message box buttons and result.</td></tr>
@@ -281,6 +310,8 @@
 				<tr><td><code>OverlayToolbarLayout</code></td><td><code>Horizontal, Vertical, Panel</code></td><td>Overlay toolbar layouts.</td></tr>
 				<tr><td><code>AnimationEditorKeyType</code></td><td><code>Float, Int, Vec2, Vec3, Vec4, Bool</code></td><td>The data type of an animation editor channel.</td></tr>
 				<tr><td><code>AnimationEditorViewMode</code></td><td><code>Keyframes, Curves</code></td><td>Animation editor view modes.</td></tr>
+				<tr><td><code>AnimationEditorAction</code></td><td><code>Play, KeyframesMode, CurvesMode, AddKey, DeleteSelected, ToggleSnap, ZoomOut, ZoomIn, FitView</code></td><td>Animation editor toolbar actions, applied with <code>animationEditorAction</code>.</td></tr>
+				<tr><td><code>SequencerAction</code></td><td><code>Play, AddSegment, DeleteSelected, ToggleSnap, ZoomOut, ZoomIn, FitView</code></td><td>Sequencer toolbar actions, applied with <code>sequencerAction</code>.</td></tr>
 			</tbody>
 		</table>
 	</div>

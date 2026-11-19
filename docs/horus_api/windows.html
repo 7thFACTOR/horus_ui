@@ -36,7 +36,9 @@
 		Horus windows live inside a <strong>dock tree</strong>. Each native window gets a root dock node (
 		<code>dockNodeCreateRoot</code>); dock nodes split into child nodes (<code>dockNodeSplit</code>) and windows are assigned to
 		nodes (<code>dockNodeSetWindow</code>). A window is drawn between <code>windowBegin</code>/<code>windowEnd</code> from inside
-		any layout, and the user can drag/drop tabs to re-dock them at runtime.
+		any layout, and the user can drag/drop tabs to re-dock them at runtime. Docking can be restricted to a subtree with
+		<code>dockNodeSetDockArea</code>, so chrome windows such as the menu bar and toolbars stay pinned full width while
+		everything else is docked in the content area below or around them.
 	</p>
 
 	<h2>Native windows &amp; the dock tree</h2>
@@ -79,6 +81,20 @@
 		<div class="prototype"><code><span class="kw">void</span> <span class="fn">dockNodeLayoutRecalculate</span>()</code></div>
 		<p class="brief">Recalculate the dock node layout sizes from the native window sizes.</p>
 	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">dockNodeSetDockArea</span>(<span class="prm">DockNodeId</span> nodeId)</code></div>
+		<p class="brief">Restrict docking to a dock node subtree, so windows can only be docked inside it. Used to pin chrome windows: windows cannot be docked into or around the chrome windows, the native window edges dock relative to the dock area, and dropping on a chrome window docks next to the dock area in that direction. The content area can still be split full width or full height (top below the toolbars, bottom of the window). Set it to the root child that holds the content, and it is saved/restored with the docking layout.</p>
+		<ul class="params"><li><span class="pname">nodeId</span> the dock area node, 0 to allow docking anywhere</li></ul>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">dockNodeSetDockAreaByWindow</span>(<span class="prm">const char*</span> windowId)</code></div>
+		<p class="brief">Restrict docking to the highest dock node below the native window root that contains the window. Useful after loading a layout, when the node ids are not known.</p>
+		<ul class="params"><li><span class="pname">windowId</span> the window id, it must be docked</li></ul>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="ret">DockNodeId</span> <span class="fn">dockNodeGetDockArea</span>()</code></div>
+		<p class="brief">Return the dock area node id, 0 if docking is not restricted.</p>
+	</div>
 
 	<h2>Dockable windows</h2>
 	<div class="member">
@@ -98,11 +114,16 @@
 	</div>
 	<div class="member">
 		<div class="prototype"><code><span class="kw">void</span> <span class="fn">windowSetVisible</span>(<span class="prm">const char*</span> windowId, <span class="prm">bool</span> visible)</code></div>
-		<p class="brief">Show or hide a window.</p>
+		<p class="brief">Show or hide a window. Hidden windows are remembered with their last screen rect and dock slot, so they reopen docked back where they were when shown again, or floating at the same rect when the slot is gone.</p>
 		<ul class="params">
 			<li><span class="pname">windowId</span> the window id</li>
 			<li><span class="pname">visible</span> true to show, false to hide</li>
 		</ul>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="ret">bool</span> <span class="fn">windowIsVisible</span>(<span class="prm">const char*</span> windowId)</code></div>
+		<p class="brief">Return true if the window is not closed; it is shown on the next frame when <code>windowBegin</code> is called for it.</p>
+		<ul class="params"><li><span class="pname">windowId</span> the window id</li></ul>
 	</div>
 	<div class="member">
 		<div class="prototype"><code><span class="kw">void</span> <span class="fn">windowSetNextFlags</span>(<span class="prm">WindowFlags</span> flags)</code></div>
@@ -168,14 +189,27 @@
 
 	<h2>Docking layout persistence</h2>
 	<div class="member">
-		<div class="prototype"><code><span class="kw">void</span> <span class="fn">dockingStateSave</span>(<span class="prm">WindowsDockingState&amp;</span> dockingState)</code></div>
-		<p class="brief">Save the current docking layout into a state object (to store on disk or in a project file).</p>
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">dockingStateSaveInMemory</span>(<span class="prm">WindowsDockingState&amp;</span> dockingState)</code></div>
+		<p class="brief">Save the current docking layout into a state object held in memory, to store in a project file or to pass around. Includes the closed windows (kept hidden on load) and their last screen rects. Save before the window close event is processed: the closing native window's docking layout is destroyed in <code>frameBegin</code>.</p>
 		<ul class="params"><li><span class="pname">dockingState</span> the state to fill</li></ul>
 	</div>
 	<div class="member">
-		<div class="prototype"><code><span class="kw">void</span> <span class="fn">dockingStateLoad</span>(<span class="prm">const WindowsDockingState&amp;</span> dockingState)</code></div>
-		<p class="brief">Restore a previously saved docking layout.</p>
+		<div class="prototype"><code><span class="ret">bool</span> <span class="fn">dockingStateLoadFromMemory</span>(<span class="prm">const WindowsDockingState&amp;</span> dockingState)</code></div>
+		<p class="brief">Restore a previously saved docking layout. Existing windows are reused by id and the saved ones are created; existing windows that are not part of the state are left untouched. Must be called outside the <code>windowBegin</code>/<code>windowEnd</code> pair.</p>
 		<ul class="params"><li><span class="pname">dockingState</span> the state to load</li></ul>
+		<p class="returns">Returns true if the state was valid and was loaded.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="ret">bool</span> <span class="fn">dockingStateSaveToFile</span>(<span class="prm">const char*</span> filename)</code></div>
+		<p class="brief">Save the current docking layout to a JSON file, provided by the JSON docking state backend (<code>backends/json_docking_state.h</code>). Uses the file I/O services.</p>
+		<ul class="params"><li><span class="pname">filename</span> the JSON filename, relative to the executable</li></ul>
+		<p class="returns">Returns true if the file was written.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="ret">bool</span> <span class="fn">dockingStateLoadFromFile</span>(<span class="prm">const char*</span> filename)</code></div>
+		<p class="brief">Read a docking layout from a JSON file and apply it, provided by the JSON docking state backend. Existing windows that are not part of the saved layout are left untouched.</p>
+		<ul class="params"><li><span class="pname">filename</span> the JSON filename, relative to the executable</li></ul>
+		<p class="returns">Returns true if the file was read and the layout was loaded.</p>
 	</div>
 
 	<h2>Overlay toolbars</h2>

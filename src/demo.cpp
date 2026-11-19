@@ -799,6 +799,7 @@ static void demoInitAnimationEditor(AnimationEditorState& state)
 	state.snapToFrames = true;
 	state.repeat = false;
 	state.ripple = false;
+	state.push = false;
 	state.extendEndTime = false;
 
 	auto addChannel = [&](const char* name, AnimationEditorKeyType type)
@@ -893,8 +894,12 @@ static void demoInitSequencer(SequencerState& state)
 	state.selectedTrack = -1;
 	state.frameRate = 30.0f;
 	state.snapToFrames = false;
+	state.snapToSegments = true;
 	state.playing = false;
 	state.loopPlayback = true;
+	state.ripple = false;
+	state.push = false;
+	state.extendEndTime = false;
 
 	auto addTrack = [&](const char* name, Color color)
 	{
@@ -985,6 +990,61 @@ void showDemo()
 	scrollViewBegin("##demoScroll", 0, demo.demoScrollPos, { 0, 0 }, ScrollViewFlags::None);
 
 	space();
+
+	// ------------------------------------------------------------------
+	// Animation editor
+	// ------------------------------------------------------------------
+	if (expandableBegin("Animation Editor", &demo.expandAnimationEditor))
+	{
+		check("Disable##Animation Editor", &demo.disableAnimationEditor);
+		check("Show toolbar##Animation Editor", &contextGetSettings().animationEditor.showToolbar);
+		widgetPushDisabled(demo.disableAnimationEditor);
+
+		// a custom toolbar built from the public action functions, shown when the
+		// built in toolbar is hidden
+		if (!contextGetSettings().animationEditor.showToolbar)
+		{
+			if (button("Play##Animation Editor Toolbar"))
+				animationEditorAction(&demo.animationEditorState, AnimationEditorAction::Play);
+
+			sameLine();
+			if (button("+ Key##Animation Editor Toolbar"))
+				animationEditorAction(&demo.animationEditorState, AnimationEditorAction::AddKey);
+
+			sameLine();
+			if (button("Del##Animation Editor Toolbar"))
+				animationEditorAction(&demo.animationEditorState, AnimationEditorAction::DeleteSelected);
+
+			sameLine();
+			if (button("Fit##Animation Editor Toolbar"))
+				animationEditorAction(&demo.animationEditorState, AnimationEditorAction::FitView, layoutGetSize().x);
+		}
+
+		label("Animation editor:");
+		labelMultiline("Drag keys to retime, drag values in Curves mode, wheel to zoom around the mouse, middle-drag to pan, double-click the canvas to add a key and Delete to remove selected keys. With Auto value range off, the wheel zooms both axes freely. In Curves mode the curves are Hermite; select a key to show its tangent handles and drag them to bend the curve. With Push enabled, dragging a key pushes the keys it reaches.", HAlignType::Left);
+		animationEditor("##demoAnimationEditor", &demo.animationEditorState, 220.0f);
+
+		space();
+		check("Snap to frames##Animation Editor", &demo.animationEditorState.snapToFrames);
+		sameLine();
+		widgetSetNextWidth(220.0f);
+		sliderFloat("Frame Rate##Animation Editor", 1.0f, 120.0f, demo.animationEditorState.frameRate, true, 1.0f);
+		check("Auto value range", &demo.animationEditorState.autoValueRange);
+		sameLine();
+		check("Repeat", &demo.animationEditorState.repeat);
+		sameLine();
+		check("Ripple##Animation Editor", &demo.animationEditorState.ripple);
+		sameLine();
+		check("Push##Animation Editor", &demo.animationEditorState.push);
+		sameLine();
+		check("Extend End", &demo.animationEditorState.extendEndTime);
+		sameLine();
+		if (button("Reset Animation Editor"))
+			demoInitAnimationEditor(demo.animationEditorState);
+
+		widgetPopDisabled();
+		expandableEnd();
+	}
 
 	// ------------------------------------------------------------------
 	// box
@@ -3480,6 +3540,62 @@ if (expandableBegin("Overlay Toolbars", &demo.expandOverlayToolbar))
 	}
 
 	// ------------------------------------------------------------------
+	// Sequencer
+	// ------------------------------------------------------------------
+	if (expandableBegin("Sequencer", &demo.expandSequencer))
+	{
+		check("Disable##Sequencer", &demo.disableSequencer);
+		check("Show toolbar##Sequencer", &contextGetSettings().sequencer.showToolbar);
+		widgetPushDisabled(demo.disableSequencer);
+
+		// a custom toolbar built from the public action functions, shown when the
+		// built in toolbar is hidden
+		if (!contextGetSettings().sequencer.showToolbar)
+		{
+			if (button("Play##Sequencer Toolbar"))
+				sequencerAction(&demo.sequencerState, SequencerAction::Play);
+
+			sameLine();
+			if (button("+ Seg##Sequencer Toolbar"))
+				sequencerAction(&demo.sequencerState, SequencerAction::AddSegment);
+
+			sameLine();
+			if (button("Del##Sequencer Toolbar"))
+				sequencerAction(&demo.sequencerState, SequencerAction::DeleteSelected);
+
+			sameLine();
+			if (button("Fit##Sequencer Toolbar"))
+				sequencerAction(&demo.sequencerState, SequencerAction::FitView, layoutGetSize().x);
+		}
+
+		label("Sequencer:");
+		labelMultiline("Tracks with start/end segments, like an engine sequencer. Drag segment bodies to move them, drag the edges to resize, double-click an empty lane to add a segment at the clicked position, box select on empty space, Delete removes selected segments, wheel zooms around the mouse and middle-drag pans. Segment edges snap to other segments' edges on all tracks (dashed guide line). With Ripple enabled, dragging a segment pushes the segments after it (or before it when dragging left); with Push enabled, dragged and resized segments push the segments blocking them.", HAlignType::Left);
+		sequencer("##demoSequencer", &demo.sequencerState, 200.0f);
+
+		space();
+		check("Snap to frames##Sequencer", &demo.sequencerState.snapToFrames);
+		sameLine();
+		check("Snap Segments##Sequencer", &demo.sequencerState.snapToSegments);
+		sameLine();
+		widgetSetNextWidth(220.0f);
+		sliderFloat("Frame Rate##Sequencer", 1.0f, 120.0f, demo.sequencerState.frameRate, true, 1.0f);
+		sameLine();
+		check("Loop playback", &demo.sequencerState.loopPlayback);
+		sameLine();
+		check("Ripple##Sequencer", &demo.sequencerState.ripple);
+		sameLine();
+		check("Push##Sequencer", &demo.sequencerState.push);
+		sameLine();
+		check("Extend End##Sequencer", &demo.sequencerState.extendEndTime);
+		sameLine();
+		if (button("Reset Sequencer"))
+			demoInitSequencer(demo.sequencerState);
+
+		widgetPopDisabled();
+		expandableEnd();
+	}
+
+	// ------------------------------------------------------------------
 	// slider
 	// ------------------------------------------------------------------
 	if (expandableBegin("Sliders", &demo.expandSlider))
@@ -3720,65 +3836,6 @@ if (expandableBegin("Overlay Toolbars", &demo.expandOverlayToolbar))
 		{
 			label("no active composition");
 		}
-
-		widgetPopDisabled();
-		expandableEnd();
-	}
-
-	// ------------------------------------------------------------------
-	// Animation editor
-	// ------------------------------------------------------------------
-	if (expandableBegin("Animation Editor", &demo.expandAnimationEditor))
-	{
-		check("Disable##Animation Editor", &demo.disableAnimationEditor);
-		widgetPushDisabled(demo.disableAnimationEditor);
-
-		label("Animation editor:");
-		labelMultiline("Drag keys to retime, drag values in Curves mode, wheel to zoom around the mouse, middle-drag to pan, double-click the canvas to add a key and Delete to remove selected keys. With Auto value range off, the wheel zooms both axes freely. In Curves mode the curves are Hermite; select a key to show its tangent handles and drag them to bend the curve.", HAlignType::Left);
-		animationEditor("##demoAnimationEditor", &demo.animationEditorState, 220.0f);
-
-		space();
-		check("Snap to frames##Animation Editor", &demo.animationEditorState.snapToFrames);
-		sameLine();
-		widgetSetNextWidth(220.0f);
-		sliderFloat("Frame Rate##Animation Editor", 1.0f, 120.0f, demo.animationEditorState.frameRate, true, 1.0f);
-		check("Auto value range", &demo.animationEditorState.autoValueRange);
-		sameLine();
-		check("Repeat", &demo.animationEditorState.repeat);
-		sameLine();
-		check("Ripple", &demo.animationEditorState.ripple);
-		sameLine();
-		check("Extend End", &demo.animationEditorState.extendEndTime);
-		sameLine();
-		if (button("Reset Animation Editor"))
-			demoInitAnimationEditor(demo.animationEditorState);
-
-		widgetPopDisabled();
-		expandableEnd();
-	}
-
-	// ------------------------------------------------------------------
-	// Sequencer
-	// ------------------------------------------------------------------
-	if (expandableBegin("Sequencer", &demo.expandSequencer))
-	{
-		check("Disable##Sequencer", &demo.disableSequencer);
-		widgetPushDisabled(demo.disableSequencer);
-
-		label("Sequencer:");
-		labelMultiline("Tracks with start/end segments, like an engine sequencer. Drag segment bodies to move them, drag the edges to resize, double-click an empty lane to add a segment at the clicked position, box select on empty space, Delete removes selected segments, wheel zooms around the mouse and middle-drag pans.", HAlignType::Left);
-		sequencer("##demoSequencer", &demo.sequencerState, 200.0f);
-
-		space();
-		check("Snap to frames##Sequencer", &demo.sequencerState.snapToFrames);
-		sameLine();
-		widgetSetNextWidth(220.0f);
-		sliderFloat("Frame Rate##Sequencer", 1.0f, 120.0f, demo.sequencerState.frameRate, true, 1.0f);
-		sameLine();
-		check("Loop playback", &demo.sequencerState.loopPlayback);
-		sameLine();
-		if (button("Reset Sequencer"))
-			demoInitSequencer(demo.sequencerState);
 
 		widgetPopDisabled();
 		expandableEnd();

@@ -508,9 +508,9 @@ void deferredDeleteObjects()
 			ctx->docking.windows.erase(iter);
 		}
 
-		// a window hidden through windowSetVisible has already been detached from its
-		// dock node, so its rect was recorded at that point
-		if (wnd->dockNode)
+		// a window closed through the docking system already recorded its rect in
+		// screen coordinates, keep that one
+		if (wnd->dockNode && !ctx->docking.closedWindowsRects.count(wnd->id))
 			ctx->docking.closedWindowsRects[wnd->id] = wnd->dockNode->rect;
 
 		auto iterWnd = ctx->docking.windowsDockNodeAssignments.find(wnd->id);
@@ -1046,6 +1046,35 @@ void dockNodeLayoutRecalculate()
 	{
 		dockNodeRecalculateLayout(pair.second);
 	}
+}
+
+void dockNodeSetDockArea(DockNodeId nodeId)
+{
+	ctx->docking.dockAreaNodeId = nodeId;
+}
+
+void dockNodeSetDockAreaByWindow(const char* windowId)
+{
+	auto iter = ctx->docking.windows.find(windowId);
+
+	if (iter == ctx->docking.windows.end() || !iter->second || !iter->second->dockNode)
+		return;
+
+	DockNode* node = iter->second->dockNode;
+
+	// walk up to the highest node below the native window root
+	while (node->parent && node->parent->parent)
+		node = node->parent;
+
+	ctx->docking.dockAreaNodeId = node->parent ? node->id : 0;
+}
+
+DockNodeId dockNodeGetDockArea()
+{
+	if (!ctx->docking.dockAreaNodeId)
+		return 0;
+
+	return ctx->docking.dockNodeIdsMap.count(ctx->docking.dockAreaNodeId) ? ctx->docking.dockAreaNodeId : 0;
 }
 
 HTheme themeCreate(u32 atlasTextureSize)

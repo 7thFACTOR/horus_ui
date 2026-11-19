@@ -7,6 +7,9 @@
 
 namespace hui
 {
+static DockNode* dockNodeGetAreaNode();
+bool dockNodeHasChromeWindow(DockNode* node);
+
 DockNode::DockNode()
 {
 	if (ctx)
@@ -436,6 +439,16 @@ void DockNode::computeMinSize()
 {
 	minSize.set(ctx->settings.dockNodeMinSize, ctx->settings.dockNodeMinSize);
 
+	// a node holding a fixed size window cannot be made smaller than that size
+	f32 fixedWidth = dockNodeFixedWidth(this);
+	f32 fixedHeight = dockNodeFixedHeight(this);
+
+	if (fixedWidth > 0.0f)
+		minSize.x = fixedWidth;
+
+	if (fixedHeight > 0.0f)
+		minSize.y = fixedHeight;
+
 	for (auto& child : children)
 	{
 		child->computeMinSize();
@@ -495,24 +508,41 @@ bool DockNode::checkRedundancy()
 	if (children.size() == 1)
 	{
 		auto child = children[0];
-		
-		children = child->children;
-		windows = child->windows;
 
-		adoptChildren();
-		adoptWindows();
-		selectedTabIndex = child->selectedTabIndex;
-		type = child->type;
+		// the root must keep a chrome child as its own node, collapsing it makes the
+		// chrome window fill the whole native window
+		bool collapsingChromeRootChild = !parent && dockNodeHasChromeWindow(child);
 
-		ctx->docking.dockNodesToDelete.insert(child);
+		// the dock area must keep its own node, never collapse it into its parent
+		bool isDockArea = ctx->docking.dockAreaNodeId && child->id == ctx->docking.dockAreaNodeId;
+
+		if (!collapsingChromeRootChild && !isDockArea)
+		{
+			children = child->children;
+			windows = child->windows;
+
+			adoptChildren();
+			adoptWindows();
+			selectedTabIndex = child->selectedTabIndex;
+			type = child->type;
+
+			ctx->docking.dockNodesToDelete.insert(child);
+		}
 	}
 
 	if (parent)
 	{
 		bool deleteThis = false;
 
-		// if same type as parent, merge its nodes and windows into parent
-		if (parent->type == type)
+		// a regular node directly under the root is the content area, never merge it
+		// into the root, the chrome windows would become its siblings
+		bool isRootContent = !parent->parent && !dockNodeHasChromeWindow(this);
+
+		// if same type as parent, merge its nodes and windows into parent, but never
+		// merge the dock area, it must keep its own node so the docking stays restricted
+		if (parent->type == type
+			&& !isRootContent
+			&& (!ctx->docking.dockAreaNodeId || id != ctx->docking.dockAreaNodeId))
 		{
 			auto iterPosThis = std::find(parent->children.begin(), parent->children.end(), this);
 
@@ -765,27 +795,716 @@ void DockNode::removeTabSpace()
 	dockingTabSpaceIndex = ~0;
 }
 
-bool saveDockingState(const char* filename)
+static DockNodeType dockingStateFromNodeType(DockNode::Type type)
 {
-	//TODO
-	return true;
+	switch (type)
+	{
+	case DockNode::Type::Tabs: return DockNodeType::Tabs;
+	case DockNode::Type::Vertical: return DockNodeType::Vertical;
+	case DockNode::Type::Horizontal: return DockNodeType::Horizontal;
+	default: return DockNodeType::None;
+	}
 }
 
-u8* dockingSaveStateToMemory(size_t& outStateInfoSize)
+static DockNode::Type dockingStateToNodeType(DockNodeType type)
 {
-	//TODO
-	return 0;
+	switch (type)
+	{
+	case DockNodeType::Tabs: return DockNode::Type::Tabs;
+	case DockNodeType::Vertical: return DockNode::Type::Vertical;
+	case DockNodeType::Horizontal: return DockNode::Type::Horizontal;
+	default: return DockNode::Type::None;
+	}
 }
 
-bool loadDockingState(const char* filename)
+// saves a dock node and its children as flat entries, the parent is referenced by index
+static void dockingStateSaveNode(
+	const DockNode* node,
+	i32 parentIndex,
+	i32 nativeWindowIndex,
+	WindowsDockingState& dockingState,
+	std::unordered_map<DockNodeId, i32>& nodeIndices)
 {
-	//TODO
-	return false;
+	if (!node || (node->emptyDockSite && node->windows.empty() && node->children.empty()
+		&& node->id != ctx->docking.dockAreaNodeId))
+		return;
+
+	WindowsDockingState::DockNodeInfo info;
+
+	info.parentIndex = parentIndex;
+	info.nativeWindowIndex = nativeWindowIndex;
+	info.type = dockingStateFromNodeType(node->type);
+	info.rect = node->rect;
+	info.selectedTabIndex = node->selectedTabIndex;
+
+	for (auto wnd : node->windows)
+	{
+		if (wnd && !wnd->id.empty())
+			info.windows.push_back({ wnd->id, wnd->title, (u32)wnd->flags });
+	}
+
+	i32 nodeIndex = (i32)dockingState.dockNodes.size();
+
+	dockingState.dockNodes.push_back(info);
+	nodeIndices[node->id] = nodeIndex;
+
+	for (auto child : node->children)
+		dockingStateSaveNode(child, nodeIndex, nativeWindowIndex, dockingState, nodeIndices);
 }
 
-bool dockingLoadStateFromMemory(const u8* stateInfo, size_t stateInfoSize)
+void dockingStateSaveInMemory(WindowsDockingState& dockingState)
 {
-	//TODO
+	dockingState = WindowsDockingState();
+
+	if (!ctx)
+		return;
+
+	// recover a stale dock area before saving, so the restriction persists
+	dockNodeGetAreaNode();
+
+	std::unordered_map<DockNodeId, i32> nodeIndices;
+
+	// iterate the native windows in creation order so saving is deterministic
+	for (auto nativeWindow : ctx->nativeWindows)
+	{
+		auto iter = ctx->docking.rootNativeWindowDockNodes.find(nativeWindow);
+
+		if (iter == ctx->docking.rootNativeWindowDockNodes.end() || !iter->second)
+			continue;
+
+		DockNode* root = iter->second;
+
+		if (!root->nativeWindow)
+			continue;
+
+		WindowsDockingState::NativeWindowInfo info;
+		auto pos = ctx->settings.services.getWindowPosition(nativeWindow);
+		auto size = ctx->settings.services.getWindowSize(nativeWindow);
+
+		info.floating = root->createdByDockingSystem;
+		info.rect.set(pos.x, pos.y, size.x, size.y);
+
+		i32 nativeWindowIndex = (i32)dockingState.nativeWindows.size();
+
+		dockingState.nativeWindows.push_back(info);
+		dockingStateSaveNode(root, -1, nativeWindowIndex, dockingState, nodeIndices);
+	}
+
+	// remember the dock area node, so the docking restriction survives a load
+	if (ctx->docking.dockAreaNodeId)
+	{
+		auto areaIter = ctx->docking.dockNodeIdsMap.find(ctx->docking.dockAreaNodeId);
+
+		// the dock area must never be one of the chrome nodes
+		if (areaIter != ctx->docking.dockNodeIdsMap.end() && areaIter->second
+			&& !dockNodeHasChromeWindow(areaIter->second))
+		{
+			auto iter = nodeIndices.find(ctx->docking.dockAreaNodeId);
+
+			if (iter != nodeIndices.end())
+				dockingState.dockAreaNodeIndex = iter->second;
+		}
+	}
+
+	// the closed windows are saved with their last screen rect and dock node, so
+	// they stay hidden and reopen where they were
+	for (const auto& id : ctx->docking.hiddenWindows)
+	{
+		WindowsDockingState::ClosedWindowInfo info;
+
+		info.id = id;
+
+		auto rectIter = ctx->docking.closedWindowsRects.find(id);
+
+		if (rectIter != ctx->docking.closedWindowsRects.end())
+			info.rect = rectIter->second;
+
+		auto assignIter = ctx->docking.windowsDockNodeAssignments.find(id);
+
+		if (assignIter != ctx->docking.windowsDockNodeAssignments.end())
+		{
+			auto indexIter = nodeIndices.find(assignIter->second);
+
+			if (indexIter != nodeIndices.end())
+				info.parentIndex = indexIter->second;
+		}
+
+		auto slotIter = ctx->docking.hiddenWindowSlots.find(id);
+
+		if (slotIter != ctx->docking.hiddenWindowSlots.end())
+		{
+			auto slotParentIter = nodeIndices.find(slotIter->second.parentNodeId);
+
+			if (slotParentIter != nodeIndices.end())
+			{
+				info.slotParentIndex = slotParentIter->second;
+				info.slotIndex = (i32)slotIter->second.index;
+				info.slotVertical = slotIter->second.verticalParent;
+				info.slotFraction = slotIter->second.fraction;
+			}
+		}
+
+		dockingState.closedWindows.push_back(info);
+	}
+
+	std::sort(dockingState.closedWindows.begin(), dockingState.closedWindows.end(),
+		[](const WindowsDockingState::ClosedWindowInfo& a, const WindowsDockingState::ClosedWindowInfo& b)
+		{
+			return a.id < b.id;
+		});
+}
+
+// deletes a dock node tree, the windows docked in it must be detached first
+static void dockingStateDeleteNodeTree(DockNode* node)
+{
+	if (!node)
+		return;
+
+	for (auto child : node->children)
+		dockingStateDeleteNodeTree(child);
+
+	ctx->docking.dockNodesToDelete.erase(node);
+	ctx->docking.dockNodeIdsMap.erase(node->id);
+
+	delete node;
+}
+
+static void dockingStateDetachWindows(DockNode* node)
+{
+	if (!node)
+		return;
+
+	for (auto wnd : node->windows)
+	{
+		if (wnd)
+			wnd->dockNode = nullptr;
+	}
+
+	node->windows.clear();
+
+	for (auto child : node->children)
+		dockingStateDetachWindows(child);
+}
+
+static DockNode* dockingStateFindTabsNode(DockNode* node)
+{
+	if (!node)
+		return nullptr;
+
+	if (node->type == DockNode::Type::Tabs)
+		return node;
+
+	for (auto child : node->children)
+	{
+		DockNode* found = dockingStateFindTabsNode(child);
+
+		if (found)
+			return found;
+	}
+
+	return nullptr;
+}
+
+// moves the regular windows that ended up as siblings of the dock area in the root
+// back into the area, used to repair layouts saved with the area restriction broken
+static void dockingStateHealRoot(DockNode* root, DockNode* area)
+{
+	if (!root || !area || area->parent != root)
+		return;
+
+	std::vector<DockNode*> orphans;
+
+	for (auto child : root->children)
+	{
+		if (child != area && !dockNodeHasChromeWindow(child))
+			orphans.push_back(child);
+	}
+
+	if (orphans.empty())
+		return;
+
+	// the area must split vertically along its children, wrap its current content if needed
+	if (area->type != DockNode::Type::Vertical)
+	{
+		if (area->type == DockNode::Type::Horizontal)
+		{
+			DockNode* content = new DockNode();
+
+			content->type = DockNode::Type::Horizontal;
+			content->rect = area->rect;
+			content->parent = area;
+			content->nativeWindow = area->nativeWindow;
+			content->children = area->children;
+
+			for (auto child : content->children)
+				child->parent = content;
+
+			ctx->docking.dockNodeIdsMap[content->id] = content;
+			area->children.clear();
+			area->children.push_back(content);
+		}
+		else if (!area->windows.empty())
+		{
+			DockNode* content = new DockNode();
+
+			content->type = DockNode::Type::Tabs;
+			content->rect = area->rect;
+			content->parent = area;
+			content->nativeWindow = area->nativeWindow;
+			content->windows = area->windows;
+
+			for (auto wnd : content->windows)
+				wnd->dockNode = content;
+
+			ctx->docking.dockNodeIdsMap[content->id] = content;
+			area->windows.clear();
+			area->children.push_back(content);
+		}
+
+		area->type = DockNode::Type::Vertical;
+	}
+
+	for (auto orphan : orphans)
+	{
+		auto iter = std::find(root->children.begin(), root->children.end(), orphan);
+
+		if (iter != root->children.end())
+			root->children.erase(iter);
+
+		orphan->parent = area;
+		orphan->nativeWindow = area->nativeWindow;
+		area->children.push_back(orphan);
+	}
+}
+
+bool dockingStateLoadFromMemory(const WindowsDockingState& dockingState)
+{
+	if (!ctx)
+		return false;
+
+	i32 nodeCount = (i32)dockingState.dockNodes.size();
+	i32 nativeWindowCount = (i32)dockingState.nativeWindows.size();
+
+	if (nodeCount == 0 || nativeWindowCount == 0)
+		return false;
+
+	// validate the flat node list before touching the current layout
+	std::vector<i32> rootCounts(nativeWindowCount, 0);
+
+	for (i32 i = 0; i < nodeCount; i++)
+	{
+		const auto& info = dockingState.dockNodes[i];
+
+		if (info.nativeWindowIndex < 0 || info.nativeWindowIndex >= nativeWindowCount)
+			return false;
+
+		// the parent must exist and come before the child in the flat list, which
+		// also rules out cycles in the tree
+		if (info.parentIndex < -1 || info.parentIndex >= i)
+			return false;
+
+		if (info.parentIndex >= 0)
+		{
+			if (dockingState.dockNodes[info.parentIndex].nativeWindowIndex != info.nativeWindowIndex)
+				return false;
+		}
+		else if (++rootCounts[info.nativeWindowIndex] > 1)
+		{
+			return false;
+		}
+	}
+
+	for (auto count : rootCounts)
+	{
+		if (count == 0)
+			return false;
+	}
+
+	std::unordered_set<std::string> savedWindowIds;
+
+	for (const auto& info : dockingState.dockNodes)
+	{
+		for (const auto& wndInfo : info.windows)
+		{
+			// a window can only be docked in one node
+			if (wndInfo.id.empty() || !savedWindowIds.insert(wndInfo.id).second)
+				return false;
+		}
+	}
+
+	// apply the pending deletions first so the maps only hold live objects
+	deferredDeleteObjects();
+
+	// hide the windows that the state has closed before rebuilding the layout
+	for (const auto& info : dockingState.closedWindows)
+	{
+		if (info.id.empty())
+			continue;
+
+		if (ctx->docking.windows.find(info.id) != ctx->docking.windows.end())
+			windowSetVisible(info.id.c_str(), false);
+	}
+
+	deferredDeleteObjects();
+
+	// the layout is replaced, drop the transient interaction state that may point
+	// to the deleted nodes
+	ctx->docking.focusedWindow = nullptr;
+	ctx->docking.currentDockNode = nullptr;
+	ctx->docking.dragWindow = nullptr;
+	ctx->docking.dragStarted = false;
+	ctx->docking.resizingNode = nullptr;
+	ctx->docking.hoveredNode = nullptr;
+	ctx->docking.lastHoveredNode = nullptr;
+	ctx->docking.dockToNode = nullptr;
+	ctx->docking.dockType = DockType::None;
+
+	// the existing root native windows, in creation order, split by who created them
+	std::vector<HNativeWindow> userNativeWindows;
+	std::vector<HNativeWindow> floatingNativeWindows;
+
+	for (auto nativeWindow : ctx->nativeWindows)
+	{
+		auto iter = ctx->docking.rootNativeWindowDockNodes.find(nativeWindow);
+
+		if (iter == ctx->docking.rootNativeWindowDockNodes.end() || !iter->second)
+			continue;
+
+		if (iter->second->createdByDockingSystem)
+			floatingNativeWindows.push_back(nativeWindow);
+		else
+			userNativeWindows.push_back(nativeWindow);
+	}
+
+	// map every saved native window to an existing one or to a newly created one
+	struct NativeWindowTarget
+	{
+		HNativeWindow nativeWindow = 0;
+		DockNode* oldRoot = nullptr;
+	};
+
+	std::vector<NativeWindowTarget> targets(nativeWindowCount);
+	size_t userIndex = 0;
+	size_t floatingIndex = 0;
+
+	for (i32 i = 0; i < nativeWindowCount; i++)
+	{
+		const auto& info = dockingState.nativeWindows[i];
+		auto& target = targets[i];
+
+		if (info.floating)
+		{
+			if (floatingIndex < floatingNativeWindows.size())
+			{
+				target.nativeWindow = floatingNativeWindows[floatingIndex++];
+				ctx->settings.services.setWindowPosition(target.nativeWindow, info.rect.topLeft());
+				ctx->settings.services.setWindowSize(target.nativeWindow, info.rect.getSize());
+			}
+			else
+			{
+				// the title is set by windowBegin every frame
+				target.nativeWindow = nativeWindowCreate("Window", NativeWindowFlags::Resizable, NativeWindowState::Normal, info.rect);
+			}
+		}
+		else if (userIndex < userNativeWindows.size())
+		{
+			target.nativeWindow = userNativeWindows[userIndex++];
+		}
+		else
+		{
+			target.nativeWindow = nativeWindowCreate("Window", NativeWindowFlags::Resizable, NativeWindowState::Normal, info.rect);
+		}
+
+		auto iter = ctx->docking.rootNativeWindowDockNodes.find(target.nativeWindow);
+
+		target.oldRoot = iter != ctx->docking.rootNativeWindowDockNodes.end() ? iter->second : nullptr;
+	}
+
+	std::unordered_map<HNativeWindow, DockNode*> rebuiltRoots;
+
+	for (auto& target : targets)
+	{
+		if (target.oldRoot)
+			rebuiltRoots[target.nativeWindow] = target.oldRoot;
+	}
+
+	// the windows that are not part of the state are left untouched, but when they
+	// share a root with the saved ones, remember the saved windows they were tabbed
+	// with so they can be reattached to the closest restored node
+	struct PreservedWindow
+	{
+		Window* window = nullptr;
+		HNativeWindow nativeWindow = 0;
+		std::vector<std::string> anchors;
+	};
+
+	std::vector<PreservedWindow> preservedWindows;
+
+	for (auto& pair : ctx->docking.windows)
+	{
+		Window* wnd = pair.second;
+
+		if (!wnd || !wnd->dockNode || savedWindowIds.count(wnd->id))
+			continue;
+
+		DockNode* node = wnd->dockNode;
+
+		while (node->parent)
+			node = node->parent;
+
+		if (!rebuiltRoots.count(node->nativeWindow))
+			continue;
+
+		PreservedWindow preserved;
+		preserved.window = wnd;
+		preserved.nativeWindow = node->nativeWindow;
+
+		for (auto otherWnd : wnd->dockNode->windows)
+		{
+			if (otherWnd && savedWindowIds.count(otherWnd->id))
+				preserved.anchors.push_back(otherWnd->id);
+		}
+
+		preservedWindows.push_back(preserved);
+	}
+
+	// detach and delete the trees that are about to be rebuilt
+	for (auto& pair : rebuiltRoots)
+	{
+		dockingStateDetachWindows(pair.second);
+		dockingStateDeleteNodeTree(pair.second);
+		ctx->docking.rootNativeWindowDockNodes.erase(pair.first);
+	}
+
+	// the saved windows currently docked in a tree that is not rebuilt must be
+	// detached as well, they are about to be reattached to the restored tree
+	for (auto& pair : ctx->docking.windows)
+	{
+		Window* wnd = pair.second;
+
+		if (!wnd || !wnd->dockNode || !savedWindowIds.count(wnd->id))
+			continue;
+
+		wnd->dockNode->removeWindow(wnd);
+	}
+
+	// build the restored dock node trees
+	std::vector<DockNode*> newNodes(nodeCount, nullptr);
+
+	for (i32 i = 0; i < nodeCount; i++)
+	{
+		const auto& info = dockingState.dockNodes[i];
+		DockNode* node = new DockNode();
+
+		node->type = dockingStateToNodeType(info.type);
+		node->emptyDockSite = info.type == DockNodeType::None;
+		node->rect = info.rect;
+		node->selectedTabIndex = info.selectedTabIndex;
+		node->nativeWindow = targets[info.nativeWindowIndex].nativeWindow;
+		newNodes[i] = node;
+		ctx->docking.dockNodeIdsMap[node->id] = node;
+	}
+
+	for (i32 i = 0; i < nodeCount; i++)
+	{
+		const auto& info = dockingState.dockNodes[i];
+		DockNode* node = newNodes[i];
+
+		if (info.parentIndex >= 0)
+		{
+			node->parent = newNodes[info.parentIndex];
+			node->parent->children.push_back(node);
+		}
+		else
+		{
+			node->createdByDockingSystem = dockingState.nativeWindows[info.nativeWindowIndex].floating;
+			ctx->docking.rootNativeWindowDockNodes[node->nativeWindow] = node;
+		}
+	}
+
+	// dock the saved windows, reusing the existing window objects by id
+	std::unordered_map<std::string, DockNode*> savedWindowNodes;
+
+	for (i32 i = 0; i < nodeCount; i++)
+	{
+		const auto& info = dockingState.dockNodes[i];
+		DockNode* node = newNodes[i];
+
+		for (const auto& wndInfo : info.windows)
+		{
+			Window* wnd = nullptr;
+			auto iter = ctx->docking.windows.find(wndInfo.id);
+
+			if (iter != ctx->docking.windows.end())
+			{
+				wnd = iter->second;
+			}
+			else
+			{
+				wnd = new Window();
+				wnd->id = wndInfo.id;
+				ctx->docking.windows[wndInfo.id] = wnd;
+			}
+
+			wnd->title = wndInfo.title;
+			wnd->flags = (WindowFlags)wndInfo.flags;
+			wnd->dockNode = node;
+			node->windows.push_back(wnd);
+			savedWindowNodes[wndInfo.id] = node;
+			ctx->docking.windowsDockNodeAssignments[wndInfo.id] = node->id;
+
+			// the saved windows were visible when the state was saved
+			ctx->docking.hiddenWindows.erase(wndInfo.id);
+			ctx->docking.hiddenWindowSlots.erase(wndInfo.id);
+		}
+
+		if (node->selectedTabIndex >= node->windows.size() && !node->windows.empty())
+			node->selectedTabIndex = node->windows.size() - 1;
+	}
+
+	// restore the dock area node, windows are docked only inside it
+	if (dockingState.dockAreaNodeIndex >= 0 && dockingState.dockAreaNodeIndex < nodeCount
+		&& !dockNodeHasChromeWindow(newNodes[dockingState.dockAreaNodeIndex]))
+		ctx->docking.dockAreaNodeId = newNodes[dockingState.dockAreaNodeIndex]->id;
+	else
+		ctx->docking.dockAreaNodeId = 0;
+
+	// keep the saved closed windows hidden, remembering where they should reopen
+	for (const auto& info : dockingState.closedWindows)
+	{
+		if (info.id.empty() || savedWindowIds.count(info.id))
+			continue;
+
+		ctx->docking.hiddenWindows.insert(info.id);
+		ctx->docking.closedWindowsRects[info.id] = info.rect;
+
+		if (info.parentIndex >= 0 && info.parentIndex < nodeCount
+			&& !dockNodeHasChromeWindow(newNodes[info.parentIndex]))
+			ctx->docking.windowsDockNodeAssignments[info.id] = newNodes[info.parentIndex]->id;
+		else
+			ctx->docking.windowsDockNodeAssignments.erase(info.id);
+
+		if (info.slotParentIndex >= 0 && info.slotParentIndex < nodeCount
+			&& !dockNodeHasChromeWindow(newNodes[info.slotParentIndex]))
+		{
+			DockingState::HiddenWindowSlot slot;
+
+			slot.parentNodeId = newNodes[info.slotParentIndex]->id;
+			slot.index = (u32)std::max(info.slotIndex, 0);
+			slot.verticalParent = info.slotVertical;
+			slot.fraction = info.slotFraction;
+
+			ctx->docking.hiddenWindowSlots[info.id] = slot;
+		}
+		else
+		{
+			ctx->docking.hiddenWindowSlots.erase(info.id);
+		}
+	}
+
+	// reattach the windows that were not part of the state but shared a rebuilt root
+	for (auto& preserved : preservedWindows)
+	{
+		DockNode* destination = nullptr;
+
+		for (const auto& anchor : preserved.anchors)
+		{
+			auto iter = savedWindowNodes.find(anchor);
+
+			if (iter != savedWindowNodes.end())
+			{
+				destination = iter->second;
+				break;
+			}
+		}
+
+		if (!destination)
+		{
+			auto iter = ctx->docking.rootNativeWindowDockNodes.find(preserved.nativeWindow);
+
+			if (iter != ctx->docking.rootNativeWindowDockNodes.end())
+				destination = dockingStateFindTabsNode(iter->second);
+		}
+
+		if (!destination)
+		{
+			// no tabs node is left in the restored tree, give the window its own
+			// floating native window instead of losing it
+			auto nativeWindow = nativeWindowCreate(preserved.window->title, NativeWindowFlags::Resizable, NativeWindowState::Normal, preserved.window->clientRect);
+			DockNode* root = dockNodeRootCreateInternal(nativeWindow);
+
+			root->type = DockNode::Type::Tabs;
+			root->createdByDockingSystem = true;
+			root->windows.push_back(preserved.window);
+			preserved.window->dockNode = root;
+			ctx->docking.windowsDockNodeAssignments[preserved.window->id] = root->id;
+
+			continue;
+		}
+
+		destination->windows.push_back(preserved.window);
+		preserved.window->dockNode = destination;
+		ctx->docking.windowsDockNodeAssignments[preserved.window->id] = destination->id;
+	}
+
+	// drop the window assignments that still point to nodes that were deleted
+	for (auto iter = ctx->docking.windowsDockNodeAssignments.begin(); iter != ctx->docking.windowsDockNodeAssignments.end(); )
+	{
+		if (!ctx->docking.dockNodeIdsMap.count(iter->second))
+			iter = ctx->docking.windowsDockNodeAssignments.erase(iter);
+		else
+			++iter;
+	}
+
+	// destroy the floating native windows that were emptied when their windows were
+	// reattached to the restored layout
+	for (auto iter = ctx->docking.rootNativeWindowDockNodes.begin(); iter != ctx->docking.rootNativeWindowDockNodes.end(); )
+	{
+		DockNode* root = iter->second;
+
+		if (root && root->createdByDockingSystem && root->windows.empty() && root->children.empty())
+		{
+			ctx->docking.nativeWindowsToDelete.insert(iter->first);
+			ctx->docking.dockNodesToDelete.insert(root);
+			iter = ctx->docking.rootNativeWindowDockNodes.erase(iter);
+		}
+		else
+		{
+			++iter;
+		}
+	}
+
+	// keep the chrome windows (menu bar, toolbars) first in their root, so old layouts
+	// saved with the chrome at the bottom are repaired on load
+	for (auto& pair : ctx->docking.rootNativeWindowDockNodes)
+	{
+		DockNode* root = pair.second;
+
+		if (!root || root->children.size() < 2)
+			continue;
+
+		std::stable_partition(root->children.begin(), root->children.end(),
+			[](DockNode* child) { return dockNodeHasChromeWindow(child); });
+	}
+
+	// move the regular windows that ended up at the root level back into the dock area
+	{
+		DockNode* area = dockNodeGetAreaNode();
+
+		if (area && area->parent)
+		{
+			DockNode* root = area;
+
+			while (root->parent)
+				root = root->parent;
+
+			dockingStateHealRoot(root, area);
+		}
+	}
+
+	for (auto& pair : ctx->docking.rootNativeWindowDockNodes)
+		dockNodeRecalculateLayout(pair.second);
+
 	return true;
 }
 
@@ -920,6 +1639,73 @@ void windowCloseInternal(Window* wnd)
 		nativeWindowDestroy(node->nativeWindow);
 		node->nativeWindow = nullptr;
 	}
+}
+
+void windowHideInternal(Window* wnd)
+{
+	if (!wnd)
+		return;
+
+	DockNode* node = wnd->dockNode;
+	Rect rect = node ? node->rect : wnd->clientRect;
+
+	// remember the window in screen coordinates, so it opens at the same place
+	// when it is shown again, including the floating native windows
+	if (node && node->nativeWindow)
+	{
+		auto pos = ctx->settings.services.getWindowPosition(node->nativeWindow);
+		rect.x += pos.x;
+		rect.y += pos.y;
+	}
+
+	ctx->docking.hiddenWindows.insert(wnd->id);
+	ctx->docking.closedWindowsRects[wnd->id] = rect;
+
+	if (node)
+	{
+		ctx->docking.windowsDockNodeAssignments[wnd->id] = node->id;
+
+		// if the window is the only one in a child node, that node is removed when
+		// the window is hidden, remember the slot so it can be docked back
+		if (node->parent)
+		{
+			DockingState::HiddenWindowSlot slot;
+			bool vertical = node->parent->type == DockNode::Type::Vertical;
+
+			slot.parentNodeId = node->parent->id;
+			slot.verticalParent = vertical;
+
+			// the size of the node relative to its parent, so the layout is restored
+			// with the same proportions
+			if (vertical)
+				slot.fraction = node->parent->rect.height > 0.0f ? node->rect.height / node->parent->rect.height : 0.5f;
+			else
+				slot.fraction = node->parent->rect.width > 0.0f ? node->rect.width / node->parent->rect.width : 0.5f;
+
+			auto iter = std::find(node->parent->children.begin(), node->parent->children.end(), node);
+
+			if (iter != node->parent->children.end())
+				slot.index = (u32)std::distance(node->parent->children.begin(), iter);
+
+			ctx->docking.hiddenWindowSlots[wnd->id] = slot;
+		}
+		else
+		{
+			ctx->docking.hiddenWindowSlots.erase(wnd->id);
+		}
+	}
+}
+
+static void windowHideTree(DockNode* node)
+{
+	if (!node)
+		return;
+
+	for (auto wnd : node->windows)
+		windowHideInternal(wnd);
+
+	for (auto child : node->children)
+		windowHideTree(child);
 }
 
 bool windowDockInternal(Window* wnd, DockNode* targetNode, DockType dockType, u32 tabIndex, const Point* undockedWindowPos)
@@ -1634,6 +2420,7 @@ bool windowDockInternal(Window* wnd, DockNode* targetNode, DockType dockType, u3
 		target->windows.insert(iter, wnd);
 		target->type = DockNode::Type::Tabs;
 		target->selectedTabIndex = tabIndex;
+		target->emptyDockSite = false;
 
 		// if we only have a nativeWindow in the source node, delete the node
 		if (source && source->windows.size() == 1)
@@ -1775,10 +2562,11 @@ void dockNodeTabs(DockNode* node)
 
 		if (closeTabIndex != ~0)
 		{
+			windowHideInternal(node->windows[closeTabIndex]);
 			ctx->docking.windowsToDelete.insert(node->windows[closeTabIndex]);
 			node->windows.erase(node->windows.begin() + closeTabIndex);
 
-			if (node->windows.empty())
+			if (node->windows.empty() && node->id != ctx->docking.dockAreaNodeId)
 			{
 				// this is an empty root dock node, destroy and close OS nativeWindow too
 				if (!node->parent && node->createdByDockingSystem)
@@ -1925,6 +2713,201 @@ void handleDockingMouseDown(const InputEvent& event, DockNode* node)
 	}
 }
 
+bool dockNodeHasChromeWindow(DockNode* node)
+{
+	if (!node)
+		return false;
+	for (auto wnd : node->windows)
+	{
+		if (wnd && !!(wnd->flags & WindowFlags::NoTab) && !!(wnd->flags & WindowFlags::NoResize))
+			return true;
+	}
+
+	for (auto child : node->children)
+	{
+		if (dockNodeHasChromeWindow(child))
+			return true;
+	}
+
+	return false;
+}
+
+// returns the dock area node, or nullptr when docking is not restricted
+static DockNode* dockNodeGetAreaNode()
+{
+	DockNodeId areaId = ctx->docking.dockAreaNodeId;
+
+	if (areaId)
+	{
+		auto iter = ctx->docking.dockNodeIdsMap.find(areaId);
+
+		// the area must be valid and must not be one of the chrome nodes
+		if (iter != ctx->docking.dockNodeIdsMap.end() && iter->second
+			&& !dockNodeHasChromeWindow(iter->second))
+			return iter->second;
+	}
+
+	// the dock area id can go stale when its node is rebuilt, recover it as the largest
+	// root child that does not contain chrome windows (menu bar, toolbars)
+	bool hasChrome = false;
+
+	for (auto& pair : ctx->docking.rootNativeWindowDockNodes)
+	{
+		if (dockNodeHasChromeWindow(pair.second))
+		{
+			hasChrome = true;
+			break;
+		}
+	}
+
+	if (!hasChrome)
+		return nullptr;
+
+	DockNode* bestArea = nullptr;
+	f32 bestSize = 0.0f;
+
+	for (auto& pair : ctx->docking.rootNativeWindowDockNodes)
+	{
+		DockNode* root = pair.second;
+
+		if (!root)
+			continue;
+
+		for (auto child : root->children)
+		{
+			if (dockNodeHasChromeWindow(child))
+				continue;
+
+			f32 size = child->rect.width * child->rect.height;
+
+			if (size > bestSize)
+			{
+				bestSize = size;
+				bestArea = child;
+			}
+		}
+	}
+
+	if (bestArea)
+		ctx->docking.dockAreaNodeId = bestArea->id;
+
+	return bestArea;
+}
+
+// returns the node a newly created window should dock into by default, nullptr when
+// there is no dock area
+DockNode* dockNodeGetDefaultDockTarget()
+{
+	DockNode* area = dockNodeGetAreaNode();
+
+	if (!area)
+		return nullptr;
+
+	if (area->type == DockNode::Type::Tabs || area->type == DockNode::Type::None)
+		return area;
+
+	DockNode* tabsNode = dockingStateFindTabsNode(area);
+
+	return tabsNode ? tabsNode : area;
+}
+
+static bool dockNodeIsInDockArea(DockNode* node)
+{
+	DockNode* area = dockNodeGetAreaNode();
+
+	if (!area)
+		return true;
+
+	DockNode* nodeRoot = node;
+
+	while (nodeRoot->parent)
+		nodeRoot = nodeRoot->parent;
+
+	DockNode* areaRoot = area;
+
+	while (areaRoot->parent)
+		areaRoot = areaRoot->parent;
+
+	// the restriction applies only inside the native window that owns the dock area,
+	// floating windows without chrome can dock anywhere in themselves
+	if (nodeRoot != areaRoot)
+		return !dockNodeHasChromeWindow(nodeRoot);
+
+	for (DockNode* n = node; n; n = n->parent)
+	{
+		if (n == area)
+			return true;
+	}
+
+	return false;
+}
+
+// docks a window at the edge of the dock area, keeping the resulting nodes inside the
+// area, so the chrome windows outside of it are never displaced
+static void dockWindowToAreaEdge(Window* wnd, DockNode* area, DockType dockType, u32 tabIndex, const Point* undockedWindowPos)
+{
+	if (!wnd || !area)
+		return;
+
+	// the window already fills the whole area, nothing to do
+	if (wnd->dockNode == area && area->children.empty() && area->windows.size() == 1 && area->windows[0] == wnd)
+		return;
+
+	bool vertical = dockType == DockType::Top || dockType == DockType::Bottom;
+	DockNode::Type requiredType = vertical ? DockNode::Type::Vertical : DockNode::Type::Horizontal;
+
+	// make the area split along the needed axis, its current content becomes a child
+	if (area->type != requiredType)
+	{
+		std::vector<Window*> windows = area->windows;
+		std::vector<DockNode*> children = area->children;
+		DockNode::Type oldType = area->type;
+
+		area->windows.clear();
+		area->children.clear();
+		area->type = requiredType;
+
+		if (!windows.empty() || !children.empty())
+		{
+			DockNode* content = new DockNode();
+
+			if (!children.empty()
+				&& (oldType == DockNode::Type::Vertical || oldType == DockNode::Type::Horizontal))
+				content->type = oldType;
+			else
+				content->type = DockNode::Type::Tabs;
+
+			content->rect = area->rect;
+			content->parent = area;
+			content->nativeWindow = area->nativeWindow;
+			content->windows = windows;
+			content->children = children;
+
+			for (auto w : content->windows)
+				w->dockNode = content;
+
+			for (auto c : content->children)
+				c->parent = content;
+
+			ctx->docking.dockNodeIdsMap[content->id] = content;
+			area->children.push_back(content);
+		}
+	}
+
+	// an empty area simply takes the window
+	if (area->children.empty())
+	{
+		windowDockInternal(wnd, area, DockType::AsTab, tabIndex, undockedWindowPos);
+		return;
+	}
+
+	DockNode* target = (dockType == DockType::Top || dockType == DockType::Left)
+		? area->children.front()
+		: area->children.back();
+
+	windowDockInternal(wnd, target, dockType, tabIndex, undockedWindowPos);
+}
+
 void handleDockingMouseUp()
 {
 	auto& ds = ctx->docking;
@@ -1982,7 +2965,20 @@ void handleDockingMouseUp()
 				wndPos = &pos;
 			}
 
-			windowDockInternal(ds.dragWindow, ds.dockToNode, ds.dockType, tabIndex, wndPos);
+			DockNode* areaNode = dockNodeGetAreaNode();
+
+			// never dock outside the dock area, if the hit test produced a node outside
+			// of it (root, chrome), dock at the matching edge of the area instead
+			bool areaEdgeDock = areaNode
+				&& ds.dockToNode
+				&& ds.dockType != DockType::AsTab
+				&& ds.dockType != DockType::Floating
+				&& (ds.dockToNode == areaNode || !dockNodeIsInDockArea(ds.dockToNode));
+
+			if (areaEdgeDock)
+				dockWindowToAreaEdge(ds.dragWindow, areaNode, ds.dockType, tabIndex, wndPos);
+			else
+				windowDockInternal(ds.dragWindow, ds.dockToNode, ds.dockType, tabIndex, wndPos);
 		}
 		else
 		{
@@ -2343,7 +3339,11 @@ void handleDockNodeResize(DockNode* node)
 		}
 		}
 
-		ds.resizingNode->computeRect();
+		// recompute the parent so the fixed size windows keep their size after the resize
+		if (ds.resizingNode->parent)
+			ds.resizingNode->parent->computeRect();
+		else
+			ds.resizingNode->computeRect();
 	}
 }
 
@@ -2361,12 +3361,94 @@ void handleDockingMouseMove(const InputEvent& event, DockNode* node)
 		if (ctx->lastHoveredNativeWindow == node->nativeWindow)
 			ds.hoveredNode = node->findTargetDockNode(mousePos);
 
+		// windows can only be docked inside the dock area, the windows outside of it
+		// (menu bar, toolbars) are not dock targets, but dropping on them docks next to
+		// the dock area in the chrome direction
+		DockNode* chromeNode = nullptr;
+
+		if (ds.hoveredNode && !dockNodeIsInDockArea(ds.hoveredNode))
+		{
+			chromeNode = ds.hoveredNode;
+			ds.hoveredNode = nullptr;
+			ds.dockType = DockType::Floating;
+			ds.isHitBoxLeftHovered = false;
+			ds.isHitBoxRightHovered = false;
+			ds.isHitBoxTopHovered = false;
+			ds.isHitBoxBottomHovered = false;
+			ds.isHitBoxTabsHovered = false;
+			ds.isHitBoxTabsBarHovered = false;
+			ds.hitBoxTabs = {};
+		}
+
 		bool isSameNode = ds.hoveredNode == ds.dragWindow->dockNode;
 		bool isSingleWindow = ds.dragWindow->dockNode && ds.dragWindow->dockNode->windows.size() == 1;
 
 		auto rootNode = node;
 		auto& rootRect = rootNode->rect;
 		auto parentRect = ds.hoveredNode ? ds.hoveredNode->rect : rootRect;
+
+		// when a dock area is set, the window edges dock relative to the dock area, so
+		// the chrome windows (menu bar, toolbars) stay full width at the top
+		DockNode* areaNode = dockNodeGetAreaNode();
+		DockNode* edgeTarget = rootNode;
+		Rect edgeRect = rootRect;
+		bool edgesEnabled = true;
+		bool areaEdges = false;
+
+		if (areaNode)
+		{
+			bool areaInRoot = false;
+
+			for (DockNode* n = areaNode; n; n = n->parent)
+			{
+				if (n == rootNode)
+				{
+					areaInRoot = true;
+					break;
+				}
+			}
+
+			if (areaInRoot)
+			{
+				edgeTarget = areaNode;
+				edgeRect = areaNode->rect;
+				areaEdges = true;
+			}
+			else if (!dockNodeHasChromeWindow(rootNode))
+			{
+				// floating windows without chrome dock relative to their own root
+				edgeTarget = rootNode;
+				edgeRect = rootRect;
+			}
+			else
+			{
+				edgesEnabled = false;
+			}
+		}
+
+		// the chrome exists but no content area can be found, do not allow docking,
+		// it would place windows around the root and displace the chrome
+		if (!areaNode && dockNodeHasChromeWindow(rootNode))
+		{
+			ds.hoveredNode = nullptr;
+			ds.dockType = DockType::Floating;
+			ds.hitBoxTabs = {};
+			edgesEnabled = false;
+		}
+
+		// docking is restricted to another window's dock area, nothing can be docked
+		// around this root
+		if (!edgesEnabled)
+		{
+			ds.hitBoxRootLeft = {};
+			ds.hitBoxRootRight = {};
+			ds.hitBoxRootTop = {};
+			ds.hitBoxRootBottom = {};
+			ds.isHitBoxRootLeftHovered = false;
+			ds.isHitBoxRootRightHovered = false;
+			ds.isHitBoxRootTopHovered = false;
+			ds.isHitBoxRootBottomHovered = false;
+		}
 
 		// do check hit tests only if this is the hovered window
 		if (ds.hoveredNode && ctx->lastHoveredNativeWindow == node->nativeWindow)
@@ -2392,21 +3474,23 @@ void handleDockingMouseMove(const InputEvent& event, DockNode* node)
 				ds.hitBoxTabs.width += ctx->settings.dockNodeSpacing;
 				ds.hitBoxTabs.height = tabGroupElem.normalState().height * 2.0f * ctx->scale;
 
-				ds.hitBoxRootLeft = rootNode->rect;
-				ds.hitBoxRootRight = rootNode->rect;
-				ds.hitBoxRootTop = rootNode->rect;
-				ds.hitBoxRootBottom = rootNode->rect;
+				f32 rootMargin = areaEdges ? 0.0f : 40.0f;
+
+				ds.hitBoxRootLeft = edgeRect;
+				ds.hitBoxRootRight = edgeRect;
+				ds.hitBoxRootTop = edgeRect;
+				ds.hitBoxRootBottom = edgeRect;
 
 				ds.hitBoxRootLeft.width = ctx->settings.dockNodeRootDockingHitSize;
 
-				ds.hitBoxRootRight.x = rootNode->rect.right() - ctx->settings.dockNodeRootDockingHitSize;
+				ds.hitBoxRootRight.x = edgeRect.right() - ctx->settings.dockNodeRootDockingHitSize;
 				ds.hitBoxRootRight.width = ctx->settings.dockNodeRootDockingHitSize;
 
 				ds.hitBoxRootTop.height = ctx->settings.dockNodeRootDockingHitSize;
-				ds.hitBoxRootTop.y -= 40;
+				ds.hitBoxRootTop.y -= rootMargin;
 
-				ds.hitBoxRootBottom.y = rootNode->rect.bottom() - ctx->settings.dockNodeRootDockingHitSize;
-				ds.hitBoxRootBottom.height = ctx->settings.dockNodeRootDockingHitSize + 40;
+				ds.hitBoxRootBottom.y = edgeRect.bottom() - ctx->settings.dockNodeRootDockingHitSize;
+				ds.hitBoxRootBottom.height = ctx->settings.dockNodeRootDockingHitSize + rootMargin;
 			}
 			else
 			{
@@ -2450,23 +3534,23 @@ void handleDockingMouseMove(const InputEvent& event, DockNode* node)
 					tabGroupElem.normalState().height * ctx->scale);
 
 				ds.hitBoxRootLeft = Rect(
-					boxGap,
-					rootRect.y + rootRect.height / 2.0f - boxSizeV / 2.0f,
+					edgeRect.x + boxGap,
+					edgeRect.y + edgeRect.height / 2.0f - boxSizeV / 2.0f,
 					boxSizeV, boxSizeV);
 
 				ds.hitBoxRootRight = Rect(
-					rootRect.right() - boxGap - boxSizeV,
-					rootRect.y + rootRect.height / 2.0f - boxSizeV / 2.0f,
+					edgeRect.right() - boxGap - boxSizeV,
+					edgeRect.y + edgeRect.height / 2.0f - boxSizeV / 2.0f,
 					boxSizeV, boxSizeV);
 
 				ds.hitBoxRootTop = Rect(
-					rootRect.x + rootRect.width / 2.0f - boxSizeH / 2.0f,
-					rootRect.y + boxGap,
+					edgeRect.x + edgeRect.width / 2.0f - boxSizeH / 2.0f,
+					edgeRect.y + boxGap,
 					boxSizeH, boxSizeH);
 
 				ds.hitBoxRootBottom = Rect(
-					rootRect.x + rootRect.width / 2.0f - boxSizeH / 2.0f,
-					rootRect.bottom() - boxSizeH / 2.0f - boxGap,
+					edgeRect.x + edgeRect.width / 2.0f - boxSizeH / 2.0f,
+					edgeRect.bottom() - boxSizeH / 2.0f - boxGap,
 					boxSizeH, boxSizeH);
 			}
 
@@ -2482,6 +3566,16 @@ void handleDockingMouseMove(const InputEvent& event, DockNode* node)
 			{
 				ds.isHitBoxTabsHovered = false;
 				ds.isHitBoxTabsBarHovered = false;
+			}
+
+			// when docking is restricted to another window's dock area, windows cannot
+			// be docked around this root
+			if (!edgesEnabled)
+			{
+				ds.hitBoxRootLeft = {};
+				ds.hitBoxRootRight = {};
+				ds.hitBoxRootTop = {};
+				ds.hitBoxRootBottom = {};
 			}
 
 			ds.isHitBoxRootLeftHovered = ds.hitBoxRootLeft.contains(mousePos);
@@ -2525,7 +3619,7 @@ void handleDockingMouseMove(const InputEvent& event, DockNode* node)
 
 			if (ds.isHitBoxRootLeftHovered)
 			{
-				ds.dockToNode = rootNode;
+				ds.dockToNode = edgeTarget;
 				ds.dockType = DockType::Left;
 				ds.dragRect = ds.dockToNode->rect;
 				ds.dragRect.width *= ctx->settings.dockNodeDockingSizeRatio;
@@ -2533,7 +3627,7 @@ void handleDockingMouseMove(const InputEvent& event, DockNode* node)
 
 			if (ds.isHitBoxRootRightHovered)
 			{
-				ds.dockToNode = rootNode;
+				ds.dockToNode = edgeTarget;
 				ds.dockType = DockType::Right;
 				ds.dragRect = ds.dockToNode->rect;
 				ds.dragRect.x += ds.dragRect.width * (1.0f - ctx->settings.dockNodeDockingSizeRatio);
@@ -2542,7 +3636,7 @@ void handleDockingMouseMove(const InputEvent& event, DockNode* node)
 
 			if (ds.isHitBoxRootTopHovered)
 			{
-				ds.dockToNode = rootNode;
+				ds.dockToNode = edgeTarget;
 				ds.dockType = DockType::Top;
 				ds.dragRect = ds.dockToNode->rect;
 				ds.dragRect.height *= ctx->settings.dockNodeDockingSizeRatio;
@@ -2550,7 +3644,7 @@ void handleDockingMouseMove(const InputEvent& event, DockNode* node)
 
 			if (ds.isHitBoxRootBottomHovered)
 			{
-				ds.dockToNode = rootNode;
+				ds.dockToNode = edgeTarget;
 				ds.dockType = DockType::Bottom;
 				ds.dragRect = ds.dockToNode->rect;
 				ds.dragRect.y += floorf(ds.dragRect.height * (1.0f - ctx->settings.dockNodeDockingSizeRatio));
@@ -2582,6 +3676,55 @@ void handleDockingMouseMove(const InputEvent& event, DockNode* node)
 				else
 				{
 					ds.hoveredNode->insertTabSpaceAt(mousePos, ds.dragWindow->tabRect.width);
+				}
+			}
+		}
+
+		// dropping on a chrome window docks next to the dock area, in the direction of
+		// the chrome, so a full width row right below the menu can be created
+		if (chromeNode && areaNode && edgesEnabled)
+		{
+			const Rect& areaRect = areaNode->rect;
+			Point chromeCenter = chromeNode->rect.center();
+			DockType chromeDockType = DockType::None;
+
+			if (chromeCenter.y <= areaRect.y)
+				chromeDockType = DockType::Top;
+			else if (chromeCenter.y >= areaRect.bottom())
+				chromeDockType = DockType::Bottom;
+			else if (chromeCenter.x <= areaRect.x)
+				chromeDockType = DockType::Left;
+			else if (chromeCenter.x >= areaRect.right())
+				chromeDockType = DockType::Right;
+
+			if (chromeDockType != DockType::None)
+			{
+				ds.dockToNode = areaNode;
+				ds.dockType = chromeDockType;
+				ds.dragRect = areaRect;
+
+				switch (chromeDockType)
+				{
+				case DockType::Left:
+					ds.dragRect.width *= ctx->settings.dockNodeDockingSizeRatio;
+					break;
+
+				case DockType::Right:
+					ds.dragRect.x += ds.dragRect.width * (1.0f - ctx->settings.dockNodeDockingSizeRatio);
+					ds.dragRect.width *= ctx->settings.dockNodeDockingSizeRatio;
+					break;
+
+				case DockType::Top:
+					ds.dragRect.height *= ctx->settings.dockNodeDockingSizeRatio;
+					break;
+
+				case DockType::Bottom:
+					ds.dragRect.y += floorf(ds.dragRect.height * (1.0f - ctx->settings.dockNodeDockingSizeRatio));
+					ds.dragRect.height *= ctx->settings.dockNodeDockingSizeRatio;
+					break;
+
+				default:
+					break;
 				}
 			}
 		}
@@ -2801,13 +3944,16 @@ void updateDockingSystem()
 
 	if (ds.dragIndicatorNativeWindow && ds.dragWindow && ds.dragStarted)
 	{
+		// the dock target can be the dock area even when the mouse is over the chrome
+		DockNode* previewTarget = ds.dockToNode ? ds.dockToNode : ds.hoveredNode;
+
 		// if we try to dock on dock nodes sides or tabs area
 		if (ctx->lastHoveredNativeWindow
 			&& ds.dockType != DockType::None
 			&& ds.dockType != DockType::Floating
-			&& ds.hoveredNode)
+			&& previewTarget)
 		{
-			auto pos = ctx->settings.services.getWindowPosition(ds.hoveredNode->nativeWindow);
+			auto pos = ctx->settings.services.getWindowPosition(previewTarget->nativeWindow);
 
 			screenRect = ds.dragRect;
 			screenRect += pos;
@@ -2822,7 +3968,6 @@ void updateDockingSystem()
 			screenRect.y = mousePosAbs.y - screenRect.height / 2;
 		}
 
-		ds.dockType = DockType::Floating;
 		ctx->settings.services.setWindowPosition(ds.dragIndicatorNativeWindow, screenRect.topLeft());
 		ctx->settings.services.setWindowSize(ds.dragIndicatorNativeWindow, screenRect.getSize());
 	}
@@ -2858,24 +4003,26 @@ void updateDockingSystem()
 		}
 		else
 		{
-			if (ds.hoveredNode)
+			DockNode* previewTarget = ds.dockToNode ? ds.dockToNode : ds.hoveredNode;
+
+			if (previewTarget)
 			{
-				auto rcIt = ds.rootNativeWindowDockNodes.find(ds.hoveredNode->nativeWindow);
+				auto rcIt = ds.rootNativeWindowDockNodes.find(previewTarget->nativeWindow);
 
 				if (rcIt != ds.rootNativeWindowDockNodes.end() && rcIt->second)
 				{
 					auto& rc = rcIt->second->rect;
 
-					ctx->settings.services.setCurrentWindow(ds.hoveredNode->nativeWindow);
+					ctx->settings.services.setCurrentWindow(previewTarget->nativeWindow);
 					ctx->renderer.disableRendering = false;
-					ctx->renderer.nativeWindowSetCurrent(ds.hoveredNode->nativeWindow);
+					ctx->renderer.nativeWindowSetCurrent(previewTarget->nativeWindow);
 					ctx->renderer.setWindowSize(rc.getSize());
 					ctx->renderer.begin();
 					ctx->renderer.pushWindowDrawCmdLayer(DrawCmdLayerType::Overlay);
 					drawDockPreview(ds.dragWindow, ds.dragRect);
 					drawDockGuides();
 					ctx->renderer.popWindowDrawCmdLayer();
-					ctx->renderer.executeDrawCommands(ds.hoveredNode->nativeWindow);
+					ctx->renderer.executeDrawCommands(previewTarget->nativeWindow);
 				}
 			}
 		}
@@ -2887,6 +4034,9 @@ void updateDockingSystem()
 
 		if (nodeIt != ctx->docking.rootNativeWindowDockNodes.end() && nodeIt->second)
 		{
+			// remember all the windows of the closed native window so they stay
+			// closed and reopen at the same place when shown again
+			windowHideTree(nodeIt->second);
 			nodeIt->second->removeWindowsAndDeleteChildrenRecursive();
 		}
 

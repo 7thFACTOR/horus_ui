@@ -343,7 +343,39 @@
 	<h2>Animation editor</h2>
 	<div class="member">
 		<div class="prototype"><code><span class="ret">bool</span> <span class="fn">animationEditor</span>(<span class="prm">const char*</span> id, <span class="prm">AnimationEditorState*</span> state, <span class="prm">f32</span> height = 0.0f)</code></div>
-		<p class="brief">Draw an animation editor with a channels list, time ruler, keyframe/curve editing, key selection, channel enable toggles, multi-selectable channel/component visibility with expandable sub-channels, playhead scrubbing, zooming, panning and frame snapping. Curves mode uses Hermite interpolation with automatic tangents; selected keys show editable in/out tangent handles. Selecting a single key shows its time and component values as combo sliders in the toolbar plus an editable text tag; the time slider is clamped to the animation editor range, while the component value sliders are unbounded. Key tags are also drawn as labels next to the keys. A Play/Pause toolbar button starts and stops playback, and Space toggles it while the animation editor is focused or hovered. Optional ripple editing shifts the keys after a moved selection in time. The mouse wheel zooms around the cursor; when <code>autoValueRange</code> is off, the wheel zooms both axes freely. The caller owns the <code>AnimationEditorState</code> and passes it in every frame.</p>
+		<p class="brief">Draw an animation editor with a channels list, time ruler, keyframe/curve editing, key selection, channel enable toggles, multi-selectable channel/component visibility with expandable sub-channels, playhead scrubbing, zooming, panning and frame snapping. Vector channels can be expanded into component lanes, shown in both view modes; the + Key toolbar button and the double click add a key at the playhead or the clicked position, belonging only to the selected sub-channels when specific components are selected. Curves mode uses Hermite interpolation with automatic tangents; selected keys show editable in/out tangent handles. Selecting a single key shows its time and component values as combo sliders in the toolbar plus an editable text tag; the time slider is clamped to the animation editor range, while the component value sliders are unbounded. Key tags are also drawn as labels next to the keys. A Play/Pause toolbar button starts and stops playback, and Space toggles it while the animation editor is focused or hovered. Optional ripple editing shifts the keys after a moved selection in time, push mode drags the selection into the neighbouring keys and pushes them along, and <code>extendEndTime</code> lets keys grow the time range. The built in toolbar can be hidden with <code>AnimationEditorSettings::showToolbar</code>, see <code>animationEditorAction</code> for a custom one. The mouse wheel zooms around the cursor; when <code>autoValueRange</code> is off, the wheel zooms both axes freely. The caller owns the <code>AnimationEditorState</code> and passes it in every frame.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="ret">bool</span> <span class="fn">animationEditorAction</span>(<span class="prm">AnimationEditorState*</span> state, <span class="prm">AnimationEditorAction</span> action, <span class="prm">f32</span> viewWidth = 0.0f)</code></div>
+		<p class="brief">Applies an animation editor toolbar action to the state, so a custom toolbar can be built when the built in one is hidden with <code>AnimationEditorSettings::showToolbar</code>. The actions are <code>Play</code>, <code>KeyframesMode</code>, <code>CurvesMode</code>, <code>AddKey</code>, <code>DeleteSelected</code>, <code>ToggleSnap</code>, <code>ZoomOut</code>, <code>ZoomIn</code> and <code>FitView</code>.</p>
+		<ul class="params">
+			<li><span class="pname">state</span> the Animation editor state</li>
+			<li><span class="pname">action</span> the action to apply</li>
+			<li><span class="pname">viewWidth</span> the visible widget width in pixels, used by the zoom and fit actions</li>
+		</ul>
+		<p class="returns">Returns true if the state changed.</p>
+	</div>
+
+	<h2>Sequencer</h2>
+	<div class="member">
+		<div class="prototype"><code><span class="ret">bool</span> <span class="fn">sequencer</span>(<span class="prm">const char*</span> id, <span class="prm">SequencerState*</span> state, <span class="prm">f32</span> height = 0.0f)</code></div>
+		<p class="brief">Draw a sequencer with a tracks list, time ruler and start/end segments on each track. Segments can be selected, moved and resized by dragging, box selected on the empty lanes and deleted with the Delete key or the toolbar button; the + Seg toolbar button and the double click add a one second segment at the playhead or the clicked position, in the nearest free gap. Segments cannot overlap each other: moves and resizes stop at the neighbouring segments, but a dragged segment crosses to the other side of a neighbour when there is free space for it there. With <code>ripple</code> enabled a moved segment pushes the segments on the drag side in time; with <code>push</code> enabled dragged and resized segments push the segments blocking them. Dragged and resized edges snap to the closest segment edges on all the tracks, a dashed guide line shows the snapped position, and <code>extendEndTime</code> lets segments grow the time range. The mouse wheel zooms around the cursor, dragging the ruler scrubs the playhead, middle dragging pans the view and Space toggles playback while the sequencer is focused or hovered. The built in toolbar can be hidden with <code>SequencerSettings::showToolbar</code>, see <code>sequencerAction</code> for a custom one. The caller owns the <code>SequencerState</code> and passes it in every frame.</p>
+		<ul class="params">
+			<li><span class="pname">id</span> unique widget id</li>
+			<li><span class="pname">state</span> the sequencer state, owned by the caller and passed to the widget every frame</li>
+			<li><span class="pname">height</span> the widget height, if zero it takes the remaining layout height or the settings default</li>
+		</ul>
+		<p class="returns">Returns true if the sequencer state changed (segments moved/added/removed, cursor moved, view changed, etc.).</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="ret">bool</span> <span class="fn">sequencerAction</span>(<span class="prm">SequencerState*</span> state, <span class="prm">SequencerAction</span> action, <span class="prm">f32</span> viewWidth = 0.0f)</code></div>
+		<p class="brief">Applies a sequencer toolbar action to the state, so a custom toolbar can be built when the built in one is hidden with <code>SequencerSettings::showToolbar</code>. The actions are <code>Play</code>, <code>AddSegment</code>, <code>DeleteSelected</code>, <code>ToggleSnap</code>, <code>ZoomOut</code>, <code>ZoomIn</code> and <code>FitView</code>.</p>
+		<ul class="params">
+			<li><span class="pname">state</span> the sequencer state</li>
+			<li><span class="pname">action</span> the action to apply</li>
+			<li><span class="pname">viewWidth</span> the visible widget width in pixels, used by the zoom and fit actions</li>
+		</ul>
+		<p class="returns">Returns true if the state changed.</p>
 	</div>
 
 	<h2>Separators & spacing</h2>

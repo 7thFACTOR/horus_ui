@@ -712,14 +712,28 @@ struct Window
 struct DockingState
 {
 	~DockingState();
+
+	// the place a hidden window was docked in, used to recreate its dock node when
+	// the window is shown again, since closing the last window of a node removes it
+	struct HiddenWindowSlot
+	{
+		DockNodeId parentNodeId = 0;
+		u32 index = 0;
+		f32 fraction = 0.5f; // the size of the removed node relative to its parent
+		bool verticalParent = false; // the parent was a vertical split
+	};
+
 	std::unordered_map<HNativeWindow, struct DockNode*> rootNativeWindowDockNodes;
 	std::unordered_map<std::string, Window*> windows;
 	std::unordered_set<Window*> windowsToDelete;
 	std::unordered_set<DockNode*> dockNodesToDelete;
 	std::unordered_set<HNativeWindow> nativeWindowsToDelete;
 	std::unordered_map<std::string /*window name*/, Rect> closedWindowsRects;
+	std::unordered_set<std::string /*window id*/> hiddenWindows;
+	std::unordered_map<std::string /*window id*/, HiddenWindowSlot> hiddenWindowSlots;
 	std::unordered_map<std::string /*window name*/, DockNodeId> windowsDockNodeAssignments;
 	std::unordered_map<DockNodeId, DockNode*> dockNodeIdsMap;
+	DockNodeId dockAreaNodeId = 0; /// when set, windows can only be docked inside this node subtree
 	DockNode* currentDockNode = nullptr;
 	Window* focusedWindow = nullptr;
 	bool closeWindow = false;
@@ -900,6 +914,7 @@ struct AnimationEditorWidgetState
 	Point boxStart;
 	Point boxEnd;
 	i32 pressedToolbarButton = -1;
+	f32 pushAppliedDelta = 0;
 	std::vector<AnimationEditorKeyDragItem> dragItems;
 	std::vector<AnimationEditorKeyDragItem> rippleItems;
 };
@@ -910,6 +925,8 @@ struct SequencerSegmentDragItem
 	i32 segment = -1;
 	f32 start = 0;
 	f32 end = 0;
+	bool leftSide = false; /// ripple: the segment moves with left drags
+	bool bothSides = false; /// ripple: the segment moves with the selection in both directions
 };
 
 struct SequencerWidgetState
@@ -938,7 +955,10 @@ struct SequencerWidgetState
 	Point boxStart;
 	Point boxEnd;
 	i32 pressedToolbarButton = -1;
+	f32 snapGuideTime = -1;
+	f32 pushAppliedDelta = 0;
 	std::vector<SequencerSegmentDragItem> dragItems;
+	std::vector<SequencerSegmentDragItem> rippleItems;
 };
 
 struct CustomFileDialogState

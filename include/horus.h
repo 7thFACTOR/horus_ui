@@ -734,6 +734,15 @@ enum class DockNodeSplitType
 	Right
 };
 
+/// The type of a saved dock node
+enum class DockNodeType
+{
+	None, /// empty or unknown node
+	Tabs, /// a leaf node holding windows as tabs
+	Vertical, /// a split node laying out its children vertically
+	Horizontal, /// a split node laying out its children horizontally
+};
+
 /// The way the docking guides and preview are drawn when docking
 enum class DockingGuidesStyle
 {
@@ -1957,25 +1966,46 @@ struct FontInfo
 	FontMetrics metrics;
 };
 
-/// The saved state of the window docking layout, used with dockingStateSave and dockingStateLoad
+/// The saved state of the window docking layout, used with dockingStateSaveInMemory and dockingStateLoadFromMemory
 struct WindowsDockingState
 {
 	struct WindowInfo
 	{
 		std::string id, title;
+		u32 flags = 0; /// the window flags, moved with the state so the chrome windows are recognized on load
 	};
 
 	struct DockNodeInfo
 	{
-		DockNodeId nodeId = 0; // unique id of the node
-		DockNodeId parentNodeIndex = 0; // index of the parent node in the nodes array, root node has parentNodeIndex = 0
-		DockType dockType = DockType::None; // how the window is docked in its parent node
-		Rect rect;
-		size_t selectedTabIndex = 0;
-		std::vector<WindowInfo> windows; // the windows docked in this node
+		i32 parentIndex = -1; /// the index of the parent node in dockNodes, -1 for a root node
+		i32 nativeWindowIndex = 0; /// the index of the native window in nativeWindows
+		DockNodeType type = DockNodeType::None; /// the node type, tabs or a vertical/horizontal split
+		Rect rect; /// the node rect in native window coordinates
+		size_t selectedTabIndex = 0; /// the selected tab of a tabs node
+		std::vector<WindowInfo> windows; /// the windows docked in the node, in tab order
 	};
 
-	std::vector<DockNodeInfo> dockNodes; // all the dock nodes in the docking layout
+	struct NativeWindowInfo
+	{
+		Rect rect; /// the native window rect in screen coordinates
+		bool floating = false; /// true if the native window was created by the docking system for floating windows
+	};
+
+	struct ClosedWindowInfo
+	{
+		std::string id; /// the id of the closed window
+		Rect rect; /// the last screen rect of the window, used when it is shown again as floating
+		i32 parentIndex = -1; /// the index of the dock node the window was docked in when it was closed, -1 if unknown
+		i32 slotParentIndex = -1; /// the index of the split node that contained the removed dock node, used to dock the window back
+		i32 slotIndex = 0; /// the index the removed dock node had within the slot parent children
+		bool slotVertical = false; /// true if the slot parent was a vertical split
+		f32 slotFraction = 0.5f; /// the size of the removed dock node relative to its parent, 0..1
+	};
+
+	std::vector<NativeWindowInfo> nativeWindows; /// the native windows, each one holds a dock node tree
+	std::vector<DockNodeInfo> dockNodes; /// all the dock nodes of all the native windows
+	std::vector<ClosedWindowInfo> closedWindows; /// the windows closed by the user, kept hidden when the state is loaded
+	i32 dockAreaNodeIndex = -1; /// the index of the dock area node in dockNodes, -1 when docking is not restricted
 };
 
 /// Dock zone for overlay toolbars
@@ -2204,6 +2234,7 @@ struct AnimationEditorKey
 	bool tangentAuto = true; /// true if the tangents are computed automatically from the neighbouring keys
 	bool selected = false; /// true if the key is selected
 	u32 components = 0; /// bit mask of the components this key belongs to, zero means all components
+	u32 selectedComponents = 0; /// bit mask of the individually selected components of this key
 	char tag[maxTagSize] = { 0 }; /// optional text label drawn next to the key
 };
 
@@ -2240,6 +2271,7 @@ struct AnimationEditorState
 	bool loopPlayback = true; /// true if playback wraps back to startTime when reaching endTime
 	bool repeat = false; /// true if the curves are drawn as repeating after endTime
 	bool ripple = false; /// true if moving keys shifts the keys after them in time
+	bool push = false; /// true if dragging keys pushes the keys they reach instead of passing through them
 	bool extendEndTime = false; /// true if moving keys past endTime grows endTime
 };
 
@@ -2247,6 +2279,7 @@ struct AnimationEditorState
 struct AnimationEditorSettings
 {
 	bool useThemeColors = true; /// if true, the Animation editor colors are derived from the current theme
+	bool showToolbar = true; /// if false the built in toolbar is hidden, use animationEditorAction for a custom toolbar
 	f32 defaultHeight = 320; /// the default widget height when no height is provided
 	f32 channelListWidth = 240; /// the width of the channels list panel
 	f32 toolbarHeight = 30; /// the height of the toolbar
@@ -2323,14 +2356,19 @@ struct SequencerState
 	i32 selectedTrack = -1; /// the selected track index, -1 if none
 	f32 frameRate = 30.0f; /// the frame rate used for snapping
 	bool snapToFrames = false; /// if true segment edges and the cursor snap to frames
+	bool snapToSegments = true; /// if true dragged and resized segment edges snap to other segment edges
 	bool playing = false; /// true while the sequencer is playing back
 	bool loopPlayback = true; /// true if playback wraps back to startTime when reaching endTime
+	bool ripple = false; /// if true, moving segments pushes the segments after them (dragging right) or before them (dragging left) in time
+	bool push = false; /// if true, dragged and resized segments push the segments blocking them instead of stopping at them
+	bool extendEndTime = false; /// true if moving segments past endTime grows endTime instead of clamping them
 };
 
 /// Settings for the sequencer widget
 struct SequencerSettings
 {
 	bool useThemeColors = true; /// if true, the sequencer colors are derived from the current theme
+	bool showToolbar = true; /// if false the built in toolbar is hidden, use sequencerAction for a custom toolbar
 	f32 defaultHeight = 320; /// the default widget height when no height is provided
 	f32 trackListWidth = 240; /// the width of the tracks list panel
 	f32 toolbarHeight = 30; /// the height of the toolbar
@@ -2362,6 +2400,7 @@ struct SequencerSettings
 	Color segmentTextShadowColor = Color::fromU8(0, 0, 0, 140); /// the shadow color drawn behind the segment labels
 	f32 segmentTextShadowOffset = 1; /// the shadow offset of the segment labels in pixels, scaled by the ui scale
 	f32 segmentColorDarkness = 0.35; /// how much the segment fill colors are darkened, 0..1, so the labels stay readable
+	f32 snapDistance = 8; /// the snap distance of segment edges to other segment edges, in pixels, scaled by the ui scale
 	Color toolbarToggleColor = Color::fromU8(150, 75, 20); /// the background of a toggled-on sequencer toolbar button
 	Color playheadColor = Color::white; /// the time cursor color
 	Color selectionFillColor = Color::fromU8(55, 185, 255, 35); /// the box selection fill color
@@ -2571,6 +2610,21 @@ HUI_API void dockNodeSplit(DockNodeId nodeId, DockNodeSplitType splitType, f32 f
 HUI_API void dockNodeSetWindow(DockNodeId parentNode, const char* windowId);
 /// Recalculate the dock node layout sizes based on the native window sizes
 HUI_API void dockNodeLayoutRecalculate();
+/// Restrict docking to a dock node subtree, so windows can only be docked inside it.
+/// Used to keep chrome windows pinned: windows cannot be docked into or around the chrome
+/// windows, the native window edges dock relative to the dock area, and dropping on a chrome
+/// window docks next to the dock area in that direction. The content area can still be split
+/// full width or full height (top below the toolbars, bottom of the window). Set the dock area
+/// to the root child that holds the content, below the menu/toolbar windows.
+/// The dock area is saved and restored with the docking layout state.
+/// \param nodeId the dock node acting as the dock area, 0 to allow docking anywhere
+HUI_API void dockNodeSetDockArea(DockNodeId nodeId);
+/// Restrict docking to the highest dock node below the native window root that contains the window.
+/// Useful after loading a layout, when the node ids are not known
+/// \param windowId the window id, it must be docked
+HUI_API void dockNodeSetDockAreaByWindow(const char* windowId);
+/// \return the dock area dock node id, 0 if docking is not restricted
+HUI_API DockNodeId dockNodeGetDockArea();
 
 /// Begin a dockable window widget, must be called inside a layout
 /// \param windowId the unique window id
@@ -2585,6 +2639,9 @@ HUI_API void windowEnd();
 /// \param windowId the window id
 /// \param visible true to show, false to hide the window
 HUI_API void windowSetVisible(const char* windowId, bool visible);
+/// \return true if the window is not closed, it will be shown on the next frame when windowBegin is called
+/// \param windowId the window id
+HUI_API bool windowIsVisible(const char* windowId);
 /// Set the flags for the next window drawn
 /// \param flags the window flags
 HUI_API void windowSetNextFlags(WindowFlags flags);
@@ -2617,12 +2674,17 @@ HUI_API void windowReleaseCapture();
 HUI_API Rect windowGetClientRect();
 /// \return the window client rect, used usually to render custom scenes
 HUI_API Rect windowGetClientRectByWindowId(const char* windowId);
-/// Save the current docking layout to a state object
+/// Save the current docking layout to a state object in memory
+/// Existing windows not present in a later loaded state are left untouched
+/// Save before the window close event is processed, the closing native window's docking layout is destroyed in frameBegin
 /// \param dockingState the state object to save into
-HUI_API void dockingStateSave(WindowsDockingState& dockingState);
-/// Load a saved docking layout state
+HUI_API void dockingStateSaveInMemory(WindowsDockingState& dockingState);
+/// Load a saved docking layout state, reattaching the existing windows and creating the saved ones
+/// Existing windows that are not part of the state are left untouched
+/// Do not call between windowBegin and windowEnd
 /// \param dockingState the state object to load
-HUI_API void dockingStateLoad(const WindowsDockingState& dockingState);
+/// \return true if the state was valid and was loaded
+HUI_API bool dockingStateLoadFromMemory(const WindowsDockingState& dockingState);
 
 ///////////////////////////////////////////////////////////////////////////
 // Overlay toolbar functions (immediate mode dockable toolbars over a client rect)
@@ -3475,14 +3537,37 @@ HUI_API bool dropdown(const char* id, i32& selectedIndex, const char** items, u3
 HUI_API bool list(const char* id, bool* selectedItems, ListSelectionMode selectionType, const char** items, u32 itemCount, f32 height = 200.0f, u32 dragDropUserType = 0);
 
 /// Draw an animation editor widget with a channels list, time ruler, keyframe and curve editing.
-/// The + Key toolbar button and the double click add a key at the playhead or the clicked
-/// position; when specific sub-channels are selected in Curves mode, the new key belongs only
-/// to them (the key's components mask), otherwise it covers all the channel components.
+/// Vector channels can be expanded into component lanes, shown in both view modes. The + Key
+/// toolbar button and the double click add a key at the playhead or the clicked position; when
+/// specific sub-channels are selected, the new key belongs only to them (the key's components
+/// mask), otherwise it covers all the channel components.
 /// \param id unique widget id
 /// \param state the Animation editor state, owned by the caller and passed to the widget every frame
 /// \param height the widget height, if zero it takes the remaining layout height or the settings default
 /// \return true if the Animation editor state changed (keys moved/added/removed, cursor moved, view changed, etc.)
 HUI_API bool animationEditor(const char* id, AnimationEditorState* state, f32 height = 0.0f);
+
+/// The animation editor toolbar actions, can be used to build a custom toolbar
+/// when the built in one is hidden with AnimationEditorSettings::showToolbar
+enum class AnimationEditorAction
+{
+	Play, /// toggles playback, restarts from the beginning when the cursor is at the end
+	KeyframesMode, /// switches to the keyframes view
+	CurvesMode, /// switches to the curves view
+	AddKey, /// adds a key at the playhead on the selected or first enabled channel
+	DeleteSelected, /// deletes the selected keys
+	ToggleSnap, /// toggles snapping to frames
+	ZoomOut, /// zooms the time axis out
+	ZoomIn, /// zooms the time axis in
+	FitView, /// fits the whole time range in the visible width
+};
+
+/// Applies an animation editor toolbar action to the state
+/// \param state the Animation editor state
+/// \param action the action to apply
+/// \param viewWidth the visible widget width in pixels, used by the zoom and fit actions
+/// \return true if the state changed
+HUI_API bool animationEditorAction(AnimationEditorState* state, AnimationEditorAction action, f32 viewWidth = 0.0f);
 
 /// Draw a sequencer widget with a tracks list, time ruler, and start/end segments on each track.
 /// Segments can be selected, moved and resized by dragging, box selected on empty lanes, and
@@ -3491,14 +3576,36 @@ HUI_API bool animationEditor(const char* id, AnimationEditorState* state, f32 he
 /// the segment is placed in the nearest free gap, on the first track with room. Segments cannot
 /// overlap each other: moves and resizes stop at the neighbouring segments, but a dragged segment
 /// crosses to the other side of a neighbour when there is free space for it there, swapping the
-/// order. The mouse wheel zooms around the cursor, dragging the ruler scrubs the playhead, and
-/// middle dragging pans the view. Playback advances the cursor with deltaTime and wraps when
-/// loopPlayback is set.
+/// order; with ripple enabled, dragging instead pushes the segments on the drag side in time.
+/// Dragged and resized edges snap to the closest segment edges on all the tracks within
+/// snapDistance, a dashed guide line shows the snapped position. The mouse wheel zooms around
+/// the cursor, dragging the ruler scrubs the playhead, and middle dragging pans the view.
+/// Playback advances the cursor with deltaTime and wraps when loopPlayback is set.
 /// \param id unique widget id
 /// \param state the sequencer state, owned by the caller and passed to the widget every frame
 /// \param height the widget height, if zero it takes the remaining layout height or the settings default
 /// \return true if the sequencer state changed (segments moved/added/removed, cursor moved, view changed, etc.)
 HUI_API bool sequencer(const char* id, SequencerState* state, f32 height = 0.0f);
+
+/// The sequencer toolbar actions, can be used to build a custom toolbar when
+/// the built in one is hidden with SequencerSettings::showToolbar
+enum class SequencerAction
+{
+	Play, /// toggles playback, restarts from the beginning when the cursor is at the end
+	AddSegment, /// adds a segment at the playhead on the selected or first track
+	DeleteSelected, /// deletes the selected segments
+	ToggleSnap, /// toggles snapping to frames
+	ZoomOut, /// zooms the time axis out
+	ZoomIn, /// zooms the time axis in
+	FitView, /// fits the whole time range in the visible width
+};
+
+/// Applies a sequencer toolbar action to the state
+/// \param state the sequencer state
+/// \param action the action to apply
+/// \param viewWidth the visible widget width in pixels, used by the zoom and fit actions
+/// \return true if the state changed
+HUI_API bool sequencerAction(SequencerState* state, SequencerAction action, f32 viewWidth = 0.0f);
 
 /// Draw a selectable label
 /// \param label the selectable's text

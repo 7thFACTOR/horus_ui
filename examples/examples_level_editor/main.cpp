@@ -10,6 +10,7 @@
 #include <string>
 #include <vector>
 #include <algorithm>
+#include <initializer_list>
 
 // backends
 #include "sdl3_input.h"
@@ -18,6 +19,7 @@
 #include "dx12_graphics.h"
 #include "vulkan_graphics.h"
 #include "json_theme_loader.h"
+#include "json_docking_state.h"
 #include "stb_rectpack.h"
 #include "freetype_fonts.h"
 #include "native_file_dialogs.h"
@@ -107,6 +109,11 @@ struct LevelEditorState
 	bool showInspector = true;
 	bool showAssetBrowser = true;
 	bool showLog = true;
+	bool showViewport = true;
+
+	bool saveLayoutRequested = false;
+	bool loadLayoutRequested = false;
+	bool resetLayoutRequested = false;
 
 	hui::HImage iconMenu = 0;
 	hui::HImage iconToolbar = 0;
@@ -355,6 +362,14 @@ void buildDummyAssets(LevelEditorState& state)
 
 void drawMainMenu(LevelEditorState& state, bool& exitNow)
 {
+	// keep the view toggles in sync with the windows, they can also be closed from
+	// the tab bar (middle click) or by a layout load/reset
+	state.showViewport = hui::windowIsVisible("viewport");
+	state.showSceneTree = hui::windowIsVisible("scene_tree");
+	state.showInspector = hui::windowIsVisible("inspector");
+	state.showAssetBrowser = hui::windowIsVisible("asset_browser");
+	state.showLog = hui::windowIsVisible("log");
+
 	if (!hui::menuBarBegin())
 		return;
 
@@ -410,6 +425,9 @@ void drawMainMenu(LevelEditorState& state, bool& exitNow)
 			hui::windowSetVisible(windowId, value);
 		};
 
+		if (hui::menuItem("Viewport", "", 0, state.showViewport ? hui::SelectableFlags::Checked : hui::SelectableFlags::Normal))
+			toggle(state.showViewport, "viewport");
+
 		if (hui::menuItem("Scene Tree", "", 0, state.showSceneTree ? hui::SelectableFlags::Checked : hui::SelectableFlags::Normal))
 			toggle(state.showSceneTree, "scene_tree");
 
@@ -425,7 +443,15 @@ void drawMainMenu(LevelEditorState& state, bool& exitNow)
 		hui::menuSeparator();
 
 		if (hui::menuItem("Reset Layout"))
-			appendLog(state, LogEntry::Level::Info, "Layout reset requested");
+			state.resetLayoutRequested = true;
+
+		hui::menuSeparator();
+
+		if (hui::menuItem("Save Layout"))
+			state.saveLayoutRequested = true;
+
+		if (hui::menuItem("Load Layout"))
+			state.loadLayoutRequested = true;
 
 		hui::menuEnd();
 	}
@@ -471,6 +497,92 @@ void drawMainMenu(LevelEditorState& state, bool& exitNow)
 	}
 
 	hui::menuBarEnd();
+}
+
+static const char* editorWindowTitle(const char* windowId)
+{
+	if (!strcmp(windowId, "main_menu")) return "Main Menu";
+	if (!strcmp(windowId, "scene_tree")) return "Scene Tree";
+	if (!strcmp(windowId, "inspector")) return "Object Inspector";
+	if (!strcmp(windowId, "viewport")) return "Viewport";
+	if (!strcmp(windowId, "asset_browser")) return "Asset Browser";
+	if (!strcmp(windowId, "log")) return "Log";
+
+	return windowId;
+}
+
+hui::WindowsDockingState buildDefaultLayoutState()
+{
+	hui::WindowsDockingState state;
+	hui::WindowsDockingState::NativeWindowInfo nativeWindow;
+
+	nativeWindow.rect = hui::Rect(0, 0, 1000, 1000);
+	nativeWindow.floating = false;
+	state.nativeWindows.push_back(nativeWindow);
+
+	auto addNode = [&state](i32 parentIndex, hui::DockNodeType type, const hui::Rect& rect, std::initializer_list<const char*> windowIds) -> i32
+	{
+		hui::WindowsDockingState::DockNodeInfo node;
+
+		node.parentIndex = parentIndex;
+		node.nativeWindowIndex = 0;
+		node.type = type;
+		node.rect = rect;
+
+		for (auto windowId : windowIds)
+			node.windows.push_back({ windowId, editorWindowTitle(windowId) });
+
+		state.dockNodes.push_back(node);
+
+		return (i32)state.dockNodes.size() - 1;
+	};
+
+	// root, the menu chrome on top and the content dock area below it
+	addNode(-1, hui::DockNodeType::Vertical, hui::Rect(0, 0, 1000, 1000), {});
+	addNode(0, hui::DockNodeType::Tabs, hui::Rect(0, 0, 1000, 68), { "main_menu" });
+	addNode(0, hui::DockNodeType::Horizontal, hui::Rect(0, 71, 1000, 929), {});
+	addNode(2, hui::DockNodeType::Tabs, hui::Rect(0, 71, 200, 929), { "scene_tree" });
+	addNode(2, hui::DockNodeType::Horizontal, hui::Rect(201, 71, 799, 929), {});
+	addNode(4, hui::DockNodeType::Vertical, hui::Rect(201, 71, 600, 929), {});
+	addNode(5, hui::DockNodeType::Tabs, hui::Rect(201, 71, 600, 650), { "viewport" });
+	addNode(5, hui::DockNodeType::Tabs, hui::Rect(201, 721, 600, 279), { "asset_browser", "log" });
+	addNode(4, hui::DockNodeType::Tabs, hui::Rect(803, 71, 197, 929), { "inspector" });
+
+	// the chrome window is pinned, mark it with the same flags the app sets every frame
+	state.dockNodes[1].windows[0].flags = (u32)(hui::WindowFlags::NoTab | hui::WindowFlags::NoResize | hui::WindowFlags::NoPadding);
+
+	state.dockAreaNodeIndex = 2;
+
+	return state;
+}
+
+void buildDefaultLayout(hui::DockNodeId root)
+{
+	hui::DockNodeId n1, n2;
+
+	// top: the menu strip with the main toolbar right below it, in one chrome window
+	hui::dockNodeSplit(root, hui::DockNodeSplitType::Top, 0.12f, &n1, &n2);
+	hui::dockNodeSetWindow(n1, "main_menu");
+
+	// windows are docked only inside the content area below the chrome window,
+	// so the menu and toolbar always stay full width at the top
+	hui::dockNodeSetDockArea(n2);
+
+	// left: scene tree
+	hui::dockNodeSplit(n2, hui::DockNodeSplitType::Left, 0.20f, &n1, &n2);
+	hui::dockNodeSetWindow(n1, "scene_tree");
+
+	// right: object inspector
+	hui::dockNodeSplit(n2, hui::DockNodeSplitType::Right, 0.75f, &n1, &n2);
+	hui::dockNodeSetWindow(n2, "inspector");
+
+	// center: viewport on top, asset browser and log as tabs at the bottom
+	hui::dockNodeSplit(n1, hui::DockNodeSplitType::Top, 0.70f, &n1, &n2);
+	hui::dockNodeSetWindow(n1, "viewport");
+	hui::dockNodeSetWindow(n2, "asset_browser");
+	hui::dockNodeSetWindow(n2, "log");
+
+	hui::dockNodeLayoutRecalculate();
 }
 
 void drawMainToolbar(LevelEditorState& state)
@@ -911,11 +1023,11 @@ void drawAssetBrowser(LevelEditorState& state)
 void drawLogWindow(LevelEditorState& state)
 {
 	hui::sameLineGroupBegin(4);
-	hui::check("Info", &state.logShowInfo);
+	hui::check("Info##logFilterInfo", &state.logShowInfo);
 	hui::sameLineGroupNext();
-	hui::check("Warning", &state.logShowWarning);
+	hui::check("Warning##logFilterWarning", &state.logShowWarning);
 	hui::sameLineGroupNext();
-	hui::check("Error", &state.logShowError);
+	hui::check("Error##logFilterError", &state.logShowError);
 	hui::sameLineGroupNext();
 
 	if (hui::button("Clear"))
@@ -1050,32 +1162,7 @@ int main(int argc, char** args)
 	hui::DockNodeId mainDockNode = hui::dockNodeCreateRoot(mainWnd);
 
 	// build the editor layout by splitting dock nodes around
-	{
-		hui::DockNodeId n1, n2;
-
-		// top: menu strip, then the main toolbar strip below it
-		hui::dockNodeSplit(mainDockNode, hui::DockNodeSplitType::Top, 0.07f, &n1, &n2);
-		hui::dockNodeSetWindow(n1, "main_menu");
-
-		hui::dockNodeSplit(n2, hui::DockNodeSplitType::Top, 0.09f, &n1, &n2);
-		hui::dockNodeSetWindow(n1, "main_toolbar");
-
-		// left: scene tree
-		hui::dockNodeSplit(n2, hui::DockNodeSplitType::Left, 0.20f, &n1, &n2);
-		hui::dockNodeSetWindow(n1, "scene_tree");
-
-		// right: object inspector
-		hui::dockNodeSplit(n2, hui::DockNodeSplitType::Right, 0.75f, &n1, &n2);
-		hui::dockNodeSetWindow(n2, "inspector");
-
-		// center: viewport on top, asset browser and log as tabs at the bottom
-		hui::dockNodeSplit(n1, hui::DockNodeSplitType::Top, 0.70f, &n1, &n2);
-		hui::dockNodeSetWindow(n1, "viewport");
-		hui::dockNodeSetWindow(n2, "asset_browser");
-		hui::dockNodeSetWindow(n2, "log");
-
-		hui::dockNodeLayoutRecalculate();
-	}
+	buildDefaultLayout(mainDockNode);
 
 	// load a theme
 	const u32 errSize = 2048;
@@ -1157,7 +1244,30 @@ int main(int argc, char** args)
 	appendLog(state, LogEntry::Level::Info, "Loaded scene /Content/Levels/Blockout.level");
 	appendLog(state, LogEntry::Level::Warning, "WARNING: 3 objects use deprecated LOD settings");
 
+	// restore the docking layout saved in the previous session, if there is one
+	const char* layoutFilename = "docking_state.json";
+
+	if (hui::dockingStateLoadFromFile(layoutFilename))
+	{
+		appendLog(state, LogEntry::Level::Info, "Docking layout restored");
+
+		// layouts saved before the dock area existed do not carry it
+		if (!hui::dockNodeGetDockArea())
+			hui::dockNodeSetDockAreaByWindow("viewport");
+
+		// older layouts had a separate toolbar window, it is merged into the menu now
+		hui::windowSetVisible("main_toolbar", false);
+	}
+
+	// sync the View menu toggles with the restored layout
+	state.showViewport = hui::windowIsVisible("viewport");
+	state.showSceneTree = hui::windowIsVisible("scene_tree");
+	state.showInspector = hui::windowIsVisible("inspector");
+	state.showAssetBrowser = hui::windowIsVisible("asset_browser");
+	state.showLog = hui::windowIsVisible("log");
+
 	bool exitNow = false;
+	bool layoutSavedOnClose = false;
 
 	while (!exitNow)
 	{
@@ -1188,21 +1298,13 @@ int main(int argc, char** args)
 			hui::frameBegin();
 			hui::skipRenderingThisFrame(!lastEventInQueue);
 
-			// the menu strip and toolbar are dockable but have no tab bar and a fixed size
+			// the menu strip and toolbar share one dockable chrome window, without a tab bar
 			hui::windowSetNextFlags(hui::WindowFlags::NoTab | hui::WindowFlags::NoResize | hui::WindowFlags::NoPadding);
-			hui::windowSetNextSize(0, menuBarInfo.height);
+			hui::windowSetNextSize(0, menuBarInfo.height + state.iconButtonSize);
 
 			if (hui::windowBegin("main_menu", "Main Menu", nullptr, state.iconMenu))
 			{
 				drawMainMenu(state, exitNow);
-				hui::windowEnd();
-			}
-
-			hui::windowSetNextFlags(hui::WindowFlags::NoTab | hui::WindowFlags::NoResize | hui::WindowFlags::NoPadding);
-			hui::windowSetNextSize(0, state.iconButtonSize);
-
-			if (hui::windowBegin("main_toolbar", "Main Toolbar", nullptr, state.iconToolbar))
-			{
 				drawMainToolbar(state);
 				hui::windowEnd();
 			}
@@ -1239,6 +1341,67 @@ int main(int argc, char** args)
 
 			hui::frameEnd();
 
+			// the layout save and load must happen outside the window pass
+			if (state.saveLayoutRequested)
+			{
+				state.saveLayoutRequested = false;
+
+				if (hui::dockingStateSaveToFile(layoutFilename))
+					appendLog(state, LogEntry::Level::Info, "Docking layout saved");
+				else
+					appendLog(state, LogEntry::Level::Warning, "Failed to save the docking layout");
+			}
+
+			if (state.loadLayoutRequested)
+			{
+				state.loadLayoutRequested = false;
+
+				if (hui::dockingStateLoadFromFile(layoutFilename))
+				{
+					appendLog(state, LogEntry::Level::Info, "Docking layout loaded");
+
+					// layouts saved before the dock area existed do not carry it
+					if (!hui::dockNodeGetDockArea())
+						hui::dockNodeSetDockAreaByWindow("viewport");
+
+					// older layouts had a separate toolbar window, it is merged into the menu now
+					hui::windowSetVisible("main_toolbar", false);
+
+					// sync the View menu toggles with the loaded layout
+					state.showViewport = hui::windowIsVisible("viewport");
+					state.showSceneTree = hui::windowIsVisible("scene_tree");
+					state.showInspector = hui::windowIsVisible("inspector");
+					state.showAssetBrowser = hui::windowIsVisible("asset_browser");
+					state.showLog = hui::windowIsVisible("log");
+				}
+				else
+				{
+					appendLog(state, LogEntry::Level::Warning, "Failed to load the docking layout");
+				}
+			}
+
+			if (state.resetLayoutRequested)
+			{
+				state.resetLayoutRequested = false;
+
+				static const char* layoutWindows[] = { "main_menu", "scene_tree", "inspector", "viewport", "asset_browser", "log" };
+
+				// show all the windows again, then apply the default layout state
+				for (auto windowId : layoutWindows)
+					hui::windowSetVisible(windowId, true);
+
+				if (hui::dockingStateLoadFromMemory(buildDefaultLayoutState()))
+				{
+					state.showSceneTree = true;
+					state.showInspector = true;
+					state.showAssetBrowser = true;
+					state.showLog = true;
+					state.showViewport = true;
+
+					appendLog(state, LogEntry::Level::Info, "Docking layout reset");
+				}
+			}
+
 			if (lastEventInQueue)
 				hui::present();
 		};
@@ -1254,6 +1417,10 @@ int main(int argc, char** args)
 				{
 					if (hui::inputEventGet().window == mainWnd)
 					{
+						// frameBegin tears down the closed native window's docking
+						// layout, so save it before the frame is drawn
+						hui::dockingStateSaveToFile(layoutFilename);
+						layoutSavedOnClose = true;
 						exitNow = true;
 					}
 				}
@@ -1266,6 +1433,11 @@ int main(int argc, char** args)
 			doFrame(true);
 		}
 	}
+
+	// remember the docking layout for the next session, unless the app was closed
+	// with the OS close button, in which case it was saved before the teardown
+	if (!layoutSavedOnClose)
+		hui::dockingStateSaveToFile(layoutFilename);
 
 	hui::contextDestroy(huiContext);
 

@@ -6,6 +6,7 @@
 #include "util.h"
 #include "rapidhash.h"
 #include "context.h"
+#include "theme.h"
 
 namespace hui
 {
@@ -613,6 +614,61 @@ i32 utf8ByteOffsetToCharIndex(const char* text, i32 byteOffset)
 	}
 
 	return charIndex;
+}
+
+void drawTimeCursor(f32 x, const Rect& rulerRect, f32 canvasBottom, const Color& color, f32 lineWidth)
+{
+	f32 scale = ctx->scale;
+	f32 flagWidth = 12.0f * scale;
+	f32 flagHeight = 16.0f * scale;
+	f32 flagPoint = 5.0f * scale;
+	f32 flagLeft = x - flagWidth * 0.5f;
+	f32 flagTop = rulerRect.y + 3.0f * scale;
+	f32 flagBottom = flagTop + flagHeight;
+	f32 flagRight = flagLeft + flagWidth;
+	f32 lineTop = flagBottom + flagPoint;
+	Color flagColor = Color::white;
+	Color outlineColor = { 0.0f, 0.0f, 0.0f, 0.45f };
+	Color glowColor = color;
+
+	glowColor.a = 0.18f;
+
+	ctx->renderer.cmdSetLineStyle(LineStyle(glowColor, lineWidth * 5.0f * scale));
+	ctx->renderer.cmdDrawLine({ x, lineTop }, { x, canvasBottom });
+	ctx->renderer.cmdSetLineStyle(LineStyle(Color::black, (lineWidth + 2.0f) * scale));
+	ctx->renderer.cmdDrawLine({ x, lineTop }, { x, canvasBottom });
+	ctx->renderer.cmdSetLineStyle(LineStyle(color, lineWidth * scale));
+	ctx->renderer.cmdDrawLine({ x, lineTop }, { x, canvasBottom });
+
+	ctx->renderer.cmdSetColor(flagColor);
+	ctx->renderer.cmdDrawFilledRectangle({ flagLeft, flagTop, flagWidth, flagHeight });
+	ctx->renderer.cmdDrawSolidTriangle(
+		{ flagLeft, flagBottom },
+		{ flagRight, flagBottom },
+		{ x, flagBottom + flagPoint },
+		flagColor,
+		flagColor,
+		flagColor);
+
+	ctx->renderer.cmdSetLineStyle(LineStyle(outlineColor, scale));
+	ctx->renderer.cmdDrawLine({ flagLeft, flagTop }, { flagRight, flagTop });
+	ctx->renderer.cmdDrawLine({ flagRight, flagTop }, { flagRight, flagBottom });
+	ctx->renderer.cmdDrawLine({ flagRight, flagBottom }, { x, flagBottom + flagPoint });
+	ctx->renderer.cmdDrawLine({ x, flagBottom + flagPoint }, { flagLeft, flagBottom });
+	ctx->renderer.cmdDrawLine({ flagLeft, flagBottom }, { flagLeft, flagTop });
+}
+
+f32 themeColorContrastFactor()
+{
+	if (!ctx->theme)
+		return 1.0f;
+
+	// dark text means a light background, darken the bright widget colors so
+	// they keep enough contrast
+	Color textColor = ctx->theme->getElement(WidgetElementId::LabelBody).normalState().textColor;
+	f32 luminance = textColor.r * 0.299f + textColor.g * 0.587f + textColor.b * 0.114f;
+
+	return luminance < 0.5f ? 0.6f : 1.0f;
 }
 
 u64 hashString(const char* str, u64 seed)

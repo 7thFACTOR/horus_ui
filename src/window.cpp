@@ -2,15 +2,106 @@
 #include "docking.h"
 #include "renderer.h"
 #include "theme.h"
+#include <algorithm>
 
 namespace hui
 {
+// recreates the dock node a closed window was in, returning the node the window
+// should be docked into, nullptr if the slot cannot be restored
+static DockNode* windowRestoreDockSlot(const DockingState::HiddenWindowSlot& slot)
+{
+	auto parentIter = ctx->docking.dockNodeIdsMap.find(slot.parentNodeId);
+
+	if (parentIter == ctx->docking.dockNodeIdsMap.end() || !parentIter->second)
+		return nullptr;
+
+	DockNode* parent = parentIter->second;
+
+	// never split a chrome window (menu bar, toolbars), the slot is stale
+	if (dockNodeHasChromeWindow(parent))
+		return nullptr;
+
+	DockNode* node = new DockNode();
+	f32 fraction = std::clamp(slot.fraction, 0.05f, 0.95f);
+
+	node->type = DockNode::Type::Tabs;
+	node->parent = parent;
+	node->nativeWindow = parent->nativeWindow;
+	node->rect = parent->rect;
+	ctx->docking.dockNodeIdsMap[node->id] = node;
+
+	// the parent is still a split, put the node back at its index
+	if (parent->type == DockNode::Type::Vertical || parent->type == DockNode::Type::Horizontal)
+	{
+		bool vertical = parent->type == DockNode::Type::Vertical;
+
+		// make room by shrinking the siblings, then insert the node
+		for (auto child : parent->children)
+		{
+			if (vertical)
+				child->rect.height *= 1.0f - fraction;
+			else
+				child->rect.width *= 1.0f - fraction;
+		}
+
+		if (vertical)
+			node->rect.height = parent->rect.height * fraction;
+		else
+			node->rect.width = parent->rect.width * fraction;
+
+		u32 index = std::min<u32>(slot.index, (u32)parent->children.size());
+
+		parent->children.insert(parent->children.begin() + index, node);
+
+		return node;
+	}
+
+	// the parent turned into a leaf when the node was removed, split it again around
+	// its remaining content
+	parent->type = slot.verticalParent ? DockNode::Type::Vertical : DockNode::Type::Horizontal;
+
+	if (parent->type == DockNode::Type::Vertical)
+		node->rect.height = parent->rect.height * fraction;
+	else
+		node->rect.width = parent->rect.width * fraction;
+
+	if (!parent->windows.empty())
+	{
+		DockNode* relocated = new DockNode();
+
+		relocated->type = DockNode::Type::Tabs;
+		relocated->parent = parent;
+		relocated->nativeWindow = parent->nativeWindow;
+		relocated->rect = parent->rect;
+
+		if (parent->type == DockNode::Type::Vertical)
+			relocated->rect.height = parent->rect.height - node->rect.height;
+		else
+			relocated->rect.width = parent->rect.width - node->rect.width;
+
+		relocated->windows = parent->windows;
+		ctx->docking.dockNodeIdsMap[relocated->id] = relocated;
+
+		for (auto wnd : relocated->windows)
+			wnd->dockNode = relocated;
+
+		parent->windows.clear();
+		parent->children.push_back(relocated);
+	}
+
+	if (slot.index == 0)
+		parent->children.insert(parent->children.begin(), node);
+	else
+		parent->children.push_back(node);
+
+	return node;
+}
+
 bool windowBegin(const char* id, const char* title, Rect* initialRect, HImage img)
 {
 	Window* wnd = nullptr;
 	auto iterWnd = ctx->docking.windows.find(id);
-	auto iterClosed = ctx->docking.closedWindowsRects.find(id);
-	bool wasClosed = iterClosed != ctx->docking.closedWindowsRects.end();
+	bool wasClosed = ctx->docking.hiddenWindows.count(id) > 0;
 	auto flags = ctx->nextWindowFlags;
 	auto fixedSize = ctx->nextWindowSize;
 
@@ -31,6 +122,32 @@ bool windowBegin(const char* id, const char* title, Rect* initialRect, HImage im
 				parentNode = mapIter->second;
 		} else {
 			parentNode = nullptr;
+		}
+
+		// the dock node of the window was removed when the window was closed, recreate
+		// it in the remembered slot so the window docks back where it was
+		auto slotIter = ctx->docking.hiddenWindowSlots.find(id);
+
+		if (!parentNode && slotIter != ctx->docking.hiddenWindowSlots.end())
+			parentNode = windowRestoreDockSlot(slotIter->second);
+
+		ctx->docking.hiddenWindowSlots.erase(id);
+
+		// a window with no remembered place docks into the dock area by default
+		if (!parentNode)
+			parentNode = dockNodeGetDefaultDockTarget();
+
+		if (parentNode)
+			ctx->docking.windowsDockNodeAssignments[id] = parentNode->id;
+
+		// reopen the window where it was when it was closed
+		Rect rememberedRect;
+		auto iterRect = ctx->docking.closedWindowsRects.find(id);
+
+		if (!initialRect && iterRect != ctx->docking.closedWindowsRects.end())
+		{
+			rememberedRect = iterRect->second;
+			initialRect = &rememberedRect;
 		}
 
 		wnd = windowCreateInternal(id, parentNode, parentNode ? DockType::AsTab : DockType::None, title, initialRect, 0, img);
@@ -67,10 +184,10 @@ bool windowBegin(const char* id, const char* title, Rect* initialRect, HImage im
 			&& !wnd->dockNode->parent
 			&& wnd->dockNode->children.empty())
 		{
+			windowHideInternal(wnd);
 			ctx->docking.nativeWindowsToDelete.insert(wnd->dockNode->nativeWindow);
 			ctx->docking.windowsToDelete.insert(wnd);
 			ctx->docking.dockNodesToDelete.insert(wnd->dockNode);
-			ctx->docking.closedWindowsRects[id] = wnd->dockNode->rect;
 
 			return false;
 		}
@@ -129,23 +246,23 @@ void windowSetVisible(const char* windowId, bool visible)
 		auto iter = ctx->docking.windows.find(windowId);
 
 		if (iter == ctx->docking.windows.end())
+		{
+			ctx->docking.hiddenWindows.insert(windowId);
 			return;
+		}
 
 		Window* wnd = iter->second;
 		DockNode* node = wnd->dockNode;
 
+		windowHideInternal(wnd);
+
 		if (node)
 		{
-			ctx->docking.closedWindowsRects[windowId] = node->rect;
-
-			// remember the dock node this window was in so we can restore it on show
-			ctx->docking.windowsDockNodeAssignments[windowId] = node->id;
-
 			// detach the window from the docking tree before it is deleted, otherwise
 			// dockNodeTabs would later dereference a freed window
 			node->removeWindow(wnd);
 
-			if (node->windows.empty())
+			if (node->windows.empty() && node->id != ctx->docking.dockAreaNodeId)
 			{
 				if (!node->parent && node->createdByDockingSystem)
 				{
@@ -169,13 +286,21 @@ void windowSetVisible(const char* windowId, bool visible)
 	}
 	else
 	{
-		auto iter = ctx->docking.closedWindowsRects.find(windowId);
+		auto iter = ctx->docking.hiddenWindows.find(windowId);
 
-		if (iter != ctx->docking.closedWindowsRects.end())
+		if (iter != ctx->docking.hiddenWindows.end())
 		{
-			ctx->docking.closedWindowsRects.erase(iter);
+			ctx->docking.hiddenWindows.erase(iter);
 		}
 	}
+}
+
+bool windowIsVisible(const char* windowId)
+{
+	if (!windowId)
+		return false;
+
+	return ctx->docking.hiddenWindows.count(windowId) == 0;
 }
 
 void windowSetNextFlags(WindowFlags flags)

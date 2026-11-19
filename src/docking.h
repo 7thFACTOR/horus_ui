@@ -61,11 +61,15 @@ void dockNodeRecalculateLayout(DockNode* root);
 Window* windowCreateInternal(const std::string& id, DockNode* targetNode, DockType dockType, const std::string& title, Rect* initialRect, HNativeWindow nativeWnd, HImage img);
 void windowDeleteInternal(Window* wnd);
 void windowCloseInternal(Window* wnd);
+void windowHideInternal(Window* wnd);
+bool dockNodeHasChromeWindow(DockNode* node);
+DockNode* dockNodeGetDefaultDockTarget();
 bool windowDockInternal(Window* wnd, DockNode* targetNode, DockType dockType, u32 tabIndex = 0, const Point* undockedWindowPos = nullptr);
 void dockNodeTabs(DockNode* node);
 void updateDockingSystem();
 void handleDockNodeEvents(DockNode* node);
 void handleDockingMouseUp();
+void deferredDeleteObjects();
 
 
 }

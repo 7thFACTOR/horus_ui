@@ -22,6 +22,20 @@ bool clampValue(f32& value, f32 minVal, f32 maxVal);
 /// Convert a utf-8 byte offset into a utf-32 character index, without ever
 /// splitting a codepoint. The offset is clamped to the end of the string.
 i32 utf8ByteOffsetToCharIndex(const char* text, i32 byteOffset);
+
+/// Draw the time cursor (playhead) as a flag in the ruler with a highlighted
+/// vertical line below it. \param x the cursor x position in window pixels
+/// \param rulerRect the time ruler the flag is drawn in
+/// \param canvasBottom the bottom of the canvas the line ends at
+/// \param color the line color
+/// \param lineWidth the line width at 100% ui scale
+void drawTimeCursor(f32 x, const Rect& rulerRect, f32 canvasBottom, const Color& color, f32 lineWidth);
+
+/// Returns a shading factor for bright widget colors (channel, track and
+/// segment colors) so they stay visible on the active theme, it is 1.0 for
+/// dark themes and darker for light themes.
+f32 themeColorContrastFactor();
+
 inline f32 clampValue01(f32 value) { return fmax(0.0f, fmin(1.0f, value)); }
 
 template <typename T> T sgn(T val) { return (T(0) < val) - (val < T(0)); }

@@ -131,6 +131,27 @@ static bool animationEditorKeyHasComponent(const AnimationEditorKey& key, i32 co
 	return key.components == 0 || (key.components & (1u << component));
 }
 
+// finds the nearest keys before and after the given key that belong to the component
+static void animationEditorKeyNeighbors(
+	const AnimationEditorChannel& channel,
+	i32 keyIndex,
+	i32 component,
+	i32& prevIndex,
+	i32& nextIndex)
+{
+	i32 keyCount = (i32)channel.keys.size();
+
+	prevIndex = keyIndex - 1;
+
+	while (prevIndex >= 0 && !animationEditorKeyHasComponent(channel.keys[prevIndex], component))
+		prevIndex--;
+
+	nextIndex = keyIndex + 1;
+
+	while (nextIndex < keyCount && !animationEditorKeyHasComponent(channel.keys[nextIndex], component))
+		nextIndex++;
+}
+
 static f32 animationEditorAutoTangent(const AnimationEditorChannel& channel, i32 keyIndex, i32 component)
 {
 	i32 keyCount = (i32)channel.keys.size();
@@ -139,43 +160,65 @@ static f32 animationEditorAutoTangent(const AnimationEditorChannel& channel, i32
 		return 0.0f;
 
 	// the tangents are computed from the nearest keys that belong to this component
-	i32 prevIndex = keyIndex - 1;
+	i32 prevIndex, nextIndex;
 
-	while (prevIndex >= 0 && !animationEditorKeyHasComponent(channel.keys[prevIndex], component))
-		prevIndex--;
+	animationEditorKeyNeighbors(channel, keyIndex, component, prevIndex, nextIndex);
 
-	i32 nextIndex = keyIndex + 1;
-
-	while (nextIndex < keyCount && !animationEditorKeyHasComponent(channel.keys[nextIndex], component))
-		nextIndex++;
-
-	if (prevIndex < 0 && nextIndex < 0)
+	// the first and last keys of a component have a flat tangent so the curve
+	// settles exactly onto their value instead of overshooting
+	if (prevIndex < 0 || nextIndex >= keyCount)
 		return 0.0f;
-
-	if (prevIndex < 0)
-	{
-		f32 duration = channel.keys[nextIndex].time - channel.keys[keyIndex].time;
-		return duration > 0.00001f ? (channel.keys[nextIndex].value[component] - channel.keys[keyIndex].value[component]) / duration : 0.0f;
-	}
-
-	if (nextIndex < 0)
-	{
-		f32 duration = channel.keys[keyIndex].time - channel.keys[prevIndex].time;
-		return duration > 0.00001f ? (channel.keys[keyIndex].value[component] - channel.keys[prevIndex].value[component]) / duration : 0.0f;
-	}
 
 	f32 duration = channel.keys[nextIndex].time - channel.keys[prevIndex].time;
 	return duration > 0.00001f ? (channel.keys[nextIndex].value[component] - channel.keys[prevIndex].value[component]) / duration : 0.0f;
 }
 
+// returns the tangent of a key, clamped so the curve never overshoots the
+// neighbouring key values and stays flat on flat segments
 static f32 animationEditorKeyTangent(const AnimationEditorChannel& channel, i32 keyIndex, i32 component, bool outgoing)
 {
 	const AnimationEditorKey& key = channel.keys[keyIndex];
 
-	if (key.tangentAuto)
-		return animationEditorAutoTangent(channel, keyIndex, component);
+	if (!key.tangentAuto)
+		return outgoing ? key.outTangent[component] : key.inTangent[component];
 
-	return outgoing ? key.outTangent[component] : key.inTangent[component];
+	f32 tangent = animationEditorAutoTangent(channel, keyIndex, component);
+
+	if (tangent == 0.0f)
+		return 0.0f;
+
+	i32 prevIndex, nextIndex;
+
+	animationEditorKeyNeighbors(channel, keyIndex, component, prevIndex, nextIndex);
+
+	i32 neighborIndex = outgoing ? nextIndex : prevIndex;
+	i32 keyCount = (i32)channel.keys.size();
+
+	if (neighborIndex < 0 || neighborIndex >= keyCount)
+		return 0.0f;
+
+	f32 timeDelta = channel.keys[neighborIndex].time - key.time;
+	f32 valueDelta = channel.keys[neighborIndex].value[component] - key.value[component];
+
+	// flat segments get a flat tangent
+	if (fabsf(valueDelta) < 0.00001f || fabsf(timeDelta) < 0.00001f)
+		return 0.0f;
+
+	f32 segmentSlope = valueDelta / timeDelta;
+
+	// the tangent has to point in the same direction as the segment, otherwise
+	// the curve would overshoot, so flatten it
+	if (segmentSlope * tangent <= 0.0f)
+		return 0.0f;
+
+	// limit the tangent to three times the segment slope, the curve then never
+	// goes past the neighbouring key values
+	f32 limit = 3.0f * fabsf(segmentSlope);
+
+	if (fabsf(tangent) > limit)
+		tangent = tangent > 0.0f ? limit : -limit;
+
+	return tangent;
 }
 
 static void animationEditorMakeKeyTangentsManual(AnimationEditorChannel& channel, i32 keyIndex)
@@ -201,8 +244,10 @@ static f32 animationEditorEvaluateComponent(const AnimationEditorChannel& channe
 	if (channel.keys.empty() || component < 0 || component >= 4)
 		return 0.0f;
 
+	// upper bound: find the first key with a time greater than the given time,
+	// it can be the key count when the time is past the last key
 	u32 lo = 0;
-	u32 hi = (u32)channel.keys.size() - 1;
+	u32 hi = (u32)channel.keys.size();
 
 	while (lo < hi)
 	{
@@ -361,7 +406,14 @@ static Color animationEditorChannelColor(i32 channelIndex, i32 component = -1)
 	if (component >= 0)
 		hue = fmodf(hue + (f32)component * 0.045f, 1.0f);
 
-	return colorHueToRgb(hue, 1.0f);
+	// darken the bright hue colors on light themes so the curves and markers
+	// stay visible
+	Color color = colorHueToRgb(hue, 1.0f);
+	f32 contrast = themeColorContrastFactor();
+
+	color = { color.r * contrast, color.g * contrast, color.b * contrast, color.a };
+
+	return color;
 }
 
 static void animationEditorComputeAutoValueRange(const AnimationEditorState& state, f32& valueMin, f32& valueMax)
@@ -603,7 +655,7 @@ static AnimationEditorTangentHit animationEditorFindTangentHandle(
 
 		for (i32 keyIndex = 0; keyIndex < (i32)channel.keys.size(); keyIndex++)
 		{
-			if (!channel.keys[keyIndex].selected)
+			if (!channel.keys[keyIndex].selected && channel.keys[keyIndex].selectedComponents == 0)
 				continue;
 
 			for (i32 component = 0; component < components; component++)
@@ -661,7 +713,8 @@ static u32 animationEditorBuildToolbarFields(
 	{
 		for (i32 keyIndex = 0; keyIndex < (i32)state.channels[channelIndex].keys.size(); keyIndex++)
 		{
-			if (!state.channels[channelIndex].keys[keyIndex].selected)
+			if (!state.channels[channelIndex].keys[keyIndex].selected
+				&& state.channels[channelIndex].keys[keyIndex].selectedComponents == 0)
 				continue;
 
 			if (selectedCount == 0)
@@ -869,15 +922,13 @@ static void animationEditorBuildChannelRows(const AnimationEditorState& state, s
 {
 	rows.clear();
 
-	bool showSubChannels = state.viewMode == AnimationEditorViewMode::Curves;
-
 	for (i32 channelIndex = 0; channelIndex < (i32)state.channels.size(); channelIndex++)
 	{
 		const AnimationEditorChannel& channel = state.channels[channelIndex];
 
 		rows.push_back({ channelIndex, -1 });
 
-		if (showSubChannels && channel.expanded)
+		if (channel.expanded)
 		{
 			i32 components = animationEditorComponentCount(channel.type);
 
@@ -893,13 +944,12 @@ static void animationEditorBuildChannelRows(const AnimationEditorState& state, s
 static i32 animationEditorTotalChannelRows(const AnimationEditorState& state)
 {
 	i32 count = 0;
-	bool showSubChannels = state.viewMode == AnimationEditorViewMode::Curves;
 
 	for (auto& channel : state.channels)
 	{
 		count++;
 
-		if (showSubChannels && channel.expanded)
+		if (channel.expanded)
 		{
 			i32 components = animationEditorComponentCount(channel.type);
 
@@ -989,8 +1039,44 @@ static i32 animationEditorTargetChannel(const AnimationEditorState& state)
 static void animationEditorClearSelection(AnimationEditorState& state)
 {
 	for (auto& channel : state.channels)
+	{
 		for (auto& key : channel.keys)
+		{
 			key.selected = false;
+			key.selectedComponents = 0;
+		}
+	}
+}
+
+// splits the key so the given component becomes an independent key at the same
+// time, returns the index of the key belonging to the component
+static i32 animationEditorSplitKey(AnimationEditorChannel& channel, i32 keyIndex, i32 component)
+{
+	if (keyIndex < 0 || keyIndex >= (i32)channel.keys.size())
+		return keyIndex;
+
+	i32 componentCount = animationEditorComponentCount(channel.type);
+	u32 allBits = (1u << componentCount) - 1u;
+	AnimationEditorKey& key = channel.keys[keyIndex];
+	u32 oldComponents = key.components == 0 ? allBits : key.components;
+
+	// the key already belongs only to this component
+	if ((oldComponents & ~(1u << component)) == 0)
+		return keyIndex;
+
+	key.components = oldComponents & ~(1u << component);
+	key.selected = false;
+	key.selectedComponents = 0;
+
+	AnimationEditorKey newKey = key;
+
+	newKey.components = (1u << component);
+	newKey.selected = false;
+	newKey.selectedComponents = 0;
+
+	channel.keys.insert(channel.keys.begin() + keyIndex + 1, newKey);
+
+	return keyIndex + 1;
 }
 
 static bool animationEditorAddKey(AnimationEditorState& state, i32 channelIndex, f32 time, const f32* values, u32 componentMask, bool select)
@@ -1026,8 +1112,10 @@ static bool animationEditorAddKey(AnimationEditorState& state, i32 channelIndex,
 	{
 		if (fabsf(key.time - time) <= 0.0001f)
 		{
-			// merge the masks, zero on either side means the key covers all components
-			if (key.components != 0 && componentMask != 0)
+			// merge the masks, zero means the key covers all the components
+			if (componentMask == 0)
+				key.components = 0;
+			else if (key.components != 0)
 				key.components |= componentMask;
 
 			for (i32 i = 0; i < 4; i++)
@@ -1075,20 +1163,47 @@ static i32 animationEditorDeleteSelectedKeys(AnimationEditorState& state)
 
 	for (auto& channel : state.channels)
 	{
+		if (!channel.enabled)
+			continue;
+
+		u32 componentBits = (1u << animationEditorComponentCount(channel.type)) - 1u;
 		size_t writeIndex = 0;
 
 		for (size_t i = 0; i < channel.keys.size(); i++)
 		{
-			if (channel.keys[i].selected)
+			AnimationEditorKey& key = channel.keys[i];
+
+			if (!key.selected && key.selectedComponents == 0)
 			{
-				deleted++;
+				if (writeIndex != i)
+					channel.keys[writeIndex] = key;
+
+				writeIndex++;
 				continue;
 			}
 
-			if (writeIndex != i)
-				channel.keys[writeIndex] = channel.keys[i];
+			// a whole key is deleted, a lane selected key only loses the
+			// selected components and disappears when none are left
+			if (!key.selected)
+			{
+				u32 oldComponents = key.components == 0 ? componentBits : key.components;
+				u32 newComponents = oldComponents & ~key.selectedComponents;
 
-			writeIndex++;
+				if (newComponents != 0)
+				{
+					key.components = newComponents;
+					key.selectedComponents = 0;
+
+					if (writeIndex != i)
+						channel.keys[writeIndex] = key;
+
+					writeIndex++;
+					deleted++;
+					continue;
+				}
+			}
+
+			deleted++;
 		}
 
 		channel.keys.resize(writeIndex);
@@ -1109,6 +1224,86 @@ static void animationEditorSelectAll(AnimationEditorState& state)
 	}
 }
 
+static bool animationEditorIsDraggedKey(
+	const std::vector<AnimationEditorKeyDragItem>& dragItems,
+	i32 channelIndex,
+	i32 keyIndex)
+{
+	for (const auto& item : dragItems)
+	{
+		if (item.channel == channelIndex && item.key == keyIndex)
+			return true;
+	}
+
+	return false;
+}
+
+// applies the push pass to a channel: the dragged keys move by the delta and
+// push the keys they reach, either only computing the resulting first and last
+// key times (apply false) or moving the keys (apply true)
+static void animationEditorPushChannel(
+	AnimationEditorChannel& channel,
+	const std::vector<AnimationEditorKeyDragItem>& dragItems,
+	i32 channelIndex,
+	f32 timeDelta,
+	bool apply,
+	f32& outMinTime,
+	f32& outMaxTime)
+{
+	i32 keyCount = (i32)channel.keys.size();
+
+	outMinTime = FLT_MAX;
+	outMaxTime = -FLT_MAX;
+
+	if (timeDelta == 0.0f || keyCount == 0)
+		return;
+
+	if (timeDelta > 0.0f)
+	{
+		f32 cursor = -FLT_MAX;
+
+		for (i32 i = 0; i < keyCount; i++)
+		{
+			AnimationEditorKey& key = channel.keys[i];
+			f32 newTime = key.time + (animationEditorIsDraggedKey(dragItems, channelIndex, i) ? timeDelta : 0.0f);
+
+			// the keys the dragged ones reach are pushed forward
+			if (newTime < cursor)
+				newTime = cursor;
+
+			outMinTime = std::min(outMinTime, newTime);
+			outMaxTime = std::max(outMaxTime, newTime);
+
+			if (apply)
+				key.time = newTime;
+
+			cursor = newTime;
+		}
+	}
+	else
+	{
+		f32 cursor = FLT_MAX;
+
+		for (i32 i = keyCount - 1; i >= 0; i--)
+		{
+			AnimationEditorKey& key = channel.keys[i];
+			f32 newTime = key.time + (animationEditorIsDraggedKey(dragItems, channelIndex, i) ? timeDelta : 0.0f);
+
+			// the keys the dragged ones reach are pushed backward
+			if (newTime > cursor)
+				newTime = cursor;
+
+			outMinTime = std::min(outMinTime, newTime);
+			outMaxTime = std::max(outMaxTime, newTime);
+
+			if (apply)
+				key.time = newTime;
+
+			cursor = newTime;
+		}
+	}
+}
+
 static void animationEditorNudgeSelectedKeys(AnimationEditorState& state, f32 delta)
 {
 	for (auto& channel : state.channels)
@@ -1120,7 +1315,7 @@ static void animationEditorNudgeSelectedKeys(AnimationEditorState& state, f32 de
 
 		for (auto& key : channel.keys)
 		{
-			if (!key.selected)
+			if (!key.selected && key.selectedComponents == 0)
 				continue;
 
 			key.time = animationEditorClamp(key.time + delta, state.startTime, state.endTime);
@@ -1193,6 +1388,7 @@ static AnimationEditorKeyHit animationEditorFindKeyUnderMouse(
 	AnimationEditorState& state,
 	const AnimationEditorSettings& settings,
 	const Rect& plotRect,
+	const std::vector<AnimationEditorChannelRow>& rows,
 	f32 rowsTop,
 	f32 rowHeight,
 	f32 valueMin,
@@ -1208,24 +1404,33 @@ static AnimationEditorKeyHit animationEditorFindKeyUnderMouse(
 	{
 		i32 row = (i32)floorf((mouse.y - rowsTop) / std::max(rowHeight, 1.0f));
 
-		if (row < 0 || row >= (i32)state.channels.size() || !state.channels[row].enabled)
+		if (row < 0 || row >= (i32)rows.size())
+			return result;
+
+		const AnimationEditorChannelRow& rowInfo = rows[row];
+		const AnimationEditorChannel& channel = state.channels[rowInfo.channel];
+
+		if (!channel.enabled)
 			return result;
 
 		f32 centerY = rowsTop + (f32)row * rowHeight + rowHeight * 0.5f;
 		f32 dy = mouse.y - centerY;
 
-		for (i32 i = 0; i < (i32)state.channels[row].keys.size(); i++)
+		for (i32 i = 0; i < (i32)channel.keys.size(); i++)
 		{
-			f32 x = animationEditorTimeToX(state, plotRect, state.channels[row].keys[i].time);
+			if (rowInfo.component >= 0 && !animationEditorKeyHasComponent(channel.keys[i], rowInfo.component))
+				continue;
+
+			f32 x = animationEditorTimeToX(state, plotRect, channel.keys[i].time);
 			f32 dx = mouse.x - x;
 			f32 distanceSquared = dx * dx + dy * dy;
 
 			if (distanceSquared <= bestDistanceSquared)
 			{
 				bestDistanceSquared = distanceSquared;
-				result.channel = row;
+				result.channel = rowInfo.channel;
 				result.key = i;
-				result.component = -1;
+				result.component = rowInfo.component;
 			}
 		}
 	}
@@ -1283,6 +1488,7 @@ static bool animationEditorKeyInsideRect(
 	const AnimationEditorState& state,
 	const Rect& plotRect,
 	const Rect& selectionRect,
+	const std::vector<AnimationEditorChannelRow>& rows,
 	f32 rowsTop,
 	f32 rowHeight,
 	f32 valueMin,
@@ -1296,9 +1502,24 @@ static bool animationEditorKeyInsideRect(
 	if (state.viewMode == AnimationEditorViewMode::Keyframes)
 	{
 		f32 x = animationEditorTimeToX(state, plotRect, key.time);
-		f32 y = rowsTop + (f32)channelIndex * rowHeight + rowHeight * 0.5f;
 
-		return selectionRect.contains({ x, y });
+		for (u32 rowIndex = 0; rowIndex < rows.size(); rowIndex++)
+		{
+			const AnimationEditorChannelRow& rowInfo = rows[rowIndex];
+
+			if (rowInfo.channel != channelIndex)
+				continue;
+
+			if (rowInfo.component >= 0 && !animationEditorKeyHasComponent(key, rowInfo.component))
+				continue;
+
+			f32 y = rowsTop + (f32)rowIndex * rowHeight + rowHeight * 0.5f;
+
+			if (selectionRect.contains({ x, y }))
+				return true;
+		}
+
+		return false;
 	}
 
 	i32 components = animationEditorComponentCount(channel.type);
@@ -1392,7 +1613,7 @@ bool animationEditor(const char* id, AnimationEditorState* state, f32 height)
 	}
 
 	auto& runtime = ctx->animationEditorStates[animationEditorId];
-	f32 toolbarHeight = animationEditorSettings.toolbarHeight * scale;
+	f32 toolbarHeight = animationEditorSettings.showToolbar ? animationEditorSettings.toolbarHeight * scale : 0.0f;
 	f32 rulerHeight = animationEditorSettings.rulerHeight * scale;
 	f32 rowHeight = animationEditorSettings.rowHeight * scale;
 
@@ -1453,7 +1674,9 @@ bool animationEditor(const char* id, AnimationEditorState* state, f32 height)
 		font = &ctx->theme->fonts[0]->font;
 
 	AnimationEditorToolbarButton toolbarButtons[AnimationEditorTbCount];
-	u32 toolbarButtonCount = animationEditorBuildToolbar(font, toolbarRect, *state, toolbarButtons);
+	u32 toolbarButtonCount = animationEditorSettings.showToolbar
+		? animationEditorBuildToolbar(font, toolbarRect, *state, toolbarButtons)
+		: 0;
 
 	Point mouse = ctx->mousePosition;
 	bool mouseInAnimationEditor = outerRect.contains(mouse) && ctx->hoveringThisWindow && ctx->isActiveLayer();
@@ -1506,85 +1729,25 @@ bool animationEditor(const char* id, AnimationEditorState* state, f32 height)
 
 	auto applyToolbarAction = [&](AnimationEditorToolbarAction action)
 	{
+		AnimationEditorAction publicAction = AnimationEditorAction::Play;
+		bool mapped = true;
+
 		switch (action)
 		{
-		case AnimationEditorTbPlay:
-			state->playing = !state->playing;
-
-			if (state->playing && state->cursorTime >= state->endTime)
-				state->cursorTime = state->startTime;
-
-			changed = true;
-			break;
-
-		case AnimationEditorTbKeys:
-			if (state->viewMode != AnimationEditorViewMode::Keyframes)
-			{
-				state->viewMode = AnimationEditorViewMode::Keyframes;
-				changed = true;
-			}
-			break;
-
-		case AnimationEditorTbCurves:
-			if (state->viewMode != AnimationEditorViewMode::Curves)
-			{
-				state->viewMode = AnimationEditorViewMode::Curves;
-				changed = true;
-			}
-			break;
-
-		case AnimationEditorTbAddKey:
-		{
-			i32 channelIndex = animationEditorTargetChannel(*state);
-
-			if (channelIndex >= 0)
-			{
-				f32 values[4];
-				f32 addTime = animationEditorSnapTime(*state, state->cursorTime);
-				const AnimationEditorChannel& channel = state->channels[channelIndex];
-
-				// when specific sub-channels are selected, the new key belongs
-				// only to them, otherwise it covers all the components
-				u32 componentMask = channel.selected ? 0 : channel.selectedComponents;
-
-				animationEditorEvaluateChannel(channel, addTime, values);
-				animationEditorAddKey(*state, channelIndex, addTime, values, componentMask, true);
-				changed = true;
-			}
-			break;
+		case AnimationEditorTbPlay: publicAction = AnimationEditorAction::Play; break;
+		case AnimationEditorTbKeys: publicAction = AnimationEditorAction::KeyframesMode; break;
+		case AnimationEditorTbCurves: publicAction = AnimationEditorAction::CurvesMode; break;
+		case AnimationEditorTbAddKey: publicAction = AnimationEditorAction::AddKey; break;
+		case AnimationEditorTbDeleteKey: publicAction = AnimationEditorAction::DeleteSelected; break;
+		case AnimationEditorTbSnap: publicAction = AnimationEditorAction::ToggleSnap; break;
+		case AnimationEditorTbZoomOut: publicAction = AnimationEditorAction::ZoomOut; break;
+		case AnimationEditorTbZoomIn: publicAction = AnimationEditorAction::ZoomIn; break;
+		case AnimationEditorTbFit: publicAction = AnimationEditorAction::FitView; break;
+		default: mapped = false; break;
 		}
 
-		case AnimationEditorTbDeleteKey:
-			if (animationEditorDeleteSelectedKeys(*state) > 0)
-				changed = true;
-			break;
-
-		case AnimationEditorTbSnap:
-			state->snapToFrames = !state->snapToFrames;
+		if (mapped && animationEditorAction(state, publicAction, plotRect.width))
 			changed = true;
-			break;
-
-		case AnimationEditorTbZoomOut:
-			animationEditorZoom(*state, animationEditorSettings, plotRect, 1.0f / animationEditorSettings.zoomStep, plotRect.x + plotRect.width * 0.5f);
-			animationEditorClampView(*state, plotRect, animationEditorSettings);
-			changed = true;
-			break;
-
-		case AnimationEditorTbZoomIn:
-			animationEditorZoom(*state, animationEditorSettings, plotRect, animationEditorSettings.zoomStep, plotRect.x + plotRect.width * 0.5f);
-			animationEditorClampView(*state, plotRect, animationEditorSettings);
-			changed = true;
-			break;
-
-		case AnimationEditorTbFit:
-			animationEditorFitView(*state, animationEditorSettings, plotRect);
-			animationEditorClampView(*state, plotRect, animationEditorSettings);
-			changed = true;
-			break;
-
-		default:
-			break;
-		}
 	};
 
 	if (!disabled)
@@ -1729,7 +1892,6 @@ bool animationEditor(const char* id, AnimationEditorState* state, f32 height)
 								changed = true;
 							}
 							else if (rowInfo.component < 0
-								&& state->viewMode == AnimationEditorViewMode::Curves
 								&& animationEditorComponentCount(channel.type) > 1
 								&& animationEditorChannelExpandRect(rowRect, scale).contains(mouse))
 							{
@@ -1798,32 +1960,62 @@ bool animationEditor(const char* id, AnimationEditorState* state, f32 height)
 				else if (canvasRect.contains(mouse))
 				{
 					f32 rowsTop = canvasRect.y - state->channelScroll * scale;
-					AnimationEditorKeyHit hit = animationEditorFindKeyUnderMouse(*state, animationEditorSettings, plotRect, rowsTop, rowHeight, valueMin, valueMax);
+					AnimationEditorKeyHit hit = animationEditorFindKeyUnderMouse(*state, animationEditorSettings, plotRect, channelRows, rowsTop, rowHeight, valueMin, valueMax);
 
 					if (hit.channel >= 0)
 					{
 						AnimationEditorChannel& channel = state->channels[hit.channel];
 						bool controlDown = has(event.mouse.modifiers, KeyModifiers::Control);
+						bool onComponentLane = state->viewMode == AnimationEditorViewMode::Keyframes && hit.component >= 0;
+						i32 keyIndex = hit.key;
 
-						if (controlDown)
+						// clicking a key on a component lane splits it so the
+						// component gets its own independent key
+						if (onComponentLane)
+							keyIndex = animationEditorSplitKey(channel, keyIndex, hit.component);
+
+						AnimationEditorKey& key = channel.keys[keyIndex];
+
+						if (onComponentLane)
 						{
-							channel.keys[hit.key].selected = !channel.keys[hit.key].selected;
+							// select just the lane component
+							if (controlDown)
+							{
+								key.selectedComponents ^= (1u << hit.component);
+								changed = true;
+							}
+							else if (!(key.selectedComponents & (1u << hit.component)))
+							{
+								animationEditorClearSelection(*state);
+								key.selectedComponents = (1u << hit.component);
+								changed = true;
+							}
+
 							state->selectedChannel = hit.channel;
-							changed = true;
-						}
-						else if (!channel.keys[hit.key].selected)
-						{
-							animationEditorClearSelection(*state);
-							channel.keys[hit.key].selected = true;
-							state->selectedChannel = hit.channel;
-							changed = true;
 						}
 						else
 						{
-							state->selectedChannel = hit.channel;
+							// whole key selection (parent lane or curves view)
+							if (controlDown)
+							{
+								key.selected = !key.selected;
+								state->selectedChannel = hit.channel;
+								changed = true;
+							}
+							else if (!key.selected)
+							{
+								animationEditorClearSelection(*state);
+								key.selected = true;
+								state->selectedChannel = hit.channel;
+								changed = true;
+							}
+							else
+							{
+								state->selectedChannel = hit.channel;
+							}
 						}
 
-						if (channel.keys[hit.key].selected)
+						if (key.selected || key.selectedComponents != 0)
 						{
 							runtime.dragType = AnimationEditorWidgetState::DragType::Keys;
 							runtime.dragChannel = hit.channel;
@@ -1834,6 +2026,7 @@ bool animationEditor(const char* id, AnimationEditorState* state, f32 height)
 							runtime.dragValueMax = valueMax;
 							runtime.dragStartValue = animationEditorYToValue(plotRect, mouse.y, valueMin, valueMax);
 							runtime.dragStartEndTime = state->endTime;
+							runtime.pushAppliedDelta = 0.0f;
 							runtime.dragItems.clear();
 
 							for (i32 channelIndex = 0; channelIndex < (i32)state->channels.size(); channelIndex++)
@@ -1843,21 +2036,21 @@ bool animationEditor(const char* id, AnimationEditorState* state, f32 height)
 								if (!selectedChannel.enabled)
 									continue;
 
-								for (i32 keyIndex = 0; keyIndex < (i32)selectedChannel.keys.size(); keyIndex++)
+								for (i32 selectedKeyIndex = 0; selectedKeyIndex < (i32)selectedChannel.keys.size(); selectedKeyIndex++)
 								{
-									AnimationEditorKey& key = selectedChannel.keys[keyIndex];
+									AnimationEditorKey& selectedKey = selectedChannel.keys[selectedKeyIndex];
 
-									if (!key.selected)
+									if (!selectedKey.selected && selectedKey.selectedComponents == 0)
 										continue;
 
 									AnimationEditorKeyDragItem item;
 
 									item.channel = channelIndex;
-									item.key = keyIndex;
-									item.time = key.time;
+									item.key = selectedKeyIndex;
+									item.time = selectedKey.time;
 
 									for (i32 i = 0; i < 4; i++)
-										item.value[i] = key.value[i];
+										item.value[i] = selectedKey.value[i];
 
 									runtime.dragItems.push_back(item);
 								}
@@ -1877,13 +2070,13 @@ bool animationEditor(const char* id, AnimationEditorState* state, f32 height)
 									if (!rippleChannel.enabled)
 										continue;
 
-									for (auto& key : rippleChannel.keys)
+									for (auto& rippleKey : rippleChannel.keys)
 									{
-										if (key.selected)
+										if (rippleKey.selected || rippleKey.selectedComponents != 0)
 										{
 											hasSelectedKey = true;
-											minSelectedTime = std::min(minSelectedTime, key.time);
-											maxSelectedTime = std::max(maxSelectedTime, key.time);
+											minSelectedTime = std::min(minSelectedTime, rippleKey.time);
+											maxSelectedTime = std::max(maxSelectedTime, rippleKey.time);
 										}
 									}
 
@@ -1894,7 +2087,7 @@ bool animationEditor(const char* id, AnimationEditorState* state, f32 height)
 									{
 										AnimationEditorKey& key = rippleChannel.keys[keyIndex];
 
-										if (key.selected)
+										if (key.selected || key.selectedComponents != 0)
 											continue;
 
 										bool leftSide = key.time < minSelectedTime;
@@ -1922,14 +2115,22 @@ bool animationEditor(const char* id, AnimationEditorState* state, f32 height)
 					else if (event.mouse.clickCount >= 2)
 					{
 						i32 channelIndex = -1;
-						i32 component = 0;
+						i32 component = -1;
 
 						if (state->viewMode == AnimationEditorViewMode::Keyframes)
 						{
 							i32 row = (i32)floorf((mouse.y - rowsTop) / std::max(rowHeight, 1.0f));
 
-							if (row >= 0 && row < (i32)state->channels.size() && state->channels[row].enabled)
-								channelIndex = row;
+							if (row >= 0 && row < (i32)channelRows.size())
+							{
+								const AnimationEditorChannelRow& rowInfo = channelRows[row];
+
+								if (state->channels[rowInfo.channel].enabled)
+								{
+									channelIndex = rowInfo.channel;
+									component = rowInfo.component;
+								}
+							}
 						}
 						else
 						{
@@ -1964,9 +2165,11 @@ bool animationEditor(const char* id, AnimationEditorState* state, f32 height)
 
 							animationEditorEvaluateChannel(state->channels[channelIndex], addTime, values);
 
-							if (state->viewMode == AnimationEditorViewMode::Curves)
+							if (component >= 0)
 							{
-								values[component] = animationEditorYToValue(plotRect, mouse.y, valueMin, valueMax);
+								if (state->viewMode == AnimationEditorViewMode::Curves)
+									values[component] = animationEditorYToValue(plotRect, mouse.y, valueMin, valueMax);
+
 								componentMask = (1u << component);
 							}
 
@@ -2108,75 +2311,175 @@ bool animationEditor(const char* id, AnimationEditorState* state, f32 height)
 				bool moved = false;
 				f32 newEndTime = runtime.dragStartEndTime;
 
-				for (auto& item : runtime.dragItems)
+				if (state->push && !runtime.dragItems.empty())
 				{
-					if (item.channel < 0 || item.channel >= (i32)state->channels.size())
-						continue;
+					// push mode: the dragged keys push the keys they reach, the
+					// pass works on the current key times so only the delta since
+					// the last frame is applied, otherwise the drag would speed up
+					f32 requestedDelta = timeDelta;
 
-					AnimationEditorChannel& channel = state->channels[item.channel];
+					if (state->snapToFrames && state->frameRate > 0.0f)
+						requestedDelta = roundf(requestedDelta * state->frameRate) / state->frameRate;
 
-					if (!channel.enabled || item.key < 0 || item.key >= (i32)channel.keys.size())
-						continue;
+					f32 pushDelta = requestedDelta - runtime.pushAppliedDelta;
 
-					AnimationEditorKey& key = channel.keys[item.key];
-					f32 time = state->extendEndTime
-						? animationEditorSnapTimeNoMax(*state, item.time + timeDelta)
-						: animationEditorSnapTime(*state, item.time + timeDelta);
-
-					if (state->extendEndTime)
-						newEndTime = std::max(newEndTime, time);
-
-					if (time != key.time)
+					// clamp the delta so the pushed keys stay in the time range
+					if (!state->extendEndTime && pushDelta != 0.0f)
 					{
-						key.time = time;
-						moved = true;
+						for (i32 iteration = 0; iteration < 4; iteration++)
+						{
+							f32 overflow = 0.0f;
+
+							for (i32 channelIndex = 0; channelIndex < (i32)state->channels.size(); channelIndex++)
+							{
+								AnimationEditorChannel& channel = state->channels[channelIndex];
+
+								if (!channel.enabled)
+									continue;
+
+								f32 minTime, maxTime;
+
+								animationEditorPushChannel(channel, runtime.dragItems, channelIndex, pushDelta, false, minTime, maxTime);
+
+								if (maxTime <= -FLT_MAX / 2.0f)
+									continue;
+
+								if (pushDelta > 0.0f)
+									overflow = std::max(overflow, maxTime - state->endTime);
+								else
+									overflow = std::max(overflow, state->startTime - minTime);
+							}
+
+							if (overflow <= 0.0001f)
+								break;
+
+							pushDelta = pushDelta > 0.0f ? pushDelta - overflow : pushDelta + overflow;
+						}
 					}
 
-					if (valueDelta != 0.0f
-						&& item.channel == runtime.dragChannel
-						&& runtime.dragComponent >= 0
-						&& runtime.dragComponent < animationEditorComponentCount(channel.type))
+					if (pushDelta != 0.0f)
 					{
-						f32 value = animationEditorQuantizeComponent(channel.type, item.value[runtime.dragComponent] + valueDelta, runtime.dragComponent);
+						f32 pushedMaxTime = -FLT_MAX;
 
-						if (value != key.value[runtime.dragComponent])
+						for (i32 channelIndex = 0; channelIndex < (i32)state->channels.size(); channelIndex++)
 						{
-							key.value[runtime.dragComponent] = value;
-							moved = true;
+							AnimationEditorChannel& channel = state->channels[channelIndex];
+
+							if (!channel.enabled)
+								continue;
+
+							f32 minTime, maxTime;
+
+							animationEditorPushChannel(channel, runtime.dragItems, channelIndex, pushDelta, true, minTime, maxTime);
+							pushedMaxTime = std::max(pushedMaxTime, maxTime);
+						}
+
+						moved = true;
+						runtime.pushAppliedDelta += pushDelta;
+
+						if (state->extendEndTime && pushedMaxTime > state->endTime)
+							state->endTime = pushedMaxTime;
+					}
+
+					// the value delta still applies to the dragged keys in curves view
+					if (valueDelta != 0.0f
+						&& runtime.dragChannel >= 0
+						&& runtime.dragChannel < (i32)state->channels.size()
+						&& runtime.dragComponent >= 0)
+					{
+						AnimationEditorChannel& channel = state->channels[runtime.dragChannel];
+
+						if (runtime.dragComponent < animationEditorComponentCount(channel.type))
+						{
+							for (auto& item : runtime.dragItems)
+							{
+								if (item.channel != runtime.dragChannel || item.key < 0 || item.key >= (i32)channel.keys.size())
+									continue;
+
+								AnimationEditorKey& key = channel.keys[item.key];
+								f32 value = animationEditorQuantizeComponent(channel.type, item.value[runtime.dragComponent] + valueDelta, runtime.dragComponent);
+
+								if (value != key.value[runtime.dragComponent])
+								{
+									key.value[runtime.dragComponent] = value;
+									moved = true;
+								}
+							}
 						}
 					}
 				}
-
-				for (auto& item : runtime.rippleItems)
+				else
 				{
-					if (item.channel < 0 || item.channel >= (i32)state->channels.size())
-						continue;
-
-					AnimationEditorChannel& channel = state->channels[item.channel];
-
-					if (item.key < 0 || item.key >= (i32)channel.keys.size())
-						continue;
-
-					AnimationEditorKey& key = channel.keys[item.key];
-					f32 itemDelta = item.leftSide ? std::min(timeDelta, 0.0f) : std::max(timeDelta, 0.0f);
-					f32 time = state->extendEndTime
-						? animationEditorSnapTimeNoMax(*state, item.time + itemDelta)
-						: animationEditorSnapTime(*state, item.time + itemDelta);
-
-					if (state->extendEndTime)
-						newEndTime = std::max(newEndTime, time);
-
-					if (time != key.time)
+					for (auto& item : runtime.dragItems)
 					{
-						key.time = time;
+						if (item.channel < 0 || item.channel >= (i32)state->channels.size())
+							continue;
+
+						AnimationEditorChannel& channel = state->channels[item.channel];
+
+						if (!channel.enabled || item.key < 0 || item.key >= (i32)channel.keys.size())
+							continue;
+
+						AnimationEditorKey& key = channel.keys[item.key];
+						f32 time = state->extendEndTime
+							? animationEditorSnapTimeNoMax(*state, item.time + timeDelta)
+							: animationEditorSnapTime(*state, item.time + timeDelta);
+
+						if (state->extendEndTime)
+							newEndTime = std::max(newEndTime, time);
+
+						if (time != key.time)
+						{
+							key.time = time;
+							moved = true;
+						}
+
+						if (valueDelta != 0.0f
+							&& item.channel == runtime.dragChannel
+							&& runtime.dragComponent >= 0
+							&& runtime.dragComponent < animationEditorComponentCount(channel.type))
+						{
+							f32 value = animationEditorQuantizeComponent(channel.type, item.value[runtime.dragComponent] + valueDelta, runtime.dragComponent);
+
+							if (value != key.value[runtime.dragComponent])
+							{
+								key.value[runtime.dragComponent] = value;
+								moved = true;
+							}
+						}
+					}
+
+					for (auto& item : runtime.rippleItems)
+					{
+						if (item.channel < 0 || item.channel >= (i32)state->channels.size())
+							continue;
+
+						AnimationEditorChannel& channel = state->channels[item.channel];
+
+						if (item.key < 0 || item.key >= (i32)channel.keys.size())
+							continue;
+
+						AnimationEditorKey& key = channel.keys[item.key];
+						f32 itemDelta = item.leftSide ? std::min(timeDelta, 0.0f) : std::max(timeDelta, 0.0f);
+						f32 time = state->extendEndTime
+							? animationEditorSnapTimeNoMax(*state, item.time + itemDelta)
+							: animationEditorSnapTime(*state, item.time + itemDelta);
+
+						if (state->extendEndTime)
+							newEndTime = std::max(newEndTime, time);
+
+						if (time != key.time)
+						{
+							key.time = time;
+							moved = true;
+						}
+					}
+
+					if (state->extendEndTime && newEndTime != state->endTime)
+					{
+						state->endTime = newEndTime;
 						moved = true;
 					}
-				}
-
-				if (state->extendEndTime && newEndTime != state->endTime)
-				{
-					state->endTime = newEndTime;
-					moved = true;
 				}
 
 				if (moved)
@@ -2233,7 +2536,7 @@ bool animationEditor(const char* id, AnimationEditorState* state, f32 height)
 
 						for (i32 keyIndex = 0; keyIndex < (i32)channel.keys.size(); keyIndex++)
 						{
-							if (animationEditorKeyInsideRect(*state, plotRect, selectionRect, rowsTop, rowHeight, valueMin, valueMax, channelIndex, keyIndex))
+							if (animationEditorKeyInsideRect(*state, plotRect, selectionRect, channelRows, rowsTop, rowHeight, valueMin, valueMax, channelIndex, keyIndex))
 							{
 								channel.keys[keyIndex].selected = true;
 								state->selectedChannel = channelIndex;
@@ -2249,6 +2552,7 @@ bool animationEditor(const char* id, AnimationEditorState* state, f32 height)
 			runtime.dragChannel = -1;
 			runtime.dragKey = -1;
 			runtime.dragComponent = -1;
+			runtime.pushAppliedDelta = 0.0f;
 			runtime.dragItems.clear();
 			runtime.rippleItems.clear();
 			endCapture();
@@ -2324,6 +2628,7 @@ bool animationEditor(const char* id, AnimationEditorState* state, f32 height)
 			case KeyCode::Esc:
 				animationEditorClearSelection(*state);
 				runtime.dragType = AnimationEditorWidgetState::DragType::None;
+				runtime.pushAppliedDelta = 0.0f;
 				runtime.dragItems.clear();
 				runtime.rippleItems.clear();
 				endCapture();
@@ -2468,7 +2773,7 @@ bool animationEditor(const char* id, AnimationEditorState* state, f32 height)
 			continue;
 
 		bool isParent = rowInfo.component < 0;
-		bool visible = isParent ? animationEditorChannelHasVisibleComponent(channel) : animationEditorComponentVisible(channel, rowInfo.component);
+		bool visible = isParent ? channel.selected : animationEditorComponentVisible(channel, rowInfo.component);
 
 		if (visible)
 		{
@@ -2506,7 +2811,7 @@ bool animationEditor(const char* id, AnimationEditorState* state, f32 height)
 
 			animationEditorDrawCheckbox(checkboxRect, channel.enabled, disabled);
 
-			if (state->viewMode == AnimationEditorViewMode::Curves && animationEditorComponentCount(channel.type) > 1)
+			if (animationEditorComponentCount(channel.type) > 1)
 			{
 				Rect expandRect = animationEditorChannelExpandRect(rowRect, scale);
 				Point center = { expandRect.x + expandRect.width * 0.5f, expandRect.y + expandRect.height * 0.5f };
@@ -2572,7 +2877,7 @@ bool animationEditor(const char* id, AnimationEditorState* state, f32 height)
 			Point dot = { rowRect.right() - 14.0f * scale, rowRect.y + rowRect.height * 0.5f };
 			Color dotColor = animationEditorChannelColor(rowInfo.channel, rowInfo.component);
 			bool selected = isParent
-				? animationEditorChannelHasVisibleComponent(channel)
+				? channel.selected
 				: animationEditorComponentVisible(channel, rowInfo.component);
 
 			if (!selected)
@@ -2608,19 +2913,25 @@ bool animationEditor(const char* id, AnimationEditorState* state, f32 height)
 	{
 		ctx->renderer.pushClipRect(canvasRect);
 
-		for (i32 i = 0; i < (i32)state->channels.size(); i++)
+		for (u32 rowIndex = 0; rowIndex < channelRows.size(); rowIndex++)
 		{
-			Rect rowRect = { canvasRect.x, rowsTop + (f32)i * rowHeight, canvasRect.width, rowHeight };
+			const AnimationEditorChannelRow& rowInfo = channelRows[rowIndex];
+			const AnimationEditorChannel& rowChannel = state->channels[rowInfo.channel];
+			Rect rowRect = { canvasRect.x, rowsTop + (f32)rowIndex * rowHeight, canvasRect.width, rowHeight };
 
 			if (rowRect.bottom() < canvasRect.y || rowRect.y > canvasRect.bottom())
 				continue;
 
-			if (i == state->selectedChannel)
+			bool rowSelected = rowInfo.component < 0
+				? rowChannel.selected
+				: animationEditorComponentVisible(rowChannel, rowInfo.component);
+
+			if (rowSelected)
 			{
 				ctx->renderer.cmdSetColor(animationEditorSettings.rowSelectedColor);
 				ctx->renderer.cmdDrawFilledRectangle(rowRect);
 			}
-			else if (i % 2 != 0)
+			else if (rowIndex % 2 != 0)
 			{
 				ctx->renderer.cmdSetColor(animationEditorSettings.rowAlternateColor);
 				ctx->renderer.cmdDrawFilledRectangle(rowRect);
@@ -2837,7 +3148,7 @@ bool animationEditor(const char* id, AnimationEditorState* state, f32 height)
 			{
 				AnimationEditorKey& key = channel.keys[keyIndex];
 
-				if (!key.selected)
+				if (!key.selected && key.selectedComponents == 0)
 					continue;
 
 				Point keyPoint = {
@@ -2884,7 +3195,7 @@ bool animationEditor(const char* id, AnimationEditorState* state, f32 height)
 	// hovered key
 	f32 rowsTopForHitTest = canvasRect.y - state->channelScroll * scale;
 	AnimationEditorKeyHit hoveredKey = mouseInAnimationEditor && canvasRect.contains(mouse)
-		? animationEditorFindKeyUnderMouse(*state, animationEditorSettings, plotRect, rowsTopForHitTest, rowHeight, valueMin, valueMax)
+		? animationEditorFindKeyUnderMouse(*state, animationEditorSettings, plotRect, channelRows, rowsTopForHitTest, rowHeight, valueMin, valueMax)
 		: AnimationEditorKeyHit();
 
 	// keys
@@ -2892,41 +3203,66 @@ bool animationEditor(const char* id, AnimationEditorState* state, f32 height)
 
 	if (state->viewMode == AnimationEditorViewMode::Keyframes)
 	{
-		for (i32 channelIndex = 0; channelIndex < (i32)state->channels.size(); channelIndex++)
+		for (u32 rowIndex = 0; rowIndex < channelRows.size(); rowIndex++)
 		{
-			AnimationEditorChannel& channel = state->channels[channelIndex];
+			const AnimationEditorChannelRow& rowInfo = channelRows[rowIndex];
+			AnimationEditorChannel& channel = state->channels[rowInfo.channel];
 
 			if (!channel.enabled)
 				continue;
 
-			f32 centerY = rowsTop + (f32)channelIndex * rowHeight + rowHeight * 0.5f;
-			Color channelColor = animationEditorChannelColor(channelIndex);
+			f32 centerY = rowsTop + (f32)rowIndex * rowHeight + rowHeight * 0.5f;
+			Color channelColor = animationEditorChannelColor(rowInfo.channel, rowInfo.component);
 
-			if (channel.keys.size() > 1)
+			// a parent row shows all the channel keys, a component row only its own
+			i32 firstKeyIndex = -1;
+			i32 lastKeyIndex = -1;
+
+			for (i32 keyIndex = 0; keyIndex < (i32)channel.keys.size(); keyIndex++)
+			{
+				if (rowInfo.component >= 0 && !animationEditorKeyHasComponent(channel.keys[keyIndex], rowInfo.component))
+					continue;
+
+				if (firstKeyIndex < 0)
+					firstKeyIndex = keyIndex;
+
+				lastKeyIndex = keyIndex;
+			}
+
+			if (firstKeyIndex >= 0 && lastKeyIndex > firstKeyIndex)
 			{
 				Color lineColor = channelColor;
+				lineColor.a = 0.45f;
 
 				ctx->renderer.cmdSetLineStyle(LineStyle(lineColor, animationEditorSettings.keyframeLineWidth * scale));
 				ctx->renderer.cmdDrawLine(
-					{ animationEditorTimeToX(*state, plotRect, channel.keys.front().time), centerY },
-					{ animationEditorTimeToX(*state, plotRect, channel.keys.back().time), centerY });
+					{ animationEditorTimeToX(*state, plotRect, channel.keys[firstKeyIndex].time), centerY },
+					{ animationEditorTimeToX(*state, plotRect, channel.keys[lastKeyIndex].time), centerY });
 			}
 
 			for (i32 keyIndex = 0; keyIndex < (i32)channel.keys.size(); keyIndex++)
 			{
 				AnimationEditorKey& key = channel.keys[keyIndex];
+
+				if (rowInfo.component >= 0 && !animationEditorKeyHasComponent(key, rowInfo.component))
+					continue;
+
 				f32 x = animationEditorTimeToX(*state, plotRect, key.time);
 
 				if (x < plotRect.x - animationEditorSettings.keySize * scale || x > plotRect.right() + animationEditorSettings.keySize * scale)
 					continue;
 
-				bool hovered = hoveredKey.channel == channelIndex && hoveredKey.key == keyIndex;
+				bool hovered = hoveredKey.channel == rowInfo.channel
+					&& hoveredKey.key == keyIndex
+					&& hoveredKey.component == rowInfo.component;
+				bool selected = key.selected
+					|| (rowInfo.component >= 0 && (key.selectedComponents & (1u << rowInfo.component)));
 				f32 radius = animationEditorSettings.keySize * scale;
 
 				if (hovered)
 					animationEditorDrawDiamond({ x, centerY }, radius * 1.9f, { 1, 1, 1, 0.35f });
 
-				if (key.selected)
+				if (selected)
 				{
 					animationEditorDrawDiamond({ x, centerY }, radius * 1.55f, animationEditorSettings.keySelectedColor);
 					animationEditorDrawDiamond({ x, centerY }, radius, channelColor);
@@ -2936,7 +3272,8 @@ bool animationEditor(const char* id, AnimationEditorState* state, f32 height)
 					animationEditorDrawDiamond({ x, centerY }, radius, channelColor);
 				}
 
-				if (key.tag[0])
+				// draw the tag only on the parent row so it isn't duplicated
+				if (key.tag[0] && rowInfo.component < 0)
 					animationEditorDrawKeyTag(font, key.tag, x + radius + 4.0f * scale, centerY, animationEditorSettings, scale);
 			}
 		}
@@ -2982,7 +3319,7 @@ bool animationEditor(const char* id, AnimationEditorState* state, f32 height)
 					if (hovered)
 						animationEditorDrawDiamond({ x, y }, radius * 2.2f, { 1, 1, 1, 0.35f });
 
-					if (key.selected)
+					if (key.selected || key.selectedComponents != 0)
 					{
 						animationEditorDrawDiamond({ x, y }, radius * 1.7f, animationEditorSettings.keySelectedColor);
 						animationEditorDrawDiamond({ x, y }, radius, componentColor);
@@ -3106,45 +3443,7 @@ bool animationEditor(const char* id, AnimationEditorState* state, f32 height)
 		f32 playheadX = animationEditorTimeToX(*state, plotRect, state->cursorTime);
 
 		if (playheadX >= plotRect.x - 1.0f && playheadX <= plotRect.right() + 1.0f)
-		{
-			f32 flagWidth = 12.0f * scale;
-			f32 flagHeight = 16.0f * scale;
-			f32 flagPoint = 5.0f * scale;
-			f32 flagLeft = playheadX - flagWidth * 0.5f;
-			f32 flagTop = rulerRect.y + 3.0f * scale;
-			f32 flagBottom = flagTop + flagHeight;
-			f32 flagRight = flagLeft + flagWidth;
-			f32 lineTop = flagBottom + flagPoint;
-			Color flagColor = Color::white;
-			Color outlineColor = { 0.0f, 0.0f, 0.0f, 0.45f };
-			Color glowColor = animationEditorSettings.playheadColor;
-
-			glowColor.a = 0.18f;
-
-			ctx->renderer.cmdSetLineStyle(LineStyle(glowColor, animationEditorSettings.playheadWidth * 5.0f * scale));
-			ctx->renderer.cmdDrawLine({ playheadX, lineTop }, { playheadX, canvasRect.bottom() });
-			ctx->renderer.cmdSetLineStyle(LineStyle(Color::black, (animationEditorSettings.playheadWidth + 2.0f) * scale));
-			ctx->renderer.cmdDrawLine({ playheadX, lineTop }, { playheadX, canvasRect.bottom() });
-			ctx->renderer.cmdSetLineStyle(LineStyle(animationEditorSettings.playheadColor, animationEditorSettings.playheadWidth * scale));
-			ctx->renderer.cmdDrawLine({ playheadX, lineTop }, { playheadX, canvasRect.bottom() });
-
-			ctx->renderer.cmdSetColor(flagColor);
-			ctx->renderer.cmdDrawFilledRectangle({ flagLeft, flagTop, flagWidth, flagHeight });
-			ctx->renderer.cmdDrawSolidTriangle(
-				{ flagLeft, flagBottom },
-				{ flagRight, flagBottom },
-				{ playheadX, flagBottom + flagPoint },
-				flagColor,
-				flagColor,
-				flagColor);
-
-			ctx->renderer.cmdSetLineStyle(LineStyle(outlineColor, scale));
-			ctx->renderer.cmdDrawLine({ flagLeft, flagTop }, { flagRight, flagTop });
-			ctx->renderer.cmdDrawLine({ flagRight, flagTop }, { flagRight, flagBottom });
-			ctx->renderer.cmdDrawLine({ flagRight, flagBottom }, { playheadX, flagBottom + flagPoint });
-			ctx->renderer.cmdDrawLine({ playheadX, flagBottom + flagPoint }, { flagLeft, flagBottom });
-			ctx->renderer.cmdDrawLine({ flagLeft, flagBottom }, { flagLeft, flagTop });
-		}
+			drawTimeCursor(playheadX, rulerRect, canvasRect.bottom(), animationEditorSettings.playheadColor, animationEditorSettings.playheadWidth);
 	}
 
 	// end of the time range
@@ -3242,18 +3541,19 @@ bool animationEditor(const char* id, AnimationEditorState* state, f32 height)
 
 			if (field.component == -1)
 			{
-				f32 minTime = state->startTime;
-				f32 maxTime = state->endTime;
+				// the full timeline range is used so the slider fill reflects the
+				// key position in the timeline, the key is clamped between its
+				// neighbours afterwards to keep the keys ordered
+				fieldChanged = comboSliderFloatRanged(&key.time, state->startTime, state->endTime, timeStepsPerPixel, timeArrowStep, "t %.3f");
 
-				if (field.key > 0)
-					minTime = std::max(minTime, channel.keys[field.key - 1].time + 0.001f);
-				if (field.key + 1 < (i32)channel.keys.size())
-					maxTime = std::min(maxTime, channel.keys[field.key + 1].time - 0.001f);
+				if (fieldChanged)
+				{
+					if (field.key > 0)
+						key.time = std::max(key.time, channel.keys[field.key - 1].time + 0.001f);
 
-				if (minTime <= maxTime)
-					fieldChanged = comboSliderFloatRanged(&key.time, minTime, maxTime, timeStepsPerPixel, timeArrowStep, "t %.3f");
-				else
-					comboSliderFloatRanged(&key.time, state->startTime, state->endTime, timeStepsPerPixel, timeArrowStep, "t %.3f");
+					if (field.key + 1 < (i32)channel.keys.size())
+						key.time = std::min(key.time, channel.keys[field.key + 1].time - 0.001f);
+				}
 			}
 			else if (field.component == -2)
 			{
@@ -3373,6 +3673,101 @@ bool animationEditor(const char* id, AnimationEditorState* state, f32 height)
 			mouseCursorSetType(MouseCursorType::HandPointing);
 		else if (canvasRect.contains(mouse))
 			mouseCursorSetType(MouseCursorType::CrossHair);
+	}
+
+	return changed;
+}
+
+bool animationEditorAction(AnimationEditorState* state, AnimationEditorAction action, f32 viewWidth)
+{
+	if (!state)
+		return false;
+
+	AnimationEditorSettings settings = ctx->settings.animationEditor;
+
+	if (settings.useThemeColors)
+		animationEditorApplyThemeColors(settings);
+
+	bool changed = false;
+	Rect viewRect = { 0.0f, 0.0f, std::max(viewWidth, 1.0f), 1.0f };
+
+	switch (action)
+	{
+	case AnimationEditorAction::Play:
+		state->playing = !state->playing;
+
+		if (state->playing && state->cursorTime >= state->endTime)
+			state->cursorTime = state->startTime;
+
+		changed = true;
+		break;
+
+	case AnimationEditorAction::KeyframesMode:
+		if (state->viewMode != AnimationEditorViewMode::Keyframes)
+		{
+			state->viewMode = AnimationEditorViewMode::Keyframes;
+			changed = true;
+		}
+		break;
+
+	case AnimationEditorAction::CurvesMode:
+		if (state->viewMode != AnimationEditorViewMode::Curves)
+		{
+			state->viewMode = AnimationEditorViewMode::Curves;
+			changed = true;
+		}
+		break;
+
+	case AnimationEditorAction::AddKey:
+	{
+		i32 channelIndex = animationEditorTargetChannel(*state);
+
+		if (channelIndex >= 0)
+		{
+			f32 values[4];
+			f32 addTime = animationEditorSnapTime(*state, state->cursorTime);
+			const AnimationEditorChannel& channel = state->channels[channelIndex];
+
+			// when specific sub-channels are selected, the new key belongs only
+			// to them, otherwise it covers all the channel components
+			u32 componentMask = channel.selected ? 0 : channel.selectedComponents;
+
+			animationEditorEvaluateChannel(channel, addTime, values);
+			animationEditorAddKey(*state, channelIndex, addTime, values, componentMask, true);
+			changed = true;
+		}
+		break;
+	}
+
+	case AnimationEditorAction::DeleteSelected:
+		changed = animationEditorDeleteSelectedKeys(*state) > 0;
+		break;
+
+	case AnimationEditorAction::ToggleSnap:
+		state->snapToFrames = !state->snapToFrames;
+		changed = true;
+		break;
+
+	case AnimationEditorAction::ZoomOut:
+	case AnimationEditorAction::ZoomIn:
+	case AnimationEditorAction::FitView:
+		if (viewWidth > 0.0f)
+		{
+			if (action == AnimationEditorAction::FitView)
+			{
+				animationEditorFitView(*state, settings, viewRect);
+			}
+			else
+			{
+				f32 factor = action == AnimationEditorAction::ZoomOut ? 1.0f / settings.zoomStep : settings.zoomStep;
+
+				animationEditorZoom(*state, settings, viewRect, factor, viewRect.x + viewRect.width * 0.5f);
+			}
+
+			animationEditorClampView(*state, viewRect, settings);
+			changed = true;
+		}
+		break;
 	}
 
 	return changed;
