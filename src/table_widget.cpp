@@ -69,11 +69,13 @@ static void finishRow(TableState& state)
 
 			rowRect = rowRect.contract(1.0);
 
-			ctx->renderer.cmdSetColor(state.currentRowColor);
-			// skip splitter when inside scroll view to respect clip rect
+			// switch to background layer before setting the color, otherwise the
+			// SetColor and DrawRect commands end up in different layers and the
+			// rectangle is drawn with whatever color is current at execution time
 			if (!state.needsScrollViewStart)
 				state.persistent->splitter->setLayer(0);
-		
+
+			ctx->renderer.cmdSetColor(state.currentRowColor);
 			ctx->renderer.cmdDrawFilledRectangle(rowRect);
 			
 			if (!state.needsScrollViewStart)

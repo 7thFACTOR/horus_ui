@@ -6,11 +6,16 @@
 #include <cstring>
 #include <cstdio>
 #include <cctype>
+#include <cstdint>
 #include <memory>
 #include <string>
 #include <vector>
 #include <algorithm>
 #include <initializer_list>
+#include <fstream>
+
+#include <json/json.h>
+#include <json/reader.h>
 
 // backends
 #include "sdl3_input.h"
@@ -26,6 +31,9 @@
 #include "stdio_fileio.h"
 #include "utfcpp.h"
 
+// all names loaded from the Material icon atlas, used by the icon browser window
+static std::vector<std::string> gMaterialIconNames;
+
 // a dummy object in the edited scene graph, purely for the example
 struct SceneObject
 {
@@ -38,6 +46,7 @@ struct SceneObject
 	f32 scale[3] = { 1, 1, 1 };
 	hui::Color color = hui::Color::white;
 	bool visible = true;
+	bool locked = false;
 	bool isStatic = false;
 	bool collision = true;
 	bool trigger = false;
@@ -60,6 +69,7 @@ struct LogEntry
 
 	Level level = Level::Info;
 	std::string text;
+	bool selected = false;
 };
 
 // a dummy asset shown in the asset browser
@@ -69,6 +79,12 @@ struct AssetItem
 	const char* type = "Texture";
 	u32 folder = 0;
 	hui::HImage thumb = 0;
+};
+
+struct ViewportDragItem
+{
+	SceneObject* object = nullptr;
+	f32 startPos[3] = { 0, 0, 0 };
 };
 
 // all the level editor state, kept in one place instead of file globals
@@ -89,13 +105,15 @@ struct LevelEditorState
 	bool logAutoScroll = true;
 	f32 logTimer = 0;
 	u32 logMessageIndex = 0;
+	i32 logSelectionAnchor = -1;
 
 	static const u32 folderCount = 5;
 	const char* folders[folderCount] = { "Textures", "Meshes", "Materials", "Audio", "Prefabs" };
 	bool folderSelected[folderCount] = { true, false, false, false, false };
 	std::vector<AssetItem> assets;
+	std::vector<bool> assetSelected;
 	u32 selectedFolder = 0;
-	i32 selectedAsset = -1;
+	i32 assetSelectionAnchor = -1;
 	char assetFilter[128] = { 0 };
 	hui::Point assetScroll = 0;
 
@@ -104,12 +122,29 @@ struct LevelEditorState
 	bool snapEnabled = true;
 	bool playing = false;
 	f32 viewZoom = 1.0f;
+	hui::Point viewPan = 0;
+	bool viewportPanning = false;
+	hui::Point viewportPanStartMouse = 0;
+	hui::Point viewportPanStartValue = 0;
+	bool viewportDragging = false;
+	std::vector<ViewportDragItem> viewportDragItems;
+	hui::Point viewportDragStartMouse = 0;
+
+	bool viewportRectSelecting = false;
+	hui::Point viewportRectStart = 0;
+	hui::Point viewportRectEnd = 0;
+	std::vector<SceneObject*> sceneSelection;
 
 	bool showSceneTree = true;
 	bool showInspector = true;
 	bool showAssetBrowser = true;
+	bool showIconBrowser = true;
+	bool iconBrowserDocked = false;
 	bool showLog = true;
 	bool showViewport = true;
+
+	char iconFilter[128] = { 0 };
+	hui::Point iconBrowserScroll = 0;
 
 	bool saveLayoutRequested = false;
 	bool loadLayoutRequested = false;
@@ -127,6 +162,11 @@ struct LevelEditorState
 	hui::HImage iconSave = 0;
 	hui::HImage iconUndo = 0;
 	hui::HImage iconRedo = 0;
+	hui::HImage iconVisible = 0;
+	hui::HImage iconLocked = 0;
+	hui::HImage iconObject = 0;
+	hui::HImage iconArrowClosed = 0;
+	hui::HImage iconArrowOpen = 0;
 	f32 iconButtonSize = 48;
 	f32 toolbarGroupSpacing = 8;
 	hui::HImage thumbLena = 0;
@@ -137,6 +177,20 @@ struct LevelEditorState
 	void* materialRef = nullptr;
 	bool materialModified = false;
 };
+
+static bool isObjectSelected(const LevelEditorState& state, const SceneObject* obj)
+{
+	if (state.selectedObject == obj)
+		return true;
+
+	for (SceneObject* selected : state.sceneSelection)
+	{
+		if (selected == obj)
+			return true;
+	}
+
+	return false;
+}
 
 SceneObject* createObject(LevelEditorState& state, const char* name, const char* type, SceneObject* parent)
 {
@@ -164,6 +218,12 @@ void deleteObject(LevelEditorState& state, SceneObject* obj)
 	if (!obj)
 		return;
 
+	state.viewportDragItems.erase(std::remove_if(state.viewportDragItems.begin(), state.viewportDragItems.end(),
+		[obj](const ViewportDragItem& item) { return item.object == obj; }), state.viewportDragItems.end());
+
+	if (state.viewportDragItems.empty())
+		state.viewportDragging = false;
+
 	// keep the children alive, re-parent them to the deleted object's parent
 	for (SceneObject* child : obj->children)
 	{
@@ -189,8 +249,22 @@ void deleteObject(LevelEditorState& state, SceneObject* obj)
 	state.objects.erase(std::remove_if(state.objects.begin(), state.objects.end(),
 		[obj](const std::unique_ptr<SceneObject>& p) { return p.get() == obj; }), state.objects.end());
 
+	state.sceneSelection.erase(std::remove(state.sceneSelection.begin(), state.sceneSelection.end(), obj), state.sceneSelection.end());
+
 	if (state.selectedObject == obj)
 		state.selectedObject = nullptr;
+}
+
+void deleteSelection(LevelEditorState& state)
+{
+	// copy: deleteObject() mutates both selectedObject and sceneSelection
+	std::vector<SceneObject*> objects = state.sceneSelection;
+
+	if (state.selectedObject && std::find(objects.begin(), objects.end(), state.selectedObject) == objects.end())
+		objects.push_back(state.selectedObject);
+
+	for (SceneObject* obj : objects)
+		deleteObject(state, obj);
 }
 
 void buildDummyScene(LevelEditorState& state)
@@ -255,11 +329,107 @@ void buildDummyScene(LevelEditorState& state)
 void appendLog(LevelEditorState& state, LogEntry::Level level, const std::string& text)
 {
 	if (state.log.size() >= 200)
+	{
 		state.log.erase(state.log.begin());
 
-	state.log.push_back({ level, text });
+		if (state.logSelectionAnchor > 0)
+			state.logSelectionAnchor--;
+		else
+			state.logSelectionAnchor = -1;
+	}
+
+	LogEntry entry;
+	entry.level = level;
+	entry.text = text;
+	entry.selected = false;
+	state.log.push_back(entry);
+
 	if (state.logAutoScroll)
 		state.logScroll.y = 1e9f;
+}
+
+static void clearLogSelection(LevelEditorState& state)
+{
+	for (LogEntry& entry : state.log)
+		entry.selected = false;
+
+	state.logSelectionAnchor = -1;
+}
+
+static void copySelectedLogEntries(const LevelEditorState& state)
+{
+	std::string text;
+
+	for (const LogEntry& entry : state.log)
+	{
+		if (!entry.selected)
+			continue;
+
+		const char* typeName = "Info";
+
+		if (entry.level == LogEntry::Level::Warning)
+			typeName = "Warning";
+		else if (entry.level == LogEntry::Level::Error)
+			typeName = "Error";
+
+		if (!text.empty())
+			text += "\n";
+
+		text += "[";
+		text += typeName;
+		text += "] ";
+		text += entry.text;
+	}
+
+	if (!text.empty())
+		hui::clipboardSetText(text.c_str());
+}
+
+static void selectLogRow(LevelEditorState& state, const std::vector<u32>& visibleIndices, u32 visibleIndex, u32 logIndex, bool ctrl, bool shift)
+{
+	if (shift && state.logSelectionAnchor >= 0)
+	{
+		int anchorVisible = -1;
+
+		for (u32 v = 0; v < visibleIndices.size(); v++)
+		{
+			if ((i32)visibleIndices[v] == state.logSelectionAnchor)
+			{
+				anchorVisible = (int)v;
+				break;
+			}
+		}
+
+		if (anchorVisible >= 0)
+		{
+			if (!ctrl)
+				clearLogSelection(state);
+
+			int from = (std::min)(anchorVisible, (int)visibleIndex);
+			int to = (std::max)(anchorVisible, (int)visibleIndex);
+
+			for (int v = from; v <= to; v++)
+			{
+				u32 idx = visibleIndices[(u32)v];
+
+				if (idx < state.log.size())
+					state.log[idx].selected = true;
+			}
+
+			return;
+		}
+	}
+
+	if (ctrl)
+	{
+		state.log[logIndex].selected = !state.log[logIndex].selected;
+		state.logSelectionAnchor = (i32)logIndex;
+		return;
+	}
+
+	clearLogSelection(state);
+	state.log[logIndex].selected = true;
+	state.logSelectionAnchor = (i32)logIndex;
 }
 
 void appendNextDummyLog(LevelEditorState& state)
@@ -306,22 +476,125 @@ bool containsInsensitive(const std::string& haystack, const char* needle)
 	return hay.find(ned) != std::string::npos;
 }
 
+// Loads the white Material icon sheet and adds every named sub-image to the
+// current theme atlas. The JSON maps lowercase_underscore names to rectangles
+// inside the sheet PNG: [x, y, width, height].
+bool loadMaterialIconAtlas(const char* atlasPath, const char* jsonPath)
+{
+	auto theme = hui::themeGet();
+	if (!theme)
+		return false;
+
+	hui::ImageData sheet = {};
+	if (!hui::loadPngImage(atlasPath, sheet) || !sheet.pixels)
+		return false;
+
+	std::ifstream jsonFile(jsonPath);
+	if (!jsonFile)
+	{
+		hui::deleteImageData(sheet);
+		return false;
+	}
+
+	Json::Value root;
+	Json::Reader reader;
+	if (!reader.parse(jsonFile, root) || !root.isObject() || !root["icons"].isArray())
+	{
+		hui::deleteImageData(sheet);
+		return false;
+	}
+
+	const Json::Value& icons = root["icons"];
+
+	for (Json::ArrayIndex i = 0; i < icons.size(); ++i)
+	{
+		const Json::Value& entry = icons[i];
+
+		if (!entry.isObject() || !entry["name"].isString() || !entry["rect"].isArray())
+			continue;
+
+		std::string name = entry["name"].asString();
+		const Json::Value& r = entry["rect"];
+		u32 x = r[0].asUInt();
+		u32 y = r[1].asUInt();
+		u32 w = r[2].asUInt();
+		u32 h = r[3].asUInt();
+
+		if (!w || !h || x + w > sheet.width || y + h > sheet.height)
+			continue;
+
+		gMaterialIconNames.push_back(name);
+
+		hui::ImageData sub = {};
+		sub.width = w;
+		sub.height = h;
+		sub.pixels = new hui::Rgba32[(size_t)w * h];
+
+		for (u32 row = 0; row < h; ++row)
+		{
+			memcpy(sub.pixels + (size_t)row * w,
+				sheet.pixels + (size_t)(y + row) * sheet.width + x,
+				sizeof(hui::Rgba32) * w);
+		}
+
+		hui::themeAddImage(theme, name.c_str(), sub);
+
+		// Dim variants for the hierarchy flag icons: shown on hover while the flag is off.
+		if (name == "visibility_off" || name == "lock")
+		{
+			hui::ImageData dim = {};
+			dim.width = w;
+			dim.height = h;
+			dim.pixels = new hui::Rgba32[(size_t)w * h];
+
+			for (size_t pixel = 0; pixel < (size_t)w * h; ++pixel)
+			{
+				hui::Rgba32 c = sub.pixels[pixel];
+				u32 alpha = (u32)((c >> 24) * 0.5f);
+				dim.pixels[pixel] = (c & 0x00FFFFFF) | (alpha << 24);
+			}
+
+			std::string dimName = name + "_dim";
+			hui::themeAddImage(theme, dimName.c_str(), dim);
+			hui::deleteImageData(dim);
+		}
+
+		hui::deleteImageData(sub);
+	}
+
+	hui::deleteImageData(sheet);
+	return true;
+}
+
+// Demo helper: get one of the atlas icons by its lowercase_underscore name.
+hui::HImage materialIcon(const char* name)
+{
+	return hui::themeGetImage(hui::themeGet(), name);
+}
+
 void loadThemeImages(LevelEditorState& state)
 {
 	auto theme = hui::themeGet();
 
-	state.iconMenu = hui::loadThemeImage(theme, "../themes/icons/stacks_FILL0_wght400_GRAD0_opsz20.png");
-	state.iconToolbar = hui::loadThemeImage(theme, "../themes/icons/settings_FILL0_wght400_GRAD0_opsz20.png");
-	state.iconTree = hui::loadThemeImage(theme, "../themes/icons/icons8-opened-folder-20.png");
-	state.iconInspector = hui::loadThemeImage(theme, "../themes/icons/icons8-settings-20.png");
-	state.iconViewport = hui::loadThemeImage(theme, "../themes/icons/ic_border_all_white_24dp.png");
-	state.iconAssets = hui::loadThemeImage(theme, "../themes/icons/icons8-opened-folder-20.png");
-	state.iconLog = hui::loadThemeImage(theme, "../themes/icons/icons8-equivalent-20.png");
-	state.iconNew = hui::loadThemeImage(theme, "../themes/icons/stacks_FILL0_wght400_GRAD0_opsz20.png");
-	state.iconOpen = hui::loadThemeImage(theme, "../themes/icons/icons8-opened-folder-20.png");
-	state.iconSave = hui::loadThemeImage(theme, "../themes/icons/data_check_FILL0_wght400_GRAD0_opsz20.png");
-	state.iconUndo = hui::loadThemeImage(theme, "../themes/icons/ic_border_left_white_24dp.png");
-	state.iconRedo = hui::loadThemeImage(theme, "../themes/icons/icons8-equivalent-20.png");
+	state.iconMenu = materialIcon("menu");
+	state.iconToolbar = materialIcon("build");
+	state.iconTree = materialIcon("account_tree");
+	state.iconInspector = materialIcon("settings");
+	state.iconViewport = materialIcon("crop_free");
+	state.iconAssets = materialIcon("folder_open");
+	state.iconLog = materialIcon("article");
+	state.iconNew = materialIcon("add");
+	state.iconOpen = materialIcon("folder_open");
+	state.iconSave = materialIcon("save");
+	state.iconUndo = materialIcon("undo");
+	state.iconRedo = materialIcon("redo");
+
+	// hierarchy icons
+	state.iconVisible = materialIcon("visibility_off");
+	state.iconLocked = materialIcon("lock");
+	state.iconObject = hui::loadThemeImage(theme, "../themes/default/cube_3d.png");
+	state.iconArrowClosed = materialIcon("chevron_right");
+	state.iconArrowOpen = materialIcon("expand_more");
 
 	state.thumbLena = hui::loadThemeImage(theme, "../themes/default/lena.png");
 	state.thumbFolder = hui::loadThemeImage(theme, "../themes/icons/icons8-opened-folder-20.png");
@@ -358,6 +631,9 @@ void buildDummyAssets(LevelEditorState& state)
 	add("S_Footstep.wav", "Audio", 3, state.thumbData);
 	add("P_StreetLamp.prefab", "Prefab", 4, state.thumbFolder);
 	add("P_Building.prefab", "Prefab", 4, state.thumbFolder);
+
+	state.assetSelected.assign(state.assets.size(), false);
+	state.assetSelectionAnchor = -1;
 }
 
 void drawMainMenu(LevelEditorState& state, bool& exitNow)
@@ -368,6 +644,7 @@ void drawMainMenu(LevelEditorState& state, bool& exitNow)
 	state.showSceneTree = hui::windowIsVisible("scene_tree");
 	state.showInspector = hui::windowIsVisible("inspector");
 	state.showAssetBrowser = hui::windowIsVisible("asset_browser");
+	state.showIconBrowser = hui::windowIsVisible("icon_browser");
 	state.showLog = hui::windowIsVisible("log");
 
 	if (!hui::menuBarBegin())
@@ -412,7 +689,7 @@ void drawMainMenu(LevelEditorState& state, bool& exitNow)
 		hui::menuSeparator();
 
 		if (hui::menuItem("Delete", "Del"))
-			deleteObject(state, state.selectedObject);
+			deleteSelection(state);
 
 		hui::menuEnd();
 	}
@@ -436,6 +713,9 @@ void drawMainMenu(LevelEditorState& state, bool& exitNow)
 
 		if (hui::menuItem("Asset Browser", "", 0, state.showAssetBrowser ? hui::SelectableFlags::Checked : hui::SelectableFlags::Normal))
 			toggle(state.showAssetBrowser, "asset_browser");
+
+		if (hui::menuItem("Icon Browser", "", 0, state.showIconBrowser ? hui::SelectableFlags::Checked : hui::SelectableFlags::Normal))
+			toggle(state.showIconBrowser, "icon_browser");
 
 		if (hui::menuItem("Log", "", 0, state.showLog ? hui::SelectableFlags::Checked : hui::SelectableFlags::Normal))
 			toggle(state.showLog, "log");
@@ -644,41 +924,134 @@ void drawMainToolbar(LevelEditorState& state)
 	}
 }
 
-void drawObjectNode(LevelEditorState& state, SceneObject* obj)
+void drawSceneTreeNode(LevelEditorState& state, SceneObject* obj, u32 depth)
 {
-	auto flags = (state.selectedObject == obj) ? hui::SelectableFlags::Selected : hui::SelectableFlags::Normal;
-
 	hui::idPush((void*)obj);
+	hui::tableRowNext();
 
-	bool clicked = false;
+	hui::Rect cellRect = hui::tableCellGetRect();
+	hui::Point rowBasePos = hui::widgetGetPosition();
 
-	if (obj->children.empty())
+	bool hasChildren = !obj->children.empty();
+
+	// match the icons to the real height of the row (the selectable/text box).
+	// tableCellGetRect() is in screen pixels, image() expects unscaled height.
+	f32 scale = hui::scaleGet();
+	f32 rowHeight = scale > 0.0f ? cellRect.height / scale : 16.0f;
+	f32 iconStep = rowHeight;
+
+	// the whole row is hoverable, so the view/lock icons can appear anywhere on it
+	hui::Rect rowRect(cellRect.x, cellRect.y, cellRect.width, cellRect.height);
+	bool rowHovered = hui::windowIsMouseOver() && rowRect.contains(hui::mouseGetPosition());
+
+	// Unity-like full-row highlight. Colors come from the theme; tableRowSetColor
+	// paints behind every widget in the row, including the hidden/lock icons.
+	// Selection takes priority over hover.
+	bool rowSelected = isObjectSelected(state, obj);
+
+	if (rowSelected || rowHovered)
 	{
-		// leaf nodes are simple selectables, no expand arrow
-		clicked = hui::selectable(obj->name, flags);
+		hui::Color rowColor = hui::themeGetUserWidgetElementParameterColor(
+			hui::themeGet(), "sceneTreeRow", "default",
+			rowSelected ? "selectedColor" : "hoverColor",
+			hui::Color::transparent);
+
+		hui::tableRowSetColor(rowColor);
 	}
-	else
+
+	// icons live in a fixed gutter on the left; they are visible when the flag is
+	// set, otherwise only while the row is hovered. A flag that is only previewed
+	// on hover uses a dim variant; a set flag is drawn at full alpha.
+	bool hideSet = !obj->visible;
+	bool showView = hideSet || rowHovered;
+	bool showLock = obj->locked || rowHovered;
+
+	// A flag preview is dimmed while merely hovering the row, but becomes fully
+	// white when the pointer is over that particular icon (Unity-style).
+	hui::Rect viewIconRect(rowBasePos.x, rowBasePos.y, rowHeight, rowHeight);
+	hui::Rect lockIconRect(rowBasePos.x + iconStep, rowBasePos.y, rowHeight, rowHeight);
+	const hui::Point mousePos = hui::mouseGetPosition();
+	bool viewIconHovered = hui::windowIsMouseOver() && viewIconRect.contains(mousePos);
+	bool lockIconHovered = hui::windowIsMouseOver() && lockIconRect.contains(mousePos);
+
+	hui::HImage viewIcon = materialIcon(hideSet || viewIconHovered ? "visibility_off" : "visibility_off_dim");
+	hui::HImage lockIcon = materialIcon(obj->locked || lockIconHovered ? "lock" : "lock_dim");
+
+	if (showView && viewIcon)
 	{
-		bool expanded = hui::treeNodeBegin(obj->name, &obj->expanded, flags, hui::TreeNodeFlags::Normal);
-		clicked = hui::widgetIsClicked();
-
-		if (expanded)
-		{
-			for (SceneObject* child : obj->children)
-				drawObjectNode(state, child);
-
-			hui::treeNodeEnd();
-		}
+		hui::widgetPushPosition();
+		hui::widgetSetPosition(rowBasePos);
+		if (hui::image(viewIcon, rowHeight, hui::HAlignType::Left, hui::VAlignType::Center))
+			obj->visible = !obj->visible;
+		hui::widgetPopPosition();
 	}
 
-	if (clicked)
+	if (showLock && lockIcon)
+	{
+		hui::widgetPushPosition();
+		hui::widgetSetPosition({ rowBasePos.x + iconStep, rowBasePos.y });
+		if (hui::image(lockIcon, rowHeight, hui::HAlignType::Left, hui::VAlignType::Center))
+			obj->locked = !obj->locked;
+		hui::widgetPopPosition();
+	}
+
+	// indented content: expand arrow, object icon, then the label
+	f32 indent = depth * 18.0f * hui::scaleGet();
+	f32 contentX = rowBasePos.x + 2.0f * iconStep + indent + (hasChildren ? 0.0f : iconStep);
+	hui::widgetSetPosition({ contentX, rowBasePos.y });
+
+	if (hasChildren)
+	{
+		hui::HImage arrow = obj->expanded ? state.iconArrowOpen : state.iconArrowClosed;
+		if (arrow && hui::image(arrow, rowHeight, hui::HAlignType::Left, hui::VAlignType::Center))
+			obj->expanded = !obj->expanded;
+		hui::sameLine();
+	}
+
+	if (state.iconObject && hui::image(state.iconObject, rowHeight, hui::HAlignType::Left, hui::VAlignType::Center))
+	{
 		state.selectedObject = obj;
+		state.sceneSelection.clear();
+	}
+
+	hui::sameLine();
+
+	// plain label: a selectable would paint its own body over the themed row
+	// highlight, so selection is handled on the whole row instead
+	hui::label(obj->name);
+
+	const hui::InputEvent& ev = hui::inputEventGet();
+
+	if (rowHovered
+		&& ev.type == hui::InputEvent::Type::MouseDown
+		&& ev.mouse.button == hui::MouseButton::Left)
+	{
+		state.selectedObject = obj;
+		state.sceneSelection.clear();
+	}
+
+	if (hasChildren && obj->expanded)
+	{
+		for (SceneObject* child : obj->children)
+			drawSceneTreeNode(state, child, depth + 1);
+	}
 
 	hui::idPop();
 }
 
 void drawSceneTree(LevelEditorState& state)
 {
+	const hui::InputEvent& ev = hui::inputEventGet();
+
+	if (hui::windowIsMouseOver()
+		&& ev.type == hui::InputEvent::Type::Key
+		&& ev.key.down
+		&& ev.key.code == hui::KeyCode::Delete
+		&& state.selectedObject)
+	{
+		deleteSelection(state);
+	}
+
 	hui::widgetSetNextWidth(0.55f);
 	hui::textInput("##objectSearch", state.objectSearch, 128, hui::TextInputFlags::None, "Search objects...");
 
@@ -704,14 +1077,23 @@ void drawSceneTree(LevelEditorState& state)
 	hui::widgetSetNextWidth(0.21f);
 
 	if (hui::button("Delete"))
-		deleteObject(state, state.selectedObject);
+		deleteSelection(state);
 
 	hui::line();
 
-	hui::scrollViewBegin("##treeScroll", hui::layoutGetRemainingHeight(), state.treeScroll, hui::Point(0, 0), hui::ScrollViewFlags::None);
+	// a single borderless column is used only for stable row positioning; the
+	// hierarchy itself is drawn manually as indented labels with icons
+	hui::scrollViewBegin("##treeScroll", hui::layoutGetRemainingHeight(), state.treeScroll, hui::Point(0, 0), hui::ScrollViewFlags::NoHorizontalScroll);
 
-	for (SceneObject* root : state.roots)
-		drawObjectNode(state, root);
+	if (hui::tableBegin("##sceneTreeTable", 1, 0, hui::TableFlags::Stretch))
+	{
+		hui::tableColumnSetup(0, 0.0f, hui::TableColumnFlags::Stretch);
+
+		for (SceneObject* root : state.roots)
+			drawSceneTreeNode(state, root, 0);
+
+		hui::tableEnd();
+	}
 
 	state.treeScroll = hui::scrollViewEnd();
 }
@@ -812,40 +1194,236 @@ void drawInspector(LevelEditorState& state)
 	}
 }
 
+static const u32 kAssetDragDropType = 100;
+
+static hui::Point sceneWorldToView(const hui::Rect& vp, f32 zoom, const hui::Point& pan, f32 x, f32 z)
+{
+	hui::Point origin = vp.center() + pan;
+
+	return { origin.x + x * zoom, origin.y + z * zoom };
+}
+
+static void sceneViewToWorld(const hui::Rect& vp, f32 zoom, const hui::Point& pan, const hui::Point& p, f32& outX, f32& outZ)
+{
+	hui::Point origin = vp.center() + pan;
+
+	outX = (p.x - origin.x) / zoom;
+	outZ = (p.y - origin.y) / zoom;
+}
+
+static hui::Rect rectFromPoints(const hui::Point& a, const hui::Point& b)
+{
+	return { a.x < b.x ? a.x : b.x,
+		a.y < b.y ? a.y : b.y,
+		a.x > b.x ? a.x - b.x : b.x - a.x,
+		a.y > b.y ? a.y - b.y : b.y - a.y };
+}
+
+static void drawDashedRect(const hui::Rect& rc, const hui::Color& color, f32 width, f32 dash, f32 gap)
+{
+	hui::LineStyle style(color, width, true);
+	style.stipplePattern[0] = dash;
+	style.stipplePattern[1] = gap;
+	hui::renderSetLineStyle(style);
+	hui::renderDrawRectangle(rc);
+}
+
+static bool sceneObjectHitTest(SceneObject* obj, const hui::Rect& vp, f32 zoom, const hui::Point& pan, const hui::Point& mouse)
+{
+	if (!obj || !obj->visible)
+		return false;
+
+	hui::Point p = sceneWorldToView(vp, zoom, pan, obj->position[0], obj->position[2]);
+
+	if (strcmp(obj->type, "Light") == 0 || strcmp(obj->type, "Camera") == 0 || strcmp(obj->type, "Marker") == 0)
+	{
+		f32 dx = mouse.x - p.x;
+		f32 dy = mouse.y - p.y;
+
+		return (dx * dx + dy * dy) <= 18.0f * 18.0f;
+	}
+
+	f32 half = 16.0f * obj->scale[0] * zoom;
+	if (half < 8.0f)
+		half = 8.0f;
+
+	hui::Rect rc = { p.x - half, p.y - half, half * 2.0f, half * 2.0f };
+
+	return rc.contains(mouse);
+}
+
+static SceneObject* pickSceneObject(LevelEditorState& state, const hui::Rect& vp, f32 zoom, const hui::Point& mouse)
+{
+	SceneObject* picked = nullptr;
+
+	for (auto& objPtr : state.objects)
+	{
+		SceneObject* obj = objPtr.get();
+
+		if (sceneObjectHitTest(obj, vp, zoom, state.viewPan, mouse))
+			picked = obj;
+	}
+
+	return picked;
+}
+
+static i32 meshIndexFromAssetName(const std::string& name)
+{
+	std::string lower = name;
+
+	std::transform(lower.begin(), lower.end(), lower.begin(), [](unsigned char c) { return (char)std::tolower(c); });
+
+	if (lower.find("cube") != std::string::npos)
+		return 1;
+
+	if (lower.find("sphere") != std::string::npos)
+		return 2;
+
+	if (lower.find("cylinder") != std::string::npos)
+		return 3;
+
+	if (lower.find("plane") != std::string::npos)
+		return 4;
+
+	return 5;
+}
+
+static SceneObject* createObjectFromAsset(LevelEditorState& state, u32 assetIndex, const hui::Rect& vp, f32 zoom, const hui::Point& dropPos)
+{
+	if (assetIndex >= state.assets.size())
+		return nullptr;
+
+	const AssetItem& asset = state.assets[assetIndex];
+
+	if (strcmp(asset.type, "Mesh") != 0 && strcmp(asset.type, "Prefab") != 0)
+		return nullptr;
+
+	f32 worldX = 0.0f;
+	f32 worldZ = 0.0f;
+	sceneViewToWorld(vp, zoom, state.viewPan, dropPos, worldX, worldZ);
+
+	if (state.snapEnabled)
+	{
+		worldX = roundf(worldX / 40.0f) * 40.0f;
+		worldZ = roundf(worldZ / 40.0f) * 40.0f;
+	}
+
+	SceneObject* parent = state.selectedObject ? state.selectedObject : (state.roots.empty() ? nullptr : state.roots[0]);
+	SceneObject* obj = nullptr;
+
+	if (strcmp(asset.type, "Prefab") == 0)
+	{
+		obj = createObject(state, asset.name.c_str(), "Prefab", parent);
+		obj->color = hui::Color::fromU8(180, 200, 120);
+	}
+	else
+	{
+		obj = createObject(state, asset.name.c_str(), "Entity", parent);
+		obj->meshIndex = meshIndexFromAssetName(asset.name);
+		obj->color = hui::Color::fromU8(140, 150, 170);
+	}
+
+	obj->position[0] = worldX;
+	obj->position[2] = worldZ;
+	state.selectedObject = obj;
+
+	appendLog(state, LogEntry::Level::Info, std::string("Dropped '") + asset.name + "' into scene");
+
+	return obj;
+}
+
 void drawViewport(LevelEditorState& state)
 {
-	// the viewport is a passive drawing area, disable interaction so it does not eat input
-	hui::widgetSetNextDisabled();
-
 	hui::Rect vp = hui::viewportBegin("##levelViewport", 0);
+	bool hovered = hui::widgetIsHovered();
 
 	hui::renderSetFillStyle(hui::FillStyle(hui::Color::fromU8(28, 30, 36)));
 	hui::renderDrawSolidRectangle(vp);
 
-	hui::Point center = vp.center();
+	const hui::InputEvent& ev = hui::inputEventGet();
+	hui::Point mouse = hui::mouseGetPosition();
+	bool mouseDownNow = HUI_SERVICES.isMouseButtonDownNow && HUI_SERVICES.isMouseButtonDownNow(hui::MouseButton::Left);
+	bool middleDownNow = HUI_SERVICES.isMouseButtonDownNow && HUI_SERVICES.isMouseButtonDownNow(hui::MouseButton::Middle);
+
+	// middle-mouse drag pans the view
+	if (hovered && ev.type == hui::InputEvent::Type::MouseDown && ev.mouse.button == hui::MouseButton::Middle)
+	{
+		state.viewportPanning = true;
+		state.viewportPanStartMouse = mouse;
+		state.viewportPanStartValue = state.viewPan;
+		hui::inputEventCancel();
+	}
+
+	if (state.viewportPanning)
+	{
+		if (!middleDownNow)
+		{
+			state.viewportPanning = false;
+		}
+		else
+		{
+			state.viewPan = state.viewportPanStartValue + (mouse - state.viewportPanStartMouse);
+			hui::inputEventCancel();
+			hui::forceRepaint();
+		}
+	}
+
+	// mouse wheel zooms around the point under the cursor
+	if (hovered && !state.viewportPanning && ev.type == hui::InputEvent::Type::MouseWheel)
+	{
+		f32 wheel = ev.mouse.wheel.y;
+
+		if (fabsf(wheel) > 0.0f)
+		{
+			f32 oldZoom = state.viewZoom;
+			f32 newZoom = oldZoom * (1.0f + 0.1f * wheel);
+
+			if (newZoom < 0.1f)
+				newZoom = 0.1f;
+			if (newZoom > 10.0f)
+				newZoom = 10.0f;
+
+			if (newZoom != oldZoom)
+			{
+				hui::Point origin = vp.center() + state.viewPan;
+				f32 worldX = (mouse.x - origin.x) / oldZoom;
+				f32 worldZ = (mouse.y - origin.y) / oldZoom;
+
+				state.viewPan = mouse - vp.center() - hui::Point(worldX * newZoom, worldZ * newZoom);
+				state.viewZoom = newZoom;
+				hui::inputEventCancel();
+				hui::forceRepaint();
+			}
+		}
+	}
+
+	hui::Point center = vp.center() + state.viewPan;
 	f32 zoom = state.viewZoom;
 	f32 gridStep = 40.0f * zoom;
+
+	if (gridStep < 4.0f)
+		gridStep = 4.0f;
 
 	// ground grid
 	if (state.gridVisible)
 	{
 		hui::renderSetLineStyle(hui::LineStyle(hui::Color::fromU8(52, 56, 66), 1.0f));
 
-		for (f32 x = center.x; x < vp.right(); x += gridStep)
-		{
+		f32 startX = center.x;
+
+		while (startX - gridStep >= vp.left())
+			startX -= gridStep;
+
+		for (f32 x = startX; x <= vp.right(); x += gridStep)
 			hui::renderDrawLine({ x, vp.top() }, { x, vp.bottom() });
 
-			if (x - gridStep >= vp.left())
-				hui::renderDrawLine({ x - gridStep, vp.top() }, { x - gridStep, vp.bottom() });
-		}
+		f32 startY = center.y;
 
-		for (f32 y = center.y; y < vp.bottom(); y += gridStep)
-		{
+		while (startY - gridStep >= vp.top())
+			startY -= gridStep;
+
+		for (f32 y = startY; y <= vp.bottom(); y += gridStep)
 			hui::renderDrawLine({ vp.left(), y }, { vp.right(), y });
-
-			if (y - gridStep >= vp.top())
-				hui::renderDrawLine({ vp.left(), y - gridStep }, { vp.right(), y - gridStep });
-		}
 	}
 
 	// world axes
@@ -855,6 +1433,140 @@ void drawViewport(LevelEditorState& state)
 	hui::renderSetLineStyle(hui::LineStyle(hui::Color::fromU8(60, 150, 70), 2.0f));
 	hui::renderDrawLine({ center.x, vp.top() }, { center.x, vp.bottom() });
 
+	// drag and drop assets into the scene
+	if (hovered && hui::dragDropGetObjectType() == kAssetDragDropType)
+	{
+		u32 assetIndex = (u32)(uintptr_t)hui::dragDropGetObject();
+
+		if (assetIndex < state.assets.size())
+		{
+			const AssetItem& asset = state.assets[assetIndex];
+
+			if (strcmp(asset.type, "Mesh") == 0 || strcmp(asset.type, "Prefab") == 0)
+			{
+				hui::dragDropAllow();
+
+				if (hui::dragDropDroppedOnWidget())
+				{
+					createObjectFromAsset(state, assetIndex, vp, zoom, mouse);
+					hui::dragDropEnd();
+					hui::forceRepaint();
+				}
+			}
+		}
+	}
+
+	// selection and moving
+	if (!hui::dragDropGetObject() && hovered && !state.viewportPanning && ev.type == hui::InputEvent::Type::MouseDown && ev.mouse.button == hui::MouseButton::Left)
+	{
+		SceneObject* picked = pickSceneObject(state, vp, zoom, mouse);
+		bool pickedAlreadySelected = picked && isObjectSelected(state, picked);
+
+		if (!pickedAlreadySelected)
+		{
+			state.selectedObject = picked;
+			state.sceneSelection.clear();
+		}
+		else
+		{
+			// keep the multi-selection and make the clicked object the primary one
+			state.selectedObject = picked;
+		}
+
+		// Select and Move tools both allow dragging objects with the mouse
+		if (picked && !picked->locked && (state.toolIndex == 0 || state.toolIndex == 1))
+		{
+			std::vector<SceneObject*> objectsToDrag;
+
+			if (pickedAlreadySelected && !state.sceneSelection.empty())
+				objectsToDrag = state.sceneSelection;
+			else
+				objectsToDrag.push_back(picked);
+
+			state.viewportDragItems.clear();
+			state.viewportDragStartMouse = mouse;
+
+			for (SceneObject* obj : objectsToDrag)
+			{
+				if (!obj || obj->locked)
+					continue;
+
+				ViewportDragItem item;
+				item.object = obj;
+				item.startPos[0] = obj->position[0];
+				item.startPos[1] = obj->position[1];
+				item.startPos[2] = obj->position[2];
+				state.viewportDragItems.push_back(item);
+			}
+
+			state.viewportDragging = !state.viewportDragItems.empty();
+		}
+		else if (!picked && state.toolIndex == 0)
+		{
+			// drag on empty space with the Select tool -> marquee selection
+			state.viewportRectSelecting = true;
+			state.viewportRectStart = mouse;
+			state.viewportRectEnd = mouse;
+		}
+	}
+
+	if (state.viewportDragging)
+	{
+		if (!mouseDownNow)
+		{
+			state.viewportDragging = false;
+			state.viewportDragItems.clear();
+		}
+		else
+		{
+			f32 dx = (mouse.x - state.viewportDragStartMouse.x) / zoom;
+			f32 dz = (mouse.y - state.viewportDragStartMouse.y) / zoom;
+
+			// free movement while dragging - no grid snapping
+			for (const ViewportDragItem& item : state.viewportDragItems)
+			{
+				item.object->position[0] = item.startPos[0] + dx;
+				item.object->position[2] = item.startPos[2] + dz;
+			}
+		}
+	}
+
+	if (state.viewportRectSelecting)
+	{
+		if (!mouseDownNow)
+		{
+			const hui::Rect rect = rectFromPoints(state.viewportRectStart, state.viewportRectEnd);
+
+			state.sceneSelection.clear();
+			state.selectedObject = nullptr;
+
+			for (auto& objPtr : state.objects)
+			{
+				SceneObject* obj = objPtr.get();
+
+				if (!obj->visible)
+					continue;
+
+				const hui::Point p = sceneWorldToView(vp, zoom, state.viewPan, obj->position[0], obj->position[2]);
+
+				if (rect.contains(p))
+				{
+					state.sceneSelection.push_back(obj);
+
+					if (!state.selectedObject)
+						state.selectedObject = obj;
+				}
+			}
+
+			state.viewportRectSelecting = false;
+			hui::forceRepaint();
+		}
+		else
+		{
+			state.viewportRectEnd = mouse;
+		}
+	}
+
 	// entities
 	for (auto& objPtr : state.objects)
 	{
@@ -863,8 +1575,13 @@ void drawViewport(LevelEditorState& state)
 		if (!obj->visible)
 			continue;
 
-		hui::Point p = { center.x + obj->position[0] * zoom, center.y + obj->position[2] * zoom };
-		bool selected = (state.selectedObject == obj);
+		hui::Point p = sceneWorldToView(vp, zoom, state.viewPan, obj->position[0], obj->position[2]);
+		bool selected = isObjectSelected(state, obj);
+
+		// bounds used for the selection outline; a little larger than the object itself
+		f32 outlinePad = 6.0f * hui::scaleGet();
+		hui::Rect outline = { p.x - 12.0f - outlinePad, p.y - 12.0f - outlinePad,
+			24.0f + 2.0f * outlinePad, 24.0f + 2.0f * outlinePad };
 
 		if (strcmp(obj->type, "Light") == 0)
 		{
@@ -896,6 +1613,8 @@ void drawViewport(LevelEditorState& state)
 		{
 			f32 half = 16.0f * obj->scale[0] * zoom;
 			hui::Rect rc = { p.x - half, p.y - half, half * 2.0f, half * 2.0f };
+			outline = { rc.x - outlinePad, rc.y - outlinePad,
+				rc.width + 2.0f * outlinePad, rc.height + 2.0f * outlinePad };
 
 			hui::renderSetFillStyle(hui::FillStyle(obj->color));
 			hui::renderDrawSolidRectangle(rc);
@@ -905,33 +1624,76 @@ void drawViewport(LevelEditorState& state)
 
 		if (selected)
 		{
-			hui::renderSetLineStyle(hui::LineStyle(hui::Color::orange, 2.0f));
-			hui::renderDrawCircle(p, 24.0f * zoom, 28);
+			const hui::Color outlineColor = obj->locked ? hui::Color::red : hui::Color::orange;
+			drawDashedRect(outline, outlineColor, 1.5f, 4.0f, 4.0f);
 		}
 
 		hui::renderSetColor(selected ? hui::Color::orange : hui::Color::lightGray);
 		hui::renderDrawTextInBox(obj->name, { p.x - 60, p.y + 18, 120, 16 }, hui::HAlignType::Center, hui::VAlignType::Top);
 	}
 
+	if (state.viewportRectSelecting)
+	{
+		const hui::Rect marquee = rectFromPoints(state.viewportRectStart, state.viewportRectEnd);
+
+		if (marquee.width > 0.5f || marquee.height > 0.5f)
+		{
+			hui::renderSetFillStyle(hui::FillStyle(hui::Color::fromU8(70, 140, 220, 40)));
+			hui::renderDrawSolidRectangle(marquee);
+			drawDashedRect(marquee, hui::Color::fromU8(120, 190, 255), 1.5f, 4.0f, 4.0f);
+		}
+	}
+
 	// status overlay
+	const char* toolName = "Select";
+
+	if (state.toolIndex == 1)
+		toolName = "Move";
+	else if (state.toolIndex == 2)
+		toolName = "Rotate";
+	else if (state.toolIndex == 3)
+		toolName = "Scale";
+
+	char selectionText[128];
+
+	if (state.sceneSelection.size() > 1)
+		snprintf(selectionText, sizeof(selectionText), "%u selected", (u32)state.sceneSelection.size());
+	else
+		snprintf(selectionText, sizeof(selectionText), "%s", state.selectedObject ? state.selectedObject->name : "no selection");
+
 	char status[192];
-	snprintf(status, sizeof(status), "Objects: %u    Zoom: %.2fx    Tool: %s    %s",
+	snprintf(status, sizeof(status), "Objects: %u    Zoom: %.2fx    Tool: %s    %s    %s    Wheel: zoom    MMB: pan",
 		(u32)state.objects.size(), state.viewZoom,
+		toolName,
 		state.snapEnabled ? "SNAP ON" : "SNAP OFF",
-		state.selectedObject ? state.selectedObject->name : "no selection");
+		selectionText);
 
 	hui::renderSetColor(hui::Color::fromU8(190, 195, 205));
-	hui::renderDrawTextInBox(status, { vp.x + 10, vp.y + 8, 700, 20 }, hui::HAlignType::Left, hui::VAlignType::Top);
+	hui::renderDrawTextInBox(status, { vp.x + 10, vp.y + 8, 760, 20 }, hui::HAlignType::Left, hui::VAlignType::Top);
 
 	hui::viewportEnd();
 }
 
 void drawAssetBrowser(LevelEditorState& state)
 {
+	u32 selectedCount = 0;
+	i32 lastSelected = -1;
+
+	for (u32 i = 0; i < state.assetSelected.size(); i++)
+	{
+		if (state.assetSelected[i])
+		{
+			selectedCount++;
+			lastSelected = (i32)i;
+		}
+	}
+
 	std::string path = "/ Content / Assets";
 
-	if (state.selectedAsset >= 0 && (u32)state.selectedAsset < state.assets.size())
-		path += " / " + state.assets[state.selectedAsset].name;
+	if (selectedCount == 1 && lastSelected >= 0 && (u32)lastSelected < state.assets.size())
+		path += " / " + state.assets[lastSelected].name;
+	else if (selectedCount > 1)
+		path += " / (" + std::to_string(selectedCount) + " selected)";
 
 	hui::labelCustomColor(path.c_str(), hui::Color::gray);
 	hui::sameLine();
@@ -967,10 +1729,12 @@ void drawAssetBrowser(LevelEditorState& state)
 			if (state.folderSelected[i])
 			{
 				state.selectedFolder = i;
-				state.selectedAsset = -1;
 				break;
 			}
 		}
+
+		std::fill(state.assetSelected.begin(), state.assetSelected.end(), false);
+		state.assetSelectionAnchor = -1;
 	}
 
 	hui::layoutEnd();
@@ -978,29 +1742,104 @@ void drawAssetBrowser(LevelEditorState& state)
 	// assets pane
 	hui::layoutBegin({ rightX, cursor.y, rightWidth, paneHeight });
 
-	hui::scrollViewBegin("##assetScroll", paneHeight, state.assetScroll, hui::Point(0, 0), hui::ScrollViewFlags::None);
+	std::vector<u32> visibleAssets;
+
+	for (u32 i = 0; i < state.assets.size(); i++)
+	{
+		const AssetItem& asset = state.assets[i];
+
+		if (asset.folder != state.selectedFolder)
+			continue;
+
+		if (!containsInsensitive(asset.name, state.assetFilter))
+			continue;
+
+		visibleAssets.push_back(i);
+	}
+
+	hui::scrollViewBegin("##assetScroll", paneHeight, state.assetScroll, hui::Point(0, 0), hui::ScrollViewFlags::NoHorizontalScroll);
 
 		u32 column = 0;
 
-		for (u32 i = 0; i < state.assets.size(); i++)
+		for (u32 visibleIndex = 0; visibleIndex < visibleAssets.size(); visibleIndex++)
 		{
+			u32 i = visibleAssets[visibleIndex];
 			const AssetItem& asset = state.assets[i];
-
-			if (asset.folder != state.selectedFolder)
-				continue;
-
-			if (!containsInsensitive(asset.name, state.assetFilter))
-				continue;
 
 			if (column > 0)
 				hui::sameLine();
 
 			hui::idPush((u32)i);
 
-			bool selected = (state.selectedAsset == (i32)i);
+			bool selected = (i < state.assetSelected.size()) ? state.assetSelected[i] : false;
 
 			if (hui::imageButton(asset.thumb, 72, 72, 0, selected))
-				state.selectedAsset = (i32)i;
+			{
+				const hui::InputEvent& ev = hui::inputEventGet();
+				bool ctrl = hui::has(ev.mouse.modifiers, hui::KeyModifiers::Control);
+				bool shift = hui::has(ev.mouse.modifiers, hui::KeyModifiers::Shift);
+
+				if (shift && state.assetSelectionAnchor >= 0)
+				{
+					int anchorVisible = -1;
+					int clickedVisible = (int)visibleIndex;
+
+					for (u32 v = 0; v < visibleAssets.size(); v++)
+					{
+						if ((i32)visibleAssets[v] == state.assetSelectionAnchor)
+						{
+							anchorVisible = (int)v;
+							break;
+						}
+					}
+
+					if (anchorVisible >= 0)
+					{
+						int from = (std::min)(anchorVisible, clickedVisible);
+						int to = (std::max)(anchorVisible, clickedVisible);
+
+						if (!ctrl)
+							std::fill(state.assetSelected.begin(), state.assetSelected.end(), false);
+
+						for (int v = from; v <= to; v++)
+						{
+							u32 idx = visibleAssets[(u32)v];
+
+							if (idx < state.assetSelected.size())
+								state.assetSelected[idx] = true;
+						}
+					}
+					else
+					{
+						if (!ctrl)
+							std::fill(state.assetSelected.begin(), state.assetSelected.end(), false);
+
+						if (i < state.assetSelected.size())
+							state.assetSelected[i] = true;
+
+						state.assetSelectionAnchor = (i32)i;
+					}
+				}
+				else if (ctrl)
+				{
+					if (i < state.assetSelected.size())
+						state.assetSelected[i] = !state.assetSelected[i];
+
+					state.assetSelectionAnchor = (i32)i;
+				}
+				else
+				{
+					std::fill(state.assetSelected.begin(), state.assetSelected.end(), false);
+
+					if (i < state.assetSelected.size())
+						state.assetSelected[i] = true;
+
+					state.assetSelectionAnchor = (i32)i;
+				}
+			}
+
+			if ((strcmp(asset.type, "Mesh") == 0 || strcmp(asset.type, "Prefab") == 0) && hui::dragDropWantsTo())
+				hui::dragDropBegin(kAssetDragDropType, (void*)(uintptr_t)i);
 
 			hui::tooltip(asset.name.c_str());
 
@@ -1020,9 +1859,113 @@ void drawAssetBrowser(LevelEditorState& state)
 	hui::paddingPop(hui::PaddingType::Layout);
 }
 
+void drawIconBrowser(LevelEditorState& state)
+{
+	hui::labelCustomColor("Double-click an icon to copy its name", hui::Color::gray);
+	hui::sameLine();
+	hui::widgetSetNextWidth(0.45f);
+	hui::textInput("##iconFilter", state.iconFilter, (u32)sizeof(state.iconFilter), hui::TextInputFlags::None, "Filter icons...");
+	hui::line();
+
+	std::vector<const std::string*> visibleIcons;
+
+	for (const std::string& name : gMaterialIconNames)
+	{
+		if (!containsInsensitive(name, state.iconFilter))
+			continue;
+
+		visibleIcons.push_back(&name);
+	}
+
+	char countText[64];
+	snprintf(countText, sizeof(countText), "%u icons", (u32)visibleIcons.size());
+	hui::label(countText);
+	hui::line();
+
+	hui::Rect client = hui::windowGetClientRect();
+	hui::Point cursor = hui::widgetGetPosition();
+	f32 paneHeight = client.bottom() - cursor.y - 10.0f;
+
+	if (paneHeight < 60.0f)
+		paneHeight = 60.0f;
+
+	f32 scale = hui::scaleGet();
+	f32 cellWidth = (40.0f + hui::sameLineSpacingGet()) * scale;
+	u32 columns = (u32)(std::max)(1.0f, std::floor((client.width - 8.0f * scale) / cellWidth));
+
+	hui::paddingPush(hui::PaddingType::Layout, 0);
+
+	hui::scrollViewBegin("##iconBrowserScroll", paneHeight, state.iconBrowserScroll, hui::Point(0, 0), hui::ScrollViewFlags::NoHorizontalScroll);
+
+	u32 column = 0;
+
+	for (const std::string* name : visibleIcons)
+	{
+		if (column > 0)
+			hui::sameLine();
+
+		hui::idPush(name->c_str());
+
+		hui::HImage icon = materialIcon(name->c_str());
+
+		if (icon && hui::imageButton(icon, 40.0f, 40.0f))
+		{
+			const hui::InputEvent& ev = hui::inputEventGet();
+
+			if (ev.mouse.clickCount >= 2 && hui::clipboardSetText(name->c_str()))
+				appendLog(state, LogEntry::Level::Info, ("Copied icon name: " + *name).c_str());
+		}
+
+		// Give the icon preview tooltip a dark gray background. The popup draws
+		// its body with the TooltipBody element color directly, so override it
+		// only while this tooltip is being built and restore it afterwards.
+		hui::WidgetElementInfo tooltipBodyInfo;
+		hui::themeGetWidgetElementInfo(hui::WidgetElementId::TooltipBody, hui::WidgetStateType::Normal, tooltipBodyInfo);
+		const hui::Color originalTooltipColor = tooltipBodyInfo.color;
+		tooltipBodyInfo.color = hui::Color::fromU8(45, 45, 48);
+		hui::themeSetWidgetElement(hui::themeGet(), hui::WidgetElementId::TooltipBody, hui::WidgetStateType::Normal, tooltipBodyInfo);
+
+		if (hui::customTooltipBegin(140.0f))
+		{
+			if (icon)
+			{
+				f32 s = hui::scaleGet();
+				f32 iconSize = 48.0f * s;
+				hui::Point iconPos = hui::widgetGetPosition();
+				f32 layoutWidth = hui::layoutGetSize().x;
+				iconPos.x += (layoutWidth - iconSize) * 0.5f;
+				hui::renderSetColor(hui::Color::white);
+				hui::renderDrawStretchedImage(icon, { iconPos.x, iconPos.y, iconSize, iconSize });
+				hui::space(48.0f);
+			}
+			hui::label(name->c_str());
+			hui::customTooltipEnd();
+		}
+
+		tooltipBodyInfo.color = originalTooltipColor;
+		hui::themeSetWidgetElement(hui::themeGet(), hui::WidgetElementId::TooltipBody, hui::WidgetStateType::Normal, tooltipBodyInfo);
+
+		hui::idPop();
+
+		column = (column + 1) % columns;
+	}
+
+	state.iconBrowserScroll = hui::scrollViewEnd();
+
+	hui::paddingPop(hui::PaddingType::Layout);
+}
+
 void drawLogWindow(LevelEditorState& state)
 {
-	hui::sameLineGroupBegin(4);
+	u32 selectedLogCount = 0;
+
+	for (const LogEntry& entry : state.log)
+	{
+		if (entry.selected)
+			selectedLogCount++;
+	}
+
+	hui::sameLineGroupBegin(5);
 	hui::check("Info##logFilterInfo", &state.logShowInfo);
 	hui::sameLineGroupNext();
 	hui::check("Warning##logFilterWarning", &state.logShowWarning);
@@ -1031,7 +1974,16 @@ void drawLogWindow(LevelEditorState& state)
 	hui::sameLineGroupNext();
 
 	if (hui::button("Clear"))
+	{
 		state.log.clear();
+		state.logSelectionAnchor = -1;
+	}
+
+	hui::sameLineGroupNext();
+
+	char selectedText[32];
+	snprintf(selectedText, sizeof(selectedText), "%u selected", selectedLogCount);
+	hui::label(selectedText);
 
 	hui::sameLineGroupEnd();
 
@@ -1053,9 +2005,52 @@ void drawLogWindow(LevelEditorState& state)
 
 	f32 viewHeight = hui::layoutGetRemainingHeight();
 	if (viewHeight <= 0) viewHeight = 200.0f;
-	hui::scrollViewBegin("##logScroll", viewHeight, state.logScroll, hui::Point(0, 0), hui::ScrollViewFlags::NoBorder | hui::ScrollViewFlags::NoPadding);
+	hui::scrollViewBegin("##logScroll", viewHeight, state.logScroll, hui::Point(0, 0), hui::ScrollViewFlags::NoBorder | hui::ScrollViewFlags::NoPadding | hui::ScrollViewFlags::NoHorizontalScroll);
 
 	hui::Point contentStart = hui::widgetGetPosition();
+
+	std::vector<u32> visibleLogIndices;
+
+	for (u32 i = 0; i < state.log.size(); i++)
+	{
+		const LogEntry& entry = state.log[i];
+
+		if (entry.level == LogEntry::Level::Info && !state.logShowInfo)
+			continue;
+
+		if (entry.level == LogEntry::Level::Warning && !state.logShowWarning)
+			continue;
+
+		if (entry.level == LogEntry::Level::Error && !state.logShowError)
+			continue;
+
+		visibleLogIndices.push_back(i);
+	}
+
+	auto drawLogContextMenu = [&]()
+	{
+		if (hui::contextMenuBegin())
+		{
+			bool anySelected = false;
+
+			for (const LogEntry& entry : state.log)
+			{
+				if (entry.selected)
+				{
+					anySelected = true;
+					break;
+				}
+			}
+
+			hui::widgetPushDisabled(!anySelected);
+
+			if (hui::menuItem("Copy", "Ctrl+C"))
+				copySelectedLogEntries(state);
+
+			hui::widgetPopDisabled();
+			hui::contextMenuEnd();
+		}
+	};
 
 	// rows table, same column setup as the header so the dividers line up
 	if (hui::tableBegin("##logTableBody", 2, 0, hui::TableFlags::Borders | hui::TableFlags::Stretch | hui::TableFlags::AltRowBg))
@@ -1063,18 +2058,23 @@ void drawLogWindow(LevelEditorState& state)
 		hui::tableColumnSetup(0, 80.0f, hui::TableColumnFlags::Fixed);
 		hui::tableColumnSetup(1, 0.0f, hui::TableColumnFlags::Stretch);
 
-		for (const LogEntry& entry : state.log)
+		for (u32 visibleIndex = 0; visibleIndex < visibleLogIndices.size(); visibleIndex++)
 		{
-			if (entry.level == LogEntry::Level::Info && !state.logShowInfo)
-				continue;
-
-			if (entry.level == LogEntry::Level::Warning && !state.logShowWarning)
-				continue;
-
-			if (entry.level == LogEntry::Level::Error && !state.logShowError)
-				continue;
+			u32 i = visibleLogIndices[visibleIndex];
+			LogEntry& entry = state.log[i];
 
 			hui::tableRowNext();
+			hui::idPush((u32)i);
+
+			hui::Rect typeCellRect = hui::tableCellGetRect();
+
+			hui::Color highlight = hui::Color::fromU8(0, 140, 195, 255); // dark azure
+
+			if (entry.selected)
+			{
+				hui::tableRowSetColor(highlight);
+				hui::tableCellSetColor(highlight);
+			}
 
 			const char* typeName = "Info";
 			hui::Color color = hui::Color::lightGray;
@@ -1090,9 +2090,44 @@ void drawLogWindow(LevelEditorState& state)
 				color = hui::Color::red;
 			}
 
+			// force the label to span the whole cell so clicks anywhere on the row register,
+			// not just on the text glyphs (labels otherwise shrink to text width)
+			hui::widgetSetNextWidth((typeCellRect.width - 2.0f * hui::scaleGet()) / hui::scaleGet());
 			hui::labelCustomColor(typeName, color);
+			bool typeClicked = hui::widgetIsClicked();
+			bool typeHovered = hui::widgetIsHovered();
+			drawLogContextMenu();
+
 			hui::tableCellNext();
-			hui::label(entry.text.c_str());
+
+			if (entry.selected)
+				hui::tableCellSetColor(highlight);
+
+			hui::Rect msgCellRect = hui::tableCellGetRect();
+			hui::widgetSetNextWidth((msgCellRect.width - 2.0f * hui::scaleGet()) / hui::scaleGet());
+			hui::labelCustomColor(entry.text.c_str(), hui::Color::lightGray);
+			bool msgClicked = hui::widgetIsClicked();
+			bool msgHovered = hui::widgetIsHovered();
+			drawLogContextMenu();
+
+			const hui::InputEvent& ev = hui::inputEventGet();
+			bool ctrl = hui::has(ev.mouse.modifiers, hui::KeyModifiers::Control);
+			bool shift = hui::has(ev.mouse.modifiers, hui::KeyModifiers::Shift);
+
+			if (typeClicked || msgClicked)
+			{
+				selectLogRow(state, visibleLogIndices, visibleIndex, i, ctrl, shift);
+			}
+			else if ((typeHovered || msgHovered)
+				&& ev.type == hui::InputEvent::Type::MouseDown
+				&& ev.mouse.button == hui::MouseButton::Right
+				&& !entry.selected)
+			{
+				// right-clicking an already selected row keeps the multi-selection intact
+				selectLogRow(state, visibleLogIndices, visibleIndex, i, false, false);
+			}
+
+			hui::idPop();
 		}
 
 		hui::tableEnd();
@@ -1102,7 +2137,7 @@ void drawLogWindow(LevelEditorState& state)
 	state.logScroll = hui::scrollViewEnd();
 
 	f32 contentHeight = contentEnd.y - contentStart.y;
-	f32 maxScroll = std::max<float>(0.0f, contentHeight - viewHeight);
+	f32 maxScroll = (std::max)(0.0f, contentHeight - viewHeight);
 	state.logAutoScroll = (state.logScroll.y >= maxScroll - 5.0f);
 }
 
@@ -1194,6 +2229,9 @@ int main(int argc, char** args)
 
 	LevelEditorState state;
 
+	if (!loadMaterialIconAtlas("../themes/icons/material_icons.png", "../themes/icons/material_icons.json"))
+		printf("Warning: could not load the Material icon atlas\n");
+
 	loadThemeImages(state);
 
 	// build the theme into the atlas after all images were added
@@ -1264,6 +2302,7 @@ int main(int argc, char** args)
 	state.showSceneTree = hui::windowIsVisible("scene_tree");
 	state.showInspector = hui::windowIsVisible("inspector");
 	state.showAssetBrowser = hui::windowIsVisible("asset_browser");
+	state.showIconBrowser = hui::windowIsVisible("icon_browser");
 	state.showLog = hui::windowIsVisible("log");
 
 	bool exitNow = false;
@@ -1339,7 +2378,20 @@ int main(int argc, char** args)
 				hui::windowEnd();
 			}
 
+			if (hui::windowBegin("icon_browser", "Icon Browser", nullptr, materialIcon("search")))
+			{
+				drawIconBrowser(state);
+				hui::windowEnd();
+			}
+
 			hui::frameEnd();
+
+			// a layout saved before the icon browser existed cannot place it, so dock it once
+			if (!state.iconBrowserDocked && hui::windowIsVisible("icon_browser"))
+			{
+				hui::windowDock("icon_browser", "asset_browser", hui::DockType::Bottom);
+				state.iconBrowserDocked = true;
+			}
 
 			// the layout save and load must happen outside the window pass
 			if (state.saveLayoutRequested)
@@ -1372,6 +2424,7 @@ int main(int argc, char** args)
 					state.showSceneTree = hui::windowIsVisible("scene_tree");
 					state.showInspector = hui::windowIsVisible("inspector");
 					state.showAssetBrowser = hui::windowIsVisible("asset_browser");
+					state.showIconBrowser = hui::windowIsVisible("icon_browser");
 					state.showLog = hui::windowIsVisible("log");
 				}
 				else
@@ -1384,7 +2437,7 @@ int main(int argc, char** args)
 			{
 				state.resetLayoutRequested = false;
 
-				static const char* layoutWindows[] = { "main_menu", "scene_tree", "inspector", "viewport", "asset_browser", "log" };
+				static const char* layoutWindows[] = { "main_menu", "scene_tree", "inspector", "viewport", "asset_browser", "icon_browser", "log" };
 
 				// show all the windows again, then apply the default layout state
 				for (auto windowId : layoutWindows)
@@ -1395,6 +2448,7 @@ int main(int argc, char** args)
 					state.showSceneTree = true;
 					state.showInspector = true;
 					state.showAssetBrowser = true;
+					state.showIconBrowser = true;
 					state.showLog = true;
 					state.showViewport = true;
 
@@ -1411,11 +2465,12 @@ int main(int argc, char** args)
 		{
 			for (int i = 0; i < eventCount; i++)
 			{
-				hui::inputEventSet(hui::inputEventGetAtIndex(i));
+				hui::InputEvent ev = hui::inputEventGetAtIndex(i);
+				hui::inputEventSet(ev);
 
-				if (hui::inputEventGet().type == hui::InputEvent::Type::WindowClose)
+				if (ev.type == hui::InputEvent::Type::WindowClose)
 				{
-					if (hui::inputEventGet().window == mainWnd)
+					if (ev.window == mainWnd)
 					{
 						// frameBegin tears down the closed native window's docking
 						// layout, so save it before the frame is drawn
@@ -1423,6 +2478,12 @@ int main(int argc, char** args)
 						layoutSavedOnClose = true;
 						exitNow = true;
 					}
+				}
+				else if (ev.type == hui::InputEvent::Type::Key && ev.key.down)
+				{
+					// copy selected log lines to clipboard
+					if (ev.key.code == hui::KeyCode::C && hui::has(ev.key.modifiers, hui::KeyModifiers::Control))
+						copySelectedLogEntries(state);
 				}
 
 				doFrame(i == eventCount - 1);

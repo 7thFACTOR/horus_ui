@@ -292,6 +292,46 @@ void renderDrawRectangle(const Rect& rc)
 	};
 
 	ctx->renderer.cmdDrawPolyLine(pts, 4, true);
+
+	// A stipple pattern wraps continuously around a closed rectangle, so the
+	// running phase can land in a gap exactly at a corner and the outline looks
+	// broken. Draw a short solid L at every corner, one dash long on each edge,
+	// so stippled rectangles always have visible corners.
+	const LineStyle original = ctx->renderer.currentLineStyle;
+	const LineStyle& style = original;
+
+	if (!style.useStipple || style.stipplePatternCount == 0)
+		return;
+
+	f32 patternTotal = 0.0f;
+	const f32 dash = style.stipplePattern[0];
+
+	for (u32 i = 0; i < style.stipplePatternCount; ++i)
+		patternTotal += style.stipplePattern[i];
+
+	if (dash <= 0.0f || patternTotal <= 0.0f)
+		return;
+
+	LineStyle solid = original;
+	solid.useStipple = false;
+	ctx->renderer.cmdSetLineStyle(solid);
+
+	const Point tl = pts[0];
+	const Point tr = pts[1];
+	const Point br = pts[2];
+	const Point bl = pts[3];
+
+	const Point corners[12] = {
+		{ tl.x + dash, tl.y }, tl, { tl.x, tl.y + dash },
+		{ tr.x - dash, tr.y }, tr, { tr.x, tr.y + dash },
+		{ br.x - dash, br.y }, br, { br.x, br.y - dash },
+		{ bl.x + dash, bl.y }, bl, { bl.x, bl.y - dash },
+	};
+
+	for (u32 i = 0; i < 4; ++i)
+		ctx->renderer.cmdDrawPolyLine(corners + i * 3, 3, false);
+
+	ctx->renderer.cmdSetLineStyle(original);
 }
 
 void renderDrawSolidRectangle(const Rect& rc)

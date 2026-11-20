@@ -11,11 +11,6 @@ WidgetId genIdFromPosition(const char* text);
 void widgetSetFocusable();
 void buttonBehavior(bool menuItem = false);
 void mouseDownOnlyButtonBehavior();
-bool viewportImageSizeFit(
-	f32 imageWidth, f32 imageHeight,
-	f32 viewWidth, f32 viewHeight,
-	f32& newWidth, f32& newHeight,
-	bool ignoreHeight, bool ignoreWidth);
 bool imageButtonInternal(HImage img, HImage disabledImg, f32 width, f32 height, bool down, ThemeElement* btnBodyElem);
 bool clampValue(f32& value, f32 minVal, f32 maxVal);
 

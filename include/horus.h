@@ -2961,7 +2961,7 @@ HUI_API f32 themeGetWidgetElementParameterFloat(HTheme theme, WidgetElementId el
 /// \param paramName the parameter name
 /// \param defaultValue the default value if the parameter doesn't exist
 /// \return the parameter value
-HUI_API const Color& themeGetWidgetElementParameterColor(HTheme theme, WidgetElementId elementId, const char* styleName, const char* paramName, const Color& defaultValue = Color());
+HUI_API Color themeGetWidgetElementParameterColor(HTheme theme, WidgetElementId elementId, const char* styleName, const char* paramName, const Color& defaultValue = Color());
 /// Set a parameter of a user widget element style
 /// \param theme the theme handle
 /// \param userElementName the user element name
@@ -2992,7 +2992,7 @@ HUI_API f32 themeGetUserWidgetElementParameterFloat(HTheme theme, const char* us
 /// \param paramName the parameter name
 /// \param defaultValue the default value if the parameter doesn't exist
 /// \return the parameter value
-HUI_API const Color& themeGetUserWidgetElementParameterColor(HTheme theme, const char* userElementName, const char* styleName, const char* paramName, const Color& defaultValue = Color());
+HUI_API Color themeGetUserWidgetElementParameterColor(HTheme theme, const char* userElementName, const char* styleName, const char* paramName, const Color& defaultValue = Color());
 
 /// Create a new font object
 /// \param theme the theme where to place the font
@@ -3819,6 +3819,23 @@ HUI_API void renderDrawTextInBox(const char* text, const Rect& rect, HAlignType 
 /// \return the pixel size (width, height) of the given text with the current font
 /// \param text the text to measure
 HUI_API Point renderGetTextSize(const char* text);
+/// Fit an image inside a view rectangle while keeping its aspect ratio.
+/// The image is only shrunk when it does not fit; it is never enlarged.
+/// \param imageWidth the source image width in pixels
+/// \param imageHeight the source image height in pixels
+/// \param viewWidth the maximum available width in pixels
+/// \param viewHeight the maximum available height in pixels
+/// \param newWidth receives the fitted width
+/// \param newHeight receives the fitted height
+/// \param ignoreHeight when true, the view height does not constrain the result
+/// \param ignoreWidth when true, the view width does not constrain the result
+/// \return true if the image had to be resized to fit
+HUI_API bool viewportImageSizeFit(
+	f32 imageWidth, f32 imageHeight,
+	f32 viewWidth, f32 viewHeight,
+	f32& newWidth, f32& newHeight,
+	bool ignoreHeight, bool ignoreWidth);
+
 /// Draw an image at a position with a given scale
 /// \param image the image to draw
 /// \param position the draw position

@@ -1,7 +1,8 @@
 # General
 - never build/compile the code, regardless of any condition, user will
+- never run the built exe
 - acp command means add commit and push to github
-- reb command means rebased onto master so master is in sync with dev branch
+- reb command means rebased onto master so master is in sync with dev branch, push after
 
 # Code Style
 - always use CRLF for EOL, convert when you see otherwise in the file you edit

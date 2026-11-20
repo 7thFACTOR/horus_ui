@@ -1,34 +1,34 @@
 {
 	"fonts":
 	{
-		"normal": { "file": "fonts/Inter-Regular.ttf", "size": 12 },
-		"normal-unicode": { "file": "fonts/Inter-Regular.ttf", "size": 12 },
-		"normal-bold": { "file": "fonts/Inter-Bold.ttf", "size": 12 },
-		"normal-italic": { "file": "fonts/Roboto-Italic.ttf", "size": 12 },
-		"code-normal": { "file": "fonts/JetBrainsMono-Regular.ttf", "size": 26 },
-		"medium": { "file": "fonts/Inter-Regular.ttf", "size": 13 },
-		"medium-bold": { "file": "fonts/Inter-Bold.ttf", "size": 13 },
-		"medium-italic": { "file": "fonts/Roboto-Italic.ttf", "size": 13 },
-		"small": { "file": "fonts/Inter-Regular.ttf", "size": 8 },
-		"small-bold": { "file": "fonts/Inter-Bold.ttf", "size": 8 },
-		"small-italic": { "file": "fonts/Roboto-Italic.ttf", "size": 8 },
-		"xsmall": { "file": "fonts/Inter-Regular.ttf", "size": 6 },
-		"xsmall-bold": { "file": "fonts/Inter-Bold.ttf", "size": 6 },
-		"xsmall-italic": { "file": "fonts/Roboto-Italic.ttf", "size": 6 },
-		"large": { "file": "fonts/Inter-Regular.ttf", "size": 25 },
-		"large-unicode": { "file": "fonts/Inter-Regular.ttf", "size": 25 },
-		"large-bold": { "file": "fonts/Inter-Regular.ttf", "size": 25 },
-		"large-italic": { "file": "fonts/Roboto-Italic.ttf", "size": 25 },
-		"title": { "file": "fonts/Inter-Regular.ttf", "size": 20 },
-		"heading": { "file": "fonts/Inter-Regular.ttf", "size": 14 },
-		"para": { "file": "fonts/Inter-Regular.ttf", "size": 12 },
-		"menu": { "file": "fonts/Inter-Regular.ttf", "size": 15 },
-		"window-tab": { "file": "fonts/Inter-Regular.ttf", "size": 17 }
+		"normal": { "file": "fonts/Inter-Regular.ttf", "size": 18 },
+		"normal-unicode": { "file": "fonts/Inter-Regular.ttf", "size": 18 },
+		"normal-bold": { "file": "fonts/Inter-Bold.ttf", "size": 18 },
+		"normal-italic": { "file": "fonts/Roboto-Italic.ttf", "size": 18 },
+		"code-normal": { "file": "fonts/JetBrainsMono-Regular.ttf", "size": 18 },
+		"medium": { "file": "fonts/Inter-Regular.ttf", "size": 20 },
+		"medium-bold": { "file": "fonts/Inter-Bold.ttf", "size": 20 },
+		"medium-italic": { "file": "fonts/Roboto-Italic.ttf", "size": 20 },
+		"small": { "file": "fonts/Inter-Regular.ttf", "size": 12 },
+		"small-bold": { "file": "fonts/Inter-Bold.ttf", "size": 12 },
+		"small-italic": { "file": "fonts/Roboto-Italic.ttf", "size": 12 },
+		"xsmall": { "file": "fonts/Inter-Regular.ttf", "size": 9 },
+		"xsmall-bold": { "file": "fonts/Inter-Bold.ttf", "size": 9 },
+		"xsmall-italic": { "file": "fonts/Roboto-Italic.ttf", "size": 9 },
+		"large": { "file": "fonts/Inter-Regular.ttf", "size": 38 },
+		"large-unicode": { "file": "fonts/Inter-Regular.ttf", "size": 38 },
+		"large-bold": { "file": "fonts/Inter-Regular.ttf", "size": 38 },
+		"large-italic": { "file": "fonts/Roboto-Italic.ttf", "size": 38 },
+		"title": { "file": "fonts/Inter-Regular.ttf", "size": 30 },
+		"heading": { "file": "fonts/Inter-Regular.ttf", "size": 21 },
+		"para": { "file": "fonts/Inter-Regular.ttf", "size": 18 },
+		"menu": { "file": "fonts/Inter-Regular.ttf", "size": 18 },
+		"window-tab": { "file": "fonts/Inter-Regular.ttf", "size": 18 }
 	},
 	
 	"settings":
 	{
-		"sameLineHeight": "22",
+		"sameLineHeight": "29",
 		"dockPreviewNativeWindowsColorTint": "200 200 200 255",
 		"dockPreviewInsideWindowsColorTint": "0 150 150 150"
 	},
@@ -43,7 +43,7 @@
 				{
 					"buttonBody":
 					{
-						"height": 22,
+						"height": 29,
 						"normal": { "image": "default/button_normal", "border": 3, "color": "120 120 120 255", "textColor": "white", "font": "normal" },
 						"disabled": { "color": "120 120 120 155", "textColor": "128 128 128 255", "textShadow": { "color": "255 255 255 255", "offsetX": 1, "offsetY": 1 } },
 						"hovered": { "color": "155 200 200 255" },
@@ -56,7 +56,7 @@
 					"buttonBody":
 					{
 						"width": 0,
-						"height": 55,
+						"height": 79,
 						"normal": { "image": "default/button_normal", "border": 3, "color": "red", "textColor": "white", "font": "large" },
 						"disabled": { "color": "darkRed", "textColor": "128 128 128 255", "textShadow": { "color": "255 255 255 255", "offsetX": 1, "offsetY": 1 } },
 						"hovered": { "color": "yellow", "textColor": "white", "font": "large-bold" },
@@ -70,7 +70,7 @@
 		{
 			"buttonGroupLeftBody":
 			{
-				"height": 22,
+				"height": 29,
 				"labelSideSpacing": "6",
 				"normal": { "image": "default/button_group_left_normal", "border": 5, "color": "90 90 90 255", "textColor": "white", "font": "normal" },
 			"disabled": { "color": "120 120 120 155", "textColor": "128 128 128 255", "textShadow": { "color": "255 255 255 255", "offsetX": 1, "offsetY": 1 } },
@@ -80,7 +80,7 @@
 		},
 		"buttonGroupMiddleBody":
 		{
-			"height": 22,
+			"height": 29,
 			"normal": { "image": "default/button_group_middle_normal", "border": 1, "color": "90 90 90 255", "textColor": "white", "font": "normal" },
 			"disabled": { "color": "120 120 120 155", "textColor": "128 128 128 255", "textShadow": { "color": "255 255 255 255", "offsetX": 1, "offsetY": 1 } },
 			"hovered": { "image": "default/button_group_middle_normal", "border": 1, "color": "sky", "textColor": "white" },
@@ -89,7 +89,7 @@
 		},
 		"buttonGroupRightBody":
 		{
-			"height": 22,
+			"height": 29,
 			"normal": { "image": "default/button_group_right_normal", "border": 5, "color": "90 90 90 255", "textColor": "white", "font": "normal" },
 			"disabled": { "color": "120 120 120 155", "textColor": "128 128 128 255", "textShadow": { "color": "255 255 255 255", "offsetX": 1, "offsetY": 1 } },
 				"hovered": { "image": "default/button_group_right_normal", "border": 5, "color": "sky", "textColor": "white" },
@@ -106,7 +106,7 @@
 					"imageButtonBody":
 					{
 						"width": 0,
-						"height": 22,
+						"height": 29,
 						"normal": { "image": "default/button_normal", "border": 3, "color": "115 115 115 255", "textColor": "white", "font": "normal" },
 						"hovered": { "image": "default/button_normal", "border": 3, "color": "155 200 200 255", "textColor": "white", "font": "normal" },
 						"pressed": { "image": "default/button_pressed", "border": 3, "color": "white", "textColor": "white", "font": "normal" },
@@ -118,7 +118,7 @@
 					"imageButtonBody":
 					{
 						"width": 0,
-						"height": 22,
+						"height": 29,
 						"normal": { "image": "default/button_normal", "border": 3, "color": "blue", "textColor": "white", "font": "normal" },
 						"hovered": { "image": "default/button_normal", "border": 3, "color": "yellow", "textColor": "white", "font": "normal" },
 						"pressed": { "image": "default/button_pressed", "border": 3, "color": "orange", "textColor": "white", "font": "normal" },
@@ -131,7 +131,7 @@
 		{
 			"dropdownBody":
 			{
-				"height": 22,
+				"height": 29,
 				"normal": { "image": "default/dropdown", "border": 3, "color": "150 150 150 255", "textColor": "white", "font": "normal" },
 				"disabled": { "color": "150 150 150 128", "textColor": "128 128 128 255", "textShadow": { "color": "255 255 255 255", "offsetX": 1, "offsetY": 1 } },
 				"hovered": { "image": "default/dropdown", "border": 3, "color": "155 200 200 255", "textColor": "white", "font": "normal" },
@@ -141,7 +141,7 @@
 			"dropdownArrowBox":
 			{
 				"width": 20,
-				"height": 22,
+				"height": 29,
 				"normal": { "image": "default/button_normal", "border": 3, "color": "90 90 90 255" },
 				"disabled": { "color": "gray" },
 				"hovered": { "image": "default/button_normal", "border": 3, "color": "115 115 115 255" },
@@ -165,8 +165,8 @@
 		{
 			"checkBody":
 			{
-				"width": 22,
-				"height": 22,
+				"width": 29,
+				"height": 29,
 				"normal": { "image": "default/check_normal", "border": 4, "color": "200 200 200 255", "textColor": "white", "font": "normal" },
 				"disabled": { "image": "default/check_normal", "border": 4, "color": "200 200 200 128", "textColor": "128 128 128 255", "font": "normal", "textShadow": { "color": "255 255 255 255", "offsetX": 1, "offsetY": 1 } },
 				"hovered": { "image": "default/check_normal", "border": 4, "color": "155 200 200 255", "textColor": "white", "font": "normal" },
@@ -194,8 +194,8 @@
 		{
 			"radioBody":
 			{
-				"width": 22,
-				"height": 22,
+				"width": 29,
+				"height": 29,
 				"normal": { "image": "default/radio_normal", "border": 7, "color": "200 200 200 255", "textColor": "white", "font": "normal" },
 				"disabled": { "color": "200 200 200 128", "textColor": "128 128 128 255", "textShadow": { "color": "255 255 255 255", "offsetX": 1, "offsetY": 1 } },
 				"hovered": { "image": "default/radio_normal", "border": 7, "color": "155 200 200 255", "textColor": "white", "font": "normal" },
@@ -222,7 +222,7 @@
 		{
 			"labelBody":
 			{
-				"height": 22,
+				"height": 29,
 				"normal": { "image": "", "border": 0, "color": "white", "textColor": "white", "font": "normal" },
 				"disabled": { "textColor": "128 128 128 255", "textShadow": { "color": "255 255 255 255", "offsetX": 1, "offsetY": 1 } }
 			}
@@ -284,7 +284,7 @@
 			"textInputBody":
 			{
 				"width": 0,
-				"height": 22,
+				"height": 29,
 				"normal": { "image": "default/text_input_normal", "border": 3, "color": "white", "textColor": "white", "font": "normal-unicode" },
 				"disabled": { "color": "255 255 255 128", "textColor": "255 255 255 200" },
 				"hovered": { "color": "white", "textColor": "white" },
@@ -294,13 +294,13 @@
 			"textInputCaret":
 			{
 				"width": 2,
-				"height": 3,
+				"height": 5,
 				"normal": { "image": "", "border": 0, "color": "sky", "textColor": "white", "font": "normal" }
 			},
 			"textInputSelection":
 			{
 				"width": 0,
-				"height": 24,
+				"height": 32,
 				"normal": { "image": "", "border": 0, "color": "veryDarkCyan", "textColor": "white", "font": "normal" }
 			},
 			"textInputSelectedText":
@@ -338,8 +338,8 @@
 			},
 			"multilineTextInputWordWrap":
 			{
-				"width": 16,
-				"height": 11,
+				"width": 22,
+				"height": 12,
 				"normal": { "image": "default/multiline_text_input_wordwrap", "border": 0, "color": "255 255 255 100", "textColor": "white", "font": "normal" }
 			}
 		},
@@ -347,7 +347,7 @@
 		{
 			"sliderBody":
 			{
-				"height": 16,
+				"height": 20,
 				"normal": { "image": "default/slider", "border": 2, "color": "white", "textColor": "white", "font": "normal" },
 				"disabled": { "color": "255 255 255 128", "textColor": "gray" },
 				"hovered": { "image": "default/slider", "border": 2, "color": "white", "textColor": "white", "font": "normal" },
@@ -376,7 +376,7 @@
 			"comboSliderLeftButton":
 			{
 				"width": 22,
-				"height": 20,
+				"height": 26,
 				"normal": { "image": "default/dropdown", "border": 2, "color": "lightGray", "font": "normal" },
 				"disabled": { "color": "255 255 255 128" },
 				"hovered": { "image": "default/dropdown", "border": 2, "color": "white", "font": "normal" },
@@ -385,7 +385,7 @@
 			},
 			"comboSliderMiddleButton":
 			{
-				"height": 20,
+				"height": 26,
 				"normal": { "image": "default/dropdown", "border": 2, "color": "lightGray", "textColor": "white", "font": "normal" },
 				"disabled": { "color": "255 255 255 128", "textColor": "lightGray" },
 				"hovered": { "image": "default/dropdown", "border": 2, "color": "white", "textColor": "white", "font": "normal" },
@@ -395,7 +395,7 @@
 			"comboSliderRightButton":
 			{
 				"width": 22,
-				"height": 20,
+				"height": 26,
 				"normal": { "image": "default/dropdown", "border": 2, "color": "lightGray", "font": "normal" },
 				"disabled": { "color": "255 255 255 128" },
 				"hovered": { "image": "default/dropdown", "border": 2, "color": "white", "font": "normal" },
@@ -420,7 +420,7 @@
 			},
 			"comboSliderRangeBar":
 			{
-				"height": 2,
+				"height": 3,
 				"normal": { "image": "default/comboslider_range_bar", "border": 1, "color": "sky", "textColor": "white", "font": "normal" },
 				"disabled": { "color": "0 185 255 55", "textColor": "gray" },
 				"hovered": { "image": "default/comboslider_range_bar", "border": 1, "color": "sky", "textColor": "white", "font": "normal" },
@@ -432,7 +432,7 @@
 		{
 			"circularSliderBody":
 			{
-				"height": 90,
+				"height": 86,
 				"labelSpacing": "4",
 				"normal": { "image": "default/circularslider_body", "border": 2, "color": "white", "textColor": "white", "font": "normal" },
 				"disabled": { "color": "255 255 255 128", "textColor": "gray" },
@@ -442,7 +442,7 @@
 			},
 			"circularSliderMark":
 			{
-				"height": 10,
+				"height": 8,
 				"placementRadius": 20,
 				"normal": { "image": "default/circularslider_mark", "border": 0, "color": "white", "textColor": "white", "font": "normal" },
 				"disabled": { "color": "255 255 255 128", "textColor": "gray" },
@@ -483,7 +483,7 @@
 		{
 			"tabGroupBody":
 			{
-				"height": 37,
+				"height": 38,
 				"normal": { "image": "default/tabgroup", "border": 3, "color": "white", "textColor": "white", "font": "normal" }
 			}
 		},
@@ -492,7 +492,7 @@
 			"tabBodyActive":
 			{
 				"width": 100,
-				"height": 30,
+				"height": 32,
 				"normal": { "image": "default/tab_active", "border": 5, "color": "white", "textColor": "196 196 196 255", "font": "window-tab" },
 				"hovered": { "image": "default/tab_active", "border": 5, "color": "white", "textColor": "196 196 196 255", "font": "window-tab" },
 				"pressed": { "image": "default/tab_active", "border": 5, "color": "white", "textColor": "196 196 196 255", "font": "window-tab" },
@@ -501,7 +501,7 @@
 			"tabBodyInactive":
 			{
 				"width": 100,
-				"height": 30,
+				"height": 32,
 				"normal": { "image": "default/tab_inactive", "border": 5, "color": "0 0 0 0", "textColor": "196 196 196 255", "font": "window-tab" },
 				"hovered": { "image": "default/tab_inactive", "border": 5, "color": "lightGray", "textColor": "196 196 196 255", "font": "window-tab" },
 				"pressed": { "image": "default/tab_inactive", "border": 5, "color": "white", "textColor": "196 196 196 255", "font": "window-tab" },
@@ -548,23 +548,23 @@
 			},
 			"scrollViewScrollBarV":
 			{
-				"width": 18,
+				"width": 23,
 				"normal": { "image": "default/scrollview_scrollbar", "border": 4, "color": "white", "textColor": "white", "font": "normal" }
 			},
 			"scrollViewScrollThumbV":
 			{
-				"width": 11,
+				"width": 12,
 				"normal": { "image": "default/scrollview_scrollthumb", "border": 3, "color": "200 200 200 255", "textColor": "white", "font": "normal" },
 				"hovered": { "image": "default/scrollview_scrollthumb", "border": 3, "color": "255 255 255 255", "textColor": "white", "font": "normal" }
 			},
 			"scrollViewScrollBarH":
 			{
-				"height": 18,
+				"height": 23,
 				"normal": { "image": "default/scrollview_scrollbar_h", "border": 4, "color": "white", "textColor": "white", "font": "normal" }
 			},
 			"scrollViewScrollThumbH":
 			{
-				"height": 11,
+				"height": 12,
 				"normal": { "image": "default/scrollview_scrollthumb_h", "border": 3, "color": "200 200 200 255", "textColor": "white", "font": "normal" },
 				"hovered": { "image": "default/scrollview_scrollthumb_h", "border": 3, "color": "white", "textColor": "white", "font": "normal" }
 			}
@@ -573,12 +573,12 @@
 		{
 			"menuBarBody":
 			{
-				"height": 20,
+				"height": 26,
 				"normal": { "image": "default/menu_bar", "border": 2, "color": "white", "textColor": "white", "font": "menu" }
 			},
 			"menuBarItem":
 			{
-				"height": 20,
+				"height": 26,
 				"normal": { "image": "default/menu_bar_item_normal", "border": 1, "color": "white", "textColor": "white", "font": "menu" },
 				"hovered": { "image": "default/menu_bar_item_normal", "border": 1, "color": "sky", "textColor": "white", "font": "menu" },
 				"pressed": { "image": "default/menu_bar_item_normal", "border": 1, "color": "black", "textColor": "white", "font": "menu" }
@@ -592,7 +592,7 @@
 			},
 			"menuItemBody":
 			{
-				"height": 20,
+				"height": 26,
 				"normal": { "image": "default/none", "border": 0, "color": "white", "textColor": "white", "font": "menu" },
 				"hovered": { "image": "default/menu_item_body", "border": 2, "color": "0 191 243 255", "textColor": "black", "font": "menu" },
 				"pressed": { "image": "default/menu_item_body", "border": 2, "color": "0 191 243 255", "textColor": "black", "font": "menu" },
@@ -629,7 +629,7 @@
 		{
 			"progressBack":
 			{
-				"height": 20,
+				"height": 26,
 				"normal": { "image": "default/progress_back", "border": 6, "color": "white", "textColor": "white", "font": "normal" },
 				"disabled": { "color": "255 255 255 128", "textColor": "lightGray" }
 			},
@@ -637,7 +637,7 @@
 			{
 				"barTextSpacing": 5,
 				"textShadowColor": "black",
-				"height": 19,
+				"height": 25,
 				"normal": { "image": "default/progress_fill", "border": 6, "color": "white", "textColor": "white", "font": "normal" },
 				"disabled": { "color": "255 255 255 128", "textColor": "lightGray" }
 			}
@@ -654,7 +654,7 @@
 			"selectableBody":
 			{
 				"width": 0,
-				"height": 20,
+				"height": 26,
 				"normal": { "image": "default/selectable", "border": 3, "color": "white", "textColor": "white", "font": "normal" },
 				"disabled": { "color": "255 255 255 128", "textColor": "128 128 128 255", "textShadow": { "color": "255 255 255 255", "offsetX": 1, "offsetY": 1 } },
 				"hovered": { "image": "default/selectable_hovered", "border": 3, "color": "white", "textColor": "black", "font": "normal" },
@@ -673,7 +673,7 @@
 		{
 			"axisBoxBody":
 			{
-				"height": 20,
+				"height": 26,
 				"normal": { "image": "default/axis_box", "border": 3, "color": "white", "textColor": "white", "font": "normal" }
 			},
 			"axisBoxXImage":
@@ -693,7 +693,7 @@
 		{
 			"objectRefEditorBody":
 			{
-				"height":22,
+				"height":29,
 				"normal": { "image": "default/box", "border": 0, "color": "white", "textColor": "white", "font": "normal" },
 				"pressed": { "image": "default/box", "border": 0, "color": "white", "textColor": "cyan", "font": "normal" }
 			},
@@ -704,6 +704,14 @@
 			"objectRefEditorClearButton":
 			{
 				"normal": { "image": "default/clear", "border": 0, "color": "white", "textColor": "white", "font": "normal" }
+			}
+		},
+		"sceneTree":
+		{
+			"sceneTreeRow":
+			{
+				"hoverColor": "120 120 120 255",
+				"selectedColor": "38 118 185 255"
 			}
 		},
 		"table":
@@ -721,19 +729,19 @@
 			},
 			"tableHeaderBody":
 			{
-				"height": 25,
+				"height": 34,
 				"borderColorV": "transparent",
 				"borderColorH": "transparent",
 				"normal": { "image": "default/table_header_middle_normal", "border": 1, "color": "70 120 130 255"}
 			},
 			"tableHeaderBodyLeft":
 			{
-				"height": 25,
+				"height": 34,
 				"normal": { "image": "default/table_header_left_normal", "border": 5, "color": "70 120 130 255" }
 			},
 			"tableHeaderBodyRight":
 			{
-				"height": 25,
+				"height": 34,
 				"normal": { "image": "default/table_header_right_normal", "border": 5, "color": "70 120 130 255" }
 			}
 		},
@@ -749,7 +757,7 @@
 			},
 			"colorPickerButtonBody":
 			{
-				"height": 22,
+				"height": 29,
 				"normal": { "image": "default/button_normal", "border": 2, "color": "120 120 120 255", "textColor": "white", "font": "normal" },
 				"disabled": { "color": "120 120 120 155", "textColor": "128 128 128 255", "textShadow": { "color": "255 255 255 255", "offsetX": 1, "offsetY": 1 } },
 				"hovered": { "color": "155 200 200 255" },
@@ -761,7 +769,7 @@
 		{
 			"linkBody":
 			{
-				"height": 20,
+				"height": 26,
 				"normal": { "textColor": "100 160 255 255", "font": "normal" },
 				"hovered": { "textColor": "140 190 255 255" },
 				"disabled": { "textColor": "128 128 128 255", "textShadow": { "color": "255 255 255 255", "offsetX": 1, "offsetY": 1 } }

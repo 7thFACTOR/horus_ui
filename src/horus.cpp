@@ -1578,7 +1578,7 @@ f32 themeGetWidgetElementParameterFloat(HTheme theme, WidgetElementId elementId,
 	return style.getParameter(paramName, defaultValue);
 }
 
-const Color& themeGetWidgetElementParameterColor(HTheme theme, WidgetElementId elementId, const char* styleName, const char* paramName, const Color& defaultValue)
+Color themeGetWidgetElementParameterColor(HTheme theme, WidgetElementId elementId, const char* styleName, const char* paramName, const Color& defaultValue)
 {
 	auto& style = ((Theme*)theme)->elements[(int)elementId].styles[styleName];
 
@@ -1616,7 +1616,7 @@ f32 themeGetUserWidgetElementParameterFloat(HTheme theme, const char* userElemen
 	return style.getParameter(paramName, defaultValue);
 }
 
-const Color& themeGetUserWidgetElementParameterColor(HTheme theme, const char* userElementName, const char* styleName, const char* paramName, const Color& defaultValue)
+Color themeGetUserWidgetElementParameterColor(HTheme theme, const char* userElementName, const char* styleName, const char* paramName, const Color& defaultValue)
 {
 	auto& style = ((Theme*)theme)->userElements[userElementName]->styles[styleName];
 
