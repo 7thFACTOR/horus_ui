@@ -3334,6 +3334,9 @@ HUI_API bool imageButton(HImage img, f32 width, f32 height, HImage disabledImg =
 /// \return true if the text was modified
 HUI_API bool textInput(const char* id, char* text, u32 maxTextSize, TextInputFlags flags = TextInputFlags::None, const char* defaultText = nullptr, HImage img = 0, bool password = false, const char* passwordChar = "*");
 
+/// Start editing a text input by id, as if it had just been clicked
+HUI_API void textInputStartEdit(const char* id);
+
 /// Multi-line text input widget. Enter key creates a new line instead of submitting.
 HUI_API bool textInputMultiline(const char* id, char* text, u32 maxTextSize, u32 visibleLines = 10, MultilineTextInputFlags flags = MultilineTextInputFlags::None, const KeywordInfo* keywords = nullptr, u32 keywordCount = 0, const RangeHighlight* rangeHighlights = nullptr, u32 rangeHighlightCount = 0);
 

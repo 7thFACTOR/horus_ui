@@ -13,6 +13,7 @@
 #include <algorithm>
 #include <initializer_list>
 #include <fstream>
+#include <chrono>
 
 #include <json/json.h>
 #include <json/reader.h>
@@ -33,6 +34,12 @@
 
 // all names loaded from the Material icon atlas, used by the icon browser window
 static std::vector<std::string> gMaterialIconNames;
+
+// separate from the asset drag type so tree drags never look like asset drops
+static const u32 kSceneTreeDragDropType = 101;
+
+static const f32 kTreeRenameHoldSeconds = 0.45f;
+static const f32 kTreeDragStartDistance = 4.0f;
 
 // a dummy object in the edited scene graph, purely for the example
 struct SceneObject
@@ -87,6 +94,22 @@ struct ViewportDragItem
 	f32 startPos[3] = { 0, 0, 0 };
 };
 
+enum class SceneTreeDropMode
+{
+	None,
+	Before,
+	After,
+	Into
+};
+
+struct SceneTreeDropTarget
+{
+	SceneObject* object = nullptr;
+	SceneObject* parent = nullptr;
+	i32 index = -1;
+	SceneTreeDropMode mode = SceneTreeDropMode::None;
+};
+
 // all the level editor state, kept in one place instead of file globals
 struct LevelEditorState
 {
@@ -134,6 +157,20 @@ struct LevelEditorState
 	hui::Point viewportRectStart = 0;
 	hui::Point viewportRectEnd = 0;
 	std::vector<SceneObject*> sceneSelection;
+
+	SceneObject* treeDragObject = nullptr;
+	hui::Point treeDragStartMouse = 0;
+	bool treeDragging = false;
+	std::vector<SceneObject*> treeDragObjects;
+	SceneTreeDropTarget treeDropTarget;
+
+	SceneObject* treeRenameObject = nullptr;
+	char treeRenameId[64] = { 0 };
+	char treeRenameText[64] = { 0 };
+	std::chrono::steady_clock::time_point treePressTime = {};
+	bool treePressOnLabel = false;
+	bool treeRenameCancelled = false;
+	bool treeRenameJustStarted = false;
 
 	bool showSceneTree = true;
 	bool showInspector = true;
@@ -192,6 +229,132 @@ static bool isObjectSelected(const LevelEditorState& state, const SceneObject* o
 	return false;
 }
 
+void appendLog(LevelEditorState& state, LogEntry::Level level, const std::string& text);
+
+// true when 'ancestor' is 'obj' or lies above it in the hierarchy
+static bool isAncestorOf(SceneObject* ancestor, SceneObject* obj)
+{
+	for (SceneObject* p = obj; p; p = p->parent)
+	{
+		if (p == ancestor)
+			return true;
+	}
+
+	return false;
+}
+
+static std::vector<SceneObject*>& sceneChildren(LevelEditorState& state, SceneObject* parent)
+{
+	return parent ? parent->children : state.roots;
+}
+
+static i32 sceneObjectIndex(LevelEditorState& state, SceneObject* obj)
+{
+	if (!obj)
+		return -1;
+
+	std::vector<SceneObject*>& list = sceneChildren(state, obj->parent);
+	auto it = std::find(list.begin(), list.end(), obj);
+
+	return it == list.end() ? -1 : (i32)(it - list.begin());
+}
+
+static void detachSceneObject(LevelEditorState& state, SceneObject* obj)
+{
+	if (!obj)
+		return;
+
+	if (obj->parent)
+	{
+		auto& siblings = obj->parent->children;
+		siblings.erase(std::remove(siblings.begin(), siblings.end(), obj), siblings.end());
+	}
+	else
+	{
+		state.roots.erase(std::remove(state.roots.begin(), state.roots.end(), obj), state.roots.end());
+	}
+
+	obj->parent = nullptr;
+}
+
+static bool performSceneTreeDrop(LevelEditorState& state)
+{
+	const SceneTreeDropTarget& target = state.treeDropTarget;
+
+	if (state.treeDragObjects.empty() || target.mode == SceneTreeDropMode::None || !target.object)
+		return false;
+
+	// never drop an object into itself or into one of its descendants
+	for (SceneObject* obj : state.treeDragObjects)
+	{
+		if (isAncestorOf(obj, target.object))
+			return false;
+
+		if (target.mode != SceneTreeDropMode::Into && isAncestorOf(obj, target.parent))
+			return false;
+	}
+
+	for (SceneObject* obj : state.treeDragObjects)
+	{
+		SceneObject* parent = target.mode == SceneTreeDropMode::Into ? target.object : target.parent;
+		i32 index = -1;
+
+		if (target.mode == SceneTreeDropMode::Into)
+		{
+			index = (i32)parent->children.size();
+		}
+		else
+		{
+			index = sceneObjectIndex(state, target.object);
+
+			if (index < 0)
+				continue;
+
+			if (target.mode == SceneTreeDropMode::After)
+				++index;
+		}
+
+		detachSceneObject(state, obj);
+
+		std::vector<SceneObject*>& list = sceneChildren(state, parent);
+
+		if (index < 0 || index > (i32)list.size())
+			index = (i32)list.size();
+
+		list.insert(list.begin() + index, obj);
+		obj->parent = parent;
+	}
+
+	if (target.mode == SceneTreeDropMode::Into)
+		target.object->expanded = true;
+
+	const char* where = target.mode == SceneTreeDropMode::Into ? "into" :
+		(target.mode == SceneTreeDropMode::Before ? "before" : "after");
+
+	appendLog(state, LogEntry::Level::Info,
+		std::string("Moved '") + state.treeDragObjects.front()->name + "' " + where + " '" + target.object->name + "'");
+
+	return true;
+}
+
+// keep the original name as the widget id so the text input can take over the
+// capture the row label grabbed on mouse-down
+static void beginSceneTreeRename(LevelEditorState& state, SceneObject* obj)
+{
+	state.treeRenameObject = obj;
+	snprintf(state.treeRenameId, sizeof(state.treeRenameId), "%s", obj->name);
+	snprintf(state.treeRenameText, sizeof(state.treeRenameText), "%s", obj->name);
+
+	state.treeDragObject = nullptr;
+	state.treeDragging = false;
+	state.treeDragObjects.clear();
+	state.treeDropTarget = SceneTreeDropTarget();
+	state.treePressOnLabel = false;
+	state.treeRenameCancelled = false;
+	state.treeRenameJustStarted = true;
+	hui::forceRepaint();
+}
+
 SceneObject* createObject(LevelEditorState& state, const char* name, const char* type, SceneObject* parent)
 {
 	state.objects.push_back(std::make_unique<SceneObject>());
@@ -223,6 +386,23 @@ void deleteObject(LevelEditorState& state, SceneObject* obj)
 
 	if (state.viewportDragItems.empty())
 		state.viewportDragging = false;
+
+	state.treeDragObjects.erase(std::remove(state.treeDragObjects.begin(), state.treeDragObjects.end(), obj),
+		state.treeDragObjects.end());
+
+	if (state.treeDragObject == obj)
+	{
+		state.treeDragObject = nullptr;
+		state.treeDragging = false;
+		state.treeDragObjects.clear();
+		state.treeDropTarget = SceneTreeDropTarget();
+		state.treePressOnLabel = false;
+		hui::dragDropEnd();
+		hui::windowReleaseCapture();
+	}
+
+	if (state.treeRenameObject == obj)
+		state.treeRenameObject = nullptr;
 
 	// keep the children alive, re-parent them to the deleted object's parent
 	for (SceneObject* child : obj->children)
@@ -1017,17 +1197,111 @@ void drawSceneTreeNode(LevelEditorState& state, SceneObject* obj, u32 depth)
 	hui::sameLine();
 
 	// plain label: a selectable would paint its own body over the themed row
-	// highlight, so selection is handled on the whole row instead
-	hui::label(obj->name);
+	// highlight, so selection is handled on the whole row instead. A long LMB
+	// press swaps it for an in-place editor using the same widget id, so the
+	// capture taken on mouse-down is handed straight to the text input.
+	hui::Rect labelRect;
+
+	if (state.treeRenameObject == obj)
+	{
+		const hui::InputEvent& renameEv = hui::inputEventGet();
+
+		if (renameEv.type == hui::InputEvent::Type::Key
+			&& renameEv.key.down
+			&& renameEv.key.code == hui::KeyCode::Esc
+			&& hui::widgetIsFocused())
+		{
+			state.treeRenameCancelled = true;
+		}
+
+		if (state.treeRenameJustStarted)
+		{
+			hui::textInputStartEdit(state.treeRenameId);
+			state.treeRenameJustStarted = false;
+		}
+
+		hui::widgetSetNextHeight(rowHeight);
+		hui::textInput(state.treeRenameId, state.treeRenameText, sizeof(state.treeRenameText), hui::TextInputFlags::AutoSelectAll);
+
+		if (!hui::widgetIsFocused())
+		{
+			if (!state.treeRenameCancelled && state.treeRenameText[0])
+			{
+				snprintf(obj->name, sizeof(obj->name), "%s", state.treeRenameText);
+				appendLog(state, LogEntry::Level::Info, std::string("Renamed object to '") + obj->name + "'");
+			}
+
+			state.treeRenameObject = nullptr;
+			state.treeRenameCancelled = false;
+			hui::forceRepaint();
+		}
+	}
+	else
+	{
+		hui::label(obj->name);
+		labelRect = hui::widgetGetRect();
+	}
 
 	const hui::InputEvent& ev = hui::inputEventGet();
 
-	if (rowHovered
+	if (!state.treeRenameObject && rowHovered
 		&& ev.type == hui::InputEvent::Type::MouseDown
 		&& ev.mouse.button == hui::MouseButton::Left)
 	{
 		state.selectedObject = obj;
 		state.sceneSelection.clear();
+
+		// start a hierarchy drag from the content part of the row; the icon
+		// gutter on the left keeps its own click behavior
+		if (mousePos.x >= contentX)
+		{
+			state.treeDragObject = obj;
+			state.treeDragStartMouse = mousePos;
+			state.treeDragging = false;
+			state.treeDragObjects.clear();
+			state.treePressTime = std::chrono::steady_clock::now();
+			state.treePressOnLabel = labelRect.contains(mousePos);
+		}
+	}
+
+	if (state.treeDragging && rowHovered && !obj->locked && state.treeDragObject != obj && !isAncestorOf(state.treeDragObject, obj))
+	{
+		f32 relY = (mousePos.y - rowRect.y) / rowRect.height;
+		SceneTreeDropMode mode = SceneTreeDropMode::Into;
+
+		if (relY < 0.25f)
+			mode = SceneTreeDropMode::Before;
+		else if (relY > 0.75f)
+			mode = SceneTreeDropMode::After;
+
+		state.treeDropTarget.object = obj;
+		state.treeDropTarget.parent = obj->parent;
+		state.treeDropTarget.index = sceneObjectIndex(state, obj);
+		state.treeDropTarget.mode = mode;
+
+		hui::renderSetLineStyle(hui::LineStyle(hui::Color::fromU8(90, 180, 255), 2.0f));
+
+		const f32 lineX0 = contentX + (mode == SceneTreeDropMode::Into ? iconStep : 0.0f);
+		const f32 lineX1 = rowRect.right() - 4.0f;
+
+		if (mode == SceneTreeDropMode::Before)
+		{
+			const f32 y = rowRect.y + 1.0f;
+			hui::renderDrawLine({ lineX0, y }, { lineX1, y });
+		}
+		else if (mode == SceneTreeDropMode::After)
+		{
+			const f32 y = rowRect.bottom() - 1.0f;
+			hui::renderDrawLine({ lineX0, y }, { lineX1, y });
+		}
+		else
+		{
+			// dropping into an object: draw the line at the child indent level
+			const f32 y = rowRect.bottom() - 2.0f;
+			hui::renderDrawLine({ lineX0, y }, { lineX1, y });
+		}
+
+		hui::renderSetLineStyle(hui::LineStyle(hui::Color::white, 1.0f));
 	}
 
 	if (hasChildren && obj->expanded)
@@ -1051,6 +1325,65 @@ void drawSceneTree(LevelEditorState& state)
 	{
 		deleteSelection(state);
 	}
+
+	const hui::Point treeMouse = hui::mouseGetPosition();
+	bool treeLeftDown = HUI_SERVICES.isMouseButtonDownNow && HUI_SERVICES.isMouseButtonDownNow(hui::MouseButton::Left);
+
+	if (state.treeDragObject)
+	{
+		f32 treeDragDistance = state.treeDragStartMouse.getDistance(treeMouse);
+		f32 holdSeconds = std::chrono::duration<f32>(std::chrono::steady_clock::now() - state.treePressTime).count();
+		bool treeMouseUp = ev.type == hui::InputEvent::Type::MouseUp && ev.mouse.button == hui::MouseButton::Left;
+
+		// a long press that ends on the same spot starts an in-place rename.
+		// it must be handled before the generic release clears the drag state.
+		if (treeMouseUp
+			&& !state.treeDragging
+			&& state.treePressOnLabel
+			&& treeDragDistance < kTreeDragStartDistance
+			&& holdSeconds >= kTreeRenameHoldSeconds)
+		{
+			beginSceneTreeRename(state, state.treeDragObject);
+		}
+		else if (!treeLeftDown
+			|| treeMouseUp
+			|| ev.type == hui::InputEvent::Type::WindowLostFocus)
+		{
+			if (state.treeDragging)
+			{
+				performSceneTreeDrop(state);
+				hui::dragDropEnd();
+			}
+
+			// buttonBehavior() on the row label/icon grabs the widget capture on
+			// mouse-down. If the row is gone by mouse-up, that capture is never
+			// released and every other window stops responding. Release it here.
+			hui::windowReleaseCapture();
+
+			state.treeDragObject = nullptr;
+			state.treeDragging = false;
+			state.treeDragObjects.clear();
+			state.treeDropTarget = SceneTreeDropTarget();
+			state.treePressOnLabel = false;
+			hui::forceRepaint();
+		}
+		else if (!state.treeDragging
+			&& !state.treeDragObject->locked
+			&& treeDragDistance >= kTreeDragStartDistance)
+		{
+			state.treeDragging = true;
+			state.treeDragObjects.clear();
+			state.treeDragObjects.push_back(state.treeDragObject);
+
+			// dragDropBegin() clears ctx->widget.captureId, so the capture taken
+			// by the row's label/image widgets cannot leak after the drop.
+			hui::dragDropBegin(kSceneTreeDragDropType, state.treeDragObject);
+			hui::windowReleaseCapture();
+		}
+	}
+
+	// recomputed every frame while dragging; rows set it again below
+	state.treeDropTarget = SceneTreeDropTarget();
 
 	hui::widgetSetNextWidth(0.55f);
 	hui::textInput("##objectSearch", state.objectSearch, 128, hui::TextInputFlags::None, "Search objects...");

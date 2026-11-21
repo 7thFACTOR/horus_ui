@@ -596,4 +596,13 @@ bool textInput(
 	return ctx->textInput.textChanged;
 }
 
+void textInputStartEdit(const char* id)
+{
+	WidgetId widgetId = genId(id);
+
+	ctx->widget.focusedId = widgetId;
+	ctx->focusChanged = true;
+	ctx->textInput.id = widgetId;
+}
+
 }
