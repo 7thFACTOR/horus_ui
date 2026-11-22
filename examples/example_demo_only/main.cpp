@@ -1,5 +1,6 @@
 #pragma execution_character_set("utf-8")
 #include "horus.h"
+#include "../common/material_icon_atlas.h"
 
 #include <algorithm>
 #include <cstring>
@@ -89,6 +90,7 @@ static void reloadTheme(hui::Sdl3GfxApi gfxApi)
 
 	auto oldTheme = hui::themeGet();
 	hui::themeSet(newTheme);
+	loadMaterialIconAtlas("../themes/icons/material_icons.png", "../themes/icons/material_icons.json");
 	hui::themeBuild(newTheme);
 	uploadAtlasTexture(gfxApi);
 
@@ -179,6 +181,7 @@ int main(int argc, char** args)
 	}
 
 	hui::themeSet(currentTheme);
+	loadMaterialIconAtlas("../themes/icons/material_icons.png", "../themes/icons/material_icons.json");
 	hui::themeBuild(currentTheme);
 	uploadAtlasTexture(sdlParams.gfxApi);
 	try { themeLastWriteTime = std::filesystem::last_write_time(themeFilePath); } catch (...) {}

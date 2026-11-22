@@ -1093,7 +1093,7 @@ void showDemo()
 
 		space();
 		label("Image button:");
-		HImage btnImg = themeGetImage(themeGet(), "ic_attach_file_white_24dp");
+		HImage btnImg = themeGetImage(themeGet(), "attach_file");
 		if (imageButton(btnImg, 32, 22))
 		{
 			demo.buttonClickCount++;
