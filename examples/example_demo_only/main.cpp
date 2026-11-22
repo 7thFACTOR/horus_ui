@@ -18,6 +18,7 @@
 #include "native_file_dialogs.h"
 #include "stdio_fileio.h"
 #include "utfcpp.h"
+#include "../common/dpi_awareness.h"
 
 hui::OpenGLTexture texAtlasGL;
 hui::Dx11Texture texAtlasDX11;
@@ -108,6 +109,8 @@ static void reloadTheme(hui::Sdl3GfxApi gfxApi)
 
 int main(int argc, char** args)
 {
+	horusExamples::makeProcessDpiAware();
+
 	hui::Sdl3InitParams sdlParams;
 
 	sdlParams.vSync = true;

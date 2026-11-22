@@ -32,6 +32,7 @@
 #include "native_file_dialogs.h"
 #include "stdio_fileio.h"
 #include "utfcpp.h"
+#include "../common/dpi_awareness.h"
 
 // all names loaded from the Material icon atlas, used by the icon browser window
 static std::vector<std::string> gMaterialIconNames;
@@ -41,6 +42,7 @@ static const u32 kSceneTreeDragDropType = 101;
 
 static const f32 kTreeRenameHoldSeconds = 0.45f;
 static const f32 kTreeDragStartDistance = 4.0f;
+static const f32 kUiScaleSteps[] = { 0.75f, 1.0f, 1.25f, 1.5f, 2.0f };
 
 // a dummy object in the edited scene graph, purely for the example
 struct SceneObject
@@ -141,6 +143,8 @@ struct LevelEditorState
 	char assetFilter[128] = { 0 };
 	hui::Point assetScroll = 0;
 
+	f32 uiScale = hui::scaleGet();
+	f32 pendingUiScale = 0;
 	i32 toolIndex = 0;
 	bool gridVisible = true;
 	bool snapEnabled = true;
@@ -810,6 +814,26 @@ void drawMainMenu(LevelEditorState& state, bool& exitNow)
 
 		if (hui::menuItem("Log", "", 0, state.showLog ? hui::SelectableFlags::Checked : hui::SelectableFlags::Normal))
 			toggle(state.showLog, "log");
+
+		hui::menuSeparator();
+
+		if (hui::menuBegin("UI Scale"))
+		{
+			char label[16];
+
+			for (f32 step : kUiScaleSteps)
+			{
+				snprintf(label, sizeof(label), "%.0f%%", step * 100.0f);
+				auto flags = std::fabs(step - state.uiScale) < 0.001f
+					? hui::SelectableFlags::Checked
+					: hui::SelectableFlags::Normal;
+
+				if (hui::menuItem(label, "", 0, flags))
+					state.pendingUiScale = step;
+			}
+
+			hui::menuEnd();
+		}
 
 		hui::menuSeparator();
 
@@ -2387,6 +2411,8 @@ void drawLogWindow(LevelEditorState& state)
 
 int main(int argc, char** args)
 {
+	horusExamples::makeProcessDpiAware();
+
 	// initialize SDL input provider
 	hui::Sdl3InitParams sdlParams;
 
@@ -2578,6 +2604,25 @@ int main(int argc, char** args)
 		// the main frame rendering and input handling
 		auto doFrame = [&](bool lastEventInQueue)
 		{
+			if (state.pendingUiScale > 0)
+			{
+				state.uiScale = state.pendingUiScale;
+				state.pendingUiScale = 0;
+
+				hui::scaleSet(state.uiScale);
+				hui::themeBuild(theme);
+				uploadThemeAtlas();
+
+				hui::themeGetWidgetElementInfo(
+					hui::WidgetElementId::MenuBarBody,
+					hui::WidgetStateType::Normal,
+					menuBarInfo);
+
+				char scaleLog[64];
+				snprintf(scaleLog, sizeof(scaleLog), "UI scale set to %.0f%%", state.uiScale * 100.0f);
+				appendLog(state, LogEntry::Level::Info, scaleLog);
+			}
+
 			hui::frameBegin();
 			hui::skipRenderingThisFrame(!lastEventInQueue);
 

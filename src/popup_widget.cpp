@@ -21,7 +21,7 @@ void popupBegin(
 	popup.lastUsedFrame = ctx->frameCount;
 	popup.flags = flags;
 
-	if (ctx->popupUseGlobalScale)
+	if (!has(flags, PopupFlags::NoScale))
 		width *= ctx->scale;
 
 	popup.layerIncremented = !has(flags, PopupFlags::SameLayer)

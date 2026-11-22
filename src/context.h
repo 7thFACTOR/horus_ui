@@ -68,7 +68,6 @@ struct Context
 
 	// Popups
 	std::vector<PopupState> popupStack;
-	bool popupUseGlobalScale = true;
 	size_t popupIndex = 0;
 
 	// Virtual list

@@ -1138,6 +1138,10 @@ void initSdl3(Services& services, const Sdl3InitParams& params)
 
 	printf("Initializing SDL3 service...\n");
 
+	// Opt out of Windows DPI virtualization. The app receives physical pixels 1:1
+	// and controls its own UI scale; the embedded manifest does the same from process start.
+	SDL_SetHint("SDL_WINDOWS_DPI_AWARENESS", "permonitorv2");
+
 	if (params.initializeSdl)
 	{
 		SDL_SetMainReady();

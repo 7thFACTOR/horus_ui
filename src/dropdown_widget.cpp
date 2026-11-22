@@ -166,11 +166,8 @@ bool dropdown(const char* id, i32& selectedIndex, const char** items, u32 itemCo
 
 	if (ctx->dropdown.active && ctx->id == ctx->dropdown.id)
 	{
-		// we need exact width, so don't scale the popup's width
-		ctx->popupUseGlobalScale = false;
-
 		popupBegin("popup", ctx->widget.rect.width,
-			PopupFlags::CustomPosition,
+			PopupFlags::CustomPosition | PopupFlags::NoScale,
 			popupPos,
 			WidgetElementId::DropdownListBody);
 
@@ -224,7 +221,6 @@ bool dropdown(const char* id, i32& selectedIndex, const char** items, u32 itemCo
 		}
 
 		popupEnd();
-		ctx->popupUseGlobalScale = true;
 	}
 
 	return selectedNewItem;

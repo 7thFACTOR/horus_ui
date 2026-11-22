@@ -831,7 +831,7 @@ bool colorPickerPopup(const char* id, Color* inOutColor, ColorPickerFlags flags,
 
 	if (popupOpen)
 	{
-		f32 pickerWidth = 360.0f * ctx->scale;
+		f32 pickerWidth = ctx->settings.colorPickerPopupWidth;
 		popupBegin("##cpPopup", pickerWidth, PopupFlags::BelowLastWidget);
 
 		bool hasApplyButtons = has(flags, ColorPickerFlags::PopupApplyButtons);

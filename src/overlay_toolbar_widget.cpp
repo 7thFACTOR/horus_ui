@@ -442,12 +442,11 @@ static void drawToolbarDropdownPopup(OverlayToolbar* toolbar, OverlayToolbarElem
 		? e->rect.topRight()
 		: e->rect.bottomLeft();
 
-	// we need the exact width, so the popup's width won't be scaled by the global scale
-	ctx->popupUseGlobalScale = false;
-
 	std::string popupId = "toolbarDropdown##" + e->id;
 
-	popupBegin(popupId.c_str(), popupWidth, PopupFlags::CustomPosition, popupPos, WidgetElementId::DropdownListBody);
+	popupBegin(popupId.c_str(), popupWidth,
+		PopupFlags::CustomPosition | PopupFlags::NoScale,
+		popupPos, WidgetElementId::DropdownListBody);
 
 	spacingPush(0);
 	paddingPush(PaddingType::ScrollView, Point());
@@ -485,7 +484,6 @@ static void drawToolbarDropdownPopup(OverlayToolbar* toolbar, OverlayToolbarElem
 	}
 
 	popupEnd();
-	ctx->popupUseGlobalScale = true;
 
 	// remember the popup rect so the viewport underneath can ignore input over it
 	if (!closed && ctx->popupStack[ctx->popupIndex].active)

@@ -808,7 +808,8 @@ enum class PopupFlags : u32
 	SameLayer = HUI_BIT(6), /// internal: don't increment layer index
 	TopMost = HUI_BIT(7), /// set to have this popup top most
 	IsMenu = HUI_BIT(8), /// internal, when this popup is a menu
-	LayerOnMouseInside = HUI_BIT(9) /// internal: acts as an upper input layer while the mouse is inside the popup bounds
+	LayerOnMouseInside = HUI_BIT(9), /// internal: acts as an upper input layer while the mouse is inside the popup bounds
+	NoScale = HUI_BIT(10) /// don't scale the popup width by the current UI scale
 };
 HUI_ENUM_AS_FLAGS(PopupFlags);
 
@@ -2451,6 +2452,7 @@ struct Settings
 	f32 movePopupMaxDistanceTrigger = 5; /// distance of dragging with mouse for when to initiate popup dragging
 	f32 customFileDialogWidth = 460; /// the popup width of the custom file dialog
 	f32 customFileDialogEntriesHeight = 220; /// the height of the entries list of the custom file dialog
+	f32 colorPickerPopupWidth = 520; /// the popup width of the color picker
 	f32 customFileDialogPreviewWidth = 250; /// the width of the preview panel in the custom file dialog (when a preview callback is provided)
 	f32 defaultBulletTextSpacing = 5; /// space size between bullet/check/radio and the label, might get overriden by the theme settings
 	f32 defaultButtonGroupLabelSideSpacing = 6; /// horizontal spacing between text and segment border in button groups, might get overriden by the theme settings
@@ -3238,7 +3240,7 @@ HUI_API void boxBeginUserElement(
 HUI_API bool boxEnd();
 
 /// Begin drawing a modal popup widget on top of all other popups or widgets
-/// \param width the width of the popup
+/// \param width the width of the popup, scaled by the current UI scale unless PopupFlags::NoScale is set
 /// \param flags the popup flags
 /// \param position when custom position, this is the window coordinates of the popup
 /// \param widgetElementId will use this element's theme to draw the popup body
