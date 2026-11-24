@@ -516,6 +516,7 @@ struct TablePersistentState
 	Point lastMousePos;
 	struct DrawCmdLayerSplitter* splitter = nullptr;
 	Point scrollViewScrollPos;
+	f32 lastHeight = 0; // final table height from the previous frame, used for resize hit testing
 };
 
 struct BoxState

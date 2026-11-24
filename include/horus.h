@@ -3815,6 +3815,9 @@ HUI_API u32 layerIndexDecrement();
 /// Decrement the maximum layer index of the current window, used internally when a window's layer stack ends
 HUI_API void layerDecrementWindowMaxLayerIndex();
 
+/// Returns true if the current layer is the topmost input layer, used by custom widgets to ignore mouse events under popups and menus
+HUI_API bool layerIsActive();
+
 /// Draw text inside a rectangle, aligned within it
 /// \param text the text to draw (UTF-8)
 /// \param rect the rectangle to draw the text in (window coordinates)

@@ -197,14 +197,9 @@ bool beginMenuInternal(const char* label, SelectableFlags stateFlags, bool conte
 		if (ctx->widget.hovered)
 			ctx->hoveredSimpleMenuItemMenuDepth = ~0;
 
-		// if submenu is open but the parent item is no longer the intended target
-		// (e.g. user hovered past it to a sibling), deactivate before opening the popup
-		if (ctx->menuStack[ctx->menuDepth].active
-			&& !ctx->widget.hovered
-			&& ctx->hoveredSimpleMenuItemMenuDepth < ctx->menuDepth)
-		{
-			ctx->menuStack[ctx->menuDepth].active = false;
-		}
+		// remember the parent rect so the submenu can close when the mouse leaves
+		// both the parent and the open popup
+		ctx->menuStack[ctx->menuDepth].lastItemRect = ctx->widget.rect;
 
 		if (!ctx->menuStack[ctx->menuDepth].active && (ctx->widget.hovered))
 		{
@@ -310,9 +305,14 @@ void endMenuInternal(bool contextMenu)
 				ctx->clickedOnASubMenuItem = false;
 			}
 
+			auto& popup = ctx->popupStack[ctx->popupIndex - 1];
+			Rect popupRect(popup.position.x, popup.position.y, popup.width, popup.height);
+			bool mouseOutsideParent = !menu.lastItemRect.contains(ctx->mousePosition);
+			bool mouseOutsidePopup = !popupRect.contains(ctx->mousePosition);
+
 			if (ctx->menuItemChosen
 				|| popupPressedEscape()
-				|| ctx->hoveredSimpleMenuItemMenuDepth < ctx->menuDepth - 1)
+				|| (mouseOutsideParent && mouseOutsidePopup))
 			{
 				menu.active = false;
 				popupClose();

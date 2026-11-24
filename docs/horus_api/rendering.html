@@ -58,6 +58,10 @@
 		<div class="prototype"><code><span class="kw">void</span> <span class="fn">layerDecrementWindowMaxLayerIndex</span>()</code></div>
 		<p class="brief">Decrement the maximum layer index of the current window, used internally when a window's layer stack ends.</p>
 	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="ret">bool</span> <span class="fn">layerIsActive</span>()</code></div>
+		<p class="brief">Returns true if the current layer is the topmost input layer, used by custom widgets to ignore mouse events under popups and menus.</p>
+	</div>
 
 	<h2>Immediate-mode drawing primitives</h2>
 	<p>These functions draw directly into the current render command list. They use the current line style, fill style and render color (set via <code>renderSetLineStyle</code>, <code>renderSetFillStyle</code>, <code>renderSetColor</code>).</p>

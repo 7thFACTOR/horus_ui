@@ -1780,6 +1780,11 @@ void layerIndexIncrement()
 	}
 }
 
+bool layerIsActive()
+{
+	return ctx->isActiveLayer();
+}
+
 u32 layerIndexDecrement()
 {
 	ctx->layerIndex--;

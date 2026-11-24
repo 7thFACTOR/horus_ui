@@ -901,6 +901,27 @@ static const char* editorWindowTitle(const char* windowId)
 	return windowId;
 }
 
+// true if the layout state knows about the window with the given id, docked or closed
+static bool layoutStateHasWindow(const hui::WindowsDockingState& layoutState, const char* windowId)
+{
+	for (const auto& node : layoutState.dockNodes)
+	{
+		for (const auto& wnd : node.windows)
+		{
+			if (wnd.id == windowId)
+				return true;
+		}
+	}
+
+	for (const auto& wnd : layoutState.closedWindows)
+	{
+		if (wnd.id == windowId)
+			return true;
+	}
+
+	return false;
+}
+
 hui::WindowsDockingState buildDefaultLayoutState()
 {
 	hui::WindowsDockingState state;
@@ -1052,7 +1073,8 @@ void drawSceneTreeNode(LevelEditorState& state, SceneObject* obj, u32 depth)
 
 	// the whole row is hoverable, so the view/lock icons can appear anywhere on it
 	hui::Rect rowRect(cellRect.x, cellRect.y, cellRect.width, cellRect.height);
-	bool rowHovered = hui::windowIsMouseOver() && rowRect.contains(hui::mouseGetPosition());
+	bool layerActive = hui::layerIsActive();
+	bool rowHovered = layerActive && hui::windowIsMouseOver() && rowRect.contains(hui::mouseGetPosition());
 
 	// Unity-like full-row highlight. Colors come from the theme; tableRowSetColor
 	// paints behind every widget in the row, including the hidden/lock icons.
@@ -1081,8 +1103,8 @@ void drawSceneTreeNode(LevelEditorState& state, SceneObject* obj, u32 depth)
 	hui::Rect viewIconRect(rowBasePos.x, rowBasePos.y, rowHeight, rowHeight);
 	hui::Rect lockIconRect(rowBasePos.x + iconStep, rowBasePos.y, rowHeight, rowHeight);
 	const hui::Point mousePos = hui::mouseGetPosition();
-	bool viewIconHovered = hui::windowIsMouseOver() && viewIconRect.contains(mousePos);
-	bool lockIconHovered = hui::windowIsMouseOver() && lockIconRect.contains(mousePos);
+	bool viewIconHovered = layerActive && hui::windowIsMouseOver() && viewIconRect.contains(mousePos);
+	bool lockIconHovered = layerActive && hui::windowIsMouseOver() && lockIconRect.contains(mousePos);
 
 	hui::HImage viewIcon = materialIcon(hideSet || viewIconHovered ? "visibility_off" : "visibility_off_dim");
 	hui::HImage lockIcon = materialIcon(obj->locked || lockIconHovered ? "lock" : "lock_dim");
@@ -1253,7 +1275,8 @@ void drawSceneTree(LevelEditorState& state)
 {
 	const hui::InputEvent& ev = hui::inputEventGet();
 
-	if (hui::windowIsMouseOver()
+	if (hui::layerIsActive()
+		&& hui::windowIsMouseOver()
 		&& ev.type == hui::InputEvent::Type::Key
 		&& ev.key.down
 		&& ev.key.code == hui::KeyCode::Delete
@@ -2545,6 +2568,11 @@ int main(int argc, char** args)
 
 		// older layouts had a separate toolbar window, it is merged into the menu now
 		hui::windowSetVisible("main_toolbar", false);
+
+		// the one-time icon browser dock below must not override a layout that already places it
+		hui::WindowsDockingState loadedLayout;
+		hui::dockingStateSaveInMemory(loadedLayout);
+		state.iconBrowserDocked = layoutStateHasWindow(loadedLayout, "icon_browser");
 	}
 
 	// sync the View menu toggles with the restored layout

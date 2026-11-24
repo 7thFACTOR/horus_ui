@@ -730,6 +730,72 @@ bool tableBegin(const char* id, u32 columnCount, f32 height, TableFlags flags)
 	// push state so we can use it
 	ctx->tableStack.push_back(state);
 
+	// claim clicks on a column separator before cell widgets get the mouse event,
+	// so resizing wins over spanning widgets like expandables
+	if (has(flags, TableFlags::Resizable)
+		&& !ctx->widget.disabled
+		&& !persistent.resizingColumn
+		&& ctx->widget.captureId == 0
+		&& ctx->hoveringThisWindow
+		&& ctx->event.type == InputEvent::Type::MouseDown
+		&& ctx->event.mouse.button == MouseButton::Left)
+	{
+		f32 hitBottom = state.tableRect.y + (state.innerHeight > 0 ? state.innerHeight : persistent.lastHeight);
+
+		if (hitBottom > state.tableRect.y
+			&& ctx->mousePosition.y >= state.tableRect.y
+			&& ctx->mousePosition.y <= hitBottom)
+		{
+			f32 currentX = state.tableRect.x;
+			const f32 separatorWidth = 4.0f;
+
+			for (u32 i = 0; i < persistent.columns.size(); i++)
+			{
+				if (persistent.columns[i].isHidden)
+					continue;
+
+				currentX += persistent.columns[i].width;
+
+				if (static_cast<bool>(persistent.columns[i].flags & TableColumnFlags::Fixed))
+					continue;
+
+				Rect separatorRect(currentX - separatorWidth, state.tableRect.y, separatorWidth * 2.0f, hitBottom - state.tableRect.y);
+
+				if (!separatorRect.contains(ctx->mousePosition))
+					continue;
+
+				windowSetCapture();
+				ctx->widget.captureId = state.id;
+				persistent.resizingColumn = true;
+				persistent.resizingColumnIndex = i;
+				persistent.resizeStartX = ctx->mousePosition.x;
+				persistent.resizeStartWidth = persistent.columns[i].width;
+				persistent.resizeNextStartWidth = 0;
+
+				u32 nextResizeIdx = i + 1;
+				while (nextResizeIdx < persistent.columns.size() && persistent.columns[nextResizeIdx].isHidden)
+					nextResizeIdx++;
+
+				if (nextResizeIdx < persistent.columns.size())
+					persistent.resizeNextStartWidth = persistent.columns[nextResizeIdx].width;
+
+				for (u32 k = 0; k < persistent.columns.size(); k++)
+				{
+					if (!persistent.columns[k].isHidden)
+					{
+						persistent.columns[k].specifiedSize = persistent.columns[k].width;
+						persistent.columns[k].isPercentage = false;
+						persistent.columns[k].isFillRemaining = false;
+						persistent.columns[k].userResized = true;
+					}
+				}
+
+				inputEventCancel();
+				break;
+			}
+		}
+	}
+
 	// get row height from theme, falling back to the global line height
 	auto& bodyElem = ctx->theme->getElement(WidgetElementId::TableBody);
 	auto& bodyElemState = bodyElem.normalState();
@@ -766,6 +832,7 @@ void tableEnd()
 	finishRow(state);
 
 	f32 finalHeight = state.currentRowY - state.tableRect.y;
+	state.persistent->lastHeight = finalHeight;
 
 	// pop any remaining clip rect BEFORE drawing borders so they don't get clipped
 	if (state.isClipping)
