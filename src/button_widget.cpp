@@ -101,7 +101,7 @@ static bool imageButtonInternal(HImage img, HImage disabledImg, f32 width, f32 h
 	ctx->widget.hasCustomWidth = true;
 
 	ctx->setLabelAndId(nullptr);
-	addWidget(height);
+	addWidget(height, false);
 	buttonBehavior();
 
 	f32 pressedIncrement = 0.0f;

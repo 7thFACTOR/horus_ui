@@ -23,7 +23,9 @@ bool list(const char* id, bool* selectedItems, ListSelectionMode selectionType, 
 		if (!fnt && !ctx->theme->fonts.empty())
 			fnt = &ctx->theme->fonts[0]->font;
 	}
-	f32 itemHeight = fmaxf(bodyElemState.height, fnt ? fnt->getMetrics().height / ctx->scale : 16.0f) * ctx->scale;
+	f32 itemHeight = ctx->settings.lineHeight > 0
+		? ctx->settings.lineHeight * ctx->scale
+		: fmaxf(bodyElemState.height, fnt ? fnt->getMetrics().height / ctx->scale : 16.0f) * ctx->scale;
 
 	f32 totalHeight = itemHeight * itemCount;
 	Point scrollOffset;

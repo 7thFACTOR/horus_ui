@@ -375,7 +375,7 @@ bool tableBegin(const char* id, u32 columnCount, f32 height, TableFlags flags)
 		return false;
 
 	widgetPushDisabled(widgetGetDisabled());
-	addWidget(0);
+	addWidget(0, false);
 
 	WidgetId tableId = genId(id);
 	auto& persistent = ctx->tablePersistentStates[tableId];
@@ -730,11 +730,12 @@ bool tableBegin(const char* id, u32 columnCount, f32 height, TableFlags flags)
 	// push state so we can use it
 	ctx->tableStack.push_back(state);
 
-	// get row height from theme
+	// get row height from theme, falling back to the global line height
 	auto& bodyElem = ctx->theme->getElement(WidgetElementId::TableBody);
 	auto& bodyElemState = bodyElem.normalState();
+	f32 defaultRowHeight = ctx->settings.lineHeight > 0 ? ctx->settings.lineHeight * ctx->scale : 25.0f;
 
-	ctx->tableStack.back().rowHeight = bodyElem.currentStyle->getParameter("rowHeight", 25);
+	ctx->tableStack.back().rowHeight = bodyElem.currentStyle->getParameter("rowHeight", defaultRowHeight);
 
 	// push a clip rect for the entire table to prevent backgrounds from extending too far
 	// start 1px to the left to include the left border, and add 2px to width for both borders

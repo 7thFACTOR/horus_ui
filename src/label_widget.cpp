@@ -92,7 +92,7 @@ static bool labelMultilineInternal(const char* label, HFont font, const Color* t
 	auto textSize = ((Font*)font)->computeTextSize(ctx->widgetLabel.c_str(), (u32)round(width));
 
 	// textSize.height is already scaled with the theme, so normalize it here
-	addWidget(textSize.height / ctx->scale + padding.y * 2.0f);
+	addWidget(textSize.height / ctx->scale + padding.y * 2.0f, false);
 
 	auto useFont = (Font*)font;
 
@@ -166,7 +166,7 @@ bool labelCustomFontMultiline(const char* label, HFont font, HAlignType horizont
 	auto textSize = ((Font*)font)->computeTextSize(ctx->widgetLabel.c_str(), (u32)round(width));
 
 	// textSize.height is already scaled with the theme, so normalize it here
-	addWidget(textSize.height / ctx->scale + padding.y * 2.0f);
+	addWidget(textSize.height / ctx->scale + padding.y * 2.0f, false);
 
 	auto useFont = (Font*)font;
 

@@ -33,7 +33,7 @@ Third-party `examples/libs` excluded. "Dead" = only its own declaration/definiti
 - `LineStyle::stipplePatternMaxCount`, `FontGlyph::pixelX/pixelY`
 - `Services`: `allInputFunctionsSet`, `allGfxFunctionsSet`, `allFontFunctionsSet`, `allTextEncodingFunctionsSet`, `allFileIoFunctionsSet`, `allFunctionsSet`
 - `OverlayToolbarSettings::insertionHintColor`
-- `Settings`: `defaultWidgetWidth`, `sameLineHeight`, `scaleLayouts`
+- `Settings`: `defaultWidgetWidth`, `scaleLayouts`
 - `DisplayInfo::usableBounds` (write-only; filled by backends, never read by the lib)
 
 ### Unused free functions (defined, never called)

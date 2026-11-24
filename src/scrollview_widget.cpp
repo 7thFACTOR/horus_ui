@@ -344,7 +344,8 @@ Point scrollViewEnd()
 	ctx->maxContentWidthStack.pop_back();
 
 	// compute measured content height early so it can be used for layout/availability checks
-	f32 scrollContentSizeV = ctx->position.y - prevPenPos.y + internalPadding.y;
+	// the border is already excluded from the available area, only the bottom padding is kept
+	f32 scrollContentSizeV = ctx->position.y - prevPenPos.y + padding.y;
 	// authoritative clamp size: use the larger of measured and virtualSize (virtual list may set this)
 	f32 contentSizeForClamp = std::max(scrollContentSizeV, scrollViewState.virtualSize.y);
 
@@ -714,7 +715,7 @@ Point scrollViewEnd()
 	scrollViewState.scrollOffset = scrollOffset;
 	widgetPopDisabled();
 	widgetPopPosition();
-	addWidget(height/ctx->scale);
+	addWidget(height/ctx->scale, false);
 	layoutPop();
 
 	// set hover when mouse is over the scroll view and no child widget claimed hover

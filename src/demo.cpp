@@ -3535,6 +3535,25 @@ if (expandableBegin("Overlay Toolbars", &demo.expandOverlayToolbar))
 		button("B");
 		sameLine();
 		button("C");
+
+		space();
+		// standard widgets share the global line height unless a custom height is set
+		label("Global lineHeight:");
+		widgetSetNextHeight(22.0f);
+		sliderFloat("Line Height##Spacing", 16.0f, 40.0f, contextGetSettings().lineHeight, true, 1.0f);
+		sameLine();
+		button("Button");
+		sameLine();
+		textInput("##lineHeightInput", demo.textBasic, sizeof(demo.textBasic));
+		sameLine();
+		sliderFloat("##lineHeightSlider", 0.0f, 1.0f, demo.sliderFloatVal);
+
+		space();
+		label("widgetSetNextHeight override:");
+		widgetSetNextHeight(32.0f);
+		button("Tall button");
+		sameLine();
+		button("Normal button");
 		widgetPopDisabled();
 		expandableEnd();
 	}

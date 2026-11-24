@@ -11,7 +11,7 @@ void line()
 	auto& padding = widgetGetPadding();
 
 	ctx->setLabelAndId(nullptr);
-	addWidget(bodyElemState.image->height + padding.y * 2.0f);
+	addWidget(bodyElemState.image->height + padding.y * 2.0f, false);
 	ctx->renderer.cmdSetColor(bodyElemState.color);
 	ctx->renderer.cmdDrawImageBordered(bodyElemState.image, bodyElemState.border,
 		{

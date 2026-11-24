@@ -16,7 +16,7 @@ Rect customWidgetBegin(const char* id, f32 height)
 	}
 
 	ctx->id = genId(id);
-	addWidget(height);
+	addWidget(height, false);
 	buttonBehavior();
 
 	return ctx->widget.rect;

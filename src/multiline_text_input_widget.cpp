@@ -46,7 +46,7 @@ bool textInputMultiline(
 	f32 totalHeight = visibleLines * lineHeight + (padding.y + border) * 2.0f;
 
 	// totalHeight is already scaled, so keep the row single scaled
-	addWidget(totalHeight / ctx->scale);
+	addWidget(totalHeight / ctx->scale, false);
 	buttonBehavior();
 
 	// pre-calculate scroll ID for focus checks

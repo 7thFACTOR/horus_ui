@@ -2432,7 +2432,7 @@ struct Settings
 	f32 whiteImageUvBorder = 0.001f; /// this value is subtracted from the white image used to draw lines, to avoid black border artifacts
 	bool lineAntiAliasing = false; /// if true, lines will have anti-aliasing applied to their edges
 	f32 lineAntiAliasingSkirtWidthPixels = 1.0f; /// width of the anti-aliasing skirt in pixels
-	f32 sameLineHeight = 20.0f; /// the height of a line when sameLine() is used to position widgets on a single row/line. Used to center various widget heights vertically. This must be non-zero, otherwise the widgets will align wrongly.
+	f32 lineHeight = 22; /// the total height of a widget line, including padding, before ui scaling; overrides theme heights unless widgetSetNextHeight() or an explicit height argument is used. Set to 0 to use theme heights.
 	f32 minScrollViewHandleSize = 20.0f; /// the minimum allowed scroll handle size (height)
 	f32 deltaTime = 0; /// you need to set this if you want to use the built in animations, otherwise they will not animate because they rely on this value to compute animation progress. This is the time elapsed between the current frame and the previous frame, in seconds
 	bool scaleScrollViewHeight = false;
@@ -3652,7 +3652,7 @@ HUI_API void sameLine(f32 offsetX = 0.0f, f32 spacing = 0.0f);
 /// \param width the next widget width
 HUI_API void widgetSetNextWidth(f32 width);
 
-/// Set the height of the next widget drawn, overriding the default widget height, the value is the total widget height including padding
+/// Set the height of the next widget drawn, overriding Settings::lineHeight and the default widget height, the value is the total widget height including padding
 /// \param height the next widget height
 HUI_API void widgetSetNextHeight(f32 height);
 

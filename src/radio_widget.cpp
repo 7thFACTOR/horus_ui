@@ -19,6 +19,15 @@ bool radio(const char* label, i32* currentRadioValue, i32 thisValue)
 	f32 height = radioBodyElem.normalState().height * ctx->scale;
 	f32 markWidth = padding.x * 2.0f + radioBodyElem.normalState().width;
 	f32 markHeight = padding.y * 2.0f + radioBodyElem.normalState().height;
+
+	// shrink the bullet to fit the global line height, so it doesn't overflow the row
+	if (ctx->settings.lineHeight > 0 && markHeight > ctx->settings.lineHeight)
+	{
+		f32 ratio = ctx->settings.lineHeight / markHeight;
+		markWidth *= ratio;
+		markHeight *= ratio;
+	}
+
 	f32 markWidthScaled = markWidth * ctx->scale;
 	f32 markHeightScaled = markHeight * ctx->scale;
 

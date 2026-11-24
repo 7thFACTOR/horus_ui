@@ -609,8 +609,8 @@ static bool ValidateSpirvWords(const uint32_t* pCode, size_t codeSize) noexcept 
         return false;
     }
 
-    constexpr uint32_t kSpirvMagic = 0x07230203u;
-    if (pCode[0] != kSpirvMagic) {
+    constexpr uint32_t spirvMagic = 0x07230203u;
+    if (pCode[0] != spirvMagic) {
         return false;
     }
 

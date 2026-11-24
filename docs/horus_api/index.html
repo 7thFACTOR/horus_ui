@@ -29,7 +29,7 @@
 <main class="main">
 
 	<h1>Horus UI API reference</h1>
-	<p class="lead">An immediate-mode graphical user interface library for C++. This page is the index of the whole public API in <code>include/horus.h</code>.</p>
+	<p class="lead">An immediate-mode graphical user interface library for C++. This page indexes the core public API in <code>include/horus.h</code>; some backends add their own functions in headers under <code>backends/</code>.</p>
 
 	<h2>What is Horus UI?</h2>
 	<p>
@@ -111,13 +111,13 @@ HTheme theme = <span class="k">hui</span>::<span class="k">loadThemeFromJson</sp
 
 	<h2>Conventions</h2>
 	<ul>
-		<li>All public functions are in the <code>hui</code> namespace, in <code class="file">include/horus.h</code>.</li>
+		<li>Core public functions are in the <code>hui</code> namespace, in <code class="file">include/horus.h</code>; backend headers may add more.</li>
 		<li>Opaque handles (<code>HTheme</code>, <code>HImage</code>, <code>HFont</code>&hellip;) are pointers kept by the library.</li>
-		<li>Widgets take a <code>const char* id</code> or generate ids from <code>setLabelAndId</code>; ids keep per-widget persistent state.</li>
+		<li>Widgets take a <code>const char* id</code>, which keeps per-widget persistent state. A <code>##</code> suffix separates a visible label from the id, while <code>###</code> forces the id and hides the label.</li>
 		<li>Widget functions that can change a value return <code>true</code> when the change happened.</li>
 		<li>Most widget names have <code>Begin/End</code> pairs so content can be drawn between them.</li>
 		<li>Colors are <code>Color</code> floats (0..1) convertible to packed <code>Rgba32</code>.</li>
-		<li>Layout works in <em>unscaled</em> pixels; the global <code>scaleSet</code> scales rendering.</li>
+		<li>The global <code>scaleSet</code> scales widget sizes, text and rendering; check individual function docs for values reported in unscaled coordinates.</li>
 	</ul>
 
 	<h2>More documentation</h2>

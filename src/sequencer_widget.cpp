@@ -1368,7 +1368,7 @@ bool sequencer(const char* id, SequencerState* state, f32 height)
 	ctx->id = genId(id);
 	WidgetId sequencerId = ctx->id;
 
-	addWidget(height);
+	addWidget(height, false);
 	widgetSetFocusable();
 
 	ctx->widget.visible = true;

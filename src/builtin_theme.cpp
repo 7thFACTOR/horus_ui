@@ -254,9 +254,9 @@ HTheme createBuiltinTheme(u32 atlasTextureSize)
 	drawAACircle(imgGrip, 12, 11, 2, 0, true, Color::white);
 
 	// the axis icons of the vector editor, embedded so the builtin theme matches the json themes
-	Image* imgXAxis = createImageFromPixels(theme, "flat/xaxis", xaxisPixels, 22, 22);
-	Image* imgYAxis = createImageFromPixels(theme, "flat/yaxis", yaxisPixels, 22, 22);
-	Image* imgZAxis = createImageFromPixels(theme, "flat/zaxis", zaxisPixels, 22, 22);
+	Image* imgXAxis = createImageFromPixels(theme, "flat/xaxis", xaxisPixels, 11, 22);
+	Image* imgYAxis = createImageFromPixels(theme, "flat/yaxis", yaxisPixels, 11, 22);
+	Image* imgZAxis = createImageFromPixels(theme, "flat/zaxis", zaxisPixels, 11, 22);
 
 	addUserElementImage(theme, "axisBoxXImage", imgXAxis);
 	addUserElementImage(theme, "axisBoxYImage", imgYAxis);
@@ -548,6 +548,8 @@ HTheme createBuiltinTheme(u32 atlasTextureSize)
 
 	setSize(WidgetElementId::WindowBody, 0, 0, 0);
 	setElementColors(WidgetElementId::WindowBody, Color::fromU8(25, 30, 35), Color::fromU8(25, 30, 35), Color::fromU8(25, 30, 35), Color::fromU8(25, 30, 35), Color::fromU8(25, 30, 35));
+	HUI_DEFAULT_STYLE(WindowBody).cachedFloatParameters["paddingX"] = 5;
+	HUI_DEFAULT_STYLE(WindowBody).cachedFloatParameters["paddingY"] = 5;
 
 	// lists sit darker than the window body so they read as an inset
 	setElementColors(WidgetElementId::ScrollViewBody, Color::fromU8(15, 18, 22), Color::fromU8(15, 18, 22), Color::fromU8(15, 18, 22), Color::fromU8(15, 18, 22), Color::fromU8(15, 18, 22));
@@ -585,8 +587,6 @@ HTheme createBuiltinTheme(u32 atlasTextureSize)
 	HUI_DEFAULT_STYLE(TabBodyActive).states[(u32)WidgetStateType::Normal].textColor = Color::fromU8(196, 196, 196);
 	HUI_DEFAULT_STYLE(TabBodyInactive).states[(u32)WidgetStateType::Normal].textColor = Color::fromU8(150, 150, 160);
 
-	theme->userSettings["sameLineHeight"] = "22";
-	
 	theme->build();
 
 	return (HTheme)theme;

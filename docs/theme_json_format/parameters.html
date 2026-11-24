@@ -73,7 +73,7 @@
 				<td><code>paddingX</code>, <code>paddingY</code></td>
 				<td><code>windowBody</code>, <code>tabBodyActive</code>, <code>tabBodyInactive</code></td>
 				<td>float</td>
-				<td><code>10</code> / <code>10</code></td>
+				<td><code>5</code> / <code>5</code></td>
 				<td>Inner padding between the 9-slice border and content.</td>
 			</tr>
 			<tr>
@@ -143,8 +143,8 @@
 				<td><code>rowHeight</code></td>
 				<td><code>tableBody</code></td>
 				<td>float</td>
-				<td><code>25</code></td>
-				<td>Default table row height when a column does not impose its own.</td>
+				<td><code>Settings::lineHeight</code></td>
+				<td>Default table row height when a column does not impose its own. Falls back to <code>25</code> when <code>Settings::lineHeight</code> is <code>0</code>.</td>
 			</tr>
 			<tr>
 				<td><code>rowAltBgColor0</code>, <code>rowAltBgColor1</code></td>
@@ -204,12 +204,6 @@
 		</thead>
 		<tbody>
 			<tr>
-				<td><code>sameLineHeight</code></td>
-				<td>Host application</td>
-				<td>Reference line height, in pixels, used to vertically center widgets placed on the same line
-				(<code>"22"</code> in all shipped themes).</td>
-			</tr>
-			<tr>
 				<td><code>dockPreviewNativeWindowsColorTint</code></td>
 				<td><code>docking.cpp</code></td>
 				<td>Color string tinting the dock preview previewed as a native OS window overlay.</td>
@@ -225,7 +219,7 @@
 
 	<p>Any setting can be read at runtime, in C++:</p>
 
-<pre><code><span class="k">const char</span>* h = <span class="k">hui</span>::themeGetUserSetting(<span class="k">hui</span>::themeGet(), <span class="s">"sameLineHeight"</span>);  <span class="c">// "22"</span></code></pre>
+<pre><code><span class="k">const char</span>* h = <span class="k">hui</span>::themeGetUserSetting(<span class="k">hui</span>::themeGet(), <span class="s">"dockPreviewNativeWindowsColorTint"</span>);  <span class="c">// "200 200 200 255"</span></code></pre>
 
 	<div class="footer">
 		Generated from the Horus UI codebase &mdash; <code>src/*_widget.cpp</code>, <code>src/table_widget.cpp</code>,

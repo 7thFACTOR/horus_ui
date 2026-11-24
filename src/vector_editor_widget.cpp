@@ -38,7 +38,8 @@ static bool vecEditorInternal(f64& x, f64& y, f64& z, f64 scrollStep, bool useZ,
 	for (u32 i = 0; i < axisCount; i++)
 		iconsWidthPx += ((Image*)ctx->theme->userElements[vecEditorAxisImages[i]]->normalState().image)->width * ctx->scale;
 
-	f32 spacingsWidth = ((f32)axisCount * 2.0f - 1.0f) * spacing;
+	// only the gaps between axes use spacing, each axis icon is glued to its edit
+	f32 spacingsWidth = ((f32)axisCount - 1.0f) * spacing;
 
 	f32 inputWidthPx = std::max((rowWidthPx - iconsWidthPx - spacingsWidth) / (f32)axisCount, 2.0f);
 	f32 inputWidthUnscaled = inputWidthPx / ctx->scale;
@@ -57,7 +58,7 @@ static bool vecEditorInternal(f64& x, f64& y, f64& z, f64 scrollStep, bool useZ,
 	for (u32 i = 0; i < axisCount; i++)
 	{
 		if (i > 0)
-			hui::sameLine();
+			hui::sameLine(-ctx->sameLine.spacing, 0);
 
 		const char* imgName = vecEditorAxisImages[i];
 		const char* inputId = (i == 0) ? "axisEditX" : (i == 1) ? "axisEditY" : "axisEditZ";
@@ -77,16 +78,27 @@ static bool vecEditorInternal(f64& x, f64& y, f64& z, f64 scrollStep, bool useZ,
 			snprintf(strAxis, VectorEditorState::maxStrSize, fmt, *val);
 
 		auto elem = ctx->theme->userElements[imgName];
+		bool imageWasSameLine = ctx->sameLine.enabled;
+		f32 imageSpacing = ctx->sameLine.nextSpacing * ctx->scale;
 
 		hui::image(elem->normalState().image, vecEditorAxisIconHeight, hui::HAlignType::Left,
 			hui::VAlignType::Center, hui::ImageFitType::None);
 		WidgetId imageWidgetId = ctx->id;
 		bool imageHovered = hui::widgetIsHovered();
 		bool imagePressed = hui::widgetIsPressed();
-		hui::sameLine();
+
+		// cancel the spacing applied after the icon, so it is glued to its edit
+		if (imageWasSameLine)
+			ctx->position.x -= imageSpacing;
+
+		hui::sameLine(-ctx->sameLine.spacing, 0);
 		hui::widgetSetNextWidth(inputWidthUnscaled);
 		auto tiFlags = has(flags, VectorEditorFlags::AutoSelectAll) ? TextInputFlags::AutoSelectAll : TextInputFlags::None;
 		modified = hui::textInput(inputId, strAxis, VectorEditorState::maxStrSize, tiFlags, hint) || modified;
+
+		// keep the default spacing between axis groups and after the last edit,
+		// since the icon is glued to its edit
+		ctx->position.x += spacing;
 
 		if (indeterminateAxis && !editingIndeterminate && ctx->widget.focused)
 		{

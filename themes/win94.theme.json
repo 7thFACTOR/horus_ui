@@ -94,7 +94,6 @@
         }
     },
 "settings": {
-        "sameLineHeight": "22",
         "dockPreviewNativeWindowsColorTint": "192 192 208 255",
         "dockPreviewInsideWindowsColorTint": "160 160 180 150"
     },
@@ -1321,8 +1320,8 @@
         },
         "window": {
             "windowBody": {
-                "paddingX": 10,
-                "paddingY": 10,
+                "paddingX": "5",
+                "paddingY": "5",
                 "normal": {
                     "image": "win94/window_body",
                     "border": 2,

@@ -134,7 +134,7 @@ bool colorPicker(const char* id, Color* inOutColor, ColorPickerFlags flags, cons
 	auto pickerId = ctx->id;
 
 	idPush(id);
-	addWidget(height);
+	addWidget(height, false);
 	buttonBehavior();
 
 	if (ctx->colorPickerState.currentEditingId == pickerId)
@@ -669,7 +669,7 @@ bool colorPicker(const char* id, Color* inOutColor, ColorPickerFlags flags, cons
 			ctx->setLabelAndId(swatchId);
 			ctx->widget.customWidth = swatchSize;
 			ctx->widget.hasCustomWidth = true;
-			addWidget(btnH);
+			addWidget(btnH, false);
 			buttonBehavior();
 
 			ctx->renderer.cmdSetColor(defaultPalette[i]);
@@ -706,7 +706,7 @@ bool colorPicker(const char* id, Color* inOutColor, ColorPickerFlags flags, cons
 				ctx->setLabelAndId(swatchId);
 				ctx->widget.customWidth = swatchSize;
 				ctx->widget.hasCustomWidth = true;
-				addWidget(btnH);
+				addWidget(btnH, false);
 				buttonBehavior();
 
 				ctx->renderer.cmdSetColor(customColors[i]);
@@ -787,7 +787,7 @@ bool colorPickerPopup(const char* id, Color* inOutColor, ColorPickerFlags flags,
 
 	ctx->widget.customWidth = swatchHeight * 3.0f;
 	ctx->widget.hasCustomWidth = true;
-	addWidget(swatchHeight);
+	addWidget(swatchHeight, false);
 	buttonBehavior();
 
 	if (ctx->widget.visible)

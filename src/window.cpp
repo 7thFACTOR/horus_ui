@@ -216,8 +216,8 @@ bool windowBegin(const char* id, const char* title, Rect* initialRect, HImage im
 	auto style = ctx->theme->getElement(WidgetElementId::WindowBody).currentStyle;
 	
 	Point padding = {
-		style->getParameter("paddingX", 10),
-		style->getParameter("paddingY", 10) };
+		style->getParameter("paddingX", 5),
+		style->getParameter("paddingY", 5) };
 
 	if (!!(flags & WindowFlags::NoPadding))
 	{

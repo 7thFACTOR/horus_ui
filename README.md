@@ -48,22 +48,27 @@ For purists: the library was 80% done pre-AI, work done for over 5 years before.
   <img src="docs/images/demo11.png" width="60%" />
 </p>
 
+## SETUP (first checkout)
+- Windows: ```setup.cmd```
+- Linux: ```sh ./setup.sh```
+
 ## PREREQUISITES
 **Windows:**
 	Microsoft Visual Studio 2022
 
 **Linux:**
-g++
+g++ (C++20)
 
 GTK3 dev, needed for the nativefiledialog lib, use:
 		```sudo apt-get install libgtk-3-dev```
 
-GLU/GLUT dev, needed by GLEW, use:
-		```sudo apt-get install libglu1-mesa-dev freeglut3-dev mesa-common-dev```
+X11/Xext/Xi and OpenGL development headers are needed, use:
+		```sudo apt-get install libx11-dev libxi-dev libxext-dev libgl1-mesa-dev```
 
 ## BUILDING
 **Windows:**
-- Execute: ```generate_examples.bat```
+- Execute: ```generate_examples.cmd```
+- Or execute ```build_examples.cmd``` to generate and build in one step
 - Open and compile: ```build/horus_examples.sln```
 - Run generated files from ```./bin``` folder
 
@@ -75,15 +80,18 @@ GLU/GLUT dev, needed by GLEW, use:
 ## FEATURES
 - Immediate mode GUI, imgui (no explicit state kept per widget, user provides the state)
 - Docking system with floating windows being OS native
-- UTF8 text support and font glpyh rendering (baking into atlas)
-- Frame throttling, it can redraw the UI only when needed, useful for non-gaming applications where continuous rendering not needed
-- DPI support, scaling of the whole UI elements, useful for high DPI screens
+- Docking layout save/load, in-memory state plus a JSON file serialization backend
+- UTF8 text support and font glyph rendering (baking into atlas)
+- Frame throttling, it can redraw the UI only when needed, useful for non-gaming applications where continuous rendering not needed; hasNothingToDo()/forceRepaint() for idle apps
+- App-controlled UI scale (scaleSet/scaleGet) with live theme rebuild, plus per-monitor DPI-aware example apps on Windows
 - Fully customizable through themes specified in a JSON file with 9-cell resizable elements and PNG images
 - Theme hot-reloading possible (great for theme creation)
 - Widgets can have multiple full styles in the same theme (example: different button shapes/skins)
 - Font atlas with multiple fonts and font sizes
-- Widgets: text input (with hint text), tooltip, box, popup, messagebox, progress, button, icon button, dropdown, menu, context menu, tab, panel, radio, check, slider, toolbar etc.
+- Widgets: text input and multiline text input (with hint text), tooltip, box, popup, messagebox, progress, button, icon button, dropdown, menu, context menu, tab, tree node, table, radio, check, slider etc.
+- Dockable overlay toolbars with insertion hints, collapse, floating position and grid alignment
 - Compound Widgets: color picker, vector (max 4 components) editor, object reference editor (with dragdrop support)
+- Animation editor and sequencer widgets with keyframe/segment editing, snapping and playback
 - Widgets body/text color tinting override
 - Virtual list view support (huge number of items)
 - Automatic vertical layouting of widgets (no need to position them by hand)
@@ -94,7 +102,7 @@ GLU/GLUT dev, needed by GLEW, use:
 - Various example backends for rendering and window/input
 - Custom backends can be implemented
 - Custom user widgets API
-- 2D primitive drawing, lines, polylines, splines (hermite, bezier, centripetal catmull-rom, natural cubic, linear, basis), elipses, rectangles, with thickness
+- 2D primitive drawing, lines, polylines, splines (hermite, bezier, centripetal catmull-rom, natural cubic, linear, basis), ellipses, rectangles, with thickness
 - Software AA (alpha skirting) for the lines
 - User viewport widget (rendering your scene/document view with the current rendering API)
 - Custom mouse cursor API
@@ -103,10 +111,10 @@ GLU/GLUT dev, needed by GLEW, use:
 - C-like API (with simple C++ features)
 
 ## ROADMAP
-- Basic Undo/Redo system
+- General-purpose undo/redo system (currently only multiline text input has undo/redo)
 - Keyboard shortcuts system
 - OSX support
-- Better unicode input (show IME suggestion box)
+- Custom in-UI IME candidate/suggestion box (composition preview and OS candidate window are already supported)
 - DPI theme elements based on current UI scale, choose the proper element bitmap size
 - Customizable Object Inspector
 - Customizable Node Editor
@@ -268,5 +276,7 @@ int main()
     return 0;
 }
 ```
+
+The example apps also call ```horusExamples::makeProcessDpiAware()``` from ```examples/common/dpi_awareness.h``` at startup and embed a per-monitor DPI manifest, so they render 1:1 in physical pixels on high-DPI Windows displays.
 
 ![HUI](docs/images/hui_sample_code.gif)

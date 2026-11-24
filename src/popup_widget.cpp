@@ -138,7 +138,7 @@ void popupBegin(
 	ctx->layout.savedPosition = ctx->position;
 	
 	auto posBeforeHitWidget = ctx->position;
-	addWidget(0);
+	addWidget(0, false);
 	ctx->position = posBeforeHitWidget;
 	ctx->renderer.pushClipRect(ctx->renderer.getWindowRect(), false);
 

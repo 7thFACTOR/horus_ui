@@ -37,7 +37,7 @@ bool circularSliderFloat(const char* label, f32* value, f32 minVal, f32 maxVal, 
 	}
 
 	// getMetrics().height is already scaled with the theme, so normalize it here
-	addWidget(bodyElem.normalState().height + padding.y * 2.0f + labelSpace);
+	addWidget(bodyElem.normalState().height + padding.y * 2.0f + labelSpace, false);
 	buttonBehavior();
 
 	if (!ctx->widget.disabled && widgetIsHovered() && ctx->event.type == InputEvent::Type::MouseDown)

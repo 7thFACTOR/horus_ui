@@ -1565,7 +1565,7 @@ bool animationEditor(const char* id, AnimationEditorState* state, f32 height)
 	ctx->id = genId(id);
 	WidgetId animationEditorId = ctx->id;
 
-	addWidget(height);
+	addWidget(height, false);
 	widgetSetFocusable();
 
 	ctx->widget.visible = true;

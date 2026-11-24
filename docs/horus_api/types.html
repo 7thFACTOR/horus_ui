@@ -77,6 +77,14 @@
 
 	<h2>Callbacks</h2>
 	<div class="member">
+		<div class="prototype"><code><span class="kw">struct</span> <span class="fn">CustomFileDialogEntry</span> { <span class="kw">std::string</span> name; <span class="kw">bool</span> isDirectory; };</code></div>
+		<p class="brief">A file or folder entry filled by <code>CustomFileDialogListCallback</code> for the <a href="rendering.html#customfiledialog">custom file dialog</a>.</p>
+		<ul class="params">
+			<li><span class="pname">name</span> the entry name</li>
+			<li><span class="pname">isDirectory</span> true when the entry is a folder</li>
+		</ul>
+	</div>
+	<div class="member">
 		<div class="prototype"><code><span class="kw">typedef</span> <span class="kw">void</span> (*<span class="fn">RenderCallback</span>)(<span class="kw">HNativeWindow</span> wnd);</code></div>
 		<p class="brief">Renders custom content when the UI command list is submitted.</p>
 		<ul class="params"><li><span class="pname">wnd</span> the native window being rendered to</li></ul>
@@ -115,8 +123,9 @@
 		<p class="brief">A 2D point with a full set of arithmetic operators, <code>dot</code>, <code>normalize</code>, <code>getLength</code>, <code>isOnLine</code>, etc.</p>
 	</div>
 	<div class="member">
-		<div class="prototype"><code><span class="kw">struct</span> <span class="fn">SplineControlPoint</span> { <span class="kw">Point</span> leftTangent, center, rightTangent; <span class="kw">bool</span> isLine; <span class="kw">NodeType</span> type; };</code></div>
+		<div class="prototype"><code><span class="kw">struct</span> <span class="fn">SplineControlPoint</span> { <span class="kw">Point</span> center, leftTangent, rightTangent; <span class="kw">bool</span> isLine; <span class="kw">NodeType</span> type; };</code></div>
 		<p class="brief">A spline control point with optional tangents, used by <code>renderDrawSpline</code>.</p>
+		<p class="note"><code>SplineControlPoint::NodeType</code>: <code>Cusp, Smooth, Symmetrical</code>. Defaults to <code>Symmetrical</code>.</p>
 	</div>
 	<div class="member">
 		<div class="prototype"><code><span class="kw">struct</span> <span class="fn">Rect</span> { <span class="kw">f32</span> x, y, width, height; };</code></div>
@@ -139,8 +148,10 @@
 	<div class="member">
 		<div class="prototype"><code><span class="kw">struct</span> <span class="fn">InputEvent</span></code></div>
 		<p class="brief">An input event pushed to the input queue by an input provider and read with <code>inputEventGet</code>.</p>
-		<p class="note"><code>InputEvent::Type</code>: <code>None, MouseMove, MouseDown, MouseUp, MouseWheel, Key, Text, WindowMoved, WindowResized, WindowGotFocus, WindowLostFocus, WindowMouseEnter, WindowMouseLeave, WindowClose, OsDragDrop</code>.</p>
+		<p class="note"><code>InputEvent::Type</code>: <code>None, MouseMove, MouseDown, MouseUp, MouseWheel, Key, Text, TextEditing, WindowMoved, WindowResized, WindowGotFocus, WindowLostFocus, WindowMouseEnter, WindowMouseLeave, WindowClose, OsDragDrop</code>.</p>
 		<p class="note">Union payload fields <code>mouse</code> (<code>MouseData</code>), <code>key</code> (<code>KeyData</code>), <code>text</code> (<code>TextData</code>), <code>drop</code> (<code>OsDragDropData</code>) are valid per the type. The affected <code>window</code> (HNativeWindow) is also stored.</p>
+		<p class="note"><code>MouseData</code>: <code>button</code>, <code>clickCount</code>, <code>point</code>, <code>wheel</code>, <code>wheelDelta</code>, <code>modifiers</code>. <code>KeyData</code>: <code>down</code>, <code>code</code>, <code>modifiers</code>.</p>
+		<p class="note"><code>TextData</code>: <code>text</code> plus <code>start</code> and <code>length</code> byte offsets used for IME composition (<code>TextEditing</code>) events. <code>OsDragDropData</code>: <code>type</code> (<code>None, DropFile, DropText, DropBegin, DropComplete</code>), <code>timestamp</code>, <code>filename</code>, <code>window</code>.</p>
 	</div>
 
 	<h2>Render types</h2>
@@ -151,7 +162,7 @@
 	<div class="member">
 		<div class="prototype"><code><span class="kw">struct</span> <span class="fn">RenderBatch</span></code></div>
 		<p class="brief">A single draw call over a vertex range; the renderer splits the UI into batches per texture and state.</p>
-		<p class="note"><code>RenderBatch::PrimitiveType</code>: <code>TriangleList, TriangleStrip, TriangleFan</code>. Fields: <code>texture</code>, <code>startVertexIndex</code>, <code>vertexCount</code>.</p>
+		<p class="note"><code>RenderBatch::PrimitiveType</code>: <code>TriangleList, TriangleStrip, TriangleFan</code>. Fields: <code>primitiveType</code>, <code>texture</code>, <code>startVertexIndex</code>, <code>vertexCount</code>.</p>
 	</div>
 	<div class="member">
 		<div class="prototype"><code><span class="kw">struct</span> <span class="fn">ImageData</span> { <span class="kw">Rgba32</span>* pixels; <span class="kw">u32</span> width; <span class="kw">u32</span> height; };</code></div>
@@ -191,7 +202,7 @@
 	</div>
 	<div class="member">
 		<div class="prototype"><code><span class="kw">struct</span> <span class="fn">OverlayToolbarSettings</span></code></div>
-		<p class="brief">Overlay toolbar geometry and color settings, available as <code>Settings::overlayToolbars</code>: default thickness, element padding and spacing, icon button size, grip size, drag start distance, dock preview color and floating grid size.</p>
+		<p class="brief">Overlay toolbar geometry and color settings, available as <code>Settings::overlayToolbars</code>: default thickness, element padding and spacing, icon button size and grip size, round-rect border, insertion hint thickness and color, background and border colors, button pressed color, drag start distance, dock preview color and floating grid size.</p>
 	</div>
 	<div class="member">
 		<div class="prototype"><code><span class="kw">struct</span> <span class="fn">VirtualScrollInfo</span></code></div>
@@ -255,7 +266,15 @@
 	<h2>Settings</h2>
 	<div class="member">
 		<div class="prototype"><code><span class="kw">struct</span> <span class="fn">Settings</span></code></div>
-		<p class="brief">The per-context global settings, passed to <code>contextCreate</code> and available through <code>contextGetSettings</code>: the <code>services</code> platform callbacks, <code>deltaTime</code> for the built in animations, default layout, widget and scroll view padding and sizes, text caret and buffer limits, <code>sliderDragDirection</code> and drag start distances, line anti-aliasing, docking (<code>dockingStyle</code>, node spacing, sizes and indicators), custom file dialog sizes, FPS throttling and the per-widget groups <code>overlayToolbars</code>, <code>animationEditor</code> and <code>sequencer</code>.</p>
+		<p class="brief">The per-context global settings, passed to <code>contextCreate</code> and available through <code>contextGetSettings</code>: the <code>services</code> platform callbacks, <code>deltaTime</code> for the built in animations, default layout, widget and scroll view padding and sizes, <code>lineHeight</code>, text caret and buffer limits, <code>sliderDragDirection</code> and drag start distances, line anti-aliasing, docking (<code>dockingStyle</code>, node spacing, sizes and indicators), custom file dialog and color picker popup widths, FPS throttling and the per-widget groups <code>overlayToolbars</code>, <code>animationEditor</code> and <code>sequencer</code>.</p>
+	</div>
+
+	<h2>Services</h2>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">struct</span> <span class="fn">Services</span></code></div>
+		<p class="brief">The function pointer callbacks used to connect the library to the OS, graphics and font backends; passed to <code>contextCreate</code> through <code>Settings::services</code>. The built-in backends in <code>backends/</code> fill these in for you.</p>
+		<p class="note">Callback groups: input and native windows (including <code>createWindow</code>, <code>setCurrentWindow</code>, mouse, clipboard and display info), graphics (<code>getGfxApiName</code>, <code>setViewport</code>, <code>clearBackbuffer</code>, <code>draw</code>), rect packing (<code>packRects</code>), fonts (<code>loadFont</code>, <code>loadFontFromMemory</code>, <code>freeFont</code>, <code>getFontKerning</code>, <code>rasterizeFontGlyph</code>), text encoding (<code>utf8To32</code>, <code>utf32To8</code>, <code>utf32To8NoAlloc</code>, <code>utf8Length</code>) and file I/O (<code>open</code>, <code>read</code>, <code>write</code>, <code>close</code>, <code>seek</code>, <code>tell</code>).</p>
+		<p class="note">Validation helpers: <code>allInputFunctionsSet</code>, <code>allGfxFunctionsSet</code>, <code>allFontFunctionsSet</code>, <code>allTextEncodingFunctionsSet</code>, <code>allFileIoFunctionsSet</code> and <code>allFunctionsSet</code>.</p>
 	</div>
 
 	<h2>Enums</h2>

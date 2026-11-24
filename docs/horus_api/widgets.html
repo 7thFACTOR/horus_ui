@@ -18,7 +18,7 @@
 		<a href="index.html">Overview</a>
 		<a href="types.html">Types</a>
 		<a href="core.html">Core</a>
-		<a href="windows.html">Windowing & toolbars</a>
+		<a href="windows.html">Windowing &amp; toolbars</a>
 		<a href="theme.html">Themes & fonts</a>
 		<a href="layout.html">Layout & tables</a>
 		<a href="widgets.html" class="active">Widgets</a>
@@ -169,6 +169,11 @@
 			<li><span class="pname">passwordChar</span> the password mask character</li>
 		</ul>
 		<p class="returns">Returns true if the text was modified.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">textInputStartEdit</span>(<span class="prm">const char*</span> id)</code></div>
+		<p class="brief">Start editing a text input by id, as if it had just been clicked.</p>
+		<ul class="params"><li><span class="pname">id</span> the widget id of the text input to edit</li></ul>
 	</div>
 	<div class="member">
 		<div class="prototype"><code><span class="ret">bool</span> <span class="fn">textInputMultiline</span>(<span class="prm">const char*</span> id, <span class="prm">char*</span> text, <span class="prm">u32</span> maxTextSize, <span class="prm">u32</span> visibleLines = 10, <span class="prm">MultilineTextInputFlags</span> flags = MultilineTextInputFlags::None, <span class="prm">const KeywordInfo*</span> keywords = nullptr, <span class="prm">u32</span> keywordCount = 0, <span class="prm">const RangeHighlight*</span> rangeHighlights = nullptr, <span class="prm">u32</span> rangeHighlightCount = 0)</code></div>
@@ -397,7 +402,7 @@
 	</div>
 	<div class="member">
 		<div class="prototype"><code><span class="kw">void</span> <span class="fn">widgetSetNextHeight</span>(<span class="prm">f32</span> height)</code></div>
-		<p class="brief">Set the height of the next widget drawn, overriding the default widget height. The value is the total widget height including padding.</p>
+		<p class="brief">Set the height of the next widget drawn, overriding <code>Settings::lineHeight</code> and the default widget height. The value is the total widget height including padding.</p>
 	</div>
 
 	<h2>Viewport</h2>

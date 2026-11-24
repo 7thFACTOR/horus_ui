@@ -28,7 +28,6 @@
 
 	"settings":
 	{
-		"sameLineHeight": "22",
 		"dockPreviewNativeWindowsColorTint": "200 200 200 255",
 		"dockPreviewInsideWindowsColorTint": "0 150 150 150"
 	},
@@ -513,8 +512,8 @@
 		{
 			"windowBody":
 			{
-				"paddingX" : 10,
-				"paddingY" : 10,
+				"paddingX": "5",
+				"paddingY": "5",
 				"normal": { "image": "flat/pixel", "border": 0, "color": "25 30 35 255" }
 			},
 			"windowHorizontalSplitter":

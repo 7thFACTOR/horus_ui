@@ -18,7 +18,7 @@
 		<a href="index.html">Overview</a>
 		<a href="types.html">Types</a>
 		<a href="core.html">Core</a>
-		<a href="windows.html">Windowing & toolbars</a>
+		<a href="windows.html">Windowing &amp; toolbars</a>
 		<a href="theme.html">Themes & fonts</a>
 		<a href="layout.html">Layout & tables</a>
 		<a href="widgets.html">Widgets</a>
@@ -80,6 +80,22 @@
 	<div class="member">
 		<div class="prototype"><code><span class="ret">Point</span> <span class="fn">renderGetTextSize</span>(<span class="prm">const char*</span> text)</code></div>
 		<p class="brief">Return the pixel size (width, height) of the given text with the current font.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="ret">bool</span> <span class="fn">viewportImageSizeFit</span>(<span class="prm">f32</span> imageWidth, <span class="prm">f32</span> imageHeight, <span class="prm">f32</span> viewWidth, <span class="prm">f32</span> viewHeight, <span class="prm">f32&amp;</span> newWidth, <span class="prm">f32&amp;</span> newHeight, <span class="prm">bool</span> ignoreHeight, <span class="prm">bool</span> ignoreWidth)</code></div>
+		<p class="brief">Fit an image inside a view rectangle while keeping its aspect ratio.</p>
+		<ul class="params">
+			<li><span class="pname">imageWidth</span> the source image width in pixels</li>
+			<li><span class="pname">imageHeight</span> the source image height in pixels</li>
+			<li><span class="pname">viewWidth</span> the maximum available width in pixels</li>
+			<li><span class="pname">viewHeight</span> the maximum available height in pixels</li>
+			<li><span class="pname">newWidth</span> receives the fitted width</li>
+			<li><span class="pname">newHeight</span> receives the fitted height</li>
+			<li><span class="pname">ignoreHeight</span> when true, the view height does not constrain the result</li>
+			<li><span class="pname">ignoreWidth</span> when true, the view width does not constrain the result</li>
+		</ul>
+		<p class="note">The image is only shrunk when it does not fit; it is never enlarged.</p>
+		<p class="returns">Returns true if the image had to be resized to fit.</p>
 	</div>
 	<div class="member">
 		<div class="prototype"><code><span class="kw">void</span> <span class="fn">renderDrawImage</span>(<span class="prm">HImage</span> image, <span class="prm">const Point&</span> position, <span class="prm">f32</span> scale)</code></div>
@@ -186,7 +202,7 @@
 
 	<h2 id="customfiledialog">Complex / combined widgets</h2>
 	<div class="member">
-		<div class="prototype"><code><span class="ret">bool</span> <span class="fn">colorPicker</span>(<span class="prm">const char*</span> id, <span class="prm">Color*</span> inOutColor, <span class="prm">ColorPickerFlags</span> flags = 0, <span class="prm">const Color*</span> oldColor = nullptr, <span class="prm">Color*</span> customColors = nullptr, <span class="prm">u32*</span> customColorCount = nullptr, <span class="prm">u32</span> maxCustomColors = 0)</code></div>
+		<div class="prototype"><code><span class="ret">bool</span> <span class="fn">colorPicker</span>(<span class="prm">const char*</span> id, <span class="prm">Color*</span> inOutColor, <span class="prm">ColorPickerFlags</span> flags = (ColorPickerFlags)0, <span class="prm">const Color*</span> oldColor = nullptr, <span class="prm">Color*</span> customColors = nullptr, <span class="prm">u32*</span> customColorCount = nullptr, <span class="prm">u32</span> maxCustomColors = 0)</code></div>
 		<p class="brief">Draw a color picker popup widget.</p>
 		<ul class="params">
 			<li><span class="pname">id</span> unique widget id</li>
@@ -200,7 +216,7 @@
 		<p class="returns">Returns true if the color was changed.</p>
 	</div>
 	<div class="member">
-		<div class="prototype"><code><span class="ret">bool</span> <span class="fn">colorPickerPopup</span>(<span class="prm">const char*</span> id, <span class="prm">Color*</span> inOutColor, <span class="prm">ColorPickerFlags</span> flags = 0, <span class="prm">const Color*</span> oldColor = nullptr, <span class="prm">Color*</span> customColors = nullptr, <span class="prm">u32*</span> customColorCount = nullptr, <span class="prm">u32</span> maxCustomColors = 0)</code></div>
+		<div class="prototype"><code><span class="ret">bool</span> <span class="fn">colorPickerPopup</span>(<span class="prm">const char*</span> id, <span class="prm">Color*</span> inOutColor, <span class="prm">ColorPickerFlags</span> flags = (ColorPickerFlags)0, <span class="prm">const Color*</span> oldColor = nullptr, <span class="prm">Color*</span> customColors = nullptr, <span class="prm">u32*</span> customColorCount = nullptr, <span class="prm">u32</span> maxCustomColors = 0)</code></div>
 		<p class="brief">Draw a color picker popup (a color swatch that opens a full color picker in a popup on click).</p>
 	</div>
 	<div class="member">
@@ -262,7 +278,7 @@
 		<p class="brief">Convert a color to a hex string like "#RRGGBB" (or with alpha "#RRGGBBAA" when not fully opaque).</p>
 	</div>
 	<div class="member">
-		<div class="prototype"><code><span class="ret">std::string</span> <span class="fn">colorIntToHex</span>(<span class="prm">u32</span> color)</code></div>
+		<div class="prototype"><code><span class="ret">std::string</span> <span class="fn">colorIntToHex</span>(<span class="prm">const u32</span> color)</code></div>
 		<p class="brief">Convert an RGBA color value to a hex string like "#RRGGBB" (or with alpha "#RRGGBBAA" when not fully opaque).</p>
 	</div>
 	<div class="member">

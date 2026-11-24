@@ -3,7 +3,8 @@
 
 namespace hui
 {
-void addWidget(f32 height);
+/// Use the global line height unless the widget has its own explicit or derived height
+void addWidget(f32 height, bool useLineHeight = true);
 WidgetId genId(const char* text);
 WidgetId genId(u32 id);
 WidgetId genId(void* ptr);

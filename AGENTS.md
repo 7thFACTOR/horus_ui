@@ -1,10 +1,11 @@
 # General
 - never build/compile the code, regardless of any condition, user will
 - never run the built exe
-- acp command means add commit and push to github
-- reb command means rebased onto master so master is in sync with dev branch, push after
+- acp = command means add commit and push to github
+- reb = command means rebased onto master so master is in sync with dev branch, push after
 
 # Code Style
+- keep the naming style you see in the code already, when not sure, ask
 - always use CRLF for EOL, convert when you see otherwise in the file you edit
 - empty line between variable declarations and if/for/while/switch etc. conditionals
 - empty line between closing curly brace of a function/scope and the next declaration

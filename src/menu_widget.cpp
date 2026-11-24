@@ -16,7 +16,7 @@ bool menuBarBegin()
 
 	// the bar starts at the current layout position, the placeholder widget must not advance the cursor
 	auto barPos = ctx->position;
-	addWidget(0);
+	addWidget(0, false);
 	ctx->position = barPos;
 
 	ctx->id = genId("__MENUBAR__");
@@ -82,7 +82,7 @@ bool beginMenuInternal(const char* label, SelectableFlags stateFlags, bool conte
 		if (isMenuBarItem && !contextMenu)
 		{
 			f32 prevY = ctx->position.y;
-			addWidget(menuBarItemElemState.height);
+			addWidget(menuBarItemElemState.height, false);
 			ctx->position.y = prevY;
 		}
 
@@ -383,7 +383,7 @@ bool menuItem(const char* label, const char* shortcut, HImage img, SelectableFla
 	bool isChecked = !!(stateFlags & SelectableFlags::Checked);
 
 	ctx->setLabelAndId(label);
-	addWidget(bodyElem.normalState().height);
+	addWidget(bodyElem.normalState().height, false);
 	buttonBehavior(true);
 
 	if (

@@ -14,7 +14,6 @@
 #include <algorithm>
 #include <initializer_list>
 #include <fstream>
-#include <chrono>
 
 #include <json/json.h>
 #include <json/reader.h>
@@ -38,11 +37,10 @@
 static std::vector<std::string> gMaterialIconNames;
 
 // separate from the asset drag type so tree drags never look like asset drops
-static const u32 kSceneTreeDragDropType = 101;
+static const u32 sceneTreeDragDropType = 101;
 
-static const f32 kTreeRenameHoldSeconds = 0.45f;
-static const f32 kTreeDragStartDistance = 4.0f;
-static const f32 kUiScaleSteps[] = { 0.75f, 1.0f, 1.25f, 1.5f, 2.0f };
+static const f32 treeDragStartDistance = 4.0f;
+static const f32 uiScaleSteps[] = { 0.75f, 1.0f, 1.25f, 1.5f, 2.0f };
 
 // a dummy object in the edited scene graph, purely for the example
 struct SceneObject
@@ -121,6 +119,7 @@ struct LevelEditorState
 	SceneObject* selectedObject = nullptr;
 	u32 newObjectCounter = 0;
 	hui::Point treeScroll = 0;
+	hui::Point inspectorScroll = 0;
 	char objectSearch[128] = { 0 };
 
 	std::vector<LogEntry> log;
@@ -172,8 +171,6 @@ struct LevelEditorState
 	SceneObject* treeRenameObject = nullptr;
 	char treeRenameId[64] = { 0 };
 	char treeRenameText[64] = { 0 };
-	std::chrono::steady_clock::time_point treePressTime = {};
-	bool treePressOnLabel = false;
 	bool treeRenameCancelled = false;
 	bool treeRenameJustStarted = false;
 
@@ -354,7 +351,6 @@ static void beginSceneTreeRename(LevelEditorState& state, SceneObject* obj)
 	state.treeDragging = false;
 	state.treeDragObjects.clear();
 	state.treeDropTarget = SceneTreeDropTarget();
-	state.treePressOnLabel = false;
 	state.treeRenameCancelled = false;
 	state.treeRenameJustStarted = true;
 	hui::forceRepaint();
@@ -401,7 +397,6 @@ void deleteObject(LevelEditorState& state, SceneObject* obj)
 		state.treeDragging = false;
 		state.treeDragObjects.clear();
 		state.treeDropTarget = SceneTreeDropTarget();
-		state.treePressOnLabel = false;
 		hui::dragDropEnd();
 		hui::windowReleaseCapture();
 	}
@@ -821,7 +816,7 @@ void drawMainMenu(LevelEditorState& state, bool& exitNow)
 		{
 			char label[16];
 
-			for (f32 step : kUiScaleSteps)
+			for (f32 step : uiScaleSteps)
 			{
 				snprintf(label, sizeof(label), "%.0f%%", step * 100.0f);
 				auto flags = std::fabs(step - state.uiScale) < 0.001f
@@ -1132,19 +1127,19 @@ void drawSceneTreeNode(LevelEditorState& state, SceneObject* obj, u32 depth)
 	hui::sameLine();
 
 	// plain label: a selectable would paint its own body over the themed row
-	// highlight, so selection is handled on the whole row instead. A long LMB
-	// press swaps it for an in-place editor using the same widget id, so the
-	// capture taken on mouse-down is handed straight to the text input.
+	// highlight, so selection is handled on the whole row instead. Clicking the
+	// content of an already-selected row swaps it for an in-place editor using
+	// the same widget id, so the capture taken on mouse-down goes to the text input.
 	hui::Rect labelRect;
 
 	if (state.treeRenameObject == obj)
 	{
 		const hui::InputEvent& renameEv = hui::inputEventGet();
 
+		// esc aborts the rename and keeps the original name
 		if (renameEv.type == hui::InputEvent::Type::Key
 			&& renameEv.key.down
-			&& renameEv.key.code == hui::KeyCode::Esc
-			&& hui::widgetIsFocused())
+			&& renameEv.key.code == hui::KeyCode::Esc)
 		{
 			state.treeRenameCancelled = true;
 		}
@@ -1183,19 +1178,25 @@ void drawSceneTreeNode(LevelEditorState& state, SceneObject* obj, u32 depth)
 		&& ev.type == hui::InputEvent::Type::MouseDown
 		&& ev.mouse.button == hui::MouseButton::Left)
 	{
-		state.selectedObject = obj;
-		state.sceneSelection.clear();
-
-		// start a hierarchy drag from the content part of the row; the icon
-		// gutter on the left keeps its own click behavior
-		if (mousePos.x >= contentX)
+		// clicking anywhere in the content of an already-selected row starts a rename
+		if (rowSelected && mousePos.x >= labelRect.x)
 		{
-			state.treeDragObject = obj;
-			state.treeDragStartMouse = mousePos;
-			state.treeDragging = false;
-			state.treeDragObjects.clear();
-			state.treePressTime = std::chrono::steady_clock::now();
-			state.treePressOnLabel = labelRect.contains(mousePos);
+			beginSceneTreeRename(state, obj);
+		}
+		else
+		{
+			state.selectedObject = obj;
+			state.sceneSelection.clear();
+
+			// start a hierarchy drag from the content part of the row; the icon
+			// gutter on the left keeps its own click behavior
+			if (mousePos.x >= contentX)
+			{
+				state.treeDragObject = obj;
+				state.treeDragStartMouse = mousePos;
+				state.treeDragging = false;
+				state.treeDragObjects.clear();
+			}
 		}
 	}
 
@@ -1267,20 +1268,9 @@ void drawSceneTree(LevelEditorState& state)
 	if (state.treeDragObject)
 	{
 		f32 treeDragDistance = state.treeDragStartMouse.getDistance(treeMouse);
-		f32 holdSeconds = std::chrono::duration<f32>(std::chrono::steady_clock::now() - state.treePressTime).count();
 		bool treeMouseUp = ev.type == hui::InputEvent::Type::MouseUp && ev.mouse.button == hui::MouseButton::Left;
 
-		// a long press that ends on the same spot starts an in-place rename.
-		// it must be handled before the generic release clears the drag state.
-		if (treeMouseUp
-			&& !state.treeDragging
-			&& state.treePressOnLabel
-			&& treeDragDistance < kTreeDragStartDistance
-			&& holdSeconds >= kTreeRenameHoldSeconds)
-		{
-			beginSceneTreeRename(state, state.treeDragObject);
-		}
-		else if (!treeLeftDown
+		if (!treeLeftDown
 			|| treeMouseUp
 			|| ev.type == hui::InputEvent::Type::WindowLostFocus)
 		{
@@ -1299,12 +1289,11 @@ void drawSceneTree(LevelEditorState& state)
 			state.treeDragging = false;
 			state.treeDragObjects.clear();
 			state.treeDropTarget = SceneTreeDropTarget();
-			state.treePressOnLabel = false;
 			hui::forceRepaint();
 		}
 		else if (!state.treeDragging
 			&& !state.treeDragObject->locked
-			&& treeDragDistance >= kTreeDragStartDistance)
+			&& treeDragDistance >= treeDragStartDistance)
 		{
 			state.treeDragging = true;
 			state.treeDragObjects.clear();
@@ -1312,7 +1301,7 @@ void drawSceneTree(LevelEditorState& state)
 
 			// dragDropBegin() clears ctx->widget.captureId, so the capture taken
 			// by the row's label/image widgets cannot leak after the drop.
-			hui::dragDropBegin(kSceneTreeDragDropType, state.treeDragObject);
+			hui::dragDropBegin(sceneTreeDragDropType, state.treeDragObject);
 			hui::windowReleaseCapture();
 		}
 	}
@@ -1389,6 +1378,8 @@ void drawInspector(LevelEditorState& state)
 
 	static const char* meshItems[] = { "None", "Cube", "Sphere", "Cylinder", "Plane", "Custom" };
 
+	hui::scrollViewBegin("##inspectorScroll", hui::layoutGetRemainingHeight(), state.inspectorScroll, hui::Point(0, 0), hui::ScrollViewFlags::NoHorizontalScroll | hui::ScrollViewFlags::NoBorder | hui::ScrollViewFlags::NoPadding);
+
 	// borderless property grid, label and value share one row
 	if (hui::tableBegin("##inspectorProps", 2, 0, hui::TableFlags::Stretch | hui::TableFlags::Resizable | hui::TableFlags::FixedSize))
 	{
@@ -1460,9 +1451,11 @@ void drawInspector(LevelEditorState& state)
 		hui::tableCellPaddingPop();
 		hui::tableEnd();
 	}
+
+	state.inspectorScroll = hui::scrollViewEnd();
 }
 
-static const u32 kAssetDragDropType = 100;
+static const u32 assetDragDropType = 100;
 
 static hui::Point sceneWorldToView(const hui::Rect& vp, f32 zoom, const hui::Point& pan, f32 x, f32 z)
 {
@@ -1702,7 +1695,7 @@ void drawViewport(LevelEditorState& state)
 	hui::renderDrawLine({ center.x, vp.top() }, { center.x, vp.bottom() });
 
 	// drag and drop assets into the scene
-	if (hovered && hui::dragDropGetObjectType() == kAssetDragDropType)
+	if (hovered && hui::dragDropGetObjectType() == assetDragDropType)
 	{
 		u32 assetIndex = (u32)(uintptr_t)hui::dragDropGetObject();
 
@@ -2107,7 +2100,7 @@ void drawAssetBrowser(LevelEditorState& state)
 			}
 
 			if ((strcmp(asset.type, "Mesh") == 0 || strcmp(asset.type, "Prefab") == 0) && hui::dragDropWantsTo())
-				hui::dragDropBegin(kAssetDragDropType, (void*)(uintptr_t)i);
+				hui::dragDropBegin(assetDragDropType, (void*)(uintptr_t)i);
 
 			hui::tooltip(asset.name.c_str());
 
@@ -2157,13 +2150,14 @@ void drawIconBrowser(LevelEditorState& state)
 	if (paneHeight < 60.0f)
 		paneHeight = 60.0f;
 
-	f32 scale = hui::scaleGet();
-	f32 cellWidth = (40.0f + hui::sameLineSpacingGet()) * scale;
-	u32 columns = (u32)(std::max)(1.0f, std::floor((client.width - 8.0f * scale) / cellWidth));
-
 	hui::paddingPush(hui::PaddingType::Layout, 0);
 
 	hui::scrollViewBegin("##iconBrowserScroll", paneHeight, state.iconBrowserScroll, hui::Point(0, 0), hui::ScrollViewFlags::NoHorizontalScroll);
+
+	f32 scale = hui::scaleGet();
+	f32 spacing = hui::sameLineSpacingGet() * scale;
+	f32 cellWidth = 40.0f * scale + spacing;
+	u32 columns = (u32)(std::max)(1.0f, std::floor((hui::layoutGetSize().x + spacing) / cellWidth));
 
 	u32 column = 0;
 
@@ -2256,20 +2250,6 @@ void drawLogWindow(LevelEditorState& state)
 	hui::sameLineGroupEnd();
 
 	hui::line();
-
-	// sticky header table, drawn outside the scroll view so it freezes in place
-	if (hui::tableBegin("##logTableHeader", 2, 0, hui::TableFlags::Borders | hui::TableFlags::Stretch))
-	{
-		hui::tableColumnSetup(0, 80.0f, hui::TableColumnFlags::Fixed);
-		hui::tableColumnSetup(1, 0.0f, hui::TableColumnFlags::Stretch);
-
-		hui::tableStartHeader();
-		hui::label("Type");
-		hui::tableCellNext();
-		hui::label("Message");
-
-		hui::tableEnd();
-	}
 
 	f32 viewHeight = hui::layoutGetRemainingHeight();
 	if (viewHeight <= 0) viewHeight = 200.0f;

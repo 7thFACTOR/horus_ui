@@ -164,7 +164,7 @@ void widgetSetNextFocused()
 	ctx->focusChanged = true;
 }
 
-void addWidget(f32 height)
+void addWidget(f32 height, bool useLineHeight)
 {
 	ctx->widget.disabled = ctx->widget.nextDisabled || (ctx->disabledNesting > 0);
 	ctx->widget.nextDisabled = false;
@@ -173,6 +173,8 @@ void addWidget(f32 height)
 
 	if (ctx->widget.hasNextHeight)
 		height = ctx->widget.nextHeight * ctx->scale;
+	else if (useLineHeight && ctx->settings.lineHeight > 0)
+		height = ctx->settings.lineHeight * ctx->scale;
 	else
 		height = (height + widgetGetPadding().y * 2.0f) * ctx->scale;
 

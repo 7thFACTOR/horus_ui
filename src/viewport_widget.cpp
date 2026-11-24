@@ -13,7 +13,7 @@ Rect viewportBegin(const char* id, f32 height)
 	}
 
 	ctx->setLabelAndId(id);
-	addWidget(height);
+	addWidget(height, false);
 	buttonBehavior();
 
 	ctx->renderer.pushClipRect(ctx->widget.rect);

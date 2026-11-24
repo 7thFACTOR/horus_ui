@@ -158,7 +158,7 @@
 		<p class="brief">Undock a window, making it a floating window.</p>
 		<ul class="params">
 			<li><span class="pname">windowId</span> the window to undock</li>
-			<li><span class="pname">windowPos</span> the window position in screen coordinates</li>
+			<li><span class="pname">windowPos</span> optional position of the undocked window, in window coordinates</li>
 		</ul>
 	</div>
 	<div class="member">
@@ -188,6 +188,7 @@
 	</div>
 
 	<h2>Docking layout persistence</h2>
+	<p class="note">The in-memory functions are declared in <code>include/horus.h</code>. The file-based functions come from the JSON backend: include <code>backends/json_docking_state.h</code> to use them.</p>
 	<div class="member">
 		<div class="prototype"><code><span class="kw">void</span> <span class="fn">dockingStateSaveInMemory</span>(<span class="prm">WindowsDockingState&amp;</span> dockingState)</code></div>
 		<p class="brief">Save the current docking layout into a state object held in memory, to store in a project file or to pass around. Includes the closed windows (kept hidden on load) and their last screen rects. Save before the window close event is processed: the closing native window's docking layout is destroyed in <code>frameBegin</code>.</p>
