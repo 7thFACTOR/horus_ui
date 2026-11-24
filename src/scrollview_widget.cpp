@@ -244,12 +244,12 @@ void scrollViewBegin(const char* id, f32 height, Point scrollOffset, Point virtu
 		approximateScrollAreaV -= hBarHeight + padding.y;
 	}
 
-	bool reserveVBar = true;
-	// if we passed a known virtual height and it doesn't exceed our area, we don't need a VBar!
-	if (virtualSize.y > 0 && virtualSize.y <= approximateScrollAreaV)
-	{
-		reserveVBar = false;
-	}
+	// reserve the vbar only when it is actually visible, or when a known virtual height needs it,
+	// so the content can use the full width while the vbar is hidden
+	bool reserveVBar = scrollViewState.vertical.wasVisible;
+
+	if (virtualSize.y > approximateScrollAreaV)
+		reserveVBar = true;
 
 	if (reserveVBar)
 	{
@@ -386,6 +386,7 @@ Point scrollViewEnd()
 	}
 
 	bool hasVerticalScrollbar = scrollContentSizeV > scrollAreaV;
+	scrollViewState.vertical.wasVisible = hasVerticalScrollbar;
 
 	if (hasVerticalScrollbar)
 	{
