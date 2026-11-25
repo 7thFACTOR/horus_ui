@@ -91,7 +91,7 @@ std::string dockingStateToJson(const WindowsDockingState& dockingState)
 {
 	Json::Value root;
 
-	root["version"] = 2;
+	root["version"] = dockingState.version;
 
 	Json::Value nativeWindows(Json::arrayValue);
 
@@ -187,6 +187,7 @@ bool dockingStateFromJson(WindowsDockingState& dockingState, const char* json)
 		return false;
 
 	dockingState = WindowsDockingState();
+	dockingState.version = root["version"].asUInt();
 
 	for (const auto& nativeWindowValue : nativeWindows)
 	{
@@ -244,13 +245,13 @@ bool dockingStateFromJson(WindowsDockingState& dockingState, const char* json)
 		}
 	}
 
-	if (root.isMember("dockArea") && root["version"].asInt() >= 2)
+	if (root.isMember("dockArea"))
 		dockingState.dockAreaNodeIndex = root["dockArea"].asInt();
 
 	return !dockingState.nativeWindows.empty() && !dockingState.dockNodes.empty();
 }
 
-bool dockingStateSaveToFile(const char* filename)
+bool dockingStateSaveToFile(const char* filename, u32 version)
 {
 	if (!filename || !*filename)
 		return false;
@@ -258,11 +259,12 @@ bool dockingStateSaveToFile(const char* filename)
 	WindowsDockingState dockingState;
 
 	dockingStateSaveInMemory(dockingState);
+	dockingState.version = version;
 
 	return writeDockingStateFile(filename, dockingStateToJson(dockingState));
 }
 
-bool dockingStateLoadFromFile(const char* filename)
+bool dockingStateLoadFromFile(const char* filename, u32 minVersion)
 {
 	if (!filename || !*filename)
 		return false;
@@ -275,6 +277,9 @@ bool dockingStateLoadFromFile(const char* filename)
 	WindowsDockingState dockingState;
 
 	if (!dockingStateFromJson(dockingState, text.c_str()))
+		return false;
+
+	if (dockingState.version < minVersion)
 		return false;
 
 	return dockingStateLoadFromMemory(dockingState);

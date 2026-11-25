@@ -2003,6 +2003,7 @@ struct WindowsDockingState
 		f32 slotFraction = 0.5f; /// the size of the removed dock node relative to its parent, 0..1
 	};
 
+	u32 version = 0; /// the layout version, saved in the JSON so older layouts can be rejected by the app
 	std::vector<NativeWindowInfo> nativeWindows; /// the native windows, each one holds a dock node tree
 	std::vector<DockNodeInfo> dockNodes; /// all the dock nodes of all the native windows
 	std::vector<ClosedWindowInfo> closedWindows; /// the windows closed by the user, kept hidden when the state is loaded

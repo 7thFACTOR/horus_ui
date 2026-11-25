@@ -201,16 +201,22 @@
 		<p class="returns">Returns true if the state was valid and was loaded.</p>
 	</div>
 	<div class="member">
-		<div class="prototype"><code><span class="ret">bool</span> <span class="fn">dockingStateSaveToFile</span>(<span class="prm">const char*</span> filename)</code></div>
+		<div class="prototype"><code><span class="ret">bool</span> <span class="fn">dockingStateSaveToFile</span>(<span class="prm">const char*</span> filename, <span class="prm">u32</span> version = 0)</code></div>
 		<p class="brief">Save the current docking layout to a JSON file, provided by the JSON docking state backend (<code>backends/json_docking_state.h</code>). Uses the file I/O services.</p>
-		<ul class="params"><li><span class="pname">filename</span> the JSON filename, relative to the executable</li></ul>
+		<ul class="params">
+			<li><span class="pname">filename</span> the JSON filename, relative to the executable</li>
+			<li><span class="pname">version</span> the layout version written to the file</li>
+		</ul>
 		<p class="returns">Returns true if the file was written.</p>
 	</div>
 	<div class="member">
-		<div class="prototype"><code><span class="ret">bool</span> <span class="fn">dockingStateLoadFromFile</span>(<span class="prm">const char*</span> filename)</code></div>
-		<p class="brief">Read a docking layout from a JSON file and apply it, provided by the JSON docking state backend. Existing windows that are not part of the saved layout are left untouched.</p>
-		<ul class="params"><li><span class="pname">filename</span> the JSON filename, relative to the executable</li></ul>
-		<p class="returns">Returns true if the file was read and the layout was loaded.</p>
+		<div class="prototype"><code><span class="ret">bool</span> <span class="fn">dockingStateLoadFromFile</span>(<span class="prm">const char*</span> filename, <span class="prm">u32</span> minVersion = 0)</code></div>
+		<p class="brief">Read a docking layout from a JSON file and apply it, provided by the JSON docking state backend. Existing windows that are not part of the saved layout are left untouched. Layouts older than <code>minVersion</code> are rejected, so the app can keep or rebuild its default layout.</p>
+		<ul class="params">
+			<li><span class="pname">filename</span> the JSON filename, relative to the executable</li>
+			<li><span class="pname">minVersion</span> reject layouts older than this version</li>
+		</ul>
+		<p class="returns">Returns true if the file was read, passed the version check and the layout was loaded.</p>
 	</div>
 
 	<h2>Overlay toolbars</h2>

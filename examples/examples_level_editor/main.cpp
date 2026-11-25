@@ -38,6 +38,7 @@ static std::vector<std::string> gMaterialIconNames;
 
 // separate from the asset drag type so tree drags never look like asset drops
 static const u32 sceneTreeDragDropType = 101;
+static const u32 levelEditorLayoutVersion = 3;
 
 static const f32 treeDragStartDistance = 4.0f;
 static const f32 uiScaleSteps[] = { 0.75f, 1.0f, 1.25f, 1.5f, 2.0f };
@@ -916,6 +917,26 @@ static bool layoutStateHasWindow(const hui::WindowsDockingState& layoutState, co
 	for (const auto& wnd : layoutState.closedWindows)
 	{
 		if (wnd.id == windowId)
+			return true;
+	}
+
+	return false;
+}
+
+static bool layoutWindowsShareNode(const hui::WindowsDockingState& layoutState, const char* windowIdA, const char* windowIdB)
+{
+	for (const auto& node : layoutState.dockNodes)
+	{
+		bool hasA = false;
+		bool hasB = false;
+
+		for (const auto& wnd : node.windows)
+		{
+			hasA = hasA || wnd.id == windowIdA;
+			hasB = hasB || wnd.id == windowIdB;
+		}
+
+		if (hasA && hasB)
 			return true;
 	}
 
@@ -2558,7 +2579,7 @@ int main(int argc, char** args)
 	// restore the docking layout saved in the previous session, if there is one
 	const char* layoutFilename = "docking_state.json";
 
-	if (hui::dockingStateLoadFromFile(layoutFilename))
+	if (hui::dockingStateLoadFromFile(layoutFilename, levelEditorLayoutVersion))
 	{
 		appendLog(state, LogEntry::Level::Info, "Docking layout restored");
 
@@ -2569,10 +2590,12 @@ int main(int argc, char** args)
 		// older layouts had a separate toolbar window, it is merged into the menu now
 		hui::windowSetVisible("main_toolbar", false);
 
-		// the one-time icon browser dock below must not override a layout that already places it
+		// the one-time icon browser dock below must not override a layout that already
+		// places it properly; if it ended up in the menu chrome node, redock it
 		hui::WindowsDockingState loadedLayout;
 		hui::dockingStateSaveInMemory(loadedLayout);
-		state.iconBrowserDocked = layoutStateHasWindow(loadedLayout, "icon_browser");
+		state.iconBrowserDocked = layoutStateHasWindow(loadedLayout, "icon_browser")
+			&& !layoutWindowsShareNode(loadedLayout, "icon_browser", "main_menu");
 	}
 
 	// sync the View menu toggles with the restored layout
@@ -2695,7 +2718,7 @@ int main(int argc, char** args)
 			{
 				state.saveLayoutRequested = false;
 
-				if (hui::dockingStateSaveToFile(layoutFilename))
+				if (hui::dockingStateSaveToFile(layoutFilename, levelEditorLayoutVersion))
 					appendLog(state, LogEntry::Level::Info, "Docking layout saved");
 				else
 					appendLog(state, LogEntry::Level::Warning, "Failed to save the docking layout");
@@ -2705,7 +2728,7 @@ int main(int argc, char** args)
 			{
 				state.loadLayoutRequested = false;
 
-				if (hui::dockingStateLoadFromFile(layoutFilename))
+				if (hui::dockingStateLoadFromFile(layoutFilename, levelEditorLayoutVersion))
 				{
 					appendLog(state, LogEntry::Level::Info, "Docking layout loaded");
 
@@ -2726,7 +2749,8 @@ int main(int argc, char** args)
 				}
 				else
 				{
-					appendLog(state, LogEntry::Level::Warning, "Failed to load the docking layout");
+					appendLog(state, LogEntry::Level::Warning, "Docking layout is missing or older than this version, resetting to default");
+					state.resetLayoutRequested = true;
 				}
 			}
 
@@ -2771,7 +2795,7 @@ int main(int argc, char** args)
 					{
 						// frameBegin tears down the closed native window's docking
 						// layout, so save it before the frame is drawn
-						hui::dockingStateSaveToFile(layoutFilename);
+						hui::dockingStateSaveToFile(layoutFilename, levelEditorLayoutVersion);
 						layoutSavedOnClose = true;
 						exitNow = true;
 					}
@@ -2795,7 +2819,7 @@ int main(int argc, char** args)
 	// remember the docking layout for the next session, unless the app was closed
 	// with the OS close button, in which case it was saved before the teardown
 	if (!layoutSavedOnClose)
-		hui::dockingStateSaveToFile(layoutFilename);
+		hui::dockingStateSaveToFile(layoutFilename, levelEditorLayoutVersion);
 
 	hui::contextDestroy(huiContext);
 

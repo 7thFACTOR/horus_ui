@@ -13,10 +13,12 @@ HUI_API std::string dockingStateToJson(const WindowsDockingState& dockingState);
 HUI_API bool dockingStateFromJson(WindowsDockingState& dockingState, const char* json);
 /// Save the current docking layout to a JSON file, uses the Horus file I/O services
 /// \param filename the JSON filename, relative to executable
+/// \param version the layout version written to the file
 /// \return true if the file was written
-HUI_API bool dockingStateSaveToFile(const char* filename);
+HUI_API bool dockingStateSaveToFile(const char* filename, u32 version = 0);
 /// Load a docking layout from a JSON file and apply it, uses the Horus file I/O services
 /// \param filename the JSON filename, relative to executable
+/// \param minVersion reject layouts older than this version
 /// \return true if the file was read and the layout was loaded
-HUI_API bool dockingStateLoadFromFile(const char* filename);
+HUI_API bool dockingStateLoadFromFile(const char* filename, u32 minVersion = 0);
 }
