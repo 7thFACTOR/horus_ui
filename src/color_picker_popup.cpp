@@ -5,6 +5,17 @@
 
 namespace hui
 {
+static f32 colorPickerButtonHeight()
+{
+	if (ctx->widget.hasNextHeight)
+		return ctx->widget.nextHeight;
+
+	if (ctx->settings.lineHeight > 0)
+		return ctx->settings.lineHeight;
+
+	return 22.0f;
+}
+
 static void drawEdgeTrianglesAt(
 	const Rect& rc,
 	f32 tNormalized,
@@ -607,9 +618,8 @@ bool colorPicker(const char* id, Color* inOutColor, ColorPickerFlags flags, cons
 		line();
 		space();
 
-		auto& btnBodyElem = ctx->theme->getElement(WidgetElementId::ColorPickerButtonBody);
 		f32 paddingY = widgetGetPadding().y;
-		f32 btnH = btnBodyElem.normalState().height;
+		f32 btnH = colorPickerButtonHeight();
 		f32 swatchSize = btnH + paddingY * 2.0f;
 
 		static const Color defaultPalette[] = {
@@ -783,7 +793,7 @@ bool colorPickerPopup(const char* id, Color* inOutColor, ColorPickerFlags flags,
 
 	auto& btnBodyElem = ctx->theme->getElement(WidgetElementId::ColorPickerButtonBody);
 	auto& colorPickerCheckersState = ctx->theme->getElement(WidgetElementId::ColorPickerCheckers).normalState();
-	f32 swatchHeight = btnBodyElem.normalState().height;
+	f32 swatchHeight = colorPickerButtonHeight();
 
 	ctx->widget.customWidth = swatchHeight * 3.0f;
 	ctx->widget.hasCustomWidth = true;

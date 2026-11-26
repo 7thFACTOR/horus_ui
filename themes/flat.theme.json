@@ -749,7 +749,6 @@
 			},
 			"colorPickerButtonBody":
 			{
-				"height": 22,
 				"normal": { "image": "flat/rect", "border": 0, "color": "55 95 135 255", "textColor": "white", "font": "normal" },
 				"disabled": { "color": "55 95 135 128", "textColor": "128 128 128 255", "textShadow": { "color": "255 255 255 255", "offsetX": 1, "offsetY": 1 } },
 				"hovered": { "color": "70 120 165 255" },

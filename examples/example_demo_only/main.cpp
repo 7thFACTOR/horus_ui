@@ -3,6 +3,7 @@
 #include "../common/material_icon_atlas.h"
 
 #include <algorithm>
+#include <cmath>
 #include <cstring>
 #include <filesystem>
 
@@ -59,14 +60,25 @@ static void setScale(f32 scale, hui::Sdl3GfxApi gfxApi)
 	uploadAtlasTexture(gfxApi);
 }
 
+static f32 getOsScale(hui::HNativeWindow window)
+{
+	if (!HUI_SERVICES.getWindowDisplayIndex || !HUI_SERVICES.getDisplayInfo)
+		return 1.0f;
+
+	u32 displayIndex = HUI_SERVICES.getWindowDisplayIndex(window);
+	auto displayInfo = HUI_SERVICES.getDisplayInfo(displayIndex);
+
+	return displayInfo.scale > 0.0f ? displayInfo.scale : 1.0f;
+}
+
 static char themeFilePath[256] = "../themes/default.theme.json";
 static std::filesystem::file_time_type themeLastWriteTime;
 static bool themeNeedsReload = false;
 
-static const char* themeNames[] = { "Builtin", "Default", "Flat", "Win94" };
-static const char* themePaths[] = { nullptr, "../themes/default.theme.json", "../themes/flat.theme.json", "../themes/win94.theme.json" };
+static const char* themeNames[] = { "Builtin", "Default", "Flat", "Roundflat", "Win94" };
+static const char* themePaths[] = { nullptr, "../themes/default.theme.json", "../themes/flat.theme.json", "../themes/roundflat.theme.json", "../themes/win94.theme.json" };
 static i32 currentThemeIndex = 1;
-static constexpr u32 themeCount = 4;
+static constexpr u32 themeCount = 5;
 static hui::HTheme currentTheme = nullptr;
 
 static void reloadTheme(hui::Sdl3GfxApi gfxApi)
@@ -159,6 +171,10 @@ int main(int argc, char** args)
 		hui::NativeWindowState::Maximized,
 		hui::Rect(0, 0, 1500, 800));
 
+	f32 osScale = getOsScale(mainWnd);
+
+	hui::scaleSet(osScale);
+
 	const u32 errSize = 2048;
 	char err[errSize] = { 0 };
 
@@ -190,8 +206,9 @@ int main(int argc, char** args)
 	try { themeLastWriteTime = std::filesystem::last_write_time(themeFilePath); } catch (...) {}
 
 	bool exitNow = false;
-	f32 uiScale = hui::scaleGet();
+	f32 uiScale = osScale;
 	bool scalePending = false;
+	bool scaleUserOverride = false;
 
 	while (!exitNow)
 	{
@@ -262,6 +279,19 @@ int main(int argc, char** args)
 
 		}
 
+		f32 newOsScale = getOsScale(mainWnd);
+
+		if (std::fabs(newOsScale - osScale) > 0.001f)
+		{
+			osScale = newOsScale;
+
+			if (!scaleUserOverride)
+			{
+				uiScale = osScale;
+				scalePending = true;
+			}
+		}
+
 		auto doFrame = [&](bool lastEventInQueue)
 		{
 			hui::nativeWindowSetCurrent(mainWnd);
@@ -298,16 +328,21 @@ int main(int argc, char** args)
 			hui::space();
 			hui::label("UI scale:");
 			hui::sameLine();
+			hui::widgetSetNextWidth(windowSize.x * 0.25f / hui::scaleGet());
 
 			if (hui::comboSliderFloatRanged(&uiScale, 0.5f, 4.0f, 0.005f, 0.1f, "%.2f"))
+			{
 				scalePending = true;
+				scaleUserOverride = true;
+			}
 
 			hui::sameLine();
 
 			if (hui::button("Reset Scale"))
 			{
-				uiScale = 1.0f;
+				uiScale = osScale;
 				scalePending = true;
+				scaleUserOverride = false;
 			}
 
 			hui::line();

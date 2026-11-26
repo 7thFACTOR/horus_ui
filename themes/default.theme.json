@@ -756,8 +756,7 @@
 			},
 			"colorPickerButtonBody":
 			{
-				"height": 29,
-				"normal": { "image": "default/button_normal", "border": 2, "color": "120 120 120 255", "textColor": "white", "font": "normal" },
+				"normal": { "image": "default/button_normal", "border": 0, "color": "120 120 120 255", "textColor": "white", "font": "normal" },
 				"disabled": { "color": "120 120 120 155", "textColor": "128 128 128 255", "textShadow": { "color": "255 255 255 255", "offsetX": 1, "offsetY": 1 } },
 				"hovered": { "color": "155 200 200 255" },
 				"pressed": { "image": "default/button_pressed", "border": 3, "color": "white", "textColor": "white", "font": "normal" },

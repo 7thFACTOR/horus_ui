@@ -1793,10 +1793,9 @@
                 }
             },
             "colorPickerButtonBody": {
-                "height": 22,
                 "normal": {
                     "image": "win94/button_normal",
-                    "border": 4,
+                    "border": 0,
                     "color": "white",
                     "textColor": "0 0 0 255",
                     "font": "normal"

@@ -271,26 +271,23 @@ HTheme createBuiltinTheme(u32 atlasTextureSize)
 	addUserElementImage(theme, "objectRefEditorClearButton", imgClear);
 	theme->userElements["objectRefEditorBody"]->styles["default"].states[(u32)WidgetStateType::Pressed].textColor = Color::cyan;
 	
-	// Default color scheme map from flat.theme.json
-	Color cBodyNormal = Color::fromU8(45, 45, 55);
-	Color cBodyHovered = Color::fromU8(60, 60, 75);
-	Color cBodyPressed = Color::fromU8(75, 75, 95);
-	Color cBodyFocused = Color::fromU8(60, 60, 75);
-	Color cBodyDisabled = Color::fromU8(45, 45, 55, 128);
+	// gray and orange color scheme
+	Color cBodyNormal = Color::fromU8(44, 44, 48);
+	Color cBodyHovered = Color::fromU8(58, 58, 63);
+	Color cBodyPressed = Color::fromU8(36, 36, 40);
+	Color cBodyFocused = Color::fromU8(58, 58, 63);
+	Color cBodyDisabled = Color::fromU8(44, 44, 48, 128);
 
-	Color cButtonNormal = Color::fromU8(55, 95, 135);
-	Color cButtonHovered = Color::fromU8(70, 120, 165);
-	Color cButtonPressed = Color::fromU8(40, 75, 110);
-	Color cButtonFocused = Color::fromU8(60, 100, 145);
+	Color cButtonNormal = Color::fromU8(58, 58, 63);
+	Color cButtonHovered = Color::fromU8(72, 72, 78);
+	Color cButtonPressed = Color::fromU8(44, 44, 49);
+	Color cButtonFocused = Color::fromU8(66, 64, 60);
 	
-	Color cAccent = Color::fromU8(55, 185, 255);
-	Color cAccentHovered = Color::fromU8(70, 200, 255);
-	
-	Color cGreen = Color::fromU8(55, 185, 100);
-	Color cGreenHovered = Color::fromU8(70, 220, 120);
+	Color cAccent = Color::fromU8(235, 145, 55);
+	Color cAccentHovered = Color::fromU8(250, 165, 80);
 
 	Color cText = Color::white;
-	Color cTextDisabled = Color::fromU8(128, 128, 128);
+	Color cTextDisabled = Color::fromU8(130, 130, 135);
 
 	for (u32 i = 0; i < (u32)WidgetElementId::Count; i++)
 	{
@@ -352,71 +349,71 @@ HTheme createBuiltinTheme(u32 atlasTextureSize)
 
 	// --- Buttons ---
 	setSize(WidgetElementId::ButtonBody, 0, 22, 3);
-	setElementColors(WidgetElementId::ButtonBody, cButtonNormal, cButtonHovered, cButtonPressed, cButtonFocused, Color::fromU8(55, 95, 135, 128));
+	setElementColors(WidgetElementId::ButtonBody, cButtonNormal, cButtonHovered, cButtonPressed, cButtonFocused, Color::fromU8(58, 58, 63, 128));
 
 	setSize(WidgetElementId::ButtonGroupLeftBody, 0, 22, 0);
-	setElementColors(WidgetElementId::ButtonGroupLeftBody, cButtonNormal, cButtonHovered, Color::black, cButtonFocused, Color::fromU8(55, 95, 135, 128));
+	setElementColors(WidgetElementId::ButtonGroupLeftBody, cButtonNormal, cButtonHovered, cButtonPressed, cButtonFocused, Color::fromU8(58, 58, 63, 128));
 	
 	setSize(WidgetElementId::ButtonGroupMiddleBody, 0, 22, 0);
-	setElementColors(WidgetElementId::ButtonGroupMiddleBody, cButtonNormal, cButtonHovered, Color::black, cButtonFocused, Color::fromU8(55, 95, 135, 128));
+	setElementColors(WidgetElementId::ButtonGroupMiddleBody, cButtonNormal, cButtonHovered, cButtonPressed, cButtonFocused, Color::fromU8(58, 58, 63, 128));
 	
 	setSize(WidgetElementId::ButtonGroupRightBody, 0, 22, 0);
-	setElementColors(WidgetElementId::ButtonGroupRightBody, cButtonNormal, cButtonHovered, Color::black, cButtonFocused, Color::fromU8(55, 95, 135, 128));
+	setElementColors(WidgetElementId::ButtonGroupRightBody, cButtonNormal, cButtonHovered, cButtonPressed, cButtonFocused, Color::fromU8(58, 58, 63, 128));
 	
 	setSize(WidgetElementId::ImageButtonBody, 0, 22, 0);
-	setElementColors(WidgetElementId::ImageButtonBody, cButtonNormal, cButtonHovered, cButtonPressed, cButtonFocused, Color::fromU8(55, 95, 135, 128));
+	setElementColors(WidgetElementId::ImageButtonBody, cButtonNormal, cButtonHovered, cButtonPressed, cButtonFocused, Color::fromU8(58, 58, 63, 128));
 
 	// --- Inputs ---
 	setSize(WidgetElementId::TextInputBody, 0, 22, 0);
-	setElementColors(WidgetElementId::TextInputBody, Color::fromU8(30, 35, 40), Color::fromU8(40, 45, 55), Color::fromU8(40, 45, 55), Color::fromU8(35, 45, 55), Color::fromU8(30, 35, 40, 128));
+	setElementColors(WidgetElementId::TextInputBody, Color::fromU8(38, 38, 42), Color::fromU8(48, 48, 54), Color::fromU8(48, 48, 54), Color::fromU8(42, 48, 56), Color::fromU8(38, 38, 42, 128));
 	
 	setSize(WidgetElementId::MultilineTextInputBody, 0, 0, 0);
-	setElementColors(WidgetElementId::MultilineTextInputBody, Color::fromU8(25, 30, 35), Color::fromU8(25, 30, 35), Color::fromU8(25, 30, 35), Color::fromU8(30, 35, 45), Color::fromU8(25, 30, 35, 128));
+	setElementColors(WidgetElementId::MultilineTextInputBody, Color::fromU8(34, 34, 38), Color::fromU8(34, 34, 38), Color::fromU8(34, 34, 38), Color::fromU8(42, 42, 48), Color::fromU8(34, 34, 38, 128));
 
 	setSize(WidgetElementId::TextInputCaret, 2, 3, 0);
 	setElementColors(WidgetElementId::TextInputCaret, cAccent, cAccent, cAccent, cAccent, cAccent);
 
 	setSize(WidgetElementId::TextInputSelection, 0, 24, 0);
-	setElementColors(WidgetElementId::TextInputSelection, Color::fromU8(55, 185, 255, 120), Color::fromU8(55, 185, 255, 120), Color::fromU8(55, 185, 255, 120), Color::fromU8(55, 185, 255, 120), Color::fromU8(55, 185, 255, 120));
+	setElementColors(WidgetElementId::TextInputSelection, Color::fromU8(235, 145, 55, 120), Color::fromU8(235, 145, 55, 120), Color::fromU8(235, 145, 55, 120), Color::fromU8(235, 145, 55, 120), Color::fromU8(235, 145, 55, 120));
 
 	// --- Sliders ---
 	setSize(WidgetElementId::SliderBody, 0, 16, 0);
 	setElementImage(WidgetElementId::SliderBody, imgSliderRail);
-	setElementColors(WidgetElementId::SliderBody, Color::fromU8(60, 60, 70), Color::fromU8(60, 60, 70), Color::fromU8(60, 60, 70), Color::fromU8(60, 60, 70), Color::fromU8(60, 60, 70, 128));
+	setElementColors(WidgetElementId::SliderBody, Color::fromU8(52, 52, 56), Color::fromU8(52, 52, 56), Color::fromU8(52, 52, 56), Color::fromU8(52, 52, 56), Color::fromU8(52, 52, 56, 128));
 	
 	setSize(WidgetElementId::SliderBodyFilled, 0, 16, 0);
 	setElementImage(WidgetElementId::SliderBodyFilled, imgSliderRail);
-	setElementColors(WidgetElementId::SliderBodyFilled, Color::fromU8(55, 125, 185), Color::fromU8(55, 125, 185), Color::fromU8(55, 125, 185), Color::fromU8(55, 125, 185), Color::fromU8(55, 125, 185, 128));
+	setElementColors(WidgetElementId::SliderBodyFilled, Color::fromU8(200, 125, 45), Color::fromU8(200, 125, 45), Color::fromU8(200, 125, 45), Color::fromU8(200, 125, 45), Color::fromU8(200, 125, 45, 128));
 
 	setSize(WidgetElementId::SliderKnob, 16, 16, 0);
 	setElementImage(WidgetElementId::SliderKnob, imgSliderKnob);
-	setElementColors(WidgetElementId::SliderKnob, cAccent, cAccentHovered, cAccent, cAccentHovered, Color::fromU8(55, 185, 255, 128));
+	setElementColors(WidgetElementId::SliderKnob, cAccent, cAccentHovered, cAccent, cAccentHovered, Color::fromU8(235, 145, 55, 128));
 
 	// --- Check & Radio ---
 	setSize(WidgetElementId::CheckBody, 22, 22, 0);
 	setSize(WidgetElementId::CheckMark, 22, 22, 0);
 	setElementImage(WidgetElementId::CheckMark, imgCheckMark);
-	setElementColors(WidgetElementId::CheckMark, cGreen, cGreenHovered, cGreen, cGreen, Color::fromU8(55, 185, 100, 128));
+	setElementColors(WidgetElementId::CheckMark, cAccent, cAccentHovered, cAccent, cAccent, Color::fromU8(235, 145, 55, 128));
 
 	setSize(WidgetElementId::CheckMarkIndeterminate, 22, 22, 0);
 	setElementImage(WidgetElementId::CheckMarkIndeterminate, imgCheckMarkIndeterminate);
-	setElementColors(WidgetElementId::CheckMarkIndeterminate, cGreen, cGreenHovered, cGreen, cGreen, Color::fromU8(55, 185, 100, 128));
+	setElementColors(WidgetElementId::CheckMarkIndeterminate, cAccent, cAccentHovered, cAccent, cAccent, Color::fromU8(235, 145, 55, 128));
 
 	setSize(WidgetElementId::RadioBody, 22, 22, 0);
 	setElementImage(WidgetElementId::RadioBody, imgRadioBody);
 	
 	setSize(WidgetElementId::RadioMark, 22, 22, 0);
 	setElementImage(WidgetElementId::RadioMark, imgRadioMark);
-	setElementColors(WidgetElementId::RadioMark, cGreen, cGreenHovered, cGreen, cGreen, Color::fromU8(55, 185, 100, 128));
+	setElementColors(WidgetElementId::RadioMark, cAccent, cAccentHovered, cAccent, cAccent, Color::fromU8(235, 145, 55, 128));
 
 	// --- Dropdown ---
 	setSize(WidgetElementId::DropdownBody, 0, 22, 0);
 	setSize(WidgetElementId::DropdownArrowBox, 20, 22, 0);
-	setElementColors(WidgetElementId::DropdownArrowBox, cButtonNormal, cButtonHovered, cButtonPressed, cButtonFocused, Color::fromU8(55, 95, 135, 128));
+	setElementColors(WidgetElementId::DropdownArrowBox, cButtonNormal, cButtonHovered, cButtonPressed, cButtonFocused, Color::fromU8(58, 58, 63, 128));
 	
 	setSize(WidgetElementId::DropdownArrow, 20, 22, 0);
 	setElementImage(WidgetElementId::DropdownArrow, imgDropdownArrow);
-	setElementColors(WidgetElementId::DropdownArrow, Color::white, Color::white, Color::white, Color::white, Color::fromU8(100, 100, 110));
+	setElementColors(WidgetElementId::DropdownArrow, Color::white, Color::white, Color::white, Color::white, Color::fromU8(105, 105, 112));
 
 	// --- Expandable & Tree ---
 	setSize(WidgetElementId::ExpandableBody, 0, 22, 0);
@@ -424,19 +421,19 @@ HTheme createBuiltinTheme(u32 atlasTextureSize)
 	
 	setSize(WidgetElementId::ExpandableCollapsedArrow, 22, 22, 0);
 	setElementImage(WidgetElementId::ExpandableCollapsedArrow, imgExpandableCollapsed);
-	setElementColors(WidgetElementId::ExpandableCollapsedArrow, Color::fromU8(180, 180, 190), cAccent, cAccent, cAccent, Color::fromU8(120, 120, 130, 128));
+	setElementColors(WidgetElementId::ExpandableCollapsedArrow, Color::fromU8(200, 200, 205), cAccent, cAccent, cAccent, Color::fromU8(125, 125, 132, 128));
 	
 	setSize(WidgetElementId::ExpandableExpandedArrow, 22, 22, 0);
 	setElementImage(WidgetElementId::ExpandableExpandedArrow, imgExpandableExpanded);
-	setElementColors(WidgetElementId::ExpandableExpandedArrow, Color::fromU8(180, 180, 190), cAccent, cAccent, cAccent, Color::fromU8(120, 120, 130, 128));
+	setElementColors(WidgetElementId::ExpandableExpandedArrow, Color::fromU8(200, 200, 205), cAccent, cAccent, cAccent, Color::fromU8(125, 125, 132, 128));
 
 	setSize(WidgetElementId::TreeNodeCollapsedArrow, 22, 22, 0);
 	setElementImage(WidgetElementId::TreeNodeCollapsedArrow, imgExpandableCollapsed); // reuse expandable arrow for tree node
-	setElementColors(WidgetElementId::TreeNodeCollapsedArrow, Color::fromU8(180, 180, 190), cAccent, cAccent, cAccent, Color::fromU8(120, 120, 130, 128));
+	setElementColors(WidgetElementId::TreeNodeCollapsedArrow, Color::fromU8(200, 200, 205), cAccent, cAccent, cAccent, Color::fromU8(125, 125, 132, 128));
 	
 	setSize(WidgetElementId::TreeNodeExpandedArrow, 22, 22, 0);
 	setElementImage(WidgetElementId::TreeNodeExpandedArrow, imgExpandableExpanded);
-	setElementColors(WidgetElementId::TreeNodeExpandedArrow, Color::fromU8(180, 180, 190), cAccent, cAccent, cAccent, Color::fromU8(120, 120, 130, 128));
+	setElementColors(WidgetElementId::TreeNodeExpandedArrow, Color::fromU8(200, 200, 205), cAccent, cAccent, cAccent, Color::fromU8(125, 125, 132, 128));
 
 	// --- ComboSlider ---
 	setSize(WidgetElementId::ComboSliderLeftButton, 22, 20, 0);
@@ -445,14 +442,14 @@ HTheme createBuiltinTheme(u32 atlasTextureSize)
 	
 	setSize(WidgetElementId::ComboSliderLeftArrow, 22, 20, 0);
 	setElementImage(WidgetElementId::ComboSliderLeftArrow, imgComboSliderLeftArrow);
-	setElementColors(WidgetElementId::ComboSliderLeftArrow, Color::fromU8(180, 180, 190), cAccent, cAccent, cAccent, Color::fromU8(120, 120, 130, 128));
+	setElementColors(WidgetElementId::ComboSliderLeftArrow, Color::fromU8(200, 200, 205), cAccent, cAccent, cAccent, Color::fromU8(125, 125, 132, 128));
 
 	setSize(WidgetElementId::ComboSliderRightArrow, 22, 20, 0);
 	setElementImage(WidgetElementId::ComboSliderRightArrow, imgComboSliderRightArrow);
-	setElementColors(WidgetElementId::ComboSliderRightArrow, Color::fromU8(180, 180, 190), cAccent, cAccent, cAccent, Color::fromU8(120, 120, 130, 128));
+	setElementColors(WidgetElementId::ComboSliderRightArrow, Color::fromU8(200, 200, 205), cAccent, cAccent, cAccent, Color::fromU8(125, 125, 132, 128));
 	
 	setSize(WidgetElementId::ComboSliderRangeBar, 0, 2, 0);
-	setElementColors(WidgetElementId::ComboSliderRangeBar, cAccent, cAccent, cAccent, cAccent, Color::fromU8(55, 185, 255, 55));
+	setElementColors(WidgetElementId::ComboSliderRangeBar, cAccent, cAccent, cAccent, cAccent, Color::fromU8(235, 145, 55, 55));
 
 	// --- CircularSlider ---
 	setSize(WidgetElementId::CircularSliderBody, 90, 90, 0);
@@ -460,11 +457,11 @@ HTheme createBuiltinTheme(u32 atlasTextureSize)
 	
 	setSize(WidgetElementId::CircularSliderMark, 20, 10, 0);
 	setElementImage(WidgetElementId::CircularSliderMark, imgCircularSliderMark);
-	setElementColors(WidgetElementId::CircularSliderMark, Color::fromU8(120, 120, 130), Color::fromU8(120, 120, 130), Color::fromU8(120, 120, 130), Color::fromU8(120, 120, 130), Color::fromU8(120, 120, 130, 128));
+	setElementColors(WidgetElementId::CircularSliderMark, Color::fromU8(125, 125, 132), Color::fromU8(125, 125, 132), Color::fromU8(125, 125, 132), Color::fromU8(125, 125, 132), Color::fromU8(125, 125, 132, 128));
 	
 	setSize(WidgetElementId::CircularSliderValueDot, 20, 20, 0);
 	setElementImage(WidgetElementId::CircularSliderValueDot, imgCircularSliderValueDot);
-	setElementColors(WidgetElementId::CircularSliderValueDot, Color::fromU8(120, 120, 130), Color::fromU8(120, 120, 130), Color::fromU8(255, 180, 60), Color::fromU8(120, 120, 130), Color::fromU8(120, 120, 130, 128));
+	setElementColors(WidgetElementId::CircularSliderValueDot, Color::fromU8(125, 125, 132), Color::fromU8(125, 125, 132), Color::fromU8(255, 180, 60), Color::fromU8(125, 125, 132), Color::fromU8(125, 125, 132, 128));
 	
 	// Set specific properties requested by CircularSlider
 	HUI_DEFAULT_STYLE(CircularSliderBody).cachedFloatParameters["labelSpacing"] = 8;
@@ -472,20 +469,23 @@ HTheme createBuiltinTheme(u32 atlasTextureSize)
 	HUI_DEFAULT_STYLE(CircularSliderValueDot).cachedFloatParameters["count"] = 30;
 	HUI_DEFAULT_STYLE(CircularSliderValueDot).cachedFloatParameters["placementRadius"] = 36;
 	HUI_DEFAULT_STYLE(CircularSliderValueDot).cachedColorParameters["negativeColor"] = Color::fromU8(220, 60, 60);
-	HUI_DEFAULT_STYLE(CircularSliderValueDot).cachedColorParameters["positiveColor"] = Color::fromU8(55, 185, 255);
+	HUI_DEFAULT_STYLE(CircularSliderValueDot).cachedColorParameters["positiveColor"] = Color::fromU8(235, 145, 55);
 
 	// --- Other layout and containers ---
 	setSize(WidgetElementId::MenuBarBody, 0, 20, 0);
-	setElementColors(WidgetElementId::MenuBarBody, Color::fromU8(30, 35, 40), Color::fromU8(30, 35, 40), Color::fromU8(30, 35, 40), Color::fromU8(30, 35, 40), Color::fromU8(30, 35, 40));
+	setElementColors(WidgetElementId::MenuBarBody, Color::fromU8(38, 38, 42), Color::fromU8(38, 38, 42), Color::fromU8(38, 38, 42), Color::fromU8(38, 38, 42), Color::fromU8(38, 38, 42));
 
 	setSize(WidgetElementId::MenuBarItem, 0, 20, 0);
 	setElementColors(WidgetElementId::MenuBarItem, Color::transparent, cButtonNormal, cButtonPressed, cButtonNormal, Color::transparent);
 
 	setSize(WidgetElementId::MenuBody, 0, 0, 0);
-	setElementColors(WidgetElementId::MenuBody, Color::fromU8(35, 40, 50, 240), Color::fromU8(35, 40, 50, 240), Color::fromU8(35, 40, 50, 240), Color::fromU8(35, 40, 50, 240), Color::fromU8(35, 40, 50, 240));
+	setElementColors(WidgetElementId::MenuBody, Color::fromU8(48, 48, 52, 240), Color::fromU8(48, 48, 52, 240), Color::fromU8(48, 48, 52, 240), Color::fromU8(48, 48, 52, 240), Color::fromU8(48, 48, 52, 240));
 
 	setSize(WidgetElementId::MenuItemBody, 0, 20, 0);
-	setElementColors(WidgetElementId::MenuItemBody, Color::black, cAccent, cAccent, cAccent, Color::black);
+	setElementColors(WidgetElementId::MenuItemBody, Color::fromU8(36, 36, 40), cAccent, cAccent, cAccent, Color::fromU8(36, 36, 40));
+	HUI_DEFAULT_STYLE(MenuItemBody).states[(u32)WidgetStateType::Hovered].textColor = Color::black;
+	HUI_DEFAULT_STYLE(MenuItemBody).states[(u32)WidgetStateType::Pressed].textColor = Color::black;
+	HUI_DEFAULT_STYLE(MenuItemBody).states[(u32)WidgetStateType::Focused].textColor = Color::black;
 
 	setSize(WidgetElementId::SubMenuItemArrow, 22, 22, 0);
 	setElementImage(WidgetElementId::SubMenuItemArrow, imgExpandableCollapsed); // Reuse right arrow
@@ -499,10 +499,10 @@ HTheme createBuiltinTheme(u32 atlasTextureSize)
 	HUI_DEFAULT_STYLE(SelectableBody).states[(u32)WidgetStateType::Pressed].textColor = Color::black;
 
 	setSize(WidgetElementId::ProgressBack, 0, 20, 0);
-	setElementColors(WidgetElementId::ProgressBack, Color::fromU8(35, 40, 50), Color::fromU8(35, 40, 50), Color::fromU8(35, 40, 50), Color::fromU8(35, 40, 50), Color::fromU8(35, 40, 50, 128));
+	setElementColors(WidgetElementId::ProgressBack, Color::fromU8(36, 36, 40), Color::fromU8(36, 36, 40), Color::fromU8(36, 36, 40), Color::fromU8(36, 36, 40), Color::fromU8(36, 36, 40, 128));
 	
 	setSize(WidgetElementId::ProgressFill, 0, 19, 0);
-	setElementColors(WidgetElementId::ProgressFill, cGreen, cGreen, cGreen, cGreen, Color::fromU8(55, 185, 100, 128));
+	setElementColors(WidgetElementId::ProgressFill, cAccent, cAccent, cAccent, cAccent, Color::fromU8(235, 145, 55, 128));
 
 	setSize(WidgetElementId::TableHeaderBodyLeft, 0, 25, 0);
 	setElementColors(WidgetElementId::TableHeaderBodyLeft, cButtonNormal, cButtonNormal, cButtonNormal, cButtonNormal, cButtonNormal);
@@ -512,17 +512,17 @@ HTheme createBuiltinTheme(u32 atlasTextureSize)
 
 	setSize(WidgetElementId::TableHeaderBody, 0, 25, 0);
 	setElementColors(WidgetElementId::TableHeaderBody, cButtonNormal, cButtonNormal, cButtonNormal, cButtonNormal, cButtonNormal);
-	HUI_DEFAULT_STYLE(TableHeaderBody).cachedColorParameters["borderColorV"] = Color::fromU8(55, 125, 185);
-	HUI_DEFAULT_STYLE(TableHeaderBody).cachedColorParameters["borderColorH"] = Color::fromU8(40, 45, 55);
+	HUI_DEFAULT_STYLE(TableHeaderBody).cachedColorParameters["borderColorV"] = Color::fromU8(200, 125, 45);
+	HUI_DEFAULT_STYLE(TableHeaderBody).cachedColorParameters["borderColorH"] = Color::fromU8(48, 48, 54);
 
-	HUI_DEFAULT_STYLE(TableBody).cachedColorParameters["innerBorderColorV"] = Color::fromU8(40, 45, 55);
-	HUI_DEFAULT_STYLE(TableBody).cachedColorParameters["innerBorderColorH"] = Color::fromU8(40, 45, 55);
-	HUI_DEFAULT_STYLE(TableBody).cachedColorParameters["outerBorderColorV"] = Color::fromU8(55, 125, 185);
-	HUI_DEFAULT_STYLE(TableBody).cachedColorParameters["outerBorderColorH"] = Color::fromU8(55, 125, 185);
-	HUI_DEFAULT_STYLE(TableBody).cachedColorParameters["columnResizeLineColor"] = Color::fromU8(55, 185, 255);
+	HUI_DEFAULT_STYLE(TableBody).cachedColorParameters["innerBorderColorV"] = Color::fromU8(48, 48, 54);
+	HUI_DEFAULT_STYLE(TableBody).cachedColorParameters["innerBorderColorH"] = Color::fromU8(48, 48, 54);
+	HUI_DEFAULT_STYLE(TableBody).cachedColorParameters["outerBorderColorV"] = Color::fromU8(200, 125, 45);
+	HUI_DEFAULT_STYLE(TableBody).cachedColorParameters["outerBorderColorH"] = Color::fromU8(200, 125, 45);
+	HUI_DEFAULT_STYLE(TableBody).cachedColorParameters["columnResizeLineColor"] = Color::fromU8(235, 145, 55);
 
 	setSize(WidgetElementId::TabGroupBody, 0, 37, 0);
-	setElementColors(WidgetElementId::TabGroupBody, Color::fromU8(25, 30, 35), Color::fromU8(25, 30, 35), Color::fromU8(25, 30, 35), Color::fromU8(25, 30, 35), Color::fromU8(25, 30, 35));
+	setElementColors(WidgetElementId::TabGroupBody, Color::fromU8(34, 34, 38), Color::fromU8(34, 34, 38), Color::fromU8(34, 34, 38), Color::fromU8(34, 34, 38), Color::fromU8(34, 34, 38));
 
 	setSize(WidgetElementId::TabBodyActive, 100, 30, 0);
 	setElementColors(WidgetElementId::TabBodyActive, cButtonNormal, cButtonHovered, cButtonPressed, cButtonNormal, cButtonNormal);
@@ -531,14 +531,14 @@ HTheme createBuiltinTheme(u32 atlasTextureSize)
 	HUI_DEFAULT_STYLE(TabBodyActive).cachedFloatParameters["paddingY"] = 3;
 	
 	setSize(WidgetElementId::TabBodyInactive, 100, 30, 0);
-	setElementColors(WidgetElementId::TabBodyInactive, Color::fromU8(35, 40, 50), Color::fromU8(50, 55, 70), Color::fromU8(55, 60, 80), Color::fromU8(55, 60, 80), Color::fromU8(35, 40, 50));
+	setElementColors(WidgetElementId::TabBodyInactive, Color::fromU8(36, 36, 40), Color::fromU8(56, 56, 62), Color::fromU8(60, 60, 66), Color::fromU8(60, 60, 66), Color::fromU8(36, 36, 40));
 	setElementFont(WidgetElementId::TabBodyInactive, fontTab);
 
 	setSize(WidgetElementId::TooltipBody, 0, 0, 0);
-	setElementColors(WidgetElementId::TooltipBody, Color::fromU8(30, 35, 40), Color::fromU8(30, 35, 40), Color::fromU8(30, 35, 40), Color::fromU8(30, 35, 40), Color::fromU8(30, 35, 40));
+	setElementColors(WidgetElementId::TooltipBody, Color::fromU8(46, 46, 50), Color::fromU8(46, 46, 50), Color::fromU8(46, 46, 50), Color::fromU8(46, 46, 50), Color::fromU8(46, 46, 50));
 
 	setSize(WidgetElementId::PopupBody, 0, 0, 0);
-	setElementColors(WidgetElementId::PopupBody, Color::fromU8(35, 40, 50), Color::fromU8(35, 40, 50), Color::fromU8(35, 40, 50), Color::fromU8(35, 40, 50), Color::fromU8(35, 40, 50));
+	setElementColors(WidgetElementId::PopupBody, Color::fromU8(50, 50, 54), Color::fromU8(50, 50, 54), Color::fromU8(50, 50, 54), Color::fromU8(50, 50, 54), Color::fromU8(50, 50, 54));
 	HUI_DEFAULT_STYLE(PopupBody).cachedFloatParameters["paddingX"] = 6;
 	HUI_DEFAULT_STYLE(PopupBody).cachedFloatParameters["paddingY"] = 6;
 
@@ -547,45 +547,45 @@ HTheme createBuiltinTheme(u32 atlasTextureSize)
 	setElementColors(WidgetElementId::PopupBehind, Color::fromU8(0, 0, 0, 180), Color::fromU8(0, 0, 0, 180), Color::fromU8(0, 0, 0, 180), Color::fromU8(0, 0, 0, 180), Color::fromU8(0, 0, 0, 180));
 
 	setSize(WidgetElementId::WindowBody, 0, 0, 0);
-	setElementColors(WidgetElementId::WindowBody, Color::fromU8(25, 30, 35), Color::fromU8(25, 30, 35), Color::fromU8(25, 30, 35), Color::fromU8(25, 30, 35), Color::fromU8(25, 30, 35));
+	setElementColors(WidgetElementId::WindowBody, Color::fromU8(34, 34, 38), Color::fromU8(34, 34, 38), Color::fromU8(34, 34, 38), Color::fromU8(34, 34, 38), Color::fromU8(34, 34, 38));
 	HUI_DEFAULT_STYLE(WindowBody).cachedFloatParameters["paddingX"] = 5;
 	HUI_DEFAULT_STYLE(WindowBody).cachedFloatParameters["paddingY"] = 5;
 
 	// lists sit darker than the window body so they read as an inset
-	setElementColors(WidgetElementId::ScrollViewBody, Color::fromU8(15, 18, 22), Color::fromU8(15, 18, 22), Color::fromU8(15, 18, 22), Color::fromU8(15, 18, 22), Color::fromU8(15, 18, 22));
+	setElementColors(WidgetElementId::ScrollViewBody, Color::fromU8(28, 28, 31), Color::fromU8(28, 28, 31), Color::fromU8(28, 28, 31), Color::fromU8(28, 28, 31), Color::fromU8(28, 28, 31));
 
 	setSize(WidgetElementId::ScrollViewScrollBarV, 18, 0, 0);
-	setElementColors(WidgetElementId::ScrollViewScrollBarV, Color::fromU8(35, 40, 50), Color::fromU8(35, 40, 50), Color::fromU8(35, 40, 50), Color::fromU8(35, 40, 50), Color::fromU8(35, 40, 50));
+	setElementColors(WidgetElementId::ScrollViewScrollBarV, Color::fromU8(36, 36, 40), Color::fromU8(36, 36, 40), Color::fromU8(36, 36, 40), Color::fromU8(36, 36, 40), Color::fromU8(36, 36, 40));
 	setSize(WidgetElementId::ScrollViewScrollThumbV, 11, 0, 0);
-	setElementColors(WidgetElementId::ScrollViewScrollThumbV, Color::fromU8(70, 75, 85), Color::fromU8(100, 105, 120), Color::fromU8(55, 125, 185), Color::fromU8(100, 105, 120), Color::fromU8(70, 75, 85, 128));
+	setElementColors(WidgetElementId::ScrollViewScrollThumbV, Color::fromU8(80, 80, 88), Color::fromU8(110, 110, 118), Color::fromU8(200, 125, 45), Color::fromU8(110, 110, 118), Color::fromU8(80, 80, 88, 128));
 
 	setSize(WidgetElementId::ScrollViewScrollBarH, 0, 18, 0);
-	setElementColors(WidgetElementId::ScrollViewScrollBarH, Color::fromU8(35, 40, 50), Color::fromU8(35, 40, 50), Color::fromU8(35, 40, 50), Color::fromU8(35, 40, 50), Color::fromU8(35, 40, 50));
+	setElementColors(WidgetElementId::ScrollViewScrollBarH, Color::fromU8(36, 36, 40), Color::fromU8(36, 36, 40), Color::fromU8(36, 36, 40), Color::fromU8(36, 36, 40), Color::fromU8(36, 36, 40));
 	setSize(WidgetElementId::ScrollViewScrollThumbH, 0, 11, 0);
-	setElementColors(WidgetElementId::ScrollViewScrollThumbH, Color::fromU8(70, 75, 85), Color::fromU8(100, 105, 120), Color::fromU8(55, 125, 185), Color::fromU8(100, 105, 120), Color::fromU8(70, 75, 85, 128));
+	setElementColors(WidgetElementId::ScrollViewScrollThumbH, Color::fromU8(80, 80, 88), Color::fromU8(110, 110, 118), Color::fromU8(200, 125, 45), Color::fromU8(110, 110, 118), Color::fromU8(80, 80, 88, 128));
 
-	setElementColors(WidgetElementId::DropdownListBody, Color::fromU8(10, 12, 15), Color::fromU8(10, 12, 15), Color::fromU8(10, 12, 15), Color::fromU8(10, 12, 15), Color::fromU8(10, 12, 15));
+	setElementColors(WidgetElementId::DropdownListBody, Color::fromU8(28, 28, 31), Color::fromU8(28, 28, 31), Color::fromU8(28, 28, 31), Color::fromU8(28, 28, 31), Color::fromU8(28, 28, 31));
 
 	setSize(WidgetElementId::BoxBody, 0, 0, 0);
-	setElementColors(WidgetElementId::BoxBody, Color::fromU8(35, 40, 50), Color::fromU8(35, 40, 50), Color::fromU8(35, 40, 50), Color::fromU8(35, 40, 50), Color::fromU8(35, 40, 50));
+	setElementColors(WidgetElementId::BoxBody, Color::fromU8(36, 36, 40), Color::fromU8(36, 36, 40), Color::fromU8(36, 36, 40), Color::fromU8(36, 36, 40), Color::fromU8(36, 36, 40));
 
 	setSize(WidgetElementId::LineBody, 0, 1, 0);
 	setElementImage(WidgetElementId::LineBody, imgPixel);
-	setElementColors(WidgetElementId::LineBody, Color::fromU8(60, 60, 70), Color::fromU8(60, 60, 70), Color::fromU8(60, 60, 70), Color::fromU8(60, 60, 70), Color::fromU8(60, 60, 70, 128));
+	setElementColors(WidgetElementId::LineBody, Color::fromU8(52, 52, 56), Color::fromU8(52, 52, 56), Color::fromU8(52, 52, 56), Color::fromU8(52, 52, 56), Color::fromU8(52, 52, 56, 128));
 	
 	setSize(WidgetElementId::ColorPickerCheckers, 16, 16, 0);
 	setElementImage(WidgetElementId::ColorPickerCheckers, imgCheckers);
 	
-	setSize(WidgetElementId::ColorPickerButtonBody, 0, 22, 0);
-	setElementColors(WidgetElementId::ColorPickerButtonBody, cButtonNormal, cButtonHovered, cButtonPressed, cButtonFocused, Color::fromU8(55, 95, 135, 128));
+	setSize(WidgetElementId::ColorPickerButtonBody, 0, 0, 0);
+	setElementColors(WidgetElementId::ColorPickerButtonBody, cButtonNormal, cButtonHovered, cButtonPressed, cButtonFocused, Color::fromU8(58, 58, 63, 128));
 	
-	HUI_DEFAULT_STYLE(LinkBody).states[(u32)WidgetStateType::Normal].textColor = Color::fromU8(100, 160, 255);
-	HUI_DEFAULT_STYLE(LinkBody).states[(u32)WidgetStateType::Hovered].textColor = Color::fromU8(140, 190, 255);
-	HUI_DEFAULT_STYLE(LinkBody).states[(u32)WidgetStateType::Disabled].textColor = Color::fromU8(128, 128, 128);
+	HUI_DEFAULT_STYLE(LinkBody).states[(u32)WidgetStateType::Normal].textColor = Color::fromU8(235, 145, 55);
+	HUI_DEFAULT_STYLE(LinkBody).states[(u32)WidgetStateType::Hovered].textColor = Color::fromU8(250, 165, 80);
+	HUI_DEFAULT_STYLE(LinkBody).states[(u32)WidgetStateType::Disabled].textColor = Color::fromU8(130, 130, 135);
 
 	// Some specific widget text colors Overrides
-	HUI_DEFAULT_STYLE(TabBodyActive).states[(u32)WidgetStateType::Normal].textColor = Color::fromU8(196, 196, 196);
-	HUI_DEFAULT_STYLE(TabBodyInactive).states[(u32)WidgetStateType::Normal].textColor = Color::fromU8(150, 150, 160);
+	HUI_DEFAULT_STYLE(TabBodyActive).states[(u32)WidgetStateType::Normal].textColor = Color::fromU8(220, 220, 222);
+	HUI_DEFAULT_STYLE(TabBodyInactive).states[(u32)WidgetStateType::Normal].textColor = Color::fromU8(150, 150, 155);
 
 	theme->build();
 

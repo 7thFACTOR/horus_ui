@@ -121,7 +121,11 @@ static bool comboSliderInternal(bool isInt, f32* value, f32 minVal, f32 maxVal, 
 
 	if (notEditingText)
 	{
-		ctx->widget.customWidth = ctx->layout.width/ctx->scale;
+		f32 availableWidth = ctx->sameLine.enabled
+			? std::max(ctx->layout.width - (ctx->position.x - ctx->layout.savedPosition.x), 0.0f)
+			: ctx->layout.width;
+
+		ctx->widget.customWidth = availableWidth/ctx->scale;
 		ctx->widget.hasCustomWidth = true;
 
 		addWidget(leftButtonElem.normalState().height + padding.y * 2.0f);

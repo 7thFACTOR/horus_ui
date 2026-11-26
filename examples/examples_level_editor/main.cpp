@@ -43,6 +43,10 @@ static const u32 levelEditorLayoutVersion = 3;
 static const f32 treeDragStartDistance = 4.0f;
 static const f32 uiScaleSteps[] = { 0.75f, 1.0f, 1.25f, 1.5f, 2.0f };
 
+static const char* editorThemeNames[] = { "Builtin", "Default", "Flat", "Roundflat", "Win94" };
+static const char* editorThemePaths[] = { nullptr, "../themes/default.theme.json", "../themes/flat.theme.json", "../themes/roundflat.theme.json", "../themes/win94.theme.json" };
+static constexpr u32 editorThemeCount = 5;
+
 // a dummy object in the edited scene graph, purely for the example
 struct SceneObject
 {
@@ -145,6 +149,8 @@ struct LevelEditorState
 
 	f32 uiScale = hui::scaleGet();
 	f32 pendingUiScale = 0;
+	i32 themeIndex = 1;
+	i32 pendingThemeIndex = -1;
 	i32 toolIndex = 0;
 	bool gridVisible = true;
 	bool snapEnabled = true;
@@ -727,6 +733,23 @@ void buildDummyAssets(LevelEditorState& state)
 	state.assetSelectionAnchor = -1;
 }
 
+void refreshAssetThumbnails(LevelEditorState& state)
+{
+	for (auto& asset : state.assets)
+	{
+		if (strcmp(asset.type, "Texture") == 0)
+			asset.thumb = strcmp(asset.name, "T_Sky_HDRI.exr") == 0 ? state.thumbData : state.thumbLena;
+		else if (strcmp(asset.type, "Mesh") == 0)
+			asset.thumb = state.thumbStacks;
+		else if (strcmp(asset.type, "Material") == 0)
+			asset.thumb = state.thumbSettings;
+		else if (strcmp(asset.type, "Audio") == 0)
+			asset.thumb = state.thumbData;
+		else if (strcmp(asset.type, "Prefab") == 0)
+			asset.thumb = state.thumbFolder;
+	}
+}
+
 void drawMainMenu(LevelEditorState& state, bool& exitNow)
 {
 	// keep the view toggles in sync with the windows, they can also be closed from
@@ -826,6 +849,21 @@ void drawMainMenu(LevelEditorState& state, bool& exitNow)
 
 				if (hui::menuItem(label, "", 0, flags))
 					state.pendingUiScale = step;
+			}
+
+			hui::menuEnd();
+		}
+
+		if (hui::menuBegin("Theme"))
+		{
+			for (u32 i = 0; i < editorThemeCount; i++)
+			{
+				auto flags = (i32)i == state.themeIndex
+					? hui::SelectableFlags::Checked
+					: hui::SelectableFlags::Normal;
+
+				if (hui::menuItem(editorThemeNames[i], "", 0, flags))
+					state.pendingThemeIndex = (i32)i;
 			}
 
 			hui::menuEnd();
@@ -2493,11 +2531,16 @@ int main(int argc, char** args)
 	// build the editor layout by splitting dock nodes around
 	buildDefaultLayout(mainDockNode);
 
+	LevelEditorState state;
+
 	// load a theme
 	const u32 errSize = 2048;
 	char err[errSize] = { 0 };
 
-	auto theme = hui::loadThemeFromJson("../themes/default.theme.json", err, errSize);
+	const char* initialThemePath = editorThemePaths[state.themeIndex];
+	auto theme = initialThemePath
+		? hui::loadThemeFromJson(initialThemePath, err, errSize)
+		: hui::createBuiltinTheme(hui::contextGetSettings().defaultAtlasSize);
 
 	if (!theme)
 	{
@@ -2520,8 +2563,6 @@ int main(int argc, char** args)
 	}
 
 	hui::themeSet(theme);
-
-	LevelEditorState state;
 
 	if (!loadMaterialIconAtlas("../themes/icons/material_icons.png", "../themes/icons/material_icons.json", &gMaterialIconNames))
 		printf("Warning: could not load the Material icon atlas\n");
@@ -2635,6 +2676,50 @@ int main(int argc, char** args)
 		// the main frame rendering and input handling
 		auto doFrame = [&](bool lastEventInQueue)
 		{
+			if (state.pendingThemeIndex >= 0)
+			{
+				i32 newThemeIndex = state.pendingThemeIndex;
+				state.pendingThemeIndex = -1;
+
+				if (newThemeIndex != state.themeIndex && newThemeIndex < (i32)editorThemeCount)
+				{
+					const char* newThemePath = editorThemePaths[newThemeIndex];
+					hui::HTheme newTheme = newThemePath
+						? hui::loadThemeFromJson(newThemePath, err, errSize)
+						: hui::createBuiltinTheme(hui::contextGetSettings().defaultAtlasSize);
+
+					if (newTheme)
+					{
+						auto oldTheme = hui::themeGet();
+						hui::themeSet(newTheme);
+						loadMaterialIconAtlas("../themes/icons/material_icons.png", "../themes/icons/material_icons.json", &gMaterialIconNames);
+						loadThemeImages(state);
+						hui::themeBuild(newTheme);
+						uploadThemeAtlas();
+
+						hui::themeGetWidgetElementInfo(
+							hui::WidgetElementId::MenuBarBody,
+							hui::WidgetStateType::Normal,
+							menuBarInfo);
+
+						refreshAssetThumbnails(state);
+
+						if (oldTheme && oldTheme != newTheme)
+							hui::themeDestroy(oldTheme);
+
+						hui::themeSet(newTheme);
+						theme = newTheme;
+						state.themeIndex = newThemeIndex;
+
+						appendLog(state, LogEntry::Level::Info, (std::string("Theme changed to ") + editorThemeNames[newThemeIndex]).c_str());
+					}
+					else
+					{
+						appendLog(state, LogEntry::Level::Warning, "Failed to load the selected theme");
+					}
+				}
+			}
+
 			if (state.pendingUiScale > 0)
 			{
 				state.uiScale = state.pendingUiScale;
