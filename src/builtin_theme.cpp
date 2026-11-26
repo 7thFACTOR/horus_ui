@@ -270,6 +270,11 @@ HTheme createBuiltinTheme(u32 atlasTextureSize)
 	addUserElementImage(theme, "objectRefEditorTargetButton", imgTarget);
 	addUserElementImage(theme, "objectRefEditorClearButton", imgClear);
 	theme->userElements["objectRefEditorBody"]->styles["default"].states[(u32)WidgetStateType::Pressed].textColor = Color::cyan;
+
+	// scene tree row colors used by the level editor
+	addUserElementImage(theme, "sceneTreeRow", theme->whiteImage);
+	theme->userElements["sceneTreeRow"]->styles["default"].cachedColorParameters["hoverColor"] = Color::fromU8(58, 58, 63);
+	theme->userElements["sceneTreeRow"]->styles["default"].cachedColorParameters["selectedColor"] = Color::fromU8(235, 145, 55);
 	
 	// gray and orange color scheme
 	Color cBodyNormal = Color::fromU8(44, 44, 48);

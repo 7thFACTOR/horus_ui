@@ -184,33 +184,43 @@ bool beginMenuInternal(const char* label, SelectableFlags stateFlags, bool conte
 	}
 	else
 	{
+		auto& menuState = ctx->menuStack[ctx->menuDepth];
+		bool submenuActive = menuState.active && menuState.id == ctx->id;
 		SelectableFlags flags = SelectableFlags::Normal;
 
-		if (ctx->menuStack[ctx->menuDepth].active)
+		if (submenuActive)
 			flags = flags | SelectableFlags::Selected;
 
 		ctx->isSubMenu = true;
-		//TODO: this needs a proper unique id too
 		menuItem(ctx->widgetLabel.c_str(), "", 0, flags);
 		ctx->isSubMenu = false;
+		WidgetId submenuId = ctx->id;
 
 		if (ctx->widget.hovered)
 			ctx->hoveredSimpleMenuItemMenuDepth = ~0;
 
+		// a sibling submenu is open from the same menu, close it when this item is hovered
+		if (menuState.active && menuState.id != submenuId && ctx->widget.hovered)
+		{
+			menuState.active = false;
+			menuState.id = 0;
+		}
+
 		// remember the parent rect so the submenu can close when the mouse leaves
 		// both the parent and the open popup
-		ctx->menuStack[ctx->menuDepth].lastItemRect = ctx->widget.rect;
+		menuState.lastItemRect = ctx->widget.rect;
 
-		if (!ctx->menuStack[ctx->menuDepth].active && (ctx->widget.hovered))
+		if (!menuState.active && ctx->widget.hovered)
 		{
 			ctx->menuItemChosen = false;
 			ctx->event.type = InputEvent::Type::None;
-			ctx->menuStack[ctx->menuDepth].active = true;
+			menuState.active = true;
+			menuState.id = submenuId;
 			ctx->setSkipRenderAndInput(true);
-			ctx->menuStack[ctx->menuDepth].size.x = 0;
+			menuState.size.x = 0;
 		}
 
-		if (ctx->menuStack[ctx->menuDepth].active)
+		if (menuState.active && menuState.id == submenuId)
 		{
 			auto rc = ctx->widget.rect;
 			auto& menuBodyElem = ctx->theme->getElement(WidgetElementId::MenuBody);
@@ -249,6 +259,7 @@ void endMenuInternal(bool contextMenu)
 				for (i32 i = 0; i < ctx->maxMenuDepth; i++)
 				{
 					ctx->menuStack[i].active = false;
+					ctx->menuStack[i].id = 0;
 				}
 			}
 
@@ -315,6 +326,7 @@ void endMenuInternal(bool contextMenu)
 				|| (mouseOutsideParent && mouseOutsidePopup))
 			{
 				menu.active = false;
+				menu.id = 0;
 				popupClose();
 				ctx->pressedOnMenuItem = false;
 				ctx->clickedOnASubMenuItem = false;

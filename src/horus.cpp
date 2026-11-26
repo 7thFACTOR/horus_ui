@@ -1601,11 +1601,23 @@ void themeSetUserWidgetElementParameter(HTheme theme, const char* userElementNam
 
 const char* themeGetUserWidgetElementParameterString(HTheme theme, const char* userElementName, const char* styleName, const char* paramName, const char* defaultValue)
 {
-	auto& style = ((Theme*)theme)->userElements[userElementName]->styles[styleName];
+	if (!theme)
+		return defaultValue;
 
-	auto iter = style.parameters.find(paramName);
+	auto themePtr = (Theme*)theme;
+	auto elemIter = themePtr->userElements.find(userElementName);
 
-	if (iter == style.parameters.end())
+	if (elemIter == themePtr->userElements.end() || !elemIter->second)
+		return defaultValue;
+
+	auto styleIter = elemIter->second->styles.find(styleName);
+
+	if (styleIter == elemIter->second->styles.end())
+		return defaultValue;
+
+	auto iter = styleIter->second.parameters.find(paramName);
+
+	if (iter == styleIter->second.parameters.end())
 		return defaultValue;
 
 	return iter->second.c_str();
@@ -1613,16 +1625,40 @@ const char* themeGetUserWidgetElementParameterString(HTheme theme, const char* u
 
 f32 themeGetUserWidgetElementParameterFloat(HTheme theme, const char* userElementName, const char* styleName, const char* paramName, f32 defaultValue)
 {
-	auto& style = ((Theme*)theme)->userElements[userElementName]->styles[styleName];
+	if (!theme)
+		return defaultValue;
 
-	return style.getParameter(paramName, defaultValue);
+	auto themePtr = (Theme*)theme;
+	auto elemIter = themePtr->userElements.find(userElementName);
+
+	if (elemIter == themePtr->userElements.end() || !elemIter->second)
+		return defaultValue;
+
+	auto styleIter = elemIter->second->styles.find(styleName);
+
+	if (styleIter == elemIter->second->styles.end())
+		return defaultValue;
+
+	return styleIter->second.getParameter(paramName, defaultValue);
 }
 
 Color themeGetUserWidgetElementParameterColor(HTheme theme, const char* userElementName, const char* styleName, const char* paramName, const Color& defaultValue)
 {
-	auto& style = ((Theme*)theme)->userElements[userElementName]->styles[styleName];
+	if (!theme)
+		return defaultValue;
 
-	return style.getColorParameter(paramName, defaultValue);
+	auto themePtr = (Theme*)theme;
+	auto elemIter = themePtr->userElements.find(userElementName);
+
+	if (elemIter == themePtr->userElements.end() || !elemIter->second)
+		return defaultValue;
+
+	auto styleIter = elemIter->second->styles.find(styleName);
+
+	if (styleIter == elemIter->second->styles.end())
+		return defaultValue;
+
+	return styleIter->second.getColorParameter(paramName, defaultValue);
 }
 
 HFont themeFontCreate(HTheme theme, const char* name, const char* fontFilename, u32 faceSize)

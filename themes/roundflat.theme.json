@@ -1624,6 +1624,12 @@
 				}
 			}
 		},
+		"sceneTree": {
+			"sceneTreeRow": {
+				"hoverColor": "62 62 68 255",
+				"selectedColor": "78 155 220 255"
+			}
+		},
 		"table": {
 			"tableBody": {
 				"rowAltBgColor0": "78 155 220 15",

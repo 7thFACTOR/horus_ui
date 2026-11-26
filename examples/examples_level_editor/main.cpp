@@ -738,7 +738,7 @@ void refreshAssetThumbnails(LevelEditorState& state)
 	for (auto& asset : state.assets)
 	{
 		if (strcmp(asset.type, "Texture") == 0)
-			asset.thumb = strcmp(asset.name, "T_Sky_HDRI.exr") == 0 ? state.thumbData : state.thumbLena;
+			asset.thumb = strcmp(asset.name.c_str(), "T_Sky_HDRI.exr") == 0 ? state.thumbData : state.thumbLena;
 		else if (strcmp(asset.type, "Mesh") == 0)
 			asset.thumb = state.thumbStacks;
 		else if (strcmp(asset.type, "Material") == 0)

@@ -706,6 +706,14 @@
 				"normal": { "image": "flat/clear", "border": 0, "color": "white" }
 			}
 		},
+		"sceneTree":
+		{
+			"sceneTreeRow":
+			{
+				"hoverColor": "60 60 75 255",
+				"selectedColor": "55 125 185 255"
+			}
+		},
 		"table":
 		{
 			"tableBody":
