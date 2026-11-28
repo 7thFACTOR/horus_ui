@@ -86,6 +86,7 @@
 
 			<tr><td>button</td><td><code>buttonBody</code></td><td>ButtonBody</td></tr>
 			<tr><td>imageButton</td><td><code>imageButtonBody</code></td><td>ImageButtonBody</td></tr>
+			<tr><td>imageButton</td><td><code>imageButtonDropDownArrow</code></td><td>ImageButtonDropDownArrow</td></tr>
 
 			<tr><td rowspan="3">buttonGroup</td><td><code>buttonGroupLeftBody</code></td><td>ButtonGroupLeftBody</td></tr>
 			<tr><td><code>buttonGroupMiddleBody</code></td><td>ButtonGroupMiddleBody</td></tr>
@@ -115,7 +116,7 @@
 			<tr><td><code>textInputSelection</code></td><td>TextInputSelection</td></tr>
 			<tr><td><code>textInputDefaultText</code></td><td>TextInputDefaultText</td></tr>
 			<tr><td><code>textInputFilterClearImage</code></td><td>TextInputFilterClearImage</td></tr>
-			<tr><td><code>textInputSelectedText</code></td><td>not mapped (see note)</td></tr>
+			<tr><td><code>textInputSelectedText</code></td><td>TextInputSelectedText</td></tr>
 
 			<tr><td rowspan="4">multilineTextInput</td><td><code>multilineTextInputBody</code></td><td>MultilineTextInputBody</td></tr>
 			<tr><td><code>multilineTextInputLineNumbers</code></td><td>MultilineTextInputLineNumbers</td></tr>
@@ -191,14 +192,6 @@
 			<tr><td>link</td><td><code>linkBody</code></td><td>LinkBody</td></tr>
 		</tbody>
 	</table>
-	</div>
-
-	<div class="callout gotcha">
-		<strong><code>textInputSelectedText</code> is not mapped by the loader</strong>
-		The internal element <code>WidgetElementId::TextInputSelectedText</code> exists and is used at runtime
-		(<code>textinput_widget.cpp</code>), but the JSON loader does not currently recognize the key
-		<code>"textInputSelectedText"</code> &mdash; it would fall back to <code>WidgetElementId::Custom</code>. The shipped themes
-		still include it; styling the selection text color currently requires setting the element through the API.
 	</div>
 
 	<div class="footer">

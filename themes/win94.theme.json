@@ -65,7 +65,7 @@
             "size": 25
         },
         "large-bold": {
-            "file": "fonts/Inter-Regular.ttf",
+            "file": "fonts/Inter-Bold.ttf",
             "size": 25
         },
         "large-italic": {
@@ -163,6 +163,44 @@
                             "font": "large-italic"
                         },
                         "focused": {
+                            "font": "large-bold"
+                        }
+                    }
+                },
+                "game": {
+                    "buttonBody": {
+                        "width": 0,
+                        "height": 64,
+                        "normal": {
+                            "image": "common/game_btn",
+                            "border": 18,
+                            "color": "white",
+                            "textColor": "255 245 200 255",
+                            "font": "large-bold",
+                            "textShadow": {
+                                "color": "0 0 0 255",
+                                "offsetX": 2,
+                                "offsetY": 2
+                            }
+                        },
+                        "disabled": {
+                            "color": "110 110 110 255",
+                            "textColor": "180 180 180 255",
+                            "font": "large-bold"
+                        },
+                        "hovered": {
+                            "color": "120 180 255 255",
+                            "textColor": "white",
+                            "font": "large-bold"
+                        },
+                        "pressed": {
+                            "color": "190 180 160 255",
+                            "textColor": "255 235 180 255",
+                            "font": "large-bold"
+                        },
+                        "focused": {
+                            "color": "255 245 210 255",
+                            "textColor": "white",
                             "font": "large-bold"
                         }
                     }
@@ -288,6 +326,33 @@
                         },
                         "focused": {
                             "color": "white"
+                        }
+                    },
+                    "imageButtonDropDownArrow": {
+                        "width": 20,
+                        "height": 22,
+                        "normal": {
+                            "image": "win94/dropdown_arrow",
+                            "border": 0,
+                            "color": "0 0 0 255"
+                        },
+                        "disabled": {
+                            "color": "128 128 128 255"
+                        },
+                        "hovered": {
+                            "image": "win94/dropdown_arrow",
+                            "border": 0,
+                            "color": "0 0 0 255"
+                        },
+                        "pressed": {
+                            "image": "win94/dropdown_arrow",
+                            "border": 0,
+                            "color": "0 0 0 255"
+                        },
+                        "focused": {
+                            "image": "win94/dropdown_arrow",
+                            "border": 0,
+                            "color": "0 0 0 255"
                         }
                     }
                 },
@@ -1237,6 +1302,7 @@
         "tabGroup": {
             "tabGroupBody": {
                 "height": 37,
+                "tabAccentColor": "44 93 195 255",
                 "normal": {
                     "image": "win94/tabgroup",
                     "border": 3,
@@ -1422,7 +1488,7 @@
         },
         "menuBar": {
             "menuBarBody": {
-                "height": 20,
+                "height": 30,
                 "normal": {
                     "image": "win94/menu_bar",
                     "border": 2,
@@ -1431,7 +1497,7 @@
                 }
             },
             "menuBarItem": {
-                "height": 20,
+                "height": 30,
                 "normal": {
                     "image": "",
                     "border": 0,

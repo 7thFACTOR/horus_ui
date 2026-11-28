@@ -199,6 +199,13 @@ struct DemoState
 	// button Group
 	u32 buttonGroupVal = 0;
 
+	// icon button dropdown popups
+	bool iconButtonSpecialPopup = false;
+	bool iconButtonMenuPopup = false;
+	bool iconButtonPopupAddCamera = true;
+	i32 iconButtonPopupGridSize = 32;
+	u32 iconButtonMenuSelection = 0;
+
 	// radio
 	i32 radioVal = 0;
 
@@ -1087,6 +1094,14 @@ void showDemo()
 		label(countBuf);
 
 		space();
+		label("Buttons skip keyboard focus by default:");
+		widgetSetNextFocusable();
+		if (button("Focusable Button"))
+		{
+			demo.buttonClickCount++;
+		}
+
+		space();
 		label("Disabled button:");
 		widgetSetNextDisabled();
 		button("Disabled");
@@ -1098,6 +1113,99 @@ void showDemo()
 		{
 			demo.buttonClickCount++;
 		}
+
+		space();
+		label("Icon button with dropdown arrow (separated):");
+		auto iconResult = iconButton(btnImg, 48, 22, IconButtonFlags::DropDownArrow);
+
+		if (iconResult == IconButtonResult::Arrow)
+			demo.iconButtonSpecialPopup = true;
+
+		// the separated arrow opens a custom popup with its own widgets
+		if (demo.iconButtonSpecialPopup)
+		{
+			popupBegin("##iconButtonSpecialPopup", 240.0f, PopupFlags::BelowLastWidget);
+			label("Scene template");
+
+			bool chosen = false;
+
+			if (button("Empty Scene"))
+			{
+				demo.iconButtonMenuSelection = 0;
+				chosen = true;
+			}
+
+			if (button("Default Scene"))
+			{
+				demo.iconButtonMenuSelection = 1;
+				chosen = true;
+			}
+
+			menuSeparator();
+			check("Add camera", &demo.iconButtonPopupAddCamera);
+			label("Grid size");
+			sliderInt("##iconPopupGridSize", 8, 128, demo.iconButtonPopupGridSize, true, 8);
+
+			if (button("Create") || chosen || popupMustClose())
+			{
+				demo.iconButtonSpecialPopup = false;
+				popupClose();
+			}
+
+			popupEnd();
+		}
+
+		snprintf(countBuf, sizeof(countBuf), "Pressed part: %d", (i32)iconResult);
+		label(countBuf);
+
+		space();
+		label("Icon button with dropdown arrow (linked):");
+		iconResult = iconButton(btnImg, 48, 22, IconButtonFlags::DropDownArrow | IconButtonFlags::LinkedArrow);
+
+		if (iconResult == IconButtonResult::Button)
+			demo.iconButtonMenuPopup = true;
+
+		// the linked button opens a dropdown list, both halves return Button
+		if (demo.iconButtonMenuPopup)
+		{
+			popupBegin("##iconButtonMenuPopup", 190.0f, PopupFlags::BelowLastWidget, Point(), WidgetElementId::MenuBody);
+
+			bool chosen = false;
+
+			if (selectable("Toolbar", demo.iconButtonMenuSelection == 0 ? SelectableFlags::Selected : SelectableFlags::Normal))
+			{
+				demo.iconButtonMenuSelection = 0;
+				chosen = true;
+			}
+
+			if (selectable("Inspector", demo.iconButtonMenuSelection == 1 ? SelectableFlags::Selected : SelectableFlags::Normal))
+			{
+				demo.iconButtonMenuSelection = 1;
+				chosen = true;
+			}
+
+			if (selectable("Console", demo.iconButtonMenuSelection == 2 ? SelectableFlags::Selected : SelectableFlags::Normal))
+			{
+				demo.iconButtonMenuSelection = 2;
+				chosen = true;
+			}
+
+			menuSeparator();
+
+			if (selectable("Reset Layout"))
+				chosen = true;
+
+			if (chosen || popupMustClose())
+			{
+				demo.iconButtonMenuPopup = false;
+				popupClose();
+			}
+
+			popupEnd();
+		}
+
+		snprintf(countBuf, sizeof(countBuf), "Pressed part: %d", (i32)iconResult);
+		label(countBuf);
 
 		space();
 		label("Button Group (3 items):");

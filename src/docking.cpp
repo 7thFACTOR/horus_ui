@@ -2681,6 +2681,10 @@ void handleDockingMouseDown(const InputEvent& event, DockNode* node)
 	ds.dragWindow = nullptr;
 	ds.dragStarted = false;
 
+	// a splitter drag must not also start a tab/window undock
+	if (ds.resizingNode)
+		return;
+
 	//TODO: we could check just the tabs of the current os window clicked on
 	for (auto& wnd : ds.windows)
 	{

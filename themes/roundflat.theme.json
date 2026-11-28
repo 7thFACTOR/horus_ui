@@ -65,7 +65,7 @@
 			"size": 25
 		},
 		"large-bold": {
-			"file": "fonts/Inter-Regular.ttf",
+			"file": "fonts/Inter-Bold.ttf",
 			"size": 25
 		},
 		"large-italic": {
@@ -161,6 +161,44 @@
 							"font": "large-italic"
 						},
 						"focused": {
+							"font": "large-bold"
+						}
+					}
+				},
+				"game": {
+					"buttonBody": {
+						"width": 0,
+						"height": 64,
+						"normal": {
+							"image": "common/game_btn",
+							"border": 18,
+							"color": "white",
+							"textColor": "255 245 200 255",
+							"font": "large-bold",
+							"textShadow": {
+								"color": "0 0 0 255",
+								"offsetX": 2,
+								"offsetY": 2
+							}
+						},
+						"disabled": {
+							"color": "110 110 110 255",
+							"textColor": "180 180 180 255",
+							"font": "large-bold"
+						},
+						"hovered": {
+							"color": "120 180 255 255",
+							"textColor": "white",
+							"font": "large-bold"
+						},
+						"pressed": {
+							"color": "190 180 160 255",
+							"textColor": "255 235 180 255",
+							"font": "large-bold"
+						},
+						"focused": {
+							"color": "255 245 210 255",
+							"textColor": "white",
 							"font": "large-bold"
 						}
 					}
@@ -278,6 +316,33 @@
 						},
 						"focused": {
 							"color": "68 78 92 255"
+						}
+					},
+					"imageButtonDropDownArrow": {
+						"width": 20,
+						"height": 22,
+						"normal": {
+							"image": "flat/dropdown_arrow",
+							"border": 0,
+							"color": "255 255 255 255"
+						},
+						"disabled": {
+							"color": "105 105 112 255"
+						},
+						"hovered": {
+							"image": "flat/dropdown_arrow",
+							"border": 0,
+							"color": "255 255 255 255"
+						},
+						"pressed": {
+							"image": "flat/dropdown_arrow",
+							"border": 0,
+							"color": "255 255 255 255"
+						},
+						"focused": {
+							"image": "flat/dropdown_arrow",
+							"border": 0,
+							"color": "255 255 255 255"
 						}
 					}
 				},
@@ -1166,6 +1231,7 @@
 		"tabGroup": {
 			"tabGroupBody": {
 				"height": 37,
+				"tabAccentColor": "44 93 195 255",
 				"normal": {
 					"image": "flat/pixel",
 					"border": 0,
@@ -1255,7 +1321,7 @@
 			},
 			"windowDockGuideVerticalSplit": {
 				"normal": {
-					"image": "flat/pixel",
+					"image": "default/window_dock_guide_vertical_split",
 					"border": 0,
 					"color": "78 155 220 128"
 				},
@@ -1265,7 +1331,7 @@
 			},
 			"windowDockGuideHorizontalSplit": {
 				"normal": {
-					"image": "flat/pixel",
+					"image": "default/window_dock_guide_horizontal_split",
 					"border": 0,
 					"color": "78 155 220 128"
 				},
@@ -1275,7 +1341,7 @@
 			},
 			"windowDockGuideAsTab": {
 				"normal": {
-					"image": "flat/pixel",
+					"image": "default/window_dock_guide_as_tab",
 					"border": 0,
 					"color": "78 155 220 128"
 				},
@@ -1333,7 +1399,7 @@
 		},
 		"menuBar": {
 			"menuBarBody": {
-				"height": 20,
+				"height": 30,
 				"normal": {
 					"image": "flat/pixel",
 					"border": 0,
@@ -1342,7 +1408,7 @@
 				}
 			},
 			"menuBarItem": {
-				"height": 20,
+				"height": 30,
 				"normal": {
 					"image": "roundflat/round_rect",
 					"border": 5,

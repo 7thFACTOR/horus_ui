@@ -24,11 +24,13 @@ struct Context
 	f32 totalTime = 0;
 	u32 frameCount = 0;
 	std::chrono::high_resolution_clock::time_point frameStartTime;
+	bool frameTimeRecorded = false;
 	f32 lastFrameTimeMs = 0.0f;
 	f32 peakFrameTimeMs = 0.0f;
 	f32 avgFrameTimeMs = 0.0f;
-	f32 frameTimes[60] = {}; // Rolling buffer for average calculation
-	u32 frameTimeIndex = 0;
+	f32 avgFrameTimeAccumMs = 0.0f;
+	u32 avgFrameTimeAccumCount = 0;
+	std::chrono::high_resolution_clock::time_point avgFrameTimeWindowStart;
 	f32 idleTime = 0.0f;
 	bool mustRedraw = false;
 	bool focusChanged = false;

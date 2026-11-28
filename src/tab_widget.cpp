@@ -201,6 +201,31 @@ void tab(const char* label, HImage img)
 	ctx->renderer.cmdSetColor(tabElemState->color);
 	ctx->renderer.cmdDrawImageBordered(tabElemState->image, tabElemState->border, ctx->widget.rect, ctx->scale);
 
+	// optional accent line across the top of the active tab, themes set tabAccentColor
+	if (isActive && isFocused)
+	{
+		auto& tabGroupElem = ctx->theme->getElement(WidgetElementId::TabGroupBody);
+		Color accentColor = tabGroupElem.currentStyle->getColorParameter("tabAccentColor", Color::transparent);
+
+		if (accentColor.a > 0)
+		{
+			f32 accentInset = tabElemState->border * ctx->scale;
+			f32 accentWidth = (std::max)(ctx->widget.rect.width - accentInset * 2.0f, 0.0f);
+
+			if (accentWidth > 0.0f)
+			{
+				ctx->renderer.cmdSetColor(accentColor);
+				ctx->renderer.cmdDrawFilledRectangle(
+					{
+						ctx->widget.rect.x + accentInset,
+						ctx->widget.rect.y,
+						accentWidth,
+						2.0f * ctx->scale
+					});
+			}
+		}
+	}
+
 	Rect rcTextAndImage = {
 		ctx->widget.rect.x + (tabElemState->border + tabPaddingX) * ctx->scale,
 		ctx->widget.rect.y,

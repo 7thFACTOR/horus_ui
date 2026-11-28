@@ -174,6 +174,7 @@ static WidgetElementId getWidgetElementFromName(std::string name)
 	if (name == "buttonGroupMiddleBody") return WidgetElementId::ButtonGroupMiddleBody;
 	if (name == "buttonGroupRightBody") return WidgetElementId::ButtonGroupRightBody;
 	if (name == "imageButtonBody") return WidgetElementId::ImageButtonBody;
+	if (name == "imageButtonDropDownArrow") return WidgetElementId::ImageButtonDropDownArrow;
 	if (name == "checkBody") return WidgetElementId::CheckBody;
 	if (name == "checkMark") return WidgetElementId::CheckMark;
 	if (name == "checkMarkIndeterminate") return WidgetElementId::CheckMarkIndeterminate;
@@ -190,6 +191,7 @@ static WidgetElementId getWidgetElementFromName(std::string name)
 	if (name == "textInputBody") return WidgetElementId::TextInputBody;
 	if (name == "textInputCaret") return WidgetElementId::TextInputCaret;
 	if (name == "textInputSelection") return WidgetElementId::TextInputSelection;
+	if (name == "textInputSelectedText") return WidgetElementId::TextInputSelectedText;
 	if (name == "textInputDefaultText") return WidgetElementId::TextInputDefaultText;
 	if (name == "textInputFilterClearImage") return WidgetElementId::TextInputFilterClearImage;
 	if (name == "sliderBody") return WidgetElementId::SliderBody;

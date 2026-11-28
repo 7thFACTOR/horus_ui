@@ -264,6 +264,7 @@ enum class WidgetElementId
 	ButtonGroupMiddleBody,
 	ButtonGroupRightBody,
 	ImageButtonBody,
+	ImageButtonDropDownArrow,
 	CheckBody,
 	CheckMark,
 	CheckMarkIndeterminate,
@@ -3301,6 +3302,9 @@ HUI_API bool widgetGetDisabled();
 /// Set next widget as focused
 HUI_API void widgetSetNextFocused();
 
+/// Set whether the next widget can receive keyboard focus, buttons are not focusable by default
+HUI_API void widgetSetNextFocusable(bool focusable = true);
+
 /// Draw a button widget
 /// \param label the button text
 /// \return true if button was pressed
@@ -3327,6 +3331,33 @@ HUI_API bool buttonGroup(const char* id, const char** labels, u32 count, u32* cu
 /// \param down if true the button is in the pressed state
 /// \return true if the button was pressed
 HUI_API bool imageButton(HImage img, f32 width, f32 height, HImage disabledImg = 0, bool down = false);
+
+/// Options for the icon button
+enum class IconButtonFlags
+{
+	None = 0,
+	DropDownArrow = 1 << 0, /// draw a drop down arrow on the right side of the button
+	LinkedArrow = 1 << 1, /// the arrow and the button share hover and both return Button when pressed
+};
+HUI_ENUM_AS_FLAGS(IconButtonFlags);
+
+/// What part of an icon button was pressed
+enum class IconButtonResult
+{
+	None = 0,
+	Button = 1,
+	Arrow = 2,
+};
+
+/// Draw a button with an image and an optional drop down arrow on the right
+/// \param img the image
+/// \param width the main icon button width; the drop down arrow adds its own width
+/// \param height the button height
+/// \param flags the button options
+/// \param disabledImg the image drawn when disabled
+/// \param down if true the button is in the pressed state
+/// \return the pressed part, or None
+HUI_API IconButtonResult iconButton(HImage img, f32 width, f32 height, IconButtonFlags flags = IconButtonFlags::None, HImage disabledImg = 0, bool down = false);
 
 /// Draw a text input widget
 /// \param text the text to be edited, provided by user

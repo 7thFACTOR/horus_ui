@@ -88,7 +88,7 @@ X11/Xext/Xi and OpenGL development headers are needed, use:
 - Theme hot-reloading possible (great for theme creation)
 - Widgets can have multiple full styles in the same theme (example: different button shapes/skins)
 - Font atlas with multiple fonts and font sizes
-- Widgets: text input and multiline text input (with hint text), tooltip, box, popup, messagebox, progress, button, icon button, dropdown, menu, context menu, tab, tree node, table, radio, check, slider etc.
+- Widgets: text input and multiline text input (with hint text), tooltip, box, popup, messagebox, progress, button, icon button (with optional dropdown arrow), dropdown, menu, context menu, tab, tree node, table, radio, check, slider etc.
 - Dockable overlay toolbars with insertion hints, collapse, floating position and grid alignment
 - Compound Widgets: color picker, vector (max 4 components) editor, object reference editor (with dragdrop support)
 - Animation editor and sequencer widgets with keyframe/segment editing, snapping and playback

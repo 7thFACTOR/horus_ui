@@ -391,7 +391,7 @@ struct ThemeElement
 	Style* currentStyle = nullptr;
 
 	inline void setDefaultStyle() { currentStyle = &styles["default"]; }
-	inline void validateCurrentStyle() { setDefaultStyle(); }
+	inline void validateCurrentStyle() { if (!currentStyle) setDefaultStyle(); }
 	inline void setStyle(const char* styleName)
 	{
 		auto iter = styles.find(styleName);
@@ -461,6 +461,8 @@ struct WidgetState
 	bool hovered = false;
 	bool focused = false;
 	bool changeEnded = false;
+	bool focusable = false; // whether the current widget can receive keyboard focus
+	bool nextFocusable = false; // whether the next widget can receive keyboard focus
 	bool nextDisabled = false; // whether the next widget will be disabled
 	Rect rect;
 	Rect hoveredWidgetRect;

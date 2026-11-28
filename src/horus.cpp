@@ -164,12 +164,19 @@ void widgetSetNextFocused()
 	ctx->focusChanged = true;
 }
 
+void widgetSetNextFocusable(bool focusable)
+{
+	ctx->widget.nextFocusable = focusable;
+}
+
 void addWidget(f32 height, bool useLineHeight)
 {
 	ctx->widget.disabled = ctx->widget.nextDisabled || (ctx->disabledNesting > 0);
 	ctx->widget.nextDisabled = false;
 	ctx->widget.changeEnded = false;
 	ctx->widget.doubleClicked = false;
+	ctx->widget.focusable = ctx->widget.nextFocusable;
+	ctx->widget.nextFocusable = false;
 
 	if (ctx->widget.hasNextHeight)
 		height = ctx->widget.nextHeight * ctx->scale;
@@ -182,7 +189,10 @@ void addWidget(f32 height, bool useLineHeight)
 	if (ctx->widget.hasNextWidth)
 	{
 		// nextWidth specifies the TOTAL widget width (including padding)
-		ctx->widget.width = ctx->widget.nextWidth * ctx->scale;
+		// values under 1 are a fraction of the layout width and are already in pixels after this
+		ctx->widget.width = ctx->widget.nextWidth > 1.0f
+			? ctx->widget.nextWidth * ctx->scale
+			: ctx->widget.nextWidth * ctx->layout.width;
 	}
 	else
 	{
@@ -326,6 +336,7 @@ bool viewportImageSizeFit(
 void frameBegin()
 {
 	ctx->frameStartTime = std::chrono::high_resolution_clock::now();
+	ctx->frameTimeRecorded = false;
 
 	// swap focusable widgets lists
 	std::swap(ctx->focusableWidgets, ctx->lastFrameFocusableWidgets);
@@ -619,24 +630,6 @@ void frameEnd()
 
 	ctx->event.type = ctx->savedEventType;
 	ctx->positionStack.clear();
-
-	auto frameEndTime = std::chrono::high_resolution_clock::now();
-	std::chrono::duration<double, std::milli> frameDuration = frameEndTime - ctx->frameStartTime;
-	ctx->lastFrameTimeMs = (f32)frameDuration.count();
-
-	// contextUpdate peak
-	if (ctx->lastFrameTimeMs < 5 && ctx->lastFrameTimeMs > ctx->peakFrameTimeMs)
-		ctx->peakFrameTimeMs = ctx->lastFrameTimeMs;
-
-	// contextUpdate rolling average
-	ctx->frameTimes[ctx->frameTimeIndex] = ctx->lastFrameTimeMs;
-	ctx->frameTimeIndex = (ctx->frameTimeIndex + 1) % 60;
-
-	f32 sum = 0.0f;
-	u32 count = ctx->frameCount < 60 ? ctx->frameCount : 60;
-	for (u32 i = 0; i < count; i++)
-		sum += ctx->frameTimes[i];
-	ctx->avgFrameTimeMs = count > 0 ? sum / (f32)count : 0.0f;
 }
 
 void renderBegin()
@@ -849,6 +842,38 @@ static void presentWindow(HNativeWindow wnd)
 	ctx->settings.services.presentWindow(wnd);
 }
 
+static void recordFrameTime()
+{
+	if (ctx->frameTimeRecorded)
+		return;
+
+	ctx->frameTimeRecorded = true;
+
+	auto frameEndTime = std::chrono::high_resolution_clock::now();
+	std::chrono::duration<double, std::milli> frameDuration = frameEndTime - ctx->frameStartTime;
+	ctx->lastFrameTimeMs = (f32)frameDuration.count();
+
+	if (ctx->lastFrameTimeMs < 5 && ctx->lastFrameTimeMs > ctx->peakFrameTimeMs)
+		ctx->peakFrameTimeMs = ctx->lastFrameTimeMs;
+
+	// average over a one-second wall-clock window
+	ctx->avgFrameTimeAccumMs += ctx->lastFrameTimeMs;
+	ctx->avgFrameTimeAccumCount++;
+
+	if (ctx->avgFrameTimeWindowStart.time_since_epoch().count() == 0)
+		ctx->avgFrameTimeWindowStart = frameEndTime;
+
+	std::chrono::duration<double> windowDuration = frameEndTime - ctx->avgFrameTimeWindowStart;
+
+	if (windowDuration.count() >= 1.0 && ctx->avgFrameTimeAccumCount > 0)
+	{
+		ctx->avgFrameTimeMs = ctx->avgFrameTimeAccumMs / (f32)ctx->avgFrameTimeAccumCount;
+		ctx->avgFrameTimeAccumMs = 0.0f;
+		ctx->avgFrameTimeAccumCount = 0;
+		ctx->avgFrameTimeWindowStart = frameEndTime;
+	}
+}
+
 void present()
 {
 	// first, delete pending objects so we dont access them
@@ -865,6 +890,8 @@ void present()
 	ctx->renderer.resetWindowContexts();
 	ctx->renderer.skipRender = false;
 	ctx->renderer.disableRendering = false;
+
+	recordFrameTime();
 }
 
 void presentNativeWindow(HNativeWindow nativeWnd)
@@ -880,6 +907,8 @@ void presentNativeWindow(HNativeWindow nativeWnd)
 	ctx->renderer.resetWindowContexts();
 	ctx->renderer.skipRender = false;
 	ctx->renderer.disableRendering = false;
+
+	recordFrameTime();
 }
 
 void inputEventCancel()

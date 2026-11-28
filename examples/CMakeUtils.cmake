@@ -115,7 +115,7 @@ macro(link_libs TARGET_LIST)
 		#target_link_libraries(${TARGET_LIST} PUBLIC debug SDL3_mixerd optimized SDL3_mixer)
 		#target_link_libraries(${TARGET_LIST} PUBLIC debug libGLEW32d optimized libGLEW32)
 		#target_link_libraries(${TARGET_LIST} PUBLIC debug glfw3 optimized glfw3)
-		target_link_libraries(${TARGET_LIST} PUBLIC debug jsoncpp_static optimized jsoncpp_static)
+		target_link_libraries(${TARGET_LIST} PUBLIC jsoncpp_static)
 		#target_link_libraries(${TARGET_LIST} PUBLIC debug spdlogd optimized spdlog)
 	endif(WIN32)
 

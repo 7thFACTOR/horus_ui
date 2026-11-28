@@ -267,7 +267,12 @@ void popupClose()
 	}
 
 	ctx->event.type = InputEvent::Type::None;
-	ctx->widget.focusedId = 0;
+
+	// tooltips are transient and must not steal focus from the widget the user
+	// was editing, only menus and interactive popups clear it
+	if (popup.widgetElementId != WidgetElementId::TooltipBody)
+		ctx->widget.focusedId = 0;
+
 	skipFrame();
 	forceRepaint();
 }

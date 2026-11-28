@@ -19,7 +19,7 @@ bool button(const char* label)
 	ctx->widget.customWidth = btnBodyNormalState.border * 2.0f + textWidth.width / ctx->scale;
 	ctx->widget.hasCustomWidth = true;
 	addWidget(btnBodyNormalState.height);
-	buttonBehavior();
+	buttonBehavior(false, ctx->widget.focusable);
 
 	auto btnBodyElemState = &btnBodyElem.normalState();
 
@@ -81,7 +81,8 @@ bool button(const char* label)
 			VAlignType::Center, true);
 	}
 
-	widgetSetFocusable();
+	if (ctx->widget.focusable)
+		widgetSetFocusable();
 
 	return ctx->widget.clicked;
 }
@@ -102,7 +103,7 @@ static bool imageButtonInternal(HImage img, HImage disabledImg, f32 width, f32 h
 
 	ctx->setLabelAndId(nullptr);
 	addWidget(height, false);
-	buttonBehavior();
+	buttonBehavior(false, ctx->widget.focusable);
 
 	f32 pressedIncrement = 0.0f;
 
@@ -154,7 +155,8 @@ static bool imageButtonInternal(HImage img, HImage disabledImg, f32 width, f32 h
 			});
 	}
 
-	widgetSetFocusable();
+	if (ctx->widget.focusable)
+		widgetSetFocusable();
 
 	if (widgetIsClicked())
 		forceRepaint();
@@ -169,7 +171,173 @@ bool imageButton(HImage img, f32 width, f32 height, HImage disabledImg, bool dow
 	return imageButtonInternal(img, disabledImg, width, height, down, &btnBodyElem);
 }
 
-void buttonBehavior(bool menuItem)
+static ThemeElement::State* iconButtonState(ThemeElement& elem, bool disabled, bool pressed, bool focused, bool hovered)
+{
+	if (disabled)
+		return &elem.getState(WidgetStateType::Disabled);
+
+	if (pressed)
+		return &elem.getState(WidgetStateType::Pressed);
+
+	if (focused)
+		return &elem.getState(WidgetStateType::Focused);
+
+	if (hovered)
+		return &elem.getState(WidgetStateType::Hovered);
+
+	return &elem.normalState();
+}
+
+static void iconButtonDrawBody(ThemeElement& elem, ThemeElement::State* state, const Rect& rect)
+{
+	Image* bodyImage = state->image;
+
+	if (!bodyImage)
+		bodyImage = elem.normalState().image;
+
+	ctx->renderer.cmdSetColor(tintApply(state->color, TintColorType::Body));
+	ctx->renderer.cmdDrawImageBordered(bodyImage, state->border, rect, ctx->scale);
+}
+
+static void iconButtonDrawImage(ThemeElement::State* state, Image* image, const Rect& rect, f32 pressedIncrement)
+{
+	if (!image)
+		return;
+
+	f32 imgWidth = image->rect.width * ctx->scale;
+	f32 imgHeight = image->rect.height * ctx->scale;
+	f32 paddingX = (widgetGetPadding().x + state->border) * ctx->scale;
+	f32 paddingY = (widgetGetPadding().y + state->border) * ctx->scale;
+
+	viewportImageSizeFit(
+		imgWidth, imgHeight,
+		(std::max)(rect.width - paddingX * 2.0f, 1.0f),
+		(std::max)(rect.height - paddingY * 2.0f, 1.0f),
+		imgWidth, imgHeight, false, false);
+
+	ctx->renderer.cmdSetColor(tintApply(state->textColor, TintColorType::Text));
+	ctx->renderer.cmdDrawImage(
+		image,
+		{
+			rect.x + (rect.width - imgWidth) / 2.0f + pressedIncrement * ctx->scale,
+			rect.y + (rect.height - imgHeight) / 2.0f + pressedIncrement * ctx->scale,
+			imgWidth,
+			imgHeight
+		});
+}
+
+IconButtonResult iconButton(HImage img, f32 width, f32 height, IconButtonFlags flags, HImage disabledImg, bool down)
+{
+	Image* image = (Image*)img;
+	Image* disabledImage = (Image*)disabledImg;
+
+	if (!image)
+		return IconButtonResult::None;
+
+	auto& imageButtonBody = ctx->theme->getElement(WidgetElementId::ImageButtonBody);
+	auto& arrowElem = ctx->theme->getElement(WidgetElementId::ImageButtonDropDownArrow);
+	auto& arrowNormalState = arrowElem.normalState();
+
+	bool hasArrow = has(flags, IconButtonFlags::DropDownArrow);
+	bool linked = has(flags, IconButtonFlags::LinkedArrow);
+	f32 arrowWidth = hasArrow ? arrowNormalState.width : 0.0f;
+
+	if (hasArrow && arrowWidth <= 0.0f && arrowNormalState.image)
+	{
+		arrowWidth = arrowNormalState.image->rect.width + widgetGetPadding().x * 2.0f + 8.0f;
+	}
+
+	ctx->widget.customWidth = width + arrowWidth;
+	ctx->widget.hasCustomWidth = true;
+	ctx->setLabelAndId(nullptr);
+	addWidget(height, false);
+	buttonBehavior(false, ctx->widget.focusable);
+
+	Rect fullRect = ctx->widget.rect;
+	f32 arrowWidthPx = (std::min)(arrowWidth * ctx->scale, fullRect.width);
+
+	Rect mainRect = fullRect;
+	mainRect.width -= arrowWidthPx;
+
+	Rect arrowRect = {
+		fullRect.x + mainRect.width,
+		fullRect.y,
+		arrowWidthPx,
+		fullRect.height
+	};
+
+	bool disabled = ctx->widget.disabled;
+	bool focused = ctx->widget.focused;
+	bool pressed = ctx->widget.pressed || down || ctx->widget.clicked;
+	bool mainHovered = ctx->widget.hovered;
+	bool arrowHovered = ctx->widget.hovered;
+
+	if (hasArrow && !linked)
+	{
+		mainHovered = ctx->widget.hovered && mainRect.contains(ctx->mousePosition);
+		arrowHovered = ctx->widget.hovered && arrowRect.contains(ctx->mousePosition);
+	}
+
+	bool mainPressed = pressed && (!hasArrow || linked || mainRect.contains(ctx->mousePosition));
+	bool arrowPressed = pressed && (!hasArrow || linked || arrowRect.contains(ctx->mousePosition));
+	f32 pressedIncrement = mainPressed ? 1.0f : 0.0f;
+	Image* drawImage = disabled && disabledImage ? disabledImage : image;
+
+	if (ctx->widget.visible)
+	{
+		if (hasArrow && !linked)
+		{
+			auto* mainBodyState = iconButtonState(imageButtonBody, disabled, mainPressed, focused, mainHovered);
+			auto* arrowBodyState = iconButtonState(imageButtonBody, disabled, arrowPressed, focused, arrowHovered);
+			auto* arrowState = iconButtonState(arrowElem, disabled, arrowPressed, focused, arrowHovered);
+
+			// draw the full icon-button body clipped to each side so the outer edge keeps
+			// its rounded corners while the joined inner edge stays straight
+			ctx->renderer.pushClipRect(mainRect);
+			iconButtonDrawBody(imageButtonBody, mainBodyState, fullRect);
+			ctx->renderer.popClipRect();
+
+			ctx->renderer.pushClipRect(arrowRect);
+			iconButtonDrawBody(imageButtonBody, arrowBodyState, fullRect);
+			ctx->renderer.popClipRect();
+
+			iconButtonDrawImage(mainBodyState, drawImage, mainRect, pressedIncrement);
+			iconButtonDrawImage(arrowState, arrowState->image ? arrowState->image : arrowNormalState.image, arrowRect, 0.0f);
+		}
+		else
+		{
+			auto* bodyState = iconButtonState(imageButtonBody, disabled, pressed, focused, ctx->widget.hovered);
+
+			iconButtonDrawBody(imageButtonBody, bodyState, fullRect);
+			iconButtonDrawImage(bodyState, drawImage, hasArrow ? mainRect : fullRect, pressedIncrement);
+
+			if (hasArrow)
+			{
+				auto* arrowState = iconButtonState(arrowElem, disabled, pressed, focused, ctx->widget.hovered);
+				iconButtonDrawImage(arrowState, arrowState->image ? arrowState->image : arrowNormalState.image, arrowRect, 0.0f);
+			}
+		}
+	}
+
+	IconButtonResult result = IconButtonResult::None;
+
+	if (ctx->widget.clicked)
+	{
+		if (hasArrow && !linked && arrowRect.contains(ctx->mousePosition))
+			result = IconButtonResult::Arrow;
+		else
+			result = IconButtonResult::Button;
+
+		forceRepaint();
+	}
+
+	if (ctx->widget.focusable)
+		widgetSetFocusable();
+
+	return result;
+}
+
+void buttonBehavior(bool menuItem, bool allowFocus)
 {
 	ctx->widget.hovered = (ctx->id == ctx->widget.hoveredId);
 	ctx->widget.focused = (ctx->id == ctx->widget.focusedId);
@@ -231,10 +399,14 @@ void buttonBehavior(bool menuItem)
 			if (ctx->event.type == InputEvent::Type::MouseDown
 				&& ctx->event.mouse.button == MouseButton::Left)
 			{
-				ctx->widget.focusedId = ctx->id;
+				if (allowFocus)
+				{
+					ctx->widget.focusedId = ctx->id;
+					ctx->widget.focused = true;
+				}
+
 				ctx->widget.captureId = ctx->id;
 				ctx->widget.pressed = true;
-				ctx->widget.focused = true;
 
 				if (ctx->event.mouse.clickCount == 2)
 					ctx->widget.doubleClicked = true;
@@ -261,7 +433,10 @@ void buttonBehavior(bool menuItem)
 				{
 					ctx->widget.clicked = true;
 					ctx->widget.pressed = false;
-					ctx->widget.focused = true;
+
+					if (allowFocus)
+						ctx->widget.focused = true;
+
 					ctx->widget.captureId = 0;
 				}
 			}

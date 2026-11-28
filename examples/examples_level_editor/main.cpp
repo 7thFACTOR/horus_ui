@@ -34,7 +34,7 @@
 #include "../common/dpi_awareness.h"
 
 // all names loaded from the Material icon atlas, used by the icon browser window
-static std::vector<std::string> gMaterialIconNames;
+static std::vector<std::string> materialIconNames;
 
 // separate from the asset drag type so tree drags never look like asset drops
 static const u32 sceneTreeDragDropType = 101;
@@ -137,15 +137,30 @@ struct LevelEditorState
 	u32 logMessageIndex = 0;
 	i32 logSelectionAnchor = -1;
 
-	static const u32 folderCount = 5;
-	const char* folders[folderCount] = { "Textures", "Meshes", "Materials", "Audio", "Prefabs" };
-	bool folderSelected[folderCount] = { true, false, false, false, false };
+	static const u32 folderCount = 13;
+	const char* folders[folderCount] =
+	{
+		"Textures", "Meshes", "Materials", "Audio", "Prefabs",
+		"Characters", "Environment", "UI", "Props", "Weapons",
+		"Common", "Music", "SFX"
+	};
+	i32 folderParents[folderCount] = { -1, -1, -1, -1, -1, 0, 0, 0, 1, 1, 2, 3, 3 };
+	bool folderExpanded[folderCount] = { true, true, true, true, true };
 	std::vector<AssetItem> assets;
 	std::vector<bool> assetSelected;
 	u32 selectedFolder = 0;
 	i32 assetSelectionAnchor = -1;
 	char assetFilter[128] = { 0 };
+	hui::Point assetFolderScroll = 0;
 	hui::Point assetScroll = 0;
+	f32 assetFolderWidth = 170.0f;
+	f32 assetFolderResizeStartMouseX = 0.0f;
+	f32 assetFolderResizeStartWidth = 0.0f;
+	bool assetFolderResizing = false;
+	hui::Point assetRectStart = 0;
+	hui::Point assetRectEnd = 0;
+	bool assetRectSelecting = false;
+	bool assetRectAdditive = false;
 
 	f32 uiScale = hui::scaleGet();
 	f32 pendingUiScale = 0;
@@ -186,11 +201,20 @@ struct LevelEditorState
 	bool showAssetBrowser = true;
 	bool showIconBrowser = true;
 	bool iconBrowserDocked = false;
+	bool showGameButtons = true;
+	bool gameButtonsDocked = false;
 	bool showLog = true;
 	bool showViewport = true;
 
 	char iconFilter[128] = { 0 };
 	hui::Point iconBrowserScroll = 0;
+	hui::Point gameButtonsScroll = 0;
+
+	bool toolbarSplitPopup = false;
+	bool toolbarLinkedPopup = false;
+	bool toolbarPopupAddCamera = true;
+	i32 toolbarPopupGridSize = 32;
+	u32 toolbarPopupSelection = 0;
 
 	bool saveLayoutRequested = false;
 	bool loadLayoutRequested = false;
@@ -214,6 +238,7 @@ struct LevelEditorState
 	hui::HImage iconArrowClosed = 0;
 	hui::HImage iconArrowOpen = 0;
 	f32 iconButtonSize = 48;
+	f32 toolbarButtonSpacing = 2;
 	f32 toolbarGroupSpacing = 8;
 	hui::HImage thumbLena = 0;
 	hui::HImage thumbFolder = 0;
@@ -236,6 +261,19 @@ static bool isObjectSelected(const LevelEditorState& state, const SceneObject* o
 	}
 
 	return false;
+}
+
+static u32 sceneSelectionCount(const LevelEditorState& state)
+{
+	u32 count = state.selectedObject ? 1 : 0;
+
+	for (SceneObject* selected : state.sceneSelection)
+	{
+		if (selected != state.selectedObject)
+			count++;
+	}
+
+	return count;
 }
 
 void appendLog(LevelEditorState& state, LogEntry::Level level, const std::string& text);
@@ -669,6 +707,34 @@ hui::HImage materialIcon(const char* name)
 	return hui::themeGetImage(hui::themeGet(), name);
 }
 
+static hui::Color themeLabelTextColor()
+{
+	hui::WidgetElementInfo info;
+	hui::themeGetWidgetElementInfo(hui::WidgetElementId::LabelBody, hui::WidgetStateType::Normal, info);
+	return info.textColor;
+}
+
+static bool themeUsesLightText()
+{
+	hui::Color c = themeLabelTextColor();
+	return (c.r + c.g + c.b) > 1.5f;
+}
+
+// the filter edit keeps 45% of the row, the label gets the rest and ellipsizes
+static void labelAndFilter(const char* label, const hui::Color& color, const char* inputId, char* text, u32 maxLength, const char* hint)
+{
+	f32 layoutWidth = (std::max)(hui::layoutGetSize().x, 1.0f);
+	f32 spacing = hui::sameLineSpacingGet() * hui::scaleGet();
+	f32 labelFraction = (layoutWidth * 0.55f - spacing) / layoutWidth;
+	labelFraction = (std::max)(labelFraction, 0.01f);
+
+	hui::widgetSetNextWidth(labelFraction);
+	hui::labelCustomColor(label, color);
+	hui::sameLine();
+	hui::widgetSetNextWidth(0.45f);
+	hui::textInput(inputId, text, maxLength, hui::TextInputFlags::None, hint);
+}
+
 void loadThemeImages(LevelEditorState& state)
 {
 	auto theme = hui::themeGet();
@@ -700,6 +766,62 @@ void loadThemeImages(LevelEditorState& state)
 	state.thumbStacks = materialIcon("layers");
 }
 
+// add the ornate game button style at runtime, so it also exists in the
+// builtin theme which has no JSON file to describe it
+void setupGameButtonStyle()
+{
+	auto theme = hui::themeGet();
+
+	if (!theme)
+		return;
+
+	const char* imagePath = "../themes/common/game_btn.png";
+	auto image = hui::themeGetImage(theme, imagePath);
+
+	if (!image)
+		image = hui::loadThemeImage(theme, imagePath);
+
+	if (!image)
+		return;
+
+	auto fontLarge = hui::themeFontGetFromTheme(theme, "large");
+	auto fontLargeBold = hui::themeFontGetFromTheme(theme, "large-bold");
+
+	if (!fontLarge)
+		fontLarge = hui::themeFontGetFromTheme(theme, "normal");
+
+	if (!fontLargeBold)
+		fontLargeBold = fontLarge;
+
+	auto makeInfo = [&](const hui::Color& color, const hui::Color& textColor, hui::HFont font)
+	{
+		hui::WidgetElementInfo info;
+		info.image = image;
+		info.border = 18;
+		info.width = 0;
+		info.height = 64;
+		info.color = color;
+		info.textColor = textColor;
+		info.font = font;
+		info.textShadow.enabled = true;
+		info.textShadow.color = hui::Color::black;
+		info.textShadow.offsetX = 2.0f;
+		info.textShadow.offsetY = 2.0f;
+		return info;
+	};
+
+	hui::themeSetWidgetElement(theme, hui::WidgetElementId::ButtonBody, hui::WidgetStateType::Normal,
+		makeInfo(hui::Color::white, hui::Color::fromU8(255, 245, 200), fontLargeBold), "game");
+	hui::themeSetWidgetElement(theme, hui::WidgetElementId::ButtonBody, hui::WidgetStateType::Hovered,
+		makeInfo(hui::Color::fromU8(120, 180, 255), hui::Color::white, fontLargeBold), "game");
+	hui::themeSetWidgetElement(theme, hui::WidgetElementId::ButtonBody, hui::WidgetStateType::Pressed,
+		makeInfo(hui::Color::fromU8(190, 180, 160), hui::Color::fromU8(255, 235, 180), fontLargeBold), "game");
+	hui::themeSetWidgetElement(theme, hui::WidgetElementId::ButtonBody, hui::WidgetStateType::Focused,
+		makeInfo(hui::Color::fromU8(255, 245, 210), hui::Color::white, fontLargeBold), "game");
+	hui::themeSetWidgetElement(theme, hui::WidgetElementId::ButtonBody, hui::WidgetStateType::Disabled,
+		makeInfo(hui::Color::fromU8(110, 110, 110), hui::Color::fromU8(180, 180, 180), fontLargeBold), "game");
+}
+
 void buildDummyAssets(LevelEditorState& state)
 {
 	auto add = [&state](const char* name, const char* type, u32 folder, hui::HImage thumb)
@@ -712,20 +834,20 @@ void buildDummyAssets(LevelEditorState& state)
 		state.assets.push_back(item);
 	};
 
-	add("T_CityWall_D.png", "Texture", 0, state.thumbLena);
-	add("T_Road_Albedo.png", "Texture", 0, state.thumbLena);
-	add("T_Grass_D.png", "Texture", 0, state.thumbLena);
-	add("T_Sky_HDRI.exr", "Texture", 0, state.thumbData);
+	add("T_CityWall_D.png", "Texture", 6, state.thumbLena);
+	add("T_Road_Albedo.png", "Texture", 6, state.thumbLena);
+	add("T_Grass_D.png", "Texture", 6, state.thumbLena);
+	add("T_Sky_HDRI.exr", "Texture", 6, state.thumbData);
 	add("T_Metal_Rough.png", "Texture", 0, state.thumbLena);
-	add("SM_Building_A.fbx", "Mesh", 1, state.thumbStacks);
-	add("SM_Building_B.fbx", "Mesh", 1, state.thumbStacks);
-	add("SM_StreetLamp.fbx", "Mesh", 1, state.thumbStacks);
+	add("SM_Building_A.fbx", "Mesh", 8, state.thumbStacks);
+	add("SM_Building_B.fbx", "Mesh", 8, state.thumbStacks);
+	add("SM_StreetLamp.fbx", "Mesh", 8, state.thumbStacks);
 	add("SM_Bridge_LOD2.fbx", "Mesh", 1, state.thumbStacks);
 	add("M_Default.mat", "Material", 2, state.thumbSettings);
-	add("M_Glass.mat", "Material", 2, state.thumbSettings);
-	add("M_Asphalt.mat", "Material", 2, state.thumbSettings);
+	add("M_Glass.mat", "Material", 10, state.thumbSettings);
+	add("M_Asphalt.mat", "Material", 10, state.thumbSettings);
 	add("S_Ambient_01.wav", "Audio", 3, state.thumbData);
-	add("S_Footstep.wav", "Audio", 3, state.thumbData);
+	add("S_Footstep.wav", "Audio", 12, state.thumbData);
 	add("P_StreetLamp.prefab", "Prefab", 4, state.thumbFolder);
 	add("P_Building.prefab", "Prefab", 4, state.thumbFolder);
 
@@ -759,7 +881,10 @@ void drawMainMenu(LevelEditorState& state, bool& exitNow)
 	state.showInspector = hui::windowIsVisible("inspector");
 	state.showAssetBrowser = hui::windowIsVisible("asset_browser");
 	state.showIconBrowser = hui::windowIsVisible("icon_browser");
+	state.showGameButtons = hui::windowIsVisible("game_buttons");
 	state.showLog = hui::windowIsVisible("log");
+
+	hui::Point menuBarPos = hui::widgetGetPosition();
 
 	if (!hui::menuBarBegin())
 		return;
@@ -831,8 +956,36 @@ void drawMainMenu(LevelEditorState& state, bool& exitNow)
 		if (hui::menuItem("Icon Browser", "", 0, state.showIconBrowser ? hui::SelectableFlags::Checked : hui::SelectableFlags::Normal))
 			toggle(state.showIconBrowser, "icon_browser");
 
+		if (hui::menuItem("Game Buttons", "", 0, state.showGameButtons ? hui::SelectableFlags::Checked : hui::SelectableFlags::Normal))
+			toggle(state.showGameButtons, "game_buttons");
+
 		if (hui::menuItem("Log", "", 0, state.showLog ? hui::SelectableFlags::Checked : hui::SelectableFlags::Normal))
 			toggle(state.showLog, "log");
+
+		bool dockSlotsEnabled = hui::contextGetSettings().dockingStyle == hui::DockingGuidesStyle::InsideNativeWindows;
+		auto dockSlotsFlags = dockSlotsEnabled
+			? hui::SelectableFlags::Checkable | hui::SelectableFlags::Checked
+			: hui::SelectableFlags::Checkable;
+
+		if (hui::menuItem("Docking Slots", "", 0, dockSlotsFlags))
+		{
+			hui::contextGetSettings().dockingStyle = dockSlotsEnabled
+				? hui::DockingGuidesStyle::NativeWindows
+				: hui::DockingGuidesStyle::InsideNativeWindows;
+			appendLog(state, LogEntry::Level::Info, dockSlotsEnabled ? "Docking slots disabled" : "Docking slots enabled");
+			hui::forceRepaint();
+		}
+
+		bool throttleEnabled = hui::contextGetSettings().fpsThrottleEnable;
+		auto throttleFlags = throttleEnabled
+			? hui::SelectableFlags::Checkable | hui::SelectableFlags::Checked
+			: hui::SelectableFlags::Checkable;
+
+		if (hui::menuItem("FPS Throttle", "", 0, throttleFlags))
+		{
+			hui::contextGetSettings().fpsThrottleEnable = !throttleEnabled;
+			hui::forceRepaint();
+		}
 
 		hui::menuSeparator();
 
@@ -924,6 +1077,24 @@ void drawMainMenu(LevelEditorState& state, bool& exitNow)
 		hui::menuItem("About Level Editor");
 		hui::menuEnd();
 	}
+
+	hui::WidgetElementInfo menuBarBodyInfo;
+	hui::themeGetWidgetElementInfo(hui::WidgetElementId::MenuBarBody, hui::WidgetStateType::Normal, menuBarBodyInfo);
+	f32 menuBarHeight = menuBarBodyInfo.height * hui::scaleGet();
+	hui::Rect client = hui::windowGetClientRect();
+	char frameTimeText[32];
+	snprintf(frameTimeText, sizeof(frameTimeText), "Frame Avg %.2f ms", hui::frameTimeGetAvgMs());
+	hui::renderSetColor(themeLabelTextColor());
+	hui::renderDrawTextInBox(
+		frameTimeText,
+		{
+			menuBarPos.x,
+			menuBarPos.y,
+			client.right() - menuBarPos.x - 8.0f * hui::scaleGet(),
+			menuBarHeight
+		},
+		hui::HAlignType::Right,
+		hui::VAlignType::Center);
 
 	hui::menuBarEnd();
 }
@@ -1051,6 +1222,7 @@ void buildDefaultLayout(hui::DockNodeId root)
 	hui::dockNodeSetWindow(n1, "viewport");
 	hui::dockNodeSetWindow(n2, "asset_browser");
 	hui::dockNodeSetWindow(n2, "log");
+	hui::dockNodeSetWindow(n2, "game_buttons");
 
 	hui::dockNodeLayoutRecalculate();
 }
@@ -1063,29 +1235,158 @@ void drawMainToolbar(LevelEditorState& state)
 		appendLog(state, LogEntry::Level::Info, "Toolbar: New");
 	hui::tooltip("New Scene");
 
-	hui::sameLine(0, 0.001f);
+	hui::sameLine(0, state.toolbarButtonSpacing);
 
 	if (hui::imageButton(state.iconOpen, state.iconButtonSize, state.iconButtonSize))
 		appendLog(state, LogEntry::Level::Info, "Toolbar: Open");
 	hui::tooltip("Open Scene");
 
-	hui::sameLine(0, 0.001f);
+	hui::sameLine(0, state.toolbarButtonSpacing);
 
 	if (hui::imageButton(state.iconSave, state.iconButtonSize, state.iconButtonSize))
 		appendLog(state, LogEntry::Level::Info, "Toolbar: Save");
 	hui::tooltip("Save");
 
-	hui::sameLine(0, 0.001f);
+	hui::sameLine(0, state.toolbarButtonSpacing);
 
 	if (hui::imageButton(state.iconUndo, state.iconButtonSize, state.iconButtonSize))
 		appendLog(state, LogEntry::Level::Info, "Toolbar: Undo");
 	hui::tooltip("Undo");
 
-	hui::sameLine(0, 0.001f);
+	hui::sameLine(0, state.toolbarButtonSpacing);
 
 	if (hui::imageButton(state.iconRedo, state.iconButtonSize, state.iconButtonSize))
 		appendLog(state, LogEntry::Level::Info, "Toolbar: Redo");
 	hui::tooltip("Redo");
+
+	hui::sameLine();
+	hui::space(state.toolbarGroupSpacing);
+
+	auto splitButtonResult = hui::iconButton(
+		state.iconNew,
+		state.iconButtonSize,
+		state.iconButtonSize,
+		hui::IconButtonFlags::DropDownArrow);
+
+	hui::tooltip("Split icon button (separate arrow hover)");
+
+	if (splitButtonResult == hui::IconButtonResult::Button)
+		appendLog(state, LogEntry::Level::Info, "Toolbar: split button");
+	else if (splitButtonResult == hui::IconButtonResult::Arrow)
+		state.toolbarSplitPopup = true;
+
+	// the arrow opens a custom popup with its own widgets
+	if (state.toolbarSplitPopup)
+	{
+		hui::popupBegin("##toolbarSplitPopup", 230.0f, hui::PopupFlags::BelowLastWidget);
+		hui::label("Quick create");
+
+		auto createFromPopup = [&](const char* type)
+		{
+			char name[64];
+			snprintf(name, sizeof(name), "%s_%u", type, state.newObjectCounter++);
+
+			SceneObject* parent = state.roots.empty() ? nullptr : state.roots[0];
+			SceneObject* obj = createObject(state, name, type, parent);
+			state.selectedObject = obj;
+
+			appendLog(state, LogEntry::Level::Info, std::string("Created '") + name + "'");
+		};
+
+		bool chosen = false;
+
+		if (hui::button("Empty Entity"))
+		{
+			createFromPopup("Entity");
+			chosen = true;
+		}
+
+		if (hui::button("Camera"))
+		{
+			createFromPopup("Camera");
+			chosen = true;
+		}
+
+		if (hui::button("Light"))
+		{
+			createFromPopup("Light");
+			chosen = true;
+		}
+
+		hui::menuSeparator();
+		hui::check("Add default components", &state.toolbarPopupAddCamera);
+		hui::label("Grid size");
+		hui::sliderInt("##toolbarPopupGridSize", 8, 128, state.toolbarPopupGridSize, true, 8);
+
+		if (hui::button("Create") || chosen || hui::popupMustClose())
+		{
+			state.toolbarSplitPopup = false;
+			hui::popupClose();
+		}
+
+		hui::popupEnd();
+	}
+
+	hui::sameLine(0, state.toolbarButtonSpacing);
+
+	auto linkedButtonResult = hui::iconButton(
+		state.iconToolbar,
+		state.iconButtonSize,
+		state.iconButtonSize,
+		hui::IconButtonFlags::DropDownArrow | hui::IconButtonFlags::LinkedArrow);
+
+	hui::tooltip("Linked icon button (shared arrow hover)");
+
+	if (linkedButtonResult == hui::IconButtonResult::Button)
+		state.toolbarLinkedPopup = true;
+
+	// the linked button opens a dropdown list, both halves return Button
+	if (state.toolbarLinkedPopup)
+	{
+		hui::popupBegin("##toolbarLinkedPopup", 190.0f, hui::PopupFlags::BelowLastWidget, hui::Point(), hui::WidgetElementId::MenuBody);
+
+		bool chosen = false;
+
+		if (hui::selectable("Toolbar", state.toolbarPopupSelection == 0 ? hui::SelectableFlags::Selected : hui::SelectableFlags::Normal))
+		{
+			state.toolbarPopupSelection = 0;
+			chosen = true;
+		}
+
+		if (hui::selectable("Scene", state.toolbarPopupSelection == 1 ? hui::SelectableFlags::Selected : hui::SelectableFlags::Normal))
+		{
+			state.toolbarPopupSelection = 1;
+			chosen = true;
+		}
+
+		if (hui::selectable("Inspector", state.toolbarPopupSelection == 2 ? hui::SelectableFlags::Selected : hui::SelectableFlags::Normal))
+		{
+			state.toolbarPopupSelection = 2;
+			chosen = true;
+		}
+
+		if (hui::selectable("Log", state.toolbarPopupSelection == 3 ? hui::SelectableFlags::Selected : hui::SelectableFlags::Normal))
+		{
+			state.toolbarPopupSelection = 3;
+			chosen = true;
+		}
+
+		hui::menuSeparator();
+
+		if (hui::selectable("Reset Layout"))
+		{
+			state.resetLayoutRequested = true;
+			chosen = true;
+		}
+
+		if (chosen || hui::popupMustClose())
+		{
+			state.toolbarLinkedPopup = false;
+			hui::popupClose();
+		}
+
+		hui::popupEnd();
+	}
 
 	hui::sameLine();
 	hui::space(state.toolbarGroupSpacing);
@@ -1259,8 +1560,9 @@ void drawSceneTreeNode(LevelEditorState& state, SceneObject* obj, u32 depth)
 		&& ev.type == hui::InputEvent::Type::MouseDown
 		&& ev.mouse.button == hui::MouseButton::Left)
 	{
-		// clicking anywhere in the content of an already-selected row starts a rename
-		if (rowSelected && mousePos.x >= labelRect.x)
+		// with a multi-selection, the first click collapses it to the clicked row;
+		// a subsequent click on the now single-selected row starts the rename
+		if (rowSelected && mousePos.x >= labelRect.x && sceneSelectionCount(state) <= 1)
 		{
 			beginSceneTreeRename(state, obj);
 		}
@@ -1391,7 +1693,13 @@ void drawSceneTree(LevelEditorState& state)
 	// recomputed every frame while dragging; rows set it again below
 	state.treeDropTarget = SceneTreeDropTarget();
 
-	hui::widgetSetNextWidth(0.55f);
+	f32 sceneBarScale = hui::scaleGet();
+	f32 sceneBarSpacing = hui::sameLineSpacingGet() * sceneBarScale;
+	f32 sceneBarWidth = hui::layoutGetSize().x;
+	f32 sceneBarButtonWidth = sceneBarWidth * 0.21f;
+	f32 sceneBarSearchWidth = (std::max)(sceneBarWidth - sceneBarButtonWidth * 2.0f - sceneBarSpacing * 2.0f, 1.0f) / sceneBarScale;
+
+	hui::widgetSetNextWidth(sceneBarSearchWidth);
 	hui::textInput("##objectSearch", state.objectSearch, 128, hui::TextInputFlags::None, "Search objects...");
 
 	hui::sameLine();
@@ -1454,7 +1762,7 @@ void drawInspector(LevelEditorState& state)
 	{
 		hui::space();
 		hui::label("No object selected", hui::HAlignType::Center);
-		hui::labelCustomColor("Select an object in the Scene Tree to edit it.", hui::Color::gray, hui::HAlignType::Center);
+		hui::labelCustomColor("Select an object in the Scene Tree to edit it.", themeLabelTextColor(), hui::HAlignType::Center);
 		return;
 	}
 
@@ -1470,7 +1778,11 @@ void drawInspector(LevelEditorState& state)
 		hui::tableCellPaddingPush(8.0f, 4.0f);
 
 		propGridRow("Name", [&]() { hui::textInput("##objectName", obj->name, sizeof(obj->name)); });
-		propGridRow("Type", [&]() { hui::labelCustomColor(obj->type, hui::Color::yellow); });
+		propGridRow("Type", [&]()
+		{
+			hui::Color typeColor = themeUsesLightText() ? hui::Color::yellow : hui::Color::fromU8(150, 90, 0);
+			hui::labelCustomColor(obj->type, typeColor);
+		});
 
 		hui::tableRowNext();
 		hui::tableCellNext(2);
@@ -1526,7 +1838,7 @@ void drawInspector(LevelEditorState& state)
 			{
 				hui::tableRowNext();
 				hui::tableCellNext(2);
-				hui::labelCustomColor("Triggers are not solid, overlap events only.", hui::Color::gray);
+				hui::labelCustomColor("Triggers are not solid, overlap events only.", themeLabelTextColor());
 			}
 		}
 
@@ -2017,6 +2329,59 @@ void drawViewport(LevelEditorState& state)
 	hui::viewportEnd();
 }
 
+static void drawAssetFolderTree(LevelEditorState& state, i32 parent)
+{
+	f32 scale = hui::scaleGet();
+
+	for (u32 i = 0; i < LevelEditorState::folderCount; i++)
+	{
+		if (state.folderParents[i] != parent)
+			continue;
+
+		// leading spaces reserve room for the folder icon drawn over the label
+		char label[128];
+		snprintf(label, sizeof(label), "      %s", state.folders[i]);
+
+		hui::idPush((void*)(uintptr_t)(i + 1));
+
+		bool expanded = hui::treeNodeBegin(
+			label,
+			&state.folderExpanded[i],
+			i == state.selectedFolder ? hui::SelectableFlags::Selected : hui::SelectableFlags::Normal);
+
+		hui::Rect labelRect = hui::widgetGetRect();
+		f32 iconSize = 14.0f * scale;
+		hui::HImage folderIcon = materialIcon(state.folderExpanded[i] ? "folder_open" : "folder");
+
+		if (folderIcon)
+		{
+			hui::renderSetColor(themeLabelTextColor());
+			hui::renderDrawStretchedImage(folderIcon,
+				{
+					labelRect.x + 2.0f * scale,
+					labelRect.y + (labelRect.height - iconSize) * 0.5f,
+					iconSize,
+					iconSize
+				});
+		}
+
+		if (hui::widgetIsClicked())
+		{
+			state.selectedFolder = i;
+			std::fill(state.assetSelected.begin(), state.assetSelected.end(), false);
+			state.assetSelectionAnchor = -1;
+		}
+
+		if (expanded)
+		{
+			drawAssetFolderTree(state, (i32)i);
+			hui::treeNodeEnd();
+		}
+
+		hui::idPop();
+	}
+}
+
 void drawAssetBrowser(LevelEditorState& state)
 {
 	u32 selectedCount = 0;
@@ -2033,15 +2398,15 @@ void drawAssetBrowser(LevelEditorState& state)
 
 	std::string path = "/ Content / Assets";
 
+	if (state.selectedFolder < LevelEditorState::folderCount)
+		path += " / " + std::string(state.folders[state.selectedFolder]);
+
 	if (selectedCount == 1 && lastSelected >= 0 && (u32)lastSelected < state.assets.size())
 		path += " / " + state.assets[lastSelected].name;
 	else if (selectedCount > 1)
 		path += " / (" + std::to_string(selectedCount) + " selected)";
 
-	hui::labelCustomColor(path.c_str(), hui::Color::gray);
-	hui::sameLine();
-	hui::widgetSetNextWidth(0.45f);
-	hui::textInput("##assetFilter", state.assetFilter, 128, hui::TextInputFlags::None, "Filter assets...");
+	labelAndFilter(path.c_str(), themeLabelTextColor(), "##assetFilter", state.assetFilter, 128, "Filter assets...");
 
 	hui::line();
 
@@ -2053,7 +2418,46 @@ void drawAssetBrowser(LevelEditorState& state)
 	if (paneHeight < 60.0f)
 		paneHeight = 60.0f;
 
-	f32 leftWidth = 130.0f;
+	const hui::InputEvent& ev = hui::inputEventGet();
+	hui::Point mouse = hui::mouseGetPosition();
+	bool leftDownNow = HUI_SERVICES.isMouseButtonDownNow && HUI_SERVICES.isMouseButtonDownNow(hui::MouseButton::Left);
+	f32 uiScale = hui::scaleGet();
+	f32 splitterWidth = 6.0f * uiScale;
+	f32 minLeftWidth = 90.0f * uiScale;
+	f32 maxLeftWidth = (std::max)(minLeftWidth, client.right() - cursor.x - 220.0f * uiScale);
+	f32 leftWidth = state.assetFolderWidth * uiScale;
+	leftWidth = (std::max)(minLeftWidth, (std::min)(leftWidth, maxLeftWidth));
+	hui::Rect splitterRect(cursor.x + leftWidth - splitterWidth * 0.5f, cursor.y, splitterWidth, paneHeight);
+	bool splitterHovered = splitterRect.contains(mouse);
+
+	if (ev.type == hui::InputEvent::Type::MouseDown
+		&& ev.mouse.button == hui::MouseButton::Left
+		&& hui::layerIsActive()
+		&& hui::windowIsMouseOver()
+		&& splitterHovered)
+	{
+		state.assetFolderResizing = true;
+		state.assetFolderResizeStartMouseX = mouse.x;
+		state.assetFolderResizeStartWidth = state.assetFolderWidth;
+	}
+
+	if (state.assetFolderResizing)
+	{
+		if (leftDownNow)
+		{
+			f32 newWidth = state.assetFolderResizeStartWidth + (mouse.x - state.assetFolderResizeStartMouseX) / uiScale;
+			newWidth = (std::max)(minLeftWidth / uiScale, (std::min)(newWidth, maxLeftWidth / uiScale));
+			state.assetFolderWidth = newWidth;
+			leftWidth = newWidth * uiScale;
+			splitterRect.x = cursor.x + leftWidth - splitterWidth * 0.5f;
+			splitterHovered = splitterRect.contains(mouse);
+		}
+		else
+		{
+			state.assetFolderResizing = false;
+		}
+	}
+
 	f32 rightX = cursor.x + leftWidth + 8.0f;
 	f32 rightWidth = client.right() - rightX - 10.0f;
 
@@ -2062,24 +2466,11 @@ void drawAssetBrowser(LevelEditorState& state)
 
 	hui::paddingPush(hui::PaddingType::Layout, 0);
 
-	// folders pane
+	// folders pane, drawn as a tree with a folder icon on every node
 	hui::layoutBegin({ cursor.x, cursor.y, leftWidth, paneHeight });
-
-	if (hui::list("##assetFolders", state.folderSelected, hui::ListSelectionMode::Single, state.folders, LevelEditorState::folderCount, paneHeight))
-	{
-		for (u32 i = 0; i < LevelEditorState::folderCount; i++)
-		{
-			if (state.folderSelected[i])
-			{
-				state.selectedFolder = i;
-				break;
-			}
-		}
-
-		std::fill(state.assetSelected.begin(), state.assetSelected.end(), false);
-		state.assetSelectionAnchor = -1;
-	}
-
+	hui::scrollViewBegin("##assetFolderScroll", paneHeight, state.assetFolderScroll, hui::Point(0, 0), hui::ScrollViewFlags::NoHorizontalScroll);
+	drawAssetFolderTree(state, -1);
+	state.assetFolderScroll = hui::scrollViewEnd();
 	hui::layoutEnd();
 
 	// assets pane
@@ -2100,86 +2491,134 @@ void drawAssetBrowser(LevelEditorState& state)
 		visibleAssets.push_back(i);
 	}
 
+	hui::Rect assetsPaneRect(rightX, cursor.y, rightWidth, paneHeight);
+	hui::Rect assetsSelectArea = assetsPaneRect;
+	assetsSelectArea.width = (std::max)(assetsSelectArea.width - 16.0f * hui::scaleGet(), 1.0f);
 	hui::scrollViewBegin("##assetScroll", paneHeight, state.assetScroll, hui::Point(0, 0), hui::ScrollViewFlags::NoHorizontalScroll);
 
-		u32 column = 0;
+	hui::Point contentStart = hui::widgetGetPosition();
+	f32 scale = hui::scaleGet();
+	f32 spacing = hui::sameLineSpacingGet() * scale;
+	f32 buttonSize = 72.0f * scale;
+	f32 buttonHeight = (72.0f + hui::widgetGetPadding().y * 2.0f) * scale;
+	f32 labelHeight = 30.0f * scale;
+	f32 rowHeight = buttonHeight + labelHeight + spacing;
+	f32 availableWidth = hui::layoutGetSize().x;
+	f32 cellWidth = buttonSize + 18.0f * scale;
+	u32 columns = (u32)(std::max)(1.0f, std::floor((availableWidth + spacing) / (cellWidth + spacing)));
+	columns = (std::min)(columns, 4u);
 
-		for (u32 visibleIndex = 0; visibleIndex < visibleAssets.size(); visibleIndex++)
+	u32 totalRows = (u32)((visibleAssets.size() + columns - 1) / columns);
+	f32 scrollOffset = (std::max)(state.assetScroll.y, 0.0f);
+	u32 firstRow = totalRows > 0 ? (u32)(std::max)((f32)0.0f, std::floor(scrollOffset / rowHeight) - 1.0f) : 0;
+	u32 lastRow = (u32)(std::min)((f32)totalRows, std::ceil((scrollOffset + paneHeight) / rowHeight) + 1.0f);
+
+	if (firstRow > totalRows)
+		firstRow = totalRows;
+
+	if (lastRow < firstRow)
+		lastRow = firstRow;
+
+	struct AssetCellRect
+	{
+		u32 assetIndex = 0;
+		u32 visibleIndex = 0;
+		hui::Rect rect;
+		hui::Rect hitRect;
+		hui::Rect labelRect;
+	};
+
+	std::vector<AssetCellRect> cellRects;
+	cellRects.reserve((lastRow - firstRow) * columns);
+
+	auto selectAsset = [&](u32 assetIndex, u32 visibleIndex)
+	{
+		const hui::InputEvent& ev = hui::inputEventGet();
+		bool ctrl = hui::has(ev.mouse.modifiers, hui::KeyModifiers::Control);
+		bool shift = hui::has(ev.mouse.modifiers, hui::KeyModifiers::Shift);
+
+		if (shift && state.assetSelectionAnchor >= 0)
 		{
+			int anchorVisible = -1;
+			int clickedVisible = (int)visibleIndex;
+
+			for (u32 v = 0; v < visibleAssets.size(); v++)
+			{
+				if ((i32)visibleAssets[v] == state.assetSelectionAnchor)
+				{
+					anchorVisible = (int)v;
+					break;
+				}
+			}
+
+			if (anchorVisible >= 0)
+			{
+				int from = (std::min)(anchorVisible, clickedVisible);
+				int to = (std::max)(anchorVisible, clickedVisible);
+
+				if (!ctrl)
+					std::fill(state.assetSelected.begin(), state.assetSelected.end(), false);
+
+				for (int v = from; v <= to; v++)
+				{
+					u32 idx = visibleAssets[(u32)v];
+
+					if (idx < state.assetSelected.size())
+						state.assetSelected[idx] = true;
+				}
+			}
+			else
+			{
+				if (!ctrl)
+					std::fill(state.assetSelected.begin(), state.assetSelected.end(), false);
+
+				if (assetIndex < state.assetSelected.size())
+					state.assetSelected[assetIndex] = true;
+
+				state.assetSelectionAnchor = (i32)assetIndex;
+			}
+		}
+		else if (ctrl)
+		{
+			if (assetIndex < state.assetSelected.size())
+				state.assetSelected[assetIndex] = !state.assetSelected[assetIndex];
+
+			state.assetSelectionAnchor = (i32)assetIndex;
+		}
+		else
+		{
+			std::fill(state.assetSelected.begin(), state.assetSelected.end(), false);
+
+			if (assetIndex < state.assetSelected.size())
+				state.assetSelected[assetIndex] = true;
+
+			state.assetSelectionAnchor = (i32)assetIndex;
+		}
+	};
+
+	for (u32 row = firstRow; row < lastRow; row++)
+	{
+		for (u32 column = 0; column < columns; column++)
+		{
+			u32 visibleIndex = row * columns + column;
+
+			if (visibleIndex >= visibleAssets.size())
+				break;
+
 			u32 i = visibleAssets[visibleIndex];
 			const AssetItem& asset = state.assets[i];
+			bool selected = (i < state.assetSelected.size()) ? state.assetSelected[i] : false;
 
-			if (column > 0)
-				hui::sameLine();
+			f32 cellX = contentStart.x + (f32)column * cellWidth;
+			f32 cellY = contentStart.y + (f32)row * rowHeight;
+
+			hui::widgetPushPosition();
+			hui::widgetSetPosition({ cellX + (cellWidth - buttonSize) * 0.5f, cellY });
 
 			hui::idPush((u32)i);
 
-			bool selected = (i < state.assetSelected.size()) ? state.assetSelected[i] : false;
-
 			if (hui::imageButton(asset.thumb, 72, 72, 0, selected))
-			{
-				const hui::InputEvent& ev = hui::inputEventGet();
-				bool ctrl = hui::has(ev.mouse.modifiers, hui::KeyModifiers::Control);
-				bool shift = hui::has(ev.mouse.modifiers, hui::KeyModifiers::Shift);
-
-				if (shift && state.assetSelectionAnchor >= 0)
-				{
-					int anchorVisible = -1;
-					int clickedVisible = (int)visibleIndex;
-
-					for (u32 v = 0; v < visibleAssets.size(); v++)
-					{
-						if ((i32)visibleAssets[v] == state.assetSelectionAnchor)
-						{
-							anchorVisible = (int)v;
-							break;
-						}
-					}
-
-					if (anchorVisible >= 0)
-					{
-						int from = (std::min)(anchorVisible, clickedVisible);
-						int to = (std::max)(anchorVisible, clickedVisible);
-
-						if (!ctrl)
-							std::fill(state.assetSelected.begin(), state.assetSelected.end(), false);
-
-						for (int v = from; v <= to; v++)
-						{
-							u32 idx = visibleAssets[(u32)v];
-
-							if (idx < state.assetSelected.size())
-								state.assetSelected[idx] = true;
-						}
-					}
-					else
-					{
-						if (!ctrl)
-							std::fill(state.assetSelected.begin(), state.assetSelected.end(), false);
-
-						if (i < state.assetSelected.size())
-							state.assetSelected[i] = true;
-
-						state.assetSelectionAnchor = (i32)i;
-					}
-				}
-				else if (ctrl)
-				{
-					if (i < state.assetSelected.size())
-						state.assetSelected[i] = !state.assetSelected[i];
-
-					state.assetSelectionAnchor = (i32)i;
-				}
-				else
-				{
-					std::fill(state.assetSelected.begin(), state.assetSelected.end(), false);
-
-					if (i < state.assetSelected.size())
-						state.assetSelected[i] = true;
-
-					state.assetSelectionAnchor = (i32)i;
-				}
-			}
+				selectAsset(i, visibleIndex);
 
 			if ((strcmp(asset.type, "Mesh") == 0 || strcmp(asset.type, "Prefab") == 0) && hui::dragDropWantsTo())
 				hui::dragDropBegin(assetDragDropType, (void*)(uintptr_t)i);
@@ -2189,30 +2628,194 @@ void drawAssetBrowser(LevelEditorState& state)
 			hui::Rect btnRect = hui::widgetGetRect();
 			hui::idPop();
 
-			hui::renderSetColor(hui::Color::lightGray);
-			hui::renderDrawTextInBox(asset.name.c_str(), { btnRect.x, btnRect.bottom() + 2.0f, btnRect.width, 16.0f }, hui::HAlignType::Center, hui::VAlignType::Top);
+			hui::Rect labelRect(btnRect.x, btnRect.bottom(), btnRect.width, labelHeight);
 
-			column = (column + 1) % 4;
+			if (selected)
+			{
+				hui::HImage white = hui::themeGetImage(hui::themeGet(), "__WHITEIMAGE__");
+				hui::renderSetColor(hui::Color::fromU8(0, 140, 195, 220));
+
+				if (white)
+					hui::renderDrawStretchedImage(white, labelRect);
+
+				hui::renderSetColor(hui::Color::white);
+			}
+			else
+			{
+				hui::renderSetColor(themeLabelTextColor());
+			}
+
+			hui::renderDrawTextInBox(asset.name.c_str(), labelRect, hui::HAlignType::Center, hui::VAlignType::Top);
+
+			cellRects.push_back({
+				i,
+				visibleIndex,
+				hui::Rect(cellX, cellY, cellWidth, rowHeight),
+				hui::Rect(btnRect.x, btnRect.y, btnRect.width, buttonHeight + labelHeight),
+				labelRect
+			});
+			hui::widgetPopPosition();
 		}
+	}
+
+	hui::widgetSetPosition({ contentStart.x, contentStart.y + (f32)totalRows * rowHeight });
+
+	bool overAsset = false;
+
+	for (const AssetCellRect& cell : cellRects)
+	{
+		if (cell.hitRect.contains(mouse))
+		{
+			overAsset = true;
+			break;
+		}
+	}
+
+	if (ev.type == hui::InputEvent::Type::MouseUp
+		&& ev.mouse.button == hui::MouseButton::Left
+		&& !state.assetRectSelecting)
+	{
+		for (const AssetCellRect& cell : cellRects)
+		{
+			if (cell.labelRect.contains(mouse))
+			{
+				selectAsset(cell.assetIndex, cell.visibleIndex);
+				break;
+			}
+		}
+	}
+
+	if (ev.type == hui::InputEvent::Type::MouseDown
+		&& ev.mouse.button == hui::MouseButton::Left
+		&& hui::layerIsActive()
+		&& hui::windowIsMouseOver()
+		&& assetsSelectArea.contains(mouse)
+		&& !overAsset)
+	{
+		state.assetRectSelecting = true;
+		state.assetRectStart = mouse;
+		state.assetRectEnd = mouse;
+		state.assetRectAdditive = hui::has(ev.mouse.modifiers, hui::KeyModifiers::Control);
+
+		if (!state.assetRectAdditive)
+			std::fill(state.assetSelected.begin(), state.assetSelected.end(), false);
+
+		state.assetSelectionAnchor = -1;
+	}
+
+	if (state.assetRectSelecting)
+	{
+		state.assetRectEnd = mouse;
+
+		f32 selX0 = (std::min)(state.assetRectStart.x, state.assetRectEnd.x);
+		f32 selY0 = (std::min)(state.assetRectStart.y, state.assetRectEnd.y);
+		f32 selW = std::fabs(state.assetRectEnd.x - state.assetRectStart.x);
+		f32 selH = std::fabs(state.assetRectEnd.y - state.assetRectStart.y);
+
+		if (!leftDownNow)
+		{
+			if (!state.assetRectAdditive)
+				std::fill(state.assetSelected.begin(), state.assetSelected.end(), false);
+
+			if (selW >= 4.0f * scale || selH >= 4.0f * scale)
+			{
+				hui::Rect selRect(selX0, selY0, selW, selH);
+				i32 last = -1;
+
+				for (const AssetCellRect& cell : cellRects)
+				{
+					if (!cell.rect.outside(selRect))
+					{
+						if (cell.assetIndex < state.assetSelected.size())
+							state.assetSelected[cell.assetIndex] = true;
+
+						last = (i32)cell.assetIndex;
+					}
+				}
+
+				state.assetSelectionAnchor = last;
+			}
+
+			state.assetRectSelecting = false;
+		}
+		else
+		{
+			hui::renderSetColor(hui::Color::fromU8(90, 180, 255, 220));
+			hui::renderDrawRectangle({ selX0, selY0, selW, selH });
+		}
+	}
 
 	state.assetScroll = hui::scrollViewEnd();
 
 	hui::layoutEnd();
 
+	hui::Color splitterColor = (splitterHovered || state.assetFolderResizing)
+		? hui::Color::fromU8(90, 180, 255, 255)
+		: hui::Color::fromU8(80, 80, 90, 255);
+
+	if (splitterHovered || state.assetFolderResizing)
+		hui::mouseCursorSetType(hui::MouseCursorType::SizeWE);
+
+	hui::renderSetLineStyle(hui::LineStyle(splitterColor, 2.0f * uiScale));
+	hui::renderDrawLine({ cursor.x + leftWidth, cursor.y }, { cursor.x + leftWidth, cursor.y + paneHeight });
+	hui::renderSetLineStyle(hui::LineStyle(hui::Color::white, 1.0f));
+
 	hui::paddingPop(hui::PaddingType::Layout);
+}
+
+void drawGameButtonsWindow(LevelEditorState& state)
+{
+	hui::labelCustomColor("Game button style using themes/common/game_btn.png", themeLabelTextColor());
+	hui::line();
+
+	f32 viewHeight = hui::layoutGetRemainingHeight();
+
+	if (viewHeight < 60.0f)
+		viewHeight = 60.0f;
+
+	hui::scrollViewBegin("##gameButtonsScroll", viewHeight, state.gameButtonsScroll, hui::Point(0, 0), hui::ScrollViewFlags::NoHorizontalScroll);
+
+	static const char* labels[] = { "START GAME", "CONTINUE", "LEVEL SELECT", "OPTIONS", "CREDITS", "QUIT" };
+
+	hui::widgetPushStyle(hui::WidgetType::Button, "game");
+
+	f32 scale = hui::scaleGet();
+	f32 buttonWidth = 280.0f;
+	f32 buttonHeight = 64.0f;
+	f32 layoutWidth = hui::layoutGetSize().x;
+	f32 offsetX = (layoutWidth - buttonWidth * scale) * 0.5f;
+
+	if (offsetX < 0.0f)
+		offsetX = 0.0f;
+
+	for (const char* label : labels)
+	{
+		hui::Point pos = hui::widgetGetPosition();
+		hui::widgetSetPosition({ pos.x + offsetX, pos.y });
+		hui::widgetSetNextWidth(buttonWidth);
+		hui::widgetSetNextHeight(buttonHeight);
+
+		if (hui::button(label))
+			appendLog(state, LogEntry::Level::Info, (std::string("Game button: ") + label).c_str());
+
+		hui::widgetSetPosition({ pos.x, hui::widgetGetPosition().y });
+		hui::space(10.0f);
+	}
+
+	hui::widgetPopStyle();
+	state.gameButtonsScroll = hui::scrollViewEnd();
 }
 
 void drawIconBrowser(LevelEditorState& state)
 {
-	hui::labelCustomColor("Double-click an icon to copy its name", hui::Color::gray);
-	hui::sameLine();
-	hui::widgetSetNextWidth(0.45f);
-	hui::textInput("##iconFilter", state.iconFilter, (u32)sizeof(state.iconFilter), hui::TextInputFlags::None, "Filter icons...");
+	bool darkTheme = themeUsesLightText();
+
+	labelAndFilter("Click an icon to copy its name", themeLabelTextColor(), "##iconFilter", state.iconFilter, (u32)sizeof(state.iconFilter), "Filter icons...");
 	hui::line();
 
 	std::vector<const std::string*> visibleIcons;
 
-	for (const std::string& name : gMaterialIconNames)
+	for (const std::string& name : materialIconNames)
 	{
 		if (!containsInsensitive(name, state.iconFilter))
 			continue;
@@ -2241,58 +2844,78 @@ void drawIconBrowser(LevelEditorState& state)
 	f32 cellWidth = 40.0f * scale + spacing;
 	u32 columns = (u32)(std::max)(1.0f, std::floor((hui::layoutGetSize().x + spacing) / cellWidth));
 
-	u32 column = 0;
+	u32 totalRows = (u32)((visibleIcons.size() + columns - 1) / columns);
+	f32 rowHeight = 40.0f * scale + spacing;
+	f32 scrollOffset = (std::max)(state.iconBrowserScroll.y, 0.0f);
+	u32 firstRow = totalRows > 0 ? (u32)(std::max)((f32)0.0f, std::floor(scrollOffset / rowHeight) - 1.0f) : 0;
+	u32 lastRow = (u32)(std::min)((f32)totalRows, std::ceil((scrollOffset + paneHeight) / rowHeight) + 1.0f);
+	hui::Point contentStart = hui::widgetGetPosition();
 
-	for (const std::string* name : visibleIcons)
+	for (u32 row = firstRow; row < lastRow; row++)
 	{
-		if (column > 0)
-			hui::sameLine();
-
-		hui::idPush(name->c_str());
-
-		hui::HImage icon = materialIcon(name->c_str());
-
-		if (icon && hui::imageButton(icon, 40.0f, 40.0f))
+		for (u32 column = 0; column < columns; column++)
 		{
-			const hui::InputEvent& ev = hui::inputEventGet();
+			u32 iconIndex = row * columns + column;
 
-			if (ev.mouse.clickCount >= 2 && hui::clipboardSetText(name->c_str()))
-				appendLog(state, LogEntry::Level::Info, ("Copied icon name: " + *name).c_str());
-		}
+			if (iconIndex >= visibleIcons.size())
+				break;
 
-		// Give the icon preview tooltip a dark gray background. The popup draws
-		// its body with the TooltipBody element color directly, so override it
-		// only while this tooltip is being built and restore it afterwards.
-		hui::WidgetElementInfo tooltipBodyInfo;
-		hui::themeGetWidgetElementInfo(hui::WidgetElementId::TooltipBody, hui::WidgetStateType::Normal, tooltipBodyInfo);
-		const hui::Color originalTooltipColor = tooltipBodyInfo.color;
-		tooltipBodyInfo.color = hui::Color::fromU8(45, 45, 48);
-		hui::themeSetWidgetElement(hui::themeGet(), hui::WidgetElementId::TooltipBody, hui::WidgetStateType::Normal, tooltipBodyInfo);
+			const std::string* name = visibleIcons[iconIndex];
 
-		if (hui::customTooltipBegin(140.0f))
-		{
-			if (icon)
+			hui::widgetPushPosition();
+			hui::widgetSetPosition({ contentStart.x + column * cellWidth, contentStart.y + row * rowHeight });
+
+			hui::idPush(name->c_str());
+
+			hui::HImage icon = materialIcon(name->c_str());
+
+			if (icon && hui::imageButton(icon, 40.0f, 40.0f))
 			{
-				f32 s = hui::scaleGet();
-				f32 iconSize = 48.0f * s;
-				hui::Point iconPos = hui::widgetGetPosition();
-				f32 layoutWidth = hui::layoutGetSize().x;
-				iconPos.x += (layoutWidth - iconSize) * 0.5f;
-				hui::renderSetColor(hui::Color::white);
-				hui::renderDrawStretchedImage(icon, { iconPos.x, iconPos.y, iconSize, iconSize });
-				hui::space(48.0f);
+				if (hui::clipboardSetText(name->c_str()))
+					appendLog(state, LogEntry::Level::Info, ("Copied icon name: " + *name).c_str());
 			}
-			hui::label(name->c_str());
-			hui::customTooltipEnd();
+
+			// dark themes keep the dark preview tooltip; light themes use their
+			// default tooltip background as-is
+			hui::WidgetElementInfo tooltipBodyInfo;
+			hui::themeGetWidgetElementInfo(hui::WidgetElementId::TooltipBody, hui::WidgetStateType::Normal, tooltipBodyInfo);
+			const hui::Color originalTooltipColor = tooltipBodyInfo.color;
+
+			if (darkTheme)
+			{
+				tooltipBodyInfo.color = hui::Color::fromU8(45, 45, 48);
+				hui::themeSetWidgetElement(hui::themeGet(), hui::WidgetElementId::TooltipBody, hui::WidgetStateType::Normal, tooltipBodyInfo);
+			}
+
+			if (hui::customTooltipBegin(140.0f))
+			{
+				if (icon)
+				{
+					f32 s = hui::scaleGet();
+					f32 iconSize = 48.0f * s;
+					hui::Point iconPos = hui::widgetGetPosition();
+					f32 layoutWidth = hui::layoutGetSize().x;
+					iconPos.x += (layoutWidth - iconSize) * 0.5f;
+					hui::renderSetColor(darkTheme ? hui::Color::white : hui::Color::black);
+					hui::renderDrawStretchedImage(icon, { iconPos.x, iconPos.y, iconSize, iconSize });
+					hui::space(48.0f);
+				}
+				hui::labelCustomColor(name->c_str(), hui::Color::white);
+				hui::customTooltipEnd();
+			}
+
+			if (darkTheme)
+			{
+				tooltipBodyInfo.color = originalTooltipColor;
+				hui::themeSetWidgetElement(hui::themeGet(), hui::WidgetElementId::TooltipBody, hui::WidgetStateType::Normal, tooltipBodyInfo);
+			}
+
+			hui::idPop();
+			hui::widgetPopPosition();
 		}
-
-		tooltipBodyInfo.color = originalTooltipColor;
-		hui::themeSetWidgetElement(hui::themeGet(), hui::WidgetElementId::TooltipBody, hui::WidgetStateType::Normal, tooltipBodyInfo);
-
-		hui::idPop();
-
-		column = (column + 1) % columns;
 	}
+
+	hui::widgetSetPosition({ contentStart.x, contentStart.y + totalRows * rowHeight });
 
 	state.iconBrowserScroll = hui::scrollViewEnd();
 
@@ -2301,6 +2924,8 @@ void drawIconBrowser(LevelEditorState& state)
 
 void drawLogWindow(LevelEditorState& state)
 {
+	hui::Color labelTextColor = themeLabelTextColor();
+	bool lightText = themeUsesLightText();
 	u32 selectedLogCount = 0;
 
 	for (const LogEntry& entry : state.log)
@@ -2407,17 +3032,17 @@ void drawLogWindow(LevelEditorState& state)
 			}
 
 			const char* typeName = "Info";
-			hui::Color color = hui::Color::lightGray;
+			hui::Color color = labelTextColor;
 
 			if (entry.level == LogEntry::Level::Warning)
 			{
 				typeName = "Warning";
-				color = hui::Color::yellow;
+				color = lightText ? hui::Color::yellow : hui::Color::fromU8(150, 100, 0);
 			}
 			else if (entry.level == LogEntry::Level::Error)
 			{
 				typeName = "Error";
-				color = hui::Color::red;
+				color = lightText ? hui::Color::red : hui::Color::fromU8(170, 0, 0);
 			}
 
 			// force the label to span the whole cell so clicks anywhere on the row register,
@@ -2435,7 +3060,7 @@ void drawLogWindow(LevelEditorState& state)
 
 			hui::Rect msgCellRect = hui::tableCellGetRect();
 			hui::widgetSetNextWidth((msgCellRect.width - 2.0f * hui::scaleGet()) / hui::scaleGet());
-			hui::labelCustomColor(entry.text.c_str(), hui::Color::lightGray);
+			hui::labelCustomColor(entry.text.c_str(), labelTextColor);
 			bool msgClicked = hui::widgetIsClicked();
 			bool msgHovered = hui::widgetIsHovered();
 			drawLogContextMenu();
@@ -2564,10 +3189,11 @@ int main(int argc, char** args)
 
 	hui::themeSet(theme);
 
-	if (!loadMaterialIconAtlas("../themes/icons/material_icons.png", "../themes/icons/material_icons.json", &gMaterialIconNames))
+	if (!loadMaterialIconAtlas("../themes/icons/material_icons.png", "../themes/icons/material_icons.json", &materialIconNames))
 		printf("Warning: could not load the Material icon atlas\n");
 
 	loadThemeImages(state);
+	setupGameButtonStyle();
 
 	// build the theme into the atlas after all images were added
 	hui::themeBuild(theme);
@@ -2637,6 +3263,8 @@ int main(int argc, char** args)
 		hui::dockingStateSaveInMemory(loadedLayout);
 		state.iconBrowserDocked = layoutStateHasWindow(loadedLayout, "icon_browser")
 			&& !layoutWindowsShareNode(loadedLayout, "icon_browser", "main_menu");
+		state.gameButtonsDocked = layoutStateHasWindow(loadedLayout, "game_buttons")
+			&& !layoutWindowsShareNode(loadedLayout, "game_buttons", "main_menu");
 	}
 
 	// sync the View menu toggles with the restored layout
@@ -2645,6 +3273,7 @@ int main(int argc, char** args)
 	state.showInspector = hui::windowIsVisible("inspector");
 	state.showAssetBrowser = hui::windowIsVisible("asset_browser");
 	state.showIconBrowser = hui::windowIsVisible("icon_browser");
+	state.showGameButtons = hui::windowIsVisible("game_buttons");
 	state.showLog = hui::windowIsVisible("log");
 
 	bool exitNow = false;
@@ -2692,8 +3321,9 @@ int main(int argc, char** args)
 					{
 						auto oldTheme = hui::themeGet();
 						hui::themeSet(newTheme);
-						loadMaterialIconAtlas("../themes/icons/material_icons.png", "../themes/icons/material_icons.json", &gMaterialIconNames);
+						loadMaterialIconAtlas("../themes/icons/material_icons.png", "../themes/icons/material_icons.json", &materialIconNames);
 						loadThemeImages(state);
+						setupGameButtonStyle();
 						hui::themeBuild(newTheme);
 						uploadThemeAtlas();
 
@@ -2733,6 +3363,9 @@ int main(int argc, char** args)
 					hui::WidgetElementId::MenuBarBody,
 					hui::WidgetStateType::Normal,
 					menuBarInfo);
+
+				// the fixed menu/toolbar window size is logical, so apply the new scale to the docking layout
+				hui::dockNodeLayoutRecalculate();
 
 				char scaleLog[64];
 				snprintf(scaleLog, sizeof(scaleLog), "UI scale set to %.0f%%", state.uiScale * 100.0f);
@@ -2789,6 +3422,12 @@ int main(int argc, char** args)
 				hui::windowEnd();
 			}
 
+			if (hui::windowBegin("game_buttons", "Game Buttons", nullptr, materialIcon("sports_esports")))
+			{
+				drawGameButtonsWindow(state);
+				hui::windowEnd();
+			}
+
 			hui::frameEnd();
 
 			// a layout saved before the icon browser existed cannot place it, so dock it once
@@ -2796,6 +3435,12 @@ int main(int argc, char** args)
 			{
 				hui::windowDock("icon_browser", "asset_browser", hui::DockType::Bottom);
 				state.iconBrowserDocked = true;
+			}
+
+			if (!state.gameButtonsDocked && hui::windowIsVisible("game_buttons"))
+			{
+				hui::windowDock("game_buttons", "asset_browser", hui::DockType::AsTab);
+				state.gameButtonsDocked = true;
 			}
 
 			// the layout save and load must happen outside the window pass

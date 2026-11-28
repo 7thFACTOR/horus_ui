@@ -10,7 +10,7 @@ WidgetId genId(u32 id);
 WidgetId genId(void* ptr);
 WidgetId genIdFromPosition(const char* text);
 void widgetSetFocusable();
-void buttonBehavior(bool menuItem = false);
+void buttonBehavior(bool menuItem = false, bool allowFocus = true);
 void mouseDownOnlyButtonBehavior();
 bool imageButtonInternal(HImage img, HImage disabledImg, f32 width, f32 height, bool down, ThemeElement* btnBodyElem);
 bool clampValue(f32& value, f32 minVal, f32 maxVal);

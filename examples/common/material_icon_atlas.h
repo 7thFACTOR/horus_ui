@@ -26,6 +26,9 @@ inline bool loadMaterialIconAtlas(
 	if (!theme)
 		return false;
 
+	if (outNames)
+		outNames->clear();
+
 	hui::ImageData sheet = {};
 	if (!hui::loadPngImage(atlasPath, sheet) || !sheet.pixels)
 		return false;

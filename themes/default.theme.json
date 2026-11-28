@@ -17,7 +17,7 @@
 		"xsmall-italic": { "file": "fonts/Roboto-Italic.ttf", "size": 6 },
 		"large": { "file": "fonts/Inter-Regular.ttf", "size": 25 },
 		"large-unicode": { "file": "fonts/Inter-Regular.ttf", "size": 25 },
-		"large-bold": { "file": "fonts/Inter-Regular.ttf", "size": 25 },
+		"large-bold": { "file": "fonts/Inter-Bold.ttf", "size": 25 },
 		"large-italic": { "file": "fonts/Roboto-Italic.ttf", "size": 25 },
 		"title": { "file": "fonts/Inter-Regular.ttf", "size": 20 },
 		"heading": { "file": "fonts/Inter-Regular.ttf", "size": 14 },
@@ -61,6 +61,19 @@
 						"hovered": { "color": "yellow", "textColor": "white", "font": "large-bold" },
 						"pressed": { "image": "default/button_pressed", "border": 3, "color": "orange", "textColor": "white", "font": "large-italic" },
 						"focused": { "color": "white", "font": "large-bold" }
+					}
+				},
+				"game":
+				{
+					"buttonBody":
+					{
+						"width": 0,
+						"height": 64,
+						"normal": { "image": "common/game_btn", "border": 18, "color": "white", "textColor": "255 245 200 255", "font": "large-bold", "textShadow": { "color": "0 0 0 255", "offsetX": 2, "offsetY": 2 } },
+						"disabled": { "color": "110 110 110 255", "textColor": "180 180 180 255", "font": "large-bold" },
+						"hovered": { "color": "120 180 255 255", "textColor": "white", "font": "large-bold" },
+						"pressed": { "color": "190 180 160 255", "textColor": "255 235 180 255", "font": "large-bold" },
+						"focused": { "color": "255 245 210 255", "textColor": "white", "font": "large-bold" }
 					}
 				}
 			}
@@ -110,6 +123,16 @@
 						"hovered": { "image": "default/button_normal", "border": 3, "color": "155 200 200 255", "textColor": "white", "font": "normal" },
 						"pressed": { "image": "default/button_pressed", "border": 3, "color": "white", "textColor": "white", "font": "normal" },
 						"focused": { "image": "default/button_normal", "border": 3, "color": "115 115 115 255", "textColor": "white", "font": "normal" }
+					},
+					"imageButtonDropDownArrow":
+					{
+						"width": 20,
+						"height": 29,
+						"normal": { "image": "default/image_button_arrow_down", "border": 0, "color": "white", "textColor": "white", "font": "normal" },
+						"disabled": { "color": "gray", "textColor": "lightGray" },
+						"hovered": { "image": "default/image_button_arrow_down", "border": 0, "color": "white", "textColor": "white", "font": "normal" },
+						"pressed": { "image": "default/image_button_arrow_down", "border": 0, "color": "white", "textColor": "white", "font": "normal" },
+						"focused": { "image": "default/image_button_arrow_down", "border": 0, "color": "white", "textColor": "white", "font": "normal" }
 					}
 				},
 				"important":
@@ -572,12 +595,12 @@
 		{
 			"menuBarBody":
 			{
-				"height": 26,
+				"height": 30,
 				"normal": { "image": "default/menu_bar", "border": 2, "color": "white", "textColor": "white", "font": "menu" }
 			},
 			"menuBarItem":
 			{
-				"height": 26,
+				"height": 30,
 				"normal": { "image": "default/menu_bar_item_normal", "border": 1, "color": "white", "textColor": "white", "font": "menu" },
 				"hovered": { "image": "default/menu_bar_item_normal", "border": 1, "color": "sky", "textColor": "white", "font": "menu" },
 				"pressed": { "image": "default/menu_bar_item_normal", "border": 1, "color": "black", "textColor": "white", "font": "menu" }

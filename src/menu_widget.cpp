@@ -475,21 +475,38 @@ bool menuItem(const char* label, const char* shortcut, HImage img, SelectableFla
 		// draw image or check mark
 		auto& rc = ctx->widget.rect;
 
-		auto rcImage = Rect(
-			rc.x + (ctx->menuImageSpace - noCheckMarkElem.normalState().width) / 2.0f * ctx->scale,
-			rc.y + (rc.height - noCheckMarkElem.normalState().image->rect.height * ctx->scale) / 2.0f,
-			noCheckMarkElem.normalState().image->rect.width * ctx->scale,
-			noCheckMarkElem.normalState().image->rect.height * ctx->scale
-		);
+		auto& checkState = ctx->widget.hovered ? checkMarkElem.hoveredState() : checkMarkElem.normalState();
+		auto& noCheckState = ctx->widget.hovered ? noCheckMarkElem.hoveredState() : noCheckMarkElem.normalState();
+		Image* checkImage = checkState.image ? checkState.image : checkMarkElem.normalState().image;
+		Image* noCheckImage = noCheckState.image ? noCheckState.image : noCheckMarkElem.normalState().image;
 
-		ctx->renderer.cmdSetColor(noCheckMarkElem.normalState().color);
-		ctx->renderer.cmdDrawImage(noCheckMarkElem.normalState().image, rcImage);
-
-		if (isChecked)
+		auto drawCheckImage = [&](Image* image, const Color& color)
 		{
-			ctx->renderer.cmdSetColor(checkMarkElem.normalState().color);
-			ctx->renderer.cmdDrawImage(checkMarkElem.normalState().image, rcImage);
-		}
+			f32 width = image->rect.width * ctx->scale;
+			f32 height = image->rect.height * ctx->scale;
+			f32 maxSize = rc.height * 0.6f;
+
+			if (width > maxSize || height > maxSize)
+			{
+				f32 factor = maxSize / (std::max)(width, height);
+				width *= factor;
+				height *= factor;
+			}
+
+			ctx->renderer.cmdSetColor(color);
+			ctx->renderer.cmdDrawImage(image, {
+				rc.x + (ctx->menuImageSpace * ctx->scale - width) / 2.0f,
+				rc.y + (rc.height - height) / 2.0f,
+				width,
+				height
+			});
+		};
+
+		if (noCheckImage && noCheckImage->rect.width > 1.0f && noCheckImage->rect.height > 1.0f)
+			drawCheckImage(noCheckImage, noCheckState.color);
+
+		if (isChecked && checkImage)
+			drawCheckImage(checkImage, checkState.color);
 	}
 	else if (hasImage)
 	{

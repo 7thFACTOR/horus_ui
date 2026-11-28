@@ -12,4 +12,5 @@
 - .cpp comments start in lowercase, a space after //, header functions desc start with uppercase letter
 - minimalistic code, avoid hardcoding, search for places where to put constants, like in Settings struct
 - avoid global statics, try to put them in context structs where available
+- never prefix globals with g, use descriptive names instead
 - for any change, check demo for consistency with the changes, if new feature or widget added, add a demo for it

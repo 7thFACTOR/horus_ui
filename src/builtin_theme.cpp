@@ -202,6 +202,11 @@ HTheme createBuiltinTheme(u32 atlasTextureSize)
 
 	Image* imgCheckMarkIndeterminate = createProceduralImage(theme, "flat/check_mark_indeterminate", 22, 22);
 	drawAALine(imgCheckMarkIndeterminate, 6, 11, 16, 11, 3.0f, Color::white);
+
+	// menu checkboxes use a small X mark, matching the shipped themes
+	Image* imgMenuCheckMark = createProceduralImage(theme, "flat/menu_item_checkmark", 6, 6);
+	drawAALine(imgMenuCheckMark, 1, 1, 4, 4, 1.25f, Color::white);
+	drawAALine(imgMenuCheckMark, 4, 1, 1, 4, 1.25f, Color::white);
 	
 	// the filled dropdown arrow is an embedded image, white tinted by the element color
 	Image* imgDropdownArrow = createImageFromPixels(theme, "flat/dropdown_arrow", dropdownArrowPixels, 20, 22);
@@ -243,6 +248,10 @@ HTheme createBuiltinTheme(u32 atlasTextureSize)
 	// 1px white image used for lines and separators
 	Image* imgPixel = createProceduralImage(theme, "flat/pixel", 1, 1);
 	drawPixel(imgPixel, 0, 0, Color::white.getRgba());
+
+	// docking location overlay boxes, tinted per state
+	Image* imgDockGuide = createProceduralImage(theme, "flat/window_dock_guide", 64, 64);
+	drawAARoundRect(imgDockGuide, 10.0f, Color::white);
 
 	// the white grip dots of the overlay toolbar handle, tinted by the element color
 	Image* imgGrip = createProceduralImage(theme, "flat/grip", 16, 16);
@@ -368,6 +377,10 @@ HTheme createBuiltinTheme(u32 atlasTextureSize)
 	setSize(WidgetElementId::ImageButtonBody, 0, 22, 0);
 	setElementColors(WidgetElementId::ImageButtonBody, cButtonNormal, cButtonHovered, cButtonPressed, cButtonFocused, Color::fromU8(58, 58, 63, 128));
 
+	setSize(WidgetElementId::ImageButtonDropDownArrow, 20, 22, 0);
+	setElementImage(WidgetElementId::ImageButtonDropDownArrow, imgDropdownArrow);
+	setElementColors(WidgetElementId::ImageButtonDropDownArrow, Color::white, Color::white, Color::white, Color::white, Color::fromU8(105, 105, 112));
+
 	// --- Inputs ---
 	setSize(WidgetElementId::TextInputBody, 0, 22, 0);
 	setElementColors(WidgetElementId::TextInputBody, Color::fromU8(38, 38, 42), Color::fromU8(48, 48, 54), Color::fromU8(48, 48, 54), Color::fromU8(42, 48, 56), Color::fromU8(38, 38, 42, 128));
@@ -477,11 +490,26 @@ HTheme createBuiltinTheme(u32 atlasTextureSize)
 	HUI_DEFAULT_STYLE(CircularSliderValueDot).cachedColorParameters["positiveColor"] = Color::fromU8(235, 145, 55);
 
 	// --- Other layout and containers ---
-	setSize(WidgetElementId::MenuBarBody, 0, 20, 0);
+	setSize(WidgetElementId::MenuBarBody, 0, 30, 0);
 	setElementColors(WidgetElementId::MenuBarBody, Color::fromU8(38, 38, 42), Color::fromU8(38, 38, 42), Color::fromU8(38, 38, 42), Color::fromU8(38, 38, 42), Color::fromU8(38, 38, 42));
 
-	setSize(WidgetElementId::MenuBarItem, 0, 20, 0);
+	setSize(WidgetElementId::MenuBarItem, 0, 30, 0);
 	setElementColors(WidgetElementId::MenuBarItem, Color::transparent, cButtonNormal, cButtonPressed, cButtonNormal, Color::transparent);
+
+	Color dockGuideNormal = Color::fromU8(78, 155, 220, 128);
+	Color dockGuideHovered = Color::fromU8(78, 155, 220, 220);
+
+	setSize(WidgetElementId::WindowDockGuideVerticalSplit, 64, 64, 0);
+	setElementImage(WidgetElementId::WindowDockGuideVerticalSplit, imgDockGuide);
+	setElementColors(WidgetElementId::WindowDockGuideVerticalSplit, dockGuideNormal, dockGuideHovered, dockGuideHovered, dockGuideHovered, Color::transparent);
+
+	setSize(WidgetElementId::WindowDockGuideHorizontalSplit, 64, 64, 0);
+	setElementImage(WidgetElementId::WindowDockGuideHorizontalSplit, imgDockGuide);
+	setElementColors(WidgetElementId::WindowDockGuideHorizontalSplit, dockGuideNormal, dockGuideHovered, dockGuideHovered, dockGuideHovered, Color::transparent);
+
+	setSize(WidgetElementId::WindowDockGuideAsTab, 64, 64, 0);
+	setElementImage(WidgetElementId::WindowDockGuideAsTab, imgDockGuide);
+	setElementColors(WidgetElementId::WindowDockGuideAsTab, dockGuideNormal, dockGuideHovered, dockGuideHovered, dockGuideHovered, Color::transparent);
 
 	setSize(WidgetElementId::MenuBody, 0, 0, 0);
 	setElementColors(WidgetElementId::MenuBody, Color::fromU8(48, 48, 52, 240), Color::fromU8(48, 48, 52, 240), Color::fromU8(48, 48, 52, 240), Color::fromU8(48, 48, 52, 240), Color::fromU8(48, 48, 52, 240));
@@ -495,8 +523,13 @@ HTheme createBuiltinTheme(u32 atlasTextureSize)
 	setSize(WidgetElementId::SubMenuItemArrow, 22, 22, 0);
 	setElementImage(WidgetElementId::SubMenuItemArrow, imgExpandableCollapsed); // Reuse right arrow
 	
-	setSize(WidgetElementId::MenuItemCheckMark, 22, 22, 0);
-	setElementImage(WidgetElementId::MenuItemCheckMark, imgCheckMark);
+	setSize(WidgetElementId::MenuItemCheckMark, 6, 6, 0);
+	setElementImage(WidgetElementId::MenuItemCheckMark, imgMenuCheckMark);
+	HUI_DEFAULT_STYLE(MenuItemCheckMark).states[(u32)WidgetStateType::Normal].color = Color::white;
+	HUI_DEFAULT_STYLE(MenuItemCheckMark).states[(u32)WidgetStateType::Hovered].color = Color::black;
+	HUI_DEFAULT_STYLE(MenuItemCheckMark).states[(u32)WidgetStateType::Pressed].color = Color::black;
+	HUI_DEFAULT_STYLE(MenuItemCheckMark).states[(u32)WidgetStateType::Focused].color = Color::black;
+	HUI_DEFAULT_STYLE(MenuItemCheckMark).states[(u32)WidgetStateType::Disabled].color = Color::fromU8(128, 128, 128);
 	
 	setSize(WidgetElementId::SelectableBody, 0, 20, 0);
 	setElementColors(WidgetElementId::SelectableBody, Color::transparent, cAccent, cAccent, Color::transparent, Color::fromU8(255, 255, 255, 128));
@@ -528,6 +561,7 @@ HTheme createBuiltinTheme(u32 atlasTextureSize)
 
 	setSize(WidgetElementId::TabGroupBody, 0, 37, 0);
 	setElementColors(WidgetElementId::TabGroupBody, Color::fromU8(34, 34, 38), Color::fromU8(34, 34, 38), Color::fromU8(34, 34, 38), Color::fromU8(34, 34, 38), Color::fromU8(34, 34, 38));
+	themeSetWidgetElementParameter(theme, WidgetElementId::TabGroupBody, "default", "tabAccentColor", "44 93 195 255");
 
 	setSize(WidgetElementId::TabBodyActive, 100, 30, 0);
 	setElementColors(WidgetElementId::TabBodyActive, cButtonNormal, cButtonHovered, cButtonPressed, cButtonNormal, cButtonNormal);

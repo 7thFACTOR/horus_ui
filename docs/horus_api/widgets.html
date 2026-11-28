@@ -124,6 +124,10 @@
 		<div class="prototype"><code><span class="kw">void</span> <span class="fn">widgetSetNextFocused</span>()</code></div>
 		<p class="brief">Set next widget as focused.</p>
 	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="kw">void</span> <span class="fn">widgetSetNextFocusable</span>(<span class="prm">bool</span> focusable = true)</code></div>
+		<p class="brief">Set whether the next widget can receive keyboard focus. Buttons and icon buttons are not focusable by default.</p>
+	</div>
 
 	<h2>Buttons</h2>
 	<div class="member">
@@ -152,6 +156,19 @@
 			<li><span class="pname">down</span> if true button is in pressed state</li>
 		</ul>
 		<p class="returns">Returns true if the button was pressed.</p>
+	</div>
+	<div class="member">
+		<div class="prototype"><code><span class="ret">IconButtonResult</span> <span class="fn">iconButton</span>(<span class="prm">HImage</span> img, <span class="prm">f32</span> width, <span class="prm">f32</span> height, <span class="prm">IconButtonFlags</span> flags = IconButtonFlags::None, <span class="prm">HImage</span> disabledImg = 0, <span class="prm">bool</span> down = false)</code></div>
+		<p class="brief">Draw an icon button, optionally with a dropdown arrow on the right.</p>
+		<ul class="params">
+			<li><span class="pname">img</span> the image</li>
+			<li><span class="pname">width</span> the main icon button width; the arrow adds its own width from the <code>imageButtonDropDownArrow</code> theme element</li>
+			<li><span class="pname">height</span> the button height</li>
+			<li><span class="pname">flags</span> the button options (<a href="types.html">IconButtonFlags</a>); <code>DropDownArrow</code> adds the arrow, <code>LinkedArrow</code> makes the arrow share hover with the button and both return <code>Button</code></li>
+			<li><span class="pname">disabledImg</span> image for disabled state</li>
+			<li><span class="pname">down</span> if true button is in pressed state</li>
+		</ul>
+		<p class="returns">Returns which part was pressed (<a href="types.html">IconButtonResult</a>): <code>None</code>, <code>Button</code> or <code>Arrow</code>.</p>
 	</div>
 
 	<h2>Text inputs</h2>
